@@ -5,7 +5,7 @@ import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 
-import { canRender, stimuliLabel, unrenderableReason } from '../lib/stimulus-data'
+import { groupLabel, stimuliLabel } from '../lib/stimulus-data'
 import { resetStimulusOpen, useStimulusOpen } from '../lib/useStimulusOpen'
 import StimulusFigure from '../StimulusFigure.vue'
 import StimulusGroup from '../StimulusGroup.vue'
@@ -216,30 +216,7 @@ describe('FR-PA-37 source line', () => {
   })
 })
 
-describe('R1-04 canRender and whole-group exclusion', () => {
-  it('canRender per kind', () => {
-    expect(canRender({ id: 'a', kind: 'passage', text: 'x' })).toBe(true)
-    expect(canRender({ id: 'a', kind: 'passage' })).toBe(true)
-    expect(canRender({ id: 'a', kind: 'table', table: { head: [], rows: [['1']] } })).toBe(true)
-    expect(canRender({ id: 'a', kind: 'table', src: '/t.png' })).toBe(true)
-    expect(canRender({ id: 'a', kind: 'table', table: { head: ['a'], rows: [] } })).toBe(true)
-    for (const kind of ['image', 'diagram', 'map', 'infographic', 'graph'] as const) {
-      expect(canRender({ id: 'a', kind, src: '/a.png' })).toBe(true)
-      expect(canRender({ id: 'a', kind, table: { head: [], rows: [['1']] } })).toBe(true)
-      expect(canRender({ id: 'a', kind })).toBe(false)
-    }
-  })
-
-  it('one stimulus that cannot render excludes the whole group with the reason', async () => {
-    const w = await mountGroup(true, { stimuli: [fig, { id: 'm', kind: 'map', label: 'Peta' }], excludeUnrenderable: true })
-    expect(w.find('[data-layout=excluded]').exists()).toBe(true)
-    expect(w.find('[data-testid=not-served-reason]').text()).toBe(
-      `Tidak dihidangkan kerana ${unrenderableReason({ id: 'm', kind: 'map' })}.`,
-    )
-    expect(w.find('[data-testid=stimulus]').exists()).toBe(false)
-    expect(w.findAll('[data-testid=q]')).toHaveLength(0)
-  })
-
+describe('R1-04 table and graph rendering', () => {
   it('with no flag a table without rows renders as before (no notice)', () => {
     const w = mount(StimulusFigure, {
       props: { stimulus: { id: 't', kind: 'table', table: { head: ['a'], rows: [] } } },
@@ -271,14 +248,6 @@ describe('AC-X6-2 one figure + 3 questions at 375', () => {
     expect(w.findAll('[data-testid=stimulus]')).toHaveLength(1)
     expect(w.findAll('[data-testid=q]')).toHaveLength(3)
     expect(w.findAll('[data-testid=stimulus-chip]')).toHaveLength(1)
-  })
-})
-
-describe('R1-04 authoring preview default', () => {
-  it('excludeUnrenderable off (default) keeps the group and its questions', async () => {
-    const w = await mountGroup(true, { stimuli: [{ id: 'm', kind: 'map' }] })
-    expect(w.find('[data-layout=excluded]').exists()).toBe(false)
-    expect(w.findAll('[data-testid=q]')).toHaveLength(3)
   })
 })
 
@@ -359,5 +328,15 @@ describe('FR-PA-37 StimulusView passage source', () => {
       global: { stubs },
     })
     expect(w.find('[data-testid=stimulus-source]').text()).toBe('Sumber: Buku Teks')
+  })
+})
+
+describe('label fallback by kind (one rule for groupLabel and stimuliLabel)', () => {
+  it('an unlabelled passage is "Petikan", an unlabelled figure is "Rajah"; labels win', () => {
+    expect(stimuliLabel([{ id: 'p', kind: 'passage', text: 'x' }])).toBe('Petikan')
+    expect(stimuliLabel([{ id: 'f', kind: 'image', src: '/a.png' }])).toBe('Rajah')
+    expect(groupLabel([{ id: 'p', kind: 'passage', label: '', alt: '', text: 'x' }])).toBe('Petikan')
+    expect(groupLabel([{ id: 'f', kind: 'image', label: '', alt: '' }])).toBe('Rajah')
+    expect(stimuliLabel([{ id: 'f', kind: 'image', label: 'Rajah 2' }])).toBe('Rajah 2')
   })
 })

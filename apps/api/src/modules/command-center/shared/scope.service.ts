@@ -17,7 +17,7 @@ export interface CcScope {
 }
 
 /**
- * Drill scope (mock `command-center-drill-scope`). Every miss is a 404 "Not Found.", never 403, so ids cannot be probed:
+ * Drill scope (mock `command-center-drill-scope`). Every miss is a 404 NOT_FOUND (generic BM default), never 403, so ids cannot be probed:
  * - admin: everything that exists.
  * - teacher: the schools of own active classrooms, own teacher page, own active classrooms, their active non-test members.
  * - school_admin: the session school, its teachers, classes (class school, else owner school), pupils (users.school_id,

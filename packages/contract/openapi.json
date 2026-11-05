@@ -15251,7 +15251,8 @@
           "tag_review",
           "paper_empty",
           "stimulus_shared_ungrouped",
-          "question_missing"
+          "question_missing",
+          "group_incomplete"
         ]
       },
       "ServabilityReason": {
@@ -39539,6 +39540,15 @@
               "string",
               "null"
             ]
+          },
+          "textbookRef": {
+            "$ref": "#/components/schemas/QuestionTextbookRef"
+          },
+          "rejectionReason": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -39594,6 +39604,45 @@
           "3",
           null
         ]
+      },
+      "QuestionTextbookRef": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "bab": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "tingkatan": {
+            "type": "string",
+            "enum": [
+              "T1",
+              "T2",
+              "T3",
+              "T4",
+              "T5"
+            ]
+          },
+          "mukaSurat": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 999
+          },
+          "hingga": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 999
+          }
+        },
+        "required": [
+          "bab",
+          "tingkatan",
+          "mukaSurat"
+        ],
+        "description": "Rujukan buku teks: {bab, tingkatan, mukaSurat, hingga?} (DM-56)."
       },
       "QuestionDetail": {
         "type": "object",
@@ -39916,6 +39965,15 @@
             ]
           },
           "numberLabel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "textbookRef": {
+            "$ref": "#/components/schemas/QuestionTextbookRef"
+          },
+          "rejectionReason": {
             "type": [
               "string",
               "null"
@@ -40343,6 +40401,9 @@
               }
             ]
           },
+          "textbookRef": {
+            "$ref": "#/components/schemas/QuestionTextbookRef"
+          },
           "questionType": {
             "$ref": "#/components/schemas/QuestionType"
           },
@@ -40527,6 +40588,9 @@
                 ]
               }
             ]
+          },
+          "textbookRef": {
+            "$ref": "#/components/schemas/QuestionTextbookRef"
           }
         },
         "required": [
@@ -41970,6 +42034,15 @@
             ],
             "maxLength": 300
           },
+          "style": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "Presentation hint (DM-70): `kotak` on a passage, `mono` for the code block. Free text, no closed list."
+          },
           "tableData": {
             "type": [
               "object",
@@ -42071,6 +42144,15 @@
             ],
             "maxLength": 300
           },
+          "style": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "Presentation hint (DM-70): `kotak` on a passage, `mono` for the code block. Free text, no closed list."
+          },
           "tableData": {
             "type": [
               "object",
@@ -42159,6 +42241,13 @@
               "string",
               "null"
             ]
+          },
+          "style": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 32
           },
           "tableData": {
             "$ref": "#/components/schemas/QuestionStimulusTable"
@@ -42974,7 +43063,7 @@
           },
           "code": {
             "type": "string",
-            "description": "Stable machine code, for example LEAF_COGNITIVE_LEVEL_MISSING, KERTAS_MISSING, UNIT_MISSING."
+            "description": "Stable machine code, the Code column of 45 section 4.1, for example NO_SUBJECT, NO_LEVEL, NO_UNIT, NO_SP, LEAF_NO_TP, LEAF_NO_ARAS, NO_KERTAS, NO_CHAPTER, NO_DIFFICULTY, STEM_SHORT (TP_MISSING and SP_NOT_IN_TAXONOMY also exist)."
           },
           "message": {
             "type": "string",
@@ -43025,7 +43114,8 @@
               "draft",
               "review",
               "approved",
-              "archived"
+              "archived",
+              "rejected"
             ]
           },
           "reason": {
@@ -55893,6 +55983,183 @@
           "order",
           "edition",
           "isElective"
+        ]
+      },
+      "CurriculumDskpState": {
+        "type": "string",
+        "enum": [
+          "dimuatkan",
+          "belum dimuatkan"
+        ]
+      },
+      "CurriculumDskpQuery": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "levelId": {
+            "$ref": "#/components/schemas/Id"
+          }
+        }
+      },
+      "CurriculumDskpReportRow": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "$ref": "#/components/schemas/CurriculumRef"
+          },
+          "level": {
+            "$ref": "#/components/schemas/CurriculumRef"
+          },
+          "state": {
+            "$ref": "#/components/schemas/CurriculumDskpState"
+          },
+          "bab": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sk": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sp": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tp": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tpDescriptors": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "subject",
+          "level",
+          "state",
+          "bab",
+          "sk",
+          "sp",
+          "tp",
+          "tpDescriptors"
+        ]
+      },
+      "CurriculumDskpTpDescriptor": {
+        "type": "object",
+        "properties": {
+          "tp": {
+            "$ref": "#/components/schemas/CurriculumTp"
+          },
+          "descriptor": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tp",
+          "descriptor"
+        ]
+      },
+      "CurriculumDskpNode": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "educationLevelId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/CurriculumNodeKind"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Stable printed code (1.0, 1.1, 1.1.3); questions tag by id, lookups by code."
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "titlePrinted": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "parentId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "edition": {
+            "type": "string",
+            "minLength": 1
+          },
+          "isElective": {
+            "type": "boolean"
+          },
+          "tpDescriptors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CurriculumDskpTpDescriptor"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "subjectId",
+          "educationLevelId",
+          "kind",
+          "code",
+          "title",
+          "titlePrinted",
+          "parentId",
+          "order",
+          "edition",
+          "isElective",
+          "tpDescriptors"
+        ]
+      },
+      "CurriculumDskpReport": {
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CurriculumDskpReportRow"
+            }
+          },
+          "nodes": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/CurriculumDskpNode"
+            }
+          }
+        },
+        "required": [
+          "rows",
+          "nodes"
         ]
       },
       "PracticeMode": {
@@ -69555,7 +69822,11 @@
         "enum": [
           "diagram",
           "passage",
-          "table"
+          "table",
+          "graph",
+          "map",
+          "infographic",
+          "image"
         ],
         "description": "Prototype StimulusDef.kind."
       },
@@ -81003,7 +81274,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81013,7 +81284,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin; Admin Sekolah and every other role included).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin; Admin Sekolah and every other role included).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81066,7 +81337,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81086,7 +81357,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\" (the question does not exist).",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (the question does not exist).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81128,7 +81399,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81192,7 +81463,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81202,7 +81473,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81212,7 +81483,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\" (unknown id, or a segment that does not match the route).",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (unknown id, or a segment that does not match the route).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81292,7 +81563,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81302,7 +81573,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin; Admin Sekolah and every other role included).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin; Admin Sekolah and every other role included).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81355,7 +81626,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81365,7 +81636,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81416,7 +81687,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81426,7 +81697,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin; Admin Sekolah and every other role included).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin; Admin Sekolah and every other role included).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81467,7 +81738,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81477,7 +81748,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not teacher or admin).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not teacher or admin).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81540,7 +81811,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81550,7 +81821,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not teacher or admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not teacher or admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81600,7 +81871,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81610,7 +81881,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin; Admin Sekolah and every other role included).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin; Admin Sekolah and every other role included).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81655,7 +81926,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81665,7 +81936,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81745,7 +82016,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81755,7 +82026,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin; Admin Sekolah and every other role included).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin; Admin Sekolah and every other role included).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81828,7 +82099,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81838,7 +82109,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81848,7 +82119,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\" (kind is not mcq or structured, or the question does not exist; a PKSK MCQ row is also 404).",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (kind is not mcq or structured, or the question does not exist; a PKSK MCQ row is also 404).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81921,7 +82192,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81931,7 +82202,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81941,7 +82212,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\" (kind is not mcq or structured, or the question does not exist).",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (kind is not mcq or structured, or the question does not exist).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81993,7 +82264,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -82003,7 +82274,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not teacher or admin).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not teacher or admin).",
             "content": {
               "application/json": {
                 "schema": {
@@ -82065,7 +82336,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED (\"Unauthenticated.\"): no valid session.",
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -82075,7 +82346,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
             "content": {
               "application/json": {
                 "schema": {
@@ -82136,7 +82407,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -82146,7 +82417,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not teacher or admin).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not teacher or admin).",
             "content": {
               "application/json": {
                 "schema": {
@@ -82208,7 +82479,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED (\"Unauthenticated.\"): no valid session.",
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -82218,7 +82489,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
             "content": {
               "application/json": {
                 "schema": {
@@ -82279,7 +82550,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -82289,7 +82560,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not teacher or admin).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not teacher or admin).",
             "content": {
               "application/json": {
                 "schema": {
@@ -82351,7 +82622,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED (\"Unauthenticated.\"): no valid session.",
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -82361,7 +82632,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
             "content": {
               "application/json": {
                 "schema": {
@@ -82432,7 +82703,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -82442,7 +82713,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin; Admin Sekolah and every other role included).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin; Admin Sekolah and every other role included).",
             "content": {
               "application/json": {
                 "schema": {
@@ -82505,7 +82776,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -82515,7 +82786,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {
@@ -82525,7 +82796,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\" (unknown id, or an action that is not approve|regen|unflag).",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (unknown id, or an action that is not approve|regen|unflag).",
             "content": {
               "application/json": {
                 "schema": {
@@ -82589,7 +82860,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -82599,7 +82870,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {
@@ -82609,7 +82880,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\" (unknown question, or a PKSK row).",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (unknown question, or a PKSK row).",
             "content": {
               "application/json": {
                 "schema": {
@@ -88866,6 +89137,95 @@
         }
       }
     },
+    "/admin/curriculum/dskp": {
+      "get": {
+        "tags": [
+          "curriculum-admin"
+        ],
+        "summary": "DSKP load report per Subjek x Tingkatan (API-DSKP-11)",
+        "description": "422 fields.subjectId / fields.levelId when an id is not a positive integer. Nothing is stored (D11/D12); the rejected rows of a load stay in the CLI report (D115).",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "subjectId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "levelId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Live counts and state per offered Subjek x Tingkatan; with subjectId and levelId also the node list with TP descriptors.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CurriculumDskpReport"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: not an admin, or CSRF_INVALID on a mutating call.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND with message \"Subjek tidak dijumpai. or Tahap Pendidikan tidak dijumpai.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (Laravel-style copy, e.g. \"The selected :attribute is invalid.\")",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/curriculum/chapters/{id}": {
       "get": {
         "tags": [
@@ -91506,7 +91866,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -91516,7 +91876,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher; or CSRF_INVALID on a mutation.",
             "content": {
               "application/json": {
                 "schema": {
@@ -91576,7 +91936,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -91586,7 +91946,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher; or CSRF_INVALID on a mutation.",
             "content": {
               "application/json": {
                 "schema": {
@@ -91637,7 +91997,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -91647,7 +92007,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher; or CSRF_INVALID on a mutation.",
             "content": {
               "application/json": {
                 "schema": {
@@ -91657,7 +92017,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\": unknown, not owned, or a school class (never names a model).",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown, not owned, or a school class (never names a model).",
             "content": {
               "application/json": {
                 "schema": {
@@ -91725,7 +92085,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -91735,7 +92095,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher; or CSRF_INVALID on a mutation.",
             "content": {
               "application/json": {
                 "schema": {
@@ -91806,7 +92166,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -91913,7 +92273,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -91982,7 +92342,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -91992,7 +92352,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher; or CSRF_INVALID on a mutation.",
             "content": {
               "application/json": {
                 "schema": {
@@ -92043,7 +92403,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -92053,7 +92413,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher; or CSRF_INVALID on a mutation.",
             "content": {
               "application/json": {
                 "schema": {
@@ -92104,7 +92464,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -92114,7 +92474,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher; or CSRF_INVALID on a mutation.",
             "content": {
               "application/json": {
                 "schema": {
@@ -92167,7 +92527,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -92177,7 +92537,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher; or CSRF_INVALID on a mutation.",
             "content": {
               "application/json": {
                 "schema": {
@@ -92228,7 +92588,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -92238,7 +92598,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher; or CSRF_INVALID on a mutation.",
             "content": {
               "application/json": {
                 "schema": {
@@ -92278,7 +92638,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -92288,7 +92648,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher; or CSRF_INVALID on a mutation.",
             "content": {
               "application/json": {
                 "schema": {
@@ -92328,7 +92688,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -92338,7 +92698,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher; or CSRF_INVALID on a mutation.",
             "content": {
               "application/json": {
                 "schema": {
@@ -92384,7 +92744,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -92438,7 +92798,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -97061,7 +97421,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session). Every role may call these routes.",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session). Every role may call these routes.",
             "content": {
               "application/json": {
                 "schema": {
@@ -97144,7 +97504,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session). Every role may call these routes.",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session). Every role may call these routes.",
             "content": {
               "application/json": {
                 "schema": {
@@ -97196,7 +97556,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session). Every role may call these routes.",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session). Every role may call these routes.",
             "content": {
               "application/json": {
                 "schema": {
@@ -97206,7 +97566,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\": unknown slug, or a hidden product (status other than active, or the seller is not active). Nothing is counted.",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown slug, or a hidden product (status other than active, or the seller is not active). Nothing is counted.",
             "content": {
               "application/json": {
                 "schema": {
@@ -97288,7 +97648,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session). Every role may call these routes.",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session). Every role may call these routes.",
             "content": {
               "application/json": {
                 "schema": {
@@ -97308,7 +97668,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\": unknown slug, or a hidden product (status other than active, or the seller is not active). Nothing is counted.",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown slug, or a hidden product (status other than active, or the seller is not active). Nothing is counted.",
             "content": {
               "application/json": {
                 "schema": {
@@ -97373,7 +97733,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session). Every role may call these routes.",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session). Every role may call these routes.",
             "content": {
               "application/json": {
                 "schema": {
@@ -97383,7 +97743,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\": unknown id, non-numeric id, or a seller whose status is not active.",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown id, non-numeric id, or a seller whose status is not active.",
             "content": {
               "application/json": {
                 "schema": {
@@ -101454,7 +101814,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -101464,7 +101824,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
             "content": {
               "application/json": {
                 "schema": {
@@ -101515,7 +101875,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -101525,7 +101885,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
             "content": {
               "application/json": {
                 "schema": {
@@ -101576,7 +101936,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -101586,7 +101946,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
             "content": {
               "application/json": {
                 "schema": {
@@ -101637,7 +101997,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -101647,7 +102007,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
             "content": {
               "application/json": {
                 "schema": {
@@ -101708,7 +102068,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -101718,7 +102078,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
             "content": {
               "application/json": {
                 "schema": {
@@ -101781,7 +102141,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -101791,7 +102151,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
             "content": {
               "application/json": {
                 "schema": {
@@ -101854,7 +102214,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -101864,7 +102224,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
             "content": {
               "application/json": {
                 "schema": {
@@ -101942,7 +102302,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -101952,7 +102312,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not school_admin, Admin Pusat included, or no school), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, Admin Pusat included, or no school), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {
@@ -102063,7 +102423,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -102073,7 +102433,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
             "content": {
               "application/json": {
                 "schema": {
@@ -102116,11 +102476,11 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 64,
-              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
               "example": "1042"
             },
             "required": true,
-            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
             "name": "id",
             "in": "path"
           }
@@ -102145,7 +102505,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -102155,7 +102515,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role/school guard, or the account is inactive).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role/school guard, or the account is inactive).",
             "content": {
               "application/json": {
                 "schema": {
@@ -102165,7 +102525,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\" (unknown id, a user of another school, or a user of another role: indistinguishable). The owner message \"Pengguna tidak ditemui.\" applies only if the account vanishes between the scope check and the write.",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (unknown id, a user of another school, or a user of another role: indistinguishable). The owner message \"Pengguna tidak ditemui.\" applies only if the account vanishes between the scope check and the write.",
             "content": {
               "application/json": {
                 "schema": {
@@ -102188,11 +102548,11 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 64,
-              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
               "example": "1042"
             },
             "required": true,
-            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
             "name": "id",
             "in": "path"
           },
@@ -102230,7 +102590,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -102240,7 +102600,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (the account is inactive), or the role/CSRF refusals of the guard; \"Anda tidak boleh mengurus akaun ini.\" for an account outside the managed roles; \"Akaun ini tidak aktif.\" when it turns inactive during the write; or CSRF_INVALID.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (the account is inactive), or the role/CSRF refusals of the guard; \"Anda tidak boleh mengurus akaun ini.\" for an account outside the managed roles; \"Akaun ini tidak aktif.\" when it turns inactive during the write; or CSRF_INVALID.",
             "content": {
               "application/json": {
                 "schema": {
@@ -102250,7 +102610,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\" (unknown id, a user of another school, or a user of another role: indistinguishable). The owner message \"Pengguna tidak ditemui.\" applies only if the account vanishes between the scope check and the write.",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (unknown id, a user of another school, or a user of another role: indistinguishable). The owner message \"Pengguna tidak ditemui.\" applies only if the account vanishes between the scope check and the write.",
             "content": {
               "application/json": {
                 "schema": {
@@ -102296,18 +102656,18 @@
           "school-admin"
         ],
         "summary": "Switch a teacher active / inactive",
-        "description": "No body. Flips isActive in either direction, including an inactive teacher. Deactivating revokes all the teacher sessions. Writes an audit event with the actor. Pupils cannot be toggled (a pupil id is 404). SELF-TOGGLE: an admin cannot deactivate their own account. The M27 mock has no explicit refusal: the caller is a school_admin, not a teacher, so a self-target already answers 404 NOT_FOUND \"Not Found.\" like any non-teacher id. If the managed roles ever widen so that the caller can be a target, the refusal is 422 VALIDATION_ERROR with fields.id \"Anda tidak boleh menyahaktifkan akaun sendiri.\" (proposed copy, modelled on the M02 own-account refusals) and nothing changes. Rate limited (429).",
+        "description": "No body. Flips isActive in either direction, including an inactive teacher. Deactivating revokes all the teacher sessions. Writes an audit event with the actor. Pupils cannot be toggled (a pupil id is 404). SELF-TOGGLE: an admin cannot deactivate their own account. The M27 mock has no explicit refusal: the caller is a school_admin, not a teacher, so a self-target already answers 404 NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" like any non-teacher id. If the managed roles ever widen so that the caller can be a target, the refusal is 422 VALIDATION_ERROR with fields.id \"Anda tidak boleh menyahaktifkan akaun sendiri.\" (proposed copy, modelled on the M02 own-account refusals) and nothing changes. Rate limited (429).",
         "parameters": [
           {
             "schema": {
               "type": "string",
               "minLength": 1,
               "maxLength": 64,
-              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
               "example": "1042"
             },
             "required": true,
-            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
             "name": "id",
             "in": "path"
           },
@@ -102335,7 +102695,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -102345,7 +102705,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not school_admin, Admin Pusat included, or no school), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, Admin Pusat included, or no school), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {
@@ -102355,7 +102715,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\" (unknown id, a user of another school, or a user of another role: indistinguishable). The owner message \"Pengguna tidak ditemui.\" applies only if the account vanishes between the scope check and the write.",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (unknown id, a user of another school, or a user of another role: indistinguishable). The owner message \"Pengguna tidak ditemui.\" applies only if the account vanishes between the scope check and the write.",
             "content": {
               "application/json": {
                 "schema": {
@@ -102398,11 +102758,11 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 64,
-              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
               "example": "1042"
             },
             "required": true,
-            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
             "name": "id",
             "in": "path"
           },
@@ -102454,7 +102814,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -102464,7 +102824,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (the account is inactive), or the role/CSRF refusals of the guard; \"Anda tidak boleh mengurus akaun ini.\" for an account outside the managed roles; \"Akaun ini tidak aktif.\" when it turns inactive during the write; or CSRF_INVALID.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (the account is inactive), or the role/CSRF refusals of the guard; \"Anda tidak boleh mengurus akaun ini.\" for an account outside the managed roles; \"Akaun ini tidak aktif.\" when it turns inactive during the write; or CSRF_INVALID.",
             "content": {
               "application/json": {
                 "schema": {
@@ -102474,7 +102834,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\" (unknown id, a user of another school, or a user of another role: indistinguishable). The owner message \"Pengguna tidak ditemui.\" applies only if the account vanishes between the scope check and the write.",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (unknown id, a user of another school, or a user of another role: indistinguishable). The owner message \"Pengguna tidak ditemui.\" applies only if the account vanishes between the scope check and the write.",
             "content": {
               "application/json": {
                 "schema": {
@@ -102565,7 +102925,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -102575,7 +102935,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
             "content": {
               "application/json": {
                 "schema": {
@@ -102653,7 +103013,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -102663,7 +103023,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not school_admin, Admin Pusat included, or no school), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, Admin Pusat included, or no school), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {
@@ -102740,7 +103100,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -102750,7 +103110,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
             "content": {
               "application/json": {
                 "schema": {
@@ -102823,7 +103183,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -102833,7 +103193,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
             "content": {
               "application/json": {
                 "schema": {
@@ -102876,11 +103236,11 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 64,
-              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
               "example": "1042"
             },
             "required": true,
-            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
             "name": "id",
             "in": "path"
           }
@@ -102905,7 +103265,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -102915,7 +103275,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role/school guard, or the account is inactive).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role/school guard, or the account is inactive).",
             "content": {
               "application/json": {
                 "schema": {
@@ -102925,7 +103285,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\" (unknown id, a user of another school, or a user of another role: indistinguishable). The owner message \"Pengguna tidak ditemui.\" applies only if the account vanishes between the scope check and the write.",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (unknown id, a user of another school, or a user of another role: indistinguishable). The owner message \"Pengguna tidak ditemui.\" applies only if the account vanishes between the scope check and the write.",
             "content": {
               "application/json": {
                 "schema": {
@@ -102948,11 +103308,11 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 64,
-              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
               "example": "1042"
             },
             "required": true,
-            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
             "name": "id",
             "in": "path"
           },
@@ -102990,7 +103350,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -103000,7 +103360,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (the account is inactive), or the role/CSRF refusals of the guard; \"Anda tidak boleh mengurus akaun ini.\" for an account outside the managed roles; \"Akaun ini tidak aktif.\" when it turns inactive during the write; or CSRF_INVALID.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (the account is inactive), or the role/CSRF refusals of the guard; \"Anda tidak boleh mengurus akaun ini.\" for an account outside the managed roles; \"Akaun ini tidak aktif.\" when it turns inactive during the write; or CSRF_INVALID.",
             "content": {
               "application/json": {
                 "schema": {
@@ -103010,7 +103370,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\" (unknown id, a user of another school, or a user of another role: indistinguishable). The owner message \"Pengguna tidak ditemui.\" applies only if the account vanishes between the scope check and the write.",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (unknown id, a user of another school, or a user of another role: indistinguishable). The owner message \"Pengguna tidak ditemui.\" applies only if the account vanishes between the scope check and the write.",
             "content": {
               "application/json": {
                 "schema": {
@@ -103063,11 +103423,11 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 64,
-              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
               "example": "1042"
             },
             "required": true,
-            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
             "name": "id",
             "in": "path"
           },
@@ -103119,7 +103479,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -103129,7 +103489,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (the account is inactive), or the role/CSRF refusals of the guard; \"Anda tidak boleh mengurus akaun ini.\" for an account outside the managed roles; \"Akaun ini tidak aktif.\" when it turns inactive during the write; or CSRF_INVALID.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (the account is inactive), or the role/CSRF refusals of the guard; \"Anda tidak boleh mengurus akaun ini.\" for an account outside the managed roles; \"Akaun ini tidak aktif.\" when it turns inactive during the write; or CSRF_INVALID.",
             "content": {
               "application/json": {
                 "schema": {
@@ -103139,7 +103499,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\" (unknown id, a user of another school, or a user of another role: indistinguishable). The owner message \"Pengguna tidak ditemui.\" applies only if the account vanishes between the scope check and the write.",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (unknown id, a user of another school, or a user of another role: indistinguishable). The owner message \"Pengguna tidak ditemui.\" applies only if the account vanishes between the scope check and the write.",
             "content": {
               "application/json": {
                 "schema": {
@@ -103185,18 +103545,18 @@
           "amaran"
         ],
         "summary": "School risk page (Amaran Awal)",
-        "description": "Roles in B1: admin, school_admin, teacher (student, parent, sponsor and ppd_officer get 403). School access: admin any school; school_admin its own school; teacher its own school or a school of a class it owns. A school outside the caller reach answers 404 NOT_FOUND \"Not Found.\", indistinguishable from an unknown school (BE-NFR-05, no school-id enumeration); 403 is only for a role that is not allowed. PDPA: the pupil lists show minors' names, classes and risk scores; never cache them and show them only to staff who need them. Risk is computed at request time and never stored: per pupil A = 100 - mean practice accuracy, E = min(100, days since active x 100 / 30), M = (10 - mean mastery) x 10, score = 0.4A + 0.3E + 0.3M (1 decimal). The role is checked first (403); then an unknown school and a school outside the caller scope are both 404 (the mock answered 403 for the latter; changed so the 403/404 difference cannot be used to list valid school ids).",
+        "description": "Roles in B1: admin, school_admin, teacher (student, parent, sponsor and ppd_officer get 403). School access: admin any school; school_admin its own school; teacher its own school or a school of a class it owns. A school outside the caller reach answers 404 NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\", indistinguishable from an unknown school (BE-NFR-05, no school-id enumeration); 403 is only for a role that is not allowed. PDPA: the pupil lists show minors' names, classes and risk scores; never cache them and show them only to staff who need them. Risk is computed at request time and never stored: per pupil A = 100 - mean practice accuracy, E = min(100, days since active x 100 / 30), M = (10 - mean mastery) x 10, score = 0.4A + 0.3E + 0.3M (1 decimal). The role is checked first (403); then an unknown school and a school outside the caller scope are both 404 (the mock answered 403 for the latter; changed so the 403/404 difference cannot be used to list valid school ids).",
         "parameters": [
           {
             "schema": {
               "type": "string",
               "minLength": 1,
               "maxLength": 64,
-              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
               "example": "1042"
             },
             "required": true,
-            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
             "name": "id",
             "in": "path"
           },
@@ -103231,7 +103591,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -103241,7 +103601,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role not allowed).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role not allowed).",
             "content": {
               "application/json": {
                 "schema": {
@@ -103251,7 +103611,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\" (unknown school, or a school outside the caller scope: indistinguishable).",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (unknown school, or a school outside the caller scope: indistinguishable).",
             "content": {
               "application/json": {
                 "schema": {
@@ -103269,7 +103629,7 @@
           "amaran"
         ],
         "summary": "Executive summary of a school, district or state",
-        "description": "Roles in B1: admin, school_admin, teacher (student, parent, sponsor and ppd_officer get 403). School access: admin any school; school_admin its own school; teacher its own school or a school of a class it owns. A school outside the caller reach answers 404 NOT_FOUND \"Not Found.\", indistinguishable from an unknown school (BE-NFR-05, no school-id enumeration); 403 is only for a role that is not allowed. PDPA: the pupil lists show minors' names, classes and risk scores; never cache them and show them only to staff who need them. Without scope the default is the viewer own scope (school_admin and teacher: own school; admin: the preview district). The district and state scopes are admin only (403 for school_admin and teacher). Reserved fixture schools are excluded from district and state roll-ups. Check order: 422, then 403 (role not allowed, no default scope, or the district / state scope for a role other than admin), then 404 (unknown school, a school outside the caller reach: indistinguishable, or a district / state with no schools). The mock answered 403 for an out-of-reach school; changed to 404 (BE-NFR-05).",
+        "description": "Roles in B1: admin, school_admin, teacher (student, parent, sponsor and ppd_officer get 403). School access: admin any school; school_admin its own school; teacher its own school or a school of a class it owns. A school outside the caller reach answers 404 NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\", indistinguishable from an unknown school (BE-NFR-05, no school-id enumeration); 403 is only for a role that is not allowed. PDPA: the pupil lists show minors' names, classes and risk scores; never cache them and show them only to staff who need them. Without scope the default is the viewer own scope (school_admin and teacher: own school; admin: the preview district). The district and state scopes are admin only (403 for school_admin and teacher). Reserved fixture schools are excluded from district and state roll-ups. Check order: 422, then 403 (role not allowed, no default scope, or the district / state scope for a role other than admin), then 404 (unknown school, a school outside the caller reach: indistinguishable, or a district / state with no schools). The mock answered 403 for an out-of-reach school; changed to 404 (BE-NFR-05).",
         "parameters": [
           {
             "schema": {
@@ -103328,7 +103688,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -103338,7 +103698,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role not allowed, the district / state scope for a role other than admin, or no default scope).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role not allowed, the district / state scope for a role other than admin, or no default scope).",
             "content": {
               "application/json": {
                 "schema": {
@@ -103348,7 +103708,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\" (unknown school, a school outside the caller reach, or a district / state with no schools).",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (unknown school, a school outside the caller reach, or a district / state with no schools).",
             "content": {
               "application/json": {
                 "schema": {
@@ -103376,7 +103736,7 @@
           "amaran"
         ],
         "summary": "Intervention effectiveness of the caller school",
-        "description": "Roles in B1: admin, school_admin, teacher (student, parent, sponsor and ppd_officer get 403). School access: admin any school; school_admin its own school; teacher its own school or a school of a class it owns. A school outside the caller reach answers 404 NOT_FOUND \"Not Found.\", indistinguishable from an unknown school (BE-NFR-05, no school-id enumeration); 403 is only for a role that is not allowed. PDPA: the pupil lists show minors' names, classes and risk scores; never cache them and show them only to staff who need them. The report is of the caller own school (a viewer without a school gets 403), computed from the intervention records at request time.",
+        "description": "Roles in B1: admin, school_admin, teacher (student, parent, sponsor and ppd_officer get 403). School access: admin any school; school_admin its own school; teacher its own school or a school of a class it owns. A school outside the caller reach answers 404 NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\", indistinguishable from an unknown school (BE-NFR-05, no school-id enumeration); 403 is only for a role that is not allowed. PDPA: the pupil lists show minors' names, classes and risk scores; never cache them and show them only to staff who need them. The report is of the caller own school (a viewer without a school gets 403), computed from the intervention records at request time.",
         "responses": {
           "200": {
             "description": "The school and its effectiveness report.",
@@ -103397,7 +103757,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -103407,7 +103767,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role not allowed, or the viewer has no school).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role not allowed, or the viewer has no school).",
             "content": {
               "application/json": {
                 "schema": {
@@ -103432,11 +103792,11 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 64,
-              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
               "example": "1042"
             },
             "required": true,
-            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
             "name": "id",
             "in": "path"
           }
@@ -103473,7 +103833,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -103483,7 +103843,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role not allowed, including a teacher; checked before the 404).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role not allowed, including a teacher; checked before the 404).",
             "content": {
               "application/json": {
                 "schema": {
@@ -103493,7 +103853,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\" (unknown school, or a school outside the caller scope: indistinguishable).",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (unknown school, or a school outside the caller scope: indistinguishable).",
             "content": {
               "application/json": {
                 "schema": {
@@ -103550,7 +103910,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -103560,7 +103920,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not school_admin, Admin Pusat included, or the school admin has no school), or CSRF_INVALID on the POST.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, Admin Pusat included, or the school admin has no school), or CSRF_INVALID on the POST.",
             "content": {
               "application/json": {
                 "schema": {
@@ -103588,7 +103948,7 @@
           "school-admin-pending"
         ],
         "summary": "Verify a pending teacher",
-        "description": "No body. In ONE transaction: the account becomes active, school_id is set to the school of the caller, pending_school_id is cleared (the teacher role is ensured) and an audit event with ids only is written; after the commit the teacher gets an inbox notice. ANTI-ENUMERATION: an unknown id, a teacher pending for another school, a teacher who is not pending (including one already verified: a repeat call is 404, never 409), a non-teacher and a suspended account are indistinguishable: 404 \"Not Found.\". Two concurrent calls: exactly one succeeds. Rate limited (429).",
+        "description": "No body. In ONE transaction: the account becomes active, school_id is set to the school of the caller, pending_school_id is cleared (the teacher role is ensured) and an audit event with ids only is written; after the commit the teacher gets an inbox notice. ANTI-ENUMERATION: an unknown id, a teacher pending for another school, a teacher who is not pending (including one already verified: a repeat call is 404, never 409), a non-teacher and a suspended account are indistinguishable: 404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\". Two concurrent calls: exactly one succeeds. Rate limited (429).",
         "parameters": [
           {
             "schema": {
@@ -103627,7 +103987,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -103637,7 +103997,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not school_admin, Admin Pusat included, or the school admin has no school), or CSRF_INVALID on the POST.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, Admin Pusat included, or the school admin has no school), or CSRF_INVALID on the POST.",
             "content": {
               "application/json": {
                 "schema": {
@@ -103647,7 +104007,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\" (see the description).",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (see the description).",
             "content": {
               "application/json": {
                 "schema": {
@@ -107762,7 +108122,7 @@
           "questions"
         ],
         "summary": "Move a question along the lifecycle",
-        "description": "Draft to review (the owning Guru or Admin), review to approved (\"Terbitkan\", Admin Pusat; runs the merged approve gate), review to archived and approved to archived (Admin; no reason needed, one is recorded when given), review to draft (a reason is required) and archived to draft (Admin). `approved` is the only servable status, so the answer carries the ServabilityReport of an approval. Refusals: 409 for a pair outside the table, 422 with `fields` keyed by path (the gate issues) and `details.gate`, 403 for a role that may not move it.",
+        "description": "Draft to review (the owning Guru or Admin), review to approved (\"Terbitkan\", Admin Pusat; runs the merged approve gate), review to archived and approved to archived (Admin; no reason needed, one is recorded when given), review to draft (a reason is required), `to: \"rejected\"` (\"Tolak\", Admin Pusat, from review only: stored as status draft with `rejection_reason`, reason 5 to 500 characters, else 422 `fields.reason`; sending for review again clears it) and archived to draft (Admin). `approved` is the only servable status, so the answer carries the ServabilityReport of an approval. Refusals: 409 for a pair outside the table, 422 with `fields` keyed by path (the gate issues) and `details.gate`, 403 for a role that may not move it.",
         "parameters": [
           {
             "schema": {
@@ -107886,7 +108246,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED (\"Unauthenticated.\"): no valid session.",
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -107917,7 +108277,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED (\"Unauthenticated.\"): no valid session.",
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -107967,7 +108327,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED (\"Unauthenticated.\"): no valid session.",
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -107977,7 +108337,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND (\"Not Found.\"): unknown id, or the caller is not the owner teacher or an admin.",
+            "description": "NOT_FOUND (\"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\"): unknown id, or the caller is not the owner teacher or an admin.",
             "content": {
               "application/json": {
                 "schema": {
@@ -108008,7 +108368,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED (\"Unauthenticated.\"): no valid session.",
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -108018,7 +108378,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
             "content": {
               "application/json": {
                 "schema": {
@@ -108049,7 +108409,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED (\"Unauthenticated.\"): no valid session.",
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -108059,7 +108419,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
             "content": {
               "application/json": {
                 "schema": {
@@ -108113,7 +108473,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED (\"Unauthenticated.\"): no valid session.",
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -108219,7 +108579,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED (\"Unauthenticated.\"): no valid session.",
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -108229,7 +108589,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
             "content": {
               "application/json": {
                 "schema": {
@@ -108308,7 +108668,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED (\"Unauthenticated.\"): no valid session.",
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -108370,7 +108730,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED (\"Unauthenticated.\"): no valid session.",
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -108380,7 +108740,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
             "content": {
               "application/json": {
                 "schema": {
@@ -108448,7 +108808,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED (\"Unauthenticated.\"): no valid session.",
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -108458,7 +108818,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
             "content": {
               "application/json": {
                 "schema": {
@@ -108498,7 +108858,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED (\"Unauthenticated.\"): no valid session.",
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -108508,7 +108868,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
             "content": {
               "application/json": {
                 "schema": {
@@ -108546,7 +108906,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -108615,7 +108975,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -108625,7 +108985,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin or teacher, or a class the viewer may not open",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin or teacher, or a class the viewer may not open",
             "content": {
               "application/json": {
                 "schema": {
@@ -108675,7 +109035,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -108685,7 +109045,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": student not visible to the viewer",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": student not visible to the viewer",
             "content": {
               "application/json": {
                 "schema": {
@@ -108695,7 +109055,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\": unknown user id",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown user id",
             "content": {
               "application/json": {
                 "schema": {
@@ -108734,7 +109094,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -108775,7 +109135,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -108823,7 +109183,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -108833,7 +109193,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\": code is not t4 or t5",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": code is not t4 or t5",
             "content": {
               "application/json": {
                 "schema": {
@@ -108875,7 +109235,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -108925,7 +109285,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -108935,7 +109295,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\": unknown class, school class, or a class the viewer may not open",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown class, school class, or a class the viewer may not open",
             "content": {
               "application/json": {
                 "schema": {
@@ -108985,7 +109345,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -108995,7 +109355,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role has no access (parent, sponsor)",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role has no access (parent, sponsor)",
             "content": {
               "application/json": {
                 "schema": {
@@ -109005,7 +109365,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\": viewer has no school, or no analysis",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": viewer has no school, or no analysis",
             "content": {
               "application/json": {
                 "schema": {
@@ -109065,7 +109425,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -109075,7 +109435,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role has no access, or school outside the viewer scope",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role has no access, or school outside the viewer scope",
             "content": {
               "application/json": {
                 "schema": {
@@ -109085,7 +109445,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\": no analysis",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": no analysis",
             "content": {
               "application/json": {
                 "schema": {
@@ -109127,7 +109487,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -109137,7 +109497,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin or teacher",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin or teacher",
             "content": {
               "application/json": {
                 "schema": {
@@ -109186,7 +109546,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -109196,7 +109556,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": unknown class OR a class the viewer may not open (live parity, FR-M08-08)",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": unknown class OR a class the viewer may not open (live parity, FR-M08-08)",
             "content": {
               "application/json": {
                 "schema": {
@@ -109275,7 +109635,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -109325,7 +109685,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -109363,7 +109723,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -109423,7 +109783,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -109433,7 +109793,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\", or CSRF_INVALID on a missing/invalid X-CSRF-Token.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\", or CSRF_INVALID on a missing/invalid X-CSRF-Token.",
             "content": {
               "application/json": {
                 "schema": {
@@ -109493,7 +109853,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\": unknown user id",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown user id",
             "content": {
               "application/json": {
                 "schema": {
@@ -109514,7 +109874,7 @@
         "description": "Live parity (OQ-M08-01): every signed-in role gets 403, nobody gets a body.",
         "responses": {
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -109524,7 +109884,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": always, for every role",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": always, for every role",
             "content": {
               "application/json": {
                 "schema": {
@@ -109565,7 +109925,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -109575,7 +109935,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin, teacher or school_admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -109642,7 +110002,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -109652,7 +110012,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\", or CSRF_INVALID on a missing/invalid X-CSRF-Token.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\", or CSRF_INVALID on a missing/invalid X-CSRF-Token.",
             "content": {
               "application/json": {
                 "schema": {
@@ -109710,7 +110070,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -109720,7 +110080,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin, teacher or school_admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -109758,7 +110118,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -109768,7 +110128,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin, teacher or school_admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -109817,7 +110177,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -109827,7 +110187,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin, teacher or school_admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -109837,7 +110197,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\": unknown id, or a config/student outside the viewer scope (uniform 404)",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown id, or a config/student outside the viewer scope (uniform 404)",
             "content": {
               "application/json": {
                 "schema": {
@@ -109886,7 +110246,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -109896,7 +110256,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin, teacher or school_admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -109906,7 +110266,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\": unknown id, or a config/student outside the viewer scope (uniform 404)",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown id, or a config/student outside the viewer scope (uniform 404)",
             "content": {
               "application/json": {
                 "schema": {
@@ -109965,7 +110325,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -109975,7 +110335,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin, teacher or school_admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -109985,7 +110345,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\": unknown id, or a config/student outside the viewer scope (uniform 404)",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown id, or a config/student outside the viewer scope (uniform 404)",
             "content": {
               "application/json": {
                 "schema": {
@@ -110054,7 +110414,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -110064,7 +110424,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\", or CSRF_INVALID on a missing/invalid X-CSRF-Token.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\", or CSRF_INVALID on a missing/invalid X-CSRF-Token.",
             "content": {
               "application/json": {
                 "schema": {
@@ -110074,7 +110434,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\": unknown id, or a config outside the viewer scope (uniform 404)",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown id, or a config outside the viewer scope (uniform 404)",
             "content": {
               "application/json": {
                 "schema": {
@@ -110126,7 +110486,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -110136,7 +110496,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin, teacher or school_admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -110146,7 +110506,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\": unknown id, or a config outside the viewer scope (uniform 404)",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown id, or a config outside the viewer scope (uniform 404)",
             "content": {
               "application/json": {
                 "schema": {
@@ -110216,7 +110576,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -110226,7 +110586,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\", or CSRF_INVALID on a missing/invalid X-CSRF-Token.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\", or CSRF_INVALID on a missing/invalid X-CSRF-Token.",
             "content": {
               "application/json": {
                 "schema": {
@@ -110315,7 +110675,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -110325,7 +110685,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\", or CSRF_INVALID on a missing/invalid X-CSRF-Token.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\", or CSRF_INVALID on a missing/invalid X-CSRF-Token.",
             "content": {
               "application/json": {
                 "schema": {
@@ -110335,7 +110695,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\": unknown id, or a config outside the viewer scope (uniform 404)",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown id, or a config outside the viewer scope (uniform 404)",
             "content": {
               "application/json": {
                 "schema": {
@@ -110416,7 +110776,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -110426,7 +110786,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\", or CSRF_INVALID on a missing/invalid X-CSRF-Token.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\", or CSRF_INVALID on a missing/invalid X-CSRF-Token.",
             "content": {
               "application/json": {
                 "schema": {
@@ -110436,7 +110796,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\": unknown id, or a config outside the viewer scope (uniform 404)",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown id, or a config outside the viewer scope (uniform 404)",
             "content": {
               "application/json": {
                 "schema": {
@@ -110475,7 +110835,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -110517,7 +110877,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -110542,10 +110902,10 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 16,
-              "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Not Found.\" before the access check."
+              "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" before the access check."
             },
             "required": true,
-            "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Not Found.\" before the access check.",
+            "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" before the access check.",
             "name": "level",
             "in": "path"
           }
@@ -110583,7 +110943,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -110593,7 +110953,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (the caller has no access to this level).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (the caller has no access to this level).",
             "content": {
               "application/json": {
                 "schema": {
@@ -110603,7 +110963,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\" (the level is not exactly T1 or T4; checked before the access test).",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (the level is not exactly T1 or T4; checked before the access test).",
             "content": {
               "application/json": {
                 "schema": {
@@ -110628,10 +110988,10 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 16,
-              "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Not Found.\" before the access check."
+              "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" before the access check."
             },
             "required": true,
-            "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Not Found.\" before the access check.",
+            "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" before the access check.",
             "name": "level",
             "in": "path"
           }
@@ -110669,7 +111029,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -110679,7 +111039,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (the caller has no access to this level).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (the caller has no access to this level).",
             "content": {
               "application/json": {
                 "schema": {
@@ -110689,7 +111049,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\" (the level is not exactly T1 or T4; checked before the access test).",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (the level is not exactly T1 or T4; checked before the access test).",
             "content": {
               "application/json": {
                 "schema": {
@@ -110714,10 +111074,10 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 16,
-              "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Not Found.\" before the access check."
+              "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" before the access check."
             },
             "required": true,
-            "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Not Found.\" before the access check.",
+            "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" before the access check.",
             "name": "level",
             "in": "path"
           },
@@ -110726,10 +111086,10 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 50,
-              "description": "Domain code, e.g. PKSK_MATH. An unknown code answers 404 \"Not Found.\" (level checked first)."
+              "description": "Domain code, e.g. PKSK_MATH. An unknown code answers 404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (level checked first)."
             },
             "required": true,
-            "description": "Domain code, e.g. PKSK_MATH. An unknown code answers 404 \"Not Found.\" (level checked first).",
+            "description": "Domain code, e.g. PKSK_MATH. An unknown code answers 404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (level checked first).",
             "name": "code",
             "in": "path"
           }
@@ -110767,7 +111127,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -110777,7 +111137,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (the caller has no access to this level).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (the caller has no access to this level).",
             "content": {
               "application/json": {
                 "schema": {
@@ -110787,7 +111147,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\" (bad level, checked first; or an unknown domain code).",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (bad level, checked first; or an unknown domain code).",
             "content": {
               "application/json": {
                 "schema": {
@@ -110812,10 +111172,10 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 16,
-              "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Not Found.\" before the access check."
+              "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" before the access check."
             },
             "required": true,
-            "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Not Found.\" before the access check.",
+            "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" before the access check.",
             "name": "level",
             "in": "path"
           }
@@ -110856,7 +111216,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -110866,7 +111226,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (the caller has no access to this level).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (the caller has no access to this level).",
             "content": {
               "application/json": {
                 "schema": {
@@ -110876,7 +111236,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\" (the level is not exactly T1 or T4; checked before the access test).",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (the level is not exactly T1 or T4; checked before the access test).",
             "content": {
               "application/json": {
                 "schema": {
@@ -110899,10 +111259,10 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 16,
-              "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Not Found.\" before the access check."
+              "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" before the access check."
             },
             "required": true,
-            "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Not Found.\" before the access check.",
+            "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" before the access check.",
             "name": "level",
             "in": "path"
           },
@@ -110961,7 +111321,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -110971,7 +111331,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (no access to the level), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (no access to the level), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {
@@ -110981,7 +111341,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\" (the level is not exactly T1 or T4; checked before the access test).",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (the level is not exactly T1 or T4; checked before the access test).",
             "content": {
               "application/json": {
                 "schema": {
@@ -111037,10 +111397,10 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 16,
-              "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Not Found.\" before the access check."
+              "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" before the access check."
             },
             "required": true,
-            "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Not Found.\" before the access check.",
+            "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" before the access check.",
             "name": "level",
             "in": "path"
           },
@@ -111049,10 +111409,10 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 50,
-              "description": "Domain code, e.g. PKSK_MATH. An unknown code answers 404 \"Not Found.\" (level checked first)."
+              "description": "Domain code, e.g. PKSK_MATH. An unknown code answers 404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (level checked first)."
             },
             "required": true,
-            "description": "Domain code, e.g. PKSK_MATH. An unknown code answers 404 \"Not Found.\" (level checked first).",
+            "description": "Domain code, e.g. PKSK_MATH. An unknown code answers 404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (level checked first).",
             "name": "code",
             "in": "path"
           },
@@ -111111,7 +111471,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -111121,7 +111481,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (no access to the level), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (no access to the level), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {
@@ -111131,7 +111491,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\" (bad level, checked first; or an unknown domain code).",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (bad level, checked first; or an unknown domain code).",
             "content": {
               "application/json": {
                 "schema": {
@@ -111187,10 +111547,10 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 16,
-              "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Not Found.\" before the access check."
+              "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" before the access check."
             },
             "required": true,
-            "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Not Found.\" before the access check.",
+            "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" before the access check.",
             "name": "level",
             "in": "path"
           }
@@ -111228,7 +111588,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -111238,7 +111598,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (the caller has no access to this level).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (the caller has no access to this level).",
             "content": {
               "application/json": {
                 "schema": {
@@ -111248,7 +111608,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\" (the level is not exactly T1 or T4; checked before the access test).",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (the level is not exactly T1 or T4; checked before the access test).",
             "content": {
               "application/json": {
                 "schema": {
@@ -111336,7 +111696,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -111346,7 +111706,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (the active role is not admin).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (the active role is not admin).",
             "content": {
               "application/json": {
                 "schema": {
@@ -111398,7 +111758,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -111408,7 +111768,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (the active role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (the active role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {
@@ -111476,7 +111836,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -111486,7 +111846,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (the active role is not admin).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (the active role is not admin).",
             "content": {
               "application/json": {
                 "schema": {
@@ -111540,7 +111900,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -111550,7 +111910,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (the active role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (the active role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {
@@ -111604,11 +111964,11 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 64,
-              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
               "example": "1042"
             },
             "required": true,
-            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
             "name": "id",
             "in": "path"
           }
@@ -111625,7 +111985,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -111635,7 +111995,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (the active role is not admin).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (the active role is not admin).",
             "content": {
               "application/json": {
                 "schema": {
@@ -111668,11 +112028,11 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 64,
-              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
               "example": "1042"
             },
             "required": true,
-            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
             "name": "id",
             "in": "path"
           },
@@ -111710,7 +112070,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -111720,7 +112080,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (the active role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (the active role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {
@@ -111782,11 +112142,11 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 64,
-              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
               "example": "1042"
             },
             "required": true,
-            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
             "name": "id",
             "in": "path"
           },
@@ -111807,7 +112167,7 @@
             "description": "Deleted. No body."
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -111817,7 +112177,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (the active role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (the active role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {
@@ -111910,7 +112270,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -111920,7 +112280,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (the active role is not admin).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (the active role is not admin).",
             "content": {
               "application/json": {
                 "schema": {
@@ -111981,7 +112341,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -111991,7 +112351,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (the active role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (the active role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {
@@ -112059,7 +112419,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -112069,7 +112429,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (the active role is not admin).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (the active role is not admin).",
             "content": {
               "application/json": {
                 "schema": {
@@ -112094,11 +112454,11 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 64,
-              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
               "example": "1042"
             },
             "required": true,
-            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
             "name": "id",
             "in": "path"
           },
@@ -112135,7 +112495,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -112145,7 +112505,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (the active role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (the active role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {
@@ -112215,7 +112575,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -112225,7 +112585,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (the active role is not admin).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (the active role is not admin).",
             "content": {
               "application/json": {
                 "schema": {
@@ -112296,7 +112656,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\": no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -112306,7 +112666,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin, teacher or school_admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -112365,7 +112725,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\": no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -112375,7 +112735,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin, teacher or school_admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -112385,7 +112745,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\": Unknown ids and, for teacher and school_admin, another school or a pupil/teacher of another school all answer 404 (existence is not revealed). A non-numeric id is also 404.",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": Unknown ids and, for teacher and school_admin, another school or a pupil/teacher of another school all answer 404 (existence is not revealed). A non-numeric id is also 404.",
             "content": {
               "application/json": {
                 "schema": {
@@ -112453,7 +112813,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\": no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -112463,7 +112823,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin, teacher or school_admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -112473,7 +112833,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\": Unknown ids and, for teacher and school_admin, another school or a pupil/teacher of another school all answer 404 (existence is not revealed). A non-numeric id is also 404.",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": Unknown ids and, for teacher and school_admin, another school or a pupil/teacher of another school all answer 404 (existence is not revealed). A non-numeric id is also 404.",
             "content": {
               "application/json": {
                 "schema": {
@@ -112541,7 +112901,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\": no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -112551,7 +112911,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin, teacher or school_admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -112561,7 +112921,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Not Found.\": Unknown ids and, for teacher and school_admin, another school or a pupil/teacher of another school all answer 404 (existence is not revealed). A non-numeric id is also 404. A user who is not a teacher is also 404.",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": Unknown ids and, for teacher and school_admin, another school or a pupil/teacher of another school all answer 404 (existence is not revealed). A non-numeric id is also 404. A user who is not a teacher is also 404.",
             "content": {
               "application/json": {
                 "schema": {
@@ -112646,7 +113006,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\": no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -112656,7 +113016,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin, teacher or school_admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -112736,7 +113096,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\": no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -112746,7 +113106,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin or teacher (school_admin included)",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin or teacher (school_admin included)",
             "content": {
               "application/json": {
                 "schema": {
@@ -112816,7 +113176,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\": no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -112826,7 +113186,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin or teacher (school_admin included)",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin or teacher (school_admin included)",
             "content": {
               "application/json": {
                 "schema": {
@@ -112887,7 +113247,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\": no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -112897,7 +113257,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin, teacher or school_admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -112946,7 +113306,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\": no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -112956,7 +113316,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin, teacher or school_admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -113007,7 +113367,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\": no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -113017,7 +113377,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin, teacher or school_admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -113078,7 +113438,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\": no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -113088,7 +113448,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin, teacher or school_admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -113158,7 +113518,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\": no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -113168,7 +113528,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin, teacher or school_admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -113217,7 +113577,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\": no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -113227,7 +113587,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin, teacher or school_admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -113266,7 +113626,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\": no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -113276,7 +113636,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin, teacher or school_admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -113335,7 +113695,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\": no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -113345,7 +113705,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin, or an id that is not a pupil in scope: one uniform 403 for an unknown id, a non-pupil and a pupil of another school (teacher, school_admin), so ids cannot be probed",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin, teacher or school_admin, or an id that is not a pupil in scope: one uniform 403 for an unknown id, a non-pupil and a pupil of another school (teacher, school_admin), so ids cannot be probed",
             "content": {
               "application/json": {
                 "schema": {
@@ -113393,7 +113753,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\": no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -113433,7 +113793,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\": no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -113443,7 +113803,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin, teacher or school_admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -113491,7 +113851,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\": no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -113501,7 +113861,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin, teacher or school_admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -113570,7 +113930,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\": no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -113580,7 +113940,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\", or CSRF_INVALID on a missing or invalid X-CSRF-Token.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\", or CSRF_INVALID on a missing or invalid X-CSRF-Token.",
             "content": {
               "application/json": {
                 "schema": {
@@ -113647,7 +114007,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\": no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -113718,7 +114078,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\": no valid session.",
             "content": {
               "application/json": {
                 "schema": {
@@ -113728,7 +114088,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\", or CSRF_INVALID on a missing or invalid X-CSRF-Token.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\", or CSRF_INVALID on a missing or invalid X-CSRF-Token.",
             "content": {
               "application/json": {
                 "schema": {

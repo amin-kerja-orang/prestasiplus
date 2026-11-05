@@ -95,7 +95,7 @@ export const REWARD_MESSAGES = {
   redemptionNotFound: 'Tebusan tidak dijumpai.',
   boxNotFound: 'Kotak tidak dijumpai.',
   /** Default message of an unmatched id: unknown reward/redemption on the admin GET/PUT/deliver, or a non-numeric path id. */
-  notFound: 'Rekod tidak dijumpai.',
+  notFound: 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?',
 } as const
 
 /** Validation messages of the M15 writes (field -> message): the P07 and P08 rows where they give one, else the ERR-REQ-10..15 patterns. */

@@ -79,6 +79,16 @@ export interface QuestionGateData {
   paperCode?: string | null
   /** R1-B05: the subject is in the SPM catalogue at Tingkatan 4 or 5 (the new-approval DSKP rules bind only then). Absent = false. */
   spmBound?: boolean
+  /** The typed Kesukaran (DM-47); absent or null = none typed. */
+  difficultyLevel?: number | null
+  /** The stem (`stem_ms`), for STEM_SHORT. Absent = not checked. */
+  stem?: string | null
+  /** R-DSKP: DSKP nodes exist for the Subjek + Tingkatan. Absent = true (unit, SP, TP, leaf aras required, the strict rule). */
+  hasDskpNodes?: boolean
+  /** The Subjek + Tingkatan has chapters (NO_CHAPTER). Absent = false. */
+  hasChapters?: boolean
+  /** Codes of the SP nodes that are not under the unit (gate-check repeats FR-ADM-QE4.3). */
+  spOutsideUnit?: string[]
 }
 
 export interface SetStatusOptions {
@@ -100,6 +110,8 @@ export interface SetStatusOptions {
    * latest version is left alone unless it is the live one. No-op when nothing is live.
    */
   target?: 'latest' | 'live'
+  /** DM-58: the review to draft move is a rejection; stored in `question_versions.rejection_reason` (the reason is validated by the lifecycle). */
+  rejectionReason?: string
 }
 
 /** One question to create from an Excel/CSV row (BE-10 imports, an MCQ). */

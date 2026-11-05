@@ -300,7 +300,7 @@ describe('errors', () => {
     }
     expect(ErrorBodySchema.safeParse(body).success).toBe(true)
     expect(REWARD_MESSAGES.redemptionNotFound).toBe('Tebusan tidak dijumpai.')
-    expect(REWARD_MESSAGES.notFound).toBe('Rekod tidak dijumpai.')
+    expect(REWARD_MESSAGES.notFound).toBe('Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
   })
 })
 

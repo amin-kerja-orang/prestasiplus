@@ -8,7 +8,10 @@ import {
   StimulusListQuerySchema,
   StimulusGroupMemberRequestSchema,
   StimulusGroupMembersSetRequestSchema,
+  StimulusGroupMergeRequestSchema,
+  StimulusGroupMoveRequestSchema,
   StimulusGroupReorderRequestSchema,
+  StimulusGroupRetireRequestSchema,
   StimulusGroupUpdateRequestSchema,
   StimulusUpdateRequestSchema,
 } from '@pp/contract'
@@ -102,6 +105,17 @@ export class StimuliController {
 
   // --- groups -------------------------------------------------------------------------------------
 
+  /** API-Q-35 (declared before the `:id` routes): merges one group into another. */
+  @Post('stimulus-groups/merge')
+  @HttpCode(200)
+  @RateLimit(QUESTIONS_WRITE_LIMIT)
+  async mergeGroups(@Actor() actor: HttpActor, @Body() body: unknown) {
+    const input = parseBody(StimulusGroupMergeRequestSchema, body)
+    const res = await this.stimuli.mergeGroups(input.fromGroupId, input.intoGroupId)
+    await this.write(actor, AUDIT_ACTIONS.STIMULUS_GROUP_MERGED, 'stimulus_group', input.intoGroupId, res.audit)
+    return flash(res.result, STIMULUS_MESSAGES.groupUpdated)
+  }
+
   @Post('stimulus-groups')
   @RateLimit(QUESTIONS_WRITE_LIMIT)
   async createGroup(@Actor() actor: HttpActor, @Body() body: unknown) {
@@ -179,5 +193,59 @@ export class StimuliController {
     const created = await this.stimuli.createQuestionInGroup(id, input, actor)
     await this.write(actor, AUDIT_ACTIONS.QUESTION_CREATED, 'question', created.id, { status: created.version.status, groupId: id })
     return flash(questionView(created), STIMULUS_MESSAGES.questionAdded)
+  }
+
+  // --- group actions (S1-T01, API-Q-31..34) -------------------------------------------------------
+
+  /** API-Q-31 `Terbitkan kumpulan`: every member `Diluluskan` together, or nothing changes. */
+  @Post('stimulus-groups/:id/publish')
+  @HttpCode(200)
+  @RateLimit(QUESTIONS_WRITE_LIMIT)
+  async publishGroup(@Actor() actor: HttpActor, @Param('id') id: string) {
+    const res = await this.stimuli.publishGroup(id, actor)
+    await this.write(actor, AUDIT_ACTIONS.STIMULUS_GROUP_PUBLISHED, 'stimulus_group', id, res.audit)
+    return flash(res.result, STIMULUS_MESSAGES.groupUpdated)
+  }
+
+  /** API-Q-32 `Sunting kumpulan`: the draft copy of the group (one open copy per group). */
+  @Post('stimulus-groups/:id/edit-as-draft')
+  @RateLimit(QUESTIONS_WRITE_LIMIT)
+  async editGroupAsDraft(@Actor() actor: HttpActor, @Param('id') id: string) {
+    const res = await this.stimuli.editAsDraft(id, actor)
+    await this.write(actor, AUDIT_ACTIONS.STIMULUS_GROUP_DRAFT_COPIED, 'stimulus_group', id, res.audit)
+    return flash(res.result, STIMULUS_MESSAGES.groupDraftCreated(res.result.id))
+  }
+
+  /** API-Q-32 `Buang draf kumpulan`: discards the draft copy only. */
+  @Delete('stimulus-groups/:id/draft')
+  @HttpCode(204)
+  @RateLimit(QUESTIONS_WRITE_LIMIT)
+  async discardGroupDraft(@Actor() actor: HttpActor, @Param('id') id: string): Promise<void> {
+    const res = await this.stimuli.discardDraft(id)
+    await this.write(actor, AUDIT_ACTIONS.STIMULUS_GROUP_DRAFT_DISCARDED, 'stimulus_group', id, res.audit)
+  }
+
+  /** API-Q-33 `Arkibkan kumpulan`: every member archived in one transaction; the answer names the Terbit papers that place a member. */
+  @Post('stimulus-groups/:id/retire')
+  @HttpCode(200)
+  @RateLimit(QUESTIONS_WRITE_LIMIT)
+  async retireGroup(@Actor() actor: HttpActor, @Param('id') id: string, @Body() body: unknown) {
+    await this.stimuli.getGroup(id)
+    parseBody(StimulusGroupRetireRequestSchema, body)
+    const res = await this.stimuli.retireGroup(id, actor)
+    await this.write(actor, AUDIT_ACTIONS.STIMULUS_GROUP_RETIRED, 'stimulus_group', id, res.audit)
+    return ok(res.result)
+  }
+
+  /** API-Q-34 `Pindah ke kumpulan lain`: a member moves to the end of another group. */
+  @Post('stimulus-groups/:id/members/:questionId/move')
+  @HttpCode(200)
+  @RateLimit(QUESTIONS_WRITE_LIMIT)
+  async moveMember(@Actor() actor: HttpActor, @Param('id') id: string, @Param('questionId') questionId: string, @Body() body: unknown) {
+    await this.stimuli.getGroup(id)
+    const input = parseBody(StimulusGroupMoveRequestSchema, body)
+    const res = await this.stimuli.moveMember(id, questionId, input.toGroupId)
+    await this.write(actor, AUDIT_ACTIONS.STIMULUS_GROUP_MEMBER_MOVED, 'stimulus_group', id, res.audit)
+    return ok(res.result)
   }
 }
