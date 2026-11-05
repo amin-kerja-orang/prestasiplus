@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { PrismaService } from '../../src/db/prisma.service'
+import type { AnswerLogPort } from '../../src/modules/practice/answer-log.port'
 import { PracticeRepository } from '../../src/modules/practice/practice.repository'
 import { PracticeAnalyticsRepository } from '../../src/modules/practice/reads/analytics/analytics.repository'
 import { OverviewRepository } from '../../src/modules/practice/reads/overview/overview.repository'
@@ -8,6 +9,9 @@ import { QuestionsRepository, QuestionsService } from '../../src/modules/questio
 import { janaEligibleScope } from '../../src/modules/questions/serving'
 import { adminActor, mcqInput, tagBody, tagOf, type Tag } from './fixtures'
 import { bootQuestionsApp, type QuestionsTestApp } from './helpers'
+
+/** `writeQueue` never writes an answer row, so the S5-T15 answer log port is not used here; a call would fail the test. */
+const unusedAnswerLog = { record: () => Promise.reject(new Error('AnswerLogPort is not used by writeQueue')) } as unknown as AnswerLogPort
 
 /**
  * S6-T16 (DM-42, FR-GUR-44a-4, AC-GUR-44a-4): a private version (`visibility = 'teacher_private'`, owner = a teacher) is absent from every
@@ -111,7 +115,7 @@ describe('a private question never reaches a bank read (DM-42)', () => {
     const pupil = (await q(`select id::text id from users where id <> $1 order by id limit 1`, [ownerId]))[0]!.id
     // A wrong answer on both: only the bank question is queued (writeQueue skips the private one).
     const graded = (questionId: string) => ({ check: { questionId, checkedAt: new Date() }, isCorrect: false, subjectId: tag.subjectId })
-    await (new PracticeRepository(prisma) as unknown as { writeQueue(u: bigint, g: unknown[], at: Date): Promise<void> }).writeQueue(BigInt(pupil), [graded(bankId), graded(privateId)], new Date())
+    await (new PracticeRepository(prisma, unusedAnswerLog) as unknown as { writeQueue(u: bigint, g: unknown[], at: Date): Promise<void> }).writeQueue(BigInt(pupil), [graded(bankId), graded(privateId)], new Date())
     expect((await q(`select count(*)::text id from revision_queue where question_id = $1`, [privateId]))[0]!.id).toBe('0')
     // A row written before the guard existed stays unserved and uncounted.
     await q(`insert into revision_queue (user_id, question_id, subject_id, wrong_times, last_wrong_at) values ($1, $2, $3, 1, now())`, [pupil, privateId, tag.subjectId])

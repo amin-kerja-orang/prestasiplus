@@ -5,6 +5,7 @@ import { QUESTION_COUNT_SQL } from '../../src/modules/account/account-data.repos
 import { TeacherQuestionStatsProvider } from '../../src/modules/classes/question-bridge/teacher-question-stats.provider'
 import { PracticeAnalyticsRepository } from '../../src/modules/practice/reads/analytics/analytics.repository'
 import { OverviewRepository } from '../../src/modules/practice/reads/overview/overview.repository'
+import type { AnswerLogPort } from '../../src/modules/practice/answer-log.port'
 import { PracticeRepository } from '../../src/modules/practice/practice.repository'
 import { Be09PracticeQuestionSource } from '../../src/modules/practice/question-bridge/be09-practice-question-source'
 import { StructuredListingRepository } from '../../src/modules/practice/reads/writes/listing.repository'
@@ -21,6 +22,9 @@ import { CurriculumRepository } from '../../src/modules/curriculum/curriculum.re
 import { QUESTION_SERVED } from '../../src/modules/questions/served-rule'
 import { databankLaneConds, filterOf as servabilityFilterOf, janaEligibleScope } from '../../src/modules/questions/serving/filters'
 import { AnalyticsRepository } from '../../src/modules/reports/analytics/analytics.repository'
+
+/** `writeQueue` never writes an answer row, so the S5-T15 answer log port is not used here; a call would fail the test. */
+const unusedAnswerLog = { record: () => Promise.reject(new Error('AnswerLogPort is not used by writeQueue')) } as unknown as AnswerLogPort
 
 /**
  * S6-T16 (DM-42): a teacher's personal question (`question_versions.visibility = 'teacher_private'`) is excluded from every
@@ -270,7 +274,7 @@ describe('DM-42 (security H1): a private question answered wrongly in a mission 
       $queryRaw: () => Promise.resolve([{ id: 5n }]),
       revisionQueue: { upsert: (a: unknown) => (upserts.push(a), Promise.resolve()), deleteMany: () => Promise.resolve() },
     }
-    const repo = new PracticeRepository({ client } as never)
+    const repo = new PracticeRepository({ client } as never, unusedAnswerLog)
     const graded = (questionId: string) => ({ check: { questionId, checkedAt: new Date() }, isCorrect: false, subjectId: '1' })
     await (repo as unknown as { writeQueue(u: bigint, g: unknown[], at: Date): Promise<void> }).writeQueue(1n, [graded('5'), graded('6')], new Date())
     expect(upserts).toHaveLength(1)
