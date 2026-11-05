@@ -1,7 +1,6 @@
 import { z } from '../../zod'
 import { listEnvelopeOf } from '../../common/envelope'
 import { IdSchema } from '../../common/ids'
-import { TimestampSchema } from '../../common/time'
 
 /**
  * M10 part B wire contract (BE-18, contract-only), question sets half: the student list of teacher
