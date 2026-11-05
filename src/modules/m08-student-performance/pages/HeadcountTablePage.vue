@@ -178,7 +178,7 @@ const exportHref = computed(
       </div>
 
       <div class="flex flex-wrap items-start gap-2" data-testid="actions">
-        <div ref="keyInRoot" class="flex flex-col gap-2">
+        <div v-if="data.config.mode === 'manual'" ref="keyInRoot" class="flex flex-col gap-2">
           <UButton
             type="button"
             size="lg"
