@@ -60,6 +60,17 @@ const byTest = (id: string): HTMLElement | null => document.body.querySelector<H
 const heroButton = (): HTMLButtonElement | undefined =>
   [...document.body.querySelectorAll<HTMLButtonElement>('[data-testid=cover-hero] button')].find((b) => /Mula|Sambung/.test(b.textContent ?? ''))
 
+describe('resume choice copy (46 section 2.6)', () => {
+  it('uses the exact text', async () => {
+    server.getCover.mockResolvedValue(coverOf({ unavailable: false }))
+    server.findInProgress.mockResolvedValue(OPEN)
+    await mountCover()
+    expect(byTest('resume')?.textContent?.trim()).toBe('Sambung - teruskan jawapan & masa sedia ada')
+    expect(byTest('restart')?.textContent?.trim()).toBe('Mula Semula - kosongkan jawapan & masa')
+    expect(byTest('resume-choice')?.textContent).toContain('"Sambung" mengekalkan semua jawapan anda. "Mula Semula" tidak boleh diundur.')
+  })
+})
+
 describe('cover unavailable (PO decision 12)', () => {
   it('disables Mula and shows the message before any click', async () => {
     server.getCover.mockResolvedValue(coverOf({ unavailable: true, unavailableReason: 'QUESTION_WITHDRAWN' }))

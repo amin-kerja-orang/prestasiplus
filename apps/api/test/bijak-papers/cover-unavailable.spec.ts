@@ -70,10 +70,13 @@ describe('cover unavailable (API-BIJAK-02)', () => {
     }
   })
 
-  it('a paper that places no question (last: the test keeps it empty): NO_QUESTIONS, same answer as the start', async () => {
+  it('a paper that places no question (last: the test keeps it empty): NO_QUESTIONS, same answer as the start, not listed', async () => {
     const id = await idOf('4541/2')
     await t.db.query(`delete from paper_placements where paper_section_id in (select id from paper_sections where paper_id = $1)`, [id])
     expect(await cover(id)).toMatchObject({ unavailable: true, unavailableReason: 'NO_QUESTIONS' })
     expect(await refused(id)).toBe('not_eligible')
+    // the third asker of the one rule: the list does not offer it
+    const listed = (await student.get('/api/bijak/papers')).body.data as { id: string }[]
+    expect(listed.map((p) => p.id)).not.toContain(id)
   })
 })
