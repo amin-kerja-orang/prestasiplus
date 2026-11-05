@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { QuestionsRepository, QuestionsService } from '../../src/modules/questions'
-import { filterOf } from '../../src/modules/questions/serving'
+import { ServabilityService, filterOf } from '../../src/modules/questions/serving'
 import { adminActor, mcqInput, tagBody, tagOf, type Tag } from './fixtures'
 import { bootQuestionsApp, type QuestionsTestApp } from './helpers'
 
@@ -13,6 +13,7 @@ describe('pupil serving needs the stimulus file (S1-T06, FR-X1-4f)', () => {
   let t: QuestionsTestApp
   let svc: QuestionsService
   let repo: QuestionsRepository
+  let servability: ServabilityService
   let tag: Tag
   let admin: Awaited<ReturnType<typeof adminActor>>
   let fileSeq = 0
@@ -36,11 +37,17 @@ describe('pupil serving needs the stimulus file (S1-T06, FR-X1-4f)', () => {
     await q(`update stimuli set asset_file_id = $2::bigint where id = $1::bigint`, [stimulusId, f!.id])
   }
   const drawn = async (ids: string[]) => new Set(await repo.eligibleAmong(ids, filterOf('latih_tubi_spm')))
+  /** Parity (JS twin vs SQL): the indicator carries `image_missing` on every pupil activity exactly when the media rule drops the question from the draw. */
+  const indicated = async (id: string): Promise<boolean> => {
+    const report = await servability.report(id)
+    return report!.activities.filter((a) => a.activity !== 'simulasi_paper').every((a) => a.reasons.some((r) => r.code === 'image_missing'))
+  }
 
   beforeAll(async () => {
     t = await bootQuestionsApp()
     svc = t.app.get(QuestionsService)
     repo = t.app.get(QuestionsRepository)
+    servability = t.app.get(ServabilityService)
     tag = await tagOf(t.db, 'SEED-MCQ-MATH-T4')
     admin = await adminActor(t.db)
     const [math] = await q(`select id::text id from subjects where code = 'MATH'`)
@@ -55,6 +62,7 @@ describe('pupil serving needs the stimulus file (S1-T06, FR-X1-4f)', () => {
     const sid = await image(true)
     await q(`insert into question_version_stimuli (question_version_id, stimulus_id, position) select id, $2::bigint, 1 from question_versions where question_id = $1`, [id, sid])
     expect((await drawn([id])).has(id)).toBe(true)
+    expect(await indicated(id)).toBe(false)
   })
 
   it('[CI] (a) a single question whose image stimulus has no file is not served', async () => {
@@ -62,6 +70,7 @@ describe('pupil serving needs the stimulus file (S1-T06, FR-X1-4f)', () => {
     const sid = await image(false)
     await q(`insert into question_version_stimuli (question_version_id, stimulus_id, position) select id, $2::bigint, 1 from question_versions where question_id = $1`, [id, sid])
     expect((await drawn([id])).has(id)).toBe(false)
+    expect(await indicated(id)).toBe(true)
   })
 
   it('[CI] (b) a group with one stimulus lacking its file serves none of its members; with the file all are served', async () => {
@@ -73,8 +82,10 @@ describe('pupil serving needs the stimulus file (S1-T06, FR-X1-4f)', () => {
     await q(`insert into stimulus_group_stimuli (group_id, stimulus_id, position) values ($1::bigint, $2::bigint, 1), ($1::bigint, $3::bigint, 2)`, [g!.id, ok, bad])
     await q(`update questions set group_id = $2::bigint, group_position = case when id = $1::bigint then 1 else 2 end where id in ($1::bigint, $3::bigint)`, [a, g!.id, b])
     expect([...(await drawn([a, b]))]).toEqual([])
+    expect([await indicated(a), await indicated(b)]).toEqual([true, true])
     await attachFile(bad)
     expect([...(await drawn([a, b]))].sort()).toEqual([a, b].sort())
+    expect([await indicated(a), await indicated(b)]).toEqual([false, false])
   })
 
   it('[CI] (c) an approved question whose stimulus file is cleared afterwards leaves serving', async () => {
@@ -84,5 +95,6 @@ describe('pupil serving needs the stimulus file (S1-T06, FR-X1-4f)', () => {
     expect((await drawn([id])).has(id)).toBe(true)
     await q(`update stimuli set asset_file_id = null where id = $1::bigint`, [sid])
     expect((await drawn([id])).has(id)).toBe(false)
+    expect(await indicated(id)).toBe(true)
   })
 })

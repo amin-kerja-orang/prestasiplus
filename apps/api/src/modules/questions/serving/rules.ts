@@ -77,7 +77,7 @@ function commonReasons(f: ServabilityFacts, activity: ServabilityActivity): Serv
     else if (!f.level.isActive) out.push(reason('level_inactive', activity))
   }
   // S1-T07: the flag and the key checks are part of the servable rule (JS twins of NOT_FLAGGED_SQL and ALL_LEAVES_KEYED_SQL).
-  out.push(...flagReasons(live, activity), ...keyReasons(live, activity))
+  out.push(...flagReasons(live, activity), ...keyReasons(live, activity), ...mediaReasons(f, activity))
   return out
 }
 
@@ -125,6 +125,27 @@ function keyReasons(live: QuestionRecord, activity: ServabilityActivity): Servab
   }
   walk(live.version.parts)
   return [...modes].map((code) => reason(code, activity))
+}
+
+/**
+ * JS twin of `MEDIA_RESOLVED_SQL` (S1-T06, FR-X1-4f), the same definition as `mediaResolvedSql`: a stimulus the live version shows cannot be shown when a picture
+ * kind has no file, a table has no grid, no file and no pipe table in its body, or a passage has no text; or the version carries a `legacy_image_unresolved`
+ * import hold. The facts list the stimuli of the question's own links, its parts and its GROUP, so every member of a group with one such stimulus gets the
+ * reason (the complete-group rule). It reuses `image_missing` ("Imej belum dimuat naik"), the existing cause and fix.
+ */
+export function mediaUnresolved(media: NonNullable<ServabilityFacts['media']>): boolean {
+  if (media.importIssueCodes.includes('legacy_image_unresolved')) return true
+  return media.stimuli.some((s) => {
+    if (PICTURE_KINDS.includes(s.kind)) return !s.hasFile
+    if (s.kind === 'table') return !s.hasTableData && !s.hasFile && (s.bodyMs === null || !s.bodyMs.includes('|'))
+    if (s.kind === 'passage') return (s.bodyMs ?? '').trim() === '' && (s.bodyEn ?? '').trim() === ''
+    return false
+  })
+}
+const PICTURE_KINDS: readonly string[] = ['image', 'diagram', 'map', 'infographic', 'graph']
+
+function mediaReasons(f: ServabilityFacts, activity: ServabilityActivity): ServabilityReason[] {
+  return f.media !== undefined && mediaUnresolved(f.media) ? [reason('image_missing', activity, 'media_unresolved')] : []
 }
 
 /** JS twin of `SPM_SERVABLE_SQL` beyond the learner level: offered level (T4, T5), active subject linked to that level. */
