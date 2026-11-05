@@ -182,7 +182,7 @@ export class SpmTrackingService implements PracticeRamalanSource {
     const singles = new Map((await this.questions.getMany(items.filter((i) => i.kind === 'question').map((i) => i.id), 'latest')).map((r) => [r.id, r]))
     const filter = trackingAFilter(row.subjectId)
     const groups = new Map((await this.questions.groupsByIds(items.filter((i) => i.kind === 'group').map((i) => i.id))).map((g) => [g.id, g]))
-    const groupMembers = new Set(await this.questions.eligibleAmong([...groups.values()].flatMap((g) => g.questionIds), filter))
+    const groupMembers = await this.wholeGroupMembers([...groups.values()], row.subjectId)
 
     // Expand, refusing what can never be a member, with the row number the admin sees.
     const units: { questions: string[]; group: StimulusGroupRecord | null; position: number }[] = []
@@ -190,8 +190,7 @@ export class SpmTrackingService implements PracticeRamalanSource {
     let next = 1
     for (const item of items) {
       const group = item.kind === 'group' ? (groups.get(item.id) ?? null) : null
-      // An archived member is no gap in a group (`groupCompleteSql`): it stays out. Any other gap leaves the whole group ineligible, so none is left here.
-      const inGroup = group?.questionIds.filter((questionId) => groupMembers.has(questionId)) ?? []
+      const inGroup = group === null ? [] : (groupMembers.get(group.id) ?? [])
       if (item.kind === 'group' && inGroup.length === 0) throw refuse(PROPOSED.notServable(next))
       const single = item.kind === 'question' ? singles.get(item.id) : undefined
       if (item.kind === 'question' && !single) throw refuse(PROPOSED.notServable(next))
@@ -232,6 +231,16 @@ export class SpmTrackingService implements PracticeRamalanSource {
       throw ApiError.of('CONFLICT')
     }
     return this.adminSet(row.id)
+  }
+
+  /**
+   * What each group brings to a set of this subject, in group order: its eligible members, without the archived ones, which are no gap (`groupCompleteSql`).
+   * Any other member that is not eligible here, one of another subject for example, leaves the group with nothing: a group is never split (FR-ADM-Q17.6).
+   */
+  private async wholeGroupMembers(groups: readonly StimulusGroupRecord[], subjectId: string): Promise<Map<string, string[]>> {
+    const all = groups.flatMap((g) => g.questionIds)
+    const [eligible, archived] = await Promise.all([this.questions.eligibleAmong(all, trackingAFilter(subjectId)).then((ids) => new Set(ids)), this.questions.latestArchivedAmong(all)])
+    return new Map(groups.map((g) => [g.id, g.questionIds.every((id) => eligible.has(id) || archived.has(id)) ? g.questionIds.filter((id) => eligible.has(id)) : []]))
   }
 
   private assertNoSibling(flat: readonly string[], positions: ReadonlyMap<string, number>, siblings: ReadonlyMap<string, number>): void {
@@ -304,8 +313,8 @@ export class SpmTrackingService implements PracticeRamalanSource {
       if (page.length === 0) return out
       const records = await this.questions.getMany(page, 'live')
       const groups = await this.questions.groupsByIds([...new Set(records.flatMap((r) => (r.groupId === null || seenGroups.has(r.groupId) ? [] : [r.groupId])))])
-      const memberIds = await this.questions.eligibleAmong(groups.flatMap((g) => g.questionIds), filter)
-      const memberRecords = new Map((await this.questions.getMany(memberIds, 'live')).map((r) => [r.id, r]))
+      const groupMembers = await this.wholeGroupMembers(groups, row.subjectId)
+      const memberRecords = new Map((await this.questions.getMany([...groupMembers.values()].flat(), 'live')).map((r) => [r.id, r]))
       const groupById = new Map(groups.map((g) => [g.id, g]))
       for (const record of records) {
         if (record.groupId === null) {
@@ -316,7 +325,7 @@ export class SpmTrackingService implements PracticeRamalanSource {
         } else if (!seenGroups.has(record.groupId)) {
           seenGroups.add(record.groupId)
           const group = groupById.get(record.groupId)
-          const members = group?.questionIds.filter((id) => memberRecords.has(id)) ?? []
+          const members = (groupMembers.get(record.groupId) ?? []).filter((id) => memberRecords.has(id))
           if (group && members.length > 0 && !members.some((id) => held.has(id))) {
             out.push({ kind: 'group', id: group.id, questions: members.length, label: groupLabel(group), members: members.map((id) => memberOf(id, memberRecords.get(id), true)) })
           }

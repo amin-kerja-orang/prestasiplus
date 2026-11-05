@@ -470,11 +470,35 @@ export class QuestionsRepository {
     return rows.map((r) => idToString(r.id))
   }
 
-  /** How many units are eligible: a question outside a group counts once, and so does a whole group (D90). */
+  /**
+   * How many units are eligible: a question outside a group counts once, and so does a whole group (D90). With `subjectId`, a group that also holds a
+   * member of another subject (bar an archived one) is no unit of this subject: taking its eligible members would split it (FR-ADM-Q17.6).
+   */
   async eligibleUnitCount(filter: QuestionFilter): Promise<number> {
     const { from, where } = this.scope({ ...filter, status: 'approved', active: true }, true)
-    const rows = await this.db.$queryRaw<{ n: number }[]>`SELECT ((count(*) FILTER (WHERE q.group_id IS NULL)) + count(DISTINCT q.group_id))::int AS n ${from} WHERE ${where}`
+    const subject = filter.subjectId === undefined ? null : bi(filter.subjectId)
+    const wholeInSubject =
+      subject === null
+        ? Prisma.sql`true`
+        : Prisma.sql`NOT EXISTS (SELECT 1 FROM questions om
+            JOIN question_versions ol ON ol.question_id = om.id AND ol.version_no = om.latest_version_no
+            JOIN question_versions ov ON ov.question_id = om.id AND ov.version_no = om.live_version_no
+           WHERE om.group_id = q.group_id AND ol.status <> 'archived' AND ov.subject_id IS DISTINCT FROM ${subject})`
+    const rows = await this.db.$queryRaw<{ n: number }[]>`SELECT ((count(*) FILTER (WHERE q.group_id IS NULL)) + count(DISTINCT q.group_id) FILTER (WHERE ${wholeInSubject}))::int AS n ${from} WHERE ${where}`
     return rows[0]?.n ?? 0
+  }
+
+  /** Of these questions, the ones whose latest version is archived: a group member like this is out of its group's unit, and no gap (`groupCompleteSql`). */
+  async latestArchivedAmong(ids: readonly string[]): Promise<Set<string>> {
+    const keys = [...new Set(ids)].flatMap((id) => {
+      const k = bi(id)
+      return k === null ? [] : [k]
+    })
+    if (keys.length === 0) return new Set()
+    const rows = await this.db.$queryRaw<{ id: bigint }[]>`
+      SELECT q.id FROM questions q JOIN question_versions l ON l.question_id = q.id AND l.version_no = q.latest_version_no
+       WHERE q.id = ANY(${keys}::bigint[]) AND l.status = 'archived'`
+    return new Set(rows.map((r) => idToString(r.id)))
   }
 
   /** One keyset page of eligible ids, ascending; pass the last id of the previous page as `after`. */
