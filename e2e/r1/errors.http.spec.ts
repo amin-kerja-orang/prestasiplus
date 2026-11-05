@@ -157,7 +157,9 @@ test.describe('save controls (AC-ERR-5, AC-ERR-2 draft)', () => {
     })
     // Same page with a query: a navigation that makes the app refresh /api/me, which answers 401.
     await goInApp(page, '/profile/edit?sesi=1')
-    await expect(page).toHaveURL(/\/login\?kembali=(%2F|\/)profile(%2F|\/)edit/, { timeout: 20_000 })
+    await expect(page).toHaveURL(/\/login\?kembali=(%2F|\/)profile(%2F|\/)edit/, {
+      timeout: 20_000,
+    })
     await expect(page.getByTestId('login-session-expired')).toHaveText(EXPIRED)
     await expectNoHScroll(page)
 
