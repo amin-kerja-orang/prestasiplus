@@ -29,11 +29,23 @@ export const DIFFICULTY_ROWS: readonly { level: number; label: string; color: st
 /** FR-M05-27: the bar of row `i` grows after 150, 300, 450, 600, 750 ms. */
 export const DIFFICULTY_BAR_DELAY_MS = 150
 
-/**
- * BR-11 (D72): practice offers Tingkatan 4 and 5 only, so the dashboard "Tahap Pendidikan" links to these
- * level codes alone (the API may still list the other Tingkatan, with 0 questions).
- */
-export const OFFERED_LEVEL_CODES: readonly string[] = ['T4', 'T5']
+/** FR-MUR-2-11: "Tahap Pendidikan" lists Tingkatan 1 to 5 only, never Darjah. */
+export const OFFERED_LEVEL_CODES: readonly string[] = ['T1', 'T2', 'T3', 'T4', 'T5']
+
+const MONTHS_BM = ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis']
+
+/** "Sah sehingga" date: `YYYY-MM-DD` -> `d M YYYY` with BM month abbreviations (e.g. `3 Nov 2027`). */
+export function formatValidUntil(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso)
+  const month = m ? MONTHS_BM[Number(m[2]) - 1] : undefined
+  if (!m || !month) return iso
+  return `${Number(m[3])} ${month} ${m[1]}`
+}
+
+/** FR-MUR-2-13: the Ketepatan tile shows the whole number rounded half up, "—" with 0 answers. */
+export function accuracyDisplay(pct: number | null): string {
+  return pct === null ? '—' : `${Math.floor(pct + 0.5)}%`
+}
 
 /** FR-M05-25: the secondary level groups, by `DashboardLevelPill.stage` (v2: no primary group). */
 export const LEVEL_GROUPS = [
@@ -146,6 +158,15 @@ export function revisionBadge(total: number): string | null {
 /** FR-M05-09 (INFERRED condition): a streak of at least 1 day and no practice today. */
 export function showKombo(streak: { count: number; practisedToday: boolean }): boolean {
   return streak.count >= 1 && !streak.practisedToday
+}
+
+/**
+ * FR-MUR-2-3: the footer "Rekod terbaik: {n} hari". `null` (no figure loaded) gives no line; a record below the
+ * live streak (two stores read at different moments) never shows under it.
+ */
+export function bestStreakText(best: number | null, current: number): string | null {
+  if (best === null) return null
+  return `Rekod terbaik: ${Math.max(best, current)} hari`
 }
 
 /** FR-M05-02: the h1 text (the wave emoji is a separate animated span). */

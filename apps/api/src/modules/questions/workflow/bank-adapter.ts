@@ -26,6 +26,7 @@ import {
   type QuestionRecord,
 } from '../index'
 import { gateDataOf } from '../gate-data'
+import { partsFromFlat } from '../projection'
 import type {
   DiagramCandidate,
   ExplanationSource,
@@ -35,6 +36,7 @@ import type {
   QuestionBrief,
   QuestionGateData,
   QuestionStatusInfo,
+  QuestionVersionBrief,
   SetStatusOptions,
 } from './ports'
 
@@ -154,9 +156,9 @@ export class QuestionBankAdapter implements QuestionBankPort {
     if (input.subjectId === null || input.educationLevelId === null || input.difficultyLevel === null) {
       throw new Error('QuestionBankAdapter.create: subject, level and difficulty are required (the import validates them first)')
     }
-    // BE-09 labels options A, B, C, ... in order and needs at least 3 (contract: 3 to 8), so the present
+    // BE-09 labels options A, B, C, ... in order and needs at least 2 (contract: 2 to 8, S1-T09a), so the present
     // options are compacted in order and the correct one is found by its position among them. A row with
-    // fewer than 3 options is refused by BE-09 with 422 (GAP: the CSV rules accept 2, the v2 model does not).
+    // fewer than 2 options is a failed row of the CSV import (csv.ts MIN_OPTIONS).
     const present = input.options.filter((o) => o.text !== '')
     const correctAnswer = present.findIndex((o) => o.label === input.correctLabel)
     const body = {
@@ -170,8 +172,31 @@ export class QuestionBankAdapter implements QuestionBankPort {
       explanation: input.explanation,
       pointsValue: input.marks ?? 1,
       ...(input.kertas === undefined ? {} : { kertas: input.kertas }),
+      // S1-T05: the DSKP and curriculum fields go through the same create as the wizard (no second path), so the gate reads real data.
+      ...(input.unitId === undefined && input.spIds === undefined && input.tp === undefined
+        ? {}
+        : { tag: { unitId: input.unitId ?? null, spIds: input.spIds ?? [], tp: input.tp ?? null } }),
+      ...(input.cognitiveLevel === undefined ? {} : { cognitiveLevel: input.cognitiveLevel }),
+      ...(input.chapterId === undefined ? {} : { curriculumChapterId: input.chapterId }),
+      ...(input.topicId === undefined ? {} : { curriculumTopicId: input.topicId }),
+      ...(input.numberLabel === undefined ? {} : { numberLabel: input.numberLabel }),
+      ...(input.language === undefined ? {} : { language: input.language }),
       status: input.status,
     } as unknown as QuestionCreateInput
+    if (input.kbat !== undefined || input.partStimulusId !== undefined) {
+      // An explicit KBAT value and a part stimulus live on the leaf and the flat body has no field for them: the one leaf is built here and sent as `parts`.
+      const parts = partsFromFlat({
+        questionType: 'mcq',
+        questionText: input.stemMs,
+        options: present.map((o) => o.text),
+        correctAnswer: Math.max(0, correctAnswer),
+        pointsValue: input.marks ?? 1,
+        ...(input.cognitiveLevel === undefined ? {} : { cognitiveLevel: input.cognitiveLevel }),
+      })
+      if (input.kbat !== undefined) (parts[0] as { kbat?: string }).kbat = input.kbat
+      if (input.partStimulusId !== undefined) (parts[0] as { stimulusId?: string }).stimulusId = input.partStimulusId
+      ;(body as unknown as { parts: QuestionPart[] }).parts = parts
+    }
     const view = await this.service.create(body, { userId: input.createdById, role: 'teacher' })
     return view.id
   }
@@ -230,6 +255,22 @@ export class QuestionBankAdapter implements QuestionBankPort {
         educationLevelId: v.educationLevelId,
         levelName: v.educationLevelId === null ? null : (levels.get(v.educationLevelId) ?? null),
         chapterName: v.chapterId === null ? null : (chapters.get(v.chapterId) ?? null),
+      })
+    }
+    return out
+  }
+
+  async describeVersions(refs: readonly { questionId: string; versionNo: number }[]): Promise<ReadonlyMap<string, QuestionVersionBrief>> {
+    const out = new Map<string, QuestionVersionBrief>()
+    const records = await this.repo.getVersions(refs)
+    if (records.length === 0) return out
+    const { subjects } = await this.names()
+    for (const r of records) {
+      const v = r.version
+      out.set(`${r.id}:${v.versionNo}`, {
+        stemText: v.stemMs ?? v.stemEn ?? '',
+        subjectId: v.subjectId,
+        subjectName: v.subjectId === null ? null : (subjects.get(v.subjectId) ?? null),
       })
     }
     return out

@@ -21,6 +21,7 @@ import type {
   Progress,
   ProgressPeriod,
   RemedialPreview,
+  RemedialSuggestions,
   RemedialTestItem,
   RevisionOverview,
   RevisionSubject,
@@ -55,6 +56,20 @@ export async function fetchDashboard(options: Signal = {}): Promise<Dashboard> {
 }
 
 /**
+ * FR-MUR-2-3 "Rekod terbaik": the pupil's longest streak, read from the existing gamification dashboard
+ * (`GET /api/gamification/dashboard`, `wallet.streak.best`; any signed-in user, own data). The type is local
+ * (modules do not import each other). `null` when the body carries no usable number.
+ */
+export async function fetchBestStreak(options: Signal = {}): Promise<number | null> {
+  const body = await api.get<{ wallet?: { streak?: { best?: unknown } } }>(
+    '/api/gamification/dashboard',
+    withSignal(options),
+  )
+  const best = body?.wallet?.streak?.best
+  return typeof best === 'number' && Number.isFinite(best) && best >= 0 ? Math.floor(best) : null
+}
+
+/**
  * http mode only: the `PracticeReadDashboard` wire body (`GET /api/dashboard`, packages/contract
  * practice/reads) already has the page's `Dashboard` shape. Ids stay as sent (opaque strings, the
  * `EntityId` of the dashboard types; the page uses them only as list keys and never posts them back).
@@ -65,6 +80,8 @@ export function normaliseDashboard(wire: Dashboard): Dashboard {
   const list = <T>(rows: readonly T[] | null | undefined): T[] => (Array.isArray(rows) ? [...rows] : [])
   return {
     ...wire,
+    accuracyPct: wire.accuracyPct ?? null,
+    package: wire.package ?? null,
     banners: list(wire.banners),
     quests: list(wire.quests),
     badges: list(wire.badges),
@@ -75,6 +92,28 @@ export function normaliseDashboard(wire: Dashboard): Dashboard {
     difficultyChart: list(wire.difficultyChart),
     subjectStats: list(wire.subjectStats),
   }
+}
+
+/** One row of `GET /api/gamification/challenges` as the dashboard "Cabaran Kilat" card reads it. */
+export interface ChallengeToday {
+  id: number | string
+  icon: string
+  title: string
+  description: string
+  difficulty: 'easy' | 'medium' | 'hard'
+  rewardSyiling: number
+  target: number
+  progress: number
+  completed: boolean
+}
+
+/** Today's challenges (API-GAME-07, the existing endpoint; the response is `{ data: rows[] }`). */
+export async function fetchChallengesToday(options: Signal = {}): Promise<ChallengeToday[]> {
+  const body = await api.get<{ data?: ChallengeToday[] }>(
+    '/api/gamification/challenges',
+    withSignal(options),
+  )
+  return Array.isArray(body?.data) ? body.data : []
 }
 
 /** #2 `GET /api/practice/subjects`. */
@@ -301,6 +340,11 @@ export function saveSpmTargets(
   targets: Record<number | string, SpmGrade | ''>,
 ): Promise<SaveSpmTargetsResult> {
   return api.put<SaveSpmTargetsResult>('/api/spm-targets', { body: { targets }, raw: true })
+}
+
+/** API-PRAC-08 `GET /api/practice/remedial-suggestions` (completed drills and subjects below 60; empty for staff). */
+export function fetchRemedialSuggestions(options: Signal = {}): Promise<RemedialSuggestions> {
+  return api.get<RemedialSuggestions>('/api/practice/remedial-suggestions', withSignal(options))
 }
 
 /** #20 `GET /api/remedial-tests/mine` (the viewer's tests, newest first). */
