@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 
-import type { SchoolPerformanceView } from '../../../../src/modules/school-admin/school-admin.ports'
 import { performanceBlock } from '../../../../src/modules/school-admin/dashboard.mapper'
 import { answers, ctxOf, world, type World } from '../fakes/fixtures'
 
@@ -27,11 +26,13 @@ function pupils(w: World, schoolId: string, n: number, active: number = n, prefi
   return ids
 }
 
-/** XS-4 / XS-5 of the school as the dashboard passes them (`XsQueries.answerTotals`); here the same answer rows, read through the fakes. */
-const xsOf = (view: SchoolPerformanceView) => ({ answered: view.stats.answered, accuracy: view.stats.accuracy })
+/**
+ * The dashboard passes the XS-4 / XS-5 figures (school scope, all time) as `xs`; both read the same `practice_answers` rows as the
+ * shared reader, so here they are the reader's own totals.
+ */
 const blockOf = async (w: World) => {
   const view = await w.school.school(schoolAdmin)
-  return performanceBlock(view, xsOf(view))
+  return performanceBlock(view, { answered: view.stats.answered, accuracy: view.stats.accuracy })
 }
 
 describe('Admin Sekolah dashboard practice block over the shared answer reader (DB scenarios, in memory)', () => {
@@ -41,7 +42,7 @@ describe('Admin Sekolah dashboard practice block over the shared answer reader (
     pupils(w, 's1', 5)
     const view = await w.school.school(schoolAdmin)
     expect(view.stats).toMatchObject({ students: 5, sessions: 5, answered: 5 * ANSWERS, accuracy: 70 })
-    const p = performanceBlock(view, xsOf(view))
+    const p = performanceBlock(view, { answered: view.stats.answered, accuracy: view.stats.accuracy })
     expect(p.practice).toEqual({ accuracy: 70, sessions: 5, questions: 5 * ANSWERS })
     // t4 and t5 stay listed at 0 (no classes); no distribution rows have counts (no headcount).
     expect(p.levels.map((l) => l.code)).toEqual(['t4', 't5'])

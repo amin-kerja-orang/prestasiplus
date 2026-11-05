@@ -256,11 +256,11 @@ describe('S2 / S3 levels', () => {
     expect((await getAs(runtime, null, '/api/performance/levels/t4')).status).toBe(401)
   })
 
-  it('S3 Tingkatan 4: computed targets (HC-2) leave every seeded pair On Track; Murid Berisiko by the answer rule (R1-AS-4, DOC DEFECT 5)', async () => {
+  it('S3 Tingkatan 4: computed targets (HC-2) leave every seeded pair On Track; Murid Berisiko by the answer rule', async () => {
     const t4 = await get<LevelDetail>(ADMIN, '/api/performance/levels/t4')
     expect([t4.onTrack, t4.below, t4.onTrackPct]).toEqual([75, 0, 100])
     expect(t4.classRows.find((r) => r.classId === 516)).toMatchObject({ onTrack: 15, below: 0 })
-    // Whole-number accuracy below 50 or no answer in 7 days; 10 rows;
+    // Murid Berisiko by the answer rule (R1-AS-4, DOC DEFECT 5): whole-number accuracy below 50 or no answer in 7 days; 10 rows;
     // accuracy ascending, pupils with no answer last. The rule does not read the targets, so the list stays full while Below is 0.
     expect(t4.atRisk).toHaveLength(10)
     expect(t4.atRisk[0]).toMatchObject({ userId: 156, className: '4 Cemerlang - BM', answered: 35, accuracy: 8.6 })
