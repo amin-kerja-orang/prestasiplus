@@ -15,6 +15,7 @@ import { curriculum } from '@/modules/m03-curriculum/mock'
 import {
   int,
   notFound,
+  validationError,
   ok,
   pageParams,
   paged,
@@ -145,7 +146,11 @@ function toSubmissionDetail(
     kbat: row.kbat,
     status: 'review',
     stimulus: r.stimulus,
-    stimulusImage: r.stimulusImageId ? `/api/files/${r.stimulusImageId}` : null,
+    // A `blob:mock/` reference (mock-mode upload, D22) cannot load: no image.
+    stimulusImage:
+      r.stimulusImageId && !r.stimulusImageId.startsWith('blob:mock/')
+        ? `/api/files/${r.stimulusImageId}`
+        : null,
     totalMarks: row.marks,
     subCount: row.subCount,
     subQuestions: r.parts.map((p, i) => ({
@@ -225,6 +230,9 @@ export const structuredRoutes: RouteDef[] = [
   route('GET', '/api/guru/structured-questions', [teacherRead], (req) => {
     const page = pageParams(req.query, { pageSize: GURU_PAGE_SIZE })
     const status = queryString(req.query, 'status')
+    // Like the BE's zod enum: any other status is a 422 on `status`.
+    if (status !== undefined && status !== '' && status !== 'approved' && status !== 'review')
+      return validationError({ status: 'Invalid option: expected one of "approved"|"review"' })
     const subjectId = queryFilterId(req.query, 'subjectId')
     const educationLevelId = queryFilterId(req.query, 'educationLevelId')
     const filter = {
@@ -233,17 +241,14 @@ export const structuredRoutes: RouteDef[] = [
     }
     // Ruling B on #493: no status = own submissions first (newest first), then approved questions;
     // `approved` = approved only; `review` = the caller's own submissions only.
-    const own = status === 'approved' ? [] : guruSubmissions.listOwn(req.session?.userId ?? 0, filter)
+    const own =
+      status === 'approved' ? [] : guruSubmissions.listOwn(req.session?.userId ?? 0, filter)
     const offset = (page.page - 1) * GURU_PAGE_SIZE
     const ownRows = own.slice(offset, offset + GURU_PAGE_SIZE)
     const approved =
       status === 'review'
         ? { rows: [] as StructuredQuestion[], total: 0 }
-        : approvedWindow(
-            filter,
-            Math.max(0, offset - own.length),
-            GURU_PAGE_SIZE - ownRows.length,
-          )
+        : approvedWindow(filter, Math.max(0, offset - own.length), GURU_PAGE_SIZE - ownRows.length)
     const names = nameLookup()
     const rows = [
       ...ownRows.map((r, i) => toSubmissionRow(r, offset + i + 1, names)),

@@ -437,3 +437,27 @@ describe('own submissions in the guru list and detail (S6-T17, ruling B)', () =>
     expect(w.find('[data-testid=structured-sub]').exists()).toBe(true)
   })
 })
+
+describe('review fixes (S6-T17)', () => {
+  it('m6: no empty KBAT badge in the list or the detail when kbat is empty', async () => {
+    api.fetchGuruStructuredQuestions.mockResolvedValue(
+      result([submissionRow(1, { kbat: '' }), row(2)], 2),
+    )
+    const w = await renderList()
+    expect(w.findAll('[data-testid=structured-kbat-pill]')).toHaveLength(1)
+    w.unmount()
+    api.fetchGuruStructuredQuestion.mockResolvedValue({ ...detail, id: 'g5', kbat: '' })
+    const d = await renderDetail('g5')
+    expect(d.find('[data-testid=structured-pill-kbat]').exists()).toBe(false)
+  })
+
+  it('m7: the tab title follows the id when the detail is reused for another id', async () => {
+    const w = await renderDetail(4001)
+    const { usePageMeta } = await import('@/composables')
+    expect(usePageMeta().state.title).toBe('Soalan Berstruktur #4001')
+    await w.setProps({ id: 4002 })
+    await flushPromises()
+    expect(api.fetchGuruStructuredQuestion.mock.calls.at(-1)![0]).toBe(4002)
+    expect(usePageMeta().state.title).toBe('Soalan Berstruktur #4002')
+  })
+})

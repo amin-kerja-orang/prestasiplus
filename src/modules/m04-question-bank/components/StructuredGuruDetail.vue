@@ -69,7 +69,12 @@ const figure = computed(() => {
             :label="detail.level?.name"
             data-testid="structured-pill-level"
           />
-          <DsBadge tone="info" :label="detail.kbat" data-testid="structured-pill-kbat" />
+          <DsBadge
+            v-if="detail.kbat"
+            tone="info"
+            :label="detail.kbat"
+            data-testid="structured-pill-kbat"
+          />
           <DsBadge
             tone="success"
             :label="`${detail.totalMarks} markah`"
