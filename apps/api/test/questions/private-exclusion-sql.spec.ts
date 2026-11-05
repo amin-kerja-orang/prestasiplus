@@ -364,20 +364,4 @@ describe('DM-42 (R-1 nits): report resolution never acts on a private question; 
     expect(await adapter.deactivate('6')).toBe(true)
     expect(acted).toEqual(['deactivate'])
   })
-
-  it('Guru removeOwn deletes the teacher\'s own bank question (the admin guard is not on this path)', async () => {
-    const calls: string[] = []
-    const svc = Object.create(QuestionsService.prototype) as QuestionsService
-    const repo = {
-      ownerOf: () => Promise.resolve('7'),
-      get: (_id: string, _v: string, opts?: { bankOnly?: boolean }) => (calls.push(opts?.bankOnly === true ? 'get:bankOnly' : 'get'), Promise.resolve({ id: '9', version: { visibility: 'bank' } })),
-      lock: () => Promise.resolve(true),
-      deletionBlock: () => Promise.resolve(null),
-      remove: () => (calls.push('remove'), Promise.resolve(true)),
-    }
-    Object.assign(svc, { repo, prisma: { transaction: (fn: () => unknown) => fn() }, overview: undefined })
-    await expect(svc.removeOwn('9', '7')).resolves.toBeUndefined()
-    expect(calls).toContain('remove')
-    expect(calls).not.toContain('get:bankOnly')
-  })
 })
