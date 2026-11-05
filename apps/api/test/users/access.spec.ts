@@ -86,6 +86,34 @@ describe('roles, scope and guards (AC 3, 9, 10)', () => {
   })
 
   describe('AC 3: a school_admin sees and edits only its own school', () => {
+    it('status=pending and pendingCount count only pending users of the own school (R1-ADM-U-01)', async () => {
+      await admin.post(`/admin/users/${ownTeacher}/toggle-active`) // own school: pending
+      await admin.post(`/admin/users/${otherTeacher}/toggle-active`) // other school: pending, invisible to sa
+      try {
+        const res = await sa.get('/admin/users?status=pending')
+        expect(res.status).toBe(200)
+        const meta = UserListMetaSchema.parse(res.body.meta)
+        const ids = (res.body.data as { id: string }[]).map((r) => r.id)
+        expect(ids).toContain(ownTeacher)
+        expect(ids).not.toContain(otherTeacher)
+        expect(meta.pendingCount).toBe(res.body.meta.totalItems)
+        // pendingCount ignores the list filters
+        expect(UserListMetaSchema.parse((await sa.get('/admin/users?role=student')).body.meta).pendingCount).toBe(meta.pendingCount)
+        const [want] = await t.db.query<{ n: number }>(
+          `select count(*)::int n from users u where u.school_id = $1 and u.is_active = false and u.is_suspended = false
+             and not exists (select 1 from user_roles x where x.user_id = u.id and x.role not in ('student','teacher'))`,
+          [s1],
+        )
+        expect(meta.pendingCount).toBe(want?.n)
+        // admin sees both
+        const all = UserListMetaSchema.parse((await admin.get('/admin/users')).body.meta)
+        expect(all.pendingCount).toBeGreaterThan(meta.pendingCount)
+      } finally {
+        await admin.post(`/admin/users/${ownTeacher}/toggle-active`)
+        await admin.post(`/admin/users/${otherTeacher}/toggle-active`)
+      }
+    })
+
     it('the list holds students and teachers of the own school only; roleCounts follow the same rows', async () => {
       const res = await sa.get('/admin/users')
       expect(res.status).toBe(200)

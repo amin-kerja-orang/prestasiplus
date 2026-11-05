@@ -17,6 +17,7 @@ import {
   UpdateUserRequestSchema,
   UserListMetaSchema,
   UserListQuerySchema,
+  USER_STATUS_FILTERS,
   ASSIGNABLE_ROLES,
   MANAGEABLE_TARGET_ROLES,
   BULK_IMPORT_ROLES_BY_CALLER,
@@ -120,13 +121,22 @@ function listItem() {
 }
 
 describe('list', () => {
+  it('list query accepts the status filter and keeps isActive', () => {
+    for (const status of USER_STATUS_FILTERS) expect(UserListQuerySchema.safeParse({ status }).success).toBe(true)
+    expect(UserListQuerySchema.safeParse({ isActive: '1' }).success).toBe(true)
+    expect(USER_STATUS_FILTERS).toEqual(['pending', 'active', 'suspended'])
+  })
+
   it('parses an item and meta with roleCounts', () => {
     expect(AdminUserListItemSchema.safeParse(listItem()).success).toBe(true)
     const meta = {
       page: 1, pageSize: 25, totalItems: 1, totalPages: 1, from: 1, to: 1,
       roleCounts: { student: 1, teacher: 0, parent: 0, sponsor: 0, schoolAdmin: 0, ppdOfficer: 0, admin: 0 },
+      pendingCount: 0,
     }
     expect(UserListMetaSchema.safeParse(meta).success).toBe(true)
+    expect(UserListMetaSchema.safeParse({ ...meta, pendingCount: undefined }).success).toBe(false)
+    expect(UserListMetaSchema.safeParse({ ...meta, pendingCount: -1 }).success).toBe(false)
     expect(UserListMetaSchema.safeParse({ ...meta, roleCounts: { student: 1 } }).success).toBe(false)
   })
 })

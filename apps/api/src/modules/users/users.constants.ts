@@ -29,7 +29,10 @@ export const SCHOOL_ADMIN_VISIBLE_ROLES: readonly RoleCode[] = ['student', 'teac
 /** Alphabet of generated passwords: no 0/O/1/I/l, so a password read from a screen is not misread. */
 export const PASSWORD_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
 export const PASSWORD_LENGTH = 14
-
+/** FR-ADM-U02.4 / AC-ADM-U05.3: no account password is shorter than this (admin create, reset and import). */
+export const MIN_PASSWORD_LENGTH = 8
+/** BM copy for a typed password under the minimum (422 `fields`); no admin path takes a typed password today (D59b). */
+export const PASSWORD_TOO_SHORT_MESSAGE = 'Kata laluan mesti sekurang-kurangnya 8 aksara.'
 
 /** Limits of the import transaction (hashing happens before it, so it only inserts). */
 export const IMPORT_TX = { maxWait: 20_000, timeout: 60_000 } as const

@@ -7,6 +7,7 @@ import {
   STUDENT_SEARCH_MIN_CHARS,
   USERS_PAGE_SIZE,
   USER_MESSAGES,
+  USER_STATUS_FILTERS,
   usersDeletedText,
   type AdminUserDetail,
   type AdminUserListItem,
@@ -37,7 +38,7 @@ import { toDetail, toListItem, toStudentItem } from './users.mapper'
 import { BULK_DELETE_MAX_IDS, PAGE_NUMBER_MAX, USER_AUDIT } from './users.constants'
 import { FIELD_MESSAGES, forbidden, invalid, lastAdmin, notFound } from './users.errors'
 import { UsersPorts } from './users.ports'
-import { UsersRepository, uniqueField, type UserRecord } from './users.repository'
+import { UsersRepository, uniqueField, type UserRecord, type UserStatusFilter } from './users.repository'
 
 type LinkChange = { added: string[]; removed: string[] }
 /** Audit `details` of a link change: student ids only (no names), and no key at all when nothing changed. */
@@ -63,6 +64,7 @@ export interface UserListQueryInput {
   role?: string | undefined
   schoolId?: string | undefined
   isActive?: string | undefined
+  status?: string | undefined
   search?: string | undefined
   page?: string | undefined
 }
@@ -89,9 +91,12 @@ export class UsersService {
   // --- reads --------------------------------------------------------------------------------------
 
   async list(caller: Caller, q: UserListQueryInput) {
-    const roleCounts = await this.users.roleCounts(caller)
+    const [roleCounts, pendingCount] = await Promise.all([this.users.roleCounts(caller), this.users.pendingCount(caller)])
     const page = pageOf(q.page)
-    const empty = () => ({ data: [] as AdminUserListItem[], meta: { ...listMeta(page, USERS_PAGE_SIZE, 0), roleCounts: toWire(roleCounts) } })
+    const empty = () => ({
+      data: [] as AdminUserListItem[],
+      meta: { ...listMeta(page, USERS_PAGE_SIZE, 0), roleCounts: toWire(roleCounts), pendingCount },
+    })
 
     // Like the SQL `where` of the mock: a role outside the codes or a non-numeric school matches nothing.
     const role = q.role?.trim() ?? ''
@@ -99,11 +104,14 @@ export class UsersService {
     const schoolText = q.schoolId?.trim() ?? ''
     if (schoolText !== '' && !isIdString(schoolText)) return empty()
     const active = q.isActive?.trim()
+    const statusText = q.status?.trim() ?? ''
+    const status = (USER_STATUS_FILTERS as readonly string[]).includes(statusText) ? (statusText as UserStatusFilter) : undefined
     const search = q.search?.trim() ?? ''
 
     const { rows, total } = await this.users.list(caller, {
       ...(role === '' ? {} : { role: role as RoleCode }),
       ...(schoolText === '' ? {} : { schoolId: schoolText }),
+      ...(status === undefined ? {} : { status }),
       ...(active === '1' ? { isActive: true } : active === '0' ? { isActive: false } : {}),
       ...(search === '' ? {} : { search }),
       page,
@@ -112,7 +120,7 @@ export class UsersService {
     const names = await this.schoolNames(rows.map((r) => r.schoolId))
     return {
       data: rows.map((r) => toListItem(r, r.schoolId === null || !this.schoolShown(caller, r.schoolId) ? undefined : names.get(r.schoolId))),
-      meta: { ...listMeta(page, USERS_PAGE_SIZE, total), roleCounts: toWire(roleCounts) },
+      meta: { ...listMeta(page, USERS_PAGE_SIZE, total), roleCounts: toWire(roleCounts), pendingCount },
     }
   }
 

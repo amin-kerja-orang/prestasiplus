@@ -41,9 +41,20 @@ export interface UserListFilter {
   role?: RoleCode
   schoolId?: string
   isActive?: boolean
+  /** Account state filter of the admin list; wins over `isActive`. */
+  status?: UserStatusFilter
   search?: string
   page: number
   pageSize: number
+}
+
+/** pending: not yet approved (inactive, not suspended); active; suspended. */
+export type UserStatusFilter = 'pending' | 'active' | 'suspended'
+
+const STATUS_WHERE: Record<UserStatusFilter, Prisma.UserWhereInput> = {
+  pending: { isActive: false, isSuspended: false },
+  active: { isActive: true, isSuspended: false },
+  suspended: { isSuspended: true },
 }
 
 export interface UserSearchInput {
@@ -431,7 +442,8 @@ export class UsersRepository {
       if (!caller.isAdmin && filter.schoolId !== caller.schoolId) return { rows: [], total: 0 }
       and.push({ schoolId: idFromString(filter.schoolId) })
     }
-    if (filter.isActive !== undefined) and.push({ isActive: filter.isActive })
+    if (filter.status !== undefined) and.push(STATUS_WHERE[filter.status])
+    else if (filter.isActive !== undefined) and.push({ isActive: filter.isActive })
     if (filter.search) and.push(textSearch(filter.search))
     const where: Prisma.UserWhereInput = { AND: and }
     const [rows, total] = await Promise.all([
@@ -445,6 +457,11 @@ export class UsersRepository {
       this.prisma.client.user.count({ where }),
     ])
     return { rows: rows.map(toRecord), total }
+  }
+
+  /** Accounts waiting for approval among the users the caller can see (scope only, no list filter). */
+  pendingCount(caller: Caller): Promise<number> {
+    return this.prisma.client.user.count({ where: { AND: [this.visibleWhere(caller), STATUS_WHERE.pending] } })
   }
 
   /** Users per role over everything the caller can see, ignoring the list filters (the 7 stat cards). */

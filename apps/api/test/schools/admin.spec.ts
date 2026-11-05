@@ -121,6 +121,43 @@ describe('admin school routes (AC 1, AC 8)', () => {
       expect(ListBody.parse((await list('?search=_')).body).data).toEqual([])
     })
 
+    it('hides primary types by default; includePrimary=true or a primary type filter shows them, and meta follows', async () => {
+      await t.db.query(
+        `insert into schools (name, code, type, state, is_active) values
+           ('SK Primary Satu', 'PRIM001', 'SK', 'Perak', true),
+           ('SJK(C) Primary Dua', 'PRIM002', 'SJK(C)', 'Perak', false),
+           ('SJK(T) Primary Tiga', 'PRIM003', 'SJK(T)', 'Perak', true)`,
+      )
+      try {
+        const base = ListBody.parse((await list()).body)
+        expect(base.data.some((s) => s.code?.startsWith('PRIM'))).toBe(false)
+        expect(base.meta.types.some((x) => ['SK', 'SJK(C)', 'SJK(T)'].includes(x))).toBe(false)
+
+        const all = ListBody.parse((await list('?includePrimary=true')).body)
+        expect(all.meta.totalItems).toBe(base.meta.totalItems + 3)
+        expect(all.meta.counts).toEqual({
+          total: base.meta.counts.total + 3,
+          active: base.meta.counts.active + 2,
+          inactive: base.meta.counts.inactive + 1,
+        })
+        expect(all.meta.types).toEqual(expect.arrayContaining(['SK', 'SJK(C)', 'SJK(T)']))
+
+        // the flag is only 'true'; any other value keeps the default
+        expect(ListBody.parse((await list('?includePrimary=1')).body).meta.totalItems).toBe(base.meta.totalItems)
+
+        // picking a primary type shows its rows without the flag
+        const sk = ListBody.parse((await list('?type=SK')).body)
+        expect(sk.data.map((s) => s.code)).toEqual(['PRIM001'])
+        expect(sk.meta.counts.total).toBe(base.meta.counts.total + 3)
+
+        // the options picker stays secondary-only
+        const options = await admin.agent.get('/api/admin/schools/options?all=1')
+        expect(JSON.stringify(options.body)).not.toContain(' Primary ')
+      } finally {
+        await t.db.query(`delete from schools where code like 'PRIM00%'`)
+      }
+    })
+
     it('studentCount and teacherCount are derived from the users of the school', async () => {
       const body = ListBody.parse((await list('?search=DEMO')).body)
       const byCode = Object.fromEntries(body.data.map((s) => [s.code, [s.studentCount, s.teacherCount]]))

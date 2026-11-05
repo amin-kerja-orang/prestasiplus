@@ -25676,6 +25676,10 @@
             "type": "string",
             "description": "Exact school type; an unknown value matches nothing."
           },
+          "includePrimary": {
+            "type": "string",
+            "description": "'true' also lists the primary types SK, SJK(C) and SJK(T) (R1-ADM-U-04, OQ-U1); any other value keeps them hidden. Filtering by one of those types shows them without the flag. When primary rows are visible, meta.counts and meta.types cover the same set."
+          },
           "page": {
             "type": "string",
             "description": "Page number; a missing, non-numeric or < 1 value is treated as 1 (not an error)."
@@ -26343,6 +26347,11 @@
           },
           "roleCounts": {
             "$ref": "#/components/schemas/RoleCounts"
+          },
+          "pendingCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Accounts awaiting approval (is_active = false and is_suspended = false) among the users the caller can see (admin: all; school_admin: own school). Ignores every list filter except the caller scope (R1-ADM-U-01 banner)."
           }
         },
         "required": [
@@ -26350,7 +26359,8 @@
           "pageSize",
           "totalItems",
           "totalPages",
-          "roleCounts"
+          "roleCounts",
+          "pendingCount"
         ],
         "additionalProperties": {}
       },
@@ -26368,6 +26378,10 @@
           "isActive": {
             "type": "string",
             "description": "\"1\" or \"0\"; other values mean no filter."
+          },
+          "status": {
+            "type": "string",
+            "description": "\"pending\" (is_active false, not suspended), \"active\" (is_active true, not suspended) or \"suspended\" (is_suspended true). Other values mean no filter. Takes precedence over isActive when both are sent."
           },
           "search": {
             "type": "string",
@@ -97456,7 +97470,7 @@
           "schools"
         ],
         "summary": "List schools (30 per page, name A to Z)",
-        "description": "Access: admin. Scope: all schools. `meta.counts` {total, active, inactive} covers all schools; `meta.types` lists the distinct types present. Responses carry the join code (a bearer secret): no-store.",
+        "description": "Access: admin. Scope: all schools. `meta.counts` {total, active, inactive} covers all visible schools; `meta.types` lists the distinct visible types. Primary types (SK, SJK(C), SJK(T)) are hidden by default; `includePrimary=true`, or a `type` filter naming one of them, shows them and counts/types follow the same set (rows are never deleted). `/admin/schools/options` and the public search stay secondary-only. Responses carry the join code (a bearer secret): no-store.",
         "parameters": [
           {
             "schema": {
@@ -97486,6 +97500,16 @@
             "required": false,
             "description": "Exact school type; an unknown value matches nothing.",
             "name": "type",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "'true' also lists the primary types SK, SJK(C) and SJK(T) (R1-ADM-U-04, OQ-U1); any other value keeps them hidden. Filtering by one of those types shows them without the flag. When primary rows are visible, meta.counts and meta.types cover the same set."
+            },
+            "required": false,
+            "description": "'true' also lists the primary types SK, SJK(C) and SJK(T) (R1-ADM-U-04, OQ-U1); any other value keeps them hidden. Filtering by one of those types shows them without the flag. When primary rows are visible, meta.counts and meta.types cover the same set.",
+            "name": "includePrimary",
             "in": "query"
           },
           {
@@ -98567,7 +98591,7 @@
           "users"
         ],
         "summary": "List users (25 per page, newest first)",
-        "description": "Access: admin, school_admin. Scope: admin: all users; school_admin: own school only and only targets whose roles are all in MANAGEABLE_TARGET_ROLES.school_admin (student, teacher, or a parent whose linked children are ALL in the school and who has at least one linked child; a parent with no children is 404, and until parent links exist (BE-25) a school_admin sees no parents). Any other target (another school_admin, ppd_officer, admin, another school) is 404, never 403, so nothing is given away; rows of other roles and schools are hidden and meta.roleCounts is counted over the visible rows only. Filters combine with AND. For a school_admin the list hides every row outside its school and every row whose roles are not all student, teacher or parent (other school_admins and higher roles never appear). `meta.roleCounts` counts users per role and ignores the filters (but not the caller scope). Responses carry the masked IC only and are no-store.",
+        "description": "Access: admin, school_admin. Scope: admin: all users; school_admin: own school only and only targets whose roles are all in MANAGEABLE_TARGET_ROLES.school_admin (student, teacher, or a parent whose linked children are ALL in the school and who has at least one linked child; a parent with no children is 404, and until parent links exist (BE-25) a school_admin sees no parents). Any other target (another school_admin, ppd_officer, admin, another school) is 404, never 403, so nothing is given away; rows of other roles and schools are hidden and meta.roleCounts is counted over the visible rows only. Filters combine with AND. For a school_admin the list hides every row outside its school and every row whose roles are not all student, teacher or parent (other school_admins and higher roles never appear). `meta.roleCounts` counts users per role and ignores the filters (but not the caller scope). `status` (pending | active | suspended) filters by account state: pending = inactive and not suspended (awaiting approval, R1-ADM-U-01), active = active and not suspended, suspended = suspended; it wins over `isActive`, which keeps working. `meta.pendingCount` is the number of pending accounts in the caller scope (admin: all; school_admin: own school), ignoring every filter. Items expose `isActive` and `isSuspended`. Responses carry the masked IC only and are no-store.",
         "parameters": [
           {
             "schema": {
@@ -98597,6 +98621,16 @@
             "required": false,
             "description": "\"1\" or \"0\"; other values mean no filter.",
             "name": "isActive",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "\"pending\" (is_active false, not suspended), \"active\" (is_active true, not suspended) or \"suspended\" (is_suspended true). Other values mean no filter. Takes precedence over isActive when both are sent."
+            },
+            "required": false,
+            "description": "\"pending\" (is_active false, not suspended), \"active\" (is_active true, not suspended) or \"suspended\" (is_suspended true). Other values mean no filter. Takes precedence over isActive when both are sent.",
+            "name": "status",
             "in": "query"
           },
           {
