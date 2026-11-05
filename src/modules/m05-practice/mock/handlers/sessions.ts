@@ -71,6 +71,9 @@ function questionItem(q: Question, wrongTimes: number) {
     contributor:
       creator && creator.role === 'teacher' ? { name: creator.name, profileUrl: null } : null,
     options: (q.options ?? []).map((text, i) => ({ id: i, label: LETTERS[i] ?? String(i), text })),
+    // S5-T03 part B wire fields: the mock bank has no figure question and no stimulus group, so none is served.
+    stimuli: [],
+    group: null,
   }
 }
 

@@ -18,7 +18,7 @@ import { Injectable } from '@nestjs/common'
 
 import type { TxClient } from '../../db/client'
 import type { Prng } from '../../db/prng'
-import type { StimulusGroupRecord } from '../questions/types'
+import type { StimulusGroupRecord, StimulusRecord } from '../questions/types'
 import type { PracticeMode } from '@pp/contract'
 
 /* --------------------------------------------------------------------------------- BE-09: questions */
@@ -58,6 +58,11 @@ export interface PracticeQuestion {
   groupId?: string
   groupPosition?: number | null
   stimulusGroup?: StimulusGroupRecord
+  /**
+   * S5-T03 part B: every stimulus the question shows (its group stimuli, then those linked straight to its version), in order.
+   * Set only on a surface that allows figures; the wire `stimuli[]` of the start response.
+   */
+  stimuli?: StimulusRecord[]
   /** SERVER ONLY: the key label. Never put it in a start response (AC 4). */
   correctLabel: string | null
   /** SERVER ONLY until the check. */
@@ -107,7 +112,10 @@ export interface PracticeQuestionSource {
    * The exact versions a session served (OD-28): key `${questionId}@${versionNo}`. Used for check and submit,
    * so a later edit (version n+1) never changes the grading (AC 11). Eligibility is NOT re-checked here.
    */
-  versions(refs: readonly { questionId: string; versionNo: number }[]): Promise<ReadonlyMap<string, PracticeQuestion>>
+  versions(
+    refs: readonly { questionId: string; versionNo: number }[],
+    opts?: { display?: boolean },
+  ): Promise<ReadonlyMap<string, PracticeQuestion>>
 }
 
 /** Until BE-09 merges: the bank is empty (every draw is `NOT_ENOUGH_QUESTIONS`). */

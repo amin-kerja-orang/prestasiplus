@@ -32,6 +32,8 @@ const question = {
     { id: 0, label: 'A', text: '4' },
     { id: 1, label: 'B', text: '5' },
   ],
+  stimuli: [],
+  group: null,
 }
 const start = {
   sessionId: SESSION_ID,
@@ -102,6 +104,19 @@ describe('start response', () => {
     }
     expect(StartSessionResponseSchema.safeParse(full).success).toBe(true)
     expect(StartSessionResponseSchema.safeParse({ ...start, subject: null, timeLimitSec: null }).success).toBe(true)
+  })
+
+  it('S5-T03 part B: stimuli and the group of a member parse; a stray stimulus field and a 0-based index are rejected', () => {
+    const stimulus = { id: '70', kind: 'diagram', label: 'Rajah 1', text: null, caption: 'Segi tiga', alt: 'Segi tiga', source: null, imageId: 'abcdefghijklmnopqrstuv', table: null }
+    const table = { ...stimulus, id: '71', kind: 'table', imageId: null, table: { head: ['x', 'y'], rows: [['1', '2']] } }
+    const member = { ...question, stimuli: [stimulus, table], group: { id: '9', index: 1, size: 2 } }
+    expect(StartSessionResponseSchema.safeParse({ ...start, questions: [member] }).success).toBe(true)
+    expect(StartSessionResponseSchema.safeParse({ ...start, questions: [{ ...member, stimuli: [{ ...stimulus, body: { ms: 'x' } }] }] }).success).toBe(false)
+    expect(StartSessionResponseSchema.safeParse({ ...start, questions: [{ ...member, group: { id: '9', index: 0, size: 2 } }] }).success).toBe(false)
+    const bare: Record<string, unknown> = { ...question }
+    delete bare.stimuli
+    delete bare.group
+    expect(StartSessionResponseSchema.safeParse({ ...start, questions: [bare] }).success).toBe(false)
   })
 
   it('never carries the key or the explanation: a leaked field is rejected', () => {

@@ -83,8 +83,7 @@ describe('the shared SPM-servable definition', () => {
   })
 
   it('the overview card counts and the login count equal the draw counts', async () => {
-    // D91: the card and the draw leave out stimulus-group members (the hub / draw rule); the login count keeps counting them.
-    const drawable = await repo.count({ type: 'mcq', spmPool: true, ungrouped: true, status: 'approved', active: true }) // all subjects
+    // D91, S5-T03 part B: the Latih Tubi card and draw serve the members of a COMPLETE stimulus group (whole), so on the demo seed (every group complete) card = login.
     const withGroups = await repo.count({ type: 'mcq', spmPool: true, status: 'approved', active: true })
     const matrix = await t.get(OverviewRepository).bankMatrix()
     const levels = (await t.db.query<{ id: string }>(`select id::text id from education_levels where code = any($1)`, [[...OFFERED_LEVEL_CODES]])).map((r) => r.id)
@@ -93,7 +92,7 @@ describe('the shared SPM-servable definition', () => {
     const cards = subjects.reduce((n, s) => n + bank.practice(s, levels), 0)
     const login = (await t.db.query<{ c: string }>(QUESTION_COUNT_SQL))[0]?.c
     expect(Number(login)).toBe(withGroups)
-    expect(cards).toBe(drawable)
+    expect(cards).toBe(withGroups)
   })
 
   it('REQ-B-006: the login count is a tagged query ($queryRaw + Prisma.sql) and its value is unchanged', async () => {

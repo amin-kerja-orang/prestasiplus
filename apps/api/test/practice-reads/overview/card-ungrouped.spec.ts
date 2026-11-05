@@ -30,13 +30,14 @@ afterAll(async () => {
 })
 
 describe('practice card counts ungrouped servable questions only (D91)', () => {
-  it('BM practice card is 50: the 3 stimulus-group MCQs are not counted', async () => {
+  it('BM practice card is 53: the 3 members of the complete stimulus group are counted (S5-T03 part B, Latih Tubi serves groups)', async () => {
     const bm = await subjectId('BM')
-    expect(bank.practice(bm, offeredIds)).toBe(50)
+    expect(bank.practice(bm, offeredIds)).toBe(53)
     const grouped = Number((await db.query<{ c: string }>(`${QUESTION_COUNT_SQL} AND v.subject_id = $1 AND q.group_id IS NOT NULL`, [bm]))[0]?.c)
     expect(grouped).toBe(3)
     const ungrouped = Number((await db.query<{ c: string }>(`${QUESTION_COUNT_SQL} AND v.subject_id = $1 AND q.group_id IS NULL`, [bm]))[0]?.c)
-    expect(bank.practice(bm, offeredIds)).toBe(ungrouped)
+    expect(ungrouped).toBe(50)
+    expect(bank.practice(bm, offeredIds)).toBe(ungrouped + grouped)
   })
 
   it('the login count is unchanged: it still counts the grouped members (493)', async () => {
@@ -83,7 +84,7 @@ describe('Bab card and Soalan by Chapter tile count what the chapter draw can se
     expect(Number((await db.query<{ c: string }>(`select count(*)::text c from question_versions where chapter_id is not null`))[0]?.c), 'no chaptered question is left behind').toBe(0)
   })
 
-  it('a chaptered grouped MCQ is not counted: Bab count = drawable (ungrouped) count; unchaptered ones never count', async () => {
+  it('Bab count = drawable count: a complete chaptered group counts whole (S5-T03 part B); unchaptered ones never count', async () => {
     const bm = await subjectId('BM')
     const chapters = await db.query<{ id: string; education_level_id: string }>(
       `select c.id::text id, c.education_level_id::text education_level_id from chapters c where c.subject_id = $1 order by c.id`, [bm])
@@ -115,10 +116,10 @@ describe('Bab card and Soalan by Chapter tile count what the chapter draw can se
     expect(grouped).toBe(3)
     expect(drawable).toBe(2)
     const counts = await repo.chapterQuestionCounts([chapterId])
-    expect(counts.get(chapterId)).toBe(drawable) // 2, not 5
+    expect(counts.get(chapterId)).toBe(drawable + grouped) // 5: Bab serves the whole group
     // The tile sums these per-chapter counts (OverviewService.chapterSubjects, asserted through the service in overview.spec.ts: tile = sum of levels[].count),
     // so tile = chapter-drawable, never the subject total. The facts are rebuilt AFTER the mutation here.
     const subjectTotal = new BankFacts(await repo.bankMatrix()).practice(bm, offeredIds)
-    expect(subjectTotal).toBeGreaterThan(drawable)
+    expect(subjectTotal).toBeGreaterThan(drawable + grouped)
   })
 })

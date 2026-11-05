@@ -13,7 +13,7 @@
 import type { QuestionPart } from '@pp/contract'
 
 import { directionOf, scriptOf } from '../../questions/projection'
-import type { QuestionRecord } from '../../questions/types'
+import type { QuestionRecord, StimulusRecord } from '../../questions/types'
 import type { PracticeQuestion } from '../ports'
 
 type Leaf = Extract<QuestionPart, { mode: string }>
@@ -60,7 +60,11 @@ export function servableMcq(record: QuestionRecord, { allowStimulus = false }: S
 export function toPracticeQuestion(
   record: QuestionRecord,
   contributor: PracticeQuestion['contributor'],
-  { allowStimulus = false, group = null }: ServableOptions & { group?: PracticeQuestion['stimulusGroup'] | null } = {},
+  {
+    allowStimulus = false,
+    group = null,
+    stimuli = null,
+  }: ServableOptions & { group?: PracticeQuestion['stimulusGroup'] | null; stimuli?: StimulusRecord[] | null } = {},
 ): PracticeQuestion | null {
   const m = servableMcq(record, { allowStimulus })
   if (!m.ok) return null
@@ -89,6 +93,7 @@ export function toPracticeQuestion(
     explanation: v.explanationMs,
     // Only on a surface that allows it (S1-T06): today's output keeps exactly its fields.
     ...(allowStimulus && v.stemImageId != null ? { stemImageId: v.stemImageId } : {}),
+    ...(allowStimulus && stimuli !== null ? { stimuli } : {}),
     ...(allowStimulus && record.groupId !== null && group != null ? { groupId: record.groupId, groupPosition: record.groupPosition, stimulusGroup: group } : {}),
   }
 }

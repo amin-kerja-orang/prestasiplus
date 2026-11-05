@@ -87,8 +87,9 @@ describe('counts on the full demo seed: login = cards = details = drawable', () 
       expect(new Set(drawnIds).size).toBe(drawnIds.length)
       // Everything drawn is servable: live, active, approved, an offered level.
       expect(drawn.every((r) => r.isActive && r.version.status === 'approved' && offeredIds.includes(r.version.educationLevelId ?? ''))).toBe(true)
-      // D91 (T04): `bankMatrix` has `group_id IS NULL`, so the practice card equals the drawable size per surface (BM 50, not 53).
-      expect(practiceCard, `${code} practice card = drawable`).toBe(poolCount)
+      // D91 (T04): `bankMatrix` has `group_id IS NULL`, so the practice card equals the drawable size per surface (the practice card of BM is 53 since S5-T03 part B: the complete group counts whole).
+      // S5-T03 part B: the Latih Tubi card (practice overview) serves whole groups; the SPM hub pool (M06: Databank, Latih Tubi hub, Mock K1) is still the ungrouped one.
+      expect(practiceCard, `${code} practice card = drawable + complete-group members`).toBe(poolCount + (code === 'BM' ? 3 : 0))
       // The login SQL counts every servable question of any activity (stimulus-group members included), so it is an upper bound.
       expect(servableInDb, `${code} login SQL >= drawable`).toBeGreaterThanOrEqual(poolCount)
       cards[code] = { ...(cards[code] as object), gapPracticeCardVsDrawable: practiceCard - poolCount }
@@ -109,12 +110,11 @@ describe('counts on the full demo seed: login = cards = details = drawable', () 
     console.log(`T05 COUNTS ${JSON.stringify(report)}`)
     expect(loginCount, 'login count = drawable count over all subjects').toBe(drawableAll)
     expect(loginCount, 'login "N+ Soalan" (D91: every servable question of any activity)').toBe(493)
-    // Known counts on the demo seed: card = details = drawable per subject (BM 50, MATH 54, SCI 50).
+    // Known counts on the demo seed: card = details = drawable per subject (hub BM 50, MATH 54, SCI 50; the practice card of BM is 53).
     const known = { BM: 50, MATH: 54, SCI: 50 } as const
     for (const code of SUBJECTS) {
       const n = known[code]
       expect(cards[code], `${code} card = details = drawable = ${String(n)}`).toMatchObject({
-        practiceCard: n,
         databank: n,
         latihTubiCard: n,
         details: n,

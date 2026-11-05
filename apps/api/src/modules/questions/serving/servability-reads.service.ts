@@ -255,13 +255,18 @@ export class ServabilityReadsService {
    * is the number of lane rows with a reason.
    */
   private async spmDraw(): Promise<{ bySubject: Map<string, number>; databankServed: number }> {
+    // Two shapes since S5-T03 part B: Latih Tubi SPM serves figures and whole groups, Databank is still text-only (S3-T07), so each has its own draw.
     const live = this.questions.scopeSql({ ...filterOf('latih_tubi_spm'), status: SERVABLE_STATUS, active: true }, false)
-    const rows = await this.db.$queryRaw<{ subject_id: bigint | null; n: number; in_lane: number }[]>`
-      SELECT v.subject_id AS subject_id, count(*)::int AS n, (count(*) FILTER (WHERE ${databankServedPredicate()}))::int AS in_lane
-        ${live.from} WHERE ${live.where} GROUP BY 1`
+    const databank = this.questions.scopeSql({ ...filterOf('databank'), status: SERVABLE_STATUS, active: true }, false)
+    const [rows, lane] = await Promise.all([
+      this.db.$queryRaw<{ subject_id: bigint | null; n: number }[]>`
+        SELECT v.subject_id AS subject_id, count(*)::int AS n ${live.from} WHERE ${live.where} GROUP BY 1`,
+      this.db.$queryRaw<{ in_lane: number }[]>`
+        SELECT (count(*) FILTER (WHERE ${databankServedPredicate()}))::int AS in_lane ${databank.from} WHERE ${databank.where}`,
+    ])
     return {
       bySubject: new Map(rows.flatMap((r) => (r.subject_id === null ? [] : [[idToString(r.subject_id), r.n] as const]))),
-      databankServed: rows.reduce((n, r) => n + r.in_lane, 0),
+      databankServed: lane[0]?.in_lane ?? 0,
     }
   }
 

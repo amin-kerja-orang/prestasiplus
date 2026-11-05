@@ -36,7 +36,7 @@ import { mapBe09Question, UnsupportedQuestionError, type BridgeMedia } from '../
 import { servableMcq } from '../../practice/question-bridge/be09-practice-mapping'
 import { OFFERED_LEVEL_CODES } from '../../practice/rules'
 import { SERVABLE_STATUS } from '../learner-visibility'
-import type { QuestionRecord } from '../types'
+import type { QuestionRecord, StimulusGroupRecord } from '../types'
 import type { ServabilityFacts } from './types'
 
 /** Statuses a pupil can be served from: `approved` only (ADR-0027, R1-B01); the one constant of `learner-visibility`. */
@@ -46,11 +46,11 @@ export const SERVABLE_STATUSES: readonly string[] = [SERVABLE_STATUS]
  * The surfaces that serve figure questions and whole stimulus groups (D105, S1-T06). On a surface in this set a question outside a
  * group, with or without a figure, and a member of a COMPLETE group are served (`wholeGroups`, whole-group predicate); on a surface
  * NOT in it the text-only practice shape holds and `has_stimulus` / `has_option_image` explain a refusal.
- * Starts as what already renders groups today: Bijak papers (`simulasi_paper`) and the Jana set (`jana_kertas`). S5-T03 adds
- * `latih_tubi_spm` and `bab` in the PR of its Part B (QuizRunner.vue), S3-T07 adds `databank` (one line each, cross-sector).
+ * Bijak papers (`simulasi_paper`) and the Jana set (`jana_kertas`) render groups; S5-T03 part B added `latih_tubi_spm` and `bab`
+ * (QuizRunner.vue renders the S8-T02 group, the last flip); S3-T07 adds `databank` (one line, cross-sector).
  * `simulasi_kuiz` reads its own mapper and is not decided by this set. Games (`permainan`) are never in it (FR-X1-4e, 46 section 5.1).
  */
-export const GROUP_SURFACES: readonly ServabilityActivity[] = ['simulasi_paper', 'jana_kertas']
+export const GROUP_SURFACES: readonly ServabilityActivity[] = ['simulasi_paper', 'jana_kertas', 'latih_tubi_spm', 'bab']
 
 /** Every INCLUDE surface of 46 section 5.1 among the six activities: what the unit tests run with. */
 export const ALL_GROUP_SURFACES: readonly ServabilityActivity[] = ['latih_tubi_spm', 'databank', 'bab', 'simulasi_paper', 'simulasi_kuiz', 'jana_kertas']
@@ -171,18 +171,20 @@ function drillShapeReasons(f: ServabilityFacts, record: QuestionRecord, activity
   return surfaces.includes(activity) ? groupSurfaceShapeReasons(f, record, activity) : practiceShapeReasons(record, activity)
 }
 
-/** What `refusalsOf` of the Bijak bridge would report for the live version: the mapper's refusal, or null when it is served. */
-export function bridgeRefusal(f: ServabilityFacts, record: QuestionRecord | null = f.live): UnsupportedQuestionError | null {
-  const live = record
-  if (live === null) return null
-  const media: BridgeMedia = { tokens: f.fileTokens, outside: f.outside }
+/** What `refusalsOf` of the Bijak bridge would report for a version: the mapper's refusal, or null when it is served. One rule for the admin read and the practice drills. */
+export function bridgeRefusalOf(record: QuestionRecord, group: StimulusGroupRecord | null, media: BridgeMedia): UnsupportedQuestionError | null {
   try {
-    mapBe09Question(live, f.group, { subjectCode: '', unitLabel: '', unitCode: null }, media)
+    mapBe09Question(record, group, { subjectCode: '', unitLabel: '', unitCode: null }, media)
     return null
   } catch (e) {
     if (e instanceof UnsupportedQuestionError) return e
     throw e
   }
+}
+
+/** The same verdict from the loaded servability facts. */
+export function bridgeRefusal(f: ServabilityFacts, record: QuestionRecord | null = f.live): UnsupportedQuestionError | null {
+  return record === null ? null : bridgeRefusalOf(record, f.group, { tokens: f.fileTokens, outside: f.outside })
 }
 
 function bridgeReasons(f: ServabilityFacts, activity: ServabilityActivity, record: QuestionRecord | null = f.live): ServabilityReason[] {

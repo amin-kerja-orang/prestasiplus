@@ -29,7 +29,15 @@ const made: Record<string, string> = {}
 let seq = 0
 
 const q = (sql: string, params: unknown[] = []) => t.db.query<{ id: string }>(sql, params)
-const sourceOf = (surfaces: readonly ServabilityActivity[]) => new Be09PracticeQuestionSource(repo, { getMany: () => Promise.resolve([]) } as unknown as UsersRepository, surfaces)
+/** The surface list before S5-T03 part B flipped the Latih Tubi and Bab drills (what the "no drill" regression runs with). */
+const BEFORE_DRILLS: readonly ServabilityActivity[] = ['simulasi_paper', 'jana_kertas']
+const files = {
+  publicIdsOf: async (ids: readonly string[]) => {
+    const rows = ids.length === 0 ? [] : await t.db.query<{ id: string; public_id: string }>(`select id::text id, public_id from files where id = any($1::bigint[])`, [ids])
+    return new Map(rows.map((r) => [r.id, r.public_id]))
+  },
+}
+const sourceOf = (surfaces: readonly ServabilityActivity[]) => new Be09PracticeQuestionSource(repo, { getMany: () => Promise.resolve([]) } as unknown as UsersRepository, surfaces, files)
 
 async function fileRow(): Promise<string> {
   seq += 1
@@ -83,7 +91,7 @@ beforeAll(async () => {
   await publish('optionImage')
   await q(`update part_options set image_file_id = $2 where id = (select o.id from part_options o join question_parts p on p.id = o.part_id join question_versions v on v.id = p.question_version_id where v.question_id = $1 order by o.id limit 1)`, [made.optionImage, await fileRow()])
 
-  today = sourceOf(GROUP_SURFACES)
+  today = sourceOf(BEFORE_DRILLS)
   ready = sourceOf(WITH_DRILLS)
 }, 180_000)
 
@@ -92,8 +100,9 @@ afterAll(async () => {
 })
 
 describe('today\'s surfaces: behaviour unchanged (regression)', () => {
-  it('the drills are not group surfaces', () => {
-    for (const d of DRILLS) expect(GROUP_SURFACES).not.toContain(d)
+  it('S5-T03 part B: Latih Tubi and Bab are group surfaces, Databank is not (S3-T07)', () => {
+    expect(GROUP_SURFACES).toEqual(expect.arrayContaining(['latih_tubi_spm', 'bab']))
+    expect(GROUP_SURFACES).not.toContain('databank')
   })
 
   it('a draw serves the ungrouped text questions only; a group member, a figure and an option image are never drawn', async () => {
@@ -109,7 +118,7 @@ describe('today\'s surfaces: behaviour unchanged (regression)', () => {
   })
 
   it('the overview cards count ungrouped questions only', async () => {
-    const repoOv = new OverviewRepository({ client: t.db.prisma } as never)
+    const repoOv = new OverviewRepository({ client: t.db.prisma } as never, BEFORE_DRILLS)
     const cells = await repoOv.bankMatrix()
     expect(cells.filter((c) => c.subjectId === tag.subjectId).reduce((s, c) => s + c.n, 0)).toBe(6 + 2) // + the figure and the option-image question (ungrouped)
     expect((await repoOv.chapterQuestionCounts([chapterId])).get(chapterId)).toBe(8)
@@ -188,8 +197,8 @@ describe('with the drills in the surface list: whole groups and figures', () => 
     // A mode with no drill surface (revision, mission, remedial) stays text-only, even with the drills in the list.
     expect([...(await ready.live(wanted)).keys()]).toEqual([])
     // Only the drill that is in the list: a list with `bab` alone serves nothing extra on Latih Tubi.
-    expect([...(await sourceOf([...GROUP_SURFACES, 'bab']).live(wanted, 'latih_tubi_spm')).keys()]).toEqual([])
-    expect([...(await sourceOf([...GROUP_SURFACES, 'bab']).live(wanted, 'bab')).keys()].sort()).toEqual([...wanted].sort())
+    expect([...(await sourceOf([...BEFORE_DRILLS, 'bab']).live(wanted, 'latih_tubi_spm')).keys()]).toEqual([])
+    expect([...(await sourceOf([...BEFORE_DRILLS, 'bab']).live(wanted, 'bab')).keys()].sort()).toEqual([...wanted].sort())
   })
 
   it('chapterPage: a group with an answered member is left for the history fill; whole groups only, within the limit', async () => {

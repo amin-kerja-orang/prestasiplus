@@ -57520,12 +57520,139 @@
           },
           "text": {
             "type": "string"
+          },
+          "imageId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Option figure file id (shown through /api/files/<imageId>); only on a drill surface that serves figures (S1 servability, S5-T03 part B)."
           }
         },
         "required": [
           "id",
           "label",
           "text"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeStimulus": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "passage",
+              "image",
+              "diagram",
+              "table",
+              "map",
+              "infographic",
+              "graph"
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "text": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "caption": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "alt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "imageId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Picture file id, shown through /api/files/<imageId>."
+          },
+          "table": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "head": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "required": [
+              "head",
+              "rows"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "label",
+          "text",
+          "caption",
+          "alt",
+          "source",
+          "imageId",
+          "table"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeQuizGroup": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "index": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "1-based position of this member in the served group."
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Members served (a group is served whole or not at all)."
+          }
+        },
+        "required": [
+          "id",
+          "index",
+          "size"
         ],
         "additionalProperties": false
       },
@@ -57581,6 +57708,42 @@
             "items": {
               "$ref": "#/components/schemas/PracticeQuizOption"
             }
+          },
+          "stimuli": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeStimulus"
+            },
+            "description": "The stimuli of the question (a group member carries the group stimuli; empty when none). Shown once per group."
+          },
+          "group": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "index": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "1-based position of this member in the served group."
+              },
+              "size": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Members served (a group is served whole or not at all)."
+              }
+            },
+            "required": [
+              "id",
+              "index",
+              "size"
+            ],
+            "additionalProperties": false,
+            "description": "Set for a stimulus-group member, else null."
           }
         },
         "required": [
@@ -57591,7 +57754,9 @@
           "wrongTimes",
           "hasDskp",
           "contributor",
-          "options"
+          "options",
+          "stimuli",
+          "group"
         ],
         "additionalProperties": false
       },

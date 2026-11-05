@@ -139,8 +139,33 @@ export const PracticeQuizOptionSchema = z
     id: z.number().int().min(0).meta({ description: 'Zero-based option index; sent back as selectedOptionId.' }),
     label: z.string().min(1).max(4),
     text: z.string(),
+    imageId: z.string().nullable().optional().meta({ description: 'Option figure file id (shown through /api/files/<imageId>); only on a drill surface that serves figures (S1 servability, S5-T03 part B).' }),
   })
   .meta({ id: 'PracticeQuizOption' })
+
+/** A stimulus of a served question or group (S5-T03 part B): the Studio `WireStimulus` under the card's field names. */
+export const PracticeStimulusSchema = z
+  .strictObject({
+    id: z.string().min(1),
+    kind: z.enum(['passage', 'image', 'diagram', 'table', 'map', 'infographic', 'graph']),
+    label: z.string(),
+    text: z.string().nullable(),
+    caption: z.string().nullable(),
+    alt: z.string().nullable(),
+    source: z.string().nullable(),
+    imageId: z.string().nullable().meta({ description: 'Picture file id, shown through /api/files/<imageId>.' }),
+    table: z.strictObject({ head: z.array(z.string()), rows: z.array(z.array(z.string())) }).nullable(),
+  })
+  .meta({ id: 'PracticeStimulus' })
+export type PracticeStimulus = z.infer<typeof PracticeStimulusSchema>
+
+export const PracticeQuizGroupSchema = z
+  .strictObject({
+    id: z.string().min(1),
+    index: z.number().int().min(1).meta({ description: '1-based position of this member in the served group.' }),
+    size: z.number().int().min(1).meta({ description: 'Members served (a group is served whole or not at all).' }),
+  })
+  .meta({ id: 'PracticeQuizGroup' })
 
 /** Served question. Strict on purpose: `correctAnswer`/`explanation` must never appear before a check. */
 export const PracticeQuizQuestionSchema = z
@@ -156,6 +181,10 @@ export const PracticeQuizQuestionSchema = z
       .nullable()
       .meta({ description: 'Teacher who wrote the question ("Soalan oleh:"), else null.' }),
     options: z.array(PracticeQuizOptionSchema),
+    stimuli: z.array(PracticeStimulusSchema).meta({
+      description: 'The stimuli of the question (a group member carries the group stimuli; empty when none). Shown once per group.',
+    }),
+    group: PracticeQuizGroupSchema.nullable().meta({ description: 'Set for a stimulus-group member, else null.' }),
   })
   .meta({ id: 'PracticeQuizQuestion' })
 export type PracticeQuizQuestion = z.infer<typeof PracticeQuizQuestionSchema>

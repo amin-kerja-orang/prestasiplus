@@ -6,7 +6,9 @@
 import { API_ERROR_CODES, ApiError } from '@/api'
 import type { QuizOptionState } from '@/ds'
 
-import type { StartSessionResponse } from '../../api/types'
+import type { StimulusData } from '../../../../components/question-display'
+
+import type { QuizStimulus, StartSessionResponse } from '../../api/types'
 import type { QuizAnswerRecord, QuizLabels } from './quiz-types'
 
 /** `MM:SS` of a number of seconds (live `formatTime`). */
@@ -131,4 +133,22 @@ export function hasJsonBody(err: unknown): boolean {
 /** `true` when a failed check call is the free-trial limit (402 / `TRIAL_EXHAUSTED`): the answer is not checked. */
 export function isTrialExhausted(err: unknown): boolean {
   return err instanceof ApiError && (err.status === 402 || err.code === 'TRIAL_EXHAUSTED')
+}
+
+/** `/api/files/<imageId>`: where a served picture is loaded from. */
+export const fileSrc = (imageId: string): string => `/api/files/${imageId}`
+
+/** A served stimulus in the shape of the shared question display (S8-T02 `StimulusGroup`). */
+export function toStimulusData(s: QuizStimulus): StimulusData {
+  return {
+    id: s.id,
+    kind: s.kind,
+    ...(s.label ? { label: s.label } : {}),
+    ...(s.text ? { text: s.text } : {}),
+    ...(s.source ? { source: s.source } : {}),
+    ...(s.caption ? { caption: s.caption } : {}),
+    ...(s.alt ? { alt: s.alt } : {}),
+    ...(s.imageId ? { src: fileSrc(s.imageId) } : {}),
+    ...(s.table ? { table: { head: s.table.head, rows: s.table.rows } } : {}),
+  }
 }

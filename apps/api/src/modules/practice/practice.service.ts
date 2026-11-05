@@ -18,6 +18,7 @@ import { listMeta } from '../../common/http/respond'
 import { toMytTimestamp } from '../../common/time/myt'
 import { CurriculumRepository } from '../curriculum'
 import { SubscriptionService, TRIAL_LIMIT } from '../subscriptions'
+import type { StimulusRecord } from '../questions/types'
 import { alreadySubmitted, invalidAnswer, isUniqueViolation, noAttemptsLeft, notFound, remedialDone, trialExhausted } from './errors'
 import { type PracticeQuestion, PracticePorts, practiceRewardSource, versionKey } from './ports'
 import {
@@ -132,7 +133,10 @@ export class PracticeService {
   /** The response of a session that already exists (replay, mission resume): its served versions, not the live ones. */
   private async replay(userId: string, session: SessionRecord): Promise<StartSessionResponse> {
     const served = await this.repo.sessionQuestions(session.id)
-    const versions = await this.ports.questions.versions(served.map((s) => ({ questionId: s.questionId, versionNo: s.versionNo })))
+    const versions = await this.ports.questions.versions(
+      served.map((s) => ({ questionId: s.questionId, versionNo: s.versionNo })),
+      { display: true },
+    )
     const questions = served
       .map((s) => versions.get(versionKey(s.questionId, s.versionNo)))
       .filter((q): q is PracticeQuestion => q !== undefined)
@@ -167,7 +171,9 @@ export class PracticeService {
         wrongTimes: wrong.get(q.id) ?? 0,
         hasDskp: q.hasDskp,
         contributor: q.contributor ? { name: q.contributor.name, profileUrl: q.contributor.profileUrl } : null,
-        options: q.options.map((o, i) => ({ id: i, label: o.label, text: o.text })),
+        options: q.options.map((o, i) => ({ id: i, label: o.label, text: o.text, ...(o.imageId === undefined ? {} : { imageId: o.imageId }) })),
+        stimuli: (q.stimuli ?? []).map(wireStimulus),
+        group: groupOf(q),
       })),
       ...(s.mode === 'revision' && revisionMeta ? { revisionMeta } : {}),
       ...(s.mode === 'question_set' ? { timeLimitSec: s.timeLimitSec } : {}),
@@ -415,4 +421,32 @@ export class PracticeService {
     }))
     return { data, meta: { ...listMeta(page, pageSize, total), activeType, stats } }
   }
+}
+
+/** The wire `Stimulus` (S5-T03 part B): the Studio shape under the card's field names; the picture is shown through `/api/files/<imageId>`. */
+export function wireStimulus(st: StimulusRecord) {
+  const t = st.tableData as { head?: unknown; rows?: unknown } | null | undefined
+  const table =
+    st.kind === 'table' && t && Array.isArray(t.head) && Array.isArray(t.rows)
+      ? { head: (t.head as unknown[]).map(String), rows: (t.rows as unknown[]).map((r) => (Array.isArray(r) ? (r as unknown[]).map(String) : [])) }
+      : null
+  return {
+    id: st.id,
+    kind: st.kind,
+    label: st.label,
+    text: st.bodyMs,
+    caption: st.caption ?? null,
+    alt: st.alt,
+    source: st.sourceCitation ?? null,
+    imageId: st.assetFileId,
+    table,
+  }
+}
+
+/** `{id, index, size}` of a stimulus-group member (`index` is 1-based among the members served), else null. */
+export function groupOf(q: PracticeQuestion): { id: string; index: number; size: number } | null {
+  if (q.groupId === undefined || q.stimulusGroup === undefined) return null
+  const members = q.stimulusGroup.questionIds
+  const at = members.indexOf(q.id)
+  return at < 0 ? null : { id: q.groupId, index: at + 1, size: members.length }
 }

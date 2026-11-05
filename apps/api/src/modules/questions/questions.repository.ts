@@ -1568,7 +1568,7 @@ export class QuestionsRepository {
       conds.push(key === null ? Prisma.sql`FALSE` : Prisma.sql`q.id > ${key}`)
     }
     if (filter.ungrouped) conds.push(Prisma.sql`q.group_id IS NULL`)
-    if (filter.wholeGroups) conds.push(Prisma.sql`(q.group_id IS NULL OR ${groupCompleteSql(Prisma.sql`q.group_id`)})`)
+    if (filter.wholeGroups) conds.push(Prisma.sql`(q.group_id IS NULL OR q.group_id = ANY(ARRAY(SELECT sg.id FROM stimulus_groups sg WHERE ${groupCompleteSql(Prisma.sql`sg.id`)})))`)
     if (filter.difficultyTps !== undefined) {
       const tps = filter.difficultyTps.filter((n) => Number.isSafeInteger(n))
       conds.push(tps.length === 0 ? Prisma.sql`FALSE` : Prisma.sql`v.difficulty_tp IN (${Prisma.join(tps)})`)

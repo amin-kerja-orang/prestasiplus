@@ -132,15 +132,19 @@ describe('servability rules (pure)', () => {
     expect(evaluate(noDatabank, 'latih_tubi_spm').served).toBe(true)
   })
 
-  it('Bab needs a chapter; text-only shape reasons are classified (D87 U2)', () => {
+  it('Bab needs a chapter; text-only shape reasons are classified on a surface outside GROUP_SURFACES (D87 U2; Bab joined it in S5-T03 part B, so the list is passed)', () => {
+    const textOnly = (f: ServabilityFacts) => evaluate(f, 'bab', ['simulasi_paper', 'jana_kertas']).reasons.map((r) => r.code)
     const noChapter = record({}, { chapterId: null })
-    expect(codes(facts({ live: noChapter, latest: noChapter }), 'bab')).toEqual(['no_chapter'])
+    expect(textOnly(facts({ live: noChapter, latest: noChapter }))).toEqual(['no_chapter'])
     const grouped = record({ groupId: '5' })
-    expect(codes(facts({ live: grouped, latest: grouped }), 'bab')).toEqual(['has_stimulus'])
+    expect(textOnly(facts({ live: grouped, latest: grouped }))).toEqual(['has_stimulus'])
     const withImage = record({}, { parts: [{ ...mcqPart, options: mcqPart.options.map((o, i) => ({ ...o, imageId: i === 0 ? '9' : null })) }] })
-    expect(codes(facts({ live: withImage, latest: withImage }), 'bab')).toEqual(['has_option_image'])
+    expect(textOnly(facts({ live: withImage, latest: withImage }))).toEqual(['has_option_image'])
     const structured = record({}, { type: 'structured', parts: [mcqPart, mcqPart] })
-    expect(codes(facts({ live: structured, latest: structured }), 'bab')).toEqual(['shape_unsupported'])
+    expect(textOnly(facts({ live: structured, latest: structured }))).toEqual(['shape_unsupported'])
+    // S5-T03 part B: with the shipped list a group member and an option image are not refused by Bab.
+    expect(codes(facts({ live: grouped, latest: grouped }), 'bab')).not.toContain('has_stimulus')
+    expect(codes(facts({ live: withImage, latest: withImage }), 'bab')).not.toContain('has_option_image')
   })
 
   it('Simulasi (kertas) needs a published paper and the bridge to accept the question', () => {
