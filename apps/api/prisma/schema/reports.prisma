@@ -100,6 +100,10 @@ model HeadcountConfig {
   /// Config level TOV and RS carried by the source system; read by no v2 route (pupil values live on the entries).
   legacyTov        Decimal? @map("legacy_tov") @db.Decimal(5, 2)
   legacyRs         Decimal? @map("legacy_rs") @db.Decimal(5, 2)
+  /// Class default TOV (0 to 100, check): an entry with a null TOV reads it ("Simpan Sasaran", DM-49).
+  defaultTov       Decimal? @map("default_tov") @db.Decimal(5, 2)
+  /// Class default ETR / "RS (Sasaran)" (0 to 100, check): an entry with a null ETR reads it.
+  defaultEtr       Decimal? @map("default_etr") @db.Decimal(5, 2)
   createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   legacySource     String?  @map("legacy_source")
@@ -141,6 +145,7 @@ model HeadcountEntryMark {
   entryId    BigInt   @map("entry_id")
   /// 1 to 5 (check).
   checkpoint Int      @db.SmallInt
+  /// Not read since S10-T02: OTR targets are computed from the resolved TOV and ETR (HC-2).
   target     Decimal? @db.Decimal(5, 2)
   actual     Decimal? @db.Decimal(5, 2)
 
