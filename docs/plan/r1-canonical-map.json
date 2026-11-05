@@ -1715,6 +1715,16 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/videos|",
+      "path": "/admin/videos",
+      "name": null,
+      "status": "canonical",
+      "sector": "S5",
+      "component": "src/modules/m09-content/pages/VideoAdminListPage.vue",
+      "file": "src/modules/m09-content/routes/admin-media.ts",
+      "approved_by_card": "S5-T08"
+    },
+    {
       "key": "/admin/audio-kbat|",
       "path": "/admin/audio-kbat",
       "name": null,
@@ -11302,6 +11312,16 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/me/profile-activity",
+      "method": "GET",
+      "path": "/api/me/profile-activity",
+      "api_id": "API-MUR-02",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/src/modules/account/account.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "GET /api/me/settings",
       "method": "GET",
       "path": "/api/me/settings",
@@ -12015,16 +12035,6 @@
       "key": "GET /api/kelas-saya",
       "method": "GET",
       "path": "/api/kelas-saya",
-      "api_id": "API-MUR-04",
-      "status": "canonical",
-      "sector": "S5",
-      "file": "apps/api/src/modules/classes/kelas-saya.controller.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "POST /api/kelas-saya/join",
-      "method": "POST",
-      "path": "/api/kelas-saya/join",
       "api_id": "API-MUR-04",
       "status": "canonical",
       "sector": "S5",

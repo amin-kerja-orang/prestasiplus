@@ -2457,6 +2457,25 @@
           },
           "uploader": {
             "$ref": "#/components/schemas/VideoUploader"
+          },
+          "category": {
+            "$ref": "#/components/schemas/VideoCategory"
+          },
+          "categoryLabel": {
+            "type": "string"
+          },
+          "subject": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ContentSubjectRef"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
           }
         },
         "required": [
@@ -2466,7 +2485,10 @@
           "thumbnailUrl",
           "views",
           "createdAt",
-          "uploader"
+          "uploader",
+          "category",
+          "categoryLabel",
+          "subject"
         ],
         "additionalProperties": false
       },
@@ -2499,24 +2521,6 @@
           "uploader": {
             "$ref": "#/components/schemas/VideoUploader"
           },
-          "videoUrl": {
-            "type": "string"
-          },
-          "embedUrl": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "platform": {
-            "$ref": "#/components/schemas/VideoPlatform"
-          },
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "category": {
             "$ref": "#/components/schemas/VideoCategory"
           },
@@ -2534,6 +2538,24 @@
                   "null"
                 ]
               }
+            ]
+          },
+          "videoUrl": {
+            "type": "string"
+          },
+          "embedUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "platform": {
+            "$ref": "#/components/schemas/VideoPlatform"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
             ]
           },
           "visibility": {
@@ -2559,13 +2581,13 @@
           "views",
           "createdAt",
           "uploader",
+          "category",
+          "categoryLabel",
+          "subject",
           "videoUrl",
           "embedUrl",
           "platform",
           "description",
-          "category",
-          "categoryLabel",
-          "subject",
           "visibility",
           "canManage",
           "related"
@@ -2713,7 +2735,7 @@
         "properties": {
           "search": {
             "type": "string",
-            "description": "Title contains."
+            "description": "Title or description contains (case-insensitive)."
           },
           "category": {
             "type": "string",
@@ -2729,6 +2751,12 @@
           "page": {
             "type": "integer",
             "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Rows per page, 1..50; default 24 (the admin list asks for 25)."
           }
         }
       },
@@ -2756,7 +2784,8 @@
           "title": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 255
+            "maxLength": 255,
+            "description": "Max 255 on the wire; the server answers 422 \"Tajuk video tidak boleh melebihi 150 aksara.\" above 150."
           },
           "description": {
             "type": [
@@ -2784,14 +2813,13 @@
               "global",
               "school"
             ],
-            "description": "`school` needs the uploader to have a video-form school, else 422 \"Anda tiada sekolah untuk dikongsi.\" under fields.visibility."
+            "description": "Ignored: the server sets it by role (teacher = `school` with the teacher's school, else 422 \"Anda tiada sekolah untuk dikongsi.\" under fields.visibility; admin = `global`)."
           }
         },
         "required": [
           "videoUrl",
           "title",
-          "category",
-          "visibility"
+          "category"
         ]
       },
       "VideoUpdateRequest": {
@@ -2806,7 +2834,8 @@
           "title": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 255
+            "maxLength": 255,
+            "description": "Max 255 on the wire; the server answers 422 \"Tajuk video tidak boleh melebihi 150 aksara.\" above 150."
           },
           "description": {
             "type": [
@@ -2834,14 +2863,13 @@
               "global",
               "school"
             ],
-            "description": "`school` needs the uploader to have a video-form school, else 422 \"Anda tiada sekolah untuk dikongsi.\" under fields.visibility."
+            "description": "Ignored: the server sets it by role (teacher = `school` with the teacher's school, else 422 \"Anda tiada sekolah untuk dikongsi.\" under fields.visibility; admin = `global`)."
           }
         },
         "required": [
           "videoUrl",
           "title",
-          "category",
-          "visibility"
+          "category"
         ]
       },
       "VideoFormContext": {
@@ -28685,6 +28713,14 @@
               "null"
             ]
           },
+          "aspiration": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 255,
+            "description": "Student aspiration (\"Cita-Cita Saya\"), max 255; null when not set."
+          },
           "avatarUrl": {
             "type": [
               "string",
@@ -29034,7 +29070,14 @@
               "string",
               "null"
             ],
-            "maxLength": 500
+            "maxLength": 1000
+          },
+          "aspiration": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 255
           },
           "grade": {
             "type": [
@@ -29055,10 +29098,7 @@
             "description": "School id. Accepted and ignored by the server for every role (API-AUTH-09).",
             "example": "1042"
           }
-        },
-        "required": [
-          "name"
-        ]
+        }
       },
       "AccountPasswordChangeRequest": {
         "type": "object",
@@ -29241,6 +29281,227 @@
           "questionCount",
           "subjectCount",
           "levelCount"
+        ],
+        "additionalProperties": false
+      },
+      "AccountProfileTiles": {
+        "type": "object",
+        "properties": {
+          "coins": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "streakDays": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "practiceDays": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sessions": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Completed sessions of every mode."
+          },
+          "accuracy": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Pooled correct / answered x 100, one decimal; null with 0 answers."
+          },
+          "streakBest": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "streakToday": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The current streak when the last activity is today (Malaysia day), else 0."
+          }
+        },
+        "required": [
+          "coins",
+          "streakDays",
+          "level",
+          "practiceDays",
+          "sessions",
+          "accuracy",
+          "streakBest",
+          "streakToday"
+        ],
+        "additionalProperties": false
+      },
+      "AccountProfileCalendarDay": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "YYYY-MM-DD, Malaysia day."
+          },
+          "answered": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sessions": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Completed sessions that day: the shade of the cell."
+          }
+        },
+        "required": [
+          "date",
+          "answered",
+          "sessions"
+        ],
+        "additionalProperties": false
+      },
+      "AccountProfileBadge": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string"
+          },
+          "unlocked": {
+            "type": "boolean"
+          },
+          "earnedAt": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "unlocked",
+          "earnedAt"
+        ],
+        "additionalProperties": false
+      },
+      "AccountProfileSession": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mode": {
+            "$ref": "#/components/schemas/PracticeMode"
+          },
+          "modeLabel": {
+            "type": "string",
+            "minLength": 1
+          },
+          "questions": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "correct": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "accuracy": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100
+          },
+          "coins": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "at": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "mode",
+          "modeLabel",
+          "questions",
+          "correct",
+          "accuracy",
+          "coins",
+          "at"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeMode": {
+        "type": "string",
+        "enum": [
+          "random",
+          "chapter",
+          "revision",
+          "past_year",
+          "latih_tubi",
+          "ramalan",
+          "mission",
+          "remedial",
+          "question_set",
+          "pksk",
+          "databank",
+          "tracking_a"
+        ]
+      },
+      "AccountProfileActivity": {
+        "type": "object",
+        "properties": {
+          "tiles": {
+            "$ref": "#/components/schemas/AccountProfileTiles"
+          },
+          "calendar30d": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountProfileCalendarDay"
+            }
+          },
+          "badges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountProfileBadge"
+            }
+          },
+          "recentSessions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccountProfileSession"
+            },
+            "maxItems": 10
+          },
+          "publicProfilePath": {
+            "type": "string",
+            "pattern": "^\\/pelajar\\/.+"
+          }
+        },
+        "required": [
+          "tiles",
+          "calendar30d",
+          "badges",
+          "recentSessions",
+          "publicProfilePath"
         ],
         "additionalProperties": false
       },
@@ -64615,23 +64876,6 @@
           "rows"
         ]
       },
-      "PracticeMode": {
-        "type": "string",
-        "enum": [
-          "random",
-          "chapter",
-          "revision",
-          "past_year",
-          "latih_tubi",
-          "ramalan",
-          "mission",
-          "remedial",
-          "question_set",
-          "pksk",
-          "databank",
-          "tracking_a"
-        ]
-      },
       "PracticeStartMode": {
         "type": "string",
         "enum": [
@@ -67098,7 +67342,7 @@
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 100,
-                "description": "Correct / answered this Monday-Sunday week, integer (BR-25)."
+                "description": "Legacy (S5-T04): correct / answered this Monday-Sunday week, integer (BR-25). The Ketepatan tile reads the top-level `accuracyPct`."
               }
             },
             "required": [
@@ -67106,6 +67350,37 @@
               "accuracyPct"
             ],
             "additionalProperties": false
+          },
+          "accuracyPct": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100,
+            "description": "The pupil's pooled accuracy: correct / answered x 100 over `practice_answers`, all modes and all time, rounded to one decimal (a whole number has no fraction, e.g. 75, 66.7); null when there are 0 answers (FR-MUR-2-2, FR-MUR-2-13, decision 11)."
+          },
+          "package": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "validUntil": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                "description": "Malaysia calendar day, YYYY-MM-DD."
+              }
+            },
+            "required": [
+              "name",
+              "validUntil"
+            ],
+            "additionalProperties": false,
+            "description": "The active package (Pakej SPM Aktif; `SubscriptionService.activePackage`, same rule as `isSubscribed`); null when none (FR-MUR-2-4, DM-35)."
           },
           "banners": {
             "type": "array",
@@ -67223,6 +67498,8 @@
           "streak",
           "wallet",
           "week",
+          "accuracyPct",
+          "package",
           "banners",
           "quests",
           "questsCompleted",
@@ -83985,15 +84262,15 @@
           "content"
         ],
         "summary": "Video library",
-        "description": "Public. A guest sees `global` videos only; a signed-in non-admin also sees `school` videos of the same school; admin sees all. 24 per page, newest first. `meta.facets` carries the category and subject counts.",
+        "description": "Public. A guest sees `global` videos only; a signed-in non-admin also sees `school` videos of the same school; admin sees all. 24 per page by default, newest first; `pageSize` (1..50) sets the page size (the admin list asks for 25). `meta.facets` carries the category and subject counts.",
         "parameters": [
           {
             "schema": {
               "type": "string",
-              "description": "Title contains."
+              "description": "Title or description contains (case-insensitive)."
             },
             "required": false,
-            "description": "Title contains.",
+            "description": "Title or description contains (case-insensitive).",
             "name": "search",
             "in": "query"
           },
@@ -84028,6 +84305,18 @@
             "required": false,
             "name": "page",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "description": "Rows per page, 1..50; default 24 (the admin list asks for 25)."
+            },
+            "required": false,
+            "description": "Rows per page, 1..50; default 24 (the admin list asks for 25).",
+            "name": "pageSize",
+            "in": "query"
           }
         ],
         "responses": {
@@ -84048,7 +84337,7 @@
           "content"
         ],
         "summary": "Publish a video link",
-        "description": "Any signed-in user publishes immediately (the mock has no approval state, OQ-API-B4-16). Platform, external id and thumbnail are parsed from the URL.",
+        "description": "admin and teacher only; other roles get 403. Publishes immediately (no approval state, OQ-API-B4-16). Visibility is set by the server (teacher: own school, admin: global), not by the body. Platform, external id and thumbnail are parsed from the URL.",
         "parameters": [
           {
             "schema": {
@@ -84074,7 +84363,7 @@
         },
         "responses": {
           "201": {
-            "description": "Created; status \"Video berjaya diterbitkan.\".",
+            "description": "Created; status \"Video ditambah.\".",
             "content": {
               "application/json": {
                 "schema": {
@@ -84108,7 +84397,7 @@
             }
           },
           "403": {
-            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin or teacher), or CSRF_INVALID.",
             "content": {
               "application/json": {
                 "schema": {
@@ -84118,7 +84407,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields. videoUrl, title, category, visibility required; description at most 1000 chars; subjectId must exist. Also \"Anda tiada sekolah untuk dikongsi.\" under fields.visibility when `school` is chosen and the uploader has no video-form school. Missing: \"Medan ini diperlukan.\"; invalid: \"Medan ini tidak sah.\". Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
+            "description": "VALIDATION_ERROR with fields. videoUrl, title (at most 150 chars) and category required (exact BM copy); a teacher link must be a YouTube video link; description at most 1000 chars; subjectId must exist. \"Anda tiada sekolah untuk dikongsi.\" when a teacher has no school. Missing: \"Medan ini diperlukan.\"; invalid: \"Medan ini tidak sah.\". Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
             "content": {
               "application/json": {
                 "schema": {
@@ -84236,7 +84525,7 @@
           "content"
         ],
         "summary": "Edit a video",
-        "description": "Uploader or admin. An invisible video is 404 before the role check; another user gets 403 \"Anda tidak dibenarkan melakukan tindakan ini.\".",
+        "description": "admin and teacher only (a teacher edits own videos); other roles get 403. An invisible video is 404 before the uploader check; another user gets 403 \"Anda tidak dibenarkan melakukan tindakan ini.\". Visibility is not changed by the body.",
         "parameters": [
           {
             "schema": {
@@ -84325,7 +84614,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields. Same rules as create, including \"Anda tiada sekolah untuk dikongsi.\". Missing: \"Medan ini diperlukan.\"; invalid: \"Medan ini tidak sah.\". Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
+            "description": "VALIDATION_ERROR with fields. Same rules as create. Missing: \"Medan ini diperlukan.\"; invalid: \"Medan ini tidak sah.\". Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
             "content": {
               "application/json": {
                 "schema": {
@@ -84341,7 +84630,7 @@
           "content"
         ],
         "summary": "Delete a video",
-        "description": "Uploader or admin. Hard delete; answers 200 with `{ deleted: 1 }` and the flash.",
+        "description": "admin and teacher only (a teacher deletes own videos); other roles get 403. Hard delete; answers 200 with `{ deleted: 1 }` and the flash.",
         "parameters": [
           {
             "schema": {
@@ -103335,100 +103624,6 @@
         }
       }
     },
-    "/kelas-saya/join": {
-      "post": {
-        "tags": [
-          "classes"
-        ],
-        "summary": "Join a class by code",
-        "description": "classCode is trimmed and compared case-insensitively. Only student (and admin) may join. The enrolment source is \"code\".",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Value of Session.csrf; required on mutating requests."
-            },
-            "required": true,
-            "description": "Value of Session.csrf; required on mutating requests.",
-            "name": "X-CSRF-Token",
-            "in": "header"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ClassJoinRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "`{ data: { classroomId }, message }`.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ClassJoinResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "FORBIDDEN: role may not join; or CSRF_INVALID.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "NOT_FOUND \"Kod kelas tidak sah.\"",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "CONFLICT \"Anda sudah menyertai kelas ini.\"",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "VALIDATION_ERROR fields.classCode \"Sila masukkan kod kelas.\"",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/battle/quick-match": {
       "post": {
         "tags": [
@@ -111252,7 +111447,7 @@
           "account"
         ],
         "summary": "Update own profile",
-        "description": "Any signed-in role, own record only. `email` and any other key in the body are ignored (BR-13). An absent key keeps the stored value; null or blank clears phone and bio. `grade`, `schoolId` and `role` are accepted and ignored for every role (API-AUTH-09). D57a: this write route is rate limited (RATE_LIMITED, retryAfter, Retry-After); the per-user limit is a platform setting of the implementation.",
+        "description": "Any signed-in role, own record only. `email` and any other key in the body are ignored (BR-13). An absent key keeps the stored value; null or blank clears phone, bio and aspiration. `grade`, `schoolId` and `role` are accepted and ignored for every role (API-AUTH-09). D57a: this write route is rate limited (RATE_LIMITED, retryAfter, Retry-After); the per-user limit is a platform setting of the implementation.",
         "parameters": [
           {
             "schema": {
@@ -111321,7 +111516,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields (one message per field, the first failing rule). name required, max 255; phone max 14; bio max 500; grade \"The selected grade is invalid.\" and school \"The selected school id is invalid.\" when the value has the wrong type (a valid value is ignored). Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
+            "description": "VALIDATION_ERROR with fields (one message per field, the first failing rule). name required, max 255; phone max 14; bio max 1000; aspiration max 255; grade \"The selected grade is invalid.\" and school \"The selected school id is invalid.\" when the value has the wrong type (a valid value is ignored). Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
             "content": {
               "application/json": {
                 "schema": {
@@ -111341,6 +111536,66 @@
                 }
               }
             },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/profile-activity": {
+      "get": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Own profile activity (API-MUR-02)",
+        "description": "Student role only, own data only (there is no user id parameter). Tiles, the 30-day calendar (exactly 30 Malaysia days, today last; the shade uses `sessions`), every configured badge (locked ones greyed: `unlocked` false, `earnedAt` null) and the newest 10 sessions of every mode with the BM mode name. `tiles.accuracy` is pooled correct / answered x 100 with one decimal, null with 0 answers. Any other role is 403 FORBIDDEN. no-store.",
+        "responses": {
+          "200": {
+            "description": "The pupil own activity.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store (the body carries a credential or token).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AccountProfileActivity"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (a role other than student), or PASSWORD_CHANGE_REQUIRED (shared common code, 403): while the account must change its password (session.mustChangePassword) every authenticated route except GET /session, PUT /me/password and POST /auth/logout answers this.",
             "content": {
               "application/json": {
                 "schema": {
