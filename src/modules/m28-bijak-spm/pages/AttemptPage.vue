@@ -734,16 +734,17 @@ const feedback = computed(() => {
           />
 
           <!-- [PROPOSED] "Tukar jawapan": a marked option does not react, so the pupil needs a way back to change it before the next "Semak" (46 section 3.5). -->
-          <UButton
-            v-if="!isExam && checkLocked && !checkCapReached"
-            type="button"
-            color="neutral"
-            variant="soft"
-            class="min-h-11 self-start"
-            data-testid="check-change"
-            @click="changeAnswer"
-            >Tukar jawapan</UButton
-          >
+          <div v-if="!isExam && checkLocked && !checkCapReached">
+            <UButton
+              type="button"
+              color="neutral"
+              variant="soft"
+              class="min-h-11"
+              data-testid="check-change"
+              @click="changeAnswer"
+              >Tukar jawapan</UButton
+            >
+          </div>
 
           <UAlert
             v-if="!isExam && checkCapReached"
