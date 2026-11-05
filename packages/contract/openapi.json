@@ -87452,7 +87452,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Rekod tidak dijumpai. Ia mungkin telah dipadam.\" (unknown id).",
+            "description": "NOT_FOUND \"Rekod tidak dijumpai.\" (unknown id).",
             "content": {
               "application/json": {
                 "schema": {
@@ -87543,7 +87543,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Rekod tidak dijumpai. Ia mungkin telah dipadam.\" (unknown id).",
+            "description": "NOT_FOUND \"Rekod tidak dijumpai.\" (unknown id).",
             "content": {
               "application/json": {
                 "schema": {
@@ -87644,7 +87644,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Rekod tidak dijumpai. Ia mungkin telah dipadam.\" (unknown id).",
+            "description": "NOT_FOUND \"Rekod tidak dijumpai.\" (unknown id).",
             "content": {
               "application/json": {
                 "schema": {

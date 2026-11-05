@@ -43,7 +43,7 @@ export const QUEUE_PER_PAGE = 25
 /** Admin ticket messages with a source: ERR-REQ-01, ERR-ACC-04 (40 X10; rulings on #507). */
 export const ADMIN_TICKET_MESSAGES = {
   statusInvalid: 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.',
-  ticketNotFound: 'Rekod tidak dijumpai. Ia mungkin telah dipadam.',
+  ticketNotFound: 'Rekod tidak dijumpai.',
 } as const
 
 /** Flash after a status save, approved by the product owner (PO batch 2 on #503). */
