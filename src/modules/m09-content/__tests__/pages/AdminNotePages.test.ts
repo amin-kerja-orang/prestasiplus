@@ -211,6 +211,29 @@ describe('AdminNoteListPage (M09 S5)', () => {
     )
   })
 
+  it('note_type=summary with 5 stored RINGKASAN rows lists 5 rows (D-7)', async () => {
+    api.fetchAdminNotes.mockResolvedValue(
+      listResult(
+        Array.from({ length: 5 }, (_, i) =>
+          item(10 + i, { title: `Ringkasan ${String(i + 1)}`, noteType: 'RINGKASAN' }),
+        ),
+      ),
+    )
+    const w = await mountAt(AdminNoteListPage, '/admin/notes?note_type=summary')
+    expect(api.fetchAdminNotes).toHaveBeenCalledWith(
+      expect.objectContaining({ noteType: 'summary' }),
+      expect.anything(),
+    )
+    expect(el<HTMLSelectElement>(w, 'admin-notes-type').value).toBe('summary')
+    const rows = w.findAll('tbody tr')
+    expect(rows).toHaveLength(5)
+    for (const row of rows) {
+      expect(row.find('[data-testid=note-type]').text()).toBe('RINGKASAN')
+    }
+    expect(t(w, 'admin-notes-count').text()).toBe('Jumlah: 5 nota')
+    expect(w.find('[data-testid=admin-notes-empty]').exists()).toBe(false)
+  })
+
   it('submits the filter as a note_type query', async () => {
     const w = await mountAt(AdminNoteListPage, '/admin/notes')
     await t(w, 'admin-notes-type').setValue('full_notes')
@@ -312,6 +335,34 @@ describe('AdminNoteFormPage (M09 S6/S7, DV-M09-01)', () => {
     })
     expect(router.currentRoute.value.path).toBe('/admin/notes')
     expect(useFlashStore().pending).toEqual({ type: 'success', message: 'Nota berjaya ditambah.' })
+  })
+
+  it.each(
+    (['FORMULA', 'RINGKASAN', 'LENGKAP', 'TIPS_TRICKS'] as const).flatMap((type) =>
+      (['TINGKATAN_4', 'TINGKATAN_5'] as const).map((grade) => [type, grade] as const),
+    ),
+  )('create: type %s and grade %s post the matching body (D-1)', async (type, grade) => {
+    api.createAdminNote.mockResolvedValue({ data: NOTE, status: 'Nota berjaya ditambah.' })
+    const w = await mountAt(AdminNoteFormPage, '/form', { mode: 'create' })
+    await t(w, 'note-title').setValue(`Nota ${type}`)
+    await t(w, 'note-content').setValue('<p>Isi</p>')
+    await t(w, 'note-subject').setValue('sejarah')
+    await t(w, 'note-type').setValue(type)
+    await t(w, 'note-grade').setValue(grade)
+    await t(w, 'admin-note-form').trigger('submit')
+    await flushPromises()
+    expect(api.createAdminNote).toHaveBeenCalledTimes(1)
+    expect(api.createAdminNote).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: `Nota ${type}`,
+        content: '<p>Isi</p>',
+        subject: 'sejarah',
+        noteType: type,
+        grade,
+      }),
+    )
+    expect(w.text()).not.toContain('Ralat Pelayan')
+    expect(router.currentRoute.value.path).toBe('/admin/notes')
   })
 
   it('create: 422 shows the field message under the field and keeps the input', async () => {

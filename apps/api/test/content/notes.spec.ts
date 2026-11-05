@@ -94,6 +94,24 @@ describe('admin notes', () => {
     expect(res.body.data.noteType).toBe('MIND_MAP')
   })
 
+  describe.each([['FORMULA'], ['RINGKASAN'], ['LENGKAP'], ['TIPS_TRICKS']] as const)('note type %s (D-1)', (noteType) => {
+    it.each(['TINGKATAN_4', 'TINGKATAN_5'] as const)('creates, updates and reads back at grade %s with no 500', async (grade) => {
+      const title = `Matriks ${noteType} ${grade}`
+      const created = await admin.post('/admin/notes', { ...NOTE, title, noteType, grade })
+      expect(created.status, JSON.stringify(created.body)).toBe(201)
+      expect(created.body.data).toMatchObject({ title, noteType, grade })
+      const noteId = created.body.data.id as string
+
+      const updated = await admin.put(`/admin/notes/${noteId}`, { title: `${title} v2` })
+      expect(updated.status, JSON.stringify(updated.body)).toBe(200)
+      expect(updated.body.data).toMatchObject({ title: `${title} v2`, noteType, grade })
+
+      const read = await admin.get(`/admin/notes/${noteId}`)
+      expect(read.status).toBe(200)
+      expect(AdminNoteDetailSchema.parse(read.body.data)).toMatchObject({ title: `${title} v2`, noteType, grade })
+    })
+  })
+
   it('filters by subject, mapped note type and title search; page size is 20', async () => {
     const q = async (s: string) => (await admin.get(`/admin/notes?${s}`)).body.meta.totalItems as number
     expect(await q('subject=sains')).toBeGreaterThanOrEqual(2)
@@ -101,6 +119,14 @@ describe('admin notes', () => {
     expect(await q('subject=all')).toBe(await q(''))
     expect(await q('noteType=mind_map')).toBe(1)
     expect(await q('noteType=full_notes')).toBeGreaterThanOrEqual(1)
+    // D-7: noteType=summary selects the stored RINGKASAN rows. The unique search term isolates these five from any seeded rows.
+    const ringkasan = Array.from({ length: 5 }, (_, i) => `('Zringkasanuji ${String(i)}', '<p>x</p>', 'sains', 'RINGKASAN', 'TINGKATAN_4', (select id from users where email = 'admin@demo.test'))`).join(',')
+    await t.db.query(`insert into notes (title, content, subject, note_type, grade, author_id) values ${ringkasan}`)
+    const summary = await admin.get('/admin/notes?noteType=summary&search=Zringkasanuji')
+    expect(summary.body.meta.totalItems).toBe(5)
+    expect((summary.body.data as Array<{ noteType: string; title: string }>).map((x) => x.noteType)).toEqual(Array(5).fill('RINGKASAN'))
+    expect((summary.body.data as Array<{ title: string }>).map((x) => x.title).sort()).toEqual(Array.from({ length: 5 }, (_, i) => `Zringkasanuji ${String(i)}`))
+    expect((await admin.get('/admin/notes?noteType=full_notes&search=Zringkasanuji')).body.meta.totalItems).toBe(0)
     expect(await q('noteType=garbage')).toBe(await q(''))
     expect(await q('search=PETA')).toBe(1)
     const many = Array.from({ length: 21 }, (_, i) => `('Banyak ${String(i)}', '<p>x</p>', 'sains', 'RINGKASAN', 'DARJAH_1', (select id from users where email = 'admin@demo.test'))`).join(',')
