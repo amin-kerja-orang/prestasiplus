@@ -395,3 +395,86 @@ export interface QuestionPaper {
   adminNotes: string | null
   createdAt: string
 }
+
+// ---------------------------------------------------------------------------------------------
+// S6-T19 `GET /api/guru/databank/overview` and `/questions` (R1-GUR-44d, API-GUR-27; read-only)
+// ---------------------------------------------------------------------------------------------
+
+/** One subject tile: BM name, English name and the count of servable Tingkatan 1-5 questions. */
+export interface DatabankSubjectTile {
+  subjectId: number
+  nameMs: string
+  nameEn: string
+  count: number
+}
+
+export interface DatabankOverview {
+  data: {
+    totalQuestions: number
+    /** Subjects with at least one servable question (a zero-question subject is not counted, D11). */
+    activeSubjects: number
+    teras: DatabankSubjectTile[]
+    elektif: DatabankSubjectTile[]
+  }
+}
+
+/** One stimulus (Rajah, petikan, jadual); a picture is served by `GET /files/:id`. */
+export interface DatabankStimulus {
+  id: string | number
+  kind: 'passage' | 'image' | 'diagram' | 'table' | 'map' | 'infographic' | 'graph'
+  label: string
+  bodyMs: string | null
+  bodyEn: string | null
+  imageId: string | number | null
+  alt: string | null
+  caption: string | null
+  sourceCitation: string | null
+  tableData: { head: string[]; rows: string[][]; caption?: string } | null
+}
+
+export interface DatabankOption {
+  label: string
+  bodyMs: string | null
+  bodyEn: string | null
+  imageId: string | number | null
+}
+
+/** A servable question as the teacher sees it; the response carries no answer key. */
+export interface DatabankQuestion {
+  id: number
+  stemMs: string | null
+  stemEn: string | null
+  type: string
+  options: DatabankOption[]
+  stimuli: DatabankStimulus[]
+  subjectId: number
+  subject: string
+  levelLabel: string
+  /** 1 to 5 stars, or null. */
+  difficulty: number | null
+  status: 'approved'
+  groupPosition: number | null
+}
+
+/** A listed unit: `unitId` `g<id>` is a stimulus group (stimuli once, then its questions), `q<id>` one question. */
+export interface DatabankRow {
+  unitId: string
+  group: { id: string | number; stimuli: DatabankStimulus[] } | null
+  questions: DatabankQuestion[]
+}
+
+export interface DatabankQuestionsMeta {
+  page: number
+  pageSize: number
+  totalItems: number
+  totalPages: number
+  from: number
+  to: number
+  totalUnits: number
+  totalQuestions: number
+}
+
+export interface DatabankQuestionsResult {
+  data: DatabankRow[]
+  meta: DatabankQuestionsMeta
+}

@@ -13,12 +13,13 @@ const session = (role: 'student' | 'teacher' | 'admin' | null) => ({
 })
 
 describe('S21-S24 route access (decideAccess)', () => {
-  it('declares the four routes for teacher and admin only on the user shell', () => {
+  it('declares the five routes for teacher and admin only on the user shell', () => {
     expect(routes.map((r) => r.path)).toEqual([
       '/guru/soalan',
       '/guru/soalan/cipta',
       '/guru/soalan/:id([0-9]+)',
       '/guru/soalan/:id([0-9]+)/edit',
+      '/guru/databank',
     ])
     for (const r of routes) {
       expect(r.meta?.layout).toBe('user')

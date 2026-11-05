@@ -1978,6 +1978,16 @@
       "approved_by_card": null
     },
     {
+      "key": "/guru/databank|",
+      "path": "/guru/databank",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m10-teacher-class/pages/DatabankGuruPage.vue",
+      "file": "src/modules/m10-teacher-class/routes/soalan.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "/guru/analisis-item|guru-analisis-item",
       "path": "/guru/analisis-item",
       "name": "guru-analisis-item",
@@ -12076,6 +12086,26 @@
       "status": "canonical",
       "sector": "S1",
       "file": "apps/api/src/modules/classes/question-sets/question-sets.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/guru/databank/overview",
+      "method": "GET",
+      "path": "/api/guru/databank/overview",
+      "api_id": "API-GUR-27",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/databank.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/guru/databank/questions",
+      "method": "GET",
+      "path": "/api/guru/databank/questions",
+      "api_id": "API-GUR-27",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/databank.controller.ts",
       "approved_by_card": null
     },
     {

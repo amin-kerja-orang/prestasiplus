@@ -1,5 +1,7 @@
 import type { RouteRecordRaw } from 'vue-router'
 
+import { GURU_API_ROLES } from './roles'
+
 /**
  * M10 route fragment: S21–S24 Sumbang Soalan (`/guru/soalan…`), M10-T6. User shell; Guru and Admin.
  * Tab titles and header texts: URS §1 / FN-M10-1.1.3 (DV-M10-01: S23 / S24 keep "Selamat datang
@@ -10,6 +12,8 @@ export const SOALAN_ROUTES = {
   create: 'm10.soalan.cipta',
   detail: 'm10.soalan.detail',
   edit: 'm10.soalan.edit',
+  /** S6-T19 Databank Soalan (R1-GUR-44d): teacher only, the API answers 403 to an admin. */
+  databank: 'm10.databank',
 } as const
 
 const base = {
@@ -64,6 +68,17 @@ const routes: RouteRecordRaw[] = [
       ...base,
       title: 'Edit Soalan — Sumbang Soalan',
       header: { title: 'Edit Soalan', subtitle: 'Selamat datang kembali' },
+    },
+  },
+  {
+    path: '/guru/databank',
+    name: SOALAN_ROUTES.databank,
+    component: () => import('../pages/DatabankGuruPage.vue'),
+    meta: {
+      ...base,
+      roles: GURU_API_ROLES,
+      title: 'Databank Soalan — PRESTASIPLUS',
+      header: { title: 'Databank Soalan' },
     },
   },
 ]

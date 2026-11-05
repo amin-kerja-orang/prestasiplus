@@ -32,13 +32,20 @@ import {
   ok,
   paged,
   pageParams,
+  queryInt,
+  queryString,
   raw,
   route,
   validationError,
   type MockRequest,
   type RouteDef,
 } from '@/mock/define'
-import { QUESTION_MESSAGES } from '@pp/contract'
+import {
+  DATABANK_MESSAGES,
+  DATABANK_PAGE_SIZE,
+  DATABANK_SEARCH_MIN,
+  QUESTION_MESSAGES,
+} from '@pp/contract'
 import { curriculum } from '@/modules/m03-curriculum/mock'
 import {
   questions,
@@ -562,3 +569,141 @@ function updateOptions(b: Body): unknown[] {
   }
   return Object.values(out)
 }
+
+// ---------------------------------------------------------------------------------------------
+// S6-T19 Databank Soalan (R1-GUR-44d, API-GUR-27): read-only, teacher only
+// ---------------------------------------------------------------------------------------------
+
+
+/** Tingkatan 1-5: every level that is not a hidden primary level (D72, D101). */
+function databankLevelIds(): number[] {
+  return curriculum
+    .levels()
+    .filter((l) => l.stage !== 'primary')
+    .map((l) => l.id)
+}
+
+/** Servable = approved, active, not PKSK, Tingkatan 1-5; the one rule behind tile counts and the list. */
+function databankCount(subjectId: number): number {
+  return questions.countWhere({
+    status: 'approved',
+    isActive: true,
+    subjectId,
+    educationLevelId: databankLevelIds(),
+  })
+}
+
+/** Newest first, as the admin list (createdAtMs desc, id asc). */
+const byNewest = (a: Question, b: Question): number => b.createdAtMs - a.createdAtMs || a.id - b.id
+
+/** One page of servable rows of the subject (or of all subjects), newest first. */
+function databankPage(
+  subjectId: number | undefined,
+  term: string,
+  page: number,
+): { rows: Question[]; total: number } {
+  const search = term === '' ? undefined : { term, fields: ['questionText'] as const }
+  const upTo = page * DATABANK_PAGE_SIZE
+  let total = 0
+  const heads: Question[] = []
+  for (const levelId of databankLevelIds()) {
+    const res = questions.query(
+      'Q-ELIGIBLE',
+      {
+        sort: [
+          { field: 'createdAtMs', dir: 'desc' },
+          { field: 'id', dir: 'asc' },
+        ],
+        page: 1,
+        pageSize: upTo,
+        ...(search ? { search } : {}),
+      },
+      subjectId,
+      levelId,
+    )
+    total += res.total
+    heads.push(...res.rows)
+  }
+  heads.sort(byNewest)
+  return { rows: heads.slice(upTo - DATABANK_PAGE_SIZE, upTo), total }
+}
+
+function databankQuestion(q: Question) {
+  const subject = q.subjectId === null ? undefined : curriculum.subject(q.subjectId)
+  const level = q.educationLevelId === null ? undefined : curriculum.level(q.educationLevelId)
+  return {
+    id: q.id,
+    stemMs: q.questionText,
+    stemEn: null,
+    type: q.questionType,
+    options: (q.options ?? []).map((body, i) => ({
+      label: String.fromCharCode(65 + i),
+      bodyMs: body,
+      bodyEn: null,
+      imageId: null,
+    })),
+    stimuli: [],
+    subjectId: q.subjectId,
+    subject: subject?.name ?? '',
+    levelLabel: level?.name ?? '',
+    difficulty: q.difficultyLevel,
+    status: 'approved' as const,
+    groupPosition: null,
+  }
+}
+
+export const databankRoutes: RouteDef[] = [
+  route('GET', '/api/guru/databank/overview', [teacherOnly], () => {
+    const tiles = curriculum
+      .subjects({ active: true })
+      .map((s) => ({
+        subjectId: s.id,
+        nameMs: s.name,
+        nameEn: s.nameEn,
+        count: databankCount(s.id),
+        isCore: s.isCore,
+        order: s.order,
+      }))
+      .sort((a, b) => a.order - b.order)
+    const tile = (t: (typeof tiles)[number]) => ({
+      subjectId: t.subjectId,
+      nameMs: t.nameMs,
+      nameEn: t.nameEn,
+      count: t.count,
+    })
+    return ok({
+      totalQuestions: tiles.reduce((sum, t) => sum + t.count, 0),
+      activeSubjects: tiles.filter((t) => t.count > 0).length,
+      teras: tiles.filter((t) => t.isCore).map(tile),
+      elektif: tiles.filter((t) => !t.isCore).map(tile),
+    })
+  }),
+
+  route('GET', '/api/guru/databank/questions', [teacherOnly], (req) => {
+    const term = (queryString(req.query, 'q') ?? '').trim()
+    if (term !== '' && term.length < DATABANK_SEARCH_MIN)
+      return validationError({ q: DATABANK_MESSAGES.searchMin })
+    const subjectId = queryInt(req.query, 'subjectId')
+    const page = pageParams(req.query, { pageSize: DATABANK_PAGE_SIZE }).page
+    const res = databankPage(subjectId, term, page)
+    // The objective store has no stimulus groups: every unit is one question.
+    const data = res.rows.map((q) => ({
+      unitId: `q${String(q.id)}`,
+      group: null,
+      questions: [databankQuestion(q)],
+    }))
+    const from = data.length === 0 ? 0 : (page - 1) * DATABANK_PAGE_SIZE + 1
+    return ok(data, {
+      meta: {
+        page,
+        pageSize: DATABANK_PAGE_SIZE,
+        totalItems: res.total,
+        totalPages: Math.max(1, Math.ceil(res.total / DATABANK_PAGE_SIZE)),
+        from,
+        to: data.length === 0 ? 0 : from + data.length - 1,
+        totalUnits: res.total,
+        totalQuestions: res.total,
+      },
+    })
+  }),
+]
