@@ -8,8 +8,6 @@ import type {
   QuestionBulkRequestSchema,
   QuestionCreateRequestSchema,
   QuestionCurriculumTagSchema,
-  QuestionGuruCreateRequestSchema,
-  QuestionGuruUpdateRequestSchema,
   QuestionPart,
   QuestionPublicSchema,
   QuestionStatus,
@@ -22,8 +20,6 @@ export type { QuestionPart, QuestionStatus }
 /** The parsed bodies the controllers hand to the service (contract schemas, already validated). */
 export type QuestionCreateInput = z.output<typeof QuestionCreateRequestSchema>
 export type QuestionUpdateInput = z.output<typeof QuestionUpdateRequestSchema>
-export type QuestionGuruCreateInput = z.output<typeof QuestionGuruCreateRequestSchema>
-export type QuestionGuruUpdateInput = z.output<typeof QuestionGuruUpdateRequestSchema>
 export type QuestionBulkAction = z.output<typeof QuestionBulkRequestSchema>['action']
 export type QuestionTag = z.output<typeof QuestionCurriculumTagSchema>
 /** What a learner may see (`QuestionPublicSchema`): never a key, explanation, model answer or source. */
@@ -315,16 +311,14 @@ export interface QuestionFilter {
 export type SampleFilter = QuestionFilter
 export type GroupCountBy = 'subject' | 'level' | 'status' | 'difficultyTp' | 'unit' | 'chapter'
 
-export interface GuruListFilter {
-  ownerId: string
-  page: number
-  pageSize: number
-}
-
 export interface StructuredListFilter {
   subjectId?: string
   educationLevelId?: string
   kbatLevel?: string
+  /** Teacher mount (API-GUR-26): only what a pupil is served (approved and live, T4/T5, figures present). */
+  served?: boolean
+  /** Order by `created_at` descending instead of id ascending. */
+  newestFirst?: boolean
   page: number
   pageSize: number
 }
@@ -398,11 +392,6 @@ export interface QuestionGrade {
   needsReview: boolean
 }
 
-export interface ContributionCounts {
-  total: number
-  byStatus: Record<QuestionStatus, number>
-}
-
 /**
  * The gate facts that live outside the version row (R1-H-A18), read by `QuestionsRepository.gateFacts` and handed to `gateDataOf`.
  * D99 (2026-11-01): no per-question source or rights fact. V2 asks for them once, at the intake batch.
@@ -437,3 +426,6 @@ export interface TextbookRef {
   /** Last page, when the reference spans pages. */
   hingga?: number
 }
+
+/** Teacher structured detail source: the question view of the LIVE version plus its stimulus group (no creator, no DSKP chain). */
+export type GuruStructuredRecord = QuestionView & { stimulusGroup: StimulusGroupRecord | null }

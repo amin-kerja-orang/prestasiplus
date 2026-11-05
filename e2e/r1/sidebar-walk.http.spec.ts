@@ -79,17 +79,13 @@ const EXPECTED_RED: Record<WalkRole, Row[]> = {
   ],
   // Guru: the Laporan Mingguan row (S6-T01) was removed after its first CI run showed it passing.
   guru: [],
-  adminSekolah: [
-    // The route allows school_admin (S0-T06), but GET /api/analytics/classes is @Roles('admin','teacher')
-    // (apps/api/src/modules/reports/performance/http/performance.controllers.ts:53), so the page shows 403.
-    // S10-T04 change (2) adds school_admin to @Roles and canOpenClassAnalysis.
-    { id: 'sa-analitik-adaptif', route: '/analitik/kelas', ownerCard: 'S10-T04' },
-  ],
+  // Admin Sekolah: the Analitik Adaptif row (S10-T04 Change (2)) was removed when the API gained school_admin.
+  adminSekolah: [],
 }
 
 /**
  * Fewest sidebar links a role must show, from what `sidebarEntries(role)` yields with the scope on:
- * pupil 41 items (40 allowed here because the Cikgu ALESA item depends on VITE_ALESA_AI), Guru 26 items
+ * pupil 42 items with Laporan Soalan (S5-T06; 40 allowed here because the Cikgu ALESA item depends on VITE_ALESA_AI), Guru 26 items
  * minus the 7 Kirkpatrick pages plus their one row = 20, Admin Sekolah 23. An empty sidebar fails.
  */
 const MIN_LINKS: Record<WalkRole, number> = { student: 40, guru: 20, adminSekolah: 23 }
