@@ -68,6 +68,7 @@ import {
   lastLoginText,
   phoneText,
   PUPIL_CREATE_PATH,
+  PUPIL_IMPORT_PATH,
   PUPIL_LIST_PATH,
   ROLE_CONFIG,
   TINGKATAN_OPTIONS,
@@ -496,6 +497,17 @@ function openRow(row: Item): void {
           data-testid="user-export"
           @click="exportCsv"
           >Eksport CSV</UButton
+        >
+        <UButton
+          v-if="isPupil"
+          :to="PUPIL_IMPORT_PATH"
+          color="neutral"
+          variant="soft"
+          size="lg"
+          icon="i-ph-upload-simple"
+          class="min-h-11 justify-center"
+          data-testid="user-import"
+          >Import Pelajar</UButton
         >
         <UButton
           :to="isPupil ? PUPIL_CREATE_PATH : TEACHER_CREATE_PATH"

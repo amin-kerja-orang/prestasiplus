@@ -16,7 +16,18 @@ import {
 } from '../amaran'
 import { SCHOOL_ADMIN_FLASH, SCHOOL_ADMIN_MESSAGES, SchoolAdminInitialCredentialSchema } from '../common'
 import { SCHOOL_ADMIN_COMPONENT_SCHEMAS } from '../paths'
-import { SchoolAdminPupilCreateRequestSchema, SchoolAdminPupilCreatedResultSchema, SchoolAdminPupilFormOptionsSchema, SchoolAdminPupilListResponseSchema } from '../pupils'
+import {
+  SCHOOL_ADMIN_PUPIL_IMPORT_MAX_BYTES,
+  SCHOOL_ADMIN_PUPIL_IMPORT_MAX_ROWS,
+  SCHOOL_ADMIN_PUPIL_IMPORT_MESSAGES,
+  SchoolAdminPupilCreateRequestSchema,
+  SchoolAdminPupilCreatedResultSchema,
+  SchoolAdminPupilFormOptionsSchema,
+  SchoolAdminPupilImportRequestSchema,
+  SchoolAdminPupilImportResultSchema,
+  SchoolAdminPupilListResponseSchema,
+  schoolPupilsImportedText,
+} from '../pupils'
 import {
   SchoolAdminActivityReportSchema,
   SchoolAdminClassListResponseSchema,
@@ -465,6 +476,26 @@ describe('school-admin contract: teachers and pupils', () => {
   })
 })
 
+describe('school-admin contract: pupil import (API-AS-06)', () => {
+  it('keeps the limits and the exact copy', () => {
+    expect(SCHOOL_ADMIN_PUPIL_IMPORT_MAX_BYTES).toBe(2_097_152)
+    expect(SCHOOL_ADMIN_PUPIL_IMPORT_MAX_ROWS).toBe(1000)
+    expect(SCHOOL_ADMIN_PUPIL_IMPORT_MESSAGES.quotaFull).toBe('Kuota penuh! Sila tingkatkan kuota dahulu.')
+    expect(SCHOOL_ADMIN_PUPIL_IMPORT_MESSAGES.emailExists).toBe('E-mel sudah wujud (dilangkau).')
+    expect(SCHOOL_ADMIN_PUPIL_IMPORT_MESSAGES.tooManyRows).toBe('Fail melebihi 1000 baris.')
+    expect(schoolPupilsImportedText(2, 1)).toBe('2 pelajar berjaya diimport, 1 baris gagal.')
+  })
+
+  it('accepts T1 to T5 only and a result without a password', () => {
+    expect(SchoolAdminPupilImportRequestSchema.safeParse({ csvFile: 'nama,email,kelas', level: 'T5' }).success).toBe(true)
+    expect(SchoolAdminPupilImportRequestSchema.safeParse({ csvFile: 'x', level: 'D3' }).success).toBe(false)
+    expect(SchoolAdminPupilImportRequestSchema.safeParse({ csvFile: 'x' }).success).toBe(true)
+    const result = { dryRun: true, rows: 12, created: 0, skipped: 1, errors: [{ row: 3, message: 'E-mel sudah wujud (dilangkau).' }], preview: [{ row: 2, name: 'Murid Contoh', email: 'murid.contoh@example.org', className: null }] }
+    expect(SchoolAdminPupilImportResultSchema.safeParse(result).success).toBe(true)
+    expect(SchoolAdminPupilImportResultSchema.safeParse({ ...result, preview: Array.from({ length: 11 }, () => result.preview[0]) }).success).toBe(false)
+  })
+})
+
 describe('school-admin contract: Amaran', () => {
   it('parses the school risk page, with and without a level filter', () => {
     expect(ok(AmaranSchoolRiskSchema, schoolRisk)).toBe(true)
@@ -547,18 +578,18 @@ describe('school-admin contract: OpenAPI document', () => {
     ['post', '/admin-sekolah/guru/{id}/toggle-active'], ['post', '/admin-sekolah/guru/{id}/reset-password'],
     ['get', '/admin-sekolah/pelajar'], ['get', '/admin-sekolah/pelajar/form-options'], ['get', '/admin-sekolah/pelajar/{id}'],
     ['get', '/admin-sekolah/pelajar/export.csv'], ['post', '/admin-sekolah/pelajar'], ['put', '/admin-sekolah/pelajar/{id}'],
-    ['post', '/admin-sekolah/pelajar/{id}/reset-password'],
+    ['post', '/admin-sekolah/pelajar/{id}/reset-password'], ['post', '/admin-sekolah/pelajar/import'],
     ['get', '/amaran/schools/{id}'], ['get', '/amaran/summary'], ['get', '/amaran/effectiveness'], ['get', '/amaran/export/school/{id}'],
   ]
   const MUTATING = ROUTES.filter(([m]) => m !== 'get')
 
-  it('contains every route (20 M27 + 4 Amaran), counted by this domain tags', () => {
+  it('contains every route (21 M27 + 4 Amaran), counted by this domain tags', () => {
     for (const [method, path] of ROUTES) expect(doc.paths[path]?.[method], `${method} ${path}`).toBeDefined()
     const own = Object.values(doc.paths).flatMap((item) =>
       Object.values(item).filter((op) => op.tags?.some((t) => t === 'school-admin' || t === 'amaran')),
     )
-    expect(own).toHaveLength(24)
-    expect(own.filter((op) => op.tags?.includes('school-admin'))).toHaveLength(20)
+    expect(own).toHaveLength(25)
+    expect(own.filter((op) => op.tags?.includes('school-admin'))).toHaveLength(21)
     expect(own.filter((op) => op.tags?.includes('amaran'))).toHaveLength(4)
   })
 
@@ -656,7 +687,7 @@ describe('school-admin contract: OpenAPI document', () => {
       ['get', '/admin-sekolah/guru/export.csv'],
       ['get', '/amaran/export/school/{id}'],
     ]
-    expect(limited).toHaveLength(7 + 3)
+    expect(limited).toHaveLength(8 + 3)
     for (const [method, path] of limited) {
       const res = doc.paths[path]![method]!.responses['429']
       expect(res, `${method} ${path}`).toBeDefined()

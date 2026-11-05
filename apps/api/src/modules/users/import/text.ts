@@ -20,8 +20,8 @@ export function textLines(text: string): string[] {
   return text.replace(/^﻿/, '').split(/\r\n|\r|\n/)
 }
 
-/** One CSV line into trimmed fields; double quotes protect commas ("" is a literal quote). */
-export function parseCsvLine(line: string): string[] {
+/** One CSV line into trimmed fields; double quotes protect the delimiter ("" is a literal quote). The delimiter is a comma unless the caller says `;`. */
+export function parseCsvLine(line: string, delimiter: ',' | ';' = ','): string[] {
   const out: string[] = []
   let cell = ''
   let quoted = false
@@ -39,7 +39,7 @@ export function parseCsvLine(line: string): string[] {
     } else if (ch === '"' && cell.trim() === '') {
       cell = ''
       quoted = true
-    } else if (ch === ',') {
+    } else if (ch === delimiter) {
       out.push(cell.trim())
       cell = ''
     } else {
@@ -50,12 +50,12 @@ export function parseCsvLine(line: string): string[] {
   return out
 }
 
-/** Every non-blank line as a record (comma-separated). */
-export function csvRecords(text: string): ImportRecord[] {
+/** Every non-blank line as a record (comma-separated unless the caller says `;`). */
+export function csvRecords(text: string, delimiter: ',' | ';' = ','): ImportRecord[] {
   const records: ImportRecord[] = []
   textLines(text).forEach((raw, index) => {
     if (raw.trim() === '') return
-    records.push({ line: index + 1, cells: parseCsvLine(raw) })
+    records.push({ line: index + 1, cells: parseCsvLine(raw, delimiter) })
   })
   return records
 }

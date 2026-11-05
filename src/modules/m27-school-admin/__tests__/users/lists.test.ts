@@ -166,7 +166,7 @@ describe('S6 Senarai Pelajar (FR-M27-88 to 93)', () => {
     expect(text(w, 'user-found')).toBe('1,234 pengguna dijumpai')
   })
 
-  it('shows "Eksport CSV" (with its title) and "Tambah Pelajar" linking to S12, no import / delete / checkbox', async () => {
+  it('shows "Eksport CSV" (with its title), "Import Pelajar" linking to the import page and "Tambah Pelajar" linking to S12, no delete / checkbox', async () => {
     const { wrapper: w } = await mountPupils()
     const exp = w.get('[data-testid="user-export"]')
     expect(exp.text()).toBe('Eksport CSV')
@@ -174,7 +174,10 @@ describe('S6 Senarai Pelajar (FR-M27-88 to 93)', () => {
     const add = w.get('[data-testid="user-add"]')
     expect(add.text()).toBe('Tambah Pelajar')
     expect(add.attributes('href')).toBe('/admin-sekolah/pelajar/baru')
-    expect(w.text()).not.toMatch(/Import|Padam|Login As/)
+    const imp = w.get('[data-testid="user-import"]')
+    expect(imp.text()).toBe('Import Pelajar')
+    expect(imp.attributes('href')).toBe('/admin-sekolah/pelajar/import')
+    expect(w.text()).not.toMatch(/Import Pengguna|Padam|Login As/)
     expect(w.find('input[type="checkbox"]').exists()).toBe(false)
   })
 
@@ -575,6 +578,7 @@ describe('S7 Senarai Guru (FR-M27-99 to 103)', () => {
     expect(add.text()).toBe('Cipta Pengguna')
     expect(add.attributes('href')).toBe('/admin-sekolah/guru/baru')
     expect(w.text()).not.toContain('Tambah Pelajar')
+    expect(w.find('[data-testid="user-import"]').exists()).toBe(false)
   })
 
   it('has the nine column heads in order', async () => {

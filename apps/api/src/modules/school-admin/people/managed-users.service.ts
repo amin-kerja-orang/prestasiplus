@@ -370,7 +370,7 @@ export class ManagedUsersService {
     return toSchoolInfo(school)
   }
 
-  private auditBase(ctx: PeopleCtx, action: string) {
+  auditBase(ctx: PeopleCtx, action: string) {
     const a = ctx.actor
     return {
       action,

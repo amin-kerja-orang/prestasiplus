@@ -31,9 +31,9 @@ export const SUBSCRIPTION_DEFAULT_PER_PAGE = 50
 export const COMP_STUDENTS_PAGE_SIZE = 50
 export const COMP_USERNAME_DOMAIN = '@prestasiplus.my'
 export const STUDENT_IMPORT_NAME_MAX = 255
-/** Added in v2 (security review): the mock has no limit. Over either limit the import is refused with 413 PAYLOAD_TOO_LARGE. */
+/** Added in v2 (security review): the mock has no limit. 2 MB since S6-T09 (E-11, shared with API-AS-06). Over either limit the import is refused with 413 PAYLOAD_TOO_LARGE. */
 export const STUDENT_IMPORT_MAX_ROWS = 1000
-export const STUDENT_IMPORT_MAX_BYTES = 1_000_000
+export const STUDENT_IMPORT_MAX_BYTES = 2_097_152
 export const COMP_BULK_MAX_IDS = 200
 export const SEARCH_MAX = 100
 export const PAYMENT_REFERENCE_MAX = 255
@@ -386,7 +386,7 @@ export const StudentImportRequestSchema = z
     schoolId: idField('schoolId'),
     classLevel: enumField('classLevel', STUDENT_IMPORT_CLASS_LEVELS),
     importMode: enumField('importMode', STUDENT_IMPORT_MODES),
-    csvFile: z.string().max(STUDENT_IMPORT_MAX_BYTES).nullish().meta({ description: 'CSV text, used when importMode is csv (at most 1 MB and 1000 rows).' }),
+    csvFile: z.string().max(STUDENT_IMPORT_MAX_BYTES).nullish().meta({ description: 'CSV text, used when importMode is csv (at most 2 MB and 1000 rows).' }),
     pasteContent: z.string().max(STUDENT_IMPORT_MAX_BYTES).nullish().meta({ description: 'Used when importMode is paste (same limits).' }),
   })
   .meta({ id: 'StudentImportRequest' })

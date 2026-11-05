@@ -204,8 +204,8 @@ describe('school quota and student import (AC 2)', () => {
       expect(ErrorBodySchema.parse(res.body).error).toMatchObject({ code: 'PAYLOAD_TOO_LARGE', message: 'Fail import melebihi had yang dibenarkan.' })
     })
 
-    it('413 for a multipart file over 1 MB', async () => {
-      const big = Buffer.alloc(1_100_000, 'a')
+    it('413 for a multipart file over 2 MB (2,097,152 bytes, E-11)', async () => {
+      const big = Buffer.alloc(2_200_000, 'a')
       const res = await who.agent
         .post('/api/admin/students/import')
         .set('X-CSRF-Token', who.csrf)
@@ -246,8 +246,8 @@ describe('school quota and student import (AC 2)', () => {
       expect([200, 413, 422]).toContain(users.status)
     })
 
-    it('413 for a JSON text over 1 MB (bytes), even before other checks', async () => {
-      const res = await imp({ importMode: 'paste', pasteContent: 'a'.repeat(1_000_001) })
+    it('413 for a JSON text over 2 MB (bytes), even before other checks', async () => {
+      const res = await imp({ importMode: 'paste', pasteContent: 'a'.repeat(2_097_153) })
       expect(res.status).toBe(413)
     })
   })

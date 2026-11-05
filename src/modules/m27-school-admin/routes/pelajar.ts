@@ -2,7 +2,7 @@ import type { RouteRecordRaw } from 'vue-router'
 
 /**
  * M27 route fragment: S6 `/admin-sekolah/pelajar` "Senarai Pelajar", S12 `/admin-sekolah/pelajar/baru` "Tambah
- * Pelajar", S9 `/admin-sekolah/pelajar/:id` "Edit Pengguna" (SRS M27 Part B §14.2, FR-M27-38, 44, 88 to 98, 117
+ * Pelajar", R1-AS-51 `/admin-sekolah/pelajar/import` "Import Pelajar" (S6-T09, opened by a button on S6; the sidebar item stays hidden), S9 `/admin-sekolah/pelajar/:id` "Edit Pengguna" (SRS M27 Part B §14.2, FR-M27-38, 44, 88 to 98, 117
  * to 120; roles-matrix row L56). User shell, role `school_admin` only: every other signed-in role gets the in-place
  * 403 page (FR-M27-40); a guest goes to `/login`. `/pelajar/baru` is registered before `:id` (a non-digit id has no
  * route and falls to the global 404 page). The header sub-line of S6 (the school name) is set by the page.
@@ -34,6 +34,21 @@ const routes: RouteRecordRaw[] = [
       onForbidden: '403',
       title: 'Tambah Pelajar - PRESTASIPLUS',
       header: { title: 'Tambah Pelajar', subtitle: 'Cipta satu akaun pelajar' },
+      module: 'M27',
+      v2: true,
+    },
+  },
+  {
+    path: '/admin-sekolah/pelajar/import',
+    name: 'm27.pelajar.import',
+    component: () => import('../pages/ImportPelajarPage.vue'),
+    meta: {
+      layout: 'user',
+      access: 'auth',
+      roles: ['school_admin'],
+      onForbidden: '403',
+      title: 'Import Pelajar - PRESTASIPLUS',
+      header: { title: 'Import Pelajar' },
       module: 'M27',
       v2: true,
     },

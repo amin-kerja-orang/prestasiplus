@@ -30402,6 +30402,148 @@
           "status"
         ]
       },
+      "SchoolAdminPupilImportLevel": {
+        "type": "string",
+        "enum": [
+          "T1",
+          "T2",
+          "T3",
+          "T4",
+          "T5"
+        ]
+      },
+      "SchoolAdminPupilImportQuery": {
+        "type": "object",
+        "properties": {
+          "dryRun": {
+            "type": "string",
+            "enum": [
+              "true",
+              "false"
+            ],
+            "description": "`true` validates the file and returns the first 10 rows as `preview`; nothing is created and nothing is audited."
+          }
+        }
+      },
+      "SchoolAdminPupilImportRequest": {
+        "type": "object",
+        "properties": {
+          "csvFile": {
+            "type": "string",
+            "maxLength": 2097152
+          },
+          "level": {
+            "$ref": "#/components/schemas/SchoolAdminPupilImportLevel"
+          }
+        },
+        "required": [
+          "csvFile"
+        ]
+      },
+      "SchoolAdminPupilImportMultipartRequest": {
+        "type": "object",
+        "properties": {
+          "csvFile": {
+            "type": "string",
+            "format": "binary"
+          },
+          "level": {
+            "$ref": "#/components/schemas/SchoolAdminPupilImportLevel"
+          }
+        },
+        "required": [
+          "csvFile"
+        ]
+      },
+      "SchoolAdminPupilImportError": {
+        "type": "object",
+        "properties": {
+          "row": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "1-based line of the file (the header is line 1)."
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "row",
+          "message"
+        ]
+      },
+      "SchoolAdminPupilImportPreviewRow": {
+        "type": "object",
+        "properties": {
+          "row": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "className": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The `kelas` cell as typed; null when empty."
+          }
+        },
+        "required": [
+          "row",
+          "name",
+          "email",
+          "className"
+        ]
+      },
+      "SchoolAdminPupilImportResult": {
+        "type": "object",
+        "properties": {
+          "dryRun": {
+            "type": "boolean"
+          },
+          "rows": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "created": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skipped": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchoolAdminPupilImportError"
+            }
+          },
+          "preview": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchoolAdminPupilImportPreviewRow"
+            },
+            "maxItems": 10
+          }
+        },
+        "required": [
+          "dryRun",
+          "rows",
+          "created",
+          "skipped",
+          "errors"
+        ]
+      },
       "AmaranRiskStatus": {
         "type": "string",
         "enum": [
@@ -49969,15 +50111,15 @@
               "string",
               "null"
             ],
-            "maxLength": 1000000,
-            "description": "CSV text, used when importMode is csv (at most 1 MB and 1000 rows)."
+            "maxLength": 2097152,
+            "description": "CSV text, used when importMode is csv (at most 2 MB and 1000 rows)."
           },
           "pasteContent": {
             "type": [
               "string",
               "null"
             ],
-            "maxLength": 1000000,
+            "maxLength": 2097152,
             "description": "Used when importMode is paste (same limits)."
           }
         },
@@ -50030,7 +50172,7 @@
               "string",
               "null"
             ],
-            "maxLength": 1000000
+            "maxLength": 2097152
           }
         },
         "required": [
@@ -102904,6 +103046,169 @@
         }
       }
     },
+    "/admin-sekolah/pelajar/import": {
+      "post": {
+        "tags": [
+          "school-admin"
+        ],
+        "summary": "Import pupils from a CSV file (API-AS-06, S6-T09)",
+        "description": "Matches before the {id} route. multipart/form-data `csvFile` (.csv or .txt, at most 2 MB = 2,097,152 bytes, at most 1000 data rows; header nama,email,kelas, comma or semicolon, `nama` required) and `level` T1 to T5 (optional; used only for a row whose kelas names no class of the school). `?dryRun=true` validates the file and returns the first 10 rows as `preview`, creating and auditing nothing. Only new accounts are created, always `is_active = false` (pending Admin Pusat approval) with role student, the school of the session and, when kelas names an active classroom of THIS school (case-insensitive), an enrolment (source school_admin); another school class is never matched. Valid rows import even when others fail. Quota: remaining seats = student_quota of the latest active or grace subscription minus ALL pupils of the school, pending ones included; more new pupils than the remaining seats refuses the WHOLE file with 409 QUOTA_FULL \"Kuota penuh! Sila tingkatkan kuota dahulu.\" (checked before hashing and again under a per-school lock); no active subscription is 409 NO_SUBSCRIPTION \"Sekolah ini tiada langganan aktif. Import pelajar tidak dibenarkan.\". Row messages: \"Sila isi nama.\", \"Nama penuh tidak boleh melebihi 255 aksara.\", \"Format e-mel tidak sah.\", \"E-mel berulang dalam fail.\" (a later duplicate inside the file), \"Kelas tidak dijumpai.\" (no class match and no level), \"E-mel sudah wujud (dilangkau).\" (e-mail already on the platform: counted in `skipped` AND listed in `errors`). The imported pupils get one shared initial password that is hashed once and never returned, shown or sent (PUPIL_IMPORT_DEFAULT_PASSWORD, at least 8 characters, else a random value nobody knows); the school admin uses \"Tetapkan semula kata laluan\" once a pupil is approved. One audit event (counts and ids only). Rate limited. Always confined to the caller school; no query or body value can change it (a schoolId sent by the client is ignored).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "`true` validates the file and returns the first 10 rows as `preview`; nothing is created and nothing is audited."
+            },
+            "required": false,
+            "description": "`true` validates the file and returns the first 10 rows as `preview`; nothing is created and nothing is audited.",
+            "name": "dryRun",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/SchoolAdminPupilImportMultipartRequest"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SchoolAdminPupilImportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The result (or the preview with dryRun=true).",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store (nothing is kept by a proxy or the browser cache).",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Pragma": {
+                "description": "no-cache (HTTP/1.0 caches).",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SchoolAdminPupilImportResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not school_admin, Admin Pusat included, or no school), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "QUOTA_FULL \"Kuota penuh! Sila tingkatkan kuota dahulu.\" (the whole file is refused, nothing is created), or NO_SUBSCRIPTION \"Sekolah ini tiada langganan aktif. Import pelajar tidak dibenarkan.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "PAYLOAD_TOO_LARGE \"Fail atau data terlalu besar. Saiz maksimum ialah 2 MB.\" (file over 2,097,152 bytes) or \"Fail melebihi 1000 baris.\" (more than 1000 data rows).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "UNSUPPORTED_MEDIA_TYPE \"Jenis fail tidak disokong. Format dibenarkan: CSV, TXT.\" (not a .csv or .txt file).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields: csvFile \"Sila pilih fail.\" (none), \"Tiada data untuk diimport.\" (no data row), \"Lajur wajib tiada: nama. Gunakan templat yang disediakan.\" (no nama header); level \"The selected level is invalid.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" (proposed copy, same text as the auth routes) with error.retryAfter in seconds and the Retry-After header.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (equals error.retryAfter).",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin-sekolah/pelajar/{id}": {
       "get": {
         "tags": [
@@ -119989,7 +120294,7 @@
           "school-subscriptions"
         ],
         "summary": "Import students from DELIMa text (CSV or paste)",
-        "description": "status: \"Import selesai: {created} pelajar didaftarkan, {skipped} dilangkau.\". 422 `fields.schoolId`: \"Sekolah ini tiada langganan aktif. Import pelajar tidak dibenarkan.\" (no active or grace subscription) or \"Kuota tidak mencukupi.\" (new records exceed the remaining quota; the whole import is refused). 422 `fields.csvFile` / `fields.pasteContent`: \"Tiada data untuk diimport.\". Central admin only. v2 limits (security review): at most 1000 rows and 1 MB, else 413 PAYLOAD_TOO_LARGE. The server hashes the DELIMa passwords on arrival, never logs the body and never echoes a row or password (errors carry only line and message); the quota check and the inserts run in one transaction with a lock. Rate limited (bulk account creation).",
+        "description": "status: \"Import selesai: {created} pelajar didaftarkan, {skipped} dilangkau.\". 422 `fields.schoolId`: \"Sekolah ini tiada langganan aktif. Import pelajar tidak dibenarkan.\" (no active or grace subscription) or \"Kuota tidak mencukupi.\" (new records exceed the remaining quota; the whole import is refused). 422 `fields.csvFile` / `fields.pasteContent`: \"Tiada data untuk diimport.\". Central admin only. v2 limits (security review): at most 1000 rows and 2 MB (2,097,152 bytes, E-11), else 413 PAYLOAD_TOO_LARGE. The server hashes the DELIMa passwords on arrival, never logs the body and never echoes a row or password (errors carry only line and message); the quota check and the inserts run in one transaction with a lock. Rate limited (bulk account creation).",
         "requestBody": {
           "required": true,
           "content": {
@@ -120051,7 +120356,7 @@
             }
           },
           "413": {
-            "description": "PAYLOAD_TOO_LARGE \"Fail import melebihi had yang dibenarkan.\": more than 1000 rows or 1 MB (v2 limits; the mock has none).",
+            "description": "PAYLOAD_TOO_LARGE \"Fail import melebihi had yang dibenarkan.\": more than 1000 rows or 2 MB (v2 limits; the mock has none).",
             "content": {
               "application/json": {
                 "schema": {

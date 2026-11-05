@@ -15,7 +15,7 @@
  * M27-T1b and M27-T1d; their client functions are here so every screen builds against one file.
  */
 
-import { api, type ListResult } from '@/api'
+import { api, IMPORT_TIMEOUT_MS, type ListResult } from '@/api'
 import type { UserMe } from '@/modules/m01-authentication'
 
 const BASE = '/api/admin-sekolah'
@@ -491,6 +491,46 @@ export const fetchSchoolPupilFormOptions = (o: { signal?: AbortSignal } = {}) =>
     `${BASE}/pelajar/form-options`,
     o.signal ? { signal: o.signal } : {},
   )
+
+// --- API-AS-06 R1-AS-51 Import Pelajar ---------------------------------------------------------
+
+export type PupilImportLevel = 'T1' | 'T2' | 'T3' | 'T4' | 'T5'
+
+export interface PupilImportResult {
+  dryRun: boolean
+  /** Data rows of the file. */
+  rows: number
+  /** Pending pupils created (0 on `dryRun`). */
+  created: number
+  /** E-mails that already exist; each is also in `errors`. */
+  skipped: number
+  /** Every row that was not created ("{b} baris gagal" = `errors.length`). */
+  errors: { row: number; message: string }[]
+  /** `dryRun` only: the first 10 rows of the file. */
+  preview?: { row: number; name: string; email: string | null; className: string | null }[]
+}
+
+/**
+ * API-AS-06 `POST /api/admin-sekolah/pelajar/import?dryRun=` (multipart `csvFile` + `level`). `dryRun` previews the first 10
+ * rows and creates nothing; the real call creates the valid rows as pending pupils. 409 `QUOTA_FULL` / `NO_SUBSCRIPTION`
+ * refuse the whole file; 413 too large or more than 1000 rows; 415 wrong type; 422 header or file missing.
+ */
+export function importSchoolPupils(input: {
+  file: File
+  level: PupilImportLevel | ''
+  dryRun: boolean
+  signal?: AbortSignal
+}): Promise<PupilImportResult> {
+  const form = new FormData()
+  if (input.level !== '') form.append('level', input.level)
+  form.append('csvFile', input.file)
+  return api.post<PupilImportResult>(`${BASE}/pelajar/import`, {
+    body: form,
+    query: { dryRun: input.dryRun },
+    timeoutMs: IMPORT_TIMEOUT_MS,
+    ...(input.signal ? { signal: input.signal } : {}),
+  })
+}
 
 // --- #16 S8 classes ----------------------------------------------------------------------------
 

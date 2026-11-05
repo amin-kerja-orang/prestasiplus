@@ -2800,6 +2800,16 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin-sekolah/pelajar/import|m27.pelajar.import",
+      "path": "/admin-sekolah/pelajar/import",
+      "name": "m27.pelajar.import",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m27-school-admin/pages/ImportPelajarPage.vue",
+      "file": "src/modules/m27-school-admin/routes/pelajar.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "/admin-sekolah/pelajar/:id(\\d+)|m27.pelajar.edit",
       "path": "/admin-sekolah/pelajar/:id(\\d+)",
       "name": "m27.pelajar.edit",
@@ -16209,6 +16219,16 @@
       "method": "GET",
       "path": "/api/admin-sekolah/pelajar/export.csv",
       "api_id": null,
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/school-admin/people/pupils.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin-sekolah/pelajar/import",
+      "method": "POST",
+      "path": "/api/admin-sekolah/pelajar/import",
+      "api_id": "API-AS-06",
       "status": "canonical",
       "sector": "S6",
       "file": "apps/api/src/modules/school-admin/people/pupils.controller.ts",
