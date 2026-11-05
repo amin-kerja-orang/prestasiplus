@@ -15,7 +15,7 @@ export const PRACTICE_MODES: readonly PracticeMode[] = [
   'question_set',
   'pksk',
 ]
-export const SPM_MODES: readonly PracticeMode[] = ['past_year', 'latih_tubi', 'ramalan']
+export const SPM_MODES: readonly PracticeMode[] = ['past_year', 'databank', 'latih_tubi', 'ramalan']
 export const ALL_MODES: readonly PracticeMode[] = [...PRACTICE_MODES, ...SPM_MODES]
 
 export const isMode = (v: unknown): v is PracticeMode =>

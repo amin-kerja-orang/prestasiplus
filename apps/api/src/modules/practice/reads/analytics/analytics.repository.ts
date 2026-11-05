@@ -196,7 +196,7 @@ export class PracticeAnalyticsRepository {
 
   /**
    * BR-18: per question, the first answer (non-test, with a question and a subject, not from a
-   * `past_year` session) and whether a later answer was right; first answers inside `[from, to)` only.
+   * `past_year` / `databank` session) and whether a later answer was right; first answers inside `[from, to)` only.
    */
   async correctionRuns(userId: string, from: Date, to: Date): Promise<CorrectionRun[]> {
     const rows = await this.db.$queryRaw<{ subject_id: bigint; answered_at: Date; is_correct: boolean; later: boolean }[]>`
@@ -207,7 +207,7 @@ export class PracticeAnalyticsRepository {
           LEFT JOIN practice_sessions s ON s.id = pa.session_id
          WHERE pa.user_id = ${idFromString(userId)}::bigint AND NOT pa.is_test
            AND pa.question_id IS NOT NULL AND pa.subject_id IS NOT NULL
-           AND (pa.session_id IS NULL OR s.mode IS DISTINCT FROM 'past_year'))
+           AND (pa.session_id IS NULL OR s.mode NOT IN ('past_year', 'databank'))
       SELECT f.subject_id, f.answered_at, f.is_correct,
              EXISTS (SELECT 1 FROM a b WHERE b.question_id = f.question_id AND b.rn > 1 AND b.is_correct) AS later
         FROM a f
