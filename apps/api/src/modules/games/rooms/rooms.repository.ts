@@ -35,6 +35,14 @@ export interface PlayerRow {
   isTest: boolean
 }
 
+export interface SpinSegmentRow {
+  position: number
+  label: string
+  syiling: number
+  weight: number
+  active: boolean
+}
+
 export interface NewRoom {
   game: string
   subject: string
@@ -290,6 +298,29 @@ export class RoomsRepository {
     await this.db.$executeRaw`
       INSERT INTO game_settings (id, boardgame_quiz_tiles, updated_at) VALUES (1, ${value}, ${at})
       ON CONFLICT (id) DO UPDATE SET boardgame_quiz_tiles = EXCLUDED.boardgame_quiz_tiles, updated_at = EXCLUDED.updated_at`
+  }
+
+  /** One admin save of the game settings at a time, so the before of its audit row is exact. Inside a transaction only. */
+  async lockAdminSettings(key: 'settings' | 'spin-segments'): Promise<void> {
+    await this.db.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`games.admin:${key}`}))`
+  }
+
+  /** The Roda Nasib segments by position (DM-64). */
+  async spinSegments(): Promise<SpinSegmentRow[]> {
+    return this.db.spinSegment.findMany({
+      orderBy: { position: 'asc' },
+      select: { position: true, label: true, syiling: true, weight: true, active: true },
+    })
+  }
+
+  async saveSpinSegments(rows: readonly SpinSegmentRow[]): Promise<void> {
+    for (const { position, label, syiling, weight, active } of rows) {
+      await this.db.spinSegment.upsert({
+        where: { position },
+        update: { label, syiling, weight, active },
+        create: { position, label, syiling, weight, active },
+      })
+    }
   }
 
   /** Room statistics of the admin page; test rooms are excluded. */

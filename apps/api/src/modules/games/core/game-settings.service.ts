@@ -70,6 +70,14 @@ export function isGameSettingValueInRange(key: GameSettingKey, value: number): b
   return 'oneOf' in spec ? spec.oneOf.includes(value) : value >= spec.min && value <= spec.max
 }
 
+/** `boardgame_quiz_tiles` is written to `game_settings` by `RoomsRepository.setQuizTiles`, never here (48 section 2 ruling on S7-T03). */
+export interface GameSettingWrite {
+  key: Exclude<GameSettingKey, 'boardgame_quiz_tiles'>
+  value: number
+  /** The BM label of 48 section 2, for a row that the migration did not leave behind. */
+  label: string
+}
+
 /**
  * The one settings reader of the games, in place of code constants (S7-T01 part 1). A value is read on each call, so a
  * saved change applies to the next event (48 section 2). A key with no row, or with a value outside its range, answers
@@ -96,5 +104,24 @@ export class GameSettingsService {
       values[key] = value !== undefined && isGameSettingValueInRange(key, value) ? value : GAME_SETTINGS[key].default
     }
     return values
+  }
+
+  /**
+   * Saves `writes` with the caller's transaction, so they commit or roll back with the rest of its save. Refusing bad
+   * input belongs to the screen; a key or value that reaches this point out of range is a programming error.
+   */
+  async setMany(writes: readonly GameSettingWrite[], at: Date, tx: TxClient): Promise<void> {
+    for (const { key, value } of writes) {
+      if ((key as GameSettingKey) === 'boardgame_quiz_tiles' || !isGameSettingKey(key) || !isGameSettingValueInRange(key, value)) {
+        throw new Error(`Not a writable game setting: ${String(key)}=${String(value)}`)
+      }
+    }
+    for (const { key, value, label } of writes) {
+      await tx.gamificationSetting.upsert({
+        where: { key },
+        update: { value, updatedAt: at },
+        create: { key, value, label, updatedAt: at },
+      })
+    }
   }
 }

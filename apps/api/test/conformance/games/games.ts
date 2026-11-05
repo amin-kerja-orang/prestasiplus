@@ -21,6 +21,16 @@ function oneOf(ctx: ScenarioContext, res: HttpResponse, statuses: readonly numbe
 const ROOM_GAMES = ['papan-bijak', 'perang-fakta', 'benteng-ilmu', 'perlumbaan-matematik', 'kuiz-relay', 'teka-silang-kata'] as const
 const SOLO_GAMES = ['betul-salah', 'cabaran-kilat', 'tembak-jawapan', 'susun-jawapan', 'kad-memori'] as const
 const MISSING_UUID = '00000000-0000-4000-8000-000000000000'
+const SPIN_SEGMENTS = [
+  { position: 1, label: '1 Syiling', syiling: 1, weight: 25, active: true },
+  { position: 2, label: '3 Syiling', syiling: 3, weight: 20, active: true },
+  { position: 3, label: '5 Syiling', syiling: 5, weight: 15, active: true },
+  { position: 4, label: '10 Syiling', syiling: 10, weight: 8, active: true },
+  { position: 5, label: '20 Syiling', syiling: 20, weight: 3, active: true },
+  { position: 6, label: 'Cuba Lagi', syiling: 0, weight: 15, active: true },
+  { position: 7, label: '2 Syiling', syiling: 2, weight: 10, active: true },
+  { position: 8, label: '7 Syiling', syiling: 7, weight: 4, active: true },
+]
 
 export const gamesScenarios: Scenario[] = [
   {
@@ -269,6 +279,55 @@ export const gamesScenarios: Scenario[] = [
       const student = await ctx.as('student')
       expectError(ctx, await student.request('GET', '/admin/games'), 403, 'FORBIDDEN')
       expectError(ctx, await student.request('PUT', '/admin/games/settings', { body: { boardgame_quiz_tiles: 10 } }), 403, 'FORBIDDEN')
+    },
+  },
+  {
+    id: 'games-api/Tetapan Permainan: partial save, refusals save nothing, an unknown key is refused',
+    domain: 'games',
+    targets: API_ONLY,
+    async run(ctx) {
+      const admin = await ctx.as('admin')
+      const settingsOf = async () => dataOf(await admin.request('GET', '/admin/games')).settings as Record<string, number>
+      const start = await settingsOf()
+      ctx.check(start.game_win_xp !== undefined && start.boardgameQuizTiles !== undefined, 'GET carries the settings keys beside boardgameQuizTiles')
+
+      const put = await admin.request('PUT', '/admin/games/settings', { body: { game_win_xp: 30 } })
+      ctx.expectStatus(put, 200)
+      ctx.check(dataOf(put).game_win_xp === 30 && dataOf(put).boardgameQuizTiles === start.boardgameQuizTiles, 'PUT answers the full settings')
+
+      const refused = await admin.request('PUT', '/admin/games/settings', { body: { game_win_xp: 40, battle_question_seconds: 5 } })
+      expectError(ctx, refused, 422, 'VALIDATION_ERROR')
+      ctx.check((errorOf(refused).fields as Record<string, string> | undefined)?.battle_question_seconds === 'Nilai mesti antara 10 dan 60.', 'AC-GM-00.11: the range message is on the key')
+      expectError(ctx, await admin.request('PUT', '/admin/games/settings', { body: { xp_per_correct: 20 } }), 422, 'VALIDATION_ERROR')
+      ctx.check((await settingsOf()).game_win_xp === 30, 'a refused save changes nothing')
+
+      ctx.expectStatus(await admin.request('PUT', '/admin/games/settings', { body: { game_win_xp: start.game_win_xp } }), 200)
+    },
+  },
+  {
+    id: 'games-api/Segmen Roda Nasib: 8 rows totalling 100, admin only',
+    domain: 'games',
+    targets: API_ONLY,
+    async run(ctx) {
+      const admin = await ctx.as('admin')
+      const read = await admin.request('GET', '/admin/games/spin-segments')
+      ctx.expectStatus(read, 200)
+      const rows = raw(read).data as unknown[]
+      ctx.check(Array.isArray(rows) && rows.length === 8, 'GET answers exactly 8 segments')
+
+      const short = SPIN_SEGMENTS.map((s, i) => (i === 0 ? { ...s, weight: 24 } : s))
+      const bad = await admin.request('PUT', '/admin/games/spin-segments', { body: { segments: short } })
+      expectError(ctx, bad, 422, 'VALIDATION_ERROR')
+      ctx.check((errorOf(bad).fields as Record<string, string> | undefined)?.segments === 'Jumlah berat mesti 100.', 'AC-GM-14.3: the total is refused on segments')
+      expectError(ctx, await admin.request('PUT', '/admin/games/spin-segments', { body: { segments: SPIN_SEGMENTS.slice(1) } }), 422, 'VALIDATION_ERROR')
+
+      const put = await admin.request('PUT', '/admin/games/spin-segments', { body: { segments: SPIN_SEGMENTS } })
+      ctx.expectStatus(put, 200)
+      ctx.check((raw(put).data as unknown[]).length === 8, 'PUT answers the 8 segments')
+
+      const student = await ctx.as('student')
+      expectError(ctx, await student.request('GET', '/admin/games/spin-segments'), 403, 'FORBIDDEN')
+      expectError(ctx, await student.request('PUT', '/admin/games/spin-segments', { body: { segments: SPIN_SEGMENTS } }), 403, 'FORBIDDEN')
     },
   },
 ]

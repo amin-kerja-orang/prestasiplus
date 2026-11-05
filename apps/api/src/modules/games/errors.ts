@@ -59,7 +59,9 @@ export const jutawanNotEnoughQuestions = (): ApiError => fieldError('subject', M
 export const jutawanQuestionMismatch = (): ApiError => fieldError('questionId', M.jutawanQuestionMismatch)
 export const jutawanOptionInvalid = (): ApiError => fieldError('optionId', M.jutawanOption)
 export const jutawanLifelineInvalid = (): ApiError => fieldError('type', M.jutawanLifelineType)
-export const quizTilesInvalid = (): ApiError => fieldError('boardgame_quiz_tiles', M.quizTiles)
+/** Admin settings: `fields` from the strict parse; the top-level message is the first BM field message, else the default. */
+export const adminSettingsInvalid = (fields: Record<string, string>, message?: string): ApiError =>
+  ApiError.of('VALIDATION_ERROR', { ...(message === undefined ? {} : { message }), fields })
 /** Leagues: the top-level message is the first field message. */
 export const leagueInvalid = (field: string, message: string): ApiError => fieldError(field, message)
 export const leagueInviteInvalid = (): ApiError => fieldError('invite_code', M.leagueInviteInvalid)

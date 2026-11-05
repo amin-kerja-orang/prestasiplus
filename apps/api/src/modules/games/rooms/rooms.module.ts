@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common'
 
+import { AuditModule } from '../../../common/audit/audit.module'
 import { GamesCoreModule } from '../core/core.module'
 import { AdminGamesController } from './admin/admin-games.controller'
 import { AdminGamesService } from './admin/admin-games.service'
@@ -16,7 +17,7 @@ import { RoomsService } from './rooms.service'
  * paths win over `/games/:game/...`; `GET /games/hub` is the first route of `RoomsController`.
  */
 @Module({
-  imports: [GamesCoreModule],
+  imports: [AuditModule, GamesCoreModule],
   controllers: [RoomsController, QuickMatchController, AdminGamesController],
   providers: [RoomSecrets, RoomsRepository, RoomsService, QuickMatchService, AdminGamesService],
   exports: [],
