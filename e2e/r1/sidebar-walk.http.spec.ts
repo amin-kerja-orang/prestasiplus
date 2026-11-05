@@ -71,8 +71,7 @@ type WalkRole = 'student' | 'guru' | 'adminSekolah'
  */
 const EXPECTED_RED: Record<WalkRole, Row[]> = {
   student: [
-    // /prestasi redirects to the school dashboard (m08 routes/prestasi.ts:29), fixed by S10-T01.
-    { id: 'prestasi', route: '/prestasi', ownerCard: 'S10-T01' },
+    // The pupil /prestasi row (S10-T01) was removed once #544 made /prestasi the pupil's own Prestasi 360 page.
     // The item is visible, but the m08 route currently answers 403 (Akses Ditolak) for the pupil until S10-T09 / S10-T03 land.
     { id: 'headcount', route: '/headcount', ownerCard: 'S10-T09' },
     { id: 'analisa-item', route: '/analisa-item', ownerCard: 'S10-T03' },
@@ -130,8 +129,8 @@ const ALLOWED_REDIRECTS: { role: WalkRole; from: string; to: string; reason: str
     role: 'adminSekolah',
     from: '/prestasi',
     to: '/prestasi/sekolah',
-    // src/modules/m08-student-performance/routes/prestasi.ts:29 redirects /prestasi for every role;
-    // /prestasi/sekolah is the school admin's own dashboard (the pupil's row is EXPECTED_RED, S10-T01).
+    // src/modules/m08-student-performance/routes/prestasi.ts:34 sends every role except the pupil to
+    // /prestasi/sekolah, the school admin's own dashboard (the pupil gets Prestasi 360, S10-T01).
     reason: 'school admin Prestasi is the school dashboard',
   },
 ]
