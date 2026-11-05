@@ -3,7 +3,10 @@
 --          With the columns 48 GAME-01 needs (ruling 5 on #497, no new DM id): `battles.round_started_at` (48 3.3); `question_count`
 --          on `battles`, `battle_queues` and `battle_invitations` (the chips 5, 10, 15, 20; every existing row drew 10);
 --          `battle_participants.last_polled_at` and `consecutive_timeouts` (absent player, forfeit); `cancelled` in
---          `ck_battle_queues_status` (a battle is never `cancelled`: `BATTLE_STATUSES` is kept); nullable `battle_answers.user_id`.
+--          `ck_battle_queues_status` and `ck_battle_invitations_status` (a battle is never `cancelled`: `BATTLE_STATUSES` is kept);
+--          nullable `battle_answers.user_id`, with one robot answer per battle and position in a partial unique index (NULLs do not
+--          collide in `uq_battle_answers_battle_id_user_id_position`, which still protects every human answer); position, answered
+--          and correct up to 20 (the largest chip); `option_id` 0..7 (48 3.2: an MCQ has 2-8 options).
 --   DM-64: `spin_segments` with the 8 rows of 48 GAME-14.
 --   DM-38: `ck_gamification_settings_key` allows the ten existing keys plus every key of 48 section 2, and one row
 --          (BM label, default) is inserted for every key of 48 section 2 that is not stored in `reward_settings`.
@@ -14,7 +17,7 @@
 -- `game_enabled_<game_key>`, default 1: one per game on the hub, with its hub name as the label (D-G, ruling 2 on #499).
 --
 -- Additive (expand only): nothing is removed, existing battles count for ranking, and every existing row is valid.
--- Reversible, in this order (assumes no robot participant, robot answer, cancelled queue entry or row with a new key needs keeping):
+-- Reversible, in this order (assumes no robot participant, robot answer, cancelled queue entry or invitation, battle over 10 questions, answer on an option past the fourth, or row with a new key needs keeping):
 --   DELETE FROM "gamification_settings" WHERE "key" NOT IN ('coins_per_question', 'cash_rate_coins', 'cash_rate_sen', 'min_cash_withdrawal', 'cash_withdrawal_enabled', 'reward_budget_sen_session', 'reward_budget_sen_month', 'current_session_year', 'flat_quiz_reward', 'games_award_syiling');
 --   ALTER TABLE "gamification_settings" DROP CONSTRAINT "ck_gamification_settings_key";
 --   ALTER TABLE "gamification_settings" ADD CONSTRAINT "ck_gamification_settings_key" CHECK ("key" IN ('coins_per_question', 'cash_rate_coins', 'cash_rate_sen', 'min_cash_withdrawal', 'cash_withdrawal_enabled', 'reward_budget_sen_session', 'reward_budget_sen_month', 'current_session_year', 'flat_quiz_reward', 'games_award_syiling'));
@@ -22,11 +25,29 @@
 --   DELETE FROM "battle_participants" WHERE "user_id" IS NULL;
 --   ALTER TABLE "battle_participants" ALTER COLUMN "user_id" SET NOT NULL;
 --   ALTER TABLE "battles" DROP COLUMN "counts_for_ranking";
+--   DROP INDEX "uq_battle_answers_robot_battle_id_position";
 --   DELETE FROM "battle_answers" WHERE "user_id" IS NULL;
 --   ALTER TABLE "battle_answers" ALTER COLUMN "user_id" SET NOT NULL;
 --   DELETE FROM "battle_queues" WHERE "status" = 'cancelled';
 --   ALTER TABLE "battle_queues" DROP CONSTRAINT "ck_battle_queues_status";
 --   ALTER TABLE "battle_queues" ADD CONSTRAINT "ck_battle_queues_status" CHECK ("status" IN ('waiting', 'incoming_challenge', 'matched', 'expired', 'abandoned'));
+--   DELETE FROM "battle_invitations" WHERE "status" = 'cancelled';
+--   ALTER TABLE "battle_invitations" DROP CONSTRAINT "ck_battle_invitations_status";
+--   ALTER TABLE "battle_invitations" ADD CONSTRAINT "ck_battle_invitations_status" CHECK ("status" IN ('pending', 'accepted', 'declined', 'expired'));
+--   DELETE FROM "battles" WHERE "question_count" > 10 OR "answered" > 10;
+--   DELETE FROM "battle_participants" WHERE "correct" > 10;
+--   DELETE FROM "battle_questions" WHERE "position" > 10;
+--   DELETE FROM "battle_answers" WHERE "position" > 10 OR "option_id" > 3;
+--   ALTER TABLE "battles" DROP CONSTRAINT "ck_battles_answered";
+--   ALTER TABLE "battles" ADD CONSTRAINT "ck_battles_answered" CHECK ("answered" BETWEEN 0 AND 10);
+--   ALTER TABLE "battle_participants" DROP CONSTRAINT "ck_battle_participants_correct";
+--   ALTER TABLE "battle_participants" ADD CONSTRAINT "ck_battle_participants_correct" CHECK ("correct" BETWEEN 0 AND 10);
+--   ALTER TABLE "battle_questions" DROP CONSTRAINT "ck_battle_questions_position";
+--   ALTER TABLE "battle_questions" ADD CONSTRAINT "ck_battle_questions_position" CHECK ("position" BETWEEN 1 AND 10);
+--   ALTER TABLE "battle_answers" DROP CONSTRAINT "ck_battle_answers_position";
+--   ALTER TABLE "battle_answers" ADD CONSTRAINT "ck_battle_answers_position" CHECK ("position" BETWEEN 1 AND 10);
+--   ALTER TABLE "battle_answers" DROP CONSTRAINT "ck_battle_answers_option_id";
+--   ALTER TABLE "battle_answers" ADD CONSTRAINT "ck_battle_answers_option_id" CHECK ("option_id" IS NULL OR "option_id" BETWEEN 0 AND 3);
 --   ALTER TABLE "battle_participants" DROP COLUMN "consecutive_timeouts";
 --   ALTER TABLE "battle_participants" DROP COLUMN "last_polled_at";
 --   ALTER TABLE "battle_invitations" DROP COLUMN "question_count";
@@ -51,7 +72,20 @@ ALTER TABLE "battle_participants" ADD COLUMN "consecutive_timeouts" SMALLINT NOT
 ALTER TABLE "battle_participants" ADD CONSTRAINT "ck_battle_participants_consecutive_timeouts" CHECK ("consecutive_timeouts" >= 0);
 ALTER TABLE "battle_queues" DROP CONSTRAINT "ck_battle_queues_status";
 ALTER TABLE "battle_queues" ADD CONSTRAINT "ck_battle_queues_status" CHECK ("status" IN ('waiting', 'incoming_challenge', 'matched', 'expired', 'abandoned', 'cancelled'));
+ALTER TABLE "battle_invitations" DROP CONSTRAINT "ck_battle_invitations_status";
+ALTER TABLE "battle_invitations" ADD CONSTRAINT "ck_battle_invitations_status" CHECK ("status" IN ('pending', 'accepted', 'declined', 'expired', 'cancelled'));
 ALTER TABLE "battle_answers" ALTER COLUMN "user_id" DROP NOT NULL;
+CREATE UNIQUE INDEX "uq_battle_answers_robot_battle_id_position" ON "battle_answers"("battle_id", "position") WHERE "user_id" IS NULL;
+ALTER TABLE "battles" DROP CONSTRAINT "ck_battles_answered";
+ALTER TABLE "battles" ADD CONSTRAINT "ck_battles_answered" CHECK ("answered" BETWEEN 0 AND 20);
+ALTER TABLE "battle_participants" DROP CONSTRAINT "ck_battle_participants_correct";
+ALTER TABLE "battle_participants" ADD CONSTRAINT "ck_battle_participants_correct" CHECK ("correct" BETWEEN 0 AND 20);
+ALTER TABLE "battle_questions" DROP CONSTRAINT "ck_battle_questions_position";
+ALTER TABLE "battle_questions" ADD CONSTRAINT "ck_battle_questions_position" CHECK ("position" BETWEEN 1 AND 20);
+ALTER TABLE "battle_answers" DROP CONSTRAINT "ck_battle_answers_position";
+ALTER TABLE "battle_answers" ADD CONSTRAINT "ck_battle_answers_position" CHECK ("position" BETWEEN 1 AND 20);
+ALTER TABLE "battle_answers" DROP CONSTRAINT "ck_battle_answers_option_id";
+ALTER TABLE "battle_answers" ADD CONSTRAINT "ck_battle_answers_option_id" CHECK ("option_id" IS NULL OR "option_id" BETWEEN 0 AND 7);
 
 -- DM-64
 CREATE TABLE "spin_segments" (
