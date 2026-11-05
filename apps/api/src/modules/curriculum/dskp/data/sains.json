@@ -2,13 +2,22 @@
   "subject": "Sains",
   "subjectCode": null,
   "levels": [
+    "T1",
+    "T2",
+    "T3",
     "T4",
     "T5"
   ],
   "language": "en",
   "source": "DSKP KSSM Science Form 4 and 5.pdf",
-  "edition": "KSSM Sains Tingkatan 4 dan 5 (Edisi Bahasa Inggeris), Bahagian Pembangunan Kurikulum, Mei 2019 (Terbitan 2019)",
-  "structureNote": "Hierarchy: Theme -> Learning Area (unit, N.0) -> Content Standard (SK) -> Learning Standard (SP). Performance Standard (levels 1-6, Recall..Create) is printed per Learning Area; units that share one table (Form 4 theme \"Scientific Methodology\") carry the theme-level table. Unit titles are as printed in the table headings (the overview lists use slightly different wording). Form 5 Electrochemistry heading is printed as \"7.0\" in the PDF while its SK/SP are numbered 6.x (a source typo); stored as code 6.0 with printedCode 7.0. Form 4 \"9.0 CHEMECAL IN INDUSTRY\" is a source typo kept as printed in titlePrinted.",
+  "edition": {
+    "T1": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)",
+    "T2": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)",
+    "T3": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)",
+    "T4": "KSSM Sains Tingkatan 4 dan 5 (Edisi Bahasa Inggeris), Bahagian Pembangunan Kurikulum, Mei 2019 (Terbitan 2019)",
+    "T5": "KSSM Sains Tingkatan 4 dan 5 (Edisi Bahasa Inggeris), Bahagian Pembangunan Kurikulum, Mei 2019 (Terbitan 2019)"
+  },
+  "structureNote": "Hierarchy: Theme -> Learning Area (unit, N.0) -> Content Standard (SK) -> Learning Standard (SP). Performance Standard (levels 1-6, Recall..Create) is printed per Learning Area; units that share one table (Form 4 theme \"Scientific Methodology\") carry the theme-level table. Unit titles are as printed in the table headings (the overview lists use slightly different wording). Form 5 Electrochemistry heading is printed as \"7.0\" in the PDF while its SK/SP are numbered 6.x (a source typo); stored as code 6.0 with printedCode 7.0. Form 4 \"9.0 CHEMECAL IN INDUSTRY\" is a source typo kept as printed in titlePrinted. T1-T3: Bab-level nodes only, built from the V3 chapter data (curriculum-data/chapters.json, in-tree chapters of this subject and Tingkatan; decisions D109/D115). Code is \"<chapterNumber>.0\"; titlePrinted is the chapter name in upper case; no Bidang grouping, no SK/SP and no TP are available, so none are invented.",
   "generalPerformanceLevels": {
     "source": "Table 9: Description of Performance Level of Knowledge and Skills (KSSM Science Form 4 and 5)",
     "levels": [
@@ -52,6 +61,454 @@
     "audit 2026-10-16: T5 SP 7.2.1 - removed stray \"1.\" (Notes numbering) at the end"
   ],
   "units": [
+    {
+      "level": "T1",
+      "code": "1.0",
+      "title": "Pengenalan kepada Penyiasatan Saintifik",
+      "titlePrinted": "PENGENALAN KEPADA PENYIASATAN SAINTIFIK",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "2.0",
+      "title": "Sel sebagai Unit Asas Hidupan",
+      "titlePrinted": "SEL SEBAGAI UNIT ASAS HIDUPAN",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "3.0",
+      "title": "Koordinasi dan Gerak Balas",
+      "titlePrinted": "KOORDINASI DAN GERAK BALAS",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "4.0",
+      "title": "Pembiakan",
+      "titlePrinted": "PEMBIAKAN",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "5.0",
+      "title": "Jirim",
+      "titlePrinted": "JIRIM",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "6.0",
+      "title": "Jadual Berkala",
+      "titlePrinted": "JADUAL BERKALA",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "7.0",
+      "title": "Udara",
+      "titlePrinted": "UDARA",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "8.0",
+      "title": "Cahaya dan Optik",
+      "titlePrinted": "CAHAYA DAN OPTIK",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "9.0",
+      "title": "Bumi",
+      "titlePrinted": "BUMI",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "1.0",
+      "title": "Biodiversiti",
+      "titlePrinted": "BIODIVERSITI",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "2.0",
+      "title": "Ekosistem",
+      "titlePrinted": "EKOSISTEM",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "3.0",
+      "title": "Nutrisi",
+      "titlePrinted": "NUTRISI",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "4.0",
+      "title": "Kesihatan Manusia",
+      "titlePrinted": "KESIHATAN MANUSIA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "5.0",
+      "title": "Air dan Larutan",
+      "titlePrinted": "AIR DAN LARUTAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "6.0",
+      "title": "Asid dan Alkali",
+      "titlePrinted": "ASID DAN ALKALI",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "7.0",
+      "title": "Keelektrikan dan Kemagnetan",
+      "titlePrinted": "KEELEKTRIKAN DAN KEMAGNETAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "8.0",
+      "title": "Daya dan Gerakan",
+      "titlePrinted": "DAYA DAN GERAKAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "9.0",
+      "title": "Haba",
+      "titlePrinted": "HABA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "10.0",
+      "title": "Gelombang Bunyi",
+      "titlePrinted": "GELOMBANG BUNYI",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "11.0",
+      "title": "Bintang dan Galaksi dalam Alam Semesta",
+      "titlePrinted": "BINTANG DAN GALAKSI DALAM ALAM SEMESTA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "12.0",
+      "title": "Sistem Suria",
+      "titlePrinted": "SISTEM SURIA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "13.0",
+      "title": "Meteoroid, Asteroid, Komet",
+      "titlePrinted": "METEOROID, ASTEROID, KOMET",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "1.0",
+      "title": "Rangsangan dan Gerak Balas",
+      "titlePrinted": "RANGSANGAN DAN GERAK BALAS",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "2.0",
+      "title": "Respirasi",
+      "titlePrinted": "RESPIRASI",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "3.0",
+      "title": "Pengangkutan",
+      "titlePrinted": "PENGANGKUTAN",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "4.0",
+      "title": "Kereaktifan Logam",
+      "titlePrinted": "KEREAKTIFAN LOGAM",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "5.0",
+      "title": "Termokimia",
+      "titlePrinted": "TERMOKIMIA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "6.0",
+      "title": "Elektrik dan Kemagnetan",
+      "titlePrinted": "ELEKTRIK DAN KEMAGNETAN",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "7.0",
+      "title": "Tenaga dan Kuasa",
+      "titlePrinted": "TENAGA DAN KUASA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "8.0",
+      "title": "Keradioaktifan",
+      "titlePrinted": "KERADIOAKTIFAN",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "9.0",
+      "title": "Cuaca Angkasa Lepas",
+      "titlePrinted": "CUACA ANGKASA LEPAS",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "10.0",
+      "title": "Penerokaan Angkasa Lepas",
+      "titlePrinted": "PENEROKAAN ANGKASA LEPAS",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "11.0",
+      "title": "1 1.1 Sistem Saraf Manusia",
+      "titlePrinted": "1 1.1 SISTEM SARAF MANUSIA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "12.0",
+      "title": "1.2 Rangsangan dan Gerak Balas dalam Manusia",
+      "titlePrinted": "1.2 RANGSANGAN DAN GERAK BALAS DALAM MANUSIA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "13.0",
+      "title": "1.3 Rangsangan dan Gerak Balas dalam Tumbuhan",
+      "titlePrinted": "1.3 RANGSANGAN DAN GERAK BALAS DALAM TUMBUHAN",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "14.0",
+      "title": "1.4 Kepentingan Gerak Balas terhadap Rangsangan dalam Haiwan Lain",
+      "titlePrinted": "1.4 KEPENTINGAN GERAK BALAS TERHADAP RANGSANGAN DALAM HAIWAN LAIN",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "15.0",
+      "title": "2.3 Kesihatan Sistem Respirasi Manusia",
+      "titlePrinted": "2.3 KESIHATAN SISTEM RESPIRASI MANUSIA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "16.0",
+      "title": "2.4 Adaptasi dalam Sistem Respirasi",
+      "titlePrinted": "2.4 ADAPTASI DALAM SISTEM RESPIRASI",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "17.0",
+      "title": "2.5 Pertukaran Gas dalam Tumbuhan",
+      "titlePrinted": "2.5 PERTUKARAN GAS DALAM TUMBUHAN",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "18.0",
+      "title": "3 3.1 Sistem Pengangkutan dalam Organisma",
+      "titlePrinted": "3 3.1 SISTEM PENGANGKUTAN DALAM ORGANISMA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "19.0",
+      "title": "3.2 Sistem Peredaran Darah",
+      "titlePrinted": "3.2 SISTEM PEREDARAN DARAH",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "20.0",
+      "title": "3.3 Darah Manusia",
+      "titlePrinted": "3.3 DARAH MANUSIA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "21.0",
+      "title": "3.4 Pengangkutan dalam Tumbuhan",
+      "titlePrinted": "3.4 PENGANGKUTAN DALAM TUMBUHAN",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "22.0",
+      "title": "dalam Tumbuhan",
+      "titlePrinted": "DALAM TUMBUHAN",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "23.0",
+      "title": "4.3 Pengekstrakan Logam daripada Bijihnya",
+      "titlePrinted": "4.3 PENGEKSTRAKAN LOGAM DARIPADA BIJIHNYA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "24.0",
+      "title": "5 5.1 Tindak Balas Endotermik dan Eksotermik",
+      "titlePrinted": "5 5.1 TINDAK BALAS ENDOTERMIK DAN EKSOTERMIK",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "25.0",
+      "title": "6.1 Penjanaan Tenaga Elektrik",
+      "titlePrinted": "6.1 PENJANAAN TENAGA ELEKTRIK",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "26.0",
+      "title": "6.2 Transformer",
+      "titlePrinted": "6.2 TRANSFORMER",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "27.0",
+      "title": "6.3 Penghantaran dan Pengagihan Tenaga Elektrik",
+      "titlePrinted": "6.3 PENGHANTARAN DAN PENGAGIHAN TENAGA ELEKTRIK",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "28.0",
+      "title": "6.4 Pengiraan Kos Penggunaan Elektrik",
+      "titlePrinted": "6.4 PENGIRAAN KOS PENGGUNAAN ELEKTRIK",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "29.0",
+      "title": "7.1 Kerja, Tenaga dan Kuasa",
+      "titlePrinted": "7.1 KERJA, TENAGA DAN KUASA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "30.0",
+      "title": "7.2 Tenaga Keupayaan dan Tenaga Kinetik",
+      "titlePrinted": "7.2 TENAGA KEUPAYAAN DAN TENAGA KINETIK",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "31.0",
+      "title": "7.3 Prinsip Keabadian Tenaga",
+      "titlePrinted": "7.3 PRINSIP KEABADIAN TENAGA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "32.0",
+      "title": "8.1 Sejarah Penemuan Keradioaktifan",
+      "titlePrinted": "8.1 SEJARAH PENEMUAN KERADIOAKTIFAN",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "33.0",
+      "title": "8.2 Atom dan Nukleus",
+      "titlePrinted": "8.2 ATOM DAN NUKLEUS",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "34.0",
+      "title": "8.3 Sinaran Mengion dan Sinaran Tidak Mengion",
+      "titlePrinted": "8.3 SINARAN MENGION DAN SINARAN TIDAK MENGION",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "35.0",
+      "title": "8.4 Kegunaan Sinaran Radioaktif",
+      "titlePrinted": "8.4 KEGUNAAN SINARAN RADIOAKTIF",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "36.0",
+      "title": "9.1 Aktiviti Matahari yang Memberi Kesan kepada Bumi",
+      "titlePrinted": "9.1 AKTIVITI MATAHARI YANG MEMBERI KESAN KEPADA BUMI",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "37.0",
+      "title": "9.2 Cuaca Angkasa",
+      "titlePrinted": "9.2 CUACA ANGKASA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "38.0",
+      "title": "10.1 Perkembangan dalam Astronomi",
+      "titlePrinted": "10.1 PERKEMBANGAN DALAM ASTRONOMI",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "39.0",
+      "title": "10.2 Perkembangan dan Teknologi dalam Penerokaan Angkasa Lepas",
+      "titlePrinted": "10.2 PERKEMBANGAN DAN TEKNOLOGI DALAM PENEROKAAN ANGKASA LEPAS",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "40.0",
+      "title": "Indeks",
+      "titlePrinted": "INDEKS",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "41.0",
+      "title": "Langkah",
+      "titlePrinted": "LANGKAH",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "42.0",
+      "title": "1 Rumusan",
+      "titlePrinted": "1 RUMUSAN",
+      "standards": []
+    },
     {
       "level": "T4",
       "code": "1.0",

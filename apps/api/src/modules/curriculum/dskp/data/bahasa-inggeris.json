@@ -2,6 +2,8 @@
  "subject": "Bahasa Inggeris (English Language)",
  "subjectCode": null,
  "levels": [
+  "T1",
+  "T2",
   "T4",
   "T5"
  ],
@@ -11,10 +13,12 @@
  },
  "source": "DSKP BAHASA INGGERIS Form 4.pdf; DSKP BAHASA INGGERIS Form 5.pdf",
  "edition": {
+  "T1": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)",
+  "T2": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)",
   "T4": "Cover printed 'DRAF 1/2018', Terbitan 2018, Bahagian Pembangunan Kurikulum, April 2018 (KSSM Bahasa Inggeris Tingkatan 4)",
   "T5": "Terbitan 2020, Bahagian Pembangunan Kurikulum, November 2020 (KSSM Bahasa Inggeris Tingkatan 5)"
  },
- "structureNote": "Printed hierarchy: Skill (1.0 Listening / 2.0 Speaking / 3.0 Reading / 4.0 Writing / 5.0 Literature in Action) > Content Standard (e.g. 1.1) with FOCUS statements > Learning Standard (e.g. 1.1.1). The printed DSKP has no per-topic unit hierarchy: each 'unit' here is one skill per form (5 per level). 'sk' = Content Standard code/title, 'sp' = Learning Standards (some printed as 'No learning standard'). 'focus' lists the FOCUS column statements (they are not mapped 1:1 to codes in the printed table). 'tahapPenguasaan' = the six Performance Levels of the Performance Standards Guide for that skill (Literature in Action has none: assessed through the four skills). Themes and topics are only named at syllabus level (themes below) and detailed in the separate Scheme of Work, not in this document. Target proficiency: CEFR B1 Mid by end of Form 4.",
+ "structureNote": "Printed hierarchy: Skill (1.0 Listening / 2.0 Speaking / 3.0 Reading / 4.0 Writing / 5.0 Literature in Action) > Content Standard (e.g. 1.1) with FOCUS statements > Learning Standard (e.g. 1.1.1). The printed DSKP has no per-topic unit hierarchy: each 'unit' here is one skill per form (5 per level). 'sk' = Content Standard code/title, 'sp' = Learning Standards (some printed as 'No learning standard'). 'focus' lists the FOCUS column statements (they are not mapped 1:1 to codes in the printed table). 'tahapPenguasaan' = the six Performance Levels of the Performance Standards Guide for that skill (Literature in Action has none: assessed through the four skills). Themes and topics are only named at syllabus level (themes below) and detailed in the separate Scheme of Work, not in this document. Target proficiency: CEFR B1 Mid by end of Form 4. T1-T3: Bab-level nodes only, built from the V3 chapter data (curriculum-data/chapters.json, in-tree chapters of this subject and Tingkatan; decisions D109/D115). Code is \"<chapterNumber>.0\"; titlePrinted is the chapter name in upper case; no Bidang grouping, no SK/SP and no TP are available, so none are invented.",
  "themes": [
   "People and Culture",
   "Health and Environment",
@@ -70,6 +74,160 @@
   ]
  },
  "units": [
+  {
+   "level": "T1",
+   "code": "1.0",
+   "title": "New Year, New You",
+   "titlePrinted": "NEW YEAR, NEW YOU",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "2.0",
+   "title": "It’s a Small World",
+   "titlePrinted": "IT’S A SMALL WORLD",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "3.0",
+   "title": "Nature’s Warning!",
+   "titlePrinted": "NATURE’S WARNING!",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "4.0",
+   "title": "Be Wise, Think Twice",
+   "titlePrinted": "BE WISE, THINK TWICE",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "5.0",
+   "title": "5 A Bundle of Joy",
+   "titlePrinted": "5 A BUNDLE OF JOY",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "6.0",
+   "title": "6 Ready, Set, Action!",
+   "titlePrinted": "6 READY, SET, ACTION!",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "7.0",
+   "title": "7 Once Bitten, Twice Shy",
+   "titlePrinted": "7 ONCE BITTEN, TWICE SHY",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "8.0",
+   "title": "8 The Savvy e-Shopper",
+   "titlePrinted": "8 THE SAVVY E-SHOPPER",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "9.0",
+   "title": "9 Stand by Me",
+   "titlePrinted": "9 STAND BY ME",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "10.0",
+   "title": "10 Gadgets and Gizmos",
+   "titlePrinted": "10 GADGETS AND GIZMOS",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "11.0",
+   "title": "11 Live Life to the Fullest",
+   "titlePrinted": "11 LIVE LIFE TO THE FULLEST",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "12.0",
+   "title": "12 Prudent Lifestyles",
+   "titlePrinted": "12 PRUDENT LIFESTYLES",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "13.0",
+   "title": "13 I am Malaysian",
+   "titlePrinted": "13 I AM MALAYSIAN",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "14.0",
+   "title": "14 Heals and Aids",
+   "titlePrinted": "14 HEALS AND AIDS",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "15.0",
+   "title": "15 Keep Green, Keep Clean",
+   "titlePrinted": "15 KEEP GREEN, KEEP CLEAN",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "16.0",
+   "title": "16 Smart Plan, Better Future",
+   "titlePrinted": "16 SMART PLAN, BETTER FUTURE",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "17.0",
+   "title": "Let’s Review",
+   "titlePrinted": "LET’S REVIEW",
+   "standards": []
+  },
+  {
+   "level": "T2",
+   "code": "1.0",
+   "title": "Jobs and Chores",
+   "titlePrinted": "JOBS AND CHORES",
+   "standards": []
+  },
+  {
+   "level": "T2",
+   "code": "2.0",
+   "title": "Future Plans and Making Money",
+   "titlePrinted": "FUTURE PLANS AND MAKING MONEY",
+   "standards": []
+  },
+  {
+   "level": "T2",
+   "code": "3.0",
+   "title": "Money and Shopping",
+   "titlePrinted": "MONEY AND SHOPPING",
+   "standards": []
+  },
+  {
+   "level": "T2",
+   "code": "5.0",
+   "title": "QZ",
+   "titlePrinted": "QZ",
+   "standards": []
+  },
+  {
+   "level": "T2",
+   "code": "4.0",
+   "title": "Second-hand Shopping",
+   "titlePrinted": "SECOND-HAND SHOPPING",
+   "standards": []
+  },
   {
    "level": "T4",
    "code": "1.0",

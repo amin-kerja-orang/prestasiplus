@@ -10,12 +10,12 @@ const DSKP_DIR = fileURLToPath(new URL('../../../../docs/reference/dskp/', impor
 const files = readdirSync(DSKP_DIR).filter((f) => f.endsWith('.json'))
 
 describe('DSKP loader (AC6)', () => {
-  it('loads all 13 DSKP JSON files without error and the seed maps every file to a subject', () => {
-    expect(files).toHaveLength(13)
+  it('loads all 20 DSKP JSON files without error and the seed maps every file to a subject', () => {
+    expect(files).toHaveLength(20)
     expect(DSKP_FILES.map((f) => f.file).sort()).toEqual([...files].sort())
-    expect(new Set(DSKP_FILES.map((f) => f.subject)).size).toBe(13)
+    expect(new Set(DSKP_FILES.map((f) => f.subject)).size).toBe(20)
     const loaded = loadDskp()
-    expect(loaded).toHaveLength(13)
+    expect(loaded).toHaveLength(20)
     for (const { file, extract } of loaded) {
       expect(extract.nodes.length, file).toBeGreaterThan(0)
     }

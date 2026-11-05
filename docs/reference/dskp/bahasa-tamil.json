@@ -1,0 +1,573 @@
+{
+  "subject": "Bahasa Tamil",
+  "subjectCode": null,
+  "levels": [
+    "T1",
+    "T2",
+    "T3"
+  ],
+  "language": "ms",
+  "source": "V3 chapter data (apps/api/prisma/seed/curriculum-data/chapters.json)",
+  "edition": {
+    "T1": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)",
+    "T2": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)",
+    "T3": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)"
+  },
+  "structureNote": "T1-T3: Bab-level nodes only, built from the V3 chapter data (curriculum-data/chapters.json, in-tree chapters of this subject and Tingkatan; decisions D109/D115). Code is \"<chapterNumber>.0\"; titlePrinted is the chapter name in upper case; no Bidang grouping, no SK/SP and no TP are available, so none are invented.",
+  "manualCorrections": [],
+  "units": [
+    {
+      "level": "T1",
+      "code": "1.0",
+      "title": "Unit 1: Mozhiyum Kadamaiyum",
+      "titlePrinted": "UNIT 1: MOZHIYUM KADAMAIYUM",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "2.0",
+      "title": "Unit 2: Tamilar Parampariya Vilaiyattugal",
+      "titlePrinted": "UNIT 2: TAMILAR PARAMPARIYA VILAIYATTUGAL",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "3.0",
+      "title": "Unit 3: Panpaattai Potruvom",
+      "titlePrinted": "UNIT 3: PANPAATTAI POTRUVOM",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "4.0",
+      "title": "Unit 4: Iyarkaiyai Nesippom",
+      "titlePrinted": "UNIT 4: IYARKAIYAI NESIPPOM",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "5.0",
+      "title": "Unit 5: Sinthanaiyum Seyalum",
+      "titlePrinted": "UNIT 5: SINTHANAIYUM SEYALUM",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "6.0",
+      "title": "Unit 6: Ilakkiya Payanum Suvaiyum",
+      "titlePrinted": "UNIT 6: ILAKKIYA PAYANUM SUVAIYUM",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "7.0",
+      "title": "Unit 7: Manitha Vaazhvil Paadhukaappu",
+      "titlePrinted": "UNIT 7: MANITHA VAAZHVIL PAADHUKAAPPU",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "8.0",
+      "title": "Unit 8: Thagaval Yugam",
+      "titlePrinted": "UNIT 8: THAGAVAL YUGAM",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "9.0",
+      "title": "Unit 9: Varalatrai Meetteduppom",
+      "titlePrinted": "UNIT 9: VARALATRAI MEETTEDUPPOM",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "10.0",
+      "title": "Unit 10: Mozhiye Namathu Vizhi",
+      "titlePrinted": "UNIT 10: MOZHIYE NAMATHU VIZHI",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "11.0",
+      "title": "Unit 11: Sutru Choozhalum Thooimaiyum",
+      "titlePrinted": "UNIT 11: SUTRU CHOOZHALUM THOOIMAIYUM",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "12.0",
+      "title": "Unit 12: Vaazhum Kalai",
+      "titlePrinted": "UNIT 12: VAAZHUM KALAI",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "13.0",
+      "title": "Unit 13: Thozhilnutpam",
+      "titlePrinted": "UNIT 13: THOZHILNUTPAM",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "14.0",
+      "title": "Unit 14: Vilaiyaattu Ulagam",
+      "titlePrinted": "UNIT 14: VILAIYAATTU ULAGAM",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "15.0",
+      "title": "Unit 15: Samuga Vaazhvil Sumooga Vaazhvu",
+      "titlePrinted": "UNIT 15: SAMUGA VAAZHVIL SUMOOGA VAAZHVU",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "16.0",
+      "title": "Unit 16: Arivaarndha Payaneedu",
+      "titlePrinted": "UNIT 16: ARIVAARNDHA PAYANEEDU",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "17.0",
+      "title": "Unit 17: Vaniga Ulagam",
+      "titlePrinted": "UNIT 17: VANIGA ULAGAM",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "18.0",
+      "title": "Unit 18: Panpaadum Unavum",
+      "titlePrinted": "UNIT 18: PANPAADUM UNAVUM",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "19.0",
+      "title": "Unit 19: Narpanbum Nalla Uravum",
+      "titlePrinted": "UNIT 19: NARPANBUM NALLA URAVUM",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "20.0",
+      "title": "Unit 20: Thannambikkai",
+      "titlePrinted": "UNIT 20: THANNAMBIKKAI",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "21.0",
+      "title": "Unit 21: Suttrulaa Thurai",
+      "titlePrinted": "UNIT 21: SUTTRULAA THURAI",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "22.0",
+      "title": "bjhFâ 18 m¿nth«! ngh‰Wnth«!",
+      "titlePrinted": "BJHFÂ 18 M¿NTH«! NGH‰WNTH«!",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "23.0",
+      "title": "bjhFâ 19 e‰g©òfŸ",
+      "titlePrinted": "BJHFÂ 19 E‰G©ÒFŸ",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "24.0",
+      "title": "bjhFâ 20 j‹Kid¥ò",
+      "titlePrinted": "BJHFÂ 20 J‹KID¥Ò",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "25.0",
+      "title": "bjhFâ 21 R‰Wyh¤ Jiw",
+      "titlePrinted": "BJHFÂ 21 R‰WYH¤ JIW",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "26.0",
+      "title": "ÛŸgh®it¥ gÆ‰á - brŒíŸ bkhÊaÂ",
+      "titlePrinted": "ÛŸGH®IT¥ GÆ‰Á - BRŒÍŸ BKHÊAÂ",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "27.0",
+      "title": "ÛŸgh®it¥ gÆ‰á - ïy¡fz«",
+      "titlePrinted": "ÛŸGH®IT¥ GÆ‰Á - ÏY¡FZ«",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "28.0",
+      "title": "mfu Ãuš F¿¥ò",
+      "titlePrinted": "MFU ÃUŠ F¿¥Ò",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "29.0",
+      "title": "Jiz üš g£oaš",
+      "titlePrinted": "JIZ ÜŠ G£OAŠ",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "1.0",
+      "title": "Unit 1: Valamaana Kudumbam",
+      "titlePrinted": "UNIT 1: VALAMAANA KUDUMBAM",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "2.0",
+      "title": "Unit 2: Nalam Potruvom",
+      "titlePrinted": "UNIT 2: NALAM POTRUVOM",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "3.0",
+      "title": "Unit 3: Thagaval Thodarbu Thozhilnutpam",
+      "titlePrinted": "UNIT 3: THAGAVAL THODARBU THOZHILNUTPAM",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "4.0",
+      "title": "Unit 4: Ariviyal Ulagam",
+      "titlePrinted": "UNIT 4: ARIVIYAL ULAGAM",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "5.0",
+      "title": "Unit 5: Unave Marunthu",
+      "titlePrinted": "UNIT 5: UNAVE MARUNTHU",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "6.0",
+      "title": "Unit 6: Pothu Pokkuvarathu",
+      "titlePrinted": "UNIT 6: POTHU POKKUVARATHU",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "7.0",
+      "title": "Unit 7: Sutru Choozhalum Naamum",
+      "titlePrinted": "UNIT 7: SUTRU CHOOZHALUM NAAMUM",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "8.0",
+      "title": "Unit 8: Tamizhai Potruvom",
+      "titlePrinted": "UNIT 8: TAMIZHAI POTRUVOM",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "9.0",
+      "title": "Unit 9: Varalaarum Panpaadum",
+      "titlePrinted": "UNIT 9: VARALAARUM PANPAADUM",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "10.0",
+      "title": "Unit 10: Nambikkaiyum Muyarchiyum",
+      "titlePrinted": "UNIT 10: NAMBIKKAIYUM MUYARCHIYUM",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "11.0",
+      "title": "Unit 11: Nalla Uravugal",
+      "titlePrinted": "UNIT 11: NALLA URAVUGAL",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "12.0",
+      "title": "Unit 12: Samuga Sevai",
+      "titlePrinted": "UNIT 12: SAMUGA SEVAI",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "13.0",
+      "title": "Unit 13: Nalla Vazhkkai",
+      "titlePrinted": "UNIT 13: NALLA VAZHKKAI",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "14.0",
+      "title": "Unit 14: Vilaiyaaduvom Vaarungal",
+      "titlePrinted": "UNIT 14: VILAIYAADUVOM VAARUNGAL",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "15.0",
+      "title": "Unit 15: Varalaaru Arivom",
+      "titlePrinted": "UNIT 15: VARALAARU ARIVOM",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "16.0",
+      "title": "Unit 16: Panpaattu Nigazhchigal",
+      "titlePrinted": "UNIT 16: PANPAATTU NIGAZHCHIGAL",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "17.0",
+      "title": "Unit 17: Thiramaigalai Valarppom",
+      "titlePrinted": "UNIT 17: THIRAMAIGALAI VALARPPOM",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "18.0",
+      "title": "Unit 18: Paadhukaappu Naamum",
+      "titlePrinted": "UNIT 18: PAADHUKAAPPU NAAMUM",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "19.0",
+      "title": "Unit 19: Payanulla Kalviyum Sugathaaramum",
+      "titlePrinted": "UNIT 19: PAYANULLA KALVIYUM SUGATHAARAMUM",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "20.0",
+      "title": "Unit 20: Melainaatu Paadugal",
+      "titlePrinted": "UNIT 20: MELAINAATU PAADUGAL",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "21.0",
+      "title": "Unit 21: Mozhiyai Naamum",
+      "titlePrinted": "UNIT 21: MOZHIYAI NAAMUM",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "22.0",
+      "title": "21 bkhÊí« ehK«",
+      "titlePrinted": "21 BKHÊÍ« EHK«",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "23.0",
+      "title": "mfu Ãuš F¿¥ò",
+      "titlePrinted": "MFU ÃUŠ F¿¥Ò",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "24.0",
+      "title": "Jiz üš g£oaš",
+      "titlePrinted": "JIZ ÜŠ G£OAŠ",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "25.0",
+      "title": "fh¥ngh« »sÉ tiugl« ïLgÂ",
+      "titlePrinted": "FH¥NGH« »SÉ TIUGL« ÏLGÂ",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "26.0",
+      "title": "2. T£L¡ FL«g« 2.1.4 ïLgÂ",
+      "titlePrinted": "2. T£L¡ FL«G« 2.1.4 ÏLGÂ",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "27.0",
+      "title": "thœ¡if ïLgÂ",
+      "titlePrinted": "THŒ¡IF ÏLGÂ",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "28.0",
+      "title": "ga‹fŸ ïLgÂ",
+      "titlePrinted": "GA‹FŸ ÏLGÂ",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "29.0",
+      "title": "ïLgÂ",
+      "titlePrinted": "ÏLGÂ",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "1.0",
+      "title": "Unit 1: இலக்கியமும் நாமும்",
+      "titlePrinted": "UNIT 1: இலக்கியமும் நாமும்",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "2.0",
+      "title": "Unit 2: மனித வாழ்வில் பாதுகாப்பு",
+      "titlePrinted": "UNIT 2: மனித வாழ்வில் பாதுகாப்பு",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "3.0",
+      "title": "Unit 3: தகவல் யுகம்",
+      "titlePrinted": "UNIT 3: தகவல் யுகம்",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "4.0",
+      "title": "Unit 4: வரலாற்றை மீட்டெடுப்போம்",
+      "titlePrinted": "UNIT 4: வரலாற்றை மீட்டெடுப்போம்",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "5.0",
+      "title": "Unit 5: மொழியே நமது விழி",
+      "titlePrinted": "UNIT 5: மொழியே நமது விழி",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "6.0",
+      "title": "Unit 6: சுற்றுச்சூழலும் தூய்மையும்",
+      "titlePrinted": "UNIT 6: சுற்றுச்சூழலும் தூய்மையும்",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "7.0",
+      "title": "Unit 7: வாழும் கலை",
+      "titlePrinted": "UNIT 7: வாழும் கலை",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "8.0",
+      "title": "Unit 8: தொழில்நுட்பம்",
+      "titlePrinted": "UNIT 8: தொழில்நுட்பம்",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "9.0",
+      "title": "Unit 9: விளையாட்டு உலகம்",
+      "titlePrinted": "UNIT 9: விளையாட்டு உலகம்",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "10.0",
+      "title": "Unit 10: சமூக வாழ்வில் சுமூக வாழ்வு",
+      "titlePrinted": "UNIT 10: சமூக வாழ்வில் சுமூக வாழ்வு",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "11.0",
+      "title": "Unit 11: அறிவார்ந்த பயனீடு",
+      "titlePrinted": "UNIT 11: அறிவார்ந்த பயனீடு",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "12.0",
+      "title": "Unit 12: வணிக உலகம்",
+      "titlePrinted": "UNIT 12: வணிக உலகம்",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "13.0",
+      "title": "Unit 13: பண்பாடும் உணவும்",
+      "titlePrinted": "UNIT 13: பண்பாடும் உணவும்",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "14.0",
+      "title": "Unit 14: நற்பண்பும் நல்லுறவும்",
+      "titlePrinted": "UNIT 14: நற்பண்பும் நல்லுறவும்",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "15.0",
+      "title": "Unit 15: தன்னம்பிக்கை",
+      "titlePrinted": "UNIT 15: தன்னம்பிக்கை",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "16.0",
+      "title": "Unit 16: சுற்றுலாத் துறை",
+      "titlePrinted": "UNIT 16: சுற்றுலாத் துறை",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "17.0",
+      "title": "Unit 17: கல்வியும் எதிர்காலமும்",
+      "titlePrinted": "UNIT 17: கல்வியும் எதிர்காலமும்",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "18.0",
+      "title": "Unit 18: மக்களும் ஊடகமும்",
+      "titlePrinted": "UNIT 18: மக்களும் ஊடகமும்",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "19.0",
+      "title": "Unit 19: நலமும் பாதுகாப்பும்",
+      "titlePrinted": "UNIT 19: நலமும் பாதுகாப்பும்",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "20.0",
+      "title": "Unit 20: தமிழரும் மரபும்",
+      "titlePrinted": "UNIT 20: தமிழரும் மரபும்",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "21.0",
+      "title": "Unit 21: மொழியும் பண்பாடும்",
+      "titlePrinted": "UNIT 21: மொழியும் பண்பாடும்",
+      "standards": []
+    }
+  ]
+}

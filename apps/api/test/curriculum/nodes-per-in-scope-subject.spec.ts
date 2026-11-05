@@ -46,17 +46,17 @@ describe('R1-12.6: curriculum nodes per in-scope subject (runbook section 4 SELE
     for (const r of rows) expect(Number(r.nodes), r.subject).toBeGreaterThan(0)
   })
 
-  it('the total is 2,844, the number the runbook (section 4) expects from the loader report', async () => {
+  it('the total is 3,652 (2,844 at Tingkatan 4-5 + 808 Bab-level nodes at Tingkatan 1-3), the number the runbook (section 4) expects from the loader report', async () => {
     const [row] = await db.query<{ nodes: string }>(TOTAL)
-    expect(Number(row!.nodes)).toBe(2844)
+    expect(Number(row!.nodes)).toBe(3652)
   })
 
   it('the runbook "subject without a node" SELECT returns no row', async () => {
     expect(await db.query(WITHOUT_NODES)).toEqual([])
   })
 
-  it('only Tingkatan 4 and 5 carry nodes', async () => {
-    expect((await db.query<{ code: string }>(LEVELS)).map((r) => r.code)).toEqual(['T4', 'T5'])
+  it('Tingkatan 1 to 5 carry nodes (T1-T3 Bab-level only)', async () => {
+    expect((await db.query<{ code: string }>(LEVELS)).map((r) => r.code)).toEqual(['T1', 'T2', 'T3', 'T4', 'T5'])
   })
 
   it('the "without a node" SELECT does report a subject that has none (a code the load never creates)', async () => {

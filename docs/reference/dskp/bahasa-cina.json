@@ -1,0 +1,23 @@
+{
+  "subject": "Bahasa Cina",
+  "subjectCode": null,
+  "levels": [
+    "T3"
+  ],
+  "language": "ms",
+  "source": "V3 chapter data (apps/api/prisma/seed/curriculum-data/chapters.json)",
+  "edition": {
+    "T3": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)"
+  },
+  "structureNote": "T1-T3: Bab-level nodes only, built from the V3 chapter data (curriculum-data/chapters.json, in-tree chapters of this subject and Tingkatan; decisions D109/D115). Code is \"<chapterNumber>.0\"; titlePrinted is the chapter name in upper case; no Bidang grouping, no SK/SP and no TP are available, so none are invented.",
+  "manualCorrections": [],
+  "units": [
+    {
+      "level": "T3",
+      "code": "51.0",
+      "title": "简介 21 世纪教学法 ix 春日偶成",
+      "titlePrinted": "简介 21 世纪教学法 IX 春日偶成",
+      "standards": []
+    }
+  ]
+}

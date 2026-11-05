@@ -79,7 +79,7 @@ describe('DSKP loader script (R1-B04)', () => {
     const expectedTps = sources.reduce((n, s) => n + (s.extract?.tps.length ?? 0), 0)
     const report = await runDskpLoad(db.prisma, sources, { dryRun: true, now: NOW })
     expect(exitCodeOf(report)).toBe(0)
-    expect(report.subjects).toHaveLength(13)
+    expect(report.subjects).toHaveLength(20)
     expect(sum(report, (l) => l.nodes.inserted)).toBe(expectedNodes)
     expect(sum(report, (l) => l.tps.inserted)).toBe(expectedTps)
     expect(sum(report, (l) => l.nodes.unchanged)).toBe(0)
@@ -113,9 +113,9 @@ describe('DSKP loader script (R1-B04)', () => {
     }
     expect(await nodesNow()).toBe(sum(real, (l) => l.nodes.inserted))
     expect(await tpsNow()).toBe(sum(real, (l) => l.tps.inserted))
-    // Tingkatan 4 and 5 only, an edition on every node, no orphans.
+    // Tingkatan 1 to 5 (T1-T3 are Bab-level only, S4-T09), an edition on every node, no orphans.
     const levels = await db.query<{ code: string }>(`select distinct l.code from curriculum_nodes n join education_levels l on l.id = n.education_level_id order by 1`)
-    expect(levels.map((r) => r.code)).toEqual(['T4', 'T5'])
+    expect(levels.map((r) => r.code)).toEqual(['T1', 'T2', 'T3', 'T4', 'T5'])
     expect(await count(db, `select count(*) n from curriculum_nodes where edition is null or edition = ''`)).toBe(0)
     expect(await count(db, `select count(*) n from curriculum_nodes c where parent_id is not null and not exists (select 1 from curriculum_nodes p where p.id = c.parent_id)`)).toBe(0)
   })

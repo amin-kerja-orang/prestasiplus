@@ -1,0 +1,272 @@
+{
+  "subject": "Geografi",
+  "subjectCode": null,
+  "levels": [
+    "T1",
+    "T2",
+    "T3"
+  ],
+  "language": "ms",
+  "source": "V3 chapter data (apps/api/prisma/seed/curriculum-data/chapters.json)",
+  "edition": {
+    "T1": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)",
+    "T2": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)",
+    "T3": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)"
+  },
+  "structureNote": "T1-T3: Bab-level nodes only, built from the V3 chapter data (curriculum-data/chapters.json, in-tree chapters of this subject and Tingkatan; decisions D109/D115). Code is \"<chapterNumber>.0\"; titlePrinted is the chapter name in upper case; no Bidang grouping, no SK/SP and no TP are available, so none are invented.",
+  "manualCorrections": [],
+  "units": [
+    {
+      "level": "T1",
+      "code": "1.0",
+      "title": "Kemahiran Geografi",
+      "titlePrinted": "KEMAHIRAN GEOGRAFI",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "2.0",
+      "title": "Bentuk Muka Bumi",
+      "titlePrinted": "BENTUK MUKA BUMI",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "3.0",
+      "title": "Cuaca dan Iklim",
+      "titlePrinted": "CUACA DAN IKLIM",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "4.0",
+      "title": "Sumber dan Kelestarian",
+      "titlePrinted": "SUMBER DAN KELESTARIAN",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "5.0",
+      "title": "Bumi",
+      "titlePrinted": "BUMI",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "6.0",
+      "title": "Bentuk Muka Bumi",
+      "titlePrinted": "BENTUK MUKA BUMI",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "7.0",
+      "title": "Saliran",
+      "titlePrinted": "SALIRAN",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "8.0",
+      "title": "Penduduk di Malaysia",
+      "titlePrinted": "PENDUDUK DI MALAYSIA",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "9.0",
+      "title": "Petempatan di Malaysia",
+      "titlePrinted": "PETEMPATAN DI MALAYSIA",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "10.0",
+      "title": "Bentuk Muka Bumi dan Saliran di Asia Tenggara",
+      "titlePrinted": "BENTUK MUKA BUMI DAN SALIRAN DI ASIA TENGGARA",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "11.0",
+      "title": "Sumber Air",
+      "titlePrinted": "SUMBER AIR",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "12.0",
+      "title": "Sisa Domestik",
+      "titlePrinted": "SISA DOMESTIK",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "13.0",
+      "title": "EKSPLORASI BAB",
+      "titlePrinted": "EKSPLORASI BAB",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "1.0",
+      "title": "Skala dan Jarak",
+      "titlePrinted": "SKALA DAN JARAK",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "2.0",
+      "title": "Peta Topografi",
+      "titlePrinted": "PETA TOPOGRAFI",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "3.0",
+      "title": "Pengaruh Pergerakan Bumi terhadap Cuaca dan Iklim",
+      "titlePrinted": "PENGARUH PERGERAKAN BUMI TERHADAP CUACA DAN IKLIM",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "4.0",
+      "title": "Cuaca dan Iklim di Malaysia",
+      "titlePrinted": "CUACA DAN IKLIM DI MALAYSIA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "5.0",
+      "title": "Pengangkutan di Malaysia",
+      "titlePrinted": "PENGANGKUTAN DI MALAYSIA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "6.0",
+      "title": "Telekomunikasi di Malaysia",
+      "titlePrinted": "TELEKOMUNIKASI DI MALAYSIA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "7.0",
+      "title": "Kepelbagaian Iklim dan Pengaruhnya terhadap Kegiatan Manusia di Asia",
+      "titlePrinted": "KEPELBAGAIAN IKLIM DAN PENGARUHNYA TERHADAP KEGIATAN MANUSIA DI ASIA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "8.0",
+      "title": "Jenis dan Kemajuan Pengangkutan di Asia",
+      "titlePrinted": "JENIS DAN KEMAJUAN PENGANGKUTAN DI ASIA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "9.0",
+      "title": "Pemanasan Global",
+      "titlePrinted": "PEMANASAN GLOBAL",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "10.0",
+      "title": "Teknologi Hijau",
+      "titlePrinted": "TEKNOLOGI HIJAU",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "11.0",
+      "title": "Panduan Kerja Lapangan",
+      "titlePrinted": "PANDUAN KERJA LAPANGAN",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "1.0",
+      "title": "Jadual dan Graf",
+      "titlePrinted": "JADUAL DAN GRAF",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "2.0",
+      "title": "Carta Pai",
+      "titlePrinted": "CARTA PAI",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "3.0",
+      "title": "Pengaruh Persekitaran Fizikal terhadap Kepelbagaian Tumbuh-tumbuhan Semula Jadi dan Hidupan Liar",
+      "titlePrinted": "PENGARUH PERSEKITARAN FIZIKAL TERHADAP KEPELBAGAIAN TUMBUH-TUMBUHAN SEMULA JADI DAN HIDUPAN LIAR",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "4.0",
+      "title": "Tumbuh-tumbuhan Semula Jadi di Malaysia",
+      "titlePrinted": "TUMBUH-TUMBUHAN SEMULA JADI DI MALAYSIA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "5.0",
+      "title": "Hidupan Liar di Malaysia",
+      "titlePrinted": "HIDUPAN LIAR DI MALAYSIA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "6.0",
+      "title": "Sumber Semula Jadi di Malaysia",
+      "titlePrinted": "SUMBER SEMULA JADI DI MALAYSIA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "7.0",
+      "title": "Kegiatan Ekonomi di Malaysia",
+      "titlePrinted": "KEGIATAN EKONOMI DI MALAYSIA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "8.0",
+      "title": "Tumbuh-tumbuhan Semula Jadi dan Hidupan Liar di Dunia",
+      "titlePrinted": "TUMBUH-TUMBUHAN SEMULA JADI DAN HIDUPAN LIAR DI DUNIA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "9.0",
+      "title": "Sumber Semula Jadi Utama dan Kerjasama Ekonomi di Dunia",
+      "titlePrinted": "SUMBER SEMULA JADI UTAMA DAN KERJASAMA EKONOMI DI DUNIA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "10.0",
+      "title": "Sumber Hutan",
+      "titlePrinted": "SUMBER HUTAN",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "11.0",
+      "title": "Kitar Semula",
+      "titlePrinted": "KITAR SEMULA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "12.0",
+      "title": "Panduan Kerja Lapangan",
+      "titlePrinted": "PANDUAN KERJA LAPANGAN",
+      "standards": []
+    }
+  ]
+}

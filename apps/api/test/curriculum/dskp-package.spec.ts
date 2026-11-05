@@ -10,8 +10,8 @@ const REFERENCE = fileURLToPath(new URL('../../../../docs/reference/dskp/', impo
 const jsonIn = (dir: string): string[] => readdirSync(dir).filter((f) => f.endsWith('.json')).sort()
 
 describe('packaged DSKP data (R1-B04)', () => {
-  it('has the same 13 files as docs/reference/dskp', () => {
-    expect(jsonIn(PACKAGED)).toHaveLength(13)
+  it('has the same 20 files as docs/reference/dskp', () => {
+    expect(jsonIn(PACKAGED)).toHaveLength(20)
     expect(jsonIn(PACKAGED)).toEqual(jsonIn(REFERENCE))
   })
 
@@ -26,7 +26,7 @@ describe('packaged DSKP data (R1-B04)', () => {
   it('maps every packaged file to a subject code and parses it', () => {
     expect(DSKP_FILES.map((f) => f.file).sort()).toEqual(jsonIn(PACKAGED))
     const sources = readDskpSources()
-    expect(sources).toHaveLength(13)
+    expect(sources).toHaveLength(20)
     for (const s of sources) {
       expect(s.error, s.file).toBeNull()
       expect(s.subjectCode, s.file).not.toBeNull()

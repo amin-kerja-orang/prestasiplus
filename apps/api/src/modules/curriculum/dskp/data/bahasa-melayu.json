@@ -2,13 +2,22 @@
   "subject": "Bahasa Melayu",
   "subjectCode": null,
   "levels": [
+    "T1",
+    "T2",
+    "T3",
     "T4",
     "T5"
   ],
   "language": "ms",
   "source": "DSKP BAHASA.MELAYU.pdf",
-  "edition": "KSSM Bahasa Melayu Tingkatan 4 dan 5, Dokumen Standard Kurikulum dan Pentaksiran, Bahagian Pembangunan Kurikulum, Terbitan 2018 (cover also shows overprinted \"SEPTEMBER 2018\" and \"NOVEMBER 2017\")",
-  "structureNote": "Structure differs from the maths/science subjects: units are the language skills/aspects (1.0 Kemahiran Mendengar dan Bertutur, 2.0 Kemahiran Membaca, 3.0 Kemahiran Menulis, 4.0 Aspek Seni Bahasa, 5.0 Aspek Tatabahasa) -> SK -> SP. Standard Prestasi (tahap penguasaan 1-6 with labels Sangat Terhad..Cemerlang) exists only for units 1.0-3.0; 4.0 and 5.0 carry a CATATAN (assessed through the three skills) instead. There are no Tajuk/themes: the Tema list in the front matter is not part of the SK/SP tables.",
+  "edition": {
+    "T1": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)",
+    "T2": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)",
+    "T3": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)",
+    "T4": "KSSM Bahasa Melayu Tingkatan 4 dan 5, Dokumen Standard Kurikulum dan Pentaksiran, Bahagian Pembangunan Kurikulum, Terbitan 2018 (cover also shows overprinted \"SEPTEMBER 2018\" and \"NOVEMBER 2017\")",
+    "T5": "KSSM Bahasa Melayu Tingkatan 4 dan 5, Dokumen Standard Kurikulum dan Pentaksiran, Bahagian Pembangunan Kurikulum, Terbitan 2018 (cover also shows overprinted \"SEPTEMBER 2018\" and \"NOVEMBER 2017\")"
+  },
+  "structureNote": "Structure differs from the maths/science subjects: units are the language skills/aspects (1.0 Kemahiran Mendengar dan Bertutur, 2.0 Kemahiran Membaca, 3.0 Kemahiran Menulis, 4.0 Aspek Seni Bahasa, 5.0 Aspek Tatabahasa) -> SK -> SP. Standard Prestasi (tahap penguasaan 1-6 with labels Sangat Terhad..Cemerlang) exists only for units 1.0-3.0; 4.0 and 5.0 carry a CATATAN (assessed through the three skills) instead. There are no Tajuk/themes: the Tema list in the front matter is not part of the SK/SP tables. T1-T3: Bab-level nodes only, built from the V3 chapter data (curriculum-data/chapters.json, in-tree chapters of this subject and Tingkatan; decisions D109/D115). Code is \"<chapterNumber>.0\"; titlePrinted is the chapter name in upper case; no Bidang grouping, no SK/SP and no TP are available, so none are invented.",
   "generalPerformanceLevels": {
     "source": "Jadual 3: Penyataan Tahap Penguasaan Keseluruhan Bahasa Melayu Sekolah Menengah",
     "levels": [
@@ -50,6 +59,398 @@
     "T5 SK 5.1 title"
   ],
   "units": [
+    {
+      "level": "T1",
+      "code": "1.0",
+      "title": "Kemahiran Membaca dan Memahami",
+      "titlePrinted": "KEMAHIRAN MEMBACA DAN MEMAHAMI",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "2.0",
+      "title": "Kemahiran Menulis",
+      "titlePrinted": "KEMAHIRAN MENULIS",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "3.0",
+      "title": "Tatabahasa",
+      "titlePrinted": "TATABAHASA",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "4.0",
+      "title": "Komsas",
+      "titlePrinted": "KOMSAS",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "5.0",
+      "title": "Dunia Baharu Tani",
+      "titlePrinted": "DUNIA BAHARU TANI",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "6.0",
+      "title": "Pengurusan Wang Berhemat",
+      "titlePrinted": "PENGURUSAN WANG BERHEMAT",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "7.0",
+      "title": "Urus Tadbir Kewangan",
+      "titlePrinted": "URUS TADBIR KEWANGAN",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "8.0",
+      "title": "Pesona Malaysia",
+      "titlePrinted": "PESONA MALAYSIA",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "9.0",
+      "title": "Indahnya Bumi Bertuah",
+      "titlePrinted": "INDAHNYA BUMI BERTUAH",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "10.0",
+      "title": "Sejarah Mengajar Erti Kehidupan",
+      "titlePrinted": "SEJARAH MENGAJAR ERTI KEHIDUPAN",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "11.0",
+      "title": "Seni Warisan Anak Bangsa",
+      "titlePrinted": "SENI WARISAN ANAK BANGSA",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "12.0",
+      "title": "Jasmani Cergas",
+      "titlePrinted": "JASMANI CERGAS",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "13.0",
+      "title": "Cergas Aktif",
+      "titlePrinted": "CERGAS AKTIF",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "14.0",
+      "title": "Industri Negara",
+      "titlePrinted": "INDUSTRI NEGARA",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "15.0",
+      "title": "Kerjaya Impian",
+      "titlePrinted": "KERJAYA IMPIAN",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "16.0",
+      "title": "Integriti Amalan Kita",
+      "titlePrinted": "INTEGRITI AMALAN KITA",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "17.0",
+      "title": "Usahawan Berwibawa",
+      "titlePrinted": "USAHAWAN BERWIBAWA",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "18.0",
+      "title": "Sempurnakan Diri",
+      "titlePrinted": "SEMPURNAKAN DIRI",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "19.0",
+      "title": "Tonggak Sejahtera",
+      "titlePrinted": "TONGGAK SEJAHTERA",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "20.0",
+      "title": "Dataran Merdeka",
+      "titlePrinted": "DATARAN MERDEKA",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "21.0",
+      "title": "Nilai Demokrasi",
+      "titlePrinted": "NILAI DEMOKRASI",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "22.0",
+      "title": "Indeks",
+      "titlePrinted": "INDEKS",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "23.0",
+      "title": "Skrip Pendengaran",
+      "titlePrinted": "SKRIP PENDENGARAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "1.0",
+      "title": "Kesihatan dan Kebersihan",
+      "titlePrinted": "KESIHATAN DAN KEBERSIHAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "2.0",
+      "title": "Menimba Ilmu",
+      "titlePrinted": "MENIMBA ILMU",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "3.0",
+      "title": "Kerjaya ke Mercu Impian",
+      "titlePrinted": "KERJAYA KE MERCU IMPIAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "4.0",
+      "title": "Integriti Amalan Kita",
+      "titlePrinted": "INTEGRITI AMALAN KITA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "5.0",
+      "title": "Bahasa dan Sastera",
+      "titlePrinted": "BAHASA DAN SASTERA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "6.0",
+      "title": "Teladani Sejarah Hargai Warisan",
+      "titlePrinted": "TELADANI SEJARAH HARGAI WARISAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "7.0",
+      "title": "Indah Seni Gah Budaya",
+      "titlePrinted": "INDAH SENI GAH BUDAYA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "8.0",
+      "title": "Utamakan Keselamatan",
+      "titlePrinted": "UTAMAKAN KESELAMATAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "9.0",
+      "title": "Sukan dan Rekreasi",
+      "titlePrinted": "SUKAN DAN REKREASI",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "10.0",
+      "title": "Selamat Datang ke Malaysia",
+      "titlePrinted": "SELAMAT DATANG KE MALAYSIA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "11.0",
+      "title": "Perpaduan",
+      "titlePrinted": "PERPADUAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "12.0",
+      "title": "Negaraku Jati Diriku",
+      "titlePrinted": "NEGARAKU JATI DIRIKU",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "13.0",
+      "title": "Ekonomi, Keusahawanan dan Pengurusan Kewangan",
+      "titlePrinted": "EKONOMI, KEUSAHAWANAN DAN PENGURUSAN KEWANGAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "14.0",
+      "title": "Suburnya Bumiku",
+      "titlePrinted": "SUBURNYA BUMIKU",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "15.0",
+      "title": "Teknologi dan Inovasi",
+      "titlePrinted": "TEKNOLOGI DAN INOVASI",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "16.0",
+      "title": "Alam Sekitar dan Teknologi Hijau",
+      "titlePrinted": "ALAM SEKITAR DAN TEKNOLOGI HIJAU",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "17.0",
+      "title": "Industri Berdaya Saing",
+      "titlePrinted": "INDUSTRI BERDAYA SAING",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "18.0",
+      "title": "Pentadbiran dan Politik",
+      "titlePrinted": "PENTADBIRAN DAN POLITIK",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "1.0",
+      "title": "SULUH MASA DEPAN",
+      "titlePrinted": "SULUH MASA DEPAN",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "2.0",
+      "title": "BERSIH SELALU, SIHAT SENTIASA",
+      "titlePrinted": "BERSIH SELALU, SIHAT SENTIASA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "3.0",
+      "title": "KECERDASAN MENINGKAT,",
+      "titlePrinted": "KECERDASAN MENINGKAT,",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "4.0",
+      "title": "WASPADA SELALU!",
+      "titlePrinted": "WASPADA SELALU!",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "5.0",
+      "title": "DIRGAHAYU NEGARAKU",
+      "titlePrinted": "DIRGAHAYU NEGARAKU",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "6.0",
+      "title": "INTEGRITI TINGGI, SAHSIAH TERPUJI",
+      "titlePrinted": "INTEGRITI TINGGI, SAHSIAH TERPUJI",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "7.0",
+      "title": "PERSAUDARAAN TANPA SEMPADAN",
+      "titlePrinted": "PERSAUDARAAN TANPA SEMPADAN",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "8.0",
+      "title": "SUBUR BAHASA, MEKAR SASTERA",
+      "titlePrinted": "SUBUR BAHASA, MEKAR SASTERA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "9.0",
+      "title": "INDAH SENI, ENDAH BUDAYA",
+      "titlePrinted": "INDAH SENI, ENDAH BUDAYA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "10.0",
+      "title": "SAINS DAN TEKNOLOGI PEMACU",
+      "titlePrinted": "SAINS DAN TEKNOLOGI PEMACU",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "11.0",
+      "title": "ALAM ANUGERAH TERINDAH",
+      "titlePrinted": "ALAM ANUGERAH TERINDAH",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "12.0",
+      "title": "TUAH DI BUMI PERMATA",
+      "titlePrinted": "TUAH DI BUMI PERMATA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "13.0",
+      "title": "PERINDUSTRIAN",
+      "titlePrinted": "PERINDUSTRIAN",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "14.0",
+      "title": "EKONOMI MAPAN, NEGARA MAKMUR",
+      "titlePrinted": "EKONOMI MAPAN, NEGARA MAKMUR",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "15.0",
+      "title": "DESTINASI MISTERI",
+      "titlePrinted": "DESTINASI MISTERI",
+      "standards": []
+    },
     {
       "level": "T4",
       "code": "1.0",
