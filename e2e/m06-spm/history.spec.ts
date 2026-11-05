@@ -11,7 +11,16 @@ import {
   moduleTag,
   viewportWidth,
 } from '../support'
-import { ADMIN, columnsOf, PELAJAR, smallTexts, tid } from './support'
+import {
+  ADMIN,
+  columnsOf,
+  PELAJAR,
+  shellTitle,
+  smallTexts,
+  statLabels,
+  statValues,
+  tid,
+} from './support'
 
 const rowsOf = (page: import('@playwright/test').Page) => page.getByTestId('history-row')
 
@@ -26,7 +35,7 @@ test.describe('M06 S10 history', { tag: [moduleTag(6)] }, () => {
     await loginAs(ADMIN)
     await gotoApp('/spm/history')
     await expectTabTitle(page, 'Sejarah Kuiz SPM | PRESTASIPLUS')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Sejarah Kuiz SPM')
+    await expect(shellTitle(page)).toHaveText('Sejarah Kuiz SPM')
     if (isDesktopShell(page)) {
       // Fact gone in v2, left failing (S3-T03 report): neither v2 shell prints this subtitle.
       await expect.soft(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')

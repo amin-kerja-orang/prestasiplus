@@ -9,6 +9,7 @@ import type { Page } from '@playwright/test'
 import { ALESA_ON } from '../support/alesa'
 import { expect, test } from './fixtures'
 import { open } from './mock-exam-nav'
+import { shellTitle } from './support'
 import {
   expectNoHorizontalScroll,
   expectTabTitle,
@@ -91,8 +92,11 @@ test.describe('M06 S11 mock exam form and list', { tag: [moduleTag(6)] }, () => 
   test('E2E-M06-30 admin rows 317 and 16; student chip colours', async ({ page, loginAs }) => {
     await loginAs(ADMIN)
     await open(page, '/spm-mock')
-    await expect(tid(page, 'shell-admin-title')).toHaveText('SPM Mock Exam')
-    await expect(page.getByTestId('shell-admin-subtitle')).toHaveCount(0)
+    await expect(shellTitle(page)).toHaveText('SPM Mock Exam')
+    // The Portal Pentadbiran prints the page lead under the title (PentadbiranLayout).
+    await expect(page.getByTestId('pentadbiran-subtitle')).toHaveText(
+      'Mock SPM penuh dengan timer + auto-grade + weakness analysis. Boleh attempt setiap bulan.',
+    )
     await expect(page.locator('li[data-testid^=mock-row-]')).toHaveCount(2)
     const pending = tid(page, 'mock-row-317')
     await expect(pending.getByTestId('mock-row-title')).toHaveText('Sejarah · Paper 1')

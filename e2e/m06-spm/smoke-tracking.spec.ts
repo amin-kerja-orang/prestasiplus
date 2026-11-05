@@ -21,6 +21,7 @@ import {
   NOT_FOUND,
   PELAJAR,
   PELAJAR2,
+  shellTitle,
   smallTexts,
   tid,
 } from './support'
@@ -46,7 +47,7 @@ test.describe('M06 S5 Tracking A hub', { tag: [moduleTag(6)] }, () => {
     await gotoApp('/spm/ramalan')
     await expect(tid(page, 'lanes')).toBeVisible(SLOW)
     await expectTabTitle(page, 'Tracking A SPM | PRESTASIPLUS')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Tracking A SPM')
+    await expect(shellTitle(page)).toHaveText('Tracking A SPM')
     if (isDesktopShell(page)) {
       // Fact gone in v2, left failing (S3-T03 report): neither v2 shell prints this subtitle.
       await expect.soft(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')

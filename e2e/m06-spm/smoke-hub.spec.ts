@@ -11,7 +11,18 @@ import {
   moduleTag,
   viewportWidth,
 } from '../support'
-import { ADMIN, columnsOf, NOT_FOUND, PELAJAR, PELAJAR2, smallTexts, tid } from './support'
+import {
+  ADMIN,
+  columnsOf,
+  NOT_FOUND,
+  PELAJAR,
+  PELAJAR2,
+  shellTitle,
+  smallTexts,
+  statLabels,
+  statValues,
+  tid,
+} from './support'
 
 test.describe('M06 S1 hub', { tag: [moduleTag(6)] }, () => {
   test.use({ mockInit: { latency: 0 } })
@@ -24,7 +35,7 @@ test.describe('M06 S1 hub', { tag: [moduleTag(6)] }, () => {
     await loginAs(PELAJAR)
     await gotoApp('/spm')
     await expectTabTitle(page, 'Mod SPM | PRESTASIPLUS')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Mod SPM')
+    await expect(shellTitle(page)).toHaveText('Mod SPM')
     if (isDesktopShell(page)) {
       // Fact gone in v2, left failing (S3-T03 report): neither v2 shell prints this subtitle.
       await expect.soft(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')
@@ -132,7 +143,7 @@ test.describe('M06 S1 hub', { tag: [moduleTag(6)] }, () => {
     // No premium gate on S1 (FR-M06-14).
     await gotoApp('/spm')
     await expect(tid(page, 'spm-title')).toBeVisible()
-    await expect(tid(page, 'shell-user-main').getByText(/\bPRO\b/)).toHaveCount(0)
+    await expect(tid(page, 'pembelajaran-main').getByText(/\bPRO\b/)).toHaveCount(0)
   })
 
   test('E2E-M06-39 S1 has no horizontal scroll and no text below 12px', async ({
