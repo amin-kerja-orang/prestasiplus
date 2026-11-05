@@ -11,6 +11,8 @@ export interface NewReport {
   questionVersionNo: number
   questionType: 'mcq' | 'structured'
   reporterId: bigint
+  /** DM-82: from the session role, never from the client. */
+  reporterRole: 'murid' | 'guru'
   reasons: string[]
   comment: string | null
   source: string
@@ -42,27 +44,21 @@ export class ReportsRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   /**
-   * One report per reporter, question and version (unique index): a second report of the same user
-   * on the same version refreshes that row while it is still pending, so it is accepted like the first.
-   * Once an admin has acted on it (reviewed, fixed, dismissed) the row is left exactly as it is: a re-POST
-   * never re-opens a dismissal or undoes a reactivation (REQ-B-031, D98). A
-   * single `INSERT ... ON CONFLICT` keeps concurrent first reports from failing on the index (a
-   * unique violation would also abort the surrounding transaction, so a retry is not possible).
+   * One report per reporter, question and version (unique index; FR-MUR-54-6/10). The service checks `exists` under the reporter lock
+   * and answers 409; `ON CONFLICT DO NOTHING` is the last guard (a unique violation would abort the surrounding transaction), so a
+   * `false` result means the row was already there and the caller answers 409 too. A filed report is never rewritten here.
    */
-  async upsert(n: NewReport): Promise<void> {
-    await this.prisma.client.$executeRaw`
+  async insert(n: NewReport): Promise<boolean> {
+    const rows = await this.prisma.client.$executeRaw`
       INSERT INTO question_reports
-        (question_id, question_version_no, question_type, reporter_id, reasons, comment, source, quiz_session_ref, room_code,
+        (question_id, question_version_no, question_type, reporter_id, reporter_role, reasons, comment, source, quiz_session_ref, room_code,
          attempt_id, paper_id, paper_label, is_test, created_at, updated_at)
       VALUES
-        (${n.questionId}, ${n.questionVersionNo}, ${n.questionType}, ${n.reporterId}, ${n.reasons}::text[], ${n.comment}, ${n.source},
+        (${n.questionId}, ${n.questionVersionNo}, ${n.questionType}, ${n.reporterId}, ${n.reporterRole}, ${n.reasons}::text[], ${n.comment}, ${n.source},
          ${n.quizSessionRef}, ${n.roomCode}, ${n.context?.attemptId ?? null}::uuid, ${n.context?.paperId ?? null}, ${n.context?.paperLabel ?? null},
          ${n.isTest}, ${n.now}, ${n.now})
-      ON CONFLICT (reporter_id, question_id, question_version_no) DO UPDATE SET
-        question_type = EXCLUDED.question_type, reasons = EXCLUDED.reasons, comment = EXCLUDED.comment, source = EXCLUDED.source,
-        quiz_session_ref = EXCLUDED.quiz_session_ref, room_code = EXCLUDED.room_code,
-        attempt_id = EXCLUDED.attempt_id, paper_id = EXCLUDED.paper_id, paper_label = EXCLUDED.paper_label, updated_at = EXCLUDED.updated_at
-      WHERE question_reports.status = 'pending'`
+      ON CONFLICT (reporter_id, question_id, question_version_no) DO NOTHING`
+    return rows === 1
   }
 
   /** The facts the report context check needs about one attempt (R1-T42): the owner, the paper, its snapshot title and the placed question ids. */
@@ -89,9 +85,9 @@ export class ReportsRepository {
     return this.prisma.client.questionReport.count({ where: { reporterId, createdAt: { gte: since } } })
   }
 
-  /** REQ-B-031: the practice session (uuid) with the owner and whether it served `questionId`; null when unknown. */
-  async sessionFacts(sessionId: string, questionId: bigint): Promise<{ userId: bigint; holds: boolean } | null> {
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId)) return null
+  /** REQ-B-031: the practice session (uuid) with the owner and whether it served `questionId`; null when unknown, `'malformed'` when it is not a uuid. */
+  async sessionFacts(sessionId: string, questionId: bigint): Promise<{ userId: bigint; holds: boolean } | 'malformed' | null> {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId)) return 'malformed'
     const s = await this.prisma.client.practiceSession.findUnique({
       where: { id: sessionId.toLowerCase() },
       select: { userId: true, questions: { where: { questionId }, select: { id: true }, take: 1 } },
@@ -99,7 +95,7 @@ export class ReportsRepository {
     return s ? { userId: s.userId, holds: s.questions.length > 0 } : null
   }
 
-  /** REQ-B-046: this reporter already has a report row for this question version (a re-POST refreshes it and is not a new report). */
+  /** FR-MUR-54-10: this reporter already has a report row for this question version (a repeat is 409). */
   async exists(reporterId: bigint, questionId: bigint, versionNo: number): Promise<boolean> {
     return (await this.prisma.client.questionReport.count({ where: { reporterId, questionId, questionVersionNo: versionNo } })) > 0
   }

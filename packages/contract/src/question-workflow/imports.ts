@@ -26,6 +26,10 @@ export const QUESTION_IMPORT_MESSAGES = {
   difficulty: 'Sila pilih tahap kesukaran.',
   /** `Fail CSV mesti mempunyai kolum question_text, option_a, option_b, correct_answer.` */
   missingColumns: (columns: readonly string[]): string => `Fail CSV mesti mempunyai kolum ${columns.join(', ')}.`,
+  /** 422 on `csvFile` when the file has more than `QUESTION_IMPORT_MAX_ROWS` data rows (30 Q-11 row 11-01, 45 section 3.2). */
+  tooManyRows: 'Fail melebihi 2,000 baris. Pecahkan fail kepada beberapa bahagian.',
+  /** Warning for a header cell of the new header that is not in the header list (30 Q-11, D113). */
+  unknownColumn: (name: string): string => `Kolum ${name} tidak dikenali dan diabaikan.`,
   /** Flash of `POST /question-imports`. */
   imported: (imported: number, failed: number): string =>
     `Import selesai: ${String(imported)} soalan diimport, ${String(failed)} gagal.`,
@@ -46,6 +50,66 @@ export const QUESTION_IMPORT_ROW_MESSAGES = {
   optionTooLong: 'Pilihan jawapan tidak boleh melebihi 500 aksara.',
 } as const
 
+/** Prefix of every row message of the new (code) header: `Baris 7: ...` (30 Q-11 column "Exact BM error"). */
+export const questionImportRowPrefix = (line: number): string => `Baris ${String(line)}: `
+
+/**
+ * Row messages of the new (code) header, exact copy of 30 R1-ADM-Q-11 (the error column of the table) and of the texts the
+ * publish gate already uses; the caller adds `questionImportRowPrefix`. Entries with a function take the value the text names.
+ */
+/** A value of the file echoed in a message is cut at this many characters (code points): the report never repeats a long cell. */
+export const QUESTION_IMPORT_ECHO_MAX = 40
+const echoed = (value: string): string => [...value].slice(0, QUESTION_IMPORT_ECHO_MAX).join('')
+
+export const QUESTION_IMPORT_CODE_ROW_MESSAGES = {
+  keyRequired: 'Kunci soalan diperlukan.',
+  keyNotConsecutive: 'Baris soalan tidak berturutan.',
+  keyDuplicate: (key: string): string => `Kunci soalan ${echoed(key)} berulang dalam fail.`,
+  typeInvalid: 'Jenis soalan tidak sah.',
+  typeStudio: 'Jenis ini dimasukkan melalui wizard Studio.',
+  subject: 'Kod subjek tidak dikenali.',
+  tingkatan: 'Tingkatan tidak sah.',
+  bahasa: 'Bahasa tidak sah.',
+  jenisTulisan: 'Jenis tulisan tidak sah.',
+  kertasSpm: 'Sila pilih kertas untuk soalan SPM.',
+  numberLabel: 'Nombor soalan tidak sah.',
+  unitRequired: 'Sila pilih unit DSKP.',
+  unitUnknown: 'Kod unit tiada dalam senarai kurikulum.',
+  spRequired: 'Sila pilih sekurang-kurangnya satu SP DSKP.',
+  spTooMany: 'Pilih paling banyak 3 SP.',
+  spUnknown: (code: string): string => `SP "${echoed(code)}" tiada dalam senarai kurikulum. Pilih SP daripada senarai DSKP.`,
+  tpMissing: (label: string): string => `Bahagian (${echoed(label)}) belum ada TP.`,
+  tpRange: 'TP mesti antara 1 dan 6.',
+  arasMissing: (label: string): string => `Bahagian (${echoed(label)}) belum ada aras pemikiran.`,
+  arasInvalid: 'Aras pemikiran tidak sah.',
+  kbatInvalid: 'Nilai KBAT tidak sah.',
+  chapterMismatch: 'Bab tidak sepadan dengan subjek dan tahap.',
+  topicInvalid: 'Topik tidak sah.',
+  difficulty: 'Sila pilih tahap kesukaran.',
+  promptShort: 'Teks soalan mesti sekurang-kurangnya 10 aksara.',
+  optionsBlank: 'Sila isi semua pilihan jawapan.',
+  correctRequired: 'Sila pilih jawapan betul.',
+  marksMin: 'Nilai mata mesti sekurang-kurangnya 1.',
+  marksMax: 'Markah bahagian tidak boleh melebihi 100.',
+} as const
+
+/** `failures[].code` of the new header: one stable code per row message (the `kod_ralat` column of the error CSV). */
+export const QUESTION_IMPORT_ERROR_CODES = [
+  'KEY_REQUIRED', 'KEY_NOT_CONSECUTIVE', 'KEY_DUPLICATE', 'TYPE_INVALID', 'TYPE_STUDIO_ONLY', 'SUBJECT_UNKNOWN', 'TINGKATAN_INVALID',
+  'BAHASA_INVALID', 'SCRIPT_INVALID', 'KERTAS_INVALID', 'KERTAS_REQUIRED', 'NUMBER_LABEL_INVALID', 'UNIT_REQUIRED', 'UNIT_UNKNOWN',
+  'SP_REQUIRED', 'SP_TOO_MANY', 'SP_UNKNOWN', 'TP_REQUIRED', 'TP_RANGE', 'ARAS_REQUIRED', 'ARAS_INVALID', 'KBAT_INVALID',
+  'CHAPTER_MISMATCH', 'TOPIC_INVALID', 'DIFFICULTY_INVALID', 'PROMPT_SHORT', 'PROMPT_LONG', 'OPTIONS_BLANK', 'OPTIONS_MIN', 'OPTION_LONG',
+  'CORRECT_REQUIRED', 'MARKS_MIN', 'MARKS_MAX',
+] as const
+export type QuestionImportErrorCode = (typeof QUESTION_IMPORT_ERROR_CODES)[number]
+
+/**
+ * Header of the error CSV (`GET /question-imports/{id}/errors`, FR-ADM-QE6.2): one line per row error. It repeats only what Q-11 asks for:
+ * the question key and the `{key}` / `{kod}` / `{label}` placeholders of the Q-11 texts, each cut at `QUESTION_IMPORT_ECHO_MAX` characters; never another cell.
+ */
+export const QUESTION_IMPORT_ERROR_CSV_HEADER = ['baris', 'question_key', 'medan', 'kod_ralat', 'mesej'] as const
+export const QUESTION_IMPORT_ERROR_CSV_FILENAME = 'laporan-ralat-import.csv'
+
 /** Template header (AC-M04-13.6). */
 export const QUESTION_IMPORT_HEADER = [
   'question_text',
@@ -63,7 +127,31 @@ export const QUESTION_IMPORT_HEADER = [
   'kertas',
 ] as const
 
-/** Columns the file must have; subject, level and difficulty may come from the form defaults. */
+/**
+ * The ONE header list of the new (code) header, in the order of the table in 30 R1-ADM-Q-11 (families expanded). A header cell outside
+ * this list (and outside `QUESTION_IMPORT_CODE_ALIAS_COLUMNS`) is ignored with `unknownColumn`. S1-T05 part 1 reads the MCQ columns and the
+ * DSKP columns; the group, stimulus and other-type columns are in the list so they raise no warning, and later parts read them.
+ */
+const familyOf = (prefix: string, suffix: string): string[] => 'abcdefgh'.split('').map((l) => `${prefix}${l}${suffix}`)
+export const QUESTION_IMPORT_CODE_HEADER = [
+  'question_key', 'type', 'mode', 'part_label', 'subject_code', 'tingkatan', 'bahasa', 'jenis_tulisan', 'kertas', 'bahagian', 'number_label',
+  'unit_code', 'sp_kod', 'tp', 'aras', 'kbat', 'bab_kod', 'topik_kod', 'difficulty',
+  'group_key', 'group_order', 'group_id',
+  'stimulus_label', 'stimulus_kind', 'stimulus_text', 'stimulus_text_en', 'stimulus_image', 'stimulus_alt', 'stimulus_caption', 'stimulus_source',
+  'stimulus2_label', 'stimulus2_kind', 'stimulus2_text', 'stimulus2_text_en', 'stimulus2_image', 'stimulus2_alt', 'stimulus2_caption', 'stimulus2_source',
+  'stimulus3_label', 'stimulus3_kind', 'stimulus3_text', 'stimulus3_text_en', 'stimulus3_image', 'stimulus3_alt', 'stimulus3_caption', 'stimulus3_source',
+  'part_stimulus', 'intro_ms', 'intro_en', 'prompt_ms', 'prompt_en',
+  ...familyOf('option_', ''), ...familyOf('option_', '_en'),
+  'correct', 'accepted_answers', 'numeric_value', 'numeric_unit', 'tolerance_kind', 'tolerance_value', 'word_min', 'word_max', 'marks', 'scheme',
+] as const
+/** Columns the new header also accepts: `explanation` (the explanation of the question) and the old name of `difficulty`. */
+export const QUESTION_IMPORT_CODE_ALIAS_COLUMNS = ['explanation', 'difficulty_level'] as const
+/** Columns the new header must have (a missing one refuses the file); the DSKP and default-able columns are checked per row. */
+export const QUESTION_IMPORT_CODE_REQUIRED_COLUMNS = ['question_key', 'type', 'prompt_ms', 'option_a', 'option_b', 'correct', 'marks'] as const
+/** Data rows a file may have (header excluded); more is refused whole with 422 on both import routes. */
+export const QUESTION_IMPORT_MAX_ROWS = 2000
+
+/** Columns the (legacy) file must have; subject, level and difficulty may come from the form defaults. */
 export const QUESTION_IMPORT_REQUIRED_COLUMNS = ['question_text', 'option_a', 'option_b', 'correct_answer'] as const
 
 /**
@@ -108,6 +196,9 @@ export const QuestionImportFailureSchema = z
   .strictObject({
     row: z.number().int().min(1).meta({ description: '1-based line of the file where the record starts; the header is line 1.' }),
     message: z.string().min(1),
+    questionKey: z.string().max(40).optional().meta({ description: 'New header only: the `question_key` of the row (cut at 40 characters).' }),
+    field: z.string().optional().meta({ description: 'New header only: the column the message is about (`medan` of the error CSV).' }),
+    code: z.enum(QUESTION_IMPORT_ERROR_CODES).optional().meta({ description: 'New header only: stable error code (`kod_ralat` of the error CSV).' }),
   })
   .meta({ id: 'QuestionImportFailure' })
 export type QuestionImportFailure = z.infer<typeof QuestionImportFailureSchema>
@@ -163,7 +254,9 @@ export const QuestionImportCreateRequestSchema = z
   .meta({ id: 'QuestionImportCreateRequest' })
 
 /** 201 body `{ data, status }`, `status` = "Import selesai: <x> soalan diimport, <y> gagal.". Whole import is one transaction. */
-export const QuestionImportCreatedSchema = questionWorkflowMutationOf(QuestionImportRunSchema).meta({
+export const QuestionImportCreatedSchema = questionWorkflowMutationOf(QuestionImportRunSchema)
+  .extend({ warnings: z.array(z.string()).optional().meta({ description: 'New header only: "Kolum {nama} tidak dikenali dan diabaikan." per unknown header cell. Not stored in the history.' }) })
+  .meta({
   id: 'QuestionImportCreated',
 })
 
@@ -259,6 +352,8 @@ export const QuestionImportGuruResultSchema = z
   .strictObject({
     imported: z.number().int().min(0),
     errors: z.array(QuestionImportFailureSchema),
+    /** Unknown header cells of an S1-T05 (code header) file; absent for the teacher's own BM format. */
+    warnings: z.array(z.string()).optional(),
   })
   .meta({ id: 'QuestionImportGuruResult' })
 export type QuestionImportGuruResult = z.infer<typeof QuestionImportGuruResultSchema>

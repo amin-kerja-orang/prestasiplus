@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common'
 import {
+  ClientUuidSchema,
   REWARD_CATEGORIES,
   REWARD_VALIDATION_MESSAGES,
   type RewardCabutanView,
@@ -44,6 +45,14 @@ function rewardIdOf(body: unknown): bigint | null {
   return idOrNull(text)
 }
 
+/** The optional `clientUuid` of a redeem or ticket body (DM-78); an unusable value is the same 422 on both routes. */
+function clientUuidOf(body: unknown): string | null {
+  const raw = typeof body === 'object' && body !== null ? (body as { clientUuid?: unknown }).clientUuid : undefined
+  if (raw === undefined || raw === null) return null
+  if (typeof raw !== 'string' || !ClientUuidSchema.safeParse(raw).success) throw validation({ clientUuid: REWARD_VALIDATION_MESSAGES.clientUuidInvalid })
+  return raw.toLowerCase()
+}
+
 const DIGITS = /^\d+$/
 
 /**
@@ -74,9 +83,16 @@ export class ShopService {
     if (actor.isTest) throw modPelajarRefused()
     const rewardId = rewardIdOf(body)
     if (rewardId === null) throw validation({ rewardId: REWARD_VALIDATION_MESSAGES.rewardIdRequired })
+    const clientUuid = clientUuidOf(body)
     const userId = idFromString(actor.userId)
     return this.prisma.transaction(async (tx) => {
       await this.repo.lockUser(actor.userId)
+      // A repeat answers before any check and moves nothing; the user lock above makes the read safe against a double tap.
+      const first = clientUuid === null ? null : await this.repo.redemptionByClientUuid(userId, clientUuid)
+      if (first) {
+        const { tokenBalance } = await this.wallet.summary(actor.userId, { tx })
+        return { id: idToString(first.id), status: first.status as RewardRedeemResult['status'], tokenBalance }
+      }
       const reward = await this.repo.lockReward(rewardId)
       if (!reward?.isActive) throw rewardNotFound()
       const at = this.clock.now()
@@ -96,6 +112,7 @@ export class ShopService {
         tokenCost: reward.tokenCost,
         status: reward.requiresParentConsent ? 'pending_parent_consent' : 'pending_admin',
         stockReserved: reserved,
+        clientUuid,
         at,
       })
       const { tokenBalance } = await tokensOr(() =>
@@ -178,13 +195,21 @@ export class ShopService {
     }
   }
 
-  async buyTicket(actor: ShopActor, drawIdText: string): Promise<RewardTicketBought> {
+  async buyTicket(actor: ShopActor, drawIdText: string, body?: unknown): Promise<RewardTicketBought> {
     if (actor.isTest) throw modPelajarRefused()
     if (!DIGITS.test(drawIdText)) throw plainNotFound()
     const drawId = idOrNull(drawIdText.replace(/^0+(?=\d)/, '') || '0')
+    const clientUuid = clientUuidOf(body)
     const userId = idFromString(actor.userId)
     return this.prisma.transaction(async (tx) => {
       await this.repo.lockUser(actor.userId)
+      // A repeat answers before any check and moves nothing, even when the draw has closed since.
+      const first = clientUuid === null ? null : await this.repo.ticketByClientUuid(userId, clientUuid)
+      if (first) {
+        const ticketsOwned = await this.repo.countTickets(first.drawId, userId)
+        const { currentSyiling } = await this.wallet.summary(actor.userId, { tx })
+        return { drawId: idToString(first.drawId), ticketsOwned, syilingBalance: currentSyiling }
+      }
       const now = this.clock.now()
       // Share-lock the draw row first, then read it: a draw run cannot start between the check and the ticket.
       if (drawId !== null) await this.repo.lockDrawShared(drawId)
@@ -192,7 +217,7 @@ export class ShopService {
       if (!draw || draw.status !== 'open' || !drawStillOpen(draw.closesAt, now)) throw rewardError('DRAW_CLOSED')
       const owned = await this.repo.countTickets(draw.id, userId)
       if (owned >= draw.maxTicketsPerStudent) throw rewardError('TICKET_LIMIT')
-      const ticket = await this.repo.insertTicket(draw.id, userId, now)
+      const ticket = await this.repo.insertTicket(draw.id, userId, clientUuid, now)
       let syilingBalance: number
       if (draw.ticketCostSyiling > 0) {
         // A ticket needs its own key: the draw id alone would turn the second ticket into a replay of the first.

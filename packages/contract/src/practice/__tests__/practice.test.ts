@@ -57,6 +57,13 @@ describe('start request', () => {
 
   it('rejects pksk, unknown modes, bad ids and bad uuids', () => {
     expect(PRACTICE_START_MODES).not.toContain('pksk')
+    // S5-T15: stored modes now, but not startable until the planner (S5-T03) has a case for them.
+    expect(PRACTICE_START_MODES).not.toContain('databank')
+    expect(PRACTICE_START_MODES).not.toContain('tracking_a')
+    expect(PRACTICE_MODES).toHaveLength(12)
+    expect(PRACTICE_MODES).toContain('databank')
+    expect(PRACTICE_MODES).toContain('tracking_a')
+    expect(StartSessionRequestSchema.safeParse({ mode: 'databank', subjectCode: 'SEJ' }).success).toBe(false)
     for (const bad of [
       { mode: 'pksk' },
       { mode: 'battle' },

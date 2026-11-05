@@ -1,5 +1,10 @@
-import { Body, Controller, Get, HttpCode, Inject, Post, Query, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common'
-import { QUESTION_IMPORT_GURU_TEMPLATE_FILENAME, QUESTION_IMPORT_TEMPLATE_CONTENT_TYPE, QUESTION_IMPORT_TEMPLATE_FILENAME } from '@pp/contract'
+import { Body, Controller, Get, HttpCode, Inject, Param, Post, Query, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common'
+import {
+  QUESTION_IMPORT_ERROR_CSV_FILENAME,
+  QUESTION_IMPORT_GURU_TEMPLATE_FILENAME,
+  QUESTION_IMPORT_TEMPLATE_CONTENT_TYPE,
+  QUESTION_IMPORT_TEMPLATE_FILENAME,
+} from '@pp/contract'
 import type { Response } from 'express'
 
 import { NoStoreInterceptor } from '../../../../common/http/no-store.interceptor'
@@ -38,6 +43,12 @@ export class QuestionImportsController {
   @Get('template')
   template(@Res() res: Response): void {
     sendTemplate(res, this.imports.template())
+  }
+
+  /** Error report of one run: `baris, question_key, medan, kod_ralat, mesej`. After the static `template`. */
+  @Get(':id/errors')
+  async errors(@Param('id') id: string, @Res() res: Response): Promise<void> {
+    sendTemplate(res, await this.imports.errorsCsv(id), QUESTION_IMPORT_ERROR_CSV_FILENAME)
   }
 
   @Post()

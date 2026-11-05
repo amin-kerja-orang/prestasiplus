@@ -1,6 +1,7 @@
 /**
  * M16 S7 `/papan-bijak`, S8-S12 lobbies and the rooms at 375 / 768 / 1280 (M16-T4; SRS M16 v1.6 §12:
- * E2E-M16-46..55). Admin account (grade Darjah 4). Opponents are the deterministic bots of the mock; the
+ * E2E-M16-46..55). Admin account (no grade, the form starts on the select); the auto grade box and the
+ * rooms use the pupil account (Tingkatan 4). Opponents are the deterministic bots of the mock; the
  * clock is the Playwright clock (`mock.advanceTime` drives the 3 s polls). E2E-M16-56 needs S29 (M16-T7)
  * and is not covered here.
  */
@@ -10,10 +11,18 @@ import type { Page } from '@playwright/test'
 import { expect as baseExpect, reloadApp, test } from '../fixtures/test'
 import type { MockHandle } from '../fixtures/test'
 import { expectNoHorizontalScroll, expectTabTitle, moduleTag, provisional } from '../support'
+import {
+  expectLearnerHeader,
+  pickOption,
+  rowStat,
+  selectOptionTexts,
+  shellMain,
+} from './helpers'
 
 const expect = baseExpect.configure({ timeout: Number(process.env.E2E_EXPECT_MS) || 10_000 })
 
 const ADMIN = 'admin@demo.test'
+const PELAJAR = 'pelajar@demo.test'
 const MODULE = { tag: [moduleTag(16)] }
 
 test.use({ mockInit: { latency: 0 } })
@@ -64,7 +73,7 @@ async function pollOnce(mock: MockHandle, pattern: string, n: number): Promise<v
 }
 
 async function smallTexts(page: Page): Promise<string[]> {
-  return page.getByTestId('shell-user-main').evaluate((main) => {
+  return shellMain(page).evaluate((main) => {
     const bad: string[] = []
     const walker = document.createTreeWalker(main, NodeFilter.SHOW_TEXT)
     for (let n = walker.nextNode(); n; n = walker.nextNode()) {
@@ -84,47 +93,49 @@ test.describe('M16 S7 Papan Bijak lobby', MODULE, () => {
     gotoApp,
     loginAs,
   }) => {
-    await loginAs(ADMIN)
+    await loginAs(PELAJAR)
     await gotoApp('/papan-bijak')
     await expectTabTitle(page, 'Papan Bijak | PRESTASIPLUS')
-    await expect(page.getByTestId('shell-user-title').first()).toHaveText('Papan Bijak')
-    await expect(page.getByTestId('shell-user-subtitle').first()).toHaveText(
-      'Selamat datang kembali',
-    )
+    await expectLearnerHeader(page, 'Papan Bijak')
     await expect(page.getByTestId('pb-h1')).toHaveText('🎲 Papan Bijak')
     await expect(page.getByTestId('pb-subtitle')).toHaveText(
       'Board game quiz multiplayer — jemput kawan, gulung dadu, jawab soalan! 🐍🪜',
     )
-    expect(await page.getByTestId('create-subject').locator('option').allTextContents()).toEqual([
+    expect(await selectOptionTexts(page, page.getByTestId('create-subject'))).toEqual([
       '🔢 Matematik',
       '📝 Bahasa Melayu',
       '🔬 Sains',
       '🇬🇧 Bahasa Inggeris',
     ])
-    await expect(page.getByTestId('grade-auto')).toContainText('Darjah 4')
+    await expect(page.getByTestId('grade-auto')).toContainText('Tingkatan 4')
     await expect(page.getByTestId('grade-auto')).toContainText('(auto dari profil anda)')
-    await expect(page.getByTestId('create-mode').locator('option').nth(1)).toHaveText(
-      'Semua Tingkatan',
+    expect((await selectOptionTexts(page, page.getByTestId('create-mode')))[1]).toBe(
+      'Semua Tingkatan (1-5)',
     )
 
     await page.getByTestId('grade-switch').click()
-    expect(
-      await page
-        .getByTestId('grade-select')
-        .locator('optgroup')
-        .evaluateAll((g) => g.map((x) => x.getAttribute('label'))),
-    ).toEqual(['Sekolah Menengah'])
-    await page.getByTestId('grade-select').selectOption('TINGKATAN_2')
-    await expect(page.getByTestId('create-mode').locator('option').nth(1)).toHaveText(
+    // Tingkatan 1-5 only (FR-MUR-21-3), under one group label.
+    await page.getByTestId('grade-select').click()
+    await expect(page.getByRole('listbox')).toContainText('Sekolah Menengah')
+    await page.keyboard.press('Escape')
+    expect(await selectOptionTexts(page, page.getByTestId('grade-select'))).toEqual([
+      'Tingkatan 1',
+      'Tingkatan 2',
+      'Tingkatan 3',
+      'Tingkatan 4',
+      'Tingkatan 5',
+    ])
+    await pickOption(page, page.getByTestId('grade-select'), 'Tingkatan 2')
+    expect((await selectOptionTexts(page, page.getByTestId('create-mode')))[1]).toBe(
       'Semua Tingkatan (1-5)',
     )
     await page.getByTestId('grade-back').click()
-    await expect(page.getByTestId('grade-auto')).toContainText('Darjah 4')
+    await expect(page.getByTestId('grade-auto')).toContainText('Tingkatan 4')
 
-    await page.getByTestId('create-mode').selectOption('custom')
-    await expect(page.getByTestId('create-grade-min')).toHaveValue('7')
-    await expect(page.getByTestId('create-grade-max')).toHaveValue('11')
-    await expect(page.getByTestId('create-max-players')).toHaveValue('4')
+    await pickOption(page, page.getByTestId('create-mode'), 'Pilih julat khas')
+    await expect(page.getByTestId('create-grade-min')).toHaveText('T1')
+    await expect(page.getByTestId('create-grade-max')).toHaveText('T5')
+    await expect(page.getByTestId('create-max-players')).toHaveText('4 Pemain')
 
     const how = page.getByTestId('pb-how-to')
     await expect(how).toContainText('Cara Bermain:')
@@ -152,17 +163,17 @@ test.describe('M16 S7 Papan Bijak lobby', MODULE, () => {
   })
 
   test(
-    'E2E-M16-48 S7 create (Matematik, Darjah 4, same grade, 4) opens /papan-bijak/{6-character code} @m16',
+    'E2E-M16-48 S7 create (Matematik, Tingkatan 4, same grade, 4) opens /papan-bijak/{6-character code} @m16',
     provisional('the new room is PROVISIONAL (FR-M16-67)'),
     async ({ page, gotoApp, loginAs, mock }) => {
-      await loginAs(ADMIN)
+      await loginAs(PELAJAR)
       await gotoApp('/papan-bijak')
       await page.getByTestId('create-submit').click()
       await expect(page).toHaveURL(/\/papan-bijak\/[A-Z0-9]{6}$/)
       const req = await mock.lastRequest('/api/games/papan-bijak/rooms')
       expect(req?.body).toEqual({
         subject: 'MATEMATIK',
-        grade_level: 'DARJAH_4',
+        grade_level: 'TINGKATAN_4',
         match_mode: 'same_grade',
         max_players: 4,
       })
@@ -229,29 +240,29 @@ test.describe('M16 S7 Papan Bijak lobby', MODULE, () => {
     await gotoApp('/papan-bijak')
     const rows = page.getByTestId('top10-row')
     await expect(rows).toHaveCount(10)
-    expect(await page.getByTestId('top10-rank').allTextContents()).toEqual(
-      ['🥇', '🥈', '🥉', '4', '5', '6', '7', '8', '9', '10'].map((x) => x.trim()),
+    expect(await rows.getByTestId('row-rank').allTextContents()).toEqual(
+      ['🥇', '🥈', '🥉', '4', '5', '6', '7', '8', '9', '10'],
     )
     // Rank 1 is the admin: 4 / 6 / 67% / 90 / 13.
     await expect(rows.first()).toContainText('Admin Demo')
-    await expect(rows.first().getByTestId('top10-initials')).toHaveText('AD')
+    await expect(rows.first().getByTestId('row-avatar')).toHaveText('AD')
     await expect(rows.first().getByTestId('top10-kadar')).toHaveText('67%')
-    expect(await rows.first().locator('td').allTextContents()).toEqual(
-      expect.arrayContaining(['4', '6', '90', '13']),
-    )
+    await expect(rowStat(rows.first(), '🏆 Menang')).toHaveText('4')
+    await expect(rowStat(rows.first(), '🎮 Jumlah')).toHaveText('6')
+    await expect(rowStat(rows.first(), '⭐ Skor')).toHaveText('90')
+    await expect(rowStat(rows.first(), '✅ Betul')).toHaveText('13')
     // Kadar pills: 75 % green, 50 % amber, 25 % red.
     const kadar = await page.getByTestId('top10-kadar').allTextContents()
     expect(kadar.slice(0, 4)).toEqual(['67%', '75%', '50%', '25%'])
     // Names longer than 15 characters are cut to 15 + "...".
-    const names = await page.getByTestId('top10-name').allTextContents()
+    const names = await rows.getByTestId('row-title').allTextContents()
     for (const n of names) expect(n.length).toBeLessThanOrEqual(18)
     expect(names.some((n) => n.endsWith('...'))).toBe(true)
-    // The table scrolls inside its card on a phone; the page does not.
-    const width = page.viewportSize()!.width
+    // One raised row per player: it wraps on a phone, so nothing scrolls sideways inside the card.
     const overflow = await page
-      .getByTestId('top10-scroll')
+      .getByTestId('top10-table')
       .evaluate((el) => el.scrollWidth - el.clientWidth)
-    if (width < 768) expect(overflow).toBeGreaterThan(0)
+    expect(overflow).toBeLessThanOrEqual(0)
     await expectNoHorizontalScroll(page)
   })
 })
@@ -262,30 +273,27 @@ test.describe('M16 S8-S12 lobbies', MODULE, () => {
     gotoApp,
     loginAs,
   }) => {
-    await loginAs(ADMIN)
+    await loginAs(PELAJAR)
     await gotoApp('/perang-fakta')
     for (const [slug, title, h1, rule] of LOBBIES) {
       await spaGo(page, `/${slug}`)
       await expectTabTitle(page, `${title} | PRESTASIPLUS`)
-      await expect(page.getByTestId('shell-user-title').first()).toHaveText(title)
-      await expect(page.getByTestId('shell-user-subtitle').first()).toHaveText(
-        'Selamat datang kembali',
-      )
+      await expectLearnerHeader(page, title)
       await expect(page.getByTestId('lobby-h1')).toHaveText(h1)
       await expect(page.getByTestId('lobby-rule')).toHaveText(rule)
-      expect(await page.getByTestId('create-subject').locator('option').allTextContents()).toEqual([
+      expect(await selectOptionTexts(page, page.getByTestId('create-subject'))).toEqual([
         'Matematik',
         'Bahasa Melayu',
         'Bahasa Inggeris',
         'Sains',
         'Sejarah',
       ])
-      await expect(page.getByTestId('grade-auto')).toContainText('Darjah 4')
+      await expect(page.getByTestId('grade-auto')).toContainText('Tingkatan 4')
       await expect(page.getByTestId('grade-auto')).toContainText('(auto)')
       await page.getByTestId('grade-switch').click()
-      await expect(page.getByTestId('grade-select')).toHaveValue('DARJAH_4')
+      await expect(page.getByTestId('grade-select')).toHaveText('Tingkatan 4')
       await expect(page.getByTestId('grade-back')).toHaveCount(0)
-      expect(await page.getByTestId('create-mode').locator('option').allTextContents()).toEqual([
+      expect(await selectOptionTexts(page, page.getByTestId('create-mode'))).toEqual([
         'Tahap sama sahaja',
         'Semua Tingkatan',
       ])
@@ -310,15 +318,18 @@ test.describe('M16 S8-S12 lobbies', MODULE, () => {
     await gotoApp('/perang-fakta')
     const rows = page.getByTestId('leaders-row')
     await expect(rows).toHaveCount(10)
-    const first = await rows.allTextContents()
-    expect(first[0]).toMatch(/^🥇 .+5 menang$/)
-    expect(first[1]).toMatch(/^🥈 .+4 menang$/)
-    expect(first[2]).toMatch(/^🥉 .+3 menang$/)
-    expect(first[3]).toMatch(/^4\. .+3 menang$/)
-    expect(first[9]).toMatch(/^10\. .+2 menang$/)
+    const first = (await rows.allTextContents()).map((t) => t.replace(/\s+/g, ' ').trim())
+    // Ranks 1-3 carry a 3D medal image in the rank chip; from 4 the chip prints the number.
+    const medals = rows.locator('[data-ds=leader-rank] img')
+    await expect(medals).toHaveCount(3)
+    expect(first[0]).toMatch(/5 menang$/)
+    expect(first[1]).toMatch(/4 menang$/)
+    expect(first[2]).toMatch(/3 menang$/)
+    expect(first[3]).toMatch(/^4.+3 menang$/)
+    expect(first[9]).toMatch(/^10.+2 menang$/)
     await gotoApp('/perang-fakta')
     await expect(rows).toHaveCount(10)
-    expect(await rows.allTextContents()).toEqual(first)
+    expect((await rows.allTextContents()).map((t) => t.replace(/\s+/g, ' ').trim())).toEqual(first)
 
     await gotoApp('/kuiz-relay')
     await expect(page.getByTestId('leaders-row')).toHaveCount(1)

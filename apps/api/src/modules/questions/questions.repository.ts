@@ -5,11 +5,12 @@ import { Prisma } from '../../db/generated/client'
 import type { Prisma as PrismaTypes } from '../../db/generated/client'
 import { idFromString, idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
-import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, SPM_SERVABLE_SQL } from './learner-visibility'
+import { ALL_LEAVES_KEYED_SQL, LEARNER_LEVEL_SQL, NOT_FLAGGED_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, SPM_SERVABLE_SQL } from './learner-visibility'
 import type { Prng } from '../../db/prng'
-import { kbatOf, missingLeafSql } from './effective-leaf'
+import { kbatOf, missingLeafSql, refreshStimulusFlag, refreshStimulusFlagsOf, type StimulusFlag } from './effective-leaf'
 import { paperHeld, QUESTION_SERVED_BY_PAPER } from './served-rule'
 import { isQuestionStatus } from './status'
+import { STRUCTURED_LEVEL_CODES } from './structured-visibility'
 import { partsFromRows, type PartDraft, StoredKeyError } from './tree'
 import type {
   AdminListFilter,
@@ -172,6 +173,26 @@ const mediaResolvedSql = (stimuli: Prisma.Sql, importIssues: Prisma.Sql): Prisma
   AND NOT (coalesce(${importIssues}, '[]'::jsonb) @> '[{"code": "legacy_image_unresolved"}]'::jsonb)
 )`
 
+/** Every stimulus a version shows (own links, part links, its group's); aliases `v`, `q`. Selects `sid`. */
+const VERSION_STIMULI_SQL = Prisma.sql`SELECT vs.stimulus_id AS sid FROM question_version_stimuli vs WHERE vs.question_version_id = v.id
+               UNION SELECT p.stimulus_id FROM question_parts p WHERE p.question_version_id = v.id AND p.stimulus_id IS NOT NULL
+               UNION SELECT gs.stimulus_id FROM stimulus_group_stimuli gs WHERE gs.group_id = q.group_id`
+
+/**
+ * R1-GUR-44b (FR-X1-4f): what the teacher structured list may show. It starts from what a pupil is served (`isStructuredVisible`: active, approved,
+ * structured, level T4 or T5) and is stricter than it: a source that is taken down and a question whose figure or table is missing
+ * (`mediaResolvedSql`, the approve-gate rule) are left out too. Aliases `q`, `v`; `v` is the LIVE version (`SERVED_FROM_SQL`), so a newer
+ * draft does not hide a question pupils still get.
+ */
+const SERVED_FROM_SQL = Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no`
+const GURU_STRUCTURED_SERVED_SQL: Prisma.Sql[] = [
+  Prisma.sql`q.is_active`,
+  Prisma.sql`v.status = 'approved'`,
+  Prisma.sql`EXISTS (SELECT 1 FROM education_levels gl WHERE gl.id = v.education_level_id AND gl.code IN (${Prisma.join([...STRUCTURED_LEVEL_CODES])}))`,
+  NOT_SOURCE_TAKEN_DOWN_SQL,
+  mediaResolvedSql(VERSION_STIMULI_SQL, Prisma.sql`v.import_issues`),
+]
+
 /** Most ids `eligibleIds` returns (it throws beyond it) and the cap of one keyset page. */
 export const ELIGIBLE_IDS_MAX = 5000
 /** Largest draw one `sampleIds` call returns (a guard; real draws are tens of ids). */
@@ -313,10 +334,10 @@ export class QuestionsRepository {
   }
 
   /** `scope`: M04 reads never return a PKSK question (default `exclude`); the PKSK service reads them with `only`. */
-  async getMany(ids: readonly string[], view: ViewMode = 'live', scope: 'exclude' | 'only' = 'exclude'): Promise<QuestionRecord[]> {
+  async getMany(ids: readonly string[], view: ViewMode = 'live', scope: 'exclude' | 'only' = 'exclude', opts: { lenientKeys?: boolean } = {}): Promise<QuestionRecord[]> {
     const wanted = [...new Set(ids)].map(bi).filter((v): v is bigint => v !== null)
     if (wanted.length === 0) return []
-    const records = await this.hydrate(wanted, view, scope)
+    const records = await this.hydrate(wanted, view, scope, opts.lenientKeys === true)
     const byId = new Map(records.map((r) => [r.id, r]))
     return [...new Set(ids)].flatMap((id) => {
       const r = byId.get(id)
@@ -699,6 +720,7 @@ export class QuestionsRepository {
   /** Structured questions (type `structured`) over the latest version, id ascending. */
   async structuredIds(filter: StructuredListFilter): Promise<{ ids: string[]; total: number }> {
     const conds: Prisma.Sql[] = [Prisma.sql`v.type = 'structured'`, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL]
+    if (filter.served === true) conds.push(...GURU_STRUCTURED_SERVED_SQL)
     for (const [text, column] of [
       [filter.subjectId, Prisma.sql`v.subject_id`],
       [filter.educationLevelId, Prisma.sql`v.education_level_id`],
@@ -718,14 +740,23 @@ export class QuestionsRepository {
             : Prisma.sql`v.cognitive_level = ${n}`,
       )
     }
-    const from = Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
+    const from = filter.served === true ? SERVED_FROM_SQL : Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
     const where = Prisma.join(conds, ' AND ')
     const offset = (filter.page - 1) * filter.pageSize
     const [rows, totals] = await Promise.all([
-      this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY q.id ASC LIMIT ${filter.pageSize} OFFSET ${offset}`,
+      this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY ${filter.newestFirst === true ? Prisma.sql`q.created_at DESC, q.id DESC` : Prisma.sql`q.id ASC`} LIMIT ${filter.pageSize} OFFSET ${offset}`,
       this.db.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n ${from} WHERE ${where}`,
     ])
     return { ids: rows.map((r) => idToString(r.id)), total: totals[0]?.n ?? 0 }
+  }
+
+  /** True when the question is a structured one the teacher mount may show (the list's `served` rule applied to one id). */
+  async isStructuredServed(id: string): Promise<boolean> {
+    const key = bi(id)
+    if (key === null) return false
+    const conds = [Prisma.sql`q.id = ${key}`, Prisma.sql`v.type = 'structured'`, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, ...GURU_STRUCTURED_SERVED_SQL]
+    const rows = await this.db.$queryRaw<{ ok: number }[]>`SELECT 1 AS ok ${SERVED_FROM_SQL} WHERE ${Prisma.join(conds, ' AND ')}`
+    return rows.length > 0
   }
 
   /** Whole-store figures of the structured list `meta.stats`: per subject id (decimal) and live count. */
@@ -926,9 +957,7 @@ export class QuestionsRepository {
              EXISTS (SELECT 1 FROM intake_items di JOIN duplicate_links dl ON dl.item_id = di.id
                       WHERE di.question_id = q.id AND dl.decision = 'pending' AND dl.kind IN ('exact', 'near')) AS duplicate_open,
              ii.low_fields, ii.confirmed_fields,
-             ${mediaResolvedSql(Prisma.sql`SELECT vs.stimulus_id AS sid FROM question_version_stimuli vs WHERE vs.question_version_id = v.id
-               UNION SELECT p.stimulus_id FROM question_parts p WHERE p.question_version_id = v.id AND p.stimulus_id IS NOT NULL
-               UNION SELECT gs.stimulus_id FROM stimulus_group_stimuli gs WHERE gs.group_id = q.group_id`, Prisma.sql`v.import_issues`)} AS media_ok
+             ${mediaResolvedSql(VERSION_STIMULI_SQL, Prisma.sql`v.import_issues`)} AS media_ok
         FROM question_versions v
         JOIN questions q ON q.id = v.question_id
         LEFT JOIN intake_items ii ON ii.id = v.intake_item_id
@@ -1072,6 +1101,7 @@ export class QuestionsRepository {
       },
     })
     await this.insertVersion(q.id, 1, input.version, input.now, input.version.status === 'approved' ? input.now : null, input.provenance)
+    await this.refreshStimulusFlag(q.id, 1, input.now)
     return idToString(q.id)
   }
 
@@ -1104,6 +1134,7 @@ export class QuestionsRepository {
     })
     await this.insertVersion(id, versionNo, draft, now, null, undefined, prev ?? undefined)
     await this.db.question.update({ where: { id }, data: { latestVersionNo: versionNo, updatedAt: now } })
+    await this.refreshStimulusFlag(id, versionNo, now)
   }
 
   /**
@@ -1181,6 +1212,7 @@ export class QuestionsRepository {
     await this.db.questionVersion.update({ where: { id: existing.id }, data: { ...this.versionColumns(columns), updatedAt: now } })
     await this.db.question.update({ where: { id }, data: { updatedAt: now } })
     await this.insertChildren(existing.id, spNodeIds, stimulusIds, parts)
+    await this.refreshStimulusFlag(id, versionNo, now)
   }
 
   /** Sets the status columns of one version (publishing stamps `publishedAt`; archiving may carry a reason). */
@@ -1201,6 +1233,8 @@ export class QuestionsRepository {
         ...(extra.rejectionReason === undefined ? {} : { rejectionReason: extra.rejectionReason }),
       },
     })
+    // DM-05: detectors also run when a version is approved (the content may have changed since the last write, e.g. by a group move).
+    if (status === 'approved') await this.refreshStimulusFlag(id, versionNo, new Date())
   }
 
   /** Moves a question to another stimulus group (or out of any group). */
@@ -1208,6 +1242,7 @@ export class QuestionsRepository {
     const id = bi(questionId)
     if (id === null) return
     await this.db.question.update({ where: { id }, data: { groupId: groupId === null ? null : bi(groupId), groupPosition: position } })
+    await this.refreshStimulusFlagsOf([id], new Date())
   }
 
   /** Writes `live_version_no` (the one writer is the service, inside the transaction that changes a status). */
@@ -1391,6 +1426,16 @@ export class QuestionsRepository {
     }
   }
 
+  /** DM-05: stores the stimulus flag of one version (`refreshStimulusFlag` of effective-leaf.ts, the one writer). */
+  async refreshStimulusFlag(questionId: bigint, versionNo: number, now: Date): Promise<StimulusFlag | null> {
+    return refreshStimulusFlag(this.db, questionId, versionNo, now)
+  }
+
+  /** `refreshStimulusFlag` for the live and the latest version of each question (a group move changes what both read). */
+  async refreshStimulusFlagsOf(questionIds: readonly bigint[], now: Date): Promise<void> {
+    await refreshStimulusFlagsOf(this.db, questionIds, now)
+  }
+
   private async insertVersion(
     questionId: bigint,
     versionNo: number,
@@ -1520,7 +1565,7 @@ export class QuestionsRepository {
     const conds: Prisma.Sql[] = [NOT_PKSK]
     if (filter.status) conds.push(Prisma.sql`v.status = ${filter.status}`)
     conds.push(NOT_PRIMARY_LEVEL_SQL)
-    if (learnerVisible) conds.push(LEARNER_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL)
+    if (learnerVisible) conds.push(LEARNER_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, NOT_FLAGGED_SQL, ALL_LEAVES_KEYED_SQL)
     if (filter.active !== undefined) conds.push(filter.active ? Prisma.sql`q.is_active` : Prisma.sql`NOT q.is_active`)
     const eq = (text: string | undefined, column: Prisma.Sql): void => {
       if (text === undefined) return
@@ -1555,7 +1600,8 @@ export class QuestionsRepository {
     }
     if (filter.spmPool !== undefined) {
       // R1-B06: the shared SPM-servable definition (offered level, linked active subject), no longer the `pool` tag.
-      conds.push(filter.spmPool ? SPM_SERVABLE_SQL : Prisma.sql`NOT ${SPM_SERVABLE_SQL}`)
+      // The complement keeps the flag out too: a flagged question is not "non-SPM", it is not served at all (S1-T07).
+      conds.push(filter.spmPool ? SPM_SERVABLE_SQL : Prisma.sql`(NOT ${SPM_SERVABLE_SQL} AND ${NOT_FLAGGED_SQL} AND ${ALL_LEAVES_KEYED_SQL})`)
     }
     if (filter.spId !== undefined) {
       const key = bi(filter.spId)
@@ -1586,7 +1632,7 @@ export class QuestionsRepository {
     return new Set(rows.map((r) => idToString(r.id)))
   }
 
-  private async hydrate(ids: readonly bigint[], view: ViewMode, scope: 'exclude' | 'only' = 'exclude'): Promise<QuestionRecord[]> {
+  private async hydrate(ids: readonly bigint[], view: ViewMode, scope: 'exclude' | 'only' = 'exclude', lenientKeys = false): Promise<QuestionRecord[]> {
     const questions = await this.db.question.findMany({
       where: { id: { in: [...ids] }, tags: scope === 'only' ? { some: { kind: PKSK_TAG } } : { none: { kind: PKSK_TAG } } },
       include: { tags: { where: { kind: { in: ['pool', 'pksk_domain', 'pksk_level'] } } } },
@@ -1597,7 +1643,7 @@ export class QuestionsRepository {
     })
     // Secondary-only (2026-10-29): a question of a primary level (D1-D6) is not found, for every caller.
     const hidden = await this.primaryLevelIds()
-    return (await this.hydratePicks(picks)).filter((r) => r.version.educationLevelId === null || !hidden.has(r.version.educationLevelId))
+    return (await this.hydratePicks(picks, lenientKeys)).filter((r) => r.version.educationLevelId === null || !hidden.has(r.version.educationLevelId))
   }
 
   /**
@@ -1622,6 +1668,7 @@ export class QuestionsRepository {
 
   private async hydratePicks(
     picks: readonly { q: PrismaTypes.QuestionGetPayload<{ include: { tags: true } }>; versionNo: number }[],
+    lenientKeys = false,
   ): Promise<QuestionRecord[]> {
     if (picks.length === 0) return []
     const versions: VersionRow[] = await this.db.questionVersion.findMany({
@@ -1639,7 +1686,7 @@ export class QuestionsRepository {
       if (!v) continue
       let version: QuestionVersionRecord
       try {
-        version = this.versionRecord(v)
+        version = this.versionRecord(v, lenientKeys)
       } catch (e) {
         if (e instanceof StoredKeyError) {
           this.logger.error(`Question ${idToString(q.id)} version ${versionNo}: stored key of part ${e.partId} is invalid`)
@@ -1666,7 +1713,7 @@ export class QuestionsRepository {
     return out.sort((a, b) => (BigInt(a.id) < BigInt(b.id) ? -1 : 1))
   }
 
-  private versionRecord(v: VersionRow): QuestionVersionRecord {
+  private versionRecord(v: VersionRow, lenientKeys = false): QuestionVersionRecord {
     if (!isQuestionStatus(v.status)) throw new Error(`Question version ${idToString(v.id)}: unknown status`)
     const parts = v.parts
     return {
@@ -1706,10 +1753,14 @@ export class QuestionsRepository {
         return img?.stimulus.assetFileId == null ? null : idToString(img.stimulus.assetFileId)
       })(),
       paperCode: v.paperCode,
+      stimulusFlag: v.stimulusFlag as QuestionVersionRecord['stimulusFlag'],
+      stimulusFlagRef: v.stimulusFlagRef as QuestionVersionRecord['stimulusFlagRef'],
+      flagDismissedAt: v.flagDismissedAt,
       parts: partsFromRows(
         parts,
         parts.flatMap((p) => p.options),
         parts.flatMap((p) => (p.key ? [p.key] : [])),
+        lenientKeys,
       ),
       createdAt: v.createdAt,
       updatedAt: v.updatedAt,
