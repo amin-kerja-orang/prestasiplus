@@ -57,10 +57,14 @@ export const questionImportRowPrefix = (line: number): string => `Baris ${String
  * Row messages of the new (code) header, exact copy of 30 R1-ADM-Q-11 (the error column of the table) and of the texts the
  * publish gate already uses; the caller adds `questionImportRowPrefix`. Entries with a function take the value the text names.
  */
+/** A value of the file echoed in a message is cut at this many characters (code points): the report never repeats a long cell. */
+export const QUESTION_IMPORT_ECHO_MAX = 40
+const echoed = (value: string): string => [...value].slice(0, QUESTION_IMPORT_ECHO_MAX).join('')
+
 export const QUESTION_IMPORT_CODE_ROW_MESSAGES = {
   keyRequired: 'Kunci soalan diperlukan.',
   keyNotConsecutive: 'Baris soalan tidak berturutan.',
-  keyDuplicate: (key: string): string => `Kunci soalan ${key} berulang dalam fail.`,
+  keyDuplicate: (key: string): string => `Kunci soalan ${echoed(key)} berulang dalam fail.`,
   typeInvalid: 'Jenis soalan tidak sah.',
   typeStudio: 'Jenis ini dimasukkan melalui wizard Studio.',
   subject: 'Kod subjek tidak dikenali.',
@@ -73,10 +77,10 @@ export const QUESTION_IMPORT_CODE_ROW_MESSAGES = {
   unitUnknown: 'Kod unit tiada dalam senarai kurikulum.',
   spRequired: 'Sila pilih sekurang-kurangnya satu SP DSKP.',
   spTooMany: 'Pilih paling banyak 3 SP.',
-  spUnknown: (code: string): string => `SP "${code}" tiada dalam senarai kurikulum. Pilih SP daripada senarai DSKP.`,
-  tpMissing: (label: string): string => `Bahagian (${label}) belum ada TP.`,
+  spUnknown: (code: string): string => `SP "${echoed(code)}" tiada dalam senarai kurikulum. Pilih SP daripada senarai DSKP.`,
+  tpMissing: (label: string): string => `Bahagian (${echoed(label)}) belum ada TP.`,
   tpRange: 'TP mesti antara 1 dan 6.',
-  arasMissing: (label: string): string => `Bahagian (${label}) belum ada aras pemikiran.`,
+  arasMissing: (label: string): string => `Bahagian (${echoed(label)}) belum ada aras pemikiran.`,
   arasInvalid: 'Aras pemikiran tidak sah.',
   kbatInvalid: 'Nilai KBAT tidak sah.',
   chapterMismatch: 'Bab tidak sepadan dengan subjek dan tahap.',
@@ -99,7 +103,10 @@ export const QUESTION_IMPORT_ERROR_CODES = [
 ] as const
 export type QuestionImportErrorCode = (typeof QUESTION_IMPORT_ERROR_CODES)[number]
 
-/** Header of the error CSV (`GET /question-imports/{id}/errors`, FR-ADM-QE6.2): one line per row error, never a cell value of the file. */
+/**
+ * Header of the error CSV (`GET /question-imports/{id}/errors`, FR-ADM-QE6.2): one line per row error. It repeats only what Q-11 asks for:
+ * the question key and the `{key}` / `{kod}` / `{label}` placeholders of the Q-11 texts, each cut at `QUESTION_IMPORT_ECHO_MAX` characters; never another cell.
+ */
 export const QUESTION_IMPORT_ERROR_CSV_HEADER = ['baris', 'question_key', 'medan', 'kod_ralat', 'mesej'] as const
 export const QUESTION_IMPORT_ERROR_CSV_FILENAME = 'laporan-ralat-import.csv'
 

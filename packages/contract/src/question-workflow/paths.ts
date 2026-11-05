@@ -314,7 +314,7 @@ export function registerQuestionWorkflowPaths(registry: OpenAPIRegistry): void {
     tags: ['question-workflow', 'question-imports'],
     summary: 'Error report of one import run (CSV)',
     description:
-      'Admin only. A file, not JSON: `laporan-ralat-import.csv`, text/csv, CRLF, columns `baris, question_key, medan, kod_ralat, mesej`, one line per stored row error. It holds no cell of the uploaded file but the question key and the codes the Q-11 messages name; every cell is neutralised against spreadsheet formulas. Declared after `/question-imports/template`.',
+      'Admin only. A file, not JSON: `laporan-ralat-import.csv`, text/csv, CRLF, columns `baris, question_key, medan, kod_ralat, mesej`, one line per stored row error. It holds no cell of the uploaded file but the question key and the values the Q-11 messages name ({key}, {kod}, {label}), each cut at 40 characters; every cell is neutralised against spreadsheet formulas. Declared after `/question-imports/template`.',
     request: { params: idParams },
     responses: {
       200: {

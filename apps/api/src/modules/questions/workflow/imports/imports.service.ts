@@ -29,6 +29,7 @@ import { QuestionWorkflowService } from '../question-workflow.service'
 import {
   buildCsv,
   type CodeLookups,
+  type CsvRecord,
   type CurriculumFacts,
   factsKey,
   GURU_IMPORT_CAPS,
@@ -144,7 +145,8 @@ export class QuestionImportsService {
     const defaults = parseDefaults(body, lookups, fields)
     if (Object.keys(fields).length > 0) throw ApiError.of('VALIDATION_ERROR', { fields })
 
-    const plan = planImport(text as string, await this.withCodes(lookups, text as string, defaults), defaults)
+    const records = parseCsv(text as string)
+    const plan = planImport(records, await this.withCodes(lookups, records, defaults), defaults)
     refuseUnusable(plan)
     const run = await this.execute(actor, file as UploadedCsv, plan, defaults, 'draft', null)
     return {
@@ -161,8 +163,9 @@ export class QuestionImportsService {
     const text = readFile(file, fields)
     if (Object.keys(fields).length > 0) throw ApiError.of('VALIDATION_ERROR', { fields })
 
-    const lookups = await this.withCodes(await this.lookups(), text as string, NO_IMPORT_DEFAULTS)
-    const plan = planImport(text as string, lookups, NO_IMPORT_DEFAULTS, GURU_IMPORT_CAPS)
+    const records = parseCsv(text as string)
+    const lookups = await this.withCodes(await this.lookups(), records, NO_IMPORT_DEFAULTS)
+    const plan = planImport(records, lookups, NO_IMPORT_DEFAULTS, GURU_IMPORT_CAPS)
     refuseUnusable(plan)
     const run = await this.execute(actor, file as UploadedCsv, plan, NO_IMPORT_DEFAULTS, 'review', null)
     return { data: { imported: run.importedCount, failed: asFailures(run.failures), ...(plan.warnings.length === 0 ? {} : { warnings: plan.warnings }) } }
@@ -182,8 +185,8 @@ export class QuestionImportsService {
    * The code maps and curriculum facts the new header needs (read-only through `CurriculumRepository`), for the Subjek + Tingkatan the file
    * names. A legacy file or one over the row cap gets none (nothing is planned from it).
    */
-  private async withCodes(lookups: ImportLookups, text: string, defaults: ImportDefaults): Promise<ImportLookups> {
-    const [header, ...data] = parseCsv(text)
+  private async withCodes(lookups: ImportLookups, records: CsvRecord[], defaults: ImportDefaults): Promise<ImportLookups> {
+    const [header, ...data] = records
     if (!header || isLegacyHeader(header) || data.length > QUESTION_IMPORT_MAX_ROWS) return lookups
     const [subjects, levels] = await Promise.all([this.curriculum.subjects(), this.curriculum.levels()])
     const subjectsByCode = new Map(subjects.map((s) => [s.code.toUpperCase(), s.id.toString()]))
@@ -294,10 +297,10 @@ function readFile(file: UploadedCsv | undefined, fields: Record<string, string>)
 }
 
 function refuseUnusable(plan: ReturnType<typeof planImport>): void {
+  if (plan.rowLimitExceeded) throw ApiError.of('VALIDATION_ERROR', { fields: { csvFile: MSG.tooManyRows } })
   if (plan.missingColumns.length > 0) {
     throw ApiError.of('VALIDATION_ERROR', { fields: { csvFile: MSG.missingColumns(plan.missingColumns) } })
   }
-  if (plan.rowLimitExceeded) throw ApiError.of('VALIDATION_ERROR', { fields: { csvFile: MSG.tooManyRows } })
   if (plan.dataRows === 0) throw ApiError.of('VALIDATION_ERROR', { fields: { csvFile: MSG.noData } })
 }
 

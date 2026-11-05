@@ -472,6 +472,17 @@ describe('S1-T05 part 1: CSV with DSKP codes (real bank)', () => {
       for (const secret of ['RAHSIA', 'Berapakah', tag.subject, tag.sp]) expect(res.text).not.toContain(secret)
     })
 
+    it('[CI] a 500-character key or SP code is capped at 40 characters in the stored failure and in the error CSV', async () => {
+      const res = await importAdmin(csvOf(line({ question_key: 'L1', sp_kod: 'z'.repeat(500) }), line({ question_key: 'L'.repeat(500) }), line({ question_key: 'L'.repeat(500) })), 'panjang.csv')
+      expect(res.status).toBe(201)
+      const csv = await c.admin.get(`/api/question-imports/${res.body.data.id as string}/errors`)
+      expect(csv.text).toContain(`SP ""${'z'.repeat(40)}"" tiada dalam senarai kurikulum.`)
+      expect(csv.text).toContain(`Kunci soalan ${'L'.repeat(40)} berulang dalam fail.`)
+      expect(csv.text).not.toContain('z'.repeat(41))
+      expect(csv.text).not.toContain('L'.repeat(41))
+      expect(JSON.stringify(res.body)).not.toContain('z'.repeat(41))
+    })
+
     it('404 for an unknown or malformed run id; 401, Guru, Admin Sekolah and student 403', async () => {
       expectError(await c.admin.get('/api/question-imports/99999999/errors'), 'NOT_FOUND')
       expectError(await c.admin.get('/api/question-imports/abc/errors'), 'NOT_FOUND')

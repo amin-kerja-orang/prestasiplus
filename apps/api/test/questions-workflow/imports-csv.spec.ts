@@ -359,3 +359,24 @@ describe('imports: the new header with codes (S1-T05, Q-11)', () => {
     expect(QUESTION_IMPORT_MESSAGES.tooManyRows).toBe('Fail melebihi 2,000 baris. Pecahkan fail kepada beberapa bahagian.')
   })
 })
+
+describe('imports: echoed file values are capped (review of #704)', () => {
+  it('[CI] a 500-character key or SP code shows up cut at 40 characters in the message and in the stored failure key', () => {
+    const long = 'k'.repeat(500)
+    const p = codePlan([row({ question_key: long }), row({ question_key: long }), row({ question_key: 'K9', sp_kod: 's'.repeat(500) }), row({ question_key: 'K8', part_label: '' , tp: '' })])
+    expect(p.failures[0]?.message).toBe(`Baris 3: Kunci soalan ${'k'.repeat(40)} berulang dalam fail.`)
+    expect(p.failures[0]?.questionKey).toBe('k'.repeat(40))
+    expect(p.failures[1]?.message).toBe(`Baris 4: SP "${'s'.repeat(40)}" tiada dalam senarai kurikulum. Pilih SP daripada senarai DSKP.`)
+    expect(JSON.stringify(p.failures)).not.toContain('k'.repeat(41))
+    expect(JSON.stringify(p.failures)).not.toContain('s'.repeat(41))
+    const label = planImport([`${CODE_HEAD},part_label`, `${row({ tp: '' })},${'b'.repeat(500)}`].join('\n'), withCodes)
+    expect(label.failures[0]?.message).toBe(`Baris 2: Bahagian (${'b'.repeat(40)}) belum ada TP.`)
+  })
+
+  it('[CI] the 2,000-row cap is checked before the missing columns', () => {
+    const rows = Array.from({ length: 2001 }, () => 'K,mcq')
+    const p = planImport(['question_key,type', ...rows].join('\n'), withCodes)
+    expect(p.rowLimitExceeded).toBe(true)
+    expect(p.missingColumns).toEqual([])
+  })
+})

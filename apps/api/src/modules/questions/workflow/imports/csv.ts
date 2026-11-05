@@ -167,6 +167,7 @@ const toInt = (value: string): number | null => (/^\d{1,9}$/.test(value) ? Numbe
 const toId = (value: string): string | null => (/^\d{1,18}$/.test(value) ? String(BigInt(value)) : null)
 
 /** BE-09 stores MCQs with 3 to 8 options (contract `QuestionLeafPart`), so a row with fewer is a failed row, not a rolled-back import. */
+/** 3..8 options: the contract and the S1-T05 card win over Q-11's "2 hingga 8" (deviation recorded in the PR). */
 const MIN_OPTIONS = 3
 /** BE-09 has no text for this rule (its contract uses the generic schema message); this copy is the lead's fallback. */
 export const MIN_OPTIONS_MESSAGE = 'Pilihan jawapan mesti sekurang-kurangnya 3.'
@@ -182,12 +183,12 @@ export function isLegacyHeader(header: CsvRecord | undefined): boolean {
 }
 
 export function planImport(
-  text: string,
+  text: string | CsvRecord[],
   lookups: ImportLookups,
   defaults: ImportDefaults = NO_IMPORT_DEFAULTS,
   caps: ImportCaps | null = null,
 ): ImportPlan {
-  const [header, ...data] = parseCsv(text)
+  const [header, ...data] = typeof text === 'string' ? parseCsv(text) : text
   const plan: ImportPlan = { missingColumns: [], rows: [], failures: [], dataRows: 0, failedQuestions: 0, rowLimitExceeded: false, warnings: [], format: 'legacy' }
   if (!header) {
     plan.missingColumns = [...QUESTION_IMPORT_REQUIRED_COLUMNS]
@@ -200,13 +201,14 @@ export function planImport(
   })
   const legacy = isLegacyHeader(header)
   plan.format = legacy ? 'legacy' : 'codes'
-  plan.missingColumns = (legacy ? QUESTION_IMPORT_REQUIRED_COLUMNS : QUESTION_IMPORT_CODE_REQUIRED_COLUMNS).filter((c) => !index.has(c))
-  if (plan.missingColumns.length > 0) return plan
+  // The row cap comes first: an oversized file gets the 422 row-cap error whatever its columns.
   if (data.length > QUESTION_IMPORT_MAX_ROWS) {
     plan.rowLimitExceeded = true
     plan.dataRows = data.length
     return plan
   }
+  plan.missingColumns = (legacy ? QUESTION_IMPORT_REQUIRED_COLUMNS : QUESTION_IMPORT_CODE_REQUIRED_COLUMNS).filter((c) => !index.has(c))
+  if (plan.missingColumns.length > 0) return plan
   if (!legacy) {
     planCodeRows(header, data, index, lookups, defaults, caps, plan)
     return plan
@@ -492,7 +494,7 @@ function planCodeRows(
         plan.failures.push({
           row: rec.line,
           message: questionImportRowPrefix(rec.line) + e.message,
-          ...(key === '' ? {} : { questionKey: key.slice(0, KEY_MAX) }),
+          ...(key === '' ? {} : { questionKey: [...key].slice(0, KEY_MAX).join('') }),
           field: e.field,
           code: e.code,
         })
