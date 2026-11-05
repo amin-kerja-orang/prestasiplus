@@ -8,8 +8,7 @@
  */
 import type { QuestionGateData } from '../ports'
 import { checkDskpGate } from '../../dskp-gate'
-import { checkDifficultyGate, checkStemGate } from '../../publish-gate'
-import { checkSchemeRulesGate } from '../../publish-gate'
+import { checkDifficultyGate, checkSchemeRulesGate, checkStemGate } from '../../publish-gate'
 import { checkKeysGate, checkTagGate, leavesOf } from './keys-gate'
 
 export type GateName = 'submit' | 'approve'

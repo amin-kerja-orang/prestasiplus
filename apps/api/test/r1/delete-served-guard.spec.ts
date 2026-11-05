@@ -1,10 +1,11 @@
-import { QUESTION_MESSAGES } from '@pp/contract'
+import { GURU_QUESTION_MESSAGES, QUESTION_MESSAGES } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { QuestionsRepository } from '../../src/modules/questions'
 import { StimuliRepository } from '../../src/modules/questions/stimuli.repository'
 import { ACCOUNTS } from '../exam-builder/helpers'
 import { makePng } from '../files/fixtures'
+import { guruFormBody, teacherQuestion } from '../questions/helpers'
 import { serveSeededBlueprints } from '../support/serve-blueprints'
 import { bootFullApp, loginFull, type FullApp, type FullClient } from './full-app'
 
@@ -12,7 +13,8 @@ vi.setConfig({ testTimeout: 180_000, hookTimeout: 300_000 })
 
 /**
  * R1 delete-served-guard (B3 review of REQ-B-052). Four holes around "what a pupil is served must not change under a sitting":
- *   1. a Guru could hard-delete their own approved question that sits on a Terbit paper (200, rows gone, the sitting answered 500);
+ *   1. a Guru could hard-delete their own approved question that sits on a Terbit paper (200, rows gone, the sitting answered 500). Since
+ *      S6-T06 the Guru route deletes intake items, never question rows: the item of an accepted question is locked (409) and the question stays;
  *   2. so could an admin (route and bulk `delete`);
  *   3. the served lock of groups and stimuli ignored a withdrawn paper that still has sittings, while `versionIsPinned` did not;
  *   4. the AI explanation write rewrote an approved or pinned version in place.
@@ -30,7 +32,7 @@ describe('R1 delete-served-guard', () => {
   let counter = 0
 
   const q = (sql: string, params: unknown[] = []) => t.db.query<Record<string, unknown>>(sql, params)
-  const one = async (sql: string) => String((await q(sql))[0]!.id)
+  const one = async (sql: string, params: unknown[] = []) => String((await q(sql, params))[0]!.id)
   const count = async (id: string) => Number((await q(`select count(*)::int n from questions where id = $1`, [id]))[0]!.n)
 
   async function advance(ids: string[]): Promise<void> {
@@ -68,14 +70,25 @@ describe('R1 delete-served-guard', () => {
   /** A Guru-owned question that Admin Pusat fixed up and approved (the owner stays the Guru). */
   async function guruApproved(): Promise<string> {
     const text = `Soalan Guru: berapakah hasil tambah ${String(4 + counter++)} dan 5?`
-    const made = await guru.post('/api/guru/questions', { subjectId: subject, educationLevelId: level, questionType: 'mcq', difficultyLevel: 3, questionText: text, options: ['8', '9', '10', '11'], correctAnswer: 1 })
-    expect(made.status, JSON.stringify(made.body)).toBe(201)
-    const own = made.body.data.id as string
+    const own = await teacherQuestion(t, guru.userId, body({ questionText: text, options: ['8', '9', '10', '11'], correctAnswer: 1 }))
     expect((await admin.put(`/api/questions/${own}`, body({ questionText: text, options: ['8', '9', '10', '11'], correctAnswer: 1 }))).status).toBe(200)
     const ok = await admin.post('/api/questions/bulk-action', { action: 'approved', ids: [own] })
     expect(ok.body.data.failed, JSON.stringify(ok.body.data)).toEqual([])
     expect((await q(`select created_by_id::text id from questions where id = $1`, [own]))[0]?.id).toBe(guru.userId)
     return own
+  }
+  /** The teacher's intake item of a question the admin accepted (what the Guru route lists and DELETEs; its id is the item id, not the question id). */
+  async function acceptedItem(questionId: string, owner = guru.userId): Promise<string> {
+    const batch = await one(
+      `insert into intake_batches (owner_user_id, source, status, paper_type, subject, source_text, rights_status) values ($1::bigint, 'guru', 'ready_for_review', 'umum', 'Matematik', 'Kiriman guru', 'own') returning id::text as id`,
+      [owner],
+    )
+    const guruFields = { v: 1, questionType: 'mcq', subjectId: subject, educationLevelId: level, chapterId: null, spIds: [], tp: null, cognitiveLevel: null, difficultyLevel: 3, correctIndex: 1, explanation: null }
+    return one(
+      `insert into intake_items (batch_id, position, source_type, number_label, item_type, payload, review_state, question_id)
+       values ($1::bigint, 1, 'manual', '1', 'mcq', $2::jsonb, 'accepted', $3::bigint) returning id::text as id`,
+      [batch, JSON.stringify({ stem: 'Soalan guru', options: [], guru: guruFields }), questionId],
+    )
   }
   const setPool = (id: string, pools: string[]) => admin.put(`/api/admin/section-pools/${id}`, { pools })
 
@@ -145,53 +158,58 @@ describe('R1 delete-served-guard', () => {
     await t.close()
   })
 
-  describe('1. Guru DELETE (removeOwn)', () => {
-    it('a Guru-owned approved question on a Terbit paper with a running sitting: 409 in BM, the rows stay, the sitting still answers 200', async () => {
+  describe('1. Guru DELETE (intake item; S6-T06)', () => {
+    const LOCKED = GURU_QUESTION_MESSAGES.locked
+
+    it('the item of a Guru-owned approved question on a Terbit paper with a running sitting: 409 in BM, the question rows stay, the sitting still answers 200', async () => {
       const own = await guruApproved()
       const { paper } = await publishedPaper([own])
       const attempt = await sit(paper)
       const before = await served(attempt, own)
-      const res = await guru.del(`/api/guru/questions/${own}`)
+      const item = await acceptedItem(own)
+      const res = await guru.del(`/api/guru/questions/${item}`)
       expect(res.status, JSON.stringify(res.body)).toBe(409)
-      expect(res.body.error).toMatchObject({ code: 'CONFLICT', message: QUESTION_MESSAGES.deleteRefused, details: { reason: 'served' } })
+      expect(res.body.error).toMatchObject({ code: 'CONFLICT', message: LOCKED })
       expect(await count(own)).toBe(1)
       expect(await versions(own)).toEqual(['1:approved'])
       expect(await served(attempt, own)).toEqual(before) // GET /bijak/attempts/:id is 200 with the same question
     })
 
-    it('a Guru question that is archived but still pinned by the Terbit paper: 409 as well', async () => {
+    it('a Guru question that is archived but still pinned by the Terbit paper: 409 as well, the question stays', async () => {
       const own = await guruApproved()
       const { paper } = await publishedPaper([own])
       const attempt = await sit(paper)
       expect((await admin.post('/api/questions/bulk-action', { action: 'archived', ids: [own] })).body.data.failed).toEqual([])
-      const res = await guru.del(`/api/guru/questions/${own}`)
+      const res = await guru.del(`/api/guru/questions/${await acceptedItem(own)}`)
       expect(res.status, JSON.stringify(res.body)).toBe(409)
-      expect(res.body.error.details.reason).toBe('served') // an archived version a Terbit paper pins is still shown to pupils
       expect(await count(own)).toBe(1)
       expect((await pupil.get(`/api/bijak/attempts/${attempt}`)).status).toBe(200)
     })
 
-    it('a Guru question that was never placed and is in review (what the Guru route creates) is deleted: 200', async () => {
-      const made = await guru.post('/api/guru/questions', { subjectId: subject, educationLevelId: level, questionType: 'mcq', difficultyLevel: 3, questionText: 'Soalan Guru yang belum digunakan di mana-mana kertas?', options: ['1', '2', '3', '4'], correctAnswer: 1 })
+    it('a submission that was never accepted (what the Guru route creates) is deleted: 200, and it never touched a question row', async () => {
+      const made = await guru.post('/api/guru/questions', await guruFormBody(t, { subjectId: subject, educationLevelId: level, questionText: 'Soalan Guru yang belum digunakan di mana-mana kertas?' }))
       expect(made.status, JSON.stringify(made.body)).toBe(201)
       const id = made.body.data.id as string
+      const before = Number((await q(`select count(*)::int n from questions`))[0]!.n)
       const res = await guru.del(`/api/guru/questions/${id}`)
       expect(res.status, JSON.stringify(res.body)).toBe(200)
-      expect(await count(id)).toBe(0)
+      expect((await q(`select 1 from intake_items where id = $1`, [id])).length).toBe(0)
+      expect(Number((await q(`select count(*)::int n from questions`))[0]!.n)).toBe(before)
     })
 
-    it('a Guru-owned APPROVED question that no held paper places is deleted: 200 (as on the live site)', async () => {
+    it('the item of a Guru-owned APPROVED question that no held paper places is also locked: 409, the approved question stays (behaviour changed on purpose: a teacher no longer deletes bank questions)', async () => {
       const own = await guruApproved()
-      const res = await guru.del(`/api/guru/questions/${own}`)
-      expect(res.status, JSON.stringify(res.body)).toBe(200)
-      expect(await count(own)).toBe(0)
+      const res = await guru.del(`/api/guru/questions/${await acceptedItem(own)}`)
+      expect(res.status, JSON.stringify(res.body)).toBe(409)
+      expect(await count(own)).toBe(1)
     })
 
-    it('another teacher\'s question is still 404 (no probing), and an unknown id is 404', async () => {
-      const mine = await create()
-      expect((await guru.del(`/api/guru/questions/${mine}`)).status).toBe(404)
+    it('another teacher\'s item is still 404 (no probing), a question id of the bank is not an item, and an unknown id is 404', async () => {
+      const theirs = await admin.post('/api/guru/questions', await guruFormBody(t, { subjectId: subject, educationLevelId: level }))
+      expect(theirs.status, JSON.stringify(theirs.body)).toBe(201)
+      expect((await guru.del(`/api/guru/questions/${theirs.body.data.id as string}`)).status).toBe(404)
       expect((await guru.del('/api/guru/questions/987654321')).status).toBe(404)
-      expect(await count(mine)).toBe(1)
+      expect((await q(`select 1 from intake_items where id = $1`, [theirs.body.data.id])).length).toBe(1)
     })
   })
 
@@ -428,12 +446,11 @@ describe('R1 delete-served-guard', () => {
         { id: inSet2, code: 'CONFLICT', message: QUESTION_MESSAGES.deleteInUse, fields: {} },
       ])
 
-      // a Guru-owned one in a set: the same 409 on the Guru route
+      // a Guru-owned one in a set: the item of it is locked on the Guru route (409), the question stays
       const own = await guruApproved()
       await q(`insert into question_set_items (question_set_id, position, question_id, question_version_no) values ($1::bigint, 2, $2::bigint, 1)`, [header!.id, own])
-      const g = await guru.del(`/api/guru/questions/${own}`)
+      const g = await guru.del(`/api/guru/questions/${await acceptedItem(own)}`)
       expect(g.status, JSON.stringify(g.body)).toBe(409)
-      expect(g.body.error.details.reason).toBe('in_use')
       expect(await count(own)).toBe(1)
 
       // the 409 rolled everything back: once the set no longer uses it, the delete goes through
@@ -490,9 +507,8 @@ describe('R1 delete-served-guard', () => {
         expect(await versions(id)).toEqual(['1:approved'])
         const own = await guruApproved()
         await link(own)
-        const g = await guru.del(`/api/guru/questions/${own}`)
+        const g = await guru.del(`/api/guru/questions/${await acceptedItem(own)}`)
         expect(g.status, JSON.stringify(g.body)).toBe(409)
-        expect(g.body.error.details.reason).toBe('in_use')
         expect(await count(own)).toBe(1)
       })
     }

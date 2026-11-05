@@ -1373,7 +1373,7 @@
         "properties": {
           "search": {
             "type": "string",
-            "description": "Title contains, case-insensitive."
+            "description": "Title or body contains, case-insensitive; at most 100 characters are used."
           },
           "category": {
             "type": "string",
@@ -1599,7 +1599,7 @@
         "properties": {
           "search": {
             "type": "string",
-            "description": "Title contains, case-insensitive."
+            "description": "Title or body contains, case-insensitive; at most 100 characters are used."
           },
           "category": {
             "type": "string",
@@ -4204,17 +4204,27 @@
         "type": "object",
         "properties": {
           "email": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "whatsapp": {
+            "type": "string"
+          },
+          "hours": {
+            "type": "string"
           },
           "whatsappNumber": {
             "type": "string",
-            "minLength": 1
+            "deprecated": true
           }
         },
         "required": [
           "email",
-          "whatsappNumber"
+          "phone",
+          "whatsapp",
+          "hours"
         ],
         "additionalProperties": false
       },
@@ -9368,7 +9378,7 @@
           "csvFile": {
             "type": "string",
             "format": "binary",
-            "description": "CSV or TXT file, UTF-8, at most 5 MB. Every row must carry subject_id, education_level_id and difficulty_level."
+            "description": "CSV file, UTF-8, at most 2 MB and 500 data rows (BM, code or legacy header; or the JSON field `csv` with the file text, limited to the default 100 kb JSON body)."
           }
         },
         "required": [
@@ -9382,22 +9392,16 @@
             "type": "integer",
             "minimum": 0
           },
-          "failed": {
+          "errors": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/QuestionImportFailure"
-            }
-          },
-          "warnings": {
-            "type": "array",
-            "items": {
-              "type": "string"
             }
           }
         },
         "required": [
           "imported",
-          "failed"
+          "errors"
         ],
         "additionalProperties": false
       },
@@ -28400,7 +28404,8 @@
               "null"
             ],
             "minimum": 1,
-            "maximum": 11
+            "maximum": 11,
+            "description": "Tingkatan 1-11. Accepted and ignored by the server for every role (API-AUTH-09)."
           },
           "schoolId": {
             "type": [
@@ -28409,7 +28414,7 @@
             ],
             "minLength": 1,
             "maxLength": 64,
-            "description": "School id. Must exist (422 \"The selected school id is invalid.\"). `null` or absent means no school.",
+            "description": "School id. Accepted and ignored by the server for every role (API-AUTH-09).",
             "example": "1042"
           }
         },
@@ -55900,7 +55905,10 @@
             "$ref": "#/components/schemas/Id"
           },
           "questionType": {
-            "$ref": "#/components/schemas/QuestionType"
+            "type": "string",
+            "enum": [
+              "mcq"
+            ]
           },
           "questionText": {
             "type": "string"
@@ -55949,38 +55957,32 @@
             "type": "boolean"
           },
           "status": {
-            "$ref": "#/components/schemas/QuestionStatus"
+            "$ref": "#/components/schemas/GuruSubmissionStatus"
           },
           "statusLabel": {
             "type": "string"
           },
-          "isActive": {
-            "type": "boolean"
-          },
-          "options": {
-            "type": [
-              "array",
-              "null"
-            ],
-            "items": {
-              "type": "string"
-            }
-          },
-          "correctAnswer": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "minimum": 0,
-            "maximum": 3
-          },
-          "explanation": {
+          "rejectionReason": {
             "type": [
               "string",
               "null"
             ]
           },
-          "source": {
+          "editable": {
+            "type": "boolean"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "correctAnswer": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          },
+          "explanation": {
             "type": [
               "string",
               "null"
@@ -56003,12 +56005,20 @@
           "dskpTagged",
           "status",
           "statusLabel",
-          "isActive",
+          "rejectionReason",
+          "editable",
           "options",
           "correctAnswer",
           "explanation",
-          "source",
           "createdAt"
+        ]
+      },
+      "GuruSubmissionStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "approved",
+          "rejected"
         ]
       },
       "QuestionGuruDetail": {
@@ -56018,7 +56028,10 @@
             "$ref": "#/components/schemas/Id"
           },
           "questionType": {
-            "$ref": "#/components/schemas/QuestionType"
+            "type": "string",
+            "enum": [
+              "mcq"
+            ]
           },
           "questionText": {
             "type": "string"
@@ -56067,28 +56080,28 @@
             "type": "boolean"
           },
           "status": {
-            "$ref": "#/components/schemas/QuestionStatus"
+            "$ref": "#/components/schemas/GuruSubmissionStatus"
           },
           "statusLabel": {
             "type": "string"
           },
-          "isActive": {
+          "rejectionReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "editable": {
             "type": "boolean"
           },
           "options": {
-            "type": [
-              "array",
-              "null"
-            ],
+            "type": "array",
             "items": {
               "type": "string"
             }
           },
           "correctAnswer": {
-            "type": [
-              "integer",
-              "null"
-            ],
+            "type": "integer",
             "minimum": 0,
             "maximum": 3
           },
@@ -56098,138 +56111,38 @@
               "null"
             ]
           },
-          "source": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "createdAt": {
             "$ref": "#/components/schemas/Timestamp"
           },
-          "questionImage": {
-            "type": [
-              "string",
-              "null"
+          "chapterId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
             ]
           },
-          "optionImages": {
+          "spIds": {
             "type": "array",
             "items": {
-              "type": [
-                "string",
-                "null"
-              ]
+              "$ref": "#/components/schemas/Id"
             }
           },
-          "tfAnswer": {
+          "tp": {
             "type": [
-              "boolean",
+              "integer",
               "null"
-            ]
+            ],
+            "minimum": 1,
+            "maximum": 6
           },
-          "correctAnswerText": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "altAnswers": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "modelAnswer": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "language": {
-            "type": "string",
-            "enum": [
-              "bm",
-              "en"
-            ]
-          },
-          "scriptType": {
-            "type": "string",
-            "enum": [
-              "rumi",
-              "arab",
-              "jawi",
-              "mixed"
-            ]
-          },
-          "textDirection": {
-            "type": "string",
-            "enum": [
-              "ltr",
-              "rtl"
-            ]
-          },
-          "curriculumChapterId": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Id"
-              },
-              {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            ]
-          },
-          "curriculumTopicId": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Id"
-              },
-              {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            ]
-          },
-          "dskpSpId": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Id"
-              },
-              {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            ]
-          },
-          "usage": {
-            "type": "object",
-            "properties": {
-              "attempts": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "correct": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "accuracy": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 100
-              }
-            },
-            "required": [
-              "attempts",
-              "correct",
-              "accuracy"
-            ]
+          "cognitiveLevel": {
+            "$ref": "#/components/schemas/QuestionCognitiveLevel"
           }
         },
         "required": [
@@ -56245,59 +56158,84 @@
           "dskpTagged",
           "status",
           "statusLabel",
-          "isActive",
+          "rejectionReason",
+          "editable",
           "options",
           "correctAnswer",
           "explanation",
-          "source",
           "createdAt",
-          "questionImage",
-          "optionImages",
-          "tfAnswer",
-          "correctAnswerText",
-          "altAnswers",
-          "modelAnswer",
-          "language",
-          "scriptType",
-          "textDirection",
-          "curriculumChapterId",
-          "curriculumTopicId",
-          "dskpSpId",
-          "usage"
+          "chapterId",
+          "spIds",
+          "tp",
+          "cognitiveLevel"
         ]
       },
       "QuestionGuruCreateRequest": {
         "type": "object",
         "properties": {
-          "educationLevelId": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 64
-          },
           "subjectId": {
             "type": "string",
             "minLength": 1,
             "maxLength": 64
           },
-          "questionType": {
-            "$ref": "#/components/schemas/QuestionType"
+          "educationLevelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "chapterId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64
+          },
+          "spIds": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 3
+          },
+          "tp": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 6
+          },
+          "cognitiveLevel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "mengingat",
+              "memahami",
+              "mengaplikasi",
+              "menganalisis",
+              "menilai",
+              "mencipta",
+              null
+            ]
           },
           "difficultyLevel": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "easy",
-                  "medium",
-                  "hard"
-                ]
-              },
-              {
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 5
-              }
-            ]
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "questionType": {
+            "type": "string",
+            "enum": [
+              "mcq"
+            ],
+            "default": "mcq"
           },
           "questionText": {
             "type": "string",
@@ -56309,27 +56247,7 @@
             "minItems": 4,
             "maxItems": 4,
             "items": {
-              "oneOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "text": {
-                      "type": "string"
-                    }
-                  }
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "optionText": {
-                      "type": "string"
-                    }
-                  }
-                }
-              ]
+              "type": "string"
             }
           },
           "correctAnswer": {
@@ -56341,175 +56259,6 @@
                 "type": "string"
               }
             ]
-          },
-          "tfAnswer": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "string"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "correctAnswerText": {
-            "type": "string"
-          },
-          "altAnswers": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              }
-            ]
-          },
-          "modelAnswer": {
-            "type": "string"
-          },
-          "explanation": {
-            "type": "string"
-          },
-          "questionImageUrl": {
-            "type": "string"
-          },
-          "questionImageFileId": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Id"
-              },
-              {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            ]
-          },
-          "optionImageFileIds": {
-            "type": "array",
-            "items": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Id"
-                },
-                {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                }
-              ]
-            },
-            "maxItems": 4
-          },
-          "curriculumChapterId": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "maxLength": 64
-          },
-          "curriculumTopicId": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "maxLength": 64
-          },
-          "dskpSpId": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "maxLength": 64
-          },
-          "scriptType": {
-            "type": "string",
-            "enum": [
-              "rumi",
-              "arab",
-              "jawi",
-              "mixed"
-            ]
-          },
-          "parts": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/QuestionWritePart"
-            },
-            "minItems": 1
-          },
-          "tag": {
-            "$ref": "#/components/schemas/QuestionCurriculumTag"
-          }
-        },
-        "required": [
-          "educationLevelId",
-          "subjectId",
-          "questionType",
-          "difficultyLevel",
-          "questionText"
-        ]
-      },
-      "QuestionGuruUpdateRequest": {
-        "type": "object",
-        "properties": {
-          "questionText": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 2000
-          },
-          "difficultyLevel": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "easy",
-                  "medium",
-                  "hard"
-                ]
-              },
-              {
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 5
-              }
-            ]
-          },
-          "options": {
-            "type": "array",
-            "minItems": 4,
-            "maxItems": 4,
-            "items": {
-              "type": "object",
-              "required": [
-                "id",
-                "optionText"
-              ],
-              "properties": {
-                "id": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 3
-                },
-                "optionText": {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 500
-                }
-              }
-            }
           },
           "correctOptionId": {
             "anyOf": [
@@ -56525,51 +56274,132 @@
             "type": [
               "string",
               "null"
-            ]
-          },
-          "questionImageFileId": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Id"
-              },
-              {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            ]
-          },
-          "optionImageFileIds": {
-            "type": "array",
-            "items": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Id"
-                },
-                {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                }
-              ]
-            },
-            "maxItems": 4
-          },
-          "removeQuestionImage": {
-            "type": "boolean"
-          },
-          "removeOptionImage": {
-            "type": "array",
-            "items": {
-              "type": "boolean"
-            },
-            "maxItems": 4
+            ],
+            "maxLength": 2000
           }
         },
         "required": [
-          "questionText"
+          "subjectId",
+          "educationLevelId",
+          "difficultyLevel",
+          "questionText",
+          "options"
+        ]
+      },
+      "QuestionGuruUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "educationLevelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "chapterId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64
+          },
+          "spIds": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 3
+          },
+          "tp": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 6
+          },
+          "cognitiveLevel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "mengingat",
+              "memahami",
+              "mengaplikasi",
+              "menganalisis",
+              "menilai",
+              "mencipta",
+              null
+            ]
+          },
+          "difficultyLevel": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "questionType": {
+            "type": "string",
+            "enum": [
+              "mcq"
+            ],
+            "default": "mcq"
+          },
+          "questionText": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "options": {
+            "type": "array",
+            "minItems": 4,
+            "maxItems": 4,
+            "items": {
+              "type": "string"
+            }
+          },
+          "correctAnswer": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "correctOptionId": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "explanation": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "subjectId",
+          "educationLevelId",
+          "difficultyLevel",
+          "questionText",
+          "options"
         ]
       },
       "QuestionPublic": {
@@ -57005,6 +56835,17 @@
                 },
                 "body": {
                   "$ref": "#/components/schemas/QuestionRichText"
+                },
+                "imageId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "S1-T01 (API-Q-08, DM-52): public token of a `question_image` file (as `Stimulus.imageId`); null or absent = no picture."
+                },
+                "isDistractor": {
+                  "type": "boolean",
+                  "description": "S1-T01 (API-Q-08, DM-52): the option is a distractor (\"Pengganggu\"); absent = false."
                 }
               },
               "required": [
@@ -57091,6 +56932,38 @@
               null
             ],
             "description": "S1-T01: kertas of the group (reuses `QuestionKertas`); defaulted from the members when absent."
+          },
+          "optionBank": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "pattern": "^[A-H]$"
+                },
+                "body": {
+                  "$ref": "#/components/schemas/QuestionRichText"
+                },
+                "imageId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "S1-T01 (API-Q-08, DM-52): public token of a `question_image` file (as `Stimulus.imageId`); null or absent = no picture."
+                },
+                "isDistractor": {
+                  "type": "boolean",
+                  "description": "S1-T01 (API-Q-08, DM-52): the option is a distractor (\"Pengganggu\"); absent = false."
+                }
+              },
+              "required": [
+                "label",
+                "body"
+              ]
+            },
+            "maxItems": 8,
+            "description": "S1-T01 (API-Q-08): replaces the whole bank (send every row to keep it; `[]` clears). A letter that a leaf key of a member uses cannot be dropped (422 `optionBank`, AC-QA-10). A served group answers 409 like the stimuli change: edit it as a draft copy."
           }
         },
         "additionalProperties": false
@@ -57178,6 +57051,15 @@
                 },
                 "body": {
                   "$ref": "#/components/schemas/QuestionRichText"
+                },
+                "imageId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "isDistractor": {
+                  "type": "boolean"
                 }
               },
               "required": [
@@ -57244,6 +57126,25 @@
               "null"
             ],
             "description": "BM warning while the group has 0 questions (a draft group); null otherwise. The write went through."
+          },
+          "usedInPapers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "title": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "title"
+              ]
+            },
+            "description": "S1-T01 (API-Q-08, ruling #685): the Terbit papers that place the group or any of its members, by paper id. Read only; the retire confirm dialog (API-Q-33) names them. Empty when none."
           }
         },
         "required": [
@@ -57888,7 +57789,8 @@
         "enum": [
           "latih_tubi",
           "tracking_a",
-          "youtube"
+          "youtube",
+          "harian"
         ]
       },
       "MissionStatus": {
@@ -57943,6 +57845,17 @@
           },
           "status": {
             "$ref": "#/components/schemas/MissionStatus"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "S6-T07 additive: mission description (null when none)."
+          },
+          "rewardCoins": {
+            "type": "integer",
+            "description": "S6-T07 additive: coins paid once at the target."
           }
         },
         "required": [
@@ -57974,6 +57887,164 @@
         "required": [
           "data",
           "meta"
+        ]
+      },
+      "TeacherMission": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "targetQuestions": {
+            "type": "integer"
+          },
+          "rewardCoins": {
+            "type": "integer"
+          },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "classroomId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "subjectId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "subjectName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "global": {
+            "type": "boolean"
+          },
+          "completedCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Pupils of the teacher's classes who completed it."
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "targetQuestions",
+          "rewardCoins",
+          "date",
+          "classroomId",
+          "subjectId",
+          "subjectName",
+          "global",
+          "completedCount"
+        ]
+      },
+      "TeacherMissionCreate": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500
+          },
+          "targetQuestions": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "default": 10
+          },
+          "rewardCoins": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "default": 10
+          },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "classroomId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "null or absent = all own classes.",
+            "example": "1042"
+          },
+          "subjectId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "title",
+          "date",
+          "subjectId"
+        ]
+      },
+      "TeacherMissionListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TeacherMission"
+            }
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "TeacherMissionResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TeacherMission"
+          }
+        },
+        "required": [
+          "data"
         ]
       },
       "RemedialStatus": {
@@ -76962,6 +77033,202 @@
           "rows"
         ]
       },
+      "GuruWeeklyReportQuery": {
+        "type": "object",
+        "properties": {
+          "classroomId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "week": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "Any date YYYY-MM-DD inside the wanted week; the report covers Monday 00:00 to Sunday 23:59 MYT containing it. Default: the current week."
+          }
+        },
+        "required": [
+          "classroomId"
+        ],
+        "additionalProperties": false
+      },
+      "GuruWeeklyReport": {
+        "type": "object",
+        "properties": {
+          "classroom": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "week": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                "description": "Monday, YYYY-MM-DD."
+              },
+              "to": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                "description": "Sunday, YYYY-MM-DD."
+              },
+              "label": {
+                "type": "string",
+                "example": "02 Nov 2026 — 08 Nov 2026"
+              }
+            },
+            "required": [
+              "from",
+              "to",
+              "label"
+            ],
+            "description": "Monday 00:00 to Sunday 23:59 MYT of the week containing the requested date (default: current week). The previous week is the 7 days before."
+          },
+          "summary": {
+            "type": "object",
+            "properties": {
+              "answered": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Answers of the class in the week, all modes of practice_answers (XS-8)."
+              },
+              "activePupils": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Class pupils with >= 1 answer in the week (XS-2)."
+              },
+              "improvedPupils": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Count of ALL pupils that qualify for mostImproved, not only the 5 listed."
+              },
+              "attentionSubjects": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Length of attentionSubjects."
+              }
+            },
+            "required": [
+              "answered",
+              "activePupils",
+              "improvedPupils",
+              "attentionSubjects"
+            ]
+          },
+          "topPerformers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "rank": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "name": {
+                  "type": "string"
+                },
+                "answered": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "accuracy": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "Pooled correct / answered x 100 over all modes of practice_answers (XS-8), ONE decimal at most on the wire (a value with no fraction has none: 100, not 100.0). The screen shows the whole number rounded half up (4.6, D-T10-1)."
+                }
+              },
+              "required": [
+                "rank",
+                "name",
+                "answered",
+                "accuracy"
+              ]
+            },
+            "maxItems": 5,
+            "description": "Pupils with answered >= 5, sorted by whole-number accuracy desc, ties answered desc then name; max 5."
+          },
+          "mostImproved": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "previousAccuracy": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "Pooled correct / answered x 100 over all modes of practice_answers (XS-8), ONE decimal at most on the wire (a value with no fraction has none: 100, not 100.0). The screen shows the whole number rounded half up (4.6, D-T10-1)."
+                },
+                "accuracy": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "Pooled correct / answered x 100 over all modes of practice_answers (XS-8), ONE decimal at most on the wire (a value with no fraction has none: 100, not 100.0). The screen shows the whole number rounded half up (4.6, D-T10-1)."
+                },
+                "delta": {
+                  "type": "integer",
+                  "description": "whole(accuracy) - whole(previousAccuracy); the shown \"+{delta}%\"."
+                }
+              },
+              "required": [
+                "name",
+                "previousAccuracy",
+                "accuracy",
+                "delta"
+              ]
+            },
+            "maxItems": 5,
+            "description": "Pupils with answers in both weeks and delta > 0, delta desc, ties by name; max 5. summary.improvedPupils counts all of them."
+          },
+          "attentionSubjects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "subject": {
+                  "type": "string"
+                },
+                "accuracy": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "Pooled correct / answered x 100 over all modes of practice_answers (XS-8), ONE decimal at most on the wire (a value with no fraction has none: 100, not 100.0). The screen shows the whole number rounded half up (4.6, D-T10-1)."
+                },
+                "answered": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "subject",
+                "accuracy",
+                "answered"
+              ]
+            },
+            "description": "Subjects whose whole-number weekly accuracy is < 50, ascending by accuracy."
+          }
+        },
+        "required": [
+          "classroom",
+          "week",
+          "summary",
+          "topPerformers",
+          "mostImproved",
+          "attentionSubjects"
+        ]
+      },
       "KirkpatrickBandKey": {
         "type": "string",
         "enum": [
@@ -89723,15 +89990,15 @@
           "content"
         ],
         "summary": "Published articles (reader list)",
-        "description": "Public (guests allowed). Only published articles; 18 per page, `publishedAt` desc then id. An out-of-range page is an empty list, not an error.",
+        "description": "Public (guests allowed). Only published articles; 12 per page, `publishedAt` desc then id. `meta.counts` holds the number of published articles per category code for the current `search` (ignoring `category`), so a pill can show its count. An out-of-range page is an empty list, not an error.",
         "parameters": [
           {
             "schema": {
               "type": "string",
-              "description": "Title contains, case-insensitive."
+              "description": "Title or body contains, case-insensitive; at most 100 characters are used."
             },
             "required": false,
-            "description": "Title contains, case-insensitive.",
+            "description": "Title or body contains, case-insensitive; at most 100 characters are used.",
             "name": "search",
             "in": "query"
           },
@@ -89973,10 +90240,10 @@
           "content"
         ],
         "summary": "Support contact (help box)",
-        "description": "Public. If the config row is missing the server answers 404 \"Konfigurasi sokongan tidak dijumpai.\" (the mock would fail with a generic error).",
+        "description": "Public. If the config row is missing the server answers 200 with empty strings {email: \"\", phone: \"\", whatsapp: \"\", hours: \"\"} (S5-T05, DM-33); phone and hours are always empty until S7-T09; the client hides a contact whose value is empty.",
         "responses": {
           "200": {
-            "description": "E-mail and WhatsApp number.",
+            "description": "E-mail, phone, WhatsApp number and hours (empty strings when not set).",
             "content": {
               "application/json": {
                 "schema": {
@@ -89989,16 +90256,6 @@
                   "required": [
                     "data"
                   ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "NOT_FOUND \"Konfigurasi sokongan tidak dijumpai.\"",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
@@ -91298,10 +91555,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "Title contains, case-insensitive."
+              "description": "Title or body contains, case-insensitive; at most 100 characters are used."
             },
             "required": false,
-            "description": "Title contains, case-insensitive.",
+            "description": "Title or body contains, case-insensitive; at most 100 characters are used.",
             "name": "search",
             "in": "query"
           },
@@ -97132,8 +97389,8 @@
           "question-workflow",
           "guru-question-import"
         ],
-        "summary": "Guru CSV template (same file as the admin template)",
-        "description": "Teacher or admin. `template-import-soalan.csv`, text/csv with Content-Disposition attachment; the same bytes as GET /question-imports/template. A static path: it matches before `/guru/questions/{id}` of the BE-09 contract.",
+        "summary": "Guru CSV template (templat-soalan.csv)",
+        "description": "Teacher or admin. `templat-soalan.csv`, text/csv with Content-Disposition attachment: the header `subjek,tingkatan,bab,sp,tp,aras,kesukaran,soalan,pilihan_a,pilihan_b,pilihan_c,pilihan_d,jawapan,penerangan` and the example row (44-F3). A static path: it matches before `/guru/questions/{id}`.",
         "responses": {
           "200": {
             "description": "The template file.",
@@ -97183,8 +97440,8 @@
           "question-workflow",
           "guru-question-import"
         ],
-        "summary": "Guru CSV contribution (same import service, no defaults)",
-        "description": "Teacher or admin. multipart/form-data `csvFile` (.csv or .txt, up to 5 MB). Same parser and template as the admin import but no form defaults: each row must carry subject_id, education_level_id and difficulty_level; extra caps question text up to 2000 and each option up to 500 characters. Valid rows are created as `review` questions owned by the caller (D54a; the mock says pending_review) and each counts as a contribution; bad rows are listed ordered by file row. Answers 200 (not 201) with { data: { imported, failed } } and no flash. Row messages as the admin import plus \"Soalan tidak boleh melebihi 2000 aksara.\" and \"Pilihan jawapan tidak boleh melebihi 500 aksara.\". A static path: it matches before `/guru/questions/{id}` of the BE-09 contract.",
+        "summary": "Guru CSV contribution (items of one guru intake batch)",
+        "description": "Teacher or admin. multipart/form-data `csvFile` (.csv only, UTF-8, up to 2 MB and 500 data rows) or JSON `{ csv }` (the JSON path is limited to the default 100 kb body parser). Rows are matched by column NAME (`subjek,tingkatan,bab,sp,tp,aras,kesukaran,soalan,pilihan_a..d,jawapan,penerangan`); each valid row becomes an item of ONE `source = guru` intake batch, shown as \"Menunggu Semakan\" (S6-T06, D113); bad rows are listed in `errors` ordered by file row and never block the valid ones. Answers 200 with { data: { imported, errors: [{ row, message }] } }. 422 `fields.csvFile`: \"Sila pilih fail.\", \"Jenis fail tidak disokong. Format dibenarkan: CSV.\", \"Fail melebihi saiz maksimum 2 MB.\", \"Fail melebihi 500 baris.\", \"Lajur wajib tiada: ...\". A static path: it matches before `/guru/questions/{id}`.",
         "parameters": [
           {
             "schema": {
@@ -116921,7 +117178,7 @@
           "account"
         ],
         "summary": "Update own profile",
-        "description": "Any signed-in role, own record only. `email` and any other key in the body are ignored (BR-13). An absent key keeps the stored value; null or blank clears phone, bio, grade, schoolId. schoolId is ignored for school_admin, ppd_officer and admin accounts. D57a: this write route is rate limited (RATE_LIMITED, retryAfter, Retry-After); the per-user limit is a platform setting of the implementation.",
+        "description": "Any signed-in role, own record only. `email` and any other key in the body are ignored (BR-13). An absent key keeps the stored value; null or blank clears phone and bio. `grade`, `schoolId` and `role` are accepted and ignored for every role (API-AUTH-09). D57a: this write route is rate limited (RATE_LIMITED, retryAfter, Retry-After); the per-user limit is a platform setting of the implementation.",
         "parameters": [
           {
             "schema": {
@@ -116990,7 +117247,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields (one message per field, the first failing rule). name required, max 255; phone max 14; bio max 500; grade \"The selected grade is invalid.\"; school \"The selected school id is invalid.\". Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
+            "description": "VALIDATION_ERROR with fields (one message per field, the first failing rule). name required, max 255; phone max 14; bio max 500; grade \"The selected grade is invalid.\" and school \"The selected school id is invalid.\" when the value has the wrong type (a valid value is ignored). Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
             "content": {
               "application/json": {
                 "schema": {
@@ -124786,6 +125043,247 @@
         }
       }
     },
+    "/guru/missions": {
+      "get": {
+        "tags": [
+          "missions"
+        ],
+        "summary": "Misi Harian of the signed-in teacher (API-GUR-11)",
+        "description": "Teacher only. Own missions plus Global (platform) missions (global = true), date descending then created descending. completedCount counts pupils of the teacher's classes.",
+        "responses": {
+          "200": {
+            "description": "Missions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherMissionListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "missions"
+        ],
+        "summary": "Create a mission (API-GUR-11)",
+        "description": "Teacher only. Recipients are a snapshot at creation (classroomId null = all pupils of all own active classes). 422 VALIDATION_ERROR with fields for the body check and for a date before today (MYT); 422 VALIDATION_ERROR without fields and message \"Had 5 misi sehari telah dicapai.\" when the teacher already has 5 missions on that MYT day; 422 MISSION_REWARD_TOO_HIGH \"Ganjaran misi melebihi had.\" (ERR-GAME-17) when rewardCoins is over the limit. UI toast \"Misi dicipta.\".",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeacherMissionCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The created mission.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherMissionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: fields per invalid input, or the daily cap refusal (no fields); or MISSION_REWARD_TOO_HIGH \"Ganjaran misi melebihi had.\" (ERR-GAME-17) when the reward is over the limit (emitted by the API part, #643).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (D57): too many writes. Body error.code RATE_LIMITED with retryAfter (seconds); Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/missions/{id}": {
+      "delete": {
+        "tags": [
+          "missions"
+        ],
+        "summary": "Delete an own mission (API-GUR-11)",
+        "description": "Teacher only. Rewards already paid stay. A Global mission answers 403 \"Misi global tidak boleh dipadam.\"; another teacher's or an unknown id answers 404.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ data: { deleted: 1 } }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "deleted": {
+                          "type": "number",
+                          "enum": [
+                            1
+                          ]
+                        }
+                      },
+                      "required": [
+                        "deleted"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Misi global tidak boleh dipadam.\"; or the generic role text; or CSRF_INVALID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id or not the caller's mission.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (D57): too many writes. Body error.code RATE_LIMITED with retryAfter (seconds); Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/remedial-tests/mine": {
       "get": {
         "tags": [
@@ -129755,6 +130253,96 @@
           },
           "403": {
             "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin or teacher (school_admin included)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/weekly-report": {
+      "get": {
+        "tags": [
+          "performance"
+        ],
+        "summary": "Teacher weekly class report (API-GUR-21)",
+        "description": "Role teacher only; own classes only. Pupil names are those of the own class. Accuracy fields carry at most one decimal.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "classroomId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "description": "Any date YYYY-MM-DD inside the wanted week; the report covers Monday 00:00 to Sunday 23:59 MYT containing it. Default: the current week."
+            },
+            "required": false,
+            "description": "Any date YYYY-MM-DD inside the wanted week; the report covers Monday 00:00 to Sunday 23:59 MYT containing it. Default: the current week.",
+            "name": "week",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Weekly report.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: holds pupil names.",
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GuruWeeklyReport"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: not a teacher, or the class belongs to another teacher (AC-GUR-43-6).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: classroomId missing, or week malformed.",
             "content": {
               "application/json": {
                 "schema": {
