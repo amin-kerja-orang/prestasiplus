@@ -14,7 +14,7 @@ const emit = defineEmits<{ jump: [field: string] }>()
 <template>
   <DsPanel :title="rows.length > 0 ? `${String(rows.length)} belum lengkap` : undefined" data-testid="studio-completeness">
     <DsStack v-if="rows.length > 0" as="ul" gap="2xs" data-testid="studio-completeness-list">
-      <DsText v-for="r in rows" :key="r.message" as="li" variant="body">
+      <DsText v-for="(r, i) in rows" :key="i" as="li" variant="body">
         <UButton
           type="button"
           color="neutral"

@@ -182,8 +182,13 @@ export interface Gap {
   dskp?: boolean
 }
 
+/** What the wizard has read about the Subjek + Tingkatan; null or absent = not known yet. */
+export interface GapFacts {
+  hasChapters?: boolean | null
+}
+
 /** What stops a draft being ready to approve. A draft may be saved with gaps; the gate is at Terbitkan (V2 S1.2). */
-export function draftGaps(d: StudioDraft, levelName = ''): Gap[] {
+export function draftGaps(d: StudioDraft, levelName = '', facts: GapFacts = {}): Gap[] {
   const gaps: Gap[] = []
   if (d.subjectId === '') gaps.push({ step: 1, field: 'studio-subject', path: 'subjectId', message: 'Sila pilih subjek.' })
   if (d.educationLevelId === '') gaps.push({ step: 1, field: 'studio-level', path: 'educationLevelId', message: 'Sila pilih tahap pendidikan.' })
@@ -204,7 +209,10 @@ export function draftGaps(d: StudioDraft, levelName = ''): Gap[] {
       gaps.push({ ...leaf, message: `${name} tiada skema jawapan.` })
     }
   })
-  for (const g of dskpItems({ unitId: d.unitId, spIds: d.spIds, leaves: d.leaves.map((l) => ({ ...l, tp: l.tp ?? d.inheritedTp ?? null })) })) {
+  if (facts.hasChapters === true && d.chapterId === '') gaps.push({ step: 1, field: 'q-chapter', path: 'chapterId', message: 'Sila pilih Bab.' })
+  // A leaf without its own TP inherits the question's, the highest of the leaves (FR-ADM-QE3.4; `dskp-gate.ts`).
+  const tp = draftTp(d)
+  for (const g of dskpItems({ unitId: d.unitId, spIds: d.spIds, leaves: d.leaves.map((l) => ({ ...l, tp: l.tp ?? tp })) })) {
     const field = g.leaf !== undefined ? `studio-leaf-${String(g.leaf)}` : g.path === 'spIds' ? 'studio-sp' : 'studio-unit'
     gaps.push({ step: g.leaf !== undefined ? 4 : 1, field, path: g.path, message: g.message, dskp: true })
   }
@@ -242,17 +250,40 @@ export function issueField(path: string, leaves: readonly Pick<LeafDraft, 'label
   return leaf < 0 ? 'studio-add-leaf' : `studio-leaf-${String(leaf)}`
 }
 
-/** A stored gate issue the form has since fixed: the panel drops it before the next save. */
-function fixedInForm(path: string, d: StudioDraft): boolean {
-  if (path === 'unitId') return d.unitId !== null && d.unitId !== ''
-  if (path === 'spIds') return d.spIds.length > 0
-  if (path === 'chapterId') return d.chapterId !== ''
-  if (path === 'tp') return draftTp(d) !== null
+/** The form's value for a gate path; undefined for a path the form has no field for. */
+function valueAt(path: string, d: StudioDraft): unknown {
+  const flat: Readonly<Record<string, unknown>> = {
+    subjectId: d.subjectId,
+    educationLevelId: d.educationLevelId,
+    kertas: d.kertas,
+    numberLabel: d.numberLabel,
+    questionText: d.stem,
+    stem: d.stem,
+    unitId: d.unitId,
+    spIds: d.spIds,
+    chapterId: d.chapterId,
+    tp: draftTp(d),
+    difficultyLevel: d.difficulty,
+  }
+  if (path in flat) return flat[path]
   const leaf = d.leaves[leafOfPath(path, d.leaves)]
-  if (leaf === undefined) return false
-  if (path.endsWith('.difficultyTp')) return (leaf.tp ?? d.inheritedTp ?? null) !== null
-  if (path.endsWith('.cognitiveLevel')) return leaf.cognitive !== null
-  return false
+  if (leaf === undefined) return undefined
+  if (path.endsWith('.difficultyTp')) return leaf.tp
+  if (path.endsWith('.cognitiveLevel')) return leaf.cognitive
+  return undefined
+}
+
+const filled = (v: unknown): boolean => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0)
+
+/**
+ * A stored gate issue the form has since fixed: its field changed from the stored question and now holds a value, or its leaf
+ * is gone. A field that merely holds a value stays listed: the gate may refuse it for another reason (an SP outside the unit).
+ */
+function fixedInForm(path: string, d: StudioDraft, stored: StudioDraft): boolean {
+  const before = valueAt(path, stored)
+  const now = valueAt(path, d)
+  if (now === undefined) return before !== undefined
+  return filled(now) && JSON.stringify(now) !== JSON.stringify(before)
 }
 
 export interface CompletenessRow {
@@ -261,17 +292,30 @@ export interface CompletenessRow {
   field: string
 }
 
+export interface CompletenessInput {
+  draft: StudioDraft
+  gaps: readonly Gap[]
+  /** API-Q-05 for the stored question; null before a save or when the read failed. */
+  issues: readonly { path: string; message: string }[] | null
+  /** The stored question as the form first held it; null before a save. */
+  stored: StudioDraft | null
+  /** The Subjek + Tingkatan has DSKP nodes; null = not known yet (FR-ADM-QE4.6). */
+  hasDskp: boolean | null
+}
+
 /**
- * The rows of the completeness panel. `issues` is API-Q-05 for the stored question, null before a save or when the read
- * failed. The gate decides the DSKP items (FR-ADM-QE4.6) once it has answered; the form decides what it can see itself.
+ * The rows of the completeness panel. The form lists what it can see live; the gate adds what only it knows. A DSKP item binds
+ * only where the Subjek + Tingkatan has DSKP nodes: while that is not known, the gate decides once it has answered.
  */
-export function completenessRows(d: StudioDraft, gaps: readonly Gap[], issues: readonly { path: string; message: string }[] | null): CompletenessRow[] {
-  const own = gaps.filter((g) => issues === null || g.dskp !== true)
+export function completenessRows({ draft, gaps, issues, stored, hasDskp }: CompletenessInput): CompletenessRow[] {
+  const own = gaps.filter((g) => g.dskp !== true || hasDskp === true || (hasDskp === null && issues === null))
   const rows: CompletenessRow[] = own.map((g) => ({ message: g.message, field: g.field }))
   const leafTpGap = (issues ?? []).some((i) => i.path.endsWith('.difficultyTp'))
   for (const i of issues ?? []) {
-    if (own.some((g) => g.path === i.path) || fixedInForm(i.path, d) || (i.path === 'tp' && leafTpGap)) continue
-    if (!rows.some((r) => r.message === i.message)) rows.push({ message: i.message, field: issueField(i.path, d.leaves) })
+    if (own.some((g) => g.path === i.path)) continue
+    if (stored !== null && fixedInForm(i.path, draft, stored)) continue
+    if (i.path === 'tp' && leafTpGap) continue
+    if (!rows.some((r) => r.message === i.message)) rows.push({ message: i.message, field: issueField(i.path, draft.leaves) })
   }
   return rows
 }

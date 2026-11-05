@@ -13,6 +13,8 @@ import { MAX_SP, toggleSp } from '../../lib/studio/dskp-tags'
 import { LOAD_ERROR } from '../../lib/ui-errors'
 
 const props = defineProps<{ subjectId: string; levelId: string; disabled?: boolean; error?: string | undefined }>()
+/** Whether the Subjek + Tingkatan has DSKP nodes; the SP, TP and aras rules bind only then (FR-ADM-QE4.6). */
+const emit = defineEmits<{ nodes: [has: boolean | null] }>()
 const unitId = defineModel<string | null>('unitId', { required: true })
 const spIds = defineModel<string[]>('spIds', { required: true })
 
@@ -23,13 +25,17 @@ let seq = 0
 async function load(): Promise<void> {
   const token = ++seq
   failed.value = false
+  emit('nodes', null)
   if (props.subjectId === '' || props.levelId === '') {
     dskp.value = null
     return
   }
   try {
     const res = await fetchStudioDskp(props.subjectId, props.levelId)
-    if (token === seq) dskp.value = res
+    if (token === seq) {
+      dskp.value = res
+      emit('nodes', res.units.length > 0)
+    }
   } catch {
     if (token === seq) {
       dskp.value = null

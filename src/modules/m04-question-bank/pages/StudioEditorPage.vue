@@ -172,10 +172,15 @@ async function keyEdit(compute: (v: string, s: number, e: number) => { value: st
 }
 
 const levelName = computed(() => levels.value.find((l) => l.id === draft.value.educationLevelId)?.name ?? '')
-const gaps = computed(() => draftGaps(draft.value, levelName.value))
+/** What the fields have read about the Subjek + Tingkatan; null = not known yet. */
+const hasDskp = ref<boolean | null>(null)
+const hasChapters = ref<boolean | null>(null)
+const gaps = computed(() => draftGaps(draft.value, levelName.value, { hasChapters: hasChapters.value }))
 /** What API-Q-05 says about the stored question; null before a save or when the read failed. */
 const gateIssues = ref<{ path: string; message: string }[] | null>(null)
-const completeness = computed(() => completenessRows(draft.value, gaps.value, gateIssues.value))
+const completeness = computed(() =>
+  completenessRows({ draft: draft.value, gaps: gaps.value, issues: gateIssues.value, stored: edit.value ? saved.value : null, hasDskp: hasDskp.value }),
+)
 const tabs = [
   { key: 'tag', label: '1 Tag' },
   { key: 'kertas', label: '2 Kertas' },
@@ -219,7 +224,9 @@ function noteOldForm(): void {
   void router.replace({ path: route.path, query })
 }
 
+let loadSeq = 0
 async function load(): Promise<void> {
+  const token = ++loadSeq
   loading.value = true
   loadFailed.value = false
   keyboardOpen.value = false
@@ -233,6 +240,8 @@ async function load(): Promise<void> {
     }
     if (props.id !== undefined) {
       const q: StudioQuestionDetail = await fetchStudioQuestion(props.id)
+      // A move to another question while this read ran: the newer load owns the form.
+      if (token !== loadSeq) return
       const h = hydrate(q)
       draft.value = h.draft
       unsupported.value = h.unsupported
@@ -240,11 +249,11 @@ async function load(): Promise<void> {
       await readGate(props.id)
     }
   } catch {
-    loadFailed.value = true
+    if (token === loadSeq) loadFailed.value = true
   } finally {
-    loading.value = false
+    if (token === loadSeq) loading.value = false
   }
-  if (!loadFailed.value) startRecovery()
+  if (token === loadSeq && !loadFailed.value) startRecovery()
 }
 onMounted(() => {
   noteOldForm()
@@ -366,8 +375,8 @@ async function save(): Promise<void> {
               </DsNativeSelect>
             </DsFormField>
           </DsGrid>
-          <StudioDskpFields v-model:unit-id="draft.unitId" v-model:sp-ids="draft.spIds" :subject-id="draft.subjectId" :level-id="draft.educationLevelId" :disabled="readOnly" :error="fieldProblems['tag.unitId']" />
-          <ChapterSelect v-model="draft.chapterId" :subject-id="draft.subjectId" :level-id="draft.educationLevelId" :error="fieldProblems.curriculumChapterId" />
+          <StudioDskpFields v-model:unit-id="draft.unitId" v-model:sp-ids="draft.spIds" :subject-id="draft.subjectId" :level-id="draft.educationLevelId" :disabled="readOnly" :error="fieldProblems['tag.unitId']" @nodes="hasDskp = $event" />
+          <ChapterSelect v-model="draft.chapterId" :subject-id="draft.subjectId" :level-id="draft.educationLevelId" :error="fieldProblems.curriculumChapterId" @chapters="hasChapters = $event" />
           <DsFormField v-slot="{ id: fid }" native label="Tahap kesukaran" for="studio-difficulty" hint="Kesukaran ialah anggaran guru; TP ialah tahap DSKP." :error="fieldProblems.difficultyLevel">
             <DsNativeSelect :id="fid" v-model.number="draft.difficulty" :disabled="readOnly" data-testid="studio-difficulty">
               <option v-for="k in KESUKARAN" :key="k.value" :value="k.value">{{ k.label }}</option>

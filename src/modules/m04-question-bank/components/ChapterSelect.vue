@@ -21,6 +21,9 @@ const props = defineProps<{
   error?: string | undefined
 }>()
 
+/** Whether the Subjek + Tingkatan has chapters; Bab is required before Terbit only then (FR-ADM-QE4.5). */
+const emit = defineEmits<{ chapters: [has: boolean | null] }>()
+
 /** The chosen chapter id as text (`''` = none); posted as `curriculumChapterId`. */
 const chapterId = defineModel<string>({ required: true })
 
@@ -31,13 +34,17 @@ let seq = 0
 async function load(): Promise<void> {
   const token = ++seq
   failed.value = false
+  emit('chapters', null)
   if (props.subjectId === '' || props.levelId === '') {
     chapters.value = []
     return
   }
   try {
     const list = await fetchChapters({ subjectId: props.subjectId, educationLevelId: props.levelId })
-    if (token === seq) chapters.value = list
+    if (token === seq) {
+      chapters.value = list
+      emit('chapters', list.length > 0)
+    }
   } catch {
     if (token === seq) {
       chapters.value = []
