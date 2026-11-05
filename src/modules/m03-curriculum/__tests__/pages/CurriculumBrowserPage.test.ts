@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import { ApiError } from '@/api'
 import { useFlashStore } from '@/stores/flash'
 
 import CurriculumBrowserPage from '../../pages/CurriculumBrowserPage.vue'
@@ -13,6 +14,7 @@ const api = vi.hoisted(() => ({
   fetchSubjectOptions: vi.fn(),
   fetchLevelOptions: vi.fn(),
   fetchCurriculumTree: vi.fn(),
+  fetchDskpReport: vi.fn(),
   deleteChapter: vi.fn(),
   deleteTopic: vi.fn(),
   deleteSubtopic: vi.fn(),
@@ -69,6 +71,7 @@ beforeEach(() => {
   api.fetchSubjectOptions.mockResolvedValue(list(SUBJECTS))
   api.fetchLevelOptions.mockResolvedValue(list(LEVELS))
   api.fetchCurriculumTree.mockResolvedValue(sampleTree())
+  api.fetchDskpReport.mockResolvedValue({ rows: [], nodes: null })
   window.scrollTo = vi.fn()
 })
 
@@ -312,5 +315,89 @@ describe('CurriculumBrowserPage (M03 S1)', () => {
       'Ralat memuatkan data. Sila cuba semula.',
     )
     expect(w.find('[data-testid=curriculum-stats]').exists()).toBe(false)
+  })
+})
+
+describe('CurriculumBrowserPage S4-T07 (R1-ADM-C-01)', () => {
+  it('shows the tabs Bab and DSKP with Bab active by default (FR-ADM-C01.3)', async () => {
+    const { w } = await render()
+    expect(w.get('[data-testid=curriculum-tab-bab]').text()).toBe('Bab')
+    expect(w.get('[data-testid=curriculum-tab-dskp]').text()).toBe('DSKP')
+    expect(w.get('[data-testid=curriculum-tab-bab]').attributes('data-active')).toBe('true')
+    expect(w.find('[data-testid=curriculum-dskp]').exists()).toBe(false)
+    expect(w.find('[data-testid=curriculum-tree]').exists()).toBe(true)
+    expect(api.fetchDskpReport).not.toHaveBeenCalled()
+  })
+
+  it('?tab=dskp mounts the DSKP report with the selected subject and level and keeps the filter', async () => {
+    const { w } = await render('/admin/curriculum?subject_id=3&education_level_id=10&tab=dskp')
+    expect(w.get('[data-testid=curriculum-tab-dskp]').attributes('data-active')).toBe('true')
+    expect(w.find('[data-testid=curriculum-dskp]').exists()).toBe(true)
+    expect(api.fetchDskpReport).toHaveBeenCalledWith({ subjectId: '3', levelId: '10' }, expect.anything())
+    expect(w.find('[data-testid=curriculum-tree]').exists()).toBe(false)
+    expect(w.find('[data-testid=chapter-add]').exists()).toBe(false)
+    expect((w.get('[data-testid=curriculum-subject]').element as HTMLSelectElement).value).toBe('3')
+  })
+
+  it('the DSKP tab works without a pair (all counts) and the tab links keep the filter in the query', async () => {
+    const { w, router } = await render('/admin/curriculum?tab=dskp')
+    expect(api.fetchDskpReport).toHaveBeenCalledWith({ subjectId: null, levelId: null }, expect.anything())
+    await router.push('/admin/curriculum?subject_id=3&education_level_id=10')
+    await flushPromises()
+    expect(w.get('[data-testid=curriculum-tab-dskp]').attributes('href')).toBe(
+      '/admin/curriculum?subject_id=3&education_level_id=10&tab=dskp',
+    )
+    expect(w.get('[data-testid=curriculum-tab-bab]').attributes('href')).toBe(
+      '/admin/curriculum?subject_id=3&education_level_id=10',
+    )
+  })
+
+  it('the filter submit on the DSKP tab keeps ?tab=dskp', async () => {
+    const { w, router } = await render('/admin/curriculum?tab=dskp')
+    await w.get('[data-testid=curriculum-subject]').setValue('3')
+    await w.get('[data-testid=curriculum-level]').setValue('10')
+    await w.get('[data-testid=curriculum-filter]').trigger('submit')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({ subject_id: '3', education_level_id: '10', tab: 'dskp' })
+  })
+
+  it('shows "Bilangan soalan" per Bab and flags an empty Bab as "Kosong" (FR-ADM-C01.2, AC-ADM-C01.1)', async () => {
+    api.fetchCurriculumTree.mockResolvedValue(
+      tree([chapter(1, { questionCount: 12 }), chapter(2, { questionCount: 0 }), chapter(3)]),
+    )
+    const { w } = await render()
+    const blocks = w.findAll('[data-testid=chapter]')
+    expect(blocks[0]!.get('[data-testid=chapter-question-count]').text()).toContain('Bilangan soalan: 12')
+    expect(blocks[0]!.find('[data-testid=chapter-empty-flag]').exists()).toBe(false)
+    expect(blocks[1]!.get('[data-testid=chapter-question-count]').text()).toContain('Bilangan soalan: 0')
+    expect(blocks[1]!.get('[data-testid=chapter-empty-flag]').text()).toBe('Kosong')
+    // A payload without counts shows nothing (no invented zero).
+    expect(blocks[2]!.find('[data-testid=chapter-question-count]').exists()).toBe(false)
+  })
+
+  it('shows the API 409 text verbatim when a Bab with questions cannot be deleted (FR-ADM-C01.4)', async () => {
+    api.deleteChapter.mockRejectedValue(
+      new ApiError({ status: 409, code: 'CONFLICT', message: 'Bab ini masih mempunyai 5 soalan.' }),
+    )
+    const { w } = await render()
+    dialogs.confirmNative.mockReturnValue(true)
+    await w.get('[data-testid=chapter-delete]').trigger('click')
+    await flushPromises()
+    expect(useFlashStore().current).toMatchObject({ type: 'error', message: ['Bab ini masih mempunyai 5 soalan.'] })
+    expect(w.findAll('[data-testid=chapter]')).toHaveLength(2)
+  })
+
+  it('offers only the Tingkatan the API returns: no Darjah in the Tahap select (FR-ADM-C01.5)', async () => {
+    const { w } = await render()
+    const options = w.findAll('[data-testid=curriculum-level] option').map((o) => o.text())
+    expect(options).toEqual(['-- Pilih Tahap --', 'Tingkatan 3', 'Tingkatan 4'])
+    expect(options.some((o) => o.startsWith('Darjah'))).toBe(false)
+  })
+
+  it('a Tingkatan 1-3 pair loads its tree and offers "Tambah Bab" for that level (FR-ADM-C01.6)', async () => {
+    api.fetchCurriculumTree.mockResolvedValue(tree([]))
+    const { w } = await render('/admin/curriculum?subject_id=3&education_level_id=9')
+    expect(api.fetchCurriculumTree).toHaveBeenCalledWith('3', '9', expect.anything())
+    expect(w.get('[data-testid=chapter-add-first]').attributes('href')).toContain('education_level_id=9')
   })
 })

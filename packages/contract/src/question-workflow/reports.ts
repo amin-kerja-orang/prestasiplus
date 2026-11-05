@@ -34,6 +34,8 @@ export const QUESTION_REPORT_MESSAGES = {
   /** REQ-B-031: `quizSessionId` is not the pupil's own practice session (unknown and someone else's answer alike). */
   session: 'Rujukan sesi tidak sah.',
   sessionQuestion: 'Soalan ini bukan sebahagian daripada sesi itu.',
+  /** FR-MUR-54-10 (AC-MUR-54-5): 409 when this reporter already reported this question version (every reporter, a Guru too). */
+  duplicate: 'Anda sudah melaporkan soalan ini.',
   /** REQ-B-031: 429 when a reporter files the 21st new report of the Malaysia day. */
   dailyCap: 'Anda telah mencapai had 20 laporan sehari. Sila cuba lagi esok.',
   comment: 'Komen tidak boleh melebihi 500 aksara.',
@@ -51,7 +53,7 @@ export const QUESTION_REPORT_MESSAGES = {
 } as const
 
 export const QUESTION_REPORT_COMMENT_MAX = 500
-/** REQ-B-031 (D98): new reports one reporter may file per Malaysia day (a refresh of an open report is not new). */
+/** REQ-B-031 (D98): new reports one reporter may file per Malaysia day (a repeat of a report is 409, not a new one). */
 export const QUESTION_REPORT_DAILY_CAP = 20
 export const QUESTION_REPORT_NOTES_MAX = 1000
 /** `quizSessionId` and `roomCode`: 1 to 64 of letters, digits, `.`, `_`, `:`, `-`; empty = not given. */
@@ -145,14 +147,14 @@ export type QuestionReportContext = z.infer<typeof QuestionReportContextSchema>
  * POST body (JSON). `reasons` must be non-empty and every reason must belong to the set of the
  * question type. 422 `fields` use the messages in `QUESTION_REPORT_MESSAGES`; `questionId` that is
  * missing or not an id answers `fields.questionId` = "Sila pilih soalan.". A question that does not
- * exist answers 404. There is no duplicate-open-report check (the mock has none): a second report
- * by the same user for the same question is accepted exactly like the first.
+ * exist answers 404. One report per reporter, question and version: a second one is 409 `duplicate`
+ * ("Anda sudah melaporkan soalan ini."), for a pupil and a Guru alike, before the daily cap is counted.
  *
  * REQ-B-031 (D98): a report never deactivates the question; Laporan Soalan is where the admin decides (Arkib / Tolak). A pupil (active role
  * student, Mod Pelajar included) must have been served the question: an MCQ report needs `attemptId` (own Bijak attempt that holds the
- * question) or `quizSessionId` (own practice session that served it), else 422 `fields.context` (also for a question that is not live, so
- * the answer is not an existence oracle); a live structured question needs no proof (REQ-B-046). A Guru is
- * not asked. Roles: student and teacher only (403 otherwise). A re-POST of a report the admin already acted on changes nothing. At most
+ * question) or `quizSessionId` (own practice session that served it), else 403 with `QUESTION_REPORT_MESSAGES.contextRequired` (also for a question
+ * that is not live, so the answer is not an existence oracle; a malformed id stays 422); a live structured question needs no proof (REQ-B-046). A Guru is
+ * not asked. Roles: student and teacher only (403 otherwise). `reporterRole` is set from the session role (never the body). At most
  * QUESTION_REPORT_DAILY_CAP new reports per reporter per Malaysia day: 429.
  */
 export const QuestionReportCreateRequestSchema = z
@@ -231,6 +233,8 @@ const reportRow = {
   adminNotes: z.string().nullable(),
   createdAt: TimestampSchema,
   updatedAt: TimestampSchema,
+  /** DM-82: the role the reporter filed under (from the session; a user holding both roles reports as the active one). */
+  reporterRole: z.enum(['murid', 'guru']),
   reporter: z.object({ id: IdSchema, name: z.string().nullable() }),
 }
 

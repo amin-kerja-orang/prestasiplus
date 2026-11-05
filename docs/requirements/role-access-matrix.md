@@ -72,7 +72,8 @@ A menu item is **allowed** when it carries a red tick in that role's screenshots
 | 51 | Harian | Senarai Pelajar | — | — | ✓ |
 | 52 | Harian | Senarai Guru | — | — | ✓ |
 | 53 | Harian | Kelas Sekolah | — | — | ✓ |
-| | | **Total modules allowed (excl. section A)** | **37** | **15** | **18** |
+| 54 | Killer Features | Laporan Soalan | ✓ | — | — |
+| | | **Total modules allowed (excl. section A)** | **38** | **15** | **18** |
 
 ## Decisions (user, 2026-09-26)
 

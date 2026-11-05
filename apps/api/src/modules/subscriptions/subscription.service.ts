@@ -6,6 +6,8 @@ import { mytDay } from './dates'
 import { TRIAL_LIMIT } from './subscriptions.constants'
 import { SubscriptionsRepository } from './subscriptions.repository'
 
+const COMPLIMENTARY_PACKAGE_NAME = 'Pakej Percuma'
+
 /** Mock M05 BR-07 trial status. */
 export interface TrialStatus {
   /** True while the user is NOT subscribed: the trial limit applies. */
@@ -39,6 +41,22 @@ export class SubscriptionService {
   async isSubscribed(userId: string, at: Date): Promise<boolean> {
     const facts = await this.facts.accessFacts(userId)
     return facts !== null && (await this.subscribedBy(facts, at))
+  }
+
+  /**
+   * The package shown on the pupil dashboard, by the same rule as `isSubscribed` (so it is non-null exactly
+   * when `isSubscribed` is true): a complimentary pupil with `package_expires_on >= today` gets
+   * `Pakej Percuma` valid until that day; otherwise a STUDENT's school latest `active` subscription covering
+   * today (highest `starts_on`, then `id`; `grace` is not active) gives the package name and `ends_on`.
+   */
+  async activePackage(userId: string, at: Date): Promise<{ name: string; validUntil: string } | null> {
+    const facts = await this.facts.accessFacts(userId)
+    if (facts === null) return null
+    const day = mytDay(at)
+    if (facts.compExpiresOn !== null && day <= facts.compExpiresOn) return { name: COMPLIMENTARY_PACKAGE_NAME, validUntil: facts.compExpiresOn }
+    if (!facts.isStudent || facts.schoolId === null) return null
+    const live = await this.subscriptions.liveSubscriptionPackage(facts.schoolId, day)
+    return live === null ? null : { name: live.name, validUntil: live.endsOn }
   }
 
   /** `{ active, used, limit: TRIAL_LIMIT (50), remaining }` with `active = !subscribed`. An unknown user has used 0. */
