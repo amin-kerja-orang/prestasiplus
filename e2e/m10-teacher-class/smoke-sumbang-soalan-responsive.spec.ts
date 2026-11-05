@@ -262,10 +262,7 @@ test.describe('S6-T06 Sumbang Soalan responsive (AC-GUR-44-7)', MODULE, () => {
     await expectNoHorizontalScroll(page)
   })
 
-  // Known defect (reported to the owner of QuestionForm.vue, not fixed here): the A to D choices are
-  // 16 px radio buttons with a 10 px letter, about 34 x 20 px per item, below the 44 px that
-  // AC-GUR-44-7 requires. `test.fail` keeps the suite green and turns red once the choices are
-  // enlarged, so remove the annotation then.
+  // Each correct-answer choice (radio plus letter) keeps a 44 px tap area.
   for (const [name, path] of [
     ['add form', '/guru/soalan/cipta'],
     ['edit form', `/guru/soalan/${String(FIRST_FIXTURE)}/edit`],
@@ -274,10 +271,6 @@ test.describe('S6-T06 Sumbang Soalan responsive (AC-GUR-44-7)', MODULE, () => {
       page,
       gotoApp,
     }) => {
-      test.fail(
-        true,
-        'DEFECT: correct-answer radios are about 34 x 20 px (AC-GUR-44-7 needs >= 44)',
-      )
       await gotoApp(path)
       await expect(page.getByTestId('question-form')).toBeVisible()
       await expect(radios(page)).toHaveCount(4)
