@@ -138,6 +138,12 @@ export interface QuestionVersionRecord {
   textbookRef: TextbookRef | null
   /** DM-58: why the version went back from Semakan to Draf ("Ditolak"); null otherwise. */
   rejectionReason: string | null
+  /** DM-42: `bank` (default) or `teacher_private` (Soalan & Rujukan, served by the mission draw only). Optional so older fixtures compile. */
+  visibility?: 'bank' | 'teacher_private'
+  /** DM-42: the teacher who owns a private question (users.id, decimal); null on every bank row. */
+  ownerUserId?: string | null
+  /** DM-42: http(s) reference link shown to the pupil as "Rujukan"; null when none. */
+  referenceUrl?: string | null
   sourcePage: number | null
   setLabel: string | null
   sourceFile: string | null

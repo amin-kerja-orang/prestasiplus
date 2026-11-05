@@ -213,6 +213,17 @@ interface Normalized {
  * Errors: 404 `NOT_FOUND` for an unknown id and for a row the caller may not see; 422
  * `VALIDATION_ERROR` with `fields`; 409 `CONFLICT` for a status pair outside the contract table.
  */
+/** DM-42: the context a mission passes to `getPublicForLearner` / `gradeAnswer` to be served a private question of that teacher. */
+export interface LearnerServeOptions {
+  /** users.id (decimal) of the teacher who set the pupil's mission; a private question of that owner is servable, any other is not. */
+  missionOwnerId?: string
+}
+
+/** A bank question is servable to any learner; a private one only inside its owner's mission. */
+const servableToLearner = (record: QuestionRecord, opts: LearnerServeOptions): boolean =>
+  record.version.visibility !== 'teacher_private' ||
+  (opts.missionOwnerId !== undefined && record.version.ownerUserId === opts.missionOwnerId)
+
 /** [PROPOSED] (no V2 phrase): a flat edit of an `essay_choice` question may not change what lives on its part (REQ-B-021c). */
 const ESSAY_CHOICE_FLAT_MESSAGES = {
   modelAnswer: 'Jawapan model esei pilihan tidak boleh disunting di sini. Ubah kunci rubrik pada bahagian soalan.',
@@ -772,15 +783,19 @@ export class QuestionsService {
 
   // --- learners (BE-12, BE-15, BE-41); there is no student HTTP route (Q-3) ---------------------
 
-  async getPublicForLearner(id: string): Promise<PublicQuestion> {
+  /**
+   * DM-42: a private question (Soalan & Rujukan) is served to a learner only through the owner's mission. The caller that resolved a
+   * mission of the owner for this pupil passes `missionOwnerId`; any other caller (and a mission of another teacher) gets a 404.
+   */
+  async getPublicForLearner(id: string, opts: LearnerServeOptions = {}): Promise<PublicQuestion> {
     const record = await this.repo.get(id, 'live')
-    if (!record || !record.isActive || record.version.status !== 'approved') throw questionNotFound()
+    if (!record || !record.isActive || record.version.status !== 'approved' || !servableToLearner(record, opts)) throw questionNotFound()
     return toPublic(record)
   }
 
-  async gradeAnswer(id: string, answers: readonly PartAnswer[]): Promise<QuestionGrade> {
+  async gradeAnswer(id: string, answers: readonly PartAnswer[], opts: LearnerServeOptions = {}): Promise<QuestionGrade> {
     const record = await this.repo.get(id, 'live')
-    if (!record || !record.isActive || record.version.status !== 'approved') throw questionNotFound()
+    if (!record || !record.isActive || record.version.status !== 'approved' || !servableToLearner(record, opts)) throw questionNotFound()
     return gradeQuestion(record.id, record.version.parts, answers)
   }
 

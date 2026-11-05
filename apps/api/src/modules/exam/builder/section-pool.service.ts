@@ -13,7 +13,7 @@ import { Prisma } from '../../../db/generated/client'
 import { idFromString, idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { bijakCodeOf } from '../../bijak/papers/subject-codes'
-import { NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL } from '../../questions/learner-visibility'
+import { BANK_VISIBLE_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL } from '../../questions/learner-visibility'
 import type { AuditActor } from './actor'
 
 /**
@@ -48,7 +48,7 @@ export class SectionPoolService {
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = COALESCE(q.live_version_no, q.latest_version_no)
         JOIN subjects s ON s.id = v.subject_id
-       WHERE q.id = ${questionId} AND ${NOT_PKSK_SQL} AND ${NOT_PRIMARY_LEVEL_SQL}`)
+       WHERE q.id = ${questionId} AND ${NOT_PKSK_SQL} AND ${NOT_PRIMARY_LEVEL_SQL} AND ${BANK_VISIBLE_SQL}`)
     const row = rows[0]
     return row ? { subjectId: row.subject_id, subject: bijakCodeOf(row.code) } : null
   }

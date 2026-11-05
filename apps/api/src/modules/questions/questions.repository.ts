@@ -5,7 +5,7 @@ import { Prisma } from '../../db/generated/client'
 import type { Prisma as PrismaTypes } from '../../db/generated/client'
 import { idFromString, idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
-import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, SPM_SERVABLE_SQL } from './learner-visibility'
+import { BANK_VISIBLE_SQL, LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, SPM_SERVABLE_SQL } from './learner-visibility'
 import type { Prng } from '../../db/prng'
 import { kbatOf, missingLeafSql } from './effective-leaf'
 import { paperHeld, QUESTION_SERVED_BY_PAPER } from './served-rule'
@@ -402,7 +402,7 @@ export class QuestionsRepository {
       SELECT q.id, v.stem_ms, v.stem_en, v.explanation_ms, v.explanation_en, q.source_type, v.subject_id, v.education_level_id, v.set_label,
              EXISTS (SELECT 1 FROM question_version_sp_nodes s WHERE s.question_version_id = v.id) AS has_sp
         FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
-       WHERE ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL} ${key === null ? Prisma.empty : Prisma.sql`AND q.id > ${key}`}
+       WHERE ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL} AND ${BANK_VISIBLE_SQL} ${key === null ? Prisma.empty : Prisma.sql`AND q.id > ${key}`}
        ORDER BY q.id ASC LIMIT ${size}`
     return rows.map((r) => ({
       id: idToString(r.id),
@@ -625,7 +625,7 @@ export class QuestionsRepository {
     if (owner === null) return { rows: [], page: filter.page, pageSize: filter.pageSize, total: 0 }
     // One raw filter for rows and total (no primary-level question, before pagination): the page and `total` always agree.
     const from = Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
-    const where = Prisma.sql`q.created_by_id = ${owner} AND ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL}`
+    const where = Prisma.sql`q.created_by_id = ${owner} AND ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL} AND ${BANK_VISIBLE_SQL}`
     const offset = (filter.page - 1) * filter.pageSize
     const [totals, ids] = await Promise.all([
       this.db.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n ${from} WHERE ${where}`,
@@ -663,7 +663,7 @@ export class QuestionsRepository {
   }
 
   private adminConds(f: AdminListFilter): Prisma.Sql[] {
-    const conds: Prisma.Sql[] = [NOT_PKSK, NOT_PRIMARY_LEVEL_SQL]
+    const conds: Prisma.Sql[] = [NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, BANK_VISIBLE_SQL]
     const id = (text: string | undefined, column: Prisma.Sql): void => {
       if (text === undefined) return
       const key = bi(text)
@@ -716,7 +716,7 @@ export class QuestionsRepository {
 
   /** Structured questions (type `structured`) over the latest version, id ascending. */
   async structuredIds(filter: StructuredListFilter): Promise<{ ids: string[]; total: number }> {
-    const conds: Prisma.Sql[] = [Prisma.sql`v.type = 'structured'`, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL]
+    const conds: Prisma.Sql[] = [Prisma.sql`v.type = 'structured'`, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, BANK_VISIBLE_SQL]
     for (const [text, column] of [
       [filter.subjectId, Prisma.sql`v.subject_id`],
       [filter.educationLevelId, Prisma.sql`v.education_level_id`],
@@ -751,7 +751,7 @@ export class QuestionsRepository {
     const rows = await this.db.$queryRaw<{ subject_id: bigint | null; total: number; published: number }[]>`
       SELECT v.subject_id, count(*)::int AS total, count(q.live_version_no)::int AS published
       FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
-      WHERE v.type = 'structured' AND ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL} GROUP BY 1`
+      WHERE v.type = 'structured' AND ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL} AND ${BANK_VISIBLE_SQL} GROUP BY 1`
     const bySubject = new Map<string, number>()
     let total = 0
     let published = 0
@@ -767,7 +767,7 @@ export class QuestionsRepository {
   async subjectTotals(): Promise<{ total: number; bySubject: Map<string, { total: number; published: number }> }> {
     const rows = await this.db.$queryRaw<{ subject_id: bigint | null; total: number; published: number }[]>`
       SELECT v.subject_id, count(*)::int AS total, count(q.live_version_no)::int AS published
-      FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no WHERE ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL} GROUP BY 1`
+      FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no WHERE ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL} AND ${BANK_VISIBLE_SQL} GROUP BY 1`
     const bySubject = new Map<string, { total: number; published: number }>()
     let total = 0
     for (const r of rows) {
@@ -785,7 +785,7 @@ export class QuestionsRepository {
     const rows = await this.db.$queryRaw<{ status: string; n: number }[]>`
       SELECT v.status AS status, count(*)::int AS n
       FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
-      WHERE q.created_by_id = ${owner} AND ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL} GROUP BY 1`
+      WHERE q.created_by_id = ${owner} AND ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL} AND ${BANK_VISIBLE_SQL} GROUP BY 1`
     for (const r of rows) if (isQuestionStatus(r.status)) counts[r.status] = r.n
     return counts
   }
@@ -1550,7 +1550,7 @@ export class QuestionsRepository {
       : Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
     const conds: Prisma.Sql[] = [NOT_PKSK]
     if (filter.status) conds.push(Prisma.sql`v.status = ${filter.status}`)
-    conds.push(NOT_PRIMARY_LEVEL_SQL)
+    conds.push(NOT_PRIMARY_LEVEL_SQL, BANK_VISIBLE_SQL)
     if (learnerVisible) conds.push(LEARNER_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL)
     if (filter.active !== undefined) conds.push(filter.active ? Prisma.sql`q.is_active` : Prisma.sql`NOT q.is_active`)
     const eq = (text: string | undefined, column: Prisma.Sql): void => {
@@ -1727,6 +1727,9 @@ export class QuestionsRepository {
       difficultyLevel: v.difficultyLevel,
       textbookRef: textbookRefOf(v.textbookRef),
       rejectionReason: v.rejectionReason,
+      visibility: v.visibility === 'teacher_private' ? 'teacher_private' : 'bank',
+      ownerUserId: v.ownerUserId === null ? null : idToString(v.ownerUserId),
+      referenceUrl: v.referenceUrl,
       sourcePage: v.sourcePage,
       setLabel: v.setLabel,
       sourceFile: null,

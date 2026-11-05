@@ -17,7 +17,7 @@ import type { ServabilityActivity } from '@pp/contract'
 import { GROUP_SURFACES } from './rules'
 
 import { Prisma } from '../../../db/generated/client'
-import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, SERVABLE_STATUS } from '../learner-visibility'
+import { BANK_VISIBLE_SQL, LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, SERVABLE_STATUS } from '../learner-visibility'
 import type { QuestionFilter } from '../types'
 
 export interface ActivityScope {
@@ -59,7 +59,7 @@ export function filterOf(activity: ServabilityActivity, scope: ActivityScope = {
 export const DATABANK_LANE_FROM = Prisma.sql`FROM questions q
       JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
       JOIN spm_subject_configs c ON c.subject_id = v.subject_id`
-export const databankLaneConds = (): Prisma.Sql[] => [Prisma.sql`v.type = 'mcq'`, Prisma.sql`c.databank_order IS NOT NULL`, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL]
+export const databankLaneConds = (): Prisma.Sql[] => [Prisma.sql`v.type = 'mcq'`, Prisma.sql`c.databank_order IS NOT NULL`, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, BANK_VISIBLE_SQL]
 
 /**
  * "Served in the Databank" as a predicate over the rows of the LIVE draw (`filterOf('databank')`, aliases `q`, `v` live): the live
@@ -93,7 +93,7 @@ export const janaEligibleScope = (): { from: Prisma.Sql; where: Prisma.Sql } => 
     from: Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no`,
     where: Prisma.sql`q.is_active AND v.status = ${Prisma.raw(`'${SERVABLE_STATUS}'`)} AND v.subject_id IS NOT NULL
        AND v.tag_review IS NOT TRUE
-       AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL}
+       AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${BANK_VISIBLE_SQL}
        AND (${dskpUnit(Prisma.sql`v.unit_node_id`)} OR v.form_origin = 't1_t3')
        AND EXISTS (SELECT 1 FROM question_parts p WHERE p.question_version_id = v.id AND p.mode IS NOT NULL)
        AND NOT EXISTS (

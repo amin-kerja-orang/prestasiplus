@@ -16,6 +16,16 @@ import { OFFERED_LEVEL_CODES } from '../practice/rules'
 export const SERVABLE_STATUS = 'approved' as const
 export const SERVABLE_VERSION_SQL = Prisma.sql`v.status = ${Prisma.raw(`'${SERVABLE_STATUS}'`)}`
 
+/**
+ * DM-42 (S6-T16, migration 0127): a teacher's personal question (Soalan & Rujukan) is a `question_versions` row with
+ * `visibility = 'teacher_private'`; it is served by the mission draw only. EVERY served or counted read of the bank (lists, counts,
+ * draws, pickers, reports) adds this predicate (alias `v` = the version read). Reads by id (`get`, `getMany`, `hydrate`) do not:
+ * a mission answer must still find its private question. The literal is inlined (no bound value) so the partial index and the
+ * static-text specs keep working.
+ */
+export const BANK_VISIBILITY = 'bank' as const
+export const BANK_VISIBLE_SQL = Prisma.sql`v.visibility = ${Prisma.raw(`'${BANK_VISIBILITY}'`)}`
+
 /** M07 PKSK questions are served by M07 only. */
 export const NOT_PKSK_SQL = Prisma.sql`NOT EXISTS (SELECT 1 FROM question_tags pt WHERE pt.question_id = q.id AND pt.kind = 'pksk_domain')`
 

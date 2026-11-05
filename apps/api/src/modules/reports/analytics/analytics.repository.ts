@@ -3,6 +3,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import { Prisma } from '../../../db/generated/client'
 import { idFromString, isIdString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
+import { BANK_VISIBLE_SQL } from '../../questions/learner-visibility'
 import { M1_START_MS } from './domain/rules'
 
 /**
@@ -468,7 +469,7 @@ export class AnalyticsRepository {
     const rows = await this.db.$queryRaw<{ chapter_id: string; n: number }[]>`
       SELECT v.chapter_id::text AS chapter_id, count(*)::int AS n
       FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'approved'
-      WHERE q.is_active AND v.chapter_id = ANY(${keys}::bigint[])
+      WHERE q.is_active AND v.chapter_id = ANY(${keys}::bigint[]) AND ${BANK_VISIBLE_SQL}
         AND NOT EXISTS (SELECT 1 FROM question_tags t WHERE t.question_id = q.id AND t.kind = 'pksk_domain')
       GROUP BY v.chapter_id`
     return new Map(rows.map((r) => [r.chapter_id, r.n]))

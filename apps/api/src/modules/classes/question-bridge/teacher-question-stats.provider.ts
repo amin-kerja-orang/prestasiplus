@@ -3,7 +3,7 @@ import { Prisma } from '../../../db/generated/client'
 
 import { PrismaService } from '../../../db/prisma.service'
 import { idFromString } from '../../../db/ids'
-import { NOT_PRIMARY_LEVEL_SQL } from '../../questions/learner-visibility'
+import { BANK_VISIBLE_SQL, NOT_PRIMARY_LEVEL_SQL } from '../../questions/learner-visibility'
 import type { TeacherQuestionStats, TeacherQuestionsProvider } from '../ports'
 
 /** A question carrying a `pksk_domain` tag belongs to PKSK (M07), never to the teacher bank (same scope as `GET /guru/questions`). */
@@ -25,7 +25,7 @@ export function usedCountQuery(owner: bigint): Prisma.Sql {
         UNION ALL
         SELECT 1 WHERE EXISTS (SELECT 1 FROM structured_attempts t WHERE t.question_id = q.id AND NOT t.is_test)
         LIMIT 1) hit
-     WHERE q.created_by_id = ${owner} AND ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL}`
+     WHERE q.created_by_id = ${owner} AND ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL} AND ${BANK_VISIBLE_SQL}`
 }
 
 const NO_STATS = (): TeacherQuestionStats => ({ total: 0, structured: 0, approved: 0, pending: 0, used: 0, bySubject: [] })
@@ -67,7 +67,7 @@ export class TeacherQuestionStatsProvider implements TeacherQuestionsProvider {
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
         LEFT JOIN subjects s ON s.id = v.subject_id
-       WHERE q.created_by_id = ${owner} AND ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL}
+       WHERE q.created_by_id = ${owner} AND ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL} AND ${BANK_VISIBLE_SQL}
        GROUP BY 1, 2, 3`
     const out = NO_STATS()
     const bySubject = new Map<string, number>()
