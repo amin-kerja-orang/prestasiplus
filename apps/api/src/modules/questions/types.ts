@@ -149,6 +149,12 @@ export interface QuestionVersionRecord {
   stemImageId?: string | null
   /** `question_versions.paper_code`; the paper builder reads the kertas from its trailing digit. */
   paperCode?: string | null
+  /** DM-05: the stored stimulus flag (detectors in effective-leaf.ts); `stimulus_missing` and `figure_only` exclude the question unless dismissed. Absent = no flag. */
+  stimulusFlag?: 'stimulus_missing' | 'figure_only' | 'stem_duplicated' | null
+  /** DM-53: `numbered` or `unnumbered`, with `stimulus_missing`. */
+  stimulusFlagRef?: 'numbered' | 'unnumbered' | null
+  /** "Bukan masalah": set = the flag no longer excludes. */
+  flagDismissedAt?: Date | null
   /** The part tree (keys included): admin/owner only; never hand it to a learner. */
   parts: QuestionPart[]
   createdAt: Date
@@ -308,6 +314,10 @@ export interface StructuredListFilter {
   subjectId?: string
   educationLevelId?: string
   kbatLevel?: string
+  /** Teacher mount (API-GUR-26): only what a pupil is served (approved and live, T4/T5, figures present). */
+  served?: boolean
+  /** Order by `created_at` descending instead of id ascending. */
+  newestFirst?: boolean
   page: number
   pageSize: number
 }
@@ -420,3 +430,6 @@ export interface TextbookRef {
   /** Last page, when the reference spans pages. */
   hingga?: number
 }
+
+/** Teacher structured detail source: the question view of the LIVE version plus its stimulus group (no creator, no DSKP chain). */
+export type GuruStructuredRecord = QuestionView & { stimulusGroup: StimulusGroupRecord | null }

@@ -179,16 +179,30 @@ export function withPrototypeIds(next: UserMe, current: UserMe): UserMe {
   }
 }
 
-/** Unsaved form drafts kept in the browser (`pp:draft:*`, for example the Studio) belong to the user: sign-out and a switch to another user remove them; an expired session (401) keeps them so recovery can offer them again. */
+/** Unsaved form drafts kept in the browser belong to the user: sign-out and a switch to another user remove them; an expired session (401) keeps them so recovery can offer them again. Covers `pp:draft:*` (localStorage, for example the Studio), `pp.bijak.local.*` (localStorage, Bijak SPM autosave) and `pp.draft.*` (sessionStorage and localStorage). */
 export const LOCAL_DRAFT_PREFIX = 'pp:draft:'
-function dropLocalDrafts(): void {
-  const store = storage()
+/** Same value as `LOCAL_PREFIX` in the m28 autosave module (a unit test keeps them equal; the store must not import from a module). */
+export const BIJAK_LOCAL_PREFIX = 'pp.bijak.local.'
+const SESSION_DRAFT_PREFIX = 'pp.draft.'
+
+function dropPrefixed(store: Storage | null, prefixes: readonly string[]): void {
   if (!store) return
   try {
-    for (const key of Object.keys(store).filter((k) => k.startsWith(LOCAL_DRAFT_PREFIX))) store.removeItem(key)
+    for (const key of Object.keys(store).filter((k) => prefixes.some((p) => k.startsWith(p)))) store.removeItem(key)
   } catch {
     // Storage blocked: nothing to remove.
   }
+}
+
+function dropLocalDrafts(): void {
+  dropPrefixed(storage(), [LOCAL_DRAFT_PREFIX, BIJAK_LOCAL_PREFIX, SESSION_DRAFT_PREFIX])
+  let session: Storage | null = null
+  try {
+    session = typeof sessionStorage === 'undefined' ? null : sessionStorage
+  } catch {
+    session = null
+  }
+  dropPrefixed(session, [SESSION_DRAFT_PREFIX])
 }
 
 export function readStoredSession(): ClientSession | null {

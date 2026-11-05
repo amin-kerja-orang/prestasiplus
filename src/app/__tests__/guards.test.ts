@@ -285,6 +285,43 @@ describe('core routes', () => {
     expect(router.currentRoute.value.path).toBe('/login')
   })
 
+  it('/logout with the network off still lands on /login and drops every local draft key', async () => {
+    installTransport({ request: () => Promise.reject(new Error('offline')) })
+    logIn(STUDENT)
+    localStorage.setItem('pp.bijak.local.7', '{}')
+    localStorage.setItem('pp:draft:studio:1', '{}')
+    sessionStorage.setItem('pp.draft.x.new', '{}')
+    const confirmSpy = vi.fn(() => true)
+    vi.stubGlobal('confirm', confirmSpy)
+    const router = testRouter()
+    await router.push('/logout')
+    expect(router.currentRoute.value.path).toBe('/login')
+    expect(useSessionStore().isLoggedIn).toBe(false)
+    expect(localStorage.getItem(PP_AUTH_STORAGE_KEY)).toBeNull()
+    expect(localStorage.getItem('pp.bijak.local.7')).toBeNull()
+    expect(localStorage.getItem('pp:draft:studio:1')).toBeNull()
+    expect(sessionStorage.getItem('pp.draft.x.new')).toBeNull()
+    expect(confirmSpy).not.toHaveBeenCalled()
+    vi.unstubAllGlobals()
+    sessionStorage.clear()
+  })
+
+  it.each([
+    ['student', {}],
+    ['teacher', { role: 'teacher', id: 3 }],
+    ['school_admin', { role: 'school_admin', id: 4 }],
+  ])('/logout in one navigation for %s lands on /login without a confirm dialog', async (_role, over) => {
+    const confirmSpy = vi.fn(() => true)
+    vi.stubGlobal('confirm', confirmSpy)
+    logIn({ ...STUDENT, ...over } as typeof STUDENT)
+    const router = testRouter()
+    await router.push('/logout')
+    expect(router.currentRoute.value.path).toBe('/login')
+    expect(useSessionStore().isLoggedIn).toBe(false)
+    expect(confirmSpy).not.toHaveBeenCalled()
+    vi.unstubAllGlobals()
+  })
+
   it('the dev-only gallery routes are registered in dev mode', () => {
     const paths = buildRoutes([]).map((r) => r.path)
     expect(import.meta.env.DEV).toBe(true)
