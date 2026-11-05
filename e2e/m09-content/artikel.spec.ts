@@ -263,7 +263,7 @@ test.describe('M09 S16 article detail', MODULE, () => {
     await expect(page.getByTestId('artikel-chip-featured')).toHaveText('Pilihan')
     await expect(page.getByTestId('artikel-author-initial')).toHaveText('A')
     await expect(page.getByTestId('artikel-author-name')).toHaveText('Admin Demo')
-    await expect(page.getByTestId('artikel-published')).toHaveText('24 Dec 2025')
+    await expect(page.getByTestId('artikel-published')).toHaveText('24 Disember 2025')
     await expect(page.getByTestId('artikel-age')).toHaveText('9 bulan yang lepas')
     await expect(page.getByTestId('artikel-views')).toHaveText('597')
     await expect(page.getByTestId('artikel-likes')).toHaveText('6')
