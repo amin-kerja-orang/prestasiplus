@@ -167,7 +167,6 @@ export const GAMES_MESSAGES = {
   leagueAlreadyIn: 'Sekolah anda sudah menyertai liga ini.',
   leagueFull: 'Liga ini sudah penuh.',
   leagueNotFound: 'Liga tidak dijumpai.',
-  sekolahAnonymous: 'Sekolah anonim',
   quizTiles: 'Nilai mesti antara 0 dan 38.',
 } as const
 
