@@ -3,8 +3,8 @@
  * removed and reordered here and saved together. Pure functions over an ordered list; the page owns the state.
  */
 
-/** D90: a stimulus with fewer members than this is not a group yet. */
-export const MIN_GROUP_MEMBERS = 2
+/** DM-01 (S1-T01): a group holds 1..n questions; 0 members is a draft group. */
+export const MIN_GROUP_MEMBERS = 1
 /** The stimulus API takes at most 40 member questions per group (`STIMULUS_LIMITS.groupQuestions`). */
 export const MAX_GROUP_MEMBERS = 40
 
@@ -15,7 +15,7 @@ export interface GroupView {
   id: string
   stimuli: WireStimulus[]
   members: GroupMember[]
-  /** D93: the server's BM warning while the group has fewer than 2 questions. */
+  /** D93: the server's BM warning while the group has no question. */
   warning: string | null
 }
 
@@ -28,7 +28,7 @@ export interface GroupMember {
 }
 
 export const GROUP_MEMBER_MESSAGES = {
-  needsTwo: 'Kumpulan perlu sekurang-kurangnya 2 soalan.',
+  needsOne: 'Kumpulan perlu sekurang-kurangnya 1 soalan.',
   duplicate: 'Soalan ini sudah ada dalam kumpulan.',
   full: 'Satu kumpulan boleh mempunyai paling banyak 40 soalan.',
 } as const
@@ -39,7 +39,7 @@ export function isComplete(members: readonly GroupMember[]): boolean {
 
 /** Messages that stop the group counting as complete; empty when it is fine. */
 export function memberIssues(members: readonly GroupMember[]): string[] {
-  return isComplete(members) ? [] : [GROUP_MEMBER_MESSAGES.needsTwo]
+  return isComplete(members) ? [] : [GROUP_MEMBER_MESSAGES.needsOne]
 }
 
 export type AddResult = { ok: true; members: GroupMember[] } | { ok: false; message: string }

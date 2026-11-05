@@ -17,11 +17,12 @@ const m = (id: string): GroupMember => ({ id, numberLabel: id, stem: `Soalan ${i
 const ids = (list: readonly GroupMember[]): string[] => memberIds(list)
 
 describe('group members (D90)', () => {
-  it('a stimulus is a group only with two or more questions', () => {
-    expect(isComplete([m('1')])).toBe(false)
-    expect(memberIssues([m('1')])).toEqual([GROUP_MEMBER_MESSAGES.needsTwo])
-    expect(isComplete([m('1'), m('2')])).toBe(true)
-    expect(memberIssues([m('1'), m('2')])).toEqual([])
+  it('a group holds 1..n questions; 0 is a draft group (DM-01, AC-QA-07)', () => {
+    expect(isComplete([])).toBe(false)
+    expect(memberIssues([])).toEqual([GROUP_MEMBER_MESSAGES.needsOne])
+    expect(GROUP_MEMBER_MESSAGES.needsOne).toBe('Kumpulan perlu sekurang-kurangnya 1 soalan.')
+    expect(isComplete([m('1')])).toBe(true)
+    expect(memberIssues([m('1')])).toEqual([])
   })
 
   it('adds at the end or at a place, once', () => {

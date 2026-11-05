@@ -81,11 +81,12 @@ describe('StudioGroupEditor on the stimulus API (T32, D90)', () => {
     expect(api.setGroupMembers).toHaveBeenCalledWith('5', ['13', '11', '14'])
   })
 
-  it('warns below two members and discards unsaved changes', async () => {
+  it('warns with no member and discards unsaved changes', async () => {
     const w = await render()
+    await t(w, 'member-11-remove').trigger('click')
     await t(w, 'member-12-remove').trigger('click')
     await t(w, 'member-13-remove').trigger('click')
-    expect(t(w, 'issues').text()).toBe('Kumpulan perlu sekurang-kurangnya 2 soalan.')
+    expect(t(w, 'issues').text()).toBe('Kumpulan perlu sekurang-kurangnya 1 soalan.')
     await t(w, 'discard').trigger('click')
     expect(order(w)).toEqual(['11', '12', '13'])
     expect(has(w, 'issues')).toBe(false)
@@ -125,11 +126,11 @@ describe('StudioGroupEditor on the stimulus API (T32, D90)', () => {
     expect(t(w, 'problems').text()).toBe(stimulusServed)
   })
 
-  it('shows the draft-group warning of the server while the group has fewer than two questions (D93)', async () => {
+  it('shows the server warning, and no member issue for a group of 1 (D93, AC-QA-07)', async () => {
     api.fetchGroup.mockResolvedValue(detail(['11'], 'Kumpulan ini kini hanya mempunyai 1 soalan. Rangsangan bersama lazimnya untuk sekurang-kurangnya 2 soalan.'))
     const w = await render()
     expect(t(w, 'warning').text()).toContain('hanya mempunyai 1 soalan')
-    expect(t(w, 'issues').text()).toBe('Kumpulan perlu sekurang-kurangnya 2 soalan.')
+    expect(w.find('[data-testid="studio-group-issues"]').exists()).toBe(false)
   })
 
   it('edits a stimulus with only the changed keys (PUT /stimuli/:id)', async () => {
