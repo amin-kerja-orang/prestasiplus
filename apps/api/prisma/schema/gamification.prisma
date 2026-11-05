@@ -200,6 +200,7 @@ model Draw {
 
   prizes  DrawPrize[]
   tickets DrawTicket[]
+  winners DrawWinner[]
 
   @@unique([legacySource, legacyId], map: "uq_draws_legacy")
   @@index([status, closesAt], map: "ix_draws_status_closes_at")
@@ -218,7 +219,8 @@ model DrawPrize {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  draw Draw @relation(fields: [drawId], references: [id], onDelete: Cascade, map: "fk_draw_prizes_draw_id")
+  draw    Draw         @relation(fields: [drawId], references: [id], onDelete: Cascade, map: "fk_draw_prizes_draw_id")
+  winners DrawWinner[]
 
   @@unique([drawId, position], map: "uq_draw_prizes_draw_position")
   @@map("draw_prizes")
@@ -234,11 +236,38 @@ model DrawTicket {
   clientUuid String? @map("client_uuid") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  draw Draw @relation(fields: [drawId], references: [id], onDelete: Restrict, map: "fk_draw_tickets_draw_id")
+  draw   Draw         @relation(fields: [drawId], references: [id], onDelete: Restrict, map: "fk_draw_tickets_draw_id")
+  winner DrawWinner?
 
   @@index([drawId, userId], map: "ix_draw_tickets_draw_id_user_id")
   @@index([userId, createdAt], map: "ix_draw_tickets_user_id_created_at")
   @@map("draw_tickets")
+}
+
+/// DM-36 (S7-T07): one row per prize slot filled by "Cabut pemenang". `slot` counts the winners of one prize line from 0 (a line with
+/// `qty` 3 has the slots 0, 1 and 2). `(draw_prize_id, slot)` is unique, so a second draw run cannot record a second winner, and so is
+/// `(draw_id, user_id)`: one prize per pupil per draw. The users are plain columns, as on `draw_tickets` (FK in SQL only).
+model DrawWinner {
+  id            BigInt    @id @default(autoincrement())
+  drawId        BigInt    @map("draw_id")
+  drawPrizeId   BigInt    @map("draw_prize_id")
+  ticketId      BigInt    @unique(map: "uq_draw_winners_ticket_id") @map("ticket_id")
+  slot          Int       @db.SmallInt
+  userId        BigInt    @map("user_id")
+  drawnAt       DateTime  @map("drawn_at") @db.Timestamptz(6)
+  drawnById     BigInt?   @map("drawn_by_id")
+  /// Set by "Tandakan Dihantar" (the prize was handed over outside the app).
+  deliveredAt   DateTime? @map("delivered_at") @db.Timestamptz(6)
+  deliveredById BigInt?   @map("delivered_by_id")
+
+  draw      Draw       @relation(fields: [drawId], references: [id], onDelete: Restrict, map: "fk_draw_winners_draw_id")
+  drawPrize DrawPrize  @relation(fields: [drawPrizeId], references: [id], onDelete: Restrict, map: "fk_draw_winners_draw_prize_id")
+  ticket    DrawTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade, map: "fk_draw_winners_ticket_id")
+
+  @@unique([drawPrizeId, slot], map: "uq_draw_winners_draw_prize_id_slot")
+  @@unique([drawId, userId], map: "uq_draw_winners_draw_id_user_id")
+  @@index([userId], map: "ix_draw_winners_user_id")
+  @@map("draw_winners")
 }
 
 /// Syiling-priced reward catalogue of the Kawalan Reward screen (M14; budgeted in sen). No .cloud source.
