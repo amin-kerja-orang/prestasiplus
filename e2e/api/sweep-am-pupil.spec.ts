@@ -130,16 +130,17 @@ test.describe('pupil sweep: no dead links @api', () => {
       `the pupil is already in "${JOINED_CLASS_NAME}"`,
     ).toContain(JOINED_CLASS_NAME)
 
+    // Listen before the navigation, so a POST fired while the page loads is counted too.
+    let posts = 0
+    page.on('request', (r) => {
+      if (r.method() === 'POST' && r.url().endsWith('/api/kelas-saya/join')) posts += 1
+    })
     await page.goto('/kelas-saya')
     await expect(
       page.getByTestId('joined-class').filter({ hasText: JOINED_CLASS_NAME }),
       'its card is listed on Kelas Saya',
     ).toBeVisible({ timeout: 20_000 })
-    // The join box is gone (API-MUR-04, D-A8): no control, and nothing posts to the removed route.
-    let posts = 0
-    page.on('request', (r) => {
-      if (r.method() === 'POST' && r.url().endsWith('/api/kelas-saya/join')) posts += 1
-    })
+    // The join box is gone (API-MUR-04, D-A8): no control, and nothing posted to the removed route.
     await expect(page.getByTestId('join-submit')).toHaveCount(0)
     await expect(page.getByTestId('class-code')).toHaveCount(0)
     await expect(page.getByText('Masukkan Kod Kelas')).toHaveCount(0)
