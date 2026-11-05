@@ -646,7 +646,7 @@ One function builds the list for `GET /api/questions/:id/gate-check` (API-Q-05, 
 
 All 30 rows are assembled into one function by card S1-T02 (owner of API-Q-05 and the 422 of API-Q-04); rows 13 to 16 and 19 to 22 call the scheme and mode validators of S1-T09a/b (API-Q-30), and rows 25 and 26 read the flags of S1-T07. The column `Owner card` names the card that writes each row's check inside that one function: a row that checks an answer key or a question-type field is S1-T09a (rows 11 to 20), a row that checks a drawing template or a `table_fill` cell is S1-T09b (rows 21 and 22), and every other row is S1-T02. A row whose owner card is not yet merged stays inert (not evaluated) until that card merges (R-2). The servability reason code `chapter_missing` (API-Q-11, 4.5) is a reason code, not a gate code: the gate code of a missing Bab is `NO_CHAPTER`.
 
-**Rule R-DSKP (D-QA-14, D112-1, D112-3).** One lookup of `curriculum_nodes` for the question's Subjek + Tingkatan decides everything: Unit, SP, TP and aras are required only when DSKP nodes exist for that Subjek + Tingkatan (no "SPM-bound" condition); Bab is required when that Subjek + Tingkatan has chapters; Kesukaran is always required (default `min(5, TP)`, or 3 when no TP). Content whose Subjek + Tingkatan has no nodes (T1-T3 until a T1-T3 extract is loaded, and subjects whose DSKP is not loaded) is approved untagged (D101, D112); they are served by Databank, Latih Tubi and Bab but are not placed in blueprint papers (as untagged legacy, D80). The gate runs only on a transition into `approved` (legacy approved rows are never re-gated, D80 DEC-2). Today T1-T3 never passes (`publish-gate.ts`): fix in S1-T02.
+**Rule R-DSKP (D-QA-14, D112-1, D112-3).** One lookup of `curriculum_nodes` for the question's Subjek + Tingkatan decides everything: Unit, SP, TP and aras are required only when DSKP nodes exist for that Subjek + Tingkatan, where "DSKP nodes exist" means **SP nodes exist** (`curriculum_nodes.kind = 'sp'`; the kinds are `grouping|unit|sk|sp`), so a Bab-level or unit node alone never switches the gate on and T1-T3 (units only) keep SP and TP optional (lead ruling 2026-11-05; `gateFacts()` and `curriculumFactsFor()` add `AND kind = 'sp'`, owner S1) (no "SPM-bound" condition); Bab is required when that Subjek + Tingkatan has chapters; Kesukaran is always required (default `min(5, TP)`, or 3 when no TP). Content whose Subjek + Tingkatan has no nodes (T1-T3 until a T1-T3 extract is loaded, and subjects whose DSKP is not loaded) is approved untagged (D101, D112); they are served by Databank, Latih Tubi and Bab but are not placed in blueprint papers (as untagged legacy, D80). The gate runs only on a transition into `approved` (legacy approved rows are never re-gated, D80 DEC-2). Today T1-T3 never passes (`publish-gate.ts`): fix in S1-T02.
 
 | # | Code | Message (exact) | Applies | When | Owner card |
 |---|---|---|---|---|---|
@@ -684,6 +684,21 @@ All 30 rows are assembled into one function by card S1-T02 (owner of API-Q-05 an
 **Code kept from V3 (D115):** `TP_MISSING` (the question-level TP at path `tp`, message as in V3 `errors.ts`) is not a numbered row: it belongs to rule R-DSKP beside rows 3 to 6 (A) and keeps its V3 name; it is skipped when the Subjek + Tingkatan has no DSKP nodes. S1-T02 neither renames nor removes it.
 
 **Code added by the scheme validator (S1-T09a):** `SCHEME_PENALTY` "Jumlah penalti melebihi markah bahagian." (when the deductions of a leaf or of the question exceed the part marks; applies to a leaf with `schemeRules`; When S; owner S1-T09a). Like `TP_MISSING` it is not a numbered row. Every new scheme code (`SCHEME_*`, `BAND_RANGE`) is reported at `step` 4 in the issue shape of API-Q-05 and API-Q-30.
+
+**Codes added by S1-T09a part 1 (lead ruling of 2026-11-05; no text is invented).** Eight conditions have no BM text in this file. They ship now as codes in `details.gate[]` / `issues[]`; a server-only code answers the generic ERR-REQ-01 message plus the code, because no user can reach it:
+
+| Code | User-reachable | Text |
+|---|---|---|
+| `EXAMPLE_MARKS_NOT_ZERO` | no (the form sets 0, L-rows above) | server-only: ERR-REQ-01 + code |
+| `SCHEME_MODE_MISMATCH` | no | server-only: ERR-REQ-01 + code |
+| `CRITERION_MAX_REQUIRED` | yes | [PO pending] |
+| `BAND_RANGE_INVALID` | yes | [PO pending] |
+| `OPTION_LABEL_DUPLICATE` | no | reuses "Label pilihan mesti A hingga H." (mode 1 rule above) |
+| `DEDUCTION_LABEL_REQUIRED` | yes (deduction code `other`) | [PO pending] |
+| `TRUE_FALSE_OPTIONS_INVALID` | no (fixed rows) | server-only: ERR-REQ-01 + code |
+| `SCHEME_VERSION_MISMATCH` | no (integrity) | server-only: ERR-REQ-01 + code |
+
+The three "[PO pending]" texts are filled in when the PO answers; until then the screen shows the generic ERR-REQ-01 message for them.
 
 The flag `stem_duplicated` is not a gate item (the question is complete; the text shows once and DM-40 cleans the data). A flag is cleared by attaching a group or stimulus (QE-08) or by `Bukan masalah` (`POST /api/admin/questions/:id/flags/dismiss`).
 
@@ -1242,7 +1257,7 @@ Each FR names the DM / API change (new IDs are in 8.4 and 8.5; "rule" = no schem
 | FR-QA-15 | `Audit Rajah` is a menu item in group `Soalan` (`/admin/soalan-gambar`) and the work-list row action `Muat naik gambar` uses it. V2 has this screen (Missing in V3), so adding it satisfies FR-X1-2. | API-Q-21 (existing) | S2-T03, S0-T07 |
 | FR-QA-16 | Wizard tab order is `Tag`, `Kertas`, `Rangsangan`, `Sub-bahagian`; a single-leaf question has one `Teks soalan` stored once; `Pengenalan soalan` for structured. | rule | S2-T01 |
 | FR-QA-17 | Bilingual: `Bahasa soalan` `BM + English (dwibahasa)`; stacked editors on every text field; "Teks English diperlukan untuk soalan dwibahasa."; pupil sees BM above English, stacked by default, with the pupil control of FR-PA-04. | DM-50 | S1-T09b, S2-T10, S8-T03 |
-| FR-QA-18 | Rich-text toolbar adds `U`, `S`, `Baris puisi`, `Dua lajur`, `Kotak teks`, `Penanda ruang kosong`; the sanitiser allow-list is BUILT (V3 has none for question text; format: HTML subset `b i u s ul ol code table br` + classes `poem`, `two-col`, `box`, D115); preview equals pupil view. Owners: the authoring editor and toolbar are S2-T10; the sanitiser and the pupil display are S8-T03. | rule (sanitiser) | S2-T10, S8-T03 |
+| FR-QA-18 | Rich-text toolbar adds `U`, `S`, `Baris puisi`, `Dua lajur`, `Kotak teks`, `Penanda ruang kosong`; the sanitiser allow-list is BUILT (V3 has none for question text; format: HTML subset `b i u s ul ol li code table thead tbody tr th td br p div` with `colspan`/`rowspan` on `th`/`td` and `class` restricted to `poem`, `two-col`, `box`; any other class or attribute is stripped; the plan S8-T03 Decided (1) list is the authority, D115); preview equals pupil view. Owners: the authoring editor and toolbar are S2-T10; the sanitiser and the pupil display are S8-T03. | rule (sanitiser) | S2-T10, S8-T03 |
 | FR-QA-19 | The full scheme editor of 3.1.7 (points, groups with caps and bonus, pairs, paths, final answer, count-based marks, deductions and zero rules on part and question, model answer, marker guidance) with live validation. | DM-54; API-Q-30 | S1-T09a, S2-T10 |
 | FR-QA-20 | Rubric mode `Markah setiap kriteria` (C/CA/O/L); pupil self-mark has one stepper per criterion. | `BijakAttemptSelfMarkRequest.criteria` (API-BIJAK-05 change) | S1-T09b, S3-T06, S8-T03 |
 | FR-QA-21 | Essay settings: min and max words, `Had keras`, `Ruang jawapan`; `Had perkataan` on `short_text`; pupil counters. | DM-55 | S1-T09a, S2-T10 |
