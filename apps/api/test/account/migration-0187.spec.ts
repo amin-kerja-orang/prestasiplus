@@ -59,7 +59,8 @@ describe('migration 0187 mood_checkins', () => {
   it('is additive: the file carries a rollback line and creates nothing but the table', () => {
     const sql = readFileSync(MIGRATION, 'utf8')
     expect(sql).toMatch(/-- rollback: DROP TABLE "mood_checkins";/)
-    expect(sql.match(/CREATE TABLE/g)).toHaveLength(1)
-    expect(sql).not.toMatch(/DROP |ALTER TABLE "(?!mood_checkins)/)
+    const code = sql.replace(/--.*$/gm, '')
+    expect(code.match(/CREATE TABLE/g)).toHaveLength(1)
+    expect(code).not.toMatch(/DROP |ALTER TABLE "(?!mood_checkins)/)
   })
 })
