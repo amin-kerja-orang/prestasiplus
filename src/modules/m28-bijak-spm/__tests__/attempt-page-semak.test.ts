@@ -80,7 +80,20 @@ describe('Semak (FR-MUR-13-6)', () => {
     expect(q('[data-testid=check-button]')).not.toBeNull()
   })
 
-  it('after a check, "Tukar jawapan" takes the verdict away, the option reacts again and Semak is offered', async () => {
+  it('Semak is disabled while the part is blank and sends nothing (lead ruling Q3)', async () => {
+    server.getAttemptView.mockResolvedValue(view([question('q1', MCQ)]))
+    await render()
+    const btn = q('[data-testid=check-button]') as HTMLButtonElement
+    expect(btn.disabled).toBe(true)
+    btn.click()
+    await flushPromises()
+    expect(server.checkQuestion).not.toHaveBeenCalled()
+    q('[data-testid=option-a]')!.click()
+    await flushPromises()
+    expect((q('[data-testid=check-button]') as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  it('after a check the result and key stay and the part locks; "Tukar jawapan" re-opens it and offers Semak again (DD4)', async () => {
     server.getAttemptView.mockResolvedValue(view([question('q1', MCQ)]))
     server.checkQuestion.mockResolvedValue(result('q1', 1))
     await render()
@@ -90,13 +103,16 @@ describe('Semak (FR-MUR-13-6)', () => {
     await flushPromises()
     expect(server.checkQuestion).toHaveBeenCalledTimes(1)
     expect(q('[data-testid=check-button]')).toBeNull()
+    expect(q('[data-testid=option-b]')?.getAttribute('data-state')).toBe('correct')
+    q('[data-testid=option-a]')!.click()
+    await flushPromises()
+    expect(q('[data-testid=option-a]')?.getAttribute('data-state')).toBe('wrong')
     q('[data-testid=check-change]')!.click()
     await flushPromises()
+    // the revealed key stays; Semak is back, the change button goes
+    expect(q('[data-testid=option-b]')?.getAttribute('data-state')).toBe('correct')
     expect(q('[data-testid=check-button]')).not.toBeNull()
     expect(q('[data-testid=check-change]')).toBeNull()
-    q('[data-testid=option-b]')!.click()
-    await flushPromises()
-    expect(q('[data-testid=option-b]')?.getAttribute('data-state')).toBe('selected')
   })
 
   it('a save that fails sends no check, and says the existing line', async () => {
@@ -111,18 +127,25 @@ describe('Semak (FR-MUR-13-6)', () => {
     expect(q('[data-testid=submit-error]')?.textContent).toContain('Semakan tidak dapat dibuat sekarang. Cuba lagi.')
   })
 
-  it('a structured part stays editable after a check; typing takes the verdict away', async () => {
-    server.getAttemptView.mockResolvedValue(view([question('q1', { parts: [partOf('p1', 'short_text')] })]))
+  it('a structured part locks after a check; "Tukar jawapan" re-opens only that part and the result stays', async () => {
+    server.getAttemptView.mockResolvedValue(view([question('q1', { parts: [partOf('p1', 'short_text'), partOf('p2', 'essay')] })]))
     server.checkQuestion.mockResolvedValue({ ...result('q1', 1), parts: [] })
     await render()
+    const fields = () => [...document.body.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('[data-testid=question-q1] input, [data-testid=question-q1] textarea')]
+    const first = fields()[0]!
+    first.value = 'jawapan'
+    first.dispatchEvent(new Event('input', { bubbles: true }))
+    await flushPromises()
     q('[data-testid=check-button]')!.click()
     await flushPromises()
     expect(q('[data-testid=check-button]')).toBeNull()
-    const input = document.body.querySelector<HTMLTextAreaElement>('[data-testid=question-q1] textarea')!
-    expect(input.disabled).toBe(false)
-    input.value = 'jawapan'
-    input.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(q('[data-testid=check-results]')).not.toBeNull()
+    expect(fields()[0]!.disabled).toBe(true)
+    expect(fields().at(-1)!.disabled).toBe(false)
+    q('[data-testid=check-change]')!.click()
     await flushPromises()
+    expect(fields()[0]!.disabled).toBe(false)
+    expect(q('[data-testid=check-results]')).not.toBeNull()
     expect(q('[data-testid=check-button]')).not.toBeNull()
   })
 

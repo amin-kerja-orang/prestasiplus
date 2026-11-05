@@ -175,7 +175,12 @@ const currentSemakParts = computed(() => {
   return q.mcq ? [q.id] : leavesOf(q.parts ?? []).filter((l) => SEMAK_KINDS.has(l.kind)).map((l) => l.id)
 })
 const checkCapReached = computed(() => !!current.value && (checkCounts.value[current.value.id] ?? 0) >= BIJAK_ATTEMPTS_LIMITS.maxChecksPerQuestion)
-const lockedPartIds = computed(() => (checkCapReached.value ? currentSemakParts.value : []))
+/** Lead ruling DD4: a checked question stays locked (result and key stay) until "Tukar jawapan"; the cap locks it for good. */
+const changing = ref<Record<string, true>>({})
+const checkLocked = computed(() => checkCapReached.value || (!!currentCheck.value && !(current.value && changing.value[current.value.id])))
+const lockedPartIds = computed(() => (checkLocked.value ? currentSemakParts.value : []))
+/** Lead ruling Q3: "Semak" waits for an answer in one of the parts it reveals. */
+const hasSemakAnswer = computed(() => currentSemakParts.value.some((id) => isAnswered(answers.value[id])))
 
 function leafIds(qid: string): string[] {
   const q = questions.value.find((x) => x.id === qid)
@@ -407,17 +412,13 @@ async function goResult(auto = false): Promise<void> {
 }
 
 /* --------------------------------------------------------------------------- actions */
-function clearCurrentCheck(): void {
+/** "Tukar jawapan": re-opens only the auto-markable parts; the shown result and key stay until the next "Semak". */
+function changeAnswer(): void {
   const q = current.value
-  if (!q || !checks.value[q.id]) return
-  const rest = { ...checks.value }
-  delete rest[q.id]
-  checks.value = rest
+  if (q) changing.value = { ...changing.value, [q.id]: true }
 }
 function onAnswer(partId: string, a: PartAnswer): void {
   answers.value = { ...answers.value, [partId]: a }
-  // An edited answer was not checked yet: its old verdict goes and "Semak" is offered again.
-  if (currentSemakParts.value.includes(partId)) clearCurrentCheck()
   autosave?.setAnswer(partId, a)
   if (isAnswered(a)) tickOnAnswer()
 }
@@ -482,6 +483,9 @@ async function check(): Promise<void> {
   try {
     const res = await server.checkQuestion(user.value, attemptId.value, q.id)
     checks.value = { ...checks.value, [q.id]: res }
+    const rest = { ...changing.value }
+    delete rest[q.id]
+    changing.value = rest
     if (res.checksUsed !== undefined) checkCounts.value = { ...checkCounts.value, [q.id]: res.checksUsed }
     combo.value = res.awarded === res.marks && res.marks > 0 ? combo.value + 1 : 0
   } catch {
@@ -715,7 +719,7 @@ const feedback = computed(() => {
             :flagged="flags.includes(current.id)"
             :check="currentCheck"
             :locked-part-ids="lockedPartIds"
-            :disabled="submitting || timeUp || (checkCapReached && !!current.mcq)"
+            :disabled="submitting || timeUp || (checkLocked && !!current.mcq)"
             :choose="choose"
             @answer="onAnswer"
             @toggle-flag="toggleFlag"
@@ -737,13 +741,13 @@ const feedback = computed(() => {
 
           <!-- [PROPOSED] "Tukar jawapan": a marked option does not react, so the pupil needs a way back to change it before the next "Semak" (46 section 3.5). -->
           <UButton
-            v-if="!isExam && currentCheck && !checkCapReached"
+            v-if="!isExam && checkLocked && !checkCapReached"
             type="button"
             color="neutral"
             variant="soft"
             class="min-h-11 self-start"
             data-testid="check-change"
-            @click="clearCurrentCheck"
+            @click="changeAnswer"
             >Tukar jawapan</UButton
           >
 
@@ -818,13 +822,13 @@ const feedback = computed(() => {
             Soalan {{ current?.number ?? 0 }} / {{ questions.length }}
           </p>
           <UButton
-            v-if="!isExam && currentSemakParts.length > 0 && !currentCheck && !checkCapReached"
+            v-if="!isExam && currentSemakParts.length > 0 && !checkLocked"
             type="button"
             color="primary"
             variant="soft"
             :size="phone ? 'sm' : undefined"
             class="min-h-11 text-nowrap"
-            :disabled="stimulusBlocked"
+            :disabled="stimulusBlocked || !hasSemakAnswer"
             data-testid="check-button"
             @click="check"
             >Semak</UButton

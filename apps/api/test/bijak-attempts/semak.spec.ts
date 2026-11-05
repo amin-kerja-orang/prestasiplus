@@ -100,18 +100,34 @@ describe('Semak (FR-MUR-13-6)', () => {
     expect(a[ESSAY_PART]?.answer.text).toBe('esei baharu')
   })
 
-  it('DM-68: the check sets revealed on the checked parts only, also on a blank one, and keeps the rev', async () => {
+  it('DM-68: the check sets revealed on the checked parts only, and keeps the rev', async () => {
     const id = await startAttempt(me, PAPER.sainsK2, 'latihan', true)
     const q = await mixedQuestion(id)
-    await check(id, q)
-    expect(await stored(id, AUTO_PART)).toMatchObject({ answer: { revealed: true }, rev: 0 })
+    await check(id, q, { changes: [change(AUTO_PART, { text: 'jawapan' }, 0)] })
+    expect(await stored(id, AUTO_PART)).toMatchObject({ answer: { text: 'jawapan', revealed: true }, rev: 0 })
     expect(await stored(id, ESSAY_PART)).toBeUndefined()
     // a later save wins over rev 0 and keeps the marker
-    expect((await save(id, [change(AUTO_PART, { text: 'jawapan' }, 1)])).status).toBe(200)
-    expect(await stored(id, AUTO_PART)).toMatchObject({ answer: { text: 'jawapan', revealed: true }, rev: 1 })
+    expect((await save(id, [change(AUTO_PART, { text: 'jawapan baharu' }, 1)])).status).toBe(200)
+    expect(await stored(id, AUTO_PART)).toMatchObject({ answer: { text: 'jawapan baharu', revealed: true }, rev: 1 })
     // a repeat check keeps both
     await check(id, q)
-    expect(await stored(id, AUTO_PART)).toMatchObject({ answer: { text: 'jawapan', revealed: true }, rev: 1 })
+    expect(await stored(id, AUTO_PART)).toMatchObject({ answer: { text: 'jawapan baharu', revealed: true }, rev: 1 })
+  })
+
+  it('lead ruling Q3: a blank part is refused 422 fields.questionId, uses no check and reveals nothing', async () => {
+    const id = await startAttempt(me, PAPER.sainsK2, 'latihan', true)
+    const q = await mixedQuestion(id)
+    // an essay answer alone does not make the auto-markable part answered
+    for (const body of [{}, { changes: [change(ESSAY_PART, { text: 'esei' }, 1)] }]) {
+      const res = await me.post(`/api/bijak/attempts/${id}/questions/${q}/check`, body)
+      expect(res.status).toBe(422)
+      expect(res.body.error.code).toBe('VALIDATION_ERROR')
+      expect(res.body.error.fields.questionId).toBeTruthy()
+    }
+    expect(await stored(id, AUTO_PART)).toBeUndefined()
+    const v = await view(id)
+    expect(v.checks).toEqual([])
+    expect(v.attempt.checkCounts ?? {}).toEqual({})
   })
 
   it('an edited answer shows no verdict in the view until its own Semak, so a reload never marks it for free', async () => {

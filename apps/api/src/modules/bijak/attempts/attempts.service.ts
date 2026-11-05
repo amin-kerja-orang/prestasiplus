@@ -47,7 +47,7 @@ import {
   AttemptsRepository,
   type PhotoRow,
 } from './attempts.repository'
-import type { PartAnswer, SectionSnapshot } from './exam-core.adapter'
+import { isBlank, type LeafKind, type PartAnswer, type SectionSnapshot } from './exam-core.adapter'
 import {
   type AnswerMap,
   type Bundles,
@@ -100,6 +100,8 @@ const ts = (d: Date) => toMytTimestamp(d)
 export const NO_ELIGIBLE_QUESTIONS = 'Tiada soalan layak untuk kertas ini.'
 const noEligibleQuestions = () => ApiError.of('VALIDATION_ERROR', { message: NO_ELIGIBLE_QUESTIONS })
 
+/** 422 fields.questionId of a "Semak" on a question whose auto-markable parts are all blank. */
+const CHECK_BLANK = 'Jawab dahulu sebelum menyemak.'
 const notFoundAttempt = () => ApiError.of('NOT_FOUND', { message: MSG.attemptNotFound })
 const forbiddenOwner = () => ApiError.of('FORBIDDEN', { message: MSG.forbidden })
 const attemptClosed = () => ApiError.of('CONFLICT', { message: MSG.attemptClosed })
@@ -738,6 +740,10 @@ export class BijakAttemptsService {
         await this.applyMeta(row, payload)
       }
       const map = this.answerMap(answers)
+      // Lead ruling Q3: a blank part never consumes a check nor reveals the key (the UI disables "Semak" too).
+      if (parts.every((pid) => isBlank(map.get(pid), index.parts.get(pid)?.kind as LeafKind | 'mcq' | undefined))) {
+        throw ApiError.of('VALIDATION_ERROR', { fields: { questionId: CHECK_BLANK } })
+      }
       const result = checkResult(row.composition, await load(), map, questionId, new Set(parts))
       // FR-MUR-13-6: only an answer-changing check counts towards the cap.
       const last = used > 0 ? ((await this.repo.checkResults(id)).get(questionId) as BijakAttemptQuestionResult | null | undefined) : null
