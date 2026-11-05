@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { z } from 'zod'
 
 import {
   EXAMPLE_ANSWER_MESSAGE,
@@ -10,7 +11,9 @@ import {
   QUESTION_LEAF_MODES,
   QuestionLeafPartSchema,
   QuestionLeafPartV3Schema,
+  QuestionWriteLeafPartSchema,
   QuestionPartSchema,
+  QuestionWritePartSchema,
   QuestionPartV3Schema,
   QuestionSchemeRulesSchema,
   QuestionTrueFalseLeafSchema,
@@ -30,7 +33,10 @@ const mcq = (n: number, key: unknown, over: Record<string, unknown> = {}) => ({
   ...over,
 })
 const multi = (n: number, ids: string[]) => mcq(n, { kind: 'options', correctOptionIds: ids }, { modeConfig: { multi: true } })
-const msgs = (r: { error?: { issues: { message: string }[] } }) => r.error?.issues.map((i) => i.message) ?? []
+type Iss = { message: string; errors?: Iss[][] }
+const flat = (is: Iss[]): string[] => is.flatMap((i) => [i.message, ...(i.errors ?? []).flatMap(flat)])
+/** All messages, including those nested inside union branches. */
+const msgs = (r: { error?: { issues: Iss[] } }) => flat(r.error?.issues ?? [])
 
 describe('FR-ADM-QE3.2 question types', () => {
   it('lists the 11 OPT-JENIS-SOALAN types in order', () => {
@@ -125,36 +131,36 @@ describe('AC-ADM-QE3.17/18 example leaf marks', () => {
     label: '(a)', prompt: rt('?'), marks, mode: 'short_text', key: { kind: 'accepted', values: ['x'] }, ...(modeConfig ? { modeConfig } : {}),
   })
   it('marks 0 without example is invalid; 101 is invalid; 1 and 100 are valid', () => {
-    expect(msgs(QuestionLeafPartSchema.safeParse(short(0)))).toContain('Nilai mata mesti sekurang-kurangnya 1.')
-    expect(msgs(QuestionLeafPartSchema.safeParse(short(101)))).toContain('Markah bahagian tidak boleh melebihi 100.')
-    expect(QuestionLeafPartSchema.safeParse(short(0)).success).toBe(false)
-    expect(QuestionLeafPartSchema.safeParse(short(101)).success).toBe(false)
-    expect(QuestionLeafPartSchema.safeParse(short(1)).success).toBe(true)
-    expect(QuestionLeafPartSchema.safeParse(short(100)).success).toBe(true)
+    expect(msgs(QuestionWriteLeafPartSchema.safeParse(short(0)))).toContain('Nilai mata mesti sekurang-kurangnya 1.')
+    expect(msgs(QuestionWriteLeafPartSchema.safeParse(short(101)))).toContain('Markah bahagian tidak boleh melebihi 100.')
+    expect(QuestionWriteLeafPartSchema.safeParse(short(0)).success).toBe(false)
+    expect(QuestionWriteLeafPartSchema.safeParse(short(101)).success).toBe(false)
+    expect(QuestionWriteLeafPartSchema.safeParse(short(1)).success).toBe(true)
+    expect(QuestionWriteLeafPartSchema.safeParse(short(100)).success).toBe(true)
   })
   it('marks 0 with example and an answer is valid', () => {
-    expect(QuestionLeafPartSchema.safeParse(short(0, { example: { answer: 'Contoh' } })).success).toBe(true)
+    expect(QuestionWriteLeafPartSchema.safeParse(short(0, { example: { answer: 'Contoh' } })).success).toBe(true)
   })
   it('example without an answer gives "Jawapan contoh diperlukan."', () => {
-    expect(msgs(QuestionLeafPartSchema.safeParse(short(0, { example: { answer: '  ' } })))).toContain(EXAMPLE_ANSWER_MESSAGE)
+    expect(msgs(QuestionWriteLeafPartSchema.safeParse(short(0, { example: { answer: '  ' } })))).toContain(EXAMPLE_ANSWER_MESSAGE)
     expect(EXAMPLE_ANSWER_MESSAGE).toBe('Jawapan contoh diperlukan.')
   })
   it('example with marks > 0 is invalid', () => {
-    expect(QuestionLeafPartSchema.safeParse(short(2, { example: { answer: 'c' } })).success).toBe(false)
+    expect(QuestionWriteLeafPartSchema.safeParse(short(2, { example: { answer: 'c' } })).success).toBe(false)
   })
 })
 
 describe('DM-55 modeConfig', () => {
   it('accepts the 45 fields', () => {
     const ok = ModeConfigSchema.safeParse({
-      maxWords: 50, wordRange: { min: 1, max: 120 }, hardLimit: true, answerSpace: 'medium', preFill: 'To: …', dependsOnPart: '(a)',
+      maxWords: 50, wordRange: { min: 1, max: 120 }, hardLimit: true, answerSpace: 'long', preFill: 'To: …', dependsOnPart: '(a)',
       multi: false, drawingKind: 'graf', answerTemplate: { grid: { xMin: 0, xMax: 10, yMin: 0, yMax: 20, step: 1, scale: '2 cm' } },
       alternatives: [{ prompt: rt('a') }, { id: 'b', prompt: rt('b'), stimulusId: '9' }],
     })
     expect(ok.success).toBe(true)
   })
   it.each([
-    [{ answerSpace: 'huge' }],
+    [{ answerSpace: 'small' }],
     [{ wordRange: { min: 9, max: 3 } }],
     [{ maxWords: 0 }],
     [{ alternatives: [{ prompt: rt('a') }] }],
@@ -284,8 +290,81 @@ describe('scheme v2 (D1, D2)', () => {
         }).success,
       ).toBe(true)
     })
-    it('the narrow service schema still rejects scheme_v 2 keys (consumers not switched yet)', () => {
-      expect(QuestionPartSchema.safeParse(p71[1]).success).toBe(false)
+    it('the v1 write schema rejects scheme_v 2 keys (reads stay lenient)', () => {
+      expect(QuestionWritePartSchema.safeParse(p71[1]).success).toBe(false)
     })
+  })
+})
+
+describe('read path never tightens; write path applies the new rules', () => {
+  const short = (over: Record<string, unknown>) => ({ label: '', prompt: rt('?'), marks: 1, mode: 'short_text', key: { kind: 'accepted', values: ['x'] }, ...over })
+  it.each([
+    ['marks 0 without example', mcq(4, { kind: 'option', correct: 'A' }, { marks: 0 })],
+    ['marks 101', mcq(4, { kind: 'option', correct: 'A' }, { marks: 101 })],
+    ['duplicate option labels', { ...mcq(4, { kind: 'option', correct: 'A' }), options: [...opts(3), { label: 'A', body: rt('dup') }] }],
+    ['short_text marks 0', short({ marks: 0 })],
+  ])('v1 leaf with %s parses on read, fails on write', (_n, leaf) => {
+    expect(QuestionLeafPartSchema.safeParse(leaf).success).toBe(true)
+    expect(QuestionPartSchema.safeParse(leaf).success).toBe(true)
+    expect(QuestionWriteLeafPartSchema.safeParse(leaf).success).toBe(false)
+    expect(QuestionWritePartSchema.safeParse(leaf).success).toBe(false)
+  })
+  it('a v1 key carrying scheme_v parses on read, SCHEME_VERSION_MISMATCH on write', () => {
+    const leaf = { label: '', prompt: rt('?'), marks: 1, mode: 'working', key: { kind: 'points', scheme_v: 2, marks: 1, points: [{ id: 'a', code: 'K', label: 'x', marks: 1 }] } }
+    expect(QuestionLeafPartSchema.safeParse(leaf).success).toBe(true)
+    expect(msgs(QuestionWriteLeafPartSchema.safeParse(leaf))).toContain('SCHEME_VERSION_MISMATCH')
+  })
+  it('PRD copy for marks and correct answer on write; old text kept on read', () => {
+    expect(msgs(QuestionWriteLeafPartSchema.safeParse(mcq(4, { kind: 'option', correct: 'H' })))).toContain('Sila pilih jawapan betul.')
+    expect(msgs(QuestionLeafPartSchema.safeParse(mcq(4, { kind: 'option', correct: 'H' })))).toContain('Jawapan betul mesti salah satu pilihan.')
+    expect(msgs(QuestionWriteLeafPartSchema.safeParse(short({ marks: 101 })))).toContain('Markah bahagian tidak boleh melebihi 100.')
+  })
+  it('the schema carries no marks maximum (oasdiff)', () => {
+    expect(JSON.stringify(z.toJSONSchema(QuestionLeafPartSchema, { unrepresentable: 'any', io: 'input' }))).not.toContain('"maximum":100')
+  })
+})
+
+describe('error codes (no PRD text)', () => {
+  const w = (leaf: unknown) => msgs(QuestionLeafPartV3Schema.safeParse(leaf))
+  const pts = { id: 'a', code: 'K', label: 'x', marks: 1 }
+  const wkey = (key: unknown, mode = 'working') => ({ label: '', prompt: rt('?'), marks: 1, mode, key })
+  it('OPTION_LABEL_DUPLICATE for options and for mcq_multi ids', () => {
+    expect(w({ ...multi(4, ['A', 'B']), options: [...opts(3), { label: 'A', body: rt('d') }] })).toContain('OPTION_LABEL_DUPLICATE')
+    expect(w(multi(4, ['A', 'A']))).toContain('OPTION_LABEL_DUPLICATE')
+  })
+  it('SCHEME_MODE_MISMATCH in both directions', () => {
+    expect(w(mcq(4, { kind: 'options', correctOptionIds: ['A'] }))).toContain('SCHEME_MODE_MISMATCH')
+    expect(w(mcq(4, { kind: 'option', correct: 'A' }, { modeConfig: { multi: true } }))).toContain('SCHEME_MODE_MISMATCH')
+  })
+  it('mcq_multi correct count uses the PRD text', () => {
+    expect(w(multi(4, ['A', 'B', 'C', 'D']))).toContain('Pilih sekurang-kurangnya satu jawapan betul dan sekurang-kurangnya satu jawapan salah.')
+    expect(w(multi(4, []))).toContain('Pilih sekurang-kurangnya satu jawapan betul dan sekurang-kurangnya satu jawapan salah.')
+  })
+  it('BAND_RANGE_INVALID', () => {
+    const k = { kind: 'rubric', scheme_v: 2, marks: 5, criteria: [{ id: 'c', name: 'C' }], bands: [{ name: 'b', range: [5, 1] }] }
+    expect(w(wkey(k, 'essay'))).toContain('BAND_RANGE_INVALID')
+  })
+  it('SCHEME_VERSION_MISMATCH on the V3 path (v1 key with scheme_v 3 and v1 shape)', () => {
+    expect(w(wkey({ kind: 'points', scheme_v: 3, marks: 1, points: [pts] }))).toContain('SCHEME_VERSION_MISMATCH')
+  })
+  it('EXAMPLE_MARKS_NOT_ZERO', () => {
+    expect(w({ label: '', prompt: rt('?'), marks: 2, mode: 'short_text', key: { kind: 'accepted', values: ['x'] }, modeConfig: { example: { answer: 'c' } } })).toContain('EXAMPLE_MARKS_NOT_ZERO')
+  })
+  it('DEDUCTION_LABEL_REQUIRED', () => {
+    const r = QuestionSchemeRulesSchema.safeParse({ deductions: [{ code: 'other', amount: 1, scope: 'part' }] })
+    expect(msgs(r)).toContain('DEDUCTION_LABEL_REQUIRED')
+  })
+  it('CRITERION_MAX_REQUIRED', () => {
+    const k = { kind: 'rubric', scheme_v: 2, marks: 5, scoring: 'perCriterion', criteria: [{ id: 'c', name: 'C' }], bands: [{ name: 'b', range: [1, 5] }] }
+    expect(w(wkey(k, 'essay'))).toContain('CRITERION_MAX_REQUIRED')
+  })
+  it('accepted not among the options', () => {
+    expect(msgs(QuestionLeafPartSchema.safeParse(mcq(4, { kind: 'option', correct: 'A', accepted: ['H'] })))).toContain('Sila pilih jawapan betul.')
+  })
+  it('TRUE_FALSE_OPTIONS_INVALID, also with an options key', () => {
+    const tfOpts = [{ label: 'A', body: rt('Betul') }, { label: 'B', body: rt('Salah') }]
+    expect(msgs(QuestionTrueFalseLeafSchema.safeParse({ ...mcq(3, { kind: 'option', correct: 'A' }) }))).toContain('TRUE_FALSE_OPTIONS_INVALID')
+    const withMulti = { ...mcq(2, { kind: 'options', correctOptionIds: ['A'] }, { modeConfig: { multi: true } }), options: tfOpts }
+    expect(msgs(QuestionTrueFalseLeafSchema.safeParse(withMulti))).toContain('TRUE_FALSE_OPTIONS_INVALID')
   })
 })

@@ -8,7 +8,7 @@ import {
   QuestionCurriculumTagSchema,
   QuestionEssayTopicSchema,
   QuestionKbatLevelSchema,
-  QuestionPartSchema,
+  QuestionWritePartSchema,
   QuestionPublicPartSchema,
   QuestionStatusSchema,
   QuestionStimulusGroupSchema,
@@ -287,7 +287,7 @@ export const QuestionSchema = z
     updatedAt: TimestampSchema,
     usage: z.object({ attempts: z.number().int().min(0), correct: z.number().int().min(0) }),
     /** v2 additions (BE-09 AC 1 to 3, 12): absent on rows that only have the flat shape. */
-    parts: z.array(QuestionPartSchema).min(1).max(20).optional(),
+    parts: z.array(QuestionWritePartSchema).min(1).max(20).optional(),
     tag: QuestionCurriculumTagSchema.optional(),
     /** BJS-06: question-level KBAT (null = Bukan KBAT), "Perlu semakan tag" flag and the catalogue the tag was made against. */
     kbat: QuestionKbatLevelSchema.nullable().optional(),
@@ -415,7 +415,7 @@ const baseInput = z.object({
   optionImageFileIds: z.array(ImageFileId).max(4).optional(),
   /** Kertas for the paper builder; null clears it; omitted keeps it. Error key `kertas`. */
   kertas: QuestionKertasSchema.nullable().optional(),
-  parts: z.array(QuestionPartSchema).min(1).optional(),
+  parts: z.array(QuestionWritePartSchema).min(1).optional(),
   tag: QuestionCurriculumTagSchema.optional(),
   /** V2 `Nombor soalan` (Studio Langkah 1); null clears it, omitted keeps it. */
   numberLabel: z.string().trim().max(32).nullable().optional(),
@@ -725,7 +725,7 @@ export const QuestionGuruCreateRequestSchema = z
     curriculumTopicId: idOrBlank(QUESTION_MESSAGES.guruTopic),
     dskpSpId: idOrBlank(QUESTION_MESSAGES.sp),
     scriptType: z.enum(['rumi', 'arab', 'jawi', 'mixed'], QUESTION_MESSAGES.guruScript).optional(),
-    parts: z.array(QuestionPartSchema).min(1).optional(),
+    parts: z.array(QuestionWritePartSchema).min(1).optional(),
     tag: QuestionCurriculumTagSchema.optional(),
   })
   .superRefine((v, ctx) => {

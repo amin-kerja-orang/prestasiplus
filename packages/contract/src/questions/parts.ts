@@ -37,7 +37,7 @@ export const QuestionLeafModeSchema = z.enum(QUESTION_LEAF_MODES).meta({ id: 'Qu
 
 const OptionLabel = z.string().regex(/^[A-H]$/, 'Label pilihan mesti A hingga H.')
 const Marks = z.number().int().min(0)
-/** 45:481 / DM-55: a leaf has 1..100 marks; 0 only on an example leaf (`modeConfig.example`), enforced in `QuestionLeafPartSchema`. */
+/** 45:481 / DM-55: a leaf has 1..100 marks; 0 only on an example leaf (`modeConfig.example`), enforced by `refineLeaf(true)` on the write path only (no schema bound: oasdiff). */
 /** 45:452 L-04. */
 const MARKS_MIN_MESSAGE = 'Nilai mata mesti sekurang-kurangnya 1.'
 const MARKS_MAX_MESSAGE = 'Markah bahagian tidak boleh melebihi 100.'
@@ -46,7 +46,7 @@ const MCQ_OPTIONS_MESSAGE = 'Soalan aneka pilihan mesti ada 2 hingga 8 pilihan.'
 const MCQ_MULTI_COUNT_MESSAGE = 'Pilih sekurang-kurangnya satu jawapan betul dan sekurang-kurangnya satu jawapan salah.'
 /** 45:475. */
 const ESSAY_CHOICE_COUNT_MESSAGE = 'Esei pilihan mesti mempunyai 2 hingga 6 topik.'
-const LeafMarks = z.number().int().min(0).max(100, MARKS_MAX_MESSAGE)
+const LeafMarks = z.number().int().min(0)
 
 export const QuestionOptionSchema = z
   .object({
@@ -88,7 +88,7 @@ export const QuestionMarkPointSchema = z
   })
   .meta({ id: 'QuestionMarkPoint' })
 
-const PointsKeyV1 = z.object({
+const PointsKeyV1Base = z.object({
   kind: z.literal('points'),
   /** Absent = scheme v1 (D2). `scheme_v: 2` selects the 45 section 7 shape. */
   scheme_v: z.number().optional(),
@@ -113,9 +113,10 @@ const PointsKeyV1 = z.object({
     .array(z.object({ code: z.enum(['spelling', 'unit', 'sf', 'dp', 'copy']), amount: Marks, cap: Marks.optional() }))
     .optional(),
   modelText: z.string().optional(),
-}).refine((k) => k.scheme_v === undefined, { path: ['scheme_v'], message: 'SCHEME_VERSION_MISMATCH' })
+})
 
-const RubricKeyV1 = z.object({
+
+const RubricKeyV1Base = z.object({
   kind: z.literal('rubric'),
   scheme_v: z.number().optional(),
   marks: Marks,
@@ -125,7 +126,12 @@ const RubricKeyV1 = z.object({
     .min(1),
   floorBand: z.object({ name: z.string(), range: z.tuple([Marks, Marks]) }).optional(),
   notes: z.array(z.string()).optional(),
-}).refine((k) => k.scheme_v === undefined, { path: ['scheme_v'], message: 'SCHEME_VERSION_MISMATCH' })
+})
+/** Write-path variants: a v1 key must not carry `scheme_v` (SCHEME_VERSION_MISMATCH, no PRD text). The read path (Base) never tightens. */
+const noSchemeV = { path: ['scheme_v'], message: 'SCHEME_VERSION_MISMATCH' }
+const PointsKeyV1 = PointsKeyV1Base.refine((k) => k.scheme_v === undefined, noSchemeV)
+const RubricKeyV1 = RubricKeyV1Base.refine((k) => k.scheme_v === undefined, noSchemeV)
+
 
 
 /* -------------------------------------------------------------------------------------------------
@@ -322,8 +328,8 @@ const leafCurriculum = {
 const leafCurriculumKeys = { kbat: true, unitNodeId: true, formOrigin: true, difficultyTp: true, cognitiveLevel: true } as const
 
 
-/** 45:473-481 / DM-55: `question_parts.mode_config`. `answerSpace` is stored English (45:1115 "medium"); UI labels Pendek / Sederhana / Panjang. */
-export const QUESTION_ANSWER_SPACES = ['small', 'medium', 'large'] as const
+/** 45:473-481 / DM-55: `question_parts.mode_config`. `answerSpace` is stored English (45:1115 "medium"); UI labels Pendek / Sederhana / Panjang (D1). */
+export const QUESTION_ANSWER_SPACES = ['short', 'medium', 'long'] as const
 export const QUESTION_DRAWING_KINDS = ['graf', 'rajah', 'lakaran'] as const
 const WordRange = z.object({ min: z.number().int().min(0).max(5000), max: z.number().int().min(0).max(5000) }).refine((r) => r.min <= r.max, {
   message: 'Julat perkataan tidak sah.',
@@ -423,7 +429,10 @@ const buildBranches = <Mcq extends z.ZodType, Pts extends z.ZodType, Ess extends
       wordRange: z.object({ min: z.number().int(), max: z.number().int() }).optional(),
     }),
   ] as const
-const LeafBranches = buildBranches(OptionKey, PointsKeyV1, z.discriminatedUnion('kind', [RubricKeyV1, PointsKeyV1]))
+/** Read path: old v1 rules plus the additive fields only. */
+const LeafBranches = buildBranches(OptionKey, PointsKeyV1Base, z.discriminatedUnion('kind', [RubricKeyV1Base, PointsKeyV1Base]))
+/** Write path (create/update requests): v1 key types, new rules on. */
+const LeafBranchesWrite = buildBranches(OptionKey, PointsKeyV1, z.discriminatedUnion('kind', [RubricKeyV1, PointsKeyV1]))
 const LeafBranchesV3 = buildBranches(z.union([OptionKey, McqMultiKey]), PointsKey, RubricOrPointsKey)
 
 /** AC-ADM-QE3.17: an example leaf without an answer. */
@@ -440,34 +449,43 @@ interface LeafLike {
 /** No PRD text: code only (DOC DEFECT). */
 const MISMATCH = 'SCHEME_MODE_MISMATCH'
 const WRONG_CHOICE = 'Jawapan betul mesti salah satu pilihan.'
+/** 45:463 / 45:662 row 11. */
+const PICK_CORRECT = 'Sila pilih jawapan betul.'
 
-/** Cross-field rules of a leaf, shared by both leaf schemas. */
-const refineLeaf = (ctx: { value: unknown; issues: z.core.$ZodRawIssue[] }) => {
-  const p = ctx.value as LeafLike
+/**
+ * Cross-field rules of a leaf. `strict = false` is the READ path (stored v1 rows): only the old rules plus the additive `accepted`.
+ * `strict = true` is the WRITE path and the V3 schemas: adds marks 1..100 (or 0 with example), duplicate labels, `scheme_v` on a v1 key,
+ * the example rules, the multi flag and the PRD correct-answer copy.
+ */
+const refineLeaf = (strict: boolean) => (ctx: { value: unknown; issues: z.core.$ZodRawIssue[] }) => {
+  const p = ctx.value as LeafLike & { key: { scheme_v?: number } }
   const bad = (path: (string | number)[], message: string) => ctx.issues.push({ code: 'custom', input: p, path, message })
   if (p.mode === 'mcq') {
     const labels = (p.options ?? []).map((o) => o.label)
     const has = (l: string) => labels.includes(l)
-    if (new Set(labels).size !== labels.length) bad(['options'], 'OPTION_LABEL_DUPLICATE')
+    if (strict && new Set(labels).size !== labels.length) bad(['options'], 'OPTION_LABEL_DUPLICATE')
     if (p.key.kind === 'option') {
       const correct = p.key.correct as string
-      if (p.modeConfig?.multi === true) bad(['key'], MISMATCH)
-      if (!has(correct) || (p.key.accepted ?? []).some((x) => !has(x))) bad(['key', 'correct'], WRONG_CHOICE)
+      if (strict && p.modeConfig?.multi === true) bad(['key'], MISMATCH)
+      if (!has(correct)) bad(['key', 'correct'], strict ? PICK_CORRECT : WRONG_CHOICE)
+      if ((p.key.accepted ?? []).some((x) => !has(x))) bad(['key', 'accepted'], PICK_CORRECT)
     } else {
       // mcq_multi (D7): ids are option labels, 1..n-1 correct.
       const ids = p.key.correctOptionIds ?? []
-      if (new Set(ids).size !== ids.length || ids.some((i) => !has(i))) bad(['key', 'correctOptionIds'], WRONG_CHOICE)
+      if (new Set(ids).size !== ids.length) bad(['key', 'correctOptionIds'], 'OPTION_LABEL_DUPLICATE')
+      else if (ids.some((i) => !has(i))) bad(['key', 'correctOptionIds'], PICK_CORRECT)
       else if (ids.length > labels.length - 1) bad(['key', 'correctOptionIds'], MCQ_MULTI_COUNT_MESSAGE)
       if (p.modeConfig?.multi !== true) bad(['modeConfig', 'multi'], MISMATCH)
     }
   }
-  // 45:481 / AC-ADM-QE3.17/18: marks 0 exactly when `modeConfig.example` is present, 1..100 otherwise.
-  const ex = p.modeConfig?.example
-  if (ex) {
-    if (ex.answer.trim() === '') bad(['modeConfig', 'example', 'answer'], EXAMPLE_ANSWER_MESSAGE)
-    if (p.marks !== 0) bad(['marks'], 'EXAMPLE_MARKS_NOT_ZERO')
-  } else if (p.marks < 1) {
-    bad(['marks'], MARKS_MIN_MESSAGE)
+  if (strict) {
+    // 45:481 / AC-ADM-QE3.17/18: marks 0 exactly when `modeConfig.example` is present, 1..100 otherwise.
+    const ex = p.modeConfig?.example
+    if (ex) {
+      if (ex.answer.trim() === '') bad(['modeConfig', 'example', 'answer'], EXAMPLE_ANSWER_MESSAGE)
+      if (p.marks !== 0) bad(['marks'], 'EXAMPLE_MARKS_NOT_ZERO')
+    } else if (p.marks < 1) bad(['marks'], MARKS_MIN_MESSAGE)
+    else if (p.marks > 100) bad(['marks'], MARKS_MAX_MESSAGE)
   }
   if (p.mode === 'essay_choice' && new Set((p.topics ?? []).map((t) => t.id)).size !== (p.topics ?? []).length) {
     bad(['topics'], 'Setiap tajuk mesti mempunyai id yang berbeza.')
@@ -481,14 +499,20 @@ const refineLeaf = (ctx: { value: unknown; issues: z.core.$ZodRawIssue[] }) => {
   }
 }
 
+/** READ path (stored rows, responses, OpenAPI `QuestionLeafPart`): never tighter than v1 except the additive fields. */
 export const QuestionLeafPartSchema = z
   .discriminatedUnion('mode', LeafBranches)
-  .check(refineLeaf as never)
+  .check(refineLeaf(false) as never)
   .meta({ id: 'QuestionLeafPart' })
+/** WRITE path leaf (create/update requests): the new rules apply. */
+export const QuestionWriteLeafPartSchema = z
+  .discriminatedUnion('mode', LeafBranchesWrite)
+  .check(refineLeaf(true) as never)
+  .meta({ id: 'QuestionWriteLeafPart' })
 /** Leaf that also accepts `mcq_multi` and scheme v2 keys (D2, D7). */
 export const QuestionLeafPartV3Schema = z
   .discriminatedUnion('mode', LeafBranchesV3)
-  .check(refineLeaf as never)
+  .check(refineLeaf(true) as never)
   .meta({ id: 'QuestionLeafPartV3' })
 
 /** D8 / OPT-MOD-JAWAPAN: the two fixed options of a `true_false` leaf (leaf mode `mcq`, key kind `option`); BM only, no EN. */
@@ -499,7 +523,7 @@ export const TRUE_FALSE_OPTIONS = [
 export const isTrueFalseOptions = (options: readonly { label: string; body: { ms: string; en?: string | undefined } }[]): boolean =>
   options.length === 2 && options.every((o, i) => o.label === TRUE_FALSE_OPTIONS[i]!.label && o.body.ms === TRUE_FALSE_OPTIONS[i]!.body.ms)
 /** A `true_false` leaf: an `mcq` leaf with exactly the two fixed options and a single-answer key. */
-export const QuestionTrueFalseLeafSchema = QuestionLeafPartSchema.check((ctx) => {
+export const QuestionTrueFalseLeafSchema = QuestionLeafPartV3Schema.check((ctx) => {
   const p = ctx.value
   if (p.mode !== 'mcq' || p.key.kind !== 'option' || !isTrueFalseOptions(p.options)) {
     ctx.issues.push({ code: 'custom', input: p, path: ['options'], message: 'TRUE_FALSE_OPTIONS_INVALID' })
@@ -514,6 +538,11 @@ const Level3 = QuestionLeafPartSchema
 const Level2 = z.union([QuestionLeafPartSchema, branch(Level3)])
 export const QuestionPartSchema = z.union([QuestionLeafPartSchema, branch(Level2)]).meta({ id: 'QuestionPart' })
 export type QuestionPart = z.infer<typeof QuestionPartSchema>
+
+/** WRITE path part tree (create/update requests): same shape as `QuestionPart`, new rules on. */
+const WLevel3 = QuestionWriteLeafPartSchema
+const WLevel2 = z.union([QuestionWriteLeafPartSchema, branch(WLevel3)])
+export const QuestionWritePartSchema = z.union([QuestionWriteLeafPartSchema, branch(WLevel2)]).meta({ id: 'QuestionWritePart' })
 
 /** Part tree that reads v1 and scheme v2 / `mcq_multi` leaves (D2). Not yet used by the services (S1-T09a parts 3 to 5). */
 const LevelV3_3 = QuestionLeafPartV3Schema
