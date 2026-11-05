@@ -52,12 +52,14 @@ export class QuestionSetsPorts {
 
   /** The bound intake. An unbound port is a wiring error (`QuestionSetsModule.onModuleInit` binds it), never a request-time answer. */
   get intake(): QuestionPaperIntakePort {
-    if (this.intakePort === null) throw new Error('QuestionSetsPorts: the paper intake is not bound')
+    if (this.intakePort === null)
+      throw new Error('QuestionSetsPorts: the paper intake is not bound')
     return this.intakePort
   }
 
   provideIntake(port: QuestionPaperIntakePort): void {
-    if (this.intakePort !== null) throw new Error('QuestionSetsPorts: the paper intake is already set')
+    if (this.intakePort !== null)
+      throw new Error('QuestionSetsPorts: the paper intake is already set')
     this.intakePort = port
   }
 }
