@@ -349,7 +349,7 @@ Rujukan PRD: R1-ADM-Q-16, U-OP-04, D95, D112 · S3-T01
 | E1.3 | Admin Pusat | Lihat Pratonton Kolam | `/admin/spm/kontrak/:subjek/:kertas/kolam` | Separuh | Uji lokal | 45 §5.2; FR-ADM-Q16.6 · S3-T01 | Angka betul. Id unit mentah dipapar. Pautan Lihat soalan hilang semua tapisan. |
 | E1.4 | Admin Pusat | Isi bukti daripada 2 badan atau lebih, tekan Sahkan | tab Pengesahan | Jalan | Uji lokal | 45 §5.2; FR-ADM-Q16.2; AC-ADM-Q16.1; D95 · S3-T01 | [Ubah C] Jalan secara lokal. Belum ada Kontrak Disahkan sebenar di UAT; hanya 6 blueprint rujukan wujud (1249-2, 1449-1, 1449-2, 3472-1, 3472-2, 4531-2); BM, BI dan Sejarah K1 kekal Spec atau Draf. |
 | E1.5 | Sistem | Kunci Disahkan. Suntingan struktur jadi versi baharu | builder.service.ts:803 | Separuh | Uji lokal | 45 §5.2; FR-ADM-Q16.3 · S3-T01 | Banner "Murid menggunakan v1" jalan. Bacaan kod: draf boleh tersangkut (builder.service.ts:803) dan murid boleh nampak Spec (papers.service.ts:130). Belum dibuktikan dalam pelayar. |
-| E1.6 | Sistem | Semak kuota Unit, profil TP dan kuota KBAT ketika Terbit (JSU) | builder.service.ts:788-793 | Separuh | Kod | 45 §5.5; FR-QA-40; AC-QA-40; FR-ADM-Q15.1..4; AC-R1-16.2 · S3-T01, S3-T02 | [BARU] BARU. Kuota, profil dan KBAT hanya menjadi nota dan "Blueprint perlu semakan" (bukan penyekat); hanya Kontrak tidak Disahkan menyekat dan boleh dilepaskan dengan pengecualian beraudit. |
+| E1.6 | Sistem | Semak kuota Unit, profil TP dan kuota KBAT ketika Terbit (JSU) | builder.service.ts:788-793 | Separuh | Kod | 45 §5.5; FR-ADM-Q15.1..4; AC-R1-16.2 · S3-T01, S3-T02 | [BARU] BARU. Kuota, profil dan KBAT hanya menjadi nota dan "Blueprint perlu semakan" (bukan penyekat); hanya Kontrak tidak Disahkan menyekat dan boleh dilepaskan dengan pengecualian beraudit. |
 
 > Dropdown subjek dalam Pembina diambil daripada senarai Kontrak, bukan senarai subjek (http-admin.ts:355).
 
@@ -377,12 +377,12 @@ Rujukan PRD: R1-ADM-Q-15, FR-ADM-Q07.7, Q07.8 · S3-T02
 |---|---|---|---|---|---|---|---|
 | E3.1 | Admin Pusat | Kemas kini metadata, kulit kertas, bahan rujukan | `/admin/spm/kertas/:id` | Jalan | Uji lokal | 45 §5.5; FR-ADM-Q15.1..4 · S3-T02 | Skrin "Semak Kertas Simulasi". |
 | E3.2 | Admin Pusat | Pratonton seperti murid | `/admin/spm/kertas/:id` | Belum diuji | PRD | 45 §3.5, §5.5; FR-ADM-Q07.7; AC-ADM-Q07.5 · S3-T02, S8-T05 |  |
-| E3.3 | Sistem | Senaraikan masalah: soalan belum lulus, kumpulan pecah, jumlah tidak padan Kontrak | Isu import dan senarai penyekat | Jalan | Uji lokal | 45 §5.5; FR-QA-40; AC-QA-40 · S3-T02 | Contoh: "Bahagian A: Kurang 9 soalan (perlu 10, ada 1)". |
+| E3.3 | Sistem | Senaraikan masalah: soalan belum lulus, kumpulan pecah, jumlah tidak padan Kontrak | Isu import dan senarai penyekat | Jalan | Uji lokal | 45 §5.5 · S3-T02 | Contoh: "Bahagian A: Kurang 9 soalan (perlu 10, ada 1)". |
 | E3.4 | Admin Pusat | Terbit di bawah Kontrak Disahkan | Butang Terbit | Separuh | Uji lokal | 45 §5.5; AC-ADM-Q14.2, AC-ADM-Q16.3 · S3-T08 | Jalan secara lokal. Belum dibuat di UAT, yang ada 0 kertas dan 0 kontrak. |
 | E3.5 | Admin Pusat | Tanpa Disahkan: tanda pengecualian, sebab 5 aksara atau lebih, Terbit kali kedua | Butang Terbit (pengecualian) | Jalan | Uji lokal | 45 §5.5; FR-ADM-Q15.2 · S3-T02 | [Ubah C] Diuji pada e34e0a52d: "Diterbitkan dengan 1 pengecualian kontrak (direkodkan)." Semua Kontrak Spec, jadi setiap Terbit perlu pengecualian. |
 | E3.6 | Sistem | Bekukan versi setiap soalan dalam kertas | `pin-servable.ts` | Belum diuji | Kod | 45 §2.10, §6.2; AC-QA-04 · S3-T02 | Kod ada, tidak diuji khusus. |
 | E3.7 | Admin Pusat | Tarik balik ke draf, atau Salin set | `/admin/spm/kertas/:id` | Belum diuji | PRD | 45 §5.5; AC-ADM-Q15.3 · S3-T02 | Murid yang sedang menjawab kekal pada versi lama. |
-| E3.8 | Admin Pusat | Lihat kad Isu import (n) dengan Lihat; cip Disematkan dan Tidak disajikan | `/admin/spm/kertas/:id` | Belum diuji | PRD | 45 §5.5; FR-QA-40; AC-QA-40; FR-ADM-Q14.5, FR-ADM-Q15.1 · S3-T02 | [BARU] BARU. Teks V2 ada tetapi tiada FR yang menyatakan kelakuan. |
+| E3.8 | Admin Pusat | Lihat kad Isu import (n) dengan Lihat; cip Disematkan dan Tidak disajikan | `/admin/spm/kertas/:id` | Belum diuji | PRD | 45 §5.5; FR-ADM-Q14.5, FR-ADM-Q15.1 · S3-T02 | [BARU] BARU. Teks V2 ada tetapi tiada FR yang menyatakan kelakuan. |
 
 ### E4 Tracking A
 

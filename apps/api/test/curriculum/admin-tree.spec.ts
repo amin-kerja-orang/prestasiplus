@@ -3,6 +3,7 @@ import {
   CurriculumChapterDeletedSchema,
   CurriculumChapterDetailSchema,
   CurriculumChapterSchema,
+  CurriculumEducationLevelListItemSchema,
   CurriculumSubtopicSchema,
   CurriculumTopicDeletedSchema,
   CurriculumTopicDetailSchema,
@@ -11,7 +12,7 @@ import {
 } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { bootCurriculumApp, count, expectError, idOf, loginAs, parseData, parseStatus, type Client, type CurriculumTestApp } from './helpers'
+import { bootCurriculumApp, count, expectError, idOf, loginAs, parseData, parseList, parseStatus, type Client, type CurriculumTestApp } from './helpers'
 
 /** Port of mock `admin-handlers.test.ts` #13 to #24: tree, chapters, topics, subtopics (AC1, AC3, AC4). */
 describe('admin curriculum tree', () => {
@@ -363,6 +364,78 @@ describe('admin curriculum tree', () => {
       expect(res.body).toEqual({ data: { deleted: 1 }, status: FLASH.subtopic.deleted })
       expect(await count(t.db, 'select count(*) n from topics')).toBe(topicsBefore)
       expect(await count(t.db, 'select count(*) n from subtopics where id = $1', [subtopicId])).toBe(0)
+    })
+  })
+  /**
+   * S4-T07 (R1-ADM-C-01, API-DSKP-04): `questionCount` / `servableCount` per Bab, the Bab delete guard, Darjah hidden
+   * (FR-ADM-C01.5) and Tingkatan 1-3 chapter creation (FR-ADM-C01.6).
+   */
+  describe('S4-T07 Kurikulum: question counts, delete guard, Darjah, T1-T3', () => {
+    let t1: string
+    let t4: string
+    let chapterId: string
+    const addQuestion = async (opts: { chapter: string; status?: string; active?: boolean; level?: string; live?: boolean }) => {
+      const q = (
+        await t.db.query<{ id: string }>('insert into questions (is_active, live_version_no) values ($1, $2) returning id::text', [
+          opts.active ?? true,
+          opts.live === false ? null : 1,
+        ])
+      )[0]!.id
+      await t.db.query(
+        "insert into question_versions (question_id, version_no, status, type, stem_ms, subject_id, education_level_id, chapter_id) values ($1, 1, $2, 'mcq', 'Soalan ujian', $3, $4, $5)",
+        [q, opts.status ?? 'approved', bm, opts.level ?? t4, opts.chapter],
+      )
+      return q
+    }
+
+    beforeAll(async () => {
+      t1 = await idOf(t.db, 'education_levels', 'T1')
+      t4 = await idOf(t.db, 'education_levels', 'T4')
+      chapterId = parseStatus(await admin.post('/api/admin/curriculum/chapters', chapterBody({ educationLevelId: t4, chapterNumber: 97 })), CurriculumChapterSchema, 201).data.id
+    })
+
+    const node = async (id: string, level = t4) => parseData(await tree(bm, level), CurriculumTreeSchema).chapters.find((c) => c.id === id)!
+
+    it('an empty Bab reports questionCount 0 and servableCount 0', async () => {
+      expect(await node(chapterId)).toMatchObject({ questionCount: 0, servableCount: 0 })
+    })
+
+    it('counts live, active, approved versions; draft, inactive and not-live ones are left out; servable excludes Darjah-level versions', async () => {
+      const d1Level = await idOf(t.db, 'education_levels', 'D1')
+      await addQuestion({ chapter: chapterId })
+      await addQuestion({ chapter: chapterId })
+      await addQuestion({ chapter: chapterId, level: d1Level }) // counted, not servable (primary stage)
+      await addQuestion({ chapter: chapterId, status: 'draft', live: false })
+      await addQuestion({ chapter: chapterId, active: false })
+      const c = await node(chapterId)
+      expect(c.questionCount).toBe(3)
+      expect(c.servableCount).toBe(2)
+    })
+
+    it('delete guard: a Bab with linked question versions is 409 "Bab ini masih mempunyai {n} soalan." and is kept', async () => {
+      // 5 question versions point at the Bab (the draft and the inactive question count too: any row would block a FK restrict).
+      const audit = await count(t.db, "select count(*) n from audit_events where action like 'curriculum.%.deleted'")
+      expectError(await admin.delete(`/api/admin/curriculum/chapters/${chapterId}`), 'CONFLICT', 'Bab ini masih mempunyai 5 soalan.')
+      expect(await count(t.db, 'select count(*) n from chapters where id = $1', [chapterId])).toBe(1)
+      expect(await count(t.db, 'select count(*) n from audit_events where action like $1', ['curriculum.%.deleted'])).toBe(audit)
+    })
+
+    it('delete guard keeps the topics check first: a Bab with topics and questions answers the topics message', async () => {
+      await admin.post('/api/admin/curriculum/topics', { chapterId, name: 'Topik Q' })
+      expectError(await admin.delete(`/api/admin/curriculum/chapters/${chapterId}`), 'CONFLICT', 'Bab ini masih mempunyai topik.')
+    })
+
+    it('FR-ADM-C01.5: the level list the Tahap select reads has no Darjah (primary stage)', async () => {
+      const items = parseList(await admin.get('/api/admin/education-levels'), CurriculumEducationLevelListItemSchema)
+      expect(items.length).toBeGreaterThan(0)
+      expect(items.some((l) => l.stage === 'primary')).toBe(false)
+      expect(items.map((l) => l.id)).toContain(t1)
+    })
+
+    it('FR-ADM-C01.6: the admin creates a Tingkatan 1 chapter and it shows in the T1 tree', async () => {
+      const created = parseStatus(await admin.post('/api/admin/curriculum/chapters', chapterBody({ educationLevelId: t1, chapterNumber: 96, name: 'Bab T1 Baharu' })), CurriculumChapterSchema, 201).data
+      const c = await node(created.id, t1)
+      expect(c).toMatchObject({ name: 'Bab T1 Baharu', educationLevelId: t1, questionCount: 0, servableCount: 0 })
     })
   })
 })

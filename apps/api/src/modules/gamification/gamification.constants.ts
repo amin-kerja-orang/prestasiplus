@@ -55,6 +55,14 @@ export const ECONOMY_KEYS = {
   gamesAwardSyiling: 'games_award_syiling',
 } as const
 
+/** The API-ADM-16 wire names of the four `reward_settings` keys, accepted beside the older names (S7-T05). */
+export const REWARD_CONTROL_KEYS = {
+  redeemBudget: 'reward_budget_sen_session',
+  flatCoins: 'flat_quiz_reward',
+  sessionYear: 'current_session_year',
+  miniGamesCoins: 'games_award_syiling',
+} as const
+
 /** Upper bounds of a lucky draw prize pool (the position column is a smallint). */
 export const MAX_PRIZE_LINES = 100
 export const MAX_PRIZE_QTY = 1_000_000

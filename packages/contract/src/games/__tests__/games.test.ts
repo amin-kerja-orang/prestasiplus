@@ -981,10 +981,10 @@ describe('openapi registration', () => {
     for (const code of ['404', '409', '422']) expect(JSON.stringify(checkOp?.responses[code]), code).toContain('[PROPOSED]')
   })
 
-  it('M16-51 and M16-52 are admin only: 403 "This action is unauthorized."', () => {
+  it('M16-51 and M16-52 are admin only: 403 "Anda tidak dibenarkan melakukan tindakan ini."', () => {
     for (const key of ['GET /admin/games', 'PUT /admin/games/settings']) {
       const op = gamesOps.find((o) => o.key === key)?.op
-      expect(JSON.stringify(op?.responses['403']), key).toMatch(/This action is unauthorized\./)
+      expect(JSON.stringify(op?.responses['403']), key).toMatch(/Anda tidak dibenarkan melakukan tindakan ini\./)
     }
     expect(gamesOps.find((o) => o.key === 'GET /games/hub')?.op.responses['403']).toBeUndefined()
   })
