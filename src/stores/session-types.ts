@@ -46,6 +46,8 @@ export interface UserMe {
   grade: number | null
   schoolId: number | null
   bio: string | null
+  /** "Cita-Cita Saya" (DM-80), max 255; absent on older payloads. */
+  aspiration?: string | null
   avatarUrl: string | null
   createdAt: string
   updatedAt: string
