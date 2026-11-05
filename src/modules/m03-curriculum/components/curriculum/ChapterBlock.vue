@@ -6,6 +6,8 @@
  */
 import { ref } from 'vue'
 
+import { DsBadge, DsText } from '@/ds'
+
 import type { ChapterNode } from '../../api/admin-curriculum'
 import { chapterEditTo, chapterHeading, topicCreateTo } from '../../lib/curriculum-paths'
 import { useTreeActions } from '../../lib/tree-actions'
@@ -43,6 +45,15 @@ const open = ref(true)
         >
           {{ chapter.description }}
         </p>
+        <DsText
+          v-if="chapter.questionCount !== undefined"
+          variant="caption"
+          tone="muted"
+          data-testid="chapter-question-count"
+        >
+          Bilangan soalan: {{ chapter.questionCount }}
+          <DsBadge v-if="chapter.questionCount === 0" tone="warning" label="Kosong" size="sm" data-testid="chapter-empty-flag" />
+        </DsText>
       </div>
       <UButton
         :to="chapterEditTo(chapter.id)"
