@@ -124,6 +124,10 @@ export const BIJAK_BUILDER_MESSAGES = {
   itemsUndecided: '{n} item belum diputuskan.',
   /** S3-T06, API-BIJAK-14: the paper has no source batch yet. [DOC DEFECT: no BM text in the PRD; default] */
   sourceBatchMissing: 'Muat naik PDF sumber dahulu.',
+  /** S3-T06, API-BIJAK-14 upload: the paper already has a source batch. [DOC DEFECT: no BM text in the PRD; default] */
+  sourceBatchExists: 'Kertas ini sudah mempunyai PDF sumber.',
+  /** S3-T06, API-BIJAK-14 upload: the copyright declaration is not ticked. [DOC DEFECT: no BM text in the PRD; default] */
+  declarationRequired: 'Sila akui perakuan hak cipta.',
   /** S3-T06, flashes of PRD30 field 18-11. */
   subjektifCreated: '“{title}” telah dicipta sebagai draf.',
   subjektifUpdated: '“{title}” telah dikemas kini.',
