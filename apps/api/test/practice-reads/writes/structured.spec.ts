@@ -177,17 +177,20 @@ describe('AC1 GET /api/practice/structured', () => {
     }
   })
 
-  it('S5-T11 markable and pendingSchemeCount: a set whose leaf has an empty scheme is not markable', async () => {
+  it('S5-T11 markable and pendingSchemeCount: a set whose leaf has no scheme still lists but is not markable', async () => {
     const good = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'Set skema lengkap' })
     const bad = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'Set skema tiada' })
     try {
-      // The scheme of the first leaf is emptied (no accepted answer).
+      // The scheme of the first leaf is removed (no answer key): the set still lists but is not markable.
       await t.db.query(
-        `update answer_keys set content = '{"values": []}'::jsonb where part_id = (select p.id from question_parts p join question_versions v on v.id = p.question_version_id
+        `delete from answer_keys where part_id = (select p.id from question_parts p join question_versions v on v.id = p.question_version_id
           where v.question_id = $1 and p.mode is not null order by p.id limit 1)`,
         [bad],
       )
-      // (The unfiltered page would hydrate the emptied key and fail the contract; that is why the pupil list is asked with markable.)
+      const all = await list(student, '?q=skema')
+      expect(all.data.map((c) => c.id).sort()).toEqual([good, bad].sort())
+      expect(all.meta.pendingSchemeCount).toBe(1)
+      expect(all.data.find((c) => c.id === bad)).toBeDefined()
       const only = await list(student, '?q=skema&markable=1')
       expect(only.data.map((c) => c.id)).toEqual([good])
       expect(only.meta).toMatchObject({ totalItems: 1, pendingSchemeCount: 1 })

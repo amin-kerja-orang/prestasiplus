@@ -186,7 +186,8 @@ export class StructuredService {
       })
       total = res.total
       pendingSchemeCount = res.pendingScheme
-      slice = await this.questions.getMany(res.ids, 'live')
+      // lenientKeys: a set with an invalid or empty stored scheme still lists (it is just not markable).
+      slice = await this.questions.getMany(res.ids, 'live', 'exclude', { lenientKeys: true })
     }
     const authors = await this.authors(slice)
     const best = await this.attempts.bestFor(caller.userId, slice.map((r) => r.id))
