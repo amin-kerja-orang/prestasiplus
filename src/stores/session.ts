@@ -373,8 +373,11 @@ export const useSessionStore = defineStore('session', () => {
 
   /** 401 policy (FR-M01-14): clear the session, then run the registered redirect. */
   async function handleUnauthorized(): Promise<void> {
+    // Only a session that existed can "end": a 401 with no session (a guest, or storage already cleared) keeps the plain
+    // `/login?redirect=` of the guard.
+    const hadSession = auth.value !== null
     clear()
-    endedByUnauthorized = true
+    endedByUnauthorized = hadSession
     await unauthorizedRedirect?.()
   }
 
