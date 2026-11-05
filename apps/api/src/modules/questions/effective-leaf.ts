@@ -200,6 +200,11 @@ export async function refreshStimulusFlag(db: TxClient | PrismaClient, questionI
   const flag = found?.flag ?? null
   const ref = found?.ref ?? null
   if (flag === v.stimulusFlag && ref === v.stimulusFlagRef) return flag
+  // Same flag, only the reference kind moved (numbered <-> unnumbered): the problem is the same one, so the dismissal stays.
+  if (flag !== null && flag === v.stimulusFlag) {
+    await db.questionVersion.update({ where: { id: v.id }, data: { stimulusFlagRef: ref } })
+    return flag
+  }
   await db.questionVersion.update({ where: { id: v.id }, data: flagWrite(flag, ref, now) })
   return flag
 }

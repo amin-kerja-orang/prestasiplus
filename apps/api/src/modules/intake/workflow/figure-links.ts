@@ -40,8 +40,10 @@ export function figureKeys(text: string): string[] {
 
 /**
  * S1-T07 (D115, 45 section 6.6.1): the figure words that count as a reference even without a number ("Graf", "Rajah di atas").
- * Whole word only: "Rajahnya" or "petakan" is not a reference. The numbered form reuses `REF` above (every figure word and its English twin).
+ * Whole word only: "Rajahnya" or "petakan" is not a reference. The numbered form uses the same six words (`NUMBERED_REF`).
  */
+/** The numbered form of the card's six words only ("Rajah 14"); the English twins of `REF` are not stimulus references for the flag (decision 55, D115). */
+const NUMBERED_REF = /(?<![\p{L}\p{N}])(rajah|jadual|graf|petikan|peta|carta)\s*(\d{1,3}(?:\.\d{1,2})?)(?![\p{N}])/iu
 const BARE_REF = /(?<![\p{L}\p{N}])(rajah|jadual|graf|petikan|peta|carta)(?![\p{L}\p{N}])/iu
 
 export interface StimulusReference {
@@ -53,8 +55,8 @@ export interface StimulusReference {
 
 /** The first reference to a figure in `text` (the numbered form wins over a bare word), or null. Pure; case-insensitive. */
 export function stimulusReferenceOf(text: string): StimulusReference | null {
-  const numbered = text.matchAll(REF).next()
-  if (numbered.done !== true) return { kind: 'numbered', text: numbered.value[0] }
+  const numbered = NUMBERED_REF.exec(text)
+  if (numbered !== null) return { kind: 'numbered', text: numbered[0] }
   const bare = BARE_REF.exec(text)
   return bare === null ? null : { kind: 'unnumbered', text: bare[0] }
 }

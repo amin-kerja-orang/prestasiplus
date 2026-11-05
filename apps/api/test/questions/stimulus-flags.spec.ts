@@ -160,6 +160,29 @@ describe('stimulus flags and the servability rule (S1-T07)', () => {
     expect([v2!.stimulus_flag, v2!.stimulus_flag_ref]).toEqual(['stimulus_missing', 'numbered'])
   })
 
+  it('[CI] decision 56: a flagged question pinned in a published paper stays served on simulasi_paper (no flag exclusion there)', async () => {
+    const id = await publish('pinnedFlagged', 'Rajah 31 menunjukkan satu graf. Nyatakan kecerunannya.')
+    expect((await flagOf('pinnedFlagged')).stimulus_flag).toBe('stimulus_missing')
+    const [paper] = await q(`insert into papers (kind, title, subject_id, kertas, printed_duration_min, status, published_at) values ('pilihan', 'Kertas terbit', $1, 2, 90, 'published', now()) returning id::text id`, [tag.subjectId])
+    const [section] = await q(`insert into paper_sections (paper_id, position, label, question_count, mark_budget) values ($1, 1, 'A', 1, 1) returning id::text id`, [paper!.id])
+    await q(`insert into paper_placements (paper_section_id, question_id, pinned_version_no, position) values ($1, $2, 1, 1)`, [section!.id, id])
+    const paperResult = await reasons('pinnedFlagged', 'simulasi_paper')
+    expect(paperResult.reasons.map((x) => x.code)).not.toContain('stimulus_missing')
+    expect(paperResult.served).toBe(true)
+    // ... while every drill still excludes it, and a missing key still blocks the paper.
+    expect((await reasons('pinnedFlagged', 'latih_tubi_spm')).reasons.map((x) => x.code)).toContain('stimulus_missing')
+    await q(`delete from answer_keys where part_id in (select p.id from question_parts p join question_versions v on v.id = p.question_version_id where v.question_id = $1)`, [id])
+    expect((await reasons('pinnedFlagged', 'simulasi_paper')).reasons.map((x) => x.code)).toEqual(['no_key'])
+  })
+
+  it('[CI] only the reference kind changing (numbered to unnumbered) keeps the dismissal', async () => {
+    const id = await publish('kind', 'Rajah 4 menunjukkan satu segi tiga.')
+    await q(`update question_versions set flag_dismissed_at = now() where question_id = $1`, [id])
+    await q(`update question_versions set stem_ms = 'Rajah di atas menunjukkan satu segi tiga.' where question_id = $1`, [id])
+    expect(await refresh(id)).toBe('stimulus_missing')
+    expect((await q(`select stimulus_flag_ref ref, flag_dismissed_at is not null as d from question_versions where question_id = $1`, [id]))[0]).toMatchObject({ ref: 'unnumbered', d: true })
+  })
+
   describe('no_key and no_scheme', () => {
     it('[CI] an MCQ leaf with no answer_keys row reads no_key and leaves the draw', async () => {
       await publish('mcqNoKey', 'Soalan objektif tanpa kunci jawapan yang disimpan.')
@@ -205,7 +228,7 @@ describe('stimulus flags and the servability rule (S1-T07)', () => {
 
   it('[CI] the indicator equals the draw outcome on 50 sampled questions (D91)', async () => {
     // 50 questions: servable, stimulus_missing (numbered and unnumbered), dismissed, stem_duplicated, no key. Deterministic stems.
-    const kinds = ['plain', 'rajah', 'graf', 'dismissed', 'dup', 'nokey'] as const
+    const kinds = ['plain', 'rajah', 'graf', 'dismissed', 'dup', 'nokey', 'figure'] as const
     const sampled: { id: string; kind: (typeof kinds)[number] }[] = []
     for (let i = 0; i < 50; i += 1) {
       const kind = kinds[i % kinds.length]!
@@ -220,6 +243,13 @@ describe('stimulus flags and the servability rule (S1-T07)', () => {
       if (kind === 'dup') {
         await q(`update question_parts set prompt_ms = $2 where question_version_id = (select id from question_versions where question_id = $1)`, [id, text])
         await q(`update question_versions set stem_ms = $2, stimulus_flag = 'stem_duplicated', stimulus_flag_at = now() where question_id = $1`, [id, text])
+      }
+      if (kind === 'figure') {
+        const [st] = await q(`insert into stimuli (kind, label, alt_text) values ('image', 'Rajah', 'Rajah') returning id::text id`)
+        await q(`insert into question_version_stimuli (question_version_id, stimulus_id, position) select id, $2, 1 from question_versions where question_id = $1`, [id, st!.id])
+        await q(`update question_versions set stem_ms = '' where question_id = $1`, [id])
+        await q(`delete from question_parts where question_version_id = (select id from question_versions where question_id = $1)`, [id])
+        await refresh(id)
       }
       if (kind === 'nokey') {
         await q(`delete from answer_keys where part_id in (select p.id from question_parts p join question_versions v on v.id = p.question_version_id where v.question_id = $1)`, [id])
@@ -242,6 +272,6 @@ describe('stimulus flags and the servability rule (S1-T07)', () => {
     expect(served('plain')).toBe(true)
     expect(served('dismissed')).toBe(true)
     expect(served('dup')).toBe(true)
-    expect(sampled.filter((s) => ['rajah', 'graf', 'nokey'].includes(s.kind)).some((s) => reports.get(s.id)!.activities.find((a) => a.activity === 'latih_tubi_spm')!.served)).toBe(false)
+    expect(sampled.filter((s) => ['rajah', 'graf', 'nokey', 'figure'].includes(s.kind)).some((s) => reports.get(s.id)!.activities.find((a) => a.activity === 'latih_tubi_spm')!.served)).toBe(false)
   })
 })

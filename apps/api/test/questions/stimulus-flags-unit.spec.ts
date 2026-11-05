@@ -50,7 +50,9 @@ describe('stimulus_missing', () => {
   it('[CI] the part prompts and the options are examined too', () => {
     expect(detectStimulusFlag(input({ stemMs: 'Hitung nilai x.', parts: [leaf({ promptMs: 'Merujuk Jadual 1, pilih jawapan.' })] }))?.flag).toBe('stimulus_missing')
     expect(detectStimulusFlag(input({ stemMs: 'Hitung nilai x.', parts: [leaf({ optionTexts: ['Rajah 2', 'B', 'C', 'D'] })] }))?.flag).toBe('stimulus_missing')
-    expect(detectStimulusFlag(input({ stemEn: 'Based on Figure 3, find the area.' }))).toEqual({ flag: 'stimulus_missing', ref: 'numbered' })
+    expect(detectStimulusFlag(input({ stemEn: 'Based on Jadual 3, find the area.' }))).toEqual({ flag: 'stimulus_missing', ref: 'numbered' })
+    // The English twins are not among the card's six words (decision 55).
+    expect(detectStimulusFlag(input({ stemEn: 'Based on Figure 3, find the area of the Table 2.' }))).toBeNull()
   })
 
   it('[CI] a group, a stimulus, a part stimulus or an option picture clears it (no flag when something is attached)', () => {

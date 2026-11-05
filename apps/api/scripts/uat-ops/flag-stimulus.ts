@@ -42,7 +42,7 @@ async function main(): Promise<void> {
         include: FLAG_INCLUDE,
         orderBy: { id: 'asc' },
       })
-      const writes: Promise<unknown>[] = []
+      const writes: (() => Promise<unknown>)[] = []
       for (const v of versions) {
         seen += 1
         const found = detectStimulusFlag(flagInputOfRow(v))
@@ -58,9 +58,14 @@ async function main(): Promise<void> {
         if (flag === v.stimulusFlag && ref === v.stimulusFlagRef) continue
         changed += 1
         if (flag === null) cleared += 1
-        if (apply) writes.push(db.questionVersion.update({ where: { id: v.id }, data: flagWrite(flag, ref, now) }))
+        if (apply) {
+          // Same flag, only the reference kind moved: keep the dismissal (as the write path does).
+          const data = flag !== null && flag === v.stimulusFlag ? { stimulusFlagRef: ref } : flagWrite(flag, ref, now)
+          writes.push(() => db.questionVersion.update({ where: { id: v.id }, data }))
+        }
       }
-      await Promise.all(writes)
+      // At most 50 updates in flight, so a 5,000-row batch cannot exhaust the connection pool.
+      for (let i = 0; i < writes.length; i += 50) await Promise.all(writes.slice(i, i + 50).map((w) => w()))
       process.stderr.write(`batch up to version ${after}: ${seen} read, ${changed} to change\n`)
     }
     const subjects = new Map((await db.$queryRaw<{ id: bigint; name: string }[]>`SELECT id, code AS name FROM subjects`).map((s) => [String(s.id), s.name]))
