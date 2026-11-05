@@ -146,7 +146,42 @@ describe('#1 GET /api/dashboard (S1)', () => {
     const d = Dashboard.parse((await guru.get('/api/dashboard')).body).data
     expect(d.user.role).toBe('teacher')
     expect(d.week).toEqual({ sessions: 0, accuracyPct: 0 })
+    expect(d.accuracyPct).toBeNull()
     expect(d.revisionTotal).toBe(0)
+  })
+
+  it('accuracyPct is null with 0 answers (FR-MUR-2-13); 3 correct of 4 reads 75; 2 of 3 reads 66.7 (decision 11)', async () => {
+    expect(Dashboard.parse((await pelajar.get('/api/dashboard')).body).data.accuracyPct).toBeNull()
+    for (const correct of [true, true, true, false]) await addAnswer(t.db, { user: u.pelajar, subject: w.math, correct, at: MON })
+    expect(Dashboard.parse((await pelajar.get('/api/dashboard')).body).data.accuracyPct).toBe(75)
+    await clearPractice(t.db)
+    for (const correct of [true, true, false]) await addAnswer(t.db, { user: u.pelajar, subject: w.math, correct, at: MON })
+    expect(Dashboard.parse((await pelajar.get('/api/dashboard')).body).data.accuracyPct).toBe(66.7)
+  })
+
+  it('accuracyPct pools every mode and all time (outside the week, sessionless), never Mod Pelajar or another pupil rows', async () => {
+    await addAnswer(t.db, { user: u.pelajar, subject: w.math, correct: true, at: MON })
+    await addAnswer(t.db, { user: u.pelajar, subject: w.math, correct: false, at: '2025-03-01T10:00:00+08:00' }) // long before this week
+    await addAnswer(t.db, { user: u.pelajar, subject: w.sej, correct: true, at: '2026-09-01T10:00:00+08:00', session: null })
+    await addAnswer(t.db, { user: u.pelajar, subject: w.math, correct: false, at: MON, isTest: true })
+    await addAnswer(t.db, { user: u.pelajar2, subject: w.math, correct: false, at: MON })
+    const d = Dashboard.parse((await pelajar.get('/api/dashboard')).body).data
+    expect(d.accuracyPct).toBe(66.7) // 2 of 3
+    expect(d.week.accuracyPct).toBe(100) // legacy week figure unchanged
+  })
+
+  it('package: null for a pupil with no complimentary package and no live school subscription; Pakej Percuma for a complimentary pupil', async () => {
+    const before = await t.db.query<{ school_id: string | null }>('select school_id::text from users where id = $1', [u.pelajar])
+    try {
+      await t.db.query('update users set school_id = null where id = $1', [u.pelajar])
+      await t.db.query('delete from comp_students where user_id = $1', [u.pelajar])
+      expect(Dashboard.parse((await pelajar.get('/api/dashboard')).body).data.package).toBeNull()
+      await t.db.query("insert into comp_students (user_id, package_expires_on) values ($1, '2027-11-03')", [u.pelajar])
+      expect(Dashboard.parse((await pelajar.get('/api/dashboard')).body).data.package).toEqual({ name: 'Pakej Percuma', validUntil: '2027-11-03' })
+    } finally {
+      await t.db.query('delete from comp_students where user_id = $1', [u.pelajar])
+      await t.db.query('update users set school_id = $2 where id = $1', [u.pelajar, before[0]?.school_id ?? null])
+    }
   })
 
   it('greeting follows the Malaysia hour (BR-02): 09:00 Pagi, 12:00 Tengah Hari, 15:40 Petang, 19:00 Malam', async () => {
@@ -253,10 +288,14 @@ describe('#1 GET /api/dashboard (S1)', () => {
     expect(card('BM')).toMatchObject({ approvedCount: 1, bankCount: 1 })
     expect(card('SEJ')).toMatchObject({ approvedCount: 0, bankCount: 0 })
     const pill = (code: string) => d.levelPills.find((p) => p.code === code)
+    // FR-MUR-2-11 / D91: Tingkatan 1-5 only; the count is the Latih Tubi figure (the subject chips' function), so T4 and T5 here.
     expect(pill('T4')?.count).toBe(3)
     expect(pill('T5')?.count).toBe(1)
-    expect(pill('T3')?.count).toBe(1)
-    expect(d.levelPills.length).toBe(d.stats.activeLevels)
+    // T1-T3 are not offered to Latih Tubi until the practice rules widen the offered levels (S4-T06): 0 is expected.
+    expect(pill('T3')?.count).toBe(0)
+    expect(d.levelPills.map((p) => p.code)).toEqual(['T1', 'T2', 'T3', 'T4', 'T5'])
+    expect(d.levelPills.every((p) => /^T[1-5]$/.test(p.code))).toBe(true) // no Darjah pill
+    expect(d.levelPills.map((p) => p.count).reduce((a, b) => a + b, 0)).toBe(d.subjects.reduce((n, s) => n + s.bankCount, 0))
     expect(d.difficultyChart).toEqual([
       { level: 1, count: 1 },
       { level: 2, count: 1 },
