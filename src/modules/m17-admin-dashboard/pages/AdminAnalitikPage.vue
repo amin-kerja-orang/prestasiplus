@@ -111,7 +111,7 @@ const trendSeries = computed(() => [
           part-prefix="an-answered"
         />
         <DsStatTile
-          :value="data.platform.accuracy === null ? '-' : pct(data.platform.accuracy)"
+          :value="data.platform.accuracy === null ? '—' : pct(data.platform.accuracy)"
           unit="Ketepatan Purata"
           sub="keseluruhan platform"
           icon="target"

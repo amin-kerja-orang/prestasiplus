@@ -3,7 +3,8 @@ import { Inject, Injectable } from '@nestjs/common'
 import { CLOCK, type Clock } from '../../../../db/clock'
 import { ClassesRepository } from '../../../classes'
 import { AnalyticsRepository } from '../analytics.repository'
-import { DAY_MS, byName, ddmm, dayKey, mytDayStart, percent, rangeOf, reportTypeOfMode, round1, type ReportType } from '../domain/rules'
+import { xsAccuracy } from '../../../school-admin/xs-queries'
+import { DAY_MS, byName, ddmm, dayKey, mytDayStart, percent, rangeOf, reportTypeOfMode, type ReportType } from '../domain/rules'
 import type { AdminLaporanView, StudentLite, TeacherReport } from '../types'
 import type { Ctx } from './scope'
 import { classOptions, ownClasses, populationOf } from './teacher-scope'
@@ -160,7 +161,7 @@ export class ReportService {
         teachersAccessed: teachers.accessed,
         pupilsPractised: people.practised,
         activities: Object.values(inRange.byType).reduce((a, b) => a + b, 0),
-        averageScore: scoreN > 0 ? round1(percent(scoreC, scoreN)) : null,
+        averageScore: xsAccuracy(scoreC, scoreN),
       },
       trend,
       breakdown: (['kuiz', 'struktur', 'latihTubi', 'trackingA', 'battle', 'permainan'] as const).map((type) => ({ type, label: TYPE_LABELS[type], count: inRange.byType[type] })),

@@ -384,6 +384,38 @@ describe('XsQueries edge cases', () => {
     expect(await xs.answerTotals(scope)).toEqual({ answered: 1, correct: 1, accuracy: 100 })
   })
 
+  it('pupilCountsByClass: counts XS-1 pupils with an active non-test enrolment; suspended, pending, no-grade, test and removed enrolments are out; an empty class is 0', async () => {
+    const tc = await createUser(t.db, { role: 'teacher', schoolId: e, name: 'Tepi Guru Kiraan Kelas' })
+    const full = await createClass(t.db, { teacherId: tc.id, schoolId: e, name: 'Tepi Kiraan Penuh', grade: 7 })
+    const empty = await createClass(t.db, { teacherId: tc.id, schoolId: e, name: 'Tepi Kiraan Kosong', grade: 7 })
+    const other = await createClass(t.db, { teacherId: tc.id, schoolId: e, name: 'Tepi Kiraan Lain', grade: 7 })
+    const ok1 = await mk('Kiraan Sah Satu', 7)
+    const ok2 = await mk('Kiraan Sah Dua', 11)
+    const held = await mk('Kiraan Digantung', 8)
+    await suspend(t.db, held)
+    const pending = await mk('Kiraan Menunggu', 8, { isActive: false })
+    const noGrade = await mk('Kiraan Tiada Gred', null)
+    const darjah = await mk('Kiraan Darjah', 6)
+    const testEnrol = await mk('Kiraan Ujian', 9)
+    const removed = await mk('Kiraan Dikeluarkan', 9)
+    for (const id of [ok1, ok2, held, pending, noGrade, darjah]) await enrol(t.db, full, id)
+    await enrol(t.db, full, testEnrol, { isTest: true })
+    await enrol(t.db, full, removed, { status: 'removed' })
+    await enrol(t.db, other, ok1) // a pupil in two classes counts once in each
+    // A pupil of a primary school (SK) with a Tingkatan grade: this reader is class-scoped, not platform-scoped, so XS-1 alone decides (the SK
+    // exclusion is a platform-scope rule of `xsPupilScopeSql`, not of this method).
+    const sk = (await t.db.query<{ id: string }>(`insert into schools (name, type) values ('Sekolah Fixture XS Rendah', 'SK') returning id::text`))[0]?.id as string
+    const skPupil = (await createUser(t.db, { role: 'student', schoolId: sk, name: 'Kiraan Murid SK', grade: 7 })).id
+    await enrol(t.db, full, skPupil)
+
+    const counts = await xs.pupilCountsByClass([full, empty, other])
+    expect(counts.get(full)).toBe(3) // ok1, ok2 and the SK pupil
+    expect(counts.get(empty)).toBe(0)
+    expect(counts.get(other)).toBe(1)
+    expect(await xs.pupilCountsByClass([])).toEqual(new Map())
+    expect((await xs.pupilCountsByClass(['not-an-id', full])).get('not-an-id')).toBe(0)
+  })
+
   it('window bounds are inclusive: an answer exactly at from and one exactly at to are counted, one second outside is not', async () => {
     const u = await mk('Tepi Tepi Tetingkap', 10)
     const from = '2026-09-01T00:00:00+08:00'
