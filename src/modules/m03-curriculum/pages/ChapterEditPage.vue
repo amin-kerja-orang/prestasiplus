@@ -5,6 +5,7 @@
  * one-time flash "Bab tidak dijumpai." (BR-18). Back link and "Batal" go to the tree of the chapter's current
  * pair; success goes to the tree of the saved (possibly new) pair with the flash.
  */
+import { preferRateLimited } from '@/api/errors'
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -125,6 +126,7 @@ async function submit(payload: ChapterFormPayload): Promise<void> {
     <DsLoadError
       v-if="loadFailed"
       :message="LOAD_ERROR"
+      :error="preferRateLimited(chapterError, subjectsError, levelsError)"
       testid="curriculum-load-error"
       @retry="retry"
     />

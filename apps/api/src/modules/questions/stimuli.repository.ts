@@ -19,6 +19,8 @@ export interface StimulusData {
   bodyEn: string | null
   altText: string | null
   sourceCitation: string | null
+  /** Presentation hint (DM-70): `kotak`, `mono` or null. */
+  style: string | null
   tableData: { head: string[]; rows: string[][] } | null
   assetFileId: bigint | null
 }
@@ -812,13 +814,14 @@ export class StimuliRepository {
       bodyEn: d.bodyEn,
       altText: d.altText,
       sourceCitation: d.sourceCitation,
+      style: d.style,
       tableData: d.tableData === null ? Prisma.JsonNull : (d.tableData as unknown as Prisma.InputJsonValue),
       assetFileId: d.assetFileId,
     }
   }
 
   private rowOf(
-    r: { id: bigint; kind: string; label: string | null; caption: string | null; bodyMs: string | null; bodyEn: string | null; altText: string | null; sourceCitation: string | null; tableData: unknown; assetFileId: bigint | null },
+    r: { id: bigint; kind: string; label: string | null; caption: string | null; bodyMs: string | null; bodyEn: string | null; altText: string | null; sourceCitation: string | null; style: string | null; tableData: unknown; assetFileId: bigint | null },
     groupCount: number,
   ): StimulusRow {
     const parts = stimulusTableParts(r.kind, r.tableData, r.bodyMs)
@@ -831,6 +834,7 @@ export class StimuliRepository {
       bodyEn: r.bodyEn,
       altText: r.altText,
       sourceCitation: r.sourceCitation,
+      style: r.style,
       tableData: stimulusTableOf(r.tableData) ?? null,
       shownTable: parts.table ?? null,
       bodyIsTable: parts.bodyIsTable,

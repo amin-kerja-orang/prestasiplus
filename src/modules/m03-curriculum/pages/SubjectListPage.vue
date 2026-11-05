@@ -158,6 +158,7 @@ async function remove(row: AdminSubjectListItem): Promise<void> {
     <DsLoadError
       v-if="error"
       :message="COPY.loadFailed"
+      :error="error"
       testid="subjects-error"
       @retry="reload()"
     />
