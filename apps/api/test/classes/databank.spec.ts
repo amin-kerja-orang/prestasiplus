@@ -12,6 +12,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { questionPoolSeed } from '../../prisma/seed/questions/pool'
 import { questionsSeed } from '../../prisma/seed/questions'
+import { DatabankModule } from '../../src/modules/classes/teacher-tools/databank.module'
 import { QuestionsModule } from '../../src/modules/questions'
 import {
   ADMIN,
@@ -50,7 +51,7 @@ describe('GET /api/guru/databank/overview and /questions (S6-T19)', () => {
     (await t.db.query<{ id: string }>(`select question_id::text id from question_versions where number_label = $1`, [ref]))[0]?.id as string
 
   beforeAll(async () => {
-    t = await bootClassesApp({ seeds: [questionsSeed, questionPoolSeed], modules: [QuestionsModule] })
+    t = await bootClassesApp({ seeds: [questionsSeed, questionPoolSeed], modules: [QuestionsModule, DatabankModule] })
     teacher = await client(t, TEACHER_A)
   }, 600_000)
   afterAll(async () => {
