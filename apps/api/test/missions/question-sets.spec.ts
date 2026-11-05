@@ -180,18 +180,12 @@ describe('BE-18 B: GET /set-soalan-saya and QuestionSetAssignments', () => {
     const header = (over: Partial<Parameters<typeof insertSet>[1]> = {}) =>
       insertSet(t, { teacherId, classroomId: null, title: 'Set Migrasi Tanpa Kelas', status: 'draft', needsRebuild: true, legacy: { source: 'cloud', id: `qs-${String(++n)}` }, ...over })
 
-    it('the database accepts a NULL class only for a migrated header that needs a rebuild', async () => {
+    it('the database accepts a NULL class for a header and for a draft (check dropped by 0201, S6-T14)', async () => {
       const ok = await header()
       expect((await t.db.query<{ classroom_id: string | null }>(`select classroom_id from question_sets where id = $1`, [ok]))[0]?.classroom_id).toBeNull()
-      const rejected = /ck_question_sets_classroom_or_migrated/
-      await expect(insertSet(t, { teacherId, classroomId: null, title: 'Tanpa kelas v2' })).rejects.toThrow(rejected)
-      await expect(header({ needsRebuild: false })).rejects.toThrow(rejected)
-      await expect(insertSet(t, { teacherId, classroomId: null, needsRebuild: true })).rejects.toThrow(rejected)
-      // removing the class of a v2 set is refused too
-      const v2 = await insertSet(t, { teacherId, classroomId: cls.id })
-      await expect(t.db.query(`update question_sets set classroom_id = null where id = $1`, [v2])).rejects.toThrow(rejected)
-      // rebuilt into a class: the check holds whatever the flags
-      await t.db.query(`update question_sets set classroom_id = $2, needs_rebuild = false where id = $1`, [ok, cls.id])
+      // A draft has no class now: the service rule "publish needs a class" replaces ck_question_sets_classroom_or_migrated.
+      await expect(insertSet(t, { teacherId, classroomId: null, title: 'Draf tanpa kelas' })).resolves.toBeTruthy()
+      await expect(t.db.query(`select 1 from pg_constraint where conname = 'ck_question_sets_classroom_or_migrated'`)).resolves.toHaveLength(0)
     })
 
     it('the repository maps the missing class to null', async () => {

@@ -217,7 +217,8 @@ describe('teacher roster, dashboard and inline curriculum (AC 2, 3, 4, 7)', () =
 
     it('SW5-03: two own classes with the same name give two entries with distinct ids, in the order of classNames', async () => {
       const twinA = await createClass(t, a, { name: 'Kelas Kembar', schoolId: school1 })
-      const twinB = await createClass(t, a, { name: 'Kelas Kembar', schoolId: school1 })
+      // Same name only in another Tahun Sesi (DM-73: unique per teacher and year).
+      const twinB = await createClass(t, a, { name: 'Kelas Kembar', schoolId: school1, year: 2027 })
       expect(twinA.id).not.toBe(twinB.id)
       await a.put(`/guru/students/${sMaju}`, { classroomId: twinA.id })
       await a.put(`/guru/students/${sMaju}`, { classroomId: twinB.id })

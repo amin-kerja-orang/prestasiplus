@@ -126,12 +126,13 @@ describe('BE-33 AC1 b to e: sampled routes of every domain', () => {
       expect((await call(student, 'post', `/me/notifications/${row!.id}/read`)).status).toBe(200)
     })
 
-    it('classes: another teacher cannot read the QR data of a class', async () => {
+    it('classes: another teacher cannot edit a class and the QR route is gone', async () => {
       const created = await call(teacher, 'post', '/guru/classes', { name: 'Kelas Keselamatan', subjectId, educationLevel: 'tingkatan-4' })
       expect(created.status, JSON.stringify(created.body)).toBe(201)
       const id = created.body.data.id as string
+      expectError(await call(teacher2, 'put', `/guru/classes/${id}`, { name: 'Rampas', educationLevel: 'tingkatan-4' }), 404, 'NOT_FOUND')
       expectError(await call(teacher2, 'get', `/guru/classes/${id}/qr-data`), 404, 'NOT_FOUND')
-      expect((await call(teacher, 'get', `/guru/classes/${id}/qr-data`)).status).toBe(200)
+      expectError(await call(teacher, 'get', `/guru/classes/${id}/qr-data`), 404, 'NOT_FOUND')
     })
 
     it('questions: another teacher cannot read, edit or delete a Guru question', async () => {

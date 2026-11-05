@@ -36,6 +36,7 @@ export function toTeacherClass(c: ClassRecord, studentCount: number, names: Clas
     levelId: c.educationLevelId,
     levelLabel: levelLabelOfGrade(grade),
     academicYear: c.academicYear,
+    year: c.academicYear,
     description: c.description,
     joinCode: c.joinCode ?? '',
     isActive: c.isActive,

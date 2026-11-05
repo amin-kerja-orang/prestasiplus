@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 import {
   CLASS_MESSAGES,
-  ClassCreateRequestSchema,
+  ClassUpsertRequestSchema,
   ClassJoinRequestSchema,
   ClassStudentAddRequestSchema,
   ClassStudentRemoveQuerySchema,
@@ -9,16 +9,12 @@ import {
   TeacherChapterCreateRequestSchema,
   TeacherTopicCreateRequestSchema,
   classJoinedText,
-  type ClassQrData,
   type TeacherClass,
   type TeacherContributions,
   type TeacherDashboard,
 } from '@pp/contract'
-import { ConfigService } from '@nestjs/config'
 
 import { AuditService } from '../../common/audit'
-import type { Env } from '../../common/config/env.schema'
-import { publicBaseUrl } from '../../common/config/public-base-url'
 import { ApiError } from '../../common/errors/api-error'
 import { toMytTimestamp } from '../../common/time/myt'
 import { CLOCK, type Clock, mytDay } from '../../db/clock'
@@ -34,7 +30,7 @@ import {
   JOIN_ROLES,
 } from './classes.constants'
 import { gradeOfLevel, toTeacherClass, type ClassNames } from './classes.mapper'
-import { ClassesRepository, type ClassRecord } from './classes.repository'
+import { ClassesRepository, isClassNameViolation, type ClassRecord } from './classes.repository'
 import { gradeOfSlug, levelLabelOfGrade } from './level-slug'
 import { ClassesPorts } from './ports'
 import { invalid, parseStrict, tryParseStrict } from './strict-body'
@@ -42,6 +38,16 @@ import type { ClassEnrolment, ClassJoinedClass, TeacherChapterOption, TeacherStu
 
 const notFound = (message?: string): ApiError => ApiError.of('NOT_FOUND', message ? { message } : {})
 const forbidden = (message: string): ApiError => ApiError.of('FORBIDDEN', { message })
+
+/** The checked values of the class form (S6-T14), ready to write. */
+interface ClassFormValues {
+  name: string
+  subjectId: string | null
+  educationLevelId: string
+  schoolId: string | null
+  academicYear: number
+  description: string | null
+}
 
 /** A canonical decimal id that is not zero (the mock's `intOf(value) >= 1`). */
 const isRealId = (s: unknown): s is string => typeof s === 'string' && isIdString(s) && s !== '0'
@@ -58,7 +64,6 @@ export class ClassesService {
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(CLOCK) private readonly clock: Clock,
-    @Inject(ConfigService) private readonly config: ConfigService<Env, true>,
   ) {}
 
   // --- classes (S4, S5) ---------------------------------------------------------------------------------
@@ -82,69 +87,121 @@ export class ClassesService {
   }
 
   /**
-   * `POST /guru/classes` (FR-M10-34): the owner is the caller; `name`, `subjectId` (an active subject) and
-   * `educationLevel` are required; `schoolId` is optional and defaults to the teacher's own school (SW7-01: a class
-   * without a school would be invisible to the school admin), staying null only for a teacher without one. All failing
-   * fields are reported together, like the mock.
+   * The validated R1 class form (S6-T14, `ClassUpsertRequestSchema`) shared by create and edit: `name` (trimmed, 1 to 100),
+   * `educationLevel` (Tingkatan 1 to 5), `subjectId` optional (null or empty = "Tiada Subjek"), `year` (default the current MYT
+   * year), `schoolId` optional (only the teacher's own school). A teacher without a school is refused (422, `noSchool`).
+   * Failing fields are reported together.
    */
-  async createClass(actor: ClassActor, raw: unknown): Promise<TeacherClass> {
-    const parsed = tryParseStrict(ClassCreateRequestSchema, raw)
+  private async classForm(actor: ClassActor, raw: unknown): Promise<ClassFormValues> {
+    const parsed = tryParseStrict(ClassUpsertRequestSchema, raw)
     const fields: Record<string, string> = { ...parsed.fields }
     const body = parsed.data
-
+    if (actor.schoolId === null) {
+      throw invalid({ ...fields, schoolId: CLASS_MESSAGES.noSchool })
+    }
     let subjectId: string | null = null
     let levelId: string | null = null
     let schoolId: string | null = actor.schoolId
     if (body) {
-      if (isRealId(body.subjectId) && (await this.repo.activeSubjectExists(body.subjectId))) subjectId = body.subjectId
-      else fields.subjectId = CLASS_MESSAGES.subject
+      if (body.subjectId !== undefined && body.subjectId !== null && body.subjectId !== '') {
+        if (isRealId(body.subjectId) && (await this.repo.activeSubjectExists(body.subjectId))) subjectId = body.subjectId
+        else fields.subjectId = CLASS_MESSAGES.subject
+      }
 
       const grade = gradeOfSlug(body.educationLevel)
-      // Secondary-only (2026-10-29): a new class cannot be created in Tahun 1 to 6 (the slugs stay in the contract enum).
+      // Secondary-only (2026-10-29): a class cannot be in Tahun 1 to 6 (the slugs stay in the contract enum).
       const level = grade === null || grade < 7 ? null : await this.curriculum.levelForGrade(grade)
       if (level) levelId = idToString(level.id)
-      else fields.educationLevel = CLASS_MESSAGES.level
+      else fields.educationLevel = CLASS_MESSAGES.educationLevelRequired
 
       if (body.schoolId !== undefined && body.schoolId !== null && body.schoolId !== '') {
-        // A class is attached to the teacher's own school only: the school is part of the teacher's scope, so another
-        // school's id is refused with the same text as an unknown school (a deliberate tightening of the mock).
+        // A class is attached to the teacher's own school only; another school's id is refused like an unknown school.
         if (isRealId(body.schoolId) && body.schoolId === actor.schoolId && (await this.repo.schoolExists(body.schoolId))) schoolId = body.schoolId
         else fields.schoolId = CLASS_MESSAGES.school
       }
     }
-    if (Object.keys(fields).length > 0 || !body || subjectId === null || levelId === null) throw invalid(fields)
+    if (Object.keys(fields).length > 0 || !body || levelId === null) throw invalid(fields)
+    const year = body.year ?? Number(mytDay(this.clock.now()).slice(0, 4))
+    return { name: body.name, subjectId, educationLevelId: levelId, schoolId, academicYear: year, description: body.description ? body.description : null }
+  }
+
+  /** 409 on a name already used by another own class of the same Tahun Sesi (case-insensitive, trimmed). */
+  private nameTaken(): ApiError {
+    return ApiError.of('CONFLICT', { message: CLASS_MESSAGES.nameTaken, fields: { name: CLASS_MESSAGES.nameTaken } })
+  }
+
+  /**
+   * `POST /guru/classes` (FR-GUR-8-2, API-GUR-02): the owner is the caller. The duplicate name of the same teacher and year is
+   * checked first (409 `fields.name`) and the unique index `uq_classrooms_teacher_year_name` decides a race (same 409).
+   */
+  async createClass(actor: ClassActor, raw: unknown): Promise<TeacherClass> {
+    const form = await this.classForm(actor, raw)
+    if (await this.repo.nameTaken(actor.userId, form.academicYear, form.name)) throw this.nameTaken()
 
     const now = this.clock.now()
-    const description = body.description ? body.description : null
-    const created = await this.prisma.transaction(async (tx) => {
-      const row = await this.repo.createClass({
-        name: body.name,
-        teacherId: actor.userId,
-        schoolId,
-        subjectId,
-        educationLevelId: levelId,
-        academicYear: Number(mytDay(now).slice(0, 4)),
-        description,
-        now,
+    let created: ClassRecord
+    try {
+      created = await this.prisma.transaction(async (tx) => {
+        const row = await this.repo.createClass({ ...form, educationLevelId: form.educationLevelId, teacherId: actor.userId, now })
+        await this.audit.record({
+          tx,
+          action: CLASS_AUDIT.CLASS_CREATED,
+          actorUserId: actor.userId,
+          actorRole: actor.role,
+          sessionRowId: actor.auth.sessionRowId,
+          targetType: 'classroom',
+          targetId: row.id,
+          schoolId: row.schoolId,
+          scopeLevel: actor.auth.active.scope.level,
+          requestId: actor.requestId,
+          ip: actor.ip,
+          details: { subjectId: form.subjectId, educationLevelId: form.educationLevelId, academicYear: form.academicYear },
+        })
+        return row
       })
-      await this.audit.record({
-        tx,
-        action: CLASS_AUDIT.CLASS_CREATED,
-        actorUserId: actor.userId,
-        actorRole: actor.role,
-        sessionRowId: actor.auth.sessionRowId,
-        targetType: 'classroom',
-        targetId: row.id,
-        schoolId: row.schoolId,
-        scopeLevel: actor.auth.active.scope.level,
-        requestId: actor.requestId,
-        ip: actor.ip,
-        details: { subjectId, educationLevelId: levelId },
-      })
-      return row
-    })
+    } catch (err) {
+      if (isClassNameViolation(err)) throw this.nameTaken()
+      throw err
+    }
     const names = await this.namesOf([created])
     const view = toTeacherClass(created, 0, names)
+    if (!view) throw ApiError.of('SERVER_ERROR')
+    return view
+  }
+
+  /** `PUT /guru/classes/:id` (API-GUR-03): the same form as create on an own class; any other class is a generic 404. */
+  async updateClass(actor: ClassActor, id: string, raw: unknown): Promise<TeacherClass> {
+    const own = await this.ownClass(actor, id)
+    const form = await this.classForm(actor, raw)
+    if (await this.repo.nameTaken(actor.userId, form.academicYear, form.name, own.id)) throw this.nameTaken()
+
+    const now = this.clock.now()
+    let updated: ClassRecord
+    try {
+      updated = await this.prisma.transaction(async (tx) => {
+        const row = await this.repo.updateClass(own.id, { ...form, now })
+        await this.audit.record({
+          tx,
+          action: CLASS_AUDIT.CLASS_UPDATED,
+          actorUserId: actor.userId,
+          actorRole: actor.role,
+          sessionRowId: actor.auth.sessionRowId,
+          targetType: 'classroom',
+          targetId: row.id,
+          schoolId: row.schoolId,
+          scopeLevel: actor.auth.active.scope.level,
+          requestId: actor.requestId,
+          ip: actor.ip,
+          details: { subjectId: form.subjectId, educationLevelId: form.educationLevelId, academicYear: form.academicYear },
+        })
+        return row
+      })
+    } catch (err) {
+      if (isClassNameViolation(err)) throw this.nameTaken()
+      throw err
+    }
+    const [names, counts] = await Promise.all([this.namesOf([updated]), this.repo.memberCounts([updated.id])])
+    const view = toTeacherClass(updated, counts.get(updated.id) ?? 0, names)
     if (!view) throw ApiError.of('SERVER_ERROR')
     return view
   }
@@ -154,18 +211,6 @@ export class ClassesService {
     const cls = isIdString(id) ? await this.repo.get(id) : null
     if (!cls || cls.kind !== 'classroom' || cls.teacherId !== actor.userId) throw notFound()
     return cls
-  }
-
-  /** `GET /guru/classes/:id/qr-data`: bare `{ name, school, joinUrl }`. */
-  async qrData(actor: ClassActor, id: string): Promise<ClassQrData> {
-    const cls = await this.ownClass(actor, id)
-    const schools = await this.repo.schoolNames([cls.schoolId])
-    const base = publicBaseUrl(this.config)
-    return {
-      name: cls.name,
-      school: cls.schoolId === null ? null : (schools.get(cls.schoolId) ?? null),
-      joinUrl: `${base}/kelas-saya?kod=${encodeURIComponent(cls.joinCode ?? '')}`,
-    }
   }
 
   // --- roster (S6) --------------------------------------------------------------------------------------

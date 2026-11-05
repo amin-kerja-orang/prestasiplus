@@ -36,6 +36,7 @@ export const JOIN_ROLES = ['student', 'admin'] as const
 /** `audit_events.action` names of this module (ids only, never names or text). */
 export const CLASS_AUDIT = {
   CLASS_CREATED: 'classes.class.created',
+  CLASS_UPDATED: 'classes.class.updated',
   STUDENT_ADDED: 'classes.student.added',
   STUDENT_REMOVED: 'classes.student.removed',
   JOINED: 'classes.class.joined',

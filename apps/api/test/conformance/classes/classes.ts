@@ -24,10 +24,14 @@ export const classesScenarios: Scenario[] = [
       const cls = dataOf(created)
       ctx.check(typeof cls.joinCode === 'string' && cls.joinCode !== '', 'class has no join code')
       ctx.expectStatus(await teacher.request('GET', '/guru/classes'), 200)
-      const qr = await teacher.request('GET', `/guru/classes/${String(cls.id)}/qr-data`)
-      ctx.expectStatus(qr, 200)
-      ctx.check(String((qr.body as { joinUrl?: unknown }).joinUrl).includes(String(cls.joinCode)), 'qr joinUrl lacks the code')
+      // S6-T14 (API-GUR-04): the QR route is gone for every id; edit and the duplicate name guard work.
+      expectError(ctx, await teacher.request('GET', `/guru/classes/${String(cls.id)}/qr-data`), 404, 'NOT_FOUND')
       expectError(ctx, await teacher.request('GET', '/guru/classes/987654321/qr-data'), 404, 'NOT_FOUND')
+      ctx.expectStatus(
+        await teacher.request('PUT', `/guru/classes/${String(cls.id)}`, { body: { name: 'Kelas Konformans', educationLevel: 'tingkatan-4' } }),
+        200,
+      )
+      expectError(ctx, await teacher.request('PUT', '/guru/classes/987654321', { body: { name: 'X', educationLevel: 'tingkatan-4' } }), 404, 'NOT_FOUND')
 
       ctx.expectStatus(await teacher.request('GET', '/guru/dashboard'), 200)
       ctx.expectStatus(await teacher.request('GET', '/guru/students'), 200)

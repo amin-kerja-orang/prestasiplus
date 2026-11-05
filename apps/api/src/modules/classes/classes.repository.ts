@@ -55,6 +55,23 @@ export interface NewClass {
   now: Date
 }
 
+export interface UpdateClass {
+  name: string
+  subjectId: string | null
+  educationLevelId: string
+  schoolId: string | null
+  academicYear: number
+  description: string | null
+  now: Date
+}
+
+/** True when a thrown database error is a violation of the unique class name index (`uq_classrooms_teacher_year_name`, DM-73). */
+export function isClassNameViolation(e: unknown): boolean {
+  if (typeof e !== 'object' || e === null) return false
+  const text = `${e instanceof Error ? e.message : ''} ${JSON.stringify((e as { meta?: unknown }).meta ?? {}, (_k, v: unknown) => (typeof v === 'bigint' ? v.toString() : v))}`
+  return text.includes('uq_classrooms_teacher_year_name')
+}
+
 export interface EnrolInput {
   classroomId: string
   studentId: string
@@ -251,8 +268,8 @@ export class ClassesRepository {
   }
 
   /**
-   * Creates a teacher class with a fresh unique join code. The insert is `ON CONFLICT DO NOTHING`, so a code
-   * collision (or a race on the case-insensitive unique index) draws a new code instead of aborting a surrounding
+   * Creates a teacher class with a fresh unique join code. The insert is `ON CONFLICT (upper(join_code)) DO NOTHING`, so a code
+   * collision (a race on the case-insensitive unique index) draws a new code instead of aborting a surrounding
    * transaction.
    */
   async createClass(input: NewClass): Promise<ClassRecord> {
@@ -263,7 +280,7 @@ export class ClassesRepository {
         VALUES ('classroom', ${input.name}, ${idFromString(input.teacherId)}, ${input.schoolId === null ? null : idFromString(input.schoolId)},
                 ${input.subjectId === null ? null : idFromString(input.subjectId)}, ${idFromString(input.educationLevelId)}, ${input.academicYear},
                 ${input.description}, ${joinCode}, true, ${input.now}, ${input.now})
-        ON CONFLICT DO NOTHING
+        ON CONFLICT (upper(join_code)) DO NOTHING
         RETURNING id`
       const first = rows[0]
       if (first) {
@@ -272,6 +289,39 @@ export class ClassesRepository {
       }
     }
     throw new Error('classes: no free join code after several draws')
+  }
+
+  /**
+   * True when another class of the teacher has this name in the same Tahun Sesi (kind `classroom`; case-insensitive,
+   * edge spaces ignored, as the unique index `uq_classrooms_teacher_year_name`). `exceptId` leaves the class being edited out.
+   */
+  async nameTaken(teacherId: string, academicYear: number, name: string, exceptId?: string): Promise<boolean> {
+    const t = idOf(teacherId)
+    if (t === null) return false
+    const except = exceptId === undefined ? null : idOf(exceptId)
+    const rows = await this.db.$queryRaw<{ ok: number }[]>`
+      SELECT 1 AS ok FROM classrooms
+       WHERE kind = 'classroom' AND teacher_id = ${t} AND academic_year = ${academicYear}
+         AND lower(btrim(name)) = lower(btrim(${name})) AND (${except}::bigint IS NULL OR id <> ${except}::bigint)
+       LIMIT 1`
+    return rows.length > 0
+  }
+
+  /** Updates the editable fields of a class (S6-T14); the join code, owner and active flag are not touched. */
+  async updateClass(id: string, input: UpdateClass): Promise<ClassRecord> {
+    const row = await this.db.classroom.update({
+      where: { id: idFromString(id) },
+      data: {
+        name: input.name,
+        subjectId: input.subjectId === null ? null : idFromString(input.subjectId),
+        educationLevelId: idFromString(input.educationLevelId),
+        academicYear: input.academicYear,
+        schoolId: input.schoolId === null ? null : idFromString(input.schoolId),
+        description: input.description,
+        updatedAt: input.now,
+      },
+    })
+    return toClass(row)
   }
 
   /**

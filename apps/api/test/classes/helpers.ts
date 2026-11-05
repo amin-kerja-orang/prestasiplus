@@ -154,13 +154,15 @@ export const firstSubject = async (t: ClassesTestApp): Promise<{ id: string; nam
   (await t.db.query<{ id: string; name: string }>(`select id::text, name from subjects where is_active order by sort_order, id limit 1`))[0] as { id: string; name: string }
 
 /** Creates a class through the API as `api`; returns the created class. */
+let classSeq = 0
 export async function createClass(
   t: ClassesTestApp,
   api: Api,
   over: Record<string, unknown> = {},
 ): Promise<{ id: string; joinCode: string; name: string; schoolId: string | null }> {
   const subject = await firstSubject(t)
-  const res = await api.post('/guru/classes', { name: 'Kelas Ujian', subjectId: subject.id, educationLevel: 'tingkatan-4', ...over })
+  // A default name is unique per call: one teacher and year may not repeat a class name (S6-T14, DM-73).
+  const res = await api.post('/guru/classes', { name: `Kelas Ujian ${String((classSeq += 1))}`, subjectId: subject.id, educationLevel: 'tingkatan-4', ...over })
   expect(res.status, JSON.stringify(res.body)).toBe(201)
   return res.body.data
 }

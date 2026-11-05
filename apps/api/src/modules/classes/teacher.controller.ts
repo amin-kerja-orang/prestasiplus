@@ -32,10 +32,10 @@ export class TeacherClassesController {
     return ok(await this.classes.createClass(actor, body))
   }
 
-  @Get('classes/:id/qr-data')
-  @RateLimit(CLASS_LIMITS.read)
-  async qrData(@Actor() actor: ClassActor, @Param('id') id: string) {
-    return this.classes.qrData(actor, id)
+  @Put('classes/:id')
+  @RateLimit(CLASS_LIMITS.write)
+  async update(@Actor() actor: ClassActor, @Param('id') id: string, @Body() body: unknown) {
+    return ok(await this.classes.updateClass(actor, id, body))
   }
 
   @Get('students')

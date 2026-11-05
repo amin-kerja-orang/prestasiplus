@@ -1,7 +1,6 @@
 import {
   CLASS_MESSAGES,
-  ClassCreateRequestSchema,
-  ClassQrDataSchema,
+  ClassUpsertRequestSchema,
   TeacherClassSchema,
   envelopeOf,
   listEnvelopeOf,
@@ -32,7 +31,7 @@ import type { ClassActor } from '../../src/modules/classes/actor'
 const ClassEnvelope = envelopeOf(TeacherClassSchema)
 const ClassList = listEnvelopeOf(TeacherClassSchema)
 
-describe('GET/POST /api/guru/classes and qr-data (AC 1, 2, 7)', () => {
+describe('GET/POST/PUT /api/guru/classes (AC 1, 2, 7; S6-T14)', () => {
   let t: ClassesTestApp
   let a: Client
   let b: Client
@@ -59,7 +58,7 @@ describe('GET/POST /api/guru/classes and qr-data (AC 1, 2, 7)', () => {
       for (const [method, path] of [
         ['get', '/api/guru/classes'],
         ['post', '/api/guru/classes'],
-        ['get', '/api/guru/classes/1/qr-data'],
+        ['put', '/api/guru/classes/1'],
         ['get', '/api/guru/students'],
         ['put', '/api/guru/students/1'],
         ['delete', '/api/guru/students/1'],
@@ -84,7 +83,7 @@ describe('GET/POST /api/guru/classes and qr-data (AC 1, 2, 7)', () => {
         errorIs(await api.post('/guru/classes', { name: 'X' }), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
         errorIs(await api.get('/guru/dashboard'), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
         errorIs(await api.get('/guru/students'), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
-        errorIs(await api.get('/guru/classes/1/qr-data'), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
+        errorIs(await api.put('/guru/classes/1', { name: 'X', educationLevel: 'tingkatan-4' }), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
       }
     })
 
@@ -150,15 +149,12 @@ describe('GET/POST /api/guru/classes and qr-data (AC 1, 2, 7)', () => {
     it('SW7-01: no schoolId (absent, null or blank) gives the class the teacher own school', async () => {
       const base = { name: 'Sekolah Lalai', subjectId: subject.id, educationLevel: 'tingkatan-4' }
       for (const extra of [{}, { schoolId: null }, { schoolId: '' }]) {
-        const res = await a.post('/guru/classes', { ...base, ...extra })
+        const res = await a.post('/guru/classes', { ...base, name: `Sekolah Lalai ${JSON.stringify(extra)}`, ...extra })
         expect(res.status, JSON.stringify(res.body)).toBe(201)
         expect(ClassEnvelope.parse(res.body).data.schoolId).toBe(school1)
         const [row] = await t.db.query<{ school_id: string | null }>(`select school_id::text from classrooms where id = $1`, [res.body.data.id])
         expect(row?.school_id).toBe(school1)
       }
-      // the QR payload names the school now
-      const k = await createClass(t, a, { name: 'QR Lalai' })
-      expect((await a.get(`/guru/classes/${k.id}/qr-data`)).body.school).toBe('SMK Demo Satu')
     })
 
     it('SW7-01: an explicit own schoolId still works', async () => {
@@ -171,8 +167,8 @@ describe('GET/POST /api/guru/classes and qr-data (AC 1, 2, 7)', () => {
       expect(fieldsOf(res)).toEqual({ schoolId: CLASS_MESSAGES.school })
     })
 
-    it('SW7-01: an actor without a school (not reachable by login, which refuses a school-less teacher) still gets a class without a school', async () => {
-      // `buildGrants` refuses a teacher without a school, so this is the service contract, called with a hand-made actor.
+    it('AC-GUR-8-9: a teacher without a school is refused (422 noSchool) on create and edit, nothing is written', async () => {
+      // `buildGrants` refuses a teacher without a school at login, so this is the service contract with a hand-made actor.
       const teacherId = await idOfEmail(t, TEACHER_A)
       const actor = {
         auth: { sessionRowId: null, active: { scope: { level: 'school' } } },
@@ -183,12 +179,10 @@ describe('GET/POST /api/guru/classes and qr-data (AC 1, 2, 7)', () => {
         requestId: null,
         ip: null,
       } as unknown as ClassActor
-      const made = await t.get(ClassesService).createClass(actor, { name: 'Tiada Sekolah', subjectId: subject.id, educationLevel: 'tingkatan-4' })
-      expect(made.schoolId).toBeNull()
-      // an explicit school is refused for them too: it is not their school
-      await expect(
-        t.get(ClassesService).createClass(actor, { name: 'Cuba', subjectId: subject.id, educationLevel: 'tingkatan-4', schoolId: school1 }),
-      ).rejects.toMatchObject({ fields: { schoolId: CLASS_MESSAGES.school } })
+      await expect(t.get(ClassesService).createClass(actor, { name: 'Tiada Sekolah', educationLevel: 'tingkatan-4' })).rejects.toMatchObject({
+        fields: { schoolId: CLASS_MESSAGES.noSchool },
+      })
+      expect(await t.db.query(`select 1 from classrooms where name = 'Tiada Sekolah'`)).toHaveLength(0)
     })
 
     it('every join code is unique and never taken from the client', async () => {
@@ -206,22 +200,45 @@ describe('GET/POST /api/guru/classes and qr-data (AC 1, 2, 7)', () => {
     it('secondary-only: a Darjah class level (tahun-n) is refused with the level message and nothing is created', async () => {
       const res = await a.post('/guru/classes', { name: 'Kelas Darjah', subjectId: subject.id, educationLevel: 'tahun-3' })
       expect(res.status).toBe(422)
-      expect(fieldsOf(res)).toEqual({ educationLevel: CLASS_MESSAGES.level })
+      expect(fieldsOf(res)).toEqual({ educationLevel: CLASS_MESSAGES.educationLevelRequired })
     })
 
-    it('reports every failing field together with the mock messages', async () => {
+    it('reports every failing field together with the R1 messages (subject is optional)', async () => {
       const res = await a.post('/guru/classes', {})
       expect(fieldsOf(res)).toEqual({
-        name: CLASS_MESSAGES.className,
-        subjectId: CLASS_MESSAGES.subject,
-        educationLevel: CLASS_MESSAGES.level,
+        name: CLASS_MESSAGES.nameRequired,
+        educationLevel: CLASS_MESSAGES.educationLevelRequired,
       })
-      expect(res.body.error.message).toBe('Sila isi nama kumpulan. (and 2 more errors)')
+      expect(res.body.error.message).toBe('Sila isi nama kelas. (and 1 more error)')
       const base = { name: 'X', subjectId: subject.id, educationLevel: 'tingkatan-4' }
-      expect(fieldsOf(await a.post('/guru/classes', { ...base, name: 'x'.repeat(256) }))).toEqual({ name: CLASS_MESSAGES.invalid })
-      expect(fieldsOf(await a.post('/guru/classes', { ...base, name: '   ' }))).toEqual({ name: CLASS_MESSAGES.className })
-      expect(fieldsOf(await a.post('/guru/classes', { ...base, educationLevel: 'tingkatan-6' }))).toEqual({ educationLevel: CLASS_MESSAGES.level })
+      expect(fieldsOf(await a.post('/guru/classes', { ...base, name: 'x'.repeat(101) }))).toEqual({ name: CLASS_MESSAGES.nameTooLong })
+      expect(fieldsOf(await a.post('/guru/classes', { ...base, name: '   ' }))).toEqual({ name: CLASS_MESSAGES.nameRequired })
+      expect(fieldsOf(await a.post('/guru/classes', { ...base, educationLevel: 'tingkatan-6' }))).toEqual({ educationLevel: CLASS_MESSAGES.educationLevelRequired })
+      expect(fieldsOf(await a.post('/guru/classes', { ...base, year: 2019 }))).toEqual({ year: CLASS_MESSAGES.yearRange })
       expect(fieldsOf(await a.post('/guru/classes', { ...base, description: 'd'.repeat(2001) }))).toEqual({ description: CLASS_MESSAGES.invalid })
+    })
+
+    it('subject is optional (absent, null or blank = no subject); year defaults to the current MYT year', async () => {
+      for (const extra of [{}, { subjectId: null }, { subjectId: '' }]) {
+        const res = await a.post('/guru/classes', { name: `Tanpa Subjek ${JSON.stringify(extra)}`, educationLevel: 'tingkatan-3', ...extra })
+        expect(res.status, JSON.stringify(res.body)).toBe(201)
+        expect(ClassEnvelope.parse(res.body).data).toMatchObject({ subjectId: null, subjectName: null, academicYear: 2026, year: 2026 })
+      }
+      const y = await a.post('/guru/classes', { name: 'Tahun Lain', educationLevel: 'tingkatan-3', year: 2027 })
+      expect(ClassEnvelope.parse(y.body).data).toMatchObject({ academicYear: 2027, year: 2027 })
+    })
+
+    it('AC-GUR-8-7: a duplicate name of the same teacher and year is 409 (case, edge spaces); another year or teacher saves', async () => {
+      const ok = await a.post('/guru/classes', { name: '5 Bestari', educationLevel: 'tingkatan-5', year: 2026 })
+      expect(ok.status, JSON.stringify(ok.body)).toBe(201)
+      const dup = await a.post('/guru/classes', { name: ' 5 bestari ', educationLevel: 'tingkatan-5', year: 2026 })
+      expect(dup.status).toBe(409)
+      expect(dup.body.error.code).toBe('CONFLICT')
+      expect(dup.body.error.fields).toEqual({ name: CLASS_MESSAGES.nameTaken })
+      expect(dup.body.error.message).toBe(CLASS_MESSAGES.nameTaken)
+      expect((await a.post('/guru/classes', { name: ' 5 bestari ', educationLevel: 'tingkatan-5', year: 2027 })).status).toBe(201)
+      expect((await b.post('/guru/classes', { name: '5 Bestari', educationLevel: 'tingkatan-5', year: 2026 })).status).toBe(201)
+      expect(await t.db.query(`select 1 from classrooms where lower(btrim(name)) = '5 bestari' and academic_year = 2026 and teacher_id = $1`, [await idOfEmail(t, TEACHER_A)])).toHaveLength(1)
     })
 
     it('the subject must exist and be active; a malformed or zero id is the same refusal', async () => {
@@ -279,23 +296,44 @@ describe('GET/POST /api/guru/classes and qr-data (AC 1, 2, 7)', () => {
     })
   })
 
-  describe('GET /api/guru/classes/:id/qr-data', () => {
-    it('answers the bare payload of an own class; the host comes from configuration', async () => {
-      const k = await createClass(t, a, { name: 'Kelas QR', schoolId: school1 })
-      const res = await a.get(`/guru/classes/${k.id}/qr-data`)
-      expect(res.status).toBe(200)
-      expect(ClassQrDataSchema.parse(res.body)).toEqual({
-        name: 'Kelas QR',
-        school: 'SMK Demo Satu',
-        joinUrl: `https://app.example.test/kelas-saya?kod=${k.joinCode}`,
+  describe('PUT /api/guru/classes/:id (API-GUR-03)', () => {
+    it('edits an own class with the same validation as create; join code and owner stay', async () => {
+      const k = await createClass(t, a, { name: 'Sebelum Edit', educationLevel: 'tingkatan-4' })
+      const res = await a.put(`/guru/classes/${k.id}`, { name: '  Selepas Edit ', educationLevel: 'tingkatan-5', subjectId: null, year: 2027, description: ' Baharu ' })
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      const cls = ClassEnvelope.parse(res.body).data
+      expect(cls).toMatchObject({
+        id: k.id,
+        name: 'Selepas Edit',
+        educationLevel: 'tingkatan-5',
+        subjectId: null,
+        academicYear: 2027,
+        year: 2027,
+        description: 'Baharu',
+        joinCode: k.joinCode,
+        teacherId: await idOfEmail(t, TEACHER_A),
+      })
+      expect(fieldsOf(await a.put(`/guru/classes/${k.id}`, { name: '', educationLevel: 'tingkatan-9' }))).toEqual({
+        name: CLASS_MESSAGES.nameRequired,
+        educationLevel: CLASS_MESSAGES.educationLevelRequired,
       })
     })
 
-    it('another teacher (same school or not), a school class, an unknown or malformed id is a plain 404', async () => {
-      const k = await createClass(t, a, { name: 'Milik A', schoolId: school1 })
+    it('saving a class with its own name is not a duplicate; another own class name is 409', async () => {
+      const one = await createClass(t, a, { name: 'Kelas Satu Edit' })
+      const two = await createClass(t, a, { name: 'Kelas Dua Edit' })
+      const same = await a.put(`/guru/classes/${one.id}`, { name: 'kelas satu edit', educationLevel: 'tingkatan-4' })
+      expect(same.status, JSON.stringify(same.body)).toBe(200)
+      const clash = await a.put(`/guru/classes/${two.id}`, { name: ' KELAS SATU EDIT', educationLevel: 'tingkatan-4' })
+      expect(clash.status).toBe(409)
+      expect(clash.body.error.fields).toEqual({ name: CLASS_MESSAGES.nameTaken })
+    })
+
+    it('another teacher, a school class, an unknown or malformed id is a plain 404', async () => {
+      const k = await createClass(t, a, { name: 'Milik A Edit', schoolId: school1 })
       const sc = (
         await t.db.query<{ id: string }>(
-          `insert into classrooms (kind, name, school_id, education_level_id, academic_year, join_code) select 'school_class', 'KS', $1, id, 2026, 'SCHCLS' from education_levels where stage <> 'primary' order by id limit 1 returning id::text`,
+          `insert into classrooms (kind, name, school_id, education_level_id, academic_year, join_code) select 'school_class', 'KS Edit', $1, id, 2026, 'SCHEDT' from education_levels where stage <> 'primary' order by id limit 1 returning id::text`,
           [school1],
         )
       )[0]?.id as string
@@ -307,12 +345,28 @@ describe('GET/POST /api/guru/classes and qr-data (AC 1, 2, 7)', () => {
         [a, 'abc'],
         [a, '0'],
       ] as const) {
-        errorIs(await who.get(`/guru/classes/${id}/qr-data`), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+        errorIs(await who.put(`/guru/classes/${id}`, { name: 'Hack', educationLevel: 'tingkatan-4' }), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
       }
+      const [row] = await t.db.query<{ name: string }>(`select name from classrooms where id = $1`, [k.id])
+      expect(row?.name).toBe('Milik A Edit')
+    })
+  })
+
+  describe('GET /api/guru/classes/:id/qr-data (API-GUR-04: removed)', () => {
+    it('answers 404 NOT_FOUND for the owner, another teacher, a pupil and the admins', async () => {
+      const k = await createClass(t, a, { name: 'Kelas QR Dibuang', schoolId: school1 })
+      for (const who of [a, b, await client(t, STUDENT_1), await client(t, SCHOOL_ADMIN), await client(t, ADMIN)]) {
+        errorIs(await who.get(`/guru/classes/${k.id}/qr-data`), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+      }
+    })
+
+    it('the class still carries joinCode (the column stays for the pupil join)', async () => {
+      const k = await createClass(t, a, { name: 'Kod Masih Ada' })
+      expect(k.joinCode).toMatch(/^[A-HJKMNP-Z2-9]{6}$/)
     })
   })
 
   it('the contract request schema accepts the documented body', () => {
-    expect(ClassCreateRequestSchema.safeParse({ name: 'A', subjectId: '1', educationLevel: 'tahun-1' }).success).toBe(true)
+    expect(ClassUpsertRequestSchema.safeParse({ name: 'A', subjectId: '1', educationLevel: 'tahun-1' }).success).toBe(true)
   })
 })
