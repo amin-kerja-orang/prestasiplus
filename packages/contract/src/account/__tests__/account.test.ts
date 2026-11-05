@@ -395,6 +395,12 @@ describe('profile', () => {
     expect(AccountProfileUpdateRequestSchema.parse({ name: 'A', phone: '   ' }).phone).toBe('')
   })
 
+  it('keeps grade and schoolId optional and nullable with their original types (the server ignores a valid value)', () => {
+    for (const extra of [{}, { grade: null, schoolId: null }, { grade: 11, schoolId: '3' }]) {
+      expect(AccountProfileUpdateRequestSchema.safeParse({ name: 'A', ...extra }).success).toBe(true)
+    }
+  })
+
   it('limits and copy', () => {
     expect(fields(AccountProfileUpdateRequestSchema, { name: 'A', bio: 'b'.repeat(501) })).toEqual({
       bio: 'The bio field must not be greater than 500 characters.',
@@ -405,7 +411,6 @@ describe('profile', () => {
     for (const grade of [0, 12, 1.5, '5']) {
       expect(fields(AccountProfileUpdateRequestSchema, { name: 'A', grade })).toEqual({ grade: ACCOUNT_AUTH_MESSAGES.gradeInvalid })
     }
-    expect(AccountProfileUpdateRequestSchema.safeParse({ name: 'A', grade: 11, schoolId: '3' }).success).toBe(true)
     expect(AccountProfileUpdateRequestSchema.safeParse({ name: 'A', schoolId: 3 }).success).toBe(false)
   })
 

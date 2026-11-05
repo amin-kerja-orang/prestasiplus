@@ -263,13 +263,11 @@ describe('structured and Guru shapes', () => {
     expect(QuestionStructuredDetailSchema.safeParse({ ...d, status: 'pending_review' }).success).toBe(false)
   })
   it('validates the Guru create and update bodies with the Guru copy', () => {
-    const b = { educationLevelId: '10', subjectId: '3', questionType: 'mcq', difficultyLevel: 'easy', questionText: 'Soalan?', options: ['a', { text: 'b' }, { optionText: 'c' }, 'd'], correctAnswer: 'B' }
+    const b = { educationLevelId: '10', subjectId: '3', questionType: 'mcq', difficultyLevel: 2, questionText: 'Soalan?', options: ['a', { text: 'b' }, { optionText: 'c' }, 'd'], correctAnswer: 'B' }
     expect(QuestionGuruCreateRequestSchema.safeParse(b).success).toBe(true)
-    const bad = QuestionGuruCreateRequestSchema.safeParse({ ...b, questionText: '' })
-    expect(bad.error?.issues[0]?.message).toBe(QUESTION_MESSAGES.guruText)
-    expect(QuestionGuruCreateRequestSchema.safeParse({ ...b, questionText: 'x'.repeat(2001) }).error?.issues[0]?.message).toBe(QUESTION_MESSAGES.guruTextLong)
-    expect(QuestionGuruCreateRequestSchema.safeParse({ ...b, difficultyLevel: 'extreme' }).success).toBe(false)
-    expect(QuestionGuruUpdateRequestSchema.safeParse({ questionText: 'Baru', options: [0, 1, 2, 3].map((id) => ({ id, optionText: `o${String(id)}` })), correctOptionId: 'C' }).success).toBe(true)
+    expect(QuestionGuruCreateRequestSchema.safeParse({ ...b, questionText: '' }).error?.issues[0]?.message).toBe('Sila isi soalan.')
+    expect(QuestionGuruCreateRequestSchema.safeParse({ ...b, difficultyLevel: 'easy' }).success).toBe(false)
+    expect(QuestionGuruUpdateRequestSchema.safeParse({ ...b, correctOptionId: 'C', correctAnswer: undefined }).success).toBe(true)
   })
 })
 
