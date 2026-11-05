@@ -13,6 +13,7 @@ import { AuthModule } from '../../../../src/modules/auth'
 import { PerformanceModule, PerformancePorts } from '../../../../src/modules/reports/performance'
 import { type CurriculumTestApp, dropDatabase } from '../../../curriculum/helpers'
 import { createTestDatabase, type TestDatabase } from '../../../support/db'
+import { InMemoryAnswerFacts, InMemoryQuestionContent } from '../fakes/in-memory-answer-facts'
 import { InMemoryBijakAggregate } from '../fakes/in-memory-bijak-aggregate'
 import { InMemoryClasses } from '../fakes/in-memory-classes'
 import { item, sitting } from '../fakes/fixtures'
@@ -29,6 +30,8 @@ export interface World extends CurriculumTestApp {
   otherClassId: string
   bijak: InMemoryBijakAggregate
   classes: InMemoryClasses
+  answers: InMemoryAnswerFacts
+  content: InMemoryQuestionContent
 }
 
 /** E-mails of the extra fictitious accounts the world adds on top of the demo seed. */
@@ -52,6 +55,8 @@ export async function bootWorld(env: Record<string, string> = {}): Promise<World
   const db = await createTestDatabase()
   await runSeeds([identitySeed], { prisma: db.prisma })
   for (const [i, email] of EXTRA_PUPILS.entries()) await addUser(db, email, `Murid Ujian ${i + 1}`, 'student', 'DEMO001', 10)
+  // The pupil of the own item analysis (API-RPT-05): a school of its own, so no figure of DEMO001 changes.
+  await addUser(db, 'saya@demo.test', 'Murid Saya', 'student', 'DEMO002', 10)
   await addUser(db, 'ppd@demo.test', 'Pegawai PPD Ujian', 'ppd_officer', 'DEMO001', null)
   await addUser(db, 'ibubapa@demo.test', 'Ibu Bapa Ujian', 'parent', 'DEMO001', null)
   await addUser(db, 'penaja@demo.test', 'Penaja Ujian', 'sponsor', 'DEMO001', null)
@@ -83,7 +88,13 @@ export async function bootWorld(env: Record<string, string> = {}): Promise<World
   // Facts: nine pupils of DEMO001 sit paper 1; q1 is answered by all nine, q2 by two pupils only.
   const pupils = [ids['pelajar@demo.test'], ids['pelajarmaju@demo.test'], ids['pelajar2@demo.test'], ...EXTRA_PUPILS.map((e) => ids[e])] as string[]
   const bijak = new InMemoryBijakAggregate()
+  // The same answers in the single answer store (the shared reader of the item analysis counts every mode from it).
+  const answers = new InMemoryAnswerFacts()
+  const at = new Date(SUBMITTED)
   pupils.forEach((userId, i) => {
+    answers.addPupil({ id: userId, schoolId: schools.demo1 })
+    answers.add({ userId, subjectId: '1', questionId: 'q1', mode: 'simulasi', isCorrect: i % 3 !== 0, answeredAt: at })
+    if (i < 2) answers.add({ userId, subjectId: '1', questionId: 'q2', mode: 'simulasi', isCorrect: false, answeredAt: at })
     const attemptId = `att${i}`
     bijak.addSitting(sitting({ userId, attemptId, schoolId: schools.demo1, score: 6 + (i % 3), maxScore: 10, submittedAt: SUBMITTED }))
     bijak.addItem(
@@ -107,9 +118,25 @@ export async function bootWorld(env: Record<string, string> = {}): Promise<World
     .add({ id: classId, schoolId: schools.demo1, teacherId: ids['guru@demo.test'] as string, teacherName: 'Guru Demo', name: '4 Amanah' }, pupils)
     .add({ id: otherClassId, schoolId: schools.demo2, teacherId: null, name: '4 Cekap' }, [])
 
+  // Question content of the pupil's own item analysis: q1 and q2 are live questions; q3 is archived (not registered).
+  const content = new InMemoryQuestionContent().add({ questionId: 'q1', explanation: 'Penjelasan q1' }).add({ questionId: 'q2' })
+  // The pupil `saya` answered q1 wrong in two modes (Pemulihan), q2 once wrong (Isyarat Awal), q3 (archived) twice wrong, q4 right then wrong (Pengukuhan).
+  const me = ids['saya@demo.test'] as string
+  answers.addPupil({ id: me, schoolId: schools.demo2 })
+  answers.add({ userId: me, subjectId: '1', questionId: 'q1', mode: 'simulasi', isCorrect: false, answeredAt: at })
+  answers.add({ userId: me, subjectId: '1', questionId: 'q2', mode: 'simulasi', isCorrect: false, answeredAt: at })
+  answers.add({ userId: me, subjectId: '1', questionId: 'q1', mode: 'latih_tubi', isCorrect: false, answeredAt: new Date('2026-10-16T09:00:00+08:00') })
+  answers.add({ userId: me, subjectId: '1', questionId: 'q3', mode: 'latih_tubi', isCorrect: false, answeredAt: at })
+  answers.add({ userId: me, subjectId: '1', questionId: 'q3', mode: 'battle', isCorrect: false, answeredAt: at })
+  content.add({ questionId: 'q4' })
+  answers.add({ userId: me, subjectId: '1', questionId: 'q4', mode: 'latih_tubi', isCorrect: true, answeredAt: at })
+  answers.add({ userId: me, subjectId: '1', questionId: 'q4', mode: 'kuiz', isCorrect: false, answeredAt: new Date('2026-10-17T09:00:00+08:00') })
+
   const ports = app.get(PerformancePorts)
   ports.provideBijak(bijak)
   ports.provideClasses(classes)
+  ports.provideAnswerFacts(answers)
+  ports.provideQuestionContent(content)
   await app.init()
 
   return {
@@ -122,6 +149,8 @@ export async function bootWorld(env: Record<string, string> = {}): Promise<World
     otherClassId,
     bijak,
     classes,
+    answers,
+    content,
     http: () => request(app.getHttpServer()) as unknown as TestAgent,
     agent: () => request.agent(app.getHttpServer()),
     async close() {

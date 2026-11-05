@@ -74,7 +74,7 @@ export const SchoolAdminDashboardSchema = z
         questions: count,
       }),
       levels: z.array(
-        z.object({ code: z.enum(['t4', 't5']), name: z.string(), accuracy: z.number() }),
+        z.object({ code: z.enum(['t4', 't5']), name: z.string(), accuracy: z.number().nullable() }),
       ),
       distribution: z.array(z.object({ grade: z.string(), count, pct: z.number() })),
       total: count.meta({ description: 'Sum of the distribution counts.' }),
@@ -87,6 +87,17 @@ export type SchoolAdminDashboard = z.infer<typeof SchoolAdminDashboardSchema>
 // S1 usage
 // ---------------------------------------------------------------------------------------------
 
+/** API-ADM-22 (M-07, PRD 30): BM text of the 422 `fields.schoolId` when Admin Pusat sends no valid school. */
+export const REPORT_SCOPE_MESSAGES = {
+  schoolIdRequired: 'Sila pilih sekolah.',
+} as const
+
+/** API-ADM-22: Admin Pusat (`admin`) must send the school to read; the school admin's own `schoolId` is ignored (the session school is used). */
+const CENTRAL_SCHOOL_ID = z
+  .string()
+  .optional()
+  .meta({ description: 'Admin Pusat only: the school to read (required for admin: 422 fields.schoolId when absent or malformed, 404 when unknown). Ignored for school_admin.' })
+
 export const SCHOOL_ADMIN_USAGE_PERIODS = ['today', '7days', '30days'] as const
 export const SchoolAdminUsagePeriodSchema = z
   .enum(SCHOOL_ADMIN_USAGE_PERIODS)
@@ -96,6 +107,7 @@ export type SchoolAdminUsagePeriod = z.infer<typeof SchoolAdminUsagePeriodSchema
 /** An unknown or absent `period` is not an error: it gives `30days`. */
 export const SchoolAdminUsageQuerySchema = z
   .object({
+    schoolId: CENTRAL_SCHOOL_ID,
     period: z
       .string()
       .optional()
@@ -140,6 +152,7 @@ export const SCHOOL_ADMIN_ACTIVITY_RANGES = [7, 30, 90] as const
 /** An unknown or absent `range` is not an error: it gives 30. */
 export const SchoolAdminActivityQuerySchema = z
   .object({
+    schoolId: CENTRAL_SCHOOL_ID,
     range: z.string().optional().meta({ description: '7 | 30 | 90 (days, today included). Any other value (or none) means 30.' }),
   })
   .meta({ id: 'SchoolAdminActivityQuery' })
@@ -151,7 +164,7 @@ export const SchoolAdminActivityPupilRowSchema = z
     name: z.string(),
     className: z.string().nullable(),
     sessions: count,
-    accuracy: z.number().min(0).max(100).meta({ description: 'correct / answered x 100, 1 decimal, never above 100.' }),
+    accuracy: z.number().min(0).max(100).nullable().meta({ description: 'correct / answered x 100, 1 decimal, never above 100; null ("—", never 0%) with 0 answers.' }),
     seconds: count,
     coins: count,
     lastLoginAt: TimestampSchema.nullable(),
@@ -206,7 +219,7 @@ export const SchoolAdminActivityReportSchema = z
       .meta({ description: 'The pills Semua, Aktif, Login Sahaja, Belum Login; up to 200 rows each.' }),
     tiles: z.object({
       teachers: z.object({ total: count, logged: count, questions: count, coins: count }),
-      pupils: z.object({ total: count, practised: count, sessions: count, accuracy: z.number() }),
+      pupils: z.object({ total: count, practised: count, sessions: count, accuracy: z.number().nullable() }),
     }),
   })
   .meta({ id: 'SchoolAdminActivityReport' })
@@ -228,6 +241,7 @@ export type SchoolAdminDskpStatus = z.infer<typeof SchoolAdminDskpStatusSchema>
 /** Unknown values are not errors: `tingkatan` falls back to T4, `subjectId` to the first subject. */
 export const SchoolAdminHeatmapQuerySchema = z
   .object({
+    schoolId: CENTRAL_SCHOOL_ID,
     subjectId: z.string().optional().meta({ description: 'Subject id (digits). Unknown or absent = the first subject by name.' }),
     tingkatan: z.string().optional().meta({ description: 'T4 or T5 (case-insensitive). Anything else means T4.' }),
   })
@@ -281,6 +295,7 @@ const MonthKeySchema = z.string().regex(MONTH_KEY)
 /** A future or invalid `bulan` is not an error: it gives the current month. */
 export const SchoolAdminMonthlyQuerySchema = z
   .object({
+    schoolId: CENTRAL_SCHOOL_ID,
     bulan: z.string().optional().meta({ description: 'YYYY-MM. A future or invalid value (or none) means the current month.' }),
   })
   .meta({ id: 'SchoolAdminMonthlyQuery' })
@@ -358,6 +373,7 @@ export type SchoolAdminMonthlyReport = z.infer<typeof SchoolAdminMonthlyReportSc
 /** An unknown `level` means all levels; `page` beyond the last page gives the last page. */
 export const SchoolAdminClassListQuerySchema = z
   .object({
+    schoolId: CENTRAL_SCHOOL_ID,
     level: z.string().optional().meta({ description: 'A level slug present in the school, e.g. tingkatan-4. Unknown = all.' }),
     search: z.string().optional().meta({ description: 'Class name contains, case-insensitive.' }),
     page: z.string().optional().meta({ description: '25 rows per page; invalid = 1; beyond the last page = the last page.' }),
