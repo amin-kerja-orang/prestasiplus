@@ -42,9 +42,9 @@ export function registerQuestionSchemeValidatePaths(registry: OpenAPIRegistry): 
     tags: ['questions'],
     summary: 'Validate a marking scheme live (Admin Pusat)',
     description:
-      'Validates the scheme v2 body against the marks of the stored leaf `partId` (its label path joined with `.`, URL-encoded, for example `a.i`). Runs the best-reachable-marks check (`SCHEME_SUM`), `SCHEME_DEPENDS`, `BAND_RANGE` and the penalty rule; the leaf marks come from the stored part, and a leaf with `modeConfig.example` is exempt from the sum. A body that does not parse is answered with 200 and `issues`, not 400. Nothing is saved.',
+      'Validates the scheme v2 body against the marks of the stored leaf `partId` (its label path joined with `.`, URL-encoded, for example `(a).(i)`; `_` is the single leaf of a question whose leaf has no label). Runs the best-reachable-marks check (`SCHEME_SUM`), `SCHEME_DEPENDS`, `BAND_RANGE` and the penalty rule; the leaf marks come from the stored part, and a leaf with `modeConfig.example` is exempt from the sum. A body that does not parse is answered with 200 and `issues`, not 400. Nothing is saved.',
     request: {
-      params: z.object({ id: IdSchema, partId: z.string().min(1) }),
+      params: z.object({ id: IdSchema, partId: z.string().min(1).describe('Label path of the leaf joined with `.`, for example `(a).(i)`; `_` for a leaf that has no label.') }),
       headers: [z.object({ 'X-CSRF-Token': z.string().min(1) })],
       body: { required: true, content: { 'application/json': { schema: QuestionSchemeValidateRequestSchema } } },
     },

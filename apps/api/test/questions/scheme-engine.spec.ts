@@ -47,12 +47,12 @@ describe('FR-QA-19 / AC-QA-19 / FR-ADM-QE3.3: 45 section 7 worked examples', () 
     ['7.5 perCriterion 4 x 5', e75, 20],
     ['7.6 (b) K N P', e76b, 3],
     ['7.6 (c) N', e76c, 1],
-  ] as const)('%s reaches the documented max and has no scheme issue', (_n, key, max) => {
+  ] as const)('[CI] %s reaches the documented max and has no scheme issue', (_n, key, max) => {
     expect(bestReachable(key)).toBe(max)
     expect(validateScheme(key, max, O)).toEqual([])
   })
 
-  it('passes the gate as a whole question (7.3: (a) numeric, (b) depends on (a), (c) pairs + bonus)', () => {
+  it('[CI] passes the gate as a whole question (7.3: (a) numeric, (b) depends on (a), (c) pairs + bonus)', () => {
     const parts = [
       leaf('(a)', 'numeric', 2, { kind: 'accepted', values: [{ v: 4.2 }] }),
       leaf('(b)', 'working', 3, e73b, { modeConfig: { dependsOnPart: '(a)' } }),
@@ -60,20 +60,20 @@ describe('FR-QA-19 / AC-QA-19 / FR-ADM-QE3.3: 45 section 7 worked examples', () 
     ]
     expect(checkKeysGate(parts)).toEqual({})
   })
-  it('7.1, 7.2 and 7.6 pass the gate; 7.4 and 7.5 too', () => {
+  it('[CI] 7.1, 7.2 and 7.6 pass the gate; 7.4 and 7.5 too', () => {
     expect(checkKeysGate([leaf('(b)', 'essay', 3, e71b), leaf('(c)', 'essay', 5, e71c)])).toEqual({})
     expect(checkKeysGate([leaf('(b)', 'drawing', 2, e72b)])).toEqual({})
     expect(checkKeysGate([leaf('(b)', 'drawing', 3, e76b), leaf('(c)', 'drawing', 1, e76c, { modeConfig: { dependsOnPart: '(b)' } })])).toEqual({})
     expect(checkKeysGate([leaf('(a)', 'essay', 15, e74)])).toEqual({})
     expect(checkKeysGate([leaf('1', 'essay', 20, e75)])).toEqual({})
   })
-  it('fails the gate with the 45 text when the scheme does not sum to the leaf marks', () => {
+  it('[CI] fails the gate with the 45 text when the scheme does not sum to the leaf marks', () => {
     expect(checkKeysGate([leaf('(a)', 'essay', 9, e73c)])).toEqual({ 'parts.(a).key': 'Jumlah skema (10) mesti sama dengan markah bahagian (9).' })
   })
 })
 
 describe('AC-QA-48 "Maks 4"', () => {
-  it('credits a capped group at most 4', () => {
+  it('[CI] credits a capped group at most 4', () => {
     const key = v2(4, { points: pts(6), groups: [{ id: 'g', cap: 4, pointIds: pts(6).map((p) => p.id) }] })
     expect(bestReachable(key)).toBe(4)
     expect(validateScheme(key, 4, O)).toEqual([])
@@ -81,7 +81,7 @@ describe('AC-QA-48 "Maks 4"', () => {
 })
 
 describe('AC-QA-49: deductions never raise (or lower) the maximum', () => {
-  it('a deduction of 1 per error capped at 5 leaves the max unchanged; 7 errors deduct min(7, cap) = 5, never below 0', () => {
+  it('[CI] a deduction of 1 per error capped at 5 leaves the max unchanged; 7 errors deduct min(7, cap) = 5, never below 0', () => {
     const base = { points: [pt('a', 6), pt('b', 4)] }
     const withDed = v2(10, { ...base, deductions: [{ code: 'spelling', amount: 1, cap: 5, scope: 'part' }], zeroIf: [{ code: 'copy', label: 'x' }] })
     expect(bestReachable(withDed)).toBe(bestReachable(v2(10, base)))
@@ -94,36 +94,48 @@ describe('AC-QA-49: deductions never raise (or lower) the maximum', () => {
 })
 
 describe('validateScheme issues', () => {
-  it('SCHEME_SUM mismatch (key marks, then points)', () => {
+  it('[CI] SCHEME_SUM mismatch (key marks, then points)', () => {
     const k = v2(3, { points: pts(3) })
     expect(validateScheme(k, 4, O)).toEqual([{ code: 'SCHEME_SUM', message: 'Jumlah skema (3) mesti sama dengan markah bahagian (4).', path: 'parts.a.key.marks' }])
     const short = v2(3, { points: pts(2) })
     expect(validateScheme(short, 3, O).map((i) => i.code)).toEqual(['SCHEME_SUM'])
   })
-  it('example leaves are exempt from the sum check', () => {
+  it('[CI] example leaves are exempt from the sum check', () => {
     expect(validateScheme(v2(3, { points: pts(2) }), 0, { ...O, example: true })).toEqual([])
   })
-  it('BAND_RANGE gap above 0', () => {
+  it('[CI] BAND_RANGE gap above 0', () => {
     const k = { kind: 'rubric', scheme_v: 2, marks: 5, scoring: 'overall', criteria: [{ id: 'k', name: 'k' }],
       bands: [{ name: 'a', range: [1, 2] }, { name: 'b', range: [4, 5] }] } as unknown as SchemeKeyLike
     expect(validateScheme(k, 5, O)).toEqual([{ code: 'BAND_RANGE', message: 'Julat band tidak meliputi 0 hingga 5.', path: 'parts.a.key' }])
   })
-  it('BAND_RANGE: mark 0 is implicit; bands covering 1..marks without a floor band pass', () => {
+  it('[CI] BAND_RANGE: mark 0 is implicit; bands covering 1..marks without a floor band pass', () => {
     const k = { kind: 'rubric', scheme_v: 2, marks: 5, scoring: 'overall', criteria: [{ id: 'k', name: 'k' }],
       bands: [{ name: 'a', range: [1, 2] }, { name: 'b', range: [3, 5] }] } as unknown as SchemeKeyLike
     expect(validateScheme(k, 5, O).map((i) => i.code)).not.toContain('BAND_RANGE')
     expect(validateScheme(k, 5, O)).toEqual([])
   })
-  it('BAND_RANGE: a gap in the middle (1-2, 4-5 for marks 5) gives the PRD text', () => {
+  it('[CI] BAND_RANGE: a gap in the middle (1-2, 4-5 for marks 5) gives the PRD text', () => {
     const k = { kind: 'rubric', scheme_v: 2, marks: 5, scoring: 'overall', criteria: [{ id: 'k', name: 'k' }],
       bands: [{ name: 'a', range: [1, 2] }, { name: 'b', range: [4, 5] }] } as unknown as SchemeKeyLike
     expect(validateScheme(k, 5, O).find((i) => i.code === 'BAND_RANGE')?.message).toBe('Julat band tidak meliputi 0 hingga 5.')
   })
-  it('SCHEME_PENALTY (deductions above the leaf marks)', () => {
+  it('[CI] SCHEME_SUM of a rubric shows key.marks when it differs from the leaf marks, never the same number twice', () => {
+    const k = { kind: 'rubric', scheme_v: 2, marks: 4, scoring: 'overall', criteria: [{ id: 'k', name: 'k' }],
+      bands: [{ name: 'a', range: [1, 2] }, { name: 'b', range: [3, 5] }] } as unknown as SchemeKeyLike
+    expect(validateScheme(k, 5, O)).toEqual([{ code: 'SCHEME_SUM', message: 'Jumlah skema (4) mesti sama dengan markah bahagian (5).', path: 'parts.a.key.marks' }])
+  })
+  it('[CI] SCHEME_PENALTY also caps the question-level deductions (scope question) by the question marks', () => {
+    const rules = { deductions: [{ code: 'spelling', amount: 2, scope: 'question' }, { code: 'unit', amount: 1, cap: 3, scope: 'question' }] } as never
+    const k = v2(2, { points: pts(2) })
+    expect(validateScheme(k, 2, { ...O, schemeRules: rules, questionMarks: 4 })).toEqual([{ code: SCHEME_PENALTY_CODE, message: 'Jumlah penalti melebihi markah bahagian.', path: 'parts.a.key.deductions' }])
+    expect(validateScheme(k, 2, { ...O, schemeRules: rules, questionMarks: 5 })).toEqual([])
+    expect(validateScheme(k, 2, { ...O, schemeRules: rules })).toEqual([])
+  })
+  it('[CI] SCHEME_PENALTY (deductions above the leaf marks)', () => {
     const k = v2(2, { points: pts(2), deductions: [{ code: 'spelling', amount: 1, cap: 2, scope: 'part' }, { code: 'unit', amount: 1, scope: 'part' }] })
     expect(validateScheme(k, 2, O)).toEqual([{ code: SCHEME_PENALTY_CODE, message: 'Jumlah penalti melebihi markah bahagian.', path: 'parts.a.key.deductions' }])
   })
-  it('SCHEME_DEPENDS: requires missing, requires cycle, dependsOnPart missing or later, ecf part missing', () => {
+  it('[CI] SCHEME_DEPENDS: requires missing, requires cycle, dependsOnPart missing or later, ecf part missing', () => {
     const missing = v2(2, { points: [pt('a', 1), pt('b', 1, { requires: ['zz'] })] })
     expect(validateScheme(missing, 2, O).filter((i) => i.code === 'SCHEME_DEPENDS').map((i) => i.message)).toEqual(['Mata b bergantung pada mata yang tiada.'])
     const cycle = v2(2, { points: [pt('a', 1, { requires: ['b'] }), pt('b', 1, { requires: ['a'] })] })
@@ -136,28 +148,33 @@ describe('validateScheme issues', () => {
     const ecf = v2(1, { points: [pt('a', 1, { ecf: { fromPart: '(z)', rule: { op: 'same' } } })] })
     expect(validateScheme(ecf, 1, { ...O, partLabels: labels })[0]?.code).toBe('SCHEME_DEPENDS')
   })
-  it('NO_SCHEME for a missing key', () => {
+  it('[CI] NO_SCHEME for a missing key', () => {
     expect(validateScheme(null, 3, O)).toEqual([{ code: 'NO_SCHEME', message: '⚠ tiada skema', path: 'parts.a.key' }])
   })
 })
 
 describe('bestReachable decisions the PRD leaves open', () => {
-  it('takes the best single alternative, never the sum', () => {
+  it('[CI] takes the best single alternative, never the sum', () => {
     const k = v2(3, { points: pts(5), alternatives: [{ id: 'A', name: 'A', pointIds: ['p1', 'p2'] }, { id: 'B', name: 'B', pointIds: ['p3', 'p4', 'p5'] }] })
     expect(bestReachable(k)).toBe(3)
   })
-  it('a point whose requires is unreachable adds nothing', () => {
+  it('[CI] a point whose requires is unreachable adds nothing', () => {
     expect(bestReachable(v2(1, { points: [pt('a', 1), pt('b', 1, { requires: ['zz'] })] }))).toBe(1)
   })
-  it('anyN over pairs counts pairs; eachMarks replaces member marks', () => {
+  it('[CI] anyN over pairs counts pairs; eachMarks replaces member marks', () => {
     const k = v2(4, { points: pts(8), groups: [{ id: 'g', type: 'pair', anyN: 2, pointIds: pts(8).map((p) => p.id) }] })
     expect(bestReachable(k)).toBe(4)
     expect(bestReachable(v2(6, { points: pts(4), groups: [{ id: 'g', anyN: 2, eachMarks: 3, pointIds: pts(4).map((p) => p.id) }] }))).toBe(6)
   })
-  it('countMarks replaces the sum by its highest value', () => {
+  it('[CI] a pair group pairs by the authored position, not by position after the alternative filters its members', () => {
+    const k = v2(2, { points: pts(4), groups: [{ id: 'g', type: 'pair', pointIds: ['p1', 'p2', 'p3', 'p4'] }], alternatives: [{ id: 'B', name: 'B', pointIds: ['p2', 'p3', 'p4'] }] })
+    // Pairs are (p1, p2) and (p3, p4): p1 is outside the alternative, so (p1, p2) gives nothing; (p3, p4) gives 2.
+    expect(bestReachable(k)).toBe(2)
+  })
+  it('[CI] countMarks replaces the sum by its highest value', () => {
     expect(bestReachable(v2(2, { points: pts(3), countMarks: { items: 3, marks: [2, 1, 0] } }))).toBe(2)
   })
-  it('rubric contentPoints add nothing', () => {
+  it('[CI] rubric contentPoints add nothing', () => {
     const k = { ...e74, contentPoints: { points: pts(4) } } as unknown as SchemeKeyLike
     expect(bestReachable(k)).toBe(15)
   })
@@ -165,12 +182,17 @@ describe('bestReachable decisions the PRD leaves open', () => {
 
 describe('v1 keys are unchanged', () => {
   const v1 = (marks: number, key: object) => leaf('a', 'working', marks, { kind: 'points', marks, ...key })
-  it('pointsTotal semantics: free points + anyN x eachMarks; paths are not evaluated', () => {
+  it('[CI] pointsTotal semantics: free points + anyN x eachMarks; paths are not evaluated', () => {
     const k = { kind: 'points', marks: 4, points: [1, 2, 3].map((n) => ({ id: `p${String(n)}`, code: 'K', label: 'k', marks: 2 })), groups: [{ id: 'g', anyN: 2, eachMarks: 2, pointIds: ['p1', 'p2', 'p3'] }] }
     expect(bestReachable(k)).toBe(4)
     expect(bestReachable({ kind: 'points', points: [pt('a', 1)], paths: [{ id: 'x', pointIds: ['a'] }] })).toBeNull()
   })
-  it('keeps the old message and field for a v1 mismatch', () => {
+  it('[CI] a v1 key on an example leaf (marks 0) is exempt from the sum check; a marked leaf is not', () => {
+    const key = { kind: 'points', marks: 3, points: [pt('a', 3)] }
+    expect(checkKeysGate([leaf('a', 'working', 0, key, { modeConfig: { example: { answer: 'x' } } })])).toEqual({})
+    expect(checkKeysGate([leaf('a', 'working', 0, key)])).toEqual({ 'parts.a.key': 'Jumlah markah tidak sepadan dengan skema.' })
+  })
+  it('[CI] keeps the old message and field for a v1 mismatch', () => {
     const msg = 'Jumlah markah tidak sepadan dengan skema.'
     expect(checkKeysGate([v1(3, { points: [pt('a', 2)] })])).toEqual({ 'parts.a.key': msg })
     expect(checkKeysGate([v1(3, { points: [pt('a', 3)] })])).toEqual({})

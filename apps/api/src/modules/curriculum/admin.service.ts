@@ -22,8 +22,10 @@ import type { AuditActor } from './actor'
 import {
   type DbErrorMap,
   chapterNotFound,
+  chapterHasQuestions,
   hasChildren,
   levelNotFound,
+  primaryLevelActive,
   subjectNotFound,
   subtopicNotFound,
   topicNotFound,
@@ -159,6 +161,8 @@ export class CurriculumAdminService {
 
   async createLevel(actor: AuditActor, body: unknown) {
     const input = await this.levelInput(body, null)
+    // A new level is created active (repository), so a primary one would be an active Darjah (FR-X3-1, DM-13).
+    if (input.stage === 'primary') throw primaryLevelActive()
     const row = await this.write(
       actor,
       { action: AUDIT_ACTIONS.CURRICULUM_LEVEL_CREATED, targetType: 'education_level', targetId: (r) => r.id },
@@ -171,6 +175,8 @@ export class CurriculumAdminService {
   async updateLevel(actor: AuditActor, rawId: string, body: unknown) {
     const current = await this.requireLevel(rawId)
     const input = await this.levelInput(body, current.id)
+    // Moving an active level to the primary stage would leave an active Darjah (FR-X3-1, DM-13).
+    if (input.stage === 'primary' && current.isActive) throw primaryLevelActive()
     const row = await this.write(
       actor,
       { action: AUDIT_ACTIONS.CURRICULUM_LEVEL_UPDATED, targetType: 'education_level', targetId: (r) => r.id },
@@ -183,6 +189,8 @@ export class CurriculumAdminService {
   async setLevelActive(actor: AuditActor, rawId: string, body: unknown) {
     const current = await this.requireLevel(rawId)
     const isActive = must((await validateBody(CurriculumSetActiveRequestSchema, body)).isActive)
+    // FR-ADM-C03.3a: a Darjah level is never activated (only Tingkatan 1-5 are active); deactivating one stays allowed.
+    if (isActive && current.stage === 'primary') throw primaryLevelActive()
     await this.write(
       actor,
       { action: AUDIT_ACTIONS.CURRICULUM_LEVEL_ACTIVE_CHANGED, targetType: 'education_level', targetId: () => current.id },
@@ -356,6 +364,7 @@ export class CurriculumAdminService {
     const level = await this.repo.level(l.value as bigint)
     if (!level) throw levelNotFound()
     const chapters = await this.repo.tree(subject.id, level.id)
+    const questionCounts = await this.repo.chapterQuestionCounts(chapters.map((c) => c.id))
     const topicCount = chapters.reduce((n, c) => n + c.topics.length, 0)
     const subtopicCount = chapters.reduce((n, c) => n + c.topics.reduce((m, t) => m + t.subtopics.length, 0), 0)
     return {
@@ -364,6 +373,8 @@ export class CurriculumAdminService {
       stats: { chapters: chapters.length, topics: topicCount, subtopics: subtopicCount },
       chapters: chapters.map((c) => ({
         ...chapterView(c),
+        questionCount: questionCounts.get(c.id)?.questionCount ?? 0,
+        servableCount: questionCounts.get(c.id)?.servableCount ?? 0,
         topics: c.topics.map((t) => ({ ...topicView(t), subtopics: t.subtopics.map(subtopicView) })),
       })),
     }
@@ -529,6 +540,8 @@ export class CurriculumAdminService {
       async () => {
         if (!(await this.repo.lockChapter(current.id))) throw chapterNotFound()
         if (await this.repo.chapterHasTopics(current.id)) throw hasChildren('chapter')
+        const linked = await this.repo.chapterQuestionVersionCount(current.id)
+        if (linked > 0) throw chapterHasQuestions(linked)
         await this.repo.deleteChapter(current.id)
         // Only an empty chapter is deleted, so no topic or subtopic goes with it.
         return { chapters: 1 as const, topics: 0, subtopics: 0 }

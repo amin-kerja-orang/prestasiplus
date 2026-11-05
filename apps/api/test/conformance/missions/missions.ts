@@ -1,7 +1,7 @@
 import type { Scenario } from '@pp/contract-tests'
 
 import { registerStudent } from '../account/account'
-import { dataOf, errorOf, expectError, listOf } from '../helpers'
+import { dataOf, enrolPupil, errorOf, expectError, listOf } from '../helpers'
 
 const SCAN = '/guru/command-center/remedial/scan'
 const GENERATE = '/guru/command-center/remedial/generate'
@@ -105,7 +105,7 @@ export const missionsScenarios: Scenario[] = [
       const subject = listOf(subjects)[0]
       const subjectId = String(subject?.id)
       const cls = dataOf(await teacher.request('POST', '/guru/classes', { body: { name: 'Kelas Remedial', subjectId, educationLevel: 'tingkatan-4' } }))
-      ctx.expectStatus(await student.request('POST', '/kelas-saya/join', { body: { classCode: String(cls.joinCode) } }), 201)
+      await enrolPupil(ctx, teacher, student, cls.id)
       const unknownSubject = await teacher.request('POST', GENERATE, { body: { studentId, subject: 'Tiada Subjek' } })
       expectError(ctx, unknownSubject, 422, 'VALIDATION_ERROR')
       ctx.check((errorOf(unknownSubject).fields as Record<string, string> | undefined)?.subject === 'Subjek tidak sah.', 'unknown subject field differs')

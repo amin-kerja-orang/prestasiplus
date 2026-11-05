@@ -53,44 +53,44 @@ describe('S1-T09a API-Q-30 POST /questions/:id/parts/:partId/scheme/validate', (
     return parseData(res, QuestionSchemeValidateResultSchema)
   }
 
-  it('a valid 45 section 7.1 (b) scheme (any 3 of 4 facts) is ok with no issues', async () => {
+  it('[CI] a valid 45 section 7.1 (b) scheme (any 3 of 4 facts) is ok with no issues', async () => {
     const body = pointsKey(3, { points: points(4), groups: [{ id: 'g1', anyN: 3, eachMarks: 1, pointIds: ['p1', 'p2', 'p3', 'p4'] }] })
     expect(await validate('(a)', body)).toEqual({ ok: true, issues: [] })
   })
 
-  it('a valid rubric with bands 1 to 5 is ok', async () => {
+  it('[CI] a valid rubric with bands 1 to 5 is ok', async () => {
     const body = { kind: 'rubric', scheme_v: 2, marks: 5, scoring: 'overall', criteria: [{ id: 'k', name: 'Kandungan' }], bands: [{ name: 'Aras 1', range: [1, 2] }, { name: 'Aras 2', range: [3, 5] }] }
     expect(await validate('(c)', body)).toEqual({ ok: true, issues: [] })
   })
 
-  it('a sum mismatch is SCHEME_SUM with the 45 text, the stored leaf marks and step 4', async () => {
+  it('[CI] a sum mismatch is SCHEME_SUM with the 45 text, the stored leaf marks and step 4', async () => {
     const out = await validate('(a)', pointsKey(2, { points: points(2) }))
     expect(out.ok).toBe(false)
     expect(out.issues).toEqual([{ path: 'parts.(a).key.marks', code: 'SCHEME_SUM', message: SUM_MESSAGE(2, 3), step: 4 }])
   })
 
-  it('the points total, not only the declared marks, is checked (best reachable marks)', async () => {
+  it('[CI] the points total, not only the declared marks, is checked (best reachable marks)', async () => {
     const out = await validate('(a)', pointsKey(3, { points: points(2, 1) }))
     expect(out.issues.map((i) => [i.code, i.message])).toEqual([['SCHEME_SUM', SUM_MESSAGE(2, 3)]])
   })
 
-  it('a point that requires a missing id is SCHEME_DEPENDS', async () => {
+  it('[CI] a point that requires a missing id is SCHEME_DEPENDS', async () => {
     const out = await validate('(a)', pointsKey(3, { points: [pt('p1', 1), pt('p2', 1, { requires: ['zz'] }), pt('p3', 1)] }))
     expect(out.ok).toBe(false)
     expect(out.issues).toContainEqual({ path: 'parts.(a).key.points.1', code: 'SCHEME_DEPENDS', message: 'Mata p2 bergantung pada mata yang tiada.', step: 4 })
   })
 
-  it('a rubric whose bands leave a gap is BAND_RANGE', async () => {
+  it('[CI] a rubric whose bands leave a gap is BAND_RANGE', async () => {
     const body = { kind: 'rubric', scheme_v: 2, marks: 5, scoring: 'overall', criteria: [{ id: 'k', name: 'Kandungan' }], bands: [{ name: 'Aras 1', range: [1, 2] }, { name: 'Aras 3', range: [4, 5] }] }
     const out = await validate('(c)', body)
     expect(out.issues).toEqual([{ path: 'parts.(c).key', code: 'BAND_RANGE', message: 'Julat band tidak meliputi 0 hingga 5.', step: 4 }])
   })
 
-  it('an example leaf (modeConfig.example, marks 0) is exempt from SCHEME_SUM', async () => {
+  it('[CI] an example leaf (modeConfig.example, marks 0) is exempt from SCHEME_SUM', async () => {
     expect(await validate('(d)', pointsKey(3, { points: points(3) }))).toEqual({ ok: true, issues: [] })
   })
 
-  it('a malformed body is reported as issues (200), one per problem, not a 400', async () => {
+  it('[CI] a malformed body is reported as issues (200), one per problem, not a 400', async () => {
     const out = await validate('(a)', pointsKey(3, { points: [{ id: 'p1' }], surprise: true }))
     expect(out.ok).toBe(false)
     expect(out.issues.length).toBeGreaterThanOrEqual(2)
@@ -102,28 +102,52 @@ describe('S1-T09a API-Q-30 POST /questions/:id/parts/:partId/scheme/validate', (
     expect(out.issues.some((i) => i.path === 'parts.(a).key.points.0.label')).toBe(true)
   })
 
-  it('a contract code in the schema message is kept as the issue code', async () => {
+  it('[CI] a contract code in the schema message is kept as the issue code', async () => {
     const body = { kind: 'rubric', scheme_v: 2, marks: 5, scoring: 'overall', criteria: [{ id: 'k', name: 'K' }], bands: [{ name: 'A', range: [4, 2] }] }
     const out = await validate('(c)', body)
     expect(out.issues.map((i) => i.code)).toContain('BAND_RANGE_INVALID')
   })
 
-  it.each([[{}], [[]], [null], ['x'], [{ kind: 'option' }]])('a body without a points or rubric kind (%j) is one SCHEME_INVALID issue', async (body) => {
+  it.each([[{}], [[]], [null], ['x'], [{ kind: 'option' }]])('[CI] a body without a points or rubric kind (%j) is one SCHEME_INVALID issue', async (body) => {
     const out = await validate('(a)', body)
     expect(out.ok).toBe(false)
     expect(out.issues).toHaveLength(1)
     expect(out.issues[0]).toMatchObject({ path: 'parts.(a).key.kind', code: 'SCHEME_INVALID', step: 4 })
   })
 
-  it('an unknown part is 404', async () => {
+  it('[CI] an unknown part is 404', async () => {
     expectError(await admin.post(url(id, '(z)'), pointsKey(3, { points: points(3) })), 'NOT_FOUND')
   })
 
-  it('an unknown question is 404', async () => {
+  it('[CI] an unknown question is 404', async () => {
     expectError(await admin.post(url('99999999', '(a)'), pointsKey(3, { points: points(3) })), 'NOT_FOUND')
   })
 
-  it('a teacher, a pupil and a school admin are 403; no session is 401', async () => {
+  it('[CI] `_` addresses the unlabelled leaf of a flat question; question-level penalties are capped by the question marks', async () => {
+    // A single leaf with the empty label (45:463 allows it): its label path is '', so only the alias can address it. (A flat body gets label '1'.)
+    const rules = { deductions: [{ code: 'unit', amount: 3, scope: 'question' }] }
+    const single = [{ label: '', prompt: rich('Soalan satu daun'), mode: 'short_text', marks: 2, cognitiveLevel: 'mengaplikasi', key: { kind: 'accepted', values: ['a'] } }]
+    const flat = await t.app.get(QuestionsService).create(
+      mcqInput(tag, { questionType: 'short_answer', options: undefined, correctAnswer: undefined, questionText: 'Soalan ujian skema v2 satu daun.', parts: single as never, schemeRules: rules as never }),
+      await adminActor(t.db),
+    )
+    const root = async (body: unknown) => {
+      const res = await admin.post(url(flat.id, '_'), body)
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      return parseData(res, QuestionSchemeValidateResultSchema)
+    }
+    expect(await root(pointsKey(2, { points: points(2), deductions: [] }))).toMatchObject({ ok: false, issues: [{ code: 'SCHEME_PENALTY', message: 'Jumlah penalti melebihi markah bahagian.', step: 4 }] })
+    expect(await root(pointsKey(3, { points: points(3) }))).toMatchObject({ ok: false, issues: [{ code: 'SCHEME_SUM', message: SUM_MESSAGE(3, 2) }, { code: 'SCHEME_PENALTY' }] })
+    // On a question whose leaves are all labelled `_` is unknown (404), and the unlabelled leaf has no other path.
+    expectError(await admin.post(url(id, '_'), pointsKey(3, { points: points(3) })), 'NOT_FOUND')
+    expectError(await admin.post(url(flat.id, '(a)'), pointsKey(2, { points: points(2) })), 'NOT_FOUND')
+  })
+
+  it('[CI] the route is not on the write bucket: more than 60 validations a minute by one admin are not throttled', async () => {
+    for (let i = 0; i < 65; i++) expect((await admin.post(url(id, '(a)'), pointsKey(3, { points: points(3) }))).status).toBe(200)
+  })
+
+  it('[CI] a teacher, a pupil and a school admin are 403; no session is 401', async () => {
     const body = pointsKey(3, { points: points(3) })
     expectError(await teacher.post(url(id, '(a)'), body), 'FORBIDDEN')
     expectError(await student.post(url(id, '(a)'), body), 'FORBIDDEN')
@@ -131,7 +155,7 @@ describe('S1-T09a API-Q-30 POST /questions/:id/parts/:partId/scheme/validate', (
     expectError(await t.http().post(url(id, '(a)')).send(body), 'UNAUTHORIZED')
   })
 
-  it('persists nothing: the version rows, keys and updated_at are unchanged after valid and invalid calls', async () => {
+  it('[CI] persists nothing: the version rows, keys and updated_at are unchanged after valid and invalid calls', async () => {
     const snapshot = async () => ({
       versions: await t.db.query(`select id, version_no, status, updated_at, scheme_rules from question_versions order by id`),
       parts: await t.db.query(`select id, label, marks, mode_config from question_parts order by id`),
@@ -146,7 +170,7 @@ describe('S1-T09a API-Q-30 POST /questions/:id/parts/:partId/scheme/validate', (
     expect(await snapshot()).toEqual(before)
   })
 
-  it('scheme_rules round trip: a PUT with schemeRules stores it and the detail returns it; a later PUT without it keeps it; null clears it', async () => {
+  it('[CI] scheme_rules round trip: a PUT with schemeRules stores it and the detail returns it; a later PUT without it keeps it; null clears it', async () => {
     const rules = { deductions: [{ code: 'unit', amount: 1, scope: 'question' }], zeroIf: [{ code: 'copy', label: 'Salin soalan' }] }
     const base = { subjectId: tag.subjectId, educationLevelId: tag.levelId, difficultyLevel: 3, questionText: 'Soalan ujian skema v2 dengan peraturan.' }
     const created = mutationEnvelopeOf(QuestionSchema).parse((await admin.post('/api/questions', { ...base, questionType: 'short_answer', correctAnswerText: 'a', schemeRules: rules })).body).data

@@ -8,6 +8,7 @@ import {
   QuestionCurriculumTagSchema,
   QuestionEssayTopicSchema,
   QuestionKbatLevelSchema,
+  QuestionPartReadV3Schema,
   QuestionPartWireSchema,
   QuestionWritePartSchema,
   QuestionPublicPartSchema,
@@ -451,7 +452,12 @@ export const QuestionCreateRequestSchema = baseInput
   .meta({ id: 'QuestionCreateRequest' })
 
 /** PUT body: the four required fields must be sent; other fields are a patch (`''`/null clears). `questionType` is ignored. */
-export const QuestionUpdateRequestSchema = baseInput.meta({ id: 'QuestionUpdateRequest' })
+export const QuestionUpdateRequestSchema = baseInput
+  // `parts` parse leniently here: the service holds new and changed parts to the strict write rules and lets a part echoed
+  // unchanged from the stored version keep the read rules (#692), which a strict DTO would make unreachable over HTTP.
+  // Typed as the write tree the service takes; the runtime schema is the lenient V3 reader (v1 and v2 stored content).
+  .extend({ parts: z.array(QuestionPartReadV3Schema as unknown as typeof QuestionWritePartSchema).min(1).optional() })
+  .meta({ id: 'QuestionUpdateRequest' })
 
 /** D54a: an action is the target lifecycle code, or `delete`. The mock verbs approve/reject/pending_review are gone. */
 export const QUESTION_BULK_ACTIONS = ['draft', 'review', 'approved', 'archived', 'delete'] as const

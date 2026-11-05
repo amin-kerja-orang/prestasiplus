@@ -1,7 +1,23 @@
 import { describe, expect, it } from 'vitest'
 
 import { buildOpenApiDocument } from '../../openapi'
-import { servabilityLaneListOf, ServabilityDatabankRowSchema, SERVABILITY_BATCH_MAX, SERVABILITY_LANE_WINDOW, ServabilityBatchRequestSchema, ServabilityLaneQuerySchema, ServabilityOverviewSchema } from '../reads'
+import {
+  latihTubiCellAttentionMs,
+  servabilityLaneListOf,
+  ServabilityDatabankRowSchema,
+  SERVABILITY_BATCH_MAX,
+  SERVABILITY_HUB_CARDS,
+  SERVABILITY_HUB_COPY,
+  SERVABILITY_HUB_LANES,
+  SERVABILITY_LANE_WINDOW,
+  ServabilityBatchRequestSchema,
+  ServabilityHubCardSchema,
+  ServabilityLaneQuerySchema,
+  ServabilityLaneRowSchema,
+  ServabilityLatihTubiLaneSchema,
+  ServabilityOverviewSchema,
+  trackingSetAttentionMs,
+} from '../reads'
 import {
   SERVABILITY_ACTIVITIES,
   SERVABILITY_ACTIVITY_LABELS,
@@ -88,6 +104,50 @@ describe('servability reads contract (R1-T30)', () => {
     expect(lane.safeParse({ data: [], meta, subjects: [{ id: '3', name: 'Matematik' }] }).success).toBe(true)
     expect(lane.safeParse({ data: [], meta }).success).toBe(false)
     expect(lane.safeParse({ data: [], meta, subjects: [{ id: '3' }] }).success).toBe(false)
+  })
+
+  describe('S3-T03 hub and lanes (FR-ADM-Q01.1, API-BIJAK-12)', () => {
+    const meta = { page: 1, pageSize: 25, totalItems: 0, totalPages: 1, from: null, to: null }
+
+    it('has six lanes in the PRD order, under the PRD title and intro', () => {
+      expect(SERVABILITY_HUB_LANES).toEqual(['databank', 'tracking-a', 'subjektif', 'bijak-spm', 'kertas-subjektif', 'latih-tubi'])
+      expect(SERVABILITY_HUB_LANES.map((l) => SERVABILITY_HUB_CARDS[l].title)).toEqual(['Databank Soalan', 'Tracking A', 'Subjektif', 'Bijak SPM', 'Kertas Subjektif', 'Latih Tubi'])
+      expect(SERVABILITY_HUB_COPY.title).toBe('SPM')
+      expect(SERVABILITY_HUB_COPY.intro).toBe('Setiap kad di bawah ialah satu laluan yang pelajar boleh buka. Nombor merah menunjukkan berapa banyak item yang perlu diperiksa.')
+    })
+
+    it('carries no attention text for Kertas Subjektif, whose rule is open', () => {
+      expect(SERVABILITY_HUB_CARDS['kertas-subjektif'].attentionLabel).toBe('')
+      expect(SERVABILITY_HUB_CARDS.subjektif.attentionLabel).toBe('tiada skema — tidak disajikan')
+      const card = { lane: 'kertas-subjektif', title: 'Kertas Subjektif', description: 'x', total: 3, attention: 0, attentionLabel: '' }
+      expect(ServabilityHubCardSchema.safeParse({ ...card, attentionOpen: true }).success).toBe(true)
+      expect(ServabilityHubCardSchema.safeParse({ ...card, attentionLines: [{ count: 0, text: 'x' }] }).success).toBe(false)
+    })
+
+    it('a lane page takes count and attention beside data, meta and subjects', () => {
+      const lane = servabilityLaneListOf(ServabilityLaneRowSchema)
+      const row = { id: '1', title: 'Bahasa Melayu · 2026 Set 1', meta: '#1 · ramalan · 8 soalan', status: 'belum_cukup', attention: [], actions: ['edit'] }
+      expect(lane.safeParse({ data: [row], meta, subjects: [], count: 1, attention: [{ count: 1, text: '1 set tidak lengkap' }] }).success).toBe(true)
+      expect(lane.safeParse({ data: [{ ...row, actions: ['padam'] }], meta, subjects: [] }).success).toBe(false)
+    })
+
+    it('the Latih Tubi page needs meta.switchEnabled and its cells have no row action', () => {
+      const cell = { id: '3:4', title: 'Sains · Tingkatan 4', meta: '#3 · 2 soalan', status: 'open', attention: [], actions: [], subject: { id: '3', name: 'Sains' }, level: { id: '4', name: 'Tingkatan 4' }, servable: 2, total: 2 }
+      expect(ServabilityLatihTubiLaneSchema.safeParse({ data: [cell], meta: { ...meta, switchEnabled: true }, subjects: [], count: 2 }).success).toBe(true)
+      expect(ServabilityLatihTubiLaneSchema.safeParse({ data: [cell], meta, subjects: [] }).success).toBe(false)
+      expect(ServabilityLatihTubiLaneSchema.safeParse({ data: [{ ...cell, actions: ['edit'] }], meta: { ...meta, switchEnabled: true }, subjects: [] }).success).toBe(false)
+    })
+
+    it('search over 100 characters gives the SR-4 message', () => {
+      const res = ServabilityLaneQuerySchema.safeParse({ search: 'a'.repeat(101) })
+      expect(res.success).toBe(false)
+      expect(res.error?.issues[0]?.message).toBe('Carian tidak boleh melebihi 100 aksara.')
+    })
+
+    it('builds the exact BM attention sentences', () => {
+      expect(trackingSetAttentionMs(8, 40, 28471)).toBe('Hanya 8 daripada 40 soalan — 28471 tersedia untuk diisi')
+      expect(latihTubiCellAttentionMs(3)).toBe('3 tidak boleh ditanda')
+    })
   })
 
   it('overview has one entry per activity', () => {

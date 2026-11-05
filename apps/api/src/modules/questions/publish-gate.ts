@@ -120,6 +120,8 @@ export interface SchemeValidateOptions {
   dependsOnPart?: string
   /** Question-level deductions (`scheme_rules`); those with scope `part` are checked against the leaf marks. */
   schemeRules?: { deductions?: readonly SchemeDeduction[] }
+  /** Total marks of the question: with `schemeRules`, the deductions of scope `question` are capped by it (45 4.1: leaf or question). */
+  questionMarks?: number
 }
 
 /** 45 section 4.1 rows 13 to 16 and 3.1.7 (R1 copy, D113). Codes without PRD text return the code as the message. */
@@ -172,7 +174,9 @@ export function validateScheme(key: SchemeKeyLike | null | undefined, leafMarks:
   if (!opts.example) {
     if (key.kind === 'rubric') {
       const max = bestReachable(key) ?? 0
-      if (max !== leafMarks || (key.marks !== undefined && key.marks !== leafMarks)) add('SCHEME_SUM', SCHEME_MESSAGES.sum(max, leafMarks), '.marks')
+      if (max !== leafMarks || (key.marks !== undefined && key.marks !== leafMarks)) {
+        add('SCHEME_SUM', SCHEME_MESSAGES.sum(key.marks !== undefined && key.marks !== leafMarks ? key.marks : max, leafMarks), '.marks')
+      }
       // perCriterion: the bands only describe levels (45 7.5 lists one band of [5, 5]); the criteria maxima decide the total.
       if (key.scoring !== 'perCriterion' && !bandsCover(key, leafMarks)) add('BAND_RANGE', SCHEME_MESSAGES.bandRange(leafMarks))
     } else {
@@ -183,6 +187,10 @@ export function validateScheme(key: SchemeKeyLike | null | undefined, leafMarks:
   }
   const deductions = [...(key.deductions ?? []), ...(opts.schemeRules?.deductions ?? []).filter((d) => d.scope === 'part')]
   if (deductions.reduce((s, d) => s + (d.cap ?? d.amount), 0) > leafMarks) add(SCHEME_PENALTY_CODE, SCHEME_MESSAGES.penalty, '.deductions')
+  else if (opts.questionMarks !== undefined) {
+    const asked = (opts.schemeRules?.deductions ?? []).filter((d) => d.scope === 'question')
+    if (asked.reduce((s, d) => s + (d.cap ?? d.amount), 0) > opts.questionMarks) add(SCHEME_PENALTY_CODE, SCHEME_MESSAGES.penalty, '.deductions')
+  }
   return issues
 }
 
@@ -200,9 +208,11 @@ export function checkKeysGate(parts: readonly QuestionPart[]): Record<string, st
     }
     if (leaf.mode === 'working' || leaf.mode === 'drawing' || leaf.mode === 'essay' || leaf.mode === 'essay_choice') {
       const key = leaf.key
+      const mc = (leaf as { modeConfig?: { example?: unknown; dependsOnPart?: string } }).modeConfig
+      // An example leaf (`modeConfig.example`, marks 0) is not marked: its key is exempt from the sum check, v1 or v2.
+      if (mc?.example !== undefined && (key as SchemeKeyLike).scheme_v !== 2) continue
       if ((key as SchemeKeyLike).scheme_v === 2) {
         // Scheme v2 (45 section 7.0): the shared validator; the first issue is the field message.
-        const mc = (leaf as { modeConfig?: { example?: unknown; dependsOnPart?: string } }).modeConfig
         const [first] = validateScheme(key as SchemeKeyLike, leaf.marks, {
           path: `parts.${path}.key`,
           example: mc?.example !== undefined,

@@ -25,6 +25,8 @@ import {
   provisional,
 } from '../support'
 
+import { expectAdminHeader, expectBarFill, expectReadable, tabTitle } from './helpers'
+
 const ADMIN = 'admin@demo.test'
 const STUDENT_2 = 'pelajar2@demo.test'
 const MODULE = { tag: [moduleTag(14)] }
@@ -36,30 +38,25 @@ const S12 = '/gamification/convert'
 const S13 = '/gamification/challenges'
 const S17 = '/gamification/history'
 
-const SUBTITLE = 'Selamat datang kembali'
-
-async function expectHeader(page: Page, title: string): Promise<void> {
-  await expect(page.getByTestId('shell-user-title')).toHaveText(title)
-  await expect(page.getByTestId('shell-user-subtitle')).toHaveText(SUBTITLE)
-}
-
 const text = (page: Page, id: string) => page.getByTestId(id)
 
-/** DV-M14-15: bronze keeps its live colour; gold, silver and platinum label text is slate-800. */
-async function expectTierLabelColours(tiers: Locator): Promise<void> {
-  const label = (i: number) => tiers.nth(i).locator('p.font-semibold').first()
-  await expect(label(0)).toHaveCSS('color', 'rgb(205, 127, 50)')
-  for (const i of [1, 2, 3]) await expect(label(i)).toHaveCSS('color', 'rgb(30, 41, 59)')
+/**
+ * DV-M14-15: every tier label stays readable. The fixed per-tier colours went with B05 (147793363),
+ * which sets each label in the token `text-highlighted`.
+ */
+async function expectTierLabelsReadable(tiers: Locator): Promise<void> {
+  await expect(tiers).toHaveCount(4)
+  for (const i of [0, 1, 2, 3]) await expectReadable(tiers.nth(i).locator('p').first())
 }
 
 test.describe('S11 / S12 / S13 / S17 headers and titles', MODULE, () => {
   const cases = [
-    { path: S11, tab: 'Gamifikasi Dashboard', header: 'Gamifikasi Dashboard', ready: 's11-hero' },
-    { path: S12, tab: 'Tukar Token', header: 'Tukar Syiling → Token', ready: 's12-hero' },
-    { path: S13, tab: 'Cabaran Harian', header: 'Cabaran Harian', ready: 's13-hero' },
-    { path: S17, tab: 'Sejarah Transaksi', header: 'Sejarah Transaksi', ready: 's17-list' },
+    { path: S11, header: 'Gamifikasi Dashboard', ready: 's11-hero' },
+    { path: S12, header: 'Tukar Syiling → Token', ready: 's12-hero' },
+    { path: S13, header: 'Cabaran Harian', ready: 's13-hero' },
+    { path: S17, header: 'Sejarah Transaksi', ready: 's17-list' },
   ] as const
-  test('E2E-M14-03 shell header title and subtitle on S11, S12, S13 and S17', async ({
+  test('E2E-M14-03 shell header title on S11, S12, S13 and S17', async ({
     page,
     gotoApp,
     loginAs,
@@ -69,11 +66,11 @@ test.describe('S11 / S12 / S13 / S17 headers and titles', MODULE, () => {
     for (const c of cases) {
       await gotoApp(c.path)
       await expect(text(page, c.ready)).toBeVisible()
-      await expectHeader(page, c.header)
+      await expectAdminHeader(page, c.header)
     }
   })
 
-  test('E2E-M14-04 tab titles and the user shell on S11, S12, S13 and S17', async ({
+  test('E2E-M14-04 tab titles and the shell on S11, S12, S13 and S17', async ({
     page,
     gotoApp,
     loginAs,
@@ -83,8 +80,8 @@ test.describe('S11 / S12 / S13 / S17 headers and titles', MODULE, () => {
     for (const c of cases) {
       await gotoApp(c.path)
       await expect(text(page, c.ready)).toBeVisible()
-      await expectTabTitle(page, c.tab)
-      await expect(page.getByTestId('shell-user-title')).toBeVisible()
+      await expectTabTitle(page, tabTitle(c.header))
+      await expect(page.getByTestId('pentadbiran-header').locator('h1')).toBeVisible()
       await expectNoHorizontalScroll(page)
     }
   })
@@ -107,8 +104,9 @@ test.describe('S11 dashboard', MODULE, () => {
     await expect(text(page, 's11-btn-challenges')).toHaveAttribute('href', S13)
     await expect(text(page, 's11-btn-rewards')).toHaveAttribute('href', '/gamification/rewards')
     await expectTouchTarget(text(page, 's11-btn-convert'))
-    // The white hero heading must stay white (global h1 colour rule).
-    await expect(text(page, 's11-tier-name')).toHaveCSS('color', 'rgb(255, 255, 255)')
+    // The hero heading must stay readable (global h1 colour rule); B05 (147793363) made the hero a
+    // plain card, so it is no longer white.
+    await expectReadable(text(page, 's11-tier-name'))
     await expectNoHorizontalScroll(page)
   })
 
@@ -121,7 +119,7 @@ test.describe('S11 dashboard', MODULE, () => {
     await expect(text(page, 's11-stat-rate')).toHaveText('50 syiling = 1 token')
     await expect(text(page, 's11-stat-level')).toHaveText('2')
     await expect(text(page, 's11-stat-xp')).toHaveText('8/110 XP')
-    await expect(text(page, 's11-xp-bar')).toHaveAttribute('style', /width:\s*7%/)
+    await expectBarFill(text(page, 's11-xp-bar'), 7)
     await expect(text(page, 's11-stat-total')).toHaveText('256')
     await expect(text(page, 's11-stat-week')).toHaveText('+0 minggu ini')
   })
@@ -147,7 +145,11 @@ test.describe('S11 dashboard', MODULE, () => {
     await expect(cards.nth(0)).toContainText('Rajin Berlatih')
     await expect(cards.nth(0)).toContainText('Selesaikan 3 kuiz hari ini')
     await expect(cards.nth(0).getByTestId('s11-challenge-progress')).toHaveText('0/3')
-    await expect(cards.nth(0).getByTestId('s11-challenge-reward')).toHaveText('+15 💰')
+    // `DsRewardChip` with the 3D coin in place of the emoji (B05, 147793363).
+    await expect(cards.nth(0).getByTestId('s11-challenge-reward')).toHaveText('+15')
+    await expect(
+      cards.nth(0).getByTestId('s11-challenge-reward').locator('img[data-art="coin"]'),
+    ).toHaveCount(1)
     await expect(cards.nth(0).getByTestId('s11-challenge-difficulty')).toHaveCSS(
       'text-transform',
       'uppercase',
@@ -206,7 +208,7 @@ test.describe('S11 dashboard', MODULE, () => {
     await expect(tiers.nth(2)).toContainText('2,000+ syiling')
     await expect(tiers.nth(3)).toContainText('20 syiling = 1 token')
     await expect(page.getByTestId('s11-tier-mine')).toHaveCount(1)
-    await expectTierLabelColours(tiers)
+    await expectTierLabelsReadable(tiers)
     await expect(text(page, 's11-next-title')).toContainText('Pelajar')
     await expect(text(page, 's11-next-title-need')).toHaveText(
       'Perlu 44 syiling lagi untuk gelaran ini',
@@ -284,7 +286,11 @@ test.describe('S12 convert', MODULE, () => {
     await text(page, 's12-quick-five').click()
     await expect(input).toHaveValue('250')
     await expect(text(page, 's12-preview-tokens')).toHaveText('5')
-    await expect(text(page, 's12-quick-five')).toHaveClass(/bg-amber-500/)
+    // The chosen amount has the solid `secondary` colour and the others stay neutral (B05, 147793363).
+    await expect(text(page, 's12-quick-five')).toHaveAttribute('data-active', 'true')
+    await expect(text(page, 's12-quick-five')).toHaveClass(/\bbg-highlight\b/)
+    await expect(text(page, 's12-quick-rate')).toHaveAttribute('data-active', 'false')
+    await expect(text(page, 's12-quick-rate')).not.toHaveClass(/\bbg-highlight\b/)
     await text(page, 's12-quick-all').click()
     await expect(input).toHaveValue('256')
     await expect(text(page, 's12-preview-tokens')).toHaveText('5')
@@ -293,13 +299,14 @@ test.describe('S12 convert', MODULE, () => {
     await expect(tiers).toHaveCount(4)
     await expect(tiers.nth(0)).toContainText('ANDA')
     await expect(page.getByTestId('s12-tier-mine')).toHaveCount(1)
-    await expectTierLabelColours(tiers)
+    await expectTierLabelsReadable(tiers)
     await expect(tiers.nth(1)).toContainText('500+ syiling')
     await expect(tiers.nth(1)).toContainText('40')
     await expect(tiers.nth(1)).toContainText('syiling/token')
     await expect(text(page, 's12-tip')).toContainText(
       'Naik tier untuk dapatkan kadar penukaran yang lebih baik!',
     )
+    await expectTouchTarget(input)
     await expectTouchTarget(text(page, 's12-quick-rate'))
     await expectTouchTarget(text(page, 's12-submit'))
     await expectNoHorizontalScroll(page)
@@ -368,7 +375,7 @@ test.describe('S13 challenges', MODULE, () => {
     )
     await expect(text(page, 's13-counter-value')).toHaveText('0/10')
     await expect(text(page, 's13-counter')).toContainText('Selesai')
-    await expect(text(page, 's13-hero').locator('h1')).toHaveCSS('color', 'rgb(255, 255, 255)')
+    await expectReadable(text(page, 's13-hero').locator('h1'))
     const cards = page.getByTestId('s13-card')
     await expect(cards).toHaveCount(10)
     const titles = [
@@ -390,8 +397,13 @@ test.describe('S13 challenges', MODULE, () => {
       await expect(cards.nth(i).getByTestId('s13-reward-syiling')).toContainText('Syiling')
       await expect(cards.nth(i).getByTestId('s13-reward-xp')).toContainText('XP')
     }
-    await expect(cards.nth(0).getByTestId('s13-reward-syiling')).toHaveText('💰 +15 Syiling')
-    await expect(cards.nth(0).getByTestId('s13-reward-xp')).toHaveText('⭐ +10 XP')
+    // `DsRewardChip`: 3D coin and star icon in place of the emoji (B05, 147793363).
+    await expect(cards.nth(0).getByTestId('s13-reward-syiling')).toHaveText('+15Syiling')
+    await expect(
+      cards.nth(0).getByTestId('s13-reward-syiling').locator('img[data-art="coin"]'),
+    ).toHaveCount(1)
+    await expect(cards.nth(0).getByTestId('s13-reward-xp')).toHaveText('+10XP')
+    await expect(cards.nth(0).getByTestId('s13-reward-xp').locator('svg')).toHaveCount(1)
     await expect(cards.nth(0).getByTestId('s13-progress')).toHaveText('Progres: 0/3')
     await expect(cards.nth(1).getByTestId('s13-progress')).toHaveText('Progres: 0/80')
     await expectNoHorizontalScroll(page)
@@ -492,7 +504,8 @@ test.describe('S17 history', MODULE, () => {
     ] as const) {
       await pills.nth(i).click()
       await expect(page).toHaveURL(new RegExp(`\\?type=${type}$`))
-      await expect(text(page, 's17-empty')).toContainText('📋')
+      // `DsEmptyState` draws the clipboard icon in place of the emoji (B05, 147793363).
+      await expect(text(page, 's17-empty').locator('svg[data-slot="icon"]')).toBeVisible()
       await expect(text(page, 's17-empty')).toContainText('Belum ada transaksi')
       await expect(text(page, 's17-empty')).toContainText('Mula latih tubi untuk dapatkan syiling!')
     }
@@ -532,7 +545,7 @@ test.describe('Access and responsive sweep', MODULE, () => {
     await loginAs(ADMIN)
     for (const path of [S11, S12, S13, S17]) {
       await gotoApp(path)
-      await expect(page.getByTestId('shell-user-title')).toBeVisible()
+      await expect(page.getByTestId('pentadbiran-header').locator('h1')).toBeVisible()
       await expect(page.locator('main h1, main h2').first()).toBeVisible()
       await expectNoHorizontalScroll(page)
     }

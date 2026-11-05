@@ -203,7 +203,8 @@ export class StimuliController {
   @RateLimit(QUESTIONS_WRITE_LIMIT)
   async publishGroup(@Actor() actor: HttpActor, @Param('id') id: string) {
     const res = await this.stimuli.publishGroup(id, actor)
-    await this.write(actor, AUDIT_ACTIONS.STIMULUS_GROUP_PUBLISHED, 'stimulus_group', id, res.audit)
+    // On a draft copy the copy is gone after the swap: the audit row names the live group (its id never changes) and `details.fromDraftId`.
+    await this.write(actor, AUDIT_ACTIONS.STIMULUS_GROUP_PUBLISHED, 'stimulus_group', res.result.id, res.audit)
     return flash(res.result, STIMULUS_MESSAGES.groupUpdated)
   }
 

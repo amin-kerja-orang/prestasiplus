@@ -1,6 +1,6 @@
 import type { ActorRole, HttpClient, Scenario, ScenarioContext } from '@pp/contract-tests'
 
-import { dataOf, errorOf, expectError, listOf } from '../helpers'
+import { dataOf, enrolPupil, errorOf, expectError, listOf } from '../helpers'
 
 /**
  * Kirkpatrick, feedback and interventions (BE-20, M12): the 14 routes, the guards, the scope rules of the
@@ -120,7 +120,7 @@ export const kirkpatrickScenarios: Scenario[] = [
       // A teacher opens only pupils of the own classes: the pupil joins a class of the teacher first.
       const subjectId = String(listOf(await teacher.request('GET', '/subjects'))[0]?.id)
       const cls = dataOf(await teacher.request('POST', '/guru/classes', { body: { name: 'Kelas Murid', subjectId, educationLevel: 'tingkatan-4' } }))
-      ctx.expectStatus(await student.request('POST', '/kelas-saya/join', { body: { classCode: String(cls.joinCode) } }), 201)
+      await enrolPupil(ctx, teacher, student, cls.id)
       ctx.expectStatus(await teacher.request('GET', `/kirkpatrick/students/${studentId}`), 200)
       for (const id of [UNKNOWN_ID, adminId, '0']) {
         expectError(ctx, await admin.request('GET', `/kirkpatrick/students/${id}`), 403, 'FORBIDDEN')
@@ -212,7 +212,7 @@ export const kirkpatrickScenarios: Scenario[] = [
       const subjects = await teacher.request('GET', '/subjects')
       const subjectId = String(listOf(subjects)[0]?.id)
       const cls = dataOf(await teacher.request('POST', '/guru/classes', { body: { name: 'Kelas Intervensi', subjectId, educationLevel: 'tingkatan-4' } }))
-      ctx.expectStatus(await student.request('POST', '/kelas-saya/join', { body: { classCode: String(cls.joinCode) } }), 201)
+      await enrolPupil(ctx, teacher, student, cls.id)
 
       const note = 'Catatan konformans'
       const created = await teacher.request('POST', '/kirkpatrick/interventions', {

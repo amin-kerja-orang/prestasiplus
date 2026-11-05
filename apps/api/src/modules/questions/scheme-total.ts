@@ -81,11 +81,13 @@ function alternativeTotal(key: SchemeKeyLike, ids: ReadonlySet<string>, live?: (
     const units: number[] = []
     const mark = (id: string): number => g.eachMarks ?? marksOf.get(id) ?? 0
     if (g.type === 'pair') {
-      for (let i = 0; i < members.length; i += 2) {
-        const first = members[i]!
-        const second = members[i + 1]
-        if (!ok.has(first)) continue
-        units.push(mark(first) + (second !== undefined && ok.has(second) ? mark(second) : 0))
+      // Pairs are the authored (first, second) positions of `g.pointIds`, not positions after filtering by the alternative.
+      const there = new Set(members)
+      for (let i = 0; i < g.pointIds.length; i += 2) {
+        const first = g.pointIds[i]!
+        const second = g.pointIds[i + 1]
+        if (!there.has(first) || !ok.has(first)) continue
+        units.push(mark(first) + (second !== undefined && there.has(second) && ok.has(second) ? mark(second) : 0))
       }
     } else {
       for (const id of members) if (ok.has(id)) units.push(mark(id))

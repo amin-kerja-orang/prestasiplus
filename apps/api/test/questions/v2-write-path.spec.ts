@@ -53,7 +53,7 @@ describe('S1-T09a v2 write path (create and update)', () => {
     return (res.body as { data: { parts: unknown } }).data.parts
   }
 
-  it('round-trips a v2 points key with modeConfig through create, read and update', async () => {
+  it('[CI] round-trips a v2 points key with modeConfig through create, read and update', async () => {
     const first = leaf('a', 'working', 3, pointsKey(3), { modeConfig: { answerSpace: 'long' } })
     const parts = [first, leaf('b', 'short_text', 0, { kind: 'accepted', values: ['contoh'] }, { modeConfig: { example: { answer: 'Contoh jawapan' } } })]
     const id = await create(parts)
@@ -65,7 +65,7 @@ describe('S1-T09a v2 write path (create and update)', () => {
     expect(await partsOf(id)).toEqual(JSON.parse(JSON.stringify(changed)))
   })
 
-  it('round-trips a v2 rubric key on an essay and keeps it unchanged when only the stem is edited', async () => {
+  it('[CI] round-trips a v2 rubric key on an essay and keeps it unchanged when only the stem is edited', async () => {
     const parts = [leaf('a', 'essay', 5, rubricKey(5), { modeConfig: { maxWords: 120, answerSpace: 'long' } })]
     const id = await create(parts)
     expect(await partsOf(id)).toEqual(JSON.parse(JSON.stringify(parts)))
@@ -75,7 +75,7 @@ describe('S1-T09a v2 write path (create and update)', () => {
     expect(await partsOf(id)).toEqual(JSON.parse(JSON.stringify(parts)))
   })
 
-  it('round-trips an mcq_multi leaf (options key, multi flag)', async () => {
+  it('[CI] round-trips an mcq_multi leaf (options key, multi flag)', async () => {
     const options = ['A', 'B', 'C', 'D'].map((label) => ({ label, body: rich(`Pilihan ${label}`) }))
     const parts = [leaf('a', 'mcq', 2, { kind: 'options', correctOptionIds: ['A', 'C'] }, { options, modeConfig: { multi: true } })]
     const id = await create(parts)
@@ -87,19 +87,19 @@ describe('S1-T09a v2 write path (create and update)', () => {
     ['an unknown top-level field (v1 spelling final)', { ...(pointsKey(1) as object), points: [pt('p1', 1)], groups: undefined, deductions: undefined, final: { display: '1', accept: ['1'] } }, 'working', 1, 'parts.0.key', 'Unrecognized key: "final"'],
     ['a perCriterion rubric without criterion max', { ...(rubricKey(5) as object), scoring: 'perCriterion' }, 'essay', 5, 'parts.0.key.criteria', 'CRITERION_MAX_REQUIRED'],
     ['a band range that runs backwards', { ...(rubricKey(5) as object), bands: [{ name: 'Baik', range: [5, 1] }] }, 'essay', 5, 'parts.0.key.bands.0.range', 'BAND_RANGE_INVALID'],
-  ])('422 names the key field and the schema message for %s', async (_name, key, mode, marks, path, text) => {
+  ])('[CI] 422 names the key field and the schema message for %s', async (_name, key, mode, marks, path, text) => {
     const res = await admin.post('/api/questions', body([leaf('a', mode, marks, key)]))
     const error = expectError(res, 'VALIDATION_ERROR')
     expect(error.fields).toEqual({ [path]: text })
   })
 
-  it('an unsupported scheme_v (3) is SCHEME_VERSION_MISMATCH', async () => {
+  it('[CI] an unsupported scheme_v (3) is SCHEME_VERSION_MISMATCH', async () => {
     const key = { kind: 'points', scheme_v: 3, marks: 1, points: [pt('p1', 1)] }
     const error = expectError(await admin.post('/api/questions', body([leaf('a', 'working', 1, key)])), 'VALIDATION_ERROR')
     expect(Object.values(error.fields ?? {})).toContain('SCHEME_VERSION_MISMATCH')
   })
 
-  it('v1 keys are unchanged: a v1 points key round-trips and a v1 rule still fails (marks 0 without example)', async () => {
+  it('[CI] v1 keys are unchanged: a v1 points key round-trips and a v1 rule still fails (marks 0 without example)', async () => {
     const v1 = { kind: 'points', marks: 2, points: [{ id: 'a', code: 'K', label: 'Kaedah', marks: 2 }] }
     const parts = [leaf('a', 'working', 2, v1)]
     const id = await create(parts)
@@ -108,7 +108,7 @@ describe('S1-T09a v2 write path (create and update)', () => {
     expect(Object.keys(bad.fields ?? {}).some((k) => k.startsWith('parts.0'))).toBe(true)
   })
 
-  it('a v2 key whose scheme sum is wrong is saved as a draft (the sum runs at publish, as for v1)', async () => {
+  it('[CI] a v2 key whose scheme sum is wrong is saved as a draft (the sum runs at publish, as for v1)', async () => {
     const parts = [leaf('a', 'working', 3, { ...(pointsKey(3) as object), groups: undefined, deductions: undefined, points: [pt('p1', 1)] })]
     const id = await create(parts)
     expect(id).toMatch(/^\d+$/)
