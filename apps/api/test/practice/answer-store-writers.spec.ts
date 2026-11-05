@@ -5,20 +5,26 @@ import { describe, expect, it } from 'vitest'
 
 /**
  * S5-T15 (AC-PA-01): no code writes `practice_answers` except through `AnswerLogPort` (answer-log.port.ts). Scanned:
- * `apps/api/src/**` (not the generated client) and `apps/api/prisma/seed/**`. The allow-list holds the direct writers
- * that still exist (practice.repository.ts left it in part 2 of S5-T15); each owning change removes its entry, so the list shrinks to empty (then migration 0188 validates
- * the mode check and sets NOT NULL). A new writer fails the test, and so does an entry that no longer matches anything.
+ * `apps/api/src/**` (not the generated client) and `apps/api/prisma/seed/**`. The allow-list is EMPTY (part 3 of S5-T15,
+ * migration 0188 validated the mode check and set NOT NULL); the only exemption is the legacy ETL loader (see EXEMPT).
+ * A new writer fails the test, and so does an exemption entry that no longer matches anything.
  */
 const API = resolve(__dirname, '../..')
 const ROOTS = [join(API, 'src'), join(API, 'prisma/seed')]
 const PORT = 'src/modules/practice/answer-log.port.ts'
 
-/** file (relative to apps/api) -> number of direct write sites it may still have. */
-const ALLOW_LIST: Readonly<Record<string, number>> = {
-  // Legacy ETL loader (upsertAndMap into practice_answers): must set `mode` before 0188 (NOT NULL).
+/** file (relative to apps/api) -> number of direct write sites it may still have. EMPTY since S5-T15 part 3 (migration 0188). */
+const ALLOW_LIST: Readonly<Record<string, number>> = {}
+
+/**
+ * Permanent, explicit exemption (not part of the allow-list): the ETL bulk loader is a migration tool that upserts
+ * historical rows keyed by legacy id in batches, not a pupil activity. It sets `mode` from the imported session.
+ * NOT A TEMPLATE: this map is pinned to exactly this one file by a test; a pupil activity never goes here (AC-PA-01),
+ * and any new entry needs a lead/architect decision recorded on DM-44 first.
+ */
+const EXEMPT: Readonly<Record<string, number>> = {
+  // legacy ETL import, not a pupil activity (AC-PA-01 covers pupil activities)
   'src/migration/load/activity/practice-steps.ts': 1,
-  // Demo seed: must set `mode` before 0188 (NOT NULL).
-  'prisma/seed/practice.ts': 1,
 }
 
 const walk = (dir: string): string[] =>
@@ -69,13 +75,23 @@ describe('no write to practice_answers outside the port', () => {
     expect(files.some((f) => f.includes('src/db/generated'))).toBe(false)
   })
 
-  it('every direct writer is on the allow-list with its exact count', () => {
-    const unexpected = [...found].filter(([f, n]) => ALLOW_LIST[f] !== n).map(([f, n]) => `${f}: ${String(n)} write site(s), allowed ${String(ALLOW_LIST[f] ?? 0)}`)
+  it('every direct writer is on the allow-list or the exemption with its exact count', () => {
+    const unexpected = [...found]
+      .filter(([f, n]) => (ALLOW_LIST[f] ?? EXEMPT[f]) !== n)
+      .map(([f, n]) => `${f}: ${String(n)} write site(s), allowed ${String(ALLOW_LIST[f] ?? EXEMPT[f] ?? 0)}`)
     expect(unexpected, 'route the write through AnswerLogPort.record').toEqual([])
   })
 
-  it('every allow-list entry still matches (remove entries as writers move to the port)', () => {
-    const stale = Object.entries(ALLOW_LIST).filter(([f, n]) => found.get(f) !== n).map(([f]) => f)
+  it('the allow-list is empty', () => {
+    expect(Object.keys(ALLOW_LIST)).toEqual([])
+  })
+
+  it('the exemption holds only the legacy ETL loader', () => {
+    expect(EXEMPT).toEqual({ 'src/migration/load/activity/practice-steps.ts': 1 })
+  })
+
+  it('every allow-list or exemption entry still matches (remove entries as writers move to the port)', () => {
+    const stale = Object.entries({ ...ALLOW_LIST, ...EXEMPT }).filter(([f, n]) => found.get(f) !== n).map(([f]) => f)
     expect(stale).toEqual([])
   })
 
