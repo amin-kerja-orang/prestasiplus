@@ -31,6 +31,7 @@ const ALL_ROUTES = [
   '/performance/classes/1',
   '/item-analysis/school/1',
   '/item-analysis/classes/1',
+  '/item-analysis/me',
 ]
 const UNKNOWN_ID = '987654321'
 const FOUR_ROLES: ActorRole[] = ['student', 'teacher', 'school_admin', 'admin']
@@ -45,7 +46,7 @@ async function ownId(who: HttpClient): Promise<string> {
 
 export const performanceScenarios: Scenario[] = [
   {
-    id: 'performance-api/anonymous is 401 on all 12 routes',
+    id: 'performance-api/anonymous is 401 on all 13 routes',
     domain: 'performance',
     targets: ['api'],
     async run(ctx) {
@@ -116,11 +117,16 @@ export const performanceScenarios: Scenario[] = [
           `${role}: /performance/levels must list t4 and t5`,
         )
       }
-      // only a teacher has own classes; every other role gets an empty list
-      for (const role of ['school_admin', 'admin'] as ActorRole[]) {
-        const rows = listOf(await (await ctx.as(role)).request('GET', '/performance/classes'))
-        ctx.check(rows.length === 0, `${role}: /performance/classes must be [] for a non-teacher`)
-      }
+      // A teacher gets the own classes, a school admin the active classrooms of the own school (S10-T07, FR-AS-4-2; the demo teacher and
+      // the demo school admin share DEMO001, so every class of the teacher is also in the school admin's list); every other role gets [].
+      const teacherIds = listOf(await (await ctx.as('teacher')).request('GET', '/performance/classes')).map((r) => String(r.id))
+      const schoolIds = listOf(await (await ctx.as('school_admin')).request('GET', '/performance/classes')).map((r) => String(r.id))
+      ctx.check(
+        teacherIds.every((id) => schoolIds.includes(id)),
+        'school_admin: /performance/classes must list every active classroom of the own school (a superset of the teacher list)',
+      )
+      const platform = listOf(await (await ctx.as('admin')).request('GET', '/performance/classes'))
+      ctx.check(platform.length === 0, 'admin: /performance/classes must be [] for a non-teacher, non-school-admin')
     },
   },
   {
@@ -157,7 +163,9 @@ export const performanceScenarios: Scenario[] = [
     domain: 'performance',
     targets: ['api'],
     async run(ctx) {
-      for (const role of FOUR_ROLES) {
+      // a pupil is refused (S10-T03, AC-MUR-6-5): the school item analysis is a staff and officer screen
+      expectError(ctx, await (await ctx.as('student')).request('GET', '/item-analysis/school'), 403, 'FORBIDDEN')
+      for (const role of FOUR_ROLES.filter((r) => r !== 'student')) {
         const res = await (await ctx.as(role)).request('GET', '/item-analysis/school')
         // the demo admin has no school: the own variant answers 404 (viewer has no school)
         const expected = role === 'admin' ? 404 : 200
@@ -165,13 +173,34 @@ export const performanceScenarios: Scenario[] = [
         noStore(ctx, res, '/item-analysis/school')
       }
       const admin = await ctx.as('admin')
-      // tingkatan other than T4/T5 is ignored; admin + unknown school = empty payload (FR-M08-143)
-      for (const path of [`/item-analysis/school/${UNKNOWN_ID}?tingkatan=T9`, `/item-analysis/school/${UNKNOWN_ID}?tingkatan=T4`, `/item-analysis/school/${UNKNOWN_ID}`]) {
+      // tingkatan outside T1 to T5 is ignored; admin + unknown school = empty payload (FR-M08-143)
+      for (const path of [`/item-analysis/school/${UNKNOWN_ID}?tingkatan=T9`, `/item-analysis/school/${UNKNOWN_ID}?tingkatan=T4`, `/item-analysis/school/${UNKNOWN_ID}?tingkatan=T1`, `/item-analysis/school/${UNKNOWN_ID}`]) {
         const res = await admin.request('GET', path)
         ctx.check(res.status === 200, `admin ${path}: expected 200, got ${res.status}`)
       }
       // a non-admin asking for a school outside the own scope is refused, same as for an unknown id
       expectError(ctx, await (await ctx.as('teacher')).request('GET', `/item-analysis/school/${UNKNOWN_ID}`), 403, 'FORBIDDEN')
+      expectError(ctx, await (await ctx.as('student')).request('GET', `/item-analysis/school/${UNKNOWN_ID}`), 403, 'FORBIDDEN')
+    },
+  },
+  {
+    id: 'performance-api/item analysis me (API-RPT-05): the pupil gets the own shape, every other role is 403',
+    domain: 'performance',
+    targets: ['api'],
+    async run(ctx) {
+      const res = await (await ctx.as('student')).request('GET', '/item-analysis/me')
+      ctx.expectStatus(res, 200)
+      noStore(ctx, res, '/item-analysis/me')
+      const data = dataOf(res) as { tiles?: Record<string, unknown>; subjects?: unknown; counts?: Record<string, unknown>; items?: unknown }
+      ctx.check(data.tiles !== undefined && 'answered' in data.tiles && 'needRemedial' in data.tiles && 'needStrengthen' in data.tiles && 'mastery' in data.tiles, 'tiles must carry answered, needRemedial, needStrengthen and mastery')
+      ctx.check(Array.isArray(data.subjects) && Array.isArray(data.items), 'subjects and items must be arrays')
+      ctx.check(data.counts !== undefined && 'isyaratAwal' in data.counts && 'pemulihan' in data.counts && 'pengukuhan' in data.counts, 'counts must carry the three categories')
+      const student = await ctx.as('student')
+      for (const q of ['tapis=ada_betul', 'tapis=selalu_salah', 'tapis=semua&subjectCode=MATH']) ctx.expectStatus(await student.request('GET', `/item-analysis/me?${q}`), 200)
+      expectError(ctx, await student.request('GET', '/item-analysis/me?tapis=semuanya'), 422, 'VALIDATION_ERROR')
+      for (const role of ['teacher', 'school_admin', 'admin'] as ActorRole[]) {
+        expectError(ctx, await (await ctx.as(role)).request('GET', '/item-analysis/me'), 403, 'FORBIDDEN')
+      }
     },
   },
   {

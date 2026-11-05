@@ -2,7 +2,7 @@ import { INTAKE_GATE_MESSAGES as G, type IntakeQuestion } from '@pp/contract'
 import { describe, expect, it } from 'vitest'
 
 import { compare, normalise, signatureOf } from '../../src/modules/intake/workflow/duplicates'
-import { batchLevelIssues, itemIssues, schemeTotal, stimulusIssues } from '../../src/modules/intake/workflow/gate'
+import { batchLevelIssues, draftIssues, itemIssues, schemeTotal, stimulusIssues } from '../../src/modules/intake/workflow/gate'
 import { attachToStimulus, detachFromStimulus, gatherByRef, groupsOf } from '../../src/modules/intake/workflow/grouping'
 import { ConvertError, toQuestionInput } from '../../src/modules/intake/workflow/to-question'
 import { bandReaches } from '../../src/modules/intake/workflow/workflow.config'
@@ -31,6 +31,33 @@ function question(over: Partial<IntakeQuestion> = {}): IntakeQuestion {
     ...over,
   } as IntakeQuestion
 }
+
+describe('draftIssues (S1-T04: what a manual Terima needs)', () => {
+  it('does not ask for unit, SP, TP or an unconfirmed low field; itemIssues still does', () => {
+    const q = question({ tag: { subject: 'MATH', level: 'T4', unit: null, unitLabel: '', sp: [], tp: 3, formOrigin: 'T4' }, lowFields: ['stem'] })
+    expect(draftIssues(q, undefined, { ...FACTS, unitKnown: null })).toEqual([])
+    expect(itemIssues(q, undefined, { ...FACTS, unitKnown: null }).length).toBeGreaterThanOrEqual(3)
+  })
+
+  it('refuses an empty stem, needsManual, no subject/level, a missing stimulus, MCQ format and unknown unit/SP, each as "Soalan {no}: {mesej}"', () => {
+    const msgs = (q: IntakeQuestion, f = FACTS, st?: Parameters<typeof draftIssues>[1]) => draftIssues(q, st, f).map((i) => i.message)
+    expect(msgs(question({ label: '7', stem: ' ' }))).toEqual([`Soalan 7: ${G.stemEmpty}`])
+    expect(msgs(question({ needsManual: true }))).toEqual([`Soalan 1: ${G.needsManual}`])
+    expect(msgs(question(), { ...FACTS, subjectKnown: false })).toEqual([`Soalan 1: ${G.subjectLevelMissing}`])
+    expect(msgs(question({ stimulusId: 's' }))).toEqual([`Soalan 1: ${G.stimulusMissing}`])
+    expect(msgs(question({ options: [{ id: 'B', text: 'x' }] }))).toEqual([`Soalan 1: ${G.mcqOptionsMin}`])
+    expect(msgs(question({ scheme: { kind: 'option', marks: 1, correct: 'Z', reason: 'x' } }))).toEqual([`Soalan 1: ${G.mcqKeyMissing}`])
+    expect(msgs(question({ marks: 0 }))).toContain(`Soalan 1: ${G.marksPositive}`)
+    expect(msgs(question(), { ...FACTS, unitKnown: false })).toEqual([`Soalan 1: ${G.unitNotInTaxonomy}`])
+    expect(msgs(question(), { ...FACTS, unknownSp: ['9.9'] })).toEqual([`Soalan 1: ${G.spNotInTaxonomy('9.9')}`])
+    const diagram = { id: 's', kind: 'diagram' as const, label: 'Rajah 1', alt: '', figureId: null, region: null }
+    expect(msgs(question({ stimulusId: 's' }), FACTS, diagram)).toEqual([`Soalan 1: ${G.stimulusAltMissing}`, `Soalan 1: ${G.figureNotResolved}`])
+  })
+
+  it('every issue carries the item id', () => {
+    expect(draftIssues(question({ stem: '' }), undefined, FACTS).every((i) => i.itemId === '1')).toBe(true)
+  })
+})
 
 describe('gate (prototype validateBatch rules)', () => {
   it('a complete MCQ passes', () => {

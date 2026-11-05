@@ -56,6 +56,17 @@ export const BijakPaperKindSchema = z.enum(BIJAK_PAPER_KINDS).meta({
 })
 export type BijakPaperKind = z.infer<typeof BijakPaperKindSchema>
 
+/**
+ * The kind of an attempt (`exam_attempts.paper_kind`, DM-83, migration 0165): the paper kinds plus
+ * `subjektif` (a Kertas Subjektif sitting, S3-T06) and `structured` (a Soalan Berstruktur attempt, S5-T11).
+ */
+export const BIJAK_ATTEMPT_KINDS = [...BIJAK_PAPER_KINDS, 'subjektif', 'structured'] as const
+export const BijakAttemptKindSchema = z.enum(BIJAK_ATTEMPT_KINDS).meta({
+  description:
+    'pilihan = curated paper, jana = generated paper, subjektif = Kertas Subjektif sitting (latihan, untimed, self-marked), structured = Soalan Berstruktur attempt (no paper).',
+})
+export type BijakAttemptKind = z.infer<typeof BijakAttemptKindSchema>
+
 /** Caller progress on a paper: `belum` not started, `sedang` an attempt is in progress, `selesai` has a result. */
 export const BIJAK_PAPER_PROGRESS = ['belum', 'sedang', 'selesai'] as const
 export const BijakPaperProgressSchema = z.enum(BIJAK_PAPER_PROGRESS).meta({
@@ -72,7 +83,7 @@ const summaryShape = {
   kertas: Kertas,
   year: z.number().int(),
   code: z.string().min(1).meta({ description: 'Printed paper code.', example: '1449/2' }),
-  durationMin: z.number().int().min(1).meta({ description: 'Printed duration in minutes (Q-S1).' }),
+  durationMin: z.number().int().min(0).meta({ description: 'Printed duration in minutes (Q-S1); 0 = an untimed Kertas Subjektif paper, shown as "—" (PO decision 2026-11-05, item 17).' }),
   questionCount: z
     .number()
     .int()
@@ -191,10 +202,10 @@ export const BijakBlueprintContractSchema = z
     sections: z.array(BijakBlueprintSectionSchema).min(1),
     canGenerate: z.boolean().meta({
       description:
-        'BJS-01: whether the caller can generate from this row now. Student and Admin Sekolah in Mod Pelajar: true only when a serving (Disahkan) version exists; the row shown is the serving version, or the head when none serves. Admin Pusat in Mod Pelajar: true when the head is Spec or Disahkan. When false the UI shows the AC-03.6 reason.',
+        'BJS-01: whether the caller can generate from this row now. S3-T01: the route lists only the serving (Disahkan) version of a subject and kertas, so the API always answers true. When false the UI shows the AC-03.6 reason.',
     }),
     unavailableReason: z.enum(['NO_BLUEPRINT']).optional().meta({
-      description: 'Present only when canGenerate is false.',
+      description: 'Present only when canGenerate is false (never from the API since S3-T01).',
     }),
   })
   .meta({ id: 'BijakBlueprintContract' })
