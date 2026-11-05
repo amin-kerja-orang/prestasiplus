@@ -9,7 +9,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 
 import { PracticeRepository } from '../practice'
-import type { ChapterCount } from './heatmap.rules'
+import type { ChapterCount, QuestionCount } from './heatmap.rules'
 
 export interface HeatmapAnswerCounts {
   /**
@@ -18,6 +18,11 @@ export interface HeatmapAnswerCounts {
    * only; Mod Pelajar reads its own `is_test = true` rows only (card open question 3).
    */
   chapterAnswerCounts(userId: string, isTest: boolean): Promise<ChapterCount[]>
+  /**
+   * S10-T05 part 3 (SP fallback): the caller's own answers grouped by `question_id` (same mode rule as above, answers with a
+   * question only, ascending question id). The service maps each question to its SP tags.
+   */
+  questionAnswerCounts(userId: string, isTest: boolean): Promise<QuestionCount[]>
 }
 
 /** Default: BE-12 `PracticeRepository.answers`, grouped in memory. */
@@ -40,6 +45,26 @@ export class PracticeLogAnswerCounts implements HeatmapAnswerCounts {
     return [...byChapter.values()].sort((a, b) => {
       const x = BigInt(a.chapterId)
       const y = BigInt(b.chapterId)
+      return x < y ? -1 : x > y ? 1 : 0
+    })
+  }
+
+  async questionAnswerCounts(userId: string, isTest: boolean): Promise<QuestionCount[]> {
+    const rows = await this.practice.answers(userId, { includeTest: isTest })
+    const byQuestion = new Map<string, QuestionCount>()
+    for (const a of rows) {
+      if (a.questionId === null || a.isTest !== isTest) continue
+      let row = byQuestion.get(a.questionId)
+      if (!row) {
+        row = { questionId: a.questionId, attempts: 0, correct: 0 }
+        byQuestion.set(a.questionId, row)
+      }
+      row.attempts += 1
+      if (a.isCorrect) row.correct += 1
+    }
+    return [...byQuestion.values()].sort((a, b) => {
+      const x = BigInt(a.questionId)
+      const y = BigInt(b.questionId)
       return x < y ? -1 : x > y ? 1 : 0
     })
   }
