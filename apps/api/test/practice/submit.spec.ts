@@ -317,8 +317,8 @@ describe('BR-14 revision queue and BR-20 mastery counters', () => {
   it('mastery counters add the session per subject; a user with answers but no counters starts from the log', async () => {
     // Two earlier answers (one right) exist in the log without counters (migrated history).
     await t.db.query(
-      `insert into practice_answers (user_id, question_id, subject_id, is_correct, answered_at, historical) values
-        ($1, 1, $2, true, '2026-01-01T00:00:00Z', true), ($1, 2, $2, false, '2026-01-02T00:00:00Z', true)`,
+      `insert into practice_answers (user_id, question_id, subject_id, is_correct, answered_at, historical, mode) values
+        ($1, 1, $2, true, '2026-01-01T00:00:00Z', true, 'latih_tubi'), ($1, 2, $2, false, '2026-01-02T00:00:00Z', true, 'latih_tubi')`,
       [ids.pelajar, w.subject.math],
     )
     await play(pelajar, t.bank, { mode: 'random', subjectCode: 'MATH', count: 5 }, 3)
