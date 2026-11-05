@@ -7,7 +7,18 @@
  */
 import { computed, ref } from 'vue'
 
-import { DsChart, DsEmptyState, DsLoadError, DsPage, DsPageHeader, DsPanel, DsStatRow } from '@/ds'
+import {
+  DsChart,
+  DsEmptyState,
+  DsLoadError,
+  DsPage,
+  DsPageHeader,
+  DsPanel,
+  DsStatRow,
+  DsText,
+} from '@/ds'
+
+import { useSessionStore } from '@/stores/session'
 
 import { fetchHeadcountDashboard } from '../api/headcount'
 import { dashboardLevels, dashboardStats } from '../lib/headcount/format'
@@ -15,6 +26,9 @@ import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
 import { useStatItems, type StatSpec } from '../lib/stat-items'
 
 const statItems = useStatItems()
+const session = useSessionStore()
+/** "Guru" line (API-AS-15): the school admin and the admin see the configs of many teachers. */
+const showTeacher = computed(() => session.role === 'school_admin' || session.role === 'admin')
 
 const { data, error, reload } = useRouteData((signal) => fetchHeadcountDashboard({ signal }))
 
@@ -122,6 +136,13 @@ const gaps = (v: (number | null)[]): number[] => v as number[]
           class="min-w-0"
           :data-testid="`chart-card-${String(c.id)}`"
         >
+          <DsText
+            v-if="showTeacher"
+            variant="caption"
+            tone="muted"
+            :data-testid="`chart-teacher-${String(c.id)}`"
+            >Guru: {{ c.teacherName }}</DsText
+          >
           <DsChart
             type="line"
             :title="`${c.className} · ${c.subjectName} · ${String(c.year)}`"

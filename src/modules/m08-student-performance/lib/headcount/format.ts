@@ -4,6 +4,7 @@
  */
 
 import { formatNumber } from '@/lib/number'
+import { formatMyt, toIsoMyt } from '@/lib/time'
 
 import type { HeadcountDashboardConfig, HeadcountGrade } from '../../api/headcount-types'
 
@@ -11,7 +12,9 @@ import type { HeadcountDashboardConfig, HeadcountGrade } from '../../api/headcou
 export const DASH = '—'
 
 /** BR-M08-02: percentage → SPM grade (A+ 90–100 … G < 40). */
-export function gradeOfPercent(value: number): HeadcountGrade {
+export function gradeOfPercent(raw: number): HeadcountGrade {
+  // HC-5: the value is first rounded to a whole number, half away from zero (89.5 reads as 90 = A+).
+  const value = Math.sign(raw) * Math.round(Math.abs(raw) + Number.EPSILON)
   if (value >= 90) return 'A+'
   if (value >= 80) return 'A'
   if (value >= 70) return 'A-'
@@ -27,6 +30,9 @@ export function gradeOfPercent(value: number): HeadcountGrade {
 /** One decimal, a trailing ".0" dropped ("73", "94.1"). */
 export const num1 = (value: number): string =>
   formatNumber(value, { decimals: 1, dropZeroFraction: true })
+
+/** A whole number ("53"): the OTR targets and the Auto AR (HC-2, decision 11). */
+export const num0 = (value: number): string => formatNumber(Math.round(value), { decimals: 0 })
 
 /** Exactly one decimal ("60.0"; the RS badge, FR-M08-94). */
 export const fixed1 = (value: number): string => formatNumber(value, { decimals: 1 })
@@ -101,3 +107,10 @@ export function dashboardLevels(
 export const TINGKATAN_LEVELS: readonly { label: string; value: string }[] = [1, 2, 3, 4, 5].map(
   (n) => ({ label: `T${String(n)}`, value: `T${String(n)}` }),
 )
+
+/** "05 Nov 2026" from a `YYYY-MM-DD` date (the "Direkodkan: …" line, FR-GUR-3-12). */
+export const formatRecordedDate = (iso: string): string =>
+  formatMyt(`${iso.slice(0, 10)}T00:00:00+08:00`, 'dd MMM yyyy')
+
+/** Today in Malaysia time as `YYYY-MM-DD` (the latest allowed Tarikh Rekod RS). */
+export const todayMyt = (): string => toIsoMyt(Date.now()).slice(0, 10)

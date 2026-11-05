@@ -210,9 +210,11 @@ describe('Cross-endpoint differencing (school, levels, level)', () => {
     const x = build()
     x.bijak.addItem(item({ attemptId: 'at-x', userId: '201', questionId: '9', awarded: 0, chosenLetter: 'B' }))
     x.bijak.addSitting(sitting({ userId: '201', attemptId: 'at-x' }))
-    const r = await x.items.school(student, {})
+    // An officer is the non-staff reader of the school item analysis (a student is refused, AC-MUR-6-5).
+    await expect(x.items.school(student, {})).rejects.toMatchObject({ status: 403 })
+    const r = await x.items.school(ctxOf('ppd_officer', 'o', { level: 'state', stateCode: 'Negeri A', label: 'x' }), {}, 's1')
     expect(r.questions).toEqual([])
-    expect(r).toMatchObject({ answers: null, correct: null })
+    expect(r).toMatchObject({ answers: null, correct: null, questionsTested: null })
   })
 })
 
