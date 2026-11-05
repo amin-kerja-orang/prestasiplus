@@ -10,9 +10,10 @@
  * Known gap: `table_fill` has no input here until `TableFillGrid` is wired in (S2-T10 / S3-T04).
  * Every change emits a whole new answer; the page autosaves it.
  */
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
-import { overLabel, shortLabel, wordCountLabel, wordTargetLabel } from './copy'
+import { capLabel, maxWordsLabel, overLabel, shortLabel, wordCountLabel, wordTargetLabel } from './copy'
+import DrawingPad from './DrawingPad.vue'
 import EssayAnswer from './EssayAnswer.vue'
 import { DsStack, DsText } from '@/ds'
 
@@ -21,9 +22,11 @@ import type { Leaf } from '@pp/exam-core/paper-model'
 import type { McqOption, PartAnswer } from '@/modules/m28-bijak-spm/domain/types'
 import { checkPhoto, photoUrl, putPhoto, removePhoto } from './lib/photo-store'
 import MathField from './MathField.vue'
+import type { LeafModeExtras } from './types'
+import { capWords, countWords } from './words'
 
 const props = defineProps<{
-  leaf: Leaf
+  leaf: Leaf & LeafModeExtras
   modelValue: PartAnswer | undefined
   attemptId: string
   disabled?: boolean
@@ -34,9 +37,24 @@ const emit = defineEmits<{ 'update:modelValue': [PartAnswer] }>()
 
 const answer = computed<PartAnswer>(() => props.modelValue ?? {})
 const steps = computed(() => (answer.value.steps?.length ? answer.value.steps : ['']))
-const words = computed(() =>
-  (answer.value.text ?? '').trim() ? (answer.value.text ?? '').trim().split(/\s+/).length : 0,
+const words = computed(() => countWords(answer.value.text ?? ''))
+/** Essay with `hardLimit` and a maximum: typing and pasting stop at that many words (FR-PA-35). */
+const hardMax = computed(() =>
+  props.leaf.kind === 'essay' && props.leaf.hardLimit ? props.leaf.wordRange?.max : undefined,
 )
+const atCap = computed(() => hardMax.value !== undefined && words.value >= hardMax.value)
+const textBox = ref<HTMLElement | null>(null)
+function onText(v: string): void {
+  const kept = hardMax.value === undefined ? v : capWords(v, hardMax.value)
+  update({ text: kept })
+  if (kept !== v) {
+    // The model value may not change (already at the cap): put the box back to the kept text.
+    void nextTick(() => {
+      const el = textBox.value?.querySelector('textarea')
+      if (el && el.value !== kept) el.value = kept
+    })
+  }
+}
 /** Numeric leaf: the final answer must be something the marker can read (FB-050). */
 // The hint shows once the field was left, or at once for a stored answer that cannot be read.
 const finalTouched = ref(!isReadableNumber(props.modelValue?.final ?? ''))
@@ -77,9 +95,17 @@ function removeStep(i: number): void {
 
 async function onFiles(ev: Event): Promise<void> {
   const input = ev.target as HTMLInputElement
+  await addPhotos(Array.from(input.files ?? []))
+  input.value = ''
+}
+/** The Papan Lukisan PNG takes the same photo path as a camera photo (FR-PA-08): no new answer field. */
+async function onDrawingSave(file: File): Promise<void> {
+  await addPhotos([file])
+}
+async function addPhotos(files: File[]): Promise<void> {
   photoError.value = ''
   let photos = [...(answer.value.photos ?? [])]
-  for (const file of Array.from(input.files ?? [])) {
+  for (const file of files) {
     const ok = checkPhoto(file, photos.length)
     if (!ok.ok) {
       photoError.value = ok.message
@@ -90,7 +116,6 @@ async function onFiles(ev: Event): Promise<void> {
     const u = await photoUrl(meta.key)
     if (u) urls.value = { ...urls.value, [meta.key]: u }
   }
-  input.value = ''
   update({ photos })
 }
 async function dropPhoto(key: string): Promise<void> {
@@ -100,8 +125,13 @@ async function dropPhoto(key: string): Promise<void> {
 </script>
 
 <template>
-  <div class="flex flex-col gap-4" :data-testid="`part-input-${leaf.id}`">
+  <div ref="textBox" class="flex flex-col gap-4" :data-testid="`part-input-${leaf.id}`">
     <template v-if="leaf.kind === 'short_text' || leaf.kind === 'essay'">
+      <p
+        v-if="leaf.preFill"
+        class="whitespace-pre-line rounded-xl bg-muted p-3 text-body text-toned"
+        data-testid="answer-prefill"
+      >{{ leaf.preFill }}</p>
       <UFormField :label="`Jawapan ${leaf.label}`.trim()" class="w-full">
         <UTextarea
           :model-value="answer.text ?? ''"
@@ -111,7 +141,7 @@ async function dropPhoto(key: string): Promise<void> {
           :placeholder="leaf.kind === 'essay' ? 'Tulis jawapan anda di sini…' : 'Tulis jawapan…'"
           class="w-full"
           data-testid="short-text-input"
-          @update:model-value="update({ text: String($event ?? '') })"
+          @update:model-value="onText(String($event ?? ''))"
         />
       </UFormField>
       <p
@@ -127,7 +157,25 @@ async function dropPhoto(key: string): Promise<void> {
         }}
       </p>
       <DsText
-        v-if="leaf.kind === 'essay' && leaf.wordRange && words > leaf.wordRange.max"
+        v-if="leaf.kind === 'short_text' && leaf.maxWords && words > leaf.maxWords"
+        variant="caption"
+        tone="error"
+        role="status"
+        data-testid="word-hint"
+      >
+        {{ maxWordsLabel(leaf.maxWords) }}
+      </DsText>
+      <DsText
+        v-else-if="atCap"
+        variant="caption"
+        tone="error"
+        role="status"
+        data-testid="word-cap-hint"
+      >
+        {{ capLabel(hardMax as number) }}
+      </DsText>
+      <DsText
+        v-else-if="leaf.kind === 'essay' && leaf.wordRange && words > leaf.wordRange.max"
         variant="caption"
         tone="error"
         role="status"
@@ -170,6 +218,11 @@ async function dropPhoto(key: string): Promise<void> {
     </template>
 
     <template v-else-if="leaf.kind === 'drawing'">
+      <DrawingPad
+        :template="leaf.answerTemplate"
+        :disabled="disabled"
+        @save="onDrawingSave"
+      />
       <p class="text-body text-toned">
         Lukis jawapan anda pada kertas, kemudian ambil gambarnya. Guru menyemak senarai semak (garis
         lurus, titik betul, bentuk lengkung).
@@ -182,6 +235,7 @@ async function dropPhoto(key: string): Promise<void> {
         :choice="{ topic: answer.choice, text: answer.text ?? '' }"
         :topics="leaf.topics ?? []"
         :range="leaf.wordRange"
+        :hard-limit="leaf.hardLimit"
         :disabled="disabled"
         :name="`topic-${leaf.id}`"
         @update:choice="update({ choice: $event.topic, text: $event.text })"

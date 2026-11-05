@@ -4,12 +4,12 @@
  * (pick one topic, then write; counter shows the target range). `readonly` = Semakan.
  * The counter is announced politely; "over" carries an icon and the words "melebihi had".
  */
-import { computed } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 import { DsText } from '@/ds'
-import { overLabel, qdCopy, shortLabel, wordCountLabel, wordTargetLabel } from './copy'
+import { capLabel, overLabel, qdCopy, shortLabel, wordCountLabel, wordTargetLabel } from './copy'
 import type { EssayChoiceValue, EssayTopic } from './types'
-import { countWords } from './words'
+import { capWords, countWords } from './words'
 
 const props = withDefaults(
   defineProps<{
@@ -21,6 +21,8 @@ const props = withDefaults(
     topics?: EssayTopic[]
     wordLimit?: number
     range?: { min: number; max: number }
+    /** Stop accepting words past the maximum (FR-PA-35); typed or pasted text is cut there. */
+    hardLimit?: boolean
     readonly?: boolean
     disabled?: boolean
     name?: string
@@ -31,6 +33,7 @@ const props = withDefaults(
     topics: () => [],
     wordLimit: undefined,
     range: undefined,
+    hardLimit: false,
     readonly: false,
     disabled: false,
     name: undefined,
@@ -41,6 +44,7 @@ const emit = defineEmits<{
   'update:choice': [EssayChoiceValue]
 }>()
 
+const root = ref<HTMLElement | null>(null)
 const isChoice = computed(() => props.mode === 'essay_choice')
 const text = computed(() => (isChoice.value ? (props.choice?.text ?? '') : props.modelValue))
 const words = computed(() => countWords(text.value))
@@ -56,7 +60,16 @@ const counter = computed(() =>
 )
 const groupName = computed(() => props.name ?? `topic-${Math.random().toString(36).slice(2, 8)}`)
 
-function onText(v: string): void {
+const cap = computed(() => (props.hardLimit ? maxWords.value : undefined))
+const atCap = computed(() => cap.value !== undefined && words.value >= cap.value)
+function onText(raw: string): void {
+  const v = cap.value === undefined ? raw : capWords(raw, cap.value)
+  if (v !== raw) {
+    void nextTick(() => {
+      const el = root.value?.querySelector('textarea')
+      if (el && el.value !== v) el.value = v
+    })
+  }
   if (isChoice.value) emit('update:choice', { topic: props.choice?.topic, text: v })
   else emit('update:modelValue', v)
 }
@@ -66,7 +79,7 @@ function pick(id: string): void {
 </script>
 
 <template>
-  <div class="flex w-full flex-col gap-3" :data-testid="`answer-${mode}`">
+  <div ref="root" class="flex w-full flex-col gap-3" :data-testid="`answer-${mode}`">
     <div
       v-if="isChoice"
       role="radiogroup"
@@ -121,8 +134,11 @@ function pick(id: string): void {
       <UIcon v-if="over" name="i-ph-warning" class="size-4" aria-hidden="true" />
       {{ counter }}
     </p>
+    <DsText v-if="atCap" variant="caption" tone="error" role="status" data-testid="word-cap-hint">
+      {{ capLabel(cap as number) }}
+    </DsText>
     <DsText
-      v-if="over || tooShort"
+      v-else-if="over || tooShort"
       variant="caption"
       tone="error"
       role="status"

@@ -15,7 +15,7 @@ import { useStimulusGroup } from './lib/useStimulusOpen'
 import PartInput from './PartInput.vue'
 import RichText from './RichText.vue'
 import StimulusFigure from './StimulusFigure.vue'
-import type { StimulusData } from './types'
+import type { LeafModeExtras, StimulusData } from './types'
 
 defineOptions({ name: 'PartNode' })
 
@@ -38,6 +38,8 @@ const leafStimulus = computed(() =>
     ? props.stimuli?.find((s) => s.id === props.part.stimulusId)
     : undefined,
 )
+/** Optional modeConfig fields (contract PR #679) that PartView does not type yet. */
+const extras = computed(() => props.part.answer as (LeafModeExtras | undefined))
 const shown = ref(false)
 /** Already in the group's pinned panel: the leaf only links to it, it never draws it twice. */
 const inPanel = computed(() => !!leafStimulus.value && !!group?.stimuli().some((s) => s.id === leafStimulus.value!.id))
@@ -124,6 +126,9 @@ const emit = defineEmits<{ answer: [partId: string, answer: PartAnswer] }>()
         kind: part.answer?.kind ?? 'short_text',
         unit: part.answer?.unit,
         wordRange: part.answer?.wordRange,
+        maxWords: extras?.maxWords,
+        hardLimit: extras?.hardLimit,
+        preFill: extras?.preFill,
         depth: depth ?? 0,
       }"
       :model-value="answers[part.id]"
