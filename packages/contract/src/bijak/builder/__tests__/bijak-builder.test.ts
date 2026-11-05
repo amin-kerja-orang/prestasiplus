@@ -1159,7 +1159,7 @@ describe('openapi document', () => {
 
   it('describes POST /admin/papers/{id}/source with multipart and JSON bodies and 201/202/409/422 answers (S3-T06, API-BIJAK-14)', () => {
     const op = doc.paths['/admin/papers/{id}/source']?.post
-    expect(Object.keys(op?.requestBody?.content ?? {}).sort()).toEqual(['application/json', 'multipart/form-data'])
+    expect(Object.keys((op?.requestBody as { content?: Record<string, unknown> } | undefined)?.content ?? {}).sort()).toEqual(['application/json', 'multipart/form-data'])
     for (const code of ['201', '202', '401', '403', '404', '409', '422', '429']) expect(op?.responses[code], code).toBeDefined()
     expect(BijakBuilderPaperSourceApplySchema.safeParse({ apply: true }).success).toBe(true)
     expect(BijakBuilderPaperSourceApplySchema.safeParse({ apply: false }).success).toBe(false)
