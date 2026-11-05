@@ -43,7 +43,7 @@ describe('S13 challenges (AC-M14-09)', () => {
     })
     await mountPage()
     expect(t('s13-hero').get('h1').text()).toBe('Cabaran Harian')
-    expect(t('s13-hero').text()).toContain('Selesaikan cabaran untuk dapatkan syiling & XP bonus!')
+    expect(t('s13-hero').text()).toContain('Selesaikan cabaran hari ini dan tuntut ganjaran syiling')
     expect(t('s13-counter-value').text()).toBe('0/10')
     expect(t('s13-counter').text()).toContain('Selesai')
     const cards = w!.findAll('[data-testid="s13-card"]')

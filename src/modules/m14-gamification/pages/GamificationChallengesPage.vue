@@ -98,7 +98,7 @@ async function onClaim(id: number): Promise<void> {
           <div class="flex min-w-0 flex-col gap-1">
             <h1 class="text-title text-highlighted">Cabaran Harian</h1>
             <p class="text-body text-muted">
-              Selesaikan cabaran untuk dapatkan syiling &amp; XP bonus!
+              Selesaikan cabaran hari ini dan tuntut ganjaran syiling
             </p>
             <p class="text-label text-toned" data-testid="s13-claimed-count">
               {{ claimedCount }} / {{ challenges.data.value.meta.active }} ganjaran dituntut

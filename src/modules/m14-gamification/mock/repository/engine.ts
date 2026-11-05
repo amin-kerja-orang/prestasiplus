@@ -1,7 +1,7 @@
 /**
  * The M14 session-completion engine (BR-M14-03/04/05/08/12/13/14/16/24), pure: given the user's
  * state and the facts M05 knows about the day and the user's history, it returns every effect of
- * one completion in the order BR-M14-03 fixes (session credit, streak activity, challenge rewards,
+ * one completion in the order BR-M14-03 fixes (session credit, streak activity, challenge completions (their rewards are paid by the claim, API-GAME-11),
  * achievement rewards), with running balances.
  *
  * The runtime `gamification.onSessionCompleted` feeds it from the stores and the M05 reads; the seed
