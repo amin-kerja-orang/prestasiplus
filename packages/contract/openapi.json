@@ -43136,6 +43136,18 @@
           "completed"
         ]
       },
+      "MissionGoalKind": {
+        "type": "string",
+        "enum": [
+          "sessions_per_day",
+          "correct_per_day",
+          "correct_in_session",
+          "accuracy_in_session",
+          "minutes_per_day",
+          "topics_per_day",
+          "streak_days"
+        ]
+      },
       "MissionToday": {
         "type": "object",
         "properties": {
@@ -43191,6 +43203,35 @@
           "rewardCoins": {
             "type": "integer",
             "description": "S6-T07 additive: coins paid once at the target."
+          },
+          "global": {
+            "type": "boolean",
+            "description": "S6-T07 additive: true for a Global (platform) goal; it is not a question set and starts no session."
+          },
+          "goalKind": {
+            "type": "string",
+            "enum": [
+              "sessions_per_day",
+              "correct_per_day",
+              "correct_in_session",
+              "accuracy_in_session",
+              "minutes_per_day",
+              "topics_per_day",
+              "streak_days"
+            ],
+            "description": "S6-T07 additive: how a Global goal is measured."
+          },
+          "target": {
+            "type": "integer",
+            "description": "S6-T07 additive: the goal target in the unit of `goalKind` (Global goals)."
+          },
+          "progress": {
+            "type": "number",
+            "description": "S6-T07 additive: the pupil progress towards `target` today (Global goals)."
+          },
+          "completed": {
+            "type": "boolean",
+            "description": "S6-T07 additive: the reward has been paid (Global goals)."
           }
         },
         "required": [
@@ -43284,10 +43325,27 @@
           "global": {
             "type": "boolean"
           },
+          "goalKind": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "sessions_per_day",
+              "correct_per_day",
+              "correct_in_session",
+              "accuracy_in_session",
+              "minutes_per_day",
+              "topics_per_day",
+              "streak_days",
+              null
+            ],
+            "description": "How a Global mission is measured; null for a teacher mission."
+          },
           "completedCount": {
             "type": "integer",
             "minimum": 0,
-            "description": "Pupils of the teacher's classes who completed it."
+            "description": "Pupils of the teacher's classes who completed it (a Global goal: those with a reward row)."
           }
         },
         "required": [
@@ -43301,6 +43359,7 @@
           "subjectId",
           "subjectName",
           "global",
+          "goalKind",
           "completedCount"
         ]
       },

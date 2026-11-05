@@ -198,6 +198,7 @@ function toTeacherMission(m: MissionRecord, subjectName: string | null, complete
     subjectId: m.subjectId,
     subjectName,
     global: m.scope === 'global',
+    goalKind: m.goalKind,
     completedCount,
   }
 }

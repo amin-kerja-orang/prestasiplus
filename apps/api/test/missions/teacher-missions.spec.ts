@@ -32,8 +32,8 @@ describe('API-GUR-11 teacher Misi Harian: GET, POST, DELETE /api/guru/missions (
     classA = await makeClass(t, w, w.teacherA, [w.student1], 'Kelas Misi A')
     globalId = (
       await t.db.query<{ id: string }>(
-        `insert into missions (scope, title, mission_type, mission_date, question_count, reward_coins, created_at)
-         values ('global', 'Rajin Berlatih', 'harian', $1, 3, 15, now()) returning id::text`,
+        `insert into missions (scope, goal_kind, title, mission_type, mission_date, question_count, reward_coins, created_at)
+         values ('global', 'sessions_per_day', 'Rajin Berlatih', 'harian', $1, 3, 15, now()) returning id::text`,
         [TODAY],
       )
     )[0]?.id as string
