@@ -33,6 +33,7 @@ import {
   STATUS_COLOR,
   STATUS_LABEL,
   TAHAP,
+  tahapLabel,
   count,
   dmy,
   dmyHm,
@@ -66,10 +67,13 @@ const paths = computed(() => monitoringPaths(props.basePath))
 const statusColor = (s: StudentStatus) => STATUS_COLOR[s]
 const statusLabel = (s: StudentStatus) => STATUS_LABEL[s]
 
+/** A Guru without a school: a plain notice, no request and no retry. */
+const noSchool = computed(() => sid.value === undefined)
+
 const { data, error, blocked, reload } = useMonitoringPage(
   (signal) =>
     sid.value === undefined
-      ? Promise.reject(new Error('Tiada sekolah untuk akaun ini.'))
+      ? new Promise<never>(() => undefined)
       : fetchSchoolDetail(sid.value, { signal }),
   () => sid.value,
   (d) => (ownSchool.value ? 'Detail Sekolah' : `${d.school.name} - Monitoring`),
@@ -222,8 +226,14 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
 <template>
   <DsPage data-testid="monitoring-school-page">
     <template v-if="!blocked">
+      <!-- The Guru index is the page the "Monitoring" crumb would point at: no self-link there. -->
       <DsBreadcrumb
-        :items="monitoringCrumbs(paths, data?.school.name ?? '')"
+        v-if="!ownSchool || data"
+        :items="
+          ownSchool
+            ? [{ label: data?.school.name ?? '' }]
+            : monitoringCrumbs(paths, data?.school.name ?? '')
+        "
         data-testid="mon-crumbs"
       />
 
@@ -234,9 +244,15 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
         data-testid="mon-scope-banner"
       />
 
-      <DsLoadError v-if="error" testid="mon-error" @retry="reload" />
+      <DsCallout
+        v-if="noSchool"
+        tone="warning"
+        title="Tiada sekolah dikaitkan dengan akaun anda."
+        data-testid="mon-no-school"
+      />
+      <DsLoadError v-else-if="error" testid="mon-error" @retry="reload" />
       <p
-        v-else-if="!data"
+        v-else-if="!data && !noSchool"
         class="flex items-center gap-2 text-body text-muted"
         data-testid="mon-loading"
       >
@@ -272,7 +288,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
             <DsBadge
               :tone="TAHAP[data.tahap].color"
               data-testid="mon-school-tahap"
-              :label="`${data.tahap} — ${pct(data.pct)}`"
+              :label="`${tahapLabel(data.tahap)} — ${pct(data.pct)}`"
             />
           </div>
         </DsPanel>
@@ -484,6 +500,10 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                   </template>
                 </DsDataTable>
               </div>
+              <DsText variant="caption" data-testid="mon-student-note"
+                >Pelajar dianggap "Aktif" apabila pernah menjawab soalan. Data dikemas kini secara
+                automatik.</DsText
+              >
             </section>
           </template>
 

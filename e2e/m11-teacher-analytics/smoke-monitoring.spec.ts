@@ -85,7 +85,7 @@ test.describe('M11 S2 Monitoring Penglibatan (admin, /admin/monitoring)', MODULE
       '#section-pelajar',
     ])
     await expect(tid(page, 'mon-guide-legend')).toContainText(
-      'Cemerlang >60% | Sederhana 20-60% | Rendah 5-20% | Kritikal <5% | Tiada 0%',
+      'Cemerlang >60% | Sederhana 20-60% | Rendah <20% | Tiada 0%',
     )
     await expect(tid(page, 'mon-guide-tip')).toContainText(
       'Tip: Guna Filter untuk tapis negeri/tempoh/tahap. Export PDF/CSV untuk pembentangan.',
@@ -138,8 +138,7 @@ test.describe('M11 S2 Monitoring Penglibatan (admin, /admin/monitoring)', MODULE
       'Cemerlang',
       'Sederhana',
       'Rendah',
-      'Kritikal',
-      'Tiada Langsung',
+      'Tiada',
     ])
     for (const id of ['mon-period', 'mon-state', 'mon-tahap', 'mon-apply', 'mon-refresh']) {
       await expectTouchTarget(tid(page, id), touchMin(page))
@@ -169,11 +168,11 @@ test.describe('M11 S2 Monitoring Penglibatan (admin, /admin/monitoring)', MODULE
     await tid(page, 'mon-reset').click()
     await expect(page).toHaveURL(/\/admin\/monitoring$/)
     await tid(page, 'mon-state').selectOption('Selangor')
-    await tid(page, 'mon-tahap').selectOption('Kritikal')
+    await tid(page, 'mon-tahap').selectOption('Rendah')
     await tid(page, 'mon-apply').click()
     await expect(tid(page, 'mon-export-pdf')).toHaveAttribute(
       'href',
-      '/admin/monitoring/export/pdf?state=Selangor&tahap=Kritikal',
+      '/admin/monitoring/export/pdf?state=Selangor&tahap=Rendah',
     )
     // 'Jumlah Sekolah' for Selangor is 25 in the mock (observed 28: M02 allocation gap, T1 `it.fails`).
     await expect(tid(page, 'mon-kpi-schools').getByTestId('mon-kpi-value')).toHaveText('25')
@@ -236,9 +235,8 @@ test.describe('M11 S2 Monitoring Penglibatan (admin, /admin/monitoring)', MODULE
     for (const label of [
       'Cemerlang (> 60%)',
       'Sederhana (20-60%)',
-      'Rendah (5-20%)',
-      'Kritikal (< 5%)',
-      'Tiada Langsung (0%)',
+      'Rendah (< 20%)',
+      'Tiada (0%)',
     ]) {
       await expect(student.getByTestId('mon-legend')).toContainText(label)
     }

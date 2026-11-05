@@ -104,9 +104,13 @@ function scrollTo(event: MouseEvent, id: string) {
             <p data-testid="mon-guide-legend">
               <strong class="text-success">Cemerlang</strong> &gt;60% |
               <strong class="text-warning">Sederhana</strong> 20-60% |
-              <strong class="text-error">Rendah</strong> 5-20% |
-              <strong class="text-error">Kritikal</strong> &lt;5% |
+              <strong class="text-error">Rendah</strong> &lt;20% |
               <strong class="text-muted">Tiada</strong> 0%
+            </p>
+            <p data-testid="mon-guide-note">
+              Penglibatan dikira sebagai pelajar yang pernah menjawab sekurang-kurangnya satu
+              soalan, dibahagikan dengan pelajar berdaftar bagi sekolah itu. Tahap: Cemerlang &gt;
+              60%, Sederhana 20-60%, Rendah &lt; 20%, Tiada = 0%.
             </p>
           </div>
           <div

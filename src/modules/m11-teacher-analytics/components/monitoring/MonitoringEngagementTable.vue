@@ -11,7 +11,7 @@ import { computed, ref } from 'vue'
 import { DsBadge, DsDataTable, DsPanel, DsProgress } from '@/ds'
 
 import type { SchoolEngagementRow, TahapKey, TeacherEngagementRow } from '../../api/types'
-import { count, pct, TAHAP, type UiColor } from './monitoring-format'
+import { count, pct, TAHAP, tahapLabel, type UiColor } from './monitoring-format'
 import type { MonitoringPaths } from './monitoring-paths'
 
 const props = defineProps<{
@@ -55,9 +55,8 @@ const columns = computed<TableColumn<Row>[]>(() => [
 const LEGEND: readonly [UiColor, string][] = [
   ['success', 'Cemerlang (> 60%)'],
   ['warning', 'Sederhana (20-60%)'],
-  ['error', 'Rendah (5-20%)'],
-  ['error', 'Kritikal (< 5%)'],
-  ['neutral', 'Tiada Langsung (0%)'],
+  ['error', 'Rendah (< 20%)'],
+  ['neutral', 'Tiada (0%)'],
 ]
 </script>
 
@@ -118,7 +117,10 @@ const LEGEND: readonly [UiColor, string][] = [
           }}</span>
         </template>
         <template #tahap-cell="{ row }">
-          <DsBadge :tone="tahapStyle(row.original.tahap).color" :label="row.original.tahap" />
+          <DsBadge
+            :tone="tahapStyle(row.original.tahap).color"
+            :label="tahapLabel(row.original.tahap)"
+          />
         </template>
         <template #bar-cell="{ row }">
           <span v-if="tahapStyle(row.original.tahap).bar === 'empty'" class="text-body text-muted"
@@ -146,7 +148,10 @@ const LEGEND: readonly [UiColor, string][] = [
                   >{{ (row as Row).code ?? '-' }} · {{ (row as Row).state }}</span
                 >
               </div>
-              <DsBadge :tone="tahapStyle((row as Row).tahap).color" :label="(row as Row).tahap" />
+              <DsBadge
+                :tone="tahapStyle((row as Row).tahap).color"
+                :label="tahapLabel((row as Row).tahap)"
+              />
             </div>
             <dl class="grid grid-cols-3 gap-3 text-body">
               <div>

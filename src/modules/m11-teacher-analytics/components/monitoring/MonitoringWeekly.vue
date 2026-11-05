@@ -43,6 +43,17 @@ const TREND_TITLE = { up: 'Meningkat', down: 'Menurun', same: 'Sama' } as const
 const trendTitle = (t: WeeklyRow['trend']) => TREND_TITLE[t]
 
 const cellOf = (r: WeeklyRow, k: number) => r.cells.find((c) => c.k === k)
+/** The best week is recomputed over the weeks shown (first week with the highest count > 0). */
+const bestOf = (r: WeeklyRow): { k: number; count: number } | null => {
+  let best: { k: number; count: number } | null = null
+  for (const w of shown.value) {
+    const c = cellOf(r, w.k)
+    if (c && c.count > 0 && (best === null || c.count > best.count))
+      best = { k: w.k, count: c.count }
+  }
+  return best
+}
+const isBest = (r: WeeklyRow, k: number) => bestOf(r)?.k === k
 
 type Row = WeeklyRow & Record<string, unknown>
 const data = computed<Row[]>(() => props.rows.map((r) => ({ ...r })))
@@ -64,7 +75,7 @@ const columns = computed<TableColumn<Row>[]>(() => [
     meta: { width: 'xs' },
   })),
   { id: 'trend', header: 'Trend', accessorKey: 'trend' },
-  { id: 'best', header: 'Best', accessorFn: (r) => r.best?.k ?? 0 },
+  { id: 'best', header: 'Best', accessorFn: (r) => bestOf(r)?.k ?? 0 },
 ])
 </script>
 
@@ -103,11 +114,11 @@ const columns = computed<TableColumn<Row>[]>(() => [
           <DsBadge
             v-if="cellOf(row.original, w.k)"
             :tone="CELL[cellOf(row.original, w.k)!.cls]"
-            :emphasis="cellOf(row.original, w.k)!.best ? 'strong' : 'soft'"
-            :icon="cellOf(row.original, w.k)!.best ? 'star' : undefined"
+            :emphasis="isBest(row.original, w.k) ? 'strong' : 'soft'"
+            :icon="isBest(row.original, w.k) ? 'star' : undefined"
             class="tabular min-w-10 justify-center"
             :data-cls="cellOf(row.original, w.k)!.cls"
-            :data-best="cellOf(row.original, w.k)!.best ? 'true' : 'false'"
+            :data-best="isBest(row.original, w.k) ? 'true' : 'false'"
             data-testid="mon-weekly-cell"
             :label="
               cellOf(row.original, w.k)!.count === 0 ? '-' : count(cellOf(row.original, w.k)!.count)
@@ -135,11 +146,11 @@ const columns = computed<TableColumn<Row>[]>(() => [
         </template>
         <template #best-cell="{ row }">
           <span class="whitespace-nowrap" data-testid="mon-weekly-best">
-            <template v-if="row.original.best && labelOf(row.original.best.k)">
-              <span class="text-label text-highlighted">{{ labelOf(row.original.best.k) }}</span
+            <template v-if="bestOf(row.original)">
+              <span class="text-label text-highlighted">{{ labelOf(bestOf(row.original)!.k) }}</span
               >{{ ' ' }}
               <span class="tabular ml-1 text-body text-muted">{{
-                count(row.original.best.count)
+                count(bestOf(row.original)!.count)
               }}</span>
             </template>
             <span v-else class="text-dimmed">-</span>
@@ -178,7 +189,7 @@ const columns = computed<TableColumn<Row>[]>(() => [
                 <DsBadge
                   v-if="cellOf(row as Row, w.k)"
                   :tone="CELL[cellOf(row as Row, w.k)!.cls]"
-                  :emphasis="cellOf(row as Row, w.k)!.best ? 'strong' : 'soft'"
+                  :emphasis="isBest(row as Row, w.k) ? 'strong' : 'soft'"
                   class="tabular"
                   :label="
                     cellOf(row as Row, w.k)!.count === 0

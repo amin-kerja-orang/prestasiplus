@@ -962,11 +962,35 @@ describe('FR-GUR-10-1 / AC-GUR-10-1 Guru index is the own-school detail', () => 
     expect(ids).toEqual(['8080'])
   })
 
-  it('a session without a school shows the error state and fetches nothing', async () => {
+  it('a session without a school shows a plain notice: no fetch, no Retry, no crumb', async () => {
     login(null)
     await mountAt(MonitoringSchoolPage, '/guru/monitoring', { basePath: '/guru/monitoring' })
     expect(api.fetchSchoolDetail).not.toHaveBeenCalled()
-    expect(tid('mon-error')?.exists()).toBe(true)
+    expect(tid('mon-no-school')?.text()).toContain('Tiada sekolah dikaitkan dengan akaun anda.')
+    expect(tid('mon-error')?.exists()).toBe(false)
+    expect(tid('mon-loading')?.exists()).toBe(false)
+    expect(wrapper?.text()).not.toContain('Cuba Semula')
+    expect(tid('mon-crumbs')?.exists()).toBe(false)
+  })
+
+  it('FR-GUR-10-1 the index has no self-linking "Monitoring" crumb; the detail route keeps it', async () => {
+    login(8080)
+    await mountAt(MonitoringSchoolPage, '/guru/monitoring', { basePath: '/guru/monitoring' })
+    expect(tid('mon-crumbs')?.findAll('a')).toHaveLength(0)
+    expect(tid('mon-crumbs')?.text()).toContain('SMK Contoh')
+    wrapper?.unmount()
+    await mountAt(MonitoringSchoolPage, '/guru/monitoring/sekolah/8080', { schoolId: 8080 })
+    expect(crumb(0)?.find('a').attributes('href')).toBe('/guru/monitoring')
+  })
+
+  it('R1-GUR-10 the pupil note, "Senarai Guru (n)" and the "{Tahap} — {p}%" pill', async () => {
+    login(8080)
+    await mountAt(MonitoringSchoolPage, '/guru/monitoring', { basePath: '/guru/monitoring' })
+    expect(tid('mon-student-note')?.text()).toBe(
+      'Pelajar dianggap "Aktif" apabila pernah menjawab soalan. Data dikemas kini secara automatik.',
+    )
+    expect(tid('mon-teachers')?.text()).toContain('Senarai Guru (2)')
+    expect(tid('mon-school-tahap')?.text()).toBe('Cemerlang — 89.7%')
   })
 
   it('the detail route with an explicit school id shows no banner', async () => {
@@ -1097,5 +1121,65 @@ describe('FR-GUR-10-8 / R1-AS-10 labels', () => {
     expect(wrapper?.text()).not.toMatch(/T4\/T5/)
     expect(tid('mon-table-student')?.text()).toContain('Analisis Penglibatan Pelajar')
     expect(valuesIn('mon-kpis')).toHaveLength(9)
+  })
+})
+
+describe('R1-AS-10 four Tahap bands (no "Kritikal")', () => {
+  it('legend, guide and filter show Cemerlang / Sederhana / Rendah / Tiada only; API keys are mapped', async () => {
+    const base = overview()
+    api.fetchMonitoringOverview.mockResolvedValue({
+      ...base,
+      studentRows: [
+        { ...base.studentRows[0]!, tahap: 'Kritikal' as const, pct: 2 },
+        { ...base.studentRows[1]!, tahap: 'Tiada Langsung' as const, pct: 0 },
+      ],
+    })
+    await mountAt(MonitoringPage, '/admin/monitoring', { basePath: '/admin/monitoring' })
+    const text = wrapper?.text() ?? ''
+    expect(text).not.toContain('Kritikal')
+    expect(text).not.toContain('Tiada Langsung')
+    expect(tid('mon-legend')?.text()).toContain('Rendah (< 20%)')
+    expect(tid('mon-legend')?.text()).toContain('Tiada (0%)')
+    expect(tid('mon-guide-legend')?.text().replace(/\s+/g, ' ')).toBe(
+      'Cemerlang >60% | Sederhana 20-60% | Rendah <20% | Tiada 0%',
+    )
+    expect(tid('mon-guide-note')?.text()).toContain('Tahap: Cemerlang > 60%')
+    expect(
+      tid('mon-tahap')
+        ?.findAll('option')
+        .map((o) => o.text()),
+    ).toEqual(['Semua Tahap', 'Cemerlang', 'Sederhana', 'Rendah', 'Tiada'])
+    const badges = (tid('mon-table-student')?.text() ?? '').match(/Rendah|Tiada(?! Guru)/g)
+    expect(badges).toContain('Rendah')
+  })
+
+  it('weekly: Best is recomputed over the 12 weeks shown and no out-of-range cell is marked best', async () => {
+    const weeks = Array.from({ length: 14 }, (_, i) => ({ k: i + 1, from: '01/01', to: '07/01' }))
+    api.fetchMonitoringOverview.mockResolvedValue({
+      ...overview(),
+      weeks,
+      weekly: [
+        {
+          schoolId: 940,
+          name: 'SMK Satu',
+          code: 'ABC1',
+          // week 1 (not shown) is the API best; week 5 (M3 of the shown weeks 3..14) is the best of the last 12
+          cells: weeks.map((w) => ({
+            k: w.k,
+            count: w.k === 1 ? 900 : w.k === 5 ? 50 : 1,
+            cls: 'up',
+            best: w.k === 1,
+          })),
+          trend: 'same',
+          best: { k: 1, count: 900 },
+        },
+      ],
+    })
+    await mountAt(MonitoringPage, '/admin/monitoring', { basePath: '/admin/monitoring' })
+    expect(all('mon-weekly-cell')).toHaveLength(12)
+    const best = all('mon-weekly-cell').filter((c) => c.attributes('data-best') === 'true')
+    expect(best).toHaveLength(1)
+    expect(best[0]?.text()).toBe('50')
+    expect(tid('mon-weekly-best')?.text().replace(/ {2,}/g, ' ')).toBe('M3 50')
   })
 })

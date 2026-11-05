@@ -37,7 +37,7 @@ import MonitoringSignals from '../components/monitoring/MonitoringSignals.vue'
 import MonitoringTools from '../components/monitoring/MonitoringTools.vue'
 import MonitoringWeekly from '../components/monitoring/MonitoringWeekly.vue'
 import { buildCsv } from '../components/monitoring/monitoring-csv'
-import { EXPORT_ERROR, pct } from '../components/monitoring/monitoring-format'
+import { EXPORT_ERROR, pct, tahapLabel } from '../components/monitoring/monitoring-format'
 import {
   MONITORING_BASE,
   monitoringPaths,
@@ -111,7 +111,7 @@ async function doExport(format: 'pdf' | 'csv') {
       r.registered,
       r.engaged,
       pct(r.pct),
-      r.tahap,
+      tahapLabel(r.tahap),
     ]),
   )
   saveBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), result.filename)
@@ -195,7 +195,7 @@ async function goto(sectionId: string) {
       >
         <DsNativeSelect :id="id" v-model="filters.tahap.value" name="tahap" data-testid="mon-tahap">
           <option value="">Semua Tahap</option>
-          <option v-for="t in TAHAPS" :key="t" :value="t">{{ t }}</option>
+          <option v-for="[value, label] in TAHAPS" :key="value" :value="value">{{ label }}</option>
         </DsNativeSelect>
       </DsFormField>
       <template v-if="wide" #actions>

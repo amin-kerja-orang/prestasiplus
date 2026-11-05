@@ -10333,6 +10333,15 @@
       "sector": "S7",
       "file": "apps/api/prisma/schema/gamification.prisma",
       "approved_by_card": null
+    },    {
+      "name": "RewardSetting",
+      "table": "reward_settings",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/gamification.prisma",
+      "approved_by_card": "S7-T05",
+      "dm": "DM-48",
+      "note": "Singleton Kawalan Reward settings (DM-48): the one source of the coin rate; read by the S5-T15 helper coinsPerCorrect()."
     },
     {
       "name": "MysteryBoxOpening",
@@ -10350,16 +10359,7 @@
       "file": "apps/api/prisma/schema/gamification.prisma",
       "approved_by_card": null
     },
-    {
-      "name": "RewardSetting",
-      "table": "reward_settings",
-      "status": "canonical",
-      "sector": "S7",
-      "file": "apps/api/prisma/schema/gamification.prisma",
-      "note": "Singleton Kawalan Reward settings (DM-48): the one source of the coin rate; read by the S5-T15 helper coinsPerCorrect().",
-      "approved_by_card": "S7-T05",
-      "dm": "DM-48"
-    },
+
     {
       "name": "User",
       "table": "users",

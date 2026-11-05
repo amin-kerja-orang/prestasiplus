@@ -26,7 +26,13 @@ export const STATES = [
   'Selangor',
   'Terengganu',
 ]
-export const TAHAPS = ['Cemerlang', 'Sederhana', 'Rendah', 'Kritikal', 'Tiada Langsung']
+/** Four bands (R1-AS-10); the value is the API key, the label the PRD band name. */
+export const TAHAPS = [
+  ['Cemerlang', 'Cemerlang'],
+  ['Sederhana', 'Sederhana'],
+  ['Rendah', 'Rendah'],
+  ['Tiada Langsung', 'Tiada'],
+] as const
 
 const LABEL: Record<keyof MonitoringFilterQuery, string> = {
   period: 'Tempoh',
@@ -55,7 +61,10 @@ export function useMonitoringFilters(
     if (query.value.state !== '')
       out.push({ key: 'state', label: `${LABEL.state}: ${query.value.state}` })
     if (query.value.tahap !== '')
-      out.push({ key: 'tahap', label: `${LABEL.tahap}: ${query.value.tahap}` })
+      out.push({
+        key: 'tahap',
+        label: `${LABEL.tahap}: ${TAHAPS.find(([v]) => v === query.value.tahap)?.[1] ?? query.value.tahap}`,
+      })
     return out
   })
 
