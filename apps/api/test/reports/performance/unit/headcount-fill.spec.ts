@@ -1,7 +1,7 @@
 import { PerformanceClassDashboardSchema, PerformanceLevelDetailSchema, PerformanceSchoolSchema, PerformanceStudentSchema } from '@pp/contract'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { ctxOf, sitting, world, type World } from '../fakes/fixtures'
+import { answers, ctxOf, sitting, world, type World } from '../fakes/fixtures'
 import { entry } from '../fakes/in-memory-headcount-facts'
 
 /**
@@ -34,7 +34,8 @@ beforeEach(() => {
     { id: '10', schoolId: 's1', name: 'Kelas 4A', teacherId: 't1', teacherName: 'Cikgu Satu', subjectId: '1', subjectName: 'Bahasa Melayu' },
     marks.map(([id]) => id),
   )
-  for (const [id] of marks) w.bijak.addSitting(sitting({ userId: id, score: 6 }))
+  // Pupils 2, 3 and 5 answer 1 of 5 right (20%): they are the Murid Berisiko; the others 3 of 5.
+  for (const [id] of marks) answers(w, id, 5, ['2', '3', '5'].includes(id) ? 1 : 3)
   w.facts.add(...hcEntries())
 })
 
@@ -44,6 +45,8 @@ const schoolAdmin = ctxOf('school_admin', 'sa1')
 
 describe('Prestasi 360: gamification and headcount cards', () => {
   it('streak, best streak, koin and badges come from the gamification port', async () => {
+    // The practice day count still reads the Bijak sittings (not part of S10-T07).
+    w.bijak.addSitting(sitting({ userId: '2', score: 6 }))
     w.gamification.add('2', { syiling: 120, streak: { current: 4, best: 9 } }).addBadge('2', { key: '7', name: 'Rajin', icon: 'R', earnedAt: new Date('2026-09-01T00:00:00Z') })
     const r = await w.student.student(admin, '2')
     expect(r.streak).toBe(4)
@@ -173,7 +176,10 @@ describe('School: GPS, distribution, subjects and teachers', () => {
       { id: '10', schoolId: 's1', teacherId: 't1', subjectId: '1', subjectName: 'Bahasa Melayu' },
       marks.map(([id]) => id),
     )
-    for (const [id] of marks) small.bijak.addSitting(sitting({ userId: id, score: 6 }))
+    for (const [id] of marks) {
+      small.directory.addPupil({ id, schoolId: 's1' })
+      answers(small, id, 5, 3)
+    }
     small.facts.add(...hcEntries(['5']))
     const student = ctxOf('student', '1')
     const hidden = await small.school.school(student)
@@ -219,12 +225,12 @@ describe('School: GPS, distribution, subjects and teachers', () => {
   })
 })
 
-describe('SW13-08: school GPS by subject keys the practice rows by the curriculum subject, not the Bijak code', () => {
+describe('SW13-08: school GPS by subject keys the practice rows by the curriculum subject', () => {
   beforeEach(() => {
-    // The aggregate stores the Bijak code MAT; classes and headcount entries know Matematik as curriculum id 3.
-    w.directory.addSubject('MAT', '3')
+    // The answer reader keys subjects by the curriculum id, the same id classes and headcount entries carry.
+    w.directory.addSubject('MAT', '3', 'Matematik')
     w.classes.add({ id: '11', schoolId: 's1', name: 'Kelas 4B', teacherId: 't1', teacherName: 'Cikgu Satu', subjectId: '3', subjectName: 'Matematik' }, ['1', '2'])
-    w.bijak.addSitting(sitting({ userId: '1', score: 7, subjectId: 'MAT', subjectCode: 'MAT', subjectName: 'Matematik BM' }))
+    answers(w, '1', 5, 4, { subjectId: '3' })
     w.facts.add(
       ...['1', '2'].map((studentId) =>
         entry({ studentId, configId: '5', classroomId: '11', subjectId: '3', subjectName: 'Matematik', targets: [null, 60], actuals: [null, 65] }),
@@ -242,20 +248,14 @@ describe('SW13-08: school GPS by subject keys the practice rows by the curriculu
     PerformanceSchoolSchema.parse(r)
   })
 
-  it("a migrated 'legacy' sitting is no subject row but stays in the school totals", async () => {
+  it('an answer with no subject is no subject row but stays in the school totals', async () => {
     const before = (await w.school.school(schoolAdmin)).stats
-    w.bijak.addSitting(sitting({ userId: '3', score: 5, subjectId: 'legacy', subjectCode: 'legacy', subjectName: 'Tidak diketahui' }))
+    answers(w, '3', 5, 3, { subjectId: '0' })
     const r = await w.school.school(schoolAdmin)
-    expect(r.subjects.map((s) => s.subjectId)).not.toContain('legacy')
+    expect(r.subjects.map((s) => s.subjectId)).not.toContain('0')
     expect(r.subjects.filter((s) => s.name.startsWith('Matematik'))).toHaveLength(1)
     expect(r.stats.sessions).toBe(before.sessions + 1)
-    expect(r.stats.answered).toBeGreaterThan(before.answered)
-  })
-
-  it('a code with no curriculum subject keeps its own row', async () => {
-    w.bijak.addSitting(sitting({ userId: '3', score: 5, subjectId: 'XYZ', subjectCode: 'XYZ', subjectName: 'Lain' }))
-    const r = await w.school.school(schoolAdmin)
-    expect(r.subjects.map((s) => s.subjectId)).toContain('XYZ')
+    expect(r.stats.answered).toBe(before.answered + 5)
   })
 })
 
@@ -264,11 +264,17 @@ describe('Level detail: on track, below, at risk', () => {
     const r = await w.school.level(teacher, 't4')
     expect(r).toMatchObject({ onTrack: 2, below: 3, onTrackPct: 40 })
     expect(r.classRows[0]).toMatchObject({ onTrack: 2, below: 3 })
-    expect(r.atRisk).toEqual([
-      { userId: '2', name: 'Murid Ujian 2', className: 'Kelas 4A', checkpoint: 2, ar: 70, target: 80, gap: -10 },
-      { userId: '3', name: 'Murid Ujian 3', className: 'Kelas 4A', checkpoint: 2, ar: 55, target: 60, gap: -5 },
-      { userId: '5', name: 'Murid Ujian 5', className: 'Kelas 4A', checkpoint: 2, ar: 45, target: 50, gap: -5 },
-    ])
+    // Murid Berisiko is answer based (R1-AS-4): accuracy below 50, lowest first, ties by id.
+    expect(r.atRisk).toEqual(
+      ['2', '3', '5'].map((id) => ({
+        userId: id,
+        name: `Murid Ujian ${id}`,
+        className: 'Kelas 4A',
+        answered: 5,
+        accuracy: 20,
+        lastAnsweredAt: '2026-09-20T10:10:00.000+08:00',
+      })),
+    )
     PerformanceLevelDetailSchema.parse(r)
   })
 

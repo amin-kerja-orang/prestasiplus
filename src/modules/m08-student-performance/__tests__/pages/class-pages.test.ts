@@ -34,7 +34,7 @@ const S5: ClassDashboard = {
     year: 2026,
     joinCode: 'DMO101',
   },
-  stats: { students: 8, accuracy: 42.6, sessions: 11, answered: 68, avgMinutes: 6.1, active7d: 6 },
+  stats: { students: 8, accuracy: 42.6, sessions: 11, answered: 68, avgMinutes: null, active7d: 6 },
   headcount: {
     configId: 504,
     onTrack: 0,
@@ -160,16 +160,19 @@ afterEach(() => {
 })
 
 describe('S5 PrestasiKelasDetailPage', () => {
-  it('shows the header, the 6 stat cards and the headcount block', async () => {
+  it('shows the header (no join code), the 5 stat cards (no Purata Masa/Sesi) and the headcount block', async () => {
     api.fetchClassDashboard.mockResolvedValue(S5)
     const w = await render(PrestasiKelasDetailPage, '/prestasi/kelas/2001', '/prestasi/kelas/:id')
     expect(t(w, 'class-name').text()).toBe('5 MARIKH - Kimia')
-    expect(t(w, 'class-sub').text()).toBe('SMK DEMO · Kimia · 2026 · Kod: DMO101')
+    expect(t(w, 'class-sub').text()).toBe('SMK DEMO · Kimia · 2026')
+    expect(w.text()).not.toContain('DMO101')
     expect(t(w, 'back-link').attributes('title')).toBe('Kembali ke senarai kelas')
     expect(t(w, 'back-link').attributes('href')).toBe('/prestasi/kelas')
     expect(
-      ['murid', 'ketepatan', 'sesi', 'soalan', 'masa', 'aktif'].map((id) => num(w, `stat-${id}`)),
-    ).toEqual(['8', '42.6%', '11', '68', '6.1m', '6'])
+      ['murid', 'ketepatan', 'sesi', 'soalan', 'aktif'].map((id) => num(w, `stat-${id}`)),
+    ).toEqual(['8', '43%', '11', '68', '6'])
+    expect(w.find('[data-testid=stat-masa]').exists()).toBe(false)
+    expect(w.text()).not.toContain('Purata Masa/Sesi')
     expect(num(w, 'hc-on')).toBe('0')
     expect(num(w, 'hc-below')).toBe('1')
     expect(num(w, 'hc-none')).toBe('7')
@@ -185,19 +188,18 @@ describe('S5 PrestasiKelasDetailPage', () => {
     })
     const w = await render(PrestasiKelasDetailPage, '/prestasi/kelas/2001', '/prestasi/kelas/:id')
     expect(w.find('[data-testid=headcount-block]').exists()).toBe(false)
-    expect(t(w, 'class-sub').text()).toBe('SMK DEMO · 2026 · Kod: DEMO-4S')
+    expect(t(w, 'class-sub').text()).toBe('SMK DEMO · 2026')
   })
 
-  it('shows zeros as "0%" and "0m", and the empty trend message', async () => {
+  it('shows zeros as "0%" and the weekly empty trend message', async () => {
     api.fetchClassDashboard.mockResolvedValue({
       ...S5,
-      stats: { students: 15, accuracy: 0, sessions: 0, answered: 0, avgMinutes: 0, active7d: 0 },
+      stats: { students: 15, accuracy: 0, sessions: 0, answered: 0, avgMinutes: null, active7d: 0 },
       trend: [],
     })
     const w = await render(PrestasiKelasDetailPage, '/prestasi/kelas/2001', '/prestasi/kelas/:id')
     expect(t(w, 'stat-ketepatan').text()).toContain('0%')
-    expect(t(w, 'stat-masa').text()).toContain('0m')
-    expect(t(w, 'trend-empty').text()).toContain('Belum ada aktiviti dalam 30 hari terakhir.')
+    expect(t(w, 'trend-empty').text()).toContain('Belum ada aktiviti dalam 12 minggu terakhir.')
     expect(w.find('[data-testid=chart]').exists()).toBe(false)
   })
 
@@ -205,15 +207,16 @@ describe('S5 PrestasiKelasDetailPage', () => {
     api.fetchClassDashboard.mockResolvedValue(S5)
     const w = await render(PrestasiKelasDetailPage, '/prestasi/kelas/2001', '/prestasi/kelas/:id')
     expect(t(w, 'attention-count').text()).toBe('(2)')
-    expect(t(w, 'attention-3003').text()).toContain('1 sesi · 37.5% ketepatan')
+    expect(t(w, 'attention-3003').text()).toContain('1 sesi · 38% ketepatan')
     expect(t(w, 'attention-3003').attributes('href')).toBe('/prestasi/3003')
     expect(t(w, 'attention-3099').text()).toContain('Belum mula berlatih')
     expect(t(w, 'attention-3099').text()).toContain('Tak Aktif')
     const first = tr(w, 'rank-row-3001')
     expect(first.text()).toContain('🥇')
-    expect(first.text()).toContain('88.9%')
+    expect(first.text()).toContain('89%')
     expect(first.get('[data-testid=rank-badge]').text()).toBe('Below')
-    expect(first.text()).toContain('yang lepas')
+    // Terakhir Aktif is dd/mm/yyyy (R1-GUR-4)
+    expect(first.text()).toContain('24/09/2026')
     const idle = tr(w, 'rank-row-3099')
     expect(idle.get('[data-testid=rank-acc]').text()).toBe('—')
     expect(idle.get('[data-testid=rank-badge]').text()).toBe('N/A')

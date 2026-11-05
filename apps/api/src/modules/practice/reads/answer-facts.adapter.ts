@@ -90,6 +90,29 @@ export class AnswerFactsAdapter implements AnswerFactsPort {
 
   async answerFacts(q: AnswerFactsQuery): Promise<AnswerFactRow[]> {
     if (q.modes && q.modes.length === 0) return []
+    if (q.grain === 'user-subject') {
+      const coarse = await this.db.$queryRaw<{ userId: bigint; subjectId: bigint; attempts: bigint; correct: bigint; lastAnsweredAt: Date; firstCorrect: boolean | null; firstAnsweredAt: Date }[]>`
+        SELECT a.user_id AS "userId", coalesce(a.subject_id, 0)::bigint AS "subjectId",
+               count(*)::bigint AS attempts, (count(*) FILTER (WHERE a.is_correct))::bigint AS correct, max(a.answered_at) AS "lastAnsweredAt",
+               (array_agg(a.is_correct ORDER BY a.answered_at, a.id))[1] AS "firstCorrect", min(a.answered_at) AS "firstAnsweredAt"
+          ${this.from}
+         WHERE ${this.where(q)}
+         GROUP BY a.user_id, coalesce(a.subject_id, 0)
+         ORDER BY a.user_id, 2`
+      return coarse.map((r) => ({
+        userId: idToString(r.userId),
+        subjectId: idToString(r.subjectId),
+        questionId: '0',
+        chapterId: null,
+        topicId: null,
+        mode: '*',
+        attempts: num(r.attempts),
+        correct: num(r.correct),
+        lastAnsweredAt: r.lastAnsweredAt,
+        firstCorrect: r.firstCorrect === true,
+        firstAnsweredAt: r.firstAnsweredAt,
+      }))
+    }
     const rows = await this.db.$queryRaw<
       { userId: bigint; subjectId: bigint; questionId: bigint; chapterId: bigint | null; topicId: bigint | null; mode: string; attempts: bigint; correct: bigint; lastAnsweredAt: Date; firstCorrect: boolean | null; firstAnsweredAt: Date }[]
     >`

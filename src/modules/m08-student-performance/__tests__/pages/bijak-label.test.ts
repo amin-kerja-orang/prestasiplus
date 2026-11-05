@@ -10,7 +10,7 @@ import type { ClassDashboard, StudentPerformance } from '../../api/types'
 import Prestasi360Page from '../../pages/Prestasi360Page.vue'
 import PrestasiKelasDetailPage from '../../pages/PrestasiKelasDetailPage.vue'
 
-/** US-33: the class dashboard still says "Keputusan Bijak SPM" in http mode; the Prestasi 360 page no longer does (S10-T01). */
+/** The Prestasi 360 page (S10-T01) and the class dashboard (S10-T07) keep no Bijak-only layout in http mode. */
 
 const api = vi.hoisted(() => ({
   fetchStudentPerformance: vi.fn(),
@@ -52,7 +52,7 @@ const CLASS: ClassDashboard = {
     year: 2026,
     joinCode: 'DMO101',
   },
-  stats: { students: 8, accuracy: 42.6, sessions: 11, answered: 68, avgMinutes: 0, active7d: 0 },
+  stats: { students: 8, accuracy: 42.6, sessions: 11, answered: 68, avgMinutes: null, active7d: 0 },
   headcount: null,
   attention: [],
   trend: [],
@@ -129,32 +129,26 @@ describe('Prestasi360Page in http mode (S10-T01 change 4: no Bijak-only layout)'
   })
 })
 
-describe('PrestasiKelasDetailPage Bijak SPM label (US-33)', () => {
-  it('http mode: shows the Bijak SPM heading and leaves out the neutral tiles', async () => {
-    vi.stubEnv('VITE_API_MODE', 'http')
+describe('PrestasiKelasDetailPage: one V3 layout in every mode (S10-T07)', () => {
+  it.each(['http', 'mock'] as const)('%s mode: five stat cards, no Bijak heading, no "Tiada data" box, no join code', async (mode) => {
+    if (mode === 'http') vi.stubEnv('VITE_API_MODE', 'http')
     api.fetchClassDashboard.mockResolvedValue(CLASS)
     const w = await render(PrestasiKelasDetailPage, '/prestasi/kelas/2001', '/prestasi/kelas/:id')
-    expect(w.get('[data-testid=bijak-summary]').text()).toContain('Keputusan Bijak SPM')
-    expect(has(w, 'stat-sesi')).toBe(true)
+    expect(has(w, 'bijak-summary')).toBe(false)
+    expect(w.text()).not.toContain('Keputusan Bijak SPM')
+    expect(['murid', 'ketepatan', 'sesi', 'soalan', 'aktif'].every((id) => has(w, `stat-${id}`))).toBe(true)
     expect(has(w, 'stat-masa')).toBe(false)
-    expect(has(w, 'stat-aktif')).toBe(false)
+    expect(w.text()).not.toContain('DMO101')
   })
 
-  it('http mode: shows "Tiada data" without sittings', async () => {
+  it('http mode: a class without answers still shows the stat cards with zeros (no Bijak-only empty state)', async () => {
     vi.stubEnv('VITE_API_MODE', 'http')
     api.fetchClassDashboard.mockResolvedValue({
       ...CLASS,
       stats: { ...CLASS.stats, accuracy: 0, sessions: 0, answered: 0 },
     })
     const w = await render(PrestasiKelasDetailPage, '/prestasi/kelas/2001', '/prestasi/kelas/:id')
-    expect(w.get('[data-testid=bijak-empty]').text()).toContain('Tiada data')
-  })
-
-  it('mock mode: no Bijak heading, six tiles', async () => {
-    api.fetchClassDashboard.mockResolvedValue(CLASS)
-    const w = await render(PrestasiKelasDetailPage, '/prestasi/kelas/2001', '/prestasi/kelas/:id')
-    expect(has(w, 'bijak-summary')).toBe(false)
-    expect(has(w, 'stat-masa')).toBe(true)
-    expect(has(w, 'stat-aktif')).toBe(true)
+    expect(has(w, 'bijak-empty')).toBe(false)
+    expect(has(w, 'stat-cards')).toBe(true)
   })
 })

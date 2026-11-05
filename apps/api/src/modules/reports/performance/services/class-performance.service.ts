@@ -2,28 +2,41 @@ import { Inject, Injectable, Optional } from '@nestjs/common'
 
 import { ApiError } from '../../../../common/errors/api-error'
 import { toMytTimestamp } from '../../../../common/time/myt'
-import { CLOCK, mytDay, type Clock } from '../../../../db/clock'
-import { canOpenClassDashboard } from '../domain/access-policy'
-import { ACTIVE_DAYS, ATTENTION_BELOW, COUNTED_MODES, TREND_WINDOW_DAYS } from '../domain/constants'
-import { addFact, emptyFigures, figuresOf, type Figures } from '../domain/reduce'
+import { CLOCK, type Clock } from '../../../../db/clock'
+import { canOpenClassDashboard, viewerSchoolId } from '../domain/access-policy'
+import {
+  ACTIVE_DAYS,
+  ATTENTION_BELOW,
+  CLASS_TREND_WEEKS,
+  REDACTED_ID,
+  SESSION_MODES,
+  TOP_STUDENT_LIMIT,
+  TOP_STUDENT_MIN_ANSWERS,
+} from '../domain/constants'
+import { canSeeName, nameFor } from '../domain/privacy'
 import { accuracyOf, compareIds, round } from '../domain/rules'
-import { startOfDaysAgo } from '../domain/windows'
+import { lastWeeks, mytMidnight, startOfDaysAgo } from '../domain/windows'
 import { HeadcountFactsService } from '../headcount/headcount-facts.service'
 import { meanOrNull } from '../headcount/headcount.rules'
-import { DIRECTORY_PORT, PerformancePorts, type DirectoryPort } from '../ports'
+import { DIRECTORY_PORT, PerformancePorts, type AnswerFactRow, type DirectoryPort } from '../ports'
 import { classBadge, liveEntries, newestConfigId } from './headcount-figures'
 import type { HeadcountFacts } from './headcount-facts.types'
-import { groupBy, nameMap, toCard } from './support'
-import type { Ctx, PerformanceClassCard, PerformanceClassDashboard } from './types'
+import { groupBy, nameMap, ownPupilIds, sessionTotalsOf, toCard } from './support'
+import type { Ctx, PerformanceClassCard, PerformanceClassDashboard, PerformanceClassesAggregate } from './types'
 
+/** One pupil's figures over the class, from the shared answer reader (every mode answers; game modes add no session). */
 interface MemberRow {
   userId: string
-  f: Figures
+  sessions: number
+  answered: number
+  correct: number
   last: Date | null
-  /** null when nothing graded yet. */
+  /** null when nothing answered yet. */
   accuracy: number | null
   rawAccuracy: number
 }
+
+const sumOf = <T>(list: readonly T[], f: (x: T) => number): number => list.reduce((n, x) => n + f(x), 0)
 
 /** Prestasi kelas (S4, S5). classDashboard throws NOT_FOUND for an unknown, school-kind or not-openable class. */
 @Injectable()
@@ -35,10 +48,60 @@ export class ClassPerformanceService {
     @Optional() @Inject(HeadcountFactsService) protected readonly facts?: HeadcountFacts,
   ) {}
 
+  /** A teacher gets the own active classrooms, a school admin the active classrooms of the own school; every other role gets []. */
   async ownClasses(ctx: Ctx): Promise<PerformanceClassCard[]> {
-    if (ctx.role !== 'teacher') return []
-    const classes = await this.ports.classes.classesForTeacher(ctx.userId)
+    let classes
+    if (ctx.role === 'teacher') classes = await this.ports.classes.classesForTeacher(ctx.userId)
+    else if (ctx.role === 'school_admin') {
+      const schoolId = viewerSchoolId(ctx)
+      classes = schoolId === null ? [] : await this.ports.classes.classesOfSchool(schoolId)
+    } else return []
     return classes.filter((c) => c.kind === 'classroom' && c.isActive).map(toCard)
+  }
+
+  /**
+   * `/prestasi/kelas` additive block (R1-GUR-4, FR-GUR-4-7): the cards plus "Pelajar Terbaik" (top 10 with at least 5 answers,
+   * accuracy descending, ties by answers) and "Prestasi Mengikut Subjek" (accuracy per subject, descending) over the pupils of
+   * those classes. One reader call; pooled accuracy (XS-5), capped at 100.
+   */
+  async classesAggregate(ctx: Ctx): Promise<PerformanceClassesAggregate> {
+    const classes = await this.ownClasses(ctx)
+    const rosters = await this.ports.classes.membersOf(classes.map((c) => c.id))
+    const members = [...new Set([...rosters.values()].flat())].sort(compareIds)
+    const rows = members.length === 0 ? [] : await this.ports.answerFacts.answerFacts({ userIds: members })
+
+    const perUser = new Map<string, { answered: number; correct: number }>()
+    const perSubject = new Map<string, { answered: number; correct: number }>()
+    const add = (m: Map<string, { answered: number; correct: number }>, key: string, r: AnswerFactRow): void => {
+      const t = m.get(key) ?? { answered: 0, correct: 0 }
+      t.answered += r.attempts
+      t.correct += r.correct
+      m.set(key, t)
+    }
+    for (const r of rows) {
+      add(perUser, r.userId, r)
+      if (r.subjectId !== '0') add(perSubject, r.subjectId, r)
+    }
+
+    const best = [...perUser]
+      .filter(([, t]) => t.answered >= TOP_STUDENT_MIN_ANSWERS)
+      .map(([userId, t]) => ({ userId, ...t, raw: t.correct / t.answered }))
+      .sort((a, b) => b.raw - a.raw || b.answered - a.answered || compareIds(a.userId, b.userId))
+      .slice(0, TOP_STUDENT_LIMIT)
+    const own = await ownPupilIds(this.ports, ctx)
+    const [names, subjectNames] = await Promise.all([nameMap(this.directory, best.map((b) => b.userId)), this.directory.subjectsOfIds([...perSubject.keys()])])
+    const topStudents = best.map((b) => {
+      const visible = canSeeName(ctx.role, ctx.userId, b.userId, own)
+      return { userId: visible ? b.userId : REDACTED_ID, name: nameFor(names.get(b.userId) ?? '', visible), answered: b.answered, accuracy: accuracyOf(b.correct, b.answered) }
+    })
+    const subjects = [...perSubject]
+      .flatMap(([subjectId, t]) => {
+        const name = subjectNames.get(subjectId)?.name
+        return name === undefined ? [] : [{ subjectId, name, answered: t.answered, accuracy: accuracyOf(t.correct, t.answered), raw: t.correct / t.answered }]
+      })
+      .sort((a, b) => b.raw - a.raw || b.answered - a.answered || a.name.localeCompare(b.name) || compareIds(a.subjectId, b.subjectId))
+      .map((r) => ({ subjectId: r.subjectId, name: r.name, answered: r.answered, accuracy: r.accuracy }))
+    return { classes, topStudents, subjects }
   }
 
   /**
@@ -94,67 +157,76 @@ export class ClassPerformanceService {
     if (!cls || !canOpenClassDashboard(ctx, cls)) throw ApiError.of('NOT_FOUND')
 
     const members = await this.ports.classes.memberIds(cls.id)
-    const facts =
-      members.length === 0
-        ? []
-        : await this.ports.bijak.sittings({
-            userIds: members,
-            ...(cls.subjectId !== null ? { subjectId: cls.subjectId } : {}),
-            modes: COUNTED_MODES.class,
-          })
     const now = this.clock.now()
+    // Every figure comes from the shared answer reader (S10-T01): all modes answer, game modes add no session (XS-4, XS-5, XS-8).
+    const query = { userIds: members, ...(cls.subjectId !== null ? { subjectId: cls.subjectId } : {}) }
+    const weeks = lastWeeks(now, CLASS_TREND_WEEKS)
+    const reader = this.ports.answerFacts
+    const [factRows, sessionRows, weekRows, weekSessionRows] =
+      members.length === 0
+        ? [[], [], [], []]
+        : await Promise.all([
+            reader.answerFacts(query),
+            reader.sessionCounts({ ...query, modes: SESSION_MODES }),
+            reader.weeklyFacts({ ...query, from: mytMidnight(weeks[0] as string), to: now }),
+            reader.weeklyFacts({ ...query, from: mytMidnight(weeks[0] as string), to: now, modes: SESSION_MODES }),
+          ])
 
-    const byUser = groupBy(facts, (s) => s.userId)
+    const byUser = groupBy(factRows, (r) => r.userId)
+    const sessionsOf = sessionTotalsOf(sessionRows)
     const rows: MemberRow[] = members.map((userId) => {
       const list = byUser.get(userId) ?? []
-      const f = list.reduce((acc, s) => addFact(acc, s), emptyFigures())
-      const last = list.reduce<Date | null>((m, s) => (m === null || s.submittedAt > m ? s.submittedAt : m), null)
+      const answered = sumOf(list, (r) => r.attempts)
+      const correct = sumOf(list, (r) => r.correct)
+      const last = list.reduce<Date | null>((m, r) => (m === null || r.lastAnsweredAt > m ? r.lastAnsweredAt : m), null)
       return {
         userId,
-        f,
+        sessions: sessionsOf.get(userId) ?? 0,
+        answered,
+        correct,
         last,
-        accuracy: f.gradedMax === 0 ? null : accuracyOf(f.gradedScore, f.gradedMax),
-        rawAccuracy: f.gradedMax === 0 ? 0 : (f.gradedScore / f.gradedMax) * 100,
+        accuracy: answered === 0 ? null : accuracyOf(correct, answered),
+        rawAccuracy: answered === 0 ? 0 : (correct / answered) * 100,
       }
     })
 
-    const total = figuresOf(facts)
+    const total = { sessions: sumOf(rows, (r) => r.sessions), answered: sumOf(rows, (r) => r.answered), correct: sumOf(rows, (r) => r.correct) }
     const activeFrom = startOfDaysAgo(now, ACTIVE_DAYS - 1)
-    const active7d = new Set(facts.filter((s) => s.submittedAt >= activeFrom).map((s) => s.userId)).size
+    const active7d = rows.filter((r) => r.last !== null && r.last >= activeFrom).length
 
-    const trendFrom = startOfDaysAgo(now, TREND_WINDOW_DAYS - 1)
-    const byDay = groupBy(
-      facts.filter((s) => s.submittedAt >= trendFrom),
-      (s) => mytDay(s.submittedAt),
-    )
-    const trend = [...byDay]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, list]) => {
-        const f = figuresOf(list)
-        return {
-          date,
-          sessions: f.sittings,
-          avgAccuracy: accuracyOf(f.gradedScore, f.gradedMax),
-          activeStudents: new Set(list.map((s) => s.userId)).size,
-        }
-      })
+    // Weekly trend (12 ISO weeks, Monday start, MYT): the reader has no day grain (DOC DEFECT 4). Weeks without an answer are left out.
+    const sessionsByWeek = new Map<string, number>()
+    for (const r of weekSessionRows) sessionsByWeek.set(r.weekStart, (sessionsByWeek.get(r.weekStart) ?? 0) + r.sessions)
+    const trend = weeks.flatMap((week) => {
+      const list = weekRows.filter((r) => r.weekStart === week && r.attempts > 0)
+      if (list.length === 0) return []
+      return [
+        {
+          date: week,
+          sessions: sessionsByWeek.get(week) ?? 0,
+          avgAccuracy: accuracyOf(sumOf(list, (r) => r.correct), sumOf(list, (r) => r.attempts)),
+          activeStudents: new Set(list.map((r) => r.userId)).size,
+        },
+      ]
+    })
 
     const hc = await this.headcountBlock(ctx, cls.id, members)
     const names = await nameMap(this.directory, members)
     const nameOf = (id: string): string => names.get(id) ?? ''
-    // Accuracy descending (uncapped for the order), ties by user id; members without graded marks last.
+    // Kedudukan Murid: accuracy descending (uncapped for the order), ties by answers descending then name; members without an answer last.
+    const byName = (a: MemberRow, b: MemberRow): number => nameOf(a.userId).localeCompare(nameOf(b.userId)) || compareIds(a.userId, b.userId)
     const order = [...rows].sort((a, b) => {
-      if (a.accuracy === null && b.accuracy === null) return compareIds(a.userId, b.userId)
+      if (a.accuracy === null && b.accuracy === null) return byName(a, b)
       if (a.accuracy === null) return 1
       if (b.accuracy === null) return -1
-      return b.rawAccuracy - a.rawAccuracy || compareIds(a.userId, b.userId)
+      return b.rawAccuracy - a.rawAccuracy || b.answered - a.answered || byName(a, b)
     })
     const ranking = order.map((r, i) => ({
       rank: i + 1,
       userId: r.userId,
       name: nameOf(r.userId),
-      sessions: r.f.sittings,
-      answered: r.f.answered,
+      sessions: r.sessions,
+      answered: r.answered,
       accuracy: r.accuracy,
       headcount: hc.badges.get(r.userId) ?? ('na' as const),
       lastActiveAt: r.last ? toMytTimestamp(r.last) : null,
@@ -162,9 +234,9 @@ export class ClassPerformanceService {
     const attention = [
       ...order
         .filter((r) => r.accuracy !== null && r.rawAccuracy < ATTENTION_BELOW)
-        .map((r) => ({ userId: r.userId, name: nameOf(r.userId), sessions: r.f.sittings, accuracy: r.accuracy })),
+        .map((r) => ({ userId: r.userId, name: nameOf(r.userId), sessions: r.sessions, accuracy: r.accuracy })),
       ...rows
-        .filter((r) => r.f.sittings === 0)
+        .filter((r) => r.answered === 0)
         .sort((a, b) => compareIds(a.userId, b.userId))
         .map((r) => ({ userId: r.userId, name: nameOf(r.userId), sessions: 0, accuracy: null })),
     ]
@@ -174,10 +246,11 @@ export class ClassPerformanceService {
       class: { id: cls.id, name: cls.name, school: school?.name ?? '', subject: cls.subjectName, year: cls.year, joinCode: cls.joinCode },
       stats: {
         students: members.length,
-        accuracy: accuracyOf(total.gradedScore, total.gradedMax),
-        sessions: total.sittings,
+        accuracy: accuracyOf(total.correct, total.answered),
+        sessions: total.sessions,
         answered: total.answered,
-        avgMinutes: total.sittings === 0 ? 0 : round(total.seconds / total.sittings / 60, 1),
+        // Dropped (DOC DEFECT 4): the single answer store has no duration. Deprecated on the wire, always null.
+        avgMinutes: null,
         active7d,
       },
       headcount: hc.block,

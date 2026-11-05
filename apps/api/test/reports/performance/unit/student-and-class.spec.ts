@@ -1,12 +1,13 @@
 import {
   PerformanceClassAnalyticsSchema,
   PerformanceClassDashboardSchema,
+  PerformanceClassesAggregateSchema,
   PerformanceStudentSchema,
   PerformanceAnalyticsSchema,
 } from '@pp/contract'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { ctxOf, sitting, world, type World } from '../fakes/fixtures'
+import { answers, ctxOf, sitting, world, type World } from '../fakes/fixtures'
 
 const d = (iso: string) => new Date(iso)
 const round1 = (v: number): number => Math.round(v * 10) / 10
@@ -280,29 +281,30 @@ describe('Prestasi 360 (student)', () => {
 
 describe('Class dashboard', () => {
   beforeEach(() => {
-    w.bijak
-      // pupil 1: 9/10 and 7/10 -> 80 percent; pupil 2: 3/10 -> 30 percent (needs attention); pupil 3: nothing
-      .addSitting(sitting({ userId: '1', score: 9, maxScore: 10, durationSeconds: 600, submittedAt: d('2026-09-25T08:00:00+08:00') }))
-      .addSitting(sitting({ userId: '1', score: 7, maxScore: 10, durationSeconds: 600, submittedAt: d('2026-09-10T08:00:00+08:00') }))
-      .addSitting(sitting({ userId: '2', score: 3, maxScore: 10, durationSeconds: 1200, submittedAt: d('2026-09-25T09:00:00+08:00') }))
-      // another subject: not in this class
-      .addSitting(sitting({ userId: '1', score: 1, maxScore: 10, subjectId: '2', subjectCode: 'MT', subjectName: 'Matematik' }))
-      .addSitting(sitting({ userId: '3', score: 10, maxScore: 10, subjectId: '2', subjectCode: 'MT', subjectName: 'Matematik' }))
-      // test row of pupil 3 in the class subject
-      .addSitting(sitting({ userId: '3', score: 10, maxScore: 10 }), { isTest: true })
+    // The figures come from the single answer store (every mode); one session per call.
+    // pupil 1: 9/10 today and 7/10 on 10 September -> 80 percent; pupil 2: 3/10 -> 30 percent (needs attention); pupil 3: nothing in the class subject
+    answers(w, '1', 10, 9, { answeredAt: d('2026-09-25T08:00:00+08:00') })
+    answers(w, '1', 10, 7, { answeredAt: d('2026-09-10T08:00:00+08:00') })
+    answers(w, '2', 10, 3, { answeredAt: d('2026-09-25T09:00:00+08:00') })
+    // another subject: not in this class
+    answers(w, '1', 10, 1, { subjectId: '2' })
+    answers(w, '3', 10, 10, { subjectId: '2' })
+    // test row of pupil 3 in the class subject
+    w.answers.add({ userId: '3', mode: 'latih_tubi', isCorrect: true, answeredAt: d('2026-09-25T08:00:00+08:00'), isTest: true })
   })
 
   const teacher = ctxOf('teacher', 't1')
 
   it('class figures are the sum of the members and only count the class subject', async () => {
     const r = await w.klass.classDashboard(teacher, '10')
-    expect(r.stats).toEqual({ students: 3, accuracy: 63.3, sessions: 3, answered: 15, avgMinutes: 13.3, active7d: 2 })
+    // avgMinutes is dropped (DOC DEFECT 4): always null
+    expect(r.stats).toEqual({ students: 3, accuracy: 63.3, sessions: 3, answered: 30, avgMinutes: null, active7d: 2 })
     expect(r.class).toMatchObject({ id: '10', school: 'Sekolah Contoh Satu', subject: 'Bahasa Melayu' })
     expect(r.headcount).toBeNull()
     PerformanceClassDashboardSchema.parse(r)
   })
 
-  it('ranks by accuracy, members without marks last; ties are not shared', async () => {
+  it('ranks by accuracy, members without answers last; ties by answers descending then name', async () => {
     const r = await w.klass.classDashboard(teacher, '10')
     expect(r.ranking.map((x) => [x.rank, x.userId, x.accuracy, x.headcount])).toEqual([
       [1, '1', 80, 'na'],
@@ -311,9 +313,17 @@ describe('Class dashboard', () => {
     ])
     expect(r.ranking[0]?.lastActiveAt).toBe('2026-09-25T08:00:00.000+08:00')
     expect(r.ranking[2]?.lastActiveAt).toBeNull()
+    // two pupils at 50%: the one with more answers first, then by name
+    answers(w, '4', 4, 2)
+    answers(w, '5', 8, 4)
+    answers(w, '6', 4, 2)
+    w.directory.addPupil({ id: '4', name: 'Zainal Contoh', schoolId: 's1' }).addPupil({ id: '5', name: 'Yati Contoh', schoolId: 's1' }).addPupil({ id: '6', name: 'Azman Contoh', schoolId: 's1' })
+    w.classes.add({ id: '15', schoolId: 's1', teacherId: 't1' }, ['4', '5', '6'])
+    const tie = await w.klass.classDashboard(teacher, '15')
+    expect(tie.ranking.map((x) => x.userId)).toEqual(['5', '6', '4'])
   })
 
-  it('attention lists accuracy under 50 first, then members with no sittings', async () => {
+  it('attention lists accuracy under 50 first, then members with no answers', async () => {
     const r = await w.klass.classDashboard(teacher, '10')
     expect(r.attention.map((x) => [x.userId, x.accuracy, x.sessions])).toEqual([
       ['2', 30, 1],
@@ -321,26 +331,51 @@ describe('Class dashboard', () => {
     ])
   })
 
-  it('trend has one point per Malaysian day with sittings in the last 30 days', async () => {
+  it('trend is weekly (Monday of the week), the last 12 weeks, only weeks with answers (DOC DEFECT 4)', async () => {
+    answers(w, '1', 10, 5, { answeredAt: d('2026-06-01T08:00:00+08:00') }) // older than 12 weeks
     const r = await w.klass.classDashboard(teacher, '10')
     expect(r.trend).toEqual([
-      { date: '2026-09-10', sessions: 1, avgAccuracy: 70, activeStudents: 1 },
-      { date: '2026-09-25', sessions: 2, avgAccuracy: 60, activeStudents: 2 },
+      { date: '2026-09-07', sessions: 1, avgAccuracy: 70, activeStudents: 1 },
+      { date: '2026-09-21', sessions: 2, avgAccuracy: 60, activeStudents: 2 },
     ])
   })
 
-  it('zero marks and no sittings give zeros, never NaN', async () => {
+  it('zero answers give zeros, never NaN', async () => {
     w.classes.add({ id: '14', schoolId: 's1', teacherId: 't2' }, ['8'])
     const r = await w.klass.classDashboard(ctxOf('teacher', 't2'), '14')
-    expect(r.stats).toEqual({ students: 1, accuracy: 0, sessions: 0, answered: 0, avgMinutes: 0, active7d: 0 })
+    expect(r.stats).toEqual({ students: 1, accuracy: 0, sessions: 0, answered: 0, avgMinutes: null, active7d: 0 })
     expect(r.trend).toEqual([])
   })
 
   it('a class without subject counts every subject', async () => {
     const r = await w.klass.classDashboard(ctxOf('teacher', 't2'), '11')
     expect(r.stats.sessions).toBe(1)
-    w.bijak.addSitting(sitting({ userId: '3', score: 5, maxScore: 10, subjectId: '3', submittedAt: d('2026-09-25T08:00:00+08:00') }))
+    answers(w, '3', 5, 2, { subjectId: '3', answeredAt: d('2026-09-25T08:00:00+08:00') })
     expect((await w.klass.classDashboard(ctxOf('teacher', 't2'), '11')).stats.sessions).toBe(2)
+  })
+
+  it('AC-X4-1: 10 latihan answers (7 right) and one simulasi of 40 (30 right) are 50 answers and 37 right on the class dashboard and the school page', async () => {
+    const x = world()
+    x.directory.addSchool({ id: 's1' }).addPupil({ id: '1', schoolId: 's1' }).addTeacher('t1', 'Cikgu Satu', 's1')
+    x.classes.add({ id: '10', schoolId: 's1', teacherId: 't1' }, ['1'])
+    answers(x, '1', 10, 7, { mode: 'latih_tubi' })
+    answers(x, '1', 40, 30, { mode: 'simulasi', subjectId: '2' })
+    const cls = await x.klass.classDashboard(ctxOf('teacher', 't1'), '10')
+    expect(cls.stats).toMatchObject({ answered: 50, sessions: 2, accuracy: 74 })
+    expect(cls.ranking[0]).toMatchObject({ answered: 50, accuracy: 74 })
+    const school = await x.school.school(ctxOf('school_admin', 'sa1'))
+    expect(school.stats).toMatchObject({ answered: 50, sessions: 2, accuracy: 74 })
+    // 37 / 50 = 74: the same figure on both pages
+    expect(cls.stats.accuracy).toBe(school.stats.accuracy)
+  })
+
+  it('game modes add answers but never a session', async () => {
+    const x = world()
+    x.directory.addSchool({ id: 's1' }).addPupil({ id: '1', schoolId: 's1' })
+    x.classes.add({ id: '10', schoolId: 's1', teacherId: 't1' }, ['1'])
+    answers(x, '1', 10, 5, { mode: 'battle' })
+    const cls = await x.klass.classDashboard(ctxOf('teacher', 't1'), '10')
+    expect(cls.stats).toMatchObject({ answered: 10, sessions: 0 })
   })
 
   it.each([
@@ -363,6 +398,32 @@ describe('Class dashboard', () => {
     expect((await w.klass.ownClasses(teacher)).map((c) => c.id)).toEqual(['10'])
     expect(await w.klass.ownClasses(ctxOf('admin', 'a', { level: 'national', label: 'x' }))).toEqual([])
     expect((await w.klass.ownClasses(teacher))[0]).toMatchObject({ color: '#6366F1', students: 3 })
+  })
+
+  it('own classes: a school admin gets the active classrooms of the own school (not school classes, not another school)', async () => {
+    w.classes.add({ id: '13', schoolId: 's1', teacherId: 't1', isActive: false }).add({ id: '30', schoolId: 's2', teacherId: 't9' })
+    expect((await w.klass.ownClasses(ctxOf('school_admin', 'sa1'))).map((c) => c.id)).toEqual(['10', '11'])
+    expect(await w.klass.ownClasses(ctxOf('school_admin', 'sa0', { level: 'national', label: 'x' }))).toEqual([])
+  })
+
+  it('classes aggregate: Pelajar Terbaik (5+ answers) and Prestasi Mengikut Subjek over the pupils of the own classes', async () => {
+    const x = world()
+    x.directory.addSchool({ id: 's1' }).addSubject('BM', '1', 'Bahasa Melayu').addSubject('MT', '2', 'Matematik')
+    for (const id of ['1', '2', '3', '9']) x.directory.addPupil({ id, name: `Murid ${id}`, schoolId: 's1' })
+    x.classes.add({ id: '10', schoolId: 's1', teacherId: 't1' }, ['1', '2', '3']).add({ id: '90', schoolId: 's1', teacherId: 't9' }, ['9'])
+    answers(x, '1', 10, 9)
+    answers(x, '2', 10, 9)
+    answers(x, '2', 4, 4, { subjectId: '2' })
+    answers(x, '3', 4, 4) // fewer than 5 answers: not a top student
+    answers(x, '9', 10, 10) // not a pupil of the teacher's classes
+    const r = await x.klass.classesAggregate(teacher)
+    expect(r.classes.map((c) => c.id)).toEqual(['10'])
+    // 2 has 13 of 14 right (92.9%); 1 has 90%; 3 has 4 answers and is left out; 9 is not a pupil of the own classes
+    expect(r.topStudents.map((t) => [t.userId, t.answered, t.accuracy])).toEqual([['2', 14, 92.9], ['1', 10, 90]])
+    // Matematik: 4 of 4 = 100; Bahasa Melayu: 9 + 9 + 4 = 22 of 24 = 91.7
+    expect(r.subjects.map((v) => [v.subjectId, v.name, v.answered, v.accuracy])).toEqual([['2', 'Matematik', 4, 100], ['1', 'Bahasa Melayu', 24, 91.7]])
+    PerformanceClassesAggregateSchema.parse(r)
+    expect(await x.klass.classesAggregate(ctxOf('teacher', 'nobody'))).toEqual({ classes: [], topStudents: [], subjects: [] })
   })
 })
 
@@ -581,18 +642,19 @@ describe('Analitik', () => {
 })
 
 describe('Soalan Dijawab counts answered questions, not the paper marks (issue 61 m1)', () => {
-  // Three 10-mark papers; the pupil answered 3, 0 and 2 questions (marks per question are not 1).
+  // The pupil answered 3 and 2 questions in two subjects (the single answer store; marks per question are not 1).
   beforeEach(() => {
+    // Analitik still reads the Bijak sittings (not part of S10-T07).
     w.bijak
       .addSitting(sitting({ userId: '1', score: 6, maxScore: 10, answeredCount: 3, submittedAt: d('2026-09-24T10:00:00+08:00') }))
       .addSitting(sitting({ userId: '1', score: 0, maxScore: 10, answeredCount: 0, submittedAt: d('2026-09-24T11:00:00+08:00') }))
       .addSitting(sitting({ userId: '1', score: 4, maxScore: 10, answeredCount: 2, subjectId: '2', subjectCode: 'MT', subjectName: 'Matematik', submittedAt: d('2026-09-25T09:00:00+08:00') }))
-  })
-
-  it('student: stats.answered and mastery.answered are the answered questions of the answer store, not the paper marks', async () => {
     w.directory.addSubject('BM', '1', 'Bahasa Melayu').addSubject('MT', '2', 'Matematik')
     w.answers.addMany('1', 3, 2, { mode: 'simulasi', subjectId: '1', sessionId: 'sA', answeredAt: d('2026-09-24T10:00:00+08:00') })
     w.answers.addMany('1', 2, 1, { mode: 'simulasi', subjectId: '2', sessionId: 'sB', answeredAt: d('2026-09-25T09:00:00+08:00') })
+  })
+
+  it('student: stats.answered and mastery.answered are the answered questions of the answer store, not the paper marks', async () => {
     const r = await w.student.student(ctxOf('student', '1'), '1')
     expect(r.stats.answered).toBe(5)
     expect(r.mastery.map((m) => [m.subjectCode, m.answered])).toEqual([

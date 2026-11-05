@@ -34,7 +34,8 @@ export const ACTIVE_DAYS = 7
 /** Class attention list: members below this accuracy. */
 export const ATTENTION_BELOW = 50
 
-export const TOP_STUDENT_MIN_SITTINGS = 3
+/** Murid Terbaik / Pelajar Terbaik: fewest answers a pupil needs to be listed (R1-AS-4, R1-GUR-4). */
+export const TOP_STUDENT_MIN_ANSWERS = 5
 export const TOP_STUDENT_LIMIT = 10
 export const SCHOOL_QUESTION_CAP = 50
 /** R1 decision D113 (FR-GUR-6-9): fewest pupils with an answer to a question for its discrimination index. */
@@ -42,12 +43,25 @@ export const DISCRIMINATION_MIN_MEMBERS = 10
 /** Share of members in the upper and the lower group. */
 export const DISCRIMINATION_GROUP_SHARE = 0.27
 
-/** Tingkatan chips of the item analysis (R1-AS-6, D101): T1 to T5. `LEVEL_CODES` below stays T4/T5 for the level cards. */
-export const ITEM_TINGKATAN_CODES = ['t1', 't2', 't3', 't4', 't5'] as const
+/** Tingkatan 1 to 5, lower case (the route `/prestasi/tingkatan/t1..t5` and the reader's `levelCode`). */
+export const LEVEL_CODES = ['t1', 't2', 't3', 't4', 't5'] as const
 
-export const LEVEL_CODES = ['t4', 't5'] as const
+/** Tingkatan chips of the item analysis (R1-AS-6, D101): T1 to T5. */
+export const ITEM_TINGKATAN_CODES = ['t1', 't2', 't3', 't4', 't5'] as const
 export type LevelCode = (typeof LEVEL_CODES)[number]
-export const LEVEL_NAMES: Readonly<Record<LevelCode, string>> = { t4: 'Tingkatan 4', t5: 'Tingkatan 5' }
+export const LEVEL_NAMES: Readonly<Record<LevelCode, string>> = {
+  t1: 'Tingkatan 1',
+  t2: 'Tingkatan 2',
+  t3: 'Tingkatan 3',
+  t4: 'Tingkatan 4',
+  t5: 'Tingkatan 5',
+}
+
+/** Murid Berisiko (R1-AS-4): whole-number accuracy below this, or no answer in the last ACTIVE_DAYS days. */
+export const AT_RISK_BELOW = 50
+export const AT_RISK_LIMIT = 10
+/** Weekly class trend (DOC DEFECT 4): the last 12 ISO weeks. */
+export const CLASS_TREND_WEEKS = 12
 
 /** A pupil is ranked once this many non-test practice answers exist (LEAD, BE-19). */
 export const RANKING_MIN_ANSWERS = 3

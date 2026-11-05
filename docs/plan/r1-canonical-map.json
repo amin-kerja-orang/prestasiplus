@@ -16523,6 +16523,16 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/performance/classes/aggregate",
+      "method": "GET",
+      "path": "/api/performance/classes/aggregate",
+      "api_id": null,
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/http/performance.controllers.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "GET /api/performance/classes/:p",
       "method": "GET",
       "path": "/api/performance/classes/:id",
