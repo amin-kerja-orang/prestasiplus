@@ -201,7 +201,7 @@ describe('PkskQuestionsService (BE-09 adapter over the one bank)', () => {
     const pool = await s2.approvedPool('T1', ['PKSK_MATH'])
     expect(JSON.stringify(pool)).not.toMatch(/isCorrect|correct/)
     expect(pool[0]).toEqual({ id, domainCode: 'PKSK_MATH', questionText: 'Berapa 1+1?', options: [{ text: '1' }, { text: '2' }, { text: '3' }] })
-    expect(await s2.answerKeys('T1', [id])).toEqual([{ id, domainCode: 'PKSK_MATH', optionCount: 3, correctIndexes: [1, 2] }])
+    expect(await s2.answerKeys('T1', [id])).toEqual([{ id, domainCode: 'PKSK_MATH', optionCount: 3, correctIndexes: [1, 2], explanation: null }])
     expect(await s2.answerKeys('T4', [id])).toEqual([])
     store.get(id)!.status = 'review'
     expect(await s2.answerKeys('T1', [id])).toEqual([])
