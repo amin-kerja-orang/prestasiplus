@@ -1,6 +1,6 @@
 import type { Scenario } from '@pp/contract-tests'
 
-import { dataOf, errorOf, expectError, listOf } from '../helpers'
+import { dataOf, enrolPupil, errorOf, expectError, listOf } from '../helpers'
 
 const CSV = '﻿tajuk,kod_subjek,kod_tingkatan,nama_fail_audio\n"Contoh: KBAT Sains Bab 1",SCI,T4,kbat-sains-1.mp3\n'
 
@@ -23,7 +23,7 @@ export const questionSetsScenarios: Scenario[] = [
       const subjects = await teacher.request('GET', '/subjects')
       const subjectId = String(listOf(subjects)[0]?.id)
       const cls = dataOf(await teacher.request('POST', '/guru/classes', { body: { name: 'Kelas Set Soalan', subjectId, educationLevel: 'tingkatan-4' } }))
-      ctx.expectStatus(await student.request('POST', '/kelas-saya/join', { body: { classCode: String(cls.joinCode) } }), 201)
+      await enrolPupil(ctx, teacher, student, cls.id)
       const after = await student.request('GET', '/set-soalan-saya')
       ctx.expectStatus(after, 200)
       ctx.check(listOf(after).length === 0, 'a class without sets shows nothing')
