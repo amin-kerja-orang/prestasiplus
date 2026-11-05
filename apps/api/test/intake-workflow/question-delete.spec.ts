@@ -40,11 +40,14 @@ async function expectKept(itemId: string, questionId: string): Promise<void> {
 }
 
 describe('deleting the Draf question of an accepted item', () => {
-  it('Guru own delete succeeds; the item stays accepted with a null question link and its history', async () => {
+  it('the Guru route no longer deletes bank questions (S6-T06): it answers 404 for a paper item and for the question id; the question, the item and its link stay', async () => {
     const { itemId, questionId } = await accepted()
-    const res = await del(teacher, `/guru/questions/${questionId}`)
-    expect(res.status, JSON.stringify(res.body)).toBe(200)
-    await expectKept(itemId, questionId)
+    // The Guru DELETE acts on the teacher's own question SUBMISSIONS (intake items with a form payload), never on a bank question.
+    expect((await del(teacher, `/guru/questions/${itemId}`)).status).toBe(404)
+    expect((await del(teacher, `/guru/questions/${questionId}`)).status).toBe(404)
+    expect(await t.db.query(`select 1 from questions where id = $1`, [questionId])).toHaveLength(1)
+    const rows = await t.db.query<{ review_state: string; question_id: string | null }>(`select review_state, question_id::text from intake_items where id = $1`, [itemId])
+    expect(rows[0]).toEqual({ review_state: 'accepted', question_id: questionId })
   })
 
   it('admin delete succeeds; the item stays accepted with a null question link and its history', async () => {

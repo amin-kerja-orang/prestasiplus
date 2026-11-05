@@ -38,11 +38,16 @@ import {
   PerutusanReactionResultSchema,
   ScreenshotUploadRequestSchema,
   ScreenshotUploadResultSchema,
+  ADMIN_VIDEO_PAGE_SIZE,
+  VIDEO_MESSAGES,
+  VIDEO_PAGE_SIZE,
   VideoCreateRequestSchema,
   VideoDetailSchema,
   VideoFormContextSchema,
+  VideoListQuerySchema,
   VideoListResponseSchema,
   contentFileRefused,
+  isYoutubeVideoUrl,
   contentMutationOf,
 } from '../schema'
 
@@ -187,6 +192,9 @@ describe('banners', () => {
   it('update: partial, and a stored legacy code is accepted', () => {
     expect(ok(AdminBannerUpdateRequestSchema, { bannerType: 'FEATURE' })).toBe(true)
     expect(ok(AdminBannerUpdateRequestSchema, { isActive: false })).toBe(true)
+    expect(ok(AdminBannerUpdateRequestSchema, { bannerType: 'PROMOTIONAL', linkType: 'LEGACY', targetAudience: 'PARENT' })).toBe(true)
+    // S5-T09 (a): a full unchanged save of a legacy FEATURE row parses (V3 DB CHECK cannot store FEATURE, so no DB case).
+    expect(ok(AdminBannerUpdateRequestSchema, { title: 'Hebahan', description: null, imageUrl: null, bannerType: 'FEATURE', linkType: 'NONE', targetAudience: 'STUDENT', displayOrder: 2, startDate: '2026-10-01', endDate: null, isActive: true })).toBe(true)
     expect(ok(AdminBannerUpdateRequestSchema, { startDate: '2026-10-31', endDate: '2026-10-01' })).toBe(false)
     expect(ok(AdminBannerUpdateRequestSchema, { title: '' })).toBe(false)
   })
@@ -237,16 +245,13 @@ describe('notes', () => {
 
 describe('videos', () => {
   const uploader = { name: 'Hakim Pengunggah', initial: 'H', roleLabel: 'Guru' }
-  const card = { id: '9', title: 'Tips SPM', platformLabel: 'YouTube', thumbnailUrl: null, views: 3, createdAt: AT, uploader }
+  const card = { id: '9', title: 'Tips SPM', platformLabel: 'YouTube', thumbnailUrl: null, views: 3, createdAt: AT, uploader, category: 'tips-spm', categoryLabel: 'Tips SPM', subject: { id: '3', name: 'Matematik' } }
   const detail = {
     ...card,
-    videoUrl: 'https://www.youtube.com/watch?v=abc123',
-    embedUrl: 'https://www.youtube.com/embed/abc123',
+    videoUrl: 'https://www.youtube.com/watch?v=aB3_dE-7hJk',
+    embedUrl: 'https://www.youtube.com/embed/aB3_dE-7hJk',
     platform: 'Youtube',
     description: null,
-    category: 'tips-spm',
-    categoryLabel: 'Tips SPM',
-    subject: { id: '3', name: 'Matematik' },
     visibility: 'global',
     canManage: false,
     related: [card],
@@ -281,7 +286,7 @@ describe('videos', () => {
   })
 
   it('create body: required fields, http(s) URL, category and visibility', () => {
-    const body = { videoUrl: 'https://youtu.be/abc123', title: 'Tips SPM', category: 'tips-spm', visibility: 'global' }
+    const body = { videoUrl: 'https://youtu.be/aB3_dE-7hJk', title: 'Tips SPM', category: 'tips-spm', visibility: 'global' }
     expect(ok(VideoCreateRequestSchema, body)).toBe(true)
     expect(ok(VideoCreateRequestSchema, { ...body, description: null, subjectId: '3', visibility: 'school' })).toBe(true)
     for (const bad of [
@@ -290,10 +295,66 @@ describe('videos', () => {
       { ...body, title: '' },
       { ...body, category: 'sukan' },
       { ...body, visibility: 'private' },
+      { ...body, title: 't'.repeat(256) },
       { ...body, description: 'd'.repeat(1001) },
       { title: 'Tips SPM', category: 'tips-spm', visibility: 'global' },
     ]) {
       expect(ok(VideoCreateRequestSchema, bad)).toBe(false)
+    }
+  })
+
+  it('create body: visibility is optional (ignored by the server) and the title may be 150 characters', () => {
+    const body = { videoUrl: 'https://youtu.be/aB3_dE-7hJk', title: 't'.repeat(150), category: 'lain-lain' }
+    expect(ok(VideoCreateRequestSchema, body)).toBe(true)
+  })
+
+  it('list query: pageSize 1..50, default constants', () => {
+    expect(ok(VideoListQuerySchema, { pageSize: '25' })).toBe(true)
+    expect(ok(VideoListQuerySchema, {})).toBe(true)
+    expect(ok(VideoListQuerySchema, { pageSize: '0' })).toBe(false)
+    expect(ok(VideoListQuerySchema, { pageSize: '51' })).toBe(false)
+    expect(VIDEO_PAGE_SIZE).toBe(24)
+    expect(ADMIN_VIDEO_PAGE_SIZE).toBe(25)
+  })
+
+  it('exact BM copy and the create flash', () => {
+    expect(VIDEO_MESSAGES.titleRequired).toBe('Sila isi tajuk video.')
+    expect(VIDEO_MESSAGES.titleTooLong).toBe('Tajuk video tidak boleh melebihi 150 aksara.')
+    expect(VIDEO_MESSAGES.urlRequired).toBe('Sila isi pautan YouTube.')
+    expect(VIDEO_MESSAGES.urlInvalid).toBe('Pautan mesti pautan YouTube yang sah.')
+    expect(VIDEO_MESSAGES.categoryRequired).toBe('Sila pilih kategori.')
+    expect(CONTENT_FLASH.video.created).toBe('Video ditambah.')
+  })
+
+  it('isYoutubeVideoUrl accepts YouTube video links only', () => {
+    for (const good of [
+      'https://youtu.be/aB3_dE-7hJk',
+      'http://youtu.be/aB3_dE-7hJk',
+      'https://www.youtube.com/watch?v=aB3_dE-7hJk',
+      'https://youtube.com/watch?v=aB3_dE-7hJk&t=3',
+      'https://m.youtube.com/watch?v=aB3_dE-7hJk',
+      'https://www.youtube.com/embed/aB3_dE-7hJk',
+      'https://www.youtube.com/shorts/aB3_dE-7hJk',
+    ]) {
+      expect(isYoutubeVideoUrl(good)).toBe(true)
+    }
+    for (const bad of [
+      '',
+      'youtube.com/watch?v=abc',
+      'https://vimeo.com/123456',
+      'https://evil-youtube.com/watch?v=aB3_dE-7hJk',
+      'https://youtube.com.evil.test/watch?v=aB3_dE-7hJk',
+      'https://www.youtube.com/',
+      'https://www.youtube.com/watch',
+      'https://www.youtube.com/embed/',
+      'https://youtu.be/',
+      'ftp://youtu.be/aB3_dE-7hJk',
+      'javascript:alert(1)',
+      'https://youtu.be/not-a-video-id',
+      'https://www.youtube.com/watch?v=x',
+      'https://www.youtube.com/embed/aB3_dE-7hJk/extra',
+    ]) {
+      expect(isYoutubeVideoUrl(bad)).toBe(false)
     }
   })
 })
@@ -509,8 +570,12 @@ describe('screenshots and support config', () => {
   })
 
   it('support config', () => {
-    expect(ok(ContentSupportConfigSchema, { email: 'bantuan@example.test', whatsappNumber: '60123456789' })).toBe(true)
+    expect(ok(ContentSupportConfigSchema, { email: 'bantuan@example.test', phone: '', whatsapp: '60123456789', hours: '' })).toBe(true)
     expect(ok(ContentSupportConfigSchema, { email: 'bantuan@example.test' })).toBe(false)
+    expect(ok(ContentSupportConfigSchema, { email: '', whatsappNumber: '' })).toBe(false)
+    expect(ok(ContentSupportConfigSchema, { email: '', phone: '', whatsapp: '', hours: '', whatsappNumber: '60123456789' })).toBe(true)
+    expect(ok(ContentSupportConfigSchema, { email: '', phone: '', whatsapp: '', hours: '' })).toBe(true)
+    expect(ok(ContentSupportConfigSchema, { email: 'bantuan@example.test', phone: '', whatsapp: '', hours: '' })).toBe(true)
   })
 })
 

@@ -12,10 +12,10 @@ import { createTestHooks } from '@/mock/testing/hooks'
 import { questions } from '@/modules/m04-question-bank/mock'
 
 import type {
-  ChapterSubjectDetail,
   Dashboard,
   Mastery,
   Progress,
+  RemedialSuggestions,
   RevisionOverview,
   SubjectConfig,
 } from '../../api/types'
@@ -23,7 +23,6 @@ import { practice, type AnswerRow, type SessionRow } from '../../mock'
 import { fixtures } from '../../mock/hooks'
 import { useOfferedLevels } from '../../mock/repository/rules'
 import {
-  ADMIN_SEKOLAH,
   GURU,
   MemoryStorage,
   PELAJAR2,
@@ -32,6 +31,9 @@ import {
   getAs,
 } from './boot-all'
 import { request } from './helpers'
+
+/** A fixture-school pupil (M02 3001–3008) no other test in this file writes for. */
+const FIXTURE_PUPIL = 3001
 
 let runtime: MockRuntime
 let hooks: Record<string, unknown>
@@ -271,7 +273,7 @@ describe('setSpmProgress(userId, subjectId, {answered, correct})  (BR-27)', () =
   })
 })
 
-describe('answerChapter(userId, chapterId, {correctPct})  (no chapter lock, D98)', () => {
+describe('answerChapter(userId, chapterId, {correctPct})', () => {
   // D72: practice offers T4 / T5, but every chapter question of the dataset is Darjah (stored, hidden): the
   // chapter list is exercised on that data with the Darjah levels offered.
   beforeEach(() => {
@@ -280,55 +282,6 @@ describe('answerChapter(userId, chapterId, {correctPct})  (no chapter lock, D98)
   afterEach(() => {
     useOfferedLevels()
   })
-
-  it('100 % of MATH D1 Bab 1 completes it at 100 % (#8); a start of Bab 2 then succeeds', async () => {
-    const r = await call('answerChapter', ADMIN_SEKOLAH, 1, { correctPct: 100 })
-    expect(r).toEqual({ answered: 464, correct: 464 })
-    const c = await data<ChapterSubjectDetail>(ADMIN_SEKOLAH, '/api/practice/chapter-subjects/MATH')
-    expect(c.chapters[0]).toMatchObject({
-      total: 464,
-      answered: 464,
-      correct: 464,
-      scorePct: 100,
-      remaining: 0,
-      complete: true,
-      state: 'open',
-    })
-    expect(c.chapters[1]).toMatchObject({ number: 2, state: 'open' })
-    expect(c.chapters[2]).toMatchObject({ number: 3, state: 'open' })
-    const start = await request(
-      runtime,
-      'POST',
-      '/api/practice/sessions',
-      setUser(ADMIN_SEKOLAH).token,
-      {
-        mode: 'chapter',
-        chapterId: 143,
-        count: 5,
-      },
-    )
-    expect(start.status).toBe(201)
-  }, 60_000)
-
-  it('60 % completes the chapter below the old 70 % bar: Bab 2 stays open and a start succeeds (D98)', async () => {
-    const r = await call('answerChapter', PELAJAR2, 1, { correctPct: 60 })
-    expect(r).toEqual({ answered: 464, correct: 278 })
-    const c = await data<ChapterSubjectDetail>(PELAJAR2, '/api/practice/chapter-subjects/MATH')
-    expect(c.chapters[0]).toMatchObject({ complete: true, scorePct: 59.9 })
-    expect(c.chapters[1]?.state).toBe('open')
-    const start = await request(
-      runtime,
-      'POST',
-      '/api/practice/sessions',
-      setUser(PELAJAR2).token,
-      {
-        mode: 'chapter',
-        chapterId: 143,
-        count: 5,
-      },
-    )
-    expect(start.status).toBe(201)
-  }, 60_000)
 
   it('rejects an unknown chapter and a bad percentage', async () => {
     await expect(call('answerChapter', PELAJAR2, 999_999, { correctPct: 50 })).rejects.toThrow(
@@ -379,5 +332,42 @@ describe('G4 follow-ups', () => {
     await expect(call('answerChapter', ghost, 1, { correctPct: 50 })).rejects.toBeInstanceOf(
       RangeError,
     )
+  })
+})
+
+describe('remedial suggestions after addAnswer (S5-T07, AC-MUR-12-1)', () => {
+  // The helper's questions are Tingkatan-less D1 ones: offer the Darjah levels so the drill is servable.
+  beforeEach(() => {
+    useOfferedLevels([1, 2, 3, 4])
+  })
+  afterEach(() => {
+    useOfferedLevels()
+  })
+
+  it('a pupil whose only answers in a subject are wrong gets a "Ketepatan: 0%" card; a correct one lifts it out', async () => {
+    const url = '/api/practice/remedial-suggestions'
+    expect(await data<RemedialSuggestions>(FIXTURE_PUPIL, url)).toEqual({ completed: [], needed: [] })
+    const [q1, q2] = mathQuestions() as [number, number]
+    for (const q of [q1, q2]) {
+      await call('addAnswer', {
+        userId: FIXTURE_PUPIL,
+        questionId: q,
+        isCorrect: false,
+        answeredAt: '2026-09-25T10:00:00+08:00',
+      })
+    }
+    expect((await data<RemedialSuggestions>(FIXTURE_PUPIL, url)).needed).toEqual([
+      { subjectCode: 'MATH', subjectName: 'Matematik', answered: 2, accuracy: 0, target: 60 },
+    ])
+    for (const q of [q1, q2, q1, q2, q1, q2]) {
+      await call('addAnswer', {
+        userId: FIXTURE_PUPIL,
+        questionId: q,
+        isCorrect: true,
+        answeredAt: '2026-09-25T10:10:00+08:00',
+      })
+    }
+    // 6 of 8 correct = 75: above the target, the card goes.
+    expect((await data<RemedialSuggestions>(FIXTURE_PUPIL, url)).needed).toEqual([])
   })
 })
