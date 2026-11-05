@@ -255,6 +255,7 @@ export function fetchStructured(
     scope?: StructuredScope | null
     track?: StructuredTrack | null
     q?: string | null
+    markable?: '1' | null
   } = {},
   options: Signal = {},
 ): Promise<ListResult<StructuredCard, StructuredListMeta>> {
@@ -266,6 +267,7 @@ export function fetchStructured(
       scope: query.scope ?? null,
       track: query.track ?? null,
       q: query.q ?? null,
+      markable: query.markable ?? null,
     },
     ...withSignal(options),
   })

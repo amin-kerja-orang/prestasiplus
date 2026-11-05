@@ -14,7 +14,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi, usePageMeta } from '@/composables'
-import { DsEmptyState, DsLoadError } from '@/ds'
+import { DsCallout, DsEmptyState, DsLoadError, DsText } from '@/ds'
 
 import { fetchStructured } from '../api/practice'
 import {
@@ -69,6 +69,7 @@ const { data, error, reload } = useApi(
         subjectId: subjectParam() || null,
         kbatLevel: qv('kbat_level') || null,
         q: qv('q').trim() || null,
+        markable: '1',
         page: parsePage(route.query),
         scope: variant.value.scope,
         track: variant.value.track,
@@ -248,8 +249,15 @@ function goPage(page: number): void {
         data-testid="structured-empty"
       />
 
+      <DsCallout
+        v-if="(meta?.pendingSchemeCount ?? 0) > 0"
+        tone="info"
+        :description="`${String(meta?.pendingSchemeCount)} soalan untuk pilihan ini masih menunggu skema pemarkahan…`"
+        data-testid="structured-pending"
+      />
+
       <ul
-        v-else
+        v-if="items.length > 0"
         class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3"
         data-testid="structured-grid"
       >
@@ -304,6 +312,9 @@ function goPage(page: number): void {
                 <UIcon name="i-ph-stack-duotone" class="mt-1 size-4 shrink-0" aria-hidden="true" />
                 {{ c.parts }} bahagian · {{ c.marks }} markah
               </p>
+              <DsText v-if="c.bestScore" variant="caption" tone="muted" data-testid="card-best"
+                >Skor terbaik: {{ c.bestScore.awarded }}/{{ c.bestScore.max }}</DsText
+              >
               <p class="flex items-start gap-2 text-caption text-muted" data-testid="card-author">
                 <UIcon name="i-ph-user-duotone" class="mt-1 size-4 shrink-0" aria-hidden="true" />
                 <span class="min-w-0 break-words"
@@ -320,7 +331,7 @@ function goPage(page: number): void {
                   trailing-icon="i-ph-arrow-right-bold"
                   class="min-h-11 min-w-11"
                   data-testid="card-start"
-                  >Mula</UButton
+                  >{{ c.bestScore ? 'Cuba Lagi' : 'Mula' }}</UButton
                 >
               </div>
             </div>

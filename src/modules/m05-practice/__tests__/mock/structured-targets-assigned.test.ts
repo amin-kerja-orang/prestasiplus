@@ -172,6 +172,7 @@ describe('#15 GET /api/practice/structured', () => {
       levelName: 'Tingkatan 5',
       parts: 1,
       marks: 8,
+      bestScore: null,
     })
   })
 
@@ -231,6 +232,15 @@ describe('#15 GET /api/practice/structured', () => {
     const none = await listOf(PELAJAR, '/api/practice/structured?q=zzqxjvkw-tiada')
     expect(none.body.data).toEqual([])
     expect(none.body.meta.totalItems).toBe(0)
+  })
+
+  it('markable keeps only sets with a usable scheme; pendingSchemeCount ignores markable; bestScore is null without attempts', async () => {
+    const all = await listOf(PELAJAR, '/api/practice/structured')
+    const mk = await listOf(PELAJAR, '/api/practice/structured?markable=1')
+    expect(mk.body.meta.totalItems).toBeLessThanOrEqual(all.body.meta.totalItems)
+    expect(mk.body.meta.totalItems + mk.body.meta.pendingSchemeCount).toBe(all.body.meta.totalItems)
+    expect(mk.body.meta.pendingSchemeCount).toBe(all.body.meta.pendingSchemeCount)
+    expect(all.body.data.every((c) => c.bestScore === null)).toBe(true)
   })
 
   it('a page past the end is an empty page that keeps the requested number', async () => {

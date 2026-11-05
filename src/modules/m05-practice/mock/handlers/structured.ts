@@ -245,6 +245,24 @@ function matchesTerm(q: StructuredQuestion, term: string): boolean {
   )
 }
 
+/** A usable scheme: every leaf part (one with no child part) has a model answer (FR-MUR-17-1). */
+function hasUsableScheme(q: StructuredQuestion): boolean {
+  const parents = new Set(q.subQuestions.map((s) => s.parentSubId))
+  return q.subQuestions
+    .filter((s) => !parents.has(s.id))
+    .every((s) => s.modelAnswer.trim() !== '')
+}
+
+/** The caller's highest attempt total on a set, or null without an attempt. */
+function bestScoreOf(userId: number, id: number): { awarded: number; max: number } | null {
+  let best: { awarded: number; max: number } | null = null
+  for (const a of practiceRepo.structuredAttempts(userId)) {
+    if (a.structuredQuestionId !== id) continue
+    if (!best || a.totalAwarded > best.awarded) best = { awarded: a.totalAwarded, max: a.totalMax }
+  }
+  return best
+}
+
 function listStructured(req: MockRequest) {
   const { scope, track } = variant(req.query)
   const options = subjectOptions(scope, track)
@@ -254,8 +272,12 @@ function listStructured(req: MockRequest) {
   const kbat = filterOf(req.query, 'kbatLevel')
 
   const term = (queryString(req.query, 'q') ?? '').trim().slice(0, SEARCH_MAX).toLowerCase()
+  const markable = ['1', 'true'].includes(
+    (queryString(req.query, 'markable') ?? '').trim().toLowerCase(),
+  )
   let rows: StructuredQuestion[] = []
   let total = 0
+  let pending = 0
   const empty =
     subject.kind === 'nothing' ||
     kbat.kind === 'nothing' ||
@@ -283,25 +305,24 @@ function listStructured(req: MockRequest) {
       const q: ListQuery = { subjectIds: options.map((o) => o.id), kbatLevel }
       return track === 'bahasa' ? concatenated(q, from, limit) : merged(q, from, limit)
     }
-    if (term === '') {
-      const r = read(offset, page.pageSize)
-      rows = r.rows
-      total = r.total
-    } else {
-      // The text search (stem or stimulus) filters the whole list, then pages the matches.
-      const all = read(0, Math.max(read(0, 1).total, 1)).rows.filter((row) =>
-        matchesTerm(row, term),
-      )
-      total = all.length
-      rows = all.slice(offset, offset + page.pageSize)
-    }
+    // The whole filtered list is read once: the text search, the `markable` rule and the pending
+    // count (sets of this filter with no usable scheme, ignoring `markable`) all need it.
+    const all = read(0, Math.max(read(0, 1).total, 1)).rows.filter(
+      (row) => term === '' || matchesTerm(row, term),
+    )
+    pending = all.filter((row) => !hasUsableScheme(row)).length
+    const shown = markable ? all.filter(hasUsableScheme) : all
+    total = shown.length
+    rows = shown.slice(offset, offset + page.pageSize)
   }
-  const items = rows.map(card)
+  const me = userIdOf(req)
+  const items = rows.map((q) => ({ ...card(q), bestScore: bestScoreOf(me, q.id) }))
   return list(items, {
     ...pageMeta(total, page, items.length),
     scope,
     track,
     subjectOptions: options,
+    pendingSchemeCount: pending,
   })
 }
 

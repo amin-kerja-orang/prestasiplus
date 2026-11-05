@@ -69,6 +69,7 @@ const card = (over: Record<string, unknown> = {}) => ({
   levelName: 'Tingkatan 5',
   parts: 1,
   marks: 10,
+  bestScore: null,
   ...over,
 })
 const listOf = (items: unknown[], meta: Record<string, unknown> = {}) => ({
@@ -83,6 +84,7 @@ const listOf = (items: unknown[], meta: Record<string, unknown> = {}) => ({
     scope: null,
     track: null,
     subjectOptions: [{ id: 23, name: 'Perniagaan' }],
+    pendingSchemeCount: 0,
     ...meta,
   },
 })
@@ -190,6 +192,31 @@ describe('S10 StructuredListPage', () => {
     )
     expect(w.get('[data-testid=filter-search]').attributes('maxlength')).toBe('100')
     expect(w.findComponent({ name: 'Pagination' }).props('itemsPerPage')).toBe(12)
+  })
+
+  it('sends markable=1, shows the best score with "Cuba Lagi" and the pending-scheme notice', async () => {
+    api.fetchStructured.mockResolvedValue(
+      listOf(
+        [card({ bestScore: { awarded: 7, max: 10 } }), card({ id: 2 })],
+        { pendingSchemeCount: 3 },
+      ),
+    )
+    const w = await render(StructuredListPage, '/latihan-berstruktur')
+    expect(api.fetchStructured.mock.calls[0]?.[0]).toMatchObject({ markable: '1' })
+    const cards = w.findAll('[data-testid^=structured-card-]')
+    expect(cards[0]?.get('[data-testid=card-best]').text()).toBe('Skor terbaik: 7/10')
+    expect(cards[0]?.get('[data-testid=card-start]').text()).toBe('Cuba Lagi')
+    expect(cards[1]?.find('[data-testid=card-best]').exists()).toBe(false)
+    expect(cards[1]?.get('[data-testid=card-start]').text()).toBe('Mula')
+    expect(t(w, 'structured-pending').text()).toBe(
+      '3 soalan untuk pilihan ini masih menunggu skema pemarkahan…',
+    )
+  })
+
+  it('hides the pending notice when nothing is pending', async () => {
+    api.fetchStructured.mockResolvedValue(listOf([card()]))
+    const w = await render(StructuredListPage, '/latihan-berstruktur')
+    expect(w.find('[data-testid=structured-pending]').exists()).toBe(false)
   })
 
   it('sends the search text as q and resets the page', async () => {
