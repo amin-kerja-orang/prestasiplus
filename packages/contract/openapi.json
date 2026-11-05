@@ -43791,6 +43791,10 @@
               "id": {
                 "$ref": "#/components/schemas/Id"
               },
+              "title": {
+                "type": "string",
+                "description": "60 section 2.17.4 `paper.title`: the source paper code, exam type and year, joined by spaces (the source paper has no title column)."
+              },
               "paperCode": {
                 "type": [
                   "string",
@@ -43812,6 +43816,7 @@
             },
             "required": [
               "id",
+              "title",
               "paperCode",
               "year",
               "examType"
