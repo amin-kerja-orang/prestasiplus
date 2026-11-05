@@ -95,36 +95,34 @@ const chainOf = (label: string): string[] => label.split(/\.(?=\()/)
 
 const tree = computed<Root[]>(() => {
   const subs = data.value?.subQuestions ?? []
-  const byChain = new Map<string, (typeof subs)[number]>()
-  for (const s of subs) byChain.set(s.label, s)
-  const hasChildren = new Set<string>()
-  const parentOf = (label: string): string | null => {
-    const c = chainOf(label)
-    return c.length > 1 ? c.slice(0, -1).join('.') : null
-  }
+  // A label is a branch when another label continues its chain ("(a)" for "(a).(i)").
+  const branches = new Set<string>()
   for (const s of subs) {
-    const p = parentOf(s.label)
-    if (p !== null && byChain.has(p)) hasChildren.add(p)
+    const c = chainOf(s.label)
+    for (let i = 1; i < c.length; i++) branches.add(c.slice(0, i).join('.'))
   }
-  const roots: Root[] = []
-  let current: Root | undefined
+  // One root per first chain segment, in first-seen order; a missing parent never makes a new root.
+  const groups = new Map<string, Row[]>()
   for (const s of subs) {
-    const p = parentOf(s.label)
-    const nested = p !== null && byChain.has(p)
+    const c = chainOf(s.label)
     const row: Row = {
       id: s.id,
       label: s.label,
       text: s.text,
       marks: s.marks,
-      depth: nested ? Math.min(chainOf(s.label).length - 1, 4) : 0,
-      leaf: !hasChildren.has(s.label),
+      depth: Math.min(c.length - 1, 4),
+      leaf: !branches.has(s.label),
     }
-    if (!nested || current === undefined) {
-      current = { id: s.id, rows: [row] }
-      roots.push(current)
-    } else current.rows.push(row)
+    const key = c[0] ?? s.label
+    const rows = groups.get(key)
+    if (rows) rows.push(row)
+    else groups.set(key, [row])
   }
-  return roots
+  return [...groups.entries()].map(([key, rows]) => {
+    // The head ("(a)") comes first even when the wire lists it late.
+    const sorted = [...rows.filter((r) => r.label === key), ...rows.filter((r) => r.label !== key)]
+    return { id: sorted[0]?.id ?? 0, rows: sorted }
+  })
 })
 const leaves = computed(() => tree.value.flatMap((r) => r.rows).filter((r) => r.leaf))
 const totalMarks = computed(() => leaves.value.reduce((n, r) => n + r.marks, 0))
@@ -218,10 +216,19 @@ function onInput(subId: number, value: string): void {
   answers[subId] = value
   scheduleSave()
 }
+function onPageHide(): void {
+  flushDraft()
+}
+function onVisibility(): void {
+  if (document.visibilityState === 'hidden') flushDraft()
+}
 onBeforeUnmount(() => {
   flushDraft()
   clearTimeout(timer)
-  window.visualViewport?.removeEventListener('resize', keepFocusedVisible)
+  clearTimeout(focusTimer)
+  window.removeEventListener('pagehide', onPageHide)
+  document.removeEventListener('visibilitychange', onVisibility)
+  window.visualViewport?.removeEventListener('resize', onViewportResize)
 })
 
 // ---- submit ---------------------------------------------------------------------------------------
@@ -285,26 +292,55 @@ watch(leaveOpen, (o) => {
   // Esc or an outside tap closes the dialog: that is the safe choice ("Kekal").
   if (!o && leaveDecision) decideLeave(false)
 })
+let leavePending: Promise<boolean> | null = null
 onBeforeRouteLeave(() => {
-  if (!hasTyped.value || result.value !== null) return true
+  // Nothing to lose, or the submit is already on its way: leave without asking.
+  if (!hasTyped.value || result.value !== null || sending.value) return true
   flushDraft()
-  return new Promise<boolean>((resolve) => {
-    leaveDecision = (stay) => resolve(!stay)
+  // A second navigation while the dialog is open shares the first answer.
+  if (leavePending) return leavePending
+  leavePending = new Promise<boolean>((resolve) => {
+    leaveDecision = (stay) => {
+      leavePending = null
+      resolve(!stay)
+    }
     leaveOpen.value = true
   })
+  return leavePending
 })
 
 // ---- keyboard and viewport (AC-MUR-17-4) ------------------------------------------------------------
 
-/** Keeps the focused textarea inside the visual viewport when the on-screen keyboard opens. */
+let focusTimer: ReturnType<typeof setTimeout> | undefined
+let lastViewportHeight = 0
+/** Scrolls the focused textarea into view only when it lies outside the visual viewport. */
 function keepFocusedVisible(): void {
   const el = document.activeElement
-  if (el instanceof HTMLTextAreaElement) el.scrollIntoView?.({ block: 'center', behavior: 'auto' })
+  if (!(el instanceof HTMLTextAreaElement)) return
+  const vv = window.visualViewport
+  const top = vv ? vv.offsetTop : 0
+  const bottom = top + (vv ? vv.height : window.innerHeight)
+  const r = el.getBoundingClientRect()
+  if (r.top < top || r.bottom > bottom) el.scrollIntoView?.({ block: 'nearest', behavior: 'auto' })
+}
+/** Only a shrinking viewport while a textarea has focus is the keyboard opening. */
+function onViewportResize(): void {
+  const h = window.visualViewport?.height ?? 0
+  const shrank = lastViewportHeight > 0 && h < lastViewportHeight
+  lastViewportHeight = h
+  if (shrank && document.activeElement instanceof HTMLTextAreaElement) keepFocusedVisible()
 }
 function onFocusIn(e: FocusEvent): void {
-  if (e.target instanceof HTMLTextAreaElement) setTimeout(keepFocusedVisible, 300)
+  if (!(e.target instanceof HTMLTextAreaElement)) return
+  clearTimeout(focusTimer)
+  focusTimer = setTimeout(keepFocusedVisible, 300)
 }
-onMounted(() => window.visualViewport?.addEventListener('resize', keepFocusedVisible))
+onMounted(() => {
+  window.addEventListener('pagehide', onPageHide)
+  document.addEventListener('visibilitychange', onVisibility)
+  lastViewportHeight = window.visualViewport?.height ?? 0
+  window.visualViewport?.addEventListener('resize', onViewportResize)
+})
 </script>
 
 <template>
@@ -349,7 +385,6 @@ onMounted(() => window.visualViewport?.addEventListener('resize', keepFocusedVis
                   :class="{
                     'ps-3': s.depth === 1,
                     'ps-6': s.depth === 2,
-
                     'ps-8': s.depth >= 3,
                   }"
                   :data-testid="`sub-${String(s.id)}`"
@@ -420,7 +455,7 @@ onMounted(() => window.visualViewport?.addEventListener('resize', keepFocusedVis
             >
               <template #description>
                 <ul class="flex flex-col gap-1">
-                  <li v-for="m in errors" :key="m">{{ m }}</li>
+                  <li v-for="(m, i) in errors" :key="`${String(i)}-${m}`">{{ m }}</li>
                 </ul>
               </template>
             </UAlert>

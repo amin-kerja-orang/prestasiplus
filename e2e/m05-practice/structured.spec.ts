@@ -239,7 +239,8 @@ test.describe('M05 Q3 structured answer', { tag: [moduleTag(5)] }, () => {
         .click()
       await expect(page).toHaveURL(/\/latihan-berstruktur\/\d+\/jawab$/)
       await expectTabTitle(page, 'Soalan Berstruktur — Jawab | PRESTASIPLUS')
-      // Known product bug (also fails on the list page): the shell title is not rendered here.
+      // Pre-existing gap, not part of S5-T11: no `shell-user-title` testid is rendered in src (the list
+      // page fails the same way). The shell owner must fix it; kept soft so the rest of this test runs.
       await expect.soft(tid(page, 'shell-user-title')).toHaveText('Soalan Berstruktur')
       await expect(tid(page, 'answer-h1')).toHaveText('Soalan Berstruktur — Jawab')
       await expect(tid(page, 'stimulus-group')).not.toBeEmpty()

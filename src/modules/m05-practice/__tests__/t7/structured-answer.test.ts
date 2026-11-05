@@ -8,6 +8,14 @@ import { createMemoryHistory, createRouter, RouterView, type Router } from 'vue-
 import StructuredAnswerPage from '../../pages/StructuredAnswerPage.vue'
 
 const api = vi.hoisted(() => ({ fetchStructuredDetail: vi.fn(), submitStructuredAttempt: vi.fn() }))
+const who = vi.hoisted(() => ({ id: null as number | null }))
+vi.mock('@/composables', async (orig) => {
+  const { computed } = await import('vue')
+  return {
+    ...(await orig<typeof import('@/composables')>()),
+    useSession: () => ({ user: computed(() => (who.id === null ? null : { id: who.id })) }),
+  }
+})
 vi.mock('../../api/practice', () => api)
 vi.mock('@/modules/m04-question-bank', () => ({
   ReportQuestionModal: defineComponent({ props: { open: Boolean }, setup: () => () => h('div') }),
@@ -64,6 +72,7 @@ const settle = async (): Promise<void> => {
 beforeEach(() => {
   vi.useFakeTimers()
   window.localStorage.clear()
+  who.id = null
   window.scrollTo = vi.fn()
   api.fetchStructuredDetail.mockReset().mockResolvedValue(DETAIL)
   api.submitStructuredAttempt.mockReset()
@@ -301,5 +310,132 @@ describe('S5-T11 structured answer: leaving', () => {
     await router.push('/latihan-berstruktur')
     await nextTick()
     expect(router.currentRoute.value.path).toBe('/latihan-berstruktur')
+  })
+})
+
+describe('S5-T11 structured answer: review fixes', () => {
+  it('flushes the draft on pagehide, before the 800 ms debounce', async () => {
+    const w = await open()
+    await boxes(w)[0]?.setValue('segera')
+    expect(window.localStorage.getItem(KEY)).toBeNull()
+    window.dispatchEvent(new Event('pagehide'))
+    expect(JSON.parse(window.localStorage.getItem(KEY) ?? '{}')).toEqual({ 2: 'segera' })
+  })
+
+  it('flushes the draft when the tab becomes hidden, and not when visible', async () => {
+    const w = await open()
+    await boxes(w)[0]?.setValue('tab')
+    let state: DocumentVisibilityState = 'visible'
+    vi.spyOn(document, 'visibilityState', 'get').mockImplementation(() => state)
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect(window.localStorage.getItem(KEY)).toBeNull()
+    state = 'hidden'
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect(JSON.parse(window.localStorage.getItem(KEY) ?? '{}')).toEqual({ 2: 'tab' })
+  })
+
+  it('isolates drafts per user', async () => {
+    who.id = 11
+    const a = await open()
+    await boxes(a)[0]?.setValue('milik 11')
+    a.unmount()
+    expect(window.localStorage.getItem('pp:structured-draft:11:7')).not.toBeNull()
+    who.id = 12
+    const b = await open()
+    expect((boxes(b)[0]?.element as HTMLTextAreaElement).value).toBe('')
+    b.unmount()
+    who.id = 11
+    const c = await open()
+    expect((boxes(c)[0]?.element as HTMLTextAreaElement).value).toBe('milik 11')
+  })
+
+  it('Esc on the leave dialog stays on the page', async () => {
+    const w = await open()
+    await boxes(w)[0]?.setValue('x')
+    const nav = router.push('/latihan-berstruktur')
+    await settle()
+    expect(body('[data-testid=leave-stay]')).not.toBeNull()
+    document.activeElement?.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+    )
+    await settle()
+    await nav
+    expect(body('[data-testid=leave-stay]')).toBeNull()
+    expect(router.currentRoute.value.path).toBe('/latihan-berstruktur/7/jawab')
+  })
+
+  it('a second navigation while the dialog is open shares the first answer', async () => {
+    const w = await open()
+    await boxes(w)[0]?.setValue('x')
+    const first = router.push('/latihan-berstruktur')
+    await settle()
+    const second = router.push('/latihan-berstruktur?x=1')
+    await settle()
+    expect(document.body.querySelectorAll('[data-testid=leave-stay]')).toHaveLength(1)
+    body('[data-testid=leave-exit]')?.click()
+    await settle()
+    await Promise.allSettled([first, second])
+    expect(router.currentRoute.value.path).toBe('/latihan-berstruktur')
+    expect(body('[data-testid=leave-stay]')).toBeNull()
+  })
+
+  it('leaving during an in-flight submit does not ask', async () => {
+    api.submitStructuredAttempt.mockReturnValue(new Promise(() => undefined))
+    const w = await open()
+    for (const b of boxes(w)) await b.setValue('x')
+    await w.get('form').trigger('submit')
+    await settle()
+    await router.push('/latihan-berstruktur')
+    await settle()
+    expect(body('[data-testid=leave-stay]')).toBeNull()
+    expect(router.currentRoute.value.path).toBe('/latihan-berstruktur')
+  })
+})
+
+describe('S5-T11 structured answer: tree by label chain', () => {
+  const sub = (id: number, label: string, marks = 1) => ({
+    id,
+    label,
+    text: `T${String(id)}`,
+    marks,
+  })
+  const withSubs = (subQuestions: ReturnType<typeof sub>[]): void => {
+    api.fetchStructuredDetail.mockResolvedValue({ ...DETAIL, subQuestions })
+  }
+
+  it('(a), (b), (a).(i) in that order puts (a).(i) under (a), with two parts', async () => {
+    withSubs([sub(1, '(a)', 0), sub(2, '(b)'), sub(3, '(a).(i)')])
+    const w = await open()
+    expect(w.findAll('[data-testid^=part-]')).toHaveLength(2)
+    expect(
+      w
+        .get('[data-testid=part-1]')
+        .findAll('[data-testid=sub-label]')
+        .map((l) => l.text()),
+    ).toEqual(['(a)', '(a)(i)'])
+    expect(
+      w
+        .get('[data-testid=part-2]')
+        .findAll('[data-testid=sub-label]')
+        .map((l) => l.text()),
+    ).toEqual(['(b)'])
+    expect(w.get('[data-testid=answer-summary]').text()).toBe('2 bahagian · 2 markah')
+    expect(boxes(w)).toHaveLength(2)
+  })
+
+  it('an orphan "(c).(i)" without "(c)" makes one part, not two', async () => {
+    withSubs([sub(1, '(a)'), sub(2, '(c).(i)'), sub(3, '(c).(ii)')])
+    const w = await open()
+    expect(w.findAll('[data-testid^=part-]')).toHaveLength(2)
+    expect(w.get('[data-testid=answer-summary]').text()).toBe('2 bahagian · 3 markah')
+    expect(boxes(w)).toHaveLength(3)
+  })
+
+  it('a child listed before its parent still sits under the parent', async () => {
+    withSubs([sub(3, '(a).(i)'), sub(1, '(a)', 0)])
+    const w = await open()
+    expect(w.findAll('[data-testid^=part-]')).toHaveLength(1)
+    expect(w.findAll('[data-testid=sub-label]').map((l) => l.text())).toEqual(['(a)', '(a)(i)'])
+    expect(boxes(w)).toHaveLength(1)
   })
 })
