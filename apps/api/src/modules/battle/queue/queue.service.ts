@@ -142,7 +142,9 @@ export class QueueService {
         await this.prisma.client.battleQueue.update({ where: { id: q.id }, data: { status: 'abandoned' } })
         return { status: 'expired' as const }
       }
-      if (now.getTime() - q.createdAt.getTime() >= QUEUE_EXPIRES_MS) {
+      // The robot comes first: with a fallback equal to the queue time the entry must not expire on the same poll.
+      const robotComes = q.status === 'waiting' && q.joinerOutcome !== 'pending' && robotDue(q, now, fallback)
+      if (!robotComes && now.getTime() - q.createdAt.getTime() >= QUEUE_EXPIRES_MS) {
         await this.prisma.client.battleQueue.update({ where: { id: q.id }, data: { status: 'expired' } })
         return { status: 'expired' as const }
       }
@@ -158,7 +160,7 @@ export class QueueService {
         await this.prisma.client.battleQueue.update({ where: { id: q.id }, data: { status: 'incoming_challenge', challengerUserId: q.joinerUserId } })
         return { status: 'incoming_challenge' as const, challenger }
       }
-      if (robotDue(q, now, fallback)) {
+      if (robotComes) {
         const battleId = await this.matchWithRobot(q, userId, isTest, prefetched)
         return { status: 'matched' as const, battle_uuid: battleId }
       }

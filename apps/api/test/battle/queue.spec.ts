@@ -124,16 +124,30 @@ describe('battle queue (M16-02 to M16-06, M16-12, M16-13)', () => {
       expect(q?.polls).toBe(0)
     })
 
+    it('battle_bot_fallback_seconds = 120 (its maximum), the same as the queue: the robot comes, the entry does not expire first', async () => {
+      await rows(`update gamification_settings set value = 120 where key = 'battle_bot_fallback_seconds'`)
+      try {
+        const qid = await startQueue(a, s.math)
+        for (let i = 0; i < 14; i++) {
+          expect((await a.get(`/battle/poll-match/${qid}`)).body).toEqual({ status: 'waiting' })
+          t.clock.advance(i === 13 ? 3_000 : 9_000) // polled at 0, 9 ... 117 s, then at exactly 120 s
+        }
+        expect(parse(BattlePollMatchResponseSchema, await a.get(`/battle/poll-match/${qid}`)).status).toBe('matched')
+      } finally {
+        await rows(`update gamification_settings set value = 30 where key = 'battle_bot_fallback_seconds'`)
+      }
+    })
+
     it('battle_bot_fallback_seconds = 0: never a robot; the entry expires after 120 s', async () => {
       await rows(`update gamification_settings set value = 0 where key = 'battle_bot_fallback_seconds'`)
       try {
         const qid = await startQueue(a, s.math)
-        for (let i = 0; i < 13; i++) {
+        for (let i = 0; i < 14; i++) {
           expect((await a.get(`/battle/poll-match/${qid}`)).body).toEqual({ status: 'waiting' })
-          t.clock.advance(9_000)
+          t.clock.advance(i === 13 ? 3_000 : 9_000)
         }
-        t.clock.advance(3_000)
         expect((await a.get(`/battle/poll-match/${qid}`)).body).toEqual({ status: 'expired' })
+        expect((await rows<{ status: string }>(`select status from battle_queues where id = $1`, [qid]))[0]?.status).toBe('expired')
       } finally {
         await rows(`update gamification_settings set value = 30 where key = 'battle_bot_fallback_seconds'`)
       }
