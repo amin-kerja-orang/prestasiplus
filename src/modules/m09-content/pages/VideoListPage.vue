@@ -17,7 +17,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi, useDebounce } from '@/composables'
-import { DsArt3D, DsEmptyState, DsLoadError, DsPage } from '@/ds'
+import { DsArt3D, DsEmptyState, DsLoadError, DsPage, DsStack, DsText } from '@/ds'
 import { useSessionStore } from '@/stores/session'
 
 import { fetchVideos } from '../api/content'
@@ -138,7 +138,10 @@ function submitSearch(): void {
 const canAdd = computed(() => canWriteVideos(session.role))
 /** No search, category or subject: an empty result means the library itself is empty. */
 const unfiltered = computed(
-  () => applied.value.search === '' && applied.value.category === '' && applied.value.subject === undefined,
+  () =>
+    applied.value.search === '' &&
+    applied.value.category === '' &&
+    applied.value.subject === undefined,
 )
 const totalPages = computed(() => Math.max(1, data.value?.meta.totalPages ?? 1))
 
@@ -302,41 +305,43 @@ function goToPage(page: number): void {
 
       <div
         v-if="total > data.meta.pageSize"
-        class="flex max-w-full flex-col items-center gap-2 overflow-x-auto"
+        class="flex max-w-full justify-center overflow-x-auto"
         data-testid="video-pager"
       >
-        <p class="text-caption text-muted" data-testid="video-page-text">
-          {{ COPY.pageOf(applied.page, totalPages) }}
-        </p>
-        <UPagination
-          :sibling-count="0"
-          :page="applied.page"
-          :total="total"
-          :items-per-page="data.meta.pageSize"
-          :to="pageTo"
-          @update:page="goToPage"
-        >
-          <template #prev>
-            <UButton
-              color="neutral"
-              variant="outline"
-              icon="i-ph-caret-left"
-              :label="COPY.pagePrev"
-              :to="applied.page > 1 ? pageTo(applied.page - 1) : undefined"
-              class="min-h-11"
-            />
-          </template>
-          <template #next>
-            <UButton
-              color="neutral"
-              variant="outline"
-              trailing-icon="i-ph-caret-right"
-              :label="COPY.pageNext"
-              :to="applied.page < totalPages ? pageTo(applied.page + 1) : undefined"
-              class="min-h-11"
-            />
-          </template>
-        </UPagination>
+        <DsStack align="center" gap="xs">
+          <DsText variant="caption" tone="muted" data-testid="video-page-text">
+            {{ COPY.pageOf(applied.page, totalPages) }}
+          </DsText>
+          <UPagination
+            :sibling-count="0"
+            :page="applied.page"
+            :total="total"
+            :items-per-page="data.meta.pageSize"
+            :to="pageTo"
+            @update:page="goToPage"
+          >
+            <template #prev>
+              <UButton
+                color="neutral"
+                variant="outline"
+                icon="i-ph-caret-left"
+                :label="COPY.pagePrev"
+                :to="applied.page > 1 ? pageTo(applied.page - 1) : undefined"
+                class="min-h-11"
+              />
+            </template>
+            <template #next>
+              <UButton
+                color="neutral"
+                variant="outline"
+                trailing-icon="i-ph-caret-right"
+                :label="COPY.pageNext"
+                :to="applied.page < totalPages ? pageTo(applied.page + 1) : undefined"
+                class="min-h-11"
+              />
+            </template>
+          </UPagination>
+        </DsStack>
       </div>
     </template>
   </DsPage>

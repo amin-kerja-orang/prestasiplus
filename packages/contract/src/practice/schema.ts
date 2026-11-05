@@ -24,14 +24,21 @@ export const PRACTICE_MODES = [
   'remedial',
   'question_set',
   'pksk',
+  // S5-T15 (0181): the two new lanes. The legacy past_year / ramalan stay so old rows load; they read as these.
+  'databank',
+  'tracking_a',
 ] as const
 export const PracticeModeSchema = z.enum(PRACTICE_MODES).meta({ id: 'PracticeMode' })
 export type PracticeMode = z.infer<typeof PracticeModeSchema>
 
-/** Modes `POST /practice/sessions` accepts: `pksk` sessions are created by M07, not here (422). */
-export const PRACTICE_START_MODES = PRACTICE_MODES.filter((m) => m !== 'pksk') as unknown as readonly [
-  Exclude<PracticeMode, 'pksk'>,
-  ...Exclude<PracticeMode, 'pksk'>[],
+/**
+ * Modes `POST /practice/sessions` accepts: `pksk` sessions are created by M07, not here (422). `databank` and `tracking_a`
+ * are stored modes already but the start planner has no case for them yet (S5-T03 adds them), so they are not startable.
+ */
+type NotStartable = 'pksk' | 'databank' | 'tracking_a'
+export const PRACTICE_START_MODES = PRACTICE_MODES.filter((m) => m !== 'pksk' && m !== 'databank' && m !== 'tracking_a') as unknown as readonly [
+  Exclude<PracticeMode, NotStartable>,
+  ...Exclude<PracticeMode, NotStartable>[],
 ]
 export const PracticeStartModeSchema = z.enum(PRACTICE_START_MODES).meta({ id: 'PracticeStartMode' })
 

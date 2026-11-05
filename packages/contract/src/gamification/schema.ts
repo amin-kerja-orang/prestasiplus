@@ -1,5 +1,5 @@
 import { z } from '../zod'
-import { IdSchema } from '../common/ids'
+import { ClientUuidSchema, IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
 import { count, int } from './shared'
 
@@ -146,6 +146,7 @@ export const GamificationChallengeProgressSchema = z
     progress: count.meta({ description: 'Equals target when already completed today.' }),
     pct: count.meta({ description: 'Rounded integer percentage.' }),
     completed: z.boolean(),
+    claimed: z.boolean().optional().meta({ description: 'True when the reward was claimed this Malaysia day (API-GAME-11). Absent until the claim route is served.' }),
   })
   .meta({ id: 'GamificationChallengeProgress' })
 export type GamificationChallengeProgress = z.infer<typeof GamificationChallengeProgressSchema>
@@ -207,7 +208,10 @@ export type GamificationConvertView = z.infer<typeof GamificationConvertViewSche
  * balance all answer 422 `VALIDATION_ERROR` "Jumlah syiling tidak sah." with `fields.syilingAmount`.
  */
 export const GamificationConvertRequestSchema = z
-  .object({ syilingAmount: int })
+  .object({
+    syilingAmount: int,
+    clientUuid: ClientUuidSchema.optional().meta({ description: 'Idempotency key (DM-79), per user: a repeat returns the first result and moves nothing.' }),
+  })
   .meta({ id: 'GamificationConvertRequest' })
 export type GamificationConvertRequest = z.infer<typeof GamificationConvertRequestSchema>
 
@@ -228,7 +232,11 @@ export type GamificationConvertResult = z.infer<typeof GamificationConvertResult
 
 /** `meta` of `GET /gamification/challenges`: NOT the standard list meta. */
 export const GamificationChallengesMetaSchema = z
-  .object({ completed: count, active: count })
+  .object({
+    completed: count,
+    active: count,
+    claimed: count.optional().meta({ description: 'Rewards claimed this Malaysia day (API-GAME-11). Absent until the claim route is served.' }),
+  })
   .meta({ id: 'GamificationChallengesMeta' })
 export type GamificationChallengesMeta = z.infer<typeof GamificationChallengesMetaSchema>
 
@@ -239,6 +247,28 @@ export const GamificationChallengesResponseSchema = z
   })
   .meta({ id: 'GamificationChallengesResponse' })
 export type GamificationChallengesResponse = z.infer<typeof GamificationChallengesResponseSchema>
+
+/** Module error codes of the claim (ERR-GAME-18, ERR-GAME-19); both answer 409. */
+export const GAMIFICATION_CLAIM_ERROR_CODES = ['CHALLENGE_NOT_DONE', 'CHALLENGE_CLAIMED'] as const
+export const GamificationClaimErrorCodeSchema = z.enum(GAMIFICATION_CLAIM_ERROR_CODES).meta({ id: 'GamificationClaimErrorCode' })
+export type GamificationClaimErrorCode = z.infer<typeof GamificationClaimErrorCodeSchema>
+
+/** Exact status and BM message per module code. */
+export const GAMIFICATION_CLAIM_ERRORS = {
+  CHALLENGE_NOT_DONE: { status: 409, message: 'Cabaran belum selesai.' },
+  CHALLENGE_CLAIMED: { status: 409, message: 'Ganjaran sudah dituntut.' },
+} as const satisfies Record<GamificationClaimErrorCode, { status: number; message: string }>
+
+/** Optional body of `POST /gamification/challenges/{id}/claim`. */
+export const GamificationChallengeClaimRequestSchema = z
+  .object({ clientUuid: ClientUuidSchema.optional().meta({ description: 'Idempotency key (DM-79), per user: a repeat returns the first result and moves nothing.' }) })
+  .meta({ id: 'GamificationChallengeClaimRequest' })
+export type GamificationChallengeClaimRequest = z.infer<typeof GamificationChallengeClaimRequestSchema>
+
+export const GamificationChallengeClaimResultSchema = z
+  .object({ claimed: z.literal(true), rewardSyiling: count, rewardXp: count })
+  .meta({ id: 'GamificationChallengeClaimResult' })
+export type GamificationChallengeClaimResult = z.infer<typeof GamificationChallengeClaimResultSchema>
 
 // ---------------------------------------------------------------------------------------------
 // Leaderboard
