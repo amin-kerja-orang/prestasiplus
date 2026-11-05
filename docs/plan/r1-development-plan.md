@@ -279,7 +279,7 @@ Owns no product code. Owns: `.evidence/**` (local), `docs/plan/r1-ac-ledger.md` 
 | `0185_s5_report_reporter_role` | DM-82 | S5-T06 |
 | `0202_s6_intervention_review` | DM-30 | S6-T02 |
 | `0203_s6_classroom_unique_name` | DM-73 | S6-T14 |
-| `0204_s6_user_username_unique` (identity table, requested with `needs:schema`) | DM-74 | S6-T10 |
+| ~~`0204_s6_user_username_unique`~~ already present (0002_identity, `uq_users_school_username`; lead ruling 2026-11-05, #486) | DM-74 | S6-T10 |
 | `0205_s6_mission_fields` | DM-75 | S6-T07 |
 | `0206_s6_mission_rewards` | DM-88 | S6-T07 |
 | `0224_s7_game_engine` | DM-60, DM-64 | S7-T01 |
@@ -1716,7 +1716,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - Build (absent in V3): nothing.
 - PRD: R1-GUR-10, R1-AS-10, R1-ADM-M-03. Gap: scope, Gap tab, wide tables, admin item points to `/guru/monitoring`. Files: `m11-teacher-analytics/**`, route under `/admin/monitoring`. Tests/verify per standard (tables → cards at 375). DoD: DoD-T.
 - Data/API: API-RPT-12
-- Decided (D115): none needed.
+- Decided (D115): none needed. Lead ruling 2026-11-05, #484: the no-school teacher copy "Tiada sekolah dikaitkan dengan akaun anda." is approved (PRD-20 R1-GUR-10); aligning `/admin/monitoring` with R1-ADM-M-03 is a separate gap, not S6-T08.
 - UI: keep V3 layout/components (product-owner rule 2026-11-04). V1/V2 are references for function, data, rules, states and messages only; do not restyle or re-lay-out any V3 screen to look like V2. A missing function is added inside the existing V3 screen style.
 
 **S6-T09 School-admin reports and lists (46–53)** · P1 · L · Type: Complete · deps: S6-T03
@@ -1739,7 +1739,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - Exists in V3 (reuse; do not rebuild): `/guru/pelajar` page; `/guru/pelajar/cipta` is a silent redirect to `/guru/pelajar` (`routes/pelajar.ts:25`) and the page has a "Cipta Pelajar" link to it (`PelajarSayaPage.vue:137`); BE `GET /guru/students`, `PUT /guru/students/:id` (= add an EXISTING pupil to a class), `DELETE` (remove) (`teacher.controller.ts:41-56`); `/guru/laporan` page whose range pills deliberately drop `classroom_id` ("live behaviour", `LaporanPage.vue:6-7,66-70`) fed by `GET /api/teacher/report` (`api/report.ts:29`, API-RPT-07).
 - Change: (1) route `/guru/pelajar/cipta` stops redirecting and renders the Cipta Pelajar form (Decided D-T10-1: route, since it already exists); (2) Pelajar Saya columns Tahap/Tugasan/Skor Purata/Terakhir Aktif (FR-GUR-41-6), as data in the existing V3 list component; (3) Laporan: keep the class filter on the range pills (reverses the live behaviour), card counts equal panel counts, all modes counted (FR-GUR-42-6), label "Pecahan Skor Purata", AC-GUR-42-7 list shows 10 names then "+ 5 lagi" which expands all; formula denominators in PRD-20 R1-GUR-42.
 - Remove: the silent redirect `/guru/pelajar/cipta` -> `/guru/pelajar`.
-- Build (absent in V3): `POST /api/guru/students` (API-GUR-06; does not exist) + migration `0204_s6_user_username_unique` (unique `(school_id, lower(username))`, partial where username is not null; `needs:schema`; reuse the admin username generator in `users/` and its existing duplicate handling). Form fields: Nama, Kelas (own active class), No. IC (optional). IC: exactly 12 digits, no hyphen: "No. IC mesti 12 digit tanpa sempang." (an 11-digit IC fails; the old wording "11-digit IC check" means that negative test); duplicate: "No. IC sudah didaftarkan.". Success: "Pelajar dicipta. Login: {username} / {kata laluan lalai}" (default password from configuration, never a literal, FR-GUR-41-3); teacher without a class: "Anda belum ada kelas aktif. Cipta kelas dahulu.".
+- Build (absent in V3): `POST /api/guru/students` (API-GUR-06; does not exist); the unique `(school_id, lower(username))` index already exists as `uq_users_school_username` in migration 0002_identity, so no `0204` migration is built (lead ruling 2026-11-05, #486); reuse the admin username generator in `users/` and its existing duplicate handling). Form fields: Nama, Kelas (own active class), No. IC (optional). IC: exactly 12 digits, no hyphen: "No. IC mesti 12 digit tanpa sempang." (an 11-digit IC fails; the old wording "11-digit IC check" means that negative test); duplicate: "No. IC sudah didaftarkan.". Success: "Pelajar dicipta. Login: {username} / {kata laluan lalai}" (default password is the single env key `PUPIL_DEFAULT_PASSWORD`: min 8, no default value, never in the repo, docs, seeds or tests, shared with the import; no forced reset; FR-GUR-41-3, lead ruling 2026-11-05, #486); teacher without a class: "Anda belum ada kelas aktif. Cipta kelas dahulu.".
 - PRD: R1-GUR-41, R1-GUR-42; Cipta Pelajar silent failure; Laporan pills drop class filter and count mismatch. Files: `m10-teacher-class/pages/**`, `m11-teacher-analytics/pages/Laporan*`. Tests/verify standard. DoD: DoD-T + AC-GUR-41/42-*.
 - Data/API: DM-74; API-GUR-05, API-GUR-06
 - Also uses: API-RPT-07 (owned by another card; read or verified here, not an ownership claim)
