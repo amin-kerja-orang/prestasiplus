@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   STIMULUS_LIMITS,
   STIMULUS_MESSAGES,
+  StimulusCreateLegacySchema,
   StimulusCreateRequestSchema,
   StimulusGroupCreateRequestSchema,
   StimulusGroupDetailSchema,
@@ -76,6 +77,13 @@ describe('R1-T32 stimulus request schemas (D90)', () => {
     }
     expect(StimulusCreateRequestSchema.safeParse({ label: 'L', kind: 'table', imageFileId: 'abc' }).success).toBe(true)
     expect(StimulusCreateRequestSchema.safeParse({ label: 'L', kind: 'passage', body: { ms: 'x' } }).success).toBe(true)
+  })
+
+  it('the regroup stimulus keeps the kind rules but not the G-01 label or G-06 alt rules', () => {
+    expect(StimulusCreateLegacySchema.safeParse({ kind: 'passage', body: { ms: 'x' } }).success).toBe(true)
+    expect(StimulusCreateLegacySchema.safeParse({ kind: 'diagram', imageFileId: 'abc' }).success).toBe(true)
+    expect(fieldsOf(StimulusCreateLegacySchema.safeParse({ kind: 'passage' }))).toEqual({ body: STIMULUS_MESSAGES.bodyRequired })
+    expect(StimulusCreateLegacySchema.safeParse({ kind: 'passage', body: { ms: 'x' }, svg: '<svg/>' }).success).toBe(false)
   })
 
   it('is strict: inline svg or html is never accepted; the update cannot change the kind', () => {

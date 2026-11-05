@@ -53,16 +53,10 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
-| S1-T01 | AC-ADM-QE1.1 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions/stimulus-api.spec.ts::a group of 1 stimulus and 4 members gives exactly 4 rows in GET /api/questions, the stimulus is not a row, and each row carries its group |
 | S1-T01 | AC-ADM-QE1.2 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions/group-swap.spec.ts::AC-ADM-QE1.2 and AC-ADM-QE1.4 (swap half): after the swap every member names the NEW stimulus, the old stimulus row is unchanged, and a version-1 read is unchanged |
 | S1-T01 | AC-ADM-QE1.3 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions/servability-parity.spec.ts::S1-T06 (D105, AC-QP-7): with every INCLUDE surface, drills serve figures and whole groups, and an incomplete group is excluded as a whole |
-| S1-T01 | AC-ADM-QE1.4 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions/group-swap.spec.ts::AC-ADM-QE1.2 and AC-ADM-QE1.4 (swap half): after the swap every member names the NEW stimulus, the old stimulus row is unchanged, and a version-1 read is unchanged |
-| S1-T01 | AC-ADM-QE2.5 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions/regroup.spec.ts::[CI] AC-ADM-QE2.5: removing a member that names "Rajah 3" from its group sets stimulus_missing |
 | S1-T01 | AC-ADM-Q05.1 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions/group-swap.spec.ts::AC-ADM-Q05.1: a draft copy staged [c,b,a] is published, groupOf lists [c,b,a], and the practice read returns that order |
-| S1-T01 | AC-ADM-Q05.2 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions/stimulus-group-rules.spec.ts::a served member cannot be removed, the stimulus cannot be edited, the stimuli cannot be replaced and the group cannot be dissolved |
-| S1-T01 | AC-ADM-Q05.3 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions/stimulus-api.spec.ts::AC-ADM-Q05.3 (G-01): a missing, empty or blank label is 422 on label with "Sila isi label rangsangan."; clearing it on update is 422 too; nothing is written |
-| S1-T01 | AC-QA-05 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions/group-actions.spec.ts::AC-QA-05: retire sets archive_reason withdrawn on each version, and a withdrawn pin is not servable to a new sitting; r1/reqb058-takedown-pin.spec.ts::AC-QA-05: after POST /api/stimulus-groups/:id/retire a new sitting on a paper placing the group answers 403 |
-| S1-T01 | AC-QA-07 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions/regroup.spec.ts::[CI] AC-ADM-QE2.5: removing a member that names "Rajah 3" from its group sets stimulus_missing; questions/stimulus-api.spec.ts::deletes an unused stimulus; a stimulus shown by a group is 409 with the BM message; audio rows are invisible |
+| S1-T01 | AC-QA-07 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions/stimulus-api.spec.ts::deletes an unused stimulus; a stimulus shown by a group is 409 with the BM message; audio rows are invisible |
 | S1-T01 | AC-QA-10 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions/stimulus-api.spec.ts::AC-QA-10 (G-06): an image stimulus with no or blank alt text is 422 on alt with "Sila isi teks alternatif untuk imej ini."; a clearing update is 422; a table or passage needs none; questions/group-option-bank.spec.ts::AC-QA-10: a letter that a leaf key of a member uses cannot be dropped; keeping it, or dropping an unused one, works |
 
 ## Sprint 2

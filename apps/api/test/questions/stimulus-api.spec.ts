@@ -191,6 +191,13 @@ describe('stimulus and stimulus group API (admin, real database)', () => {
       }
       expect((await admin.get(`/api/stimuli/${made.id}`)).body.data.alt).toBe('Penerangan rajah')
       expect((await admin.put(`/api/stimuli/${made.id}`, { caption: 'Kapsyen baharu' })).status).toBe(200)
+      // a LEGACY image stimulus with no alt: a caption-only edit still succeeds; sending a blank alt, or a new picture without alt, is refused
+      await t.db.query(`update stimuli set alt_text = null where id = $1`, [made.id])
+      const legacy = await admin.put(`/api/stimuli/${made.id}`, { caption: 'Sunting kapsyen sahaja' })
+      expect(legacy.status, JSON.stringify(legacy.body)).toBe(200)
+      expect(legacy.body.data.alt).toBeNull()
+      expect((await admin.put(`/api/stimuli/${made.id}`, { alt: '' })).body.error.fields.alt).toBe(STIMULUS_MESSAGES.altRequired)
+      expect((await admin.put(`/api/stimuli/${made.id}`, { imageFileId: await upload() })).body.error.fields.alt).toBe(STIMULUS_MESSAGES.altRequired)
       // a table with a picture and a passage have no alt rule
       expect((await admin.post('/api/stimuli', { kind: 'table', label: 'Jadual 1', imageFileId: file })).status).toBe(201)
       expect((await admin.post('/api/stimuli', { kind: 'passage', label: 'Petikan B', body: { ms: 'Teks.' } })).status).toBe(201)
@@ -253,6 +260,11 @@ describe('stimulus and stimulus group API (admin, real database)', () => {
       expect(del.body.status).toBe(STIMULUS_MESSAGES.deleted)
       expect((await admin.get(`/api/stimuli/${free.id}`)).status).toBe(404)
       expect((await admin.delete(`/api/stimuli/${free.id}`)).status).toBe(404)
+
+      // a group with 1 member shows no warning (AC-QA-07)
+      const lone = await group([(await stimulus()).id], [await question()])
+      expect(lone.warning ?? null).toBeNull()
+      expect(StimulusGroupDetailSchema.parse((await admin.get(`/api/stimulus-groups/${lone.id}`)).body.data).warning ?? null).toBeNull()
 
       const used = await stimulus()
       await group([used.id], [await question(), await question()])
