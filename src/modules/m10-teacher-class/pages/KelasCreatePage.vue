@@ -163,10 +163,9 @@ const {
   immediate: isEdit.value,
 })
 
+/** By class id only: class names are not unique (the roster carries `classes[].id`). */
 const inThisClass = (p: Pupil): boolean =>
-  p.classes
-    ? p.classes.some((c) => String(c.id) === classId.value)
-    : current.value !== null && p.classNames.includes(current.value.name)
+  (p.classes ?? []).some((c) => String(c.id) === classId.value)
 
 const members = computed<Pupil[]>(() =>
   ((roster.value?.data ?? []) as Pupil[])
