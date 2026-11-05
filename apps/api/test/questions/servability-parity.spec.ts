@@ -479,6 +479,23 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     expect(servedBy('permainan').has(made.plain!)).toBe(true)
   })
 
+  it('[CI] AC-QA-45 permainan parity on the two picture cases: an ungrouped MCQ with a stimulus and one with an option image', async () => {
+    // `toServed` alone accepts both (it reads text only); the draw's SQL scope (GAME_SHAPE has no allowStimulus, so `shapeArraySql` drops a stem stimulus
+    // and an option image) is what refuses them. The indicator is the scope AND the mapper, so it agrees with the draw and names the cause.
+    const games = new GameQuestions(repo)
+    const ids = [made.stemImage!, made.optionImage!]
+    const mapped = new Set((await games.byIds(ids)).map((x) => x.question.id))
+    const inScope = new Set(await repo.eligibleAmong(ids, filterOf('permainan')))
+    for (const id of ids) {
+      const drawn = inScope.has(id) && mapped.has(id)
+      expect(servedBy('permainan').has(id), `indicator equals the draw for ${id}`).toBe(drawn)
+    }
+    expect(inScope.size, 'the SQL scope refuses a stimulus and an option image').toBe(0)
+    expect(mapped.size, 'toServed alone does not refuse them').toBe(2)
+    expect(reasonsOf('stemImage', 'permainan')).toEqual(['image_games'])
+    expect(reasonsOf('optionImage', 'permainan')).toEqual(['image_games'])
+  })
+
   it('jana_kertas: pool facts eligible by exam-core and served by the bridge', async () => {
     const subjects = await q(`select distinct subject_id::text id from question_versions where subject_id is not null`)
     const eligible = new Set<string>()
