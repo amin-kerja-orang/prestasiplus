@@ -186,6 +186,8 @@ describe('regroup-report on a real database (parity with API-Q-13, read-only, ex
   })
 
   it('[CI] writes .txt and .json under .evidence/uat-ops with counts and ids only (no question text, no connection string)', async () => {
+    // Self-contained: write the report in this test instead of relying on an earlier run.
+    expect(await run([], { DATABASE_URL: t.db.url }, () => undefined, root)).toBe(0)
     const files = await readdir(join(root, '.evidence', 'uat-ops'))
     expect(files.some((f) => /^regroup-report-.*\.txt$/.test(f))).toBe(true)
     const jsonName = files.find((f) => /^regroup-report-.*\.json$/.test(f))!
