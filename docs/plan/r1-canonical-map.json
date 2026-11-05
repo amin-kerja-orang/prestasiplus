@@ -11094,6 +11094,14 @@
       "sector": "S7",
       "file": "apps/api/prisma/schema/wallet.prisma",
       "approved_by_card": null
+    },
+    {
+      "name": "QuestionSetClassroom",
+      "table": "question_set_classrooms",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/prisma/schema/classes.prisma",
+      "approved_by_card": null
     }
   ],
   "apis": [
@@ -12092,16 +12100,6 @@
       "method": "POST",
       "path": "/api/guru/classes",
       "api_id": "API-GUR-02",
-      "status": "canonical",
-      "sector": "S6",
-      "file": "apps/api/src/modules/classes/teacher.controller.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "GET /api/guru/classes/:p/qr-data",
-      "method": "GET",
-      "path": "/api/guru/classes/:id/qr-data",
-      "api_id": "API-GUR-04",
       "status": "canonical",
       "sector": "S6",
       "file": "apps/api/src/modules/classes/teacher.controller.ts",
@@ -17235,6 +17233,106 @@
       "status": "canonical",
       "sector": "S7",
       "file": "apps/api/src/modules/wallet/wallet.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/guru/question-sets",
+      "method": "GET",
+      "path": "/api/guru/question-sets",
+      "api_id": "API-GUR-16",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/guru/question-sets/bank",
+      "method": "GET",
+      "path": "/api/guru/question-sets/bank",
+      "api_id": "API-GUR-16",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/guru/question-sets",
+      "method": "POST",
+      "path": "/api/guru/question-sets",
+      "api_id": "API-GUR-16",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/guru/question-sets/:p",
+      "method": "GET",
+      "path": "/api/guru/question-sets/:id",
+      "api_id": "API-GUR-16",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "PUT /api/guru/question-sets/:p",
+      "method": "PUT",
+      "path": "/api/guru/question-sets/:id",
+      "api_id": "API-GUR-16",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "DELETE /api/guru/question-sets/:p",
+      "method": "DELETE",
+      "path": "/api/guru/question-sets/:id",
+      "api_id": "API-GUR-16",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/guru/question-sets/:p/status",
+      "method": "POST",
+      "path": "/api/guru/question-sets/:id/status",
+      "api_id": "API-GUR-16",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/guru/question-sets/:p/copy",
+      "method": "POST",
+      "path": "/api/guru/question-sets/:id/copy",
+      "api_id": "API-GUR-16",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/guru/question-sets/:p/results",
+      "method": "GET",
+      "path": "/api/guru/question-sets/:id/results",
+      "api_id": "API-GUR-16",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "PUT /api/guru/classes/:p",
+      "method": "PUT",
+      "path": "/api/guru/classes/:id",
+      "api_id": "API-GUR-03",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher.controller.ts",
       "approved_by_card": null
     }
   ],
