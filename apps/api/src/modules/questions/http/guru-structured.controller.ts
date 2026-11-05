@@ -30,8 +30,13 @@ export class GuruStructuredQuestionsController {
     const { filter, status } = parseGuruStructuredList(query)
     const own = { subjectId: filter.subjectId, educationLevelId: filter.educationLevelId }
     const offset = (filter.page - 1) * GURU_STRUCTURED_PAGE_SIZE
-    const ownTotal = status === 'approved' ? 0 : await this.submissions.countOwnStructured(actor.userId, own)
-    const ownRows = status === 'approved' ? [] : await this.submissions.listOwnStructured(actor.userId, own, offset, GURU_STRUCTURED_PAGE_SIZE)
+    // Each own row sits under its real status: an accepted item whose question the approved side lists shows there (once); a published but
+    // hidden one (inactive, needs a diagram) is an own `approved` row; the rest are `review`.
+    const accepted = await this.submissions.ownAcceptedQuestions(actor.userId)
+    const served = [...(await this.questions.servedStructuredAmong(accepted.all))]
+    const scope = { status, served, published: accepted.published } as const
+    const ownTotal = await this.submissions.countOwnStructured(actor.userId, own, scope)
+    const ownRows = await this.submissions.listOwnStructured(actor.userId, own, offset, GURU_STRUCTURED_PAGE_SIZE, scope)
     const approved =
       status === 'review'
         ? { rows: [], total: 0 }

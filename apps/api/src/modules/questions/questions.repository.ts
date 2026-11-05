@@ -760,6 +760,18 @@ export class QuestionsRepository {
     return rows.length > 0
   }
 
+  /** Of these question ids, those the teacher list serves (the same `served` rule as `structuredIds` and `isStructuredServed`). */
+  async structuredServedAmong(ids: readonly string[]): Promise<Set<string>> {
+    const keys = ids.flatMap((id) => {
+      const key = bi(id)
+      return key === null ? [] : [key]
+    })
+    if (keys.length === 0) return new Set()
+    const conds = [Prisma.sql`q.id IN (${Prisma.join(keys)})`, Prisma.sql`v.type = 'structured'`, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, ...GURU_STRUCTURED_SERVED_SQL]
+    const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${SERVED_FROM_SQL} WHERE ${Prisma.join(conds, ' AND ')}`
+    return new Set(rows.map((r) => idToString(r.id)))
+  }
+
   /** Whole-store figures of the structured list `meta.stats`: per subject id (decimal) and live count. */
   async structuredStats(): Promise<{ total: number; published: number; bySubject: Map<string, number> }> {
     const rows = await this.db.$queryRaw<{ subject_id: bigint | null; total: number; published: number }[]>`
