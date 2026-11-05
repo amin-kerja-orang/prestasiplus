@@ -22,6 +22,12 @@ const e71c = { kind: 'rubric', scheme_v: 2, marks: 5, scoring: 'overall', criter
 const e72b = v2(2, { points: [pt('k1', 1, { code: 'K' }), pt('n1', 1, { code: 'N' })] })
 const e73b = v2(3, { points: [pt('m1', 1), pt('m2', 1, { requires: ['m1'] }), pt('n1', 1, { requires: ['m2'], ecf: { fromPart: '(a)', rule: { op: 'same' } } })] })
 const e73c = v2(10, { points: pts(8), groups: [{ id: 'p1', type: 'pair', cap: 8, pointIds: pts(8).map((p) => p.id) }], bonus: { ifAllCorrect: true, marks: 2, label: 'b' } })
+// Second 7.3 (c) shape (team-dd ruling on #558, D1): four pair groups of 2 points (8 marks), no per-group cap, bonus 2 = 10.
+const e73cFour = v2(10, {
+  points: pts(8),
+  groups: [0, 1, 2, 3].map((i) => ({ id: `p${String(i + 1)}`, type: 'pair', pointIds: [`p${String(2 * i + 1)}`, `p${String(2 * i + 2)}`] })),
+  bonus: { ifAllCorrect: true, marks: 2, label: 'b' },
+})
 const e74 = { kind: 'rubric', scheme_v: 2, marks: 15, scoring: 'overall', criteria: [{ id: 'isi', name: 'Isi' }, { id: 'bahasa', name: 'Bahasa' }],
   bands: [{ name: 'P1', range: [1, 5] }, { name: 'P2', range: [6, 10] }, { name: 'P3', range: [11, 15] }], floorBand: { name: 'Sifar', range: [0, 0] } } as unknown as SchemeKeyLike
 const e75 = { kind: 'rubric', scheme_v: 2, marks: 20, scoring: 'perCriterion',
@@ -36,6 +42,7 @@ describe('FR-QA-19 / AC-QA-19 / FR-ADM-QE3.3: 45 section 7 worked examples', () 
     ['7.2 (b) K1 + N1', e72b, 2],
     ['7.3 (b) requires chain + carried value', e73b, 3],
     ['7.3 (c) 8 pair points, cap 8, bonus 2', e73c, 10],
+    ['7.3 (c) four pair groups of 2, no cap, bonus 2', e73cFour, 10],
     ['7.4 overall bands with floor band', e74, 15],
     ['7.5 perCriterion 4 x 5', e75, 20],
     ['7.6 (b) K N P', e76b, 3],
