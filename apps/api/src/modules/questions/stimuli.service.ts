@@ -106,6 +106,20 @@ export class StimuliService {
     return { result: await this.getStimulus(id), audit: { kind: input.kind } }
   }
 
+  /**
+   * Gives an image stimulus its first file (S6-T18 part 2, a teacher's diagram accepted by the admin). Same guards as `updateStimulus`:
+   * the row is locked and a stimulus shown to pupils is refused (409, D113). Returns false when the stimulus is gone or already has a file
+   * (never overwritten). Joins the caller's transaction.
+   */
+  async attachFirstAsset(id: string, fileId: bigint): Promise<boolean> {
+    if (!(await this.repo.lockStimulus(id))) return false
+    const current = await this.repo.getStimulus(id)
+    if (current === null || current.assetFileId !== null) return false
+    if (await this.repo.stimulusServed(id)) throw ApiError.of('CONFLICT', { message: STIMULUS_MESSAGES.stimulusServed })
+    await this.repo.setAssetFile(id, fileId)
+    return true
+  }
+
   async updateStimulus(id: string, input: StimulusUpdateRequest): Promise<StimulusWrite<Stimulus>> {
     await this.stimulusOrThrow(id) // 404 before 422
     return this.prisma.transaction(async () => {

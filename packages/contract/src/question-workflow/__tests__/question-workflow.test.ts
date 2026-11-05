@@ -388,7 +388,7 @@ describe('diagram audit', () => {
 
   it('answers image and dismiss with needsDiagram false and the flash', () => {
     expect(ok(DiagramAuditMutationSchema, { data: { id: '41', needsDiagram: false }, status: DIAGRAM_AUDIT_MESSAGES.uploaded })).toBe(true)
-    // A teacher / school admin image leaves the question flagged (S6-T18 part 2).
+    // A teacher image leaves the question flagged (S6-T18 part 2).
     expect(ok(DiagramAuditMutationSchema, { data: { id: '41', needsDiagram: true }, status: DIAGRAM_AUDIT_MESSAGES.submittedForReview })).toBe(true)
     expect(ok(DiagramAuditMutationSchema, { data: { id: '41', needsDiagram: 'yes' }, status: 'x' })).toBe(false)
     expect(DIAGRAM_AUDIT_MESSAGES.dismissed).toBe('Soalan telah dikeluarkan daripada senarai audit.')

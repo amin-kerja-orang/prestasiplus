@@ -10054,7 +10054,7 @@
           },
           "needsDiagram": {
             "type": "boolean",
-            "description": "false after the admin upload / dismiss; true after a teacher or school admin upload (the question is unchanged until an admin accepts the image)."
+            "description": "false after the admin upload / dismiss; true after a teacher upload (the question is unchanged until an admin accepts the image)."
           }
         },
         "required": [
@@ -71643,7 +71643,7 @@
               "status"
             ],
             "additionalProperties": false,
-            "description": "Set once the item is accepted."
+            "description": "Set once the item is accepted, or preset for a diagram-upload item (the question the image is for; no new question is made on accept)."
           },
           "duplicates": {
             "type": "array",
@@ -72076,7 +72076,7 @@
               "status"
             ],
             "additionalProperties": false,
-            "description": "Set once the item is accepted."
+            "description": "Set once the item is accepted, or preset for a diagram-upload item (the question the image is for; no new question is made on accept)."
           },
           "duplicates": {
             "type": "array",
@@ -73136,7 +73136,7 @@
                   "status"
                 ],
                 "additionalProperties": false,
-                "description": "Set once the item is accepted."
+                "description": "Set once the item is accepted, or preset for a diagram-upload item (the question the image is for; no new question is made on accept)."
               },
               "duplicates": {
                 "type": "array",
@@ -83703,8 +83703,8 @@
           "question-workflow",
           "diagram-audit"
         ],
-        "summary": "Attach a diagram image (admin) or submit one for review (teacher, school admin)",
-        "description": "Admin, teacher and school admin. multipart/form-data `image` (JPG, PNG or WebP, GIF and SVG refused, up to 2 MB; storage: BE-04). Admin: sets needsDiagram false and stores the image reference, flash \"Gambar rajah berjaya dimuat naik.\". Teacher / school admin (S6-T18 part 2): the question is NOT changed; the image is stored as the caller's question_image and becomes an intake item (source guru, kind diagram, one per stimulus group) for the admin to accept or reject; answers { data: { id, needsDiagram: true }, status: \"Gambar dihantar untuk semakan.\" } and the list row then has pendingReview true. One open image per stimulus group.",
+        "summary": "Attach a diagram image (admin) or submit one for review (teacher)",
+        "description": "Admin and teacher (school admin is refused). multipart/form-data `image` (JPG, PNG or WebP, GIF and SVG refused, up to 2 MB; storage: BE-04). Admin: sets needsDiagram false and stores the image reference, flash \"Gambar rajah berjaya dimuat naik.\". Teacher (S6-T18 part 2): the question is NOT changed; the image is stored as the caller's question_image and becomes an intake item (source guru, kind diagram, one per stimulus group) for the admin to accept or reject; answers { data: { id, needsDiagram: true }, status: \"Gambar dihantar untuk semakan.\" } and the list row then has pendingReview true. One open image per stimulus group.",
         "parameters": [
           {
             "schema": {
@@ -83748,7 +83748,7 @@
         },
         "responses": {
           "200": {
-            "description": "Image attached (admin) or submitted for review (teacher, school admin); status is the flash text.",
+            "description": "Image attached (admin) or submitted for review (teacher); status is the flash text.",
             "content": {
               "application/json": {
                 "schema": {
@@ -83768,7 +83768,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin, teacher or school admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin or teacher), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {
@@ -83788,7 +83788,7 @@
             }
           },
           "409": {
-            "description": "CONFLICT \"Gambar untuk soalan ini sedang menunggu semakan.\" (teacher / school admin: the question's stimulus group already has an open image) or \"Soalan ini tiada kumpulan rangsangan untuk dilekatkan gambar.\" (the question has no stimulus group).",
+            "description": "CONFLICT \"Gambar untuk soalan ini sedang menunggu semakan.\" (teacher: the question's stimulus group already has an open image) or \"Soalan ini tiada kumpulan rangsangan untuk dilekatkan gambar.\" (the question has no stimulus group).",
             "content": {
               "application/json": {
                 "schema": {

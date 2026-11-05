@@ -1,15 +1,17 @@
-import { DIAGRAM_AUDIT_MESSAGES, DiagramAuditMutationSchema, DiagramAuditResponseSchema } from '@pp/contract'
+import { DIAGRAM_AUDIT_MESSAGES, DiagramAuditMutationSchema, DiagramAuditResponseSchema, STIMULUS_MESSAGES } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { QuestionsService, type QuestionCreateInput } from '../../src/modules/questions'
+import { StimuliRepository } from '../../src/modules/questions/stimuli.repository'
 import { QuestionBankAdapter } from '../../src/modules/questions/workflow'
 import type { DiagramCandidate } from '../../src/modules/questions/workflow/ports'
 import { makePng } from '../files/fixtures'
+import { WORKFLOW_MESSAGES } from '../../src/modules/intake/workflow/workflow.constants'
 import { adminActor } from '../questions/fixtures'
 import { bootWorkflowApp, expectError, loginAs, post, type LoggedIn, type WorkflowTestApp } from './helpers'
 
 /**
- * S6-T18 part 2 (API-Q-21, ruling on #494): a teacher's or school admin's diagram image is an intake item (source guru, kind diagram, one per group),
+ * S6-T18 part 2 (API-Q-21, ruling on #494): a teacher's diagram image is an intake item (source guru, kind diagram, one per group),
  * the question is unchanged, and the admin's accept sets the asset on the EXISTING group stimulus. Needs Docker (compile-only in the sandbox).
  */
 let t: WorkflowTestApp
@@ -20,7 +22,15 @@ let student: LoggedIn
 let groupQuestions: string[] // three questions of one group
 let loneQuestion: string // no group
 let otherGroupQuestion: string
-let passageStimulus: string
+let diagramStimulus: string // the image-kind stimulus (no file yet) of the main group
+let hiddenQuestion: string // a draft of another author: not visible to a teacher
+let dismissedQuestion: string
+let otherStimulus: string
+let goneQuestion: string // group removed before accept
+let overwriteQuestion: string // stimulus gets a file before accept
+let overwriteStimulus: string
+let foreignQuestion: string
+let goneGroup: string // image file not the batch owner's at accept
 const png = { data: makePng(), name: 'rajah.png', type: 'image/png' }
 
 const q = <T extends object>(sql: string, params: unknown[] = []) => t.db.query<T>(sql, params)
@@ -63,24 +73,51 @@ beforeAll(async () => {
         actor,
       )
     ).id
+  // A group is a passage plus an image-kind stimulus without a file (the diagram candidate predicate); the image goes to the second one.
   const groupOf = async (label: string) => {
-    const stimulus = await svc.createStimulus({ kind: 'passage', label, bodyMs: 'Rajah menunjukkan sebuah litar.', bodyEn: null, altText: null, assetFileId: null })
-    return { stimulus, group: await svc.createStimulusGroup({ label, scope: 'section', stimulusIds: [stimulus], optionBank: [] }) }
+    const passage = await svc.createStimulus({ kind: 'passage', label, bodyMs: 'Rajah menunjukkan sebuah litar.', bodyEn: null, altText: null, assetFileId: null })
+    const diagram = await svc.createStimulus({ kind: 'passage', label: `${label} (rajah)`, bodyMs: 'Rajah litar.', bodyEn: null, altText: null, assetFileId: null })
+    await q(`update stimuli set kind = 'diagram' where id = $1::bigint`, [diagram])
+    return { diagram, group: await svc.createStimulusGroup({ label, scope: 'section', stimulusIds: [passage, diagram], optionBank: [] }) }
+  }
+  const inGroup = async (n: number, groupId: string, position = 1): Promise<string> => {
+    const id = await make(n)
+    await q('update questions set group_id = $2::bigint, group_position = $3 where id = $1::bigint', [id, groupId, position])
+    return id
   }
   const main = await groupOf('Litar')
-  passageStimulus = main.stimulus
+  diagramStimulus = main.diagram
   groupQuestions = [await make(1), await make(2), await make(3)]
   for (const [i, id] of groupQuestions.entries()) await q('update questions set group_id = $2::bigint, group_position = $3 where id = $1::bigint', [id, main.group, i + 1])
   const other = await groupOf('Graf')
-  otherGroupQuestion = await make(4)
-  await q('update questions set group_id = $2::bigint, group_position = 1 where id = $1::bigint', [otherGroupQuestion, other.group])
+  otherStimulus = other.diagram
+  otherGroupQuestion = await inGroup(4, other.group)
   loneQuestion = await make(5)
+  hiddenQuestion = await make(6)
+  dismissedQuestion = await make(7)
+  const gone = await groupOf('Hilang')
+  goneQuestion = await inGroup(8, gone.group)
+  goneGroup = gone.group
+  const over = await groupOf('Timpa')
+  overwriteQuestion = await inGroup(9, over.group)
+  overwriteStimulus = over.diagram
+  const foreign = await groupOf('Asing')
+  foreignQuestion = await inGroup(10, foreign.group)
+
+  // The questions a teacher may see: approved and active (the rest are admin drafts). `hiddenQuestion` stays a draft of another author.
+  const approved = new Set([...groupQuestions, otherGroupQuestion, loneQuestion, dismissedQuestion, goneQuestion, overwriteQuestion, foreignQuestion])
+  const bank = t.app.get(QuestionBankAdapter)
+  const realStatus = bank.getStatus.bind(bank)
+  vi.spyOn(bank, 'getStatus').mockImplementation(async (id: string) => {
+    const status = await realStatus(id)
+    return status && approved.has(id) ? { ...status, status: 'approved', isActive: true } : status
+  })
 
   // The real bank has no candidate source yet (awaiting S1-T07): the flagged questions are supplied here.
   const candidate = (id: string): DiagramCandidate => ({
     id, kind: 'mcq', text: `Soalan ${id}`, subjectId: tag!.s, subjectName: 'Matematik', createdBy: { id: '1', name: null, schoolId: null }, sourceFile: null, sourcePage: null,
   })
-  vi.spyOn(t.app.get(QuestionBankAdapter), 'listDiagramCandidates').mockImplementation(async () => [...groupQuestions, otherGroupQuestion, loneQuestion].map(candidate))
+  vi.spyOn(t.app.get(QuestionBankAdapter), 'listDiagramCandidates').mockImplementation(async () => [...groupQuestions, otherGroupQuestion, loneQuestion, hiddenQuestion, dismissedQuestion, goneQuestion, overwriteQuestion, foreignQuestion].map(candidate))
 }, 180_000)
 afterAll(async () => {
   vi.restoreAllMocks()
@@ -106,9 +143,9 @@ describe('teacher image: an intake item, not a change of the question', () => {
     const row = rows[0]!
     expect(row).toMatchObject({ source: 'guru', status: 'ready_for_review', kind: 'diagram', review_state: 'needs_review', source_type: 'manual', question_id: groupQuestions[0], purpose: 'question_image', file_owner: row.owner })
     expect(row.ref).toMatch(/^group:\d+$/)
-    expect(row.target).toMatchObject({ questionId: groupQuestions[0], groupId: row.ref.slice('group:'.length), stimulusId: passageStimulus })
+    expect(row.target).toMatchObject({ questionId: groupQuestions[0], groupId: row.ref.slice('group:'.length), stimulusId: diagramStimulus })
     expect(await q('select * from questions where id = $1::bigint', [groupQuestions[0]])).toEqual(before)
-    expect(await assetOf(passageStimulus)).toBeNull()
+    expect(await assetOf(diagramStimulus)).toBeNull()
     expect(await q('select 1 from diagram_audit_resolutions where question_id = $1::bigint', [groupQuestions[0]])).toHaveLength(0)
   })
 
@@ -126,7 +163,7 @@ describe('teacher image: an intake item, not a change of the question', () => {
 
   it('one open image per group: a second upload for any question of the group is 409, nothing new is stored', async () => {
     const files = (await q('select id from files where purpose = $1', ['question_image'])).length
-    const again = await image(schoolAdmin, groupQuestions[2]!)
+    const again = await image(teacher, groupQuestions[2]!)
     expectError(again, 'CONFLICT', DIAGRAM_AUDIT_MESSAGES.alreadyPending)
     expect(await openItems()).toHaveLength(1)
     expect((await q('select id from files where purpose = $1', ['question_image'])).length).toBe(files)
@@ -136,10 +173,15 @@ describe('teacher image: an intake item, not a change of the question', () => {
     expectError(await image(teacher, loneQuestion), 'CONFLICT', DIAGRAM_AUDIT_MESSAGES.noStimulusGroup)
   })
 
-  it('a school admin may submit too (own batch, own file)', async () => {
-    const res = await image(schoolAdmin, otherGroupQuestion)
+  it('a second teacher image for another group is accepted (own batch, own file)', async () => {
+    const res = await image(teacher, otherGroupQuestion)
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     expect(res.body.data).toEqual({ id: otherGroupQuestion, needsDiagram: true })
+  })
+
+  it('a school admin is 403 on the upload (the list stays open to the role)', async () => {
+    expectError(await image(schoolAdmin, loneQuestion), 'FORBIDDEN')
+    expect((await schoolAdmin.agent.get('/api/diagram-audit')).status).toBe(200)
   })
 
   it('a student is 403; dismiss stays admin only; no session is 401', async () => {
@@ -165,11 +207,32 @@ describe('teacher image: an intake item, not a change of the question', () => {
   })
 })
 
+describe('target guard', () => {
+  it('a kind that is not the question type is 404, like an unknown id; nothing is stored', async () => {
+    const files = (await q('select id from files where purpose = $1', ['question_image'])).length
+    expectError(await image(teacher, loneQuestion, png, 'structured'), 'NOT_FOUND')
+    expect((await q('select id from files where purpose = $1', ['question_image'])).length).toBe(files)
+  })
+
+  it('a draft of another author is 404 for a teacher', async () => {
+    expectError(await image(teacher, hiddenQuestion), 'NOT_FOUND')
+  })
+
+  it('a dismissed question is 404', async () => {
+    expect((await post(admin, `/diagram-audit/mcq/${dismissedQuestion}/dismiss`)).status).toBe(200)
+    expectError(await image(teacher, dismissedQuestion), 'NOT_FOUND')
+  })
+})
+
 describe('admin review of the diagram item', () => {
   it('reject leaves the question and the stimulus unchanged; the group may then take a new image', async () => {
-    const [id] = (await q<{ id: string }>(`select id::text from intake_items where payload -> 'target' ->> 'questionId' = $1`, [otherGroupQuestion])).map((r) => r.id)
+    const [item] = await q<{ id: string; file: string }>(`select id::text, payload -> 'target' ->> 'imageFileId' as file from intake_items where payload -> 'target' ->> 'questionId' = $1`, [otherGroupQuestion])
+    const id = item!.id
+    expect(await q('select 1 from files where id = $1::bigint', [item!.file])).toHaveLength(1)
     const res = await post(admin, `/intake/items/${id}/reject`, { reason: 'Gambar tidak jelas.' })
     expect(res.status, JSON.stringify(res.body)).toBe(200)
+    expect(await q('select 1 from files where id = $1::bigint', [item!.file])).toHaveLength(0) // the source image is discarded
+    expect(await assetOf(otherStimulus)).toBeNull()
     expect(await q('select 1 from diagram_audit_resolutions where question_id = $1::bigint', [otherGroupQuestion])).toHaveLength(0)
     expect((await list(teacher)).data.mcq.items.find((i) => i.id === otherGroupQuestion)).toMatchObject({ pendingReview: false })
     expect(res.body.data.state).toBe('rejected')
@@ -182,7 +245,7 @@ describe('admin review of the diagram item', () => {
     const res = await post(admin, `/intake/items/${id}/accept`)
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     expect(await counts()).toEqual(before)
-    const asset = await assetOf(passageStimulus)
+    const asset = await assetOf(diagramStimulus)
     expect(asset).not.toBeNull()
     const [file] = await q<{ purpose: string; owner: string; src: string }>(
       `select f.purpose, f.owner_user_id::text owner, (i.payload -> 'target' ->> 'imageFileId') src from files f, intake_items i where f.id = $1::bigint and i.id = $2::bigint`,
@@ -198,10 +261,83 @@ describe('admin review of the diagram item', () => {
     expect(await openItems()).toHaveLength(0)
   })
 
-  it('a teacher cannot accept it', async () => {
-    const fresh = await image(teacher, groupQuestions[1]!)
-    expect(fresh.status, JSON.stringify(fresh.body)).toBe(200)
-    const [id] = await openItems()
+  it('after an accept a sibling upload of the group is 409 (the stimulus has its file)', async () => {
+    expectError(await image(teacher, groupQuestions[1]!), 'CONFLICT', DIAGRAM_AUDIT_MESSAGES.noStimulusGroup)
+  })
+})
+
+describe('accept guards', () => {
+  const itemOf = async (questionId: string) =>
+    (await q<{ id: string }>(`select id::text from intake_items where payload -> 'target' ->> 'questionId' = $1 and review_state = 'needs_review'`, [questionId]))[0]!.id
+  const stateOf = async (id: string) => (await q<{ review_state: string }>('select review_state from intake_items where id = $1::bigint', [id]))[0]!.review_state
+
+  it('a teacher accepting their own diagram item is 403 (INTAKE_TEACHER_ENABLED is on); the stimulus and the item stay unchanged', async () => {
+    expect((await image(teacher, otherGroupQuestion)).status).toBe(200) // the group is free again after the reject
+    const id = await itemOf(otherGroupQuestion)
     expectError(await post(teacher, `/intake/items/${id}/accept`), 'FORBIDDEN')
+    expect(await assetOf(otherStimulus)).toBeNull()
+    expect(await stateOf(id)).toBe('needs_review')
+  })
+
+  it('a stimulus shown to pupils is 409 stimulusServed: nothing is set and the copy is removed', async () => {
+    const id = await itemOf(otherGroupQuestion)
+    const files = (await q('select id from files where purpose = $1', ['question_image'])).length
+    const served = vi.spyOn(t.app.get(StimuliRepository), 'stimulusServed').mockResolvedValue(true)
+    try {
+      expectError(await post(admin, `/intake/items/${id}/accept`), 'CONFLICT', STIMULUS_MESSAGES.stimulusServed)
+    } finally {
+      served.mockRestore()
+    }
+    expect(await assetOf(otherStimulus)).toBeNull()
+    expect(await stateOf(id)).toBe('needs_review')
+    expect((await q('select id from files where purpose = $1', ['question_image'])).length).toBe(files)
+  })
+
+  it('the edit path keeps the target, and a bulk accept sets the asset', async () => {
+    const id = await itemOf(otherGroupQuestion)
+    const before = (await q<{ t: unknown }>(`select payload -> 'target' as t from intake_items where id = $1::bigint`, [id]))[0]!.t
+    const patched = await admin.agent.patch(`/api/intake/items/${id}`).set('X-CSRF-Token', admin.csrf).send({ stem: 'Gambar rajah graf untuk soalan ini.' })
+    expect(patched.status, JSON.stringify(patched.body)).toBe(200)
+    expect((await q<{ t: unknown }>(`select payload -> 'target' as t from intake_items where id = $1::bigint`, [id]))[0]!.t).toEqual(before)
+    const res = await post(admin, '/intake/items/bulk', { action: 'accept', ids: [id] })
+    expect(res.status, JSON.stringify(res.body)).toBe(200)
+    expect(res.body.data.results[0].outcome, JSON.stringify(res.body)).toBe('done')
+    expect(await assetOf(otherStimulus)).not.toBeNull()
+    expect(await stateOf(id)).toBe('accepted')
+  })
+
+  it('a group removed before the accept is 409 diagramTargetGone', async () => {
+    expect((await image(teacher, goneQuestion)).status).toBe(200)
+    const id = await itemOf(goneQuestion)
+    await q('delete from stimulus_group_stimuli where group_id = $1::bigint', [goneGroup])
+    expectError(await post(admin, `/intake/items/${id}/accept`), 'CONFLICT', WORKFLOW_MESSAGES.diagramTargetGone)
+    expect(await stateOf(id)).toBe('needs_review')
+  })
+
+  it('a stimulus that got a file before the accept is never overwritten: 409 diagramTargetGone', async () => {
+    expect((await image(teacher, overwriteQuestion)).status).toBe(200)
+    const id = await itemOf(overwriteQuestion)
+    const [file] = await q<{ id: string }>('select id::text from files where purpose = $1 limit 1', ['question_image'])
+    await q('update stimuli set asset_file_id = $2::bigint where id = $1::bigint', [overwriteStimulus, file!.id])
+    expectError(await post(admin, `/intake/items/${id}/accept`), 'CONFLICT', WORKFLOW_MESSAGES.diagramTargetGone)
+    expect(await assetOf(overwriteStimulus)).toBe(file!.id)
+    expect(await stateOf(id)).toBe('needs_review')
+  })
+
+  it('a missing or foreign image file at accept is 422', async () => {
+    expect((await image(teacher, foreignQuestion)).status).toBe(200)
+    const id = await itemOf(foreignQuestion)
+    await q(`update intake_items set payload = jsonb_set(payload, '{target,imageFileId}', '"999999999"') where id = $1::bigint`, [id])
+    expect((await post(admin, `/intake/items/${id}/accept`)).status).toBe(422)
+    const [foreign] = await q<{ id: string }>(
+      `select f.id::text from files f where f.purpose = 'question_image' and f.owner_user_id is distinct from
+         (select b.owner_user_id from intake_batches b join intake_items i on i.batch_id = b.id where i.id = $1::bigint) limit 1`,
+      [id],
+    )
+    if (foreign) {
+      await q(`update intake_items set payload = jsonb_set(payload, '{target,imageFileId}', to_jsonb($2::text)) where id = $1::bigint`, [id, foreign.id])
+      expect((await post(admin, `/intake/items/${id}/accept`)).status).toBe(422)
+    }
+    expect(await stateOf(id)).toBe('needs_review')
   })
 })

@@ -33,9 +33,16 @@ describe('diagram item payload', () => {
 })
 
 describe('the stimulus that receives the image', () => {
-  it('is the first non-passage stimulus of the group, else the first one', () => {
-    expect(pickGroupStimulus([{ id: 1n, kind: 'passage', position: 1 }, { id: 2n, kind: 'diagram', position: 2 }])?.id).toBe(2n)
-    expect(pickGroupStimulus([{ id: 5n, kind: 'passage', position: 2 }, { id: 4n, kind: 'passage', position: 1 }])?.id).toBe(4n)
+  const row = (id: bigint, kind: string, position: number, assetFileId: bigint | null = null) => ({ id, kind, position, assetFileId })
+  it('is the first image-kind stimulus without a file, by position', () => {
+    expect(pickGroupStimulus([row(1n, 'passage', 1), row(2n, 'diagram', 2)])?.id).toBe(2n)
+    expect(pickGroupStimulus([row(3n, 'graph', 3), row(2n, 'map', 2)])?.id).toBe(2n)
+    expect(pickGroupStimulus([row(1n, 'diagram', 1, 50n), row(2n, 'image', 2)])?.id).toBe(2n)
+  })
+  it('is none for a table-only, a passage-only or an image-with-file group, and for an empty one', () => {
+    expect(pickGroupStimulus([row(1n, 'table', 1)])).toBeNull()
+    expect(pickGroupStimulus([row(5n, 'passage', 2), row(4n, 'passage', 1)])).toBeNull()
+    expect(pickGroupStimulus([row(1n, 'diagram', 1, 50n)])).toBeNull()
     expect(pickGroupStimulus([])).toBeNull()
   })
 })

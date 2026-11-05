@@ -62,8 +62,9 @@ describe('diagram audit (BE-10 AC 7 area, BR-M04-19)', () => {
         expect(res.status).toBe(200)
         expect(res.body).toEqual(adminList.body)
         expectError(await who.post('/api/diagram-audit/mcq/201/dismiss'), 'FORBIDDEN')
-        // The image route is open to the teacher and school admin since S6-T18 part 2 (see test/intake-workflow/diagram-upload.spec.ts).
       }
+      // The image route is open to the teacher (S6-T18 part 2, see test/intake-workflow/diagram-upload.spec.ts); a school admin is refused.
+      expectError(await c.schoolAdmin.post('/api/diagram-audit/mcq/201/image'), 'FORBIDDEN')
       expectError(await c.student.get('/api/diagram-audit'), 'FORBIDDEN')
       expectError(await c.student.post('/api/diagram-audit/mcq/201/dismiss'), 'FORBIDDEN')
       expectError(await c.student.post('/api/diagram-audit/mcq/201/image'), 'FORBIDDEN')

@@ -33,7 +33,7 @@ export interface DiagramSubmission {
 }
 
 /**
- * S6-T18 part 2 (API-Q-21): a teacher's or school admin's image for a question that needs a diagram. The question is NOT changed: the image is
+ * S6-T18 part 2 (API-Q-21): a teacher's image for a question that needs a diagram. The question is NOT changed: the image is
  * stored as the caller's own `question_image`, and ONE `source = 'guru'` batch with ONE diagram stimulus (`ref = group:<groupId>`) and ONE item
  * (`payload.target`, `question_id` preset) waits for the admin (`IntakeReviewService.accept` sets the asset on the group stimulus).
  * One open image per stimulus group (409). No existing `uploadImage` call, no new table.
@@ -54,9 +54,9 @@ export class GuruDiagramService {
     if (question.groupId === null) throw ApiError.of('CONFLICT', { message: MSG.noStimulusGroup })
     const links = await this.prisma.client.stimulusGroupStimulus.findMany({
       where: { groupId: question.groupId },
-      select: { stimulusId: true, position: true, stimulus: { select: { kind: true } } },
+      select: { stimulusId: true, position: true, stimulus: { select: { kind: true, assetFileId: true } } },
     })
-    const stimulus = pickGroupStimulus(links.map((l) => ({ id: l.stimulusId, kind: l.stimulus.kind, position: l.position })))
+    const stimulus = pickGroupStimulus(links.map((l) => ({ id: l.stimulusId, kind: l.stimulus.kind, position: l.position, assetFileId: l.stimulus.assetFileId })))
     if (!stimulus) throw ApiError.of('CONFLICT', { message: MSG.noStimulusGroup })
 
     // Cheap pre-check (the locked one below decides) so a refused call stores no file.
@@ -130,8 +130,8 @@ export class GuruDiagramService {
   /** Open diagram items that target the stimulus group (the "one image per group" fact). */
   private async openForGroup(db: Pick<TxClient, '$queryRaw'>, groupId: string): Promise<number> {
     const rows = await db.$queryRaw<{ n: bigint }[]>`
-      SELECT count(*) AS n FROM intake_items i
-      WHERE i.review_state = ANY(${[...DIAGRAM_OPEN_STATES]}::text[]) AND (i.payload -> 'target' ->> 'groupId') = ${groupId}`
+      SELECT count(*) AS n FROM intake_items i JOIN intake_stimuli s ON s.id = i.stimulus_id
+      WHERE i.review_state = ANY(${[...DIAGRAM_OPEN_STATES]}::text[]) AND s.ref = ${diagramStimulusRef(groupId)} AND i.payload -> 'target' IS NOT NULL`
     return Number(rows[0]?.n ?? 0)
   }
 
@@ -142,11 +142,13 @@ export class GuruDiagramService {
     const questions = await this.prisma.client.question.findMany({ where: { id: { in: keys.map(idFromString) } }, select: { id: true, groupId: true } })
     const asked = questions.map((q) => ({ id: idToString(q.id), groupId: q.groupId === null ? null : idToString(q.groupId) }))
     const groupIds = asked.flatMap((q) => (q.groupId === null ? [] : [q.groupId]))
+    // The question by its indexed `question_id`, the group by the batch stimulus ref `group:<id>` (one per batch, unique with the batch).
+    const refs = groupIds.map(diagramStimulusRef)
     const open = await this.prisma.client.$queryRaw<{ question_id: string; group_id: string }[]>`
       SELECT i.payload -> 'target' ->> 'questionId' AS question_id, i.payload -> 'target' ->> 'groupId' AS group_id
-      FROM intake_items i
-      WHERE i.review_state = ANY(${[...DIAGRAM_OPEN_STATES]}::text[])
-        AND ((i.payload -> 'target' ->> 'questionId') = ANY(${keys}::text[]) OR (i.payload -> 'target' ->> 'groupId') = ANY(${groupIds}::text[]))`
+      FROM intake_items i JOIN intake_stimuli s ON s.id = i.stimulus_id
+      WHERE i.review_state = ANY(${[...DIAGRAM_OPEN_STATES]}::text[]) AND i.payload -> 'target' IS NOT NULL
+        AND (i.question_id = ANY(${keys.map(idFromString)}::bigint[]) OR s.ref = ANY(${refs}::text[]))`
     return pendingQuestionIds(asked, open.map((o) => ({ questionId: o.question_id, groupId: o.group_id })))
   }
 

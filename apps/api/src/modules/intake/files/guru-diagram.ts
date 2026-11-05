@@ -1,3 +1,4 @@
+import { IMAGE_STIMULUS_KINDS } from '@pp/contract'
 import { z } from 'zod'
 
 /**
@@ -33,10 +34,13 @@ export function diagramTargetOf(payload: unknown): DiagramTarget | null {
   return parsed.success ? parsed.data : null
 }
 
-/** The stimulus that receives the image: the first non-passage stimulus of the group, else the first one. */
-export function pickGroupStimulus<T extends { id: bigint; kind: string; position: number }>(rows: readonly T[]): T | null {
+/**
+ * The stimulus that receives the image: the first stimulus of the group, by position, of an image kind that has no file yet (the predicate of
+ * the diagram candidates). A passage or a table is never picked; null when none qualifies.
+ */
+export function pickGroupStimulus<T extends { id: bigint; kind: string; position: number; assetFileId: bigint | null }>(rows: readonly T[]): T | null {
   const sorted = [...rows].sort((a, b) => a.position - b.position)
-  return sorted.find((r) => r.kind !== 'passage') ?? sorted[0] ?? null
+  return sorted.find((r) => (IMAGE_STIMULUS_KINDS as readonly string[]).includes(r.kind) && r.assetFileId === null) ?? null
 }
 
 /** The intake payload of a diagram item (the review views parse it as any item; `target` carries the meaning). */

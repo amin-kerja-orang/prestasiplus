@@ -20,6 +20,12 @@ import type { GuruActor } from '../../../intake/files/guru-submissions.service'
 
 export type DiagramKind = 'mcq' | 'structured'
 
+/** Who asks, for the visibility guard of the teacher path. */
+export interface DiagramViewer {
+  userId: string
+  isAdmin: boolean
+}
+
 export interface DiagramAuditFilters {
   subjectId?: string
   schoolId?: string
@@ -126,19 +132,28 @@ export class DiagramAuditService {
   }
 
   /** The candidate must exist in the bank's list for `kind` (resolved ones included: re-upload is allowed). */
-  async assertExists(kind: DiagramKind, id: string): Promise<void> {
-    await this.requireQuestion(kind, id)
+  async assertExists(kind: DiagramKind, id: string, viewer?: DiagramViewer): Promise<void> {
+    await this.requireQuestion(kind, id, viewer)
   }
 
-  private async requireQuestion(kind: DiagramKind, id: string): Promise<void> {
+  /**
+   * 404 for an unknown id, a `kind` that is not the question's real type, a dismissed question and, for a non-admin viewer, a question
+   * they may not see. Visibility here is the author's own question, or an approved and active one; S6-T16 `visibility` will apply
+   * through the shared scope when it lands.
+   */
+  private async requireQuestion(kind: DiagramKind, id: string, viewer?: DiagramViewer): Promise<void> {
     if (!isIdString(id)) throw ApiError.of('NOT_FOUND')
     const status = await this.ports.questionBank.getStatus(id)
     if (!status) throw ApiError.of('NOT_FOUND')
+    if (viewer && !viewer.isAdmin && status.createdById !== viewer.userId && !(status.status === 'approved' && status.isActive)) throw ApiError.of('NOT_FOUND')
+    const brief = (await this.ports.questionBank.describe([id])).get(id)
+    if (!brief || brief.type !== kind) throw ApiError.of('NOT_FOUND')
     const flagged = await this.ports.questionBank.listDiagramCandidates(kind)
     const resolved = await this.prisma.client.diagramAuditResolution.findUnique({
       where: { kind_questionId: { kind, questionId: idFromString(id) } },
-      select: { id: true },
+      select: { resolution: true },
     })
+    if (resolved?.resolution === 'dismissed') throw ApiError.of('NOT_FOUND')
     if (!resolved && !flagged.some((c) => c.id === id)) throw ApiError.of('NOT_FOUND')
   }
 
@@ -171,7 +186,7 @@ export class DiagramAuditService {
   }
 
   /**
-   * Teacher / school admin image (S6-T18 part 2): the question is not changed and nothing is resolved; an intake item waits for the admin.
+   * Teacher image (S6-T18 part 2): the question is not changed and nothing is resolved; an intake item waits for the admin.
    * 404 unknown question, 409 an image for the stimulus group is already waiting (or the question has no group), 422 not an image.
    */
   async submitForReview(
@@ -180,7 +195,7 @@ export class DiagramAuditService {
     id: string,
     bytes: Buffer,
   ): Promise<{ data: { id: string; needsDiagram: true }; status: string }> {
-    await this.requireQuestion(kind, id)
+    await this.requireQuestion(kind, id, { userId: actor.userId, isAdmin: false })
     const brief = (await this.ports.questionBank.describe([id])).get(id)
     await this.guruDiagram.submit(actor, { kind, questionId: id, subjectName: brief?.subjectName ?? null, bytes })
     return { data: { id, needsDiagram: true }, status: DIAGRAM_AUDIT_MESSAGES.submittedForReview }

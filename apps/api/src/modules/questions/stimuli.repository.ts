@@ -189,6 +189,11 @@ export class StimuliRepository {
     await this.db.stimulus.update({ where: { id: BigInt(id) }, data: { ...this.columns(data), contentHash: null } })
   }
 
+  /** Sets only the file of a stimulus (the content hash goes stale like any edit). */
+  async setAssetFile(id: string, fileId: bigint): Promise<void> {
+    await this.db.stimulus.update({ where: { id: BigInt(id) }, data: { assetFileId: fileId, contentHash: null } })
+  }
+
   /** Locks the stimulus row so a delete and a link cannot cross. Returns false when it does not exist. */
   async lockStimulus(id: string): Promise<boolean> {
     const key = bi(id)

@@ -30,10 +30,10 @@ import { ApiError } from '../../../../common/errors/api-error'
 import { Roles } from '../../../../common/guards/decorators'
 import { NoStoreInterceptor } from '../../../../common/http'
 import { AUTH_CONTEXT_KEY, type RequestWithAuth } from '../../../../common/scope/auth-context'
-import { RateLimit, RateLimitGuard } from '../../../../common/throttle'
+import { RateLimit, RateLimitGuard, RateLimiter } from '../../../../common/throttle'
 import { isIdString } from '../../../../db/ids'
 import { Actor, AdminOnly, actorOf, isAdminPusat, type WorkflowActor } from '../actor'
-import { QUESTION_WORKFLOW_IMAGE_MAX_BYTES, WORKFLOW_ADMIN_WRITE_LIMIT } from '../quality/limits'
+import { QUESTION_WORKFLOW_IMAGE_MAX_BYTES, WORKFLOW_ADMIN_WRITE_LIMIT, WORKFLOW_DIAGRAM_GURU_LIMIT } from '../quality/limits'
 import { type DiagramAuditFilters, DiagramAuditService, type DiagramKind } from './diagram-audit.service'
 
 const EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp']
@@ -109,15 +109,18 @@ function checkedBytes(file: UploadedImage | undefined): Buffer {
 }
 
 /**
- * Diagram audit, S11. The list and the image upload are open to admin, teacher and school admin (whole bank); dismiss is Admin Pusat only.
- * Admin Pusat's image is applied to the question at once; a teacher's or school admin's is an intake item for the admin to accept (S6-T18 part 2).
+ * Diagram audit, S11. The list is open to admin, teacher and school admin (whole bank); the image upload to admin and teacher; dismiss is Admin Pusat only.
+ * Admin Pusat's image is applied to the question at once; a teacher's is an intake item for the admin to accept (S6-T18 part 2).
  */
 @Roles('admin', 'teacher', 'school_admin')
 @UseGuards(RateLimitGuard)
 @UseInterceptors(NoStoreInterceptor)
 @Controller('diagram-audit')
 export class DiagramAuditController {
-  constructor(@Inject(DiagramAuditService) private readonly audit: DiagramAuditService) {}
+  constructor(
+    @Inject(DiagramAuditService) private readonly audit: DiagramAuditService,
+    @Inject(RateLimiter) private readonly limiter: RateLimiter,
+  ) {}
 
   @Get()
   @Roles('admin', 'teacher', 'school_admin')
@@ -135,6 +138,7 @@ export class DiagramAuditController {
   }
 
   @Post(':kind/:id/image')
+  @Roles('admin', 'teacher')
   @HttpCode(200)
   @RateLimit(WORKFLOW_ADMIN_WRITE_LIMIT)
   @UseInterceptors(DiagramImageInterceptor)
@@ -148,11 +152,13 @@ export class DiagramAuditController {
     const qid = parseId(id)
     const auth = req[AUTH_CONTEXT_KEY]
     if (!auth) throw ApiError.of('UNAUTHORIZED')
-    // 404 (unknown question) is decided before the body is judged, like the mock.
-    await this.audit.assertExists(k, qid)
-    const bytes = checkedBytes(file)
     const actor = actorOf(req)
-    // The active role decides: only Admin Pusat changes the question directly; the others submit the image for review.
+    // Teacher: the lower dedicated bucket, counted before any lookup or body work.
+    if (!isAdminPusat(actor)) this.limiter.consume(WORKFLOW_DIAGRAM_GURU_LIMIT, auth.userId)
+    // 404 (unknown question) is decided before the body is judged, like the mock.
+    await this.audit.assertExists(k, qid, { userId: actor.userId, isAdmin: isAdminPusat(actor) })
+    const bytes = checkedBytes(file)
+    // The active role decides: only Admin Pusat changes the question directly; the teacher submits the image for review.
     if (isAdminPusat(actor)) return this.audit.uploadImage(auth, k, qid, bytes, { ip: actor.ip, requestId: actor.requestId })
     return this.audit.submitForReview(
       { userId: actor.userId, roleCode: actor.role, requestId: actor.requestId, ip: actor.ip, isTest: actor.isTest },

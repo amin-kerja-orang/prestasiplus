@@ -5,8 +5,7 @@ import { QUESTION_WORKFLOW_IMAGE_MAX_BYTES, questionWorkflowFile, questionWorkfl
 /**
  * Diagram audit, S11 "Soalan Perlu Gambar Rajah" (mock `handlers/diagram-audit.ts`, SRS BR-M04-19,
  * FR-M04-95 to 101). Routes: `GET /diagram-audit`, `POST /diagram-audit/{kind}/{id}/image`,
- * `POST /diagram-audit/{kind}/{id}/dismiss`. List: admin, teacher and school admin (whole bank). Image and
- * dismiss: admin only. A teacher / school admin image is NOT applied to the question: it becomes an intake item of
+ * `POST /diagram-audit/{kind}/{id}/dismiss`. List: admin, teacher and school admin (whole bank). Image: admin (applied at once) and teacher (review path); dismiss: admin only. A teacher image is NOT applied to the question: it becomes an intake item of
  * a `source = guru` batch (kind diagram, `payload.target`) and the card shows `pendingReview` until an admin accepts or
  * rejects it (S6-T18 part 2). Image storage is BE-04.
  *
@@ -131,10 +130,10 @@ const image = questionWorkflowFile({
 export const DiagramAuditImageRequestSchema = z.object({ image }).meta({ id: 'DiagramAuditImageRequest' })
 
 export const DiagramAuditResultSchema = z
-  .strictObject({ id: IdSchema, needsDiagram: z.boolean().meta({ description: 'false after the admin upload / dismiss; true after a teacher or school admin upload (the question is unchanged until an admin accepts the image).' }) })
+  .strictObject({ id: IdSchema, needsDiagram: z.boolean().meta({ description: 'false after the admin upload / dismiss; true after a teacher upload (the question is unchanged until an admin accepts the image).' }) })
   .meta({ id: 'DiagramAuditResult' })
 
-/** 200 body of image and dismiss `{ data: { id, needsDiagram }, status }`. Teacher / school admin image: `needsDiagram: true`, status "Gambar dihantar untuk semakan."; 409 when the stimulus group already has an open image (`alreadyPending`) or the question has no group (`noStimulusGroup`). */
+/** 200 body of image and dismiss `{ data: { id, needsDiagram }, status }`. Teacher image: `needsDiagram: true`, status "Gambar dihantar untuk semakan."; 409 when the stimulus group already has an open image (`alreadyPending`) or the question has no group (`noStimulusGroup`). */
 export const DiagramAuditMutationSchema = questionWorkflowMutationOf(DiagramAuditResultSchema).meta({
   id: 'DiagramAuditMutation',
 })
