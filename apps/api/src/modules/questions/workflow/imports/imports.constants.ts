@@ -22,3 +22,16 @@ export const IMPORT_ZIP = {
   /** One image: 2 MB (the `question_image` rule of the files module). */
   maxEntryBytes: 2 * 1024 * 1024,
 } as const
+
+/**
+ * Limits of fetching a `stimulus_image` https URL (S1-T05 part 4, PO #11). The fetch runs BEFORE the import transaction opens, so network time
+ * never counts against `IMPORT_TX`. `maxUrls` is the number of DISTINCT URLs in one file; more refuses the whole file (like the ZIP entry cap).
+ */
+export const IMPORT_URL = {
+  maxUrls: 100,
+  concurrency: 4,
+  connectTimeoutMs: 5_000,
+  totalTimeoutMs: 10_000,
+  /** One image: 2 MB, the same as the ZIP entry and the `question_image` rule. The body is cut off as soon as it passes this. */
+  maxBytes: 2 * 1024 * 1024,
+} as const

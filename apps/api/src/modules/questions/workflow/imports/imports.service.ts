@@ -1,3 +1,7 @@
+import { lookup as dnsLookup } from 'node:dns/promises'
+import { request as httpsRequest } from 'node:https'
+import { BlockList, isIP } from 'node:net'
+
 import { Inject, Injectable } from '@nestjs/common'
 import {
   FILE_PURPOSE_RULES,
@@ -34,7 +38,7 @@ import type { WorkflowActor } from '../actor'
 import { type ImportedQuestionInput, QuestionWorkflowPorts } from '../ports'
 import type { CreateGateInput } from '../lifecycle'
 import { QuestionWorkflowService } from '../question-workflow.service'
-import { IMPORT_ZIP } from './imports.constants'
+import { IMPORT_URL, IMPORT_ZIP } from './imports.constants'
 import {
   buildCsv,
   type CodeLookups,
@@ -45,6 +49,8 @@ import {
   GURU_IMPORT_CAPS,
   type ImportDefaults,
   type ImportLookups,
+  imageKeyOf,
+  isHttpsUrl,
   isLegacyHeader,
   NO_IMPORT_DEFAULTS,
   numberKey,
@@ -162,6 +168,8 @@ export class QuestionImportsService {
     if (Object.keys(fields).length > 0) throw ApiError.of('VALIDATION_ERROR', { fields })
 
     const records = parseCsv(text as string)
+    // https image URLs are fetched NOW, before the transaction opens, and kept in memory (S1-T05 part 4).
+    await this.fetchImages(records, images)
     const plan = planImport(records, await this.withCodes(lookups, records, defaults, images.status), defaults)
     refuseUnusable(plan)
     const run = await this.execute(actor, file as UploadedCsv, plan, defaults, 'draft', null, images.bytes)
@@ -170,6 +178,36 @@ export class QuestionImportsService {
       status: MSG.imported(run.importedCount, run.failedCount),
       ...(plan.warnings.length === 0 ? {} : { warnings: plan.warnings }),
     }
+  }
+
+  /** How a URL is fetched; tests replace these (a stubbed resolver, a private-address allowance, a self-signed CA). Production uses the defaults. */
+  fetchOptions: FetchGuardOptions = {}
+
+  /**
+   * Fetches the distinct https URLs of the `stimulus_image` columns (new header only), at most `IMPORT_URL.concurrency` at a time, and adds
+   * each image that passed the checks to `images` under `url:<cell>`. A URL that failed is simply not added (the row then gets the Q-11
+   * "cannot be downloaded" text); one that is not a JPG, PNG or WebP of at most 2 MB is added as `bad`. More than `maxUrls` distinct URLs refuses
+   * the WHOLE file (422 on `csvFile`, ERR-REQ-01): an arbitrary subset of rows failing by file order would be a worse outcome, and it matches the
+   * ZIP entry cap.
+   */
+  private async fetchImages(records: CsvRecord[], images: { status: Map<string, 'ok' | 'bad'>; bytes: Map<string, Buffer> }): Promise<void> {
+    const [header, ...data] = records
+    if (!header || isLegacyHeader(header)) return
+    const at = ['stimulus_image', 'stimulus2_image', 'stimulus3_image'].map((c) => header.cells.findIndex((n) => n.trim().toLowerCase() === c)).filter((i) => i >= 0)
+    const urls = new Set<string>()
+    for (const rec of data) for (const i of at) if (isHttpsUrl(rec.cells[i] ?? '')) urls.add(rec.cells[i] as string)
+    if (urls.size > IMPORT_URL.maxUrls) throw ApiError.of('VALIDATION_ERROR', { fields: { csvFile: CODE_MSG.requestInvalid } })
+    const queue = [...urls]
+    const worker = async (): Promise<void> => {
+      for (let url = queue.shift(); url !== undefined; url = queue.shift()) {
+        const got = await fetchImageBytes(url, this.fetchOptions)
+        if (!got.ok) continue
+        const kind = classifyImage(got.bytes)
+        images.status.set(imageKeyOf(url), kind)
+        if (kind === 'ok') images.bytes.set(imageKeyOf(url), got.bytes)
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(IMPORT_URL.concurrency, queue.length) }, worker))
   }
 
   // --- Guru import -----------------------------------------------------------------------------
@@ -500,14 +538,152 @@ function readImages(zip: UploadedCsv | undefined, fields: Record<string, string>
     fields.zipFile = CODE_MSG.requestInvalid
     return none
   }
-  const rule = FILE_PURPOSE_RULES.question_image
   const out = { status: new Map<string, 'ok' | 'bad'>(), bytes: new Map<string, Buffer>() }
   for (const [name, bytes] of files) {
-    const inspected = bytes === null || bytes.length > rule.maxBytes ? null : inspectUpload(bytes)
-    if (bytes !== null && inspected !== null && (rule.mimes as readonly string[]).includes(inspected.mime)) {
-      out.status.set(name, 'ok')
-      out.bytes.set(name, bytes)
-    } else out.status.set(name, 'bad')
+    const kind = bytes === null ? 'bad' : classifyImage(bytes)
+    out.status.set(name, kind)
+    if (kind === 'ok' && bytes !== null) out.bytes.set(name, bytes)
   }
   return out
+}
+
+/** `ok` when the BYTES are a JPG, PNG or WebP of at most 2 MB (the `question_image` rule, the same inspection as `POST /files`); the name and any Content-Type are ignored. */
+export function classifyImage(bytes: Buffer): 'ok' | 'bad' {
+  const rule = FILE_PURPOSE_RULES.question_image
+  if (bytes.length === 0 || bytes.length > rule.maxBytes) return 'bad'
+  const inspected = inspectUpload(bytes)
+  return inspected !== null && (rule.mimes as readonly string[]).includes(inspected.mime) ? 'ok' : 'bad'
+}
+
+// --- fetching an https image URL (S1-T05 part 4, PO #11) -------------------------------------------
+
+/**
+ * Addresses the importer never connects to: this host's own network, private ranges, link-local (the cloud metadata address 169.254.169.254
+ * included), CGNAT, multicast and reserved space, and the IPv6 equivalents. An IPv4-mapped IPv6 address is judged as its IPv4 address.
+ */
+const BLOCKED = new BlockList()
+for (const [net, bits] of [['0.0.0.0', 8], ['10.0.0.0', 8], ['100.64.0.0', 10], ['127.0.0.0', 8], ['169.254.0.0', 16], ['172.16.0.0', 12], ['192.0.0.0', 24], ['192.0.2.0', 24], ['192.168.0.0', 16], ['198.18.0.0', 15], ['198.51.100.0', 24], ['203.0.113.0', 24], ['224.0.0.0', 4], ['240.0.0.0', 4]] as const) {
+  BLOCKED.addSubnet(net, bits, 'ipv4')
+}
+for (const [net, bits] of [['::', 96], ['64:ff9b::', 96], ['100::', 64], ['2001:db8::', 32], ['2002::', 16], ['fc00::', 7], ['fe80::', 10], ['ff00::', 8]] as const) {
+  BLOCKED.addSubnet(net, bits, 'ipv6')
+}
+
+/** True when `ip` must not be connected to. Anything that is not an IP literal is blocked. */
+export function isBlockedIp(ip: string): boolean {
+  const family = isIP(ip)
+  if (family === 0) return true
+  if (family === 4) return BLOCKED.check(ip, 'ipv4')
+  // ::ffff:a.b.c.d in any spelling (dotted or hex groups): the compact form from the URL parser always has hex groups.
+  let compact = ip.toLowerCase()
+  try {
+    compact = new URL(`http://[${ip}]/`).hostname.slice(1, -1)
+  } catch {
+    return true
+  }
+  const mapped = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(compact)
+  if (mapped) {
+    const hi = parseInt(mapped[1] as string, 16)
+    const lo = parseInt(mapped[2] as string, 16)
+    return BLOCKED.check(`${String(hi >> 8)}.${String(hi & 255)}.${String(lo >> 8)}.${String(lo & 255)}`, 'ipv4')
+  }
+  return BLOCKED.check(compact, 'ipv6')
+}
+
+/** Test seams. `resolve` replaces DNS; `isBlocked` replaces the range check (a local test server is a private address); `ca` trusts a self-signed test certificate; `port` replaces 443. */
+export interface FetchGuardOptions {
+  resolve?: (host: string) => Promise<string[]>
+  isBlocked?: (ip: string) => boolean
+  ca?: string
+  port?: number
+}
+
+export type FetchedImage = { ok: true; bytes: Buffer } | { ok: false }
+
+const defaultResolve = async (host: string): Promise<string[]> => (await dnsLookup(host, { all: true })).map((a) => a.address)
+
+/**
+ * GET of one https image URL with the guard of the lead security review. Never throws; every failure is `{ ok: false }` and nothing about it
+ * (URL, address, error text) leaves this function.
+ * - https only, default port 443, no credentials in the URL; the WHATWG parser has already turned decimal, octal and hex IPv4 literals
+ *   (`https://2130706433/`, `https://0x7f.1/`) into dotted form, which the range check then sees.
+ * - DNS is resolved HERE and EVERY address must be allowed; the connection is pinned to the first one through the request's `lookup`, so a second
+ *   DNS answer cannot swap the target between the check and the connect. The host name still goes into SNI, the Host header and certificate
+ *   verification.
+ * - No redirect is followed: any status other than 200 (3xx included) fails.
+ * - A connect timeout and a total timeout; the body is streamed and cut off the moment it passes the 2 MB cap (never more is held).
+ * The bytes are returned unjudged: the caller checks the magic bytes, the Content-Type is never read for the decision.
+ */
+export async function fetchImageBytes(raw: string, opts: FetchGuardOptions = {}): Promise<FetchedImage> {
+  const no: FetchedImage = { ok: false }
+  let url: URL
+  try {
+    url = new URL(raw)
+  } catch {
+    return no
+  }
+  if (url.protocol !== 'https:' || url.username !== '' || url.password !== '' || (url.port !== '' && url.port !== '443')) return no
+  const host = url.hostname.startsWith('[') ? url.hostname.slice(1, -1) : url.hostname
+  if (host === '') return no
+  const blocked = opts.isBlocked ?? isBlockedIp
+  let addresses: string[]
+  try {
+    addresses = isIP(host) !== 0 ? [host] : await (opts.resolve ?? defaultResolve)(host)
+  } catch {
+    return no
+  }
+  if (addresses.length === 0 || addresses.some((a) => blocked(a))) return no
+  const pinned = addresses[0] as string
+  const family = isIP(pinned)
+
+  return new Promise<FetchedImage>((resolve) => {
+    let done = false
+    const finish = (r: FetchedImage): void => {
+      if (done) return
+      done = true
+      clearTimeout(connectTimer)
+      clearTimeout(totalTimer)
+      resolve(r)
+    }
+    const req = httpsRequest({
+      host,
+      port: opts.port ?? 443,
+      path: `${url.pathname}${url.search}`,
+      method: 'GET',
+      agent: false,
+      headers: { accept: 'image/jpeg, image/png, image/webp', 'user-agent': 'PrestasiPlus-import' },
+      ...(isIP(host) === 0 ? { servername: host } : {}),
+      ...(opts.ca === undefined ? {} : { ca: opts.ca }),
+      lookup: (_h, options, cb) => {
+        const result = { address: pinned, family }
+        if ((options as { all?: boolean }).all === true) (cb as unknown as (e: null, a: unknown[]) => void)(null, [result])
+        else cb(null, result.address, result.family)
+      },
+    })
+    const fail = (): void => {
+      finish(no)
+      req.destroy()
+    }
+    const connectTimer = setTimeout(fail, IMPORT_URL.connectTimeoutMs)
+    const totalTimer = setTimeout(fail, IMPORT_URL.totalTimeoutMs)
+    req.on('socket', (socket) => {
+      socket.once('secureConnect', () => clearTimeout(connectTimer))
+    })
+    req.on('error', fail)
+    req.on('response', (res) => {
+      const length = Number(res.headers['content-length'])
+      if (res.statusCode !== 200 || (Number.isFinite(length) && length > IMPORT_URL.maxBytes)) return fail()
+      const chunks: Buffer[] = []
+      let total = 0
+      res.on('data', (c: Buffer) => {
+        total += c.length
+        if (total > IMPORT_URL.maxBytes) return fail()
+        chunks.push(c)
+      })
+      res.on('end', () => finish({ ok: true, bytes: Buffer.concat(chunks) }))
+      res.on('error', fail)
+      res.on('aborted', fail)
+    })
+    req.end()
+  })
 }

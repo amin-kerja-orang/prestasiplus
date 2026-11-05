@@ -732,15 +732,16 @@ function evaluateBlock(block: RowResult[], key: string, plan: ImportPlan, codes:
         table = parseTable(s.text)
         if (table === null) at(head, f('text'), 'STIMULUS_TABLE_INVALID', CODE_MSG.stimulusTable)
       }
-      // The image is a file of the uploaded ZIP, named by its base name. A URL is refused (Q75, interim A); a name not in the ZIP, or an image
+      // The image is an https URL (fetched before the import, key `url:<cell>`) or a file of the uploaded ZIP named by its base name. A name not fetched or not in the ZIP, or an image
       // kind with no image, has no text of its own: the Q-11 "cannot be downloaded" text; a file that is not an image or too big has the 11-02 text.
       let imageName: string | null = null
       if (s.image === '') {
         if (IMAGE_KINDS.has(s.kind)) at(head, f('image'), 'STIMULUS_IMAGE_UNAVAILABLE', CODE_MSG.stimulusImage)
-      } else if (/^https?:\/\//i.test(s.image)) {
+      } else if (SCHEME.test(s.image) && !isHttpsUrl(s.image)) {
+        // Any scheme other than https (http, ftp, file, data, javascript...) is a row error; a value without a scheme is a ZIP name.
         at(head, f('image'), 'STIMULUS_IMAGE_UNAVAILABLE', CODE_MSG.stimulusImage)
       } else {
-        const name = imageBaseName(s.image)
+        const name = imageKeyOf(s.image)
         const status = codes.images?.get(name)
         if (status === undefined) at(head, f('image'), 'STIMULUS_IMAGE_UNAVAILABLE', CODE_MSG.stimulusImage)
         else if (status === 'bad') at(head, f('image'), 'STIMULUS_IMAGE_INVALID', CODE_MSG.stimulusImageType)
@@ -910,6 +911,12 @@ export function readZipFiles(b: Buffer, limits: ZipLimits): Map<string, Buffer |
   }
   return out
 }
+
+/** A `stimulus_image` value that starts with `https://` is a URL (Q75, PO #11); anything else without a scheme is a ZIP name. */
+export const isHttpsUrl = (cell: string): boolean => /^https:\/\//i.test(cell)
+const SCHEME = /^[a-z][a-z0-9+.-]+:/i
+/** The key of a `stimulus_image` cell in `CodeLookups.images`: `url:` plus the cell for an https URL, else the lower-case base name. */
+export const imageKeyOf = (cell: string): string => (isHttpsUrl(cell) ? `url:${cell}` : imageBaseName(cell))
 
 /** The file name a `stimulus_image` cell names: its last path segment, lower-case (names match without regard to case). */
 export const imageBaseName = (cell: string): string => (cell.replaceAll('\\', '/').split('/').pop()?.trim() ?? '').toLowerCase()
