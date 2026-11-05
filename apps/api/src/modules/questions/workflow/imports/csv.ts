@@ -122,6 +122,8 @@ export interface CodeLookups {
   subjectsByCode: ReadonlyMap<string, string>
   levelsByCode: ReadonlyMap<string, string>
   facts: ReadonlyMap<string, CurriculumFacts>
+  /** `group_id` cells: a group a row may join (exists, no member shown to pupils, not a draft copy) with its stimuli by label, else null. */
+  groups?: ReadonlyMap<string, { stimuli: ReadonlyMap<string, string> } | null>
 }
 
 /** The ids that exist in the curriculum tables (and, for the new header, the code maps). */
@@ -142,10 +144,35 @@ export interface PlannedRow {
   line: number
   /** New header only. */
   questionKey?: string
+  /** Group member only: index (in the group's stimuli) of the stimulus its leaf is shown with (`part_stimulus`). */
+  partStimulusIndex?: number
   input: Omit<ImportedQuestionInput, 'createdById' | 'status'>
 }
 
+/** One stimulus of a group to create (S1-T05 part 2). */
+export interface PlannedStimulus {
+  kind: string
+  label: string
+  caption: string | null
+  bodyMs: string | null
+  bodyEn: string | null
+  alt: string | null
+  sourceCitation: string | null
+  tableData: { head: string[]; rows: string[][] } | null
+}
+
+/** A valid group: its stimuli and members (in `group_order`), or the id of an existing group the members join. */
+export interface PlannedGroup {
+  key: string
+  line: number
+  existingGroupId: string | null
+  stimuli: PlannedStimulus[]
+  members: PlannedRow[]
+}
+
 export interface ImportPlan {
+  /** Valid groups (new header only); each is created whole or skipped whole. */
+  groups: PlannedGroup[]
   /** Required header columns the file lacks (a non-empty list refuses the file). */
   missingColumns: string[]
   rows: PlannedRow[]
@@ -189,7 +216,7 @@ export function planImport(
   caps: ImportCaps | null = null,
 ): ImportPlan {
   const [header, ...data] = typeof text === 'string' ? parseCsv(text) : text
-  const plan: ImportPlan = { missingColumns: [], rows: [], failures: [], dataRows: 0, failedQuestions: 0, rowLimitExceeded: false, warnings: [], format: 'legacy' }
+  const plan: ImportPlan = { missingColumns: [], rows: [], groups: [], failures: [], dataRows: 0, failedQuestions: 0, rowLimitExceeded: false, warnings: [], format: 'legacy' }
   if (!header) {
     plan.missingColumns = [...QUESTION_IMPORT_REQUIRED_COLUMNS]
     return plan
@@ -358,6 +385,7 @@ function planCodeRows(
   }
   const textMax = caps?.textMax ?? 2000
   const optionMax = caps?.optionMax ?? 500
+  const results: RowResult[] = []
   const seenKeys = new Set<string>()
   let lastKey: string | null = null
 
@@ -368,8 +396,9 @@ function planCodeRows(
       return i === undefined ? '' : (rec.cells[i] ?? '')
     }
     const key = get('question_key')
-    const errors: { field: string; code: QuestionImportErrorCode; message: string }[] = []
-    const bad = (field: string, code: QuestionImportErrorCode, message: string) => errors.push({ field, code, message })
+    const errors: RowError[] = []
+    const bad = (field: string, code: QuestionImportErrorCode, message: string, raw = false) =>
+      errors.push({ field, code, message: raw ? message : questionImportRowPrefix(rec.line) + message })
 
     // question_key: required; the rows of one question are consecutive (an MCQ is one row in part 1, so a repeat right after is a duplicate).
     if (key === '') bad('question_key', 'KEY_REQUIRED', CODE_MSG.keyRequired)
@@ -488,24 +517,29 @@ function planCodeRows(
     const difficulty = diffCell === '' ? (defaults.difficultyLevel ?? (tp === null ? null : Math.min(5, tp))) : toInt(diffCell)
     if (difficulty === null || difficulty < 1 || difficulty > 5) bad('difficulty', 'DIFFICULTY_INVALID', CODE_MSG.difficulty)
 
-    if (errors.length > 0) {
-      plan.failedQuestions++
-      for (const e of errors) {
-        plan.failures.push({
-          row: rec.line,
-          message: questionImportRowPrefix(rec.line) + e.message,
-          ...(key === '' ? {} : { questionKey: [...key].slice(0, KEY_MAX).join('') }),
-          field: e.field,
-          code: e.code,
-        })
-      }
-      continue
-    }
-
     const explanation = get('explanation')
-    plan.rows.push({
+    const groupKey = get('group_key')
+    const groupId = get('group_id')
+    const stimuli = readStimuli(get)
+    const partStimulus = get('part_stimulus')
+    // A stimulus column outside any group has no text of its own in Q-11: ERR-REQ-01 (interim).
+    if (groupKey === '' && groupId === '' && (partStimulus !== '' || stimuli.some((x) => x.present))) {
+      bad('group_key', 'GROUP_FIELDS_INVALID', CODE_MSG.requestInvalid)
+    }
+    results.push({
+      rec,
+      key,
+      errors,
+      groupKey,
+      groupId,
+      subject: subjectId ?? '',
+      kertas: kertasCell,
+      partStimulus,
+      order: get('group_order'),
+      stimuli,
+      row: errors.length > 0 ? null : {
       line: rec.line,
-      questionKey: key.slice(0, KEY_MAX),
+      questionKey: [...key].slice(0, KEY_MAX).join(''),
       input: {
         stemMs: stem,
         options: texts.slice(0, filled).map((t, i) => ({ label: OPTION_LETTERS.charAt(i), text: t })),
@@ -528,8 +562,221 @@ function planCodeRows(
         ...(numberLabel === '' ? {} : { numberLabel }),
         ...(bahasa === 'en' ? { language: 'en' as const } : {}),
       },
+      },
     })
   }
+  planBlocks(results, plan, codes)
+}
+
+// --- groups and stimuli (S1-T05 part 2) ---------------------------------------------------------
+
+interface RowError { field: string; code: QuestionImportErrorCode; message: string }
+interface RawStimulus { prefix: string; label: string; kind: string; text: string; textEn: string; image: string; alt: string; caption: string; source: string; present: boolean }
+interface RowResult {
+  rec: CsvRecord
+  key: string
+  errors: RowError[]
+  row: PlannedRow | null
+  groupKey: string
+  groupId: string
+  subject: string
+  kertas: string
+  partStimulus: string
+  order: string
+  stimuli: RawStimulus[]
+}
+type AddError = (r: RowResult, field: string, code: QuestionImportErrorCode, message: string, raw?: boolean) => void
+
+const STIMULUS_PREFIXES = ['stimulus', 'stimulus2', 'stimulus3'] as const
+const STIMULUS_KINDS_ALL: ReadonlySet<string> = new Set(['passage', 'diagram', 'table', 'graph', 'map', 'infographic', 'image'])
+const IMAGE_KINDS: ReadonlySet<string> = new Set(['diagram', 'graph', 'map', 'infographic', 'image'])
+const STIMULUS_LIMIT = { label: 100, caption: 300, alt: 1000, source: 300, body: 20_000, cell: 500, columns: 12, rows: 60 } as const
+
+function readStimuli(get: (col: string) => string): RawStimulus[] {
+  return STIMULUS_PREFIXES.map((prefix) => {
+    const s = {
+      prefix,
+      label: get(`${prefix}_label`),
+      kind: get(`${prefix}_kind`).toLowerCase(),
+      text: get(`${prefix}_text`),
+      textEn: get(`${prefix}_text_en`),
+      image: get(`${prefix}_image`),
+      alt: get(`${prefix}_alt`),
+      caption: get(`${prefix}_caption`),
+      source: get(`${prefix}_source`),
+    }
+    return { ...s, present: [s.label, s.kind, s.text, s.textEn, s.image, s.alt, s.caption, s.source].some((v) => v !== '') }
+  })
+}
+
+/** A table as `[["kepala1","kepala2"],["a","b"]]`: a head plus at least one row, within the table limits; else null. */
+function parseTable(text: string): { head: string[]; rows: string[][] } | null {
+  let value: unknown
+  try {
+    value = JSON.parse(text)
+  } catch {
+    return null
+  }
+  if (!Array.isArray(value) || value.length < 2) return null
+  const lines: string[][] = []
+  for (const line of value as unknown[]) {
+    if (!Array.isArray(line)) return null
+    const cells: string[] = []
+    for (const c of line as unknown[]) {
+      if (typeof c !== 'string' && typeof c !== 'number') return null
+      const t = String(c)
+      if ([...t].length > STIMULUS_LIMIT.cell) return null
+      cells.push(t)
+    }
+    if (cells.length > STIMULUS_LIMIT.columns) return null
+    lines.push(cells)
+  }
+  const [head, ...rows] = lines as [string[], ...string[][]]
+  return head.length < 1 || rows.length < 1 || rows.length > STIMULUS_LIMIT.rows ? null : { head, rows }
+}
+
+/** Walks the rows in file order: a row with no group is one question; a group's consecutive rows are checked and planned as one unit. */
+function planBlocks(results: RowResult[], plan: ImportPlan, codes: CodeLookups): void {
+  const closed = new Set<string>()
+  let previousGroup: string | null = null
+  const emit = (rows: RowResult[]): void => {
+    for (const r of rows) {
+      for (const e of r.errors) {
+        plan.failures.push({ row: r.rec.line, message: e.message, ...(r.key === '' ? {} : { questionKey: [...r.key].slice(0, KEY_MAX).join('') }), field: e.field, code: e.code })
+      }
+    }
+  }
+  const at: AddError = (r, field, code, message, raw = false) => {
+    r.errors.push({ field, code, message: raw ? message : questionImportRowPrefix(r.rec.line) + message })
+  }
+  for (let i = 0; i < results.length; ) {
+    const first = results[i] as RowResult
+    if (first.groupKey === '' && first.groupId === '') {
+      if (first.row === null) {
+        plan.failedQuestions++
+        emit([first])
+      } else plan.rows.push(first.row)
+      previousGroup = null
+      i++
+      continue
+    }
+    let j = i + 1
+    if (first.groupKey !== '') while (j < results.length && (results[j] as RowResult).groupKey === first.groupKey) j++
+    const block = results.slice(i, j)
+    const key = first.groupKey
+    if (key !== '' && closed.has(key)) {
+      // The key was used by an earlier block. Another group in between: "already imported"; only ungrouped rows in between: not consecutive.
+      for (const r of block) {
+        if (previousGroup !== null && previousGroup !== key) at(r, 'group_key', 'GROUP_ALREADY_IMPORTED', CODE_MSG.groupAlreadyImported(key))
+        else at(r, 'group_key', 'GROUP_NOT_CONSECUTIVE', CODE_MSG.groupNotConsecutive)
+      }
+      plan.failedQuestions += block.length
+      emit(block)
+      previousGroup = key
+      i = j
+      continue
+    }
+    if (key !== '') closed.add(key)
+    previousGroup = key === '' ? null : key
+    evaluateBlock(block, key, plan, codes, at, emit)
+    i = j
+  }
+  plan.failures.sort((a, b) => a.row - b.row)
+}
+
+function evaluateBlock(block: RowResult[], key: string, plan: ImportPlan, codes: CodeLookups, at: AddError, emit: (rows: RowResult[]) => void): void {
+  const head = block[0] as RowResult
+  const existingId = head.groupId
+  const existing = existingId === '' ? null : /^[1-9]\d{0,17}$/.test(existingId) ? (codes.groups?.get(existingId) ?? null) : null
+  const stimuli: PlannedStimulus[] = []
+  const labels = new Map<string, number>()
+
+  // Stimulus columns are read from the first row only; a group is one Subjek and one Kertas.
+  for (const r of block.slice(1)) {
+    if (r.stimuli.some((x) => x.present)) at(r, 'stimulus_label', 'GROUP_STIMULUS_FIRST_ROW_ONLY', CODE_MSG.stimulusFirstRowOnly(r.rec.line), true)
+    if (key !== '' && (r.subject !== head.subject || r.kertas !== head.kertas)) at(r, 'group_key', 'GROUP_MIXED', CODE_MSG.groupMixed(r.rec.line, key), true)
+  }
+  // group_order: 1..n, unique; an empty cell takes the row's place in the group.
+  const order = block.map((r, n) => (r.order === '' ? n + 1 : toInt(r.order)))
+  const seen = new Set<number>()
+  block.forEach((r, n) => {
+    const v = order[n] as number | null
+    if (v === null || v < 1 || v > block.length || seen.has(v)) at(r, 'group_order', 'GROUP_ORDER_INVALID', CODE_MSG.groupOrder)
+    else seen.add(v)
+  })
+
+  if (existingId !== '') {
+    if (existing === null) at(head, 'group_id', 'GROUP_UNAVAILABLE', CODE_MSG.groupUnavailable)
+    else if (head.stimuli.some((x) => x.present)) at(head, 'group_id', 'GROUP_FIELDS_INVALID', CODE_MSG.requestInvalid)
+  } else {
+    const present = head.stimuli.filter((x) => x.present)
+    if (present.length === 0) at(head, 'stimulus_label', 'STIMULI_COUNT', CODE_MSG.stimuliCount)
+    for (const s of present) {
+      const f = (name: string): string => `${s.prefix}_${name}`
+      const before = head.errors.length
+      if (s.label === '') at(head, f('label'), 'STIMULUS_LABEL_REQUIRED', CODE_MSG.stimulusLabel)
+      else if ([...s.label].length > STIMULUS_LIMIT.label) at(head, f('label'), 'GROUP_FIELDS_INVALID', CODE_MSG.requestInvalid)
+      if (!STIMULUS_KINDS_ALL.has(s.kind)) at(head, f('kind'), 'STIMULUS_KIND_INVALID', CODE_MSG.stimulusKind)
+      if ([...s.caption].length > STIMULUS_LIMIT.caption || [...s.source].length > STIMULUS_LIMIT.source) at(head, f('caption'), 'STIMULUS_CAPTION_LONG', CODE_MSG.stimulusCaption)
+      if ([...s.text].length > STIMULUS_LIMIT.body || [...s.textEn].length > STIMULUS_LIMIT.body || [...s.alt].length > STIMULUS_LIMIT.alt) at(head, f('text'), 'GROUP_FIELDS_INVALID', CODE_MSG.requestInvalid)
+      let table: { head: string[]; rows: string[][] } | null = null
+      if (s.kind === 'passage' && s.text === '') at(head, f('text'), 'STIMULUS_TEXT_REQUIRED', CODE_MSG.stimulusPassage)
+      if (s.kind === 'table') {
+        table = parseTable(s.text)
+        if (table === null) at(head, f('text'), 'STIMULUS_TABLE_INVALID', CODE_MSG.stimulusTable)
+      }
+      // Images come only from the ZIP of part 3: a URL, a file name, or an image kind with no image cannot be satisfied yet.
+      if (s.image !== '' || IMAGE_KINDS.has(s.kind)) at(head, f('image'), 'STIMULUS_IMAGE_UNAVAILABLE', CODE_MSG.stimulusImage)
+      if (IMAGE_KINDS.has(s.kind) && s.alt === '') at(head, f('alt'), 'STIMULUS_ALT_REQUIRED', CODE_MSG.stimulusAlt)
+      if (head.errors.length === before) {
+        labels.set(s.label, stimuli.length)
+        stimuli.push({
+          kind: s.kind,
+          label: s.label,
+          caption: s.caption === '' ? null : s.caption,
+          bodyMs: s.kind === 'table' || s.text === '' ? null : s.text,
+          bodyEn: s.kind === 'table' || s.textEn === '' ? null : s.textEn,
+          alt: s.alt === '' ? null : s.alt,
+          sourceCitation: s.source === '' ? null : s.source,
+          tableData: table,
+        })
+      }
+    }
+  }
+  // part_stimulus: the label of one of the group's stimuli.
+  const partIndex = new Map<RowResult, number>()
+  const partId = new Map<RowResult, string>()
+  for (const r of block) {
+    if (r.partStimulus === '') continue
+    if (existingId === '') {
+      const idx = labels.get(r.partStimulus)
+      if (idx !== undefined) partIndex.set(r, idx)
+      else if (head.errors.length === 0) at(r, 'part_stimulus', 'PART_STIMULUS_INVALID', CODE_MSG.partStimulus)
+    } else if (existing !== null) {
+      const known = existing.stimuli.get(r.partStimulus)
+      if (known !== undefined) partId.set(r, known)
+      else at(r, 'part_stimulus', 'PART_STIMULUS_INVALID', CODE_MSG.partStimulus)
+    }
+  }
+
+  if (block.some((r) => r.errors.length > 0)) {
+    plan.failedQuestions += block.length
+    emit(block)
+    return
+  }
+  const members = block
+    .map((r, n) => ({ r, o: order[n] as number }))
+    .sort((a, b) => a.o - b.o)
+    .map(({ r }): PlannedRow => {
+      const row = r.row as PlannedRow
+      const pid = partId.get(r)
+      return {
+        ...row,
+        ...(partIndex.has(r) ? { partStimulusIndex: partIndex.get(r) as number } : {}),
+        ...(pid === undefined ? {} : { input: { ...row.input, partStimulusId: pid } }),
+      }
+    })
+  plan.groups.push({ key: [...key].slice(0, KEY_MAX).join(''), line: head.rec.line, existingGroupId: existingId === '' ? null : existingId, stimuli, members })
 }
 
 /** One CSV cell of a generated file: formula neutralised (`=`, `+`, `-`, `@`), quoted when needed. */

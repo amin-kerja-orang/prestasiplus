@@ -9106,7 +9106,24 @@
               "OPTION_LONG",
               "CORRECT_REQUIRED",
               "MARKS_MIN",
-              "MARKS_MAX"
+              "MARKS_MAX",
+              "GROUP_NOT_CONSECUTIVE",
+              "GROUP_ALREADY_IMPORTED",
+              "GROUP_MIXED",
+              "GROUP_STIMULUS_FIRST_ROW_ONLY",
+              "GROUP_ORDER_INVALID",
+              "GROUP_UNAVAILABLE",
+              "GROUP_FIELDS_INVALID",
+              "GROUP_REJECTED",
+              "STIMULI_COUNT",
+              "STIMULUS_LABEL_REQUIRED",
+              "STIMULUS_KIND_INVALID",
+              "STIMULUS_TEXT_REQUIRED",
+              "STIMULUS_TABLE_INVALID",
+              "STIMULUS_IMAGE_UNAVAILABLE",
+              "STIMULUS_ALT_REQUIRED",
+              "STIMULUS_CAPTION_LONG",
+              "PART_STIMULUS_INVALID"
             ],
             "description": "New header only: stable error code (`kod_ralat` of the error CSV)."
           }

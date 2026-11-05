@@ -380,3 +380,143 @@ describe('imports: echoed file values are capped (review of #704)', () => {
     expect(p.missingColumns).toEqual([])
   })
 })
+
+
+/* ---------------------------------------------------------------------------------------------------- S1-T05 part 2: groups and stimuli */
+
+const GROUP_HEAD = `${CODE_HEAD},group_key,group_order,group_id,stimulus_label,stimulus_kind,stimulus_text,stimulus_image,stimulus_alt,stimulus_caption,part_stimulus,stimulus2_label,stimulus2_kind,stimulus2_text`
+const grow = (over: Record<string, string> = {}): string => {
+  const base: Record<string, string> = { group_key: 'G1' }
+  const rest = GROUP_HEAD.split(',').slice(CODE_HEAD.split(',').length)
+  const cells = rest.map((c) => csvCell({ ...base, ...over }[c] ?? ''))
+  return `${row(over)},${cells.join(',')}`
+}
+const FIRST = { stimulus_label: 'Rajah 1', stimulus_kind: 'passage', stimulus_text: 'Petikan ringkas tentang pasar.' }
+const gplan = (rows: string[], extra?: Partial<ImportLookups>) => planImport([GROUP_HEAD, ...rows].join('\n'), { ...withCodes, ...extra }, undefined)
+const NO_PLAIN = { subject_code: 'SEJ', tingkatan: '1', kertas: '', unit_code: '', sp_kod: '', tp: '', aras: '', bab_kod: '', topik_kod: '' }
+
+describe('imports: groups and stimuli (S1-T05 part 2, Q-11 and FR-ADM-QE6.4)', () => {
+  it('[CI] one group of 3 rows is one group with 3 members in group_order and one stimulus', () => {
+    const p = gplan([
+      grow({ question_key: 'A', group_order: '3', ...FIRST }),
+      grow({ question_key: 'B', group_order: '1' }),
+      grow({ question_key: 'C', group_order: '2' }),
+    ])
+    expect(p.failures).toEqual([])
+    expect(p.rows).toHaveLength(0)
+    expect(p.groups).toHaveLength(1)
+    expect(p.groups[0]?.members.map((m) => m.questionKey)).toEqual(['B', 'C', 'A'])
+    expect(p.groups[0]?.stimuli).toEqual([{ kind: 'passage', label: 'Rajah 1', caption: null, bodyMs: 'Petikan ringkas tentang pasar.', bodyEn: null, alt: null, sourceCitation: null, tableData: null }])
+    expect(p.groups[0]).toMatchObject({ key: 'G1', existingGroupId: null })
+  })
+
+  it('[CI] up to three stimuli, a table from JSON and a part stimulus by label', () => {
+    const p = gplan([
+      grow({ question_key: 'A', ...FIRST, stimulus_caption: 'Sumber kajian', stimulus2_label: 'Jadual 1', stimulus2_kind: 'table', stimulus2_text: '[["Nama","Skor"],["a",1]]', part_stimulus: 'Jadual 1' }),
+      grow({ question_key: 'B' }),
+    ])
+    expect(p.failures).toEqual([])
+    expect(p.groups[0]?.stimuli[1]).toMatchObject({ kind: 'table', bodyMs: null, tableData: { head: ['Nama', 'Skor'], rows: [['a', '1']] } })
+    expect(p.groups[0]?.stimuli[0]?.caption).toBe('Sumber kajian')
+    expect(p.groups[0]?.members[0]?.partStimulusIndex).toBe(1)
+  })
+
+  it('[CI] "Baris kumpulan mesti berturutan." for a group row after ungrouped rows; "Kumpulan {key} sudah diimport dalam kelompok ini." after another group', () => {
+    const p = gplan([
+      grow({ question_key: 'A', ...FIRST }),
+      grow({ question_key: 'B', group_key: '' }),
+      grow({ question_key: 'C' }),
+      grow({ question_key: 'D', group_key: 'G2', ...FIRST }),
+      grow({ question_key: 'E', group_key: 'G1' }),
+    ])
+    expect(p.groups.map((g) => g.key)).toEqual(['G1', 'G2'])
+    expect(p.rows.map((r) => r.questionKey)).toEqual(['B'])
+    expect(p.failures.map((f) => [f.row, f.code, f.message])).toEqual([
+      [4, 'GROUP_NOT_CONSECUTIVE', 'Baris 4: Baris kumpulan mesti berturutan.'],
+      [6, 'GROUP_ALREADY_IMPORTED', 'Baris 6: Kumpulan G1 sudah diimport dalam kelompok ini.'],
+    ])
+  })
+
+  it('[CI] mixed Subjek or Kertas, and stimulus fields on a later row, give the QE6.4 texts once (no second "Baris {n}:")', () => {
+    const p = gplan([
+      grow({ question_key: 'A', ...FIRST }),
+      grow({ question_key: 'B', ...NO_PLAIN, difficulty: '2' }),
+      grow({ question_key: 'C', stimulus_label: 'Rajah 2' }),
+    ])
+    expect(p.groups).toHaveLength(0)
+    expect(p.failedQuestions).toBe(3)
+    expect(p.failures.map((f) => [f.row, f.code, f.message])).toEqual([
+      [3, 'GROUP_MIXED', 'Baris 3: kumpulan G1 bercampur subjek atau kertas.'],
+      [4, 'GROUP_STIMULUS_FIRST_ROW_ONLY', 'Baris 4: rangsangan hanya pada baris pertama kumpulan.'],
+    ])
+    const k = gplan([grow({ question_key: 'A', ...FIRST }), grow({ question_key: 'B', kertas: '2' })])
+    expect(k.failures.map((f) => f.message)).toEqual(['Baris 3: kumpulan G1 bercampur subjek atau kertas.'])
+  })
+
+  it('[CI] group_order must be 1..n and unique: "Susunan kumpulan tidak sah."', () => {
+    for (const orders of [['1', '1'], ['1', '3'], ['0', '1'], ['x', '1']]) {
+      const p = gplan([grow({ question_key: 'A', group_order: orders[0] as string, ...FIRST }), grow({ question_key: 'B', group_order: orders[1] as string })])
+      expect(p.groups, orders.join()).toHaveLength(0)
+      expect(p.failures.map((f) => f.message), orders.join()).toContain(orders[0] === '1' ? 'Baris 3: Susunan kumpulan tidak sah.' : 'Baris 2: Susunan kumpulan tidak sah.')
+    }
+  })
+
+  it('[CI] every stimulus rule has its Q-11 text on the first row', () => {
+    const msgs = (over: Record<string, string>): string[] => gplan([grow({ question_key: 'A', ...FIRST, ...over })]).failures.map((f) => f.message)
+    expect(msgs({ stimulus_label: '', stimulus_kind: '', stimulus_text: '' })).toEqual(['Baris 2: Satu kumpulan mesti mempunyai 1 hingga 3 rangsangan.'])
+    expect(msgs({ stimulus_label: '' })).toEqual(['Baris 2: Sila isi label rangsangan.'])
+    expect(msgs({ stimulus_kind: 'video' })).toEqual(['Baris 2: Sila pilih jenis rangsangan.'])
+    expect(msgs({ stimulus_text: '' })).toEqual(['Baris 2: Petikan mesti mempunyai teks.'])
+    expect(msgs({ stimulus_kind: 'table', stimulus_text: '[["a"]]' })).toEqual(['Baris 2: Jadual mesti mempunyai kepala dan sekurang-kurangnya satu baris, atau imej.'])
+    expect(msgs({ stimulus_kind: 'table', stimulus_text: 'bukan json' })).toEqual(['Baris 2: Jadual mesti mempunyai kepala dan sekurang-kurangnya satu baris, atau imej.'])
+    expect(msgs({ stimulus_caption: 'k'.repeat(301) })).toEqual(['Baris 2: Kapsyen tidak boleh melebihi 300 aksara.'])
+    expect(msgs({ stimulus_kind: 'diagram', stimulus_text: '', stimulus_image: 'rajah.png' })).toEqual(['Baris 2: Imej rangsangan tidak dapat dimuat turun.', 'Baris 2: Sila isi teks alternatif imej.'])
+    expect(msgs({ stimulus_label: 'x'.repeat(101) })).toEqual(['Baris 2: Data yang dihantar tidak sah. Sila semak dan cuba lagi.'])
+    expect(msgs({ part_stimulus: 'Tiada' })).toEqual(['Baris 2: Rangsangan bahagian mesti daripada kumpulan soalan ini.'])
+  })
+
+  it('[CI] a URL (or any) stimulus_image is a row error until the ZIP exists; an image kind without an image is the same error', () => {
+    for (const image of ['https://contoh.test/a.png', 'http://contoh.test/a.png', 'a.png']) {
+      const p = gplan([grow({ question_key: 'A', ...FIRST, stimulus_kind: 'image', stimulus_image: image, stimulus_alt: 'Gambar pasar' })])
+      expect(p.groups).toHaveLength(0)
+      expect(p.failures).toEqual([{ row: 2, message: 'Baris 2: Imej rangsangan tidak dapat dimuat turun.', questionKey: 'A', field: 'stimulus_image', code: 'STIMULUS_IMAGE_UNAVAILABLE' }])
+    }
+    expect(gplan([grow({ question_key: 'A', ...FIRST, stimulus_kind: 'map', stimulus_alt: 'Peta' })]).failures.map((f) => f.code)).toEqual(['STIMULUS_IMAGE_UNAVAILABLE'])
+  })
+
+  it('[CI] a member with its own error skips the whole group, the other questions still import', () => {
+    const p = gplan([grow({ question_key: 'A', group_key: '' }), grow({ question_key: 'B', ...FIRST }), grow({ question_key: 'C', tp: '9' }), grow({ question_key: 'D', group_key: '' })])
+    expect(p.rows.map((r) => r.questionKey)).toEqual(['A', 'D'])
+    expect(p.groups).toHaveLength(0)
+    expect(p.failedQuestions).toBe(2)
+    expect(p.failures.map((f) => f.questionKey)).toEqual(['C'])
+  })
+
+  it('[CI] group_id: a group that is missing or shown to pupils gives the QE6.4 text; a usable one is joined; stimulus columns with it are refused', () => {
+    const groups = new Map([['7', { stimuli: new Map([['Rajah 1', '71']]) }], ['8', null]])
+    const join = (id: string, over: Record<string, string> = {}) => gplan([grow({ question_key: 'A', group_key: '', group_id: id, ...over })], { codes: { ...codes, groups } })
+    expect(join('8').failures.map((f) => [f.message, f.code])).toEqual([['Baris 2: Kumpulan tidak dijumpai atau sedang dipaparkan kepada murid.', 'GROUP_UNAVAILABLE']])
+    expect(join('99').failures.map((f) => f.code)).toEqual(['GROUP_UNAVAILABLE'])
+    expect(join('abc').failures.map((f) => f.code)).toEqual(['GROUP_UNAVAILABLE'])
+    const ok = join('7', { part_stimulus: 'Rajah 1' })
+    expect(ok.failures).toEqual([])
+    expect(ok.groups[0]).toMatchObject({ existingGroupId: '7', stimuli: [] })
+    expect(ok.groups[0]?.members[0]?.input.partStimulusId).toBe('71')
+    expect(join('7', FIRST).failures.map((f) => [f.message, f.code])).toEqual([['Baris 2: Data yang dihantar tidak sah. Sila semak dan cuba lagi.', 'GROUP_FIELDS_INVALID']])
+    expect(join('7', { part_stimulus: 'Lain' }).failures.map((f) => f.code)).toEqual(['PART_STIMULUS_INVALID'])
+  })
+
+  it('[CI] stimulus columns on a row with no group are refused with the ERR-REQ-01 text', () => {
+    const p = gplan([grow({ question_key: 'A', group_key: '', ...FIRST })])
+    expect(p.failures.map((f) => [f.message, f.code])).toEqual([['Baris 2: Data yang dihantar tidak sah. Sila semak dan cuba lagi.', 'GROUP_FIELDS_INVALID']])
+  })
+
+  it('[CI] a group key echoed in a message is cut at 40 characters', () => {
+    const key = 'g'.repeat(500)
+    const p = gplan([grow({ question_key: 'A', group_key: key, ...FIRST }), grow({ question_key: 'B', group_key: key, ...NO_PLAIN, difficulty: '2' })])
+    expect(p.failures[0]?.message).toBe(`Baris 3: kumpulan ${'g'.repeat(40)} bercampur subjek atau kertas.`)
+    const q = gplan([grow({ question_key: 'A', group_key: key, ...FIRST }), grow({ question_key: 'B', group_key: 'H', ...FIRST }), grow({ question_key: 'C', group_key: key })])
+    expect(q.failures[0]?.message).toBe(`Baris 4: Kumpulan ${'g'.repeat(40)} sudah diimport dalam kelompok ini.`)
+    expect(JSON.stringify(p.failures) + JSON.stringify(q.failures)).not.toContain('g'.repeat(41))
+  })
+})

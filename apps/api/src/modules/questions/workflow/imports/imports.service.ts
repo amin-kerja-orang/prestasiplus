@@ -9,6 +9,8 @@ import {
   QUESTION_IMPORT_TEMPLATE_CSV,
   QuestionImportListQuerySchema,
   type QuestionImportFailure,
+  type StimulusCreateRequest,
+  questionImportRowPrefix,
   type QuestionImportGuruResult,
   type QuestionImportRun,
   type QuestionWorkflowStatus,
@@ -21,7 +23,7 @@ import { ApiError } from '../../../../common/errors/api-error'
 import { listMeta } from '../../../../common/http/respond'
 import { toMytTimestamp } from '../../../../common/time/myt'
 import { CurriculumRepository } from '../../../curriculum'
-import { QuestionsRepository } from '../../index'
+import { QuestionsRepository, StimuliService } from '../../index'
 import type { WorkflowActor } from '../actor'
 import { type ImportedQuestionInput, QuestionWorkflowPorts } from '../ports'
 import type { CreateGateInput } from '../lifecycle'
@@ -31,6 +33,7 @@ import {
   type CodeLookups,
   type CsvRecord,
   type CurriculumFacts,
+  type PlannedGroup,
   factsKey,
   GURU_IMPORT_CAPS,
   type ImportDefaults,
@@ -97,6 +100,7 @@ export class QuestionImportsService {
     @Inject(QuestionWorkflowPorts) private readonly ports: QuestionWorkflowPorts,
     @Inject(QuestionWorkflowService) private readonly workflow: QuestionWorkflowService,
     @Inject(QuestionsRepository) private readonly questions: QuestionsRepository,
+    @Inject(StimuliService) private readonly stimuli: StimuliService,
   ) {}
 
   /** The template file text (mock `IMPORT_TEMPLATE_CSV`; no cell starts with a formula character). */
@@ -209,7 +213,26 @@ export class QuestionImportsService {
     }
     const facts = new Map<string, CurriculumFacts>()
     for (const [key, { subjectId, levelId }] of pairs) facts.set(key, await this.factsOf(BigInt(subjectId), BigInt(levelId), withTopics))
-    return { ...lookups, codes: { subjectsByCode, levelsByCode, facts } }
+    const groups = new Map<string, { stimuli: ReadonlyMap<string, string> } | null>()
+    const gi = names.get('group_id')
+    for (const rec of gi === undefined ? [] : data) {
+      const id = rec.cells[gi as number] ?? ''
+      if (id !== '' && !groups.has(id)) groups.set(id, await this.usableGroup(id))
+    }
+    return { ...lookups, codes: { subjectsByCode, levelsByCode, facts, groups } }
+  }
+
+  /** A group a `group_id` row may join: it exists, is not a draft copy and no member is shown to pupils; else null. */
+  private async usableGroup(id: string): Promise<{ stimuli: ReadonlyMap<string, string> } | null> {
+    if (!/^[1-9]\d{0,17}$/.test(id)) return null
+    try {
+      const g = await this.stimuli.getGroup(id)
+      if (g.draftOfGroupId != null || g.members.some((m) => m.servable)) return null
+      return { stimuli: new Map(g.stimuli.flatMap((x) => (x.label === null ? [] : [[x.label, x.id] as const]))) }
+    } catch (err) {
+      if (err instanceof ApiError) return null
+      throw err
+    }
   }
 
   private async factsOf(subjectId: bigint, levelId: bigint, withTopics: boolean): Promise<CurriculumFacts> {
@@ -244,6 +267,39 @@ export class QuestionImportsService {
     return { subjectId: subjectId.toString(), levelId: levelId.toString(), hasDskpNodes: nodes.length > 0, spmBound, units, sps, chapters: chapterMap }
   }
 
+  /**
+   * One valid group, inside the caller's transaction: its stimuli (S1-T01 `StimuliService.createStimulus`), then its members through the bank port
+   * (the same create as every other row), then the group (`createGroup`, which takes its Subjek, Tingkatan and Kertas from the members) or, for a
+   * `group_id` row, `addMember` on the existing group. Any `ApiError` is the caller's cue to skip the whole group.
+   */
+  private async createGroup(actor: WorkflowActor, group: PlannedGroup, status: 'draft' | 'review'): Promise<void> {
+    const bank = this.ports.questionBank
+    const stimulusIds: string[] = []
+    for (const s of group.stimuli) {
+      const made = await this.stimuli.createStimulus({
+        kind: s.kind as StimulusCreateRequest['kind'],
+        label: s.label,
+        ...(s.caption === null ? {} : { caption: s.caption }),
+        ...(s.bodyMs === null ? {} : { body: { ms: s.bodyMs, ...(s.bodyEn === null ? {} : { en: s.bodyEn }) } }),
+        ...(s.alt === null ? {} : { alt: s.alt }),
+        ...(s.sourceCitation === null ? {} : { sourceCitation: s.sourceCitation }),
+        ...(s.tableData === null ? {} : { tableData: s.tableData }),
+      })
+      stimulusIds.push(made.result.id)
+    }
+    const questionIds: string[] = []
+    for (const m of group.members) {
+      const partId = m.partStimulusIndex === undefined ? undefined : stimulusIds[m.partStimulusIndex]
+      const input: ImportedQuestionInput = { ...m.input, ...(partId === undefined ? {} : { partStimulusId: partId }), createdById: actor.userId, status }
+      this.workflow.assertCreateAllowed(gateInputOf(input, GATE_STATUS), actor)
+      const id = await bank.create(input)
+      await this.workflow.recordCreation(id, status, actor, 1)
+      questionIds.push(id)
+    }
+    if (group.existingGroupId !== null) for (const id of questionIds) await this.stimuli.addMember(group.existingGroupId, id)
+    else await this.stimuli.createGroup({ stimulusIds, questionIds })
+  }
+
   /** Creates the valid rows and stores the run in ONE transaction: nothing partial is kept on an error. */
   private execute(
     actor: WorkflowActor,
@@ -261,13 +317,38 @@ export class QuestionImportsService {
         const id = await bank.create(input)
         await this.workflow.recordCreation(id, status, actor, 1)
       }
+      // A group is created whole or skipped whole (45 section 3.2): a savepoint per group keeps what the rest of the import made.
+      const failures = [...plan.failures]
+      let imported = plan.rows.length
+      let failed = plan.failedQuestions
+      for (const group of plan.groups) {
+        await this.prisma.client.$executeRaw`SAVEPOINT import_group`
+        try {
+          await this.createGroup(actor, group, status)
+          await this.prisma.client.$executeRaw`RELEASE SAVEPOINT import_group`
+          imported += group.members.length
+        } catch (err) {
+          if (!(err instanceof ApiError)) throw err
+          await this.prisma.client.$executeRaw`ROLLBACK TO SAVEPOINT import_group`
+          const text = Object.values(err.fields ?? {})[0] ?? err.message
+          failures.push({
+            row: group.line,
+            message: questionImportRowPrefix(group.line) + text,
+            ...((group.key || group.members[0]?.questionKey) ? { questionKey: group.key || (group.members[0]?.questionKey as string) } : {}),
+            field: 'group_key',
+            code: 'GROUP_REJECTED',
+          })
+          failed += group.members.length
+        }
+      }
+      failures.sort((a, b) => a.row - b.row)
       return this.prisma.client.questionImport.create({
         data: {
           fileName: file.originalname.slice(0, FILE_NAME_MAX),
           templateVersion,
-          importedCount: plan.rows.length,
-          failedCount: plan.failedQuestions,
-          failures: plan.failures,
+          importedCount: imported,
+          failedCount: failed,
+          failures,
           defaultSubjectId: defaults.subjectId === null ? null : BigInt(defaults.subjectId),
           defaultEducationLevelId: defaults.educationLevelId === null ? null : BigInt(defaults.educationLevelId),
           defaultDifficulty: defaults.difficultyLevel,

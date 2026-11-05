@@ -91,6 +91,24 @@ export const QUESTION_IMPORT_CODE_ROW_MESSAGES = {
   correctRequired: 'Sila pilih jawapan betul.',
   marksMin: 'Nilai mata mesti sekurang-kurangnya 1.',
   marksMax: 'Markah bahagian tidak boleh melebihi 100.',
+  /** Groups and stimuli (30 Q-11 and FR-ADM-QE6.4). The two texts that carry their own "Baris {n}: " are `groupMixed` and `stimulusFirstRowOnly`: no second prefix. */
+  groupNotConsecutive: 'Baris kumpulan mesti berturutan.',
+  groupMixed: (line: number, key: string): string => `Baris ${String(line)}: kumpulan ${echoed(key)} bercampur subjek atau kertas.`,
+  stimulusFirstRowOnly: (line: number): string => `Baris ${String(line)}: rangsangan hanya pada baris pertama kumpulan.`,
+  groupAlreadyImported: (key: string): string => `Kumpulan ${echoed(key)} sudah diimport dalam kelompok ini.`,
+  groupOrder: 'Susunan kumpulan tidak sah.',
+  groupUnavailable: 'Kumpulan tidak dijumpai atau sedang dipaparkan kepada murid.',
+  stimulusLabel: 'Sila isi label rangsangan.',
+  stimulusKind: 'Sila pilih jenis rangsangan.',
+  stimulusPassage: 'Petikan mesti mempunyai teks.',
+  stimulusTable: 'Jadual mesti mempunyai kepala dan sekurang-kurangnya satu baris, atau imej.',
+  stimulusImage: 'Imej rangsangan tidak dapat dimuat turun.',
+  stimulusAlt: 'Sila isi teks alternatif imej.',
+  stimulusCaption: 'Kapsyen tidak boleh melebihi 300 aksara.',
+  stimuliCount: 'Satu kumpulan mesti mempunyai 1 hingga 3 rangsangan.',
+  partStimulus: 'Rangsangan bahagian mesti daripada kumpulan soalan ini.',
+  /** ERR-REQ-01 (40 X10): interim for a rule without its own text (a stimulus column outside a group, a label over 100, `group_id` with stimulus columns). */
+  requestInvalid: 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.',
 } as const
 
 /** `failures[].code` of the new header: one stable code per row message (the `kod_ralat` column of the error CSV). */
@@ -100,6 +118,9 @@ export const QUESTION_IMPORT_ERROR_CODES = [
   'SP_REQUIRED', 'SP_TOO_MANY', 'SP_UNKNOWN', 'TP_REQUIRED', 'TP_RANGE', 'ARAS_REQUIRED', 'ARAS_INVALID', 'KBAT_INVALID',
   'CHAPTER_MISMATCH', 'TOPIC_INVALID', 'DIFFICULTY_INVALID', 'PROMPT_SHORT', 'PROMPT_LONG', 'OPTIONS_BLANK', 'OPTIONS_MIN', 'OPTION_LONG',
   'CORRECT_REQUIRED', 'MARKS_MIN', 'MARKS_MAX',
+  'GROUP_NOT_CONSECUTIVE', 'GROUP_ALREADY_IMPORTED', 'GROUP_MIXED', 'GROUP_STIMULUS_FIRST_ROW_ONLY', 'GROUP_ORDER_INVALID', 'GROUP_UNAVAILABLE',
+  'GROUP_FIELDS_INVALID', 'GROUP_REJECTED', 'STIMULI_COUNT', 'STIMULUS_LABEL_REQUIRED', 'STIMULUS_KIND_INVALID', 'STIMULUS_TEXT_REQUIRED',
+  'STIMULUS_TABLE_INVALID', 'STIMULUS_IMAGE_UNAVAILABLE', 'STIMULUS_ALT_REQUIRED', 'STIMULUS_CAPTION_LONG', 'PART_STIMULUS_INVALID',
 ] as const
 export type QuestionImportErrorCode = (typeof QUESTION_IMPORT_ERROR_CODES)[number]
 

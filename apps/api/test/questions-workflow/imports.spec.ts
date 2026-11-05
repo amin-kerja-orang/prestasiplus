@@ -12,6 +12,8 @@ import {
 } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { StimuliService } from '../../src/modules/questions'
+
 import { expectCsrfInvalid, expectError, bootWorkflowApp, loginAll, parseData, count, type Client, type WorkflowTestApp } from './helpers'
 import { curriculumIds, fixture, uploadClient, type UploadClient } from './imports-support'
 
@@ -438,6 +440,99 @@ describe('S1-T05 part 1: CSV with DSKP codes (real bank)', () => {
     }
     expect(await runs()).toBe(before)
     expect(await count(t.db, 'select count(*) as n from questions')).toBe(questions)
+  })
+
+  describe('groups and stimuli (S1-T05 part 2)', () => {
+    const GHEAD = `${HEAD},group_key,group_order,group_id,stimulus_label,stimulus_kind,stimulus_text,part_stimulus`
+    const gline = (over: Record<string, string> = {}): string => {
+      const extra = GHEAD.split(',').slice(HEAD.split(',').length)
+      return `${line(over)},${extra.map((c) => (over[c] ?? '').replace(/^(.*[",\n].*)$/s, (v) => `"${v.replaceAll('"', '""')}"`)).join(',')}`
+    }
+    const FIRST = { group_key: 'G1', stimulus_label: 'Rajah 1', stimulus_kind: 'passage', stimulus_text: 'Petikan ringkas tentang pasar raya.' }
+    const gcsv = (...rows: string[]) => [GHEAD, ...rows].join('\n')
+    const groupCount = () => count(t.db, 'select count(*) as n from stimulus_groups')
+
+    it('[CI] a CSV of one group of 3 yields one group with 3 members in group_order and one stimulus, all drafts, in the same import', async () => {
+      const groups = await groupCount()
+      const stimuli = await count(t.db, 'select count(*) as n from stimuli')
+      const res = await importAdmin(
+        gcsv(
+          gline({ question_key: 'GA', group_order: '3', ...FIRST, prompt_ms: 'Soalan ketiga dalam kumpulan ini?' }),
+          gline({ question_key: 'GB', group_order: '1', group_key: 'G1', prompt_ms: 'Soalan pertama dalam kumpulan ini?' }),
+          gline({ question_key: 'GC', group_order: '2', group_key: 'G1', prompt_ms: 'Soalan kedua dalam kumpulan ini?' }),
+        ),
+        'kumpulan.csv',
+      )
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      expect(res.body.status).toBe('Import selesai: 3 soalan diimport, 0 gagal.')
+      expect(await groupCount()).toBe(groups + 1)
+      expect(await count(t.db, 'select count(*) as n from stimuli')).toBe(stimuli + 1)
+      const members = await t.db.query<{ stem: string; status: string }>(
+        `select v.stem_ms as stem, v.status from question_versions v join questions q on q.id = v.question_id
+          where q.group_id = (select max(id) from stimulus_groups) order by q.group_position`,
+      )
+      expect(members.map((m) => m.stem)).toEqual(['Soalan pertama dalam kumpulan ini?', 'Soalan kedua dalam kumpulan ini?', 'Soalan ketiga dalam kumpulan ini?'])
+      expect(members.every((m) => m.status === 'draft')).toBe(true)
+      const [g] = await t.db.query<{ subject_id: string | null; education_level_id: string | null }>('select subject_id::text, education_level_id::text from stimulus_groups order by id desc limit 1')
+      expect(g).toEqual({ subject_id: tag.subjectId, education_level_id: tag.levelId })
+    })
+
+    it('[CI] a group whose creation fails is skipped whole (nothing of it is kept) while the other questions still import', async () => {
+      // An existing group of ANOTHER subject: the planner accepts group_id, the S1-T01 member rule refuses at execute time.
+      const [other] = await t.db.query<{ id: string }>('select id::text from subjects where id <> $1::bigint order by id limit 1', [tag.subjectId])
+      const stimuliSvc = t.app.get(StimuliService)
+      const made = await stimuliSvc.createStimulus({ kind: 'passage', label: 'Lain', body: { ms: 'Petikan subjek lain.' } })
+      const other_g = await stimuliSvc.createGroup({ stimulusIds: [made.result.id], questionIds: [], subjectId: other!.id })
+      const before = await count(t.db, 'select count(*) as n from questions')
+      const res = await importAdmin(
+        gcsv(
+          gline({ question_key: 'OKA', prompt_ms: 'Soalan biasa pertama sebelum kumpulan?' }),
+          gline({ question_key: 'GJ1', group_id: other_g.result.id, prompt_ms: 'Ahli kumpulan yang akan ditolak?' }),
+          gline({ question_key: 'GJ2', group_id: '', group_key: '', prompt_ms: 'Soalan biasa kedua selepas kumpulan?' }),
+        ),
+      )
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      expect(res.body.status).toBe('Import selesai: 2 soalan diimport, 1 gagal.')
+      expect(res.body.data.failures).toEqual([
+        { row: 3, message: 'Baris 3: Subjek dan Tingkatan ahli mesti sama dengan kumpulan.', questionKey: 'GJ1', field: 'group_key', code: 'GROUP_REJECTED' },
+      ])
+      expect(await count(t.db, 'select count(*) as n from questions')).toBe(before + 2)
+    })
+
+    it('[CI] group_id of a group with a member shown to pupils gives "Kumpulan tidak dijumpai atau sedang dipaparkan kepada murid."', async () => {
+      const made = await importAdmin(gcsv(gline({ question_key: 'SV1', ...FIRST, group_key: 'GS', prompt_ms: 'Soalan untuk kumpulan yang diterbitkan?' })))
+      expect(made.status, JSON.stringify(made.body)).toBe(201)
+      const [g] = await t.db.query<{ id: string }>('select max(id)::text as id from stimulus_groups')
+      const [member] = await t.db.query<{ id: string }>('select id::text from questions where group_id = $1::bigint', [g!.id])
+      expect((await c.admin.post(`/api/questions/${member!.id}/status`, { to: 'review' })).status).toBe(200)
+      const published = await c.admin.post(`/api/stimulus-groups/${g!.id}/publish`, {})
+      expect(published.status, JSON.stringify(published.body)).toBeLessThan(300)
+      const res = await importAdmin(gcsv(gline({ question_key: 'SV2', group_key: '', group_id: g!.id, prompt_ms: 'Soalan yang mahu menyertai kumpulan itu?' })))
+      expect(res.status).toBe(201)
+      expect(res.body.data.failures).toEqual([
+        { row: 2, message: 'Baris 2: Kumpulan tidak dijumpai atau sedang dipaparkan kepada murid.', questionKey: 'SV2', field: 'group_id', code: 'GROUP_UNAVAILABLE' },
+      ])
+    })
+
+    it('[CI] a URL stimulus_image is a row error and nothing of the group is created', async () => {
+      const groups = await groupCount()
+      const res = await importAdmin(
+        [`${GHEAD},stimulus_image,stimulus_alt`, `${gline({ question_key: 'IM1', ...FIRST, stimulus_kind: 'image' })},https://contoh.test/a.png,Gambar`].join('\n'),
+      )
+      expect(res.status).toBe(201)
+      expect(res.body.data.failures.map((f: { message: string }) => f.message)).toEqual(['Baris 2: Imej rangsangan tidak dapat dimuat turun.'])
+      expect(await groupCount()).toBe(groups)
+    })
+
+    it('[CI] the error CSV keeps the group texts and caps a 500-character group key', async () => {
+      const key = 'M'.repeat(500)
+      const res = await importAdmin(gcsv(gline({ question_key: 'MX1', ...FIRST, group_key: key }), gline({ question_key: 'MX2', group_key: key, kertas: '2' })), 'campur.csv')
+      expect(res.status).toBe(201)
+      const csv = await c.admin.get(`/api/question-imports/${res.body.data.id as string}/errors`)
+      expect(csv.text.split('\r\n')[1]).toBe(`3,MX2,group_key,GROUP_MIXED,Baris 3: kumpulan ${'M'.repeat(40)} bercampur subjek atau kertas.`)
+      expect(csv.text).not.toContain('M'.repeat(41))
+      expect(csv.text).not.toContain('Petikan ringkas')
+    })
   })
 
   describe('GET /api/question-imports/:id/errors', () => {
