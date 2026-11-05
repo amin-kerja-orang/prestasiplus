@@ -61,6 +61,27 @@ export function checkStemGate(stem: string | null | undefined, parts: readonly Q
   return Array.from(text).length < 10 ? { questionText: PUBLISH_TAG_MESSAGES.stem } : {}
 }
 
+/** Gate rows 25 and 26 (S, A): text of the open stimulus flag. `{Rajah 3}` of the PRD is the reference the text contains. */
+export const STIMULUS_FLAG_MESSAGES = {
+  missing: (rujukan: string): string => `Soalan menyebut ${rujukan} tetapi tiada rangsangan. Pilih kumpulan atau tambah rangsangan.`,
+  figureOnly: 'Soalan ini hanya mengandungi rangsangan. Tukarkan kepada rangsangan kumpulan.',
+} as const
+
+export interface StimulusFlagGateInput {
+  stimulusFlag?: 'stimulus_missing' | 'figure_only' | 'stem_duplicated' | null
+  flagDismissedAt?: Date | null
+  /** The reference the text contains ("Rajah 3"), for `stimulus_missing`. */
+  stimulusRefText?: string | null
+}
+
+/** Rows 25 STIMULUS_MISSING and 26 FIGURE_ONLY: an item only while the flag is open (not dismissed); `stem_duplicated` never blocks. */
+export function checkStimulusFlagGate(input: StimulusFlagGateInput): Record<string, string> {
+  if (input.flagDismissedAt != null) return {}
+  if (input.stimulusFlag === 'stimulus_missing') return { stimulusMissing: STIMULUS_FLAG_MESSAGES.missing(input.stimulusRefText ?? 'Rajah') }
+  if (input.stimulusFlag === 'figure_only') return { figureOnly: STIMULUS_FLAG_MESSAGES.figureOnly }
+  return {}
+}
+
 /** Sum of the marks a points key can award: free points, plus `anyN` of each group. */
 function pointsTotal(key: Extract<QuestionPart, { mode: 'working' }>['key']): number | null {
   if (key.paths && key.paths.length > 0) return null

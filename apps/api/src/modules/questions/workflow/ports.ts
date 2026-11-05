@@ -89,6 +89,11 @@ export interface QuestionGateData {
   hasChapters?: boolean
   /** Codes of the SP nodes that are not under the unit (gate-check repeats FR-ADM-QE4.3). */
   spOutsideUnit?: string[]
+  /** DM-05 stimulus flag of the version (rows 25 and 26); absent = none. */
+  stimulusFlag?: 'stimulus_missing' | 'figure_only' | 'stem_duplicated' | null
+  flagDismissedAt?: Date | null
+  /** The reference the text names ("Rajah 3"), for the row 25 text. */
+  stimulusRefText?: string | null
 }
 
 export interface SetStatusOptions {

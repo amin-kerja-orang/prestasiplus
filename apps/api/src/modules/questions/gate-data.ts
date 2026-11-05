@@ -1,5 +1,6 @@
 import type { QuestionPart } from '@pp/contract'
 
+import { stimulusReferenceOf } from '../intake/workflow/figure-links'
 import { leavesOf } from './grading'
 import type { GateFacts, QuestionVersionRecord } from './types'
 import type { QuestionGateData } from './workflow/ports'
@@ -24,7 +25,26 @@ export function missingRequiredFieldsOf(stem: string | null, parts: readonly Que
 }
 
 /** What the builder reads of a version (a stored one, or a draft that is not stored yet). */
-export type GateVersion = Pick<QuestionVersionRecord, 'stemMs' | 'parts' | 'subjectId' | 'educationLevelId' | 'chapterId' | 'unitId' | 'spIds' | 'difficultyTp' | 'difficultyLevel' | 'paperCode'>
+export type GateVersion = Pick<QuestionVersionRecord, 'stemMs' | 'parts' | 'subjectId' | 'educationLevelId' | 'chapterId' | 'unitId' | 'spIds' | 'difficultyTp' | 'difficultyLevel' | 'paperCode'> &
+  Partial<Pick<QuestionVersionRecord, 'stimulusFlag' | 'stimulusFlagRef' | 'flagDismissedAt' | 'stemEn'>>
+
+/** The first figure reference the question text names ("Rajah 3"), as the servability read finds it (rows 25 text). */
+function stimulusRefTextOf(v: GateVersion): string | null {
+  const texts: (string | null | undefined)[] = [v.stemMs, v.stemEn]
+  const walk = (parts: readonly QuestionPart[]): void => {
+    for (const p of parts) {
+      texts.push(p.prompt?.ms, p.prompt?.en)
+      if ('options' in p) for (const o of p.options) texts.push(o.body?.ms, o.body?.en)
+      if ('children' in p) walk(p.children)
+    }
+  }
+  walk(v.parts)
+  for (const t of texts) {
+    const found = typeof t === 'string' && t !== '' ? stimulusReferenceOf(t) : null
+    if (found !== null) return found.text
+  }
+  return null
+}
 
 export function gateDataOf(
   record: { id: string; version: GateVersion },
@@ -54,5 +74,8 @@ export function gateDataOf(
     hasDskpNodes: facts.hasDskpNodes,
     hasChapters: facts.hasChapters,
     spOutsideUnit: facts.spOutsideUnit,
+    stimulusFlag: v.stimulusFlag ?? null,
+    flagDismissedAt: v.flagDismissedAt ?? null,
+    stimulusRefText: v.stimulusFlag === 'stimulus_missing' ? stimulusRefTextOf(v) : null,
   }
 }
