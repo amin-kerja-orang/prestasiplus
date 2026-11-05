@@ -1,6 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common'
 import {
+  cappedText,
   QUESTION_IMPORT_ERROR_CSV_HEADER,
+  QUESTION_IMPORT_MESSAGE_MAX,
   QUESTION_IMPORT_MAX_ROWS,
   QUESTION_IMPORT_MESSAGES as MSG,
   QUESTION_IMPORT_MIME_TYPES,
@@ -317,6 +319,9 @@ export class QuestionImportsService {
         const id = await bank.create(input)
         await this.workflow.recordCreation(id, status, actor, 1)
       }
+      // Order of work: the single (ungrouped) questions above are created FIRST, then the groups below, whatever their place in the file. A group
+      // can fail and be rolled back to its savepoint, so the questions made before it are kept; ids and creation times therefore do not follow
+      // the file order across single questions and groups (the order inside a group is `group_order`).
       // A group is created whole or skipped whole (45 section 3.2): a savepoint per group keeps what the rest of the import made.
       const failures = [...plan.failures]
       let imported = plan.rows.length
@@ -330,7 +335,9 @@ export class QuestionImportsService {
         } catch (err) {
           if (!(err instanceof ApiError)) throw err
           await this.prisma.client.$executeRaw`ROLLBACK TO SAVEPOINT import_group`
-          const text = Object.values(err.fields ?? {})[0] ?? err.message
+          // The service text is BM and mostly fixed, but it can echo a file value: it is capped like every echoed value. The cap is 200
+          // characters, not 40, because 40 would cut the sentence itself ("Subjek dan Tingkatan ahli mesti sama dengan kumpulan.").
+          const text = cappedText(Object.values(err.fields ?? {})[0] ?? err.message, QUESTION_IMPORT_MESSAGE_MAX)
           failures.push({
             row: group.line,
             message: questionImportRowPrefix(group.line) + text,

@@ -1,5 +1,7 @@
 import {
   QUESTION_IMPORT_CODE_ROW_MESSAGES as CM,
+  QUESTION_IMPORT_MESSAGE_MAX,
+  cappedText,
   QUESTION_IMPORT_HEADER,
   QUESTION_IMPORT_MESSAGES,
   QUESTION_IMPORT_ROW_MESSAGES as MSG,
@@ -518,5 +520,20 @@ describe('imports: groups and stimuli (S1-T05 part 2, Q-11 and FR-ADM-QE6.4)', (
     const q = gplan([grow({ question_key: 'A', group_key: key, ...FIRST }), grow({ question_key: 'B', group_key: 'H', ...FIRST }), grow({ question_key: 'C', group_key: key })])
     expect(q.failures[0]?.message).toBe(`Baris 4: Kumpulan ${'g'.repeat(40)} sudah diimport dalam kelompok ini.`)
     expect(JSON.stringify(p.failures) + JSON.stringify(q.failures)).not.toContain('g'.repeat(41))
+  })
+})
+
+describe('imports: #719 review minors', () => {
+  it('[CI] a service message is capped at QUESTION_IMPORT_MESSAGE_MAX code points', () => {
+    expect(cappedText('x'.repeat(500), QUESTION_IMPORT_MESSAGE_MAX)).toHaveLength(200)
+    expect(cappedText('Subjek dan Tingkatan ahli mesti sama dengan kumpulan.', QUESTION_IMPORT_MESSAGE_MAX)).toBe('Subjek dan Tingkatan ahli mesti sama dengan kumpulan.')
+  })
+
+  it('[CI] group_order of a group_id row without group_key: a one-row block, so only empty or 1 is valid', () => {
+    const groups = new Map([['7', { stimuli: new Map<string, string>() }]])
+    const join = (order: string) => gplan([grow({ question_key: 'A', group_key: '', group_id: '7', group_order: order })], { codes: { ...codes, groups } })
+    expect(join('').failures).toEqual([])
+    expect(join('1').failures).toEqual([])
+    expect(join('2').failures.map((f) => [f.code, f.message])).toEqual([['GROUP_ORDER_INVALID', 'Baris 2: Susunan kumpulan tidak sah.']])
   })
 })

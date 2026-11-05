@@ -59,7 +59,10 @@ export const questionImportRowPrefix = (line: number): string => `Baris ${String
  */
 /** A value of the file echoed in a message is cut at this many characters (code points): the report never repeats a long cell. */
 export const QUESTION_IMPORT_ECHO_MAX = 40
-const echoed = (value: string): string => [...value].slice(0, QUESTION_IMPORT_ECHO_MAX).join('')
+const echoed = (value: string): string => cappedText(value, QUESTION_IMPORT_ECHO_MAX)
+/** Cuts `value` to `max` code points (a service message that may echo file values is cut at `QUESTION_IMPORT_MESSAGE_MAX`). */
+export const cappedText = (value: string, max: number): string => [...value].slice(0, max).join('')
+export const QUESTION_IMPORT_MESSAGE_MAX = 200
 
 export const QUESTION_IMPORT_CODE_ROW_MESSAGES = {
   keyRequired: 'Kunci soalan diperlukan.',

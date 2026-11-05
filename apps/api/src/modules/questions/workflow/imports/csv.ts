@@ -696,7 +696,8 @@ function evaluateBlock(block: RowResult[], key: string, plan: ImportPlan, codes:
     if (r.stimuli.some((x) => x.present)) at(r, 'stimulus_label', 'GROUP_STIMULUS_FIRST_ROW_ONLY', CODE_MSG.stimulusFirstRowOnly(r.rec.line), true)
     if (key !== '' && (r.subject !== head.subject || r.kertas !== head.kertas)) at(r, 'group_key', 'GROUP_MIXED', CODE_MSG.groupMixed(r.rec.line, key), true)
   }
-  // group_order: 1..n, unique; an empty cell takes the row's place in the group.
+  // group_order: 1..n, unique; an empty cell takes the row's place in the group. A row with `group_id` and no `group_key` is a one-row block
+  // (n = 1): its order is empty or 1, so such rows join the existing group in FILE order and `group_order` cannot reorder them.
   const order = block.map((r, n) => (r.order === '' ? n + 1 : toInt(r.order)))
   const seen = new Set<number>()
   block.forEach((r, n) => {
