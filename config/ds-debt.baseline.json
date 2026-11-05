@@ -2495,7 +2495,6 @@
     "src/modules/m05-practice/pages/MissionListPage.vue": 3,
     "src/modules/m05-practice/pages/ProgressPage.vue": 4,
     "src/modules/m05-practice/pages/SpmTargetsPage.vue": 6,
-    "src/modules/m07-pksk/pages/PkskQuestionListPage.vue": 3,
     "src/modules/m08-student-performance/components/analitik/SubjectPane.vue": 1,
     "src/modules/m08-student-performance/components/prestasi/GradeDistribution.vue": 1,
     "src/modules/m08-student-performance/components/prestasi360/MasteryCard.vue": 1,

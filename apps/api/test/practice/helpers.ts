@@ -288,6 +288,8 @@ export interface BootOptions {
   db?: TestDatabase
   /** Extra seeds run after identity + curriculum. */
   seeds?: SeedModule[]
+  /** Extra Nest modules next to Auth and Practice (for example the analytics reads). */
+  modules?: unknown[]
 }
 
 /** Nest app with auth + practice (and the curriculum and subscriptions it needs) on a private seeded database. */
@@ -305,7 +307,7 @@ export async function bootPracticeApp(opts: BootOptions = {}): Promise<PracticeT
     ...opts.env,
   })
   const clock = new FixedClock(START)
-  const moduleRef = await Test.createTestingModule({ imports: [defineAppModule([AuthModule, PracticeModule])] })
+  const moduleRef = await Test.createTestingModule({ imports: [defineAppModule([AuthModule, PracticeModule, ...((opts.modules ?? []) as never[])])] })
     .overrideProvider(CLOCK)
     .useValue(clock)
     .compile()
