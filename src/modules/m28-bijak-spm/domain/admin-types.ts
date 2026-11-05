@@ -126,6 +126,8 @@ export interface ReviewDetail {
   optionBank?: McqOption[]
   history: HistoryEntry[]
   reason?: string
+  /** http mode: the question the item created on accept; null before that. Absent in the mock. */
+  questionId?: string | null
   /** Why the publish gate fails (empty = can publish). */
   gate: string[]
   /** For a revision: the stem that is live now. */

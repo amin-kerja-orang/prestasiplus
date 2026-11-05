@@ -239,6 +239,7 @@ export function reviewDetailFromItem(item: IntakeItem, ctx: QueueContext): Revie
     history: historyFromWire(item.events),
     // The gate of accept: the item's own issues, as "Soalan 3(b): message".
     gate: item.issues.map((i) => `${i.where}: ${i.message}`),
+    questionId: item.question?.id ?? null,
   }
   detail.item.topic = item.tag.unitLabel
   if (item.rejectReason) detail.reason = item.rejectReason

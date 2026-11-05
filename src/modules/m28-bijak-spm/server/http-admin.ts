@@ -7,8 +7,8 @@
  * extracted-question editor, the extraction step and the review queue call the BE-38 routes
  * (`/api/intake/items*`, `/stimuli`, `/extract`, `/review`; ./intake-wire, ./review-wire); the bank
  * list, stats and preview read the BE-09 admin questions (`/api/questions*`; ./bank-wire). The few
- * methods with no route (the bank "Sunting" versions, "Minta Pembetulan") REJECT (never throw
- * synchronously) with `BijakError('unavailable')`, so each page shows its own state, not a crash.
+ * methods with no route REJECT (never throw synchronously) with `BijakError('unavailable')`, so each
+ * page shows its own state, not a crash.
  *
  * Like `./http` this must never import `store.ts` or the seed registry (type imports only).
  */
@@ -865,7 +865,7 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
   /**
    * Lulus = accept (creates a Draf question, never publishes); Tolak = reject with the mandatory
    * reason. A gate failure (422 `details.issues`) or a locked item (409) comes back as `errors`, the
-   * way the page shows them. "Minta Pembetulan" has no route (the page hides it in http mode).
+   * way the page shows them. "Minta Pembetulan" (`betulkan`) moves the item's question back to draft (API-Q-06); the page disables it until the item has a question.
    */
   async reviewDecision(
     key: string,

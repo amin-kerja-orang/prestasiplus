@@ -27,6 +27,11 @@ const flash = useFlash()
 const key = computed(() => String(route.params.key))
 const { data, error, reload } = useApi(() => server.getReviewItem(key.value), key)
 
+// [PROPOSED] "Item ini belum mempunyai soalan." (PO ruling 2026-11-05, #432): in http mode "Minta Pembetulan" and "Hantar semula"
+// move the question the item created on accept (status route), so they stay disabled while the item has none.
+const NO_QUESTION_HINT = 'Item ini belum mempunyai soalan.'
+const noQuestion = computed(() => WIRE && !!data.value && !data.value.questionId)
+
 const dialog = ref<DecisionAction | null>(null)
 const reason = ref('')
 const reasonError = ref('')
@@ -216,6 +221,13 @@ async function resubmit(): Promise<void> {
         class="sticky bottom-0 z-10 flex flex-wrap justify-end gap-2 rounded-card bg-default p-3 shadow-card"
         data-testid="review-actions"
       >
+        <p
+          v-if="noQuestion && data.item.status !== 'terbit'"
+          class="w-full text-right text-caption text-muted"
+          data-testid="no-question-hint"
+        >
+          {{ NO_QUESTION_HINT }}
+        </p>
         <template v-if="data.item.status === 'semakan'">
           <UButton
             color="error"
@@ -228,13 +240,12 @@ async function resubmit(): Promise<void> {
             @click="ask('tolak')"
           />
           <UButton
-            v-if="!WIRE"
             color="warning"
             variant="soft"
             icon="i-ph-arrow-u-up-left"
             label="Minta Pembetulan"
             class="min-h-11"
-            :disabled="busy"
+            :disabled="busy || noQuestion"
             data-testid="action-correct"
             @click="ask('betulkan')"
           />
@@ -249,11 +260,12 @@ async function resubmit(): Promise<void> {
           />
         </template>
         <UButton
-          v-else-if="data.item.status !== 'terbit' && !WIRE"
+          v-else-if="data.item.status !== 'terbit'"
           icon="i-ph-arrow-counter-clockwise"
           label="Hantar semula untuk semakan"
           class="min-h-11"
           :loading="busy"
+          :disabled="noQuestion"
           data-testid="action-resubmit"
           @click="resubmit"
         />
