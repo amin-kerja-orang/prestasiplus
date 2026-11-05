@@ -429,6 +429,7 @@ const feedbackExplanation = computed(() =>
                   color="neutral"
                   variant="link"
                   icon="i-ph-arrow-square-out-bold"
+                  class="min-h-11"
                   data-testid="question-reference-link"
                   >Rujukan</UButton
                 >
