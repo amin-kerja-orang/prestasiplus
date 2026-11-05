@@ -82,6 +82,21 @@ describe('S1-T09a v2 write path (create and update)', () => {
     expect(await partsOf(id)).toEqual(JSON.parse(JSON.stringify(parts)))
   })
 
+  it('[CI] AC-PA-35: an mcq_multi leaf is stored as type mcq_multi; dropping the flag on edit stores mcq again; a Betul/Salah leaf stays mcq', async () => {
+    const typeOf = async (id: string) =>
+      (await t.db.query<{ type: string }>(`select type from question_versions where question_id = $1 order by version_no desc limit 1`, [id]))[0]?.type
+    const options = ['A', 'B', 'C', 'D'].map((label) => ({ label, body: rich(`Pilihan ${label}`) }))
+    const multi = [leaf('a', 'mcq', 2, { kind: 'options', correctOptionIds: ['A', 'C'] }, { options, modeConfig: { multi: true } })]
+    const id = await create(multi)
+    expect(await typeOf(id)).toBe('mcq_multi')
+    const single = [leaf('a', 'mcq', 1, { kind: 'option', correct: 'A' }, { options })]
+    const res = await admin.put(`/api/questions/${id}`, body(single))
+    expect(res.status, JSON.stringify(res.body)).toBe(200)
+    expect(await typeOf(id)).toBe('mcq')
+    const tf = [leaf('a', 'mcq', 1, { kind: 'option', correct: 'A' }, { options: [{ label: 'A', body: rich('Betul') }, { label: 'B', body: rich('Salah') }] })]
+    expect(await typeOf(await create(tf))).toBe('mcq')
+  })
+
   it.each([
     ['an unknown field inside a point (v1 spelling impliedOk)', { ...(pointsKey(1) as object), points: [pt('p1', 1, { impliedOk: true })], groups: undefined, deductions: undefined }, 'working', 1, 'parts.0.key.points.0', 'Unrecognized key: "impliedOk"'],
     ['an unknown top-level field (v1 spelling final)', { ...(pointsKey(1) as object), points: [pt('p1', 1)], groups: undefined, deductions: undefined, final: { display: '1', accept: ['1'] } }, 'working', 1, 'parts.0.key', 'Unrecognized key: "final"'],

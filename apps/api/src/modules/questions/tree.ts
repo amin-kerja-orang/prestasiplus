@@ -240,11 +240,15 @@ export function totalMarks(parts: readonly QuestionPart[]): number {
 }
 
 /** Part type of a version: `structured` for a tree or several leaves, otherwise by the single leaf mode. */
-export function versionTypeOf(parts: readonly QuestionPart[]): 'mcq' | 'match' | 'short' | 'structured' | 'working' | 'essay' | 'drawing' | 'table' {
+export function versionTypeOf(parts: readonly QuestionPart[]): 'mcq' | 'mcq_multi' | 'match' | 'short' | 'structured' | 'working' | 'essay' | 'drawing' | 'table' {
   const [only] = parts
   if (parts.length !== 1 || only === undefined || !isLeaf(only)) return 'structured'
   switch (only.mode) {
     case 'mcq':
+      // S1-T09a (AC-PA-35): a single `mcq` leaf with the multi flag is stored as `mcq_multi`, so NOT_MCQ_MULTI_SQL and the `type = 'mcq'` readers keep it
+      // out of the single-option drills. A Betul/Salah leaf stays `mcq`: every learner reader selects `type = 'mcq'`, and the flat view derives
+      // `true_false` from the options at read time (projection.ts).
+      return (only.modeConfig as { multi?: boolean } | undefined)?.multi === true ? 'mcq_multi' : 'mcq'
     case 'pksk_choice':
       return 'mcq'
     case 'match_letter':

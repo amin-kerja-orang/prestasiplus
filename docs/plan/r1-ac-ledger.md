@@ -63,6 +63,7 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
+| S1-T09a | AC-PA-35 | CI | Pass | 2026-11-05 | team-aa/S-4 | v2-write-path.spec.ts: [CI] AC-PA-35: an mcq_multi leaf is stored as type mcq_multi; dropping the flag on edit stores mcq again; a Betul/Salah leaf stays mcq; served-mcq-multi.spec.ts: [CI] Latih Tubi, Databank, Tracking A, Misi and Battle SPM (spmPool without a type filter) never draw an mcq_multi |
 
 ## Sprint 4
 
