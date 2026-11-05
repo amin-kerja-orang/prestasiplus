@@ -144,26 +144,29 @@ async function copyLink(): Promise<void> {
           {{ REFERRAL_COPY.statsTitle }}
         </h2>
         <div class="grid grid-cols-3 gap-3">
-          <div data-testid="stat-referrals">
+          <div>
             <DsStatTile
               icon="users"
               :value="formatNumber(data.stats.referrals)"
               :unit="REFERRAL_COPY.referrals"
+              value-testid="stat-referrals"
             />
           </div>
-          <div data-testid="stat-rewarded">
+          <div>
             <DsStatTile
               icon="gift"
               accent="win"
               :value="formatNumber(data.stats.rewarded)"
               :unit="REFERRAL_COPY.rewarded"
+              value-testid="stat-rewarded"
             />
           </div>
-          <div data-testid="stat-earned">
+          <div>
             <DsStatTile
               art="coin"
               :value="formatNumber(data.stats.syilingEarned)"
               :unit="REFERRAL_COPY.earned"
+              value-testid="stat-earned"
             />
           </div>
         </div>
