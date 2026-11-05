@@ -451,6 +451,8 @@ export interface QuestionResult {
   counted: boolean
   attempted: boolean
   parts: PartResult[]
+  /** FR-MUR-13-6: only on a "Semak" response, the answer-changing checks used on this question so far. */
+  checksUsed?: number
 }
 
 export interface SectionResult {

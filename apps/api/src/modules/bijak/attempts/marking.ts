@@ -23,6 +23,7 @@ import {
   isBlank,
   leavesOf,
   numericValue,
+  SEMAK_KINDS,
   type Leaf,
   type McqOption,
   type PartAnswer,
@@ -105,13 +106,18 @@ export function buildLeafIndex(composition: readonly SectionSnapshot[], bundles:
   return { parts, byQuestion }
 }
 
-/** Latihan: after the check cap the answers of a question are final. */
+/** The parts of a question "Semak" reveals (46 section 3.5). A question without any has no "Semak". */
+export function semakParts(index: LeafIndex, questionId: string): string[] {
+  return (index.byQuestion.get(questionId) ?? []).filter((id) => SEMAK_KINDS.has(index.parts.get(id)?.kind ?? ''))
+}
+
+/** Latihan: after the check cap the answers of the checked parts are final. An essay in the same question stays open: it has no "Semak". */
 export function lockedParts(mode: string, checkCounts: ReadonlyMap<string, number>, index: LeafIndex): Set<string> {
   const locked = new Set<string>()
   if (mode !== 'latihan') return locked
   for (const [qid, n] of checkCounts) {
     if (n < MAX_CHECKS_PER_QUESTION) continue
-    for (const id of index.byQuestion.get(qid) ?? []) locked.add(id)
+    for (const id of semakParts(index, qid)) locked.add(id)
   }
   return locked
 }
@@ -220,9 +226,35 @@ export function checkResult(
   bundles: Bundles,
   answers: AnswerMap,
   questionId: string,
+  parts: ReadonlySet<string>,
 ): BijakAttemptQuestionResult {
   const number = questionIdsOf(composition).indexOf(questionId) + 1
-  return gradeQuestion(composition, bundles, answers, questionId, number, true)
+  return revealedOnly(gradeQuestion(composition, bundles, answers, questionId, number, true), parts)
+}
+
+/** 46 section 3.5: "Semak" shows only these parts, and the totals of the question count only them. An essay or working scheme waits for "Hantar". */
+export function revealedOnly(result: BijakAttemptQuestionResult, parts: ReadonlySet<string>): BijakAttemptQuestionResult {
+  const shown = result.parts.filter((p) => parts.has(p.partId))
+  return {
+    ...result,
+    marks: shown.reduce((n, p) => n + p.marks, 0),
+    awarded: shown.reduce((n, p) => n + p.awarded, 0),
+    attempted: shown.some((p) => !isBlank(p.answer)),
+    parts: shown,
+  }
+}
+
+/** The typed answer alone: `revealed` is not the pupil's, `plain` is derived, and jsonb does not keep key order. */
+function answerText(a: PartAnswer | undefined): string {
+  const typed = { ...a }
+  delete typed.revealed
+  delete typed.plain
+  return JSON.stringify(Object.entries(typed).filter(([, v]) => v !== undefined).sort(([x], [y]) => x.localeCompare(y)))
+}
+
+/** True when the parts of a stored "Semak" still hold the answers it was made on: a check that changes nothing uses no check (FR-MUR-13-6). */
+export function sameAnswersAsCheck(result: BijakAttemptQuestionResult, answers: AnswerMap): boolean {
+  return result.parts.every((p) => answerText(p.answer) === answerText(answers.get(p.partId)))
 }
 
 /* ---------------------------------------------------------------------- the served paper */

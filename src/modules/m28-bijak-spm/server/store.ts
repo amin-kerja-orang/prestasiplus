@@ -35,7 +35,7 @@ import { BANK, BLUEPRINTS, PAPERS, SUBJECTS, subjectName } from '../data/registr
 import { countedIds } from '../domain/choose-n'
 import { gradePart, isBlank } from '../domain/grading'
 import { numericValue } from '../domain/math-expr'
-import { effectiveMarks, leavesOf, type Leaf } from '../domain/paper-model'
+import { effectiveMarks, leavesOf, SEMAK_KINDS, type Leaf } from '../domain/paper-model'
 import type { PastSittings, ReviewPart, SelfMarkOutcome } from '../domain/semakan'
 import type { BankFilter, DecisionAction, PaperPatch, QueueFilter, SectionPoolQuery } from '../domain/admin-types'
 import type {
@@ -498,7 +498,7 @@ export class BijakServer implements BijakApi {
     void _s
     const checks =
       a.status === 'in_progress' && a.mode === 'latihan'
-        ? a.checked.map((qid) => this.gradeQuestion(a, qid, numberOf.get(qid)!, true))
+        ? a.checked.map((qid) => this.semakResult(a, qid, numberOf.get(qid)!))
         : []
     return { attempt: meta, sections, questions, groups, checks }
   }
@@ -538,16 +538,13 @@ export class BijakServer implements BijakApi {
     }
   }
 
-  /** Latihan: after the check cap the answer of a question is final. */
+  /** Latihan: after the check cap the answers of the checked parts are final. */
   private lockedParts(a: Attempt): Set<string> {
     const ids = new Set<string>()
     if (a.mode !== 'latihan') return ids
     for (const [qid, n] of Object.entries(a.checkCounts ?? {})) {
-      if (n < MAX_CHECKS_PER_QUESTION) continue
-      const q = BANK.questions.get(qid)
-      if (!q) continue
-      if (q.mcq) ids.add(q.id)
-      else for (const l of leavesOf(q.parts ?? [])) ids.add(l.id)
+      if (n < MAX_CHECKS_PER_QUESTION || !BANK.questions.has(qid)) continue
+      for (const id of this.semakParts(qid)) ids.add(id)
     }
     return ids
   }
@@ -910,6 +907,8 @@ export class BijakServer implements BijakApi {
     if (a.status !== 'in_progress') throw new BijakError('bad_request', 'Percubaan sudah tamat')
     if (!a.sections.some((s) => s.questionIds.includes(questionId)))
       throw new BijakError('not_found', 'Soalan tidak ditemui')
+    if (this.semakParts(questionId).size === 0)
+      throw new BijakError('forbidden', 'Skema hanya didedahkan selepas Hantar')
     const counts = (a.checkCounts ??= {})
     const used = counts[questionId] ?? 0
     // After the cap the answer is shown and no further payload can change it.
@@ -923,7 +922,19 @@ export class BijakServer implements BijakApi {
     if (!a.checked.includes(questionId)) a.checked.push(questionId)
     this.persist()
     const number = a.sections.flatMap((s) => s.questionIds).indexOf(questionId) + 1
-    return this.gradeQuestion(a, questionId, number, true)
+    return { ...this.semakResult(a, questionId, number), checksUsed: counts[questionId] ?? used }
+  }
+
+  /** The parts "Semak" reveals (46 section 3.5). */
+  private semakParts(qid: string): ReadonlySet<string> {
+    const q = BANK.questions.get(qid)!
+    return new Set(q.mcq ? [qid] : leavesOf(q.parts ?? []).filter((l) => SEMAK_KINDS.has(l.kind)).map((l) => l.id))
+  }
+
+  private semakResult(a: Attempt, qid: string, number: number): QuestionResult {
+    const graded = this.gradeQuestion(a, qid, number, true)
+    const parts = graded.parts.filter((p) => this.semakParts(qid).has(p.partId))
+    return { ...graded, parts, marks: parts.reduce((n, p) => n + p.marks, 0), awarded: parts.reduce((n, p) => n + p.awarded, 0) }
   }
 
   async getResult(userId: number, attemptId: string): Promise<ResultView> {
