@@ -327,7 +327,9 @@ describe('#43 GET /api/config/support', () => {
   it('returns the support e-mail and the WhatsApp number (DV-M09-14)', async () => {
     expect(await data<SupportConfig>('/api/config/support', null)).toEqual({
       email: 'support@prestasiplus.my',
-      whatsappNumber: '60123456789',
+      phone: '',
+      whatsapp: '60123456789',
+      hours: '',
     })
   })
 })

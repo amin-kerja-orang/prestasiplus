@@ -183,16 +183,11 @@ afterEach(() => {
 })
 
 describe('S1 PrestasiSekolahPage', () => {
-  it('"Navigasi Pantas" has no Headcount link for a pelajar (403 page there, D2), but has it for staff', async () => {
+  it('"Navigasi Pantas" has the Headcount link for staff (a pelajar gets the 403 page on this screen, FR-MUR-4-2)', async () => {
     api.fetchSchoolPerformance.mockResolvedValue(S1)
-    signInAs('student')
-    let w = await render(PrestasiSekolahPage, '/prestasi/sekolah')
-    let hrefs = w.findAll('[data-testid=quick-nav] a').map((a) => a.attributes('href'))
-    expect(hrefs).toEqual(['/prestasi/tingkatan', '/prestasi/kelas', '/analisa-item/sekolah'])
-    w.unmount()
     signInAs('teacher')
-    w = await render(PrestasiSekolahPage, '/prestasi/sekolah')
-    hrefs = w.findAll('[data-testid=quick-nav] a').map((a) => a.attributes('href'))
+    const w = await render(PrestasiSekolahPage, '/prestasi/sekolah')
+    const hrefs = w.findAll('[data-testid=quick-nav] a').map((a) => a.attributes('href'))
     expect(hrefs).toContain('/headcount')
   })
 
@@ -264,7 +259,6 @@ describe('S1 PrestasiSekolahPage', () => {
     ['admin', '/analisa-item/kelas'],
     ['teacher', '/analisa-item/sekolah'],
     ['school_admin', '/analisa-item/sekolah'],
-    ['student', '/analisa-item/sekolah'],
   ] as const)(
     'the "Analisa Item" quick link for %s goes to %s (the admin has no own school, SW5-15)',
     async (role, href) => {
@@ -434,16 +428,6 @@ describe('S4 PrestasiKelasPilihPage', () => {
     } finally {
       vi.unstubAllEnvs()
     }
-  })
-
-  it('shows a pelajar the empty state without the teacher copy and the dead "Cipta Kelas" button (D5)', async () => {
-    signInAs('student')
-    api.fetchOwnClasses.mockResolvedValue([])
-    const w = await render(PrestasiKelasPilihPage, '/prestasi/kelas')
-    expect(t(w, 'kelas-empty').text()).toContain('Anda belum mempunyai kelas aktif.')
-    expect(t(w, 'kelas-empty').text()).not.toContain('Cipta')
-    expect(w.find('[data-testid=kelas-create]').exists()).toBe(false)
-    expect(w.find('a[href="/guru/kelas/cipta"]').exists()).toBe(false)
   })
 
   it('lists active classes as cards linking to the class dashboard', async () => {

@@ -1,3 +1,4 @@
+export * from './answer-facts.port'
 export * from './bijak-aggregate.port'
 export * from './classes-read.port'
 export * from './directory.port'
