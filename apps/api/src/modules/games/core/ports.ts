@@ -7,15 +7,13 @@
  *                      (copies BE-23 semantics, credits through `WalletService`) but `canEarnSyiling` is FALSE until
  *                      BE-23 merges, because the `games_award_syiling` setting (seed 0) lives in BE-23. On the
  *                      BE-23 merge the lead rebinds this port to `GamificationService` (provideRewards).
- * - `platformAccuracy` BE-13 (platform answer accuracy, the bots' `p`). Default: the mock's fallback (0).
+ * - `platformAccuracy` The robots' chance of a correct answer, `p`. Default: the setting `battle_bot_accuracy_pct` (48 section 3.6).
  * - `battle`           BE-44 (`BattleReadService.hasBattled`). Default: false.
- * - `botPool`          bot picker. Default: students of the host's school (school-scoped; a platform-wide pick needs a BE-05 read).
  */
 import { Inject, Injectable } from '@nestjs/common'
 
 import type { TxClient } from '../../../db/client'
-import { BOT_ACCURACY_FALLBACK } from '../games.constants'
-import { SchoolBotPool } from './bot-pool'
+import { GameSettingsService } from './game-settings.service'
 import { WalletGameRewards } from './wallet-rewards'
 
 /* ---------------------------------------------------------------------------------------- rewards */
@@ -73,13 +71,16 @@ export interface GameRewardsPort {
 /* ------------------------------------------------------------------------------ platform accuracy */
 
 export interface PlatformAccuracySource {
-  /** Platform answer accuracy 0..1 (the bots' probability of a correct answer). */
+  /** The robots' probability of a correct answer, 0..1. */
   accuracy(): Promise<number>
 }
 
-export class FallbackPlatformAccuracy implements PlatformAccuracySource {
+/** Read per call, so a saved change applies to the next answer (48 section 2). */
+export class RobotAccuracySetting implements PlatformAccuracySource {
+  constructor(private readonly settings: GameSettingsService) {}
+
   async accuracy(): Promise<number> {
-    return BOT_ACCURACY_FALLBACK
+    return (await this.settings.get('battle_bot_accuracy_pct')) / 100
   }
 }
 
@@ -96,44 +97,18 @@ export class NoBattle implements BattleReadPort {
   }
 }
 
-/* --------------------------------------------------------------------------------------- bot pool */
-
-export interface BotCandidate {
-  id: string
-  /** Display name only (D54(d)). */
-  name: string
-  grade: number | null
-}
-
-export interface BotPickInput {
-  /** The room host: its school scopes the pool. */
-  hostId: string
-  /** Whether a candidate's grade fits the room (use `gradeFits`). */
-  fits: (grade: number | null) => boolean
-  /** User ids already in the room (and the host). */
-  exclude: readonly string[]
-  /** Named PRNG stream, e.g. `games:bot:<roomCode>:<n>`. */
-  stream: string
-}
-
-export interface BotPoolPort {
-  /** One fictitious student of a fitting grade not in `exclude`, or null when none exists. Deterministic per stream. */
-  pick(input: BotPickInput): Promise<BotCandidate | null>
-}
-
 /* -------------------------------------------------------------------------------------- the holder */
 
 @Injectable()
 export class GamesPorts {
   private rewardsPort: GameRewardsPort
-  private accuracySource: PlatformAccuracySource = new FallbackPlatformAccuracy()
+  private accuracySource: PlatformAccuracySource
   private battlePort: BattleReadPort = new NoBattle()
-  private botPoolPort: BotPoolPort
   private readonly bound = new Set<string>()
 
-  constructor(@Inject(WalletGameRewards) rewards: WalletGameRewards, @Inject(SchoolBotPool) bots: SchoolBotPool) {
+  constructor(@Inject(WalletGameRewards) rewards: WalletGameRewards, @Inject(GameSettingsService) settings: GameSettingsService) {
     this.rewardsPort = rewards
-    this.botPoolPort = bots
+    this.accuracySource = new RobotAccuracySetting(settings)
   }
 
   get rewards(): GameRewardsPort {
@@ -144,9 +119,6 @@ export class GamesPorts {
   }
   get battle(): BattleReadPort {
     return this.battlePort
-  }
-  get botPool(): BotPoolPort {
-    return this.botPoolPort
   }
 
   private once(name: string): void {
@@ -168,9 +140,5 @@ export class GamesPorts {
   provideBattle(port: BattleReadPort): void {
     this.once('battle port')
     this.battlePort = port
-  }
-  provideBotPool(port: BotPoolPort): void {
-    this.once('bot pool')
-    this.botPoolPort = port
   }
 }

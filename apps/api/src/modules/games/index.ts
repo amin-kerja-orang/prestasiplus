@@ -1,11 +1,8 @@
 export { GamesModule } from './games.module'
 export { GamesCoreModule } from './core/core.module'
-export { GamesPorts, NoBattle, FallbackPlatformAccuracy } from './core/ports'
+export { GamesPorts, NoBattle, RobotAccuracySetting } from './core/ports'
 export type {
   BattleReadPort,
-  BotCandidate,
-  BotPickInput,
-  BotPoolPort,
   GameResultInput,
   GameResultOutcome,
   GameResultSession,

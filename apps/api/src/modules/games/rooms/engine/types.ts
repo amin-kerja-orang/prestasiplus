@@ -1,7 +1,8 @@
 import type { GamesRoomGame, GamesRoomSubject } from '@pp/contract'
 
-/** A player as the engine sees them. `userId` is the decimal string id. */
+/** A seat as the engine sees it. */
 export interface EnginePlayer {
+  /** The key of the seat in the engine state: the decimal string user id, or `robot-<n>` for a robot (no user). */
   userId: string
   team: number | null
   points: number

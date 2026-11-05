@@ -56,7 +56,7 @@ interface RawBattle {
   school_b: bigint | null
 }
 
-const COUNTED = Prisma.sql`b.status IN ('finished', 'forfeited') AND b.is_test = false AND p.is_test = false AND p.is_bot = false`
+const COUNTED = Prisma.sql`b.status IN ('finished', 'forfeited') AND b.is_test = false AND b.counts_for_ranking AND p.is_test = false AND p.is_bot = false`
 
 const windowSql = (w: PeriodWindow): Prisma.Sql => {
   const parts: Prisma.Sql[] = []
@@ -67,7 +67,7 @@ const windowSql = (w: PeriodWindow): Prisma.Sql => {
 
 const num = (v: bigint | number | null): number => Number(v ?? 0)
 
-/** Bot sides (`is_bot`, real pupils used as simulated opponents) never earn standings, history or school credit. */
+/** Bot sides (`is_bot`) never earn standings, history or school credit; a robot battle counts for nobody (DM-60). */
 /** Aggregations over `battle_participants` / `battles` (BE-44 AC 13). Reads only the battle tables. */
 @Injectable()
 export class StandingsRepository {

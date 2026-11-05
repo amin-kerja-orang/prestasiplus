@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config'
 import {
   BATTLE_MESSAGES,
   BATTLE_RULES,
+  GAMES_ROBOT_NAME,
   type BattleListRowSchema,
   type BattlePodiumEntrySchema,
   type BattleSchoolDetailSchema,
@@ -160,7 +161,7 @@ export class StandingsService {
     return rows.map((r) => {
       const own = r.playerA === viewer.userId || r.playerB === viewer.userId
       const one = (id: string | null): { id: string | null; name: string } => {
-        if (id === null) return { id: null, name: FALLBACK_NAME }
+        if (id === null) return { id: null, name: GAMES_ROBOT_NAME } // FR-MUR-21-9: a side with no user is the robot
         const p = players.get(id)
         return own ? { id, name: p?.name ?? FALLBACK_NAME } : mask(id, p?.schoolId ?? null, p?.name ?? FALLBACK_NAME)
       }

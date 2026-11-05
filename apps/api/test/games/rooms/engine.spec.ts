@@ -805,10 +805,13 @@ describe('settlement (AC10)', () => {
       code: 'AB12CD',
       game: 'papan-bijak',
       state: finishedState({ winnerId: '11' }),
-      players: ps([{ correct: 1 }, {}]),
+      players: ps([{ correct: 1 }, {}, { userId: '12', isBot: false }]),
     })
     expect(lost.report).toMatchObject({ event: 'correct', won: false })
     expect(lost.standings).toEqual([{ userId: '10', wins: 0, jumlah: 1, betul: 1, skor: 0 }]) // the bot winner has no standing
+    // FR-PA-29, 48 GAME-R: against robots only, nobody's standing moves
+    const robots = computeSettlement({ code: 'AB12CD', game: 'papan-bijak', state: finishedState({ winnerId: '10' }), players: ps([{ correct: 1 }, { userId: 'robot-1' }]) })
+    expect(robots.standings).toEqual([])
   })
 
   it('a joined human the engine simulated never gets a standing, even as the winner or the MVP', () => {

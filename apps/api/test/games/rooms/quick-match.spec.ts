@@ -8,7 +8,7 @@ import {
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { ACCOUNTS, bootGamesApp, loginAs, type Client, type GamesTestApp } from '../helpers'
-import { P, demo001Students, ListBots, parseRoom, roomOf } from './support'
+import { P, parseRoom, roomOf } from './support'
 
 const M = GAMES_MESSAGES
 const QM = '/api/papan-bijak/quick-match'
@@ -25,10 +25,6 @@ describe('Papan Bijak quick match (M16-29..31): raw bodies', () => {
     student = await loginAs(t, ACCOUNTS.student)
     student2 = await loginAs(t, ACCOUNTS.student2)
     teacher = await loginAs(t, ACCOUNTS.teacher)
-    const kids = await demo001Students(t.db)
-    t.ports.provideBotPool(
-      new ListBots(kids.map((k) => ({ id: k.id, name: k.name, grade: k.grade }))),
-    )
   })
   afterAll(async () => {
     await t.close()
@@ -109,7 +105,7 @@ describe('Papan Bijak quick match (M16-29..31): raw bodies', () => {
     )
     expect(players).toHaveLength(2)
     expect(players[0]).toEqual({ user_id: student.userId, is_bot: false })
-    expect(players[1]?.is_bot).toBe(true)
+    expect(players[1]).toEqual({ user_id: null, is_bot: true }) // FR-GM-00.4: a robot seat, no user
     // the caller can open the room
     const view = parseRoom(await student.get(P('papan-bijak', code)))
     expect(view.players).toHaveLength(2) // already at the minimum: the host poll adds no bot

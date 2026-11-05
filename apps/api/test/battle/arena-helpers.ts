@@ -31,6 +31,9 @@ import { createTestDatabase, type TestDatabase } from '../support/db'
 
 export { START }
 
+/** The database of the app this spec file booted (one per file). */
+let entries: TestDatabase
+
 export interface BattleTestApp {
   db: TestDatabase
   clock: FixedClock
@@ -88,6 +91,7 @@ export async function bootBattleApp(opts: { env?: Record<string, string | undefi
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)
   await app.init()
+  entries = db
   return {
     db,
     clock,
@@ -215,8 +219,10 @@ export async function startQueue(owner: Client, subjectId: string, over: Record<
 
 /** Polls three times: the third poll matches a bot. Returns the battle uuid. */
 export async function matchBot(owner: Client, queueId: string): Promise<string> {
+  // The entry has waited `battle_bot_fallback_seconds` (48 GAME-01), without moving the clock of the test.
+  await entries.query(`update battle_queues set created_at = created_at - interval '30 seconds' where id = $1`, [queueId])
   let last: Response | null = null
-  for (let i = 0; i < 3; i++) last = await owner.get(`/battle/poll-match/${queueId}`)
+  last = await owner.get(`/battle/poll-match/${queueId}`)
   expect((last as Response).body.status, JSON.stringify((last as Response).body)).toBe('matched')
   return (last as Response).body.battle_uuid as string
 }

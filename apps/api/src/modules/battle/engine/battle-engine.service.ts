@@ -1,6 +1,6 @@
 /**
- * What the queue, the invitations and the arena share (BE-44): the pool pre-check, the bot pick, battle creation
- * (ten questions drawn once) and the report of a finished battle to M14.
+ * What the queue, the invitations and the arena share (BE-44): the pool pre-check, battle creation (ten questions drawn
+ * once) and the report of a finished battle to M14.
  */
 import { Inject, Injectable, Logger } from '@nestjs/common'
 import { BATTLE_MESSAGES, BATTLE_RULES } from '@pp/contract'
@@ -9,11 +9,11 @@ import { CLOCK, type Clock } from '../../../db/clock'
 import { idFromString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { prngStream } from '../../../db/prng'
+import { GameSettingsService, GamesPorts } from '../../games'
 import { BattleDeps, type BattleStudent } from '../battle.deps'
 import { GAME_RESULT_PORT, type GameResultEvent, type GameResultPort } from '../game-result.port'
 import { rawInvalid } from '../raw-response'
 import type { BattleParams } from './battle-params'
-import { pickBot } from './bots'
 
 export type BattleMode = 'quick_match' | 'school_battle' | 'challenge' | 'queue_join'
 export type QueueMode = 'quick_match' | 'school_battle'
@@ -26,23 +26,25 @@ export interface BattleSide {
 @Injectable()
 export class BattleEngine {
   private readonly logger = new Logger(BattleEngine.name)
-  private accuracy: Promise<number> | null = null
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(CLOCK) readonly clock: Clock,
     @Inject(BattleDeps) readonly deps: BattleDeps,
     @Inject(GAME_RESULT_PORT) private readonly port: GameResultPort,
+    @Inject(GamesPorts) private readonly ports: GamesPorts,
+    @Inject(GameSettingsService) private readonly settings: GameSettingsService,
   ) {}
 
-  /** The platform answer accuracy for the bots, read once per process start. */
+  /** The robot's chance of a correct answer (`battle_bot_accuracy_pct`), read per answer. */
   botAccuracy(): Promise<number> {
-    // A rejected read must not be cached: the next call retries.
-    this.accuracy ??= this.deps.platformAccuracy().catch((e: unknown) => {
-      this.accuracy = null
-      throw e
-    })
-    return this.accuracy
+    return this.ports.platformAccuracy.accuracy()
+  }
+
+  /** How long a queue entry waits for a human before the robot (`battle_bot_fallback_seconds`); null: never a robot. */
+  async robotFallbackMs(): Promise<number | null> {
+    const seconds = await this.settings.get('battle_bot_fallback_seconds')
+    return seconds === 0 ? null : seconds * 1000
   }
 
   /** A user as a battle side (any role: a Mod Pelajar account is not a student); null when the account is gone. */
@@ -69,22 +71,16 @@ export class BattleEngine {
     return (await this.draw(params, ownerGrade, streamName)) !== null
   }
 
-  /** The opponent of a queue, picked with the stream `m16:battle:<queueId>`; null when no student can be found. */
-  async pickOpponent(queueId: string, owner: BattleStudent, mode: QueueMode, openToAll: boolean): Promise<BattleStudent | null> {
-    const candidates = await this.deps.activeStudents({ excludeIds: new Set([owner.id]) })
-    return pickBot({ id: owner.id, grade: owner.grade, schoolId: owner.schoolId }, mode, openToAll, candidates, prngStream(`m16:battle:${queueId}`))
-  }
-
   /**
    * Creates an `active` battle with its two participants and 10 drawn questions. Runs in the caller's transaction: when
-   * the pool cannot give 10 questions the whole unit rolls back with 422 "Soalan tidak mencukupi.".
+   * the pool cannot give 10 questions the whole unit rolls back with 422 "Soalan tidak mencukupi.". Side `b` null is the
+   * robot: a seat with no user and no school, in a battle that counts for no ranking (DM-60, 48 section 3.6).
    */
   async createBattle(args: {
     mode: BattleMode
     params: BattleParams
     a: BattleSide
-    b: BattleSide
-    bIsBot: boolean
+    b: BattleSide | null
     isTest: boolean
     ownerGrade: number | null
     /** Ids drawn before the transaction (`draw`); undefined draws here, null means the pool was too small. */
@@ -105,11 +101,14 @@ export class BattleEngine {
         pkskTargetLevel: params.pkskTargetLevel,
         levelId: levelId === null ? null : idFromString(levelId),
         isTest,
+        countsForRanking: b !== null,
         createdAt: this.clock.now(),
         participants: {
           create: [
             { side: 'A', userId: idFromString(a.id), schoolId: a.schoolId === null ? null : idFromString(a.schoolId), isBot: false, isTest },
-            { side: 'B', userId: idFromString(b.id), schoolId: b.schoolId === null ? null : idFromString(b.schoolId), isBot: args.bIsBot, isTest },
+            b === null
+              ? { side: 'B', userId: null, schoolId: null, isBot: true, isTest }
+              : { side: 'B', userId: idFromString(b.id), schoolId: b.schoolId === null ? null : idFromString(b.schoolId), isBot: false, isTest },
           ],
         },
       },

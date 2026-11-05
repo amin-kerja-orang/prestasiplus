@@ -21,7 +21,7 @@ Shared root files (`battle-core.module.ts`, `battle.deps.ts`, ...) change only w
 - **Raw routes (M16-02..14, M16-01)**: return the bare object (no `ok()`); put `@UseFilters(BattleRawErrorFilter)` on the controller
   and throw `rawNotFound(text)` (404), `rawConflict(text)` (409), `rawInvalid(text?)` (422), `rawForbidden(text?)` (403) from
   `'../raw-response'`. No text = the empty `{}` body (M16-02/03). Other errors (401, CSRF, 429) keep the standard envelope.
-- **Owner reads**: inject `BattleDeps` (`'../battle.deps'`, from `BattleCoreModule`): `activeStudents`, `searchStudents`, `student`,
+- **Owner reads**: inject `BattleDeps` (`'../battle.deps'`, from `BattleCoreModule`): `searchStudents`, `student`,
   `players`, `gradeOf`, `school(s)`, `subjects`, `subject`, `levelIdOfGrade`, `spmPoolCount`, `drawQuestions`, `arenaQuestion`
   (keyless), `gradeAnswer`, `platformAccuracy`, `pkskDomains`. Never inject an owner repository or query `users`, `schools`,
   `subjects`, `questions` tables yourself. Fallbacks and limits are listed at the top of `battle.deps.ts`.

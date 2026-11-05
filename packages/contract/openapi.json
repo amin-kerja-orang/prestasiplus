@@ -21284,6 +21284,10 @@
                   },
                   "school": {
                     "type": "string"
+                  },
+                  "isBot": {
+                    "type": "boolean",
+                    "description": "True for the robot opponent (\"Robot PrestasiPlus\"), shown with the chip \"Latihan\" (48 GAME-01)."
                   }
                 },
                 "required": [
@@ -21300,6 +21304,10 @@
                   },
                   "school": {
                     "type": "string"
+                  },
+                  "isBot": {
+                    "type": "boolean",
+                    "description": "True for the robot opponent (\"Robot PrestasiPlus\"), shown with the chip \"Latihan\" (48 GAME-01)."
                   }
                 },
                 "required": [
@@ -22920,11 +22928,15 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/Id"
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Keys `state.positions` / `meter`: the user id, or an opaque seat id for a robot (no user).",
+            "example": "1042"
           },
           "name": {
             "type": "string",
-            "description": "Display name only (D54(d)); first given name outside the viewer's scope (children's names rule). The id stays: it keys `state.positions` / `meter`."
+            "description": "Display name only (D54(d)); first given name outside the viewer's scope (children's names rule). A robot is \"Robot PrestasiPlus {n}\"."
           },
           "grade": {
             "type": "string",

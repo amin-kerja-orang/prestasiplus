@@ -4,7 +4,7 @@
  * the question just answered. A battle is visible to its two players only (anyone else: 404 "Battle tidak dijumpai.").
  */
 import { Inject, Injectable } from '@nestjs/common'
-import { BATTLE_MESSAGES, BATTLE_RULES, battleArenaPoints, battleWinner } from '@pp/contract'
+import { BATTLE_MESSAGES, BATTLE_RULES, GAMES_ROBOT_NAME, battleArenaPoints, battleWinner } from '@pp/contract'
 
 import { ApiError } from '../../../common/errors/api-error'
 import { CLOCK, type Clock } from '../../../db/clock'
@@ -71,7 +71,7 @@ export class ArenaService {
   private async load(uuid: string, userId: string) {
     if (!isUuid(uuid)) throw notFound()
     const battle = await this.prisma.client.battle.findUnique({ where: { id: uuid }, include: { participants: true } })
-    // A pupil used as a simulated opponent (side B, is_bot) is not a participant of the battle: same not-found as a stranger.
+    // A seat marked is_bot, also one from before FR-GM-00.4 that still points at a pupil, is not a participant: same not-found as a stranger.
     const mine = battle?.participants.filter(hasUser).find((p) => idToString(p.userId) === userId && !p.isBot)
     if (!battle || !mine) throw notFound()
     return { battle, mine }
@@ -97,9 +97,11 @@ export class ArenaService {
     }
     const people = await this.engine.deps.players([a, b].filter(hasUser).map((p) => idToString(p.userId)))
     // FR-GM-00.8, 48 section 3.10: the opponent by first given name, no school; `school` stays in the contract, always empty.
+    // FR-MUR-21-9: a robot is "Robot PrestasiPlus", also on a seat from before FR-GM-00.4 that still points at a pupil.
     const player = (p: typeof a) => {
+      if (p.isBot) return { name: GAMES_ROBOT_NAME, school: '', isBot: true }
       const name = (p.userId === null ? undefined : people.get(idToString(p.userId)))?.name ?? ''
-      return { name: (p.side === mine.side ? name : displayName(name)) || 'Pelajar', school: '' }
+      return { name: (p.side === mine.side ? name : displayName(name)) || 'Pelajar', school: '', isBot: false }
     }
     return {
       uuid,
@@ -164,7 +166,7 @@ export class ArenaService {
         if (locked.status !== 'active') throw ApiError.of('CONFLICT', { message: BATTLE_MESSAGES.battleOver })
         // Another answer of the caller got in first: this position is no longer the next one.
         if ((await this.prisma.client.battleAnswer.count({ where: { battleId: uuid, userId: mine.userId } })) !== done) throw invalid('questionId', BATTLE_MESSAGES.questionInvalid)
-        const opp = locked.participants.filter(hasUser).find((p) => p.userId !== mine.userId)
+        const opp = locked.participants.find((p) => p.side !== mine.side)
         if (!opp) throw notFound()
         await this.prisma.client.battleAnswer.create({
           data: { battleId: uuid, userId: mine.userId, position: index, questionId: expected.questionId, optionId: timedOut ? null : optionId, correct: graded.correct, seconds: whole, points, createdAt: now },

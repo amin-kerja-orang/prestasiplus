@@ -177,7 +177,7 @@ export const BattleChallengerSchema = z
   .meta({ id: 'BattleChallenger' })
 
 /**
- * 200 of M16-04. `waiting` for the first two polls, `matched` (bot) on the third (BATTLE_RULES.matchOnPoll);
+ * 200 of M16-04. `waiting` until a human is matched or, after `battle_bot_fallback_seconds` (48 GAME-01), the robot;
  * the queue is `expired` after 120 s or after more than 10 s without a poll; another user's queue is
  * `not_found` (never an HTTP error).
  */
@@ -312,7 +312,11 @@ export const BattleArenaQuestionSchema = z
   .strictObject({ id: IdSchema, text: z.string(), options: z.array(BattleArenaOptionSchema).min(2).max(4) })
   .meta({ id: 'BattleArenaQuestion' })
 
-const ArenaPlayerSchema = z.strictObject({ name: z.string(), school: z.string() })
+const ArenaPlayerSchema = z.strictObject({
+  name: z.string(),
+  school: z.string(),
+  isBot: z.boolean().optional().meta({ description: 'True for the robot opponent ("Robot PrestasiPlus"), shown with the chip "Latihan" (48 GAME-01).' }),
+})
 const ScoresSchema = z.strictObject({ A: z.number().int().min(0), B: z.number().int().min(0) })
 
 export const BattleArenaResultSchema = z

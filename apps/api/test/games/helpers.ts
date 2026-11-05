@@ -26,7 +26,6 @@ import {
   GamesPorts,
   GameReadService,
   type BattleReadPort,
-  type BotPoolPort,
   type GameRewardsPort,
   type PlatformAccuracySource,
 } from '../../src/modules/games'
@@ -59,7 +58,6 @@ export interface BootGamesOptions {
     rewards?: GameRewardsPort
     platformAccuracy?: PlatformAccuracySource
     battle?: BattleReadPort
-    botPool?: BotPoolPort
   }
   /** Start the clock somewhere else. */
   at?: string
@@ -134,7 +132,6 @@ export async function bootGamesApp(opts: BootGamesOptions = {}): Promise<GamesTe
   if (p.rewards) ports.provideRewards(p.rewards)
   if (p.platformAccuracy) ports.providePlatformAccuracy(p.platformAccuracy)
   if (p.battle) ports.provideBattle(p.battle)
-  if (p.botPool) ports.provideBotPool(p.botPool)
   await app.init()
   return {
     app,

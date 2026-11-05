@@ -111,6 +111,9 @@ export const GamesRoomCodeSchema = z
 /** Non-negative integer (counts, scores). */
 export const gamesCount = z.number().int().min(0)
 
+/** 48 section 3.6: a robot is no person: this name, no user, no school. A room adds its number ("Robot PrestasiPlus 1", GAME-R). */
+export const GAMES_ROBOT_NAME = 'Robot PrestasiPlus'
+
 /** Exact BM (and generic English) messages of the mock, by use. Tests assert these. */
 export const GAMES_MESSAGES = {
   unauthenticated: 'Sesi anda telah tamat. Sila log masuk semula.',

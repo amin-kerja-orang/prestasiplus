@@ -4,6 +4,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import {
   GamesRoomActionRequestSchema,
   GamesRoomGameSchema,
+  GAMES_ROBOT_NAME,
   GAMES_ROOM_LIMITS,
   gamesRoomCreateRequestFor,
   gamesRoomMaxPlayers,
@@ -278,7 +279,7 @@ export class RoomsService {
         seed,
       )
       if (inserted) {
-        await this.repo.addPlayer(code, host.userId, false, host.isTest, now)
+        await this.repo.addPlayer(code, host.userId, host.isTest, now)
         return code
       }
     }
@@ -307,7 +308,7 @@ export class RoomsService {
       ) {
         throw roomNotFound()
       }
-      await this.repo.addPlayer(code, caller.userId, false, caller.isTest, this.clock.now())
+      await this.repo.addPlayer(code, caller.userId, caller.isTest, this.clock.now())
       return { code }
     })
   }
@@ -337,13 +338,8 @@ export class RoomsService {
     return this.prisma.transaction(async (tx) => {
       await this.repo.lock(probe.room.code)
       let { room, players } = await this.mustPlayer(caller, game, rawCode)
-      if (
-        room.status === 'waiting' &&
-        room.hostId === caller.userId &&
-        players.length < GAMES_ROOM_LIMITS[game].minPlayers
-      ) {
-        await this.addBot(room, players)
-        players = await this.repo.players(room.code)
+      if (room.status === 'waiting' && room.hostId === caller.userId) {
+        players = await this.robotsAfterWait(room, players)
       }
       if (room.status === 'playing') {
         const after = await this.runClocks(tx, room, players)
@@ -362,9 +358,10 @@ export class RoomsService {
     return this.prisma.transaction(async (tx) => {
       const probe = await this.mustPlayer(caller, game, rawCode)
       await this.repo.lock(probe.room.code)
-      const { room, players } = await this.mustPlayer(caller, game, rawCode)
+      const { room, players: seated } = await this.mustPlayer(caller, game, rawCode)
       if (room.hostId !== caller.userId) throw startHostOnly()
       if (room.status !== 'waiting') throw startAlreadyStarted()
+      const players = await this.robotsAfterWait(room, seated)
       if (players.length < GAMES_ROOM_LIMITS[game].minPlayers) throw startNotEnoughPlayers()
       const pool = await this.drawPool(room, game)
       const now = this.clock.now()
@@ -494,7 +491,7 @@ export class RoomsService {
   ): Promise<{ room: RoomRow; players: PlayerRow[] }> {
     const now = this.clock.now()
     for (const ep of out.players) {
-      const row = players.find((p) => p.userId === ep.userId)
+      const row = players.find((p) => p.seat === ep.userId)
       if (row)
         await this.repo.updatePlayer(row.id, {
           team: ep.team,
@@ -503,7 +500,7 @@ export class RoomsService {
         })
     }
     const nextPlayers = players.map((p) => {
-      const ep = out.players.find((x) => x.userId === p.userId)
+      const ep = out.players.find((x) => x.userId === p.seat)
       return ep ? { ...p, team: ep.team, points: ep.points, correct: ep.correct } : p
     })
     if (!out.finished) {
@@ -545,7 +542,7 @@ export class RoomsService {
     const game = room.game as GamesRoomGame
     const s = computeSettlement({ code: room.code, game, state: out.state, players: out.players })
     const now = this.clock.now()
-    const byId = new Map(players.map((p) => [p.userId, p]))
+    const byId = new Map(players.map((p) => [p.seat, p]))
     for (const d of s.standings) {
       if (byId.get(d.userId)?.isTest || (d.wins === 0 && d.jumlah === 0)) continue
       await this.repo.bumpStanding(game, d.userId, d, now)
@@ -574,19 +571,21 @@ export class RoomsService {
     )
   }
 
-  /** One fictitious student of a fitting grade not yet in the room (BR-M16-19); none when the pool is empty. */
-  async addBot(room: RoomRow, players: PlayerRow[]): Promise<void> {
-    const exclude = players.map((p) => p.userId)
-    const stream = `m16:room:${room.code}:${seedOf(room, this.secrets)}:bot:${String(players.length)}`
-    const pick =
-      (await this.ports.botPool.pick({
-        hostId: room.hostId,
-        fits: (g) => gradeFits(room, g),
-        exclude,
-        stream,
-      })) ??
-      (await this.ports.botPool.pick({ hostId: room.hostId, fits: () => true, exclude, stream }))
-    if (pick) await this.repo.addPlayer(room.code, pick.id, true, room.isTest, this.clock.now())
+  /** 48 GAME-R: the robots of a room that has waited `battle_bot_fallback_seconds` below its minimum; else the seats as they are. */
+  private async robotsAfterWait(room: RoomRow, players: PlayerRow[]): Promise<PlayerRow[]> {
+    const waited = this.clock.now().getTime() - room.createdAt.getTime()
+    const seconds = await this.settings.get('battle_bot_fallback_seconds')
+    return waited >= seconds * 1000 ? this.addRobots(room, players) : players
+  }
+
+  /** One robot per seat missing to the minimum, when robots are on (`games_room_bots_enabled`; a fallback of 0 is "never a robot", 48 section 2). */
+  async addRobots(room: RoomRow, players: PlayerRow[]): Promise<PlayerRow[]> {
+    const missing = GAMES_ROOM_LIMITS[room.game as GamesRoomGame].minPlayers - players.length
+    if (missing <= 0) return players
+    const s = await this.settings.getMany(['games_room_bots_enabled', 'battle_bot_fallback_seconds'])
+    if (s.games_room_bots_enabled !== 1 || s.battle_bot_fallback_seconds === 0) return players
+    for (let i = 0; i < missing; i++) await this.repo.addRobot(room.code, room.isTest, this.clock.now())
+    return this.repo.players(room.code)
   }
 
   /** Draws the question pool through BE-09 for the room subject and level, widening like the mock. */
@@ -628,9 +627,8 @@ export class RoomsService {
 
   private async viewOf(caller: Caller, room: RoomRow, players: PlayerRow[]): Promise<GamesRoomView> {
     const game = room.game as GamesRoomGame
-    const ids = [room.hostId, ...players.map((p) => p.userId)]
+    const ids = [room.hostId, ...players.flatMap((p) => (p.userId === null ? [] : [p.userId]))]
     const st = room.status === 'waiting' ? null : room.state // a waiting room only stores its secret seed
-    if (st?.winnerId) ids.push(st.winnerId)
     const names = await this.users.getMany(ids)
     // Children's names rule: players, host, winner and scores show a name the caller may see, else first given name.
     // Ids stay: they key `state.positions` / `meter` and `humanId`, which the room client needs to draw the game.
@@ -639,6 +637,9 @@ export class RoomsService {
       const u = names.get(id)
       return u ? seen.name(u) : ''
     }
+    // A robot is never shown as a person, also on a seat from before FR-GM-00.4 that still points at a pupil.
+    const seatName = (p: PlayerRow): string =>
+      p.robot !== null ? `${GAMES_ROBOT_NAME} ${String(p.robot)}` : nameOf(p.seat)
     const nowMs = this.clock.now().getTime()
     const view: GamesRoomView = {
       code: room.code,
@@ -646,9 +647,9 @@ export class RoomsService {
       status: room.status as GamesRoomView['status'],
       host: { id: room.hostId, name: nameOf(room.hostId) },
       players: players.map((p) => ({
-        id: p.userId,
-        name: nameOf(p.userId),
-        grade: gradeLabel((names.get(p.userId) as GameUser | undefined)?.grade ?? null),
+        id: p.seat,
+        name: seatName(p),
+        grade: p.robot === null ? gradeLabel((names.get(p.seat) as GameUser | undefined)?.grade ?? null) : '',
         ...(p.team === null ? {} : { team: p.team }),
         points: p.points,
         isBot: p.isBot,
@@ -670,13 +671,14 @@ export class RoomsService {
     const q = questionView(game, room.status, st)
     if (q) view.question = q
     if (room.status === 'finished' && st) {
+      const winnerSeat = players.find((p) => p.seat === st.winnerId)
       view.result = {
         winnerId: st.winnerId,
-        winnerName: st.winnerId === null ? null : nameOf(st.winnerId),
+        winnerName: winnerSeat ? seatName(winnerSeat) : null,
         mvpId: st.mvpId,
         scores: players.map((p) => ({
-          userId: p.userId,
-          name: nameOf(p.userId),
+          userId: p.seat,
+          name: seatName(p),
           points: p.points,
           correct: p.correct,
         })),
@@ -708,7 +710,7 @@ function engineRoom(room: RoomRow): EngineRoom {
 
 function enginePlayers(players: PlayerRow[]): EnginePlayer[] {
   return players.map((p) => ({
-    userId: p.userId,
+    userId: p.seat,
     team: p.team,
     points: p.points,
     correct: p.correct,

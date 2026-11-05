@@ -40,7 +40,7 @@ describe('forfeit (M16-14)', () => {
   it('a robot opponent (DM-60: no user): the arena still shows the battle and the player can forfeit', async () => {
     const uuid = await botBattle(a, s.math)
     await rows(`update battle_participants set user_id = null where battle_id = $1 and side = 'B'`, [uuid])
-    expect(parseData(BattleArenaViewSchema, await a.get(`/battle/arena/${uuid}`))).toMatchObject({ uuid, status: 'active', you: 'A', players: { B: { name: 'Pelajar' } } })
+    expect(parseData(BattleArenaViewSchema, await a.get(`/battle/arena/${uuid}`))).toMatchObject({ uuid, status: 'active', you: 'A', players: { B: { name: 'Robot PrestasiPlus', isBot: true } } })
     expect((await a.post(`/battle/forfeit/${uuid}`)).status).toBe(200)
   })
 
@@ -95,15 +95,14 @@ describe('forfeit (M16-14)', () => {
     expect(t.reports.at(-1)).toMatchObject({ userId: admin.id, isTest: true, event: 'forfeit' })
   })
 
-  it('the pupil used as the simulated opponent is not a participant: view, answer and forfeit are the stranger not-found', async () => {
+  it('a seat marked is_bot that still points at a pupil (before FR-GM-00.4) is not a participant: the stranger not-found', async () => {
     const uuid = await botBattle(a, s.math)
-    const [bot] = await rows<{ email: string }>(`select u.email from battle_participants p join users u on u.id = p.user_id where p.battle_id = $1 and p.is_bot`, [uuid])
-    const pupil = await client(t, bot!.email)
-    const view = await pupil.get(`/battle/arena/${uuid}`)
+    await rows(`update battle_participants set user_id = $2 where battle_id = $1 and is_bot`, [uuid, b.id])
+    const view = await b.get(`/battle/arena/${uuid}`)
     expect(view.status).toBe(404)
-    const answer = await pupil.post(`/battle/arena/${uuid}/answer`, { questionId: '1', optionId: 1, seconds: 1 })
+    const answer = await b.post(`/battle/arena/${uuid}/answer`, { questionId: '1', optionId: 1, seconds: 1 })
     expect(answer.status).toBe(404)
-    const forfeit = await pupil.post(`/battle/forfeit/${uuid}`)
+    const forfeit = await b.post(`/battle/forfeit/${uuid}`)
     expect(forfeit.status).toBe(404)
     expect(parse(BattleRawErrorSchema, forfeit)).toEqual({ error: 'Battle tidak dijumpai.' })
     expect((await rows<{ status: string }>(`select status from battles where id = $1`, [uuid]))[0]?.status).toBe('active')

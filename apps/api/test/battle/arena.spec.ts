@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { BATTLE_RULES, BattleAnswerResultSchema, BattleArenaViewSchema, ErrorBodySchema, battleArenaPoints } from '@pp/contract'
 
 import { BattleEngine } from '../../src/modules/battle/engine'
@@ -27,7 +27,7 @@ describe('arena (M16-16, M16-17)', () => {
   let c: Client
   const rows = <T extends Record<string, unknown>>(sql: string, params: unknown[] = []) => t.db.query<T>(sql, params)
   const setAccuracy = (p: number) => {
-    ;(t.get(BattleEngine) as unknown as { accuracy: Promise<number> | null }).accuracy = Promise.resolve(p)
+    vi.spyOn(t.get(BattleEngine), 'botAccuracy').mockResolvedValue(p)
   }
   const view = async (who: Client, uuid: string) => who.get(`/battle/arena/${uuid}`)
   const questionOf = async (who: Client, uuid: string): Promise<string> => parseData(BattleArenaViewSchema, await view(who, uuid)).question?.id as string
@@ -62,9 +62,8 @@ describe('arena (M16-16, M16-17)', () => {
       expect(v).toMatchObject({ uuid, status: 'active', you: 'A', index: 1, total: 10, secondsLeft: 15, scores: { A: 0, B: 0 } })
       expect(v.result).toBeUndefined()
       expect(v.question?.options.map((o) => [o.id, o.label])).toEqual([[0, 'A'], [1, 'B'], [2, 'C'], [3, 'D']])
-      expect(v.players.A).toEqual({ name: 'Murid Demo', school: '' }) // FR-GM-00.8: own name in full, no school
-      expect(v.players.B.school).toBe('')
-      expect(v.players.B.name.split(' ')).toHaveLength(1) // the opponent: first given name only
+      expect(v.players.A).toEqual({ name: 'Murid Demo', school: '', isBot: false }) // FR-GM-00.8: own name in full, no school
+      expect(v.players.B).toEqual({ name: 'Robot PrestasiPlus', school: '', isBot: true }) // FR-MUR-21-9
       expect(leakedKeys(res.body)).toEqual([])
       const [first] = await rows<{ question_id: string }>(`select question_id::text from battle_questions where battle_id = $1 and position = 1`, [uuid])
       expect(v.question?.id).toBe(first?.question_id)
@@ -201,7 +200,7 @@ describe('arena (M16-16, M16-17)', () => {
         expect(r.opponent).toEqual({ answered: true, correct: true, score: running })
       })
       const stored = await rows<{ position: number; seconds: number; correct: boolean; points: number; is_bot: boolean }>(
-        `select a.position, a.seconds, a.correct, a.points, p.is_bot from battle_answers a join battle_participants p on p.battle_id = a.battle_id and p.user_id = a.user_id where a.battle_id = $1 and p.is_bot order by a.position`,
+        `select position, seconds, correct, points, user_id is null as is_bot from battle_answers where battle_id = $1 and user_id is null order by position`,
         [uuid],
       )
       expect(stored.map((r) => [r.seconds, r.correct, r.points])).toEqual(bot.map((x) => [x.seconds, x.correct, x.points]))

@@ -24,8 +24,8 @@ import {
  * Hub, lobbies, rooms (create, join, view, start, action) and the Papan Bijak quick match
  * (M16-22 to M16-31). All room routes use `{ data }`; the quick match keeps the live raw bodies.
  *
- * Players are deterministic bots in the mock (D53(a)): only the room host acts. `isBot` is on the wire
- * as in the mock (BE-45 Open question 3).
+ * Only the room host acts; every other seat is simulated (D53(a)). A robot seat (`isBot`) has no user behind it
+ * (FR-GM-00.4, 48 section 3.6).
  */
 
 // --- hub (M16-22) -----------------------------------------------------------------------------------------
@@ -188,8 +188,8 @@ export type GamesRoomJoinRequest = z.infer<typeof GamesRoomJoinRequestSchema>
 
 export const GamesRoomPlayerSchema = z
   .strictObject({
-    id: IdSchema,
-    name: z.string().meta({ description: 'Display name only (D54(d)); first given name outside the viewer\'s scope (children\'s names rule). The id stays: it keys `state.positions` / `meter`.' }),
+    id: IdSchema.meta({ description: 'Keys `state.positions` / `meter`: the user id, or an opaque seat id for a robot (no user).' }),
+    name: z.string().meta({ description: 'Display name only (D54(d)); first given name outside the viewer\'s scope (children\'s names rule). A robot is "Robot PrestasiPlus {n}".' }),
     grade: z.string().meta({ description: '"Darjah n", "Tingkatan n" or "" without a grade.' }),
     team: z.number().int().optional().meta({ description: 'Kuiz Relay team number, once teams are set.' }),
     points: z.number().int(),
@@ -256,7 +256,8 @@ export type GamesRoomResult = z.infer<typeof GamesRoomResultSchema>
 /**
  * The room as polled every 3 seconds. `state` is null while waiting. `question` is present only while
  * playing and is keyless. `result` only when finished. A poll by the host of a waiting room below the
- * minimum players adds one bot (simulation, D53(a)); server clocks advance timed games on read.
+ * minimum players, once `battle_bot_fallback_seconds` have passed, adds one robot per missing seat (48 GAME-R);
+ * server clocks advance timed games on read.
  */
 export const GamesRoomViewSchema = z
   .strictObject({

@@ -162,7 +162,6 @@ export class InvitationsService {
         params: paramsOfInvitation(inv),
         a: { id: sender.id, schoolId: sender.schoolId },
         b: { id: receiver.id, schoolId: receiver.schoolId },
-        bIsBot: false,
         isTest,
         ownerGrade: sender.grade,
         drawStream: poolStream(uuid),

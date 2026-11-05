@@ -123,7 +123,6 @@ describe('BattleDeps reads (empty owner data)', () => {
   })
 
   it('answers empty/neutral values on an empty database', async () => {
-    expect(await deps.activeStudents()).toEqual([])
     expect(await deps.searchStudents('ab', '1', 10)).toEqual([])
     expect(await deps.student('999')).toBeNull()
     expect(await deps.student('x')).toBeNull()
@@ -132,7 +131,6 @@ describe('BattleDeps reads (empty owner data)', () => {
     expect(await deps.school('999')).toBeNull()
     expect(await deps.arenaQuestion('999')).toBeNull()
     expect(await deps.gradeAnswer('999', 0)).toBeNull()
-    expect(await deps.platformAccuracy()).toBe(0)
     expect(await deps.drawQuestions({ questionType: 'pksk', subjectId: null, levelId: null }, 10, { next: () => 0, int: () => 0, pick: (a) => a[0]! })).toBeNull()
   })
 })
