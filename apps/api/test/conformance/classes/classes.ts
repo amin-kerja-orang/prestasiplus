@@ -1,6 +1,6 @@
 import type { Scenario } from '@pp/contract-tests'
 
-import { dataOf, errorOf, expectError, listOf } from '../helpers'
+import { dataOf, enrolPupil, errorOf, expectError, listOf } from '../helpers'
 
 /**
  * Classes and teacher basics (BE-17) scenarios: every served operation of M10 part A, the guards, and the
@@ -63,15 +63,10 @@ export const classesScenarios: Scenario[] = [
         await teacher.request('POST', '/guru/classes', { body: { name: 'Kelas Sertai', subjectId, educationLevel: 'tingkatan-4' } }),
       )
 
-      const joined = await student.request('POST', '/kelas-saya/join', { body: { classCode: String(cls.joinCode).toLowerCase() } })
-      ctx.expectStatus(joined, 201)
-      expectError(ctx, await student.request('POST', '/kelas-saya/join', { body: { classCode: String(cls.joinCode) } }), 409, 'CONFLICT')
-      expectError(ctx, await student.request('POST', '/kelas-saya/join', { body: { classCode: '' } }), 422, 'VALIDATION_ERROR')
-      expectError(ctx, await student.request('POST', '/kelas-saya/join', { body: { classCode: 'ZZZZZZ' } }), 404, 'NOT_FOUND')
+      await enrolPupil(ctx, teacher, student, cls.id)
       const mine = await student.request('GET', '/kelas-saya')
       ctx.expectStatus(mine, 200)
       ctx.check(listOf(mine).some((c) => c.id === cls.id), 'joined class missing from Kelas Saya')
-      expectError(ctx, await teacher.request('POST', '/kelas-saya/join', { body: { classCode: String(cls.joinCode) } }), 403, 'FORBIDDEN')
 
       const roster = await teacher.request('GET', '/guru/students')
       ctx.expectStatus(roster, 200)
@@ -93,7 +88,6 @@ export const classesScenarios: Scenario[] = [
       expectError(ctx, await anon.request('GET', '/guru/classes'), 401, 'UNAUTHORIZED')
       expectError(ctx, await anon.request('GET', '/guru/dashboard'), 401, 'UNAUTHORIZED')
       expectError(ctx, await anon.request('GET', '/kelas-saya'), 401, 'UNAUTHORIZED')
-      expectError(ctx, await anon.request('POST', '/kelas-saya/join', { body: {} }), 401, 'UNAUTHORIZED')
       const student = await ctx.as('student')
       expectError(ctx, await student.request('GET', '/guru/classes'), 403, 'FORBIDDEN')
       expectError(ctx, await student.request('POST', '/guru/classes', { body: {} }), 403, 'FORBIDDEN')

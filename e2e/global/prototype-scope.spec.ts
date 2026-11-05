@@ -110,7 +110,8 @@ for (const [role, c] of Object.entries(CASES)) {
       await gotoApp(c.blocked)
       await expect(page).toHaveURL(new RegExp(`${c.blocked}$`))
       await expect(page.getByRole('heading', { name: 'Halaman Tidak Dijumpai' })).toBeVisible()
-      await expect(page.getByText('Belum tersedia dalam prototaip')).toHaveCount(0)
+      // A 404, not a 403 and not a scope page (the old prototype-scope text is gone).
+      await expect(page.getByText('Akses Ditolak')).toHaveCount(0)
       await expectNoHorizontalScroll(page)
     })
   })
