@@ -48,6 +48,43 @@ import {
 } from './rules'
 import { schoolSpmHistoryRepo } from './stores'
 
+/**
+ * XS-1 "Murid" in the mock (R1 S10-T07, FR-AS-4-1): a pupil account that is active and in Tingkatan 1 to 5 (`grade` 7..11). The
+ * mock users carry no suspension or pending-school flag; a pending account is `isActive = false`, so it is out as in the API.
+ */
+export function isXsPupil(id: number): boolean {
+  const u = users.get(id)
+  return u !== undefined && u.role === 'student' && u.isActive && u.grade !== null && u.grade >= 7 && u.grade <= 11
+}
+
+/**
+ * How many of `ids` are XS-1 pupils in `scope`. The platform view keeps the observed live figures of prestasiplus.my (the 4,533 /
+ * 149 / 3,911 anchors, D11 display constants: seeds mirror observation), so only a school scope is counted by XS-1.
+ */
+export function xsPupilCount(scope: Scope, ids: readonly number[]): number {
+  if (scope.kind === 'platform') return ids.length
+  let n = 0
+  for (const id of ids) if (isXsPupil(id)) n += 1
+  return n
+}
+
+/** XS-3 "Guru" of the school in the mock: active teacher accounts (a pending teacher is inactive here). */
+function xsTeacherCount(scope: Scope): number {
+  if (scope.kind === 'platform') return users.roleCounts().teacher // observed platform anchor, see xsPupilCount
+  return users.countWhere({ role: 'teacher', isActive: true, schoolId: scope.schoolId })
+}
+
+/** XS-1 count of the school (Tingkatan 1 to 5, active). */
+function xsPupilTotal(scope: Scope): number {
+  if (scope.kind === 'platform') return users.roleCounts().student // observed platform anchor, see xsPupilCount
+  return users.countWhere({
+    role: 'student',
+    isActive: true,
+    grade: { gte: 7, lte: 11 },
+    schoolId: scope.schoolId,
+  })
+}
+
 /** BR-M08-04 Pencapaian bar: round((9.5 − GPS) ÷ 9.5 × 100)%; 9.5 is the observed scale base. */
 const GPS_BAR_BASE = 9.5
 
@@ -282,13 +319,9 @@ function computeSchoolPerformance(scope: Scope, clockYear: number): SchoolPerfor
     scope.kind === 'platform'
       ? null
       : users.adminList({ role: 'student', schoolId: scope.schoolId, pageSize: 100_000 }).rows
-  const teacherRows =
-    scope.kind === 'platform'
-      ? null
-      : users.adminList({ role: 'teacher', schoolId: scope.schoolId, pageSize: 100_000 }).rows
-  const roleCounts = scope.kind === 'platform' ? users.roleCounts() : null
-  const studentCount = roleCounts ? roleCounts.student : (studentRows?.length ?? 0)
-  const teacherCount = roleCounts ? roleCounts.teacher : (teacherRows?.length ?? 0)
+  // XS-1 / XS-3 (S6-T03 definitions; FR-AS-4-1): the same rule as the API, not the raw account count.
+  const studentCount = xsPupilTotal(scope)
+  const teacherCount = xsTeacherCount(scope)
 
   let sessions: number
   let answered: number
@@ -347,7 +380,7 @@ function computeSchoolPerformance(scope: Scope, clockYear: number): SchoolPerfor
         code,
         accuracy: round(a.accuracy, 1),
         classes: a.classes.length,
-        students: a.studentIds.length,
+        students: xsPupilCount(scope, a.studentIds),
         sessions: a.sessions,
       },
     ]
@@ -405,7 +438,7 @@ function teacherCards(
       userId: teacherId,
       name: u?.name ?? `Guru ${String(teacherId)}`,
       classCount: own.length,
-      studentCount: ids.length,
+      studentCount: xsPupilCount(scope, ids),
       // INFERRED: the teacher's "Ketepatan" is the session mean over the pupils of the own classes.
       accuracy: round(capPercent(meanAccuracy(totals)), 1),
       onTrack: st ? st.on : null,
@@ -480,7 +513,7 @@ export function levelDetail(
               ? 'Tiada Subjek'
               : (curriculum.subject(c.subjectId)?.name ?? 'Tiada Subjek'),
         teacher,
-        students: ids.length,
+        students: xsPupilCount(scope, ids),
         sessions: t.sessions,
         // BR-M08-09: the class rows are per answer (Σ correct ÷ Σ questions of the sessions).
         accuracy: round(capPercent(pct(t.correct, t.questions)), 1),
@@ -543,7 +576,7 @@ export function levelDetail(
     code,
     name: LEVEL_NAME[code],
     classes: agg.classes.length,
-    students: agg.studentIds.length,
+    students: xsPupilCount(scope, agg.studentIds),
     subjects: agg.subjects,
     accuracy: round(capPercent(agg.accuracy), 1),
     sessions: agg.sessions,

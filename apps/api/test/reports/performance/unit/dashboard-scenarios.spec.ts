@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import type { SchoolPerformanceView } from '../../../../src/modules/school-admin/school-admin.ports'
 import { performanceBlock } from '../../../../src/modules/school-admin/dashboard.mapper'
 import { answers, ctxOf, world, type World } from '../fakes/fixtures'
 
@@ -26,7 +27,12 @@ function pupils(w: World, schoolId: string, n: number, active: number = n, prefi
   return ids
 }
 
-const blockOf = async (w: World) => performanceBlock(await w.school.school(schoolAdmin))
+/** XS-4 / XS-5 of the school as the dashboard passes them (`XsQueries.answerTotals`); here the same answer rows, read through the fakes. */
+const xsOf = (view: SchoolPerformanceView) => ({ answered: view.stats.answered, accuracy: view.stats.accuracy })
+const blockOf = async (w: World) => {
+  const view = await w.school.school(schoolAdmin)
+  return performanceBlock(view, xsOf(view))
+}
 
 describe('Admin Sekolah dashboard practice block over the shared answer reader (DB scenarios, in memory)', () => {
   it('5 pupils with answered sessions: the block carries accuracy 70, 5 sessions, 50 questions', async () => {
@@ -35,7 +41,7 @@ describe('Admin Sekolah dashboard practice block over the shared answer reader (
     pupils(w, 's1', 5)
     const view = await w.school.school(schoolAdmin)
     expect(view.stats).toMatchObject({ students: 5, sessions: 5, answered: 5 * ANSWERS, accuracy: 70 })
-    const p = performanceBlock(view)
+    const p = performanceBlock(view, xsOf(view))
     expect(p.practice).toEqual({ accuracy: 70, sessions: 5, questions: 5 * ANSWERS })
     // t4 and t5 stay listed at 0 (no classes); no distribution rows have counts (no headcount).
     expect(p.levels.map((l) => l.code)).toEqual(['t4', 't5'])
@@ -43,12 +49,12 @@ describe('Admin Sekolah dashboard practice block over the shared answer reader (
     expect(p.total).toBe(0)
   })
 
-  it('fewer than 5 pupils: the block stays suppressed (k = 5), levels 0', async () => {
+  it('fewer than 5 pupils: the block is shown (staff screen, no minimum cohort: PO decision 2026-11-05, #503 batch 3), levels 0', async () => {
     const w = world()
     w.directory.addSchool({ id: 's1' })
     pupils(w, 's1', 4)
     const p = await blockOf(w)
-    expect(p.practice).toEqual({ accuracy: null, sessions: 0, questions: 0 })
+    expect(p.practice).toEqual({ accuracy: 70, sessions: 4, questions: 4 * ANSWERS })
     expect(p.levels.every((l) => l.accuracy === 0)).toBe(true)
     expect(p.total).toBe(0)
   })
@@ -62,7 +68,7 @@ describe('Admin Sekolah dashboard practice block over the shared answer reader (
     expect(p.practice).toEqual({ accuracy: 70, sessions: 2, questions: 2 * ANSWERS })
   })
 
-  it('levels: 5 pupils with answers in one class of the level are shown; a level with fewer than 5 pupils stays 0', async () => {
+  it('levels: 5 pupils with answers in one class of the level are shown; a level with fewer than 5 pupils is shown too (no minimum cohort)', async () => {
     const w = world()
     w.directory.addSchool({ id: 's1' })
     const five = pupils(w, 's1', 5)
@@ -71,7 +77,7 @@ describe('Admin Sekolah dashboard practice block over the shared answer reader (
     w.classes.add({ id: '11', schoolId: 's1', levelSlug: 't5' }, small)
     const p = await blockOf(w)
     expect(p.levels.find((l) => l.code === 't4')?.accuracy).toBe(70)
-    expect(p.levels.find((l) => l.code === 't5')?.accuracy).toBe(0)
+    expect(p.levels.find((l) => l.code === 't5')?.accuracy).toBe(70)
   })
 
   it('a school with activity is never {accuracy: null, sessions: 0}', async () => {

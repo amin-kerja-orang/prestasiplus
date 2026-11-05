@@ -256,10 +256,10 @@ describe('S2 / S3 levels', () => {
     expect((await getAs(runtime, null, '/api/performance/levels/t4')).status).toBe(401)
   })
 
-  it('S3 Tingkatan 4: 34 On Track / 41 Below (45 %), "4 Simulasi" 13 / 2; Murid Berisiko by the answer rule (R1-AS-4, DOC DEFECT 5)', async () => {
+  it('S3 Tingkatan 4: computed targets (HC-2) leave every seeded pair On Track; Murid Berisiko by the answer rule (R1-AS-4, DOC DEFECT 5)', async () => {
     const t4 = await get<LevelDetail>(ADMIN, '/api/performance/levels/t4')
-    expect([t4.onTrack, t4.below, t4.onTrackPct]).toEqual([34, 41, 45])
-    expect(t4.classRows.find((r) => r.classId === 516)).toMatchObject({ onTrack: 13, below: 2 })
+    expect([t4.onTrack, t4.below, t4.onTrackPct]).toEqual([75, 0, 100])
+    expect(t4.classRows.find((r) => r.classId === 516)).toMatchObject({ onTrack: 15, below: 0 })
     // Whole-number accuracy below 50 or no answer in 7 days; 10 rows; accuracy ascending, pupils with no answer last.
     expect(t4.atRisk).toHaveLength(10)
     expect(t4.atRisk[0]).toMatchObject({ userId: 156, className: '4 Cemerlang - BM', answered: 35, accuracy: 8.6 })
@@ -270,9 +270,9 @@ describe('S2 / S3 levels', () => {
     for (const r of t4.atRisk) expect('checkpoint' in r).toBe(false)
   })
 
-  it('S3 Tingkatan 5: 114 On Track / 289 Below (28 %) and the at-risk rows of the answer rule, the observed Kimia pupils first', async () => {
+  it('S3 Tingkatan 5: 309 On Track / 94 Below (77 %) and the at-risk rows of the answer rule, the observed Kimia pupils first', async () => {
     const t5 = await get<LevelDetail>(ADMIN, '/api/performance/levels/t5')
-    expect([t5.onTrack, t5.below, t5.onTrackPct]).toEqual([114, 289, 28])
+    expect([t5.onTrack, t5.below, t5.onTrackPct]).toEqual([309, 94, 77])
     expect(t5.atRisk).toHaveLength(10)
     expect(t5.atRisk.slice(0, 2).map((r) => [r.userId, r.answered, r.accuracy])).toEqual([
       [3008, 8, 12.5],

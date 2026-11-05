@@ -23,7 +23,7 @@ import { startOfDaysAgo } from '../domain/windows'
 import { toMytTimestamp } from '../../../../common/time/myt'
 import { HeadcountFactsService } from '../headcount/headcount-facts.service'
 import { latestAr } from '../headcount/headcount.rules'
-import { DIRECTORY_PORT, PerformancePorts, type AnswerFactsQuery, type ClassInfo, type DirectoryPort } from '../ports'
+import { DIRECTORY_PORT, PerformancePorts, XS_COUNTS_PORT, type AnswerFactsQuery, type ClassInfo, type DirectoryPort, type XsCountsPort } from '../ports'
 import type { HeadcountEntryView, HeadcountFacts } from './headcount-facts.types'
 import {
   achievementOf,
@@ -104,6 +104,16 @@ interface Frame {
   byUser: Map<string, UserTotals>
 }
 
+/** Schools whose XS-3 count is read at once for the platform view. */
+const XS_TEACHER_BATCH = 20
+
+/** How many of `ids` are XS-1 pupils. */
+function countOf(ids: Iterable<string>, xsPupils: ReadonlySet<string>): number {
+  let n = 0
+  for (const id of ids) if (xsPupils.has(id)) n += 1
+  return n
+}
+
 const EMPTY_FACTS = (): FactSet => ({ byUser: new Map(), bySubject: new Map() })
 
 /** Prestasi sekolah and tingkatan (S1 to S3). Scope: admin = platform, others their own school, no school = empty. Exported for BE-21. level() throws NOT_FOUND for a code other than t1 to t5. */
@@ -113,6 +123,7 @@ export class SchoolPerformanceService {
     protected readonly ports: PerformancePorts,
     @Inject(DIRECTORY_PORT) protected readonly directory: DirectoryPort,
     @Inject(CLOCK) protected readonly clock: Clock,
+    @Inject(XS_COUNTS_PORT) protected readonly xs: XsCountsPort,
     @Optional() @Inject(HeadcountFactsService) protected readonly facts?: HeadcountFacts,
   ) {}
 
@@ -137,6 +148,36 @@ export class SchoolPerformanceService {
       hit = loaded
     }
     return hit
+  }
+
+  /** Per-request memo of the XS-1 pupil set of the view scope (same lifetime as `memo`). */
+  private readonly pupilMemo = new WeakMap<Ctx, Promise<ReadonlySet<string>>>()
+
+  /**
+   * XS-1 (S6-T03 `XsQueries.pupils`): the pupils of the view scope that count as "Murid". Every pupil figure of Prestasi sekolah and
+   * Tingkatan (header, stats, level rows, teacher cards) is a count over this set, so a suspended, pending, deactivated or
+   * non-Tingkatan-1-5 account never adds to a "Murid" number (AC-XS-1). A scope without a school is empty.
+   */
+  private xsPupils(ctx: Ctx, scope: ViewScope): Promise<ReadonlySet<string>> {
+    if (scope.kind === 'none') return Promise.resolve(new Set())
+    let hit = this.pupilMemo.get(ctx)
+    if (!hit) {
+      hit = this.xs.pupils(scope.kind === 'platform' ? { kind: 'platform' } : { kind: 'school', schoolId: scope.schoolId }).then((r) => new Set(r.ids))
+      this.pupilMemo.set(ctx, hit)
+      // A failed read is not kept: a later call with the same ctx tries again.
+      hit.catch(() => this.pupilMemo.delete(ctx))
+    }
+    return hit
+  }
+
+  /** XS-3 "Guru" of the view scope: the school's count, or the sum over every school for the platform (admin). */
+  private async xsTeachers(scope: ViewScope): Promise<number> {
+    if (scope.kind === 'none') return 0
+    if (scope.kind === 'school') return this.xs.teacherCount(scope.schoolId)
+    const ids = (await this.directory.schoolsInScope({})).map((s) => s.id)
+    let total = 0
+    for (let i = 0; i < ids.length; i += XS_TEACHER_BATCH) total += (await Promise.all(ids.slice(i, i + XS_TEACHER_BATCH).map((id) => this.xs.teacherCount(id)))).reduce((a, b) => a + b, 0)
+    return total
   }
 
   /** The shared answer reader (S10-T01): answers of every mode, sessions of the non-game modes; per pupil and per subject. */
@@ -191,12 +232,9 @@ export class SchoolPerformanceService {
     const kind = scope.kind === 'platform' ? 'platform' : 'school'
     const classrooms = fr.classes.filter((c) => c.kind === 'classroom')
 
-    const schoolIds =
-      scope.kind === 'school' ? [scope.schoolId] : scope.kind === 'platform' ? (await this.directory.schoolsInScope({})).map((s) => s.id) : []
-    const sum = (m: ReadonlyMap<string, number>): number => [...m.values()].reduce((a, b) => a + b, 0)
-    // S6-T03: countPupils / countTeachers (XS-1 / XS-3) stay as they are until S6-T03 swaps them for the shared queries.
-    const students = schoolIds.length === 0 ? 0 : sum(await this.directory.countPupils(schoolIds))
-    const teachers = schoolIds.length === 0 ? 0 : sum(await this.directory.countTeachers(schoolIds))
+    // XS-1 / XS-3 (S6-T03): the same named queries as the school admin Dashboard, through XS_COUNTS_PORT (FR-AS-4-1, AC-AS-4-1).
+    const [xsPupils, teachers] = await Promise.all([this.xsPupils(ctx, scope), this.xsTeachers(scope)])
+    const students = xsPupils.size
 
     // Sessions, answered and pooled accuracy come from the shared answer reader (all modes; XS-4, XS-5, XS-8).
     let sessions = 0
@@ -221,14 +259,14 @@ export class SchoolPerformanceService {
       const ids = [...new Set(lc.flatMap((c) => fr.members.byClass.get(c.id) ?? []))]
       const sums = sumOf(ids, fr.byUser)
       const classPupils = lc.map((c) => sumOf(fr.members.byClass.get(c.id) ?? [], fr.byUser).contributors)
-      return { code, classes: lc.length, ids, sums, visible: levelVisibleToNonStaff(ctx.role, sums.contributors, classPupils) }
+      return { code, classes: lc.length, ids, counted: countOf(ids, xsPupils), sums, visible: levelVisibleToNonStaff(ctx.role, sums.contributors, classPupils) }
     })
     // t4 and t5 are always listed (zeros when empty); t1 to t3 only when the scope has classes or pupils at that level (R1-AS-4).
     const levels = levelSums.filter(listedLevel).map((l) => ({
       code: l.code,
       accuracy: l.visible ? shown(ctx, l.sums).accuracy : 0,
       classes: l.classes,
-      students: l.ids.length,
+      students: l.counted,
       sessions: l.visible ? shown(ctx, l.sums).sessions : 0,
     }))
     // Non-staff: a total that would let a suppressed level (or a small remainder) be recovered by
@@ -263,7 +301,7 @@ export class SchoolPerformanceService {
               userId,
               name: e.name,
               classCount: e.classes.length,
-              studentCount: ids.length,
+              studentCount: countOf(ids, xsPupils),
               accuracy: shown(ctx, sumOf(ids, fr.byUser)).accuracy,
               onTrack: st ? st.on : null,
               below: st ? st.below : null,
@@ -381,11 +419,12 @@ export class SchoolPerformanceService {
 
   async levels(ctx: Ctx): Promise<PerformanceLevelCard[]> {
     const fr = await this.scoped(ctx, await this.frame(ctx, false))
+    const xsPupils = await this.xsPupils(ctx, fr.scope)
     // t4 and t5 always, t1 to t3 only with classes or pupils: the Tingkatan cards and chips are built from this list.
     return LEVEL_CODES.flatMap((code) => {
       const lc = fr.classes.filter((c) => c.levelSlug === code)
       const ids = new Set(lc.flatMap((c) => fr.members.byClass.get(c.id) ?? []))
-      return listedLevel({ code, classes: lc.length, ids: [...ids] }) ? [{ code, name: LEVEL_NAMES[code], classes: lc.length, students: ids.size }] : []
+      return listedLevel({ code, classes: lc.length, ids: [...ids] }) ? [{ code, name: LEVEL_NAMES[code], classes: lc.length, students: countOf(ids, xsPupils) }] : []
     })
   }
 
@@ -395,6 +434,7 @@ export class SchoolPerformanceService {
     const fr = await this.scoped(ctx, await this.frame(ctx))
     const lc = fr.classes.filter((c) => c.levelSlug === level)
     const students = [...new Set(lc.flatMap((c) => fr.members.byClass.get(c.id) ?? []))].sort(compareIds)
+    const xsPupils = await this.xsPupils(ctx, fr.scope)
     // Non-staff: a class row hidden for having 1 to 4 pupils would be recovered as total minus shown rows, so the total is hidden too.
     const visible = levelVisibleToNonStaff(
       ctx.role,
@@ -427,7 +467,7 @@ export class SchoolPerformanceService {
           name: c.name,
           subject: c.kind === 'school_class' ? SCHOOL_CLASS_LABEL : (c.subjectName ?? NO_SUBJECT_LABEL),
           teacher: c.teacherName,
-          students: ids.length,
+          students: countOf(ids, xsPupils),
           sessions: s.sessions,
           accuracy: s.accuracy,
           onTrack: st.on,
@@ -489,7 +529,7 @@ export class SchoolPerformanceService {
       code: level,
       name: LEVEL_NAMES[level],
       classes: lc.length,
-      students: students.length,
+      students: countOf(students, xsPupils),
       subjects: new Set(lc.map((c) => c.subjectId).filter((s): s is string => s !== null)).size,
       accuracy: total.accuracy,
       sessions: total.sessions,

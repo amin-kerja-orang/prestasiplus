@@ -93,7 +93,7 @@ describe('Prestasi sekolah', () => {
 
   it('a school with classes but no answers has accuracy 0, never NaN', async () => {
     const e = world()
-    e.directory.addSchool({ id: 's1' })
+    e.directory.addSchool({ id: 's1' }).addPupil({ id: '1', schoolId: 's1' }) // a class member counts as Murid only when it is an XS-1 pupil
     e.classes.add({ id: '10', schoolId: 's1', teacherId: 't1' }, ['1'])
     const r = await e.school.school(schoolAdmin)
     expect(r.stats).toMatchObject({ sessions: 0, answered: 0, accuracy: 0 })
