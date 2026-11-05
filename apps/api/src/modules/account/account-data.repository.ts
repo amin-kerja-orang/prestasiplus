@@ -176,18 +176,25 @@ export class AccountDataRepository {
    * Counts of the question bank and the curriculum, per request (BR-21). The tables belong to BE-08
    * and BE-09, which are not merged yet: a table or column that does not exist counts as 0 (checked
    * against the catalogue, never by catching an SQL error). Rules: published AND active questions
-   * (`questions.live_version_no` set, D54a), active subjects, active education levels.
+   * (`questions.live_version_no` set, D54a), active subjects, active education levels that are not
+   * primary (Darjah): only Tingkatan 1-5 count, so the public "Tahap" is 5 even while UAT still has
+   * active Darjah rows (FR-X3-1, FR-X3-2, API-AUTH-13, S4-T05).
    */
   async platformCounts(): Promise<PlatformCounts> {
-    const have = await this.prisma.client.$queryRaw<{ table_name: string }[]>`
-      SELECT table_name FROM information_schema.columns
+    const have = await this.prisma.client.$queryRaw<{ table_name: string; column_name: string }[]>`
+      SELECT table_name, column_name FROM information_schema.columns
        WHERE table_schema = current_schema()
          AND ((table_name = 'questions' AND column_name = 'live_version_no')
            OR (table_name = 'subjects' AND column_name = 'is_active')
-           OR (table_name = 'education_levels' AND column_name = 'is_active'))`
-    const present = new Set(have.map((r) => r.table_name))
+           OR (table_name = 'education_levels' AND column_name IN ('is_active', 'stage')))`
+    const present = new Set(have.map((r) => `${r.table_name}.${r.column_name}`))
+    const needs: Record<string, string[]> = {
+      questions: ['live_version_no'],
+      subjects: ['is_active'],
+      education_levels: ['is_active', 'stage'],
+    }
     const count = async (table: string, statement: Prisma.Sql): Promise<number> => {
-      if (!present.has(table)) return 0
+      if (!(needs[table] ?? []).every((column) => present.has(`${table}.${column}`))) return 0
       // Tagged statements (Prisma.sql), never a concatenated string; the table check above is the build-time guard.
       const rows = await this.prisma.client.$queryRaw<{ c: bigint }[]>(statement)
       return Number(rows[0]?.c ?? 0)
@@ -195,7 +202,7 @@ export class AccountDataRepository {
     return {
       questionCount: await count('questions', QUESTION_COUNT),
       subjectCount: await count('subjects', Prisma.sql`SELECT count(*) AS c FROM subjects WHERE is_active`),
-      levelCount: await count('education_levels', Prisma.sql`SELECT count(*) AS c FROM education_levels WHERE is_active`),
+      levelCount: await count('education_levels', Prisma.sql`SELECT count(*) AS c FROM education_levels WHERE is_active AND stage <> 'primary'`),
     }
   }
 

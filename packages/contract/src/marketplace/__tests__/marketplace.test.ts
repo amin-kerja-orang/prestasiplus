@@ -283,13 +283,13 @@ describe('pure rules (BR-M20-16, 17, 21; FR-M20-11)', () => {
 
 describe('errors', () => {
   it('uses the generic copy of the mock', () => {
-    expect(MARKETPLACE_ERRORS.UNAUTHORIZED).toEqual({ status: 401, message: 'Unauthenticated.' })
-    expect(MARKETPLACE_ERRORS.NOT_FOUND).toEqual({ status: 404, message: 'Not Found.' })
+    expect(MARKETPLACE_ERRORS.UNAUTHORIZED).toEqual({ status: 401, message: 'Sesi anda telah tamat. Sila log masuk semula.' })
+    expect(MARKETPLACE_ERRORS.NOT_FOUND).toEqual({ status: 404, message: 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?' })
     expect(MARKETPLACE_ERRORS.CSRF_INVALID.status).toBe(403)
   })
 
   it('error bodies parse', () => {
-    expect(ok(ErrorBodySchema, { error: { code: 'NOT_FOUND', message: 'Not Found.' } })).toBe(true)
+    expect(ok(ErrorBodySchema, { error: { code: 'NOT_FOUND', message: 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?' } })).toBe(true)
     expect(ok(ErrorBodySchema, { error: { code: 'CSRF_INVALID', message: MARKETPLACE_ERRORS.CSRF_INVALID.message } })).toBe(true)
   })
 })
