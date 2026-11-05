@@ -153,6 +153,8 @@ export interface ImportedQuestionInput {
   numberLabel?: string
   /** `en` when the row says `bahasa = en`; absent = Bahasa Melayu. */
   language?: 'en'
+  /** S1-T05 part 2: the stimulus (id) the one leaf is shown with (`part_stimulus`); the importer sets it after it creates the group's stimuli. */
+  partStimulusId?: string
 }
 
 /** The stem and subject of one exact version (the version a report was filed against), for the reporter's own list. */

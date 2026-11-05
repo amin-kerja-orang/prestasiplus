@@ -39,9 +39,8 @@ const stamp = (d: Date | null) => (d === null ? null : toMytTimestamp(d))
  * `ClassesPorts` question provider, coins from BE-11's `WalletService.balancesOf` (the current balance, as the mock; one batched read; no SQL on wallet
  * tables). Struktur, Battle and Permainan have no source in this build and stay 0 (as BE-20).
  *
- * Privacy: the per-pupil rows are in the contract and stay (the route is `no-store`); the school pupil accuracy tile is 0 with
- * no answers (no minimum cohort on this staff screen, PO decision 2026-11-05, #503 batch 3; the tile and the pupil row accuracy are non-nullable in the contract: 0 stands
- * for "no data" there until the contract part of S6-T03 makes them nullable).
+ * Privacy: the per-pupil rows are in the contract and stay (the route is `no-store`); the school pupil accuracy tile is null with
+ * no answers (no minimum cohort on this staff screen, PO decision 2026-11-05, #503 batch 3; XS-5: null, shown "—", never 0%).
  */
 @Injectable()
 export class ActivityService {
@@ -112,7 +111,7 @@ export class ActivityService {
         name: p.name,
         className: classNames.get(p.id) ?? null,
         sessions: per.get(p.id)?.sessions ?? 0,
-        accuracy: u ? (accuracyOf(u.correct, u.answered) ?? 0) : 0,
+        accuracy: u ? accuracyOf(u.correct, u.answered) : null,
         seconds: seconds.get(p.id) ?? 0,
         coins: coins.get(p.id) ?? 0,
         lastLoginAt: stamp(p.lastLoginAt),
@@ -168,7 +167,7 @@ export class ActivityService {
           total: pupils.length,
           practised: practised.size,
           sessions: quiz,
-          accuracy: totals.accuracy ?? 0,
+          accuracy: totals.accuracy,
         },
       },
     }
