@@ -45,18 +45,36 @@ async function matchBot(ctx: ScenarioContext, who: HttpClient, queueId: string):
   return String(body(last).battle_uuid)
 }
 
-/** Plays the 10 questions (always option 1, the key of every fixture question) and returns the last answer response. */
-async function playToEnd(ctx: ScenarioContext, who: HttpClient, uuid: string): Promise<HttpResponse> {
-  const view = await who.request('GET', `/battle/arena/${uuid}`)
-  ctx.expectStatus(view, 200)
-  let question = dataOf(view).question as { id: string } | null
-  let last: HttpResponse = view
-  for (let n = 0; n < 10 && question; n++) {
-    last = await who.request('POST', `/battle/arena/${uuid}/answer`, { body: { questionId: question.id, optionId: 1, seconds: 3 } })
-    ctx.expectStatus(last, 200)
-    question = (dataOf(last).next as { id: string } | undefined) ?? null
+/**
+ * Waits like a client until the battle is over or a round after `index` is open: the clock moves one second at a time with a poll
+ * after each (the robot answers 2 to 12 s into a round, and a closed round is revealed for 3 s). Returns the last arena view.
+ */
+async function waitForRound(ctx: ScenarioContext, who: HttpClient, uuid: string, index: number): Promise<HttpResponse> {
+  for (let i = 0; i < 40; i++) {
+    battleFixture.advanceClock(1_000)
+    const view = await who.request('GET', `/battle/arena/${uuid}`)
+    ctx.expectStatus(view, 200)
+    const v = dataOf(view)
+    if (v.status !== 'active' || (v.phase === 'answering' && (v.index as number) > index)) return view
   }
-  return last
+  throw new Error(`battle ${uuid}: round ${index} did not close`)
+}
+
+/**
+ * Plays the battle to its end (always option 1, the key of every fixture question), one answer per round. `answeredFirst`: the
+ * caller already answered the round on screen, so the first step waits for the next one. Returns the finished arena view.
+ */
+async function playToEnd(ctx: ScenarioContext, who: HttpClient, uuid: string, answeredFirst = false): Promise<HttpResponse> {
+  let view = await who.request('GET', `/battle/arena/${uuid}`)
+  ctx.expectStatus(view, 200)
+  if (answeredFirst) view = await waitForRound(ctx, who, uuid, dataOf(view).index as number)
+  for (let n = 0; n < 20 && dataOf(view).status === 'active'; n++) {
+    const question = dataOf(view).question as { id: string }
+    const answered = await who.request('POST', `/battle/arena/${uuid}/answer`, { body: { questionId: question.id, optionId: 1, seconds: 3 } })
+    ctx.expectStatus(answered, 200)
+    view = await waitForRound(ctx, who, uuid, dataOf(view).index as number)
+  }
+  return view
 }
 
 export const battleScenarios: Scenario[] = [
@@ -102,9 +120,9 @@ export const battleScenarios: Scenario[] = [
       const first = await student.request('POST', `/battle/arena/${uuid}/answer`, { body: { questionId: question.id, optionId: 1, seconds: 0 } })
       ctx.expectStatus(first, 200)
       ctx.check(dataOf(first).correct === true && dataOf(first).correctOptionId === 1 && dataOf(first).points === 1000, 'a correct answer at 0 s scores 1000')
-      const end = await playToEnd(ctx, student, uuid)
+      const end = await playToEnd(ctx, student, uuid, true)
       const result = dataOf(end).result as { winner: string | null; scoreA: number } | undefined
-      ctx.check(result !== undefined && result.scoreA > 0, 'question 10 must return a result with the caller score')
+      ctx.check(result !== undefined && result.scoreA > 0, 'the last round must end the battle with a result carrying the caller score')
 
       const done = await student.request('GET', `/battle/arena/${uuid}`)
       ctx.expectStatus(done, 200)
