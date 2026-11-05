@@ -1,5 +1,6 @@
 export { PracticeModule } from './practice.module'
 export { PracticeRepository, queueOrder } from './practice.repository'
+export { RemedialSelector } from './start.planner'
 export { PracticeService } from './practice.service'
 export type {
   AnswerFilter,

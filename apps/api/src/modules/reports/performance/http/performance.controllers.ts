@@ -50,7 +50,7 @@ export class AnalyticsController {
     return ok(await overloadTo429(async () => this.analytics.me(await this.ctx.of(req))))
   }
 
-  @Roles('admin', 'teacher')
+  @Roles('admin', 'teacher', 'school_admin')
   @Get('analytics/classes')
   async classes(
     @Query(new BoundedQueryPipe(), new ZodValidationPipe(PerformanceClassAnalyticsQuerySchema))

@@ -156,9 +156,11 @@ describe('TopicsPage (S12)', () => {
       'false',
     ])
     expect(w.findAll('[data-testid=subject-chip]')[0]?.attributes('data-active')).toBe('true')
+    expect(w.get('[data-testid=topics-empty]').text()).toContain('Tiada topik buat masa ini')
     expect(w.get('[data-testid=topics-empty]').text()).toContain(
-      'Tiada topik tersedia buat masa ini.',
+      'Bank topik DSKP belum tersedia untuk pilihan ini. Cuba pilih subjek lain atau semak semula nanti.',
     )
+    expect(w.text()).not.toContain('akan datang')
   })
 
   it('opens on the student form: Tingkatan 5 for grade 11, Tingkatan 4 for grade 10 or a Darjah grade', async () => {
@@ -336,8 +338,8 @@ describe('LearningMapPage (S14)', () => {
       subject: 'ZZZ',
       grade: 'TINGKATAN_5',
     })
-    expect(w.get('[data-testid=map-empty]').text()).toContain('Tiada Topik Dijumpai')
-    expect(w.get('[data-testid=map-empty]').text()).toContain('tingkatan yang lain')
+    expect(w.get('[data-testid=map-empty]').text()).toContain('Peta Belum Tersedia')
+    expect(w.get('[data-testid=map-empty]').text()).toContain('Bab DSKP untuk subjek ini belum dimuatkan.')
     expect(w.get('[data-testid=map-done]').text()).toBe('0/0')
     expect(w.get('[data-testid=map-subtitle]').text()).toContain('Terokai perjalanan Zzz —')
     expect(
