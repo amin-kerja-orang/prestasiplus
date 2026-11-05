@@ -244,6 +244,10 @@ export class FakeAssignments implements PracticeAssignmentSource {
   readonly items = new Map<string, AssignmentResolution>()
   readonly remedialCalls: { remedialTestId: string; userId: string; afterAccuracy: number; completedAt: Date; isTest: boolean }[] = []
   failRemedial: Error | null = null
+  /** S6-T07: the fake target-reward settlement: `${userId}:${missionId}` -> coins; pays once per key, like the unique row. */
+  readonly targetRewards = new Map<string, number>()
+  readonly paidTargets = new Set<string>()
+  readonly targetCalls: { userId: string; missionId: string; sessionId: string; isTest: boolean }[] = []
   set(kind: AssignmentKind, id: string, value: AssignmentResolution): void {
     this.items.set(`${kind}:${id}`, value)
   }
@@ -253,6 +257,14 @@ export class FakeAssignments implements PracticeAssignmentSource {
   async remedialCompleted(input: (typeof this.remedialCalls)[number]): Promise<void> {
     this.remedialCalls.push(input)
     if (this.failRemedial) throw this.failRemedial
+  }
+  async settleTargetReward(input: { userId: string; missionId: string; sessionId: string; isTest: boolean }): Promise<{ paid: number }> {
+    this.targetCalls.push(input)
+    const key = `${input.userId}:${input.missionId}`
+    const coins = this.targetRewards.get(key) ?? 0
+    if (coins <= 0 || this.paidTargets.has(key)) return { paid: 0 }
+    this.paidTargets.add(key)
+    return { paid: coins }
   }
 }
 

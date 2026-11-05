@@ -4,7 +4,7 @@ import type { PracticeMode, StartSessionResponse } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { PrismaService } from '../../src/db/prisma.service'
-import { PRACTICE_REWARD_DESCRIPTION, WalletPracticeReward } from '../../src/modules/bijak/integration'
+import { MISSION_TARGET_REWARD_DESCRIPTION, MISSION_TARGET_REWARD_SOURCE, PRACTICE_REWARD_DESCRIPTION, WalletPracticeReward } from '../../src/modules/bijak/integration'
 import { PracticePorts, type PracticeRewardSource } from '../../src/modules/practice/ports'
 import { FakeBank, fillBank, loadWorld, makeSubscribed, type World } from '../practice/helpers'
 import { bootIntegrationApp, type Client, type IntegrationApp, loginAs, STUDENT } from './helpers'
@@ -181,3 +181,23 @@ describe('streak (kombo) on a practice submit', () => {
   })
 })
 
+
+describe('mission target reward (S6-T07): its own ledger row, once per pupil and mission', () => {
+  it('credits the paid coins as `mission_target` / `mission:<id>` with the BM description, keeps the session credit apart, and never pays the same mission twice', async () => {
+    const p = await play({ mode: 'random', subjectCode: 'MATH', count: 5 }, 2)
+    const s = (await sessionRow(p.sessionId))!
+    const prisma = t.app.get(PrismaService)
+    const reward = t.app.get(WalletPracticeReward)
+    const base = { userId: student.userId, sessionId: p.sessionId, mode: 'random' as const, source: 'quiz_practice' as const, correct: s.correct_count, total: p.total, timeSpent: 60, completedAt: new Date('2026-10-20T01:00:00Z'), pointsEarned: s.points_earned, sessionCoins: s.coins_earned, isTest: false }
+    const before = await balance()
+    const out = await prisma.transaction((tx) => reward.onSessionCompleted({ ...base, missionTargetReward: { missionId: '8801', coins: 25 } }, tx))
+    expect(out.coinsEarned).toBe(2) // the response keeps the session coins only
+    expect(out.totalBalance).toBe(before + 25)
+    expect(await balance()).toBe(before + 25)
+    const rows = await t.db.query<{ amount: number; description: string }>('select amount::int, description from coin_ledger where user_id = $1 and source = $2 and source_id = $3', [student.userId, MISSION_TARGET_REWARD_SOURCE, 'mission:8801'])
+    expect(rows).toEqual([{ amount: 25, description: MISSION_TARGET_REWARD_DESCRIPTION }])
+    await prisma.transaction((tx) => reward.onSessionCompleted({ ...base, missionTargetReward: { missionId: '8801', coins: 25 } }, tx))
+    expect(await balance()).toBe(before + 25)
+    expect(await t.db.query('select 1 from coin_ledger where user_id = $1 and source = $2', [student.userId, MISSION_TARGET_REWARD_SOURCE])).toHaveLength(1)
+  })
+})

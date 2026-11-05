@@ -246,6 +246,8 @@ export class PracticeService {
         completed: async (completed, tx) => {
           const s = completed.session
           const test = caller.isTest || s.isTest
+          // S6-T07: a session linked to a mission may pay that mission's once-only target reward (0 when not met or already paid).
+          const targetPaid = s.missionId !== null ? (await this.ports.assignments.settleTargetReward({ userId: s.userId, missionId: s.missionId, sessionId: s.id, isTest: test, at: completed.completedAt }, tx)).paid : 0
           const credit = await this.ports.reward.onSessionCompleted(
             {
               userId: s.userId,
@@ -259,6 +261,7 @@ export class PracticeService {
               pointsEarned: completed.pointsEarned,
               sessionCoins: completed.coinsEarned,
               ...(s.mode === 'mission' && s.coinsPerCorrect !== null ? { coinsPerCorrect: s.coinsPerCorrect } : {}),
+              ...(targetPaid > 0 && s.missionId !== null ? { missionTargetReward: { missionId: s.missionId, coins: targetPaid } } : {}),
               isTest: test,
             },
             tx,

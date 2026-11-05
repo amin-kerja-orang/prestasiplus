@@ -161,6 +161,8 @@ export interface PracticeAssignmentSource {
   resolve(kind: AssignmentKind, input: { userId: string; id: string; at: Date }): Promise<AssignmentResolution>
   /** Runs inside the submit transaction when a remedial session completes (mock `seams().remedialComplete`). */
   remedialCompleted(input: { remedialTestId: string; userId: string; afterAccuracy: number; completedAt: Date; isTest: boolean }, tx: TxClient): Promise<void>
+  /** Runs inside the submit transaction when a session with a `mission_id` completes (S6-T07): the coins of the once-only target reward paid by THIS call (0 = not met or already paid). */
+  settleTargetReward(input: { userId: string; missionId: string; sessionId: string; isTest: boolean; at: Date }, tx: TxClient): Promise<{ paid: number }>
 }
 
 export class NoAssignments implements PracticeAssignmentSource {
@@ -168,6 +170,9 @@ export class NoAssignments implements PracticeAssignmentSource {
     return { status: 'not_ready' }
   }
   async remedialCompleted(): Promise<void> {}
+  async settleTargetReward(): Promise<{ paid: number }> {
+    return { paid: 0 }
+  }
 }
 
 /* ------------------------------------------------------------------------------ BE-41: ramalan */
@@ -229,6 +234,8 @@ export interface PracticeSessionCompleted {
   sessionCoins: number
   /** mission only. */
   coinsPerCorrect?: number
+  /** Set only when this completion paid a mission's once-only target reward (S6-T07): the coins to credit, ledger source `mission_target`. */
+  missionTargetReward?: { missionId: string; coins: number }
   /** True under Mod Pelajar: every ledger row must be stamped `is_test`. */
   isTest: boolean
 }
