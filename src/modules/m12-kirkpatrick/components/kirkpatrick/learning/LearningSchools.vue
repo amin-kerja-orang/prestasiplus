@@ -11,7 +11,7 @@ import { RouterLink } from 'vue-router'
 import { DsDataTable, DsPanel } from '@/ds'
 
 import type { Learning, WireId } from '../../../api/types'
-import { accuracyText, count, pct, plain, type KirkpatrickPaths } from '../common'
+import { accuracyText, count, pct, plain, type KirkpatrickPaths, accuracyPct } from '../common'
 
 const props = defineProps<{ schools: Learning['schools']; paths: KirkpatrickPaths }>()
 
@@ -36,7 +36,7 @@ const rows = computed<Row[]>(() =>
     students: count(s.students),
     answers: count(s.answers),
     accuracy: s.accuracy,
-    accuracyText: pct(s.accuracy),
+    accuracyText: accuracyPct(s.accuracy),
     avgScore: pct(s.avgScore),
     subjects: plain(s.subjects),
   })),
@@ -80,7 +80,7 @@ const pageSize = ref(20)
       <template #name-cell="{ row }">
         <RouterLink
           :to="paths.monitoringSchool(row.original.schoolId)"
-          class="block max-w-72 whitespace-normal break-words text-label text-primary-t"
+          class="block max-w-72 text-label break-words whitespace-normal text-primary-t"
           data-testid="kirk-school-link"
           >{{ row.original.name }}</RouterLink
         >
