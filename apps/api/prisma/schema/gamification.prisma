@@ -228,6 +228,8 @@ model DrawTicket {
   id        BigInt   @id @default(autoincrement())
   drawId    BigInt   @map("draw_id")
   userId    BigInt   @map("user_id")
+  /// DM-78: partial unique (user_id, client_uuid), written in migration 0230 only (Prisma cannot express partial indexes).
+  clientUuid String? @map("client_uuid") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   draw Draw @relation(fields: [drawId], references: [id], onDelete: Restrict, map: "fk_draw_tickets_draw_id")
@@ -341,6 +343,8 @@ model RewardRedemption {
   cancelledAt        DateTime? @map("cancelled_at") @db.Timestamptz(6)
   /// admin, parent (check).
   cancelledBy        String?   @map("cancelled_by")
+  /// DM-78: partial unique (user_id, client_uuid), written in migration 0230 only (Prisma cannot express partial indexes).
+  clientUuid         String?   @map("client_uuid") @db.Uuid
   createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   legacySource       String?   @map("legacy_source")

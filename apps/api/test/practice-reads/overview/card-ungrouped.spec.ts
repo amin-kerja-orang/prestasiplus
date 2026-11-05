@@ -47,6 +47,29 @@ describe('practice card counts ungrouped servable questions only (D91)', () => {
   })
 })
 
+describe('a flagged question is not counted on the practice card (S1-T07)', () => {
+  it('[CI] bankMatrix excludes a stimulus_missing question (not dismissed); a dismissed one is counted again', async () => {
+    const bm = await subjectId('BM')
+    const before = bank.practice(bm, offeredIds)
+    const target = (await db.query<{ question_id: string; version_no: number }>(
+      `select q.id::text question_id, v.version_no from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no
+        where q.is_active and v.status = 'approved' and v.type = 'mcq' and q.group_id is null and v.subject_id = $1 and v.stimulus_flag is null
+          and v.education_level_id = any($2::bigint[]) order by q.id limit 1`, [bm, offeredIds]))[0]
+    expect(target).toBeDefined()
+    const where = [target?.question_id, target?.version_no]
+    const count = async () => new BankFacts(await new OverviewRepository({ client: db.prisma } as never).bankMatrix()).practice(bm, offeredIds)
+    try {
+      await db.query(`update question_versions set stimulus_flag = 'stimulus_missing', stimulus_flag_ref = 'numbered', stimulus_flag_at = now() where question_id = $1::bigint and version_no = $2`, where)
+      expect(await count()).toBe(before - 1)
+      await db.query(`update question_versions set flag_dismissed_at = now() where question_id = $1::bigint and version_no = $2`, where)
+      expect(await count()).toBe(before)
+    } finally {
+      await db.query(`update question_versions set stimulus_flag = null, stimulus_flag_ref = null, stimulus_flag_at = null, flag_dismissed_at = null where question_id = $1::bigint and version_no = $2`, where)
+    }
+    expect(await count()).toBe(before)
+  })
+})
+
 describe('Bab card and Soalan by Chapter tile count what the chapter draw can serve (D91, V2 section 2.3)', () => {
   const COUNT_DRAWABLE = `select count(*)::text c from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no
     where v.chapter_id = $1::bigint and q.is_active and v.status = 'approved' and v.type = 'mcq' and q.group_id is null`

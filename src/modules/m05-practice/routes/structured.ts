@@ -29,8 +29,7 @@ const routes: RouteRecordRaw[] = [
       ownsH1: true,
       layout: 'user',
       access: 'auth',
-      // UNVERIFIED (Q3 never opened on live): the S10 title.
-      title: 'Soalan Berstruktur - PRESTASIPLUS',
+      title: 'Soalan Berstruktur — Jawab - PRESTASIPLUS',
       header: { title: 'Soalan Berstruktur' },
       module: 'M05',
       v2: true,
