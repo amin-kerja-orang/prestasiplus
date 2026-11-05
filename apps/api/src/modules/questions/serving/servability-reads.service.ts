@@ -54,6 +54,8 @@ const leafWithoutKey = (mode: Prisma.Sql): Prisma.Sql =>
      AND NOT EXISTS (SELECT 1 FROM answer_keys k WHERE k.part_id = qp.id))`
 const NO_SCHEME_SQL = leafWithoutKey(Prisma.sql`qp.mode <> 'mcq'`)
 const NO_KEY_SQL = leafWithoutKey(Prisma.sql`qp.mode = 'mcq'`)
+/** Only a question pupils could be served carries the two sentences ("tidak disajikan" says nothing about a draft or an archived row): the hub number and the lane rows both use it. */
+const SUBJEKTIF_LIVE_SQL = Prisma.sql`v.status = ${SERVABLE_STATUS} AND q.is_active`
 /** The label V2 gives a Tracking A set in its row meta (30 Q-02). */
 const TRACKING_KIND = 'ramalan'
 interface PaperRow {
@@ -550,7 +552,7 @@ export class ServabilityReadsService {
       this.db.$queryRaw<{ id: bigint; stem: string | null; status: string; subject_name: string | null; level_name: string | null; no_scheme: boolean; no_key: boolean }[]>`
         SELECT q.id, v.stem_ms AS stem, v.status, (SELECT s.name FROM subjects s WHERE s.id = v.subject_id) AS subject_name,
                (SELECT l.name FROM education_levels l WHERE l.id = v.education_level_id) AS level_name,
-               ${NO_SCHEME_SQL} AS no_scheme, ${NO_KEY_SQL} AS no_key
+               (${SUBJEKTIF_LIVE_SQL} AND ${NO_SCHEME_SQL}) AS no_scheme, (${SUBJEKTIF_LIVE_SQL} AND ${NO_KEY_SQL}) AS no_key
           ${SUBJEKTIF_LANE_FROM} WHERE ${where} ORDER BY q.id DESC LIMIT ${q.pageSize} OFFSET ${offset}`,
       this.db.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n ${SUBJEKTIF_LANE_FROM} WHERE ${where}`,
     ])
@@ -568,8 +570,8 @@ export class ServabilityReadsService {
 
   private async subjektifFigures(): Promise<SubjektifFigures> {
     const [row] = await this.db.$queryRaw<SubjektifFigures[]>`
-      SELECT count(*)::int AS total, (count(*) FILTER (WHERE ${NO_SCHEME_SQL} OR ${NO_KEY_SQL}))::int AS attention,
-             (count(*) FILTER (WHERE ${NO_SCHEME_SQL}))::int AS "noScheme", (count(*) FILTER (WHERE ${NO_KEY_SQL}))::int AS "noKey"
+      SELECT count(*)::int AS total, (count(*) FILTER (WHERE ${SUBJEKTIF_LIVE_SQL} AND (${NO_SCHEME_SQL} OR ${NO_KEY_SQL})))::int AS attention,
+             (count(*) FILTER (WHERE ${SUBJEKTIF_LIVE_SQL} AND ${NO_SCHEME_SQL}))::int AS "noScheme", (count(*) FILTER (WHERE ${SUBJEKTIF_LIVE_SQL} AND ${NO_KEY_SQL}))::int AS "noKey"
         ${SUBJEKTIF_LANE_FROM} WHERE ${Prisma.join(subjektifLaneConds(), ' AND ')}`
     return row ?? { total: 0, attention: 0, noScheme: 0, noKey: 0 }
   }

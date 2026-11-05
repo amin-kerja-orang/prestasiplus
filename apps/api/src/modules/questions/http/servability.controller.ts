@@ -74,8 +74,8 @@ export class ServabilityController {
   async overview() {
     // H-A21: cached 5 minutes, stale-while-revalidate (the cold compute is slow on a large bank); `computedAt` says how old it is.
     const { value, computedAt } = await this.overviewCache.get(() => this.reads.overview())
-    // A card that failed must not sit in the cache for 5 minutes: `Cuba lagi` reaches a fresh compute.
-    if (value.cards.some((c) => c.failed)) this.overviewCache.invalidate()
+    // A card that failed must not sit in the cache: dropped, so the very next read (`Cuba lagi`) is a fresh compute and not this card again.
+    if (value.cards.some((c) => c.failed)) this.overviewCache.evict()
     return ok({ ...value, computedAt: toMytTimestamp(computedAt) })
   }
 
