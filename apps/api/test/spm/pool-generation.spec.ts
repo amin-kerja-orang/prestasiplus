@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { databankFilter } from '../../src/modules/spm/pool.service'
+import { databankFilter, SpmPoolService } from '../../src/modules/spm/pool.service'
 import { OverviewCache } from '../../src/modules/questions/serving/overview-cache'
 
 describe('Databank count scope (pure)', () => {
@@ -20,5 +20,27 @@ describe('OverviewCache generation (pure)', () => {
     cache.invalidate()
     cache.invalidate()
     expect(cache.generation).toBe(g + 2)
+  })
+})
+
+describe('Databank count single-flight (pure)', () => {
+  it('[CI] AC-MUR-13-10 a caller after an invalidation does not join a load started before it', async () => {
+    const releases: (() => void)[] = []
+    let calls = 0
+    const repo = {
+      unitCount: () => {
+        const n = ++calls
+        return new Promise<number>((resolve) => releases.push(() => resolve(n)))
+      },
+    }
+    const cache = new OverviewCache({ now: () => new Date(0) } as never, {} as never)
+    const pool = new SpmPoolService(repo as never, { get: () => '0' } as never, { now: () => new Date(0) } as never, cache)
+    const before = pool.databankCount('1')
+    cache.invalidate()
+    const after = pool.databankCount('1')
+    expect(calls).toBe(2)
+    releases.forEach((r) => r())
+    expect(await before).toBe(1)
+    expect(await after).toBe(2)
   })
 })

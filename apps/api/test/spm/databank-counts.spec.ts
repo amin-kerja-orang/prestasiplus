@@ -5,9 +5,8 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { QuestionsRepository, QuestionsService, servabilityFilterOf } from '../../src/modules/questions'
-import { GROUP_SURFACES } from '../../src/modules/questions/serving/rules'
-import { SpmPoolService } from '../../src/modules/spm/pool.service'
+import { GROUP_SURFACES, QuestionsRepository, QuestionsService, servabilityFilterOf } from '../../src/modules/questions'
+import { databankFilter, SpmPoolService } from '../../src/modules/spm/pool.service'
 import { addQuestion, bootSpmApp, type SpmTestApp } from './helpers'
 
 let t: SpmTestApp
@@ -26,13 +25,18 @@ async function groupOf(members: string[]): Promise<string> {
   return group
 }
 
-/** A second leaf on the live version of a question: a multi-leaf question. */
+/** A second, keyed leaf (with options, like `addQuestion` builds one) on the live version of a question: a valid multi-leaf question. */
 async function addSecondLeaf(questionId: string): Promise<void> {
-  await t.db.query(
-    `insert into question_parts (question_version_id, position, depth, label, prompt_ms, marks, mode)
-     select v.id, 2, 1, 'b', 'Bahagian b', 1, 'mcq' from question_versions v join questions q on q.id = v.question_id and v.version_no = q.live_version_no where q.id = $1::bigint`,
-    [questionId],
-  )
+  const pid = (
+    await t.db.query<{ id: string }>(
+      `insert into question_parts (question_version_id, position, depth, label, prompt_ms, marks, mode)
+       select v.id, 2, 1, 'b', 'Bahagian b', 1, 'mcq' from question_versions v join questions q on q.id = v.question_id and v.version_no = q.live_version_no where q.id = $1::bigint
+       returning id::text`,
+      [questionId],
+    )
+  )[0]!.id
+  for (const [i, label] of ['A', 'B', 'C', 'D'].entries()) await t.db.query(`insert into part_options (part_id, label, body_ms, position) values ($1, $2, $3, $4)`, [pid, label, `Pilihan ${label}`, i + 1])
+  await t.db.query(`insert into answer_keys (part_id, kind, content) values ($1, 'option', $2::jsonb)`, [pid, JSON.stringify({ kind: 'option', correct: 'B' })])
 }
 
 /** The Databank serving filter with `databank` ADDED to the group surfaces (what B3 will make of `GROUP_SURFACES`). */
@@ -60,22 +64,29 @@ describe('Databank counts follow the serving rule', () => {
     await groupOf(gappy) // one member is not live-approved: the whole group is not served
     const multi = await addQuestion(t.db, { subject: 'SEJ', level: 'T4' })
     await addSecondLeaf(multi)
-    // solo (1) + the complete group (1) = 2; the incomplete group (0); the multi-leaf question has no single-leaf shape (0).
+    // solo (1) + the complete group (1) = 2; the incomplete group (0); the multi-leaf question has no single-part shape (0).
     expect(await repo.unitCount(withGroups(sej))).toBe(2)
     // Row count of the same scope is 4 (solo + 3 members): the unit count is what dedupes.
     expect(await repo.count(withGroups(sej))).toBe(4)
+    // The complete group alone is 1 unit of 3 rows; the incomplete group alone is 0.
+    expect(await repo.unitCount({ ...withGroups(sej), idIn: three })).toBe(1)
+    expect(await repo.count({ ...withGroups(sej), idIn: three })).toBe(3)
+    expect(await repo.unitCount({ ...withGroups(sej), idIn: gappy })).toBe(0)
   })
 
-  it('[CI] AC-MUR-13-13 a multi-leaf question counts once (not once per leaf) in a scope that serves it', async () => {
+  it('[CI] AC-MUR-13-13 a multi-leaf question is one unit where it is served and 0 under the Databank shape (count = servable)', async () => {
     const sej = await subjectId('SEJ')
     const plain = { subjectId: sej, type: 'mcq' as const, spmPool: true, status: 'approved' as const, active: true }
-    const before = await repo.unitCount(plain)
     const multi = await addQuestion(t.db, { subject: 'SEJ', level: 'T5' })
     await addSecondLeaf(multi)
-    expect(await repo.unitCount(plain)).toBe(before + 1)
+    // No shape filter: one row = one unit, however many leaves.
+    expect(await repo.unitCount({ ...plain, idIn: [multi] })).toBe(1)
+    // The Databank draw shape (one part) cannot serve it: it counts 0.
+    expect(await repo.unitCount({ ...databankFilter(sej), idIn: [multi] })).toBe(0)
+    expect(await repo.unitCount({ ...withGroups(sej), idIn: [multi] })).toBe(0)
   })
 
-  it('[CI] AC-MUR-13-13 the hub count equals what the draw serves today: it follows GROUP_SURFACES, so a group counts only once databank is a group surface', async () => {
+  it('[CI] AC-MUR-13-13 the hub count follows GROUP_SURFACES; today databank is not a group surface, so only singles count', async () => {
     const sej = await subjectId('SEJ')
     const served = await repo.unitCount({ ...servabilityFilterOf('databank', { subjectId: sej }), status: 'approved', active: true })
     expect(await pool.databankCount(sej, { fresh: true })).toBe(served)

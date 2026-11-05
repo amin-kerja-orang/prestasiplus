@@ -3,8 +3,7 @@ import { ConfigService } from '@nestjs/config'
 
 import { CLOCK, type Clock } from '../../db/clock'
 import type { Prng } from '../../db/prng'
-import { QuestionsRepository, servabilityFilterOf, type QuestionFilter, type QuestionRecord } from '../questions'
-import { OverviewCache } from '../questions/serving/overview-cache'
+import { OverviewCache, QuestionsRepository, servabilityFilterOf, type QuestionFilter, type QuestionRecord } from '../questions'
 import { POOL_CACHE_SECONDS } from './config'
 import { difficultyOf, mcqItemOf } from './rules'
 
@@ -22,7 +21,8 @@ const poolFilter = (subjectId: string): QuestionFilter => ({ subjectId, type: 'm
 /**
  * S3-T07 (D91, AC-MUR-13-13): the SQL scope of the Databank COUNT. It is the serving definition of the Databank draw
  * (`filterOf('databank')`, which follows `GROUP_SURFACES`), so a count equals what a Databank draw can serve: a stimulus group
- * is counted once (and only while complete), a multi-leaf question once. NOT `poolFilter`: that one stays the single-leaf scope of the
+ * is counted once (and only while complete). A multi-leaf question is one unit in any scope that serves it; the Databank shape serves
+ * single-part questions only, so there it counts 0. NOT `poolFilter`: that one stays the single-leaf scope of the
  * SPM Mock paper 1 draw (`mock.service.ts`, `mcqItemOf`).
  */
 export const databankFilter = (subjectId: string): QuestionFilter => ({ ...servabilityFilterOf('databank', { subjectId }), status: 'approved', active: true })
@@ -74,8 +74,9 @@ export class SpmPoolService {
     const hit = this.cache.get(subjectId)
     const generation = this.generation()
     if (!options.fresh && ttl > 0 && hit && hit.until > now && hit.generation === generation) return hit.cells
-    // Single-flight: concurrent reads of one subject share one statement.
-    const running = this.inflight.get(subjectId)
+    // Single-flight: concurrent reads of one subject share one statement, but never across a question event (the key holds the generation).
+    const flight = `${subjectId}:${String(generation)}`
+    const running = this.inflight.get(flight)
     if (running) return running
     const load = (async () => {
       const rows = await this.questions.groupCountsByLevelTp({ ...poolFilter(subjectId), status: 'approved', active: true })
@@ -91,11 +92,11 @@ export class SpmPoolService {
       if (ttl > 0) this.cache.set(subjectId, { until: now + ttl, cells, generation })
       return cells
     })()
-    this.inflight.set(subjectId, load)
+    this.inflight.set(flight, load)
     try {
       return await load
     } finally {
-      this.inflight.delete(subjectId)
+      this.inflight.delete(flight)
     }
   }
 
@@ -109,18 +110,19 @@ export class SpmPoolService {
     const generation = this.generation()
     const hit = this.databankCache.get(subjectId)
     if (!options.fresh && ttl > 0 && hit && hit.until > now && hit.generation === generation) return hit.n
-    const running = this.databankInflight.get(subjectId)
+    const flight = `${subjectId}:${String(generation)}`
+    const running = this.databankInflight.get(flight)
     if (running) return running
     const load = (async () => {
       const n = await this.questions.unitCount(databankFilter(subjectId))
       if (ttl > 0) this.databankCache.set(subjectId, { until: now + ttl, n, generation })
       return n
     })()
-    this.databankInflight.set(subjectId, load)
+    this.databankInflight.set(flight, load)
     try {
       return await load
     } finally {
-      this.databankInflight.delete(subjectId)
+      this.databankInflight.delete(flight)
     }
   }
 

@@ -1,5 +1,7 @@
 export { QuestionsModule } from './questions.module'
 export { QuestionsBijakPoolSource } from './bijak-pool'
+export { GROUP_SURFACES } from './serving/rules'
+export { OverviewCache } from './serving/overview-cache'
 export { ServabilityService, evaluate as evaluateServability, filterOf as servabilityFilterOf } from './serving'
 export { ELIGIBLE_IDS_MAX, QuestionsRepository, groupCompleteSql } from './questions.repository'
 export { QuestionsService } from './questions.service'

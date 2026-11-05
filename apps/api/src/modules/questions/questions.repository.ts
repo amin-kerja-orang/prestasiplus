@@ -392,7 +392,7 @@ export class QuestionsRepository {
 
   /**
    * S3-T07 (D91, AC-MUR-13-13): the number of UNITS the filter serves. A stimulus group counts once however many members it has, a
-   * question outside any group counts once (a multi-leaf question is one row, so it counts once). The group rule itself is in the
+   * question outside any group counts once (a multi-leaf question is one unit in any scope that serves it; a scope with `mcqShape` serves single-part questions only, so there it counts 0). The group rule itself is in the
    * filter (`wholeGroups` = `groupCompleteSql`: an incomplete group matches no row, so it counts 0, the same as the draw).
    */
   async unitCount(filter: QuestionFilter = {}): Promise<number> {
