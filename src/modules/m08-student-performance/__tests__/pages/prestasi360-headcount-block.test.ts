@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { setRouteOutcome } from '@/app/router/outcome'
+import { clock, mytParts } from '@/lib/time'
 import { useSessionStore } from '@/stores/session'
 
 import type { StudentPerformance } from '../../api/types'
@@ -112,6 +113,7 @@ beforeEach(() => {
   api.fetchStudentPerformance.mockReset()
 })
 afterEach(() => {
+  clock.reset()
   wrapper?.unmount()
   wrapper = null
 })
@@ -136,9 +138,17 @@ describe('Prestasi 360 Headcount block, the pupil\'s own view (FR-MUR-4-6)', () 
     api.fetchStudentPerformance.mockResolvedValue(BASE)
     const w = await render('/prestasi', '/prestasi')
     expect(t(w, 'headcount-block').text()).toContain('Headcount — Prestasi SPM')
-    expect(t(w, 'headcount-empty').text()).toBe(`Belum ada sasaran headcount daripada cikgu untuk sesi ${String(new Date().getFullYear())}.`)
+    expect(t(w, 'headcount-empty').text()).toBe(`Belum ada sasaran headcount daripada cikgu untuk sesi ${String(mytParts(clock.now()).year)}.`)
     expect(exists(w, 'headcount-504')).toBe(false)
     expect(w.findAll('[data-testid=chip]')).toHaveLength(0)
+  })
+
+  it('the empty copy names the MYT year: 31 Dec 16:30Z is already 1 Jan in Malaysia', async () => {
+    signIn(3001, 'student')
+    api.fetchStudentPerformance.mockResolvedValue(BASE)
+    clock.setNow('2026-12-31T16:30:00Z')
+    const w = await render('/prestasi', '/prestasi')
+    expect(t(w, 'headcount-empty').text()).toBe('Belum ada sasaran headcount daripada cikgu untuk sesi 2027.')
   })
 
   it('staff opening a pupil without headcount keep the block hidden', async () => {

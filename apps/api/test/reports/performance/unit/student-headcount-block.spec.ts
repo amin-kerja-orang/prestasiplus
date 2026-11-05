@@ -125,6 +125,18 @@ describe('Prestasi 360 Headcount block (FR-MUR-4-6)', () => {
     expect((await w.me.listOwn(ctx('p1', 'student'))).map((c) => c.id)).toEqual([current])
   })
 
+  it('staff keep every year and the entry-holding configs of their scope: the teacher and the admin see the 2025 card', async () => {
+    const current = w.repo.addConfig({ teacherId: 't1', classroomId: 'c1', mode: 'manual' }).id
+    const old = w.repo.addConfig({ teacherId: 't1', classroomId: 'c1', mode: 'manual', academicYear: 2025, subjectId: '3' }).id
+    w.repo.addEntry(current, 'p1', { tov: 40, etr: 80 })
+    w.repo.addEntry(old, 'p1', { tov: 30, etr: 70 })
+    for (const viewer of [ctx('t1', 'teacher'), ctx('a1', 'admin')]) {
+      const r = await w.student.student(viewer, 'p1')
+      expect(r.headcount.map((c) => c.configId).sort()).toEqual([current, old].sort())
+      expect(r.headcount.find((c) => c.configId === old)?.year).toBe(2025)
+    }
+  })
+
   it('a dropped pupil sees nothing, and so does a pupil with no headcount (empty array, no error)', async () => {
     const manual = w.repo.addConfig({ teacherId: 't1', classroomId: 'c1', mode: 'manual' }).id
     w.repo.addEntry(manual, 'p1', { tov: 40, etr: 80, dropped: true })

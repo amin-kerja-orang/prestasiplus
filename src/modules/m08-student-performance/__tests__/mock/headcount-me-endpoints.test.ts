@@ -46,6 +46,17 @@ describe('Prestasi 360 Headcount block (FR-MUR-4-6, S10-T01 part 2)', () => {
     }
   })
 
+  it('staff keep every year: the admin and the teacher read the previous-year card of /prestasi/3001 (AC-M08-14.2)', async () => {
+    for (const viewer of [ADMIN, GURU]) {
+      const prestasi = await get<StudentPerformance>(viewer, '/api/performance/students/3001')
+      const old = prestasi.headcount.find((c) => c.year === 2025)
+      expect(old).toMatchObject({ configId: 505, subject: 'Bahasa Melayu' })
+    }
+    // The pupil themself reads the current year only.
+    const own = await get<StudentPerformance>(3001, '/api/performance/students/3001')
+    expect(own.headcount.every((c) => c.year === 2026)).toBe(true)
+  })
+
   it('a pupil outside every configured class has no card', async () => {
     const members = new Set(headcount.configs().flatMap((c) => classrooms.memberIds('classroom', c.classroomId)))
     const lonely = [2, 3, 4, 7].find((id) => !members.has(id))

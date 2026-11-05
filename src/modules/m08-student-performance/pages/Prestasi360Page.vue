@@ -25,6 +25,7 @@ import {
 } from '@/ds'
 import type { ChartSeries } from '@/ds'
 import { usePageMeta } from '@/composables/usePageMeta'
+import { clock, mytParts } from '@/lib/time'
 import { useSessionStore } from '@/stores/session'
 
 import { fetchStudentPerformance } from '../api/performance'
@@ -68,8 +69,8 @@ watch(
   { immediate: true },
 )
 
-/** The session year of the Headcount empty copy: the current calendar year, as the API's `me` read (FR-MUR-3-2). */
-const sessionYear = new Date().getFullYear()
+/** The session year of the Headcount empty copy: the current MYT calendar year, as the API's `me` read (FR-MUR-3-2). */
+const sessionYear = computed(() => mytParts(clock.now()).year)
 
 /** The back control is the browser history back (FR-M08-37); a pupil has no list to go back to. */
 const back = (): void => {
