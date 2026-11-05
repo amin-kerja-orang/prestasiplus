@@ -2,22 +2,29 @@
 
 export const MARKETPLACE_COPY = {
   headerTitle: 'Marketplace',
-  headerSubtitle: 'Peralatan sekolah untuk pelajar 🛒',
-  tabTitle: 'Marketplace - PRESTASIPLUS',
+  headerSubtitle: 'Produk pembelajaran daripada penjual yang diluluskan',
+  tabTitle: 'Marketplace — PRESTASIPLUS',
   searchPlaceholder: 'Cari peralatan sekolah...',
   allCategories: 'Semua Kategori',
   allConditions: 'Semua Keadaan',
   conditionNew: 'Baru',
   conditionUsed: 'Terpakai',
   sortLatest: 'Terbaru',
-  sortPriceLow: 'Harga ↑',
-  sortPriceHigh: 'Harga ↓',
-  sortPopular: 'Popular',
+  sortPriceLow: 'Harga: Rendah ke Tinggi',
+  sortPriceHigh: 'Harga: Tinggi ke Rendah',
   submit: 'Cari',
   chipAll: 'Semua',
   emptyIcon: '🛒',
-  emptyTitle: 'Tiada Produk Dijumpai',
-  emptyHint: 'Cuba tukar kata kunci atau kategori',
+  /** No filter active (R1-MUR-32, AC-MUR-32-2). */
+  emptyTitle: 'Tiada produk tersedia',
+  emptyHint: 'Belum ada penjual diluluskan yang menyenaraikan produk aktif.',
+  /** A filter that matches nothing keeps the V3 text. */
+  noMatchTitle: 'Tiada Produk Dijumpai',
+  noMatchHint: 'Cuba tukar kata kunci atau kategori',
+  /** FR-MUR-32-4 (PO decision 2026-11-05, item 21): prices are Ringgit; no order is recorded. */
+  priceNote: 'Harga di Marketplace dalam Ringgit (RM) — bukan syiling atau token.',
+  /** FR-MUR-32-3 struck: the pupil contacts the seller through the existing WhatsApp hand-off. */
+  contactWhatsapp: 'Hubungi penjual melalui WhatsApp',
   back: 'Kembali ke Marketplace',
   used: 'Terpakai',
   loadFailed: 'Maaf, berlaku ralat. Sila cuba semula.',
@@ -40,7 +47,6 @@ export const SORT_OPTIONS = [
   { value: 'latest', label: MARKETPLACE_COPY.sortLatest },
   { value: 'price_low', label: MARKETPLACE_COPY.sortPriceLow },
   { value: 'price_high', label: MARKETPLACE_COPY.sortPriceHigh },
-  { value: 'popular', label: MARKETPLACE_COPY.sortPopular },
 ] as const
 
 /** BR-M20-19: "RM 89.90" (price) from a decimal string. */

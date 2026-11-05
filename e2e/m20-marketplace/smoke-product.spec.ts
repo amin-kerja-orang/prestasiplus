@@ -54,7 +54,7 @@ test.describe('M20 S7 Product page', MODULE, () => {
     await expect(page.getByTestId('product-shipping-icon')).toBeVisible()
     await expect(page.getByTestId('product-location')).toHaveText('Kuala Lumpur')
     const wa = page.getByTestId('product-whatsapp')
-    await expect(wa).toHaveText('Hubungi Penjual di WhatsApp')
+    await expect(wa).toHaveText('Hubungi penjual melalui WhatsApp')
     await expect(wa).toHaveAttribute('href', `/marketplace/${SLUG_1}/whatsapp`)
     await expect(wa).toHaveAttribute('target', '_blank')
     // B06 (79b5fa2dc) made it a `UButton`, whose link adds this `rel` to every new-tab link; the

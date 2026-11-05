@@ -1565,14 +1565,14 @@ Same template as section 3 (Action, Screen specification (from V2), change list)
 
 ### R1-MUR-32 Marketplace
 - **Action**: Complete
-- **Screen specification (from V2)** (route `/marketplace`, browser title "Marketplace — PRESTASIPLUS"). Regions: (1) price note "Harga di Marketplace dalam Ringgit (RM) — bukan syiling atau token. Pesanan anda direkodkan di sini dan penjual akan menghubungi anda untuk pembayaran."; (2) product grid; empty state (observed) "Tiada produk tersedia" / "Belum ada penjual diluluskan yang menyenaraikan produk aktif."; (3) section "Pesanan saya" with the pupil's orders; empty state (observed) "Anda belum membuat sebarang pesanan.". Product card fields, the order button and dialog, order statuses: Not observed in V2 — follow FR-MUR-32-*. Loading and error: Not observed in V2 — follow FR-X6.
-- **Confirmed in the screens (earlier review)**: Confirmed and closes OQ-MUR-18: note "Harga di Marketplace dalam Ringgit (RM) — bukan syiling atau token. Pesanan anda direkodkan di sini dan penjual akan menghubungi anda untuk pembayaran." (so orders are recorded and the seller contacts the buyer: no online payment); empty "Tiada produk tersedia" / "Belum ada penjual diluluskan yang menyenaraikan produk aktif."; section "Pesanan saya" with "Anda belum membuat sebarang pesanan.". Product cards with data are not in the screens (E-11c).
-- **Current gap and root cause (change list)**: remove sample products from production data; add "Pesanan saya" and the order action with the note above; admin Marketplace screens are missing.
+- **Screen specification (from V2)** (route `/marketplace`, browser title "Marketplace — PRESTASIPLUS"). Regions: (1) price note "Harga di Marketplace dalam Ringgit (RM) — bukan syiling atau token."; (2) product grid, each product with "Hubungi penjual melalui WhatsApp"; empty state "Tiada produk tersedia" / "Belum ada penjual diluluskan yang menyenaraikan produk aktif." when no filter is active. There is no order, no order dialog and no "Pesanan saya" (PO decision 2026-11-05, item 21). Loading and error: Not observed in V2 — follow FR-X6.
+- **Confirmed in the screens (earlier review)**: note "Harga di Marketplace dalam Ringgit (RM) — bukan syiling atau token." (no online payment; the order sentence and "Pesanan saya" are struck, PO decision 2026-11-05, item 21); empty "Tiada produk tersedia" / "Belum ada penjual diluluskan yang menyenaraikan produk aktif.". Product cards with data are not in the screens (E-11c).
+- **Current gap and root cause (change list)**: remove sample products from production data; admin Marketplace screens are missing.
 - **Field & behaviour spec**
   | Label | Type | Req | Default | Options / source | Validation + exact BM error | Depends on | Stored as | API |
   |---|---|---|---|---|---|---|---|---|
-  | Kategori | select | Tidak | Semua | Semua plus the admin-defined categories | - | - | query | marketplace read |
-  | Keadaan | select | Tidak | Semua | Semua, Baharu, Terpakai | - | - | query | same |
+  | Kategori | select | Tidak | Semua Kategori | Semua Kategori plus the six fixed categories (Peralatan Sekolah, Buku & Rujukan, Uniform & Pakaian, Stationery, Digital & E-Book, Lain-lain; no category management, decision 7 on #506) | - | - | query | marketplace read |
+  | Keadaan | select | Tidak | Semua Keadaan | Semua Keadaan, Baru, Terpakai | - | - | query | same |
   | Susun | select | Tidak | Terbaru | Terbaru, Harga: Rendah ke Tinggi, Harga: Tinggi ke Rendah | - | - | query | same |
   | ~~Order dialog: Kuantiti~~ | - | - | - | STRUCK (PO decision 2026-11-05, item 21: no order dialog) | - | - | - | - |
   | ~~Order dialog: Catatan (pilihan)~~ | - | - | - | STRUCK (PO decision 2026-11-05, item 21: no order dialog) | - | - | - | - |
@@ -1581,11 +1581,11 @@ Same template as section 3 (Action, Screen specification (from V2), change list)
   - New requirements: FR-MUR-32-6 The sample products are replaced by admin-managed products. 
   - New acceptance criteria: ~~AC-MUR-32-5 Given a quantity above stock, then `Nilai mesti antara 1 dan {stok}.` shows.~~ STRUCK (PO decision 2026-11-05, item 21: no order dialog).
 - **Name**: "Marketplace" (sub "Produk pembelajaran daripada penjual yang diluluskan"). **Route**: `/marketplace`. **Row**: 32. **Priority**: P2.
-- **Current status**: V3 sample products with filters category/condition/sort and discounts; "Pesanan saya" not visible; V2 empty "Tiada produk tersedia" / "Belum ada penjual diluluskan yang menyenaraikan produk aktif." and "Anda belum membuat sebarang pesanan.".
-- **Outcome**: browse and order learning products from approved sellers.
+- **Current status**: V3 sample products with filters category/condition/sort and discounts; no order; V2 empty "Tiada produk tersedia" / "Belum ada penjual diluluskan yang menyenaraikan produk aktif.".
+- **Outcome**: browse learning products from approved sellers and contact the seller through WhatsApp.
 - **Reference (V2 `marketplace.blade.php`, M20)**: product cards, filters, order list.
 - **FRs**: FR-MUR-32-1 only active products of approved sellers show. FR-MUR-32-2 filters (category, condition, sort) work. ~~FR-MUR-32-3 ordering creates an order with status and the pupil sees "Pesanan saya" with the empty text "Anda belum membuat sebarang pesanan."~~ STRUCK (PO decision 2026-11-05, item 21): there is no order, no "Pesanan saya" and no order table; each product shows the note "Hubungi penjual melalui WhatsApp" with the existing WhatsApp action. FR-MUR-32-4 prices are in Ringgit; there is no online payment: the pupil contacts the seller through WhatsApp ("Hubungi penjual melalui WhatsApp"); no order is recorded (PO decision 2026-11-05, item 21). Page price note: "Harga di Marketplace dalam Ringgit (RM) — bukan syiling atau token." [lead to confirm the final note text] (V2 route `/marketplace`). FR-MUR-32-5 sample/demo products never reach production.
-- **Data**: products, sellers, orders (owner M20); admin Marketplace screens (missing; cross-ref).
+- **Data**: products, sellers (owner M20; no order table); admin Marketplace screens (R1-ADM-P2-12, 13).
 - **ACs**: AC-MUR-32-1 Given an approved product, then it lists and shows "Hubungi penjual melalui WhatsApp" (the order clause is struck, PO decision 2026-11-05, item 21). AC-MUR-32-2 Given no products, then V2 empty text. AC-MUR-32-3 Given a seller not approved, then products hidden. AC-MUR-32-4 Given 375 px, then filters collapse into a drawer.
 - **Gap**: sample data, no admin, BE read-only. **FD**: none. **Decided**: OQ-MUR-18 (section 6.1).
 

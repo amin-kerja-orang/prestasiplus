@@ -2400,10 +2400,10 @@ Cancel before drawing refunds every ticket once (FR-GM-22.3).
   1. Two stat cards: `Jumlah Produk` (10) and `Aktif` (10).
   2. Filter bar: text search (no visible label; placeholder as V1 "Cari produk..."), select `Semua Kategori` (`Peralatan Sekolah`, `Buku & Rujukan`, `Uniform & Pakaian`, `Stationery`, `Digital & E-Book`, `Lain-lain`), select `Semua Status` (`Aktif`, `Draf`, `Ditolak`), buttons `Tapis` and `Reset`.
   3. Count line "{n} produk dijumpai" (observed "10 produk dijumpai").
-  4. Product card grid. Each card: image area (placeholder when none), product name, price "RM 35.00", seller name, category badge, stock line "{n} stok", status badge (English "Active" in V2; V3 uses `Aktif`). Observed products are school goods, e.g. a school shoe at RM 35.00 with 7 stok, a school bag at RM 89.90 with 20 stok.
+  4. Product card grid. Each card: image area (placeholder when none), product name, price "RM 35.00", seller name, category badge, stock line (`✅ Ada` or `❌ Habis`, no number: decision 2 on #506), status badge (English "Active" in V2; V3 uses `Aktif`). Observed products are school goods, e.g. a school shoe at RM 35.00, a school bag at RM 89.90 (V2 showed "7 stok" and "20 stok"; R1 keeps no stock quantity, so the line is `✅ Ada`).
   `Tambah Produk`, card actions (open, `Nyahaktif`, edit, delete with confirm "Padam produk ini?"), the create form "Tambah Produk Marketplace" and the edit form are not visible in V2 and follow the V1 reference line and FR-ADM-P2-12.* (image delete and `Simpan Perubahan` are separate forms). Empty state (V1): "📦 Tiada Produk" with "Tambah produk pertama sekarang!".
 - Reference (V1 M20 S1-S3): "Marketplace - Produk"; "{n} produk dijumpai"; `Tambah Produk`; filters `Cari produk...`, `Semua Kategori` (`Peralatan Sekolah`, `Buku & Rujukan`, `Uniform & Pakaian`, `Stationery`, `Digital & E-Book`, `Lain-lain`), `Semua Status` (`Aktif`, `Draf`, `Ditolak`), `Tapis`; cards (thumbnail, name, price "RM 89.90", seller, views, rating, condition `Baru`/`Terpakai`, status), actions open / `Nyahaktif` / edit / delete (confirm "Padam produk ini?"); empty "📦 Tiada Produk" / "Tambah produk pertama sekarang!"; create "Tambah Produk Marketplace": `Penjual` ("🏪 PRESTASIPLUS Official (Admin)"), `Nama Produk *`, `Kategori *`, `Harga (RM) *`, `Harga Asal (RM)` ("Untuk tunjukkan diskaun"), `Penerangan`, `Keadaan *` (`🆕 Baru`, `♻️ Terpakai`), `Status Stok *` (`✅ Ada`, `❌ Habis`), `Kaedah Penghantaran *` (`Ambil Sendiri`, `Pos / Kurier`, `COD`, `Percuma`), `Kos Penghantaran (RM)`, `Lokasi`, images up to 5 ("JPG, PNG, WEBP. Maks 2MB setiap gambar."), `Tambah Produk`; edit adds `Status Produk *` (`🟢 Aktif`, `⏸️ Draf`, `🔴 Ditolak`), "Gambar Sedia Ada ({n})", `Simpan Perubahan`.
-- FR-ADM-P2-12.1 All of the above with one correction: image delete and product save are separate forms (V1 nests them so the first image's delete can delete the product and `Simpan Perubahan` does nothing = D9 defect D-M20-01). FR-ADM-P2-12.2 A published product appears in the pupil Marketplace; a draft/rejected one does not. FR-ADM-P2-12.3 Delete asks for confirm and is blocked if orders exist (then `Nyahaktif`).
+- FR-ADM-P2-12.1 All of the above with one correction: image delete and product save are separate forms (V1 nests them so the first image's delete can delete the product and `Simpan Perubahan` does nothing = D9 defect D-M20-01). FR-ADM-P2-12.2 A published product appears in the pupil Marketplace; a draft/rejected one does not. FR-ADM-P2-12.3 Delete asks for confirm and is not blocked (no order exists: PO decision 2026-11-05, item 21).
 - AC-ADM-P2-12.1 (E2E) Given the admin adds an active product with 2 images, then the pupil Marketplace lists it with price and first image as main.
 - AC-ADM-P2-12.2 Given editing a product with 4 images, when deleting image 1 then saving, then the product and the other 3 images remain.
 - Gap: PG-14 hidden; BE read-only. Deviation: FD-P2-12.
@@ -2415,13 +2415,13 @@ Cancel before drawing refunds every ticket once (FR-GM-22.3).
 | P12-02 | `Penjual` | select | `PRESTASIPLUS Official (Admin)` | sellers | "Penjual diperlukan." |
 | P12-03 | `Nama Produk *` | text | required, <= 120 | n/a | "Nama produk diperlukan." |
 | P12-04 | `Kategori *` | select | required | OPT-MARKET | "Kategori diperlukan." |
-| P12-05 | `Harga (RM) *`, `Harga Asal (RM)` | 2 numbers | required / optional; 0.01 to 100000 | original >= price | "Harga asal mesti lebih besar daripada harga." |
+| P12-05 | `Harga (RM) *`, `Harga Asal (RM)` | 2 numbers | required / optional; 0.01 to 100000 | original > price | "Harga asal mesti lebih besar daripada harga." |
 | P12-06 | `Penerangan` | textarea | optional, <= 2000 | n/a | n/a |
 | P12-07 | `Keadaan *`, `Status Stok *`, `Kaedah Penghantaran *` | radio / select | required | OPT-MARKET | n/a |
 | P12-08 | `Kos Penghantaran (RM)`, `Lokasi` | number, text | optional; 0 to 1000, <= 100 | n/a | n/a |
 | P12-09 | Images (up to 5) | file | optional; JPG, PNG, WebP <= 2 MB | delete image is its own action | "Maksimum 5 gambar."; "Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB." |
 | P12-10 | `Status Produk *` (edit) | radio | `🟢 Aktif` | OPT-MARKET | n/a |
-| P12-11 | Delete | action | n/a | confirm "Padam produk ini?" / `Batal` `Ya, Padam`; blocked with orders | "Produk ini mempunyai pesanan. Nyahaktifkan sahaja." |
+| P12-11 | Delete | action | n/a | confirm "Padam produk ini?" / `Batal` `Ya, Padam`; not blocked (no order table) | n/a |
 
 #### R1-ADM-P2-13 `Marketplace: Penjual` | `/admin/marketplace/sellers`, `/admin/marketplace/sellers/:id` | row 32 | BE none for admin
 - **Action: Build** | gap and differences: 4.V row P2-13.
@@ -2574,7 +2574,7 @@ Machine: the user creates `dibuka`; the admin sets any of the 5 statuses indepen
 - AC-ADM-P2-09.5 Given the tile `Liabiliti sesi 2026`, then it equals the sum of the real cost of the non-cancelled redemptions (`Menunggu` plus `Dihantar`) of the session year. AC-ADM-P2-09.3 Given 375 px, then the cost table is cards each with its own `Simpan`.
 - AC-ADM-P2-10.2 Given `Cabut pemenang` pressed twice, then only one winner is recorded per prize. AC-ADM-P2-10.3 Given 375 px, then the draw list is cards and `Cipta Cabutan Baru` is a full-width form.
 - AC-ADM-P2-11.2 Given prize weights that do not total 100, when saved, then it is refused with a field message. AC-ADM-P2-11.3 Given 375 px, then the prize table is cards.
-- AC-ADM-P2-12.3 Given a product with orders, when `Padam` is confirmed ("Padam produk ini?"), then deletion is refused and `Nyahaktif` is offered. AC-ADM-P2-12.4 Given 375 px, then image upload accepts up to 5 images of JPG, PNG or WEBP up to 2MB each and the cards stack.
+- AC-ADM-P2-12.3 Given `Padam` and the confirm "Padam produk ini?", then the product is deleted and leaves the pupil Marketplace. AC-ADM-P2-12.4 Given 375 px, then image upload accepts up to 5 images of JPG, PNG or WEBP up to 2MB each and the cards stack.
 - AC-ADM-P2-13.2 Given `Haramkan` and the confirm "Haramkan penjual ini?", then the seller's products leave the pupil Marketplace at once. AC-ADM-P2-13.3 Given 375 px, then seller cards keep the status and actions visible.
 - AC-ADM-P2-14.2 Given registration closed, then the pupil can no longer join. AC-ADM-P2-14.3 Given 375 px, then the tournament form is one column.
 - AC-ADM-P2-15.2 Given a period reset, then both the admin views and the pupil Kedudukan restart together. AC-ADM-P2-15.3 Given 375 px, then rankings are cards with rank, name and score.

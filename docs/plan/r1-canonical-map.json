@@ -2610,6 +2610,56 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/marketplace/products|",
+      "path": "/admin/marketplace/products",
+      "name": null,
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m20-marketplace/pages/AdminProdukPage.vue",
+      "file": "src/modules/m20-marketplace/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/marketplace/products/create|",
+      "path": "/admin/marketplace/products/create",
+      "name": null,
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m20-marketplace/pages/AdminProdukFormPage.vue",
+      "file": "src/modules/m20-marketplace/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/marketplace/products/:id/edit|",
+      "path": "/admin/marketplace/products/:id/edit",
+      "name": null,
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m20-marketplace/pages/AdminProdukFormPage.vue",
+      "file": "src/modules/m20-marketplace/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/marketplace/sellers|",
+      "path": "/admin/marketplace/sellers",
+      "name": null,
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m20-marketplace/pages/AdminPenjualPage.vue",
+      "file": "src/modules/m20-marketplace/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/marketplace/sellers/:id|",
+      "path": "/admin/marketplace/sellers/:id",
+      "name": null,
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m20-marketplace/pages/AdminPenjualDetailPage.vue",
+      "file": "src/modules/m20-marketplace/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "/marketplace|m20.marketplace",
       "path": "/marketplace",
       "name": "m20.marketplace",
@@ -9181,14 +9231,13 @@
       "source": "pentadbiran",
       "id": "PG-14",
       "label": "Produk",
-      "route": "/admin/p/pg-14",
+      "route": "/admin/marketplace/products",
       "roles": [
         "admin"
       ],
       "status": "canonical",
       "sector": "S0",
       "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
       "group": "penglibatan",
       "approved_by_card": null
     },
@@ -9197,14 +9246,13 @@
       "source": "pentadbiran",
       "id": "PG-15",
       "label": "Penjual",
-      "route": "/admin/p/pg-15",
+      "route": "/admin/marketplace/sellers",
       "roles": [
         "admin"
       ],
       "status": "canonical",
       "sector": "S0",
       "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
       "group": "penglibatan",
       "approved_by_card": null
     },
