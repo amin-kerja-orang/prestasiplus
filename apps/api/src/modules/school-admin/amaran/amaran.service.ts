@@ -33,6 +33,7 @@ import {
   compareIds,
   effectivenessReport,
   inTingkatan,
+  levelsOf,
   masteryLevelOf,
   parseTingkatan,
   pupilView,
@@ -67,6 +68,9 @@ async function each<T>(ids: readonly string[], fn: (part: string[]) => Promise<T
   for (let i = 0; i < ids.length; i += IN_CHUNK) out.push(await fn(ids.slice(i, i + IN_CHUNK)))
   return out
 }
+
+/** The pupils with a risk score (everyone but `not_started`). */
+const started = (pupils: readonly ScoredPupil[]): ScoredPupil[] => pupils.filter((p) => p.risk.status !== 'not_started')
 
 const isFixture = (id: string): boolean => {
   const n = BigInt(id)
@@ -113,14 +117,17 @@ export class AmaranService {
       const now = this.clock.now().getTime()
       const t = parseTingkatan(rawTingkatan)
       const data = await this.load(school, now, caller)
-      const kept = t === undefined ? data.scored : data.scored.filter((p) => inTingkatan(p.facts.classes, t))
+      // The pills filter every block (FR-AS-49-1): list, tally and subject weakness all come from the same kept pupils.
+      const keptIdx = data.scored.flatMap((p, i) => (t === undefined || inTingkatan(p.facts.classes, t) ? [i] : []))
+      const kept = keptIdx.map((i) => data.scored[i] as ScoredPupil)
       const ranked = [...kept].sort(rankOrder)
       return {
         school: { id: school.id, name: school.name, code: school.code ?? '', district: school.district, state: school.state ?? '' },
-        levelFilter: t === undefined ? null : t === 4 ? 'T4' : 'T5',
+        levelFilter: t === undefined ? null : (`T${t}` as AmaranSchoolRisk['levelFilter']),
+        levels: levelsOf(data.scored),
         levelSuffix: t === undefined ? '' : ` — Tingkatan ${t}`,
         tally: tallyOf(kept),
-        weakness: await this.weakness(data.counters),
+        weakness: await this.weakness(keptIdx.map((i) => data.counters[i] as SubjectCounter[])),
         pupils: ranked.map((p, i) => pupilView(p, i + 1)),
       }
     })
@@ -145,7 +152,7 @@ export class AmaranService {
           pupilsLine: `${data.scored.length} pelajar`,
           generatedAt: now,
           tally: tallyOf(data.scored),
-          kombo: this.kombo(data.scored, now),
+          kombo: this.kombo(started(data.scored), now),
           weakness: await this.weakness(data.counters),
         }
       }
@@ -160,14 +167,16 @@ export class AmaranService {
       const rows: AmaranSummarySchoolRow[] = []
       for (const school of chosen) {
         const data = await this.load(school, now, caller)
-        if (data.scored.length === 0) continue
+        // A school with no started pupil has no risk figure to roll up (not_started is outside every group, FR-X4-3).
+        const live = started(data.scored)
         scored.push(...data.scored)
+        if (live.length === 0) continue
         const t = tallyOf(data.scored)
         rows.push({
           schoolId: school.id,
           school: school.name,
           pupils: t.total,
-          avgScore: round1(data.scored.reduce((a, p) => a + p.risk.score, 0) / t.total),
+          avgScore: round1(live.reduce((a, p) => a + (p.risk.score ?? 0), 0) / live.length),
           green: t.green,
           yellow: t.yellow,
           red: t.red,
@@ -175,13 +184,13 @@ export class AmaranService {
       }
       rows.sort((a, b) => b.avgScore - a.avgScore || compareIds(a.schoolId, b.schoolId))
       const tally = tallyOf(scored)
-      const kombo = this.kombo(scored, now)
+      const kombo = this.kombo(started(scored), now)
       if (scope.kind === 'district') {
         return {
           scope: 'district',
           title: chosen[0]?.district?.trim() || scope.district,
           subtitle: `${state} — Ringkasan Eksekutif`,
-          pupilsLine: `${tally.total} pelajar`,
+          pupilsLine: `${scored.length} pelajar`,
           generatedAt: now,
           tally,
           kombo,
@@ -309,6 +318,7 @@ export class AmaranService {
    * set-based reads (one query per 1000 pupils each), never one read per pupil.
    */
   private async load(school: SchoolRow, now: number, caller: AmaranCaller): Promise<SchoolData> {
+    // S6-T03: switch to XsQueries.pupils (XS-1) after merge
     let students = (await this.users.studentsOfSchool(school.id, '', '')).filter((s) => s.schoolId === school.id)
     if (caller.role === 'teacher') {
       const own = new Set(await this.classes.teacherStudentIds(caller.userId))

@@ -7,13 +7,16 @@
 
 import { api } from '@/api'
 
-export type RiskStatus = 'on_track' | 'watch' | 'high'
-export type LevelFilter = 'T4' | 'T5'
+export type RiskStatus = 'on_track' | 'watch' | 'high' | 'not_started'
+export type LevelFilter = 'T1' | 'T2' | 'T3' | 'T4' | 'T5'
 
 export interface RiskTallyView {
   green: number
   yellow: number
   red: number
+  /** Pupils with no practice data (outside green, yellow, red and total). */
+  notStarted: number
+  /** green + yellow + red. */
   total: number
   /** Integer percentages. */
   pct: { green: number; yellow: number; red: number }
@@ -33,7 +36,8 @@ export interface PupilRiskView {
   name: string
   /** "Tingkatan n {kelas}" or "-". */
   classLabel: string
-  score: number
+  /** null for `not_started`. */
+  score: number | null
   status: RiskStatus
   accuracyText: string
   engagementText: string
@@ -43,6 +47,8 @@ export interface PupilRiskView {
 export interface SchoolRiskData {
   school: { id: number; name: string }
   levelFilter: LevelFilter | null
+  /** The Tingkatan numbers that have pupils; the pills list only these. */
+  levels: number[]
   /** `''` or `' — Tingkatan {n}'`. */
   levelSuffix: string
   tally: RiskTallyView

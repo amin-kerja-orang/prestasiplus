@@ -2,7 +2,7 @@
 /**
  * S4 `/amaran/sekolah` "Amaran Awal — Sekolah" (SRS M27 Part B v1.8 FR-M27-74…80, 44; roles-matrix row L54): the
  * M27 alias of M18 S22 for the school admin. The school comes from the session (the route takes no id, so no
- * foreign school can be asked for); `?tingkatan=T4|T5` filters. One read call, M18 #21; "Muat Turun CSV" calls
+ * foreign school can be asked for); `?tingkatan=T1…T5` filters. One read call, M18 #21; "Muat Turun CSV" calls
  * M18 #30. Top to bottom: level pills, four tiles, the distribution card, the buttons, the subject card (only
  * with data) and the risk list. No breadcrumb (DV-M27-22).
  *
@@ -26,7 +26,7 @@ import AmaranLevelPills from '../components/amaran/AmaranLevelPills.vue'
 import AmaranPupilTable from '../components/amaran/AmaranPupilTable.vue'
 import AmaranSubjectCard from '../components/amaran/AmaranSubjectCard.vue'
 import AmaranTiles from '../components/amaran/AmaranTiles.vue'
-import { loadErrorMessage, normaliseLevel, TITLE } from '../components/amaran/amaran-format'
+import { loadErrorMessage, normaliseLevel, notStartedLine, TITLE } from '../components/amaran/amaran-format'
 import { errorLines } from '../components/users/users-format'
 
 const route = useRoute()
@@ -83,8 +83,11 @@ async function download(): Promise<void> {
 <template>
   <DsPage data-testid="am-page" :data-level="data?.levelFilter ?? 'all'">
     <template v-if="data && schoolId !== null">
-      <AmaranLevelPills :active="level" />
+      <AmaranLevelPills :active="level" :levels="data.levels" />
       <AmaranTiles :tally="data.tally" />
+      <p class="text-body text-muted" data-testid="am-not-started">
+        {{ notStartedLine(data.tally.notStarted) }}
+      </p>
       <AmaranDistribution :tally="data.tally" />
       <AmaranActions :school-id="schoolId" :downloading="downloading" @download="download" />
       <AmaranSubjectCard v-if="data.weakness.length > 0" :rows="data.weakness" />

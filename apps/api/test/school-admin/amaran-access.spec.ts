@@ -151,9 +151,16 @@ describe('BE-21 Amaran access: /amaran/*', () => {
     expect(names).not.toContain('Murid Sekolah Dua')
     expect(names).toEqual(expect.arrayContaining(pupilIds.map((_, i) => `Murid Amaran ${i + 1}`)))
     expect(data.pupils.map((p) => p.rank)).toEqual(data.pupils.map((_, i) => i + 1))
-    const scores = data.pupils.map((p) => p.score)
-    expect(scores).toEqual([...scores].sort((a, b) => (b ?? -1) - (a ?? -1)))
-    expect(data.tally.total).toBe(data.pupils.length)
+    // Score descending with the not_started rows (no score) last.
+    const scored = data.pupils.filter((p) => p.status !== 'not_started')
+    const scores = scored.map((p) => p.score as number)
+    expect(scores).toEqual([...scores].sort((a, b) => b - a))
+    expect(data.pupils.slice(scored.length).every((p) => p.status === 'not_started' && p.score === null)).toBe(true)
+    // AC-AS-49-3: Hijau + Kuning + Merah + Belum Bermula = the Senarai Pelajar count; not_started is outside the total.
+    expect(data.tally.green + data.tally.yellow + data.tally.red + data.tally.notStarted).toBe(data.pupils.length)
+    expect(data.tally.total).toBe(data.tally.green + data.tally.yellow + data.tally.red)
+    expect(data.tally.notStarted).toBe(data.pupils.filter((p) => p.status === 'not_started').length)
+    expect(data.levels).toContain(4)
     expect(data.levelFilter).toBeNull()
     const weak = data.pupils.find((p) => p.name === 'Murid Amaran 1')
     expect(weak?.accuracyText).toBe('Purata ketepatan: 20%')
@@ -191,7 +198,7 @@ describe('BE-21 Amaran access: /amaran/*', () => {
       expect(res.status, JSON.stringify(res.body)).toBe(200)
       const s = AmaranSummarySchema.parse(res.body.data)
       expect(s.scope).toBe('school')
-      expect(s.pupilsLine).toBe(`${s.tally.total} pelajar`)
+      expect(s.pupilsLine).toBe(`${s.tally.total + (s.tally.notStarted ?? 0)} pelajar`)
       expect(Number.isInteger(s.generatedAt)).toBe(true)
     }
     errorOf(await admin.get('/amaran/summary'), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')

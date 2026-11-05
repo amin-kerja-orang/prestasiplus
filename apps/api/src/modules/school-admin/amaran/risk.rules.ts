@@ -8,7 +8,7 @@ import {
   type AmaranInterventionType,
   type AmaranPupilRisk,
   type AmaranRiskStatus,
-  type AmaranTally,
+  type AmaranSchoolTally,
 } from '@pp/contract'
 
 /**
@@ -22,8 +22,8 @@ const MYT_OFFSET_MS = 8 * 3_600_000
 export const round1 = (n: number): number => Math.round(n * 10) / 10
 export const pctInt = (part: number, whole: number): number => (whole === 0 ? 0 : Math.round((part / whole) * 100))
 
-/** score < 40 on_track, < 60 watch, otherwise high. */
-export function statusOf(score: number): AmaranRiskStatus {
+/** score < 40 on_track, < 60 watch, otherwise high (the three scored groups; `not_started` has no score). */
+export function statusOf(score: number): Exclude<AmaranRiskStatus, 'not_started'> {
   return score < 40 ? 'on_track' : score < 60 ? 'watch' : 'high'
 }
 
@@ -48,7 +48,8 @@ export interface RiskComputed {
   a: number
   e: number
   m: number
-  score: number
+  /** null for a never-active pupil (FR-X4-3: no data is not a score). */
+  score: number | null
   status: AmaranRiskStatus
   neverActive: boolean
   masteryMean: number | null
@@ -59,6 +60,8 @@ export interface RiskComputed {
  * E = min(100, whole days since last active x 100 / 30); 100 when never active.
  * M = (10 - mean mastery level) x 10; 100 without mastery records.
  * score = 0.4A + 0.3E + 0.3M, one decimal.
+ * A never-active pupil (no session, no activity, no mastery) is `not_started` with no score (FR-X4-3, R1-AS-49): the formula
+ * would give 80 (Merah), a false alarm for a pupil who has simply not begun.
  */
 export function computeRisk(input: RiskInputs, now: number): RiskComputed {
   const hasActivity = input.lastActiveAt !== null
@@ -71,16 +74,19 @@ export function computeRisk(input: RiskInputs, now: number): RiskComputed {
   const days = input.lastActiveAt === null ? null : Math.max(0, Math.floor((now - input.lastActiveAt) / DAY_MS))
   const e = days === null ? 100 : Math.min(100, (days * 100) / 30)
   const m = masteryMean === null ? 100 : (10 - masteryMean) * 10
+  if (neverActive) return { a, e, m, score: null, status: 'not_started', neverActive, masteryMean }
   const score = round1(0.4 * a + 0.3 * e + 0.3 * m)
   return { a, e, m, score, status: statusOf(score), neverActive, masteryMean }
 }
 
 // --- labels and filters -----------------------------------------------------------------------------------------------------
 
-/** `T4`, `T5`, `4`, `5` (any case) to 4 or 5; anything else is no filter. */
-export function parseTingkatan(value: string | undefined): 4 | 5 | undefined {
+export type Tingkatan = 1 | 2 | 3 | 4 | 5
+
+/** `T1` to `T5`, `1` to `5` (any case) to 1 to 5 (D101); anything else is no filter. */
+export function parseTingkatan(value: string | undefined): Tingkatan | undefined {
   const v = value?.trim().toUpperCase().replace(/^T/, '')
-  return v === '4' ? 4 : v === '5' ? 5 : undefined
+  return v !== undefined && /^[1-5]$/.test(v) ? (Number(v) as Tingkatan) : undefined
 }
 
 /** "Tingkatan n" (grades 7 to 11), "Darjah n" (grades 1 to 6) or null. */
@@ -107,7 +113,12 @@ export function classLabelOf(classes: readonly ClassFact[]): string {
 }
 
 /** A pupil is in a tingkatan when one of the active classes is of that level (the filter is class based). */
-export const inTingkatan = (classes: readonly ClassFact[], t: 4 | 5): boolean => classes.some((c) => c.slug === `tingkatan-${t}`)
+export const inTingkatan = (classes: readonly ClassFact[], t: Tingkatan): boolean => classes.some((c) => c.slug === `tingkatan-${t}`)
+
+/** The Tingkatan numbers (ascending) that at least one of the pupils is in (the level pills list only these). */
+export function levelsOf(pupils: readonly ScoredPupil[]): Tingkatan[] {
+  return ([1, 2, 3, 4, 5] as const).filter((t) => pupils.some((p) => inTingkatan(p.facts.classes, t)))
+}
 
 /** The MYT calendar date (yyyy-mm-dd) of an instant. */
 export const mytDate = (ms: number): string => new Date(ms + MYT_OFFSET_MS).toISOString().slice(0, 10)
@@ -136,10 +147,17 @@ export function scorePupils(facts: readonly PupilFacts[], now: number): ScoredPu
   return facts.map((f) => ({ facts: f, risk: computeRisk(f, now) }))
 }
 
-/** Score descending, then name, then id. */
+/** Score descending with `not_started` (no score) last, then name, then id. */
 export function rankOrder(a: ScoredPupil, b: ScoredPupil): number {
-  return b.risk.score - a.risk.score || a.facts.name.localeCompare(b.facts.name, 'ms', { sensitivity: 'base' }) || compareIds(a.facts.userId, b.facts.userId)
+  const sa = a.risk.score
+  const sb = b.risk.score
+  if (sa === null && sb !== null) return 1
+  if (sa !== null && sb === null) return -1
+  return (sb ?? 0) - (sa ?? 0) || a.facts.name.localeCompare(b.facts.name, 'ms', { sensitivity: 'base' }) || compareIds(a.facts.userId, b.facts.userId)
 }
+
+/** The cell text of a `not_started` pupil (Skor, Ketepatan, Penglibatan, Penguasaan): no data is shown as a dash (FR-X4-3). */
+export const NO_VALUE = '—'
 
 /** One row of the risk list with the exact BM cell texts (never any IC, e-mail or phone). */
 export function pupilView(p: ScoredPupil, rank: number): AmaranPupilRisk {
@@ -147,6 +165,7 @@ export function pupilView(p: ScoredPupil, rank: number): AmaranPupilRisk {
   const accuracy = f.sessions > 0 && f.accuracy !== null ? round1(f.accuracy) : null
   const engagement = f.lastActiveAt === null ? null : mytDate(f.lastActiveAt)
   const mastery = p.risk.masteryMean === null ? null : round1(p.risk.masteryMean)
+  const notStarted = p.risk.status === 'not_started'
   return {
     rank,
     userId: f.userId,
@@ -161,18 +180,20 @@ export function pupilView(p: ScoredPupil, rank: number): AmaranPupilRisk {
     accuracy,
     engagement,
     mastery,
-    accuracyText: accuracy !== null ? `Purata ketepatan: ${accuracy}%` : p.risk.neverActive ? 'Tiada data latihan' : 'Tiada data',
-    engagementText: engagement !== null ? `Terakhir aktif: ${engagement}` : 'Tiada aktiviti',
-    masteryText: p.risk.masteryMean !== null ? `Purata tahap: L${Math.round(p.risk.masteryMean)}` : p.risk.neverActive ? 'Tiada data penguasaan' : 'Tiada data',
+    accuracyText: notStarted ? NO_VALUE : accuracy !== null ? `Purata ketepatan: ${accuracy}%` : 'Tiada data',
+    engagementText: notStarted ? NO_VALUE : engagement !== null ? `Terakhir aktif: ${engagement}` : 'Tiada aktiviti',
+    masteryText: notStarted ? NO_VALUE : p.risk.masteryMean !== null ? `Purata tahap: L${Math.round(p.risk.masteryMean)}` : 'Tiada data',
   }
 }
 
-export function tallyOf(pupils: readonly ScoredPupil[]): AmaranTally {
+export function tallyOf(pupils: readonly ScoredPupil[]): AmaranSchoolTally {
   const green = pupils.filter((p) => p.risk.status === 'on_track').length
   const yellow = pupils.filter((p) => p.risk.status === 'watch').length
   const red = pupils.filter((p) => p.risk.status === 'high').length
-  const total = pupils.length
-  return { green, yellow, red, total, pct: { green: pctInt(green, total), yellow: pctInt(yellow, total), red: pctInt(red, total) } }
+  const notStarted = pupils.filter((p) => p.risk.status === 'not_started').length
+  // not_started is outside the three groups and the total, so Hijau + Kuning + Merah + Belum Bermula = the pupil population.
+  const total = green + yellow + red
+  return { green, yellow, red, notStarted, total, pct: { green: pctInt(green, total), yellow: pctInt(yellow, total), red: pctInt(red, total) } }
 }
 
 export const statusLabelOf = (s: AmaranRiskStatus): string => AMARAN_STATUS_LABELS[s]
@@ -196,8 +217,8 @@ export interface WeaknessRow {
 }
 
 /**
- * One row per subject that at least `minPupils` pupils answered, in subject id order (numeric). `weak` = pupils under
- * `WEAK_BELOW_PCT`. A subject with fewer pupils than `minPupils` is left out (k-cohort rule).
+ * One row per subject that at least `minPupils` pupils answered, sorted by weak share (`pct`) descending, ties by subject id
+ * (numeric). `weak` = pupils under `WEAK_BELOW_PCT`. A subject with fewer pupils than `minPupils` is left out (k-cohort rule).
  */
 export function weaknessOf(perPupil: readonly (readonly SubjectCounter[])[], minPupils: number): WeaknessRow[] {
   const by = new Map<string, { weak: number; total: number }>()
@@ -212,8 +233,8 @@ export function weaknessOf(perPupil: readonly (readonly SubjectCounter[])[], min
   }
   return [...by.entries()]
     .filter(([, r]) => r.total >= minPupils)
-    .sort((a, b) => compareIds(a[0], b[0]))
     .map(([subjectId, r]) => ({ subjectId, weak: r.weak, total: r.total, pct: pctInt(r.weak, r.total) }))
+    .sort((a, b) => b.pct - a.pct || compareIds(a.subjectId, b.subjectId))
 }
 
 // --- effectiveness ----------------------------------------------------------------------------------------------------------

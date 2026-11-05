@@ -9,6 +9,7 @@ import {
   effectivenessReport,
   inTingkatan,
   levelLabelOf,
+  levelsOf,
   masteryLevelOf,
   parseTingkatan,
   pupilView,
@@ -20,6 +21,7 @@ import {
   weaknessOf,
   yyyymmdd,
   type PupilFacts,
+  type ScoredPupil,
 } from '../../src/modules/school-admin/amaran/risk.rules'
 
 const NOW = Date.parse('2026-10-21T10:00:00+08:00')
@@ -67,9 +69,16 @@ describe('BE-21 Amaran risk formula (AC 10)', () => {
     expect(computeRisk({ accuracy: null, sessions: 0, lastActiveAt: null, masteryLevels: [5] }, NOW).a).toBe(100)
   })
 
-  it('a pupil with no session, no activity and no mastery is never active: A 50, E 100, M 100, score 80', () => {
+  // FR-X4-3 / R1-AS-49 (S6-T04): the old expectation (score 80, status high) was the false alarm for a pupil who has not begun;
+  // "no data" is never a negative result, so a never-active pupil is not_started with no score.
+  it('a pupil with no session, no activity and no mastery is never active: not_started, no score (was 80 / high)', () => {
     const r = computeRisk({ accuracy: null, sessions: 0, lastActiveAt: null, masteryLevels: [] }, NOW)
-    expect([r.a, r.e, r.m, r.score, r.status, r.neverActive]).toEqual([50, 100, 100, 80, 'high', true])
+    expect([r.a, r.e, r.m, r.score, r.status, r.neverActive]).toEqual([50, 100, 100, null, 'not_started', true])
+  })
+
+  it('AC-AS-49-2: accuracy 30, active today, mastery mean 2 gives 52, Kuning', () => {
+    const r = computeRisk({ accuracy: 30, sessions: 3, lastActiveAt: NOW, masteryLevels: [2] }, NOW)
+    expect([r.score, r.status]).toEqual([52, 'watch'])
   })
 
   it('a pupil whose only activity is a login (no practice, so no facts) is never active: A 50, E 100, M 100', () => {
@@ -106,15 +115,10 @@ describe('BE-21 Amaran cell texts and labels', () => {
     expect(active.tingkatan).toBe(4)
   })
 
-  it('never-active pupils get the no-data family; a pupil with a date but no sessions gets "Tiada data"', () => {
+  it('never-active pupils show a dash in every value cell; a pupil with a date but no sessions gets "Tiada data"', () => {
     const never = pupilView(scored({ classes: [], grade: null }), 1)
-    expect([never.accuracyText, never.engagementText, never.masteryText, never.classLabel, never.levelLabel]).toEqual([
-      'Tiada data latihan',
-      'Tiada aktiviti',
-      'Tiada data penguasaan',
-      '-',
-      null,
-    ])
+    expect([never.accuracyText, never.engagementText, never.masteryText, never.classLabel, never.levelLabel]).toEqual(['—', '—', '—', '-', null])
+    expect([never.score, never.status, never.accuracy, never.engagement, never.mastery]).toEqual([null, 'not_started', null, null, null])
     const seen = pupilView(scored({ lastActiveAt: NOW }), 1)
     expect([seen.accuracyText, seen.masteryText]).toEqual(['Tiada data', 'Tiada data'])
   })
@@ -125,14 +129,18 @@ describe('BE-21 Amaran cell texts and labels', () => {
     expect(classLabelOf([{ name: 'Bestari', slug: null }])).toBe('Bestari')
   })
 
-  it('tingkatan filter accepts T4, T5, 4, 5 in any case; anything else is no filter', () => {
-    expect(['T4', 't4', '4', ' T5 ', '5', 'T6', '', 'x', undefined].map((v) => parseTingkatan(v))).toEqual([4, 4, 4, 5, 5, undefined, undefined, undefined, undefined])
+  it('tingkatan filter accepts T1 to T5 and 1 to 5 in any case (D101); anything else is no filter', () => {
+    expect(['T1', 't2', '3', 'T4', 't4', '4', ' T5 ', '5', 'T6', '0', 'T', '45', '', 'x', undefined].map((v) => parseTingkatan(v))).toEqual([
+      1, 2, 3, 4, 4, 4, 5, 5, undefined, undefined, undefined, undefined, undefined, undefined, undefined,
+    ])
+    expect(inTingkatan([{ name: 'A', slug: 'tingkatan-1' }], 1)).toBe(true)
+    expect(inTingkatan([{ name: 'A', slug: 'tingkatan-3' }], 3)).toBe(true)
     expect(inTingkatan([{ name: 'A', slug: 'tingkatan-4' }], 4)).toBe(true)
     expect(inTingkatan([{ name: 'A', slug: 'tingkatan-4' }], 5)).toBe(false)
     expect(inTingkatan([], 4)).toBe(false)
   })
 
-  it('ranks by score descending, then name, then id, and tallies with integer percentages', () => {
+  it('ranks by score descending (not_started last), then name, then id, and tallies with integer percentages', () => {
     const list = scorePupils(
       [
         facts({ userId: '3', name: 'Cili', accuracy: 95, sessions: 5, lastActiveAt: NOW, masteryLevels: [9] }),
@@ -141,9 +149,41 @@ describe('BE-21 Amaran cell texts and labels', () => {
       ],
       NOW,
     ).sort(rankOrder)
-    expect(list.map((p) => p.facts.name)).toEqual(['Anggur', 'Betik', 'Cili'])
-    expect(tallyOf(list)).toEqual({ green: 1, yellow: 0, red: 2, total: 3, pct: { green: 33, yellow: 0, red: 67 } })
+    expect(list.map((p) => p.facts.name)).toEqual(['Cili', 'Anggur', 'Betik'])
+    // Anggur and Betik never practised: not_started, outside the three groups.
+    expect(list.map((p) => p.risk.status)).toEqual(['on_track', 'not_started', 'not_started'])
+    expect(tallyOf(list)).toEqual({ green: 1, yellow: 0, red: 0, notStarted: 2, total: 1, pct: { green: 100, yellow: 0, red: 0 } })
     expect(tallyOf([]).pct).toEqual({ green: 0, yellow: 0, red: 0 })
+  })
+
+  it('AC-AS-49-7: scores 39.9 / 40.0 / 59.9 / 60.0 give Hijau 1, Kuning 2, Merah 1; a never-active pupil is in none of them', () => {
+    const at = (score: number): ScoredPupil => ({ facts: facts(), risk: { a: 0, e: 0, m: 0, score, status: statusOf(score), neverActive: false, masteryMean: null } })
+    const t = tallyOf([39.9, 40, 59.9, 60].map(at).concat(scored()))
+    expect([t.green, t.yellow, t.red, t.notStarted, t.total]).toEqual([1, 2, 1, 1, 4])
+  })
+
+  it('AC-AS-49-1: 17 pupils of whom 15 never practised give notStarted 15 and Hijau + Kuning + Merah 2', () => {
+    const pupils = [
+      ...Array.from({ length: 15 }, (_, i) => facts({ userId: String(i + 1), name: `Belum ${i + 1}` })),
+      facts({ userId: '16', name: 'Aktif A', accuracy: 90, sessions: 3, lastActiveAt: NOW, masteryLevels: [8] }),
+      facts({ userId: '17', name: 'Aktif B', accuracy: 10, sessions: 3, lastActiveAt: NOW - 40 * DAY_MS, masteryLevels: [0] }),
+    ]
+    const list = scorePupils(pupils, NOW).sort(rankOrder)
+    const t = tallyOf(list)
+    expect(t.notStarted).toBe(15)
+    expect(t.green + t.yellow + t.red).toBe(2)
+    expect(t.total).toBe(2)
+    expect(t.green + t.yellow + t.red + t.notStarted).toBe(list.length) // FR-AS-49-3
+    expect(list.slice(2).every((p) => p.risk.status === 'not_started')).toBe(true) // sorted last
+  })
+
+  it('levelsOf lists only the Tingkatan that have pupils, ascending', () => {
+    const list = scorePupils(
+      [facts({ userId: '1', classes: [{ name: 'A', slug: 'tingkatan-5' }] }), facts({ userId: '2', classes: [{ name: 'B', slug: 'tingkatan-2' }] }), facts({ userId: '3', classes: [] })],
+      NOW,
+    )
+    expect(levelsOf(list)).toEqual([2, 5])
+    expect(levelsOf([])).toEqual([])
   })
 
   it('yyyymmdd is the Malaysia date', () => {
@@ -162,12 +202,19 @@ describe('BE-21 Amaran weakness and the k=5 cohort rule', () => {
     expect(rows).toEqual([{ subjectId: '10', weak: 2, total: 5, pct: 40 }])
   })
 
-  it('orders subjects by numeric id', () => {
+  it('orders subjects by weak share descending, ties by numeric id', () => {
     const p = [
       { subjectId: '9', correct: 0, answered: 1 },
       { subjectId: '10', correct: 0, answered: 1 },
     ]
     expect(weaknessOf([p, p, p, p, p], 5).map((r) => r.subjectId)).toEqual(['9', '10'])
+    // subject 3: 1 of 5 weak (20%); subjects 20 and 4: 4 of 5 (80%).
+    const pupil = (i: number) => [
+      { subjectId: '3', correct: i === 0 ? 0 : 1, answered: 1 },
+      { subjectId: '20', correct: i < 4 ? 0 : 1, answered: 1 },
+      { subjectId: '4', correct: i < 4 ? 0 : 1, answered: 1 },
+    ]
+    expect(weaknessOf([0, 1, 2, 3, 4].map(pupil), 5).map((r) => [r.subjectId, r.pct])).toEqual([['4', 80], ['20', 80], ['3', 20]])
   })
 })
 
@@ -246,6 +293,15 @@ describe('BE-21 Amaran CSV (pure part)', () => {
     expect(csv).toContain(`"'=HYPERLINK(""http://evil.test"",""klik"")"`)
     expect(csv).toContain(`'@SUM(A1)`)
     expect(csv).toContain(`"Murid, ""Koma"""`)
+  })
+
+  it('a not_started row has the school name, a dash for the score and "Belum Bermula" as status', () => {
+    const lines = amaranCsv(pupils, 'SMK Contoh').slice(1).split('\r\n')
+    const never = lines.find((l) => l.includes('Koma'))
+    expect(never?.endsWith(',SMK Contoh,\'-,—,Belum Bermula,—,—,—')).toBe(true)
+    const started = lines.find((l) => l.includes('SUM(A1)'))
+    expect(started).toContain(',SMK Contoh,')
+    expect(started).not.toContain('Belum Bermula')
   })
 
   it('has no IC, e-mail or phone field on the row', () => {

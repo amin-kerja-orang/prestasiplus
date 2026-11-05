@@ -48,8 +48,9 @@ function data(over: Partial<SchoolRiskData> = {}): SchoolRiskData {
   return {
     school: { id: SCHOOL_ID, name: 'SMK Demo' },
     levelFilter: null,
+    levels: [4, 5],
     levelSuffix: '',
-    tally: { green: 5, yellow: 3, red: 2, total: 10, pct: { green: 50, yellow: 30, red: 20 } },
+    tally: { green: 5, yellow: 3, red: 2, notStarted: 0, total: 10, pct: { green: 50, yellow: 30, red: 20 } },
     weakness: [
       { subjectId: 1, subjectName: 'Matematik', weak: 6, total: 184, pct: 3 },
       { subjectId: 2, subjectName: 'Kimia', weak: 5, total: 10, pct: 50 },
@@ -163,18 +164,18 @@ describe('data call (FR-M27-80)', () => {
     expect(api.fetchSchoolRisk.mock.calls[0]?.[1]).toMatchObject({ tingkatan: null })
   })
 
-  it('passes ?tingkatan=T5 and ignores any other value', async () => {
+  it('passes ?tingkatan=T5 (T1 to T5 are valid) and ignores any other value', async () => {
     await mountPage(data(), '/amaran/sekolah?tingkatan=T5')
     expect(api.fetchSchoolRisk.mock.calls[0]?.[1]).toMatchObject({ tingkatan: 'T5' })
     api.fetchSchoolRisk.mockClear()
-    await mountPage(data(), '/amaran/sekolah?tingkatan=T3&school_id=8080')
+    await mountPage(data(), '/amaran/sekolah?tingkatan=T6&school_id=8080')
     expect(api.fetchSchoolRisk.mock.calls[0]?.[0]).toBe(SCHOOL_ID)
     expect(api.fetchSchoolRisk.mock.calls[0]?.[1]).toMatchObject({ tingkatan: null })
   })
 })
 
 describe('pills (FR-M27-75)', () => {
-  it('shows the three pills, links on the alias, and activates the current level', async () => {
+  it('shows the pills of the levels, links on the alias, and activates the current level', async () => {
     const w = await mountPage(data())
     expect(texts(w, 'am-pills').join('')).toContain('Semua Tingkatan')
     const hrefs = ['all', 'T4', 'T5'].map((k) =>
@@ -197,6 +198,56 @@ describe('pills (FR-M27-75)', () => {
     const w = await mountPage(data(), '/amaran/sekolah?tingkatan=T4')
     expect(w.get('[data-testid="am-pill-T4"]').attributes('data-active')).toBe('true')
     expect(w.get('[data-testid="am-pill-all"]').attributes('data-active')).toBe('false')
+  })
+})
+
+describe('pills follow the levels that have pupils (FR-AS-49; D101)', () => {
+  it('lists only the Tingkatan in `levels`', async () => {
+    const w = await mountPage(data({ levels: [1, 3] }))
+    expect(w.findAll('[data-testid^="am-pill-"]').map((e) => e.text())).toEqual(['Semua Tingkatan', 'Tingkatan 1', 'Tingkatan 3'])
+    expect(w.get('[data-testid="am-pill-T3"]').attributes('href')).toBe('/amaran/sekolah?tingkatan=T3')
+    expect(has(w, 'am-pill-T4')).toBe(false)
+  })
+
+  it('shows only "Semua Tingkatan" without levels, and passes ?tingkatan=T2', async () => {
+    const w = await mountPage(data({ levels: [] }))
+    expect(w.findAll('[data-testid^="am-pill-"]').map((e) => e.text())).toEqual(['Semua Tingkatan'])
+    await mountPage(data({ levels: [2] }), '/amaran/sekolah?tingkatan=T2')
+    expect(api.fetchSchoolRisk.mock.calls.at(-1)?.[1]).toMatchObject({ tingkatan: 'T2' })
+  })
+})
+
+describe('Belum Bermula (FR-X4-3, R1-AS-49; AC-AS-49-1, 49-3)', () => {
+  const started = data({
+    tally: { green: 1, yellow: 0, red: 1, notStarted: 15, total: 2, pct: { green: 50, yellow: 0, red: 50 } },
+    pupils: [
+      pupil(1),
+      pupil(2, { status: 'on_track', score: 12.5 }),
+      pupil(3, { status: 'not_started', score: null, accuracyText: '—', engagementText: '—', masteryText: '—' }),
+    ],
+  })
+
+  it('shows the line under the tiles; the tile "Jumlah Pelajar" is the three groups only', async () => {
+    const w = await mountPage(started)
+    expect(text(w, 'am-not-started')).toBe('15 pelajar belum mula (tiada data latihan)')
+    expect(texts(w, 'am-tile-value')).toEqual(['2', '1', '0', '1'])
+  })
+
+  it('lists a not_started row last with the word "Belum Bermula" and dashes', async () => {
+    const w = await mountPage(started)
+    expect(texts(w, 'am-status')).toEqual(['Berisiko Tinggi', 'On Track', 'Belum Bermula'])
+    expect(w.findAll('[data-testid="am-status"]')[2]?.attributes('data-status')).toBe('not_started')
+    expect(texts(w, 'am-score')).toEqual(['79', '12.5', '—'])
+    expect(texts(w, 'am-accuracy')[2]).toBe('—')
+    expect(texts(w, 'am-engagement')[2]).toBe('—')
+    expect(texts(w, 'am-mastery')[2]).toBe('—')
+  })
+
+  it('paginates 25 rows per page (FR-AS-49-6)', async () => {
+    const many = Array.from({ length: 30 }, (_, i) => pupil(i + 1))
+    const w = await mountPage(data({ pupils: many }))
+    expect(texts(w, 'am-rank')).toHaveLength(25)
+    expect(texts(w, 'am-rank')[24]).toBe('25')
   })
 })
 
@@ -227,7 +278,7 @@ describe('tiles and distribution (FR-M27-75; AC-M27-21.2)', () => {
   it('keeps a zero level in the legend', async () => {
     const w = await mountPage(
       data({
-        tally: { green: 4, yellow: 0, red: 0, total: 4, pct: { green: 100, yellow: 0, red: 0 } },
+        tally: { green: 4, yellow: 0, red: 0, notStarted: 0, total: 4, pct: { green: 100, yellow: 0, red: 0 } },
       }),
     )
     expect(text(w, 'am-bar')).toContain('Hijau (100%)')
@@ -373,7 +424,7 @@ describe('empty school (FR-M27-79; AC-M27-22.4)', () => {
   it('shows zeros, a bar without segments, no subject card and no rows, without an error', async () => {
     const w = await mountPage(
       data({
-        tally: { green: 0, yellow: 0, red: 0, total: 0, pct: { green: 0, yellow: 0, red: 0 } },
+        tally: { green: 0, yellow: 0, red: 0, notStarted: 0, total: 0, pct: { green: 0, yellow: 0, red: 0 } },
         weakness: [],
         pupils: [],
       }),
