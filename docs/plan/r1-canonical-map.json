@@ -1700,7 +1700,7 @@
       "name": null,
       "status": "canonical",
       "sector": "S5",
-      "component": "src/modules/m09-content/pages/AdminVideoListPage.vue",
+      "component": "src/modules/m09-content/pages/VideoAdminListPage.vue",
       "file": "src/modules/m09-content/routes/admin-media.ts",
       "approved_by_card": "S5-T08"
     },

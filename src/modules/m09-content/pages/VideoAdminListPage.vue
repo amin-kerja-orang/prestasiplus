@@ -11,7 +11,20 @@ import { computed, ref, watch } from 'vue'
 
 import { wireId } from '@/api'
 import { useApi, useFlash } from '@/composables'
-import { DsDataTable, DsEmptyState, DsLoadError, DsPage, DsPanel, DsRowActions, useConfirm } from '@/ds'
+import {
+  DsDataTable,
+  DsEmptyState,
+  DsFormField,
+  DsIcon,
+  DsLoadError,
+  DsNativeSelect,
+  DsPage,
+  DsPanel,
+  DsRowActions,
+  DsStack,
+  DsText,
+  useConfirm,
+} from '@/ds'
 import type { CardField, RowAction } from '@/ds'
 
 import { deleteVideo, fetchVideos } from '../api/content'
@@ -99,10 +112,10 @@ async function remove(id: number): Promise<void> {
 
 function actionsOf(id: number): RowAction[] {
   return [
-    { label: 'Edit', icon: 'i-ph-pencil-simple', to: videoEditPath(id) },
+    { label: 'Edit', icon: 'pencil-simple', to: videoEditPath(id) },
     {
       label: 'Padam',
-      icon: 'i-ph-trash',
+      icon: 'trash',
       danger: true,
       disabled: deleting.value,
       onSelect: () => void remove(id),
@@ -127,32 +140,31 @@ const cardFields: CardField[] = [
 </script>
 
 <template>
-  <DsPage :subtitle="`Jumlah: ${total} video`" subtitle-testid="videos-count" data-testid="admin-videos-page">
+  <DsPage
+    layout="list"
+    :subtitle="`Jumlah: ${total} video`"
+    subtitle-testid="videos-count"
+    data-testid="admin-videos-page"
+  >
     <template #actions>
-      <UButton
-        :to="VIDEO_ADD_PATH"
-        icon="i-ph-plus"
-        label="Tambah Video"
-        class="min-h-11"
-        data-testid="videos-add"
-      />
+      <UButton :to="VIDEO_ADD_PATH" data-testid="videos-add">
+        <DsIcon name="plus" />
+        Tambah Video
+      </UButton>
     </template>
 
-    <div class="flex max-w-xs flex-col gap-1">
-      <label for="video-subject-filter" class="text-label text-default">Subjek</label>
-      <USelect
-        id="video-subject-filter"
-        v-model="subject"
-        :items="subjectItems"
-        class="w-full"
-        data-testid="videos-subject-filter"
-      />
-    </div>
+    <DsStack gap="xs">
+      <DsFormField v-slot="{ id }" native for="video-subject-filter" label="Subjek">
+        <DsNativeSelect :id="id" v-model="subject" data-testid="videos-subject-filter">
+          <option v-for="o in subjectItems" :key="o.value" :value="o.value">{{ o.label }}</option>
+        </DsNativeSelect>
+      </DsFormField>
+    </DsStack>
 
     <DsLoadError v-if="error" :message="COPY.loadFailed" testid="videos-error" @retry="reload()" />
 
     <DsPanel v-else-if="!firstLoad && rows.length === 0" data-testid="videos-empty">
-      <DsEmptyState :title="COPY.videosEmpty" icon="i-ph-film-slate" />
+      <DsEmptyState :title="COPY.videosEmpty" icon="film-slate" />
     </DsPanel>
 
     <DsDataTable
@@ -173,14 +185,15 @@ const cardFields: CardField[] = [
       data-testid="videos-table"
     >
       <template #title-cell="{ row }">
-        <p
-          class="line-clamp-2 text-label text-highlighted"
+        <DsText
+          variant="label"
+          :clamp="2"
           :title="row.original.title"
           data-testid="video-row"
           :data-video-id="row.original.id"
         >
           {{ row.original.title }}
-        </p>
+        </DsText>
       </template>
       <template #actions-cell="{ row }">
         <DsRowActions :actions="actionsOf(row.original.id)" :inline="1" />
