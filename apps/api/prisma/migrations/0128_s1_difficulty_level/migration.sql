@@ -4,4 +4,6 @@
 -- forward-only); to revert by hand: ALTER TABLE "question_versions" DROP CONSTRAINT "ck_question_versions_difficulty_level", DROP COLUMN "difficulty_level".
 ALTER TABLE "question_versions" ADD COLUMN "difficulty_level" SMALLINT;
 ALTER TABLE "question_versions" ADD CONSTRAINT "ck_question_versions_difficulty_level"
-  CHECK ("difficulty_level" IS NULL OR "difficulty_level" BETWEEN 1 AND 5);
+  CHECK ("difficulty_level" IS NULL OR "difficulty_level" BETWEEN 1 AND 5) NOT VALID;
+-- Validated in a second step (SHARE UPDATE EXCLUSIVE), as 0103 and 0105, so the table is not scanned under ACCESS EXCLUSIVE.
+ALTER TABLE "question_versions" VALIDATE CONSTRAINT "ck_question_versions_difficulty_level";

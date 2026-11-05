@@ -2,7 +2,8 @@
  * U-OP-19 (DM-47, S1-T02): backfill `question_versions.difficulty_level` after migration 0128.
  *
  * Writes `least(5, difficulty_tp)` only where `difficulty_level IS NULL` and `difficulty_tp` is 1..6 (TP 6 gives 5). `difficulty_tp` is never
- * changed; rows with no TP stay NULL (readers fall back to `least(5, tp)`, else 3, and the gate still refuses Terbit without a typed value).
+ * changed; rows with no TP stay NULL (readers fall back to `least(5, tp)`, else 3; the gate refuses Terbit with NO_DIFFICULTY only
+ * when both `difficulty_level` and `difficulty_tp` are NULL, decision 35).
  * Idempotent (a second run finds nothing to write). Batches of 5,000 by version id, one short transaction per batch.
  *
  * DRY RUN IS THE DEFAULT: it only counts. Pass `--apply` to write.

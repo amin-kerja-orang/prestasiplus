@@ -39469,9 +39469,6 @@
               "string",
               "null"
             ]
-          },
-          "difficultyDefaulted": {
-            "type": "boolean"
           }
         },
         "required": [
@@ -39901,9 +39898,6 @@
               "string",
               "null"
             ]
-          },
-          "difficultyDefaulted": {
-            "type": "boolean"
           },
           "subject": {
             "allOf": [

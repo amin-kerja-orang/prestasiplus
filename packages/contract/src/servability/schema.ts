@@ -87,7 +87,7 @@ export const SERVABILITY_REASON_MS: Readonly<Record<ServabilityReasonCode, strin
   level_not_offered: 'Hanya soalan Tingkatan 4 dan 5 dipaparkan di {aktiviti}.',
   subject_unavailable: 'Subjek tidak aktif atau tidak dipautkan kepada tahap soalan ini.',
   subject_not_listed: 'Subjek ini tiada dalam senarai {aktiviti}.',
-  no_chapter: 'Belum dipautkan kepada bab — pilih Bab di borang soalan.',
+  no_chapter: 'Bab belum dipaut - tidak disajikan dalam Soalan by Chapter.',
   has_stimulus: 'Ada rangsangan atau imej — {aktiviti} hanya memaparkan soalan teks.',
   has_option_image: 'Ada imej pada pilihan jawapan — {aktiviti} hanya memaparkan soalan teks.',
   bridge_refused: 'Tidak dapat dihidangkan di {aktiviti}.',

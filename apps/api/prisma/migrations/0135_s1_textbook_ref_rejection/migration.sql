@@ -7,4 +7,6 @@
 ALTER TABLE "question_versions" ADD COLUMN "textbook_ref" JSONB;
 ALTER TABLE "question_versions" ADD COLUMN "rejection_reason" TEXT;
 ALTER TABLE "question_versions" ADD CONSTRAINT "ck_question_versions_rejection_reason"
-  CHECK ("rejection_reason" IS NULL OR char_length(btrim("rejection_reason")) BETWEEN 5 AND 500);
+  CHECK ("rejection_reason" IS NULL OR char_length(btrim("rejection_reason")) BETWEEN 5 AND 500) NOT VALID;
+-- Validated in a second step (SHARE UPDATE EXCLUSIVE), as 0103 and 0105, so the table is not scanned under ACCESS EXCLUSIVE.
+ALTER TABLE "question_versions" VALIDATE CONSTRAINT "ck_question_versions_rejection_reason";

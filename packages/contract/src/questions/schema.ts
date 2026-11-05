@@ -278,8 +278,6 @@ export const QuestionSchema = z
     textbookRef: QuestionTextbookRefSchema.nullable().optional(),
     /** DM-58: why an admin sent the question back from Semakan to Draf; with the status `draft` it is the chip "Ditolak". Null otherwise. */
     rejectionReason: z.string().nullable().optional(),
-    /** DM-47 response hint of a save: the Kesukaran was filled by default (`min(5, TP)`, else 3) and not typed. Never stored. */
-    difficultyDefaulted: z.boolean().optional(),
   })
   .meta({ id: 'Question' })
 

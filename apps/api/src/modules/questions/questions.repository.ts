@@ -889,6 +889,7 @@ export class QuestionsRepository {
    */
   async gateFacts(questionId: string, versionNo: number): Promise<GateFacts> {
     const key = bi(questionId)
+    // Unknown id or version: no DSKP nodes or chapters are assumed, so the R-DSKP and NO_CHAPTER rows stay inert (the gate has nothing to check).
     const none: GateFacts = { unconfirmedLowConfidenceFields: [], hasOpenDuplicateFlag: false, mediaResolved: true, lastEditedByAi: false, declaredMarks: null, hasDskpNodes: false, hasChapters: false, spOutsideUnit: [] }
     if (key === null) return none
     const rows = await this.db.$queryRaw<

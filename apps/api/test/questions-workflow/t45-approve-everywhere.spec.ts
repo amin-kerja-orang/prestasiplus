@@ -73,7 +73,7 @@ describe('AC-05.3 Terbitkan: notice when unservable somewhere, refused when unse
     const bab = report?.activities.find((a) => a.activity === 'bab')
     expect(bab?.served).toBe(false)
     expect(bab?.reasons[0]?.code).toBe('no_chapter')
-    expect(bab?.reasons[0]?.message).toBe('Belum dipautkan kepada bab — pilih Bab di borang soalan.') // the exact BM sentence the admin reads
+    expect(bab?.reasons[0]?.message).toBe('Bab belum dipaut - tidak disajikan dalam Soalan by Chapter.') // the exact BM sentence the admin reads
     expect(report?.servedCount).toBeGreaterThan(0)
     expect(report?.servedCount).toBeLessThan(report?.total ?? 0)
   })
@@ -166,7 +166,7 @@ describe('AC-05.3 Terbitkan: notice when unservable somewhere, refused when unse
       'servability.simulasi_paper': 'Simulasi (kertas): Tidak dihidangkan kerana mod isi jadual (table_fill) belum disokong.',
       'servability.simulasi_kuiz': 'Simulasi Kuiz: Bentuk soalan ini tidak dipaparkan di Simulasi Kuiz.',
       'servability.jana_kertas': 'Jana Kertas: Tidak dihidangkan kerana mod isi jadual (table_fill) belum disokong.',
-      'servability.bab': 'Latihan Bab: Belum dipautkan kepada bab — pilih Bab di borang soalan.',
+      'servability.bab': 'Latihan Bab: Bab belum dipaut - tidak disajikan dalam Soalan by Chapter.',
     })
     expect(await t.bank.getStatus(bad)).toMatchObject({ status: 'review', liveVersionNo: null })
     expect(await events(bad)).toBe(before)
