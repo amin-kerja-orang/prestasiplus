@@ -148,6 +148,7 @@ async function begin(restart: boolean): Promise<void> {
       </UAlert>
 
       <UButton
+        v-if="cover.kuizAvailable !== false"
         :to="`/simulasi/${paperId}/kuiz`"
         color="neutral"
         variant="outline"

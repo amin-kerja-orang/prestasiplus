@@ -10840,6 +10840,10 @@
               "$ref": "#/components/schemas/BijakPaperCoverSection"
             },
             "minItems": 1
+          },
+          "kuizAvailable": {
+            "type": "boolean",
+            "description": "S3-T07: false when the paper is outside the caller's form (`level_scope`) and the caller has no open sitting on it, so the paper Kuiz answers 404 and the cover omits its action. Absent means available."
           }
         },
         "required": [

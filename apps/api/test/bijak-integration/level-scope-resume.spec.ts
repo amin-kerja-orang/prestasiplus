@@ -102,3 +102,22 @@ describe('level_scope: new sitting 404, own open sitting resumes (S3-T07, AC-PA-
     expect((await kuizPage(paperId)).status).toBe(404)
   })
 })
+
+describe('cover `kuizAvailable` follows the Kuiz rule (S3-T07, AC-PA-36 b) [CI]', () => {
+  const cover = async (paperId: string) => (await student.get(`/api/bijak/papers/${paperId}`)).body.data as { kuizAvailable?: boolean }
+
+  it('is absent in scope, false out of scope with no open sitting, absent again with an own open sitting', async () => {
+    await setGrade(11)
+    const paperId = await createPaper('t5')
+    expect((await cover(paperId)).kuizAvailable).toBeUndefined()
+    const first = await startSitting(paperId)
+    const attemptId = (first.body as { data: { attemptId: string } }).data.attemptId
+    await t.db.query(`update papers set level_scope = 't4' where id = $1`, [paperId])
+    expect((await cover(paperId)).kuizAvailable).toBeUndefined()
+    // Sitting submitted: the cover stays (result, Semakan) but the Kuiz action goes.
+    expect((await student.post(`/api/bijak/attempts/${attemptId}/submit`, {})).status).toBeLessThan(300)
+    const body = await cover(paperId)
+    expect(body.kuizAvailable).toBe(false)
+    expect((await kuizPage(paperId)).status).toBe(404)
+  })
+})

@@ -108,8 +108,13 @@ export class PapersService {
       this.ports.progressSource.progressFor(userId, [idToString(paper.id)]),
     ])
     const marked = await this.withPinned(info, [paper])
+    // S3-T07: the paper Kuiz is refused (404) for an out-of-scope curated paper unless the pupil has an own open sitting (`kuiz.service.ts`
+    // `visiblePaper`); the cover then omits the action. Sent only when false so every other cover is unchanged.
+    const inScope = paper.kind !== 'pilihan' || levelScopeAllows(paper.levelScope, await this.repo.gradeOf(userId))
+    const kuizAvailable = inScope || progress.get(idToString(paper.id))?.attemptId !== undefined
     return {
       ...this.summary(paper, subjects, marked, progress),
+      ...(kuizAvailable ? {} : { kuizAvailable: false }),
       instructions: paper.instructions,
       reference: referencePanels(paper.referenceSheets),
       // AC-20.3: "Untuk Kegunaan Pemeriksa" is printed only when the paper holds a part a person marks. Read from `marked` (live and pinned) so a question archived after Terbit keeps the grid.
