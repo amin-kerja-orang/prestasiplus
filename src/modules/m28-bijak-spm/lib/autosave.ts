@@ -85,6 +85,8 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
   let timer: ReturnType<typeof setTimeout> | undefined
   let retry: ReturnType<typeof setTimeout> | undefined
   let dirtyTimer: ReturnType<typeof setTimeout> | undefined
+  /** Counts flag, pick and position changes: one made while a request is in flight is not in its payload, so that response must not clear `metaDirty`. */
+  let metaChanges = 0
   let current: SaveStatus = 'idle'
   let inFlight: Promise<boolean> | null = null
   let disposed = false
@@ -141,6 +143,7 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
   async function send(): Promise<boolean> {
     const parts = [...doc.pending]
     const revs = new Map(parts.map((p) => [p, doc.answers[p]?.rev ?? 0]))
+    const metaSent = metaChanges
     const payload: SavePayload = {
       changes: parts.map((partId) => {
         const st = doc.answers[partId]!
@@ -168,7 +171,7 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
     }
     // Keep a part pending when it changed again while the request was in flight.
     doc.pending = doc.pending.filter((p) => (doc.answers[p]?.rev ?? 0) !== revs.get(p))
-    if (!doc.pending.length) doc.metaDirty = false
+    if (!doc.pending.length && metaChanges === metaSent) doc.metaDirty = false
     writeLocal()
     return true
   }
@@ -231,16 +234,19 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
     setFlags(flags) {
       doc.flags = flags
       doc.metaDirty = true
+      metaChanges += 1
       touched()
     },
     setPicks(picks) {
       doc.picks = picks
       doc.metaDirty = true
+      metaChanges += 1
       touched()
     },
     setPosition(position) {
       doc.position = position
       doc.metaDirty = true
+      metaChanges += 1
       writeLocal()
       schedule()
       armDirtyFlush()

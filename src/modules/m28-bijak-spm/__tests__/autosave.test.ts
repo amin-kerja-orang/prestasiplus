@@ -71,6 +71,19 @@ describe('autosave', () => {
     expect(vi.getTimerCount()).toBe(0)
   })
 
+  it('a choose-N tick made while a request is in flight stays unsent until a later request carries it', async () => {
+    const { auto, server, view } = await setup()
+    const q = view.questions[0]!.id
+    const save = vi.spyOn(server, 'saveAnswers')
+    auto.setAnswer(q, { choice: 'a' })
+    const first = auto.flush()
+    auto.setPicks({ s1: [q] })
+    await first
+    await vi.advanceTimersByTimeAsync(2000)
+    const payloads = save.mock.calls.map((c) => c[2] as { picks: Record<string, string[]> })
+    expect(payloads.at(-1)!.picks).toEqual({ s1: [q] })
+  })
+
   it('coalesces fast typing into one revision per part sent', async () => {
     const { auto, view } = await setup()
     const q = view.questions[0]!.id

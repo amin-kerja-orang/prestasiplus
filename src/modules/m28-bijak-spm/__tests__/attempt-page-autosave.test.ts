@@ -65,6 +65,34 @@ function type(value: string): HTMLTextAreaElement {
 }
 const sentParts = (): string[] => server.saveAnswers.mock.calls.flatMap((c) => (c[2] as { changes: { partId: string }[] }).changes.map((x) => x.partId))
 
+describe('a change made while the blur save is in flight', () => {
+  /** Type, leave the field (the save goes and stays open), do `tap`, then let the save answer. */
+  async function blurThen(tap: () => void): Promise<void> {
+    let answer: (v: { closed: boolean }) => void = () => undefined
+    server.saveAnswers.mockReturnValueOnce(new Promise((resolve) => (answer = resolve)))
+    type('jawapan').dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    await flushPromises()
+    expect(server.saveAnswers).toHaveBeenCalledTimes(1)
+    tap()
+    await flushPromises()
+    answer({ closed: false })
+    await flushPromises()
+  }
+  const lastPayload = () => server.saveAnswers.mock.calls.at(-1)![2] as { flags: string[]; position: number }
+
+  it('type then "Tanda soalan" still sends the flag', async () => {
+    await blurThen(() => q('[data-testid=flag-button]')!.click())
+    expect(server.saveAnswers).toHaveBeenCalledTimes(2)
+    expect(lastPayload().flags).toEqual(['q1'])
+  })
+
+  it('type then Seterusnya still sends the new position', async () => {
+    await blurThen(() => q('[data-testid=next]')!.click())
+    expect(server.saveAnswers).toHaveBeenCalledTimes(2)
+    expect(lastPayload().position).toBe(1)
+  })
+})
+
 describe('autosave triggers (FR-MUR-13-10)', () => {
   it('blur sends the field at once, before the debounce', async () => {
     const input = type('jawapan')
