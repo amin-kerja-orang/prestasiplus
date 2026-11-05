@@ -154,7 +154,7 @@ describe('GET /admin/teachers/:id/classrooms (S7 "Kelas guru")', () => {
 
   describe('role guard', () => {
     it('no session is 401', async () => {
-      expectError(await t.http().get(`/api${url(teacherId)}`), 'UNAUTHORIZED', 'Unauthenticated.')
+      expectError(await t.http().get(`/api${url(teacherId)}`), 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
     })
 
     it('a teacher and a student are 403', async () => {

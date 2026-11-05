@@ -7827,9 +7827,9 @@
       "sector": "S0",
       "file": "src/shells/pentadbiran/menu.ts",
       "group": "pemantauan",
-      "target_label": "Command Center",
       "note": "moves to the top shortcuts, label \"Command Center\" + LIVE (30 §3.4; conflict D77/D107, OQ-L1)",
-      "approved_by_card": null
+      "approved_by_card": null,
+      "target_label": "Command Center"
     },
     {
       "key": "pentadbiran|PM-02",
@@ -7859,9 +7859,9 @@
       "sector": "S0",
       "file": "src/shells/pentadbiran/menu.ts",
       "group": "pemantauan",
-      "target_label": "Monitoring",
       "note": "route must become /admin/monitoring (30 §3.4; register M-09: admin sees a teacher route today)",
-      "approved_by_card": null
+      "approved_by_card": null,
+      "target_label": "Monitoring"
     },
     {
       "key": "pentadbiran|PM-04",
@@ -8269,9 +8269,9 @@
       "sector": "S2",
       "file": "src/shells/pentadbiran/menu.ts",
       "group": "bank-soalan",
-      "target_label": "Senarai Soalan",
       "note": "MERGE (rename) into Bank Lama; removes the duplicate \"Bank Soalan\" (30 §3.3; register M-01)",
-      "approved_by_card": null
+      "approved_by_card": null,
+      "target_label": "Senarai Soalan"
     },
     {
       "key": "pentadbiran|BS-02",
@@ -8351,9 +8351,9 @@
       "sector": "S5",
       "file": "src/shells/pentadbiran/menu.ts",
       "group": "bank-soalan",
-      "target_label": "PKSK Soalan",
       "note": "KEEP (move) to group Premium (30 §3.3)",
-      "approved_by_card": null
+      "approved_by_card": null,
+      "target_label": "PKSK Soalan"
     },
     {
       "key": "pentadbiran|BS-07",
@@ -8867,9 +8867,9 @@
       "sector": "S6",
       "file": "src/shells/pentadbiran/menu.ts",
       "group": "pengguna-sekolah",
-      "target_label": "Senarai Pengguna",
       "note": "V2 label (30 §3.4)",
-      "approved_by_card": null
+      "approved_by_card": null,
+      "target_label": "Senarai Pengguna"
     },
     {
       "key": "pentadbiran|PS-02",
@@ -9529,8 +9529,8 @@
       "sector": "S7",
       "file": "apps/api/prisma/schema/battle.prisma",
       "note": "register S-02 (D113): mode battle",
-      "dm": "DM-44",
-      "approved_by_card": null
+      "approved_by_card": null,
+      "dm": "DM-44"
     },
     {
       "name": "BattleQueue",
@@ -9579,8 +9579,8 @@
       "sector": "S3",
       "file": "apps/api/prisma/schema/bijak-attempts.prisma",
       "note": "DM-44 / register S-02: Bijak sitting detail (rev-guarded parts); every answer also goes to practice_answers via AnswerLogPort; never a second source for reports",
-      "dm": "DM-44",
-      "approved_by_card": null
+      "approved_by_card": null,
+      "dm": "DM-44"
     },
     {
       "name": "AttemptPhoto",
@@ -9701,8 +9701,8 @@
       "sector": "S6",
       "file": "apps/api/prisma/schema/classes.prisma",
       "note": "register S-02: remedial writes practice_answers with mode remedial",
-      "dm": "DM-44",
-      "approved_by_card": null
+      "approved_by_card": null,
+      "dm": "DM-44"
     },
     {
       "name": "QuestionSet",
@@ -9727,8 +9727,8 @@
       "sector": "S6",
       "file": "apps/api/prisma/schema/classes.prisma",
       "note": "DM-15 Keep: teacher picking list (OWN-11); question tags use curriculum_nodes only; nothing joins the two",
-      "dm": "DM-15",
-      "approved_by_card": null
+      "approved_by_card": null,
+      "dm": "DM-15"
     },
     {
       "name": "DskpSk",
@@ -9737,8 +9737,8 @@
       "sector": "S6",
       "file": "apps/api/prisma/schema/classes.prisma",
       "note": "DM-15 Keep: teacher picking list",
-      "dm": "DM-15",
-      "approved_by_card": null
+      "approved_by_card": null,
+      "dm": "DM-15"
     },
     {
       "name": "DskpSp",
@@ -9747,8 +9747,8 @@
       "sector": "S6",
       "file": "apps/api/prisma/schema/classes.prisma",
       "note": "DM-15 Keep: teacher picking list",
-      "dm": "DM-15",
-      "approved_by_card": null
+      "approved_by_card": null,
+      "dm": "DM-15"
     },
     {
       "name": "Article",
@@ -9861,8 +9861,8 @@
       "sector": "S5",
       "file": "apps/api/prisma/schema/content.prisma",
       "note": "register S-02 (D113): mode audio_kbat",
-      "dm": "DM-44",
-      "approved_by_card": null
+      "approved_by_card": null,
+      "dm": "DM-44"
     },
     {
       "name": "SupportConfig",
@@ -9952,8 +9952,8 @@
       "sector": "S4",
       "file": "apps/api/prisma/schema/curriculum.prisma",
       "note": "DM-16: prototype topic catalogue; readers switch to chapters -> topics -> subtopics; dropped in a later release (50 F5, ENT-LegacyTopic; register S-01)",
-      "dm": "DM-16",
-      "approved_by_card": null
+      "approved_by_card": null,
+      "dm": "DM-16"
     },
     {
       "name": "LegacySubtopic",
@@ -9962,8 +9962,8 @@
       "sector": "S4",
       "file": "apps/api/prisma/schema/curriculum.prisma",
       "note": "DM-16: as LegacyTopic",
-      "dm": "DM-16",
-      "approved_by_card": null
+      "approved_by_card": null,
+      "dm": "DM-16"
     },
     {
       "name": "EtlRun",
@@ -10108,8 +10108,8 @@
       "sector": "S7",
       "file": "apps/api/prisma/schema/games.prisma",
       "note": "register S-02: question-based games write practice_answers with mode game (R1-MUR-21)",
-      "dm": "DM-44",
-      "approved_by_card": null
+      "approved_by_card": null,
+      "dm": "DM-44"
     },
     {
       "name": "PersonalBest",
@@ -10294,8 +10294,8 @@
       "sector": "S7",
       "file": "apps/api/prisma/schema/gamification.prisma",
       "note": "register S-05 (D113): second reward catalogue; Kawalan Reward switches to rewards; migrate and retire",
-      "dm": "DM-48",
-      "approved_by_card": null
+      "approved_by_card": null,
+      "dm": "DM-48"
     },
     {
       "name": "RewardClaim",
@@ -10304,8 +10304,8 @@
       "sector": "S7",
       "file": "apps/api/prisma/schema/gamification.prisma",
       "note": "register S-05 (D113): claims of syiling_rewards; rewards + reward_redemptions are canonical",
-      "dm": "DM-48",
-      "approved_by_card": null
+      "approved_by_card": null,
+      "dm": "DM-48"
     },
     {
       "name": "Reward",
@@ -10322,6 +10322,16 @@
       "sector": "S7",
       "file": "apps/api/prisma/schema/gamification.prisma",
       "approved_by_card": null
+    },
+    {
+      "name": "RewardSetting",
+      "table": "reward_settings",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/gamification.prisma",
+      "approved_by_card": "S7-T05",
+      "dm": "DM-48",
+      "note": "Singleton Kawalan Reward settings (DM-48): the one source of the coin rate; read by the S5-T15 helper coinsPerCorrect()."
     },
     {
       "name": "MysteryBoxOpening",
@@ -10570,8 +10580,8 @@
       "sector": "S0",
       "file": "apps/api/prisma/schema/pksk.prisma",
       "note": "register S-02 (D113): mode pksk",
-      "dm": "DM-44",
-      "approved_by_card": null
+      "approved_by_card": null,
+      "dm": "DM-44"
     },
     {
       "name": "PkskMastery",
@@ -10676,8 +10686,8 @@
       "sector": "S5",
       "file": "apps/api/prisma/schema/practice.prisma",
       "note": "register S-02 (D113): mode structured",
-      "dm": "DM-44",
-      "approved_by_card": null
+      "approved_by_card": null,
+      "dm": "DM-44"
     },
     {
       "name": "SourcePaper",
@@ -12942,6 +12952,16 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/admin/curriculum/dskp",
+      "method": "GET",
+      "path": "/api/admin/curriculum/dskp",
+      "api_id": "API-DSKP-11",
+      "status": "canonical",
+      "sector": "S4",
+      "file": "apps/api/src/modules/curriculum/admin.controller.ts",
+      "approved_by_card": "S4-T02"
+    },
+    {
       "key": "GET /api/admin/curriculum/chapters/:p",
       "method": "GET",
       "path": "/api/admin/curriculum/chapters/:id",
@@ -13515,7 +13535,7 @@
       "key": "GET /api/leagues",
       "method": "GET",
       "path": "/api/leagues",
-      "api_id": null,
+      "api_id": "API-GAME-05",
       "status": "canonical",
       "sector": "S7",
       "file": "apps/api/src/modules/games/leagues/leagues.controller.ts",
@@ -15233,6 +15253,16 @@
       "approved_by_card": null
     },
     {
+      "key": "POST /api/stimulus-groups/merge",
+      "method": "POST",
+      "path": "/api/stimulus-groups/merge",
+      "api_id": "API-Q-35",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/stimuli.controller.ts",
+      "approved_by_card": "S1-T01"
+    },
+    {
       "key": "POST /api/stimulus-groups",
       "method": "POST",
       "path": "/api/stimulus-groups",
@@ -15321,6 +15351,56 @@
       "sector": "S1",
       "file": "apps/api/src/modules/questions/http/stimuli.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "POST /api/stimulus-groups/:p/publish",
+      "method": "POST",
+      "path": "/api/stimulus-groups/:id/publish",
+      "api_id": "API-Q-31",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/stimuli.controller.ts",
+      "approved_by_card": "S1-T01"
+    },
+    {
+      "key": "POST /api/stimulus-groups/:p/edit-as-draft",
+      "method": "POST",
+      "path": "/api/stimulus-groups/:id/edit-as-draft",
+      "api_id": "API-Q-32",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/stimuli.controller.ts",
+      "approved_by_card": "S1-T01"
+    },
+    {
+      "key": "DELETE /api/stimulus-groups/:p/draft",
+      "method": "DELETE",
+      "path": "/api/stimulus-groups/:id/draft",
+      "api_id": "API-Q-32",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/stimuli.controller.ts",
+      "approved_by_card": "S1-T01"
+    },
+    {
+      "key": "POST /api/stimulus-groups/:p/retire",
+      "method": "POST",
+      "path": "/api/stimulus-groups/:id/retire",
+      "api_id": "API-Q-33",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/stimuli.controller.ts",
+      "approved_by_card": "S1-T01"
+    },
+    {
+      "key": "POST /api/stimulus-groups/:p/members/:p/move",
+      "method": "POST",
+      "path": "/api/stimulus-groups/:id/members/:questionId/move",
+      "api_id": "API-Q-34",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/stimuli.controller.ts",
+      "approved_by_card": "S1-T01"
     },
     {
       "key": "GET /api/structured-questions",

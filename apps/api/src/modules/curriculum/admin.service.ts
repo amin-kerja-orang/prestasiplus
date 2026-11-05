@@ -24,6 +24,7 @@ import {
   chapterNotFound,
   hasChildren,
   levelNotFound,
+  primaryLevelActive,
   subjectNotFound,
   subtopicNotFound,
   topicNotFound,
@@ -43,7 +44,7 @@ import {
   uniqueMessage,
   validateBody,
 } from './validation'
-import { chapterView, levelView, subjectView, subtopicView, topicView } from './views'
+import { chapterView, levelView, nodeView, subjectView, subtopicView, topicView } from './views'
 
 const CHAPTER_BOUNDS = { ...LONG_TEXT_BOUNDS, maxValue: INT_BOUNDS }
 
@@ -159,6 +160,8 @@ export class CurriculumAdminService {
 
   async createLevel(actor: AuditActor, body: unknown) {
     const input = await this.levelInput(body, null)
+    // A new level is created active (repository), so a primary one would be an active Darjah (FR-X3-1, DM-13).
+    if (input.stage === 'primary') throw primaryLevelActive()
     const row = await this.write(
       actor,
       { action: AUDIT_ACTIONS.CURRICULUM_LEVEL_CREATED, targetType: 'education_level', targetId: (r) => r.id },
@@ -171,6 +174,8 @@ export class CurriculumAdminService {
   async updateLevel(actor: AuditActor, rawId: string, body: unknown) {
     const current = await this.requireLevel(rawId)
     const input = await this.levelInput(body, current.id)
+    // Moving an active level to the primary stage would leave an active Darjah (FR-X3-1, DM-13).
+    if (input.stage === 'primary' && current.isActive) throw primaryLevelActive()
     const row = await this.write(
       actor,
       { action: AUDIT_ACTIONS.CURRICULUM_LEVEL_UPDATED, targetType: 'education_level', targetId: (r) => r.id },
@@ -183,6 +188,8 @@ export class CurriculumAdminService {
   async setLevelActive(actor: AuditActor, rawId: string, body: unknown) {
     const current = await this.requireLevel(rawId)
     const isActive = must((await validateBody(CurriculumSetActiveRequestSchema, body)).isActive)
+    // FR-ADM-C03.3a: a Darjah level is never activated (only Tingkatan 1-5 are active); deactivating one stays allowed.
+    if (isActive && current.stage === 'primary') throw primaryLevelActive()
     await this.write(
       actor,
       { action: AUDIT_ACTIONS.CURRICULUM_LEVEL_ACTIVE_CHANGED, targetType: 'education_level', targetId: () => current.id },
@@ -366,6 +373,60 @@ export class CurriculumAdminService {
         ...chapterView(c),
         topics: c.topics.map((t) => ({ ...topicView(t), subtopics: t.subtopics.map(subtopicView) })),
       })),
+    }
+  }
+
+  // --- DSKP load report (API-DSKP-11, S4-T02) -----------------------------------------------------
+
+  /** An optional id query field: absent or empty is "no filter", anything that is not a positive id is 422. */
+  private optionalIdParam(query: Record<string, unknown>, field: string): { value?: bigint; error?: string } {
+    const raw = query[field]
+    if (raw === undefined || (typeof raw === 'string' && raw.trim() === '')) return {}
+    const id = typeof raw === 'string' ? parseId(raw.trim()) : null
+    return id === null ? { error: integerMessage(field) } : { value: id }
+  }
+
+  /**
+   * FR-ADM-C04.0: live counts and the state `dimuatkan` / `belum dimuatkan` per offered Subjek x Tingkatan;
+   * with both `subjectId` and `levelId` also the node list (Bidang / SK / SP with TP descriptors) for the
+   * Kurikulum `DSKP` tab. An unknown id is 404 with the flash copy, like the tree read.
+   */
+  async dskpReport(rawQuery: unknown) {
+    const query = asRecord(rawQuery)
+    const s = this.optionalIdParam(query, 'subjectId')
+    const l = this.optionalIdParam(query, 'levelId')
+    if (s.error !== undefined || l.error !== undefined) {
+      throw ApiError.of('VALIDATION_ERROR', {
+        fields: {
+          ...(s.error === undefined ? {} : { subjectId: s.error }),
+          ...(l.error === undefined ? {} : { levelId: l.error }),
+        },
+      })
+    }
+    if (s.value !== undefined && !(await this.repo.subject(s.value))) throw subjectNotFound()
+    if (l.value !== undefined && !(await this.repo.level(l.value))) throw levelNotFound()
+    const rows = await this.repo.dskpReport({ subjectId: s.value, levelId: l.value })
+    let nodes = null
+    if (s.value !== undefined && l.value !== undefined) {
+      const list = await this.repo.dskpNodes(l.value, s.value)
+      const descriptors = await this.repo.tpDescriptorsOfNodes(list.map((n) => n.id))
+      nodes = list.map((n) => ({
+        ...nodeView(n),
+        tpDescriptors: descriptors.filter((d) => d.nodeId === n.id).map((d) => ({ tp: d.tp, descriptor: d.descriptor })),
+      }))
+    }
+    return {
+      rows: rows.map((r) => ({
+        subject: { id: idToString(r.subjectId), name: r.subjectName },
+        level: { id: idToString(r.levelId), name: r.levelName },
+        state: r.nodes > 0 ? ('dimuatkan' as const) : ('belum dimuatkan' as const),
+        bab: r.bab,
+        sk: r.sk,
+        sp: r.sp,
+        tp: r.tp,
+        tpDescriptors: r.tpGeneral,
+      })),
+      nodes,
     }
   }
 

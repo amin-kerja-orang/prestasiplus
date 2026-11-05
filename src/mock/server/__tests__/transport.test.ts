@@ -107,7 +107,7 @@ describe('fault injection (failNext)', () => {
   it('resolves every spec form', () => {
     expect(resolveFaultSpec(500)).toMatchObject({
       kind: 'response',
-      response: { status: 500, body: { error: { code: 'SERVER_ERROR', message: 'Server Error' } } },
+      response: { status: 500, body: { error: { code: 'SERVER_ERROR', message: 'Sesuatu tidak kena di pihak kami. Pasukan teknikal telah dimaklumkan. Sila cuba sebentar lagi.' } } },
     })
     expect(resolveFaultSpec(404)).toMatchObject({
       response: { status: 404, body: { error: { code: 'NOT_FOUND' } } },
@@ -154,7 +154,8 @@ describe('fault injection (failNext)', () => {
       runtime.transport.request({ method: 'GET', url: '/api/notes', headers: {} }),
     ).rejects.toBeInstanceOf(TransportNetworkError)
     runtime.faults.failNext('/api/notes', 'network')
-    const err = (await api.get('/api/notes').catch((e: unknown) => e)) as ApiError
+    // A POST: a one-shot GET network fault is retried automatically (X10.3.4) and would be absorbed.
+    const err = (await api.post('/api/notes', { body: {} }).catch((e: unknown) => e)) as ApiError
     expect(err).toBeInstanceOf(ApiError)
     expect(err).toMatchObject({ status: 0, code: 'NETWORK_ERROR' })
     expect(runtime.log.last('/api/notes')).toMatchObject({

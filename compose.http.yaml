@@ -44,11 +44,19 @@ services:
       # Demo accounts with a published password: dev and e2e only. The production base job never sets this.
       ALLOW_DEMO_SEED: 'true'
 
+  db:
+    # E2E/CI only: the trial-exhausted spec resets a pupil with psql from the runner (E2E_DATABASE_URL), loopback only.
+    ports:
+      - '127.0.0.1:${E2E_DB_PORT:-55433}:5432'
+
   api:
     environment:
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       # The e2e run logs in many times from one address (3 viewports); the default is 5 per minute.
       THROTTLE_LOGIN_PER_MINUTE: ${E2E_THROTTLE_LOGIN_PER_MINUTE:-200}
+      # The whole e2e suite runs from one address, so the per-address global ceiling (THROTTLE_GLOBAL_PER_MINUTE,
+      # default 300 per minute, D115) answers 429 mid-run. E2E/CI stack only; the production default is unchanged.
+      THROTTLE_GLOBAL_PER_MINUTE: ${E2E_THROTTLE_GLOBAL_PER_MINUTE:-3000}
       # PoC question papers off (R1-B07 / T36 makes the flag a deprecated no-op): Bijak serves the question bank only.
       # Explicit false so a stale .env.api with true behaves the same before and after T36.
       BIJAK_POC_QUESTIONS: 'false'

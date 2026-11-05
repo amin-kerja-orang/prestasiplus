@@ -385,6 +385,36 @@ describe('PaperQuizPage', () => {
     for (const id of ['g1', 'g2', 'q9']) expect(q(`[data-testid="kuiz-item-${id}"]`)).not.toBeNull()
   })
 
+  it('S8-T02: a group of 2 stimuli renders both, in order, in one group, open the first time at 375', async () => {
+    const one = { kind: 'passage', label: 'Petikan A', body: 'Teks pertama.', imageToken: null, alt: null }
+    const two = { kind: 'passage', label: 'Petikan B', body: 'Teks kedua.', imageToken: null, alt: null }
+    server.getKuizPaperPage.mockResolvedValue({
+      ...page1,
+      items: [mcq('g1', { groupId: 'G' }), mcq('g2', { groupId: 'G' })],
+      groups: [{ id: 'G', stimuli: [one, two] }],
+    })
+    await mountPage(PaperQuizPage, '/simulasi/p1/kuiz')
+    expect(document.querySelectorAll('[data-testid="stimulus-group"]').length).toBe(1)
+    const box = document.querySelector('[data-testid="group-stimuli"]')!
+    expect(box.getAttribute('data-count')).toBe('2')
+    const text = box.textContent
+    expect(text.indexOf('Teks pertama.')).toBeGreaterThanOrEqual(0)
+    expect(text.indexOf('Teks pertama.')).toBeLessThan(text.indexOf('Teks kedua.'))
+  })
+
+  it('S8-T02: a group whose picture has no source keeps its questions visible and answerable', async () => {
+    const pic = { kind: 'image', label: 'Rajah 1', body: null, imageToken: null, alt: null }
+    server.getKuizPaperPage.mockResolvedValue({
+      ...page1,
+      items: [mcq('g1', { groupId: 'G' }), mcq('g2', { groupId: 'G' })],
+      groups: [{ id: 'G', stimuli: [pic] }],
+    })
+    await mountPage(PaperQuizPage, '/simulasi/p1/kuiz')
+    expect(document.querySelector('[data-layout="excluded"]')).toBeNull()
+    for (const id of ['g1', 'g2']) expect(q(`[data-testid="kuiz-item-${id}"]`)).not.toBeNull()
+    expect(document.querySelectorAll('[data-testid=kuiz-semak]').length).toBeGreaterThan(0)
+  })
+
   it('numbers questions, not parts, and continues across the Bahagian pages', async () => {
     const part = (id: string): BijakKuizItem => ({ ...open, id, path: id.split(':')[1]! })
     server.getKuizPaperPage.mockImplementation((_id: string, n: number) =>

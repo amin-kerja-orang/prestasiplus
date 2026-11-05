@@ -31,7 +31,7 @@ import type {
   StructuredListFilter,
   ViewMode,
 } from './types'
-import { STIMULUS_KINDS } from './types'
+import { STIMULUS_KINDS, type TextbookRef } from './types'
 
 /** Columns of `question_versions` a writer may set (ids are bigint, the service already parsed them). */
 export interface VersionDraft {
@@ -54,6 +54,10 @@ export interface VersionDraft {
   tagReview: boolean
   catalogueVersion: string | null
   difficultyTp: number | null
+  /** DM-47: the typed Kesukaran 1..5, written on every save (null only when nothing typed and no TP exists). */
+  difficultyLevel: number | null
+  /** DM-56: `undefined` keeps what is stored (a new version inherits it); an object writes the jsonb and the three int columns; `null` clears them. */
+  textbookRef?: TextbookRef | null
   sourcePage: number | null
   setLabel: string | null
   /**
@@ -188,7 +192,11 @@ function shapeArraySql(candidates: Prisma.Sql, shape: QuestionFilter['mcqShape']
   const having: Prisma.Sql[] = []
   if (shape) {
     having.push(
-      Prisma.sql`count(DISTINCT sp.id) = 1 AND bool_and(sp.mode = 'mcq' AND sp.stimulus_id IS NULL)
+      shape.allowStimulus === true
+        ? Prisma.sql`count(DISTINCT sp.id) = 1 AND bool_and(sp.mode = 'mcq')
+        AND count(DISTINCT so.id) BETWEEN ${Math.trunc(shape.minOptions)} AND ${Math.trunc(shape.maxOptions)}
+        AND coalesce(bool_or(so.label = sk.content ->> 'correct'), false)`
+        : Prisma.sql`count(DISTINCT sp.id) = 1 AND bool_and(sp.mode = 'mcq' AND sp.stimulus_id IS NULL)
         AND count(DISTINCT so.id) BETWEEN ${Math.trunc(shape.minOptions)} AND ${Math.trunc(shape.maxOptions)}
         AND count(so.image_file_id) = 0
         AND coalesce(bool_or(so.label = sk.content ->> 'correct'), false)
@@ -203,6 +211,28 @@ function shapeArraySql(candidates: Prisma.Sql, shape: QuestionFilter['mcqShape']
 }
 
 const NO_STATUS_COUNTS = (): Record<QuestionStatus, number> => ({ draft: 0, review: 0, approved: 0, archived: 0 })
+
+/**
+ * S1-T06 (D105, FR-MUR-QP-6/7, AC-QP-7, FR-QA-01): the whole-group predicate. A group member is served only when its WHOLE group can be:
+ * the group holds a stimulus and no member is a gap. A member (bar those whose latest version is archived) is a gap when it is
+ * inactive, has no live approved version, or is not a single MCQ leaf (part mode `mcq`) whose key names one of its options (the draw's `groupSurfaceShapeReasons`). One definition for the SQL draw (`QuestionFilter.wholeGroups`)
+ * and the indicator (`incompleteGroups`), so the card, the details and the draw agree (D91).
+ */
+const groupGapCountSql = (groupId: Prisma.Sql): Prisma.Sql =>
+  Prisma.sql`(SELECT count(*) FROM questions wm
+        JOIN question_versions wl ON wl.question_id = wm.id AND wl.version_no = wm.latest_version_no
+        LEFT JOIN question_versions wv ON wv.question_id = wm.id AND wv.version_no = wm.live_version_no
+       WHERE wm.group_id = ${groupId} AND wl.status <> 'archived'
+         AND (NOT wm.is_active OR wv.id IS NULL OR wv.status <> 'approved' OR wv.type <> 'mcq'
+              OR (SELECT count(*) FROM question_parts wp WHERE wp.question_version_id = wv.id) <> 1
+              OR NOT EXISTS (SELECT 1 FROM question_parts wp
+                              JOIN answer_keys wk ON wk.part_id = wp.id
+                              JOIN part_options wo ON wo.part_id = wp.id AND wo.label = wk.content ->> 'correct'
+                             WHERE wp.question_version_id = wv.id AND wp.mode = 'mcq')))`
+
+/** SQL boolean: the group `groupId` (a bigint expression) has a stimulus and no gap member. */
+export const groupCompleteSql = (groupId: Prisma.Sql): Prisma.Sql =>
+  Prisma.sql`(EXISTS (SELECT 1 FROM stimulus_group_stimuli wgs WHERE wgs.group_id = ${groupId}) AND ${groupGapCountSql(groupId)} = 0)`
 
 /** `bigint` of a decimal id, or null when the text is not a canonical id (such an id never exists). */
 function bi(text: string): bigint | null {
@@ -536,6 +566,20 @@ export class QuestionsRepository {
     if (key === null) return false
     const res = await this.db.question.updateMany({ where: { id: key, tags: { none: { kind: PKSK_TAG } } }, data: { isActive } })
     return res.count > 0
+  }
+
+  /** Of these group ids, the incomplete ones (see `groupCompleteSql`) with their number of gap members (the "{n}" of FR-QA-01). */
+  async incompleteGroups(groupIds: readonly string[]): Promise<Map<string, number>> {
+    const keys = [...new Set(groupIds)].flatMap((id) => {
+      const k = bi(id)
+      return k === null ? [] : [k]
+    })
+    if (keys.length === 0) return new Map()
+    const rows = await this.db.$queryRaw<{ id: bigint; n: bigint }[]>(
+      Prisma.sql`SELECT g.id, ${groupGapCountSql(Prisma.sql`g.id`)} AS n FROM stimulus_groups g
+        WHERE g.id = ANY(${keys}::bigint[]) AND NOT ${groupCompleteSql(Prisma.sql`g.id`)}`,
+    )
+    return new Map(rows.map((r) => [idToString(r.id), Number(r.n)]))
   }
 
   async groupOf(questionId: string): Promise<StimulusGroupRecord | null> {
@@ -885,7 +929,8 @@ export class QuestionsRepository {
    */
   async gateFacts(questionId: string, versionNo: number): Promise<GateFacts> {
     const key = bi(questionId)
-    const none: GateFacts = { unconfirmedLowConfidenceFields: [], hasOpenDuplicateFlag: false, mediaResolved: true, lastEditedByAi: false, declaredMarks: null }
+    // Unknown id or version: no DSKP nodes or chapters are assumed, so the R-DSKP and NO_CHAPTER rows stay inert (the gate has nothing to check).
+    const none: GateFacts = { unconfirmedLowConfidenceFields: [], hasOpenDuplicateFlag: false, mediaResolved: true, lastEditedByAi: false, declaredMarks: null, hasDskpNodes: false, hasChapters: false, spOutsideUnit: [] }
     if (key === null) return none
     const rows = await this.db.$queryRaw<
       {
@@ -895,9 +940,20 @@ export class QuestionsRepository {
         low_fields: string[] | null
         confirmed_fields: string[] | null
         media_ok: boolean
+        has_dskp: boolean
+        has_chapters: boolean
+        sp_outside: string[] | null
       }[]
     >`
       SELECT v.last_editor, v.declared_marks,
+             EXISTS (SELECT 1 FROM curriculum_nodes cn WHERE cn.subject_id = v.subject_id AND cn.education_level_id = v.education_level_id) AS has_dskp,
+             EXISTS (SELECT 1 FROM chapters ch WHERE ch.subject_id = v.subject_id AND ch.education_level_id = v.education_level_id AND ch.is_active AND ch.in_tree) AS has_chapters,
+             CASE WHEN v.unit_node_id IS NULL THEN NULL ELSE ARRAY(
+               SELECT sp.code FROM question_version_sp_nodes qs JOIN curriculum_nodes sp ON sp.id = qs.node_id
+                WHERE qs.question_version_id = v.id
+                  AND NOT EXISTS (WITH RECURSIVE up(id, parent_id) AS (SELECT sp.id, sp.parent_id UNION ALL SELECT n.id, n.parent_id FROM curriculum_nodes n JOIN up ON n.id = up.parent_id)
+                                  SELECT 1 FROM up WHERE up.id = v.unit_node_id)
+                ORDER BY sp.code) END AS sp_outside,
              EXISTS (SELECT 1 FROM intake_items di JOIN duplicate_links dl ON dl.item_id = di.id
                       WHERE di.question_id = q.id AND dl.decision = 'pending' AND dl.kind IN ('exact', 'near')) AS duplicate_open,
              ii.low_fields, ii.confirmed_fields,
@@ -917,7 +973,21 @@ export class QuestionsRepository {
       mediaResolved: r.media_ok,
       lastEditedByAi: r.last_editor === 'ai',
       declaredMarks: r.declared_marks,
+      hasDskpNodes: r.has_dskp,
+      hasChapters: r.has_chapters,
+      spOutsideUnit: r.sp_outside ?? [],
     }
+  }
+
+  /** R-DSKP and the Bab rule for a version that is not stored yet (the create-as-approved shortcut): the same two lookups as `gateFacts`. */
+  async curriculumFactsFor(subjectId: string | null, levelId: string | null): Promise<{ hasDskpNodes: boolean; hasChapters: boolean }> {
+    const subject = subjectId === null ? null : bi(subjectId)
+    const level = levelId === null ? null : bi(levelId)
+    if (subject === null || level === null) return { hasDskpNodes: false, hasChapters: false }
+    const rows = await this.db.$queryRaw<{ has_dskp: boolean; has_chapters: boolean }[]>`
+      SELECT EXISTS (SELECT 1 FROM curriculum_nodes WHERE subject_id = ${subject} AND education_level_id = ${level}) AS has_dskp,
+             EXISTS (SELECT 1 FROM chapters WHERE subject_id = ${subject} AND education_level_id = ${level} AND is_active AND in_tree) AS has_chapters`
+    return { hasDskpNodes: rows[0]?.has_dskp === true, hasChapters: rows[0]?.has_chapters === true }
   }
 
   /** The AI service's write of `explanation_ms` on a version nobody is served (a draft or a review version): in place, marked as the AI's. */
@@ -1054,6 +1124,7 @@ export class QuestionsRepository {
         textbookBab: true,
         textbookTingkatan: true,
         textbookPage: true,
+        textbookRef: true,
         sourcePaperId: true,
         sourceFileId: true,
         sourceRegion: true,
@@ -1148,7 +1219,7 @@ export class QuestionsRepository {
     questionId: string,
     versionNo: number,
     status: QuestionStatus,
-    extra: { archiveReason?: 'superseded' | 'withdrawn' | 'source_takedown' | null; publishedAt?: Date | null } = {},
+    extra: { archiveReason?: 'superseded' | 'withdrawn' | 'source_takedown' | null; publishedAt?: Date | null; rejectionReason?: string | null } = {},
   ): Promise<void> {
     const id = bi(questionId)
     if (id === null) return
@@ -1158,6 +1229,7 @@ export class QuestionsRepository {
         status,
         archiveReason: status === 'archived' ? (extra.archiveReason ?? null) : null,
         ...(extra.publishedAt === undefined ? {} : { publishedAt: extra.publishedAt }),
+        ...(extra.rejectionReason === undefined ? {} : { rejectionReason: extra.rejectionReason }),
       },
     })
   }
@@ -1335,6 +1407,12 @@ export class QuestionsRepository {
       tagReview: c.tagReview,
       catalogueVersion: c.catalogueVersion,
       difficultyTp: c.difficultyTp,
+      difficultyLevel: c.difficultyLevel,
+      ...(c.textbookRef === undefined
+        ? {}
+        : c.textbookRef === null
+          ? { textbookRef: Prisma.DbNull, textbookBab: null, textbookTingkatan: null, textbookPage: null }
+          : { textbookRef: c.textbookRef as unknown as Prisma.InputJsonValue, textbookBab: smallInt(c.textbookRef.bab), textbookTingkatan: smallInt(c.textbookRef.tingkatan.replace(/^T/i, '')), textbookPage: c.textbookRef.mukaSurat }),
       sourcePage: c.sourcePage,
       setLabel: c.setLabel,
       ...(c.paperCode === undefined ? {} : { paperCode: c.paperCode }),
@@ -1361,6 +1439,7 @@ export class QuestionsRepository {
       textbookBab: number | null
       textbookTingkatan: number | null
       textbookPage: number | null
+      textbookRef: unknown
       sourcePaperId: bigint | null
       sourceFileId: bigint | null
       sourceRegion: unknown
@@ -1380,7 +1459,7 @@ export class QuestionsRepository {
         ...this.versionColumns(columns),
         ...(inherited === undefined
           ? {}
-          : { ...inherited, sourceRegion: inherited.sourceRegion === null || inherited.sourceRegion === undefined ? undefined : (inherited.sourceRegion as object) }),
+          : { ...inheritedOf(inherited, draft.textbookRef !== undefined), sourceRegion: inherited.sourceRegion === null || inherited.sourceRegion === undefined ? undefined : (inherited.sourceRegion as object) }),
         ...(provenance === undefined
           ? {}
           : {
@@ -1500,6 +1579,7 @@ export class QuestionsRepository {
       conds.push(key === null ? Prisma.sql`FALSE` : Prisma.sql`q.id > ${key}`)
     }
     if (filter.ungrouped) conds.push(Prisma.sql`q.group_id IS NULL`)
+    if (filter.wholeGroups) conds.push(Prisma.sql`(q.group_id IS NULL OR ${groupCompleteSql(Prisma.sql`q.group_id`)})`)
     if (filter.difficultyTps !== undefined) {
       const tps = filter.difficultyTps.filter((n) => Number.isSafeInteger(n))
       conds.push(tps.length === 0 ? Prisma.sql`FALSE` : Prisma.sql`v.difficulty_tp IN (${Prisma.join(tps)})`)
@@ -1644,6 +1724,9 @@ export class QuestionsRepository {
       tagReview: v.tagReview,
       catalogueVersion: v.catalogueVersion,
       difficultyTp: v.difficultyTp,
+      difficultyLevel: v.difficultyLevel,
+      textbookRef: textbookRefOf(v.textbookRef),
+      rejectionReason: v.rejectionReason,
       sourcePage: v.sourcePage,
       setLabel: v.setLabel,
       sourceFile: null,
@@ -1665,3 +1748,27 @@ export class QuestionsRepository {
   }
 }
 
+
+/**
+ * The provenance a new version inherits from the one it edits. The textbook reference (jsonb and its three int columns) is inherited only when
+ * the save did not send one (`textbookSent` false); a sent value, or a cleared one, is written by `versionColumns` instead.
+ */
+function inheritedOf<T extends { textbookBab: number | null; textbookTingkatan: number | null; textbookPage: number | null; textbookRef: unknown }>(inherited: T, textbookSent: boolean) {
+  const { textbookBab, textbookTingkatan, textbookPage, textbookRef, ...rest } = inherited
+  if (textbookSent) return rest
+  return { ...rest, textbookBab, textbookTingkatan, textbookPage, textbookRef: textbookRef === null || textbookRef === undefined ? Prisma.DbNull : (textbookRef as Prisma.InputJsonValue) }
+}
+
+/** The stored `textbook_ref` jsonb as a `TextbookRef`, or null when it is empty or not shaped like one. */
+function textbookRefOf(raw: unknown): TextbookRef | null {
+  if (typeof raw !== 'object' || raw === null) return null
+  const r = raw as Record<string, unknown>
+  if (typeof r.bab !== 'string' || typeof r.tingkatan !== 'string' || typeof r.mukaSurat !== 'number') return null
+  return { bab: r.bab, tingkatan: r.tingkatan, mukaSurat: r.mukaSurat, ...(typeof r.hingga === 'number' ? { hingga: r.hingga } : {}) }
+}
+
+/** The int column twin of a textbook field: the number when the text is all digits and fits a smallint, else null (the jsonb keeps the text). */
+function smallInt(text: string): number | null {
+  const t = text.trim()
+  return /^\d{1,5}$/.test(t) && Number(t) <= 32767 ? Number(t) : null
+}
