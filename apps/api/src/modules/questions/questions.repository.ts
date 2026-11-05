@@ -237,7 +237,7 @@ const NO_STATUS_COUNTS = (): Record<QuestionStatus, number> => ({ draft: 0, revi
 
 /**
  * S1-T06 (D105, FR-MUR-QP-6/7, AC-QP-7, FR-QA-01): the whole-group predicate. A group member is served only when its WHOLE group can be:
- * the group holds a stimulus and no member is a gap. A member (bar those whose latest version is archived) is a gap when it is
+ * the group holds a stimulus the screen can show (a picture kind has its file, a passage has text: `mediaResolvedSql`) and no member is a gap. A member (bar those whose latest version is archived) is a gap when it is
  * inactive, has no live approved version, or is not a single MCQ leaf (part mode `mcq`) whose key names one of its options (the draw's `groupSurfaceShapeReasons`). One definition for the SQL draw (`QuestionFilter.wholeGroups`)
  * and the indicator (`incompleteGroups`), so the card, the details and the draw agree (D91).
  */
@@ -255,7 +255,8 @@ const groupGapCountSql = (groupId: Prisma.Sql): Prisma.Sql =>
 
 /** SQL boolean: the group `groupId` (a bigint expression) has a stimulus and no gap member. */
 export const groupCompleteSql = (groupId: Prisma.Sql): Prisma.Sql =>
-  Prisma.sql`(EXISTS (SELECT 1 FROM stimulus_group_stimuli wgs WHERE wgs.group_id = ${groupId}) AND ${groupGapCountSql(groupId)} = 0)`
+  Prisma.sql`(EXISTS (SELECT 1 FROM stimulus_group_stimuli wgs WHERE wgs.group_id = ${groupId}) AND ${groupGapCountSql(groupId)} = 0
+    AND ${mediaResolvedSql(Prisma.sql`SELECT wms.stimulus_id AS sid FROM stimulus_group_stimuli wms WHERE wms.group_id = ${groupId}`, Prisma.sql`NULL::jsonb`)})`
 
 /** The PKSK tags of a question (`pksk_domain` code and `pksk_level`), or null when it carries no domain tag. */
 function pkskOf(tags: readonly { kind: string; code: string }[]): { domainCode: string; level: 'T1' | 'T4' } | null {

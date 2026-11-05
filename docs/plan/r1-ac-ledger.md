@@ -63,6 +63,7 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
+| S1-T06 | AC-ADM-QE7.2 | CI | Pass | 2026-11-05 | team-aa/S-3 | exam-builder/builder-placements.spec.ts::D90: a stimulus group is one unit > placing ONE member places the whole group, contiguous in group order |
 
 ## Sprint 4
 
