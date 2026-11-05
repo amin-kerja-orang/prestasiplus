@@ -1,6 +1,6 @@
 import { z } from '../zod'
 import { IdSchema } from '../common/ids'
-import { SPM_DIFFICULTY_KEYS, SpmSetStatusSchema, SpmSubjectGroupSchema, SpmTargetTypeSchema } from './shared'
+import { SPM_DIFFICULTY_KEYS, SPM_MESSAGES, SpmSetStatusSchema, SpmSubjectGroupSchema, SpmTargetTypeSchema } from './shared'
 import { count } from './util'
 
 /**
@@ -307,3 +307,149 @@ export const SpmSubjektifOverviewSchema = z
   })
   .meta({ id: 'SpmSubjektifOverview' })
 export type SpmSubjektifOverview = z.infer<typeof SpmSubjektifOverviewSchema>
+
+// ---------------------------------------------------------------------------------------------
+// API-BIJAK-13 Tracking A admin (S3-T05, DM-24, FR-ADM-Q17.1..6). The lane list is the S3-T03 lane read (API-BIJAK-12, D-8).
+// ---------------------------------------------------------------------------------------------
+
+/** The word a Tracking A set shows on the lane and as a chip: a fixed display word, derived, no column (D-2). It is not a session mode. */
+export const TRACKING_A_KIND = 'ramalan'
+/** Field 17-01: the lowest year, the default year and the set number range. The highest year is the current year + 1, checked on the server. */
+export const TRACKING_A_YEAR_MIN = 2020
+export const TRACKING_A_YEAR_DEFAULT = 2026
+export const TRACKING_A_SET_NO_MAX = 99
+/** Most units `candidateItems` lists (PO 16); `candidates` still counts them all. */
+export const TRACKING_A_CANDIDATE_CAP = 200
+/** Most units one save may carry; far above any `target_size`, it only bounds the body. */
+export const TRACKING_A_SAVE_MAX_ITEMS = 500
+
+/** The exact copy of R1-ADM-Q-17 (PRD 30) and the product owner's rulings 14 and 15. */
+export const TRACKING_A_MESSAGES = {
+  subjectRequired: SPM_MESSAGES.subjectInvalid,
+  saveEmpty: 'Pilih sekurang-kurangnya satu soalan sebelum menyimpan.',
+  saved: 'Set dikemas kini.',
+  complete: 'Set ini lengkap.',
+  empty: 'Set ini masih kosong.',
+  fillNone: 'Tiada soalan lain yang boleh disajikan untuk mengisi set ini.',
+  swapNone: 'Tiada soalan lain yang boleh disajikan untuk ditukar.',
+  swapFailed: 'Tukar gagal.',
+  swapGone: 'Soalan yang ditukar telah dibuang; tukaran diabaikan.',
+  notServed: 'Tidak disajikan kepada pelajar',
+  paneEmpty: 'Pilih soalan untuk menyunting.',
+  paneLoading: 'Memuatkan…',
+  paneRetry: 'Cuba lagi',
+  paneOpen: 'Buka di laman berasingan',
+  setExists: (setNo: number): string => `Set ${String(setNo)} sudah wujud untuk subjek dan tahun ini.`,
+  needed: (n: number): string => `${String(n)} soalan lagi diperlukan.`,
+  available: (subject: string, n: number): string => `Soalan tersedia untuk ${subject}: ${n.toLocaleString('en-US')}`,
+  siblingClash: (position: number, setNo: number): string =>
+    `Soalan No. ${String(position)} sudah ada dalam Set ${String(setNo)} untuk subjek dan tahun ini. Buang atau tukar soalan itu.`,
+  groupNoFit: (label: string, questions: number, free: number): string =>
+    `Kumpulan \u201C${label}\u201D (${String(questions)} soalan) tidak muat dalam ${String(free)} petak yang tinggal. Pilih kumpulan lain atau kosongkan petak.`,
+} as const
+
+/**
+ * [PROPOSED] Every Tracking A string with no source in the PRD, in this one constant so a reviewer can replace them together. The
+ * server's refusals use the first six; the rest label the editor's controls.
+ */
+export const TRACKING_A_PROPOSED_COPY = {
+  yearRange: (max: number): string => `Tahun mesti antara ${String(TRACKING_A_YEAR_MIN)} dan ${String(max)}.`,
+  setNoRange: `Nombor set mesti antara 1 dan ${String(TRACKING_A_SET_NO_MAX)}.`,
+  notServable: (position: number): string => `Soalan No. ${String(position)} tidak boleh disajikan kepada pelajar. Buang atau tukar soalan itu.`,
+  groupMember: (position: number): string => `Soalan No. ${String(position)} ialah ahli kumpulan. Tambah kumpulan itu sepenuhnya.`,
+  repeated: (position: number): string => `Soalan No. ${String(position)} berulang dalam set ini. Buang salah satu.`,
+  overTarget: (target: number, excess: number): string => `Set ini melebihi sasaran ${String(target)} soalan. Buang ${String(excess)} soalan sebelum menyimpan.`,
+  targetLabel: (target: number): string => `Sasaran: ${String(target)} soalan`,
+  groupRow: (label: string, questions: number): string => `Kumpulan \u201C${label}\u201D (${String(questions)} soalan)`,
+  pickLabel: 'Pilih soalan atau kumpulan',
+  pickPlaceholder: 'Pilih daripada calon',
+  pickAdd: 'Tambah',
+  unsaved: 'Perubahan belum disimpan.',
+  addCancel: 'Batal',
+  addHeading: 'Set baharu',
+} as const
+
+const trackingUnitKind = z.enum(['question', 'group']).meta({ description: 'A question outside a group, or a whole stimulus group (FR-ADM-Q17.6).' })
+
+/** One question of a unit, as a row of the editor shows it. */
+export const SpmAdminTrackingAMemberSchema = z
+  .strictObject({
+    id: IdSchema,
+    stem: z.string(),
+    servable: z.boolean().meta({ description: 'False: the pupil start would not serve it now; the row says "Tidak disajikan kepada pelajar".' }),
+    statusWord: z.string().nullable().meta({ description: 'The word of a question that is not served, such as "diarkib"; null when there is none.' }),
+  })
+  .meta({ id: 'SpmAdminTrackingAMember' })
+export type SpmAdminTrackingAMember = z.infer<typeof SpmAdminTrackingAMemberSchema>
+
+/** A unit a set can take: servable, and held by no sibling set of the same subject and year (PO 16). */
+export const SpmAdminTrackingACandidateSchema = z
+  .strictObject({
+    kind: trackingUnitKind,
+    id: IdSchema.meta({ description: 'The question id, or the stimulus group id.' }),
+    questions: z.number().int().min(1).meta({ description: 'A group counts as its number of questions.' }),
+    label: z.string().meta({ description: 'The stem of a question, the label of a group.' }),
+    members: z.array(SpmAdminTrackingAMemberSchema).min(1),
+  })
+  .meta({ id: 'SpmAdminTrackingACandidate' })
+export type SpmAdminTrackingACandidate = z.infer<typeof SpmAdminTrackingACandidateSchema>
+
+/** A unit of a set in set order. `position` is the 1-based number of its first question. */
+export const SpmAdminTrackingASetItemSchema = z
+  .strictObject({
+    kind: trackingUnitKind,
+    id: IdSchema,
+    position: z.number().int().min(1),
+    questions: z.number().int().min(1),
+    label: z.string(),
+    members: z.array(SpmAdminTrackingAMemberSchema).min(1),
+  })
+  .meta({ id: 'SpmAdminTrackingASetItem' })
+export type SpmAdminTrackingASetItem = z.infer<typeof SpmAdminTrackingASetItemSchema>
+
+/**
+ * `TrackingASet` of API-BIJAK-13. `targetCount` is the read-only `spm_subject_configs.target_size` (D-12). `filled` and `attention` equal the
+ * lane row of the same set. `candidates` counts the questions that could still fill it; `candidateItems` lists them as units, capped.
+ */
+export const SpmAdminTrackingASetSchema = z
+  .strictObject({
+    id: IdSchema,
+    subjectId: IdSchema,
+    subject: z.string(),
+    year: z.number().int(),
+    setNo: z.number().int().min(1),
+    kind: z.literal(TRACKING_A_KIND),
+    targetCount: count,
+    filled: count,
+    attention: z.array(z.string()).meta({ description: '"Hanya {a} daripada {b} soalan" while the set is not complete; empty when it is.' }),
+    items: z.array(SpmAdminTrackingASetItemSchema),
+    candidates: count,
+    candidateItems: z.array(SpmAdminTrackingACandidateSchema).max(TRACKING_A_CANDIDATE_CAP),
+  })
+  .meta({ id: 'SpmAdminTrackingASet' })
+export type SpmAdminTrackingASet = z.infer<typeof SpmAdminTrackingASetSchema>
+
+/** `POST /admin/spm/tracking-a` body (field 17-01). The server also refuses a year above the current year + 1 and a subject outside the select (D-11). */
+export const SpmAdminTrackingASetCreateSchema = z
+  .strictObject({
+    subjectId: z.string({ error: TRACKING_A_MESSAGES.subjectRequired }).min(1, TRACKING_A_MESSAGES.subjectRequired).max(64, TRACKING_A_MESSAGES.subjectRequired),
+    year: z.number().int().meta({ description: 'From 2020 to the current year + 1. The range is checked, and its message written, by the server.' }),
+    setNo: z
+      .number({ error: TRACKING_A_PROPOSED_COPY.setNoRange })
+      .int(TRACKING_A_PROPOSED_COPY.setNoRange)
+      .min(1, TRACKING_A_PROPOSED_COPY.setNoRange)
+      .max(TRACKING_A_SET_NO_MAX, TRACKING_A_PROPOSED_COPY.setNoRange),
+  })
+  .meta({ id: 'SpmAdminTrackingASetCreate' })
+export type SpmAdminTrackingASetCreate = z.infer<typeof SpmAdminTrackingASetCreateSchema>
+
+/** `PUT /admin/spm/tracking-a/{id}` body: the whole set in order. One transaction; a group is one item (FR-ADM-Q17.5, 17.6). */
+export const SpmAdminTrackingASetSaveSchema = z
+  .strictObject({
+    items: z
+      .array(z.strictObject({ kind: trackingUnitKind, id: IdSchema }), { error: TRACKING_A_MESSAGES.saveEmpty })
+      .min(1, TRACKING_A_MESSAGES.saveEmpty)
+      .max(TRACKING_A_SAVE_MAX_ITEMS),
+  })
+  .meta({ id: 'SpmAdminTrackingASetSave' })
+export type SpmAdminTrackingASetSave = z.infer<typeof SpmAdminTrackingASetSaveSchema>

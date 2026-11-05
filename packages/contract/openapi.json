@@ -14673,6 +14673,256 @@
         ],
         "additionalProperties": false
       },
+      "SpmAdminTrackingAMember": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "stem": {
+            "type": "string"
+          },
+          "servable": {
+            "type": "boolean",
+            "description": "False: the pupil start would not serve it now; the row says \"Tidak disajikan kepada pelajar\"."
+          },
+          "statusWord": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The word of a question that is not served, such as \"diarkib\"; null when there is none."
+          }
+        },
+        "required": [
+          "id",
+          "stem",
+          "servable",
+          "statusWord"
+        ],
+        "additionalProperties": false
+      },
+      "SpmAdminTrackingACandidate": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "question",
+              "group"
+            ],
+            "description": "A question outside a group, or a whole stimulus group (FR-ADM-Q17.6)."
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The question id, or the stimulus group id.",
+            "example": "1042"
+          },
+          "questions": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "A group counts as its number of questions."
+          },
+          "label": {
+            "type": "string",
+            "description": "The stem of a question, the label of a group."
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpmAdminTrackingAMember"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "questions",
+          "label",
+          "members"
+        ],
+        "additionalProperties": false
+      },
+      "SpmAdminTrackingASetItem": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "question",
+              "group"
+            ],
+            "description": "A question outside a group, or a whole stimulus group (FR-ADM-Q17.6)."
+          },
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "position": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "questions": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "label": {
+            "type": "string"
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpmAdminTrackingAMember"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "position",
+          "questions",
+          "label",
+          "members"
+        ],
+        "additionalProperties": false
+      },
+      "SpmAdminTrackingASet": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "year": {
+            "type": "integer"
+          },
+          "setNo": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ramalan"
+            ]
+          },
+          "targetCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "filled": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "attention": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "\"Hanya {a} daripada {b} soalan\" while the set is not complete; empty when it is."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpmAdminTrackingASetItem"
+            }
+          },
+          "candidates": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "candidateItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpmAdminTrackingACandidate"
+            },
+            "maxItems": 200
+          }
+        },
+        "required": [
+          "id",
+          "subjectId",
+          "subject",
+          "year",
+          "setNo",
+          "kind",
+          "targetCount",
+          "filled",
+          "attention",
+          "items",
+          "candidates",
+          "candidateItems"
+        ],
+        "additionalProperties": false
+      },
+      "SpmAdminTrackingASetCreate": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "year": {
+            "type": "integer",
+            "description": "From 2020 to the current year + 1. The range is checked, and its message written, by the server."
+          },
+          "setNo": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 99
+          }
+        },
+        "required": [
+          "subjectId",
+          "year",
+          "setNo"
+        ],
+        "additionalProperties": false
+      },
+      "SpmAdminTrackingASetSave": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "question",
+                    "group"
+                  ],
+                  "description": "A question outside a group, or a whole stimulus group (FR-ADM-Q17.6)."
+                },
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                }
+              },
+              "required": [
+                "kind",
+                "id"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 500
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
       "SpmMockListItem": {
         "type": "object",
         "properties": {
@@ -86483,6 +86733,265 @@
           },
           "401": {
             "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/spm/tracking-a": {
+      "post": {
+        "tags": [
+          "spm-admin"
+        ],
+        "summary": "Create an empty Tracking A set (Tambah Set)",
+        "description": "Admin Pusat only. BM and BI have no objective sets and are refused as `fields.subjectId` (D-11).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpmAdminTrackingASetCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new set.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SpmAdminTrackingASet"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (not the `admin` role), or CSRF_INVALID (missing or wrong X-CSRF-Token) on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields.subjectId \"Sila pilih subjek.\", fields.year, or fields.setNo (out of range, or \"Set {n} sudah wujud untuk subjek dan tahun ini.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/spm/tracking-a/{id}": {
+      "get": {
+        "tags": [
+          "spm-admin"
+        ],
+        "summary": "One Tracking A set with its units and candidates",
+        "description": "Admin Pusat only. `filled` and `attention` equal the lane row. `candidates` counts; `candidateItems` lists units, servable only, capped.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Tracking A set id. An unknown id is 404.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Tracking A set id. An unknown id is 404.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The set.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SpmAdminTrackingASet"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (not the `admin` role), or CSRF_INVALID (missing or wrong X-CSRF-Token) on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "spm-admin"
+        ],
+        "summary": "Save a Tracking A set in one transaction",
+        "description": "Admin Pusat only. Replaces the members in the given order and recomputes `dskp_tagged`. A group is one item, added whole in group order. Refused whole, nothing written: an empty body, an item that is not servable, a group member sent alone, a repeat, a question held by a sibling set, a save above the target, a group that does not fit.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Tracking A set id. An unknown id is 404.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Tracking A set id. An unknown id is 404.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpmAdminTrackingASetSave"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The saved set.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SpmAdminTrackingASet"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (not the `admin` role), or CSRF_INVALID (missing or wrong X-CSRF-Token) on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields.items carrying the reason in BM.",
             "content": {
               "application/json": {
                 "schema": {
