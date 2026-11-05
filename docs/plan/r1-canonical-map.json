@@ -10512,6 +10512,22 @@
       "approved_by_card": null
     },
     {
+      "name": "MysteryBox",
+      "table": "mystery_boxes",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/gamification.prisma",
+      "approved_by_card": "S7-T07"
+    },
+    {
+      "name": "MysteryBoxPrize",
+      "table": "mystery_box_prizes",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/gamification.prisma",
+      "approved_by_card": "S7-T07"
+    },
+    {
       "name": "GamificationSetting",
       "table": "gamification_settings",
       "status": "canonical",
@@ -14250,6 +14266,26 @@
       "sector": "S7",
       "file": "apps/api/src/modules/gamification/admin.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/reward-control/mystery-boxes",
+      "method": "GET",
+      "path": "/api/admin/reward-control/mystery-boxes",
+      "api_id": "API-GAME-09",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/gamification/admin.controller.ts",
+      "approved_by_card": "S7-T07"
+    },
+    {
+      "key": "PUT /api/admin/reward-control/mystery-boxes/:p",
+      "method": "PUT",
+      "path": "/api/admin/reward-control/mystery-boxes/:id",
+      "api_id": "API-GAME-09",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/gamification/admin.controller.ts",
+      "approved_by_card": "S7-T07"
     },
     {
       "key": "GET /api/gamification/dashboard",

@@ -87,6 +87,8 @@ export const AUDIT_ACTIONS = {
   SHOP_REWARD_BULK_ACTION: 'shop.reward.bulk_action',
   SHOP_REDEMPTION_DELIVERED: 'shop.redemption.delivered',
   SHOP_REDEMPTION_CANCELLED: 'shop.redemption.cancelled',
+  // S7-T07 P7: an admin saved a Kotak Misteri box (label, cost, active flag, prize rows, daily limit).
+  SHOP_MYSTERY_BOX_UPDATED: 'shop.mystery_box.updated',
   INTAKE_BATCH_CREATED: 'intake.batch_created',
   INTAKE_FILES_UPLOADED: 'intake.files_uploaded',
   INTAKE_BATCH_CANCELLED: 'intake.batch_cancelled',

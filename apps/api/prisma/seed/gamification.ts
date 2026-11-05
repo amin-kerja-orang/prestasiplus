@@ -12,7 +12,7 @@
  *    500 sen x10 from the mock draw tests), closing 90 days after the seed clock.
  * Not seeded: wallets and ledger (BE-11), tier rows (BE-11), claims, redemptions, tickets, completions and unlocks
  * (they need users and runtime activity), learner badge holdings (the mock holdings belong to a mock user id with no
- * seeded account), mystery boxes (constants in code, no table), teacher economy (D53/OWN-10).
+ * seeded account), mystery boxes (rows of migration 0222, DM-37: not seeded here), teacher economy (D53/OWN-10).
  *
  * Idempotent: settings are upserted by their unique `key`; every other row is found by its natural key (challenge
  * title, achievement name, badge name, Syiling reward name, Hadiah vendor + title, draw title) and created only when

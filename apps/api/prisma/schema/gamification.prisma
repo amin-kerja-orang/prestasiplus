@@ -360,17 +360,63 @@ model RewardRedemption {
   @@map("reward_redemptions")
 }
 
-/// One mystery box opening. The four boxes are static constants in code (no table, as in the mock); `box_id` is the constant's id.
+/// One mystery box opening. `box_id` references `mystery_boxes` (FK from 0222; ids 1 to 4 are the old constant boxes, kept inactive).
+/// The prize columns and `client_uuid` are written by the pupil flow of S7-T07 part P8; rows made before it hold NULL there.
+/// DM-79 pattern: the partial unique index (user_id, client_uuid) WHERE client_uuid IS NOT NULL lives in migration 0222 only.
 model MysteryBoxOpening {
-  id        BigInt   @id @default(autoincrement())
-  userId    BigInt   @map("user_id")
-  boxId     Int      @map("box_id")
-  coins     Int
-  xp        Int
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id          BigInt   @id @default(autoincrement())
+  userId      BigInt   @map("user_id")
+  boxId       Int      @map("box_id")
+  coins       Int
+  xp          Int
+  /// Label, kind (syiling, token; check) and amount of the prize as drawn (NULL before P8).
+  prizeLabel  String?  @map("prize_label")
+  prizeKind   String?  @map("prize_kind")
+  prizeAmount Int?     @map("prize_amount")
+  clientUuid  String?  @map("client_uuid") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  box MysteryBox @relation(fields: [boxId], references: [id], onDelete: Restrict, map: "fk_mystery_box_openings_box_id")
 
   @@index([userId, createdAt], map: "ix_mystery_box_openings_user_id_created_at")
+  @@index([boxId], map: "ix_mystery_box_openings_box_id")
   @@map("mystery_box_openings")
+}
+
+/// DM-37: a Kotak Misteri box. Cost lives only here (R2). Ids 1 to 4 are the four old constant boxes, inactive and
+/// without prizes; id 5 is the one active box (migration 0222). There is no create route (R1): admins edit these rows.
+model MysteryBox {
+  id          Int      @id @default(autoincrement())
+  label       String
+  /// Cost of one opening in syiling (check >= 1).
+  costSyiling Int      @map("cost_syiling")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  prizes   MysteryBoxPrize[]
+  openings MysteryBoxOpening[]
+
+  @@map("mystery_boxes")
+}
+
+/// DM-37: one prize row of a box. `kind` is syiling or token (check), `amount >= 1`, `weight` an integer 0..100
+/// (the weights of a box total 100, enforced by the admin save), `stock` NULL = unlimited, 0 = out of stock.
+model MysteryBoxPrize {
+  id        BigInt   @id @default(autoincrement())
+  boxId     Int      @map("box_id")
+  label     String
+  kind      String
+  amount    Int
+  weight    Int
+  stock     Int?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  box MysteryBox @relation(fields: [boxId], references: [id], onDelete: Cascade, map: "fk_mystery_box_prizes_box_id")
+
+  @@index([boxId], map: "ix_mystery_box_prizes_box_id")
+  @@map("mystery_box_prizes")
 }
 
 /// Key/value gamification settings (mock `gamification.settings`); toggles are 0/1.

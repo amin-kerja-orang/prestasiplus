@@ -7,6 +7,9 @@ import { IdSchema } from '../common/ids'
 import {
   GamificationAdminAwardRequestSchema,
   GamificationAdminAwardResultSchema,
+  GamificationBoxOpeningsDaySchema,
+  GamificationBoxPrizeKindSchema,
+  GamificationBoxPrizeSchema,
   GamificationAdminChallengeInputSchema,
   GamificationAdminChallengeSchema,
   GamificationAdminOverviewSchema,
@@ -25,6 +28,9 @@ import {
   GamificationDrawPrizeSchema,
   GamificationDrawSchema,
   GamificationDrawStatusSchema,
+  GamificationMysteryBoxesAdminSchema,
+  GamificationMysteryBoxSchema,
+  GamificationMysteryBoxUpdateRequestSchema,
   GamificationEconomySettingsSchema,
   GamificationEconomySettingsUpdateSchema,
   GamificationRewardControlSchema,
@@ -169,6 +175,12 @@ export const GAMIFICATION_COMPONENT_SCHEMAS = {
   GamificationDraw: GamificationDrawSchema,
   GamificationDrawCreateRequest: GamificationDrawCreateRequestSchema,
   GamificationRewardControl: GamificationRewardControlSchema,
+  GamificationBoxPrizeKind: GamificationBoxPrizeKindSchema,
+  GamificationBoxPrize: GamificationBoxPrizeSchema,
+  GamificationMysteryBox: GamificationMysteryBoxSchema,
+  GamificationBoxOpeningsDay: GamificationBoxOpeningsDaySchema,
+  GamificationMysteryBoxesAdmin: GamificationMysteryBoxesAdminSchema,
+  GamificationMysteryBoxUpdateRequest: GamificationMysteryBoxUpdateRequestSchema,
   // M15
   RewardCategory: RewardCategorySchema,
   RewardDeliveryMethod: RewardDeliveryMethodSchema,
@@ -603,6 +615,32 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
       422: err(
         `${VALIDATION_FIELDS} Or VALIDATION_ERROR "Format JSON kolam hadiah tidak sah." with fields.prizePool (also the top-level message), or "Tarikh tutup tidak sah." (closesAt), or fields.closesAt "Medan ini tidak sah." (not a real date).`,
       ),
+    },
+  })
+
+  registry.registerPath({
+    method: 'get',
+    path: '/admin/reward-control/mystery-boxes',
+    tags: ['gamification-admin'],
+    summary: 'Kotak Misteri: boxes, daily limit and openings per day',
+    description: 'Every box with its prize rows (prize rows in stored order), dailyMax (mystery_box_daily_max) and the openings of the last 7 Malaysia days.',
+    responses: { 200: json(envelopeOf(GamificationMysteryBoxesAdminSchema), 'Boxes, dailyMax and openingsPerDay.'), 401: UNAUTHORIZED, 403: FORBIDDEN_ADMIN },
+  })
+
+  registry.registerPath({
+    method: 'put',
+    path: '/admin/reward-control/mystery-boxes/{id}',
+    tags: ['gamification-admin'],
+    summary: 'Save a Kotak Misteri box',
+    description:
+      'Replaces the label, cost, active flag and prize rows of the box; dailyMax (optional) saves mystery_box_daily_max. There is no POST: boxes are not created through the API. An active box needs weights that total 100.',
+    request: { params: IdParams, headers: [csrf], body: body(GamificationMysteryBoxUpdateRequestSchema) },
+    responses: {
+      200: json(envelopeOf(GamificationMysteryBoxesAdminSchema), 'The list after the save.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_ADMIN_WRITE,
+      404: err('NOT_FOUND "Kotak tidak dijumpai."'),
+      422: err(`${VALIDATION_FIELDS} Or VALIDATION_ERROR "Jumlah peluang mesti 100%." with fields.prizes (an active box whose weights do not total 100, or an active box with no prize).`),
     },
   })
 
