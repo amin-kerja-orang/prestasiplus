@@ -342,6 +342,29 @@ export class CurriculumRepository {
     return out
   }
 
+  /**
+   * S10-T05 (heatmap): the active in-tree chapters of the given subjects in the active Tingkatan 1 to 5 levels (codes
+   * `T1`..`T5`; never a Darjah), each with its Bab number and level. Unsorted; the caller orders them.
+   */
+  async chaptersOfSubjectsInForms(
+    subjectIds: readonly bigint[],
+  ): Promise<{ id: bigint; subjectId: bigint; name: string; chapterNumber: number | null; levelCode: string; levelOrder: number }[]> {
+    if (subjectIds.length === 0) return []
+    const levels = (await this.levels({ active: true })).filter((l) => /^T[1-5]$/.test(l.code))
+    if (levels.length === 0) return []
+    const byLevel = new Map(levels.map((l) => [l.id, l]))
+    const rows = await this.db.chapter.findMany({
+      where: { subjectId: { in: [...new Set(subjectIds)] }, educationLevelId: { in: levels.map((l) => l.id) }, inTree: true, isActive: true },
+    })
+    const out: { id: bigint; subjectId: bigint; name: string; chapterNumber: number | null; levelCode: string; levelOrder: number }[] = []
+    for (const c of rows) {
+      const level = c.educationLevelId === null ? undefined : byLevel.get(c.educationLevelId)
+      if (c.name == null || !level) continue
+      out.push({ id: c.id, subjectId: c.subjectId, name: c.name, chapterNumber: c.chapterNumber, levelCode: level.code, levelOrder: level.sortOrder })
+    }
+    return out
+  }
+
   /** Topics of a chapter, BR-08 natural order. */
   async topics(chapterId: bigint): Promise<Topic[]> {
     const rows = await this.db.topic.findMany({ where: { chapterId } })
