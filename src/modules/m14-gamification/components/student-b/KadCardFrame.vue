@@ -17,11 +17,9 @@ withDefaults(
     /** Colour of the "Muat Turun" button (per card). */
     downloadColor?: FrameColor
     shareLabel?: string
-    /** Smaller buttons inside the mastery grid. */
-    compact?: boolean
     testKey: string
   }>(),
-  { title: '', downloadColor: 'primary', shareLabel: KAD_COPY.whatsapp, compact: false },
+  { title: '', downloadColor: 'primary', shareLabel: KAD_COPY.whatsapp },
 )
 const emit = defineEmits<{ download: [el: HTMLElement | null]; share: [] }>()
 
@@ -43,7 +41,7 @@ const cardEl = ref<HTMLElement | null>(null)
     <div class="flex flex-wrap justify-center gap-3">
       <UButton
         type="button"
-        :size="compact ? 'lg' : 'xl'"
+        size="lg"
         :color="downloadColor"
         icon="i-ph-download-simple-duotone"
         :data-testid="`kad-${testKey}-download`"
@@ -53,7 +51,7 @@ const cardEl = ref<HTMLElement | null>(null)
       </UButton>
       <UButton
         type="button"
-        :size="compact ? 'lg' : 'xl'"
+        size="lg"
         color="success"
         :data-testid="`kad-${testKey}-share`"
         @click="emit('share')"

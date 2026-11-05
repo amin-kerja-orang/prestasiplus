@@ -5,7 +5,6 @@ import {
   SUPPORT_QUEUE_PER_PAGE,
   SUPPORT_ROLE_LABELS,
   SUPPORT_TICKET_STATUS_LABELS,
-  type ContentSupportConfig,
   type SupportQueueResponse,
   type SupportTicket,
   type SupportTicketCreateRequest,
@@ -23,7 +22,7 @@ import { PrismaService } from '../../db/prisma.service'
 import { isOverloadError } from '../auth/auth.errors'
 import { hasNul } from '../content/audio/null-char'
 import { NotificationsService } from '../notifications'
-import { NOTIFY_BATCH, SUPPORT_AUDIT, SUPPORT_CONFIG_MISSING, WRITE_TX } from './support.constants'
+import { NOTIFY_BATCH, SUPPORT_AUDIT, WRITE_TX } from './support.constants'
 import { isTicketStatus, SupportRepository, type TicketDetailRow, type TicketRow } from './support.repository'
 
 /** Who is acting: the signed-in user and the request facts the audit row needs. */
@@ -69,6 +68,14 @@ const toDetail = (r: TicketDetailRow): SupportTicketDetail => ({
 const pageOf = (raw: string | undefined): number => {
   const page = /^[0-9]{1,9}$/.test(raw ?? '') ? Number(raw) : 1
   return Math.max(page, 1)
+}
+
+/** Wire shape of `GET /config/support`; local until the S5-T05 contract (`ContentSupportConfig`) reaches this branch. */
+interface SupportConfigResponse {
+  email: string
+  phone: string
+  whatsapp: string
+  hours: string
 }
 
 @Injectable()
@@ -203,11 +210,11 @@ export class SupportService {
     return { count: await this.guard(() => this.repo.openCount()) }
   }
 
-  /** GET /config/support (public): the contact from the singleton row. */
-  async supportConfig(): Promise<ContentSupportConfig> {
+  /** GET /config/support (public): `{email, phone, whatsapp, hours}`; `whatsapp` is the row's `whatsapp_number`, all four are '' when no row exists (DM-33, S5-T05). */
+  async supportConfig(): Promise<SupportConfigResponse> {
     const config = await this.guard(() => this.repo.config())
-    if (!config) throw ApiError.of('NOT_FOUND', { message: SUPPORT_CONFIG_MISSING })
-    return config
+    // Four-key wire shape (#458 decision 2): phone and hours are not stored until S7-T09.
+    return { email: config?.email ?? '', phone: '', whatsapp: config?.whatsappNumber ?? '', hours: '' }
   }
 
   // --- helpers ------------------------------------------------------------------------------------

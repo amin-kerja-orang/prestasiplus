@@ -15,6 +15,8 @@ const baseURL = `http://localhost:${PORT}`
 export default defineConfig({
   testDir: 'e2e',
   testMatch: '**/*.spec.ts',
+  // R1 specs (e2e/r1/**) are http-mode only: they run under playwright.http.config.ts.
+  testIgnore: ['**/r1/**'],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,

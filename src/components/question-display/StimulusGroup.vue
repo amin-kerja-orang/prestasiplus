@@ -8,14 +8,14 @@
  * With `groupId` the sheet is open the first time the group appears and keeps the pupil's choice (FR-X6-6).
  * (A stimulus that cannot be drawn is kept out at serving, FR-X1-4.) The questions go in the default slot. Only one tree is rendered at a time (no duplicate ids).
  */
-import { computed, useSlots } from 'vue'
+import { computed, nextTick, onBeforeUnmount, provide, ref, useSlots } from 'vue'
 
 import { DsIconChip, DsStack, DsText } from '@/ds'
 import { useMedia } from '@/ds/useMedia'
 
 import { chipLabel, qdCopy } from './copy'
 import { stimuliLabel } from './lib/stimulus-data'
-import { useStimulusOpen } from './lib/useStimulusOpen'
+import { STIMULUS_GROUP_KEY, useStimulusOpen } from './lib/useStimulusOpen'
 import StimulusFigure from './StimulusFigure.vue'
 import type { StimulusData } from './types'
 
@@ -58,6 +58,32 @@ const list = computed<readonly StimulusData[]>(() =>
   props.stimuli && props.stimuli.length > 0 ? props.stimuli : props.stimulus ? [props.stimulus] : [],
 )
 const label = computed(() => stimuliLabel(list.value))
+
+/** Open one stimulus (or 'all') from a link in a question: the pinned pane scrolls and highlights, the drawer opens and scrolls (FR-PA-37). */
+/** The one rendered stimulus container of THIS group (inline stack, pinned pane or drawer body): scroll never looks outside it. */
+const scope = ref<unknown>(null)
+const lit = ref<string[]>([])
+let timer: ReturnType<typeof setTimeout> | undefined
+function openStimulus(id: string): void {
+  const ids = id === 'all' ? list.value.map((s) => s.id) : list.value.some((s) => s.id === id) ? [id] : []
+  if (ids.length === 0) return
+  if (!wide.value && !inline) open.value = true
+  lit.value = ids
+  clearTimeout(timer)
+  timer = setTimeout(() => (lit.value = []), 2500)
+  const scroll = (): void => {
+    const root = scope.value as { $el?: HTMLElement } | HTMLElement | null
+    const el = root && '$el' in root ? root.$el : (root as HTMLElement | null)
+    el
+      ?.querySelector<HTMLElement>(`[data-stimulus-id="${ids[0]}"]`)
+      ?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' })
+  }
+  void nextTick(() => (wide.value || inline ? scroll() : void setTimeout(scroll, 50)))
+}
+onBeforeUnmount(() => clearTimeout(timer))
+provide(STIMULUS_GROUP_KEY, { stimuli: () => list.value, open: openStimulus })
+defineExpose({ openStimulus })
+const isLit = (id: string): 'true' | undefined => (lit.value.includes(id) ? 'true' : undefined)
 /** The pinned hint is about a passage; a figure-only group shows none. */
 const hasPassage = computed(() => list.value.some((s) => s.kind === 'passage'))
 const thumb = computed(() => list.value[0])
@@ -67,11 +93,13 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
 </script>
 
 <template>
-  <DsStack v-if="inline" gap="md" data-testid="stimulus-group" data-layout="inline">
+  <DsStack v-if="inline" ref="scope" gap="md" data-testid="stimulus-group" data-layout="inline">
     <StimulusFigure
       v-for="st in list"
       :key="st.id"
       :stimulus="st"
+      :data-stimulus-id="st.id"
+      :data-stimulus-lit="isLit(st.id)"
       @loaded="emit('loaded', st.id)"
       @error="emit('error', st.id)"
       @retry="emit('retry', st.id)"
@@ -94,6 +122,7 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
           : 'sticky top-20 max-h-[calc(100vh-6rem)]'
       "
       :aria-label="split === 'sitting' ? qdCopy.pinnedAria : label"
+      ref="scope"
       data-testid="stimulus-pane"
     >
       <DsStack gap="xs">
@@ -102,6 +131,8 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
           v-for="st in list"
           :key="st.id"
           :stimulus="st"
+          :data-stimulus-id="st.id"
+          :data-stimulus-lit="isLit(st.id)"
           :max-height="false"
           @loaded="emit('loaded', st.id)"
           @error="emit('error', st.id)"
@@ -152,11 +183,13 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
     :description="qdCopy.sheetDescription"
   >
     <template #body>
-      <DsStack gap="md" data-testid="group-stimuli" :data-count="list.length">
+      <DsStack ref="scope" gap="md" data-testid="group-stimuli" :data-count="list.length">
         <StimulusFigure
           v-for="st in list"
           :key="st.id"
           :stimulus="st"
+          :data-stimulus-id="st.id"
+          :data-stimulus-lit="isLit(st.id)"
           @loaded="emit('loaded', st.id)"
           @error="emit('error', st.id)"
           @retry="emit('retry', st.id)"

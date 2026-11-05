@@ -65,7 +65,6 @@ model School {
   ppd           Ppd?                 @relation(fields: [ppdId], references: [id], onDelete: Restrict, map: "fk_schools_ppd_id")
   users         User[]
   pendingUsers  User[]               @relation("UserPendingSchool")
-  supportTickets SupportTicket[]     @relation("SupportTicketSchool")
   userScopes    UserScope[]
   auditEvents   AuditEvent[]
   importJobs    ImportJob[]
@@ -74,6 +73,9 @@ model School {
   videos        Video[]              @relation("VideoSchool")
   videoShares   VideoSchool[]        @relation("VideoSchoolShare")
   perutusan     Perutusan[]          @relation("PerutusanSchool")
+
+  // DM-32 back-relation (content.prisma owns support_tickets).
+  supportTickets SupportTicket[] @relation("SupportTicketSchool")
 
   // uq_schools_code_lower (unique on lower(code)) and ix_schools_name_lower are hand-written in migration
   // 0004 (Prisma cannot express functional indexes); `migrate diff` ignores them.
