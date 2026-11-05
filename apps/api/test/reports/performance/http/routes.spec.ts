@@ -4,6 +4,7 @@ import {
   PerformanceClassCardSchema,
   PerformanceClassDashboardSchema,
   PerformanceClassItemAnalysisSchema,
+  PerformanceItemAnalysisMeSchema,
   PerformanceLevelCardSchema,
   PerformanceLevelDetailSchema,
   PerformanceSchoolItemAnalysisSchema,
@@ -18,7 +19,7 @@ import { bootWorld, type World } from './boot'
 
 let w: World
 const as: Record<string, Client> = {}
-const who = ['pelajar', 'pelajarmaju', 'pelajar2', 'guru', 'adminsekolah', 'admin', 'ppd', 'ibubapa', 'penaja'] as const
+const who = ['pelajar', 'pelajarmaju', 'pelajar2', 'saya', 'guru', 'adminsekolah', 'admin', 'ppd', 'ibubapa', 'penaja'] as const
 
 beforeAll(async () => {
   w = await bootWorld()
@@ -44,9 +45,10 @@ describe('authentication', () => {
     `/api/item-analysis/school/${w.schools.demo1}`,
     '/api/item-analysis/classes',
     `/api/item-analysis/classes/${w.classId}`,
+    '/api/item-analysis/me',
   ]
 
-  it('answers 401 on all 12 routes without a session', async () => {
+  it('answers 401 on all 13 routes without a session', async () => {
     for (const url of routes()) {
       const res = await w.http().get(url)
       expectError(res, 'UNAUTHORIZED')
@@ -59,6 +61,14 @@ describe('roles', () => {
     for (const k of ['ibubapa', 'penaja']) {
       expectError(await (as[k] as Client).get('/api/item-analysis/school'), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
       expectError(await (as[k] as Client).get(`/api/item-analysis/school/${w.schools.demo1}`), 'FORBIDDEN')
+    }
+  })
+
+  it('a student is refused (403) on both school item analyses (AC-MUR-6-5, FR-MUR-6-2)', async () => {
+    for (const k of ['pelajar', 'pelajarmaju', 'saya'] as const) {
+      expectError(await (as[k] as Client).get('/api/item-analysis/school'), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
+      expectError(await (as[k] as Client).get(`/api/item-analysis/school/${w.schools.demo1}`), 'FORBIDDEN')
+      expectError(await (as[k] as Client).get(`/api/item-analysis/school/${w.schools.demo2}`), 'FORBIDDEN')
     }
   })
 
@@ -226,10 +236,11 @@ describe('query validation', () => {
 describe('privacy', () => {
   const wrongPupils = (r: z.infer<typeof PerformanceSchoolItemAnalysisSchema>) => r.questions.flatMap((q) => q.wrongPupils)
 
-  it('a student gets no pupil rows on the school item analysis, and no question under the minimum cohort', async () => {
-    const r = parseData(await (as.pelajar as Client).get('/api/item-analysis/school'), PerformanceSchoolItemAnalysisSchema)
-    expect(wrongPupils(r)).toEqual([])
+  it('an officer gets no question under the minimum cohort and no real pupil name', async () => {
+    const r = parseData(await (as.ppd as Client).get(`/api/item-analysis/school/${w.schools.demo1}`), PerformanceSchoolItemAnalysisSchema)
     expect(r.questions.map((q) => q.questionId)).toEqual(['q1'])
+    for (const p of wrongPupils(r)) expect(p).toMatchObject({ name: 'Murid', userId: '0' })
+    expect(r.tingkatanOptions).toEqual([])
   })
 
   it('an officer gets redacted pupil rows and the same cohort rule', async () => {
@@ -250,6 +261,44 @@ describe('privacy', () => {
   it('a student has no school or level view at all (403), so no teacher list and no top or at-risk pupils', async () => {
     expectError(await (as.pelajar as Client).get('/api/performance/school'), 'FORBIDDEN')
     expectError(await (as.pelajar as Client).get('/api/performance/levels/t4'), 'FORBIDDEN')
+  })
+})
+
+describe('API-RPT-05 item analysis of the pupil (me)', () => {
+  it('a student gets the own analysis: categories over every mode, archived questions dropped, parses with the contract and is no-store', async () => {
+    const res = await (as.saya as Client).get('/api/item-analysis/me')
+    const r = parseData(res, PerformanceItemAnalysisMeSchema)
+    noStore(res)
+    // q1: wrong in two modes (Pemulihan); q2: wrong once (Isyarat Awal); q4: right then wrong (Pengukuhan); q3 is archived (no content).
+    expect(Object.fromEntries(r.items.map((i) => [i.questionId, i.category]))).toEqual({ q1: 'pemulihan', q4: 'pengukuhan', q2: 'isyarat_awal' })
+    expect(r.counts).toEqual({ isyaratAwal: 1, pemulihan: 1, pengukuhan: 1 })
+    expect(r.tiles).toMatchObject({ answered: 7, needRemedial: 1, needStrengthen: 1 })
+    expect(r.items.find((i) => i.questionId === 'q1')).toMatchObject({ attempts: 2, correct: 0, wrongTimes: 2, explanation: 'Penjelasan q1' })
+  })
+
+  it('the query tapis filters the items only; an unknown tapis or an over-long subjectCode is a 422', async () => {
+    const s = as.saya as Client
+    const wrong = parseData(await s.get('/api/item-analysis/me?tapis=selalu_salah'), PerformanceItemAnalysisMeSchema)
+    expect(wrong.items.map((i) => i.questionId)).toEqual(['q1'])
+    expect(wrong.counts).toEqual({ isyaratAwal: 1, pemulihan: 1, pengukuhan: 1 })
+    const some = parseData(await s.get('/api/item-analysis/me?tapis=ada_betul'), PerformanceItemAnalysisMeSchema)
+    expect(some.items.map((i) => i.questionId)).toEqual(['q4'])
+    expectError(await s.get('/api/item-analysis/me?tapis=semuanya'), 'VALIDATION_ERROR')
+    expectError(await s.get('/api/item-analysis/me?tapis=semua&tapis=ada_betul'), 'VALIDATION_ERROR')
+    expectError(await s.get(`/api/item-analysis/me?subjectCode=${'X'.repeat(100)}`), 'VALIDATION_ERROR')
+  })
+
+  it('an unknown subjectCode is the empty payload; a pupil with no answers gets zeros', async () => {
+    const r = parseData(await (as.saya as Client).get('/api/item-analysis/me?subjectCode=NOPE'), PerformanceItemAnalysisMeSchema)
+    expect(r).toEqual({ tiles: { answered: 0, needRemedial: 0, needStrengthen: 0, mastery: null }, subjects: [], counts: { isyaratAwal: 0, pemulihan: 0, pengukuhan: 0 }, items: [] })
+    const none = parseData(await (as.pelajarmaju as Client).get('/api/item-analysis/me?subjectCode=NOPE'), PerformanceItemAnalysisMeSchema)
+    expect(none.items).toEqual([])
+  })
+
+  it('teacher, school admin, admin, officer, parent and sponsor are refused (403)', async () => {
+    for (const k of ['guru', 'adminsekolah', 'admin', 'ppd', 'ibubapa', 'penaja'] as const) {
+      expectError(await (as[k] as Client).get('/api/item-analysis/me'), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
+    }
   })
 })
 

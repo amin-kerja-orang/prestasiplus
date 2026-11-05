@@ -72,6 +72,9 @@ const AFTER_CAPTURE: Record<string, Record<string, unknown>> = {
   },
 }
 
+/** S10-T03 added `tingkatanOptions` and `questionsTested` to the school item analysis. */
+AFTER_CAPTURE['item-analysis-school'] = { tingkatanOptions: ['T4', 'T5'], questionsTested: 2 }
+
 const CASES: [string, z.ZodType][] = [
   ['analytics-me', PerformanceAnalyticsSchema],
   ['analytics-classes', PerformanceClassAnalyticsSchema],

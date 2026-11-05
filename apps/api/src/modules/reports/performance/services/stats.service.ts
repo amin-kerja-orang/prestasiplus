@@ -39,7 +39,7 @@ export class StatsService {
 
   difficulty(correct: number, attempts: number): { index: number; level: DifficultyLevel } {
     const index = difficultyIndex(correct, attempts)
-    return { index, level: difficultyLevel(index) }
+    return { index, level: difficultyLevel(pct(correct, attempts)) }
   }
 
   discrimination(d: number): ReturnType<typeof discriminationStatus> {

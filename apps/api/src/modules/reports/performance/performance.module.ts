@@ -18,6 +18,7 @@ import { PerformancePorts, DIRECTORY_PORT, TIMELINE_READ_PORT } from './ports'
 import {
   AnalyticsService,
   ClassPerformanceService,
+  ItemAnalysisMeService,
   ItemAnalysisService,
   LeaderboardService,
   PublicProfileService,
@@ -52,6 +53,7 @@ import { TimelineService } from './timeline/timeline.service'
     SchoolPerformanceService,
     ClassPerformanceService,
     ItemAnalysisService,
+    ItemAnalysisMeService,
     RankingService,
     LeaderboardService,
     PublicProfileService,
@@ -72,6 +74,7 @@ import { TimelineService } from './timeline/timeline.service'
     SchoolPerformanceService,
     ClassPerformanceService,
     ItemAnalysisService,
+    ItemAnalysisMeService,
     HeadcountFactsService,
   ],
 })

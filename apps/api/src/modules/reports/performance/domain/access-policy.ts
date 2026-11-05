@@ -11,8 +11,8 @@ export function viewerSchoolId(ctx: Pick<Ctx, 'scope'>): string | null {
   return (scope.level === 'school' || scope.level === 'class') && scope.schoolId ? scope.schoolId : null
 }
 
-/** Roles that may call the school item analysis (parent and sponsor may not). */
-export const ITEM_SCHOOL_ROLES: readonly RoleCode[] = ['admin', 'teacher', 'school_admin', 'student', 'ppd_officer']
+/** Roles that may call the school item analysis (student, parent and sponsor may not: FR-MUR-6-2, AC-MUR-6-5). */
+export const ITEM_SCHOOL_ROLES: readonly RoleCode[] = ['admin', 'teacher', 'school_admin', 'ppd_officer']
 /** Roles that may call the class item analysis and the class analytics. */
 export const CLASS_ANALYSIS_ROLES: readonly RoleCode[] = ['admin', 'teacher']
 

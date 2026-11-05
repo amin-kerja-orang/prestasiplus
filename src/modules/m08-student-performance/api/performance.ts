@@ -11,6 +11,8 @@ import type {
   Analytics,
   ClassCard,
   ClassItemAnalysis,
+  ItemAnalysisMe,
+  ItemMeTapis,
   LeaderboardPeriod,
   Leaderboard,
   LevelCard,
@@ -19,6 +21,7 @@ import type {
   Ranking,
   SchoolItemAnalysis,
   SchoolPerformance,
+  Tingkatan,
   StudentPerformance,
   Timeline,
   TimelineInput,
@@ -54,9 +57,9 @@ export const fetchStudentPerformance = (userId: number | string, o: Signal = {})
 export const fetchAnalytics = (o: Signal = {}) =>
   api.get<Analytics>('/api/analytics/me', withSignal(o))
 
-/** #9 `GET /api/item-analysis/school[/:schoolId]` (S9); `tingkatan` T4 / T5 or absent. */
+/** #9 `GET /api/item-analysis/school[/:schoolId]` (S9); `tingkatan` T1 to T5 or absent (API-AS-17). */
 export const fetchSchoolItemAnalysis = (
-  options: { schoolId?: number; tingkatan?: 'T4' | 'T5' | null } & Signal = {},
+  options: { schoolId?: number; tingkatan?: Tingkatan | null } & Signal = {},
 ) =>
   api.get<SchoolItemAnalysis>(
     options.schoolId === undefined
@@ -67,6 +70,22 @@ export const fetchSchoolItemAnalysis = (
       ...(options.tingkatan ? { query: { tingkatan: options.tingkatan } } : {}),
     },
   )
+
+/**
+ * `GET /api/item-analysis/me` (API-RPT-05, R1-MUR-6): the pupil's own Analisa Item. `tapis` filters the items
+ * only; the tiles and counts follow `subjectCode` (S10-T03 decision 7).
+ */
+export const fetchItemAnalysisMe = (
+  options: { subjectCode?: string; tapis?: ItemMeTapis } & Signal = {},
+) => {
+  const query: Record<string, string> = {}
+  if (options.subjectCode) query.subjectCode = options.subjectCode
+  if (options.tapis) query.tapis = options.tapis
+  return api.get<ItemAnalysisMe>('/api/item-analysis/me', {
+    ...withSignal(options),
+    ...(Object.keys(query).length > 0 ? { query } : {}),
+  })
+}
 
 /** #10 `GET /api/item-analysis/classes` (S10). */
 export const fetchItemAnalysisClasses = (o: Signal = {}) =>

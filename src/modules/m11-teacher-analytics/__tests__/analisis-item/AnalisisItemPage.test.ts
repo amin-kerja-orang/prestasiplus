@@ -28,6 +28,8 @@ const row = (id: number, pct: number, over: Partial<ItemAnalysisRow> = {}): Item
   textPlain: `Soalan ${id}`,
   subjectName: 'Kimia',
   attempts: 8,
+  correct: Math.round((8 * pct) / 100),
+  wrong: 8 - Math.round((8 * pct) / 100),
   pct,
   band: pct > 70 ? 'mudah' : pct >= 40 ? 'sederhana' : 'sukar',
   discrimination: 0.5,
@@ -163,7 +165,7 @@ describe('S6 Analisis Item: teacher table (E2E-M11-44, provisional)', () => {
       find: (sel: string) => w.find(`${sel}[data-question-id="${id}"]`),
     })
 
-    expect(byId(5).get('[data-testid="item-pct"]').text()).toBe('12.5%')
+    expect(byId(5).get('[data-testid="item-pct"]').text()).toBe('13%')
     expect(byId(5).get('[data-testid="item-dot"]').attributes('data-band')).toBe('sukar')
     expect(byId(5).get('[data-testid="item-disc"]').text()).toBe('-0.50')
     expect(byId(5).get('[data-testid="item-disc-note"]').text()).toBe('semak semula')
@@ -181,15 +183,23 @@ describe('S6 Analisis Item: teacher table (E2E-M11-44, provisional)', () => {
     expect(byId(4).find('[data-testid="item-disc-note"]').exists()).toBe(false)
     expect(byId(8).find('[data-testid="item-disc-note"]').exists()).toBe(false)
     expect(byId(8).get('[data-testid="item-dot"]').attributes('data-band')).toBe('sederhana')
-    expect(byId(9).get('[data-testid="item-disc"]').text()).toBe('-')
+    expect(byId(9).get('[data-testid="item-disc"]').text()).toBe('Data Tidak Mencukupi')
     // 40 is Sederhana, as is 70 (40 ≤ p ≤ 70)
     expect(byId(9).get('[data-testid="item-dot"]').attributes('data-band')).toBe('sederhana')
   })
 
-  it('keeps the API order (% betul ascending) and shows subject and attempts', async () => {
+  it('defaults to "Paling Sukar Dahulu" (% betul ascending) and shows #, subject, Cubaan, Betul and Salah', async () => {
     const w = await mountAt('/guru/analisis-item?classroom_id=2001')
     const ids = w.findAll('[data-testid="item-row"]').map((r) => r.attributes('data-question-id'))
-    expect(ids).toEqual(['5', '4', '2', '1', '9', '8'])
+    expect(ids).toEqual(['5', '4', '9', '2', '8', '1'])
+    expect(w.findAll('[data-testid="item-index"]').map((e) => e.text())).toEqual([
+      '1', '2', '3', '4', '5', '6',
+    ])
+    expect(w.findAll('thead th').map((h) => h.text())).toEqual([
+      '#', 'Soalan', 'Subjek', 'Cubaan', 'Betul', 'Salah', '% Betul', 'Diskriminasi',
+    ])
+    expect(w.get('[data-testid="item-correct"][data-question-id="1"]').text()).toBe('6')
+    expect(w.get('[data-testid="item-wrong"][data-question-id="1"]').text()).toBe('2')
     expect(w.get('[data-testid="item-subject"][data-question-id="5"]').text()).toBe('Kimia')
     expect(w.get('[data-testid="item-attempts"][data-question-id="5"]').text()).toBe('8')
   })
@@ -256,5 +266,114 @@ describe('S6 Analisis Item: states', () => {
     const w = await mountAt('/guru/analisis-item')
     expect(w.text()).toContain('Tidak dapat memuatkan data. Sila cuba semula.')
     expect(has(w, 'item-legend')).toBe(false)
+  })
+})
+
+describe('S6 Analisis Item: search, sort and Tahap Kesukaran (R1-GUR-6)', () => {
+  beforeEach(() => {
+    api.fetchItemAnalysis.mockResolvedValue(
+      analysis({
+        rows: [
+          row(1, 71, { textPlain: 'Fakta penting tentang sel' }),
+          row(2, 70, { textPlain: 'Kadar tindak balas', attempts: 20 }),
+          row(3, 40, { textPlain: 'Ikatan kovalen' }),
+          row(4, 39, { textPlain: 'Fakta sejarah negara' }),
+        ],
+      }),
+    )
+  })
+  const ids = (w: VueWrapper) =>
+    w.findAll('[data-testid="item-row"]').map((r) => r.attributes('data-question-id'))
+
+  it('has the sort select with the five options and "Paling Sukar Dahulu" first, and the Tahap select', async () => {
+    const w = await mountAt('/guru/analisis-item')
+    expect(w.findAll('[data-testid="filter-sort"] option').map((o) => o.text())).toEqual([
+      'Paling Sukar Dahulu',
+      'Paling Mudah Dahulu',
+      'Ketepatan Rendah Dahulu',
+      'Ketepatan Tinggi Dahulu',
+      'Paling Banyak Percubaan',
+    ])
+    expect((t(w, 'filter-sort').element as HTMLSelectElement).value).toBe('difficulty_desc')
+    expect(w.findAll('[data-testid="filter-tahap"] option').map((o) => o.text())).toEqual([
+      'Semua Tahap',
+      '> 70% (Mudah)',
+      '40–70% (Sederhana)',
+      '< 40% (Sukar)',
+    ])
+    expect(ids(w)).toEqual(['4', '3', '2', '1'])
+  })
+
+  it('the sort select re-orders the rows and is kept in the query string', async () => {
+    const w = await mountAt('/guru/analisis-item')
+    const select = t(w, 'filter-sort')
+    ;(select.element as HTMLSelectElement).value = 'accuracy_desc'
+    await select.trigger('change')
+    await flushPromises()
+    expect(router.currentRoute.value.query.susun).toBe('accuracy_desc')
+    expect(ids(w)).toEqual(['1', '2', '3', '4'])
+    ;(select.element as HTMLSelectElement).value = 'attempts_desc'
+    await select.trigger('change')
+    await flushPromises()
+    expect(ids(w)[0]).toBe('2')
+    // no new request: the order is client-side
+    expect(api.fetchItemAnalysis).toHaveBeenCalledTimes(1)
+  })
+
+  it('Tahap Kesukaran lists on the whole-number % (AC-GUR-6-11: 71 / 70 / 40 / 39)', async () => {
+    const w = await mountAt('/guru/analisis-item?tahap=mudah')
+    expect(ids(w)).toEqual(['1'])
+    wrapper?.unmount()
+    const w2 = await mountAt('/guru/analisis-item?tahap=sederhana')
+    expect(ids(w2).sort()).toEqual(['2', '3'])
+    wrapper?.unmount()
+    const w3 = await mountAt('/guru/analisis-item?tahap=sukar')
+    expect(ids(w3)).toEqual(['4'])
+    expect((t(w3, 'filter-tahap').element as HTMLSelectElement).value).toBe('sukar')
+    expect(resetButton(w3)).toBeDefined()
+  })
+
+  it('choosing a Tahap puts it in the query string', async () => {
+    const w = await mountAt('/guru/analisis-item')
+    const select = t(w, 'filter-tahap')
+    ;(select.element as HTMLSelectElement).value = 'sukar'
+    await select.trigger('change')
+    await flushPromises()
+    expect(router.currentRoute.value.query.tahap).toBe('sukar')
+    expect(ids(w)).toEqual(['4'])
+  })
+
+  it('search filters from 2 characters; one character shows the hint and filters nothing', async () => {
+    const w = await mountAt('/guru/analisis-item')
+    await t(w, 'filter-search').setValue('f')
+    expect(w.text()).toContain('Taip sekurang-kurangnya 2 aksara.')
+    expect(ids(w)).toHaveLength(4)
+    await t(w, 'filter-search').setValue('fakta')
+    await flushPromises()
+    expect(w.text()).not.toContain('Taip sekurang-kurangnya 2 aksara.')
+    expect(ids(w).sort()).toEqual(['1', '4'])
+    expect(router.currentRoute.value.query.q).toBe('fakta')
+    await t(w, 'filter-search').setValue('zzzz')
+    await flushPromises()
+    expect(has(w, 'item-no-match')).toBe(true)
+  })
+
+  it('search from the query string, and Reset clears it', async () => {
+    const w = await mountAt('/guru/analisis-item?q=kovalen')
+    expect(ids(w)).toEqual(['3'])
+    expect(resetButton(w)).toBeDefined()
+    await resetButton(w)?.trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.fullPath).toBe('/guru/analisis-item')
+    expect(ids(w)).toHaveLength(4)
+  })
+
+  it('pages by 25 and numbers the rows across pages', async () => {
+    api.fetchItemAnalysis.mockResolvedValue(
+      analysis({ rows: Array.from({ length: 30 }, (_, i) => row(i + 1, (i % 100) + 1)) }),
+    )
+    const w = await mountAt('/guru/analisis-item')
+    expect(ids(w)).toHaveLength(25)
+    expect(has(w, 'item-pager')).toBe(true)
   })
 })

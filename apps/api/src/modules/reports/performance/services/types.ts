@@ -6,6 +6,7 @@ import type {
   PerformanceClassCardSchema,
   PerformanceClassDashboardSchema,
   PerformanceClassItemAnalysisSchema,
+  PerformanceItemAnalysisMeSchema,
   PerformanceLevelCardSchema,
   PerformanceLeaderboardSchema,
   PerformanceLevelDetailSchema,
@@ -42,9 +43,17 @@ export type PerformanceSchool = z.infer<typeof PerformanceSchoolSchema>
 export type PerformanceSchoolItemAnalysis = z.infer<typeof PerformanceSchoolItemAnalysisSchema>
 export type PerformanceStudent = z.infer<typeof PerformanceStudentSchema>
 
-/** Query of the school item analysis: `tingkatan` is T4 or T5, anything else is ignored. */
+/** Query of the school item analysis: `tingkatan` is T1 to T5 (staff only), anything else is ignored. */
 export interface ItemAnalysisSchoolQuery {
   tingkatan?: string
+}
+
+export type PerformanceItemAnalysisMe = z.infer<typeof PerformanceItemAnalysisMeSchema>
+
+/** Query of the pupil's own item analysis (API-RPT-05); the controller parses it with the contract schema. */
+export interface ItemAnalysisMeQuery {
+  subjectCode?: string | undefined
+  tapis?: 'semua' | 'ada_betul' | 'selalu_salah' | undefined
 }
 
 export type PerformanceRanking = z.infer<typeof PerformanceRankingSchema>

@@ -14,7 +14,7 @@ import { practice } from '@/modules/m05-practice/mock'
 
 import type { ItemAnalysis, ItemAnalysisRow } from '../../api/types'
 import { classOptions, ownClasses, populationOf, type Viewer } from './report'
-import { percent, round1, round3, stripHtml } from './rules'
+import { percent, round1, round2, stripHtml } from './rules'
 
 /** BR-M11-28 bands: p > 70 mudah; 40 ≤ p ≤ 70 sederhana; p < 40 sukar. */
 export const bandOf = (p: number): ItemAnalysisRow['band'] =>
@@ -90,7 +90,7 @@ export function itemAnalysis(
       const u = group(upper, qid)
       const l = group(lower, qid)
       if (u.n === 0 || l.n === 0) continue
-      discrimination.set(qid, round3(u.c / u.n - l.c / l.n))
+      discrimination.set(qid, round2(u.c / u.n - l.c / l.n))
     }
   }
 
@@ -104,6 +104,8 @@ export function itemAnalysis(
         textPlain: q ? stripHtml(q.questionText) : '',
         subjectName: sid === null ? '' : (curriculum.subject(sid)?.name ?? ''),
         attempts: t.attempts,
+        correct: t.correct,
+        wrong: t.attempts - t.correct,
         pct: round1(p),
         band: bandOf(p),
         discrimination: discrimination.get(questionId) ?? null,

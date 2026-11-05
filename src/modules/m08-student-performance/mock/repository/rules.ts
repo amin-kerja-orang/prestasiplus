@@ -51,15 +51,20 @@ export const pct = (part: number, whole: number): number => (whole === 0 ? 0 : (
 /** DV-07 / FR-M08-124: every displayed accuracy is capped at 100. */
 export const capPercent = (value: number): number => Math.min(value, 100)
 
-/** BR-M08-18: Indeks = 1 − p (2 decimals half up); Tahap Sukar > 0.70, Mudah ≤ 0.30, else Sederhana. */
+/**
+ * Indeks Kesukaran = 1 − p (2 decimals half up), kept for display only. Tahap is on the whole-number % betul
+ * (S10-T03 change 2, R1-GUR-6 DV-GUR-6-1): > 70 Mudah, 40–70 Sederhana, < 40 Sukar.
+ */
 export type DifficultyLevel = 'Mudah' | 'Sederhana' | 'Sukar'
 export function difficultyIndex(correct: number, attempts: number): number {
   return attempts === 0 ? 0 : round(1 - correct / attempts, 2)
 }
-export function difficultyLevel(index: number): DifficultyLevel {
-  if (index > 0.7) return 'Sukar'
-  if (index <= 0.3) return 'Mudah'
-  return 'Sederhana'
+/** Tahap of a % betul (any decimals; rounded half up to the whole number first, decision 11). */
+export function difficultyLevel(accuracyPct: number): DifficultyLevel {
+  const whole = Math.round(accuracyPct)
+  if (whole > 70) return 'Mudah'
+  if (whole >= 40) return 'Sederhana'
+  return 'Sukar'
 }
 
 /** BR-M08-19 status of a discrimination index D. */

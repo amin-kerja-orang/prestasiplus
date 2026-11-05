@@ -6,6 +6,12 @@
  * (a fixed number of statements, no per-pupil loop) and is the only place the pooled accuracy sum
  * (correct / answered, XS-5) is made.
  */
+import type { QuestionPublicSchema, QuestionStimulusGroupSchema } from '@pp/contract'
+import type { z } from 'zod'
+
+type PublicQuestionShape = z.output<typeof QuestionPublicSchema>
+type StimulusGroupShape = z.output<typeof QuestionStimulusGroupSchema>
+
 export interface AnswerFactsQuery {
   userIds?: readonly string[]
   schoolIds?: readonly string[]
@@ -19,7 +25,12 @@ export interface AnswerFactsQuery {
   to?: Date
 }
 
-/** Grain: user, subject, question, chapter, topic, mode. An id the row does not carry reads '0' (subject, question). */
+/**
+ * Grain: user, subject, question, chapter, topic, mode. An id the row does not carry reads '0' (subject, question).
+ * `firstCorrect` and `firstAnsweredAt` (S10-T03, additive): the first answer of the row's grain by `answered_at`
+ * (ties by the stored order) and when it was given, so a caller can find the first attempt of a pupil on a question
+ * across several rows (the row with the earliest `firstAnsweredAt`) without a second statement.
+ */
 export interface AnswerFactRow {
   userId: string
   subjectId: string
@@ -30,6 +41,8 @@ export interface AnswerFactRow {
   attempts: number
   correct: number
   lastAnsweredAt: Date
+  firstCorrect: boolean
+  firstAnsweredAt: Date
 }
 
 export interface WeeklyFactRow {
@@ -71,6 +84,35 @@ export interface AnswerFactsPort {
 }
 
 export const ANSWER_FACTS_PORT = Symbol('ANSWER_FACTS_PORT')
+
+/**
+ * What the pupil's own Analisa Item shows of a question (R1-MUR-6, FR-MUR-6-5/-7/-10), read-only through the S1 questions
+ * read contract (`QuestionsRepository.getMany(ids, 'live')` and `groupsByIds`). A question that is archived, inactive or
+ * unknown has no entry: it is dropped from the list. `question` is the public projection (no key); the types are those of
+ * the contract (`QuestionPublic`, `QuestionStimulusGroup`).
+ */
+export interface QuestionContent {
+  questionId: string
+  question: PublicQuestionShape
+  explanation: string | null
+  /** "Sumber" of the question; '' when the question records none. */
+  source: string
+  stimulusGroup: StimulusGroupShape | null
+}
+
+export interface QuestionContentPort {
+  /** Unknown, inactive or archived ids are absent from the map. */
+  questionContent(ids: readonly string[]): Promise<Map<string, QuestionContent>>
+}
+
+export const QUESTION_CONTENT_PORT = Symbol('QUESTION_CONTENT_PORT')
+
+/** Default until the questions adapter is bound: no content, so no item is listed. */
+export class EmptyQuestionContent implements QuestionContentPort {
+  async questionContent(): Promise<Map<string, QuestionContent>> {
+    return new Map()
+  }
+}
 
 /** Default until the practice adapter is registered: nothing answered. */
 export class EmptyAnswerFacts implements AnswerFactsPort {

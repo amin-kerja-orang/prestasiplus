@@ -26,7 +26,11 @@ import {
   PerformanceHeadcountSortQuerySchema,
   PerformanceHeadcountStudentSchema,
   PerformanceHeadcountSummarySchema,
+  PerformanceItemAnalysisMeQuerySchema,
+  PerformanceItemAnalysisMeSchema,
   PerformanceItemAnalysisQuerySchema,
+  PerformanceItemCategorySchema,
+  PerformanceItemTingkatanSchema,
   PerformanceLeaderboardQuerySchema,
   PerformanceLeaderboardSchema,
   PerformanceLevelCardSchema,
@@ -66,6 +70,10 @@ export const PERFORMANCE_COMPONENT_SCHEMAS = {
   PerformanceClassAnalytics: PerformanceClassAnalyticsSchema,
   PerformanceClassAnalyticsQuery: PerformanceClassAnalyticsQuerySchema,
   PerformanceItemAnalysisQuery: PerformanceItemAnalysisQuerySchema,
+  PerformanceItemAnalysisMeQuery: PerformanceItemAnalysisMeQuerySchema,
+  PerformanceItemAnalysisMe: PerformanceItemAnalysisMeSchema,
+  PerformanceItemCategory: PerformanceItemCategorySchema,
+  PerformanceItemTingkatan: PerformanceItemTingkatanSchema,
   PerformanceSchoolItemAnalysis: PerformanceSchoolItemAnalysisSchema,
   PerformanceClassItemAnalysis: PerformanceClassItemAnalysisSchema,
   PerformanceTimelineCategory: PerformanceTimelineCategorySchema,
@@ -187,11 +195,19 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
 
   // Item analysis
   get(
+    '/item-analysis/me',
+    'Own item analysis of a pupil (API-RPT-05)',
+    PerformanceItemAnalysisMeSchema,
+    { 403: E403('role is not student') },
+    { query: PerformanceItemAnalysisMeQuerySchema },
+    'Student only, own answers of every mode. Categories per question: isyarat_awal (1 attempt, 0 correct), pemulihan (>= 2 attempts, 0 correct), pengukuhan (>= 2 attempts, 0 < correct < attempts). `tapis` filters `items` only; tiles, subjects and counts follow `subjectCode`. Archived questions are dropped.',
+  )
+  get(
     '/item-analysis/school',
     'Item analysis of the own school (S9)',
     PerformanceSchoolItemAnalysisSchema,
     {
-      403: E403('role has no access (parent, sponsor)'),
+      403: E403('role has no access (student, parent, sponsor)'),
       404: E404('viewer has no school, or no analysis'),
     },
     { query: PerformanceItemAnalysisQuerySchema },

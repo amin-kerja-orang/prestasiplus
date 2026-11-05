@@ -255,6 +255,9 @@ export interface Analytics {
 // #9 GET /api/item-analysis/school[/:schoolId] (S9)
 // ---------------------------------------------------------------------------------------------
 
+/** Tingkatan 1 to 5 (R1-AS-6, D101). */
+export type Tingkatan = 'T1' | 'T2' | 'T3' | 'T4' | 'T5'
+
 export interface SchoolItemQuestion {
   rank: number
   questionId: number
@@ -267,7 +270,8 @@ export interface SchoolItemQuestion {
   pupils: number
   pupilsPct: number
   wrongPupils: { userId: number; name: string; classLabel: string; wrongOption: Letter }[]
-  correctOption: { letter: Letter; text: string }
+  /** null = no recorded key for this question (shown as "—", never a guessed letter). */
+  correctOption: { letter: Letter; text: string } | null
   popularWrongOption: { letter: Letter; text: string } | null
   popularWrongCount: number
 }
@@ -283,7 +287,11 @@ export interface SchoolItemAnalysis {
   }
   /** "" = the route without a school id (own school), else the id copy variant (FR-M08-60 / 143). */
   variant: 'own' | 'byId'
-  tingkatan: 'T4' | 'T5' | null
+  tingkatan: Tingkatan | null
+  /** The Tingkatan that have data in this scope, ascending (AC-AS-6-6): the chips. Absent on an older server. */
+  tingkatanOptions?: Tingkatan[]
+  /** "Soalan Diuji" (XS-7): distinct questions answered in this scope, all modes (FR-AS-6-5); null = no figure for this view. */
+  questionsTested?: number | null
   students: number
   /** null = no header for this view: its question list is observed but no header figure is (D11, DV-M08-32). */
   answers: number | null
@@ -326,7 +334,8 @@ export interface ItemAnalysis {
     index: number
     level: DifficultyLevel
     wrongStudents: { userId: number; name: string; times: number }[]
-    correctOption: { letter: Letter; text: string }
+    /** null = no recorded key for this question (shown as "—", never a guessed letter). */
+    correctOption: { letter: Letter; text: string } | null
     popularWrong: { letter: Letter; text: string; times: number } | null
   }[]
   discrimination: {
@@ -517,4 +526,74 @@ export interface ClassAnalytics {
     projection: { low: Grade; high: Grade }
     riskLevel: RiskLevel
   }[]
+}
+
+// ---------------------------------------------------------------------------------------------
+// GET /api/item-analysis/me (API-RPT-05, R1-MUR-6): the pupil's own Analisa Item
+// ---------------------------------------------------------------------------------------------
+
+export type ItemMeTapis = 'semua' | 'ada_betul' | 'selalu_salah'
+export type ItemMeCategory = 'isyarat_awal' | 'pemulihan' | 'pengukuhan'
+
+/** `QuestionPublic` (contract): no key, no explanation. Ids are numbers in the mock and strings over http. */
+export interface ItemMeQuestion {
+  id: number | string
+  questionText: string
+  questionType: string
+  options: string[] | null
+  language?: string
+  textDirection: 'ltr' | 'rtl'
+  scriptType: 'rumi' | 'arab' | 'jawi' | 'mixed'
+  pointsValue?: number
+}
+
+/** `QuestionStimulusGroup` (contract): the stimulus is shown once above the members of the group (D90, D105). */
+export interface ItemMeStimulusGroup {
+  id: number | string
+  stimuli: {
+    id: number | string
+    kind: 'passage' | 'image' | 'diagram' | 'table' | 'map' | 'infographic' | 'graph'
+    label: string
+    body: { ms: string; en?: string } | null
+    imageId: string | null
+    alt: string | null
+    caption?: string | null
+    sourceCitation?: string | null
+    tableData?: { head: string[]; rows: string[][] } | null
+  }[]
+  questionIds: (number | string)[]
+}
+
+export interface ItemMeItem {
+  questionId: number | string
+  category: ItemMeCategory
+  attempts: number
+  correct: number
+  wrongTimes: number
+  lastAnsweredAt: string
+  subject: string
+  chapter: string | null
+  source: string
+  question: ItemMeQuestion
+  stimulusGroup: ItemMeStimulusGroup | null
+  explanation: string | null
+}
+
+export interface ItemMeSubject {
+  code: string
+  name: string
+  attempts: number
+  uniqueQuestions: number
+  accuracy: number | null
+  wrongAnswers: number
+  weakRepeated: number
+  earlySignalWeak: number
+}
+
+export interface ItemAnalysisMe {
+  tiles: { answered: number; needRemedial: number; needStrengthen: number; mastery: number | null }
+  /** Ascending accuracy. */
+  subjects: ItemMeSubject[]
+  counts: { isyaratAwal: number; pemulihan: number; pengukuhan: number }
+  items: ItemMeItem[]
 }

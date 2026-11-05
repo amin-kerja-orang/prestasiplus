@@ -46490,9 +46490,266 @@
         "properties": {
           "tingkatan": {
             "type": "string",
-            "description": "T4 or T5; any other value is ignored (null)."
+            "description": "T1 to T5 (staff only); any other value is ignored (null)."
           }
         }
+      },
+      "PerformanceItemAnalysisMeQuery": {
+        "type": "object",
+        "properties": {
+          "subjectCode": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "Curriculum subject code; narrows tiles, subjects, counts and items. Unknown code = empty result."
+          },
+          "tapis": {
+            "type": "string",
+            "enum": [
+              "semua",
+              "ada_betul",
+              "selalu_salah"
+            ],
+            "description": "semua (default) | ada_betul (correct >= 1) | selalu_salah (>= 2 attempts, all wrong). Filters `items` only."
+          }
+        }
+      },
+      "PerformanceItemAnalysisMe": {
+        "type": "object",
+        "properties": {
+          "tiles": {
+            "type": "object",
+            "properties": {
+              "answered": {
+                "type": "integer",
+                "description": "\"Soalan Dijawab\": answer rows of every mode (XS-4)."
+              },
+              "needRemedial": {
+                "type": "integer",
+                "description": "\"Perlu Pemulihan\": questions in Pemulihan."
+              },
+              "needStrengthen": {
+                "type": "integer",
+                "description": "\"Perlu Pengukuhan\": questions in Pengukuhan."
+              },
+              "mastery": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "\"Tahap Penguasaan\": pooled accuracy, one decimal; null with no answers."
+              }
+            },
+            "required": [
+              "answered",
+              "needRemedial",
+              "needStrengthen",
+              "mastery"
+            ]
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "attempts": {
+                  "type": "integer"
+                },
+                "uniqueQuestions": {
+                  "type": "integer"
+                },
+                "accuracy": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "One decimal."
+                },
+                "wrongAnswers": {
+                  "type": "integer"
+                },
+                "weakRepeated": {
+                  "type": "integer",
+                  "description": "Distinct questions in Pemulihan or Pengukuhan."
+                },
+                "earlySignalWeak": {
+                  "type": "integer",
+                  "description": "Distinct questions in Isyarat Awal."
+                }
+              },
+              "required": [
+                "code",
+                "name",
+                "attempts",
+                "uniqueQuestions",
+                "accuracy",
+                "wrongAnswers",
+                "weakRepeated",
+                "earlySignalWeak"
+              ]
+            },
+            "description": "Ascending accuracy."
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "isyaratAwal": {
+                "type": "integer"
+              },
+              "pemulihan": {
+                "type": "integer"
+              },
+              "pengukuhan": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "isyaratAwal",
+              "pemulihan",
+              "pengukuhan"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "questionId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "category": {
+                  "$ref": "#/components/schemas/PerformanceItemCategory"
+                },
+                "attempts": {
+                  "type": "integer"
+                },
+                "correct": {
+                  "type": "integer"
+                },
+                "wrongTimes": {
+                  "type": "integer"
+                },
+                "lastAnsweredAt": {
+                  "$ref": "#/components/schemas/Timestamp"
+                },
+                "subject": {
+                  "type": "string"
+                },
+                "chapter": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "source": {
+                  "type": "string"
+                },
+                "question": {
+                  "$ref": "#/components/schemas/QuestionPublic"
+                },
+                "stimulusGroup": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "id": {
+                      "$ref": "#/components/schemas/Id"
+                    },
+                    "stimuli": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/QuestionStimulus"
+                      },
+                      "minItems": 1,
+                      "maxItems": 3
+                    },
+                    "optionBank": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "label": {
+                            "type": "string",
+                            "pattern": "^[A-H]$"
+                          },
+                          "body": {
+                            "$ref": "#/components/schemas/QuestionRichText"
+                          }
+                        },
+                        "required": [
+                          "label",
+                          "body"
+                        ]
+                      }
+                    },
+                    "questionIds": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Id"
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "stimuli",
+                    "questionIds"
+                  ],
+                  "description": "Shown once per group by the client."
+                },
+                "explanation": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "questionId",
+                "category",
+                "attempts",
+                "correct",
+                "wrongTimes",
+                "lastAnsweredAt",
+                "subject",
+                "chapter",
+                "source",
+                "question",
+                "stimulusGroup",
+                "explanation"
+              ]
+            }
+          }
+        },
+        "required": [
+          "tiles",
+          "subjects",
+          "counts",
+          "items"
+        ]
+      },
+      "PerformanceItemCategory": {
+        "type": "string",
+        "enum": [
+          "isyarat_awal",
+          "pemulihan",
+          "pengukuhan"
+        ]
+      },
+      "PerformanceItemTingkatan": {
+        "type": "string",
+        "enum": [
+          "T1",
+          "T2",
+          "T3",
+          "T4",
+          "T5"
+        ]
       },
       "PerformanceSchoolItemAnalysis": {
         "type": "object",
@@ -46542,20 +46799,34 @@
             ]
           },
           "tingkatan": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "enum": [
-              "T4",
-              "T5",
-              null
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PerformanceItemTingkatan"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
             ]
+          },
+          "tingkatanOptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PerformanceItemTingkatan"
+            }
           },
           "students": {
             "type": "integer"
           },
           "answers": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "questionsTested": {
             "type": [
               "integer",
               "null"
@@ -46742,7 +47013,10 @@
                   }
                 },
                 "correctOption": {
-                  "type": "object",
+                  "type": [
+                    "object",
+                    "null"
+                  ],
                   "properties": {
                     "letter": {
                       "$ref": "#/components/schemas/PerformanceLetter"
@@ -46801,8 +47075,10 @@
           "school",
           "variant",
           "tingkatan",
+          "tingkatanOptions",
           "students",
           "answers",
+          "questionsTested",
           "correct",
           "accuracy",
           "difficulty",
@@ -46946,7 +47222,10 @@
                       }
                     },
                     "correctOption": {
-                      "type": "object",
+                      "type": [
+                        "object",
+                        "null"
+                      ],
                       "properties": {
                         "letter": {
                           "$ref": "#/components/schemas/PerformanceLetter"
@@ -47024,7 +47303,8 @@
                           "type": "number"
                         },
                         "index": {
-                          "type": "number"
+                          "type": "number",
+                          "description": "Discrimination D, 2 decimals (R1 decision D113)."
                         },
                         "status": {
                           "type": "string",
@@ -62376,6 +62656,14 @@
                 "attempts": {
                   "type": "integer"
                 },
+                "correct": {
+                  "type": "integer",
+                  "description": "\"Betul\": answers of all modes that were right (FR-GUR-6-5)."
+                },
+                "wrong": {
+                  "type": "integer",
+                  "description": "\"Salah\": attempts minus correct."
+                },
                 "pct": {
                   "type": "number"
                 },
@@ -62392,7 +62680,7 @@
                     "number",
                     "null"
                   ],
-                  "description": "Upper-group p minus lower-group p (3 decimals); null when it cannot be computed."
+                  "description": "Upper-group p minus lower-group p (2 decimals); null when it cannot be computed (fewer than 10 pupils)."
                 }
               },
               "required": [
@@ -62400,6 +62688,8 @@
                 "textPlain",
                 "subjectName",
                 "attempts",
+                "correct",
+                "wrong",
                 "pct",
                 "band",
                 "discrimination"
@@ -110181,6 +110471,83 @@
         }
       }
     },
+    "/item-analysis/me": {
+      "get": {
+        "tags": [
+          "performance"
+        ],
+        "summary": "Own item analysis of a pupil (API-RPT-05)",
+        "description": "Student only, own answers of every mode. Categories per question: isyarat_awal (1 attempt, 0 correct), pemulihan (>= 2 attempts, 0 correct), pengukuhan (>= 2 attempts, 0 < correct < attempts). `tapis` filters `items` only; tiles, subjects and counts follow `subjectCode`. Archived questions are dropped.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 32,
+              "description": "Curriculum subject code; narrows tiles, subjects, counts and items. Unknown code = empty result."
+            },
+            "required": false,
+            "description": "Curriculum subject code; narrows tiles, subjects, counts and items. Unknown code = empty result.",
+            "name": "subjectCode",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "semua",
+                "ada_betul",
+                "selalu_salah"
+              ],
+              "description": "semua (default) | ada_betul (correct >= 1) | selalu_salah (>= 2 attempts, all wrong). Filters `items` only."
+            },
+            "required": false,
+            "description": "semua (default) | ada_betul (correct >= 1) | selalu_salah (>= 2 attempts, all wrong). Filters `items` only.",
+            "name": "tapis",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Own item analysis of a pupil (API-RPT-05)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceItemAnalysisMe"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role is not student",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/item-analysis/school": {
       "get": {
         "tags": [
@@ -110191,10 +110558,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "T4 or T5; any other value is ignored (null)."
+              "description": "T1 to T5 (staff only); any other value is ignored (null)."
             },
             "required": false,
-            "description": "T4 or T5; any other value is ignored (null).",
+            "description": "T1 to T5 (staff only); any other value is ignored (null).",
             "name": "tingkatan",
             "in": "query"
           }
@@ -110229,7 +110596,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role has no access (parent, sponsor)",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role has no access (student, parent, sponsor)",
             "content": {
               "application/json": {
                 "schema": {
@@ -110271,10 +110638,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "T4 or T5; any other value is ignored (null)."
+              "description": "T1 to T5 (staff only); any other value is ignored (null)."
             },
             "required": false,
-            "description": "T4 or T5; any other value is ignored (null).",
+            "description": "T1 to T5 (staff only); any other value is ignored (null).",
             "name": "tingkatan",
             "in": "query"
           }

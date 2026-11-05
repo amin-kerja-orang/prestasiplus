@@ -5,7 +5,7 @@
  * it to every role but admin and teacher).
  */
 import { computed, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { DsBreadcrumb, DsLoadError, DsPage, DsPageHeader, DsPanel, DsPillNav, type PillItem } from '@/ds'
 import { usePrototypeScope } from '@/composables'
@@ -18,6 +18,7 @@ import { LEVEL_BADGE, LEVEL_ICON } from '../lib/prestasi/format'
 import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
 
 const route = useRoute()
+const router = useRouter()
 const { home } = usePrototypeScope()
 const icon = usePhIcon()
 const classId = computed(() => Number(route.params.id))
@@ -30,9 +31,17 @@ const { data, error, reload } = useRouteData(
 const classes = useRouteData((signal) => fetchItemAnalysisClasses({ signal }))
 const loadFailed = computed(() => isLoadError(error.value))
 
-const tab = ref<'difficulty' | 'discrimination'>('difficulty')
+// The tab lives in the query string (`tab=diskriminasi`; R1-GUR-6 "Tabs").
+const tab = ref<'difficulty' | 'discrimination'>(
+  route.query.tab === 'diskriminasi' ? 'discrimination' : 'difficulty',
+)
 watch(classId, () => {
   tab.value = 'difficulty'
+})
+watch(tab, (t) => {
+  void router.replace({
+    query: { ...route.query, tab: t === 'discrimination' ? 'diskriminasi' : undefined },
+  })
 })
 
 const summary = computed(() => {

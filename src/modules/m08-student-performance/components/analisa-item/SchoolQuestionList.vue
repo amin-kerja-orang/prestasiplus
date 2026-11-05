@@ -1,25 +1,62 @@
 <script setup lang="ts">
 /**
  * S9 "Soalan Paling Banyak Salah — Perlu Perhatian Khas" (FR-M08-142): the stored item-statistics
- * questions in rank order; the subject pills filter client-side (no request); a click on a card toggles
- * its detail ("Jawapan Betul", "Jawapan Salah Paling Popular", "Pelajar Yang Salah").
+ * questions; the subject pills filter client-side (no request); a click on a card toggles its detail
+ * ("Jawapan Betul", "Jawapan Salah Paling Popular", "Pelajar Yang Salah"). R1-AS-6: "Cari soalan..." (from 2
+ * characters) and the sort select "Susun" (default "Paling Sukar Dahulu" = the stored rank), both kept in the
+ * query string (`q`, `susun`); 25 per page. The school payload has no discrimination, so the two class tabs are
+ * not offered here.
  */
-import { DsPanel } from '@/ds'
-import { computed, ref } from 'vue'
-
-import { formatNumber } from '@/lib/number'
+import { DsCluster, DsPanel, DsText } from '@/ds'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 import type { SchoolItemQuestion } from '../../api/types'
 import { usePhIcon } from '../../lib/icons'
-import { LEVEL_BADGE, LEVEL_ICON } from '../../lib/prestasi/format'
+import { LEVEL_BADGE, LEVEL_ICON, pctWhole } from '../../lib/prestasi/format'
+import {
+  DEFAULT_SORT,
+  SEARCH_MIN,
+  SEARCH_TOO_SHORT,
+  SORT_OPTIONS,
+  parseSort,
+  searchTooShort,
+  type SortKey,
+} from '../../lib/prestasi/item-analysis'
 
 import OptionCallout from './OptionCallout.vue'
 
 const props = defineProps<{ questions: SchoolItemQuestion[] }>()
 
+const PAGE_SIZE = 25
 const icon = usePhIcon()
+const route = useRoute()
+const router = useRouter()
 const subject = ref<string | null>(null)
 const open = ref<ReadonlySet<number>>(new Set())
+const page = ref(1)
+
+const search = ref(typeof route.query.q === 'string' ? route.query.q : '')
+const sort = ref<SortKey>(parseSort(route.query.susun))
+watch([search, sort, subject], () => {
+  page.value = 1
+})
+watch([search, sort], () => {
+  const q = search.value.trim() === '' ? undefined : search.value
+  const susun = sort.value === DEFAULT_SORT ? undefined : sort.value
+  void router.replace({ query: { ...route.query, q, susun } })
+})
+const tooShort = computed(() => searchTooShort(search.value))
+
+/** Ketepatan of the stored row (100 − % salah); the order of the others follows the same figures. */
+const accuracyOf = (q: SchoolItemQuestion): number => 100 - q.wrongPct
+const SORTERS: Record<SortKey, (a: SchoolItemQuestion, b: SchoolItemQuestion) => number> = {
+  difficulty_desc: (a, b) => a.rank - b.rank,
+  difficulty_asc: (a, b) => b.rank - a.rank,
+  accuracy_asc: (a, b) => accuracyOf(a) - accuracyOf(b),
+  accuracy_desc: (a, b) => accuracyOf(b) - accuracyOf(a),
+  attempts_desc: (a, b) => b.attempts - a.attempts,
+}
 
 const subjects = computed(() => {
   const counts = new Map<string, number>()
@@ -29,11 +66,24 @@ const subjects = computed(() => {
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => a.name.localeCompare(b.name, 'ms'))
 })
-const shown = computed(() =>
-  subject.value === null
-    ? props.questions
-    : props.questions.filter((q) => q.subjectName === subject.value),
-)
+const found = computed(() => {
+  const needle = search.value.trim().toLowerCase()
+  const bySubject =
+    subject.value === null
+      ? props.questions
+      : props.questions.filter((q) => q.subjectName === subject.value)
+  const matched =
+    needle.length < SEARCH_MIN
+      ? bySubject
+      : bySubject.filter((q) => q.stem.toLowerCase().includes(needle))
+  const sorter = SORTERS[sort.value]
+  return [...matched].sort((a, b) => sorter(a, b) || a.questionId - b.questionId)
+})
+const pages = computed(() => Math.max(1, Math.ceil(found.value.length / PAGE_SIZE)))
+const shown = computed(() => {
+  const from = (Math.min(page.value, pages.value) - 1) * PAGE_SIZE
+  return found.value.slice(from, from + PAGE_SIZE)
+})
 
 function toggle(id: number): void {
   const next = new Set(open.value)
@@ -52,6 +102,40 @@ function toggle(id: number): void {
         Soalan yang majoriti pelajar jawab salah. Fokuskan pengajaran khas di sini.
       </p>
     </div>
+
+    <DsCluster align="start" data-testid="question-search-bar">
+      <UInput
+        v-model="search"
+        type="text"
+        placeholder="Cari soalan..."
+        aria-label="Cari soalan"
+        size="lg"
+        class="w-full sm:w-72"
+        :color="tooShort ? 'error' : undefined"
+        :aria-invalid="tooShort"
+        aria-describedby="question-search-hint"
+        data-testid="question-search"
+      />
+      <USelect
+        v-model="sort"
+        :items="[...SORT_OPTIONS]"
+        aria-label="Susunan soalan"
+        size="lg"
+        class="w-full sm:w-64"
+        data-testid="question-sort"
+      />
+      <DsText
+        v-if="tooShort"
+        id="question-search-hint"
+        variant="caption"
+        tone="error"
+        role="status"
+        class="w-full"
+        data-testid="question-search-hint"
+      >
+        {{ SEARCH_TOO_SHORT }}
+      </DsText>
+    </DsCluster>
 
     <div
       class="flex max-w-full items-center gap-2 overflow-x-auto pb-1"
@@ -122,11 +206,9 @@ function toggle(id: number): void {
                   />
                 </span>
                 <span class="flex flex-wrap gap-x-4 gap-y-1 text-caption text-muted">
-                  <span class="text-error"
-                    >{{ formatNumber(q.wrongPct, { decimals: 1 }) }}% salah</span
-                  >
+                  <span class="text-error">{{ pctWhole(q.wrongPct) }} salah</span>
                   <span>{{ q.attempts }} pelajar cuba</span>
-                  <span>{{ formatNumber(q.pupilsPct, { decimals: 1 }) }}% pelajar terlibat</span>
+                  <span>{{ pctWhole(q.pupilsPct) }} pelajar terlibat</span>
                 </span>
                 <span v-if="q.wrongPupils.length > 0" class="text-caption text-primary-t">
                   {{ q.wrongPupils.length }} pelajar salah — klik untuk lihat
@@ -142,8 +224,8 @@ function toggle(id: number): void {
               <OptionCallout
                 variant="correct"
                 title="Jawapan Betul"
-                :letter="q.correctOption.letter"
-                :text="q.correctOption.text"
+                :letter="q.correctOption?.letter ?? null"
+                :text="q.correctOption?.text ?? ''"
               />
               <OptionCallout
                 v-if="q.popularWrongOption"
@@ -172,5 +254,35 @@ function toggle(id: number): void {
         </DsPanel>
       </li>
     </ul>
+
+    <DsCluster
+      v-if="pages > 1"
+      as="nav"
+      justify="between"
+      aria-label="Halaman"
+      data-testid="question-pager"
+    >
+      <UButton
+        type="button"
+        color="neutral"
+        variant="soft"
+        size="lg"
+        class="min-h-11"
+        :disabled="page <= 1"
+        label="Sebelum"
+        @click="page -= 1"
+      />
+      <DsText as="span" variant="meta">Halaman {{ page }} daripada {{ pages }}</DsText>
+      <UButton
+        type="button"
+        color="neutral"
+        variant="soft"
+        size="lg"
+        class="min-h-11"
+        :disabled="page >= pages"
+        label="Seterusnya"
+        @click="page += 1"
+      />
+    </DsCluster>
   </section>
 </template>

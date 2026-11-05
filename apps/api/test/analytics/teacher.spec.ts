@@ -237,8 +237,9 @@ describe('M11 teacher report S1 and item analysis S6 (AC 1 to 3)', () => {
       expect(body.rows).toHaveLength(2)
       const [hard, easy] = body.rows
       // q2: 1 of 4 right (25 percent, sukar); q1: 3 of 4 (75, mudah); the test answer of p2 is left out.
-      expect(hard).toMatchObject({ textPlain: 'Soalan dua', attempts: 4, pct: 25, band: 'sukar', discrimination: 1 })
-      expect(easy).toMatchObject({ textPlain: 'Soalan satu ?', attempts: 4, pct: 75, band: 'mudah', discrimination: 1 })
+      // Only 4 pupils practised: below the minimum of 10 (R1 decision D113) there is no discrimination index.
+      expect(hard).toMatchObject({ textPlain: 'Soalan dua', attempts: 4, correct: 1, wrong: 3, pct: 25, band: 'sukar', discrimination: null })
+      expect(easy).toMatchObject({ textPlain: 'Soalan satu ?', attempts: 4, correct: 3, wrong: 1, pct: 75, band: 'mudah', discrimination: null })
       expect(hard?.subjectName).not.toBe('')
       expect(body.options.classes.map((c) => c.id)).toContain(classItems)
       expect(body.options.subjects.length).toBeGreaterThan(1)
@@ -249,7 +250,7 @@ describe('M11 teacher report S1 and item analysis S6 (AC 1 to 3)', () => {
     it('an explicit subject wins over the class subject; all classes and all subjects keep every answer of the own pupils', async () => {
       const other = items(await teacherA.get(`/teacher/item-analysis?classroomId=${classItems}&subjectId=${w.subjects[1]}`))
       expect(other.rows.map((r) => [r.textPlain, r.attempts, r.pct])).toEqual([['Soalan tiga', 1, 100]])
-      expect(other.rows[0]?.discrimination).toBeNull() // fewer than 4 pupils with a session in that subject
+      expect(other.rows[0]?.discrimination).toBeNull() // fewer than 10 pupils with a session in that subject
       const all = items(await teacherA.get('/teacher/item-analysis'))
       expect(all.rows.map((r) => r.textPlain)).toEqual(['Soalan dua', 'Soalan satu ?', 'Soalan tiga'])
     })

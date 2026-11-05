@@ -1,5 +1,5 @@
 import { Controller, Get, Inject, Param, Query, Req, UseGuards, UseInterceptors } from '@nestjs/common'
-import { PerformanceClassAnalyticsQuerySchema, PerformanceItemAnalysisQuerySchema } from '@pp/contract'
+import { PerformanceClassAnalyticsQuerySchema, PerformanceItemAnalysisMeQuerySchema, PerformanceItemAnalysisQuerySchema } from '@pp/contract'
 import type { Request } from 'express'
 
 import { Roles } from '../../../../common/guards/decorators'
@@ -10,9 +10,11 @@ import { ZodValidationPipe } from '../../../../common/validation/zod-validation.
 import {
   AnalyticsService,
   ClassPerformanceService,
+  ItemAnalysisMeService,
   ItemAnalysisService,
   SchoolPerformanceService,
   StudentPerformanceService,
+  type ItemAnalysisMeQuery,
   type ItemAnalysisSchoolQuery,
   type PerformanceClassAnalyticsQuery,
 } from '../services'
@@ -29,6 +31,7 @@ const READ = {
 } as const satisfies RateLimitSpec
 
 const itemAnalysisQuery = [new BoundedQueryPipe(), new ZodValidationPipe(PerformanceItemAnalysisQuerySchema)] as const
+const itemAnalysisMeQuery = [new BoundedQueryPipe(), new ZodValidationPipe(PerformanceItemAnalysisMeQuerySchema)] as const
 
 /**
  * Prestasi, Analitik and Analisa Item (BE-19 slice). Every body is pupil performance data, so every
@@ -117,16 +120,24 @@ export class PerformanceController {
 export class ItemAnalysisController {
   constructor(
     @Inject(ItemAnalysisService) private readonly items: ItemAnalysisService,
+    @Inject(ItemAnalysisMeService) private readonly mine: ItemAnalysisMeService,
     @Inject(CtxFactory) private readonly ctx: CtxFactory,
   ) {}
 
-  @Roles('admin', 'teacher', 'school_admin', 'student', 'ppd_officer')
+  /** API-RPT-05: the pupil's own analysis (own answers of every mode). Every other role, teacher and school admin included, gets 403. */
+  @Roles('student')
+  @Get('me')
+  async me(@Query(...itemAnalysisMeQuery) query: ItemAnalysisMeQuery, @Req() req: Req) {
+    return ok(await overloadTo429(async () => this.mine.me(await this.ctx.of(req), query)))
+  }
+
+  @Roles('admin', 'teacher', 'school_admin', 'ppd_officer')
   @Get('school')
   async ownSchool(@Query(...itemAnalysisQuery) query: ItemAnalysisSchoolQuery, @Req() req: Req) {
     return ok(await overloadTo429(async () => this.items.school(await this.ctx.of(req), query)))
   }
 
-  @Roles('admin', 'teacher', 'school_admin', 'student', 'ppd_officer')
+  @Roles('admin', 'teacher', 'school_admin', 'ppd_officer')
   @Get('school/:schoolId')
   async schoolById(
     @Param('schoolId', SafeIdPipe) schoolId: string,

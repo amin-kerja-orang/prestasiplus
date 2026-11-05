@@ -16,9 +16,9 @@ import { queryString } from '@/mock/define'
 import { classrooms } from '@/modules/m10-teacher-class/mock'
 import { schools } from '@/modules/m02-users-schools/mock'
 
-import type { ClassCard, SchoolItemAnalysis } from '../../api/types'
+import type { ClassCard, ItemMeTapis, SchoolItemAnalysis, Tingkatan } from '../../api/types'
 import { classCard } from '../repository/performance'
-import { classItemAnalysis, schoolItemAnalysis } from '../repository/item-analysis'
+import { classItemAnalysis, itemAnalysisMe, schoolItemAnalysis } from '../repository/item-analysis'
 import {
   mayOpenClass,
   officerCovers,
@@ -33,21 +33,28 @@ const SCHOOL_ROLES: readonly string[] = [
   'admin',
   'teacher',
   'school_admin',
-  'student',
   'ppd_officer',
   'jpn_officer',
 ]
 
-function tingkatanOf(value: string | undefined): 'T4' | 'T5' | null {
-  return value === 'T4' || value === 'T5' ? value : null
+function tingkatanOf(value: string | undefined): Tingkatan | null {
+  return value === 'T1' || value === 'T2' || value === 'T3' || value === 'T4' || value === 'T5'
+    ? value
+    : null
+}
+
+function tapisOf(value: string | undefined): ItemMeTapis {
+  return value === 'ada_betul' || value === 'selalu_salah' ? value : 'semua'
 }
 
 /** The by-id payload of an id that is no school: no pupils, no name (the page shows the empty state only). */
-function unknownSchoolPayload(id: number, tingkatan: 'T4' | 'T5' | null): SchoolItemAnalysis {
+function unknownSchoolPayload(id: number, tingkatan: Tingkatan | null): SchoolItemAnalysis {
   return {
     school: { id, name: '', code: null, type: '', district: null, state: '' },
     variant: 'byId',
     tingkatan,
+    tingkatanOptions: [],
+    questionsTested: 0,
     students: 0,
     answers: 0,
     correct: 0,
@@ -80,6 +87,19 @@ function schoolHandler(
 }
 
 export const itemAnalysisRoutes: RouteDef[] = [
+  // API-RPT-05: the pupil's own Analisa Item; every other role is refused (R1-MUR-6).
+  route('GET', '/api/item-analysis/me', [requireAuth()], (req) => {
+    const viewer = viewerOf(req)
+    if (viewer.role !== 'student') return forbidden()
+    return ok(
+      itemAnalysisMe(
+        viewer.id,
+        queryString(req.query, 'subjectCode') || null,
+        tapisOf(queryString(req.query, 'tapis')),
+      ),
+    )
+  }),
+
   route('GET', '/api/item-analysis/school', [requireAuth()], (req) => {
     const viewer = viewerOf(req)
     return schoolHandler(viewer, viewer.schoolId, queryString(req.query, 'tingkatan'), false)

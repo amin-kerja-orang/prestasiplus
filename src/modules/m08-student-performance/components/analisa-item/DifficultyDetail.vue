@@ -15,8 +15,8 @@ const icon = usePhIcon()
     <OptionCallout
       variant="correct"
       title="Jawapan Betul"
-      :letter="row.correctOption.letter"
-      :text="row.correctOption.text"
+      :letter="row.correctOption?.letter ?? null"
+      :text="row.correctOption?.text ?? ''"
     />
     <OptionCallout
       v-if="row.popularWrong"

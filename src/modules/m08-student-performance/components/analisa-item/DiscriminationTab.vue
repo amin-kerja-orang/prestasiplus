@@ -4,10 +4,9 @@ import { computed } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
 import { DsDataTable, DsEmptyState, DsPanel } from '@/ds'
-import { formatNumber } from '@/lib/number'
-
 import type { ItemAnalysis } from '../../api/types'
 import { usePhIcon } from '../../lib/icons'
+import { pctWhole } from '../../lib/prestasi/format'
 import { STATUS_COLOR, indexClass } from '../../lib/prestasi/item-analysis'
 
 const props = defineProps<{ discrimination: ItemAnalysis['discrimination'] }>()
@@ -40,10 +39,10 @@ const rows = computed<Row[]>(() =>
     questionId: r.questionId,
     index: i + 1,
     text: r.text,
-    upperText: `${formatNumber(r.upperPct, { decimals: 1 })}% betul`,
-    lowerText: `${formatNumber(r.lowerPct, { decimals: 1 })}% betul`,
+    upperText: `${pctWhole(r.upperPct)} betul`,
+    lowerText: `${pctWhole(r.lowerPct)} betul`,
     indexValue: r.index,
-    indexText: r.index.toFixed(3),
+    indexText: r.index.toFixed(2),
     status: r.status,
   })),
 )
@@ -92,7 +91,7 @@ const cardFields = [
       caption="Indeks diskriminasi soalan"
       card-title="text"
       :card-fields="cardFields"
-      :page-size="1000"
+      :page-size="25"
       data-testid="discrimination-table"
     >
       <template #text-cell="{ row }">
@@ -125,7 +124,7 @@ const cardFields = [
     <div v-else data-testid="discrimination-insufficient">
       <DsEmptyState
         title="Data Tidak Mencukupi"
-        description="Perlu sekurang-kurangnya 4 pelajar dengan sesi latihan selesai untuk mengira indeks diskriminasi."
+        description="Perlu sekurang-kurangnya 10 pelajar dengan sesi latihan selesai untuk mengira indeks diskriminasi."
         icon="chart-line-up"
       />
     </div>

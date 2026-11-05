@@ -1270,15 +1270,15 @@
       "approved_by_card": null
     },
     {
-      "key": "/analisa-item|",
+      "key": "/analisa-item|m08.analisa-item.murid",
       "path": "/analisa-item",
-      "name": null,
+      "name": "m08.analisa-item.murid",
       "status": "canonical",
       "sector": "S10",
-      "component": null,
+      "component": "src/modules/m08-student-performance/pages/AnalisaItemMuridPage.vue",
       "file": "src/modules/m08-student-performance/routes/analisa-item.ts",
-      "redirects_to": "(dynamic)",
-      "approved_by_card": null
+      "note": "S10-T03: the pupil own Analisa Item (API-RPT-05); beforeEnter sends staff to /analisa-item/kelas or /analisa-item/sekolah.",
+      "approved_by_card": "S10-T03"
     },
     {
       "key": "/analisa-item/sekolah|m08.analisa-item.sekolah",
@@ -16057,6 +16057,16 @@
       "sector": "S10",
       "file": "apps/api/src/modules/reports/performance/http/performance.controllers.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "GET /api/item-analysis/me",
+      "method": "GET",
+      "path": "/api/item-analysis/me",
+      "api_id": "API-RPT-05",
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/http/performance.controllers.ts",
+      "approved_by_card": "S10-T03"
     },
     {
       "key": "GET /api/item-analysis/school",

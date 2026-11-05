@@ -30,6 +30,19 @@ import {
 const fixture = (name: string): unknown =>
   JSON.parse(readFileSync(fileURLToPath(new URL(`./fixtures/${name}.json`, import.meta.url)), 'utf8'))
 
+/** Fields added by a later card than the capture (the capture is never hand-edited): S10-T03 added `correct` and `wrong` to the item-analysis rows. */
+const afterCapture = (name: string, v: unknown): unknown => {
+  if (!name.startsWith('item-analysis')) return v
+  const body = v as { rows: { attempts: number; pct: number }[] }
+  return {
+    ...body,
+    rows: body.rows.map((r) => {
+      const correct = Math.round((r.attempts * r.pct) / 100)
+      return { ...r, correct, wrong: r.attempts - correct }
+    }),
+  }
+}
+
 const ID_KEY = /^(id|[a-z]+Id)$/
 const wire = (v: unknown): unknown =>
   Array.isArray(v)
@@ -60,7 +73,7 @@ describe('M11 payloads captured from the mock', () => {
     ['item-analysis-admin', AnalyticsItemAnalysisSchema],
   ]
   it.each(cases)('%s parses with its response schema', (name, schema) => {
-    expect(() => schema.parse(wire(fixture(name)))).not.toThrow()
+    expect(() => schema.parse(afterCapture(name, wire(fixture(name))))).not.toThrow()
   })
 
   it('the raw numeric ids are rejected: the contract id is an opaque string', () => {
@@ -73,7 +86,7 @@ describe('M11 payloads captured from the mock', () => {
     const r = AnalyticsTeacherReportSchema.parse(wire(fixture('report-admin')))
     expect(r.population.total).toBe(0)
     expect(r.score.overall).toBeNull()
-    expect(AnalyticsItemAnalysisSchema.parse(wire(fixture('item-analysis-admin'))).rows).toEqual([])
+    expect(AnalyticsItemAnalysisSchema.parse(afterCapture('item-analysis-admin', wire(fixture('item-analysis-admin')))).rows).toEqual([])
   })
 })
 

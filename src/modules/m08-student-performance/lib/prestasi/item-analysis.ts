@@ -15,10 +15,25 @@ export const SORT_OPTIONS = [
 ] as const
 export type SortKey = (typeof SORT_OPTIONS)[number]['value']
 
-/** The question is shown for a case-insensitive substring of its text (DV-M08-17). */
+export const DEFAULT_SORT: SortKey = 'difficulty_desc'
+
+/** An unknown `susun` query value is the default order. */
+export const parseSort = (raw: unknown): SortKey => {
+  const v = Array.isArray(raw) ? raw[0] : raw
+  return SORT_OPTIONS.find((o) => o.value === v)?.value ?? DEFAULT_SORT
+}
+
+/** Search needs at least 2 characters (GLB-4, R1-GUR-6); one character filters nothing. */
+export const SEARCH_MIN = 2
+export const SEARCH_TOO_SHORT = 'Taip sekurang-kurangnya 2 aksara.'
+export const searchTooShort = (search: string): boolean => search.trim().length === 1
+
+/** The question is shown for a case-insensitive substring of its text (DV-M08-17, from 2 characters). */
 export function filterRows(rows: readonly DifficultyRow[], search: string): DifficultyRow[] {
   const needle = search.trim().toLowerCase()
-  return needle === '' ? [...rows] : rows.filter((r) => r.text.toLowerCase().includes(needle))
+  return needle.length < SEARCH_MIN
+    ? [...rows]
+    : rows.filter((r) => r.text.toLowerCase().includes(needle))
 }
 
 /** The chosen order, ties by question id ascending (BR-M08-20). */
@@ -34,9 +49,14 @@ export function sortRows(rows: readonly DifficultyRow[], sort: SortKey): Difficu
   return [...rows].sort((a, b) => k(a) - k(b) || a.questionId - b.questionId)
 }
 
-/** "Ketepatan" colour: red < 40, amber 40–74.9, green ≥ 75 (BR-M08-05). */
-export const accuracyClass = (v: number): string =>
-  v < 40 ? 'text-error' : v < 75 ? 'text-warning' : 'text-success'
+/**
+ * "Ketepatan" colour on the same bands as the Tahap badge (whole-number %, AC-GUR-6-11): red < 40, amber 40–70,
+ * green > 70, so the colour and the badge always agree.
+ */
+export const accuracyClass = (v: number): string => {
+  const whole = Math.round(v)
+  return whole < 40 ? 'text-error' : whole <= 70 ? 'text-warning' : 'text-success'
+}
 
 /** Discrimination index colour: green ≥ 0.30, amber 0.20–0.29, red < 0.20 (FR-M08-72). */
 export const indexClass = (v: number): string =>

@@ -1,4 +1,4 @@
-import type { SchoolItemAnalysis } from '../../api/types'
+import type { SchoolItemAnalysis, Tingkatan } from '../../api/types'
 
 /**
  * S9 `/analisa-item/sekolah` for a viewer without a school (an officer, a teacher or a pelajar with no school;
@@ -6,11 +6,13 @@ import type { SchoolItemAnalysis } from '../../api/types'
  * render the SPA 404 page. The page shows the S9 "Tiada Data Pelajar" empty state instead, as an unknown
  * `{id}` does (FR-M08-143; DV-M08-41).
  */
-export function noSchoolAnalysis(tingkatan: 'T4' | 'T5' | null = null): SchoolItemAnalysis {
+export function noSchoolAnalysis(tingkatan: Tingkatan | null = null): SchoolItemAnalysis {
   return {
     school: { id: 0, name: '', code: null, type: '', district: null, state: '' },
     variant: 'own',
     tingkatan,
+    tingkatanOptions: [],
+    questionsTested: 0,
     students: 0,
     answers: 0,
     correct: 0,

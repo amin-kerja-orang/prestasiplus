@@ -59,8 +59,9 @@ describe('student access', () => {
 })
 
 describe('school access', () => {
-  it('only the five roles; non-admins reach own school or officer coverage', () => {
-    expect(ITEM_SCHOOL_ROLES).toEqual(['admin', 'teacher', 'school_admin', 'student', 'ppd_officer'])
+  it('only the four roles (a student is refused, FR-MUR-6-2); non-admins reach own school or officer coverage', () => {
+    expect(ITEM_SCHOOL_ROLES).toEqual(['admin', 'teacher', 'school_admin', 'ppd_officer'])
+    expect(ITEM_SCHOOL_ROLES).not.toContain('student')
     const none = new Set<string>()
     for (const role of ROLE_CODES) {
       const ok = ITEM_SCHOOL_ROLES.includes(role)

@@ -6,6 +6,7 @@ import {
   compareIds,
   difficultyIndex,
   difficultyLevel,
+  discriminationGroupSize,
   discriminationStatus,
   gradeOfPercent,
   parseRiskLevel,
@@ -48,11 +49,29 @@ describe('difficulty and discrimination', () => {
     expect(difficultyIndex(1, 3)).toBe(0.67)
     expect(difficultyIndex(0, 0)).toBe(0)
   })
-  it('levels: Sukar > 0.70, Mudah <= 0.30, else Sederhana', () => {
-    expect(difficultyLevel(0.71)).toBe('Sukar')
-    expect(difficultyLevel(0.7)).toBe('Sederhana')
-    expect(difficultyLevel(0.31)).toBe('Sederhana')
-    expect(difficultyLevel(0.3)).toBe('Mudah')
+  it('levels on the whole-number % betul: > 70 Mudah, 40 to 70 Sederhana, < 40 Sukar (AC-GUR-6-11)', () => {
+    expect(difficultyLevel(71)).toBe('Mudah')
+    expect(difficultyLevel(70)).toBe('Sederhana')
+    expect(difficultyLevel(40)).toBe('Sederhana')
+    expect(difficultyLevel(39)).toBe('Sukar')
+    expect(difficultyLevel(0)).toBe('Sukar')
+    expect(difficultyLevel(100)).toBe('Mudah')
+  })
+  it('the level follows the number the screen shows: 70.4 shows 70 (Sederhana), 70.5 shows 71 (Mudah), 39.5 shows 40, 39.4 shows 39', () => {
+    expect(difficultyLevel(70.4)).toBe('Sederhana')
+    expect(difficultyLevel(70.5)).toBe('Mudah')
+    expect(difficultyLevel(39.5)).toBe('Sederhana')
+    expect(difficultyLevel(39.4)).toBe('Sukar')
+    // two decimals first round to the one-decimal wire value
+    expect(difficultyLevel(70.46)).toBe('Mudah')
+  })
+  it('the index is display only: 1 - p no longer decides the level', () => {
+    expect(difficultyIndex(3, 10)).toBe(0.7)
+    expect(difficultyLevel(30)).toBe('Sukar')
+    expect(difficultyLevel(25)).toBe('Sukar')
+  })
+  it('group size is ceil(0.27 x N), at least 1, with no float drift at N = 100', () => {
+    expect([1, 4, 10, 11, 15, 100, 101].map((n) => discriminationGroupSize(n, 0.27))).toEqual([1, 2, 3, 3, 5, 27, 28])
   })
   it('discrimination status thresholds', () => {
     expect(discriminationStatus(0.4)).toBe('Sangat Baik')

@@ -10,6 +10,8 @@ import {
   PerformanceHeadcountCreateRequestSchema,
   PerformanceHeadcountDetailSchema,
   PerformanceHeadcountDropRequestSchema,
+  PerformanceItemAnalysisMeQuerySchema,
+  PerformanceItemAnalysisMeSchema,
   PerformanceLeaderboardSchema,
   PerformanceLevelDetailSchema,
   PerformancePublicProfileSchema,
@@ -400,8 +402,10 @@ describe('performance contract (BE-19)', () => {
       },
       variant: 'byId',
       tingkatan: null,
+      tingkatanOptions: [],
       students: 0,
       answers: null,
+      questionsTested: null,
       correct: null,
       accuracy: null,
       difficulty: { mudah: 0, sederhana: 0, sukar: 0 },
@@ -413,6 +417,79 @@ describe('performance contract (BE-19)', () => {
     expect(
       PerformanceSchoolItemAnalysisSchema.safeParse({ ...school, variant: 'other' }).success,
     ).toBe(false)
+    // R1-AS-6: Tingkatan T1 to T5, with the chips that have data.
+    for (const t of ['T1', 'T3', 'T5'])
+      expect(PerformanceSchoolItemAnalysisSchema.safeParse({ ...school, tingkatan: t, tingkatanOptions: [t], questionsTested: 3 }).success).toBe(true)
+    expect(PerformanceSchoolItemAnalysisSchema.safeParse({ ...school, tingkatan: 'T6' }).success).toBe(false)
+    // correctOption is nullable (no key/Bijak fact available), never fabricated.
+    const q = {
+      rank: 1, questionId: '1', stem: 's', subjectName: 'BM', chips: [], level: 'Sukar', wrongPct: 50, attempts: 2, pupils: 2, pupilsPct: 50,
+      wrongPupils: [], correctOption: null, popularWrongOption: null, popularWrongCount: 0,
+    }
+    const withQ = (correctOption: unknown) => ({ ...school, questionsTested: 1, questions: [{ ...q, correctOption }] })
+    expect(PerformanceSchoolItemAnalysisSchema.safeParse(withQ(null)).success).toBe(true)
+    expect(PerformanceSchoolItemAnalysisSchema.safeParse(withQ({ letter: 'A', text: 'x' })).success).toBe(true)
+    expect(PerformanceSchoolItemAnalysisSchema.safeParse(withQ(undefined)).success).toBe(false)
+    expect(PerformanceSchoolItemAnalysisSchema.safeParse({ ...school, tingkatanOptions: ['T9'] }).success).toBe(false)
+  })
+
+  describe('API-RPT-05 item analysis of the pupil (me)', () => {
+    const question = {
+      id: '100',
+      questionText: 'Soalan contoh',
+      questionType: 'mcq',
+      options: ['A', 'B', 'C', 'D'],
+      language: 'bm',
+      textDirection: 'ltr',
+      scriptType: 'rumi',
+      pointsValue: 1,
+    }
+    const item = {
+      questionId: '100',
+      category: 'pemulihan',
+      attempts: 2,
+      correct: 0,
+      wrongTimes: 2,
+      lastAnsweredAt: '2026-10-16T09:30:00+08:00',
+      subject: 'Matematik',
+      chapter: null,
+      source: '',
+      question,
+      stimulusGroup: null,
+      explanation: null,
+    }
+    const body = {
+      tiles: { answered: 2, needRemedial: 1, needStrengthen: 0, mastery: 0 },
+      subjects: [{ code: 'MATH', name: 'Matematik', attempts: 2, uniqueQuestions: 1, accuracy: 0, wrongAnswers: 2, weakRepeated: 1, earlySignalWeak: 0 }],
+      counts: { isyaratAwal: 0, pemulihan: 1, pengukuhan: 0 },
+      items: [item],
+    }
+
+    it('parses a populated and an empty payload', () => {
+      expect(PerformanceItemAnalysisMeSchema.safeParse(body).success).toBe(true)
+      const empty = { tiles: { answered: 0, needRemedial: 0, needStrengthen: 0, mastery: null }, subjects: [], counts: { isyaratAwal: 0, pemulihan: 0, pengukuhan: 0 }, items: [] }
+      expect(PerformanceItemAnalysisMeSchema.safeParse(empty).success).toBe(true)
+    })
+
+    it('rejects a bad category and a UTC timestamp, and never carries the answer key', () => {
+      expect(PerformanceItemAnalysisMeSchema.safeParse({ ...body, items: [{ ...item, category: 'lain' }] }).success).toBe(false)
+      expect(PerformanceItemAnalysisMeSchema.safeParse({ ...body, items: [{ ...item, lastAnsweredAt: '2026-10-16T01:30:00Z' }] }).success).toBe(false)
+      const parsed = PerformanceItemAnalysisMeSchema.parse({ ...body, items: [{ ...item, question: { ...question, correctAnswer: 1 } }] })
+      expect(JSON.stringify(parsed)).not.toContain('correctAnswer')
+    })
+
+    it('the query takes subjectCode and the three tapis values only', () => {
+      for (const tapis of ['semua', 'ada_betul', 'selalu_salah'])
+        expect(PerformanceItemAnalysisMeQuerySchema.safeParse({ subjectCode: 'MATH', tapis }).success).toBe(true)
+      expect(PerformanceItemAnalysisMeQuerySchema.safeParse({}).success).toBe(true)
+      expect(PerformanceItemAnalysisMeQuerySchema.safeParse({ tapis: 'semuanya' }).success).toBe(false)
+    })
+
+    it('is registered in the OpenAPI document', () => {
+      const doc = buildOpenApiDocument() as { paths: Record<string, Record<string, unknown>>; components: { schemas: Record<string, unknown> } }
+      expect(doc.paths['/item-analysis/me']?.get).toBeDefined()
+      expect(doc.components.schemas['PerformanceItemAnalysisMe']).toBeDefined()
+    })
   })
 
   it('parses a school performance payload and rejects a bad grade', () => {

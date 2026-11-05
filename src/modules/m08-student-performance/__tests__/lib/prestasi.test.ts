@@ -134,16 +134,16 @@ describe('/analisa-item redirect (OD-R4)', () => {
     expect(analisaItemTarget('admin')).toBe('/analisa-item/kelas')
     expect(analisaItemTarget('teacher')).toBe('/analisa-item/kelas')
     expect(analisaItemTarget('school_admin')).toBe('/analisa-item/sekolah')
-    expect(analisaItemTarget('student')).toBe('/dashboard')
+    expect(analisaItemTarget('student')).toBe('/analisa-item')
     expect(analisaItemTarget('parent')).toBe('/dashboard')
     expect(analisaItemTarget(null)).toBe('/login')
   })
 
-  it('sends a pelajar to the role home in http mode too (D6, 23 Oct sweep; /dashboard since AZ-20c)', () => {
+  it('keeps a pelajar on the own page and sends the other roles home in http mode too (S10-T03)', () => {
     vi.stubEnv('VITE_API_MODE', 'http')
     try {
-      expect(analisaItemTarget('student')).toBe(shellHomePath('student'))
-      expect(analisaItemTarget('student')).toBe('/dashboard')
+      expect(analisaItemTarget('student')).toBe('/analisa-item')
+      expect(analisaItemTarget('parent')).toBe(shellHomePath('parent'))
     } finally {
       vi.unstubAllEnvs()
     }

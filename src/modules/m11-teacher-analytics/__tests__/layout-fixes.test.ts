@@ -141,6 +141,8 @@ describe('S6 question column is capped (bug 3)', () => {
       textPlain: 'Soalan panjang '.repeat(5),
       subjectName: 'Kimia',
       attempts: 8,
+      correct: 4,
+      wrong: 4,
       pct: 55,
       band: 'sederhana',
       discrimination: 0.4,

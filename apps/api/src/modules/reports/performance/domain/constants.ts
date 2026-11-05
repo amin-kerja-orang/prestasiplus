@@ -37,10 +37,13 @@ export const ATTENTION_BELOW = 50
 export const TOP_STUDENT_MIN_SITTINGS = 3
 export const TOP_STUDENT_LIMIT = 10
 export const SCHOOL_QUESTION_CAP = 50
-/** BR-M08-19: fewest members with a finished sitting for a discrimination table. */
-export const DISCRIMINATION_MIN_MEMBERS = 4
+/** R1 decision D113 (FR-GUR-6-9): fewest pupils with an answer to a question for its discrimination index. */
+export const DISCRIMINATION_MIN_MEMBERS = 10
 /** Share of members in the upper and the lower group. */
 export const DISCRIMINATION_GROUP_SHARE = 0.27
+
+/** Tingkatan chips of the item analysis (R1-AS-6, D101): T1 to T5. `LEVEL_CODES` below stays T4/T5 for the level cards. */
+export const ITEM_TINGKATAN_CODES = ['t1', 't2', 't3', 't4', 't5'] as const
 
 export const LEVEL_CODES = ['t4', 't5'] as const
 export type LevelCode = (typeof LEVEL_CODES)[number]

@@ -12,6 +12,7 @@ const MYT_OFFSET_MS = 8 * 3_600_000
 
 /** 1 decimal (BR-M11-11). */
 export const round1 = (n: number): number => Math.round(n * 10) / 10
+export const round2 = (n: number): number => Math.round(n * 100) / 100
 export const round3 = (n: number): number => Math.round(n * 1000) / 1000
 /** `part ÷ whole × 100`; 0 when `whole` is 0. */
 export const percent = (part: number, whole: number): number =>
