@@ -81,15 +81,19 @@ test.describe('R1-ADM-Q-24 Quick Edit @api', () => {
       cognitiveLevel: 'memahami',
       status: 'approved',
     })
-    const before = await data<{ status: string; liveVersionNo: number | null; parts: { options: { body: { ms: string } }[] }[] }>(page, `/api/questions/${q.id}`)
+    const before = await data<{ status: string }>(page, `/api/questions/${q.id}`)
     expect(before.status).toBe('approved')
+    const live = await data<{ versionNo: number | null }>(page, `/api/admin/servability/questions/${q.id}`)
+    expect(live.versionNo).toBe(1)
     await page.goto(`/admin/spm/soalan/${q.id}/sunting`)
     await page.getByTestId('edit-option-C').fill(`Tiga ${token}`)
     await page.getByTestId('edit-submit').click()
     await expect(page.getByText(`Draf baharu #${q.id} dicipta.`)).toBeVisible()
-    const after = await data<{ status: string; liveVersionNo: number | null; parts: { options: { body: { ms: string } }[] }[] }>(page, `/api/questions/${q.id}`)
+    const after = await data<{ status: string; parts: { options: { body: { ms: string } }[] }[] }>(page, `/api/questions/${q.id}`)
     expect(after.status).toBe('draft')
-    expect(after.liveVersionNo).toBe(before.liveVersionNo)
+    // The version pupils are served stays the first one until the draft is published.
+    const still = await data<{ versionNo: number | null }>(page, `/api/admin/servability/questions/${q.id}`)
+    expect(still.versionNo).toBe(1)
     expect(after.parts[0]?.options[2]?.body.ms).toBe(`Tiga ${token}`)
   })
 

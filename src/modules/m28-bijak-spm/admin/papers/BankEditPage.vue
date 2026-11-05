@@ -174,7 +174,7 @@ async function save(): Promise<void> {
             <DsFormField v-for="(o, i) in draft.options" :key="o.id" native :for="`edit-option-${o.id}`" :label="`Pilihan ${o.id}`" required>
               <UInput :id="`edit-option-${o.id}`" v-model="draft.options[i]!.text" maxlength="500" :disabled="locked" class="w-full" :data-testid="`edit-option-${o.id}`" />
             </DsFormField>
-            <URadioGroup v-model="correct" legend="Pilihan jawapan — pilih yang betul" :items="correctItems" orientation="horizontal" variant="card" :disabled="locked" data-testid="edit-correct" />
+            <URadioGroup v-model="correct" required legend="Pilihan jawapan — pilih yang betul" :items="correctItems" orientation="horizontal" variant="card" :disabled="locked" data-testid="edit-correct" />
             <DsFormField native for="edit-explanation" label="Penjelasan">
               <UTextarea id="edit-explanation" v-model="draft.explanation" :rows="3" :disabled="locked" class="w-full" data-testid="edit-explanation" />
             </DsFormField>

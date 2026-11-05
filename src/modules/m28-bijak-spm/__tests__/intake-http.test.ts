@@ -307,8 +307,9 @@ describe('intake client', () => {
       expect(requests.some((r) => r.method !== 'GET')).toBe(false)
     })
 
-    it('a question with no subject makes no copy', async () => {
+    it('a question with no subject is out of scope on load and makes no copy', async () => {
       const { server, requests } = setup(routes({ subjectId: null }))
+      expect((await server.getBankEditable('q')).quickEdit?.outOfScope).toBe(true)
       expect((await server.reviseQuestionFull('q', edited())).ok).toBe(false)
       expect(requests.some((r) => r.method !== 'GET')).toBe(false)
     })

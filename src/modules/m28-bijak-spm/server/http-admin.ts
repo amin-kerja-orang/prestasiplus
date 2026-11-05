@@ -1096,8 +1096,6 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
     if (!leaf) return { ok: false, errors: [QUICK_EDIT_OUT_OF_SCOPE] }
     // The page locks this state; another tab may have sent the draft for review since it loaded.
     if (d.status === 'review') return { ok: false, errors: ['Versi baharu menunggu semakan'] }
-    // Checked before the copy is made: a PUT refused for these would leave an unchanged draft on the live question.
-    if (!d.subjectId || !d.educationLevelId) return { ok: false, errors: [QUICK_EDIT_OUT_OF_SCOPE] }
     let message: string | undefined
     if (d.status === 'approved') {
       const res = await this.send<{ id: string }>('POST', `/api/questions/${enc(qid)}/edit-as-draft`, {})
