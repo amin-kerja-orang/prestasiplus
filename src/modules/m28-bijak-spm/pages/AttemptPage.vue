@@ -19,9 +19,18 @@ import {
 } from '@/ds'
 import { useMedia } from '@/ds/useMedia'
 
-import { AttemptShell, NavigatorPanel, StimulusChip, StimulusStack } from '../../../components/question-display'
+import {
+  AttemptShell,
+  clearPosition,
+  NavigatorPanel,
+  QuestionBlock,
+  readPosition,
+  StimulusGroup,
+  writePosition,
+} from '../../../components/question-display'
 import type { NavState } from '../../../components/question-display'
-import QuestionBlock from '../components/QuestionBlock.vue'
+import PartResultCard from '../components/PartResultCard.vue'
+import ReportQuestionButton from '../components/ReportQuestionButton.vue'
 import {
   chooseCounterLine,
   chooseFullHint,
@@ -33,7 +42,7 @@ import {
   type ChooseState,
 } from '../domain/choose-n'
 import { formatClock, isAnswered, sectionRuleLine } from '../domain/paper-model'
-import { groupLabel, stimuliOf } from '../lib/stimulus-data'
+import { groupLabel, stimuliOf, toStimulusData } from '../lib/stimulus-data'
 import type { AttemptPaperView, PartAnswer, QuestionResult } from '../domain/types'
 import { createAutosave, clearLocal, type Autosave, type SaveStatus } from '../lib/autosave'
 import { useBijakUser, useLearnerTheme } from '../lib/use-bijak'
@@ -62,7 +71,6 @@ const submitting = ref(false)
 const confirmSubmit = ref(false)
 const confirmExit = ref(false)
 const navOpen = ref(false)
-const stimOpen = ref(false)
 /** Phones (below sm): the footer buttons use the compact size so they fit 320 px. */
 const phone = useMedia('(width < 640px)', false)
 const now = ref(Date.now())
@@ -75,6 +83,16 @@ let retryTimer: ReturnType<typeof setInterval> | undefined
 /** A submit (or the auto-submit at 0) that could not reach the server yet. */
 const submitPending = ref<{ auto: boolean } | null>(null)
 const RETRY_MS = 30_000
+/** Time ran out while offline (AC-PA-21): inputs lock until the queued auto-submit goes through. */
+const timeUp = computed(() => submitPending.value?.auto === true)
+const confirmBack = ref<{ $el: HTMLElement } | null>(null)
+/** Focus starts on the safe choice of the Hantar dialog (AC-PA-22). */
+const dialogContent = {
+  onOpenAutoFocus: (e: Event): void => {
+    e.preventDefault()
+    confirmBack.value?.$el.focus()
+  },
+}
 
 const isExam = computed(() => view.value?.attempt.mode === 'exam')
 const questions = computed(() => view.value?.questions ?? [])
@@ -85,6 +103,20 @@ const group = computed(() =>
 )
 /** The stimuli of the current question's group: one panel for the whole group, never one per question (D90). */
 const groupStimuli = computed(() => (group.value ? stimuliOf(group.value) : []))
+/** The display shape for the shared StimulusGroup; the Bijak StimulusDef never crosses the barrel. */
+const groupData = computed(() => groupStimuli.value.map(toStimulusData))
+/** Group props for the one StimulusGroup; a question outside a group gets a plain wrapper. */
+const groupBind = computed(() =>
+  group.value
+    ? {
+        stimuli: groupData.value,
+        groupId: group.value.id,
+        split: 'sitting' as const,
+        onError: onStimError,
+        onLoaded: onStimLoaded,
+      }
+    : { gap: 'md' as const },
+)
 const groupText = computed(() => (group.value ? groupLabel(groupStimuli.value) : undefined))
 /** Stimulus ids whose picture failed to load (AC-07.4): Seterusnya / Semak wait for "Cuba lagi" to succeed. */
 const failedStimuli = ref<string[]>([])
@@ -229,10 +261,17 @@ async function load(): Promise<void> {
     answers.value = autosave.answers()
     flags.value = [...autosave.flags()]
     picks.value = { ...autosave.picks() }
-    index.value = Math.min(autosave.position(), Math.max(0, v.questions.length - 1))
+    const lastIndex = Math.max(0, v.questions.length - 1)
+    // A reload in the same tab (sessionStorage) wins over the saved server position (FR-X6-10).
+    const savedPos = readPosition(attemptId.value)
+    index.value = Math.min(savedPos?.questionIndex ?? autosave.position(), lastIndex)
     checks.value = Object.fromEntries(v.checks.map((c) => [c.questionId, c]))
     clockOffset.value = server.serverNow() - Date.now()
     view.value = v
+    if (savedPos && savedPos.questionIndex === index.value) {
+      await nextTick()
+      scrollEl()?.scrollTo({ top: savedPos.scrollTop })
+    }
   } catch (e) {
     const code = (e as { code?: string }).code
     if (code === 'not_found' || code === 'forbidden') refused.value = true
@@ -240,14 +279,36 @@ async function load(): Promise<void> {
   }
 }
 
+/** The scrolling question area of the shell: it lives outside every `phone`/`lg` switch. */
+let scrollNode: HTMLElement | null = null
+const scrollEl = (): HTMLElement | null =>
+  scrollNode ?? document.querySelector<HTMLElement>('[data-testid=attempt-scroll]')
+let scrollTimer: ReturnType<typeof setTimeout> | undefined
+function onScroll(): void {
+  clearTimeout(scrollTimer)
+  scrollTimer = setTimeout(() => {
+    if (!view.value) return
+    writePosition(attemptId.value, {
+      questionIndex: index.value,
+      scrollTop: Math.round(scrollEl()?.scrollTop ?? 0),
+    })
+  }, 150)
+}
+
 onMounted(() => {
   void load()
+  void nextTick(() => {
+    scrollNode = scrollEl()
+    scrollNode?.addEventListener('scroll', onScroll, { passive: true })
+  })
   tick = setInterval(() => (now.value = Date.now()), 1000)
   document.addEventListener('visibilitychange', onVisibility)
   window.addEventListener('online', onOnline)
 })
 onBeforeUnmount(() => {
   if (tick) clearInterval(tick)
+  clearTimeout(scrollTimer)
+  scrollNode?.removeEventListener('scroll', onScroll)
   stopRetry()
   document.removeEventListener('visibilitychange', onVisibility)
   window.removeEventListener('online', onOnline)
@@ -274,12 +335,19 @@ async function retrySubmit(): Promise<void> {
   if (!submitPending.value || submitting.value) return
   await submit(submitPending.value.auto)
 }
-async function goResult(): Promise<void> {
+async function goResult(auto = false): Promise<void> {
   stopRetry()
+  clearTimeout(scrollTimer)
   submitPending.value = null
+  clearPosition(attemptId.value)
   clearLocal(browserStorage(), attemptId.value)
   autosave?.dispose()
-  await router.replace({ name: 'm28.bijak.result', params: { attemptId: attemptId.value } })
+  // `auto=1` tells the result page to show the "Masa tamat" banner once (AC-PA-21).
+  await router.replace({
+    name: 'm28.bijak.result',
+    params: { attemptId: attemptId.value },
+    query: auto ? { auto: '1' } : undefined,
+  })
 }
 
 /* --------------------------------------------------------------------------- actions */
@@ -325,9 +393,10 @@ async function goTo(i: number): Promise<void> {
   if (i < 0 || i >= questions.value.length) return
   index.value = i
   autosave?.setPosition(i)
+  writePosition(attemptId.value, { questionIndex: i, scrollTop: 0 })
   navOpen.value = false
   await nextTick()
-  document.querySelector('[data-testid=attempt-scroll]')?.scrollTo({ top: 0 })
+  scrollEl()?.scrollTo({ top: 0 })
   questionRef.value?.focus()
 }
 function goToId(id: string): void {
@@ -364,7 +433,6 @@ async function submit(auto = false): Promise<void> {
   if (submitting.value || !autosave || !view.value || questions.value.length === 0) return
   submitting.value = true
   submitError.value = ''
-  confirmSubmit.value = false
   await autosave.flush()
   const snap = autosave.snapshot()
   try {
@@ -378,8 +446,9 @@ async function submit(auto = false): Promise<void> {
       auto,
     })
     void res // closed or not, the attempt is final on the server: show its Semakan
-    await goResult()
+    await goResult(auto)
   } catch {
+    confirmSubmit.value = false // the dialog stays open while sending ("Menghantar..."), FR-PA-15
     submitError.value =
       'Luar talian. Jawapan anda disimpan pada peranti ini dan akan dihantar apabila sambungan pulih.'
     submitPending.value = { auto }
@@ -433,7 +502,7 @@ const feedback = computed(() => {
 </script>
 
 <template>
-  <AttemptShell :has-stimulus="!!group">
+  <AttemptShell>
     <template #header>
       <DsQuizHeader
         close-label="Keluar daripada kertas"
@@ -444,7 +513,11 @@ const feedback = computed(() => {
         @close="confirmExit = true"
       />
       <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
-        <p class="min-w-0 truncate text-caption text-muted" data-testid="attempt-title">
+        <p
+          class="min-w-0 truncate text-caption text-muted"
+          data-short-hide
+          data-testid="attempt-title"
+        >
           {{ view?.attempt.title }}
           <UBadge color="neutral" variant="subtle" size="sm" class="ms-1">{{
             isExam ? 'Mod Peperiksaan' : 'Mod Latihan'
@@ -470,21 +543,21 @@ const feedback = computed(() => {
     </template>
 
     <template #banner>
+      <!-- One bar for both notices: the 5-minute warning (timer still running) and, at 0 while
+           offline, "Masa tamat" (the two never show together). -->
       <p
-        v-if="warned && isExam && (remaining ?? 0) > 0"
+        v-if="timeUp || (warned && isExam && (remaining ?? 0) > 0)"
         class="shrink-0 bg-elevated px-3 py-2 text-center text-label text-warning sm:px-6"
         role="status"
-        data-testid="time-warning"
+        data-short-compact
+        :data-testid="timeUp ? 'time-up-offline' : 'time-warning'"
       >
-        Amaran: masa berbaki kurang 5 minit.
+        {{
+          timeUp
+            ? 'Masa tamat. Jawapan akan dihantar apabila sambungan pulih.'
+            : 'Amaran: masa berbaki kurang 5 minit.'
+        }}
       </p>
-    </template>
-
-    <template v-if="group" #stimulus>
-      <StimulusStack :stimuli="groupStimuli" @error="onStimError" @loaded="onStimLoaded" />
-    </template>
-    <template v-if="group" #chip>
-      <StimulusChip :stimuli="groupStimuli" @open="stimOpen = true" />
     </template>
 
     <template #main>
@@ -539,41 +612,46 @@ const feedback = computed(() => {
           </DsText>
         </div>
 
-        <QuestionBlock
-          ref="questionRef"
-          :key="current.id"
-          :question="current"
-          :answers="answers"
-          :attempt-id="attemptId"
-          :stimulus-label="groupText"
-          :stimulus-blocked="stimulusBlocked"
-          :flagged="flags.includes(current.id)"
-          :check="currentCheck"
-          :disabled="submitting"
-          :choose="choose"
-          @answer="onAnswer"
-          @toggle-flag="toggleFlag"
-          @toggle-choose="toggleChoose"
-        />
+        <component :is="group ? StimulusGroup : DsStack" v-bind="groupBind">
+          <QuestionBlock
+            ref="questionRef"
+            :key="current.id"
+            :question="current"
+            :answers="answers"
+            :attempt-id="attemptId"
+            :stimulus-label="groupText"
+            :stimulus-blocked="stimulusBlocked"
+            :flagged="flags.includes(current.id)"
+            :check="currentCheck"
+            :disabled="submitting || timeUp"
+            :choose="choose"
+            @answer="onAnswer"
+            @toggle-flag="toggleFlag"
+            @toggle-choose="toggleChoose"
+          >
+            <template #report="p"><ReportQuestionButton v-bind="p" /></template>
+            <template #result="p"><PartResultCard v-bind="p" /></template>
+          </QuestionBlock>
 
-        <DsFeedbackSheet
-          v-if="feedback && !isExam"
-          :tone="feedback.tone"
-          :title="feedback.title"
-          :body="feedback.body"
-          :combo="feedback.combo"
-          :continue-label="isLast ? 'Selesai' : 'Seterusnya'"
-          @continue="isLast ? (confirmSubmit = true) : goTo(index + 1)"
-        />
+          <DsFeedbackSheet
+            v-if="feedback && !isExam"
+            :tone="feedback.tone"
+            :title="feedback.title"
+            :body="feedback.body"
+            :combo="feedback.combo"
+            :continue-label="isLast ? 'Selesai' : 'Seterusnya'"
+            @continue="isLast ? (confirmSubmit = true) : goTo(index + 1)"
+          />
 
-        <UAlert
-          v-if="submitError"
-          color="warning"
-          variant="soft"
-          :description="submitError"
-          role="alert"
-          data-testid="submit-error"
-        />
+          <UAlert
+            v-if="submitError"
+            color="warning"
+            variant="soft"
+            :description="submitError"
+            role="alert"
+            data-testid="submit-error"
+          />
+        </component>
       </div>
     </template>
 
@@ -677,21 +755,6 @@ const feedback = computed(() => {
   </AttemptShell>
 
   <UDrawer
-    v-model:open="stimOpen"
-    :title="groupText ?? 'Rajah'"
-    description="Rajah kekal boleh dibuka semasa menjawab."
-  >
-    <template #body>
-      <StimulusStack
-        v-if="group"
-        :stimuli="groupStimuli"
-        @error="onStimError"
-        @loaded="onStimLoaded"
-      />
-    </template>
-  </UDrawer>
-
-  <UDrawer
     v-model:open="navOpen"
     title="Peta soalan"
     description="Pilih soalan untuk melompat ke sana."
@@ -707,16 +770,16 @@ const feedback = computed(() => {
           :counters="counters"
           @go="goToId"
         />
-        <!-- Phones: the footer has no room for Hantar, so it lives here on every question (FB-044). -->
+        <!-- Phones: the footer has no room for Hantar, so it lives here on every question (FB-044);
+             latihan pupils get "Selesai" here to finish early (S8-T04, D115). -->
         <UButton
-          v-if="isExam"
           type="button"
           block
           size="lg"
           class="min-h-11"
           data-testid="submit-from-map"
           @click="openSubmitFromMap"
-          >Hantar</UButton
+          >{{ isExam ? 'Hantar' : 'Selesai' }}</UButton
         >
       </DsStack>
     </template>
@@ -724,23 +787,38 @@ const feedback = computed(() => {
 
   <UModal
     v-model:open="confirmSubmit"
-    :title="isExam ? 'Hantar jawapan anda sekarang?' : 'Selesai latihan?'"
-    :description="
-      isExam
-        ? 'Selepas dihantar, anda tidak boleh mengubah jawapan.'
-        : 'Ringkasan markah akan dipaparkan.'
+    :title="
+      !isExam
+        ? 'Selesai latihan?'
+        : unanswered > 0
+          ? `Anda belum menjawab ${unanswered} soalan.`
+          : 'Hantar jawapan anda sekarang?'
     "
+    :description="
+      !isExam
+        ? 'Ringkasan markah akan dipaparkan.'
+        : unanswered > 0
+          ? 'Hantar jawapan anda sekarang?'
+          : undefined
+    "
+    :content="dialogContent"
   >
     <template #body>
       <ul class="flex flex-col gap-1 text-body text-default" data-testid="submit-summary">
-        <li>Belum dijawab: {{ unanswered }} soalan</li>
+        <li v-if="!isExam">Belum dijawab: {{ unanswered }} soalan</li>
         <li>Ditanda: {{ flaggedCount }} soalan</li>
       </ul>
     </template>
     <template #footer>
       <div class="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
-        <UButton color="neutral" variant="soft" class="min-h-11" @click="confirmSubmit = false"
-          >Kembali</UButton
+        <UButton
+          ref="confirmBack"
+          color="neutral"
+          variant="soft"
+          class="min-h-11"
+          data-testid="confirm-back"
+          @click="confirmSubmit = false"
+          >{{ isExam ? 'Batal' : 'Kembali' }}</UButton
         >
         <UButton
           class="min-h-11"
@@ -748,7 +826,7 @@ const feedback = computed(() => {
           data-testid="confirm-submit"
           @click="submit(false)"
         >
-          {{ isExam ? 'Hantar' : 'Selesai' }}
+          {{ submitting ? 'Menghantar...' : isExam ? 'Hantar' : 'Selesai' }}
         </UButton>
       </div>
     </template>

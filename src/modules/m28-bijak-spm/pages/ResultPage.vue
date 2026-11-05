@@ -21,7 +21,7 @@ import PartResultCard from '../components/PartResultCard.vue'
 import ReportQuestionButton from '../components/ReportQuestionButton.vue'
 import PastSittingsLink from '../components/PastSittingsLink.vue'
 import ResultGroup from '../components/ResultGroup.vue'
-import { RichText, StimulusStack } from '../../../components/question-display'
+import { RichText, StimulusGroup } from '../../../components/question-display'
 import SelfMarkControl from '../components/SelfMarkControl.vue'
 import { needsAttention, sectionRuleLine } from '../domain/paper-model'
 import type { ReviewPart } from '../domain/semakan'
@@ -35,7 +35,7 @@ import type {
   SubjectCode,
 } from '../domain/types'
 import { rewardItems } from '../lib/rewards'
-import { stimuliOf } from '../lib/stimulus-data'
+import { stimuliOf, toStimulusData } from '../lib/stimulus-data'
 import { useBijakUser, useLearnerTheme } from '../lib/use-bijak'
 import { bijakServer } from '../server/client'
 
@@ -47,6 +47,17 @@ const { user: me, landingPath } = useSession()
 const server = bijakServer()
 const toast = useToast()
 const attemptId = computed(() => String(route.params.attemptId))
+
+/**
+ * Set by AttemptPage only after the automatic submit at 0 (AC-PA-21). Read once at setup, then
+ * dropped from the URL so a reload does not show the banner again.
+ */
+const autoSubmitNote = route.query.auto === '1'
+if (autoSubmitNote) {
+  const query = { ...route.query }
+  delete query.auto
+  void router.replace({ query })
+}
 
 const { data, error } = useApi(() => server.getResult(user.value, attemptId.value), attemptId)
 
@@ -327,7 +338,16 @@ const home = computed(() => landingPath.value || '/dashboard')
       />
 
       <UAlert
-        v-if="data.attempt.status === 'auto_submitted'"
+        v-if="autoSubmitNote"
+        color="info"
+        variant="soft"
+        icon="i-ph-timer"
+        title="Masa tamat. Jawapan anda telah dihantar secara automatik."
+        data-testid="auto-submit-banner"
+      />
+
+      <UAlert
+        v-if="data.attempt.status === 'auto_submitted' && !autoSubmitNote"
         color="info"
         variant="soft"
         icon="i-ph-timer"
@@ -418,11 +438,12 @@ const home = computed(() => landingPath.value || '/dashboard')
                   :attempt-id="attemptId"
                   :variant="questionMap.get(q.questionId)?.mcq ? 'mcq' : 'structured'"
                 /></div>
-              <StimulusStack
-                v-if="ownStimuliOf(q.questionId).length"
-                :stimuli="ownStimuliOf(q.questionId)"
-                data-testid="own-stimuli"
-              />
+              <div v-if="ownStimuliOf(q.questionId).length" :data-count="ownStimuliOf(q.questionId).length" data-testid="own-stimuli">
+                <StimulusGroup
+                  :stimuli="ownStimuliOf(q.questionId).map(toStimulusData)"
+                  :hint="false"
+                />
+              </div>
               <p v-if="questionMap.get(q.questionId)?.stem" class="text-body text-default">
                 <RichText :text="questionMap.get(q.questionId)!.stem" />
               </p>

@@ -26,6 +26,7 @@ import {
   setLevelActive,
   type AdminEducationLevelListItem,
 } from '../api/admin-subjects-levels'
+import { isApiError } from '@/api'
 import { DsLoadError, DsRowActions, type RowAction } from '@/ds'
 import {
   COPY,
@@ -101,7 +102,14 @@ async function toggle(row: AdminEducationLevelListItem): Promise<void> {
     await setLevelActive(row.id, next)
   } catch (err) {
     row.isActive = !next
-    alertNative(isNetworkFailure(err) ? COPY.networkError : COPY.switchFailed)
+    // FR-ADM-C03.3a: a refused switch (409, e.g. activating a Darjah level) shows the API's own message.
+    alertNative(
+      isNetworkFailure(err)
+        ? COPY.networkError
+        : isApiError(err) && err.status === 409
+          ? (errorLines(err)[0] ?? COPY.switchFailed)
+          : COPY.switchFailed,
+    )
   } finally {
     switching.delete(row.id)
   }
@@ -165,6 +173,7 @@ async function remove(row: AdminEducationLevelListItem): Promise<void> {
     <DsLoadError
       v-if="error"
       :message="COPY.loadFailed"
+      :error="error"
       testid="levels-error"
       @retry="reload()"
     />

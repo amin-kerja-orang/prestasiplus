@@ -47,6 +47,8 @@ export function mcqBody(refs: Pick<Refs, 'mathId' | 't4Id' | 'chapterId'>, over:
     questionText: 'Berapakah hasil tambah 2 dan 3?',
     options: ['4', '5', '6', '7'],
     correctAnswer: 1,
+    // S1-T02 R-DSKP: the aras of the leaf is required wherever DSKP nodes exist for the Subjek + Tingkatan (the test taxonomy has them).
+    cognitiveLevel: 'mengaplikasi',
     ...over,
   }
 }

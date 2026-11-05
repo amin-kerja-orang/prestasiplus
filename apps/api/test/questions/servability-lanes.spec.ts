@@ -157,7 +157,7 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
       { lane: 'tracking-a', title: 'Tracking A', description: 'Set objektif penuh dan lane bahasa.', attentionLabel: 'set tidak lengkap' },
       { lane: 'subjektif', title: 'Subjektif', description: 'Soalan berstruktur dan esei.', attentionLabel: 'tiada skema — tidak disajikan' },
       { lane: 'bijak-spm', title: 'Bijak SPM', description: 'Kertas SPM penuh dalam format sebenar.', attentionLabel: 'tiada kunci jawapan' },
-      { lane: 'kertas-subjektif', title: 'Kertas Subjektif', description: 'Kertas 2, 3 & 4 percubaan negeri.', attentionLabel: '' },
+      { lane: 'kertas-subjektif', title: 'Kertas Subjektif', description: 'Kertas 2, 3 & 4 percubaan negeri.', attentionLabel: 'tiada kandungan' },
       { lane: 'latih-tubi', title: 'Latih Tubi', description: 'Latihan ikut topik dan bab.', attentionLabel: 'tidak boleh ditanda' },
     ])
     // The text lives in one table; the hub chrome is pinned too.
@@ -166,7 +166,7 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
       'tracking-a': { title: 'Tracking A', description: 'Set objektif penuh dan lane bahasa.', attentionLabel: 'set tidak lengkap' },
       subjektif: { title: 'Subjektif', description: 'Soalan berstruktur dan esei.', attentionLabel: 'tiada skema — tidak disajikan' },
       'bijak-spm': { title: 'Bijak SPM', description: 'Kertas SPM penuh dalam format sebenar.', attentionLabel: 'tiada kunci jawapan' },
-      'kertas-subjektif': { title: 'Kertas Subjektif', description: 'Kertas 2, 3 & 4 percubaan negeri.', attentionLabel: '' },
+      'kertas-subjektif': { title: 'Kertas Subjektif', description: 'Kertas 2, 3 & 4 percubaan negeri.', attentionLabel: 'tiada kandungan' },
       'latih-tubi': { title: 'Latih Tubi', description: 'Latihan ikut topik dan bab.', attentionLabel: 'tidak boleh ditanda' },
     })
     expect(SERVABILITY_HUB_COPY).toEqual({
@@ -284,7 +284,7 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
       archived: 'Diarkibkan — pulihkan ke draf dahulu.',
       dskp_incomplete: 'DSKP belum lengkap — lengkapkan Tag dan TP di borang soalan.',
       untagged_legacy: 'Belum ditanda DSKP — tidak dimasukkan dalam kertas blueprint dan Jana set.',
-      image_games: 'Ada imej dan permainan ini tidak memaparkan imej.',
+      image_games: 'Soalan bergambar tidak digunakan dalam permainan.',
       image_missing: 'Imej belum dimuat naik — muat naik di borang sunting.',
       level_inactive: 'Tahap tidak aktif untuk murid.',
       no_key: 'Tiada kunci jawapan.',
@@ -299,7 +299,7 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
       level_not_offered: 'Hanya soalan Tingkatan 4 dan 5 dipaparkan di {aktiviti}.',
       subject_unavailable: 'Subjek tidak aktif atau tidak dipautkan kepada tahap soalan ini.',
       subject_not_listed: 'Subjek ini tiada dalam senarai {aktiviti}.',
-      no_chapter: 'Belum dipautkan kepada bab — pilih Bab di borang soalan.',
+      no_chapter: 'Bab belum dipaut - tidak disajikan dalam Soalan by Chapter.',
       has_stimulus: 'Ada rangsangan atau imej — {aktiviti} hanya memaparkan soalan teks.',
       has_option_image: 'Ada imej pada pilihan jawapan — {aktiviti} hanya memaparkan soalan teks.',
       bridge_refused: 'Tidak dapat dihidangkan di {aktiviti}.',
@@ -308,6 +308,7 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
       paper_empty: 'Disajikan tetapi tiada soalan',
       stimulus_shared_ungrouped: 'Rangsangan ini dikongsi oleh beberapa soalan tetapi bukan kumpulan rangsangan — jadikan soalan-soalan itu satu kumpulan rangsangan (D90).',
       question_missing: 'Soalan pada kertas ini tiada dalam bank soalan — kertas tidak boleh dimulakan; gantikan atau buang soalan itu.',
+      group_incomplete: 'Kumpulan belum lengkap - {n} soalan belum diluluskan.',
     })
     const v2 = Object.entries(SERVABILITY_REASON_SOURCE).filter(([, src]) => src === 'V2').map(([code]) => code)
     expect(v2.sort()).toEqual(['bridge_refused', 'no_key', 'no_scheme', 'paper_empty'])
@@ -349,6 +350,7 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
     expect(card.attention).toBe(cells.reduce((n, c) => n + c.total - c.servable, 0))
     const math = cells.find((c) => c.subject.id === tag.subjectId && c.servable > 0)!
     expect(math.actions).toEqual([])
+    expect(math.meta).toBe(`#${math.subject.id} · ${String(math.servable)} soalan`) // PO: the cell label is the servable "{n} soalan"
     const filtered = await admin.get(`/api/admin/servability/lanes/latih-tubi?subjectId=${sciId}`)
     for (const c of filtered.body.data as ServabilityLatihTubiCell[]) expect(c.subject.id).toBe(sciId)
     const none = await admin.get('/api/admin/servability/lanes/latih-tubi?search=zzz-tiada')
@@ -419,7 +421,8 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
     expect(lane.body.data).toEqual([])
     expect(lane.body.count).toBe(0)
     const card = parseData(await admin.get('/api/admin/servability/overview'), ServabilityOverviewSchema).cards.find((c) => c.lane === 'kertas-subjektif')!
-    expect(card).toMatchObject({ total: 0, attention: 0, attentionOpen: true, attentionLines: [] })
+    expect(card).toMatchObject({ total: 0, attention: 0, attentionLines: [] })
+    expect(card.attentionOpen).toBeUndefined()
   })
 
   it('S3-T03: once papers carry a surface, a Kertas Subjektif paper leaves the Bijak SPM lane for its own', async () => {
@@ -430,6 +433,15 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
       expect(own.rows.map((r) => r.id)).toEqual([made.sciPaper])
       const bijak = await wholeLane<ServabilityPaperRow>('bijak-spm', ServabilityPaperRowSchema)
       expect(bijak.rows.map((r) => r.paperId)).not.toContain(made.sciPaper)
+
+      // FR-ADM-Q18.3: a paper with no placement reads "tiada kandungan", and the hub counts the same rows.
+      await t.db.query(`update papers set surface = 'subjektif' where id = $1`, [made.refusedPaper])
+      ;(t.app.get(OverviewCache) as unknown as { slots: Map<string, unknown> }).slots.clear()
+      const both = await wholeLane<ServabilityLaneRow>('kertas-subjektif', ServabilityLaneRowSchema)
+      expect(both.rows.find((r) => r.id === made.sciPaper)?.attention).toEqual(['tiada kandungan'])
+      expect(both.rows.find((r) => r.id === made.refusedPaper)?.attention).toEqual([])
+      const card = parseData(await admin.get('/api/admin/servability/overview'), ServabilityOverviewSchema).cards.find((c) => c.lane === 'kertas-subjektif')!
+      expect(card).toMatchObject({ total: 2, attention: 1, attentionLines: [{ count: 1, text: '1 tiada kandungan' }] })
     } finally {
       await t.db.query(`alter table papers drop column surface`)
     }

@@ -56,6 +56,8 @@ async function mcq(over: { level?: string; tag?: Tag; text?: string; tp?: number
       options: ['Satu', 'Dua', 'Tiga', 'Empat'],
       correctAnswer: over.correct ?? 1,
       explanation: over.explanation ?? SECRET_EXPLANATION,
+      cognitiveLevel: 'mengaplikasi', // S1-T02 R-DSKP: aras per leaf, and the Bab where the subject and level have chapters
+      ...(tag.chapterId === undefined ? {} : { curriculumChapterId: tag.chapterId }),
       tag: { unitId: tag.unitId, spIds: [tag.spId], tp: over.tp ?? 3 },
     } as never,
     { userId: w.admin, role: 'admin' },

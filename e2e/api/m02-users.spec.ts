@@ -25,7 +25,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
 import { gotoApi, loginViaUi } from '../fixtures/api'
-import { account, expectNoHScroll, HOME, newPeerContext, type ApiRole } from './helpers'
+import { account, expectNoHScroll, FORBIDDEN_TITLE, newPeerContext, type ApiRole } from './helpers'
 import {
   applyFilters,
   createTempAdmin,
@@ -627,7 +627,7 @@ test.describe('M02 user management role guards @api', () => {
     }
   })
 
-  test('USR-07b Admin Sekolah opening the admin user screens is sent to /admin-sekolah @api', async ({
+  test('USR-07b Admin Sekolah opening the admin user screens sees Akses Ditolak in place @api', async ({
     page,
   }) => {
     await signIn(page, 'adminSekolah')
@@ -638,7 +638,10 @@ test.describe('M02 user management role guards @api', () => {
       '/admin/import-students',
       '/admin/comp-students',
     ]) {
-      await gotoExpectUrl(page, path, new RegExp(`${HOME.adminSekolah}$`))
+      // `roles: ['admin']`, default onForbidden '403': the 403 page renders in place, URL unchanged.
+      await gotoExpectUrl(page, path, new RegExp(`${path}/?$`))
+      await expect(page).toHaveTitle(FORBIDDEN_TITLE)
+      await expect(page.getByText('Akses Ditolak').first()).toBeVisible()
       await expect(page.getByTestId('users-page')).toHaveCount(0)
       await expectNoHScroll(page)
     }

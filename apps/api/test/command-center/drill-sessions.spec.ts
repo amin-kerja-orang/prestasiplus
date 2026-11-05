@@ -69,7 +69,7 @@ afterAll(async () => {
   await t.close()
 })
 
-const NOT_FOUND = 'Not Found.'
+const NOT_FOUND = 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?'
 const expect404 = async (who: LoggedIn, path: string): Promise<void> => {
   expectError(await getAs(who, path), 'NOT_FOUND', NOT_FOUND)
 }

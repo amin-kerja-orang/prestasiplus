@@ -1,5 +1,5 @@
 export { ServabilityService } from './servability.service'
 export { ServabilityReadsService } from './servability-reads.service'
-export { SERVABLE_STATUSES, bridgeRefusal, evaluate, evaluateAll } from './rules'
+export { ALL_GROUP_SURFACES, GROUP_SURFACES, SERVABLE_STATUSES, bridgeRefusal, drawUnits, evaluate, evaluateAll, type DrawCandidate } from './rules'
 export { DATABANK_LANE_FROM, databankLaneConds, databankServedPredicate, filterOf, janaEligibleScope, type ActivityScope } from './filters'
 export type { LevelFact, ServabilityFacts, SubjectFact } from './types'

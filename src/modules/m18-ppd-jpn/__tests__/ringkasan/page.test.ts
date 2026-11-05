@@ -258,7 +258,7 @@ describe('error states', () => {
 
   it('shows the BM rate-limit line on a 429', async () => {
     const w = await mountPage(apiError(429, 'RATE_LIMITED', 'Too Many Attempts.'))
-    expect(text(w, 'rk-error')).toContain('Terlalu banyak percubaan. Cuba sebentar lagi.')
+    expect(text(w, 'rk-error')).toContain('Terlalu banyak percubaan. Sila cuba sebentar lagi.')
   })
 
   it('renders the global 403 in place for a 403', async () => {

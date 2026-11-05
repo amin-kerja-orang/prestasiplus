@@ -28,7 +28,7 @@ import {
   type GamesTestApp,
   type InsertedMcq,
 } from '../helpers'
-import { expectKeyless, itemRows, keyTextOf, shortenAnswers, type DbItem } from './support'
+import { expectKeyless, itemRows, keyTextOf, servedTextOf, shortenAnswers, type DbItem } from './support'
 
 const M = GAMES_MESSAGES
 const rewards = new FakeRewards()
@@ -109,10 +109,10 @@ describe('solo games (D58a: keyless payload, server-checked answers, server-comp
   describe('guards', () => {
     it('401 on every route without a session', async () => {
       const id = '3f2b8a6e-5c1d-4e7a-9b0f-1a2b3c4d5e6f'
-      expectError(await t.http().get('/api/games/solo/betul-salah'), 'UNAUTHORIZED', M.unauthenticated)
-      expectError(await t.http().post('/api/games/solo/betul-salah/check').send({ session_id: id }), 'UNAUTHORIZED', M.unauthenticated)
-      expectError(await t.http().post('/api/games/solo/kad-memori/reveal').send({ session_id: id, card_id: 'a' }), 'UNAUTHORIZED', M.unauthenticated)
-      expectError(await t.http().post('/api/games/solo/betul-salah/submit').send({ session_id: id }), 'UNAUTHORIZED', M.unauthenticated)
+      expectError(await t.http().get('/api/games/solo/betul-salah'), 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
+      expectError(await t.http().post('/api/games/solo/betul-salah/check').send({ session_id: id }), 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
+      expectError(await t.http().post('/api/games/solo/kad-memori/reveal').send({ session_id: id, card_id: 'a' }), 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
+      expectError(await t.http().post('/api/games/solo/betul-salah/submit').send({ session_id: id }), 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
     })
 
     it('CSRF_INVALID on a write without the token', async () => {
@@ -477,7 +477,7 @@ describe('solo games (D58a: keyless payload, server-checked answers, server-comp
       expect(rev.headers['cache-control']).toBe('no-store')
       const face = parseData(rev, GamesKadMemoriFaceSchema)
       expect(face).toMatchObject({ id: pairs[0]?.q.card_id, type: 'question' })
-      expect(face.content).toContain('Soalan permainan contoh')
+      expect(face.content).toBe(await servedTextOf(t.db, pairs[0]?.q.question_id as string))
       expect((await sessionRow(sessionId))?.open_card_id).toBe(pairs[0]?.q.card_id)
 
       // one open card at a time; the open card is closed only by a check that names it

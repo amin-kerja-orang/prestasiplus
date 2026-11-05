@@ -109,7 +109,7 @@ describe('public pickers (AC 1, AC 11)', () => {
     })
 
     it('404 for an unknown or malformed JPN', async () => {
-      expectError(await t.http().get('/api/jpn/99999/ppd'), 'NOT_FOUND', 'Not Found.')
+      expectError(await t.http().get('/api/jpn/99999/ppd'), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
       expectError(await t.http().get('/api/jpn/abc/ppd'), 'NOT_FOUND')
       expectError(await t.http().get('/api/jpn/99999999999999999999999/ppd'), 'NOT_FOUND')
     })

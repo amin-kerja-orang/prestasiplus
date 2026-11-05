@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Post, Put, Query, UseGuards, UseInterceptors } from '@nestjs/common'
-import { QUESTION_MESSAGES, QuestionCreateRequestSchema, QuestionUpdateRequestSchema } from '@pp/contract'
+import { QUESTION_MESSAGES, QuestionBulkGroupRequestSchema, QuestionCreateRequestSchema, QuestionUpdateRequestSchema } from '@pp/contract'
 
 import { AuditService } from '../../../common/audit'
 import { Roles } from '../../../common/guards'
@@ -7,9 +7,10 @@ import { NoStoreInterceptor } from '../../../common/http'
 import { ok } from '../../../common/http/respond'
 import { RateLimit, RateLimitGuard, type RateLimitSpec } from '../../../common/throttle'
 import { QuestionsService } from '../questions.service'
+import { StimuliService } from '../stimuli.service'
 import { Actor, type HttpActor } from './actor'
 import { QuestionAudit } from './audit'
-import { adminMeta, flash, parseAdminList, parseBody, parseBulk, parseFilterBulk } from './parse'
+import { adminMeta, flash, invalid, parseAdminList, parseBody, parseBulk, parseFilterBulk } from './parse'
 import { detailView, questionView, rowView } from './views'
 
 /** D57: writes are rate limited per user. Env `THROTTLE_QUESTIONS_WRITE_PER_MINUTE`, else 60. */
@@ -45,6 +46,7 @@ export const QUESTIONS_LIST_LIMIT = {
 export class AdminQuestionsController {
   constructor(
     @Inject(QuestionsService) private readonly questions: QuestionsService,
+    @Inject(StimuliService) private readonly stimuli: StimuliService,
     @Inject(AuditService) audit: AuditService,
   ) {
     this.audit = new QuestionAudit(audit)
@@ -76,8 +78,17 @@ export class AdminQuestionsController {
   @HttpCode(200)
   @RateLimit(QUESTIONS_WRITE_LIMIT)
   async bulk(@Actor() actor: HttpActor, @Body() body: unknown) {
+    // S1-T01 (API-Q-04): `ids` and `groupId` together are refused before anything is parsed; `{action, groupId}` moves a whole stimulus group.
+    const raw = typeof body === 'object' && body !== null && !Array.isArray(body) ? (body as Record<string, unknown>) : {}
+    if (raw.ids !== undefined && raw.groupId !== undefined) throw invalid({ groupId: QUESTION_MESSAGES.bothIdsAndGroup })
+    if (raw.groupId !== undefined) {
+      const group = parseBody(QuestionBulkGroupRequestSchema, body)
+      const moved = await this.stimuli.bulkGroup(group.action, group.groupId, actor)
+      await this.audit.bulk(actor, group.action, moved.affected, moved.affected, moved.ids, { groupId: group.groupId })
+      return flash({ affected: moved.affected, failed: moved.failed }, QUESTION_MESSAGES.bulkUpdated(moved.affected))
+    }
     const input = parseBulk(body)
-    const { affected, ids, failed, skipped } = await this.questions.bulkAction(input.action, input.ids, actor, { submitGate: true })
+    const { affected, ids, failed, skipped } = await this.stimuli.bulkWithGroups(input.action, input.ids, actor, (rest) => this.questions.bulkAction(input.action, rest, actor, { submitGate: true }))
     await this.audit.bulk(actor, input.action, new Set(input.ids).size, affected, ids)
     // R1E2E-10 minor 11 (Q16: skipped is information, not an error): a batch where every row was already Diterbitkan (nothing affected, at least one
     // skipped, NOTHING refused) must not flash "0 soalan berjaya dikemaskini."; it says why instead. Any refused row (`failed`) or any published row keeps

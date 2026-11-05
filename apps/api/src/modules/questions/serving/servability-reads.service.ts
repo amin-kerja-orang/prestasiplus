@@ -202,7 +202,7 @@ export class ServabilityReadsService {
       paperCardP,
       run(() => this.soft(() => this.trackingCard())),
       run(() => this.soft(() => this.subjektifFigures())),
-      run(() => this.soft(() => this.kertasSubjektifTotal())),
+      run(() => this.soft(() => this.kertasSubjektifFigures())),
     ])
     const sumOver = (by: ReadonlyMap<string, number>, only?: ReadonlySet<string>) => [...by].reduce((n, [k, v]) => n + (only === undefined || only.has(k) ? v : 0), 0)
     let paperServed = 0
@@ -223,7 +223,6 @@ export class ServabilityReadsService {
       return { lane, ...copy, total, attention, attentionLines: attention > 0 ? [{ count: attention, text: `${countText(attention)} ${copy.attentionLabel}` }] : [] }
     }
     const failed = (lane: ServabilityHubLane): ServabilityHubCard => ({ ...card(lane, 0, 0), failed: true })
-    // "tiada halaman" has no definition yet (issue S3-T03, awaiting the product owner): the card carries the count only.
     const subjektif = (f: SubjektifFigures): ServabilityHubCard => {
       const lines: ServabilityLaneAttention[] = []
       if (f.noScheme > 0) lines.push({ count: f.noScheme, text: `${countText(f.noScheme)} ${SERVABILITY_HUB_CARDS.subjektif.attentionLabel}` })
@@ -237,7 +236,7 @@ export class ServabilityReadsService {
         trackingCard === null ? failed('tracking-a') : card('tracking-a', trackingCard.total, trackingCard.attention),
         subjektifCard === null ? failed('subjektif') : subjektif(subjektifCard),
         card('bijak-spm', paperCard.total, paperCard.attention),
-        kertasTotal === null ? failed('kertas-subjektif') : { ...card('kertas-subjektif', kertasTotal, 0), attentionOpen: true },
+        kertasTotal === null ? failed('kertas-subjektif') : card('kertas-subjektif', kertasTotal.total, kertasTotal.empty),
         card('latih-tubi', bank, Math.max(0, bank - latihTubiServed)),
       ],
       activities: SERVABILITY_ACTIVITIES.map((a) => {
@@ -422,7 +421,7 @@ export class ServabilityReadsService {
         {
           id: key(r),
           title: metaLine(subject.name, r.level_name),
-          meta: metaLine(`#${subject.id}`, `${String(r.n)} soalan`),
+          meta: metaLine(`#${subject.id}`, `${String(n)} soalan`),
           status: switchEnabled ? 'open' : 'closed',
           attention: r.n > n ? [latihTubiCellAttentionMs(r.n - n)] : [],
           actions: [],
@@ -575,7 +574,7 @@ export class ServabilityReadsService {
     return row ?? { total: 0, attention: 0, noScheme: 0, noKey: 0 }
   }
 
-  /** Lane "Kertas Subjektif": the papers of that surface, newest first; nothing until DM-23 exists. `attention` stays empty: "tiada halaman" is undefined (issue S3-T03). */
+  /** Lane "Kertas Subjektif": the papers of that surface, newest first; nothing until DM-23 exists. A paper with no placement reads "tiada kandungan" (FR-ADM-Q18.3). */
   async kertasSubjektifLane(q: ServabilityLaneQuery): Promise<Paged<ServabilityLaneRow>> {
     const conds: Prisma.Sql[] = [KERTAS_SUBJEKTIF_COND]
     if (q.status !== undefined) conds.push(Prisma.sql`p.status = ${q.status}`)
@@ -593,7 +592,7 @@ export class ServabilityReadsService {
     return {
       rows: papers.map((p) => {
         const id = idToString(p.id)
-        return { id, title: p.title, meta: metaLine(`#${id}`, p.subject_name, `${String(p.questions)} soalan`), status: p.status, attention: [], actions: ['preview', 'edit'] }
+        return { id, title: p.title, meta: metaLine(`#${id}`, p.subject_name, `${String(p.questions)} soalan`), status: p.status, attention: p.questions === 0 ? [SERVABILITY_HUB_CARDS['kertas-subjektif'].attentionLabel] : [], actions: ['preview', 'edit'] }
       }),
       page: q.page,
       pageSize: q.pageSize,
@@ -601,9 +600,15 @@ export class ServabilityReadsService {
     }
   }
 
-  private async kertasSubjektifTotal(): Promise<number> {
-    const rows = await this.db.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n FROM papers p WHERE ${KERTAS_SUBJEKTIF_COND}`
-    return rows[0]?.n ?? 0
+  /** The hub card of that lane, on the same rows: `empty` counts the papers the lane marks "tiada kandungan". */
+  private async kertasSubjektifFigures(): Promise<{ total: number; empty: number }> {
+    const rows = await this.db.$queryRaw<{ total: number; empty: number }[]>`
+      SELECT count(*)::int AS total,
+             (count(*) FILTER (WHERE NOT EXISTS (
+               SELECT 1 FROM paper_placements pl JOIN paper_sections ps ON ps.id = pl.paper_section_id WHERE ps.paper_id = p.id
+             )))::int AS empty
+        FROM papers p WHERE ${KERTAS_SUBJEKTIF_COND}`
+    return rows[0] ?? { total: 0, empty: 0 }
   }
 
   // --- helpers -------------------------------------------------------------------------------------

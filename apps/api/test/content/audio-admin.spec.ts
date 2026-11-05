@@ -272,7 +272,7 @@ describe('audio KBAT admin tools (AC 8)', () => {
         'questions.9.dskpSpId': 'Medan ini tidak sah.',
         'sections.2.title': 'Medan ini tidak sah.',
       })
-      expect(errorOf(res).message).toBe('Medan ini diperlukan. (and 9 more errors)')
+      expect(errorOf(res).message).toBe('Medan ini diperlukan. (dan 9 ralat lain)')
     })
 
     it('a missing question (fewer than 30) is reported per question', async () => {
@@ -356,7 +356,7 @@ describe('audio KBAT admin tools (AC 8)', () => {
       const spy = vi.spyOn(t.app.get(AudioRepository), 'createSet').mockRejectedValueOnce(Object.assign(new Error('pool'), { code: 'P2024' }))
       const res = await createRequest(admin)
       spy.mockRestore()
-      expectError(res, 'RATE_LIMITED', 'Too Many Attempts.')
+      expectError(res, 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
     })
   })
 })

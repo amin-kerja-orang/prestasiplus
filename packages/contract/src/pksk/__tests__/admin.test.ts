@@ -416,10 +416,10 @@ describe('guards', () => {
       const body = method === 'GET' ? undefined : {}
       const guest = await h.call(runtime, method, url, null, body)
       expect(guest.status, url).toBe(401)
-      expect(errorOf(guest)).toMatchObject({ code: 'UNAUTHORIZED', message: 'Unauthenticated.' })
+      expect(errorOf(guest)).toMatchObject({ code: 'UNAUTHORIZED', message: 'Sesi anda telah tamat. Sila log masuk semula.' })
       const student = await h.call(runtime, method, url, h.PELAJAR, body)
       expect(student.status, url).toBe(403)
-      expect(errorOf(student)).toMatchObject({ code: 'FORBIDDEN', message: 'This action is unauthorized.' })
+      expect(errorOf(student)).toMatchObject({ code: 'FORBIDDEN', message: 'Anda tidak dibenarkan melakukan tindakan ini.' })
     }
   })
 })
