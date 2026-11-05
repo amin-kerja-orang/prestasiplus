@@ -424,3 +424,6 @@ export interface TextbookRef {
   /** Last page, when the reference spans pages. */
   hingga?: number
 }
+
+/** Teacher structured detail source: the question view of the LIVE version plus its stimulus group (no creator, no DSKP chain). */
+export type GuruStructuredRecord = QuestionView & { stimulusGroup: StimulusGroupRecord | null }

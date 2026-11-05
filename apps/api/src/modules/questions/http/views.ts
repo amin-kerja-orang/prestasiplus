@@ -17,7 +17,6 @@ import {
   QuestionStructuredRowSchema,
   GuruStructuredDetailSchema,
   GuruStructuredRowSchema,
-  type GuruStructuredSubSchema,
   type QuestionPart,
   type QuestionStatus,
 } from '@pp/contract'
@@ -28,7 +27,7 @@ import { isLeaf, type QuestionLeaf } from '../grading'
 import { constantFields, difficultyLabelOf, flatFromVersion, kertasOfPaperCode, wireSourceType } from '../projection'
 import { dskpCompleteness } from '../dskp-gate'
 import { stimulusTableParts } from '../stimulus-table'
-import type { QuestionDetailView, QuestionView, StimulusGroupRecord } from '../types'
+import type { GuruStructuredRecord, QuestionDetailView, QuestionView, StimulusGroupRecord } from '../types'
 
 export type QuestionRow = z.output<typeof QuestionRowSchema>
 export type QuestionWire = z.output<typeof QuestionSchema>
@@ -297,6 +296,10 @@ interface Sub {
   modelAnswer: string
   parentSubId: string | null
   order: number
+  /** Bloom level of a leaf (teacher mount only; the admin schema strips it). */
+  cognitiveLevel: string | null
+  /** Nesting depth: 0 for a top part. */
+  depth: number
 }
 
 /** The part tree flattened depth first: one entry per part, branches included (marks 0). */
@@ -318,10 +321,13 @@ function flatten(questionId: string, parts: readonly QuestionPart[]): Sub[] {
         modelAnswer: '',
         parentSubId: parent?.id ?? null,
         order: out.length + 1,
+        cognitiveLevel: null,
+        depth: path.length,
       }
       out.push(sub)
       if (isLeaf(part)) {
         sub.marks = part.marks
+        sub.cognitiveLevel = part.cognitiveLevel ?? null
         sub.modelAnswer = modelAnswerOf(part)
         if (part.mode === 'numeric') {
           const first = part.key.values[0]
@@ -403,25 +409,18 @@ export function guruStructuredRowView(q: QuestionView, number: number): z.output
   })
 }
 
-function guruSubs(parts: readonly QuestionPart[], path: readonly string[], depth: number): z.output<typeof GuruStructuredSubSchema>[] {
-  return parts.flatMap((part) => {
-    const labels = [...path, part.label]
-    const own: z.output<typeof GuruStructuredSubSchema> = isLeaf(part)
-      ? {
-          partLabel: labels.join('.'),
-          questionText: part.prompt.ms,
-          marks: part.marks,
-          cognitiveLevel: part.cognitiveLevel ?? null,
-          modelAnswer: modelAnswerOf(part),
-          depth,
-        }
-      : { partLabel: labels.join('.'), questionText: part.prompt.ms, marks: 0, cognitiveLevel: null, modelAnswer: '', depth }
-    return isLeaf(part) ? [own] : [own, ...guruSubs(part.children as QuestionPart[], labels, depth + 1)]
-  })
+/** The stimulus text once: the stem, then the text of the group's passages and tables that the stem does not already carry. */
+function guruStimulusText(d: GuruStructuredRecord): string {
+  const texts = [d.version.stemMs ?? '']
+  for (const st of d.stimulusGroup?.stimuli ?? []) {
+    const body = (st.bodyMs ?? st.bodyEn ?? '').trim()
+    if (body !== '' && !texts.some((t) => t.includes(body))) texts.push(body)
+  }
+  return texts.filter((t) => t.trim() !== '').join('\n\n')
 }
 
 /** Teacher detail: the stimulus once, the parts with their marks and scheme; none of the admin-only fields. */
-export function guruStructuredDetailView(d: QuestionDetailView): z.output<typeof GuruStructuredDetailSchema> {
+export function guruStructuredDetailView(d: GuruStructuredRecord): z.output<typeof GuruStructuredDetailSchema> {
   const parts = d.version.parts
   return GuruStructuredDetailSchema.parse({
     id: d.id,
@@ -429,11 +428,18 @@ export function guruStructuredDetailView(d: QuestionDetailView): z.output<typeof
     level: d.level,
     kbat: kbatLabelOf(d.version.cognitiveLevel),
     status: 'approved',
-    stimulus: d.version.stemMs ?? '',
+    stimulus: guruStimulusText(d),
     stimulusImage: null,
     totalMarks: marksOf(parts),
     subCount: countLeaves(parts),
-    subQuestions: guruSubs(parts, [], 0),
+    subQuestions: flatten(d.id, parts).map((x) => ({
+      partLabel: x.partLabel,
+      questionText: x.questionText,
+      marks: x.marks,
+      cognitiveLevel: x.cognitiveLevel,
+      modelAnswer: x.modelAnswer,
+      depth: x.depth,
+    })),
     createdAt: toMytTimestamp(d.createdAt),
   })
 }

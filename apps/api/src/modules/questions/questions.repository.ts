@@ -181,13 +181,14 @@ const VERSION_STIMULI_SQL = Prisma.sql`SELECT vs.stimulus_id AS sid FROM questio
                UNION SELECT gs.stimulus_id FROM stimulus_group_stimuli gs WHERE gs.group_id = q.group_id`
 
 /**
- * R1-GUR-44b (FR-X1-4f): what the teacher structured list may show = what a pupil is served (`isStructuredVisible`: active, approved, structured,
- * level T4 or T5) over the LIVE version, and a question whose figure or table is missing is left out (`mediaResolvedSql`, the approve-gate rule).
- * Aliases `q`, `v`. `v` is the latest version, so the live version must be the latest one.
+ * R1-GUR-44b (FR-X1-4f): what the teacher structured list may show. It starts from what a pupil is served (`isStructuredVisible`: active, approved,
+ * structured, level T4 or T5) and is stricter than it: a source that is taken down and a question whose figure or table is missing
+ * (`mediaResolvedSql`, the approve-gate rule) are left out too. Aliases `q`, `v`; `v` is the LIVE version (`SERVED_FROM_SQL`), so a newer
+ * draft does not hide a question pupils still get.
  */
+const SERVED_FROM_SQL = Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no`
 const GURU_STRUCTURED_SERVED_SQL: Prisma.Sql[] = [
   Prisma.sql`q.is_active`,
-  Prisma.sql`q.live_version_no = v.version_no`,
   Prisma.sql`v.status = 'approved'`,
   Prisma.sql`EXISTS (SELECT 1 FROM education_levels gl WHERE gl.id = v.education_level_id AND gl.code IN (${Prisma.join([...STRUCTURED_LEVEL_CODES])}))`,
   NOT_SOURCE_TAKEN_DOWN_SQL,
@@ -757,7 +758,7 @@ export class QuestionsRepository {
             : Prisma.sql`v.cognitive_level = ${n}`,
       )
     }
-    const from = Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
+    const from = filter.served === true ? SERVED_FROM_SQL : Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
     const where = Prisma.join(conds, ' AND ')
     const offset = (filter.page - 1) * filter.pageSize
     const [rows, totals] = await Promise.all([
@@ -772,7 +773,7 @@ export class QuestionsRepository {
     const key = bi(id)
     if (key === null) return false
     const conds = [Prisma.sql`q.id = ${key}`, Prisma.sql`v.type = 'structured'`, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, ...GURU_STRUCTURED_SERVED_SQL]
-    const rows = await this.db.$queryRaw<{ ok: number }[]>`SELECT 1 AS ok FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no WHERE ${Prisma.join(conds, ' AND ')}`
+    const rows = await this.db.$queryRaw<{ ok: number }[]>`SELECT 1 AS ok ${SERVED_FROM_SQL} WHERE ${Prisma.join(conds, ' AND ')}`
     return rows.length > 0
   }
 
