@@ -547,7 +547,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
             >
               <DsIcon :name="tab.icon" class="size-6" />
               <span
-                class="max-w-full text-center text-xs leading-tight break-normal sm:text-caption"
+                class="max-w-full text-center text-caption leading-tight break-normal"
                 :title="tab.label"
                 >{{ tab.label }}</span
               >

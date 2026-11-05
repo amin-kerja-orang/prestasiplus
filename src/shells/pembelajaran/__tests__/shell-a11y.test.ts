@@ -23,8 +23,8 @@ describe('Pembelajaran shell a11y (S8-T07)', () => {
     for (const r of rows) expect(r).toContain('pointer-coarse:h-12')
   })
 
-  it('D08 bottom-nav labels are at least 12px (text-xs)', () => {
-    expect(src).toMatch(/max-w-full text-center text-xs leading-tight/)
+  it('D08 bottom-nav labels use the 13px caption role (at least 12px)', () => {
+    expect(src).toMatch(/max-w-full text-center text-caption leading-tight/)
     expect(src).not.toContain('text-[0.6875rem]')
   })
 
