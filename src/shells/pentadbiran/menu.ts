@@ -217,7 +217,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
   },
 ]
 
-/** All 103 items, built or not (backlog data). */
+/** All 107 items, built or not (backlog data). */
 export const FULL_ITEMS: readonly PentadbiranItem[] = PENTADBIRAN_FULL_MENU.flatMap((g) => g.items)
 
 /** The rendered menu: built screens only; a group with no built item is dropped. */
