@@ -206,7 +206,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
     label: 'Sistem',
     icon: 'gear',
     items: items([
-      ['SY-01', 'Tetapan'],
+      ['SY-01', 'Tetapan', '/admin/settings'],
       ['SY-02', 'Kawalan Ciri'],
       ['SY-03', 'Prestasi Sistem'],
       ['SY-04', 'Log Audit'],
