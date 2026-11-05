@@ -15523,6 +15523,17 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/question-imports/:p/errors",
+      "method": "GET",
+      "path": "/api/question-imports/:id/errors",
+      "api_id": "API-Q-17",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/workflow/imports/imports.controller.ts",
+      "approved_by_card": "S1-T05",
+      "note": "Error report CSV of one import run (FR-ADM-QE6.2): baris, question_key, medan, kod_ralat, mesej. Admin only."
+    },
+    {
       "key": "POST /api/question-imports",
       "method": "POST",
       "path": "/api/question-imports",

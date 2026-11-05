@@ -445,7 +445,7 @@ describe('openapi registration', () => {
 
   const ROUTES: readonly [string, string][] = [
     ['get', '/question-reports'], ['post', '/question-reports'], ['get', '/question-reports/mine'], ['patch', '/question-reports/{id}'],
-    ['get', '/question-imports'], ['post', '/question-imports'], ['get', '/question-imports/template'],
+    ['get', '/question-imports'], ['post', '/question-imports'], ['get', '/question-imports/template'], ['get', '/question-imports/{id}/errors'],
     ['get', '/guru/questions/template'], ['post', '/guru/questions/import'],
     ['get', '/question-quality'], ['post', '/question-quality/audit'],
     ['get', '/diagram-audit'], ['post', '/diagram-audit/{kind}/{id}/image'], ['post', '/diagram-audit/{kind}/{id}/dismiss'],
@@ -460,9 +460,9 @@ describe('openapi registration', () => {
         .map(([method, op]): [string, string, Operation] => [method, path, op]),
     )
 
-  it('registers the 20 routes, and only those, under the question-workflow tag', () => {
-    expect(ROUTES).toHaveLength(20)
-    expect(operations()).toHaveLength(20)
+  it('registers the 21 routes, and only those, under the question-workflow tag', () => {
+    expect(ROUTES).toHaveLength(21)
+    expect(operations()).toHaveLength(21)
     for (const [method, path] of ROUTES) {
       const op = doc.paths[path]?.[method]
       expect(op, `${method} ${path}`).toBeDefined()

@@ -1,5 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 import {
+  QUESTION_IMPORT_ERROR_CSV_HEADER,
+  QUESTION_IMPORT_MAX_ROWS,
   QUESTION_IMPORT_MESSAGES as MSG,
   QUESTION_IMPORT_MIME_TYPES,
   QUESTION_IMPORT_PAGE_SIZE,
@@ -19,11 +21,26 @@ import { ApiError } from '../../../../common/errors/api-error'
 import { listMeta } from '../../../../common/http/respond'
 import { toMytTimestamp } from '../../../../common/time/myt'
 import { CurriculumRepository } from '../../../curriculum'
+import { QuestionsRepository } from '../../index'
 import type { WorkflowActor } from '../actor'
 import { type ImportedQuestionInput, QuestionWorkflowPorts } from '../ports'
 import type { CreateGateInput } from '../lifecycle'
 import { QuestionWorkflowService } from '../question-workflow.service'
-import { GURU_IMPORT_CAPS, type ImportDefaults, type ImportLookups, NO_IMPORT_DEFAULTS, planImport } from './csv'
+import {
+  buildCsv,
+  type CodeLookups,
+  type CurriculumFacts,
+  factsKey,
+  GURU_IMPORT_CAPS,
+  type ImportDefaults,
+  type ImportLookups,
+  isLegacyHeader,
+  NO_IMPORT_DEFAULTS,
+  numberKey,
+  parseCsv,
+  planImport,
+  resolveSubjectLevel,
+} from './csv'
 
 /** What the controller hands over from multer (memory storage). */
 export interface UploadedCsv {
@@ -34,8 +51,8 @@ export interface UploadedCsv {
 }
 
 /**
- * Gate data of an imported row for `QuestionWorkflowService.assertCreateAllowed`. A CSV row has no
- * chapter, unit, SP or TP, and it is a declared `excel` source.
+ * Gate data of an imported row for `QuestionWorkflowService.assertCreateAllowed`. A row of the legacy header has no chapter, unit, SP or
+ * TP; a row of the new header carries the unit, SP, TP and chapter its codes mapped to (S1-T05). It is a declared `excel` source.
  */
 function gateInputOf(row: ImportedQuestionInput, status: QuestionWorkflowStatus): CreateGateInput {
   return {
@@ -44,10 +61,10 @@ function gateInputOf(row: ImportedQuestionInput, status: QuestionWorkflowStatus)
     marks: row.marks ?? 1,
     subjectId: row.subjectId,
     educationLevelId: row.educationLevelId,
-    chapterId: null,
-    unitId: null,
-    spIds: [],
-    tp: null,
+    chapterId: row.chapterId ?? null,
+    unitId: row.unitId ?? null,
+    spIds: row.spIds ?? [],
+    tp: row.tp ?? null,
     unconfirmedLowConfidenceFields: [],
     hasOpenDuplicateFlag: false,
     mediaResolved: true,
@@ -78,6 +95,7 @@ export class QuestionImportsService {
     @Inject(CurriculumRepository) private readonly curriculum: CurriculumRepository,
     @Inject(QuestionWorkflowPorts) private readonly ports: QuestionWorkflowPorts,
     @Inject(QuestionWorkflowService) private readonly workflow: QuestionWorkflowService,
+    @Inject(QuestionsRepository) private readonly questions: QuestionsRepository,
   ) {}
 
   /** The template file text (mock `IMPORT_TEMPLATE_CSV`; no cell starts with a formula character). */
@@ -102,6 +120,21 @@ export class QuestionImportsService {
     return { data: rows.map(runView), meta: listMeta(page, QUESTION_IMPORT_PAGE_SIZE, totalItems) }
   }
 
+  /**
+   * The error CSV of one run (`GET /question-imports/:id/errors`, FR-ADM-QE6.2): columns `baris, question_key, medan, kod_ralat, mesej`, one
+   * line per stored row error. It holds nothing of the file's cells but the question key and the codes the Q-11 messages name; every cell
+   * goes through `csvCell` (formula neutralised). 404 for an unknown id.
+   */
+  async errorsCsv(id: string): Promise<string> {
+    if (!/^[1-9]\d{0,17}$/.test(id)) throw ApiError.of('NOT_FOUND')
+    const row = await this.prisma.client.questionImport.findUnique({ where: { id: BigInt(id) } })
+    if (!row) throw ApiError.of('NOT_FOUND')
+    return buildCsv([
+      [...QUESTION_IMPORT_ERROR_CSV_HEADER],
+      ...asFailures(row.failures).map((f) => [String(f.row), f.questionKey ?? '', f.field ?? '', f.code ?? '', f.message]),
+    ])
+  }
+
   // --- admin import ----------------------------------------------------------------------------
 
   async importAdmin(actor: WorkflowActor, file: UploadedCsv | undefined, body: unknown) {
@@ -111,10 +144,14 @@ export class QuestionImportsService {
     const defaults = parseDefaults(body, lookups, fields)
     if (Object.keys(fields).length > 0) throw ApiError.of('VALIDATION_ERROR', { fields })
 
-    const plan = planImport(text as string, lookups, defaults)
+    const plan = planImport(text as string, await this.withCodes(lookups, text as string, defaults), defaults)
     refuseUnusable(plan)
     const run = await this.execute(actor, file as UploadedCsv, plan, defaults, 'draft', null)
-    return { data: runView(run), status: MSG.imported(run.importedCount, run.failedCount) }
+    return {
+      data: runView(run),
+      status: MSG.imported(run.importedCount, run.failedCount),
+      ...(plan.warnings.length === 0 ? {} : { warnings: plan.warnings }),
+    }
   }
 
   // --- Guru import -----------------------------------------------------------------------------
@@ -124,10 +161,11 @@ export class QuestionImportsService {
     const text = readFile(file, fields)
     if (Object.keys(fields).length > 0) throw ApiError.of('VALIDATION_ERROR', { fields })
 
-    const plan = planImport(text as string, await this.lookups(), NO_IMPORT_DEFAULTS, GURU_IMPORT_CAPS)
+    const lookups = await this.withCodes(await this.lookups(), text as string, NO_IMPORT_DEFAULTS)
+    const plan = planImport(text as string, lookups, NO_IMPORT_DEFAULTS, GURU_IMPORT_CAPS)
     refuseUnusable(plan)
     const run = await this.execute(actor, file as UploadedCsv, plan, NO_IMPORT_DEFAULTS, 'review', null)
-    return { data: { imported: run.importedCount, failed: asFailures(run.failures) } }
+    return { data: { imported: run.importedCount, failed: asFailures(run.failures), ...(plan.warnings.length === 0 ? {} : { warnings: plan.warnings }) } }
   }
 
   // --- shared ----------------------------------------------------------------------------------
@@ -138,6 +176,69 @@ export class QuestionImportsService {
       subjectIds: new Set(subjects.map((s) => s.id.toString())),
       levelIds: new Set(levels.map((l) => l.id.toString())),
     }
+  }
+
+  /**
+   * The code maps and curriculum facts the new header needs (read-only through `CurriculumRepository`), for the Subjek + Tingkatan the file
+   * names. A legacy file or one over the row cap gets none (nothing is planned from it).
+   */
+  private async withCodes(lookups: ImportLookups, text: string, defaults: ImportDefaults): Promise<ImportLookups> {
+    const [header, ...data] = parseCsv(text)
+    if (!header || isLegacyHeader(header) || data.length > QUESTION_IMPORT_MAX_ROWS) return lookups
+    const [subjects, levels] = await Promise.all([this.curriculum.subjects(), this.curriculum.levels()])
+    const subjectsByCode = new Map(subjects.map((s) => [s.code.toUpperCase(), s.id.toString()]))
+    const levelsByCode = new Map(levels.map((l) => [l.code.toUpperCase(), l.id.toString()]))
+    const names = new Map<string, number>()
+    header.cells.forEach((n, i) => {
+      const k = n.trim().toLowerCase()
+      if (!names.has(k)) names.set(k, i)
+    })
+    const withTopics = names.has('topik_kod')
+    const bare: CodeLookups = { subjectsByCode, levelsByCode, facts: new Map() }
+    const pairs = new Map<string, { subjectId: string; levelId: string }>()
+    for (const rec of data) {
+      const get = (col: string): string => {
+        const i = names.get(col)
+        return i === undefined ? '' : (rec.cells[i] ?? '')
+      }
+      const { subjectId, levelId } = resolveSubjectLevel(get, bare, defaults)
+      if (subjectId !== null && levelId !== null) pairs.set(factsKey(subjectId, levelId), { subjectId, levelId })
+    }
+    const facts = new Map<string, CurriculumFacts>()
+    for (const [key, { subjectId, levelId }] of pairs) facts.set(key, await this.factsOf(BigInt(subjectId), BigInt(levelId), withTopics))
+    return { ...lookups, codes: { subjectsByCode, levelsByCode, facts } }
+  }
+
+  private async factsOf(subjectId: bigint, levelId: bigint, withTopics: boolean): Promise<CurriculumFacts> {
+    const [nodes, chapters, spmBound] = await Promise.all([
+      this.curriculum.dskpNodes(levelId, subjectId),
+      this.curriculum.chapters(subjectId, levelId, { active: true }),
+      this.questions.isSpmBound(subjectId.toString(), levelId.toString()),
+    ])
+    const byId = new Map(nodes.map((n) => [n.id, n]))
+    const units = new Map<string, string[]>()
+    const sps = new Map<string, { id: string; unitIds: Set<string> }[]>()
+    for (const n of nodes) {
+      if (n.kind === 'unit') units.set(n.code, [...(units.get(n.code) ?? []), n.id.toString()])
+      if (n.kind !== 'sp') continue
+      const unitIds = new Set<string>()
+      const seen = new Set<bigint>()
+      for (let p = n.parentId === null ? undefined : byId.get(n.parentId); p && !seen.has(p.id); p = p.parentId === null ? undefined : byId.get(p.parentId)) {
+        seen.add(p.id)
+        if (p.kind === 'unit') unitIds.add(p.id.toString())
+      }
+      sps.set(n.code, [...(sps.get(n.code) ?? []), { id: n.id.toString(), unitIds }])
+    }
+    const chapterMap = new Map<string, { id: string; topics: ReadonlyMap<string, string> }>()
+    for (const c of chapters) {
+      if (c.chapterNumber === null) continue
+      const topics = new Map<string, string>()
+      if (withTopics) {
+        for (const t of await this.curriculum.topics(c.id)) if (t.topicNumber !== null && !topics.has(numberKey(t.topicNumber.trim()))) topics.set(numberKey(t.topicNumber.trim()), t.id.toString())
+      }
+      if (!chapterMap.has(numberKey(String(c.chapterNumber)))) chapterMap.set(numberKey(String(c.chapterNumber)), { id: c.id.toString(), topics })
+    }
+    return { subjectId: subjectId.toString(), levelId: levelId.toString(), hasDskpNodes: nodes.length > 0, spmBound, units, sps, chapters: chapterMap }
   }
 
   /** Creates the valid rows and stores the run in ONE transaction: nothing partial is kept on an error. */
@@ -162,7 +263,7 @@ export class QuestionImportsService {
           fileName: file.originalname.slice(0, FILE_NAME_MAX),
           templateVersion,
           importedCount: plan.rows.length,
-          failedCount: plan.failures.length,
+          failedCount: plan.failedQuestions,
           failures: plan.failures,
           defaultSubjectId: defaults.subjectId === null ? null : BigInt(defaults.subjectId),
           defaultEducationLevelId: defaults.educationLevelId === null ? null : BigInt(defaults.educationLevelId),
@@ -196,6 +297,7 @@ function refuseUnusable(plan: ReturnType<typeof planImport>): void {
   if (plan.missingColumns.length > 0) {
     throw ApiError.of('VALIDATION_ERROR', { fields: { csvFile: MSG.missingColumns(plan.missingColumns) } })
   }
+  if (plan.rowLimitExceeded) throw ApiError.of('VALIDATION_ERROR', { fields: { csvFile: MSG.tooManyRows } })
   if (plan.dataRows === 0) throw ApiError.of('VALIDATION_ERROR', { fields: { csvFile: MSG.noData } })
 }
 
