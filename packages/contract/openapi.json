@@ -15185,7 +15185,8 @@
           "tag_review",
           "paper_empty",
           "stimulus_shared_ungrouped",
-          "question_missing"
+          "question_missing",
+          "group_incomplete"
         ]
       },
       "ServabilityReason": {
