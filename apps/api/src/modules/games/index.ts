@@ -15,6 +15,8 @@ export type {
 } from './core/ports'
 export { WalletGameRewards, gameRow } from './core/wallet-rewards'
 export { GameReadService } from './core/game-read.service'
+export { GAME_SETTINGS, GameSettingsService, isGameSettingKey, isGameSettingValueInRange } from './core/game-settings.service'
+export type { GameSettingKey } from './core/game-settings.service'
 export { GameQuestions, toServed } from './core/game-questions.service'
 export type { GameQuestionFilter, ServedQuestion } from './core/game-questions.service'
 export { GameSubjects, ROOM_SUBJECT_CODES } from './core/subjects'
