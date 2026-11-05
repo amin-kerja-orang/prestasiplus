@@ -112,7 +112,7 @@ const tile = {
   locked: 1,
   total: 3,
   readiness: 67,
-  lockedSets: [{ setNo: 3, readyCount: 12, target: 40 }],
+  lockedSets: [{ year: 2026, setNo: 3, readyCount: 12, target: 40 }],
   hasBankBesar: true,
 }
 
@@ -259,7 +259,7 @@ describe('M06 read models', () => {
     expect(ok(SpmTrackingAHubSchema, { ...hub, readiness: { summary: { bersih: 1, bankBesar: 1, locked: 1 }, tiles: [tile] } })).toBe(true)
     expect(ok(SpmTrackingAHubSchema, { ...hub, readiness: undefined })).toBe(false)
     expect(ok(SpmTrackingAHubSchema, { ...hub, bahasaLane: { subjects: 3, sets: 1 } })).toBe(false)
-    const tooMany = Array.from({ length: 7 }, (_, i) => ({ setNo: i + 1, readyCount: 0, target: 40 }))
+    const tooMany = Array.from({ length: 7 }, (_, i) => ({ year: 2026, setNo: i + 1, readyCount: 0, target: 40 }))
     expect(ok(SpmTrackingAHubSchema, { ...hub, readiness: { summary: { bersih: 0, bankBesar: 0, locked: 7 }, tiles: [{ ...tile, lockedSets: tooMany }] } })).toBe(false)
     expect(ok(SpmTrackingAHubSchema, { ...hub, readiness: { summary: { bersih: 0, bankBesar: 0, locked: 0 }, tiles: [{ ...tile, readiness: 101 }] } })).toBe(false)
   })
