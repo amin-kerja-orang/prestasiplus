@@ -33,6 +33,23 @@ export function legacySubjectOfPracticeCode(practiceCode: string): LegacySubject
   return LEGACY_OF_PRACTICE_CODE.get(practiceCode)
 }
 
+/**
+ * The learner subject of a subject row (S4-T06, D11): the legacy code for the 8 legacy practice codes, otherwise the subject's own
+ * `code`. The practice code of a subject is its `code` either way (`PRACTICE_CODE` only maps legacy names to it).
+ */
+export function learnerSubjectOf(subjectCode: string): string {
+  return legacySubjectOfPracticeCode(subjectCode) ?? subjectCode
+}
+
+/**
+ * The `subjects.code` a learner subject query selects, or `null` when it selects nothing. Own keys of `PRACTICE_CODE` map to their
+ * practice code; a legacy practice code typed as such (`MATH`) is not a learner code, so it matches nothing; any other code is exact.
+ */
+export function practiceCodeOfLearnerSubject(subject: string): string | null {
+  if (Object.hasOwn(PRACTICE_CODE, subject)) return PRACTICE_CODE[subject as LegacySubjectCode]
+  return legacySubjectOfPracticeCode(subject) === undefined ? subject : null
+}
+
 export const GRADE_CODES: readonly GradeCode[] = Object.freeze([
   'DARJAH_1',
   'DARJAH_2',
@@ -154,6 +171,25 @@ export const MAP_SUBJECTS: readonly CurriculumLearningMap['subjects'][number][] 
   { code: 'PENDIDIKAN_MORAL', label: 'Pend. Moral', emoji: '🤝', color: '#F97316' },
   { code: 'SEJARAH', label: 'Sejarah', emoji: '🏛️', color: '#EF4444' },
 ])
+
+/**
+ * The S14 pills from the active subjects, in the order given (S4-T06, D11): the 7 legacy pills first, as before (own emoji, colour
+ * and label, shown only while their subject is active), then every other active subject (Geografi included) with its name from the
+ * data, an empty emoji and an empty colour (the client draws the neutral default pill). A subject's code is its learner code.
+ */
+export function mapSubjectPills(active: readonly { code: string; name: string }[]): CurriculumLearningMap['subjects'] {
+  const learnerCodes = new Set(active.map((s) => learnerSubjectOf(s.code)))
+  const known = new Set(MAP_SUBJECTS.map((s) => s.code))
+  const legacy = MAP_SUBJECTS.filter((s) => learnerCodes.has(s.code)).map((s) => ({ ...s }))
+  const seen = new Set<string>()
+  const others = active.flatMap((s) => {
+    const code = learnerSubjectOf(s.code)
+    if (known.has(code) || seen.has(code)) return []
+    seen.add(code)
+    return [{ code, label: s.name, emoji: '', color: '' }]
+  })
+  return [...legacy, ...others]
+}
 
 export const DEFAULT_MAP_SUBJECT = 'MATEMATIK'
 /** The grade list itself is `offeredLevels(db)` (`gradeKey`, S4-T06); only the default is fixed. */
