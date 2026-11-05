@@ -44,7 +44,6 @@ export const STRUCTURED_COPY = {
 
 /** Texts that are not in the PRD or the contract (UNVERIFIED COPY): flashes and fallbacks. */
 export const STRUCTURED_EXTRA_COPY = {
-  updated: 'Soalan berstruktur dikemas kini.',
   saveFailed: 'Gagal menghantar soalan berstruktur. Sila cuba lagi.',
   loadFailed: 'Gagal memuatkan data. Sila cuba lagi.',
   retry: 'Cuba Semula',

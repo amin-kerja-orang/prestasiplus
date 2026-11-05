@@ -270,6 +270,21 @@ describe('submit and validation', () => {
   })
 })
 
+describe('D112 lookups', () => {
+  it('"Hantar" is disabled and a submit is ignored until the Bab / SP lookups have loaded', async () => {
+    let release: (v: unknown[]) => void = () => undefined
+    guru.fetchBidang.mockReturnValue(new Promise((r) => (release = r)))
+    await mountForm()
+    await fillBasics()
+    expect(t('form-submit').attributes('disabled')).toBeDefined()
+    await t('structured-form').trigger('submit')
+    expect(wrapper!.emitted('submit')).toBeUndefined()
+    release([])
+    await flushPromises()
+    expect(t('form-submit').attributes('disabled')).toBeUndefined()
+  })
+})
+
 describe('stimulus image', () => {
   it('refuses a non-image and an image over 2 MB with the PRD texts', async () => {
     await mountForm()

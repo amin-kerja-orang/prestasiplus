@@ -8,6 +8,7 @@ import { setUser } from '@/mock/core-data/set-user'
 import type { MockRuntime } from '@/mock/index'
 import { curriculum } from '@/modules/m03-curriculum/mock'
 import { GURU_SUBMISSION_PREFIX, guruSubmissions } from '@/modules/m04-question-bank/mock'
+import { dskpRepo } from '../../mock/repository/dskp'
 
 import {
   buildBody,
@@ -26,13 +27,32 @@ const OTHER_GURU = 4501
 let runtime: MockRuntime
 let body: StructuredSubmitBody
 
+/** A secondary (Tingkatan) level + a subject linked to it, and what D112 then requires. */
+function pick() {
+  const level = curriculum.levels().find((l) => l.isActive && l.stage !== 'primary')!
+  const subject = curriculum
+    .subjects()
+    .find((x) => x.isActive && x.educationLevelIds.includes(level.id))!
+  const chapter = curriculum.chapters(subject.id, level.id).find((c) => c.isActive)
+  const sp = dskpRepo
+    .bidang({ subjectId: subject.id, educationLevelId: level.id })
+    .flatMap((b) => dskpRepo.sk(b.id))
+    .flatMap((k) => dskpRepo.sp(k.id))[0]
+  return { level, subject, chapter, sp }
+}
+
 beforeAll(async () => {
   ;({ runtime } = await bootM10())
+  const { level, subject, chapter, sp } = pick()
   body = buildBody(
     {
       ...emptyValues(),
-      levelId: String(curriculum.levels()[0]!.id),
-      subjectId: String(curriculum.subjects()[0]!.id),
+      levelId: String(level.id),
+      subjectId: String(subject.id),
+      chapterId: chapter ? String(chapter.id) : '',
+      spId: sp ? String(sp.id) : '',
+      tp: sp ? '3' : '',
+      cognitiveLevel: sp ? 'memahami' : '',
       difficulty: '3',
       stimulus: 'Petikan untuk dua sub-soalan.',
       parts: [
@@ -133,13 +153,70 @@ describe('POST /api/guru/intake/structured', () => {
       difficultyLevel: 'Sila pilih kesukaran.',
       stimulus: 'Rangsangan tidak boleh melebihi 4000 aksara.',
       parts: 'Sekurang-kurangnya satu sub-soalan diperlukan.',
-      totalMarks: 'Medan ini tidak sah.',
+      _: 'Unrecognized key: "totalMarks"',
     })
     const eleven = await call<Err>('POST', URL, GURU, {
       ...body,
       parts: Array.from({ length: 11 }, () => body.parts[0]),
     })
     expect(eleven.body.error.fields?.parts).toBe('Bilangan sub-soalan mesti antara 1 dan 10.')
+  })
+})
+
+describe('tags and D112 (the BE resolveTags and guruDskpFields)', () => {
+  it('an unknown or inactive Subjek / Tingkatan is a 422 with the PRD texts, a Darjah too', async () => {
+    const bad = await call<Err>('POST', URL, GURU, {
+      ...body,
+      subjectId: '99999999',
+      educationLevelId: '99999999',
+    })
+    expect(bad.status).toBe(422)
+    expect(bad.body.error.fields).toEqual({
+      subjectId: 'Sila pilih subjek.',
+      educationLevelId: 'Sila pilih tingkatan.',
+    })
+    const darjah = curriculum.levels().find((l) => l.stage === 'primary')
+    if (darjah) {
+      const r = await call<Err>('POST', URL, GURU, { ...body, educationLevelId: String(darjah.id) })
+      expect(r.body.error.fields?.educationLevelId).toBe('Sila pilih tingkatan.')
+    }
+  })
+
+  it('names the unknown key of a part as parts.{i} and several keys together', async () => {
+    const r = await call<Err>('POST', URL, GURU, {
+      ...body,
+      a: 1,
+      b: 2,
+      parts: [{ ...body.parts[0]!, x: 1 }],
+    })
+    expect(r.body.error.fields).toEqual({
+      _: 'Unrecognized keys: "a", "b"',
+      'parts.0': 'Unrecognized key: "x"',
+    })
+  })
+
+  it('D112: Bab, SP, TP and Aras are required where chapters / DSKP nodes exist', async () => {
+    const { chapter, sp } = pick()
+    const bare = { ...body, chapterId: null, spIds: null, tp: null, cognitiveLevel: null }
+    const r = await call<Err>('POST', URL, GURU, bare)
+    const fields = r.body.error.fields ?? {}
+    expect('chapterId' in fields).toBe(chapter !== undefined)
+    expect('spIds' in fields).toBe(sp !== undefined)
+    expect('tp' in fields).toBe(sp !== undefined)
+    expect('cognitiveLevel' in fields).toBe(sp !== undefined)
+    if (chapter) expect(fields.chapterId).toBe('Sila pilih bab.')
+    if (sp) {
+      expect(fields.spIds).toBe('Sila pilih Standard Pembelajaran (SP).')
+      expect(fields.tp).toBe('Sila pilih TP.')
+      expect(fields.cognitiveLevel).toBe('Sila pilih aras pemikiran.')
+    }
+  })
+
+  it('createdAt is the +08:00 stamp of the BE', async () => {
+    const made = (await call<Detail>('POST', URL, GURU, body)).body.data as Detail['data'] & {
+      createdAt: string
+    }
+    expect(made.createdAt).toMatch(/\+08:00$/)
   })
 })
 

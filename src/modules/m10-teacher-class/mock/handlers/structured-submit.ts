@@ -14,6 +14,7 @@
  * are served by the M04 mock.
  */
 
+import { toIsoMyt } from '@/lib/time'
 import {
   conflict,
   created,
@@ -26,6 +27,7 @@ import {
 import { curriculum } from '@/modules/m03-curriculum/mock'
 
 import { COGNITIVE_LEVELS, STRUCTURED_COPY } from '../../lib/structured-form'
+import { dskpRepo } from '../repository/dskp'
 import { bodyOf, intOf, teacherOnly, viewerId, type Body } from './common'
 import {
   guruSubmissions,
@@ -50,6 +52,12 @@ const ALLOWED_KEYS = new Set([
 const PART_KEYS = new Set(['text', 'marks', 'scheme', 'cognitiveLevel'])
 const LEVELS: readonly string[] = COGNITIVE_LEVELS.map((c) => c.value)
 
+/** The zod 4 text of a strict-object violation: the BE returns it as is (key `_` at the root, `parts.{i}` in a part). */
+const unrecognized = (keys: string[]): string =>
+  keys.length === 1
+    ? `Unrecognized key: "${keys[0] ?? ''}"`
+    : `Unrecognized keys: ${keys.map((k) => `"${k}"`).join(', ')}`
+
 type Parsed =
   { ok: true; input: GuruSubmissionInput } | { ok: false; fields: Record<string, string> }
 
@@ -58,7 +66,8 @@ const isNil = (v: unknown): v is null | undefined => v === null || v === undefin
 /** Validates the strict body with the contract's keys and BM texts. */
 export function parseStructuredBody(body: Body): Parsed {
   const f: Record<string, string> = {}
-  for (const k of Object.keys(body)) if (!ALLOWED_KEYS.has(k)) f[k] = 'Medan ini tidak sah.'
+  const extra = Object.keys(body).filter((k) => !ALLOWED_KEYS.has(k))
+  if (extra.length > 0) f._ = unrecognized(extra)
 
   const subjectId = intOf(body.subjectId)
   const educationLevelId = intOf(body.educationLevelId)
@@ -126,7 +135,8 @@ export function parseStructuredBody(body: Body): Parsed {
     (body.parts as unknown[]).forEach((raw, i) => {
       const p = typeof raw === 'object' && raw !== null && !Array.isArray(raw) ? (raw as Body) : {}
       const at = (k: string) => `parts.${String(i)}.${k}`
-      for (const k of Object.keys(p)) if (!PART_KEYS.has(k)) f[at(k)] = 'Medan ini tidak sah.'
+      const extraPart = Object.keys(p).filter((k) => !PART_KEYS.has(k))
+      if (extraPart.length > 0) f[`parts.${String(i)}`] = unrecognized(extraPart)
       const text = typeof p.text === 'string' ? p.text.trim() : ''
       if (text === '') f[at('text')] = STRUCTURED_COPY.partText
       else if (text.length > 2000) f[at('text')] = STRUCTURED_COPY.partTextLong
@@ -194,7 +204,7 @@ function detailOf(r: GuruSubmission) {
       modelAnswer: p.scheme,
       depth: 0,
     })),
-    createdAt: new Date(r.createdAtMs).toISOString(),
+    createdAt: toIsoMyt(r.createdAtMs),
     source: 'submission' as const,
     editable: r.editable,
     form: {
@@ -211,10 +221,48 @@ function detailOf(r: GuruSubmission) {
   }
 }
 
+/**
+ * The BE's `resolveTags` + `guruDskpFields`: Subjek and Tingkatan must exist and be active (a Darjah is refused
+ * like an unknown level, D72); the Bab must belong to them; then the D112 rule (Bab only where chapters exist,
+ * SP, TP and Aras only where DSKP nodes exist). Returns the 422 `fields` (empty when fine).
+ */
+export function resolveTags(input: GuruSubmissionInput): Record<string, string> {
+  const f: Record<string, string> = {}
+  const subject = curriculum.subject(input.subjectId)
+  const level = curriculum.level(input.educationLevelId)
+  if (!subject || !subject.isActive) f.subjectId = STRUCTURED_COPY.subject
+  if (!level || !level.isActive || level.stage === 'primary')
+    f.educationLevelId = STRUCTURED_COPY.level
+  if (f.subjectId || f.educationLevelId) return f
+
+  const chapters = curriculum
+    .chapters(input.subjectId, input.educationLevelId)
+    .filter((c) => c.isActive)
+  const sps = dskpRepo
+    .bidang({ subjectId: input.subjectId, educationLevelId: input.educationLevelId })
+    .flatMap((b) => dskpRepo.sk(b.id))
+    .flatMap((k) => dskpRepo.sp(k.id))
+  if (chapters.length > 0 && input.chapterId === null) f.chapterId = STRUCTURED_COPY.chapter
+  if (sps.length > 0 && input.spIds.length === 0) f.spIds = STRUCTURED_COPY.sp
+  if (sps.length > 0 && input.tp === null) f.tp = STRUCTURED_COPY.tp
+  if (sps.length > 0 && input.cognitiveLevel === null) f.cognitiveLevel = STRUCTURED_COPY.cognitive
+  if (input.chapterId !== null) {
+    const chapter = chapters.find((c) => c.id === input.chapterId)
+    if (!chapter) f.chapterId = 'Bab tidak sah.'
+  }
+  if (input.spIds.length > 0 && f.spIds === undefined) {
+    const known = new Set(sps.map((x) => x.id))
+    if (!input.spIds.every((id) => known.has(id))) f.spIds = 'SP tidak sah.'
+  }
+  return f
+}
+
 export const structuredSubmitRoutes: RouteDef[] = [
   route('POST', '/api/guru/intake/structured', [teacherOnly], (req, ctx) => {
     const parsed = parseStructuredBody(bodyOf(req))
     if (!parsed.ok) return validationError(parsed.fields)
+    const tags = resolveTags(parsed.input)
+    if (Object.keys(tags).length > 0) return validationError(tags)
     const row = guruSubmissions.add(viewerId(req), parsed.input, ctx.clock.now())
     return created(detailOf(row))
   }),
@@ -226,6 +274,8 @@ export const structuredSubmitRoutes: RouteDef[] = [
     if (!row.editable) return conflict(LOCKED_MESSAGE)
     const parsed = parseStructuredBody(bodyOf(req))
     if (!parsed.ok) return validationError(parsed.fields)
+    const tags = resolveTags(parsed.input)
+    if (Object.keys(tags).length > 0) return validationError(tags)
     return ok(detailOf(guruSubmissions.update(row, parsed.input)))
   }),
   route('DELETE', '/api/guru/intake/structured/:id', [teacherOnly], (req) => {

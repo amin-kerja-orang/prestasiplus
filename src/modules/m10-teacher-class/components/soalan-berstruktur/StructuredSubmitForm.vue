@@ -135,6 +135,8 @@ watch(
 const ready = computed(() => lookupsFor.value === `${v.subjectId}|${v.levelId}`)
 const hasChapters = computed(() => ready.value && chapters.value.length > 0)
 const hasDskpNodes = computed(() => ready.value && sps.value.length > 0)
+/** D112: the required fields are known only once the Bab / SP lookups of the chosen Subjek + Tingkatan have loaded. */
+const loadingLookups = computed(() => v.subjectId !== '' && v.levelId !== '' && !ready.value)
 
 // --- Kesukaran default (44-F1) and the parts' Aras default ------------------------------------
 let difficultyTouched = v.difficulty !== ''
@@ -193,7 +195,7 @@ function onImage(value: File | File[] | null): void {
 
 // --- submit ----------------------------------------------------------------------------------
 function submit(): void {
-  if (props.saving) return
+  if (props.saving || loadingLookups.value) return
   const found = validate(
     v,
     { hasChapters: hasChapters.value, hasDskpNodes: hasDskpNodes.value },
@@ -529,7 +531,7 @@ const err = (k: string): string | undefined => errors.value[k]
       <UButton
         type="submit"
         :loading="saving"
-        :disabled="saving"
+        :disabled="saving || loadingLookups"
         :icon="saving ? undefined : 'i-ph-paper-plane-tilt'"
         size="xl"
         data-testid="form-submit"
