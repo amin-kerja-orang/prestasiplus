@@ -6,7 +6,7 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { mytDay, RUN_DATE_SEED_PROFILES, SEED_NOW, seedClockFor, startOfMytDay } from '../../src/db/clock'
+import { mytDay, RUN_DATE_SEED_PROFILES, SEED_NOW, seedClockFor, seedRunAt, startOfMytDay } from '../../src/db/clock'
 import { runSeeds, seedModules, UAT_LIKE_PROFILE } from '../../prisma/seed'
 import { seedUuid } from '../../prisma/seed/battle'
 import { DEMO_WALLETS } from '../../prisma/seed/wallet'
@@ -75,6 +75,28 @@ async function snap(db: TestDatabase): Promise<Snap> {
     leagues: await col(`select created_at as t from leagues order by id`),
   }
 }
+
+describe('seedRunAt (SEED_CLOCK opt-in)', () => {
+  const now = () => new Date('2026-11-05T09:00:00Z')
+
+  it('unset SEED_CLOCK gives no run date, so poc keeps SEED_NOW', () => {
+    const runAt = seedRunAt({}, now)
+    expect(runAt).toBeUndefined()
+    const dates = seedClockFor('poc', runAt)
+    expect(dates.shiftMs).toBe(0)
+    expect(dates.clock.now().getTime()).toBe(new Date(SEED_NOW).getTime())
+  })
+
+  it('SEED_CLOCK=fixed or any other value also keeps SEED_NOW', () => {
+    for (const value of ['fixed', '', 'RUNDATE', 'run-date', 'true']) {
+      expect(seedRunAt({ SEED_CLOCK: value }, now)).toBeUndefined()
+    }
+  })
+
+  it('only SEED_CLOCK=rundate returns the real run time', () => {
+    expect(seedRunAt({ SEED_CLOCK: 'rundate' }, now)?.toISOString()).toBe('2026-11-05T09:00:00.000Z')
+  })
+})
 
 describe('poc seed, fixed versus run-date (database)', () => {
   let fixedDb: TestDatabase

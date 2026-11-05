@@ -9,7 +9,7 @@
  */
 import { pathToFileURL } from 'node:url'
 
-import { seedClockFor, SystemClock, type Clock } from '../../src/db/clock'
+import { seedClockFor, seedRunAt, SystemClock, type Clock } from '../../src/db/clock'
 import { createPrismaClient, type PrismaClient } from '../../src/db/client'
 import { DEFAULT_SEED_BASE, type Prng, prngStream } from '../../src/db/prng'
 import { identitySeed } from './core/identity'
@@ -235,8 +235,9 @@ async function main(): Promise<void> {
   const profile = parseProfile(process.argv.slice(2))
   const prisma = createPrismaClient(url)
   try {
-    // The one place the real time is read for seeds. SEED_CLOCK=fixed pins SEED_NOW for any profile (CI jobs that seed `poc`).
-    const runAt = process.env.SEED_CLOCK === 'fixed' ? undefined : new SystemClock().now()
+    // The one place the real time is read for seeds. Opt-in: only SEED_CLOCK=rundate (demo/UAT reseed) dates `poc` from the run
+    // day; unset or `fixed` keeps SEED_NOW for every profile (ADR-0006 amendment 3).
+    const runAt = seedRunAt(process.env, () => new SystemClock().now())
     const done = await runSeeds(seedModules, { profile, prisma, runAt })
     console.log(`seed: profile=${profile}, ${done.length} module(s): ${done.join(', ') || '(none)'}`)
   } finally {

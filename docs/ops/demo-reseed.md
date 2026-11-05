@@ -32,10 +32,10 @@ Set `SEED_DEMO_PASSWORD_HASH` BEFORE the first seed (an account that already has
 ```bash
 npm run be:db:migrate        # prisma migrate deploy; safe to re-run
 if [ -z "$(printf '%s' "${SEED_DEMO_PASSWORD_HASH:-}" | tr -d '[:space:]')" ]; then echo 'SEED_DEMO_PASSWORD_HASH is not set (or blank): the seed would use the published dev password'; else
-  ALLOW_DEMO_SEED=true npm run be:db:seed -- --profile=poc; fi
+  ALLOW_DEMO_SEED=true SEED_CLOCK=rundate npm run be:db:seed -- --profile=poc; fi
 ```
 
-Expected last line: `seed: profile=poc, N module(s): ...` (`poc` is also the default profile). To start from an empty database, recreate the Supabase project schema first (or restore a clean backup), then run the two commands above.
+Expected last line: `seed: profile=poc, N module(s): ...` (`poc` is also the default profile). `SEED_CLOCK=rundate` dates the demo data from today, so 7-day, 30-day and "this month" views are not empty (ADR-0006 amendment 3, FR-AS-0-3); without it the seed uses the fixed 2026-09-25 calendar. To start from an empty database, recreate the Supabase project schema first (or restore a clean backup), then run the two commands above.
 
 ## Path B: already seeded with the published dev password (Demo1234)
 
@@ -69,7 +69,7 @@ Then re-run the seed (same env as Path A):
 
 ```bash
 if [ -z "$(printf '%s' "${SEED_DEMO_PASSWORD_HASH:-}" | tr -d '[:space:]')" ]; then echo 'SEED_DEMO_PASSWORD_HASH is not set (or blank): the seed would use the published dev password'; else
-  ALLOW_DEMO_SEED=true npm run be:db:seed -- --profile=poc; fi
+  ALLOW_DEMO_SEED=true SEED_CLOCK=rundate npm run be:db:seed -- --profile=poc; fi
 ```
 
 **No follow-up SQL is needed.** Every seed that writes demo accounts (`core/identity.ts`, `core/population.ts` and the Bijak PoC `poc/bijak-sittings.ts`, which owns murid4 to murid8) refills a NULL `password_hash` from the shared `demoPasswordHash()` (`core/demo-password.ts`, honours `SEED_DEMO_PASSWORD_HASH`). An existing non-NULL hash is kept. Check afterwards that no demo account is left without a hash (expect 0):

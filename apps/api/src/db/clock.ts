@@ -70,6 +70,14 @@ export interface SeedDates {
 }
 
 /**
+ * The seed run time to pass to `seedClockFor`, read from the environment. Opt-in only: `SEED_CLOCK=rundate` returns `now()`;
+ * unset, `fixed` or any other value returns `undefined`, so the seed keeps `SEED_NOW` (ADR-0006 amendment 3).
+ */
+export function seedRunAt(env: Readonly<Record<string, string | undefined>>, now: () => Date): Date | undefined {
+  return env.SEED_CLOCK === 'rundate' ? now() : undefined
+}
+
+/**
  * Builds the seed clock for a profile. `runAt` is the real run time, passed in by the entry point (the only place that reads the real
  * clock; `prisma/seed/**` may not). Without `runAt`, or for a CI profile, the shift is 0 and the result is identical to the pre-split seed.
  */
