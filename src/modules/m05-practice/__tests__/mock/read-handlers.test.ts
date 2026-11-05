@@ -956,6 +956,11 @@ describe('API-PRAC-08 remedial suggestions (S5-T07; FR-MUR-12-2, FR-MUR-12-4, FR
     ])
   })
 
+  it('pelajar2 (the empty-state e2e pupil) has no suggestions and no assigned test', async () => {
+    expect(await data<RemedialSuggestions>(PELAJAR2, url)).toEqual({ completed: [], needed: [] })
+    expect(await data<unknown[]>(PELAJAR2, '/api/remedial-tests/mine')).toEqual([])
+  })
+
   it('a pupil with 0 answers and the staff roles get empty lists, not an error', async () => {
     for (const u of [PELAJAR2, ADMIN, GURU, ADMIN_SEKOLAH]) {
       expect(await data<RemedialSuggestions>(u, url), String(u)).toEqual({ completed: [], needed: [] })
