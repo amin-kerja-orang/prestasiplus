@@ -13,7 +13,7 @@ permissions:
 
 concurrency:
   group: r1-docs-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   r1-docs:

@@ -76,6 +76,67 @@ describe('SubscriptionService (AC 5)', () => {
     })
   })
 
+  describe('activePackage', () => {
+    const noon = at('2026-10-19T09:00:00+08:00')
+
+    it('is null for an unknown user, a user with no school and no complimentary package, and a school with no live subscription', async () => {
+      expect(await service.activePackage('99999999', noon)).toBeNull()
+      expect(await service.activePackage('abc', noon)).toBeNull()
+      expect(await service.activePackage(await fresh(null), noon)).toBeNull()
+      const school = (await t.db.query<{ id: string }>(`insert into schools (name, code) values ('SK Tiada Pakej', 'NOPKG1') returning id::text`))[0]?.id as string
+      expect(await service.activePackage(await fresh(school), noon)).toBeNull()
+    })
+
+    it('gives the package name and ends_on of the active subscription, both end days included', async () => {
+      const school = (await t.db.query<{ id: string }>(`insert into schools (name, code) values ('SK Pakej Aktif', 'ACTPK1') returning id::text`))[0]?.id as string
+      await addSubscription(t.db, { schoolId: school, status: 'active', starts: '2026-10-01', ends: '2026-12-31' })
+      const user = await fresh(school)
+      const name = (await t.db.query<{ name: string }>(`select name from school_packages where code = 'T5'`))[0]?.name
+      expect(await service.activePackage(user, at('2026-09-30T23:59:00+08:00'))).toBeNull()
+      expect(await service.activePackage(user, at('2026-10-01T00:00:00+08:00'))).toEqual({ name, validUntil: '2026-12-31' })
+      expect(await service.activePackage(user, at('2026-12-31T23:59:59+08:00'))).toEqual({ name, validUntil: '2026-12-31' })
+      expect(await service.activePackage(user, at('2026-12-31T16:30:00Z'))).toBeNull()
+    })
+
+    it('picks the latest starts_on, then the highest id, and ignores grace, expired and cancelled rows', async () => {
+      const school = (await t.db.query<{ id: string }>(`insert into schools (name, code) values ('SK Pakej Terkini', 'LATPK1') returning id::text`))[0]?.id as string
+      const t4 = (await t.db.query<{ id: string }>(`select id::text from school_packages where code = 'T4'`))[0]?.id as string
+      const t4Name = (await t.db.query<{ name: string }>(`select name from school_packages where code = 'T4'`))[0]?.name
+      const t5Name = (await t.db.query<{ name: string }>(`select name from school_packages where code = 'T5'`))[0]?.name
+      await addSubscription(t.db, { schoolId: school, status: 'active', starts: '2026-01-01', ends: '2027-12-31' }) // T5, earlier start
+      await addSubscription(t.db, { schoolId: school, status: 'grace', starts: '2026-09-01', ends: '2027-12-31', packageId: t4 })
+      await addSubscription(t.db, { schoolId: school, status: 'cancelled', starts: '2026-09-15', ends: '2027-12-31', packageId: t4 })
+      const user = await fresh(school)
+      expect(await service.activePackage(user, noon)).toEqual({ name: t5Name, validUntil: '2027-12-31' })
+      await addSubscription(t.db, { schoolId: school, status: 'active', starts: '2026-06-01', ends: '2027-06-30', packageId: t4 })
+      expect(await service.activePackage(user, noon)).toEqual({ name: t4Name, validUntil: '2027-06-30' })
+      // Same starts_on: the higher id wins.
+      await addSubscription(t.db, { schoolId: school, status: 'active', starts: '2026-06-01', ends: '2027-05-31' })
+      expect(await service.activePackage(user, noon)).toEqual({ name: t5Name, validUntil: '2027-05-31' })
+    })
+
+    it('only a STUDENT gets the school package, and it is non-null exactly when isSubscribed is true', async () => {
+      const school = (await t.db.query<{ id: string }>(`insert into schools (name, code) values ('SK Peranan Pakej', 'PERPK1') returning id::text`))[0]?.id as string
+      await addSubscription(t.db, { schoolId: school, status: 'active', starts: '2026-01-01', ends: '2027-12-31' })
+      for (const role of ['student', 'parent', 'teacher', 'school_admin']) {
+        const user = await fresh(school, role)
+        expect((await service.activePackage(user, noon)) !== null).toBe(await service.isSubscribed(user, noon))
+      }
+    })
+
+    it('a complimentary student gets Pakej Percuma until package_expires_on, and it wins over the school package', async () => {
+      const school = (await t.db.query<{ id: string }>(`insert into schools (name, code) values ('SK Percuma', 'COMPK1') returning id::text`))[0]?.id as string
+      await addSubscription(t.db, { schoolId: school, status: 'active', starts: '2026-01-01', ends: '2027-12-31' })
+      const user = await fresh(school)
+      await t.db.query(`update users set is_complimentary = true where id = $1`, [user])
+      await t.db.query(`insert into comp_students (user_id, package_expires_on) values ($1, '2026-12-31')`, [user])
+      expect(await service.activePackage(user, noon)).toEqual({ name: 'Pakej Percuma', validUntil: '2026-12-31' })
+      expect(await service.activePackage(user, at('2026-12-31T23:59:59+08:00'))).toEqual({ name: 'Pakej Percuma', validUntil: '2026-12-31' })
+      // After the comp package ends, the school package applies.
+      expect((await service.activePackage(user, at('2027-01-01T00:00:00+08:00')))?.validUntil).toBe('2027-12-31')
+    })
+  })
+
   describe('trial', () => {
     it('returns { active, used, limit: 50, remaining } with active = !subscribed', async () => {
       const user = await fresh(null)
