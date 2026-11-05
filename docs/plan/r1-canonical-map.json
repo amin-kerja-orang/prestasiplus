@@ -1827,6 +1827,46 @@
       "approved_by_card": null
     },
     {
+      "key": "/perutusan|perutusan-list",
+      "path": "/perutusan",
+      "name": "perutusan-list",
+      "status": "canonical",
+      "sector": "S5",
+      "component": "src/modules/m09-content/pages/PerutusanListPage.vue",
+      "file": "src/modules/m09-content/routes/perutusan.ts",
+      "approved_by_card": "S5-T09"
+    },
+    {
+      "key": "/perutusan/tulis|perutusan-compose",
+      "path": "/perutusan/tulis",
+      "name": "perutusan-compose",
+      "status": "canonical",
+      "sector": "S5",
+      "component": "src/modules/m09-content/pages/PerutusanComposePage.vue",
+      "file": "src/modules/m09-content/routes/perutusan.ts",
+      "approved_by_card": "S5-T09"
+    },
+    {
+      "key": "/perutusan/saya|perutusan-mine",
+      "path": "/perutusan/saya",
+      "name": "perutusan-mine",
+      "status": "canonical",
+      "sector": "S5",
+      "component": "src/modules/m09-content/pages/PerutusanMinePage.vue",
+      "file": "src/modules/m09-content/routes/perutusan.ts",
+      "approved_by_card": "S5-T09"
+    },
+    {
+      "key": "/perutusan/:id(\\d+)|perutusan-detail",
+      "path": "/perutusan/:id(\\d+)",
+      "name": "perutusan-detail",
+      "status": "canonical",
+      "sector": "S5",
+      "component": "src/modules/m09-content/pages/PerutusanDetailPage.vue",
+      "file": "src/modules/m09-content/routes/perutusan.ts",
+      "approved_by_card": "S5-T09"
+    },
+    {
       "key": "/video|",
       "path": "/video",
       "name": null,
@@ -5113,13 +5153,12 @@
       "label": "Perutusan",
       "route": "/perutusan",
       "roles": [
-        "student",
         "admin"
       ],
       "status": "canonical",
-      "sector": "S0",
+      "sector": "S5",
       "file": "src/shells/nav/user-nav.ts",
-      "approved_by_card": null
+      "approved_by_card": "S5-T09"
     },
     {
       "key": "user-nav|latih-tubi",
@@ -15419,6 +15458,16 @@
       "key": "GET /api/admin/tiket/:p",
       "method": "GET",
       "path": "/api/admin/tiket/:id",
+      "api_id": "API-SUP-05",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/support/support.controller.ts",
+      "approved_by_card": "S7-T09"
+    },
+    {
+      "key": "PUT /api/admin/tiket/:p/reply",
+      "method": "PUT",
+      "path": "/api/admin/tiket/:id/reply",
       "api_id": "API-SUP-05",
       "status": "canonical",
       "sector": "S7",

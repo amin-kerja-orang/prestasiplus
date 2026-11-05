@@ -152,7 +152,7 @@ export async function addAnswers(t: CikguTestApp, userId: string, subjectId: str
   const rows: boolean[] = [...Array<boolean>(correct).fill(true), ...Array<boolean>(wrong).fill(false)]
   for (const ok of rows) {
     await t.db.query(
-      `insert into practice_answers (user_id, subject_id, is_correct, answered_at, is_test) values ($1, $2, $3, '2026-10-01T00:00:00Z', $4)`,
+      `insert into practice_answers (user_id, subject_id, is_correct, answered_at, is_test, mode) values ($1, $2, $3, '2026-10-01T00:00:00Z', $4, 'latih_tubi')`,
       [userId, subjectId, ok, isTest],
     )
   }

@@ -115,12 +115,20 @@ describe('navFor with the prototype scope on', () => {
       'Laporan',
       'Laporan Mingguan',
       'Sumbang Soalan',
+      'Perutusan',
     ]) {
       expect(shown, label).toContain(label)
     }
     for (const label of ['Misi Harian', 'Broadcast', 'Databank Soalan', 'Liga Pertandingan']) {
       expect(shown, label).not.toContain(label)
     }
+  })
+
+  it('Perutusan menu: the pupil has no item, Admin Pusat keeps it, the school admin sidebar hides it (S5-T09)', () => {
+    expect(labels('student')).not.toContain('Perutusan')
+    expect(labels('admin')).toContain('Perutusan')
+    expect(labels('school_admin')).not.toContain('Perutusan')
+    expect(isPathInScope('school_admin', '/perutusan')).toBe(true)
   })
 
   it('Admin Sekolah keeps the 18 matrix screens only', () => {
@@ -153,6 +161,7 @@ describe('navFor with the prototype scope on', () => {
       'Aktiviti Guru',
       'Langganan',
       'Invois',
+      // Perutusan: the page works for the school admin, the sidebar item stays hidden (Delivery A, AC-SH-2).
       'Perutusan',
       'Kombo Harian',
       'Liga Pertandingan',

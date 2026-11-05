@@ -56,8 +56,8 @@ export async function addSession(db: TestDatabase, userId: string, s: SessionSee
   if (s.subjectId || s.answers) {
     for (let i = 0; i < s.questions; i++) {
       await db.query(
-        `insert into practice_answers (session_id, user_id, subject_id, question_id, is_correct, answered_at, created_at)
-         values ($1::uuid, $2::bigint, $3::bigint, $4::bigint, $5, $6::timestamptz, now())`,
+        `insert into practice_answers (session_id, user_id, subject_id, question_id, is_correct, answered_at, created_at, mode)
+         values ($1::uuid, $2::bigint, $3::bigint, $4::bigint, $5, $6::timestamptz, now(), 'latih_tubi')`,
         // The table needs a subject or a question; without a subject a plain id stands for the question (no foreign key yet).
         [sessionId, userId, s.subjectId ?? null, s.subjectId ? null : 9000 + i, i < s.correct, s.completedAt],
       )
