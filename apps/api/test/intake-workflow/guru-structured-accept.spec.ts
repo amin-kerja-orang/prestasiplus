@@ -38,7 +38,11 @@ async function submit(token: string | null, stimulus = 'Rajah menunjukkan sebuah
     difficultyLevel: 3,
     stimulus,
     ...(token === null ? {} : { stimulusImageId: token }),
-    parts: [{ text: 'Hitung luas segi tiga itu.', marks: 3, scheme: '1/2 x 6 x 4 = 12 cm2' }],
+    // Two parts: the bank types a version by its parts (`versionTypeOf`), and a lone leaf is typed by its mode (an essay here).
+    parts: [
+      { text: 'Hitung luas segi tiga itu.', marks: 3, scheme: '1/2 x 6 x 4 = 12 cm2' },
+      { text: 'Hitung perimeter segi tiga itu.', marks: 2, scheme: '6 + 5 + 5 = 16 cm' },
+    ],
     // The conditional DSKP fields are required only where the seed has chapters or DSKP nodes for MATH T4.
     ...(await dskp(ref.s, ref.l)),
   })

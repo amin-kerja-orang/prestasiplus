@@ -386,7 +386,7 @@ export class GuruSubmissionsService {
       image = await this.checkImage(userId, body.stimulusImageId)
     } catch (e) {
       if (!(e instanceof ApiError)) throw e
-      Object.assign(extra, (e.details as { fields?: Record<string, string> } | undefined)?.fields ?? {})
+      Object.assign(extra, e.fields ?? {})
     }
     const { subject, level, chapterKey, spKeys, spCodes } = await this.resolveTags(body, extra)
     const stimulus = body.stimulus?.trim() ?? ''
