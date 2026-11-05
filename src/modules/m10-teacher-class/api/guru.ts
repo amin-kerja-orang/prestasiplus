@@ -584,6 +584,8 @@ export async function fetchGuruSetResults(
     totalPages: body.meta?.totalPages ?? 1,
     totalItems: body.meta?.totalItems ?? body.data.rows.length,
   }
+}
+
 // --- Misi Harian, teacher side (API-GUR-11, S6-T07) ---------------------------------------------
 
 export type { TeacherMission, TeacherMissionCreate }
