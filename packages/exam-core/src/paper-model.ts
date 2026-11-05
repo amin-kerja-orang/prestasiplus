@@ -60,10 +60,27 @@ export function leavesOf(parts: readonly PartLike[], prefix = '', depth = 0): Le
   return out
 }
 
-/** Effective marks of a section: choose-N counts only the N largest questions. */
-export function effectiveMarks(rule: SectionSnapshot['rule'], questionMarks: number[]): number {
+/**
+ * Effective marks of a section: choose-N counts only the N largest choice units. `groupIds` (same order as
+ * `questionMarks`) folds the questions of one stimulus group into ONE unit whose marks are their sum (45 5.4 rule 4).
+ */
+export function effectiveMarks(
+  rule: SectionSnapshot['rule'],
+  questionMarks: number[],
+  groupIds?: readonly (string | undefined)[],
+): number {
   if (rule.type === 'all') return questionMarks.reduce((a, b) => a + b, 0)
-  return [...questionMarks]
+  const units: number[] = []
+  const at = new Map<string, number>()
+  questionMarks.forEach((m, i) => {
+    const g = groupIds?.[i]
+    const j = g === undefined ? undefined : at.get(g)
+    if (j === undefined) {
+      if (g !== undefined) at.set(g, units.length)
+      units.push(m)
+    } else units[j] = (units[j] as number) + m
+  })
+  return units
     .sort((a, b) => b - a)
     .slice(0, rule.n)
     .reduce((a, b) => a + b, 0)
