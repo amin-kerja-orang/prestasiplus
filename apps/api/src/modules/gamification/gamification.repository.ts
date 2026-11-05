@@ -679,11 +679,6 @@ export class GamificationRepository {
     return rows.map((r) => ({ key: r.key, label: r.label, value: r.value.toNumber() }))
   }
 
-  async settingValue(db: Db, key: string): Promise<number> {
-    const r = await db.gamificationSetting.findUnique({ where: { key } })
-    return r ? r.value.toNumber() : 0
-  }
-
   async saveSetting(db: Db, key: string, value: number, at: Date): Promise<boolean> {
     const r = await db.gamificationSetting.updateMany({ where: { key }, data: { value, updatedAt: at } })
     return r.count === 1

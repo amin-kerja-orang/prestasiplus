@@ -325,7 +325,7 @@ export type GamificationSettingsUpdateRequest = z.infer<typeof GamificationSetti
 
 /**
  * The five settings S9 and S10 share, with camelCase names, and the four API-ADM-16 names beside them.
- * The four are optional until the API returns them (S7-T05, `reward-settings.service.ts`).
+ * The API returns all nine (S7-T05, `reward-settings.service.ts`); the four stay optional because the mock does not return them.
  */
 export const GamificationEconomySettingsSchema = z
   .object({
