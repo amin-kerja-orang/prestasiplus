@@ -34,8 +34,10 @@ describe('cancel a queue entry (API-GAME-14)', () => {
     expect(res.status).toBe(200)
     expect(parse(envelopeOf(BattleQueueCancelledSchema), res)).toEqual({ data: { cancelled: true } })
     expect(res.headers['cache-control']).toBe('no-store')
-    expect((await statusOf(id))?.status).toBe('abandoned')
-    for (let i = 0; i < 4; i++) expect((await a.get(`/battle/poll-match/${id}`)).body).toEqual({ status: 'expired' })
+    expect((await statusOf(id))?.status).toBe('cancelled')
+    // BATTLE_RULES.matchOnPoll polls would match a waiting entry: "Batal" removes it at once (48 GAME-01).
+    for (let i = 0; i < 4; i++) expect((await a.get(`/battle/poll-match/${id}`)).body).toEqual({ status: 'not_found' })
+    expect((await statusOf(id))?.status).toBe('cancelled')
     expect(await t.db.query('select 1 from battles b join battle_queues q on q.battle_id = b.id where q.id = $1', [id])).toHaveLength(0)
   })
 
@@ -45,6 +47,23 @@ describe('cancel a queue entry (API-GAME-14)', () => {
     const again = await a.post(cancelPath(id), undefined)
     expect(again.status).toBe(200)
     expect(again.body).toEqual({ data: { cancelled: true } })
+    expect((await statusOf(id))?.status).toBe('cancelled')
+  })
+
+  it('a cancelled entry cannot be joined, and accept-challenger finds nothing', async () => {
+    const id = await startQueue(a, s.math)
+    expect((await a.post(cancelPath(id), undefined)).status).toBe(200)
+    expect((await b.post(`/battle/join-queue/${id}`, undefined)).status).toBe(404)
+    expect((await a.post(`/battle/accept-challenger/${id}`, undefined)).status).toBe(404)
+    expect((await statusOf(id))?.status).toBe('cancelled')
+    expect((await t.db.query('select joiner_user_id from battle_queues where id = $1', [id]))[0]).toEqual({ joiner_user_id: null })
+  })
+
+  it('another pupil polling a cancelled entry is told the same as for any entry not theirs', async () => {
+    const id = await startQueue(a, s.math)
+    expect((await a.post(cancelPath(id), undefined)).status).toBe(200)
+    expect((await b.get(`/battle/poll-match/${id}`)).body).toEqual({ status: 'not_found' })
+    expect((await b.get(`/battle/poll-challenger/${id}`)).body).toEqual({ status: 'not_found' })
   })
 
   it('an entry that already expired answers the same and keeps its status', async () => {
@@ -85,7 +104,7 @@ describe('cancel a queue entry (API-GAME-14)', () => {
     expect((await b.post(`/battle/join-queue/${id}`, undefined)).status).toBe(200)
     expect((await a.get(`/battle/poll-match/${id}`)).body).toMatchObject({ status: 'incoming_challenge' })
     expect((await a.post(cancelPath(id), undefined)).status).toBe(200)
-    expect(await statusOf(id)).toEqual({ status: 'abandoned', joiner_outcome: 'expired' })
+    expect(await statusOf(id)).toEqual({ status: 'cancelled', joiner_outcome: 'expired' })
     expect((await b.get(`/battle/poll-challenger/${id}`)).body).toEqual({ status: 'expired' })
   })
 

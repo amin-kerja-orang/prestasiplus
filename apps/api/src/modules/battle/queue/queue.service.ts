@@ -128,7 +128,8 @@ export class QueueService {
     const prefetched = await this.prefetchOpponent(key, userId, isTest)
     return this.prisma.transaction(async () => {
       const q = await this.lock(key)
-      if (!q || idToString(q.ownerId) !== userId || q.isTest !== isTest) return { status: 'not_found' as const }
+      // 48 GAME-01: "Batal" removes the entry at once, so the owner polls it like an entry that does not exist.
+      if (!q || idToString(q.ownerId) !== userId || q.isTest !== isTest || q.status === 'cancelled') return { status: 'not_found' as const }
       if (q.status === 'matched' && q.battleId) return { status: 'matched' as const, battle_uuid: q.battleId }
       if (q.status === 'expired' || q.status === 'abandoned' || q.status === 'matched') return { status: 'expired' as const }
       const now = this.clock.now()
@@ -264,7 +265,7 @@ export class QueueService {
   /**
    * API-GAME-14, the "Batal" of the queue overlay. Another pupil's entry, an unknown id and an entry that already has its
    * battle are the same 404; an entry that already ended answers the same success.
-   * Stored as `abandoned`, which is never matched and polls as `expired`: `ck_battle_queues_status` has no `cancelled` yet.
+   * Stored as `cancelled` (48 GAME-01), which is never matched and polls as `not_found`; a pending joiner polls `expired`.
    */
   async cancel(userId: string, isTest: boolean, queueId: string): Promise<{ cancelled: true }> {
     const notFound = () => ApiError.of('NOT_FOUND', { message: BATTLE_MESSAGES.queueNotFound })
@@ -276,7 +277,7 @@ export class QueueService {
       if (q.status === 'waiting' || q.status === 'incoming_challenge') {
         await this.prisma.client.battleQueue.update({
           where: { id: q.id },
-          data: { status: 'abandoned', challengerUserId: null, ...(q.joinerOutcome === 'pending' ? { joinerOutcome: 'expired' } : {}) },
+          data: { status: 'cancelled', challengerUserId: null, ...(q.joinerOutcome === 'pending' ? { joinerOutcome: 'expired' } : {}) },
         })
       }
       return { cancelled: true as const }
@@ -321,7 +322,7 @@ export class QueueService {
         }
         return { status: 'matched' as const, battle_uuid: battleId }
       }
-      if (q.status === 'matched' || q.status === 'expired' || q.status === 'abandoned') return { status: 'expired' as const }
+      if (q.status === 'matched' || q.status === 'expired' || q.status === 'abandoned' || q.status === 'cancelled') return { status: 'expired' as const }
       return { status: 'waiting' as const }
     })
   }
