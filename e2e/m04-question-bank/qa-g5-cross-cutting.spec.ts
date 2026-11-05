@@ -14,6 +14,20 @@ import { openFilters } from './list-helpers'
 
 const ADMIN = 'admin@demo.test'
 const byId = (page: Page, id: string) => page.getByTestId(id)
+const toCount = (text: string): number => Number(text.replace(/\D/g, ''))
+
+/** The value above a label in the KPI strip of S1. */
+async function kpi(page: Page, label: string): Promise<number> {
+  const lines = (await byId(page, 'questions-kpis').innerText()).split('\n').map((l) => l.trim())
+  return toCount(lines[lines.indexOf(label) - 1] ?? '')
+}
+
+/** The total in the summary of the list pager, "Menunjukkan 1-25 daripada {n} hasil". */
+async function pagerTotal(page: Page): Promise<number> {
+  const status = page.locator('[data-ds="data-table-pager"] [role="status"]')
+  await expect(status).toContainText('daripada')
+  return toCount((await status.innerText()).split('daripada')[1] ?? '')
+}
 
 const ROUTES: Array<[string, string]> = [
   ['S1', '/admin/questions'],
@@ -139,37 +153,45 @@ test.describe('QA G5 lookups, counts, PKSK', { tag: [moduleTag(4), '@qa'] }, () 
     expect(dNames).toEqual([...dNames].sort((a, b) => a.localeCompare(b, 'ms')))
   })
 
-  test('E2E-M04-57 counts agree: S1 total, tiles, S6, status split, Prinsip Perakaunan, S8, S11 (AC-29.3)', async ({
+  // The figures come from the dataset, never from this file. The admin reads hide the Darjah questions (D72, D96;
+  // `mock/repository/visible-levels.ts`), so they are below the whole-bank figures of SRS section 4.1.
+  test('E2E-M04-57 counts agree: S1 Jumlah, pager total, KPI parts, S6, S11 (AC-29.3)', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/admin/questions')
-    await expect(byId(page, 'questions-total')).toHaveText('Jumlah: 268,777 soalan')
-    await expect(byId(page, 'questions-kpis')).toContainText('98,143')
-    await gotoApp('/admin/questions?status=approved')
-    await expect(byId(page, 'questions-table')).toBeVisible()
+    const total = await kpi(page, 'Jumlah soalan')
+    expect(total).toBeGreaterThan(0)
+    expect(toCount(await byId(page, 'questions-total').innerText())).toBe(total)
+    expect(await pagerTotal(page)).toBe(total)
+    expect((await kpi(page, 'Subjek Teras (7)')) + (await kpi(page, 'Subjek Elektif (24)'))).toBe(total)
+    expect((await kpi(page, 'Diluluskan')) + (await kpi(page, 'Belum diluluskan'))).toBe(total)
     await gotoApp('/admin/questions/quality')
-    await expect(byId(page, 'kpi-total')).toContainText('268,777')
+    await expect(byId(page, 'kpi-total')).toContainText(total.toLocaleString('en-US'))
     await gotoApp('/admin/structured-questions')
     await expect(byId(page, 'structured-stat-total')).toContainText('4,064')
     await gotoApp('/admin/soalan-gambar')
-    await expect(byId(page, 'diagrams-stat-mcq')).toContainText('5,653')
     await expect(byId(page, 'diagrams-stat-structured')).toContainText('522')
-    await expect(byId(page, 'diagrams-stat-total')).toContainText('6,175')
+    const stat = async (id: string): Promise<number> => toCount((await byId(page, id).innerText()).split('\n')[0] ?? '')
+    expect((await stat('diagrams-stat-mcq')) + (await stat('diagrams-stat-structured'))).toBe(
+      await stat('diagrams-stat-total'),
+    )
   })
 
-  test('E2E-M04-57 status split 98,143 approved / 170,634 not approved (AC-29.3)', async ({
+  test('E2E-M04-57 status split: the Diluluskan KPI equals the status=approved pager total (AC-29.3)', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
     await loginAs(ADMIN)
+    await gotoApp('/admin/questions')
+    const approved = await kpi(page, 'Diluluskan')
+    expect(approved).toBeGreaterThan(0)
     await gotoApp('/admin/questions?status=approved')
     await expect(byId(page, 'questions-table')).toBeVisible()
-    await expect(byId(page, 'questions-kpis')).toContainText('98,143')
-    await expect(byId(page, 'questions-kpis')).toContainText('170,634')
+    expect(await pagerTotal(page)).toBe(approved)
   })
 
   test('E2E-M04-62 PKSK: search finds no PKSK rows; S3 of 177698 shows text and "-" subject/level (AC-32.1, 32.2)', async ({
