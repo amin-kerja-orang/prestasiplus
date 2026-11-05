@@ -685,11 +685,10 @@ export class QuestionsService {
   // --- structured (teacher mount, API-GUR-26) ----------------------------------------------------
 
   /**
-   * One page of what a pupil is served (approved, live, figures present), newest first. `status=review` is the teacher's own submissions,
-   * which have no source yet: an empty page. The caller fixes the page size.
+   * One slice of what a pupil is served (approved, live, figures present), newest first; `total` is the approved count. The own `review`
+   * submissions of the caller are merged in by the controller (S6-T17), which sets `offset` and `limit` to the part of the union that is approved.
    */
-  async listGuruStructured(filter: StructuredListFilter, status: 'approved' | 'review'): Promise<Page<QuestionView>> {
-    if (status === 'review') return { rows: [], page: filter.page, pageSize: filter.pageSize, total: 0 }
+  async listGuruStructured(filter: StructuredListFilter): Promise<Page<QuestionView>> {
     const page = await this.repo.structuredIds({ ...filter, served: true, newestFirst: true })
     const records = await this.repo.getMany(page.ids, 'live')
     return { rows: await this.named(records), page: filter.page, pageSize: filter.pageSize, total: page.total }

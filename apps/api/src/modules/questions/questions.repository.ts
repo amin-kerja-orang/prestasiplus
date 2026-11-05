@@ -742,9 +742,10 @@ export class QuestionsRepository {
     }
     const from = filter.served === true ? SERVED_FROM_SQL : Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
     const where = Prisma.join(conds, ' AND ')
-    const offset = (filter.page - 1) * filter.pageSize
+    const offset = filter.offset ?? (filter.page - 1) * filter.pageSize
+    const limit = filter.limit ?? filter.pageSize
     const [rows, totals] = await Promise.all([
-      this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY ${filter.newestFirst === true ? Prisma.sql`q.created_at DESC, q.id DESC` : Prisma.sql`q.id ASC`} LIMIT ${filter.pageSize} OFFSET ${offset}`,
+      this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY ${filter.newestFirst === true ? Prisma.sql`q.created_at DESC, q.id DESC` : Prisma.sql`q.id ASC`} LIMIT ${limit} OFFSET ${offset}`,
       this.db.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n ${from} WHERE ${where}`,
     ])
     return { ids: rows.map((r) => idToString(r.id)), total: totals[0]?.n ?? 0 }

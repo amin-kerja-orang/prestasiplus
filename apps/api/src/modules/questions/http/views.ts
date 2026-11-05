@@ -355,6 +355,8 @@ export function guruStructuredRowView(q: QuestionView, number: number): z.output
     subCount: countLeaves(parts),
     marks: marksOf(parts),
     status: 'approved',
+    source: 'question',
+    editable: false,
   })
 }
 
@@ -390,5 +392,8 @@ export function guruStructuredDetailView(d: GuruStructuredRecord): z.output<type
       depth: x.depth,
     })),
     createdAt: toMytTimestamp(d.createdAt),
+    source: 'question',
+    editable: false,
+    form: null,
   })
 }

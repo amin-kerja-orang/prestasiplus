@@ -308,6 +308,9 @@ export interface StructuredListFilter {
   served?: boolean
   /** Order by `created_at` descending instead of id ascending. */
   newestFirst?: boolean
+  /** Row offset and row count that replace the page arithmetic (the teacher union of API-GUR-26). */
+  offset?: number
+  limit?: number
   page: number
   pageSize: number
 }
