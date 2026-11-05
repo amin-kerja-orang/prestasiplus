@@ -254,7 +254,7 @@ describe('SPM pool and tracking (S1, S2, S5)', () => {
   it('count and level/difficulty splits are SQL counts; nothing is hydrated', async () => {
     const pool = t.get(SpmPoolService)
     const total = await pool.count(w.tag.subjectId)
-    const expected = (await t.db.query<{ n: number }>(`select count(*)::int n from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no where q.is_active and v.status = 'approved' and v.type = 'mcq' and v.subject_id = $1 and exists (select 1 from education_levels ol where ol.id = v.education_level_id and ol.stage <> 'primary' and ol.is_active) and exists (select 1 from subject_levels sl where sl.subject_id = v.subject_id and sl.education_level_id = v.education_level_id)`, [w.tag.subjectId]))[0]?.n
+    const expected = (await t.db.query<{ n: number }>(`select count(*)::int n from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no where q.is_active and v.status = 'approved' and v.type = 'mcq' and v.subject_id = $1 and exists (select 1 from education_levels ol where ol.id = v.education_level_id and ol.stage <> 'primary' and ol.is_active) and exists (select 1 from subject_levels sl where sl.subject_id = v.subject_id and sl.education_level_id = v.education_level_id) and (select count(*) from question_parts p where p.question_version_id = v.id) = 1`, [w.tag.subjectId]))[0]?.n // one part only: the pool serves a single multiple-choice leaf, and the two-part question at otherLevel (offered since S4-T06) is not in it
     expect(total).toBe(expected)
     expect(total).toBeGreaterThan(2000)
     const t4 = await pool.count(w.tag.subjectId, { levelId: w.tag.levelId })
