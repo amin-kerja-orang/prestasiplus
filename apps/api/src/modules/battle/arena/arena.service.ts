@@ -85,13 +85,13 @@ export class ArenaService implements OnModuleInit, OnModuleDestroy {
   private async timeOutSeat(uuid: string, seat: { id: bigint; side: string; userId: bigint }): Promise<boolean> {
     const done = await this.prisma.client.battleAnswer.count({ where: { battleId: uuid, userId: seat.userId } })
     const battle = await this.prisma.client.battle.findUnique({ where: { id: uuid } })
-    if (!battle || battle.status !== 'active' || done >= BATTLE_RULES.arenaQuestions) return false
+    if (!battle || battle.status !== 'active' || done >= battle.questionCount) return false
     const served = await this.servedAt(uuid, seat.userId, done, battle.createdAt)
     if (this.clock.now().getTime() - served.getTime() <= (await this.engine.questionLimitMs())) return false
     const expected = await this.questionAt(uuid, done + 1)
     if (!expected) return false
     try {
-      await this.store(uuid, seat, done, expected, null, BATTLE_RULES.questionSeconds, served, true)
+      await this.store(uuid, seat, done, expected, null, BATTLE_RULES.questionSeconds, served, battle.questionCount, true)
       return true
     } catch (err) {
       if (!(err instanceof ApiError)) throw err
@@ -205,7 +205,7 @@ export class ArenaService implements OnModuleInit, OnModuleDestroy {
     const { battle, mine } = await this.load(uuid, userId)
     if (battle.status !== 'active') throw ApiError.of('CONFLICT', { message: BATTLE_MESSAGES.battleOver })
     const done = await this.prisma.client.battleAnswer.count({ where: { battleId: uuid, userId: mine.userId } })
-    const expected = done < BATTLE_RULES.arenaQuestions ? await this.questionAt(uuid, done + 1) : null
+    const expected = done < battle.questionCount ? await this.questionAt(uuid, done + 1) : null
     if (!expected) throw ApiError.of('CONFLICT', { message: BATTLE_MESSAGES.battleOver })
     const questionId = idToString(expected.questionId)
     if (input.questionId !== questionId) throw invalid('questionId', BATTLE_MESSAGES.questionInvalid)
@@ -216,7 +216,7 @@ export class ArenaService implements OnModuleInit, OnModuleDestroy {
     if (typeof seconds !== 'number' || !Number.isFinite(seconds) || seconds < 0 || seconds > BATTLE_RULES.questionSeconds) {
       throw invalid('seconds', BATTLE_MESSAGES.timeInvalid)
     }
-    return this.store(uuid, mine, done, expected, optionId, seconds, await this.servedAt(uuid, mine.userId, done, battle.createdAt))
+    return this.store(uuid, mine, done, expected, optionId, seconds, await this.servedAt(uuid, mine.userId, done, battle.createdAt), battle.questionCount)
   }
 
   /**
@@ -225,7 +225,7 @@ export class ArenaService implements OnModuleInit, OnModuleDestroy {
    * `byClock` is the sweep's own timeout: nobody reads the response, so a question that can no longer be served (archived) still
    * times out and the battle reaches its end.
    */
-  private async store(uuid: string, mine: { id: bigint; side: string; userId: bigint }, done: number, expected: { questionId: bigint }, optionId: number | null, seconds: number, served: Date, byClock = false) {
+  private async store(uuid: string, mine: { id: bigint; side: string; userId: bigint }, done: number, expected: { questionId: bigint }, optionId: number | null, seconds: number, served: Date, count: number, byClock = false) {
     const userId = idToString(mine.userId)
     const questionId = idToString(expected.questionId)
     const now = this.clock.now()
@@ -236,11 +236,11 @@ export class ArenaService implements OnModuleInit, OnModuleDestroy {
     const graded = (await this.engine.deps.gradeAnswer(questionId, timedOut ? null : optionId)) ?? (byClock ? { correct: false, correctOptionId: 0 } : null)
     if (!graded) throw notFound(BATTLE_MESSAGES.questionNotFound)
     const index = done + 1
-    const last = index >= BATTLE_RULES.arenaQuestions
+    const last = index >= count
     const nextRow = last || byClock ? null : await this.questionAt(uuid, index + 1)
     const next = nextRow ? await this.engine.deps.arenaQuestion(idToString(nextRow.questionId)) : null
     if (!last && !next && !byClock) throw notFound(BATTLE_MESSAGES.questionNotFound)
-    const bot = botAnswers(uuid, await this.engine.botAccuracy())[done]
+    const bot = botAnswers(uuid, await this.engine.botAccuracy(), count)[done]
     if (!bot) throw notFound()
 
     const points = graded.correct ? battleArenaPoints(whole) : 0

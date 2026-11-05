@@ -13,10 +13,10 @@ export interface BotAnswer {
   points: number
 }
 
-/** The ten answers of the opponent of `battleUuid`; `accuracy` is its chance of a correct answer in [0, 1]. */
-export function botAnswers(battleUuid: string, accuracy: number): BotAnswer[] {
+/** The answers of the opponent of `battleUuid` (one per question, `count` of them, 10 by default); `accuracy` is its chance of a correct answer in [0, 1]. */
+export function botAnswers(battleUuid: string, accuracy: number, count: number = BATTLE_RULES.arenaQuestions): BotAnswer[] {
   const rng = prngStream(`m16:battle:${battleUuid}`)
-  return Array.from({ length: BATTLE_RULES.arenaQuestions }, () => {
+  return Array.from({ length: count }, () => {
     const seconds = Math.min(BATTLE_RULES.questionSeconds, Math.floor(2 + 10 * rng.next()))
     const correct = rng.next() < accuracy
     return { seconds, correct, points: correct ? battleArenaPoints(seconds) : 0 }

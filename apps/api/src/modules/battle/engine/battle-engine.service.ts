@@ -1,9 +1,9 @@
 /**
- * What the queue, the invitations and the arena share (BE-44): the pool pre-check, battle creation (ten questions drawn
- * once) and the report of a finished battle to M14.
+ * What the queue, the invitations and the arena share (BE-44): the pool pre-check, battle creation (the chosen count of
+ * questions drawn once) and the report of a finished battle to M14.
  */
 import { Inject, Injectable } from '@nestjs/common'
-import { BATTLE_MESSAGES, BATTLE_RULES, type GamesReward } from '@pp/contract'
+import { BATTLE_MESSAGES, BATTLE_RULES, type BattleQuestionCount, type GamesReward } from '@pp/contract'
 
 import type { TxClient } from '../../../db/client'
 import { CLOCK, type Clock } from '../../../db/clock'
@@ -48,6 +48,21 @@ export class BattleEngine {
     return (BATTLE_RULES.questionSeconds + (await this.settings.get('battle_grace_seconds'))) * 1000
   }
 
+  /** The chip used when a start carries no `question_count` (`battle_questions_default`: 5, 10, 15 or 20). */
+  async questionCountDefault(): Promise<BattleQuestionCount> {
+    return (await this.settings.get('battle_questions_default')) as BattleQuestionCount
+  }
+
+  /** How long a Cabar Kawan invitation lasts (`battle_invitation_hours`). */
+  async invitationMs(): Promise<number> {
+    return (await this.settings.get('battle_invitation_hours')) * 3_600_000
+  }
+
+  /** `battle_daily_max`: Quick Match and Battle Sekolah battles a pupil may have per Malaysia day. */
+  dailyMax(): Promise<number> {
+    return this.settings.get('battle_daily_max')
+  }
+
   /** How long a queue entry waits for a human before the robot (`battle_bot_fallback_seconds`); null: never a robot. */
   async robotFallbackMs(): Promise<number | null> {
     const seconds = await this.settings.get('battle_bot_fallback_seconds')
@@ -60,7 +75,7 @@ export class BattleEngine {
   }
 
   /**
-   * Draws the 10 question ids of a battle with the stream `streamName` (null when the pool is too small, BR-M16-03). Call
+   * Draws the `params.questionCount` question ids of a battle with the stream `streamName` (null when the pool is too small, BR-M16-03). Call
    * it BEFORE a transaction: the questions owner hydrates SPM pools with queries that must not share a transaction
    * connection.
    */
@@ -68,18 +83,18 @@ export class BattleEngine {
     const levelId = await this.deps.levelIdOfGrade(ownerGrade)
     return this.deps.drawQuestions(
       { questionType: params.questionType, subjectId: params.subjectId, levelId, pkskDomainId: params.pkskDomainId, pkskTargetLevel: params.pkskTargetLevel },
-      BATTLE_RULES.arenaQuestions,
+      params.questionCount,
       prngStream(streamName),
     )
   }
 
-  /** True when 10 eligible keyless questions can be drawn for the params at the owner's level (BR-M16-03). */
+  /** True when `params.questionCount` eligible keyless questions can be drawn for the params at the owner's level (BR-M16-03). */
   async poolOk(params: BattleParams, ownerGrade: number | null, streamName: string): Promise<boolean> {
     return (await this.draw(params, ownerGrade, streamName)) !== null
   }
 
   /**
-   * Creates an `active` battle with its two participants and 10 drawn questions. Runs in the caller's transaction: when
+   * Creates an `active` battle with its two participants and its drawn questions (`params.questionCount`). Runs in the caller's transaction: when
    * the pool cannot give 10 questions the whole unit rolls back with 422 "Soalan tidak mencukupi.". Side `b` null is the
    * robot: a seat with no user and no school, in a battle that counts for no ranking (DM-60, 48 section 3.6).
    */
@@ -108,6 +123,7 @@ export class BattleEngine {
         pkskTargetLevel: params.pkskTargetLevel,
         levelId: levelId === null ? null : idFromString(levelId),
         isTest,
+        questionCount: params.questionCount,
         countsForRanking: b !== null,
         createdAt: this.clock.now(),
         participants: {
