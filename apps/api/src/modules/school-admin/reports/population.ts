@@ -92,6 +92,11 @@ export class SchoolPopulation {
     return this.xs.tallyByMonth(schoolScope(schoolId), this.window(from, to))
   }
 
+  /** XS-4 and XS-2 per subject in the window (answer rows, all modes; rows without a subject are left out). */
+  async tallyBySubject(schoolId: string, from: number, to: number): Promise<Map<string, XsMonthTally>> {
+    return this.xs.tallyBySubject(schoolScope(schoolId), this.window(from, to))
+  }
+
   async seconds(ids: readonly string[], from: number, to: number): Promise<Map<string, number>> {
     const out = new Map<string, number>()
     for (const part of await each(ids, (c) => this.analytics.secondsByUser(c, new Date(from), new Date(to)))) {
@@ -100,7 +105,4 @@ export class SchoolPopulation {
     return out
   }
 
-  async subjectTallies(ids: readonly string[], from: number, to: number) {
-    return (await each(ids, (c) => this.analytics.subjectTallies(c, new Date(from), new Date(to)))).flat()
-  }
 }

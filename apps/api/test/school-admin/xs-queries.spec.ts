@@ -20,7 +20,7 @@ import { XS_ALL_TIME, XsQueries, xsAccuracy } from '../../src/modules/school-adm
 import { UsersModule } from '../../src/modules/users'
 import { bootCommandCenterApp, type CcTestApp, createClass, createUser, enrol, getAs, login, type LoggedIn } from '../command-center/helpers'
 import { FakePerformance, emptyView, insertPendingTeacher } from './helpers'
-import { suspend } from './reports-fixtures'
+import { addSubject, suspend } from './reports-fixtures'
 
 /**
  * AC-XS-1 to AC-XS-3 and AC-X4-2 (R1 card S6-T03): one fixture school, and every screen that shows XS-1..XS-5 and XS-7 shows the same
@@ -192,6 +192,9 @@ describe('AC-XS-1: the same number on every screen of the school admin and the C
     const u = SchoolAdminUsageSchema.parse((await get(schoolAdmin, `/admin-sekolah/usage?period=${period}`)).data)
     // Sessions are session counts: the two completed ones (the unfinished session is not completed).
     expect(u.tiles).toMatchObject({ pupils: 6, teachers: 1, activePupils: 5, participationPct: 83, sessions: 2, answers: 24, accuracy: 62.5 })
+    // The same values as XsQueries for the same scope and window.
+    const sum = await xs.summary(SCHOOL(), { from: new Date('2026-10-01T00:00:00+08:00'), to: new Date('2026-10-19T09:00:00+08:00') })
+    expect([u.tiles.pupils, u.tiles.activePupils, u.tiles.answers, u.tiles.accuracy]).toEqual([sum.pupils, sum.activePupils, sum.answers, sum.accuracy])
   })
 
   it('Laporan Aktiviti', async () => {
@@ -311,5 +314,109 @@ describe('AC-X4-2: pooled, never an average of rounded values', () => {
     const live = CommandCenterGuruLiveDataSchema.parse(await get(who, '/guru/command-center/live-data'))
     expect(live.classes[0]).toMatchObject({ studentCount: 3, accuracy: 60 })
     expect(live.accuracy).toBe(60)
+  })
+})
+
+describe('XsQueries edge cases', () => {
+  let e: string
+  const mk = async (name: string, grade: number | null, o: { role?: 'student' | 'teacher'; isActive?: boolean } = {}) =>
+    (await createUser(t.db, { role: o.role ?? 'student', schoolId: e, name, grade, ...(o.isActive === undefined ? {} : { isActive: o.isActive }) })).id
+  const answerAt = async (userId: string, at: string, q: number) =>
+    t.db.query(`insert into practice_answers (user_id, question_id, is_correct, answered_at) values ($1::bigint, $2::bigint, true, $3::timestamptz)`, [userId, q, at])
+
+  beforeAll(async () => {
+    e = (await t.db.query<{ id: string }>(`insert into schools (name, type) values ('Sekolah Fixture XS Tepi', 'SMK') returning id::text`))[0]?.id as string
+  })
+
+  it('grade 7 and 11 are in; grade 6, grade 1 and no grade are out; a student who is also a teacher is counted once', async () => {
+    const g7 = await mk('Tepi G7', 7)
+    const g11 = await mk('Tepi G11', 11)
+    await mk('Tepi G6', 6)
+    await mk('Tepi G1', 1) // grade 12 cannot exist: ck_users_grade allows 1..11
+    await mk('Tepi Tiada Gred', null)
+    const dual = await mk('Tepi Dwi Peranan', 9)
+    await t.db.query(`insert into user_roles (user_id, role, created_at) values ($1::bigint, 'teacher', now())`, [dual])
+    const r = await xs.pupils({ kind: 'school', schoolId: e })
+    expect(new Set(r.ids)).toEqual(new Set([g7, g11, dual]))
+    expect(r.ids).toHaveLength(r.count)
+    expect(r.count).toBe(3)
+    // XS-3 sees the dual-role account as a teacher as well (it has no school-admin role).
+    expect((await xs.teachers(e)).ids).toContain(dual)
+  })
+
+  it('XS-3 counts a deactivated approved teacher (DOC DEFECT 1: no is_active filter)', async () => {
+    const before = await xs.teacherCount(e)
+    const off = await mk('Tepi Guru Tidak Aktif', null, { role: 'teacher', isActive: false })
+    expect((await xs.teachers(e)).ids).toContain(off)
+    expect(await xs.teacherCount(e)).toBe(before + 1)
+  })
+
+  it('a pupil enrolled in two classes of the same teacher is counted once', async () => {
+    const tc = await createUser(t.db, { role: 'teacher', schoolId: e, name: 'Tepi Guru Dua Kelas' })
+    const c1 = await createClass(t.db, { teacherId: tc.id, schoolId: e, name: 'Tepi K1', grade: 7 })
+    const c2 = await createClass(t.db, { teacherId: tc.id, schoolId: e, name: 'Tepi K2', grade: 7 })
+    const a = await mk('Tepi Dua Kelas A', 7)
+    const b = await mk('Tepi Dua Kelas B', 8)
+    await enrol(t.db, c1, a)
+    await enrol(t.db, c1, b)
+    await enrol(t.db, c2, a)
+    await answerAt(a, AT, 7001)
+    const scope = { kind: 'teacher', teacherId: tc.id } as const
+    expect((await xs.pupils(scope)).count).toBe(2)
+    expect(await xs.pupilCount(scope)).toBe(2)
+    expect(await xs.answerTotals(scope)).toEqual({ answered: 1, correct: 1, accuracy: 100 })
+  })
+
+  it('window bounds are inclusive: an answer exactly at from and one exactly at to are counted, one second outside is not', async () => {
+    const u = await mk('Tepi Tepi Tetingkap', 10)
+    const from = '2026-09-01T00:00:00+08:00'
+    const to = '2026-09-02T00:00:00+08:00'
+    await answerAt(u, '2026-08-31T23:59:59+08:00', 7101)
+    await answerAt(u, from, 7102)
+    await answerAt(u, to, 7103)
+    await answerAt(u, '2026-09-02T00:00:01+08:00', 7104)
+    const w = { from: new Date(from), to: new Date(to) }
+    const scope = { kind: 'school', schoolId: e } as const
+    expect(await xs.answers(scope, w)).toBe(2)
+    expect(await xs.questionsTested(scope, w)).toBe(2)
+    expect(await xs.activePupilCount(scope, w)).toBe(1)
+  })
+})
+
+describe('Laporan Bulanan on XS-4 (a month with answers but no completed session)', () => {
+  it('lists the months by answers, totals equal XS-4 / XS-5 of the window, and subject rows sum to XS-4 (an unfinished session included)', async () => {
+    const sc = (await t.db.query<{ id: string }>(`insert into schools (name, type) values ('Sekolah Fixture XS Bulanan', 'SMK') returning id::text`))[0]?.id as string
+    const sa = await createUser(t.db, { role: 'school_admin', schoolId: sc, name: 'Admin Bulanan' })
+    const subject = await addSubject(t.db, 'XSBLN', 'Subjek XS Bulanan')
+    const ids: string[] = []
+    const put = async (userId: string, n: number, correct: number, at: string, sessionId: string | null = null) =>
+      t.db.query(
+        `insert into practice_answers (user_id, session_id, subject_id, is_correct, answered_at)
+         select $1::bigint, $2::uuid, $3::bigint, g <= $4, $5::timestamptz + (g || ' seconds')::interval from generate_series(1, $6::int) g`,
+        [userId, sessionId, subject, correct, at, n],
+      )
+    for (let i = 1; i <= 5; i++) {
+      const id = (await createUser(t.db, { role: 'student', schoolId: sc, name: `Murid Bulanan XS ${i}`, grade: 8 })).id
+      ids.push(id)
+      await put(id, 4, 3, '2026-10-10T10:00:00+08:00')
+      await put(id, 2, 1, '2026-09-10T10:00:00+08:00')
+    }
+    await put(ids[0] as string, 2, 0, '2026-10-11T10:00:00+08:00', await session(ids[0] as string, 'chapter', 'in_progress', 2, 0))
+
+    const who = await login(t, sa.email)
+    const r = SchoolAdminMonthlyReportSchema.parse((await get(who, '/admin-sekolah/laporan-bulanan')).data)
+    expect(r.cards).toMatchObject({ active: 5, answers: 22, sessions: 0, accuracy: 68.2 })
+    expect(r.months.map((m) => [m.month, m.answers, m.correct])).toEqual([
+      ['2026-09', 10, 5],
+      ['2026-10', 22, 15],
+    ])
+    const sc1 = { kind: 'school', schoolId: sc } as const
+    const window = await xs.answerTotals(sc1, { from: new Date('2025-11-01T00:00:00+08:00'), to: new Date('2026-10-31T23:59:59.999+08:00') })
+    expect(r.total).toEqual({ answers: window.answered, correct: window.correct, accuracy: window.accuracy })
+    expect(r.total).toEqual({ answers: 32, correct: 20, accuracy: 62.5 })
+    // Subject rows: every answer has a subject, so the subject answers equal XS-4 of the month.
+    const month = await xs.answers(sc1, { from: new Date('2026-10-01T00:00:00+08:00'), to: new Date('2026-10-31T23:59:59.999+08:00') })
+    expect(r.subjects.rows.reduce((n, x) => n + x.answers, 0)).toBe(month)
+    expect(r.subjects.rows).toEqual([{ name: 'Subjek XS Bulanan', accuracy: 68.2, answers: 22, pupils: 5 }])
   })
 })

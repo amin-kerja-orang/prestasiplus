@@ -286,4 +286,13 @@ export class XsQueries {
         ${answerRows(scope, window)} GROUP BY 1`)
     return new Map(rows.map((r) => [String(r.month), { answered: num(r.answered), correct: num(r.correct), pupils: num(r.pupils) }]))
   }
+
+  /** XS-4 and XS-2 per subject (`practice_answers.subject_id`; rows without a subject are left out), all modes, no session join. */
+  async tallyBySubject(scope: XsScope, window: XsWindow = XS_ALL_TIME): Promise<Map<string, XsMonthTally>> {
+    const rows = await this.q(Prisma.sql`
+      SELECT a.subject_id::text AS subject_id, count(*)::int AS answered, count(*) FILTER (WHERE a.is_correct)::int AS correct,
+             count(DISTINCT a.user_id)::int AS pupils
+        ${answerRows(scope, window)} AND a.subject_id IS NOT NULL GROUP BY a.subject_id`)
+    return new Map(rows.map((r) => [String(r.subject_id), { answered: num(r.answered), correct: num(r.correct), pupils: num(r.pupils) }]))
+  }
 }

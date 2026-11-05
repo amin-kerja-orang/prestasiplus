@@ -69,7 +69,7 @@ export class MonthlyService {
     if (showable) {
       for (const ym of series) {
         const m = perMonth.get(monthKey(ym))
-        if (!m || m.sessions === 0 || m.users < K_COHORT) continue
+        if (!m || m.answers === 0 || m.users < K_COHORT) continue
         months.push({
           month: monthKey(ym),
           label: monthLabel(ym),
@@ -81,8 +81,8 @@ export class MonthlyService {
         })
       }
     }
-    const totalAnswers = months.reduce((n, m) => n + m.answers, 0)
-    const totalCorrect = months.reduce((n, m) => n + m.correct, 0)
+    // The total is XS-4 / XS-5 of the whole 12-month window (not a sum of the listed rows), so it equals every other screen.
+    const total = months.length > 1 ? await this.population.answerTotals(schoolId, from, to) : null
 
     const active = sm?.users ?? 0
     const next = shifted(shown, 1, current)
@@ -102,22 +102,17 @@ export class MonthlyService {
         sessions: sm?.sessions ?? 0,
       },
       months,
-      total: months.length > 1 ? { answers: totalAnswers, correct: totalCorrect, accuracy: accuracyOf(totalCorrect, totalAnswers) } : null,
-      subjects: showable ? await this.subjects(ids, shown) : { strongest: null, weakest: null, rows: [] },
+      total: total ? { answers: total.answered, correct: total.correct, accuracy: total.accuracy } : null,
+      subjects: showable ? await this.subjects(schoolId, shown) : { strongest: null, weakest: null, rows: [] },
       generatedAt: toMytTimestamp(new Date(minuteOf(now))),
     }
   }
 
-  private async subjects(ids: readonly string[], shown: { year: number; month: number }): Promise<SchoolAdminMonthlyReport['subjects']> {
-    const tallies = await this.population.subjectTallies(ids, monthStart(shown), monthEnd(shown))
-    const per = new Map<string, { answers: number; correct: number; users: Set<string> }>()
-    for (const t of tallies) {
-      const s = per.get(t.subjectId) ?? { answers: 0, correct: 0, users: new Set<string>() }
-      s.answers += t.answers
-      s.correct += t.correct
-      s.users.add(t.userId)
-      per.set(t.subjectId, s)
-    }
+  /** Subject rows from the XS answer rows (all modes, unfinished sessions included), so they sum to XS-4 when every answer has a subject. */
+  private async subjects(schoolId: string, shown: { year: number; month: number }): Promise<SchoolAdminMonthlyReport['subjects']> {
+    const tallies = await this.population.tallyBySubject(schoolId, monthStart(shown), monthEnd(shown))
+    const per = new Map<string, { answers: number; correct: number; users: { size: number } }>()
+    for (const [id, t] of tallies) per.set(id, { answers: t.answered, correct: t.correct, users: { size: t.pupils } })
     const names = await this.analytics.subjectNames([...per.keys()])
     const rows: (SchoolAdminMonthlySubjectRow & { id: string })[] = []
     for (const [id, s] of per) {
