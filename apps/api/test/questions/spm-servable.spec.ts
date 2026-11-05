@@ -5,7 +5,6 @@ import { AccountDataRepository, QUESTION_COUNT_SQL } from '../../src/modules/acc
 import { Be09PracticeQuestionSource } from '../../src/modules/practice/question-bridge'
 import { BankFacts } from '../../src/modules/practice/reads/overview/bank-facts'
 import { OverviewRepository } from '../../src/modules/practice/reads/overview/overview.repository'
-import { OFFERED_LEVEL_CODES } from '../../src/modules/practice/rules'
 import { QuestionsRepository } from '../../src/modules/questions'
 import { SpmPoolService } from '../../src/modules/spm/pool.service'
 import { bulkMcqs } from '../helpers/bulk-bank'
@@ -53,8 +52,9 @@ afterAll(async () => {
 })
 
 describe('the shared SPM-servable definition', () => {
-  it('the offered levels are the practice rule (T4, T5), reused not copied', () => {
-    expect([...OFFERED_LEVEL_CODES]).toEqual(['T4', 'T5'])
+  it('the offered levels are the practice rule (active, not primary: T1 to T5), reused not copied', async () => {
+    const codes = (await t.db.query<{ code: string }>(`select code from education_levels where stage <> 'primary' and is_active order by sort_order, id`)).map((r) => r.code)
+    expect(codes).toEqual(['T1', 'T2', 'T3', 'T4', 'T5'])
   })
 
   it('Databank / Latih Tubi SPM draw (source.sample with spmPool): an untagged admin T4 MCQ appears', async () => {
@@ -87,7 +87,7 @@ describe('the shared SPM-servable definition', () => {
     const drawable = await repo.count({ type: 'mcq', spmPool: true, ungrouped: true, status: 'approved', active: true }) // all subjects
     const withGroups = await repo.count({ type: 'mcq', spmPool: true, status: 'approved', active: true })
     const matrix = await t.get(OverviewRepository).bankMatrix()
-    const levels = (await t.db.query<{ id: string }>(`select id::text id from education_levels where code = any($1)`, [[...OFFERED_LEVEL_CODES]])).map((r) => r.id)
+    const levels = (await t.db.query<{ id: string }>(`select id::text id from education_levels where stage <> 'primary' and is_active`)).map((r) => r.id)
     const subjects = (await t.db.query<{ id: string }>(`select id::text id from subjects where is_active`)).map((r) => r.id)
     const bank = new BankFacts(matrix)
     const cards = subjects.reduce((n, s) => n + bank.practice(s, levels), 0)

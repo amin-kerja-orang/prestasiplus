@@ -11,7 +11,7 @@ import { POOL_PER_LEVEL } from '../../prisma/seed/questions/pool-content'
 import { PRIMARY_LEVELS, PRIMARY_PER_LEVEL, PRIMARY_SUBJECTS, primaryBank } from '../../prisma/seed/questions/pool-content-primary'
 import { featureModules } from '../../src/modules'
 import { SOLO_INFO, SUSUN_MAX_ANSWER } from '../../src/modules/games/solo/play/solo.rules'
-import { COUNT_OPTIONS, OFFERED_LEVEL_CODES } from '../../src/modules/practice/rules'
+import { COUNT_OPTIONS } from '../../src/modules/practice/rules'
 import { GAMES_THROTTLES_LIFTED } from '../games/helpers'
 import { bootSchoolAdminApp, DEMO_PASSWORD, type SchoolAdminTestApp } from '../school-admin/helpers'
 
@@ -20,6 +20,8 @@ import { bootSchoolAdminApp, DEMO_PASSWORD, type SchoolAdminTestApp } from '../s
  * the four question games draw at the pupil's level, Kad Memori draws over D1 to D4. Before AZ-02 the bank had no
  * question below Tingkatan 4, so all of them came back empty (UAT J-01).
  */
+/** The offered levels (practice `offeredLevels`: active, not primary), as the seed defines them. */
+const OFFERED_LEVEL_CODES = ['T1', 'T2', 'T3', 'T4', 'T5']
 const PRACTICE_MAX = Math.max(...COUNT_OPTIONS) // 20
 const JUTAWAN_LADDER: Record<number, number> = { 1: 4, 2: 4, 3: 4, 4: 3 }
 const SUBJECT_LEVELS = JSON.parse(

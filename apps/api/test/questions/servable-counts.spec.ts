@@ -9,7 +9,6 @@ import { QUESTION_COUNT_SQL } from '../../src/modules/account/account-data.repos
 import { Be09PracticeQuestionSource } from '../../src/modules/practice/question-bridge'
 import { BankFacts } from '../../src/modules/practice/reads/overview/bank-facts'
 import { OverviewRepository } from '../../src/modules/practice/reads/overview/overview.repository'
-import { OFFERED_LEVEL_CODES } from '../../src/modules/practice/rules'
 import { QuestionsRepository, QuestionsService } from '../../src/modules/questions'
 import { UsersRepository } from '../../src/modules/users'
 import { SpmHubService } from '../../src/modules/spm/hub.service'
@@ -51,7 +50,7 @@ beforeAll(async () => {
   source = new Be09PracticeQuestionSource(repo, t.app.get(UsersRepository, { strict: false }))
   pool = t.app.get(SpmPoolService, { strict: false })
   hub = t.app.get(SpmHubService, { strict: false })
-  offeredIds = (await t.db.query<{ id: string }>(`select id::text id from education_levels where code = any($1)`, [[...OFFERED_LEVEL_CODES]])).map((r) => r.id)
+  offeredIds = (await t.db.query<{ id: string }>(`select id::text id from education_levels where stage <> 'primary' and is_active`)).map((r) => r.id)
 }, 600_000)
 
 afterAll(async () => {
@@ -253,5 +252,55 @@ describe('one admin-created approved T4 MCQ is served by all five SPM_SERVABLE_S
     readers['Misi (assignments adapter fallback)'] = true
     // The repository count that backs them all.
     expect(await repo.count({ type: 'mcq', subjectId: subject, spmPool: true, status: 'approved', active: true })).toBe(1)
+  })
+})
+
+describe('S4-T06: a servable T1 and T5 question are both counted and drawn; a flagged T1 question is not', () => {
+  it('counts T1 and T5 through the one SPM_SERVABLE_SQL, and S1-T07 NOT_FLAGGED_SQL still excludes at T1', async () => {
+    const id = await subjectId('MATH')
+    const [admin] = await t.db.query<{ id: string }>(`select id::text id from users where lower(email) = 'admin@demo.test'`)
+    const svc = t.app.get(QuestionsService, { strict: false })
+    const actor = { userId: admin?.id as string, role: 'admin' } as const
+    const seeded = (await t.db.query<{ unit_node_id: string | null }>(`select v.unit_node_id::text unit_node_id from question_versions v join education_levels l on l.id = v.education_level_id where v.subject_id = $1 and l.code = 'T4' limit 1`, [id]))[0]
+    const sp = (await t.db.query<{ node_id: string }>(`select s.node_id::text node_id from question_version_sp_nodes s join question_versions v on v.id = s.question_version_id where v.subject_id = $1 limit 1`, [id]))[0]?.node_id
+    const levelOf = async (code: string): Promise<string> => (await t.db.query<{ id: string }>(`select id::text id from education_levels where code = $1`, [code]))[0]?.id as string
+    const make = async (code: string, text: string): Promise<string> => {
+      const levelId = await levelOf(code)
+      await t.db.query(`insert into subject_levels (subject_id, education_level_id) values ($1, $2) on conflict do nothing`, [id, levelId])
+      const created = await svc.create(
+        {
+          subjectId: id,
+          educationLevelId: levelId,
+          difficultyLevel: 3,
+          questionText: text,
+          questionType: 'mcq',
+          options: ['Satu', 'Dua', 'Tiga', 'Empat'],
+          correctAnswer: 1,
+          explanation: 'Penjelasan ujian S4-T06.',
+          cognitiveLevel: 'mengaplikasi',
+          kertas: '1',
+          curriculumChapterId: (await t.db.query<{ id: string }>(`select id::text id from chapters where subject_id = $1::bigint and education_level_id = $2::bigint order by id limit 1`, [id, levelId]))[0]?.id,
+          tag: { ...(seeded?.unit_node_id ? { unitId: seeded.unit_node_id } : {}), spIds: sp ? [sp] : [], tp: 3 },
+        } as never,
+        actor,
+      )
+      for (const status of SERVE_STEPS) await svc.bulkAction(status, [created.id], actor)
+      return created.id
+    }
+    const before = await login()
+    const t1 = await make('T1', 'Soalan S4-T06 tahap satu: yang manakah betul?')
+    const t5 = await make('T5', 'Soalan S4-T06 tahap lima: yang manakah betul?')
+    expect(await login(), 'login count grows by the T1 and the T5 question').toBe(before + 2)
+    const drawn = await source.sample({ subjectId: id, spmPool: true }, 100_000, prngStream('s4t06'))
+    expect(drawn).toContain(t1)
+    expect(drawn).toContain(t5)
+    expect(await pool.sample(id, await pool.count(id), prngStream('s4t06-k1')).then((rows) => rows.map((r) => r.id))).toEqual(expect.arrayContaining([t1, t5]))
+
+    // S1-T07: a flagged T1 question leaves the count and the draw; dismissing the flag brings it back.
+    await t.db.query(`update question_versions set stimulus_flag = 'figure_only' where question_id = $1`, [t1])
+    expect(await login(), 'flagged T1 leaves the login count').toBe(before + 1)
+    expect(await source.sample({ subjectId: id, spmPool: true }, 100_000, prngStream('s4t06b'))).not.toContain(t1)
+    await t.db.query(`update question_versions set flag_dismissed_at = now() where question_id = $1`, [t1])
+    expect(await login(), 'a dismissed flag counts again').toBe(before + 2)
   })
 })

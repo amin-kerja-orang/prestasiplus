@@ -60,11 +60,6 @@ export async function offeredLevels(db: Pick<TxClient | PrismaClient, '$queryRaw
   return rows.map((r) => ({ id: r.id, code: r.code, order: Number(r.order), gradeKey: `TINGKATAN_${/\d/.exec(r.code)?.[0] ?? ''}` }))
 }
 
-/** TODO(S4-T06 PR3): remove after S1-T07. Temporary alias: `questions/learner-visibility.ts` and `questions/serving/rules.ts` (S1 files) still import them. */
-export const SPM_LEVEL_CODES: readonly string[] = ['T4', 'T5']
-/** TODO(S4-T06 PR3): remove after S1-T07. Practice no longer reads this; see `offeredLevels`. */
-export const OFFERED_LEVEL_CODES: readonly string[] = SPM_LEVEL_CODES
-
 /** BR-30: `timeSpent` cap per question. */
 export const MAX_SECONDS_PER_QUESTION = 180
 /** BR-09. */
