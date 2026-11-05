@@ -77,9 +77,9 @@ describe('REQ-B-034: unknown SP codes are refused (review minors)', () => {
     const by = new Map((res.body.data.results as { id: string; outcome: string; reason?: string; issues?: { message: string }[] }[]).map((r) => [r.id, r]))
     expect(by.get(good)!.outcome).toBe('done')
     expect(by.get(bad)).toMatchObject({ outcome: 'skipped', reason: 'GATE_FAILED' })
-    expect(by.get(bad)!.issues!.map((i) => i.message)).toContain(`Soalan 2: ${G.spNotInTaxonomy('9.9.9')}`)
+    expect(by.get(bad)!.issues!.map((i) => i.message)).toContain(G.spNotInTaxonomy('9.9.9'))
     expect(by.get(foreign)).toMatchObject({ outcome: 'skipped', reason: 'GATE_FAILED' })
-    expect(by.get(foreign)!.issues!.map((i) => i.message)).toContain(`Soalan 3: ${G.spNotInTaxonomy(otherSubjectSp)}`)
+    expect(by.get(foreign)!.issues!.map((i) => i.message)).toContain(G.spNotInTaxonomy(otherSubjectSp))
     expect(res.body.data).toMatchObject({ done: 1, skipped: 2 })
   })
 

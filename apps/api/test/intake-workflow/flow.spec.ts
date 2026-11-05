@@ -35,7 +35,11 @@ describe('intake-e2e (AC-1)', () => {
     expect(list.meta.totalItems).toBe(2)
     const [first, second] = await itemsOf(teacher, batchId)
 
-    // S1-T04: an unconfirmed low field no longer blocks Terima (it is asked at Hantar/Terbitkan); confirming it still clears the state.
+    // The low field blocks accept until a person confirms it.
+    const blocked = await post(teacher, `/intake/items/${second!.id}/accept`)
+    expect(blocked.status).toBe(422)
+    expect(blocked.body.error.details.issues.length).toBeGreaterThan(0)
+
     const confirmed = await teacher.agent.patch(`/api/intake/items/${second!.id}`).set('X-CSRF-Token', teacher.csrf).send({ confirmed: ['stem'] })
     expect(confirmed.status, JSON.stringify(confirmed.body)).toBe(200)
     expect(confirmed.body.data.state).toBe('generated')

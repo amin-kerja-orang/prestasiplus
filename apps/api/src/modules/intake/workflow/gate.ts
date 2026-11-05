@@ -47,27 +47,18 @@ export function questionMarks(q: Pick<IntakeQuestion, 'parts' | 'marks'>): numbe
   return q.parts.length > 0 ? q.parts.reduce((n, p) => n + p.marks, 0) : q.marks
 }
 
-/** Collects the issues of one item; every issue carries the item id and the "Soalan {no}" place. */
-function collector(q: IntakeQuestion) {
+/** Every rule that stops a single accept for this item (the item-level and stimulus-level rules). */
+export function itemIssues(q: IntakeQuestion, stimulus: IntakeStimulus | undefined, facts: CurriculumFacts): IntakeIssue[] {
   const issues: IntakeIssue[] = []
   const where = `Soalan ${q.label}`
   const add = (w: string, message: string): void => {
     issues.push({ itemId: q.id, where: w, message })
   }
-  return { issues, where, add, label: (part = ''): string => `${where}${part}` }
-}
-type Collector = ReturnType<typeof collector>
+  const label = (part = ''): string => `${where}${part}`
 
-// The check helpers below are shared by `itemIssues` (review summary) and `draftIssues` (manual Terima).
+  if (!q.stem.trim() && q.parts.length === 0) add(where, G.stemEmpty)
+  if (q.needsManual) add(where, G.needsManual)
 
-function stemChecks(q: IntakeQuestion, c: Collector): void {
-  if (!q.stem.trim() && q.parts.length === 0) c.add(c.where, G.stemEmpty)
-  if (q.needsManual) c.add(c.where, G.needsManual)
-}
-
-/** Answer format: options, key, marks, parts and scheme totals. */
-function formatChecks(q: IntakeQuestion, c: Collector): void {
-  const { where, add, label } = c
   if (q.type === 'mcq') {
     if (q.options.length < 2) add(where, G.mcqOptionsMin)
     if (q.options.some((o) => !o.text.trim())) add(where, G.mcqOptionEmpty)
@@ -89,61 +80,22 @@ function formatChecks(q: IntakeQuestion, c: Collector): void {
     else if (schemeTotal(q.scheme) !== q.marks) add(where, G.schemeTotalQuestion(schemeTotal(q.scheme), q.marks))
   }
   if (questionMarks(q) <= 0 && q.type !== 'mcq' && q.parts.length > 0) add(where, G.questionMarksZero)
-}
 
-function subjectLevelCheck(q: IntakeQuestion, facts: CurriculumFacts, c: Collector): void {
   const t = q.tag
-  if (!t.subject || !t.level || !facts.subjectKnown || !facts.levelKnown) c.add(c.where, G.subjectLevelMissing)
-}
+  if (!t.subject || !t.level || !facts.subjectKnown || !facts.levelKnown) add(where, G.subjectLevelMissing)
+  if (t.unit === null && t.formOrigin !== 'T1-T3') add(where, G.unitMissing)
+  if (t.unit !== null && facts.unitKnown === false) add(where, G.unitNotInTaxonomy)
+  if (t.sp.length === 0) add(where, G.spMissing)
+  for (const code of facts.unknownSp) add(where, G.spNotInTaxonomy(code))
+  if (!(t.tp >= 1 && t.tp <= 6)) add(where, G.tpRange)
+  for (const f of q.lowFields) if (!q.confirmed.includes(f)) add(where, G.lowFieldUnconfirmed(f))
 
-function unitTaxonomyCheck(q: IntakeQuestion, facts: CurriculumFacts, c: Collector): void {
-  if (q.tag.unit !== null && facts.unitKnown === false) c.add(c.where, G.unitNotInTaxonomy)
-}
-
-function spTaxonomyCheck(facts: CurriculumFacts, c: Collector): void {
-  for (const code of facts.unknownSp) c.add(c.where, G.spNotInTaxonomy(code))
-}
-
-function stimulusChecks(q: IntakeQuestion, stimulus: IntakeStimulus | undefined, c: Collector): void {
-  if (q.stimulusId !== undefined && !stimulus) c.add(c.where, G.stimulusMissing)
+  if (q.stimulusId !== undefined && !stimulus) add(where, G.stimulusMissing)
   if (stimulus) {
-    if (!stimulus.alt.trim()) c.add(stimulus.label || c.where, G.stimulusAltMissing)
-    if (isImageKind(stimulus.kind) && !stimulus.figureId && !stimulus.svg) c.add(stimulus.label || c.where, G.figureNotResolved)
+    if (!stimulus.alt.trim()) add(stimulus.label || where, G.stimulusAltMissing)
+    if (isImageKind(stimulus.kind) && !stimulus.figureId && !stimulus.svg) add(stimulus.label || where, G.figureNotResolved)
   }
-}
-
-/** Every rule that applies to a single item (the item-level and stimulus-level rules); feeds the review summary. */
-export function itemIssues(q: IntakeQuestion, stimulus: IntakeStimulus | undefined, facts: CurriculumFacts): IntakeIssue[] {
-  const c = collector(q)
-  const t = q.tag
-  stemChecks(q, c)
-  formatChecks(q, c)
-  subjectLevelCheck(q, facts, c)
-  if (t.unit === null && t.formOrigin !== 'T1-T3') c.add(c.where, G.unitMissing)
-  unitTaxonomyCheck(q, facts, c)
-  if (t.sp.length === 0) c.add(c.where, G.spMissing)
-  spTaxonomyCheck(facts, c)
-  if (!(t.tp >= 1 && t.tp <= 6)) c.add(c.where, G.tpRange)
-  for (const f of q.lowFields) if (!q.confirmed.includes(f)) c.add(c.where, G.lowFieldUnconfirmed(f))
-  stimulusChecks(q, stimulus, c)
-  return c.issues
-}
-
-/**
- * What a manual Terima needs to create a Draf (S1-T04, FR-ADM-QE4.3): content, answer format, subject/level, a unit or SP that
- * is NOT in the curriculum list, and the stimulus. A missing unit, SP or TP and an unconfirmed low-confidence field do NOT block
- * (they are asked later at Hantar/Terbitkan). Each message is prefixed "Soalan {no}: " (the number as shown in review).
- */
-export function draftIssues(q: IntakeQuestion, stimulus: IntakeStimulus | undefined, facts: CurriculumFacts): IntakeIssue[] {
-  const c = collector(q)
-  stemChecks(q, c)
-  formatChecks(q, c)
-  subjectLevelCheck(q, facts, c)
-  unitTaxonomyCheck(q, facts, c)
-  spTaxonomyCheck(facts, c)
-  stimulusChecks(q, stimulus, c)
-  const no = q.label.trim()
-  return no === '' ? c.issues : c.issues.map((i) => ({ ...i, message: `Soalan ${no}: ${i.message}` }))
+  return issues
 }
 
 export interface BatchLevelInput {
