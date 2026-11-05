@@ -94,7 +94,9 @@ describe('S3 admin', () => {
     expect(rows[0]?.text()).toContain('guru')
     expect(rows[1]?.text()).toContain('login')
     expect(texts(w, 'cc-school-accuracy')).toEqual(['95.0%', '-'])
-    expect(w.findAll('[data-testid="cc-school-accuracy"]')[0]?.attributes('data-tone')).toBe('success')
+    expect(w.findAll('[data-testid="cc-school-accuracy"]')[0]?.attributes('data-tone')).toBe(
+      'success',
+    )
     w.unmount()
   })
 
@@ -259,9 +261,36 @@ describe('S3 Admin Sekolah alias', () => {
     expect(w.find('[data-testid="cc-panel-schools"]').exists()).toBe(false)
     expect(texts(w, 'cc-pulse-sub')[2]).toBe('daripada 1')
     expect(w.text()).not.toContain('AKTIVITI PLATFORM')
-    expect(w.findAll('[data-testid="cc-daily-top-row"] a').map((e) => e.attributes('href'))).toEqual(
-      ['/admin-sekolah/command-center/student/2022'],
-    )
+    expect(
+      w.findAll('[data-testid="cc-daily-top-row"] a').map((e) => e.attributes('href')),
+    ).toEqual(['/admin-sekolah/command-center/student/2022'])
     w.unmount()
+  })
+})
+
+describe('S3 Admin Sekolah alias never calls the admin-only school drill (S6-T07)', () => {
+  it('mounts the alias, shows no school row and never calls fetchCcSchoolDrill', async () => {
+    api.fetchCcSchoolDrill.mockClear()
+    api.fetchCcDailyActivity.mockResolvedValue(schoolDaily())
+    const w = await mountDaily(true)
+    expect(w.findAll('[data-testid="cc-school-row"]')).toHaveLength(0)
+    w.unmount()
+    expect(api.fetchCcSchoolDrill).not.toHaveBeenCalled()
+  })
+
+  it('useSchoolDrill.toggle is a no-op for a school_admin session', async () => {
+    const { createPinia, setActivePinia } = await import('pinia')
+    setActivePinia(createPinia())
+    vi.spyOn(await import('@/composables/useSession'), 'useSession').mockReturnValue({
+      role: { value: 'school_admin' },
+    } as unknown as ReturnType<typeof import('@/composables/useSession').useSession>)
+    const { ref } = await import('vue')
+    const { useSchoolDrill } = await import('../../components/command-center-board/composables')
+    api.fetchCcSchoolDrill.mockClear()
+    const d = useSchoolDrill(ref('today'))
+    await d.toggle(7)
+    expect(api.fetchCcSchoolDrill).not.toHaveBeenCalled()
+    expect(d.state.value).toBeNull()
+    vi.restoreAllMocks()
   })
 })
