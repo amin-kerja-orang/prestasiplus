@@ -16,6 +16,8 @@ const base = {
 } as const
 
 const routes: RouteRecordRaw[] = [
+  // V2 path of Import & Semakan (PRD30 3.2).
+  { path: '/admin/studio/imports', redirect: '/admin/spm/soalan/ekstrak' },
   {
     path: '/admin/spm/soalan/ekstrak',
     name: INTAKE_ROUTES.list,

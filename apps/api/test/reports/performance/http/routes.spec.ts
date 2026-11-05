@@ -75,13 +75,25 @@ describe('roles', () => {
     expectError(await s.get('/api/item-analysis/classes'), 'FORBIDDEN')
   })
 
-  it('every role with a session reads analytics/me, school, levels and classes', async () => {
-    for (const k of who) {
+  it('every role with a session reads analytics/me', async () => {
+    for (const k of who) parseData(await (as[k] as Client).get('/api/analytics/me'), PerformanceAnalyticsSchema)
+  })
+
+  it('admin, teacher and school admin read school, levels and classes', async () => {
+    for (const k of ['admin', 'guru', 'adminsekolah'] as const) {
       const c = as[k] as Client
-      parseData(await c.get('/api/analytics/me'), PerformanceAnalyticsSchema)
       parseData(await c.get('/api/performance/school'), PerformanceSchoolSchema)
       parseData(await c.get('/api/performance/levels'), z.array(PerformanceLevelCardSchema))
       parseData(await c.get('/api/performance/classes'), z.array(PerformanceClassCardSchema))
+    }
+  })
+
+  it('pupil, parent, sponsor and PPD officer are refused (403) on school, levels, levels/:code, classes and classes/:id', async () => {
+    for (const k of ['pelajar', 'pelajarmaju', 'pelajar2', 'ibubapa', 'penaja', 'ppd'] as const) {
+      const c = as[k] as Client
+      for (const url of ['/api/performance/school', '/api/performance/levels', '/api/performance/levels/t4', '/api/performance/classes', `/api/performance/classes/${w.classId}`]) {
+        expectError(await c.get(url), 'FORBIDDEN')
+      }
     }
   })
 })
@@ -147,10 +159,10 @@ describe('404 versus 403 and hostile ids', () => {
     expectError(await (as.guru as Client).get('/api/analytics/classes?classroomId=987654'), 'FORBIDDEN')
   })
 
-  it('class dashboard: unknown, other school and a student caller give 404', async () => {
+  it('class dashboard: unknown and other school give 404, a student caller 403', async () => {
     expectError(await (as.guru as Client).get('/api/performance/classes/987654'), 'NOT_FOUND')
     expectError(await (as.guru as Client).get(`/api/performance/classes/${w.otherClassId}`), 'NOT_FOUND')
-    expectError(await (as.pelajar as Client).get(`/api/performance/classes/${w.classId}`), 'NOT_FOUND')
+    expectError(await (as.pelajar as Client).get(`/api/performance/classes/${w.classId}`), 'FORBIDDEN')
   })
 
   it('level code other than t4 or t5 is 404', async () => {
@@ -235,12 +247,9 @@ describe('privacy', () => {
     expect(names.every((n) => /^Murid/.test(n))).toBe(true)
   })
 
-  it('a student sees no teacher list and no top or at-risk pupils', async () => {
-    const school = parseData(await (as.pelajar as Client).get('/api/performance/school'), PerformanceSchoolSchema)
-    expect(school.teachers).toEqual([])
-    const level = parseData(await (as.pelajar as Client).get('/api/performance/levels/t4'), PerformanceLevelDetailSchema)
-    expect(level.topStudents).toEqual([])
-    expect(level.atRisk).toEqual([])
+  it('a student has no school or level view at all (403), so no teacher list and no top or at-risk pupils', async () => {
+    expectError(await (as.pelajar as Client).get('/api/performance/school'), 'FORBIDDEN')
+    expectError(await (as.pelajar as Client).get('/api/performance/levels/t4'), 'FORBIDDEN')
   })
 })
 

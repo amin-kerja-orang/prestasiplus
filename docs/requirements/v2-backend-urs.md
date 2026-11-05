@@ -50,7 +50,7 @@ Roles use the contract codes (`RoleCode`), not the older requirement keys (`admi
 
 | Actor | Contract code | In B1 | What it may do (summary; [role-access-matrix](role-access-matrix.md) is the authority) |
 |---|---|---|---|
-| Murid (student) | `student` | yes | The 37 Murid module rows of the matrix (learning, wallet, Bijak SPM, own performance); own data only; never combines with another role. |
+| Murid (student) | `student` | yes | The 38 Murid module rows of the matrix (learning, wallet, Bijak SPM, own performance); own data only; never combines with another role. |
 | Guru (teacher) | `teacher` | yes | The 15 Guru rows: own classes, own students, class reports, question contributions, own intake batches. |
 | Admin Sekolah | `school_admin` | yes | The 18 Admin Sekolah rows: own school only (staff, students, reports, Command Center); Mod Pelajar. |
 | Admin Pusat | `admin` | yes (D48) | Everything, including question approval and publication, curriculum, paper builder, intake dashboard and AI usage; single-role; Mod Pelajar. |
