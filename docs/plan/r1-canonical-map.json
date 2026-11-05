@@ -700,7 +700,7 @@
       "name": "m04.questions.create",
       "status": "redirect-to:/admin/studio/questions/create",
       "sector": "S2",
-      "component": "src/modules/m04-question-bank/pages/QuestionCreatePage.vue",
+      "component": null,
       "file": "src/modules/m04-question-bank/routes/questions-form.ts",
       "note": "V3 duplicates register M-06 (D113): old flat form redirects to Studio after the field comparison",
       "approved_by_card": null
@@ -807,6 +807,18 @@
       "component": "src/modules/m04-question-bank/pages/StudioEditorPage.vue",
       "file": "src/modules/m04-question-bank/routes/studio.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "/admin/studio/questions/:id(\\d+)/edit|",
+      "path": "/admin/studio/questions/:id(\\d+)/edit",
+      "name": null,
+      "status": "redirect-to:/admin/studio/questions/:id/sunting",
+      "sector": "S2",
+      "component": null,
+      "file": "src/modules/m04-question-bank/routes/studio.ts",
+      "redirects_to": "/admin/studio/questions/:id/sunting",
+      "note": "V2 path alias of the Studio wizard; FR-ADM-Q04.7",
+      "approved_by_card": "S2-T01"
     },
     {
       "key": "/admin/studio/groups/:id(\\d+)|m04.studio.group",

@@ -97,6 +97,22 @@ afterEach(() => {
   wrapper = null
 })
 
+const SAVED = {
+  id: '501',
+  status: 'draft',
+  numberLabel: '1',
+  subjectId: '3',
+  educationLevelId: '7',
+  difficultyLevel: 3,
+  questionText: 'S1 berdasarkan Rajah 1, apakah ini?',
+  questionImage: null,
+  kertas: '1',
+  curriculumChapterId: '12',
+  stimulusGroup: null,
+  tag: { unitId: '40', spIds: ['41'], tp: 2 },
+  parts: [{ label: 'a', prompt: { ms: 'Pilih.' }, mode: 'mcq', marks: 1, difficultyTp: 2, cognitiveLevel: 'memahami', options: [{ label: 'A', body: { ms: 'x' } }, { label: 'B', body: { ms: 'y' } }, { label: 'C', body: { ms: 'z' } }], key: { kind: 'option', correct: 'A' } }],
+}
+
 describe('wizard order and completeness (FR-QA-16, FR-ADM-QE4.1)', () => {
   it('the tabs read 1 Tag, 2 Kertas, 3 Rangsangan, 4 Sub-bahagian and Tag comes first (AC-ADM-QE2.4)', async () => {
     const w = await render('/admin/studio/questions/create')
@@ -120,27 +136,60 @@ describe('wizard order and completeness (FR-QA-16, FR-ADM-QE4.1)', () => {
   })
 
   it('adds the API-Q-05 issues once, with their exact text and a link to the field', async () => {
-    serve({
-      id: '501',
-      status: 'draft',
-      numberLabel: '1',
-      subjectId: '3',
-      educationLevelId: '7',
-      difficultyLevel: 3,
-      questionText: 'S1 berdasarkan Rajah 1, apakah ini?',
-      questionImage: null,
-      kertas: '1',
-      curriculumChapterId: null,
-      stimulusGroup: null,
-      tag: { unitId: '40', spIds: ['41'], tp: 2 },
-      parts: [{ label: 'a', prompt: { ms: 'Pilih.' }, mode: 'mcq', marks: 1, difficultyTp: 2, cognitiveLevel: 'memahami', options: [{ label: 'A', body: { ms: 'x' } }, { label: 'B', body: { ms: 'y' } }, { label: 'C', body: { ms: 'z' } }], key: { kind: 'option', correct: 'A' } }],
-    })
+    serve({ ...SAVED, curriculumChapterId: null })
     studio.fetchGateCheck.mockResolvedValue({ issues: [{ path: 'chapterId', code: 'NO_CHAPTER', message: 'Sila pilih Bab.', step: 4 }] })
     const w = await render('/admin/studio/questions/501/sunting', '501')
     expect(studio.fetchGateCheck).toHaveBeenCalledWith('501')
     const rows = w.findAll('[data-testid="studio-completeness-row"]').map((r) => r.text())
     expect(rows).toEqual(['Sila pilih Bab.'])
     expect(t(w, 'studio-save-gaps').text()).toContain('1 belum lengkap')
+  })
+
+  it('saves Penjelasan and sends the English one only when the question has it (PO decision 3)', async () => {
+    serve({ ...SAVED, explanation: 'Sebab A.', explanationEn: null })
+    studio.updateStudioQuestion.mockResolvedValue({ data: { id: '501', status: 'draft' }, status: 'ok' })
+    const w = await render('/admin/studio/questions/501/sunting', '501')
+    expect((t(w, 'studio-explanation').element as HTMLTextAreaElement).value).toBe('Sebab A.')
+    expect(has(w, 'studio-explanation-en')).toBe(false)
+    await t(w, 'studio-explanation').setValue('Sebab B.')
+    await t(w, 'studio-form').trigger('submit')
+    await flushPromises()
+    const body = studio.updateStudioQuestion.mock.calls[0]?.[1] as Record<string, unknown>
+    expect(body.explanation).toBe('Sebab B.')
+    expect('explanationEn' in body).toBe(false)
+  })
+
+  it('keeps the English explanation of a bilingual question editable', async () => {
+    serve({ ...SAVED, explanation: 'Sebab A.', explanationEn: 'Reason A.' })
+    studio.updateStudioQuestion.mockResolvedValue({ data: { id: '501', status: 'draft' }, status: 'ok' })
+    const w = await render('/admin/studio/questions/501/sunting', '501')
+    await t(w, 'studio-explanation-en').setValue('Reason B.')
+    await t(w, 'studio-form').trigger('submit')
+    await flushPromises()
+    expect((studio.updateStudioQuestion.mock.calls[0]?.[1] as Record<string, unknown>).explanationEn).toBe('Reason B.')
+  })
+
+  it('asks Jenis tulisan only for the listed subjects; not Rumi shows the keyboard (PO decision 4)', async () => {
+    lookups.fetchSubjects.mockResolvedValue({ data: [{ id: 3, name: 'Matematik' }, { id: 8, name: 'Bahasa Arab' }], meta: {} })
+    serve({ ...SAVED, subjectId: '8', scriptType: 'mixed' })
+    studio.updateStudioQuestion.mockResolvedValue({ data: { id: '501', status: 'draft' }, status: 'ok' })
+    const w = await render('/admin/studio/questions/501/sunting', '501')
+    expect((t(w, 'studio-script').element as HTMLSelectElement).value).toBe('mixed')
+    expect(has(w, 'studio-keyboard-toggle')).toBe(true)
+    await t(w, 'studio-form').trigger('submit')
+    await flushPromises()
+    expect((studio.updateStudioQuestion.mock.calls[0]?.[1] as Record<string, unknown>).scriptType).toBe('mixed')
+  })
+
+  it('a subject outside the list has no Jenis tulisan, and the save leaves the script alone', async () => {
+    serve({ ...SAVED })
+    studio.updateStudioQuestion.mockResolvedValue({ data: { id: '501', status: 'draft' }, status: 'ok' })
+    const w = await render('/admin/studio/questions/501/sunting', '501')
+    expect(has(w, 'studio-script')).toBe(false)
+    expect(has(w, 'studio-keyboard-toggle')).toBe(false)
+    await t(w, 'studio-form').trigger('submit')
+    await flushPromises()
+    expect('scriptType' in (studio.updateStudioQuestion.mock.calls[0]?.[1] as Record<string, unknown>)).toBe(false)
   })
 
   it('shows the all-complete text when nothing is missing', async () => {

@@ -241,6 +241,7 @@ export const QuestionSchema = z
     altAnswers: z.array(z.string()),
     modelAnswer: z.string().nullable(),
     explanation: z.string().nullable(),
+    explanationEn: z.string().nullable().optional(),
     /** Kertas for the paper builder (trailing digit of the paper code); null when not set. */
     kertas: QuestionKertasSchema.nullable().optional(),
     aiExplanation: z.object({ markdown: z.string(), generatedAt: TimestampSchema }).nullable(),
@@ -388,7 +389,11 @@ const baseInput = z.object({
   altAnswers: z.array(z.string()).optional(),
   modelAnswer: z.string().nullable().optional(),
   explanation: z.string().nullable().optional(),
+  /** PO decision 3 (#428): the English explanation of a `ms+en` question; null clears it, omitted keeps it. */
+  explanationEn: z.string().nullable().optional(),
   language: Language.optional(),
+  /** PO decision 4 (#428): `Jenis tulisan` of the wizard; `mixed` is stored as `ms_en`. */
+  scriptType: z.enum(['rumi', 'arab', 'jawi', 'mixed'], QUESTION_MESSAGES.guruScript).optional(),
   pointsValue: z.coerce.number({ error: QUESTION_MESSAGES.points }).int(QUESTION_MESSAGES.points).min(1, QUESTION_MESSAGES.points).optional(),
   removeQuestionImage: z.boolean().optional(),
   removeOptionImage: z.array(z.boolean()).max(4).optional(),

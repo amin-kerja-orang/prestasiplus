@@ -4,7 +4,7 @@
  * ini." The snapshot is the form state only (text, ids, tokens of pictures already uploaded), read back with a strict shape
  * check so a damaged or foreign value is ignored. Pure over a storage-like object.
  */
-import { LEAF_MODES, newUid, type LeafDraft, type StudioDraft } from './draft'
+import { LEAF_MODES, SCRIPT_TYPES, newUid, type LeafDraft, type StudioDraft } from './draft'
 import { isCognitive } from './dskp-tags'
 
 export const RECOVERY_MESSAGE = 'Terdapat kerja yang belum disimpan daripada sesi sebelum ini.'
@@ -74,6 +74,10 @@ export function parseSnapshot(text: string | null): StudioDraft | null {
     subjectId: d.subjectId, educationLevelId: d.educationLevelId, kertas: d.kertas as StudioDraft['kertas'], numberLabel: d.numberLabel, stem: d.stem,
     stemImageToken: d.stemImageToken, chapterId: d.chapterId, difficulty: d.difficulty, unitId: d.unitId, spIds: d.spIds, groupId: d.groupId,
     leaves: leaves as LeafDraft[],
+    // A snapshot from before these fields opens with their defaults.
+    explanation: isStr(d.explanation) ? d.explanation : '',
+    explanationEn: isStr(d.explanationEn) ? d.explanationEn : null,
+    scriptType: SCRIPT_TYPES.find((k) => k.value === d.scriptType)?.value ?? 'rumi',
     ...(typeof inheritedTp === 'number' ? { inheritedTp } : {}),
   }
 }

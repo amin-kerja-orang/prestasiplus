@@ -56,6 +56,30 @@ describe('admin question CRUD (AC 1, AC 2)', () => {
     expect(detail.parts?.[0]).toMatchObject({ mode: 'mcq', key: { kind: 'option', correct: 'B' } })
   })
 
+  it('PO decision 3: explanationEn saves and reads back next to explanation; omitted keeps it, null clears it', async () => {
+    const { data } = await created({ explanation: 'Sebab.', explanationEn: 'Reason.' })
+    const read = async () => parseData(await admin.get(`/api/questions/${data.id}`), QuestionDetailSchema)
+    expect(await read()).toMatchObject({ explanation: 'Sebab.', explanationEn: 'Reason.' })
+    const base = { subjectId: refs.mathId, educationLevelId: refs.t4Id, difficultyLevel: 3, questionText: data.questionText }
+    expect((await admin.put(`/api/questions/${data.id}`, { ...base, explanation: 'Sebab 2.' })).status).toBe(200)
+    expect(await read()).toMatchObject({ explanation: 'Sebab 2.', explanationEn: 'Reason.' })
+    expect((await admin.put(`/api/questions/${data.id}`, { ...base, explanationEn: null })).status).toBe(200)
+    expect((await read()).explanationEn).toBeNull()
+  })
+
+  it('PO decision 4: scriptType mixed is stored as ms_en and reads back mixed; omitted keeps it', async () => {
+    const { data } = await created({ scriptType: 'mixed' })
+    const read = async () => parseData(await admin.get(`/api/questions/${data.id}`), QuestionDetailSchema)
+    expect((await read()).scriptType).toBe('mixed')
+    const base = { subjectId: refs.mathId, educationLevelId: refs.t4Id, difficultyLevel: 3, questionText: data.questionText }
+    expect((await admin.put(`/api/questions/${data.id}`, base)).status).toBe(200)
+    expect((await read()).scriptType).toBe('mixed')
+    expect((await admin.put(`/api/questions/${data.id}`, { ...base, scriptType: 'jawi' })).status).toBe(200)
+    expect((await read()).scriptType).toBe('jawi')
+    expect((await admin.put(`/api/questions/${data.id}`, { ...base, scriptType: 'rumi' })).status).toBe(200)
+    expect((await read()).scriptType).toBe('rumi')
+  })
+
   it('round-trips a 3-level tree ((a)(i)(A)) with marks only on the leaves', async () => {
     const parts = [{ label: 'a', prompt: { ms: 'Bahagian (a).' }, children: [{ label: 'i', prompt: { ms: 'Bahagian (i).' }, children: [leaf('A'), leaf('B')] }] }]
     const res = await admin.post('/api/questions', mcqBody(refs, { questionType: 'essay', questionText: 'Soalan berstruktur tiga peringkat.', options: undefined, correctAnswer: undefined, parts }))

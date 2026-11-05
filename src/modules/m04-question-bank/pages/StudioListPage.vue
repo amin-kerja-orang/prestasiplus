@@ -27,7 +27,9 @@ import {
   DsPanel,
   DsRowActions,
   DsStack,
+  DsStatRow,
   DsStatTile,
+  type StatItem,
   DsText,
   useConfirm,
   type CardField,
@@ -37,6 +39,7 @@ import {
 import { useMedia } from '@/ds/useMedia'
 
 import { fetchSubjects } from '../api/lookups'
+import { fetchQuestionSummary } from '../api/questions'
 import {
   editAsDraft,
   EditAsDraftRefused,
@@ -145,6 +148,34 @@ const list = useApi(
   [...KEYS.map((k) => () => route.query[k]), () => route.query.page, () => route.query.per_page],
 )
 const subjects = useApi((signal) => (available ? fetchSubjects({ signal }) : Promise.resolve(null)))
+
+/** The KPI strip by Subjek (plan S2-T01, copied from `BankPage.vue`; data API-Q-01 `/summary`). A failed read just hides it. */
+const summary = useApi((signal) => (available ? fetchQuestionSummary({ signal }) : Promise.resolve(null)))
+const kpi = computed<StatItem[]>(() => {
+  const s = summary.data.value
+  if (!s) return []
+  return [
+    {
+      key: 'total',
+      label: 'Jumlah soalan',
+      value: s.total,
+      icon: 'books' as const,
+      active: applied.value.subject_id === '',
+      onClick: () => void router.push({ path: STUDIO_PATH, query: { ...pagerQuery.value, subject_id: undefined, page: undefined } }),
+    },
+    ...s.subjects
+      .filter((x) => x.total > 0)
+      .map((x) => ({
+        key: String(x.id),
+        label: x.name,
+        value: x.approved,
+        sub: `${String(x.approved)} Terbit`,
+        icon: 'book-open' as const,
+        active: applied.value.subject_id === String(x.id),
+        onClick: () => void router.push({ path: STUDIO_PATH, query: { ...pagerQuery.value, subject_id: String(x.id), page: undefined } }),
+      })),
+  ]
+})
 
 const rows = computed<StudioRow[]>(() => list.data.value?.data ?? [])
 const firstLoad = computed(() => available && list.data.value === null && list.error.value === null)
@@ -434,6 +465,8 @@ const cardFields: CardField[] = [
           :part-prefix="`studio-tile-${s}`"
         />
       </DsGrid>
+
+      <DsStatRow v-if="kpi.length > 0" :items="kpi" density="compact" aria-label="Ringkasan bank soalan" prefix="studio-kpi" data-testid="studio-kpis" />
 
       <DsFilterBar
         :active-count="activeCount"

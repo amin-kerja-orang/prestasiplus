@@ -24,6 +24,8 @@ const studio = vi.hoisted(() => ({
 const lookups = vi.hoisted(() => ({ fetchSubjects: vi.fn() }))
 vi.mock('../../api/studio', () => studio)
 vi.mock('../../api/lookups', () => lookups)
+const summaryApi = vi.hoisted(() => ({ fetchQuestionSummary: vi.fn() }))
+vi.mock('../../api/questions', () => summaryApi)
 
 const row = (id: string, status: string, extra: Record<string, unknown> = {}) => ({
   id,
@@ -70,6 +72,7 @@ beforeEach(() => {
     notFound: [],
   })
   lookups.fetchSubjects.mockReset().mockResolvedValue({ data: [{ id: 3, name: 'Matematik' }], meta: {} })
+  summaryApi.fetchQuestionSummary.mockReset().mockResolvedValue(null)
   vi.spyOn(window, 'confirm').mockReturnValue(true)
 })
 afterEach(() => {
@@ -80,6 +83,16 @@ afterEach(() => {
 })
 
 describe('StudioListPage (S1 to S6)', () => {
+  it('shows the KPI strip by Subjek from /summary, without an empty subject (plan S2-T01)', async () => {
+    summaryApi.fetchQuestionSummary.mockResolvedValue({ total: 10, subjects: [{ id: '3', name: 'Matematik', icon: null, group: 'teras', total: 7, approved: 4 }, { id: '5', name: 'Fizik', icon: null, group: 'elektif', total: 0, approved: 0 }] })
+    const w = await render()
+    const strip = w.get('[data-testid="studio-kpis"]').text()
+    expect(strip).toContain('Jumlah soalan')
+    expect(strip).toContain('Matematik')
+    expect(strip).toContain('4Matematik')
+    expect(strip).not.toContain('Fizik')
+  })
+
   it('shows the V2 subtitle, the four status tiles with counts and "Cipta baharu"', async () => {
     const w = await render()
     expect(w.text()).toContain('Bank soalan kanonikal - cipta, semak, terbit')

@@ -186,6 +186,8 @@ interface Normalized {
   parts: QuestionPart[]
   language: VersionDraft['language']
   explanation: string | null
+  /** A value sets the English explanation, null clears it, undefined keeps what is stored. */
+  explanationEn?: string | null | undefined
   tag?: QuestionTag | undefined
   dskpSpId?: string | null | undefined
   chapterId?: string | null | undefined
@@ -300,8 +302,9 @@ export class QuestionsService {
         textbookRef: input.textbookRef,
         stem: input.questionText,
         parts,
-        language: languageToStore(input.language, undefined),
+        language: languageToStore(input.language, input.scriptType),
         explanation: input.explanation?.trim() || null,
+        explanationEn: input.explanationEn?.trim() || null,
         tag: input.tag,
         dskpSpId: input.dskpSpId,
         chapterId: input.curriculumChapterId,
@@ -1113,7 +1116,7 @@ export class QuestionsService {
       numberLabel: n.numberLabel !== undefined ? (n.numberLabel === '' ? null : n.numberLabel) : (v?.numberLabel ?? null),
       language: n.language,
       explanationMs: n.explanation,
-      explanationEn: v?.explanationEn ?? null,
+      explanationEn: n.explanationEn === undefined ? (v?.explanationEn ?? null) : n.explanationEn,
       subjectId: subject?.id ?? null,
       educationLevelId: level?.id ?? null,
       unitNodeId: unitKey,
@@ -1212,11 +1215,13 @@ export class QuestionsService {
 
     // Level 5 on the flat scale may be TP 5 or 6: keep the stored TP when the body repeats what was read.
     const keepTp = v.difficultyTp !== null && input.difficultyLevel === flat.difficultyLevel
-    const language = input.language === undefined
-      ? v.language
-      : v.language === 'ar' || v.language === 'jawi' || v.language === 'ms_en'
+    const language = input.scriptType !== undefined
+      ? languageToStore(v.language === 'en' ? 'en' : undefined, input.scriptType)
+      : input.language === undefined
         ? v.language
-        : languageToStore(input.language, undefined)
+        : v.language === 'ar' || v.language === 'jawi' || v.language === 'ms_en'
+          ? v.language
+          : languageToStore(input.language, undefined)
     const dskpSpId = input.dskpSpId === undefined ? undefined : input.dskpSpId === '' ? null : input.dskpSpId
     const normalized: Normalized = {
       subjectId: opts.keepSubject ? (v.subjectId ?? input.subjectId) : input.subjectId,
@@ -1228,6 +1233,7 @@ export class QuestionsService {
       parts,
       language,
       explanation: input.explanation === undefined ? v.explanationMs : input.explanation?.trim() || null,
+      explanationEn: input.explanationEn === undefined ? undefined : input.explanationEn?.trim() || null,
       ...(input.tag
         ? { tag: input.tag }
         : dskpSpId !== undefined

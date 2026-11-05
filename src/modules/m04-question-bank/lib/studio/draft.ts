@@ -64,7 +64,24 @@ export interface StudioDraft {
   /** The stimulus group this question belongs to (D90), or null. */
   groupId: string | null
   leaves: LeafDraft[]
+  /** PO decision 3: `Penjelasan`, shown to the pupil after answering. */
+  explanation: string
+  /** The English explanation of a `ms+en` question; null = not bilingual, so no field and nothing sent. */
+  explanationEn: string | null
+  /** `Jenis tulisan` (PRD30 04-23); PO decision 4: `mixed` is stored as `ms_en`. */
+  scriptType: ScriptType
 }
+
+export type ScriptType = 'rumi' | 'arab' | 'jawi' | 'mixed'
+export const SCRIPT_TYPES: readonly { value: ScriptType; label: string }[] = [
+  { value: 'rumi', label: 'Rumi' },
+  { value: 'arab', label: 'Arab' },
+  { value: 'jawi', label: 'Jawi' },
+  { value: 'mixed', label: 'Campuran' },
+]
+/** The subjects that ask for `Jenis tulisan` (plan S2-T01); the others are always Rumi. */
+const SCRIPT_SUBJECTS = new Set(['Pendidikan Islam', 'Bahasa Arab', 'Jawi', 'Pendidikan Al-Quran & As-Sunnah', 'Tasawwur Islam', 'Pendidikan Syariah Islamiah'])
+export const asksScript = (subjectName: string): boolean => SCRIPT_SUBJECTS.has(subjectName)
 
 let seq = 0
 export const newUid = (): string => `leaf-${String((seq += 1))}`
@@ -103,6 +120,9 @@ export function blankDraft(): StudioDraft {
     spIds: [],
     groupId: null,
     leaves: [blankLeaf('a')],
+    explanation: '',
+    explanationEn: null,
+    scriptType: 'rumi',
   }
 }
 
@@ -256,7 +276,7 @@ function leafToPart(l: LeafDraft): Json {
  * `questionType: 'essay'` is the wire wrapper of a part tree: the server derives the stored type from the parts, and the
  * flat objective fields (four options, one answer) are not needed.
  */
-export function toRequestBody(d: StudioDraft): Json {
+export function toRequestBody(d: StudioDraft, opts: { sendScript?: boolean } = {}): Json {
   // The group is NOT sent: membership is changed through the group API (`StudioGroupEditor`), never by this save.
   return {
     subjectId: d.subjectId,
@@ -270,6 +290,9 @@ export function toRequestBody(d: StudioDraft): Json {
     kertas: d.kertas === '' ? null : d.kertas,
     numberLabel: d.numberLabel.trim() === '' ? null : d.numberLabel.trim(),
     questionImageFileId: d.stemImageToken,
+    explanation: d.explanation.trim() === '' ? null : d.explanation.trim(),
+    ...(d.explanationEn === null ? {} : { explanationEn: d.explanationEn.trim() === '' ? null : d.explanationEn.trim() }),
+    ...(opts.sendScript === true ? { scriptType: d.scriptType } : {}),
   }
 }
 
@@ -306,6 +329,9 @@ export interface WireQuestion {
   parts?: unknown[]
   tag?: { unitId: string | null; spIds: string[]; tp: number | null }
   stimulusGroup?: { id: string } | null
+  explanation?: string | null
+  explanationEn?: string | null
+  scriptType?: ScriptType
 }
 
 export interface Hydrated {
@@ -429,6 +455,9 @@ export function hydrate(q: WireQuestion): Hydrated {
     spIds: q.tag?.spIds ?? [],
     groupId: q.stimulusGroup?.id ?? null,
     leaves: leaves.length === 0 && unsupported.length === 0 ? [blankLeaf('a')] : leaves,
+    explanation: q.explanation ?? '',
+    explanationEn: q.explanationEn ?? null,
+    scriptType: q.scriptType ?? 'rumi',
     ...(leafTp === null && storedTp !== null ? { inheritedTp: storedTp } : {}),
   }
   return { draft, unsupported }

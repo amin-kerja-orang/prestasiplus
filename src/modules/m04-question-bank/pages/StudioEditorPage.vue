@@ -6,7 +6,7 @@
  * module. A draft saves with gaps; the gate is at approval. The status bar (Hantar untuk semakan, Terbitkan, Arkib, Edit sebagai
  * draf, Dilihat murid di) is `StudioStatusBar` (R1-F03a).
  */
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
@@ -28,6 +28,7 @@ import {
   updateStudioQuestion,
   type StudioQuestionDetail,
 } from '../api/studio'
+import ArabicKeyboardPanel from '../components/ArabicKeyboardPanel.vue'
 import ChapterSelect from '../components/ChapterSelect.vue'
 import StudioCompletenessPanel, { type CompletenessRow } from '../components/studio/StudioCompletenessPanel.vue'
 import StudioDskpFields from '../components/studio/StudioDskpFields.vue'
@@ -36,11 +37,13 @@ import StudioImageField from '../components/studio/StudioImageField.vue'
 import StudioLeafEditor from '../components/studio/StudioLeafEditor.vue'
 import StudioPreview from '../components/studio/StudioPreview.vue'
 import StudioStatusBar from '../components/studio/StudioStatusBar.vue'
+import { backspaceAtCaret, insertAtCaret, type KeyboardMode } from '../lib/arabic-keyboard'
 import { studioFieldErrors } from '../lib/studio/field-errors'
 import type { GroupView } from '../lib/studio/group-members'
 import { toStimulusData } from '../lib/studio/preview'
 import { stimulusIssue, toCreateBody, type PendingGroup } from '../lib/studio/stimulus'
 import {
+  asksScript,
   blankDraft,
   blankLeaf,
   draftGaps,
@@ -50,6 +53,7 @@ import {
   issueField,
   KESUKARAN,
   nextLeafLabel,
+  SCRIPT_TYPES,
   toRequestBody,
   totalMarks,
   type StudioDraft,
@@ -135,6 +139,32 @@ const unlocked = computed(() => !SERVING.includes(status.value))
 const readOnly = computed(() => !unlocked.value || unsupported.value.length > 0)
 /** The form differs from what is stored: a status move would act on the stored version. */
 const dirty = computed(() => saved.value !== null && !sameDraft(draft.value, saved.value))
+const subjectName = computed(() => subjects.value.find((x) => x.id === draft.value.subjectId)?.name ?? '')
+const showScript = computed(() => asksScript(subjectName.value))
+
+/* ---- FR: the flat form's keyboard (imported, not rewritten) on every text editor of a non-Rumi question (decision 5 on #428) ---- */
+const keyboardOpen = ref(false)
+const keyboardMode = ref<KeyboardMode>('arab')
+const keyboardTarget = ref<HTMLInputElement | HTMLTextAreaElement | null>(null)
+const showKeyboard = computed(() => showScript.value && draft.value.scriptType !== 'rumi' && !readOnly.value)
+watch(showKeyboard, (on) => {
+  if (!on) keyboardOpen.value = false
+})
+function trackField(e: FocusEvent): void {
+  const el = e.target
+  if (el instanceof HTMLTextAreaElement || (el instanceof HTMLInputElement && el.type === 'text')) keyboardTarget.value = el
+}
+async function keyEdit(compute: (v: string, s: number, e: number) => { value: string; caret: number }): Promise<void> {
+  const el = keyboardTarget.value
+  if (!el) return
+  const next = compute(el.value, el.selectionStart ?? el.value.length, el.selectionEnd ?? el.value.length)
+  el.value = next.value
+  el.dispatchEvent(new Event('input', { bubbles: true }))
+  await nextTick()
+  el.setSelectionRange(next.caret, next.caret)
+  el.focus()
+}
+
 const levelName = computed(() => levels.value.find((l) => l.id === draft.value.educationLevelId)?.name ?? '')
 const gaps = computed(() => draftGaps(draft.value, levelName.value))
 /** What API-Q-05 says about the stored question; the panel adds it to the client gaps of the form. */
@@ -231,7 +261,7 @@ async function save(): Promise<void> {
   fieldProblems.value = {}
   try {
     if (edit.value && props.id !== undefined) {
-      const res = await updateStudioQuestion(props.id, toRequestBody(draft.value))
+      const res = await updateStudioQuestion(props.id, toRequestBody(draft.value, { sendScript: showScript.value }))
       flash.success(res.status)
       if (store !== null) clearSnapshot(store, storeKey.value)
       await load()
@@ -252,7 +282,7 @@ async function save(): Promise<void> {
         into = g.data.id
         draft.value.groupId = g.data.id
       }
-      const body = toRequestBody(draft.value)
+      const body = toRequestBody(draft.value, { sendScript: showScript.value })
       const res = into === null ? await createStudioQuestion(body) : await createQuestionInGroup(into, body)
       flash.success('Soalan draf disimpan. Terbitkan melalui semakan apabila sedia.')
       clearTimeout(keepTimer)
@@ -275,7 +305,7 @@ async function save(): Promise<void> {
     <DsLoadError v-else-if="loadFailed" :message="LOAD_ERROR" testid="studio-load-error" retry-testid="studio-load-retry" @retry="load" />
     <DsText v-else-if="loading" variant="body" tone="muted" data-testid="studio-loading">Memuatkan…</DsText>
 
-    <DsStack v-else as="form" gap="lg" data-testid="studio-form" @submit.prevent="save">
+    <DsStack v-else as="form" gap="lg" data-testid="studio-form" @submit.prevent="save" @focusin="trackField">
       <DsCallout v-if="offer" tone="warning" data-testid="studio-recovery">
         {{ RECOVERY_MESSAGE }}
         <template #actions>
@@ -348,6 +378,14 @@ async function save(): Promise<void> {
           <DsFormField v-slot="{ id: fid }" native label="Nombor soalan" for="studio-number" required :error="fieldProblems.numberLabel">
             <UInput :id="fid" v-model="draft.numberLabel" placeholder="1" maxlength="32" :disabled="readOnly" data-testid="studio-number" />
           </DsFormField>
+          <DsFormField v-if="showScript" v-slot="{ id: fid }" native label="Jenis tulisan" for="studio-script" :error="fieldProblems.scriptType">
+            <DsNativeSelect :id="fid" v-model="draft.scriptType" :disabled="readOnly" data-testid="studio-script">
+              <option v-for="k in SCRIPT_TYPES" :key="k.value" :value="k.value">{{ k.label }}</option>
+            </DsNativeSelect>
+          </DsFormField>
+          <DsCluster v-if="showKeyboard" gap="sm">
+            <UButton type="button" color="neutral" variant="soft" icon="keyboard" title="Papan kekunci Arab / Jawi" data-testid="studio-keyboard-toggle" @mousedown.prevent @click="keyboardOpen = !keyboardOpen">Papan kekunci</UButton>
+          </DsCluster>
           <DsFormField v-slot="{ id: fid }" native label="Teks soalan (stem)" for="studio-stem" required :error="fieldProblems.questionText">
             <UTextarea :id="fid" v-model="draft.stem" :rows="4" placeholder="Contoh: Rajah 1 menunjukkan litar bersiri." :disabled="readOnly" data-testid="studio-stem" />
           </DsFormField>
@@ -383,6 +421,12 @@ async function save(): Promise<void> {
           <UButton type="button" color="neutral" variant="soft" :disabled="readOnly" data-testid="studio-add-leaf" @click="addLeaf">
             + Sub-bahagian
           </UButton>
+          <DsFormField v-slot="{ id: fid }" native label="Penjelasan" for="studio-explanation" hint="Penjelasan akan ditunjukkan kepada pelajar selepas menjawab" :error="fieldProblems.explanation">
+            <UTextarea :id="fid" v-model="draft.explanation" :rows="3" placeholder="Penjelasan untuk jawapan (pilihan)" :disabled="readOnly" data-testid="studio-explanation" />
+          </DsFormField>
+          <DsFormField v-if="draft.explanationEn !== null" v-slot="{ id: fid }" native label="Penjelasan (English)" for="studio-explanation-en" :error="fieldProblems.explanationEn">
+            <UTextarea :id="fid" v-model="draft.explanationEn" :rows="3" :disabled="readOnly" data-testid="studio-explanation-en" />
+          </DsFormField>
         </DsFormSection>
       </DsStack>
 
@@ -398,6 +442,14 @@ async function save(): Promise<void> {
         </template>
       </DsFormBar>
     </DsStack>
+    <ArabicKeyboardPanel
+      v-if="keyboardOpen"
+      v-model:mode="keyboardMode"
+      :anchor="keyboardTarget"
+      @insert="(text: string) => keyEdit((v, a, b) => insertAtCaret(v, a, b, text))"
+      @backspace="keyEdit((v, a, b) => backspaceAtCaret(v, a, b))"
+      @close="keyboardOpen = false"
+    />
     <DsDrawer v-model:open="stimulusOpen" title="Rangsangan" data-testid="studio-stimulus-sheet">
       <DsStack gap="md">
         <StimulusFigure v-for="s in stimuli" :key="s.id" :stimulus="s" />
