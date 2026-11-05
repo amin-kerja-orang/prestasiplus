@@ -26,7 +26,7 @@ export interface BijakAttemptAggregateInput {
   regraded: boolean
   questions: { questionId: string; marks: number; awarded: number; attempted: boolean; counted: boolean }[]
   /** Extension (AC-33.4 "start type"): `exam_attempts.paper_kind`. */
-  paperKind?: 'pilihan' | 'jana' | null
+  paperKind?: AttemptStartType | null
   /** Extension (AC-33.4 "duration"): `exam_attempts.started_at`. */
   startedAt?: Date | null
   /** Extension (AC-33.4 "duration"): `exam_attempts.submitted_at`. */
@@ -37,3 +37,7 @@ export interface BijakAttemptAggregateInput {
 export interface BijakAttemptAggregatePort {
   recordGraded(input: BijakAttemptAggregateInput): Promise<void>
 }
+
+/** `exam_attempts.paper_kind` as kept in `practice_attempt_aggregates.start_type` (DM-83, migration 0190). */
+export const ATTEMPT_START_TYPES: readonly AttemptStartType[] = ['pilihan', 'jana', 'subjektif', 'structured']
+export type AttemptStartType = 'pilihan' | 'jana' | 'subjektif' | 'structured'

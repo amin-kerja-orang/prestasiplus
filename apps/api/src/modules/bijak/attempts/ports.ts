@@ -12,6 +12,7 @@
  * - `BijakAttemptAggregatePort`  BE-12 / US-33 (teacher and school analytics over the practice store). Default: no-op.
  */
 import { Injectable } from '@nestjs/common'
+import type { BijakAttemptKind } from '@pp/contract'
 
 import type { McqOption, QuestionDef, SchemeDef, SectionSnapshot, StimulusDef } from './exam-core.adapter'
 
@@ -133,7 +134,7 @@ export interface BijakAttemptAggregateInput {
   userId: string
   isTest: boolean
   /** Optional context BE-12 uses for `start_type` and `duration_sec` (AC-33.4). */
-  paperKind?: 'pilihan' | 'jana'
+  paperKind?: BijakAttemptKind
   startedAt?: Date
   submittedAt?: Date | null
   /** Decimal-string paper id; null for a migrated attempt. */

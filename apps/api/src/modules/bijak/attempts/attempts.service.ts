@@ -818,9 +818,7 @@ export class BijakAttemptsService {
           attemptId: a.id,
           userId: a.userId,
           isTest: a.isTest,
-          // The aggregate's start_type knows only the paper kinds; `subjektif` / `structured` (DM-83) are
-          // passed once S5 widens `ck_practice_attempt_aggregates_start_type` (S3-T06 cross-sector PR).
-          paperKind: a.paperKind === 'pilihan' || a.paperKind === 'jana' ? a.paperKind : undefined,
+          paperKind: a.paperKind,
           startedAt: a.startedAt,
           submittedAt: a.submittedAt,
           paperId: a.paperId,
