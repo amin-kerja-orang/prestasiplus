@@ -203,7 +203,7 @@ export interface MissionInit {
   teacherId: string
   recipients: string[]
   day?: string
-  type?: 'latih_tubi' | 'tracking_a' | 'youtube'
+  type?: 'latih_tubi' | 'tracking_a' | 'youtube' | 'harian'
   title?: string
   subjectId?: string
   chapterId?: string | null

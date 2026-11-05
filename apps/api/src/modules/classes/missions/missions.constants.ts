@@ -17,4 +17,6 @@ export const REMEDIAL_MAX_QUESTIONS = 10
 export const MISSION_AUDIT = {
   REMEDIAL_GENERATED: 'classes.remedial.generated',
   REMEDIAL_CANCELLED: 'classes.remedial.cancelled',
+  MISSION_CREATED: 'classes.mission.created',
+  MISSION_DELETED: 'classes.mission.deleted',
 } as const

@@ -1,5 +1,6 @@
-import { Controller, Get, Param, UseGuards, UseInterceptors } from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, UseGuards, UseInterceptors } from '@nestjs/common'
 
+import { Roles } from '../../../common/guards/decorators'
 import { listMeta, NoStoreInterceptor, ok, okList } from '../../../common/http'
 import { RateLimit, RateLimitGuard } from '../../../common/throttle'
 import { Actor, type ClassActor } from '../actor'
@@ -26,6 +27,29 @@ export class MissionsController {
   async today(@Actor() actor: ClassActor) {
     const items = await this.missions.today(actor)
     return okList(items, listMeta(1, Math.max(1, items.length), items.length))
+  }
+
+  /** API-GUR-11 (S6-T07): the teacher's own and Global missions. Teacher only. */
+  @Get('guru/missions')
+  @Roles('teacher')
+  @RateLimit(MISSION_LIMITS.read)
+  async teacherList(@Actor() actor: ClassActor) {
+    return ok(await this.missions.list(actor))
+  }
+
+  @Post('guru/missions')
+  @Roles('teacher')
+  @HttpCode(201)
+  @RateLimit(MISSION_LIMITS.write)
+  async teacherCreate(@Actor() actor: ClassActor, @Body() body: unknown) {
+    return ok(await this.missions.create(actor, body))
+  }
+
+  @Delete('guru/missions/:id')
+  @Roles('teacher')
+  @RateLimit(MISSION_LIMITS.write)
+  async teacherDelete(@Actor() actor: ClassActor, @Param('id') id: string) {
+    return ok(await this.missions.remove(actor, id))
   }
 
   @Get('remedial-tests/mine')

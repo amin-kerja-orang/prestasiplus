@@ -1,0 +1,135 @@
+import { MISSION_DAILY_CAP, MISSION_MESSAGES, TeacherMissionListResponseSchema, TeacherMissionResponseSchema } from '@pp/contract'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+
+import {
+  STUDENT_1, STUDENT_2, TEACHER_A, TEACHER_B,
+  bootMissionsApp, client, count, errorIs, insertMission, insertSession, loadWorld, makeClass,
+  type Client, type MissionsTestApp, type World,
+} from './helpers'
+
+// The test clock is 2026-10-19 09:00 +08:00.
+const TODAY = '2026-10-19'
+
+describe('API-GUR-11 teacher Misi Harian: GET, POST, DELETE /api/guru/missions (S6-T07)', () => {
+  let t: MissionsTestApp
+  let w: World
+  let teacherA: Client
+  let teacherB: Client
+  let student: Client
+  let classA: string
+  let globalId: string
+
+  const payload = (over: Record<string, unknown> = {}) => ({ title: 'Jawab 20 soalan', targetQuestions: 20, rewardCoins: 15, date: TODAY, subjectId: w.tag.subjectId, ...over })
+
+  beforeAll(async () => {
+    t = await bootMissionsApp()
+    w = await loadWorld(t)
+    teacherA = await client(t, TEACHER_A)
+    teacherB = await client(t, TEACHER_B)
+    student = await client(t, STUDENT_1)
+    classA = await makeClass(t, w, w.teacherA, [w.student1], 'Kelas Misi A')
+    globalId = (
+      await t.db.query<{ id: string }>(
+        `insert into missions (scope, title, mission_type, mission_date, question_count, reward_coins, created_at)
+         values ('global', 'Rajin Berlatih', 'harian', $1, 3, 15, now()) returning id::text`,
+        [TODAY],
+      )
+    )[0]?.id as string
+  }, 120_000)
+  afterAll(async () => {
+    await t.close()
+  })
+
+  it('401 anonymous and 403 for a pupil on all three routes', async () => {
+    for (const [method, path] of [['get', '/guru/missions'], ['post', '/guru/missions'], ['delete', `/guru/missions/${globalId}`]] as const) {
+      const anon = await (t.http() as never as Record<string, (p: string) => Promise<{ status: number; body: never }>>)[method]!(`/api${path}`)
+      expect(anon.status).toBe(401)
+    }
+    errorIs(await student.get('/guru/missions'), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
+    errorIs(await student.post('/guru/missions', payload()), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
+  })
+
+  it('POST 201 creates a harian mission for one class and snapshots its pupils; a pupil enrolled later is not added', async () => {
+    const res = await teacherA.post('/guru/missions', payload({ classroomId: classA, description: 'Fokus Bab 3' }))
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    const m = TeacherMissionResponseSchema.parse(res.body).data
+    expect(m).toMatchObject({ title: 'Jawab 20 soalan', description: 'Fokus Bab 3', targetQuestions: 20, rewardCoins: 15, date: TODAY, classroomId: classA, global: false, completedCount: 0 })
+    expect(await count(t, 'missions where id = $1 and mission_type = $2 and scope = $3', [m.id, 'harian', 'teacher'])).toBe(1)
+    const items = (await t.db.query<{ student_id: string }>(`select student_id::text from mission_items where mission_id = $1`, [m.id])).map((r) => r.student_id)
+    expect(items).toEqual([w.student1])
+    await t.get((await import('../../src/modules/classes')).ClassesRepository).enrol({ classroomId: classA, studentId: w.student2, source: 'teacher', now: new Date() })
+    expect(await count(t, 'mission_items where mission_id = $1', [m.id])).toBe(1)
+    // The pupil reads it with description and reward.
+    const today = (await student.get('/missions/today')).body.data as { id: string; description: string; rewardCoins: number }[]
+    expect(today.find((r) => r.id === m.id)).toMatchObject({ description: 'Fokus Bab 3', rewardCoins: 15 })
+    expect(((await (await client(t, STUDENT_2)).get('/missions/today')).body.data as { id: string }[]).some((r) => r.id === m.id)).toBe(false)
+  })
+
+  it('POST with no class snapshots the pupils of all own active classes', async () => {
+    const res = await teacherA.post('/guru/missions', payload({ title: 'Semua kelas' }))
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    const m = TeacherMissionResponseSchema.parse(res.body).data
+    expect(m.classroomId).toBeNull()
+    const items = (await t.db.query<{ student_id: string }>(`select student_id::text from mission_items where mission_id = $1`, [m.id])).map((r) => r.student_id)
+    expect(items).toContain(w.student1)
+    expect(items).toContain(w.student2)
+  })
+
+  it('POST 422 with fields: past date (MYT), reward 101, empty title, unknown subject', async () => {
+    const res = await teacherA.post('/guru/missions', payload({ date: '2026-10-18', rewardCoins: 101, title: ' ', subjectId: '99999999' }))
+    expect(res.status).toBe(422)
+    expect(res.body.error.code).toBe('VALIDATION_ERROR')
+    expect(res.body.error.fields).toEqual({
+      title: MISSION_MESSAGES.titleRequired,
+      rewardCoins: MISSION_MESSAGES.reward,
+      date: MISSION_MESSAGES.datePast,
+      subjectId: MISSION_MESSAGES.subjectRequired,
+    })
+  })
+
+  it('POST with another teacher\'s class is the generic 404', async () => {
+    const classB = await makeClass(t, w, w.teacherC, [], 'Kelas Guru C')
+    errorIs(await teacherA.post('/guru/missions', payload({ classroomId: classB })), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+  })
+
+  it('POST: the 6th mission of the creation day is 422 without fields', async () => {
+    const have = await count(t, 'missions where teacher_id = $1 and scope = $2', [w.teacherA, 'teacher'])
+    for (let i = have; i < MISSION_DAILY_CAP; i++) expect((await teacherA.post('/guru/missions', payload({ title: `Isi ${String(i)}` }))).status).toBe(201)
+    const res = await teacherA.post('/guru/missions', payload({ title: 'Keenam' }))
+    errorIs(res, 422, 'VALIDATION_ERROR', MISSION_MESSAGES.capReached)
+    expect(res.body.error.fields).toBeUndefined()
+    // Another teacher is not affected.
+    expect((await teacherB.post('/guru/missions', payload({ title: 'Guru B' }))).status).toBe(201)
+  })
+
+  it('GET lists own and Global missions (global true), newest date first, with the completed pupils of the teacher\'s classes', async () => {
+    const own = (await teacherA.get('/guru/missions')).body.data as { id: string }[]
+    const ownId = own.find((m) => m.id !== globalId)?.id as string
+    await insertSession(t, w.student1, { missionId: ownId }, 'completed')
+    await insertSession(t, w.student1, { missionId: ownId }, 'completed')
+    await insertSession(t, w.studentOther, { missionId: ownId }, 'completed')
+    await insertSession(t, w.student2, { missionId: ownId }, 'in_progress')
+    const res = await teacherA.get('/guru/missions')
+    expect(res.status).toBe(200)
+    expect(res.headers['cache-control']).toBe('no-store')
+    const rows = TeacherMissionListResponseSchema.parse(res.body).data
+    expect(rows.find((r) => r.id === globalId)).toMatchObject({ global: true, subjectId: null, subjectName: null, rewardCoins: 15, completedCount: 0 })
+    expect(rows.find((r) => r.id === ownId)?.completedCount).toBe(1)
+    expect(rows.every((r) => r.global || r.title !== 'Guru B')).toBe(true)
+    const dates = rows.map((r) => r.date)
+    expect([...dates].sort().reverse()).toEqual(dates)
+  })
+
+  it('DELETE: own 200 { deleted: 1 } with its recipients; Global 403; another teacher\'s and unknown 404', async () => {
+    const own = await insertMission(t, w, { teacherId: w.teacherA, recipients: [w.student1], type: 'harian', title: 'Padam saya', day: TODAY, createdAt: '2026-10-10T09:00:00+08:00' })
+    const res = await teacherA.del(`/guru/missions/${own}`)
+    expect(res.status, JSON.stringify(res.body)).toBe(200)
+    expect(res.body).toEqual({ data: { deleted: 1 } })
+    expect(await count(t, 'mission_items where mission_id = $1', [own])).toBe(0)
+
+    errorIs(await teacherA.del(`/guru/missions/${globalId}`), 403, 'FORBIDDEN', MISSION_MESSAGES.globalNotDeletable)
+    const theirs = await insertMission(t, w, { teacherId: w.teacherC, recipients: [], type: 'harian', title: 'Guru C', day: TODAY, createdAt: '2026-10-10T09:00:00+08:00' })
+    for (const id of [theirs, '987654321']) expect((await teacherA.del(`/guru/missions/${id}`)).status).toBe(404)
+    expect(await count(t, 'missions where id = $1', [theirs])).toBe(1)
+  })
+})

@@ -11942,6 +11942,36 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/guru/missions",
+      "method": "GET",
+      "path": "/api/guru/missions",
+      "api_id": "API-GUR-11",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/missions/missions.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/guru/missions",
+      "method": "POST",
+      "path": "/api/guru/missions",
+      "api_id": "API-GUR-11",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/missions/missions.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "DELETE /api/guru/missions/:p",
+      "method": "DELETE",
+      "path": "/api/guru/missions/:id",
+      "api_id": "API-GUR-11",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/missions/missions.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "GET /api/remedial-tests/mine",
       "method": "GET",
       "path": "/api/remedial-tests/mine",

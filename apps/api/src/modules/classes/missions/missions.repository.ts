@@ -2,30 +2,60 @@ import { Inject, Injectable } from '@nestjs/common'
 
 import type { TxClient } from '../../../db/client'
 import { idFromString, idToString, isIdString } from '../../../db/ids'
+import { Prisma } from '../../../db/generated/client'
 import { PrismaService } from '../../../db/prisma.service'
+import { VISIBLE_USER_SQL } from '../../command-center/shared/visibility'
 
-export type MissionType = 'latih_tubi' | 'tracking_a' | 'youtube'
+export type MissionType = 'latih_tubi' | 'tracking_a' | 'youtube' | 'harian'
+export type MissionScope = 'teacher' | 'global'
 export type RemedialStatus = 'active' | 'completed' | 'cancelled'
 
 /** A mission as the student reads and the practice adapter resolve it. Ids are decimal strings. */
 export interface MissionRecord {
   id: string
-  teacherId: string
+  /** Null for a Global (platform) mission. */
+  teacherId: string | null
   classroomId: string | null
   title: string
   missionType: MissionType
   /** Malaysia calendar day `YYYY-MM-DD`. */
   missionDate: string
-  subjectId: string
+  /** Null for a Global mission. */
+  subjectId: string | null
   chapterId: string | null
   questionCount: number
   coinsPerCorrect: number
+  description: string | null
+  /** Coins paid once at the target (S6-T07); null for the older types. */
+  rewardCoins: number | null
+  scope: MissionScope
   resourceTitle: string | null
   resourceUrl: string | null
   resourceNote: string | null
   isTest: boolean
   createdAt: Date
 }
+
+/** Input of `createWithItems`: a Misi Harian of a teacher (S6-T07). */
+export interface NewTeacherMission {
+  teacherId: string
+  /** Null = all the teacher's active classes. */
+  classroomId: string | null
+  title: string
+  description: string | null
+  /** Malaysia day `YYYY-MM-DD`. */
+  date: string
+  subjectId: string
+  targetQuestions: number
+  rewardCoins: number
+  isTest: boolean
+  now: Date
+  /** MYT creation day `YYYY-MM-DD` the cap counts. */
+  creationDay: string
+  cap: number
+}
+
+export type CreateMissionOutcome = { status: 'capReached' } | { status: 'created'; mission: MissionRecord; recipients: number }
 
 export interface RemedialRecord {
   id: string
@@ -62,15 +92,18 @@ const idOf = (id: string): bigint | null => (isIdString(id) ? idFromString(id) :
 
 const toMission = (r: {
   id: bigint
-  teacherId: bigint
+  teacherId: bigint | null
   classroomId: bigint | null
   title: string
   missionType: string
   missionDate: Date
-  subjectId: bigint
+  subjectId: bigint | null
   chapterId: bigint | null
   questionCount: number
   coinsPerCorrect: number
+  description: string | null
+  rewardCoins: number | null
+  scope: string
   resourceTitle: string | null
   resourceUrl: string | null
   resourceNote: string | null
@@ -78,15 +111,18 @@ const toMission = (r: {
   createdAt: Date
 }): MissionRecord => ({
   id: idToString(r.id),
-  teacherId: idToString(r.teacherId),
+  teacherId: r.teacherId === null ? null : idToString(r.teacherId),
   classroomId: r.classroomId === null ? null : idToString(r.classroomId),
   title: r.title,
   missionType: r.missionType as MissionType,
   missionDate: r.missionDate.toISOString().slice(0, 10),
-  subjectId: idToString(r.subjectId),
+  subjectId: r.subjectId === null ? null : idToString(r.subjectId),
   chapterId: r.chapterId === null ? null : idToString(r.chapterId),
   questionCount: r.questionCount,
   coinsPerCorrect: r.coinsPerCorrect,
+  description: r.description,
+  rewardCoins: r.rewardCoins,
+  scope: r.scope === 'global' ? 'global' : 'teacher',
   resourceTitle: r.resourceTitle,
   resourceUrl: r.resourceUrl,
   resourceNote: r.resourceNote,
@@ -126,7 +162,7 @@ const NEWEST_FIRST = [{ createdAt: 'desc' as const }, { id: 'desc' as const }]
 /**
  * The only doorway to `missions`, `mission_items`, `remedial_tests` and `remedial_test_items` (BE-18, M10).
  * Every method uses `prisma.client`, so it joins the transaction a service opened with `prisma.transaction(...)`.
- * Mission creation is not built (open question 1); missions exist as rows the seeds or tests insert.
+ * The teacher Misi Harian create, list and delete (S6-T07) live here too.
  */
 @Injectable()
 export class MissionsRepository {
@@ -162,6 +198,113 @@ export class MissionsRepository {
     const key = idOf(teacherId)
     if (key === null) return false
     return (await this.db.mission.count({ where: { teacherId: key, isTest: false } })) > 0
+  }
+
+  // --- teacher Misi Harian (S6-T07, API-GUR-11) --------------------------------------------------
+
+  /** The teacher's own missions plus every Global one, mission date descending, then created descending (ties by id). */
+  async listForTeacher(teacherId: string, isTest: boolean): Promise<MissionRecord[]> {
+    const key = idOf(teacherId)
+    if (key === null) return []
+    const rows = await this.db.mission.findMany({
+      where: { OR: [{ teacherId: key, isTest }, { scope: 'global' }] },
+      orderBy: [{ missionDate: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
+    })
+    return rows.map(toMission)
+  }
+
+  /** Missions the teacher created on one Malaysia creation day (`created_at`, MYT), Global rows never counted. */
+  async countCreatedOnDay(teacherId: string, day: string, isTest: boolean): Promise<number> {
+    const key = idOf(teacherId)
+    if (key === null) return 0
+    const start = new Date(`${day}T00:00:00+08:00`)
+    const end = new Date(start.getTime() + 24 * 60 * 60 * 1000)
+    return this.db.mission.count({ where: { teacherId: key, scope: 'teacher', isTest, createdAt: { gte: start, lt: end } } })
+  }
+
+  /**
+   * Creates a Misi Harian and its recipient snapshot in ONE transaction (D-T07-3): the teacher's active pupils of the chosen
+   * class, or of all the teacher's active classes. The daily cap is re-checked inside the transaction, under an advisory lock per
+   * (teacher, creation day), so two parallel creates cannot both take the last slot. `classroom_id` stays null for "all classes".
+   */
+  async createWithItems(input: NewTeacherMission): Promise<CreateMissionOutcome> {
+    const teacher = idFromString(input.teacherId)
+    return this.prisma.transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`mission-cap:${input.teacherId}:${input.creationDay}`}, 0))`
+      if ((await this.countCreatedOnDay(input.teacherId, input.creationDay, input.isTest)) >= input.cap) return { status: 'capReached' as const }
+      const classroom = input.classroomId === null ? null : idFromString(input.classroomId)
+      const classFilter = classroom === null ? Prisma.empty : Prisma.sql`AND c.id = ${classroom}`
+      const pupils = await tx.$queryRaw<{ student_id: bigint }[]>`
+        SELECT DISTINCT e.student_id
+          FROM enrolments e
+          JOIN classrooms c ON c.id = e.classroom_id
+          JOIN users u ON u.id = e.student_id
+         WHERE c.teacher_id = ${teacher} AND c.kind = 'classroom' AND c.is_active ${classFilter}
+           AND e.status = 'active' AND e.is_test = ${input.isTest} AND u.is_active
+           AND ${VISIBLE_USER_SQL}
+         ORDER BY e.student_id`
+      const row = await tx.mission.create({
+        data: {
+          teacherId: teacher,
+          classroomId: classroom,
+          title: input.title,
+          description: input.description,
+          missionType: 'harian',
+          scope: 'teacher',
+          missionDate: new Date(`${input.date}T00:00:00.000Z`),
+          subjectId: idFromString(input.subjectId),
+          questionCount: input.targetQuestions,
+          rewardCoins: input.rewardCoins,
+          isTest: input.isTest,
+          createdAt: input.now,
+          updatedAt: input.now,
+        },
+      })
+      if (pupils.length > 0) {
+        await tx.missionItem.createMany({
+          data: pupils.map((p) => ({ missionId: row.id, studentId: p.student_id, createdAt: input.now })),
+        })
+      }
+      return { status: 'created' as const, mission: toMission(row), recipients: pupils.length }
+    })
+  }
+
+  /**
+   * Distinct pupils of the teacher's active classes with a COMPLETED practice session linked to the mission, per mission id
+   * (every asked id present, 0 when none).
+   */
+  async completedCounts(missionIds: readonly string[], teacherId: string, isTest: boolean): Promise<Map<string, number>> {
+    const out = new Map<string, number>(missionIds.map((id) => [id, 0]))
+    const keys = missionIds.flatMap((id) => (isIdString(id) ? [idFromString(id)] : []))
+    const teacher = idOf(teacherId)
+    if (keys.length === 0 || teacher === null) return out
+    const rows = await this.db.$queryRaw<{ mission_id: bigint; n: number }[]>`
+      SELECT s.mission_id, COUNT(DISTINCT s.user_id)::int AS n
+        FROM practice_sessions s
+       WHERE s.mission_id = ANY(${keys}::bigint[]) AND s.status = 'completed' AND s.is_test = ${isTest}
+         AND EXISTS (
+           SELECT 1 FROM enrolments e JOIN classrooms c ON c.id = e.classroom_id
+            WHERE e.student_id = s.user_id AND e.status = 'active' AND e.is_test = ${isTest}
+              AND c.teacher_id = ${teacher} AND c.kind = 'classroom' AND c.is_active)
+       GROUP BY s.mission_id`
+    for (const r of rows) out.set(idToString(r.mission_id), r.n)
+    return out
+  }
+
+  async findById(id: string): Promise<MissionRecord | null> {
+    const key = idOf(id)
+    if (key === null) return null
+    const row = await this.db.mission.findUnique({ where: { id: key } })
+    return row ? toMission(row) : null
+  }
+
+  /** Deletes a mission the teacher owns (never a Global one); recipient rows go with it (cascade). False when nothing matched. */
+  async deleteOwn(id: string, teacherId: string): Promise<boolean> {
+    const key = idOf(id)
+    const teacher = idOf(teacherId)
+    if (key === null || teacher === null) return false
+    const res = await this.db.mission.deleteMany({ where: { id: key, teacherId: teacher, scope: 'teacher' } })
+    return res.count > 0
   }
 
   // --- remedial tests ---------------------------------------------------------------------------

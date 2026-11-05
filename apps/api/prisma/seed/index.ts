@@ -28,6 +28,7 @@ import { questionsSeed } from './questions'
 import { questionPoolSeed } from './questions/pool'
 import { bijakSittingsSeed } from './poc/bijak-sittings'
 import { classesSeed } from './poc/classes'
+import { missionsSeed } from './missions'
 import { marketplaceSeed } from './marketplace'
 import { assertSeedAllowed, countsAsProduction } from './guard'
 import { walletSeed } from './wallet'
@@ -86,7 +87,7 @@ export interface SeedModule {
  * ALLOW_DEMO_SEED.
  * ORDER NOTE: `exam-retire-poc` (R1-B07) withdraws the seeded PoC papers once every seed that reads them has run (it sits before `gamification`); `core-wallet-tiers` sits right after `core-school-packages`, BEFORE `wallet` and `gamification` (the modules that read tiers); `questions-pool` sits BEFORE `spm-subject-configs` and `spm` (the SPM seed reads the SPM pool; test/seed/question-pool.spec.ts); the marketplace seeds sit BEFORE `gamification`; `gamification` then `poc-profile` stay at the END (test/gamification/seed.spec.ts, test/seed/poc.spec.ts).
  */
-export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, walletTiersSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, examLaunchBlueprintsSeed, e2eSeed, classesSeed, bijakSittingsSeed, battleSeed, gamesSeed, cikguSeed, pkskSeed, performanceSeed, questionPoolSeed, spmSubjectConfigsSeed, spmSeed, practiceSeed, marketplaceCategoriesSeed, marketplaceSeed, examRetirePocSeed, gamificationSeed, pocProfileSeed]
+export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, walletTiersSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, examLaunchBlueprintsSeed, e2eSeed, classesSeed, missionsSeed, bijakSittingsSeed, battleSeed, gamesSeed, cikguSeed, pkskSeed, performanceSeed, questionPoolSeed, spmSubjectConfigsSeed, spmSeed, practiceSeed, marketplaceCategoriesSeed, marketplaceSeed, examRetirePocSeed, gamificationSeed, pocProfileSeed]
 
 export interface RunSeedsOptions {
   /** Environment read by the demo guard (default `process.env`). */
