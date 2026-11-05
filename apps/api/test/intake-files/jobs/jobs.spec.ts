@@ -616,8 +616,10 @@ describe('claim fairness and per-claim tokens', () => {
     const svc = make({ JOBS_CONCURRENCY: '4' })
     const gate = deferred()
     const started: string[] = []
+    const threeStarted = deferred()
     svc.register('t.fair', async (job) => {
       started.push(job.entityId ?? '')
+      if (started.length === 3) threeStarted.resolve()
       await gate.promise
     })
     await svc.enqueue({ type: 't.fair', idempotencyKey: key(), entityType: 'file', entityId: 'A' })
@@ -625,7 +627,20 @@ describe('claim fairness and per-claim tokens', () => {
     await svc.enqueue({ type: 't.fair', idempotencyKey: key(), entityType: 'file', entityId: 'B' })
     await svc.enqueue({ type: 't.fair', idempotencyKey: key() }) // no entity: never held back
     const first = svc.runOnce(4)
-    await waitFor(() => started.length >= 3) // handlers start only after all four claim statements finish; a fixed sleep flakes under load
+    // Handlers start only after all four claim statements finish. Wait on the handlers' own signal (no polling
+    // budget to run out under runner load) and fail with the real cause if the run settles before 3 started.
+    const seen = () => JSON.stringify(started)
+    let timer: ReturnType<typeof setTimeout> | undefined
+    await Promise.race([
+      threeStarted.promise,
+      first.then(() => {
+        throw new Error(`runOnce settled before 3 handlers started (started: ${seen()})`)
+      }),
+      new Promise<never>((_, reject) => {
+        const fail = () => reject(new Error(`3 handlers did not start in 25 s (started: ${seen()})`))
+        timer = setTimeout(fail, 25_000)
+      }),
+    ]).finally(() => clearTimeout(timer))
     await sleep(100) // grace: a wrong extra start would show up here
     expect(started.sort()).toEqual(['', 'A', 'B'])
     expect(await db.query("SELECT 1 FROM jobs WHERE state = 'queued'")).toHaveLength(1)
@@ -645,12 +660,15 @@ describe('claim fairness and per-claim tokens', () => {
     })
     const { id } = await svc.enqueue({ type: 't.token', idempotencyKey: key(), maxAttempts: 5 })
     const oldRun = svc.runOnce()
-    await sleep(100)
+    await waitFor(async () => (await row(id)).locked_by != null, 20_000) // claimed by the first run
     const firstToken = (await row(id)).locked_by
     await db.query("UPDATE jobs SET locked_at = now() - interval '1 hour' WHERE id = $1", [id])
     expect(await svc.sweepStuck()).toBe(1)
     const newRun = svc.runOnce()
-    await sleep(100)
+    await waitFor(async () => {
+      const token = (await row(id)).locked_by
+      return token != null && token !== firstToken
+    }, 20_000) // re-claimed by the second run
     const secondToken = (await row(id)).locked_by
     expect(secondToken).not.toBe(firstToken)
     expect(secondToken?.split(':')[0]).toBe(firstToken?.split(':')[0]) // same process, new token
