@@ -421,7 +421,7 @@ export class ServabilityReadsService {
         {
           id: key(r),
           title: metaLine(subject.name, r.level_name),
-          meta: metaLine(`#${subject.id}`, `${String(n)} soalan`),
+          meta: metaLine(`#${subject.id}`, `${countText(n)} soalan`),
           status: switchEnabled ? 'open' : 'closed',
           attention: r.n > n ? [latihTubiCellAttentionMs(r.n - n)] : [],
           actions: [],

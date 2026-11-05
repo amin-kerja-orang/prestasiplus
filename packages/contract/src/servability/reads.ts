@@ -220,7 +220,7 @@ export const trackingSetAttentionMs = (filled: number, size: number, available: 
   `Hanya ${String(filled)} daripada ${String(size)} soalan — ${String(available)} tersedia untuk diisi`
 
 /** The Perhatian text of a Latih Tubi cell. */
-export const latihTubiCellAttentionMs = (n: number): string => `${String(n)} tidak boleh ditanda`
+export const latihTubiCellAttentionMs = (n: number): string => `${n.toLocaleString('en-US')} tidak boleh ditanda`
 
 /**
  * Lane "Latih Tubi" (FR-ADM-Q02.4): one row per subject x Tingkatan. It carries counts, not a question, so `actions` is always empty.
