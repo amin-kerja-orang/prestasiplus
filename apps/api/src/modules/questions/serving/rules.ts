@@ -34,7 +34,6 @@ import { markableLeaf, leavesOf, optionImageIds, resolveStimuli } from '../../bi
 import { BRIDGE_REFUSAL_REASONS_MS } from '../../bijak/question-bridge/refusals'
 import { mapBe09Question, UnsupportedQuestionError, type BridgeMedia } from '../../bijak/question-bridge/be09-mapping'
 import { servableMcq } from '../../practice/question-bridge/be09-practice-mapping'
-import { OFFERED_LEVEL_CODES } from '../../practice/rules'
 import { SERVABLE_STATUS } from '../learner-visibility'
 import type { QuestionRecord } from '../types'
 import type { ServabilityFacts } from './types'
@@ -127,10 +126,11 @@ function keyReasons(live: QuestionRecord, activity: ServabilityActivity): Servab
   return [...modes].map((code) => reason(code, activity))
 }
 
-/** JS twin of `SPM_SERVABLE_SQL` beyond the learner level: offered level (T4, T5), active subject linked to that level. */
+/** JS twin of `SPM_SERVABLE_SQL` beyond the learner level: offered level (T1 to T5 are all learner levels; the active/non-primary checks are in `commonReasons`), active subject linked to that level. */
 function spmReasons(f: ServabilityFacts, activity: ServabilityActivity): ServabilityReason[] {
   const out: ServabilityReason[] = []
-  if (f.level === null || !OFFERED_LEVEL_CODES.includes(f.level.code)) out.push(reason('level_not_offered', activity))
+  // S4-T06: every active non-primary level is offered; only a question with NO level is refused here (the SQL twin's EXISTS on education_levels).
+  if (f.level === null) out.push(reason('level_not_offered', activity))
   if (f.subject === null || !f.subject.isActive || !f.subject.linkedToLevel) out.push(reason('subject_unavailable', activity))
   return out
 }
