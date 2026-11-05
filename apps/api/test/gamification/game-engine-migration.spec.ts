@@ -20,7 +20,7 @@ const REWARD_KEYS = ['flat_quiz_reward', 'games_award_syiling', 'reward_budget_s
 const OTHER_OLD_KEYS = ['coins_per_question', 'cash_rate_coins', 'cash_rate_sen', 'min_cash_withdrawal', 'cash_withdrawal_enabled', 'reward_budget_sen_month']
 
 /** 48 section 2: key, default, BM label. */
-const ROWS: readonly (readonly [string, number, string])[] = [
+const GAME_ROWS: readonly (readonly [string, number, string])[] = [
   ['xp_per_correct', 10, 'Mata (XP) setiap jawapan betul'],
   ['xp_level_size', 1000, 'Saiz tahap (mata)'],
   ['games_daily_syiling_cap', 100, 'Had syiling permainan sehari'],
@@ -43,7 +43,6 @@ const ROWS: readonly (readonly [string, number, string])[] = [
   ['games_room_bots_enabled', 1, 'Robot dalam bilik permainan'],
   ['games_absent_seconds', 30, 'Saat sebelum pemain dianggap tiada'],
   ['room_waiting_minutes', 15, 'Tempoh bilik menunggu (minit)'],
-  ['boardgame_quiz_tiles', 35, 'Bilangan Petak Soalan'],
   ['challenge_accuracy_min_questions', 5, 'Soalan minimum untuk cabaran ketepatan'],
   ['daily_login_syiling', 2, 'Syiling log masuk harian'],
   ['spm_first_session_syiling', 7, 'Syiling sesi SPM pertama sehari'],
@@ -57,6 +56,28 @@ const ROWS: readonly (readonly [string, number, string])[] = [
   ['sekolah_bersaing_min_pupils', 1, 'Pelajar minimum setiap sekolah'],
   ['sekolah_bersaing_top_n', 30, 'Bilangan sekolah dipaparkan'],
 ]
+
+/** The games on the hub with their hub names (ruling 2 on #499). */
+const HUB_GAMES: readonly (readonly [string, string])[] = [
+  ['papan-bijak', 'Papan Bijak'],
+  ['battle', 'Battle Arena'],
+  ['perang-fakta', 'Perang Fakta'],
+  ['benteng-ilmu', 'Benteng Ilmu'],
+  ['perlumbaan-matematik', 'Perlumbaan Matematik'],
+  ['kuiz-relay', 'Kuiz Relay'],
+  ['teka-silang-kata', 'Teka Silang Kata'],
+  ['betul-salah', 'Betul atau Salah'],
+  ['cabaran-kilat', 'Cabaran Kilat'],
+  ['tembak-jawapan', 'Tembak Jawapan'],
+  ['susun-jawapan', 'Susun Jawapan'],
+  ['sambung-kata', 'Sambung Kata'],
+  ['kad-memori', 'Kad Memori'],
+  ['jutawan', 'Jutawan Ilmu'],
+  ['roda-nasib', 'Roda Nasib'],
+]
+
+/** Every row the migration inserts. */
+const ROWS: readonly (readonly [string, number, string])[] = [...GAME_ROWS, ...HUB_GAMES.map(([key, name]): [string, number, string] => [`game_enabled_${key}`, 1, name])]
 
 describe('migration 0224 game engine', () => {
   let db: TestDatabase
@@ -90,14 +111,13 @@ describe('migration 0224 game engine', () => {
     await reverse()
     await db.query('delete from battles')
     await db.query('delete from gamification_settings')
-    await db.query(`update game_settings set boardgame_quiz_tiles = 35`)
     await apply()
   })
 
   describe('DM-38 key rows', () => {
     it('has one row with the label and default of 48 section 2 for each key, and nothing else', async () => {
       const rows = await settings()
-      expect(rows.size).toBe(35)
+      expect(rows.size).toBe(49)
       for (const [key, value, label] of ROWS) expect(rows.get(key), key).toEqual({ value, label })
     })
 
@@ -117,7 +137,7 @@ describe('migration 0224 game engine', () => {
       for (const key of [...REWARD_KEYS, ...OTHER_OLD_KEYS, ...ROWS.map(([k]) => k)]) {
         await db.query(`insert into gamification_settings (key, value, label) values ($1, 1, 'Label')`, [key])
       }
-      expect((await settings()).size).toBe(45)
+      expect((await settings()).size).toBe(59)
     })
 
     it('the check refuses an unknown key', async () => {
@@ -131,7 +151,7 @@ describe('migration 0224 game engine', () => {
       const rows = await settings()
       expect(rows.get('flat_quiz_reward')).toEqual({ value: 3, label: 'Lama' })
       expect(rows.get('cash_rate_sen')).toEqual({ value: 8, label: 'Sen' })
-      expect(rows.size).toBe(37)
+      expect(rows.size).toBe(51)
     })
 
     it('a row that already exists is not overwritten', async () => {
@@ -142,16 +162,19 @@ describe('migration 0224 game engine', () => {
       expect((await settings()).get('xp_per_correct')).toEqual({ value: 50, label: 'Disimpan' })
     })
 
-    it('boardgame_quiz_tiles starts from the saved game_settings value, else its default', async () => {
-      await reverse()
-      await db.query(`update game_settings set boardgame_quiz_tiles = 20`)
-      await apply()
-      expect((await settings()).get('boardgame_quiz_tiles')).toEqual({ value: 20, label: 'Bilangan Petak Soalan' })
-      await reverse()
-      await db.query('delete from game_settings')
-      await apply()
-      expect((await settings()).get('boardgame_quiz_tiles')?.value).toBe(35)
-      await db.query(`insert into game_settings (id, boardgame_quiz_tiles) values (1, 35)`)
+    it('boardgame_quiz_tiles is not a key: the check refuses it and it stays in game_settings (ruling 5 on #499)', async () => {
+      expect((await settings()).has('boardgame_quiz_tiles')).toBe(false)
+      expect(await rejects(`insert into gamification_settings (key, value, label) values ('boardgame_quiz_tiles', 35, 'Label')`)).toMatch(/ck_gamification_settings_key/)
+      const [row] = await db.query<{ boardgame_quiz_tiles: number }>(`select boardgame_quiz_tiles from game_settings where id = 1`)
+      expect(row?.boardgame_quiz_tiles).toBe(35)
+    })
+
+    it('every hub game has game_enabled_<key> on, with its hub name; tournament has none (D-G, ruling 2 on #499)', async () => {
+      const rows = await settings()
+      expect(HUB_GAMES).toHaveLength(15)
+      for (const [key, name] of HUB_GAMES) expect(rows.get(`game_enabled_${key}`), key).toEqual({ value: 1, label: name })
+      expect(rows.has('game_enabled_tournament')).toBe(false)
+      expect(await rejects(`insert into gamification_settings (key, value, label) values ('game_enabled_tournament', 1, 'Label')`)).toMatch(/ck_gamification_settings_key/)
     })
   })
 
