@@ -60,6 +60,44 @@ function toWire(value: unknown, key = '', parent = ''): unknown {
 const load = (name: string): unknown =>
   toWire(JSON.parse(readFileSync(resolve(DIR, `${name}.json`), 'utf8')))
 
+/** Fields added by a later card than the capture (the capture is never hand-edited): S10-T01 added `trend` to the pupil view. */
+const AFTER_CAPTURE: Record<string, Record<string, unknown>> = {
+  'performance-student': {
+    trend: Array.from({ length: 12 }, (_, i) => ({
+      week: new Date(Date.parse('2026-07-13T00:00:00Z') + i * 7 * 86_400_000).toISOString().slice(0, 10),
+      label: `Mgg ${String(i + 1)}`,
+      accuracy: null,
+      sessions: 0,
+    })),
+  },
+}
+
+/** Fields added by S10-T02 inside nested objects (the capture is never hand-edited): the same shapes the API now answers. */
+const S10_T02: Record<string, (v: unknown) => unknown> = {
+  headcounts: (row) => ({ ...(row as object), teacherName: 'Guru Contoh', entryStatus: 'active', statusReason: null }),
+  'headcounts-dashboard': (v) => ({
+    ...(v as { configs: object[] }),
+    configs: (v as { configs: object[] }).configs.map((c) => ({ ...c, mode: 'auto', teacherName: 'Guru Contoh' })),
+  }),
+  'headcount-detail': (v) => {
+    const d = v as { config: object; chips: object; rows: object[] }
+    return {
+      ...d,
+      config: { ...d.config, mode: 'auto', defaultTov: null, defaultEtr: null },
+      chips: { ...d.chips, onTrackPct: 0 },
+      rows: d.rows.map((r) => ({ ...r, rs: null, rsRecordedAt: null, status: 'none', statusReason: null, entryStatus: 'active', projection: null })),
+    }
+  },
+  'headcount-student': (v) => {
+    const d = v as { sections: object[] }
+    return {
+      ...d,
+      sections: d.sections.map((s) => ({ ...s, mode: 'auto', statusReason: null, entryStatus: 'active', jurang: null, unjuran: null, keyakinan: null })),
+    }
+  },
+}
+const afterCapture = (name: string, v: unknown): unknown => S10_T02[name]?.(v) ?? v
+
 const CASES: [string, z.ZodType][] = [
   ['analytics-me', PerformanceAnalyticsSchema],
   ['analytics-classes', PerformanceClassAnalyticsSchema],
@@ -90,7 +128,7 @@ const LISTS: [string, z.ZodType][] = [
 
 describe('BE-19 contract parses payloads captured from the m08 mock', () => {
   it.each(CASES)('%s', (name, schema) => {
-    const r = schema.safeParse(load(name))
+    const r = schema.safeParse({ ...(afterCapture(name, load(name)) as object), ...AFTER_CAPTURE[name] })
     expect(r.success ? 'ok' : JSON.stringify(r.error.issues.slice(0, 5))).toBe('ok')
   })
 
@@ -98,9 +136,25 @@ describe('BE-19 contract parses payloads captured from the m08 mock', () => {
     const rows = load(name) as unknown[]
     expect(rows.length).toBeGreaterThan(0)
     for (const row of rows) {
-      const r = schema.safeParse(row)
+      const r = schema.safeParse(afterCapture(name, row))
       expect(r.success ? 'ok' : JSON.stringify(r.error.issues.slice(0, 5))).toBe('ok')
     }
+  })
+
+  it('Prestasi 360: trend is exactly 12 weeks with a DateOnly week; an empty week has null accuracy; heroAccuracy and stats.accuracy accept null (nothing answered)', () => {
+    const base = { ...(load('performance-student') as { stats: object }), ...AFTER_CAPTURE['performance-student'] } as {
+      stats: object
+      trend: unknown[]
+      heroAccuracy: unknown
+    }
+    expect(PerformanceStudentSchema.safeParse(base).success).toBe(true)
+    expect(PerformanceStudentSchema.safeParse({ ...base, heroAccuracy: null }).success).toBe(true)
+    expect(PerformanceStudentSchema.safeParse({ ...base, stats: { ...base.stats, accuracy: null } }).success).toBe(true)
+    expect(PerformanceStudentSchema.safeParse({ ...base, heroAccuracy: 'x' }).success).toBe(false)
+    expect(PerformanceStudentSchema.safeParse({ ...base, trend: base.trend.slice(1) }).success).toBe(false)
+    expect(PerformanceStudentSchema.safeParse({ ...base, trend: [...base.trend, base.trend[0]] }).success).toBe(false)
+    const bad = base.trend.map((w, i) => (i === 0 ? { ...(w as object), week: '2026/07/13' } : w))
+    expect(PerformanceStudentSchema.safeParse({ ...base, trend: bad }).success).toBe(false)
   })
 
   it('a drifted shape is rejected', () => {

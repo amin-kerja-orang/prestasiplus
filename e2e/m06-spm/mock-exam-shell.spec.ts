@@ -9,6 +9,7 @@ import type { Page } from '@playwright/test'
 import { ALESA_ON } from '../support/alesa'
 import { expect, test } from './fixtures'
 import { open } from './mock-exam-nav'
+import { shellTitle } from './support'
 import { expectNoHorizontalScroll, expectTabTitle, moduleTag, provisional } from '../support'
 
 const PELAJAR = 'pelajar@demo.test'
@@ -21,7 +22,7 @@ test.use({ mockInit: { latency: 0 } })
 async function smallText(page: Page): Promise<string[]> {
   return page.evaluate(() => {
     const main = document.querySelector(
-      '[data-testid=shell-admin-main], [data-testid=shell-user-main]',
+      '[data-testid=pentadbiran-main], [data-testid=pembelajaran-main]',
     )
     if (!main) return ['no main']
     const out: string[] = []
@@ -46,20 +47,37 @@ test.describe('M06 S11-S13 shell and layout', { tag: [moduleTag(6)] }, () => {
     loginAs,
   }) => {
     await loginAs(ADMIN)
-    for (const [path, title, tab] of [
-      ['/spm-mock', 'SPM Mock Exam', 'SPM Mock Exam'],
-      ['/spm-mock/16/result', 'Result Mock SPM — Bahasa Melayu', 'Result Mock SPM — Bahasa Melayu'],
+    for (const [path, title, tab, lead] of [
+      [
+        '/spm-mock',
+        'SPM Mock Exam',
+        'SPM Mock Exam | PRESTASIPLUS',
+        'Mock SPM penuh dengan timer + auto-grade + weakness analysis. Boleh attempt setiap bulan.',
+      ],
+      [
+        '/spm-mock/16/result',
+        'Result Mock SPM — Bahasa Melayu',
+        'Result Mock SPM — Bahasa Melayu | PRESTASIPLUS',
+        null,
+      ],
       ...(ALESA_ON
         ? ([
-            ['/pusat-ai/spm', 'SPM Walkthrough — Cikgu Alesa', 'SPM Walkthrough — Cikgu Alesa'],
+            [
+              '/pusat-ai/spm',
+              'SPM Walkthrough — Cikgu Alesa',
+              'SPM Walkthrough — Cikgu Alesa | PRESTASIPLUS',
+              'Snap soalan SPM, AI walk-through step-by-step dengan mark scheme + sebutan buku teks. Faham bukan hafal.',
+            ],
           ] as const)
         : []),
     ] as const) {
       await open(page, path)
       await expectTabTitle(page, tab)
-      await expect(tid(page, 'shell-admin-title')).toHaveText(title)
-      await expect(page.getByTestId('shell-admin-subtitle')).toHaveCount(0)
-      await expect(page.getByTestId('shell-user-header')).toHaveCount(0)
+      await expect(shellTitle(page)).toHaveText(title)
+      // The Portal Pentadbiran prints a page's own lead under the title, and nothing else.
+      if (lead) await expect(page.getByTestId('pentadbiran-subtitle')).toHaveText(lead)
+      else await expect(page.getByTestId('pentadbiran-subtitle')).toHaveCount(0)
+      await expect(page.getByTestId('pembelajaran-header')).toHaveCount(0)
     }
   })
 
@@ -69,8 +87,8 @@ test.describe('M06 S11-S13 shell and layout', { tag: [moduleTag(6)] }, () => {
   }) => {
     await loginAs(PELAJAR)
     await open(page, '/spm-mock')
-    await expect(tid(page, 'shell-user-title')).toHaveText('SPM Mock Exam')
-    await expect(page.getByTestId('shell-admin-header')).toHaveCount(0)
+    await expect(shellTitle(page)).toHaveText('SPM Mock Exam')
+    await expect(page.getByTestId('pentadbiran-header')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
   })
 

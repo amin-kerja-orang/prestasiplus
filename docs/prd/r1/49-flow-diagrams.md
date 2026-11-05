@@ -915,7 +915,7 @@ Resolved points (how the docs settle them):
 - Actors: admin
 - Trigger: Admin opens Kontrak from Set Builder landing (button Kontrak Simulasi) or paper review (Sunting kontrak); no sidebar entry
 - Cards: S3-T01, S4-T02, S3-T08
-- Acceptance criteria: AC-ADM-Q16.1, AC-ADM-Q16.2, AC-ADM-Q16.3, AC-ADM-Q16.4, AC-QA-25, AC-QA-40, AC-QA-42
+- Acceptance criteria: AC-ADM-Q16.1, AC-ADM-Q16.2, AC-ADM-Q16.3, AC-ADM-Q16.4, AC-QA-25, AC-QA-42
 
 ```mermaid
 flowchart TD
@@ -931,8 +931,7 @@ flowchart TD
   S4["4. Pratonton Kolam<br/><i>admin</i>"]:::ex
   S5["5. Pengesahan: add evidence<br/>( =2 incl. skema)<br/><i>admin</i>"]:::ex
   S6["6. Sahkan (status Disahkan)<br/><i>admin</i>"]:::ch
-  S7["7. Read Jadual JSU grid<br/><i>admin</i>"]:::bu
-  S8["8. New version for<br/>structural change<br/><i>admin</i>"]:::ex
+  S8["7. New version for<br/>structural change<br/><i>admin</i>"]:::ex
   END(["Tamat"]):::en
   START --> S1
   S1 --> S2
@@ -955,9 +954,8 @@ flowchart TD
   S5 --> S6
   D6_0{"Verify conditions met?"}:::dc
   S6 --> D6_0
-  D6_0 -->|"Yes"| S7
+  D6_0 -->|"Yes"| S8
   D6_0 -->|"Evidence 2 or no skema"| S5
-  S7 --> S8
   D8_0{"Edit a Disahkan contract<br/>in place?"}:::dc
   S8 --> D8_0
   D8_0 -->|"Cipta versi"| S8
@@ -985,8 +983,7 @@ stateDiagram-v2
 | 4 | Exists in V3 | admin | Pratonton Kolam | /admin/spm/kontrak/kolam | API-BIJAK-09 GET .../pool | questions (read) | Per unit and KBAT quota whether pool can fill; units by code and name; Lihat soalan keeps filters. Legacy untagged MCQs excluded (D80). |
 | 5 | Exists in V3 | admin | Pengesahan: add evidence (>=2 incl. skema) | Pengesahan tab (VerifyPanel) | API-BIJAK-09 GET/POST .../evidence, GET .../verification | blueprint evidence | Jenis bukti Skema / Kertas rasmi / Spesifikasi LPM, Rujukan, Fail; rows Syarat Disahkan pass/fail; count Belum lengkap untuk Disahkan (n). |
 | 6 | Change | admin | Sahkan (status Disahkan) | GeneralTab status control / VerifyPanel | API-BIJAK-09 POST .../verify | blueprints.status Disahkan + verifier | S3-T01: control now offers Disahkan (was Draf/Spec only) and runs verify with conditions shown inline. Only Admin Pusat verifies. Terbit under Disahkan contract needs no exception box. |
-| 7 | Build | admin | Read Jadual JSU grid | tab Jadual JSU (?paparan=jsu) | API-Q-39 GET /api/admin/blueprints/:subject/:kertas/jsu | - | Grid Bahagian x Tajuk DSKP x TP x KBAT x Markah; screen only, NO CSV/PDF export in R1. |
-| 8 | Exists in V3 | admin | New version for structural change | Kontrak editor | API-BIJAK-09 POST .../versions | blueprints (new Spec version) | Disahkan is immutable in place; pupils keep v1 until new version verified; Spec contract never shown to pupils. |
+| 7 | Exists in V3 | admin | New version for structural change | Kontrak editor | API-BIJAK-09 POST .../versions | blueprints (new Spec version) | Disahkan is immutable in place; pupils keep v1 until new version verified; Spec contract never shown to pupils. |
 
 Decisions:
 
@@ -1019,7 +1016,7 @@ Resolved points (how the docs settle them):
 - Actors: admin
 - Trigger: Admin opens Set Builder (/admin/studio/sets) to compose a Simulasi paper (generate or manual)
 - Cards: S3-T02, S3-T01, S1-T06, S1-T10, S3-T08, S2-T03
-- Acceptance criteria: AC-ADM-Q13.1, AC-ADM-Q13.2, AC-ADM-Q14.1, AC-ADM-Q14.2, AC-ADM-Q15.1, AC-ADM-Q15.2, AC-ADM-Q15.3, AC-ADM-QE7.1, AC-ADM-QE7.2, AC-QA-40, AC-QA-41, AC-ADM-R6, AC-ADM-R7, AC-CHAIN-2
+- Acceptance criteria: AC-ADM-Q13.1, AC-ADM-Q13.2, AC-ADM-Q14.1, AC-ADM-Q14.2, AC-ADM-Q15.1, AC-ADM-Q15.2, AC-ADM-Q15.3, AC-ADM-QE7.1, AC-ADM-QE7.2, AC-QA-41, AC-ADM-R6, AC-ADM-R7, AC-CHAIN-2
 
 ```mermaid
 flowchart TD
@@ -1092,7 +1089,7 @@ stateDiagram-v2
 | 3 | Exists in V3 | admin | Or Mula kosong | landing | API-BIJAK-10 POST /api/admin/papers | papers + 3 empty sections (rule Jawab Semua) | Tajuk set kosong + Subjek (all subjects in dropdown). |
 | 4 | Change | admin | Add from bank, group as one unit | /admin/studio/sets/:paper/builder | API-BIJAK-10 GET /sections/:sid/pool; POST placements | paper_placements (question_id FK NOT VALID -> VALIDATE, migration 0160) | Bank shows only Diluluskan + complete DSKP questions; a group = ONE card Rajah 3 · 4 soalan; adding one member adds whole group in order. Filters Tahun, Negeri, Cari teks soalan…, Bahagian destinasi; pager not 50-row stop. Error copy: Soalan gagal ditambah — cuba lagi.; Susunan gagal disimpan — muat semula halaman dan cuba lagi.; Soalan gagal dibuang — cuba lagi.; Bahagian gagal dikemas kini.; Ralat semasa mencari bank soalan. |
 | 5 | Change | admin | Set section rule and order | builder section blocks | API-BIJAK-10 PUT sections | paper_sections (rule semua/pilih N, rule_n) | Jawab Semua / Pilih N (choice unit = numbered question, a group is ONE unit; equal marks in section; Wajib dijawab read-only from contract, never with Pilih N); chips Soalan x / n and Markah x / budget and budget-check panel ported from old editor; Tulis soalan baharu per Bahagian; Naik/Turun. |
-| 6 | Change | admin | Open Semak Kertas Simulasi | /admin/spm/kertas/:id (PaperEditorPage becomes review) | API-BIJAK-10 GET /api/admin/papers/:id; API-Q-39 GET /api/admin/papers/:id/jsu | papers | Metadata (Tajuk, Tempoh, Kod kertas, Arahan kulit), Bahan rujukan, Isu import ({n}) card, section blocks, contract block, Jadual JSU panel (each cell check/cross), chips Disematkan and Tidak disajikan, publication block (Belum boleh diterbitkan + {n} masalah). Section editing replaced by button Sunting di Set Builder. |
+| 6 | Change | admin | Open Semak Kertas Simulasi | /admin/spm/kertas/:id (PaperEditorPage becomes review) | API-BIJAK-10 GET /api/admin/papers/:id | papers | Metadata (Tajuk, Tempoh, Kod kertas, Arahan kulit), Bahan rujukan, Isu import ({n}) card, section blocks, contract block, chips Disematkan and Tidak disajikan, publication block (Belum boleh diterbitkan + {n} masalah). Section editing replaced by button Sunting di Set Builder. |
 | 7 | Exists in V3 | admin | Fix blockers (all listed by name) | Semak Kertas Simulasi | paper-check / blockers | - | Terbit disabled with title Betulkan {n} masalah dahulu. See decisions. |
 | 8 | Change | admin | Terbit (confirm) | Semak Kertas Simulasi | API-BIJAK-10 POST publish | papers.status Terbit; pins snapshot per placement (question_version ids AND stimulus row ids) | Confirm Terbitkan kertas ini? Ia akan terus boleh diakses pelajar di Simulasi. Flash: Kertas '{title}' telah DITERBITKAN — kini boleh diakses pelajar di Simulasi. S3-T08 pipeline for UAT. Admin Sekolah and Guru get 403. |
 | 9 | Exists in V3 | admin | Exception Terbit (no Disahkan contract) | Semak Kertas Simulasi (PublishOverride) | publish with override+reason | audit BIJAK_PAPER_PUBLISHED_OVERRIDE | Checkbox Terbitkan walaupun tidak memenuhi kontrak Simulasi + Sebab 5..500 + second Terbitkan; flash Diterbitkan dengan 1 pengecualian kontrak (direkodkan). Hidden when contract Disahkan. |
@@ -1194,7 +1191,7 @@ stateDiagram-v2
 | 4 | Build | system | Place accepted questions in print order | - | builder.service addPlacement | paper_placements (question_id from accepted item, number_label); groups whole and contiguous | Rejected member not placed; group with no accepted member not placed; split of accepted members = 422. Questions stay Draf at this point. |
 | 5 | Build | admin | See paper in Kertas Diimport | /admin/spm/soalan/ekstrak?tab=kertas-diimport | API-BIJAK-10 GET /api/admin/papers?imported=true | papers (questionCount, paperCode, sourceBatchId, importIssueCount, status) | Columns Kertas, Subjek, Bilangan Soalan, Status, link Semak & Terbit; empty: Tiada kertas diimport lagi.; batch with paper shows link instead of creating another. |
 | 6 | Exists in V3 | admin | Approve every placed question | Studio wizard / group screen | API-Q-06 / API-Q-31 | question_versions.status | Admin sets Bab, SP, TP, Kesukaran per question (A1/A6), Hantar, Terbitkan; group via Terbitkan kumpulan. Paper review lists Soalan {no}: belum diluluskan. until done. |
-| 7 | Change | admin | Semak & Terbit then Terbit | /admin/spm/kertas/:id | see B2 | papers.status | Preview as pupil, blueprint validation (Jadual JSU), Terbit only from preview. |
+| 7 | Change | admin | Semak & Terbit then Terbit | /admin/spm/kertas/:id | see B2 | papers.status | Preview as pupil, blueprint validation against the Kontrak (no Jadual JSU, removed from R1), Terbit only from preview. |
 
 Decisions:
 
@@ -1892,12 +1889,12 @@ flowchart TD
 
 | # | Status | Actor | Step | Screen | API | Data | Notes |
 |---|---|---|---|---|---|---|---|
-| 1 | Build | guru | Open Misi Harian list | /guru/misi-harian (MisiHarianPage) | API-GUR-11 GET /api/guru/missions | missions (scope teacher\|global, migration 0205) | Teacher side does not exist today (no route/controller/service); route removed from GURU_TOOLS out-of-scope list (delete-only S0 PR). /guru/misi-harian/cipta redirects to list with form open. List shows platform missions with a Global badge (15 observed seeded rows). |
+| 1 | Build | guru | Open Misi Harian list | /guru/misi-harian (MisiHarianPage) | API-GUR-11 GET /api/guru/missions | missions (migration 0205) | Teacher side does not exist today (no route/controller/service); route removed from GURU_TOOLS out-of-scope list (delete-only S0 PR). /guru/misi-harian/cipta redirects to list with form open. The list also READS the active S7 Cabaran Harian challenges as rows with a Global badge (no delete; "{n} pelajar selesai" = that teacher's pupils who completed the challenge today, via S7's contract); S6 has no global seed. |
 | 2 | Build | guru | Cipta Misi (form) | MisiHarianFormPage | API-GUR-11 POST /api/guru/missions | missions (mission_type 'harian', question_count 1..1000, reward_coins 0..100, description, date), mission_items (recipient snapshot) | Fields: Subjek (required, OPT-SUBJEK), date, targetQuestions, rewardCoins, class scope (one class or Semua kelas saya). Recipients = snapshot of pupils of the teacher's active classes at creation; later pupils do not get it. Success: Misi dicipta. |
-| 3 | Build | guru | Delete mission | list | API-GUR-11 DELETE /api/guru/missions/:id | missions | Confirm Padam misi ini? / Ganjaran yang sudah dibayar kekal. (Padam / Batal); global mission: 403 Misi global tidak boleh dipadam. |
-| 4 | Change | murid | See today's missions | Dashboard Misi Harian card / /misi-harian (V3 routes /misi-harian, /misi-harian/:id) | API-GUR-10 GET /api/missions/today | missions, mission_items | Valid on its date only (MYT); expired not listed; own classes + Global; payload gains rewardCoins and description. |
-| 5 | Change | murid | Start mission drill | /misi-harian/:id | API-PRAC-01 POST /api/practice/sessions {mode:'mission', missionId} | practice_sessions (mission_id) | Questions drawn (S6-T16): bank questions of mission Subjek + class Tingkatan plus the setting teacher's personal teacher_private questions of same Subjek/Tahap, equal weight, no replacement; Global mission = bank only. Text-only standalone questions. |
-| 6 | Exists in V3 | murid | Answer, Semak, Tamat | drill screen | API-PRAC-02, API-PRAC-03 | practice_answers mode mission | Per-answer Syiling = admin rate coinsPerCorrect() (constant 3 deleted by S5-T03). rewardCoins paid ONCE when progress reaches target (idempotent per pupil+mission); AC-GM-20.2: rate 1, target 5, rewardCoins 10 => 15 Syiling; 6th answer +1 only. Ledger Misi Harian: {title}; reached: Misi selesai! +{n} syiling. |
+| 3 | Build | guru | Delete mission | list | API-GUR-11 DELETE /api/guru/missions/:id | missions | Confirm Padam misi ini? / Ganjaran yang sudah dibayar kekal. (Padam / Batal); a Global row (id challenge-<id>) has no delete control and a direct delete answers 403 Misi global tidak boleh dipadam. |
+| 4 | Change | murid | See today's missions | Dashboard Misi Harian card / /misi-harian (V3 routes /misi-harian, /misi-harian/:id) | API-GUR-10 GET /api/missions/today | missions, mission_items | Valid on its date only (MYT); expired not listed; own classes only (platform challenges are S7-T04); payload gains rewardCoins and description. |
+| 5 | Change | murid | Start mission drill | /misi-harian/:id | API-PRAC-01 POST /api/practice/sessions {mode:'mission', missionId} | practice_sessions (mission_id) | Questions drawn (S6-T16): bank questions of mission Subjek + class Tingkatan plus the setting teacher's personal teacher_private questions of same Subjek/Tahap, equal weight, no replacement. Text-only standalone questions. |
+| 6 | Exists in V3 | murid | Answer, Semak, Tamat | drill screen | API-PRAC-02, API-PRAC-03 | practice_answers mode mission | Per-answer Syiling = admin rate coinsPerCorrect() (constant 3 deleted by S5-T03). rewardCoins paid ONCE when progress reaches target (idempotent per pupil+mission through mission_rewards, DM-88); AC-GM-20.2: rate 1, target 5, rewardCoins 10 => 15 Syiling; 6th answer +1 only. Ledger Misi Harian: {title}; reached: Misi selesai! +{n} syiling. |
 
 Decisions:
 

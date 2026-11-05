@@ -1,15 +1,31 @@
 <script setup lang="ts">
 /**
- * S6 `/prestasi/{userId}` "Prestasi 360 — Dashboard Individu" (M08-T2; FR-M08-37…44), from
- * `GET /api/performance/students/:userId`: an unknown id is the standard 404 page, a pupil the viewer may
- * not open (§9) the 403 page. Tab title "Prestasi 360 — {nama} — PRESTASIPLUS" once the name is known.
+ * S6 "Prestasi 360 — Dashboard Individu" (M08-T2; FR-M08-37…44) at two routes: `/prestasi/{userId}` (staff
+ * viewing a pupil, or a pupil on own id) and `/prestasi` (S10-T01: the pupil's own view, userId = the
+ * signed-in user). Data from `GET /api/performance/students/:userId`: an unknown or other pupil's id is the
+ * standard 404 page, a pupil the viewer may not open (§9) the 403 page. Tab title "Prestasi 360 — {nama} —
+ * PRESTASIPLUS" only when staff open a pupil by id; the own view keeps the route title "Prestasi Saya",
+ * printed as the h1 by the shell (no second h1 here).
  */
 import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { DsBackLink, DsEmptyState, DsLoadError, DsPage, DsPageHeader, DsPanel, DsSection, DsStatRow, DsStatTile } from '@/ds'
-import { isHttpMode } from '@/api/mode'
+import {
+  DsBackLink,
+  DsChart,
+  DsEmptyState,
+  DsLoadError,
+  DsPage,
+  DsPageHeader,
+  DsPanel,
+  DsSection,
+  DsStatRow,
+  DsStatTile,
+  DsText,
+} from '@/ds'
+import type { ChartSeries } from '@/ds'
 import { usePageMeta } from '@/composables/usePageMeta'
+import { useSessionStore } from '@/stores/session'
 
 import { fetchStudentPerformance } from '../api/performance'
 import ActivityHeatmap from '../components/prestasi360/ActivityHeatmap.vue'
@@ -19,7 +35,7 @@ import SuggestionsCard from '../components/prestasi360/SuggestionsCard.vue'
 import WeakTopicsCard from '../components/prestasi360/WeakTopicsCard.vue'
 import { usePhIcon } from '../lib/icons'
 import { studyTime } from '../lib/analitik'
-import { grouped, pct1, plain } from '../lib/prestasi/format'
+import { DASH, grouped, pctWhole, plain } from '../lib/prestasi/format'
 import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
 import { routeId } from '../lib/route-id'
 import { useStatItems, type StatSpec } from '../lib/stat-items'
@@ -28,9 +44,13 @@ const statItems = useStatItems()
 
 const route = useRoute()
 const router = useRouter()
+const session = useSessionStore()
 const pageMeta = usePageMeta()
 const icon = usePhIcon()
-const userId = computed(() => routeId(route.params.userId))
+/** True on `/prestasi/{userId}`; false on the own route `/prestasi`. */
+const byId = computed(() => route.params.userId !== undefined)
+const isStudent = computed(() => session.role === 'student')
+const userId = computed(() => routeId(byId.value ? route.params.userId : session.user?.id))
 
 const { data, error, reload } = useRouteData(
   (signal) => fetchStudentPerformance(userId.value, { signal }),
@@ -41,38 +61,31 @@ const loadFailed = computed(() => isLoadError(error.value))
 watch(
   data,
   (d) => {
-    if (d) pageMeta.setTitle(`Prestasi 360 — ${d.user.name} — PRESTASIPLUS`)
+    if (d && byId.value && !isStudent.value) {
+      pageMeta.setTitle(`Prestasi 360 — ${d.user.name} — PRESTASIPLUS`)
+    }
   },
   { immediate: true },
 )
 
-/** The back control is the browser history back (FR-M08-37). */
+/** The back control is the browser history back (FR-M08-37); a pupil has no list to go back to. */
 const back = (): void => {
   router.back()
 }
 
-/**
- * US-33: in http mode the figures come from Bijak SPM sittings (BE-19), so the summary says so, and the
- * panels the backend returns neutral (study time, streaks, coins, heatmap, weak topics, suggestions) are hidden
- * instead of showing a misleading 0. Mock mode (practice figures) is unchanged.
- */
-const bijak = isHttpMode()
-/** Empty = no Bijak SPM sitting recorded for this pupil. */
-const bijakEmpty = computed(() => bijak && (data.value?.stats.sessions ?? 0) === 0)
+/** "Trend Prestasi" (S10-T01 Build (b)): a week without answers is a gap (`NaN`, `DsChart` takes plain numbers). */
+const trend = computed(() => data.value?.trend ?? [])
+const trendEmpty = computed(() => trend.value.every((w) => w.accuracy === null && w.sessions === 0))
+const trendSeries = computed<ChartSeries[]>(() => [
+  { label: 'Ketepatan (%)', data: trend.value.map((w) => w.accuracy ?? Number.NaN), slot: 1 },
+])
 
 const stats = computed<StatSpec[]>(() => {
   const s = data.value?.stats
   if (!s) return []
-  if (bijak) {
-    return [
-      { id: 'sesi', label: 'Sesi Kuiz', value: plain(s.sessions), icon: 'clipboard-text' },
-      { id: 'ketepatan', label: 'Ketepatan', value: pct1(s.accuracy), icon: 'check-circle' },
-      { id: 'soalan', label: 'Soalan Dijawab', value: plain(s.answered), icon: 'question' },
-    ]
-  }
   return [
     { id: 'sesi', label: 'Sesi Kuiz', value: plain(s.sessions), icon: 'clipboard-text' },
-    { id: 'ketepatan', label: 'Ketepatan', value: pct1(s.accuracy), icon: 'check-circle' },
+    { id: 'ketepatan', label: 'Ketepatan', value: s.answered === 0 ? DASH : pctWhole(s.accuracy), icon: 'check-circle' },
     { id: 'soalan', label: 'Soalan Dijawab', value: plain(s.answered), icon: 'question' },
     { id: 'masa', label: 'Masa Belajar', value: studyTime(s.seconds), icon: 'clock' },
   ]
@@ -110,31 +123,41 @@ const activity = computed(() => {
 
 <template>
   <DsPage data-testid="prestasi360-page">
-    <h1 v-if="loadFailed || !data" class="sr-only">Prestasi 360</h1>
+    <h1 v-if="byId && (loadFailed || !data)" class="sr-only">Prestasi 360</h1>
     <DsLoadError v-if="loadFailed" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <template v-else-if="data">
       <div data-testid="hero">
         <DsPageHeader
-          :show-title="true" :title="data.user.name"
+          :show-title="byId" :title="data.user.name"
           subtitle="Prestasi 360 — Dashboard Individu"
           title-testid="hero-name"
         >
           <template #breadcrumb>
-            <DsBackLink to="/prestasi/kelas" label="Kembali" data-testid="back" @click.prevent="back" />
+            <DsBackLink
+              v-if="!isStudent"
+              to="/prestasi/kelas"
+              label="Kembali"
+              data-testid="back"
+              @click.prevent="back"
+            />
+          </template>
+          <template v-if="!byId" #subtitle>
+            <DsText variant="title" as="p" data-testid="hero-name">{{ data.user.name }}</DsText>
+            <p>Prestasi 360 — Dashboard Individu</p>
           </template>
           <template #leading>
             <UAvatar :text="data.user.initial" size="xl" data-testid="avatar" />
           </template>
           <template #actions>
-            <div v-if="!bijakEmpty" class="hidden gap-3 lg:flex" data-testid="hero-mini">
+            <div class="hidden gap-3 lg:flex" data-testid="hero-mini">
               <p class="flex flex-col items-center bg-elevated px-4 py-2">
                 <span class="tabular text-heading text-highlighted" data-testid="hero-accuracy"
-                  >{{ data.heroAccuracy }}%</span
+                  >{{ data.stats.answered === 0 ? DASH : pctWhole(data.heroAccuracy) }}</span
                 >
                 <span class="text-caption text-muted">Ketepatan</span>
               </p>
-              <p v-if="!bijak" class="flex flex-col items-center bg-elevated px-4 py-2">
+              <p class="flex flex-col items-center bg-elevated px-4 py-2">
                 <span class="tabular text-heading text-highlighted" data-testid="hero-streak">{{
                   data.streak
                 }}</span>
@@ -145,13 +168,7 @@ const activity = computed(() => {
         </DsPageHeader>
       </div>
 
-      <DsSection v-if="bijak" title="Keputusan Bijak SPM" variant="subheading" data-testid="bijak-summary">
-        <div v-if="bijakEmpty" data-testid="bijak-empty">
-          <DsEmptyState title="Tiada data" icon="tray" />
-        </div>
-        <DsStatRow v-else :items="statItems(stats)" data-testid="stat-cards" :cols="3" prefix="stat" />
-      </DsSection>
-      <DsStatRow v-else :items="statItems(stats)" data-testid="stat-cards" :cols="4" prefix="stat" />
+      <DsStatRow :items="statItems(stats)" data-testid="stat-cards" :cols="4" prefix="stat" />
 
       <HeadcountCards
         v-if="data.headcount.length > 0"
@@ -159,10 +176,38 @@ const activity = computed(() => {
         :cards="data.headcount"
       />
 
+      <DsPanel data-testid="trend-card">
+        <DsSection title="Trend Prestasi" variant="subheading" icon="chart-line-up">
+          <div v-if="trendEmpty" data-testid="trend-empty">
+            <DsEmptyState title="Belum ada data prestasi lagi." icon="i-ph-chart-line-up">
+              <template #actions>
+                <UButton
+                  to="/practice"
+                  variant="link"
+                  color="primary"
+                  label="Mula latihan →"
+                  data-testid="trend-start"
+                />
+              </template>
+            </DsEmptyState>
+          </div>
+          <DsChart
+            v-else
+            title="Ketepatan mingguan (12 minggu)"
+            type="line"
+            :labels="trend.map((w) => w.label)"
+            :series="trendSeries"
+            unit="%"
+            table-label="Trend prestasi mengikut minggu"
+            data-testid="trend-chart"
+          />
+        </DsSection>
+      </DsPanel>
+
       <div class="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-3">
         <MasteryCard :mastery="data.mastery" />
         <div class="flex min-w-0 flex-col gap-4 md:gap-6">
-          <DsPanel v-if="!bijak" class="min-w-0" data-testid="activity-card">
+          <DsPanel class="min-w-0" data-testid="activity-card">
             <div class="flex flex-col gap-4">
               <h2 class="flex items-center gap-2 text-subheading text-highlighted">
                 <UIcon :name="icon('fire')" class="size-5 text-primary-t" />Aktiviti
@@ -206,10 +251,13 @@ const activity = computed(() => {
         </div>
       </div>
 
-      <ActivityHeatmap v-if="!bijak" :days="data.heatmap" />
+      <ActivityHeatmap :days="data.heatmap" />
 
-      <div v-if="!bijak" class="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
-        <WeakTopicsCard :topics="data.weakTopics" />
+      <div
+        class="grid grid-cols-1 gap-4 md:gap-6"
+        :class="data.weakTopics.length > 0 ? 'lg:grid-cols-2' : ''"
+      >
+        <WeakTopicsCard v-if="data.weakTopics.length > 0" :topics="data.weakTopics" />
         <SuggestionsCard :items="data.suggestions" />
       </div>
     </template>

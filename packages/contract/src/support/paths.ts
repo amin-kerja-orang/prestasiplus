@@ -52,7 +52,7 @@ export function registerSupportPaths(registry: OpenAPIRegistry): void {
     'X-CSRF-Token': z.string().min(1).meta({ description: 'Value of Session.csrf; required on mutating requests.' }),
   })
   const unauthorized = err('UNAUTHORIZED: no valid session.')
-  const adminOnly = err('FORBIDDEN "This action is unauthorized." (not an admin).')
+  const adminOnly = err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (not an admin).')
   const adminWrite = err('FORBIDDEN (not an admin) or CSRF_INVALID (missing or wrong X-CSRF-Token).')
   const idParams = z.object({ id: IdSchema })
   const ticketNotFound = err(`NOT_FOUND "${SUPPORT_ADMIN_MESSAGES.ticketNotFound}" (unknown id).`)
@@ -95,7 +95,7 @@ export function registerSupportPaths(registry: OpenAPIRegistry): void {
     tags: ['support'],
     summary: 'Admin support queue',
     description:
-      'Admin only. Newest first (createdAt desc, then id desc), 25 per page with `page`. `meta.total` = all tickets; `meta.counts` = statuses with a count above 0, in vocabulary order, over all tickets; `meta.matched` counts the rows matching the filters. A row has no body, no e-mail and no user id.',
+      'Admin only. Newest first (createdAt desc, then id desc), 25 per page with `page`. `meta.total` and `meta.counts` cover the role-filtered tickets, whatever the status filter; `meta.counts` has all five statuses in vocabulary order; `meta.matched` counts the rows matching both filters. A row has no body, no e-mail and no user id.',
     request: { query: SupportQueueQuerySchema },
     responses: { 200: json(SupportQueueResponseSchema, 'Queue rows with meta.total and meta.counts.'), 401: unauthorized, 403: adminOnly },
   })
@@ -147,7 +147,7 @@ export function registerSupportPaths(registry: OpenAPIRegistry): void {
       401: unauthorized,
       403: adminWrite,
       404: ticketNotFound,
-      422: err(`VALIDATION_ERROR with fields.status: "${SUPPORT_ADMIN_MESSAGES.statusRequired}"`),
+      422: err(`VALIDATION_ERROR with fields.status: "${SUPPORT_ADMIN_MESSAGES.statusInvalid}"`),
     },
   })
 }
