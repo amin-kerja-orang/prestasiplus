@@ -98,6 +98,26 @@ describe('#2 GET /api/pksk-domains', () => {
     })
   })
 
+  it('adds questionCount: approved questions of the domain over both levels, no question text', async () => {
+    const r = await get<PkskDomain[]>(PELAJAR2, '/api/pksk-domains')
+    for (const d of r.body.data) {
+      const expected = ['T1', 'T4'].reduce(
+        (n, level) =>
+          n +
+          questions.pkskList({
+            domainIds: [d.id],
+            targetLevel: level as 'T1' | 'T4',
+            status: 'approved',
+            pageSize: 5000,
+          }).rows.length,
+        0,
+      )
+      expect(d.questionCount, d.code).toBe(expected)
+    }
+    expect(r.body.data.reduce((n, d) => n + d.questionCount, 0)).toBeGreaterThan(0)
+    expect(JSON.stringify(r.body)).not.toContain('questionText')
+  })
+
   it('answers 401 without a session', async () => {
     expect((await get(null, '/api/pksk-domains')).status).toBe(401)
   })
@@ -399,11 +419,39 @@ describe('#21 POST /api/pksk/levels/:level/domains/:code/practice-sessions', () 
     expect(practice.history(IBUBAPA)).toHaveLength(before)
   })
 
+  it('returns correct, total and a review with the key revealed only after scoring', async () => {
+    const served = await get<PkskPractice>(IBUBAPA, '/api/pksk/levels/T1/domains/PKSK_MATH')
+    const ids = served.body.data.questions.map((q) => q.id)
+    expect(JSON.stringify(served.body)).not.toContain('correctIndex')
+    const first = correctAnswer(ids[0] as number)
+    const r = await post<PkskPracticeResult>(
+      IBUBAPA,
+      '/api/pksk/levels/T1/domains/PKSK_MATH/practice-sessions',
+      { answers: [first, { questionId: ids[1] as number }] },
+    )
+    expect(r.status).toBe(201)
+    const d = r.body.data
+    expect([d.correct, d.total]).toEqual([1, 2])
+    expect(d.review.map((x) => x.questionId)).toEqual([ids[0], ids[1]])
+    expect(d.review[0]).toMatchObject({
+      selectedIndex: first.optionIndex,
+      correctIndex: first.optionIndex,
+      isCorrect: true,
+    })
+    expect(d.review[1]).toMatchObject({ selectedIndex: null, isCorrect: false })
+    expect(typeof d.review[1]?.correctIndex).toBe('number')
+    for (const x of d.review)
+      expect(x.explanation === null || typeof x.explanation === 'string').toBe(true)
+  })
+
   it('answers 401, 403 and 404 (level, code)', async () => {
     const url = (l: string, c: string) => `/api/pksk/levels/${l}/domains/${c}/practice-sessions`
     const body = { answers: [{ questionId: 177698 }] }
     expect((await post(null, url('T1', 'PKSK_MATH'), body)).status).toBe(401)
-    expect((await post(PELAJAR2, url('T1', 'PKSK_MATH'), body)).status).toBe(403)
+    const denied = await post(PELAJAR2, url('T1', 'PKSK_MATH'), body)
+    expect(denied.status).toBe(403)
+    // The refusal carries the standard FORBIDDEN text (the hub shows it).
+    expect(denied.body.error.message).toBe('Anda tidak dibenarkan melakukan tindakan ini.')
     expect((await post(IBUBAPA, url('T9', 'PKSK_MATH'), body)).status).toBe(404)
     expect((await post(IBUBAPA, url('T1', 'NOPE'), body)).status).toBe(404)
   })
