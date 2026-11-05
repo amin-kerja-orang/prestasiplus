@@ -246,8 +246,10 @@ describe('curriculum contract: bulk Bab (API-DSKP-09) and coverage (API-DSKP-10)
   })
 
   it('parses a result and refuses negative counts', () => {
-    const result = { matched: 5, eligible: 3, refused: 2, applied: 3, cap: 10_000, remaining: 0, capped: false, dryRun: false, auditId: '41' }
+    const result = { matched: 5, eligible: 3, refused: 2, skipped: [{ questionId: '7', reason: 'Sudah mempunyai Bab.' }, { questionId: '9', reason: 'Bab tidak sepadan dengan subjek dan tahap.' }, { questionId: '10', reason: 'Soalan belum diluluskan.' }], applied: 3, cap: 10_000, remaining: 0, capped: false, dryRun: false, auditId: '41' }
     expect(BulkChapterResultSchema.parse(result).auditId).toBe('41')
+    expect(BulkChapterResultSchema.parse(result).skipped).toHaveLength(3)
+    expect(() => BulkChapterResultSchema.parse({ ...result, skipped: undefined })).toThrow()
     expect(BulkChapterResultSchema.parse({ ...result, dryRun: true, applied: 0, auditId: null }).auditId).toBeNull()
     expect(() => BulkChapterResultSchema.parse({ ...result, refused: -1 })).toThrow()
   })
