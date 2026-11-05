@@ -108,7 +108,7 @@ export const spmScenarios: Scenario[] = [
       for (const [method, path] of [['GET', `/spm-mocks/${id}`], ['GET', `/spm-mocks/${id}/result`], ['POST', `/spm-mocks/${id}/submit`]] as const) {
         const res = await teacher.request(method, path, method === 'POST' ? { body: { answers: [] } } : {})
         expectError(ctx, res, 404, 'NOT_FOUND')
-        ctx.check(errorOf(res).message === 'Not Found.', `${path} message differs`)
+        ctx.check(errorOf(res).message === 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?', `${path} message differs`)
       }
       expectError(ctx, await student.request('GET', `/spm-mocks/${UNKNOWN_MOCK}`), 404, 'NOT_FOUND')
     },

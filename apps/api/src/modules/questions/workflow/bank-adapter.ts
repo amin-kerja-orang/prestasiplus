@@ -128,7 +128,11 @@ export class QuestionBankAdapter implements QuestionBankPort {
         return this.getStatus(id)
       }
 
-      await this.service.setStatus(id, to, actorId, { actor: options.actor ?? 'admin', ...(options.reason === undefined ? {} : { reason: options.reason }) })
+      await this.service.setStatus(id, to, actorId, {
+        actor: options.actor ?? 'admin',
+        ...(options.reason === undefined ? {} : { reason: options.reason }),
+        ...(options.rejectionReason === undefined ? {} : { rejectionReason: options.rejectionReason }),
+      })
       return this.getStatus(id)
     })
   }
