@@ -108,6 +108,8 @@ describe('tile helpers', () => {
   })
   it('builds the tile link from the subject code only (Q-1), no query', () => {
     expect(cellHref({ code: 'MATH' })).toBe('/practice/chapter/MATH')
+    expect(cellHref({ code: '' })).toBe('/practice')
+    expect(cellHref({ code: '  ' })).toBe('/practice')
   })
 })
 

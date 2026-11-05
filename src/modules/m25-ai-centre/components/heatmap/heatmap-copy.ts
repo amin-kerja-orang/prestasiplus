@@ -21,10 +21,12 @@ export const HEATMAP_COPY = {
  * FR-MUR-14-2 (lead ruling on #473, Q-1): a tile opens Soalan by Chapter of its subject, `/practice/chapter/{code}`,
  * with no deeper link and no query. The only place that decides the tile target.
  */
-export function cellHref(subject: { code: string }): string {
-  return `/practice/chapter/${encodeURIComponent(subject.code)}`
-}
 export const EMPTY_HREF = '/practice'
+/** A subject without a code falls back to the practice home, never a dead `/practice/chapter/` link (D106). */
+export function cellHref(subject: { code: string }): string {
+  const code = subject.code.trim()
+  return code === '' ? EMPTY_HREF : `/practice/chapter/${encodeURIComponent(code)}`
+}
 
 /** The grey outline: 1px inset ring of the muted text colour at 35%. */
 const GREY_RING =
