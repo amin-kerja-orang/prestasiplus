@@ -9,13 +9,20 @@ import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { DsDataTable, DsEmptyState, DsLoadError, DsPage, DsPageHeader } from '@/ds'
+import { useSessionStore } from '@/stores/session'
 
 import { fetchHeadcounts } from '../api/headcount'
 import AutoSetupModal from '../components/headcount/AutoSetupModal.vue'
+import { useHeadcountReadOnly } from '../lib/headcount-access'
 import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
 
 const { data, error, reload } = useRouteData((signal) => fetchHeadcounts({ signal }))
 const showAutoSetup = ref(false)
+/** The school admin reads the school's list: no create / Auto-Setup (R1-AS-3). */
+const readOnly = useHeadcountReadOnly()
+const session = useSessionStore()
+/** "Guru" (API-AS-15): the owner of a config; the teacher's own list is all theirs, so no column there. */
+const showTeacher = computed(() => session.role === 'school_admin' || session.role === 'admin')
 
 interface Row extends Record<string, unknown> {
   id: number
@@ -25,6 +32,7 @@ interface Row extends Record<string, unknown> {
   modeText: string
   otrText: string
   studentsText: string
+  teacherName: string
 }
 const rows = computed<Row[]>(() =>
   (data.value ?? []).map((c) => ({
@@ -35,23 +43,26 @@ const rows = computed<Row[]>(() =>
     modeText: c.mode === 'auto' ? 'Auto' : 'Manual',
     otrText: `${String(c.activeOtrs)} OTR`,
     studentsText: `${String(c.students)} murid`,
+    teacherName: c.teacherName,
   })),
 )
-const columns: TableColumn<Row>[] = [
+const columns = computed<TableColumn<Row>[]>(() => [
   { accessorKey: 'className', header: 'Kelas' },
   { accessorKey: 'subjectName', header: 'Subjek' },
   { accessorKey: 'levelYear', header: 'Tingkatan' },
+  ...(showTeacher.value ? [{ accessorKey: 'teacherName', header: 'Guru' }] : []),
   { accessorKey: 'modeText', header: 'Mod' },
   { accessorKey: 'otrText', header: 'OTR' },
   { accessorKey: 'studentsText', header: 'Murid' },
-]
-const cardFields = [
+])
+const cardFields = computed(() => [
   { key: 'subjectName', label: 'Subjek' },
   { key: 'levelYear', label: 'Tingkatan' },
+  ...(showTeacher.value ? [{ key: 'teacherName', label: 'Guru' }] : []),
   { key: 'modeText', label: 'Mod' },
   { key: 'otrText', label: 'OTR' },
   { key: 'studentsText', label: 'Murid' },
-]
+])
 </script>
 
 <template>
@@ -71,12 +82,14 @@ const cardFields = [
           data-testid="hero-dashboard"
         />
         <UButton
+          v-if="!readOnly"
           to="/headcount/create"
           icon="i-ph-plus"
           label="Buat Baru"
           data-testid="hero-create"
         />
         <UButton
+          v-if="!readOnly"
           type="button"
           color="neutral"
           variant="soft"
@@ -93,7 +106,7 @@ const cardFields = [
     <template v-else-if="data">
       <div v-if="data.length === 0" data-testid="headcount-empty">
         <DsEmptyState title="Belum ada headcount." icon="clipboard-text">
-          <template #actions>
+          <template v-if="!readOnly" #actions>
             <UButton
               to="/headcount/create"
               icon="i-ph-plus"
@@ -147,6 +160,6 @@ const cardFields = [
       <USkeleton class="h-64 w-full" />
     </div>
 
-    <AutoSetupModal v-model:open="showAutoSetup" @done="reload()" />
+    <AutoSetupModal v-if="!readOnly" v-model:open="showAutoSetup" @done="reload()" />
   </DsPage>
 </template>

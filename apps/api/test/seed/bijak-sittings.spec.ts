@@ -12,7 +12,10 @@ import { examSeed } from '../../prisma/seed/exam'
 import { questionsSeed } from '../../prisma/seed/questions'
 import { BIJAK_BANK_SITTINGS, BIJAK_DEMO_PUPILS, BIJAK_DEMO_SITTINGS, bijakSittingsSeed } from '../../prisma/seed/poc/bijak-sittings'
 import { classesSeed } from '../../prisma/seed/poc/classes'
+import { CLOCK, type Clock } from '../../src/db/clock'
 import { ClassPerformanceService, ItemAnalysisService, PerformancePorts, SchoolPerformanceService } from '../../src/modules/reports/performance'
+import { DIRECTORY_PORT, type DirectoryPort } from '../../src/modules/reports/performance/ports'
+import { InMemoryAnswerFacts } from '../reports/performance/fakes/in-memory-answer-facts'
 import { featureModules } from '../../src/modules'
 import { MIN_COHORT } from '../../src/modules/reports/performance/domain/constants'
 import { SchoolAdminDashboardSchema } from '@pp/contract'
@@ -121,7 +124,16 @@ describe('PoC Bijak sittings seed', () => {
   it('BE-19 item analysis of DEMO001 is not empty: lettered correct option, popular wrong option, at least 5 attempts', async () => {
     const [school] = await t.db.query<{ id: string }>(`select id::text from schools where code = 'DEMO001'`)
     const [admin] = await t.db.query<{ id: string }>(`select id::text from users where email = 'admin@demo.test'`)
-    const items = t.app.get(ItemAnalysisService, { strict: false })
+    // S10-T03: the counts come from the single answer store (`answerFacts`), which this seed does not fill (S3-T04 writes it from a sitting), so the
+    // seeded Bijak item facts are mirrored into an in-memory store; the Bijak port still supplies the lettered options.
+    const real = t.app.get(PerformancePorts)
+    const store = new InMemoryAnswerFacts()
+    for (const f of await real.bijak.items({ schoolIds: [school!.id], modes: ['exam', 'latihan'] })) {
+      store.addPupil({ id: f.userId, schoolId: school!.id })
+      store.add({ userId: f.userId, subjectId: f.subjectId, questionId: f.questionId, mode: 'simulasi', isCorrect: f.awarded >= f.max, answeredAt: new Date('2026-09-20T10:00:00+08:00') })
+    }
+    const ports = new PerformancePorts(real.bijak, real.classes, real.practice, real.gamification, undefined, store, real.questionContent)
+    const items = new ItemAnalysisService(ports, t.app.get<DirectoryPort>(DIRECTORY_PORT, { strict: false }), t.app.get<Clock>(CLOCK, { strict: false }))
     const res = await items.school(
       { userId: admin!.id, role: 'admin', scope: { level: 'national', label: 'Kebangsaan' }, isTest: false },
       {} as never,
@@ -130,7 +142,7 @@ describe('PoC Bijak sittings seed', () => {
     expect(res.questions.filter((x) => x.attempts >= 5).length).toBeGreaterThanOrEqual(4)
     const q = res.questions.find((x) => x.attempts >= 5)
     expect(q, JSON.stringify(res.questions)).toBeDefined()
-    expect(q?.correctOption.letter).toMatch(/^[A-D]$/)
+    expect(q?.correctOption?.letter).toMatch(/^[A-D]$/)
     expect(q?.popularWrongOption?.letter).toMatch(/^[A-D]$/)
     expect(q?.popularWrongCount).toBeGreaterThan(0)
     expect(q?.wrongPct).toBeGreaterThan(0)
