@@ -6,7 +6,6 @@ import { CLOCK, type Clock } from '../../../db/clock'
 import { ClassesPorts, ClassesRepository } from '../../classes'
 import { DAY_MS, byName, ddmm, dayKey, rangeOf, statusOf } from '../../reports/analytics/domain/rules'
 import { WalletService } from '../../wallet'
-import { K_COHORT } from '../school-admin.constants'
 import { SchoolPopulation, type PupilFact } from './population'
 import { accuracyOf, activityWindow } from './windows'
 
@@ -40,8 +39,8 @@ const stamp = (d: Date | null) => (d === null ? null : toMytTimestamp(d))
  * `ClassesPorts` question provider, coins from BE-11's `WalletService.balancesOf` (the current balance, as the mock; one batched read; no SQL on wallet
  * tables). Struktur, Battle and Permainan have no source in this build and stay 0 (as BE-20).
  *
- * Privacy: the per-pupil rows are in the contract and stay (the route is `no-store`); the school pupil accuracy tile is 0 when
- * fewer than `K_COHORT` pupils contributed answers (the tile and the pupil row accuracy are non-nullable in the contract: 0 stands
+ * Privacy: the per-pupil rows are in the contract and stay (the route is `no-store`); the school pupil accuracy tile is 0 with
+ * no answers (no minimum cohort on this staff screen, PO decision 2026-11-05, #503 batch 3; the tile and the pupil row accuracy are non-nullable in the contract: 0 stands
  * for "no data" there until the contract part of S6-T03 makes them nullable).
  */
 @Injectable()
@@ -62,10 +61,9 @@ export class ActivityService {
     const [pupils, teachers] = await Promise.all([this.population.pupils(schoolId), this.population.teachers(schoolId)])
     const ids = pupils.map((p) => p.id)
 
-    const [rows, totals, contributing, answered] = await Promise.all([
+    const [rows, totals, answered] = await Promise.all([
       this.population.sessions(ids, w.from, w.to),
       this.population.answerTotals(schoolId, w.from, w.to),
-      this.population.activeCount(schoolId, w.from, w.to),
       this.population.tallyByPupil(schoolId, w.from, w.to),
     ])
     const perDay = new Map<string, number>()
@@ -170,7 +168,7 @@ export class ActivityService {
           total: pupils.length,
           practised: practised.size,
           sessions: quiz,
-          accuracy: contributing >= K_COHORT ? (totals.accuracy ?? 0) : 0,
+          accuracy: totals.accuracy ?? 0,
         },
       },
     }

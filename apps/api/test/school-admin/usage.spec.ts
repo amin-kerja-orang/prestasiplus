@@ -79,18 +79,18 @@ describe('GET /admin-sekolah/usage', () => {
     expect(month.tiles.participationPct).toBe(Math.round((5 / pupils) * 100))
   })
 
-  it('a mode answered by fewer than 5 pupils keeps its session count but hides its accuracy', async () => {
+  it('a mode answered by fewer than 5 pupils shows its accuracy too (no minimum cohort for staff)', async () => {
     const month = SchoolAdminUsageSchema.parse((await admin.get('/admin-sekolah/usage')).body.data)
-    expect(month.modes.find((m) => m.label === 'Ulang Kaji')).toEqual({ label: 'Ulang Kaji', sessions: 1, accuracy: null })
+    expect(month.modes.find((m) => m.label === 'Ulang Kaji')).toEqual({ label: 'Ulang Kaji', sessions: 1, accuracy: 40 })
   })
 
-  it('a school with fewer than 5 contributing pupils shows no accuracy at all', async () => {
+  it('a school with fewer than 5 contributing pupils still shows its accuracy', async () => {
     const p = await addPupil(t.db, s2, 'Murid Kecil Satu')
     await addSession(t.db, p, { answers: true, mode: 'chapter', questions: 10, correct: 9, completedAt: '2026-10-19T08:00:00+08:00' })
     const after = SchoolAdminUsageSchema.parse((await adminB.get('/admin-sekolah/usage')).body.data)
     expect(after.school.id).toBe(s2)
-    expect(after.tiles).toMatchObject({ sessions: 1, answers: 10, activePupils: 1, accuracy: null })
-    expect(after.modes).toEqual([{ label: 'Bab', sessions: 1, accuracy: null }])
+    expect(after.tiles).toMatchObject({ sessions: 1, answers: 10, activePupils: 1, accuracy: 90 })
+    expect(after.modes).toEqual([{ label: 'Bab', sessions: 1, accuracy: 90 }])
   })
 
   it('a school-B admin never sees school A rows, and a schoolId in the query is ignored', async () => {

@@ -2,7 +2,6 @@ import { Inject, Injectable } from '@nestjs/common'
 import type { SchoolAdminUsage } from '@pp/contract'
 
 import { CLOCK, type Clock } from '../../../db/clock'
-import { K_COHORT } from '../school-admin.constants'
 import { SchoolPopulation } from './population'
 import { accuracyOf, modeLabelOf, participationOf, USAGE_LABELS, usagePeriodOf, usageWindow } from './windows'
 
@@ -10,8 +9,8 @@ import { accuracyOf, modeLabelOf, participationOf, USAGE_LABELS, usagePeriodOf, 
  * S1 usage (mock `usage`): pupils, teachers, participation, sessions, answers and accuracy of the school over `today`, `7days` or
  * `30days`, plus the sessions per mode. Pupils (XS-1), teachers (XS-3), active pupils (XS-2), answers (XS-4) and accuracy (XS-5,
  * pooled over the same answer rows, all modes) come from `XsQueries` through `SchoolPopulation`; the session count and the per-mode
- * rows are session reads (completed non-test sessions of the XS-1 pupils). The accuracy is shown only when at least `K_COHORT`
- * pupils answered (DOC DEFECT 3 keeps this suppression); a mode row keeps its session count but hides its accuracy under the same rule.
+ * rows are session reads (completed non-test sessions of the XS-1 pupils). There is no minimum cohort on this
+ * staff screen (PO decision 2026-11-05, #503 batch 3): every figure is shown.
  */
 @Injectable()
 export class UsageService {
@@ -36,16 +35,15 @@ export class UsageService {
       this.population.activeCount(schoolId, window.from, window.to),
     ])
 
-    const byMode = new Map<string, { sessions: number; correct: number; questions: number; users: Set<string> }>()
+    const byMode = new Map<string, { sessions: number; correct: number; questions: number }>()
     let sessions = 0
     for (const r of rows) {
       sessions += r.sessions
       const label = modeLabelOf(r.mode)
-      const m = byMode.get(label) ?? { sessions: 0, correct: 0, questions: 0, users: new Set<string>() }
+      const m = byMode.get(label) ?? { sessions: 0, correct: 0, questions: 0 }
       m.sessions += r.sessions
       m.correct += r.correct
       m.questions += r.questions
-      if (r.questions > 0) m.users.add(r.userId)
       byMode.set(label, m)
     }
 
@@ -60,13 +58,13 @@ export class UsageService {
         participationPct: participationOf(active, pupils.length),
         sessions,
         answers: totals.answered,
-        accuracy: active >= K_COHORT ? totals.accuracy : null,
+        accuracy: totals.accuracy,
       },
       modes: [...byMode.entries()]
         .map(([label, m]) => ({
           label,
           sessions: m.sessions,
-          accuracy: m.users.size >= K_COHORT ? accuracyOf(m.correct, m.questions) : null,
+          accuracy: accuracyOf(m.correct, m.questions),
         }))
         .sort((a, b) => b.sessions - a.sessions || a.label.localeCompare(b.label, 'ms', { sensitivity: 'base' })),
     }

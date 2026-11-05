@@ -15,7 +15,7 @@
  *
  * Ids go in and out as decimal strings. Counts are plain numbers. Instants are `Date`; MYT calendar days are `YYYY-MM-DD`.
  * "Student" means an XS-1 pupil (`XS_PUPIL_SQL` of `school-admin/xs-queries.ts`: role student, active and not suspended, Tingkatan
- * 1-5), on top of the secondary-only rule (`VISIBLE_USER_SQL`, D72: no pupil of a primary school). Teachers are XS-3 (`XS_TEACHER_SQL`).
+ * 1-5), on top of the secondary-only rule (`VISIBLE_USER_SQL`, D72: no pupil of a primary school). Teachers are XS-3 (`isXs3Teacher`: active approved teachers).
  * Only one read ignores the account state: `includeInactive: true`, used by the single-pupil page.
  */
 import { Inject, Injectable } from '@nestjs/common'
@@ -24,7 +24,7 @@ import { Prisma } from '../../../db/generated/client'
 import { idFromString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { SchoolsRepository } from '../../schools'
-import { XS_PUPIL_SQL, XS_TEACHER_SQL } from '../../school-admin/xs-queries'
+import { XS_PUPIL_SQL, isXs3Teacher } from '../../school-admin/xs-queries'
 import { UsersRepository } from '../../users'
 
 import { SCHOOL_DRILL_ROW_LIMIT } from '../command-center.constants'
@@ -469,13 +469,13 @@ export class CommandCenterRepository {
     return new Map(rows.map((r) => [r.id, r.name]))
   }
 
-  /** XS-3 teachers of a school (approved, no school-admin account; not filtered on `is_active`, DOC DEFECT 1), by name then id, with the profile subject. */
+  /** XS-3 teachers of a school (active, approved, no school-admin account; PO decision 2026-11-05, #503 batch 3), by name then id, with the profile subject. */
   async teachersOfSchool(schoolId: string): Promise<TeacherRow[]> {
     const sid = bigintOrNull(schoolId)
     if (sid === null) return []
     const rows = await this.q(Prisma.sql`
       SELECT u.id::text AS id, u.name, u.is_active, tp.subject FROM users u LEFT JOIN teacher_profiles tp ON tp.user_id = u.id
-       WHERE u.school_id = ${sid} AND ${XS_TEACHER_SQL('u')}
+       WHERE u.school_id = ${sid} AND ${isXs3Teacher('u')}
        ORDER BY u.name ASC, u.id ASC`)
     return rows.map((r) => ({ id: String(r.id), name: String(r.name), isActive: Boolean(r.is_active), subject: s(r.subject)?.trim() || null }))
   }

@@ -155,25 +155,24 @@ describe('GET /admin-sekolah/dashboard with a BE-19-shaped provider', () => {
     await t.close()
   })
 
-  it('maps the BE-19 figures, applies k = 5 to small groups, and asks BE-19 with the own school scope', async () => {
+  it('maps the BE-19 figures, shows small groups too (no minimum cohort), and asks BE-19 with the own school scope', async () => {
     const res = await admin.get('/admin-sekolah/dashboard')
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     const d = SchoolAdminDashboardSchema.parse(res.body.data)
     expect(d.cards.activeClasses).toBe(7)
     // S6-T03: `sessions` is the S10 view's (40); `questions` and `accuracy` are XS-4 / XS-5 of the school (no answer rows in this DB: 0 and null, never 0 %).
     expect(d.performance.practice).toEqual({ accuracy: null, sessions: 40, questions: 0 })
-    // t5 has 3 pupils: suppressed. t4 has 9: shown.
+    // Staff screen, no minimum cohort (PO decision 2026-11-05, #503 batch 3): t5 (3 pupils) is shown, and so are the small grades.
     expect(d.performance.levels).toEqual([
       { code: 't4', name: 'Tingkatan 4', accuracy: 71.2 },
-      { code: 't5', name: 'Tingkatan 5', accuracy: 0 },
+      { code: 't5', name: 'Tingkatan 5', accuracy: 64.9 },
     ])
-    // Grades B (4) and C (2) are under 5 pupils: suppressed; the total follows what is shown.
     expect(d.performance.distribution).toEqual([
       { grade: 'A', count: 6, pct: 50 },
-      { grade: 'B', count: 0, pct: 0 },
-      { grade: 'C', count: 0, pct: 0 },
+      { grade: 'B', count: 4, pct: 33 },
+      { grade: 'C', count: 2, pct: 17 },
     ])
-    expect(d.performance.total).toBe(6)
+    expect(d.performance.total).toBe(12)
     expect(d.performance.gps).toEqual({ value: 2.6, grade: 'B+', band: 'Baik', entries: 12 })
 
     const ctx = fake.calls.at(-1)
@@ -190,9 +189,10 @@ describe('GET /admin-sekolah/dashboard with a BE-19-shaped provider', () => {
     for (const name of names) expect(text).not.toContain(name)
   })
 
-  it('a school under the cohort size shows an empty practice block', async () => {
+  it('a school under the cohort size still shows its practice block (no minimum cohort for staff)', async () => {
     fake.view = emptyView({ stats: { students: 4, sessions: 9, answered: 90, accuracy: 55 } })
     const d = SchoolAdminDashboardSchema.parse((await admin.get('/admin-sekolah/dashboard')).body.data)
-    expect(d.performance.practice).toEqual({ accuracy: null, sessions: 0, questions: 0 })
+    // Changed from { null, 0, 0 }: sessions are the view's; no answer rows in this DB, so questions 0 and accuracy null.
+    expect(d.performance.practice).toEqual({ accuracy: null, sessions: 9, questions: 0 })
   })
 })

@@ -120,10 +120,10 @@ export async function xsPupilCount(db: TestDatabase, schoolId: string): Promise<
   return rows[0]?.n ?? 0
 }
 
-/** XS-3 as plain SQL: teachers of a school, approved (no pending school), without a school-admin role; `is_active` is not filtered (DOC DEFECT 1). */
+/** XS-3 as plain SQL: teachers of a school, approved (no pending school), active and not suspended, without a school-admin role (PO decision 2026-11-05, #503 batch 3). */
 export async function xsTeacherCount(db: TestDatabase, schoolId: string): Promise<number> {
   const rows = await db.query<{ n: number }>(
-    `select count(*)::int as n from users u where u.school_id = $1::bigint and u.pending_school_id is null
+    `select count(*)::int as n from users u where u.school_id = $1::bigint and u.pending_school_id is null and u.is_active and not u.is_suspended
        and exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'teacher')
        and not exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'school_admin')`,
     [schoolId],

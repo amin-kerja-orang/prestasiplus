@@ -93,7 +93,7 @@ describe('GET /admin-sekolah/laporan-aktiviti', () => {
     expect(r.breakdown.quiz).toBe(1)
   })
 
-  it('a school with fewer than 5 contributing pupils: the accuracy tile is hidden (0), the session count stays', async () => {
+  it('a school with fewer than 5 pupils: no minimum cohort; the seeded session has no answers, so the accuracy tile is 0 and the session count stays', async () => {
     const r = SchoolAdminActivityReportSchema.parse((await adminB.get('/admin-sekolah/laporan-aktiviti')).body.data)
     expect(r.tiles.pupils.sessions).toBe(1)
     expect(r.tiles.pupils.accuracy).toBe(0)

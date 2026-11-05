@@ -5,7 +5,6 @@ import { toMytTimestamp } from '../../../common/time/myt'
 import { CLOCK, type Clock } from '../../../db/clock'
 import { AnalyticsRepository } from '../../reports/analytics/analytics.repository'
 import { compareIds } from '../../reports/analytics/domain/rules'
-import { K_COHORT } from '../school-admin.constants'
 import { SchoolPopulation } from './population'
 import {
   accuracyOf,
@@ -24,8 +23,8 @@ import {
 
 /**
  * S5 monthly report (mock `monthly`): the shown month's cards, a 12-month series, and the subject strengths of the shown month.
- * A month is listed only when it has at least one completed session and at least `K_COHORT` pupils answered in it (a smaller
- * group is never shown). Subject rows are the same: a subject answered by fewer than `K_COHORT` pupils is left out.
+ * A month is listed when it has answers; subject rows likewise. There is no minimum cohort on this staff screen (PO decision
+ * 2026-11-05, #503 batch 3).
  * Answers, correct answers, active pupils and accuracy are the XS-4 / XS-2 / XS-5 figures of `XsQueries` (answer rows, all modes, pooled),
  * per MYT calendar month; the session count of a month is a session read and stays a separately named figure.
  */
@@ -62,14 +61,14 @@ export class MonthlyService {
     const shownKey = monthKey(shown)
     const sm = perMonth.get(shownKey)
     const hasData = (sm?.answers ?? 0) > 0
-    // A group under the cohort size is never shown: the cards keep the counts, hide the accuracy, and the month leaves the series.
-    const showable = hasData && (sm?.users ?? 0) >= K_COHORT
+    // Staff screen: no minimum cohort (PO decision 2026-11-05, #503 batch 3).
+    const showable = hasData
 
     const months: SchoolAdminMonthlyMonthRow[] = []
     if (showable) {
       for (const ym of series) {
         const m = perMonth.get(monthKey(ym))
-        if (!m || m.answers === 0 || m.users < K_COHORT) continue
+        if (!m || m.answers === 0) continue
         months.push({
           month: monthKey(ym),
           label: monthLabel(ym),
@@ -116,7 +115,7 @@ export class MonthlyService {
     const names = await this.analytics.subjectNames([...per.keys()])
     const rows: (SchoolAdminMonthlySubjectRow & { id: string })[] = []
     for (const [id, s] of per) {
-      if (s.users.size < K_COHORT || s.answers === 0) continue
+      if (s.answers === 0) continue
       rows.push({ id, name: names.get(id) ?? '', accuracy: accuracyOf(s.correct, s.answers) ?? 0, answers: s.answers, pupils: s.users.size })
     }
     rows.sort((a, b) => b.accuracy - a.accuracy || b.answers - a.answers || compareIds(a.id, b.id))

@@ -28,9 +28,8 @@
  *   Platform scope also leaves out pupils of primary schools (`PRIMARY_SCHOOL_TYPES`, D72), as the Command Center always did.
  * - XS-5 is a pooled figure (correct and answered are summed first, never an average of rounded values), sent as a number with
  *   ONE decimal (half up), `null` with 0 answers, never above 100 (R1-START-HERE section 11).
- * - XS-3 does NOT filter on `is_active` (DOC DEFECT 1 is open: 50 section 5.3 says "approved", 20 says "approved and not deleted",
- *   and neither says that a deactivated teacher is left out). This follows 50 literally; change it here, in one place, when the
- *   defect is decided.
+ * - XS-3 counts ACTIVE approved teachers only (PO decision 2026-11-05, #503 batch 3): role teacher, `school_id` set,
+ *   `pending_school_id` null, `is_active` and not suspended, no school-admin role. The predicate lives in one place, `isXs3Teacher`.
  */
 import { Inject, Injectable } from '@nestjs/common'
 
@@ -106,6 +105,9 @@ export function xsAccuracy(correct: number, answered: number): number | null {
   return Math.min(100, tenths / 10)
 }
 
+/** The lead's name for the same pooled helper (decision 11): `xsAccuracy` stays the one implementation. */
+export const pooledAccuracy = xsAccuracy
+
 // --- SQL fragments ---------------------------------------------------------------------------------------------------------
 
 const ALIAS = /^[a-z_][a-z0-9_]*$/i
@@ -127,15 +129,19 @@ export function XS_PUPIL_SQL(userAlias = 'u'): Prisma.Sql {
 }
 
 /**
- * XS-3 as a condition on the users table `alias` (default `u`): a teacher account, approved (`pending_school_id` is null) and with
- * no school-admin role. The school (`school_id = ...`) is added by the caller. It does not filter on `is_active` (DOC DEFECT 1).
+ * `isXs3Teacher`, the one XS-3 predicate, as a condition on the users table `alias` (default `u`): a teacher account, approved
+ * (`pending_school_id` is null), active and not suspended, with no school-admin role (PO decision 2026-11-05, #503 batch 3). The
+ * school (`school_id = ...`, set) is added by the caller; `XsQueries.teachers`, `teacherCount` and the Command Center use this.
  */
-export function XS_TEACHER_SQL(userAlias = 'u'): Prisma.Sql {
+export function isXs3Teacher(userAlias = 'u'): Prisma.Sql {
   const u = alias(userAlias)
-  return Prisma.sql`(${u}.pending_school_id IS NULL
+  return Prisma.sql`(${u}.pending_school_id IS NULL AND ${u}.is_active = true AND ${u}.is_suspended = false
     AND EXISTS (SELECT 1 FROM user_roles xtr WHERE xtr.user_id = ${u}.id AND xtr.role = 'teacher')
     AND NOT EXISTS (SELECT 1 FROM user_roles xar WHERE xar.user_id = ${u}.id AND xar.role = 'school_admin'))`
 }
+
+/** Same predicate under the name the raw-SQL callers already use. */
+export const XS_TEACHER_SQL = isXs3Teacher
 
 const idOrNull = (id: string): bigint | null => (isIdString(id) ? idFromString(id) : null)
 
@@ -223,16 +229,16 @@ export class XsQueries {
     return num(r?.c)
   }
 
-  /** XS-3: the teachers of a school (count and ids). Not filtered on `is_active` (DOC DEFECT 1, see the header). */
+  /** XS-3: the teachers of a school (count and ids). Active approved teachers only (see the header). */
   async teachers(schoolId: string): Promise<XsPupils> {
-    const rows = await this.q(Prisma.sql`SELECT u.id::text AS id FROM users u WHERE ${schoolSql('u', schoolId)} AND ${XS_TEACHER_SQL()} ORDER BY u.id`)
+    const rows = await this.q(Prisma.sql`SELECT u.id::text AS id FROM users u WHERE ${schoolSql('u', schoolId)} AND ${isXs3Teacher()} ORDER BY u.id`)
     const ids = rows.map((r) => String(r.id))
     return { count: ids.length, ids }
   }
 
   /** XS-3 as a number only. */
   async teacherCount(schoolId: string): Promise<number> {
-    const [r] = await this.q(Prisma.sql`SELECT count(*)::int AS c FROM users u WHERE ${schoolSql('u', schoolId)} AND ${XS_TEACHER_SQL()}`)
+    const [r] = await this.q(Prisma.sql`SELECT count(*)::int AS c FROM users u WHERE ${schoolSql('u', schoolId)} AND ${isXs3Teacher()}`)
     return num(r?.c)
   }
 

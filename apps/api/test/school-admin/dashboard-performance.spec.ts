@@ -183,11 +183,12 @@ describe('GET /admin-sekolah/dashboard with the real BE-19 SchoolPerformanceServ
     expect(d.performance.total).toBe(0)
   })
 
-  it('fewer than 5 pupils: the practice block stays suppressed (k = 5)', async () => {
+  it('fewer than 5 pupils: the practice block is shown (staff screen, no minimum cohort: PO decision 2026-11-05, #503 batch 3)', async () => {
     for (let i = 0; i < 4; i++) await pupil(s1, true)
     const d = await dashboard()
     expect(d.cards.pupils).toBe(4)
-    expect(d.performance.practice).toEqual({ accuracy: null, sessions: 0, questions: 0 })
+    // Changed from the suppressed { null, 0, 0 }: 16 practice_answers rows, 12 correct.
+    expect(d.performance.practice).toEqual({ accuracy: 75, sessions: 4, questions: 4 * ANSWERED_PER_SITTING })
     expect(d.performance.levels.every((l) => l.accuracy === 0)).toBe(true)
     expect(d.performance.total).toBe(0)
   })
@@ -209,7 +210,7 @@ describe('GET /admin-sekolah/dashboard with the real BE-19 SchoolPerformanceServ
     expect((await dashboard()).cards.activeClasses).toBe(4)
   })
 
-  it('levels: 5 pupils with sittings in one class of the level are shown; a level with fewer than 5 pupils stays 0', async () => {
+  it('levels: 5 pupils with sittings in one class of the level are shown; a level with fewer than 5 pupils is shown too (no minimum cohort)', async () => {
     const five: string[] = []
     for (let i = 0; i < 5; i++) five.push(await pupil(s1, true))
     const small: string[] = []
@@ -218,6 +219,7 @@ describe('GET /admin-sekolah/dashboard with the real BE-19 SchoolPerformanceServ
     const little = await klass(s1, 11, { pupils: small })
     const d = await dashboard()
     expect(d.performance.levels.find((l) => l.code === big)?.accuracy).toBe(70)
-    expect(d.performance.levels.find((l) => l.code === little)?.accuracy).toBe(0)
+    // Changed from 0 (suppressed): the small level now shows its BE-19 figure.
+    expect(d.performance.levels.find((l) => l.code === little)?.accuracy).toBe(70)
   })
 })

@@ -15,6 +15,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { AuthModule } from '../../src/modules/auth'
 import { CommandCenterModule } from '../../src/modules/command-center'
+import { CommandCenterRepository } from '../../src/modules/command-center/shared/command-center.repository'
 import { SchoolAdminModule, SCHOOL_PERFORMANCE_PORT } from '../../src/modules/school-admin'
 import { XS_ALL_TIME, XsQueries, xsAccuracy } from '../../src/modules/school-admin/xs-queries'
 import { UsersModule } from '../../src/modules/users'
@@ -344,12 +345,28 @@ describe('XsQueries edge cases', () => {
     expect((await xs.teachers(e)).ids).toContain(dual)
   })
 
-  it('XS-3 counts a deactivated approved teacher (DOC DEFECT 1: no is_active filter)', async () => {
+  it('XS-3 counts active approved teachers only: a deactivated and a suspended teacher are out (PO decision 2026-11-05, #503 batch 3)', async () => {
     const before = await xs.teacherCount(e)
+    const on = await mk('Tepi Guru Aktif', null, { role: 'teacher' })
     const off = await mk('Tepi Guru Tidak Aktif', null, { role: 'teacher', isActive: false })
-    expect((await xs.teachers(e)).ids).toContain(off)
+    const held = await mk('Tepi Guru Digantung', null, { role: 'teacher' })
+    await suspend(t.db, held)
+    const r = await xs.teachers(e)
+    expect(r.ids).toContain(on)
+    expect(r.ids).not.toContain(off)
+    expect(r.ids).not.toContain(held)
     expect(await xs.teacherCount(e)).toBe(before + 1)
+    // The Command Center teacher list of the school follows the same predicate.
+    const repo = t.app.get(CommandCenterRepository, { strict: false })
+    expect((await repo.teachersOfSchool(e)).map((x) => x.id).sort()).toEqual([...r.ids].sort())
   })
+
+  // Lead ruling (#479). Enable after PR #544 (AnswerFactsPort) merges. The exact assertion to add, on the fixture school above:
+  //   const facts = await port.answerFacts(<the fixture school's XS-1 pupil ids>, {})   // AnswerFactsPort.answerFacts
+  //   const answered = facts.length; const correct = facts.filter((f) => f.isCorrect).length
+  //   expect(answered).toBe((await xs.answerTotals(SCHOOL())).answered)            // 24
+  //   expect(xsAccuracy(correct, answered)).toBe((await xs.answerTotals(SCHOOL())).accuracy)   // 62.5
+  it.todo('XS-4/XS-5 equal the AnswerFactsPort sums (enable after #544 merges)')
 
   it('a pupil enrolled in two classes of the same teacher is counted once', async () => {
     const tc = await createUser(t.db, { role: 'teacher', schoolId: e, name: 'Tepi Guru Dua Kelas' })
