@@ -1,12 +1,17 @@
 import { Body, Controller, Get, HttpCode, Inject, Param, Post, Query, Res, UploadedFile, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common'
-import { QUESTION_IMPORT_ERROR_CSV_FILENAME, QUESTION_IMPORT_TEMPLATE_CONTENT_TYPE, QUESTION_IMPORT_TEMPLATE_FILENAME } from '@pp/contract'
+import {
+  QUESTION_IMPORT_ERROR_CSV_FILENAME,
+  QUESTION_IMPORT_GURU_TEMPLATE_FILENAME,
+  QUESTION_IMPORT_TEMPLATE_CONTENT_TYPE,
+  QUESTION_IMPORT_TEMPLATE_FILENAME,
+} from '@pp/contract'
 import type { Response } from 'express'
 
 import { NoStoreInterceptor } from '../../../../common/http/no-store.interceptor'
 import { RateLimit, RateLimitGuard } from '../../../../common/throttle'
 import { Actor, AdminOnly, AdminOrGuru, type WorkflowActor } from '../actor'
 import { IMPORT_LIMITS } from './imports.constants'
-import { CsvUploadInterceptor, CsvZipUploadInterceptor } from './imports.interceptor'
+import { CsvUploadInterceptor, CsvZipUploadInterceptor, GuruCsvUploadInterceptor } from './imports.interceptor'
 import { QuestionImportsService, type UploadedCsv } from './imports.service'
 
 function sendTemplate(res: Response, text: string, filename: string = QUESTION_IMPORT_TEMPLATE_FILENAME): void {
@@ -55,7 +60,7 @@ export class QuestionImportsController {
   }
 }
 
-/** Guru contribution import (`/guru/questions/import|template`); an admin may use it too. */
+/** Guru contribution import (`/guru/questions/import|template`, API-GUR-19); an admin may use it too. */
 @AdminOrGuru()
 @UseGuards(RateLimitGuard)
 @UseInterceptors(NoStoreInterceptor)
@@ -65,14 +70,14 @@ export class GuruQuestionImportController {
 
   @Get('template')
   template(@Res() res: Response): void {
-    sendTemplate(res, this.imports.template())
+    sendTemplate(res, this.imports.guruTemplate(), QUESTION_IMPORT_GURU_TEMPLATE_FILENAME)
   }
 
   @Post('import')
   @HttpCode(200)
   @RateLimit(IMPORT_LIMITS.write)
-  @UseInterceptors(CsvUploadInterceptor)
-  import(@Actor() actor: WorkflowActor, @UploadedFile() file: UploadedCsv | undefined) {
-    return this.imports.importGuru(actor, file)
+  @UseInterceptors(GuruCsvUploadInterceptor)
+  import(@Actor() actor: WorkflowActor, @UploadedFile() file: UploadedCsv | undefined, @Body() body: unknown) {
+    return this.imports.importGuru(actor, file, body)
   }
 }

@@ -95,6 +95,7 @@ function isBold(seg: Segment): seg is { b: string } {
               block
               :trailing-icon="open[i] ? 'i-ph-caret-up' : 'i-ph-caret-down'"
               class="h-auto justify-between py-3 text-start"
+              :aria-expanded="open[i] === true"
               data-testid="panduan-faq-toggle"
               @click="toggle(i)"
               >{{ faq.q }}</UButton
