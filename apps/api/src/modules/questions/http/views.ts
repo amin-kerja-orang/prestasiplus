@@ -103,7 +103,7 @@ function flatBase(q: QuestionView) {
     createdAt: toMytTimestamp(q.createdAt),
     updatedAt: toMytTimestamp(q.updatedAt),
     // S1-T07 (API-Q-12): the stored flag unless dismissed ("Bukan masalah").
-    flags: v.stimulusFlag != null && v.flagDismissedAt == null ? [v.stimulusFlag] : [],
+    flags: q.openFlags ?? [],
     usage: c.usage,
     parts: partsOf(q),
     numberLabel: v.numberLabel,
@@ -170,7 +170,7 @@ export function rowView(q: QuestionView): QuestionRow {
     kertas: kertasOfPaperCode(q.version.paperCode),
     numberLabel: q.version.numberLabel,
     ...(f.essayTopics === null ? {} : { essayTopics: f.essayTopics }),
-    flags: q.version.stimulusFlag != null && q.version.flagDismissedAt == null ? [q.version.stimulusFlag] : [],
+    flags: q.openFlags ?? [],
   })
 }
 

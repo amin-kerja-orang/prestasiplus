@@ -716,10 +716,11 @@ export class QuestionsRepository {
       const text = f.q.trim()
       const like = likePattern(text)
       const key = /^\d{1,18}$/.test(text) ? BigInt(text) : null
+      // One table: the id is read from the version row (`v.question_id`), so the id path keeps the plan of the text path (min 3 characters, in the schema).
       conds.push(
         key === null
           ? Prisma.sql`(v.stem_ms ILIKE ${like} ESCAPE '\\' OR v.stem_en ILIKE ${like} ESCAPE '\\')`
-          : Prisma.sql`(q.id = ${key} OR v.stem_ms ILIKE ${like} ESCAPE '\\' OR v.stem_en ILIKE ${like} ESCAPE '\\')`,
+          : Prisma.sql`(v.question_id = ${key} OR v.stem_ms ILIKE ${like} ESCAPE '\\' OR v.stem_en ILIKE ${like} ESCAPE '\\')`,
       )
     }
     if (f.tingkatan !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM education_levels tl WHERE tl.id = v.education_level_id AND tl.code = ${f.tingkatan})`)
@@ -733,8 +734,12 @@ export class QuestionsRepository {
           : Prisma.sql`q.source_type = ${f.source === 'csv' ? 'excel' : f.source}`,
       )
     }
-    // The OPEN flag of the version the list shows (dismissed = not open).
-    if (f.flag !== undefined) conds.push(Prisma.sql`(v.stimulus_flag = ${f.flag} AND v.flag_dismissed_at IS NULL)`)
+    // D12: the OPEN flag (not dismissed) of the LIVE approved version, as the work-list and the pupil draws read it, not of the version the list shows.
+    if (f.flag !== undefined) {
+      conds.push(
+        Prisma.sql`EXISTS (SELECT 1 FROM question_versions lv WHERE lv.question_id = q.id AND lv.version_no = q.live_version_no AND lv.status = 'approved' AND lv.stimulus_flag = ${f.flag} AND lv.flag_dismissed_at IS NULL)`,
+      )
+    }
     if (f.rejected !== undefined) conds.push(f.rejected === 'true' ? Prisma.sql`v.rejection_reason IS NOT NULL` : Prisma.sql`v.rejection_reason IS NULL`)
     return conds
   }
@@ -1451,6 +1456,18 @@ export class QuestionsRepository {
       lastEditor: c.lastEditor ?? 'person',
       declaredMarks: c.declaredMarks ?? null,
     }
+  }
+
+  /** D12: the OPEN flag of the LIVE approved version of each question (one query), by question id. Absent = none. */
+  async openLiveFlags(ids: readonly string[]): Promise<Map<string, 'stimulus_missing' | 'figure_only' | 'stem_duplicated'>> {
+    const keys = ids.map(bi).filter((k): k is bigint => k !== null)
+    const out = new Map<string, 'stimulus_missing' | 'figure_only' | 'stem_duplicated'>()
+    if (keys.length === 0) return out
+    const rows = await this.db.$queryRaw<{ id: bigint; flag: string }[]>`
+      SELECT q.id, v.stimulus_flag AS flag FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
+       WHERE q.id IN (${Prisma.join(keys)}) AND v.status = 'approved' AND v.stimulus_flag IS NOT NULL AND v.flag_dismissed_at IS NULL`
+    for (const r of rows) out.set(idToString(r.id), r.flag as 'stimulus_missing' | 'figure_only' | 'stem_duplicated')
+    return out
   }
 
   /** DM-05: stores the stimulus flag of one version (`refreshStimulusFlag` of effective-leaf.ts, the one writer). */

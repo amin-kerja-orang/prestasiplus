@@ -188,6 +188,8 @@ export interface QuestionView extends QuestionRecord {
   imageTokens?: Record<string, string>
   /** Name of the curriculum chapter of the version (the admin "Bab" label), or null. */
   chapterName?: string | null
+  /** S1-T07 (D12): the open stimulus flag of the LIVE approved version, as `flags[]` on the wire. Absent = none. */
+  openFlags?: ('stimulus_missing' | 'figure_only' | 'stem_duplicated')[]
 }
 
 /** Admin detail: DSKP chain (unit/sk/sp) and creator name resolved through the owners' repositories. */

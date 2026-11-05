@@ -193,8 +193,13 @@ export const questionFilterShape = {
   unit: IdSchema.optional(),
   source: z.enum(QUESTION_SOURCE_FILTERS, QUESTION_MESSAGES.filterInvalid).optional(),
   /** Text in the stem, or a question id when it is all digits (AC-QA-47). */
-  q: z.string().max(100, 'Carian tidak boleh melebihi 100 aksara.').optional(),
-  /** An OPEN flag (not dismissed) on the version the list shows. */
+  q: z
+    .string()
+    .max(100, 'Carian tidak boleh melebihi 100 aksara.')
+    // Text needs 3 characters (the trigram index); a question id is all digits and may be any length. The generic filter text, no new BM.
+    .refine((v) => /^\d+$/.test(v.trim()) || v.trim().length >= 3, QUESTION_MESSAGES.filterInvalid)
+    .optional(),
+  /** An OPEN flag (not dismissed) on the LIVE approved version (D12), the one the work-list and the pupil draws read. */
   flag: z.enum(STIMULUS_FLAGS, QUESTION_MESSAGES.filterInvalid).optional(),
   /** DM-58 (AC-QA-32): `true` = a question with a rejection reason (the chip "Ditolak"), `false` = none. */
   rejected: z.enum(['true', 'false'], QUESTION_MESSAGES.filterInvalid).optional(),

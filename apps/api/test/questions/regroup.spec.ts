@@ -147,7 +147,8 @@ describe('stimulus flags, regroup and undo (S1-T07 part 2, real database)', () =
       expect(res.status, JSON.stringify(res.body)).toBe(200)
       const group = res.body.data
       expect(group.questionIds).toEqual([s.a, s.b])
-      expect(group.stimuli.map((x: { id: string }) => x.id)).toEqual([s.figureStimulus])
+      // the alt text was completed, so the group carries a copy of the figure stimulus (same file); the figure's own stimulus is untouched
+      expect(group.stimuli).toHaveLength(1)
       expect(group.subjectId).toBe(refs.mathId)
       expect(group.educationLevelId).toBe(refs.t4Id)
       expect(res.body.meta.auditId).toMatch(/^[1-9]\d*$/)
@@ -170,7 +171,7 @@ describe('stimulus flags, regroup and undo (S1-T07 part 2, real database)', () =
       // DM-59: the audit row holds before and after.
       const row = (await audit('questions.regrouped')).find((r) => r.id === res.body.meta.auditId)!
       expect(row.target_id).toBe(group.id)
-      expect(row.detail).toMatchObject({ v: 1, groupId: group.id, members: `${s.a},${s.b}`, figureQuestionId: s.figureId, stimulusIds: s.figureStimulus })
+      expect(row.detail).toMatchObject({ v: 1, groupId: group.id, members: `${s.a},${s.b}`, figureQuestionId: s.figureId })
       expect((row.detail as { versions: unknown[] }).versions).toHaveLength(2)
     })
 
@@ -226,6 +227,79 @@ describe('stimulus flags, regroup and undo (S1-T07 part 2, real database)', () =
       await refused(async (s) => {
         await q(`update question_versions set stem_ms = stem_ms || ' (disunting)', updated_at = now() + interval '1 second' where question_id = $1 and version_no = 1`, [s.b])
       })
+      // D5: changed stimuli of the group
+      await refused(async (_s, groupId) => {
+        const other = await stimulus('Lain')
+        await q(`update stimulus_group_stimuli set stimulus_id = $2 where group_id = $1`, [groupId, other])
+      })
+      // D5: changed member order
+      await refused(async (s, groupId) => {
+        await q(`update questions set group_position = 3 where id = $2 and group_id = $1`, [groupId, s.a])
+      })
+      // D5: a figure version change (a new version) and an in-place edit of the figure row
+      await refused(async (s) => {
+        await q(`update questions set latest_version_no = 2 where id = $1`, [s.figureId])
+        await q(`insert into question_versions (question_id, version_no, status, type, stem_ms, subject_id, education_level_id) select question_id, 2, 'draft', type, stem_ms, subject_id, education_level_id from question_versions where question_id = $1 and version_no = 1`, [s.figureId])
+      })
+      await refused(async (s) => {
+        await q(`update question_versions set updated_at = now() + interval '2 seconds' where question_id = $1 and version_no = 1`, [s.figureId])
+      })
+      // D5: the group itself edited (label)
+      await refused(async (_s, groupId) => {
+        await q(`update stimulus_groups set updated_at = now() + interval '3 seconds' where id = $1`, [groupId])
+      })
+    })
+
+    it('[CI] the figure stimulus is never edited (a copy carries the new alt) and undo writes the reverse status event and deletes the copy', async () => {
+      const s = await scenario()
+      await q(`update stimuli set kind = 'image', alt_text = 'Asal' where id = $1`, [s.figureStimulus])
+      const done = await admin.post('/api/admin/questions/regroup', { figureQuestionId: s.figureId, memberQuestionIds: [s.a, s.b], stimulus: { alt: 'Alt baharu' } })
+      expect(done.status, JSON.stringify(done.body)).toBe(200)
+      const groupStimulus = done.body.data.stimuli[0].id as string
+      expect(groupStimulus).not.toBe(s.figureStimulus)
+      expect((await one<{ alt_text: string }>(`select alt_text from stimuli where id = $1`, [s.figureStimulus])).alt_text).toBe('Asal')
+      expect((await one<{ alt_text: string }>(`select alt_text from stimuli where id = $1`, [groupStimulus])).alt_text).toBe('Alt baharu')
+      // the undo record holds no text
+      const row = (await audit('questions.regrouped')).find((r) => r.id === done.body.meta.auditId)!
+      expect(JSON.stringify(row.detail)).not.toContain('Alt baharu')
+      expect((await admin.post(`/api/admin/questions/regroup/${done.body.meta.auditId as string}/undo`)).status).toBe(200)
+      expect((await q(`select 1 from stimuli where id = $1`, [groupStimulus])).length).toBe(0)
+      const events = await q<{ from_status: string; to_status: string; reason: string }>(`select from_status, to_status, reason from question_status_events where question_id = $1 order by id`, [s.figureId])
+      expect(events.slice(-2)).toEqual([
+        { from_status: 'approved', to_status: 'archived', reason: 'regrouped' },
+        { from_status: 'archived', to_status: 'approved', reason: 'regroup_undone' },
+      ])
+    })
+
+    it('[CI] two undos at the same time: one 200 and one 409 (the group and the questions are locked before the conflict check)', async () => {
+      const s = await scenario()
+      const done = await admin.post('/api/admin/questions/regroup', { figureQuestionId: s.figureId, memberQuestionIds: [s.a, s.b], stimulus: { alt: 'x' } })
+      const url = `/api/admin/questions/regroup/${done.body.meta.auditId as string}/undo`
+      const [r1, r2] = await Promise.all([admin.post(url), admin.post(url)])
+      expect([r1.status, r2.status].sort()).toEqual([200, 409])
+      expect(Number((await one<{ n: string }>(`select count(*) n from audit_events where action = 'questions.regroup_undone' and target_id = $1`, [done.body.data.id])).n)).toBe(1)
+    })
+
+    it('[CI] a failure in the middle of a regroup leaves nothing behind (group, links, flags, figure, audit)', async () => {
+      const s = await scenario()
+      await q(`create or replace function pp_fail_regroup() returns trigger language plpgsql as $$ begin raise exception 'forced regroup failure'; end $$`)
+      await q(`create trigger pp_fail_regroup before insert on question_status_events for each row when (new.reason = 'regrouped') execute function pp_fail_regroup()`)
+      try {
+        const audits = Number((await one<{ n: string }>(`select count(*) n from audit_events where action = 'questions.regrouped'`)).n)
+        const before = { a: await flagRow(s.a), b: await flagRow(s.b), fig: await flagRow(s.figureId) }
+        const res = await admin.post('/api/admin/questions/regroup', { figureQuestionId: s.figureId, memberQuestionIds: [s.a, s.b], stimulus: { alt: 'x' } })
+        expect(res.status).toBeGreaterThanOrEqual(500)
+        expect((await q(`select 1 from questions where id in ($1, $2) and group_id is not null`, [s.a, s.b])).length).toBe(0)
+        expect(await flagRow(s.a)).toEqual(before.a)
+        expect(await flagRow(s.b)).toEqual(before.b)
+        expect(await flagRow(s.figureId)).toEqual(before.fig)
+        expect(Number((await one<{ n: string }>(`select count(*) n from question_version_stimuli where stimulus_id = $1`, [s.own])).n)).toBe(1)
+        expect(Number((await one<{ n: string }>(`select count(*) n from audit_events where action = 'questions.regrouped'`)).n)).toBe(audits)
+        expect((await one<{ live_version_no: number }>(`select live_version_no from questions where id = $1`, [s.figureId])).live_version_no).toBe(1)
+      } finally {
+        await q(`drop trigger if exists pp_fail_regroup on question_status_events`)
+        await q(`drop function if exists pp_fail_regroup()`)
+      }
     })
 
     it('[CI] undo: unknown audit id is 404, an audit row of another action is 404, a non-numeric id is 404, a teacher is 403', async () => {
@@ -422,7 +496,7 @@ describe('stimulus flags, regroup and undo (S1-T07 part 2, real database)', () =
       const unit = await one<{ u: string }>(`select unit_node_id::text u from question_versions where question_id = $1 and version_no = 1`, [t4])
       const byUnit = await list(`unit=${unit.u}`)
       expect(byUnit.data.map((r) => r.id)).toContain(t4)
-      const dry = await admin.post('/api/questions/bulk-action/filter', { action: 'archived', filter: { tingkatan: 'T5', chapter: 'none', unit: unit.u, source: 'manual', q: 'x', flag: 'stem_duplicated' }, dryRun: true })
+      const dry = await admin.post('/api/questions/bulk-action/filter', { action: 'archived', filter: { tingkatan: 'T5', chapter: 'none', unit: unit.u, source: 'manual', q: 'xyz', flag: 'stem_duplicated' }, dryRun: true })
       expect(dry.status, JSON.stringify(dry.body)).toBe(200)
     })
 
@@ -488,6 +562,30 @@ describe('stimulus flags, regroup and undo (S1-T07 part 2, real database)', () =
       const bad = await admin.get('/api/questions?rejected=maybe')
       expect(bad.status).toBe(422)
       expect(bad.body.error.fields.rejected).toBe(QUESTION_MESSAGES.filterInvalid)
+    })
+
+    it('[CI] D12: `flags[]` and the `flag` filter read the LIVE approved version, not the version the list shows', async () => {
+      const liveFlagged = await served('Rajah 71 menunjukkan satu motor. Apakah jenisnya? Hidup.')
+      const liveClean = await served('Soalan bersih untuk versi hidup. Hidup dua.')
+      // a newer draft version on each: the flagged one gets a clean draft, the clean one a flagged draft
+      for (const [id, flag] of [[liveFlagged, null], [liveClean, 'stimulus_missing']] as const) {
+        await q(`update questions set latest_version_no = 2 where id = $1`, [id])
+        await q(`insert into question_versions (question_id, version_no, status, type, stem_ms, subject_id, education_level_id, stimulus_flag) select question_id, 2, 'draft', type, stem_ms, subject_id, education_level_id, $2 from question_versions where question_id = $1 and version_no = 1`, [id, flag])
+      }
+      const rows = (await list('flag=stimulus_missing')).data
+      expect(rows.map((r) => r.id)).toContain(liveFlagged)
+      expect(rows.map((r) => r.id)).not.toContain(liveClean)
+      expect(rows.find((r) => r.id === liveFlagged)!.flags).toEqual(['stimulus_missing'])
+      const clean = (await list(`q=${liveClean}`)).data.find((r) => r.id === liveClean)!
+      expect(clean.flags).not.toContain('stimulus_missing')
+    })
+
+    it('[CI] q: text needs 3 characters (422 "Nilai penapis tidak sah."), a question id of any length is accepted', async () => {
+      const short = await admin.get('/api/questions?q=ab')
+      expect(short.status).toBe(422)
+      expect(short.body.error.fields.q).toBe(QUESTION_MESSAGES.filterInvalid)
+      expect((await admin.get('/api/questions?q=1')).status).toBe(200)
+      expect((await admin.get('/api/questions?q=abc')).status).toBe(200)
     })
 
     it('[CI] AC-ADM-QE3.14 scope note: a bad value of any new filter is 422 "Nilai penapis tidak sah."', async () => {

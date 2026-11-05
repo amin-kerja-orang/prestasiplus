@@ -35,8 +35,9 @@ const EXCERPT_MAX = 120
 
 /**
  * The audit payload of a regroup (DM-59, lead decision D4 on #424). FLAT on purpose: `sanitizeDetails` redacts below depth 4, so every list
- * of ids is a comma string and the per-version rows are one array of flat objects. Ids only, never content. Undo reads it back; the `after*`
- * fields and `doneAt` are how undo tells that something changed since.
+ * of ids is a comma string and the per-version rows are one array of flat objects. IDS, ENUM VALUES AND TIMESTAMPS ONLY, never content (so nothing
+ * here can be redacted by the sanitizer). Undo reads it back; `memberState`, `stamps` and `groupUa` (the `updated_at` of every row the regroup
+ * touched, as it was when the regroup ended) are how undo tells by EQUALITY that something changed since.
  */
 interface VersionRow {
   q: string
@@ -76,9 +77,14 @@ interface RegroupPayload {
   figureLive: number | null
   figureState: MemberState | null
   figureVersions: FigureVersionRow[]
-  /** The reused figure stimulus before its label, alt and caption were completed. */
-  figureStimulus: { id: string; label: string | null; alt: string | null; caption: string | null } | null
-  doneAt: string
+  /** `updated_at` (ISO) of the group and of every member / figure version row, after the last write of the regroup. */
+  groupUa: string
+  stamps: StampRow[]
+}
+interface StampRow {
+  q: string
+  no: number
+  ua: string
 }
 
 /**
@@ -242,7 +248,7 @@ export class RegroupService {
     // 1. The stimulus source.
     let stimulusIds: bigint[] = []
     let createdStimulusId: string | null = null
-    let figureStimulus: RegroupPayload['figureStimulus'] = null
+    let originalFigureStimuli: bigint[] = []
     let figureRow: { live: number | null; latest: number; versions: FigureVersionRow[] } | null = null
     if (input.stimulusId !== undefined) {
       const k = bi(input.stimulusId)
@@ -251,7 +257,8 @@ export class RegroupService {
     } else if (figureId !== undefined) {
       const figure = await this.figureSource(figureId, input, facts.get(figureId)?.groupId ?? null)
       stimulusIds = figure.stimulusIds
-      figureStimulus = figure.completed
+      createdStimulusId = figure.createdStimulusId
+      originalFigureStimuli = figure.originalStimulusIds
       figureRow = figure.row
     } else {
       const parsed = StimulusCreateRequestSchema.safeParse(input.stimulus)
@@ -262,7 +269,8 @@ export class RegroupService {
     }
 
     // 2. The snapshot of what the members look like before (flags, stem stimulus links), then the group and its members.
-    const stimulusRows = await this.db.stimulus.findMany({ where: { id: { in: stimulusIds } }, select: { id: true, assetFileId: true, contentHash: true } })
+    const matchIds = [...stimulusIds, ...originalFigureStimuli]
+    const stimulusRows = await this.db.stimulus.findMany({ where: { id: { in: matchIds } }, select: { id: true, assetFileId: true, contentHash: true } })
     const sameAssets = stimulusRows.flatMap((s) => (s.assetFileId === null ? [] : [s.assetFileId]))
     const sameHashes = stimulusRows.flatMap((s) => (s.contentHash === null ? [] : [s.contentHash]))
     const versionRows: VersionRow[] = []
@@ -273,31 +281,31 @@ export class RegroupService {
     // The members as they are BEFORE the move (attaching them to the group decides the flags again): stored flags and the stem links that are the group's image
     // (same stimulus, same asset file or same content hash; the files stay stored for the undo).
     const toDelete: bigint[] = []
-    for (const q of before) {
-      for (const no of numbersOf(q)) {
-        const v = await this.db.questionVersion.findUnique({
-          where: { questionId_versionNo: { questionId: q.id, versionNo: no } },
-          include: { stimuli: { include: { stimulus: { select: { assetFileId: true, contentHash: true } } } } },
-        })
-        if (v === null) continue
-        const gone = v.stimuli.filter(
-          (l) =>
-            stimulusIds.includes(l.stimulusId) ||
-            (l.stimulus.assetFileId !== null && sameAssets.includes(l.stimulus.assetFileId)) ||
-            (l.stimulus.contentHash !== null && sameHashes.includes(l.stimulus.contentHash)),
-        )
-        versionRows.push({
-          q: idToString(q.id),
-          no,
-          flag: v.stimulusFlag,
-          flagAt: iso(v.stimulusFlagAt),
-          flagRef: v.stimulusFlagRef,
-          dismissedAt: iso(v.flagDismissedAt),
-          dismissedBy: v.flagDismissedBy === null ? null : idToString(v.flagDismissedBy),
-          removed: gone.map((l) => `${idToString(l.stimulusId)}:${String(l.position)}`).join(','),
-        })
-        toDelete.push(...gone.map((l) => l.id))
-      }
+    const wantedNumbers = new Map(before.map((q) => [q.id, numbersOf(q)]))
+    const beforeVersions = await this.db.questionVersion.findMany({
+      where: { questionId: { in: memberKeys }, versionNo: { in: [...new Set([...wantedNumbers.values()].flat())] } },
+      include: { stimuli: { include: { stimulus: { select: { assetFileId: true, contentHash: true } } } } },
+      orderBy: [{ questionId: 'asc' }, { versionNo: 'asc' }],
+    })
+    for (const v of beforeVersions) {
+      if (!(wantedNumbers.get(v.questionId) ?? []).includes(v.versionNo)) continue
+      const gone = v.stimuli.filter(
+        (l) =>
+          matchIds.includes(l.stimulusId) ||
+          (l.stimulus.assetFileId !== null && sameAssets.includes(l.stimulus.assetFileId)) ||
+          (l.stimulus.contentHash !== null && sameHashes.includes(l.stimulus.contentHash)),
+      )
+      versionRows.push({
+        q: idToString(v.questionId),
+        no: v.versionNo,
+        flag: v.stimulusFlag,
+        flagAt: iso(v.stimulusFlagAt),
+        flagRef: v.stimulusFlagRef,
+        dismissedAt: iso(v.flagDismissedAt),
+        dismissedBy: v.flagDismissedBy === null ? null : idToString(v.flagDismissedBy),
+        removed: gone.map((l) => `${idToString(l.stimulusId)}:${String(l.position)}`).join(','),
+      })
+      toDelete.push(...gone.map((l) => l.id))
     }
     const groupId = await this.repo.createGroup({ label: input.label ?? null, scope: 'section', stimulusIds, optionBank: [] })
     await this.members.set(groupId, memberIds, 'memberQuestionIds', undefined, false, { regroup: true })
@@ -337,8 +345,8 @@ export class RegroupService {
       figureLive: figureRow?.live ?? null,
       figureState,
       figureVersions: figureRow?.versions ?? [],
-      figureStimulus,
-      doneAt: new Date().toISOString(),
+      groupUa: (await this.db.stimulusGroup.findUniqueOrThrow({ where: { id: BigInt(groupId) }, select: { updatedAt: true } })).updatedAt.toISOString(),
+      stamps: await this.stampsOf([...memberState, ...(figureState === null ? [] : [figureState])]),
     }
     const auditId = await this.write(actor, AUDIT_ACTIONS.QUESTIONS_REGROUPED, 'stimulus_group', groupId, payload as unknown as Record<string, unknown>)
     return { group: await this.stimuli.getGroup(groupId), auditId }
@@ -349,7 +357,7 @@ export class RegroupService {
     figureId: string,
     input: RegroupRequest,
     groupId: string | null,
-  ): Promise<{ stimulusIds: bigint[]; completed: RegroupPayload['figureStimulus']; row: { live: number | null; latest: number; versions: FigureVersionRow[] } }> {
+  ): Promise<{ stimulusIds: bigint[]; createdStimulusId: string | null; originalStimulusIds: bigint[]; row: { live: number | null; latest: number; versions: FigureVersionRow[] } }> {
     if (groupId !== null) throw conflict(M.conflict)
     const key = BigInt(figureId)
     const q = await this.db.question.findUniqueOrThrow({ where: { id: key }, select: { latestVersionNo: true, liveVersionNo: true } })
@@ -368,15 +376,34 @@ export class RegroupService {
     const caption = given?.caption ?? first.caption
     // An image needs its alt text (30 QE2.6); the figure row has none to offer, so the admin supplies it.
     if (['image', 'diagram', 'map', 'infographic', 'graph'].includes(first.kind) && (alt === null || alt.trim() === '')) throw fail({ 'stimulus.alt': M.requestInvalid })
-    const completed = { id: idToString(first.id), label: first.label, alt: first.altText, caption: first.caption }
+    // The figure's own stimulus is never edited: when the admin completes its label, alt or caption, the GROUP gets a copy (same file) and undo deletes the
+    // copy. So the undo record holds ids only, no text.
+    let createdStimulusId: string | null = null
+    let firstId = first.id
     if (label !== first.label || alt !== first.altText || caption !== first.caption) {
-      await this.db.stimulus.update({ where: { id: first.id }, data: { label, altText: alt, caption } })
+      const copy = await this.db.stimulus.create({
+        data: {
+          kind: first.kind,
+          label,
+          altText: alt,
+          caption,
+          bodyMs: first.bodyMs,
+          bodyEn: first.bodyEn,
+          sourceCitation: first.sourceCitation,
+          style: first.style,
+          contentHash: first.contentHash,
+          assetFileId: first.assetFileId,
+          tableData: first.tableData === null ? Prisma.JsonNull : (first.tableData as Prisma.InputJsonValue),
+        },
+      })
+      firstId = copy.id
+      createdStimulusId = idToString(copy.id)
     }
     const numbers = [...new Set([q.liveVersionNo, q.latestVersionNo].filter((n): n is number => n !== null))]
     const versions = (await this.db.questionVersion.findMany({ where: { questionId: key, versionNo: { in: numbers } } }))
       .filter((r) => r.status !== 'archived')
       .map((r) => ({ no: r.versionNo, status: r.status, publishedAt: iso(r.publishedAt) }))
-    return { stimulusIds: v.stimuli.slice(0, 3).map((l) => l.stimulusId), completed, row: { live: q.liveVersionNo, latest: q.latestVersionNo, versions } }
+    return { stimulusIds: v.stimuli.slice(0, 3).map((l, i) => (i === 0 ? firstId : l.stimulusId)), createdStimulusId, originalStimulusIds: v.stimuli.map((l) => l.stimulusId), row: { live: q.liveVersionNo, latest: q.latestVersionNo, versions } }
   }
 
   private async archiveFigure(figureId: string, row: { live: number | null; versions: FigureVersionRow[] }, actor: HttpActor): Promise<void> {
@@ -395,6 +422,18 @@ export class RegroupService {
     return rows.map((r) => ({ q: idToString(r.id), latest: r.latestVersionNo, live: r.liveVersionNo }))
   }
 
+  /** `updated_at` of the live and latest version of each question: undo compares these by equality (D5), never against a clock. */
+  private async stampsOf(states: readonly MemberState[]): Promise<StampRow[]> {
+    if (states.length === 0) return []
+    const wanted = new Map(states.map((st) => [st.q, new Set([st.latest, ...(st.live === null ? [] : [st.live])])]))
+    const rows = await this.db.questionVersion.findMany({
+      where: { questionId: { in: states.map((st) => BigInt(st.q)) }, versionNo: { in: [...new Set([...wanted.values()].flatMap((x) => [...x]))] } },
+      select: { questionId: true, versionNo: true, updatedAt: true },
+      orderBy: [{ questionId: 'asc' }, { versionNo: 'asc' }],
+    })
+    return rows.filter((r) => wanted.get(idToString(r.questionId))?.has(r.versionNo) === true).map((r) => ({ q: idToString(r.questionId), no: r.versionNo, ua: r.updatedAt.toISOString() }))
+  }
+
   // --- API-Q-36 undo --------------------------------------------------------------------------------------------------------------
 
   async undo(auditId: string, actor: HttpActor): Promise<{ restored: number }> {
@@ -405,26 +444,36 @@ export class RegroupService {
       if (row === null || row.action !== AUDIT_ACTIONS.QUESTIONS_REGROUPED || row.detail === null || typeof row.detail !== 'object') throw ApiError.of('NOT_FOUND')
       const p = row.detail as unknown as RegroupPayload
       const refused = conflict(REGROUP_MESSAGES.undoConflict)
-      // The group row is the lock: a second undo at the same time waits here and then finds the group gone.
+      // A record the sanitizer touched is never written back (it would put "[redacted]" into the data).
+      if (JSON.stringify(p).includes('[redacted]')) throw refused
+      // Lock order = group first, then the questions in id order (the order of `GroupMembers.set`), BEFORE anything is read for the conflict check, so an
+      // edit that is running right now finishes first and is seen by `assertUnchanged`; a second undo waits here and then finds the group gone.
       if (!(await this.repo.lockGroup(p.groupId))) throw refused
+      const memberIds = p.members === '' ? [] : p.members.split(',')
+      await this.repo.lockQuestions(p.figureQuestionId === null ? memberIds : [...memberIds, p.figureQuestionId])
       const undone = await this.db.auditEvent.count({ where: { action: AUDIT_ACTIONS.QUESTIONS_REGROUP_UNDONE, targetId: p.groupId } })
       if (undone > 0) throw refused
-      await this.assertUnchanged(p, refused)
+      await this.assertUnchanged(p, memberIds, refused)
 
       const groupKey = BigInt(p.groupId)
-      const memberKeys = p.members === '' ? [] : p.members.split(',').map((m) => BigInt(m))
       await this.db.question.updateMany({ where: { groupId: groupKey }, data: { groupId: null, groupPosition: null } })
       await this.db.stimulusGroup.delete({ where: { id: groupKey } })
-      // Restore each version exactly as it was: the stem links removed, and the stored flags (not decided again).
+      // Restore each version exactly as it was: the stem links removed, and the stored flags (not decided again). One read, one insert.
+      const stored = await this.db.questionVersion.findMany({
+        where: { questionId: { in: [...new Set(p.versions.map((r) => BigInt(r.q)))] }, versionNo: { in: [...new Set(p.versions.map((r) => r.no))] } },
+        select: { id: true, questionId: true, versionNo: true },
+      })
+      const idOf = new Map(stored.map((v) => [`${idToString(v.questionId)}:${String(v.versionNo)}`, v.id]))
+      const links: { questionVersionId: bigint; stimulusId: bigint; position: number }[] = []
       for (const r of p.versions) {
-        const v = await this.db.questionVersion.findUnique({ where: { questionId_versionNo: { questionId: BigInt(r.q), versionNo: r.no } } })
-        if (v === null) continue
+        const versionId = idOf.get(`${r.q}:${String(r.no)}`)
+        if (versionId === undefined) continue
         for (const link of r.removed === '' ? [] : r.removed.split(',')) {
           const [sid, pos] = link.split(':')
-          await this.db.questionVersionStimulus.createMany({ data: [{ questionVersionId: v.id, stimulusId: BigInt(sid ?? '0'), position: Number(pos) }], skipDuplicates: true })
+          links.push({ questionVersionId: versionId, stimulusId: BigInt(sid ?? '0'), position: Number(pos) })
         }
         await this.db.questionVersion.update({
-          where: { id: v.id },
+          where: { id: versionId },
           data: {
             stimulusFlag: r.flag,
             stimulusFlagRef: r.flagRef,
@@ -434,11 +483,12 @@ export class RegroupService {
           },
         })
       }
+      if (links.length > 0) await this.db.questionVersionStimulus.createMany({ data: links, skipDuplicates: true })
       if (p.createdStimulusId !== null) {
         const usage = await this.repo.usageOf(p.createdStimulusId)
         if (usage.groups + usage.versions + usage.parts === 0) await this.repo.deleteStimulus(p.createdStimulusId)
       }
-      let restored = memberKeys.length
+      let restored = memberIds.length
       if (p.figureQuestionId !== null) {
         const figure = BigInt(p.figureQuestionId)
         for (const v of p.figureVersions) {
@@ -446,11 +496,12 @@ export class RegroupService {
             where: { questionId_versionNo: { questionId: figure, versionNo: v.no } },
             data: { status: v.status, archiveReason: null, publishedAt: v.publishedAt === null ? null : new Date(v.publishedAt) },
           })
+          // The reverse of the archive event of the regroup.
+          await this.db.questionStatusEvent.create({
+            data: { questionId: figure, versionNo: v.no, fromStatus: 'archived', toStatus: v.status, actorUserId: BigInt(actor.userId), actorRole: actor.roleCode, reason: 'regroup_undone', requestId: actor.requestId },
+          })
         }
         await this.db.question.update({ where: { id: figure }, data: { liveVersionNo: p.figureLive } })
-        if (p.figureStimulus !== null) {
-          await this.db.stimulus.update({ where: { id: BigInt(p.figureStimulus.id) }, data: { label: p.figureStimulus.label, altText: p.figureStimulus.alt, caption: p.figureStimulus.caption } })
-        }
         restored += 1
       }
       await this.write(actor, AUDIT_ACTIONS.QUESTIONS_REGROUP_UNDONE, 'stimulus_group', p.groupId, { auditId, restored })
@@ -460,23 +511,25 @@ export class RegroupService {
     return out
   }
 
-  /** 409 when the group, its members, its stimuli, a member, the figure question or a draft copy changed since the regroup (D5). */
-  private async assertUnchanged(p: RegroupPayload, refused: ApiError): Promise<void> {
+  /**
+   * 409 when the group, its members, its stimuli, a member, the figure question or a draft copy changed since the regroup (D5). EQUALITY against what the
+   * regroup recorded (version numbers, `updated_at` of the group and of every member / figure version row), never against a clock.
+   */
+  private async assertUnchanged(p: RegroupPayload, memberIds: readonly string[], refused: ApiError): Promise<void> {
     const groupKey = BigInt(p.groupId)
-    const done = new Date(p.doneAt)
     const group = await this.db.stimulusGroup.findUnique({ where: { id: groupKey }, include: { stimuli: { orderBy: { position: 'asc' } } } })
-    if (group === null || group.draftOfGroupId !== null || group.updatedAt > done) throw refused
+    if (group === null || group.draftOfGroupId !== null || group.updatedAt.toISOString() !== p.groupUa) throw refused
     if ((await this.db.stimulusGroup.count({ where: { draftOfGroupId: groupKey } })) > 0) throw refused
-    if (!sameList(await this.repo.memberIds(p.groupId), p.members === '' ? [] : p.members.split(','))) throw refused
+    if (!sameList(await this.repo.memberIds(p.groupId), memberIds)) throw refused
     if (!sameList(group.stimuli.map((s) => idToString(s.stimulusId)), p.stimulusIds.split(','))) throw refused
     const states = [...p.memberState, ...(p.figureState === null ? [] : [p.figureState])]
-    const now = await this.statesOf(states.map((s) => BigInt(s.q)))
-    for (const s of states) {
-      const c = now.find((n) => n.q === s.q)
-      if (c === undefined || c.latest !== s.latest || c.live !== s.live) throw refused
-      // An in-place edit of a draft keeps the version number, so the version rows' own clock is read too.
-      const edited = await this.db.questionVersion.count({ where: { questionId: BigInt(s.q), updatedAt: { gt: done } } })
-      if (edited > 0) throw refused
+    const now = await this.statesOf(states.map((st) => BigInt(st.q)))
+    for (const st of states) {
+      const c = now.find((n) => n.q === st.q)
+      if (c === undefined || c.latest !== st.latest || c.live !== st.live) throw refused
     }
+    // An in-place edit of a draft keeps the version number, so the row stamps are compared as well.
+    const current = await this.stampsOf(states)
+    if (current.length !== p.stamps.length || current.some((c, i) => c.q !== p.stamps[i]?.q || c.no !== p.stamps[i]?.no || c.ua !== p.stamps[i]?.ua)) throw refused
   }
 }

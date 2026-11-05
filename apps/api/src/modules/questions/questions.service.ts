@@ -1329,8 +1329,10 @@ export class QuestionsService {
       (chapterIds.length === 0 ? [] : await this.curriculum.chaptersByIds(chapterIds)).map((c) => [idToString(c.id), c.name]),
     )
     const tokens = fileIds.size === 0 ? new Map<string, string>() : await this.files.publicIdsOf([...fileIds])
+    const liveFlags = await this.repo.openLiveFlags(records.map((r) => r.id))
     return records.map((r) => ({
       ...r,
+      openFlags: liveFlags.has(r.id) ? [liveFlags.get(r.id) as 'stimulus_missing' | 'figure_only' | 'stem_duplicated'] : [],
       subject: (r.version.subjectId && refs.subjects.get(r.version.subjectId)) || null,
       level: (r.version.educationLevelId && refs.levels.get(r.version.educationLevelId)) || null,
       imageTokens: Object.fromEntries(tokens),
