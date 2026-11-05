@@ -4,7 +4,7 @@
  * stat cards, "Tindakan Hari Ini", "Peer Tutor Matching", "Tindakan Pantas", "Kelas Saya" and
  * "Penghantaran Terkini" from `GET /api/guru/dashboard`.
  */
-import { computed, watchEffect } from 'vue'
+import { computed, ref, watchEffect } from 'vue'
 
 import { useApi, usePageMeta, usePrototypeScope } from '@/composables'
 import {
@@ -13,13 +13,16 @@ import {
   DsLoadError,
   DsPage,
   DsPanel,
+  DsStack,
   DsStatRow,
   DsText,
   type DsAccent,
   type StatItem,
 } from '@/ds'
+import { roundHalfUp } from '@/lib/number'
 import { useSessionStore } from '@/stores/session'
 
+import { fetchCommandCenterDrill } from '../api/command-center'
 import { fetchGuruDashboard } from '../api/guru'
 import ChecklistCard from '../components/dashboard/ChecklistCard.vue'
 import { DASH_COPY, type QuickTile } from '../components/dashboard/copy'
@@ -31,6 +34,23 @@ const session = useSessionStore()
 const { allows } = usePrototypeScope()
 const { setHeader } = usePageMeta()
 const { data, error, reload } = useApi((signal) => fetchGuruDashboard({ signal }))
+
+/**
+ * "On Track" / "Off Track" (FR-GUR-2-6): pupils with accuracy of 55% or more / below 55% among the
+ * pupils with answers, from the Command Center drill of the teacher's own pupils. A failed call
+ * leaves the tiles at "—" and never blocks the dashboard.
+ */
+const TRACK_THRESHOLD = 55
+const track = ref<{ on: number; off: number } | null>(null)
+fetchCommandCenterDrill('students')
+  .then((drill) => {
+    const answered = drill.students.filter((s) => s.answered > 0)
+    const on = answered.filter((s) => roundHalfUp(s.accuracy) >= TRACK_THRESHOLD).length
+    track.value = { on, off: answered.length - on }
+  })
+  .catch(() => {
+    track.value = null
+  })
 
 watchEffect(() => {
   const name = session.user?.name
@@ -104,10 +124,20 @@ const QUICK_ACCENTS: DsAccent[] = ['action', 'win', 'heat', 'friend']
     </div>
 
     <template v-else>
-      <DsStatRow :items="stats" prefix="stat" part-prefix="stat" data-testid="stat-cards" :cols="4" />
+      <DsStatRow
+        :items="stats"
+        prefix="stat"
+        part-prefix="stat"
+        data-testid="stat-cards"
+        :cols="4"
+      />
       <div class="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-12 xl:items-start">
         <div class="flex min-w-0 flex-col gap-4 xl:col-span-8">
-          <TodayPanel :today="data.today" />
+          <TodayPanel
+            :today="data.today"
+            :on-track="track?.on ?? null"
+            :off-track="track?.off ?? null"
+          />
 
           <DsPanel data-testid="peer-card">
             <p class="text-overline text-muted">{{ DASH_COPY.peerLabel }}</p>
@@ -119,6 +149,27 @@ const QUICK_ACCENTS: DsAccent[] = ['action', 'win', 'heat', 'friend']
           </DsPanel>
 
           <DsPanel
+            v-if="allows('/headcount')"
+            :title="DASH_COPY.headcountTitle"
+            icon="target"
+            accent="trial"
+            data-testid="headcount-card"
+          >
+            <DsStack gap="sm" align="start">
+              <DsText variant="caption">{{ DASH_COPY.headcountSub }}</DsText>
+              <DsText variant="body" tone="muted">{{ DASH_COPY.headcountText }}</DsText>
+              <UButton
+                to="/headcount"
+                color="neutral"
+                variant="soft"
+                class="min-h-11"
+                data-testid="headcount-open"
+                >{{ DASH_COPY.headcountButton }}</UButton
+              >
+            </DsStack>
+          </DsPanel>
+
+          <DsPanel
             :title="DASH_COPY.submissionsTitle"
             icon="clock"
             accent="heat"
@@ -126,7 +177,6 @@ const QUICK_ACCENTS: DsAccent[] = ['action', 'win', 'heat', 'friend']
           >
             <DsEmptyState
               :title="DASH_COPY.submissionsEmpty"
-              :description="DASH_COPY.submissionsHint"
               icon="tray"
               data-testid="submissions-empty"
             />

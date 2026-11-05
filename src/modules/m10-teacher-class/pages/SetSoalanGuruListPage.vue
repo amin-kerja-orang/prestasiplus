@@ -7,7 +7,7 @@
  * target class, sent as a one-element `classroomIds`. Toasts use the server texts (`GURU_SET_MESSAGES`).
  */
 import { GURU_SET_MESSAGES } from '@pp/contract'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { ApiError } from '@/api'
 import { useApi, useFlash } from '@/composables'
@@ -74,6 +74,10 @@ const { data, error, reload } = useApi(
   (signal) => fetchGuruSets({ page: page.value }, { signal }),
   page,
 )
+// A delete that empties the last page leaves `page` past the end: step back to the last page.
+watch(data, (d) => {
+  if (d && page.value > Math.max(1, d.totalPages)) page.value = Math.max(1, d.totalPages)
+})
 const { data: classList } = useApi((signal) => fetchGuruClasses({ signal }))
 const classes = computed(() => (classList.value?.data ?? []).filter((c) => c.isActive))
 

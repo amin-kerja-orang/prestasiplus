@@ -129,6 +129,33 @@ describe('R1-GUR-8b list', () => {
     expect(w.findAll('[data-testid="set-card"]')).toHaveLength(5)
   })
 
+  it('after a delete empties the last page it steps back to the last page', async () => {
+    api.fetchGuruSets.mockResolvedValue(
+      sets(Array.from({ length: 20 }, (_, i) => row(String(i + 1))), { totalPages: 2, totalItems: 21 }),
+    )
+    api.deleteGuruSet.mockResolvedValue({ deleted: 1 })
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const w = await mountPage()
+    api.fetchGuruSets.mockResolvedValue(
+      sets([row('21')], { page: 2, totalPages: 2, totalItems: 21 }),
+    )
+    await w.get('[data-testid="set-pager"] [aria-label="Next page"]').trigger('click')
+    await flushPromises()
+    expect(api.fetchGuruSets).toHaveBeenLastCalledWith({ page: 2 }, expect.anything())
+    // The delete leaves page 2 empty: the server now has one page only.
+    api.fetchGuruSets.mockImplementation((p: { page: number }) =>
+      Promise.resolve(
+        p.page === 1
+          ? sets([row('1')], { page: 1, totalPages: 1, totalItems: 1 })
+          : sets([], { page: 2, totalPages: 1, totalItems: 0 }),
+      ),
+    )
+    await w.get('[data-testid="set-delete"]').trigger('click')
+    await flushPromises()
+    expect(api.fetchGuruSets).toHaveBeenLastCalledWith({ page: 1 }, expect.anything())
+    expect(w.findAll('[data-testid="set-card"]')).toHaveLength(1)
+  })
+
   it('shows no pager for a single page', async () => {
     api.fetchGuruSets.mockResolvedValue(sets([row('1')]))
     const w = await mountPage()

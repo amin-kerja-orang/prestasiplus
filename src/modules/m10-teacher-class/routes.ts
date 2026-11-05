@@ -10,6 +10,29 @@ import setSoalanSaya from './routes/set-soalan-saya'
 import soalan from './routes/soalan'
 
 /**
+ * R1-GUR-2b Misi Harian (S6-T07): teacher only in both API modes (API-GUR-11 is teacher-only and the
+ * mock has no handler), so it is not part of the `routes/dashboard.ts` fragment, whose roles follow the
+ * mock-mode rule of `routes/roles.ts`. `/cipta` redirects to the list with the form open (D115).
+ */
+const misiHarian: RouteRecordRaw[] = [
+  {
+    path: '/guru/misi-harian',
+    name: 'm10.guru-misi-harian',
+    component: () => import('./pages/MisiHarianPage.vue'),
+    meta: {
+      layout: 'user',
+      access: 'auth',
+      roles: ['teacher'],
+      title: 'Misi Harian — PRESTASIPLUS',
+      header: { title: 'Misi Harian', subtitle: 'Assign misi harian kepada pelajar' },
+      module: 'M10',
+      v2: true,
+    },
+  },
+  { path: '/guru/misi-harian/cipta', redirect: '/guru/misi-harian?baru=1' },
+]
+
+/**
  * R1-GUR-8b teacher Set Soalan (S6-T14): teacher only in both API modes (API-GUR-16 is teacher-only and
  * has no mock handler), so it is not part of a fragment whose roles follow `routes/roles.ts`. There is
  * no sidebar item: the Dashboard tile "Set Soalan" (`Urus set →`) is the entry. The V2 path
@@ -82,6 +105,7 @@ const setSoalanGuru: RouteRecordRaw[] = [
 const routes: RouteRecordRaw[] = [
   ...commandCenter,
   ...dashboard,
+  ...misiHarian,
   ...kelas,
   ...kelasSaya,
   ...pelajar,

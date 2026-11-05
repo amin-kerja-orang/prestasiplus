@@ -5,29 +5,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import type { GuruDashboard } from '../../api/types'
+import { DASH_COPY } from '../../components/dashboard/copy'
 import GuruDashboardPage from '../../pages/GuruDashboardPage.vue'
 
 /**
- * S6-T14 (R1-GUR-8b, FR-GUR-2-2): the Dashboard tile "Set Soalan" carries the link "Urus set →" and opens
- * `/guru/set-soalan`. The tile entry itself arrives with the S6-T07 Dashboard card (#665); until it is on
- * this base the test supplies the entry through the copy module and checks the rendering support.
+ * S6-T14 (R1-GUR-8b, FR-GUR-2-2): the real Dashboard tile "Set Soalan" (copy from S6-T07) carries the link
+ * "Urus set →" and opens `/guru/set-soalan`. No mock of the copy: the tile is read from `DASH_COPY`.
  */
-
-vi.mock('../../components/dashboard/copy', async (importOriginal) => {
-  const mod = await importOriginal<typeof import('../../components/dashboard/copy')>()
-  // The entry replaces the tile that points at the profile edit; it is found by its `to`, not its position.
-  const quick = mod.DASH_COPY.quick.map((q) =>
-    q.to === '/guru/profil/edit'
-      ? {
-          title: 'Set Soalan',
-          text: 'Bina & terbitkan set latihan.',
-          to: '/guru/set-soalan',
-          link: 'Urus set →',
-        }
-      : q,
-  )
-  return { ...mod, DASH_COPY: { ...mod.DASH_COPY, quick } }
-})
 
 const api = vi.hoisted(() => ({ fetchGuruDashboard: vi.fn() }))
 vi.mock('../../api/guru', () => api)
@@ -60,7 +44,7 @@ afterEach(() => {
 })
 
 describe('Dashboard tile "Set Soalan"', () => {
-  it('shows "Urus set →" and opens /guru/set-soalan; tiles without a link show none', async () => {
+  it('shows "Urus set →" on the real tile and opens /guru/set-soalan; other tiles show none', async () => {
     const router = createRouter({
       history: createMemoryHistory(),
       routes: [{ path: '/:p(.*)*', component: { template: '<div />' } }],
@@ -74,6 +58,7 @@ describe('Dashboard tile "Set Soalan"', () => {
       .find((t) => t.attributes('href') === '/guru/set-soalan')
     expect(tile).toBeDefined()
     expect(tile?.text()).toContain('Set Soalan')
+    expect(DASH_COPY.quick.find((q) => q.to === '/guru/set-soalan')?.link).toBe('Urus set →')
     expect(tile?.get('[data-testid="quick-tile-link"]').text()).toBe('Urus set →')
     expect(wrapper.findAll('[data-testid="quick-tile-link"]')).toHaveLength(1)
 

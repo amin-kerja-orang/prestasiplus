@@ -19,6 +19,9 @@ import {
   RemedialScanSchema,
   RemedialTestNotActiveSchema,
   RemedialTestNotFoundSchema,
+  MISSION_MESSAGES,
+  TeacherMissionCreateSchema,
+  TeacherMissionListResponseSchema,
 } from '../schema'
 
 const meta = (n: number) => ({
@@ -67,7 +70,7 @@ describe('missions today (student read)', () => {
   })
 
   it('has the three observed type labels', () => {
-    expect(MISSION_TYPE_LABELS).toEqual({ latih_tubi: 'Latih Tubi SPM', tracking_a: 'Tracking A', youtube: 'Soalan & Rujukan' })
+    expect(MISSION_TYPE_LABELS).toEqual({ latih_tubi: 'Latih Tubi SPM', tracking_a: 'Tracking A', youtube: 'Soalan & Rujukan', harian: 'Misi Harian' })
   })
 })
 
@@ -239,8 +242,35 @@ describe('D57 rate limit and removed provisional routes', () => {
       expect(r?.headers?.['Retry-After']).toBeDefined()
     }
   })
-  it('has no /guru/missions route and no provisional mission schemas', () => {
-    expect(doc.paths['/guru/missions']).toBeUndefined()
-    expect(Object.keys(MISSIONS_COMPONENT_SCHEMAS)).not.toContain('MissionCreateRequest')
+  it('registers the teacher missions routes (API-GUR-11)', () => {
+    expect(Object.keys(doc.paths['/guru/missions'] ?? {}).sort()).toEqual(['get', 'post'])
+    expect(Object.keys(doc.paths['/guru/missions/{id}'] ?? {})).toEqual(['delete'])
+    expect(Object.keys(MISSIONS_COMPONENT_SCHEMAS)).toContain('TeacherMission')
+  })
+})
+
+describe('teacher mission create (API-GUR-11)', () => {
+  const ok = { title: ' Jawab 10 ', targetQuestions: 10, rewardCoins: 10, date: '2026-11-06', subjectId: '12' }
+  it('parses, trims and applies defaults', () => {
+    const r = TeacherMissionCreateSchema.parse({ title: ' Jawab 10 ', date: '2026-11-06', subjectId: '12' })
+    expect(r).toMatchObject({ title: 'Jawab 10', targetQuestions: 10, rewardCoins: 10 })
+    expect(TeacherMissionCreateSchema.safeParse({ ...ok, classroomId: null }).success).toBe(true)
+  })
+  it('gives the exact BM messages', () => {
+    const m = (b: object) => fieldMessages(TeacherMissionCreateSchema.safeParse(b))
+    expect(m({ ...ok, title: '  ' }).title).toBe(MISSION_MESSAGES.titleRequired)
+    expect(m({ ...ok, title: 'a'.repeat(256) }).title).toBe('Tajuk misi tidak boleh melebihi 255 aksara.')
+    expect(m({ ...ok, description: 'a'.repeat(501) }).description).toBe('Keterangan tidak boleh melebihi 500 aksara.')
+    expect(m({ ...ok, targetQuestions: 0 }).targetQuestions).toBe('Sasaran soalan mesti antara 1 dan 1000.')
+    expect(m({ ...ok, targetQuestions: 1001 }).targetQuestions).toBe('Sasaran soalan mesti antara 1 dan 1000.')
+    expect(m({ ...ok, rewardCoins: 101 }).rewardCoins).toBe('Ganjaran syiling mesti antara 0 dan 100.')
+    expect(m({ ...ok, rewardCoins: -1 }).rewardCoins).toBe('Ganjaran syiling mesti antara 0 dan 100.')
+    expect(m({ ...ok, subjectId: undefined }).subjectId).toBe('Sila pilih subjek.')
+    expect(m({ ...ok, subjectId: '' }).subjectId).toBe('Sila pilih subjek.')
+    expect(m({ ...ok, date: '2026-02-30' }).date).toBeDefined()
+  })
+  it('list response parses', () => {
+    const row = { id: '1', title: 'T', description: null, targetQuestions: 3, rewardCoins: 15, date: '2026-11-05', classroomId: null, subjectId: null, subjectName: null, global: true, completedCount: 0 }
+    expect(TeacherMissionListResponseSchema.safeParse({ data: [row] }).success).toBe(true)
   })
 })
