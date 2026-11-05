@@ -13,7 +13,9 @@ import { DsFileField, DsFormField, DsIconChip, DsPanel } from '@/ds'
 import { saveBlob } from '@/lib/save-blob'
 
 import { downloadQuestionTemplate, importQuestions } from '../../api/guru'
-import type { ImportResult } from '../../api/types'
+import type { TableColumn } from '@nuxt/ui'
+
+import type { ImportFailure, ImportResult } from '../../api/types'
 import {
   buildErrorCsv,
   errorFileName,
@@ -22,6 +24,12 @@ import {
   validateCsvRows,
 } from './csv-rules'
 import { COPY } from './lib'
+
+/** Result table of 44-F3: Baris · Sebab. */
+const FAILURE_COLUMNS: TableColumn<ImportFailure>[] = [
+  { accessorKey: 'row', header: 'Baris' },
+  { accessorKey: 'message', header: 'Sebab' },
+]
 
 const emit = defineEmits<{ imported: [result: ImportResult] }>()
 
@@ -49,8 +57,8 @@ function readText(f: Blob): Promise<string> {
   if (typeof f.text === 'function') return f.text()
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result))
-    reader.onerror = () => reject(reader.error)
+    reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '')
+    reader.onerror = () => reject(reader.error ?? new Error('read failed'))
     reader.readAsText(f)
   })
 }
@@ -156,22 +164,14 @@ function downloadErrors(): void {
         <p data-testid="import-result-summary">
           {{ COPY.importDone(result.imported, result.errors.length) }}
         </p>
-        <div v-if="result.errors.length" class="mt-2 min-w-0 overflow-x-auto">
-          <table class="w-full min-w-64 text-left text-body" data-testid="import-failures">
-            <thead>
-              <tr>
-                <th scope="col" class="py-1 pr-3 text-label text-highlighted">Baris</th>
-                <th scope="col" class="py-1 text-label text-highlighted">Sebab</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="f in result.errors" :key="f.row" data-testid="import-failure">
-                <td class="tabular py-1 pr-3 align-top">{{ f.row }}</td>
-                <td class="py-1 break-words">{{ f.message }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <UTable
+          v-if="result.errors.length"
+          :data="result.errors"
+          :columns="FAILURE_COLUMNS"
+          class="mt-2 min-w-0"
+          caption="Baris yang gagal diimport"
+          data-testid="import-failures"
+        />
         <UButton
           v-if="result.errors.length"
           type="button"

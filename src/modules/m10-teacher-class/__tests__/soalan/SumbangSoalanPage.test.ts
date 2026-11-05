@@ -306,7 +306,10 @@ describe('S21 import card', () => {
         .findAll('th')
         .map((h) => h.text()),
     ).toEqual(['Baris', 'Sebab'])
-    expect(t(w, 'import-failure').text()).toBe('3Jawapan mesti A, B, C atau D.')
+    const cells = t(w, 'import-failures')
+      .findAll('tbody td')
+      .map((c) => c.text())
+    expect(cells).toEqual(['3', 'Jawapan mesti A, B, C atau D.'])
     expect(guru.fetchContributions).toHaveBeenCalledTimes(2)
 
     await t(w, 'import-errors-download').trigger('click')

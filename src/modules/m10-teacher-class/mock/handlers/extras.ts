@@ -116,7 +116,7 @@ export const extraRoutes: RouteDef[] = [
     if ([...author].length > 150) fields.preparedBy = PAPER_MSG.author
     const note = textOf(b.note) ?? ''
     if ([...note].length > 1000) fields.note = PAPER_MSG.note
-    const confirm = String(b.answerSchemeConfirmed ?? '')
+    const confirm = String(textOf(b.answerSchemeConfirmed) ?? b.answerSchemeConfirmed === true)
       .trim()
       .toLowerCase()
     if (!['true', '1', 'on'].includes(confirm)) fields.answerSchemeConfirmed = PAPER_MSG.confirm
