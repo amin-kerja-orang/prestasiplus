@@ -260,7 +260,8 @@ describe('S2 / S3 levels', () => {
     const t4 = await get<LevelDetail>(ADMIN, '/api/performance/levels/t4')
     expect([t4.onTrack, t4.below, t4.onTrackPct]).toEqual([75, 0, 100])
     expect(t4.classRows.find((r) => r.classId === 516)).toMatchObject({ onTrack: 15, below: 0 })
-    // Whole-number accuracy below 50 or no answer in 7 days; 10 rows; accuracy ascending, pupils with no answer last.
+    // Whole-number accuracy below 50 or no answer in 7 days; 10 rows;
+    // accuracy ascending, pupils with no answer last. The rule does not read the targets, so the list stays full while Below is 0.
     expect(t4.atRisk).toHaveLength(10)
     expect(t4.atRisk[0]).toMatchObject({ userId: 156, className: '4 Cemerlang - BM', answered: 35, accuracy: 8.6 })
     const accs = t4.atRisk.map((r) => r.accuracy)
@@ -610,7 +611,7 @@ describe('S10 / S11 item analysis of a class', () => {
       700007: 1,
       700008: 1,
       700006: 0.5,
-      700002: 0.333,
+      700002: 0.33,
       700003: 0.25,
       700004: 0,
       700005: -0.5,

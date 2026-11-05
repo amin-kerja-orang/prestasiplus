@@ -49,11 +49,12 @@ describe('Admin Sekolah dashboard practice block over the shared answer reader (
     expect(p.total).toBe(0)
   })
 
-  it('fewer than 5 pupils: the block is shown (staff screen, no minimum cohort: PO decision 2026-11-05, #503 batch 3), levels 0', async () => {
+  it('fewer than 5 pupils: the practice block is shown (staff screen, no minimum cohort: PO decision 2026-11-05, #503 batch 3), levels 0', async () => {
     const w = world()
     w.directory.addSchool({ id: 's1' })
     pupils(w, 's1', 4)
     const p = await blockOf(w)
+    // Changed from the suppressed { null, 0, 0 }: 40 answers, 28 right.
     expect(p.practice).toEqual({ accuracy: 70, sessions: 4, questions: 4 * ANSWERS })
     expect(p.levels.every((l) => l.accuracy === 0)).toBe(true)
     expect(p.total).toBe(0)
@@ -77,6 +78,7 @@ describe('Admin Sekolah dashboard practice block over the shared answer reader (
     w.classes.add({ id: '11', schoolId: 's1', levelSlug: 't5' }, small)
     const p = await blockOf(w)
     expect(p.levels.find((l) => l.code === 't4')?.accuracy).toBe(70)
+    // Changed from 0 (suppressed): the small level now shows its figure.
     expect(p.levels.find((l) => l.code === 't5')?.accuracy).toBe(70)
   })
 

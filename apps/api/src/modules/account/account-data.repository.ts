@@ -8,7 +8,7 @@ import { SPM_SERVABLE_SQL } from '../questions/learner-visibility'
 
 /**
  * The public question count follows the practice draws (BR-11, D72): live-version, active, non-PKSK, objective (mcq) questions of a
- * learner-visible level that is one of the OFFERED_LEVEL_CODES (T4, T5), of an active subject linked to that level: exactly the sum of the subject cards.
+ * learner-visible level that is an offered level (active, not primary: T1 to T5), of an active subject linked to that level: exactly the sum of the subject cards.
  * R1-B06: the level / subject / PKSK part is the shared SPM_SERVABLE_SQL (static text, the codes are constants).
  */
 export const QUESTION_COUNT = Prisma.sql`SELECT count(*) AS c FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no WHERE q.is_active AND v.status = 'approved' AND v.type = 'mcq' AND ${SPM_SERVABLE_SQL}`
@@ -43,6 +43,17 @@ export const fromTimeColumn = (value: Date): string => value.toISOString().slice
 @Injectable()
 export class AccountDataRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+
+  // --- teacher profile -----------------------------------------------------------------------------
+
+  /** True when another account already holds this IC hash (the own row does not count): "No. IC sudah didaftarkan." */
+  async icHashTakenByOther(userId: string, icHash: string): Promise<boolean> {
+    const row = await this.prisma.client.user.findFirst({
+      where: { icHash, id: { not: idFromString(userId) } },
+      select: { id: true },
+    })
+    return row !== null
+  }
 
   // --- password_resets -----------------------------------------------------------------------------
 
