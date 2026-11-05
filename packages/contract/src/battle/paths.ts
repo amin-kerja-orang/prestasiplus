@@ -359,7 +359,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
       401: UNAUTHORIZED,
       403: CSRF_INVALID,
       404: raw('{error:"Cabaran tidak dijumpai."}.'),
-      422: raw('{error:"Soalan tidak mencukupi."}.'),
+      422: raw('{error:"Soalan tidak mencukupi."}, or {error:"Anda belum mempunyai akses PKSK PRO"} (a PKSK battle and the receiver has no grant for its level).'),
     },
   })
 
@@ -406,7 +406,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     summary: 'Battle lobby data (M16-15)',
     description:
       'Grade label: "Darjah n" for grades 1 to 6, "Tingkatan n" for 7 to 11, "" otherwise. `spmUnlocked` when grade is 10 or more; `spmSubjects` is present only then, with the subjects that have a non-empty SPM pool.',
-    responses: { 200: json(envelopeOf(BattleLobbySchema), 'Lobby data.'), 401: UNAUTHORIZED },
+    responses: { 200: json(envelopeOf(BattleLobbySchema), 'Lobby data. `pkskAccess` is the PKSK grant of the caller per level.'), 401: UNAUTHORIZED },
   })
 
   registerRoute(registry, {

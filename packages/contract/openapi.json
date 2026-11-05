@@ -20812,6 +20812,9 @@
               "$ref": "#/components/schemas/BattleLobbyPkskDomain"
             }
           },
+          "pkskAccess": {
+            "$ref": "#/components/schemas/PkskAccess"
+          },
           "spmSubjects": {
             "type": "array",
             "items": {
@@ -20824,9 +20827,25 @@
           "gradeLabel",
           "spmUnlocked",
           "subjects",
-          "pkskDomains"
+          "pkskDomains",
+          "pkskAccess"
         ],
         "additionalProperties": false
+      },
+      "PkskAccess": {
+        "type": "object",
+        "properties": {
+          "T1": {
+            "type": "boolean"
+          },
+          "T4": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "T1",
+          "T4"
+        ]
       },
       "BattleArenaOption": {
         "type": "object",
@@ -57166,21 +57185,6 @@
           "isActive",
           "createdAt",
           "updatedAt"
-        ]
-      },
-      "PkskAccess": {
-        "type": "object",
-        "properties": {
-          "T1": {
-            "type": "boolean"
-          },
-          "T4": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "T1",
-          "T4"
         ]
       },
       "PkskDashboardDomain": {
@@ -94264,7 +94268,7 @@
             }
           },
           "422": {
-            "description": "{error:\"Soalan tidak mencukupi.\"}.",
+            "description": "{error:\"Soalan tidak mencukupi.\"}, or {error:\"Anda belum mempunyai akses PKSK PRO\"} (a PKSK battle and the receiver has no grant for its level).",
             "content": {
               "application/json": {
                 "schema": {
@@ -94498,7 +94502,7 @@
         "description": "Grade label: \"Darjah n\" for grades 1 to 6, \"Tingkatan n\" for 7 to 11, \"\" otherwise. `spmUnlocked` when grade is 10 or more; `spmSubjects` is present only then, with the subjects that have a non-empty SPM pool.",
         "responses": {
           "200": {
-            "description": "Lobby data.",
+            "description": "Lobby data. `pkskAccess` is the PKSK grant of the caller per level.",
             "content": {
               "application/json": {
                 "schema": {

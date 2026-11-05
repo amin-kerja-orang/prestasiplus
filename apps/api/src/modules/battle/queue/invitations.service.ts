@@ -54,11 +54,12 @@ export class InvitationsService {
   }
 
   /** M16-08. */
-  async invite(senderId: string, isTest: boolean, body: unknown): Promise<{ success: true }> {
+  async invite(who: { userId: string; role: string }, isTest: boolean, body: unknown): Promise<{ success: true }> {
+    const senderId = who.userId
     const grade = await this.engine.deps.gradeOf(senderId)
     let params: BattleParams
     try {
-      params = await parseBattleParams(body, grade, this.engine.deps, true)
+      params = await parseBattleParams(body, grade, this.engine.deps, who, true)
     } catch (e) {
       if (e instanceof ParamRefusal) throw e.forbidden ? rawForbidden(e.message) : rawInvalid(e.message)
       throw e
@@ -119,6 +120,15 @@ export class InvitationsService {
     return this.prisma.client.battleInvitation.findUnique({ where: { id: uuid } })
   }
 
+  /** A PKSK battle needs a grant for its level on both sides, checked at match start (48 GAME-01); the sender's was checked at invite. */
+  private async mustHavePkskGrant(who: { userId: string; role: string }, isTest: boolean, uuid: string): Promise<void> {
+    if (!isUuid(uuid)) return
+    const inv = await this.prisma.client.battleInvitation.findUnique({ where: { id: uuid } })
+    if (!inv || inv.isTest !== isTest || idToString(inv.receiverId) !== who.userId || inv.questionType !== 'pksk') return
+    const level = inv.pkskTargetLevel as 'T1' | 'T4'
+    if (!(await this.engine.deps.pkskAccess(who))[level]) throw rawInvalid(BATTLE_MESSAGES.pkskNoAccess)
+  }
+
   /** The question draw, made before the transaction (undefined when the invitation does not qualify). */
   private async prefetchIds(userId: string, isTest: boolean, uuid: string): Promise<string[] | null | undefined> {
     if (!isUuid(uuid)) return undefined
@@ -129,7 +139,9 @@ export class InvitationsService {
   }
 
   /** M16-10: the sender is player A. */
-  async accept(userId: string, isTest: boolean, uuid: string): Promise<{ success: true; battle_uuid: string }> {
+  async accept(who: { userId: string; role: string }, isTest: boolean, uuid: string): Promise<{ success: true; battle_uuid: string }> {
+    const { userId } = who
+    await this.mustHavePkskGrant(who, isTest, uuid)
     const ids = await this.prefetchIds(userId, isTest, uuid)
     return this.prisma.transaction(async () => {
       const inv = await this.lock(uuid)

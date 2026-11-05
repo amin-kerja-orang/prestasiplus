@@ -16,8 +16,8 @@
  *  5b. OPEN QUESTION for the lead: BE-05 should export a bounded read of active students (grade, school, exclude ids,
  *     limit). Until then the read in 1 and the pool count in 2 are cached in process for
  *     `CACHE_TTL_MS` (read through the Clock) so polls and the lobby do not rescan the tables; `invalidateCache()` is for tests.
- *  6. PKSK: no owner serves PKSK domains or tagged questions (Open question 6): `pkskDomains()` is `[]` and a PKSK
- *     draw returns `null` (callers answer 422 `{}`).
+ *  6. PKSK: domains and the grant come from the PKSK owner (`PkskDomainsRepository`, `PkskAccessService`), the questions
+ *     from the PKSK read of the questions owner. Only a question `pkskArenaLeaf` accepts enters a battle.
  */
 import { Inject, Injectable } from '@nestjs/common'
 import type { AuthContext } from '../../common/scope/auth-context'
@@ -26,8 +26,10 @@ import type { Prng } from '../../db/prng'
 import { idFromString, idToString, isIdString } from '../../db/ids'
 import { ClassesRepository } from '../classes'
 import { CurriculumRepository } from '../curriculum'
+import { PkskAccessService, PkskDomainsRepository } from '../pksk'
 import { type QuestionFilter, QuestionsRepository } from '../questions'
 import { flatFromVersion } from '../questions/projection'
+import type { QuestionRecord } from '../questions/types'
 import { SchoolsRepository } from '../schools'
 import { UsersRepository, type UserRecord } from '../users'
 import type { Caller } from '../users/caller'
@@ -48,6 +50,20 @@ const isSecondaryGrade = (grade: number | null): boolean => grade === null || gr
 const SEARCH_OVER_READ = 40
 const ARENA_OPTIONS = 4
 const LABELS = ['A', 'B', 'C', 'D'] as const
+
+/**
+ * The one leaf of a PKSK question a battle can serve, with its key index; null for any other question (ruling 3 on #497,
+ * 48 GAME-01): a `pksk_choice` leaf with exactly one correct label and 2 to 4 options, no group, stimulus, figure or option image.
+ */
+function pkskArenaLeaf(r: QuestionRecord): { options: string[]; correct: number } | null {
+  const [leaf] = r.version.parts
+  if (r.version.parts.length !== 1 || !leaf || !('mode' in leaf) || leaf.mode !== 'pksk_choice') return null
+  if (r.groupId !== null || r.version.stimulusIds.length > 0 || r.version.stemImageId || leaf.stimulusId) return null
+  if (leaf.options.length < 2 || leaf.options.length > ARENA_OPTIONS || leaf.options.some((o) => o.imageId)) return null
+  const [only, ...others] = leaf.key.correct
+  const correct = leaf.options.findIndex((o) => o.label === only)
+  return correct < 0 || others.length > 0 ? null : { options: leaf.options.map((o) => o.body.ms), correct }
+}
 
 export interface BattleStudent {
   id: string
@@ -93,6 +109,17 @@ export interface PoolSpec {
   subjectId: string | null
   /** The queue owner's education level id (biasa only). */
   levelId: string | null
+  /** PKSK only: the domain and its target level. */
+  pkskDomainId?: string | null
+  pkskTargetLevel?: 'T1' | 'T4' | null
+}
+
+export interface BattlePkskDomain {
+  id: string
+  code: string
+  name: string
+  icon: string
+  colour: string
 }
 
 export interface ArenaQuestionView {
@@ -110,6 +137,8 @@ export class BattleDeps {
     @Inject(CurriculumRepository) private readonly curriculum: CurriculumRepository,
     @Inject(QuestionsRepository) private readonly questions: QuestionsRepository,
     @Inject(ClassesRepository) private readonly classes: ClassesRepository,
+    @Inject(PkskDomainsRepository) private readonly pkskDomainRows: PkskDomainsRepository,
+    @Inject(PkskAccessService) private readonly pkskGrants: PkskAccessService,
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
@@ -251,18 +280,49 @@ export class BattleDeps {
     )
   }
 
-  /** PKSK domains served by an owner: none yet (Open question 6). */
-  pkskDomains(): { id: string; name: string }[] {
-    return []
+  /** The active PKSK domains in display order, cached `CACHE_TTL_MS`. */
+  async pkskDomains(): Promise<BattlePkskDomain[]> {
+    return this.cached('pksk-domains', async () => {
+      const rows = await this.pkskDomainRows.list()
+      return rows.filter((d) => d.isActive).map((d) => ({ id: d.id, code: d.code, name: d.name, icon: d.icon, colour: d.color }))
+    })
+  }
+
+  /** The caller's PKSK grant per level, the same check as the pupil PKSK page. Never cached: a grant can end at any time. */
+  pkskAccess(who: { userId: string; role: string }): Promise<{ T1: boolean; T4: boolean }> {
+    return this.pkskGrants.levels(who, this.clock.now())
+  }
+
+  /** Ids of the questions of a PKSK domain and level a battle can serve, in id order, cached `CACHE_TTL_MS`. */
+  private pkskPool(level: 'T1' | 'T4', domainCode: string): Promise<string[]> {
+    return this.cached(`pksk-pool:${level}:${domainCode}`, async () => {
+      const records = await this.questions.getMany(await this.questions.pkskServedIds(level, [domainCode]), 'live', 'only')
+      return records.filter((r) => pkskArenaLeaf(r) !== null).map((r) => r.id)
+    })
+  }
+
+  /** `n` ids of the pool in a seeded order (`null` when the domain is unknown or the pool is smaller than `n`). */
+  private async drawPksk(spec: PoolSpec, n: number, rng: Prng): Promise<string[] | null> {
+    if (!spec.pkskDomainId || !spec.pkskTargetLevel || !Number.isSafeInteger(n) || n < 0) return null
+    const domain = (await this.pkskDomains()).find((d) => d.id === spec.pkskDomainId)
+    if (!domain) return null
+    const pool = [...(await this.pkskPool(spec.pkskTargetLevel, domain.code))]
+    if (pool.length < n) return null
+    for (let i = 0; i < n; i++) {
+      const j = rng.int(i, pool.length - 1)
+      ;[pool[i], pool[j]] = [pool[j] as string, pool[i] as string]
+    }
+    return pool.slice(0, n)
   }
 
   /**
-   * Draws `n` eligible keyless MCQ ids (pool rule `battle-pool.ts poolFilter`): biasa = published MCQ of the subject at
-   * the owner's level; spm = SPM pool MCQ of the subject; pksk = unsupported. Drawn in SQL (`sampleIds`: seeded hash order,
-   * LIMIT `n`), so a seeded stream gives the same ids and memory stays O(n). `null` when fewer than `n` can be drawn.
+   * Draws `n` eligible keyless question ids (pool rule `battle-pool.ts poolFilter`): biasa = published MCQ of the subject at
+   * the owner's level; spm = SPM pool MCQ of the subject, both drawn in SQL (`sampleIds`: seeded hash order, LIMIT `n`), so a
+   * seeded stream gives the same ids and memory stays O(n); pksk = `drawPksk`. `null` when fewer than `n` can be drawn.
    */
   async drawQuestions(spec: PoolSpec, n: number, rng: Prng): Promise<string[] | null> {
-    if (spec.questionType === 'pksk' || spec.subjectId === null) return null
+    if (spec.questionType === 'pksk') return this.drawPksk(spec, n, rng)
+    if (spec.subjectId === null) return null
     if (!Number.isSafeInteger(n) || n <= 0) return n === 0 ? [] : null
     const filter: QuestionFilter =
       spec.questionType === 'spm'
@@ -275,7 +335,11 @@ export class BattleDeps {
   /** The question as the arena serves it: text and up to four options, NEVER the key. */
   async arenaQuestion(id: string): Promise<ArenaQuestionView | null> {
     const record = await this.questions.get(id, 'live')
-    if (!record) return null
+    if (!record) {
+      const pksk = await this.pkskQuestion(id)
+      if (!pksk) return null
+      return { id: pksk.record.id, text: pksk.record.version.stemMs ?? '', options: pksk.leaf.options.map((text, i) => ({ id: i, label: LABELS[i] ?? '', text })) }
+    }
     const flat = flatFromVersion(record.version)
     if (flat.questionType !== 'mcq' || flat.options === null) return null
     return {
@@ -288,10 +352,20 @@ export class BattleDeps {
   /** Grades one arena answer (`optionId` 0..3, or null for a timeout). Null when the question has no usable key. */
   async gradeAnswer(id: string, optionId: number | null): Promise<{ correct: boolean; correctOptionId: number } | null> {
     const record = await this.questions.get(id, 'live')
-    if (!record) return null
+    if (!record) {
+      const key = (await this.pkskQuestion(id))?.leaf.correct
+      return key === undefined ? null : { correct: optionId === key, correctOptionId: key }
+    }
     const flat = flatFromVersion(record.version)
     if (flat.questionType !== 'mcq' || flat.correctAnswer === null) return null
     return { correct: optionId !== null && optionId === flat.correctAnswer, correctOptionId: flat.correctAnswer }
+  }
+
+  /** A live PKSK question a battle can serve (the default question reads never return one). */
+  private async pkskQuestion(id: string): Promise<{ record: QuestionRecord; leaf: { options: string[]; correct: number } } | null> {
+    const [record] = await this.questions.getMany([id], 'live', 'only')
+    const leaf = record ? pkskArenaLeaf(record) : null
+    return record && leaf ? { record, leaf } : null
   }
 
   // --- practice (BE-12) --------------------------------------------------------------------------------

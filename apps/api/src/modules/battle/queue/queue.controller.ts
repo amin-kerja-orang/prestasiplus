@@ -26,7 +26,7 @@ export class QueueController {
   @RateLimit(BATTLE_LIMITS.write)
   quickMatch(@Req() req: Req, @Body() body: unknown) {
     const w = who(req)
-    return this.queue.start(w.userId, w.isTest, 'quick_match', body)
+    return this.queue.start(w, w.isTest, 'quick_match', body)
   }
 
   @Post('school-battle')
@@ -34,7 +34,7 @@ export class QueueController {
   @RateLimit(BATTLE_LIMITS.write)
   schoolBattle(@Req() req: Req, @Body() body: unknown) {
     const w = who(req)
-    return this.queue.start(w.userId, w.isTest, 'school_battle', body)
+    return this.queue.start(w, w.isTest, 'school_battle', body)
   }
 
   @Get('poll-match/:queueId')

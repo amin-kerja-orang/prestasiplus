@@ -243,6 +243,7 @@ describe('lobby', () => {
     gradeLabel: 'Tingkatan 4',
     spmUnlocked: true,
     subjects: [{ id: '1', name: 'Matematik', icon: 'calculator', colour: '#2563eb', core: true }],
+    pkskAccess: { T1: true, T4: false },
     pkskDomains: [{ id: '2', name: 'Kejujuran', icon: 'heart', colour: '#16a34a' }],
     spmSubjects: [{ id: '1', name: 'Matematik' }],
   }

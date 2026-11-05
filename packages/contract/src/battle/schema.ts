@@ -1,6 +1,7 @@
 import { z } from '../zod'
 import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
+import { PkskAccessSchema } from '../pksk/student'
 
 /**
  * BE-44 (M16 part 1): wire schemas of the battle arena, standings and tournaments.
@@ -47,6 +48,7 @@ export const BATTLE_MESSAGES = {
   pkskLevelInvalid: 'Tahap PKSK tidak sah.',
   poolTooSmall: 'Soalan tidak mencukupi.',
   spmOnly: 'Khas untuk pelajar Tingkatan 4 & 5 sahaja.',
+  pkskNoAccess: 'Anda belum mempunyai akses PKSK PRO',
   noOpponent: 'Tiada lawan dijumpai.',
   queueNotFound: 'Giliran tidak dijumpai.',
   joinFailed: 'Ralat menghantar permohonan.',
@@ -283,6 +285,8 @@ export const BattleLobbySchema = z
     spmUnlocked: z.boolean(),
     subjects: z.array(BattleLobbySubjectSchema),
     pkskDomains: z.array(BattleLobbyPkskDomainSchema),
+    /** The caller's PKSK grant per level (R1-MUR-19): the PKSK tab shows the no-access state where it is false. */
+    pkskAccess: PkskAccessSchema,
     spmSubjects: z.array(BattleLobbySpmSubjectSchema).optional(),
   })
   .refine((l) => l.spmUnlocked === (l.spmSubjects !== undefined), {

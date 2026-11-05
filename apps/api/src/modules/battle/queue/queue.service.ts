@@ -84,11 +84,12 @@ export class QueueService {
   }
 
   /** M16-02 / M16-03. Refusals answer an EMPTY body (BR-M16-03). */
-  async start(userId: string, isTest: boolean, mode: QueueMode, body: unknown): Promise<{ queue_id: string }> {
+  async start(who: { userId: string; role: string }, isTest: boolean, mode: QueueMode, body: unknown): Promise<{ queue_id: string }> {
+    const { userId } = who
     const grade = await this.engine.deps.gradeOf(userId)
     let params: BattleParams
     try {
-      params = await parseBattleParams(body, grade, this.engine.deps)
+      params = await parseBattleParams(body, grade, this.engine.deps, who)
     } catch (e) {
       if (e instanceof ParamRefusal) throw e.forbidden ? rawForbidden() : rawInvalid()
       throw e

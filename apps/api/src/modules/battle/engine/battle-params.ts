@@ -17,7 +17,7 @@ export interface BattleParams {
   openToAll: boolean
 }
 
-/** A refused body: `forbidden` is a 403 (SPM below Tingkatan 4), anything else a 422. */
+/** A refused body: `forbidden` is a 403 (SPM below Tingkatan 4, PKSK without a grant for the level), anything else a 422. */
 export class ParamRefusal extends Error {
   constructor(
     readonly forbidden: boolean,
@@ -32,7 +32,7 @@ const asRecord = (body: unknown): Record<string, unknown> =>
 
 const idOf = (v: unknown): string | null => (typeof v === 'string' && isIdString(v) ? v : null)
 
-export async function parseBattleParams(body: unknown, callerGrade: number | null, deps: BattleDeps, withReceiver = false): Promise<BattleParams> {
+export async function parseBattleParams(body: unknown, callerGrade: number | null, deps: BattleDeps, who: { userId: string; role: string }, withReceiver = false): Promise<BattleParams> {
   const b = asRecord(body)
   const type = b.question_type
   const bad = (message: string): ParamRefusal => new ParamRefusal(false, message)
@@ -46,8 +46,9 @@ export async function parseBattleParams(body: unknown, callerGrade: number | nul
   } else if (type === 'pksk') {
     const domain = idOf(b.pksk_domain_id)
     const level = b.pksk_target_level
-    if (domain === null || !deps.pkskDomains().some((d) => d.id === domain)) throw bad(BATTLE_MESSAGES.pkskDomainInvalid)
+    if (domain === null || !(await deps.pkskDomains()).some((d) => d.id === domain)) throw bad(BATTLE_MESSAGES.pkskDomainInvalid)
     if (level !== 'T1' && level !== 'T4') throw bad(BATTLE_MESSAGES.pkskLevelInvalid)
+    if (!(await deps.pkskAccess(who))[level]) throw new ParamRefusal(true, BATTLE_MESSAGES.pkskNoAccess)
     params = { questionType: type, subjectId: null, pkskDomainId: domain, pkskTargetLevel: level, openToAll }
   } else {
     if (callerGrade === null || callerGrade < BATTLE_RULES.spmMinGrade) throw new ParamRefusal(true, BATTLE_MESSAGES.spmOnly)

@@ -37,7 +37,7 @@ export class InvitationsController {
   @RateLimit(BATTLE_LIMITS.write)
   invite(@Req() req: Req, @Body() body: unknown) {
     const w = who(req)
-    return this.invitations.invite(w.userId, w.isTest, body)
+    return this.invitations.invite(w, w.isTest, body)
   }
 
   @Get('invitations')
@@ -52,7 +52,7 @@ export class InvitationsController {
   @RateLimit(BATTLE_LIMITS.write)
   accept(@Req() req: Req, @Param('uuid') uuid: string) {
     const w = who(req)
-    return this.invitations.accept(w.userId, w.isTest, uuid)
+    return this.invitations.accept(w, w.isTest, uuid)
   }
 
   @Post('invite/:uuid/decline')

@@ -261,8 +261,11 @@ export const battleScenarios: Scenario[] = [
         const unknownSubject = await student.request('POST', path, { body: START({ subject_id: '999999999' }) })
         ctx.expectStatus(unknownSubject, 422)
         ctx.check(JSON.stringify(unknownSubject.body) === '{}', `${path}: an unknown subject must carry an empty body {}`)
-        const pksk = await student.request('POST', path, { body: { question_type: 'pksk', pksk_domain_id: '1', pksk_target_level: 'T1' } })
+        const pksk = await student.request('POST', path, { body: { question_type: 'pksk', pksk_domain_id: '999999999', pksk_target_level: 'T1' } })
         ctx.expectStatus(pksk, 422)
+        const noGrant = await student.request('POST', path, { body: { question_type: 'pksk', pksk_domain_id: '1', pksk_target_level: 'T1' } })
+        ctx.expectStatus(noGrant, 403)
+        ctx.check(JSON.stringify(noGrant.body) === '{}', `${path}: PKSK without a grant must carry an empty body {}`)
       }
       // The SPM pool is level-based (R1-B06): MATH at Tingkatan 4 is stocked by the fixture, so the empty pool is a subject without questions.
       const noPool = await student.request('POST', '/battle/quick-match', { body: START({ question_type: 'spm', subject_id: battleFixture.emptyId }) })

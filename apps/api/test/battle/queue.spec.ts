@@ -63,7 +63,7 @@ describe('battle queue (M16-02 to M16-06, M16-12, M16-13)', () => {
       ['unknown subject', { question_type: 'biasa', subject_id: '999999' }],
       ['numeric subject (ids are strings)', { question_type: 'biasa', subject_id: 3 }],
       ['subject injection text', { question_type: 'biasa', subject_id: "1'; drop table battles;--" }],
-      ['pksk (no domain is served)', { question_type: 'pksk', pksk_domain_id: '1', pksk_target_level: 'T1' }],
+      ['pksk with an unknown domain', { question_type: 'pksk', pksk_domain_id: '999999', pksk_target_level: 'T1' }],
       ['pool below 10 questions', 'sci'],
     ])('422 with an EMPTY body: %s', async (_name, body) => {
       const res = await a.post('/battle/quick-match', body === 'sci' ? { question_type: 'biasa', subject_id: s.sci } : (body as object))

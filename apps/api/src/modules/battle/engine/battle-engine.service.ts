@@ -58,7 +58,7 @@ export class BattleEngine {
   async draw(params: BattleParams, ownerGrade: number | null, streamName: string): Promise<string[] | null> {
     const levelId = await this.deps.levelIdOfGrade(ownerGrade)
     return this.deps.drawQuestions(
-      { questionType: params.questionType, subjectId: params.subjectId, levelId },
+      { questionType: params.questionType, subjectId: params.subjectId, levelId, pkskDomainId: params.pkskDomainId, pkskTargetLevel: params.pkskTargetLevel },
       BATTLE_RULES.arenaQuestions,
       prngStream(streamName),
     )

@@ -110,6 +110,36 @@ describe('S1 lobby', () => {
     expect(byId('battle-quick-match').attributes('disabled')).toBeUndefined()
   })
 
+  it('PKSK with no grant shows the no-access state and no picker (R1-MUR-19)', async () => {
+    api.fetchBattleLobby.mockResolvedValue({ ...lobby(), pkskAccess: { T1: false, T4: false } })
+    await mountPage(BattleLobbyPage)
+    await byId('battle-type-pksk').trigger('click')
+    const state = byId('battle-pksk-no-access')
+    expect(state.text()).toContain('Anda belum mempunyai akses PKSK PRO')
+    expect(state.text()).toContain(
+      'Akses PKSK diberikan oleh pentadbir sekolah anda. Hubungi guru atau pentadbir sekolah untuk mengaktifkan pakej.',
+    )
+    expect(wrapper!.findAll('[data-testid="battle-domain"]')).toHaveLength(0)
+    expect(byId('battle-level-t1').exists()).toBe(false)
+    for (const id of ['battle-quick-match', 'battle-challenge', 'battle-school-battle']) {
+      expect(byId(id).attributes('disabled')).toBeDefined()
+    }
+  })
+
+  it('PKSK with a grant for one level blocks only the other level', async () => {
+    api.fetchBattleLobby.mockResolvedValue({ ...lobby(), pkskAccess: { T1: true, T4: false } })
+    await mountPage(BattleLobbyPage)
+    await byId('battle-type-pksk').trigger('click')
+    expect(byId('battle-pksk-no-access').exists()).toBe(false)
+    await wrapper!.findAll('[data-testid="battle-domain"]')[0]!.trigger('click')
+    await byId('battle-level-t4').trigger('click')
+    expect(byId('battle-pksk-no-access').exists()).toBe(true)
+    expect(byId('battle-quick-match').attributes('disabled')).toBeDefined()
+    await byId('battle-level-t1').trigger('click')
+    expect(byId('battle-pksk-no-access').exists()).toBe(false)
+    expect(byId('battle-quick-match').attributes('disabled')).toBeUndefined()
+  })
+
   it('SPM below Tingkatan 4 only toggles the tooltip and keeps the type', async () => {
     await mountPage(BattleLobbyPage)
     await byId('battle-type-spm').trigger('click')

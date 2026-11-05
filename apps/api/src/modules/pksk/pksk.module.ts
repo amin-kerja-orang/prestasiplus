@@ -39,7 +39,7 @@ export const shuffleCopy: Shuffle = <T>(items: readonly T[]): T[] => {
 
 /**
  * PKSK (M07, BE-42): the learner area, the PKSK question bank screens, the access grants and the packages.
- * Exports `PkskAccessService` (the level gate) for other modules.
+ * Exports `PkskAccessService` (the level gate) and `PkskDomainsRepository` (the domain read) for other modules.
  *
  * Seams: the practice completion (BE-12) and the PKSK questions (BE-09, tagged questions of the one bank) are real
  * adapters. The PKSK subscription flag (BE-25) keeps a FAIL-CLOSED default: no package or subscription data defines it
@@ -61,6 +61,6 @@ export const shuffleCopy: Shuffle = <T>(items: readonly T[]): T[] => {
     { provide: PKSK_SUBSCRIPTION_PORT, useClass: NoPkskSubscription },
     { provide: PKSK_SHUFFLE, useValue: shuffleCopy },
   ],
-  exports: [PkskAccessService],
+  exports: [PkskAccessService, PkskDomainsRepository],
 })
 export class PkskModule {}
