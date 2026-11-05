@@ -116,11 +116,16 @@ export const performanceScenarios: Scenario[] = [
           `${role}: /performance/levels must list t4 and t5`,
         )
       }
-      // only a teacher has own classes; every other role gets an empty list
-      for (const role of ['school_admin', 'admin'] as ActorRole[]) {
-        const rows = listOf(await (await ctx.as(role)).request('GET', '/performance/classes'))
-        ctx.check(rows.length === 0, `${role}: /performance/classes must be [] for a non-teacher`)
-      }
+      // A teacher gets the own classes, a school admin the active classrooms of the own school (S10-T07, FR-AS-4-2; the demo teacher and
+      // the demo school admin share DEMO001, so every class of the teacher is also in the school admin's list); every other role gets [].
+      const teacherIds = listOf(await (await ctx.as('teacher')).request('GET', '/performance/classes')).map((r) => String(r.id))
+      const schoolIds = listOf(await (await ctx.as('school_admin')).request('GET', '/performance/classes')).map((r) => String(r.id))
+      ctx.check(
+        teacherIds.every((id) => schoolIds.includes(id)),
+        'school_admin: /performance/classes must list every active classroom of the own school (a superset of the teacher list)',
+      )
+      const platform = listOf(await (await ctx.as('admin')).request('GET', '/performance/classes'))
+      ctx.check(platform.length === 0, 'admin: /performance/classes must be [] for a non-teacher, non-school-admin')
     },
   },
   {

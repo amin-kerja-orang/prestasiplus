@@ -13,6 +13,7 @@ import { AuthModule } from '../../../../src/modules/auth'
 import { PerformanceModule, PerformancePorts } from '../../../../src/modules/reports/performance'
 import { type CurriculumTestApp, dropDatabase } from '../../../curriculum/helpers'
 import { createTestDatabase, type TestDatabase } from '../../../support/db'
+import { InMemoryAnswerFacts } from '../fakes/in-memory-answer-facts'
 import { InMemoryBijakAggregate } from '../fakes/in-memory-bijak-aggregate'
 import { InMemoryClasses } from '../fakes/in-memory-classes'
 import { item, sitting } from '../fakes/fixtures'
@@ -107,8 +108,17 @@ export async function bootWorld(env: Record<string, string> = {}): Promise<World
     .add({ id: classId, schoolId: schools.demo1, teacherId: ids['guru@demo.test'] as string, teacherName: 'Guru Demo', name: '4 Amanah' }, pupils)
     .add({ id: otherClassId, schoolId: schools.demo2, teacherId: null, name: '4 Cekap' }, [])
 
+  // The class and school figures read the shared answer store (S10-T01/T07), not the sittings: one answered session per pupil
+  // (5 answers, 3 right), plus a test row that must never be counted. Item analysis still reads the Bijak facts above.
+  const answers = new InMemoryAnswerFacts()
+  pupils.forEach((userId, i) => {
+    answers.addMany(userId, 5, 3, { mode: 'latih_tubi', subjectId: '1', answeredAt: SUBMITTED, sessionId: `ses${String(i)}` })
+  })
+  answers.add({ userId: pupils[0] as string, mode: 'latih_tubi', subjectId: '1', isCorrect: true, answeredAt: SUBMITTED, sessionId: 'sestest', isTest: true })
+
   const ports = app.get(PerformancePorts)
   ports.provideBijak(bijak)
+  ports.provideAnswerFacts(answers)
   ports.provideClasses(classes)
   await app.init()
 
