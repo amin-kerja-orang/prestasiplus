@@ -204,6 +204,8 @@ describe('progress, history, corrections, mastery', () => {
   })
   it('has a badge for every session mode', () => {
     expect(Object.keys(PRACTICE_READS_HISTORY_BADGES).sort()).toEqual([...PRACTICE_MODES].sort())
+    expect(PRACTICE_READS_HISTORY_BADGES.databank.label).toBe('Databank SPM')
+    expect(PRACTICE_READS_HISTORY_BADGES.tracking_a.label).toBe('Tracking A')
   })
   it('accepts corrections with and without a summary', () => {
     const base = { month: '2026-10', prevMonth: '2026-09', nextMonth: null, summary: null, subjects: [] }

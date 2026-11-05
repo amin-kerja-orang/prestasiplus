@@ -55329,6 +55329,14 @@
           "updatedAt": {
             "$ref": "#/components/schemas/Timestamp"
           },
+          "questionCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "servableCount": {
+            "type": "integer",
+            "minimum": 0
+          },
           "topics": {
             "type": "array",
             "items": {
@@ -56478,7 +56486,9 @@
           "mission",
           "remedial",
           "question_set",
-          "pksk"
+          "pksk",
+          "databank",
+          "tracking_a"
         ]
       },
       "PracticeStartMode": {
