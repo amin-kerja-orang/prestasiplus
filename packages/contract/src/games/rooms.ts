@@ -180,7 +180,11 @@ export type GamesRoomCodeResult = z.infer<typeof GamesRoomCodeResultSchema>
 
 // --- join (M16-25) -----------------------------------------------------------------------------------------------
 
-/** `room_code` is trimmed and upper-cased by the server; every refusal (including blank) is 404 "Bilik tidak dijumpai.". */
+/**
+ * `room_code` is trimmed and upper-cased by the server. A blank or malformed code, an unknown room, another game, a closed
+ * room and a Tingkatan the match mode does not allow are 404 "Bilik tidak dijumpai."; a started room is 409 "Permainan sudah
+ * dimulakan." and a full room 409 "Bilik sudah penuh." (checked in that order, FR-GM-R.2).
+ */
 export const GamesRoomJoinRequestSchema = z
   .object({ room_code: z.string() })
   .meta({ id: 'GamesRoomJoinRequest' })
@@ -273,6 +277,9 @@ export const GamesRoomViewSchema = z
     state: GamesRoomStateSchema.nullable(),
     round: z.number().int().min(0).optional().meta({ description: 'Present with `state`.' }),
     roundEndsAt: TimestampSchema.optional().meta({ description: 'While playing: when the server clock ends the current turn or round (Teka Silang Kata: the game).' }),
+    robotInSeconds: z.number().int().min(0).optional().meta({
+      description: 'A waiting room below its minimum with robots on: seconds until robots may join, counted from the creation of the room (48 GAME-R). Absent otherwise.',
+    }),
     question: GamesKeylessQuestionSchema.optional(),
     result: GamesRoomResultSchema.optional(),
   })
@@ -309,9 +316,12 @@ export const GamesRoomAnswerActionSchema = z
   })
   .meta({ id: 'GamesRoomAnswerAction' })
 
-/** `{type:'roll'}` or `{type:'answer', questionId, optionId?, value?, seconds?}`; anything else 422 "Tindakan tidak sah." (type). */
+/** `Keluar` (48 GAME-R): a seated player leaves. Waiting: the seat is freed, the host leaving closes the room. Playing: the seat is forfeited (0 XP, no reward). */
+export const GamesRoomLeaveActionSchema = z.object({ type: z.literal('leave') }).meta({ id: 'GamesRoomLeaveAction' })
+
+/** `{type:'roll'}`, `{type:'answer', questionId, optionId?, value?, seconds?}` or `{type:'leave'}`; anything else 422 "Tindakan tidak sah." (type). */
 export const GamesRoomActionRequestSchema = z
-  .discriminatedUnion('type', [GamesRoomRollActionSchema, GamesRoomAnswerActionSchema], {
+  .discriminatedUnion('type', [GamesRoomRollActionSchema, GamesRoomAnswerActionSchema, GamesRoomLeaveActionSchema], {
     error: GAMES_MESSAGES.actionType,
   })
   .meta({ id: 'GamesRoomActionRequest' })
@@ -342,7 +352,7 @@ export const GamesQuickMatchPollResponseSchema = z
   .meta({
     id: 'GamesQuickMatchPollResponse',
     description:
-      'The caller latest search: none or cancelled = cancelled; older than 120 s = expired; the third poll matches (a Papan Bijak room, 4 seats, caller grade level, one bot) and answers matched with room_code; before that searching.',
+      'The caller latest search: none or cancelled = cancelled; older than 120 s = expired; a poll that finds another compatible searching pupil matches both of them into one Papan Bijak room (the polling pupil is the host, both seated as players; the other pupil gets matched with the same room_code on their next poll); otherwise the third poll matches (a Papan Bijak room, 4 seats, caller grade level, one bot) and answers matched with room_code; before that searching.',
   })
 export type GamesQuickMatchPollResponse = z.infer<typeof GamesQuickMatchPollResponseSchema>
 

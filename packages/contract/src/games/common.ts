@@ -134,6 +134,10 @@ export const GAMES_MESSAGES = {
   unauthorized: 'Anda tidak dibenarkan melakukan tindakan ini.',
   gameNotFound: 'Permainan tidak dijumpai.',
   roomNotFound: 'Bilik tidak dijumpai.',
+  /** ERR-GAME-06: refused by the client before any request (48 GAME-R, FR-GM-R.1). */
+  roomCodeInvalid: 'Kod bilik tidak sah.',
+  /** ERR-GAME-08: join with no free seat (409). */
+  roomFull: 'Bilik sudah penuh.',
   roomSubject: 'Subjek tidak sah.',
   roomGradeLevel: 'Tahap soalan tidak sah.',
   roomRange: 'Julat tahap tidak sah.',
