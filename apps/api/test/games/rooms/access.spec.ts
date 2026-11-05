@@ -67,7 +67,7 @@ describe('guards on every route (AC1)', () => {
     it(`${r.name}: 401 "Unauthenticated." without a session (standard envelope)`, async () => {
       const req = t.http()[r.method](r.url)
       const res = await (r.body ? req.send(r.body) : req)
-      expectError(res, 'UNAUTHORIZED', 'Unauthenticated.')
+      expectError(res, 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
     })
   }
 

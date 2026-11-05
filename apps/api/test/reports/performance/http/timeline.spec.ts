@@ -79,7 +79,7 @@ describe('authentication, roles and CSRF', () => {
     for (const email of ['guru@demo.test', 'adminsekolah@demo.test', 'ibubapa@demo.test', 'admin@demo.test']) {
       const s = await login(email)
       const before = await countFiles()
-      expectError(await post(s, fields, [png()]), 'FORBIDDEN', 'This action is unauthorized.')
+      expectError(await post(s, fields, [png()]), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
       expect(await countFiles()).toBe(before)
     }
   })

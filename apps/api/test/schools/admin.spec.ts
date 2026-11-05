@@ -235,7 +235,7 @@ describe('admin school routes (AC 1, AC 8)', () => {
 
     it('422 with the mock copy for missing, too long and invalid fields', async () => {
       const empty = expectError(await post({}), 'VALIDATION_ERROR')
-      expect(empty.message).toBe('The given data was invalid.')
+      expect(empty.message).toBe('Data yang dihantar tidak sah. Sila semak dan cuba lagi.')
       expect(empty.fields).toEqual({
         name: 'The name field is required.',
         code: 'The code field is required.',
@@ -367,7 +367,7 @@ describe('admin school routes (AC 1, AC 8)', () => {
       expect(dup.fields).toEqual({ code: 'The code has already been taken.' })
       const missing = expectError(await put(id, { name: 'x' }), 'VALIDATION_ERROR')
       expect(Object.keys(missing.fields as object)).toEqual(['code', 'type', 'state'])
-      expectError(await put('99999999', VALID), 'NOT_FOUND', 'Not Found.')
+      expectError(await put('99999999', VALID), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
       expectError(await put('abc', VALID), 'NOT_FOUND')
       // 404 is decided before validation, as in the mock
       expectError(await put('99999999', {}), 'NOT_FOUND')

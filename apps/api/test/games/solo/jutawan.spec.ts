@@ -59,10 +59,10 @@ describe('Jutawan Ilmu (M16-36 to M16-39)', () => {
 
   it('401 on every route, CSRF_INVALID on a write', async () => {
     const id = '3f2b8a6e-5c1d-4e7a-9b0f-1a2b3c4d5e6f'
-    expectError(await t.http().get('/api/games/jutawan'), 'UNAUTHORIZED', M.unauthenticated)
-    expectError(await t.http().post('/api/games/jutawan/start').send({}), 'UNAUTHORIZED', M.unauthenticated)
-    expectError(await t.http().post(`/api/games/jutawan/${id}/answer`).send({}), 'UNAUTHORIZED', M.unauthenticated)
-    expectError(await t.http().post(`/api/games/jutawan/${id}/lifeline`).send({}), 'UNAUTHORIZED', M.unauthenticated)
+    expectError(await t.http().get('/api/games/jutawan'), 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
+    expectError(await t.http().post('/api/games/jutawan/start').send({}), 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
+    expectError(await t.http().post(`/api/games/jutawan/${id}/answer`).send({}), 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
+    expectError(await t.http().post(`/api/games/jutawan/${id}/lifeline`).send({}), 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
     expectCsrfInvalid(await student.noCsrf.post('/api/games/jutawan/start', { subject: mathId, darjah: 10 }))
     expectCsrfInvalid(await student.noCsrf.post(`/api/games/jutawan/${id}/answer`, {}))
     expectCsrfInvalid(await student.noCsrf.post(`/api/games/jutawan/${id}/lifeline`, { type: '50:50' }))

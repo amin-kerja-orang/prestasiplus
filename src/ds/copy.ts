@@ -102,12 +102,22 @@ export const dsCopy = {
   confirmYes: 'Ya',
   // Error pages
   error403Title: 'Akses Ditolak',
-  error403Description: 'Halaman ini tidak tersedia untuk peranan anda.',
+  error403Description:
+    'Anda tidak mempunyai kebenaran untuk mengakses halaman ini. Sila log masuk dengan akaun yang betul atau hubungi pentadbir.',
   error404Title: 'Halaman Tidak Dijumpai',
   error404Description:
     'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?',
-  error500Title: 'Sesuatu tidak kena',
-  error500Description: 'Kami tidak dapat memuatkan halaman ini. Cuba lagi sebentar.',
+  error500Title: 'Ralat Pelayan',
+  error500Description:
+    'Sesuatu tidak kena di pihak kami. Pasukan teknikal telah dimaklumkan. Sila cuba sebentar lagi.',
+  error503Title: 'Penyelenggaraan Sedang Dijalankan',
+  error503Description:
+    'Sistem sedang diselenggara buat sementara waktu. Sila cuba semula dalam beberapa minit.',
+  errorReference: 'Rujukan: {requestId}',
+  errorReferenceCopy: 'Salin',
+  errorReferenceHint: 'Hubungi sokongan dengan nombor ini.',
+  chunkLoadDescription: 'Versi baharu tersedia. Sila muat semula halaman.',
+  chunkLoadReload: 'Muat Semula',
   // Admin page templates (batch 0a)
   viewAll: 'Lihat Semua',
   close: 'Tutup',

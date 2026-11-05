@@ -130,6 +130,8 @@ export const EnvSchema = z.object({
   // BE-06 (account). Optional: the code applies 30 writes per minute per user when unset.
   // BE-33: global per-address ceiling on every /api route except /api/health (default 300 per minute, per process).
   THROTTLE_GLOBAL_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  // D115: global ceiling per signed-in user per minute (anonymous requests stay on the per-address ceiling above).
+  THROTTLE_GLOBAL_USER_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   THROTTLE_ACCOUNT_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   // BE-16 (Bijak attempts). All optional: the code applies the defaults (save 240, lifecycle 30, Semak 60, photo 20 per minute per user; sweep every 60 s, 0 = off, off under NODE_ENV=test).
   THROTTLE_BIJAK_ATTEMPT_SAVE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
