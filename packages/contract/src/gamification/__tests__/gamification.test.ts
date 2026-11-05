@@ -18,6 +18,7 @@ import {
   GamificationDeleteResultSchema,
   GamificationDrawCreateRequestSchema,
   GamificationDrawSchema,
+  GamificationEconomySettingsSchema,
   GamificationEconomySettingsUpdateSchema,
   GamificationRewardControlSchema,
   GamificationRewardCostRequestSchema,
@@ -377,6 +378,17 @@ describe('admin: settings, reward control, draws', () => {
     expect(GamificationEconomySettingsUpdateSchema.safeParse({ flatQuizReward: 2 }).success).toBe(true)
     expect(GamificationEconomySettingsUpdateSchema.safeParse({}).success).toBe(false)
     expect(GamificationEconomySettingsUpdateSchema.safeParse({ currentSessionYear: 2026.5 }).success).toBe(false)
+  })
+
+  it('takes the four API-ADM-16 names beside the older ones, inside the ranges of 48 section 2 (S7-T05)', () => {
+    const update = (body: object) => GamificationEconomySettingsUpdateSchema.safeParse(body).success
+    expect(update({ redeemBudget: 300, flatCoins: 3, sessionYear: 2026, miniGamesCoins: false })).toBe(true)
+    for (const body of [{ flatCoins: 0 }, { flatCoins: 20 }, { redeemBudget: 0 }, { redeemBudget: 100000 }, { sessionYear: 2020 }, { sessionYear: 2100 }]) expect(update(body)).toBe(true)
+    for (const body of [{ flatCoins: -1 }, { flatCoins: 21 }, { flatCoins: 1.5 }, { redeemBudget: -1 }, { redeemBudget: 100001 }, { sessionYear: 2019 }, { sessionYear: 2101 }, { miniGamesCoins: 1 }]) expect(update(body)).toBe(false)
+    const older = { rewardBudgetSenSession: 1000, rewardBudgetSenMonth: 300, flatQuizReward: 1, currentSessionYear: 2026, gamesAwardSyiling: 0 }
+    expect(GamificationEconomySettingsSchema.safeParse(older).success).toBe(true)
+    expect(GamificationEconomySettingsSchema.safeParse({ ...older, redeemBudget: 1000, flatCoins: 1, sessionYear: 2026, miniGamesCoins: false }).success).toBe(true)
+    expect(GamificationEconomySettingsSchema.safeParse({ redeemBudget: 1000, flatCoins: 1, sessionYear: 2026, miniGamesCoins: false }).success).toBe(false)
   })
 
   it('parses reward control with its draws and prize pool', () => {

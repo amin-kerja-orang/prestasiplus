@@ -1,16 +1,14 @@
 import { QuestionGateCheckSchema, envelopeOf } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { OverviewRepository } from '../../src/modules/practice/reads/overview/overview.repository'
 import { bootWorkflowApp, loginAll, type Client, type WorkflowTestApp } from './helpers'
 
 /**
- * REQ-B-071 (Mandor Q17, V2): the Bab (chapter) is a filter and report tag, not a gate. Semakan (submit) and Terbitkan (approve) do not ask
- * for it; AC-03.2 keeps the DSKP check (unit, SP, TP, per-leaf cognitive level, kertas for SPM) at Terbitkan. When a question is approved
- * without a Bab and its DSKP unit maps to exactly one active Bab (`chapters.dskp_code` = the unit's printed code), the Bab is
- * filled so Soalan by Chapter, Peta Belajar and Latihan Bab still count it. Real bank, real routes.
+ * S1-T02 (45 section 4.1 row 8, D-QA-12; supersedes REQ-B-071 "the Bab is optional"): the Bab is required to Terbitkan (`NO_CHAPTER`, "Sila pilih Bab.",
+ * step 4) only where the Subjek + Tingkatan has chapters (an active `chapters` row in the tree); it is never asked at Semakan and it is no longer
+ * derived from the DSKP unit. The unit, SP and TP items are listed only where DSKP nodes exist for the Subjek + Tingkatan (R-DSKP). Real bank, real routes.
  */
-describe('REQ-B-071: the Bab is optional at Semakan and Terbitkan; it is derived from the DSKP node at Terbitkan', () => {
+describe('S1-T02: NO_CHAPTER and the R-DSKP conditional items', () => {
   let t: WorkflowTestApp
   let c: Record<'admin' | 'teacher' | 'otherTeacher' | 'schoolAdmin' | 'student', Client>
   let tag: { subjectId: string; levelId: string; unitId: string; spId: string; unitCode: string; spCode: string }
@@ -39,6 +37,7 @@ describe('REQ-B-071: the Bab is optional at Semakan and Terbitkan; it is derived
     difficultyLevel: 2,
     options: ['4', '5', '6', '7'],
     correctAnswer: 1,
+    cognitiveLevel: 'mengaplikasi',
     tag: { unitId: tag.unitId, spIds: [tag.spId], tp: 3 },
     ...over,
   })
@@ -46,9 +45,7 @@ describe('REQ-B-071: the Bab is optional at Semakan and Terbitkan; it is derived
   async function chapterless(over: Record<string, unknown> = {}, status: 'draft' | 'review' = 'draft'): Promise<string> {
     const res = await c.admin.post('/api/questions', body({ status, ...over }))
     expect(res.status, JSON.stringify(res.body)).toBe(201)
-    const id = res.body.data.id as string
-    expect(await chapterOf(id)).toBeNull()
-    return id
+    return res.body.data.id as string
   }
   const chapterOf = async (id: string) => (await t.db.query<{ chapter_id: string | null }>(`select chapter_id::text from question_versions where question_id = $1::bigint order by version_no desc limit 1`, [id]))[0]!.chapter_id
   const statusOf = async (id: string) => (await t.db.query<{ status: string }>(`select status from question_versions where question_id = $1::bigint order by version_no desc limit 1`, [id]))[0]!.status
@@ -59,14 +56,25 @@ describe('REQ-B-071: the Bab is optional at Semakan and Terbitkan; it is derived
     (
       await t.db.query<{ id: string }>(
         `insert into chapters (subject_id, education_level_id, name, chapter_number, dskp_code, is_active) values ($1::bigint, $2::bigint, $3, $4, $5, true) returning id::text`,
-        [tag.subjectId, tag.levelId, `Bab REQ-B-071 ${String(++counter)}`, 900 + counter, dskpCode],
+        [tag.subjectId, tag.levelId, `Bab S1-T02 ${String(++counter)}`, 900 + counter, dskpCode],
       )
     )[0]!.id
-  const practiceCount = async (chapterId: string) => (await new OverviewRepository({ client: t.db.prisma } as never).chapterQuestionCounts([chapterId])).get(chapterId) ?? 0
+  /** Runs `fn` with the chapters of the question's Subjek + Tingkatan switched off (`in_tree = false`), then restores them. */
+  const withoutChapters = async (fn: () => Promise<void>): Promise<void> => {
+    const ids = (await t.db.query<{ id: string }>(`select id::text from chapters where subject_id = $1::bigint and education_level_id = $2::bigint and is_active and in_tree`, [tag.subjectId, tag.levelId])).map((r) => r.id)
+    await t.db.query(`update chapters set in_tree = false where id = any($1::bigint[])`, [ids])
+    try {
+      await fn()
+    } finally {
+      await t.db.query(`update chapters set in_tree = true where id = any($1::bigint[])`, [ids])
+    }
+  }
 
   describe('Semakan (submit) without a Bab', () => {
-    it('single and bulk: chapterless drafts (CSV rows, accepted intake items) enter Semakan, N of N, and gate-check submit is ok', async () => {
+    it('single and bulk: chapterless drafts enter Semakan, N of N, and gate-check submit is ok', async () => {
+      await newChapter(null)
       const one = await chapterless()
+      expect(await chapterOf(one)).toBeNull()
       expect((await gate(one, 'submit')).ok).toBe(true)
       const single = await move(one, 'review')
       expect(single.status, JSON.stringify(single.body)).toBe(200)
@@ -85,100 +93,80 @@ describe('REQ-B-071: the Bab is optional at Semakan and Terbitkan; it is derived
       const res = await move(id, 'review')
       expect(res.status).toBe(422)
       expect(res.body.error.fields).toMatchObject({ subjectId: 'Sila pilih subjek.' })
-      expect(JSON.stringify(res.body)).not.toContain('Sila pilih bab')
       expect(res.body.error.fields).not.toHaveProperty('chapterId')
     })
   })
 
-  describe('Terbitkan (approve) without a Bab', () => {
-    it('with a DSKP node and no Bab it passes (single, bulk) and asks for no Bab', async () => {
-      const a = await chapterless({}, 'review')
-      expect((await gate(a, 'approve')).ok).toBe(true)
-      expect((await move(a, 'approved')).status).toBe(200)
-      const b = await chapterless({}, 'review')
-      const bulk = await c.admin.post('/api/questions/bulk-action', { action: 'approved', ids: [b] })
-      expect(bulk.body.data).toEqual({ affected: 1, failed: [] })
-      const created = await c.admin.post('/api/questions', body({ status: 'approved' })) // created already approved
-      expect(created.status, JSON.stringify(created.body)).toBe(201)
-    })
-
-    it('with NO DSKP node it is refused with the issue list (unit, SP), no Bab message, and stays in Semakan', async () => {
+  describe('Terbitkan (approve): the Bab where the Subjek + Tingkatan has chapters', () => {
+    it('without a Bab: gate-check lists NO_CHAPTER (step 4); the status route, the bulk action and create-as-approved name the same field; nothing moves', async () => {
+      const chapter = await newChapter(null)
       const id = await chapterless({}, 'review')
-      await t.db.query(`update question_versions set unit_node_id = null where question_id = $1::bigint`, [id])
-      await t.db.query(`delete from question_version_sp_nodes where question_version_id in (select id from question_versions where question_id = $1::bigint)`, [id])
       const check = await gate(id, 'approve')
       expect(check.ok).toBe(false)
-      const codes = check.issues.map((i) => i.code)
-      expect(codes).toEqual(expect.arrayContaining(['UNIT_MISSING', 'SP_MISSING']))
-      expect(codes).not.toContain('CHAPTER_MISSING')
+      expect(check.issues).toContainEqual({ path: 'chapterId', code: 'NO_CHAPTER', message: 'Sila pilih Bab.', step: 4 })
       const res = await move(id, 'approved')
       expect(res.status, JSON.stringify(res.body)).toBe(422)
-      expect(res.body.error.fields).toMatchObject({ unitId: 'Sila pilih unit DSKP.', spIds: 'Sila pilih sekurang-kurangnya satu SP DSKP.' })
-      expect(JSON.stringify(res.body)).not.toContain('Sila pilih bab')
+      expect(res.body.error.fields).toEqual({ chapterId: 'Sila pilih Bab.' })
       expect(await statusOf(id)).toBe('review')
+      const bulk = await c.admin.post('/api/questions/bulk-action', { action: 'approved', ids: [id] })
+      expect(bulk.body.data).toMatchObject({ affected: 0, failed: [{ id, code: 'VALIDATION_ERROR', fields: { chapterId: 'Sila pilih Bab.' } }] })
+      const created = await c.admin.post('/api/questions', body({ status: 'approved' }))
+      expect(created.status).toBe(422)
+      expect(created.body.error.fields).toEqual({ chapterId: 'Sila pilih Bab.' })
+
+      // With a Bab chosen it passes (single, bulk, create-as-approved).
+      await t.db.query(`update question_versions set chapter_id = $2::bigint where question_id = $1::bigint`, [id, chapter])
+      expect((await gate(id, 'approve')).ok).toBe(true)
+      expect((await move(id, 'approved')).status).toBe(200)
+      const chosen = await chapterless({ curriculumChapterId: chapter }, 'review')
+      expect((await c.admin.post('/api/questions/bulk-action', { action: 'approved', ids: [chosen] })).body.data).toEqual({ affected: 1, failed: [] })
+      const ok = await c.admin.post('/api/questions', body({ status: 'approved', curriculumChapterId: chapter }))
+      expect(ok.status, JSON.stringify(ok.body)).toBe(201)
+    })
+
+    it('a Subjek + Tingkatan without chapters has no NO_CHAPTER item and approves chapterless', async () => {
+      await withoutChapters(async () => {
+        const id = await chapterless({}, 'review')
+        const check = await gate(id, 'approve')
+        expect(check.issues.map((i) => i.code)).not.toContain('NO_CHAPTER')
+        expect(check.ok).toBe(true)
+        expect((await move(id, 'approved')).status).toBe(200)
+        expect(await chapterOf(id)).toBeNull()
+      })
+    })
+
+    it('the Bab is no longer derived from the DSKP unit: a chapter whose dskp_code is the unit code does not satisfy the gate', async () => {
+      const chapter = await newChapter(tag.unitCode)
+      const id = await chapterless({}, 'review')
+      expect((await move(id, 'approved')).status).toBe(422)
+      expect(await chapterOf(id)).toBeNull()
+      await t.db.query(`update chapters set dskp_code = null where id = $1::bigint`, [chapter])
     })
   })
 
-  describe('the Bab is derived at Terbitkan from the DSKP unit (chapters.dskp_code = the unit printed code, exactly one)', () => {
-    it('exactly one Bab matches: filled on single approve, bulk approve and create-as-approved; the question is then counted by the chapter read', async () => {
-      const chapter = await newChapter(tag.unitCode)
-      expect(await practiceCount(chapter)).toBe(0)
-      const single = await chapterless({}, 'review')
-      expect((await move(single, 'approved')).status).toBe(200)
-      expect(await chapterOf(single)).toBe(chapter)
-      const viaBulk = await chapterless({}, 'review')
-      expect((await c.admin.post('/api/questions/bulk-action', { action: 'approved', ids: [viaBulk] })).body.data.affected).toBe(1)
-      expect(await chapterOf(viaBulk)).toBe(chapter)
-      const created = await c.admin.post('/api/questions', body({ status: 'approved' }))
-      expect(created.status, JSON.stringify(created.body)).toBe(201)
-      expect(await chapterOf(created.body.data.id as string)).toBe(chapter)
-      // Soalan by Chapter / Latihan Bab: the three approved MCQs are counted for that Bab
-      expect(await practiceCount(chapter)).toBe(3)
-      await t.db.query(`update chapters set dskp_code = null where id = $1::bigint`, [chapter]) // isolate the next cases
+  describe('R-DSKP: unit, SP and TP only where DSKP nodes exist for the Subjek + Tingkatan', () => {
+    it('with DSKP nodes and no unit or SP: the issue list names NO_UNIT and NO_SP (and the 422 the same fields)', async () => {
+      await withoutChapters(async () => {
+        const id = await chapterless({}, 'review')
+        await t.db.query(`update question_versions set unit_node_id = null where question_id = $1::bigint`, [id])
+        await t.db.query(`delete from question_version_sp_nodes where question_version_id in (select id from question_versions where question_id = $1::bigint)`, [id])
+        const check = await gate(id, 'approve')
+        expect(check.ok).toBe(false)
+        expect(check.issues.map((i) => i.code)).toEqual(expect.arrayContaining(['NO_UNIT', 'NO_SP']))
+        const res = await move(id, 'approved')
+        expect(res.status, JSON.stringify(res.body)).toBe(422)
+        expect(res.body.error.fields).toMatchObject({ unitId: 'Sila pilih unit DSKP.', spIds: 'Sila pilih sekurang-kurangnya satu SP DSKP.' })
+        expect(await statusOf(id)).toBe('review')
+      })
     })
 
-    it('an admin-chosen Bab is never overwritten, even when a different Bab matches the unit code', async () => {
-      const matching = await newChapter(tag.unitCode)
-      const chosen = await newChapter(null)
-      const own = await chapterless({}, 'review')
-      await t.db.query(`update question_versions set chapter_id = $2::bigint where question_id = $1::bigint`, [own, chosen])
-      expect((await move(own, 'approved')).status).toBe(200)
-      expect(await chapterOf(own)).toBe(chosen)
-      await t.db.query(`update chapters set dskp_code = null where id = $1::bigint`, [matching])
-    })
-
-    it('an SP code is not a bridge (no other heuristic): a Bab carrying only the SP code is not derived', async () => {
-      const bySp = await newChapter(tag.spCode)
-      const q = await chapterless({}, 'review')
-      expect((await move(q, 'approved')).status).toBe(200)
-      expect(await chapterOf(q)).toBeNull()
-      await t.db.query(`update chapters set dskp_code = null where id = $1::bigint`, [bySp])
-    })
-
-    it('no Bab matches (today seed: dskp_code is null everywhere): approved chapterless, and it is not in the chapter read of any Bab', async () => {
-      const none = await chapterless({}, 'review')
-      expect((await move(none, 'approved')).status).toBe(200)
-      expect(await chapterOf(none)).toBeNull()
-      const [{ n }] = await t.db.query<{ n: string }>(`select count(*)::text n from chapters where dskp_code is not null`) as [{ n: string }]
-      expect(n).toBe('0')
-    })
-
-    it('an out-of-tree Bab (in_tree = false) with the matching dskp_code is not derived', async () => {
-      const hidden = await newChapter(tag.unitCode)
-      await t.db.query(`update chapters set in_tree = false where id = $1::bigint`, [hidden])
-      const q = await chapterless({}, 'review')
-      expect((await move(q, 'approved')).status).toBe(200)
-      expect(await chapterOf(q)).toBeNull()
-      await t.db.query(`update chapters set dskp_code = null where id = $1::bigint`, [hidden])
-    })
-
-    it('several Babs match the unit code: the question is approved chapterless (never a guess)', async () => {
-      const x = await newChapter(tag.unitCode)
-      const y = await newChapter(tag.unitCode)
-      const several = await chapterless({}, 'review')
-      expect((await move(several, 'approved')).status).toBe(200)
-      expect(await chapterOf(several)).toBeNull()
-      await t.db.query(`update chapters set dskp_code = null where id = any($1::bigint[])`, [[x, y]])
+    it('without DSKP nodes for the Subjek + Tingkatan: no unit, SP, TP or aras item', async () => {
+      const [free] = await t.db.query<{ id: string }>(`select s.id::text from subjects s where not exists (select 1 from curriculum_nodes n where n.subject_id = s.id and n.education_level_id = $1::bigint) limit 1`, [tag.levelId])
+      expect(free, 'a subject without DSKP nodes at the level').toBeDefined()
+      const id = await chapterless({ subjectId: free!.id, tag: undefined, cognitiveLevel: undefined }, 'review')
+      await t.db.query(`update question_versions set unit_node_id = null, difficulty_tp = null where question_id = $1::bigint`, [id])
+      const check = await gate(id, 'approve')
+      expect(check.issues.filter((i) => ['NO_UNIT', 'NO_SP', 'TP_MISSING', 'LEAF_NO_ARAS', 'LEAF_NO_TP'].includes(i.code))).toEqual([])
     })
   })
 })

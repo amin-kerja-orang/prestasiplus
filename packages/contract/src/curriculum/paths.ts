@@ -51,6 +51,12 @@ import {
   CurriculumTreeQuerySchema,
   CurriculumTreeSchema,
   CurriculumTreeStatsSchema,
+  CurriculumDskpNodeSchema,
+  CurriculumDskpQuerySchema,
+  CurriculumDskpReportRowSchema,
+  CurriculumDskpReportSchema,
+  CurriculumDskpStateSchema,
+  CurriculumDskpTpDescriptorSchema,
   curriculumStatusEnvelopeOf as withStatus,
 } from './schema'
 
@@ -98,6 +104,12 @@ export const CURRICULUM_COMPONENT_SCHEMAS = {
   CurriculumNodeKind: CurriculumNodeKindSchema,
   CurriculumTp: CurriculumTpSchema,
   CurriculumNode: CurriculumNodeSchema,
+  CurriculumDskpState: CurriculumDskpStateSchema,
+  CurriculumDskpQuery: CurriculumDskpQuerySchema,
+  CurriculumDskpReportRow: CurriculumDskpReportRowSchema,
+  CurriculumDskpTpDescriptor: CurriculumDskpTpDescriptorSchema,
+  CurriculumDskpNode: CurriculumDskpNodeSchema,
+  CurriculumDskpReport: CurriculumDskpReportSchema,
 } as const
 
 const json = (schema: z.ZodType, description: string) => ({
@@ -120,7 +132,7 @@ const invalid = (extra = '') =>
 
 type Method = 'get' | 'post' | 'put' | 'patch' | 'delete'
 
-/** Registers the 29 M03 endpoints. Every body is `{ data }`, `{ data, meta }`, `{ data, status }` or `{ error }`. */
+/** Registers the 30 M03 endpoints. Every body is `{ data }`, `{ data, meta }`, `{ data, status }` or `{ error }`. */
 export function registerCurriculumPaths(registry: OpenAPIRegistry): void {
   const admin = (
     method: Method,
@@ -274,6 +286,12 @@ export function registerCurriculumPaths(registry: OpenAPIRegistry): void {
     ok: { status: 200, schema: envelopeOf(CurriculumTreeSchema), text: 'In-tree chapters with topics and subtopics; stats include inactive records.' },
     notFound: `${NF.subject} or ${NF.level}`, validation: true,
     description: '422 fields.subjectId / fields.educationLevelId: "The subject id field is required." / "The education level id field is required.".',
+  })
+  admin('get', '/admin/curriculum/dskp', 'DSKP load report per Subjek x Tingkatan (API-DSKP-11)', {
+    tag: 'curriculum-admin', query: CurriculumDskpQuerySchema,
+    ok: { status: 200, schema: envelopeOf(CurriculumDskpReportSchema), text: 'Live counts and state per offered Subjek x Tingkatan; with subjectId and levelId also the node list with TP descriptors.' },
+    notFound: `${NF.subject} or ${NF.level}`, validation: true,
+    description: '422 fields.subjectId / fields.levelId when an id is not a positive integer. Nothing is stored (D11/D12); the rejected rows of a load stay in the CLI report (D115).',
   })
   admin('get', '/admin/curriculum/chapters/{id}', 'Get a chapter', {
     tag: 'curriculum-admin', params: true, notFound: NF.chapter,
