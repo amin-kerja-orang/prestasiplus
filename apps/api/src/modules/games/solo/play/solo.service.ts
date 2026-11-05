@@ -12,7 +12,6 @@ import {
   GamesSoloSubmitRequestSchema,
   GamesSusunJawapanCheckSchema,
   GamesTembakJawapanCheckSchema,
-  type GamesReward,
   type GamesSoloGame,
 } from '@pp/contract'
 import type { z } from 'zod'
@@ -27,7 +26,7 @@ import { GameSettingsService } from '../../core/game-settings.service'
 import { GameSubjects } from '../../core/subjects'
 import { GameUsers } from '../../core/game-users'
 import { GamesPorts, gameAnswerEntry } from '../../core/ports'
-import { PACE_GUARD_REWARD, rewardBlock, rewardNow } from '../../core/wallet-rewards'
+import { rewardNow } from '../../core/wallet-rewards'
 import { fieldError, gameNotFound, levelInvalid, rawMessage, soloAlreadyChecked, soloCardMatched, soloCardOpen, soloItemNotFound, soloSessionNotFound, startNotEnoughQuestions } from '../../errors'
 import { SoloItemBuilder } from './solo-items'
 import { type ItemRecord, SoloRepository } from './solo.repository'
@@ -282,16 +281,15 @@ export class SoloService {
       const at = this.clock.now()
       // FR-GM-00.3, GAME-S: a finished solo game is "played". Reported also while syiling is off, for the reward event (DM-87);
       // the port decides what is paid. A fast gap credits nothing and makes no call; Mod Pelajar never reports.
-      const report = async (fast: boolean, correct: number, total: number, detail: Record<string, unknown>): Promise<{ coins: number; credited: number; reward?: GamesReward }> => {
+      const report = async (fast: boolean, correct: number, total: number, detail: Record<string, unknown>): Promise<{ coins: number; credited: number }> => {
         const asked = await rewardNow(this.settings, tx, { correct, outcome: 'play', robotsOnly: false, fastGap: false })
-        if (caller.isTest) return { coins: asked.coins, credited: 0 }
-        if (fast) return { coins: asked.coins, credited: 0, reward: PACE_GUARD_REWARD }
+        if (caller.isTest || fast) return { coins: asked.coins, credited: 0 }
         const out = await this.ports.rewards.onGameResult(
           caller.userId,
           { game: info.token, event: 'finish', coins: asked.coins, xp: asked.xp, correct, total, detail, key: s.id, session: { id: s.id, gameKey: game } },
           { tx, isTest: false },
         )
-        return { coins: asked.coins, credited: out.coinsCredited, reward: rewardBlock(out) }
+        return { coins: asked.coins, credited: out.coinsCredited }
       }
 
       if (game === 'kad-memori') {
@@ -309,7 +307,6 @@ export class SoloService {
               moves: s.moves,
               time_seconds: Math.max(0, Math.floor((at.getTime() - s.createdAt.getTime()) / 1000)),
             },
-            ...(r.reward ? { reward: r.reward } : {}),
           },
         }
       }
@@ -333,7 +330,7 @@ export class SoloService {
       })
       return {
         status: 200,
-        body: { is_new_record: isNewRecord, syiling_awarded: r.credited, score: run.score, correct_count: run.correct, total_answered: run.total, ...(r.reward ? { reward: r.reward } : {}) },
+        body: { is_new_record: isNewRecord, syiling_awarded: r.credited, score: run.score, correct_count: run.correct, total_answered: run.total },
       }
     })
   }

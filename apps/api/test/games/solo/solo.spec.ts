@@ -341,7 +341,7 @@ describe('solo games (D58a: keyless payload, server-checked answers, server-comp
       })
       expect(res.status, JSON.stringify(res.body)).toBe(200)
       expect(res.body.data).toBeUndefined()
-      expect(GamesSoloSubmitResponseSchema.parse(res.body)).toEqual({ is_new_record: true, syiling_awarded: 5, score: 68, correct_count: 5, total_answered: 6, reward: { xp: 55, syiling: 5, capped: false, reason: null } })
+      expect(GamesSoloSubmitResponseSchema.parse(res.body)).toEqual({ is_new_record: true, syiling_awarded: 5, score: 68, correct_count: 5, total_answered: 6 })
       expect(await sessionRow(sessionId)).toMatchObject({ score: 68, coins_computed: 5, coins_credited: 5, correct_count: 5, checks: 6, is_new_record: true, is_test: false })
       expect((await sessionRow(sessionId))?.submitted_at).not.toBeNull()
       expect(rewards.calls).toHaveLength(1)
@@ -379,7 +379,6 @@ describe('solo games (D58a: keyless payload, server-checked answers, server-comp
         score: points,
         correct_count: 2,
         total_answered: 3,
-        reward: { xp: 25, syiling: 2, capped: false, reason: null },
       })
     })
 
@@ -432,7 +431,7 @@ describe('solo games (D58a: keyless payload, server-checked answers, server-comp
       }
       t.clock.advance(60_000)
       const res = await student2.post('/api/games/solo/cabaran-kilat/submit', { session_id: fast.sessionId })
-      expect(GamesSoloSubmitResponseSchema.parse(res.body)).toEqual({ is_new_record: false, syiling_awarded: 0, score: 60, correct_count: 3, total_answered: 3, reward: { xp: 0, syiling: 0, capped: false, reason: 'pace_guard' } })
+      expect(GamesSoloSubmitResponseSchema.parse(res.body)).toEqual({ is_new_record: false, syiling_awarded: 0, score: 60, correct_count: 3, total_answered: 3 })
       expect(rewards.calls).toHaveLength(0)
       expect(await sessionRow(fast.sessionId)).toMatchObject({ score: 60, coins_computed: 3, coins_credited: 0, is_new_record: false })
       const [none] = await t.db.query<{ n: string }>(`select count(*)::text as n from personal_bests where user_id = $1::bigint and game = 'cabaran-kilat'`, [student2.userId])
@@ -527,7 +526,7 @@ describe('solo games (D58a: keyless payload, server-checked answers, server-comp
       t.clock.advance(90_000)
       const res = await submit()
       expect(res.status, JSON.stringify(res.body)).toBe(200)
-      expect(GamesSoloSubmitResponseSchema.parse(res.body)).toEqual({ results: { syiling_earned: 6, accuracy: 75, moves: 8, time_seconds: 100 }, reward: { xp: 65, syiling: 6, capped: false, reason: null } })
+      expect(GamesSoloSubmitResponseSchema.parse(res.body)).toEqual({ results: { syiling_earned: 6, accuracy: 75, moves: 8, time_seconds: 100 } })
       expect(rewards.calls).toHaveLength(1)
       expect(rewards.calls[0]?.input).toMatchObject({ game: 'kad_memori', event: 'finish', coins: 6, correct: 6, total: 6, key: sessionId })
       expect(await sessionRow(sessionId)).toMatchObject({ coins_computed: 6, coins_credited: 6 })

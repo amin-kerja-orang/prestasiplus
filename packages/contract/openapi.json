@@ -24217,9 +24217,6 @@
                 "type": "integer",
                 "minimum": 0,
                 "description": "[PROPOSED] Checks stored for the session."
-              },
-              "reward": {
-                "$ref": "#/components/schemas/GamesReward"
               }
             },
             "required": [
@@ -24265,9 +24262,6 @@
                   "time_seconds"
                 ],
                 "additionalProperties": false
-              },
-              "reward": {
-                "$ref": "#/components/schemas/GamesReward"
               }
             },
             "required": [
@@ -24276,43 +24270,6 @@
             "additionalProperties": false
           }
         ]
-      },
-      "GamesReward": {
-        "type": "object",
-        "properties": {
-          "xp": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "syiling": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "capped": {
-            "type": "boolean",
-            "description": "A daily cap reduced the reward."
-          },
-          "reason": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "enum": [
-              "xp_cap",
-              "syiling_cap",
-              "xp_and_syiling_cap",
-              "pace_guard",
-              null
-            ]
-          }
-        },
-        "required": [
-          "xp",
-          "syiling",
-          "capped",
-          "reason"
-        ],
-        "additionalProperties": false
       },
       "GamesSpinSegment": {
         "type": "object",
@@ -24653,6 +24610,43 @@
         "required": [
           "correct",
           "level"
+        ],
+        "additionalProperties": false
+      },
+      "GamesReward": {
+        "type": "object",
+        "properties": {
+          "xp": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "syiling": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "capped": {
+            "type": "boolean",
+            "description": "A daily cap reduced the reward."
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "xp_cap",
+              "syiling_cap",
+              "xp_and_syiling_cap",
+              "pace_guard",
+              null
+            ]
+          }
+        },
+        "required": [
+          "xp",
+          "syiling",
+          "capped",
+          "reason"
         ],
         "additionalProperties": false
       },

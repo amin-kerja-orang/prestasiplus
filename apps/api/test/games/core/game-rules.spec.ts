@@ -108,7 +108,7 @@ describe('GAME-00 common rules', () => {
       const id = await playBetulSalah(student, 'TFTFT')
       const res = await submit(student, id)
       expect(res.status, JSON.stringify(res.body)).toBe(200)
-      expect((res.body as { reward: unknown }).reward).toEqual({ xp: 35, syiling: 0, capped: false, reason: null })
+      expect((res.body as { syiling_awarded: number }).syiling_awarded).toBe(0)
       expect(await xpOf(student.userId)).toBe(before + 35)
       expect(await events(id)).toEqual([{ xp: 35, syiling: 0, capped_reason: null }])
     })
@@ -144,9 +144,15 @@ describe('GAME-00 common rules', () => {
       await t.db.query('update gamification_settings set value = 10 where key = $1', ['games_daily_xp_cap'])
       try {
         const first = await playBetulSalah(student, 'TT')
-        expect((await submit(student, first)).body).toMatchObject({ reward: { xp: 10, capped: true, reason: 'xp_cap' } })
+        expect((await submit(student, first)).status).toBe(200)
+        expect(await events(first)).toEqual([{ xp: 10, syiling: 0, capped_reason: 'xp_cap' }])
         const second = await playBetulSalah(student, 'T')
-        expect((await submit(student, second)).body).toMatchObject({ reward: { xp: 0, capped: true, reason: 'xp_cap' } })
+        expect((await submit(student, second)).status).toBe(200)
+        expect(await events(second)).toEqual([{ xp: 0, syiling: 0, capped_reason: 'xp_cap' }])
+        // the block of a result that carries one (API-GAME-01): the room view says the cap
+        const code = await createRoom(student, 'perang-fakta')
+        parseRoom(await fillAndStart(t, student, 'perang-fakta', code))
+        expect((await finishRoom(student, code)).result?.reward).toEqual({ xp: 0, syiling: 0, capped: true, reason: 'xp_cap' })
       } finally {
         await t.db.query('update gamification_settings set value = 500 where key = $1', ['games_daily_xp_cap'])
       }
@@ -160,7 +166,7 @@ describe('GAME-00 common rules', () => {
       expect((await checkBetulSalah(student, sessionId, items[1] as DbItem, true)).status).toBe(200)
       t.clock.advance(20_000) // a long total time does not help: any gap counts
       const res = await submit(student, sessionId)
-      expect(res.body).toMatchObject({ score: 12 + 14, reward: { xp: 0, syiling: 0, capped: false, reason: 'pace_guard' } })
+      expect(res.body).toMatchObject({ score: 12 + 14, syiling_awarded: 0 })
       expect(await events(sessionId)).toEqual([])
     })
 
@@ -192,10 +198,13 @@ describe('GAME-00 common rules', () => {
 
     it('Mod Pelajar: no reward block and no event', async () => {
       const id = await playBetulSalah(mod, 'T')
-      const res = await submit(mod, id)
-      expect(res.status).toBe(200)
-      expect((res.body as Record<string, unknown>).reward).toBeUndefined()
+      expect((await submit(mod, id)).status).toBe(200)
       expect(await events(id)).toEqual([])
+      const code = await createRoom(mod, 'perang-fakta')
+      parseRoom(await fillAndStart(t, mod, 'perang-fakta', code))
+      const v = await finishRoom(mod, code)
+      expect(v.status).toBe('finished')
+      expect(v.result?.reward).toBeUndefined()
     })
   })
 

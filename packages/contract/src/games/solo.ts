@@ -354,7 +354,6 @@ export const GamesSoloSubmitResponseSchema = z
       score: gamesCount.meta({ description: '[PROPOSED] Server-computed score.' }),
       correct_count: gamesCount.meta({ description: '[PROPOSED] Correct checks (solved puzzles for susun-jawapan).' }),
       total_answered: gamesCount.meta({ description: '[PROPOSED] Checks stored for the session.' }),
-      reward: GamesRewardSchema.optional(),
     }),
     z.strictObject({
       results: z.strictObject({
@@ -363,7 +362,6 @@ export const GamesSoloSubmitResponseSchema = z
         moves: z.number().int().min(6).meta({ description: '[PROPOSED] Pair checks stored for the session.' }),
         time_seconds: gamesCount.meta({ description: '[PROPOSED] Server clock: submit time minus session start.' }),
       }),
-      reward: GamesRewardSchema.optional(),
     }),
   ])
   .meta({ id: 'GamesSoloSubmitResponse' })
