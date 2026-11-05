@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { ApiError } from '@/api'
+import { DsNativeSelect } from '@/ds'
 
 import { FOSTER_APPLICATION_MESSAGES as MSG } from '../../api/types'
 import { REASON_EXAMPLES } from '../../components/mohon/mohon-copy'
@@ -125,6 +126,16 @@ describe('S6 static copy (FR-M21-46, 48)', () => {
     expect(reason().attributes('required')).toBeDefined()
   })
 
+  it('builds the selects on DsNativeSelect, a component that exists at runtime', async () => {
+    await mountPage()
+    // Nuxt UI has no UNativeSelect: unresolved, it rendered an empty element with no options.
+    expect(wrapper!.findAllComponents(DsNativeSelect)).toHaveLength(2)
+    expect(category().element.tagName).toBe('SELECT')
+    expect(income().element.tagName).toBe('SELECT')
+    expect(category().element.validity.valid).toBe(false)
+    expect(income().element.validity.valid).toBe(true)
+  })
+
   it('shows the info box copy', async () => {
     await mountPage()
     const box = wrapper!.get('[data-testid="mohon-info"]')
@@ -204,9 +215,19 @@ describe('S6 submit (FR-M21-49)', () => {
     expect(email().element.value).toBe('tiada.pelajar@demo.test')
     expect(reason().element.value).toBe('Sebab ujian')
     expect(email().classes()).toContain('ring-error')
-    expect(category().classes()).not.toContain('ring-error')
+    expect(category().attributes('data-state')).toBeUndefined()
     expect(wrapper!.find('[aria-invalid], [aria-live], [aria-describedby]').exists()).toBe(false)
     expect(wrapper!.find('[data-variant="success"]').exists()).toBe(false)
+  })
+
+  it('marks a rejected select through DsNativeSelect invalid', async () => {
+    submit.mockReturnValue(failure(validation({ studentCategory: MSG.required })))
+    await mountPage()
+    await fill()
+    await wrapper!.get('form').trigger('submit')
+    await flushPromises()
+    expect(category().attributes('data-state')).toBe('invalid')
+    expect(income().attributes('data-state')).toBeUndefined()
   })
 
   it('lists one line per rejected field', async () => {
