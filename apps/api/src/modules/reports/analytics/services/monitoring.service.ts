@@ -47,8 +47,6 @@ interface Universe {
   loggedBySchool: Map<string, number>
   answersBySchool: Map<string, number>
   scope: string[] | null
-  /** Pupil filter; always null since R1-GUR-10 (a teacher sees the whole own school). */
-  pupilIds: string[] | null
 }
 
 const NOT_FOUND = (): never => {
@@ -71,15 +69,16 @@ export class MonitoringService {
     const period = periodOf(filters.period)
     // Teacher and school admin are fixed to the own school (BE-20 teacher scope, BR-M11-35, FR-M11-88): `state` is ignored for them.
     const state = isSchoolForced(ctx.role) ? '' : (filters.state ?? '')
-    const tahap = filters.tahap ?? ''
+    // Legacy five-band keys from an old client map to the four bands.
+    const rawTahap = filters.tahap ?? ''
+    const tahap = rawTahap === 'Kritikal' ? 'Rendah' : rawTahap === 'Tiada Langsung' ? 'Tiada' : rawTahap
     const from = periodFromMs(period, now.getTime())
-    const pupilIds: string[] | null = null
     const [facts, registered, teachers, engagement, withUsers] = await Promise.all([
       this.repo.schools(scope),
-      this.repo.registeredBySchool(scope, pupilIds),
+      this.repo.registeredBySchool(scope),
       // R1-GUR-10: a teacher sees the whole own school, like the school admin.
       this.repo.teachersBySchool(scope),
-      this.repo.engagement(scope, from === null ? null : new Date(from), pupilIds),
+      this.repo.engagement(scope, from === null ? null : new Date(from)),
       this.repo.schoolsWithUsers(scope),
     ])
     const factOf = new Map<string, SchoolFact>(facts.map((f) => [f.id, f]))
@@ -94,7 +93,7 @@ export class MonitoringService {
       const raw = percent(e, n)
       students.push({
         raw,
-        row: { schoolId, name: fact.name, code: fact.code, state: fact.state, registered: n, engaged: e, pct: round1(raw), tahap: tahapOf(raw) },
+        row: { schoolId, name: fact.name, code: fact.code, state: fact.state, registered: n, engaged: e, pct: round1(raw), tahap: tahapOf(round1(raw)) },
       })
     }
     students.sort((a, b) => b.raw - a.raw || compareIds(a.row.schoolId, b.row.schoolId))
@@ -108,7 +107,7 @@ export class MonitoringService {
       const raw = percent(t.logged, t.n)
       teacherRows.push({
         raw,
-        row: { schoolId, name: fact.name, code: fact.code, state: fact.state, registered: t.n, loggedIn: t.logged, pct: round1(raw), tahap: tahapOf(raw) },
+        row: { schoolId, name: fact.name, code: fact.code, state: fact.state, registered: t.n, loggedIn: t.logged, pct: round1(raw), tahap: tahapOf(round1(raw)) },
       })
     }
     teacherRows.sort((a, b) => b.raw - a.raw || compareIds(a.row.schoolId, b.row.schoolId))
@@ -127,7 +126,6 @@ export class MonitoringService {
       loggedBySchool,
       answersBySchool: new Map([...engagement].map(([id, e]) => [id, e.answers])),
       scope,
-      pupilIds,
     }
   }
 
@@ -169,8 +167,8 @@ export class MonitoringService {
 
   /** BR-M11-15 weekly tracking over the student-table schools (state filter only). */
   private async weekly(u: Universe, weeks: { k: number }[]): Promise<WeeklyRow[]> {
-    const perSchool = await this.repo.answersByWeek(u.scope, u.pupilIds)
-    const totals = u.period === '' ? u.answersBySchool : new Map([...(await this.repo.engagement(u.scope, null, u.pupilIds))].map(([id, e]) => [id, e.answers]))
+    const perSchool = await this.repo.answersByWeek(u.scope)
+    const totals = u.period === '' ? u.answersBySchool : new Map([...(await this.repo.engagement(u.scope, null))].map(([id, e]) => [id, e.answers]))
     const ordered = [...u.rows].sort((a, b) => {
       const ta = totals.get(a.schoolId) ?? 0
       const tb = totals.get(b.schoolId) ?? 0
@@ -253,13 +251,11 @@ export class MonitoringService {
 
   async schoolDetail(ctx: Ctx, schoolId: string): Promise<SchoolDetail> {
     const fact = await this.schoolInScope(ctx, schoolId)
-    const [allPupils, allTeachers, sub] = await Promise.all([
+    const [pupils, teachers, sub] = await Promise.all([
       this.repo.pupilsOfSchool(fact.id),
       this.repo.teachersOfSchool(fact.id),
       this.repo.latestSubscription(fact.id),
     ])
-    const pupils = allPupils
-    const teachers = allTeachers
     const [stats, flags] = await Promise.all([this.repo.pupilStats(pupils.map((p) => p.id)), this.repo.flagsOf(pupils.map((p) => p.id))])
 
     const students = pupils
@@ -302,7 +298,7 @@ export class MonitoringService {
       school: { id: fact.id, name: fact.name, code: fact.code, state: fact.state },
       subscription: sub && status ? { status, endsAt: `${sub.endsOn}T23:59:59+08:00` } : null,
       warning: fc.review + fc.excluded > 0 ? { review: fc.review, excluded: fc.excluded } : null,
-      tahap: tahapOf(p),
+      tahap: tahapOf(round1(p)),
       pct: round1(p),
       cards: {
         students: students.length,

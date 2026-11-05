@@ -204,6 +204,17 @@ describe('M11 monitoring S2 to S5 and export (AC 1 to 3, 5)', () => {
       expect(unknown.kpi).toEqual(all.kpi)
     })
 
+    it('a legacy tahap filter maps to the four bands: Tiada Langsung -> Tiada, Kritikal -> Rendah', async () => {
+      const tiada = AnalyticsMonitoringOverviewSchema.parse((await admin.get('/monitoring/overview?period=7d&tahap=Tiada%20Langsung')).body.data)
+      const direct = AnalyticsMonitoringOverviewSchema.parse((await admin.get('/monitoring/overview?period=7d&tahap=Tiada')).body.data)
+      expect(tiada.studentRows.map((r) => r.schoolId)).toContain(w.schoolA)
+      expect(tiada.studentRows).toEqual(direct.studentRows)
+      expect(tiada.filters.tahap).toBe('Tiada')
+      const rendah = AnalyticsMonitoringOverviewSchema.parse((await admin.get('/monitoring/overview?tahap=Kritikal')).body.data)
+      const rendahDirect = AnalyticsMonitoringOverviewSchema.parse((await admin.get('/monitoring/overview?tahap=Rendah')).body.data)
+      expect(rendah.studentRows).toEqual(rendahDirect.studentRows)
+    })
+
     it('signals: Cemerlang schools are "best" (at most 3), low bands are attention and suggestions', async () => {
       const body = AnalyticsMonitoringOverviewSchema.parse((await admin.get('/monitoring/overview?period=7d')).body.data)
       expect(body.signals.best.map((s) => s.schoolId)).toContain(w.schoolB)

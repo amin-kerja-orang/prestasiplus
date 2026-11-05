@@ -43,6 +43,19 @@ describe('tahap (R1-AS-10 four bands)', () => {
   })
 })
 
+describe('tahap follows the displayed 1-decimal figure (round1 then tahapOf)', () => {
+  it.each([
+    [19.96, 20, 'Sederhana'],
+    [0.04, 0, 'Tiada'],
+    [60.04, 60, 'Sederhana'],
+    [60.05, 60.1, 'Cemerlang'],
+    [19.94, 19.9, 'Rendah'],
+  ] as const)('raw %s shows %s and is %s', (raw, shown, tahap) => {
+    expect(round1(raw)).toBe(shown)
+    expect(tahapOf(round1(raw))).toBe(tahap)
+  })
+})
+
 describe('filters (BR-M11-06, BR-M11-10)', () => {
   it('range is 7, 30 or 90, anything else (also a non-number) 30', () => {
     expect(['7', '30', '90', '999', '0', undefined, 'abc', '7.5', ' 90 ', '-7', ''].map(rangeOf)).toEqual([7, 30, 90, 30, 30, 30, 30, 30, 90, 30, 30])
