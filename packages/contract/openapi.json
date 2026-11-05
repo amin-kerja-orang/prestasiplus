@@ -104511,11 +104511,18 @@
             }
           },
           "403": {
-            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "`{error:\"Anda belum mempunyai akses PKSK PRO\"}` (a PKSK battle and the receiver has no grant for its level), or CSRF_INVALID (ErrorBody).",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BattleRawError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    }
+                  ]
                 }
               }
             }
@@ -104531,7 +104538,7 @@
             }
           },
           "422": {
-            "description": "{error:\"Soalan tidak mencukupi.\"}, or {error:\"Anda belum mempunyai akses PKSK PRO\"} (a PKSK battle and the receiver has no grant for its level).",
+            "description": "{error:\"Soalan tidak mencukupi.\"}.",
             "content": {
               "application/json": {
                 "schema": {

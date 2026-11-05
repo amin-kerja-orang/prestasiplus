@@ -357,9 +357,12 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     responses: {
       200: json(BattleInviteAcceptResponseSchema, 'The battle was created.'),
       401: UNAUTHORIZED,
-      403: CSRF_INVALID,
+      403: json(
+        z.union([BattleRawErrorSchema, ErrorBodySchema]),
+        '`{error:"Anda belum mempunyai akses PKSK PRO"}` (a PKSK battle and the receiver has no grant for its level), or CSRF_INVALID (ErrorBody).',
+      ),
       404: raw('{error:"Cabaran tidak dijumpai."}.'),
-      422: raw('{error:"Soalan tidak mencukupi."}, or {error:"Anda belum mempunyai akses PKSK PRO"} (a PKSK battle and the receiver has no grant for its level).'),
+      422: raw('{error:"Soalan tidak mencukupi."}.'),
     },
   })
 
