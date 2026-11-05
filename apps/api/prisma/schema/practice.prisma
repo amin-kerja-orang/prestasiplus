@@ -114,8 +114,8 @@ model PracticeAnswer {
   legacySource       String?   @map("legacy_source")
   legacyId           String?   @map("legacy_id")
   legacyHash         String?   @map("legacy_hash")
-  /// DM-44 (0181): one of the 19 registry values (check ck_practice_answers_mode, NOT VALID, NULL passes until 0188 sets NOT NULL).
-  mode               String?
+  /// DM-44 (0181, 0188): one of the 19 registry values (check ck_practice_answers_mode, validated and NOT NULL since 0188).
+  mode               String
   /// DM-44: id of the activity instance (exam attempt, practice session, battle/game uuid); no FK.
   attemptId          String?   @map("attempt_id") @db.Uuid
   /// DM-44: leaf path of a structured/subjective part, or `<game_key>#<position>`.

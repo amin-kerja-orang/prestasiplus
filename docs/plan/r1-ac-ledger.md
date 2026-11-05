@@ -53,26 +53,58 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S0-T12 | AC-ERR-7 | CI | Pass | 2026-11-05 | team-aa/S-1 | wave0.test.ts::shows Rujukan only on 5xx with a requestId; wave0.test.ts::Salin copies the request id |
 | S0-T12 | AC-ERR-10 | CI | Pass | 2026-11-05 | team-aa/S-1 | client.test.ts::retries a GET 503 twice (about 1 s, then 3 s) and then fails; client.test.ts::never retries POST, PUT, PATCH or DELETE |
 | S0-T12 | AC-ERR-12 | CI | Pass | 2026-11-05 | team-aa/S-1 | error-filter.spec.ts::415 gives UNSUPPORTED_MEDIA_TYPE with the generic text |
+| S8-T02 | AC-PA-39 | CI | Pass | 2026-11-05 | team-aa/S-1 | leaf-links.test.ts::AC-PA-39: "Bahan 2" renders a button that opens Bahan 2; leaf-links.test.ts::AC-PA-39: "semua bahan" opens all (3 shown) in the drawer; leaf-links.test.ts::FR-PA-37: a leaf without stimulusId is unchanged; stimulus-panel.test.ts::FR-PA-37 source line |
+| S8-T02 | AC-QA-09 | CI | Pass | 2026-11-05 | team-aa/S-1 | leaf-links.test.ts::FR-PA-37: the stimulus sits in the leaf, inline from 768; leaf-links.test.ts::FR-PA-37: a leaf without stimulusId is unchanged; leaf-links.test.ts::AC-PA-39: "semua bahan" opens all (3 shown) in the drawer |
 
 ## Sprint 1
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
+| S1-T01 | AC-QA-02 | CI | Pass | 2026-11-05 | team-aa/S-3 | group-actions.spec.ts::AC-QA-02: member 3 fails the approve gate: 422 lists "Soalan 3: ..." and no member changes status |
+| S1-T01 | AC-QA-03 | CI | Pass | 2026-11-05 | team-aa/S-3 | group-actions.spec.ts::AC-QA-03: an ids list with some but not all members is 422 stimulus_group_split on the group; nothing changes |
+| S1-T01 | AC-QA-06 | CI | Pass | 2026-11-05 | team-aa/S-3 | group-actions.spec.ts::a draft member leaves group A and joins the end of group B in one call; A closes up; both details come back; audit row |
+| S1-T01 | AC-QA-50 | CI | Pass | 2026-11-05 | team-aa/S-3 | group-actions.spec.ts::3 Draf members: 409 publishNotReady and nothing changes; after Hantar kumpulan all 3 are Menunggu Semakan; after Terbitkan kumpulan all 3 are Diluluskan together |
+| S1-T01 | AC-QA-51 | CI | Pass | 2026-11-05 | team-aa/S-3 | group-actions.spec.ts::attaching a question of another Subjek to the empty Sains T4 group answers 422 memberScope; the same Subjek and Tingkatan is accepted |
+| S1-T01 | AC-ADM-QE1.5 | CI | Pass | 2026-11-05 | team-aa/S-3 | group-actions.spec.ts::3 Draf members: 409 publishNotReady and nothing changes; after Hantar kumpulan all 3 are Menunggu Semakan; after Terbitkan kumpulan all 3 are Diluluskan together |
+| S1-T01 | AC-ADM-QE2.3 | CI | Pass | 2026-11-05 | team-aa/S-3 | group-actions.spec.ts::a draft member leaves group A and joins the end of group B in one call; A closes up; both details come back; audit row |
+| S1-T01 | AC-ADM-QE2.6 | CI | Pass | 2026-11-05 | team-aa/S-3 | group-actions.spec.ts::attaching a question of another Subjek to the empty Sains T4 group answers 422 memberScope; the same Subjek and Tingkatan is accepted |
+| S1-T02 | AC-ADM-QE4.3 | CI | Pass | 2026-11-05 | team-aa/S-3 | bab-optional.spec.ts::without a Bab: gate-check lists NO_CHAPTER (step 4); the status route, the bulk action and create-as-approved name the same field; nothing moves |
+| S1-T02 | AC-ADM-QE4.4 | CI | Pass | 2026-11-05 | team-aa/S-3 | bab-optional.spec.ts::a Subjek + Tingkatan without chapters has no NO_CHAPTER item and approves chapterless |
+| S1-T01 | AC-ADM-QE2.1 | CI | Pass | 2026-11-05 | team-aa/S-3 | stimulus-api.spec.ts::adds the 2nd and 3rd question to a one-stimulus group; stimuli stay at 1 and the detail lists 3 members in order |
+| S1-T01 | AC-ADM-QE2.2 | CI | Pass | 2026-11-05 | team-aa/S-3 | paper-units.spec.ts::is a paper-level error with the exact BM line (not section-prefixed, hard) |
+| S1-T01 | AC-ADM-QE3.13 | CI | Pass | 2026-11-05 | team-aa/S-3 | stimulus-api.spec.ts::deletes an unused stimulus; a stimulus shown by a group is 409 with the BM message; audio rows are invisible |
 
 ## Sprint 2
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
+| S1-T05 | AC-QA-34 | CI | Pass | 2026-11-05 | team-aa/S-3 | imports.spec.ts::[CI] the 2,000-row cap is admin-only: the Guru route refuses more than 500 rows with "Fail melebihi 500 baris." for every header, the admin route 2,001 rows with the 2,000 message; imports-csv.spec.ts::[CI] more than 2,000 data rows refuses the file whole (both formats); 2,000 is accepted |
 
 ## Sprint 3
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
+| S1-T06 | AC-ADM-QE7.1 | CI | Pass | 2026-11-05 | team-aa/S-3 | builder-placements.spec.ts::[CI] AC-QE7.1: the Jana draw never splits a group: whole or not at all, members contiguous in group order |
+| S1-T06 | AC-MUR-QP-6 | CI | Pass | 2026-11-05 | team-aa/S-3 | kuiz-whole-groups.spec.ts::[CI] AC-QP-6: a whole group is served together, contiguous and in group order |
+| S8-T03 | AC-QA-18 | CI | Pass | 2026-11-05 | team-aa/S-3 | sanitize.test.ts::keeps allowed tags; render-markup.test.ts::sanitises before expanding |
 
 ## Sprint 4
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
+| S5-T04 | AC-MUR-2-1 | CI | Pass | 2026-11-05 | team-bb/S-4 | DashboardPage.test.ts |
+| S5-T05 | AC-MUR-A2-5 | CI | Pass | 2026-11-05 | team-bb/S-4 | profile.spec.ts |
+| S5-T08 | AC-GUR-7-5 | CI | Pass | 2026-11-06 | team-bb/S-4 | videos.spec.ts::a teacher link must be a YouTube video link: everything else is 422 "Pautan mesti pautan YouTube yang sah." under videoUrl; VideoPages.test.ts::validates with the contract copy and posts nothing when invalid |
+| S5-T08 | AC-GUR-7-6 | CI | Pass | 2026-11-06 | team-bb/S-4 | videos.spec.ts::a teacher of another school cannot see a teacher video; a guest and a pupil of another school cannot either |
+| S5-T08 | AC-AS-7-4 | CI | Pass | 2026-11-06 | team-bb/S-4 | videos.spec.ts::a school admin gets 403 on POST, PUT and DELETE; VideoPages.test.ts::"Tambah Video" for school_admin: false |
+| S5-T08 | AC-MUR-7-1 | CI | Pass | 2026-11-06 | team-bb/S-4 | VideoPages.test.ts::a pill with count 0 is not a link; others link to ?category |
+| S5-T08 | AC-MUR-7-2 | CI | Pass | 2026-11-06 | team-bb/S-4 | VideoPages.test.ts::shows the empty state with "Lihat Semua Video" |
+| S5-T08 | AC-MUR-7-5 | CI | Pass | 2026-11-06 | team-bb/S-4 | videos.spec.ts::a page holds 24 cards, newest first; meta follows the mock; a bad or too large page is not an error; VideoPages.test.ts::submitting the search pushes ?search and keeps the filters |
+| S5-T04 | AC-MUR-2-3 | CI | Pass | 2026-11-06 | team-bb/S-4 | DashboardPage.test.ts::shows HomePakej for a package and hides it for null (FR-MUR-2-4); overview.spec.ts::package: null for a pupil with no complimentary package and no live school subscription |
+| S5-T04 | AC-MUR-2-8 | CI | Pass | 2026-11-06 | team-bb/S-4 | HomeMood.test.ts::asks "Bagaimana perasaan anda hari ini?" with the four labelled choices; HomeMood.test.ts::after a reload with a stored choice, shows "✓ Sedih" and offers no choices; mood.spec.ts::reads null before a check-in, then records the first choice and reads it back (AC-MUR-2-8) |
+| S5-T04 | AC-MUR-2-9 | CI | Pass | 2026-11-06 | team-bb/S-4 | DashboardPage.test.ts::Ketepatan shows "—" for null accuracy, without a count-up (AC-MUR-2-9); overview.spec.ts::accuracyPct is null with 0 answers (FR-MUR-2-13) |
+| S5-T04 | AC-MUR-2-10 | CI | Pass | 2026-11-06 | team-bb/S-4 | mood.spec.ts::a second submit the same day is 409 ALREADY_CHECKED_IN and the row is unchanged (AC-MUR-2-10) |
+| S5-T04 | AC-MUR-2-12 | CI | Pass | 2026-11-06 | team-bb/S-4 | mood.spec.ts::answers 401 without a session and 403 for every other role (AC-MUR-2-12) |
 
 ## Sprint 5
 
