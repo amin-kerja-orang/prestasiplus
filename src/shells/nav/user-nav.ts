@@ -750,6 +750,16 @@ const SETTINGS_ID = 'tetapan-peribadi'
 const STUDENT_HIDDEN_IDS: ReadonlySet<string> = new Set([
   'laporan-mingguan',
 ])
+/**
+ * Misi Harian (teacher) is a child page of the Dashboard checklist with no sidebar item (D106,
+ * 20 R1-GUR-2b, OQ-G-13): its route is in scope, the rows stay in the data but never render.
+ */
+const ROLE_HIDDEN_IDS: Readonly<Record<string, ReadonlySet<string>>> = {
+  student: STUDENT_HIDDEN_IDS,
+  teacher: new Set(['t-misi-harian']),
+  admin: new Set(['guru-misi-harian']),
+}
+const isRoleHidden = (role: string, id: string): boolean => ROLE_HIDDEN_IDS[role]?.has(id) === true
 /** Profile entries of each role: scope mode puts "Tetapan Peribadi" right after them. */
 const PROFILE_IDS: readonly string[] = ['profil-saya', 't-profil-saya', 'sa-profil-saya']
 
@@ -770,7 +780,7 @@ function scopeEntries(
   for (const entry of entries) {
     if (entry.kind === 'item') {
       if (SCOPE_DUPLICATE_IDS.has(entry.id)) continue
-      if (role === 'student' && STUDENT_HIDDEN_IDS.has(entry.id)) continue
+      if (isRoleHidden(role, entry.id)) continue
       if (isPathAllowed(role, entry.to)) kept.push(entry)
     } else if (entry.kind === 'group') {
       const children = entry.children.filter((child) => isPathAllowed(role, child.to))
@@ -807,7 +817,7 @@ export function navFor(
     options.includeOutOfScope === true ||
     isPrototypeScopeOn() ||
     entry.kind !== 'item' ||
-    (!isOutOfScope(entry.to) && !(role === 'student' && STUDENT_HIDDEN_IDS.has(entry.id)))
+    (!isOutOfScope(entry.to) && !isRoleHidden(role, entry.id))
   const visible = scopeEntries(
     withoutKeluargaAngkat(withoutAlesa(entries))
       .filter((entry) => visibleTo(entry, role, surface) && inScope(entry))
