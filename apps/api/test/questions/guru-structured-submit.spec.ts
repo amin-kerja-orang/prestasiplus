@@ -349,6 +349,44 @@ describe('Guru structured submission: POST/PUT/DELETE /guru/intake/structured an
     }
   })
 
+  it('a 1-part submission (an essay in the bank) is listed once as approved by its guru origin marker; a plain essay is not; a 2-part one still is', async () => {
+    const served = (await list(teacher, '?status=approved')).data.filter((r) => r.source === 'question')
+    expect(served.length).toBeGreaterThan(1)
+    const [onePart, plainEssay, twoPart] = [served[0]?.id as string, served[1]?.id as string, served[2]?.id ?? (served[0]?.id as string)]
+    const typeOf = async (id: string) => (await t.db.query<{ type: string }>(`select v.type from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no where q.id = $1`, [id]))[0]?.type as string
+    const before = new Map<string, string>([
+      [onePart, await typeOf(onePart)],
+      [plainEssay, await typeOf(plainEssay)],
+    ])
+    const retype = (id: string, type: string) =>
+      t.db.query(`update question_versions v set type = $2 from questions q where q.id = v.question_id and v.version_no = q.live_version_no and q.id = $1`, [id, type])
+    const total = (await list(teacher, '?status=approved')).meta.totalItems
+    const one = await created(teacher, { stimulus: 'Satu bahagian sahaja.', parts: [part()] })
+    expect(one).toMatchObject({ subCount: 1 })
+    await t.db.query(`update intake_items set review_state = 'accepted', question_id = $2 where id = $1`, [one.id.slice(1), onePart])
+    const two = await created(teacher, { stimulus: 'Dua bahagian.' })
+    await t.db.query(`update intake_items set review_state = 'accepted', question_id = $2 where id = $1`, [two.id.slice(1), twoPart])
+    await retype(onePart, 'essay')
+    await retype(plainEssay, 'essay')
+    try {
+      const approved = await list(teacher, '?status=approved')
+      const all = await list(teacher)
+      // The 1-part one stays listed (marker); the plain essay (no guru item) drops out; nothing is duplicated.
+      expect(approved.data.filter((r) => r.id === onePart)).toHaveLength(1)
+      expect(approved.data.map((r) => r.id)).not.toContain(plainEssay)
+      expect(approved.meta.totalItems).toBe(total - 1)
+      expect(all.data.filter((r) => r.id === onePart)).toHaveLength(1)
+      expect(approved.data.filter((r) => r.id === twoPart)).toHaveLength(1)
+      for (const id of [one.id, two.id]) expect([...all.data, ...(await list(teacher, '?status=review')).data].map((r) => r.id)).not.toContain(id)
+      const detail = Detail.parse((await teacher.get(`/api/guru/structured-questions/${onePart}`)).body).data
+      expect(detail).toMatchObject({ id: onePart, status: 'approved', subCount: 1 })
+      expect(detail.subQuestions).toHaveLength(1)
+      expectError(await teacher.get(`/api/guru/structured-questions/${plainEssay}`), 'NOT_FOUND')
+    } finally {
+      for (const [id, type] of before) await retype(id, type)
+    }
+  })
+
   it('a structured item is not in the single-MCQ list, and the roles are enforced', async () => {
     const d = await created(teacher)
     const mcq = await teacher.get('/api/guru/questions')
