@@ -151,8 +151,8 @@ describe('M15 admin routes (BE-23)', () => {
       expect(audit.at(-1)).toEqual({ action: 'shop.reward.created', target_type: 'reward', target_id: item.id })
       const digits = await admin.post('/admin/hadiah', { ...MINIMAL, denominationRm: '25', tokenCost: '30', stockQuantity: '3' })
       expect(RewardItemSchema.parse(digits.body.data)).toMatchObject({ denominationRm: 25, tokenCost: 30, stockQuantity: 3 })
-      const posted = await admin.post('/admin/hadiah', { ...MINIMAL, denominationRm: 0.5, tokenCost: 100_000, iconEmoji: '🇲🇾', isActive: true, requiresParentConsent: true })
-      expect(RewardItemSchema.parse(posted.body.data), 'a posted consent is ignored (FR-GM-21.3)').toMatchObject({ denominationRm: 0.5, tokenCost: 100_000, iconEmoji: '🇲🇾', isActive: true, requiresParentConsent: false })
+      const posted = await admin.post('/admin/hadiah', { ...MINIMAL, denominationRm: 0.5, tokenCost: 100_000, maxPerMonthPerStudent: 100, iconEmoji: '🇲🇾', isActive: true, requiresParentConsent: true })
+      expect(RewardItemSchema.parse(posted.body.data), 'a posted consent is ignored (FR-GM-21.3)').toMatchObject({ denominationRm: 0.5, tokenCost: 100_000, maxPerMonthPerStudent: 100, iconEmoji: '🇲🇾', isActive: true, requiresParentConsent: false })
     })
 
     it('stores imageUrl (https only) and returns it on create, read and replace', async () => {
@@ -210,6 +210,8 @@ describe('M15 admin routes (BE-23)', () => {
       await call({ action: 'set_max_per_month', ids: [b], maxPerMonthValue: '0' })
       const caps = await t.db.query<{ id: string; max_per_month_per_student: number | null }>(`select id::text, max_per_month_per_student from rewards where id in ($1, $2) order by id`, [a, b])
       expect(caps.map((c) => c.max_per_month_per_student)).toEqual([2, null])
+      await call({ action: 'set_max_per_month', ids: [a], maxPerMonthValue: '100' }) // the bulk limit is the form limit (P07-10)
+      expect((await t.db.query<{ m: number }>(`select max_per_month_per_student m from rewards where id = $1`, [a]))[0]!.m).toBe(100)
       await call({ action: 'set_token_cost', ids: [a, b], tokenCostDeltaPct: '50%' }) // 10 -> 15, 7 -> 10.5 -> 11 (half up)
       const costs = await t.db.query<{ token_cost: number; denomination_rm: string }>(`select token_cost, denomination_rm::text from rewards where id in ($1, $2) order by id`, [a, b])
       expect(costs.map((c) => c.token_cost)).toEqual([15, 11])

@@ -115,6 +115,7 @@ describe('admin catalogue', () => {
     expect(bad({ tokenCost: 0 })).toBe(false)
     expect(bad({ stockQuantity: -1 })).toBe(false)
     expect(bad({ maxPerMonthPerStudent: 0 })).toBe(false)
+    expect(bad({ maxPerMonthPerStudent: 100 })).toBe(true)
     expect(bad({ maxPerMonthPerStudent: 101 })).toBe(false)
     expect(bad({ voucherValidityDays: 3651 })).toBe(false)
     expect(bad({ displayOrder: 10_000 })).toBe(false)
