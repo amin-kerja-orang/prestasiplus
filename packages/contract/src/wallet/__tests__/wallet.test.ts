@@ -205,10 +205,10 @@ describe('OpenAPI document', () => {
     }
   })
 
-  it('documents the optional type query of the transactions list and no paging params', () => {
+  it('documents the optional type and limit queries of the transactions list and no page param', () => {
     const params = doc.paths['/gamification/transactions']?.get?.parameters ?? []
-    expect(params.map((p) => p.name)).toEqual(['type'])
-    expect(params[0]?.in).toBe('query')
+    expect(params.map((p) => p.name)).toEqual(['type', 'limit'])
+    expect(params.every((p) => p.in === 'query' && p.required !== true)).toBe(true)
   })
 
   it('contains every wallet component, each id prefixed Wallet', () => {

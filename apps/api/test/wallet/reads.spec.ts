@@ -230,6 +230,22 @@ describe('wallet read endpoints (AC6, AC8)', () => {
       expect((await t.wallet.transactions(u, 'spend')).data).toHaveLength(0)
     })
 
+    it('limit: the newest rows only, with type and the same meta; an invalid limit is ignored and a large one stays at the bound (S7-T04)', async () => {
+      const whole = await list(student)
+      expect(whole.data.length).toBeGreaterThan(3)
+      const three = await list(student, '?limit=3')
+      expect(three.data).toEqual(whole.data.slice(0, 3))
+      expect(three.meta).toEqual(whole.meta)
+      const earn = whole.data.filter((r) => r.type === 'earn')
+      expect((await list(student, '?type=earn&limit=2')).data).toEqual(earn.slice(0, 2))
+      for (const ignored of ['?limit=0', '?limit=-1', '?limit=abc', '?limit=1.5', '?limit=', '?limit=1234567890123456']) expect((await list(student, ignored)).data).toHaveLength(whole.data.length)
+      expect((await list(student, '?limit=1&limit=2')).data).toHaveLength(1)
+      const u = await bareUser(t, 'cap limit')
+      await t.db.query(`insert into coin_ledger (user_id, type, source, amount, balance_after, description) select $1, 'earn', 'cap', 1, g, 'd' from generate_series(1, 510) g`, [u])
+      expect((await t.wallet.transactions(u, '', { limit: 501 })).data).toHaveLength(500)
+      expect((await t.wallet.transactions(u, '', { limit: 3 })).data).toHaveLength(3)
+    })
+
     it('lists every row of the caller, newest first (created_at desc, id desc), with meta { currentSyiling, type }', async () => {
       const res = await student.get('/gamification/transactions')
       expect(res.headers['cache-control']).toMatch(/no-store/)

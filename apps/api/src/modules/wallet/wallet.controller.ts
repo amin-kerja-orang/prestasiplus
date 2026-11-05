@@ -24,6 +24,13 @@ const first = (v: unknown): string => {
   return typeof x === 'string' ? x : ''
 }
 
+/** `limit` of the ledger read: a positive integer; anything else is ignored, as an unknown `type` is not an error. */
+const limitOf = (v: unknown): { limit?: number } => {
+  const text = first(v).trim()
+  const n = /^\d{1,15}$/.test(text) ? Number(text) : 0
+  return n > 0 ? { limit: n } : {}
+}
+
 /** An overloaded database is a retryable 429, never a 500. */
 async function guard<T>(fn: () => Promise<T>): Promise<T> {
   try {
@@ -52,7 +59,7 @@ export class WalletController {
 
   @Get('transactions')
   async transactions(@Req() req: Req, @Query() query: Record<string, unknown>) {
-    return guard(() => this.wallet.transactions(me(req), first(query.type)))
+    return guard(() => this.wallet.transactions(me(req), first(query.type), limitOf(query.limit)))
   }
 }
 

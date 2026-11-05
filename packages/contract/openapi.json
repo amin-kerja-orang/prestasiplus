@@ -937,6 +937,10 @@
           "type": {
             "type": "string",
             "description": "earn | spend | convert | bonus | refund. Empty = all; anything else = no rows."
+          },
+          "limit": {
+            "type": "string",
+            "description": "Positive integer: at most this many of the newest rows. An invalid value is ignored and a value above 500 is clamped to 500, the bound of the route."
           }
         }
       },
@@ -75047,6 +75051,16 @@
             "required": false,
             "description": "earn | spend | convert | bonus | refund. Empty = all; anything else = no rows.",
             "name": "type",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Positive integer: at most this many of the newest rows. An invalid value is ignored and a value above 500 is clamped to 500, the bound of the route."
+            },
+            "required": false,
+            "description": "Positive integer: at most this many of the newest rows. An invalid value is ignored and a value above 500 is clamped to 500, the bound of the route.",
+            "name": "limit",
             "in": "query"
           }
         ],

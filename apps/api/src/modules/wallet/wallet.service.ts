@@ -369,13 +369,13 @@ export class WalletService {
    * `GET /api/gamification/transactions`: every ledger row of the user, newest first (`created_at` desc, `id`
    * desc, BR-M14-33), not paginated (contract OQ-API-B4-2). `type` empty = all; a value outside the five
    * types is not an error and gives no rows (FR-M14-08). `meta.type` echoes the query. Not paginated (contract
-   * OQ-API-B4-2) but bounded: at most `TRANSACTIONS_MAX_ROWS` (500) rows, the newest ones.
+   * OQ-API-B4-2) but bounded: at most `TRANSACTIONS_MAX_ROWS` (500) rows, the newest ones; `limit` asks for fewer.
    */
-  async transactions(userId: string, type: string, options: { tx?: TxClient } = {}): Promise<WalletTransactionsResponse> {
+  async transactions(userId: string, type: string, options: { tx?: TxClient; limit?: number } = {}): Promise<WalletTransactionsResponse> {
     assertUser(userId)
     const db = this.repo.handle(options.tx)
     const known = type === '' || (WALLET_LEDGER_TYPES as readonly string[]).includes(type)
-    const [rows, wallet] = await Promise.all([known ? this.repo.ledgerOf(db, userId, type || null, TRANSACTIONS_MAX_ROWS) : Promise.resolve([]), this.repo.wallet(db, userId)])
+    const [rows, wallet] = await Promise.all([known ? this.repo.ledgerOf(db, userId, type || null, Math.min(options.limit ?? TRANSACTIONS_MAX_ROWS, TRANSACTIONS_MAX_ROWS)) : Promise.resolve([]), this.repo.wallet(db, userId)])
     return { data: rows.map(toLedgerEntry), meta: { currentSyiling: wallet?.currentSyiling ?? 0, type } }
   }
 
