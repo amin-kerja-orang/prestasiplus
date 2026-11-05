@@ -582,7 +582,7 @@ describe('S0-T06 nav integrity (scope on)', () => {
       't-pelajar-saya', 't-prestasi', 't-laporan', 't-monitoring', 't-kirk-ringkasan',
       't-kirk-reaksi', 't-kirk-pembelajaran', 't-kirk-tingkah-laku', 't-kirk-hasil',
       't-kirk-rantaian', 't-kirk-intervensi', 't-analitik-adaptif', 't-analisa-item',
-      't-laporan-mingguan', 't-sumbang-soalan', 't-video', 't-profil-saya', 'tetapan-peribadi',
+      't-laporan-mingguan', 't-sumbang-soalan', 't-databank', 't-video', 't-profil-saya', 'tetapan-peribadi',
       't-panduan', 't-analisis-item', 'tiket-bantuan',
     ],
     school_admin: [
