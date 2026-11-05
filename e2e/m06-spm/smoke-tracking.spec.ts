@@ -21,7 +21,10 @@ import {
   NOT_FOUND,
   PELAJAR,
   PELAJAR2,
+  shellTitle,
   smallTexts,
+  statLabels,
+  statValues,
   tid,
 } from './support'
 
@@ -46,9 +49,10 @@ test.describe('M06 S5 Tracking A hub', { tag: [moduleTag(6)] }, () => {
     await gotoApp('/spm/ramalan')
     await expect(tid(page, 'lanes')).toBeVisible(SLOW)
     await expectTabTitle(page, 'Tracking A SPM | PRESTASIPLUS')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Tracking A SPM')
+    await expect(shellTitle(page)).toHaveText('Tracking A SPM')
     if (isDesktopShell(page)) {
-      await expect(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')
+      // Fact gone in v2, left failing (S3-T03 report): neither v2 shell prints this subtitle.
+      await expect.soft(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')
     }
     await expect(tid(page, 'spm-back')).toHaveText('Kembali ke Mod SPM')
     await expect(tid(page, 'spm-back')).toHaveAttribute('href', '/spm')
@@ -157,7 +161,7 @@ test.describe('M06 S5 Tracking A hub', { tag: [moduleTag(6)] }, () => {
       'Bank Besar: 1 set',
       'Locked: 58 set',
     ])
-    const tiles = page.locator('[data-testid=readiness-tiles] > article')
+    const tiles = page.locator('[data-testid=readiness-tiles] > [data-testid^=tile-]')
     await expect(tiles).toHaveCount(15)
     await expect(
       tiles.evaluateAll((els) => els.map((e) => e.getAttribute('data-testid'))),
@@ -248,7 +252,8 @@ test.describe('M06 S5 Tracking A hub', { tag: [moduleTag(6)] }, () => {
     await loginAs(PELAJAR)
     await gotoApp('/spm/ramalan/BM')
     await expect(page).toHaveURL(/\/latihan-berstruktur\?subject_id=1&scope=spm&track=bahasa$/)
-    await expect(tid(page, 'shell-user-title')).toHaveText('Tracking A Bahasa')
+    // Product bug, left failing (S0, S3-T03 report): PembelajaranLayout ignores `usePageMeta` headers.
+    await expect.soft(shellTitle(page)).toHaveText('Tracking A Bahasa')
     await gotoApp('/spm/ramalan/BI')
     await expect(page).toHaveURL(/\/latihan-berstruktur\?subject_id=2&scope=spm&track=bahasa$/)
 
@@ -309,9 +314,10 @@ test.describe('M06 S6 Tracking A set list and Q3', { tag: [moduleTag(6)] }, () =
   }) => {
     await loginAs(PELAJAR)
     await gotoApp('/spm/ramalan/GEO')
-    await expectTabTitle(page, 'Tracking A SPM — Geografi')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Tracking A SPM — Geografi')
-    await expect(tid(page, 'shell-user-subtitle')).toHaveCount(0)
+    await expectTabTitle(page, 'Tracking A SPM — Geografi | PRESTASIPLUS')
+    // Product bug, left failing (S0, S3-T03 report): PembelajaranLayout ignores `usePageMeta` headers.
+    await expect.soft(shellTitle(page)).toHaveText('Tracking A SPM — Geografi')
+    await expect(tid(page, 'pembelajaran-header')).not.toContainText('Selamat datang kembali')
     await expect(tid(page, 'spm-back')).toHaveText('Kembali')
     await expect(tid(page, 'spm-back')).toHaveAttribute('href', '/spm/ramalan')
     await expect(tid(page, 'subject-title')).toHaveText('Geografi')
@@ -461,6 +467,8 @@ test.describe('M06 S6 Tracking A set list and Q3', { tag: [moduleTag(6)] }, () =
       'L-5: the live Tracking A set quiz was never opened; the quiz page is the M05 component',
     ),
     async ({ page, loginAs, gotoApp, mock }) => {
+      // Answering all 40 questions alone takes about 50 s, more than the project's 30 s default.
+      test.setTimeout(120_000)
       await loginAs(PELAJAR)
       await gotoApp('/spm/ramalan/AKAUN')
       await tid(page, 'set-card-3').click()
@@ -524,7 +532,8 @@ test.describe('M06 S6 Tracking A set list and Q3', { tag: [moduleTag(6)] }, () =
   }) => {
     await loginAs(PELAJAR)
     await gotoApp('/spm/ramalan/AKAUN')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Tracking A SPM — Prinsip Perakaunan')
+    // Product bug, left failing (S0, S3-T03 report): PembelajaranLayout ignores `usePageMeta` headers.
+    await expect.soft(shellTitle(page)).toHaveText('Tracking A SPM — Prinsip Perakaunan')
   })
 })
 
@@ -538,10 +547,12 @@ test.describe('M06 S8 Subjektif', { tag: [moduleTag(6)] }, () => {
   }) => {
     await loginAs(PELAJAR2)
     await gotoApp('/spm/subjektif')
-    await expectTabTitle(page, 'Latihan Subjektif SPM | PRESTASIPLUS')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Subjektif SPM')
+    // The tab title equals the title the shell prints (useShellTabTitle), not the page's h1.
+    await expectTabTitle(page, 'Subjektif SPM | PRESTASIPLUS')
+    await expect(shellTitle(page)).toHaveText('Subjektif SPM')
     if (isDesktopShell(page)) {
-      await expect(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')
+      // Fact gone in v2, left failing (S3-T03 report): neither v2 shell prints this subtitle.
+      await expect.soft(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')
     }
     await expect(tid(page, 'spm-back')).toHaveText('Kembali ke Mod SPM')
     await expect(tid(page, 'spm-back')).toHaveAttribute('href', '/spm')
@@ -555,13 +566,13 @@ test.describe('M06 S8 Subjektif', { tag: [moduleTag(6)] }, () => {
     )
 
     const stats = page.locator('[data-testid^=subjektif-stat-]')
-    await expect(stats.getByTestId('stat-label')).toHaveText([
+    await expect(statLabels(stats)).toHaveText([
       'Set Dijawab',
       'Subjek Dicuba',
       'Skor Terbaik',
       'Set Terbaik Disimpan',
     ])
-    await expect(stats.getByTestId('stat-value')).toHaveText(['0', '0', 'Belum Ada', '0'])
+    await expect(statValues(stats)).toHaveText(['0', '0', 'Belum Ada', '0'])
     await expect(stats.getByTestId('stat-caption')).toHaveText([
       'Percubaan subjektif SPM yang telah dihantar',
       'Bilangan subjek subjektif SPM yang pernah dicuba',
@@ -634,9 +645,12 @@ test.describe('M06 S8 Subjektif', { tag: [moduleTag(6)] }, () => {
   }) => {
     await loginAs(PELAJAR)
     await gotoApp('/spm/subjektif')
-    await expect(
-      page.locator('[data-testid^=subjektif-stat-]').getByTestId('stat-value'),
-    ).toHaveText(['2', '2', '75%', '2'])
+    await expect(statValues(page.locator('[data-testid^=subjektif-stat-]'))).toHaveText([
+      '2',
+      '2',
+      '75%',
+      '2',
+    ])
   })
 
   test('E2E-M06-24 a card opens the S9 list for its subject', async ({
@@ -648,7 +662,8 @@ test.describe('M06 S8 Subjektif', { tag: [moduleTag(6)] }, () => {
     await gotoApp('/spm/subjektif')
     await tid(page, 'subjektif-card-3').click()
     await expect(page).toHaveURL(/\/latihan-berstruktur\?subject_id=3&scope=spm$/)
-    await expect(tid(page, 'shell-user-title')).toHaveText('Subjektif SPM')
+    // Product bug, left failing (S0, S3-T03 report): PembelajaranLayout ignores `usePageMeta` headers.
+    await expect.soft(shellTitle(page)).toHaveText('Subjektif SPM')
   })
 
   test(
@@ -670,7 +685,7 @@ test.describe('M06 S8 Subjektif', { tag: [moduleTag(6)] }, () => {
       await expect(page).toHaveURL(/\/latihan-berstruktur\?subject_id=\d+&scope=spm/)
       await page.getByRole('link', { name: /Kembali ke Subjektif SPM/ }).click()
       await expect(page).toHaveURL(/\/spm\/subjektif$/)
-      const values = page.locator('[data-testid^=subjektif-stat-]').getByTestId('stat-value')
+      const values = statValues(page.locator('[data-testid^=subjektif-stat-]'))
       await expect(values.nth(0)).toHaveText('1')
       await expect(values.nth(1)).toHaveText('1')
       await expect(values.nth(2)).toHaveText(/^\d+%$/)

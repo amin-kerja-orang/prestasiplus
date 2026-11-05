@@ -107,7 +107,7 @@ export function readFields<S extends Specs>(input: unknown, specs: S): Parsed<S>
   return value as Parsed<S>
 }
 
-/** A route `:id`: digits only and within bigint range, else the router's own 404 "Not Found." (the mock `int()` param). */
+/** A route `:id`: digits only and within bigint range, else the router's own 404 NOT_FOUND (generic BM default) (the mock `int()` param). */
 export function idParam(raw: string): bigint {
   if (!/^(0|[1-9]\d{0,18})$/.test(raw)) throw notFoundError()
   const id = BigInt(raw)

@@ -105,6 +105,18 @@ export function dayLabel(date: string, sessions: number): string {
   return `${two(d)}/${two(m)} (${weekday}) — ${sessions === 0 ? 'Tiada aktiviti' : `${String(sessions)} sesi`}`
 }
 
+export const HEAT_LEGEND_360 = ['0', '1-4', '5-8', '9-12', '13+'] as const
+/** Prestasi 360 map bin (R1-MUR-4): 0, 1-4, 5-8, 9-12, 13+ sessions a day. */
+export function heatBin360(sessions: number): number {
+  const n = Math.max(Math.floor(sessions), 0)
+  return n === 0 ? 0 : n <= 4 ? 1 : n <= 8 ? 2 : n <= 12 ? 3 : 4
+}
+
+/** Prestasi 360 tooltip: "{dd/mm} ({Hari}) — {n} sesi latihan" or "— Tiada aktiviti". */
+export function dayLabel360(date: string, sessions: number): string {
+  return dayLabel(date, sessions).replace(/ sesi$/, ' sesi latihan')
+}
+
 /** FR-M08-40 bar and text colours: ≥ 80 success, 60–79.9 warning, < 60 error (INFERRED bands). */
 export function masteryTone(accuracy: number): {
   color: 'success' | 'warning' | 'error'
