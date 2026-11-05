@@ -126,6 +126,10 @@ export async function pocFingerprint(db: Queryable, options: { withSalted?: bool
       order = 't.client_uuid'
     } else if (SESSION_REF_TABLES.includes(t)) {
       row = `jsonb_set(${row}, '{session_id}', coalesce(to_jsonb((select s.client_uuid from practice_sessions s where s.id = t.session_id)), 'null'::jsonb))`
+      // S5-T15: the seeded answers carry attempt_id = the session id (also a database-generated uuid).
+      if (t === 'practice_answers') {
+        row = `jsonb_set(${row}, '{attempt_id}', coalesce(to_jsonb((select s.client_uuid from practice_sessions s where s.id = t.attempt_id)), 'null'::jsonb))`
+      }
     }
     const salted = options.withSalted
       ? SALTED_COLUMNS.map((c) => `, md5(coalesce(to_jsonb(t) ->> '${c}', '')) as salted_${c}`).join('')

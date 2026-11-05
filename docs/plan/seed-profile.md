@@ -90,7 +90,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | marketplace_product_images | 45 |
 | marketplace_products | 10 |
 | marketplace_sellers | 1 |
-| mastery | 3 |
+| mastery | 8 |
 | mystery_box_prizes | 7 |
 | mystery_boxes | 5 |
 | paper_placements | 31 |
@@ -105,10 +105,10 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | pksk_mastery | 7 |
 | pksk_packages | 3 |
 | ppds | 3 |
-| practice_answers | 30 |
+| practice_answers | 80 |
 | practice_attempt_aggregate_items | 126 |
 | practice_attempt_aggregates | 15 |
-| practice_sessions | 4 |
+| practice_sessions | 9 |
 | question_parts | 1277 |
 | question_tags | 483 |
 | question_version_sp_nodes | 501 |
@@ -146,7 +146,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | videos | 3 |
 | wallets | 3 |
 
-Tables with rows: 102 of 203. Total rows: 21960.
+Tables with rows: 102 of 203. Total rows: 22020.
 <!-- poc-counts:end -->
 
 `mystery_boxes` (5 rows: the four old boxes inactive, one active 50-syiling box) and `mystery_box_prizes` (7 rows) come from migration `0222_s7_mystery_boxes` (S7-T07, DM-37), not from a seed module; the counts above include them.
@@ -201,7 +201,7 @@ Two seeded databases hash identically, and a second run on a seeded database cha
 
 The e2e suite runs against the mock (`src/mock`, `VITE_DATA_PROFILE=full`), whose datasets are far larger than the PoC profile; the backend seed is not meant to equal them. The gaps that matter when the frontend is switched to HTTP:
 
-- Practice: 4 sessions and 30 answers for the two data-rich demo students. Answers have no `question_id` (the practice seed predates the question bank), so `revision_queue`, `practice_session_questions`, `practice_checks` and `session_credits` are empty: the wrong-answer list and the session replay screens render empty states.
+- Practice: 4 sessions and 30 answers for the two data-rich demo students, plus 5 Latih Tubi sessions (50 answers) for the Form 4 pupils of the Bijak sittings seed (`murid4` to `murid8`), so the shared answer reader has activity for DEMO001. Answers have no `question_id` (the practice seed predates the question bank), so `revision_queue`, `practice_session_questions`, `practice_checks` and `session_credits` are empty: the wrong-answer list and the session replay screens render empty states.
 - No seed at all for: missions and remedial tests, question sets, SPM targets, notifications, perutusan, parent links/invites, school subscriptions and user packages, user achievements and referrals, reward claims/redemptions, teacher profiles, feedback and interventions (Kirkpatrick), intake batches/files, question reports and quality scores, uploaded files. Screens fed by these tables show empty states.
 - Wallets exist for 3 users only (`admin`, `pelajar`, `pelajarmaju`); the Bijak demo pupils (`murid4`..`murid8`) have sittings but no wallet or ledger rows.
 - Monitoring/admin aggregates: 12 pupils counted in `/api/monitoring/overview` (`engaged`: 2, `answers`: 30), against the mock's much larger totals.
