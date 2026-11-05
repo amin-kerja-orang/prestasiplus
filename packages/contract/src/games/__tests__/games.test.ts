@@ -6,6 +6,14 @@ import {
   GAMES_COMPONENT_SCHEMAS,
 } from '../paths'
 import {
+  GAMES_ADMIN_PROPOSED_COPY,
+  GAMES_ADMIN_QUIZ_TILES,
+  GAMES_ADMIN_SETTING_KEYS,
+  GAMES_ADMIN_SETTINGS,
+  gamesBoardBreakdown,
+  gamesSettingRangeMessage,
+  GamesAdminSpinSegmentsSchema,
+  GamesAdminSpinSegmentsUpdateRequestSchema,
   GAMES_LEAGUE_LABELS,
   GAMES_MESSAGES,
   GAMES_ROOM_GAMES,
@@ -830,23 +838,123 @@ describe('Sekolah Bersaing (M16-50)', () => {
   })
 })
 
-describe('admin game settings (M16-51, M16-52)', () => {
-  it('parses the overview and the settings result', () => {
-    ok(GamesAdminOverviewSchema, { stats: { rooms: 160, playing: 0, finished: 0, players: 189 }, settings: { boardgameQuizTiles: 35 } })
-    rejected(GamesAdminOverviewSchema, { stats: { rooms: 160, playing: 0, finished: 0, players: 189 }, settings: { boardgameQuizTiles: 39 } })
-    ok(GamesAdminSettingsResultSchema, { boardgameQuizTiles: 0 })
+describe('admin game settings (M16-51, M16-52, API-ADM-08)', () => {
+  const settings = {
+    boardgameQuizTiles: 35,
+    ...Object.fromEntries(GAMES_ADMIN_SETTING_KEYS.map((key) => [key, GAMES_ADMIN_SETTINGS[key].default])),
+  }
+  const stats = { rooms: 160, playing: 0, finished: 0, players: 189 }
+
+  it('has exactly the 22 keys of 48 section 2 that Tetapan Permainan changes, with the exact labels of a sample', () => {
+    expect(GAMES_ADMIN_SETTING_KEYS).toHaveLength(22)
+    expect(GAMES_ADMIN_SETTINGS.games_daily_syiling_cap.label).toBe('Had syiling permainan sehari')
+    expect(GAMES_ADMIN_SETTINGS.battle_bot_accuracy_pct.label).toBe('Ketepatan Robot PrestasiPlus (%)')
+    expect(GAMES_ADMIN_SETTINGS.sekolah_bersaing_top_n.label).toBe('Bilangan sekolah dipaparkan')
+    expect(GAMES_ADMIN_QUIZ_TILES.hint).toBe('Maks 38 petak (48 available - 10 petak khas). Set 0 = tiada soalan.')
   })
 
-  it('PUT body: integer 0..38 with "Nilai mesti antara 0 dan 38."', () => {
+  it('parses the overview and the settings result: every key is required, an unknown key is rejected', () => {
+    ok(GamesAdminOverviewSchema, { stats, settings })
+    ok(GamesAdminSettingsResultSchema, settings)
+    ok(GamesAdminSettingsResultSchema, { ...settings, boardgameQuizTiles: 0 })
+    rejected(GamesAdminOverviewSchema, { stats, settings: { ...settings, boardgameQuizTiles: 39 } })
+    rejected(GamesAdminOverviewSchema, { stats, settings: { boardgameQuizTiles: 35 } })
+    rejected(GamesAdminSettingsResultSchema, { ...settings, xp_per_correct: 10 })
+  })
+
+  it('PUT body is partial', () => {
+    ok(GamesAdminSettingsUpdateRequestSchema, {})
+    ok(GamesAdminSettingsUpdateRequestSchema, { game_win_xp: 30 })
+    ok(GamesAdminSettingsUpdateRequestSchema, { boardgame_quiz_tiles: 0, game_win_xp: 0 })
+  })
+
+  it('boardgame_quiz_tiles: "Maksimum 38 petak soalan." above 38, "Bilangan petak tidak sah." for a non-integer or below 0', () => {
     ok(GamesAdminSettingsUpdateRequestSchema, { boardgame_quiz_tiles: 0 })
     ok(GamesAdminSettingsUpdateRequestSchema, { boardgame_quiz_tiles: 38 })
-    for (const v of [-1, 39, 3.5, '10', null]) {
+    expect(firstIssue(GamesAdminSettingsUpdateRequestSchema, { boardgame_quiz_tiles: 39 })).toEqual({
+      message: 'Maksimum 38 petak soalan.',
+      path: 'boardgame_quiz_tiles',
+    })
+    for (const v of [-1, 3.5, '10', null]) {
       expect(firstIssue(GamesAdminSettingsUpdateRequestSchema, { boardgame_quiz_tiles: v })).toEqual({
-        message: 'Nilai mesti antara 0 dan 38.',
+        message: 'Bilangan petak tidak sah.',
         path: 'boardgame_quiz_tiles',
       })
     }
-    expect(firstIssue(GamesAdminSettingsUpdateRequestSchema, {}).message).toBe('Nilai mesti antara 0 dan 38.')
+  })
+
+  it('every key refuses out of range with ERR-REQ-15 on that key', () => {
+    for (const key of GAMES_ADMIN_SETTING_KEYS) {
+      const { min, max } = GAMES_ADMIN_SETTINGS[key]
+      ok(GamesAdminSettingsUpdateRequestSchema, { [key]: GAMES_ADMIN_SETTINGS[key].default })
+      for (const v of [min - 1, max + 1, min + 0.5, String(min), null]) {
+        expect(firstIssue(GamesAdminSettingsUpdateRequestSchema, { [key]: v }), `${key}=${String(v)}`).toEqual({
+          message: `Nilai mesti antara ${String(min)} dan ${String(max)}.`,
+          path: key,
+        })
+      }
+    }
+    expect(gamesSettingRangeMessage(10, 60)).toBe('Nilai mesti antara 10 dan 60.')
+  })
+
+  it('battle_questions_default is 5, 10, 15 or 20', () => {
+    for (const v of [5, 10, 15, 20]) ok(GamesAdminSettingsUpdateRequestSchema, { battle_questions_default: v })
+    for (const v of [6, 12, 19]) {
+      expect(firstIssue(GamesAdminSettingsUpdateRequestSchema, { battle_questions_default: v }).message).toBe('Nilai mesti antara 5 dan 20.')
+    }
+  })
+
+  it('N05-02: the live breakdown of the board', () => {
+    expect(gamesBoardBreakdown(35)).toEqual({ quiz: 35, ladders: 6, bonus: 4, special: 10, plain: 3, ends: 2 })
+    expect(gamesBoardBreakdown(0).plain).toBe(38)
+    expect(gamesBoardBreakdown(38).plain).toBe(0)
+    expect(gamesBoardBreakdown(40).plain).toBe(0)
+  })
+})
+
+describe('spin segments (API-ADM-23)', () => {
+  const rows = [
+    { position: 1, label: '1 Syiling', syiling: 1, weight: 25, active: true },
+    { position: 2, label: '3 Syiling', syiling: 3, weight: 20, active: true },
+    { position: 3, label: '5 Syiling', syiling: 5, weight: 15, active: true },
+    { position: 4, label: '10 Syiling', syiling: 10, weight: 8, active: true },
+    { position: 5, label: '20 Syiling', syiling: 20, weight: 3, active: true },
+    { position: 6, label: 'Cuba Lagi', syiling: 0, weight: 15, active: true },
+    { position: 7, label: '2 Syiling', syiling: 2, weight: 10, active: true },
+    { position: 8, label: '7 Syiling', syiling: 7, weight: 4, active: false },
+  ]
+  const change = (i: number, patch: object) => ({ segments: rows.map((r, n) => (n === i ? { ...r, ...patch } : r)) })
+
+  it('accepts 8 rows totalling 100, trims the label', () => {
+    ok(GamesAdminSpinSegmentsSchema, rows)
+    ok(GamesAdminSpinSegmentsUpdateRequestSchema, { segments: rows })
+    const parsed = GamesAdminSpinSegmentsUpdateRequestSchema.parse(change(0, { label: '  Satu  ' }))
+    expect(parsed.segments[0]?.label).toBe('Satu')
+  })
+
+  it('refuses a total other than 100 with "Jumlah berat mesti 100." on segments', () => {
+    expect(firstIssue(GamesAdminSpinSegmentsUpdateRequestSchema, change(0, { weight: 24 }))).toEqual({ message: 'Jumlah berat mesti 100.', path: 'segments' })
+  })
+
+  it('refuses a wrong count and repeated positions', () => {
+    expect(firstIssue(GamesAdminSpinSegmentsUpdateRequestSchema, { segments: rows.slice(1) }).message).toBe(GAMES_ADMIN_PROPOSED_COPY.segmentsCount)
+    expect(firstIssue(GamesAdminSpinSegmentsUpdateRequestSchema, {}).message).toBe(GAMES_ADMIN_PROPOSED_COPY.segmentsCount)
+    expect(firstIssue(GamesAdminSpinSegmentsUpdateRequestSchema, change(1, { position: 1 })).message).toBe(GAMES_ADMIN_PROPOSED_COPY.segmentsPositions)
+    rejected(GamesAdminSpinSegmentsSchema, rows.slice(1))
+  })
+
+  it('refuses a bad row with the field message', () => {
+    const cases: [object, string, string][] = [
+      [{ position: 9 }, 'position', 'Nilai mesti antara 1 dan 8.'],
+      [{ label: '' }, 'label', 'Sila isi label.'],
+      [{ label: 'x'.repeat(21) }, 'label', 'Label tidak boleh melebihi 20 aksara.'],
+      [{ syiling: 101 }, 'syiling', 'Nilai mesti antara 0 dan 100.'],
+      [{ weight: 2.5 }, 'weight', 'Nilai mesti antara 0 dan 100.'],
+      [{ active: 'ya' }, 'active', 'Nilai tidak sah.'],
+    ]
+    for (const [patch, key, message] of cases) {
+      expect(firstIssue(GamesAdminSpinSegmentsUpdateRequestSchema, change(3, patch))).toEqual({ message, path: `segments.3.${key}` })
+    }
   })
 })
 
@@ -899,10 +1007,12 @@ describe('openapi registration', () => {
     'GET /sekolah-bersaing',
     'GET /admin/games',
     'PUT /admin/games/settings',
+    'GET /admin/games/spin-segments',
+    'PUT /admin/games/spin-segments',
   ]
 
-  it('registers exactly the 29 routes of the card under the games tag', () => {
-    expect(gamesOps).toHaveLength(29)
+  it('registers exactly the 31 routes of the card under the games tag', () => {
+    expect(gamesOps).toHaveLength(31)
     expect(gamesOps.map((o) => o.key).sort()).toEqual([...EXPECTED].sort())
   })
 
@@ -922,7 +1032,7 @@ describe('openapi registration', () => {
 
   it('every mutation takes the X-CSRF-Token header and declares 403', () => {
     const mutations = gamesOps.filter((o) => o.method !== 'get')
-    expect(mutations).toHaveLength(16)
+    expect(mutations).toHaveLength(17)
     for (const { key, op } of mutations) {
       expect(op.parameters?.some((p) => p.in === 'header' && p.name === 'X-CSRF-Token'), key).toBe(true)
       expect(op.responses['403'], key).toBeDefined()
@@ -936,7 +1046,7 @@ describe('openapi registration', () => {
 
   it('D57(a): every write route (and the solo GET that creates a session) documents 429 RATE_LIMITED with retryAfter and Retry-After', () => {
     const writes = gamesOps.filter((o) => o.method !== 'get' || o.key === 'GET /games/solo/{game}')
-    expect(writes).toHaveLength(17)
+    expect(writes).toHaveLength(18)
     for (const { key, op } of writes) {
       const r = op.responses['429']
       expect(r, key).toBeDefined()
@@ -982,7 +1092,7 @@ describe('openapi registration', () => {
   })
 
   it('M16-51 and M16-52 are admin only: 403 "This action is unauthorized."', () => {
-    for (const key of ['GET /admin/games', 'PUT /admin/games/settings']) {
+    for (const key of ['GET /admin/games', 'PUT /admin/games/settings', 'GET /admin/games/spin-segments', 'PUT /admin/games/spin-segments']) {
       const op = gamesOps.find((o) => o.key === key)?.op
       expect(JSON.stringify(op?.responses['403']), key).toMatch(/This action is unauthorized\./)
     }

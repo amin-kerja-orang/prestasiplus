@@ -24912,23 +24912,159 @@
             "additionalProperties": false
           },
           "settings": {
-            "type": "object",
-            "properties": {
-              "boardgameQuizTiles": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 38
-              }
-            },
-            "required": [
-              "boardgameQuizTiles"
-            ],
-            "additionalProperties": false
+            "$ref": "#/components/schemas/GamesAdminSettingsResult"
           }
         },
         "required": [
           "stats",
           "settings"
+        ],
+        "additionalProperties": false
+      },
+      "GamesAdminSettingsResult": {
+        "type": "object",
+        "properties": {
+          "boardgameQuizTiles": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 38
+          },
+          "games_daily_syiling_cap": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "games_daily_xp_cap": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5000
+          },
+          "game_win_xp": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "game_draw_xp": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "game_play_xp": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "game_win_bonus_syiling": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 50
+          },
+          "games_min_ms_per_answer": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5000
+          },
+          "jutawan_min_ms_per_answer": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5000
+          },
+          "jutawan_question_seconds": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 300
+          },
+          "battle_questions_default": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 20,
+            "description": "One of 5, 10, 15, 20."
+          },
+          "battle_question_seconds": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 60
+          },
+          "battle_grace_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10
+          },
+          "battle_queue_seconds": {
+            "type": "integer",
+            "minimum": 30,
+            "maximum": 600
+          },
+          "battle_bot_fallback_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 120
+          },
+          "battle_bot_accuracy_pct": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 90
+          },
+          "battle_invitation_hours": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 72
+          },
+          "battle_daily_max": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "games_room_bots_enabled": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "games_absent_seconds": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 120
+          },
+          "room_waiting_minutes": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 60
+          },
+          "sekolah_bersaing_min_pupils": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "sekolah_bersaing_top_n": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "boardgameQuizTiles",
+          "games_daily_syiling_cap",
+          "games_daily_xp_cap",
+          "game_win_xp",
+          "game_draw_xp",
+          "game_play_xp",
+          "game_win_bonus_syiling",
+          "games_min_ms_per_answer",
+          "jutawan_min_ms_per_answer",
+          "jutawan_question_seconds",
+          "battle_questions_default",
+          "battle_question_seconds",
+          "battle_grace_seconds",
+          "battle_queue_seconds",
+          "battle_bot_fallback_seconds",
+          "battle_bot_accuracy_pct",
+          "battle_invitation_hours",
+          "battle_daily_max",
+          "games_room_bots_enabled",
+          "games_absent_seconds",
+          "room_waiting_minutes",
+          "sekolah_bersaing_min_pupils",
+          "sekolah_bersaing_top_n"
         ],
         "additionalProperties": false
       },
@@ -24939,23 +25075,174 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 38
-          }
-        },
-        "required": [
-          "boardgame_quiz_tiles"
-        ]
-      },
-      "GamesAdminSettingsResult": {
-        "type": "object",
-        "properties": {
-          "boardgameQuizTiles": {
+          },
+          "games_daily_syiling_cap": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 38
+            "maximum": 1000
+          },
+          "games_daily_xp_cap": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5000
+          },
+          "game_win_xp": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "game_draw_xp": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "game_play_xp": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "game_win_bonus_syiling": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 50
+          },
+          "games_min_ms_per_answer": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5000
+          },
+          "jutawan_min_ms_per_answer": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5000
+          },
+          "jutawan_question_seconds": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 300
+          },
+          "battle_questions_default": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 20,
+            "description": "One of 5, 10, 15, 20."
+          },
+          "battle_question_seconds": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 60
+          },
+          "battle_grace_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10
+          },
+          "battle_queue_seconds": {
+            "type": "integer",
+            "minimum": 30,
+            "maximum": 600
+          },
+          "battle_bot_fallback_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 120
+          },
+          "battle_bot_accuracy_pct": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 90
+          },
+          "battle_invitation_hours": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 72
+          },
+          "battle_daily_max": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "games_room_bots_enabled": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "games_absent_seconds": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 120
+          },
+          "room_waiting_minutes": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 60
+          },
+          "sekolah_bersaing_min_pupils": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "sekolah_bersaing_top_n": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 100
+          }
+        }
+      },
+      "GamesAdminSpinSegment": {
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "syiling": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "weight": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "active": {
+            "type": "boolean"
           }
         },
         "required": [
-          "boardgameQuizTiles"
+          "position",
+          "label",
+          "syiling",
+          "weight",
+          "active"
+        ],
+        "additionalProperties": false
+      },
+      "GamesAdminSpinSegments": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/GamesAdminSpinSegment"
+        }
+      },
+      "GamesAdminSpinSegmentsUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "segments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamesAdminSpinSegment"
+            }
+          }
+        },
+        "required": [
+          "segments"
         ],
         "additionalProperties": false
       },
@@ -97726,8 +98013,8 @@
         "tags": [
           "games"
         ],
-        "summary": "Save the Papan Bijak quiz-tile count (M16-52)",
-        "description": "Role admin only. The mock writes no audit event.",
+        "summary": "Save the Tetapan Permainan settings (M16-52, API-ADM-08)",
+        "description": "Role admin only. Partial and strict: a key left out keeps its value, an unknown key is refused. One bad value saves nothing. Each change is audited with before and after, a save that changes nothing writes no audit row, and a change applies to later events only. Answers every setting. The mock writes no audit event.",
         "parameters": [
           {
             "schema": {
@@ -97791,7 +98078,155 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR \"Nilai mesti antara 0 dan 38.\" (fields.boardgame_quiz_tiles).",
+            "description": "VALIDATION_ERROR on fields.<key>: \"Nilai mesti antara {min} dan {max}.\", for boardgame_quiz_tiles \"Maksimum 38 petak soalan.\" above 38 and \"Bilangan petak tidak sah.\" for a non-integer or below 0, \"The <key> field is not allowed.\" for an unknown key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/games/spin-segments": {
+      "get": {
+        "tags": [
+          "games"
+        ],
+        "summary": "The 8 Roda Nasib segments (API-ADM-23)",
+        "description": "Role admin only.",
+        "responses": {
+          "200": {
+            "description": "The 8 segments by position.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesAdminSpinSegments"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Save the 8 Roda Nasib segments (API-ADM-23)",
+        "description": "Role admin only. All or nothing. Audited with before and after; a save that changes nothing writes no audit row. The mock writes no audit event.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamesAdminSpinSegmentsUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved; the 8 segments by position.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesAdminSpinSegments"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Jumlah berat mesti 100.\" (fields.segments), or a field message under fields.segments.<n>.<key>.",
             "content": {
               "application/json": {
                 "schema": {
