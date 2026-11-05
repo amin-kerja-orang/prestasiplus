@@ -153,7 +153,7 @@ describe('RegroupPage row actions (API-Q-12, API-Q-24, API-Q-36)', () => {
     confirm.mockReturnValue(true)
     api.dismissQuestionFlag.mockRejectedValue(apiError('Bendera tidak sepadan.'))
     await click(w, 'regroup-dismiss-11')
-    expect(t(w, 'regroup-action-error').text()).toBeTruthy()
+    expect(t(w, 'regroup-action-error').text()).toBe('Bendera tidak sepadan.')
     expect(api.fetchRegroupWorklist).toHaveBeenCalledTimes(1)
   })
 
@@ -195,6 +195,60 @@ describe('RegroupPage row actions (API-Q-12, API-Q-24, API-Q-36)', () => {
     expect(w.find('[data-testid="regroup-attach-12"]').exists()).toBe(false)
     expect(w.find('[data-testid="regroup-upload-12"]').exists()).toBe(false)
     expect(w.find('[data-testid="regroup-dismiss-12"]').exists()).toBe(true)
+  })
+
+
+  it('Lampirkan rangsangan reads the stimuli again on every open', async () => {
+    const w = await render()
+    await click(w, 'regroup-attach-11')
+    await click(w, 'regroup-attach-11')
+    await click(w, 'regroup-attach-11')
+    expect(api.listStimuliToAttach).toHaveBeenCalledTimes(2)
+  })
+
+  it('a 422 with fields on regroup shows the field messages', async () => {
+    api.regroupQuestions.mockRejectedValue(
+      new ApiError({ status: 422, code: API_ERROR_CODES.VALIDATION_ERROR, message: 'x', fields: { memberQuestionIds: 'Soalan sudah dalam kumpulan lain.' } }),
+    )
+    const w = await render()
+    await click(w, 'regroup-attach-11')
+    await set(w, 'regroup-pick-11', '40')
+    await click(w, 'regroup-pick-go-11')
+    expect(t(w, 'regroup-action-error').text()).toBe('Soalan sudah dalam kumpulan lain.')
+  })
+
+  it('two figure_only rows offer the figure selector and the chosen one is the stimulus', async () => {
+    api.fetchRegroupWorklist.mockResolvedValue(
+      page([row({ questionId: '10', flag: 'figure_only', numberLabel: '13' }), row({ questionId: '11', flag: 'figure_only', numberLabel: '14' }), row({ questionId: '12', numberLabel: '15' })]),
+    )
+    const w = await render()
+    for (const id of ['10', '11', '12']) await click(w, `regroup-select-${id}`)
+    expect(t(w, 'regroup-figure').findAll('option').map((o) => o.text())).toEqual(['#10', '#11'])
+    await set(w, 'regroup-figure', '11')
+    await click(w, 'regroup-group')
+    expect(api.regroupQuestions).toHaveBeenCalledWith({ figureQuestionId: '11', memberQuestionIds: ['10', '12'] })
+  })
+
+  it('a changed filter clears the selection and the action error', async () => {
+    api.fetchRegroupWorklist.mockResolvedValue(page([row({ questionId: '10', flag: 'figure_only' }), row()]))
+    api.dismissQuestionFlag.mockRejectedValue(apiError('Bendera tidak sepadan.'))
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const w = await render()
+    await click(w, 'regroup-select-10')
+    await click(w, 'regroup-dismiss-11')
+    expect(w.find('[data-testid="regroup-action-error"]').exists()).toBe(true)
+    await set(w, 'regroup-flag-filter', 'figure_only')
+    expect(w.find('[data-testid="regroup-action-error"]').exists()).toBe(false)
+    expect(w.find('[data-testid="regroup-group-bar"]').exists()).toBe(false)
+  })
+
+  it('an emptied page after an action goes back one page', async () => {
+    api.fetchRegroupWorklist.mockResolvedValueOnce(page([row()])).mockResolvedValueOnce(page([]))
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    await render('/admin/questions?tab=regroup&page=2')
+    await click(wrapper as VueWrapper, 'regroup-dismiss-11')
+    expect(router.currentRoute.value.query.page).toBeUndefined()
+    expect(router.currentRoute.value.query.tab).toBe('regroup')
   })
 
   describe('Kumpulkan and Buat asal', () => {
@@ -244,8 +298,8 @@ describe('RegroupPage row actions (API-Q-12, API-Q-24, API-Q-36)', () => {
       await click(w, 'regroup-group')
       api.undoRegroup.mockRejectedValue(apiError('Kumpulan telah diubah selepas kumpul semula; tidak boleh dibuat asal.'))
       await click(w, 'regroup-undo')
-      expect(t(w, 'regroup-action-error').text()).toContain('tidak boleh dibuat asal.')
-      expect(w.find('[data-testid="regroup-undo"]').exists()).toBe(true)
+      expect(t(w, 'regroup-action-error').text()).toBe('Kumpulan telah diubah selepas kumpul semula; tidak boleh dibuat asal.')
+      expect(w.find('[data-testid="regroup-undo"]').exists()).toBe(false)
     })
   })
 

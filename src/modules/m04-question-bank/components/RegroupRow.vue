@@ -22,8 +22,9 @@ const loadFailed = ref(false)
 
 async function openPicker(): Promise<void> {
   picking.value = !picking.value
-  if (!picking.value || choices.value.length > 0) return
+  if (!picking.value) return
   loadFailed.value = false
+  choice.value = ''
   try {
     choices.value = (await listStimuliToAttach()).data.filter((s) => s.groupCount === 0)
   } catch {

@@ -328,6 +328,8 @@ export function regroupSource(row: Pick<RegroupWorkRow, 'paper' | 'numberLabel'>
 /**
  * "Pilih baris yang berturutan sahaja." (PRD45 6.6.2): the selected rows share one source paper and their numbers are whole numbers
  * with no gap. Fewer than one row, a row with no paper or a non-numeric number is not a run.
+ * Labels such as "14a" or "3(a)" are refused on purpose: they name a sub-part, so "next number" is undefined (is 14b after 14a, or 15?)
+ * and a guess could group questions that are not neighbours. The admin groups those through Studio. Pending lead confirmation.
  */
 export function isConsecutiveRun(rows: readonly Pick<RegroupWorkRow, 'paper' | 'numberLabel'>[]): boolean {
   if (rows.length === 0) return false

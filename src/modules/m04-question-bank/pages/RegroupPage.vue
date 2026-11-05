@@ -5,9 +5,10 @@
  * filters in the URL, the pager and the row actions: `Bukan masalah` (API-Q-12, confirm), `Kumpulkan` / `Lampirkan rangsangan`
  * (API-Q-24) and `Buat asal` (API-Q-36). Not built, no contract: the `Kertas sumber` filter, `Cadangan`, `Gabungkan kumpulan`.
  */
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import { isApiError } from '@/api'
 import { useApi } from '@/composables'
 import { DsCluster, DsEmptyState, DsFormField, DsLoadError, DsNativeSelect, DsPage, DsStack, DsText, useConfirm } from '@/ds'
 
@@ -61,6 +62,13 @@ const figure = computed(() => figureRows.value.find((r) => r.questionId === figu
 const runNotConsecutive = computed(() => selectedRows.value.length > 1 && !isConsecutiveRun(selectedRows.value))
 const canGroup = computed(() => figure.value !== undefined && selectedRows.value.length >= 2 && !runNotConsecutive.value)
 
+/** A new filter or page is a new list: the selection and the last action error no longer apply. */
+watch([filters, page], () => {
+  selected.value = []
+  figureId.value = ''
+  errors.value = []
+})
+
 function toggle(id: string): void {
   selected.value = selected.value.includes(id) ? selected.value.filter((x) => x !== id) : [...selected.value, id]
 }
@@ -73,7 +81,8 @@ async function mutate(action: () => Promise<void>): Promise<boolean> {
     await action()
     selected.value = []
     figureId.value = ''
-    void list.reload()
+    await list.reload()
+    if (rows.value.length === 0 && page.value > 1) go({ page: page.value - 1 })
     return true
   } catch (err) {
     errors.value = errorLines(err)
@@ -107,7 +116,15 @@ async function attach(row: RegroupWorkRow, stimulusId: string): Promise<void> {
 async function undo(): Promise<void> {
   const u = undoable.value
   if (!u) return
-  const ok = await mutate(async () => void (await undoRegroup(u.auditId)))
+  const ok = await mutate(async () => {
+    try {
+      await undoRegroup(u.auditId)
+    } catch (err) {
+      // 409: the group changed after the regroup, so this audit can never be undone; the server message stays on screen.
+      if (isApiError(err) && err.status === 409) undoable.value = null
+      throw err
+    }
+  })
   if (ok) undoable.value = null
 }
 

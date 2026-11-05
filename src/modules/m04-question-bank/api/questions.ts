@@ -466,8 +466,19 @@ export interface StimulusPick {
   excerpt: string | null
   groupCount: number
 }
-export function listStimuliToAttach(options: { signal?: AbortSignal } = {}): Promise<{ data: StimulusPick[] }> {
-  return api.get<{ data: StimulusPick[] }>('/api/stimuli', { query: { pageSize: 100 }, raw: true, ...(options.signal ? { signal: options.signal } : {}) })
+export async function listStimuliToAttach(options: { signal?: AbortSignal } = {}): Promise<{ data: StimulusPick[] }> {
+  // The contract has no "ungrouped" filter (subject/level filter by members, which an ungrouped stimulus lacks), so every page is read, in order.
+  const data: StimulusPick[] = []
+  for (let page = 1, pages = 1; page <= pages; page += 1) {
+    const res = await api.get<{ data: StimulusPick[]; meta?: { totalPages?: number } }>('/api/stimuli', {
+      query: { pageSize: 100, page },
+      raw: true,
+      ...(options.signal ? { signal: options.signal } : {}),
+    })
+    data.push(...res.data.filter((s) => s.groupCount === 0))
+    pages = res.meta?.totalPages ?? 1
+  }
+  return { data }
 }
 
 /** API-Q-12 `POST /api/admin/questions/{id}/flags/dismiss` ("Bukan masalah"); 409 when `flag` is not the stored flag. */
