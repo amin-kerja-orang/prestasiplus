@@ -433,7 +433,8 @@ export class StimuliRepository {
     return idToString(group.id)
   }
 
-  /** Replaces the whole option bank of a group (delete, then insert: the (group, position) and (group, label) keys are unique). */
+  /** Replaces the whole option bank of a group (delete, then insert: the (group, position) and (group, label) keys are unique).
+   * Option row ids change on every save: the rows are replaced, not updated in place. */
   async replaceOptionBank(groupId: string, bank: { label: string; bodyMs: string | null; bodyEn: string | null; imageFileId: bigint | null; isDistractor: boolean }[]): Promise<void> {
     const key = BigInt(groupId)
     await this.db.stimulusGroupOption.deleteMany({ where: { groupId: key } })

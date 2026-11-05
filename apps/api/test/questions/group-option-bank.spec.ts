@@ -175,6 +175,32 @@ describe('[CI] group usedInPapers and option bank image/distractor/update (API-Q
       expect((await detail(copy.id)).optionBank).toEqual([{ label: 'A', body: { ms: 'Ubah' }, imageId: null, isDistractor: true }])
     })
 
+    it('a duplicate letter answers 422 on optionBank and changes nothing, on create and on update', async () => {
+      const dup = [{ label: 'A', body: { ms: 'Satu' } }, { label: 'B', body: { ms: 'Dua' } }, { label: 'A', body: { ms: 'Tiga' } }]
+      const groups = Number((await q('select count(*)::text n from stimulus_groups'))[0]!.n)
+      const created = await admin.post('/api/stimulus-groups', { stimulusIds: [await stimulus()], optionBank: dup })
+      expect(expectError(created, 'VALIDATION_ERROR').fields).toEqual({ optionBank: STIMULUS_MESSAGES.requestInvalid })
+      expect(Number((await q('select count(*)::text n from stimulus_groups'))[0]!.n)).toBe(groups)
+      const g = await makeGroup(0, false, { optionBank: bank() })
+      const res = await admin.put(`/api/stimulus-groups/${g.id}`, { optionBank: dup })
+      expect(expectError(res, 'VALIDATION_ERROR').fields).toEqual({ optionBank: STIMULUS_MESSAGES.requestInvalid })
+      expect((await detail(g.id)).optionBank!.map((o) => o.label)).toEqual(['A', 'B', 'C'])
+    })
+
+    it('the swap refuses a draft copy whose bank drops a letter that a key uses: 422, rolled back, the served group unchanged', async () => {
+      const g = await makeGroup(1, true, { optionBank: bank() })
+      await keyOn(g.ids[0]!, 'C')
+      const copyRes = await admin.post(`/api/stimulus-groups/${g.id}/edit-as-draft`)
+      expect(copyRes.status, JSON.stringify(copyRes.body)).toBe(201)
+      const copy = mutationEnvelopeOf(StimulusGroupDetailSchema).parse(copyRes.body).data
+      // the PUT would already refuse this, so the letter is removed straight in the database
+      await q(`delete from stimulus_group_options where group_id = $1 and label = 'C'`, [copy.id])
+      const res = await admin.post(`/api/stimulus-groups/${copy.id}/publish`)
+      expect(expectError(res, 'VALIDATION_ERROR').fields).toEqual({ optionBank: STIMULUS_MESSAGES.bankLetterKey })
+      expect((await detail(g.id)).optionBank!.map((o) => o.label)).toEqual(['A', 'B', 'C'])
+      expect((await q(`select 1 from stimulus_groups where id = $1`, [copy.id])).length).toBe(1) // the copy is still there
+    })
+
     it('guards: 422 on a bad letter, 401 anonymous, 403 teacher', async () => {
       const g = await makeGroup(0, false)
       expectError(await admin.put(`/api/stimulus-groups/${g.id}`, { optionBank: [{ label: 'Z', body: { ms: 'x' } }] }), 'VALIDATION_ERROR')

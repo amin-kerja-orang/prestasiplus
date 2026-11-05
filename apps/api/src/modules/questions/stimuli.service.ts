@@ -291,6 +291,8 @@ export class StimuliService {
     bank: NonNullable<StimulusGroupCreateRequest['optionBank']>,
     fields: Record<string, string>,
   ): Promise<{ label: string; bodyMs: string | null; bodyEn: string | null; imageFileId: bigint | null; isDistractor: boolean }[]> {
+    // The contract fixes a letter to /^[A-H]$/ (no trimming or case folding anywhere), so equal strings are the duplicates. Before any write.
+    if (new Set(bank.map((o) => o.label)).size !== bank.length) fields.optionBank = STIMULUS_MESSAGES.requestInvalid
     const out = []
     for (const [i, o] of bank.entries()) {
       const own: Record<string, string> = {}
@@ -433,6 +435,8 @@ export class StimuliService {
         if (otherCopy === null || ((await this.groupOrThrow(otherCopy)).draftMembers ?? []).includes(questionId)) throw conflictOf(STIMULUS_MESSAGES.memberTaken)
         await this.members.set(holder, (await this.repo.memberIds(holder)).filter((m) => m !== questionId), 'questionId', undefined, true)
       }
+      // AC-QA-10: the bank the copy brings must keep every letter that a key of the final members uses (422, the swap rolls back).
+      await this.assertBankKeepsKeyLetters(draftId, draft.optionBank.map((o) => o.label))
       await this.repo.replaceFromCopy(liveId, draftId)
       await this.members.set(liveId, staged, 'questionIds', undefined, true)
       // The members as they are now must all fit the scope the copy brings.
