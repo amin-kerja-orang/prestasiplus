@@ -3,6 +3,7 @@ import {
   CONTENT_MESSAGES,
   SupportSettingsUpdateRequestSchema,
   SupportTicketCreateRequestSchema,
+  SupportTicketReplyRequestSchema,
   SupportTicketStatusRequestSchema,
 } from '@pp/contract'
 import type { Request } from 'express'
@@ -45,6 +46,7 @@ const StrictSupportTicketCreateRequestSchema = SupportTicketCreateRequestSchema.
 /** `phone` and `hours` are refused by name until they have a store (open on #458, #507). */
 const StrictSupportSettingsUpdateRequestSchema = SupportSettingsUpdateRequestSchema.strict()
 const StrictSupportTicketStatusRequestSchema = SupportTicketStatusRequestSchema.strict()
+const StrictSupportTicketReplyRequestSchema = SupportTicketReplyRequestSchema.strict()
 
 /** A body that is not a JSON object is treated as empty (both fields then fail as required). */
 const objectOf = (raw: unknown): Record<string, unknown> =>
@@ -84,7 +86,7 @@ export class SupportController {
   @Roles('admin')
   @RateLimit(SUPPORT_LIMITS.read)
   async queue(@Query() query: Record<string, unknown>) {
-    return this.support.queue(one(query.status), one(query.page))
+    return this.support.queue(one(query.status), one(query.page), one(query.role))
   }
 
   @Get('admin/tiket/open-count')
@@ -119,6 +121,18 @@ export class SupportController {
   @RateLimit(SUPPORT_LIMITS.read)
   async ticket(@Param('id') id: string) {
     return ok(await this.support.ticket(id))
+  }
+
+  @Put('admin/tiket/:id/reply')
+  @Roles('admin')
+  @RateLimit(SUPPORT_LIMITS.adminWrite)
+  async reply(@Req() req: Req, @Param('id') id: string, @Body() raw: unknown) {
+    const body = objectOf(raw)
+    const parsed = StrictSupportTicketReplyRequestSchema.safeParse(body)
+    const fields: Record<string, string> = parsed.success ? {} : strictFieldsOf(parsed.error.issues)
+    if (hasNul(body.text)) fields.text = CONTENT_MESSAGES.fieldInvalid
+    if (!parsed.success || Object.keys(fields).length > 0) throw invalid(fields)
+    return ok(await this.support.reply(actorOf(req), id, parsed.data.text))
   }
 
   @Patch('admin/tiket/:id/status')

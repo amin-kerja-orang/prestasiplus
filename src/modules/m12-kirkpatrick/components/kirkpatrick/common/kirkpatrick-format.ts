@@ -16,6 +16,11 @@ export const plain = count
 export const pct = (value: number) => formatPercent(value, { decimals: 1, dropZeroFraction: true })
 /** Percent that keeps the decimal ("100.0%": the S3 bars). */
 export const pct1 = (value: number) => formatPercent(value, { decimals: 1 })
+/** XS-5: every accuracy ("Ketepatan") is a whole number, rounded half away from zero ("66.5" -> "67%", "-16.5" -> "-17%"). */
+export const accuracyPct = (value: number, options: { signed?: boolean } = {}) => {
+  const whole = Math.sign(value) * Math.round(Math.abs(value))
+  return formatPercent(whole === 0 ? 0 : whole, { decimals: 0, signed: options.signed ?? false })
+}
 /** A mean on a /5 or /10 scale, 1 decimal, ".0" dropped ("4.6", "8.4"). */
 export const mean = (value: number) => formatNumber(value, { decimals: 1, dropZeroFraction: true })
 /** GPS, 2 decimals (DV-M12-09). */

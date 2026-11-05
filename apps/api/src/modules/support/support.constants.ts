@@ -5,6 +5,7 @@ export const SUPPORT_AUDIT = {
   TICKET_CREATED: 'support.ticket.created',
   CONFIG_UPDATED: 'support.config.updated',
   TICKET_STATUS_CHANGED: 'support.ticket.status_changed',
+  TICKET_REPLIED: 'support.ticket.replied',
 } as const
 
 /**

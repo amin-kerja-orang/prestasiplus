@@ -13,6 +13,7 @@ import {
   SUPPORT_ADMIN_FLASH,
   SUPPORT_ADMIN_MESSAGES,
   SUPPORT_QUEUE_PER_PAGE,
+  SUPPORT_ROLE_LABELS,
   SUPPORT_SETTINGS_MESSAGES,
   SUPPORT_SETTINGS_SAVED_FLASH,
 } from '@pp/contract'
@@ -22,6 +23,7 @@ import {
   ADMIN_TICKET_FLASH,
   ADMIN_TICKET_MESSAGES,
   QUEUE_PER_PAGE,
+  ROLE_LABELS,
   SETTINGS_MESSAGES,
   SETTINGS_SAVED_FLASH,
 } from '../../api/types'
@@ -91,7 +93,11 @@ describe('settings copy matches the contract', () => {
 describe('admin ticket copy matches the contract', () => {
   it('the client copies are the contract values', () => {
     expect(QUEUE_PER_PAGE).toBe(SUPPORT_QUEUE_PER_PAGE)
+    expect(ADMIN_TICKET_MESSAGES.replyRequired).toBe(SUPPORT_ADMIN_MESSAGES.replyRequired)
+    expect(ADMIN_TICKET_MESSAGES.replyTooLong).toBe(SUPPORT_ADMIN_MESSAGES.replyTooLong)
     expect(ADMIN_TICKET_MESSAGES.statusInvalid).toBe(SUPPORT_ADMIN_MESSAGES.statusInvalid)
+    expect(ADMIN_TICKET_FLASH.replySaved).toBe(SUPPORT_ADMIN_FLASH.replySaved)
+    expect(ROLE_LABELS).toEqual(SUPPORT_ROLE_LABELS)
     expect(ADMIN_TICKET_MESSAGES.ticketNotFound).toBe(SUPPORT_ADMIN_MESSAGES.ticketNotFound)
     expect(ADMIN_TICKET_FLASH.statusSaved).toBe(SUPPORT_ADMIN_FLASH.statusSaved)
   })
