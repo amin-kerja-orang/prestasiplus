@@ -417,7 +417,7 @@ describe('S8 password card (FR-M01-45)', () => {
     expect(form.text()).toContain('Kata Laluan Semasa')
     expect(form.text()).toContain('Kata Laluan Baharu')
     expect(form.text()).toContain('Sahkan Kata Laluan Baharu')
-    expect(form.text()).toContain('Sekurang-kurangnya 6 aksara')
+    expect(form.text()).toContain('Sekurang-kurangnya 8 aksara')
     for (const input of form.findAll('input')) {
       expect(input.attributes('required')).toBeUndefined()
       expect(input.attributes('type')).toBe('password')

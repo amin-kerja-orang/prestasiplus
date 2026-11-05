@@ -21,13 +21,13 @@ describe('a self-registered or unverified teacher has no scope (privacy over fid
       email: 'menunggu@ujian.test',
       role: 'teacher',
       schoolId: school,
-      password: 'rahsia1',
-      passwordConfirmation: 'rahsia1',
+      password: 'rahsia111',
+      passwordConfirmation: 'rahsia111',
     })
     expect(reg.status).toBe(201)
     const row = await userRow(t.db, 'menunggu@ujian.test')
     expect(row?.school_id).toBeNull()
-    const login1 = await t.http().post('/api/auth/login').send({ identifier: 'menunggu@ujian.test', password: 'rahsia1' })
+    const login1 = await t.http().post('/api/auth/login').send({ identifier: 'menunggu@ujian.test', password: 'rahsia111' })
     errorOf(login1, 403, 'ACCOUNT_INACTIVE')
     // No session row was ever created for it.
     const sessions = await t.db.query<{ n: string }>('select count(*)::text as n from sessions where user_id = $1::bigint', [row?.id])

@@ -364,7 +364,7 @@ async function submit(): Promise<void> {
           </template>
         </div>
 
-        <DsFormField native for="password" label="Kata Laluan" hint="Minimum 6 aksara">
+        <DsFormField native for="password" label="Kata Laluan" hint="Minimum 8 aksara">
           <PasswordInput
             id="password"
             v-model="password"

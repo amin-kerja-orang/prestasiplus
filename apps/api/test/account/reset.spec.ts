@@ -193,7 +193,7 @@ describe('password reset by e-mail link and by IC (AC2, AC3, D55a, D55b)', () =>
       expect(fieldsOf(res)).toEqual({
         token: 'The token field is required.',
         email: 'The email field must be a valid email address.',
-        password: 'The password field must be at least 6 characters.',
+        password: 'The password field must be at least 8 characters.',
       })
       const token = await issue(STUDENT)
       const c = await t.http().post('/api/auth/password/reset').send({ token, email: STUDENT, password: 'Baharu123', passwordConfirmation: 'lain' })

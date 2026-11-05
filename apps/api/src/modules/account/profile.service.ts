@@ -118,8 +118,13 @@ export class ProfileService {
       if (!user) throw ApiError.of('UNAUTHORIZED')
       // ALLOW-list (security review L1): only a student or a parent may set their own school; every other role, and any
       // role added later, ignores the body value (school membership is managed by school_admin/admin). Fail closed.
+      // FR-ADM-U03.4: grade and school change only through the admin edit. PUT /me may FIRST-SET them (current value
+      // null: a registration that skipped them, or an account created without them); once set, a body value is ignored.
       const mayChooseSchool =
-        user.roles.length > 0 && user.roles.every((r) => SELF_SCHOOL_ROLES.includes(r))
+        user.roles.length > 0 &&
+        user.roles.every((r) => SELF_SCHOOL_ROLES.includes(r)) &&
+        user.schoolId === null
+      const mayChooseGrade = user.grade === null
       const schoolId =
         typeof body.schoolId === 'string'
           ? body.schoolId
@@ -128,6 +133,7 @@ export class ProfileService {
             : undefined
 
       if (
+        mayChooseSchool &&
         fields.schoolId === undefined &&
         typeof schoolId === 'string' &&
         !(await this.schools.existsSecondary(schoolId))
@@ -135,7 +141,7 @@ export class ProfileService {
         fields.schoolId = ACCOUNT_AUTH_MESSAGES.schoolInvalid
       }
       // Secondary-only (2026-10-29): a Darjah grade cannot be newly chosen (an unchanged stored grade is kept).
-      if (fields.grade === undefined && typeof body.grade === 'number' && body.grade < 7 && body.grade !== user.grade) fields.grade = ACCOUNT_AUTH_MESSAGES.gradeInvalid
+      if (mayChooseGrade && fields.grade === undefined && typeof body.grade === 'number' && body.grade < 7) fields.grade = ACCOUNT_AUTH_MESSAGES.gradeInvalid
       if (Object.keys(fields).length > 0 || !parsed.success) {
         const ordered: Record<string, string> = {}
         for (const key of ['name', 'phone', 'bio', 'grade', 'schoolId', ...Object.keys(fields)]) {
@@ -154,7 +160,7 @@ export class ProfileService {
             name: data.name,
             ...(data.phone !== undefined ? { phone: blankToNull(data.phone) } : {}),
             ...(data.bio !== undefined ? { bio: blankToNull(data.bio) } : {}),
-            ...(data.grade !== undefined ? { grade: data.grade } : {}),
+            ...(data.grade !== undefined && mayChooseGrade ? { grade: data.grade } : {}),
             ...(data.schoolId !== undefined && mayChooseSchool ? { schoolId: data.schoolId } : {}),
             now,
           })

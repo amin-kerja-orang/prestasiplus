@@ -43,7 +43,7 @@ describe('POST /api/auth/register (mock cases, AC1 and AC6)', () => {
     expect(row?.must_reset_password).toBe(false)
     const roles = await t.db.query<{ role: string }>(`select role from user_roles where user_id = $1::bigint`, [row?.id])
     expect(roles.map((r) => r.role)).toEqual(['student'])
-    const login = await t.http().post('/api/auth/login').send({ identifier: 'murid.baharu@ujian.test', password: 'rahsia1' })
+    const login = await t.http().post('/api/auth/login').send({ identifier: 'murid.baharu@ujian.test', password: 'rahsia111' })
     expect(login.status).toBe(200)
     const lastLogin = await t.db.query<{ at: string | null }>(`select last_login_at::text as at from users where id = $1::bigint`, [row?.id])
     expect(lastLogin[0]?.at).not.toBeNull()
@@ -68,7 +68,7 @@ describe('POST /api/auth/register (mock cases, AC1 and AC6)', () => {
     const roles = await t.db.query<{ role: string }>('select role from user_roles where user_id = $1::bigint', [row?.id])
     expect(roles.map((x) => x.role)).toEqual(['teacher'])
     // The BE-03 login refuses it (is_active = false): 403 ACCOUNT_INACTIVE, no session.
-    const login = await t.http().post('/api/auth/login').send({ identifier: 'cikgu.baharu@ujian.test', password: 'rahsia1' })
+    const login = await t.http().post('/api/auth/login').send({ identifier: 'cikgu.baharu@ujian.test', password: 'rahsia111' })
     errorOf(login, 403, 'ACCOUNT_INACTIVE')
     expect(cookieValue(login)).toBeUndefined()
 
@@ -91,7 +91,7 @@ describe('POST /api/auth/register (mock cases, AC1 and AC6)', () => {
     expect(fieldsOf(r)).toEqual({
       name: 'The name field is required.',
       email: 'The email has already been taken.',
-      password: 'The password field must be at least 6 characters.',
+      password: 'The password field must be at least 8 characters.',
     })
     expect(ErrorBodySchema.parse(r.body).error.message).toBe('The name field is required. (and 2 more errors)')
     const c = await t.http().post('/api/auth/register').send(body({ passwordConfirmation: 'lain' }))

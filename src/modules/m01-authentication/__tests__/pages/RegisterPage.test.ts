@@ -72,8 +72,8 @@ async function render(path = '/register'): Promise<VueWrapper> {
 async function fillRequired(w: VueWrapper): Promise<void> {
   await w.get('[data-testid=register-name]').setValue('Murid Baru')
   await w.get('[data-testid=register-email]').setValue('baru@demo.test')
-  await w.get('[data-testid=register-password]').setValue('rahsia1')
-  await w.get('[data-testid=register-password-confirm]').setValue('rahsia1')
+  await w.get('[data-testid=register-password]').setValue('rahsia111')
+  await w.get('[data-testid=register-password-confirm]').setValue('rahsia111')
 }
 
 beforeEach(() => {
@@ -115,7 +115,7 @@ describe('RegisterPage (M01 S2)', () => {
     })
     expect(attrs('register-password')).toMatchObject({ required: '', type: 'password' })
     expect(attrs('register-password-confirm')).toMatchObject({ required: '', type: 'password' })
-    expect(w.text()).toContain('Minimum 6 aksara')
+    expect(w.text()).toContain('Minimum 8 aksara')
     expect(w.text()).toContain('Dilindungi PDPA. Hanya 2 digit terakhir akan dipaparkan.')
     expect(w.get('form').attributes('novalidate')).toBeUndefined()
   })
@@ -195,8 +195,8 @@ describe('RegisterPage (M01 S2)', () => {
       grade: 10,
       icNumber: '031215101234',
       schoolId: null,
-      password: 'rahsia1',
-      passwordConfirmation: 'rahsia1',
+      password: 'rahsia111',
+      passwordConfirmation: 'rahsia111',
       referralCode: null,
     })
     expect(useSessionStore().user?.id).toBe(9000001)

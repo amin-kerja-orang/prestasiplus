@@ -202,7 +202,7 @@ function register(req: MockRequest, ctx: MockContext): MockResponse {
       grade: [gradeRule],
       icNumber: [max(14)],
       schoolId: [teacherSchoolRule, schoolRule],
-      password: [required(), min(6), confirmed()],
+      password: [required(), min(8), confirmed()],
     },
     { attributes: { icNumber: 'ic number' } },
   )
@@ -279,7 +279,7 @@ function resetPassword(req: MockRequest, ctx: MockContext): MockResponse {
   const invalid = validate(body, {
     token: [required()],
     email: [required(), email()],
-    password: [required(), min(6), confirmed()],
+    password: [required(), min(8), confirmed()],
   })
   if (invalid) return invalid
   const found = users.findByEmail(String(body.email))

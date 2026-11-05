@@ -27875,7 +27875,7 @@
           },
           "password": {
             "type": "string",
-            "minLength": 6
+            "minLength": 8
           },
           "passwordConfirmation": {
             "type": "string"
@@ -27962,7 +27962,7 @@
           },
           "password": {
             "type": "string",
-            "minLength": 6
+            "minLength": 8
           },
           "passwordConfirmation": {
             "type": "string"
@@ -28078,7 +28078,7 @@
           },
           "password": {
             "type": "string",
-            "minLength": 6
+            "minLength": 8
           },
           "passwordConfirmation": {
             "type": "string"
