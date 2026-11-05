@@ -128,6 +128,8 @@ export const BIJAK_BUILDER_MESSAGES = {
   subjektifCreated: '“{title}” telah dicipta sebagai draf.',
   subjektifUpdated: '“{title}” telah dikemas kini.',
   subjektifDeleted: '“{title}” telah dipadam.',
+  /** S3-T06 [DOC DEFECT: no BM text in the PRD]: Negeri, Tahun, Tempoh or Jumlah Markah sent for a Simulasi paper. */
+  subjektifOnly: 'Hanya untuk Kertas Subjektif.',
   subjektifPublished: '“{title}” kini diterbitkan.',
   subjektifHidden: '“{title}” disembunyikan daripada pelajar.',
   /** [PROPOSED] R1-T34 */
@@ -317,6 +319,10 @@ export const BIJAK_BUILDER_BLOCKER_OVERRIDABLE = {
   COMPULSORY_CHOOSE: false,
   /** S3-T02, S3-T01 decision 15: a placed question differs from `Markah setiap soalan` of the Kontrak. */
   MARKS_NOT_IN_CONTRACT: true,
+  /** S3-T06, PRD30 field 18-08: `Jumlah Markah` differs from the marks of the placed questions (Kertas Subjektif). */
+  TOTAL_MARKS_MISMATCH: false,
+  /** S3-T06, FR-ADM-Q18.8: a placed question of a Kertas Subjektif has a leaf with no scheme. */
+  NO_SCHEME: false,
 } as const
 export type BijakBuilderBlockerCode = keyof typeof BIJAK_BUILDER_BLOCKER_OVERRIDABLE
 export const BIJAK_BUILDER_BLOCKER_CODES = Object.keys(BIJAK_BUILDER_BLOCKER_OVERRIDABLE) as [BijakBuilderBlockerCode, ...BijakBuilderBlockerCode[]]
@@ -795,7 +801,7 @@ export const BijakBuilderPaperCreateSchema = z
   .superRefine((b, ctx) => {
     if (b.surface !== 'subjektif') {
       for (const k of ['examBoard', 'year', 'durationMinutes', 'totalMarks'] as const) {
-        if (b[k] !== undefined) ctx.addIssue({ code: 'custom', path: [k], message: 'Only for a Kertas Subjektif paper (surface subjektif).' })
+        if (b[k] !== undefined) ctx.addIssue({ code: 'custom', path: [k], message: BIJAK_BUILDER_MESSAGES.subjektifOnly })
       }
       return
     }
