@@ -79173,7 +79173,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (not an admin).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (not an admin).",
             "content": {
               "application/json": {
                 "schema": {
