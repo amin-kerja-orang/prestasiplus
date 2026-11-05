@@ -397,7 +397,7 @@ export function settleSession(
   }
 
   w.xp += xpAdded
-  w.tierKey = upgradedTier(ctx.tiers, w.tierKey, w.currentSyiling)
+  w.tierKey = upgradedTier(ctx.tiers, w.tierKey, w.totalSyilingEarned)
   const touched = rows.length > 0 || xpAdded > 0
   return {
     wallet: base || touched ? w : null,
