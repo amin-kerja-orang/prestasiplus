@@ -1993,7 +1993,7 @@
       "name": "m11.laporan-mingguan-kelas",
       "status": "canonical",
       "sector": "S6",
-      "component": "src/pages/NotFoundPage.vue",
+      "component": "src/pages/PrototypeUnavailablePage.vue",
       "file": "src/modules/m11-teacher-analytics/routes/laporan-mingguan.ts",
       "approved_by_card": null
     },
