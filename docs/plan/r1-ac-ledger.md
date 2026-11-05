@@ -63,9 +63,9 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S10-T04 | AC-GUR-5-8 | CI | Pass | 2026-11-05 | team-bb/S-2 | student-and-class.spec.ts |
 | S10-T04 | AC-AS-5-1 | CI | Pass | 2026-11-05 | team-bb/S-2 | student-and-class.spec.ts |
 | S10-T04 | AC-AS-5-3 | CI | Pass | 2026-11-05 | team-bb/S-2 | class-pages.test.ts |
-| S10-T04 | AC-MUR-5-1 | CI | Pass | 2026-11-05 | team-bb/S-2 | analitik-pelajar.spec.ts |
-| S10-T04 | AC-MUR-5-2 | CI | Pass | 2026-11-05 | team-bb/S-2 | analitik-pages.test.ts |
-| S10-T04 | AC-MUR-5-3 | CI | Pass | 2026-11-05 | team-bb/S-2 | analitik-pages.test.ts |
+| S10-T04 | AC-MUR-5-1 | CI | Pass | 2026-11-05 | team-bb/S-2 | analitik-pelajar.spec.ts (fake SP port; UAT waits #924) |
+| S10-T04 | AC-MUR-5-2 | CI | Pass | 2026-11-05 | team-bb/S-2 | analitik-pages.test.ts (fake SP port; UAT waits #924) |
+| S10-T04 | AC-MUR-5-3 | CI | Pass | 2026-11-05 | team-bb/S-2 | analitik-pages.test.ts (fake SP port; UAT waits #924) |
 
 ## Sprint 3
 
