@@ -78607,7 +78607,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields.text: \"Sila isi balasan.\" or \"Balasan tidak boleh melebihi 5000 aksara.\"",
+            "description": "VALIDATION_ERROR with fields.text: \"Sila tulis balasan.\" or \"Balasan tidak boleh melebihi 5000 aksara.\"",
             "content": {
               "application/json": {
                 "schema": {
@@ -78708,7 +78708,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields.status: \"Sila pilih status.\"",
+            "description": "VALIDATION_ERROR with fields.status: \"Data yang dihantar tidak sah. Sila semak dan cuba lagi.\"",
             "content": {
               "application/json": {
                 "schema": {

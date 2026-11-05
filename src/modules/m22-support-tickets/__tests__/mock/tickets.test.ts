@@ -247,7 +247,7 @@ describe('#3 and #4 admin queue (AC-M22-07, 08, 09)', () => {
     expect(moved.status).toBe(200)
     expect(moved.body.data).toMatchObject({ status: 'ditutup', adminReply: reply })
     expect((await call('PATCH', '/api/admin/tiket/6/status', ADMIN, { status: 'baru' })).body.error?.fields).toEqual({
-      status: 'Sila pilih status.',
+      status: 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.',
     })
     expect((await call('GET', '/api/admin/tiket/999', ADMIN)).status).toBe(404)
     expect((await call('PATCH', '/api/admin/tiket/999/status', ADMIN, { status: 'selesai' })).status).toBe(404)

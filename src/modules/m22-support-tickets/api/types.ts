@@ -40,15 +40,15 @@ export const TICKET_CREATED_FLASH =
 /** Rows per page of the admin queue (API-SUP-03). */
 export const QUEUE_PER_PAGE = 25
 
-/** Admin ticket messages with a source: ERR-REQ-11, ERR-ACC-04 (40 X10). */
+/** Admin ticket messages with a source: ERR-REQ-01, ERR-ACC-04 (40 X10; rulings on #507). */
 export const ADMIN_TICKET_MESSAGES = {
-  statusRequired: 'Sila pilih status.',
+  statusInvalid: 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.',
   ticketNotFound: 'Rekod tidak dijumpai. Ia mungkin telah dipadam.',
 } as const
 
-/** [PROPOSED] Copy with no source in the SRS or the ERR catalogue, waiting for product-owner approval (D94, #507). */
-export const ADMIN_TICKET_PROPOSED_COPY = {
-  statusSavedFlash: 'Status dikemas kini.',
+/** Flash after a status save, approved by the product owner (PO batch 2 on #503). */
+export const ADMIN_TICKET_FLASH = {
+  statusSaved: 'Status dikemas kini.',
 } as const
 
 /** `Ticket` of §7. */

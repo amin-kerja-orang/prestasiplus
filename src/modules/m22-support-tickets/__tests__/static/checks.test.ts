@@ -9,10 +9,10 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { SUPPORT_ADMIN_MESSAGES, SUPPORT_ADMIN_PROPOSED_COPY, SUPPORT_QUEUE_PER_PAGE } from '@pp/contract'
+import { SUPPORT_ADMIN_MESSAGES, SUPPORT_ADMIN_FLASH, SUPPORT_QUEUE_PER_PAGE } from '@pp/contract'
 import { describe, expect, it } from 'vitest'
 
-import { ADMIN_TICKET_MESSAGES, ADMIN_TICKET_PROPOSED_COPY, QUEUE_PER_PAGE } from '../../api/types'
+import { ADMIN_TICKET_MESSAGES, ADMIN_TICKET_FLASH, QUEUE_PER_PAGE } from '../../api/types'
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url))
 const REPO = fileURLToPath(new URL('../../../../../', import.meta.url))
@@ -72,8 +72,8 @@ describe('CHK-M22-02', () => {
 describe('admin ticket copy matches the contract', () => {
   it('the client copies are the contract values', () => {
     expect(QUEUE_PER_PAGE).toBe(SUPPORT_QUEUE_PER_PAGE)
-    expect(ADMIN_TICKET_MESSAGES.statusRequired).toBe(SUPPORT_ADMIN_MESSAGES.statusRequired)
+    expect(ADMIN_TICKET_MESSAGES.statusInvalid).toBe(SUPPORT_ADMIN_MESSAGES.statusInvalid)
     expect(ADMIN_TICKET_MESSAGES.ticketNotFound).toBe(SUPPORT_ADMIN_MESSAGES.ticketNotFound)
-    expect(ADMIN_TICKET_PROPOSED_COPY.statusSavedFlash).toBe(SUPPORT_ADMIN_PROPOSED_COPY.statusSavedFlash)
+    expect(ADMIN_TICKET_FLASH.statusSaved).toBe(SUPPORT_ADMIN_FLASH.statusSaved)
   })
 })

@@ -160,7 +160,7 @@ function setStatus(req: MockRequest): MockResponse {
     typeof req.body === 'object' && req.body !== null && !Array.isArray(req.body) ? req.body : {}
   ) as Record<string, unknown>
   if (!isTicketStatus(body.status)) {
-    return validationError({ status: ADMIN_TICKET_MESSAGES.statusRequired })
+    return validationError({ status: ADMIN_TICKET_MESSAGES.statusInvalid })
   }
   const row = supportTicketsRepo.setStatus(Number(req.params.id), body.status)
   return row ? ok(toDetail(row)) : notFound(ADMIN_TICKET_MESSAGES.ticketNotFound)

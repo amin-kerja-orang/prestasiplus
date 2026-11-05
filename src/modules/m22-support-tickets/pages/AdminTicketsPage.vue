@@ -32,7 +32,7 @@ import { formatDateTimeRaw } from '@/lib/time'
 
 import { fetchQueue, fetchTicketDetail, setTicketStatus } from '../api/tickets'
 import {
-  ADMIN_TICKET_PROPOSED_COPY,
+  ADMIN_TICKET_FLASH,
   TICKET_STATUSES,
   TICKET_STATUS_LABELS,
   isTicketStatus,
@@ -261,7 +261,7 @@ async function changeStatus(value: unknown): Promise<void> {
           <DsCallout
             v-if="statusFlash"
             tone="success"
-            :title="ADMIN_TICKET_PROPOSED_COPY.statusSavedFlash"
+            :title="ADMIN_TICKET_FLASH.statusSaved"
             data-testid="tq-detail-flash"
           />
         </DsStack>
