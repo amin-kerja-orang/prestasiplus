@@ -14,6 +14,7 @@ import { ApiError } from '../../../common/errors/api-error'
 import { CLOCK, type Clock, mytDay } from '../../../db/clock'
 import { isIdString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
+import { GamificationService } from '../../gamification'
 import { PracticeRepository } from '../../practice'
 import type { ClassActor } from '../actor'
 import { ClassesRepository } from '../classes.repository'
@@ -42,6 +43,7 @@ export class MissionsService {
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(GamificationService) private readonly gamification: GamificationService,
   ) {}
 
   /**
@@ -77,15 +79,45 @@ export class MissionsService {
 
   // --- teacher Misi Harian (API-GUR-11) ---------------------------------------------------------
 
-  /** `GET /guru/missions`: the teacher's own missions, date descending then created descending, with the completion count. */
+  /**
+   * `GET /guru/missions`: the teacher's own missions, date descending then created descending, with the completion count; then one
+   * "Global" row per ACTIVE S7 Cabaran Harian (`GamificationService.challengesForTeacher`, read-only): `global: true`, the challenge
+   * target as `targetQuestions`, its syiling reward as `rewardCoins`, today's Malaysia date, no class and no subject, and
+   * `completedCount` = the teacher's pupils (active enrolments in the teacher's active classes, the set the pupil counts use) who
+   * completed it today. The id is `challenge-<id>`: a challenge id may equal a mission id, and the id is never a mission id, so
+   * `DELETE /guru/missions/:id` answers the generic 404 for it.
+   */
   async list(actor: ClassActor): Promise<TeacherMission[]> {
     const missions = await this.repo.listForTeacher(actor.userId, actor.isTest)
-    if (missions.length === 0) return []
-    const [subjects, completed] = await Promise.all([
-      this.classes.subjectNames(missions.map((m) => m.subjectId)),
-      this.repo.completedCounts(missions.map((m) => m.id), actor.userId, actor.isTest),
-    ])
-    return missions.map((m) => toTeacherMission(m, m.subjectId !== null ? (subjects.get(m.subjectId) ?? null) : null, completed.get(m.id) ?? 0))
+    const own: TeacherMission[] = []
+    if (missions.length > 0) {
+      const [subjects, completed] = await Promise.all([
+        this.classes.subjectNames(missions.map((m) => m.subjectId)),
+        this.repo.completedCounts(missions.map((m) => m.id), actor.userId, actor.isTest),
+      ])
+      own.push(...missions.map((m) => toTeacherMission(m, m.subjectId !== null ? (subjects.get(m.subjectId) ?? null) : null, completed.get(m.id) ?? 0)))
+    }
+    const pupils = await this.classes.teacherStudentIds(actor.userId)
+    const challenges = await this.gamification.challengesForTeacher(pupils)
+    const today = mytDay(this.clock.now())
+    return [
+      ...own,
+      ...challenges.map(
+        (c): TeacherMission => ({
+          id: `challenge-${c.id}`,
+          title: c.title,
+          description: c.description === '' ? null : c.description,
+          targetQuestions: c.target,
+          rewardCoins: c.rewardSyiling,
+          date: today,
+          classroomId: null,
+          subjectId: null,
+          subjectName: null,
+          global: true,
+          completedCount: pupils.length === 0 ? 0 : c.completedToday,
+        }),
+      ),
+    ]
   }
 
   /**

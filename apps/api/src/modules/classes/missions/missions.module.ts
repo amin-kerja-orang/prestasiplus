@@ -3,6 +3,7 @@ import { Inject, Logger, Module, type OnModuleInit } from '@nestjs/common'
 import { AuditModule } from '../../../common/audit'
 import { ThrottleModule } from '../../../common/throttle'
 import { CurriculumModule } from '../../curriculum'
+import { GamificationModule } from '../../gamification'
 import { PracticeModule, PracticePorts } from '../../practice'
 import { QuestionsModule } from '../../questions'
 import { WalletModule } from '../../wallet'
@@ -25,7 +26,7 @@ import { RemedialService } from './remedial.service'
  * plugged in before `app.init()`) is left as it is and logged, never overwritten.
  */
 @Module({
-  imports: [AuditModule, ThrottleModule, CurriculumModule, QuestionsModule, ClassesModule, PracticeModule, QuestionSetsModule, WalletModule],
+  imports: [AuditModule, ThrottleModule, CurriculumModule, QuestionsModule, ClassesModule, PracticeModule, QuestionSetsModule, WalletModule, GamificationModule],
   controllers: [MissionsController, RemedialController],
   providers: [MissionsRepository, MissionsService, RemedialService, QuestionPool, PracticeAssignmentsAdapter],
   exports: [MissionsRepository],

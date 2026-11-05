@@ -111,6 +111,23 @@ describe('API-GUR-11 teacher Misi Harian: GET, POST, DELETE /api/guru/missions (
     expect([...dates].sort().reverse()).toEqual(dates)
   })
 
+  it('GET appends the active S7 challenges as Global rows after the own missions; their count is over the teacher\'s pupils; DELETE of one is 404', async () => {
+    const ch = (
+      await t.db.query<{ id: string }>(
+        `insert into challenges (title, description, challenge_type, metric, target_value, reward_syiling, reward_xp, difficulty, sort_order, is_active)
+         values ('Cabaran DB', 'Selesaikan kuiz', 'quiz_count', 'sessions', 3, 15, 20, 'easy', 1, true) returning id::text`,
+      )
+    )[0]?.id as string
+    await t.db.query(`insert into challenge_completions (user_id, challenge_id, completion_date) values ($1, $2, $3), ($4, $2, $3)`, [w.student1, ch, TODAY, w.studentOther])
+    const rows = TeacherMissionListResponseSchema.parse((await teacherA.get('/guru/missions')).body).data
+    const globals = rows.filter((r) => r.global)
+    const row = globals.find((r) => r.id === `challenge-${ch}`)
+    expect(row).toMatchObject({ title: 'Cabaran DB', description: 'Selesaikan kuiz', targetQuestions: 3, rewardCoins: 15, date: TODAY, classroomId: null, subjectId: null, subjectName: null, completedCount: 1 })
+    expect(rows.findIndex((r) => r.global)).toBe(rows.filter((r) => !r.global).length) // own missions first
+    expect((await teacherA.del(`/guru/missions/challenge-${ch}`)).status).toBe(404)
+    expect(await count(t, 'challenges where id = $1', [ch])).toBe(1)
+  })
+
   it('DELETE: own 200 { deleted: 1 } with its recipients; another teacher\'s and unknown 404', async () => {
     const own = await insertMission(t, w, { teacherId: w.teacherA, recipients: [w.student1], type: 'harian', title: 'Padam saya', day: TODAY, createdAt: '2026-10-10T09:00:00+08:00' })
     const res = await teacherA.del(`/guru/missions/${own}`)
