@@ -663,6 +663,7 @@ const dskpItems = computed(() => [
                       type="number"
                       inputmode="numeric"
                       min="1"
+                      class="w-full"
                       :aria-label="`${t.sectionCount} ${s.label}`"
                       :data-testid="`rule-n-${si}`"
                       @blur="saveRule(s.id)"

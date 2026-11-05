@@ -268,6 +268,7 @@ async function deleteSet(id: string, status: string): Promise<void> {
           <DsFormField :label="t.genTitleField" required :error="genTitleError">
             <UInput
               v-model="genTitle"
+              class="w-full"
               maxlength="200"
               :placeholder="t.genTitlePlaceholder"
               data-testid="gen-title"
@@ -296,6 +297,7 @@ async function deleteSet(id: string, status: string): Promise<void> {
                 inputmode="numeric"
                 min="1"
                 :max="contractTotal"
+                class="w-full"
                 data-testid="gen-count"
                 @update:model-value="genCountEdited = true"
               />
