@@ -19,7 +19,7 @@ import {
   cmpId,
   computeSettlement,
   handOverSeat,
-  markSeen,
+  shouldWritePoll,
   questionView,
   seatOf,
   seatPresent,
@@ -984,8 +984,8 @@ describe('multi-human seats: Papan Bijak (GAME-02) and Kuiz Relay (GAME-06)', ()
   it('Papan Bijak: a timeout belongs to the seat whose turn ran out and counts one miss for that seat only', () => {
     const o = begin('papan-bijak')
     const t = applyTimeout({ room: room('papan-bijak'), players: o.players, state: o.state, p: 0, roundStartMs: T0 + 30_000 })
-    expect(t.state.seats?.[A]?.missed).toBe(1)
-    expect(t.state.seats?.[B]?.missed ?? 0).toBe(0)
+    expect(t.players.find((x) => x.userId === A)?.consecutiveTimeouts).toBe(1)
+    expect(t.players.find((x) => x.userId === B)?.consecutiveTimeouts ?? 0).toBe(0)
     expect(t.state.humanId === B || t.state.humanId === A).toBe(true)
   })
 
@@ -1011,16 +1011,12 @@ describe('multi-human seats: Papan Bijak (GAME-02) and Kuiz Relay (GAME-06)', ()
     expect(r.players.find((x) => x.userId === A)?.points).toBe(11) // floor(9.9) = 9 s: 10 + max(0, 10 - 9)
   })
 
-  it('markSeen writes presence at most once per gap and never resets the timeout count (ruling 49.1); youAnswered is true only for the question the seat answered', () => {
+  it('shouldWritePoll writes the first poll and then at most once per gap; youAnswered is true only for the question the seat answered', () => {
     const o = begin('papan-bijak')
     const st = structuredClone(o.state)
-    expect(seatOf(st, B).seenMs).toBe(T0) // everybody is present at the start
-    expect(markSeen(st, B, T0 + 6_000, 5_000)).toBe(true) // past the gap: writes
-    expect(markSeen(st, B, T0 + 7_000, 5_000)).toBe(false) // inside the gap
-    seatOf(st, B).missed = 2
-    expect(markSeen(st, B, T0 + 7_500, 5_000)).toBe(false) // a miss streak does not write the poll sooner
-    expect(markSeen(st, B, T0 + 12_000, 5_000)).toBe(true)
-    expect(seatOf(st, B).missed).toBe(2) // a poll never resets the count
+    expect(shouldWritePoll(null, T0, 5_000)).toBe(true) // never polled: writes
+    expect(shouldWritePoll(T0, T0 + 4_999, 5_000)).toBe(false) // inside the gap
+    expect(shouldWritePoll(T0, T0 + 5_000, 5_000)).toBe(true) // past the gap
     const q = { ...st, awaiting: 'answer' as const, pendingQ: '1000' }
     expect(youAnswered(q, A)).toBe(false)
     seatOf(q, A).answeredAt = `${String(q.round)}:${String(q.turn)}:1000`
@@ -1061,12 +1057,11 @@ describe('robots off: a leaver\'s seat is skipped (ruling 50.1)', () => {
 })
 
 describe('presence window (ruling 50)', () => {
-  it('a seat is present up to absence limit + the write gap (seenMs is written at most every 5 s), and not a ms later', () => {
-    const o = startGame({ room: room('papan-bijak'), players: players(2, false), humanId: '10', seed: 's', pool: pool(40), quizTiles: 35, p: 0, nowMs: T0 })
+  it('a seat is present up to absence limit + the write gap (last_polled_at is written at most every 5 s), and not a ms later', () => {
     const limit = 30_000 + 5_000
-    expect(seatPresent(o.state, '11', T0 + limit, limit)).toBe(true)
-    expect(seatPresent(o.state, '11', T0 + limit + 1, limit)).toBe(false)
-    expect(seatPresent(o.state, '99', T0, limit)).toBe(false) // never seen
+    expect(seatPresent(T0, T0 + limit, limit)).toBe(true)
+    expect(seatPresent(T0, T0 + limit + 1, limit)).toBe(false)
+    expect(seatPresent(null, T0, limit)).toBe(false) // never seen
   })
 })
 
@@ -1137,5 +1132,102 @@ describe('a human leaves a game in play: a robot takes the seat (ruling 50)', ()
     const after = [{ userId: 'robot-1', team: null, points: 0, correct: 0, isBot: true }, seats3()[1] as EnginePlayer]
     const h = handOverSeat({ room: room('benteng-ilmu'), players: after, state: own.state, remap: { '10': 'robot-1' }, leaver: '10', p: 0, nowMs: T0 })
     expect(h.state.humanId).toBe('11')
+  })
+})
+
+describe('seat presence and the consecutive timeouts (DM-90, rulings 49 and 54)', () => {
+  const A = '10'
+  const B = '11'
+  const two = (lastA: number | null, lastB: number | null): EnginePlayer[] => [
+    { userId: A, team: null, points: 0, correct: 0, isBot: false, lastPolledMs: lastA, consecutiveTimeouts: 0 },
+    { userId: B, team: null, points: 0, correct: 0, isBot: false, lastPolledMs: lastB, consecutiveTimeouts: 0 },
+  ]
+  const begin = (game: EngineRoom['game'], seats: EnginePlayer[]) =>
+    startGame({ room: room(game), players: seats, humanId: A, seed: 'seed-p', pool: pool(POOL_SIZE[game]), quizTiles: 35, p: 0, nowMs: T0 })
+  const count = (o: EngineOut, id: string): number => o.players.find((x) => x.userId === id)?.consecutiveTimeouts ?? 0
+  const timeout = (o: EngineOut, nowMs: number): EngineOut =>
+    applyTimeout({ room: room('papan-bijak'), players: o.players, state: o.state, p: 0, roundStartMs: nowMs })
+  const act = (o: EngineOut, nowMs: number): EngineOut =>
+    step(room('papan-bijak'), o, o.state.awaiting === 'roll' ? { type: 'roll' } : answerRight(o.state), 0, nowMs)
+  /** Plays the other seat's turns until `id` is on turn. */
+  const toTurn = (o: EngineOut, id: string, nowMs: number): EngineOut => {
+    let cur = o
+    for (let i = 0; i < 20 && cur.state.humanId !== id; i++) cur = act(cur, nowMs)
+    return cur
+  }
+
+  it('a timeout of the seat\'s own turn counts one; an action resets it to 0; 2 timeouts, an action, 2 timeouts is 2 (never 3)', () => {
+    let o = begin('papan-bijak', two(T0, T0))
+    let now = T0
+    for (let n = 1; n <= 2; n++) {
+      o = toTurn(o, A, now)
+      now += 30_000
+      o = timeout(o, now)
+      expect(count(o, A)).toBe(n) // the other seat's count is untouched
+      expect(count(o, B)).toBe(0)
+    }
+    o = toTurn(o, A, now)
+    o = act(o, now)
+    expect(count(o, A)).toBe(0) // an action reset it
+    for (let n = 1; n <= 2; n++) {
+      o = toTurn(o, A, now)
+      now += 30_000
+      o = timeout(o, now)
+    }
+    expect(count(o, A)).toBe(2)
+    expect(count(o, B)).toBe(0) // B acted on every turn it was awaited
+  })
+
+  it('a poll is not an engine event: the count only moves on a timeout or an action (the explicit "time ran out" answer is a timeout)', () => {
+    let o = begin('papan-bijak', two(T0, T0))
+    o = act(o, T0) // A rolls
+    expect(count(o, A)).toBe(0)
+    o = toTurn(o, A, T0)
+    // a roll that stopped on a quiz tile leaves A on turn with a question; find one
+    for (let i = 0; i < 40 && o.state.awaiting !== 'answer'; i++) o = toTurn(act(toTurn(o, A, T0), T0), A, T0)
+    if (o.state.awaiting === 'answer') {
+      const noPick = step(room('papan-bijak'), o, { type: 'answer', questionId: o.state.pendingQ as string, optionId: null, value: undefined, seconds: 0 }, 0, T0 + 20_000)
+      expect(count(noPick, A)).toBe(1)
+    }
+  })
+
+  const tick = (game: EngineRoom['game'], o: EngineOut, nowMs: number, absentMs: number | undefined) =>
+    resolveClocks({ room: room(game), players: o.players, state: o.state, startedAtMs: T0, nowMs, p: 0, ...(absentMs === undefined ? {} : { absentMs }) })
+
+  it('an absent seat\'s turn closes at last_polled_at + games_absent_seconds (+ the write gap), a present seat\'s runs the full clock', () => {
+    const absent = begin('papan-bijak', two(T0, T0 + 14_000)) // B keeps polling, so only A is absent
+    // games_absent_seconds = 10 s, the limit as presence reads it is 15 s (10 + the 5 s write gap); the roll clock is 30 s
+    expect(tick('papan-bijak', absent, T0 + 14_999, 10_000).changed).toBe(false)
+    const closed = tick('papan-bijak', absent, T0 + 15_000, 10_000)
+    expect(closed.changed).toBe(true)
+    expect(closed.state.log.filter((l) => l.startsWith('roll:'))).toHaveLength(1) // the roll timed out at 15 s, not 30 s
+    expect(closed.players.find((x) => x.userId === A)?.consecutiveTimeouts).toBeGreaterThanOrEqual(1)
+    const present = begin('papan-bijak', two(T0 + 10_000, T0 + 24_000))
+    expect(tick('papan-bijak', present, T0 + 24_999, 10_000).changed).toBe(false) // polled at 10 s: absent only from 25 s
+    expect(tick('papan-bijak', present, T0 + 25_000, 10_000).changed).toBe(true)
+    const polling = begin('papan-bijak', two(T0 + 29_000, T0 + 29_000))
+    expect(tick('papan-bijak', polling, T0 + 29_999, 10_000).changed).toBe(false) // the full clock still ends the turn
+    expect(tick('papan-bijak', polling, T0 + 30_000, 10_000).changed).toBe(true)
+    expect(tick('papan-bijak', absent, T0 + 29_999, undefined).changed).toBe(false) // no absence rule given: the full clock only
+  })
+
+  it('a seat already absent when its turn begins is timed out at once, and the catch-up stops at 3 timeouts for the service to remove the seat', () => {
+    const seats = two(T0, null).map((x, i) => (i === 1 ? { ...x, isBot: true, userId: 'robot-1' } : x)) // A last polled at the start; a robot is the other seat
+    const o = begin('papan-bijak', seats)
+    const r = tick('papan-bijak', o, T0 + 10 * 60_000, 10_000)
+    expect(r.changed).toBe(true)
+    expect(r.players.find((x) => x.userId === A)?.consecutiveTimeouts).toBe(3)
+    expect(r.finished).toBe(false)
+    expect(r.state.humanId).toBe(A) // stopped on A's turn with 3 timeouts
+  })
+
+  it('Kuiz Relay closes an absent seat\'s turn early too; an own-part game (Benteng Ilmu) does not (via its GAME-0x part)', () => {
+    const relay = begin('kuiz-relay', two(T0, T0))
+    expect(tick('kuiz-relay', relay, T0 + 14_999, 10_000).changed).toBe(false)
+    expect(tick('kuiz-relay', relay, T0 + 15_000, 10_000).changed).toBe(true) // the 15 s answer clock and the limit meet here
+    const relay2 = begin('kuiz-relay', two(T0 - 100_000, T0))
+    expect(tick('kuiz-relay', relay2, T0, 10_000).changed).toBe(true) // already absent: closes at once, before the 15 s clock
+    const benteng = begin('benteng-ilmu', two(T0 - 100_000, T0))
+    expect(tick('benteng-ilmu', benteng, T0 + 14_999, 10_000).changed).toBe(false) // own part: only the full 15 s clock
   })
 })

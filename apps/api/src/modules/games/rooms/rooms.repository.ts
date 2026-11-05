@@ -40,6 +40,10 @@ export interface PlayerRow {
   correct: number
   isBot: boolean
   isTest: boolean
+  /** DM-90: when the seat last polled or acted in a playing room; null before the first and for a robot. */
+  lastPolledAt: Date | null
+  /** DM-90: timeouts of the seat's own turns since its last action; 3 remove the seat. */
+  consecutiveTimeouts: number
 }
 
 export interface NewRoom {
@@ -122,6 +126,8 @@ const toPlayer = (
     correct: number
     isBot: boolean
     isTest: boolean
+    lastPolledAt: Date | null
+    consecutiveTimeouts: number
   },
   robot: number | null,
 ): PlayerRow => ({
@@ -134,6 +140,8 @@ const toPlayer = (
   correct: p.correct,
   isBot: p.isBot,
   isTest: p.isTest,
+  lastPolledAt: p.lastPolledAt,
+  consecutiveTimeouts: p.consecutiveTimeouts,
 })
 
 /** Data access of the room games (tables `game_rooms`, `game_room_players`, `game_standings`, `pb_searches`, `game_settings`). */
@@ -203,7 +211,23 @@ export class RoomsRepository {
 
   /** A human who left a game in play: a robot takes the seat (the row keeps its place, points and correct count). */
   async seatToRobot(id: bigint): Promise<void> {
-    await this.db.gameRoomPlayer.update({ where: { id }, data: { userId: null, isBot: true } })
+    await this.db.gameRoomPlayer.update({
+      where: { id },
+      data: { userId: null, isBot: true, lastPolledAt: null, consecutiveTimeouts: 0 },
+    })
+  }
+
+  /** DM-90: the seat polled or acted at `at`. */
+  async touchSeat(id: bigint, at: Date): Promise<void> {
+    await this.db.gameRoomPlayer.update({ where: { id }, data: { lastPolledAt: at } })
+  }
+
+  /** DM-90: a room starts playing: every human seat is present now with no timeouts. */
+  async startPresence(code: string, at: Date): Promise<void> {
+    await this.db.gameRoomPlayer.updateMany({
+      where: { roomCode: code, isBot: false },
+      data: { lastPolledAt: at, consecutiveTimeouts: 0 },
+    })
   }
 
   async removeSeat(id: bigint): Promise<void> {
@@ -230,11 +254,16 @@ export class RoomsRepository {
 
   async updatePlayer(
     id: bigint,
-    p: { team: number | null; points: number; correct: number },
+    p: { team: number | null; points: number; correct: number; consecutiveTimeouts?: number },
   ): Promise<void> {
     await this.db.gameRoomPlayer.update({
       where: { id },
-      data: { team: p.team, points: p.points, correct: p.correct },
+      data: {
+        team: p.team,
+        points: p.points,
+        correct: p.correct,
+        ...(p.consecutiveTimeouts === undefined ? {} : { consecutiveTimeouts: p.consecutiveTimeouts }),
+      },
     })
   }
 

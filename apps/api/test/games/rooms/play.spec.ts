@@ -748,7 +748,7 @@ describe('start, actions, clocks and settlement (M16-26..28)', () => {
       expect(l.state).toMatchObject({ round: 3, roundSecondsLeft: 5 })
     })
 
-    it('a host who never comes back: the room finishes once with a result and settles once, under concurrent polls', async () => {
+    it('a host who never comes back: 3 timeouts remove the lone absent human; the room finishes once, unsettled, under concurrent polls', async () => {
       const { code } = await started('perang-fakta')
       advance(15 * 10 + 7)
       const polls = await Promise.all([1, 2, 3, 4].map(() => student.get(P('perang-fakta', code))))
@@ -762,10 +762,9 @@ describe('start, actions, clocks and settlement (M16-26..28)', () => {
       }
       advance(60)
       expect(await view(student, 'perang-fakta', code)).toEqual(views[0])
-      expect(rewards.calls).toHaveLength(1) // exactly one report for the acting human
-      expect(rewards.calls[0]?.input).toMatchObject({ game: 'perang_fakta', correct: 0 })
-      expect(rewards.calls[0]?.input.key).toBe(code)
-      expect(rewards.calls[0]?.input.session).toEqual({ id: (await roomOf(t.db, code)).session_id, gameKey: 'perang-fakta' })
+      // ruling 49/50.3: removed at the 3rd timeout, so nothing is settled: no report at all
+      expect(rewards.calls).toHaveLength(0)
+      expect((await roomOf(t.db, code)).settled_at).not.toBeNull()
     })
 
     it('optionId null is the explicit no-vote and restarts the round clock; a real vote scores', async () => {
@@ -811,7 +810,7 @@ describe('start, actions, clocks and settlement (M16-26..28)', () => {
         'CONFLICT',
         M.actionNotStarted,
       )
-      expect(rewards.calls).toHaveLength(1)
+      expect(rewards.calls).toHaveLength(0) // the lone absent human was removed at the 3rd timeout: nothing settled
     })
 
     it('Teka Silang Kata: 300 s from the start; plays on at 299 s; ends once at 301 s with the words found so far', async () => {
