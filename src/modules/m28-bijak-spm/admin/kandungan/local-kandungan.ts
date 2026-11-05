@@ -84,22 +84,22 @@ export function createMockKandungan(): KandunganApi {
   const bank = async (): Promise<BankRow[]> => admin.listBank({ status: 'semua' })
 
   const trackingSets: MockTrackingSet[] = []
-  /** The servable units of a subject: the published objective questions of the bank, a group once (D-10, D90). */
+  /**
+   * The servable units of a subject (D-10): the published, text-only, ungrouped objective questions of the bank. Same temporary limit as the
+   * API's `trackingAFilter`: a stimulus question (group member) and a figure question are not candidates.
+   */
+  // TODO(S5-T03, S5-T15): lift when the pupil start serves stimulus questions (a group is one unit again, D90).
   const trackingUnits = async (subject: string): Promise<SpmAdminTrackingACandidate[]> => {
-    const rows = (await bank()).filter((r) => r.subject === subject && r.kind === 'objektif' && r.status === 'terbit')
-    const member = (r: BankRow) => ({ id: r.id, stem: r.previewPlain.slice(0, 200), servable: true, statusWord: null })
-    const out: SpmAdminTrackingACandidate[] = []
-    const seen = new Set<string>()
-    for (const r of rows) {
-      if (r.groupId === undefined) {
-        out.push({ kind: 'question', id: r.id, questions: 1, label: r.previewPlain.slice(0, 200), members: [member(r)] })
-      } else if (!seen.has(r.groupId)) {
-        seen.add(r.groupId)
-        const all = rows.filter((x) => x.groupId === r.groupId)
-        out.push({ kind: 'group', id: r.groupId, questions: all.length, label: r.groupId, members: all.map(member) })
-      }
-    }
-    return out
+    const rows = (await bank()).filter(
+      (r) => r.subject === subject && r.kind === 'objektif' && r.status === 'terbit' && r.groupId === undefined && !/<(img|svg|figure)\b/i.test(r.preview),
+    )
+    return rows.map((r) => ({
+      kind: 'question' as const,
+      id: r.id,
+      questions: 1,
+      label: r.previewPlain.slice(0, 200),
+      members: [{ id: r.id, stem: r.previewPlain.slice(0, 200), servable: true, statusWord: null }],
+    }))
   }
   const trackingKey = (u: { kind: string; id: string }): string => `${u.kind}:${u.id}`
   const trackingView = async (set: MockTrackingSet): Promise<SpmAdminTrackingASet> => {

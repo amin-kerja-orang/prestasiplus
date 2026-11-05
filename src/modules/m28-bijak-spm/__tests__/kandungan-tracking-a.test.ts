@@ -11,6 +11,7 @@ import { createMockKandungan } from '../admin/kandungan/local-kandungan'
 import TrackingAListPage from '../admin/kandungan/pages/TrackingAListPage.vue'
 import TrackingASetEditorPage from '../admin/kandungan/pages/TrackingASetEditorPage.vue'
 import { ADMIN_ROUTES } from '../admin/papers/ui'
+import { bijakAdminServer } from '../server/client'
 
 const server = vi.hoisted(() => ({ trackingLane: vi.fn(), trackingSet: vi.fn(), createTrackingSet: vi.fn(), saveTrackingSet: vi.fn() }))
 const flash = vi.hoisted(() => ({ show: vi.fn() }))
@@ -104,6 +105,31 @@ describe('the mock reads (they answer like the API)', () => {
     await expect(api.saveTrackingSet(two.id, { items: [{ kind: 'question', id: first.id }] })).rejects.toBeInstanceOf(TrackingRefusal)
     const row = (await api.trackingLane({ page: 1, pageSize: 5 })).rows[0]
     expect(row?.meta).toBe(`#${one.id} · ramalan · 1 soalan`)
+  })
+})
+
+describe('temporary limit: the mock follows the API, stimulus questions are not Tracking A candidates (lead ruling on #717)', () => {
+  // TODO(S5-T03, S5-T15): lift with `trackingAFilter` when the pupil start serves stimulus questions.
+  it('no group member or figure question is a candidate; a group id is refused on save; a set short of the target is not complete', async () => {
+    const bank = await bijakAdminServer().listBank({ status: 'semua' })
+    const api = createMockKandungan()
+    const grouped = bank.filter((r) => r.kind === 'objektif' && r.status === 'terbit' && r.groupId !== undefined)
+    expect(grouped.length).toBeGreaterThan(0)
+    const subjectId = grouped[0]?.subject ?? ''
+    const plain = bank.filter(
+      (r) => r.subject === subjectId && r.kind === 'objektif' && r.status === 'terbit' && r.groupId === undefined && !/<(img|svg|figure)\b/i.test(r.preview),
+    )
+    const set = await api.createTrackingSet({ subjectId, year: 2026, setNo: 1 })
+    expect(set.candidates).toBe(plain.length)
+    expect(set.candidateItems.every((c) => c.kind === 'question' && c.questions === 1)).toBe(true)
+    const stimulusIds = new Set(grouped.map((r) => r.id))
+    expect(set.candidateItems.some((c) => stimulusIds.has(c.id))).toBe(false)
+    const groupId = grouped[0]?.groupId ?? ''
+    await expect(api.saveTrackingSet(set.id, { items: [{ kind: 'group', id: groupId }] })).rejects.toBeInstanceOf(TrackingRefusal)
+    const some = set.candidateItems.slice(0, Math.min(2, set.candidateItems.length))
+    const saved = await api.saveTrackingSet(set.id, { items: some.map((c) => ({ kind: 'question' as const, id: c.id })) })
+    expect(saved.filled).toBe(some.length)
+    expect(saved.attention).not.toEqual([])
   })
 })
 
