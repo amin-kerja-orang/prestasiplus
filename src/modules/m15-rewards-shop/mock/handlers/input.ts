@@ -1,11 +1,14 @@
 /**
- * Boundary validation of the M15 admin requests (SRS M15 v1.4 §5 server-side re-check, BR-M15-11,
- * BR-M15-12, BR-M15-13). No live BM copy exists for the server answers (SRS §5), so the messages
- * are the Laravel-style defaults; the pages never reach them through the native checks.
+ * Boundary validation of the M15 admin requests, in step with the server's `shop/hadiah.input.ts`
+ * (P07-02..15, BR-M15-11, 12, 13): same limits, same BM messages (the P07 rows where they give one,
+ * else the ERR-REQ-10..15 patterns with the P07 labels), so the screens meet the same answers in the
+ * mock and on the API. A reward is created Off (P07-14, U-OP-09) and never needs parent consent
+ * (FR-GM-21.3): a posted `requiresParentConsent` is ignored.
  */
 
+import { REWARD_VALIDATION_MESSAGES as MSG } from '@pp/contract'
+
 import {
-  DELIVERY_METHODS,
   HADIAH_CATEGORIES,
   type BulkAction,
   type DeliveryMethod,
@@ -39,7 +42,31 @@ function asBool(v: unknown, fallback: boolean): boolean | undefined {
   return undefined
 }
 
-const label = (field: string): string => field.replace(/([A-Z])/g, ' $1').toLowerCase()
+/** The P07 label of a field. */
+const LABELS: Readonly<Record<string, string>> = {
+  vendor: 'Vendor',
+  title: 'Tajuk',
+  description: 'Penerangan',
+  denominationRm: 'Nilai (RM)',
+  tokenCost: 'Kos Token',
+  iconEmoji: 'Emoji Icon',
+  stockQuantity: 'Stok',
+  maxPerMonthPerStudent: 'Maks/bulan/pelajar',
+  voucherValidityDays: 'Sah Hari',
+  vendorSku: 'Vendor SKU',
+  displayOrder: 'Display Order',
+  imageUrl: 'Image URL',
+  termsText: 'Terma Khas',
+}
+const label = (field: string): string => LABELS[field] ?? field
+const required = (field: string): string => `${label(field)} diperlukan.`
+const badFormat = (field: string): string => `Format ${label(field)} tidak sah.`
+/** Characters as a reader counts them: a flag or a skin-tone emoji is one. */
+const charCount = (text: string): number =>
+  [...new Intl.Segmenter('ms', { granularity: 'grapheme' }).segment(text)].length
+
+/** Delivery methods the form offers; `api` is not (FR-ADM-P2-07.3). */
+const INPUT_DELIVERY_METHODS: readonly DeliveryMethod[] = ['manual', 'instant']
 
 export type ParsedInput = { ok: true; value: HadiahFields } | { ok: false; fields: Fields }
 
@@ -48,18 +75,18 @@ export function parseHadiahInput(body: unknown): ParsedInput {
   const fields: Fields = {}
   const b: Raw = typeof body === 'object' && body !== null ? (body as Raw) : {}
 
-  const text = (name: string, max: number, required: boolean): string | null => {
+  const text = (name: string, max: number, isRequired: boolean): string | null => {
     const v = b[name]
     if (isBlank(v)) {
-      if (required) fields[name] = `The ${label(name)} field is required.`
+      if (isRequired) fields[name] = required(name)
       return null
     }
     if (typeof v !== 'string') {
-      fields[name] = `The ${label(name)} field must be a string.`
+      fields[name] = badFormat(name)
       return null
     }
     if (v.length > max) {
-      fields[name] = `The ${label(name)} field must not be greater than ${String(max)} characters.`
+      fields[name] = `${label(name)} tidak boleh melebihi ${String(max)} aksara.`
       return null
     }
     return v
@@ -69,61 +96,89 @@ export function parseHadiahInput(body: unknown): ParsedInput {
     name: string,
     min: number,
     max: number,
-    required: boolean,
+    isRequired: boolean,
     fallback: number | null,
   ): number | null => {
     const v = b[name]
     if (isBlank(v)) {
-      if (required) fields[name] = `The ${label(name)} field is required.`
+      if (isRequired) fields[name] = required(name)
       return fallback
     }
     const n = asInt(v)
     if (n === undefined) {
-      fields[name] = `The ${label(name)} field must be an integer.`
+      fields[name] = name === 'stockQuantity' ? MSG.stockValue : badFormat(name)
       return fallback
     }
     if (n < min || n > max) {
-      fields[name] = `The ${label(name)} field must be between ${String(min)} and ${String(max)}.`
+      fields[name] =
+        name === 'stockQuantity'
+          ? MSG.stockValue
+          : `${label(name)} mesti antara ${String(min)} dan ${String(max)}.`
       return fallback
     }
     return n
   }
 
-  const category = b.category
-  if (isBlank(category)) fields.category = 'The category field is required.'
-  else if (!HADIAH_CATEGORIES.includes(category as HadiahCategory)) {
-    fields.category = 'The selected category is invalid.'
-  }
-  const delivery = b.deliveryMethod
-  if (!isBlank(delivery) && !DELIVERY_METHODS.includes(delivery as DeliveryMethod)) {
-    fields.deliveryMethod = 'The selected delivery method is invalid.'
+  /** `denominationRm`: 0.01 to 10000 with at most 2 decimal places (P07-06). */
+  const money = (name: string): number | null => {
+    const v = b[name]
+    if (isBlank(v)) {
+      fields[name] = required(name)
+      return null
+    }
+    const n =
+      typeof v === 'number'
+        ? v
+        : typeof v === 'string' && /^\d+(\.\d+)?$/.test(v.trim())
+          ? Number(v.trim())
+          : Number.NaN
+    if (!Number.isFinite(n) || Math.round(n * 100) / 100 !== n) {
+      fields[name] = badFormat(name)
+      return null
+    }
+    if (n < 0.01 || n > 10000) {
+      fields[name] = `${label(name)} mesti antara 0.01 dan 10000.`
+      return null
+    }
+    return n
   }
 
-  const vendor = text('vendor', 100, true)
-  const title = text('title', 200, true)
-  const description = text('description', 1000, false)
-  const iconEmoji = text('iconEmoji', 8, false)
-  const vendorSku = text('vendorSku', 100, false)
-  const termsText = text('termsText', 2000, false)
+  const category = b.category
+  if (isBlank(category)) fields.category = MSG.categoryRequired
+  else if (!HADIAH_CATEGORIES.includes(category as HadiahCategory)) {
+    fields.category = MSG.categoryInvalid
+  }
+  const delivery = b.deliveryMethod
+  if (!isBlank(delivery) && !INPUT_DELIVERY_METHODS.includes(delivery as DeliveryMethod)) {
+    fields.deliveryMethod = MSG.deliveryMethodInvalid
+  }
+
+  const vendor = text('vendor', 60, true)
+  const title = text('title', 100, true)
+  const description = text('description', 500, false)
+  let iconEmoji = text('iconEmoji', 16, false)
+  if (iconEmoji !== null && charCount(iconEmoji.trim()) > 2) {
+    fields.iconEmoji = `${label('iconEmoji')} tidak boleh melebihi 2 aksara.`
+    iconEmoji = null
+  }
+  const vendorSku = text('vendorSku', 50, false)
+  const termsText = text('termsText', 1000, false)
   let imageUrl = text('imageUrl', 500, false)
-  if (imageUrl !== null && !/^https?:\/\/\S+$/i.test(imageUrl.trim())) {
-    fields.imageUrl = 'The image url field must be a valid URL.'
+  if (imageUrl !== null && !/^https:\/\/\S+$/i.test(imageUrl.trim())) {
+    fields.imageUrl = MSG.imageUrlInvalid
     imageUrl = null
   }
 
-  const denominationRm = int('denominationRm', 1, 10000, true, null)
-  const tokenCost = int('tokenCost', 1, 10000, true, null)
+  const denominationRm = money('denominationRm')
+  const tokenCost = int('tokenCost', 1, 100_000, true, null)
   const stockQuantity = int('stockQuantity', 0, 999_999_999, false, null)
-  const maxPerMonth = int('maxPerMonthPerStudent', 1, 99, false, null)
-  const validity = int('voucherValidityDays', 1, 1825, false, 365)
+  const maxPerMonth = int('maxPerMonthPerStudent', 1, 100, false, null)
+  const validity = int('voucherValidityDays', 1, 3650, false, 365)
   const displayOrder = int('displayOrder', 0, 9999, false, 100)
 
-  const isActive = asBool(b.isActive, true)
-  if (isActive === undefined) fields.isActive = 'The is active field must be true or false.'
-  const consent = asBool(b.requiresParentConsent, false)
-  if (consent === undefined) {
-    fields.requiresParentConsent = 'The requires parent consent field must be true or false.'
-  }
+  // Off by default: the admin activates the catalogue (P07-14, U-OP-09).
+  const isActive = asBool(b.isActive, false)
+  if (isActive === undefined) fields.isActive = MSG.isActiveInvalid
 
   if (Object.keys(fields).length > 0) return { ok: false, fields }
   return {
@@ -145,7 +200,8 @@ export function parseHadiahInput(body: unknown): ParsedInput {
       imageUrl,
       termsText,
       isActive: isActive as boolean,
-      requiresParentConsent: consent as boolean,
+      // No consent status exists (FR-GM-21.3): a posted value is ignored.
+      requiresParentConsent: false,
     },
   }
 }
@@ -170,25 +226,23 @@ function rawText(v: unknown): string | undefined {
   return undefined
 }
 
-/** #5 (BR-M15-11, BR-M15-12): the action, the ids and the action's value. */
+/** #5 (BR-M15-11, BR-M15-12): the action, the ids (numbers or digit strings) and the action's value. */
 export function parseBulk(body: unknown): ParsedBulk {
   const fields: Fields = {}
   const b: Raw = typeof body === 'object' && body !== null ? (body as Raw) : {}
 
   const action = b.action
-  if (isBlank(action)) fields.action = 'The action field is required.'
-  else if (!BULK_ACTIONS.includes(action as BulkAction)) {
-    fields.action = 'The selected action is invalid.'
-  }
+  if (isBlank(action)) fields.action = MSG.actionRequired
+  else if (!BULK_ACTIONS.includes(action as BulkAction)) fields.action = MSG.actionInvalid
 
   const ids: number[] = []
   if (!Array.isArray(b.ids) || b.ids.length === 0) {
-    fields.ids = 'The ids field is required.'
+    fields.ids = MSG.idsRequired
   } else {
     for (const v of b.ids as unknown[]) {
       const n = asInt(v)
       if (n === undefined || n < 1) {
-        fields.ids = 'The ids field must contain positive integers.'
+        fields.ids = MSG.idsInvalid
         break
       }
       ids.push(n)
@@ -203,18 +257,15 @@ export function parseBulk(body: unknown): ParsedBulk {
       return { ok: true, change: { action: action as 'activate' | 'deactivate' | 'delete' }, ids }
     case 'set_stock': {
       const t = rawText(b.stockValue)
-      if (t === undefined || (t !== '' && (!/^\d+$/.test(t) || Number(t) > 999_999))) {
-        return { ok: false, fields: { stockValue: 'The stock value must be 0-999999 or empty.' } }
+      if (t === undefined || (t !== '' && (!/^\d+$/.test(t) || Number(t) > 999_999_999))) {
+        return { ok: false, fields: { stockValue: MSG.stockValue } }
       }
       return { ok: true, change: { action: 'set_stock', value: t === '' ? null : Number(t) }, ids }
     }
     case 'set_max_per_month': {
       const t = rawText(b.maxPerMonthValue)
-      if (t === undefined || (t !== '' && (!/^\d+$/.test(t) || Number(t) > 99))) {
-        return {
-          ok: false,
-          fields: { maxPerMonthValue: 'The max per month value must be 0-99 or empty.' },
-        }
+      if (t === undefined || (t !== '' && (!/^\d+$/.test(t) || Number(t) > 100))) {
+        return { ok: false, fields: { maxPerMonthValue: MSG.maxPerMonthValue } }
       }
       const n = t === '' ? 0 : Number(t)
       return { ok: true, change: { action: 'set_max_per_month', value: n === 0 ? null : n }, ids }
@@ -224,12 +275,7 @@ export function parseBulk(body: unknown): ParsedBulk {
       // BR-M15-11: `parseInt(text, 10)` semantics (leading integer; "50%" -> 50, "+50abc" -> 50).
       const pct = t === undefined ? Number.NaN : Number.parseInt(t, 10)
       if (Number.isNaN(pct) || pct === 0 || pct < -90 || pct > 500) {
-        return {
-          ok: false,
-          fields: {
-            tokenCostDeltaPct: 'The token cost adjustment must be between -90 and 500 (not 0).',
-          },
-        }
+        return { ok: false, fields: { tokenCostDeltaPct: MSG.tokenCostDeltaPct } }
       }
       return { ok: true, change: { action: 'set_token_cost', pct }, ids }
     }
@@ -242,12 +288,7 @@ export function parseVoucherCode(
 ): { ok: true; code: string } | { ok: false; fields: Fields } {
   const raw = typeof body === 'object' && body !== null ? (body as Raw).code : undefined
   const code = typeof raw === 'string' ? raw.trim() : ''
-  if (code === '') return { ok: false, fields: { code: 'The code field is required.' } }
-  if (code.length > 100) {
-    return {
-      ok: false,
-      fields: { code: 'The code field must not be greater than 100 characters.' },
-    }
-  }
+  if (code === '') return { ok: false, fields: { code: MSG.codeRequired } }
+  if (code.length > 100) return { ok: false, fields: { code: MSG.codeTooLong } }
   return { ok: true, code }
 }

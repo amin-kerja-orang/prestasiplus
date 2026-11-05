@@ -16,7 +16,6 @@ export interface LockedReward {
   stockQuantity: number | null
   maxPerMonthPerStudent: number | null
   isActive: boolean
-  requiresParentConsent: boolean
 }
 
 export type DrawWithPrizes = Draw & { prizes: DrawPrize[] }
@@ -137,7 +136,7 @@ export class ShopRepository {
     const rows = await this.db.$queryRaw<LockedReward[]>`
       SELECT id, title, vendor, icon_emoji AS "iconEmoji", denomination_rm::float8 AS "denominationRm", token_cost AS "tokenCost",
              stock_quantity AS "stockQuantity", max_per_month_per_student::int AS "maxPerMonthPerStudent",
-             is_active AS "isActive", requires_parent_consent AS "requiresParentConsent"
+             is_active AS "isActive"
         FROM rewards WHERE id = ${id} FOR UPDATE`
     return rows[0] ?? null
   }
