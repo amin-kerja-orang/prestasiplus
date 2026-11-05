@@ -193,4 +193,23 @@ describe('HeatmapService SP fallback (FR-MUR-14-3)', () => {
     })
     expect((await s.forCaller(who)).subjects).toEqual([])
   })
+
+  it('an SP in two editions (same subject, Tingkatan and code) is one tile: pooled counts, highest node id and its title', async () => {
+    const oldEd = sp(601, 2, '2.1.1', 'Tajuk lama', 1)
+    const newEd = sp(655, 2, '2.1.1', 'Tajuk baharu', 1)
+    const s = service({
+      questionRows: [
+        { questionId: '200', attempts: 3, correct: 1 },
+        { questionId: '201', attempts: 2, correct: 2 },
+        { questionId: '202', attempts: 4, correct: 4 },
+      ],
+      tagsByQuestion: { '200': [oldEd], '201': [newEd], '202': [oldEd, newEd] },
+      approvedSp: [oldEd, newEd],
+    })
+    const chapters = (await s.forCaller(who)).subjects[0]?.chapters
+    // question 202 carries both editions of the SP and still counts once
+    expect(chapters).toEqual([
+      { id: '655', number: null, name: '2.1.1 Tajuk baharu', attempts: 9, correct: 7, accuracy: 77.8, state: 'amber' },
+    ])
+  })
 })

@@ -12,6 +12,7 @@ export {
   compareSpRefs,
   levelKey,
   spCounts,
+  spKey,
   spTile,
   type ChapterCount,
   type HeatmapSpInput,

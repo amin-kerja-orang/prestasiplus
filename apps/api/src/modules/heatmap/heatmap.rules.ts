@@ -152,7 +152,15 @@ export function spTile(sp: HeatmapSpRef, count: { attempts: number; correct: num
   )
 }
 
-/** Pooled attempts and right answers per SP: an answered question counts once for each SP tag it carries. */
+/** One SP is one tile across DSKP editions: the key is subject, Tingkatan and printed code. */
+export function spKey(sp: HeatmapSpRef): string {
+  return `${sp.subjectId}:${sp.levelCode}:${sp.code}`
+}
+
+/**
+ * Pooled attempts and right answers per SP key (`spKey`): an answered question counts once for each distinct SP it carries,
+ * even when it is tagged with the same SP of two editions.
+ */
 export function spCounts(
   questionRows: readonly QuestionCount[],
   nodesByQuestion: ReadonlyMap<string, readonly HeatmapSpRef[]>,
@@ -162,11 +170,11 @@ export function spCounts(
   for (const r of questionRows) {
     if (seen.has(r.questionId)) continue
     seen.add(r.questionId)
-    for (const sp of nodesByQuestion.get(r.questionId) ?? []) {
-      const c = out.get(sp.id) ?? { attempts: 0, correct: 0 }
+    for (const key of new Set((nodesByQuestion.get(r.questionId) ?? []).map(spKey))) {
+      const c = out.get(key) ?? { attempts: 0, correct: 0 }
       c.attempts += r.attempts
       c.correct += r.correct
-      out.set(sp.id, c)
+      out.set(key, c)
     }
   }
   return out
@@ -203,16 +211,18 @@ export function buildHeatmap(
     practised.add(c.subjectId)
   }
   const spCount = sp ? spCounts(sp.questionRows, sp.nodesByQuestion) : new Map<string, { attempts: number; correct: number }>()
-  const spNodes: HeatmapSpRef[] = []
+  // Editions: one SP is one tile. The node with the highest numeric id represents it (edition text has no reliable order).
+  const spRep = new Map<string, HeatmapSpRef>()
   if (sp) {
-    const seenSp = new Set<string>()
     for (const n of sp.nodes) {
-      if (seenSp.has(n.id) || !subjectById.has(n.subjectId) || sp.babLevels.has(levelKey(n.subjectId, n.levelCode))) continue
-      seenSp.add(n.id)
-      spNodes.push(n)
-      if ((spCount.get(n.id)?.attempts ?? 0) > 0) practised.add(n.subjectId)
+      if (!subjectById.has(n.subjectId) || sp.babLevels.has(levelKey(n.subjectId, n.levelCode))) continue
+      const key = spKey(n)
+      const cur = spRep.get(key)
+      if (!cur || compareIds(n.id, cur.id) > 0) spRep.set(key, n)
     }
   }
+  const spNodes = [...spRep.values()]
+  for (const n of spNodes) if ((spCount.get(spKey(n))?.attempts ?? 0) > 0) practised.add(n.subjectId)
   const bySubject = new Map<string, HeatmapChapterRef[]>()
   const seen = new Set<string>()
   for (const c of chapters) {
@@ -238,7 +248,7 @@ export function buildHeatmap(
     name: ref.name,
     chapters: [
       ...(bySubject.get(ref.id) ?? []).sort(compareChapterRefs).map((c) => chapterTile(c, countById.get(c.id))),
-      ...(spBySubject.get(ref.id) ?? []).sort(compareSpRefs).map((n) => spTile(n, spCount.get(n.id))),
+      ...(spBySubject.get(ref.id) ?? []).sort(compareSpRefs).map((n) => spTile(n, spCount.get(spKey(n)))),
     ],
   }))
 }
