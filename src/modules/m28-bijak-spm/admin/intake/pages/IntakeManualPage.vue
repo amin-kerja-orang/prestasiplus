@@ -87,7 +87,7 @@ async function submit(): Promise<void> {
     layout="form"
     title="Tulis Soalan Manual"
     subtitle="Taip soalan, pilihan dan skema sendiri tanpa PDF. Soalan dihantar untuk semakan seperti kertas yang diekstrak."
-    back-label="Kembali ke Senarai Ekstrak"
+    back-label="Kembali ke Import &amp; Semakan"
     :back-to="INTAKE_LIST_PATH"
     data-testid="intake-manual-page"
   >

@@ -165,7 +165,7 @@ async function useSample(): Promise<void> {
     layout="form"
     title="Muat Naik Kertas"
     subtitle="Pilih PDF kertas SPM. Soalan dan skema diekstrak untuk anda semak."
-    back-label="Kembali ke Senarai Ekstrak"
+    back-label="Kembali ke Import &amp; Semakan"
     :back-to="INTAKE_LIST_PATH"
     data-testid="intake-upload-page"
   >

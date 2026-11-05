@@ -24,6 +24,7 @@ import {
   DsPage,
   DsStatRow,
   DsStatusBadge,
+  DsText,
   type CardField,
   type StatItem,
 } from '@/ds'
@@ -54,6 +55,10 @@ const router = useRouter()
 const flash = useFlash()
 
 const applied = computed(() => queryText(route.query.status))
+/** Field 12-01: only the OPT-KIRIMAN-STATUS options filter; `Jumlah` is a tile key, not an option. */
+const invalidStatus = computed(
+  () => applied.value !== '' && !SUBMISSION_STATUS_OPTIONS.includes(applied.value as SubmissionStatus),
+)
 const page = computed(() => pageOf(route.query.page))
 const status = ref(applied.value)
 watch(applied, (value) => {
@@ -62,39 +67,48 @@ watch(applied, (value) => {
 
 const { data, error, reload } = useApi(
   async (signal) => {
-    const [list, counts] = await Promise.all([
-      fetchSubmissionItems({ status: applied.value || null, page: page.value, signal }),
-      fetchSubmissionCounts(signal),
-    ])
+    if (invalidStatus.value) return null
+    const status = applied.value as SubmissionStatus | ''
+    const list = await fetchSubmissionItems({ status: status || null, page: page.value, signal })
     const files = await fetchBatchFiles(
       list.data.map((row) => row.batchId),
       signal,
     )
-    return { list, counts, files }
+    return { list, files, status }
   },
   () => [route.query.status, route.query.page],
 )
 
-const counts = computed(() => data.value?.counts ?? null)
-const firstLoad = computed(() => data.value === null && error.value === null)
-/** Field 12-01: the server answers 422 for a status that is not an OPT-KIRIMAN-STATUS key. */
+// The tiles ignore the filter (FR-ADM-Q12.1), so they load once and survive a failed list.
+const { data: counts, error: countsError } = useApi((signal) => fetchSubmissionCounts(signal))
+
+const firstLoad = computed(() => data.value === null && error.value === null && !invalidStatus.value)
 const errorText = computed(() =>
-  error.value instanceof ApiError && error.value.status === 422
+  invalidStatus.value || (error.value instanceof ApiError && error.value.status === 422)
     ? 'Nilai penapis tidak sah.'
     : LOAD_ERROR,
 )
 
+// A page past the end (the list shrank since the link was made): go to the last page.
+watch(data, (result) => {
+  if (!result || result.list.data.length > 0 || page.value === 1) return
+  const last = Math.ceil(result.list.meta.totalItems / SUBMISSION_PAGE_SIZE)
+  if (last > 0) goToPage(last, true)
+})
+
+const tile = (value: number | undefined): string => (value === undefined ? '-' : formatNumber(value))
+
 const countItems = computed<StatItem[]>(() => [
-  { key: 'all', label: 'Jumlah', value: formatNumber(counts.value?.all ?? 0), icon: 'stack', accent: 'action' },
-  { key: 'pending', label: 'Pending', value: formatNumber(counts.value?.pending ?? 0), icon: 'clock', accent: 'trial' },
+  { key: 'all', label: 'Jumlah', value: tile(counts.value?.all), icon: 'stack', accent: 'action' },
+  { key: 'pending', label: 'Pending', value: tile(counts.value?.pending), icon: 'clock', accent: 'trial' },
   {
     key: 'processing',
     label: 'Processing',
-    value: formatNumber(counts.value?.processing ?? 0),
+    value: tile(counts.value?.processing),
     icon: 'gear',
     accent: 'friend',
   },
-  { key: 'done', label: 'Selesai', value: formatNumber(counts.value?.done ?? 0), icon: 'check-circle', accent: 'win' },
+  { key: 'done', label: 'Selesai', value: tile(counts.value?.done), icon: 'check-circle', accent: 'win' },
 ])
 
 async function submitFilter(): Promise<void> {
@@ -111,8 +125,8 @@ async function resetFilter(): Promise<void> {
   await router.push({ path: SUBMISSIONS_PATH })
 }
 
-function goToPage(next: number): void {
-  void router.push({
+function goToPage(next: number, replace = false): void {
+  void router[replace ? 'replace' : 'push']({
     path: SUBMISSIONS_PATH,
     query: { ...(applied.value ? { status: applied.value } : {}), page: String(next) },
   })
@@ -133,8 +147,8 @@ const tableRows = computed<SubmissionTableRow[]>(() =>
     id: row.id,
     roleLabel: 'Guru',
     title: row.stemPreview,
-    // A filtered list keeps the filter's word: the server reads the live version, the row the latest.
-    statusLabel: (applied.value as SubmissionStatus) || submissionStatusOf(row),
+    // A filtered list keeps its filter's word: the server reads the live version, the row the latest.
+    statusLabel: data.value?.status || submissionStatusOf(row),
     dateText: `${formatEnDate(row.createdAt)} ${formatTime(row.createdAt)}`,
     files: data.value?.files.get(row.batchId) ?? [],
     raw: row,
@@ -154,7 +168,6 @@ const cardFields: CardField[] = [
   { key: 'statusLabel', label: 'Status' },
   { key: 'dateText', label: 'Tarikh' },
 ]
-
 async function download(file: IntakeFileSummary): Promise<void> {
   try {
     const result = await downloadSubmissionFile(file.id)
@@ -178,7 +191,12 @@ const asRow = (row: Record<string, unknown>): SubmissionTableRow => row as Submi
     </template>
 
     <!-- Tiles: 2 per row, 4 from xl. -->
-    <DsStatRow :items="countItems" :cols="4" :loading="!counts" prefix="submissions-count" />
+    <DsStatRow
+      :items="countItems"
+      :cols="4"
+      :loading="!counts && !countsError"
+      prefix="submissions-count"
+    />
 
     <!-- Filter (the URL is the state). -->
     <DsFilterBar
@@ -206,7 +224,7 @@ const asRow = (row: Record<string, unknown>): SubmissionTableRow => row as Submi
     </DsFilterBar>
 
     <DsLoadError
-      v-if="error"
+      v-if="error || invalidStatus"
       :message="errorText"
       testid="submissions-error"
       retry-testid="submissions-retry"
@@ -284,19 +302,25 @@ const asRow = (row: Record<string, unknown>): SubmissionTableRow => row as Submi
           Semak
         </UButton>
       </template>
-      <template #card-actions="{ row }">
+      <template #card="{ row }">
+        <DsText variant="label" tone="highlighted" wrap="anywhere">{{ asRow(row).title }}</DsText>
+        <DsText variant="caption" tone="muted">
+          {{ asRow(row).roleLabel }} · {{ asRow(row).statusLabel }} · {{ asRow(row).dateText }}
+        </DsText>
         <UButton
           v-for="file in asRow(row).files"
           :key="file.id"
           type="button"
           color="neutral"
           variant="link"
-          class="max-w-full min-h-11 justify-start"
+          class="max-w-full min-w-0 min-h-11 justify-start"
           data-testid="submission-file"
           @click="download(file)"
         >
           <span class="truncate">{{ file.originalName }}</span>
         </UButton>
+      </template>
+      <template #card-actions="{ row }">
         <UButton
           :to="submissionReviewPath(asRow(row).raw.batchId)"
           color="neutral"

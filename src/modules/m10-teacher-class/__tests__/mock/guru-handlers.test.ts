@@ -14,7 +14,7 @@ import type { MockRuntime } from '@/mock/index'
 import { users } from '@/modules/m01-authentication/mock'
 import { schools } from '@/modules/m02-users-schools/mock'
 import { curriculum } from '@/modules/m03-curriculum/mock'
-import { IMPORT_TEMPLATE_CSV, questions } from '@/modules/m04-question-bank/mock'
+import { IMPORT_TEMPLATE_CSV, questions, submissions } from '@/modules/m04-question-bank/mock'
 import { practice } from '@/modules/m05-practice/mock'
 import { teacherWallet } from '@/modules/m14-gamification/mock'
 
@@ -1392,12 +1392,7 @@ describe('#59, #60, #63 gallery, question papers, Audio KBAT templates (S21, S22
       'skema.docx',
       'data.xlsx',
     ])
-    const m04 = await call<{ data: { id: number; status: string }[] }>(
-      'GET',
-      '/api/question-submissions',
-      { as: ADMIN },
-    )
-    expect(m04.body.data.map((s) => s.id)).toContain(a.body.data.id as number)
+    expect(submissions.get(a.body.data.id as number)?.status).toBe('pending')
   })
 
   it('#60 an empty level, year and note are optional (the year falls back to the clock)', async () => {

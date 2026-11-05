@@ -4,7 +4,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
 
 import { useApi, useFlash } from '@/composables'
-import { DsDataTable, DsEmptyState, DsFilterBar, DsNativeSelect, DsPage, DsStatusBadge, useConfirm } from '@/ds'
+import { DsDataTable, DsEmptyState, DsFilterBar, DsNativeSelect, DsPage, DsStatusBadge, useConfirm, type CardField } from '@/ds'
 
 import { bijakAdminServer } from '../../../server/client'
 import { isUnavailable, UNAVAILABLE_TITLE } from '../../../server/errors'
@@ -80,6 +80,13 @@ async function cancel(row: Row): Promise<void> {
   }
   await reload()
 }
+
+const CARD_FIELDS: CardField[] = [
+  { key: 'statusLabel', label: 'Status' },
+  { key: 'questionCount', label: 'Bilangan Soalan' },
+]
+/** The card slot passes the row object. */
+const asRow = (row: Record<string, unknown>): Row => row as Row
 
 // V2 "Import & Semakan" > "Kelompok Item": Fail Sumber, Subjek, Bilangan Soalan, Disemak, Status, Semak.
 const COLUMNS: TableColumn<Row>[] = [
@@ -172,8 +179,9 @@ const COLUMNS: TableColumn<Row>[] = [
       caption="Kelompok item"
       :page-size="20"
       card-title="title"
+      :card-fields="CARD_FIELDS"
       :loading="data === null && error === null"
-      :error="error ? 'Tidak dapat memuatkan senarai ekstrak.' : undefined"
+      :error="error ? 'Tidak dapat memuatkan kelompok item.' : undefined"
       :filtered="filtered"
       empty-title="Tiada kelompok item lagi."
       data-testid="intake-table"
@@ -222,9 +230,23 @@ const COLUMNS: TableColumn<Row>[] = [
           type="button"
           variant="ghost"
           color="error"
-          class="ml-2"
           data-testid="batch-cancel"
           @click="cancel(row.original)"
+        >
+          Batalkan
+        </UButton>
+      </template>
+      <template #card-actions="{ row }">
+        <UButton :to="intakeReviewPath(asRow(row).id)" variant="outline" color="neutral">
+          Semak
+        </UButton>
+        <UButton
+          v-if="cancellable(asRow(row))"
+          type="button"
+          variant="ghost"
+          color="error"
+          data-testid="batch-cancel"
+          @click="cancel(asRow(row))"
         >
           Batalkan
         </UButton>

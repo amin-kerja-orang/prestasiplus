@@ -72,7 +72,8 @@ async function loginTo(request: APIRequestContext): Promise<string> {
 /** Sends a teacher paper and waits until the server has read its items. */
 async function sendPaper(request: APIRequestContext, csrf: string): Promise<Sent> {
   const token = `KIRIMAN${String(Date.now())}`
-  const fileName = `${token}.pdf`
+  // A long name: the mobile card must not push the page sideways.
+  const fileName = `${token}-kertas-percubaan-sains-tingkatan-empat-penggal-kedua.pdf`
   const sent = await request.post('/api/guru/question-papers', {
     headers: { 'x-csrf-token': csrf },
     multipart: {

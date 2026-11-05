@@ -536,7 +536,7 @@ async function submit(): Promise<void> {
           : `${batch.fileName}${batch.year ? ` · ${batch.year}` : ''}`
         : undefined
     "
-    back-label="Kembali ke Senarai Ekstrak"
+    back-label="Kembali ke Import &amp; Semakan"
     :back-to="INTAKE_LIST_PATH"
     data-testid="intake-review-page"
   >

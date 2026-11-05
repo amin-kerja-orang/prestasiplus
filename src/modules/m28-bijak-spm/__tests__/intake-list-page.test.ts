@@ -116,3 +116,29 @@ describe('IntakeListPage (R1-ADM-Q-07)', () => {
     expect(server.cancelIntakeBatch).not.toHaveBeenCalled()
   })
 })
+
+describe('declaration (field 08-12)', () => {
+  it('Tulis Soalan Manual refuses without the tick, names it, and goes on with it', async () => {
+    const createManualBatch = vi.fn().mockResolvedValue({ id: '9' })
+    Object.assign(server, { createManualBatch, dskpUnits: vi.fn().mockResolvedValue([]) })
+    const { default: Page } = await import('../admin/intake/pages/IntakeManualPage.vue')
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/:rest(.*)*', component: { template: '<div />' } }],
+    })
+    await router.push('/admin/spm/soalan/manual')
+    wrapper = mount(Page, { global: { plugins: [router] } })
+    await flushPromises()
+    await wrapper.get('[data-testid=intake-source]').setValue('Sekolah Contoh')
+    await wrapper.get('[data-testid=intake-copyright]').setValue('sendiri')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+    expect(wrapper.text()).toContain('Pengisytiharan sumber diperlukan.')
+    expect(createManualBatch).not.toHaveBeenCalled()
+    await wrapper.get('[data-testid=intake-declaration]').trigger('click')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+    expect(wrapper.text()).not.toContain('Pengisytiharan sumber diperlukan.')
+    expect(createManualBatch).toHaveBeenCalledTimes(1)
+  })
+})

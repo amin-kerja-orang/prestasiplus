@@ -182,12 +182,42 @@ describe('SubmissionListPage (R1-ADM-Q-12)', () => {
     expect(w.find('[data-testid=submissions-error]').exists()).toBe(false)
   })
 
-  it('names a refused filter value (field 12-01)', async () => {
+  it.each(['done', 'Jumlah'])('names a status outside the options (%s) and does not ask for it', async (status) => {
+    const w = await render(`/admin/question-submissions?status=${status}`)
+    expect(w.get('[data-testid=submissions-error]').text()).toContain('Nilai penapis tidak sah.')
+    expect(api.fetchSubmissionItems).not.toHaveBeenCalled()
+    expect(w.get('[data-testid=submissions-count-all]').text()).toBe('6Jumlah')
+  })
+
+  it('names a 422 from the server too', async () => {
     api.fetchSubmissionItems.mockRejectedValue(
       new ApiError({ status: 422, code: 'VALIDATION_ERROR', message: 'x' }),
     )
-    const w = await render('/admin/question-submissions?status=done')
+    const w = await render('/admin/question-submissions?status=Pending')
     expect(w.get('[data-testid=submissions-error]').text()).toContain('Nilai penapis tidak sah.')
+  })
+
+  it('keeps the tiles when the list fails, and reads them once across a filter', async () => {
+    api.fetchSubmissionItems.mockRejectedValueOnce(new Error('network'))
+    const w = await render()
+    expect(w.get('[data-testid=submissions-count-all]').text()).toBe('6Jumlah')
+    await router.push('/admin/question-submissions?status=Pending')
+    await flushPromises()
+    expect(api.fetchSubmissionCounts).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows a dash on the tiles when they fail, with the list still there', async () => {
+    api.fetchSubmissionCounts.mockRejectedValue(new Error('network'))
+    const w = await render()
+    expect(w.get('[data-testid=submissions-count-all]').text()).toBe('-Jumlah')
+    expect(w.text()).toContain('Soalan ujian 1')
+  })
+
+  it('goes to the last page when the page is past the end', async () => {
+    api.fetchSubmissionItems.mockResolvedValueOnce(result([], 20)).mockResolvedValue(result([item('1')], 20))
+    await render('/admin/question-submissions?status=Pending&page=2')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({ status: 'Pending', page: '1' })
   })
 
   it('offers a retry after any other load failure', async () => {
