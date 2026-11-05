@@ -88,6 +88,7 @@ export class ServabilityService {
       const gid = live.get(id)?.groupId
       return gid ? (groups.get(gid) ?? null) : null
     }
+    const gaps = await this.questions.incompleteGroups([...new Set(records.flatMap((r) => (r.groupId === null ? [] : [r.groupId])))])
     const out = new Map<string, ServabilityFacts>()
     for (const [id, l] of latest) {
       const v = (live.get(id) ?? l).version
@@ -97,6 +98,7 @@ export class ServabilityService {
         level: v.educationLevelId ? (levels.get(v.educationLevelId) ?? null) : null,
         subject: subjects.get(`${v.subjectId ?? ''}:${v.educationLevelId ?? ''}`) ?? null,
         group: bridgeGroupOf(id),
+        ...((gid) => (gid != null && gaps.has(gid) ? { groupIncomplete: gaps.get(gid) as number } : {}))(live.get(id)?.groupId),
         linkedAssets,
         outside: own.outside,
         fileTokens: tokens,

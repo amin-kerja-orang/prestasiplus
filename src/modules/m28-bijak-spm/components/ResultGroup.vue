@@ -1,58 +1,26 @@
 <script setup lang="ts">
 /**
  * A stimulus group in the Semakan list: the stimuli are shown ONCE with every member question under them
- * (D90). From 1024px a pinned, self-scrolling left pane; below it a chip "Lihat {label}" that opens a sheet
- * (D83 D-3). The member cards go in the default slot. Only one tree is rendered at a time.
+ * (D90), through the one shared StimulusGroup (pinned pane from 1024px, chip + sheet below it). No group id: the sheet starts closed on the result page.
+ * The member cards go in the default slot.
  */
-import { ref } from 'vue'
-
-import { useMedia } from '@/ds/useMedia'
+import { computed } from 'vue'
 
 import type { StimulusDef } from '../domain/types'
-import { groupLabel } from '../lib/stimulus-data'
-import { StimulusChip, StimulusStack, qdCopy } from '../../../components/question-display'
+import { DsStack } from '@/ds'
+
+import { groupLabel, toStimulusData } from '../lib/stimulus-data'
+import { StimulusGroup } from '../../../components/question-display'
 
 const props = defineProps<{ groupId: string; stimuli: readonly StimulusDef[] }>()
-const wide = useMedia('(min-width: 1024px)')
-const open = ref(false)
 const label = groupLabel(props.stimuli)
+const data = computed(() => props.stimuli.map(toStimulusData))
 </script>
 
 <template>
-  <section
-    v-if="wide"
-    class="grid grid-cols-2 items-start gap-6"
-    :aria-label="label"
-    :data-group="groupId"
-    data-testid="result-group"
-    data-layout="split"
-  >
-    <aside
-      class="sticky top-20 flex max-h-screen flex-col gap-2 self-start overflow-y-auto"
-      :aria-label="label"
-      data-testid="result-group-pane"
-    >
-      <StimulusStack :stimuli="stimuli" />
-    </aside>
-    <div class="flex min-w-0 flex-col gap-3" data-testid="result-group-members"><slot /></div>
-  </section>
-
-  <section
-    v-else
-    class="flex flex-col gap-3"
-    :aria-label="label"
-    :data-group="groupId"
-    data-testid="result-group"
-    data-layout="stacked"
-  >
-    <div class="sticky top-0 z-10 bg-default py-1">
-      <StimulusChip :stimuli="stimuli" @open="open = true" />
-    </div>
-    <div class="flex min-w-0 flex-col gap-3" data-testid="result-group-members"><slot /></div>
-    <UDrawer v-model:open="open" :title="label" :description="qdCopy.sheetDescription">
-      <template #body>
-        <StimulusStack :stimuli="stimuli" />
-      </template>
-    </UDrawer>
+  <section :aria-label="label" :data-group="groupId" data-testid="result-group">
+    <StimulusGroup :stimuli="data" :hint="false">
+      <DsStack gap="sm" data-testid="result-group-members"><slot /></DsStack>
+    </StimulusGroup>
   </section>
 </template>

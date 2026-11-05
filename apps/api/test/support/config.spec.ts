@@ -40,7 +40,7 @@ describe('GET /api/config/support (public)', () => {
     try {
       expect((await limited.http().get('/api/config/support')).status).toBe(200)
       expect((await limited.http().get('/api/config/support')).status).toBe(200)
-      expectError(await limited.http().get('/api/config/support'), 'RATE_LIMITED', 'Too Many Attempts.')
+      expectError(await limited.http().get('/api/config/support'), 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
     } finally {
       await limited.close()
     }

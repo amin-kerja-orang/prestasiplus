@@ -129,6 +129,13 @@ describe('decideAccess with the prototype scope on', () => {
     })
   })
 
+  it.each(['/guru/profil', '/guru/profil/edit', '/guru/profil/123'])(
+    'lets a teacher open the profile page %s (A1 covers /guru/profil, not a 404)',
+    (path) => {
+      expect(decideAccess(fakeRoute(path, 'x'), session('teacher'))).toEqual({ kind: 'allow' })
+    },
+  )
+
   it('sends a teacher or school admin from the student /dashboard to their own dashboard', () => {
     expect(decideAccess(fakeRoute('/dashboard', 'm05.dashboard'), session('teacher'))).toEqual({
       kind: 'redirect',

@@ -5,6 +5,12 @@ import {
   STIMULUS_MESSAGES,
   StimulusCreateRequestSchema,
   StimulusGroupCreateRequestSchema,
+  StimulusGroupDetailSchema,
+  StimulusGroupMergeRequestSchema,
+  StimulusGroupMoveRequestSchema,
+  StimulusGroupPublishGateErrorSchema,
+  StimulusGroupRetireRequestSchema,
+  StimulusGroupRetireResultSchema,
   StimulusGroupListQuerySchema,
   StimulusListQuerySchema,
   StimulusGroupReorderRequestSchema,
@@ -28,6 +34,17 @@ describe('R1-T32 stimulus request schemas (D90)', () => {
       { kind: 'graph', imageFileId: 'abc' },
     ]
     for (const body of ok) expect(StimulusCreateRequestSchema.safeParse(body).success, JSON.stringify(body)).toBe(true)
+  })
+
+  it('DM-70: style is optional and nullable, trimmed, 1 to 32 characters, on create and update', () => {
+    expect(StimulusCreateRequestSchema.safeParse({ kind: 'passage', body: { ms: 'x' } }).success).toBe(true)
+    for (const style of ['kotak', 'mono', null]) {
+      expect(StimulusCreateRequestSchema.safeParse({ kind: 'passage', body: { ms: 'x' }, style }).success, String(style)).toBe(true)
+      expect(StimulusUpdateRequestSchema.safeParse({ style }).success, String(style)).toBe(true)
+    }
+    expect(StimulusCreateRequestSchema.safeParse({ kind: 'passage', body: { ms: 'x' }, style: 'k'.repeat(33) }).success).toBe(false)
+    expect(StimulusCreateRequestSchema.safeParse({ kind: 'passage', body: { ms: 'x' }, style: '  ' }).success).toBe(false)
+    expect(StimulusUpdateRequestSchema.safeParse({ style: 'k'.repeat(33) }).success).toBe(false)
   })
 
   it('names the missing content in BM on the right field', () => {
@@ -99,5 +116,56 @@ describe('R1-T49 list queries', () => {
     expect(StimulusGroupListQuerySchema.safeParse({ joinable: 'true' }).success).toBe(true)
     expect(StimulusGroupListQuerySchema.safeParse({ joinable: 'false' }).success).toBe(false)
     expect(StimulusListQuerySchema.safeParse({ joinable: 'true' }).success).toBe(false)
+  })
+})
+
+describe('S1-T01 group action schemas (API-Q-31..35)', () => {
+  it('has the exact BM texts', () => {
+    expect(STIMULUS_MESSAGES.publishNotReady).toBe('Semua soalan dalam kumpulan mesti dihantar untuk semakan dahulu.')
+    expect(STIMULUS_MESSAGES.memberScope).toBe('Subjek dan Tingkatan ahli mesti sama dengan kumpulan.')
+    expect(STIMULUS_MESSAGES.draftExists).toBe('Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi.')
+    expect(STIMULUS_MESSAGES.noDraft).toBe(STIMULUS_MESSAGES.conflict)
+    expect(STIMULUS_MESSAGES.requestInvalid).toBe('Data yang dihantar tidak sah. Sila semak dan cuba lagi.')
+    expect(STIMULUS_MESSAGES.retireConfirm).toBe(STIMULUS_MESSAGES.requestInvalid)
+    expect(STIMULUS_MESSAGES.mergeSame).toBe(STIMULUS_MESSAGES.requestInvalid)
+    expect(STIMULUS_MESSAGES.groupDraftCreated('12')).toBe('Draf kumpulan #12 dicipta.')
+  })
+  it('create/update accept the optional scope keys and still refuse a bad kertas', () => {
+    const base = { stimulusIds: ['1'] }
+    expect(StimulusGroupCreateRequestSchema.safeParse(base).success).toBe(true)
+    expect(StimulusGroupCreateRequestSchema.safeParse({ ...base, subjectId: '3', educationLevelId: '2', kertas: '1' }).success).toBe(true)
+    expect(StimulusGroupCreateRequestSchema.safeParse({ ...base, kertas: null }).success).toBe(true)
+    expect(fieldsOf(StimulusGroupCreateRequestSchema.safeParse({ ...base, kertas: '9' }))).toEqual({ kertas: 'Kertas tidak sah.' })
+    expect(StimulusGroupUpdateRequestSchema.safeParse({ subjectId: '3' }).success).toBe(true)
+    expect(StimulusGroupUpdateRequestSchema.safeParse({ kertas: '2' }).success).toBe(true)
+    expect(fieldsOf(StimulusGroupUpdateRequestSchema.safeParse({}))).toEqual({ _: STIMULUS_MESSAGES.noChange })
+  })
+  it('detail carries subjectId, educationLevelId, kertas and draftOfGroupId, all optional', () => {
+    const d = { id: '1', label: null, scope: 'section', stimuli: [{ id: '1', kind: 'passage', label: 'P', body: null, imageId: null, alt: null }], questionIds: [], members: [] }
+    expect(StimulusGroupDetailSchema.safeParse(d).success).toBe(true)
+    expect(StimulusGroupDetailSchema.safeParse({ ...d, subjectId: '2', educationLevelId: '4', kertas: '2', draftOfGroupId: '7' }).success).toBe(true)
+    expect(StimulusGroupDetailSchema.safeParse({ ...d, subjectId: null, educationLevelId: null, kertas: null, draftOfGroupId: null }).success).toBe(true)
+  })
+  it('retire needs confirm: true exactly', () => {
+    expect(StimulusGroupRetireRequestSchema.safeParse({ confirm: true }).success).toBe(true)
+    expect(fieldsOf(StimulusGroupRetireRequestSchema.safeParse({ confirm: false }))).toEqual({ confirm: STIMULUS_MESSAGES.retireConfirm })
+    expect(StimulusGroupRetireRequestSchema.safeParse({}).success).toBe(false)
+    expect(StimulusGroupRetireRequestSchema.safeParse({ confirm: true, x: 1 }).success).toBe(false)
+    expect(StimulusGroupRetireResultSchema.safeParse({ archived: 2, affectedPapers: [{ id: '5', title: 'Kertas A' }] }).success).toBe(true)
+  })
+  it('move needs toGroupId and is strict', () => {
+    expect(StimulusGroupMoveRequestSchema.safeParse({ toGroupId: '9' }).success).toBe(true)
+    expect(StimulusGroupMoveRequestSchema.safeParse({}).success).toBe(false)
+    expect(StimulusGroupMoveRequestSchema.safeParse({ toGroupId: '9', extra: 1 }).success).toBe(false)
+  })
+  it('merge needs two different ids', () => {
+    expect(StimulusGroupMergeRequestSchema.safeParse({ fromGroupId: '1', intoGroupId: '2' }).success).toBe(true)
+    expect(fieldsOf(StimulusGroupMergeRequestSchema.safeParse({ fromGroupId: '1', intoGroupId: '1' }))).toEqual({ intoGroupId: STIMULUS_MESSAGES.mergeSame })
+    expect(StimulusGroupMergeRequestSchema.safeParse({ fromGroupId: '1' }).success).toBe(false)
+  })
+  it('publish gate error body shape', () => {
+    const body = { error: { code: 'VALIDATION_ERROR', message: 'x', details: { gate: [{ questionId: '4', message: 'Soalan 1: Kunci jawapan diperlukan.' }] } } }
+    expect(StimulusGroupPublishGateErrorSchema.safeParse(body).success).toBe(true)
+    expect(StimulusGroupPublishGateErrorSchema.safeParse({ error: { code: 'CONFLICT', message: 'x', details: { gate: [] } } }).success).toBe(false)
   })
 })
