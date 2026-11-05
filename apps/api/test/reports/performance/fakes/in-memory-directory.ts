@@ -30,6 +30,11 @@ export class InMemoryDirectory implements DirectoryPort {
     return this
   }
 
+  /** Synchronous school of a pupil (the answer fake derives its school filter from it). */
+  schoolOf(id: string): string | null {
+    return this.pupils.get(id)?.schoolId ?? null
+  }
+
   get schoolList(): SchoolRef[] {
     return [...this.schoolRows.values()]
   }

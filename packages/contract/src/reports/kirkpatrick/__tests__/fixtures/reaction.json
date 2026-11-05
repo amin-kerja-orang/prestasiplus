@@ -2,5 +2,48 @@
   "npsStudent": 8.4,
   "npsTeacher": 6.5,
   "npsAdmin": 9.6,
-  "satisfaction": 4.6
+  "satisfaction": 4.6,
+  "responses": 12,
+  "usability": 4.2,
+  "relevance": null,
+  "promoters": 6,
+  "detractors": 3,
+  "writtenComments": 2,
+  "latestComments": [
+    {
+      "comment": "Contoh komen.",
+      "nps": 9,
+      "satisfaction": 5,
+      "date": "2026-10-18"
+    }
+  ],
+  "mood": {
+    "positivePct": 75,
+    "checkIns": 4,
+    "engaged": 3,
+    "pupils": 20,
+    "last7Days": 2,
+    "rows": [
+      {
+        "mood": "Gembira",
+        "count": 2,
+        "pct": 50
+      },
+      {
+        "mood": "Okay",
+        "count": 1,
+        "pct": 25
+      },
+      {
+        "mood": "Sedih",
+        "count": 1,
+        "pct": 25
+      },
+      {
+        "mood": "Tertekan",
+        "count": 0,
+        "pct": 0
+      }
+    ]
+  }
 }
