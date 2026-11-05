@@ -359,12 +359,24 @@ export class QuestionReportsService {
 export const PLAIN_PREVIEW_MAX = 200
 
 /** Plain-text preview of a stem that may hold markup: tags dropped, common entities decoded, whitespace collapsed, capped with an ellipsis. */
+/**
+ * Markup the stems use (rich-text editor output). Only these tag names count as markup, so a maths comparison such as
+ * `x<y dan y>3` is never taken for a tag.
+ */
+const PREVIEW_TAG =
+  /<\/?(?:p|br|b|i|u|s|em|strong|span|div|sub|sup|small|mark|ul|ol|li|table|thead|tbody|tfoot|tr|td|th|img|a|h[1-6]|blockquote|pre|code|hr|figure|figcaption|math|mi|mn|mo|mrow|msup|msub|mfrac|msqrt|semantics|annotation)(?=[\s/>])[^<>]*>/gi
+
+/** A numeric entity outside the Unicode range stays as written (never throws). */
+function codePointOr(cp: number, raw: string): string {
+  return Number.isInteger(cp) && cp >= 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : raw
+}
+
 export function plainPreview(html: string, max: number = PLAIN_PREVIEW_MAX): string {
   const text = html
-    .replace(/<\/?[a-zA-Z][^<>]*>/g, ' ')
+    .replace(PREVIEW_TAG, ' ')
     .replace(/&nbsp;/g, ' ')
-    .replace(/&#(\d+);/g, (_, d: string) => String.fromCodePoint(Number(d)))
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, h: string) => String.fromCodePoint(Number.parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (m, d: string) => codePointOr(Number(d), m))
+    .replace(/&#x([0-9a-fA-F]+);/g, (m, h: string) => codePointOr(Number.parseInt(h, 16), m))
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')

@@ -622,5 +622,8 @@ describe('plainPreview (S5-T06 DD1)', () => {
     expect(plainPreview('a'.repeat(250))).toHaveLength(200)
     expect(plainPreview('a'.repeat(250)).endsWith('…')).toBe(true)
     expect(plainPreview('<p> </p>')).toBe('')
+    expect(plainPreview('Jika x<y dan y>3, cari x.')).toBe('Jika x<y dan y>3, cari x.')
+    expect(plainPreview('<span class="m">a</span><br/>b')).toBe('a b')
+    expect(plainPreview('A &#1114112; &#x110000; B')).toBe('A &#1114112; &#x110000; B')
   })
 })
