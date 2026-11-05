@@ -6,12 +6,13 @@
  *  - short_text: a text area;
  *  - essay / essay_choice: a text area (essay_choice: pick one topic first, via the shared `EssayAnswer`).
  * `table_fill`, and any kind outside the contract's `BijakAttemptLeafKind` (e.g. the BE-42 PKSK leaf
- * `pksk_choice`, which the server never serves to Bijak, #78 78-09), shows the "not yet available" notice
- * instead of falling into the working/numeric inputs.
+ * `pksk_choice`, which the server never serves to Bijak, #78 78-09), renders nothing (as AnswerWidget).
+ * Known gap: `table_fill` has no input here until `TableFillGrid` is wired in (S2-T10 / S3-T04).
  * Every change emits a whole new answer; the page autosaves it.
  */
 import { computed, ref } from 'vue'
 
+import { overLabel, shortLabel, wordCountLabel, wordTargetLabel } from './copy'
 import EssayAnswer from './EssayAnswer.vue'
 import { DsStack, DsText } from '@/ds'
 
@@ -119,10 +120,30 @@ async function dropPhoto(key: string): Promise<void> {
         role="status"
         data-testid="word-count"
       >
-        {{ words }} patah perkataan<template v-if="leaf.wordRange">
-          · sasaran {{ leaf.wordRange.min }}–{{ leaf.wordRange.max }}</template
-        >. Guru akan menilai esei ini mengikut band.
+        {{
+          leaf.wordRange
+            ? wordTargetLabel(words, leaf.wordRange.min, leaf.wordRange.max)
+            : wordCountLabel(words)
+        }}
       </p>
+      <DsText
+        v-if="leaf.kind === 'essay' && leaf.wordRange && words > leaf.wordRange.max"
+        variant="caption"
+        tone="error"
+        role="status"
+        data-testid="word-hint"
+      >
+        {{ overLabel(leaf.wordRange.max) }}
+      </DsText>
+      <DsText
+        v-else-if="leaf.kind === 'essay' && leaf.wordRange && words > 0 && words < leaf.wordRange.min"
+        variant="caption"
+        tone="error"
+        role="status"
+        data-testid="word-hint"
+      >
+        {{ shortLabel(words, leaf.wordRange.min) }}
+      </DsText>
     </template>
 
     <template v-else-if="leaf.kind === 'match_letter'">
@@ -167,16 +188,7 @@ async function dropPhoto(key: string): Promise<void> {
       />
     </template>
 
-    <template v-else-if="leaf.kind !== 'working' && leaf.kind !== 'numeric'">
-      <UAlert
-        color="info"
-        variant="soft"
-        title="Jenis jawapan ini akan tersedia tidak lama lagi."
-        data-testid="kind-unavailable"
-      />
-    </template>
-
-    <template v-else>
+    <template v-else-if="leaf.kind === 'working' || leaf.kind === 'numeric'">
       <fieldset v-if="leaf.kind === 'working'" class="flex flex-col gap-3" :disabled="disabled">
         <legend class="mb-1 text-label text-toned">Jalan kerja</legend>
         <MathField
@@ -263,7 +275,7 @@ async function dropPhoto(key: string): Promise<void> {
         }}</UButton
       >
       <p v-if="photoError" class="text-caption text-error" role="alert">{{ photoError }}</p>
-      <ul v-if="answer.photos?.length" class="flex flex-wrap gap-2" aria-label="Gambar jalan kerja">
+      <ul v-if="answer.photos?.length" class="flex flex-wrap gap-2" :aria-label="leaf.kind === 'drawing' ? 'Gambar jawapan lukisan' : 'Gambar jalan kerja'">
         <li
           v-for="p in answer.photos"
           :key="p.key"

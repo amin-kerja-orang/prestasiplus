@@ -27,7 +27,7 @@ describe('class access matrix', () => {
     ['admin', 'a', true, true],
     ['teacher', 't1', true, true],
     ['teacher', 't2', false, false],
-    ['school_admin', 'sa1', true, false],
+    ['school_admin', 'sa1', true, true], // S10-T04 Change (2): own-school classroom
     ['student', '1', false, false],
     ['ppd_officer', 'o', false, false],
     ['parent', 'p', false, false],
@@ -41,6 +41,9 @@ describe('class access matrix', () => {
     expect(canOpenClassDashboard(ctxOf('admin', 'a'), cls({ kind: 'school_class' }))).toBe(false)
     expect(canOpenClassDashboard(ctxOf('school_admin', 'sa1'), cls({ schoolId: 's2' }))).toBe(false)
     expect(canOpenClassDashboard(ctxOf('admin', 'a'), cls({ schoolId: 's2' }))).toBe(true)
+
+    expect(canOpenClassAnalysis(ctxOf('school_admin', 'sa1'), cls({ schoolId: 's2' }))).toBe(false)
+    expect(canOpenClassAnalysis(ctxOf('school_admin', 'sa1'), cls({ kind: 'school_class' }))).toBe(false)
   })
 })
 

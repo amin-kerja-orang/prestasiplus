@@ -37,3 +37,18 @@ export function trendWindows(now: Date): TrendWindows {
 }
 
 export const inWindow = (at: Date, from: Date, to: Date): boolean => at >= from && at < to
+
+/** Monday (YYYY-MM-DD) of the Malaysian ISO week that holds `day` (YYYY-MM-DD). */
+export function mondayOf(day: string): string {
+  const dow = new Date(`${day}T00:00:00Z`).getUTCDay() // 0 = Sunday
+  return addMytDays(day, -((dow + 6) % 7))
+}
+
+/** The Mondays of the last `n` Malaysian weeks ending with the week of `now`, oldest first. */
+export function lastWeeks(now: Date, n: number): string[] {
+  const current = mondayOf(mytDay(now))
+  return Array.from({ length: n }, (_, i) => addMytDays(current, (i - (n - 1)) * 7))
+}
+
+/** 00:00 +08:00 of a Malaysian date. */
+export const mytMidnight = (day: string): Date => new Date(`${day}T00:00:00+08:00`)

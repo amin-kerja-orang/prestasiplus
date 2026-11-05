@@ -127,14 +127,14 @@ const csrf = z.object({
 const queueParams = z.object({ queueId: IdSchema.meta({ description: 'Queue id (decimal string).' }) })
 const uuidParams = z.object({ uuid: IdSchema })
 
-const UNAUTHORIZED = err('UNAUTHORIZED "Unauthenticated." (no valid session).')
+const UNAUTHORIZED = err('UNAUTHORIZED "Sesi anda telah tamat. Sila log masuk semula." (no valid session).')
 const CSRF_INVALID = err('CSRF_INVALID (missing or wrong X-CSRF-Token).')
 /** 403 of M16-02 and M16-03: an empty body `{}` (SPM below grade 10), or the CSRF error body. */
 const FORBIDDEN_EMPTY = json(
   z.union([BattleEmptyBodySchema, ErrorBodySchema]),
   'Empty body `{}` (SPM requested below Tingkatan 4; the text is not sent), or CSRF_INVALID (ErrorBody).',
 )
-const ADMIN_ONLY = err('FORBIDDEN "This action is unauthorized." (role is not admin).')
+const ADMIN_ONLY = err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not admin).')
 
 const SEARCH_NOTE =
   'D54(d): classmates and opponents are shown by display name (and school) only; no IC, e-mail, phone or birth date is ever returned. D57: this is a student-facing lookup, not the staff-only GET /students/search; it is rate-limited (429 RATE_LIMITED with retryAfter and Retry-After) because it can be used to enumerate students, and it never exposes more than the display fields above.'
@@ -524,7 +524,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     responses: {
       201: json(envelopeOf(BattleTournamentCreatedSchema), 'Created.'),
       401: UNAUTHORIZED,
-      403: err('FORBIDDEN "This action is unauthorized." (role is not admin), or CSRF_INVALID.'),
+      403: err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not admin), or CSRF_INVALID.'),
       422: err('VALIDATION_ERROR with fields.'),
     },
   })

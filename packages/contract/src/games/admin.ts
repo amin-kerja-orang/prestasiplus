@@ -3,7 +3,7 @@ import { GAMES_MESSAGES, gamesCount } from './common'
 
 /**
  * Tetapan Permainan (M16-51, M16-52; API-ADM-08, API-ADM-23; 30 N-05, 48 section 2). Role `admin` only; other roles 403
- * "This action is unauthorized.".
+ * "Anda tidak dibenarkan melakukan tindakan ini.".
  */
 
 /** ERR-REQ-15 in the form 48 section 2 gives it. */
