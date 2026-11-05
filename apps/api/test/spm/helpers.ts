@@ -165,11 +165,12 @@ export async function addQuestion(db: TestDatabase, q: QInit): Promise<string> {
   const type = q.type ?? 'mcq'
   const status = q.status ?? 'approved'
   const subject = (await db.query<{ id: string }>('select id::text from subjects where code = $1', [q.subject]))[0]?.id
-  // R1-B06: the SPM pool is defined by level (T4/T5), not by the `pool` tag. A multiple-choice question that must stay OUT of the
-  // pool (`pool: false`) therefore sits at an active secondary level that is not offered (T1 to T3), unless a level is asked for.
+  // R1-B06, S4-T06: the SPM pool is defined by level, not by the `pool` tag, and every active secondary level (T1 to T5) is offered.
+  // A multiple-choice question that must stay OUT of the pool (`pool: false`) therefore sits at a primary-stage level (Darjah, hidden from
+  // pupils), unless a level is asked for.
   const outOfPool = type === 'mcq' && q.pool === false
   const nonOffered = outOfPool
-    ? ((await db.query<{ code: string }>(`select code from education_levels where stage <> 'primary' and is_active and code not in ('T4','T5') order by sort_order, id limit 1`))[0]?.code ?? 'T4')
+    ? ((await db.query<{ code: string }>(`select code from education_levels where stage = 'primary' order by sort_order, id limit 1`))[0]?.code ?? 'T4')
     : 'T4'
   const levelCode = q.level ?? nonOffered
   const level = (await db.query<{ id: string }>('select id::text from education_levels where code = $1', [levelCode]))[0]?.id

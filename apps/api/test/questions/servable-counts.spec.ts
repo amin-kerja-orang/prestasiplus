@@ -261,12 +261,12 @@ describe('S4-T06: a servable T1 and T5 question are both counted and drawn; a fl
     const [admin] = await t.db.query<{ id: string }>(`select id::text id from users where lower(email) = 'admin@demo.test'`)
     const svc = t.app.get(QuestionsService, { strict: false })
     const actor = { userId: admin?.id as string, role: 'admin' } as const
-    const seeded = (await t.db.query<{ unit_node_id: string | null }>(`select v.unit_node_id::text unit_node_id from question_versions v join education_levels l on l.id = v.education_level_id where v.subject_id = $1 and l.code = 'T4' limit 1`, [id]))[0]
-    const sp = (await t.db.query<{ node_id: string }>(`select s.node_id::text node_id from question_version_sp_nodes s join question_versions v on v.id = s.question_version_id where v.subject_id = $1 limit 1`, [id]))[0]?.node_id
     const levelOf = async (code: string): Promise<string> => (await t.db.query<{ id: string }>(`select id::text id from education_levels where code = $1`, [code]))[0]?.id as string
     const make = async (code: string, text: string): Promise<string> => {
       const levelId = await levelOf(code)
       await t.db.query(`insert into subject_levels (subject_id, education_level_id) values ($1, $2) on conflict do nothing`, [id, levelId])
+      // The DSKP nodes belong to one subject and level: take an SP of THIS level (the service derives its unit); a level with no DSKP nodes carries no tag.
+      const sp = (await t.db.query<{ id: string }>(`select id::text id from curriculum_nodes where subject_id = $1::bigint and education_level_id = $2::bigint and kind = 'sp' order by id limit 1`, [id, levelId]))[0]?.id
       const created = await svc.create(
         {
           subjectId: id,
@@ -280,7 +280,7 @@ describe('S4-T06: a servable T1 and T5 question are both counted and drawn; a fl
           cognitiveLevel: 'mengaplikasi',
           kertas: '1',
           curriculumChapterId: (await t.db.query<{ id: string }>(`select id::text id from chapters where subject_id = $1::bigint and education_level_id = $2::bigint order by id limit 1`, [id, levelId]))[0]?.id,
-          tag: { ...(seeded?.unit_node_id ? { unitId: seeded.unit_node_id } : {}), spIds: sp ? [sp] : [], tp: 3 },
+          tag: { spIds: sp ? [sp] : [], tp: 3 },
         } as never,
         actor,
       )
