@@ -71925,6 +71925,24 @@
           "state": {
             "$ref": "#/components/schemas/IntakeItemState"
           },
+          "source": {
+            "type": "string",
+            "enum": [
+              "guru"
+            ],
+            "description": "S1-T08: `guru` = items of teacher submissions (batch `source = guru`) only. Omitted = every item. Any other value is 422."
+          },
+          "kirimanStatus": {
+            "type": "string",
+            "enum": [
+              "Pending",
+              "Processing",
+              "Selesai",
+              "Ditolak",
+              "Jumlah"
+            ],
+            "description": "S1-T08 (FR-ADM-Q12.1, OPT-KIRIMAN-STATUS): display filter of Kiriman Guru, mapped by the server. Pending = item generated, needs_review or duplicate; Processing = accepted, question not Diluluskan; Selesai = accepted, question Diluluskan; Ditolak = rejected; Jumlah = no filter. Combined with `state` by AND."
+          },
           "batchId": {
             "$ref": "#/components/schemas/Id"
           },
@@ -125644,6 +125662,36 @@
             "required": false,
             "description": "[PROPOSED] Review state of an extracted item (card BE-38): generated = Dijana (nothing needs attention), needs_review = Perlu semakan (any unconfirmed low field, needsManual, or an open exact or near duplicate entry), accepted = Diterima (a Draf question exists), rejected = Ditolak (never becomes a question, kept with a reason), duplicate = Pendua (a person linked it as a duplicate). NOT a question status (D54a).",
             "name": "state",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "guru"
+              ],
+              "description": "S1-T08: `guru` = items of teacher submissions (batch `source = guru`) only. Omitted = every item. Any other value is 422."
+            },
+            "required": false,
+            "description": "S1-T08: `guru` = items of teacher submissions (batch `source = guru`) only. Omitted = every item. Any other value is 422.",
+            "name": "source",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Pending",
+                "Processing",
+                "Selesai",
+                "Ditolak",
+                "Jumlah"
+              ],
+              "description": "S1-T08 (FR-ADM-Q12.1, OPT-KIRIMAN-STATUS): display filter of Kiriman Guru, mapped by the server. Pending = item generated, needs_review or duplicate; Processing = accepted, question not Diluluskan; Selesai = accepted, question Diluluskan; Ditolak = rejected; Jumlah = no filter. Combined with `state` by AND."
+            },
+            "required": false,
+            "description": "S1-T08 (FR-ADM-Q12.1, OPT-KIRIMAN-STATUS): display filter of Kiriman Guru, mapped by the server. Pending = item generated, needs_review or duplicate; Processing = accepted, question not Diluluskan; Selesai = accepted, question Diluluskan; Ditolak = rejected; Jumlah = no filter. Combined with `state` by AND.",
+            "name": "kirimanStatus",
             "in": "query"
           },
           {
