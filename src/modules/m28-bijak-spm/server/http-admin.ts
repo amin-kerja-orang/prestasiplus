@@ -59,6 +59,7 @@ import type {
   ExtractedPaper,
   ManualMeta,
   PageText,
+  IntakeDuplicate,
   IntakeStatus,
   SaveExtractedPayload,
 } from '../admin/intake/types'
@@ -125,6 +126,7 @@ export type BijakAdminMethods = Omit<
   | 'dskpUnits'
   | 'submitForReview'
   | 'decideIntakeItem'
+  | 'resolveIntakeDuplicate'
   | 'acceptUnreviewed'
   | 'listReviewQueue'
   | 'getReviewItem'
@@ -761,6 +763,18 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
   ): Promise<{ ok: boolean; errors: string[]; batch: IntakeBatch }> {
     const res = await this.reviewDecision(questionId, { action: d.action, ...(d.reason ? { reason: d.reason } : {}) })
     return { ok: res.ok, errors: res.errors, batch: await this.getIntakeBatch(id) }
+  }
+
+  /** FR-QA-36: `Pautkan` links the item to what the check found; `Diketepikan` dismisses that one finding. */
+  async resolveIntakeDuplicate(
+    id: string,
+    questionId: string,
+    entry: IntakeDuplicate,
+    action: 'pautkan' | 'ketepikan',
+  ): Promise<IntakeBatch> {
+    const target = entry.matchedQuestionId ? { matchedQuestionId: entry.matchedQuestionId } : { matchedItemId: entry.matchedItemId }
+    await this.send('POST', `/api/intake/items/${enc(questionId)}/duplicate`, action === 'pautkan' ? { decision: 'duplicate', ...target } : { decision: 'not_duplicate', duplicateId: entry.id })
+    return this.getIntakeBatch(id)
   }
 
   /**

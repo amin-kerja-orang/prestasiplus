@@ -203,6 +203,7 @@ export function batchFromWire(b: WireBatchDetail, pages: PageText[], extras: Bat
     provider: review?.provider ?? (manual ? 'manual' : 'server'),
     model: review?.model ?? '-',
     questions: (items ?? []).filter((i) => i.state !== 'rejected').map(questionFromItem),
+    duplicates: Object.fromEntries((items ?? []).filter((i) => i.duplicates.length > 0).map((i) => [i.id, i.duplicates])),
     stimuli: (review?.stimuli ?? []).map(stimulusFromWire),
     unmatched: review?.unmatched ?? [],
     pages,

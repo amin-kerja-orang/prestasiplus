@@ -11,6 +11,7 @@ const server = vi.hoisted(() => ({
   saveExtracted: vi.fn(),
   decideIntakeItem: vi.fn(),
   acceptUnreviewed: vi.fn(),
+  resolveIntakeDuplicate: vi.fn(),
   submitForReview: vi.fn(),
   subjects: () => [],
 }))
@@ -110,6 +111,58 @@ describe('IntakeReviewPage V2 item actions (I6, I7)', () => {
     document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }))
     await flushPromises()
     expect(server.decideIntakeItem).toHaveBeenCalledTimes(1)
+  })
+
+  describe('duplicates and provenance (FR-QA-36, field 09-03)', () => {
+    const withDuplicates = (entries: unknown[]) => {
+      const b = batchOf(1)
+      return { ...b, duplicates: { [b.questions[0]!.id]: entries } }
+    }
+    const open = { id: 'd1', kind: 'near', status: 'open', matchedQuestionId: '77', matchedItemId: null }
+
+    it('shows the finding, blocks Terima while open, and offers both resolutions', async () => {
+      server.getIntakeBatch.mockResolvedValue(withDuplicates([open]))
+      const w = await mountPage()
+      const row = w.get('[data-testid=item-duplicate-d1]')
+      expect(row.text()).toContain('Hampir sama')
+      expect(row.text()).toContain('Terbuka')
+      expect(row.text()).toContain('Soalan #77')
+      expect(w.get('[data-testid=item-accept]').attributes('disabled')).toBeDefined()
+    })
+
+    it.each([
+      ['item-duplicate-link', 'pautkan'],
+      ['item-duplicate-dismiss', 'ketepikan'],
+    ])('%s sends %s and reads the batch back', async (id, action) => {
+      const b = withDuplicates([open])
+      server.getIntakeBatch.mockResolvedValue(b)
+      server.resolveIntakeDuplicate.mockResolvedValue(withDuplicates([{ ...open, status: action === 'pautkan' ? 'linked' : 'dismissed' }]))
+      const w = await mountPage()
+      await w.get(`[data-testid=${id}]`).trigger('click')
+      await flushPromises()
+      expect(server.resolveIntakeDuplicate).toHaveBeenCalledWith(b.id, b.questions[0]!.id, open, action)
+      expect(w.get('[data-testid=item-duplicate-d1]').text()).toContain(action === 'pautkan' ? 'Dipautkan' : 'Diketepikan')
+      expect(w.get('[data-testid=item-accept]').attributes('disabled')).toBeUndefined()
+    })
+
+    it('a variant informs but does not block Terima', async () => {
+      server.getIntakeBatch.mockResolvedValue(withDuplicates([{ ...open, kind: 'variant' }]))
+      const w = await mountPage()
+      expect(w.get('[data-testid=item-duplicate-d1]').text()).toContain('Varian')
+      expect(w.get('[data-testid=item-accept]').attributes('disabled')).toBeUndefined()
+    })
+
+    it('a finding the caller may not read cannot be linked', async () => {
+      server.getIntakeBatch.mockResolvedValue(withDuplicates([{ ...open, matchedQuestionId: null }]))
+      const w = await mountPage()
+      expect(w.find('[data-testid=item-duplicate-link]').exists()).toBe(false)
+      expect(w.find('[data-testid=item-duplicate-dismiss]').exists()).toBe(true)
+    })
+
+    it('shows the provenance of the batch read-only', async () => {
+      const w = await mountPage()
+      expect(w.get('[data-testid=item-provenance]').text()).toContain('Cadangan Provenans')
+    })
   })
 
   it('Terima semua asks first; a refusal sends nothing', async () => {

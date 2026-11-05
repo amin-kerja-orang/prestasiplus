@@ -19,6 +19,7 @@ import { demoBatch } from '../admin/intake/lib/seed'
 import type {
   ExtractedPaper,
   IntakeBatch,
+  IntakeDuplicate,
   IntakeIssue,
   IntakeMeta,
   IntakeQuestion,
@@ -1155,6 +1156,14 @@ export class BijakServer implements BijakApi {
    * decided where it is edited. The mock runs the same unit through the review queue (a one-question
    * batch, so a stimulus group is not decided as a whole here) and removes it from the batch.
    */
+  /** The mock has no duplicate check, so the page never offers this; it only reads the batch back. */
+  async resolveIntakeDuplicate(
+    ...[id]: [id: string, questionId: string, entry: IntakeDuplicate, action: 'pautkan' | 'ketepikan']
+  ): Promise<IntakeBatch> {
+    await this.tick()
+    return this.intakeBatch(id)
+  }
+
   async decideIntakeItem(
     id: string,
     questionId: string,

@@ -157,6 +157,15 @@ export type ManualMeta = Omit<IntakeMeta, 'fileName' | 'fileHash' | 'pageCount'>
   forPaperId?: string
 }
 
+/** One finding of the duplicate check on an item (FR-QA-36). */
+export interface IntakeDuplicate {
+  id: string
+  kind: 'exact' | 'near' | 'variant'
+  status: 'open' | 'linked' | 'dismissed'
+  matchedQuestionId: string | null
+  matchedItemId: string | null
+}
+
 export interface IntakeBatch extends IntakeMeta {
   id: string
   /** Absent on batches saved before manual entry existed (= `pdf`). */
@@ -176,6 +185,8 @@ export interface IntakeBatch extends IntakeMeta {
   stimuli: IntakeStimulus[]
   unmatched: string[]
   pages: PageText[]
+  /** http mode: the duplicate findings by item id. */
+  duplicates?: Record<string, IntakeDuplicate[]>
   /** http mode: the extracted questions could not be read from the server (the page says so). */
   itemsUnavailable?: boolean
   /** http mode: the backend extraction run of this batch (the mock extracts in the browser). */

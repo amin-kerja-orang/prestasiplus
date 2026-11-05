@@ -8,7 +8,7 @@
 import { computed, h, nextTick, onBeforeUnmount, onMounted, ref, watch, type FunctionalComponent } from 'vue'
 
 import { usePageMeta } from '@/composables/usePageMeta'
-import { useConfirm, DsBadge, DsCluster, DsEmptyState, DsPage, DsPanel, DsSplitPane, DsStack, DsStateView, DsStatusBadge, DsText } from '@/ds'
+import { useConfirm, DsBadge, DsCluster, DsEmptyState, DsPage, DsPanel, DsSplitPane, DsStack, DsStateView, DsStatusBadge, DsSurface, DsText } from '@/ds'
 
 import { StimulusView } from '../../../../../components/question-display'
 import { formatDateTime } from '../../../lib/use-bijak'
@@ -28,7 +28,7 @@ import { blankQuestion, nextLabel } from '../domain/blank'
 import { intakeBadge } from '../lib/intake-badge'
 import { INTAKE_LIST_PATH } from '../lib/intake-routes'
 import { getPageImages } from '../lib/page-images'
-import type { IntakeBatch, IntakeIssue, IntakeQuestion, IntakeStimulus } from '../types'
+import type { IntakeBatch, IntakeDuplicate, IntakeIssue, IntakeQuestion, IntakeStimulus } from '../types'
 
 const props = defineProps<{ batchId: string }>()
 const pageMeta = usePageMeta()
@@ -419,6 +419,29 @@ async function settle(): Promise<boolean> {
   return false
 }
 const failMessage = (e: unknown): string => (e instanceof Error && e.message ? e.message : 'Tindakan gagal. Cuba lagi.')
+
+const DUPLICATE_KIND: Record<IntakeDuplicate['kind'], string> = { exact: 'Sama', near: 'Hampir sama', variant: 'Varian' }
+const DUPLICATE_STATUS: Record<IntakeDuplicate['status'], string> = { open: 'Terbuka', linked: 'Dipautkan', dismissed: 'Diketepikan' }
+
+const duplicatesOf = (id: string): IntakeDuplicate[] => batch.value?.duplicates?.[resolveId(id)] ?? []
+/** An open `Sama` or `Hampir sama` blocks Terima until it is resolved (FR-QA-36); a `Varian` is only information. */
+const blockedByDuplicate = (id: string): boolean => duplicatesOf(id).some((d) => d.status === 'open' && d.kind !== 'variant')
+
+async function resolveDuplicate(id: string, entry: IntakeDuplicate, action: 'pautkan' | 'ketepikan'): Promise<void> {
+  const b = batch.value
+  if (!b || deciding.value) return
+  deciding.value = true
+  decisionErrors.value = []
+  decisionNote.value = ''
+  try {
+    if (!(await settle())) return
+    afterDecision(await server.resolveIntakeDuplicate(b.id, resolveId(id), entry, action), id)
+  } catch (e) {
+    decisionErrors.value = [failMessage(e)]
+  } finally {
+    deciding.value = false
+  }
+}
 
 async function accept(id: string): Promise<void> {
   const b = batch.value
@@ -1108,6 +1131,43 @@ async function submit(): Promise<void> {
                         <p class="text-caption text-muted" data-testid="item-counter">
                           Item {{ batch.questions.findIndex((x) => x.id === q.id) + 1 }} / {{ batch.questions.length }}
                         </p>
+                        <DsText variant="caption" tone="muted" data-testid="item-provenance">
+                          Cadangan Provenans: {{ [batch.year ? `Tahun ${batch.year}` : '', batch.source].filter(Boolean).join(' · ') }}
+                        </DsText>
+                        <DsStack v-if="duplicatesOf(q.id).length > 0" as="ul" gap="xs" data-testid="item-duplicates">
+                          <DsSurface v-for="d in duplicatesOf(q.id)" :key="d.id" as="li" level="soft" padding="sm" shadow="none" :data-testid="`item-duplicate-${d.id}`">
+                            <DsCluster gap="xs">
+                            <DsBadge :label="DUPLICATE_KIND[d.kind]" tone="warning" />
+                            <DsBadge :label="DUPLICATE_STATUS[d.status]" tone="neutral" />
+                            <DsText variant="caption" tone="muted">
+                              {{ d.matchedQuestionId ? `Soalan #${d.matchedQuestionId}` : d.matchedItemId ? `Item #${d.matchedItemId}` : '' }}
+                            </DsText>
+                            <template v-if="d.status === 'open'">
+                              <UButton
+                                v-if="d.matchedQuestionId || d.matchedItemId"
+                                type="button"
+                                color="neutral"
+                                variant="soft"
+                                :disabled="deciding"
+                                data-testid="item-duplicate-link"
+                                @click="resolveDuplicate(q.id, d, 'pautkan')"
+                              >
+                                Pautkan
+                              </UButton>
+                              <UButton
+                                type="button"
+                                color="neutral"
+                                variant="soft"
+                                :disabled="deciding"
+                                data-testid="item-duplicate-dismiss"
+                                @click="resolveDuplicate(q.id, d, 'ketepikan')"
+                              >
+                                Diketepikan
+                              </UButton>
+                            </template>
+                            </DsCluster>
+                          </DsSurface>
+                        </DsStack>
                         <DsCluster gap="xs" data-testid="item-nav">
                           <UButton
                             type="button"
@@ -1139,6 +1199,7 @@ async function submit(): Promise<void> {
                             icon="i-ph-check"
                             class="min-h-11"
                             :loading="deciding"
+                            :disabled="blockedByDuplicate(q.id)"
                             data-testid="item-accept"
                             @click="accept(q.id)"
                           >
