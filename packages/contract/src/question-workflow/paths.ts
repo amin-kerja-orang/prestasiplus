@@ -34,6 +34,7 @@ import {
 } from './guru'
 import {
   QUESTION_IMPORT_TEMPLATE_CONTENT_TYPE,
+  QUESTION_IMPORT_ERROR_CSV_FILENAME,
   QUESTION_IMPORT_TEMPLATE_FILENAME,
   QuestionImportCreateRequestSchema,
   QuestionImportCreatedSchema,
@@ -200,11 +201,10 @@ const FORBIDDEN_TEACHER = err('FORBIDDEN "Anda tidak dibenarkan melakukan tindak
 const FORBIDDEN_TEACHER_WRITE = err(
   'FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not teacher or admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).',
 )
-const FORBIDDEN_CSRF = err('CSRF_INVALID (missing or wrong X-CSRF-Token).')
 const NOT_FOUND = err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (unknown id, or a segment that does not match the route).')
 
 const CSV_422 =
-  'VALIDATION_ERROR with fields.csvFile: "Sila pilih fail CSV." (missing), "Fail mesti jenis CSV atau TXT dan tidak melebihi 5MB." (extension, MIME or size), "Fail CSV mesti mempunyai kolum <missing columns joined by comma and space>." or "Fail CSV tiada baris data."'
+  'VALIDATION_ERROR with fields.csvFile: "Fail melebihi 2,000 baris. Pecahkan fail kepada beberapa bahagian." (more than 2,000 data rows, whole file refused), "Sila pilih fail CSV." (missing), "Fail mesti jenis CSV atau TXT dan tidak melebihi 5MB." (extension, MIME or size), "Fail CSV mesti mempunyai kolum <missing columns joined by comma and space>." or "Fail CSV tiada baris data."'
 
 /**
  * Registers the BE-10 routes (20). Reports: create and mine accept any signed-in user. Imports,
@@ -236,13 +236,15 @@ export function registerQuestionWorkflowPaths(registry: OpenAPIRegistry): void {
     tags: ['question-workflow', 'question-reports'],
     summary: 'File a report on a question (Lapor Soalan)',
     description:
-      'Any signed-in user. Creates a `pending` report. The response is RAW (no data envelope). No duplicate-open-report check (as the mock): a second report by the same user for the same question is accepted. Whether and when the report deactivates the question is Open question 1 of the card (mock: an MCQ at the first report, a structured question at the third open report).',
+      'Student or teacher (active role). Creates a `pending` report; the response is RAW (no data envelope). One report per reporter per question version (S5-T06, FR-MUR-54-6): a second one answers 409 and changes nothing. A pupil must have been served the question (FR-MUR-54-5): an own Bijak attempt that holds it (`attemptId`), an own practice session that served it (`quizSessionId`), or a live structured question; otherwise 403 (an unknown question answers the same, so the status is not an existence oracle). `reporterRole` is set from the session role (student = murid, teacher = guru), never from the body. A report never deactivates the question (REQ-B-031, D98). At most QUESTION_REPORT_DAILY_CAP new reports per reporter per Malaysia day.',
     request: { headers: [csrf], body: body(QuestionReportCreateRequestSchema) },
     responses: {
       201: json(QuestionReportCreatedSchema, 'Report filed: { success: true, message: "Laporan berjaya dihantar." }.'),
       401: UNAUTHORIZED,
-      403: FORBIDDEN_CSRF,
-      404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (the question does not exist).'),
+      403: err(`CSRF_INVALID (missing or wrong X-CSRF-Token); FORBIDDEN for a role other than student or teacher; FORBIDDEN "${QUESTION_REPORT_MESSAGES.contextRequired}" when the pupil was never served the question (no proof, an unknown or someone else's session, a session that did not serve it, a structured question outside the pupil's levels).`),
+      404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (the pupil was served the question by an own proof, but the question is no longer live).'),
+      409: err(`CONFLICT "${QUESTION_REPORT_MESSAGES.duplicate}" when the reporter already reported this question version (checked under the reporter lock, before the daily cap).`),
+      429: err(`RATE_LIMITED "${QUESTION_REPORT_MESSAGES.dailyCap}" with retryAfter, at the daily cap.`),
       422: err(
         'VALIDATION_ERROR with fields: questionType "Jenis soalan tidak sah."; questionId "Sila pilih soalan."; reasons "Sila pilih sekurang-kurangnya satu sebab laporan." or "Sebab laporan tidak sah."; source "Sumber laporan tidak sah."; comment "Komen tidak boleh melebihi 500 aksara."; quizSessionId and roomCode "Rujukan sesi atau bilik tidak sah.". Top-level message is the first field message plus " (and N more error(s))" when several.',
       ),
@@ -297,13 +299,33 @@ export function registerQuestionWorkflowPaths(registry: OpenAPIRegistry): void {
     tags: ['question-workflow', 'question-imports'],
     summary: 'Import questions from a CSV file',
     description:
-      'Admin only. multipart/form-data (file storage: BE-04). UTF-8, first row is the header (case-insensitive), comma separator, `"` quoting with `""`, quoted fields may span lines, blank lines ignored. Required columns question_text, option_a, option_b, correct_answer; correct_answer is a letter A to D (any case); subject_id, education_level_id and difficulty_level come from the row or the form default; marks default 1. Each valid row creates a `draft` question (it never bypasses review); a bad row is reported with its 1-based file line (header = line 1) and does not stop the others. The whole import is one transaction. An accepted file always answers 201. Flash: "Import selesai: <x> soalan diimport, <y> gagal.".',
+      'Admin only. Two headers, detected by the first header cell: `question_text` is the legacy positional MCQ header; anything else is the header with codes of 30 Q-11 (S1-T05 part 1: `mcq` rows only; `subject_code`, `tingkatan`, `unit_code`, `sp_kod` separated by `;`, `tp`, `aras`, `kbat`, `bab_kod`, `topik_kod`, `kertas`, `number_label`, `difficulty`). A row of the new header lists every error with `questionKey`, `field`, `code` and a message with the prefix "Baris {n}: " (exact Q-11 texts); a question is imported only if its row is valid. An unknown header cell is ignored and listed in `warnings` ("Kolum {nama} tidak dikenali dan diabaikan."). At most 2,000 data rows. multipart/form-data (file storage: BE-04). UTF-8, first row is the header (case-insensitive), comma separator, `"` quoting with `""`, quoted fields may span lines, blank lines ignored. Required columns question_text, option_a, option_b, correct_answer; correct_answer is a letter A to D (any case); subject_id, education_level_id and difficulty_level come from the row or the form default; marks default 1. Each valid row creates a `draft` question (it never bypasses review); a bad row is reported with its 1-based file line (header = line 1) and does not stop the others. The whole import is one transaction. An accepted file always answers 201. Flash: "Import selesai: <x> soalan diimport, <y> gagal.".',
     request: { headers: [csrf], body: multipart(QuestionImportCreateRequestSchema) },
     responses: {
       201: json(QuestionImportCreatedSchema, 'The run with its failures; status is the flash text.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_ADMIN_WRITE,
       422: err(`${CSV_422} Also fields.defaultSubjectId "Sila pilih subjek.", fields.defaultEducationLevelId "Sila pilih tahap pendidikan.", fields.defaultDifficultyLevel "Sila pilih tahap kesukaran.". Row failures (200/201 body, not 422): "Baris tidak lengkap.", "Jawapan betul mesti A, B, C atau D.", "Jawapan betul merujuk pilihan yang kosong.", "Subjek tidak sah.", "Tahap pendidikan tidak sah.", "Tahap kesukaran mesti 1 hingga 5.", "Markah mesti nombor bulat sekurang-kurangnya 1.".`),
+    },
+  })
+
+  registry.registerPath({
+    method: 'get',
+    path: '/question-imports/{id}/errors',
+    tags: ['question-workflow', 'question-imports'],
+    summary: 'Error report of one import run (CSV)',
+    description:
+      'Admin only. A file, not JSON: `laporan-ralat-import.csv`, text/csv, CRLF, columns `baris, question_key, medan, kod_ralat, mesej`, one line per stored row error. It holds no cell of the uploaded file but the question key and the values the Q-11 messages name ({key}, {kod}, {label}), each cut at 40 characters; every cell is neutralised against spreadsheet formulas. Declared after `/question-imports/template`.',
+    request: { params: idParams },
+    responses: {
+      200: {
+        description: 'The error report file.',
+        headers: { 'Content-Disposition': { description: `attachment; filename="${QUESTION_IMPORT_ERROR_CSV_FILENAME}"`, schema: { type: 'string' as const } } },
+        content: { 'text/csv': { schema: binary } },
+      },
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_ADMIN,
+      404: NOT_FOUND,
     },
   })
 

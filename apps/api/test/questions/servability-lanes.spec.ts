@@ -115,11 +115,15 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
     // The text lives in one table; the hub chrome is pinned too.
     expect(SERVABILITY_HUB_CARDS).toEqual({
       databank: { title: 'Databank Soalan', description: 'Bank soalan objektif SPM mengikut subjek.', attentionLabel: 'tidak boleh ditanda' },
+      'tracking-a': { title: 'Tracking A', description: 'Set objektif penuh dan lane bahasa.', attentionLabel: 'set tidak lengkap' },
+      subjektif: { title: 'Subjektif', description: 'Soalan berstruktur dan esei.', attentionLabel: 'tiada skema — tidak disajikan' },
       'bijak-spm': { title: 'Bijak SPM', description: 'Kertas SPM penuh dalam format sebenar.', attentionLabel: 'tiada kunci jawapan' },
+      'kertas-subjektif': { title: 'Kertas Subjektif', description: 'Kertas 2, 3 & 4 percubaan negeri.', attentionLabel: '' },
+      'latih-tubi': { title: 'Latih Tubi', description: 'Latihan ikut topik dan bab.', attentionLabel: 'tidak boleh ditanda' },
     })
     expect(SERVABILITY_HUB_COPY).toEqual({
-      title: 'Kandungan SPM',
-      intro: 'Setiap kad ialah satu laluan yang pelajar boleh buka. Nombor merah menunjukkan berapa banyak item yang perlu diperiksa.',
+      title: 'SPM',
+      intro: 'Setiap kad di bawah ialah satu laluan yang pelajar boleh buka. Nombor merah menunjukkan berapa banyak item yang perlu diperiksa.',
       allGood: 'Semua elok',
       open: 'Buka senarai',
     })
@@ -256,6 +260,8 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
       stimulus_shared_ungrouped: 'Rangsangan ini dikongsi oleh beberapa soalan tetapi bukan kumpulan rangsangan — jadikan soalan-soalan itu satu kumpulan rangsangan (D90).',
       question_missing: 'Soalan pada kertas ini tiada dalam bank soalan — kertas tidak boleh dimulakan; gantikan atau buang soalan itu.',
       group_incomplete: 'Kumpulan belum lengkap - {n} soalan belum diluluskan.',
+      stimulus_missing: 'Rangsangan tiada — soalan merujuk {rujukan} tetapi tiada gambar.',
+      figure_only: 'Soalan ini hanya mengandungi rangsangan. Tukarkan kepada rangsangan kumpulan.',
     })
     const v2 = Object.entries(SERVABILITY_REASON_SOURCE).filter(([, src]) => src === 'V2').map(([code]) => code)
     expect(v2.sort()).toEqual(['bridge_refused', 'no_key', 'no_scheme', 'paper_empty'])

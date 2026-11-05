@@ -66,6 +66,7 @@ import {
   RewardRedemptionListResponseSchema,
   RewardRedemptionStatusSchema,
   RewardTicketBoughtSchema,
+  RewardTicketRequestSchema,
   ShopDigitalItemsMetaSchema,
   ShopDigitalItemsQuerySchema,
   ShopDigitalItemsResponseSchema,
@@ -76,7 +77,10 @@ import {
   GamificationAchievementsQuerySchema,
   GamificationAchievementsSchema,
   GamificationChallengeProgressSchema,
+  GamificationChallengeClaimRequestSchema,
+  GamificationChallengeClaimResultSchema,
   GamificationChallengeTypeSchema,
+  GamificationClaimErrorCodeSchema,
   GamificationChallengesMetaSchema,
   GamificationChallengesResponseSchema,
   GamificationConvertRequestSchema,
@@ -123,6 +127,9 @@ export const GAMIFICATION_COMPONENT_SCHEMAS = {
   GamificationConvertResult: GamificationConvertResultSchema,
   GamificationChallengesMeta: GamificationChallengesMetaSchema,
   GamificationChallengesResponse: GamificationChallengesResponseSchema,
+  GamificationClaimErrorCode: GamificationClaimErrorCodeSchema,
+  GamificationChallengeClaimRequest: GamificationChallengeClaimRequestSchema,
+  GamificationChallengeClaimResult: GamificationChallengeClaimResultSchema,
   GamificationPodiumEntry: GamificationPodiumEntrySchema,
   GamificationLeaderboardRow: GamificationLeaderboardRowSchema,
   GamificationLeaderboard: GamificationLeaderboardSchema,
@@ -192,6 +199,7 @@ export const GAMIFICATION_COMPONENT_SCHEMAS = {
   RewardCabutanDraw: RewardCabutanDrawSchema,
   RewardCabutanView: RewardCabutanViewSchema,
   RewardTicketBought: RewardTicketBoughtSchema,
+  RewardTicketRequest: RewardTicketRequestSchema,
   ShopDigitalItemsQuery: ShopDigitalItemsQuerySchema,
   ShopDigitalItemsMeta: ShopDigitalItemsMetaSchema,
   ShopDigitalItemsResponse: ShopDigitalItemsResponseSchema,
@@ -256,14 +264,14 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
     tags: ['gamification'],
     summary: 'Convert syiling to tokens at the tier rate',
     description:
-      'tokens = floor(syilingAmount / rate). Atomic: debits syiling with a ledger row (type convert, source token_conversion, description "Tukar {s} syiling → {t} token"), then credits the tokens. Success is 200, not 201. There is no daily cap.',
+      'tokens = floor(syilingAmount / rate). Atomic: debits syiling with a ledger row (type convert, source token_conversion, description "Tukar {s} syiling → {t} token"), then credits the tokens. Success is 200, not 201. There is no daily cap. A repeat with the same clientUuid from the same user returns the first result and moves nothing (DM-79).',
     request: { headers: [csrf], body: body(GamificationConvertRequestSchema) },
     responses: {
       200: json(envelopeOf(GamificationConvertResultSchema), 'Converted.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_CSRF,
       422: err(
-        'VALIDATION_ERROR "Jumlah syiling tidak sah." with fields.syilingAmount = the same text (not an integer, below the tier rate, or above the balance).',
+        'VALIDATION_ERROR "Jumlah syiling tidak sah." with fields.syilingAmount = the same text (not an integer, below the tier rate, or above the balance); fields.clientUuid "Medan ini tidak sah." (not a UUID).',
       ),
     },
   })
@@ -276,6 +284,24 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
     description:
       'Active challenges by (sortOrder, id). Progress is computed for the current Malaysia day; progress equals target when already completed today. meta is {completed, active}, NOT the standard list meta. Completion and its reward are written by the session-completed hook (idempotent per user, challenge and Malaysia day), not by this route.',
     responses: { 200: json(GamificationChallengesResponseSchema, 'Challenges with meta.'), 401: UNAUTHORIZED },
+  })
+
+  registry.registerPath({
+    method: 'post',
+    path: '/gamification/challenges/{id}/claim',
+    tags: ['gamification'],
+    summary: 'Claim the reward of a completed daily challenge (API-GAME-11)',
+    description:
+      'One transaction: credits reward_syiling and reward_xp once (ledger source challenge) and records the claim for the Malaysia day (DM-63). A challenge deactivated after completion can still be claimed that day. A repeat with the same clientUuid from the same user returns the first result and moves nothing (DM-79). The body is optional. Success is 200, not 201.',
+    request: { params: IdParams, headers: [csrf], body: { ...body(GamificationChallengeClaimRequestSchema), required: false } },
+    responses: {
+      200: json(envelopeOf(GamificationChallengeClaimResultSchema), 'Claimed.'),
+      401: UNAUTHORIZED,
+      403: err('CSRF_INVALID (missing or wrong X-CSRF-Token); "Tidak dibenarkan dalam Mod Pelajar." (ERR-GAME-26).'),
+      404: err('NOT_FOUND "Cabaran tidak dijumpai." (no such challenge).'),
+      409: err('CHALLENGE_NOT_DONE "Cabaran belum selesai." (ERR-GAME-18, progress below the target); CHALLENGE_CLAIMED "Ganjaran sudah dituntut." (ERR-GAME-19, second claim the same Malaysia day).'),
+      422: err('VALIDATION_ERROR fields.clientUuid "Medan ini tidak sah." (not a UUID).'),
+    },
   })
 
   registry.registerPath({
@@ -609,7 +635,7 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
     tags: ['rewards'],
     summary: 'Redeem a catalogue reward with tokens',
     description:
-      'One transaction: snapshot redemption row, token debit (source hadiah_redeem, ref redemption:{id}), stock - 1 when stock is limited. Checks run in this order: reward exists and is active, stock, monthly cap (non-cancelled redemptions of that reward in the Malaysia calendar month), token balance. Any refusal rolls back everything.',
+      'One transaction: snapshot redemption row, token debit (source hadiah_redeem, ref redemption:{id}), stock - 1 when stock is limited. Checks run in this order: reward exists and is active, stock, monthly cap (non-cancelled redemptions of that reward in the Malaysia calendar month), token balance. Any refusal rolls back everything. A repeat with the same clientUuid from the same user returns the first redemption before any of these checks; no header and no time window (DM-78).',
     request: { headers: [csrf], body: body(RewardRedeemRequestSchema) },
     responses: {
       201: json(envelopeOf(RewardRedeemResultSchema), 'Redeemed.'),
@@ -619,7 +645,7 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
       409: err(
         'OUT_OF_STOCK "Stok hadiah telah habis."; MONTHLY_CAP "Had tebusan bulanan dicapai."; INSUFFICIENT_TOKENS "Token tidak mencukupi.".',
       ),
-      422: err('VALIDATION_ERROR fields.rewardId "The reward id field is required." (missing, non-numeric or below 1; the top-level message is the same text).'),
+      422: err('VALIDATION_ERROR fields.rewardId "The reward id field is required." (missing, non-numeric or below 1; the top-level message is the same text); fields.clientUuid "The client uuid field must be a valid UUID.".'),
     },
   })
 
@@ -663,8 +689,8 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
     tags: ['rewards'],
     summary: 'Buy one draw ticket with syiling',
     description:
-      'Debits ticketCostSyiling (ledger spend, source cabutan_ticket, description "Tiket Cabutan: {title}", ref draw:{id}) and inserts one ticket. No body.',
-    request: { params: DrawParams, headers: [csrf] },
+      'Debits ticketCostSyiling (ledger spend, source cabutan_ticket, description "Tiket Cabutan: {title}", ref draw:{id}) and inserts one ticket. The body is optional. A repeat with the same clientUuid from the same user answers for the first ticket before any check and moves nothing (DM-78).',
+    request: { params: DrawParams, headers: [csrf], body: { ...body(RewardTicketRequestSchema), required: false } },
     responses: {
       201: json(envelopeOf(RewardTicketBoughtSchema), 'Ticket bought.'),
       401: UNAUTHORIZED,
@@ -672,6 +698,7 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
       409: err(
         'DRAW_CLOSED "Cabutan ditutup." (missing, not open, or closed by date); TICKET_LIMIT "Had tiket dicapai."; INSUFFICIENT_BALANCE "Baki syiling tidak mencukupi.".',
       ),
+      422: err('VALIDATION_ERROR fields.clientUuid "The client uuid field must be a valid UUID.".'),
     },
   })
 

@@ -67,11 +67,12 @@ export const questionsWorkflowScenarios: Scenario[] = [
       ctx.expectStatus(mine, 200)
       ctx.check(listOf(mine).length === 0, 'the student must have no reports')
 
-      // A signed-in student may file; an unknown question is 404 (empty bank); a bad body is 422.
+      // A signed-in student may file; an unknown question without a served proof is 403 like any unserved one
+      // (S5-T06, AC-MUR-54-3: no existence oracle); a bad body is 422.
       const unknown = await student.request('POST', '/question-reports', {
         body: { questionId: '999999', questionType: 'mcq', reasons: ['wrong_answer'] },
       })
-      ctx.check(unknown.status === 404 || unknown.status === 422, `unknown question answered ${String(unknown.status)}`)
+      ctx.check(unknown.status === 403, `unknown question answered ${String(unknown.status)}`)
       expectField(ctx, await student.request('POST', '/question-reports', { body: { reasons: [] } }), 'questionId')
       expectField(ctx, await student.request('POST', '/question-reports', { body: { questionId: '1', reasons: [] } }), 'reasons')
 

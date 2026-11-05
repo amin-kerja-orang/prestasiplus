@@ -809,6 +809,17 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/studio/questions/:id(\\d+)/preview|",
+      "path": "/admin/studio/questions/:id(\\d+)/preview",
+      "name": null,
+      "status": "redirect-to:/admin/studio/questions/:id/sunting?pratonton=1",
+      "sector": "S2",
+      "component": null,
+      "file": "src/modules/m04-question-bank/routes/studio.ts",
+      "redirects_to": "(dynamic)",
+      "approved_by_card": "S2-T03"
+    },
+    {
       "key": "/admin/studio/groups/:id(\\d+)|m04.studio.group",
       "path": "/admin/studio/groups/:id(\\d+)",
       "name": "m04.studio.group",
@@ -2839,6 +2850,18 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/studio/imports|",
+      "path": "/admin/studio/imports",
+      "name": null,
+      "status": "redirect-to:/admin/spm/soalan/ekstrak",
+      "sector": "S3",
+      "component": null,
+      "file": "src/modules/m28-bijak-spm/routes/admin-intake.ts",
+      "redirects_to": "/admin/spm/soalan/ekstrak",
+      "note": "V2 path alias of Import & Semakan; docs/prd/r1/30-admin-pusat.md 3.2",
+      "approved_by_card": "S2-T03"
+    },
+    {
       "key": "/admin/spm/soalan/ekstrak|",
       "path": "/admin/spm/soalan/ekstrak",
       "name": null,
@@ -2944,8 +2967,9 @@
       "name": null,
       "status": "redirect-to:/admin/studio?status=review",
       "sector": "S3",
-      "component": "src/modules/m28-bijak-spm/admin/papers/ReviewQueuePage.vue",
+      "component": null,
       "file": "src/modules/m28-bijak-spm/routes/admin-papers.ts",
+      "redirects_to": "/admin/studio?status=review",
       "note": "KS-15 second review queue; docs/prd/r1/30-admin-pusat.md 3.3 writes ?status=reviewed but the status value is \"review\" (register M-04, section 7 item 2). The item route /admin/spm/semakan/:key stays (D113).",
       "approved_by_card": null
     },
@@ -15517,6 +15541,17 @@
       "sector": "S1",
       "file": "apps/api/src/modules/questions/workflow/imports/imports.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "GET /api/question-imports/:p/errors",
+      "method": "GET",
+      "path": "/api/question-imports/:id/errors",
+      "api_id": "API-Q-17",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/workflow/imports/imports.controller.ts",
+      "approved_by_card": "S1-T05",
+      "note": "Error report CSV of one import run (FR-ADM-QE6.2): baris, question_key, medan, kod_ralat, mesej. Admin only."
     },
     {
       "key": "POST /api/question-imports",
