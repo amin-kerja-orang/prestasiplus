@@ -132,7 +132,7 @@ export function registerKirkpatrickPaths(registry: OpenAPIRegistry): void {
     KirkpatrickStudentSchema,
     { 403: E403('role not admin, teacher or school_admin, or an id that is not a pupil in scope: one uniform 403 for an unknown id, a non-pupil and a pupil of another school (teacher, school_admin), so ids cannot be probed') },
     { params: z.object({ id: IdSchema }) },
-    'Admin: any pupil. Teacher and school_admin: pupils of the own school only (deviation: the mock has no school limit and refuses school_admin). A non-numeric id is 404 NOT_FOUND "Not Found." (no route). A pupil with no sessions gets the zero state.',
+    'Admin: any pupil. Teacher and school_admin: pupils of the own school only (deviation: the mock has no school limit and refuses school_admin). A non-numeric id is 404 NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (no route). A pupil with no sessions gets the zero state.',
     true,
   )
   get('/kirkpatrick/me', 'Own headcount and last 30 days (S9)', KirkpatrickMeSchema, {}, {}, 'Any signed-in role; own data only.', true)

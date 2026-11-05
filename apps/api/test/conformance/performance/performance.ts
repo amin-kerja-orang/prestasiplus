@@ -63,13 +63,14 @@ export const performanceScenarios: Scenario[] = [
         ctx.expectStatus(res, 200)
         noStore(ctx, res, '/analytics/me')
       }
-      for (const role of ['admin', 'teacher'] as ActorRole[]) {
+      // S10-T04 Change (2): the school admin reads the classes of the own school.
+      for (const role of ['admin', 'teacher', 'school_admin'] as ActorRole[]) {
         const who = await ctx.as(role)
         ctx.expectStatus(await who.request('GET', '/analytics/classes'), 200)
         // an unknown risk level is treated as "all"
         ctx.expectStatus(await who.request('GET', '/analytics/classes?riskLevel=bogus'), 200)
       }
-      for (const role of ['student', 'school_admin'] as ActorRole[]) {
+      for (const role of ['student'] as ActorRole[]) {
         expectError(ctx, await (await ctx.as(role)).request('GET', '/analytics/classes'), 403, 'FORBIDDEN')
       }
     },
@@ -98,7 +99,11 @@ export const performanceScenarios: Scenario[] = [
     domain: 'performance',
     targets: ['api'],
     async run(ctx) {
-      for (const role of FOUR_ROLES) {
+      const student = await ctx.as('student')
+      for (const path of ['/performance/school', '/performance/levels', '/performance/levels/t4', '/performance/classes']) {
+        expectError(ctx, await student.request('GET', path), 403, 'FORBIDDEN')
+      }
+      for (const role of FOUR_ROLES.filter((r) => r !== 'student')) {
         const who = await ctx.as(role)
         for (const path of ['/performance/school', '/performance/levels', '/performance/classes']) {
           const res = await who.request('GET', path)
@@ -112,7 +117,7 @@ export const performanceScenarios: Scenario[] = [
         )
       }
       // only a teacher has own classes; every other role gets an empty list
-      for (const role of ['student', 'school_admin', 'admin'] as ActorRole[]) {
+      for (const role of ['school_admin', 'admin'] as ActorRole[]) {
         const rows = listOf(await (await ctx.as(role)).request('GET', '/performance/classes'))
         ctx.check(rows.length === 0, `${role}: /performance/classes must be [] for a non-teacher`)
       }
@@ -143,8 +148,8 @@ export const performanceScenarios: Scenario[] = [
           noStore(ctx, res, `/performance/classes/${id}`)
         }
       }
-      // a role that may not open class dashboards gets the same 404 (no existence leak)
-      expectError(ctx, await (await ctx.as('student')).request('GET', `/performance/classes/${UNKNOWN_ID}`), 404, 'NOT_FOUND')
+      // a pupil may not open class dashboards at all (S10-T01: the five staff routes carry @Roles)
+      expectError(ctx, await (await ctx.as('student')).request('GET', `/performance/classes/${UNKNOWN_ID}`), 403, 'FORBIDDEN')
     },
   },
   {
