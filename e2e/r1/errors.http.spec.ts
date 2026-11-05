@@ -68,6 +68,33 @@ test.describe('401 return URL (AC-ERR-2, ERR-AUTH-01)', () => {
   })
 })
 
+test.describe('login throttle (AC-ERR-3, ERR-AUTH-09)', () => {
+  test('@api AC-ERR-3 a 429 on login counts down and keeps Log Masuk disabled until 0', async ({
+    page,
+  }) => {
+    await page.route('**/api/auth/login', (route) =>
+      route.fulfill({
+        status: 429,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          error: { code: 'RATE_LIMITED', message: 'Terlalu banyak percubaan.', retryAfter: 3 },
+        }),
+      }),
+    )
+    await gotoApi(page, '/login')
+    const form = page.getByTestId('login-form')
+    await form.getByLabel('Alamat Email').fill('pelajar@demo.test')
+    await form.getByLabel('Kata Laluan').fill('Demo1234')
+    const submit = form.getByTestId('login-submit')
+    await submit.click()
+    await expect(form).toContainText('Cuba lagi dalam')
+    await expect(submit).toBeDisabled()
+    await expectNoHScroll(page)
+    await expect(form).not.toContainText('Cuba lagi dalam', { timeout: 8_000 })
+    await expect(submit).toBeEnabled()
+  })
+})
+
 test.describe('offline banner (AC-ERR-4, ERR-NET-01, ERR-NET-03)', () => {
   test('@api AC-ERR-4 shows within 10 s, no layout shift, no horizontal scroll, then recovers for 3 s', async ({
     page,

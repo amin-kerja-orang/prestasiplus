@@ -11,10 +11,11 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import { API_ERROR_CODES, isApiError, type ApiError } from '@/api'
 import { isPrototypeRole, isPrototypeScopeOn, MSG_ROLE_OUT_OF_SCOPE } from '@/app/prototype-scope'
 import { isSafeRedirect, resolvePostLoginTarget } from '@/app/router/guards'
 import { useApi } from '@/composables'
-import { DsFormField, DsSticker } from '@/ds'
+import { DsFormField, DsLoadError, DsSticker } from '@/ds'
 import { formatNumber } from '@/lib/number'
 import { useSessionStore } from '@/stores/session'
 
@@ -35,6 +36,9 @@ const password = ref('')
 const remember = ref(false)
 const loading = ref(false)
 const errors = ref<string[]>([])
+/** ERR-AUTH-09 / ERR-RATE-01: a throttled login shows the countdown and locks the submit until it ends (AC-ERR-3). */
+const rateLimited = ref<ApiError | null>(null)
+const remaining = ref(0)
 
 /** ERR-AUTH-01: shown when the page is reached by a 401 redirect (`?kembali=`). */
 const SESSION_EXPIRED_BM = 'Sesi anda telah tamat. Sila log masuk semula.'
@@ -51,9 +55,16 @@ const sessionExpired = computed(() => {
 // FR-M01-11: derived at request time; the welcome text and the stats strip use the same values.
 const { data: stats } = useApi(() => getPlatformStats())
 
+/** The password was cleared after the throttled attempt: the retry takes the user back to it. */
+function focusPassword(): void {
+  document.getElementById('password')?.focus()
+}
+
 async function submit(): Promise<void> {
   loading.value = true
   errors.value = []
+  rateLimited.value = null
+  remaining.value = 0
   try {
     const next = await login({
       email: email.value,
@@ -77,7 +88,8 @@ async function submit(): Promise<void> {
       }),
     )
   } catch (err) {
-    errors.value = errorLines(err)
+    if (isApiError(err, API_ERROR_CODES.RATE_LIMITED)) rateLimited.value = err
+    else errors.value = errorLines(err)
     password.value = ''
   } finally {
     loading.value = false
@@ -109,6 +121,14 @@ async function submit(): Promise<void> {
         role="status"
         :description="SESSION_EXPIRED_BM"
         data-testid="login-session-expired"
+      />
+      <DsLoadError
+        v-if="rateLimited"
+        variant="inline"
+        :error="rateLimited"
+        testid="login-rate-limited"
+        @countdown="remaining = $event"
+        @retry="focusPassword"
       />
       <AuthAlert :messages="errors" data-testid="login-alert" />
 
@@ -168,7 +188,7 @@ async function submit(): Promise<void> {
         size="xl"
         variant="solid"
         :loading="loading"
-        :disabled="loading"
+        :disabled="loading || remaining > 0"
         icon="i-ph-sign-in-duotone"
         data-testid="login-submit"
       >

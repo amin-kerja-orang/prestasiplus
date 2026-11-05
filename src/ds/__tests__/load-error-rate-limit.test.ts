@@ -61,6 +61,15 @@ describe('DsLoadError rate-limit countdown', () => {
     expect(w.emitted('retry')).toHaveLength(1)
   })
 
+  it('emits countdown with the seconds left at the start, on each tick and a final 0', async () => {
+    vi.useFakeTimers()
+    const w = mount(DsLoadError, { props: { error: rateLimited(3) } })
+    vi.advanceTimersByTime(3000)
+    await w.vm.$nextTick()
+    expect(w.emitted('countdown')?.map((e) => e[0])).toEqual([3, 2, 1, 0])
+    expect(mount(DsLoadError, { props: { message: 'x' } }).emitted('countdown')).toBeUndefined()
+  })
+
   it('keeps the changing countdown out of the live region announcements (aria-live off)', () => {
     vi.useFakeTimers()
     for (const variant of ['alert', 'inline'] as const) {
@@ -73,9 +82,15 @@ describe('DsLoadError rate-limit countdown', () => {
 
   it('clamps a huge retryAfter to 120 s and rounds a fractional one up', () => {
     vi.useFakeTimers()
-    expect(mount(DsLoadError, { props: { error: rateLimited(3600) } }).text()).toContain('Cuba lagi dalam 2 minit.')
-    expect(mount(DsLoadError, { props: { error: rateLimited(1.5) } }).text()).toContain('Cuba lagi dalam 2 saat.')
-    expect(mount(DsLoadError, { props: { error: rateLimited(120) } }).text()).toContain('Cuba lagi dalam 2 minit.')
+    expect(mount(DsLoadError, { props: { error: rateLimited(3600) } }).text()).toContain(
+      'Cuba lagi dalam 2 minit.',
+    )
+    expect(mount(DsLoadError, { props: { error: rateLimited(1.5) } }).text()).toContain(
+      'Cuba lagi dalam 2 saat.',
+    )
+    expect(mount(DsLoadError, { props: { error: rateLimited(120) } }).text()).toContain(
+      'Cuba lagi dalam 2 minit.',
+    )
   })
 
   it('is deadline based: a 10 s clock jump inside one tick enables the retry', async () => {
@@ -91,8 +106,12 @@ describe('DsLoadError rate-limit countdown', () => {
 
   it('uses seconds up to 119 and minutes from 120 s', () => {
     vi.useFakeTimers()
-    expect(mount(DsLoadError, { props: { error: rateLimited(119) } }).text()).toContain('Cuba lagi dalam 119 saat.')
-    expect(mount(DsLoadError, { props: { error: rateLimited(150) } }).text()).toContain('Cuba lagi dalam 2 minit.')
+    expect(mount(DsLoadError, { props: { error: rateLimited(119) } }).text()).toContain(
+      'Cuba lagi dalam 119 saat.',
+    )
+    expect(mount(DsLoadError, { props: { error: rateLimited(150) } }).text()).toContain(
+      'Cuba lagi dalam 2 minit.',
+    )
   })
 
   it('leaves a non-429 ApiError on the default message', () => {
