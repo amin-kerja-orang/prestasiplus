@@ -498,7 +498,7 @@ How it connects: [60-api-contract.md](60-api-contract.md) §1.4 carries the enve
 | Offline | ERR-NET-01 "Anda sedang luar talian. Semak sambungan internet anda."; the word `luar talian` stays in the autosave status line | "Luar talian. Cuba lagi.", "Luar talian. Semak sambungan anda." |
 | Not found | "Rekod tidak dijumpai." for a record; always "dijumpai", never "ditemui" | "Kertas tidak ditemui" becomes "Kertas tidak dijumpai." (ERR-BIJ-05) |
 | Access denied | ERR-ACC-01 | "This action is unauthorized.", "Peranan ini tidak tersedia untuk akaun anda." |
-| Invalid | ERR-REQ-01 default; a specific text ("Nilai tidak sah.", "Jawapan tidak sah.", "Mod tidak sah.") stays for its own field | "The given data was invalid." |
+| Invalid | ERR-REQ-01 default; a specific text ("Nilai tidak sah.", "Jawapan tidak sah.", "Mod tidak sah.") stays for its own field; S7-T09 (30 P2-20): empty reply "Sila tulis balasan.", over-long reply ERR-REQ-12 "Balasan tidak boleh melebihi 5000 aksara.", invalid status ERR-REQ-01, missing ticket ERR-ACC-04 "Rekod tidak dijumpai." | "The given data was invalid." |
 | English leftovers | all error text is BM; the V2-kept English labels (`Mastered`, `Developing`, English weekday abbreviations on the Engagement bars) are listed fidelity exceptions | `Payload Too Large.`, `HTTP 502`, `Network request failed` |
 
 ### X10.10 Empty states

@@ -1350,7 +1350,7 @@ Decisions:
 Resolved points (how the docs settle them):
 
 - Hub count must equal the lane list count for every lane (S3-T03 test).
-- 30 Q-02 and 4.V list attention labels 'tidak boleh ditanda', 'set tidak lengkap', 'tiada skema — tidak disajikan', 'tiada kunci jawapan', 'tiada halaman'.
+- 30 Q-02 and 4.V list attention labels 'tidak boleh ditanda', 'set tidak lengkap', 'tiada skema — tidak disajikan', 'tiada kunci jawapan', 'tiada kandungan'.
 
 ### B6 UAT dry-run tooling and Terbit pipeline (U-OP tasks)
 
