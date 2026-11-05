@@ -273,15 +273,28 @@ describe('arena', () => {
     expect(BattleArenaViewSchema.safeParse({ ...finishedArena, result: { winner: null, scoreA: 4000, scoreB: 4000 } }).success).toBe(true)
   })
 
-  it('keeps the state rules: active has a question, 15 s and no result; others the reverse', () => {
+  it('keeps the state rules: active has a question and no result; others the reverse', () => {
     expect(BattleArenaViewSchema.safeParse({ ...activeArena, question: null }).success).toBe(false)
-    expect(BattleArenaViewSchema.safeParse({ ...activeArena, secondsLeft: 0 }).success).toBe(false)
+    // the last second of a round: 0 seconds left is still an active round (secondsLeft counts down since the rounds are shared)
+    expect(BattleArenaViewSchema.safeParse({ ...activeArena, secondsLeft: 0 }).success).toBe(true)
+    expect(BattleArenaViewSchema.safeParse({ ...activeArena, secondsLeft: 61 }).success).toBe(false)
     expect(BattleArenaViewSchema.safeParse({ ...activeArena, result: finishedArena.result }).success).toBe(false)
     expect(BattleArenaViewSchema.safeParse({ ...finishedArena, result: undefined }).success).toBe(false)
     expect(BattleArenaViewSchema.safeParse({ ...finishedArena, question }).success).toBe(false)
     expect(BattleArenaViewSchema.safeParse({ ...finishedArena, secondsLeft: 15 }).success).toBe(false)
+    // total is the battle's question_count (5..20) and index runs up to it
     expect(BattleArenaViewSchema.safeParse({ ...activeArena, index: 11 }).success).toBe(false)
-    expect(BattleArenaViewSchema.safeParse({ ...activeArena, total: 12 }).success).toBe(false)
+    expect(BattleArenaViewSchema.safeParse({ ...activeArena, index: 11, total: 20 }).success).toBe(true)
+    expect(BattleArenaViewSchema.safeParse({ ...activeArena, total: 4 }).success).toBe(false)
+    expect(BattleArenaViewSchema.safeParse({ ...activeArena, total: 21 }).success).toBe(false)
+    // the optional round fields: phase must agree with the status, a reveal phase carries its reveal
+    expect(BattleArenaViewSchema.safeParse({ ...activeArena, phase: 'answering' }).success).toBe(true)
+    expect(BattleArenaViewSchema.safeParse({ ...activeArena, phase: 'finished' }).success).toBe(false)
+    expect(BattleArenaViewSchema.safeParse({ ...activeArena, phase: 'reveal' }).success).toBe(false)
+    const reveal = { index: 1, correctOptionId: 1, you: { optionId: 1, correct: true, points: 900 }, opponent: { optionId: null, correct: false, points: 0 } }
+    expect(BattleArenaViewSchema.safeParse({ ...activeArena, phase: 'reveal', reveal, secondsLeft: 0 }).success).toBe(true)
+    expect(BattleArenaViewSchema.safeParse({ ...finishedArena, phase: 'finished', reveal }).success).toBe(true)
+    expect(BattleArenaViewSchema.safeParse({ ...finishedArena, phase: 'answering' }).success).toBe(false)
     expect(BattleArenaViewSchema.safeParse({ ...activeArena, status: 'waiting' }).success).toBe(false)
   })
 
@@ -308,7 +321,7 @@ describe('arena', () => {
     }
   })
 
-  it('validates the answer body: id string, option 0..3 or null, seconds 0..15', () => {
+  it('validates the answer body: id string, option 0..3 or null, seconds 0..60 (the server holds it to battle_question_seconds)', () => {
     expect(BattleAnswerRequestSchema.safeParse({ questionId: '5001', optionId: 1, seconds: 4 }).success).toBe(true)
     expect(BattleAnswerRequestSchema.safeParse({ questionId: '5001', optionId: null, seconds: 15 }).success).toBe(true)
     expect(BattleAnswerRequestSchema.safeParse({ questionId: '5001', seconds: 0 }).success).toBe(true)
@@ -317,18 +330,20 @@ describe('arena', () => {
     expect(BattleAnswerRequestSchema.safeParse({ questionId: '5001', optionId: 4, seconds: 4 }).success).toBe(false)
     expect(BattleAnswerRequestSchema.safeParse({ questionId: '5001', optionId: -1, seconds: 4 }).success).toBe(false)
     expect(BattleAnswerRequestSchema.safeParse({ questionId: '5001', optionId: 1.5, seconds: 4 }).success).toBe(false)
-    expect(BattleAnswerRequestSchema.safeParse({ questionId: '5001', optionId: 1, seconds: 16 }).success).toBe(false)
+    expect(BattleAnswerRequestSchema.safeParse({ questionId: '5001', optionId: 1, seconds: 60 }).success).toBe(true)
+    expect(BattleAnswerRequestSchema.safeParse({ questionId: '5001', optionId: 1, seconds: 61 }).success).toBe(false)
     expect(BattleAnswerRequestSchema.safeParse({ questionId: '5001', optionId: 1, seconds: -1 }).success).toBe(false)
     expect(BattleAnswerRequestSchema.safeParse({ optionId: 1, seconds: 4 }).success).toBe(false)
   })
 
-  it('parses an answer result with next, or with result after question 10, never both or neither', () => {
+  it('parses an answer result with next, or with result when the last round closed, never both; neither while the round is open', () => {
     expect(BattleAnswerResultSchema.safeParse(answerNext).success).toBe(true)
     const last = { ...answerNext, next: undefined, result: { winner: 'B', scoreA: 0, scoreB: 0 } }
     expect(BattleAnswerResultSchema.safeParse(last).success).toBe(true)
     expect(BattleAnswerResultSchema.safeParse({ ...answerNext, result: last.result }).success).toBe(false)
-    expect(BattleAnswerResultSchema.safeParse({ ...answerNext, next: undefined }).success).toBe(false)
-    expect(BattleAnswerResultSchema.safeParse({ ...answerNext, opponent: { answered: false, correct: true, score: 1 } }).success).toBe(false)
+    // the round is open for the other side: neither next nor result, and the opponent has not answered
+    expect(BattleAnswerResultSchema.safeParse({ ...answerNext, next: undefined, opponent: { answered: false } }).success).toBe(true)
+    expect(BattleAnswerResultSchema.safeParse({ ...answerNext, opponent: { answered: true } }).success).toBe(false)
     expect(BattleAnswerResultSchema.safeParse({ ...answerNext, next: { ...question, correctOptionId: 2 } }).success).toBe(false)
   })
 
