@@ -84,6 +84,7 @@ describe('DM-42: private questions are absent from the S1 reads', () => {
       () => repo.listIdsKeyset({} as never, undefined, 10),
       () => repo.filterTargets({} as never, ['review'], 10),
       () => repo.subjectTotals(),
+      () => repo.statusSummary(new Date(0)),
       () => repo.structuredStats(),
     )
     expect(sqls.length).toBeGreaterThanOrEqual(5)

@@ -255,6 +255,10 @@ function shapeArraySql(candidates: Prisma.Sql, shape: QuestionFilter['mcqShape']
     GROUP BY sp.question_version_id HAVING ${Prisma.join(having, ' AND ')})`
 }
 
+/** The base of `GET /questions/summary` and the Admin Pusat dashboard counts: latest version, no PKSK, no Darjah (aliases `q`, `v`). */
+// S6-T16 (FR-GUR-44a-4): a private question is never in a bank count.
+const SUMMARY_BASE = Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no WHERE ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL} AND ${BANK_VISIBLE_SQL}`
+
 const NO_STATUS_COUNTS = (): Record<QuestionStatus, number> => ({ draft: 0, review: 0, approved: 0, archived: 0 })
 
 /**
@@ -748,7 +752,7 @@ export class QuestionsRepository {
   async subjectTotals(): Promise<{ total: number; bySubject: Map<string, { total: number; published: number }> }> {
     const rows = await this.db.$queryRaw<{ subject_id: bigint | null; total: number; published: number }[]>`
       SELECT v.subject_id, count(*)::int AS total, count(q.live_version_no)::int AS published
-      FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no WHERE ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL} AND ${BANK_VISIBLE_SQL} GROUP BY 1`
+      ${SUMMARY_BASE} GROUP BY 1`
     const bySubject = new Map<string, { total: number; published: number }>()
     let total = 0
     for (const r of rows) {
@@ -756,6 +760,25 @@ export class QuestionsRepository {
       if (r.subject_id !== null) bySubject.set(idToString(r.subject_id), { total: r.total, published: r.published })
     }
     return { total, bySubject }
+  }
+
+  /**
+   * Questions per latest-version status and those created at or after `since`, over the SAME base as `subjectTotals` (S6-T11, the Admin Pusat
+   * dashboard), so the dashboard total always equals the summary total.
+   */
+  async statusSummary(since: Date): Promise<{ total: number; byStatus: Record<QuestionStatus, number>; createdSince: number }> {
+    const rows = await this.db.$queryRaw<{ status: string; n: number; recent: number }[]>`
+      SELECT v.status AS status, count(*)::int AS n, (count(*) FILTER (WHERE q.created_at >= ${since}))::int AS recent
+      ${SUMMARY_BASE} GROUP BY 1`
+    const byStatus = NO_STATUS_COUNTS()
+    let total = 0
+    let createdSince = 0
+    for (const r of rows) {
+      total += r.n
+      createdSince += r.recent
+      if (isQuestionStatus(r.status)) byStatus[r.status] = r.n
+    }
+    return { total, byStatus, createdSince }
   }
 
   /** The owner of a question (decimal id) or `undefined` when the question does not exist. */
@@ -1325,6 +1348,17 @@ export class QuestionsRepository {
       JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'approved'
       JOIN question_tags d ON d.question_id = q.id AND d.kind = 'pksk_domain'
       JOIN question_tags l ON l.question_id = q.id AND l.kind = 'pksk_level' AND l.code = ${level}
+      WHERE q.is_active GROUP BY 1`
+    return Object.fromEntries(rows.map((r) => [r.code, r.n]))
+  }
+
+  /** Served PKSK questions per domain code over both levels; DISTINCT so a T1 + T4 question counts once (D91). */
+  async pkskServedCountsAllLevels(): Promise<Record<string, number>> {
+    const rows = await this.db.$queryRaw<{ code: string; n: number }[]>`
+      SELECT d.code AS code, count(DISTINCT q.id)::int AS n
+      FROM questions q
+      JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'approved'
+      JOIN question_tags d ON d.question_id = q.id AND d.kind = 'pksk_domain'
       WHERE q.is_active GROUP BY 1`
     return Object.fromEntries(rows.map((r) => [r.code, r.n]))
   }
