@@ -5113,9 +5113,7 @@
       "label": "Sekolah Bersaing",
       "route": "/sekolah-bersaing",
       "roles": [
-        "student",
         "admin",
-        "teacher",
         "school_admin"
       ],
       "status": "canonical",
@@ -6100,7 +6098,6 @@
       "label": "Sekolah Bersaing",
       "route": "/sekolah-bersaing",
       "roles": [
-        "student",
         "admin"
       ],
       "status": "canonical",
