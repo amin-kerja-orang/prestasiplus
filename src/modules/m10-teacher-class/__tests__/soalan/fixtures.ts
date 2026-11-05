@@ -70,7 +70,7 @@ export function detail(
     correctAnswerText: null,
     altAnswers: [],
     modelAnswer: null,
-    language: 'bm',
+    language: 'ms',
     scriptType: 'rumi',
     textDirection: 'ltr',
     curriculumChapterId: null,

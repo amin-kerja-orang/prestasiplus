@@ -254,7 +254,7 @@ export interface ContributedQuestionDetail extends ContributedQuestion {
   correctAnswerText: string | null
   altAnswers: string[]
   modelAnswer: string | null
-  language: 'bm' | 'en'
+  language: 'ms' | 'en' | 'ms+en'
   scriptType: ScriptType
   textDirection: 'ltr' | 'rtl'
   curriculumChapterId: number | null
