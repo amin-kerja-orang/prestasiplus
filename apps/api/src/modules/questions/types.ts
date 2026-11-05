@@ -33,8 +33,11 @@ export type PublicQuestion = z.output<typeof QuestionPublicSchema>
 export const STORE_SOURCE_TYPES = ['pdf', 'excel', 'manual', 'ai_variant'] as const
 export type StoreSourceType = (typeof STORE_SOURCE_TYPES)[number]
 
-/** `question_versions.type`. */
-export const STORE_QUESTION_TYPES = ['mcq', 'match', 'short', 'structured', 'working', 'essay', 'drawing', 'table'] as const
+/**
+ * `question_versions.type`: the 8 original values plus `mcq_multi`, `true_false` and `fill_blank` (S1-T09a D4, DM-69, migration
+ * 0134 widens the check). The API names and the mapping are `QUESTION_TYPES` / `questionTypeToDb` / `questionTypeFromDb` in `@pp/contract`.
+ */
+export const STORE_QUESTION_TYPES = ['mcq', 'match', 'short', 'structured', 'working', 'essay', 'drawing', 'table', 'mcq_multi', 'true_false', 'fill_blank'] as const
 export type StoreQuestionType = (typeof STORE_QUESTION_TYPES)[number]
 
 export type ViewMode = 'live' | 'latest'
@@ -426,11 +429,3 @@ export interface TextbookRef {
   /** Last page, when the reference spans pages. */
   hingga?: number
 }
-
-/**
- * S1-T09a (D4, DM-69): the stored `question_versions.type` values once migration 0134 widens the check: the 8 above plus
- * `mcq_multi`, `true_false` and `fill_blank`. The API names and the mapping are `QUESTION_TYPES` / `questionTypeToDb` /
- * `questionTypeFromDb` in `@pp/contract`. The DB is not changed by this part.
- */
-export const STORE_QUESTION_TYPES_V3 = [...STORE_QUESTION_TYPES, 'mcq_multi', 'true_false', 'fill_blank'] as const
-export type StoreQuestionTypeV3 = (typeof STORE_QUESTION_TYPES_V3)[number]

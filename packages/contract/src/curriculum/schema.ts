@@ -49,6 +49,14 @@ export const CURRICULUM_CONFLICT_MESSAGES = {
   topic: 'Topik ini masih mempunyai subtopik.',
 } as const
 
+/**
+ * 409 CONFLICT copy when a write would leave a primary (Darjah) level active: only Tingkatan 1-5 are
+ * active (FR-X3-1, FR-ADM-C03.3a, DM-13). PROPOSED copy (D115), owner to confirm (docs/qa/r1-proposed-copy.md).
+ */
+export const CURRICULUM_LEVEL_RULE_MESSAGES = {
+  primaryActive: 'Darjah tidak boleh diaktifkan. Hanya Tingkatan 1 hingga 5 digunakan.',
+} as const
+
 export const CURRICULUM_FLASH_MESSAGES = {
   chapter: { created: 'Bab berjaya ditambah.', updated: 'Bab berjaya dikemaskini.', deleted: 'Bab berjaya dipadam.' },
   topic: { created: 'Topik berjaya ditambah.', updated: 'Topik berjaya dikemaskini.', deleted: 'Topik berjaya dipadam.' },
@@ -245,7 +253,14 @@ export const CurriculumTopicNodeSchema = CurriculumTopicSchema.extend({
   subtopics: z.array(CurriculumSubtopicSchema),
 }).meta({ id: 'CurriculumTopicNode' })
 
+/**
+ * `questionCount` / `servableCount` (API-DSKP-04, FR-ADM-C01.2) are computed per request and additive:
+ * both are absent on mock/legacy payloads. questionCount = live, active, approved question versions linked
+ * to the Bab; servableCount = the subset the learner-visibility rule would serve.
+ */
 export const CurriculumChapterNodeSchema = CurriculumChapterSchema.extend({
+  questionCount: z.int().min(0).optional(),
+  servableCount: z.int().min(0).optional(),
   topics: z.array(CurriculumTopicNodeSchema),
 }).meta({ id: 'CurriculumChapterNode' })
 

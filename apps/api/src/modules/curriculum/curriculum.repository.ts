@@ -13,6 +13,7 @@ import type {
 } from '../../db/generated/client'
 import { Prisma } from '../../db/generated/client'
 import { PrismaService } from '../../db/prisma.service'
+import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_SOURCE_TAKEN_DOWN_SQL } from '../questions/learner-visibility'
 import { byOrderThenId, chapterOrder, compareIds, MAP_GRADES, topicOrder } from './rules'
 
 /** The learner catalogue (topics, learning map) is Tingkatan 4 and 5 only (secondary-only, D72); a topic of any other grade is never read. */
@@ -398,6 +399,33 @@ export class CurriculumRepository {
   async lockChapter(id: bigint): Promise<boolean> {
     const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT id FROM chapters WHERE id = ${id} FOR UPDATE`
     return rows.length > 0
+  }
+
+  /**
+   * API-DSKP-04 / FR-ADM-C01.2: per chapter id, `questionCount` = questions that are active with a LIVE version that is
+   * `approved` and linked to the chapter; `servableCount` = the subset a learner may be served (the shared learner level,
+   * source take-down and PKSK predicates of `learner-visibility.ts`; the SPM-only T4/T5 rule is not applied because a Bab
+   * of any Tingkatan is counted). One grouped statement over `ix_qv_pub_chapter`; a chapter without questions is absent.
+   */
+  async chapterQuestionCounts(chapterIds: readonly bigint[]): Promise<Map<bigint, { questionCount: number; servableCount: number }>> {
+    const out = new Map<bigint, { questionCount: number; servableCount: number }>()
+    if (chapterIds.length === 0) return out
+    const rows = await this.db.$queryRaw<{ chapter_id: bigint; question_count: number; servable_count: number }[]>`
+      SELECT v.chapter_id,
+             count(*)::int AS question_count,
+             (count(*) FILTER (WHERE ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_PKSK_SQL}))::int AS servable_count
+        FROM questions q
+        JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
+       WHERE v.chapter_id = ANY(${chapterIds as bigint[]}::bigint[]) AND q.is_active AND v.status = 'approved'
+       GROUP BY v.chapter_id`
+    for (const r of rows) out.set(r.chapter_id, { questionCount: r.question_count, servableCount: r.servable_count })
+    return out
+  }
+
+  /** DM-18 delete guard: every question version (any status, any question) that still points at the chapter. */
+  async chapterQuestionVersionCount(chapterId: bigint): Promise<number> {
+    const rows = await this.db.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n FROM question_versions WHERE chapter_id = ${chapterId}`
+    return rows[0]?.n ?? 0
   }
 
   async chapterHasTopics(chapterId: bigint): Promise<boolean> {

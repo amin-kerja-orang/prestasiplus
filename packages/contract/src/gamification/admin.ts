@@ -8,6 +8,7 @@ import {
   GamificationLedgerKindSchema,
   GAMIFICATION_AWARD_MAX,
 } from './schema'
+import { RewardSettingsSchema } from './reward-settings'
 import { count, int, nonBlank } from './shared'
 
 /**
@@ -215,6 +216,7 @@ export const GamificationAdminStudentRowSchema = z
     tokenBalance: count,
     totalSyilingEarned: count,
     xp: count,
+    streak: count.optional().meta({ description: 'Current streak in days (FR-ADM-P2-04.1). Absent until the route serves it.' }),
   })
   .meta({ id: 'GamificationAdminStudentRow' })
 export type GamificationAdminStudentRow = z.infer<typeof GamificationAdminStudentRowSchema>
@@ -321,7 +323,10 @@ export const GamificationSettingsUpdateRequestSchema = z
   .meta({ id: 'GamificationSettingsUpdateRequest' })
 export type GamificationSettingsUpdateRequest = z.infer<typeof GamificationSettingsUpdateRequestSchema>
 
-/** The five settings S9 and S10 share, with camelCase names. */
+/**
+ * The five settings S9 and S10 share, with camelCase names, and the four API-ADM-16 names beside them.
+ * The four are optional until the API returns them (S7-T05, `reward-settings.service.ts`).
+ */
 export const GamificationEconomySettingsSchema = z
   .object({
     rewardBudgetSenSession: count,
@@ -329,6 +334,7 @@ export const GamificationEconomySettingsSchema = z
     flatQuizReward: count,
     currentSessionYear: count,
     gamesAwardSyiling: count,
+    ...RewardSettingsSchema.partial().shape,
   })
   .meta({ id: 'GamificationEconomySettings' })
 export type GamificationEconomySettings = z.infer<typeof GamificationEconomySettingsSchema>

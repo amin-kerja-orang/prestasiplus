@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { QuestionsRepository, QuestionsService } from '../../src/modules/questions'
 import { draftsFromParts } from '../../src/modules/questions/tree'
 import { adminActor, apiError, mcqInput, tagOf, type Tag } from './fixtures'
-import { bootQuestionsApp, type QuestionsTestApp } from './helpers'
+import { bootQuestionsApp, expectError, loginAs, type Client, type QuestionsTestApp } from './helpers'
 
 const shortPart = (over: Record<string, unknown> = {}) => ({
   label: '',
@@ -24,6 +24,7 @@ describe('S1-T09a schema (migrations 0133, 0134)', () => {
   let repo: QuestionsRepository
   let tag: Tag
   let admin: Awaited<ReturnType<typeof adminActor>>
+  let http: Client
 
   beforeAll(async () => {
     t = await bootQuestionsApp()
@@ -31,6 +32,7 @@ describe('S1-T09a schema (migrations 0133, 0134)', () => {
     repo = t.app.get(QuestionsRepository)
     tag = await tagOf(t.db, 'SEED-MCQ-MATH-T4')
     admin = await adminActor(t.db)
+    http = await loginAs(t, 'admin')
   })
   afterAll(async () => {
     await t.close()
@@ -39,7 +41,7 @@ describe('S1-T09a schema (migrations 0133, 0134)', () => {
   const make = (parts: unknown[]) =>
     svc.create(mcqInput(tag, { questionType: 'short_answer', options: undefined, correctAnswer: undefined, questionText: 'Soalan ujian skema v2.', parts: parts as never }), admin)
 
-  it('0133 adds nullable jsonb scheme_rules and mode_config with DM comments; existing rows stay NULL', async () => {
+  it('[CI] 0133 adds nullable jsonb scheme_rules and mode_config with DM comments; existing rows stay NULL', async () => {
     const cols = await t.db.query<{ table_name: string; column_name: string; data_type: string; is_nullable: string }>(
       `select table_name, column_name, data_type, is_nullable from information_schema.columns
        where (table_name, column_name) in (('question_versions','scheme_rules'),('question_parts','mode_config')) order by table_name`,
@@ -56,7 +58,7 @@ describe('S1-T09a schema (migrations 0133, 0134)', () => {
     expect(d?.d).toContain('DM-55')
   })
 
-  it('0134 widens ck_question_versions_type: accepts the three new types, rejects bogus', async () => {
+  it('[CI] 0134 widens ck_question_versions_type: accepts the three new types, rejects bogus', async () => {
     const [q] = await t.db.query<{ id: string }>(`select id::text id from question_versions limit 1`)
     expect(q).toBeDefined()
     for (const type of ['mcq_multi', 'true_false', 'fill_blank', 'short', 'table']) {
@@ -65,7 +67,7 @@ describe('S1-T09a schema (migrations 0133, 0134)', () => {
     await expect(t.db.query(`update question_versions set type = 'bogus' where id = $1`, [q?.id])).rejects.toThrow(/ck_question_versions_type/)
   })
 
-  it('a write of modeConfig on a part round-trips (draft mapping, store and read)', async () => {
+  it('[CI] a write of modeConfig on a part round-trips (draft mapping, store and read)', async () => {
     const modeConfig = { maxWords: 50, hardLimit: true }
     expect(draftsFromParts([shortPart({ modeConfig }) as never])[0]?.modeConfig).toEqual(modeConfig)
     expect(draftsFromParts([shortPart() as never])[0]?.modeConfig).toBeNull()
@@ -78,7 +80,7 @@ describe('S1-T09a schema (migrations 0133, 0134)', () => {
     expect((await repo.get(q.id, 'latest'))?.version.parts[0]).toMatchObject({ modeConfig })
   })
 
-  it('the write path is strict: marks 0 without example and duplicate option labels are refused with the PRD message', async () => {
+  it('[CI] the write path is strict: marks 0 without example and duplicate option labels are refused with the PRD message', async () => {
     const err = await apiError(() => make([shortPart({ marks: 0 })]))
     expect(err.getStatus()).toBe(422)
     expect(Object.values(err.fields ?? {})).toContain(MARKS_MIN)
@@ -98,7 +100,7 @@ describe('S1-T09a schema (migrations 0133, 0134)', () => {
     expect(dup.getStatus()).toBe(422)
   })
 
-  it('the read path stays lenient: a stored row with marks 0 and no example still reads', async () => {
+  it('[CI] the read path stays lenient: a stored row with marks 0 and no example still reads', async () => {
     const q = await make([shortPart()])
     await t.db.query(`update question_parts set marks = 0 where question_version_id in (select id from question_versions where question_id = $1)`, [q.id])
     expect((await repo.get(q.id, 'latest'))?.version.parts[0]).toMatchObject({ marks: 0, mode: 'short_text' })
@@ -107,7 +109,7 @@ describe('S1-T09a schema (migrations 0133, 0134)', () => {
   const put = (over: Record<string, unknown>) =>
     ({ subjectId: tag.subjectId, educationLevelId: tag.levelId, difficultyLevel: 3, questionType: 'short_answer', questionText: 'Soalan ujian skema v2.', ...over }) as never
 
-  it('#692: a flat edit of a legacy row (marks 0) that changes only the stem or tag succeeds; a changed part is held to the new rules', async () => {
+  it('[CI] #692: a flat edit of a legacy row (marks 0) that changes only the stem or tag succeeds; a changed part is held to the new rules', async () => {
     const q = await make([shortPart()])
     await t.db.query(`update question_parts set marks = 0 where question_version_id in (select id from question_versions where question_id = $1)`, [q.id])
     const stored = (await repo.get(q.id, 'latest'))!.version.parts
@@ -124,7 +126,22 @@ describe('S1-T09a schema (migrations 0133, 0134)', () => {
     expect(Object.values(err.fields ?? {})).toContain(MARKS_MIN)
   })
 
-  it('a new create with marks 101 is refused', async () => {
+  it('[CI] #692 over HTTP: PUT /questions/:id echoing a legacy leaf (marks 0) unchanged is 200; a changed part with marks 0 is 422', async () => {
+    const q = await make([shortPart()])
+    await t.db.query(`update question_parts set marks = 0 where question_version_id in (select id from question_versions where question_id = $1)`, [q.id])
+    const stored = (await repo.get(q.id, 'latest'))!.version.parts
+    const echoed = await http.put(`/api/questions/${q.id}`, put({ questionText: 'Soalan ujian skema v2 (HTTP).', parts: stored as never }))
+    expect(echoed.status, JSON.stringify(echoed.body)).toBe(200)
+    expect((await repo.get(q.id, 'latest'))?.version.parts[0]).toMatchObject({ marks: 0, mode: 'short_text' })
+    const changed = await http.put(`/api/questions/${q.id}`, put({ parts: [{ ...stored[0], prompt: { ms: 'Diubah.' } }] as never }))
+    const error = expectError(changed, 'VALIDATION_ERROR')
+    expect(Object.values(error.fields ?? {})).toContain(MARKS_MIN)
+    // Create stays strict over HTTP.
+    const created = await http.post('/api/questions', put({ parts: [shortPart({ marks: 0 })] as never }))
+    expect(Object.keys(expectError(created, 'VALIDATION_ERROR').fields ?? {}).some((k) => k.startsWith('parts'))).toBe(true)
+  })
+
+  it('[CI] a new create with marks 101 is refused', async () => {
     const err = await apiError(() => make([shortPart({ marks: 101 })]))
     expect(err.getStatus()).toBe(422)
     expect(Object.values(err.fields ?? {})).toContain('Markah bahagian tidak boleh melebihi 100.')

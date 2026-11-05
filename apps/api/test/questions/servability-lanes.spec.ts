@@ -115,11 +115,15 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
     // The text lives in one table; the hub chrome is pinned too.
     expect(SERVABILITY_HUB_CARDS).toEqual({
       databank: { title: 'Databank Soalan', description: 'Bank soalan objektif SPM mengikut subjek.', attentionLabel: 'tidak boleh ditanda' },
+      'tracking-a': { title: 'Tracking A', description: 'Set objektif penuh dan lane bahasa.', attentionLabel: 'set tidak lengkap' },
+      subjektif: { title: 'Subjektif', description: 'Soalan berstruktur dan esei.', attentionLabel: 'tiada skema — tidak disajikan' },
       'bijak-spm': { title: 'Bijak SPM', description: 'Kertas SPM penuh dalam format sebenar.', attentionLabel: 'tiada kunci jawapan' },
+      'kertas-subjektif': { title: 'Kertas Subjektif', description: 'Kertas 2, 3 & 4 percubaan negeri.', attentionLabel: '' },
+      'latih-tubi': { title: 'Latih Tubi', description: 'Latihan ikut topik dan bab.', attentionLabel: 'tidak boleh ditanda' },
     })
     expect(SERVABILITY_HUB_COPY).toEqual({
-      title: 'Kandungan SPM',
-      intro: 'Setiap kad ialah satu laluan yang pelajar boleh buka. Nombor merah menunjukkan berapa banyak item yang perlu diperiksa.',
+      title: 'SPM',
+      intro: 'Setiap kad di bawah ialah satu laluan yang pelajar boleh buka. Nombor merah menunjukkan berapa banyak item yang perlu diperiksa.',
       allGood: 'Semua elok',
       open: 'Buka senarai',
     })
