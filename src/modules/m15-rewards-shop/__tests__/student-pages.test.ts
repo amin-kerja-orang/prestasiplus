@@ -7,7 +7,13 @@ import type { Component } from 'vue'
 import { ApiError } from '@/api'
 import { useFlashStore } from '@/stores/flash'
 
-import type { CabutanView, MysteryBoxView, MysteryBoxesView, OpenDrawView } from '../api'
+import type {
+  CabutanView,
+  MysteryBoxOpened,
+  MysteryBoxView,
+  MysteryBoxesView,
+  OpenDrawView,
+} from '../api'
 import { errorMessage, formatDate, formatDayMonthTime } from '../components/format'
 import CabutanPage from '../pages/CabutanPage.vue'
 import MysteryResultModal from '../components/MysteryResultModal.vue'
@@ -207,9 +213,9 @@ describe('S6 MysteryBoxPage', () => {
     expect(w.get('[data-testid="box-1"]').text()).toContain('1-20')
     expect(w.get('[data-testid="box-1"]').text()).toContain('1-10')
     expect(w.find('[data-testid="box-1-ribbon"]').exists()).toBe(false)
-    expect(w.get('[data-testid="box-2-ribbon"]').text()).toBe('rare')
-    expect(w.get('[data-testid="box-3-ribbon"]').text()).toBe('epic')
-    expect(w.get('[data-testid="box-4-ribbon"]').text()).toBe('legendary')
+    expect(w.get('[data-testid="box-2-ribbon"]').text()).toBe('Rare')
+    expect(w.get('[data-testid="box-3-ribbon"]').text()).toBe('Epic')
+    expect(w.get('[data-testid="box-4-ribbon"]').text()).toBe('Legendary')
     expect(w.find('[data-testid="box-history"]').exists()).toBe(false)
   })
 
@@ -316,6 +322,19 @@ describe('S6 MysteryBoxPage', () => {
     await flushPromises()
     expect(useFlashStore().current?.message).toBe('Ralat berlaku. Sila cuba lagi.')
     expect(w.find('[data-testid="box-result"]').exists()).toBe(false)
+  })
+})
+
+describe('MysteryResultModal', () => {
+  // The e2e hook sits in the dialog body, because UModal / UDrawer drop attrs given to DsDialog.
+  it('carries data-testid="box-result" in the dialog body, only with a result', () => {
+    const stubs = { DsDialog: { template: '<section><slot /></section>' } }
+    const opened = { boxName: 'Kotak Gangsa', coins: 12, xp: 4 } as MysteryBoxOpened
+    const shown = mount(MysteryResultModal, { props: { result: opened }, global: { stubs } })
+    expect(shown.get('[data-testid="box-result"]').text()).toContain('Kotak Gangsa')
+    expect(shown.element.getAttribute('data-testid')).toBeNull()
+    const closed = mount(MysteryResultModal, { props: { result: null }, global: { stubs } })
+    expect(closed.find('[data-testid="box-result"]').exists()).toBe(false)
   })
 })
 
