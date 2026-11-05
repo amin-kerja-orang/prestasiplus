@@ -1,5 +1,4 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { bijakLevelScopeAllows } from '@pp/contract'
 import type {
   BijakBlueprintContract,
   BijakGenerateRequest,
@@ -18,7 +17,7 @@ import { composeStandardPaper, describeQuestion, effectiveMarks } from './exam-c
 import { generateLimit, noBlueprint, paperNotFound, shortage } from './errors'
 import { BijakPapersPorts, type BijakQuestionInfo, type PinRef, pinKey } from './ports'
 import { PapersRepository, type PaperWithTree, type SubjectRef } from './papers.repository'
-import { generationSeed, mytYear, referencePanels, ruleOf, sectionInstruction, sourceToWire } from './rules'
+import { generationSeed, mytYear, paperInPupilScope, referencePanels, ruleOf, sectionInstruction, sourceToWire } from './rules'
 import { bijakCodeOf, curriculumCodeOf } from './subject-codes'
 
 type Info = ReadonlyMap<string, BijakQuestionInfo>
@@ -96,7 +95,7 @@ export class PapersService {
     // REQ-B-058: a pinned version that is taken down refuses a new sitting too, so the paper is not offered either (one read for the whole list).
     const down = await this.takenDownOf(papers)
     // S3-T02, PO decision item 6: only the papers of the pupil's own Tingkatan; the same lead decision keeps a paper the pupil has a sitting on.
-    const listed = papers.filter((p) => progress.has(idToString(p.id)) || bijakLevelScopeAllows(p.levelScope, grade) && p.sections.every((s) => s.placements.every((pl) => info.has(idToString(pl.questionId)) && !down.has(pinKey({ questionId: idToString(pl.questionId), versionNo: pl.pinnedVersionNo })))))
+    const listed = papers.filter((p) => progress.has(idToString(p.id)) || paperInPupilScope(p, grade) && p.sections.every((s) => s.placements.every((pl) => info.has(idToString(pl.questionId)) && !down.has(pinKey({ questionId: idToString(pl.questionId), versionNo: pl.pinnedVersionNo })))))
     const marked = await this.withPinned(info, listed)
     return listed.map((p) => this.summary(p, subjects, marked, progress))
   }
@@ -294,10 +293,7 @@ export class PapersService {
     if (!paper || paper.status !== 'published') throw paperNotFound()
     if (paper.kind === 'jana' && paper.generatedForUserId?.toString() !== userId) throw paperNotFound()
     // S3-T02, PO decision item 6: a paper of another Tingkatan does not exist for this pupil, unless a sitting of theirs already stands on it.
-    if (paper.kind === 'pilihan' && !bijakLevelScopeAllows(paper.levelScope, await this.repo.userGrade(userId))) {
-      const progress = await this.ports.progressSource.progressFor(userId, [idToString(paper.id)])
-      if (!progress.has(idToString(paper.id))) throw paperNotFound()
-    }
+    if ((await this.repo.pupilScope(paper, userId, this.ports.progressSource)) === 'closed') throw paperNotFound()
     return paper
   }
 
