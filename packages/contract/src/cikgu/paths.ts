@@ -72,10 +72,10 @@ const noStore = (schema: z.ZodType, description: string) => ({
   content: { 'application/json': { schema } },
 })
 
-const UNAUTHORIZED = err('UNAUTHORIZED "Unauthenticated." (no valid session).')
-const FORBIDDEN_TEACHER = err('FORBIDDEN "This action is unauthorized." (any role other than teacher or admin).')
+const UNAUTHORIZED = err('UNAUTHORIZED "Sesi anda telah tamat. Sila log masuk semula." (no valid session).')
+const FORBIDDEN_TEACHER = err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (any role other than teacher or admin).')
 const CSRF_INVALID = err('CSRF_INVALID (missing or wrong X-CSRF-Token).')
-const NOT_FOUND = err('NOT_FOUND "Not Found." (unknown, foreign or non-numeric id; indistinguishable on purpose).')
+const NOT_FOUND = err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (unknown, foreign or non-numeric id; indistinguishable on purpose).')
 const AI_UNAVAILABLE_ENVELOPE = err(
   'AI_UNAVAILABLE "Cikgu Alesa tidak dapat menjawab sekarang. Sila cuba sebentar lagi." (provider error, BE-36 rate limit or AI_BUDGET_EXHAUSTED). Nothing is stored.',
 )
@@ -173,7 +173,7 @@ export function registerCikguPaths(registry: OpenAPIRegistry): void {
     responses: {
       201: json(envelopeOf(CikguRphSchema), 'The saved RPH.'),
       401: UNAUTHORIZED,
-      403: err('FORBIDDEN "This action is unauthorized." (any role other than teacher or admin), or CSRF_INVALID.'),
+      403: err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (any role other than teacher or admin), or CSRF_INVALID.'),
       422: err(
         'VALIDATION_ERROR with `fields`, collected for all fields and returned together, inserted in the order subjectName, level, tajuk, durationMinutes, lessonDate, pengajaranKeperluan, className, timeSlot, tema. ' +
           'Messages: required text = "Medan ini diperlukan."; level not in D1-D6/T1-T5 = "Medan ini tidak sah."; too long = "Medan ini tidak boleh melebihi {max} aksara." (subjectName 100, tajuk 200, pengajaranKeperluan 500, className/timeSlot/tema 100); durationMinutes = "Tempoh mesti antara 15 dan 240 minit."; lessonDate = "Tarikh tidak sah.". ' +
@@ -189,7 +189,7 @@ export function registerCikguPaths(registry: OpenAPIRegistry): void {
     path: '/cikgu/rph/{id}',
     tags: TAGS,
     summary: 'RPH detail',
-    description: 'Teacher or admin. Own rows only; unknown, foreign or non-numeric id = 404 NOT_FOUND "Not Found." (no existence leak). Carries class names and plan content: `Cache-Control: no-store`.',
+    description: 'Teacher or admin. Own rows only; unknown, foreign or non-numeric id = 404 NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (no existence leak). Carries class names and plan content: `Cache-Control: no-store`.',
     request: { params: idParam },
     responses: {
       200: noStore(envelopeOf(CikguRphSchema), 'The RPH.'),
@@ -222,7 +222,7 @@ export function registerCikguPaths(registry: OpenAPIRegistry): void {
     tags: TAGS,
     summary: 'Essay marking detail',
     description:
-      'Teacher or admin. Own rows only; unknown, foreign or non-numeric id = 404 NOT_FOUND "Not Found.". Carries the essay text and student name (child data): `Cache-Control: no-store`, never logged.',
+      'Teacher or admin. Own rows only; unknown, foreign or non-numeric id = 404 NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?". Carries the essay text and student name (child data): `Cache-Control: no-store`, never logged.',
     request: { params: idParam },
     responses: {
       200: noStore(envelopeOf(CikguEssayMarkingSchema), 'The marking.'),
@@ -262,7 +262,7 @@ export function registerCikguPaths(registry: OpenAPIRegistry): void {
     responses: {
       200: json(envelopeOf(CikguRollupResultSchema), 'Counts of the run.'),
       401: UNAUTHORIZED,
-      403: err('FORBIDDEN "This action is unauthorized." (any role other than teacher or admin), or CSRF_INVALID.'),
+      403: err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (any role other than teacher or admin), or CSRF_INVALID.'),
     },
   })
 
@@ -278,7 +278,7 @@ export function registerCikguPaths(registry: OpenAPIRegistry): void {
     responses: {
       200: json(envelopeOf(CikguBulkApproveResultSchema), 'Number of tags approved.'),
       401: UNAUTHORIZED,
-      403: err('FORBIDDEN "This action is unauthorized." (any role other than teacher or admin), or CSRF_INVALID.'),
+      403: err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (any role other than teacher or admin), or CSRF_INVALID.'),
       422: err('VALIDATION_ERROR, `fields.ids` = "Terlalu banyak item dipilih (maksimum 100)." when `ids` has more than 100 items.'),
     },
   })

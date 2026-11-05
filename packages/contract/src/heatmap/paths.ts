@@ -36,8 +36,8 @@ export function registerHeatmapPaths(registry: OpenAPIRegistry): void {
     ].join('\n'),
     responses: {
       200: json(HeatmapResponseSchema, 'Subjects with their shown topics; `subjects` is empty when no chapter reaches 5 attempts.'),
-      401: err('UNAUTHORIZED "Unauthenticated." (no valid session).'),
-      403: err('FORBIDDEN "This action is unauthorized." (any role other than student or admin).'),
+      401: err('UNAUTHORIZED "Sesi anda telah tamat. Sila log masuk semula." (no valid session).'),
+      403: err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (any role other than student or admin).'),
     },
   })
 }

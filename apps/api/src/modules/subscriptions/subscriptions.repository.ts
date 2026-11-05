@@ -248,6 +248,20 @@ export class SubscriptionsRepository {
     return n > 0
   }
 
+  /**
+   * The school's latest `active` subscription covering `day` (start and end days included), with its
+   * package name: highest `starts_on`, then highest `id`. `grace` is not active. Same filter as `hasLiveSubscription`.
+   */
+  async liveSubscriptionPackage(schoolId: string, day: string): Promise<{ name: string; endsOn: string } | null> {
+    if (!isIdString(schoolId)) return null
+    const row = await this.prisma.client.schoolSubscription.findFirst({
+      where: { schoolId: idFromString(schoolId), status: 'active', startsOn: { lte: dayToDate(day) }, endsOn: { gte: dayToDate(day) } },
+      orderBy: [{ startsOn: 'desc' }, { id: 'desc' }],
+      select: { endsOn: true, schoolPackage: { select: { name: true } } },
+    })
+    return row ? { name: row.schoolPackage.name, endsOn: dateToDay(row.endsOn) } : null
+  }
+
   // --- subscriptions: writes (call inside a transaction) ------------------------------------------
 
   async create(input: NewSubscription): Promise<SubscriptionRecord> {
