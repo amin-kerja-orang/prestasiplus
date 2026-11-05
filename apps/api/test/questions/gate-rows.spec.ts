@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest'
 
 import { dskpApprovalIssues } from '../../src/modules/questions/dskp-gate'
 import { TRANSITION_CONFLICT_MESSAGE } from '../../src/modules/questions/errors'
-import { checkDifficultyGate, checkStemGate, checkTagGate, type TagGateInput } from '../../src/modules/questions/publish-gate'
+import { checkDifficultyGate, checkStemGate, checkStimulusFlagGate, checkTagGate, type TagGateInput } from '../../src/modules/questions/publish-gate'
+import { approveGate, submitGate } from '../../src/modules/questions/workflow/lifecycle/gates'
 import { gateIssuesOf } from '../../src/modules/questions/workflow/lifecycle/gate-issues'
 
 /** S1-T02, 45 section 4.1: the rows that need no group, flag or validator data, table-driven (code, path, exact message, step). */
@@ -96,5 +97,52 @@ describe('row 30 / ERR-CON-04', () => {
   it('one catalogue text for every status pair', () => {
     expect(TRANSITION_CONFLICT_MESSAGE('draft', 'approved')).toBe('Perubahan status ini tidak dibenarkan daripada status semasa.')
     expect(TRANSITION_CONFLICT_MESSAGE('approved', 'approved')).toBe('Perubahan status ini tidak dibenarkan daripada status semasa.')
+  })
+})
+
+describe('AC-ADM-QE4.2: an SP outside the unit', () => {
+  it('"12.1.1" gives SP_NOT_IN_TAXONOMY with the contract text, step 4', () => {
+    const out = checkTagGate({ ...tagged, spOutsideUnit: ['12.1.1'] })
+    expect(out).toEqual({ spIds: INTAKE_GATE_MESSAGES.spNotInTaxonomy('12.1.1') })
+    expect(gateIssuesOf(out)).toEqual([{ path: 'spIds', message: INTAKE_GATE_MESSAGES.spNotInTaxonomy('12.1.1'), code: 'SP_NOT_IN_TAXONOMY', step: 4 }])
+  })
+})
+
+describe('rows 25 STIMULUS_MISSING and 26 FIGURE_ONLY (PRD 45 section 4.1, S and A)', () => {
+  const missing = 'Soalan menyebut Rajah 3 tetapi tiada rangsangan. Pilih kumpulan atau tambah rangsangan.'
+  const only = 'Soalan ini hanya mengandungi rangsangan. Tukarkan kepada rangsangan kumpulan.'
+
+  it('25: an open stimulus_missing flag is an item naming the reference; the code and step come from gateIssuesOf', () => {
+    const out = checkStimulusFlagGate({ stimulusFlag: 'stimulus_missing', stimulusRefText: 'Rajah 3' })
+    expect(out).toEqual({ stimulusMissing: missing })
+    expect(gateIssuesOf(out)).toEqual([{ path: 'stimulusMissing', message: missing, code: 'STIMULUS_MISSING', step: 2 }])
+  })
+
+  it('26: an open figure_only flag is an item', () => {
+    const out = checkStimulusFlagGate({ stimulusFlag: 'figure_only' })
+    expect(out).toEqual({ figureOnly: only })
+    expect(gateIssuesOf(out)).toEqual([{ path: 'figureOnly', message: only, code: 'FIGURE_ONLY', step: 2 }])
+  })
+
+  it('a dismissed flag gives no item', () => {
+    const flagDismissedAt = new Date()
+    expect(checkStimulusFlagGate({ stimulusFlag: 'stimulus_missing', stimulusRefText: 'Rajah 3', flagDismissedAt })).toEqual({})
+    expect(checkStimulusFlagGate({ stimulusFlag: 'figure_only', flagDismissedAt })).toEqual({})
+  })
+
+  it('stem_duplicated and no flag never give an item', () => {
+    expect(checkStimulusFlagGate({ stimulusFlag: 'stem_duplicated' })).toEqual({})
+    expect(checkStimulusFlagGate({ stimulusFlag: null })).toEqual({})
+    expect(checkStimulusFlagGate({})).toEqual({})
+  })
+
+  it('the open flag binds both gates (submit and approve) and a dismissed one binds neither', () => {
+    const base = { ...tagged, stem: 'Rajah 3 menunjukkan...', stimulusRefText: 'Rajah 3', parts: [], missingRequiredFields: [], unconfirmedLowConfidenceFields: [], mediaResolved: true } as unknown as Parameters<typeof submitGate>[0]
+    const open = { ...base, stimulusFlag: 'stimulus_missing' as const }
+    expect(submitGate(open).stimulusMissing).toBe(missing)
+    expect(approveGate(open).stimulusMissing).toBe(missing)
+    const dismissed = { ...open, flagDismissedAt: new Date() }
+    expect(submitGate(dismissed).stimulusMissing).toBeUndefined()
+    expect(approveGate(dismissed).stimulusMissing).toBeUndefined()
   })
 })

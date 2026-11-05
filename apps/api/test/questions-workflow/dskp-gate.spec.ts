@@ -1,6 +1,8 @@
 import { QuestionGateCheckSchema, QuestionStatusResultSchema, envelopeOf } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { PUBLISH_TAG_MESSAGES } from '../../src/modules/questions/errors'
+
 import { expectError, bootWorkflowApp, loginAll, type Client, type WorkflowTestApp } from './helpers'
 
 /**
@@ -205,6 +207,22 @@ describe('DSKP-complete approve gate, gate-check and status route (real bank)', 
       const issues = detail.body.data.dskpStatus.issues as { path: string; step: number }[]
       expect(issues.filter((i) => i.step === 4).map((i) => i.path)).toEqual(['unitId', 'spIds'])
       expect(detail.body.data.dskpStatus.complete).toBe(false)
+    })
+  })
+
+  describe('AC-ADM-QE4.1: a draft with no tag lists exactly the unit and the SP', () => {
+    it('gate-check approve returns two items, NO_UNIT then NO_SP, at step 4 with the PRD text', async () => {
+      // The subject has SP nodes (R-DSKP applies); the draft has aras, kertas, Bab and TP-free difficulty, so only the two tag items remain.
+      const id = await draft({ tag: undefined, cognitiveLevel: 'mengaplikasi', kertas: '1' })
+      const g = await issues(c.admin, id, 'approve')
+      expect(g.ok).toBe(false)
+      expect(g.issues).toEqual([
+        { path: 'unitId', code: 'NO_UNIT', step: 4, message: PUBLISH_TAG_MESSAGES.unitId },
+        { path: 'spIds', code: 'NO_SP', step: 4, message: PUBLISH_TAG_MESSAGES.spIds },
+      ])
+      // The constants are the PRD 30 AC-ADM-QE4.1 text.
+      expect(PUBLISH_TAG_MESSAGES.unitId).toBe('Sila pilih unit DSKP.')
+      expect(PUBLISH_TAG_MESSAGES.spIds).toBe('Sila pilih sekurang-kurangnya satu SP DSKP.')
     })
   })
 
