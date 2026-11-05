@@ -86,6 +86,7 @@ describe('routes', () => {
   it('S7 is a user-shell route and W has no shell (D14)', () => {
     const byPath = Object.fromEntries(productRoutes.map((r) => [r.path, r.meta]))
     expect(byPath['/marketplace/:slug']).toMatchObject({
+      ownsH1: true,
       layout: 'user',
       header: { title: 'Marketplace' },
     })
@@ -216,6 +217,26 @@ describe('S7 ProductDetailPage', () => {
     const w = await mountAt(ProductDetailPage, '/marketplace/:slug', '/marketplace/x')
     expect(useRouteOutcome().value).toBeNull()
     expect(w.find('[data-testid="m20-load-error"]').exists()).toBe(true)
+  })
+
+  it('prints exactly one h1 of its own: the product name, or a hidden one until it loads (ownsH1)', async () => {
+    const loaded = await mountAt(
+      ProductDetailPage,
+      '/marketplace/:slug',
+      `/marketplace/${DETAIL_1.slug}`,
+    )
+    expect(loaded.findAll('h1').map((h) => h.text())).toEqual([DETAIL_1.name])
+    loaded.unmount()
+
+    api.fetchMarketplaceProduct.mockReturnValue(new Promise(() => {}))
+    const loading = await mountAt(ProductDetailPage, '/marketplace/:slug', '/marketplace/x')
+    expect(loading.findAll('h1').map((h) => h.text())).toEqual(['Marketplace'])
+    expect(loading.get('h1').classes()).toContain('sr-only')
+    loading.unmount()
+
+    api.fetchMarketplaceProduct.mockRejectedValue(serverError())
+    const failed = await mountAt(ProductDetailPage, '/marketplace/:slug', '/marketplace/x')
+    expect(failed.findAll('h1').map((h) => h.text())).toEqual(['Marketplace'])
   })
 })
 
