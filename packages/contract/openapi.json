@@ -6754,6 +6754,61 @@
           "cancelled"
         ]
       },
+      "GamificationDrawWinner": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "prizePosition": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "prizeLabel": {
+            "type": "string"
+          },
+          "slot": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "userId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "ticketId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "drawnAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "deliveredAt": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "prizePosition",
+          "prizeLabel",
+          "slot",
+          "userId",
+          "name",
+          "ticketId",
+          "drawnAt",
+          "deliveredAt"
+        ]
+      },
       "GamificationDraw": {
         "type": "object",
         "properties": {
@@ -6802,6 +6857,13 @@
           "ticketsSold": {
             "type": "integer",
             "minimum": 0
+          },
+          "winners": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamificationDrawWinner"
+            },
+            "description": "Empty until the draw is drawn; then in prize order, slot order."
           }
         },
         "required": [
@@ -6814,7 +6876,8 @@
           "closesAt",
           "status",
           "createdAt",
-          "ticketsSold"
+          "ticketsSold",
+          "winners"
         ]
       },
       "GamificationDrawCreateRequest": {
@@ -81439,7 +81502,7 @@
           "gamification-admin"
         ],
         "summary": "List the lucky draws (Cabutan Bertuah), newest first (API-GAME-09)",
-        "description": "Every draw with its prize pool and ticketsSold. An open draw whose closing day (Malaysia time) has passed reads closed: the state is derived on read and nothing is written. Winners are listed by the winners route (not in this part).",
+        "description": "Every draw with its prize pool, ticketsSold and winners (empty until the draw is drawn). An open draw whose closing day (Malaysia time) has passed reads closed: the state is derived on read and nothing is written.",
         "responses": {
           "200": {
             "description": "The draws, newest first.",
@@ -81676,7 +81739,7 @@
           "gamification-admin"
         ],
         "summary": "Close an open draw: Tutup (API-GAME-09)",
-        "description": "No body. open to closed; tickets can no longer be bought. Winners are drawn from a closed draw by the winners route (not in this part).",
+        "description": "No body. open to closed; tickets can no longer be bought. Winners are drawn from a closed draw by POST /admin/reward-control/draws/{id}/winners.",
         "parameters": [
           {
             "schema": {
@@ -81754,6 +81817,209 @@
           },
           "409": {
             "description": "CONFLICT \"Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi.\" (the stored state of the draw is not open).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reward-control/draws/{id}/winners": {
+      "post": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Cabut pemenang: draw the winners of a closed draw (API-GAME-09)",
+        "description": "No body. One press draws every prize slot in prize order, in one transaction, and sets the draw to drawn (final: no redraw). Each slot takes one ticket uniformly at random (CSPRNG) among the remaining tickets; the winner's other tickets then leave the pool, so a pupil wins at most one prize per draw. Fewer pupils than prizes gives fewer winners. Allowed on a closed draw, and on an open draw whose closing day (Malaysia time) has passed. Each winner gets the in-app notice \"Tahniah! Anda memenangi {prize} dalam {title}.\". Audited. Safe on a double press: the second answers 409.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The draw, status drawn, with its winners.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationDraw"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND (no such draw; a non-numeric id gets the router default message).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi.\" (the draw is not closed: draft, still open, already drawn or cancelled), or NO_PARTICIPANTS \"Tiada peserta\" (no ticket was sold; the draw stays closed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reward-control/draws/{id}/winners/{winnerId}/deliver": {
+      "post": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Tandakan Dihantar: mark a prize as handed over (API-ADM-24)",
+        "description": "No body. Sets deliveredAt on the winner (the prize is handed over outside the app). Audited. A winner already marked answers 409.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; the id of a winner of this draw (GamificationDrawWinner.id).",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; the id of a winner of this draw (GamificationDrawWinner.id).",
+            "name": "winnerId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The draw with the winner marked delivered.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationDraw"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND (no such draw, or the winner is not a winner of this draw; a non-numeric id gets the router default message).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi.\" (the winner is already marked delivered).",
             "content": {
               "application/json": {
                 "schema": {

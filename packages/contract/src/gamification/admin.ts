@@ -387,6 +387,8 @@ export const GAMIFICATION_DRAW_MESSAGES = {
   ticketPriceInvalid: 'Harga tiket tidak sah.',
   prizeRequired: 'Hadiah diperlukan.',
   closeDatePast: 'Tarikh tutup mesti pada masa hadapan.',
+  /** 48 GAME-22, AC-GM-22.5: "Cabut pemenang" on a closed draw with no tickets; the draw stays closed. */
+  noParticipants: 'Tiada peserta',
 } as const
 
 /** Draw form limits (P10-01..P10-05). */
@@ -424,6 +426,26 @@ export const GamificationDrawStatusSchema = z
   .meta({ id: 'GamificationDrawStatus' })
 export type GamificationDrawStatus = z.infer<typeof GamificationDrawStatusSchema>
 
+/**
+ * One winner of a drawn Cabutan Bertuah draw (DM-36): the pupil that won one prize slot. `prizePosition` is the 0-based index of the
+ * prize line in the draw's `prizePool`; `slot` counts the winners of that line from 0. `deliveredAt` is set by "Tandakan Dihantar".
+ * The admin sees the pupil's name (the pupil page shows other winners by first name only, 48 GAME-22).
+ */
+export const GamificationDrawWinnerSchema = z
+  .object({
+    id: IdSchema,
+    prizePosition: count,
+    prizeLabel: z.string(),
+    slot: count,
+    userId: IdSchema,
+    name: z.string(),
+    ticketId: IdSchema,
+    drawnAt: TimestampSchema,
+    deliveredAt: TimestampSchema.nullable(),
+  })
+  .meta({ id: 'GamificationDrawWinner' })
+export type GamificationDrawWinner = z.infer<typeof GamificationDrawWinnerSchema>
+
 /** A lucky draw (Cabutan Bertuah) as the admin sees it, newest first in the reward-control list. */
 export const GamificationDrawSchema = z
   .object({
@@ -437,6 +459,7 @@ export const GamificationDrawSchema = z
     status: GamificationDrawStatusSchema,
     createdAt: TimestampSchema,
     ticketsSold: count,
+    winners: z.array(GamificationDrawWinnerSchema).meta(FIELD('Empty until the draw is drawn; then in prize order, slot order.')),
   })
   .meta({ id: 'GamificationDraw' })
 export type GamificationDraw = z.infer<typeof GamificationDrawSchema>

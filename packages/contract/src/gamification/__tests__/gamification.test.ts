@@ -136,6 +136,7 @@ const draw = {
   status: 'open',
   createdAt: AT,
   ticketsSold: 7,
+  winners: [],
 }
 
 describe('student: dashboard and convert', () => {
@@ -432,6 +433,11 @@ describe('admin: settings, reward control, draws', () => {
     expect(GamificationDrawSchema.safeParse({ ...draw, status: 'finished' }).success).toBe(false)
     for (const status of ['draft', 'open', 'closed', 'drawn', 'cancelled']) expect(GamificationDrawSchema.safeParse({ ...draw, status }).success, status).toBe(true)
     expect(GamificationDrawSchema.safeParse({ ...draw, closesAt: null }).success).toBe(true)
+    const winner = { id: '9', prizePosition: 0, prizeLabel: 'Baucar Buku RM10', slot: 0, userId: '12', name: 'Aisyah', ticketId: '31', drawnAt: AT, deliveredAt: null }
+    expect(GamificationDrawSchema.safeParse({ ...draw, status: 'drawn', winners: [winner, { ...winner, id: '10', slot: 1, userId: '13', ticketId: '32', deliveredAt: AT }] }).success).toBe(true)
+    expect(GamificationDrawSchema.safeParse({ ...draw, winners: [{ ...winner, deliveredAt: undefined }] }).success).toBe(false)
+    expect(GamificationDrawSchema.safeParse({ ...draw, winners: [{ ...winner, slot: -1 }] }).success).toBe(false)
+    expect(GamificationDrawSchema.safeParse({ ...draw, winners: undefined }).success).toBe(false)
     expect(GamificationDrawSchema.safeParse({ ...draw, closesAt: '2026-12-31T00:00:00+08:00' }).success).toBe(false)
     expect(GamificationRewardCostRequestSchema.safeParse({ costValueSen: 0 }).success).toBe(true)
     expect(GamificationRewardCostRequestSchema.safeParse({ costValueSen: -1 }).success).toBe(false)
