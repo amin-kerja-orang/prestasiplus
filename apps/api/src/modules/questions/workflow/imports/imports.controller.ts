@@ -11,7 +11,7 @@ import { NoStoreInterceptor } from '../../../../common/http/no-store.interceptor
 import { RateLimit, RateLimitGuard } from '../../../../common/throttle'
 import { Actor, AdminOnly, AdminOrGuru, type WorkflowActor } from '../actor'
 import { IMPORT_LIMITS } from './imports.constants'
-import { CsvUploadInterceptor, CsvZipUploadInterceptor, GuruCsvUploadInterceptor } from './imports.interceptor'
+import { CsvZipUploadInterceptor, GuruCsvUploadInterceptor } from './imports.interceptor'
 import { QuestionImportsService, type UploadedCsv } from './imports.service'
 
 function sendTemplate(res: Response, text: string, filename: string = QUESTION_IMPORT_TEMPLATE_FILENAME): void {

@@ -5,7 +5,6 @@ import {
   QUESTION_IMPORT_GURU_HEADER,
   QUESTION_IMPORT_GURU_TEMPLATE_CSV,
   QUESTION_IMPORT_GURU_TEMPLATE_FILENAME,
-  QUESTION_IMPORT_HEADER,
   QUESTION_IMPORT_TEMPLATE_CONTENT_TYPE,
   QUESTION_IMPORT_TEMPLATE_CSV,
   QUESTION_IMPORT_TEMPLATE_FILENAME,
@@ -971,9 +970,9 @@ describe('S1-T05 part 3: stimulus images from the ZIP and the template (real ban
     const guru = await uploadClient(t, 'teacher')
     const res = await guru.upload('/api/guru/questions/import', { name: 'g.csv', body: [GHEAD, imageRow('rajah.png', 'GZ1')].join('\n') }, {}, true, { name: 'imej.zip', body: buildZip([{ name: 'rajah.png', data: png }]) })
     expect(res.status).toBe(422)
-    // An unexpected part is not a missing file: ERR-REQ-01, never "Sila pilih fail CSV." (that is for an absent csvFile only).
+    // An unexpected part is not a missing file: ERR-REQ-01, never "Sila pilih fail." (that is for an absent csvFile only).
     expect(res.body.error.fields.csvFile).toBe('Data yang dihantar tidak sah. Sila semak dan cuba lagi.')
     const missing = await guru.upload('/api/guru/questions/import', null)
-    expect(missing.body.error.fields.csvFile).toBe('Sila pilih fail CSV.')
+    expect(missing.body.error.fields.csvFile).toBe('Sila pilih fail.')
   })
 })

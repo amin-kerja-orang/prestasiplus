@@ -113,6 +113,8 @@ export class GuruCsvUploadInterceptor implements NestInterceptor {
         throw ApiError.of('VALIDATION_ERROR', { fields: { csvFile: QUESTION_IMPORT_GURU_MESSAGES.fileSize } })
       }
       if (err instanceof BadRequestException) {
+        // An unexpected part (a `zipFile` on this route: no ZIP here) is not a missing file: ERR-REQ-01 (S1-T05 part 3).
+        if (err.message === 'Too many files' || err.message === 'Unexpected file field') throw ApiError.of('VALIDATION_ERROR', { fields: { csvFile: QUESTION_IMPORT_CODE_ROW_MESSAGES.requestInvalid } })
         throw ApiError.of('VALIDATION_ERROR', { fields: { csvFile: QUESTION_IMPORT_GURU_MESSAGES.fileRequired } })
       }
       throw err
