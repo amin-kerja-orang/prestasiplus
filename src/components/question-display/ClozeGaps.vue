@@ -42,6 +42,8 @@ const over = computed(() =>
     : Object.values(props.modelValue).some((v) => countWords(v) > props.maxWords!),
 )
 
+// A gap number used twice in one text gives two inputs bound to the same key, by design: both show and edit the
+// one answer of leaf N (45 FR-QA-24 links each token to the leaf labelled N).
 function gapInput(n: number): VNode {
   const ex = props.exampleGap?.n === n ? props.exampleGap : undefined
   return h('input', {
