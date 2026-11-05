@@ -142,10 +142,18 @@ describe('S6-T07 create validation (AC-GM-20.1)', () => {
     expect(await fieldsOf(service.create(actor(), body({ date: '2026-13-40' })))).toEqual({ date: MISSION_MESSAGES.dateInvalid })
   })
 
-  it('rewardCoins 101 is refused with the reward message, 100 and 0 are accepted', async () => {
+  it('rewardCoins 101 answers ERR-GAME-17 (422 MISSION_REWARD_TOO_HIGH), other field errors ride along; 100 and 0 are accepted', async () => {
     const { service } = build()
     expect(MISSION_REWARD_MAX).toBe(100)
-    expect(await fieldsOf(service.create(actor(), body({ rewardCoins: 101 })))).toEqual({ rewardCoins: MISSION_MESSAGES.reward })
+    const err = await refusal(service.create(actor(), body({ rewardCoins: 101, title: ' ' })))
+    expect(err.getStatus()).toBe(422)
+    expect(err.code).toBe('MISSION_REWARD_TOO_HIGH')
+    expect(err.message).toBe('Ganjaran misi melebihi had.')
+    expect(err.fields).toEqual({ title: MISSION_MESSAGES.titleRequired, rewardCoins: 'Ganjaran misi melebihi had.' })
+    expect((await refusal(service.create(actor(), body({ rewardCoins: 5000 })))).code).toBe('MISSION_REWARD_TOO_HIGH')
+    // Not a whole number or negative: the contract field text, as before.
+    expect(await fieldsOf(service.create(actor(), body({ rewardCoins: -1 })))).toEqual({ rewardCoins: MISSION_MESSAGES.reward })
+    expect(await fieldsOf(service.create(actor(), body({ rewardCoins: 100.5 })))).toEqual({ rewardCoins: MISSION_MESSAGES.reward })
     expect((await service.create(actor(), body({ rewardCoins: 100 }))).rewardCoins).toBe(100)
     expect((await service.create(actor(), body({ rewardCoins: 0 }))).rewardCoins).toBe(0)
   })

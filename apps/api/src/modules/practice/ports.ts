@@ -204,8 +204,8 @@ export const PRACTICE_REWARD_SOURCE = 'quiz_practice'
 export type PracticeRewardSource = 'quiz_practice' | 'quiz_spm' | 'quiz_pksk'
 
 /**
- * M14 BR-M14-03: the ledger source follows the session mode. The SPM modes `past_year`, `latih_tubi` and
- * `ramalan` credit as `quiz_spm`, `pksk` as `quiz_pksk`, and every other (practice) mode as `quiz_practice`.
+ * M14 BR-M14-03: the ledger source follows the session mode. The SPM modes `past_year`, `latih_tubi`,
+ * `ramalan`, `databank` and `tracking_a` credit as `quiz_spm`, `pksk` as `quiz_pksk`, and every other (practice) mode as `quiz_practice`.
  * The reward binding passes this as `CreditInput.source`.
  */
 export function practiceRewardSource(mode: PracticeMode): PracticeRewardSource {
@@ -213,6 +213,9 @@ export function practiceRewardSource(mode: PracticeMode): PracticeRewardSource {
     case 'past_year':
     case 'latih_tubi':
     case 'ramalan':
+    // S5-T15: databank / tracking_a replace past_year / ramalan, so they credit as the SPM source too.
+    case 'databank':
+    case 'tracking_a':
       return 'quiz_spm'
     case 'pksk':
       return 'quiz_pksk'

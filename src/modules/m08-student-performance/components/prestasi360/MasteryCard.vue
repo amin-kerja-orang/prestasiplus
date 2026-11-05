@@ -1,8 +1,9 @@
 <script setup lang="ts">
 /**
  * S6 "Penguasaan Subjek" (FR-M08-40): per practised subject a chip (the first two letters of the subject
- * code), the name, a bar (≥ 80 success, 60–79.9 warning, < 60 error; INFERRED bands), "{round(x)}%" and
- * "{n} sesi · {m} soalan"; or the empty state with "Mula Berlatih" → `/practice`.
+ * code), the name, a bar (≥ 80 success, 60–79 warning, < 60 error, compared on the shown whole number,
+ * FR-MUR-4-12), "{round(x)}%" and "{n} sesi · {m} soalan"; or the empty state "Belum ada latihan." with
+ * "Mula sekarang →" → `/practice` (FR-MUR-4-10).
  */
 import { usePrototypeScope } from '@/composables'
 import { DsEmptyState, DsPanel } from '@/ds'
@@ -10,6 +11,7 @@ import { DsEmptyState, DsPanel } from '@/ds'
 import type { StudentPerformance } from '../../api/types'
 import { usePhIcon } from '../../lib/icons'
 import { masteryTone } from '../../lib/analitik'
+import { pctWhole } from '../../lib/prestasi/format'
 
 defineProps<{ mastery: StudentPerformance['mastery'] }>()
 
@@ -25,13 +27,13 @@ const { allows } = usePrototypeScope()
         <UIcon :name="icon('books')" class="size-5 text-primary-t" />Penguasaan Subjek
       </h2>
       <div v-if="mastery.length === 0" data-testid="mastery-empty">
-        <DsEmptyState title="Belum ada data latihan." icon="i-ph-chart-pie">
+        <DsEmptyState title="Belum ada latihan." icon="i-ph-chart-pie">
           <template v-if="allows('/practice')" #actions>
             <UButton
               to="/practice"
               size="lg"
               :icon="icon('play')"
-              label="Mula Berlatih"
+              label="Mula sekarang →"
               data-testid="mastery-start"
             />
           </template>
@@ -50,16 +52,16 @@ const { allows } = usePrototypeScope()
             <div class="flex items-center gap-2">
               <UProgress
                 class="min-w-0 grow"
-                :model-value="Math.min(m.accuracy, 100)"
+                :model-value="Math.min(Math.round(m.accuracy), 100)"
                 :max="100"
-                :color="masteryTone(m.accuracy).color"
+                :color="masteryTone(Math.round(m.accuracy)).color"
                 size="sm"
                 :aria-label="`Penguasaan ${m.subjectName}`"
               />
               <span
-:class="[masteryTone(m.accuracy).text, 'tabular text-label']"
+:class="[masteryTone(Math.round(m.accuracy)).text, 'tabular text-label']"
                 data-testid="pct"
-                >{{ Math.round(m.accuracy) }}%</span>
+                >{{ pctWhole(m.accuracy) }}</span>
             </div>
             <p class="text-caption text-muted">{{ m.sessions }} sesi · {{ m.answered }} soalan</p>
           </div>

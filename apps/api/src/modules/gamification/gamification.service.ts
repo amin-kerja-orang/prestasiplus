@@ -24,6 +24,7 @@ import { idFromString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { toMytTimestamp } from '../../common/time/myt'
 import { ClassesRepository } from '../classes/classes.repository'
+import { RewardSettingsService } from '../shop'
 import { MAX_AMOUNT_PER_CALL, StreakService, WalletService, walletLockOrder } from '../wallet'
 import { titleOf } from '../wallet/rules'
 import {
@@ -154,6 +155,7 @@ export class GamificationService {
     @Inject(ClassesRepository) private readonly classes: ClassesRepository,
     @Inject(ConfigService) private readonly config: ConfigService<Env, true>,
     @Inject(StreakService) private readonly streaks: StreakService,
+    @Inject(RewardSettingsService) private readonly rewardSettings: RewardSettingsService,
   ) {}
 
   private run<T>(tx: TxClient | undefined, fn: (db: Db) => Promise<T>): Promise<T> {
@@ -470,10 +472,10 @@ export class GamificationService {
     return (await this.repo.userBasics(db, userId))?.isComplimentary !== true
   }
 
-  /** BR-M14-21: `games_award_syiling` = 1 and the user's `coinsEnabled` (XP is always allowed). */
+  /** BR-M14-21: `reward_settings.mini_games_give_coins` and the user's `coinsEnabled` (XP is always allowed). */
   async canEarnSyiling(userId: string, options: { tx?: TxClient } = {}): Promise<boolean> {
     const db = this.repo.handle(options.tx)
-    if ((await this.repo.settingValue(db, 'games_award_syiling')) !== 1) return false
+    if (!(await this.rewardSettings.read(db)).miniGamesGiveCoins) return false
     return this.coinsEnabled(userId, options)
   }
 

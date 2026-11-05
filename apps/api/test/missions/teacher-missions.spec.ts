@@ -67,16 +67,19 @@ describe('API-GUR-11 teacher Misi Harian: GET, POST, DELETE /api/guru/missions (
     expect(items).toContain(w.student2)
   })
 
-  it('POST 422 with fields: past date (MYT), reward 101, empty title, unknown subject', async () => {
+  it('POST 422 with fields: past date (MYT), empty title, unknown subject; reward 101 is ERR-GAME-17 and rides along', async () => {
     const res = await teacherA.post('/guru/missions', payload({ date: '2026-10-18', rewardCoins: 101, title: ' ', subjectId: '99999999' }))
     expect(res.status).toBe(422)
-    expect(res.body.error.code).toBe('VALIDATION_ERROR')
+    expect(res.body.error.code).toBe('MISSION_REWARD_TOO_HIGH')
+    expect(res.body.error.message).toBe('Ganjaran misi melebihi had.')
     expect(res.body.error.fields).toEqual({
       title: MISSION_MESSAGES.titleRequired,
-      rewardCoins: MISSION_MESSAGES.reward,
+      rewardCoins: 'Ganjaran misi melebihi had.',
       date: MISSION_MESSAGES.datePast,
       subjectId: MISSION_MESSAGES.subjectRequired,
     })
+    const only = await teacherA.post('/guru/missions', payload({ date: '2026-10-18', subjectId: '99999999', title: ' ' }))
+    expect(only.body.error.code).toBe('VALIDATION_ERROR')
   })
 
   it('POST with another teacher\'s class is the generic 404', async () => {
