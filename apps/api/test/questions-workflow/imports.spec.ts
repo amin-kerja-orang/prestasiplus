@@ -13,6 +13,7 @@ import {
   QuestionImportRunSchema,
   listEnvelopeOf,
 } from '@pp/contract'
+import { TRUE_FALSE_OPTIONS } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { expectCsrfInvalid, expectError, bootWorkflowApp, loginAll, parseData, count, type Client, type WorkflowTestApp } from './helpers'
@@ -412,18 +413,20 @@ describe('S1-T05 part 1: CSV with DSKP codes (real bank)', () => {
         [questionId],
       )
 
-    it('[CI] true_false betul and SALAH are stored as type true_false with options A=Betul, B=Salah and read back as true_false', async () => {
+    it('[CI] true_false betul and SALAH are stored as type mcq with exactly TRUE_FALSE_OPTIONS and the single key', async () => {
       const res = await importAdmin(csvOf(tfRow({ question_key: 'TF1', correct: 'betul' }), tfRow({ question_key: 'TF2', correct: 'SALAH', number_label: '13' })))
       expect(res.status, JSON.stringify(res.body)).toBe(201)
       expect(res.body.status).toBe('Import selesai: 2 soalan diimport, 0 gagal.')
       const rows = await t.db.query<{ question_id: string; type: string }>('select question_id::text, type from question_versions order by id desc limit 2')
-      expect(rows.map((r) => r.type)).toEqual(['true_false', 'true_false'])
+      // Ruling (S-4): type stays 'mcq' (the readers of `type = 'mcq'` must keep seeing it); the D8 form is the two fixed options.
+      expect(rows.map((r) => r.type)).toEqual(['mcq', 'mcq'])
       const [salah, betul] = rows
       expect((await optionsOf(betul!.question_id)).map((o) => [o.label, o.body, o.is_correct])).toEqual([['A', 'Betul', true], ['B', 'Salah', false]])
       expect((await optionsOf(salah!.question_id)).map((o) => [o.label, o.body, o.is_correct])).toEqual([['A', 'Betul', false], ['B', 'Salah', true]])
       const read = await c.admin.get(`/api/questions/${betul!.question_id}`)
       expect(read.status, JSON.stringify(read.body)).toBe(200)
       expect(JSON.stringify(read.body)).toContain('"correct":"A"')
+      expect((await optionsOf(betul!.question_id)).map((o) => [o.label, o.body])).toEqual(TRUE_FALSE_OPTIONS.map((o) => [o.label, o.body.ms]))
     })
 
     it('[CI] true_false with an option cell filled, or a blank or "ya" correct, is a row error and nothing is saved', async () => {
@@ -439,12 +442,13 @@ describe('S1-T05 part 1: CSV with DSKP codes (real bank)', () => {
       expect(await count(t.db, 'select count(*) as n from questions')).toBe(before)
     })
 
-    it('[CI] mcq_multi A;C with 4 options is stored as type mcq_multi with 2 correct and reads back as mcq_multi (A;A saves one correct)', async () => {
+    it('[CI] mcq_multi A;C with 4 options is stored as the multi leaf with 2 correct and reads back so (A;A saves one correct)', async () => {
       const res = await importAdmin(csvOf(line({ question_key: 'M1', type: 'mcq_multi', correct: 'A;C' }), line({ question_key: 'M2', type: 'mcq_multi', correct: 'A;A', number_label: '13' })))
       expect(res.status, JSON.stringify(res.body)).toBe(201)
       expect(res.body.status).toBe('Import selesai: 2 soalan diimport, 0 gagal.')
       const [dup, two] = await t.db.query<{ question_id: string; type: string }>('select question_id::text, type from question_versions order by id desc limit 2')
-      expect([two!.type, dup!.type]).toEqual(['mcq_multi', 'mcq_multi'])
+      // TODO(#820): assert type === 'mcq_multi' after the rebase onto #820; until then the stored type is 'mcq' and the leaf shape is what is asserted.
+      expect([two!.type, dup!.type]).toEqual(['mcq', 'mcq'])
       const opts = await optionsOf(two!.question_id)
       expect(opts.map((o) => o.label)).toEqual(['A', 'B', 'C', 'D'])
       expect(opts.filter((o) => o.is_correct).map((o) => o.label)).toEqual(['A', 'C'])

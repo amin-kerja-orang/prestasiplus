@@ -4,7 +4,7 @@
  * this file only converts. A key that does not parse as the contract leaf for its mode fails
  * closed (`StoredKeyError`, mapped to a 500 by the service with the part id logged).
  */
-import { isTrueFalseOptions, QuestionLeafPartReadV3Schema, type ModeConfigSchema, type QuestionCognitiveLevel, type QuestionPart } from '@pp/contract'
+import { QuestionLeafPartReadV3Schema, type ModeConfigSchema, type QuestionCognitiveLevel, type QuestionPart } from '@pp/contract'
 import type { z } from 'zod'
 
 import type { AnswerKey, PartOption, QuestionPart as PartRow } from '../../db/generated/client'
@@ -240,14 +240,11 @@ export function totalMarks(parts: readonly QuestionPart[]): number {
 }
 
 /** Part type of a version: `structured` for a tree or several leaves, otherwise by the single leaf mode. */
-export function versionTypeOf(parts: readonly QuestionPart[]): 'mcq' | 'mcq_multi' | 'true_false' | 'match' | 'short' | 'structured' | 'working' | 'essay' | 'drawing' | 'table' {
+export function versionTypeOf(parts: readonly QuestionPart[]): 'mcq' | 'match' | 'short' | 'structured' | 'working' | 'essay' | 'drawing' | 'table' {
   const [only] = parts
   if (parts.length !== 1 || only === undefined || !isLeaf(only)) return 'structured'
   switch (only.mode) {
     case 'mcq':
-      // S1-T05 / D4: a single `mcq` leaf with the multi flag is `mcq_multi`; one with the two fixed Betul/Salah options is `true_false`.
-      if ((only.modeConfig as { multi?: boolean } | undefined)?.multi === true) return 'mcq_multi'
-      return isTrueFalseOptions(only.options) ? 'true_false' : 'mcq'
     case 'pksk_choice':
       return 'mcq'
     case 'match_letter':
