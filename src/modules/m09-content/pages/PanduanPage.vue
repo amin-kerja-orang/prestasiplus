@@ -15,7 +15,7 @@ import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables/useApi'
 import { useSession } from '@/composables/useSession'
-import { DsArt3D, DsIconChip } from '@/ds'
+import { DsArt3D, DsCluster, DsIconChip, DsStack } from '@/ds'
 import { useThemeMode } from '@/theme/color-mode'
 
 import { fetchSupportConfig } from '../api/content'
@@ -103,36 +103,34 @@ function setRole(id: string): void {
       <PanduanRolePanel v-if="activePanel" :key="activePanel.id" :role="activePanel" />
 
       <UCard v-if="hasContact || !isLoggedIn" data-testid="panduan-help">
-        <div class="flex flex-col items-center gap-3 text-center">
-          <template v-if="hasContact">
-            <div class="flex flex-col items-center gap-3" data-testid="panduan-contact">
-              <DsIconChip icon="i-ph-chats-circle-duotone" size="lg" />
-              <h2 class="text-heading text-highlighted">Perlukan Bantuan Lanjut?</h2>
-              <p class="text-label text-muted">
-                Hubungi pasukan sokongan kami untuk sebarang pertanyaan.
-              </p>
-              <div class="flex flex-wrap items-center justify-center gap-3">
-                <UButton
-                  v-if="email !== ''"
-                  :to="`mailto:${email}`"
-                  icon="i-ph-envelope-simple-duotone"
-                  data-testid="panduan-email"
-                  >E-mel Kami</UButton
-                >
-                <UButton
-                  v-if="whatsapp !== ''"
-                  :to="`https://wa.me/${whatsapp}`"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  color="neutral"
-                  variant="soft"
-                  data-testid="panduan-whatsapp"
-                >
-                  <WhatsAppIcon class="size-4" />WhatsApp
-                </UButton>
-              </div>
-            </div>
-          </template>
+        <DsStack gap="sm" align="center" class="text-center">
+          <DsStack v-if="hasContact" gap="sm" align="center" data-testid="panduan-contact">
+            <DsIconChip icon="i-ph-chats-circle-duotone" size="lg" />
+            <h2 class="text-heading text-highlighted">Perlukan Bantuan Lanjut?</h2>
+            <p class="text-label text-muted">
+              Hubungi pasukan sokongan kami untuk sebarang pertanyaan.
+            </p>
+            <DsCluster gap="sm" justify="center">
+              <UButton
+                v-if="email !== ''"
+                :to="`mailto:${email}`"
+                icon="i-ph-envelope-simple-duotone"
+                data-testid="panduan-email"
+                >E-mel Kami</UButton
+              >
+              <UButton
+                v-if="whatsapp !== ''"
+                :to="`https://wa.me/${whatsapp}`"
+                target="_blank"
+                rel="noopener noreferrer"
+                color="neutral"
+                variant="soft"
+                data-testid="panduan-whatsapp"
+              >
+                <WhatsAppIcon class="size-4" />WhatsApp
+              </UButton>
+            </DsCluster>
+          </DsStack>
           <UButton
             v-if="!isLoggedIn"
             to="/register"
@@ -141,7 +139,7 @@ function setRole(id: string): void {
             data-testid="panduan-register"
             >Daftar Percuma Sekarang</UButton
           >
-        </div>
+        </DsStack>
       </UCard>
     </main>
 

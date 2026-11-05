@@ -280,4 +280,6 @@ export interface SupportConfig {
   phone: string
   whatsapp: string
   hours: string
+  /** @deprecated Use `whatsapp`. Optional; the server may omit it. */
+  whatsappNumber?: string
 }
