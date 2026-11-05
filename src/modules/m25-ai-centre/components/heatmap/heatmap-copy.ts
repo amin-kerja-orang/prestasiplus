@@ -28,23 +28,23 @@ export function cellHref(subject: { code: string }): string {
   return code === '' ? EMPTY_HREF : `/practice/chapter/${encodeURIComponent(code)}`
 }
 
-/** The grey outline: 1px inset ring of the muted text colour at 35%. */
-const GREY_RING =
-  'ring-1 ring-inset ring-[color-mix(in_oklab,var(--ui-text-muted)_35%,transparent)]'
+/** The grey tile surface: the page background with a 1px inset ring of the muted text colour at 35%. */
+const GREY_SURFACE =
+  'bg-default ring-1 ring-inset ring-[color-mix(in_oklab,var(--ui-text-muted)_35%,transparent)]'
 
 /** Legend pills in order (FR-M25-14); gray is the `belum-cuba` tile (S10-T05). Single orange ramp (A3). */
 export const LEGEND: readonly { key: HeatmapState | 'gray'; label: string; swatch: string }[] = [
   { key: 'red', label: 'Lemah (< 50%)', swatch: 'bg-heat' },
   { key: 'amber', label: 'Sederhana (50-79%)', swatch: 'bg-heat/35' },
   { key: 'green', label: 'Mantap (≥ 80%)', swatch: 'bg-accented' },
-  { key: 'gray', label: 'Belum cuba', swatch: `bg-default ${GREY_RING}` },
+  { key: 'gray', label: 'Belum cuba', swatch: GREY_SURFACE },
 ]
 
 /** Cell fills per band: one hue ramp, weak = full A3 orange, strong = the elevated surface. */
 export function bandCellClass(band: HeatmapState): string {
   // Grey: an outlined tile on the page surface (the theme borders are transparent, so the outline is a ring
   // of the muted text token), so it never reads as the green tile (elevated fill).
-  if (band === 'belum-cuba') return `bg-default text-muted ${GREY_RING}`
+  if (band === 'belum-cuba') return `text-muted ${GREY_SURFACE}`
   if (band === 'red') return 'bg-heat text-on-highlight'
   if (band === 'amber') return 'bg-heat/35 text-highlighted'
   return 'bg-elevated text-highlighted'
