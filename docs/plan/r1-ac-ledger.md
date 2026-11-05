@@ -53,6 +53,19 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
+| S1-T01 | AC-QA-02 | CI | Pass | 2026-11-05 | team-aa/S-3 | group-actions.spec.ts::AC-QA-02: member 3 fails the approve gate: 422 lists "Soalan 3: ..." and no member changes status |
+| S1-T01 | AC-QA-03 | CI | Pass | 2026-11-05 | team-aa/S-3 | group-actions.spec.ts::AC-QA-03: an ids list with some but not all members is 422 stimulus_group_split on the group; nothing changes |
+| S1-T01 | AC-QA-06 | CI | Pass | 2026-11-05 | team-aa/S-3 | group-actions.spec.ts::a draft member leaves group A and joins the end of group B in one call; A closes up; both details come back; audit row |
+| S1-T01 | AC-QA-50 | CI | Pass | 2026-11-05 | team-aa/S-3 | group-actions.spec.ts::3 Draf members: 409 publishNotReady and nothing changes; after Hantar kumpulan all 3 are Menunggu Semakan; after Terbitkan kumpulan all 3 are Diluluskan together |
+| S1-T01 | AC-QA-51 | CI | Pass | 2026-11-05 | team-aa/S-3 | group-actions.spec.ts::attaching a question of another Subjek to the empty Sains T4 group answers 422 memberScope; the same Subjek and Tingkatan is accepted |
+| S1-T01 | AC-ADM-QE1.5 | CI | Pass | 2026-11-05 | team-aa/S-3 | group-actions.spec.ts::3 Draf members: 409 publishNotReady and nothing changes; after Hantar kumpulan all 3 are Menunggu Semakan; after Terbitkan kumpulan all 3 are Diluluskan together |
+| S1-T01 | AC-ADM-QE2.3 | CI | Pass | 2026-11-05 | team-aa/S-3 | group-actions.spec.ts::a draft member leaves group A and joins the end of group B in one call; A closes up; both details come back; audit row |
+| S1-T01 | AC-ADM-QE2.6 | CI | Pass | 2026-11-05 | team-aa/S-3 | group-actions.spec.ts::attaching a question of another Subjek to the empty Sains T4 group answers 422 memberScope; the same Subjek and Tingkatan is accepted |
+| S1-T02 | AC-ADM-QE4.3 | CI | Pass | 2026-11-05 | team-aa/S-3 | bab-optional.spec.ts::without a Bab: gate-check lists NO_CHAPTER (step 4); the status route, the bulk action and create-as-approved name the same field; nothing moves |
+| S1-T02 | AC-ADM-QE4.4 | CI | Pass | 2026-11-05 | team-aa/S-3 | bab-optional.spec.ts::a Subjek + Tingkatan without chapters has no NO_CHAPTER item and approves chapterless |
+| S1-T05 | AC-QA-34 | CI | Pass | 2026-11-05 | team-aa/S-3 | imports-csv.spec.ts::more than 2,000 data rows is refused whole with 422 on the admin and the Guru route, for both headers, and nothing is stored |
+| S1-T06 | AC-ADM-QE7.1 | CI | Pass | 2026-11-05 | team-aa/S-3 | builder-placements.spec.ts::[CI] AC-QE7.1: the Jana draw never splits a group: whole or not at all, members contiguous in group order |
+| S1-T06 | AC-MUR-QP-6 | CI | Pass | 2026-11-05 | team-aa/S-3 | draw-units.spec.ts::property: 1000 random draws never return a member without its group, never split a group, and stay within n |
 
 ## Sprint 2
 
