@@ -26,6 +26,7 @@ import HomeKombo from '../components/dashboard-v2/HomeKombo.vue'
 import HomeLevels from '../components/dashboard-v2/HomeLevels.vue'
 import HomeCabaran from '../components/dashboard-v2/HomeCabaran.vue'
 import HomePakej from '../components/dashboard-v2/HomePakej.vue'
+import HomeMood from '../components/dashboard-v2/HomeMood.vue'
 import HomePlatform from '../components/dashboard-v2/HomePlatform.vue'
 import HomeQuests from '../components/dashboard-v2/HomeQuests.vue'
 import HomeQuickActions from '../components/dashboard-v2/HomeQuickActions.vue'
@@ -97,6 +98,7 @@ watch(
         <HomeBadges :badges="data.badges" />
       </div>
       <HomeCabaran />
+      <HomeMood v-if="data.user.role === 'student'" />
       <HomeQuickActions
         :revision-total="data.revisionTotal"
         :is-admin="data.user.role === 'admin'"
