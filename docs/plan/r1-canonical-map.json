@@ -15033,6 +15033,16 @@
       "approved_by_card": null
     },
     {
+      "key": "POST /api/questions/:p/parts/:p/scheme/validate",
+      "method": "POST",
+      "path": "/api/questions/:id/parts/:partId/scheme/validate",
+      "api_id": "API-Q-30",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "POST /api/questions",
       "method": "POST",
       "path": "/api/questions",

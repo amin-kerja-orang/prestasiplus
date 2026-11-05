@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common'
+import { QuestionSchemeRulesSchema, type QuestionSchemeRules } from '@pp/contract'
 
 import { ApiError } from '../../common/errors/api-error'
 import { Prisma } from '../../db/generated/client'
@@ -58,6 +59,8 @@ export interface VersionDraft {
   difficultyLevel: number | null
   /** DM-56: `undefined` keeps what is stored (a new version inherits it); an object writes the jsonb and the three int columns; `null` clears them. */
   textbookRef?: TextbookRef | null
+  /** DM-54: question-level scheme rules (`scheme_rules`); `undefined` keeps what is stored (a new version inherits it), `null` clears it. */
+  schemeRules?: QuestionSchemeRules | null
   sourcePage: number | null
   setLabel: string | null
   /**
@@ -1126,6 +1129,7 @@ export class QuestionsRepository {
         textbookTingkatan: true,
         textbookPage: true,
         textbookRef: true,
+        schemeRules: true,
         sourcePaperId: true,
         sourceFileId: true,
         sourceRegion: true,
@@ -1421,6 +1425,7 @@ export class QuestionsRepository {
           : { textbookRef: c.textbookRef as unknown as Prisma.InputJsonValue, textbookBab: smallInt(c.textbookRef.bab), textbookTingkatan: smallInt(c.textbookRef.tingkatan.replace(/^T/i, '')), textbookPage: c.textbookRef.mukaSurat }),
       sourcePage: c.sourcePage,
       setLabel: c.setLabel,
+      ...(c.schemeRules === undefined ? {} : { schemeRules: c.schemeRules === null ? Prisma.DbNull : (c.schemeRules as unknown as Prisma.InputJsonValue) }),
       ...(c.paperCode === undefined ? {} : { paperCode: c.paperCode }),
       ...(c.importIssues === undefined ? {} : { importIssues: c.importIssues === null || c.importIssues.length === 0 ? Prisma.DbNull : (c.importIssues as unknown as Prisma.InputJsonValue) }),
       lastEditor: c.lastEditor ?? 'person',
@@ -1456,6 +1461,7 @@ export class QuestionsRepository {
       textbookTingkatan: number | null
       textbookPage: number | null
       textbookRef: unknown
+      schemeRules?: unknown
       sourcePaperId: bigint | null
       sourceFileId: bigint | null
       sourceRegion: unknown
@@ -1473,6 +1479,9 @@ export class QuestionsRepository {
         createdAt: now,
         updatedAt: now,
         ...this.versionColumns(columns),
+        ...(inherited === undefined || draft.schemeRules !== undefined || inherited.schemeRules === null || inherited.schemeRules === undefined
+          ? {}
+          : { schemeRules: inherited.schemeRules as Prisma.InputJsonValue }),
         ...(inherited === undefined
           ? {}
           : { ...inheritedOf(inherited, draft.textbookRef !== undefined), sourceRegion: inherited.sourceRegion === null || inherited.sourceRegion === undefined ? undefined : (inherited.sourceRegion as object) }),
@@ -1745,6 +1754,7 @@ export class QuestionsRepository {
       difficultyTp: v.difficultyTp,
       difficultyLevel: v.difficultyLevel,
       textbookRef: textbookRefOf(v.textbookRef),
+      schemeRules: schemeRulesOf(v.schemeRules),
       rejectionReason: v.rejectionReason,
       sourcePage: v.sourcePage,
       setLabel: v.setLabel,
@@ -1776,8 +1786,10 @@ export class QuestionsRepository {
  * The provenance a new version inherits from the one it edits. The textbook reference (jsonb and its three int columns) is inherited only when
  * the save did not send one (`textbookSent` false); a sent value, or a cleared one, is written by `versionColumns` instead.
  */
-function inheritedOf<T extends { textbookBab: number | null; textbookTingkatan: number | null; textbookPage: number | null; textbookRef: unknown }>(inherited: T, textbookSent: boolean) {
-  const { textbookBab, textbookTingkatan, textbookPage, textbookRef, ...rest } = inherited
+function inheritedOf<T extends { textbookBab: number | null; textbookTingkatan: number | null; textbookPage: number | null; textbookRef: unknown; schemeRules?: unknown }>(inherited: T, textbookSent: boolean) {
+  // `schemeRules` is inherited by insertVersion itself (typed JSON), so it is dropped here.
+  const { textbookBab, textbookTingkatan, textbookPage, textbookRef, schemeRules: _schemeRules, ...rest } = inherited
+  void _schemeRules
   if (textbookSent) return rest
   return { ...rest, textbookBab, textbookTingkatan, textbookPage, textbookRef: textbookRef === null || textbookRef === undefined ? Prisma.DbNull : (textbookRef as Prisma.InputJsonValue) }
 }
@@ -1794,4 +1806,10 @@ function textbookRefOf(raw: unknown): TextbookRef | null {
 function smallInt(text: string): number | null {
   const t = text.trim()
   return /^\d{1,5}$/.test(t) && Number(t) <= 32767 ? Number(t) : null
+}
+
+/** The stored `scheme_rules` jsonb (DM-54) when it parses as `QuestionSchemeRules`, else null (a bad stored value is never served). */
+function schemeRulesOf(raw: unknown): QuestionSchemeRules | null {
+  const parsed = QuestionSchemeRulesSchema.safeParse(raw)
+  return parsed.success ? parsed.data : null
 }

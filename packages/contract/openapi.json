@@ -39960,6 +39960,9 @@
               "string",
               "null"
             ]
+          },
+          "schemeRules": {
+            "$ref": "#/components/schemas/QuestionSchemeRules"
           }
         },
         "required": [
@@ -40054,6 +40057,86 @@
           "mukaSurat"
         ],
         "description": "Rujukan buku teks: {bab, tingkatan, mukaSurat, hingga?} (DM-56)."
+      },
+      "QuestionSchemeRules": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "deductions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "$ref": "#/components/schemas/QuestionDeductionCode"
+                },
+                "amount": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "cap": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "scope": {
+                  "type": "string",
+                  "enum": [
+                    "question",
+                    "part"
+                  ]
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              },
+              "required": [
+                "code",
+                "amount",
+                "scope"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "zeroIf": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "$ref": "#/components/schemas/QuestionDeductionCode"
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              },
+              "required": [
+                "code",
+                "label"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "QuestionDeductionCode": {
+        "type": "string",
+        "enum": [
+          "spelling",
+          "punctuation",
+          "grammar",
+          "unit",
+          "sf",
+          "dp",
+          "copy",
+          "other"
+        ]
       },
       "QuestionDetail": {
         "type": "object",
@@ -40389,6 +40472,9 @@
               "string",
               "null"
             ]
+          },
+          "schemeRules": {
+            "$ref": "#/components/schemas/QuestionSchemeRules"
           },
           "subject": {
             "allOf": [
@@ -40814,6 +40900,9 @@
           },
           "textbookRef": {
             "$ref": "#/components/schemas/QuestionTextbookRef"
+          },
+          "schemeRules": {
+            "$ref": "#/components/schemas/QuestionSchemeRules"
           },
           "questionType": {
             "$ref": "#/components/schemas/QuestionType"
@@ -47013,6 +47102,9 @@
           },
           "textbookRef": {
             "$ref": "#/components/schemas/QuestionTextbookRef"
+          },
+          "schemeRules": {
+            "$ref": "#/components/schemas/QuestionSchemeRules"
           }
         },
         "required": [
@@ -49606,6 +49698,1065 @@
           "question",
           "servability"
         ]
+      },
+      "QuestionSchemeValidateRequest": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "points"
+                ]
+              },
+              "scheme_v": {
+                "type": "number",
+                "enum": [
+                  2
+                ]
+              },
+              "marks": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "points": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "K",
+                        "N",
+                        "P",
+                        "B",
+                        "M",
+                        "F",
+                        "C"
+                      ]
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "marks": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "text": {
+                      "$ref": "#/components/schemas/QuestionRichText"
+                    },
+                    "accept": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "allOf": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "seen": {
+                      "type": "boolean"
+                    },
+                    "implied": {
+                      "type": "boolean"
+                    },
+                    "requires": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "notAccepted": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "unit": {
+                      "type": "object",
+                      "properties": {
+                        "value": {
+                          "type": "string"
+                        },
+                        "mandatory": {
+                          "type": "boolean"
+                        },
+                        "alt": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "value",
+                        "mandatory"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "tol": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "tolKind": {
+                      "type": "string",
+                      "enum": [
+                        "abs",
+                        "rel"
+                      ]
+                    },
+                    "sf": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "dp": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "ecf": {
+                      "type": "object",
+                      "properties": {
+                        "fromPart": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "rule": {
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "op": {
+                                  "type": "string",
+                                  "enum": [
+                                    "same"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "op"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "op": {
+                                  "type": "string",
+                                  "enum": [
+                                    "scale"
+                                  ]
+                                },
+                                "factor": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "op",
+                                "factor"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "fromPart",
+                        "rule"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "note": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "code",
+                    "label",
+                    "marks"
+                  ],
+                  "additionalProperties": false
+                },
+                "minItems": 1
+              },
+              "groups": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "pointIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "minItems": 1
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "pair"
+                      ]
+                    },
+                    "anyN": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "eachMarks": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "cap": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "pointIds"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "bonus": {
+                "type": "object",
+                "properties": {
+                  "ifAllCorrect": {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  },
+                  "marks": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "label": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "ifAllCorrect",
+                  "marks",
+                  "label"
+                ],
+                "additionalProperties": false
+              },
+              "alternatives": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "pointIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "minItems": 1
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "pointIds"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "countMarks": {
+                "type": "object",
+                "properties": {
+                  "items": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "marks": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "items",
+                  "marks"
+                ],
+                "additionalProperties": false
+              },
+              "finalAnswer": {
+                "type": "object",
+                "properties": {
+                  "display": {
+                    "type": "string"
+                  },
+                  "accepted": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "minItems": 1
+                  },
+                  "tol": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "tolKind": {
+                    "type": "string",
+                    "enum": [
+                      "abs",
+                      "rel"
+                    ]
+                  },
+                  "unit": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "display",
+                  "accepted"
+                ],
+                "additionalProperties": false
+              },
+              "modelText": {
+                "$ref": "#/components/schemas/QuestionRichText"
+              },
+              "modelImageId": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "guidance": {
+                "$ref": "#/components/schemas/QuestionRichText"
+              },
+              "deductions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "$ref": "#/components/schemas/QuestionDeductionCode"
+                    },
+                    "amount": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "cap": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "scope": {
+                      "type": "string",
+                      "enum": [
+                        "question",
+                        "part"
+                      ]
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "amount",
+                    "scope"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "zeroIf": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "$ref": "#/components/schemas/QuestionDeductionCode"
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "label"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "kind",
+              "scheme_v",
+              "marks",
+              "points"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "rubric"
+                ]
+              },
+              "scheme_v": {
+                "type": "number",
+                "enum": [
+                  2
+                ]
+              },
+              "marks": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "scoring": {
+                "type": "string",
+                "enum": [
+                  "overall",
+                  "perCriterion"
+                ],
+                "default": "overall"
+              },
+              "criteria": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "max": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name"
+                  ],
+                  "additionalProperties": false
+                },
+                "minItems": 1
+              },
+              "bands": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "range": {
+                      "type": "array",
+                      "prefixItems": [
+                        {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      ]
+                    },
+                    "descriptors": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
+                    "sub": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "range": {
+                            "type": "array",
+                            "prefixItems": [
+                              {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              {
+                                "type": "integer",
+                                "minimum": 0
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "range"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "range"
+                  ],
+                  "additionalProperties": false
+                },
+                "minItems": 1
+              },
+              "floorBand": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "range": {
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "range"
+                ],
+                "additionalProperties": false
+              },
+              "contentPoints": {
+                "type": "object",
+                "properties": {
+                  "points": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "K",
+                            "N",
+                            "P",
+                            "B",
+                            "M",
+                            "F",
+                            "C"
+                          ]
+                        },
+                        "label": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        },
+                        "marks": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "text": {
+                          "$ref": "#/components/schemas/QuestionRichText"
+                        },
+                        "accept": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "allOf": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "seen": {
+                          "type": "boolean"
+                        },
+                        "implied": {
+                          "type": "boolean"
+                        },
+                        "requires": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "notAccepted": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "unit": {
+                          "type": "object",
+                          "properties": {
+                            "value": {
+                              "type": "string"
+                            },
+                            "mandatory": {
+                              "type": "boolean"
+                            },
+                            "alt": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "required": [
+                            "value",
+                            "mandatory"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "tol": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "tolKind": {
+                          "type": "string",
+                          "enum": [
+                            "abs",
+                            "rel"
+                          ]
+                        },
+                        "sf": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "dp": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "ecf": {
+                          "type": "object",
+                          "properties": {
+                            "fromPart": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "rule": {
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "op": {
+                                      "type": "string",
+                                      "enum": [
+                                        "same"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "op"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "op": {
+                                      "type": "string",
+                                      "enum": [
+                                        "scale"
+                                      ]
+                                    },
+                                    "factor": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": [
+                                    "op",
+                                    "factor"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "fromPart",
+                            "rule"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "note": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "code",
+                        "label",
+                        "marks"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "minItems": 1
+                  },
+                  "groups": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "pointIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "minItems": 1
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "pair"
+                          ]
+                        },
+                        "anyN": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "eachMarks": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "cap": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "pointIds"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "bonus": {
+                    "type": "object",
+                    "properties": {
+                      "ifAllCorrect": {
+                        "type": "boolean",
+                        "enum": [
+                          true
+                        ]
+                      },
+                      "marks": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "label": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [
+                      "ifAllCorrect",
+                      "marks",
+                      "label"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "alternatives": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "pointIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "minItems": 1
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "pointIds"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "countMarks": {
+                    "type": "object",
+                    "properties": {
+                      "items": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "marks": {
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "minItems": 1
+                      }
+                    },
+                    "required": [
+                      "items",
+                      "marks"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "finalAnswer": {
+                    "type": "object",
+                    "properties": {
+                      "display": {
+                        "type": "string"
+                      },
+                      "accepted": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "minItems": 1
+                      },
+                      "tol": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "tolKind": {
+                        "type": "string",
+                        "enum": [
+                          "abs",
+                          "rel"
+                        ]
+                      },
+                      "unit": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "display",
+                      "accepted"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "modelText": {
+                    "$ref": "#/components/schemas/QuestionRichText"
+                  },
+                  "modelImageId": {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  "guidance": {
+                    "$ref": "#/components/schemas/QuestionRichText"
+                  },
+                  "deductions": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "$ref": "#/components/schemas/QuestionDeductionCode"
+                        },
+                        "amount": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "cap": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "scope": {
+                          "type": "string",
+                          "enum": [
+                            "question",
+                            "part"
+                          ]
+                        },
+                        "label": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "amount",
+                        "scope"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "zeroIf": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "$ref": "#/components/schemas/QuestionDeductionCode"
+                        },
+                        "label": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "label"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "points"
+                ],
+                "additionalProperties": false
+              },
+              "modelText": {
+                "$ref": "#/components/schemas/QuestionRichText"
+              },
+              "guidance": {
+                "$ref": "#/components/schemas/QuestionRichText"
+              },
+              "deductions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "$ref": "#/components/schemas/QuestionDeductionCode"
+                    },
+                    "amount": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "cap": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "scope": {
+                      "type": "string",
+                      "enum": [
+                        "question",
+                        "part"
+                      ]
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "amount",
+                    "scope"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "zeroIf": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "$ref": "#/components/schemas/QuestionDeductionCode"
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "label"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "kind",
+              "scheme_v",
+              "marks",
+              "criteria",
+              "bands"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "QuestionSchemeValidateResult": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionGateIssue"
+            }
+          }
+        },
+        "required": [
+          "ok",
+          "issues"
+        ],
+        "description": "No state change. `issues` is empty when `ok`. `step` is always 4 (Tag & pengelasan, where the scheme is edited)."
       },
       "MissionType": {
         "type": "string",
@@ -114618,6 +115769,104 @@
           },
           "422": {
             "description": "VALIDATION_ERROR: the gate failed (`fields` keyed by path, `details.gate`), or a reason / status is missing or unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/questions/{id}/parts/{partId}/scheme/validate": {
+      "post": {
+        "tags": [
+          "questions"
+        ],
+        "summary": "Validate a marking scheme live (Admin Pusat)",
+        "description": "Validates the scheme v2 body against the marks of the stored leaf `partId` (its label path joined with `.`, URL-encoded, for example `a.i`). Runs the best-reachable-marks check (`SCHEME_SUM`), `SCHEME_DEPENDS`, `BAND_RANGE` and the penalty rule; the leaf marks come from the stored part, and a leaf with `modeConfig.example` is exempt from the sum. A body that does not parse is answered with 200 and `issues`, not 400. Nothing is saved.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "partId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuestionSchemeValidateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok and the issues, in reading order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/QuestionSchemeValidateResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (not Admin Pusat) or CSRF_INVALID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown question or part.",
             "content": {
               "application/json": {
                 "schema": {

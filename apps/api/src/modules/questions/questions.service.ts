@@ -7,8 +7,11 @@ import {
   QuestionPartSchema,
   QuestionWritePartSchema,
   type QuestionPart,
+  type QuestionSchemeRules,
+  type QuestionSchemeValidateResult,
 } from '@pp/contract'
 
+import { validateSchemeBody } from './scheme-validate'
 import { ApiError } from '../../common/errors/api-error'
 import { CLOCK, type Clock } from '../../db/clock'
 import { idToString } from '../../db/ids'
@@ -184,6 +187,8 @@ interface Normalized {
   difficultyLevel: number
   /** DM-56: a value sets the reference, null clears it, undefined keeps what is stored. */
   textbookRef?: TextbookRef | null | undefined
+  /** DM-54: a value sets the scheme rules, null clears them, undefined keeps what is stored. */
+  schemeRules?: QuestionSchemeRules | null | undefined
   stem: string
   parts: QuestionPart[]
   language: VersionDraft['language']
@@ -276,6 +281,18 @@ export class QuestionsService {
     return { ...(await this.detail(record)), ...(await this.repo.placementsOf(record.id)) }
   }
 
+  /**
+   * API-Q-30: validates a scheme v2 body against the stored leaf `partId` of the latest version. Read-only; an unknown question or part is 404.
+   * The question-level `scheme_rules` of the version are applied (part-scoped deductions).
+   */
+  async validateScheme(id: string, partId: string, body: unknown): Promise<QuestionSchemeValidateResult> {
+    const record = await this.repo.get(id, 'latest')
+    if (!record) throw questionNotFound()
+    const result = validateSchemeBody(record.version.parts, partId, body, record.version.schemeRules ?? null)
+    if (!result) throw questionNotFound()
+    return result
+  }
+
   async create(raw: QuestionCreateInput, actor: QuestionActor, provenance?: QuestionProvenance): Promise<QuestionView> {
     const input = await this.withImageKeys(raw)
     const flat: FlatSource = {
@@ -300,6 +317,7 @@ export class QuestionsService {
         tp: input.tag?.tp ?? input.difficultyLevel,
         difficultyLevel: input.difficultyLevel,
         textbookRef: input.textbookRef,
+        schemeRules: input.schemeRules,
         stem: input.questionText,
         parts,
         language: languageToStore(input.language, undefined),
@@ -1146,6 +1164,7 @@ export class QuestionsService {
       difficultyTp: n.tp,
       difficultyLevel: n.difficultyLevel,
       ...(n.textbookRef === undefined ? {} : { textbookRef: n.textbookRef }),
+      ...(n.schemeRules === undefined ? {} : { schemeRules: n.schemeRules }),
       sourcePage: v?.sourcePage ?? null,
       setLabel: v?.setLabel ?? null,
       spNodeIds: spKeys,
@@ -1243,6 +1262,7 @@ export class QuestionsService {
       tp: input.tag?.tp ?? (keepTp && v.difficultyTp !== null ? v.difficultyTp : input.difficultyLevel),
       difficultyLevel: input.difficultyLevel,
       textbookRef: input.textbookRef,
+      schemeRules: input.schemeRules,
       stem: input.questionText,
       parts,
       language,

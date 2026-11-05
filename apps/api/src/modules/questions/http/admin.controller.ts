@@ -125,6 +125,14 @@ export class AdminQuestionsController {
     return ok(detailView(await this.questions.getAdmin(id)))
   }
 
+  /** API-Q-30: validates a scheme v2 body against a stored leaf. Read-only (nothing is saved), so no audit row. `partId` is the label path (`a.i`). */
+  @Post(':id/parts/:partId/scheme/validate')
+  @HttpCode(200)
+  @RateLimit(QUESTIONS_WRITE_LIMIT)
+  async validateScheme(@Param('id') id: string, @Param('partId') partId: string, @Body() body: unknown) {
+    return ok(await this.questions.validateScheme(id, partId, body))
+  }
+
   @Post()
   @RateLimit(QUESTIONS_WRITE_LIMIT)
   async create(@Actor() actor: HttpActor, @Body() body: unknown) {
