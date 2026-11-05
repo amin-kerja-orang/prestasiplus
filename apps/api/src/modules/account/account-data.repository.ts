@@ -44,6 +44,17 @@ export const fromTimeColumn = (value: Date): string => value.toISOString().slice
 export class AccountDataRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
+  // --- teacher profile -----------------------------------------------------------------------------
+
+  /** True when another account already holds this IC hash (the own row does not count): "No. IC sudah didaftarkan." */
+  async icHashTakenByOther(userId: string, icHash: string): Promise<boolean> {
+    const row = await this.prisma.client.user.findFirst({
+      where: { icHash, id: { not: idFromString(userId) } },
+      select: { id: true },
+    })
+    return row !== null
+  }
+
   // --- password_resets -----------------------------------------------------------------------------
 
   /** Serialises token issuing and redemption for one user, so at most one live token per channel exists (released at commit). */
