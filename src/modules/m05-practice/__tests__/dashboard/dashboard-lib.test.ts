@@ -93,4 +93,22 @@ describe('dashboard-lib', () => {
     const out = weakTopics([p('A', 9, 59.9), p('B', 5, 60), p('C', 20, 30), p('D', 0, 0), p('E', 3, 30)])
     expect(out.map((s) => s.code)).toEqual(['C', 'E', 'A'])
   })
+
+  it('XS-5: rounds half-up before the threshold and for display (59.5 counts as 60)', () => {
+    const p = (code: string, accuracyPct: number) => ({
+      code,
+      name: code,
+      color: '#000',
+      answered: 4,
+      correct: 0,
+      wrong: 0,
+      accuracyPct,
+      trend: [],
+    })
+    const out = weakTopics([p('A', 59.5), p('B', 59.4), p('C', 33.3)])
+    expect(out.map((s) => [s.code, s.accuracyPct])).toEqual([
+      ['C', 33],
+      ['B', 59],
+    ])
+  })
 })

@@ -172,9 +172,12 @@ export const WEAK_TOPIC_PERIOD = '30'
 /**
  * FR-MUR-2-6: the subjects answered in the window with accuracy under 60, worst first (ties keep the
  * order of the read: most answers first). A subject with no answer has no accuracy and is not listed.
+ * XS-5: the accuracy is rounded half-up to a whole percent before the threshold and for display, so
+ * 59.5 counts as 60 and is not listed.
  */
 export function weakTopics(subjects: readonly ProgressSubject[]): ProgressSubject[] {
   return subjects
+    .map((s) => ({ ...s, accuracyPct: Math.round(s.accuracyPct) }))
     .filter((s) => s.answered > 0 && s.accuracyPct < WEAK_TOPIC_BELOW_PCT)
     .map((s, i) => ({ s, i }))
     .sort((a, b) => a.s.accuracyPct - b.s.accuracyPct || a.i - b.i)
