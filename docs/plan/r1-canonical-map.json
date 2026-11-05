@@ -2003,7 +2003,7 @@
       "name": "m11.laporan-mingguan-kelas",
       "status": "canonical",
       "sector": "S6",
-      "component": "src/pages/PrototypeUnavailablePage.vue",
+      "component": "src/pages/NotFoundPage.vue",
       "file": "src/modules/m11-teacher-analytics/routes/laporan-mingguan.ts",
       "approved_by_card": null
     },
@@ -4896,7 +4896,7 @@
       "source": "user-nav",
       "id": "t-analitik-adaptif",
       "label": "Analitik Adaptif",
-      "route": "/analitik/pelajar",
+      "route": "/analitik/kelas",
       "roles": [
         "teacher"
       ],
@@ -4938,12 +4938,12 @@
       "source": "user-nav",
       "id": "t-laporan-mingguan",
       "label": "Laporan Mingguan",
-      "route": "/laporan-mingguan",
+      "route": "/guru/laporan-mingguan-kelas",
       "roles": [
         "teacher"
       ],
       "status": "redirect-to:/guru/laporan-mingguan-kelas",
-      "sector": "S10",
+      "sector": "S6",
       "file": "src/shells/nav/user-nav.ts",
       "note": "register R-03: teacher sidebar opens a 403 page; re-point (S0-T06, S6-T01)",
       "approved_by_card": null
@@ -5867,7 +5867,7 @@
       "source": "user-nav",
       "id": "sa-analitik-adaptif",
       "label": "Analitik Adaptif",
-      "route": "/analitik/pelajar",
+      "route": "/analitik/kelas",
       "roles": [
         "school_admin"
       ],
@@ -10185,9 +10185,9 @@
       "status": "canonical",
       "sector": "S7",
       "file": "apps/api/prisma/schema/games.prisma",
+      "note": "The 8 Roda Nasib wheel segments (48 GAME-14) as admin data, replacing SPIN_SEGMENTS in the GAME-14 part.",
       "approved_by_card": "S7-T01",
-      "dm": "DM-64",
-      "note": "The 8 Roda Nasib wheel segments (48 GAME-14) as admin data, replacing SPIN_SEGMENTS in the GAME-14 part."
+      "dm": "DM-64"
     },
     {
       "name": "League",
@@ -10354,16 +10354,6 @@
       "approved_by_card": null
     },
     {
-      "name": "RewardSetting",
-      "table": "reward_settings",
-      "status": "canonical",
-      "sector": "S7",
-      "file": "apps/api/prisma/schema/gamification.prisma",
-      "approved_by_card": "S7-T05",
-      "dm": "DM-48",
-      "note": "Singleton Kawalan Reward settings (DM-48): the one source of the coin rate; read by the S5-T15 helper coinsPerCorrect()."
-    },
-    {
       "name": "MysteryBoxOpening",
       "table": "mystery_box_openings",
       "status": "canonical",
@@ -10378,6 +10368,16 @@
       "sector": "S7",
       "file": "apps/api/prisma/schema/gamification.prisma",
       "approved_by_card": null
+    },
+    {
+      "name": "RewardSetting",
+      "table": "reward_settings",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/gamification.prisma",
+      "note": "Singleton Kawalan Reward settings (DM-48): the one source of the coin rate; read by the S5-T15 helper coinsPerCorrect().",
+      "approved_by_card": "S7-T05",
+      "dm": "DM-48"
     },
     {
       "name": "User",
@@ -12992,20 +12992,20 @@
       "approved_by_card": "S4-T02"
     },
     {
-      "key": "POST /api/admin/curriculum/questions/bulk-chapter",
-      "method": "POST",
-      "path": "/api/admin/curriculum/questions/bulk-chapter",
-      "api_id": "API-DSKP-09",
+      "key": "GET /api/admin/curriculum/chapter-coverage",
+      "method": "GET",
+      "path": "/api/admin/curriculum/chapter-coverage",
+      "api_id": "API-DSKP-10",
       "status": "canonical",
       "sector": "S4",
       "file": "apps/api/src/modules/curriculum/admin.controller.ts",
       "approved_by_card": "S4-T03"
     },
     {
-      "key": "GET /api/admin/curriculum/chapter-coverage",
-      "method": "GET",
-      "path": "/api/admin/curriculum/chapter-coverage",
-      "api_id": "API-DSKP-10",
+      "key": "POST /api/admin/curriculum/questions/bulk-chapter",
+      "method": "POST",
+      "path": "/api/admin/curriculum/questions/bulk-chapter",
+      "api_id": "API-DSKP-09",
       "status": "canonical",
       "sector": "S4",
       "file": "apps/api/src/modules/curriculum/admin.controller.ts",
@@ -14273,6 +14273,26 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/admin/source-papers",
+      "method": "GET",
+      "path": "/api/admin/source-papers",
+      "api_id": "API-Q-23",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/intake/files/source-papers.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/source-papers/:p",
+      "method": "GET",
+      "path": "/api/admin/source-papers/:id",
+      "api_id": "API-Q-23",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/intake/files/source-papers.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "POST /api/intake/batches/:p/extract",
       "method": "POST",
       "path": "/api/intake/batches/:id/extract",
@@ -15133,6 +15153,26 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/guru/structured-questions",
+      "method": "GET",
+      "path": "/api/guru/structured-questions",
+      "api_id": "API-GUR-26",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
+      "key": "GET /api/guru/structured-questions/:p",
+      "method": "GET",
+      "path": "/api/guru/structured-questions/:id",
+      "api_id": "API-GUR-26",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
       "key": "GET /api/guru/questions",
       "method": "GET",
       "path": "/api/guru/questions",
@@ -15473,26 +15513,6 @@
       "approved_by_card": null
     },
     {
-      "key": "GET /api/guru/structured-questions",
-      "method": "GET",
-      "path": "/api/guru/structured-questions",
-      "api_id": "API-GUR-26",
-      "status": "canonical",
-      "sector": "S1",
-      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
-      "approved_by_card": "S6-T17"
-    },
-    {
-      "key": "GET /api/guru/structured-questions/:p",
-      "method": "GET",
-      "path": "/api/guru/structured-questions/:id",
-      "api_id": "API-GUR-26",
-      "status": "canonical",
-      "sector": "S1",
-      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
-      "approved_by_card": "S6-T17"
-    },
-    {
       "key": "GET /api/questions/studio/dskp",
       "method": "GET",
       "path": "/api/questions/studio/dskp",
@@ -15600,8 +15620,8 @@
       "status": "canonical",
       "sector": "S1",
       "file": "apps/api/src/modules/questions/workflow/imports/imports.controller.ts",
-      "approved_by_card": "S1-T05",
-      "note": "Error report CSV of one import run (FR-ADM-QE6.2): baris, question_key, medan, kod_ralat, mesej. Admin only."
+      "note": "Error report CSV of one import run (FR-ADM-QE6.2): baris, question_key, medan, kod_ralat, mesej. Admin only.",
+      "approved_by_card": "S1-T05"
     },
     {
       "key": "POST /api/question-imports",
