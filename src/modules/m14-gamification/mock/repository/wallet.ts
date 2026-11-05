@@ -38,7 +38,7 @@ import {
   saveWallet,
   type WalletSummary,
 } from './ops'
-import { activeTiers, defaultTier } from './rules'
+import { activeTiers, defaultTier, upgradedTier } from './rules'
 import type { LedgerRow, LedgerType, WalletRow } from './types'
 
 // --- named queries (§6.10) ---------------------------------------------------------------------
@@ -267,7 +267,9 @@ export const walletRepo = defineRepository({
           const key = clientUuid === null ? null : `${String(userId)}:${clientUuid.toLowerCase()}`
           const first = key === null ? undefined : convertReplays.get(key)
           if (first) return { ...first, currentSyiling: w.currentSyiling, tokenBalance: w.tokenBalance }
-          const tier = allTiers().find((t) => t.tierName === w.tierKey) ?? defaultTier(allTiers())
+          // FR-MUR-29-5: the rate of the lifetime tier, the one `convertView` shows.
+          const tierKey = upgradedTier(allTiers(), w.tierKey, w.totalSyilingEarned)
+          const tier = allTiers().find((t) => t.tierName === tierKey) ?? defaultTier(allTiers())
           const rate = tier.conversionRate
           if (
             !Number.isInteger(syilingAmount) ||
@@ -371,6 +373,7 @@ export const walletRepo = defineRepository({
         userId: number,
         fields: {
           syiling?: number
+          lifetime?: number
           tokens?: number
           xp?: number
           level?: number
@@ -381,6 +384,7 @@ export const walletRepo = defineRepository({
         return tx(() => {
           const w = walletState(userId)
           if (fields.syiling !== undefined) w.currentSyiling = fields.syiling
+          if (fields.lifetime !== undefined) w.totalSyilingEarned = fields.lifetime
           if (fields.tokens !== undefined) w.tokenBalance = fields.tokens
           if (fields.xp !== undefined) w.xp = fields.xp
           if (fields.level !== undefined) w.level = fields.level
