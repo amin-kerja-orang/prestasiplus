@@ -4,7 +4,7 @@
  * activity in the period; a row click toggles its drill (Guru Aktif, Pelajar, Login, "Lihat penuh →"). Admin
  * only: the page does not render it for the school admin (FR-M17-116).
  */
-import { DsBadge, DsEmptyState, formatCount } from '@/ds'
+import { DsBadge, DsEmptyState, DsText, formatCount } from '@/ds'
 
 import type { CcDailyActivity, CcSchoolActivity } from '../../api/command-center-board'
 import { ccPaths } from '../command-center/cc-paths'
@@ -133,7 +133,8 @@ const pct1 = accuracyText
                       :label="t.name"
                     />
                     <span class="tabular text-highlighted">{{ t.students }} pelajar</span>
-                    <span :class="['tabular', TONE_TEXT[toneOf(t.accuracy) as keyof typeof TONE_TEXT]]">{{ pct1(t.accuracy) }}</span>
+                    <DsText v-if="toneOf(t.accuracy) === 'neutral'" as="span" variant="body" tone="muted" tabular>{{ pct1(t.accuracy) }}</DsText>
+                    <span v-else :class="['tabular', TONE_TEXT[toneOf(t.accuracy) as keyof typeof TONE_TEXT]]">{{ pct1(t.accuracy) }}</span>
                     <span class="basis-full text-caption text-muted">{{ t.lastActiveHuman }}</span>
                   </li>
                 </ul>
@@ -159,7 +160,8 @@ const pct1 = accuracyText
                     <span class="tabular text-highlighted"
                       >{{ formatCount(p.answers) }} soalan</span
                     >
-                    <span :class="['tabular', TONE_TEXT[toneOf(p.accuracy) as keyof typeof TONE_TEXT]]">{{ pct1(p.accuracy) }}</span>
+                    <DsText v-if="toneOf(p.accuracy) === 'neutral'" as="span" variant="body" tone="muted" tabular>{{ pct1(p.accuracy) }}</DsText>
+                    <span v-else :class="['tabular', TONE_TEXT[toneOf(p.accuracy) as keyof typeof TONE_TEXT]]">{{ pct1(p.accuracy) }}</span>
                     <span class="basis-full text-caption text-muted">{{ p.lastActiveHuman }}</span>
                   </li>
                 </ul>

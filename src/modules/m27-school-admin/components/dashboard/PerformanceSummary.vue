@@ -10,7 +10,7 @@ import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { isHttpMode } from '@/api/mode'
-import { DsEmptyState, DsIconChip, DsPanel } from '@/ds'
+import { DsEmptyState, DsIconChip, DsPanel, DsText } from '@/ds'
 
 import type { SchoolDashboard } from '../../api/dashboard'
 import GradeList from './GradeList.vue'
@@ -157,7 +157,17 @@ const isEmpty = computed(() => {
           >
             <div class="flex items-baseline justify-between gap-2">
               <span class="text-label text-highlighted">{{ level.name }}</span>
+              <DsText
+                v-if="levelTone(level.accuracy) === 'muted'"
+                as="span"
+                variant="label"
+                tone="muted"
+                tabular
+                data-testid="sd-level-pct"
+                >{{ percent(level.accuracy) }}</DsText
+              >
               <span
+                v-else
                 class="tabular text-label"
                 :class="{
                   'text-error': levelTone(level.accuracy) === 'error',
