@@ -21,6 +21,8 @@ model Stimulus {
   caption        String?
   altText        String?  @map("alt_text")
   sourceCitation String?  @map("source_citation")
+  /// Presentation hint (DM-70): `kotak` on a passage, `mono` for the code block. Nullable text, no check constraint.
+  style          String?
   contentHash    String?  @map("content_hash")
   /// Table grid (G-11: jsonb only for grids, keys, boxes).
   tableData      Json?    @map("table_data") @db.JsonB
@@ -40,13 +42,27 @@ model Stimulus {
 }
 
 model StimulusGroup {
-  id        BigInt   @id @default(autoincrement())
-  label     String?
+  id               BigInt    @id @default(autoincrement())
+  label            String?
   /// section, paper (check constraint).
-  scope     String   @default("section")
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  scope            String    @default("section")
+  /// S1-T01 DM-51: the Subjek, Tingkatan and optional Kertas of the group itself; NULL = no restriction. FKs subjects / education_levels in the migration SQL.
+  subjectId        BigInt?   @map("subject_id")
+  educationLevelId BigInt?   @map("education_level_id")
+  /// 1..4 (check constraint).
+  kertas           Int?      @db.SmallInt
+  /// Draft copy of a published group (DM-51): the group this copy replaces; unique where not null (partial index in the migration SQL).
+  draftOfGroupId   BigInt?   @map("draft_of_group_id")
+  /// Ordered question ids staged in the draft copy (jsonb array).
+  draftMembers     Json?     @map("draft_members") @db.JsonB
+  /// FK users(id) ON DELETE SET NULL (migration SQL).
+  draftCreatedBy   BigInt?   @map("draft_created_by")
+  draftCreatedAt   DateTime? @map("draft_created_at") @db.Timestamptz(6)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
+  draftOf   StimulusGroup?          @relation("GroupDraftCopy", fields: [draftOfGroupId], references: [id], onDelete: SetNull, map: "fk_stimulus_groups_draft_of")
+  drafts    StimulusGroup[]         @relation("GroupDraftCopy")
   stimuli   StimulusGroupStimulus[]
   options   StimulusGroupOption[]
   questions Question[]
@@ -73,13 +89,17 @@ model StimulusGroupStimulus {
 
 /// Lettered option bank (A to H) shared by the questions of a group (match_letter).
 model StimulusGroupOption {
-  id        BigInt   @id @default(autoincrement())
-  groupId   BigInt   @map("group_id")
-  label     String
-  bodyMs    String?  @map("body_ms")
-  bodyEn    String?  @map("body_en")
-  position  Int      @db.SmallInt
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id           BigInt   @id @default(autoincrement())
+  groupId      BigInt   @map("group_id")
+  label        String
+  bodyMs       String?  @map("body_ms")
+  bodyEn       String?  @map("body_en")
+  /// S1-T01 DM-52: the option's own text, image (FK files SET NULL in the migration SQL) and distractor flag.
+  body         String?
+  imageFileId  BigInt?  @map("image_file_id")
+  isDistractor Boolean  @default(false) @map("is_distractor")
+  position     Int      @db.SmallInt
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   group StimulusGroup @relation(fields: [groupId], references: [id], onDelete: Cascade, map: "fk_stimulus_group_options_group_id")
 
@@ -166,6 +186,12 @@ model QuestionVersion {
   textbookBab       Int?    @map("textbook_bab") @db.SmallInt
   textbookTingkatan Int?    @map("textbook_tingkatan") @db.SmallInt
   textbookPage      Int?    @map("textbook_page")
+  /// DM-47: the typed Kesukaran 1..5 (check); TP stays in difficultyTp. NULL on legacy rows until the U-OP-19 backfill.
+  difficultyLevel   Int?    @map("difficulty_level") @db.SmallInt
+  /// DM-56: Rujukan buku teks {bab, tingkatan, mukaSurat, hingga?}; the three int columns above are written with it.
+  textbookRef       Json?   @map("textbook_ref")
+  /// DM-58: why the version was sent back from Semakan to Draf (5..500 characters); cleared on the next send for review.
+  rejectionReason   String? @map("rejection_reason")
 
   // Provenance (all optional).
   year          Int?    @db.SmallInt
