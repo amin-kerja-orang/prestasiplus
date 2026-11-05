@@ -22,8 +22,7 @@ import {
   accuracyTone,
   count,
   MODAL_ERROR_COPY,
-  pct1,
-  pct2,
+  accuracyText,
   statItems,
   TONE_TEXT,
   type CcSessionsSource,
@@ -58,7 +57,7 @@ const stats = computed(() => {
   return [
     { label: 'Jawapan', value: count(d.totalAnswers) },
     { label: 'Sesi', value: count(d.totalSessions) },
-    { label: 'Ketepatan', value: pct1(d.accuracy) },
+    { label: 'Ketepatan', value: accuracyText(d.accuracy) },
     {
       label: props.source.kind === 'all' ? 'Jumlah Masa' : 'Masa',
       value: `${count(d.timeSpentMinutes)}m`,
@@ -146,7 +145,7 @@ const sessions = computed(() => data.value?.sessions ?? [])
             >
             <template #acc-cell="{ row }">
               <span :class="TONE_TEXT[accuracyTone(row.original.accuracy)]">{{
-                pct2(row.original.accuracy)
+                accuracyText(row.original.accuracy)
               }}</span>
             </template>
             <template #time-cell="{ row }">{{ row.original.minutes }}m</template>

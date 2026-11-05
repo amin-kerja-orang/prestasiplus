@@ -2,7 +2,8 @@ import { Inject, Module, type OnModuleInit } from '@nestjs/common'
 
 import { PerformanceModule } from '../../reports/performance/performance.module'
 import { PerformancePorts } from '../../reports/performance/ports'
-import { AnswerFactsAdapter } from './answer-facts.adapter'
+import { QuestionsModule } from '../../questions'
+import { AnswerFactsAdapter, QuestionContentAdapter } from './answer-facts.adapter'
 import { PracticeAnalyticsReadsModule } from './analytics/analytics.module'
 import { PracticeOverviewReadsModule } from './overview/overview.module'
 import { PerformancePracticeReadAdapter } from './performance-practice-read.adapter'
@@ -16,22 +17,24 @@ import { PracticeTargetsStructuredModule } from './writes/writes.module'
  *
  * On init it binds `PerformancePracticeReadAdapter` into BE-19's `PerformancePorts` (the reports'
  * `PracticeReadPort`: rankings, practice leaderboard, public profile) and `AnswerFactsAdapter` (S10-T01's
- * shared cross-mode answer reader).
+ * shared cross-mode answer reader) and `QuestionContentAdapter` (S10-T03: the question text of the pupil's Analisa Item, read through the S1 questions read contract).
  */
 @Module({
-  imports: [PracticeOverviewReadsModule, PracticeAnalyticsReadsModule, PracticeTargetsStructuredModule, PerformanceModule],
-  providers: [PerformancePracticeReadAdapter, AnswerFactsAdapter],
+  imports: [PracticeOverviewReadsModule, PracticeAnalyticsReadsModule, PracticeTargetsStructuredModule, PerformanceModule, QuestionsModule],
+  providers: [PerformancePracticeReadAdapter, AnswerFactsAdapter, QuestionContentAdapter],
 })
 export class PracticeReadsModule implements OnModuleInit {
   constructor(
     @Inject(PerformancePorts) private readonly performance: PerformancePorts,
     @Inject(PerformancePracticeReadAdapter) private readonly practiceRead: PerformancePracticeReadAdapter,
     @Inject(AnswerFactsAdapter) private readonly answerFacts: AnswerFactsAdapter,
+    @Inject(QuestionContentAdapter) private readonly questionContent: QuestionContentAdapter,
   ) {}
 
   /** Binds the real practice read port of BE-19's reports (once; `providePractice` throws on a second call). */
   onModuleInit(): void {
     this.performance.providePractice(this.practiceRead)
     this.performance.provideAnswerFacts(this.answerFacts)
+    this.performance.provideQuestionContent(this.questionContent)
   }
 }

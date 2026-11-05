@@ -4,7 +4,8 @@
  *
  * Rules (docs/architecture/v2-data-migration.md 3.3, design in the QLOAD card):
  *  - a question that is not `diluluskan` or not an MCQ is EXCLUDED (counted, not a reject);
- *  - the leaf must satisfy the contract `QuestionLeafPartSchema` (3 to 8 options, labels A to H, non-empty texts, the key
+ *  - the leaf must satisfy the contract `QuestionLeafPartSchema` (2 to 8 options since S1-T09a; this ETL keeps its own floor of 3,
+ *    `MIN_OPTIONS` below, an S0 rule this card does not change; labels A to H, non-empty texts, the key
  *    names an option): the v2 reader fails closed on a stored leaf that does not, so nothing is inserted that it would refuse;
  *  - curriculum ids come from the `migrate:core` id maps; subject and level are required, chapter and topic are optional;
  *  - `difficulty_tp` is the raw 1 to 5 (as `practice_answers.difficulty`); `cognitive_level` stays empty;
