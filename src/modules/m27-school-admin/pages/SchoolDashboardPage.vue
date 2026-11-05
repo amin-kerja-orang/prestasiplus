@@ -14,7 +14,7 @@ import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsCallout, DsCluster, DsLink, DsLoadError, DsPage, DsText } from '@/ds'
+import { DsCallout, DsLoadError, DsPage } from '@/ds'
 
 import { fetchSchoolDashboard } from '../api/dashboard'
 import PerformanceSummary from '../components/dashboard/PerformanceSummary.vue'
@@ -57,12 +57,11 @@ watch(
         title="Guru Menunggu"
         data-testid="sd-pending-teachers"
       >
-        <DsLink :to="PATHS.pendingTeachers" data-testid="sd-pending-teachers-link">
-          <DsCluster as="span" gap="sm">
-            <DsText as="span" variant="label">Guru Menunggu</DsText>
-            <DsText as="span" variant="label" tabular data-testid="sd-pending-teachers-count">{{ count(data.pendingTeachers) }}</DsText>
-          </DsCluster>
-        </DsLink>
+        <template #actions>
+          <UButton :to="PATHS.pendingTeachers" size="lg" data-testid="sd-pending-teachers-link">
+            Guru Menunggu <span data-testid="sd-pending-teachers-count">{{ count(data.pendingTeachers) }}</span>
+          </UButton>
+        </template>
       </DsCallout>
       <PerformanceSummary :performance="data.performance" />
     </template>
