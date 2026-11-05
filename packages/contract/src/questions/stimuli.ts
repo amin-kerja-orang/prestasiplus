@@ -83,7 +83,7 @@ export const STIMULUS_MESSAGES = {
 } as const
 
 /** Bounds (BE-NFR-25): every free text field is capped. */
-export const STIMULUS_LIMITS = { label: 100, caption: 300, alt: 1000, source: 300, body: 20_000, cell: 500, columns: 12, rows: 60, groupQuestions: 40, optionBank: 8 } as const
+export const STIMULUS_LIMITS = { label: 100, caption: 300, alt: 1000, source: 300, style: 32, body: 20_000, cell: 500, columns: 12, rows: 60, groupQuestions: 40, optionBank: 8 } as const
 
 /** Kinds that show a picture: the file is the content (inline SVG is never writable, stored-XSS rule). */
 export const IMAGE_STIMULUS_KINDS = ['image', 'diagram', 'map', 'infographic', 'graph'] as const
@@ -92,6 +92,7 @@ const Label = z.string().trim().max(STIMULUS_LIMITS.label)
 const Caption = z.string().trim().max(STIMULUS_LIMITS.caption)
 const Alt = z.string().trim().max(STIMULUS_LIMITS.alt)
 const Source = z.string().trim().max(STIMULUS_LIMITS.source)
+const Style = z.string().trim().min(1).max(STIMULUS_LIMITS.style).meta({ description: 'Presentation hint (DM-70): `kotak` on a passage, `mono` for the code block. Free text, no closed list.' })
 const Body = z.object({ ms: z.string().min(1).max(STIMULUS_LIMITS.body), en: z.string().max(STIMULUS_LIMITS.body).optional() })
 const Table = z.object({
   head: z.array(z.string().max(STIMULUS_LIMITS.cell)).min(1).max(STIMULUS_LIMITS.columns),
@@ -109,6 +110,7 @@ export const StimulusCreateRequestSchema = z
     body: Body.nullish(),
     alt: Alt.nullish(),
     sourceCitation: Source.nullish(),
+    style: Style.nullish(),
     tableData: Table.nullish(),
     imageFileId: imageFile.nullish(),
   })
@@ -129,6 +131,7 @@ export const StimulusUpdateRequestSchema = z
     body: Body.nullable().optional().meta({ description: 'Replaces the whole text (ms and en): send both languages to keep both; null clears (only allowed when the kind does not need it).' }),
     alt: Alt.nullable().optional(),
     sourceCitation: Source.nullable().optional(),
+    style: Style.nullable().optional(),
     tableData: Table.nullable().optional(),
     imageFileId: imageFile.nullable().optional(),
   })
@@ -146,6 +149,7 @@ export const StimulusSchema = z
     body: QuestionRichTextSchema.nullable(),
     alt: z.string().nullable(),
     sourceCitation: z.string().nullable(),
+    style: z.string().max(STIMULUS_LIMITS.style).nullable().optional(),
     tableData: QuestionStimulusTableSchema.nullable(),
     imageId: z.string().nullable(),
     groupCount: z.number().int().min(0).meta({ description: 'Groups that show this stimulus. A stimulus in use cannot be deleted.' }),
@@ -515,7 +519,7 @@ export function registerStimuliPaths(registry: OpenAPIRegistry): void {
     tags,
     summary: 'Publish a group: every member becomes approved in one audited transaction (S1-T01, API-Q-31)',
     description:
-      'No body. Every member must be Menunggu Semakan (`review`) or already Diluluskan (`approved`); any other member (Draf, Diarkibkan or another status) answers 409 "Semua soalan dalam kumpulan mesti dihantar untuk semakan dahulu." and nothing changes. An empty group is 409 "Kumpulan perlu sekurang-kurangnya 1 soalan.". One member failing its approve gate is 422 `details.gate[{questionId, message}]` and nothing changes. Publishing a draft copy (`draftOfGroupId` set) answers 409 until part 3b, which swaps it in for the served group in one transaction.',
+      'No body. Every member must be Menunggu Semakan (`review`) or already Diluluskan (`approved`); any other member (Draf, Diarkibkan or another status) answers 409 "Semua soalan dalam kumpulan mesti dihantar untuk semakan dahulu." and nothing changes. An empty group is 409 "Kumpulan perlu sekurang-kurangnya 1 soalan.". One member failing its approve gate is 422 `details.gate[{questionId, message}]` and nothing changes. Publishing a draft copy (`draftOfGroupId` set) swaps it in for the served group in one transaction, same gate on the members staged in the copy: the copy\'s members, stimuli, option bank and scope replace those of the served group, Menunggu Semakan members are approved (the old version is archived `superseded`), the copy is deleted, and the served group id is unchanged (the answer is the served group). Audit `details.fromDraftId`.',
     request: { params: idParams, headers: [csrf] },
     responses: {
       200: json(mutationEnvelopeOf(StimulusGroupDetailSchema), 'Published.'),
@@ -558,7 +562,7 @@ export function registerStimuliPaths(registry: OpenAPIRegistry): void {
     path: '/stimulus-groups/{id}/members/{questionId}/move',
     tags,
     summary: 'Move a member question to another group (S1-T01, API-Q-34)',
-    description: 'Same Subjek, Tingkatan and Kertas only (422 "Subjek dan Tingkatan ahli mesti sama dengan kumpulan." / "Soalan dalam satu kumpulan mesti sama subjek." / "...sama kertas."). A member that is shown to pupils answers 409 `memberServed` ("Soalan ini sedang dipaparkan kepada murid. Sunting sebagai draf atau arkibkannya dahulu sebelum memasukkannya ke dalam kumpulan.") and nothing changes; moving a served member through draft copies comes with part 3b.',
+    description: 'Same Subjek, Tingkatan and Kertas only (422 "Subjek dan Tingkatan ahli mesti sama dengan kumpulan." / "Soalan dalam satu kumpulan mesti sama subjek." / "...sama kertas."). A member that is shown to pupils answers 409 `memberServed` ("Soalan ini sedang dipaparkan kepada murid. Sunting sebagai draf atau arkibkannya dahulu sebelum memasukkannya ke dalam kumpulan.") and nothing changes; a served member moves only between two draft copies (the move is staged and takes effect when both copies are published); a move with a draft copy on one side only is 409.',
     request: { params: memberParams, headers: [csrf], body: body(StimulusGroupMoveRequestSchema) },
     responses: { 200: json(mutationEnvelopeOf(StimulusGroupMoveResultSchema), 'Both groups after the move.'), 401: unauthorized, 403: forbidden, 404: notFound, 409: conflict, 422: invalid },
   })

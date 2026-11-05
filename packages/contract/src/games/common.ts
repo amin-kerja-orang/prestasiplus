@@ -113,8 +113,8 @@ export const gamesCount = z.number().int().min(0)
 
 /** Exact BM (and generic English) messages of the mock, by use. Tests assert these. */
 export const GAMES_MESSAGES = {
-  unauthenticated: 'Unauthenticated.',
-  unauthorized: 'This action is unauthorized.',
+  unauthenticated: 'Sesi anda telah tamat. Sila log masuk semula.',
+  unauthorized: 'Anda tidak dibenarkan melakukan tindakan ini.',
   gameNotFound: 'Permainan tidak dijumpai.',
   roomNotFound: 'Bilik tidak dijumpai.',
   roomSubject: 'Subjek tidak sah.',

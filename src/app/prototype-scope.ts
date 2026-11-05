@@ -72,7 +72,7 @@ const item = (no: MatrixItem['no'], label: string, ...rules: PathRule[]): Matrix
 /** Section A: available to every prototype role (D-RAM-3). */
 export const ACCOUNT_ITEMS: readonly MatrixItem[] = [
   // [S5 begin]
-  item('A1', 'Profil Saya', p('/profile')),
+  item('A1', 'Profil Saya', p('/profile'), p('/guru/profil')),
   item('A2', 'Tetapan Peribadi', p('/tetapan')),
   item('A3', 'Panduan', p('/panduan'), p('/pusat-tuisyen/panduan')),
   // [S5 end]

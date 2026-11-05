@@ -257,6 +257,8 @@ describe('question content (prototype types.ts, field for field)', () => {
     expect(IntakeStimulusSchema.safeParse({ ...stimulus, svg: '<svg></svg>' }).success).toBe(true)
     expect(IntakeStimulusSchema.safeParse({ id: '1', kind: 'table', label: 'Jadual 1', alt: 'x', table: { head: ['a'], rows: [['1']] } }).success).toBe(true)
     expect(ok(IntakeStimulusCreateRequestSchema, { kind: 'diagram' })).toBe(true)
+    for (const kind of ['passage', 'diagram', 'table', 'graph', 'map', 'infographic', 'image']) expect(ok(IntakeStimulusCreateRequestSchema, { kind }), kind).toBe(true)
+    expect(ok(IntakeStimulusCreateRequestSchema, { kind: 'audio' })).toBe(false)
     expect(ok(IntakeStimulusCreateRequestSchema, { kind: 'diagram', svg: '<svg onload=x>' })).toBe(false)
     expect(ok(IntakeStimulusUpdateRequestSchema, { alt: 'Segi tiga' })).toBe(true)
     expect(ok(IntakeStimulusUpdateRequestSchema, {})).toBe(false)

@@ -36,7 +36,7 @@ describe('listLoadMessage (REQ-A-027)', () => {
       headers: Object.fromEntries(res.headers.entries()),
       body: await res.json(),
     })
-    expect(err.message).toBe('Terlalu banyak percubaan. Cuba sebentar lagi.')
+    expect(err.message).toBe('Terlalu banyak percubaan. Sila cuba sebentar lagi.')
     expect(listLoadMessage(err)).toBe('Terlalu banyak carian dalam masa singkat. Cuba lagi dalam 17 saat.')
   })
   it('uses the wait from the body when the header is absent, and the plain wording when neither exists', () => {
@@ -44,6 +44,6 @@ describe('listLoadMessage (REQ-A-027)', () => {
     const mk = (error: Record<string, unknown>) =>
       errorFromResponse({ status: 429, headers: {}, body: { error: { code: 'RATE_LIMITED', message: 'x', ...error } } })
     expect(listLoadMessage(mk({ retryAfter: 4 }))).toContain('dalam 4 saat')
-    expect(listLoadMessage(mk({}))).toBe('Terlalu banyak percubaan. Cuba sebentar lagi.')
+    expect(listLoadMessage(mk({}))).toBe('Terlalu banyak percubaan. Sila cuba sebentar lagi.')
   })
 })

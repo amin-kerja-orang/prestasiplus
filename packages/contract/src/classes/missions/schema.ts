@@ -31,9 +31,9 @@ export const REMEDIAL_MESSAGES = {
 
 /** Generic texts of the mock guards (401, 403, 404 on a malformed or unknown route). */
 export const MISSION_GUARD_MESSAGES = {
-  unauthenticated: 'Unauthenticated.',
-  forbidden: 'This action is unauthorized.',
-  notFound: 'Not Found.',
+  unauthenticated: 'Sesi anda telah tamat. Sila log masuk semula.',
+  forbidden: 'Anda tidak dibenarkan melakukan tindakan ini.',
+  notFound: 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?',
 } as const
 
 /**

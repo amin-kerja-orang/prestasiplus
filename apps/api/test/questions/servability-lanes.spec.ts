@@ -231,7 +231,7 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
       archived: 'Diarkibkan — pulihkan ke draf dahulu.',
       dskp_incomplete: 'DSKP belum lengkap — lengkapkan Tag dan TP di borang soalan.',
       untagged_legacy: 'Belum ditanda DSKP — tidak dimasukkan dalam kertas blueprint dan Jana set.',
-      image_games: 'Ada imej dan permainan ini tidak memaparkan imej.',
+      image_games: 'Soalan bergambar tidak digunakan dalam permainan.',
       image_missing: 'Imej belum dimuat naik — muat naik di borang sunting.',
       level_inactive: 'Tahap tidak aktif untuk murid.',
       no_key: 'Tiada kunci jawapan.',
@@ -246,7 +246,7 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
       level_not_offered: 'Hanya soalan Tingkatan 4 dan 5 dipaparkan di {aktiviti}.',
       subject_unavailable: 'Subjek tidak aktif atau tidak dipautkan kepada tahap soalan ini.',
       subject_not_listed: 'Subjek ini tiada dalam senarai {aktiviti}.',
-      no_chapter: 'Belum dipautkan kepada bab — pilih Bab di borang soalan.',
+      no_chapter: 'Bab belum dipaut - tidak disajikan dalam Soalan by Chapter.',
       has_stimulus: 'Ada rangsangan atau imej — {aktiviti} hanya memaparkan soalan teks.',
       has_option_image: 'Ada imej pada pilihan jawapan — {aktiviti} hanya memaparkan soalan teks.',
       bridge_refused: 'Tidak dapat dihidangkan di {aktiviti}.',
@@ -255,6 +255,7 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
       paper_empty: 'Disajikan tetapi tiada soalan',
       stimulus_shared_ungrouped: 'Rangsangan ini dikongsi oleh beberapa soalan tetapi bukan kumpulan rangsangan — jadikan soalan-soalan itu satu kumpulan rangsangan (D90).',
       question_missing: 'Soalan pada kertas ini tiada dalam bank soalan — kertas tidak boleh dimulakan; gantikan atau buang soalan itu.',
+      group_incomplete: 'Kumpulan belum lengkap - {n} soalan belum diluluskan.',
     })
     const v2 = Object.entries(SERVABILITY_REASON_SOURCE).filter(([, src]) => src === 'V2').map(([code]) => code)
     expect(v2.sort()).toEqual(['bridge_refused', 'no_key', 'no_scheme', 'paper_empty'])
