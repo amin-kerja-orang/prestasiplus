@@ -378,7 +378,9 @@ export const useSessionStore = defineStore('session', () => {
     const hadSession = auth.value !== null
     clear()
     endedByUnauthorized = hadSession
-    await unauthorizedRedirect?.()
+    // A guest (no session) is already handled by the route guard; redirecting again would race with it and could drop
+    // the guard's `?redirect=` (for example a 401 that lands while /login?redirect=... is open).
+    if (hadSession) await unauthorizedRedirect?.()
   }
 
   /**
