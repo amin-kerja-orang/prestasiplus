@@ -52,6 +52,25 @@ describe('autosave', () => {
     expect(auto.status()).toBe('saved')
   })
 
+  it('FR-MUR-13-10: typing without a pause still reaches the server every 15 s while dirty, then the timer stops', async () => {
+    const { auto, server, attemptId, view } = await setup()
+    const q = view.questions[0]!.id
+    const save = vi.spyOn(server, 'saveAnswers')
+    // A keystroke every 500 ms: the 800 ms debounce never fires.
+    for (let i = 1; i <= 29; i++) {
+      auto.setAnswer(q, { choice: `c${i}` })
+      await vi.advanceTimersByTimeAsync(500)
+    }
+    expect(save).not.toHaveBeenCalled()
+    auto.setAnswer(q, { choice: 'c30' })
+    await vi.advanceTimersByTimeAsync(500)
+    expect(save).toHaveBeenCalledTimes(1)
+    expect(server.debugSaved(attemptId)[q]!.answer.choice).toBe('c30')
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(save).toHaveBeenCalledTimes(1)
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
   it('coalesces fast typing into one revision per part sent', async () => {
     const { auto, view } = await setup()
     const q = view.questions[0]!.id

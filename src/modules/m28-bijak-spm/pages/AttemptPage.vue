@@ -363,6 +363,10 @@ onBeforeUnmount(() => {
   if (!sessionExpired.value) void autosave?.flush()
   autosave?.dispose()
 })
+/** FR-MUR-13-10: leaving a field sends what it holds now. Moving focus with nothing unsent sends nothing. */
+function onFieldBlur(): void {
+  if (autosave?.pendingCount()) void autosave.flush()
+}
 function onVisibility(): void {
   if (document.visibilityState === 'hidden') void autosave?.flush()
 }
@@ -454,6 +458,8 @@ async function goTo(i: number): Promise<void> {
   if (i < 0 || i >= questions.value.length) return
   index.value = i
   autosave?.setPosition(i)
+  // FR-MUR-13-10: the answers of the question just left go now, not after the debounce.
+  void autosave?.flush()
   writePosition(attemptId.value, { questionIndex: i, scrollTop: 0 })
   navOpen.value = false
   await nextTick()
@@ -670,7 +676,7 @@ const feedback = computed(() => {
         <USkeleton class="h-24 w-full" />
         <USkeleton class="h-16 w-full" />
       </div>
-      <div v-else class="flex flex-col gap-4 pt-2">
+      <div v-else class="flex flex-col gap-4 pt-2" @focusout="onFieldBlur">
         <div v-if="section" class="flex flex-col gap-1" data-testid="section-header">
           <p class="text-overline text-muted">
             {{ section.label }} · [{{ section.effectiveMarks }} markah]

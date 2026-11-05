@@ -31,6 +31,8 @@ export interface AutosaveOptions {
   api: AutosaveApi
   debounceMs?: number
   retryMs?: number
+  /** FR-MUR-13-10: while there is unsent work, a flush at least this often, so typing without a pause still reaches the server. */
+  dirtyFlushMs?: number
   now?: () => number
   onStatus?: (status: SaveStatus) => void
   /** The server reports the attempt closed (deadline passed); the page then opens its Semakan and clears the local copy. */
@@ -70,6 +72,7 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
   const key = `${LOCAL_PREFIX}${opts.attemptId}`
   const debounceMs = opts.debounceMs ?? 800
   const retryMs = opts.retryMs ?? 5000
+  const dirtyFlushMs = opts.dirtyFlushMs ?? 15_000
   const now = opts.now ?? (() => Date.now())
   let doc: LocalDoc = {
     answers: {},
@@ -81,6 +84,7 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
   }
   let timer: ReturnType<typeof setTimeout> | undefined
   let retry: ReturnType<typeof setTimeout> | undefined
+  let dirtyTimer: ReturnType<typeof setTimeout> | undefined
   let current: SaveStatus = 'idle'
   let inFlight: Promise<boolean> | null = null
   let disposed = false
@@ -117,10 +121,21 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
     }, debounceMs)
   }
 
+  const armDirtyFlush = (): void => {
+    if (dirtyTimer || disposed || closed) return
+    dirtyTimer = setTimeout(() => {
+      dirtyTimer = undefined
+      if (!doc.pending.length && !doc.metaDirty) return
+      void flush()
+      armDirtyFlush()
+    }, dirtyFlushMs)
+  }
+
   const touched = (): void => {
     writeLocal()
     setStatus('saving')
     schedule()
+    armDirtyFlush()
   }
 
   async function send(): Promise<boolean> {
@@ -204,6 +219,7 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
       if (doc.pending.length || doc.metaDirty) {
         setStatus('saving')
         schedule()
+        armDirtyFlush()
       }
     },
     setAnswer(partId, answer) {
@@ -227,6 +243,7 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
       doc.metaDirty = true
       writeLocal()
       schedule()
+      armDirtyFlush()
     },
     flush,
     answers: () => Object.fromEntries(Object.entries(doc.answers).map(([k, v]) => [k, v.answer])),
@@ -245,6 +262,7 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
       disposed = true
       if (timer) clearTimeout(timer)
       if (retry) clearTimeout(retry)
+      if (dirtyTimer) clearTimeout(dirtyTimer)
     },
   }
 }
