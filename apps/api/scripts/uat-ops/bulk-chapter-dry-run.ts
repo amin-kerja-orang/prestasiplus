@@ -7,7 +7,7 @@
  *   (--dry-run is accepted and means the default; the npm name `uat:bulk-chapter-dry-run` is added by S4-T08)
  *
  * Per offered Subjek x Tingkatan (an active subject linked through `subject_levels` to an active, non-primary level; the same set as
- * `GET /api/admin/curriculum/chapter-coverage`): the approved LIVE questions (live version approved, question active) with no Bab, with a
+ * `GET /api/admin/curriculum/chapter-coverage`): the approved LIVE questions (live version approved; `questions.is_active` is NOT a condition, like the API; PKSK questions are left out, like the admin filter) with no Bab, with a
  * Bab, and for each active in-tree Bab of that subject and level how many questions are eligible for it. Eligible is the definition of
  * `bulk-chapter.service.ts`, `overwrite=false`: the live version is approved, its subject and level equal the Bab's, and it has no Bab.
  * That count is the same for every Bab of the pair; it is a count, never a per-question mapping.
@@ -64,6 +64,11 @@ export interface Plan {
   totals: { pairs: number; approved: number; withoutChapter: number; withChapter: number; chapters: number }
 }
 
+/**
+ * Same eligibility as `bulk-chapter.service.ts` (S4-T03, API-DSKP-09), overwrite=false: no `questions.is_active` condition (the card and
+ * the contract say "live approved version", and the admin filter has none, so an inactive approved question is matched and mapped), and
+ * PKSK questions are excluded (the admin filter `NOT_PKSK_SQL`).
+ */
 export const PAIRS_SQL = `
 SELECT s.id::text AS subject_id, s.code AS subject_code, l.id::text AS level_id, l.code AS level_code,
        a.approved::int AS approved, a.with_chapter::int AS with_chapter
@@ -73,8 +78,9 @@ SELECT s.id::text AS subject_id, s.code AS subject_code, l.id::text AS level_id,
   CROSS JOIN LATERAL (
     SELECT count(*) AS approved, count(v.chapter_id) AS with_chapter
       FROM question_versions v
-      JOIN questions q ON q.id = v.question_id AND q.live_version_no = v.version_no AND q.is_active
+      JOIN questions q ON q.id = v.question_id AND q.live_version_no = v.version_no
      WHERE v.subject_id = s.id AND v.education_level_id = l.id AND v.status = 'approved'
+       AND NOT EXISTS (SELECT 1 FROM question_tags pt WHERE pt.question_id = q.id AND pt.kind = 'pksk_domain')
   ) a
  WHERE ($1::text IS NULL OR s.code = $1) AND ($2::text IS NULL OR l.code = $2)
  ORDER BY s.sort_order, s.id, l.sort_order, l.id`
