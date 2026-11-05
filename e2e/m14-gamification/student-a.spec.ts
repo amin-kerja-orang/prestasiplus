@@ -159,7 +159,7 @@ test.describe('S11 dashboard', MODULE, () => {
     await expect(cards.nth(2)).toContainText('Penjelajah Topik')
     await expect(cards.nth(3)).toContainText('Kilat Matematik')
     const rows = page.getByTestId('s11-recent-row')
-    await expect(rows).toHaveCount(6)
+    await expect(rows).toHaveCount(10) // AC-MUR-28-5: the last 10 of the 14 rows
     const expected = [
       ['Cabaran selesai: Penjelajah Topik', '+25'],
       ['Streak activity (spm)', '+7'],
@@ -231,6 +231,9 @@ test.describe('S11 dashboard', MODULE, () => {
     await expect(text(page, 's11-tier-name')).toHaveText('Gangsa Tier')
     await expect(text(page, 's11-title-chip')).toHaveText('📚 Permulaan')
     await expect(text(page, 's11-next-need')).toHaveText('Perlu 500 syiling lagi')
+    // AC-MUR-28-3
+    await expect(text(page, 's11-recent-empty')).toHaveText('Tiada transaksi.')
+    await expect(page.getByTestId('s11-recent-row')).toHaveCount(0)
   })
 
   test('E2E-M14-95 no visible text under 12px (S11 and S13)', async ({
@@ -485,6 +488,7 @@ test.describe('S17 history', MODULE, () => {
     await expect(rows.last().getByTestId('s17-row-amount')).toHaveText('+4')
     await expect(rows.last().getByTestId('s17-row-balance')).toHaveText('Baki: 4')
     await expect(page.locator('nav[aria-label="pagination"]')).toHaveCount(0)
+    await expect(text(page, 's17-pager')).toHaveCount(0) // AC-MUR-28-5: fewer than 15 rows stay on one page
     await expectNoHorizontalScroll(page)
   })
 
@@ -515,6 +519,31 @@ test.describe('S17 history', MODULE, () => {
       await expect(text(page, 's17-empty')).toContainText('Mula latih tubi untuk dapatkan syiling!')
     }
     await expectNoHorizontalScroll(page)
+  })
+
+  test('FR-MUR-28-4 19 rows page at 15, the pager has 44px targets, a pill starts at page 1', async ({
+    page,
+    gotoApp,
+    loginAs,
+  }) => {
+    await loginAs(4) // pelajarmaju: 19 ledger rows
+    await gotoApp(S17)
+    const rows = page.getByTestId('s17-row')
+    await expect(rows).toHaveCount(15)
+    const pager = text(page, 's17-pager')
+    const second = pager.getByRole('button', { name: 'Halaman 2', exact: true })
+    await expectTouchTarget(second)
+    await expectNoHorizontalScroll(page)
+    await second.click()
+    await expect(page).toHaveURL(/\?halaman=2$/)
+    await expect(rows).toHaveCount(4)
+    await expect(text(page, 's17-balance')).toHaveText('Baki semasa: 267 syiling')
+    await expectNoHorizontalScroll(page)
+    await page.reload()
+    await expect(rows).toHaveCount(4)
+    await page.getByTestId('s17-pill').nth(1).click()
+    await expect(page).toHaveURL(/\?type=earn$/)
+    await expect(rows).toHaveCount(15)
   })
 
   test('E2E-M14-08 an unknown ?type= renders the empty state', async ({

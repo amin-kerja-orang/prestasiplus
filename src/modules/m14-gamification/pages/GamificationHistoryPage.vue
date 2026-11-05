@@ -1,11 +1,12 @@
 <script setup lang="ts">
 /**
  * S17 `/gamification/history` "Sejarah Transaksi" (M14-T2a; FR-M14-23…26, BR-M14-33). Reads #4 with the
- * live `?type=` query; every row of the viewer's ledger, newest first, no pager. An unknown `type`
- * renders the empty state (FR-M14-08). Rows are grouped under a day label.
+ * live `?type=` query; the viewer's ledger, newest first, 15 rows per page on the client with `?halaman=`
+ * (FR-MUR-28-4; #4 stays unpaged, ruling on defect 15). No pager for one page. An unknown `type` renders the empty
+ * state (FR-M14-08). Rows are grouped under a day label.
  */
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
 import { DsEmptyState, DsPage } from '@/ds'
@@ -15,7 +16,10 @@ import { formatDate, formatDateKey, formatDateTime } from '@/lib/time/format'
 import { fetchGamificationTransactions, type LedgerEntry } from '../api'
 import { gamLedgerIcon, gamRelativeTime, gamSignedAmount } from '../lib/student/s11-format'
 
+const PAGE_SIZE = 15
+
 const route = useRoute()
+const router = useRouter()
 
 const type = computed(() => {
   const raw = route.query.type
@@ -36,10 +40,25 @@ const PILLS = [
   { key: 'bonus', label: '🎁 Bonus' },
 ] as const
 
-/** Rows in the order served, split into consecutive day groups. */
+const total = computed(() => tx.data.value?.data.length ?? 0)
+
+/** `?halaman=` as a page in range: anything else reads as the nearest real page. */
+const page = computed(() => {
+  const raw = route.query.halaman
+  const asked = Math.floor(Number(Array.isArray(raw) ? raw[0] : raw)) || 1
+  return Math.min(Math.max(1, asked), Math.max(1, Math.ceil(total.value / PAGE_SIZE)))
+})
+
+function goPage(next: number): void {
+  const query = { ...(type.value ? { type: type.value } : {}), ...(next > 1 ? { halaman: String(next) } : {}) }
+  void router.push({ path: '/gamification/history', query })
+}
+
+/** The rows of this page in the order served, split into consecutive day groups. */
 const groups = computed(() => {
   const out: { key: string; label: string; rows: LedgerEntry[] }[] = []
-  for (const r of tx.data.value?.data ?? []) {
+  const start = (page.value - 1) * PAGE_SIZE
+  for (const r of (tx.data.value?.data ?? []).slice(start, start + PAGE_SIZE)) {
     const key = formatDateKey(r.createdAt)
     const last = out[out.length - 1]
     if (last && last.key === key) last.rows.push(r)
@@ -142,6 +161,16 @@ const groups = computed(() => {
             </UCard>
           </li>
         </ul>
+      </div>
+      <div v-if="total > PAGE_SIZE" class="flex justify-center" data-testid="s17-pager">
+        <UPagination
+          :page="page"
+          :total="total"
+          :items-per-page="PAGE_SIZE"
+          size="lg"
+          :ui="{ list: 'flex-wrap justify-center' }"
+          @update:page="goPage"
+        />
       </div>
     </section>
   </DsPage>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** S11 "Transaksi Terkini" (FN-M14-2.1.7; FR-M14-19): latest 6 ledger rows, "Semua →". */
+/** S11 "Transaksi Terkini" (FN-M14-2.1.7; FR-M14-19; AC-MUR-28-3, 28-5): latest ledger rows or "Tiada transaksi.", "Semua →". */
 import { DsIconChip } from '@/ds'
 
 import type { LedgerEntry } from '../../api'
@@ -24,7 +24,10 @@ defineProps<{ rows: readonly LedgerEntry[] }>()
           >Semua →</UButton
         >
       </div>
-      <ul class="flex flex-col gap-3">
+      <p v-if="rows.length === 0" class="text-body text-muted" data-testid="s11-recent-empty">
+        Tiada transaksi.
+      </p>
+      <ul v-else class="flex flex-col gap-3">
         <li
           v-for="r in rows"
           :key="r.id"
