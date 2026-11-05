@@ -4,6 +4,7 @@ import type { ServabilityActivity } from '@pp/contract'
 import { isIdString } from '../../../db/ids'
 import { mulberry32, type Prng } from '../../../db/prng'
 import { QuestionsRepository } from '../../questions'
+import { isBankVersion } from '../../questions/learner-visibility'
 import { GROUP_SURFACES, drawUnits, filterOf as servingFilterOf, type DrawCandidate } from '../../questions/serving'
 import type { QuestionFilter, QuestionRecord, StimulusGroupRecord } from '../../questions/types'
 import { UsersRepository } from '../../users'
@@ -318,7 +319,7 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
 /** Q-2: the live version is published and the question is active. */
 const eligible = (r: QuestionRecord): boolean => r.isActive && r.version.status === 'approved'
 /** DM-42: a personal question is served by a mission session only. */
-const notPrivate = (r: QuestionRecord): boolean => r.version.visibility !== 'teacher_private'
+const notPrivate = (r: QuestionRecord): boolean => isBankVersion(r.version)
 
 /** The drill surface of a selection (`PracticeSelection.activity`, else Latih Tubi SPM for the SPM pool, Databank for the rest). */
 const activityOf = (s: PracticeSelection): PracticeDrillActivity => s.activity ?? (s.spmPool ? 'latih_tubi_spm' : 'databank')

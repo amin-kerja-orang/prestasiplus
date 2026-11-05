@@ -26,6 +26,12 @@ export const SERVABLE_VERSION_SQL = Prisma.sql`v.status = ${Prisma.raw(`'${SERVA
 export const BANK_VISIBILITY = 'bank' as const
 export const BANK_VISIBLE_SQL = Prisma.sql`v.visibility = ${Prisma.raw(`'${BANK_VISIBILITY}'`)}`
 
+/**
+ * The JS twin of `BANK_VISIBLE_SQL`, the ONE definition for records already in memory (the practice source, the remedial pool, the by-id
+ * `bankOnly` read). A version that does not carry the field (an older fixture) is a bank version.
+ */
+export const isBankVersion = (version: { visibility?: string | undefined }): boolean => version.visibility === undefined || version.visibility === BANK_VISIBILITY
+
 /** M07 PKSK questions are served by M07 only. */
 export const NOT_PKSK_SQL = Prisma.sql`NOT EXISTS (SELECT 1 FROM question_tags pt WHERE pt.question_id = q.id AND pt.kind = 'pksk_domain')`
 

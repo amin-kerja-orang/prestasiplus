@@ -1,6 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { PrismaService } from '../../src/db/prisma.service'
+import { PracticeRepository } from '../../src/modules/practice/practice.repository'
+import { PracticeAnalyticsRepository } from '../../src/modules/practice/reads/analytics/analytics.repository'
+import { OverviewRepository } from '../../src/modules/practice/reads/overview/overview.repository'
 import { QuestionsRepository, QuestionsService } from '../../src/modules/questions'
 import { janaEligibleScope } from '../../src/modules/questions/serving'
 import { adminActor, mcqInput, tagBody, tagOf, type Tag } from './fixtures'
@@ -88,9 +91,38 @@ describe('a private question never reaches a bank read (DM-42)', () => {
     expect(await repo.get(privateId, 'live')).not.toBeNull()
   })
 
-  it('a new version of a question carries visibility, owner and link forward', async () => {
-    const draft = (await repo.get(privateId, 'latest'))!
-    expect(draft.version.visibility).toBe('teacher_private')
+  it('a new version (v2) of a private question carries visibility, owner and link forward', async () => {
+    const draft = {
+      status: 'draft', type: 'mcq', stemMs: 'Versi 2', stemEn: null, numberLabel: null, language: 'ms', explanationMs: null, explanationEn: null,
+      subjectId: null, educationLevelId: null, unitNodeId: null, chapterId: null, topicId: null, formOrigin: 't4', cognitiveLevel: null, kbat: null,
+      tagReview: false, catalogueVersion: null, difficultyTp: 3, difficultyLevel: 3, sourcePage: null, setLabel: null, spNodeIds: [], stimulusIds: [], parts: [],
+    }
+    await repo.addVersion(privateId, 2, draft as never, new Date())
+    const [row] = await t.db.query<{ visibility: string; owner: string | null; url: string | null }>(
+      `select visibility, owner_user_id::text owner, reference_url url from question_versions where question_id = $1 and version_no = 2`,
+      [privateId],
+    )
+    expect(row).toMatchObject({ visibility: 'teacher_private', owner: ownerId, url: 'https://example.org/rujukan' })
+    await q(`delete from question_versions where question_id = $1 and version_no = 2`, [privateId])
+    await q(`update questions set latest_version_no = 1 where id = $1`, [privateId])
+  })
+
+  it('Ulang Kaji and the overview counts leave it out', async () => {
+    const pupil = (await q(`select id::text id from users where id <> $1 order by id limit 1`, [ownerId]))[0]!.id
+    // A wrong answer on both: only the bank question is queued (writeQueue skips the private one).
+    const graded = (questionId: string) => ({ check: { questionId, checkedAt: new Date() }, isCorrect: false, subjectId: tag.subjectId })
+    await (new PracticeRepository(prisma) as unknown as { writeQueue(u: bigint, g: unknown[], at: Date): Promise<void> }).writeQueue(BigInt(pupil), [graded(bankId), graded(privateId)], new Date())
+    expect((await q(`select count(*)::text id from revision_queue where question_id = $1`, [privateId]))[0]!.id).toBe('0')
+    // A row written before the guard existed stays unserved and uncounted.
+    await q(`insert into revision_queue (user_id, question_id, subject_id, wrong_times, last_wrong_at) values ($1, $2, $3, 1, now())`, [pupil, privateId, tag.subjectId])
+    const overview = new OverviewRepository(prisma)
+    expect(await overview.revisionTotal(pupil)).toBe(1)
+    const queued = await new PracticeAnalyticsRepository(prisma).eligibleQueueBySubject(pupil)
+    expect([...queued.values()].reduce((a, b) => a + b, 0)).toBe(1)
+    const matrix = await overview.bankMatrix()
+    const rows = await prisma.client.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no WHERE q.is_active AND v.status = 'approved' AND v.visibility = 'bank' AND v.subject_id = ${BigInt(tag.subjectId)}`
+    const shown = matrix.filter((c) => c.subjectId === tag.subjectId).reduce((a, c) => a + c.n, 0)
+    expect(shown).toBeLessThanOrEqual(rows[0]!.n)
   })
 
   it('a read by id still finds it (the mission path), with the reference link', async () => {
