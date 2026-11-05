@@ -8,11 +8,11 @@ import type { Page } from '@playwright/test'
 
 import { expect, test } from '../fixtures/test'
 import { expectNoHorizontalScroll, expectTabTitle, moduleTag, provisional, TAG } from '../support'
+import { expectAdminHeader } from './helpers'
 
 const ADMIN = 'admin@demo.test'
 const PELAJARMAJU = 'pelajarmaju@demo.test'
 const MODULE = { tag: [moduleTag(16)] }
-const SUBTITLE = 'Selamat datang kembali'
 
 test.use({ mockInit: { latency: 0 } })
 
@@ -39,8 +39,7 @@ test.describe('S20 Pertandingan Mingguan', () => {
       await loginAs(ADMIN)
       await gotoApp('/permainan/pertandingan')
       await expectTabTitle(page, 'Pertandingan Mingguan | PRESTASIPLUS')
-      await expect(page.getByTestId('shell-user-title')).toHaveText('Pertandingan Mingguan')
-      await expect(page.getByTestId('shell-user-subtitle')).toHaveText(SUBTITLE)
+      await expectAdminHeader(page, 'Pertandingan Mingguan')
       await expect(
         page.getByRole('heading', { level: 1, name: '🏆 Pertandingan Mingguan' }),
       ).toBeVisible()
@@ -170,9 +169,8 @@ test.describe('S21 Uji Minda', () => {
   test('E2E-M16-74 the empty state', MODULE, async ({ page, gotoApp, loginAs }) => {
     await loginAs(ADMIN)
     await gotoApp('/permainan/uji-minda')
-    await expectTabTitle(page, 'Uji Minda — Belum Ada Cabaran')
-    await expect(page.getByTestId('shell-user-title')).toHaveText('Uji Minda')
-    await expect(page.getByTestId('shell-user-subtitle')).toHaveText(SUBTITLE)
+    await expectTabTitle(page, 'Uji Minda | PRESTASIPLUS')
+    await expectAdminHeader(page, 'Uji Minda')
     await expect(
       page.getByTestId('uji-minda-hero').getByRole('heading', { name: 'Uji Minda' }),
     ).toBeVisible()
@@ -215,9 +213,9 @@ test.describe('S22 Sambung Kata (DV-M16-03)', () => {
         ),
       ).toBeVisible()
       await expect(page.getByRole('link', { name: 'Halaman Utama' })).toHaveAttribute('href', '/')
-      await expect(page.getByText('PRESTASIPLUS', { exact: true })).toBeVisible()
-      // No shell: no sidebar header.
-      await expect(page.getByTestId('shell-user-title')).toHaveCount(0)
+      await expect(page.getByTestId('m16-server-error')).toContainText('PRESTASIPLUS')
+      // No shell: no portal header.
+      await expect(page.getByTestId('pentadbiran-header')).toHaveCount(0)
       await expectNoHorizontalScroll(page)
 
       await Promise.all([
