@@ -391,7 +391,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
       429: RATE_LIMITED,
       200: json(envelopeOf(GamesRoomViewSchema), 'The room after the action.'),
       401: UNAUTHORIZED,
-      403: FORBIDDEN_CSRF_OR('"Bukan giliran anda." (caller is not the room human)'),
+      403: FORBIDDEN_CSRF_OR('"Bukan giliran anda." (caller is not the seat on turn)'),
       404: err('NOT_FOUND "Bilik tidak dijumpai." or "Permainan tidak dijumpai.".'),
       409: err('CONFLICT "Permainan belum bermula.", "Bukan giliran anda untuk gulung dadu.", "Tiada soalan untuk dijawab." or "Tiada jam untuk permainan ini.".'),
       422: err(

@@ -190,4 +190,89 @@ describe('multi-human rooms (R2): Papan Bijak and Kuiz Relay', () => {
     expect(await standing('papan-bijak', a.userId)).toMatchObject({ wins: 1, jumlah: 1 })
     expect((await events(code)).map((e) => e.user_id)).toEqual([a.userId]) // no reward for the removed seat
   }, 120_000)
+
+  it('3 humans: one absent human (3 timeouts, no poll) is replaced by a robot and the game goes on with 2 humans', async () => {
+    const code = await createRoom(a, 'papan-bijak', { ...PB_FORM, match_mode: 'same_level' })
+    await join(b, 'papan-bijak', code)
+    await join(solo, 'papan-bijak', code)
+    parseRoom(await a.post(P('papan-bijak', code, '/start')))
+    // `solo` never polls again; a and b play every turn they are waited for, so they stay present
+    let v: GamesRoomView = parseRoom(await a.get(P('papan-bijak', code)))
+    for (let i = 0; i < 400 && v.status === 'playing' && v.players.every((p) => !p.isBot); i++) {
+      t.clock.advance(15_000)
+      const turn = v.state?.humanId as string
+      const actor = turn === b.userId ? b : a
+      v = parseRoom(await (turn === solo.userId ? a : actor).get(P('papan-bijak', code)))
+      if (v.status === 'playing' && (v.state?.humanId === a.userId || v.state?.humanId === b.userId)) {
+        const c = v.state.humanId === a.userId ? a : b
+        const st = await stateOf(t.db, code)
+        v = parseRoom(await c.post(P('papan-bijak', code, '/action'), v.state.awaiting === 'roll' ? { type: 'roll' } : { type: 'answer', questionId: st.pendingQ, optionId: null }))
+      }
+      await Promise.all([a.get(P('papan-bijak', code)), b.get(P('papan-bijak', code))]) // both present
+    }
+    const now = parseRoom(await a.get(P('papan-bijak', code)))
+    expect(now.status).toBe('playing') // 2 humans remain: the game goes on
+    expect(now.players.map((p) => p.isBot).sort()).toEqual([false, false, true])
+    expect(now.players.find((p) => p.id === solo.userId)).toBeUndefined()
+    expect(await standing('papan-bijak', solo.userId)).toMatchObject({ wins: 0, jumlah: 1 })
+    expect(await t.db.query('select 1 from game_reward_events where user_id = $1::bigint', [solo.userId])).toHaveLength(0)
+  }, 120_000)
+
+  it('ruling 50.1: robots off, a human leaves a 3-human room: the seat is skipped (no robot), play goes on and settles for the 2 who stayed', async () => {
+    await t.db.query(`update gamification_settings set value = 0 where key = 'games_room_bots_enabled'`)
+    try {
+      const code = await createRoom(a, 'papan-bijak', { ...PB_FORM, match_mode: 'same_level' })
+      await join(b, 'papan-bijak', code)
+      await join(solo, 'papan-bijak', code)
+      parseRoom(await a.post(P('papan-bijak', code, '/start')))
+      const start = parseRoom(await solo.post(P('papan-bijak', code, '/action'), { type: 'leave' }))
+      expect(start.status).toBe('playing')
+      expect(start.players).toHaveLength(2)
+      expect(start.players.some((p) => p.isBot)).toBe(false)
+      expect(await t.db.query('select 1 from game_room_players where room_code = $1 and (is_bot or user_id is null)', [code])).toHaveLength(0)
+      const v = await playOut(code, 'papan-bijak', start)
+      expect(v.status).toBe('finished')
+      for (const c of [a, b]) expect(await standing('papan-bijak', c.userId)).toMatchObject({ jumlah: 1 })
+      expect(await standing('papan-bijak', solo.userId)).toEqual({ wins: 0, jumlah: 1, skor: 0, betul: 0 })
+      expect((await events(code)).map((e) => e.user_id).sort()).toEqual([a.userId, b.userId].sort())
+    } finally {
+      await t.db.query(`update gamification_settings set value = 1 where key = 'games_room_bots_enabled'`)
+    }
+  }, 120_000)
+
+  it('ruling 50.1: robots off, an absent human (3 timeouts) is skipped the same way', async () => {
+    await t.db.query(`update gamification_settings set value = 0 where key = 'games_room_bots_enabled'`)
+    try {
+      const code = await createRoom(a, 'papan-bijak', { ...PB_FORM, match_mode: 'same_level' })
+      await join(b, 'papan-bijak', code)
+      await join(solo, 'papan-bijak', code)
+      parseRoom(await a.post(P('papan-bijak', code, '/start')))
+      const rooms = t.app.get(RoomsService, { strict: false })
+      let v: GamesRoomView = parseRoom(await a.get(P('papan-bijak', code)))
+      for (let i = 0; i < 60 && v.players.length === 3; i++) {
+        t.clock.advance(31_000)
+        await b.get(P('papan-bijak', code)) // b and a stay present; solo never polls
+        await rooms.sweepClocks()
+        v = parseRoom(await a.get(P('papan-bijak', code)))
+      }
+      expect(v.status).toBe('playing')
+      expect(v.players.map((p) => p.id).sort()).toEqual([a.userId, b.userId].sort())
+      expect(v.players.some((p) => p.isBot)).toBe(false)
+    } finally {
+      await t.db.query(`update gamification_settings set value = 1 where key = 'games_room_bots_enabled'`)
+    }
+  }, 120_000)
+
+  it('ruling 50.3: a lone human who is absent (3 timeouts, the sweep runs) ends the game with nothing settled', async () => {
+    const code = await createRoom(solo, 'perang-fakta', FORM)
+    await ageRoom(t, code)
+    parseRoom(await solo.post(P('perang-fakta', code, '/start')))
+    t.clock.advance(35_000)
+    await t.app.get(RoomsService, { strict: false }).sweepClocks()
+    const room = (await t.db.query<{ status: string; settled_at: Date | null }>('select status, settled_at from game_rooms where code = $1', [code]))[0]
+    expect(room?.status).toBe('finished')
+    expect(room?.settled_at).not.toBeNull()
+    expect(await events(code)).toHaveLength(0)
+    expect(await t.db.query('select 1 from game_standings')).toHaveLength(0)
+  }, 120_000)
 })

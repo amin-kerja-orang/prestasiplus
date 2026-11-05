@@ -106534,7 +106534,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"Bukan giliran anda.\" (caller is not the room human), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Bukan giliran anda.\" (caller is not the seat on turn), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {

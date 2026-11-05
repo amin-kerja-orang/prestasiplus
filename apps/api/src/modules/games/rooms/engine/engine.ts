@@ -71,9 +71,22 @@ export function seatOf(s: RoomState, id: string): SeatState {
 /** The turn marker of the question on the table (`youAnswered` compares it with the seat's last answer). */
 const markerOf = (s: RoomState, qId: string | null): string => `${String(s.round)}:${String(s.turn)}:${qId ?? ''}`
 
-/** Whether `id` has already answered the question the room awaits now (the waiting state of a simultaneous round). */
+/**
+ * Whether `id` has already answered the question the room awaits now (the waiting state of a simultaneous round). The six
+ * current games move the turn on at once after an answer, so this is not yet true in practice; the marker becomes live only
+ * with the simultaneous-round parts (GAME-03/04/05/07).
+ */
 export function youAnswered(s: RoomState, id: string): boolean {
   return s.awaiting === 'answer' && s.pendingQ !== null && s.seats?.[id]?.answeredAt === markerOf(s, s.pendingQ)
+}
+
+/**
+ * Whether `id` was seen within `windowMs` of `nowMs`. `seenMs` is written at most every `minGapMs` (see `markSeen`), so the
+ * caller passes the absence limit plus that gap.
+ */
+export function seatPresent(s: RoomState, id: string, nowMs: number, windowMs: number): boolean {
+  const seen = s.seats?.[id]?.seenMs
+  return seen !== null && seen !== undefined && nowMs - seen <= windowMs
 }
 
 /** The player is polling or acting: absence starts again (3 timeouts "with no poll in between"). Returns whether the state changed. */
@@ -789,4 +802,69 @@ export function handOverSeat(input: HandOverInput): EngineOut {
     res = pbRun(c)
   }
   return stamp(input.state, res, input.nowMs)
+}
+
+export interface SkipSeatInput {
+  room: EngineRoom
+  /** The seats after the change: the leaver's seat is gone (robots are off, so no robot takes it). */
+  players: EnginePlayer[]
+  state: RoomState
+  /** The old seat key and the position of the human who left, and how many seats there were. */
+  leaver: string
+  leaverIndex: number
+  oldCount: number
+  p: number
+  nowMs: number
+  streams?: StreamFactory
+}
+
+/**
+ * A human left a game in play and robots are off (`games_room_bots_enabled` = Tidak): the seat is skipped, never a robot, and
+ * the humans left play on. Papan Bijak keeps its turn order (the next seat in line stays next); Kuiz Relay's seat formula
+ * `((round - 1) mod players)` simply runs over the seats that are left, so the answerer of the round on the table is
+ * re-read from it and its clock restarts. The own-part games pass the one acting seat to the next human.
+ */
+export function skipSeat(input: SkipSeatInput): EngineOut {
+  const c: Ctx = {
+    room: input.room,
+    players: input.players.map((x) => ({ ...x })),
+    s: structuredClone(input.state),
+    streams: input.streams ?? defaultStreams,
+    p: input.p,
+    nowMs: input.nowMs,
+    answered: [],
+  }
+  const s = c.s
+  const gone = input.leaver
+  delete s.positions[gone]
+  delete s.meter[gone]
+  if (s.seats) delete s.seats[gone]
+  const wasActor = s.humanId === gone
+  const game = input.room.game
+  if (game !== 'papan-bijak' && game !== 'kuiz-relay') {
+    if (wasActor) {
+      const next = c.players.find((x) => !x.isBot)
+      if (next) s.humanId = next.userId
+    }
+    return { state: s, players: c.players, finished: false, answered: [] }
+  }
+  let res: EngineOut
+  if (game === 'kuiz-relay') {
+    s.awaiting = null
+    s.pendingQ = null
+    res = relayRun(c)
+  } else {
+    const n = input.oldCount
+    const at = s.turn % n
+    const i = input.leaverIndex
+    const target = i < at ? at - 1 : i === at ? i % (n - 1) : at
+    s.turn = Math.floor(s.turn / n) * (n - 1) + target
+    if (!wasActor) return { state: s, players: c.players, finished: false, answered: [] }
+    s.awaiting = null
+    s.pendingQ = null
+    res = pbRun(c)
+  }
+  // The answerer or roller changed hands with the same turn number: the clock of the new seat starts now.
+  res.state.roundStartedMs = input.nowMs
+  return res
 }

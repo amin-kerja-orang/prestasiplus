@@ -55,9 +55,10 @@ import {
   computeSettlement,
   EngineRefusal,
   handOverSeat,
-  isMultiHuman,
+  skipSeat,
   markSeen,
   playedHumans,
+  seatPresent,
   POOL_SIZE,
   questionView,
   resolveClocks,
@@ -602,6 +603,24 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
       await this.repo.bumpStanding(room.game, seat.userId, { wins: 0, jumlah: 1, betul: 0, skor: 0 }, now)
     }
     const left = players.filter((p) => !p.isBot && p !== seat)
+    // `game_rooms.host_id` is not moved when the host leaves: host-only actions (start, close) exist in the waiting room only,
+    // so in a playing room it is display only.
+    if (left.length >= 2 && (await this.settings.get('games_room_bots_enabled')) !== 1) {
+      // Ruling 50.1: robots off, so the seat is skipped and never a robot; the humans left play on.
+      await this.repo.removeSeat(seat.id)
+      const rest = players.filter((p) => p !== seat)
+      const out = skipSeat({
+        room: engineRoom(room),
+        players: enginePlayers(rest),
+        state: st,
+        leaver: seat.seat,
+        leaverIndex: players.indexOf(seat),
+        oldCount: players.length,
+        p: await this.botAccuracy(),
+        nowMs: now.getTime(),
+      })
+      return this.applyOut(tx, room, rest, out)
+    }
     if (left.length >= 2) {
       await this.repo.seatToRobot(seat.id)
       const after = await this.repo.players(room.code)
@@ -627,8 +646,8 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
     if (last) await this.repo.removeSeat(seat.id)
     const rest = last ? players.filter((p) => p !== seat) : players
     const absentMs = (await this.settings.get('games_absent_seconds')) * 1000
-    const seen = last ? st.seats?.[last.seat]?.seenMs : null
-    const present = seen !== null && seen !== undefined && now.getTime() - seen <= absentMs
+    // `seenMs` is written at most every SEEN_GAP_MS, so the window is the absence limit plus that gap.
+    const present = last !== undefined && seatPresent(st, last.seat, now.getTime(), absentMs + SEEN_GAP_MS)
     if (last && present) {
       const state: RoomState = { ...st, humanId: last.seat, awaiting: null, pendingQ: null, winnerId: last.seat, mvpId: last.seat }
       return this.applyOut(tx, room, rest, { state, players: enginePlayers(rest), finished: true })
@@ -670,12 +689,21 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
       await this.repo.updateRoom(room.code, { state: room.state }, this.clock.now())
     }
     cur = await this.runClocks(tx, cur.room, cur.players)
+    // The caller is here now: timeouts the catch-up applied to their own seat do not remove them. The sweep or another
+    // player's poll is what removes an absent seat.
+    const mine = seen === undefined || cur.room.status !== 'playing' ? undefined : cur.room.state?.seats?.[seen]
+    if (mine && mine.missed > 0 && cur.room.state) {
+      mine.missed = 0
+      mine.seenMs = this.clock.now().getTime()
+      await this.repo.updateRoom(cur.room.code, { state: cur.room.state }, this.clock.now())
+    }
     for (let i = 0; i < 8; i++) {
       const st = cur.room.state
       if (cur.room.status !== 'playing' || !st) break
-      // Multi-human games only (Papan Bijak, Kuiz Relay) and only while another human could carry on; a lone human or an
-      // own-part game keeps timing out as before, and the game ends by its own rules.
-      if (!isMultiHuman(cur.room.game as GamesRoomGame) || cur.players.filter((p) => !p.isBot).length < 2) break
+      // Ruling 49, every room game: 3 timeouts in a row remove the seat. With other humans the game goes on (or the last
+      // present one wins); a lone human who is absent ends the game with nothing settled (ruling 50.3). In the own-part
+      // games (GAME-03/04/05/07) only the one acting human is awaited, so only that seat can miss turns; absence of the
+      // simulated seats comes with each part's simultaneous rounds.
       const absent = cur.players.find((p) => !p.isBot && (st.seats?.[p.seat]?.missed ?? 0) >= ABSENT_TIMEOUTS)
       if (!absent) break
       cur = await this.dropSeat(tx, cur.room, cur.players, absent)
@@ -825,7 +853,7 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
 
   /** The reward block of the finished room for the caller; nothing for a seat that did not play or left, or for Mod Pelajar. */
   private async rewardOf(caller: Caller, room: RoomRow, st: RoomState, players: PlayerRow[]): Promise<GamesReward | undefined> {
-    if (room.isTest || isRecord(room.result) && room.result.forfeitedBy !== undefined) return undefined
+    if (room.isTest || (isRecord(room.result) && room.result.forfeitedBy !== undefined)) return undefined
     if (!playedHumans(room.game as GamesRoomGame, st, enginePlayers(players)).some((p) => p.userId === caller.userId)) return undefined
     const first = await this.ports.rewards.firstGameResult(room.sessionId, caller.userId)
     if (first) return rewardBlock(first)
@@ -938,6 +966,7 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
         : null,
     }
     if (st) view.round = st.round
+    // The six current games move the turn on at once, so this is not yet set in practice; it becomes live with the simultaneous-round parts.
     if (st && youAnswered(st, caller.userId)) view.youAnswered = true
     if (room.status === 'waiting') {
       const robotIn = await this.robotInSeconds(room, players.length)
