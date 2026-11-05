@@ -5,6 +5,7 @@ import {
   activeTiers,
   defaultTier,
   levelProgressPct,
+  lifetimeTierOf,
   nextTierOf,
   nextTierProgress,
   nextTitleOf,
@@ -51,7 +52,7 @@ describe('wallet rules (pure, mock rules.ts)', () => {
     expect(activeTiers([tier('9', 'x', 5), tier('3', 'y', 5)]).map((t) => t.id)).toEqual(['3', '9']) // ties by sortOrder, then id
   })
 
-  it('upgradedTierId: highest active tier whose minSyiling is at most the current syiling, only if higher, never down', () => {
+  it('upgradedTierId: highest active tier whose minSyiling is at most the lifetime syiling, only if higher, never down (FR-GM-17.2)', () => {
     expect(upgradedTierId(TIERS, '1', 499)).toBe('1')
     expect(upgradedTierId(TIERS, '1', 500)).toBe('2')
     expect(upgradedTierId(TIERS, '1', 2500)).toBe('3') // skips silver
@@ -62,6 +63,16 @@ describe('wallet rules (pure, mock rules.ts)', () => {
     expect(upgradedTierId(TIERS, null, 0)).toBe('1')
     // An inactive tier is never a target.
     expect(upgradedTierId([...TIERS.slice(0, 1), tier('2', 'silver', 500, false), TIERS[2]!], '1', 600)).toBe('1')
+  })
+
+  it('lifetimeTierOf: the tier a read shows, from the lifetime total, never below the stored tier (FR-GM-17.2)', () => {
+    expect(lifetimeTierOf(TIERS, { tierId: '1', totalSyilingEarned: 700 })?.tierName).toBe('silver') // the stored tier lags
+    expect(lifetimeTierOf(TIERS, { tierId: '3', totalSyilingEarned: 100 })?.tierName).toBe('gold') // never down
+    expect(lifetimeTierOf(TIERS, { tierId: '1', totalSyilingEarned: 499 })?.tierName).toBe('bronze')
+    expect(lifetimeTierOf(TIERS, { tierId: null, totalSyilingEarned: 2000 })?.tierName).toBe('gold')
+    expect(lifetimeTierOf(TIERS, null)?.tierName).toBe('bronze') // no wallet row
+    expect(lifetimeTierOf(TIERS, { tierId: '99', totalSyilingEarned: 0 })?.tierName).toBe('bronze') // an unknown stored id
+    expect(lifetimeTierOf([], null)).toBeUndefined()
   })
 
   it('nextTierOf and nextTierProgress (BR-M14-06): 1 decimal, capped at 100, null at the top', () => {

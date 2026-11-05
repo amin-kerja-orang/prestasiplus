@@ -54,7 +54,7 @@ describe('WalletService credit (AC1, AC4, AC5)', () => {
       ['spend', -7, 8],
       ['refund', 20, 28],
     ])
-    expect(await walletOf(t, u)).toMatchObject({ current_syiling: 28, total_syiling_earned: 35 })
+    expect(await walletOf(t, u)).toMatchObject({ current_syiling: 28, total_syiling_earned: 15 }) // 48 GAME-17: a refund moves the balance, not the lifetime
   })
 
   describe('idempotency per (user, source, source_id)', () => {
@@ -103,7 +103,7 @@ describe('WalletService credit (AC1, AC4, AC5)', () => {
       // A refund under its own key works; a spend that reuses the key of a credit is refused.
       await t.wallet.credit({ userId: u, amount: 40, type: 'refund', source: 'shop_refund', sourceId: 'order-1', description: 'refund', isTest: false })
       await refused(t.wallet.debit({ userId: u, amount: 30, source: 'seed', sourceId: 'fund', description: 'x', isTest: false }))
-      expect(await walletOf(t, u)).toMatchObject({ current_syiling: 100, total_syiling_earned: 140 })
+      expect(await walletOf(t, u)).toMatchObject({ current_syiling: 100, total_syiling_earned: 100 }) // 48 GAME-17: the refund moves the balance, not the lifetime
     })
 
     it('M1: a convert replay needs the same amount and tokens; type earn versus bonus is a conflict too', async () => {
@@ -203,8 +203,8 @@ describe('WalletService credit (AC1, AC4, AC5)', () => {
     })
   })
 
-  describe('tier (BR-M14-08)', () => {
-    it('moves up to the highest active tier reached by the current syiling and never down', async () => {
+  describe('tier (FR-GM-17.2)', () => {
+    it('moves up to the highest active tier reached by the lifetime syiling and never down', async () => {
       const u = await fresh()
       expect((await t.wallet.credit({ userId: u, amount: 499, source: 't', sourceId: '1', description: 'd', isTest: false })).tierKey).toBe('bronze')
       expect((await t.wallet.credit({ userId: u, amount: 1, source: 't', sourceId: '2', description: 'd', isTest: false })).tierKey).toBe('silver')
@@ -214,6 +214,26 @@ describe('WalletService credit (AC1, AC4, AC5)', () => {
       expect(spent).toMatchObject({ currentSyiling: 100, tierKey: 'gold' })
       expect((await t.wallet.credit({ userId: u, amount: 1, source: 't', sourceId: '5', description: 'd', isTest: false })).tierKey).toBe('gold')
       expect((await walletOf(t, u))?.tier_name).toBe('gold')
+    })
+
+    it('AC-GM-17.1 (rule): 499 lifetime and a credit of 1 is Perak although the balance is far lower; spending 300 afterwards leaves Perak', async () => {
+      const u = await fresh()
+      await t.wallet.credit({ userId: u, amount: 499, source: 't', sourceId: '1', description: 'd', isTest: false })
+      await t.wallet.debit({ userId: u, amount: 100, source: 'shop', sourceId: '2', description: 'd', isTest: false })
+      const up = await t.wallet.credit({ userId: u, amount: 1, source: 't', sourceId: '3', description: 'd', isTest: false })
+      expect(up).toMatchObject({ currentSyiling: 400, totalSyilingEarned: 500, tierKey: 'silver' })
+      const spent = await t.wallet.debit({ userId: u, amount: 300, source: 'shop', sourceId: '4', description: 'd', isTest: false })
+      expect(spent).toMatchObject({ currentSyiling: 100, totalSyilingEarned: 500, tierKey: 'silver' })
+      expect(await walletOf(t, u)).toMatchObject({ current_syiling: 100, total_syiling_earned: 500, tier_name: 'silver' })
+    })
+
+    it('a bonus counts for the lifetime total and the tier; a refund counts for neither, though the balance rises', async () => {
+      const u = await fresh()
+      await t.wallet.credit({ userId: u, amount: 499, source: 't', sourceId: '1', description: 'd', isTest: false })
+      const refund = await t.wallet.credit({ userId: u, amount: 50, type: 'refund', source: 'shop_refund', sourceId: '2', description: 'd', isTest: false })
+      expect(refund).toMatchObject({ currentSyiling: 549, totalSyilingEarned: 499, tierKey: 'bronze' })
+      const bonus = await t.wallet.credit({ userId: u, amount: 1, type: 'bonus', source: 't', sourceId: '3', description: 'd', isTest: false })
+      expect(bonus).toMatchObject({ currentSyiling: 550, totalSyilingEarned: 500, tierKey: 'silver' })
     })
 
     it('skips tiers: a single large credit lands on the highest one reached', async () => {

@@ -149,6 +149,7 @@ export interface LockedWallet {
   userId: string
   tierId: string | null
   currentSyiling: number
+  totalSyilingEarned: number
   tokenBalance: number
 }
 
@@ -509,11 +510,11 @@ export class GamificationRepository {
 
   /** Read plus row lock: serialises the conversions of one wallet while the caller validates the amount against the balance. */
   async lockWallet(db: Db, userId: string): Promise<LockedWallet | null> {
-    const rows = await db.$queryRaw<{ userId: bigint; tierId: bigint | null; currentSyiling: number; tokenBalance: number }[]>`
-      SELECT user_id AS "userId", tier_id AS "tierId", current_syiling AS "currentSyiling", token_balance AS "tokenBalance"
+    const rows = await db.$queryRaw<{ userId: bigint; tierId: bigint | null; currentSyiling: number; totalSyilingEarned: number; tokenBalance: number }[]>`
+      SELECT user_id AS "userId", tier_id AS "tierId", current_syiling AS "currentSyiling", total_syiling_earned AS "totalSyilingEarned", token_balance AS "tokenBalance"
         FROM wallets WHERE user_id = ${idFromString(userId)} FOR UPDATE`
     const r = rows[0]
-    return r ? { userId: idToString(r.userId), tierId: r.tierId === null ? null : idToString(r.tierId), currentSyiling: r.currentSyiling, tokenBalance: r.tokenBalance } : null
+    return r ? { userId: idToString(r.userId), tierId: r.tierId === null ? null : idToString(r.tierId), currentSyiling: r.currentSyiling, totalSyilingEarned: r.totalSyilingEarned, tokenBalance: r.tokenBalance } : null
   }
 
   async walletTierId(db: Db, userId: string): Promise<string | null> {
@@ -768,8 +769,8 @@ export class GamificationRepository {
   // --- reads for BE-19's reports (PerformanceGamificationAdapter) ---------------------------------
 
   /** Wallet level, syiling and cached tier of many users in one read; users without a wallet row are absent. */
-  async levelsOf(db: Db, userIds: readonly string[]): Promise<Map<string, { level: number; syiling: number; tierId: string | null }>> {
-    const out = new Map<string, { level: number; syiling: number; tierId: string | null }>()
+  async levelsOf(db: Db, userIds: readonly string[]): Promise<Map<string, { level: number; syiling: number; lifetime: number; tierId: string | null }>> {
+    const out = new Map<string, { level: number; syiling: number; lifetime: number; tierId: string | null }>()
     const ids = userIds.flatMap((id) => {
       try {
         return [idFromString(id)]
@@ -778,8 +779,8 @@ export class GamificationRepository {
       }
     })
     if (ids.length === 0) return out
-    const rows = await db.wallet.findMany({ where: { userId: { in: ids } }, select: { userId: true, level: true, currentSyiling: true, tierId: true } })
-    for (const r of rows) out.set(idToString(r.userId), { level: r.level, syiling: r.currentSyiling, tierId: r.tierId === null ? null : idToString(r.tierId) })
+    const rows = await db.wallet.findMany({ where: { userId: { in: ids } }, select: { userId: true, level: true, currentSyiling: true, totalSyilingEarned: true, tierId: true } })
+    for (const r of rows) out.set(idToString(r.userId), { level: r.level, syiling: r.currentSyiling, lifetime: r.totalSyilingEarned, tierId: r.tierId === null ? null : idToString(r.tierId) })
     return out
   }
 

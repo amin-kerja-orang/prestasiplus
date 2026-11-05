@@ -51,6 +51,19 @@ describe('S11 dashboard (AC-M14-04, 05)', () => {
     expect(t('s11-next-bar').attributes('data-value')).toContain('51.2')
   })
 
+  it('next-tier progress runs on lifetime syiling, not the balance (AC-MUR-28-1, AC-GM-17.6)', async () => {
+    api.fetchGamificationDashboard.mockResolvedValue(
+      dashboard({ wallet: wallet({ currentSyiling: 74, totalSyilingEarned: 374 }) }),
+    )
+    await mountPage()
+    expect(t('s11-tier-name').text()).toBe('Gangsa Tier')
+    expect(t('s11-hero-syiling').text()).toBe('74')
+    expect(t('s11-next-figures').text()).toBe('374 / 500')
+    expect(t('s11-next-pct').text()).toBe('74.8%')
+    expect(t('s11-next-need').text()).toBe('Perlu 126 syiling lagi')
+    expect(t('s11-next-bar').attributes('data-value')).toContain('74.8')
+  })
+
   it('hero buttons target S12, S13 and M15 rewards (AC-04.3)', async () => {
     await mountPage()
     expect(t('s11-btn-convert').attributes('href')).toBe('/gamification/convert')

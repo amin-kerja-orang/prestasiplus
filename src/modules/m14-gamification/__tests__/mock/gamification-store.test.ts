@@ -1078,8 +1078,8 @@ describe('review follow-ups (idempotency, validation, shim, claims, complimentar
     expect(wallet.get(5901)).toBeUndefined()
   })
 
-  it('tier upgrade through onSessionCompleted (BR-M14-08): 495 + credits ≥ 500 → silver', () => {
-    wallet.setFields(3, { syiling: 495, tierKey: 'bronze' })
+  it('tier upgrade through onSessionCompleted (FR-GM-17.2): 495 lifetime + credits ≥ 500 → silver', () => {
+    wallet.setFields(3, { syiling: 495, lifetime: 495, tierKey: 'bronze' })
     gamification.onSessionCompleted(session(3, { mode: 'past_year', correct: 6 }))
     expect(wallet.summary(3)).toMatchObject({
       currentSyiling: 495 + 6 + 7 + 10 + 12,

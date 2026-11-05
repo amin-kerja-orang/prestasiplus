@@ -100,6 +100,7 @@ test.describe('S11 dashboard', MODULE, () => {
     await expect(text(page, 's11-next-tier')).toContainText('Naik ke Perak')
     await expect(text(page, 's11-next-pct')).toHaveText('51.2%')
     await expect(text(page, 's11-next-need')).toHaveText('Perlu 244 syiling lagi')
+    await expect(text(page, 's11-next-figures')).toHaveText('256 / 500')
     await expect(text(page, 's11-btn-convert')).toHaveAttribute('href', S12)
     await expect(text(page, 's11-btn-challenges')).toHaveAttribute('href', S13)
     await expect(text(page, 's11-btn-rewards')).toHaveAttribute('href', '/gamification/rewards')
@@ -348,6 +349,10 @@ test.describe('S12 convert', MODULE, () => {
       await expect(text(page, 's11-stat-today')).toHaveText('+0 hari ini')
       await expect(text(page, 's11-stat-total')).toHaveText('256')
       await expect(text(page, 's11-tier-name')).toHaveText('Gangsa Tier')
+      // AC-MUR-28-1: next-tier progress runs on lifetime syiling, so the 250 spent does not move it.
+      await expect(text(page, 's11-next-figures')).toHaveText('256 / 500')
+      await expect(text(page, 's11-next-pct')).toHaveText('51.2%')
+      await expect(text(page, 's11-next-need')).toHaveText('Perlu 244 syiling lagi')
       await gotoApp(`${S17}?type=convert`)
       const rows = page.getByTestId('s17-row')
       await expect(rows).toHaveCount(1)

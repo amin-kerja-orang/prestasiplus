@@ -1,5 +1,8 @@
 <script setup lang="ts">
-/** S11 hero (FN-M14-2.1.1–2.1.4; FR-M14-14, 15, 16): tier badge, title chip, figures, next-tier bar, buttons. */
+/**
+ * S11 hero (FN-M14-2.1.1–2.1.4; FR-M14-14, 15, 16): tier badge, title chip, figures, next-tier bar, buttons.
+ * Next-tier progress runs on lifetime syiling (FR-MUR-28-2, AC-MUR-28-1): spending never moves it back.
+ */
 import { computed } from 'vue'
 
 import { DsRewardChip } from '@/ds'
@@ -12,10 +15,10 @@ const props = defineProps<{ wallet: GamificationWallet }>()
 
 const next = computed(() => props.wallet.nextTier)
 const pct = computed(() =>
-  next.value ? gamNextTierPct(props.wallet.currentSyiling, next.value.minSyiling) : 0,
+  next.value ? gamNextTierPct(props.wallet.totalSyilingEarned, next.value.minSyiling) : 0,
 )
 const need = computed(() =>
-  next.value ? Math.max(0, next.value.minSyiling - props.wallet.currentSyiling) : 0,
+  next.value ? Math.max(0, next.value.minSyiling - props.wallet.totalSyilingEarned) : 0,
 )
 const titleChip = computed(() =>
   `${props.wallet.title.emoji ?? ''} ${props.wallet.title.name}`.trim(),
@@ -83,9 +86,12 @@ const titleChip = computed(() =>
           :data-value="pct"
           data-testid="s11-next-bar"
         />
-        <p class="text-caption text-muted" data-testid="s11-next-need">
-          Perlu {{ formatCount(need) }} syiling lagi
-        </p>
+        <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-caption text-muted">
+          <p data-testid="s11-next-need">Perlu {{ formatCount(need) }} syiling lagi</p>
+          <span class="tabular" data-testid="s11-next-figures"
+            >{{ formatCount(wallet.totalSyilingEarned) }} / {{ formatCount(next.minSyiling) }}</span
+          >
+        </div>
       </div>
 
       <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">

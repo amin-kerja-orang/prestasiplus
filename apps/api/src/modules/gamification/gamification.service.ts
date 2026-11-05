@@ -24,7 +24,7 @@ import { PrismaService } from '../../db/prisma.service'
 import { toMytTimestamp } from '../../common/time/myt'
 import { ClassesRepository } from '../classes/classes.repository'
 import { MAX_AMOUNT_PER_CALL, StreakService, WalletService, walletLockOrder } from '../wallet'
-import { titleOf } from '../wallet/rules'
+import { lifetimeTierOf, titleOf } from '../wallet/rules'
 import {
   ACCURATE_SESSION_PCT,
   LEADERBOARD_SIZE,
@@ -419,7 +419,7 @@ export class GamificationService {
     return this.prisma.transaction(async (tx) => {
       const locked = await this.repo.lockWallet(tx, viewer.userId)
       const tiers = await this.repo.tiers(tx)
-      const tier = (locked?.tierId ? tiers.find((t) => t.id === locked.tierId) : undefined) ?? defaultTier(tiers)
+      const tier = lifetimeTierOf(tiers, locked) // FR-MUR-29-5: the rate shown by `convertView`, never the lagging stored tier
       if (!tier) throw new Error('M14: no tier is defined')
       const rate = tier.conversionRate
 
