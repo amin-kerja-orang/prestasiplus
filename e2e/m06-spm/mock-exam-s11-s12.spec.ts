@@ -128,21 +128,21 @@ test.describe('M06 S11 mock exam form and list', { tag: [moduleTag(6)] }, () => 
     await open(page, '/spm-mock')
     const grade = (id: number) => tid(page, `mock-row-${String(id)}`).getByTestId('mock-row-grade')
     const expected: [number, string, RegExp][] = [
-      [318, 'A+', /emerald/],
-      [319, 'A', /emerald/],
-      [320, 'B+', /blue/],
-      [321, 'B', /blue/],
-      [322, 'C', /amber/],
-      [323, 'D', /red/],
-      [324, 'E', /red/],
-      [325, 'G', /red/],
+      [318, 'A+', /bg-success/],
+      [319, 'A', /bg-success/],
+      [320, 'B+', /bg-info/],
+      [321, 'B', /bg-info/],
+      [322, 'C', /bg-warning/],
+      [323, 'D', /bg-error/],
+      [324, 'E', /bg-error/],
+      [325, 'G', /bg-error/],
     ]
     for (const [id, text, colour] of expected) {
       await expect(grade(id)).toHaveText(text)
       await expect(grade(id)).toHaveClass(colour)
     }
     await expect(grade(327)).toHaveText('Belum')
-    await expect(grade(327)).toHaveClass(/slate/)
+    await expect(grade(327)).toHaveClass(/bg-elevated/)
     // Newest first.
     const ids = await page
       .locator('li[data-testid^=mock-row-]')
@@ -276,10 +276,10 @@ test.describe('M06 S12 mock result', { tag: [moduleTag(6)] }, () => {
     await expect(shellTitle(page)).toHaveText('Result Mock SPM — Bahasa Melayu')
     const hero = tid(page, 'result-hero')
     await expect(hero).toHaveAttribute('data-hero', 'bad')
-    await expect(hero).toHaveClass(/red/)
+    await expect(tid(page, 'result-grade')).toHaveClass(/text-error/)
     await expect(tid(page, 'result-title')).toHaveText('Bahasa Melayu · Paper 1')
-    // G4 fix: the h1 carries its own white (admin shell has no `-hero` override).
-    await expect(tid(page, 'result-title')).toHaveCSS('color', 'rgb(255, 255, 255)')
+    // G4 fix: the h1 carries its own readable colour (the v2 hero is a plain card, no dark gradient).
+    await expect(tid(page, 'result-title')).toHaveClass(/text-highlighted/)
     await expect(tid(page, 'result-grade')).toHaveText('G')
     await expect(tid(page, 'result-percent')).toHaveText('0.00%')
     await expect(tid(page, 'result-score')).toHaveText('0 / 30 markah')
@@ -339,16 +339,18 @@ test.describe('M06 S12 mock result', { tag: [moduleTag(6)] }, () => {
     await open(page, '/spm-mock/318/result')
     await expect(tid(page, 'result-grade')).toHaveText('A+')
     await expect(tid(page, 'result-hero')).toHaveAttribute('data-hero', 'good')
-    await expect(tid(page, 'result-hero')).toHaveClass(/emerald/)
-    const correct = page.locator('.q-review.correct').first()
-    await expect(correct.getByTestId('review-header')).toContainText('✓')
-    await expect(correct).toHaveClass(/emerald/)
-    await expect(page.locator('.q-review.wrong').first()).toHaveClass(/red/)
+    await expect(tid(page, 'result-grade')).toHaveClass(/text-success/)
+    const correct = page.locator('[data-correct=true]').first().getByTestId('review-header')
+    await expect(correct).toContainText('✓')
+    await expect(correct).toHaveClass(/text-success/)
+    await expect(page.locator('[data-correct=false]').first().getByTestId('review-header')).toHaveClass(
+      /text-error/,
+    )
 
     await open(page, '/spm-mock/322/result')
     await expect(tid(page, 'result-grade')).toHaveText('C')
     await expect(tid(page, 'result-hero')).toHaveAttribute('data-hero', 'mid')
-    await expect(tid(page, 'result-hero')).toHaveClass(/amber/)
+    await expect(tid(page, 'result-grade')).toHaveClass(/text-warning/)
     await expectNoHorizontalScroll(page)
   })
 
