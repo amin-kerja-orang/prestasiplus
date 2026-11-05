@@ -187,7 +187,12 @@ describe('GET /api/guru/databank/overview and /questions (S6-T19)', () => {
       expect(unit.questions).toHaveLength(3)
       expect(unit.questions.map((q) => q.groupPosition)).toEqual([1, 2, 3])
       // The unit shows once in the unfiltered list too, and counts three questions in the totals.
-      const everything = await list('?subjectId=' + unit.questions[0]?.subjectId)
+      // The list is paged, so walk every page of the subject (the CI seed has more than one page of units).
+      const subjectQuery = '?subjectId=' + unit.questions[0]?.subjectId
+      const firstPage = await list(subjectQuery)
+      const pages = [firstPage]
+      for (let page = 2; page <= firstPage.meta.totalPages; page++) pages.push(await list(`${subjectQuery}&page=${page}`))
+      const everything = { data: pages.flatMap((p) => p.data), meta: firstPage.meta }
       expect(everything.data.filter((u) => u.unitId === unit.unitId)).toHaveLength(1)
       const standalone = everything.data.filter((u) => u.group === null).length
       const grouped = everything.data.filter((u) => u.group !== null)
