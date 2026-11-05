@@ -128,7 +128,8 @@ describe('every Kawalan Ciri key (S0-T11)', () => {
   })
 
   it.each(entries)('%s: OFF answers the in-place 404 on its fe paths, ON and missing pass', (key, p) => {
-    for (const prefix of p.fe) {
+    for (const raw of p.fe) {
+      const prefix = raw.replace(':id', '3001')
       for (const path of [prefix, `${prefix}/1`]) {
         const owner = entries.find(
           ([, o]) => o.fe.some((f) => pathHasPrefix(path, f)) && !(o.feExcept ?? []).some((e) => pathHasPrefix(path, e)),
@@ -150,14 +151,14 @@ describe('every Kawalan Ciri key (S0-T11)', () => {
 
   it.each(entries.filter(([, p]) => (p.feExcept ?? []).length > 0))('%s: OFF leaves its feExcept paths reachable', (key, p) => {
     withFlags({ [key]: false })
-    for (const except of p.feExcept ?? []) {
+    for (const except of (p.feExcept ?? []).map((e) => e.replace(':id', '3001'))) {
       expect(decideAccess(route(except), student), `${key} OFF ${except}`).toEqual({ kind: 'allow' })
     }
   })
 
   it('every feExcept path (bar the two other-module ones of S0-T10) is owned by another key', () => {
     for (const [key, p] of entries) {
-      for (const except of p.feExcept ?? []) {
+      for (const except of (p.feExcept ?? []).map((e) => e.replace(':id', '3001'))) {
         if (['/practice/chapter', '/practice/revision'].includes(except)) continue
         const owners = entries.filter(([k, o]) => k !== key && o.fe.some((f) => pathHasPrefix(except, f)))
         expect(owners.length > 0, `${key} feExcept ${except}`).toBe(true)
@@ -179,7 +180,6 @@ describe('every Kawalan Ciri key (S0-T11)', () => {
   it('shared pages follow the key that owns them (D-3): prestasi vs guru.prestasi, cita-cita vs universiti', () => {
     withFlags({ prestasi: false })
     expect(decideAccess(route('/prestasi'), student)).toEqual({ kind: 'in-place', status: 404 })
-    expect(decideAccess(route('/prestasi/3001'), student)).toEqual({ kind: 'in-place', status: 404 })
     expect(decideAccess(route('/prestasi/kelas'), student)).toEqual({ kind: 'allow' })
     withFlags({ 'guru.prestasi': false })
     expect(decideAccess(route('/prestasi/kelas/2001'), student)).toEqual({ kind: 'in-place', status: 404 })
@@ -190,6 +190,23 @@ describe('every Kawalan Ciri key (S0-T11)', () => {
     withFlags({ universiti: false })
     expect(decideAccess(route('/cita-cita/universiti'), student)).toEqual({ kind: 'in-place', status: 404 })
     expect(decideAccess(route('/cita-cita/biasiswa'), student)).toEqual({ kind: 'allow' })
+  })
+
+  it('Prestasi 360 drill-down /prestasi/<id> follows guru.prestasi: prestasi OFF keeps it, guru.prestasi OFF closes it', () => {
+    withFlags({ prestasi: false })
+    expect(decideAccess(route('/prestasi/3001'), student)).toEqual({ kind: 'allow' })
+    expect(decideAccess(route('/prestasi'), student)).toEqual({ kind: 'in-place', status: 404 })
+    withFlags({ 'guru.prestasi': false })
+    expect(decideAccess(route('/prestasi/3001'), student)).toEqual({ kind: 'in-place', status: 404 })
+    expect(decideAccess(route('/prestasi'), student)).toEqual({ kind: 'allow' })
+  })
+
+  it('a :id segment matches digits only', () => {
+    expect(pathHasPrefix('/prestasi/12', '/prestasi/:id')).toBe(true)
+    expect(pathHasPrefix('/prestasi/12/x', '/prestasi/:id')).toBe(true)
+    expect(pathHasPrefix('/prestasi/kelas', '/prestasi/:id')).toBe(false)
+    expect(pathHasPrefix('/prestasi', '/prestasi/:id')).toBe(false)
+    expect(pathHasPrefix('/prestasi/12a', '/prestasi/:id')).toBe(false)
   })
 
   it('AC-ADM-P2-19.1: Leaderboard OFF answers 404 on /leaderboard and its duplicate, keeps the URL, ON restores it', async () => {

@@ -82,7 +82,7 @@ export const FEATURE_ROUTE_PREFIXES: Readonly<Record<string, FeatureRoutePrefixe
   'misi-harian': { fe: ['/misi-harian'], api: ['/api/missions'] },
   kombo: { fe: ['/kombo'], api: [] },
   // Canonical Papan Pendahulu is `/leaderboard` + `GET /api/leaderboard` (D113, register R-01 / P-02). The duplicate page
-  // `/gamification/leaderboard` still exists until it redirects, so OFF covers it too; its retired api is not referenced.
+  // `/gamification/leaderboard` still exists until it redirects, so OFF covers it too. The legacy api `GET /api/gamification/leaderboard` (retired, P-02) is NOT listed: the scope guard rejects a new reference (RETIRED_REF), so it stays open when OFF until it is removed.
   leaderboard: { fe: ['/leaderboard', '/gamification/leaderboard'], api: ['/api/leaderboard'] },
   remedial: { fe: ['/remedial'], api: ['/api/remedial-tests'] },
   'cita-cita': { fe: ['/cita-cita'], api: [], feExcept: ['/cita-cita/universiti', '/cita-cita/biasiswa'] },
@@ -93,7 +93,8 @@ export const FEATURE_ROUTE_PREFIXES: Readonly<Record<string, FeatureRoutePrefixe
   prestasi: {
     fe: ['/prestasi'],
     api: [],
-    feExcept: ['/prestasi/kelas', '/prestasi/sekolah', '/prestasi/tingkatan'],
+    // `/prestasi/:id` is the teacher/admin Prestasi 360 drill-down (m08 analitik.ts); a `:id` segment is all digits.
+    feExcept: ['/prestasi/kelas', '/prestasi/sekolah', '/prestasi/tingkatan', '/prestasi/:id'],
   },
   psikometrik: { fe: ['/psikometrik'], api: [] },
   'profil-cerah': { fe: ['/profil-cerah'], api: [] },
@@ -116,7 +117,7 @@ export const FEATURE_ROUTE_PREFIXES: Readonly<Record<string, FeatureRoutePrefixe
   'guru.headcount': { fe: ['/headcount'], api: ['/api/headcounts'] },
   'guru.misi-harian': { fe: ['/guru/misi-harian'], api: [] },
   'guru.kelas': { fe: ['/guru/kelas'], api: [] },
-  'guru.prestasi': { fe: ['/prestasi/kelas', '/prestasi/sekolah', '/prestasi/tingkatan'], api: [] },
+  'guru.prestasi': { fe: ['/prestasi/kelas', '/prestasi/sekolah', '/prestasi/tingkatan', '/prestasi/:id'], api: [] },
   'guru.monitoring': { fe: ['/guru/monitoring'], api: [] },
   'guru.analisis-item': { fe: ['/guru/analisis-item'], api: ['/api/teacher/item-analysis'] },
   'guru.gamifikasi': { fe: ['/guru/gamifikasi'], api: [] },
@@ -125,9 +126,15 @@ export const FEATURE_ROUTE_PREFIXES: Readonly<Record<string, FeatureRoutePrefixe
   'guru.sumbang-soalan': { fe: ['/guru/soalan'], api: ['/api/guru/questions'] },
 }
 
-/** True when `path` equals `prefix` or lies below it (`/api/games` matches `/api/games/hub`, not `/api/gamesx`). */
+/**
+ * True when `path` equals `prefix` or lies below it (`/api/games` matches `/api/games/hub`, not `/api/gamesx`).
+ * A `:id` segment in `prefix` matches one all-digit segment (`/prestasi/:id` is `/prestasi/3001` and below, not `/prestasi/kelas`).
+ */
 export function pathHasPrefix(path: string, prefix: string): boolean {
-  return path === prefix || path.startsWith(`${prefix}/`)
+  if (!prefix.includes('/:id')) return path === prefix || path.startsWith(`${prefix}/`)
+  const want = prefix.split('/')
+  const got = path.split('/')
+  return got.length >= want.length && want.every((seg, i) => (seg === ':id' ? /^\d+$/.test(got[i] ?? '') : seg === got[i]))
 }
 
 /** The flag key whose api prefix covers `path` (query string ignored), or null. */

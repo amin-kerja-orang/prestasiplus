@@ -69,25 +69,44 @@ describe('FEATURE_ROUTE_PREFIXES coverage (S0-T11)', () => {
     }
   })
 
-  it('every api prefix points at a real route: each segment is a quoted route string in apps/api/src', () => {
+  it('every api prefix is a segment-boundary prefix of a real route: @Controller(x) joined with a @Get/@Post/... path', () => {
     const root = fileURLToPath(new URL('../../src/', import.meta.url))
     const files: string[] = []
     const walk = (dir: string) => {
       for (const name of readdirSync(dir)) {
         const full = join(dir, name)
         if (statSync(full).isDirectory()) walk(full)
-        else if (/\.controllers?\.ts$|\.controller\.ts$/.test(name)) files.push(full)
+        else if (/\.controllers?\.ts$/.test(name)) files.push(full)
       }
     }
     walk(root)
-    const text = files.map((f) => readFileSync(f, 'utf8')).join('\n')
-    for (const [key, p] of Object.entries(FEATURE_ROUTE_PREFIXES)) {
-      for (const prefix of p.api) {
-        for (const seg of prefix.replace(/^\/api\//, '').split('/')) {
-          expect(new RegExp(`['"\`]${seg}['"\`/]`).test(text), `${key}: no route string '${seg}' for ${prefix}`).toBe(true)
-        }
+    // Every route is "/api/" + controller + method path, read in file order: a @Controller starts a new base,
+    // each following @Get/@Post/@Put/@Patch/@Delete/@All adds one route (an empty path is the controller itself).
+    const routes = new Set<string>()
+    const decorator = /@(Controller|Get|Post|Put|Patch|Delete|All)\(\s*(?:'([^']*)'|"([^"]*)")?\s*[,)]/g
+    for (const file of files) {
+      let base = ''
+      for (const m of readFileSync(file, 'utf8').matchAll(decorator)) {
+        const arg = (m[2] ?? m[3] ?? '').replace(/^\/+|\/+$/g, '')
+        if (m[1] === 'Controller') base = arg
+        else routes.add(`/api/${[base, arg].filter(Boolean).join('/')}`.replace(/\/+$/, ''))
       }
     }
+    expect(routes.size).toBeGreaterThan(200)
+    expect(routes.has('/api/games/hub') || [...routes].some((r) => r.startsWith('/api/games/'))).toBe(true)
+    for (const [key, p] of Object.entries(FEATURE_ROUTE_PREFIXES)) {
+      for (const prefix of p.api) {
+        const real = [...routes].some((r) => r === prefix || r.startsWith(`${prefix}/`))
+        expect(real, `${key}: no controller route under ${prefix}`).toBe(true)
+      }
+    }
+  })
+
+  it('the route check fails on a drifted prefix', () => {
+    // The retired legacy leaderboard api is deliberately not claimed (RETIRED_REF); a typo never maps to a key.
+    expect(featureKeyForApiPath('/api/leaderboard')).toBe('leaderboard')
+    expect(featureKeyForApiPath('/api/gamification/leaderboard')).toBeNull()
+    expect(featureKeyForApiPath('/api/gamification/leaderbord')).toBeNull()
   })
 
   it('featureKeyForApiPath maps each api prefix, a sub-path and a query string to its key, and not a look-alike', () => {
