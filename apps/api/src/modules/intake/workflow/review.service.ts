@@ -20,6 +20,7 @@ import {
   type IntakeItemRow,
   type IntakeItemState,
   type IntakeQuestion,
+  type IntakeStimulusKind,
   type IntakeRejectRequest,
 } from '@pp/contract'
 
@@ -617,7 +618,7 @@ export class IntakeReviewService {
     const table = stimulusTableOf(s.tableData)
     const body = s.body ?? (table ? [table.head.join(' | '), ...table.rows.map((r) => r.join(' | '))].join('\n') : null)
     const stimulusId = await this.questions.createStimulus({
-      kind: s.kind as 'passage' | 'diagram' | 'table',
+      kind: s.kind as IntakeStimulusKind,
       label: s.label || null,
       bodyMs: body,
       bodyEn: null,
