@@ -360,7 +360,7 @@ export class PracticeStartPlanner {
     const open = sessions.find((s) => s.status === 'in_progress')
     if (open) return { ...plan, questionSetId: req.questionSetId as string, resume: open }
     if (res.questionIds.length === 0) throw notEnoughQuestions()
-    const served = await this.serve(res.questionIds)
+    const served = await this.serve(res.questionIds, 'bab')
     if (served.length === 0) throw notEnoughQuestions()
     return Object.assign(plan, {
       subjectId: res.subjectId ?? served[0]?.subjectId ?? null,

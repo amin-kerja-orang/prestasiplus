@@ -27,8 +27,9 @@ export class QuestionSetsService {
 
   /**
    * Served question ids per set, in `position` order, keeping only questions that are still eligible
-   * (published live version, active). A deactivated question is skipped, never removed from the set. A set
-   * that needs a rebuild (migrated header only) has no served items.
+   * (approved live version, active). A deactivated question is skipped, never removed from the set. A set
+   * that needs a rebuild (migrated header only) has no served items. A stimulus group is whole or not at all (D91):
+   * when any member of its full list is ineligible or not in the set, or the group is incomplete, every member drops.
    */
   async eligibleItems(sets: readonly QuestionSetRecord[]): Promise<Map<string, string[]>> {
     const buildable = sets.filter((s) => !s.needsRebuild)
@@ -36,8 +37,20 @@ export class QuestionSetsService {
     const all = [...new Set([...stored.values()].flat())]
     const live = all.length === 0 ? [] : await this.questions.getMany(all, 'live')
     const eligible = new Set(live.filter((q) => q.isActive && q.version.status === 'approved').map((q) => q.id))
+    const groupOf = new Map(live.filter((q) => eligible.has(q.id) && q.groupId !== null).map((q) => [q.id, q.groupId as string]))
+    const defs = groupOf.size === 0 ? [] : await this.questions.groupsByIds([...new Set(groupOf.values())])
+    const incomplete = groupOf.size === 0 ? new Map<string, number>() : await this.questions.incompleteGroups(defs.map((g) => g.id))
+    const members = new Map(defs.map((g) => [g.id, g.questionIds]))
     const out = new Map<string, string[]>()
-    for (const s of sets) out.set(s.id, (stored.get(s.id) ?? []).filter((id) => eligible.has(id)))
+    for (const s of sets) {
+      const ids = (stored.get(s.id) ?? []).filter((id) => eligible.has(id))
+      const inSet = new Set(ids)
+      const whole = (id: string): boolean => {
+        const g = groupOf.get(id) as string
+        return !incomplete.has(g) && (members.get(g) ?? []).every((m) => inSet.has(m))
+      }
+      out.set(s.id, ids.filter((id) => !groupOf.has(id) || whole(id)))
+    }
     return out
   }
 
