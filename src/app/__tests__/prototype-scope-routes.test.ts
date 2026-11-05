@@ -13,9 +13,8 @@ describe('dev routes with the prototype scope on (D43)', () => {
     vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
     const found = paths()
     expect(found).toContain('/__ds')
-    // '/admin' is only a role-aware redirect to the admin landing (D48, UAT fix), not the preview hub.
-    const admin = devRoutes().find((r) => r.path === '/admin')
-    expect(typeof admin?.redirect).toBe('function')
+    // '/admin' is the M17 dashboard route (S6-T11), so the dev routes no longer register it at all.
+    expect(found).not.toContain('/admin')
     expect(adminLandingFor('admin')).toBe('/admin/command-center')
     expect(found).not.toContain('/dashboard')
     expect(found.filter((p) => p.startsWith('/__dev'))).toEqual([])

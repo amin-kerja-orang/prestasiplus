@@ -27,12 +27,12 @@ const itemsOf = (label: string): string[] =>
   PENTADBIRAN_MENU.find((g) => g.label === label)?.items.map((i) => i.id) ?? []
 
 describe('Pentadbiran menu data', () => {
-  it('keeps the full 9-group, 106-item definition as data', () => {
+  it('keeps the full 9-group, 107-item definition as data', () => {
     expect(PENTADBIRAN_FULL_MENU.map((g) => g.items.length)).toEqual([
-      2, 28, 8, 17, 12, 6, 22, 6, 5,
+      2, 29, 8, 17, 12, 6, 22, 6, 5,
     ])
-    expect(FULL_ITEMS).toHaveLength(106)
-    expect(new Set(FULL_ITEMS.map((i) => i.id)).size).toBe(106)
+    expect(FULL_ITEMS).toHaveLength(107)
+    expect(new Set(FULL_ITEMS.map((i) => i.id)).size).toBe(107)
   })
 
   it('renders built screens only and drops empty groups', () => {

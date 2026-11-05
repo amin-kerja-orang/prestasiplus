@@ -1,6 +1,6 @@
 /**
  * Menu of the Portal Pentadbiran (D30; `docs/requirements/v2-portals.md` section 6): 9 groups and
- * 106 items for Admin Pusat. `PENTADBIRAN_FULL_MENU` keeps the whole definition as data for the
+ * 107 items for Admin Pusat. `PENTADBIRAN_FULL_MENU` keeps the whole definition as data for the
  * next round; `PENTADBIRAN_MENU` (rendered) holds built screens only and drops empty groups.
  * Unbuilt items are listed in `docs/requirements/v2-pentadbiran-backlog.md`.
  */
@@ -48,7 +48,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
     label: 'Papan Pemuka',
     icon: 'squares-four',
     items: items([
-      ['PP-01', 'Dashboard'],
+      ['PP-01', 'Dashboard', '/admin'],
       ['PP-02', 'Laporan Eksekutif'],
     ]),
   },
@@ -60,7 +60,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
       ['PM-01', 'Langsung', '/admin/command-center'],
       ['PM-02', 'Aktiviti Harian', '/admin/command-center/daily-activity'],
       ['PM-03', 'Monitoring', '/guru/monitoring'],
-      ['PM-04', 'Analitik'],
+      ['PM-04', 'Analitik', '/admin/analytics'],
       ['PM-05', 'Ringkasan', '/admin/kirkpatrick', K],
       ['PM-06', 'Tahap 1: Reaksi', '/admin/kirkpatrick/reaction', K],
       ['PM-07', 'Tahap 2: Pembelajaran', '/admin/kirkpatrick/learning', K],
@@ -68,6 +68,8 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
       ['PM-09', 'Tahap 4: Hasil', '/admin/kirkpatrick/results', K],
       ['PM-10', 'Rantaian Impak', '/admin/kirkpatrick/chain', K],
       ['PM-11', 'Intervensi', '/admin/kirkpatrick/interventions', K],
+      // 30 section 3.4 "new: Laporan /admin/laporan" (R1-ADM-M-06, S6-T11); new id, the next free PM number.
+      ['PM-29', 'Laporan', '/admin/laporan'],
       ['PM-12', 'Laporan Aktiviti'],
       ['PM-13', 'Amaran Wellbeing'],
       ['PM-14', 'Papan Pemuka Wilayah'],
@@ -153,9 +155,9 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
     items: items([
       ['PS-01', 'Pengguna', '/admin/users'],
       ['PS-02', 'Sekolah', '/admin/schools'],
-      ['PS-03', 'Kelas Sekolah'],
+      ['PS-03', 'Kelas Sekolah', '/admin/classes'],
       ['PS-04', 'Import Pelajar', '/admin/import-students'],
-      ['PS-05', 'Import Pengguna'],
+      ['PS-05', 'Import Pengguna', '/admin/users/bulk-import'],
       ['PS-06', 'Pelajar Komplimen', '/admin/comp-students'],
     ]),
   },

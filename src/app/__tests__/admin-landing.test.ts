@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import m17Routes from '@/modules/m17-admin-dashboard/routes'
+
 import { adminLandingFor, devRoutes } from '../router/core-routes'
 
 describe('/admin landing outside the preview hub (G4 #394)', () => {
@@ -11,13 +13,12 @@ describe('/admin landing outside the preview hub (G4 #394)', () => {
     expect(adminLandingFor(null)).toBe('/admin/command-center')
   })
 
-  it('registers the /admin redirect in a production build with the scope off', () => {
+  it('has no /admin redirect in a production build with the scope off: /admin is the M17 dashboard', () => {
     vi.stubEnv('DEV', false)
     vi.stubEnv('MODE', 'production')
     vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'off')
-    const admin = devRoutes().find((r) => r.path === '/admin')
-    expect(admin).toBeDefined()
-    expect(typeof admin?.redirect).toBe('function')
+    expect(devRoutes().find((r) => r.path === '/admin')).toBeUndefined()
+    expect(m17Routes.find((r) => r.path === '/admin')?.name).toBe('m17.admin-dashboard')
   })
 
   it('keeps the preview hub in dev with the scope off', () => {
