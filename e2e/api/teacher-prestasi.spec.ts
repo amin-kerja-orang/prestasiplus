@@ -1,9 +1,8 @@
 /**
  * @api Guru opens a pupil's Prestasi 360 against the REAL API (BE-32 AC3, slug `e2e-bijak`). Read-only.
  *
- * In http mode (src/modules/m08-student-performance/pages/Prestasi360Page.vue) the page shows the
- * section `bijak-summary` titled "Keputusan Bijak SPM" (US-33) holding EITHER `stat-cards` (the pupil has
- * Bijak sittings) OR `bijak-empty` ("Tiada data"), never both.
+ * Since S10-T01 (#544) src/modules/m08-student-performance/pages/Prestasi360Page.vue renders one layout in
+ * both modes (hero, `stat-cards`, trend, ...); the Bijak-only `bijak-summary` section no longer exists.
  *
  * The pupil id is found through the API, not hard-coded: GET /api/performance/classes (the teacher's
  * own classes, e.g. DEMO4M MATH), then GET /api/performance/classes/:id whose `ranking`/`attention`
@@ -47,7 +46,7 @@ async function findPupilId(page: Page): Promise<string | null> {
 test.describe('guru prestasi 360 @api', () => {
   test.setTimeout(60_000)
 
-  test('guru sees "Keputusan Bijak SPM" with stat cards or the empty state, never both @api @provisional', async ({
+  test('guru sees the shared Prestasi 360 layout (hero and stat cards, no Bijak-only section) @api @provisional', async ({
     page,
   }) => {
     const { user, pass } = account('guru')
@@ -66,20 +65,11 @@ test.describe('guru prestasi 360 @api', () => {
     expect(res.status(), 'GET /api/performance/students/:userId as teacher').toBe(200)
 
     await expect(page.getByTestId('prestasi360-page')).toBeVisible({ timeout: 20_000 })
-    const section = page.getByTestId('bijak-summary')
-    await expect(section).toBeVisible()
-    await expect(section).toContainText('Keputusan Bijak SPM')
-
-    await expect
-      .poll(
-        async () =>
-          (await section.getByTestId('stat-cards').count()) +
-          (await section.getByTestId('bijak-empty').count()),
-      )
-      .toBe(1)
-    if ((await section.getByTestId('bijak-empty').count()) === 1) {
-      await expect(section.getByTestId('bijak-empty')).toContainText('Tiada data')
-    }
+    // S10-T01 (D115): the page is the shared Prestasi 360 layout; the Bijak-only section is gone.
+    await expect(page.getByTestId('hero')).toBeVisible()
+    await expect(page.getByTestId('stat-cards')).toBeVisible()
+    await expect(page.getByTestId('bijak-summary')).toHaveCount(0)
+    await expect(page.getByTestId('bijak-empty')).toHaveCount(0)
     await expectNoHScroll(page)
   })
 })

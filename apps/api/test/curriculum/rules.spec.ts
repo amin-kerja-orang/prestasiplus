@@ -10,6 +10,9 @@ import {
   compareTopicNumbers,
   deriveSubjectLevelPairs,
   gradeOfCode,
+  learnerSubjectOf,
+  legacySubjectOfPracticeCode,
+  practiceCodeOfLearnerSubject,
   islandStates,
   mapSubjectLabel,
   subjectLabelOf,
@@ -105,6 +108,21 @@ describe('grade and practice codes (BR-13, BR-16, BR-17)', () => {
       GEOGRAFI: 'GEO',
     })
     expect(subjectLabelOf('BAHASA_MELAYU')).toBe('BAHASA MELAYU')
+  })
+
+  it('legacySubjectOfPracticeCode is the reverse of PRACTICE_CODE and never resolves an inherited property name', () => {
+    expect(legacySubjectOfPracticeCode('MATH')).toBe('MATEMATIK')
+    expect(legacySubjectOfPracticeCode('GEO')).toBe('GEOGRAFI')
+    for (const name of ['ZZ', '', 'constructor', 'toString', '__proto__', 'hasOwnProperty']) expect(legacySubjectOfPracticeCode(name), name).toBeUndefined()
+  })
+
+  it('learnerSubjectOf / practiceCodeOfLearnerSubject: legacy codes map both ways, any other subject code is its own, a bare practice code or inherited name selects nothing', () => {
+    expect(learnerSubjectOf('MATH')).toBe('MATEMATIK')
+    expect(learnerSubjectOf('KIMIA')).toBe('KIMIA')
+    expect(practiceCodeOfLearnerSubject('MATEMATIK')).toBe('MATH')
+    expect(practiceCodeOfLearnerSubject('KIMIA')).toBe('KIMIA')
+    for (const name of ['MATH', 'GEO']) expect(practiceCodeOfLearnerSubject(name), name).toBeNull()
+    for (const name of ['constructor', 'toString', '__proto__', 'hasOwnProperty']) expect(practiceCodeOfLearnerSubject(name), name).toBe(name) // exact, matches no subject row
   })
 })
 

@@ -3,8 +3,9 @@
  * flows that failed because the SPA sent or expected numeric ids where `packages/contract` uses string
  * ids (`IdSchema`). Runs against the REAL API at 375 / 768 / 1280 (playwright.http.config.ts).
  *
- * - D-01: the teacher creates a class from "Cipta Kelas" (201, not 422 "Sila pilih subjek.") and a
- *   pupil joins it with the class code.
+ * - D-01: the teacher creates a class from "Cipta Kelas" (201, not 422 "Sila pilih subjek.") and adds a
+ *   pupil to it (`PUT /api/guru/students/:id`; the pupil join box is gone, API-MUR-04), who then sees it
+ *   on Kelas Saya.
  * - D-02: Latih Tubi with a specific Tahap Pendidikan starts (201, not 422 "Nilai tidak sah.") and
  *   runs to the results. Needs a level with questions (the D1–D4 pool of AZ-02 / #129).
  * - D-03: Battle Arena "Quick Match" enters the queue (searching card) without "Ralat sistem: ID
@@ -17,7 +18,7 @@
 import type { Page } from '@playwright/test'
 
 import { expect, loginViaUi, test } from '../fixtures/api'
-import { account, expectNoHScroll, newPeerContext } from './helpers'
+import { account, csrfOf, expectNoHScroll, newPeerContext } from './helpers'
 
 /** Records every dialog (and dismisses it) so a test can assert that none appeared. */
 function recordDialogs(page: Page): string[] {
@@ -32,7 +33,7 @@ function recordDialogs(page: Page): string[] {
 test.describe('DEMO-FIX-1 string ids @api', () => {
   test.setTimeout(120_000)
 
-  test('D-01: the teacher creates a class and a pupil joins it with the code @api', async ({
+  test('D-01: the teacher creates a class and adds a pupil, who then sees it on Kelas Saya @api', async ({
     page,
     browser,
   }, info) => {
@@ -59,27 +60,35 @@ test.describe('DEMO-FIX-1 string ids @api', () => {
     const sentBody = res.request().postDataJSON() as { subjectId: unknown }
     expect(typeof sentBody.subjectId, 'subjectId on the wire').toBe('string')
     expect(res.status(), `POST /api/guru/classes ${await res.text()}`).toBe(201)
-    const cls = ((await res.json()) as { data: { joinCode: string; name: string } }).data
+    const cls = ((await res.json()) as { data: { id: string; name: string } }).data
     expect(cls.name).toBe(name)
     await expect(page).toHaveURL(/\/guru\/kelas$/)
     await expect(page.getByTestId('kelas-grid')).toContainText(name)
     await expectNoHScroll(page)
 
-    // The pupil joins with the new code (own cookie session).
+    // The teacher adds the pupil (own cookie session for the pupil); there is no join box any more.
     const peer = await newPeerContext(browser, info)
     try {
       const pupilPage = await peer.newPage()
       const pupilDialogs = recordDialogs(pupilPage)
       const pupil = account('studentB')
       await loginViaUi(pupilPage, pupil.user, pupil.pass)
+      const me = await pupilPage.request.get('/api/me')
+      expect(me.status(), 'GET /api/me').toBe(200)
+      const pupilId = String(((await me.json()) as { data: { id: number | string } }).data.id)
+
+      const add = await page.request.put(`/api/guru/students/${pupilId}`, {
+        data: { classroomId: cls.id },
+        headers: { 'x-csrf-token': await csrfOf(page) },
+      })
+      expect(add.status(), `PUT /api/guru/students/${pupilId} ${await add.text()}`).toBe(200)
+
       await pupilPage.goto('/kelas-saya')
-      await pupilPage.getByTestId('class-code').fill(cls.joinCode)
-      const joined = pupilPage.waitForResponse(
-        (r) => r.url().endsWith('/api/kelas-saya/join') && r.request().method() === 'POST',
-      )
-      await pupilPage.getByTestId('join-submit').click()
-      expect((await joined).status(), 'POST /api/kelas-saya/join').toBeLessThan(300)
-      await expect(pupilPage.getByTestId('join-success')).toBeVisible()
+      await expect(
+        pupilPage.getByTestId('joined-class').filter({ hasText: name }),
+        'the class the teacher added the pupil to is listed',
+      ).toBeVisible({ timeout: 20_000 })
+      await expect(pupilPage.getByTestId('join-submit')).toHaveCount(0)
       await expect(pupilPage.getByTestId('join-error')).toHaveCount(0)
       await expectNoHScroll(pupilPage)
       expect(pupilDialogs).toEqual([])
