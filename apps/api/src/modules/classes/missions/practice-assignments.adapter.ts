@@ -39,7 +39,7 @@ export class PracticeAssignmentsAdapter implements PracticeAssignmentSource {
 
   private async mission(input: { userId: string; id: string; at: Date }): Promise<AssignmentResolution> {
     const mission = await this.repo.missionOfRecipient(input.id, input.userId)
-    if (!mission || mission.subjectId === null || mission.missionDate !== mytDay(input.at)) return { status: 'not_found' }
+    if (!mission || mission.missionDate !== mytDay(input.at)) return { status: 'not_found' }
     return {
       status: 'ok',
       subjectId: mission.subjectId,
@@ -50,8 +50,8 @@ export class PracticeAssignmentsAdapter implements PracticeAssignmentSource {
 
   /** BR-M10-35: eligible question ids of the mission for the student (empty = no pool). */
   private async missionQuestionIds(mission: MissionRecord, userId: string): Promise<string[]> {
-    // `harian` (S6-T07) is served like `latih_tubi`: by the mission's subject (a Global mission has none and is never a recipient row).
-    if ((mission.missionType !== 'latih_tubi' && mission.missionType !== 'harian') || mission.subjectId === null) return []
+    // `harian` (S6-T07) is served like `latih_tubi`: by the mission's subject.
+    if (mission.missionType !== 'latih_tubi' && mission.missionType !== 'harian') return []
     const subjectId = mission.subjectId
     const rng = prngStream(`m10:mission:${mission.id}:${userId}`)
     if (mission.chapterId !== null) {

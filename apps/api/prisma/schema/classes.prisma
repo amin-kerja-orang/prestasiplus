@@ -97,16 +97,14 @@ model TeacherProfile {
 /// Completion is derived from `practice_sessions.mission_id`, never stored.
 model Mission {
   id              BigInt   @id @default(autoincrement())
-  /// Null only for a Global (platform) mission (scope = 'global', S6-T07).
-  teacherId       BigInt?  @map("teacher_id")
+  teacherId       BigInt   @map("teacher_id")
   /// The class the mission was launched for; null for a migrated or orphaned row, or "all own classes" (S6-T07).
   classroomId     BigInt?  @map("classroom_id")
   title           String
   /// latih_tubi, tracking_a, youtube, harian (check constraint). The constant missionSource 'bank_soalan' is not stored.
   missionType     String   @map("mission_type")
   missionDate     DateTime @map("mission_date") @db.Date
-  /// Null only for a Global mission.
-  subjectId       BigInt?  @map("subject_id")
+  subjectId       BigInt   @map("subject_id")
   /// null = "Semua Bab".
   chapterId       BigInt?  @map("chapter_id")
   questionCount   Int      @map("question_count") @db.SmallInt
@@ -115,10 +113,6 @@ model Mission {
   description     String?
   /// Coins paid once at the target (0..100, check constraint), S6-T07; null for the older types.
   rewardCoins     Int?     @map("reward_coins") @db.SmallInt
-  /// teacher, global (check constraint). Partial unique index uq_missions_global_title (title) WHERE scope = 'global' lives in migration 0205.
-  scope           String   @default("teacher")
-  /// How a Global mission is measured (7 kinds, check constraint ck_missions_goal_kind); null for a teacher mission (ck_missions_goal_kind_scope), S6-T07.
-  goalKind        String?  @map("goal_kind")
   resourceTitle   String?  @map("resource_title")
   resourceUrl     String?  @map("resource_url")
   resourceNote    String?  @map("resource_note")

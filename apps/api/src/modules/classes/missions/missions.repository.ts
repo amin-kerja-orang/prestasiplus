@@ -1,4 +1,3 @@
-import { MISSION_GOAL_KINDS, type MissionGoalKind } from '@pp/contract'
 import { Inject, Injectable } from '@nestjs/common'
 
 import type { TxClient } from '../../../db/client'
@@ -8,31 +7,24 @@ import { PrismaService } from '../../../db/prisma.service'
 import { VISIBLE_USER_SQL } from '../../command-center/shared/visibility'
 
 export type MissionType = 'latih_tubi' | 'tracking_a' | 'youtube' | 'harian'
-export type MissionScope = 'teacher' | 'global'
-export type { MissionGoalKind }
 export type RemedialStatus = 'active' | 'completed' | 'cancelled'
 
 /** A mission as the student reads and the practice adapter resolve it. Ids are decimal strings. */
 export interface MissionRecord {
   id: string
-  /** Null for a Global (platform) mission. */
-  teacherId: string | null
+  teacherId: string
   classroomId: string | null
   title: string
   missionType: MissionType
   /** Malaysia calendar day `YYYY-MM-DD`. */
   missionDate: string
-  /** Null for a Global mission. */
-  subjectId: string | null
+  subjectId: string
   chapterId: string | null
   questionCount: number
   coinsPerCorrect: number
   description: string | null
   /** Coins paid once at the target (S6-T07); null for the older types. */
   rewardCoins: number | null
-  scope: MissionScope
-  /** How a Global mission is measured; null for a teacher mission (S6-T07). */
-  goalKind: MissionGoalKind | null
   resourceTitle: string | null
   resourceUrl: string | null
   resourceNote: string | null
@@ -96,19 +88,17 @@ const idOf = (id: string): bigint | null => (isIdString(id) ? idFromString(id) :
 
 const toMission = (r: {
   id: bigint
-  teacherId: bigint | null
+  teacherId: bigint
   classroomId: bigint | null
   title: string
   missionType: string
   missionDate: Date
-  subjectId: bigint | null
+  subjectId: bigint
   chapterId: bigint | null
   questionCount: number
   coinsPerCorrect: number
   description: string | null
   rewardCoins: number | null
-  scope: string
-  goalKind: string | null
   resourceTitle: string | null
   resourceUrl: string | null
   resourceNote: string | null
@@ -116,19 +106,17 @@ const toMission = (r: {
   createdAt: Date
 }): MissionRecord => ({
   id: idToString(r.id),
-  teacherId: r.teacherId === null ? null : idToString(r.teacherId),
+  teacherId: idToString(r.teacherId),
   classroomId: r.classroomId === null ? null : idToString(r.classroomId),
   title: r.title,
   missionType: r.missionType as MissionType,
   missionDate: r.missionDate.toISOString().slice(0, 10),
-  subjectId: r.subjectId === null ? null : idToString(r.subjectId),
+  subjectId: idToString(r.subjectId),
   chapterId: r.chapterId === null ? null : idToString(r.chapterId),
   questionCount: r.questionCount,
   coinsPerCorrect: r.coinsPerCorrect,
   description: r.description,
   rewardCoins: r.rewardCoins,
-  scope: r.scope === 'global' ? 'global' : 'teacher',
-  goalKind: (MISSION_GOAL_KINDS as readonly string[]).includes(r.goalKind ?? '') ? (r.goalKind as MissionGoalKind) : null,
   resourceTitle: r.resourceTitle,
   resourceUrl: r.resourceUrl,
   resourceNote: r.resourceNote,
@@ -208,24 +196,24 @@ export class MissionsRepository {
 
   // --- teacher Misi Harian (S6-T07, API-GUR-11) --------------------------------------------------
 
-  /** The teacher's own missions plus every Global one, mission date descending, then created descending (ties by id). */
+  /** The teacher's own missions, mission date descending, then created descending (ties by id). */
   async listForTeacher(teacherId: string, isTest: boolean): Promise<MissionRecord[]> {
     const key = idOf(teacherId)
     if (key === null) return []
     const rows = await this.db.mission.findMany({
-      where: { OR: [{ teacherId: key, isTest }, { scope: 'global' }] },
+      where: { teacherId: key, isTest },
       orderBy: [{ missionDate: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
     })
     return rows.map(toMission)
   }
 
-  /** Missions the teacher created on one Malaysia creation day (`created_at`, MYT), Global rows never counted. It counts existing rows: a deleted mission frees a slot (known limit). */
+  /** Missions the teacher created on one Malaysia creation day (`created_at`, MYT). It counts existing rows: a deleted mission frees a slot (known limit). */
   async countCreatedOnDay(teacherId: string, day: string, isTest: boolean): Promise<number> {
     const key = idOf(teacherId)
     if (key === null) return 0
     const start = new Date(`${day}T00:00:00+08:00`)
     const end = new Date(start.getTime() + 24 * 60 * 60 * 1000)
-    return this.db.mission.count({ where: { teacherId: key, scope: 'teacher', isTest, createdAt: { gte: start, lt: end } } })
+    return this.db.mission.count({ where: { teacherId: key, isTest, createdAt: { gte: start, lt: end } } })
   }
 
   /**
@@ -257,7 +245,6 @@ export class MissionsRepository {
           title: input.title,
           description: input.description,
           missionType: 'harian',
-          scope: 'teacher',
           missionDate: new Date(`${input.date}T00:00:00.000Z`),
           subjectId: idFromString(input.subjectId),
           questionCount: input.targetQuestions,
@@ -305,12 +292,12 @@ export class MissionsRepository {
     return row ? toMission(row) : null
   }
 
-  /** Deletes a mission the teacher owns (never a Global one); recipient rows go with it (cascade). False when nothing matched. */
+  /** Deletes a mission the teacher owns; recipient rows go with it (cascade). False when nothing matched. */
   async deleteOwn(id: string, teacherId: string): Promise<boolean> {
     const key = idOf(id)
     const teacher = idOf(teacherId)
     if (key === null || teacher === null) return false
-    const res = await this.db.mission.deleteMany({ where: { id: key, teacherId: teacher, scope: 'teacher' } })
+    const res = await this.db.mission.deleteMany({ where: { id: key, teacherId: teacher } })
     return res.count > 0
   }
 

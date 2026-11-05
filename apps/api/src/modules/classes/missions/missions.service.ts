@@ -47,7 +47,7 @@ export class MissionsService {
   /**
    * The M10 missions whose mission date is today (Malaysia day) and whose stored recipients include the caller,
    * oldest first. Status (Q-SESS-LINK) comes from the caller's sessions linked by `missionId`: a completed
-   * session beats an in-progress one, none gives `new`. A Global mission has no recipients, so a pupil never sees it here.
+   * session beats an in-progress one, none gives `new`.
    */
   async today(actor: ClassActor): Promise<MissionToday[]> {
     const missions = await this.repo.missionsForStudent(actor.userId, mytDay(this.clock.now()), actor.isTest)
@@ -77,7 +77,7 @@ export class MissionsService {
 
   // --- teacher Misi Harian (API-GUR-11) ---------------------------------------------------------
 
-  /** `GET /guru/missions`: own and Global missions, date descending then created descending, with the completion count. */
+  /** `GET /guru/missions`: the teacher's own missions, date descending then created descending, with the completion count. */
   async list(actor: ClassActor): Promise<TeacherMission[]> {
     const missions = await this.repo.listForTeacher(actor.userId, actor.isTest)
     if (missions.length === 0) return []
@@ -156,13 +156,12 @@ export class MissionsService {
   }
 
   /**
-   * `DELETE /guru/missions/:id`: an own mission goes with its recipient rows (rewards already paid stay). A Global mission
-   * is 403 "Misi global tidak boleh dipadam."; another teacher's mission and an unknown id are the generic 404.
+   * `DELETE /guru/missions/:id`: an own mission goes with its recipient rows. Another teacher's mission and an unknown id
+   * are the generic 404.
    */
   async remove(actor: ClassActor, id: string): Promise<{ deleted: 1 }> {
     const mission = isIdString(id) ? await this.repo.findById(id) : null
     if (!mission) throw notFound()
-    if (mission.scope === 'global') throw ApiError.of('FORBIDDEN', { message: MISSION_MESSAGES.globalNotDeletable })
     if (mission.teacherId !== actor.userId) throw notFound()
     await this.prisma.transaction(async (tx) => {
       if (!(await this.repo.deleteOwn(mission.id, actor.userId))) throw notFound()
@@ -197,8 +196,7 @@ function toTeacherMission(m: MissionRecord, subjectName: string | null, complete
     classroomId: m.classroomId,
     subjectId: m.subjectId,
     subjectName,
-    global: m.scope === 'global',
-    goalKind: m.goalKind,
+    global: false,
     completedCount,
   }
 }
