@@ -341,7 +341,7 @@ export function registerBijakStandardsPaths(registry: OpenAPIRegistry): void {
       403: FORBIDDEN_WRITE,
       422: json(
         z.union([BijakGenerateNoBlueprintErrorSchema, BijakGenerateShortageErrorSchema, ErrorBodySchema]),
-        'NO_BLUEPRINT, SHORTAGE (error.details.shortages) or VALIDATION_ERROR (subject, kertas).',
+        'NO_BLUEPRINT, SHORTAGE (error.details.shortages) or VALIDATION_ERROR (subject, kertas, title, years, negeri, count, levelScope).',
       ),
       500: err('SERVER_ERROR: the independent re-check found a violation (logged, never served).'),
       503: json(BijakGenerateLimitErrorSchema, 'GENERATE_LIMIT [PROPOSED]: solver budget reached.'),

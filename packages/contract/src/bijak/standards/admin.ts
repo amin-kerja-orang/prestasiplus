@@ -1,7 +1,12 @@
 import { z } from '../../zod'
 import { IdSchema } from '../../common/ids'
 import { TimestampSchema } from '../../common/time'
-import { BijakBuilderSectionRuleSchema } from '../builder/schema'
+import {
+  BIJAK_BUILDER_MESSAGES,
+  BijakBuilderSectionRuleSchema,
+  BijakBuilderSourceFiltersSchema,
+  BijakLevelScopeSchema,
+} from '../builder/schema'
 import { BijakBlueprintSourceSchema, BijakGenerateShortageSchema } from '../papers/schema'
 import {
   BIJAK_STANDARDS_MESSAGES,
@@ -261,6 +266,10 @@ export const BijakPoolPreviewSchema = z
     }),
     warnings: z.array(BijakBlueprintWarningSchema).meta({ description: 'KBAT_TP_BAND is shown in the preview too (AC-37.5).' }),
     sections: z.array(BijakPoolPreviewSectionSchema),
+    groupTotal: z.number().int().min(0).optional().meta({ description: 'S3-T02, FR-ADM-Q13.3: stimulus groups among the eligible questions; the pool counts questions and groups. Always sent by the server.' }),
+    contractTotal: z.number().int().min(0).optional().meta({ description: 'S3-T02: questions of the contract, the most a set may ask for (FR-ADM-Q13.2). Always sent by the Jana set preview.' }),
+    filters: BijakBuilderSourceFiltersSchema.optional().meta({ description: 'S3-T02: the values the Tahun and Negeri filters offer for this subject and kertas. Always sent by the Jana set preview.' }),
+    levelScope: BijakLevelScopeSchema.optional().meta({ description: 'S3-T02: the default of `Dilihat murid` from this contract. Always sent by the Jana set preview.' }),
   })
   .meta({
     id: 'BijakPoolPreview',
@@ -296,18 +305,38 @@ export const BijakDskpUnitsQuerySchema = z
 
 /* ----------------------------------------------------------------------------- draft paper */
 
-/** `POST /admin/papers/generate` body (AC-29.2). */
+/** `POST /admin/papers/generate` body (AC-29.2, API-BIJAK-11). */
 export const BijakDraftGenerateRequestSchema = z
   .strictObject({
-    subject: z.string().trim().min(1).max(32).meta({ example: 'MAT' }),
-    kertas: z.number().int().min(1).meta({ example: 2 }),
+    subject: z.string().trim().min(1, BIJAK_BUILDER_MESSAGES.subjectRequired).max(32).meta({ example: 'MAT' }),
+    kertas: z
+      .number({ error: BIJAK_BUILDER_MESSAGES.kertasInvalid })
+      .int(BIJAK_BUILDER_MESSAGES.kertasInvalid)
+      .min(1, BIJAK_BUILDER_MESSAGES.kertasInvalid)
+      .max(4, BIJAK_BUILDER_MESSAGES.kertasInvalid)
+      .meta({ description: 'OPT-KERTAS.', example: 2 }),
+    title: z.string().trim().max(200, BIJAK_BUILDER_MESSAGES.titleTooLong).optional().meta({
+      description: '`Tajuk set`. Omitted or blank = the default "Percubaan SPM {subjectName} Kertas {kertas} (draf)".',
+    }),
+    years: z.array(z.number().int().min(1900).max(2100)).max(30).optional().meta({ description: '`Tahun`: the source paper year, any of them. Omitted or empty = all.' }),
+    negeri: z.array(z.string().trim().min(1).max(64)).max(30).optional().meta({ description: '`Negeri`: the source paper exam board, any of them, case-insensitive. Omitted or empty = all.' }),
+    count: z
+      .number({ error: BIJAK_BUILDER_MESSAGES.countRange })
+      .int(BIJAK_BUILDER_MESSAGES.countRange)
+      .min(1, BIJAK_BUILDER_MESSAGES.countRange)
+      .optional()
+      .meta({
+        description:
+          '`Bilangan soalan`, from 1 to the contract total, default the contract total. A smaller count scales the contract sections by largest remainder (ties to the earlier section) and never splits a stimulus group (FR-ADM-Q13.2, PO decision item 5). Above the total: 422 `fields.count`.',
+      }),
+    levelScope: BijakLevelScopeSchema.optional().meta({ description: '`Dilihat murid`; omitted = the default from the contract.' }),
   })
   .meta({ id: 'BijakDraftGenerateRequest' })
 export type BijakDraftGenerateRequest = z.infer<typeof BijakDraftGenerateRequestSchema>
 
 export const BijakDraftGenerateResultSchema = z
-  .strictObject({ paperId: IdSchema })
-  .meta({ id: 'BijakDraftGenerateResult', description: 'A draft pilihan paper; never published automatically.' })
+  .strictObject({ id: IdSchema })
+  .meta({ id: 'BijakDraftGenerateResult', description: 'A draft pilihan paper; never published automatically (API-BIJAK-11: `{ data: { id } }`).' })
 export type BijakDraftGenerateResult = z.infer<typeof BijakDraftGenerateResultSchema>
 
 /* ------------------------------------------------------------------------------ error bodies */

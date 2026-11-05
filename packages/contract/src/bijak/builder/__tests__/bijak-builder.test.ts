@@ -47,6 +47,13 @@ import {
   bijakBuilderBlockerOverridable,
   BijakBuilderQuestionSchema,
   BijakBuilderSchemeLineSchema,
+  BijakBuilderPoolPreviewQuerySchema,
+  BijakBuilderSectionPoolQuerySchema,
+  BijakBuilderSectionRuleSchema,
+  BIJAK_LEVEL_SCOPE_LABELS,
+  bijakDefaultLevelScope,
+  bijakLevelScopeAllows,
+  bijakNegeriOptions,
 } from '../schema'
 
 /* Fixtures are shaped like the data of the prototype paper builder (m28-bijak-spm at 9af43134;
@@ -522,8 +529,8 @@ describe('publish, delete and preview results', () => {
     expect(BijakBuilderBlockerSchema.safeParse({ code: 'MADE_UP', message: 'x', overridable: false }).success).toBe(false)
     expect(BijakBuilderBlockerSchema.safeParse({ code: 'NOT_SERVABLE', message: 'x' }).success).toBe(false)
     expect(BijakBuilderBlockerSchema.safeParse({ ...blocker, extra: 1 }).success).toBe(false)
-    expect(BIJAK_BUILDER_BLOCKER_CODES).toHaveLength(26) // T34's 18 + T48's RULE_NOT_IN_CONTRACT, SECTION_NOT_IN_CONTRACT, RULE_N_EXCEEDS_QUESTIONS, SECTION_EMPTY + REQ-A-013's REFERENCE_IMAGE_INVALID + T43b's NO_QUESTIONS, ZERO_MARK_SECTION, TOTAL_MARKS_BELOW_ONE
-    expect(BIJAK_BUILDER_BLOCKER_CODES.filter((c) => BIJAK_BUILDER_BLOCKER_OVERRIDABLE[c]).sort()).toEqual(['BLUEPRINT_NOT_VERIFIED', 'INELIGIBLE', 'RULE_NOT_IN_CONTRACT', 'SECTION_NOT_IN_CONTRACT'])
+    expect(BIJAK_BUILDER_BLOCKER_CODES).toHaveLength(29) // T34's 18 + T48's RULE_NOT_IN_CONTRACT, SECTION_NOT_IN_CONTRACT, RULE_N_EXCEEDS_QUESTIONS, SECTION_EMPTY + REQ-A-013's REFERENCE_IMAGE_INVALID + T43b's NO_QUESTIONS, ZERO_MARK_SECTION, TOTAL_MARKS_BELOW_ONE + S3-T02's CHOICE_UNITS_UNEQUAL, COMPULSORY_CHOOSE, MARKS_NOT_IN_CONTRACT
+    expect(BIJAK_BUILDER_BLOCKER_CODES.filter((c) => BIJAK_BUILDER_BLOCKER_OVERRIDABLE[c]).sort()).toEqual(['BLUEPRINT_NOT_VERIFIED', 'INELIGIBLE', 'MARKS_NOT_IN_CONTRACT', 'RULE_NOT_IN_CONTRACT', 'SECTION_NOT_IN_CONTRACT'])
   })
 
   it('S3-T01: nothing is overridable under a Disahkan Kontrak; under any other Kontrak the map decides', () => {
@@ -1189,5 +1196,65 @@ describe('R1-T48 builder parity (cover code, rule, sections, added questions, pi
   it('the openapi lists the three new routes', () => {
     const paths = Object.keys(buildOpenApiDocument().paths ?? {})
     for (const p of ['/admin/papers/{id}/sections', '/admin/papers/{id}/sections/{sid}/questions', '/admin/papers/{id}/questions/{questionId}']) expect(paths).toContain(p)
+  })
+})
+
+describe('S3-T02 One Set Builder', () => {
+  it('the bank query takes one Tahun and any number of Negeri; a single Negeri arrives as a string', () => {
+    expect(BijakBuilderSectionPoolQuerySchema.parse({ tahun: '2025', negeri: 'Johor' })).toEqual({ tahun: 2025, negeri: ['Johor'] })
+    expect(BijakBuilderSectionPoolQuerySchema.parse({ negeri: ['Johor', ' MRSM '] })).toEqual({ negeri: ['Johor', 'MRSM'] })
+    expect(BijakBuilderSectionPoolQuerySchema.parse({})).toEqual({})
+    expect(BijakBuilderSectionPoolQuerySchema.safeParse({ tahun: 'dua' }).success).toBe(false)
+  })
+
+  it('the Jana set preview takes arrays and a count', () => {
+    expect(BijakBuilderPoolPreviewQuerySchema.parse({ subject: 'MAT', kertas: '2', years: '2025', negeri: ['Johor'], count: '10' })).toEqual({ subject: 'MAT', kertas: 2, years: [2025], negeri: ['Johor'], count: 10 })
+    expect(BijakBuilderPoolPreviewQuerySchema.parse({ subject: 'MAT', kertas: '2', years: ['2025', '2024'] }).years).toEqual([2025, 2024])
+  })
+
+  it('the rule N carries "Nombor N tidak sah."', () => {
+    expect(BijakBuilderSectionRuleSchema.safeParse({ type: 'choose', n: 0 }).error?.issues[0]?.message).toBe('Nombor N tidak sah.')
+  })
+
+  it('Dilihat murid: default from the contract share, and who sees what', () => {
+    expect(bijakDefaultLevelScope(null)).toBe('t4_t5')
+    expect(bijakDefaultLevelScope({ t4: 40, t5: 60 })).toBe('t4_t5')
+    expect(bijakDefaultLevelScope({ t4: 100, t5: 0 })).toBe('t4')
+    expect(bijakDefaultLevelScope({ t4: 0, t5: 100 })).toBe('t5')
+    expect(bijakLevelScopeAllows('t4', 10)).toBe(true)
+    expect(bijakLevelScopeAllows('t4', 11)).toBe(false)
+    expect(bijakLevelScopeAllows('t5', 11)).toBe(true)
+    expect(bijakLevelScopeAllows('t5', 10)).toBe(false)
+    expect(bijakLevelScopeAllows('t4_t5', 10)).toBe(true)
+    expect(bijakLevelScopeAllows('t4_t5', 9)).toBe(false)
+    expect(bijakLevelScopeAllows(null, 9)).toBe(true)
+    expect(bijakLevelScopeAllows('t4', null)).toBe(true)
+  })
+
+  it('Negeri options: values present, one per value ignoring case, list order, unknown values last', () => {
+    expect(bijakNegeriOptions(['SBP', 'kedah', ' Johor ', 'Kedah', 'Zon Timur', 'WP Labuan', '  '])).toEqual(['Johor', 'Kedah', 'WP Labuan', 'SBP', 'Zon Timur'])
+  })
+
+  it('a placed question carries servable; the paper and the summary carry levelScope', () => {
+    expect(BijakBuilderQuestionSchema.shape.servable.safeParse(false).success).toBe(true)
+    expect(BijakBuilderPaperSchema.shape.levelScope.safeParse(null).success).toBe(true)
+    expect(BijakBuilderPaperSummarySchema.shape.levelScope.safeParse('t5').success).toBe(true)
+    expect(BijakBuilderPaperCreateSchema.safeParse({ subject: 'MAT', kertas: 2, levelScope: 't4' }).success).toBe(true)
+    expect(BijakBuilderPaperCreateSchema.safeParse({ subject: 'MAT', kertas: 2, levelScope: 'T9' }).success).toBe(false)
+  })
+
+  it('the three new blockers: marks against the contract is overridable, nothing is under Disahkan, the choice rules are hard', () => {
+    expect(bijakBuilderBlockerOverridable('MARKS_NOT_IN_CONTRACT', false)).toBe(true)
+    expect(bijakBuilderBlockerOverridable('MARKS_NOT_IN_CONTRACT', true)).toBe(false)
+    expect(bijakBuilderBlockerOverridable('CHOICE_UNITS_UNEQUAL', false)).toBe(false)
+    expect(bijakBuilderBlockerOverridable('COMPULSORY_CHOOSE', false)).toBe(false)
+    expect(BIJAK_BUILDER_CHECK_LINES.marksNotInContract('12')).toBe('Markah soalan 12 tidak sepadan dengan kontrak.')
+  })
+
+  it('the openapi lists the filters of the bank response', () => {
+    const paths = (buildOpenApiDocument().paths ?? {}) as Record<string, { get?: unknown }>
+    const pool = paths['/admin/papers/{id}/sections/{sid}/pool']?.get
+    expect(JSON.stringify(pool)).toContain('BijakBuilderSourceFilters')
+    expect(BIJAK_LEVEL_SCOPE_LABELS).toEqual({ t4: 'Tingkatan 4', t5: 'Tingkatan 5', t4_t5: 'Tingkatan 4 dan 5' })
   })
 })

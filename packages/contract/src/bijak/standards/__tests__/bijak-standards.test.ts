@@ -15,6 +15,7 @@ import {
 import {
   BijakBlueprintInvalidErrorSchema,
   BijakDraftGenerateRequestSchema,
+  BijakDraftGenerateResultSchema,
   BijakDskpUnitSchema,
   BijakDskpUnitsQuerySchema,
   BijakEvidenceInputSchema,
@@ -532,6 +533,26 @@ describe('pool preview and draft generation', () => {
   it('parses the draft generate request and rejects unknown keys', () => {
     expect(BijakDraftGenerateRequestSchema.safeParse({ subject: 'MAT', kertas: 2 }).success).toBe(true)
     expect(BijakDraftGenerateRequestSchema.safeParse({ subject: 'MAT', kertas: 2, publish: true }).success).toBe(false)
+  })
+
+  it('API-BIJAK-11: title, years, negeri, count and levelScope are optional; the bad values carry the PRD30 messages', () => {
+    const full = { subject: 'SEJ', kertas: 1, title: '  Set Mac  ', years: [2025, 2024], negeri: ['Johor', 'MRSM'], count: 10, levelScope: 't5' }
+    expect(BijakDraftGenerateRequestSchema.parse(full)).toEqual({ ...full, title: 'Set Mac' })
+    const message = (body: object): string | undefined => BijakDraftGenerateRequestSchema.safeParse({ subject: 'MAT', kertas: 2, ...body }).error?.issues[0]?.message
+    expect(message({ kertas: 5 })).toBe('Kertas tidak sah.')
+    expect(message({ kertas: 0 })).toBe('Kertas tidak sah.')
+    expect(message({ count: 0 })).toBe('Bilangan soalan mesti antara 1 dan 100.')
+    expect(message({ count: 1.5 })).toBe('Bilangan soalan mesti antara 1 dan 100.')
+    expect(message({ subject: '   ' })).toBe('Sila pilih subjek.')
+    expect(BijakDraftGenerateRequestSchema.safeParse({ subject: 'MAT', kertas: 2, levelScope: 'T4' }).success).toBe(false)
+    expect(BijakDraftGenerateResultSchema.safeParse({ id: '7' }).success).toBe(true)
+    expect(BijakDraftGenerateResultSchema.safeParse({ paperId: '7' }).success).toBe(false)
+  })
+
+  it('the pool preview takes the additive group, total, filter and scope fields', () => {
+    const shape = BijakPoolPreviewSchema.shape
+    for (const key of ['groupTotal', 'contractTotal', 'filters', 'levelScope'] as const) expect(shape[key].safeParse(undefined).success, key).toBe(true)
+    expect(shape.filters.safeParse({ years: [2025], negeri: ['Johor'] }).success).toBe(true)
   })
 })
 

@@ -57,6 +57,7 @@ import {
   BijakBuilderSchemeLineSchema,
   BijakBuilderReviewQuestionSchema,
   BijakBuilderSectionPatchSchema,
+  BijakBuilderSectionPoolExtrasShape,
   BijakBuilderSectionRuleSchema,
 } from './schema'
 
@@ -375,14 +376,14 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     path: '/admin/papers/{id}/sections/{sid}/pool',
     tags: [BIJAK_BUILDER_TAG],
     summary: 'Paper builder: candidate pool of a section (units, groups whole)',
-    description: `Candidates by subject, kertas, level and DSKP unit from the standard pool (bijak-pool facts). A stimulus group is ONE unit with the stimulus once and marks = sum of members. Each unit says eligible (with BM reasons) and placed. ${ROLE_NOTE}`,
+    description: `Candidates by subject, kertas, level and DSKP unit from the standard pool (bijak-pool facts). A stimulus group is ONE unit with the stimulus once and marks = sum of members. Only units eligible for the section are listed (FR-ADM-Q14.4), each says placed. \`tahun\` and \`negeri\` filter on the source paper; a group matches as one unit. ${ROLE_NOTE}`,
     request: { params: SectionParams, query: BijakBuilderSectionPoolQuerySchema },
     responses: {
-      200: json(listEnvelopeOf(BijakBuilderPoolUnitSchema), 'Units (paged).'),
+      200: json(listEnvelopeOf(BijakBuilderPoolUnitSchema).extend(BijakBuilderSectionPoolExtrasShape), 'Units (paged), with the values the Tahun and Negeri filters offer.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_READ,
       404: PAPER_NOT_FOUND,
-      422: err('VALIDATION_ERROR with fields (q, level, unit, page, pageSize) or invalid section.'),
+      422: err('VALIDATION_ERROR with fields (q, level, unit, tahun, negeri, page, pageSize) or invalid section.'),
     },
   })
 
@@ -391,14 +392,14 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     path: '/admin/papers/pool-preview',
     tags: [BIJAK_BUILDER_TAG],
     summary: 'Paper builder: Pratonton kolam for a subject and kertas (shortage report)',
-    description: `Same code and candidate list as Jana set (composeStandardPaper): verdict, per-section needed/available and the first shortage. Uses the head blueprint (Spec or Disahkan). 404 when there is none. ${ROLE_NOTE}`,
+    description: `Same code and candidate list as Jana set (composeStandardPaper): verdict, per-section needed/available and the first shortage, over the questions that match \`years\` and \`negeri\`, for a set of \`count\` questions. Uses the head blueprint (Spec or Disahkan). 404 when there is none. ${ROLE_NOTE}`,
     request: { query: BijakBuilderPoolPreviewQuerySchema },
     responses: {
       200: json(envelopeOf(BijakPoolPreviewSchema), 'The pool preview.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_READ,
       404: BLUEPRINT_NOT_FOUND,
-      422: err('VALIDATION_ERROR with fields (subject, kertas).'),
+      422: err('VALIDATION_ERROR with fields (subject, kertas, years, negeri, count).'),
     },
   })
 

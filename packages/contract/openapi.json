@@ -64702,6 +64702,40 @@
           },
           "updatedAt": {
             "$ref": "#/components/schemas/Timestamp"
+          },
+          "levelScope": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "t4",
+              "t5",
+              "t4_t5",
+              null
+            ],
+            "description": "S3-T02 `Dilihat murid` column; null = not restricted. Always sent by the server."
+          },
+          "origins": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "negeri": {
+                  "type": "string"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "negeri",
+                "count"
+              ],
+              "additionalProperties": false
+            },
+            "description": "S3-T02 origin of the placed questions per Negeri (`source_papers.exam_board`), largest first; empty when none is known."
           }
         },
         "required": [
@@ -64790,6 +64824,26 @@
             "pattern": "\\+08:00$",
             "description": "Time of the latest publish; absent while the paper has never been published.",
             "example": "2026-10-16T09:30:00+08:00"
+          },
+          "levelScope": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "t4",
+              "t5",
+              "t4_t5",
+              null
+            ],
+            "description": "S3-T02 `Dilihat murid` (`papers.level_scope`); null = not restricted (a paper older than PO decision item 6). Always sent by the server."
+          },
+          "sourceBatchId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "S3-T02, FR-ADM-Q07.7: present on a draft imported from an intake batch (DM-45, filled by S1-T10): `Terbitkan` is then offered only from the preview. Absent on every other paper.",
+            "example": "1042"
           }
         },
         "required": [
@@ -64860,6 +64914,14 @@
           "pinned": {
             "type": "boolean",
             "description": "R1-T48 / REQ-C-017 (V2 \"Disematkan\"): on a question PLACED on this paper (editor `questions[]`, the questions of a section pool unit and the review rows), true when its version and marks are frozen (the paper is Terbit); false while the paper is a draf (the placement follows the question in force). Absent on a candidate that is not placed."
+          },
+          "servable": {
+            "type": "boolean",
+            "description": "S3-T02, FR-ADM-Q14.7, API-BIJAK-10 (g): on a question placed on this paper in the editor, false when pupils cannot be served it (chip `Tidak disajikan`, blocks Terbit). A Terbit paper serves its pinned version, so it reads true there (AC-ADM-Q14.3). Absent on a candidate that is not placed."
+          },
+          "notServedReason": {
+            "type": "string",
+            "description": "S3-T02: the BM reason of `Dilihat murid di` (tooltip of `Tidak disajikan`); present when `servable` is false."
           }
         },
         "required": [
@@ -65707,6 +65769,15 @@
             "type": "string",
             "maxLength": 200,
             "description": "Trimmed, at most 200 characters (422 `fields.title` \"Tajuk kertas tidak boleh melebihi 200 aksara.\"); omitted or blank = the default \"Percubaan SPM {subjectName} Kertas {kertas} (draf)\" (the mock ignores a blank title on create)."
+          },
+          "levelScope": {
+            "type": "string",
+            "enum": [
+              "t4",
+              "t5",
+              "t4_t5"
+            ],
+            "description": "S3-T02 `Dilihat murid`; omitted = the default from the contract."
           }
         },
         "required": [
@@ -65894,7 +65965,10 @@
               "RULE_NOT_IN_CONTRACT",
               "RULE_N_EXCEEDS_QUESTIONS",
               "SECTION_NOT_IN_CONTRACT",
-              "SECTION_EMPTY"
+              "SECTION_EMPTY",
+              "CHOICE_UNITS_UNEQUAL",
+              "COMPULSORY_CHOOSE",
+              "MARKS_NOT_IN_CONTRACT"
             ],
             "description": "Stable code. Hard (overridable false): NO_QUESTIONS, ZERO_MARK_SECTION, TOTAL_MARKS_BELOW_ONE (PIPE AC-07.4: no question, a Bahagian with questions but 0 marks, a total under 1), DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Hard also: REFERENCE_IMAGE_INVALID (a reference-sheet picture that is not a stored question image, re-checked at Terbit), NO_KEY, NO_MARKS, MODE_NOT_ALLOWED (structural failures of a question) and GROUP_BROKEN. Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan) and INELIGIBLE (a question without DSKP unit or TP, or with tags awaiting review). Overridable also (R1-T48): RULE_NOT_IN_CONTRACT (the rule of a Bahagian differs from the Kontrak) and SECTION_NOT_IN_CONTRACT (admin-added Bahagian). Hard also (R1-T48): RULE_N_EXCEEDS_QUESTIONS (Pilih N with fewer than N questions in the Bahagian) and SECTION_EMPTY (an admin-added Bahagian without a question). S3-T01: under a Disahkan Kontrak nothing is overridable; INELIGIBLE, RULE_NOT_IN_CONTRACT and SECTION_NOT_IN_CONTRACT come with overridable false there."
           },
@@ -67464,6 +67538,22 @@
             "maxLength": 40,
             "description": "DSKP unit node id."
           },
+          "tahun": {
+            "type": "integer",
+            "minimum": 1900,
+            "maximum": 2100,
+            "description": "S3-T02 `Tahun` (14-01): the year of the source paper."
+          },
+          "negeri": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 30,
+            "description": "S3-T02 `Negeri` (14-02, repeated parameter): the exam board of the source paper, any of them, case-insensitive."
+          },
           "page": {
             "type": "integer",
             "minimum": 1
@@ -67544,6 +67634,31 @@
           "kertas": {
             "type": "integer",
             "minimum": 1
+          },
+          "years": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1900,
+              "maximum": 2100
+            },
+            "maxItems": 30,
+            "description": "S3-T02 `Tahun` (13-08, repeated parameter); empty = all."
+          },
+          "negeri": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 30,
+            "description": "S3-T02 `Negeri` (13-09, repeated parameter); empty = all."
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "S3-T02 `Bilangan soalan`: the verdict is the one of a set of this size, scaled as Jana set does. Omitted = the contract total."
           }
         },
         "required": [
@@ -68745,6 +68860,50 @@
             "items": {
               "$ref": "#/components/schemas/BijakPoolPreviewSection"
             }
+          },
+          "groupTotal": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "S3-T02, FR-ADM-Q13.3: stimulus groups among the eligible questions; the pool counts questions and groups. Always sent by the server."
+          },
+          "contractTotal": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "S3-T02: questions of the contract, the most a set may ask for (FR-ADM-Q13.2). Always sent by the Jana set preview."
+          },
+          "filters": {
+            "type": "object",
+            "properties": {
+              "years": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                },
+                "description": "OPT-TAHUN: years present in the data, descending."
+              },
+              "negeri": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "OPT-NEGERI-KERTAS: values present in the data, in the order of the list."
+              }
+            },
+            "required": [
+              "years",
+              "negeri"
+            ],
+            "additionalProperties": false,
+            "description": "S3-T02: the values the Tahun and Negeri filters offer for this subject and kertas. Always sent by the Jana set preview."
+          },
+          "levelScope": {
+            "type": "string",
+            "enum": [
+              "t4",
+              "t5",
+              "t4_t5"
+            ],
+            "description": "S3-T02: the default of `Dilihat murid` from this contract. Always sent by the Jana set preview."
           }
         },
         "required": [
@@ -68846,7 +69005,48 @@
           "kertas": {
             "type": "integer",
             "minimum": 1,
+            "maximum": 4,
+            "description": "OPT-KERTAS.",
             "example": 2
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "`Tajuk set`. Omitted or blank = the default \"Percubaan SPM {subjectName} Kertas {kertas} (draf)\"."
+          },
+          "years": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1900,
+              "maximum": 2100
+            },
+            "maxItems": 30,
+            "description": "`Tahun`: the source paper year, any of them. Omitted or empty = all."
+          },
+          "negeri": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 30,
+            "description": "`Negeri`: the source paper exam board, any of them, case-insensitive. Omitted or empty = all."
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "`Bilangan soalan`, from 1 to the contract total, default the contract total. A smaller count scales the contract sections by largest remainder (ties to the earlier section) and never splits a stimulus group (FR-ADM-Q13.2, PO decision item 5). Above the total: 422 `fields.count`."
+          },
+          "levelScope": {
+            "type": "string",
+            "enum": [
+              "t4",
+              "t5",
+              "t4_t5"
+            ],
+            "description": "`Dilihat murid`; omitted = the default from the contract."
           }
         },
         "required": [
@@ -68858,15 +69058,15 @@
       "BijakDraftGenerateResult": {
         "type": "object",
         "properties": {
-          "paperId": {
+          "id": {
             "$ref": "#/components/schemas/Id"
           }
         },
         "required": [
-          "paperId"
+          "id"
         ],
         "additionalProperties": false,
-        "description": "A draft pilihan paper; never published automatically."
+        "description": "A draft pilihan paper; never published automatically (API-BIJAK-11: `{ data: { id } }`)."
       },
       "BijakBlueprintInvalidError": {
         "type": "object",
@@ -74512,6 +74712,30 @@
         "required": [
           "removed"
         ]
+      },
+      "BijakBuilderSourceFilters": {
+        "type": "object",
+        "properties": {
+          "years": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "OPT-TAHUN: years present in the data, descending."
+          },
+          "negeri": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "OPT-NEGERI-KERTAS: values present in the data, in the order of the list."
+          }
+        },
+        "required": [
+          "years",
+          "negeri"
+        ],
+        "additionalProperties": false
       },
       "IntakeExtractionRunEnvelope": {
         "type": "object",
@@ -116298,7 +116522,7 @@
           "bijak-builder"
         ],
         "summary": "Paper builder: candidate pool of a section (units, groups whole)",
-        "description": "Candidates by subject, kertas, level and DSKP unit from the standard pool (bijak-pool facts). A stimulus group is ONE unit with the stimulus once and marks = sum of members. Each unit says eligible (with BM reasons) and placed. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "Candidates by subject, kertas, level and DSKP unit from the standard pool (bijak-pool facts). A stimulus group is ONE unit with the stimulus once and marks = sum of members. Only units eligible for the section are listed (FR-ADM-Q14.4), each says placed. `tahun` and `negeri` filter on the source paper; a group matches as one unit. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -116358,6 +116582,34 @@
           {
             "schema": {
               "type": "integer",
+              "minimum": 1900,
+              "maximum": 2100,
+              "description": "S3-T02 `Tahun` (14-01): the year of the source paper."
+            },
+            "required": false,
+            "description": "S3-T02 `Tahun` (14-01): the year of the source paper.",
+            "name": "tahun",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "maxItems": 30,
+              "description": "S3-T02 `Negeri` (14-02, repeated parameter): the exam board of the source paper, any of them, case-insensitive."
+            },
+            "required": false,
+            "description": "S3-T02 `Negeri` (14-02, repeated parameter): the exam board of the source paper, any of them, case-insensitive.",
+            "name": "negeri",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
               "minimum": 1
             },
             "required": false,
@@ -116377,7 +116629,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Units (paged).",
+            "description": "Units (paged), with the values the Tahun and Negeri filters offer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -116391,11 +116643,15 @@
                     },
                     "meta": {
                       "$ref": "#/components/schemas/ListMeta"
+                    },
+                    "filters": {
+                      "$ref": "#/components/schemas/BijakBuilderSourceFilters"
                     }
                   },
                   "required": [
                     "data",
-                    "meta"
+                    "meta",
+                    "filters"
                   ]
                 }
               }
@@ -116432,7 +116688,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields (q, level, unit, page, pageSize) or invalid section.",
+            "description": "VALIDATION_ERROR with fields (q, level, unit, tahun, negeri, page, pageSize) or invalid section.",
             "content": {
               "application/json": {
                 "schema": {
@@ -116450,7 +116706,7 @@
           "bijak-builder"
         ],
         "summary": "Paper builder: Pratonton kolam for a subject and kertas (shortage report)",
-        "description": "Same code and candidate list as Jana set (composeStandardPaper): verdict, per-section needed/available and the first shortage. Uses the head blueprint (Spec or Disahkan). 404 when there is none. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "Same code and candidate list as Jana set (composeStandardPaper): verdict, per-section needed/available and the first shortage, over the questions that match `years` and `negeri`, for a set of `count` questions. Uses the head blueprint (Spec or Disahkan). 404 when there is none. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -116469,6 +116725,49 @@
             },
             "required": true,
             "name": "kertas",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1900,
+                "maximum": 2100
+              },
+              "maxItems": 30,
+              "description": "S3-T02 `Tahun` (13-08, repeated parameter); empty = all."
+            },
+            "required": false,
+            "description": "S3-T02 `Tahun` (13-08, repeated parameter); empty = all.",
+            "name": "years",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "maxItems": 30,
+              "description": "S3-T02 `Negeri` (13-09, repeated parameter); empty = all."
+            },
+            "required": false,
+            "description": "S3-T02 `Negeri` (13-09, repeated parameter); empty = all.",
+            "name": "negeri",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "S3-T02 `Bilangan soalan`: the verdict is the one of a set of this size, scaled as Jana set does. Omitted = the contract total."
+            },
+            "required": false,
+            "description": "S3-T02 `Bilangan soalan`: the verdict is the one of a set of this size, scaled as Jana set does. Omitted = the contract total.",
+            "name": "count",
             "in": "query"
           }
         ],
@@ -116522,7 +116821,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields (subject, kertas).",
+            "description": "VALIDATION_ERROR with fields (subject, kertas, years, negeri, count).",
             "content": {
               "application/json": {
                 "schema": {
@@ -119351,7 +119650,7 @@
             }
           },
           "422": {
-            "description": "NO_BLUEPRINT, SHORTAGE (error.details.shortages) or VALIDATION_ERROR (subject, kertas).",
+            "description": "NO_BLUEPRINT, SHORTAGE (error.details.shortages) or VALIDATION_ERROR (subject, kertas, title, years, negeri, count, levelScope).",
             "content": {
               "application/json": {
                 "schema": {
