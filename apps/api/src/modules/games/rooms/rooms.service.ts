@@ -601,20 +601,17 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
     players: PlayerRow[],
     seat: PlayerRow,
   ): Promise<{ room: RoomRow; players: PlayerRow[] }> {
-    const st = room.state as RoomState
     const now = this.clock.now()
-    // Ruling 50.4: the leaver's jumlah + 1 is written once the outcome is known; when nothing is settled they get none either.
-    const bump = async (): Promise<void> => {
-      if (!room.isTest && !seat.isTest && seat.userId !== null && startedHumans(st, enginePlayers(players)) >= 2) {
-        await this.repo.bumpStanding(room.game, seat.userId, { wins: 0, jumlah: 1, betul: 0, skor: 0 }, now)
-      }
-    }
+    // Rulings 50.3 and 50.4: the leaver's jumlah + 1 is not written now. The leaver is recorded in the state and `settle`
+    // writes jumlah + 1 (menang 0) once, when the game finishes settled; a game that ends unsettled writes nothing for anyone.
+    const base = room.state as RoomState
+    const counts = !room.isTest && !seat.isTest && seat.userId !== null && startedHumans(base, enginePlayers(players)) >= 2
+    const st: RoomState = counts ? { ...base, leavers: [...(base.leavers ?? []), seat.userId as string] } : base
     const left = players.filter((p) => !p.isBot && p !== seat)
     // `game_rooms.host_id` is not moved when the host leaves: host-only actions (start, close) exist in the waiting room only,
     // so in a playing room it is display only.
     if (left.length >= 2 && (await this.settings.get('games_room_bots_enabled')) !== 1) {
       // Ruling 50.1: robots off, so the seat is skipped and never a robot; the humans left play on.
-      await bump()
       await this.repo.removeSeat(seat.id)
       const rest = players.filter((p) => p !== seat)
       const out = skipSeat({
@@ -630,7 +627,6 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
       return this.applyOut(tx, room, rest, out)
     }
     if (left.length >= 2) {
-      await bump()
       await this.repo.seatToRobot(seat.id)
       const after = await this.repo.players(room.code)
       const remap: Record<string, string> = {}
@@ -658,7 +654,6 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
     // `last_polled_at` is written at most every SEEN_GAP_MS, so the window is the absence limit plus that gap.
     const present = last !== undefined && seatPresent(last.lastPolledAt?.getTime(), now.getTime(), absentMs + SEEN_GAP_MS)
     if (last && present) {
-      await bump()
       const state: RoomState = { ...st, humanId: last.seat, awaiting: null, pendingQ: null, winnerId: last.seat, mvpId: last.seat }
       return this.applyOut(tx, room, rest, { state, players: enginePlayers(rest), finished: true })
     }
@@ -842,6 +837,10 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
     for (const d of s.standings) {
       if (byId.get(d.userId)?.isTest || (d.wins === 0 && d.jumlah === 0)) continue
       await this.repo.bumpStanding(game, d.userId, d, now)
+    }
+    // Ruling 50.4: every leaver of the game gets jumlah + 1 and menang 0, once (the caller's `settledAt` guard), only now that it is settled.
+    for (const userId of out.state.leavers ?? []) {
+      await this.repo.bumpStanding(game, userId, { wins: 0, jumlah: 1, betul: 0, skor: 0 }, now)
     }
     for (const r of s.reports) {
       if (byId.get(r.userId)?.isTest) continue // the Mod Pelajar actor never earns: no reward call at all

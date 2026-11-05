@@ -216,7 +216,10 @@ describe('multi-human rooms (R2): Papan Bijak and Kuiz Relay', () => {
     expect(now.status).toBe('playing') // 2 humans remain: the game goes on
     expect(now.players.map((p) => p.isBot).sort()).toEqual([false, false, true])
     expect(now.players.find((p) => p.id === solo.userId)).toBeUndefined()
-    expect(await standing('papan-bijak', solo.userId)).toMatchObject({ wins: 0, jumlah: 1 })
+    expect(await standing('papan-bijak', solo.userId)).toBeUndefined() // ruling 50.4: nothing is written until the game finishes settled
+    const end = await playOut(code, 'papan-bijak', now)
+    expect(end.status).toBe('finished')
+    expect(await standing('papan-bijak', solo.userId)).toEqual({ wins: 0, jumlah: 1, skor: 0, betul: 0 }) // written once, at the settled finish
     expect(await t.db.query('select 1 from game_reward_events where user_id = $1::bigint', [solo.userId])).toHaveLength(0)
   }, 120_000)
 
@@ -284,7 +287,14 @@ describe('multi-human rooms (R2): Papan Bijak and Kuiz Relay', () => {
     expect(v.status).toBe('playing')
     expect(v.players.find((p) => p.id === solo.userId)).toBeUndefined()
     expect(v.players.map((p) => p.isBot).sort()).toEqual([false, false, true])
-    expect(await standing('papan-bijak', solo.userId)).toMatchObject({ wins: 0, jumlah: 1 })
+    expect(await standing('papan-bijak', solo.userId)).toBeUndefined() // not written while the game is in play
+    const end = await playOut(code, 'papan-bijak', v)
+    expect(end.status).toBe('finished')
+    expect(await standing('papan-bijak', solo.userId)).toEqual({ wins: 0, jumlah: 1, skor: 0, betul: 0 })
+    for (const c of [a, b]) {
+      const mine = end.result?.scores.find((x) => x.userId === c.userId)
+      expect(await standing('papan-bijak', c.userId)).toEqual({ wins: end.result?.winnerId === c.userId ? 1 : 0, jumlah: 1, skor: mine?.points, betul: mine?.correct })
+    }
   }, 120_000)
 
   it('ruling 49.1: the same idle poller with robots off is skipped, not replaced', async () => {
@@ -298,6 +308,14 @@ describe('multi-human rooms (R2): Papan Bijak and Kuiz Relay', () => {
       expect(v.status).toBe('playing')
       expect(v.players.map((p) => p.id).sort()).toEqual([a.userId, b.userId].sort())
       expect(v.players.some((p) => p.isBot)).toBe(false)
+      expect(await standing('papan-bijak', solo.userId)).toBeUndefined() // the skipped seat's jumlah waits for the settled finish
+      const end = await playOut(code, 'papan-bijak', v)
+      expect(end.status).toBe('finished')
+      expect(await standing('papan-bijak', solo.userId)).toEqual({ wins: 0, jumlah: 1, skor: 0, betul: 0 })
+      for (const c of [a, b]) {
+        const mine = end.result?.scores.find((x) => x.userId === c.userId)
+        expect(await standing('papan-bijak', c.userId)).toEqual({ wins: end.result?.winnerId === c.userId ? 1 : 0, jumlah: 1, skor: mine?.points, betul: mine?.correct })
+      }
     } finally {
       await t.db.query(`update gamification_settings set value = 1 where key = 'games_room_bots_enabled'`)
     }
@@ -319,7 +337,32 @@ describe('multi-human rooms (R2): Papan Bijak and Kuiz Relay', () => {
     }
     expect(v.status).toBe('finished')
     expect(v.result?.winnerId).toBe(a.userId)
-    expect(await standing('papan-bijak', b.userId)).toMatchObject({ wins: 0, jumlah: 1 })
+    expect(await standing('papan-bijak', b.userId)).toEqual({ wins: 0, jumlah: 1, skor: 0, betul: 0 })
+    const mineA = v.result?.scores.find((x) => x.userId === a.userId)
+    expect(await standing('papan-bijak', a.userId)).toEqual({ wins: 1, jumlah: 1, skor: mineA?.points, betul: mineA?.correct })
+  }, 120_000)
+
+  it.each([1, 0])('ruling 50.3/50.4: three humans all go away (bots %i), only the sweep runs: A replaced or skipped, then B removed, C absent: nothing settled and no standing for A, B or C', async (bots) => {
+    await t.db.query(`update gamification_settings set value = ${String(bots)} where key = 'games_room_bots_enabled'`)
+    try {
+      const code = await createRoom(a, 'papan-bijak', { ...PB_FORM, match_mode: 'same_level' })
+      await join(b, 'papan-bijak', code)
+      await join(solo, 'papan-bijak', code)
+      parseRoom(await a.post(P('papan-bijak', code, '/start')))
+      const rooms = t.app.get(RoomsService, { strict: false })
+      for (let i = 0; i < 80; i++) {
+        t.clock.advance(31_000)
+        await rooms.sweepClocks()
+        if ((await t.db.query<{ status: string }>('select status from game_rooms where code = $1', [code]))[0]?.status !== 'playing') break
+      }
+      const room = (await t.db.query<{ status: string; settled_at: Date | null }>('select status, settled_at from game_rooms where code = $1', [code]))[0]
+      expect(room?.status).toBe('finished')
+      expect(room?.settled_at).not.toBeNull()
+      expect(await t.db.query('select 1 from game_standings')).toHaveLength(0) // not for A, not for B, not for C
+      expect(await events(code)).toHaveLength(0)
+    } finally {
+      await t.db.query(`update gamification_settings set value = 1 where key = 'games_room_bots_enabled'`)
+    }
   }, 120_000)
 
   it('ruling 50.3: a lone human who is absent (3 timeouts, the sweep runs) ends the game with nothing settled', async () => {

@@ -56,6 +56,8 @@ export interface RoomState {
   humanId: string
   /** How many humans were seated when the game started: standings need 2 or more (48 GAME-R, FR-GM-R.6). Absent on a room from before R2. */
   startHumans?: number
+  /** User ids of the humans who left the game in play and count for standings: jumlah + 1 at a settled finish, never at an unsettled one (rulings 50.3, 50.4). Absent on a room from before this field. */
+  leavers?: string[]
   /** Per human seat: answers and pace. Robots have none. Presence and the timeout count are columns of the seat (DM-90). */
   seats?: Record<string, SeatState>
   awaiting: 'roll' | 'answer' | null
