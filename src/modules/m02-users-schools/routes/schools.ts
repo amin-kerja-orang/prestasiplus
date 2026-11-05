@@ -24,6 +24,20 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/admin/classes',
+    name: SCHOOL_ROUTES.classes,
+    component: () => import('../pages/KelasSekolahPage.vue'),
+    meta: {
+      layout: 'admin',
+      access: 'auth',
+      roles: ['admin'],
+      title: 'Kelas Sekolah - Admin Panel',
+      header: { title: 'Kelas Sekolah', subtitle: 'Senarai kelas mengikut sekolah' },
+      module: 'M02',
+      v2: true,
+    },
+  },
+  {
     path: '/admin/schools/create',
     name: SCHOOL_ROUTES.create,
     component: () => import('../pages/SchoolFormPage.vue'),

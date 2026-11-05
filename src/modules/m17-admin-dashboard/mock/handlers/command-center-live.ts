@@ -10,10 +10,14 @@
  * `dailyTrend` (OQ-M17-12).
  */
 
-import { formatMyt, toIsoMyt } from '@/lib/time'
-import { ok, route, type MockRequest, type RouteDef } from '@/mock/define'
+import { DAY_MS, formatMyt, toIsoMyt } from '@/lib/time'
+import { ok, queryString, requireRole, route, type MockRequest, type RouteDef } from '@/mock/define'
 import { users } from '@/modules/m01-authentication/mock'
+import { curriculum } from '@/modules/m03-curriculum/mock'
+import { questions } from '@/modules/m04-question-bank/mock'
+import { battles } from '@/modules/m16-battle-games/mock'
 
+import type { AdminAnalytics, AdminDashboard, AdminLaporan, AdminRange } from '../../api/command-center'
 import type {
   CcDailyPoint,
   CcFeedRow,
@@ -21,6 +25,7 @@ import type {
   CcTopSchool,
   CcTopStudent,
 } from '../../api/command-center-board-types'
+import { buildStatsReport } from '../reports/stats-report'
 import { DC_M17_03, DC_M17_05 } from '../constants/command-center-display'
 import { adminOrSchoolAdmin } from './command-center-drill-scope'
 import {
@@ -184,5 +189,160 @@ export function buildLiveData(scope: BoardScope, now: number): CcLiveData {
 export const commandCenterLiveRoutes: RouteDef[] = [
   route('GET', '/api/admin/command-center/live-data', [adminOrSchoolAdmin], (req, ctx) =>
     ok(buildLiveData(boardScopeOf(req), ctx.clock.now())),
+  ),
+]
+
+// --- Admin Pusat central pages (S6-T11): API-ADM-11 dashboard, API-ADM-12 analytics, API-ADM-13 laporan ---------
+
+const adminOnly = requireRole('admin')
+type Status = 'draft' | 'pending_review' | 'approved' | 'archived'
+const STATUS_KEYS: [keyof AdminDashboard['questions']['byStatus'], Status][] = [
+  ['draft', 'draft'],
+  ['review', 'pending_review'],
+  ['approved', 'approved'],
+  ['archived', 'archived'],
+]
+
+/** Counts through the Studio list query (`adminList`), so the tiles and the Studio always agree (FR-ADM-M01.1). */
+function questionStatusCounts(): AdminDashboard['questions']['byStatus'] {
+  const out = { draft: 0, review: 0, approved: 0, archived: 0 }
+  for (const [key, status] of STATUS_KEYS) {
+    out[key] = questions.adminList({ status, page: 1, pageSize: 1 }).total
+  }
+  return out
+}
+
+/** Tingkatan levels only (Darjah is hidden, D72). */
+const secondaryLevels = () => curriculum.levels({ active: true }).filter((l) => l.stage !== 'primary')
+
+export function buildAdminDashboard(now: number): AdminDashboard {
+  const levelIds = [...curriculum.levels().filter((l) => l.stage !== 'primary').map((l) => l.id), null]
+  return {
+    questions: {
+      total: questions.adminList({ page: 1, pageSize: 1 }).total,
+      byStatus: questionStatusCounts(),
+      thisWeek: questions.countWhere({
+        createdAtMs: { gte: now - 7 * DAY_MS },
+        educationLevelId: levelIds,
+      }),
+    },
+    subjects: {
+      total: curriculum.subjects().length,
+      active: curriculum.subjects({ active: true }).length,
+    },
+    levels: secondaryLevels().length,
+    users: {
+      total: users.countWhere({}),
+      students: users.countWhere({ role: 'student' }),
+      teachers: users.countWhere({ role: 'teacher' }),
+    },
+    battles: battles.m17Counts(),
+  }
+}
+
+const rangeOf = (raw: string | undefined): AdminRange => (raw === '7d' || raw === '90d' ? raw : '30d')
+const daysOf = (r: AdminRange): number => (r === '7d' ? 7 : r === '90d' ? 90 : 30)
+
+export function buildAdminAnalytics(rangeRaw: string | undefined, now: number): AdminAnalytics {
+  const range = rangeOf(rangeRaw)
+  const ctx = boardCtx(PLATFORM_SCOPE, now)
+  const report = buildStatsReport(daysOf(range), { now })
+  const win = range === '7d' ? '7d' : range === '30d' ? '30d' : 'all'
+  const inRange = tallies(ctx, win)
+  const sum = sumOf(inRange)
+  const bySchool = new Map<number, number>()
+  for (const [userId, t] of inRange) {
+    const school = schoolOfUser(userId)
+    if (school !== null) bySchool.set(school, (bySchool.get(school) ?? 0) + t.answers)
+  }
+  const total = questions.adminList({ page: 1, pageSize: 1 }).total
+  const tagged = questions.adminList({ dskpFilter: 'tagged', page: 1, pageSize: 1 }).total
+  const approved = questions.adminList({ status: 'approved', page: 1, pageSize: 1 }).total
+  return {
+    range,
+    platform: {
+      schools: report.schools.length,
+      activeSubscriptions: report.schools.filter((s) => s.subscription === 'Aktif').length,
+      students: report.overview.pupils,
+      activeStudents: report.overview.practised,
+      answered: sum.answers,
+      accuracy: sum.answers === 0 ? null : accuracyOf(sum.correct, sum.answers),
+    },
+    trend: [...answersPerDay(ctx, Math.min(daysOf(range), 30))].map(([date, answered]) => ({
+      date,
+      answered,
+    })),
+    topSchools: [...bySchool.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0] - b[0])
+      .slice(0, 10)
+      .map(([id, answered]) => ({ schoolId: id, school: schoolName(id) ?? '', answered })),
+    bank: {
+      total,
+      bySubject: curriculum
+        .subjects({ active: true })
+        .map((s) => ({ id: s.id, name: s.name, total: questions.visibleCount('Q-ALL', s.id) })),
+      byLevel: secondaryLevels().map((l) => ({
+        id: l.id,
+        name: l.name,
+        total: questions.adminList({ educationLevelId: l.id, page: 1, pageSize: 1 }).total,
+      })),
+      byStatus: questionStatusCounts(),
+      dskpTaggedShare: total === 0 ? 0 : (tagged / total) * 100,
+      chapterCoverage: 0,
+      servability: { 'Latih Tubi': approved },
+    },
+  }
+}
+
+export function buildAdminLaporan(rangeRaw: string | undefined, now: number): AdminLaporan {
+  const range = rangeRaw === '7' || rangeRaw === '90' ? Number(rangeRaw) : 30
+  const r = buildStatsReport(range, { now })
+  const named = (id: number): { id: number; name: string } | null => {
+    const name = schoolName(schoolOfUser(id))
+    const school = schoolOfUser(id)
+    return school === null || name === null ? null : { id: school, name }
+  }
+  return {
+    range,
+    tiles: {
+      schools: r.schools.length,
+      teachers: r.overview.teachers,
+      pupils: r.overview.pupils,
+      pupilsAccessed: r.overview.pupilsLogged,
+      teachersAccessed: r.overview.teachersLogged,
+      pupilsPractised: r.overview.practised,
+      activities: r.overview.activity,
+      averageScore: r.overview.score,
+    },
+    trend: buildStatsReport(30, { now }).trend.slice(-14).map((p) => ({ date: p.label, count: p.value })),
+    breakdown: [
+      { type: 'kuiz' as const, label: 'Kuiz Objektif', count: r.breakdown.quiz },
+      { type: 'struktur' as const, label: 'Soalan Berstruktur', count: r.breakdown.structured },
+      { type: 'battle' as const, label: 'Battle Arena', count: r.breakdown.battle },
+      { type: 'permainan' as const, label: 'Permainan', count: r.breakdown.game },
+    ].filter((b) => b.count > 0),
+    mostActive: r.topPupils.map((p) => ({
+      id: p.userId,
+      name: p.name,
+      school: named(p.userId),
+      activities: p.activities,
+    })),
+    schoolActivity: r.schools
+      .filter((s) => s.sessions > 0)
+      .sort((a, b) => b.sessions - a.sessions || a.schoolId - b.schoolId)
+      .slice(0, 10)
+      .map((s) => ({ schoolId: s.schoolId, name: s.name, activities: s.sessions, activePupils: s.pupilsLogged })),
+  }
+}
+
+export const adminCentralRoutes: RouteDef[] = [
+  route('GET', '/api/admin/dashboard', [adminOnly], (_req, ctx) =>
+    ok(buildAdminDashboard(ctx.clock.now())),
+  ),
+  route('GET', '/api/admin/analytics', [adminOnly], (req, ctx) =>
+    ok(buildAdminAnalytics(queryString(req.query, 'range'), ctx.clock.now())),
+  ),
+  route('GET', '/api/admin/reports/laporan', [adminOnly], (req, ctx) =>
+    ok(buildAdminLaporan(queryString(req.query, 'range'), ctx.clock.now())),
   ),
 ]

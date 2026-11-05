@@ -33,6 +33,7 @@ export const SCHOOL_ROUTES = {
   list: 'm02.schools.list',
   create: 'm02.schools.create',
   edit: 'm02.schools.edit',
+  classes: 'm02.admin-classes',
 } as const
 
 export const SCHOOLS_LIST_PATH = '/admin/schools'

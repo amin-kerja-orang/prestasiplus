@@ -132,3 +132,42 @@ export function fetchSchoolOptions(
     ...(options.signal ? { signal: options.signal } : {}),
   })
 }
+
+/** API-ADM-05 row: a class with its teacher, school and pupil count (pupils = XS-1 for that class). */
+export interface AdminClass {
+  id: number
+  name: string
+  /** Display label, e.g. "Tingkatan 4". */
+  level: string
+  teacher: { id: number; name: string } | null
+  school: { id: number; name: string } | null
+  pupils: number
+  joinCode: string | null
+  isActive: boolean
+}
+
+export interface AdminClassQuery {
+  schoolId?: number | null
+  /** Slug `tingkatan-1` to `tingkatan-5`. */
+  level?: string | null
+  teacherId?: number | null
+  search?: string | null
+  page?: number | null
+  signal?: AbortSignal
+}
+
+/** API-ADM-05 `GET /api/admin/classes`: classes of all schools (admin only), name A to Z, 20 per page. */
+export function fetchAdminClasses(
+  query: AdminClassQuery = {},
+): Promise<ListResult<AdminClass, Record<never, never>>> {
+  return api.list<AdminClass, Record<never, never>>('/api/admin/classes', {
+    query: {
+      schoolId: query.schoolId ?? null,
+      level: query.level || null,
+      teacherId: query.teacherId ?? null,
+      search: query.search || null,
+      page: query.page ?? null,
+    },
+    ...(query.signal ? { signal: query.signal } : {}),
+  })
+}

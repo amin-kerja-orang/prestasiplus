@@ -39,7 +39,9 @@ import {
   type RouteDef,
 } from '@/mock/define'
 
-import type { AdminSchool } from '../../api/schools-admin'
+import { classrooms } from '@/modules/m10-teacher-class/mock'
+
+import type { AdminClass, AdminSchool } from '../../api/schools-admin'
 import { STATE_NAMES } from '../data/geo'
 import { activeSchoolTypes, schoolsRepo, type SchoolInput } from '../repository/schools'
 import type { School, SchoolType } from '../repository/types'
@@ -146,7 +148,57 @@ function options(): MockResponse {
   return ok(schoolsRepo.options())
 }
 
+export const ADMIN_CLASSES_PAGE_SIZE = 20
+
+/** "tingkatan-4" gives "Tingkatan 4"; Darjah classes are hidden (D72) and give `null`. */
+function tingkatanOf(slug: string): number | null {
+  const m = /^tingkatan-(\d+)$/.exec(slug)
+  return m ? Number(m[1]) : null
+}
+
+/** API-ADM-05: the secondary classes of every school (admin only), filtered, name A to Z. */
+function adminClasses(req: MockRequest): MockResponse {
+  const pageReq = pageParams(req.query, { pageSize: ADMIN_CLASSES_PAGE_SIZE, maxPageSize: 100 })
+  const schoolId = Number(queryString(req.query, 'schoolId') ?? '')
+  const teacherId = Number(queryString(req.query, 'teacherId') ?? '')
+  const level = /^tingkatan-([1-5])$/.exec(queryString(req.query, 'level') ?? '')?.[1]
+  const term = (queryString(req.query, 'search') ?? '').trim().toLocaleLowerCase('ms-MY')
+  const rows: AdminClass[] = []
+  const all = classrooms
+    .list({
+      kind: 'classroom',
+      ...(Number.isInteger(schoolId) && schoolId > 0 ? { schoolId } : {}),
+      ...(Number.isInteger(teacherId) && teacherId > 0 ? { teacherId } : {}),
+    })
+    .sort(
+      (a, b) =>
+        a.name.localeCompare(b.name, 'ms-MY', { sensitivity: 'base' }) || a.classId - b.classId,
+    )
+  for (const c of all) {
+    const n = tingkatanOf(c.educationLevel)
+    const school = c.schoolId === null ? undefined : schoolsRepo.get(c.schoolId)
+    if (n === null) continue
+    if (level !== undefined && n !== Number(level)) continue
+    if (term !== '' && !c.name.toLocaleLowerCase('ms-MY').includes(term)) continue
+    const teacher = c.teacherId === null ? undefined : users.get(c.teacherId)
+    rows.push({
+      id: c.classId,
+      name: c.name,
+      level: `Tingkatan ${String(n)}`,
+      teacher: teacher ? { id: teacher.id, name: teacher.name } : null,
+      school: school ? { id: school.id, name: school.name } : null,
+      pupils: classrooms.memberCount('classroom', c.classId),
+      joinCode: c.joinCode === '' ? null : c.joinCode,
+      isActive: c.isActive,
+    })
+  }
+  const start = (pageReq.page - 1) * pageReq.pageSize
+  return paged({ rows: rows.slice(start, start + pageReq.pageSize), total: rows.length }, pageReq)
+}
+
 export const schoolAdminRoutes: RouteDef[] = [
+  route('GET', '/api/admin/classes', [adminOnly], adminClasses),
+
   route('GET', '/api/admin/schools', [adminOnly], (req) => {
     const pageReq = pageParams(req.query, { pageSize: SCHOOLS_PAGE_SIZE })
     const search = queryString(req.query, 'search')
