@@ -1128,6 +1128,16 @@ export const BijakBuilderPaperListQuerySchema = z
   })
   .meta({ id: 'BijakBuilderPaperListQuery' })
 
+/** S3-T06 API-BIJAK-14: multipart body of `POST /admin/papers/{id}/source`. `paper` is required, `scheme` and `declaration` are optional at the schema level; the 422 rules (PDF, 30 MB, declaration "true") are enforced by the route. */
+export const BijakBuilderPaperSourceUploadSchema = z
+  .strictObject({
+    paper: z.string().meta({ type: 'string', format: 'binary', description: 'Source paper, a PDF (`%PDF-` magic bytes and a `.pdf` name), at most 30 MB.' }),
+    scheme: z.string().meta({ type: 'string', format: 'binary', description: 'Marking scheme, a PDF, at most 30 MB.' }).optional(),
+    declaration: z.literal('true').optional().meta({ description: 'Copyright declaration (field 18-09). The text value `true` is required; anything else is 422 on `fields.declaration`.' }),
+  })
+  .meta({ id: 'BijakBuilderPaperSourceUpload' })
+export type BijakBuilderPaperSourceUpload = z.infer<typeof BijakBuilderPaperSourceUploadSchema>
+
 /** S3-T06 API-BIJAK-14: `POST /admin/papers/{id}/source` with a JSON body `{ apply: true }` appends the accepted items of the paper's source batch. */
 export const BijakBuilderPaperSourceApplySchema = z.strictObject({ apply: z.literal(true) }).meta({ id: 'BijakBuilderPaperSourceApply' })
 export type BijakBuilderPaperSourceApply = z.infer<typeof BijakBuilderPaperSourceApplySchema>

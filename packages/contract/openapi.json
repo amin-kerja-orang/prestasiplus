@@ -78053,6 +78053,72 @@
         ],
         "additionalProperties": false
       },
+      "BijakBuilderPaperSourceUpload": {
+        "type": "object",
+        "properties": {
+          "paper": {
+            "type": "string",
+            "format": "binary",
+            "description": "Source paper, a PDF (`%PDF-` magic bytes and a `.pdf` name), at most 30 MB."
+          },
+          "scheme": {
+            "type": "string",
+            "format": "binary",
+            "description": "Marking scheme, a PDF, at most 30 MB."
+          },
+          "declaration": {
+            "type": "string",
+            "enum": [
+              "true"
+            ],
+            "description": "Copyright declaration (field 18-09). The text value `true` is required; anything else is 422 on `fields.declaration`."
+          }
+        },
+        "required": [
+          "paper"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderPaperSourceApply": {
+        "type": "object",
+        "properties": {
+          "apply": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "apply"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderPaperSourceUploadResult": {
+        "type": "object",
+        "properties": {
+          "batchId": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "batchId"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderPaperSourceApplyResult": {
+        "type": "object",
+        "properties": {
+          "placements": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "placements"
+        ],
+        "additionalProperties": false
+      },
       "BijakBuilderPublishResult": {
         "type": "object",
         "properties": {
@@ -134687,6 +134753,170 @@
           },
           "422": {
             "description": "VALIDATION_ERROR \"Sebab pengecualian diperlukan (sekurang-kurangnya 5 aksara).\" (override without a reason).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/papers/{id}/source": {
+      "post": {
+        "tags": [
+          "bijak-builder"
+        ],
+        "summary": "Paper builder: source PDF of a Kertas Subjektif (upload, then apply) [API-BIJAK-14]",
+        "description": "S3-T06. Kertas Subjektif only. Two request shapes on one path. (1) multipart/form-data with `paper` (required PDF), optional `scheme` (PDF) and `declaration` (\"true\"): each file is at most 30 MB, checked by the %PDF- magic bytes and the .pdf name; the API creates the intake batch of THIS paper and answers 202 { data: { batchId } }. (2) JSON { apply: true } appends the accepted items of that batch as placements of the paper in one transaction (idempotent; a repeat appends 0) and answers 201 { data: { placements } }. Errors: 404 \"Kertas tidak ditemui\"; 409 for a Terbit paper \"Kertas ini sudah diterbitkan. Tarik balik ke draf dahulu.\", an upload when the paper already has a source batch \"Kertas ini sudah mempunyai PDF sumber.\", and on apply open items \"{n} item belum diputuskan.\" or a batch that is not ready \"Kelompok sumber masih diproses atau telah dibatalkan.\"; 422 on fields.paper / fields.scheme \"Format fail tidak sah. Gunakan .pdf.\" or \"Fail melebihi had 30 MB.\", fields.declaration \"Sila akui perakuan hak cipta.\", fields.surface \"Hanya untuk Kertas Subjektif.\", fields.source \"Muat naik PDF sumber dahulu.\" (apply before upload). The edge allows 62 MB for this path (2 x 30 MB plus overhead). Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Paper id.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Paper id.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakBuilderPaperSourceUpload"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakBuilderPaperSourceApply"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "JSON { apply: true }: the number of placements appended by this call.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBuilderPaperSourceApplyResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Multipart: the intake batch created for this paper.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBuilderPaperSourceUploadResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID \"Sesi tidak sah. Sila muat semula halaman dan cuba lagi.\" (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kertas tidak ditemui\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT (Terbit paper, source batch already exists, open items or batch not ready; BM text as listed above).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR (not a Kertas Subjektif, invalid or oversize PDF, declaration not ticked, or apply before upload; BM text as listed above).",
             "content": {
               "application/json": {
                 "schema": {
