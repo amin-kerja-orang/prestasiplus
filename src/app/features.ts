@@ -8,6 +8,10 @@
  * `VITE_KELUARGA_ANGKAT=on` shows the student page "Mohon Keluarga Angkat" (M21 S6, `/mohon-keluarga-angkat`).
  * It is OFF by default (TRACKER D74): the page was never requested for v2, so its menu item and route
  * are hidden (route unregistered -> 404). The backend endpoint and the access-matrix row are kept.
+ *
+ * `VITE_CENTRAL_REPORTS=on` shows the Admin Pusat central views of the school reports (M17 R1-ADM-M-07,
+ * `/admin/laporan-sekolah/{view}`, S6-T13). It is OFF by default: the routes are not registered (global 404) until
+ * the Portal Pentadbiran menu items PM-12..PM-28 point at them.
  */
 
 import { FEATURE_ROUTE_PREFIXES, pathHasPrefix } from '@pp/contract'
@@ -76,4 +80,14 @@ export const NAV_FEATURE_KEYS: Readonly<Record<string, string>> = {
   'cikgu-alesa': 'cikgu-alesa',
   'cikgu-alesa-chat': 'cikgu-alesa',
   'mohon-keluarga-angkat': 'keluarga-angkat',
+}
+
+/** Whether the Admin Pusat central report views (M17 R1-ADM-M-07) are on. OFF unless `VITE_CENTRAL_REPORTS=on`. */
+export function isCentralReportsOn(): boolean {
+  return import.meta.env.VITE_CENTRAL_REPORTS === 'on'
+}
+
+/** The routes of the central report views: kept when the flag is on, none otherwise (unbuilt route -> 404). */
+export function whenCentralReports<T>(routes: readonly T[]): T[] {
+  return isCentralReportsOn() ? [...routes] : []
 }

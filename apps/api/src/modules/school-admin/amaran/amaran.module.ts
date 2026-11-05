@@ -7,6 +7,7 @@ import { PracticeModule } from '../../practice'
 import { KirkpatrickModule } from '../../reports/kirkpatrick'
 import { SchoolsModule } from '../../schools'
 import { UsersModule } from '../../users'
+import { XsQueries } from '../xs-queries'
 import { AmaranController } from './amaran.controller'
 import { AmaranService } from './amaran.service'
 
@@ -17,6 +18,6 @@ import { AmaranService } from './amaran.service'
 @Module({
   imports: [AuditModule, ClassesModule, KirkpatrickModule, PracticeModule, SchoolsModule, ThrottleModule, UsersModule],
   controllers: [AmaranController],
-  providers: [AmaranService],
+  providers: [AmaranService, XsQueries],
 })
 export class AmaranModule {}

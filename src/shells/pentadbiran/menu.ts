@@ -212,7 +212,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
       ['KK-05', 'Banner', '/admin/banners'],
       ['KK-07', 'Nota', '/admin/notes'],
       ['SY-05', 'Upload Screenshot', '/admin/tools/screenshots'],
-      ['KK-08', 'Video'],
+      ['KK-08', 'Video', '/admin/videos'],
     ]),
   },
   {
