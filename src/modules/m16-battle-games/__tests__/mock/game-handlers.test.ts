@@ -936,7 +936,7 @@ describe('game settings (SRS §7 #51-#52, BR-M16-36)', () => {
 
     const after = await get<Data<Any>>('/api/admin/games', ADMIN)
     expect(after.body.data.settings.game_win_xp).toBe(30)
-    expect((await save({})).status).toBe(200)
+    expect((await save({})).status).toBe(422)
     await save({ game_win_xp: 20, battle_questions_default: 10 })
   })
 

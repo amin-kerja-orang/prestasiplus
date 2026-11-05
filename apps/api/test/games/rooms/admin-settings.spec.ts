@@ -188,10 +188,13 @@ describe('Tetapan Permainan (S7-T03, API-ADM-08, API-ADM-23)', () => {
       expect(await stored('xp_per_correct')).toBe('10.00')
     })
 
-    it('an empty body changes nothing and answers the settings; an array is refused', async () => {
-      expect(parseData(await admin.put(SETTINGS_URL, {}), GamesAdminSettingsResultSchema).game_win_xp).toBe(20)
-      expect(parseData(await admin.put(SETTINGS_URL, undefined), GamesAdminSettingsResultSchema).game_win_xp).toBe(20)
+    it('an empty body or an array is a 422, saves nothing and writes no audit row (D114)', async () => {
+      for (const body of [{}, undefined]) {
+        const err = expectError(await admin.put(SETTINGS_URL, body), 'VALIDATION_ERROR')
+        expect(err.fields).toEqual({ boardgame_quiz_tiles: M.quizTilesInvalid })
+      }
       expectError(await admin.put(SETTINGS_URL, []), 'VALIDATION_ERROR')
+      expect(await stored('game_win_xp')).toBe('20.00')
       expect(await audits(SETTINGS_ACTION)).toEqual([])
     })
 

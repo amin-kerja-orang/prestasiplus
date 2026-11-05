@@ -869,7 +869,8 @@ describe('admin game settings (M16-51, M16-52, API-ADM-08)', () => {
   })
 
   it('PUT body is partial', () => {
-    ok(GamesAdminSettingsUpdateRequestSchema, {})
+    rejected(GamesAdminSettingsUpdateRequestSchema, {})
+    expect(firstIssue(GamesAdminSettingsUpdateRequestSchema, {}).message).toBe(GAMES_MESSAGES.quizTilesInvalid)
     ok(GamesAdminSettingsUpdateRequestSchema, { game_win_xp: 30 })
     ok(GamesAdminSettingsUpdateRequestSchema, { boardgame_quiz_tiles: 0, game_win_xp: 0 })
   })

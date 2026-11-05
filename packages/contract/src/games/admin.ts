@@ -188,7 +188,8 @@ export const GamesAdminOverviewSchema = z
 export type GamesAdminOverview = z.infer<typeof GamesAdminOverviewSchema>
 
 /**
- * Partial body: a key left out keeps its value. Out of range is 422 VALIDATION_ERROR with `fields.<key>` and ERR-REQ-15;
+ * Partial body: a key left out keeps its value, but an empty body is a 422 on `boardgame_quiz_tiles`, as before partial
+ * input (D114). Out of range is 422 VALIDATION_ERROR with `fields.<key>` and ERR-REQ-15;
  * `boardgame_quiz_tiles` above 38 is "Maksimum 38 petak soalan.", a non-integer or below 0 "Bilangan petak tidak sah.".
  * The server parses this schema strictly: an unknown key is a 422 on that key. One bad value saves nothing.
  */
@@ -201,6 +202,10 @@ export const GamesAdminSettingsUpdateRequestSchema = z
       .max(GAMES_ADMIN_QUIZ_TILES.max, { error: GAMES_MESSAGES.quizTilesMax })
       .optional(),
     ...optionalSettingFields,
+  })
+  .refine((body) => Object.values(body).some((value) => value !== undefined), {
+    error: GAMES_MESSAGES.quizTilesInvalid,
+    path: ['boardgame_quiz_tiles'],
   })
   .meta({ id: 'GamesAdminSettingsUpdateRequest' })
 export type GamesAdminSettingsUpdateRequest = z.infer<typeof GamesAdminSettingsUpdateRequestSchema>
