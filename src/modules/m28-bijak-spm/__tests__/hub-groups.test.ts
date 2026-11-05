@@ -76,13 +76,12 @@ describe('Kertas Pilihan', () => {
     expect(labelsOf(w, 'kertasItems')).toEqual(['Semua kertas', 'Kertas 1', 'Kertas 2', 'Kertas 3'])
   })
 
-  it('a card shows the three chips', async () => {
+  it('a card shows the three chips, then only the V3 status', async () => {
     server.listPapers.mockResolvedValue(PAPERS)
     await render()
-    const card = document.body.querySelector('[data-testid=paper-m1]')?.textContent ?? ''
-    expect(card).toContain('Kertas 1')
-    expect(card).toContain('40 markah')
-    expect(card).toContain('75 min')
+    const chips = [...document.body.querySelectorAll('[data-testid=paper-m1] [data-testid=paper-chips] > *')].map((c) => c.textContent?.trim())
+    expect(chips).toEqual(['Kertas 1', '40 markah', '75 min', 'Belum cuba'])
+    expect(document.body.querySelector('[data-testid=paper-m1]')?.textContent).not.toContain('2025')
   })
 
   it('with no listed paper: the exact empty text', async () => {

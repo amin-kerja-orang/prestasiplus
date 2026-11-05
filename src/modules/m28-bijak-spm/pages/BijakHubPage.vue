@@ -252,11 +252,10 @@ async function generate(): Promise<void> {
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div class="flex min-w-0 flex-col gap-2">
                 <h4 class="text-body text-highlighted">{{ p.title }}</h4>
-                <div class="flex flex-wrap items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2" data-testid="paper-chips">
                   <UBadge color="neutral" variant="subtle">Kertas {{ p.kertas }}</UBadge>
                   <UBadge color="neutral" variant="subtle">{{ p.marks }} markah</UBadge>
                   <UBadge color="neutral" variant="subtle">{{ p.durationMin }} min</UBadge>
-                  <UBadge color="neutral" variant="subtle">{{ p.year }}</UBadge>
                   <UBadge
                     :color="
                       p.status === 'belum' ? 'neutral' : p.status === 'sedang' ? 'info' : 'success'
