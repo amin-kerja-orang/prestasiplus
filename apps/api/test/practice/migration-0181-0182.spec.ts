@@ -36,7 +36,7 @@ async function insertSession(mode: string, status = 'in_progress', completedAt: 
   return id
 }
 const insertAnswer = (extra: Record<string, unknown> = {}) => {
-  const cols = { user_id: uid, is_correct: true, answered_at: new Date(), ...extra }
+  const cols = { user_id: uid, is_correct: true, answered_at: new Date(), mode: 'latih_tubi', ...extra }
   const keys = Object.keys(cols)
   return db.query(`insert into practice_answers (${keys.join(', ')}) values (${keys.map((_, i) => `$${i + 1}`).join(', ')})`, Object.values(cols))
 }
