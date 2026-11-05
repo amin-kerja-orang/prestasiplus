@@ -722,7 +722,7 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
     tags: ['rewards-admin'],
     summary: 'Bulk action on rewards',
     description:
-      'activate, deactivate, delete (rewards with any redemption row are kept and reported in keptIds), set_stock, set_max_per_month, set_token_cost (new cost = floor(cost * (1 + pct/100) + 0.5), clamped to 1..10000; denominationRm is unchanged).',
+      'activate, deactivate, delete (rewards with any redemption row are kept and reported in keptIds), set_stock, set_max_per_month, set_token_cost (new cost = floor(cost * (1 + pct/100) + 0.5), clamped to 1..100000; denominationRm is unchanged).',
     request: { headers: [csrf], body: body(RewardBulkRequestSchema) },
     responses: {
       200: json(envelopeOf(RewardBulkResultSchema), 'Bulk result.'),
