@@ -55,6 +55,12 @@ describe('GET /api/admin/analytics (API-ADM-12)', () => {
     expect(a.bank.bySubject.length).toBeGreaterThan(0)
     expect(a.bank.byLevel).toHaveLength(5)
     expect(a.topSchools.length).toBeLessThanOrEqual(10)
+    expect(typeof a.bank.bySubject[0]?.id).toBe('string')
+    const totals = a.bank.bySubject.map((x) => x.total)
+    expect(totals).toEqual([...totals].sort((x, y) => y - x))
+    expect(Object.keys(a.bank.servability)).toEqual(['latih_tubi_spm', 'bab', 'simulasi_kuiz'])
+    const d90 = await data<AdminAnalytics>(runtime, ADMIN, '/api/admin/analytics?range=90d')
+    expect(d90.trend).toHaveLength(90)
   })
 })
 
@@ -64,7 +70,23 @@ describe('GET /api/admin/reports/laporan (API-ADM-13)', () => {
     expect(l.trend).toHaveLength(14)
     expect(l.tiles.pupilsAccessed).toBeLessThanOrEqual(l.tiles.pupils)
     expect(l.mostActive.length).toBeLessThanOrEqual(10)
-    expect(l.breakdown.every((b) => b.count > 0)).toBe(true)
+    expect(l.breakdown.map((b) => b.type)).toEqual([
+      'kuiz',
+      'struktur',
+      'latihTubi',
+      'trackingA',
+      'battle',
+      'permainan',
+    ])
+    expect(l.breakdown.map((b) => b.label)).toEqual([
+      'Kuiz',
+      'Struktur',
+      'Latih Tubi',
+      'Tracking A',
+      'Battle Arena',
+      'Permainan',
+    ])
+    expect(typeof l.schoolActivity[0]?.schoolId).toBe('string')
   })
 })
 

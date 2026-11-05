@@ -135,22 +135,22 @@ export function fetchSchoolOptions(
 
 /** API-ADM-05 row: a class with its teacher, school and pupil count (pupils = XS-1 for that class). */
 export interface AdminClass {
-  id: number
+  id: string
   name: string
   /** Display label, e.g. "Tingkatan 4". */
   level: string
-  teacher: { id: number; name: string } | null
-  school: { id: number; name: string } | null
+  teacher: { id: string; name: string } | null
+  school: { id: string; name: string } | null
   pupils: number
   joinCode: string | null
   isActive: boolean
 }
 
 export interface AdminClassQuery {
-  schoolId?: number | null
+  schoolId?: string | number | null
   /** Slug `tingkatan-1` to `tingkatan-5`. */
   level?: string | null
-  teacherId?: number | null
+  teacherId?: string | number | null
   search?: string | null
   page?: number | null
   signal?: AbortSignal

@@ -85,7 +85,7 @@ const tiles = computed(() => {
       key: 'battle',
       unit: 'Battle Arena',
       value: d.battles.total,
-      sub: `${n(d.battles.active)} Aktif · ${n(d.battles.finished)} Selesai`,
+      sub: `PvP Quiz Battles · ${n(d.battles.total)} Total · ${n(d.battles.active)} Aktif · ${n(d.battles.finished)} Selesai`,
       icon: 'sword',
     },
   ]

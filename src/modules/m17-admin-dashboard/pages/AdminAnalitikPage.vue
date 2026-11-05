@@ -57,7 +57,7 @@ const statusRows = computed(() => {
 
 const topSubjects = computed(() =>
   [...(data.value?.bank.bySubject ?? [])]
-    .sort((a, b) => b.total - a.total || a.id - b.id)
+    .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name, 'ms-MY'))
     .slice(0, 10),
 )
 const trendLabels = computed(() =>

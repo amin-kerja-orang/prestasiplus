@@ -10,14 +10,19 @@
  * `dailyTrend` (OQ-M17-12).
  */
 
-import { DAY_MS, formatMyt, toIsoMyt } from '@/lib/time'
+import { DAY_MS, dayRange, formatMyt, toIsoMyt } from '@/lib/time'
 import { ok, queryString, requireRole, route, type MockRequest, type RouteDef } from '@/mock/define'
 import { users } from '@/modules/m01-authentication/mock'
 import { curriculum } from '@/modules/m03-curriculum/mock'
 import { questions } from '@/modules/m04-question-bank/mock'
 import { battles } from '@/modules/m16-battle-games/mock'
 
-import type { AdminAnalytics, AdminDashboard, AdminLaporan, AdminRange } from '../../api/command-center'
+import type {
+  AdminAnalytics,
+  AdminDashboard,
+  AdminLaporan,
+  AdminRange,
+} from '../../api/command-center'
 import type {
   CcDailyPoint,
   CcFeedRow,
@@ -213,16 +218,29 @@ function questionStatusCounts(): AdminDashboard['questions']['byStatus'] {
 }
 
 /** Tingkatan levels only (Darjah is hidden, D72). */
-const secondaryLevels = () => curriculum.levels({ active: true }).filter((l) => l.stage !== 'primary')
+const secondaryLevels = () =>
+  curriculum.levels({ active: true }).filter((l) => l.stage !== 'primary')
+
+/** Monday 00:00 (MYT) of the week of `now`. */
+function mondayStart(now: number): number {
+  const weekday = new Date(now + 8 * 3_600_000).getUTCDay()
+  return dayRange(now).start - ((weekday + 6) % 7) * DAY_MS
+}
 
 export function buildAdminDashboard(now: number): AdminDashboard {
-  const levelIds = [...curriculum.levels().filter((l) => l.stage !== 'primary').map((l) => l.id), null]
+  const levelIds = [
+    ...curriculum
+      .levels()
+      .filter((l) => l.stage !== 'primary')
+      .map((l) => l.id),
+    null,
+  ]
   return {
     questions: {
       total: questions.adminList({ page: 1, pageSize: 1 }).total,
       byStatus: questionStatusCounts(),
       thisWeek: questions.countWhere({
-        createdAtMs: { gte: now - 7 * DAY_MS },
+        createdAtMs: { gte: mondayStart(now) },
         educationLevelId: levelIds,
       }),
     },
@@ -240,7 +258,8 @@ export function buildAdminDashboard(now: number): AdminDashboard {
   }
 }
 
-const rangeOf = (raw: string | undefined): AdminRange => (raw === '7d' || raw === '90d' ? raw : '30d')
+const rangeOf = (raw: string | undefined): AdminRange =>
+  raw === '7d' || raw === '90d' ? raw : '30d'
 const daysOf = (r: AdminRange): number => (r === '7d' ? 7 : r === '90d' ? 90 : 30)
 
 export function buildAdminAnalytics(rangeRaw: string | undefined, now: number): AdminAnalytics {
@@ -268,28 +287,33 @@ export function buildAdminAnalytics(rangeRaw: string | undefined, now: number): 
       answered: sum.answers,
       accuracy: sum.answers === 0 ? null : accuracyOf(sum.correct, sum.answers),
     },
-    trend: [...answersPerDay(ctx, Math.min(daysOf(range), 30))].map(([date, answered]) => ({
+    trend: [...answersPerDay(ctx, daysOf(range))].map(([date, answered]) => ({
       date,
       answered,
     })),
     topSchools: [...bySchool.entries()]
       .sort((a, b) => b[1] - a[1] || a[0] - b[0])
       .slice(0, 10)
-      .map(([id, answered]) => ({ schoolId: id, school: schoolName(id) ?? '', answered })),
+      .map(([id, answered]) => ({ schoolId: String(id), school: schoolName(id) ?? '', answered })),
     bank: {
       total,
       bySubject: curriculum
         .subjects({ active: true })
-        .map((s) => ({ id: s.id, name: s.name, total: questions.visibleCount('Q-ALL', s.id) })),
+        .map((s) => ({
+          id: String(s.id),
+          name: s.name,
+          total: questions.visibleCount('Q-ALL', s.id),
+        }))
+        .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name, 'ms-MY')),
       byLevel: secondaryLevels().map((l) => ({
-        id: l.id,
+        id: String(l.id),
         name: l.name,
         total: questions.adminList({ educationLevelId: l.id, page: 1, pageSize: 1 }).total,
       })),
       byStatus: questionStatusCounts(),
-      dskpTaggedShare: total === 0 ? 0 : (tagged / total) * 100,
+      dskpTaggedShare: total === 0 ? 0 : Math.round((tagged / total) * 1000) / 10,
       chapterCoverage: 0,
-      servability: { 'Latih Tubi': approved },
+      servability: { latih_tubi_spm: approved, bab: approved, simulasi_kuiz: approved },
     },
   }
 }
@@ -297,10 +321,10 @@ export function buildAdminAnalytics(rangeRaw: string | undefined, now: number): 
 export function buildAdminLaporan(rangeRaw: string | undefined, now: number): AdminLaporan {
   const range = rangeRaw === '7' || rangeRaw === '90' ? Number(rangeRaw) : 30
   const r = buildStatsReport(range, { now })
-  const named = (id: number): { id: number; name: string } | null => {
+  const named = (id: number): { id: string; name: string } | null => {
     const name = schoolName(schoolOfUser(id))
     const school = schoolOfUser(id)
-    return school === null || name === null ? null : { id: school, name }
+    return school === null || name === null ? null : { id: String(school), name }
   }
   return {
     range,
@@ -314,15 +338,19 @@ export function buildAdminLaporan(rangeRaw: string | undefined, now: number): Ad
       activities: r.overview.activity,
       averageScore: r.overview.score,
     },
-    trend: buildStatsReport(30, { now }).trend.slice(-14).map((p) => ({ date: p.label, count: p.value })),
+    trend: buildStatsReport(30, { now })
+      .trend.slice(-14)
+      .map((p) => ({ date: p.label, count: p.value })),
     breakdown: [
-      { type: 'kuiz' as const, label: 'Kuiz Objektif', count: r.breakdown.quiz },
-      { type: 'struktur' as const, label: 'Soalan Berstruktur', count: r.breakdown.structured },
+      { type: 'kuiz' as const, label: 'Kuiz', count: r.breakdown.quiz },
+      { type: 'struktur' as const, label: 'Struktur', count: r.breakdown.structured },
+      { type: 'latihTubi' as const, label: 'Latih Tubi', count: 0 },
+      { type: 'trackingA' as const, label: 'Tracking A', count: 0 },
       { type: 'battle' as const, label: 'Battle Arena', count: r.breakdown.battle },
       { type: 'permainan' as const, label: 'Permainan', count: r.breakdown.game },
-    ].filter((b) => b.count > 0),
+    ],
     mostActive: r.topPupils.map((p) => ({
-      id: p.userId,
+      id: String(p.userId),
       name: p.name,
       school: named(p.userId),
       activities: p.activities,
@@ -330,8 +358,13 @@ export function buildAdminLaporan(rangeRaw: string | undefined, now: number): Ad
     schoolActivity: r.schools
       .filter((s) => s.sessions > 0)
       .sort((a, b) => b.sessions - a.sessions || a.schoolId - b.schoolId)
-      .slice(0, 10)
-      .map((s) => ({ schoolId: s.schoolId, name: s.name, activities: s.sessions, activePupils: s.pupilsLogged })),
+      .slice(0, 20)
+      .map((s) => ({
+        schoolId: String(s.schoolId),
+        name: s.name,
+        activities: s.sessions,
+        activePupils: s.pupilsLogged,
+      })),
   }
 }
 

@@ -1606,11 +1606,6 @@
     },
     "src/shells/pentadbiran/menu.ts": {
       "pp/ds-copy-glossary": 1
-    },
-    "src/modules/m27-school-admin/components/classes/ClassFilters.vue": {
-      "pp/ds-no-class-attr": 3,
-      "pp/ds-icon-names": 1,
-      "pp/ds-ui-allowlist": 1
     }
   }
 }

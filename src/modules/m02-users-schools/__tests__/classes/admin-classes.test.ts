@@ -55,9 +55,10 @@ describe('GET /api/admin/classes (API-ADM-05)', () => {
       level: expect.stringMatching(/^Tingkatan [1-5]$/),
       pupils: expect.any(Number),
     })
-    const sid = row.school?.id ?? 0
-    expect(sid).toBeGreaterThan(0)
-    const bySchool = await get(1, `/api/admin/classes?schoolId=${String(sid)}`)
+    const sid = row.school?.id ?? ''
+    expect(typeof row.id).toBe('string')
+    expect(sid).not.toBe('')
+    const bySchool = await get(1, `/api/admin/classes?schoolId=${sid}`)
     expect(bySchool.body.data.every((c) => c.school?.id === sid)).toBe(true)
     expect(typeof row.isActive).toBe('boolean')
     const t = /\d/.exec(row.level)?.[0] ?? '1'
@@ -73,7 +74,7 @@ describe('GET /api/admin/classes (API-ADM-05)', () => {
 
 const api = vi.hoisted(() => ({
   fetchAdminClasses: vi.fn(),
-  fetchAdminUsers: vi.fn(),
+  fetchTeachers: vi.fn(),
   fetchSchoolOptions: vi.fn(),
 }))
 vi.mock('../../api', async (orig) => ({ ...(await orig<object>()), ...api }))
@@ -108,15 +109,15 @@ describe('KelasSekolahPage', () => {
     setActivePinia(createPinia())
     for (const f of Object.values(api)) f.mockReset()
     api.fetchSchoolOptions.mockResolvedValue([{ id: 1, name: 'SMK CONTOH' }])
-    api.fetchAdminUsers.mockResolvedValue({ data: [], meta: {} })
+    api.fetchTeachers.mockResolvedValue([{ id: 9, name: 'CIKGU CONTOH', email: 'a@b.c' }])
     api.fetchAdminClasses.mockResolvedValue(
       page([
         {
-          id: 3,
+          id: '3',
           name: '4 Amanah',
           level: 'Tingkatan 4',
-          teacher: { id: 9, name: 'CIKGU CONTOH' },
-          school: { id: 1, name: 'SMK CONTOH' },
+          teacher: { id: '9', name: 'CIKGU CONTOH' },
+          school: { id: '1', name: 'SMK CONTOH' },
           pupils: 31,
           joinCode: 'AB12CD',
           isActive: false,
@@ -140,7 +141,7 @@ describe('KelasSekolahPage', () => {
     expect(text).toContain('AB12CD')
     expect(text).toContain('Tidak Aktif')
     expect(w.get('[data-testid=akp-school]').text()).toContain('SMK CONTOH')
-    expect(w.get('[data-testid=akp-teacher]').attributes('disabled')).toBeDefined()
+    expect(w.get('[data-testid=akp-teacher]').text()).toContain('CIKGU CONTOH')
   })
 
   it('shows the empty state', async () => {

@@ -1,35 +1,30 @@
 <script setup lang="ts">
 /**
  * U-08 `/admin/classes` "Kelas Sekolah" (PRD-30 R1-ADM-U-08, FR-ADM-U08.1; API-ADM-05). Admin Pusat list of
- * the classes of every school: filters Sekolah, Guru (teachers of the chosen school), Tingkatan and Cari
- * (the M27 `ClassFilters`), a table (cards below `md`) and the server pager. All filters live in the URL.
+ * the classes of every school: filters Sekolah, Guru, Tingkatan and Cari, a table (cards below `md`) and the server pager. All filters live in the URL.
  * The list stays on screen while the next filter or page loads.
  */
 import type { TableColumn } from '@nuxt/ui'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { useApi } from '@/composables'
+import { useApi, useDebounce } from '@/composables'
 import {
   DsCluster,
   DsDataTable,
+  DsFilterBar,
   DsFormField,
-  DsGrid,
   DsLink,
   DsLoadError,
   DsNativeSelect,
   DsPage,
-  DsPanel,
-  DsStack,
   DsStateView,
   DsStatusBadge,
   type CardField,
 } from '@/ds'
 import { formatCount } from '@/lib/number'
-// eslint-disable-next-line no-restricted-imports -- S6-T11: composes the M27 filter bar; M27 exports no components from its entry
-import ClassFilters from '@/modules/m27-school-admin/components/classes/ClassFilters.vue'
 
-import { fetchAdminClasses, fetchAdminUsers, fetchSchoolOptions } from '../api'
+import { fetchAdminClasses, fetchSchoolOptions, fetchTeachers } from '../api'
 import type { AdminClass } from '../api'
 
 const PATH = '/admin/classes'
@@ -43,13 +38,14 @@ const router = useRouter()
 
 const first = (v: unknown): string =>
   typeof v === 'string' ? v : Array.isArray(v) && typeof v[0] === 'string' ? v[0] : ''
+const idOf = (v: string): string | null => (/^[1-9]\d*$/.test(v) ? v : null)
 const positive = (v: string): number | null => {
   const n = Number(v)
   return Number.isInteger(n) && n > 0 ? n : null
 }
 
-const schoolId = computed(() => positive(first(route.query.schoolId)))
-const teacherId = computed(() => positive(first(route.query.teacherId)))
+const schoolId = computed(() => idOf(first(route.query.schoolId)))
+const teacherId = computed(() => idOf(first(route.query.teacherId)))
 const level = computed(() => {
   const v = first(route.query.level)
   return LEVELS.some((l) => l.code === v) ? v : ''
@@ -73,27 +69,12 @@ const { data, error, loading, reload } = useApi(
 // Sekolah picker options (existing schools client).
 const { data: schoolOptions } = useApi((signal) => fetchSchoolOptions({ signal }))
 
-// Guru options: the teachers of the chosen school.
-const teachers = ref<{ id: number; name: string }[]>([])
-watch(
-  schoolId,
-  async (id) => {
-    teachers.value = []
-    if (id === null) return
-    try {
-      const res = await fetchAdminUsers({ role: 'teacher', schoolId: id })
-      if (schoolId.value === id)
-        teachers.value = res.data.map((u) => ({ id: Number(u.id), name: u.name }))
-    } catch {
-      teachers.value = []
-    }
-  },
-  { immediate: true },
-)
+// Guru options: the existing teacher lookup (every teacher, by name).
+const { data: teachers } = useApi((signal) => fetchTeachers({ signal }))
 
 function go(next: {
-  schoolId?: number | null
-  teacherId?: number | null
+  schoolId?: string | null
+  teacherId?: string | null
   level?: string
   search?: string
   page?: number
@@ -118,18 +99,41 @@ function go(next: {
 }
 
 function onSchool(e: Event) {
-  go({ schoolId: positive((e.target as HTMLSelectElement).value), teacherId: null })
+  go({ schoolId: idOf((e.target as HTMLSelectElement).value) })
 }
 function onTeacher(e: Event) {
-  go({ teacherId: positive((e.target as HTMLSelectElement).value) })
+  go({ teacherId: idOf((e.target as HTMLSelectElement).value) })
 }
-function onApply(f: { level: string; search: string }) {
-  go({ level: f.level, search: f.search })
+
+// Tingkatan and Cari: the select applies on change, the search on Enter or after a short pause.
+const levelValue = ref(level.value)
+const searchValue = ref(search.value)
+watch(level, (v) => (levelValue.value = v))
+watch(search, (v) => (searchValue.value = v))
+const activeCount = computed(
+  () =>
+    (schoolId.value !== null ? 1 : 0) +
+    (teacherId.value !== null ? 1 : 0) +
+    (levelValue.value !== '' ? 1 : 0),
+)
+function apply() {
+  go({ level: levelValue.value, search: searchValue.value.trim().slice(0, 100) })
+}
+const applyLater = useDebounce(apply, 400)
+function onSubmit() {
+  applyLater.cancel()
+  apply()
+}
+function onReset() {
+  applyLater.cancel()
+  levelValue.value = ''
+  searchValue.value = ''
+  go({ schoolId: null, teacherId: null, level: '', search: '' })
 }
 
 interface Item extends Record<string, unknown> {
   no: number
-  id: number
+  id: string
   name: string
   school: string
   level: string
@@ -182,38 +186,65 @@ function open(row: Item) {
 
 <template>
   <DsPage layout="list" data-testid="akp-page">
-    <DsPanel padding="md">
-      <DsStack gap="sm">
-        <DsGrid :cols="{ base: 1, sm: 2 }" gap="sm">
-          <DsFormField label="Sekolah" native for="akp-school">
-            <DsNativeSelect
-              id="akp-school"
-              :model-value="schoolId === null ? '' : String(schoolId)"
-              data-testid="akp-school"
-              @change="onSchool"
-            >
-              <option value="">Semua Sekolah</option>
-              <option v-for="s in schoolOptions ?? []" :key="s.id" :value="String(s.id)">
-                {{ s.name }}
-              </option>
-            </DsNativeSelect>
-          </DsFormField>
-          <DsFormField label="Guru" native for="akp-teacher">
-            <DsNativeSelect
-              id="akp-teacher"
-              :model-value="teacherId === null ? '' : String(teacherId)"
-              :disabled="schoolId === null"
-              data-testid="akp-teacher"
-              @change="onTeacher"
-            >
-              <option value="">Semua Guru</option>
-              <option v-for="t in teachers" :key="t.id" :value="String(t.id)">{{ t.name }}</option>
-            </DsNativeSelect>
-          </DsFormField>
-        </DsGrid>
-        <ClassFilters :levels="LEVELS" :level="level" :search="search" @apply="onApply" />
-      </DsStack>
-    </DsPanel>
+    <DsFilterBar
+      :active-count="activeCount"
+      data-testid="akp-filters"
+      @apply="onSubmit"
+      @reset="onReset"
+    >
+      <template #search>
+        <DsFormField label="Cari" name="search">
+          <UInput
+            id="akp-search"
+            v-model="searchValue"
+            type="search"
+            name="search"
+            placeholder="Cari kelas..."
+            autocomplete="off"
+            maxlength="100"
+            data-testid="akp-search"
+            @input="applyLater"
+          />
+        </DsFormField>
+      </template>
+      <DsFormField label="Sekolah" native for="akp-school">
+        <DsNativeSelect
+          id="akp-school"
+          :model-value="schoolId ?? ''"
+          data-testid="akp-school"
+          @change="onSchool"
+        >
+          <option value="">Semua Sekolah</option>
+          <option v-for="s in schoolOptions ?? []" :key="s.id" :value="String(s.id)">
+            {{ s.name }}
+          </option>
+        </DsNativeSelect>
+      </DsFormField>
+      <DsFormField label="Guru" native for="akp-teacher">
+        <DsNativeSelect
+          id="akp-teacher"
+          :model-value="teacherId ?? ''"
+          data-testid="akp-teacher"
+          @change="onTeacher"
+        >
+          <option value="">Semua Guru</option>
+          <option v-for="t in teachers ?? []" :key="t.id" :value="String(t.id)">
+            {{ t.name }}
+          </option>
+        </DsNativeSelect>
+      </DsFormField>
+      <DsFormField label="Tingkatan" native for="akp-level">
+        <DsNativeSelect
+          id="akp-level"
+          v-model="levelValue"
+          data-testid="akp-level"
+          @change="onSubmit"
+        >
+          <option value="">Semua</option>
+          <option v-for="l in LEVELS" :key="l.code" :value="l.code">{{ l.label }}</option>
+        </DsNativeSelect>
+      </DsFormField>
+    </DsFilterBar>
 
     <template v-if="data">
       <DsDataTable

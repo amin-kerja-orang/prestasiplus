@@ -127,11 +127,11 @@ export interface AdminAnalytics {
     accuracy: number | null
   }
   trend: { date: string; answered: number }[]
-  topSchools: { schoolId: number; school: string; answered: number }[]
+  topSchools: { schoolId: string; school: string; answered: number }[]
   bank: {
     total: number
-    bySubject: { id: number; name: string; total: number }[]
-    byLevel: { id: number; name: string; total: number }[]
+    bySubject: { id: string; name: string; total: number }[]
+    byLevel: { id: string; name: string; total: number }[]
     byStatus: { draft: number; review: number; approved: number; archived: number }
     /** Percent (0 to 100) of the questions that carry a DSKP tag. */
     dskpTaggedShare: number
@@ -163,8 +163,8 @@ export interface AdminLaporan {
     label: string
     count: number
   }[]
-  mostActive: { id: number; name: string; school: { id: number; name: string } | null; activities: number }[]
-  schoolActivity: { schoolId: number; name: string; activities: number; activePupils: number }[]
+  mostActive: { id: string; name: string; school: { id: string; name: string } | null; activities: number }[]
+  schoolActivity: { schoolId: string; name: string; activities: number; activePupils: number }[]
 }
 
 export const fetchAdminDashboard = (o: Signal = {}) =>

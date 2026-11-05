@@ -182,11 +182,11 @@ function adminClasses(req: MockRequest): MockResponse {
     if (term !== '' && !c.name.toLocaleLowerCase('ms-MY').includes(term)) continue
     const teacher = c.teacherId === null ? undefined : users.get(c.teacherId)
     rows.push({
-      id: c.classId,
+      id: String(c.classId),
       name: c.name,
       level: `Tingkatan ${String(n)}`,
-      teacher: teacher ? { id: teacher.id, name: teacher.name } : null,
-      school: school ? { id: school.id, name: school.name } : null,
+      teacher: teacher ? { id: String(teacher.id), name: teacher.name } : null,
+      school: school ? { id: String(school.id), name: school.name } : null,
       pupils: classrooms.memberCount('classroom', c.classId),
       joinCode: c.joinCode === '' ? null : c.joinCode,
       isActive: c.isActive,

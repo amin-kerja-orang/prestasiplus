@@ -94,18 +94,23 @@ const pupilColumns: TableColumn<PupilItem>[] = [
     <template v-else-if="data">
       <DsGrid min-item="xs" gap="md" data-testid="adm-lp-tiles">
         <DsStatTile
-          :value="data.tiles.schools"
+          :value="n(data.tiles.schools)"
           unit="Sekolah"
           icon="buildings"
           part-prefix="lp-schools"
         />
         <DsStatTile
-          :value="data.tiles.teachers"
+          :value="n(data.tiles.teachers)"
           unit="Guru"
           icon="chalkboard-teacher"
           part-prefix="lp-teachers"
         />
-        <DsStatTile :value="data.tiles.pupils" unit="Murid" icon="users" part-prefix="lp-pupils" />
+        <DsStatTile
+          :value="n(data.tiles.pupils)"
+          unit="Murid"
+          icon="users"
+          part-prefix="lp-pupils"
+        />
         <DsStatTile
           :value="`${n(data.tiles.pupilsAccessed)} / ${n(data.tiles.pupils)}`"
           unit="Murid Pernah Akses"
@@ -121,13 +126,13 @@ const pupilColumns: TableColumn<PupilItem>[] = [
           part-prefix="lp-teachers-accessed"
         />
         <DsStatTile
-          :value="data.tiles.pupilsPractised"
+          :value="n(data.tiles.pupilsPractised)"
           unit="Murid Buat Latihan"
           icon="pencil-simple"
           part-prefix="lp-practised"
         />
         <DsStatTile
-          :value="data.tiles.activities"
+          :value="n(data.tiles.activities)"
           unit="Jumlah Aktiviti"
           sub="30 hari lepas"
           icon="chart-line-up"
@@ -156,7 +161,7 @@ const pupilColumns: TableColumn<PupilItem>[] = [
       <DsGrid min-item="md" gap="md">
         <DsPanel title="Pecahan Aktiviti" as="section" data-testid="adm-lp-breakdown">
           <DsEmptyState
-            v-if="data.breakdown.length === 0"
+            v-if="data.breakdown.every((b) => b.count === 0)"
             size="sm"
             title="Tiada aktiviti direkodkan."
           />
@@ -165,7 +170,7 @@ const pupilColumns: TableColumn<PupilItem>[] = [
               v-for="b in data.breakdown"
               :key="b.label"
               :title="b.label"
-              :meta="b.count"
+              :meta="n(b.count)"
             />
           </DsStack>
         </DsPanel>
@@ -183,7 +188,7 @@ const pupilColumns: TableColumn<PupilItem>[] = [
               :rank="i + 1"
               :title="s.name"
               :sub="`${n(s.activePupils)} murid aktif`"
-              :meta="s.activities"
+              :meta="n(s.activities)"
             />
           </DsStack>
         </DsPanel>

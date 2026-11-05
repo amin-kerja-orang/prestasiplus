@@ -39,14 +39,14 @@ const analytics: AdminAnalytics = {
     accuracy: 62.5,
   },
   trend: [{ date: '2026-09-24', answered: 10 }],
-  topSchools: [{ schoolId: 1, school: 'SMK CONTOH', answered: 90 }],
+  topSchools: [{ schoolId: '1', school: 'SMK CONTOH', answered: 90 }],
   bank: {
-    bySubject: [{ id: 1, name: 'Matematik', total: 50 }],
-    byLevel: [{ id: 7, name: 'Tingkatan 1', total: 50 }],
+    bySubject: [{ id: '1', name: 'Matematik', total: 50 }],
+    byLevel: [{ id: '7', name: 'Tingkatan 1', total: 50 }],
     total: 4,
     byStatus: { draft: 1, review: 1, approved: 2, archived: 0 },
     dskpTaggedShare: 40,
-    chapterCoverage: 3,
+    chapterCoverage: 30,
     servability: {},
   },
 }
@@ -64,11 +64,11 @@ const laporan: AdminLaporan = {
     averageScore: 71.5,
   },
   trend: [{ date: '24/09', count: 3 }],
-  breakdown: [{ type: 'kuiz', label: 'Kuiz Objektif', count: 200 }],
+  breakdown: [{ type: 'kuiz', label: 'Kuiz', count: 1200 }],
   mostActive: [
-    { id: 1, name: 'MURID CONTOH', school: { id: 1, name: 'SMK CONTOH' }, activities: 12 },
+    { id: '1', name: 'MURID CONTOH', school: { id: '1', name: 'SMK CONTOH' }, activities: 12 },
   ],
-  schoolActivity: [{ schoolId: 1, name: 'SMK CONTOH', activities: 99, activePupils: 8 }],
+  schoolActivity: [{ schoolId: '1', name: 'SMK CONTOH', activities: 99, activePupils: 8 }],
 }
 
 let wrapper: VueWrapper | null = null
@@ -113,6 +113,8 @@ describe('AdminDashboardPage (M-01)', () => {
     expect(text).toContain('Minggu ini: 4')
     expect(text).toContain('250 Pelajar')
     expect(text).toContain('11 Aktif')
+    expect(text).toContain('PvP Quiz Battles')
+    expect(text).toContain('9 Total')
     expect(text).toContain('Tindakan Pantas')
     expect(text).toContain('Pautan Pantas')
     const hrefs = w.findAll('a').map((a) => a.attributes('href'))
@@ -181,6 +183,7 @@ describe('AdminLaporanPage (M-06)', () => {
       expect(text).toContain(l)
     }
     expect(text).toContain('20 / 40')
+    expect(text).toContain('1,200')
     expect(text).toContain('72%')
     expect(text).toContain('Semua guru telah mengakses platform.')
   })

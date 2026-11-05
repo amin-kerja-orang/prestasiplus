@@ -222,7 +222,6 @@
   ],
   "$adminComment": "Portal Pentadbiran strict lint (docs/design/v2-ds-hardening.md, section Strict lint for Portal Pentadbiran). adminScope = every file of the portal that the admin rules (eslint/admin-strict.mjs) check; eslint/__tests__/ds-strict-scope.test.mjs fails when a file reachable from an /admin or /guru/monitoring route is outside it. adminExempt = never checked. enforce = per-batch globs where every violation is an error with no baseline; APPEND ONLY (ds-debt ratchet test refuses removal). adminAreas = report grouping for npm run lint:admin:report (first match wins).",
   "adminScope": [
-    "src/modules/m27-school-admin/components/classes/ClassFilters.vue",
     "src/modules/m02-users-schools/{pages,components}/**",
     "src/modules/m03-curriculum/pages/{Chapter,Curriculum,Level,Subject}*Page.vue",
     "src/modules/m03-curriculum/pages/Topic{Create,Edit}Page.vue",
