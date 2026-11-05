@@ -55,6 +55,20 @@ describe('PartInput pad photo (replace, not append)', () => {
     expect(store.removePhoto).toHaveBeenCalledWith(first)
   })
 
+  it('a save still exporting when Kosongkan is pressed is dropped, not stored again', async () => {
+    const w = mountLive()
+    const pad = w.findComponent(DrawingPad)
+    pad.vm.$emit('change', { empty: false })
+    pad.vm.$emit('change', { empty: true })
+    pad.vm.$emit('save', png())
+    await flushPromises()
+    expect(photos(w)).toHaveLength(0)
+    pad.vm.$emit('change', { empty: false })
+    pad.vm.$emit('save', png())
+    await flushPromises()
+    expect(photos(w)).toHaveLength(1)
+  })
+
   it('an emptied pad removes the pad photo but keeps camera photos', async () => {
     const w = mountLive({
       photos: [
