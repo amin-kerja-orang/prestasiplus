@@ -2,8 +2,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
-/** S5-T15, DM-44, migration 0187: `ck_practice_checks_selected_label` allows NULL or comma-joined labels A-H. */
-describe('migration 0187 practice_checks.selected_label check', () => {
+/** S5-T15, DM-44, migration 0261: `ck_practice_checks_selected_label` allows NULL or comma-joined labels A-H. */
+describe('migration 0261 practice_checks.selected_label check', () => {
   let db: TestDatabase
 
   const labelOk = async (label: string | null): Promise<boolean> => {
