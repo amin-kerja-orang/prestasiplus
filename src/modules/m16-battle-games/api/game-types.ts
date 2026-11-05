@@ -69,6 +69,8 @@ export interface RoomView {
   host: { id: EntityId; name: string }
   /** A waiting room below its minimum with robots on: seconds until robots may join, from creation (48 GAME-R); absent otherwise. */
   robotInSeconds?: number
+  /** The caller has already answered the question the room awaits now (contract `youAnswered`); absent otherwise. */
+  youAnswered?: true
   players: {
     id: number
     name: string
