@@ -6,6 +6,8 @@ import { CLASSES_COMPONENT_SCHEMAS } from '../paths'
 import {
   CLASS_MESSAGES,
   ClassCreateRequestSchema,
+  ClassUpdateRequestSchema,
+  ClassUpsertRequestSchema,
   ClassJoinRequestSchema,
   ClassJoinResponseSchema,
   ClassQrDataSchema,
@@ -211,5 +213,30 @@ describe('contract is no stricter than the mock', () => {
     expect(fieldsOf(TeacherChapterCreateRequestSchema.safeParse({ ...ch, name: 'Bab', chapterNumber: 0 }))).toEqual({ chapterNumber: CLASS_MESSAGES.chapterNumber })
     expect(fieldsOf(TeacherChapterCreateRequestSchema.safeParse({ ...ch, name: 'Bab', chapterNumber: 1.5 }))).toEqual({ chapterNumber: CLASS_MESSAGES.chapterNumber })
     expect(fieldsOf(TeacherTopicCreateRequestSchema.safeParse({ name: 'x'.repeat(256), chapterId: '1' }))).toEqual({ name: CLASS_MESSAGES.topicName })
+  })
+})
+
+describe('ClassUpsertRequest (S6-T14)', () => {
+  const base = { name: ' 5 Bestari ', educationLevel: 'tingkatan-5' }
+  it('trims, makes subject and year optional, accepts a legacy body', () => {
+    expect(ClassUpsertRequestSchema.parse(base).name).toBe('5 Bestari')
+    expect(ClassUpsertRequestSchema.safeParse({ ...base, subjectId: null, year: 2026 }).success).toBe(true)
+    expect(ClassUpsertRequestSchema.safeParse({ ...base, subjectId: '12', schoolId: null }).success).toBe(true)
+    expect(ClassUpdateRequestSchema).toBe(ClassUpsertRequestSchema)
+    expect(ClassCreateRequestSchema.safeParse({ ...base, subjectId: '12', year: 2026 }).success).toBe(true)
+  })
+  it('enforces name 1..100, year 2020..2100 and the level', () => {
+    expect(fieldsOf(ClassUpsertRequestSchema.safeParse({ ...base, name: '  ' }))).toEqual({ name: 'Sila isi nama kelas.' })
+    expect(fieldsOf(ClassUpsertRequestSchema.safeParse({ ...base, name: 'a'.repeat(101) }))).toEqual({ name: 'Nama kelas tidak boleh melebihi 100 aksara.' })
+    expect(ClassUpsertRequestSchema.safeParse({ ...base, name: 'a'.repeat(100) }).success).toBe(true)
+    for (const year of [2019, 2101, 2026.5]) {
+      expect(fieldsOf(ClassUpsertRequestSchema.safeParse({ ...base, year }))).toEqual({ year: 'Tahun sesi mesti antara 2020 dan 2100.' })
+    }
+    expect(ClassUpsertRequestSchema.safeParse({ ...base, year: 2020 }).success).toBe(true)
+    expect(ClassUpsertRequestSchema.safeParse({ ...base, year: 2100 }).success).toBe(true)
+    expect(fieldsOf(ClassUpsertRequestSchema.safeParse({ name: 'X' }))).toEqual({ educationLevel: 'Sila pilih tingkatan.' })
+  })
+  it('TeacherClass accepts the optional year and keeps joinCode', () => {
+    expect(TeacherClassSchema.safeParse({ ...klass, year: 2026 }).success).toBe(true)
   })
 })

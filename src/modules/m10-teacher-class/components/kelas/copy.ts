@@ -6,47 +6,59 @@ export const KELAS_COPY = {
   emptyTitle: 'Belum Ada Kelas',
   emptyBody: 'Cipta kelas pertama anda untuk memulakan pengajaran',
   noSubject: 'Tiada Subjek',
-  qrButton: 'Kod QR',
   joinLink: 'Pautan sertai:',
   copied: 'Disalin!',
   print: 'Cetak',
   close: 'Tutup',
   loadFailed: 'Gagal memuatkan senarai kelas. Sila cuba lagi.',
   qrFailed: 'Gagal memuatkan kod QR. Sila cuba lagi.',
-  // S5
+  // S5 / S6-T14 (R1-GUR-8: the class form, create and edit)
   back: 'Kembali',
-  chooseSchool: 'Pilih Sekolah',
-  schoolPlaceholder: 'Taip nama sekolah untuk cari...',
-  schoolNone: 'Tiada sekolah dijumpai',
-  clearSchool: 'Kosongkan sekolah',
   info: 'Maklumat Kelas',
-  name: 'Nama Kumpulan',
+  name: 'Nama Kelas',
   namePlaceholder: 'cth: 5 Bestari',
-  nameHelp: 'Nama kumpulan latih tubi anda.',
-  subject: 'Subjek',
-  subjectPlaceholder: '-- Pilih Subjek --',
-  level: 'Tahap Pendidikan',
-  description: 'Penerangan (pilihan)',
-  descriptionPlaceholder: 'Penerangan ringkas tentang kelas ini...',
+  level: 'Tingkatan',
+  levelPlaceholder: '-- Pilih tingkatan --',
+  subject: 'Subjek (pilihan)',
+  subjectNone: '— Tiada —',
+  year: 'Tahun Sesi',
   submit: 'Cipta Kelas',
-  submitting: 'Mencipta...',
-  /** UNVERIFIED COPY (SRS §8.3): the flash after a create. */
-  created: 'Kelas berjaya dicipta.',
-  createFailed: 'Gagal mencipta kelas. Sila cuba lagi.',
+  submitEdit: 'Simpan',
+  submitting: 'Menyimpan...',
+  cancel: 'Batal',
+  editTitle: 'Edit Kelas',
+  edit: 'Edit',
+  createFailed: 'Gagal menyimpan kelas. Sila cuba lagi.',
+  loadOneFailed: 'Gagal memuatkan kelas. Sila cuba lagi.',
+  notFound: 'Kelas tidak dijumpai.',
+  retry: 'Cuba Lagi',
+  // Edit mode: members and the two add paths
+  membersTitle: 'Pelajar dalam Kelas',
+  colName: 'Nama',
+  colLevel: 'Tingkatan',
+  colActive: 'Terakhir Aktif',
+  remove: 'Keluarkan',
+  removeTitle: 'Keluarkan pelajar?',
+  addExisting: 'Tambah pelajar sedia ada',
+  searchPupil: 'Cari pelajar...',
+  searchHint: 'Taip sekurang-kurangnya 2 aksara.',
+  add: 'Tambah',
+  newPupil: 'Tambah Pelajar Baharu',
+  newPupilText: 'Cipta akaun pelajar baharu dan tambah ke kelas ini.',
+  newPupilLink: 'Cipta Pelajar',
+  added: 'Pelajar ditambah.',
+  removed: 'Pelajar dikeluarkan.',
+  memberFailed: 'Tindakan tidak dapat dilaksanakan. Sila cuba lagi.',
+  membersFailed: 'Gagal memuatkan senarai pelajar. Sila cuba lagi.',
 } as const
 
 /** BR-M10-03 (v2: secondary only): the five Tingkatan tiles, for every school type; no Tahun tiles. */
 export const LEVEL_TILES = [
-  { slug: 'tingkatan-1', label: 'Ting. 1' },
-  { slug: 'tingkatan-2', label: 'Ting. 2' },
-  { slug: 'tingkatan-3', label: 'Ting. 3' },
-  { slug: 'tingkatan-4', label: 'Ting. 4' },
-  { slug: 'tingkatan-5', label: 'Ting. 5' },
+  { slug: 'tingkatan-1', label: 'Tingkatan 1' },
+  { slug: 'tingkatan-2', label: 'Tingkatan 2' },
+  { slug: 'tingkatan-3', label: 'Tingkatan 3' },
+  { slug: 'tingkatan-4', label: 'Tingkatan 4' },
+  { slug: 'tingkatan-5', label: 'Tingkatan 5' },
 ] as const
 
 export type LevelTile = (typeof LEVEL_TILES)[number]
-
-/** "{daerah}, {negeri}" (FN-M10-3.2.2). */
-export function schoolPlace(s: { district: string | null; state: string }): string {
-  return [s.district, s.state].filter((p): p is string => !!p).join(', ')
-}

@@ -2,6 +2,9 @@ import { z } from '../../zod'
 import { listEnvelopeOf } from '../../common/envelope'
 import { IdSchema } from '../../common/ids'
 import { TimestampSchema } from '../../common/time'
+import { ListMetaSchema } from '../../common/envelope'
+import { QUESTION_MESSAGES } from '../../questions/schema'
+import { StimulusSchema } from '../../questions/stimuli'
 
 /**
  * M10 part B wire contract (BE-18, contract-only), question sets half: the student list of teacher
@@ -330,3 +333,197 @@ export const DskpSkInlineErrorSchema = z
 export const DskpSpInlineErrorSchema = z
   .object({ error: z.enum([DSKP_MESSAGES.spFields, DSKP_MESSAGES.spParent]) })
   .meta({ id: 'DskpSpInlineError' })
+
+// --- Teacher Set Soalan (S6-T14, API-GUR-16, R1-GUR-8b) ---------------------------------------
+// Teacher routes only (`@Roles` teacher; an admin has no own sets). All BM copy is the PRD copy of
+// 20 R1-GUR-8b (field table wins over 60 where they differ).
+
+export const GURU_SET_MESSAGES = {
+  titleRequired: 'Sila isi tajuk set.',
+  titleTooLong: 'Tajuk set tidak boleh melebihi 150 aksara.',
+  subjectRequired: 'Sila pilih subjek.',
+  questionsRequired: 'Pilih sekurang-kurangnya satu soalan.',
+  questionsTooMany: 'Satu set boleh mengandungi paling banyak 100 soalan.',
+  /** ERR-QST-02, reused from the questions contract. */
+  groupSplit: QUESTION_MESSAGES.groupSplit,
+  classRequiredToPublish: 'Pilih sekurang-kurangnya satu kelas sebelum menerbitkan.',
+  classRequiredToCopy: 'Sila pilih kelas sasaran.',
+  locked: 'Soalan tidak boleh diubah kerana pelajar telah menjawab set ini.',
+  searchTooShort: 'Taip sekurang-kurangnya 2 aksara.',
+  emptyResults: 'Belum ada pelajar menjawab set ini.',
+  emptyBank: 'Tiada soalan sepadan. Laraskan penapis di atas.',
+  statusInvalid: 'Status tidak sah.',
+  invalid: 'Medan ini tidak sah.',
+  draftSaved: 'Draf disimpan.',
+  published: 'Set diterbitkan.',
+  unpublished: 'Set dijadikan draf.',
+  deleted: 'Set dipadam.',
+  copied: 'Set disalin.',
+  copySuffix: ' (Salinan)',
+  copyNote: 'Set baharu akan dicipta sebagai draf dengan semua soalan disalin.',
+} as const
+
+export const GURU_SET_MAX_QUESTIONS = 100
+export const GURU_SET_RESULTS_PAGE_SIZE = 25
+export const GURU_SET_BANK_PAGE_SIZE = 50
+export const GURU_SET_BANK_PREVIEW_MAX = 120
+
+export const GuruSetStatusSchema = z
+  .enum(['draft', 'published'], { error: GURU_SET_MESSAGES.statusInvalid })
+  .meta({ id: 'GuruSetStatus', description: '`scheduled` exists in the table but is never produced or offered.' })
+
+const setTitle = z
+  .string({ error: GURU_SET_MESSAGES.titleRequired })
+  .trim()
+  .min(1, GURU_SET_MESSAGES.titleRequired)
+  .max(150, GURU_SET_MESSAGES.titleTooLong)
+
+/**
+ * Body of `POST /guru/question-sets` (201) and `PUT /guru/question-sets/{id}` (200).
+ * `classroomIds` may be empty for a draft; the server answers 422 fields.classroomIds
+ * "Pilih sekurang-kurangnya satu kelas sebelum menerbitkan." when status is published and it is empty.
+ * Server rules (not expressible here): own classes only, approved questions only (fields.questionIds),
+ * a stimulus group is sent whole (fields.questionIds groupSplit), the question list is locked once a
+ * pupil has an attempt (409 `locked` text) while title and classes stay editable.
+ */
+export const GuruSetUpsertRequestSchema = z
+  .object({
+    title: setTitle,
+    subjectId: z.string({ error: GURU_SET_MESSAGES.subjectRequired }).min(1, GURU_SET_MESSAGES.subjectRequired),
+    educationLevelId: z.string({ error: GURU_SET_MESSAGES.invalid }).nullish().meta({ description: '"Tingkatan (pilihan)"; null or absent = none.' }),
+    questionIds: z
+      .array(IdSchema, { error: GURU_SET_MESSAGES.questionsRequired })
+      .min(1, GURU_SET_MESSAGES.questionsRequired)
+      .max(GURU_SET_MAX_QUESTIONS, GURU_SET_MESSAGES.questionsTooMany),
+    classroomIds: z.array(IdSchema, { error: GURU_SET_MESSAGES.invalid }).default([]),
+    status: GuruSetStatusSchema,
+  })
+  .meta({ id: 'GuruSetUpsertRequest' })
+export type GuruSetUpsertRequest = z.infer<typeof GuruSetUpsertRequestSchema>
+
+export const GuruSetStatusRequestSchema = z.object({ status: GuruSetStatusSchema }).meta({ id: 'GuruSetStatusRequest' })
+export const GuruSetCopyRequestSchema = z
+  .object({
+    classroomIds: z
+      .array(IdSchema, { error: GURU_SET_MESSAGES.classRequiredToCopy })
+      .min(1, GURU_SET_MESSAGES.classRequiredToCopy),
+  })
+  .meta({ id: 'GuruSetCopyRequest', description: 'The dialog "Salin Set ke Kelas" sends a one-element array. Own classes only.' })
+
+const classRef = z.object({ id: IdSchema, name: z.string() })
+
+/** One card of the list. */
+export const QuestionSetRowSchema = z
+  .object({
+    id: IdSchema,
+    title: z.string(),
+    status: GuruSetStatusSchema,
+    subjectId: IdSchema,
+    subjectName: z.string(),
+    educationLevelId: IdSchema.nullable(),
+    questionCount: z.number().int().min(0),
+    siap: z.number().int().min(0).meta({ description: 'Pupils who finished the set ("{n} siap").' }),
+    classrooms: z.array(classRef),
+    updatedAt: TimestampSchema,
+  })
+  .meta({ id: 'QuestionSetRow' })
+export type QuestionSetRow = z.infer<typeof QuestionSetRowSchema>
+
+/** Detail for the "Urus" form. */
+export const QuestionSetSchema = z
+  .object({
+    id: IdSchema,
+    title: z.string(),
+    status: GuruSetStatusSchema,
+    subjectId: IdSchema,
+    educationLevelId: IdSchema.nullable(),
+    questionIds: z.array(IdSchema),
+    classroomIds: z.array(IdSchema),
+    locked: z.boolean().meta({ description: 'true once any pupil has an attempt: the question list cannot change.' }),
+    createdAt: TimestampSchema,
+    updatedAt: TimestampSchema,
+  })
+  .meta({ id: 'QuestionSet' })
+export type QuestionSet = z.infer<typeof QuestionSetSchema>
+
+export const GuruSetListQuerySchema = z
+  .object({
+    classroomId: z.string().optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  })
+  .meta({ id: 'GuruSetListQuery' })
+
+export const GuruSetListSchema = z
+  .object({
+    rows: z.array(QuestionSetRowSchema),
+    counters: z.object({
+      published: z.number().int().min(0).meta({ description: '"Diterbitkan".' }),
+      draft: z.number().int().min(0).meta({ description: '"Draf".' }),
+      participation: z.number().int().min(0).meta({ description: '"Penyertaan": pupils with at least one completed attempt on any set of the teacher.' }),
+    }),
+    summary: z.object({ total: z.number().int().min(0), siap: z.number().int().min(0) }),
+  })
+  .meta({ id: 'GuruSetList' })
+export const GuruSetListResponseSchema = z
+  .object({ data: GuruSetListSchema, meta: ListMetaSchema })
+  .meta({ id: 'GuruSetListResponse' })
+
+export const GuruSetResultsQuerySchema = z
+  .object({
+    classroomId: z.string().optional().meta({ description: 'Absent = "Semua Kelas".' }),
+    page: z.coerce.number().int().min(1).default(1),
+  })
+  .meta({ id: 'GuruSetResultsQuery', description: 'Fixed 25 rows per page, newest first.' })
+
+export const GuruSetResultsSchema = z
+  .object({
+    summary: z.object({
+      penyertaan: z.number().int().min(0),
+      skorPurata: z.number().int().nullable().meta({ description: 'Mean of the per-attempt percentages, whole number rounded half up; null without attempts.' }),
+      jumlahPercubaan: z.number().int().min(0),
+    }),
+    rows: z.array(
+      z.object({
+        pupil: z.object({ id: IdSchema, name: z.string() }),
+        correct: z.number().int().min(0),
+        total: z.number().int().min(0),
+        accuracy: z.number().min(0).max(100).meta({ description: 'correct / total * 100 with one decimal on the wire; the screen shows it rounded half up.' }),
+        attemptedAt: TimestampSchema,
+      }),
+    ),
+  })
+  .meta({ id: 'GuruSetResults' })
+export const GuruSetResultsResponseSchema = z
+  .object({ data: GuruSetResultsSchema, meta: ListMetaSchema })
+  .meta({ id: 'GuruSetResultsResponse' })
+
+export const GuruSetBankQuerySchema = z
+  .object({
+    subjectId: z.string().optional(),
+    levelId: z.string().optional(),
+    q: z.string().trim().min(2, GURU_SET_MESSAGES.searchTooShort).optional(),
+    cursor: z.string().optional(),
+  })
+  .meta({ id: 'GuruSetBankQuery', description: 'subjectId and levelId absent = "Semua"; q shorter than 2 characters answers 422.' })
+
+/** The stimulus of a bank unit as the picker shows it (no group count, no style). */
+export const GuruSetBankStimulusSchema = StimulusSchema.omit({ groupCount: true, style: true }).meta({ id: 'GuruSetBankStimulus' })
+
+export const GuruSetBankUnitSchema = z
+  .object({
+    kind: z.enum(['question', 'group']),
+    id: IdSchema,
+    questionIds: z.array(IdSchema).min(1).meta({ description: 'A group is one unit: all its members, ticked together.' }),
+    preview: z.string().meta({ description: 'Up to 120 characters; "..." appended when cut.' }),
+    subject: z.string(),
+    level: z.string(),
+    difficulty: z.number().int().min(1).max(5),
+    stimulus: GuruSetBankStimulusSchema.nullable(),
+  })
+  .meta({ id: 'GuruSetBankUnit' })
+export const GuruSetBankResponseSchema = z
+  .object({ data: z.object({ units: z.array(GuruSetBankUnitSchema), nextCursor: z.string().nullable() }) })
+  .meta({ id: 'GuruSetBankResponse', description: 'Approved and servable questions only, newest first, 50 units per call.' })
+
+export const GuruSetDeleteResultSchema = z.object({ deleted: z.literal(1) }).meta({ id: 'GuruSetDeleteResult' })

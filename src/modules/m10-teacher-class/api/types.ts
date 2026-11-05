@@ -88,22 +88,14 @@ export interface GuruClass {
   /** "Tahun n" / "Ting. n". */
   levelLabel: string
   academicYear: number
+  /** Tahun Sesi (S6-T14), the same value as `academicYear`; absent on an older API. */
+  year?: number
   description: string | null
   joinCode: string
   isActive: boolean
   createdAt: string
   /** Active enrolments (BR-M10-04). */
   studentCount: number
-}
-
-export interface CreateClassRequest {
-  /** Sent as a string id in http mode (`ClassCreateRequestSchema`, DEMO-FIX-1 D-01). */
-  schoolId?: number | string | null
-  name: string
-  /** The `<select>` value or a mock number; sent as a string id in http mode. */
-  subjectId: number | string
-  educationLevel: EducationLevelSlug
-  description?: string | null
 }
 
 export interface ClassQrData {
