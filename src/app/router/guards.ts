@@ -60,7 +60,8 @@ const PASSWORD_CHANGE_ALLOWED = [PASSWORD_CHANGE_PATH, '/logout']
 /** A same-origin app path that is worth returning to (not `/`, not an auth page, no `//host`). */
 export function isSafeRedirect(value: unknown): value is string {
   if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//')) return false
-  if (value.includes('\\') ||value === '/') return false
+  // Backslash and control characters (a browser drops tab/newline, so `/\t/host` would become `//host`).
+  if (value.includes('\\') || /[\u0000-\u001f\u007f]/.test(value) || value === '/') return false
   const path = value.split(/[?#]/)[0] ?? ''
   return !['/login', '/logout', '/register'].includes(path)
 }
@@ -221,5 +222,7 @@ export function resolvePostLoginTarget(
   if (!isSafeRedirect(redirect)) return landing
   const resolved = router.resolve(redirect)
   if (resolved.name === NOT_FOUND_ROUTE_NAME) return landing
-  return decideAccess(resolved as RouteLocationNormalized, session).kind === 'allow' ? resolved.fullPath : landing
+  return decideAccess(resolved as RouteLocationNormalized, session).kind === 'allow'
+    ? resolved.fullPath
+    : landing
 }

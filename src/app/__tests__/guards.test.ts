@@ -384,7 +384,21 @@ describe('401 policy (FR-M01-14)', () => {
     expect(useNotificationBadgeStore().count).toBe(0)
     expect(localStorage.getItem(PP_AUTH_STORAGE_KEY)).toBeNull()
     expect(router.currentRoute.value.path).toBe('/login')
-    expect(router.currentRoute.value.query).toEqual({})
+    expect(router.currentRoute.value.query).toEqual({ kembali: '/dashboard' })
+  })
+
+  it('does not stack a second redirect inside 2 s and keeps an auth page as it is', async () => {
+    installTransport(fakeTransport(() => ({})))
+    logIn(STUDENT)
+    const router = testRouter()
+    const replace = vi.spyOn(router, 'replace')
+    const stop = connectUnauthorizedRedirect(router)
+    await router.push('/dashboard?x=1')
+    await useSessionStore().handleUnauthorized()
+    await useSessionStore().handleUnauthorized()
+    expect(replace).toHaveBeenCalledTimes(1)
+    expect(router.currentRoute.value.query).toEqual({ kembali: '/dashboard?x=1' })
+    stop()
   })
 })
 
@@ -497,7 +511,7 @@ describe('session survives a reload and returns to the requested page', () => {
       role: STUDENT.role,
       landingPath: STUDENT.landingPath,
     }
-        expect(resolvePostLoginTarget(router, '/no/such/page', student)).toBe(student.landingPath)
+    expect(resolvePostLoginTarget(router, '/no/such/page', student)).toBe(student.landingPath)
     expect(resolvePostLoginTarget(router, '//evil.example', student)).toBe(student.landingPath)
     expect(resolvePostLoginTarget(router, '/login', student)).toBe(student.landingPath)
     expect(resolvePostLoginTarget(router, undefined, student)).toBe(student.landingPath)
@@ -523,22 +537,35 @@ describe('forced password change (AM2-A1, DV-26)', () => {
       id: 'M98' as const,
       slug: 'm98-stub',
       routes: [
-        { path: '/password/change', component: stub('change'), meta: { layout: 'bare' as const, access: 'auth' as const } },
-        { path: '/password/reset/:token', component: stub('reset'), meta: { layout: 'bare' as const, access: 'public' as const } },
+        {
+          path: '/password/change',
+          component: stub('change'),
+          meta: { layout: 'bare' as const, access: 'auth' as const },
+        },
+        {
+          path: '/password/reset/:token',
+          component: stub('reset'),
+          meta: { layout: 'bare' as const, access: 'public' as const },
+        },
       ],
     },
   ]
   const flaggedRouter = () => createAppRouter({ history: createMemoryHistory(), registry })
 
-  it.each(['/dashboard', '/admin', '/login', '/register', '/password/reset/abc', '/artikel', '/tetapan'])(
-    'sends a flagged session from %s to /password/change',
-    async (path) => {
-      logIn(path === '/admin' ? ADMIN : STUDENT, { mustChangePassword: true })
-      const router = flaggedRouter()
-      await router.push(path)
-      expect(router.currentRoute.value.path).toBe('/password/change')
-    },
-  )
+  it.each([
+    '/dashboard',
+    '/admin',
+    '/login',
+    '/register',
+    '/password/reset/abc',
+    '/artikel',
+    '/tetapan',
+  ])('sends a flagged session from %s to /password/change', async (path) => {
+    logIn(path === '/admin' ? ADMIN : STUDENT, { mustChangePassword: true })
+    const router = flaggedRouter()
+    await router.push(path)
+    expect(router.currentRoute.value.path).toBe('/password/change')
+  })
 
   it('lets a flagged session open /password/change and sign out via /logout', async () => {
     logIn(STUDENT, { mustChangePassword: true })
@@ -565,7 +592,12 @@ describe('forced password change (AM2-A1, DV-26)', () => {
   })
 
   it('ignores one trailing slash, a query and a hash on the exempt paths, but not nesting', () => {
-    const flagged = { isLoggedIn: true, role: 'student' as const, landingPath: '/dashboard', mustChangePassword: true }
+    const flagged = {
+      isLoggedIn: true,
+      role: 'student' as const,
+      landingPath: '/dashboard',
+      mustChangePassword: true,
+    }
     const route = (path: string) => ({ path, meta: {} }) as unknown as RouteLocationNormalized
     const redirect = { kind: 'redirect', to: '/password/change' }
     expect(decideAccess(route('/logout/'), flagged)).toEqual({ kind: 'allow' })
@@ -608,9 +640,17 @@ describe('forced password change (AM2-A1, DV-26)', () => {
   })
 
   it('decideAccess redirects a flagged session and allows the exempt paths', () => {
-    const flagged = { isLoggedIn: true, role: 'student' as const, landingPath: '/dashboard', mustChangePassword: true }
+    const flagged = {
+      isLoggedIn: true,
+      role: 'student' as const,
+      landingPath: '/dashboard',
+      mustChangePassword: true,
+    }
     const route = (path: string) => ({ path, meta: {} }) as unknown as RouteLocationNormalized
-    expect(decideAccess(route('/dashboard'), flagged)).toEqual({ kind: 'redirect', to: '/password/change' })
+    expect(decideAccess(route('/dashboard'), flagged)).toEqual({
+      kind: 'redirect',
+      to: '/password/change',
+    })
     expect(decideAccess(route('/password/change'), flagged)).toEqual({ kind: 'allow' })
     expect(decideAccess(route('/logout'), flagged)).toEqual({ kind: 'allow' })
   })

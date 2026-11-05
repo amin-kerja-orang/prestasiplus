@@ -11,16 +11,12 @@
 import { computed } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 
+import { DsOfflineBanner } from '@/ds'
 import ForbiddenPage from '@/pages/ForbiddenPage.vue'
 import NotFoundPage from '@/pages/NotFoundPage.vue'
 import { useSessionStore } from '@/stores/session'
 
-import {
-  DEFAULT_LAYOUT,
-  resolveShellForPath,
-  shellComponents,
-  useRouteOutcome,
-} from './router'
+import { DEFAULT_LAYOUT, resolveShellForPath, shellComponents, useRouteOutcome } from './router'
 
 const route = useRoute()
 const session = useSessionStore()
@@ -38,6 +34,7 @@ const shell = computed(() => (shellKind.value ? shellComponents[shellKind.value]
 </script>
 
 <template>
+  <DsOfflineBanner />
   <ForbiddenPage v-if="outcome === 403" />
   <NotFoundPage v-else-if="outcome === 404" />
   <component :is="shell" v-else-if="shell" :key="shellKind">

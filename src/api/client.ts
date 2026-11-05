@@ -37,6 +37,7 @@ import {
   errorFromResponse,
   parseRetryAfterHeader,
 } from './errors'
+import { reportNetworkError, reportNetworkOk } from './offline'
 import type {
   HttpMethod,
   ResponseType,
@@ -419,10 +420,13 @@ export class ApiClient {
       controller.abort()
     }, timeoutMs)
     try {
-      return await transport.request(req, controller.signal)
+      const response = await transport.request(req, controller.signal)
+      reportNetworkOk()
+      return response
     } catch (err) {
       if (callerSignal?.aborted) throw err
       if (timedOut) {
+        reportNetworkError()
         throw new ApiError({
           status: 0,
           code: API_ERROR_CODES.NETWORK_ERROR,
@@ -434,6 +438,7 @@ export class ApiClient {
         })
       }
       if (isAbort(err, undefined)) throw err
+      reportNetworkError()
       throw new ApiError({
         status: 0,
         code: API_ERROR_CODES.NETWORK_ERROR,

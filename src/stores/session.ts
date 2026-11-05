@@ -32,6 +32,7 @@ import { defineStore } from 'pinia'
 import { computed, shallowRef } from 'vue'
 
 import { api, type Transport, type TransportRequest } from '@/api'
+import { clearAllDrafts } from '@/lib/draft'
 import { clock, MINUTE_MS, toIsoMyt } from '@/lib/time'
 
 import {
@@ -185,7 +186,8 @@ function dropLocalDrafts(): void {
   const store = storage()
   if (!store) return
   try {
-    for (const key of Object.keys(store).filter((k) => k.startsWith(LOCAL_DRAFT_PREFIX))) store.removeItem(key)
+    for (const key of Object.keys(store).filter((k) => k.startsWith(LOCAL_DRAFT_PREFIX)))
+      store.removeItem(key)
   } catch {
     // Storage blocked: nothing to remove.
   }
@@ -259,7 +261,10 @@ export const useSessionStore = defineStore('session', () => {
   function setSession(session: ClientSession): void {
     // A different user signing in on this browser never sees the previous user's unsaved drafts (a 401 of the same user keeps them).
     const previous = auth.value
-    if (previous && String(previous.user.id) !== String(session.user.id)) dropLocalDrafts()
+    if (previous && String(previous.user.id) !== String(session.user.id)) {
+      dropLocalDrafts()
+      clearAllDrafts()
+    }
     commit({ ...session })
   }
 
@@ -365,6 +370,7 @@ export const useSessionStore = defineStore('session', () => {
     }
     clear()
     dropLocalDrafts()
+    clearAllDrafts() // pp.draft.* (FR-ERR-8): removed on logout, kept on a 401
   }
 
   // Wiring: the API client reads the token from this store and reports 401s to it.

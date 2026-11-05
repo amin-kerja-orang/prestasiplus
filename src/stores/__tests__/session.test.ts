@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
 
 import { api, ApiError } from '@/api'
+import { loadDraft, saveDraft } from '@/lib/draft'
 import { clock, MINUTE_MS, toIsoMyt } from '@/lib/time'
 import type { ClientSession as MockClientSession } from '@/mock/core-data/client-session'
 import { PP_AUTH_STORAGE_KEY as MOCK_KEY } from '@/mock/core-data/client-session'
@@ -117,6 +118,18 @@ describe('session store: load, save and expiry', () => {
     store.clear()
     expect(store.isLoggedIn).toBe(false)
     expect(localStorage.getItem(PP_AUTH_STORAGE_KEY)).toBeNull()
+  })
+
+  it('logout removes pp.draft.* drafts; a 401 keeps them (FR-ERR-8)', async () => {
+    writeStored(session())
+    const store = useSessionStore()
+    api.configure({ transport: fakeTransport(() => ({ status: 200 })) })
+    saveDraft('studio-soalan', null, { tajuk: 'A' })
+    await store.handleUnauthorized()
+    expect(loadDraft('studio-soalan')).toEqual({ tajuk: 'A' })
+    writeStored(session())
+    await useSessionStore().logout()
+    expect(loadDraft('studio-soalan')).toBeNull()
   })
 })
 

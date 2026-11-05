@@ -8,11 +8,11 @@
  * page with no message (FR-M01-12); on failure the red alert shows the server text, the email is
  * kept and the password cleared (FR-M01-09/10/68). Renders for a logged-in user too (FR-M01-13).
  */
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { isPrototypeRole, isPrototypeScopeOn, MSG_ROLE_OUT_OF_SCOPE } from '@/app/prototype-scope'
-import { resolvePostLoginTarget } from '@/app/router/guards'
+import { isSafeRedirect, resolvePostLoginTarget } from '@/app/router/guards'
 import { useApi } from '@/composables'
 import { DsFormField, DsSticker } from '@/ds'
 import { formatNumber } from '@/lib/number'
@@ -36,6 +36,18 @@ const remember = ref(false)
 const loading = ref(false)
 const errors = ref<string[]>([])
 
+/** ERR-AUTH-01: shown when the page is reached by a 401 redirect (`?kembali=`). */
+const SESSION_EXPIRED_BM = 'Sesi anda telah tamat. Sila log masuk semula.'
+const returnTo = computed<unknown>(() => {
+  const q = route.query
+  const first = (v: unknown) => (Array.isArray(v) ? (v[0] as unknown) : v)
+  return first(q.kembali) ?? first(q.redirect)
+})
+const sessionExpired = computed(() => {
+  const k = route.query.kembali
+  return isSafeRedirect(Array.isArray(k) ? k[0] : k)
+})
+
 // FR-M01-11: derived at request time; the welcome text and the stats strip use the same values.
 const { data: stats } = useApi(() => getPlatformStats())
 
@@ -58,7 +70,7 @@ async function submit(): Promise<void> {
       return
     }
     await router.push(
-      resolvePostLoginTarget(router, route.query.redirect, {
+      resolvePostLoginTarget(router, returnTo.value, {
         isLoggedIn: true,
         role: next.user.role,
         landingPath: next.user.landingPath,
@@ -89,6 +101,15 @@ async function submit(): Promise<void> {
     </template>
 
     <form data-testid="login-form" class="flex flex-col gap-4" @submit.prevent="submit">
+      <UAlert
+        v-if="sessionExpired"
+        color="warning"
+        variant="soft"
+        icon="i-ph-clock-countdown-duotone"
+        role="status"
+        :description="SESSION_EXPIRED_BM"
+        data-testid="login-session-expired"
+      />
       <AuthAlert :messages="errors" data-testid="login-alert" />
 
       <DsFormField native for="email" label="Alamat Email / Nama Pengguna">
@@ -175,7 +196,9 @@ async function submit(): Promise<void> {
         data-testid="login-stats"
       >
         <li>
-          <DsSticker contained art="books">{{ formatNumber(stats.questionCount) }}+ Soalan</DsSticker>
+          <DsSticker contained art="books"
+            >{{ formatNumber(stats.questionCount) }}+ Soalan</DsSticker
+          >
         </li>
         <li>
           <DsSticker contained art="cap">{{ formatNumber(stats.subjectCount) }} Subjek</DsSticker>

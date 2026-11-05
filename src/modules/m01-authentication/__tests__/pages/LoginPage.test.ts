@@ -38,7 +38,7 @@ const SESSION: ClientSession = {
 let wrapper: VueWrapper | null = null
 let router: Router
 
-async function render(): Promise<VueWrapper> {
+async function render(path = '/login'): Promise<VueWrapper> {
   router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -47,7 +47,7 @@ async function render(): Promise<VueWrapper> {
       { path: '/:rest(.*)*', component: { template: '<div />' } },
     ],
   })
-  await router.push('/login')
+  await router.push(path)
   wrapper = mount(LoginPage, { global: { plugins: [router] } })
   await flushPromises()
   return wrapper
@@ -184,6 +184,34 @@ describe('LoginPage (M01 S1)', () => {
     resolve(SESSION)
     await flushPromises()
     expect(w.get('[data-testid=login-submit]').text()).toBe('Log Masuk')
+  })
+
+  describe('401 return (ERR-AUTH-01, AC-ERR-2)', () => {
+    const BANNER = '[data-testid=login-session-expired]'
+
+    it('shows the expired-session banner for ?kembali= and returns there after login', async () => {
+      apiMocks.login.mockResolvedValue(SESSION)
+      const w = await render('/login?kembali=/dashboard%3Ftab%3D2')
+      expect(w.get(BANNER).text()).toBe('Sesi anda telah tamat. Sila log masuk semula.')
+      await fillAndSubmit(w, 'pelajar@demo.test', 'Demo1234')
+      expect(router.currentRoute.value.fullPath).toBe('/dashboard?tab=2')
+    })
+
+    it('shows no banner without ?kembali= (a guard redirect uses ?redirect=)', async () => {
+      const w = await render('/login?redirect=/dashboard')
+      expect(w.find(BANNER).exists()).toBe(false)
+    })
+
+    it.each(['//evil.example', '/\\evil.example', 'https://evil.example', '/\t/x'])(
+      'ignores the unsafe return target %s',
+      async (target) => {
+        apiMocks.login.mockResolvedValue(SESSION)
+        const w = await render('/login?kembali=' + encodeURIComponent(target))
+        expect(w.find(BANNER).exists()).toBe(false)
+        await fillAndSubmit(w, 'pelajar@demo.test', 'Demo1234')
+        expect(router.currentRoute.value.fullPath).toBe('/dashboard')
+      },
+    )
   })
 
   it('stores the session and goes to the landing path with no message', async () => {

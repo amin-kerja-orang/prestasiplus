@@ -10,6 +10,7 @@ import {
   serializeQuery,
 } from '../client'
 import { ApiError, isApiError } from '../errors'
+import { resetOfflineForTests, useOffline } from '../offline'
 import type { Transport, TransportRequest, TransportResponse } from '../transport'
 import { TransportNetworkError } from '../transport'
 
@@ -557,6 +558,24 @@ describe('ApiClient: timeout, abort and GET retry (S0-T12 part B)', () => {
       code: 'NETWORK_ERROR',
       message: NET,
     })
+  })
+
+  it('feeds the offline state: two NETWORK_ERRORs mean offline, a response ends it (AC-ERR-4)', async () => {
+    resetOfflineForTests()
+    let fail = true
+    const { c } = client(() => {
+      if (fail) throw new TransportNetworkError()
+      return { status: 200, headers: {}, body: { data: 1 } }
+    })
+    const { status } = useOffline()
+    await catchError(c.post('/api/x'))
+    expect(status.value).toBe('online')
+    await catchError(c.post('/api/x'))
+    expect(status.value).toBe('offline')
+    fail = false
+    await c.post('/api/x')
+    expect(status.value).toBe('restored')
+    resetOfflineForTests()
   })
 
   it('times out a JSON call at 30 s as NETWORK_ERROR subtype TIMEOUT', async () => {
