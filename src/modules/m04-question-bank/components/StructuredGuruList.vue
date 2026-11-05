@@ -7,6 +7,8 @@
 import type { TableColumn } from '@nuxt/ui'
 import { computed, h } from 'vue'
 
+import { useRouteExists } from '@/composables'
+
 import {
   DsBadge,
   DsCluster,
@@ -24,16 +26,18 @@ import {
   type RowAction,
 } from '@/ds'
 
-import { GURU_STRUCTURED_ROUTES } from '../lib/audit-routes'
+import { GURU_STRUCTURED_ROUTES, structuredEditPath } from '../lib/audit-routes'
 import {
   GURU_APPLY_LABEL,
+  GURU_EDIT_ICON,
+  GURU_EDIT_LABEL,
   GURU_STATUS_FILTER_OPTIONS,
   GURU_VIEW_ICON,
 } from '../lib/structured-options'
 import { LOAD_ERROR } from '../lib/ui-errors'
 
 export interface GuruTableRow extends Record<string, unknown> {
-  id: number
+  id: number | string
   number: number
   textExcerpt: string
   levelName: string
@@ -43,6 +47,8 @@ export interface GuruTableRow extends Record<string, unknown> {
   marks: string
   status: string
   statusKey: string
+  /** An own submission the admin has not accepted yet: shows the "Edit" link. */
+  editable: boolean
 }
 
 const props = defineProps<{
@@ -64,13 +70,26 @@ const status = defineModel<string>('status', { required: true })
 const page = defineModel<number>('page', { required: true })
 defineEmits<{ apply: []; retry: [] }>()
 
-const viewAction = (id: number): RowAction[] => [
+// The edit form is registered by M10; the link shows only once its route exists (no dead link).
+const { routeExists } = useRouteExists()
+
+const rowActions = (id: number | string, editable: boolean): RowAction[] => [
   {
     label: 'Lihat',
     icon: GURU_VIEW_ICON,
     to: { name: GURU_STRUCTURED_ROUTES.detail, params: { id } },
     testid: 'structured-view',
   },
+  ...(editable && routeExists(structuredEditPath(id))
+    ? [
+        {
+          label: GURU_EDIT_LABEL,
+          icon: GURU_EDIT_ICON,
+          to: structuredEditPath(id),
+          testid: 'structured-edit',
+        },
+      ]
+    : []),
 ]
 
 const columns: TableColumn<GuruTableRow>[] = [
@@ -187,10 +206,16 @@ const showPager = computed(() => props.total > props.pageSize)
         />
       </template>
       <template #actions-cell="{ row }">
-        <DsRowActions :actions="viewAction(row.original.id)" :inline="1" />
+        <DsRowActions
+          :actions="rowActions(row.original.id, row.original.editable)"
+          :inline="2"
+        />
       </template>
       <template #card-actions="{ row }">
-        <DsRowActions :actions="viewAction(row.id as number)" :inline="1" />
+        <DsRowActions
+          :actions="rowActions(row.id as number | string, row.editable as boolean)"
+          :inline="2"
+        />
       </template>
     </DsDataTable>
     <DsStack v-if="summary" gap="sm" align="center" data-testid="structured-pager">

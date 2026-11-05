@@ -29,7 +29,7 @@ import {
 import { GURU_BACK_LABEL, kbatLabel, partLabelText } from '../lib/structured-options'
 import { LOAD_ERROR, isNotFound } from '../lib/ui-errors'
 
-const props = withDefaults(defineProps<{ id: number; portal?: 'admin' | 'guru' }>(), {
+const props = withDefaults(defineProps<{ id: number | string; portal?: 'admin' | 'guru' }>(), {
   portal: 'admin',
 })
 const guru = props.portal === 'guru'
@@ -48,7 +48,7 @@ const {
   (signal) =>
     guru
       ? fetchGuruStructuredQuestion(props.id, { signal })
-      : fetchStructuredQuestion(props.id, { signal }),
+      : fetchStructuredQuestion(Number(props.id), { signal }),
   () => props.id,
 )
 const question = computed(() =>

@@ -51,6 +51,19 @@ function row(n: number): GuruStructuredRow {
     subCount: 1,
     marks: 8,
     status: 'approved',
+    source: 'question',
+    editable: false,
+  }
+}
+
+function submissionRow(n: number, over: Partial<GuruStructuredRow> = {}): GuruStructuredRow {
+  return {
+    ...row(n),
+    id: `g${String(n)}`,
+    status: 'review',
+    source: 'submission',
+    editable: true,
+    ...over,
   }
 }
 
@@ -77,6 +90,9 @@ const detail: GuruStructuredDetail = {
   totalMarks: 10,
   subCount: 2,
   createdAt: '2026-04-08T09:00:00+08:00',
+  source: 'question',
+  editable: false,
+  form: null,
   stimulus: 'Rangsangan sekali sahaja',
   stimulusImage: null,
   subQuestions: [
@@ -101,17 +117,26 @@ const detail: GuruStructuredDetail = {
 
 let wrapper: VueWrapper | null = null
 
-async function renderList(url = '/guru/soalan-berstruktur'): Promise<VueWrapper> {
+const FORM_ROUTES = [
+  { path: '/guru/soalan-berstruktur/cipta', component: { template: '<div />' } },
+  { path: '/guru/soalan-berstruktur/:id/edit', component: { template: '<div />' } },
+]
+
+async function renderList(
+  url = '/guru/soalan-berstruktur',
+  extraRoutes: typeof FORM_ROUTES = [],
+): Promise<VueWrapper> {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
+      ...extraRoutes,
       {
         path: '/guru/soalan-berstruktur',
         component: StructuredListPage,
         props: { portal: 'guru' },
       },
       {
-        path: '/guru/soalan-berstruktur/:id',
+        path: '/guru/soalan-berstruktur/:id([0-9]+|g[0-9]+)',
         name: 'm10.soalan.berstruktur.detail',
         component: { template: '<div />' },
       },
@@ -123,12 +148,12 @@ async function renderList(url = '/guru/soalan-berstruktur'): Promise<VueWrapper>
   return wrapper
 }
 
-async function renderDetail(id = 4001): Promise<VueWrapper> {
+async function renderDetail(id: number | string = 4001): Promise<VueWrapper> {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
       { path: '/guru/soalan-berstruktur', component: { template: '<div />' } },
-      { path: '/guru/soalan-berstruktur/:id', component: StructuredDetailPage },
+      { path: '/guru/soalan-berstruktur/:id([0-9]+|g[0-9]+)', component: StructuredDetailPage },
     ],
   })
   await router.push(`/guru/soalan-berstruktur/${String(id)}`)
@@ -282,5 +307,133 @@ describe('StructuredDetailPage portal="guru" (R1-GUR-44b)', () => {
     )
     await renderDetail(9)
     expect(useRouteOutcome().value).toBe(404)
+  })
+})
+
+describe('own submissions in the guru list and detail (S6-T17, ruling B)', () => {
+  it('a submission row shows the "Menunggu Semakan" chip and an Edit link to the edit route when editable', async () => {
+    api.fetchGuruStructuredQuestions.mockResolvedValue(
+      result([submissionRow(1), submissionRow(2, { editable: false }), row(3)], 3),
+    )
+    const w = await renderList('/guru/soalan-berstruktur', FORM_ROUTES)
+    const rows = w.findAll('tbody tr')
+    expect(rows[0]!.get('[data-testid=structured-status-chip]').text()).toBe('Menunggu Semakan')
+    const edit = rows[0]!.get('[data-testid=structured-edit]')
+    expect(edit.attributes('aria-label') ?? edit.text()).toBe('Edit')
+    expect(edit.attributes('href')).toBe('/guru/soalan-berstruktur/g1/edit')
+    expect(rows[0]!.get('[data-testid=structured-view]').attributes('href')).toBe(
+      '/guru/soalan-berstruktur/g1',
+    )
+    // Accepted by the admin (not editable) and an approved question: no Edit link.
+    expect(rows[1]!.find('[data-testid=structured-edit]').exists()).toBe(false)
+    expect(rows[2]!.find('[data-testid=structured-edit]').exists()).toBe(false)
+    expect(rows[2]!.get('[data-testid=structured-status-chip]').text()).toBe('Diluluskan')
+  })
+
+  it('a g12 row links to a real detail route, and that detail loads the g-id as text', async () => {
+    api.fetchGuruStructuredQuestions.mockResolvedValue(result([submissionRow(12)], 1))
+    const w = await renderList('/guru/soalan-berstruktur', FORM_ROUTES)
+    const href = w.get('[data-testid=structured-view]').attributes('href')
+    expect(href).toBe('/guru/soalan-berstruktur/g12')
+    w.unmount()
+    api.fetchGuruStructuredQuestion.mockResolvedValue({
+      ...detail,
+      id: 'g12',
+      source: 'submission',
+    })
+    const d = await renderDetail('g12')
+    expect(api.fetchGuruStructuredQuestion.mock.calls.at(-1)![0]).toBe('g12')
+    expect(d.find('[data-testid=structured-status]').exists()).toBe(true)
+  })
+
+  it('the Edit link is hidden while the edit route is not registered (no dead link)', async () => {
+    api.fetchGuruStructuredQuestions.mockResolvedValue(result([submissionRow(1)], 1))
+    const w = await renderList()
+    expect(w.find('[data-testid=structured-edit]').exists()).toBe(false)
+    expect(w.find('[data-testid=structured-view]').exists()).toBe(true)
+  })
+
+  it('"Cipta Soalan Berstruktur" links to /cipta only when that route exists', async () => {
+    const without = await renderList()
+    expect(without.find('[data-testid=structured-create]').exists()).toBe(false)
+    without.unmount()
+    const w = await renderList('/guru/soalan-berstruktur', FORM_ROUTES)
+    const add = w.get('[data-testid=structured-create]')
+    expect(add.text()).toBe('Cipta Soalan Berstruktur')
+    expect(add.attributes('href')).toBe('/guru/soalan-berstruktur/cipta')
+  })
+
+  it('the Status filter "Menunggu Semakan" sends status=review and renders the own rows', async () => {
+    api.fetchGuruStructuredQuestions.mockResolvedValue(result([submissionRow(1)], 1))
+    const w = await renderList('/guru/soalan-berstruktur?status=review')
+    expect(api.fetchGuruStructuredQuestions.mock.calls[0]![0]).toMatchObject({ status: 'review' })
+    expect(w.findAll('tbody tr')).toHaveLength(1)
+    expect((w.get('[data-testid=structured-status]').element as HTMLSelectElement).value).toBe(
+      'review',
+    )
+  })
+
+  it('the detail of a submission shows the waiting status and no rejection reason', async () => {
+    api.fetchGuruStructuredQuestion.mockResolvedValue({
+      ...detail,
+      id: 'g2',
+      status: 'review',
+      source: 'submission',
+      editable: true,
+      form: {
+        subjectId: 9,
+        educationLevelId: 11,
+        chapterId: null,
+        spIds: [],
+        tp: null,
+        cognitiveLevel: null,
+        difficultyLevel: 3,
+        stimulusImageId: null,
+        rejectionReason: null,
+      },
+    })
+    const w = await renderDetail('g2')
+    expect(api.fetchGuruStructuredQuestion.mock.calls[0]![0]).toBe('g2')
+    expect(w.get('[data-testid=structured-status]').text()).toBe('Menunggu Semakan')
+    expect(w.find('[data-testid=structured-rejection]').exists()).toBe(false)
+  })
+
+  it('the detail of a returned submission shows "Ditolak" and "Sebab: {reason}"', async () => {
+    api.fetchGuruStructuredQuestion.mockResolvedValue({
+      ...detail,
+      id: 'g1',
+      status: 'review',
+      source: 'submission',
+      editable: true,
+      form: {
+        subjectId: 9,
+        educationLevelId: 11,
+        chapterId: null,
+        spIds: [],
+        tp: null,
+        cognitiveLevel: null,
+        difficultyLevel: 3,
+        stimulusImageId: null,
+        rejectionReason: 'Skema jawapan bahagian (a) tidak lengkap.',
+      },
+    })
+    const w = await renderDetail('g1')
+    expect(w.get('[data-testid=structured-status]').text()).toBe('Ditolak')
+    expect(w.get('[data-testid=structured-rejection]').text()).toBe(
+      'Sebab: Skema jawapan bahagian (a) tidak lengkap.',
+    )
+  })
+
+  it('a submission without a stimulus hides the "Rangsangan" block', async () => {
+    api.fetchGuruStructuredQuestion.mockResolvedValue({
+      ...detail,
+      id: 'g3',
+      stimulus: '',
+      status: 'review',
+      source: 'submission',
+    })
+    const w = await renderDetail('g3')
+    expect(w.text()).not.toContain('Rangsangan')
+    expect(w.find('[data-testid=structured-sub]').exists()).toBe(true)
   })
 })
