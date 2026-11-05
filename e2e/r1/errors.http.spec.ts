@@ -48,8 +48,16 @@ test.describe('401 return URL (AC-ERR-2, ERR-AUTH-01)', () => {
       })
     })
 
-    await page.goto('/profile')
-    await expect(page).toHaveURL(/\/login\?kembali=%2Fprofile/, { timeout: 20_000 })
+    // In-app navigation (no reload): a full page load would re-check the session at boot and send a
+    // guest to `?redirect=`, which is the guard's path, not the 401-in-use path this AC covers.
+    await page.evaluate(() => {
+      window.history.pushState({}, '', '/profile')
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
+    await expect(page).toHaveURL(/\/login\?kembali=%2F/, { timeout: 20_000 })
+    // `kembali` is the page that was current when the 401 arrived; login must return exactly there.
+    const kembali = new URL(page.url()).searchParams.get('kembali') ?? ''
+    expect(kembali.startsWith('/') && !kembali.startsWith('//')).toBe(true)
     await expect(page.getByTestId('login-session-expired')).toHaveText(EXPIRED)
     await expectNoHScroll(page)
 
@@ -58,7 +66,9 @@ test.describe('401 return URL (AC-ERR-2, ERR-AUTH-01)', () => {
     await again.getByLabel('Alamat Email').fill(user)
     await again.getByLabel('Kata Laluan').fill(pass)
     await again.getByRole('button', { name: 'Log Masuk' }).click()
-    await expect(page).toHaveURL(/\/profile$/, { timeout: 20_000 })
+    await expect
+      .poll(() => new URL(page.url()).pathname + new URL(page.url()).search, { timeout: 20_000 })
+      .toBe(kembali)
   })
 
   test('@api AC-ERR-2 an unsafe kembali shows no banner and is not followed', async ({ page }) => {
