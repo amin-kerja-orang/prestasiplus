@@ -262,6 +262,11 @@ export class QuestionsService {
     }
   }
 
+  /** Status counts and questions created since `since`, on the same base as `summary` (Admin Pusat dashboard, S6-T11). */
+  statusSummary(since: Date): Promise<{ total: number; byStatus: Record<QuestionStatus, number>; createdSince: number }> {
+    return this.repo.statusSummary(since)
+  }
+
   /** The values of the Studio selects that come from data (REQ-C-019): the Negeri / exam board options of the source papers. */
   async filterOptions(): Promise<{ negeri: string[] }> {
     return { negeri: await this.repo.examBoards() }
