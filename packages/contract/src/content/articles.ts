@@ -56,7 +56,7 @@ export const ARTICLE_GRADE_LABELS = {
 } as const satisfies Record<ArticleGradeLevel, string>
 
 /** Page sizes are fixed per endpoint (a client `pageSize` is ignored). */
-export const ARTICLE_READER_PAGE_SIZE = 18
+export const ARTICLE_READER_PAGE_SIZE = 12
 export const ARTICLE_ADMIN_PAGE_SIZE = 20
 /** `GET /articles/latest`: default and clamp range of `limit`. */
 export const ARTICLE_LATEST_DEFAULT = 5
@@ -109,7 +109,7 @@ export type ArticleDetail = z.infer<typeof ArticleDetailSchema>
 
 export const ArticleListQuerySchema = z
   .object({
-    search: z.string().optional().meta({ description: 'Title contains, case-insensitive.' }),
+    search: z.string().optional().meta({ description: 'Title or body contains, case-insensitive; at most 100 characters are used.' }),
     category: z.string().optional().meta({
       description: 'An ArticleCategory code or `all`; an unknown code matches nothing (empty list, not an error).',
     }),
@@ -190,7 +190,7 @@ export type AdminArticleDetail = z.infer<typeof AdminArticleDetailSchema>
 
 export const AdminArticleListQuerySchema = z
   .object({
-    search: z.string().optional().meta({ description: 'Title contains, case-insensitive.' }),
+    search: z.string().optional().meta({ description: 'Title or body contains, case-insensitive; at most 100 characters are used.' }),
     category: z.string().optional().meta({ description: 'An ArticleCategory code or `all`; an unknown code matches nothing.' }),
     published: z.string().optional().meta({ description: '`1` = published only, `0` = unpublished only, anything else = all.' }),
     page: pageQuery(),
