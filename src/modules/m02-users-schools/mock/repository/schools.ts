@@ -70,6 +70,14 @@ export const activeSchoolTypes = (): readonly SchoolType[] =>
   primarySchools.hidden
     ? SECONDARY_SCHOOL_TYPES
     : [...SECONDARY_SCHOOL_TYPES, ...PRIMARY_SCHOOL_TYPES]
+/**
+ * The school types an S9 request may show: the active types, plus the primary ones when the request asks for them
+ * (`includePrimary=true`, OQ-U1) or names one of them as the type filter.
+ */
+const typesForRequest = (includePrimary: boolean): readonly SchoolType[] =>
+  includePrimary
+    ? [...SECONDARY_SCHOOL_TYPES, ...PRIMARY_SCHOOL_TYPES]
+    : activeSchoolTypes()
 /** True while the primary schools and Darjah pupils are hidden (the default). */
 export const arePrimaryHidden = (): boolean => primarySchools.hidden
 /** True for a school of a primary type (hidden). */
@@ -143,6 +151,8 @@ export interface SchoolListFilter {
   search?: string
   state?: string
   type?: string
+  /** U-04 (OQ-U1): also list the primary types SK, SJK(C), SJK(T). */
+  includePrimary?: boolean
   isActive?: boolean
   page?: number
   pageSize?: number
@@ -271,12 +281,12 @@ export const schoolsRepo = defineRepository({
        * ties by id), 30 per page.
        */
       list(filter: SchoolListFilter = {}): { rows: School[]; total: number } {
-        const where: Where<School> = { type: [...activeSchoolTypes()] }
+        const where: Where<School> = { type: [...typesForRequest(filter.includePrimary === true)] }
         if (!blank(filter.state)) where.state = (filter.state as string).trim()
         if (!blank(filter.type)) {
           const type = (filter.type as string).trim() as SchoolType
-          // A hidden (primary) type filters to nothing; the list never offers it.
-          where.type = activeSchoolTypes().includes(type) ? type : []
+          // Picking a primary type shows those rows too (U-04); an unknown type filters to nothing.
+          where.type = [...typesForRequest(true)].includes(type) ? type : []
         }
         if (filter.isActive !== undefined) where.isActive = filter.isActive
         const term = filter.search?.trim() ?? ''
@@ -290,8 +300,9 @@ export const schoolsRepo = defineRepository({
       },
 
       /** S9 `meta.types` (FR-M02-77): the distinct school types present in the data, A→Z. */
-      types(): string[] {
-        return [...store.groupCount('type').keys()].filter((t) => !isPrimarySchoolType(t)).sort()
+      types(includePrimary = false): string[] {
+        const allowed: readonly string[] = typesForRequest(includePrimary)
+        return [...store.groupCount('type').keys()].filter((t) => allowed.includes(t)).sort()
       },
 
       /** True when school `id` is of a primary type (hidden: the admin screens answer "not found"). */
@@ -327,8 +338,8 @@ export const schoolsRepo = defineRepository({
       },
 
       /** S9 stat cards: total, active, inactive (named queries S-ALL / S-ACTIVE / S-INACTIVE). */
-      counts(): { total: number; active: number; inactive: number } {
-        const type = [...activeSchoolTypes()]
+      counts(includePrimary = false): { total: number; active: number; inactive: number } {
+        const type = [...typesForRequest(includePrimary)]
         return {
           total: store.count({ type }),
           active: store.count({ type, isActive: true }),

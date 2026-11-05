@@ -86,7 +86,7 @@ describe('planUserImport (BR-14)', () => {
   it('plans, skips and fails per line; errors carry the original line number', () => {
     const text = [
       'Nama,Emel,Telefon,Kata Laluan', // 1 header
-      'Ali,ali@x.my,0123456789,rahsia1', // 2 planned
+      'Ali,ali@x.my,0123456789,rahsia12', // 2 planned
       '', // 3
       'Siti,SITI@x.my', // 4 planned, no phone / password
       'Dup,sedia@ada.my', // 5 skipped: exists
@@ -94,11 +94,11 @@ describe('planUserImport (BR-14)', () => {
       ',nama@x.my', // 7 failed: no name
       'Bad,bukan-emel', // 8 failed: bad e-mail
       'Tel,tel@x.my,012345678901234', // 9 failed: phone 15 chars
-      'Pendek,pendek@x.my,,abc', // 10 failed: password < 6
+      'Pendek,pendek@x.my,,abc', // 10 failed: password < 8
     ].join('\r\n')
     const plan = planUserImport(text, exists)
     expect(plan.planned).toEqual([
-      { line: 2, name: 'Ali', email: 'ali@x.my', phone: '0123456789', password: 'rahsia1' },
+      { line: 2, name: 'Ali', email: 'ali@x.my', phone: '0123456789', password: 'rahsia12' },
       { line: 4, name: 'Siti', email: 'SITI@x.my', phone: null, password: '' },
     ])
     expect(plan.skipped).toBe(2)

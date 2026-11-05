@@ -47,6 +47,7 @@ const applied = computed(() => ({
   search: queryText(route.query.search).trim(),
   state: queryText(route.query.state),
   type: queryText(route.query.type),
+  includePrimary: queryText(route.query.includePrimary) === 'true',
   page: Math.max(1, Number.parseInt(queryText(route.query.page), 10) || 1),
 }))
 
@@ -54,12 +55,15 @@ const applied = computed(() => ({
 const search = ref(queryText(route.query.search))
 const state = ref(queryText(route.query.state))
 const type = ref(queryText(route.query.type))
+const includePrimary = ref(queryText(route.query.includePrimary) === 'true')
 watch(
-  () => [route.query.search, route.query.state, route.query.type] as const,
-  ([s, st, ty]) => {
+  () =>
+    [route.query.search, route.query.state, route.query.type, route.query.includePrimary] as const,
+  ([s, st, ty, ip]) => {
     search.value = queryText(s)
     state.value = queryText(st)
     type.value = queryText(ty)
+    includePrimary.value = queryText(ip) === 'true'
   },
 )
 
@@ -69,6 +73,7 @@ const { data, error, reload } = useApi(
       search: applied.value.search || null,
       state: applied.value.state || null,
       type: applied.value.type || null,
+      includePrimary: applied.value.includePrimary,
       page: applied.value.page,
       signal,
     }),
@@ -76,6 +81,7 @@ const { data, error, reload } = useApi(
     () => route.query.search,
     () => route.query.state,
     () => route.query.type,
+    () => route.query.includePrimary,
     () => route.query.page,
   ],
 )
@@ -89,6 +95,7 @@ const chips = computed<{ key: string; label: string }[]>(() => {
   const out: { key: string; label: string }[] = []
   if (applied.value.state !== '') out.push({ key: 'state', label: applied.value.state })
   if (applied.value.type !== '') out.push({ key: 'type', label: applied.value.type })
+  if (applied.value.includePrimary) out.push({ key: 'includePrimary', label: 'Sekolah rendah' })
   return out
 })
 
@@ -97,6 +104,7 @@ async function removeChip(key: string): Promise<void> {
   if (applied.value.search !== '') query.search = applied.value.search
   if (applied.value.state !== '' && key !== 'state') query.state = applied.value.state
   if (applied.value.type !== '' && key !== 'type') query.type = applied.value.type
+  if (applied.value.includePrimary && key !== 'includePrimary') query.includePrimary = 'true'
   await router.push({ path: SCHOOLS_LIST_PATH, query })
 }
 /** Filters in force (search counts as one), for the reset button and the mobile badge. */
@@ -109,6 +117,7 @@ function filterQuery(): Record<string, string> {
   if (s !== '') out.search = s
   if (state.value !== '') out.state = state.value
   if (type.value !== '') out.type = type.value
+  if (includePrimary.value) out.includePrimary = 'true'
   return out
 }
 
@@ -117,6 +126,7 @@ function sameQuery(next: Record<string, string>): boolean {
   if (applied.value.search !== '') current.search = applied.value.search
   if (applied.value.state !== '') current.state = applied.value.state
   if (applied.value.type !== '') current.type = applied.value.type
+  if (applied.value.includePrimary) current.includePrimary = 'true'
   return (
     applied.value.page === 1 &&
     JSON.stringify(current) === JSON.stringify(next) &&
@@ -135,6 +145,7 @@ async function resetFilter(): Promise<void> {
   search.value = ''
   state.value = ''
   type.value = ''
+  includePrimary.value = false
   await submitFilter()
 }
 
@@ -142,6 +153,7 @@ const pagerQuery = computed(() => ({
   search: applied.value.search,
   state: applied.value.state,
   type: applied.value.type,
+  includePrimary: applied.value.includePrimary ? 'true' : '',
 }))
 
 function goToPage(page: number): void {
@@ -166,6 +178,10 @@ async function toggle(school: AdminSchool): Promise<void> {
     toggling.value = null
   }
 }
+
+/** Primary types are listed only (U-04): the by-id routes answer 404, so no edit link and no toggle. */
+const PRIMARY_TYPES: readonly string[] = ['SK', 'SJK(C)', 'SJK(T)']
+const isPrimary = (school: { type: string }): boolean => PRIMARY_TYPES.includes(school.type)
 
 type SchoolRow = AdminSchool & Record<string, unknown>
 const tableRows = computed(() => rows.value as SchoolRow[])
@@ -266,6 +282,13 @@ const COLUMNS: TableColumn<SchoolRow>[] = [
         <option value="">Semua Jenis</option>
         <option v-for="name in types" :key="name" :value="name">{{ name }}</option>
       </DsNativeSelect>
+      <UCheckbox
+        v-model="includePrimary"
+        name="includePrimary"
+        label="Tunjuk sekolah rendah (SK, SJK)"
+        class="min-h-11 items-center"
+        data-testid="schools-include-primary"
+      />
     </DsFilterBar>
 
     <DsLoadError
@@ -333,6 +356,7 @@ const COLUMNS: TableColumn<SchoolRow>[] = [
       <template #actions-cell="{ row }">
         <div class="flex items-center justify-end gap-2">
           <UButton
+            v-if="!isPrimary(row.original)"
             :to="{ name: SCHOOL_ROUTES.edit, params: { id: row.original.id } }"
             color="neutral"
             variant="soft"
@@ -341,7 +365,7 @@ const COLUMNS: TableColumn<SchoolRow>[] = [
             aria-label="Edit"
             data-testid="school-edit"
           />
-          <form method="post" @submit.prevent="toggle(row.original)">
+          <form v-if="!isPrimary(row.original)" method="post" @submit.prevent="toggle(row.original)">
             <UButton
               type="submit"
               color="neutral"
@@ -379,6 +403,7 @@ const COLUMNS: TableColumn<SchoolRow>[] = [
         <div class="flex items-center gap-2">
           <DsStatusBadge :status="row.isActive ? 'active' : 'inactive'" />
           <UButton
+            v-if="!isPrimary(row as unknown as AdminSchool)"
             :to="{ name: SCHOOL_ROUTES.edit, params: { id: row.id as number } }"
             color="neutral"
             variant="soft"

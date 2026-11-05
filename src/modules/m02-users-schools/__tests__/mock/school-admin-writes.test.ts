@@ -123,7 +123,7 @@ describe('createTeacher', () => {
     expect(row).toMatchObject({ role: 'teacher', schoolId: school, isActive: true })
   })
 
-  it('refuses with 422 fields: name, e-mail (invalid, used), phone, password min 6 and confirmation', () => {
+  it('refuses with 422 fields: name, e-mail (invalid, used), phone, password min 8 and confirmation', () => {
     const e = refused(() =>
       svc.createTeacher(
         school,
@@ -148,8 +148,8 @@ describe('createTeacher', () => {
     ).toHaveProperty('password')
   })
 
-  it('accepts a 6 character password (M02 minimum) and a missing phone', () => {
-    expect(teacher({ password: '123456', passwordConfirmation: '123456' }).phone).toBeNull()
+  it('accepts an 8 character password (M02 minimum) and a missing phone', () => {
+    expect(teacher({ password: '12345678', passwordConfirmation: '12345678' }).phone).toBeNull()
   })
 })
 
@@ -275,7 +275,7 @@ describe('updateUser', () => {
     expect(out.phone).toBe('0123456789')
   })
 
-  it('a filled new password replaces the old one (min 6, confirmed); empty keeps it', () => {
+  it('a filled new password replaces the old one (min 8, confirmed); empty keeps it', () => {
     const t = teacher()
     const base = { name: t.name, email: t.email }
     svc.updateUser(
@@ -303,7 +303,7 @@ describe('updateUser', () => {
           school,
           'teacher',
           t.id,
-          { ...base, newPassword: 'abcdef', newPasswordConfirmation: 'abcdeg' },
+          { ...base, newPassword: 'abcdefgh', newPasswordConfirmation: 'abcdefgi' },
           NOW,
         ),
       ).fields,
@@ -312,10 +312,10 @@ describe('updateUser', () => {
       school,
       'teacher',
       t.id,
-      { ...base, newPassword: 'abcdef', newPasswordConfirmation: 'abcdef' },
+      { ...base, newPassword: 'abcdefgh', newPasswordConfirmation: 'abcdefgh' },
       NOW,
     )
-    expect(users.verifyPassword(t.id, 'abcdef')).toBe(true)
+    expect(users.verifyPassword(t.id, 'abcdefgh')).toBe(true)
     expect(users.verifyPassword(t.id, 'rahsia123')).toBe(false)
   })
 
@@ -472,17 +472,17 @@ describe('resetPassword', () => {
       school,
       'student',
       p.id,
-      { newPassword: 'abcdef', newPasswordConfirmation: 'abcdef' },
+      { newPassword: 'abcdefgh', newPasswordConfirmation: 'abcdefgh' },
       NOW,
     )
-    expect(users.verifyPassword(p.id, 'abcdef')).toBe(true)
+    expect(users.verifyPassword(p.id, 'abcdefgh')).toBe(true)
   })
 
-  it('min 6, confirmed, required; the old password stays on refusal', () => {
+  it('min 8, confirmed, required; the old password stays on refusal', () => {
     const t = teacher()
     for (const input of [
       { newPassword: '12345', newPasswordConfirmation: '12345' },
-      { newPassword: 'abcdef', newPasswordConfirmation: 'abcdeg' },
+      { newPassword: 'abcdefgh', newPasswordConfirmation: 'abcdefgi' },
       { newPassword: '', newPasswordConfirmation: '' },
     ]) {
       expect(
@@ -495,9 +495,9 @@ describe('resetPassword', () => {
   it('403 for an inactive account, 404 for another school', () => {
     const t = teacher()
     svc.setTeacherActive(school, t.id, false, NOW)
-    const ok = { newPassword: 'abcdef', newPasswordConfirmation: 'abcdef' }
+    const ok = { newPassword: 'abcdefgh', newPasswordConfirmation: 'abcdefgh' }
     expect(refused(() => svc.resetPassword(school, 'teacher', t.id, ok, NOW)).status).toBe(403)
-    expect(users.verifyPassword(t.id, 'abcdef')).toBe(false)
+    expect(users.verifyPassword(t.id, 'abcdefgh')).toBe(false)
     expect(
       refused(() => svc.resetPassword(school, 'student', foreignPupil.id, ok, NOW)).status,
     ).toBe(404)

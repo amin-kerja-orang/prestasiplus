@@ -8,7 +8,7 @@ import { confirmed, email, max, min, required, unique, type ValidationRule } fro
 import { users } from '@/modules/m01-authentication/mock'
 
 /** BR-M02-08: password minimum of the admin forms (S2 create, S3 edit "newPassword"). */
-export const M02_PASSWORD_MIN = 6
+export const M02_PASSWORD_MIN = 8
 
 /** `name`: required, at most 255 characters. */
 export const nameRules = (): ValidationRule[] => [required(), max(255)]

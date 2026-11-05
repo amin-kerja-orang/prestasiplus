@@ -18,7 +18,7 @@ function school(id: number, extra: Partial<AdminSchool> = {}): AdminSchool {
     id,
     name: `SK TAMAN CONTOH ${String(id)}`,
     code: `ABC${String(1000 + id)}`,
-    type: 'SK',
+    type: 'SMK',
     state: 'Selangor',
     district: 'PPD CONTOH',
     city: null,
@@ -91,6 +91,47 @@ beforeEach(() => {
 afterEach(() => {
   wrapper?.unmount()
   wrapper = null
+})
+
+describe('SchoolListPage (M02 S9) primary schools checkbox (U-04, OQ-U1)', () => {
+  it('is unchecked by default and does not send includePrimary', async () => {
+    const w = await render()
+    expect(w.find('[data-testid=schools-include-primary]').exists()).toBe(true)
+    expect(w.text()).toContain('Tunjuk sekolah rendah (SK, SJK)')
+    expect(api.fetchAdminSchools.mock.calls.at(-1)?.[0]).toMatchObject({ includePrimary: false })
+    expect(router.currentRoute.value.query.includePrimary).toBeUndefined()
+  })
+
+  it('checking it sends includePrimary and keeps it in the URL and the pager', async () => {
+    const w = await render()
+    await w.get('[data-testid=schools-include-primary]').trigger('click')
+    await w.get('[data-testid=schools-filter]').trigger('submit')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({ includePrimary: 'true' })
+    expect(api.fetchAdminSchools.mock.calls.at(-1)?.[0]).toMatchObject({ includePrimary: true })
+    expect(w.text()).toContain('Sekolah rendah')
+  })
+
+  it('a primary-type row has no edit link and no toggle; a secondary row keeps both', async () => {
+    api.fetchAdminSchools.mockResolvedValue(listResult([school(1, { type: 'SK' }), school(2)]))
+    const w = await render('/admin/schools?includePrimary=true')
+    const rows = w.findAll('tbody tr')
+    expect(rows[0]?.text()).toContain('SK TAMAN CONTOH 1')
+    expect(rows[0]?.find('[data-testid=school-edit]').exists()).toBe(false)
+    expect(rows[0]?.find('[data-testid=school-toggle]').exists()).toBe(false)
+    expect(rows[1]?.find('[data-testid=school-edit]').exists()).toBe(true)
+    expect(rows[1]?.find('[data-testid=school-toggle]').exists()).toBe(true)
+  })
+
+  it('reads includePrimary from the URL and the reset clears it', async () => {
+    const w = await render('/admin/schools?includePrimary=true')
+    expect(api.fetchAdminSchools.mock.calls.at(-1)?.[0]).toMatchObject({ includePrimary: true })
+    const reset = w.findAll('button').find((b) => b.text().includes('Set Semula'))
+    expect(reset).toBeDefined()
+    await reset!.trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.query.includePrimary).toBeUndefined()
+  })
 })
 
 describe('SchoolListPage (M02 S9)', () => {

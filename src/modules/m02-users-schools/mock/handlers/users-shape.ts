@@ -25,6 +25,8 @@ export function toListItem(row: UserRow): AdminUserListItem {
     role: row.role,
     school: row.schoolId !== null && name !== null ? { id: row.schoolId, name } : null,
     isActive: row.isActive,
+    // The users store has no suspended flag: no mock account is suspended, so an inactive one is pending (U-01).
+    isSuspended: false,
     createdAt: row.createdAt,
     avatarUrl: row.avatarUrl,
   }

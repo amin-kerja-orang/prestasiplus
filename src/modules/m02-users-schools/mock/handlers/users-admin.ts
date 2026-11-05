@@ -162,26 +162,54 @@ function listUsers(req: MockRequest): MockResponse {
   const page = pageParams(req.query, { pageSize: USERS_PAGE_SIZE })
   const visibility = arePrimaryHidden() ? secondaryVisibility() : undefined
   const roleCounts = users.roleCounts(visibility)
-  const empty = () => paged({ rows: [], total: 0 }, page, { roleCounts })
+  // No suspended flag in the mock store: pending = inactive, within the caller's scope.
+  const pendingCount = users.adminList({
+    ...(visibility ? { visibility } : {}),
+    isActive: false,
+    page: 1,
+    pageSize: 1,
+  }).total
+  const meta = { roleCounts, pendingCount }
+  const empty = () => paged({ rows: [], total: 0 }, page, meta)
 
   const role = queryString(req.query, 'role')?.trim() ?? ''
   const schoolText = queryString(req.query, 'schoolId')?.trim() ?? ''
   const schoolId = queryInt(req.query, 'schoolId')
   const active = queryString(req.query, 'isActive')?.trim()
+  const status = queryString(req.query, 'status')?.trim() ?? ''
+  const search = queryString(req.query, 'search') ?? ''
   // BR-02 / INFERRED: like the SQL `where`, a role outside the 8 codes or a non-numeric school matches nothing.
   if (role !== '' && !isLiveRole(role)) return empty()
   if (schoolText !== '' && schoolId === undefined) return empty()
+  if (status !== '' && status !== 'pending' && status !== 'active' && status !== 'suspended')
+    return empty()
 
-  const result = users.adminList({
+  const filter = {
     ...(visibility ? { visibility } : {}),
     ...(role === '' ? {} : { role: role as UserRole }),
     ...(schoolId === undefined ? {} : { schoolId }),
-    ...(active === '1' ? { isActive: true } : active === '0' ? { isActive: false } : {}),
-    search: queryString(req.query, 'search') ?? '',
+    search,
+  }
+  const isActive =
+    status === 'active' || active === '1'
+      ? true
+      : status === 'pending' || status === 'suspended' || active === '0'
+        ? false
+        : undefined
+  // `status` narrows `is_active` (a contradicting pair matches nothing).
+  if (status === 'active' && active === '0') return empty()
+  if ((status === 'pending' || status === 'suspended') && active === '1') return empty()
+
+  // Nobody is suspended in the mock store.
+  if (status === 'suspended') return empty()
+
+  const result = users.adminList({
+    ...filter,
+    ...(isActive === undefined ? {} : { isActive }),
     page: page.page,
     pageSize: page.pageSize,
   })
-  return paged({ rows: result.rows.map(toListItem), total: result.total }, page, { roleCounts })
+  return paged({ rows: result.rows.map(toListItem), total: result.total }, page, meta)
 }
 
 // --- #2 --------------------------------------------------------------------------------------------
@@ -456,7 +484,7 @@ function updateUser(req: MockRequest, ctx: MockContext): MockResponse {
         expiresAt: computeExpiry(next, next === 'personal' ? 'onetime' : 'monthly', now),
       })
     }
-    // BR-08: a filled new password replaces the old one (min 6, confirmed).
+    // BR-08: a filled new password replaces the old one (min 8, confirmed).
     if (typeof body.newPassword === 'string' && body.newPassword !== '') {
       users.setPassword(id, body.newPassword)
     }

@@ -23,10 +23,10 @@ import {
   type ImportRecord,
 } from './text'
 
-/** BR-08: `name` ≤ 255, `phone` ≤ 14, password min 6. */
+/** BR-08: `name` ≤ 255, `phone` ≤ 14, password min 8. */
 const NAME_MAX = 255
 const PHONE_MAX = 14
-const PASSWORD_MIN = 6
+const PASSWORD_MIN = 8
 
 export const IMPORT_MESSAGES = {
   noName: 'Nama diperlukan.',
@@ -34,7 +34,7 @@ export const IMPORT_MESSAGES = {
   badEmail: 'Emel tidak sah.',
   badDelimaEmail: 'Emel DELIMa tidak sah.',
   phoneLong: 'Nombor telefon tidak boleh melebihi 14 aksara.',
-  passwordShort: 'Kata laluan mesti sekurang-kurangnya 6 aksara.',
+  passwordShort: 'Kata laluan mesti sekurang-kurangnya 8 aksara.',
   noDelimaPassword: 'Kata laluan DELIMa diperlukan.',
   icLong: 'Nombor IC tidak boleh melebihi 14 aksara.',
 } as const
