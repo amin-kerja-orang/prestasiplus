@@ -1,22 +1,26 @@
 <script setup lang="ts">
 /**
- * S4 `/prestasi/kelas` "Pilih Kelas" (M08-T5; FR-M08-29, FR-M08-30). The viewer's own active classes;
- * none (the admin, a pelajar) shows the observed empty state. The populated picker reuses the S10 card
- * pattern (PROPOSED, UNVERIFIED L-6); the card action "Lihat Prestasi" is INFERRED.
+ * S4 `/prestasi/kelas` "Pilih Kelas" (M08-T5; FR-M08-29, FR-M08-30). The viewer's own active classes (the teacher's own,
+ * the school admin's whole school); none (the admin, a pelajar) shows the observed empty state. The populated picker reuses the
+ * S10 card pattern (PROPOSED, UNVERIFIED L-6); the card action "Lihat Prestasi" is INFERRED. Above the cards (R1-GUR-4,
+ * FR-GUR-4-7): "Prestasi Mengikut Subjek" and "Pelajar Terbaik" from the same endpoint (`/classes/aggregate`).
  */
 import { computed } from 'vue'
 
 import { isHttpMode } from '@/api'
-import { DsEmptyState, DsLoadError, DsPage, DsPageHeader } from '@/ds'
+import { DsEmptyState, DsGrid, DsListRow, DsLoadError, DsPage, DsPageHeader, DsPanel, DsProgress, DsStack, DsText } from '@/ds'
 import { useSessionStore } from '@/stores/session'
 
-import { fetchOwnClasses } from '../api/performance'
+import { fetchOwnClassesAggregate } from '../api/performance'
 import ClassPickCard from '../components/prestasi/ClassPickCard.vue'
+import { capPct, pctWhole, plain } from '../lib/prestasi/format'
 import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
 
-const { data, error, reload } = useRouteData((signal) => fetchOwnClasses({ signal }))
+const { data, error, reload } = useRouteData((signal) => fetchOwnClassesAggregate({ signal }))
 const loadFailed = computed(() => isLoadError(error.value))
-const active = computed(() => (data.value ?? []).filter((c) => c.isActive))
+const active = computed(() => (data.value?.classes ?? []).filter((c) => c.isActive))
+const topStudents = computed(() => data.value?.topStudents ?? [])
+const subjects = computed(() => data.value?.subjects ?? [])
 
 /**
  * Only the teacher and the admin own / create classes (M10 `/guru/kelas/cipta` is theirs). Any other role
@@ -57,19 +61,54 @@ const canCreateClass = computed(
         </DsEmptyState>
       </div>
 
-      <div
-        v-else
-        class="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-3"
-        data-testid="kelas-list"
-      >
-        <ClassPickCard
-          v-for="c in active"
-          :key="c.id"
-          :item="c"
-          :to="`/prestasi/kelas/${c.id}`"
-          action="Lihat Prestasi"
-        />
-      </div>
+      <template v-else>
+        <DsGrid :cols="{ base: 1, lg: 2 }" data-testid="kelas-aggregate">
+          <DsPanel title="Prestasi Mengikut Subjek" data-testid="subject-performance">
+            <DsText v-if="subjects.length === 0" variant="caption" tone="muted" data-testid="subject-empty">
+              Belum ada data latihan.
+            </DsText>
+            <DsStack v-else as="ul" gap="sm">
+              <li v-for="s in subjects" :key="s.subjectId" data-testid="subject-row">
+                <DsProgress
+                  :label="`${s.name} ${pctWhole(capPct(s.accuracy))} · ${plain(s.answered)} soalan`"
+                  :value="Math.round(capPct(s.accuracy))"
+                  :show-value="false"
+                  tone="auto"
+                />
+              </li>
+            </DsStack>
+          </DsPanel>
+
+          <DsPanel title="Pelajar Terbaik" data-testid="top-students">
+            <DsText v-if="topStudents.length === 0" variant="caption" tone="muted" data-testid="top-empty">
+              Tiada pelajar dengan sekurang-kurangnya 5 soalan.
+            </DsText>
+            <DsStack v-else as="ol" gap="sm">
+              <DsListRow
+                v-for="(t, i) in topStudents"
+                :key="t.userId"
+                :rank="i + 1"
+                :title="t.name"
+                :meta="`${pctWhole(capPct(t.accuracy))} · ${plain(t.answered)} soalan`"
+                data-testid="top-row"
+              />
+            </DsStack>
+          </DsPanel>
+        </DsGrid>
+
+        <div
+          class="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-3"
+          data-testid="kelas-list"
+        >
+          <ClassPickCard
+            v-for="c in active"
+            :key="c.id"
+            :item="c"
+            :to="`/prestasi/kelas/${c.id}`"
+            action="Lihat Prestasi"
+          />
+        </div>
+      </template>
     </template>
     <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
       <USkeleton class="h-24 w-full" />
