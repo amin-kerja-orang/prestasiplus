@@ -4899,6 +4899,10 @@
           },
           "completed": {
             "type": "boolean"
+          },
+          "claimed": {
+            "type": "boolean",
+            "description": "True when the reward was claimed this Malaysia day (API-GAME-11). Absent until the claim route is served."
           }
         },
         "required": [
@@ -5099,6 +5103,11 @@
         "properties": {
           "syilingAmount": {
             "type": "integer"
+          },
+          "clientUuid": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Idempotency key (DM-79), per user: a repeat returns the first result and moves nothing."
           }
         },
         "required": [
@@ -5147,6 +5156,11 @@
           "active": {
             "type": "integer",
             "minimum": 0
+          },
+          "claimed": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Rewards claimed this Malaysia day (API-GAME-11). Absent until the claim route is served."
           }
         },
         "required": [
@@ -5170,6 +5184,47 @@
         "required": [
           "data",
           "meta"
+        ]
+      },
+      "GamificationClaimErrorCode": {
+        "type": "string",
+        "enum": [
+          "CHALLENGE_NOT_DONE",
+          "CHALLENGE_CLAIMED"
+        ]
+      },
+      "GamificationChallengeClaimRequest": {
+        "type": "object",
+        "properties": {
+          "clientUuid": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Idempotency key (DM-79), per user: a repeat returns the first result and moves nothing."
+          }
+        }
+      },
+      "GamificationChallengeClaimResult": {
+        "type": "object",
+        "properties": {
+          "claimed": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "rewardSyiling": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rewardXp": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "claimed",
+          "rewardSyiling",
+          "rewardXp"
         ]
       },
       "GamificationPodiumEntry": {
@@ -6237,6 +6292,11 @@
           "xp": {
             "type": "integer",
             "minimum": 0
+          },
+          "streak": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Current streak in days (FR-ADM-P2-04.1). Absent until the route serves it."
           }
         },
         "required": [
@@ -78799,7 +78859,7 @@
           "gamification"
         ],
         "summary": "Convert syiling to tokens at the tier rate",
-        "description": "tokens = floor(syilingAmount / rate). Atomic: debits syiling with a ledger row (type convert, source token_conversion, description \"Tukar {s} syiling → {t} token\"), then credits the tokens. Success is 200, not 201. There is no daily cap.",
+        "description": "tokens = floor(syilingAmount / rate). Atomic: debits syiling with a ledger row (type convert, source token_conversion, description \"Tukar {s} syiling → {t} token\"), then credits the tokens. Success is 200, not 201. There is no daily cap. A repeat with the same clientUuid from the same user returns the first result and moves nothing (DM-79).",
         "parameters": [
           {
             "schema": {
@@ -78863,7 +78923,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR \"Jumlah syiling tidak sah.\" with fields.syilingAmount = the same text (not an integer, below the tier rate, or above the balance).",
+            "description": "VALIDATION_ERROR \"Jumlah syiling tidak sah.\" with fields.syilingAmount = the same text (not an integer, below the tier rate, or above the balance); fields.clientUuid \"Medan ini tidak sah.\" (not a UUID).",
             "content": {
               "application/json": {
                 "schema": {
@@ -78895,6 +78955,121 @@
           },
           "401": {
             "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gamification/challenges/{id}/claim": {
+      "post": {
+        "tags": [
+          "gamification"
+        ],
+        "summary": "Claim the reward of a completed daily challenge (API-GAME-11)",
+        "description": "One transaction: credits reward_syiling and reward_xp once (ledger source challenge) and records the claim for the Malaysia day (DM-63). A challenge deactivated after completion can still be claimed that day. A repeat with the same clientUuid from the same user returns the first result and moves nothing (DM-79). The body is optional. Success is 200, not 201.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamificationChallengeClaimRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Claimed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationChallengeClaimResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token); \"Tidak dibenarkan dalam Mod Pelajar.\" (ERR-GAME-26).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Cabaran tidak dijumpai.\" (no such challenge).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CHALLENGE_NOT_DONE \"Cabaran belum selesai.\" (ERR-GAME-18, progress below the target); CHALLENGE_CLAIMED \"Ganjaran sudah dituntut.\" (ERR-GAME-19, second claim the same Malaysia day).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR fields.clientUuid \"Medan ini tidak sah.\" (not a UUID).",
             "content": {
               "application/json": {
                 "schema": {
