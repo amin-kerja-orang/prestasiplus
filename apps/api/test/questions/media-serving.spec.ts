@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { QuestionsRepository, QuestionsService } from '../../src/modules/questions'
 import { ServabilityService, filterOf } from '../../src/modules/questions/serving'
+import { ALL_GROUP_SURFACES } from '../../src/modules/questions/serving/rules'
 import { adminActor, mcqInput, tagBody, tagOf, type Tag } from './fixtures'
 import { bootQuestionsApp, type QuestionsTestApp } from './helpers'
 
@@ -36,7 +37,8 @@ describe('pupil serving needs the stimulus file (S1-T06, FR-X1-4f)', () => {
     const [f] = await q(`insert into files (public_id, purpose, mime, size_bytes, sha256, storage_key) values ($1, 'question_image', 'image/png', 10, repeat('b', 64), $1) returning id::text id`, [`s1t06-${stimulusId}-${String(++fileSeq)}`.padEnd(22, 'x')])
     await q(`update stimuli set asset_file_id = $2::bigint where id = $1::bigint`, [stimulusId, f!.id])
   }
-  const drawn = async (ids: string[]) => new Set(await repo.eligibleAmong(ids, filterOf('latih_tubi_spm')))
+  /** The draw of a surface that shows figures and groups (D105); on the default text-only shape any stimulus question is refused first (`has_stimulus`). */
+  const drawn = async (ids: string[]) => new Set(await repo.eligibleAmong(ids, filterOf('latih_tubi_spm', {}, ALL_GROUP_SURFACES)))
   /** Parity (JS twin vs SQL): the indicator carries `image_missing` on every pupil activity exactly when the media rule drops the question from the draw. */
   const indicated = async (id: string): Promise<boolean> => {
     const report = await servability.report(id)
@@ -89,7 +91,7 @@ describe('pupil serving needs the stimulus file (S1-T06, FR-X1-4f)', () => {
   })
 
   it('[CI] (c) an approved question whose stimulus file is cleared afterwards leaves serving', async () => {
-    const id = await publish('Soalan diluluskan dahulu, kemudian fail rajah dikosongkan, hitung sudut.')
+    const id = await publish('Soalan diluluskan dahulu, kemudian fail dikosongkan, hitung sudut pedalaman.')
     const sid = await image(true)
     await q(`insert into question_version_stimuli (question_version_id, stimulus_id, position) select id, $2::bigint, 1 from question_versions where question_id = $1`, [id, sid])
     expect((await drawn([id])).has(id)).toBe(true)
