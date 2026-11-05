@@ -12,7 +12,8 @@ import { PracticeRepository } from '../../src/modules/practice/practice.reposito
 import { Be09PracticeQuestionSource } from '../../src/modules/practice/question-bridge/be09-practice-question-source'
 import { StructuredListingRepository } from '../../src/modules/practice/reads/writes/listing.repository'
 import { QuestionsBijakPoolSource } from '../../src/modules/questions/bijak-pool'
-import { BANK_VISIBLE_SQL } from '../../src/modules/questions/learner-visibility'
+import { QuestionSetsService } from '../../src/modules/classes/question-sets/question-sets.service'
+import { BANK_VISIBLE_SQL, isBankVersion } from '../../src/modules/questions/learner-visibility'
 import { BANK_ONLY, QuestionsRepository } from '../../src/modules/questions/questions.repository'
 import { QuestionsService } from '../../src/modules/questions/questions.service'
 import { databankLaneConds, janaEligibleScope } from '../../src/modules/questions/serving/filters'
@@ -171,7 +172,6 @@ describe('DM-42: getPublicForLearner and gradeAnswer never serve a private quest
 })
 
 describe('DM-42 (security M1): a by-id read with bankOnly does not find a private question; without it the mission path does', () => {
-  const rowOf = (visibility: string) => ({ id: 5n, tags: [], liveVersionNo: 1, latestVersionNo: 1, visibility })
   it('QuestionsRepository.getMany filters teacher_private only when bankOnly is set', async () => {
     const repo = new QuestionsRepository({ client: {} } as never)
     const rec = { id: '5', version: { visibility: 'teacher_private' } }
@@ -179,7 +179,6 @@ describe('DM-42 (security M1): a by-id read with bankOnly does not find a privat
     expect(await repo.getMany(['5'], 'live')).toHaveLength(1)
     expect(await repo.getMany(['5'], 'live', 'exclude', BANK_ONLY)).toHaveLength(0)
     expect(await repo.get('5', 'live', BANK_ONLY)).toBeNull()
-    expect(rowOf('bank').visibility).toBe('bank')
   })
 })
 
@@ -210,8 +209,62 @@ describe('DM-42 (security H1): a private question answered wrongly in a mission 
     const a = capture()
     await run(() => new PracticeAnalyticsRepository(a.prisma).eligibleQueueBySubject('3'))
     expect(a.sqls[0]).toContain(BANK)
+    const rt = capture()
+    await run(() => new OverviewRepository(rt.prisma).revisionTotal('3'))
+    expect(rt.sqls[0]).toContain(BANK)
     const e = capture()
     await run(() => new QuestionsRepository(e.prisma).eligibleForPractice('5'))
     expect(e.sqls[0]).toContain(BANK)
+  })
+})
+
+describe('DM-42 (R-1): admin delete, bulk delete, deactivate and reactivate treat a private question as unknown', () => {
+  const calls: string[] = []
+  const priv = { id: '5', version: { visibility: 'teacher_private' } }
+  const svc = (() => {
+    const s = Object.create(QuestionsService.prototype) as QuestionsService
+    const repo = {
+      get: (_id: string, _v: string, opts?: { bankOnly?: boolean }) => Promise.resolve(opts?.bankOnly === true ? null : priv),
+      lock: () => (calls.push('lock'), Promise.resolve(true)),
+      deletionBlock: () => (calls.push('deletionBlock'), Promise.resolve(null)),
+      remove: () => (calls.push('remove'), Promise.resolve(true)),
+      deactivate: () => (calls.push('deactivate'), Promise.resolve(true)),
+      reactivate: () => (calls.push('reactivate'), Promise.resolve(true)),
+    }
+    Object.assign(s, { repo, prisma: { transaction: (fn: () => unknown) => fn() }, overview: undefined })
+    return s
+  })()
+  const actor = { userId: '1', role: 'admin' } as never
+
+  it('remove, deactivate and reactivate are 404 and touch nothing', async () => {
+    await expect(svc.remove('5', actor)).rejects.toMatchObject({ status: 404 })
+    await expect(svc.deactivate('5')).rejects.toMatchObject({ status: 404 })
+    await expect(svc.reactivate('5')).rejects.toMatchObject({ status: 404 })
+    expect(calls).toEqual([])
+  })
+
+  it('a bulk delete reports the id as not found and deletes nothing', async () => {
+    const res = await svc.bulkAction('delete', ['5'], actor)
+    expect(res.affected).toBe(0)
+    expect(res.failed).toHaveLength(1)
+    expect(res.failed[0]).toMatchObject({ id: '5', code: 'NOT_FOUND' })
+    expect(calls).toEqual([])
+  })
+})
+
+describe('DM-42: the pupil Set Soalan does not serve a private question, and one definition says what a bank version is', () => {
+  it('QuestionSetsService.eligibleItems reads the items bank-only', async () => {
+    const seen: unknown[] = []
+    const questions = { getMany: (_ids: string[], _v: string, _s: string, opts: unknown) => (seen.push(opts), Promise.resolve([])) }
+    const repo = { itemIds: () => Promise.resolve(new Map([['1', ['5']]])) }
+    const svc = new QuestionSetsService(repo as never, {} as never, questions as never, {} as never)
+    await svc.eligibleItems([{ id: '1', needsRebuild: false }] as never)
+    expect(seen).toEqual([BANK_ONLY])
+  })
+
+  it('isBankVersion: bank and an unmarked (older) version are bank, teacher_private is not', () => {
+    expect(isBankVersion({ visibility: 'bank' })).toBe(true)
+    expect(isBankVersion({})).toBe(true)
+    expect(isBankVersion({ visibility: 'teacher_private' })).toBe(false)
   })
 })

@@ -4,7 +4,7 @@ import type { QuestionSetStudentItem } from '@pp/contract'
 import { isIdString } from '../../../db/ids'
 import { PracticeRepository } from '../../practice'
 import { ATTEMPT_LOOKUP_CONCURRENCY } from './question-sets.constants'
-import { QuestionsRepository } from '../../questions'
+import { BANK_ONLY, QuestionsRepository } from '../../questions'
 import type { ClassActor } from '../actor'
 import { ClassesRepository } from '../classes.repository'
 import { QuestionSetsRepository, type QuestionSetRecord } from './question-sets.repository'
@@ -34,7 +34,7 @@ export class QuestionSetsService {
     const buildable = sets.filter((s) => !s.needsRebuild)
     const stored = await this.repo.itemIds(buildable.map((s) => s.id))
     const all = [...new Set([...stored.values()].flat())]
-    const live = all.length === 0 ? [] : await this.questions.getMany(all, 'live')
+    const live = all.length === 0 ? [] : await this.questions.getMany(all, 'live', 'exclude', BANK_ONLY)
     const eligible = new Set(live.filter((q) => q.isActive && q.version.status === 'approved').map((q) => q.id))
     const out = new Map<string, string[]>()
     for (const s of sets) out.set(s.id, (stored.get(s.id) ?? []).filter((id) => eligible.has(id)))

@@ -6,6 +6,7 @@ import type { PracticeSession as SessionRow } from '../../db/generated/client'
 import { idFromString, idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { alreadySubmitted, notFound } from './errors'
+import { BANK_VISIBLE_SQL } from '../questions/learner-visibility'
 import { MAX_SECONDS_PER_QUESTION, POINTS_PER_CORRECT, sessionCoins } from './rules'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -598,7 +599,7 @@ export class PracticeRepository {
       (
         await this.db.$queryRaw<{ id: bigint }[]>`
           SELECT q.id FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
-           WHERE q.id = ANY(${ids}::bigint[]) AND v.visibility <> 'bank'`
+           WHERE q.id = ANY(${ids}::bigint[]) AND NOT (${BANK_VISIBLE_SQL})`
       ).map((r) => r.id.toString()),
     )
     for (const g of graded) {
