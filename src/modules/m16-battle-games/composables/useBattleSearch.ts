@@ -21,6 +21,7 @@ import {
   acceptChallenger,
   BATTLE_MAX_FAILURES,
   BATTLE_POLL_MS,
+  BATTLE_ROBOT_OVERLAY_MS,
   BATTLE_SEARCH_TIMEOUT_MS,
   joinQueue,
   pollChallenger,
@@ -29,12 +30,14 @@ import {
   startBattle,
   type BattleQueueId,
   type BattleStartBody,
+  type BattleStartResponse,
   type PollChallengerResponse,
   type PollMatchResponse,
 } from '../api'
 import { BATTLE_MSG, formatMss, rejectedMessage } from '../components/battle/battle-lib'
 
-export type SearchPhase = 'idle' | 'searching' | 'incoming' | 'waiting'
+/** `robot`: the 2 s overlay before the arena of a robot battle (48 GAME-01). */
+export type SearchPhase = 'idle' | 'searching' | 'incoming' | 'waiting' | 'robot'
 
 export interface Challenger {
   name: string
@@ -59,6 +62,14 @@ export function isQueueId(value: unknown): value is BattleQueueId {
   return typeof value === 'string' && value.trim() !== '' && value.length <= 64
 }
 
+/** The text of a refusal: a live-shaped `{error: string}` or the `{error: {message}}` envelope (429). */
+function refusalText(body: Partial<BattleStartResponse> | null): string {
+  const e = body?.error
+  if (typeof e === 'string' && e !== '') return e
+  if (typeof e === 'object' && typeof e.message === 'string' && e.message !== '') return e.message
+  return body?.message ?? ''
+}
+
 function bodyOf<T extends object>(res: RawResponse<unknown>): Partial<T> | null {
   return typeof res.body === 'object' && res.body !== null ? res.body : null
 }
@@ -71,6 +82,9 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
   const challenger = shallowRef<Challenger | null>(null)
   const waitingName = ref('')
   const waitingGrade = ref('')
+  /** True after "Tiada lawan dijumpai.": the page offers "Cuba Lagi" (48 ERR-GAME-02). */
+  const canRetry = ref(false)
+  let lastStart: { mode: 'quick-match' | 'school-battle'; params: BattleStartBody } | null = null
 
   let session = 0
   let queueId: BattleQueueId = 0
@@ -95,11 +109,12 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
     failures = 0
   }
 
-  function stopWith(message: string): void {
+  function stopWith(message: string, retry = false): void {
     halt()
     phase.value = 'idle'
     challenger.value = null
     if (message !== '') errorMsg.value = message
+    canRetry.value = retry && lastStart !== null
   }
 
   function matched(battleUuid: string): void {
@@ -123,13 +138,25 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
     }, delay)
   }
 
+  /** A robot battle: the overlay text for 2 s, then the arena (the arena shows the chip "Latihan"). */
+  function showRobotOverlay(battleUuid: string, mySession: number): void {
+    clearTimer()
+    controller = null
+    challenger.value = null
+    phase.value = 'robot'
+    timer = setTimeout(() => {
+      timer = null
+      if (mySession === session) matched(battleUuid)
+    }, BATTLE_ROBOT_OVERLAY_MS)
+  }
+
   // --- search (#4) -------------------------------------------------------------------------------
 
   async function searchTick(mySession: number): Promise<void> {
     const elapsedMs = clock.now() - startedAt
     elapsedText.value = formatMss(elapsedMs / 1000)
     if (elapsedMs >= BATTLE_SEARCH_TIMEOUT_MS) {
-      stopWith(BATTLE_MSG.noOpponentTimeout)
+      stopWith(BATTLE_MSG.noOpponentTimeout, true)
       return
     }
     const mine = new AbortController()
@@ -152,13 +179,16 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
       return
     }
     failures = 0
-    const body = bodyOf<PollMatchResponse & { battle_uuid: string; challenger: Challenger }>(res)
+    const body = bodyOf<
+      PollMatchResponse & { battle_uuid: string; challenger: Challenger; robot: boolean }
+    >(res)
     if (body?.status === 'matched' && typeof body.battle_uuid === 'string') {
-      matched(body.battle_uuid)
+      if (body.robot === true) showRobotOverlay(body.battle_uuid, mySession)
+      else matched(body.battle_uuid)
       return
     }
     if (body?.status === 'expired' || body?.status === 'not_found') {
-      stopWith(BATTLE_MSG.noOpponent)
+      stopWith(BATTLE_MSG.noOpponent, true)
       return
     }
     if (body?.status === 'incoming_challenge' && body.challenger) {
@@ -177,16 +207,12 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
     halt()
     const mySession = session
     errorMsg.value = ''
+    canRetry.value = false
+    lastStart = { mode, params }
     loading.value = true
     const mine = new AbortController()
     controller = mine
-    let res: RawResponse<{
-      queue_id?: BattleQueueId
-      matched?: boolean
-      battle_uuid?: string
-      error?: string
-      message?: string
-    }>
+    let res: RawResponse<BattleStartResponse>
     try {
       res = await startBattle(mode, params, { signal: mine.signal })
     } catch (err) {
@@ -199,7 +225,8 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
     loading.value = false
     const body = bodyOf<typeof res.body>(res)
     if (!isOk(res.status)) {
-      errorMsg.value = body?.error ?? body?.message ?? BATTLE_MSG.startFallback
+      // 429 BATTLE_DAILY_LIMIT: the server text inline, no countdown (ruling 35).
+      errorMsg.value = refusalText(body) || BATTLE_MSG.startFallback
       return
     }
     if (body === null) {
@@ -221,6 +248,13 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
     elapsedText.value = formatMss(0)
     phase.value = 'searching'
     schedule(mySession, () => searchTick(mySession))
+  }
+
+  /** "Cuba Lagi": starts the same search again. */
+  async function retry(): Promise<void> {
+    const last = lastStart
+    if (last === null) return
+    await start(last.mode, last.params)
   }
 
   /** "Batal": resets the page state; no request (DV-M16-05). */
@@ -333,6 +367,7 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
 
   function clearError(): void {
     errorMsg.value = ''
+    canRetry.value = false
   }
 
   if (getCurrentScope()) onScopeDispose(halt)
@@ -345,7 +380,9 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
     challenger,
     waitingName,
     waitingGrade,
+    canRetry,
     start,
+    retry,
     cancel,
     respond,
     watchWaiting,

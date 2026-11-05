@@ -18,6 +18,8 @@ import { useApi, useClickOutside } from '@/composables'
 import { DsArt3D, DsIconChip, DsPage, DsLoadError } from '@/ds'
 
 import {
+  BATTLE_QUESTION_COUNT_DEFAULT,
+  BATTLE_QUESTION_COUNTS,
   fetchBattleLobby,
   fetchInvitations,
   type BattleInvitation,
@@ -27,6 +29,7 @@ import {
 import ChallengeFriendModal from '../components/battle/ChallengeFriendModal.vue'
 import InvitationsModal from '../components/battle/InvitationsModal.vue'
 import {
+  BATTLE_MSG,
   canStart,
   matchParams,
   pkskBlocked,
@@ -50,6 +53,7 @@ const sel = reactive<BattleSelection>({
   pkskDomainId: null,
   pkskLevel: null,
   spmSubjectId: null,
+  questionCount: BATTLE_QUESTION_COUNT_DEFAULT,
 })
 const showMore = ref(false)
 const showSpmTip = ref(false)
@@ -75,7 +79,8 @@ const hideVisibility = computed(
   () =>
     search.phase.value === 'searching' ||
     search.phase.value === 'incoming' ||
-    search.phase.value === 'waiting',
+    search.phase.value === 'waiting' ||
+    search.phase.value === 'robot',
 )
 
 function setType(type: QuestionType): void {
@@ -194,7 +199,20 @@ onBeforeUnmount(() => {
         :close="errorClose"
         data-testid="battle-error"
         @update:open="search.clearError()"
-      />
+      >
+        <template v-if="search.canRetry.value" #actions>
+          <UButton
+            color="neutral"
+            variant="soft"
+            size="lg"
+            class="min-h-11"
+            data-testid="battle-retry"
+            @click="void search.retry()"
+          >
+            {{ BATTLE_MSG.retry }}
+          </UButton>
+        </template>
+      </UAlert>
 
       <UCard>
         <div class="flex items-center justify-between gap-4">
@@ -394,6 +412,26 @@ onBeforeUnmount(() => {
             </UButton>
           </div>
         </div>
+
+        <!-- Bilangan Soalan (48 GAME-01: chips 5, 10, 15, 20) -->
+        <div class="mt-4" data-testid="battle-count">
+          <p class="mb-2 text-overline text-muted">{{ BATTLE_MSG.questionCount }}</p>
+          <div class="grid grid-cols-4 gap-2">
+            <UButton
+              v-for="n in BATTLE_QUESTION_COUNTS"
+              :key="n"
+              size="lg"
+              :color="sel.questionCount === n ? 'primary' : 'neutral'"
+              :variant="sel.questionCount === n ? 'solid' : 'soft'"
+              class="min-h-12 justify-center"
+              :aria-pressed="sel.questionCount === n"
+              :data-testid="`battle-count-${n}`"
+              @click="sel.questionCount = n"
+            >
+              {{ n }}
+            </UButton>
+          </div>
+        </div>
       </UCard>
 
       <!-- Searching / incoming / waiting -->
@@ -422,6 +460,12 @@ onBeforeUnmount(() => {
           >
             Batal
           </UButton>
+        </div>
+      </UCard>
+      <UCard v-else-if="search.phase.value === 'robot'" data-testid="battle-robot">
+        <div class="flex flex-col items-center gap-2 text-center">
+          <DsArt3D name="bolt" size="hero" float />
+          <p class="text-body text-highlighted" role="status">{{ BATTLE_MSG.robotOverlay }}</p>
         </div>
       </UCard>
       <UCard

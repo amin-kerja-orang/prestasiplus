@@ -18,6 +18,7 @@ const api = vi.hoisted(() => ({
   pollMatch: vi.fn(),
   searchOpponent: vi.fn(),
   sendInvite: vi.fn(),
+  acceptInvitation: vi.fn(),
 }))
 vi.mock('../../api/battle', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
@@ -178,12 +179,117 @@ describe('S1 lobby', () => {
     await flushPromises()
     expect(api.startBattle).toHaveBeenCalledWith(
       'quick-match',
-      { question_type: 'biasa', open_to_all: false, subject_id: 3 },
+      { question_type: 'biasa', open_to_all: false, subject_id: 3, question_count: 10 },
       expect.anything(),
     )
     expect(byId('battle-error').text()).toBe('Ralat dari server. Sila cuba lagi.')
     await byId('battle-error-close').trigger('click')
     expect(byId('battle-error').exists()).toBe(false)
+  })
+
+  it('"Bilangan Soalan" shows chips 5, 10, 15, 20 with 10 chosen; the chosen chip is sent as question_count', async () => {
+    api.startBattle.mockResolvedValue({ status: 200, headers: {}, body: { queue_id: 7 } })
+    await mountPage(BattleLobbyPage)
+    expect(byId('battle-count').text()).toContain('Bilangan Soalan')
+    const chips = [5, 10, 15, 20].map((n) => byId(`battle-count-${String(n)}`))
+    expect(chips.map((c) => c.text())).toEqual(['5', '10', '15', '20'])
+    expect(chips.map((c) => c.attributes('aria-pressed'))).toEqual(['false', 'true', 'false', 'false'])
+    await byId('battle-count-15').trigger('click')
+    expect(byId('battle-count-15').attributes('aria-pressed')).toBe('true')
+    expect(byId('battle-count-10').attributes('aria-pressed')).toBe('false')
+    await wrapper!.findAll('[data-testid="battle-subject"]')[2]!.trigger('click')
+    await byId('battle-school-battle').trigger('click')
+    await flushPromises()
+    expect(api.startBattle).toHaveBeenCalledWith(
+      'school-battle',
+      { question_type: 'biasa', open_to_all: false, subject_id: 3, question_count: 15 },
+      expect.anything(),
+    )
+  })
+
+  it('the chips are 44 px targets or taller (AC-GM-01.11)', async () => {
+    await mountPage(BattleLobbyPage)
+    for (const n of [5, 10, 15, 20]) {
+      expect(byId(`battle-count-${String(n)}`).classes()).toContain('min-h-12')
+    }
+  })
+
+  it('the daily limit (429) shows the server text inline, with no "Cuba Lagi"', async () => {
+    api.startBattle.mockResolvedValue({
+      status: 429,
+      headers: {},
+      body: {
+        error: {
+          code: 'BATTLE_DAILY_LIMIT',
+          message: 'Had battle hari ini telah dicapai. Cuba lagi esok.',
+          retryAfter: 7200,
+        },
+      },
+    })
+    await mountPage(BattleLobbyPage)
+    await wrapper!.findAll('[data-testid="battle-subject"]')[2]!.trigger('click')
+    await byId('battle-quick-match').trigger('click')
+    await flushPromises()
+    expect(byId('battle-error').text()).toBe('Had battle hari ini telah dicapai. Cuba lagi esok.')
+    expect(byId('battle-retry').exists()).toBe(false)
+  })
+
+  it('Battle Sekolah with no school (422 {}) shows the page error text', async () => {
+    api.startBattle.mockResolvedValue({ status: 422, headers: {}, body: {} })
+    await mountPage(BattleLobbyPage)
+    await wrapper!.findAll('[data-testid="battle-subject"]')[2]!.trigger('click')
+    await byId('battle-school-battle').trigger('click')
+    await flushPromises()
+    expect(byId('battle-error').text()).toBe('Ralat dari server. Sila cuba lagi.')
+  })
+
+  it('an expired search shows "Tiada lawan dijumpai." with "Cuba Lagi", which searches again', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+    try {
+      api.startBattle.mockResolvedValue({ status: 200, headers: {}, body: { queue_id: 7 } })
+      api.pollMatch.mockResolvedValue({ status: 200, headers: {}, body: { status: 'expired' } })
+      await mountPage(BattleLobbyPage)
+      await wrapper!.findAll('[data-testid="battle-subject"]')[2]!.trigger('click')
+      await byId('battle-quick-match').trigger('click')
+      await vi.advanceTimersByTimeAsync(3000)
+      await flushPromises()
+      expect(byId('battle-error').text()).toContain('Tiada lawan dijumpai.')
+      expect(byId('battle-retry').text()).toBe('Cuba Lagi')
+      await byId('battle-retry').trigger('click')
+      await flushPromises()
+      expect(api.startBattle).toHaveBeenCalledTimes(2)
+      expect(byId('battle-searching').exists()).toBe(true)
+      expect(byId('battle-retry').exists()).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('a robot match shows the overlay text for 2 s, then opens the arena', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+    try {
+      api.startBattle.mockResolvedValue({ status: 200, headers: {}, body: { queue_id: 7 } })
+      api.pollMatch.mockResolvedValue({
+        status: 200,
+        headers: {},
+        body: { status: 'matched', battle_uuid: 'b-robot', robot: true },
+      })
+      const { router } = await mountPage(BattleLobbyPage)
+      await wrapper!.findAll('[data-testid="battle-subject"]')[2]!.trigger('click')
+      await byId('battle-quick-match').trigger('click')
+      await vi.advanceTimersByTimeAsync(3000)
+      await flushPromises()
+      expect(byId('battle-robot').text()).toBe(
+        'Tiada lawan setakat ini. Anda akan bermain dengan Robot PrestasiPlus (latihan).',
+      )
+      expect(byId('battle-searching').exists()).toBe(false)
+      expect(router.currentRoute.value.path).toBe('/battle')
+      await vi.advanceTimersByTimeAsync(2000)
+      await flushPromises()
+      expect(router.currentRoute.value.path).toBe('/battle/arena/b-robot')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('opens the invitations modal by itself when the list is not empty', async () => {
@@ -196,6 +302,29 @@ describe('S1 lobby', () => {
     const modal = document.body.querySelector('[data-testid="battle-invitations-modal"]')
     expect(modal?.textContent).toContain('Murid A')
     expect(modal?.textContent).not.toContain('SK Satu') // FR-GM-00.8: no school next to a pupil name
+  })
+
+  it('accepting an expired invitation tells the receiver "Cabaran tamat tempoh." and drops the row', async () => {
+    api.fetchInvitations.mockResolvedValue({
+      status: 200,
+      headers: {},
+      body: { invitations: [{ uuid: 'i-1', sender_name: 'Murid A', sender_school: 'SK Satu' }] },
+    })
+    api.acceptInvitation.mockResolvedValue({
+      status: 404,
+      headers: {},
+      body: { error: 'Cabaran tamat tempoh.' },
+    })
+    const { router } = await mountPage(BattleLobbyPage)
+    document.body
+      .querySelector<HTMLElement>('[data-testid="battle-invitation-accept"]')!
+      .click()
+    await flushPromises()
+    expect(
+      document.body.querySelector('[data-testid="battle-invitation-notice"]')?.textContent,
+    ).toContain('Cabaran tamat tempoh.')
+    expect(document.body.querySelector('[data-testid="battle-invitation-row"]')).toBeNull()
+    expect(router.currentRoute.value.path).toBe('/battle')
   })
 })
 

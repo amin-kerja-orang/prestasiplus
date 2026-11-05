@@ -17,17 +17,24 @@ defineProps<{ open: boolean }>()
 const invitations = defineModel<BattleInvitation[]>('invitations', { required: true })
 const emit = defineEmits<{ 'update:open': [value: false]; matched: [battleUuid: string] }>()
 
+/** The server's refusal of an expired invitation, shown to the receiver (48 GAME-01). */
+const notice = ref('')
+
 /** uuids with a request in flight (a second click on the same row is ignored). */
 const busy = ref<Set<string>>(new Set())
 
 async function accept(inv: BattleInvitation): Promise<void> {
   if (busy.value.has(inv.uuid)) return
+  notice.value = ''
   busy.value.add(inv.uuid)
   try {
     const res = await acceptInvitation(inv.uuid)
-    const body = res.body as { success?: boolean; battle_uuid?: string } | null
+    const body = res.body as { success?: boolean; battle_uuid?: string; error?: unknown } | null
     if (body?.success === true && typeof body.battle_uuid === 'string') {
       emit('matched', body.battle_uuid)
+    } else if (body?.error === BATTLE_MSG.invitationExpired) {
+      notice.value = BATTLE_MSG.invitationExpired
+      invitations.value = invitations.value.filter((i) => i.uuid !== inv.uuid)
     }
   } catch {
     alertNative(BATTLE_MSG.acceptInviteNetwork)
@@ -58,6 +65,16 @@ async function decline(inv: BattleInvitation): Promise<void> {
     @update:open="emit('update:open', false)"
   >
     <div data-testid="battle-invitations-modal">
+      <UAlert
+        v-if="notice"
+        color="neutral"
+        variant="subtle"
+        icon="i-ph-info-duotone"
+        :description="notice"
+        class="mb-3"
+        role="alert"
+        data-testid="battle-invitation-notice"
+      />
       <ul v-if="invitations.length > 0" class="flex flex-col gap-2">
         <li
           v-for="inv in invitations"
