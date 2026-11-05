@@ -393,8 +393,14 @@ export class QuestionsService {
     return { id, versionNo }
   }
 
+  /** DM-42: an admin action by id treats a personal (teacher_private) question as unknown (404, no existence oracle). Guru `removeOwn` does not use it. */
+  private async assertBankQuestion(id: string): Promise<void> {
+    if (!(await this.repo.get(id, 'latest', BANK_ONLY))) throw questionNotFound()
+  }
+
   async remove(id: string, actor: QuestionActor): Promise<void> {
     void actor
+    await this.assertBankQuestion(id)
     if (!(await this.removeGuarded(id))) throw questionNotFound()
     this.overview?.invalidate()
   }
@@ -495,6 +501,7 @@ export class QuestionsService {
     for (const id of new Set(ids)) {
       try {
         if (action === 'delete') {
+          await this.assertBankQuestion(id)
           if (await this.removeGuarded(id)) {
             affected += 1
             done.push(id)
@@ -647,11 +654,13 @@ export class QuestionsService {
   }
 
   async deactivate(id: string): Promise<void> {
+    await this.assertBankQuestion(id)
     if (!(await this.repo.deactivate(id))) throw questionNotFound()
     this.overview?.invalidate()
   }
 
   async reactivate(id: string): Promise<void> {
+    await this.assertBankQuestion(id)
     if (!(await this.repo.reactivate(id))) throw questionNotFound()
     this.overview?.invalidate()
   }

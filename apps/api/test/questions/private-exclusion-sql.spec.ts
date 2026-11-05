@@ -215,3 +215,37 @@ describe('DM-42 (security H1): a private question answered wrongly in a mission 
     expect(e.sqls[0]).toContain(BANK)
   })
 })
+
+describe('DM-42 (R-1): admin delete, bulk delete, deactivate and reactivate treat a private question as unknown', () => {
+  const calls: string[] = []
+  const priv = { id: '5', version: { visibility: 'teacher_private' } }
+  const svc = (() => {
+    const s = Object.create(QuestionsService.prototype) as QuestionsService
+    const repo = {
+      get: (_id: string, _v: string, opts?: { bankOnly?: boolean }) => Promise.resolve(opts?.bankOnly === true ? null : priv),
+      lock: () => (calls.push('lock'), Promise.resolve(true)),
+      deletionBlock: () => (calls.push('deletionBlock'), Promise.resolve(null)),
+      remove: () => (calls.push('remove'), Promise.resolve(true)),
+      deactivate: () => (calls.push('deactivate'), Promise.resolve(true)),
+      reactivate: () => (calls.push('reactivate'), Promise.resolve(true)),
+    }
+    Object.assign(s, { repo, prisma: { transaction: (fn: () => unknown) => fn() }, overview: undefined })
+    return s
+  })()
+  const actor = { userId: '1', role: 'admin' } as never
+
+  it('remove, deactivate and reactivate are 404 and touch nothing', async () => {
+    await expect(svc.remove('5', actor)).rejects.toMatchObject({ status: 404 })
+    await expect(svc.deactivate('5')).rejects.toMatchObject({ status: 404 })
+    await expect(svc.reactivate('5')).rejects.toMatchObject({ status: 404 })
+    expect(calls).toEqual([])
+  })
+
+  it('a bulk delete reports the id as not found and deletes nothing', async () => {
+    const res = await svc.bulkAction('delete', ['5'], actor)
+    expect(res.affected).toBe(0)
+    expect(res.failed).toHaveLength(1)
+    expect(res.failed[0]).toMatchObject({ id: '5', code: 'NOT_FOUND' })
+    expect(calls).toEqual([])
+  })
+})
