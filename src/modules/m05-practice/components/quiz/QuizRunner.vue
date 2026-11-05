@@ -495,7 +495,7 @@ const feedbackExplanation = computed(() =>
                   }}<img
                     v-if="option.imageId"
                     :src="fileSrc(option.imageId)"
-                    :alt="option.text"
+                    alt=""
                     loading="lazy"
                     class="block h-auto max-h-40 max-w-full object-contain"
                     data-testid="option-image"

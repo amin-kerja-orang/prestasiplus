@@ -154,4 +154,29 @@ describe('Latih Tubi serves figures with their figure and groups whole (S5-T03 p
     expect(groupOf(second)).toMatchObject({ index: 2, size: 3 })
     expect(second.stimuli?.length).toBe(1)
   })
+
+  it('grading: a served figure question is still found when its figure file is gone; the draw no longer serves it', async () => {
+    const id = made.figure as string
+    expect([...(await source.live([id], 'latih_tubi_spm')).keys()]).toEqual([id])
+    await q(`update stimuli set asset_file_id = null where id in (select stimulus_id from question_version_stimuli where question_version_id in (select id from question_versions where question_id = $1))`, [id])
+    try {
+      expect([...(await source.live([id], 'latih_tubi_spm')).keys()], 'the draw filters').toEqual([])
+      const got = await source.versions([{ questionId: id, versionNo: 1 }])
+      const pinned = got.get(`${id}:1`) ?? [...got.values()][0]
+      expect(pinned, 'the pinned version is found for grading').toBeDefined()
+      expect(pinned?.correctLabel).toBeTruthy()
+    } finally {
+      // no restore needed: later tests do not use the figure question
+    }
+  })
+
+  it('replay: a group is resumed whole (every member, size 3) even when the group figure is gone; none when no member is stored', async () => {
+    const refs = ['g1', 'g2', 'g3'].map((k) => ({ questionId: made[k] as string, versionNo: 1 }))
+    await q(`update stimuli set asset_file_id = null where id in (select stimulus_id from stimulus_group_stimuli)`)
+    const got = await source.versions(refs, { display: true })
+    expect(got.size).toBe(3)
+    for (const v of got.values()) expect(groupOf(v)).toMatchObject({ size: 3 })
+    expect([...got.values()].every((v) => (v.stimuli ?? []).every((st) => st.assetFileId === null))).toBe(true)
+    expect((await source.versions([], { display: true })).size).toBe(0)
+  })
 })

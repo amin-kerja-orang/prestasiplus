@@ -4,6 +4,7 @@ import { prngStream } from '../../src/db/prng'
 import { AccountDataRepository, QUESTION_COUNT_SQL } from '../../src/modules/account/account-data.repository'
 import { Be09PracticeQuestionSource } from '../../src/modules/practice/question-bridge'
 import { BankFacts } from '../../src/modules/practice/reads/overview/bank-facts'
+import { filterOf } from '../../src/modules/questions/serving'
 import { OverviewRepository } from '../../src/modules/practice/reads/overview/overview.repository'
 import { OFFERED_LEVEL_CODES } from '../../src/modules/practice/rules'
 import { QuestionsRepository } from '../../src/modules/questions'
@@ -92,7 +93,8 @@ describe('the shared SPM-servable definition', () => {
     const cards = subjects.reduce((n, s) => n + bank.practice(s, levels), 0)
     const login = (await t.db.query<{ c: string }>(QUESTION_COUNT_SQL))[0]?.c
     expect(Number(login)).toBe(withGroups)
-    expect(cards).toBe(withGroups)
+    const latihDraw = await repo.count({ ...filterOf('latih_tubi_spm'), status: 'approved', active: true })
+    expect(cards, 'practice card = latih_tubi_spm draw').toBe(latihDraw)
   })
 
   it('REQ-B-006: the login count is a tagged query ($queryRaw + Prisma.sql) and its value is unchanged', async () => {

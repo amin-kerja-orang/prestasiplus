@@ -12,6 +12,7 @@ import { OverviewRepository } from '../../src/modules/practice/reads/overview/ov
 import { OFFERED_LEVEL_CODES } from '../../src/modules/practice/rules'
 import { QuestionsRepository, QuestionsService } from '../../src/modules/questions'
 import { UsersRepository } from '../../src/modules/users'
+import { filterOf } from '../../src/modules/questions/serving'
 import { SpmHubService } from '../../src/modules/spm/hub.service'
 import { SpmPoolService } from '../../src/modules/spm/pool.service'
 import { BattleDeps } from '../../src/modules/battle/battle.deps'
@@ -88,8 +89,9 @@ describe('counts on the full demo seed: login = cards = details = drawable', () 
       // Everything drawn is servable: live, active, approved, an offered level.
       expect(drawn.every((r) => r.isActive && r.version.status === 'approved' && offeredIds.includes(r.version.educationLevelId ?? ''))).toBe(true)
       // D91 (T04): `bankMatrix` has `group_id IS NULL`, so the practice card equals the drawable size per surface (the practice card of BM is 53 since S5-T03 part B: the complete group counts whole).
-      // S5-T03 part B: the Latih Tubi card (practice overview) serves whole groups; the SPM hub pool (M06: Databank, Latih Tubi hub, Mock K1) is still the ungrouped one.
-      expect(practiceCard, `${code} practice card = drawable + complete-group members`).toBe(poolCount + (code === 'BM' ? 3 : 0))
+      // S5-T03 part B (D91): the practice card equals the Latih Tubi draw (whole groups and figures); the SPM hub pool (Databank, hub, Mock K1) stays ungrouped until S3-T07 / S3-T05.
+      const latihDraw = await repo.count({ ...filterOf('latih_tubi_spm', { subjectId: id }), status: 'approved', active: true })
+      expect(practiceCard, `${code} practice card = latih_tubi_spm draw`).toBe(latihDraw)
       // The login SQL counts every servable question of any activity (stimulus-group members included), so it is an upper bound.
       expect(servableInDb, `${code} login SQL >= drawable`).toBeGreaterThanOrEqual(poolCount)
       cards[code] = { ...(cards[code] as object), gapPracticeCardVsDrawable: practiceCard - poolCount }

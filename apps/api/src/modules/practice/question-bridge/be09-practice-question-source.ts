@@ -21,7 +21,7 @@ const DRILLS: readonly PracticeDrillActivity[] = ['latih_tubi_spm', 'databank', 
 interface Media {
   tokens: Map<string, string>
   outside: Map<string, OutsideStimulus>
-  stimuliOf: (r: QuestionRecord, group: StimulusGroupRecord | null) => StimulusRecord[] | null
+  stimuliOf: (r: QuestionRecord, group: StimulusGroupRecord | null, lenient?: boolean) => StimulusRecord[] | null
 }
 
 interface GroupUnit {
@@ -194,18 +194,22 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     const wanted = refs.filter((r) => isIdString(r.questionId) && Number.isSafeInteger(r.versionNo) && r.versionNo >= 1)
     if (wanted.length === 0) return new Map()
     const records = await this.questions.getVersions(wanted)
-    // Grading a version a session already served: once a drill joins the set it may have been served as a figure or a group member.
     const allow = DRILLS.some((a) => this.allows(a))
-    if (!allow || opts.display !== true) return this.mapAll(records, (r) => versionKey(r.id, r.version.versionNo), allow)
-    // S5-T03 part B (replay of an open session): the served members are the unit, in group order; their stimuli come with them.
-    const served = records.filter((r) => this.check(r, true))
-    const defs = await this.questions.groupsByIds([...new Set(served.flatMap((r) => (r.groupId === null ? [] : [r.groupId])))])
+    const keyOf = (r: QuestionRecord): string => versionKey(r.id, r.version.versionNo)
+    if (!allow) return this.mapAll(records, keyOf, false)
+    // Pinned reads never filter on drawability (S5-T03 part B): a served version is always found for grading, even when a stimulus file or an
+    // option picture is gone since. Only the draw (`live`, `sample`) filters. A version that is no longer a servable MCQ shape stays refused as before.
+    const pinned = records.filter((r) => this.check(r, true))
+    if (opts.display !== true) return this.mapServable(pinned, keyOf, true, new Map(), 'none')
+    // Replay of an open session: every member as stored (the session was started whole), so the group is whole or absent; no bridge filtering and
+    // no narrowing of the group; a picture that cannot be resolved any more is left out of the member instead of dropping the question.
+    const defs = await this.questions.groupsByIds([...new Set(pinned.flatMap((r) => (r.groupId === null ? [] : [r.groupId])))])
     const groups = new Map<string, GroupUnit>()
     for (const g of defs) {
-      const members = served.filter((r) => r.groupId === g.id).sort((a, b) => (a.groupPosition ?? 0) - (b.groupPosition ?? 0))
+      const members = pinned.filter((r) => r.groupId === g.id).sort((a, b) => (a.groupPosition ?? 0) - (b.groupPosition ?? 0))
       groups.set(g.id, { group: { ...g, questionIds: members.map((m) => m.id) }, members })
     }
-    return this.mapServable(served, (r) => versionKey(r.id, r.version.versionNo), true, groups)
+    return this.mapServable(pinned, keyOf, true, groups, 'lenient')
   }
 
   // --- internals ------------------------------------------------------------------------------------
@@ -326,21 +330,36 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     )
   }
 
-  private async mapServable(servable: QuestionRecord[], keyOf: (r: QuestionRecord) => string, allowStimulus: boolean, groups: ReadonlyMap<string, GroupUnit>, known?: Media): Promise<Map<string, PracticeQuestion>> {
+  private async mapServable(
+    servable: QuestionRecord[],
+    keyOf: (r: QuestionRecord) => string,
+    allowStimulus: boolean,
+    groups: ReadonlyMap<string, GroupUnit>,
+    known?: Media | 'none' | 'lenient',
+  ): Promise<Map<string, PracticeQuestion>> {
     const contributors = await this.contributorsOf(servable)
-    const media = !allowStimulus ? null : (known ?? (await this.mediaOf(servable, new Map([...groups].map(([id, u]) => [id, u.group] as const)))))
+    // 'none': grading (no media queries at all); 'lenient': replay (media resolved, nothing dropped); a Media or undefined: the draw (drops what cannot be drawn).
+    const lenient = known === 'lenient'
+    const media =
+      !allowStimulus || known === 'none'
+        ? null
+        : typeof known === 'object'
+          ? known
+          : await this.mediaOf(servable, new Map([...groups].map(([id, u]) => [id, u.group] as const)))
     const out = new Map<string, PracticeQuestion>()
     for (const r of servable) {
       const group = r.groupId === null ? null : (groups.get(r.groupId)?.group ?? null)
-      const stimuli = media === null ? null : media.stimuliOf(r, group)
-      // A figure that cannot be drawn (no public file token) is never served without it (S5-T03, AC "no figure question without its figure").
+      const stimuli = media === null ? null : media.stimuliOf(r, group, lenient)
+      // A figure that cannot be drawn (no public file token) is never DRAWN without it (S5-T03, AC "no figure question without its figure").
       if (stimuli === null && media !== null) continue
       const q = toPracticeQuestion(r, r.createdById ? (contributors.get(r.createdById) ?? null) : null, { allowStimulus, group, stimuli })
       if (!q) continue
       if (media !== null) {
         const options = q.options.map((o) => (o.imageId === undefined ? o : { ...o, imageId: media.tokens.get(o.imageId) }))
-        if (options.some((o, i) => q.options[i]?.imageId !== undefined && o.imageId === undefined)) continue
+        if (!lenient && options.some((o, i) => q.options[i]?.imageId !== undefined && o.imageId === undefined)) continue
         q.options = options.map((o) => (o.imageId === undefined ? { label: o.label, text: o.text } : o))
+      } else if (known === 'none') {
+        q.options = q.options.map((o) => ({ label: o.label, text: o.text }))
       }
       out.set(keyOf(r), q)
     }
@@ -364,7 +383,7 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     return {
       tokens,
       outside,
-      stimuliOf: (r, group) => {
+      stimuliOf: (r, group, lenient = false) => {
         const own = r.version.stimulusIds.flatMap((id): StimulusRecord[] => {
           if (group?.stimuli.some((s) => s.id === id)) return []
           const o = outside.get(id)
@@ -373,8 +392,9 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
             : [{ id, kind: o.kind as StimulusRecord['kind'], label: o.label ?? '', bodyMs: o.bodyMs ?? null, bodyEn: null, assetFileId: o.assetFileId, alt: o.alt ?? null, caption: o.caption ?? null, sourceCitation: o.sourceCitation ?? null, tableData: o.tableData ?? null }]
         })
         // A linked stimulus the reader did not return (unknown, audio) cannot be shown: the question is not served.
-        if (r.version.stimulusIds.some((id) => !(group?.stimuli.some((s) => s.id === id) ?? false) && !outside.has(id))) return null
+        if (!lenient && r.version.stimulusIds.some((id) => !(group?.stimuli.some((s) => s.id === id) ?? false) && !outside.has(id))) return null
         const all = [...(group?.stimuli ?? []), ...own]
+        if (lenient) return all.map((st) => drawable(st) ?? { ...st, assetFileId: null })
         const shown = all.map(drawable)
         return shown.some((s) => s === null) ? null : (shown as StimulusRecord[])
       },

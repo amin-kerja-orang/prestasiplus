@@ -403,10 +403,10 @@ export interface QuizQuestion {
   hasDskp: boolean
   contributor: { name: string; profileUrl: string | null } | null
   options: { id: number; label: string; text: string; imageId?: string | null }[]
-  /** The stimuli of the question, shown once per group; absent or empty when none. */
-  stimuli?: QuizStimulus[]
+  /** The stimuli of the question, shown once per group; empty when none. */
+  stimuli: QuizStimulus[]
   /** Set for a member of a stimulus group (`index` is 1-based). */
-  group?: { id: string; index: number; size: number } | null
+  group: { id: string; index: number; size: number } | null
 }
 
 export interface StartSessionResponse {
