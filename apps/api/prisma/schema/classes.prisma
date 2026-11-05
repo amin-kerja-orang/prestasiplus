@@ -151,7 +151,7 @@ model MissionItem {
   @@map("mission_items")
 }
 
-/// The once-only target reward paid to a pupil for a mission (S6-T07, DM-TBD, issue #483): unique on (mission, pupil), so a second
+/// The once-only target reward paid to a pupil for a mission (S6-T07, DM-88, issue #483): unique on (mission, pupil), so a second
 /// completion pays nothing. Written inside the practice submit transaction; the wallet credit is S7's (ledger source `mission_target`).
 model MissionReward {
   id        BigInt   @id @default(autoincrement())

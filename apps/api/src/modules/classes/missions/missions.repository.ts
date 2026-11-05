@@ -433,7 +433,7 @@ export class MissionsRepository {
     })
   }
 
-  // --- target reward (S6-T07, DM-TBD `mission_rewards`) --------------------------------------------
+  // --- target reward (S6-T07, DM-88 `mission_rewards`) --------------------------------------------
 
   /**
    * Serialises the settlement of one (mission, pupil) until the caller's transaction ends, so two sessions that complete at once
@@ -471,5 +471,47 @@ export class MissionsRepository {
       VALUES (${mission}, ${student}, ${input.coins}, ${input.sessionId}::uuid, ${input.isTest}, ${input.paidAt})
       ON CONFLICT (mission_id, student_id) DO NOTHING`
     return inserted === 1
+  }
+
+  // --- Global goals (S6-T07, DM-88) -----------------------------------------------------------------
+
+  /** The Global missions dated `day` (a Malaysia day), oldest first. Read inside the caller's transaction when `tx` is given. */
+  async globalMissionsOfDay(day: string, tx?: TxClient): Promise<MissionRecord[]> {
+    const rows = await (tx ?? this.db).mission.findMany({
+      where: { scope: 'global', missionDate: new Date(`${day}T00:00:00.000Z`) },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    })
+    return rows.map(toMission)
+  }
+
+  /** The ids among `missionIds` that already have a reward row for the pupil. */
+  async paidMissionIds(studentId: string, missionIds: readonly string[], tx?: TxClient): Promise<Set<string>> {
+    const student = idOf(studentId)
+    const ids = missionIds.flatMap((id) => (isIdString(id) ? [idFromString(id)] : []))
+    if (student === null || ids.length === 0) return new Set()
+    const rows = await (tx ?? this.db).missionReward.findMany({ where: { studentId: student, missionId: { in: ids } }, select: { missionId: true } })
+    return new Set(rows.map((r) => idToString(r.missionId)))
+  }
+
+  /**
+   * "{n} pelajar selesai" of a Global mission: distinct pupils of the teacher's active classes with a reward row for it
+   * (every asked id present, 0 when none).
+   */
+  async rewardedCounts(missionIds: readonly string[], teacherId: string, isTest: boolean): Promise<Map<string, number>> {
+    const out = new Map<string, number>(missionIds.map((id) => [id, 0]))
+    const keys = missionIds.flatMap((id) => (isIdString(id) ? [idFromString(id)] : []))
+    const teacher = idOf(teacherId)
+    if (keys.length === 0 || teacher === null) return out
+    const rows = await this.db.$queryRaw<{ mission_id: bigint; n: number }[]>`
+      SELECT r.mission_id, COUNT(DISTINCT r.student_id)::int AS n
+        FROM mission_rewards r
+       WHERE r.mission_id = ANY(${keys}::bigint[])
+         AND EXISTS (
+           SELECT 1 FROM enrolments e JOIN classrooms c ON c.id = e.classroom_id
+            WHERE e.student_id = r.student_id AND e.status = 'active' AND e.is_test = ${isTest}
+              AND c.teacher_id = ${teacher} AND c.kind = 'classroom' AND c.is_active)
+       GROUP BY r.mission_id`
+    for (const r of rows) out.set(idToString(r.mission_id), r.n)
+    return out
   }
 }

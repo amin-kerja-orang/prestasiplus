@@ -84,6 +84,8 @@ function build(clockAt = NOW) {
       world.items.set(mission.id, pupils)
       return { status: 'created' as const, mission, recipients: pupils.length }
     },
+    rewardedCounts: (ids: string[]) => Promise.resolve(new Map(ids.map((id) => [id, world.completed.get(id) ?? 0]))),
+    globalMissionsOfDay: () => Promise.resolve([]),
     completedCounts: (ids: string[]) => Promise.resolve(new Map(ids.map((id) => [id, world.completed.get(id) ?? 0]))),
     findById: (id: string) => Promise.resolve(world.missions.find((m) => m.id === id) ?? null),
     deleteOwn: (id: string, teacherId: string) => {
@@ -102,7 +104,7 @@ function build(clockAt = NOW) {
   const practice = { linkedSessions: () => Promise.resolve([]) }
   const audit = { record: (e: { action: string }) => (world.audits.push(e.action), Promise.resolve()) }
   const prisma = { transaction: <T>(fn: (tx: unknown) => Promise<T>) => fn({}) }
-  const service = new MissionsService(repo as never, classes as never, practice as never, audit as never, prisma as never, new FixedClock(clockAt))
+  const service = new MissionsService(repo as never, classes as never, practice as never, audit as never, prisma as never, new FixedClock(clockAt), { get: () => Promise.resolve({ current: 0 }) } as never)
   return { world, repo, service }
 }
 
