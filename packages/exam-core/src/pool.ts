@@ -116,7 +116,9 @@ function baseItems(ctx: PoolContext, section: StandardSection, ignoreQuota: bool
     }
     if (!members.every((m) => ok.get(m.id))) continue
     const ds = members.map((m) => ctx.described.get(m.id)!)
-    if (per !== null && ds.some((d) => d.marks !== per)) continue
+    // FR-QA-41: under Pilih N a group is ONE choice unit, so a unit is drawn only when it is worth the marks of one choice. The solver and the oracle
+    // count the marks offered per question (`offeredMarks`), so a group whose members add up to one choice is not drawn either; the builder can still place it by hand.
+    if (per !== null && (ds.some((d) => d.marks !== per) || ds.reduce((n, d) => n + d.marks, 0) !== per)) continue
     base.push({
       ids: members.map((m) => m.id),
       members: ds,

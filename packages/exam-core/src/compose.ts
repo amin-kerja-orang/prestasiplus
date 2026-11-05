@@ -250,10 +250,10 @@ export function composeStandardPaper(
 export function scaleSectionCounts(counts: readonly number[], count: number): number[] {
   const total = counts.reduce((n, c) => n + c, 0)
   if (total === 0) return counts.map(() => 0)
-  const exact = counts.map((c) => (count * c) / total)
-  const out = exact.map((x) => Math.floor(x))
+  // Integers only: `count * c % total` is the fraction over `total`, so two equal fractions tie exactly (a float can miss the tie and drop a section).
+  const out = counts.map((c) => Math.floor((count * c) / total))
   let left = count - out.reduce((n, c) => n + c, 0)
-  const order = exact.map((x, i) => ({ i, frac: x - Math.floor(x) })).sort((a, b) => b.frac - a.frac || a.i - b.i)
+  const order = counts.map((c, i) => ({ i, rest: (count * c) % total })).sort((a, b) => b.rest - a.rest || a.i - b.i)
   for (const { i } of order) {
     if (left <= 0) break
     out[i]! += 1

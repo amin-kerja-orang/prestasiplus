@@ -22,18 +22,29 @@ import type { BlockerDraft } from './blockers'
  * blueprint version the paper conforms to, matched by position. Null when the paper has no blueprint.
  */
 export interface PaperSections {
-  sections: { position?: number; label: string; ruleType: string; ruleN: number | null; questionCount: number; markBudget: number; compulsory: boolean }[]
+  sections: { position?: number; adminCreated?: boolean; label: string; ruleType: string; ruleN: number | null; questionCount: number; markBudget: number; compulsory: boolean }[]
+}
+
+/**
+ * S3-T02, PO decision item 5: a scaled set is drawn from the whole contract at another size, so the answer is one for the whole paper: true when any Kontrak section
+ * is missing or holds another count. Then every section is held to the structure only, including one whose rounded share happens to equal its contract count.
+ */
+export function isScaledPaper(
+  paper: { sections: readonly { position?: number; questionCount: number; adminCreated?: boolean }[] },
+  blueprint: { sections: readonly { position: number; questionCount: number }[] },
+): boolean {
+  const own = paper.sections.flatMap((s, i) => (s.adminCreated ? [] : [{ position: s.position ?? i + 1, questionCount: s.questionCount }]))
+  return blueprint.sections.some((b) => own.find((s) => s.position === b.position)?.questionCount !== b.questionCount)
 }
 
 export function standardForPaper(paper: PaperSections, blueprint: BlueprintWithSections | null, subjectCode: string): StandardBlueprint | null {
   if (!blueprint) return null
   const base = toStandard(blueprint, subjectCode)
+  const scaled = isScaledPaper(paper, base)
   return {
     ...base,
     sections: paper.sections.map((ps, i) => {
       const b = base.sections.find((s) => s.position === (ps.position ?? i + 1))
-      // S3-T02: a scaled set (fewer questions than its Kontrak section, PO decision item 5) is held to the structure only, as it was drawn.
-      const scaled = !!b && b.questionCount !== ps.questionCount
       return {
         position: i + 1,
         label: ps.label,
