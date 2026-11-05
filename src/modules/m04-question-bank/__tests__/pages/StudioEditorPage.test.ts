@@ -145,6 +145,46 @@ describe('wizard order and completeness (FR-QA-16, FR-ADM-QE4.1)', () => {
     expect(t(w, 'studio-save-gaps').text()).toContain('1 belum lengkap')
   })
 
+  it('never says complete when the gate read failed: it says the check could not load', async () => {
+    serve({ ...SAVED })
+    studio.fetchGateCheck.mockRejectedValue(new Error('network'))
+    const w = await render('/admin/studio/questions/501/sunting', '501')
+    expect(t(w, 'studio-completeness-failed').text()).toContain('tidak dapat dimuatkan')
+    expect(has(w, 'studio-completeness-empty')).toBe(false)
+  })
+
+  it('never says complete when the chapter or DSKP read failed', async () => {
+    serve({ ...SAVED })
+    studio.fetchGateCheck.mockResolvedValue({ issues: [] })
+    const w = await render('/admin/studio/questions/501/sunting', '501')
+    const panel = () => has(w, 'studio-completeness-failed')
+    expect(panel()).toBe(false)
+    w.getComponent({ name: 'ChapterSelect' }).vm.$emit('failed', true)
+    await flushPromises()
+    expect(panel()).toBe(true)
+    expect(has(w, 'studio-completeness-empty')).toBe(false)
+    w.getComponent({ name: 'ChapterSelect' }).vm.$emit('failed', false)
+    w.getComponent({ name: 'StudioDskpFields' }).vm.$emit('failed', true)
+    await flushPromises()
+    expect(panel()).toBe(true)
+  })
+
+  it('opens the preview on `?pratonton=1` (S2-T03 alias)', async () => {
+    serve({ ...SAVED })
+    studio.fetchGateCheck.mockResolvedValue({ issues: [] })
+    const w = await render('/admin/studio/questions/501/sunting?pratonton=1', '501')
+    expect(w.getComponent({ name: 'StudioPreview' }).props('open')).toBe(true)
+  })
+
+  it('on create with ?kumpulan= the group is read-only, linked, and prefills Subjek, Tingkatan and Kertas', async () => {
+    studio.fetchGroup.mockResolvedValue({ id: '9', label: null, scope: 'section', stimuli: [], questionIds: [], members: [], subjectId: '3', educationLevelId: '7', kertas: '2' })
+    const w = await render('/admin/studio/questions/create?kumpulan=9')
+    expect(w.getComponent({ name: 'StudioGroupEditor' }).props('disabled')).toBe(true)
+    expect(t(w, 'studio-open-group').attributes('href')).toBe('/admin/studio/groups/9')
+    expect((t(w, 'studio-level').element as HTMLSelectElement).value).toBe('7')
+    expect((t(w, 'studio-kertas').element as HTMLSelectElement).value).toBe('2')
+  })
+
   it('saves Penjelasan and sends the English one only when the question has it (PO decision 3)', async () => {
     serve({ ...SAVED, explanation: 'Sebab A.', explanationEn: null })
     studio.updateStudioQuestion.mockResolvedValue({ data: { id: '501', status: 'draft' }, status: 'ok' })

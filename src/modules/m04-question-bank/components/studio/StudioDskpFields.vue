@@ -14,7 +14,7 @@ import { LOAD_ERROR } from '../../lib/ui-errors'
 
 const props = defineProps<{ subjectId: string; levelId: string; disabled?: boolean; error?: string | undefined }>()
 /** Whether the Subjek + Tingkatan has DSKP nodes; the SP, TP and aras rules bind only then (FR-ADM-QE4.6). */
-const emit = defineEmits<{ nodes: [has: boolean | null] }>()
+const emit = defineEmits<{ nodes: [has: boolean | null]; failed: [failed: boolean] }>()
 const unitId = defineModel<string | null>('unitId', { required: true })
 const spIds = defineModel<string[]>('spIds', { required: true })
 
@@ -25,6 +25,7 @@ let seq = 0
 async function load(): Promise<void> {
   const token = ++seq
   failed.value = false
+  emit('failed', false)
   emit('nodes', null)
   if (props.subjectId === '' || props.levelId === '') {
     dskp.value = null
@@ -40,6 +41,7 @@ async function load(): Promise<void> {
     if (token === seq) {
       dskp.value = null
       failed.value = true
+      emit('failed', true)
     }
   }
 }

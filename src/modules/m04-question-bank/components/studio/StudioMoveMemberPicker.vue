@@ -3,36 +3,24 @@
  * `Pindah ke kumpulan lain` (FR-ADM-QE2.7, FR-QA-06): a picker of the other groups of the same Subjek and Kertas. The move
  * itself is one call by the group editor; a mixed target is refused by the server, whose text the editor shows.
  */
-import { computed, ref, watch } from 'vue'
+import { computed, watch } from 'vue'
 
-import { DsCluster, DsDialog, DsLoadError, DsStack, DsSurface, DsText } from '@/ds'
+import { DsCluster, DsDialog, DsFormField, DsLoadError, DsStack, DsSurface, DsText } from '@/ds'
 
-import { listGroups, type GroupListRow } from '../../api/studio'
+import type { GroupListRow } from '../../api/studio'
+import { useGroupBrowse } from '../../lib/studio/group-members'
 import { LOAD_ERROR } from '../../lib/ui-errors'
 
 const props = defineProps<{ fromGroupId: string; subjectId: string | null; memberLabel: string }>()
 const open = defineModel<boolean>('open', { required: true })
 const emit = defineEmits<{ pick: [groupId: string] }>()
 
-const rows = ref<GroupListRow[]>([])
-const loading = ref(false)
-const failed = ref(false)
+const { search, rows, page, pages, loading, failed, load, onSearch } = useGroupBrowse(() => props.subjectId)
 const others = computed(() => rows.value.filter((g) => g.id !== props.fromGroupId))
-
-async function load(): Promise<void> {
-  loading.value = true
-  failed.value = false
-  try {
-    rows.value = (await listGroups({ subjectId: props.subjectId, pageSize: 20 })).data
-  } catch {
-    rows.value = []
-    failed.value = true
-  } finally {
-    loading.value = false
-  }
-}
 watch(open, (on) => {
-  if (on) void load()
+  if (!on) return
+  search.value = ''
+  void load(1)
 })
 
 const title = (g: GroupListRow): string => g.label?.trim() || g.stimuli.map((s) => s.label).join(', ') || `Kumpulan #${g.id}`
@@ -41,6 +29,9 @@ const title = (g: GroupListRow): string => g.label?.trim() || g.stimuli.map((s) 
 <template>
   <DsDialog v-model:open="open" title="Pindah ke kumpulan lain" :description="memberLabel" data-testid="studio-move-picker">
     <DsStack gap="sm">
+      <DsFormField v-slot="{ id }" native label="Cari kumpulan" for="studio-move-search">
+        <UInput :id="id" v-model="search" placeholder="Label atau tajuk rangsangan" maxlength="200" data-testid="studio-move-search" @update:model-value="onSearch" />
+      </DsFormField>
       <DsLoadError v-if="failed" :message="LOAD_ERROR" testid="studio-move-error" retry-testid="studio-move-retry" @retry="load" />
       <DsText v-else-if="loading" variant="body" tone="muted">Memuatkan…</DsText>
       <DsText v-else-if="others.length === 0" variant="body" tone="muted" data-testid="studio-move-empty">Tiada kumpulan dijumpai.</DsText>
@@ -52,6 +43,11 @@ const title = (g: GroupListRow): string => g.label?.trim() || g.stimuli.map((s) 
           </DsCluster>
         </DsSurface>
       </DsStack>
+      <DsCluster v-if="pages > 1" gap="sm">
+        <UButton type="button" color="neutral" variant="soft" :disabled="page <= 1 || loading" data-testid="studio-move-prev" @click="load(page - 1)">Sebelumnya</UButton>
+        <DsText variant="caption" tone="muted">Halaman {{ page }} / {{ pages }}</DsText>
+        <UButton type="button" color="neutral" variant="soft" :disabled="page >= pages || loading" data-testid="studio-move-next" @click="load(page + 1)">Seterusnya</UButton>
+      </DsCluster>
     </DsStack>
   </DsDialog>
 </template>

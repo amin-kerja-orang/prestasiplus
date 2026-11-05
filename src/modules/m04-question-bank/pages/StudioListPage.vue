@@ -97,10 +97,11 @@ const PAGE_SIZES = [25, 50, 100]
 const DEFAULT_PAGE_SIZE = 25
 /** Field 03-10, OPT-DSKP-TAG. */
 const DSKP_TAG_OPTIONS = [
-  { value: 'tagged', label: 'Ada DSKP Tag' },
-  { value: 'untagged', label: 'Belum Ditag' },
+  { value: 'ada', wire: 'tagged', label: 'Ada DSKP Tag' },
+  { value: 'belum', wire: 'untagged', label: 'Belum Ditag' },
 ]
-const KEYS = ['subject_id', 'education_level_id', 'status', 'dskp_filter', 'search', 'tahun', 'negeri', 'kertas', 'jenis'] as const
+const dskpWire = (value: string): string | null => DSKP_TAG_OPTIONS.find((o) => o.value === value)?.wire ?? null
+const KEYS = ['subject_id', 'tingkatan', 'status', 'dskp', 'search', 'tahun', 'negeri', 'kertas', 'jenis'] as const
 type Key = (typeof KEYS)[number]
 
 const route = useRoute()
@@ -118,7 +119,7 @@ const validFilter = (k: Key, v: string): string => {
   if (k === 'tahun') return /^\d{4}$/.test(v) ? v : ''
   if (k === 'kertas') return KERTAS_OPTIONS.includes(v) ? v : ''
   if (k === 'jenis') return JENIS_OPTIONS.some((o) => o.value === v) ? v : ''
-  if (k === 'dskp_filter') return DSKP_TAG_OPTIONS.some((o) => o.value === v) ? v : ''
+  if (k === 'dskp') return dskpWire(v) === null ? '' : v
   if (k === 'negeri') return v.slice(0, 64)
   return v
 }
@@ -147,8 +148,8 @@ const list = useApi(
     available
       ? fetchStudioList({
           subjectId: applied.value.subject_id || null,
-          educationLevelId: applied.value.education_level_id || null,
-          dskpFilter: applied.value.dskp_filter || null,
+          educationLevelId: applied.value.tingkatan || null,
+          dskpFilter: dskpWire(applied.value.dskp),
           status: applied.value.status || null,
           search: applied.value.search || null,
           tahun: applied.value.tahun || null,
@@ -219,14 +220,20 @@ async function createNewGroup(): Promise<void> {
   }
 }
 
-/** FR-ADM-Q03.5: rows picked for the bulk bar; the selection survives paging. */
+/** FR-ADM-Q03.5: rows picked for the bulk bar; the selection survives paging, not a change of filter. */
 const selected = ref<TableRow[]>([])
+watch(
+  () => KEYS.map((k) => queryText(route.query[k])).join('\u0000'),
+  () => {
+    selected.value = []
+  },
+)
 const selectedIds = computed(() => selected.value.map((r) => r.id))
 /** The applied filter as the filter route takes it; the status filter is already the wire code here. */
 const bulkFilter = computed<QuestionBulkFilter>(() => {
   const a = applied.value
   return Object.fromEntries(
-    Object.entries({ subjectId: a.subject_id, educationLevelId: a.education_level_id, dskpFilter: a.dskp_filter, status: a.status, search: a.search, tahun: a.tahun, negeri: a.negeri, kertas: a.kertas, jenis: a.jenis }).filter(([, v]) => v !== ''),
+    Object.entries({ subjectId: a.subject_id, educationLevelId: a.tingkatan, dskpFilter: dskpWire(a.dskp) ?? '', status: a.status, search: a.search, tahun: a.tahun, negeri: a.negeri, kertas: a.kertas, jenis: a.jenis }).filter(([, v]) => v !== ''),
   )
 })
 async function afterBulk(): Promise<void> {
@@ -310,15 +317,15 @@ const chips = computed(() => {
     const s = subjectOptions.value.find((o) => String(o.id) === applied.value.subject_id)
     out.push({ key: 'subject_id', label: `Subjek: ${s?.name ?? applied.value.subject_id}` })
   }
-  if (applied.value.education_level_id !== '') {
-    const l = levelOptions.value.find((o) => String(o.id) === applied.value.education_level_id)
-    out.push({ key: 'education_level_id', label: `Tingkatan: ${l?.name ?? applied.value.education_level_id}` })
+  if (applied.value.tingkatan !== '') {
+    const l = levelOptions.value.find((o) => String(o.id) === applied.value.tingkatan)
+    out.push({ key: 'tingkatan', label: `Tingkatan: ${l?.name ?? applied.value.tingkatan}` })
   }
   if (applied.value.status !== '') out.push({ key: 'status', label: `Status: ${statusBadge(applied.value.status)}` })
-  if (applied.value.dskp_filter !== '') {
+  if (applied.value.dskp !== '') {
     out.push({
-      key: 'dskp_filter',
-      label: `Penandaan DSKP: ${DSKP_TAG_OPTIONS.find((o) => o.value === applied.value.dskp_filter)?.label ?? ''}`,
+      key: 'dskp',
+      label: `Penandaan DSKP: ${DSKP_TAG_OPTIONS.find((o) => o.value === applied.value.dskp)?.label ?? ''}`,
     })
   }
   if (applied.value.search !== '') out.push({ key: 'search', label: `Cari: ${applied.value.search}` })
@@ -392,6 +399,7 @@ async function hide(row: StudioRow): Promise<void> {
   try {
     await moveQuestionStatus(row.id, 'archived', REASON.archive)
     flash.show({ type: 'success', message: FLASH.archived })
+    selected.value = selected.value.filter((r) => r.id !== row.id)
     await Promise.all([list.reload(), summary.reload()])
   } catch (err) {
     flash.show({ type: 'error', message: errorLines(err) })
@@ -584,11 +592,11 @@ const cardFields: CardField[] = [
             <option v-for="s in subjectOptions" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
           </DsNativeSelect>
         </div>
-        <DsNativeSelect id="studio-level-filter" v-model="draft.education_level_id" aria-label="Tingkatan" data-testid="studio-level-filter">
+        <DsNativeSelect id="studio-level-filter" v-model="draft.tingkatan" aria-label="Tingkatan" data-testid="studio-level-filter">
           <option value="">Semua tingkatan</option>
           <option v-for="o in levelOptions" :key="o.id" :value="String(o.id)">{{ o.name }}</option>
         </DsNativeSelect>
-        <DsNativeSelect id="studio-dskp-filter" v-model="draft.dskp_filter" aria-label="Penandaan DSKP" data-testid="studio-dskp-filter">
+        <DsNativeSelect id="studio-dskp-filter" v-model="draft.dskp" aria-label="Penandaan DSKP" data-testid="studio-dskp-filter">
           <option value="">Semua</option>
           <option v-for="o in DSKP_TAG_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
         </DsNativeSelect>

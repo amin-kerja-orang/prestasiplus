@@ -7,7 +7,8 @@ import { DsPanel, DsStack, DsText } from '@/ds'
 
 import type { CompletenessRow } from '../../lib/studio/draft'
 
-defineProps<{ rows: readonly CompletenessRow[] }>()
+/** `loadFailed`: a read behind the gate failed, so an empty list proves nothing. */
+defineProps<{ rows: readonly CompletenessRow[]; loadFailed?: boolean }>()
 const emit = defineEmits<{ jump: [field: string] }>()
 </script>
 
@@ -25,6 +26,9 @@ const emit = defineEmits<{ jump: [field: string] }>()
         />
       </DsText>
     </DsStack>
-    <DsText v-else variant="body" tone="muted" data-testid="studio-completeness-empty">Semua medan wajib telah lengkap.</DsText>
+    <DsText v-if="loadFailed" variant="body" tone="warning" role="alert" data-testid="studio-completeness-failed">
+      Semakan kelengkapan tidak dapat dimuatkan. Muat semula halaman untuk cuba lagi.
+    </DsText>
+    <DsText v-else-if="rows.length === 0" variant="body" tone="muted" data-testid="studio-completeness-empty">Semua medan wajib telah lengkap.</DsText>
   </DsPanel>
 </template>

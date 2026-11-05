@@ -242,7 +242,7 @@ describe('StudioListPage (S1 to S6)', () => {
   })
 
   it('filters by Tingkatan and Penandaan DSKP (FR-ADM-Q03.4), through the URL and the chips', async () => {
-    const w = await render('/admin/studio?education_level_id=7&dskp_filter=untagged')
+    const w = await render('/admin/studio?tingkatan=7&dskp=belum')
     expect(studio.fetchStudioList).toHaveBeenLastCalledWith(
       expect.objectContaining({ educationLevelId: '7', dskpFilter: 'untagged' }),
     )
@@ -256,8 +256,22 @@ describe('StudioListPage (S1 to S6)', () => {
     ])
   })
 
+  it('clears the selection when a filter changes, not when the page does', async () => {
+    const w = await render('/admin/studio')
+    const table = w.getComponent({ name: 'DsDataTable' })
+    table.vm.$emit('update:selection', [{ id: '1' }])
+    await flushPromises()
+    expect(w.getComponent({ name: 'StudioBulkBar' }).props('selectedIds')).toEqual(['1'])
+    await router.push('/admin/studio?page=2')
+    await flushPromises()
+    expect(w.getComponent({ name: 'StudioBulkBar' }).props('selectedIds')).toEqual(['1'])
+    await router.push('/admin/studio?status=draft')
+    await flushPromises()
+    expect(w.getComponent({ name: 'StudioBulkBar' }).props('selectedIds')).toEqual([])
+  })
+
   it('drops a Penandaan DSKP value the API has no meaning for', async () => {
-    await render('/admin/studio?dskp_filter=lain')
+    await render('/admin/studio?dskp=lain')
     expect(studio.fetchStudioList).toHaveBeenLastCalledWith(expect.objectContaining({ dskpFilter: null }))
   })
 

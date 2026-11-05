@@ -18,7 +18,6 @@ import {
   createGroup,
   createStimulus,
   discardGroupDraft,
-  listGroups,
   dissolveGroup,
   editGroupAsDraft,
   fetchGroup,
@@ -44,6 +43,7 @@ import {
   planMembers,
   removeMember,
   type GroupMember,
+  useGroupBrowse,
 } from '../../lib/studio/group-members'
 import {
   blankStimulus,
@@ -86,12 +86,6 @@ const problems = ref<string[]>([])
 const fresh = ref<StimulusForm>(blankStimulus())
 const adding = ref<StimulusForm>(blankStimulus())
 const showAddStimulus = ref(false)
-const groupSearch = ref('')
-const groupRows = ref<GroupListRow[]>([])
-const groupsLoading = ref(false)
-const groupsFailed = ref(false)
-const groupPage = ref(1)
-const groupPages = ref(1)
 const search = ref('')
 const found = ref<QuestionPick[]>([])
 const searching = ref(false)
@@ -242,34 +236,16 @@ async function create(): Promise<void> {
   }
 }
 
-const GROUP_PAGE_SIZE = 10
-let groupSeq = 0
-/** Browses the existing groups (T49): newest first, filtered by the search text over the group label and its stimuli. */
-async function loadGroups(page = 1): Promise<void> {
-  const token = ++groupSeq
-  groupsLoading.value = true
-  groupsFailed.value = false
-  try {
-    const res = await listGroups({ q: groupSearch.value.trim() || null, subjectId: props.subjectId || null, page, pageSize: GROUP_PAGE_SIZE })
-    if (token !== groupSeq) return
-    groupRows.value = res.data
-    groupPage.value = res.meta.page
-    groupPages.value = Math.max(1, Math.ceil(res.meta.totalItems / res.meta.pageSize))
-  } catch {
-    if (token === groupSeq) {
-      groupRows.value = []
-      groupsFailed.value = true
-    }
-  } finally {
-    if (token === groupSeq) groupsLoading.value = false
-  }
-}
-let groupTimer: ReturnType<typeof setTimeout> | undefined
-function onGroupSearch(): void {
-  clearTimeout(groupTimer)
-  groupTimer = setTimeout(() => void loadGroups(1), 300)
-}
-onBeforeUnmount(() => clearTimeout(groupTimer))
+const {
+  search: groupSearch,
+  rows: groupRows,
+  page: groupPage,
+  pages: groupPages,
+  loading: groupsLoading,
+  failed: groupsFailed,
+  load: loadGroups,
+  onSearch: onGroupSearch,
+} = useGroupBrowse(() => props.subjectId || null)
 watch(
   () => view.value === null && !loading.value && !loadFailed.value,
   (browse) => {
@@ -644,7 +620,7 @@ const preview = (m: GroupMember): string => (m.stem.length > 90 ? `${m.stem.slic
         <DsText variant="body" tone="muted">Rangsangan dipaparkan sekali, dengan semua soalan di bawahnya. Kumpulan tidak membawa markah.</DsText>
         <DsStack as="ul" gap="xs" :data-testid="`${testid}-members`">
           <DsSurface v-for="(m, i) in members" :key="m.id" as="li" level="soft" padding="sm" shadow="none" :data-testid="`${testid}-member-${m.id}`">
-            <DsCluster gap="xs" :wrap="false">
+            <DsCluster gap="xs">
               <DsText variant="label" tabular :data-testid="`${testid}-member-${m.id}-pos`">{{ i + 1 }}</DsText>
               <DsText variant="body" truncate>
                 <DsText v-if="m.id === currentQuestionId" as="strong" variant="body-strong">Soalan ini · </DsText>{{ m.numberLabel ? `${m.numberLabel}. ` : '' }}{{ preview(m) || `Soalan #${m.id}` }}

@@ -22,6 +22,7 @@ import {
   createStimulus,
   createStudioQuestion,
   fetchGateCheck,
+  fetchGroup,
   fetchStudioQuestion,
   STUDIO_UNAVAILABLE,
   studioAvailable,
@@ -178,6 +179,10 @@ const hasChapters = ref<boolean | null>(null)
 const gaps = computed(() => draftGaps(draft.value, levelName.value, { hasChapters: hasChapters.value }))
 /** What API-Q-05 says about the stored question; null before a save or when the read failed. */
 const gateIssues = ref<{ path: string; message: string }[] | null>(null)
+const gateFailed = ref(false)
+const chaptersFailed = ref(false)
+const dskpFailed = ref(false)
+const checkFailed = computed(() => gateFailed.value || chaptersFailed.value || dskpFailed.value)
 const completeness = computed(() =>
   completenessRows({ draft: draft.value, gaps: gaps.value, issues: gateIssues.value, stored: edit.value ? saved.value : null, hasDskp: hasDskp.value }),
 )
@@ -207,11 +212,25 @@ function jump(field: string): void {
   target.focus({ preventScroll: true })
 }
 
+/** A question made from its group starts on the group's Subjek, Tingkatan and Kertas (PRD45 6.3). A failed read leaves them to the admin. */
+async function prefillFromGroup(id: string): Promise<void> {
+  try {
+    const g = await fetchGroup(id)
+    if (g.subjectId) draft.value.subjectId = g.subjectId
+    if (g.educationLevelId) draft.value.educationLevelId = g.educationLevelId
+    if (g.kertas) draft.value.kertas = g.kertas as StudioDraft['kertas']
+  } catch {
+    // The group editor below shows its own load error.
+  }
+}
+
 async function readGate(id: string): Promise<void> {
+  gateFailed.value = false
   try {
     gateIssues.value = (await fetchGateCheck(id)).issues
   } catch {
     gateIssues.value = null
+    gateFailed.value = true
   }
 }
 
@@ -237,6 +256,7 @@ async function load(): Promise<void> {
     levels.value = l.data.map((x) => ({ id: String(x.id), name: x.name }))
     if (props.id === undefined && typeof route.query.kumpulan === 'string' && /^\d+$/.test(route.query.kumpulan)) {
       draft.value.groupId = route.query.kumpulan
+      await prefillFromGroup(route.query.kumpulan)
     }
     if (props.id !== undefined) {
       const q: StudioQuestionDetail = await fetchStudioQuestion(props.id)
@@ -247,6 +267,8 @@ async function load(): Promise<void> {
       unsupported.value = h.unsupported
       status.value = q.status
       await readGate(props.id)
+      // S2-T03: the V2 `/preview` path arrives here with `?pratonton=1`.
+      if (route.query.pratonton === '1') previewOpen.value = true
     }
   } catch {
     if (token === loadSeq) loadFailed.value = true
@@ -375,8 +397,8 @@ async function save(): Promise<void> {
               </DsNativeSelect>
             </DsFormField>
           </DsGrid>
-          <StudioDskpFields v-model:unit-id="draft.unitId" v-model:sp-ids="draft.spIds" :subject-id="draft.subjectId" :level-id="draft.educationLevelId" :disabled="readOnly" :error="fieldProblems['tag.unitId']" @nodes="hasDskp = $event" />
-          <ChapterSelect v-model="draft.chapterId" :subject-id="draft.subjectId" :level-id="draft.educationLevelId" :error="fieldProblems.curriculumChapterId" @chapters="hasChapters = $event" />
+          <StudioDskpFields v-model:unit-id="draft.unitId" v-model:sp-ids="draft.spIds" :subject-id="draft.subjectId" :level-id="draft.educationLevelId" :disabled="readOnly" :error="fieldProblems['tag.unitId']" @nodes="hasDskp = $event" @failed="dskpFailed = $event" />
+          <ChapterSelect v-model="draft.chapterId" :subject-id="draft.subjectId" :level-id="draft.educationLevelId" :error="fieldProblems.curriculumChapterId" @chapters="hasChapters = $event" @failed="chaptersFailed = $event" />
           <DsFormField v-slot="{ id: fid }" native label="Tahap kesukaran" for="studio-difficulty" hint="Kesukaran ialah anggaran guru; TP ialah tahap DSKP." :error="fieldProblems.difficultyLevel">
             <DsNativeSelect :id="fid" v-model.number="draft.difficulty" :disabled="readOnly" data-testid="studio-difficulty">
               <option v-for="k in KESUKARAN" :key="k.value" :value="k.value">{{ k.label }}</option>
@@ -420,8 +442,8 @@ async function save(): Promise<void> {
       <DsStack id="studio-section-rangsangan" as="section">
         <DsFormSection title="Langkah 3 Rangsangan (stimulus)" description="Satu rangsangan dikongsi oleh semua soalan yang merujuknya. Ia dipaparkan sekali." icon="book-open-text">
           <!-- FR-ADM-QE2.2: a saved member shows the stimulus read-only; the group is changed on its own page. -->
-          <UButton v-if="edit && draft.groupId !== null" :to="`/admin/studio/groups/${draft.groupId}`" color="neutral" variant="soft" data-testid="studio-open-group">Buka kumpulan</UButton>
-          <StudioGroupEditor v-model:group-id="draft.groupId" v-model:pending="pendingGroup" :current-question-id="props.id ?? null" :subject-id="draft.subjectId || null" :disabled="readOnly || (edit && draft.groupId !== null)" @changed="groupView = $event" />
+          <UButton v-if="draft.groupId !== null" :to="`/admin/studio/groups/${draft.groupId}`" color="neutral" variant="soft" data-testid="studio-open-group">Buka kumpulan</UButton>
+          <StudioGroupEditor v-model:group-id="draft.groupId" v-model:pending="pendingGroup" :current-question-id="props.id ?? null" :subject-id="draft.subjectId || null" :disabled="readOnly || draft.groupId !== null" @changed="groupView = $event" />
         </DsFormSection>
       </DsStack>
 
@@ -453,7 +475,7 @@ async function save(): Promise<void> {
         </DsFormSection>
       </DsStack>
 
-      <StudioCompletenessPanel :rows="completeness" @jump="jump" />
+      <StudioCompletenessPanel :rows="completeness" :load-failed="checkFailed" @jump="jump" />
 
       <DsFormBar submit-label="Simpan draf" :saving="saving" :disabled="readOnly" cancel-to="/admin/studio" data-testid="studio-save-bar">
         <template v-if="stimuli.length > 0 && !wide" #extra>

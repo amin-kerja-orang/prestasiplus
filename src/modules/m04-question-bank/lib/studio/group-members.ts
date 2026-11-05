@@ -8,6 +8,9 @@ export const MIN_GROUP_MEMBERS = 1
 /** The stimulus API takes at most 40 member questions per group (`STIMULUS_LIMITS.groupQuestions`). */
 export const MAX_GROUP_MEMBERS = 40
 
+import { onBeforeUnmount, ref } from 'vue'
+
+import { listGroups, type GroupListRow } from '../../api/studio'
 import type { WireStimulus } from './stimulus'
 
 /** A group as the Studio shows it: stimuli, ordered members (stem, number) and whether a member is being served. */
@@ -130,4 +133,46 @@ export function planMembers(saved: readonly GroupMember[], edited: readonly Grou
   const had = new Set(saved.map((m) => m.id))
   const want = new Set(edited.map((m) => m.id))
   return { remove: saved.filter((m) => !want.has(m.id)).map((m) => m.id), add: edited.filter((m) => !had.has(m.id)).map((m) => m.id), order: edited.map((m) => m.id) }
+}
+
+const GROUP_PAGE_SIZE = 10
+
+/**
+ * Browses the existing groups (T49): newest first, filtered by the search text over the group label and its stimuli,
+ * within the question's subject (a group of another subject cannot take it). The join list and the move picker share it.
+ */
+export function useGroupBrowse(subjectId: () => string | null) {
+  const search = ref('')
+  const rows = ref<GroupListRow[]>([])
+  const page = ref(1)
+  const pages = ref(1)
+  const loading = ref(false)
+  const failed = ref(false)
+  let seq = 0
+  async function load(next = 1): Promise<void> {
+    const token = ++seq
+    loading.value = true
+    failed.value = false
+    try {
+      const res = await listGroups({ q: search.value.trim() || null, subjectId: subjectId(), page: next, pageSize: GROUP_PAGE_SIZE })
+      if (token !== seq) return
+      rows.value = res.data
+      page.value = res.meta.page
+      pages.value = Math.max(1, Math.ceil(res.meta.totalItems / res.meta.pageSize))
+    } catch {
+      if (token === seq) {
+        rows.value = []
+        failed.value = true
+      }
+    } finally {
+      if (token === seq) loading.value = false
+    }
+  }
+  let timer: ReturnType<typeof setTimeout> | undefined
+  function onSearch(): void {
+    clearTimeout(timer)
+    timer = setTimeout(() => void load(1), 300)
+  }
+  onBeforeUnmount(() => clearTimeout(timer))
+  return { search, rows, page, pages, loading, failed, load, onSearch }
 }
