@@ -3,10 +3,10 @@
 import { ok, queryString, route, type RouteDef } from '@/mock/define'
 
 import { buildMonthlyReport } from '../read-models/monthly'
-import { requireSchoolAdminWithSchool, schoolOf } from '../read-models/school-scope'
+import { reportSchoolOf, requireSchoolAdminOrAdminReport } from '../read-models/school-scope'
 
 export const monthlyRoutes: RouteDef[] = [
-  route('GET', '/api/admin-sekolah/laporan-bulanan', [requireSchoolAdminWithSchool], (req, ctx) =>
-    ok(buildMonthlyReport(schoolOf(req), queryString(req.query, 'bulan'), ctx.clock.now())),
+  route('GET', '/api/admin-sekolah/laporan-bulanan', [requireSchoolAdminOrAdminReport], (req, ctx) =>
+    ok(buildMonthlyReport(reportSchoolOf(req), queryString(req.query, 'bulan'), ctx.clock.now())),
   ),
 ]

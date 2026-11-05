@@ -41,7 +41,7 @@ describe('bijak attempts schema (migration 0013_bijak_attempts)', () => {
     await rejects(`insert into exam_attempts (user_id, paper_kind, title, subject, subject_name, kertas, paper_code, mode, started_at, duration_min) values ($1, 'x', 't', 'M', 'M', 1, 'c', 'exam', now(), 60)`, [userId])
     await rejects(`insert into exam_attempts (user_id, paper_kind, title, subject, subject_name, kertas, paper_code, mode, started_at, duration_min) values ($1, 'pilihan', 't', 'M', 'M', 1, 'c', 'quiz', now(), 60)`, [userId])
     await rejects(`insert into exam_attempts (user_id, paper_kind, title, subject, subject_name, kertas, paper_code, mode, status, started_at, duration_min) values ($1, 'pilihan', 't', 'M', 'M', 1, 'c', 'exam', 'done', now(), 60)`, [userId])
-    await rejects(`insert into exam_attempts (user_id, paper_kind, title, subject, subject_name, kertas, paper_code, mode, started_at, duration_min) values ($1, 'pilihan', 't', 'M', 'M', 1, 'c', 'exam', now(), 0)`, [userId])
+    await rejects(`insert into exam_attempts (user_id, paper_kind, title, subject, subject_name, kertas, paper_code, mode, started_at, duration_min) values ($1, 'pilihan', 't', 'M', 'M', 1, 'c', 'exam', now(), -1)`, [userId]) // 0 is allowed since 0165 (untimed subjektif, PO item 17)
   })
 
   it('child tables use GENERATED ALWAYS identity keys; the attempt id is a server-generated uuid', async () => {
