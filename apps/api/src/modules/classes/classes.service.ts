@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 import {
   CLASS_MESSAGES,
   ClassCreateRequestSchema,
@@ -57,6 +57,8 @@ const str = (v: unknown): string | undefined => (typeof v === 'string' ? v : und
 
 @Injectable()
 export class ClassesService {
+  private readonly logger = new Logger(ClassesService.name)
+
   constructor(
     @Inject(ClassesRepository) private readonly repo: ClassesRepository,
     @Inject(CurriculumRepository) private readonly curriculum: CurriculumRepository,
@@ -239,7 +241,11 @@ export class ClassesService {
     }
     if (actor.schoolId === null) throw invalid({ classroomId: GURU_STUDENT_MESSAGES.noSchool })
     const password = this.config.get('PUPIL_DEFAULT_PASSWORD', { infer: true }) as string | undefined
-    if (!password) throw ApiError.of('SERVER_ERROR', { message: 'PUPIL_DEFAULT_PASSWORD is not configured.' })
+    if (!password) {
+      // The standard BM server-error copy goes to the client; the reason stays in the log (names the key only, never a value).
+      this.logger.error('PUPIL_DEFAULT_PASSWORD is not configured: Cipta Pelajar refused.')
+      throw ApiError.of('SERVER_ERROR')
+    }
     const grade = gradeOfLevel((await this.repo.levelGrades([cls.educationLevelId])).get(cls.educationLevelId))
 
     const now = this.clock.now()

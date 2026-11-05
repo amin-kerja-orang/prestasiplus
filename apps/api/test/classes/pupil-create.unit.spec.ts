@@ -6,7 +6,7 @@ import {
 } from '@pp/contract'
 import { describe, expect, it } from 'vitest'
 
-import { ApiError } from '../../src/common/errors/api-error'
+import { ApiError, DEFAULT_ERROR_MESSAGES } from '../../src/common/errors/api-error'
 import { ClassesService } from '../../src/modules/classes/classes.service'
 import { skorPurataOf } from '../../src/modules/classes/classes.repository'
 import { IcService, usernameStem } from '../../src/modules/users/credentials'
@@ -206,9 +206,13 @@ describe('ClassesService.createStudent', () => {
     await expect(svc.createStudent(actor, body)).rejects.toMatchObject({ status: 422, fields: { classroomId: GURU_STUDENT_MESSAGES.noSchool } })
   })
 
-  it('an unconfigured default password is a 500 and nothing is created', async () => {
+  it('an unconfigured default password is a 500 with the standard BM server-error copy and nothing is created', async () => {
     const { svc, actor, calls } = classesServiceWith({})
-    await expect(svc.createStudent(actor, body)).rejects.toMatchObject({ status: 500 })
+    await expect(svc.createStudent(actor, body)).rejects.toMatchObject({
+      status: 500,
+      code: 'SERVER_ERROR',
+      message: DEFAULT_ERROR_MESSAGES.SERVER_ERROR,
+    })
     expect(calls.createPupil).toHaveLength(0)
   })
 
