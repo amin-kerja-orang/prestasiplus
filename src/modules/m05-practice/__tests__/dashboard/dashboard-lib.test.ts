@@ -90,7 +90,7 @@ describe('dashboard-lib', () => {
       accuracyPct,
       trend: [],
     })
-    const out = weakTopics([p('A', 9, 59.9), p('B', 5, 60), p('C', 20, 30), p('D', 0, 0), p('E', 3, 30)])
+    const out = weakTopics([p('A', 9, 59.4), p('B', 5, 60), p('C', 20, 30), p('D', 0, 0), p('E', 3, 30)])
     expect(out.map((s) => s.code)).toEqual(['C', 'E', 'A'])
   })
 

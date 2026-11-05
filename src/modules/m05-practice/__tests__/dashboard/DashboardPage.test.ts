@@ -330,7 +330,7 @@ describe('S1 DashboardPage (v2 Murid Home)', () => {
   it('lists the subjects under 60 % of the last 30 days, worst first, with a Latih link (FR-MUR-2-6)', async () => {
     api.fetchProgress.mockResolvedValue(
       progress([
-        prog('BM', 'Bahasa Melayu', 40, 59.9),
+        prog('BM', 'Bahasa Melayu', 40, 59.4),
         prog('SC', 'Sains', 10, 60),
         prog('MT', 'Matematik', 12, 25),
         prog('SJ', 'Sejarah', 8, 80),
