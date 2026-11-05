@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S12 `/topics` "Topik - PRESTASIPLUS" (M03-T4; FR-M03-69..74, BR-13). Grade (Tingkatan 4 / 5, D54) and
+ * S12 `/topics` "Topik - PRESTASIPLUS" (M03-T4; FR-M03-69..74, BR-13). Grade (Tingkatan 1 to 5, D54, D101) and
  * subject chips (each keeps the other filter), then every matching topic on one page in a 1 / 2 (`sm`) / 3 (`lg`)
  * column grid. No loading state: the content area stays empty until the data is ready (SRS §8).
  */
@@ -9,7 +9,6 @@ import { RouterLink, useRoute } from 'vue-router'
 
 import { useApi } from '@/composables'
 import { DsEmptyState, DsIconChip, DsPage } from '@/ds'
-import { LOWER_FORM_COPY, useIsLowerForm } from '@/lib/lower-form'
 import { useSessionStore } from '@/stores/session'
 
 import { topicAccent, topicGlyph } from '../lib/topic-accent'
@@ -29,8 +28,7 @@ import {
 
 const route = useRoute()
 const session = useSessionStore()
-const lowerForm = useIsLowerForm()
-/** D54: Tingkatan 4 / 5 / "Semua" (`SEMUA`); a bare URL opens the student's form (4 by default). */
+/** D54, D101: Tingkatan 1 to 5 / "Semua" (`SEMUA`); a bare URL opens the student's form (4 by default). */
 const grade = computed(() =>
   effectiveTopicGrade(readFilter(route.query.grade_level), session.user?.grade),
 )
@@ -46,14 +44,6 @@ const loaded = computed(() => data.value !== null)
 
 <template>
   <DsPage data-testid="topics-page">
-    <DsEmptyState
-      v-if="lowerForm"
-      icon="books"
-      :title="LOWER_FORM_COPY.title"
-      :description="LOWER_FORM_COPY.description"
-      data-testid="lower-form-empty"
-    />
-    <template v-else>
     <section class="flex flex-col gap-3 rounded-card bg-default p-4 shadow-lift sm:p-5">
       <nav class="flex flex-wrap gap-2" aria-label="Tingkatan" data-testid="grade-chips">
         <UButton
@@ -175,7 +165,6 @@ const loaded = computed(() => data.value !== null)
           </span>
         </RouterLink>
       </div>
-    </template>
     </template>
   </DsPage>
 </template>

@@ -10,7 +10,6 @@ import { RouterLink } from 'vue-router'
 
 import { useApi } from '@/composables'
 import { DsEmptyState, DsIconChip, DsLoadError, DsPage } from '@/ds'
-import { LOWER_FORM_COPY, useIsLowerForm } from '@/lib/lower-form'
 import { formatCount } from '@/lib/number'
 
 import { fetchChapterSubjects } from '../api/practice'
@@ -18,7 +17,6 @@ import { subjectAccent, subjectGlyph } from '../components/quiz/subject-glyph'
 
 const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
 
-const lowerForm = useIsLowerForm()
 const { data, error, reload } = useApi((signal) => fetchChapterSubjects({ signal }))
 const subjects = computed(() => data.value?.data ?? [])
 </script>
@@ -45,15 +43,7 @@ const subjects = computed(() => data.value?.data ?? [])
     </template>
 
     <DsEmptyState
-      v-if="lowerForm"
-      icon="books"
-      :title="LOWER_FORM_COPY.title"
-      :description="LOWER_FORM_COPY.description"
-      data-testid="lower-form-empty"
-    />
-
-    <DsEmptyState
-      v-else-if="data && subjects.length === 0"
+      v-if="data && subjects.length === 0"
       icon="stack"
       title="Tiada subjek bab tersedia untuk tahap ini."
       data-testid="chapter-subjects-empty"

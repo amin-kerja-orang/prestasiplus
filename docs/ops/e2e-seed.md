@@ -42,6 +42,7 @@ With `E2E_DEMO_SECONDARY=1` as well, the demo schools DEMO002..004 become type S
 | Evidence | the study evidence rows of `3472/2` replaced by admin-origin rows with the same values, note `E2E fixture: ...` (H-A15: study rows do not count at Sahkan) |
 | Blueprint | `3472/2` moved from Spec to Disahkan with `serves_students = true` (verification note set) |
 | K2 fixture | 15 structured `3472/2` questions plus one published Kertas 2 paper (`e2e-k2.ts`, see below) |
+| T1 fixture | 5 approved MCQs for Matematik at Tingkatan 1 (`E2E-T1-MATH-01..05`, `apps/api/prisma/seed/e2e-t1.ts`, run before the chapter link, linked to the first in-tree T1 chapter); the Tingkatan 5 pupil reads the `questions-pool` MCQs |
 | Question pool | the `questions-pool` demo seed also runs under `e2e` (Tingkatan 4 and 5 MCQs per subject), so the paper builder reaches Sepadan for Matematik Kertas 1 (1449/1, 40 questions) from the bank |
 
 The password is the existing demo convention (`core/demo-password.ts`: the published demo password, or the argon2id hash in `SEED_DEMO_PASSWORD_HASH` if set); see [AKAUN-DEMO-LOCAL.md](../AKAUN-DEMO-LOCAL.md). No secret is stored in the repo.

@@ -121,13 +121,20 @@ describe('TopicsPage (S12)', () => {
       subject: 'SAINS',
     })
     const grades = w.findAll('[data-testid=grade-chip]')
-    expect(grades.map((c) => c.text())).toEqual(['Semua Tingkatan', 'Tingkatan 4', 'Tingkatan 5'])
+    expect(grades.map((c) => c.text())).toEqual([
+      'Semua Tingkatan',
+      'Tingkatan 1',
+      'Tingkatan 2',
+      'Tingkatan 3',
+      'Tingkatan 4',
+      'Tingkatan 5',
+    ])
     expect(w.text()).not.toContain('Darjah')
     expect(w.get('[data-testid=grade-chips]').attributes('aria-label')).toBe('Tingkatan')
     expect(w.findAll('[data-testid=subject-chip]')).toHaveLength(8)
-    expect(grades.map((c) => c.attributes('data-active'))).toEqual(['false', 'false', 'true'])
+    expect(grades.map((c) => c.attributes('data-active'))).toEqual(['false', 'false', 'false', 'false', 'false', 'true'])
     expect(grades[0]?.attributes('href')).toBe('/topics?grade_level=SEMUA&subject=SAINS')
-    expect(grades[1]?.attributes('href')).toBe('/topics?grade_level=TINGKATAN_4&subject=SAINS')
+    expect(grades[4]?.attributes('href')).toBe('/topics?grade_level=TINGKATAN_4&subject=SAINS')
     const subjects = w.findAll('[data-testid=subject-chip]')
     expect(subjects[0]?.attributes('data-active')).toBe('false')
     expect(subjects[4]?.attributes('data-active')).toBe('true')
@@ -151,6 +158,9 @@ describe('TopicsPage (S12)', () => {
       subject: null,
     })
     expect(w.findAll('[data-testid=grade-chip]').map((c) => c.attributes('data-active'))).toEqual([
+      'false',
+      'false',
+      'false',
       'false',
       'true',
       'false',
@@ -189,12 +199,15 @@ describe('TopicsPage (S12)', () => {
       'true',
       'false',
       'false',
+      'false',
+      'false',
+      'false',
     ])
   })
 
   it('never requests a Darjah or other out-of-scope grade from an old link: falls back to the form', async () => {
     api.fetchTopics.mockResolvedValue({ data: [] })
-    for (const raw of ['DARJAH_1', 'darjah_1', 'TINGKATAN_1', 'xyz']) {
+    for (const raw of ['DARJAH_1', 'darjah_1', 'TINGKATAN_6', 'xyz']) {
       api.fetchTopics.mockClear()
       await render(TopicsPage, '/topics', `/topics?grade_level=${raw}`)
       expect(api.fetchTopics.mock.calls[0]?.[0], raw).toMatchObject({ gradeLevel: 'TINGKATAN_4' })
@@ -297,9 +310,15 @@ describe('LearningMapPage (S14)', () => {
     expect(pills[0]?.attributes('data-active')).toBe('true')
     expect(pills[1]?.attributes('data-active')).toBe('false')
     const chips = w.findAll('[data-testid=map-grade-chip]')
-    expect(chips.map((c) => c.text())).toEqual(['Tingkatan 4', 'Tingkatan 5'])
-    expect(chips.map((c) => c.attributes('data-active'))).toEqual(['true', 'false'])
-    expect(chips[1]?.attributes('href')).toBe('/peta-belajar?subject=MATEMATIK&grade=TINGKATAN_5')
+    expect(chips.map((c) => c.text())).toEqual([
+      'Tingkatan 1',
+      'Tingkatan 2',
+      'Tingkatan 3',
+      'Tingkatan 4',
+      'Tingkatan 5',
+    ])
+    expect(chips.map((c) => c.attributes('data-active'))).toEqual(['false', 'false', 'false', 'true', 'false'])
+    expect(chips[4]?.attributes('href')).toBe('/peta-belajar?subject=MATEMATIK&grade=TINGKATAN_5')
     expect(w.get('[data-testid=map-grade-chips]').attributes('aria-label')).toBe('Tingkatan')
     expect(w.text()).not.toContain('Darjah')
     expect(api.fetchLearningMap.mock.calls[0]?.[0]).toMatchObject({
@@ -368,9 +387,9 @@ describe('LearningMapPage (S14)', () => {
 
   it('opens on the pupil own level (a T5 pupil on Tingkatan 5, no recognised form on Tingkatan 4) with that tab marked', async () => {
     for (const [grade, expected, active] of [
-      [11, 'TINGKATAN_5', ['false', 'true']],
-      [10, 'TINGKATAN_4', ['true', 'false']],
-      [null, 'TINGKATAN_4', ['true', 'false']],
+      [11, 'TINGKATAN_5', ['false', 'false', 'false', 'false', 'true']],
+      [10, 'TINGKATAN_4', ['false', 'false', 'false', 'true', 'false']],
+      [null, 'TINGKATAN_4', ['false', 'false', 'false', 'true', 'false']],
     ] as const) {
       api.fetchLearningMap.mockResolvedValue(map([island(1, 'unlocked')], { grade: expected }))
       loginStudent(grade)
@@ -388,12 +407,16 @@ describe('LearningMapPage (S14)', () => {
     }
   })
 
-  it('a Tingkatan 1 pupil gets the lower-form notice, never the empty topic card (D54)', async () => {
+  it('a Tingkatan 1 pupil gets the same page as Tingkatan 5: own form, five chips, no "akan datang" (D101)', async () => {
     api.fetchLearningMap.mockClear()
+    api.fetchLearningMap.mockResolvedValue(map([island(1, 'unlocked')], { grade: 'TINGKATAN_1' }))
     loginStudent(7)
     const w = await render(LearningMapPage, '/peta-belajar', '/peta-belajar')
-    expect(w.find('[data-testid=lower-form-empty]').exists()).toBe(true)
-    expect(w.find('[data-testid=map-empty]').exists()).toBe(false)
+    expect(w.find('[data-testid=lower-form-empty]').exists()).toBe(false)
+    expect(w.text()).not.toContain('akan datang')
+    expect(api.fetchLearningMap.mock.calls.at(-1)?.[0]).toMatchObject({ grade: 'TINGKATAN_1' })
+    const chips = w.findAll('[data-testid=map-grade-chip]')
+    expect(chips.map((c) => c.attributes('data-active'))).toEqual(['true', 'false', 'false', 'false', 'false'])
   })
 
   it('never leaves the tabs unselected: an unrecognised served grade falls back to the requested tab', async () => {
@@ -401,7 +424,7 @@ describe('LearningMapPage (S14)', () => {
     loginStudent(11)
     const w = await render(LearningMapPage, '/peta-belajar', '/peta-belajar')
     const chips = w.findAll('[data-testid=map-grade-chip]')
-    expect(chips.map((c) => c.attributes('data-active'))).toEqual(['false', 'true'])
+    expect(chips.map((c) => c.attributes('data-active'))).toEqual(['false', 'false', 'false', 'false', 'true'])
   })
 
   it('an old Darjah link asks for the student form, never a Darjah', async () => {
