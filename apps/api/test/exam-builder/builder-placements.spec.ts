@@ -561,7 +561,7 @@ describe('paper builder R1-B09a: placements, D90 groups, review, publish, copy, 
       expectError(await admin.get('/api/admin/papers/pool-preview?subject=MAT&kertas=9'), 'NOT_FOUND', 404)
       expectError(await admin.get('/api/admin/papers/pool-preview?subject=MAT'), 'VALIDATION_ERROR', 422)
       expect((await student.get('/api/admin/papers/pool-preview?subject=MAT&kertas=2')).status).toBe(403)
-      expectError(await admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 9 }), 'NO_BLUEPRINT', 422)
+      expectError(await admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 4 }), 'NO_BLUEPRINT', 422)
       expectError(await admin.post('/api/admin/papers/generate', { subject: 'MAT' }), 'VALIDATION_ERROR', 422)
     })
   })
