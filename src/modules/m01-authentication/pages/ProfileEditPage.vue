@@ -4,7 +4,7 @@
  * Three cards in the order of live: "Gambar Profil" (own form), "Maklumat Peribadi" + actions row
  * (one form, `PUT /api/me`: name, phone, bio only; Tingkatan and school change only through the admin
  * user edit, S5-T05), and "Tukar Kata Laluan" (own form).
- * Native validation only (`required` name, `maxlength` bio 1000). The bio counter is `{n}/1000` (FR-MUR-A1-11). Outcomes show in the flash outlet at the top of the shell main:
+ * Native validation (`required` name, except the school admin, whose empty Nama shows the app line "Sila isi nama." instead; `maxlength` bio 1000). The bio counter is `{n}/1000` (FR-MUR-A1-11). Outcomes show in the flash outlet at the top of the shell main:
  * success texts and server errors are UNVERIFIED COPY (SRS §8). The form is seeded from the cached
  * session user; a background `GET /api/me` refresh re-seeds it only while the user has not typed.
  */
@@ -143,7 +143,7 @@ async function submit(): Promise<void> {
               v-model="name"
               type="text"
               name="name"
-              required
+              :required="!isSchoolAdmin"
               icon="i-ph-user"
               size="lg"
               class="w-full"
