@@ -49,7 +49,7 @@ export function servableMcq(record: QuestionRecord, { allowStimulus = false }: S
       return { ok: false, reason: 'a stimulus cannot be shown on the practice screen' }
     if (only.options.some((o) => o.imageId != null)) return { ok: false, reason: 'an option image cannot be shown' }
   }
-  if (!only.options.some((o) => o.label === only.key.correct)) return { ok: false, reason: 'the key names no option' }
+  if (!only.options.some((o) => o.label === only.key?.correct)) return { ok: false, reason: 'the key names no option' }
   return { ok: true, leaf: only }
 }
 
