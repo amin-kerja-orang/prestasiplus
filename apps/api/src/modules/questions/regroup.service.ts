@@ -300,7 +300,7 @@ export class RegroupService {
       }
     }
     const groupId = await this.repo.createGroup({ label: input.label ?? null, scope: 'section', stimulusIds, optionBank: [] })
-    await this.members.set(groupId, memberIds, 'memberQuestionIds', undefined, { regroup: true })
+    await this.members.set(groupId, memberIds, 'memberQuestionIds', undefined, false, { regroup: true })
     // The group's own scope (DM-51): the common value of its members, else none (a mixed T4/T5 group keeps no level).
     const traits = await this.repo.memberTraits(groupId)
     const common = <T>(values: readonly T[]): T | null => (values.length > 0 && values.every((v) => v === values[0]) ? (values[0] as T) : null)

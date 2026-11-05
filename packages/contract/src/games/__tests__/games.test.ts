@@ -45,6 +45,7 @@ import {
   GamesRoomCreateRequestSchema,
   GamesRoomJoinRequestSchema,
   GamesRoomViewSchema,
+  GamesSekolahBersaingBoardSchema,
   GamesSekolahBersaingSchema,
   GamesSoloPayloadSchema,
   GamesSoloCheckRequestSchema,
@@ -789,6 +790,27 @@ describe('leagues (M16-46 to M16-49)', () => {
     rejected(GamesLeagueDetailSchema, { ...detail, schools: 3 })
     rejected(GamesLeagueDetailSchema, { ...detail, inviteCode: 'abc' })
     rejected(GamesLeagueDetailSchema, { ...detail, standings: { T9: [] } })
+  })
+})
+
+describe('Sekolah Bersaing live board (API-AS-14, S7-T02)', () => {
+  const row = { rank: 1, school: 'SMK Rekaan', state: 'Negeri Rekaan', accuracy: 69.6, pupils: 5 }
+
+  it('is a bare array of rows; [] is the empty board', () => {
+    ok(GamesSekolahBersaingBoardSchema, [row])
+    ok(GamesSekolahBersaingBoardSchema, [])
+    rejected(GamesSekolahBersaingBoardSchema, { rows: [row] })
+  })
+
+  it('removed fields are refused', () => {
+    for (const extra of ['weekStart', 'count', 'aktifPct', 'streakAvg', 'notaPer10', 'anonymous']) {
+      rejected(GamesSekolahBersaingBoardSchema, [{ ...row, [extra]: 1 }])
+    }
+  })
+
+  it('accuracy is 0..100 with at most one decimal; 100 and 50 carry no fraction', () => {
+    for (const accuracy of [0, 50, 100, 69.6]) ok(GamesSekolahBersaingBoardSchema, [{ ...row, accuracy }])
+    for (const accuracy of [-1, 100.1, 69.65]) rejected(GamesSekolahBersaingBoardSchema, [{ ...row, accuracy }])
   })
 })
 

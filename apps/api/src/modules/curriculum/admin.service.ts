@@ -24,6 +24,7 @@ import {
   chapterNotFound,
   hasChildren,
   levelNotFound,
+  primaryLevelActive,
   subjectNotFound,
   subtopicNotFound,
   topicNotFound,
@@ -159,6 +160,8 @@ export class CurriculumAdminService {
 
   async createLevel(actor: AuditActor, body: unknown) {
     const input = await this.levelInput(body, null)
+    // A new level is created active (repository), so a primary one would be an active Darjah (FR-X3-1, DM-13).
+    if (input.stage === 'primary') throw primaryLevelActive()
     const row = await this.write(
       actor,
       { action: AUDIT_ACTIONS.CURRICULUM_LEVEL_CREATED, targetType: 'education_level', targetId: (r) => r.id },
@@ -171,6 +174,8 @@ export class CurriculumAdminService {
   async updateLevel(actor: AuditActor, rawId: string, body: unknown) {
     const current = await this.requireLevel(rawId)
     const input = await this.levelInput(body, current.id)
+    // Moving an active level to the primary stage would leave an active Darjah (FR-X3-1, DM-13).
+    if (input.stage === 'primary' && current.isActive) throw primaryLevelActive()
     const row = await this.write(
       actor,
       { action: AUDIT_ACTIONS.CURRICULUM_LEVEL_UPDATED, targetType: 'education_level', targetId: (r) => r.id },
@@ -183,6 +188,8 @@ export class CurriculumAdminService {
   async setLevelActive(actor: AuditActor, rawId: string, body: unknown) {
     const current = await this.requireLevel(rawId)
     const isActive = must((await validateBody(CurriculumSetActiveRequestSchema, body)).isActive)
+    // FR-ADM-C03.3a: a Darjah level is never activated (only Tingkatan 1-5 are active); deactivating one stays allowed.
+    if (isActive && current.stage === 'primary') throw primaryLevelActive()
     await this.write(
       actor,
       { action: AUDIT_ACTIONS.CURRICULUM_LEVEL_ACTIVE_CHANGED, targetType: 'education_level', targetId: () => current.id },

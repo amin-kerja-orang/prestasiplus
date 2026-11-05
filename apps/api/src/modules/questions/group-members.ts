@@ -58,9 +58,10 @@ export class GroupMembers {
    * Makes `ordered` the members of the group, in that order. Adds, removals and reordering in one call; an unchanged list is a no-op.
    * Returns the members after the change. `opts.regroup` lifts the served lock for ADDED members only (the regroup route, API-Q-24).
    */
-  async set(groupId: string, ordered: readonly string[], field = 'questionIds', subjectMessage: string = M.memberScope, opts: { regroup?: boolean } = {}): Promise<string[]> {
+  async set(groupId: string, ordered: readonly string[], field = 'questionIds', subjectMessage: string = M.memberScope, swap = false, opts: { regroup?: boolean } = {}): Promise<string[]> {
     await this.lock(groupId)
-    // A draft copy stages its members in `draft_members`; the in-place member routes do not apply to it (S1-T01, the swap is not built yet).
+    // A draft copy stages its members in `draft_members`; the in-place member routes do not apply to it. Its members reach the live group
+    // only through the swap (`swap = true`: the publish of the copy, which is the one path that may change the members of a served group).
     const scope = await this.repo.groupScope(groupId)
     if (scope?.draftOfGroupId != null) throw conflict(M.conflict)
     if (new Set(ordered).size !== ordered.length) throw fail({ [field]: M.membersInvalid })
@@ -72,7 +73,7 @@ export class GroupMembers {
     if (unchanged) return [...current]
 
     // Served lock: the served members stay, in their order.
-    const serving = new Set(await this.repo.servingMemberIds(groupId))
+    const serving = new Set(swap ? [] : await this.repo.servingMemberIds(groupId))
     if (serving.size > 0) {
       const keptOrder = ordered.filter((q) => serving.has(q))
       const before = current.filter((q) => serving.has(q))
@@ -87,7 +88,7 @@ export class GroupMembers {
       if (f.groupId !== null) throw fail({ [field]: f.groupId === groupId ? M.memberExists : M.memberTaken })
       if (!f.active || f.archived) throw fail({ [field]: M.memberInactive })
       // S1-T07 (45 6.6.3): the regroup (`regroup: true`) is the only caller that may add a question shown to pupils; the normal routes keep DM-04.
-      if (f.served && opts.regroup !== true) throw conflict(M.memberServed)
+      if (f.served && !swap && opts.regroup !== true) throw conflict(M.memberServed)
     }
     // The group's own scope (DM-51): an added member must match a non-null Subjek / Tingkatan / Kertas of the group.
     for (const q of added) {

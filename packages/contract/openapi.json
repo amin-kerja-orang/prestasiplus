@@ -4350,6 +4350,20 @@
           "replied": {
             "type": "boolean",
             "description": "adminReply is non-empty."
+          },
+          "roleLabel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Role label from `created_role`; null on an old row of a user with several roles. Sent once DM-32 lands."
+          },
+          "school": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "School from `school_id`. Sent once DM-32 lands."
           }
         },
         "required": [
@@ -4368,6 +4382,14 @@
           "status": {
             "type": "string",
             "description": "Exact SupportTicketStatus value; blank = all; an unknown value returns no rows."
+          },
+          "role": {
+            "type": "string",
+            "description": "Exact role of `created_role`; an unknown value is ignored. Applies once DM-32 lands."
+          },
+          "page": {
+            "type": "string",
+            "description": "Page number from 1, 25 rows per page; an odd value is page 1; a page past the end returns no rows."
           }
         }
       },
@@ -4397,6 +4419,18 @@
               ],
               "additionalProperties": false
             }
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "perPage": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "matched": {
+            "type": "integer",
+            "minimum": 0
           }
         },
         "required": [
@@ -4436,6 +4470,101 @@
           "count"
         ],
         "additionalProperties": false
+      },
+      "SupportTicketDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SupportTicketStatus"
+          },
+          "roleLabel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Role label from `created_role`; null on an old row of a user with several roles."
+          },
+          "school": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "adminReply": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "repliedAt": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "subject",
+          "body",
+          "status",
+          "roleLabel",
+          "school",
+          "createdAt",
+          "adminReply",
+          "repliedAt"
+        ],
+        "additionalProperties": false
+      },
+      "SupportTicketReplyRequest": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          }
+        },
+        "required": [
+          "text"
+        ]
+      },
+      "SupportTicketStatusRequest": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "dibuka",
+              "dalam_proses",
+              "menunggu_balas",
+              "selesai",
+              "ditutup"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
       },
       "GamificationLedgerKind": {
         "type": "string",
@@ -6369,6 +6498,28 @@
           "gamesAwardSyiling": {
             "type": "integer",
             "minimum": 0
+          },
+          "redeemBudget": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000,
+            "description": "The one global session budget, in sen (`redeem_budget_sen`)."
+          },
+          "flatCoins": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20,
+            "description": "Syiling per correct answer (`coins_per_correct`)."
+          },
+          "sessionYear": {
+            "type": "integer",
+            "minimum": 2020,
+            "maximum": 2100,
+            "description": "The current session year (`session_year`)."
+          },
+          "miniGamesCoins": {
+            "type": "boolean",
+            "description": "Whether games pay Syiling (`mini_games_give_coins`)."
           }
         },
         "required": [
@@ -6401,6 +6552,28 @@
           "gamesAwardSyiling": {
             "type": "integer",
             "minimum": 0
+          },
+          "redeemBudget": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000,
+            "description": "The one global session budget, in sen (`redeem_budget_sen`)."
+          },
+          "flatCoins": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20,
+            "description": "Syiling per correct answer (`coins_per_correct`)."
+          },
+          "sessionYear": {
+            "type": "integer",
+            "minimum": 2020,
+            "maximum": 2100,
+            "description": "The current session year (`session_year`)."
+          },
+          "miniGamesCoins": {
+            "type": "boolean",
+            "description": "Whether games pay Syiling (`mini_games_give_coins`)."
           }
         }
       },
@@ -24588,6 +24761,47 @@
           "standings"
         ],
         "additionalProperties": false
+      },
+      "GamesSekolahBersaingBoardRow": {
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "school": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "accuracy": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Mean of per-session accuracy of the school, percent, one decimal."
+          },
+          "pupils": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Distinct pupils of the school with a session."
+          }
+        },
+        "required": [
+          "rank",
+          "school",
+          "state",
+          "accuracy",
+          "pupils"
+        ],
+        "additionalProperties": false
+      },
+      "GamesSekolahBersaingBoard": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/GamesSekolahBersaingBoardRow"
+        },
+        "description": "Rank order; [] when no school has a session."
       },
       "GamesSekolahBersaingQuery": {
         "type": "object",
@@ -78534,8 +78748,8 @@
         "tags": [
           "support"
         ],
-        "summary": "Admin support queue (read-only)",
-        "description": "Admin only (D27: read-only, no reply or status change). Newest first (createdAt desc, then id desc), first 200 rows only. `meta.total` = all tickets; `meta.counts` = statuses with a count above 0, in vocabulary order, over all tickets (not the filtered ones).",
+        "summary": "Admin support queue",
+        "description": "Admin only. Newest first (createdAt desc, then id desc), 25 per page with `page`. `meta.total` = all tickets; `meta.counts` = statuses with a count above 0, in vocabulary order, over all tickets; `meta.matched` counts the rows matching the filters. A row has no body, no e-mail and no user id.",
         "parameters": [
           {
             "schema": {
@@ -78545,6 +78759,26 @@
             "required": false,
             "description": "Exact SupportTicketStatus value; blank = all; an unknown value returns no rows.",
             "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Exact role of `created_role`; an unknown value is ignored. Applies once DM-32 lands."
+            },
+            "required": false,
+            "description": "Exact role of `created_role`; an unknown value is ignored. Applies once DM-32 lands.",
+            "name": "role",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Page number from 1, 25 rows per page; an odd value is page 1; a page past the end returns no rows."
+            },
+            "required": false,
+            "description": "Page number from 1, 25 rows per page; an odd value is page 1; a page past the end returns no rows.",
+            "name": "page",
             "in": "query"
           }
         ],
@@ -78620,6 +78854,278 @@
           },
           "403": {
             "description": "FORBIDDEN \"This action is unauthorized.\" (not an admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/tiket/{id}": {
+      "get": {
+        "tags": [
+          "support"
+        ],
+        "summary": "One support ticket (API-SUP-05)",
+        "description": "Admin only. The ticket with its single reply. No e-mail is returned.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The ticket.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SupportTicketDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (not an admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Rekod tidak dijumpai. Ia mungkin telah dipadam.\" (unknown id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/tiket/{id}/reply": {
+      "put": {
+        "tags": [
+          "support"
+        ],
+        "summary": "Save the single reply (API-SUP-05)",
+        "description": "Admin only. Sets the reply, the replier and the time; a second save replaces the text. The status does not change. The owner gets an in-app notification.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupportTicketReplyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated ticket.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SupportTicketDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (not an admin) or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Rekod tidak dijumpai. Ia mungkin telah dipadam.\" (unknown id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields.text: \"Sila isi balasan.\" or \"Balasan tidak boleh melebihi 5000 aksara.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/tiket/{id}/status": {
+      "patch": {
+        "tags": [
+          "support"
+        ],
+        "summary": "Set the ticket status (API-SUP-05)",
+        "description": "Admin only. The reply does not change.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupportTicketStatusRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated ticket.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SupportTicketDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (not an admin) or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Rekod tidak dijumpai. Ia mungkin telah dipadam.\" (unknown id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields.status: \"Sila pilih status.\"",
             "content": {
               "application/json": {
                 "schema": {
@@ -107557,7 +108063,7 @@
           "stimuli"
         ],
         "summary": "Publish a group: every member becomes approved in one audited transaction (S1-T01, API-Q-31)",
-        "description": "No body. Every member must be Menunggu Semakan (`review`) or already Diluluskan (`approved`); any other member (Draf, Diarkibkan or another status) answers 409 \"Semua soalan dalam kumpulan mesti dihantar untuk semakan dahulu.\" and nothing changes. An empty group is 409 \"Kumpulan perlu sekurang-kurangnya 1 soalan.\". One member failing its approve gate is 422 `details.gate[{questionId, message}]` and nothing changes. Publishing a draft copy (`draftOfGroupId` set) answers 409 until part 3b, which swaps it in for the served group in one transaction.",
+        "description": "No body. Every member must be Menunggu Semakan (`review`) or already Diluluskan (`approved`); any other member (Draf, Diarkibkan or another status) answers 409 \"Semua soalan dalam kumpulan mesti dihantar untuk semakan dahulu.\" and nothing changes. An empty group is 409 \"Kumpulan perlu sekurang-kurangnya 1 soalan.\". One member failing its approve gate is 422 `details.gate[{questionId, message}]` and nothing changes. Publishing a draft copy (`draftOfGroupId` set) swaps it in for the served group in one transaction, same gate on the members staged in the copy: the copy's members, stimuli, option bank and scope replace those of the served group, Menunggu Semakan members are approved (the old version is archived `superseded`), the copy is deleted, and the served group id is unchanged (the answer is the served group). Audit `details.fromDraftId`.",
         "parameters": [
           {
             "schema": {
@@ -107952,7 +108458,7 @@
           "stimuli"
         ],
         "summary": "Move a member question to another group (S1-T01, API-Q-34)",
-        "description": "Same Subjek, Tingkatan and Kertas only (422 \"Subjek dan Tingkatan ahli mesti sama dengan kumpulan.\" / \"Soalan dalam satu kumpulan mesti sama subjek.\" / \"...sama kertas.\"). A member that is shown to pupils answers 409 `memberServed` (\"Soalan ini sedang dipaparkan kepada murid. Sunting sebagai draf atau arkibkannya dahulu sebelum memasukkannya ke dalam kumpulan.\") and nothing changes; moving a served member through draft copies comes with part 3b.",
+        "description": "Same Subjek, Tingkatan and Kertas only (422 \"Subjek dan Tingkatan ahli mesti sama dengan kumpulan.\" / \"Soalan dalam satu kumpulan mesti sama subjek.\" / \"...sama kertas.\"). A member that is shown to pupils answers 409 `memberServed` (\"Soalan ini sedang dipaparkan kepada murid. Sunting sebagai draf atau arkibkannya dahulu sebelum memasukkannya ke dalam kumpulan.\") and nothing changes; a served member moves only between two draft copies (the move is staged and takes effect when both copies are published); a move with a draft copy on one side only is 409.",
         "parameters": [
           {
             "schema": {
