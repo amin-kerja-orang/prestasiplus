@@ -103,6 +103,8 @@ model QuestionReport {
   questionType      String    @default("mcq") @map("question_type")
   /// FK users(id) ON DELETE SET NULL (migration SQL).
   reporterId        BigInt?   @map("reporter_id")
+  /// DM-82: the role the report was filed under, murid or guru (check constraint); set from the session role, never from the client.
+  reporterRole      String    @default("murid") @map("reporter_role")
   /// Codes of E-report_reason (check constraint): wrong_answer, confusing_question, wrong_options,
   /// missing_options, duplicate, typo, other, outdated. At least one.
   reasons           String[]

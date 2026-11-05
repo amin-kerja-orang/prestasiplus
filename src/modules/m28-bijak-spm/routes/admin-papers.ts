@@ -16,16 +16,8 @@ const base = {
 } as const
 
 const routes: RouteRecordRaw[] = [
-  {
-    path: '/admin/spm/semakan',
-    name: ADMIN_ROUTES.review,
-    component: () => import('../admin/papers/ReviewQueuePage.vue'),
-    meta: {
-      ...base,
-      title: 'Baris Gilir Semakan - Admin PRESTASIPLUS',
-      header: { title: 'Baris Gilir Semakan', subtitle: 'Soalan SPM yang menunggu keputusan' },
-    },
-  },
+  // One review queue (FR-ADM-Q03.6): the list redirects to the Studio tile; `/admin/spm/semakan/:key` below stays.
+  { path: '/admin/spm/semakan', name: ADMIN_ROUTES.review, redirect: '/admin/studio?status=review' },
   {
     path: '/admin/spm/semakan/:key',
     name: ADMIN_ROUTES.reviewItem,

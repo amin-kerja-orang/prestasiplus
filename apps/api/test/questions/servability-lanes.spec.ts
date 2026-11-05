@@ -309,6 +309,8 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
       stimulus_shared_ungrouped: 'Rangsangan ini dikongsi oleh beberapa soalan tetapi bukan kumpulan rangsangan — jadikan soalan-soalan itu satu kumpulan rangsangan (D90).',
       question_missing: 'Soalan pada kertas ini tiada dalam bank soalan — kertas tidak boleh dimulakan; gantikan atau buang soalan itu.',
       group_incomplete: 'Kumpulan belum lengkap - {n} soalan belum diluluskan.',
+      stimulus_missing: 'Rangsangan tiada — soalan merujuk {rujukan} tetapi tiada gambar.',
+      figure_only: 'Soalan ini hanya mengandungi rangsangan. Tukarkan kepada rangsangan kumpulan.',
     })
     const v2 = Object.entries(SERVABILITY_REASON_SOURCE).filter(([, src]) => src === 'V2').map(([code]) => code)
     expect(v2.sort()).toEqual(['bridge_refused', 'no_key', 'no_scheme', 'paper_empty'])

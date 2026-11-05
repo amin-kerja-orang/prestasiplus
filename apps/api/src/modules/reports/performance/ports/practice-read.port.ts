@@ -83,10 +83,20 @@ export interface LeaderboardResult {
   me: (LeaderboardFact & { rank: number }) | null
 }
 
+/** One MYT day of a pupil's completed, non-test practice sessions. */
+export interface PracticeDayActivity {
+  /** yyyy-mm-dd, Asia/Kuala_Lumpur, of the session's completion. */
+  day: string
+  sessions: number
+  seconds: number
+}
+
 export interface PracticeReadPort {
   userTotals(q: PracticeScopeQuery): Promise<PracticeUserTotals[]>
   /** Distinct MYT days (yyyy-mm-dd) with a completed non-test session, ascending. */
   practiceDays(userId: string): Promise<string[]>
+  /** Per MYT day, completed non-test sessions of the pupil (an abandoned or running session is not one), ascending. Bijak sittings are not here: they are not `practice_sessions`. */
+  dailyActivity(userId: string): Promise<PracticeDayActivity[]>
   rankingRows(q: RankingQuery): Promise<RankingResult>
   leaderboard(q: LeaderboardQuery): Promise<LeaderboardResult>
 }
@@ -99,6 +109,9 @@ export class EmptyPracticeRead implements PracticeReadPort {
     return []
   }
   async practiceDays(): Promise<string[]> {
+    return []
+  }
+  async dailyActivity(): Promise<PracticeDayActivity[]> {
     return []
   }
   async rankingRows(): Promise<RankingResult> {

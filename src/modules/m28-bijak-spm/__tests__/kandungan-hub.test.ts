@@ -271,6 +271,19 @@ describe('lane Databank Soalan (R1-ADM-Q-02)', () => {
     expect(q('[data-testid=lane-edit-2]')).not.toBeNull()
   })
 
+  it('offers Pratonton beside Sunting, through the V2 preview path (S2-T03)', async () => {
+    await mountAt(LaneDatabankPage, '/admin/spm/databank')
+    const preview = q('[data-testid=lane-preview-2]')
+    expect(preview?.textContent?.trim()).toBe('Pratonton')
+    expect(preview?.getAttribute('href')).toBe('/admin/studio/questions/2/preview')
+  })
+
+  it('offers Pratonton on the phone cards too (S2-T03)', async () => {
+    media(false)
+    await mountAt(LaneDatabankPage, '/admin/spm/databank')
+    expect(q('[data-testid=lane-preview-2]')?.getAttribute('href')).toBe('/admin/studio/questions/2/preview')
+  })
+
   it('applies Subjek, Status and Cari with Tapis and clears them with Set Semula', async () => {
     await mountAt(LaneDatabankPage, '/admin/spm/databank')
     expect(server.databankLane).toHaveBeenLastCalledWith({ page: 1, pageSize: 25 })
