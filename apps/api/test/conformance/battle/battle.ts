@@ -72,8 +72,15 @@ export const battleScenarios: Scenario[] = [
       ctx.check(l.spmUnlocked === true && Array.isArray(l.spmSubjects) && l.gradeLabel === 'Tingkatan 4', 'the grade 10 student must have SPM unlocked and the label Tingkatan 4')
       ctx.check((l.subjects as Json[]).some((s) => s.id === battleFixture.mathId), 'the lobby must list the battle subject')
 
+      // A ranked battle between two pupils moves the list (the arena cannot play one yet, so a finished row is seeded); the list
+      // is then non-empty, so the robot check below cannot pass on two empty lists.
+      const empty = await student.request('GET', '/battle/standings/students?period=monthly')
+      ctx.expectStatus(empty, 200)
+      await battleFixture.seedRankedBattle()
       const standingsBefore = await student.request('GET', '/battle/standings/students?period=monthly')
       ctx.expectStatus(standingsBefore, 200)
+      ctx.check(listOf(standingsBefore).length >= listOf(empty).length + 1, 'a finished ranked battle between two pupils must add them to the monthly standings')
+      ctx.check(JSON.stringify(listOf(standingsBefore)) !== JSON.stringify(listOf(empty)), 'a ranked battle must change the monthly standings')
       const queueId = await startQueue(ctx, student)
       const uuid = await matchBot(ctx, student, queueId) // waits, then the robot comes
 
@@ -113,7 +120,7 @@ export const battleScenarios: Scenario[] = [
       const standings = await student.request('GET', '/battle/standings/students?period=monthly')
       ctx.expectStatus(standings, 200)
       // FR-MUR-21-9 / DM-60: a battle against Robot PrestasiPlus counts for no ranking, so the standings do not move.
-      ctx.check(JSON.stringify(listOf(standings)) === JSON.stringify(listOf(standingsBefore)), 'a finished robot battle must not change the monthly standings')
+      ctx.check(JSON.stringify(listOf(standings)) === JSON.stringify(listOf(standingsBefore)), 'a finished robot battle must not change the (non-empty) monthly standings')
       ctx.expectStatus(await student.request('GET', '/battle/standings/students'), 200)
     },
   },
@@ -313,7 +320,7 @@ export const battleScenarios: Scenario[] = [
     },
   },
   {
-    id: 'battle-api/school standings, podium and school page agree after a finished battle; unknown school is 404',
+    id: 'battle-api/school standings, podium and school page agree on seed data after a robot battle; unknown school is 404',
     domain: 'battle',
     targets: API_ONLY,
     async run(ctx) {

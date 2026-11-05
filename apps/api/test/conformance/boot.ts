@@ -144,6 +144,21 @@ export async function bootConformanceApp(opts: BootOptions = {}): Promise<Confor
   }
 
   battleFixture.advanceClock = (ms) => clock.set(clock.now().getTime() + ms)
+  battleFixture.seedRankedBattle = async () => {
+    const [a, b] = await db.query<{ id: string; school_id: string }>(
+      `select id::text, school_id::text from users where email in ('pelajar@demo.test', 'pelajar2@demo.test') order by email`,
+    )
+    const [battle] = await db.query<{ id: string }>(
+      `insert into battles (mode, question_type, status, answered, winner, is_test, counts_for_ranking, created_at, finished_at)
+       values ('quick_match', 'biasa', 'finished', 10, 'A', false, true, $1, $1) returning id::text`,
+      [clock.now()],
+    )
+    await db.query(
+      `insert into battle_participants (battle_id, side, user_id, school_id, score, correct, is_test, is_bot)
+       values ($1, 'A', $2, $3, 7000, 7, false, false), ($1, 'B', $4, $5, 3000, 3, false, false)`,
+      [battle!.id, a!.id, a!.school_id, b!.id, b!.school_id],
+    )
+  }
   const moduleRef = await Test.createTestingModule({
     imports: [defineAppModule(featureModules)],
     controllers: opts.controllers ?? [],
