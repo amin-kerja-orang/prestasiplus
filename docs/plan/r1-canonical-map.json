@@ -9692,7 +9692,7 @@
       "status": "canonical",
       "sector": "S6",
       "file": "apps/api/prisma/schema/classes.prisma",
-      "approved_by_card": null
+      "approved_by_card": "S6-T07"
     },
     {
       "name": "RemedialTest",
