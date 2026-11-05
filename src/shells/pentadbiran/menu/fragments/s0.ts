@@ -38,7 +38,6 @@ export const S0_ROWS: readonly Row[] = [
   ['PG-23', 'Tournament'],
   ['PG-14', 'Produk'],
   ['PG-15', 'Penjual'],
-  ['KK-08', 'Video'],
   ['SY-01', 'Tetapan'],
   ['PM-12', 'Laporan Aktiviti'],
   ['PM-13', 'Amaran Wellbeing'],

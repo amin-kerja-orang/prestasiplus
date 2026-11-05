@@ -451,8 +451,8 @@
         {
           "id": "KK-08",
           "label": "Video",
-          "to": "/admin/p/kk-08",
-          "built": false
+          "to": "/admin/videos",
+          "built": true
         }
       ]
     },
@@ -961,6 +961,12 @@
           "id": "SY-05",
           "label": "Upload Screenshot",
           "to": "/admin/tools/screenshots",
+          "built": true
+        },
+        {
+          "id": "KK-08",
+          "label": "Video",
+          "to": "/admin/videos",
           "built": true
         }
       ]

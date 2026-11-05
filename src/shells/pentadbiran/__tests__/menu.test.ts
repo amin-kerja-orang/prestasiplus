@@ -101,7 +101,7 @@ describe('Pentadbiran menu data', () => {
       ],
       ['Databank Soalan'],
       ['PKSK Soalan', 'PKSK Akses'],
-      ['Artikel', 'Banner', 'Nota', 'Upload Screenshot'],
+      ['Artikel', 'Banner', 'Nota', 'Upload Screenshot', 'Video'],
       ['Tiket Bantuan'],
     ])
   })
@@ -156,10 +156,19 @@ describe('Pentadbiran menu data', () => {
     expect(byId.get('BS-01')).toMatchObject({ label: 'Senarai Soalan', to: '/admin/questions' })
     expect(byId.get('BS-09')).toMatchObject({ label: 'Audit Rajah', to: '/admin/soalan-gambar' })
     // unbuilt target routes stay out of the rendered menu (FR-ADM-H0.2)
-    for (const id of ['PP-01', 'PP-02', 'PM-04', 'PM-29', 'PS-03', 'SY-01', 'SY-02', 'KK-08', 'BS-03', 'KS-07']) {
+    for (const id of ['PP-01', 'PP-02', 'PM-04', 'PM-29', 'PS-03', 'SY-01', 'SY-02', 'BS-03', 'KS-07']) {
       expect(byId.has(id), id).toBe(false)
       expect(FULL_ITEMS.find((i) => i.id === id)?.built, id).toBe(false)
     }
+  })
+
+  it('S5-T08: Video (KK-08) is built and opens the admin video list', () => {
+    expect(ALL_ITEMS.find((i) => i.id === 'KK-08')).toMatchObject({
+      label: 'Video',
+      to: '/admin/videos',
+    })
+    // PRD 30 §3.1 row 12: Video sits in the Kandungan group (S0-T07 regrouping).
+    expect(PENTADBIRAN_MENU.find((g) => g.label === 'Kandungan')?.items.map((i) => i.id)).toContain('KK-08')
   })
 
   it('REQ-B-039: Bank Soalan (Studio) opens the Studio list', () => {

@@ -12,4 +12,5 @@ export const S5_ROWS: readonly Row[] = [
   ['KK-05', 'Banner', '/admin/banners'],
   ['KK-07', 'Nota', '/admin/notes'],
   ['SY-05', 'Upload Screenshot', '/admin/tools/screenshots'],
+  ['KK-08', 'Video', '/admin/videos'],
 ]
