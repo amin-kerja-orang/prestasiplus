@@ -651,6 +651,24 @@ export class StimuliRepository {
     return out
   }
 
+  /** The ordered question ids staged in a draft copy (empty for a group that is not a copy). */
+  async stagedMembers(draftId: string): Promise<string[]> {
+    const key = bi(draftId)
+    if (key === null) return []
+    const g = await this.db.stimulusGroup.findUnique({ where: { id: key }, select: { draftMembers: true } })
+    return draftMembersOf(g?.draftMembers) ?? []
+  }
+
+  /** Of the given question ids, those staged in a draft copy other than `exceptDraftId`. */
+  async stagedElsewhere(exceptDraftId: string | null, ids: readonly string[]): Promise<Set<string>> {
+    const key = exceptDraftId === null ? 0n : bi(exceptDraftId)
+    if (key === null || ids.length === 0) return new Set()
+    const rows = await this.db.$queryRaw<{ m: string }[]>`
+      SELECT DISTINCT m FROM stimulus_groups g, jsonb_array_elements_text(g.draft_members) AS m
+       WHERE g.draft_of_group_id IS NOT NULL AND g.id <> ${key} AND m IN (${Prisma.join(ids)})`
+    return new Set(rows.map((r) => r.m))
+  }
+
   /** Replaces the ordered question ids staged in a draft copy. */
   async setDraftMembers(draftId: string, ids: readonly string[]): Promise<void> {
     await this.db.stimulusGroup.update({ where: { id: BigInt(draftId) }, data: { draftMembers: [...ids], updatedAt: new Date() } })
