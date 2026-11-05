@@ -22,6 +22,7 @@ import {
   provisional,
   viewportWidth,
 } from '../support'
+import { chooseOption, expectShellTitle, selectTrigger } from './helpers'
 
 /** The shell re-renders once the session loads; give the first assertions room on a loaded machine. */
 const expect = baseExpect.configure({ timeout: 10_000 })
@@ -36,6 +37,10 @@ const PELAJAR2 = 'pelajar2@demo.test'
 const IBUBAPA = 'ibubapa@demo.test'
 const GURU = 'guru@demo.test'
 const MODULE = { tag: [moduleTag(21)] }
+/** `formatTabTitle` (docs/design/v2-copy-glossary.md). */
+const TAB_TITLE = 'Mohon Keluarga Angkat | PRESTASIPLUS'
+/** `DsPage layout="form"` for the learner: `width: 'prose'`, `max-w-3xl` (D-H12, restyle spec M-15). */
+const FORM_COLUMN_MAX = 768
 
 const SUCCESS =
   'Permohonan anda telah dihantar. Admin akan menyemak permohonan dalam 1-3 hari bekerja.'
@@ -66,30 +71,33 @@ async function posts(mock: MockHandle) {
 const isInvalid = (loc: Locator): Promise<boolean> =>
   loc.evaluate((el) => !(el as HTMLInputElement).validity.valid)
 
+/** The learner `--text-title` in px: `clamp(1.875rem, 1.668rem + 0.88vw, 2.5rem)` (tokens.css). */
+const learnerTitlePx = (width: number): number =>
+  Math.min(40, Math.max(30, 1.668 * 16 + 0.0088 * width))
+
 async function fill(
   page: Page,
   v: { email: string; category: string; income?: string; reason: string },
 ): Promise<void> {
   await email(page).fill(v.email)
-  await category(page).selectOption(v.category)
-  if (v.income !== undefined) await income(page).selectOption({ label: v.income })
+  await chooseOption(page, 'student_category', new RegExp(`^${v.category}\\b`))
+  if (v.income !== undefined) await chooseOption(page, 'family_income_range', v.income)
   await reason(page).fill(v.reason)
 }
 
 test.describe('M21 S6 Mohon Keluarga Angkat', MODULE, () => {
-  test('E2E-M21-04 S6 renders in the user shell without the tournament banner @m21', async ({
+  test('E2E-M21-04 S6 renders in the Pembelajaran shell without the tournament banner @m21', async ({
     page,
     gotoApp,
     loginAs,
   }) => {
     await loginAs(PELAJAR)
     await gotoApp(PATH)
-    await expect(page.getByTestId('mohon-hero')).toBeVisible()
-    await expect(page.getByTestId('shell-user-header')).toBeVisible()
+    const main = page.getByTestId('pembelajaran-main')
+    await expect(main.getByTestId('mohon-hero')).toBeVisible()
+    await expect(page.getByTestId('pembelajaran-header')).toBeVisible()
     for (const hidden of ['LIVE:', 'MAIN', 'DAFTAR']) {
-      await expect(
-        page.getByTestId('shell-user-main').getByText(hidden, { exact: true }),
-      ).toHaveCount(0)
+      await expect(main.getByText(hidden, { exact: true })).toHaveCount(0)
     }
   })
 
@@ -100,17 +108,22 @@ test.describe('M21 S6 Mohon Keluarga Angkat', MODULE, () => {
   }) => {
     await loginAs(PELAJAR)
     await gotoApp(PATH)
-    await expect(page.getByTestId('shell-user-title').first()).toHaveText('Mohon Keluarga Angkat')
-    await expect(page.getByTestId('shell-user-title').first()).not.toHaveText('Dashboard')
-    await expect(page.getByTestId('shell-user-subtitle').first()).toHaveText(
+    await expectShellTitle(page, 'Mohon Keluarga Angkat')
+    await expect(page.getByTestId('shell-title')).not.toHaveText('Dashboard')
+    // The Pembelajaran navbar prints the title only: the `meta.header.subtitle` is not shown.
+    await expect(page.getByTestId('pembelajaran-header')).not.toContainText(
       'Selamat datang kembali',
     )
-    await expectTabTitle(page, 'Mohon Keluarga Angkat')
+    await expectTabTitle(page, TAB_TITLE)
   })
 
-  test('E2E-M21-08 a guest on S6 is sent to /login @m21', async ({ page, gotoApp }) => {
+  test('E2E-M21-08 a guest on S6 is sent to /login with the return path @m21', async ({
+    page,
+    gotoApp,
+  }) => {
     await gotoApp(PATH)
-    await expect(page).toHaveURL(/\/login$/)
+    // The guard keeps the requested page for after the login (d8c385124, guards.ts).
+    await expect(page).toHaveURL(/\/login\?redirect=\/mohon-keluarga-angkat$/)
   })
 
   for (const [role, who] of [
@@ -171,6 +184,18 @@ test.describe('M21 S6 Mohon Keluarga Angkat', MODULE, () => {
       'RM2,500 - RM4,000',
       'Atas RM4,000',
     ])
+    // The options the user really sees: the combobox prompts and its open list.
+    await expect(selectTrigger(page, 'student_category')).toContainText('Pilih kategori')
+    await expect(selectTrigger(page, 'family_income_range')).toContainText('Pilih (pilihan)')
+    await selectTrigger(page, 'student_category').click()
+    await expect(page.getByRole('option')).toHaveText([
+      'B40 — Pendapatan rendah',
+      'Asnaf — Layak bantuan zakat',
+      'Yatim — Tiada ibu/bapa',
+      'OKU — Orang kurang upaya',
+      'Lain-lain',
+    ])
+    await page.keyboard.press('Escape')
     await expect(page.locator('label[for="reason"]')).toHaveText('Sebab Permohonan')
     await expect(reason(page)).toHaveAttribute('rows', '4')
     await expect(reason(page)).toHaveAttribute(
@@ -223,11 +248,12 @@ test.describe('M21 S6 Mohon Keluarga Angkat', MODULE, () => {
     await expect(submit(page)).toHaveText('Hantar Permohonan')
     const info = page.getByTestId('mohon-info')
     await expect(info).toContainText('Apa yang berlaku selepas mohon?')
+    // B02 (adf28d5da) prints the step number as text instead of `list-decimal`.
     await expect(info.locator('ol li')).toHaveText([
-      'Admin semak dan luluskan permohonan (1-3 hari bekerja)',
-      'Pelajar masuk ke pool — sponsor/keluarga angkat boleh pilih',
-      'Bila sponsor pilih, pelajar dapat akses PERCUMA PrestasiPlus selama 1 sesi persekolahan',
-      'Keluarga angkat boleh pantau prestasi pelajar dari dashboard mereka',
+      '1. Admin semak dan luluskan permohonan (1-3 hari bekerja)',
+      '2. Pelajar masuk ke pool — sponsor/keluarga angkat boleh pilih',
+      '3. Bila sponsor pilih, pelajar dapat akses PERCUMA PrestasiPlus selama 1 sesi persekolahan',
+      '4. Keluarga angkat boleh pantau prestasi pelajar dari dashboard mereka',
     ])
     await expect(info).toContainText('Siapa boleh mohon?')
     await expect(info.locator('ul li')).toHaveText([
@@ -251,7 +277,7 @@ test.describe('M21 S6 Mohon Keluarga Angkat', MODULE, () => {
     expect(await isInvalid(reason(page))).toBe(true)
     expect(await isInvalid(income(page))).toBe(false)
     await email(page).fill('abc')
-    await category(page).selectOption('B40')
+    await chooseOption(page, 'student_category', /^B40\b/)
     await reason(page).fill('Sebab ujian')
     await submit(page).click()
     expect(await isInvalid(email(page))).toBe(true)
@@ -368,12 +394,15 @@ test.describe('M21 S6 Mohon Keluarga Angkat', MODULE, () => {
         return out
       })
       expect(small).toEqual([])
+      await expectTouchTarget(email(page))
+      await expectTouchTarget(selectTrigger(page, 'student_category'))
+      await expectTouchTarget(selectTrigger(page, 'family_income_range'))
       await expectTouchTarget(submit(page))
       await expectTouchTarget(page.getByTestId('mohon-example').first())
     },
   )
 
-  test('E2E-M21-67 S6 is one centred column (max ~670 px) at each width @m21', async ({
+  test('E2E-M21-67 S6 is one centred column (DsPage form width) at each width @m21', async ({
     page,
     gotoApp,
     loginAs,
@@ -383,19 +412,18 @@ test.describe('M21 S6 Mohon Keluarga Angkat', MODULE, () => {
     const root = page.getByTestId('mohon-page')
     await expect(root).toBeVisible()
     const box = (await root.boundingBox())!
-    expect(box.width).toBeLessThanOrEqual(670.5)
-    if (viewportWidth(page) >= 768) {
-      const left = box.x
-      const right = viewportWidth(page) - (box.x + box.width)
-      // centred inside the content area (the sidebar shifts the area on desktop)
-      expect(left).toBeGreaterThan(0)
-      expect(right).toBeGreaterThan(0)
-    }
+    expect(box.width).toBeLessThanOrEqual(FORM_COLUMN_MAX + 0.5)
+    // Centred inside the content area (the sidebar shifts the area on desktop).
+    const area = (await page.getByTestId('pembelajaran-main').boundingBox())!
+    const left = box.x - area.x
+    const right = area.x + area.width - (box.x + box.width)
+    expect(left).toBeGreaterThan(0)
+    expect(Math.abs(left - right)).toBeLessThanOrEqual(1)
     const h1 = await page
       .getByTestId('mohon-hero')
       .locator('h1')
-      .evaluate((el) => getComputedStyle(el).fontSize)
-    expect(h1).toBe('24px')
+      .evaluate((el) => parseFloat(getComputedStyle(el).fontSize))
+    expect(Math.abs(h1 - learnerTitlePx(viewportWidth(page)))).toBeLessThan(0.5)
     const fields = await page
       .locator('[data-testid="mohon-form"] > div')
       .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().left)))
