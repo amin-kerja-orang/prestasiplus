@@ -21,6 +21,25 @@ import { errorLines } from '../lib/error-lines'
 const session = useSessionStore()
 const flash = useFlash()
 const user = computed(() => session.user)
+/** S5-T14 (R1-AS-A1): the school admin's form follows the field table of 20 R1-AS-A1 (other roles keep the V3 behaviour). */
+const isSchoolAdmin = computed(() => user.value?.role === 'school_admin')
+const SCHOOL_ADMIN_PROFILE_SAVED = 'Profil dikemaskini.'
+const PHONE = /^\+?\d{9,14}$/
+
+/**
+ * FR-AS-A1-4, AC-AS-A1-4: Nama required and at most 255 characters; Telefon optional, digits with an optional leading "+",
+ * 9 to 14 digits. Spaces and dashes typed for readability (the placeholder is "012-3456789") are ignored by the check and
+ * the value is sent as typed. Nothing is saved while a check fails.
+ */
+function schoolAdminProfileErrors(input: { name: string; phone: string }): string[] {
+  const out: string[] = []
+  const trimmed = input.name.trim()
+  if (trimmed === '') out.push('Sila isi nama.')
+  else if (trimmed.length > 255) out.push('Nama tidak boleh melebihi 255 aksara.')
+  const digits = input.phone.trim().replace(/[\s-]/g, '')
+  if (digits !== '' && !PHONE.test(digits)) out.push('Format telefon tidak sah.')
+  return out
+}
 
 const name = ref('')
 const phone = ref('')
@@ -63,8 +82,15 @@ async function onPictureSaved(status: string): Promise<void> {
 }
 
 async function submit(): Promise<void> {
-  saving.value = true
   flash.clear()
+  if (isSchoolAdmin.value) {
+    const problems = schoolAdminProfileErrors({ name: name.value, phone: phone.value })
+    if (problems.length) {
+      showErrors(problems)
+      return
+    }
+  }
+  saving.value = true
   try {
     const result = await updateProfile({
       name: name.value,
@@ -74,7 +100,7 @@ async function submit(): Promise<void> {
     session.setUser(result.data)
     seed(result.data)
     touched.value = false
-    showSuccess(result.status)
+    showSuccess(isSchoolAdmin.value ? SCHOOL_ADMIN_PROFILE_SAVED : result.status)
   } catch (err) {
     showErrors(errorLines(err))
   } finally {
