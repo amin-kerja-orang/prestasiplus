@@ -48,9 +48,9 @@ const json = (schema: z.ZodType, description: string) => ({
 })
 const err = (description: string) => json(ErrorBodySchema, description)
 
-const UNAUTHORIZED = err('UNAUTHORIZED "Unauthenticated." (no valid session).')
+const UNAUTHORIZED = err('UNAUTHORIZED "Sesi anda telah tamat. Sila log masuk semula." (no valid session).')
 const FORBIDDEN = err(
-  'FORBIDDEN "This action is unauthorized." (role is not teacher or admin; school_admin gets 403 here).',
+  'FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not teacher or admin; school_admin gets 403 here).',
 )
 const IS_TEST = 'Implementation excludes is_test accounts (card AC2, OQ-API-B3-1).'
 const BASE = '/guru/command-center'
