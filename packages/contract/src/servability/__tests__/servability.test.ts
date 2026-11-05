@@ -116,8 +116,8 @@ describe('servability reads contract (R1-T30)', () => {
       expect(SERVABILITY_HUB_COPY.intro).toBe('Setiap kad di bawah ialah satu laluan yang pelajar boleh buka. Nombor merah menunjukkan berapa banyak item yang perlu diperiksa.')
     })
 
-    it('carries no attention text for Kertas Subjektif, whose rule is open', () => {
-      expect(SERVABILITY_HUB_CARDS['kertas-subjektif'].attentionLabel).toBe('')
+    it('Kertas Subjektif reads "tiada kandungan", and a card still validates its lines', () => {
+      expect(SERVABILITY_HUB_CARDS['kertas-subjektif'].attentionLabel).toBe('tiada kandungan')
       expect(SERVABILITY_HUB_CARDS.subjektif.attentionLabel).toBe('tiada skema — tidak disajikan')
       const card = { lane: 'kertas-subjektif', title: 'Kertas Subjektif', description: 'x', total: 3, attention: 0, attentionLabel: '' }
       expect(ServabilityHubCardSchema.safeParse({ ...card, attentionOpen: true }).success).toBe(true)

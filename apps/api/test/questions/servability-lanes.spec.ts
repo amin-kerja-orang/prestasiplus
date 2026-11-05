@@ -157,7 +157,7 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
       { lane: 'tracking-a', title: 'Tracking A', description: 'Set objektif penuh dan lane bahasa.', attentionLabel: 'set tidak lengkap' },
       { lane: 'subjektif', title: 'Subjektif', description: 'Soalan berstruktur dan esei.', attentionLabel: 'tiada skema — tidak disajikan' },
       { lane: 'bijak-spm', title: 'Bijak SPM', description: 'Kertas SPM penuh dalam format sebenar.', attentionLabel: 'tiada kunci jawapan' },
-      { lane: 'kertas-subjektif', title: 'Kertas Subjektif', description: 'Kertas 2, 3 & 4 percubaan negeri.', attentionLabel: '' },
+      { lane: 'kertas-subjektif', title: 'Kertas Subjektif', description: 'Kertas 2, 3 & 4 percubaan negeri.', attentionLabel: 'tiada kandungan' },
       { lane: 'latih-tubi', title: 'Latih Tubi', description: 'Latihan ikut topik dan bab.', attentionLabel: 'tidak boleh ditanda' },
     ])
     // The text lives in one table; the hub chrome is pinned too.
@@ -166,7 +166,7 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
       'tracking-a': { title: 'Tracking A', description: 'Set objektif penuh dan lane bahasa.', attentionLabel: 'set tidak lengkap' },
       subjektif: { title: 'Subjektif', description: 'Soalan berstruktur dan esei.', attentionLabel: 'tiada skema — tidak disajikan' },
       'bijak-spm': { title: 'Bijak SPM', description: 'Kertas SPM penuh dalam format sebenar.', attentionLabel: 'tiada kunci jawapan' },
-      'kertas-subjektif': { title: 'Kertas Subjektif', description: 'Kertas 2, 3 & 4 percubaan negeri.', attentionLabel: '' },
+      'kertas-subjektif': { title: 'Kertas Subjektif', description: 'Kertas 2, 3 & 4 percubaan negeri.', attentionLabel: 'tiada kandungan' },
       'latih-tubi': { title: 'Latih Tubi', description: 'Latihan ikut topik dan bab.', attentionLabel: 'tidak boleh ditanda' },
     })
     expect(SERVABILITY_HUB_COPY).toEqual({
@@ -350,6 +350,7 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
     expect(card.attention).toBe(cells.reduce((n, c) => n + c.total - c.servable, 0))
     const math = cells.find((c) => c.subject.id === tag.subjectId && c.servable > 0)!
     expect(math.actions).toEqual([])
+    expect(math.meta).toBe(`#${math.subject.id} · ${String(math.servable)} soalan`) // PO: the cell label is the servable "{n} soalan"
     const filtered = await admin.get(`/api/admin/servability/lanes/latih-tubi?subjectId=${sciId}`)
     for (const c of filtered.body.data as ServabilityLatihTubiCell[]) expect(c.subject.id).toBe(sciId)
     const none = await admin.get('/api/admin/servability/lanes/latih-tubi?search=zzz-tiada')
@@ -420,7 +421,8 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
     expect(lane.body.data).toEqual([])
     expect(lane.body.count).toBe(0)
     const card = parseData(await admin.get('/api/admin/servability/overview'), ServabilityOverviewSchema).cards.find((c) => c.lane === 'kertas-subjektif')!
-    expect(card).toMatchObject({ total: 0, attention: 0, attentionOpen: true, attentionLines: [] })
+    expect(card).toMatchObject({ total: 0, attention: 0, attentionLines: [] })
+    expect(card.attentionOpen).toBeUndefined()
   })
 
   it('S3-T03: once papers carry a surface, a Kertas Subjektif paper leaves the Bijak SPM lane for its own', async () => {
@@ -431,6 +433,15 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
       expect(own.rows.map((r) => r.id)).toEqual([made.sciPaper])
       const bijak = await wholeLane<ServabilityPaperRow>('bijak-spm', ServabilityPaperRowSchema)
       expect(bijak.rows.map((r) => r.paperId)).not.toContain(made.sciPaper)
+
+      // FR-ADM-Q18.3: a paper with no placement reads "tiada kandungan", and the hub counts the same rows.
+      await t.db.query(`update papers set surface = 'subjektif' where id = $1`, [made.refusedPaper])
+      ;(t.app.get(OverviewCache) as unknown as { slots: Map<string, unknown> }).slots.clear()
+      const both = await wholeLane<ServabilityLaneRow>('kertas-subjektif', ServabilityLaneRowSchema)
+      expect(both.rows.find((r) => r.id === made.sciPaper)?.attention).toEqual(['tiada kandungan'])
+      expect(both.rows.find((r) => r.id === made.refusedPaper)?.attention).toEqual([])
+      const card = parseData(await admin.get('/api/admin/servability/overview'), ServabilityOverviewSchema).cards.find((c) => c.lane === 'kertas-subjektif')!
+      expect(card).toMatchObject({ total: 2, attention: 1, attentionLines: [{ count: 1, text: '1 tiada kandungan' }] })
     } finally {
       await t.db.query(`alter table papers drop column surface`)
     }
