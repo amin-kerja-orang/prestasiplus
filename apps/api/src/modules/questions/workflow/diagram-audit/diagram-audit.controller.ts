@@ -101,8 +101,7 @@ function checkedBytes(file: UploadedImage | undefined): Buffer {
   const name = file.originalname ?? ''
   const ext = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1).toLowerCase() : ''
   const mime = file.mimetype ?? ''
-  if (mime !== '' && !mime.startsWith('image/')) throw required
-  if (mime === '' && !EXTENSIONS.includes(ext)) throw required
+  if (mime === '' && !EXTENSIONS.includes(ext)) throw wrongType
   if (mime !== '' && !(DIAGRAM_AUDIT_IMAGE_MIME_TYPES as readonly string[]).includes(mime)) throw wrongType
   if (!EXTENSIONS.includes(ext)) throw wrongType
   if (file.buffer.length > QUESTION_WORKFLOW_IMAGE_MAX_BYTES) throw tooLarge

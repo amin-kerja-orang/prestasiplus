@@ -173,9 +173,15 @@ describe('diagram audit (BE-10 AC 7 area, BR-M04-19)', () => {
       expect(res.body.error.fields).toEqual({ image: DIAGRAM_AUDIT_MESSAGES.fileRequired })
     })
 
-    it('a file that is not an image is 422 "Sila pilih fail gambar."', async () => {
-      const res = await upload(raw, '/api/diagram-audit/mcq/202/image', { data: Buffer.from('abc'), name: 'nota.txt', type: 'text/plain' })
-      expect(res.body.error.fields).toEqual({ image: DIAGRAM_AUDIT_MESSAGES.fileRequired })
+    it('a file that is not an image (txt, pdf) is 422 with the file type message', async () => {
+      for (const f of [
+        { data: Buffer.from('abc'), name: 'nota.txt', type: 'text/plain' },
+        { data: Buffer.from('%PDF-1.4'), name: 'nota.pdf', type: 'application/pdf' },
+      ]) {
+        const res = await upload(raw, '/api/diagram-audit/mcq/202/image', f)
+        expect(res.status).toBe(422)
+        expect(res.body.error.fields).toEqual({ image: DIAGRAM_AUDIT_MESSAGES.fileType })
+      }
     })
 
     it('SVG, GIF, a wrong extension, a disguised file and an image over 2 MB are 422 (type or size message)', async () => {
