@@ -338,15 +338,16 @@ describe('S2 admin queue (AC-M22-07, 08, 09)', () => {
 })
 
 describe('S3 settings (R1-ADM-N-07)', () => {
-  const contact = { email: 'sokongan@demo.test', phone: '', whatsapp: '60100000000', hours: '' }
+  const contact = { email: 'sokongan@demo.test', phone: '', whatsapp: '60100000000', hours: 'Isnin - Jumaat' }
 
-  it('shows the section with the saved values and no field for hours', async () => {
+  it('shows the section with the saved values', async () => {
     api.fetchSupportSettings.mockResolvedValue(contact)
     const { w } = await open('/admin/settings', AdminSettingsPage)
     expect(w.text()).toContain('Hubungi Sokongan')
     expect(w.text()).toContain('E-mel sokongan')
     expect(w.text()).toContain('Telefon / WhatsApp sokongan')
-    expect(w.text()).not.toContain('Waktu perkhidmatan')
+    expect(w.text()).toContain('Waktu perkhidmatan')
+    expect((tid(w, 'st-hours').element as HTMLInputElement).value).toBe(contact.hours)
     expect((tid(w, 'st-email').element as HTMLInputElement).value).toBe(contact.email)
     expect((tid(w, 'st-whatsapp').element as HTMLInputElement).value).toBe(contact.whatsapp)
     expect(tid(w, 'st-save').text()).toBe('Simpan Tetapan')
@@ -359,7 +360,11 @@ describe('S3 settings (R1-ADM-N-07)', () => {
     await tid(w, 'st-email').setValue('bantuan@demo.test')
     await tid(w, 'st-form').trigger('submit')
     await flushPromises()
-    expect(api.saveSupportSettings).toHaveBeenCalledWith({ email: 'bantuan@demo.test', whatsapp: contact.whatsapp })
+    expect(api.saveSupportSettings).toHaveBeenCalledWith({
+      email: 'bantuan@demo.test',
+      whatsapp: contact.whatsapp,
+      hours: contact.hours,
+    })
     expect(tid(w, 'st-flash').text()).toContain('Tetapan disimpan.')
   })
 

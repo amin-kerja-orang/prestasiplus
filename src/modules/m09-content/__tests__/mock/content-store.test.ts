@@ -655,6 +655,7 @@ describe('notes, perutusan, support', () => {
     expect(support.config()).toEqual({
       email: 'support@prestasiplus.my',
       whatsappNumber: '60123456789',
+      hours: '',
     })
     support.setWhatsappNumber('60111111111')
     expect(support.config().whatsappNumber).toBe('60111111111')

@@ -132,8 +132,8 @@ export class SupportRepository {
   }
 
   /** The singleton row: created on the first save (DM-33). */
-  async saveConfig(input: { email: string; whatsappNumber: string; now: Date }): Promise<void> {
-    const values = { email: input.email, whatsappNumber: input.whatsappNumber, updatedAt: input.now }
+  async saveConfig(input: { email: string; whatsappNumber: string; hours: string; now: Date }): Promise<void> {
+    const values = { email: input.email, whatsappNumber: input.whatsappNumber, hours: input.hours === '' ? null : input.hours, updatedAt: input.now }
     await this.prisma.client.supportConfig.upsert({
       where: { id: SUPPORT_CONFIG_ID },
       create: { id: SUPPORT_CONFIG_ID, createdAt: input.now, ...values },
@@ -141,8 +141,8 @@ export class SupportRepository {
     })
   }
 
-  async config(): Promise<{ email: string; whatsappNumber: string } | null> {
+  async config(): Promise<{ email: string; whatsappNumber: string; hours: string } | null> {
     const row = await this.prisma.client.supportConfig.findUnique({ where: { id: SUPPORT_CONFIG_ID } })
-    return row ? { email: row.email, whatsappNumber: row.whatsappNumber } : null
+    return row ? { email: row.email, whatsappNumber: row.whatsappNumber, hours: row.hours ?? '' } : null
   }
 }

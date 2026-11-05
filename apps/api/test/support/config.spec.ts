@@ -16,14 +16,14 @@ describe('GET /api/config/support (public)', () => {
   it('answers without a session with the e-mail and WhatsApp number of the singleton row', async () => {
     const res = await t.http().get('/api/config/support')
     expect(res.status).toBe(200)
-    expect(ContentSupportConfigSchema.parse(res.body.data)).toEqual({ email: 'sokongan@demo.test', whatsappNumber: '60100000000' })
+    expect(ContentSupportConfigSchema.parse(res.body.data)).toEqual({ email: 'sokongan@demo.test', whatsappNumber: '60100000000', hours: '' })
     expect(Object.keys(res.body as object)).toEqual(['data'])
   })
 
   it('reads the row live: a change in support_config shows at once', async () => {
     await t.db.query(`update support_config set whatsapp_number = '60123456789' where id = 1`)
     const res = await t.http().get('/api/config/support')
-    expect(res.body.data).toEqual({ email: 'sokongan@demo.test', whatsappNumber: '60123456789' })
+    expect(res.body.data).toEqual({ email: 'sokongan@demo.test', whatsappNumber: '60123456789', hours: '' })
   })
 
   it('the singleton cannot be duplicated (id = 1 check)', async () => {

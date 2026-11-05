@@ -168,6 +168,9 @@ describe('support settings (API-ADM-10)', () => {
     expect(issues({ whatsapp: '12345678' })).toEqual({ whatsapp: SUPPORT_SETTINGS_MESSAGES.phoneInvalid })
     expect(issues({ whatsapp: '60 10 000' })).toEqual({ whatsapp: SUPPORT_SETTINGS_MESSAGES.phoneInvalid })
     expect(issues({ email: 5 })).toEqual({ email: SUPPORT_SETTINGS_MESSAGES.emailInvalid })
+    expect(issues({ hours: 'x'.repeat(121) })).toEqual({ hours: SUPPORT_SETTINGS_MESSAGES.hoursTooLong })
+    expect(issues({ hours: 'x'.repeat(120) })).toEqual({})
+    expect(SupportSettingsUpdateRequestSchema.parse({ hours: ' Isnin - Jumaat ' })).toEqual({ hours: 'Isnin - Jumaat' })
   })
 
   it('the answer has the four keys and nothing else', () => {

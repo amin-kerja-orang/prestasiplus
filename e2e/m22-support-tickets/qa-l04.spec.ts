@@ -304,10 +304,14 @@ test.describe('R1-ADM-N-07 settings', MODULE, () => {
     await expect(page.getByText('E-mel tidak sah.')).toBeVisible()
     await expect(page.getByTestId('st-flash')).toHaveCount(0)
     await page.getByTestId('st-email').fill('bantuan@demo.test')
+    await page.getByTestId('st-hours').fill('Isnin - Jumaat')
     await page.getByTestId('st-save').click()
     await expect(page.getByTestId('st-flash')).toContainText('Tetapan disimpan.')
     await page.reload()
     await expect(page.getByTestId('st-email')).toHaveValue('bantuan@demo.test')
+    await expect(page.getByTestId('st-hours')).toHaveValue('Isnin - Jumaat')
+    await gotoApp('/panduan')
+    await expect(page.getByTestId('panduan-hours')).toHaveText('Waktu perkhidmatan: Isnin - Jumaat')
   })
 
   test('FR-ADM-N07.3 a pupil is refused the page', async ({ page, loginAs, gotoApp }) => {

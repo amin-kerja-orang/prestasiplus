@@ -292,20 +292,20 @@ export const supportRepo = defineRepository({
     },
 
     /** S26/S27: the support e-mail and WhatsApp number. */
-    config(): { email: string; whatsappNumber: string } {
+    config(): { email: string; whatsappNumber: string; hours: string } {
       const row = store.get(1)
       if (!row) throw new M09Error('NOT_FOUND', 'Konfigurasi sokongan tidak dijumpai.')
-      return { email: row.email, whatsappNumber: row.whatsappNumber }
+      return { email: row.email, whatsappNumber: row.whatsappNumber, hours: row.hours ?? '' }
     },
 
     /** The contact for the admin (API-ADM-10): empty strings when no row exists. */
-    contact(): { email: string; whatsappNumber: string } {
+    contact(): { email: string; whatsappNumber: string; hours: string } {
       const row = store.get(1)
-      return { email: row?.email ?? '', whatsappNumber: row?.whatsappNumber ?? '' }
+      return { email: row?.email ?? '', whatsappNumber: row?.whatsappNumber ?? '', hours: row?.hours ?? '' }
     },
 
     /** API-ADM-10 (S7): the admin saves the contact; the row is created on the first save. */
-    saveContact(input: { email: string; whatsappNumber: string }): void {
+    saveContact(input: { email: string; whatsappNumber: string; hours: string }): void {
       transaction(() => {
         if (store.get(1)) store.update(1, input)
         else store.insert({ id: 1, ...input })

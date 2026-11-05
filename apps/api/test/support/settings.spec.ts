@@ -45,11 +45,25 @@ describe('support contact settings (API-ADM-10, FR-ADM-N07)', () => {
     expect(await audits()).toHaveLength(auditsBefore)
   })
 
-  it('phone and hours are refused by name until they have a store', async () => {
-    const res = await put(admin, { phone: '60100000000', hours: 'Isnin' })
+  it('phone is refused by name: the phone is whatsapp (PO decision 18)', async () => {
+    const res = await put(admin, { phone: '60100000000' })
     expectError(res, 'VALIDATION_ERROR')
     expect(fieldsOf(res)).toHaveProperty('phone')
-    expect(fieldsOf(res)).toHaveProperty('hours')
+  })
+
+  it('hours: saved, trimmed, audited, shown by the public config; over 120 refused; null clears to a null column', async () => {
+    const saved = await put(admin, { hours: '  Isnin - Jumaat, 9 pagi - 5 petang  ' })
+    expect(saved.status, JSON.stringify(saved.body)).toBe(200)
+    expect(saved.body.data).toMatchObject({ hours: 'Isnin - Jumaat, 9 pagi - 5 petang', phone: '' })
+    expect((await audits()).at(-1)?.detail).toMatchObject({ changed: ['hours'] })
+    expect((await t.http().get('/api/config/support')).body.data).toMatchObject({ hours: 'Isnin - Jumaat, 9 pagi - 5 petang' })
+    const long = await put(admin, { hours: 'x'.repeat(121) })
+    expectError(long, 'VALIDATION_ERROR')
+    expect(fieldsOf(long)).toEqual({ hours: SUPPORT_SETTINGS_MESSAGES.hoursTooLong })
+    expect((await put(admin, { hours: 'x'.repeat(120) })).status).toBe(200)
+    expect((await put(admin, { hours: null })).body.data).toMatchObject({ hours: '' })
+    const [column] = await t.db.query<{ hours: string | null }>(`select hours from support_config where id = 1`)
+    expect(column?.hours).toBeNull()
   })
 
   it('a save is audited by field name, an omitted field stays, no change writes nothing, public config follows', async () => {

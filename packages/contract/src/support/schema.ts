@@ -202,11 +202,12 @@ const SUPPORT_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 export const SUPPORT_SETTINGS_MESSAGES = {
   emailInvalid: 'E-mel tidak sah.',
   phoneInvalid: 'No. telefon tidak sah.',
+  hoursTooLong: 'Waktu perkhidmatan tidak boleh melebihi 120 aksara.',
 } as const
 /** Flash after a save (N07-04). */
 export const SUPPORT_SETTINGS_SAVED_FLASH = 'Tetapan disimpan.'
 
-/** `data` of `GET` and `PUT /admin/settings/support` (API-ADM-10); '' = not set. `phone` and `hours` stay '' until they have a store (open on #458, #507). */
+/** `data` of `GET` and `PUT /admin/settings/support` (API-ADM-10); '' = not set. `phone` stays '': the phone is `whatsapp` (PO decision 18). */
 export const SupportSettingsSchema = z
   .strictObject({ email: z.string(), phone: z.string(), whatsapp: z.string(), hours: z.string() })
   .meta({ id: 'SupportSettings' })
@@ -225,6 +226,7 @@ export const SupportSettingsUpdateRequestSchema = z
   .object({
     email: contactField(SUPPORT_EMAIL_PATTERN, SUPPORT_SETTINGS_MESSAGES.emailInvalid),
     whatsapp: contactField(SUPPORT_PHONE_PATTERN, SUPPORT_SETTINGS_MESSAGES.phoneInvalid),
+    hours: contactField(/./, SUPPORT_SETTINGS_MESSAGES.hoursTooLong),
   })
   .meta({ id: 'SupportSettingsUpdateRequest' })
 export type SupportSettingsUpdateRequest = z.infer<typeof SupportSettingsUpdateRequestSchema>

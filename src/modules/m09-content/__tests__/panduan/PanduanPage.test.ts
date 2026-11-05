@@ -42,6 +42,7 @@ beforeEach(() => {
   api.fetchSupportConfig.mockResolvedValue({
     email: 'support@prestasiplus.my',
     whatsappNumber: '60123456789',
+    hours: '',
   })
   window.scrollTo = scrollTo
 })
@@ -119,8 +120,16 @@ describe('PanduanPage', () => {
     expect(answers[0]!.text()).toContain('Kombo bermaksud')
   })
 
+  it('shows the service hours only when they are set (PO decision 18)', async () => {
+    const none = await render()
+    expect(none.find('[data-testid="panduan-hours"]').exists()).toBe(false)
+    api.fetchSupportConfig.mockResolvedValue({ email: 'a@b.my', whatsappNumber: '60111111111', hours: 'Isnin - Jumaat' })
+    const set = await render()
+    expect(set.get('[data-testid="panduan-hours"]').text()).toBe('Waktu perkhidmatan: Isnin - Jumaat')
+  })
+
   it('builds the help box links from the support config', async () => {
-    api.fetchSupportConfig.mockResolvedValue({ email: 'a@b.my', whatsappNumber: '60111111111' })
+    api.fetchSupportConfig.mockResolvedValue({ email: 'a@b.my', whatsappNumber: '60111111111', hours: '' })
     const w = await render()
     expect(w.find('[data-testid="panduan-email"]').attributes('href')).toBe('mailto:a@b.my')
     const wa = w.find('[data-testid="panduan-whatsapp"]')

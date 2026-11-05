@@ -328,6 +328,7 @@ describe('#43 GET /api/config/support', () => {
     expect(await data<SupportConfig>('/api/config/support', null)).toEqual({
       email: 'support@prestasiplus.my',
       whatsappNumber: '60123456789',
+      hours: '',
     })
   })
 })

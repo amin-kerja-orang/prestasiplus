@@ -23,7 +23,7 @@ import PanduanTopBar from '../components/panduan/PanduanTopBar.vue'
 import { GUIDE_ROLES, roleFromHash, type RoleId } from '../lib/panduan-content'
 
 /** Live defaults, used until `GET /api/config/support` answers (or if it fails). */
-const DEFAULT_SUPPORT = { email: 'support@prestasiplus.my', whatsappNumber: '60123456789' }
+const DEFAULT_SUPPORT = { email: 'support@prestasiplus.my', whatsappNumber: '60123456789', hours: '' }
 const LOGO_URL = `${import.meta.env.BASE_URL}images/prestasiplus-logo.svg`
 
 const ROLE_ICONS: Record<RoleId, string> = {
@@ -104,6 +104,10 @@ function setRole(id: string): void {
           <h2 class="text-heading text-highlighted">Perlukan Bantuan Lanjut?</h2>
           <p class="text-label text-muted">
             Hubungi pasukan sokongan kami untuk sebarang pertanyaan.
+            <template v-if="config.hours">
+              <br />
+              <span data-testid="panduan-hours">Waktu perkhidmatan: {{ config.hours }}</span>
+            </template>
           </p>
           <div class="flex flex-wrap items-center justify-center gap-3">
             <UButton

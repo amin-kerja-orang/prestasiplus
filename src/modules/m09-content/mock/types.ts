@@ -300,6 +300,8 @@ export interface SupportConfigRow {
   id: number
   email: string
   whatsappNumber: string
+  /** Service hours; absent or '' when not set (PO decision 18). */
+  hours?: string
 }
 
 // --- API shapes (§6.1, §6.5, §6.7) -----------------------------------------------------------------

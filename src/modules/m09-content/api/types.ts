@@ -278,4 +278,6 @@ export interface PublicPerutusan {
 export interface SupportConfig {
   email: string
   whatsappNumber: string
+  /** Service hours; '' when not set (PO decision 18). */
+  hours: string
 }

@@ -33,5 +33,5 @@ export const fetchSupportSettings = (o: { signal?: AbortSignal } = {}) =>
   api.get<SupportSettings>('/api/admin/settings/support', o.signal ? { signal: o.signal } : {})
 
 /** API-ADM-10 `PUT /api/admin/settings/support`. */
-export const saveSupportSettings = (input: { email: string; whatsapp: string }) =>
+export const saveSupportSettings = (input: { email: string; whatsapp: string; hours: string }) =>
   api.put<SupportSettings>('/api/admin/settings/support', { body: input })

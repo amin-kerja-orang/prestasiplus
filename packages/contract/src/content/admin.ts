@@ -70,6 +70,6 @@ export const ScreenshotUploadResultSchema = z
 
 /** `data` of `GET /config/support` (#43, public): the contact shown in the help box. */
 export const ContentSupportConfigSchema = z
-  .strictObject({ email: z.string().min(1), whatsappNumber: z.string().min(1) })
+  .strictObject({ email: z.string().min(1), whatsappNumber: z.string().min(1), hours: z.string().max(120).meta({ description: "Service hours; '' when not set." }) })
   .meta({ id: 'ContentSupportConfig' })
 export type ContentSupportConfig = z.infer<typeof ContentSupportConfigSchema>

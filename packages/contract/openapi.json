@@ -4210,11 +4210,17 @@
           "whatsappNumber": {
             "type": "string",
             "minLength": 1
+          },
+          "hours": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Service hours; '' when not set."
           }
         },
         "required": [
           "email",
-          "whatsappNumber"
+          "whatsappNumber",
+          "hours"
         ],
         "additionalProperties": false
       },
@@ -4509,6 +4515,16 @@
             ]
           },
           "whatsapp": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hours": {
             "anyOf": [
               {
                 "type": "string"
@@ -78547,7 +78563,7 @@
           "support"
         ],
         "summary": "Save the support contact (API-ADM-10)",
-        "description": "Admin only, audited. An omitted field keeps its value; null or blank clears it. `phone` and `hours` are refused until they have a store.",
+        "description": "Admin only, audited. An omitted field keeps its value; null or blank clears it. `phone` is refused: the phone is `whatsapp`.",
         "parameters": [
           {
             "schema": {
@@ -78611,7 +78627,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields: email \"E-mel tidak sah.\"; whatsapp \"No. telefon tidak sah.\".",
+            "description": "VALIDATION_ERROR with fields: email \"E-mel tidak sah.\"; whatsapp \"No. telefon tidak sah.\"; hours \"Waktu perkhidmatan tidak boleh melebihi 120 aksara.\".",
             "content": {
               "application/json": {
                 "schema": {

@@ -37,7 +37,7 @@ const one = (v: unknown): string | undefined => (typeof v === 'string' ? v : Arr
 
 /** The create body in STRICT mode (BE-33 AC1c, #98): an unknown key such as `status` or `userId` is a 422 naming it. */
 const StrictSupportTicketCreateRequestSchema = SupportTicketCreateRequestSchema.strict()
-/** `phone` and `hours` are refused by name until they have a store (open on #458, #507). */
+/** `phone` is refused by name: the phone is `whatsapp` (PO decision 18). */
 const StrictSupportSettingsUpdateRequestSchema = SupportSettingsUpdateRequestSchema.strict()
 
 /** A body that is not a JSON object is treated as empty (both fields then fail as required). */
@@ -102,7 +102,7 @@ export class SupportController {
     const body = objectOf(raw)
     const parsed = StrictSupportSettingsUpdateRequestSchema.safeParse(body)
     const fields: Record<string, string> = parsed.success ? {} : strictFieldsOf(parsed.error.issues)
-    for (const key of ['email', 'whatsapp'] as const) if (hasNul(body[key])) fields[key] = CONTENT_MESSAGES.fieldInvalid
+    for (const key of ['email', 'whatsapp', 'hours'] as const) if (hasNul(body[key])) fields[key] = CONTENT_MESSAGES.fieldInvalid
     if (!parsed.success || Object.keys(fields).length > 0) throw invalid(fields)
     return ok(await this.support.saveSettings(actorOf(req), parsed.data))
   }
