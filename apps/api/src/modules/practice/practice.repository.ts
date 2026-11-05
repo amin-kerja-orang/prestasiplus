@@ -217,6 +217,14 @@ export interface HistoryStats {
   answered: number
 }
 
+/** One school's completed practice sessions (`sessionAccuracyBySchool`). `accuracy` is not rounded. */
+export interface SchoolSessionAccuracy {
+  schoolId: string
+  accuracy: number
+  pupils: number
+  sessions: number
+}
+
 export interface AnswerRecord {
   id: string
   sessionId: string | null
@@ -745,6 +753,24 @@ export class PracticeRepository {
       }
     }
     return out
+  }
+
+  /**
+   * Sekolah Bersaing (API-AS-14, FR-AS-45-1): per school of the pupil, the mean of per-session accuracy (the formula of
+   * `historyStats`), the distinct pupils and the sessions, over completed non-test sessions of active Tingkatan 1-5 pupils
+   * (grade 7..11). A school with no such session is absent. One grouped statement. Read only.
+   */
+  async sessionAccuracyBySchool(): Promise<SchoolSessionAccuracy[]> {
+    const rows = await this.db.$queryRaw<{ school_id: bigint; avg: string; pupils: bigint; sessions: bigint }[]>`
+      SELECT u.school_id, avg(s.correct_count::numeric / s.question_count * 100)::text AS avg,
+             count(DISTINCT s.user_id) AS pupils, count(*) AS sessions
+        FROM practice_sessions s
+        JOIN users u ON u.id = s.user_id
+       WHERE s.status = 'completed' AND NOT s.is_test AND s.question_count > 0
+         AND u.school_id IS NOT NULL AND u.is_active AND u.grade BETWEEN 7 AND 11
+         AND EXISTS (SELECT 1 FROM user_roles r WHERE r.user_id = u.id AND r.role = 'student')
+       GROUP BY u.school_id`
+    return rows.map((r) => ({ schoolId: idToString(r.school_id), accuracy: Number(r.avg), pupils: Number(r.pupils), sessions: Number(r.sessions) }))
   }
 
   /** The newest `completed_at` of completed sessions of `modes` per user (test rows excluded unless `includeTest`), one query per 1000-id chunk. */
