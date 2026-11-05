@@ -278,8 +278,6 @@ export interface QuestionFilter {
   active?: boolean
   excludeIds?: readonly string[]
   type?: StoreQuestionType
-  /** Any of these question types (ANDed with `type` when both are set); `simulasi_kuiz` serves `mcq` and `mcq_multi` (46:612). */
-  types?: readonly StoreQuestionType[]
   /** R1-B06: `true` = SPM-servable (shared `SPM_SERVABLE_SQL`: offered level T4/T5, linked active subject), NOT the legacy `pool` tag; `false` = the complement. */
   spmPool?: boolean
   /**

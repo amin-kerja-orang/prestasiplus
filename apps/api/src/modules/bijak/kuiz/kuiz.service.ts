@@ -98,7 +98,7 @@ export class KuizService {
     // Published + active + learner-visible (secondary, not PKSK) are forced by the bank's `sample`; the shape is one objective leaf.
     // S1-T06 (FR-MUR-QP-6, D90): `wholeGroups` keeps a member only of a complete group; the draw below then takes whole units.
     const ids = await this.questions.sample(
-      { types: ['mcq', 'mcq_multi'], singleMcqLeaf: true, wholeGroups: true, ...(subjectId ? { subjectId } : {}) },
+      { type: 'mcq', singleMcqLeaf: true, wholeGroups: true, ...(subjectId ? { subjectId } : {}) },
       count * KUIZ_OVER_FETCH,
       mulberry32(randomInt(0, 0x1_0000_0000)),
     )
@@ -171,8 +171,10 @@ export class KuizService {
       const ref = record ? leafOf(record, req.itemId) : null
       const leaf = ref ? markableLeaf(ref) : null
       if (!record || !leaf) throw invalidAnswer('itemId')
+      // The random quiz stores ONE letter per check (`practice_checks.selected_label` is NOT NULL and `^[A-H]$`), so an mcq_multi question is
+      // not drawn here and a check on one is refused (waiting for the S5 migration; the per-paper quiz stores nothing and does serve it).
+      if (multiKeyOf(leaf) !== null) throw invalidAnswer('itemId')
       const selected = this.selectionOf(req, leaf)
-      const multi = multiKeyOf(leaf) !== null
       const marked = selectionVerdict(leaf, selected)
 
       const verdict = (correct: boolean): BijakKuizCheckResult =>
@@ -182,13 +184,9 @@ export class KuizService {
           ...(marked.correctOptionIds ? { correctOptionIds: marked.correctOptionIds } : {}),
           explanation: record.version.explanationMs,
         })
-      // The stored selection is ONE letter (`ck_practice_checks_selected_label`), so an mcq_multi check keeps its verdict in `is_correct` and
-      // the first ticked letter in `selected_label` (the comma-joined form of 46:270 needs a constraint migration, reported as a gap).
-      const storedCorrect = (c: { selectedLabel: string; isCorrect: boolean }): boolean => (multi ? c.isCorrect : c.selectedLabel === marked.correctOptionId)
-
       // One check per question: a repeat returns the stored verdict and counts nothing.
       const stored = await this.practice.check(session.id, questionId)
-      if (stored) return verdict(storedCorrect(stored))
+      if (stored) return verdict(stored.selectedLabel === marked.correctOptionId)
       const correct = marked.correct
       const inserted = await this.practice.insertCheck({
         sessionId: session.id,
@@ -202,7 +200,7 @@ export class KuizService {
       })
       if (!inserted) {
         const winner = await this.practice.check(session.id, questionId)
-        return verdict(winner ? storedCorrect(winner) : correct)
+        return verdict(winner ? winner.selectedLabel === marked.correctOptionId : correct)
       }
       return verdict(correct)
     })
@@ -263,7 +261,7 @@ export class KuizService {
       const v = record?.version
       return {
         check,
-        isCorrect: leaf && multiKeyOf(leaf) === null ? leaf.key.correct === check.selectedLabel : check.isCorrect,
+        isCorrect: leaf ? leaf.key.correct === check.selectedLabel : check.isCorrect,
         subjectId: v?.subjectId ?? null,
         educationLevelId: v?.educationLevelId ?? null,
         chapterId: v?.chapterId ?? null,
