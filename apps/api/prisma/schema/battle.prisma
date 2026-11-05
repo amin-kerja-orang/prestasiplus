@@ -32,6 +32,10 @@ model Battle {
   isTest           Boolean   @default(false) @map("is_test")
   /// DM-60: false for a battle against "Robot PrestasiPlus", which must not count for ranking.
   countsForRanking Boolean   @default(true) @map("counts_for_ranking")
+  /// 48 3.3: when the current round started; the server's clock for every answer. Null until a code path stores it.
+  roundStartedAt   DateTime? @map("round_started_at") @db.Timestamptz(6)
+  /// 48 GAME-01: the chosen chip, 5, 10, 15, 20 (check).
+  questionCount    Int       @default(10) @map("question_count") @db.SmallInt
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   legacySource     String?   @map("legacy_source")
   legacyId         String?   @map("legacy_id")
@@ -48,20 +52,24 @@ model Battle {
 
 /// One side (A or B) of a battle (.cloud `battle_participants`). `schoolId` is the school at battle time.
 model BattleParticipant {
-  id           BigInt   @id @default(autoincrement())
-  battleId     String   @map("battle_id") @db.Uuid
+  id                  BigInt    @id @default(autoincrement())
+  battleId            String    @map("battle_id") @db.Uuid
   /// A, B (check).
-  side         String
+  side                String
   /// DM-60: null for a robot (`isBot`), which is no user.
-  userId       BigInt?  @map("user_id")
-  schoolId     BigInt?  @map("school_id")
-  isBot        Boolean  @default(false) @map("is_bot")
-  score        Int      @default(0)
-  correct      Int      @default(0) @db.SmallInt
-  isTest       Boolean  @default(false) @map("is_test")
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  legacySource String?  @map("legacy_source")
-  legacyId     String?  @map("legacy_id")
+  userId              BigInt?   @map("user_id")
+  schoolId            BigInt?   @map("school_id")
+  isBot               Boolean   @default(false) @map("is_bot")
+  score               Int       @default(0)
+  correct             Int       @default(0) @db.SmallInt
+  isTest              Boolean   @default(false) @map("is_test")
+  /// 48 GAME-01: this player's last poll; no poll for `games_absent_seconds` times out each round.
+  lastPolledAt        DateTime? @map("last_polled_at") @db.Timestamptz(6)
+  /// 48 GAME-01: timeouts in a row with no poll in between; 3 forfeit the battle.
+  consecutiveTimeouts Int       @default(0) @map("consecutive_timeouts") @db.SmallInt
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  legacySource        String?   @map("legacy_source")
+  legacyId            String?   @map("legacy_id")
 
   battle Battle @relation(fields: [battleId], references: [id], onDelete: Cascade, map: "fk_battle_participants_battle_id")
 
@@ -72,7 +80,7 @@ model BattleParticipant {
   @@map("battle_participants")
 }
 
-/// The ten questions drawn once at creation (the mock's `questionIds[]`), position 1..10.
+/// The questions drawn once at creation (the mock's `questionIds[]`), position 1..20 (48 GAME-01: the largest chip).
 model BattleQuestion {
   id         BigInt @id @default(autoincrement())
   battleId   String @map("battle_id") @db.Uuid
@@ -85,14 +93,17 @@ model BattleQuestion {
   @@map("battle_questions")
 }
 
-/// One answer per player per position: the human's, and the bot's pre-computed ones.
+/// One answer per player per position: the human's, and the bot's pre-computed ones. The partial unique index
+/// uq_battle_answers_robot_battle_id_position (battle_id, position) WHERE user_id IS NULL lives in migration 0224:
+/// Prisma cannot express the WHERE clause, and NULLs do not collide in the @@unique below.
 model BattleAnswer {
   id         BigInt   @id @default(autoincrement())
   battleId   String   @map("battle_id") @db.Uuid
-  userId     BigInt   @map("user_id")
+  /// Null for a robot's answer (DM-60, ruling 5 on #497): a robot is no user.
+  userId     BigInt?  @map("user_id")
   position   Int      @db.SmallInt
   questionId BigInt   @map("question_id")
-  /// 0..3; null = timeout.
+  /// 0..7 (48 3.2: 2-8 options); null = timeout.
   optionId   Int?     @map("option_id") @db.SmallInt
   correct    Boolean
   seconds    Int      @db.SmallInt
@@ -116,8 +127,10 @@ model BattleQueue {
   subjectId        BigInt?   @map("subject_id")
   pkskDomainId     BigInt?   @map("pksk_domain_id")
   pkskTargetLevel  String?   @map("pksk_target_level")
+  /// 48 GAME-01: the chosen chip, 5, 10, 15, 20 (check); a match needs the same count.
+  questionCount    Int       @default(10) @map("question_count") @db.SmallInt
   openToAll        Boolean   @default(false) @map("open_to_all")
-  /// waiting, incoming_challenge, matched, expired, abandoned (check).
+  /// waiting, incoming_challenge, matched, expired, abandoned, cancelled (check).
   status           String    @default("waiting")
   challengerUserId BigInt?   @map("challenger_user_id")
   /// FK battles(id) ON DELETE SET NULL (migration SQL, not a Prisma relation).
@@ -145,7 +158,9 @@ model BattleInvitation {
   subjectId       BigInt?  @map("subject_id")
   pkskDomainId    BigInt?  @map("pksk_domain_id")
   pkskTargetLevel String?  @map("pksk_target_level")
-  /// pending, accepted, declined, expired (check).
+  /// 48 GAME-01: the chosen chip, 5, 10, 15, 20 (check).
+  questionCount   Int      @default(10) @map("question_count") @db.SmallInt
+  /// pending, accepted, declined, expired, cancelled (check).
   status          String   @default("pending")
   isTest          Boolean  @default(false) @map("is_test")
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
