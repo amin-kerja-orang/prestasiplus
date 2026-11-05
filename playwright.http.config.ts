@@ -34,6 +34,64 @@ export default defineConfig({
     '**/bijak/http-*.spec.ts',
     '**/r1/**/*.http.spec.ts',
     '**/m04-question-bank/responsive-s2.spec.ts',
+    '**/m04-question-bank/question-tabs-http.spec.ts',
   ],
   // E2E_SKIP_R1=1 (set by the full-suite step of e2e-http.yml): e2e/r1 already ran in its own step, so skip it here.
   testIgnore: process.env.E2E_SKIP_R1 === '1' ? ['**/r1/**'] : [],
+  grep: /@api/,
+  // The seeded database is shared by every worker and project: keep one worker so a spec that
+  // changes data (profile, password) cannot race another. Raise it only for read-only specs.
+  fullyParallel: false,
+  workers: Number(process.env.E2E_HTTP_WORKERS) || 1,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 1 : 0,
+  reporter: process.env.CI
+    ? [['list'], ['html', { open: 'never', outputFolder: 'playwright-report-http' }]]
+    : 'list',
+  outputDir: 'test-results-http',
+  use: {
+    baseURL,
+    locale: 'ms-MY',
+    timezoneId: 'Asia/Kuala_Lumpur',
+    trace: 'retain-on-failure',
+  },
+  projects: [
+    {
+      name: 'mobile',
+      use: {
+        browserName: 'chromium',
+        viewport: { width: 375, height: 812 },
+        isMobile: true,
+        hasTouch: true,
+        deviceScaleFactor: 2,
+      },
+    },
+    {
+      name: 'tablet',
+      use: {
+        browserName: 'chromium',
+        viewport: { width: 768, height: 1024 },
+        isMobile: true,
+        hasTouch: true,
+        deviceScaleFactor: 2,
+      },
+    },
+    {
+      name: 'desktop',
+      use: {
+        browserName: 'chromium',
+        viewport: { width: 1280, height: 800 },
+        hasTouch: false,
+      },
+    },
+  ],
+  webServer: process.env.E2E_HTTP_START_STACK
+    ? {
+        command: 'docker compose -f compose.yaml -f compose.http.yaml up --build',
+        url: `${baseURL}/healthz`,
+        reuseExistingServer: true,
+        timeout: 600_000,
+        gracefulShutdown: { signal: 'SIGTERM', timeout: 30_000 },
+      }
+    : undefined,
+})
