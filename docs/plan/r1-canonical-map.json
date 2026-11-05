@@ -2402,6 +2402,26 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/hadiah|m15.admin-hadiah",
+      "path": "/admin/hadiah",
+      "name": "m15.admin-hadiah",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m15-rewards-shop/pages/HadiahAdminPage.vue",
+      "file": "src/modules/m15-rewards-shop/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/hadiah/tebusan|m15.admin-redemptions",
+      "path": "/admin/hadiah/tebusan",
+      "name": "m15.admin-redemptions",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m15-rewards-shop/pages/RedemptionsAdminPage.vue",
+      "file": "src/modules/m15-rewards-shop/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "/cikgu/hadiah|m15.digital-shop",
       "path": "/cikgu/hadiah",
       "name": "m15.digital-shop",

@@ -36,7 +36,6 @@ import {
   HADIAH_CATEGORIES,
   type ApproveResult,
   type CabutanView,
-  type CancelResult,
   type DigitalItemsMeta,
   type DigitalRedemptionItem,
   type DigitalShopItem,
@@ -46,6 +45,7 @@ import {
   type OpenDrawView,
   type ParentApprovalItem,
   type ParentApprovalsView,
+  type ParentRejectResult,
   type RedeemResult,
   type TicketBought,
 } from '../../api/types'
@@ -215,7 +215,7 @@ function reject(req: MockRequest): MockResponse {
       childrenOf(req),
       idOf(req),
     )
-    const data: CancelResult = { id: row.id, status: 'cancelled', refundedTokens }
+    const data: ParentRejectResult = { id: row.id, status: 'cancelled', refundedTokens }
     return ok(data)
   } catch (e) {
     if (e instanceof M15Error) return refusal(e)

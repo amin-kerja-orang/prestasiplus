@@ -213,16 +213,12 @@ export const hadiahRepo = defineRepository({
 
       /**
        * Q-M15-QUEUE(status) newest first (BR-M15-15). The caller resolves the filter: a status key,
-       * `all`, or anything else (→ empty).
+       * `all`, or anything else (→ empty). There is no consent filter (FR-ADM-P2-08.4): a stored
+       * `pending_parent_consent` row shows under `all` only.
        */
       queue(status: string): HadiahRedemption[] {
         if (status === 'all') return redemptions.query({ sort: QUEUE_ORDER }).rows
-        if (
-          status !== 'pending_parent_consent' &&
-          status !== 'pending_admin' &&
-          status !== 'delivered' &&
-          status !== 'cancelled'
-        ) {
+        if (status !== 'pending_admin' && status !== 'delivered' && status !== 'cancelled') {
           return []
         }
         return redemptions.query({ where: { status }, sort: QUEUE_ORDER }).rows
@@ -248,12 +244,16 @@ export const hadiahRepo = defineRepository({
         })
       },
 
-      /** BR-M15-09 (#8): admin cancels a `pending_admin` row; tokens are refunded once. */
+      /**
+       * BR-M15-09 (#8): admin cancels a `pending_admin` row, or a stored `pending_parent_consent`
+       * one (no parent approval route exists, so it would strand the pupil's tokens); tokens are
+       * refunded once.
+       */
       cancelByAdmin(id: number): { row: HadiahRedemption; refundedTokens: number } {
         return transaction(() => {
           const row = redemptions.get(id)
           if (!row) throw new M15Error('NOT_FOUND', 'Tebusan tidak dijumpai.')
-          if (row.status !== 'pending_admin') {
+          if (row.status !== 'pending_admin' && row.status !== 'pending_parent_consent') {
             throw new M15Error('CONFLICT', 'Tebusan ini tidak lagi menunggu pemprosesan.')
           }
           const refundedTokens = cancelRow(row, 'admin', isoNow())
