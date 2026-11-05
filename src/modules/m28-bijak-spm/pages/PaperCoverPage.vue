@@ -60,6 +60,8 @@ const modeItems = [
   },
 ]
 const needsChoice = computed(() => !!open.value && !open.value.fresh)
+/** PO decision 12: a new sitting would be refused, so nothing offers one. A sitting already open keeps its pinned version and can still be resumed. */
+const unavailable = computed(() => cover.value?.unavailable === true)
 
 async function begin(restart: boolean): Promise<void> {
   starting.value = true
@@ -113,6 +115,21 @@ async function begin(restart: boolean): Promise<void> {
         :cta-label="open ? 'Sambung' : 'Mula'"
         data-testid="cover-hero"
         @cta="begin(false)"
+      >
+        <template v-if="unavailable && !open" #cta>
+          <UButton color="neutral" size="lg" disabled class="mt-2 min-h-12" data-testid="cover-start-disabled"
+            >Mula</UButton
+          >
+        </template>
+      </DsHeroCard>
+      <UAlert
+        v-if="unavailable"
+        color="warning"
+        variant="soft"
+        icon="i-ph-file-x"
+        title="Kertas belum tersedia"
+        role="status"
+        data-testid="cover-unavailable"
       />
       <PastSittingsLink :paper-id="paperId" class="self-start" />
 
@@ -137,17 +154,18 @@ async function begin(restart: boolean): Promise<void> {
             <UButton :loading="starting" data-testid="resume" @click="begin(false)"
               >Sambung — teruskan jawapan &amp; masa sedia ada</UButton
             >
-            <UButton color="neutral" data-testid="restart" @click="confirmRestart = true"
+            <UButton v-if="!unavailable" color="neutral" data-testid="restart" @click="confirmRestart = true"
               >Mula Semula — kosongkan jawapan &amp; masa</UButton
             >
           </div>
-          <p class="mt-2 text-caption">
+          <p v-if="!unavailable" class="mt-2 text-caption">
             “Sambung” mengekalkan semua jawapan anda. “Mula Semula” tidak boleh diundur.
           </p>
         </template>
       </UAlert>
 
       <UButton
+        v-if="!unavailable"
         :to="`/simulasi/${paperId}/kuiz`"
         color="neutral"
         variant="outline"
@@ -192,7 +210,7 @@ async function begin(restart: boolean): Promise<void> {
         </UCollapsible>
       </section>
 
-      <section v-if="!needsChoice" class="flex flex-col gap-3" aria-labelledby="h-mod">
+      <section v-if="!needsChoice && !unavailable" class="flex flex-col gap-3" aria-labelledby="h-mod">
         <h2 id="h-mod" class="text-heading text-highlighted">Pilih mod</h2>
         <URadioGroup
           v-model="mode"
