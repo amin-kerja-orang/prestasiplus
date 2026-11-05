@@ -467,6 +467,8 @@ test.describe('M06 S6 Tracking A set list and Q3', { tag: [moduleTag(6)] }, () =
       'L-5: the live Tracking A set quiz was never opened; the quiz page is the M05 component',
     ),
     async ({ page, loginAs, gotoApp, mock }) => {
+      // Answering all 40 questions alone takes about 50 s, more than the project's 30 s default.
+      test.setTimeout(120_000)
       await loginAs(PELAJAR)
       await gotoApp('/spm/ramalan/AKAUN')
       await tid(page, 'set-card-3').click()
