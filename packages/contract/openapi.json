@@ -10847,6 +10847,18 @@
               "$ref": "#/components/schemas/BijakPaperCoverSection"
             },
             "minItems": 1
+          },
+          "unavailable": {
+            "type": "boolean",
+            "description": "PO decision 12, FR-QA-47: true when a new sitting would be refused. The pupil sees \"Mula\" disabled with the message \"Kertas belum tersedia\" before any click. A sitting already open can still be resumed."
+          },
+          "unavailableReason": {
+            "type": "string",
+            "enum": [
+              "QUESTION_WITHDRAWN",
+              "NO_QUESTIONS"
+            ],
+            "description": "Present only when `unavailable` is true."
           }
         },
         "required": [
@@ -10865,7 +10877,8 @@
           "instructions",
           "reference",
           "examinerGrid",
-          "sections"
+          "sections",
+          "unavailable"
         ],
         "additionalProperties": false
       },
