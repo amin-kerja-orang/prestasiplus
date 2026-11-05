@@ -196,3 +196,54 @@ describe('autosave', () => {
     expect(a.pendingCount()).toBe(0)
   })
 })
+
+describe('flushHidden (lead ruling Q4: keepalive PUT on pagehide / hidden tab)', () => {
+  function bare(saveKeepalive?: (p: unknown) => boolean) {
+    const calls: unknown[] = []
+    const auto = createAutosave({
+      attemptId: 'a1',
+      storage: new MemoryStorage(),
+      api: {
+        save: () => Promise.resolve({ closed: false }),
+        ...(saveKeepalive ? { saveKeepalive: (p) => (calls.push(p), saveKeepalive(p)) } : {}),
+      },
+    })
+    auto.init({ answers: {}, flags: [], picks: {}, position: 0 })
+    return { auto, calls }
+  }
+
+  it('sends only the dirty changes through the keepalive path, and keeps them pending', () => {
+    const { auto, calls } = bare(() => true)
+    auto.setAnswer('p1', { text: 'satu' })
+    auto.setAnswer('p2', { text: 'dua' })
+    expect(auto.flushHidden()).toBe(true)
+    expect(calls).toHaveLength(1)
+    const sent = calls[0] as { changes: { partId: string; rev: number }[] }
+    expect(sent.changes.map((c) => c.partId)).toEqual(['p1', 'p2'])
+    expect(auto.pendingCount()).toBe(2)
+  })
+
+  it('sends nothing when nothing is dirty', () => {
+    const { auto, calls } = bare(() => true)
+    expect(auto.flushHidden()).toBe(false)
+    expect(calls).toHaveLength(0)
+  })
+
+  it('returns false when the api cannot send (too large, or no keepalive)', () => {
+    const refusing = bare(() => false)
+    refusing.auto.setAnswer('p1', { text: 'x' })
+    expect(refusing.auto.flushHidden()).toBe(false)
+    const none = bare()
+    none.auto.setAnswer('p1', { text: 'x' })
+    expect(none.auto.flushHidden()).toBe(false)
+    expect(none.auto.pendingCount()).toBe(1)
+  })
+
+  it('sends nothing once disposed', () => {
+    const { auto, calls } = bare(() => true)
+    auto.setAnswer('p1', { text: 'x' })
+    auto.dispose()
+    expect(auto.flushHidden()).toBe(false)
+    expect(calls).toHaveLength(0)
+  })
+})

@@ -294,7 +294,12 @@ async function load(): Promise<void> {
     autosave = createAutosave({
       attemptId: attemptId.value,
       storage: browserStorage(),
-      api: { save: (p) => server.saveAnswers(user.value, attemptId.value, p) },
+      api: {
+        save: (p) => server.saveAnswers(user.value, attemptId.value, p),
+        saveKeepalive: server.saveAnswersKeepalive
+          ? (p) => server.saveAnswersKeepalive!(user.value, attemptId.value, p)
+          : undefined,
+      },
       onStatus: (s) => (saveStatus.value = s),
       onClosed: () => void goResult(),
     })
@@ -350,6 +355,7 @@ onMounted(() => {
   })
   tick = setInterval(() => (now.value = Date.now()), 1000)
   document.addEventListener('visibilitychange', onVisibility)
+  window.addEventListener('pagehide', flushOnLeave)
   window.addEventListener('online', onOnline)
   window.addEventListener('offline', onOffline)
   if (navigator.onLine === false) offline.value = true
@@ -360,6 +366,7 @@ onBeforeUnmount(() => {
   scrollNode?.removeEventListener('scroll', onScroll)
   stopRetry()
   document.removeEventListener('visibilitychange', onVisibility)
+  window.removeEventListener('pagehide', flushOnLeave)
   window.removeEventListener('online', onOnline)
   window.removeEventListener('offline', onOffline)
   clearTimeout(reconnectedTimer)
@@ -373,7 +380,11 @@ function onFieldBlur(): void {
   if (autosave?.pendingCount()) void autosave.flush()
 }
 function onVisibility(): void {
-  if (document.visibilityState === 'hidden') void autosave?.flush()
+  if (document.visibilityState === 'hidden') flushOnLeave()
+}
+/** Lead ruling Q4: a hiding or unloading tab sends only the dirty changes with a keepalive `fetch` PUT; without one (mock, over 64 KB) the normal flush runs. */
+function flushOnLeave(): void {
+  if (!autosave?.flushHidden()) void autosave?.flush()
 }
 function onOnline(): void {
   if (submitPending.value) void retrySubmit()

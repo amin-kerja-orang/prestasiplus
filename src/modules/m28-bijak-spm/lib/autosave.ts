@@ -12,6 +12,12 @@ export type SaveStatus = 'idle' | 'saving' | 'saved' | 'offline' | 'error' | 'cl
 
 export interface AutosaveApi {
   save(payload: SavePayload): Promise<unknown>
+  /**
+   * Fire-and-forget `PUT .../answers` with `fetch({ keepalive: true })` for a tab that is hiding or unloading
+   * (lead ruling Q4; `sendBeacon` is POST only). Returns false when it sent nothing (no way to send, or the body
+   * is over the 64 KB keepalive limit); the local mirror and the 15 s flush then cover the change.
+   */
+  saveKeepalive?(payload: SavePayload): boolean
 }
 
 interface LocalDoc {
@@ -52,6 +58,11 @@ export interface Autosave {
   setPicks(picks: Record<string, string[]>): void
   setPosition(position: number): void
   flush(): Promise<boolean>
+  /**
+   * `pagehide` / tab hidden: sends only the dirty changes with a keepalive `fetch`. True when a request went out.
+   * Nothing is marked saved (the reply is not awaited): the changes stay pending, a later flush repeats them (idempotent per revision).
+   */
+  flushHidden(): boolean
   answers(): Record<string, PartAnswer>
   flags(): string[]
   picks(): Record<string, string[]>
@@ -140,19 +151,21 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
     armDirtyFlush()
   }
 
+  const payloadOfPending = (parts: readonly string[]): SavePayload => ({
+    changes: parts.map((partId) => {
+      const st = doc.answers[partId]!
+      return { partId, answer: st.answer, rev: st.rev, savedAt: st.savedAt }
+    }),
+    flags: doc.flags,
+    picks: doc.picks,
+    position: doc.position,
+  })
+
   async function send(): Promise<boolean> {
     const parts = [...doc.pending]
     const revs = new Map(parts.map((p) => [p, doc.answers[p]?.rev ?? 0]))
     const metaSent = metaChanges
-    const payload: SavePayload = {
-      changes: parts.map((partId) => {
-        const st = doc.answers[partId]!
-        return { partId, answer: st.answer, rev: st.rev, savedAt: st.savedAt }
-      }),
-      flags: doc.flags,
-      picks: doc.picks,
-      position: doc.position,
-    }
+    const payload = payloadOfPending(parts)
     try {
       const res = (await opts.api.save(payload)) as { closed?: boolean } | undefined
       if (res?.closed) {
@@ -253,6 +266,15 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
       armDirtyFlush()
     },
     flush,
+    flushHidden() {
+      if (closed || disposed || !opts.api.saveKeepalive) return false
+      if (!doc.pending.length && !doc.metaDirty) return false
+      try {
+        return opts.api.saveKeepalive(payloadOfPending(doc.pending))
+      } catch {
+        return false
+      }
+    },
     answers: () => Object.fromEntries(Object.entries(doc.answers).map(([k, v]) => [k, v.answer])),
     flags: () => doc.flags,
     picks: () => doc.picks,

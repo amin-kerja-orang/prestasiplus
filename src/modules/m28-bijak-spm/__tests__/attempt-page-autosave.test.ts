@@ -153,3 +153,47 @@ describe('autosave triggers (FR-MUR-13-10)', () => {
     expect(sentParts()).toEqual(['q1-a'])
   })
 })
+
+describe('pagehide and a hidden tab (lead ruling Q4)', () => {
+  it('pagehide sends only the dirty changes with the keepalive path, not the normal save', async () => {
+    const keepalive = vi.fn(() => true)
+    ;(server as Record<string, unknown>).saveAnswersKeepalive = keepalive
+    try {
+      // the page built its autosave before the hook existed: remount so it picks it up
+      wrapper?.unmount()
+      document.body.innerHTML = ''
+      const stub = { template: '<i/>' }
+      const router = createRouter({
+        history: createMemoryHistory(),
+        routes: [
+          { path: '/a/:attemptId', name: 'm28.bijak.attempt', component: stub },
+          { path: '/:p(.*)*', component: stub },
+        ],
+      })
+      await router.push('/a/a1')
+      wrapper = mount(AttemptPage, { global: { plugins: [router] }, attachTo: document.body })
+      await flushPromises()
+      type('jawapan')
+      window.dispatchEvent(new Event('pagehide'))
+      await flushPromises()
+      expect(keepalive).toHaveBeenCalledTimes(1)
+      const sent = (keepalive.mock.calls[0] as unknown as [number, string, { changes: { partId: string }[] }])[2]
+      expect(sent.changes.map((c) => c.partId)).toEqual(['q1-a'])
+      expect(server.saveAnswers).not.toHaveBeenCalled()
+    } finally {
+      delete (server as Record<string, unknown>).saveAnswersKeepalive
+    }
+  })
+
+  it('without a keepalive path (mock, over 64 KB) a hidden tab falls back to the normal flush', async () => {
+    type('jawapan')
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' })
+    try {
+      document.dispatchEvent(new Event('visibilitychange'))
+      await flushPromises()
+      expect(sentParts()).toEqual(['q1-a'])
+    } finally {
+      delete (document as unknown as Record<string, unknown>).visibilityState
+    }
+  })
+})
