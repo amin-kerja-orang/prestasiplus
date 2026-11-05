@@ -14,6 +14,7 @@ import {
   showKombo,
   starStates,
   subjectColorByName,
+  weakTopics,
 } from '../../components/dashboard/dashboard-lib'
 
 describe('dashboard-lib', () => {
@@ -76,5 +77,20 @@ describe('dashboard-lib', () => {
     expect(COUNT_RULES.accuracy.step(70)).toBe(3)
     expect(COUNT_RULES.totalQuestions.step(130152)).toBe(4339)
     expect(COUNT_RULES.approvedQuestions.intervalMs).toBe(30)
+  })
+
+  it('keeps answered subjects under 60 % only, worst first, ties in read order (FR-MUR-2-6)', () => {
+    const p = (code: string, answered: number, accuracyPct: number) => ({
+      code,
+      name: code,
+      color: '#000',
+      answered,
+      correct: 0,
+      wrong: 0,
+      accuracyPct,
+      trend: [],
+    })
+    const out = weakTopics([p('A', 9, 59.9), p('B', 5, 60), p('C', 20, 30), p('D', 0, 0), p('E', 3, 30)])
+    expect(out.map((s) => s.code)).toEqual(['C', 'E', 'A'])
   })
 })

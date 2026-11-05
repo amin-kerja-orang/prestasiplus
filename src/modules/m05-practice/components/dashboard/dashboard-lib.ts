@@ -2,7 +2,12 @@
  * Small pure helpers of the S1 dashboard blocks (M05-T3; SRS M05 v1.17 FR-M05-02…28, §6.10).
  */
 
-import type { DashboardBanner, PracticeSubject, QuestDifficulty } from '../../api/types'
+import type {
+  DashboardBanner,
+  PracticeSubject,
+  ProgressSubject,
+  QuestDifficulty,
+} from '../../api/types'
 
 /** FR-M05-12 / 14: the widget counts out of 10 quests (the M14 catalogue). */
 export const QUEST_TOTAL = 10
@@ -156,4 +161,22 @@ export function greetingText(period: string, name: string): string {
 /** FR-M05-15 (PROPOSED, SRS §8.3): a completed quest is drawn with a full bar. */
 export function questBarPct(q: { progress: number; target: number; completed: boolean }): number {
   return q.completed ? 100 : questPct(q.progress, q.target)
+}
+
+/** FR-MUR-2-6: a subject is "perlu diperkuat" below this accuracy (percent) in the last 30 days. */
+export const WEAK_TOPIC_BELOW_PCT = 60
+
+/** FR-MUR-2-6: the window of the Topik Perlu Diperkuat card, as the `GET /api/practice/progress` period. */
+export const WEAK_TOPIC_PERIOD = '30'
+
+/**
+ * FR-MUR-2-6: the subjects answered in the window with accuracy under 60, worst first (ties keep the
+ * order of the read: most answers first). A subject with no answer has no accuracy and is not listed.
+ */
+export function weakTopics(subjects: readonly ProgressSubject[]): ProgressSubject[] {
+  return subjects
+    .filter((s) => s.answered > 0 && s.accuracyPct < WEAK_TOPIC_BELOW_PCT)
+    .map((s, i) => ({ s, i }))
+    .sort((a, b) => a.s.accuracyPct - b.s.accuracyPct || a.i - b.i)
+    .map(({ s }) => s)
 }

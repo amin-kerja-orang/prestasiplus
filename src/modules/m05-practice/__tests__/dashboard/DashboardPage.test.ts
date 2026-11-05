@@ -5,12 +5,12 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { ApiError } from '@/api'
 
-import type { Dashboard, DashboardQuest, PracticeSubject } from '../../api/types'
+import type { Dashboard, DashboardQuest, PracticeSubject, Progress } from '../../api/types'
 import { resetFriendForTests, useFriend } from '@/composables/useFriend'
 
 import DashboardPage from '../../pages/DashboardPage.vue'
 
-const api = vi.hoisted(() => ({ fetchDashboard: vi.fn() }))
+const api = vi.hoisted(() => ({ fetchDashboard: vi.fn(), fetchProgress: vi.fn() }))
 vi.mock('../../api/practice', () => api)
 
 const subject = (over: Partial<PracticeSubject>): PracticeSubject => ({
@@ -153,6 +153,30 @@ function stubMatchMedia(): void {
   )
 }
 
+const prog = (code: string, name: string, answered: number, accuracyPct: number) => ({
+  code,
+  name,
+  color: '#3B82F6',
+  answered,
+  correct: Math.round((answered * accuracyPct) / 100),
+  wrong: answered - Math.round((answered * accuracyPct) / 100),
+  accuracyPct,
+  trend: [],
+})
+
+function progress(subjects: ReturnType<typeof prog>[]): Progress {
+  return {
+    period: '30',
+    answered: 0,
+    accuracyPct: null,
+    sessions: 0,
+    minutes: 0,
+    chart: { labels: [], accuracy: [], counts: [] },
+    weakSubjects: [],
+    subjects,
+  }
+}
+
 async function render(data: Dashboard = dash(), pricingRouted = true): Promise<VueWrapper> {
   api.fetchDashboard.mockResolvedValue(data)
   const router = createRouter({
@@ -160,7 +184,11 @@ async function render(data: Dashboard = dash(), pricingRouted = true): Promise<V
     routes: [
       { path: '/dashboard', component: DashboardPage },
       ...(pricingRouted ? [{ path: '/pricing', component: { template: '<div />' } }] : []),
-      { path: '/:rest(.*)*', name: pricingRouted ? undefined : 'core.not-found', component: { template: '<div />' } },
+      {
+        path: '/:rest(.*)*',
+        name: pricingRouted ? undefined : 'core.not-found',
+        component: { template: '<div />' },
+      },
     ],
   })
   await router.push('/dashboard')
@@ -174,6 +202,8 @@ const has = (w: VueWrapper, id: string) => w.find(`[data-testid=${id}]`).exists(
 
 beforeEach(() => {
   api.fetchDashboard.mockReset()
+  api.fetchProgress.mockReset()
+  api.fetchProgress.mockResolvedValue(progress([]))
   stubMatchMedia()
   localStorage.clear()
   resetFriendForTests()
@@ -295,6 +325,40 @@ describe('S1 DashboardPage (v2 Murid Home)', () => {
     expect(w.findAll('[data-testid=dash-difficulty-row]')).toHaveLength(5)
     expect(t(w, 'dash-difficulty-total').text()).toBe('130152')
     expect(t(w, 'dash-subject-stats').text()).toContain('Bahasa Melayu')
+  })
+
+  it('lists the subjects under 60 % of the last 30 days, worst first, with a Latih link (FR-MUR-2-6)', async () => {
+    api.fetchProgress.mockResolvedValue(
+      progress([
+        prog('BM', 'Bahasa Melayu', 40, 59.9),
+        prog('SC', 'Sains', 10, 60),
+        prog('MT', 'Matematik', 12, 25),
+        prog('SJ', 'Sejarah', 8, 80),
+      ]),
+    )
+    const w = await render()
+    expect(api.fetchProgress).toHaveBeenCalledWith('30', expect.anything())
+    expect(w.get('[data-testid=dash-weak]').text()).toContain('Topik Perlu Diperkuat')
+    const rows = w.findAll('[data-testid=dash-weak-row]')
+    expect(rows.map((r) => r.get('[data-testid=dash-weak-name]').text())).toEqual([
+      'Matematik',
+      'Bahasa Melayu',
+    ])
+    expect(rows[0]?.get('[data-testid=dash-weak-pct]').text()).toBe('25%')
+    expect(rows[0]?.get('[data-testid=dash-weak-latih]').attributes('href')).toBe('/practice/MT')
+    expect(rows[0]?.get('[data-testid=dash-weak-latih]').text()).toBe('Latih')
+  })
+
+  it('hides Topik Perlu Diperkuat with no weak subject or a failed read (FR-MUR-2-6)', async () => {
+    api.fetchProgress.mockResolvedValue(progress([prog('SJ', 'Sejarah', 8, 80)]))
+    expect(has(await render(), 'dash-weak')).toBe(false)
+    wrapper?.unmount()
+    api.fetchProgress.mockRejectedValue(
+      new ApiError({ status: 500, code: 'INTERNAL_ERROR', message: 'Ralat' }),
+    )
+    const w = await render()
+    expect(has(w, 'dash-weak')).toBe(false)
+    expect(has(w, 'dashboard-main')).toBe(true)
   })
 
   it('offers the friend picker on the first visit of a student only', async () => {
