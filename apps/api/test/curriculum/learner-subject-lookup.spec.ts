@@ -13,7 +13,7 @@ const LEVELS = [{ id: '4', code: 'T4', order: 10, gradeKey: 'TINGKATAN_4' }]
 
 function service() {
   const learnerChapters = vi.fn().mockResolvedValue([])
-  const repo = { offeredLevels: () => Promise.resolve(LEVELS), learnerChapters, activeTopicsByChapter: () => Promise.resolve(new Map()) }
+  const repo = { offeredLevels: () => Promise.resolve(LEVELS), learnerChapters, activeTopicsByChapter: () => Promise.resolve(new Map()), subjects: () => Promise.resolve([]) }
   const ports = { topicProgress: { topicProgress: () => Promise.resolve(new Map()) } }
   return { svc: new CurriculumLearnerService(repo as never, ports as never), learnerChapters }
 }

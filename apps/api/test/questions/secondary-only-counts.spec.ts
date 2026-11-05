@@ -61,6 +61,7 @@ describe('B-HTTP-01/02: learner topics and the learning map are Tingkatan only',
     const repo = {
       offeredLevels: () => Promise.resolve(offered),
       learnerChapters: (f: { levelIds: bigint[] }) => (asked.push(f.levelIds), Promise.resolve([])),
+      subjects: () => Promise.resolve([]),
     }
     const ports = { topicProgress: { topicProgress: () => Promise.resolve(new Map()) } }
     const svc = new CurriculumLearnerService(repo as never, ports as never)

@@ -83,6 +83,7 @@ const reference = [
 const coverMatK2 = {
   ...summaryMatK2,
   examinerGrid: true,
+  unavailable: false,
   instructions: [
     'Kertas ini mengandungi tiga bahagian: Bahagian A, Bahagian B dan Bahagian C.',
     'Jawab semua soalan dalam Bahagian A dan Bahagian B, dan satu soalan dalam Bahagian C.',
@@ -117,6 +118,7 @@ const coverMatK2 = {
 const coverSnK2 = {
   ...summarySnK2,
   examinerGrid: true,
+  unavailable: false,
   instructions: [
     'Kertas ini mengandungi dua bahagian: Bahagian A dan Bahagian B.',
     'Jawab semua soalan dalam Bahagian A dan satu soalan dalam Bahagian B.',
@@ -318,6 +320,14 @@ describe('BijakPaperCover (getCover)', () => {
     delete without.examinerGrid
     expect(BijakPaperCoverSchema.safeParse(without).success).toBe(false)
     expect(BijakPaperCoverSchema.safeParse({ ...coverMatK2, examinerGrid: 'yes' }).success).toBe(false)
+  })
+
+  it('PO decision 12: unavailable is a required boolean; a reason is one of the listed values', () => {
+    const without = { ...coverMatK2 } as Partial<typeof coverMatK2>
+    delete without.unavailable
+    expect(BijakPaperCoverSchema.safeParse(without).success).toBe(false)
+    expect(BijakPaperCoverSchema.safeParse({ ...coverMatK2, unavailable: true, unavailableReason: 'QUESTION_WITHDRAWN' }).success).toBe(true)
+    expect(BijakPaperCoverSchema.safeParse({ ...coverMatK2, unavailable: true, unavailableReason: 'x' }).success).toBe(false)
   })
 
   it('rejects a cover without sections, or with a non-array instructions', () => {

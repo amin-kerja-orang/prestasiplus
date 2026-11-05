@@ -48,6 +48,8 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
+| S8-T02 | AC-PA-39 | CI | Pass | 2026-11-05 | team-aa/S-1 | leaf-links.test.ts::AC-PA-39: "Bahan 2" renders a button that opens Bahan 2; leaf-links.test.ts::AC-PA-39: "semua bahan" opens all (3 shown) in the drawer; leaf-links.test.ts::FR-PA-37: a leaf without stimulusId is unchanged; stimulus-panel.test.ts::FR-PA-37 source line |
+| S8-T02 | AC-QA-09 | CI | Pass | 2026-11-05 | team-aa/S-1 | leaf-links.test.ts::FR-PA-37: the stimulus sits in the leaf, inline from 768; leaf-links.test.ts::FR-PA-37: a leaf without stimulusId is unchanged; leaf-links.test.ts::AC-PA-39: "semua bahan" opens all (3 shown) in the drawer |
 
 ## Sprint 1
 
@@ -66,6 +68,10 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S1-T01 | AC-ADM-QE2.1 | CI | Pass | 2026-11-05 | team-aa/S-3 | stimulus-api.spec.ts::adds the 2nd and 3rd question to a one-stimulus group; stimuli stay at 1 and the detail lists 3 members in order |
 | S1-T01 | AC-ADM-QE2.2 | CI | Pass | 2026-11-05 | team-aa/S-3 | paper-units.spec.ts::is a paper-level error with the exact BM line (not section-prefixed, hard) |
 | S1-T01 | AC-ADM-QE3.13 | CI | Pass | 2026-11-05 | team-aa/S-3 | stimulus-api.spec.ts::deletes an unused stimulus; a stimulus shown by a group is 409 with the BM message; audio rows are invisible |
+| S6-T03 | AC-XS-1 | CI | Pass | 2026-11-05 | team-dd/S-4 | xs-queries.spec.ts |
+| S6-T03 | AC-XS-2 | CI | Pass | 2026-11-05 | team-dd/S-4 | xs-queries.spec.ts |
+| S6-T03 | AC-XS-3 | CI | Pass | 2026-11-05 | team-dd/S-4 | xs-queries.unit.spec.ts |
+| S6-T03 | AC-X4-2 | CI | Pass | 2026-11-05 | team-dd/S-4 | xs-queries.spec.ts |
 | S1-T02 | AC-ADM-QE4.1 | CI | Pass | 2026-11-05 | team-aa/S-3 | dskp-gate.spec.ts::AC-ADM-QE4.1: a draft with no tag lists exactly the unit and the SP gate-check approve returns two items, NO_UNIT then NO_SP, at step 4 with the PRD text |
 | S1-T02 | AC-ADM-QE4.2 | CI | Pass | 2026-11-05 | team-aa/S-3 | gate-rows.spec.ts::AC-ADM-QE4.2: an SP outside the unit "12.1.1" gives SP_NOT_IN_TAXONOMY with the contract text, step 4 |
 | S1-T02 | AC-ADM-QE4.5 | CI | Pass | 2026-11-05 | team-aa/S-3 | close-gates.spec.ts::without nodes a complete draft approves (200) and the panel never lists unit, SP or TP; once an SP node is loaded the same draft is refused |
@@ -80,6 +86,9 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
 | S1-T05 | AC-QA-34 | CI | Pass | 2026-11-05 | team-aa/S-3 | imports.spec.ts::[CI] the 2,000-row cap is admin-only: the Guru route refuses more than 500 rows with "Fail melebihi 500 baris." for every header, the admin route 2,001 rows with the 2,000 message; imports-csv.spec.ts::[CI] more than 2,000 data rows refuses the file whole (both formats); 2,000 is accepted |
+| S4-T03 | AC-ADM-C05.1 | CI | Pass | 2026-11-05 | team-bb/S-3 | bulk-chapter.spec.ts::sets the Bab in place on the eligible rows, with expectedCount = matched, and writes one counts-only audit entry (no new version, status and live version unchanged); bulk-chapter.spec.ts::is live: a bulk run moves the counts at once |
+| S4-T03 | AC-ADM-C05.2 | CI | Pass | 2026-11-05 | team-bb/S-3 | bulk-chapter.spec.ts::counts a question of another subject or level as refused and leaves it alone (AC-ADM-C05.2) |
+| S4-T03 | AC-ADM-C05.4 | CI | Pass | 2026-11-05 | team-bb/S-3 | bulk-chapter.spec.ts::overwrite=false keeps an existing Bab (AC-ADM-C05.4: 10 selected, 4 with a Bab -> 6 linked, 4 refused); bulk-chapter.spec.ts::overwrite=true replaces an existing Bab (AC-ADM-C05.4: all 10 linked) |
 
 ## Sprint 3
 
@@ -88,6 +97,7 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S1-T06 | AC-ADM-QE7.1 | CI | Pass | 2026-11-05 | team-aa/S-3 | builder-placements.spec.ts::[CI] AC-QE7.1: the Jana draw never splits a group: whole or not at all, members contiguous in group order |
 | S1-T06 | AC-MUR-QP-6 | CI | Pass | 2026-11-05 | team-aa/S-3 | kuiz-whole-groups.spec.ts::[CI] AC-QP-6: a whole group is served together, contiguous and in group order |
 | S8-T03 | AC-QA-18 | CI | Pass | 2026-11-05 | team-aa/S-3 | sanitize.test.ts::keeps allowed tags; render-markup.test.ts::sanitises before expanding |
+| S4-T07 | AC-ADM-C01.1 | CI | Pass | 2026-11-05 | team-bb/S-3 | CurriculumBrowserPage.test.ts |
 
 ## Sprint 4
 
@@ -95,6 +105,17 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 |---|---|---|---|---|---|---|
 | S5-T04 | AC-MUR-2-1 | CI | Pass | 2026-11-05 | team-bb/S-4 | DashboardPage.test.ts |
 | S5-T05 | AC-MUR-A2-5 | CI | Pass | 2026-11-05 | team-bb/S-4 | profile.spec.ts |
+| S5-T08 | AC-GUR-7-5 | CI | Pass | 2026-11-06 | team-bb/S-4 | videos.spec.ts::a teacher link must be a YouTube video link: everything else is 422 "Pautan mesti pautan YouTube yang sah." under videoUrl; VideoPages.test.ts::validates with the contract copy and posts nothing when invalid |
+| S5-T08 | AC-GUR-7-6 | CI | Pass | 2026-11-06 | team-bb/S-4 | videos.spec.ts::a teacher of another school cannot see a teacher video; a guest and a pupil of another school cannot either |
+| S5-T08 | AC-AS-7-4 | CI | Pass | 2026-11-06 | team-bb/S-4 | videos.spec.ts::a school admin gets 403 on POST, PUT and DELETE; VideoPages.test.ts::"Tambah Video" for school_admin: false |
+| S5-T08 | AC-MUR-7-1 | CI | Pass | 2026-11-06 | team-bb/S-4 | VideoPages.test.ts::a pill with count 0 is not a link; others link to ?category |
+| S5-T08 | AC-MUR-7-2 | CI | Pass | 2026-11-06 | team-bb/S-4 | VideoPages.test.ts::shows the empty state with "Lihat Semua Video" |
+| S5-T08 | AC-MUR-7-5 | CI | Pass | 2026-11-06 | team-bb/S-4 | videos.spec.ts::a page holds 24 cards, newest first; meta follows the mock; a bad or too large page is not an error; VideoPages.test.ts::submitting the search pushes ?search and keeps the filters |
+| S5-T04 | AC-MUR-2-3 | CI | Pass | 2026-11-06 | team-bb/S-4 | DashboardPage.test.ts::shows HomePakej for a package and hides it for null (FR-MUR-2-4); overview.spec.ts::package: null for a pupil with no complimentary package and no live school subscription |
+| S5-T04 | AC-MUR-2-8 | CI | Pass | 2026-11-06 | team-bb/S-4 | HomeMood.test.ts::asks "Bagaimana perasaan anda hari ini?" with the four labelled choices; HomeMood.test.ts::after a reload with a stored choice, shows "✓ Sedih" and offers no choices; mood.spec.ts::reads null before a check-in, then records the first choice and reads it back (AC-MUR-2-8) |
+| S5-T04 | AC-MUR-2-9 | CI | Pass | 2026-11-06 | team-bb/S-4 | DashboardPage.test.ts::Ketepatan shows "—" for null accuracy, without a count-up (AC-MUR-2-9); overview.spec.ts::accuracyPct is null with 0 answers (FR-MUR-2-13) |
+| S5-T04 | AC-MUR-2-10 | CI | Pass | 2026-11-06 | team-bb/S-4 | mood.spec.ts::a second submit the same day is 409 ALREADY_CHECKED_IN and the row is unchanged (AC-MUR-2-10) |
+| S5-T04 | AC-MUR-2-12 | CI | Pass | 2026-11-06 | team-bb/S-4 | mood.spec.ts::answers 401 without a session and 403 for every other role (AC-MUR-2-12) |
 
 ## Sprint 5
 
@@ -110,6 +131,10 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
+| S5-T13 | AC-MUR-19-1 | CI | Pass | 2026-11-05 | team-dd/S-2 | student.service.spec.ts, http.spec.ts, student-pages.test.ts |
+| S5-T13 | AC-MUR-19-2 | CI | Pass | 2026-11-05 | team-dd/S-2 | student.service.spec.ts, student-pages.test.ts, student-s1-s4b.spec.ts |
+| S5-T13 | AC-MUR-19-3 | CI | Pass | 2026-11-05 | team-dd/S-2 | student.service.spec.ts, http.spec.ts, student-pages.test.ts |
+| S5-T13 | AC-MUR-19-4 | CI | Pass | 2026-11-05 | team-dd/S-2 | student-s1-s4b.spec.ts |
 
 ## Sprint 8
 
