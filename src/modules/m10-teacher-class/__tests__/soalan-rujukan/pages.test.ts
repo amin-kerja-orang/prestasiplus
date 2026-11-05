@@ -65,7 +65,7 @@ async function fill(w: VueWrapper, over: { url?: string; text?: string } = {}): 
   await t(w, 'r-difficulty').setValue('3')
   await t(w, 'r-text').setValue(over.text ?? 'Soalan baharu?')
   for (const i of [0, 1, 2, 3]) await t(w, `r-option-${String(i)}`).setValue(`P${String(i)}`)
-  await w.find('[data-testid="r-correct-1"] [role="radio"]').trigger('click')
+  await w.findAll('[data-testid="r-correct"] [role="radio"]')[1]!.trigger('click')
   if (over.url !== undefined) await t(w, 'r-url').setValue(over.url)
   await flushPromises()
 }
@@ -128,7 +128,17 @@ describe('Cipta form', () => {
     expect(w.findAll('[data-testid^="r-option-row-"]')).toHaveLength(4)
     expect(t(w, 'form-submit').classes()).toContain('min-h-11')
     expect(t(w, 'form-cancel').classes()).toContain('min-h-11')
-    expect(w.find('[data-testid="r-correct-0"]').classes()).toContain('min-h-11')
+    // The radios are card-variant items (padded, whole card clickable), p-3.5 around a 20 px line is 48 px.
+    expect(t(w, 'r-correct').html()).toContain('p-3.5')
+  })
+
+  it('FR-GUR-44a-6: ONE radiogroup with four radios A to D (arrow keys and group semantics)', async () => {
+    const w = await mountCreate()
+    expect(w.findAll('[role="radiogroup"]')).toHaveLength(1)
+    const radios = w.findAll('[role="radiogroup"] [role="radio"]')
+    expect(radios).toHaveLength(4)
+    const group = w.find('[role="radiogroup"]').text()
+    for (const letter of ['A', 'B', 'C', 'D']) expect(group).toContain(letter)
   })
 
   it('AC-GUR-44a-1: saves with B correct and the link, goes to the list with "Soalan disimpan."', async () => {
@@ -309,6 +319,17 @@ describe('List', () => {
     expect(cards[0]!.find('[data-testid="rujukan-delete"]').text()).toBe('Padam')
     expect(t(w, 'rujukan-add').text()).toBe('Tambah Soalan')
     expect(t(w, 'rujukan-add').attributes('href')).toBe('/guru/soalan-guru/cipta')
+  })
+
+  it('defence in depth: a stored non-http reference URL is not rendered as a link', async () => {
+    pq.fetchPersonalQuestions.mockResolvedValue({
+      data: [personal({ referenceUrl: 'javascript:alert(1)' })],
+      meta: listMeta(1),
+    })
+    const w = await mountList()
+    expect(all(w, 'rujukan-card')).toHaveLength(1)
+    expect(t(w, 'rujukan-link').exists()).toBe(false)
+    expect(w.html()).not.toContain('javascript:')
   })
 
   it('shows the empty state "Belum ada soalan peribadi." with "Tambah Soalan"', async () => {

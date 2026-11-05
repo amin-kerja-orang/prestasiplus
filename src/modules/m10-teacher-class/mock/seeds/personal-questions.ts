@@ -2,7 +2,7 @@
  * Seed of Soalan & Rujukan (S6-T16): the demo teacher's private MCQ. The PRD has no observed rows (the list page was not
  * captured), so these are designed, generic study questions. Deterministic rule for the 409 path: the question at index
  * `i` is "drawn into an active Misi" exactly when `i % 3 === 0` (indices 0 and 3), so deleting it is refused with
- * "Soalan sedang digunakan dalam misi." and the others delete normally. Ids 7801…; newest first by `createdAt`.
+ * "Soalan sedang digunakan dalam misi." and the others delete normally. Every row carries a valid Bab, SP, TP 3 and Aras so that editing an untouched row passes the form's own D112 rule. Ids 7801…; newest first by `createdAt`.
  */
 
 import { toIsoMyt } from '@/lib/time'
@@ -25,6 +25,9 @@ interface Template {
   options: [string, string, string, string]
   correctIndex: number
   referenceUrl: string | null
+  /** Bab and SP of the pair (M03 / M10 DSKP mock): every seeded pair has chapters and DSKP nodes (D112). */
+  chapterId: number
+  spId: number
 }
 
 const TEMPLATES: readonly Template[] = [
@@ -36,6 +39,8 @@ const TEMPLATES: readonly Template[] = [
     options: ['8', '9', '10', '11'],
     correctIndex: 3,
     referenceUrl: 'https://example.org/rujukan/ungkapan-algebra',
+    chapterId: 91,
+    spId: 8070,
   },
   {
     subjectId: MATEMATIK,
@@ -45,6 +50,8 @@ const TEMPLATES: readonly Template[] = [
     options: ['4.5 x 10^-3', '4.5 x 10^-4', '4.5 x 10^-5', '45 x 10^-5'],
     correctIndex: 1,
     referenceUrl: null,
+    chapterId: 91,
+    spId: 8070,
   },
   {
     subjectId: KIMIA,
@@ -54,6 +61,8 @@ const TEMPLATES: readonly Template[] = [
     options: ['Hidrogen', 'Klorin', 'Oksigen', 'Natrium'],
     correctIndex: 1,
     referenceUrl: 'https://example.org/video/elektrolisis',
+    chapterId: 571,
+    spId: 9001,
   },
   {
     subjectId: KIMIA,
@@ -68,6 +77,8 @@ const TEMPLATES: readonly Template[] = [
     ],
     correctIndex: 1,
     referenceUrl: null,
+    chapterId: 571,
+    spId: 9001,
   },
   {
     subjectId: MATEMATIK,
@@ -77,6 +88,8 @@ const TEMPLATES: readonly Template[] = [
     options: ['x = 1 atau x = 6', 'x = 2 atau x = 3', 'x = -2 atau x = -3', 'x = 5 atau x = 1'],
     correctIndex: 1,
     referenceUrl: 'https://example.org/rujukan/persamaan-kuadratik.pdf',
+    chapterId: 228,
+    spId: 8071,
   },
   {
     subjectId: KIMIA,
@@ -91,6 +104,8 @@ const TEMPLATES: readonly Template[] = [
     ],
     correctIndex: 0,
     referenceUrl: null,
+    chapterId: 562,
+    spId: 8210,
   },
 ]
 
@@ -102,10 +117,10 @@ export const DESIGNED_PERSONAL_QUESTIONS: readonly PersonalQuestionRow[] = TEMPL
     educationLevelId: t.educationLevelId,
     difficulty: t.difficulty,
     text: t.text,
-    chapterId: null,
-    spIds: [],
-    tp: null,
-    cognitiveLevel: null,
+    chapterId: t.chapterId,
+    spIds: [t.spId],
+    tp: 3,
+    cognitiveLevel: 'memahami',
     options: [...t.options],
     correctIndex: t.correctIndex,
     referenceUrl: t.referenceUrl,

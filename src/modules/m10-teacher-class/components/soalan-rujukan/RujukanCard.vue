@@ -9,16 +9,22 @@ import { computed } from 'vue'
 
 import type { PersonalQuestion } from '../../api/personal-questions-types'
 import { difficultyStars, difficultyWord } from '../soalan/lib'
-import { excerpt } from './form'
+import { excerpt, isHttpUrl } from './form'
 
 const props = defineProps<{ question: PersonalQuestion; levelName: string; deleting?: boolean }>()
 const emit = defineEmits<{ remove: [id: number] }>()
+
+/** Defence in depth: only a stored http or https address is rendered as a link. */
+const safeUrl = computed(() => {
+  const u = props.question.referenceUrl
+  return u !== null && isHttpUrl(u) ? u : null
+})
 
 const items = computed(() => [
   { key: 'subject', label: 'Subjek', value: props.question.subjectName },
   { key: 'level', label: 'Tahap', value: props.levelName },
   { key: 'difficulty', label: 'Kesukaran', value: difficultyStars(props.question.difficulty) },
-  { key: 'link', label: 'Rujukan', value: props.question.referenceUrl },
+  { key: 'link', label: 'Rujukan', value: safeUrl.value },
 ])
 </script>
 
@@ -40,8 +46,8 @@ const items = computed(() => [
           </template>
           <template #value-link>
             <UButton
-              v-if="question.referenceUrl"
-              :to="question.referenceUrl"
+              v-if="safeUrl"
+              :to="safeUrl"
               target="_blank"
               rel="noopener noreferrer"
               color="neutral"

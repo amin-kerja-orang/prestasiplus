@@ -251,3 +251,31 @@ describe('409 delete guard (AC-GUR-44a-9)', () => {
     expect((await call('GET', `${BASE}/7802`)).status).toBe(404)
   })
 })
+
+describe('seed rows vs D112', () => {
+  it('re-saving an untouched seeded row passes the rule (every seed pair has Bab and SP)', async () => {
+    for (const id of [7803, 7804, 7805, 7806]) {
+      const got = await call<{ data: Row & Record<string, unknown> }>(
+        'GET',
+        `${BASE}/${String(id)}`,
+      )
+      const q = got.body.data
+      const put = await call('PUT', `${BASE}/${String(id)}`, {
+        body: {
+          subjectId: q.subjectId,
+          educationLevelId: q.educationLevelId,
+          chapterId: q.chapterId,
+          spIds: q.spIds,
+          tp: q.tp,
+          cognitiveLevel: q.cognitiveLevel,
+          difficulty: q.difficulty,
+          text: q.text,
+          options: q.options,
+          correctIndex: q.correctIndex,
+          referenceUrl: q.referenceUrl,
+        },
+      })
+      expect(put.status, `${String(id)} ${JSON.stringify(put.body)}`).toBe(200)
+    }
+  })
+})

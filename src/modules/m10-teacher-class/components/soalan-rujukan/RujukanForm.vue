@@ -28,6 +28,7 @@ import { DSKP_EMPTY, TP_VALUES, dskpRequired } from '../soalan/dskp-rule'
 import {
   chapterLabel,
   COPY,
+  correctItems,
   DIFFICULTY_OPTIONS,
   difficultyFromTp,
   OPTION_LETTERS,
@@ -35,6 +36,8 @@ import {
 } from '../soalan/lib'
 import { buildBody, emptyValues, validateForm, valuesOf, type RujukanField } from './form'
 import { useDskpPair } from './use-dskp-pair'
+
+const CORRECT_ITEMS = correctItems()
 
 const props = withDefaults(
   defineProps<{
@@ -132,7 +135,7 @@ const FOCUS_ID: Record<RujukanField, string> = {
   text: 'r-text',
   referenceUrl: 'r-url',
   options: 'r-option-0',
-  correctIndex: 'r-correct-0',
+  correctIndex: 'r-correct',
 }
 
 async function submit(): Promise<void> {
@@ -373,6 +376,16 @@ async function submit(): Promise<void> {
         <DsText as="legend" variant="label" tone="default">
           Pilihan Jawapan <span aria-hidden="true">*</span> (pilih jawapan betul)
         </DsText>
+        <URadioGroup
+          id="r-correct"
+          :model-value="v.correct ?? undefined"
+          legend="Jawapan betul"
+          orientation="vertical"
+          variant="card"
+          :items="CORRECT_ITEMS"
+          data-testid="r-correct"
+          @update:model-value="v.correct = Number($event)"
+        />
         <DsPanel
           v-for="(letter, i) in OPTION_LETTERS"
           :key="letter"
@@ -380,15 +393,7 @@ async function submit(): Promise<void> {
           :data-testid="`r-option-row-${String(i)}`"
         >
           <DsCluster :wrap="false" gap="sm">
-            <URadioGroup
-              :id="`r-correct-${String(i)}`"
-              :model-value="v.correct === i ? i : undefined"
-              :legend="`Pilihan ${letter} ialah jawapan betul`"
-              :items="[{ label: letter, value: i }]"
-              class="min-h-11 shrink-0"
-              :data-testid="`r-correct-${String(i)}`"
-              @update:model-value="v.correct = i"
-            />
+            <UBadge color="primary" variant="subtle" size="lg">{{ letter }}</UBadge>
             <UInput
               :id="`r-option-${String(i)}`"
               v-model="v.options[i]"
