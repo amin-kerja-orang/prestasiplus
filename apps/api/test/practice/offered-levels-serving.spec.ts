@@ -30,20 +30,26 @@ beforeEach(async () => {
   t.clock.set(START)
   await resetPractice(t.db)
   t.bank.reset()
-  for (const levelId of [t1, t5]) for (let i = 0; i < 8; i++) t.bank.add({ subjectId: w.subject.math, levelId, difficulty: (i % 5) + 1, correct: i % 4 })
+  for (const levelId of [t1, t5]) for (let i = 0; i < 8; i++) t.bank.add({ subjectId: w.subject.math, levelId, difficulty: 3, spmPool: true, correct: i % 4 })
 })
 
-describe('random mode', () => {
-  it('starts at a T1 level and at a T5 level', async () => {
-    for (const levelId of [t1, t5]) {
-      const s = await startSession(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5, levelId })
-      expect(s.questions).toHaveLength(5)
-      for (const q of s.questions) expect(t.bank.get(q.id).educationLevelId).toBe(levelId)
-    }
+describe('latih_tubi mode (was random, ERR-PRAC-07)', () => {
+  it('starts at a T5 level', async () => {
+    const s = await startSession(pelajar, { mode: 'latih_tubi', subjectCode: 'MATH', count: 5, difficulty: 3, levelId: t5 })
+    expect(s.questions).toHaveLength(5)
+    for (const q of s.questions) expect(t.bank.get(q.id).educationLevelId).toBe(t5)
+  })
+
+  // Latih Tubi (the only mode that takes a levelId once random is gone, ERR-PRAC-07) is still limited to the SPM levels
+  // (start.planner latihTubiLevelIds, TODO S4-T06 PR3), so a T1 level is refused until that twin follows offeredLevels.
+  it('refuses a T1 level for latih_tubi until the SPM-level limit is lifted', async () => {
+    const res = await pelajar.post('/api/practice/sessions', { mode: 'latih_tubi', subjectCode: 'MATH', count: 5, difficulty: 3, levelId: t1 })
+    expect(res.status).toBe(422)
+    expect(res.body.error.fields.levelId).toBe('Nilai tidak sah.')
   })
 
   it('refuses a primary level (not offered)', async () => {
-    const res = await pelajar.post('/api/practice/sessions', { mode: 'random', subjectCode: 'MATH', count: 5, levelId: w.level.primary })
+    const res = await pelajar.post('/api/practice/sessions', { mode: 'latih_tubi', subjectCode: 'MATH', count: 5, difficulty: 3, levelId: w.level.primary })
     expect(res.status).toBe(422)
     expect(res.body.error.fields.levelId).toBe('Nilai tidak sah.')
   })
