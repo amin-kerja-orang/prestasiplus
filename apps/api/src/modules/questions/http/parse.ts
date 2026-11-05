@@ -144,7 +144,7 @@ export function parseAdminList(raw: unknown): AdminListFilter {
 }
 
 /** The four V2 Studio filters of a parsed list query or bulk filter (only the ones that are set). */
-function filterV2Fields(d: { tahun?: string | undefined; negeri?: string | undefined; kertas?: '1' | '2' | '3' | undefined; jenis?: AdminListFilter['jenis'] | undefined }): Partial<AdminListFilter> {
+function filterV2Fields(d: { tahun?: string | undefined; negeri?: string | undefined; kertas?: '1' | '2' | '3' | '4' | undefined; jenis?: AdminListFilter['jenis'] | undefined }): Partial<AdminListFilter> {
   return {
     ...(d.tahun === undefined ? {} : { tahun: d.tahun }),
     ...(d.negeri === undefined ? {} : { negeri: d.negeri }),

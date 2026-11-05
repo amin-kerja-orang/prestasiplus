@@ -154,7 +154,7 @@ export class GroupMembers {
    * question has the group's subject and a compatible kertas, and returns its position (the end). The question is not in the group yet, so
    * it is not counted; it can be served at once only when it is created already approved (an admin shortcut), which does not bind the group.
    */
-  async joinNew(groupId: string, subjectId: string | null, levelId: string | null, kertas: '1' | '2' | '3' | null): Promise<number> {
+  async joinNew(groupId: string, subjectId: string | null, levelId: string | null, kertas: '1' | '2' | '3' | '4' | null): Promise<number> {
     await this.lock(groupId).catch(() => {
       throw fail({ stimulusGroupId: M.groupInvalid })
     })
@@ -171,7 +171,7 @@ export class GroupMembers {
    * A member's subject or kertas changes (PUT /api/questions on a grouped question): it must still fit the other members, else the group
    * would hold two subjects (or two kertas). The only member of a group may change freely. Runs inside the edit transaction.
    */
-  async assertTraitChange(groupId: string, questionId: string, subjectId: string | null, levelId: string | null, kertas: '1' | '2' | '3' | null): Promise<void> {
+  async assertTraitChange(groupId: string, questionId: string, subjectId: string | null, levelId: string | null, kertas: '1' | '2' | '3' | '4' | null): Promise<void> {
     await this.lock(groupId)
     this.assertScope(await this.repo.groupScope(groupId), { subjectId, levelId, kertas }, 'subjectId')
     this.assertFits(await this.repo.memberTraits(groupId, questionId), subjectId, kertas, 'subjectId')
@@ -188,7 +188,7 @@ export class GroupMembers {
     if (group.kertas !== null && member.kertas !== null && String(group.kertas) !== member.kertas) throw fail({ [field === 'subjectId' ? 'kertas' : field]: M.memberKertas })
   }
 
-  private assertFits(others: readonly { subjectId: string | null; kertas: '1' | '2' | '3' | null }[], subjectId: string | null, kertas: '1' | '2' | '3' | null, field: string): void {
+  private assertFits(others: readonly { subjectId: string | null; kertas: '1' | '2' | '3' | '4' | null }[], subjectId: string | null, kertas: '1' | '2' | '3' | '4' | null, field: string): void {
     if (others.some((o) => o.subjectId !== subjectId)) throw fail({ [field]: M.memberMixed })
     if (kertas !== null && others.some((o) => o.kertas !== null && o.kertas !== kertas)) throw fail({ [field === 'subjectId' ? 'kertas' : field]: M.memberKertas })
   }

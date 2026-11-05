@@ -103,14 +103,14 @@ export interface QuestionFacts {
   served: boolean
   subjectId: string | null
   levelId: string | null
-  /** '1' | '2' | '3' from the paper code of the latest version, or null (compatible with any kertas). */
-  kertas: '1' | '2' | '3' | null
+  /** '1' | '2' | '3' | '4' from the paper code of the latest version, or null (compatible with any kertas). */
+  kertas: '1' | '2' | '3' | '4' | null
 }
 /** Subject, Tingkatan and kertas of one member (latest version). */
 export interface MemberTrait {
   subjectId: string | null
   levelId: string | null
-  kertas: '1' | '2' | '3' | null
+  kertas: '1' | '2' | '3' | '4' | null
 }
 /** The short form of a group member (R1-T49). */
 export interface MemberBrief {

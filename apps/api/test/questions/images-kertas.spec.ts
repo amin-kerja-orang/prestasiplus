@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { QuestionsService } from '../../src/modules/questions'
-import { paperCodeWithKertas } from '../../src/modules/questions/projection'
+import { kertasOfPaperCode, paperCodeWithKertas } from '../../src/modules/questions/projection'
 import { kertasOfSourcePaper } from '../../src/modules/intake/workflow/review.service'
 import { makePng } from '../files/fixtures'
 import { ACCOUNTS, bootQuestionsApp, loginAs, type Client, type QuestionsTestApp } from './helpers'
@@ -170,6 +170,12 @@ describe('question images and kertas (real database)', () => {
     expect(real.body.data.kertas).toBe('2')
     const cleared = await admin.put(`/api/questions/${qid}`).send({ ...base(), kertas: null })
     expect(cleared.body.data.kertas).toBeNull()
+    const four = await admin.post('/api/questions').send({ ...base(), kertas: '4' })
+    expect(four.status, JSON.stringify(four.body)).toBe(201)
+    expect(four.body.data.kertas).toBe('4')
+    expect(kertasOfPaperCode('1449/4')).toBe('4')
+    expect(kertasOfPaperCode('1449/5')).toBeNull()
+    expect(paperCodeWithKertas('1449/2', '4', null)).toBe('1449/4')
     const bad = await admin.post('/api/questions').send({ ...base(), kertas: '9' })
     expect(bad.status).toBe(422)
     expect(Object.keys(bad.body.error.fields)).toEqual(['kertas'])
@@ -180,6 +186,7 @@ describe('question images and kertas (real database)', () => {
     expect(kertasOfSourcePaper({ paperCode: null, kertas: 'K1' })).toBe('1')
     expect(kertasOfSourcePaper({ paperCode: null, kertas: 'P2' })).toBe('2')
     expect(kertasOfSourcePaper({ paperCode: '1449/1', kertas: 'K2' })).toBe('1')
+    expect(kertasOfSourcePaper({ paperCode: '1449/4', kertas: null })).toBe('4')
     expect(kertasOfSourcePaper({ paperCode: '1449/5', kertas: 'abc' })).toBeNull()
     expect(kertasOfSourcePaper(null)).toBeNull()
   })
@@ -193,8 +200,8 @@ describe('question images and kertas (real database)', () => {
     expect((await one(`select paper_code from question_versions where question_id = $1`, [q.id]))?.paper_code).toBe('1449/2')
   })
 
-  it('paperCodeWithKertas: null removes only a valid trailing /1../3; nothing is invented without a subject code', () => {
-    expect(paperCodeWithKertas('1449/4', null, 'MATH')).toBe('1449/4')
+  it('paperCodeWithKertas: null removes only a valid trailing /1../4; nothing is invented without a subject code', () => {
+    expect(paperCodeWithKertas('1449/5', null, 'MATH')).toBe('1449/5')
     expect(paperCodeWithKertas('SPM2023', null, 'MATH')).toBe('SPM2023')
     expect(paperCodeWithKertas('1449/2', null, 'MATH')).toBe('1449')
     expect(paperCodeWithKertas('MATH/2', null, 'MATH')).toBe('MATH')
@@ -203,12 +210,12 @@ describe('question images and kertas (real database)', () => {
     expect(paperCodeWithKertas(null, '2', 'MATH')).toBe('MATH/2')
     expect(paperCodeWithKertas(null, '2', null)).toBeNull()
     expect(paperCodeWithKertas('SPM2023', '2', null)).toBe('SPM2023')
-    expect(paperCodeWithKertas('1449/4', '2', 'MATH')).toBe('1449/2')
+    expect(paperCodeWithKertas('1449/5', '2', 'MATH')).toBe('1449/2')
   })
 
-  it('an edit without kertas, or with kertas null, keeps a real paper code such as 1449/4 or SPM2023', async () => {
+  it('an edit without kertas, or with kertas null, keeps a real paper code such as 1449/5 or SPM2023', async () => {
     const qid = (await admin.post('/api/questions').send({ ...base() })).body.data.id as string
-    for (const code of ['1449/4', 'SPM2023']) {
+    for (const code of ['1449/5', 'SPM2023']) {
       await t.db.query(`update question_versions set paper_code = $2 where question_id = $1`, [qid, code])
       for (const extra of [{}, { kertas: null }]) {
         const res = await admin.put(`/api/questions/${qid}`).send({ ...base(), ...extra })
