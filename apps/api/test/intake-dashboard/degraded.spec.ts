@@ -28,7 +28,7 @@ describe('no intake or AI store at all (the base without BE-36/37/38 tables)', (
     const d = IntakeDashboardSchema.parse(res.body.data)
     expect(d.sources).toEqual({ batches: false, items: false, duplicates: false, usage: false, settings: false })
     expect(d.submissions.total).toBe(0)
-    expect(d.submissions.byStatus.map((r) => r.count)).toEqual([0, 0, 0, 0, 0])
+    expect(d.submissions.byStatus.map((r) => r.count)).toEqual([0, 0, 0, 0, 0, 0])
     expect(d.queue).toEqual({ items: 0, oldestItemAt: null, oldestItemAgeSeconds: null, pendingSubmissions: 0, oldestPendingSubmissionAt: null })
     expect(d.extraction).toEqual({ succeeded: 0, failed: 0, successRate: null })
     expect(d.tagAcceptance.acceptedItems).toBe(0)
