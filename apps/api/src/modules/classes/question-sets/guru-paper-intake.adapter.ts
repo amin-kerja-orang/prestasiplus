@@ -1,9 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { INTAKE_FILE_MESSAGES, type QuestionSetPaper } from '@pp/contract'
+import { QUESTION_SET_PAPER_MESSAGES, type QuestionSetPaper } from '@pp/contract'
 
 import { ApiError } from '../../../common/errors/api-error'
-import { toMytTimestamp } from '../../../common/time/myt'
 import { idToString } from '../../../db/ids'
 import { detectOffice, inspectUpload } from '../../files/content-inspect'
 import { FilesConfig } from '../../files/files.config'
@@ -13,21 +12,10 @@ import { PDF_ENGINE, type PdfEngine } from '../../ocr'
 import { intakeTeacherEnabled } from '../../intake/intake-teacher.gate'
 import { type PaperSubmission, type QuestionPaperIntakePort } from './question-sets.ports'
 
-/** OPT-JENIS-HANTARAN (docs/prd/r1/40-cross-cutting.md): the declaration label to the stored slug. Unknown reads as `lain`. */
-export const GURU_PAPER_TYPE_SLUGS: Readonly<Record<string, string>> = {
-  'Soalan Umum': 'umum',
-  'Trial Paper': 'trial',
-  'Soalan DSKP': 'dskp',
-  'Buku Teks': 'buku_teks',
-  'Buku Latihan': 'buku_latihan',
-  'Soalan Peperiksaan': 'peperiksaan',
-  'Lain-lain': 'lain',
-}
-
 /** ERR-REQ-04 with the list of what the guru path accepts (FR-GUR-44-13). */
-export const GURU_PAPER_TYPE_REFUSED = 'Jenis fail tidak disokong. Format dibenarkan: PDF, DOCX, XLSX.'
+export const GURU_PAPER_TYPE_REFUSED = QUESTION_SET_PAPER_MESSAGES.fileType
 /** Field table of 20 FR-GUR-44-13 (D-26): refusal of a PDF with no extractable text on its first 3 pages. */
-export const GURU_PAPER_SCANNED_REFUSED = 'PDF imbasan imej tidak diterima — teks mesti boleh disalin.'
+export const GURU_PAPER_SCANNED_REFUSED = QUESTION_SET_PAPER_MESSAGES.scanned
 const SCAN_CHECK_PAGES = 3
 const DEFAULT_SOURCE_TEXT = 'Kiriman guru'
 
@@ -64,7 +52,7 @@ export class GuruPaperIntakeAdapter implements QuestionPaperIntakePort {
     const batchId = await this.batches.createGuruBatch(
       input.auth,
       {
-        paperType: GURU_PAPER_TYPE_SLUGS[d.paperType] ?? 'lain',
+        paperType: d.paperType,
         subject: d.subjectText,
         year: d.year,
         sourceText: author === '' ? DEFAULT_SOURCE_TEXT : author.slice(0, 200),
@@ -73,35 +61,20 @@ export class GuruPaperIntakeAdapter implements QuestionPaperIntakePort {
       who,
     )
     const id = idToString(batchId)
-    let uploaded
     try {
-      uploaded = await this.uploads.upload(input.auth, id, input.files.map((f) => ({ buffer: f.buffer, originalname: f.name })), who, undefined, { acceptOffice: true })
+      await this.uploads.upload(input.auth, id, input.files.map((f) => ({ buffer: f.buffer, originalname: f.name })), who, undefined, { acceptOffice: true })
     } catch (err) {
       await this.batches.discardEmptyBatch(batchId)
       throw err
     }
-    const detail = await this.batches.getBatch(input.auth, id)
-    return {
-      id,
-      teacherId: input.teacherId,
-      subjectText: d.subjectText,
-      levelCode: d.levelCode,
-      year: d.year,
-      paperType: d.paperType,
-      authorCredit: d.authorCredit,
-      note: d.note,
-      files: uploaded.files.map((f, index) => ({ index, name: f.originalName, size: f.sizeBytes, mime: detectOffice(input.files[index]?.buffer ?? Buffer.alloc(0)) ?? 'application/pdf' })),
-      status: detail.status === 'processing' ? 'processing' : 'pending',
-      adminNotes: null,
-      createdAt: toMytTimestamp(input.at),
-    }
+    return { batchId: id }
   }
 
   /** DOCX/XLSX by content (stored as they are), or a PDF with a text layer on at least one of its first 3 pages. Anything else is refused. */
   private async assertAcceptable(buffer: Buffer): Promise<void> {
     // Size first (cheap), before any parsing of the content.
     if (buffer.length === 0) throw refuse(GURU_PAPER_TYPE_REFUSED)
-    if (buffer.length > this.filesConfig.intakeMaxBytes) throw refuse(INTAKE_FILE_MESSAGES.size(Math.floor(this.filesConfig.intakeMaxBytes / (1024 * 1024))))
+    if (buffer.length > this.filesConfig.intakeMaxBytes) throw refuse(`Fail melebihi saiz maksimum ${String(Math.floor(this.filesConfig.intakeMaxBytes / (1024 * 1024)))} MB.`)
     if (detectOffice(buffer)) return
     const inspected = inspectUpload(buffer)
     if (!inspected || inspected.mime !== 'application/pdf') throw refuse(GURU_PAPER_TYPE_REFUSED)

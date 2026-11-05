@@ -7,7 +7,7 @@ import { scanPdf, textPdf } from '../intake-files/pdf-fixtures'
 import { ADMIN, STUDENT_1, TEACHER_A, TEACHER_C, bootQsApp, client, idOfEmail, type Client, type QsTestApp } from './qs-helpers'
 
 /** S1-T08 (API-GUR-17, FR-GUR-44-13): the teacher paper upload creates a `source = guru` intake batch through the real adapter. */
-const FIELDS = { jenisSoalan: 'Trial Paper', subject: 'Matematik Tambahan', tingkatan: '4', tahun: '2025', disediakanOleh: 'Cikgu Ujian', catatan: 'Nota' }
+const FIELDS = { paperType: 'trial', subject: 'Matematik Tambahan', levelId: '4', year: '2025', preparedBy: 'Cikgu Ujian', note: 'Nota', answerSchemeConfirmed: 'true' }
 
 function upload(c: Client, fields: Record<string, string>, files: { name: string; bytes: Buffer }[]) {
   let req = c.who.agent.post('/api/guru/question-papers').set('X-CSRF-Token', c.who.csrf)
@@ -103,32 +103,32 @@ describe('S1-T08: the teacher paper upload with the real intake', () => {
     expect(() => t.get(QuestionSetsPorts).provideIntake({ submit: () => Promise.reject(new Error('x')) })).toThrow(/already set/)
   })
 
-  it('201 with a QuestionSetPaper; the admin sees the guru batch; ?source accepts only guru', async () => {
+  it('201 {data: {batchId}} only; the admin sees the guru batch; ?source accepts only guru', async () => {
     const res = await upload(teacher, FIELDS, [{ name: 'soalan.pdf', bytes: textPdf(1) }])
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const paper = QuestionSetPaperSchema.parse(res.body.data)
-    expect(paper).toMatchObject({ teacherId, status: 'processing', subjectText: 'Matematik Tambahan', levelCode: 'T4', year: 2025, paperType: 'Trial Paper', authorCredit: 'Cikgu Ujian', adminNotes: null })
-    expect(paper.files).toHaveLength(1)
-    expect(paper.files[0]).toMatchObject({ index: 0, name: 'soalan.pdf', mime: 'application/pdf' })
+    expect(Object.keys(res.body)).toEqual(['data'])
+    expect(Object.keys(res.body.data)).toEqual(['batchId'])
+    expect(paper.batchId).toMatch(/^\d+$/)
 
-    const row = (await t.db.query<Record<string, unknown>>(`select * from intake_batches where id = $1::bigint`, [paper.id]))[0]
+    const row = (await t.db.query<Record<string, unknown>>(`select * from intake_batches where id = $1::bigint`, [paper.batchId]))[0]
     expect(row).toMatchObject({ source: 'guru', paper_type: 'trial', subject: 'Matematik Tambahan', kertas: null, year: 2025, rights_status: 'own', source_text: 'Cikgu Ujian', is_test: false })
     expect(String(row?.owner_user_id)).toBe(teacherId)
 
     const guru = await admin.get('/intake/batches?source=guru')
     expect(guru.status, JSON.stringify(guru.body)).toBe(200)
     const ids = (guru.body.data as { id: string }[]).map((b) => b.id)
-    expect(ids).toContain(paper.id)
-    const summary = (guru.body.data as unknown[]).find((b) => (b as { id: string }).id === paper.id)
+    expect(ids).toContain(paper.batchId)
+    const summary = (guru.body.data as unknown[]).find((b) => (b as { id: string }).id === paper.batchId)
     expect(IntakeBatchSummarySchema.parse(summary)).toMatchObject({ kertas: null, paperType: 'trial' })
     // Only `guru` is a valid filter value.
     expect((await admin.get('/intake/batches?source=admin')).status).toBe(422)
   })
 
   it('a blank author credit reads "Kiriman guru"', async () => {
-    const res = await upload(teacher, { ...FIELDS, disediakanOleh: '', jenisSoalan: 'Lain-lain', tahun: '' }, [{ name: 'b.pdf', bytes: textPdf(2) }])
+    const res = await upload(teacher, { ...FIELDS, preparedBy: '', paperType: 'lain', year: '' }, [{ name: 'b.pdf', bytes: textPdf(2) }])
     expect(res.status, JSON.stringify(res.body)).toBe(201)
-    const row = (await t.db.query<Record<string, unknown>>(`select source_text, paper_type, is_test from intake_batches where id = $1::bigint`, [res.body.data.id]))[0]
+    const row = (await t.db.query<Record<string, unknown>>(`select source_text, paper_type, is_test from intake_batches where id = $1::bigint`, [res.body.data.batchId]))[0]
     expect(row).toMatchObject({ source_text: 'Kiriman guru', paper_type: 'lain', is_test: false })
   })
 
@@ -138,21 +138,19 @@ describe('S1-T08: the teacher paper upload with the real intake', () => {
     const res = await upload(teacher, FIELDS, [{ name: 'soalan.docx', bytes }])
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const paper = QuestionSetPaperSchema.parse(res.body.data)
-    expect(paper.files).toEqual([{ index: 0, name: 'soalan.docx', size: bytes.length, mime: DOCX }])
-    expect(paper.status).toBe('pending')
     expect(await jobCount(t)).toBe(jobsBefore)
 
-    const batch = (await t.db.query<Record<string, unknown>>(`select status from intake_batches where id = $1::bigint`, [paper.id]))[0]
+    const batch = (await t.db.query<Record<string, unknown>>(`select status from intake_batches where id = $1::bigint`, [paper.batchId]))[0]
     expect(batch?.status).toBe('ready_for_review')
     const file = (await t.db.query<{ id: string; status: string; page_count: number | null; mime: string; pages: string }>(
       `select f.id::text id, f.status, f.page_count, s.mime, (select count(*)::text from intake_pages p where p.intake_file_id = f.id) pages
          from intake_files f join files s on s.id = f.file_id where f.batch_id = $1::bigint`,
-      [paper.id],
+      [paper.batchId],
     ))[0]
     expect(file).toMatchObject({ status: 'done', page_count: null, mime: DOCX, pages: '0' })
 
     const listed = await admin.get('/intake/batches?source=guru')
-    expect((listed.body.data as { id: string }[]).map((b) => b.id)).toContain(paper.id)
+    expect((listed.body.data as { id: string }[]).map((b) => b.id)).toContain(paper.batchId)
     const dl = await admin.get(`/intake/files/${(file as { id: string }).id}/original`)
     expect(dl.status).toBe(200)
     expect(dl.headers['content-type']).toContain(DOCX)
@@ -164,17 +162,19 @@ describe('S1-T08: the teacher paper upload with the real intake', () => {
   it('XLSX is accepted; a mixed PDF + DOCX batch processes the PDF and only stores the DOCX', async () => {
     const x = await upload(teacher, FIELDS, [{ name: 'markah.xlsx', bytes: zip(['[Content_Types].xml', 'xl/workbook.xml'], 'xlsx-1') }])
     expect(x.status, JSON.stringify(x.body)).toBe(201)
-    expect(x.body.data.files[0].mime).toBe(XLSX)
+    const xf = (await t.db.query<{ mime: string }>(`select s.mime from intake_files f join files s on s.id = f.file_id where f.batch_id = $1::bigint`, [x.body.data.batchId]))[0]
+    expect(xf?.mime).toBe(XLSX)
 
     const mixed = await upload(teacher, FIELDS, [
       { name: 'a.pdf', bytes: textPdf(7) },
       { name: 'a.docx', bytes: zip(['[Content_Types].xml', 'word/document.xml'], 'docx-mixed') },
     ])
     expect(mixed.status, JSON.stringify(mixed.body)).toBe(201)
-    expect(mixed.body.data.files.map((f: { mime: string }) => f.mime)).toEqual(['application/pdf', DOCX])
-    const rows = await t.db.query<{ status: string; page_count: number | null }>(`select status, page_count from intake_files where batch_id = $1::bigint order by id`, [mixed.body.data.id])
+    const mimes = await t.db.query<{ mime: string }>(`select s.mime from intake_files f join files s on s.id = f.file_id where f.batch_id = $1::bigint order by f.id`, [mixed.body.data.batchId])
+    expect(mimes.map((m) => m.mime)).toEqual(['application/pdf', DOCX])
+    const rows = await t.db.query<{ status: string; page_count: number | null }>(`select status, page_count from intake_files where batch_id = $1::bigint order by id`, [mixed.body.data.batchId])
     expect(rows).toEqual([{ status: 'uploaded', page_count: 7 }, { status: 'done', page_count: null }])
-    expect((await t.db.query<{ status: string }>(`select status from intake_batches where id = $1::bigint`, [mixed.body.data.id]))[0]?.status).toBe('processing')
+    expect((await t.db.query<{ status: string }>(`select status from intake_batches where id = $1::bigint`, [mixed.body.data.batchId]))[0]?.status).toBe('processing')
   })
 
   it('legacy .doc/.xls (OLE), a ZIP that is neither, and a name-only DOCX are refused with no batch', async () => {
@@ -204,6 +204,26 @@ describe('S1-T08: the teacher paper upload with the real intake', () => {
     expect(ok.status, JSON.stringify(ok.body)).toBe(201)
   })
 
+  it('422 with no batch: confirmation not true, 6 files, a .doc, an image, a file over 20 MB', async () => {
+    const before = await count(t)
+    const pdf = (n: number) => ({ name: `ok${String(n)}.pdf`, bytes: textPdf(20 + n) })
+    const confirm = await upload(teacher, { ...FIELDS, answerSchemeConfirmed: 'false' }, [pdf(1)])
+    expect(confirm.status).toBe(422)
+    expect(confirm.body.error.fields).toEqual({ answerSchemeConfirmed: 'Sila sahkan skema jawapan disertakan.' })
+    const six = await upload(teacher, FIELDS, [1, 2, 3, 4, 5, 6].map(pdf))
+    expect(six.status).toBe(422)
+    expect(six.body.error.fields).toEqual({ files: 'Maksimum 5 fail, saiz maksimum 20MB setiap fail' })
+    for (const name of ['lama.doc', 'rajah.png']) {
+      const res = await upload(teacher, FIELDS, [pdf(1), { name, bytes: Buffer.from('x') }])
+      expect(res.status, name).toBe(422)
+      expect(res.body.error.fields, name).toEqual({ files: 'Jenis fail tidak disokong. Format dibenarkan: PDF, DOCX, XLSX.' })
+    }
+    const big = await upload(teacher, FIELDS, [pdf(1), { name: 'besar.pdf', bytes: Buffer.concat([textPdf(1), Buffer.alloc(20 * 1024 * 1024, 0x20)]) }])
+    expect(big.status).toBe(422)
+    expect(big.body.error.fields).toEqual({ files: 'Fail melebihi saiz maksimum 20 MB.' })
+    expect(await count(t)).toBe(before)
+  })
+
   it('an empty file is refused with no batch', async () => {
     const before = await count(t)
     const res = await upload(teacher, FIELDS, [{ name: 'kosong.pdf', bytes: Buffer.alloc(0) }])
@@ -215,7 +235,7 @@ describe('S1-T08: the teacher paper upload with the real intake', () => {
     const bytes = zip(['[Content_Types].xml', 'word/document.xml'], 'isolation')
     const res = await upload(teacher, FIELDS, [{ name: 'rahsia.docx', bytes }])
     expect(res.status, JSON.stringify(res.body)).toBe(201)
-    const batchId = res.body.data.id as string
+    const batchId = res.body.data.batchId as string
     const row = (await t.db.query<{ id: string; public_id: string }>(
       `select f.id::text id, s.public_id from intake_files f join files s on s.id = f.file_id where f.batch_id = $1::bigint`,
       [batchId],
@@ -285,7 +305,7 @@ describe('S1-T08: the guru paper path follows INTAKE_TEACHER_ENABLED', () => {
       // Defence in depth: the adapter itself refuses a teacher while the flag is off, even when the route gate is bypassed.
       const adapter = t.get(GuruPaperIntakeAdapter)
       const auth = { userId: '1', active: { role: 'teacher', scope: { level: 'school' } }, mode: null } as never
-      await expect(adapter.submit({ auth, declaration: { paperType: 'Trial Paper', subjectText: 'x', levelCode: null, year: 2025, authorCredit: '', note: null }, files: [], teacherId: '1', role: 'teacher', isTest: false, at: new Date(), ip: null, requestId: null })).rejects.toMatchObject({ status: 403 })
+      await expect(adapter.submit({ auth, declaration: { paperType: 'trial', subjectText: 'x', levelCode: null, year: 2025, authorCredit: '', note: null }, files: [], teacherId: '1', role: 'teacher', isTest: false, at: new Date(), ip: null, requestId: null })).rejects.toMatchObject({ status: 403 })
       expect(await count(t)).toBe(0)
     } finally {
       await t.close()
@@ -318,7 +338,7 @@ describe('S1-T08: the file size limit is checked before the content', () => {
       const teacher = await client(t, TEACHER_A)
       const res = await upload(teacher, FIELDS, [{ name: 'besar.pdf', bytes: Buffer.concat([textPdf(1), Buffer.alloc(1024 * 1024 + 10, 0x20)]) }])
       expect(res.status).toBe(422)
-      expect(res.body.error.fields.files).toBe('Fail melebihi had 1 MB.')
+      expect(res.body.error.fields.files).toBe('Fail melebihi saiz maksimum 1 MB.')
       expect(await count(t)).toBe(0)
     } finally {
       await t.close()

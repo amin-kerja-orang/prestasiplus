@@ -1,15 +1,13 @@
 import {
   QUESTION_SET_PAPER_MESSAGES as M,
   QuestionSetPaperSchema,
-  questionSetPaperFileText,
-  type QuestionSetPaper,
 } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { QuestionSetsPorts, type PaperSubmission } from '../../src/modules/classes/question-sets'
 import { ADMIN, STUDENT_1, TEACHER_A, bootQsApp, bytes, client, expectNoStore, idOfEmail, type Client, type QsTestApp } from './qs-helpers'
 
-const OK_FIELDS = { jenisSoalan: 'Trial Paper', subject: 'Matematik', tingkatan: '4', tahun: '2025', disediakanOleh: 'Cikgu Ujian', catatan: 'Nota' }
+const OK_FIELDS = { paperType: 'trial', subject: 'Matematik', levelId: '4', year: '2025', preparedBy: 'Cikgu Ujian', note: 'Nota', answerSchemeConfirmed: 'true' }
 
 /** A multipart request builder: text fields plus (name, size) file parts under `key`. */
 function upload(c: Client, fields: Record<string, string>, files: { name: string; size: number }[] = [], key = 'files', csrf = true) {
@@ -45,30 +43,32 @@ describe('BE-18 B: POST /guru/question-papers', () => {
     const good = [{ name: 'a.pdf', size: 5 }]
 
     it('reports each field message', async () => {
-      expect((await run({ ...OK_FIELDS, jenisSoalan: 'Lain' }, good)).fields).toEqual({ jenisSoalan: M.type })
-      expect((await run({ ...OK_FIELDS, jenisSoalan: '' }, good)).fields).toEqual({ jenisSoalan: M.type })
+      expect((await run({ ...OK_FIELDS, paperType: 'Soalan Umum' }, good)).fields).toEqual({ paperType: M.type })
+      expect((await run({ ...OK_FIELDS, paperType: '' }, good)).fields).toEqual({ paperType: M.type })
       expect((await run({ ...OK_FIELDS, subject: '   ' }, good)).fields).toEqual({ subject: M.subject })
       expect((await run({ ...OK_FIELDS, subject: 'x'.repeat(101) }, good)).fields).toEqual({ subject: M.subjectLong })
-      expect((await run({ ...OK_FIELDS, tingkatan: '6' }, good)).fields).toEqual({ tingkatan: M.level })
-      expect((await run({ ...OK_FIELDS, tingkatan: 'T0' }, good)).fields).toEqual({ tingkatan: M.level })
-      expect((await run({ ...OK_FIELDS, tingkatan: 'abc' }, good)).fields).toEqual({ tingkatan: M.level })
-      expect((await run({ ...OK_FIELDS, tahun: '1999' }, good)).fields).toEqual({ tahun: M.year })
-      expect((await run({ ...OK_FIELDS, tahun: '2100' }, good)).fields).toEqual({ tahun: M.year })
-      expect((await run({ ...OK_FIELDS, disediakanOleh: 'x'.repeat(151) }, good)).fields).toEqual({ disediakanOleh: M.author })
-      expect((await run({ ...OK_FIELDS, catatan: 'x'.repeat(1001) }, good)).fields).toEqual({ catatan: M.note })
+      expect((await run({ ...OK_FIELDS, levelId: '6' }, good)).fields).toEqual({ levelId: M.level })
+      expect((await run({ ...OK_FIELDS, levelId: 'T0' }, good)).fields).toEqual({ levelId: M.level })
+      expect((await run({ ...OK_FIELDS, levelId: 'abc' }, good)).fields).toEqual({ levelId: M.level })
+      expect((await run({ ...OK_FIELDS, year: '1999' }, good)).fields).toEqual({ year: M.year })
+      expect((await run({ ...OK_FIELDS, year: '2100' }, good)).fields).toEqual({ year: M.year })
+      expect((await run({ ...OK_FIELDS, preparedBy: 'x'.repeat(201) }, good)).fields).toEqual({ preparedBy: M.author })
+      expect((await run({ ...OK_FIELDS, note: 'x'.repeat(1001) }, good)).fields).toEqual({ note: M.note })
+      expect((await run({ ...OK_FIELDS, answerSchemeConfirmed: 'false' }, good)).fields).toEqual({ answerSchemeConfirmed: M.confirm })
+      expect((await run({ ...OK_FIELDS, answerSchemeConfirmed: '' }, good)).fields).toEqual({ answerSchemeConfirmed: M.confirm })
     })
 
     it('counts code points, not UTF-16 units, and trims', async () => {
       // 100 emoji = 200 UTF-16 units but 100 code points: allowed; the failure here can only be the file
       const err = await run({ ...OK_FIELDS, subject: '\u{1F600}'.repeat(100) }, [{ name: 'a.txt', size: 5 }])
-      expect(err.fields).toEqual({ files: questionSetPaperFileText('a.txt') })
+      expect(err.fields).toEqual({ files: M.fileType })
     })
 
     it('reports all failing fields at once, in form order, with the Laravel summary of the first', async () => {
-      const err = await run({ jenisSoalan: 'x', subject: '', tingkatan: '9', tahun: '5', disediakanOleh: 'x'.repeat(151), catatan: 'x'.repeat(1001) }, [])
-      expect(Object.keys(err.fields)).toEqual(['jenisSoalan', 'subject', 'tingkatan', 'tahun', 'disediakanOleh', 'catatan', 'files'])
+      const err = await run({ paperType: 'x', subject: '', levelId: '9', year: '5', preparedBy: 'x'.repeat(201), note: 'x'.repeat(1001) }, [])
+      expect(Object.keys(err.fields)).toEqual(['paperType', 'subject', 'levelId', 'year', 'preparedBy', 'note', 'answerSchemeConfirmed', 'files'])
       expect(err.fields.files).toBe(M.files)
-      expect(err.message).toBe(`${M.type} (and 6 more errors)`)
+      expect(err.message).toBe(`${M.type} (and 7 more errors)`)
       const two = await run({ ...OK_FIELDS, subject: '' }, [])
       expect(two.message).toBe(`${M.subject} (and 1 more error)`)
     })
@@ -79,17 +79,31 @@ describe('BE-18 B: POST /guru/question-papers', () => {
       expect((await run(OK_FIELDS, six)).fields).toEqual({ files: M.tooMany })
       const seven = Array.from({ length: 7 }, (_, i) => ({ name: `f${String(i)}.pdf`, size: 3 }))
       expect((await run(OK_FIELDS, seven)).fields).toEqual({ files: M.tooMany })
-      expect((await run(OK_FIELDS, [{ name: 'a.pdf', size: 3 }, { name: 'virus.exe', size: 3 }])).fields).toEqual({ files: questionSetPaperFileText('virus.exe') })
-      expect((await run(OK_FIELDS, [{ name: 'noext', size: 3 }])).fields).toEqual({ files: questionSetPaperFileText('noext') })
-      expect((await run(OK_FIELDS, [{ name: 'a.pdf.png', size: 3 }])).fields).toEqual({ files: questionSetPaperFileText('a.pdf.png') })
+      expect((await run(OK_FIELDS, [{ name: 'a.pdf', size: 3 }, { name: 'virus.exe', size: 3 }])).fields).toEqual({ files: M.fileType })
+      expect((await run(OK_FIELDS, [{ name: 'noext', size: 3 }])).fields).toEqual({ files: M.fileType })
+      expect((await run(OK_FIELDS, [{ name: 'a.pdf.png', size: 3 }])).fields).toEqual({ files: M.fileType })
+      // the old Office formats and images are not accepted; one bad file rejects the whole submission
+      for (const bad of ['soalan.doc', 'soalan.xls', 'rajah.png', 'rajah.jpg', 'rajah.jpeg']) {
+        expect((await run(OK_FIELDS, [{ name: 'a.pdf', size: 3 }, { name: bad, size: 3 }])).fields, bad).toEqual({ files: M.fileType })
+      }
       const big = await run(OK_FIELDS, [{ name: 'kecil.pdf', size: 3 }, { name: 'besar.xlsx', size: 20 * 1024 * 1024 + 1 }])
-      expect(big.fields).toEqual({ files: questionSetPaperFileText('besar.xlsx') })
+      expect(big.fields).toEqual({ files: M.fileSize })
+    })
+
+    it('the PRD 44-F4 texts are exact', () => {
+      expect(M.confirm).toBe('Sila sahkan skema jawapan disertakan.')
+      expect(M.files).toBe('Sila pilih fail.')
+      expect(M.tooMany).toBe('Maksimum 5 fail, saiz maksimum 20MB setiap fail')
+      expect(M.fileType).toBe('Jenis fail tidak disokong. Format dibenarkan: PDF, DOCX, XLSX.')
+      expect(M.fileSize).toBe('Fail melebihi saiz maksimum 20 MB.')
+      expect(M.scanned).toBe('PDF imbasan imej tidak diterima — teks mesti boleh disalin.')
+      expect(M.note).toBe('Catatan tambahan tidak boleh melebihi 1000 aksara.')
     })
 
     it('a request without any multipart body is a files failure plus the field failures', async () => {
       const res = await teacher.post('/guru/question-papers', {})
       expect(res.status).toBe(422)
-      expect(Object.keys(res.body.error.fields)).toEqual(['jenisSoalan', 'subject', 'files'])
+      expect(Object.keys(res.body.error.fields)).toEqual(['paperType', 'subject', 'answerSchemeConfirmed', 'files'])
     })
 
     it('validation runs before the port is called', async () => {
@@ -121,35 +135,22 @@ describe('BE-18 B: POST /guru/question-papers', () => {
   })
 
   describe('with a bound intake port', () => {
-    const pending = (id: string, s: PaperSubmission): QuestionSetPaper => ({
-      id,
-      teacherId: s.teacherId,
-      subjectText: s.declaration.subjectText,
-      levelCode: s.declaration.levelCode,
-      year: s.declaration.year,
-      paperType: s.declaration.paperType,
-      authorCredit: s.declaration.authorCredit,
-      note: s.declaration.note,
-      files: s.files.map((f) => ({ index: f.index, name: f.name, size: f.size, mime: 'application/pdf' })),
-      status: 'pending',
-      adminNotes: null,
-      createdAt: '2026-10-19T09:00:00+08:00',
-    })
-
     beforeAll(() => {
       t.intake.handler = async (s) => {
         seen.push(s)
-        return pending('77', s)
+        void s
+        return { batchId: '77' }
       }
     })
 
-    it('201 {data} with the pending submission; the port gets the declaration and the buffers', async () => {
+    it('201 {data: {batchId}} only; the port gets the declaration and the buffers', async () => {
       const res = await upload(teacher, OK_FIELDS, [{ name: 'a.pdf', size: 12 }, { name: 'b.docx', size: 7 }])
       expect(res.status, JSON.stringify(res.body)).toBe(201)
       expectNoStore(res)
-      const paper = QuestionSetPaperSchema.parse(res.body.data)
-      expect(paper).toMatchObject({ status: 'pending', teacherId, subjectText: 'Matematik', levelCode: 'T4', year: 2025, paperType: 'Trial Paper', authorCredit: 'Cikgu Ujian', note: 'Nota' })
+      expect(res.body).toEqual({ data: { batchId: '77' } })
+      expect(QuestionSetPaperSchema.parse(res.body.data)).toEqual({ batchId: '77' })
       const call = seen.at(-1) as PaperSubmission
+      expect(call.declaration).toEqual({ paperType: 'trial', subjectText: 'Matematik', levelCode: 'T4', year: 2025, authorCredit: 'Cikgu Ujian', note: 'Nota' })
       expect(call).toMatchObject({ teacherId, role: 'teacher', isTest: false, requestId: expect.any(String) })
       expect(call.auth.userId).toBe(teacherId)
       expect(call.files.map((f) => [f.index, f.name, f.size])).toEqual([[0, 'a.pdf', 12], [1, 'b.docx', 7]])
@@ -157,14 +158,14 @@ describe('BE-18 B: POST /guru/question-papers', () => {
     })
 
     it('reads the key files[] too; normalises T-level, empty year and note, blank author', async () => {
-      const res = await upload(teacher, { jenisSoalan: ' Soalan DSKP ', subject: ' Sains ', tingkatan: 'T2', tahun: '', disediakanOleh: '', catatan: '  ' }, [{ name: 'X.XLS', size: 4 }], 'files[]')
+      const res = await upload(teacher, { paperType: ' dskp ', subject: ' Sains ', levelId: 'T2', year: '', preparedBy: '', note: '  ', answerSchemeConfirmed: 'on' }, [{ name: 'X.XLSX', size: 4 }], 'files[]')
       expect(res.status, JSON.stringify(res.body)).toBe(201)
-      expect(seen.at(-1)?.declaration).toEqual({ paperType: 'Soalan DSKP', subjectText: 'Sains', levelCode: 'T2', year: 2026, authorCredit: '', note: null })
+      expect(seen.at(-1)?.declaration).toEqual({ paperType: 'dskp', subjectText: 'Sains', levelCode: 'T2', year: 2026, authorCredit: '', note: null })
     })
 
     it('an empty level is null; a file of exactly 20 MB is accepted; five files are accepted', async () => {
-      const five = Array.from({ length: 5 }, (_, i) => ({ name: `f${String(i)}.doc`, size: i === 0 ? 20 * 1024 * 1024 : 2 }))
-      const res = await upload(teacher, { jenisSoalan: 'Lain-lain', subject: 'BM' }, five)
+      const five = Array.from({ length: 5 }, (_, i) => ({ name: `f${String(i)}.docx`, size: i === 0 ? 20 * 1024 * 1024 : 2 }))
+      const res = await upload(teacher, { paperType: 'lain', subject: 'BM', answerSchemeConfirmed: 'true' }, five)
       expect(res.status, JSON.stringify(res.body)).toBe(201)
       expect(seen.at(-1)?.declaration.levelCode).toBeNull()
       expect(seen.at(-1)?.files).toHaveLength(5)

@@ -18,7 +18,6 @@ import {
   QuestionSetPaperRequestSchema,
   QuestionSetPaperSchema,
   QuestionSetStudentListSchema,
-  questionSetPaperFileText,
 } from '../schema'
 
 const meta = (n: number) => ({
@@ -54,90 +53,90 @@ describe('set-soalan-saya (student list)', () => {
 
 describe('question paper upload: request copy per field', () => {
   const file = { name: 'kertas-contoh.pdf', size: 1024, type: 'application/pdf' }
-  const good = { jenisSoalan: 'Trial Paper', subject: 'Kimia', files: [file] }
+  const good = { paperType: 'trial', subject: 'Kimia', answerSchemeConfirmed: true, files: [file] }
 
-  it('accepts the minimal form and every coercion of the mock', () => {
+  it('accepts the minimal form and every coercion', () => {
     expect(QuestionSetPaperRequestSchema.safeParse(good).success).toBe(true)
-    for (const tingkatan of [undefined, null, '', 4, '4', 'T4', 't5', ' 3 ']) {
-      expect(QuestionSetPaperRequestSchema.safeParse({ ...good, tingkatan }).success).toBe(true)
+    for (const levelId of [undefined, null, '', 4, '4', 'T4', 't5', ' 3 ']) {
+      expect(QuestionSetPaperRequestSchema.safeParse({ ...good, levelId }).success).toBe(true)
     }
-    for (const tahun of [undefined, null, '', 2000, '2099', ' 2026 ']) {
-      expect(QuestionSetPaperRequestSchema.safeParse({ ...good, tahun }).success).toBe(true)
+    for (const year of [undefined, null, '', 2000, '2099', ' 2026 ']) {
+      expect(QuestionSetPaperRequestSchema.safeParse({ ...good, year }).success).toBe(true)
     }
-    expect(QuestionSetPaperRequestSchema.parse({ ...good, jenisSoalan: '  Trial Paper ', subject: '  Kimia ' }).subject).toBe('Kimia')
+    for (const answerSchemeConfirmed of [true, 'true', 'on', '1']) {
+      expect(QuestionSetPaperRequestSchema.safeParse({ ...good, answerSchemeConfirmed }).success).toBe(true)
+    }
+    expect(QuestionSetPaperRequestSchema.parse({ ...good, paperType: '  trial ', subject: '  Kimia ' }).subject).toBe('Kimia')
   })
 
   it('wires the exact message of each field', () => {
-    expect(fieldMessages(QuestionSetPaperRequestSchema.safeParse({ ...good, jenisSoalan: 'Lain' }))).toEqual({ jenisSoalan: 'Sila pilih jenis soalan.' })
-    expect(fieldMessages(QuestionSetPaperRequestSchema.safeParse({ ...good, jenisSoalan: undefined }))).toEqual({ jenisSoalan: 'Sila pilih jenis soalan.' })
+    expect(fieldMessages(QuestionSetPaperRequestSchema.safeParse({ ...good, paperType: 'Lain' }))).toEqual({ paperType: 'Sila pilih jenis soalan.' })
+    expect(fieldMessages(QuestionSetPaperRequestSchema.safeParse({ ...good, paperType: undefined }))).toEqual({ paperType: 'Sila pilih jenis soalan.' })
     expect(fieldMessages(QuestionSetPaperRequestSchema.safeParse({ ...good, subject: '  ' }))).toEqual({ subject: 'Sila isi matapelajaran.' })
     expect(fieldMessages(QuestionSetPaperRequestSchema.safeParse({ ...good, subject: 'a'.repeat(101) }))).toEqual({ subject: 'Matapelajaran tidak boleh melebihi 100 aksara.' })
     expect(QuestionSetPaperRequestSchema.safeParse({ ...good, subject: 'a'.repeat(100) }).success).toBe(true)
-    for (const tingkatan of [0, 6, '6', 'T0', 'T', 'abc', 2.5, true, '-1']) {
-      expect(fieldMessages(QuestionSetPaperRequestSchema.safeParse({ ...good, tingkatan }))).toEqual({ tingkatan: 'Tingkatan tidak sah.' })
+    for (const levelId of [0, 6, '6', 'T0', 'T', 'abc', 2.5, true, '-1']) {
+      expect(fieldMessages(QuestionSetPaperRequestSchema.safeParse({ ...good, levelId }))).toEqual({ levelId: 'Tingkatan tidak sah.' })
     }
-    for (const tahun of [1999, 2100, 'abc', 2026.5, true]) {
-      expect(fieldMessages(QuestionSetPaperRequestSchema.safeParse({ ...good, tahun }))).toEqual({ tahun: 'Tahun mesti antara 2000 dan 2099.' })
+    for (const year of [1999, 2100, 'abc', 2026.5, true]) {
+      expect(fieldMessages(QuestionSetPaperRequestSchema.safeParse({ ...good, year }))).toEqual({ year: 'Tahun mesti antara 2000 dan 2099.' })
     }
-    expect(fieldMessages(QuestionSetPaperRequestSchema.safeParse({ ...good, disediakanOleh: 'a'.repeat(151) }))).toEqual({
-      disediakanOleh: 'Disediakan oleh tidak boleh melebihi 150 aksara.',
+    expect(fieldMessages(QuestionSetPaperRequestSchema.safeParse({ ...good, preparedBy: 'a'.repeat(201) }))).toEqual({
+      preparedBy: 'Disediakan oleh tidak boleh melebihi 200 aksara.',
     })
-    expect(fieldMessages(QuestionSetPaperRequestSchema.safeParse({ ...good, catatan: 'a'.repeat(1001) }))).toEqual({
-      catatan: 'Catatan tidak boleh melebihi 1000 aksara.',
+    expect(fieldMessages(QuestionSetPaperRequestSchema.safeParse({ ...good, note: 'a'.repeat(1001) }))).toEqual({
+      note: 'Catatan tambahan tidak boleh melebihi 1000 aksara.',
     })
-    expect(QuestionSetPaperRequestSchema.safeParse({ ...good, disediakanOleh: 'a'.repeat(150), catatan: 'b'.repeat(1000) }).success).toBe(true)
+    expect(QuestionSetPaperRequestSchema.safeParse({ ...good, preparedBy: 'a'.repeat(200), note: 'b'.repeat(1000) }).success).toBe(true)
+    for (const answerSchemeConfirmed of [false, 'false', '', undefined, 'no']) {
+      expect(fieldMessages(QuestionSetPaperRequestSchema.safeParse({ ...good, answerSchemeConfirmed }))).toEqual({
+        answerSchemeConfirmed: 'Sila sahkan skema jawapan disertakan.',
+      })
+    }
   })
 
-  it('counts characters by code point, as the mock does', () => {
+  it('counts characters by code point', () => {
     expect(QuestionSetPaperRequestSchema.safeParse({ ...good, subject: '\u{1F600}'.repeat(100) }).success).toBe(true)
   })
 
-  it('checks the files: none, more than 5, and the first bad file', () => {
+  it('checks the files: none, more than 5, a bad type (pdf, docx, xlsx only), too large', () => {
     const files = (f: unknown) => fieldMessages(QuestionSetPaperRequestSchema.safeParse({ ...good, files: f }))
-    expect(files(undefined)).toEqual({ files: 'Sila pilih sekurang-kurangnya satu fail.' })
-    expect(files([])).toEqual({ files: 'Sila pilih sekurang-kurangnya satu fail.' })
-    expect(files(Array.from({ length: 6 }, () => file))).toEqual({ files: 'Maksimum 5 fail.' })
+    const type = 'Jenis fail tidak disokong. Format dibenarkan: PDF, DOCX, XLSX.'
+    expect(files(undefined)).toEqual({ files: 'Sila pilih fail.' })
+    expect(files([])).toEqual({ files: 'Sila pilih fail.' })
+    expect(files(Array.from({ length: 6 }, () => file))).toEqual({ files: 'Maksimum 5 fail, saiz maksimum 20MB setiap fail' })
     expect(files(Array.from({ length: 5 }, () => file))).toEqual({})
-    expect(files([file, { ...file, name: 'gambar.png' }, { ...file, name: 'lain.exe' }])).toEqual({ files: 'gambar.png: format atau saiz tidak dibenarkan.' })
-    expect(files([{ ...file, size: QUESTION_SET_PAPER_MAX_FILE_BYTES + 1 }])).toEqual({ files: 'kertas-contoh.pdf: format atau saiz tidak dibenarkan.' })
+    expect(files([file, { ...file, name: 'gambar.png' }, { ...file, name: 'lain.exe' }])).toEqual({ files: type })
+    expect(files([{ ...file, size: QUESTION_SET_PAPER_MAX_FILE_BYTES + 1 }])).toEqual({ files: 'Fail melebihi saiz maksimum 20 MB.' })
     expect(files([{ ...file, size: QUESTION_SET_PAPER_MAX_FILE_BYTES }])).toEqual({})
-    for (const name of ['a.PDF', 'a.doc', 'a.DOCX', 'a.xls', 'a.xlsx']) expect(files([{ ...file, name }])).toEqual({})
+    for (const name of ['a.PDF', 'a.DOCX', 'a.xlsx']) expect(files([{ ...file, name }])).toEqual({})
+    for (const name of ['a.doc', 'a.xls', 'a.jpg', 'a.jpeg']) expect(files([{ ...file, name }]), name).toEqual({ files: type })
   })
 
-  it('exports the mock copy verbatim', () => {
+  it('exports the PRD 44-F4 copy verbatim', () => {
     expect(QUESTION_SET_PAPER_MESSAGES).toEqual({
       type: 'Sila pilih jenis soalan.',
       subject: 'Sila isi matapelajaran.',
       subjectLong: 'Matapelajaran tidak boleh melebihi 100 aksara.',
       level: 'Tingkatan tidak sah.',
       year: 'Tahun mesti antara 2000 dan 2099.',
-      author: 'Disediakan oleh tidak boleh melebihi 150 aksara.',
-      note: 'Catatan tidak boleh melebihi 1000 aksara.',
-      files: 'Sila pilih sekurang-kurangnya satu fail.',
-      tooMany: 'Maksimum 5 fail.',
+      author: 'Disediakan oleh tidak boleh melebihi 200 aksara.',
+      note: 'Catatan tambahan tidak boleh melebihi 1000 aksara.',
+      confirm: 'Sila sahkan skema jawapan disertakan.',
+      files: 'Sila pilih fail.',
+      tooMany: 'Maksimum 5 fail, saiz maksimum 20MB setiap fail',
+      fileType: 'Jenis fail tidak disokong. Format dibenarkan: PDF, DOCX, XLSX.',
+      fileSize: 'Fail melebihi saiz maksimum 20 MB.',
+      scanned: 'PDF imbasan imej tidak diterima — teks mesti boleh disalin.',
     })
-    expect(questionSetPaperFileText('x.exe')).toBe('x.exe: format atau saiz tidak dibenarkan.')
   })
 
-  it('parses the 201 submission and the 422 body', () => {
-    const paper = {
-      id: '4001',
-      teacherId: '5302',
-      subjectText: 'Kimia',
-      levelCode: 'T4',
-      year: 2026,
-      paperType: 'Trial Paper',
-      authorCredit: '',
-      note: null,
-      files: [{ index: 0, name: 'kertas-contoh.pdf', size: 1024, mime: 'application/pdf' }],
-      status: 'pending',
-      adminNotes: null,
-      createdAt: '2026-10-19T08:00:00+08:00',
-    }
-    expect(QuestionSetPaperSchema.safeParse(paper).success).toBe(true)
-    const body = { error: { code: 'VALIDATION_ERROR', message: 'Tahun mesti antara 2000 dan 2099.', fields: { tahun: 'Tahun mesti antara 2000 dan 2099.' } } }
+  it('parses the 201 {batchId} and the 422 body', () => {
+    expect(QuestionSetPaperSchema.safeParse({ batchId: '4001' }).success).toBe(true)
+    expect(QuestionSetPaperSchema.safeParse({ id: '4001' }).success).toBe(false)
+    const body = { error: { code: 'VALIDATION_ERROR', message: 'Tahun mesti antara 2000 dan 2099.', fields: { year: 'Tahun mesti antara 2000 dan 2099.' } } }
     expect(QuestionSetPaperFieldErrorSchema.safeParse(body).success).toBe(true)
-    expect(QuestionSetPaperFieldErrorSchema.safeParse({ error: { ...body.error, fields: { tahun: 'Lain.' } } }).success).toBe(false)
+    expect(QuestionSetPaperFieldErrorSchema.safeParse({ error: { ...body.error, fields: { year: 'Lain.' } } }).success).toBe(false)
   })
 })
 

@@ -19,20 +19,25 @@ export const QUESTION_SET_GUARD_MESSAGES = {
   notFound: 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?',
 } as const
 
-/** UNVERIFIED COPY in the mock (OQ-M10-16): `PAPER_MSG` of handlers/extras.ts, verbatim. */
+/**
+ * Texts of the paper upload 422 (PRD-20 44-F4, 40-cross-cutting X10): ERR-REQ-04 with "PDF, DOCX, XLSX", ERR-REQ-05 with 20,
+ * ERR-REQ-07, the teacher text of ERR-QUOTA-03, and the field messages of the 44-F4 table.
+ */
 export const QUESTION_SET_PAPER_MESSAGES = {
   type: 'Sila pilih jenis soalan.',
   subject: 'Sila isi matapelajaran.',
   subjectLong: 'Matapelajaran tidak boleh melebihi 100 aksara.',
   level: 'Tingkatan tidak sah.',
   year: 'Tahun mesti antara 2000 dan 2099.',
-  author: 'Disediakan oleh tidak boleh melebihi 150 aksara.',
-  note: 'Catatan tidak boleh melebihi 1000 aksara.',
-  files: 'Sila pilih sekurang-kurangnya satu fail.',
-  tooMany: 'Maksimum 5 fail.',
+  author: 'Disediakan oleh tidak boleh melebihi 200 aksara.',
+  note: 'Catatan tambahan tidak boleh melebihi 1000 aksara.',
+  confirm: 'Sila sahkan skema jawapan disertakan.',
+  files: 'Sila pilih fail.',
+  tooMany: 'Maksimum 5 fail, saiz maksimum 20MB setiap fail',
+  fileType: 'Jenis fail tidak disokong. Format dibenarkan: PDF, DOCX, XLSX.',
+  fileSize: 'Fail melebihi saiz maksimum 20 MB.',
+  scanned: 'PDF imbasan imej tidak diterima — teks mesti boleh disalin.',
 } as const
-/** `{name}: format atau saiz tidak dibenarkan.` for the first file with a bad type or size. */
-export const questionSetPaperFileText = (name: string): string => `${name}: format atau saiz tidak dibenarkan.`
 
 /** Exact copy of the mock `MSG` for the DSKP inline creates (`200 { error }`), UNVERIFIED COPY. */
 export const DSKP_MESSAGES = {
@@ -82,19 +87,12 @@ export const QuestionSetStudentListSchema = listEnvelopeOf(QuestionSetStudentIte
 
 // --- Teacher question paper upload (S22, BR-M10-25, FR-M10-98) ------------------------------------
 
-export const QUESTION_SET_PAPER_TYPES = [
-  'Soalan Umum',
-  'Trial Paper',
-  'Soalan DSKP',
-  'Buku Teks',
-  'Buku Latihan',
-  'Soalan Peperiksaan',
-  'Lain-lain',
-] as const
+/** OPT-JENIS-HANTARAN stored slugs (the select labels are "Soalan Umum", "Trial Paper", "Soalan DSKP", "Buku Teks", "Buku Latihan", "Soalan Peperiksaan", "Lain-lain"). */
+export const QUESTION_SET_PAPER_TYPES = ['umum', 'trial', 'dskp', 'buku_teks', 'buku_latihan', 'peperiksaan', 'lain'] as const
 export const QUESTION_SET_PAPER_MAX_FILES = 5
 export const QUESTION_SET_PAPER_MAX_FILE_BYTES = 20 * 1024 * 1024
-/** Allowed extensions, case-insensitive, matched at the end of the file name. */
-export const QUESTION_SET_PAPER_FILE_PATTERN = /\.(pdf|docx?|xlsx?)$/i
+/** Allowed extensions, case-insensitive, matched at the end of the file name (images and the old .doc/.xls are not accepted). */
+export const QUESTION_SET_PAPER_FILE_PATTERN = /\.(pdf|docx|xlsx)$/i
 
 /** The mock `intOf`: a safe integer, or a string of digits with an optional minus and surrounding spaces. */
 function wholeNumber(value: unknown): number | undefined {
@@ -116,45 +114,49 @@ const numberOrText = (message: string) => z.union([z.number(), z.string()], { er
  */
 export const QuestionSetPaperFieldsSchema = z
   .object({
-    jenisSoalan: z
+    paperType: z
       .string({ error: QUESTION_SET_PAPER_MESSAGES.type })
       .trim()
       .pipe(z.enum(QUESTION_SET_PAPER_TYPES, { error: QUESTION_SET_PAPER_MESSAGES.type }))
-      .meta({ enum: [...QUESTION_SET_PAPER_TYPES], description: 'One of the 7 labels (value = label), trimmed.' }),
+      .meta({ enum: [...QUESTION_SET_PAPER_TYPES], description: 'OPT-JENIS-HANTARAN slug, trimmed.' }),
     subject: z
       .string({ error: QUESTION_SET_PAPER_MESSAGES.subject })
       .trim()
       .min(1, QUESTION_SET_PAPER_MESSAGES.subject)
       .refine(within(100), QUESTION_SET_PAPER_MESSAGES.subjectLong)
-      .meta({ maxLength: 100, description: 'Matapelajaran, trimmed, at most 100 characters.' }),
-    tingkatan: numberOrText(QUESTION_SET_PAPER_MESSAGES.level)
+      .meta({ maxLength: 100, description: 'Matapelajaran (free text), trimmed, at most 100 characters.' }),
+    levelId: numberOrText(QUESTION_SET_PAPER_MESSAGES.level)
       .nullish()
       .refine((v) => {
         if (isEmpty(v)) return true
         const n = wholeNumber(typeof v === 'string' ? v.replace(/^T/i, '') : v)
         return n !== undefined && n >= 1 && n <= 5
       }, QUESTION_SET_PAPER_MESSAGES.level)
-      .meta({ description: '1 to 5, or "T1" to "T5" (a leading T is dropped), or empty. The server stores levelCode "T{n}" or null.' }),
-    tahun: numberOrText(QUESTION_SET_PAPER_MESSAGES.year)
+      .meta({ description: 'Tingkatan 1 to 5 ("T1" to "T5" is read too), or empty for "Semua / Tidak Pasti".' }),
+    year: numberOrText(QUESTION_SET_PAPER_MESSAGES.year)
       .nullish()
       .refine((v) => {
         if (isEmpty(v)) return true
         const n = wholeNumber(v)
         return n !== undefined && n >= 2000 && n <= 2099
       }, QUESTION_SET_PAPER_MESSAGES.year)
-      .meta({ description: '2000 to 2099, or empty; empty is stored as the current year (the field is optional on the form, the question bank needs a year).' }),
-    disediakanOleh: z
+      .meta({ description: '2000 to 2099, or empty; empty is stored as the current year (the question bank needs a year).' }),
+    preparedBy: z
       .string()
       .trim()
-      .refine(within(150), QUESTION_SET_PAPER_MESSAGES.author)
+      .refine(within(200), QUESTION_SET_PAPER_MESSAGES.author)
       .nullish()
-      .meta({ maxLength: 150, description: 'At most 150 characters; absent or null is "".' }),
-    catatan: z
+      .meta({ maxLength: 200, description: 'At most 200 characters; empty is stored as "Kiriman guru".' }),
+    note: z
       .string()
       .trim()
       .refine(within(1000), QUESTION_SET_PAPER_MESSAGES.note)
       .nullish()
-      .meta({ maxLength: 1000, description: 'At most 1000 characters; absent or null is stored as null.' }),
+      .meta({ maxLength: 1000, description: 'At most 1000 characters; empty is stored as null.' }),
+    answerSchemeConfirmed: z
+      .union([z.boolean(), z.string()], { error: QUESTION_SET_PAPER_MESSAGES.confirm })
+      .refine((v) => v === true || (typeof v === 'string' && ['true', '1', 'on'].includes(v.trim().toLowerCase())), QUESTION_SET_PAPER_MESSAGES.confirm)
+      .meta({ description: 'The teacher confirms the answer scheme is attached; must be true ("true", "1" or "on" in multipart). Not stored.' }),
   })
   .meta({ id: 'QuestionSetPaperFields' })
 
@@ -165,7 +167,7 @@ export const QuestionSetPaperFileSchema = z
 
 /**
  * The checks on the uploaded parts, named `files` (the client sends the key `files[]`; both are read).
- * Messages: none or missing, more than 5, and the first file with a bad extension or over 20 MB.
+ * Messages: none or missing, more than 5, a bad extension (.pdf .docx .xlsx only), a file over 20 MB. Any invalid file rejects the whole submission.
  */
 export const QuestionSetPaperFilesSchema = z
   .array(QuestionSetPaperFileSchema, { error: QUESTION_SET_PAPER_MESSAGES.files })
@@ -175,10 +177,9 @@ export const QuestionSetPaperFilesSchema = z
     } else if (files.length > QUESTION_SET_PAPER_MAX_FILES) {
       ctx.addIssue({ code: 'custom', message: QUESTION_SET_PAPER_MESSAGES.tooMany })
     } else {
-      const bad = files.find(
-        (f) => !QUESTION_SET_PAPER_FILE_PATTERN.test(f.name) || f.size > QUESTION_SET_PAPER_MAX_FILE_BYTES,
-      )
-      if (bad) ctx.addIssue({ code: 'custom', message: questionSetPaperFileText(bad.name) })
+      const badType = files.find((f) => !QUESTION_SET_PAPER_FILE_PATTERN.test(f.name))
+      if (badType) ctx.addIssue({ code: 'custom', message: QUESTION_SET_PAPER_MESSAGES.fileType })
+      else if (files.some((f) => f.size > QUESTION_SET_PAPER_MAX_FILE_BYTES)) ctx.addIssue({ code: 'custom', message: QUESTION_SET_PAPER_MESSAGES.fileSize })
     }
   })
   .meta({ id: 'QuestionSetPaperFiles' })
@@ -195,26 +196,11 @@ export const QuestionSetPaperUploadSchema = QuestionSetPaperFieldsSchema.extend(
     .array(z.string().meta({ format: 'binary' }))
     .min(1)
     .max(QUESTION_SET_PAPER_MAX_FILES)
-    .meta({ description: '1 to 5 files (.pdf .doc .docx .xls .xlsx), each at most 20 MB. The mock also reads the key "files[]".' }),
+    .meta({ description: '1 to 5 files (.pdf .docx .xlsx; images are not accepted), each at most 20 MB. A scanned PDF (no text on its first 3 pages) is refused. The mock also reads the key "files[]".' }),
 }).meta({ id: 'QuestionSetPaperUpload' })
 
-/** `data` of the 201: the question bank submission, always created `pending`. */
-export const QuestionSetPaperSchema = z
-  .object({
-    id: IdSchema,
-    teacherId: IdSchema,
-    subjectText: z.string(),
-    levelCode: z.string().nullable().meta({ description: '"T1" to "T5" or null.' }),
-    year: z.number().int(),
-    paperType: z.string(),
-    authorCredit: z.string(),
-    note: z.string().nullable(),
-    files: z.array(z.object({ index: z.number().int(), name: z.string(), size: z.number().int(), mime: z.string() })),
-    status: z.enum(['pending', 'processing', 'done', 'rejected']),
-    adminNotes: z.string().nullable(),
-    createdAt: TimestampSchema,
-  })
-  .meta({ id: 'QuestionSetPaper' })
+/** `data` of the 201: the id of the `source = guru` intake batch the files were stored in. */
+export const QuestionSetPaperSchema = z.object({ batchId: IdSchema }).meta({ id: 'QuestionSetPaper' })
 export type QuestionSetPaper = z.infer<typeof QuestionSetPaperSchema>
 
 /** 422: `fields` holds the first message per field; `message` is the Laravel summary of the first one. */
@@ -224,14 +210,15 @@ export const QuestionSetPaperFieldErrorSchema = z
       code: z.literal('VALIDATION_ERROR'),
       message: z.string(),
       fields: z.object({
-        jenisSoalan: z.literal(QUESTION_SET_PAPER_MESSAGES.type).optional(),
+        paperType: z.literal(QUESTION_SET_PAPER_MESSAGES.type).optional(),
         subject: z.enum([QUESTION_SET_PAPER_MESSAGES.subject, QUESTION_SET_PAPER_MESSAGES.subjectLong]).optional(),
-        tingkatan: z.literal(QUESTION_SET_PAPER_MESSAGES.level).optional(),
-        tahun: z.literal(QUESTION_SET_PAPER_MESSAGES.year).optional(),
-        disediakanOleh: z.literal(QUESTION_SET_PAPER_MESSAGES.author).optional(),
-        catatan: z.literal(QUESTION_SET_PAPER_MESSAGES.note).optional(),
+        levelId: z.literal(QUESTION_SET_PAPER_MESSAGES.level).optional(),
+        year: z.literal(QUESTION_SET_PAPER_MESSAGES.year).optional(),
+        preparedBy: z.literal(QUESTION_SET_PAPER_MESSAGES.author).optional(),
+        note: z.literal(QUESTION_SET_PAPER_MESSAGES.note).optional(),
+        answerSchemeConfirmed: z.literal(QUESTION_SET_PAPER_MESSAGES.confirm).optional(),
         files: z.string().optional().meta({
-          description: `${QUESTION_SET_PAPER_MESSAGES.files} | ${QUESTION_SET_PAPER_MESSAGES.tooMany} | "{file name}: format atau saiz tidak dibenarkan."`,
+          description: [QUESTION_SET_PAPER_MESSAGES.files, QUESTION_SET_PAPER_MESSAGES.tooMany, QUESTION_SET_PAPER_MESSAGES.fileType, QUESTION_SET_PAPER_MESSAGES.fileSize, QUESTION_SET_PAPER_MESSAGES.scanned].join(' | '),
         }),
       }),
     }),

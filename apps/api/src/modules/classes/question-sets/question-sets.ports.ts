@@ -2,10 +2,8 @@ import { Injectable } from '@nestjs/common'
 import type { QuestionSetPaper } from '@pp/contract'
 
 import type { AuthContext } from '../../../common/scope/auth-context'
-import { ApiError } from '../../../common/errors/api-error'
-import { PAPER_INTAKE_UNAVAILABLE } from './question-sets.constants'
 
-/** The validated text fields of a paper submission, already normalised (trimmed, level as "T{n}", year defaulted). */
+/** The validated text fields of a paper submission, already normalised (trimmed, paper type as its slug, level as "T{n}", year defaulted). */
 export interface PaperDeclaration {
   paperType: string
   subjectText: string
@@ -42,32 +40,24 @@ export interface PaperSubmission {
   requestId: string | null
 }
 
-/** Implemented by BE-37 (intake): stores the files, creates the pending question bank submission. */
+/** Implemented by BE-37 (intake): stores the files, creates the `source = guru` intake batch and answers its id. */
 export interface QuestionPaperIntakePort {
   submit(input: PaperSubmission): Promise<QuestionSetPaper>
-}
-
-/** Default while BE-37 is not merged: says honestly that the upload cannot be accepted yet. */
-export class UnavailablePaperIntake implements QuestionPaperIntakePort {
-  async submit(): Promise<QuestionSetPaper> {
-    // 503 with the generic SERVER_ERROR code: no new code is added; the status tells a client to try again later.
-    throw new ApiError({ code: 'SERVER_ERROR', status: 503, message: PAPER_INTAKE_UNAVAILABLE })
-  }
 }
 
 /** Holder with a set-once `provideIntake`, so BE-37 plugs in from its own `onModuleInit` (same pattern as `ClassesPorts`). */
 @Injectable()
 export class QuestionSetsPorts {
-  private intakePort: QuestionPaperIntakePort = new UnavailablePaperIntake()
-  private intakeSet = false
+  private intakePort: QuestionPaperIntakePort | null = null
 
+  /** The bound intake. An unbound port is a wiring error (`QuestionSetsModule.onModuleInit` binds it), never a request-time answer. */
   get intake(): QuestionPaperIntakePort {
+    if (this.intakePort === null) throw new Error('QuestionSetsPorts: the paper intake is not bound')
     return this.intakePort
   }
 
   provideIntake(port: QuestionPaperIntakePort): void {
-    if (this.intakeSet) throw new Error('QuestionSetsPorts: the paper intake is already set')
+    if (this.intakePort !== null) throw new Error('QuestionSetsPorts: the paper intake is already set')
     this.intakePort = port
-    this.intakeSet = true
   }
 }

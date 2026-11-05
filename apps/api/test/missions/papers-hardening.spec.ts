@@ -15,7 +15,7 @@ import { PAPER_MAX_BODY_BYTES } from '../../src/modules/classes/question-sets/qu
 import type { PaperSubmission } from '../../src/modules/classes/question-sets'
 import { STUDENT_1, TEACHER_A, bootQsApp, bytes, classWith, client, eligibleQuestionIds, idOfEmail, insertSession, insertSet, type Client, type QsTestApp } from './qs-helpers'
 
-const FIELDS = { jenisSoalan: 'Trial Paper', subject: 'Matematik' }
+const FIELDS = { paperType: 'trial', subject: 'Matematik', answerSchemeConfirmed: 'true' }
 
 function upload(c: Client, fields: Record<string, string>, files: { name: string; size: number }[] = []) {
   let req = c.who.agent.post('/api/guru/question-papers').set('X-CSRF-Token', c.who.csrf)
@@ -24,11 +24,7 @@ function upload(c: Client, fields: Record<string, string>, files: { name: string
   return req
 }
 
-const paperOf = (s: PaperSubmission): QuestionSetPaper => ({
-  id: '5', teacherId: s.teacherId, subjectText: s.declaration.subjectText, levelCode: null, year: 2026, paperType: s.declaration.paperType,
-  authorCredit: '', note: null, files: s.files.map((f) => ({ index: f.index, name: f.name, size: f.size, mime: 'application/pdf' })),
-  status: 'pending', adminNotes: null, createdAt: '2026-10-19T09:00:00+08:00',
-})
+const paperOf = (): QuestionSetPaper => ({ batchId: '5' })
 
 /** A minimal execution context for the interceptor's early checks. */
 function fakeCtx(headers: Record<string, string>, userId = '1') {
@@ -133,7 +129,7 @@ describe('BE-18 B: paper upload guards (integration)', () => {
       seen.push(s)
       entered()
       await gate
-      return paperOf(s)
+      return paperOf()
     }
   })
   afterAll(async () => {
@@ -167,14 +163,15 @@ describe('BE-18 B: paper upload guards (integration)', () => {
     const res = await upload(teacher, FIELDS, [{ name: '../../x.pdf', size: 4 }])
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     expect(seen.at(-1)?.files.map((f) => f.name)).toEqual(['x.pdf'])
-    expect(res.body.data.files.map((f: { name: string }) => f.name)).toEqual(['x.pdf'])
+    expect(res.body.data).toEqual({ batchId: '5' })
   })
 
   it('control characters in a raw multipart file name are removed', async () => {
     const boundary = 'BOUNDARYxyz'
     const part = (head: string, body: string) => `--${boundary}\r\n${head}\r\n\r\n${body}\r\n`
     const body = Buffer.from(
-      part('Content-Disposition: form-data; name="jenisSoalan"', 'Trial Paper') +
+      part('Content-Disposition: form-data; name="paperType"', 'trial') +
+        part('Content-Disposition: form-data; name="answerSchemeConfirmed"', 'true') +
         part('Content-Disposition: form-data; name="subject"', 'Matematik') +
         part('Content-Disposition: form-data; name="files"; filename="a\tb\u0085.docx"\r\nContent-Type: application/pdf', 'data') +
         `--${boundary}--\r\n`,

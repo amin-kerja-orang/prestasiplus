@@ -44114,26 +44114,26 @@
       "QuestionSetPaperFields": {
         "type": "object",
         "properties": {
-          "jenisSoalan": {
+          "paperType": {
             "type": "string",
             "enum": [
-              "Soalan Umum",
-              "Trial Paper",
-              "Soalan DSKP",
-              "Buku Teks",
-              "Buku Latihan",
-              "Soalan Peperiksaan",
-              "Lain-lain"
+              "umum",
+              "trial",
+              "dskp",
+              "buku_teks",
+              "buku_latihan",
+              "peperiksaan",
+              "lain"
             ],
-            "description": "One of the 7 labels (value = label), trimmed."
+            "description": "OPT-JENIS-HANTARAN slug, trimmed."
           },
           "subject": {
             "type": "string",
             "minLength": 1,
             "maxLength": 100,
-            "description": "Matapelajaran, trimmed, at most 100 characters."
+            "description": "Matapelajaran (free text), trimmed, at most 100 characters."
           },
-          "tingkatan": {
+          "levelId": {
             "anyOf": [
               {
                 "type": "number"
@@ -44145,9 +44145,9 @@
                 "type": "null"
               }
             ],
-            "description": "1 to 5, or \"T1\" to \"T5\" (a leading T is dropped), or empty. The server stores levelCode \"T{n}\" or null."
+            "description": "Tingkatan 1 to 5 (\"T1\" to \"T5\" is read too), or empty for \"Semua / Tidak Pasti\"."
           },
-          "tahun": {
+          "year": {
             "anyOf": [
               {
                 "type": "number"
@@ -44159,28 +44159,40 @@
                 "type": "null"
               }
             ],
-            "description": "2000 to 2099, or empty; empty is stored as the current year (the field is optional on the form, the question bank needs a year)."
+            "description": "2000 to 2099, or empty; empty is stored as the current year (the question bank needs a year)."
           },
-          "disediakanOleh": {
+          "preparedBy": {
             "type": [
               "string",
               "null"
             ],
-            "maxLength": 150,
-            "description": "At most 150 characters; absent or null is \"\"."
+            "maxLength": 200,
+            "description": "At most 200 characters; empty is stored as \"Kiriman guru\"."
           },
-          "catatan": {
+          "note": {
             "type": [
               "string",
               "null"
             ],
             "maxLength": 1000,
-            "description": "At most 1000 characters; absent or null is stored as null."
+            "description": "At most 1000 characters; empty is stored as null."
+          },
+          "answerSchemeConfirmed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "description": "The teacher confirms the answer scheme is attached; must be true (\"true\", \"1\" or \"on\" in multipart). Not stored."
           }
         },
         "required": [
-          "jenisSoalan",
-          "subject"
+          "paperType",
+          "subject",
+          "answerSchemeConfirmed"
         ]
       },
       "QuestionSetPaperFile": {
@@ -44212,26 +44224,26 @@
       "QuestionSetPaperRequest": {
         "type": "object",
         "properties": {
-          "jenisSoalan": {
+          "paperType": {
             "type": "string",
             "enum": [
-              "Soalan Umum",
-              "Trial Paper",
-              "Soalan DSKP",
-              "Buku Teks",
-              "Buku Latihan",
-              "Soalan Peperiksaan",
-              "Lain-lain"
+              "umum",
+              "trial",
+              "dskp",
+              "buku_teks",
+              "buku_latihan",
+              "peperiksaan",
+              "lain"
             ],
-            "description": "One of the 7 labels (value = label), trimmed."
+            "description": "OPT-JENIS-HANTARAN slug, trimmed."
           },
           "subject": {
             "type": "string",
             "minLength": 1,
             "maxLength": 100,
-            "description": "Matapelajaran, trimmed, at most 100 characters."
+            "description": "Matapelajaran (free text), trimmed, at most 100 characters."
           },
-          "tingkatan": {
+          "levelId": {
             "anyOf": [
               {
                 "type": "number"
@@ -44243,9 +44255,9 @@
                 "type": "null"
               }
             ],
-            "description": "1 to 5, or \"T1\" to \"T5\" (a leading T is dropped), or empty. The server stores levelCode \"T{n}\" or null."
+            "description": "Tingkatan 1 to 5 (\"T1\" to \"T5\" is read too), or empty for \"Semua / Tidak Pasti\"."
           },
-          "tahun": {
+          "year": {
             "anyOf": [
               {
                 "type": "number"
@@ -44257,57 +44269,69 @@
                 "type": "null"
               }
             ],
-            "description": "2000 to 2099, or empty; empty is stored as the current year (the field is optional on the form, the question bank needs a year)."
+            "description": "2000 to 2099, or empty; empty is stored as the current year (the question bank needs a year)."
           },
-          "disediakanOleh": {
+          "preparedBy": {
             "type": [
               "string",
               "null"
             ],
-            "maxLength": 150,
-            "description": "At most 150 characters; absent or null is \"\"."
+            "maxLength": 200,
+            "description": "At most 200 characters; empty is stored as \"Kiriman guru\"."
           },
-          "catatan": {
+          "note": {
             "type": [
               "string",
               "null"
             ],
             "maxLength": 1000,
-            "description": "At most 1000 characters; absent or null is stored as null."
+            "description": "At most 1000 characters; empty is stored as null."
+          },
+          "answerSchemeConfirmed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "description": "The teacher confirms the answer scheme is attached; must be true (\"true\", \"1\" or \"on\" in multipart). Not stored."
           },
           "files": {
             "$ref": "#/components/schemas/QuestionSetPaperFiles"
           }
         },
         "required": [
-          "jenisSoalan",
+          "paperType",
           "subject",
+          "answerSchemeConfirmed",
           "files"
         ]
       },
       "QuestionSetPaperUpload": {
         "type": "object",
         "properties": {
-          "jenisSoalan": {
+          "paperType": {
             "type": "string",
             "enum": [
-              "Soalan Umum",
-              "Trial Paper",
-              "Soalan DSKP",
-              "Buku Teks",
-              "Buku Latihan",
-              "Soalan Peperiksaan",
-              "Lain-lain"
+              "umum",
+              "trial",
+              "dskp",
+              "buku_teks",
+              "buku_latihan",
+              "peperiksaan",
+              "lain"
             ],
-            "description": "One of the 7 labels (value = label), trimmed."
+            "description": "OPT-JENIS-HANTARAN slug, trimmed."
           },
           "subject": {
             "type": "string",
             "minLength": 1,
             "maxLength": 100,
-            "description": "Matapelajaran, trimmed, at most 100 characters."
+            "description": "Matapelajaran (free text), trimmed, at most 100 characters."
           },
-          "tingkatan": {
+          "levelId": {
             "anyOf": [
               {
                 "type": "number"
@@ -44319,9 +44343,9 @@
                 "type": "null"
               }
             ],
-            "description": "1 to 5, or \"T1\" to \"T5\" (a leading T is dropped), or empty. The server stores levelCode \"T{n}\" or null."
+            "description": "Tingkatan 1 to 5 (\"T1\" to \"T5\" is read too), or empty for \"Semua / Tidak Pasti\"."
           },
-          "tahun": {
+          "year": {
             "anyOf": [
               {
                 "type": "number"
@@ -44333,23 +44357,34 @@
                 "type": "null"
               }
             ],
-            "description": "2000 to 2099, or empty; empty is stored as the current year (the field is optional on the form, the question bank needs a year)."
+            "description": "2000 to 2099, or empty; empty is stored as the current year (the question bank needs a year)."
           },
-          "disediakanOleh": {
+          "preparedBy": {
             "type": [
               "string",
               "null"
             ],
-            "maxLength": 150,
-            "description": "At most 150 characters; absent or null is \"\"."
+            "maxLength": 200,
+            "description": "At most 200 characters; empty is stored as \"Kiriman guru\"."
           },
-          "catatan": {
+          "note": {
             "type": [
               "string",
               "null"
             ],
             "maxLength": 1000,
-            "description": "At most 1000 characters; absent or null is stored as null."
+            "description": "At most 1000 characters; empty is stored as null."
+          },
+          "answerSchemeConfirmed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "description": "The teacher confirms the answer scheme is attached; must be true (\"true\", \"1\" or \"on\" in multipart). Not stored."
           },
           "files": {
             "type": "array",
@@ -44359,107 +44394,25 @@
             },
             "minItems": 1,
             "maxItems": 5,
-            "description": "1 to 5 files (.pdf .doc .docx .xls .xlsx), each at most 20 MB. The mock also reads the key \"files[]\"."
+            "description": "1 to 5 files (.pdf .docx .xlsx; images are not accepted), each at most 20 MB. A scanned PDF (no text on its first 3 pages) is refused. The mock also reads the key \"files[]\"."
           }
         },
         "required": [
-          "jenisSoalan",
+          "paperType",
           "subject",
+          "answerSchemeConfirmed",
           "files"
         ]
       },
       "QuestionSetPaper": {
         "type": "object",
         "properties": {
-          "id": {
+          "batchId": {
             "$ref": "#/components/schemas/Id"
-          },
-          "teacherId": {
-            "$ref": "#/components/schemas/Id"
-          },
-          "subjectText": {
-            "type": "string"
-          },
-          "levelCode": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "\"T1\" to \"T5\" or null."
-          },
-          "year": {
-            "type": "integer"
-          },
-          "paperType": {
-            "type": "string"
-          },
-          "authorCredit": {
-            "type": "string"
-          },
-          "note": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "files": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "index": {
-                  "type": "integer"
-                },
-                "name": {
-                  "type": "string"
-                },
-                "size": {
-                  "type": "integer"
-                },
-                "mime": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "index",
-                "name",
-                "size",
-                "mime"
-              ]
-            }
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "pending",
-              "processing",
-              "done",
-              "rejected"
-            ]
-          },
-          "adminNotes": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "createdAt": {
-            "$ref": "#/components/schemas/Timestamp"
           }
         },
         "required": [
-          "id",
-          "teacherId",
-          "subjectText",
-          "levelCode",
-          "year",
-          "paperType",
-          "authorCredit",
-          "note",
-          "files",
-          "status",
-          "adminNotes",
-          "createdAt"
+          "batchId"
         ]
       },
       "QuestionSetPaperFieldError": {
@@ -44480,7 +44433,7 @@
               "fields": {
                 "type": "object",
                 "properties": {
-                  "jenisSoalan": {
+                  "paperType": {
                     "type": "string",
                     "enum": [
                       "Sila pilih jenis soalan."
@@ -44493,33 +44446,39 @@
                       "Matapelajaran tidak boleh melebihi 100 aksara."
                     ]
                   },
-                  "tingkatan": {
+                  "levelId": {
                     "type": "string",
                     "enum": [
                       "Tingkatan tidak sah."
                     ]
                   },
-                  "tahun": {
+                  "year": {
                     "type": "string",
                     "enum": [
                       "Tahun mesti antara 2000 dan 2099."
                     ]
                   },
-                  "disediakanOleh": {
+                  "preparedBy": {
                     "type": "string",
                     "enum": [
-                      "Disediakan oleh tidak boleh melebihi 150 aksara."
+                      "Disediakan oleh tidak boleh melebihi 200 aksara."
                     ]
                   },
-                  "catatan": {
+                  "note": {
                     "type": "string",
                     "enum": [
-                      "Catatan tidak boleh melebihi 1000 aksara."
+                      "Catatan tambahan tidak boleh melebihi 1000 aksara."
+                    ]
+                  },
+                  "answerSchemeConfirmed": {
+                    "type": "string",
+                    "enum": [
+                      "Sila sahkan skema jawapan disertakan."
                     ]
                   },
                   "files": {
                     "type": "string",
-                    "description": "Sila pilih sekurang-kurangnya satu fail. | Maksimum 5 fail. | \"{file name}: format atau saiz tidak dibenarkan.\""
+                    "description": "Sila pilih fail. | Maksimum 5 fail, saiz maksimum 20MB setiap fail | Jenis fail tidak disokong. Format dibenarkan: PDF, DOCX, XLSX. | Fail melebihi saiz maksimum 20 MB. | PDF imbasan imej tidak diterima — teks mesti boleh disalin."
                   }
                 }
               }
@@ -109106,7 +109065,7 @@
           "question-sets"
         ],
         "summary": "Upload a question paper (S22, BR-M10-25, FR-M10-98)",
-        "description": "SCOPE: BE-18 owns only this submission request and its validation; storing and processing the uploaded files belongs to BE-37 (intake). Teacher or admin. Multipart. Creates a question bank submission with status pending for the admin to review. 422 lists every failing field at once (first message per field); the message is the Laravel summary. The file checks (1 to 5 files, .pdf .doc .docx .xls .xlsx, each at most 20 MB) are on the uploaded parts.",
+        "description": "SCOPE: BE-18 owns only this submission request and its validation; storing and processing the uploaded files belongs to BE-37 (intake). Teacher or admin. Multipart. Creates an intake batch with source = guru for the admin to review (API-GUR-17). Answers 201 with only the batch id. 422 lists every failing field at once (first message per field); the message is the Laravel summary. The file checks (1 to 5 files, .pdf .docx .xlsx, each at most 20 MB; a scanned PDF is refused; any invalid file rejects the whole submission). The answer-scheme confirmation must be true.",
         "parameters": [
           {
             "schema": {
@@ -109132,7 +109091,7 @@
         },
         "responses": {
           "201": {
-            "description": "The pending submission.",
+            "description": "The id of the guru intake batch created (message shown by the client: \"Kertas dihantar kepada admin.\").",
             "content": {
               "application/json": {
                 "schema": {
