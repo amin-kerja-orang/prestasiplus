@@ -34,10 +34,10 @@ test.describe('M06 S11 mock exam form and list', { tag: [moduleTag(6)] }, () => 
   }) => {
     await loginAs(PELAJAR)
     await open(page, '/spm-mock')
-    await expectTabTitle(page, 'SPM Mock Exam')
-    await expect(tid(page, 'shell-user-title')).toHaveText('SPM Mock Exam')
-    await expect(tid(page, 'mock-hero')).toContainText('📝 SPM Mock Exam')
-    await expect(tid(page, 'mock-hero')).toContainText(
+    await expectTabTitle(page, 'SPM Mock Exam | PRESTASIPLUS')
+    await expect(shellTitle(page)).toHaveText('SPM Mock Exam')
+    await expect(tid(page, 'mock-title')).toHaveText('📝 SPM Mock Exam')
+    await expect(tid(page, 'mock-page')).toContainText(
       'Mock SPM penuh dengan timer + auto-grade + weakness analysis. Boleh attempt setiap bulan.',
     )
     await expect(tid(page, 'duta-title')).toHaveText('⭐ Maestro SPM Untuk Anda')
@@ -202,7 +202,7 @@ test.describe('M06 Q4 in-exam placeholder (provisional, L-8)', { tag: [moduleTag
       await expect(page).toHaveURL(/\/spm-mock\/\d+$/)
       const url = new URL(page.url()).pathname
       await expect(tid(page, 'run-title')).toHaveText('Matematik · Paper 1')
-      await expectTabTitle(page, 'SPM Mock Exam')
+      await expectTabTitle(page, 'SPM Mock Exam | PRESTASIPLUS')
       await expect(tid(page, 'mock-timer')).toBeVisible()
       await expect(page.getByRole('button', { name: /pause|jeda|henti/i })).toHaveCount(0)
       await expect(page.locator('[data-testid^=run-item-]').first()).toBeVisible()
@@ -272,8 +272,8 @@ test.describe('M06 S12 mock result', { tag: [moduleTag(6)] }, () => {
   }) => {
     await loginAs(ADMIN)
     await open(page, '/spm-mock/16/result')
-    await expectTabTitle(page, 'Result Mock SPM — Bahasa Melayu')
-    await expect(tid(page, 'shell-admin-title')).toHaveText('Result Mock SPM — Bahasa Melayu')
+    await expectTabTitle(page, 'Result Mock SPM — Bahasa Melayu | PRESTASIPLUS')
+    await expect(shellTitle(page)).toHaveText('Result Mock SPM — Bahasa Melayu')
     const hero = tid(page, 'result-hero')
     await expect(hero).toHaveAttribute('data-hero', 'bad')
     await expect(hero).toHaveClass(/red/)

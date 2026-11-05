@@ -37,8 +37,8 @@ test.describe('M06 S13 SPM walkthrough', { tag: [moduleTag(6)] }, () => {
   }) => {
     await loginAs(ADMIN)
     await open(page, '/pusat-ai/spm')
-    await expectTabTitle(page, 'SPM Walkthrough — Cikgu Alesa')
-    await expect(tid(page, 'shell-admin-title')).toHaveText('SPM Walkthrough — Cikgu Alesa')
+    await expectTabTitle(page, 'SPM Walkthrough — Cikgu Alesa | PRESTASIPLUS')
+    await expect(shellTitle(page)).toHaveText('SPM Walkthrough — Cikgu Alesa')
     await expect(page.getByText('📝 SPM Walkthrough', { exact: true })).toBeVisible()
     await expect(tid(page, 'pentadbiran-subtitle')).toHaveText(
       'Snap soalan SPM, AI walk-through step-by-step dengan mark scheme + sebutan buku teks. Faham bukan hafal.',

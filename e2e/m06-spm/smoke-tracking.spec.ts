@@ -543,8 +543,9 @@ test.describe('M06 S8 Subjektif', { tag: [moduleTag(6)] }, () => {
   }) => {
     await loginAs(PELAJAR2)
     await gotoApp('/spm/subjektif')
-    await expectTabTitle(page, 'Latihan Subjektif SPM | PRESTASIPLUS')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Subjektif SPM')
+    // The tab title equals the title the shell prints (useShellTabTitle), not the page's h1.
+    await expectTabTitle(page, 'Subjektif SPM | PRESTASIPLUS')
+    await expect(shellTitle(page)).toHaveText('Subjektif SPM')
     if (isDesktopShell(page)) {
       // Fact gone in v2, left failing (S3-T03 report): neither v2 shell prints this subtitle.
       await expect.soft(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')
