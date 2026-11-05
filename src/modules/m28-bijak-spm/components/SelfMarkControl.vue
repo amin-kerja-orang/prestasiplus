@@ -44,6 +44,8 @@ const error = ref('')
 const AUTOSAVE_MS = 500
 let timer: ReturnType<typeof setTimeout> | undefined
 let again = false
+/** Set on unmount: nothing is saved after it (the page may already show another sitting). */
+let unmounted = false
 /** A change waits for its 500 ms (reactive twin of `timer`). */
 const pending = ref(false)
 
@@ -54,6 +56,8 @@ const hi = computed(() => selected.value?.to ?? max.value)
 watch(
   [() => props.part.awarded, () => props.part.band, () => props.part.selfMarked],
   () => {
+    // A newer change of the pupil (waiting, or queued behind a save in flight) wins over a refreshed part.
+    if (pending.value || again) return
     draft.value = props.part.awarded
     band.value = initialBand()
   },
@@ -72,19 +76,38 @@ function changed(): void {
   }, AUTOSAVE_MS)
 }
 
-function step(by: number): void {
-  draft.value = clampMark(draft.value + by, hi.value, lo.value)
+/** Sets the draft; arms the autosave only when the value really changed. */
+function setDraft(value: number): void {
+  if (value === draft.value) return
+  draft.value = value
   changed()
 }
 
-/** The numeric input: round half up, negative to 0 (or the band floor), over the maximum to the maximum (AC-MUR-13-22). */
-function typed(raw: string | number): void {
-  const n = typeof raw === 'number' ? raw : Number(String(raw).replace(',', '.'))
-  draft.value = clampMark(Number.isFinite(n) ? Math.floor(n + 0.5) : lo.value, hi.value, lo.value)
-  changed()
+function step(by: number): void {
+  setDraft(clampMark(draft.value + by, hi.value, lo.value))
+}
+
+/** A typed value: round half up, negative to 0 (or the band floor), over the maximum to the maximum (AC-MUR-13-22). */
+function normalise(raw: string): number {
+  const n = raw.trim() === '' ? Number.NaN : Number(raw.replace(',', '.'))
+  return clampMark(Number.isFinite(n) ? Math.floor(n + 0.5) : lo.value, hi.value, lo.value)
+}
+
+/** While typing: a number counts as a change (500 ms autosave); the field is left as typed. */
+function typing(event: Event): void {
+  const raw = (event.target as HTMLInputElement).value
+  if (raw.trim() !== '' && Number.isFinite(Number(raw.replace(',', '.')))) setDraft(normalise(raw))
+}
+
+/** On Enter or leaving the field: the stored value is written back into the field (9 over a maximum of 4 shows 4). */
+function typed(event: Event): void {
+  const input = event.target as HTMLInputElement
+  setDraft(normalise(input.value))
+  input.value = String(draft.value)
 }
 
 function pickBand(name: string | undefined): void {
+  if (name === band.value) return
   band.value = name
   const b = bands.value.find((x) => x.name === name)
   if (b) draft.value = bandMidpoint(b)
@@ -100,6 +123,8 @@ const dirty = computed(
 const emit = defineEmits<{ dirty: [partId: string, dirty: boolean] }>()
 watch(dirty, (d) => emit('dirty', props.part.partId, d))
 onBeforeUnmount(() => {
+  unmounted = true
+  again = false
   // A change still waiting for its 500 ms is dropped: by now the page may show another sitting, and the page's leave guard
   // already warned about the unsaved change (`dirty`).
   if (timer) clearTimeout(timer)
@@ -126,6 +151,7 @@ const bandItems = computed(() =>
 )
 
 async function commit(): Promise<void> {
+  if (unmounted) return
   // A change made while a save is in flight is saved right after it.
   if (saving.value) {
     again = true
@@ -154,7 +180,7 @@ async function commit(): Promise<void> {
   }
   if (again) {
     again = false
-    if (!timer) void commit()
+    if (!timer && !unmounted) void commit()
   }
 }
 
@@ -187,7 +213,7 @@ const labelId = computed(() => `selfmark-label-${props.part.partId}`)
       @update:model-value="pickBand($event as string)"
     />
 
-    <div role="group" :aria-labelledby="labelId" class="flex items-center gap-3">
+    <div role="group" :aria-labelledby="labelId" class="flex flex-wrap items-center gap-3">
       <UButton
         color="neutral"
         variant="outline"
@@ -207,9 +233,10 @@ const labelId = computed(() => `selfmark-label-${props.part.partId}`)
         step="1"
         class="w-20"
         :ui="{ base: 'tabular text-center' }"
-        aria-label="Markah kendiri"
+        aria-label="Markah (nombor)"
         data-testid="selfmark-input"
-        @change="typed(($event.target as HTMLInputElement).value)"
+        @input="typing"
+        @change="typed"
       />
       <output
         class="tabular min-w-12 text-heading text-highlighted"
@@ -241,7 +268,6 @@ const labelId = computed(() => `selfmark-label-${props.part.partId}`)
     <p
       v-if="saveState"
       class="text-caption text-muted"
-      aria-live="polite"
       data-testid="selfmark-save-state"
     >
       {{ saveState }}
