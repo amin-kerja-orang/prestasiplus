@@ -14,9 +14,15 @@ import { classrooms, type ClassroomRow } from '@/modules/m10-teacher-class/mock'
 import type {
   ClassItemAnalysis,
   ItemAnalysis,
+  ItemAnalysisMe,
+  ItemMeCategory,
+  ItemMeItem,
+  ItemMeSubject,
+  ItemMeTapis,
   Letter,
   SchoolItemAnalysis,
   SchoolItemQuestion,
+  Tingkatan,
 } from '../../api/types'
 import { headcountReads } from './headcount-port'
 import { fnv1a32 } from '@/mock/determinism/hash'
@@ -134,7 +140,7 @@ function computeClassItemAnalysis(cls: ClassroomRow): ClassItemAnalysis {
         students: t.students.size,
         accuracy: round(capPercent(pct(t.correct, t.attempts)), 1),
         index,
-        level: difficultyLevel(index),
+        level: difficultyLevel(pct(t.correct, t.attempts)),
         wrongStudents: [...t.wrong.entries()]
           .sort((a, b) => a[0] - b[0])
           .map(([userId, times]) => ({
@@ -142,7 +148,7 @@ function computeClassItemAnalysis(cls: ClassroomRow): ClassItemAnalysis {
             name: users.get(userId)?.name ?? `Murid ${String(userId)}`,
             times,
           })),
-        correctOption: optionOf(q, q?.correctAnswer ?? null),
+        correctOption: q?.correctAnswer == null ? null : optionOf(q, q.correctAnswer),
         popularWrong: popular ? { ...optionOf(q, popular.idx), times: popular.times } : null,
       }
     })
@@ -185,7 +191,7 @@ function computeClassItemAnalysis(cls: ClassroomRow): ClassItemAnalysis {
       const u = group(upper, questionId)
       const l = group(lower, questionId)
       if (u.n === 0 || l.n === 0) continue
-      const d = round(u.c / u.n - l.c / l.n, 3)
+      const d = round(u.c / u.n - l.c / l.n, 2)
       rows.push({
         questionId,
         text: qRows.get(questionId)?.questionText ?? '',
@@ -256,11 +262,13 @@ function computedSubjects(pupilIds: readonly number[]): SchoolItemAnalysis['subj
     .sort((a, b) => a.accuracy - b.accuracy || a.subjectId - b.subjectId)
 }
 
-const TINGKATAN_LEVEL: Readonly<Record<'T4' | 'T5', number>> = { T4: 10, T5: 11 }
+/** Level ids of Tingkatan 1 to 5 in the enrolment rows (T4 / T5 observed as 10 / 11; T1 to T3 follow in sequence). */
+const TINGKATAN_LEVEL: Readonly<Record<Tingkatan, number>> = { T1: 7, T2: 8, T3: 9, T4: 10, T5: 11 }
+const TINGKATAN_ORDER: readonly Tingkatan[] = ['T1', 'T2', 'T3', 'T4', 'T5']
 
 export function schoolItemAnalysis(
   schoolId: number,
-  tingkatan: 'T4' | 'T5' | null,
+  tingkatan: Tingkatan | null,
   variant: 'own' | 'byId',
 ): SchoolItemAnalysis | null {
   const school = schools.get(schoolId)
@@ -339,7 +347,7 @@ export function schoolItemAnalysis(
         cat?.subjectName ??
         '',
       chips: cat ? [cat.topic, cat.subtopic] : [],
-      level: difficultyLevel(difficultyIndex(r.attempts - r.wrong, r.attempts)),
+      level: difficultyLevel(pct(r.attempts - r.wrong, r.attempts)),
       wrongPct: round(pct(r.wrong, r.attempts), 1),
       attempts: r.attempts,
       pupils: r.pupils,
@@ -365,6 +373,23 @@ export function schoolItemAnalysis(
     else difficulty.sukar++
   }
 
+  // AC-AS-6-6: the Tingkatan that have data (a pupil enrolled at that level, or a stored / observed view).
+  const enrolledLevels = new Set<number>()
+  for (const u of all) {
+    for (const e of classrooms.enrolmentsOf(u.id)) {
+      if (e.status === 'active') enrolledLevels.add(e.levelId)
+    }
+  }
+  const tingkatanOptions = TINGKATAN_ORDER.filter(
+    (t) =>
+      enrolledLevels.has(TINGKATAN_LEVEL[t]) ||
+      itemStatisticsRepo.summary(schoolId, t) !== undefined ||
+      itemStatisticsRepo.forScope('school', schoolId, t).length > 0,
+  )
+  // FR-AS-6-5 "Soalan Diuji" (XS-7): distinct questions; a question belongs to one subject, so the subject rows add up.
+  const questionsTested =
+    subjects.length > 0 ? subjects.reduce((sum, s) => sum + s.questions, 0) : stored.length
+
   const pupilIds = new Set(all.map((u) => u.id))
   const gps = gpsOf(headcountReads.entries().filter((e) => pupilIds.has(e.studentId)))
   const history = schoolSpmHistoryRepo.platform()
@@ -380,6 +405,8 @@ export function schoolItemAnalysis(
     },
     variant,
     tingkatan,
+    tingkatanOptions,
+    questionsTested,
     students: studentsShown,
     answers,
     correct,
@@ -393,5 +420,176 @@ export function schoolItemAnalysis(
     },
     subjects,
     questions: list,
+  }
+}
+
+// ---------------------------------------------------------------------------------------------
+// GET /api/item-analysis/me (API-RPT-05, R1-MUR-6): the pupil's own Analisa Item
+// ---------------------------------------------------------------------------------------------
+
+const SOURCE_LABEL: Readonly<Record<string, string>> = {
+  random: 'Latih Tubi',
+  latih_tubi: 'Latih Tubi',
+  chapter: 'Latihan Bab',
+  revision: 'Ulang Kaji',
+  past_year: 'Soalan Tahun Lepas',
+  ramalan: 'Ramalan',
+  mission: 'Misi',
+  remedial: 'Ujian Remedial',
+  question_set: 'Set Soalan',
+  pksk: 'PKSK',
+}
+
+interface MeTally {
+  questionId: number
+  attempts: number
+  correct: number
+  lastAt: string
+  lastMs: number
+  subjectId: number | null
+  chapterId: number | null
+  sessionId: string | null
+}
+
+/** FR-MUR-6-3: attempts 1 and correct 0 = Isyarat Awal; ≥ 2 and 0 correct = Pemulihan; ≥ 2 and 0 < correct < attempts = Pengukuhan. */
+export function categoryOf(attempts: number, correct: number): ItemMeCategory | null {
+  if (correct === 0) return attempts === 1 ? 'isyarat_awal' : attempts >= 2 ? 'pemulihan' : null
+  return attempts >= 2 && correct < attempts ? 'pengukuhan' : null
+}
+
+/** `tapis` filters the items only (decision 7): `ada_betul` correct ≥ 1; `selalu_salah` ≥ 2 attempts, every answer wrong. */
+export function passesTapis(t: { attempts: number; correct: number }, tapis: ItemMeTapis): boolean {
+  if (tapis === 'ada_betul') return t.correct >= 1
+  if (tapis === 'selalu_salah') return t.attempts >= 2 && t.correct === 0
+  return true
+}
+
+export function itemAnalysisMe(
+  userId: number,
+  subjectCode: string | null,
+  tapis: ItemMeTapis,
+): ItemAnalysisMe {
+  const rows = practice.answers(userId)
+  const byQuestion = new Map<number, MeTally>()
+  const subjectIds = new Set<number>()
+  for (const a of rows) {
+    const q = questions.get(a.questionId)
+    // FR-MUR-6-5: an archived question no longer appears.
+    if (q?.status === 'archived') continue
+    const t = byQuestion.get(a.questionId) ?? {
+      questionId: a.questionId,
+      attempts: 0,
+      correct: 0,
+      lastAt: a.answeredAt,
+      lastMs: a.answeredAtMs,
+      subjectId: a.subjectId,
+      chapterId: a.chapterId,
+      sessionId: a.sessionId,
+    }
+    t.attempts++
+    if (a.isCorrect) t.correct++
+    if (a.answeredAtMs >= t.lastMs) {
+      t.lastAt = a.answeredAt
+      t.lastMs = a.answeredAtMs
+      t.sessionId = a.sessionId
+    }
+    byQuestion.set(a.questionId, t)
+    if (a.subjectId !== null) subjectIds.add(a.subjectId)
+  }
+
+  // Subject cards: every subject of the pupil, ascending accuracy (Subjek Perlu Perhatian).
+  const subjects: ItemMeSubject[] = []
+  for (const sid of subjectIds) {
+    const subject = curriculum.subject(sid)
+    if (!subject) continue
+    let attempts = 0
+    let correct = 0
+    let weakRepeated = 0
+    let earlySignalWeak = 0
+    let uniqueQuestions = 0
+    for (const t of byQuestion.values()) {
+      if (t.subjectId !== sid) continue
+      uniqueQuestions++
+      attempts += t.attempts
+      correct += t.correct
+      const c = categoryOf(t.attempts, t.correct)
+      if (c === 'pemulihan' || c === 'pengukuhan') weakRepeated++
+      else if (c === 'isyarat_awal') earlySignalWeak++
+    }
+    subjects.push({
+      code: subject.code,
+      name: subject.name,
+      attempts,
+      uniqueQuestions,
+      accuracy: attempts === 0 ? null : round(capPercent(pct(correct, attempts)), 1),
+      wrongAnswers: attempts - correct,
+      weakRepeated,
+      earlySignalWeak,
+    })
+  }
+  subjects.sort(
+    (a, b) => (a.accuracy ?? 101) - (b.accuracy ?? 101) || a.code.localeCompare(b.code),
+  )
+
+  const scopeId = subjectCode === null ? null : (curriculum.subjectByCode(subjectCode)?.id ?? -1)
+  const scoped = [...byQuestion.values()].filter((t) => scopeId === null || t.subjectId === scopeId)
+  let answered = 0
+  let correctAll = 0
+  const counts = { isyaratAwal: 0, pemulihan: 0, pengukuhan: 0 }
+  const items: ItemMeItem[] = []
+  for (const t of scoped) {
+    answered += t.attempts
+    correctAll += t.correct
+    const category = categoryOf(t.attempts, t.correct)
+    if (category === null) continue
+    if (category === 'isyarat_awal') counts.isyaratAwal++
+    else if (category === 'pemulihan') counts.pemulihan++
+    else counts.pengukuhan++
+    if (!passesTapis(t, tapis)) continue
+    const q = questions.get(t.questionId)
+    if (!q) continue
+    const mode = t.sessionId === null ? undefined : practice.session(t.sessionId)?.mode
+    items.push({
+      questionId: t.questionId,
+      category,
+      attempts: t.attempts,
+      correct: t.correct,
+      wrongTimes: t.attempts - t.correct,
+      lastAnsweredAt: t.lastAt,
+      subject: t.subjectId === null ? '' : (curriculum.subject(t.subjectId)?.name ?? ''),
+      chapter: t.chapterId === null ? null : (curriculum.chapter(t.chapterId)?.name ?? null),
+      source: mode === undefined ? 'Latih Tubi' : (SOURCE_LABEL[mode] ?? 'Latih Tubi'),
+      question: {
+        id: q.id,
+        questionText: q.questionText,
+        questionType: q.questionType,
+        options: q.options,
+        language: q.language,
+        textDirection: q.textDirection,
+        scriptType: q.scriptType,
+        pointsValue: q.pointsValue,
+      },
+      stimulusGroup: null,
+      explanation: q.explanation && q.explanation.trim() !== '' ? q.explanation : null,
+    })
+  }
+  // Inside a list: attempts descending, then the last attempt descending (R1-MUR-6).
+  items.sort(
+    (a, b) =>
+      b.attempts - a.attempts ||
+      b.lastAnsweredAt.localeCompare(a.lastAnsweredAt) ||
+      Number(a.questionId) - Number(b.questionId),
+  )
+
+  return {
+    tiles: {
+      answered,
+      needRemedial: counts.pemulihan,
+      needStrengthen: counts.pengukuhan,
+      mastery: answered === 0 ? null : round(capPercent(pct(correctAll, answered)), 1),
+    },
+    subjects,
+    counts,
+    items,
   }
 }

@@ -4,8 +4,7 @@
  * Three cards in the order of live: "Gambar Profil" (own form), "Maklumat Peribadi" + actions row
  * (one form, `PUT /api/me`: name, phone, bio only; Tingkatan and school change only through the admin
  * user edit, S5-T05), and "Tukar Kata Laluan" (own form).
- * Native validation only (`required` name, `maxlength` bio). The bio counter is static, as live
- * (its binding is missing there). Outcomes show in the flash outlet at the top of the shell main:
+ * Native validation only (`required` name, `maxlength` bio 1000). The bio counter is `{n}/1000` (FR-MUR-A1-11). Outcomes show in the flash outlet at the top of the shell main:
  * success texts and server errors are UNVERIFIED COPY (SRS §8). The form is seeded from the cached
  * session user; a background `GET /api/me` refresh re-seeds it only while the user has not typed.
  */
@@ -153,15 +152,15 @@ async function submit(): Promise<void> {
               v-model="bio"
               name="bio"
               :rows="3"
-              :maxlength="500"
+              :maxlength="1000"
               placeholder="Tulis sesuatu tentang diri anda..."
               size="lg"
               class="w-full"
               data-testid="profile-bio-input"
             />
             <template #help>
-              <!-- Static, as live: the counter never updates (FR-M01-39). -->
-              <span data-testid="profile-bio-counter">Baki: 500 aksara</span>
+              <!-- FR-MUR-A1-11: the limit is 1000 and the counter is `{n}/1000` (live showed a static "Baki: 500 aksara"). -->
+              <span data-testid="profile-bio-counter">{{ bio.length }}/1000</span>
             </template>
           </UFormField>
         </div>
