@@ -115,6 +115,21 @@ export function rejectChallenger(
   )
 }
 
+/**
+ * API-GAME-14 `POST /api/battle/queue/{queueId}/cancel`: the owner's "Batal" of a waiting queue entry
+ * (`{cancelled: true}`; a repeat cancel answers the same; 404 when the entry is already matched or is
+ * not the caller's).
+ */
+export function cancelQueue(
+  queueId: BattleQueueId,
+  options: Signal = {},
+): Promise<{ cancelled: true }> {
+  return api.post<{ cancelled: true }>(
+    `/api/battle/queue/${encodeURIComponent(String(queueId))}/cancel`,
+    withSignal(options),
+  )
+}
+
 /** #7 `GET /api/battle/search-opponent?q=` (from 2 characters). */
 export function searchOpponent(
   q: string,

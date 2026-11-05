@@ -5,7 +5,8 @@
  *   (never two requests at once; a tick is skipped from the schedule, not queued). The timer text is
  *   set from the elapsed seconds on each poll only.
  * - Stops: `matched` (navigate), `expired` / `not_found`, 120 s since the start, 5 consecutive failed
- *   polls (a success resets the counter). "Batal" stops everything and sends no request.
+ *   polls (a success resets the counter). "Batal" stops everything at once and, while searching, tells the
+ *   server to drop the queue entry (API-GAME-14); that request is fire-and-forget.
  * - `incoming_challenge` swaps the card for the challenger card; polling continues.
  * - The waiting side (#12, #13) exists but no UI control starts it (DV-M16-06): `watchWaiting` /
  *   `requestJoin` are reached by the page's test seam only.
@@ -19,6 +20,7 @@ import { clock } from '@/lib/time/clock'
 
 import {
   acceptChallenger,
+  cancelQueue,
   BATTLE_MAX_FAILURES,
   BATTLE_POLL_MS,
   BATTLE_SEARCH_TIMEOUT_MS,
@@ -223,11 +225,17 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
     schedule(mySession, () => searchTick(mySession))
   }
 
-  /** "Batal": resets the page state; no request (DV-M16-05). */
+  /**
+   * "Batal": resets the page state at once (optimistic). While searching, the own queue entry is also
+   * cancelled on the server (API-GAME-14); a failure (404 already matched, network) changes nothing on
+   * screen. The waiting phase holds somebody else's entry (#12), so it sends nothing.
+   */
   function cancel(): void {
+    const dropId = phase.value === 'searching' ? queueId : null
     stopWith('')
     waitingName.value = ''
     waitingGrade.value = ''
+    if (dropId !== null) cancelQueue(dropId).catch(() => undefined)
   }
 
   // --- incoming challenger (#5, #6) --------------------------------------------------------------
