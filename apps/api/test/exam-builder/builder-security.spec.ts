@@ -2,6 +2,7 @@ import { BIJAK_BUILDER_MESSAGES as MSG, BijakBuilderEditorSchema, BijakBuilderPa
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { FakeBank, matBank } from './fakes'
+import { seedJanaPaper } from '../support/jana-paper'
 import { serveSeededBlueprints, setPocMarkBudgets } from '../support/serve-blueprints'
 import { ACCOUNTS, anonymous, bootBuilderApp, count, expectError, loginAs, type BuilderTestApp, type Client } from './helpers'
 
@@ -104,9 +105,7 @@ describe('generated papers are invisible to the builder', () => {
     await serveSeededBlueprints(t.db)
     admin = await loginAs(t, ACCOUNTS.admin)
     const student = await loginAs(t, ACCOUNTS.student)
-    const res = await student.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 2 })
-    expect(res.status, JSON.stringify(res.body)).toBeLessThan(300)
-    janaId = String((res.body.data as { id?: string; paperId?: string }).id ?? (res.body.data as { paperId?: string }).paperId)
+    janaId = await seedJanaPaper(t.db, { userId: student.userId, subject: 'MAT', kertas: 2 })
   })
   afterAll(async () => {
     await t.close()

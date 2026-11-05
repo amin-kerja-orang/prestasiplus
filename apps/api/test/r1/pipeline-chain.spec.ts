@@ -809,21 +809,18 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
   })
 
   // R1-20.2: the same with Jana Kertas under the Disahkan Kontrak (exact-or-refuse).
-  describe('6. Jana Kertas under the Disahkan Kontrak (pupil)', () => {
-    it('a Tingkatan 4 and a Tingkatan 5 pupil each generate a private paper from the approved pool and start it', async () => {
-      const made: string[] = []
+  // S3-T07: no pupil path generates a paper; the generator is the admin Jana Kertas only (`POST /api/admin/papers/generate`, a Draf).
+  describe('6. Jana Kertas under the Disahkan Kontrak (admin generator; the pupil route is gone)', () => {
+    it('the admin generates a draft from the approved pool; a pupil cannot generate (404) and never sees the draft', async () => {
+      const res = await admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 3 })
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      const id = res.body.data.paperId as string
+      expect((await db.query<{ status: string }>(`select status from papers where id = $1`, [id]))[0]!.status).toBe('draft')
       for (const who of [pupil, pupil5]) {
-        const res = await who.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 3 })
-        expect(res.status, JSON.stringify(res.body)).toBe(201)
-        const id = res.body.data.paperId as string
-        made.push(id)
-        const start = await who.post('/api/bijak/attempts', { paperId: id, mode: 'exam' })
-        expect(start.status, JSON.stringify(start.body)).toBe(201)
+        expect((await who.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 3 })).status).toBe(404)
+        expect(((await who.get('/api/bijak/papers')).body.data as { id: string }[]).some((p) => p.id === id)).toBe(false)
+        expect((await who.get(`/api/bijak/papers/${id}`)).status).toBe(404)
       }
-      expect(new Set(made).size).toBe(2)
-      // a generated paper is private: not in the Kertas Pilihan list, and another pupil gets 404
-      expect(((await pupil.get('/api/bijak/papers')).body.data as { id: string }[]).some((p) => made.includes(p.id))).toBe(false)
-      expect((await pupil5.get(`/api/bijak/papers/${made[0]}`)).status).toBe(404)
     })
 
     // R1-20.2 (exact-or-refuse): a Disahkan Kontrak whose pool cannot fill a section gives 422 SHORTAGE with the shortage list in BM, never a
@@ -862,32 +859,24 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       const ok = await admin.post('/api/admin/blueprints/MAT/4/verify', { note: 'Struktur disemak dengan dokumen format LPM.' })
       expect(ok.status, JSON.stringify(ok.body)).toBe(200)
 
-      const before = Number((await db.query<{ n: string }>(`select count(*) n from papers where kind = 'jana'`))[0]!.n)
-      for (const who of [pupil, pupil5]) {
-        const res = await who.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 4 })
-        expect(res.status, JSON.stringify(res.body)).toBe(422)
-        expect(res.body.error).toMatchObject({ code: 'SHORTAGE', message: 'Kertas tidak dapat dijana kerana soalan tidak mencukupi.' })
-        expect(res.body.error.details.shortages).toEqual([expect.objectContaining({ section: 'Bahagian A', kind: 'count', need, have: 0 })])
-      }
-      expect(Number((await db.query<{ n: string }>(`select count(*) n from papers where kind = 'jana'`))[0]!.n)).toBe(before)
+      const before = Number((await db.query<{ n: string }>(`select count(*) n from papers`))[0]!.n)
+      const res = await admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 4 })
+      expect(res.status, JSON.stringify(res.body)).toBe(422)
+      expect(res.body.error).toMatchObject({ code: 'SHORTAGE', message: 'Kertas tidak dapat dijana kerana soalan tidak mencukupi.' })
+      expect(res.body.error.details.shortages).toEqual([expect.objectContaining({ section: 'Bahagian A', kind: 'count', need, have: 0 })])
+      expect(Number((await db.query<{ n: string }>(`select count(*) n from papers`))[0]!.n)).toBe(before)
 
       const preview = await admin.get('/api/admin/papers/pool-preview?subject=MAT&kertas=4')
       expect(preview.status, JSON.stringify(preview.body)).toBe(200)
       expect(preview.body.data.verdict).not.toBe('boleh')
       expect(preview.body.data.firstFailure).toMatchObject({ section: 'Bahagian A', need })
     })
-
-    it('only a Disahkan Kontrak is offered: a Spec Kontrak (the seeded MAT kertas 1) is refused with NO_BLUEPRINT', async () => {
-      const res = await pupil.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 1 })
-      expect(res.status, JSON.stringify(res.body)).toBe(422)
-      expect(res.body.error.code).toBe('NO_BLUEPRINT')
-    })
   })
 
   // B2 cycle 17 Minor on T43 ("no chain step runs Jana Kertas with a KBAT quota above 0"): every Kontrak above uses kbatMarks 0. Here a Kontrak asks for
   // 3 KBAT marks in a 4-question Bahagian; the pool holds 3 KBAT and 6 non-KBAT MCQs (1 mark each), so the quota is binding: a draw that ignored it would
   // almost never hit exactly 3. The KBAT marks of the generated paper are counted from the pinned versions (leaf cognitive levels mengaplikasi to mencipta).
-  describe('6b. Jana Kertas under a Kontrak with a KBAT quota above 0', () => {
+  describe('6b. Jana Kertas (admin generator) under a Kontrak with a KBAT quota above 0', () => {
     const KBAT_LEVELS = "('mengaplikasi', 'menganalisis', 'menilai', 'mencipta')"
     const kbatIds: string[] = []
     const plainIds: string[] = []
@@ -970,10 +959,10 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     })
 
     it('a Disahkan Kontrak asks for 3 KBAT marks out of 4: the generated paper has exactly 4 questions and exactly 3 KBAT marks', async () => {
-      const res = await pupil.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 5 })
+      const res = await admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 5 })
       expect(res.status, JSON.stringify(res.body)).toBe(201)
       const paperId = res.body.data.paperId as string
-      expect((await db.query<{ kind: string }>(`select kind from papers where id = $1`, [paperId]))[0]!.kind).toBe('jana')
+      expect((await db.query<{ kind: string }>(`select kind from papers where id = $1`, [paperId]))[0]!.kind).toBe('pilihan')
       expect(await kbatMarksOf(paperId)).toEqual({ questions: 4, kbat: 3, total: 4 })
       // the KBAT questions are exactly the three of the pool (all of them), plus one non-KBAT
       const placed = (await db.query<{ id: string }>(`select pl.question_id::text id from paper_placements pl join paper_sections s on s.id = pl.paper_section_id where s.paper_id = $1`, [paperId])).map((r) => r.id)
@@ -982,12 +971,12 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     })
 
     it('an unreachable KBAT quota is refused with SHORTAGE (kind kbat), never a paper that misses the quota', async () => {
-      const before = Number((await db.query<{ n: string }>(`select count(*) n from papers where kind = 'jana'`))[0]!.n)
-      const res = await pupil.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 6 })
+      const before = Number((await db.query<{ n: string }>(`select count(*) n from papers`))[0]!.n)
+      const res = await admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 6 })
       expect(res.status, JSON.stringify(res.body)).toBe(422)
       expect(res.body.error).toMatchObject({ code: 'SHORTAGE', message: 'Kertas tidak dapat dijana kerana soalan tidak mencukupi.' })
       expect(res.body.error.details.shortages).toEqual([expect.objectContaining({ section: 'Bahagian A', kind: 'kbat', need: 5, have: 3 })])
-      expect(Number((await db.query<{ n: string }>(`select count(*) n from papers where kind = 'jana'`))[0]!.n)).toBe(before)
+      expect(Number((await db.query<{ n: string }>(`select count(*) n from papers`))[0]!.n)).toBe(before)
     })
   })
 

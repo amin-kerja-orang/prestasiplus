@@ -1,7 +1,6 @@
 /** Pure rules of the papers module (no database, no Nest): mapping, defaults and the generation seed. */
 import type { BijakBlueprintSource } from '@pp/contract'
 
-import { fnv1a32 } from '../../../db/prng'
 import type { Blueprint, BlueprintSection, SectionRule } from './exam-core.adapter'
 
 /** Database source code -> wire provenance tag (data model: verified, spec, draft). */
@@ -93,15 +92,6 @@ export function toComposerBlueprint(subject: string, kertas: number, row: Bluepr
       }),
     ),
   }
-}
-
-/**
- * Seed of one generation: a function of the injected clock, the user, the blueprint and how many
- * papers the user generated before. The same inputs give the same paper (AC 4); the counter makes
- * the next call differ even when the clock does not move.
- */
-export function generationSeed(at: Date, userId: string, blueprintCode: string, previousCount: number): number {
-  return fnv1a32(`${at.toISOString()}|${userId}|${blueprintCode}|${String(previousCount)}`)
 }
 
 /** Calendar year in Malaysia time (UTC+8, no daylight saving). */

@@ -13,9 +13,7 @@ import { useApi } from '@/composables/useApi'
 import { useFriend } from '@/composables/useFriend'
 import { useSession } from '@/composables/useSession'
 
-import type { BijakGenerateShortage } from '@pp/contract'
 
-import GenerateShortageAlert from '../components/GenerateShortageAlert.vue'
 import KeywordSuggestion from '../components/KeywordSuggestion.vue'
 import PartResultCard from '../components/PartResultCard.vue'
 import ReportQuestionButton from '../components/ReportQuestionButton.vue'
@@ -32,7 +30,6 @@ import type {
   QuestionResult,
   QuestionView,
   StimulusDef,
-  SubjectCode,
 } from '../domain/types'
 import { rewardItems } from '../lib/rewards'
 import { stimuliOf, toStimulusData } from '../lib/stimulus-data'
@@ -197,13 +194,10 @@ async function share(): Promise<void> {
   }
 }
 
-/** Retry on a Jana Kertas result (design 7.4): shortage / limit / no-contract show under the button. */
+/** Cuba Lagi (R1-B15, S3-T07): a fresh attempt on the same paper, for every paper kind; the 409 text is shown as it is. */
 const retrying = ref(false)
-const retryShortages = ref<BijakGenerateShortage[]>([])
-const retryShortageKey = ref(0)
 const retryMessage = ref('')
 
-/** Cuba Lagi on a Kertas Pilihan (R1-B15): a fresh attempt on the same paper; the 409 text is shown as it is. */
 async function retrySamePaper(attemptIdToRetry: string): Promise<void> {
   retrying.value = true
   retryMessage.value = ''
@@ -220,41 +214,10 @@ async function retrySamePaper(attemptIdToRetry: string): Promise<void> {
   }
 }
 
-/** Cuba Lagi on a Jana Kertas: a newly generated paper (design 7.4). */
-async function retryGenerated(subject: SubjectCode, kertas: number): Promise<void> {
-  retrying.value = true
-  retryShortages.value = []
-  retryMessage.value = ''
-  let paperId: string
-  try {
-    const out = await server.generatePaper(user.value, subject, kertas)
-    if (!out.ok) {
-      if (out.reason === 'shortage') {
-        retryShortages.value = out.shortages
-        retryShortageKey.value += 1
-      } else {
-        retryMessage.value =
-          out.reason === 'limit'
-            ? 'Kertas tidak dapat disusun sekarang. Cuba lagi.'
-            : 'Belum ada kontrak untuk subjek dan kertas ini'
-      }
-      return
-    }
-    paperId = out.paperId
-  } catch {
-    retryMessage.value = 'Kertas tidak dapat dijana sekarang. Cuba lagi.'
-    return
-  } finally {
-    retrying.value = false
-  }
-  await router.push({ name: 'm28.bijak.cover', params: { paperId } })
-}
-
 async function retry(): Promise<void> {
   const a = data.value?.attempt
   if (!a || retrying.value) return
-  if (a.paperKind === 'jana') await retryGenerated(a.subject, a.kertas)
-  else await retrySamePaper(a.id)
+  await retrySamePaper(a.id)
 }
 const home = computed(() => landingPath.value || '/dashboard')
 </script>
@@ -322,12 +285,6 @@ const home = computed(() => landingPath.value || '/dashboard')
           >Sejarah Bijak SPM</UButton
         >
       </div>
-      <GenerateShortageAlert
-        v-if="retryShortages.length"
-        :key="retryShortageKey"
-        :shortages="retryShortages"
-        class="mx-auto"
-      />
       <UAlert
         v-if="retryMessage"
         color="error"

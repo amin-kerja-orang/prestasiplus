@@ -745,9 +745,9 @@ describe('OpenAPI document', () => {
   })
 
   it('has no clash with the papers routes of BE-15', () => {
-    for (const p of ['/bijak/papers', '/bijak/papers/{id}', '/bijak/contracts', '/bijak/subjects', '/bijak/papers/generate'])
+    for (const p of ['/bijak/papers', '/bijak/papers/{id}', '/bijak/contracts', '/bijak/subjects'])
       expect(paths[p]).toBeDefined()
-    expect(ops.some((o) => o.path === '/bijak/papers/generate')).toBe(false)
+    expect(paths['/bijak/papers/generate']).toBeUndefined()
   })
 
   it('registers every component of this card, all prefixed BijakAttempt', () => {

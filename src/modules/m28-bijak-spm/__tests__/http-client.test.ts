@@ -120,14 +120,12 @@ describe('HttpBijakServer: reads', () => {
     const { server, only } = setup({
       'GET /api/bijak/papers': ok([paper]),
       'GET /api/bijak/papers/paper-1': ok({ ...paper, sections: [] }),
-      'GET /api/bijak/contracts': ok([{ subject: 'MAT', kertas: 1, source: 'Disahkan' }]),
       'GET /api/bijak/history': ok([
         { attemptId: 'att-1', startedAt: T0, durationSeconds: 5, score: 3, max: 4 },
       ]),
     })
     expect(await server.listPapers()).toEqual([paper])
     expect(await server.getCover(7, 'paper-1')).toMatchObject({ id: 'paper-1' })
-    expect((await server.listContracts())[0]).toMatchObject({ subject: 'MAT' })
     const rows = await server.history()
     expect(rows[0]).toMatchObject({ attemptId: 'att-1', startedAt: T0_MS, score: 3 })
     expect(only('GET', '/api/bijak/papers')).toHaveLength(1)
@@ -236,34 +234,6 @@ describe('HttpBijakServer: writes', () => {
     })
     // the token is fetched once and cached
     expect(only('GET', '/api/session')).toHaveLength(1)
-  })
-
-  it('generatePaper: 201, NO_BLUEPRINT and SHORTAGE map to the GenerateOutcome', async () => {
-    let res: TransportResponse = ok({ paperId: 'jana-1' }, 201)
-    const { server, last } = setup({ 'POST /api/bijak/papers/generate': () => res })
-    expect(await server.generatePaper(7, 'MAT', 2)).toEqual({ ok: true, paperId: 'jana-1' })
-    expect(last().body).toEqual({ subject: 'MAT', kertas: 2 })
-    expect(last().headers['x-csrf-token']).toBe('csrf-1')
-
-    res = fail(422, 'NO_BLUEPRINT', 'Belum ada kontrak untuk subjek dan kertas ini')
-    expect(await server.generatePaper(7, 'SN', 1)).toEqual({ ok: false, reason: 'no_blueprint' })
-
-    const shortages = [{ section: 'Bahagian A', need: 5, have: 3 }]
-    res = fail(422, 'SHORTAGE', 'Kertas tidak dapat dijana kerana soalan tidak mencukupi.', {
-      details: { shortages },
-    })
-    expect(await server.generatePaper(7, 'MAT', 1)).toEqual({
-      ok: false,
-      reason: 'shortage',
-      shortages,
-    })
-  })
-
-  it('generatePaper: a VALIDATION_ERROR is a bad_request', async () => {
-    const { server } = setup({
-      'POST /api/bijak/papers/generate': fail(422, 'VALIDATION_ERROR', 'Data tidak sah'),
-    })
-    await expect(server.generatePaper(7, '', 0)).rejects.toMatchObject({ code: 'bad_request' })
   })
 
   it('saveAnswers sends savedAt as ISO, flags/picks/position, and maps savedAt back', async () => {
@@ -439,7 +409,6 @@ describe('HttpBijakServer: errors', () => {
     for (const call of [
       () => server.getAttemptView(7, 'att-1'),
       () => server.saveAnswers(7, 'att-1', { changes: [] }),
-      () => server.generatePaper(7, 'MAT', 1),
     ]) {
       expect(await code(call())).toMatchObject({ code: 'offline', message: 'Luar talian' })
     }

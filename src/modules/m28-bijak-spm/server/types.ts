@@ -4,7 +4,6 @@
  * Type-only imports: this file must never pull the seed registry into the http bundle.
  */
 import type {
-  BijakGenerateShortage,
   BijakKuizCheckRequest,
   BijakKuizCheckResult,
   BijakKuizPaperPage,
@@ -24,7 +23,6 @@ import type {
   ResultView,
   SavePayload,
   Subject,
-  SubjectCode,
   SubmitPayload,
 } from '../domain/types'
 import type { PastSittings, SelfMarkOutcome } from '../domain/semakan'
@@ -43,30 +41,6 @@ export interface SubmitResult {
   closed?: boolean
   regraded?: boolean
 }
-
-/** One Kontrak row for Jana Kertas: which (subject, kertas) can be generated. */
-export interface ContractRow {
-  subject: SubjectCode
-  subjectName: string
-  kertas: number
-  source: string
-  code: string
-  durationMin: number
-  sections: { label: string; take: number }[]
-  /** BJS-01: whether the caller can generate from this row now (false: show the AC-03.6 reason). */
-  canGenerate: boolean
-  unavailableReason?: 'NO_BLUEPRINT'
-}
-
-/**
- * What `generatePaper` resolves to (BJS-01): the mock `GenerateOutcome` plus the typed shortage
- * lines and the 503 GENERATE_LIMIT outcome. A transport failure rejects instead.
- */
-export type BijakGenerateOutcome =
-  | { ok: true; paperId: string }
-  | { ok: false; reason: 'no_blueprint' }
-  | { ok: false; reason: 'shortage'; shortages: BijakGenerateShortage[] }
-  | { ok: false; reason: 'limit'; limitSections: { section?: string }[] }
 
 /**
  * Simulasi Kuiz (R1-B16): the random quiz (a stored practice session) and the per-paper quiz
@@ -88,8 +62,6 @@ export interface BijakApi extends BijakKuizApi {
   serverNow(): number
   listPapers(userId: number): Promise<PaperSummary[]>
   getCover(userId: number, paperId: string): Promise<PaperCover>
-  listContracts(): Promise<ContractRow[]>
-  generatePaper(userId: number, subject: SubjectCode, kertas: number): Promise<BijakGenerateOutcome>
   findInProgress(userId: number, paperId: string): Promise<InProgressInfo | null>
   startAttempt(
     userId: number,

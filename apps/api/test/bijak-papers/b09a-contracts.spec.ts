@@ -20,7 +20,7 @@ describe('R1-B09a fixes in bijak/papers', () => {
   const contract = async () => envelopeOf(BijakBlueprintContractSchema.array()).parse((await student.get('/api/bijak/contracts')).body).data
   const matK2 = (rows: Awaited<ReturnType<typeof contract>>) => rows.find((r) => r.subject === 'MAT' && r.kertas === 2)!
 
-  it('N1: canGenerate agrees with the serving row that generate uses (an older Disahkan row still serving)', async () => {
+  it('N1: canGenerate agrees with the serving row (an older Disahkan row still serving)', async () => {
     expect(matK2(await contract()).canGenerate).toBe(true)
     // A Spec head is being edited (v2, active) while v1 stays the serving Disahkan row (retired, serves_students).
     await t.db.query(`update blueprints set status = 'retired' where code = '1449/2' and version = 1`)
@@ -37,9 +37,6 @@ describe('R1-B09a fixes in bijak/papers', () => {
     expect(row.source).toBe('Spec')
     expect(row.canGenerate).toBe(true)
     expect(row.unavailableReason).toBeUndefined()
-    // and generate agrees: it does not answer NO_BLUEPRINT for this pair
-    const res = await student.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 2 })
-    expect(res.body?.error?.code).not.toBe('NO_BLUEPRINT')
     // no serving row at all: not offered
     await t.db.query(`update blueprints set serves_students = false, source = 'spec', verification_id = null where code = '1449/2' and version = 1`)
     expect(matK2(await contract()).canGenerate).toBe(false)

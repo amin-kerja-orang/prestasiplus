@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { bijakCodeOf, curriculumCodeOf } from '../../src/modules/bijak/papers/subject-codes'
-import { generationSeed, mytYear, referencePanels, ruleOf, sectionInstruction, sourceToWire, toComposerBlueprint } from '../../src/modules/bijak/papers/rules'
+import { mytYear, referencePanels, ruleOf, sectionInstruction, sourceToWire, toComposerBlueprint } from '../../src/modules/bijak/papers/rules'
 
 describe('papers rules', () => {
   it('maps the database source codes to the wire tags (Draf for anything unknown)', () => {
@@ -36,13 +36,6 @@ describe('papers rules', () => {
     })
     expect(b).toMatchObject({ source: 'Disahkan', sections: [{ label: 'A', rule: { type: 'choose', n: 1 }, pool: '', take: 2, compulsory: true }] })
     expect(b).not.toHaveProperty('reference')
-  })
-
-  it('the generation seed is a pure function of clock, user, blueprint and count', () => {
-    const at = new Date('2026-10-19T01:00:00Z')
-    expect(generationSeed(at, '5', '1449/2', 0)).toBe(generationSeed(at, '5', '1449/2', 0))
-    const others = [generationSeed(at, '6', '1449/2', 0), generationSeed(at, '5', '1449/1', 0), generationSeed(at, '5', '1449/2', 1), generationSeed(new Date(at.getTime() + 1), '5', '1449/2', 0)]
-    for (const o of others) expect(o).not.toBe(generationSeed(at, '5', '1449/2', 0))
   })
 
   it('computes the year in Malaysia time', () => {

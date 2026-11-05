@@ -18,7 +18,6 @@ const server = vi.hoisted(() => ({
   getResult: vi.fn(),
   selfMark: vi.fn(),
   retryAttempt: vi.fn(),
-  generatePaper: vi.fn(),
   pastSittings: vi.fn(),
 }))
 vi.mock('../server/client', () => ({ bijakServer: () => server }))

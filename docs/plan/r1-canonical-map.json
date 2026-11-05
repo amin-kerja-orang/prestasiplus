@@ -11832,16 +11832,6 @@
       "approved_by_card": null
     },
     {
-      "key": "POST /api/bijak/papers/generate",
-      "method": "POST",
-      "path": "/api/bijak/papers/generate",
-      "api_id": "API-BIJAK-03",
-      "status": "canonical",
-      "sector": "S3",
-      "file": "apps/api/src/modules/bijak/papers/papers.controller.ts",
-      "approved_by_card": null
-    },
-    {
       "key": "POST /api/cikgu/send",
       "method": "POST",
       "path": "/api/cikgu/send",

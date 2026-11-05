@@ -8,8 +8,6 @@ import {
   BIJAK_PAPERS_MESSAGES,
   BijakBlueprintContractSchema,
   BijakGenerateNoBlueprintErrorSchema,
-  BijakGenerateRequestSchema,
-  BijakGenerateResultSchema,
   BijakGenerateShortageErrorSchema,
   BijakPaperCoverSchema,
   BijakPaperSummarySchema,
@@ -430,31 +428,7 @@ describe('BijakBlueprintContract (listContracts) and BijakSubject (subjects)', (
   })
 })
 
-describe('generate (Jana Kertas)', () => {
-  it('accepts a subject and an integer kertas, and rejects bad input', () => {
-    expect(BijakGenerateRequestSchema.safeParse({ subject: 'MAT', kertas: 2 }).success).toBe(true)
-    expect(BijakGenerateRequestSchema.safeParse({ subject: 'MAT', kertas: '2' }).success).toBe(
-      false,
-    )
-    expect(BijakGenerateRequestSchema.safeParse({ subject: 'MAT', kertas: 1.5 }).success).toBe(
-      false,
-    )
-    expect(BijakGenerateRequestSchema.safeParse({ subject: 'MAT', kertas: 0 }).success).toBe(false)
-    expect(BijakGenerateRequestSchema.safeParse({ subject: '', kertas: 1 }).success).toBe(false)
-    expect(BijakGenerateRequestSchema.safeParse({ kertas: 1 }).success).toBe(false)
-  })
-
-  it('parses the 201 result: a string paper id and nothing else', () => {
-    expect(
-      envelopeOf(BijakGenerateResultSchema).safeParse({ data: { paperId: 'jana-mat-k2-1' } })
-        .success,
-    ).toBe(true)
-    expect(BijakGenerateResultSchema.safeParse({ paperId: 7 }).success).toBe(false)
-    expect(
-      BijakGenerateResultSchema.safeParse({ paperId: 'jana-mat-k2-1', sections: [] }).success,
-    ).toBe(false)
-  })
-
+describe('generate errors (admin Jana Kertas)', () => {
   it('parses the 422 NO_BLUEPRINT body with the mock copy', () => {
     const body = {
       error: { code: 'NO_BLUEPRINT', message: 'Belum ada kontrak untuk subjek dan kertas ini' },
@@ -515,7 +489,7 @@ describe('openapi document', () => {
     components: { schemas: Record<string, unknown> }
   }
 
-  it('contains the five routes with the documented status codes', () => {
+  it('contains the four routes with the documented status codes', () => {
     const ops = (path: string, method: string) => {
       const op = doc.paths[path]?.[method]
       expect(op, `${method} ${path}`).toBeDefined()
@@ -538,14 +512,10 @@ describe('openapi document', () => {
       '401',
       '403',
     ])
-    const generate = ops('/bijak/papers/generate', 'post')
-    expect(Object.keys(generate.responses).sort()).toEqual(['201', '401', '403', '422', '500', '503'])
-    expect(generate.parameters?.some((p) => p.name === 'X-CSRF-Token' && p.in === 'header')).toBe(
-      true,
-    )
+    expect(doc.paths['/bijak/papers/generate']?.post).toBeUndefined()
   })
 
-  it('has exactly five operations with the bijak-papers tag and no CSRF header on the GETs', () => {
+  it('has exactly four operations with the bijak-papers tag and no CSRF header on the GETs', () => {
     const tagged = Object.entries(doc.paths).flatMap(([path, methods]) =>
       Object.entries(methods)
         .filter(([, op]) => op.tags?.includes('bijak-papers'))
@@ -556,7 +526,6 @@ describe('openapi document', () => {
       'get /bijak/papers',
       'get /bijak/papers/{id}',
       'get /bijak/subjects',
-      'post /bijak/papers/generate',
     ])
     for (const [path, method] of [
       ['/bijak/papers', 'get'],
@@ -574,7 +543,7 @@ describe('openapi document', () => {
 
   it('contains every component of this card, all prefixed Bijak', () => {
     const names = Object.keys(BIJAK_PAPERS_COMPONENT_SCHEMAS)
-    expect(names).toHaveLength(15)
+    expect(names).toHaveLength(13)
     for (const name of names) {
       expect(name.startsWith('Bijak'), name).toBe(true)
       expect(doc.components.schemas[name], name).toBeDefined()
