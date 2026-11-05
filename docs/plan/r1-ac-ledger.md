@@ -77,10 +77,13 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
-| S1-T05 | AC-QA-34 | CI | Pass | 2026-11-05 | team-aa/S-3 | imports.spec.ts::[CI] the 2,000-row cap is admin-only: the Guru route refuses more than 500 rows with "Fail melebihi 500 baris." for every header, the admin route 2,001 rows with the 2,000 message; imports-csv.spec.ts::[CI] more than 2,000 data rows refuses the file whole (both formats); 2,000 is accepted |
 | S4-T03 | AC-ADM-C05.1 | CI | Pass | 2026-11-05 | team-bb/S-3 | bulk-chapter.spec.ts::sets the Bab in place on the eligible rows, with expectedCount = matched, and writes one counts-only audit entry (no new version, status and live version unchanged); bulk-chapter.spec.ts::is live: a bulk run moves the counts at once |
 | S4-T03 | AC-ADM-C05.2 | CI | Pass | 2026-11-05 | team-bb/S-3 | bulk-chapter.spec.ts::counts a question of another subject or level as refused and leaves it alone (AC-ADM-C05.2) |
 | S4-T03 | AC-ADM-C05.4 | CI | Pass | 2026-11-05 | team-bb/S-3 | bulk-chapter.spec.ts::overwrite=false keeps an existing Bab (AC-ADM-C05.4: 10 selected, 4 with a Bab -> 6 linked, 4 refused); bulk-chapter.spec.ts::overwrite=true replaces an existing Bab (AC-ADM-C05.4: all 10 linked) |
+| S1-T05 | AC-QA-34 | CI | Pass | 2026-11-05 | team-aa/S-3 | imports.spec.ts::[CI] the 2,000-row cap is admin-only: the Guru route refuses more than 500 rows with "Fail melebihi 500 baris." for every header, the admin route 2,001 rows with the 2,000 message; imports-csv.spec.ts::[CI] more than 2,000 data rows refuses the file whole (both formats); 2,000 is accepted; imports.spec.ts::[CI] AC-QA-34: 10 questions with 1 invalid: 9 imported, the error CSV has exactly one line |
+| S1-T05 | AC-ADM-QE6.1 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions-workflow/imports.spec.ts::[CI] a CSV of one group of 3 yields one group with 3 members in group_order and one stimulus, all drafts, in the same import; questions-workflow/imports-csv.spec.ts::[CI] one group of 3 rows is one group with 3 members in group_order and one stimulus |
+| S1-T05 | AC-ADM-QE6.2 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions-workflow/imports.spec.ts::[CI] a row with every DSKP column imports with its unit, SP, TP, aras, chapter and topic and passes the publish gate through the existing approve route |
+| S1-T05 | AC-ADM-Q11.1 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions-workflow/imports.spec.ts::[CI] a row with every DSKP column imports with its unit, SP, TP, aras, chapter and topic and passes the publish gate through the existing approve route |
 
 ## Sprint 3
 
