@@ -127,13 +127,19 @@ export class AuditService {
    * (status, code, message or timing class).
    */
   async record(event: AuditEventInput): Promise<void> {
+    await this.recordWithId(event)
+  }
+
+  /** `record`, and the decimal-string id of the new row (for a response that names its audit entry). */
+  async recordWithId(event: AuditEventInput): Promise<string> {
     const detail: Record<string, unknown> = {
       ...((sanitizeDetails(event.details ?? {}) as Record<string, unknown>) ?? {}),
     }
     if (event.sessionRowId) detail.sessionRowId = event.sessionRowId
     const secret = this.config.get('SESSION_SECRET', { infer: true }) as string
     const db = event.tx ?? this.prisma.client
-    await db.auditEvent.create({
+    const row = await db.auditEvent.create({
+      select: { id: true },
       data: {
         action: event.action,
         actorUserId: toBigInt(event.actorUserId, 'actorUserId'),
@@ -148,5 +154,6 @@ export class AuditService {
         isTest: event.isTest ?? false,
       },
     })
+    return row.id.toString()
   }
 }

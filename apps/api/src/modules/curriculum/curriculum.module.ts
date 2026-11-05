@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common'
 
 import { AdminCurriculumController, AdminEducationLevelsController, AdminSubjectsController } from './admin.controller'
 import { CurriculumAdminService } from './admin.service'
+import { CurriculumBulkChapterService } from './bulk-chapter.service'
 import { CurriculumRepository } from './curriculum.repository'
 import { CurriculumLearnerController } from './learner.controller'
 import { CurriculumLearnerService } from './learner.service'
@@ -28,6 +29,7 @@ import { CurriculumPorts } from './providers'
   providers: [
     CurriculumRepository,
     CurriculumAdminService,
+    CurriculumBulkChapterService,
     CurriculumLearnerService,
     CurriculumPorts,
   ],

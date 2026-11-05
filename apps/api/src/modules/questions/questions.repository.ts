@@ -3,11 +3,12 @@ import { Inject, Injectable, Logger } from '@nestjs/common'
 import { ApiError } from '../../common/errors/api-error'
 import { Prisma } from '../../db/generated/client'
 import type { Prisma as PrismaTypes } from '../../db/generated/client'
-import { idFromString, idToString } from '../../db/ids'
+import { idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, SPM_SERVABLE_SQL } from './learner-visibility'
 import type { Prng } from '../../db/prng'
-import { kbatOf, missingLeafSql } from './effective-leaf'
+import { adminFilterConds, bi, likePattern } from './admin-filter'
+import { kbatOf } from './effective-leaf'
 import { paperHeld, QUESTION_SERVED_BY_PAPER } from './served-rule'
 import { isQuestionStatus } from './status'
 import { partsFromRows, type PartDraft, StoredKeyError } from './tree'
@@ -234,15 +235,6 @@ const groupGapCountSql = (groupId: Prisma.Sql): Prisma.Sql =>
 export const groupCompleteSql = (groupId: Prisma.Sql): Prisma.Sql =>
   Prisma.sql`(EXISTS (SELECT 1 FROM stimulus_group_stimuli wgs WHERE wgs.group_id = ${groupId}) AND ${groupGapCountSql(groupId)} = 0)`
 
-/** `bigint` of a decimal id, or null when the text is not a canonical id (such an id never exists). */
-function bi(text: string): bigint | null {
-  try {
-    return idFromString(text)
-  } catch {
-    return null
-  }
-}
-
 /** The PKSK tags of a question (`pksk_domain` code and `pksk_level`), or null when it carries no domain tag. */
 function pkskOf(tags: readonly { kind: string; code: string }[]): { domainCode: string; level: 'T1' | 'T4' } | null {
   const domain = tags.find((t) => t.kind === 'pksk_domain')
@@ -285,8 +277,6 @@ function stimulusRecordOf(row: StimulusRow): StimulusRecord | null {
     tableData: row.tableData ?? null,
   }
 }
-
-const likePattern = (s: string): string => `%${s.replace(/[\\%_]/g, (c) => `\\${c}`)}%`
 
 /**
  * The only doorway to the question tables (ADR-0014, data model G-12). Other cards (BE-12 practice,
@@ -663,55 +653,7 @@ export class QuestionsRepository {
   }
 
   private adminConds(f: AdminListFilter): Prisma.Sql[] {
-    const conds: Prisma.Sql[] = [NOT_PKSK, NOT_PRIMARY_LEVEL_SQL]
-    const id = (text: string | undefined, column: Prisma.Sql): void => {
-      if (text === undefined) return
-      const key = bi(text)
-      conds.push(key === null ? Prisma.sql`FALSE` : Prisma.sql`${column} = ${key}`)
-    }
-    id(f.subjectId, Prisma.sql`v.subject_id`)
-    id(f.educationLevelId, Prisma.sql`v.education_level_id`)
-    if (f.difficultyLevel !== undefined) {
-      const n = /^[1-5]$/.test(f.difficultyLevel) ? Number(f.difficultyLevel) : null
-      // Level 5 includes TP 6 (the flat wire clamps 6 to 5).
-      conds.push(n === null ? Prisma.sql`FALSE` : n === 5 ? Prisma.sql`v.difficulty_tp >= 5` : Prisma.sql`v.difficulty_tp = ${n}`)
-    }
-    if (f.status) conds.push(Prisma.sql`v.status = ${f.status}`)
-    if (f.dskpFilter !== undefined) {
-      const tagged = Prisma.sql`EXISTS (SELECT 1 FROM question_version_sp_nodes s WHERE s.question_version_id = v.id)`
-      conds.push(f.dskpFilter === 'tagged' ? tagged : f.dskpFilter === 'untagged' ? Prisma.sql`NOT ${tagged}` : Prisma.sql`FALSE`)
-    }
-    if (f.tagReview) conds.push(Prisma.sql`v.tag_review`)
-    if (f.missing !== undefined) conds.push(missingLeafSql(f.missing))
-    if (f.complianceFilter !== undefined) {
-      const c = f.complianceFilter
-      conds.push(
-        c === 'verified'
-          ? Prisma.sql`q.live_version_no = v.version_no AND v.status = 'approved'`
-          : c === 'draft'
-            ? Prisma.sql`v.status <> 'approved'`
-            : c === 'missing_source'
-              ? Prisma.sql`v.source_file_id IS NULL`
-              : c === 'verified_generated'
-                ? Prisma.sql`q.source_type = 'ai_variant' AND v.status = 'approved'`
-                : Prisma.sql`FALSE`,
-      )
-    }
-    if (f.sourceFilter !== undefined) {
-      // The v2 store has no textbook / dskp / trial / marking_scheme source: only ai_generated exists on the wire.
-      conds.push(f.sourceFilter === 'ai_generated' ? Prisma.sql`q.source_type = 'ai_variant'` : Prisma.sql`FALSE`)
-    }
-    // V2 Studio filters (D79). Tahun, Negeri and Jenis read the source paper of the version; Kertas is the trailing digit of the
-    // version's paper code (how the paper builder reads it). A question without the value never matches.
-    if (f.tahun !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND sp.year = ${Number(f.tahun)})`)
-    if (f.negeri !== undefined && f.negeri.trim() !== '') conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND lower(btrim(sp.exam_board)) = lower(btrim(${f.negeri})))`)
-    if (f.jenis !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND sp.exam_type = ${f.jenis})`)
-    if (f.kertas !== undefined) conds.push(Prisma.sql`substring(v.paper_code from '/([1-3])[[:space:]]*$') = ${f.kertas}`)
-    if (f.search !== undefined && f.search.trim() !== '') {
-      const like = likePattern(f.search.trim())
-      conds.push(Prisma.sql`(v.stem_ms ILIKE ${like} ESCAPE '\\' OR v.stem_en ILIKE ${like} ESCAPE '\\')`)
-    }
-    return conds
+    return adminFilterConds(f)
   }
 
   /** Structured questions (type `structured`) over the latest version, id ascending. */
