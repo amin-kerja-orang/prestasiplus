@@ -218,7 +218,7 @@ export const TEACHER_ITEMS: readonly MatrixItem[] = [
   item(41, 'Pelajar Saya', p('/guru/pelajar')),
   item(42, 'Laporan', p('/guru/laporan')),
   item(43, 'Laporan Mingguan', p('/guru/laporan-mingguan-kelas'), p('/laporan-mingguan')),
-  item(44, 'Sumbang Soalan', p('/guru/soalan')),
+  item(44, 'Sumbang Soalan', p('/guru/soalan'), p('/guru/soalan-guru')),
   // [S6 end]
 ]
 
