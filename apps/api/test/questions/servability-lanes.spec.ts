@@ -304,7 +304,7 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
       withdrawn: 'Soalan ditarik balik (tidak aktif) — aktifkan semula di senarai soalan.',
       pksk: 'Soalan PKSK dipaparkan di modul PKSK sahaja.',
       level_primary: 'Tahap sekolah rendah tidak dipaparkan kepada murid.',
-      level_not_offered: 'Hanya soalan Tingkatan 4 dan 5 dipaparkan di {aktiviti}.',
+      level_not_offered: 'Tetapkan Tingkatan soalan ini untuk memaparkannya di {aktiviti}.',
       subject_unavailable: 'Subjek tidak aktif atau tidak dipautkan kepada tahap soalan ini.',
       subject_not_listed: 'Subjek ini tiada dalam senarai {aktiviti}.',
       no_chapter: 'Bab belum dipaut - tidak disajikan dalam Soalan by Chapter.',
