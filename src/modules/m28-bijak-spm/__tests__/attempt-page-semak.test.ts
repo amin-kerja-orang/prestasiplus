@@ -99,6 +99,18 @@ describe('Semak (FR-MUR-13-6)', () => {
     expect(q('[data-testid=option-b]')?.getAttribute('data-state')).toBe('selected')
   })
 
+  it('a save that fails sends no check, and says the existing line', async () => {
+    server.getAttemptView.mockResolvedValue(view([question('q1', MCQ)]))
+    server.saveAnswers.mockRejectedValueOnce(new Error('500'))
+    await render()
+    q('[data-testid=option-a]')!.click()
+    await flushPromises()
+    q('[data-testid=check-button]')!.click()
+    await flushPromises()
+    expect(server.checkQuestion).not.toHaveBeenCalled()
+    expect(q('[data-testid=submit-error]')?.textContent).toContain('Semakan tidak dapat dibuat sekarang. Cuba lagi.')
+  })
+
   it('a structured part stays editable after a check; typing takes the verdict away', async () => {
     server.getAttemptView.mockResolvedValue(view([question('q1', { parts: [partOf('p1', 'short_text')] })]))
     server.checkQuestion.mockResolvedValue({ ...result('q1', 1), parts: [] })

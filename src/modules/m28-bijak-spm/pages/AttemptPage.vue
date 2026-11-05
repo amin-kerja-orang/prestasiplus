@@ -427,7 +427,12 @@ function goToId(id: string): void {
 async function check(): Promise<void> {
   const q = current.value
   if (!q) return
-  await autosave?.flush()
+  submitError.value = ''
+  // A save that did not go through would mark the old answer on the server and use up a check.
+  if (autosave && !(await autosave.flush())) {
+    submitError.value = 'Semakan tidak dapat dibuat sekarang. Cuba lagi.'
+    return
+  }
   try {
     const res = await server.checkQuestion(user.value, attemptId.value, q.id)
     checks.value = { ...checks.value, [q.id]: res }

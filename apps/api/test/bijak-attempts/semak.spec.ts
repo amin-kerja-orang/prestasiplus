@@ -127,6 +127,21 @@ describe('Semak (FR-MUR-13-6)', () => {
     expect((await view(id)).attempt.checkCounts).toEqual({ [q]: 2 })
   })
 
+  it('text the grader defuses is the same answer: a repeat check uses no check, and the verdict survives a reload', async () => {
+    const id = await startAttempt(me, PAPER.sainsK2, 'latihan', true)
+    const q = await mixedQuestion(id)
+    const first = await check(id, q, { changes: [change(AUTO_PART, { text: '[Ca] ion' }, 1)] })
+    expect(first.checksUsed).toBe(1)
+    expect((await check(id, q)).checksUsed).toBe(1)
+    expect((await check(id, q)).checksUsed).toBe(1)
+    const v = await view(id)
+    expect(v.checks.map((c) => c.questionId)).toEqual([q])
+    expect(v.attempt.checkCounts).toEqual({ [q]: 1 })
+    // not locked: the part still takes an edit
+    expect((await save(id, [change(AUTO_PART, { text: 'kalsium' }, 2)])).status).toBe(200)
+    expect((await view(id)).attempt.answers[AUTO_PART]?.answer.text).toBe('kalsium')
+  })
+
   it('a stored check row made before this rule is still narrowed in the view', async () => {
     const id = await startAttempt(me, PAPER.sainsK2, 'latihan', true)
     const q = await mixedQuestion(id)

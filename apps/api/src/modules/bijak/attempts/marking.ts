@@ -18,6 +18,7 @@ import type {
 } from '@pp/contract'
 
 import {
+  defuseAnswer,
   effectiveMarks,
   gradePart,
   isBlank,
@@ -244,9 +245,12 @@ export function revealedOnly(result: BijakAttemptQuestionResult, parts: Readonly
   }
 }
 
-/** The typed answer alone: `revealed` is not the pupil's, `plain` is derived, and jsonb does not keep key order. */
+/**
+ * The typed answer alone: `revealed` is not the pupil's, `plain` is derived, and jsonb does not keep key order. Defused like the grader's copy, because a
+ * stored check holds that copy: the same text must compare equal whether it comes from the check or from the saved answer.
+ */
 function answerText(a: PartAnswer | undefined): string {
-  const typed = { ...a }
+  const typed = defuseAnswer(a ?? {})
   delete typed.revealed
   delete typed.plain
   return JSON.stringify(Object.entries(typed).filter(([, v]) => v !== undefined).sort(([x], [y]) => x.localeCompare(y)))
