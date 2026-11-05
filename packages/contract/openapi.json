@@ -10575,8 +10575,8 @@
           },
           "durationMin": {
             "type": "integer",
-            "minimum": 1,
-            "description": "Printed duration in minutes (Q-S1)."
+            "minimum": 0,
+            "description": "Printed duration in minutes (Q-S1); 0 = an untimed Kertas Subjektif paper, shown as \"—\" (PO decision 2026-11-05, item 17)."
           },
           "questionCount": {
             "type": "integer",
@@ -10760,8 +10760,8 @@
           },
           "durationMin": {
             "type": "integer",
-            "minimum": 1,
-            "description": "Printed duration in minutes (Q-S1)."
+            "minimum": 0,
+            "description": "Printed duration in minutes (Q-S1); 0 = an untimed Kertas Subjektif paper, shown as \"—\" (PO decision 2026-11-05, item 17)."
           },
           "questionCount": {
             "type": "integer",
@@ -11642,9 +11642,11 @@
             "type": "string",
             "enum": [
               "pilihan",
-              "jana"
+              "jana",
+              "subjektif",
+              "structured"
             ],
-            "description": "pilihan = curated paper, jana = paper generated for the caller."
+            "description": "pilihan = curated paper, jana = generated paper, subjektif = Kertas Subjektif sitting (latihan, untimed, self-marked), structured = Soalan Berstruktur attempt (no paper)."
           },
           "title": {
             "type": "string",
@@ -11691,7 +11693,8 @@
           },
           "durationMin": {
             "type": "integer",
-            "minimum": 1
+            "minimum": 0,
+            "description": "0 = untimed (a Kertas Subjektif sitting of a paper with no Tempoh; PO decision 2026-11-05, item 17)."
           },
           "answers": {
             "type": "object",
@@ -13047,9 +13050,11 @@
             "type": "string",
             "enum": [
               "pilihan",
-              "jana"
+              "jana",
+              "subjektif",
+              "structured"
             ],
-            "description": "pilihan = curated paper, jana = paper generated for the caller."
+            "description": "pilihan = curated paper, jana = generated paper, subjektif = Kertas Subjektif sitting (latihan, untimed, self-marked), structured = Soalan Berstruktur attempt (no paper)."
           },
           "mode": {
             "$ref": "#/components/schemas/BijakAttemptMode"
