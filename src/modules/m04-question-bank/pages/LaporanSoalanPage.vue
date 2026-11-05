@@ -12,14 +12,31 @@
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsEmptyState, DsLoadError, DsPage, DsPanel, DsStatRow, DsStatusBadge, type StatItem } from '@/ds'
-import { diffForHumans } from '@/lib/time'
+import {
+  DsEmptyState,
+  DsLoadError,
+  DsPage,
+  DsPanel,
+  DsStatRow,
+  DsStatusBadge,
+  DsText,
+  type StatItem,
+} from '@/ds'
+import { formatDateShortMs } from '@/lib/time'
 
-import { fetchMyReports } from '../api/reports'
-import { DISPLAY_STATUS_DS, DISPLAY_STATUS_LABEL } from '../lib/report-reasons'
+import { fetchMyReports, type ReportView } from '../api/reports'
+import {
+  DISPLAY_STATUS_DS,
+  DISPLAY_STATUS_LABEL,
+  reasonLabel,
+} from '../lib/report-reasons'
 import { LOAD_ERROR } from '../lib/ui-errors'
 
 const { data, error, reload } = useApi((signal) => fetchMyReports({ signal }))
+
+/** DD1: the type chip shows the label of the FIRST reason (10-murid R1-MUR-54). */
+const firstReasonLabel = (r: ReportView): string =>
+  r.reasonLabels[0] ?? (r.reasons[0] ? reasonLabel(r.questionType, r.reasons[0]) : '')
 
 const rows = computed(() => data.value?.data ?? [])
 const counts = computed(() => data.value?.meta.counts ?? null)
@@ -81,7 +98,7 @@ const counters = computed<StatItem[]>(() =>
       >
         <DsPanel>
           <div class="flex flex-col gap-3">
-            <div class="flex flex-wrap items-center gap-2">
+            <div class="flex flex-wrap gap-2">
               <h3 class="text-label text-highlighted" data-testid="my-report-title">
                 {{ r.questionType === 'structured' ? 'Soalan Struktur' : 'Soalan' }} #{{
                   r.questionId
@@ -92,20 +109,28 @@ const counters = computed<StatItem[]>(() =>
                 :label="DISPLAY_STATUS_LABEL[r.displayStatus]"
                 data-testid="my-report-status"
               />
-              <span class="text-caption text-muted" data-testid="my-report-time">{{
-                diffForHumans(r.createdAt)
-              }}</span>
+              <DsText variant="caption" as="span" data-testid="my-report-time"
+                >Dihantar {{ formatDateShortMs(r.createdAt) }}</DsText
+              >
             </div>
             <div class="flex flex-wrap gap-2">
               <UBadge
-                v-for="(label, i) in r.reasonLabels"
-                :key="`${String(i)}-${label}`"
+                v-if="firstReasonLabel(r)"
                 color="neutral"
                 variant="soft"
-                :label="label"
+                :label="firstReasonLabel(r)"
                 data-testid="my-report-reason"
               />
+              <DsText v-if="r.subject" variant="caption" as="span" data-testid="my-report-subject">{{
+                r.subject.name
+              }}</DsText>
             </div>
+            <DsText v-if="r.questionText" variant="body" :clamp="2" data-testid="my-report-text">{{
+              r.questionText
+            }}</DsText>
+            <DsText v-if="r.comment" variant="body" tone="muted" data-testid="my-report-comment">{{
+              r.comment
+            }}</DsText>
             <UAlert
               v-if="r.adminNotes"
               color="neutral"

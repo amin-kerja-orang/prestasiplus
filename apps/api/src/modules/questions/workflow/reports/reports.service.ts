@@ -183,16 +183,25 @@ export class QuestionReportsService {
     }
   }
 
-  /** GET /question-reports/mine: only the caller's rows, no question content. */
+  /** GET /question-reports/mine: only the caller's rows; a pupil's rows add `subject` and a plain-text `questionText` of the reported version (DD1). */
   async mine(actor: WorkflowActor) {
     const reporter = idFromString(actor.userId)
     const [rows, by] = await Promise.all([this.repo.list({ reporterId: reporter }), this.repo.statusCounts({ reporterId: reporter })])
     const facts = await this.factsOf(rows)
     const names = await this.repo.userNames([reporter])
+    // DD1: a pupil's card shows the subject and a short text of the version they reported (it passed the served check at create time).
+    // A Guru's row keeps no question content.
+    const versions = await this.bank.describeVersions(rows.filter((r) => r.reporterRole === 'murid').map((r) => ({ questionId: idToString(r.questionId), versionNo: r.questionVersionNo })))
     const data: QuestionReportMineView[] = rows.map((r) => {
       const qid = idToString(r.questionId)
       const exists = facts.status.has(qid)
-      return { ...this.baseView(r, exists, facts, names), question: { exists, type: typeOf(r), id: qid } }
+      const v = r.reporterRole === 'murid' ? versions.get(`${qid}:${r.questionVersionNo}`) : undefined
+      return {
+        ...this.baseView(r, exists, facts, names),
+        question: { exists, type: typeOf(r), id: qid },
+        subject: v?.subjectId != null && v.subjectName != null ? { id: v.subjectId, name: v.subjectName } : null,
+        questionText: v ? plainPreview(v.stemText) || null : null,
+      }
     })
     return { data, meta: { ...listMeta(1, Math.max(1, data.length), data.length), counts: countsOf(by) } }
   }
@@ -344,4 +353,25 @@ export class QuestionReportsService {
     }
     return out
   }
+}
+
+/** Longest preview of a question stem sent to a reporter's own list. */
+export const PLAIN_PREVIEW_MAX = 200
+
+/** Plain-text preview of a stem that may hold markup: tags dropped, common entities decoded, whitespace collapsed, capped with an ellipsis. */
+export function plainPreview(html: string, max: number = PLAIN_PREVIEW_MAX): string {
+  const text = html
+    .replace(/<\/?[a-zA-Z][^<>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&#(\d+);/g, (_, d: string) => String.fromCodePoint(Number(d)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, h: string) => String.fromCodePoint(Number.parseInt(h, 16)))
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ')
+    .trim()
+  const chars = Array.from(text)
+  return chars.length <= max ? text : `${chars.slice(0, max - 1).join('').trimEnd()}…`
 }

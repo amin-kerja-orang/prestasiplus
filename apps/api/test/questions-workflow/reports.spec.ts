@@ -496,6 +496,28 @@ describe('question reports (BE-10 AC 3, 4, 9, 11)', () => {
       expect(mine.data.find((r) => r.id === rid)).toMatchObject({ status: 'reviewed', adminNotes: 'Terima kasih, sedang disemak.', reporterRole: 'murid' })
     })
 
+    it('DD1: a pupil row carries the subject and plain text of the reported version; null once the question is gone; never another pupil text', async () => {
+      const pupil = await freshPupil('pelajar-kad@demo.test')
+      const other = await freshPupil('pelajar-kad2@demo.test')
+      const long = `<p>Berapakah   nilai</p>${'x'.repeat(300)}`
+      const id = seed({ brief: { stemText: long, subjectId: '3', subjectName: 'Fizik' } })
+      const gone = seed({ brief: { stemText: 'Akan hilang' } })
+      const secret = seed({ brief: { stemText: 'Teks murid lain' } })
+      for (const q of [id, gone]) expect((await pupil.post('/api/question-reports', body(q))).status).toBe(201)
+      expect((await other.post('/api/question-reports', body(secret))).status).toBe(201)
+      const before = QuestionReportMineResponseSchema.parse((await pupil.get('/api/question-reports/mine')).body)
+      const row = before.data.find((r) => r.questionId === id)!
+      expect(row.subject).toEqual({ id: '3', name: 'Fizik' })
+      expect(row.questionText!.length).toBeLessThanOrEqual(200)
+      expect(row.questionText).toMatch(/^Berapakah nilai/)
+      expect(row.questionText).not.toContain('<')
+      t.fake.questions.delete(gone)
+      const res = await pupil.get('/api/question-reports/mine')
+      const after = QuestionReportMineResponseSchema.parse(res.body)
+      expect(after.data.find((r) => r.questionId === gone)).toMatchObject({ subject: null, questionText: null })
+      expect(JSON.stringify(res.body)).not.toContain('Teks murid lain')
+    })
+
     it('the admin sees only the reports the admin filed, never the students', async () => {
       const res = QuestionReportMineResponseSchema.parse((await c.admin.get('/api/question-reports/mine')).body)
       expect(res.data.every((r) => r.reporter.id === c.admin.userId)).toBe(true)
@@ -589,5 +611,16 @@ describe('question reports (BE-10 AC 3, 4, 9, 11)', () => {
       await c.student.post('/api/question-reports', body(qid))
       expect(await t.app.get(QuestionReportsService, { strict: false }).markFixedFor(qid, 2)).toBe(0)
     })
+  })
+})
+
+describe('plainPreview (S5-T06 DD1)', () => {
+  it('drops tags but keeps maths comparisons, decodes named and numeric entities, collapses spaces and caps with an ellipsis', async () => {
+    const { plainPreview } = await import('../../src/modules/questions/workflow/reports/reports.service')
+    expect(plainPreview('<p>Jika x < 5 dan y > 3,</p>  <b>cari</b> nilai')).toBe('Jika x < 5 dan y > 3, cari nilai')
+    expect(plainPreview('A&nbsp;&amp;&#160;B &#x41; &lt;tag&gt;')).toBe('A & B A <tag>')
+    expect(plainPreview('a'.repeat(250))).toHaveLength(200)
+    expect(plainPreview('a'.repeat(250)).endsWith('…')).toBe(true)
+    expect(plainPreview('<p> </p>')).toBe('')
   })
 })

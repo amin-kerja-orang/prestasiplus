@@ -140,6 +140,14 @@ export interface ImportedQuestionInput {
 }
 
 /** Display facts about a question for lists (reports, master notes). */
+/** The stem and subject of one exact version (the version a report was filed against), for the reporter's own list. */
+export interface QuestionVersionBrief {
+  /** Plain-text stem (the adapter strips markup). */
+  stemText: string
+  subjectId: string | null
+  subjectName: string | null
+}
+
 export interface QuestionBrief {
   id: string
   /** Plain-text stem (the adapter strips markup). */
@@ -242,6 +250,9 @@ export interface QuestionBankPort {
   /** Display facts for lists; unknown ids are absent from the map. */
   describe(ids: readonly string[]): Promise<ReadonlyMap<string, QuestionBrief>>
 
+  /** Stem and subject of exact versions, keyed `${questionId}:${versionNo}`; an unknown question or version is absent. */
+  describeVersions(refs: readonly { questionId: string; versionNo: number }[]): Promise<ReadonlyMap<string, QuestionVersionBrief>>
+
   /**
    * Every question, for the quality audit and dashboard, in batches of at most `size` (ascending id, keyset, bounded memory):
    * `visit` is called once per batch, in order. Never load the whole bank into one array.
@@ -296,6 +307,9 @@ export class EmptyQuestionBank implements QuestionBankPort {
     return null
   }
   async describe(): Promise<ReadonlyMap<string, QuestionBrief>> {
+    return new Map()
+  }
+  async describeVersions(): Promise<ReadonlyMap<string, QuestionVersionBrief>> {
     return new Map()
   }
   async forEachQualityBatch(): Promise<void> {

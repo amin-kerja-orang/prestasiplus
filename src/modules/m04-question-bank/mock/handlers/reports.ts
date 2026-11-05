@@ -277,10 +277,22 @@ function update(req: MockRequest, ctx: MockContext): MockResponse {
   )
 }
 
+/** DD1: the subject and a short plain text of the reported question, for the caller's own card (S13). */
+function cardFacts(r: QuestionReport): Pick<ReportView, 'subject' | 'questionText'> {
+  const q = r.questionType === 'structured' ? structuredRepo.get(r.questionId) : questionsRepo.get(r.questionId)
+  if (!q) return { subject: null, questionText: null }
+  const text = ('stimulus' in q ? q.stimulus : q.questionText).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+  const subject = q.subjectId === null ? undefined : nameLookup().subject(q.subjectId)
+  return {
+    subject: subject ? { id: subject.id, name: subject.name } : null,
+    questionText: text === '' ? null : text.slice(0, 200),
+  }
+}
+
 function mine(req: MockRequest): MockResponse {
   const rows = reportsRepo.mine(req.session?.userId ?? 0)
   return unpaged(
-    rows.map((r) => toView(r, false)),
+    rows.map((r) => ({ ...toView(r, false), ...cardFacts(r) })),
     { counts: countsOf(rows) },
   )
 }

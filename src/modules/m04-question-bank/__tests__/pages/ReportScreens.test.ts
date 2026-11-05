@@ -359,6 +359,41 @@ describe('LaporanSoalanPage (M04 S13)', () => {
     expect(second.get('[data-testid=my-report-notes]').text()).toContain('Status tindakan admin:')
   })
 
+  it('DD1: a card shows the first-reason chip, subject, 2-line text, comment and "Dihantar {d M Y}"', async () => {
+    api.fetchMyReports.mockResolvedValue(
+      mine(
+        [
+          mcq(6, {
+            reasons: ['wrong_answer', 'typo'],
+            reasonLabels: ['Jawapan tidak tepat', 'Kesalahan ejaan / taip'],
+            comment: 'Pilihan C pun salah.',
+            subject: { id: 2, name: 'Matematik' },
+            questionText: 'Rajah 16 menunjukkan dua segi tiga.',
+          }),
+          report(7, { subject: null, questionText: null, comment: null }),
+        ],
+        { pending: 1, reviewed: 1, fixed: 0, dismissed: 0, all: 2 },
+      ),
+    )
+    wrapper = mount(LaporanSoalanPage)
+    await flushPromises()
+    const card = wrapper.get('[data-testid=my-report-6]')
+    expect(card.findAll('[data-testid=my-report-reason]').map((c) => c.text())).toEqual([
+      'Jawapan tidak tepat',
+    ])
+    expect(card.get('[data-testid=my-report-subject]').text()).toBe('Matematik')
+    const text = card.get('[data-testid=my-report-text]')
+    expect(text.text()).toBe('Rajah 16 menunjukkan dua segi tiga.')
+    expect(text.classes()).toContain('line-clamp-2')
+    expect(card.get('[data-testid=my-report-comment]').text()).toBe('Pilihan C pun salah.')
+    expect(card.get('[data-testid=my-report-time]').text()).toBe('Dihantar 25 Sep 2026')
+    expect(card.get('[data-testid=my-report-status]').text()).toBe('Disemak')
+    const bare = wrapper.get('[data-testid=my-report-7]')
+    expect(bare.find('[data-testid=my-report-subject]').exists()).toBe(false)
+    expect(bare.find('[data-testid=my-report-text]').exists()).toBe(false)
+    expect(bare.find('[data-testid=my-report-comment]').exists()).toBe(false)
+  })
+
   it('a load failure keeps the counters row and shows the red box', async () => {
     api.fetchMyReports.mockRejectedValue(new Error('x'))
     wrapper = mount(LaporanSoalanPage)

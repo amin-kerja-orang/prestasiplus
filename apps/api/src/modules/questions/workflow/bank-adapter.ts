@@ -35,6 +35,7 @@ import type {
   QuestionBrief,
   QuestionGateData,
   QuestionStatusInfo,
+  QuestionVersionBrief,
   SetStatusOptions,
 } from './ports'
 
@@ -230,6 +231,22 @@ export class QuestionBankAdapter implements QuestionBankPort {
         educationLevelId: v.educationLevelId,
         levelName: v.educationLevelId === null ? null : (levels.get(v.educationLevelId) ?? null),
         chapterName: v.chapterId === null ? null : (chapters.get(v.chapterId) ?? null),
+      })
+    }
+    return out
+  }
+
+  async describeVersions(refs: readonly { questionId: string; versionNo: number }[]): Promise<ReadonlyMap<string, QuestionVersionBrief>> {
+    const out = new Map<string, QuestionVersionBrief>()
+    const records = await this.repo.getVersions(refs)
+    if (records.length === 0) return out
+    const { subjects } = await this.names()
+    for (const r of records) {
+      const v = r.version
+      out.set(`${r.id}:${v.versionNo}`, {
+        stemText: v.stemMs ?? v.stemEn ?? '',
+        subjectId: v.subjectId,
+        subjectName: v.subjectId === null ? null : (subjects.get(v.subjectId) ?? null),
       })
     }
     return out

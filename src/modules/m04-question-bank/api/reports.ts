@@ -68,6 +68,10 @@ export interface ReportView {
   updatedAt: string
   question: ReportQuestionView
   reporter: { id: number; name: string | null }
+  /** DD1, `GET /mine` only: subject of the reported version. */
+  subject?: { id: number; name: string } | null
+  /** DD1, `GET /mine` only: plain-text preview (at most 200 characters) of the reported version's stem. */
+  questionText?: string | null
 }
 
 export interface ReportCounts extends Record<string, number> {

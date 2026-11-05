@@ -11,6 +11,7 @@ export {
   type QuestionBrief,
   type QuestionGateData,
   type QuestionStatusInfo,
+  type QuestionVersionBrief,
   type SetStatusOptions,
 } from './ports'
 export { AdminOnly, AdminOrGuru, GuruOnly, assertCanActOn, isAdminPusat, isGuru, transitionActorOf, type WorkflowActor } from './actor'
