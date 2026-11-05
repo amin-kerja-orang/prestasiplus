@@ -7,6 +7,8 @@
  * to the created record or to `{error}` and never throw for a refusal.
  */
 
+import type { TeacherMission, TeacherMissionCreate } from '@pp/contract'
+
 import {
   api,
   isHttpMode,
@@ -418,4 +420,32 @@ export function downloadAudioKbatTemplate(format: 'xlsx' | 'word'): Promise<Blob
   return api.blob(
     format === 'xlsx' ? '/api/guru/audio-kbat/template' : '/api/guru/audio-kbat/template-word',
   )
+}
+
+// --- Misi Harian, teacher side (API-GUR-11, S6-T07) ---------------------------------------------
+
+export type { TeacherMission, TeacherMissionCreate }
+
+/** `GET /api/guru/missions` `{data}`: the teacher's own missions and the Global ones, newest date first. */
+export async function fetchTeacherMissions(options: Signal = {}): Promise<TeacherMission[]> {
+  const body = await api.get<{ data: TeacherMission[] }>('/api/guru/missions', {
+    raw: true,
+    ...withSignal(options),
+  })
+  return body.data
+}
+
+/** `POST /api/guru/missions` (201 `{data}`; 422 with `fields`, or message-only for the daily cap). */
+export async function createTeacherMission(body: TeacherMissionCreate): Promise<TeacherMission> {
+  const res = await api.post<{ data: TeacherMission }>('/api/guru/missions', { body, raw: true })
+  return res.data
+}
+
+/** `DELETE /api/guru/missions/:id`: 403 for a Global mission, 404 for an unknown one. */
+export async function deleteTeacherMission(id: string): Promise<{ deleted: number }> {
+  const res = await api.delete<{ data: { deleted: number } }>(
+    `/api/guru/missions/${encodeURIComponent(id)}`,
+    { raw: true },
+  )
+  return res.data
 }

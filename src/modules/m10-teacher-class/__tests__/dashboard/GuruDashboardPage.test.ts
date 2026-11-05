@@ -15,6 +15,18 @@ import GuruDashboardPage from '../../pages/GuruDashboardPage.vue'
 
 const api = vi.hoisted(() => ({ fetchGuruDashboard: vi.fn() }))
 vi.mock('../../api/guru', () => api)
+const cc = vi.hoisted(() => ({ fetchCommandCenterDrill: vi.fn() }))
+vi.mock('../../api/command-center', () => cc)
+
+const pupil = (studentId: number, answered: number, accuracy: number) => ({
+  studentId,
+  name: `Murid ${String(studentId)}`,
+  className: 'Kelas A',
+  answered,
+  accuracy,
+  lastActiveAt: null,
+  status: 'Login' as const,
+})
 
 const empty = (): GuruDashboard => ({
   checklist: { hasClass: false, hasStudents: false, hasMission: false },
@@ -51,6 +63,8 @@ beforeEach(() => {
   localStorage.clear()
   api.fetchGuruDashboard.mockReset()
   api.fetchGuruDashboard.mockResolvedValue(empty())
+  cc.fetchCommandCenterDrill.mockReset()
+  cc.fetchCommandCenterDrill.mockResolvedValue({ title: 'Pelajar Berdaftar', students: [] })
 })
 afterEach(() => {
   wrapper?.unmount()
@@ -95,16 +109,16 @@ describe('S1 GuruDashboardPage', () => {
     expect(w.get('[data-testid="guide-title"]').text()).toBe('Mula Di Sini — 3 Langkah Mudah')
     const links = w.findAll('[data-testid="guide-link"]')
     expect(links.map((l) => [l.text(), l.attributes('href')])).toEqual([
-      ['Kelas Saya →', '/guru/kelas'],
-      ['Pelajar Saya →', '/guru/pelajar'],
-      ['Monitoring →', '/guru/monitoring'],
+      ['Buka Kelas →', '/guru/kelas'],
+      ['Lihat Pelajar →', '/guru/pelajar'],
+      ['Pantau Prestasi →', '/guru/monitoring'],
     ])
     expect(w.get('[data-testid="checklist-count"]').text()).toBe('0/3 langkah selesai')
     expect(w.get('[data-testid="checklist-percent"]').text()).toBe('0%')
     expect(w.findAll('[data-testid="checklist-link"]').map((l) => l.attributes('href'))).toEqual([
       '/guru/kelas',
       '/guru/pelajar',
-      '/guru/misi-harian/cipta',
+      '/guru/misi-harian',
     ])
     const cards = ['classes', 'students', 'questions', 'assignments'].map((k) => {
       const c = w.get(`[data-testid="stat-${k}"]`)
@@ -121,27 +135,89 @@ describe('S1 GuruDashboardPage', () => {
       ['Tugasan', '0', 'Jumlah tugasan dibuat'],
     ])
     const text = w.text()
-    expect(text).toContain('Tiada pelajar berkeutamaan tinggi dikesan buat masa ini.')
-    expect(text).toContain('Tiada topik kritikal menonjol dikesan daripada data semasa.')
-    expect(text).toContain('Bina aktiviti pertama untuk pelajar')
-    expect(text).toContain('Permulaan')
+    expect(text).toContain('Tiada pelajar berisiko buat masa ini. 🎉')
+    expect(text).toContain('Top 5')
+    expect(text).toContain('Ketepatan terendah')
+    expect(text).toContain('Belum ada data.')
+    expect(text).toContain('Semak analitik kelas untuk pecahan prestasi')
+    expect(text).toContain('Analitik')
+    expect(text).toContain('Buka Analitik Kelas →')
+    expect(text).toContain('Kelas anda sudah disediakan oleh admin')
+    expect(text).toContain('Pelajar sudah ditugaskan')
     expect(w.get('[data-testid="today-analytics"]').attributes('href')).toBe('/analitik/kelas')
     expect(w.get('[data-testid="today-action-link"]').attributes('href')).toBe('/guru/kelas')
     expect(w.get('[data-testid="today-counters"]').text().replace(/\s+/g, ' ')).toBe(
       'Pelajar0Topik0Tindakan0',
     )
     expect(w.get('[data-testid="peer-empty"]').text()).toContain('Belum cukup signal')
-    expect(w.findAll('[data-testid="quick-tile"]').map((t) => t.attributes('href'))).toEqual([
-      '/guru/kelas/cipta',
-      '/guru/soalan/cipta',
-      '/guru/pelajar',
-      '/guru/profil/edit',
-    ])
-    expect(w.get('[data-testid="classes-empty"]').text()).toBe('Belum ada kelas. Cipta sekarang!')
+    expect(w.get('[data-testid="classes-empty"]').text()).toBe(
+      'Belum ada kelas. Cipta kelas pertama anda.',
+    )
+    expect(w.get('[data-testid="classes-all"]').text()).toBe('Urus Kelas →')
     expect(w.get('[data-testid="classes-all"]').attributes('href')).toBe('/guru/kelas')
     expect(w.get('[data-testid="submissions-empty"]').text()).toContain(
-      'Belum ada penghantaran tugasan.',
+      'Belum ada penghantaran tugasan. Buat tugasan di kelas untuk mula mengumpul penghantaran.',
     )
+  })
+
+  it('AC-GUR-2-2 / FR-GUR-2-2: the four V2 Tindakan Pantas tiles, no dead tiles', async () => {
+    const w = await mountPage()
+    const tiles = w.findAll('[data-testid="quick-tile"]')
+    const shown = tiles.map((t) => [
+      t.get('.text-label').text(),
+      t.get('.text-caption').text(),
+      t.attributes('href'),
+    ])
+    // "Set Soalan" is hidden by the prototype scope until S6-T14 brings its route in (allows filter kept).
+    expect(shown).toEqual(
+      [
+        ['Pelajar Saya', 'Semak & urus pelajar kelas anda.', '/guru/pelajar'],
+        ['Sumbang Soalan', 'Hantar soalan ke bank kebangsaan.', '/guru/soalan/cipta'],
+        ['Set Soalan', 'Bina & terbitkan set latihan.', '/guru/set-soalan'],
+        ['Prestasi Kelas', 'Lihat ketepatan & pelajar terbaik.', '/prestasi/kelas'],
+      ].filter(([title]) => shown.some((s) => s[0] === title)),
+    )
+    expect(shown.map((s) => s[0])).toEqual(
+      expect.arrayContaining(['Pelajar Saya', 'Sumbang Soalan', 'Prestasi Kelas']),
+    )
+    const text = w.get('[data-testid="quick-card"]').text()
+    expect(text).not.toContain('Edit Profil Guru')
+    expect(text).not.toContain('Cipta Kelas Baru')
+  })
+
+  it('AC-GUR-2-7: On Track / Off Track count pupils at 55% and 54%; a pupil without answers is in neither', async () => {
+    cc.fetchCommandCenterDrill.mockResolvedValue({
+      title: 'Pelajar Berdaftar',
+      students: [pupil(1, 20, 54), pupil(2, 20, 55), pupil(3, 0, 0), pupil(4, 5, 54.5)],
+    })
+    const w = await mountPage()
+    expect(cc.fetchCommandCenterDrill).toHaveBeenCalledWith('students')
+    // 54.5 rounds half up to 55: On Track.
+    expect(w.get('[data-testid="track-on-n"]').text()).toBe('2')
+    expect(w.get('[data-testid="track-off-n"]').text()).toBe('1')
+    const on = w.get('[data-testid="track-on"]').text()
+    expect(on).toContain('On Track')
+    expect(on).toContain('Ketepatan 55% atau lebih')
+    const off = w.get('[data-testid="track-off"]').text()
+    expect(off).toContain('Off Track')
+    expect(off).toContain('Ketepatan di bawah 55%')
+  })
+
+  it('On Track / Off Track show "—" when the Command Center call fails; the page still renders', async () => {
+    cc.fetchCommandCenterDrill.mockRejectedValue(new Error('x'))
+    const w = await mountPage()
+    expect(w.get('[data-testid="track-on-n"]').text()).toBe('—')
+    expect(w.get('[data-testid="track-off-n"]').text()).toBe('—')
+    expect(w.find('[data-testid="checklist-card"]').exists()).toBe(true)
+  })
+
+  it('FR-GUR-2-2: the Headcount card opens /headcount', async () => {
+    const w = await mountPage()
+    const card = w.get('[data-testid="headcount-card"]')
+    expect(card.text()).toContain('Headcount TOV / RS / AR')
+    expect(card.text()).toContain('Sasaran & pencapaian sebenar')
+    expect(w.get('[data-testid="headcount-open"]').text()).toBe('Buka Headcount')
+    expect(w.get('[data-testid="headcount-open"]').attributes('href')).toBe('/headcount')
   })
 
   it('teacher: 3/3, 100% and the class lines (AC-04.2, 05.4)', async () => {
@@ -178,7 +254,7 @@ describe('S1 GuruDashboardPage', () => {
     await w.get('[data-testid="guide-close"]').trigger('click')
     expect(localStorage.getItem('hideGuruGuide')).toBe('true')
     expect(w.find('[data-testid="guide-card"]').exists()).toBe(false)
-    expect(w.get('[data-testid="guide-show"]').text()).toBe('Tunjuk panduan Mula Di Sini')
+    expect(w.get('[data-testid="guide-show"]').text()).toBe('Tunjuk panduan mula')
     wrapper?.unmount()
     const again = await mountPage()
     expect(again.find('[data-testid="guide-card"]').exists()).toBe(false)
@@ -218,6 +294,22 @@ describe('S1 route and header', () => {
       access: 'auth',
       roles: ['teacher', 'admin'],
       title: 'Dashboard Guru - PRESTASIPLUS',
+    })
+  })
+
+  it('AC-GUR-2b-1: registers /guru/misi-harian (teacher) and the /cipta redirect with the form open', async () => {
+    const { default: routes } = await import('../../routes')
+    const list = routes.find((x) => x.path === '/guru/misi-harian')!
+    expect(list.meta).toMatchObject({
+      layout: 'user',
+      access: 'auth',
+      roles: ['teacher'],
+      module: 'M10',
+      header: { title: 'Misi Harian' },
+    })
+    expect(String(list.meta?.title)).toMatch(/^Misi Harian .+ PRESTASIPLUS$/)
+    expect(routes.find((x) => x.path === '/guru/misi-harian/cipta')).toMatchObject({
+      redirect: '/guru/misi-harian?baru=1',
     })
   })
 
