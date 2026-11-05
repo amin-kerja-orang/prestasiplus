@@ -315,6 +315,29 @@ describe('M15 student routes (BE-23)', () => {
     })
   })
 
+  describe('clientUuid over HTTP (S7-T05, DM-78)', () => {
+    it('a repeated redeem and a repeated ticket answer 201 with the same result; a bad key is 422 fields.clientUuid', async () => {
+      const api = await as(STUDENT_MAJU)
+      const uid = await userIdOf(t.db, STUDENT_MAJU)
+      await fund(t, uid, { tokens: 5, syiling: 10 }, 'http-key')
+      const reward = await insertReward(t, { tokenCost: 5, stock: null })
+      const body = { rewardId: reward, clientUuid: '0b9d6c1e-3f2a-4e7b-8c5d-2a1f0e9d8c7b' }
+      const first = await api.post('/hadiah/redemptions', body)
+      const second = await api.post('/hadiah/redemptions', body)
+      expect(first.status, JSON.stringify(first.body)).toBe(201)
+      expect(second.status).toBe(201)
+      expect(RewardRedeemResultSchema.parse(second.body.data)).toEqual(RewardRedeemResultSchema.parse(first.body.data))
+      expectError(await api.post('/hadiah/redemptions', { rewardId: reward, clientUuid: 'x' }), 422, 'VALIDATION_ERROR')
+      const draw = await insertDraw(t, { cost: 1, max: 5 })
+      const ticket = { clientUuid: '1c0e7d2f-4a3b-4f8c-9d6e-3b2a1f0e9d8c' }
+      const a = await api.post(`/cabutan/${draw}/tickets`, ticket)
+      const b = await api.post(`/cabutan/${draw}/tickets`, ticket)
+      expect(a.status, JSON.stringify(a.body)).toBe(201)
+      expect(RewardTicketBoughtSchema.parse(b.body.data)).toEqual(RewardTicketBoughtSchema.parse(a.body.data))
+      expectError(await api.post(`/cabutan/${draw}/tickets`, { clientUuid: 'x' }), 422, 'VALIDATION_ERROR')
+    })
+  })
+
   describe('Mod Pelajar (admin acting as a student)', () => {
     it('refuses every spending write with 403 and writes nothing; reads still work', async () => {
       const me = await login(t, ADMIN)

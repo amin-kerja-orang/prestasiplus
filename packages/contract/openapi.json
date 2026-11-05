@@ -9152,6 +9152,54 @@
           "message": {
             "type": "string",
             "minLength": 1
+          },
+          "questionKey": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "New header only: the `question_key` of the row (cut at 40 characters)."
+          },
+          "field": {
+            "type": "string",
+            "description": "New header only: the column the message is about (`medan` of the error CSV)."
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "KEY_REQUIRED",
+              "KEY_NOT_CONSECUTIVE",
+              "KEY_DUPLICATE",
+              "TYPE_INVALID",
+              "TYPE_STUDIO_ONLY",
+              "SUBJECT_UNKNOWN",
+              "TINGKATAN_INVALID",
+              "BAHASA_INVALID",
+              "SCRIPT_INVALID",
+              "KERTAS_INVALID",
+              "KERTAS_REQUIRED",
+              "NUMBER_LABEL_INVALID",
+              "UNIT_REQUIRED",
+              "UNIT_UNKNOWN",
+              "SP_REQUIRED",
+              "SP_TOO_MANY",
+              "SP_UNKNOWN",
+              "TP_REQUIRED",
+              "TP_RANGE",
+              "ARAS_REQUIRED",
+              "ARAS_INVALID",
+              "KBAT_INVALID",
+              "CHAPTER_MISMATCH",
+              "TOPIC_INVALID",
+              "DIFFICULTY_INVALID",
+              "PROMPT_SHORT",
+              "PROMPT_LONG",
+              "OPTIONS_BLANK",
+              "OPTIONS_MIN",
+              "OPTION_LONG",
+              "CORRECT_REQUIRED",
+              "MARKS_MIN",
+              "MARKS_MAX"
+            ],
+            "description": "New header only: stable error code (`kod_ralat` of the error CSV)."
           }
         },
         "required": [
@@ -9290,6 +9338,13 @@
             "type": "string",
             "minLength": 1,
             "description": "BM flash text for the success message."
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "New header only: \"Kolum {nama} tidak dikenali dan diabaikan.\" per unknown header cell. Not stored in the history."
           }
         },
         "required": [
@@ -9331,6 +9386,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/QuestionImportFailure"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
             }
           }
         },
@@ -9974,7 +10035,7 @@
           "image": {
             "type": "string",
             "format": "binary",
-            "description": "JPG, PNG, WebP or GIF (SVG refused), at most 2 MB. Storage: BE-04."
+            "description": "JPG, PNG or WebP (GIF and SVG refused), at most 2 MB. Storage: BE-04."
           }
         },
         "required": [
@@ -41315,6 +41376,212 @@
           "subCount"
         ]
       },
+      "GuruStructuredRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "number": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Position in the full ordered list (1-based): page offset + index."
+          },
+          "textExcerpt": {
+            "type": "string"
+          },
+          "level": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QuestionNamedRef"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "subject": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QuestionNamedRef"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "kbat": {
+            "type": "string",
+            "description": "KBAT chip text from the question cognitive level: \"LOTS 1\", \"LOTS 2\", \"MOTS 3\", \"HOTS 4\" to \"HOTS 6\"; empty when the question has no level."
+          },
+          "subCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Sum of the part marks."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "approved",
+              "review"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "textExcerpt",
+          "level",
+          "subject",
+          "kbat",
+          "subCount",
+          "marks",
+          "status"
+        ]
+      },
+      "GuruStructuredSub": {
+        "type": "object",
+        "properties": {
+          "partLabel": {
+            "type": "string"
+          },
+          "questionText": {
+            "type": "string"
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "0 for a branch (a part that only groups its children)."
+          },
+          "cognitiveLevel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "mengingat",
+              "memahami",
+              "mengaplikasi",
+              "menganalisis",
+              "menilai",
+              "mencipta",
+              null
+            ],
+            "description": "Bloom level of the part (Taksonomi Bloom), if set."
+          },
+          "modelAnswer": {
+            "type": "string",
+            "description": "\"Skema Jawapan\"."
+          },
+          "depth": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "partLabel",
+          "questionText",
+          "marks",
+          "cognitiveLevel",
+          "modelAnswer",
+          "depth"
+        ]
+      },
+      "GuruStructuredDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subject": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QuestionNamedRef"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "level": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QuestionNamedRef"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "kbat": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "approved",
+              "review"
+            ]
+          },
+          "stimulus": {
+            "type": "string",
+            "description": "The stimulus text, once, above all the sub-questions."
+          },
+          "stimulusImage": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Always null this round: the file read rule has no teacher branch for a question picture."
+          },
+          "totalMarks": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "subCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "subQuestions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuruStructuredSub"
+            }
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "subject",
+          "level",
+          "kbat",
+          "status",
+          "stimulus",
+          "stimulusImage",
+          "totalMarks",
+          "subCount",
+          "subQuestions",
+          "createdAt"
+        ]
+      },
       "QuestionStructuredSub": {
         "type": "object",
         "properties": {
@@ -71864,6 +72131,24 @@
           "state": {
             "$ref": "#/components/schemas/IntakeItemState"
           },
+          "source": {
+            "type": "string",
+            "enum": [
+              "guru"
+            ],
+            "description": "S1-T08: `guru` = items of teacher submissions (batch `source = guru`) only. Omitted = every item. Any other value is 422."
+          },
+          "kirimanStatus": {
+            "type": "string",
+            "enum": [
+              "Pending",
+              "Processing",
+              "Selesai",
+              "Ditolak",
+              "Jumlah"
+            ],
+            "description": "S1-T08 (FR-ADM-Q12.1, OPT-KIRIMAN-STATUS): display filter of Kiriman Guru, mapped by the server. Pending = item generated, needs_review or duplicate; Processing = accepted, question not Diluluskan; Selesai = accepted, question Diluluskan; Ditolak = rejected; Jumlah = no filter. Combined with `state` by AND."
+          },
           "batchId": {
             "$ref": "#/components/schemas/Id"
           },
@@ -79385,11 +79670,11 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 64,
-              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
               "example": "1042"
             },
             "required": true,
-            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
             "name": "id",
             "in": "path"
           },
@@ -79435,7 +79720,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -82631,7 +82916,7 @@
           "question-imports"
         ],
         "summary": "Import questions from a CSV file",
-        "description": "Admin only. multipart/form-data (file storage: BE-04). UTF-8, first row is the header (case-insensitive), comma separator, `\"` quoting with `\"\"`, quoted fields may span lines, blank lines ignored. Required columns question_text, option_a, option_b, correct_answer; correct_answer is a letter A to D (any case); subject_id, education_level_id and difficulty_level come from the row or the form default; marks default 1. Each valid row creates a `draft` question (it never bypasses review); a bad row is reported with its 1-based file line (header = line 1) and does not stop the others. The whole import is one transaction. An accepted file always answers 201. Flash: \"Import selesai: <x> soalan diimport, <y> gagal.\".",
+        "description": "Admin only. Two headers, detected by the first header cell: `question_text` is the legacy positional MCQ header; anything else is the header with codes of 30 Q-11 (S1-T05 part 1: `mcq` rows only; `subject_code`, `tingkatan`, `unit_code`, `sp_kod` separated by `;`, `tp`, `aras`, `kbat`, `bab_kod`, `topik_kod`, `kertas`, `number_label`, `difficulty`). A row of the new header lists every error with `questionKey`, `field`, `code` and a message with the prefix \"Baris {n}: \" (exact Q-11 texts); a question is imported only if its row is valid. An unknown header cell is ignored and listed in `warnings` (\"Kolum {nama} tidak dikenali dan diabaikan.\"). At most 2,000 data rows. multipart/form-data (file storage: BE-04). UTF-8, first row is the header (case-insensitive), comma separator, `\"` quoting with `\"\"`, quoted fields may span lines, blank lines ignored. Required columns question_text, option_a, option_b, correct_answer; correct_answer is a letter A to D (any case); subject_id, education_level_id and difficulty_level come from the row or the form default; marks default 1. Each valid row creates a `draft` question (it never bypasses review); a bad row is reported with its 1-based file line (header = line 1) and does not stop the others. The whole import is one transaction. An accepted file always answers 201. Flash: \"Import selesai: <x> soalan diimport, <y> gagal.\".",
         "parameters": [
           {
             "schema": {
@@ -82687,7 +82972,79 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields.csvFile: \"Sila pilih fail CSV.\" (missing), \"Fail mesti jenis CSV atau TXT dan tidak melebihi 5MB.\" (extension, MIME or size), \"Fail CSV mesti mempunyai kolum <missing columns joined by comma and space>.\" or \"Fail CSV tiada baris data.\" Also fields.defaultSubjectId \"Sila pilih subjek.\", fields.defaultEducationLevelId \"Sila pilih tahap pendidikan.\", fields.defaultDifficultyLevel \"Sila pilih tahap kesukaran.\". Row failures (200/201 body, not 422): \"Baris tidak lengkap.\", \"Jawapan betul mesti A, B, C atau D.\", \"Jawapan betul merujuk pilihan yang kosong.\", \"Subjek tidak sah.\", \"Tahap pendidikan tidak sah.\", \"Tahap kesukaran mesti 1 hingga 5.\", \"Markah mesti nombor bulat sekurang-kurangnya 1.\".",
+            "description": "VALIDATION_ERROR with fields.csvFile: \"Fail melebihi 2,000 baris. Pecahkan fail kepada beberapa bahagian.\" (more than 2,000 data rows, whole file refused), \"Sila pilih fail CSV.\" (missing), \"Fail mesti jenis CSV atau TXT dan tidak melebihi 5MB.\" (extension, MIME or size), \"Fail CSV mesti mempunyai kolum <missing columns joined by comma and space>.\" or \"Fail CSV tiada baris data.\" Also fields.defaultSubjectId \"Sila pilih subjek.\", fields.defaultEducationLevelId \"Sila pilih tahap pendidikan.\", fields.defaultDifficultyLevel \"Sila pilih tahap kesukaran.\". Row failures (200/201 body, not 422): \"Baris tidak lengkap.\", \"Jawapan betul mesti A, B, C atau D.\", \"Jawapan betul merujuk pilihan yang kosong.\", \"Subjek tidak sah.\", \"Tahap pendidikan tidak sah.\", \"Tahap kesukaran mesti 1 hingga 5.\", \"Markah mesti nombor bulat sekurang-kurangnya 1.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/question-imports/{id}/errors": {
+      "get": {
+        "tags": [
+          "question-workflow",
+          "question-imports"
+        ],
+        "summary": "Error report of one import run (CSV)",
+        "description": "Admin only. A file, not JSON: `laporan-ralat-import.csv`, text/csv, CRLF, columns `baris, question_key, medan, kod_ralat, mesej`, one line per stored row error. It holds no cell of the uploaded file but the question key and the values the Q-11 messages name ({key}, {kod}, {label}), each cut at 40 characters; every cell is neutralised against spreadsheet formulas. Declared after `/question-imports/template`.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The error report file.",
+            "headers": {
+              "Content-Disposition": {
+                "description": "attachment; filename=\"laporan-ralat-import.csv\"",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin; Admin Sekolah and every other role included).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (unknown id, or a segment that does not match the route).",
             "content": {
               "application/json": {
                 "schema": {
@@ -82872,7 +83229,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields.csvFile: \"Sila pilih fail CSV.\" (missing), \"Fail mesti jenis CSV atau TXT dan tidak melebihi 5MB.\" (extension, MIME or size), \"Fail CSV mesti mempunyai kolum <missing columns joined by comma and space>.\" or \"Fail CSV tiada baris data.\"",
+            "description": "VALIDATION_ERROR with fields.csvFile: \"Fail melebihi 2,000 baris. Pecahkan fail kepada beberapa bahagian.\" (more than 2,000 data rows, whole file refused), \"Sila pilih fail CSV.\" (missing), \"Fail mesti jenis CSV atau TXT dan tidak melebihi 5MB.\" (extension, MIME or size), \"Fail CSV mesti mempunyai kolum <missing columns joined by comma and space>.\" or \"Fail CSV tiada baris data.\"",
             "content": {
               "application/json": {
                 "schema": {
@@ -83006,7 +83363,7 @@
           "diagram-audit"
         ],
         "summary": "Questions flagged as needing a diagram",
-        "description": "Admin only. Two lists with separate pagers (mcqPage, strPage; 20 per page; id descending). subjectId filters both lists, schoolId the MCQ list only; a malformed or unknown filter matches nothing. The body is { data: { mcq, structured }, meta: { stats, bySubject, unfilteredMcq } }, not the standard list meta.",
+        "description": "Admin, teacher and school admin (the whole bank, same data for all three). Two lists with separate pagers (mcqPage, strPage; 20 per page; id descending). subjectId filters both lists, schoolId the MCQ list only; a malformed or unknown filter matches nothing. The body is { data: { mcq, structured }, meta: { stats, bySubject, unfilteredMcq } }, not the standard list meta.",
         "parameters": [
           {
             "schema": {
@@ -83067,7 +83424,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin; Admin Sekolah and every other role included).",
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin, teacher or school admin).",
             "content": {
               "application/json": {
                 "schema": {
@@ -83086,7 +83443,7 @@
           "diagram-audit"
         ],
         "summary": "Attach a diagram image and clear the flag",
-        "description": "Admin only. multipart/form-data `image` (JPG, PNG, WebP or GIF, SVG refused, up to 2 MB; storage: BE-04). Sets needsDiagram false and stores the image reference. Flash: \"Gambar rajah berjaya dimuat naik.\".",
+        "description": "Admin only. multipart/form-data `image` (JPG, PNG or WebP, GIF and SVG refused, up to 2 MB; storage: BE-04). Sets needsDiagram false and stores the image reference. Flash: \"Gambar rajah berjaya dimuat naik.\".",
         "parameters": [
           {
             "schema": {
@@ -83170,7 +83527,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR fields.image \"Sila pilih fail gambar.\" (missing or not an image) or \"Gambar mesti jenis JPG, PNG, WebP atau GIF dan tidak melebihi 2MB.\".",
+            "description": "VALIDATION_ERROR fields.image \"Sila pilih fail gambar.\" (missing or not an image) \"Fail mesti berupa imej (jpg, png atau webp).\" (wrong type) or \"Saiz imej tidak boleh melebihi 2 MB.\" (over 2 MB).",
             "content": {
               "application/json": {
                 "schema": {
@@ -107048,6 +107405,188 @@
         }
       }
     },
+    "/guru/structured-questions": {
+      "get": {
+        "tags": [
+          "questions",
+          "guru"
+        ],
+        "summary": "Teacher list of approved structured questions (20 per page, newest first)",
+        "description": "API-GUR-26, read-only. Teacher or Admin Pusat. Only approved, live, active questions a pupil is served; a question that needs a figure it lacks is left out. `meta.totalItems` is the dataset count. `status=review` answers an empty page.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "subjectId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "educationLevelId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "approved",
+                "review"
+              ],
+              "description": "Omitted: approved. `review` (the teacher's own submissions) is an empty page until the submission part exists."
+            },
+            "required": false,
+            "description": "Omitted: approved. `review` (the teacher's own submissions) is an empty page until the submission part exists.",
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of rows.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/GuruStructuredRow"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ListMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN, or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages), `message` = first message plus the count of the others.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/structured-questions/{id}": {
+      "get": {
+        "tags": [
+          "questions",
+          "guru"
+        ],
+        "summary": "Teacher detail of an approved structured question",
+        "description": "No admin-only fields. A question that is not approved, not served or unknown is 404.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The question.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GuruStructuredDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN, or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id (for Guru routes also another teacher's question; ids cannot be probed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/structured-questions/{id}": {
       "get": {
         "tags": [
@@ -125511,6 +126050,36 @@
             "required": false,
             "description": "[PROPOSED] Review state of an extracted item (card BE-38): generated = Dijana (nothing needs attention), needs_review = Perlu semakan (any unconfirmed low field, needsManual, or an open exact or near duplicate entry), accepted = Diterima (a Draf question exists), rejected = Ditolak (never becomes a question, kept with a reason), duplicate = Pendua (a person linked it as a duplicate). NOT a question status (D54a).",
             "name": "state",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "guru"
+              ],
+              "description": "S1-T08: `guru` = items of teacher submissions (batch `source = guru`) only. Omitted = every item. Any other value is 422."
+            },
+            "required": false,
+            "description": "S1-T08: `guru` = items of teacher submissions (batch `source = guru`) only. Omitted = every item. Any other value is 422.",
+            "name": "source",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Pending",
+                "Processing",
+                "Selesai",
+                "Ditolak",
+                "Jumlah"
+              ],
+              "description": "S1-T08 (FR-ADM-Q12.1, OPT-KIRIMAN-STATUS): display filter of Kiriman Guru, mapped by the server. Pending = item generated, needs_review or duplicate; Processing = accepted, question not Diluluskan; Selesai = accepted, question Diluluskan; Ditolak = rejected; Jumlah = no filter. Combined with `state` by AND."
+            },
+            "required": false,
+            "description": "S1-T08 (FR-ADM-Q12.1, OPT-KIRIMAN-STATUS): display filter of Kiriman Guru, mapped by the server. Pending = item generated, needs_review or duplicate; Processing = accepted, question not Diluluskan; Selesai = accepted, question Diluluskan; Ditolak = rejected; Jumlah = no filter. Combined with `state` by AND.",
+            "name": "kirimanStatus",
             "in": "query"
           },
           {
