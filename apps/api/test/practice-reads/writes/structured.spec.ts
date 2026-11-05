@@ -202,6 +202,59 @@ describe('AC1 GET /api/practice/structured', () => {
     }
   })
 
+  it('S5-T11 a present but invalid key never gives 500: listed unfiltered (200), dropped by markable=1', async () => {
+    const good = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'Kunci baik' })
+    const bad = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'Kunci rosak' })
+    try {
+      await t.db.query(
+        `update answer_keys set kind = 'points', content = '{"points": []}'::jsonb where part_id = (select p.id from question_parts p join question_versions v on v.id = p.question_version_id
+          where v.question_id = $1 and p.mode is not null order by p.id limit 1)`,
+        [bad],
+      )
+      const all = await list(student, '?q=kunci')
+      expect(all.data.map((c) => c.id).sort()).toEqual([good, bad].sort())
+      const card = all.data.find((c) => c.id === bad)
+      expect(card).toMatchObject({ subQuestionCount: 2, parts: 2, marks: 5, preview: 'Kunci rosak' })
+      const only = await list(student, '?q=kunci&markable=1')
+      expect(only.data.map((c) => c.id)).toEqual([good])
+    } finally {
+      await t.db.query('update questions set is_active = false where id = any($1::bigint[])', [[good, bad]])
+    }
+  })
+
+  it('S5-T11 order: newest published first by published_at, not created_at', async () => {
+    const older = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'Susunan lama' })
+    const newer = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'Susunan baru' })
+    try {
+      // created order: older, newer; published order is the reverse.
+      await t.db.query(`update question_versions set published_at = '2030-01-02T00:00:00Z' where question_id = $1`, [older])
+      await t.db.query(`update question_versions set published_at = '2030-01-01T00:00:00Z' where question_id = $1`, [newer])
+      expect((await list(student, '?q=susunan')).data.map((c) => c.id)).toEqual([older, newer])
+    } finally {
+      await t.db.query('update questions set is_active = false where id = any($1::bigint[])', [[older, newer]])
+    }
+  })
+
+  it('S5-T11 bestScore tie-break: the highest awarded wins; equal awarded takes the latest attempt', async () => {
+    const id = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'Set seri skor' })
+    const uid = await userIdOf(t.db, 'pelajar@demo.test')
+    try {
+      const ins = (awarded: number, max: number, at: string) =>
+        t.db.query(
+          `insert into structured_attempts (user_id, question_id, question_version_no, answers, marks, total_awarded, total_max, submitted_at, is_test)
+           values ($1, $2, 1, '[]'::jsonb, '[]'::jsonb, $3, $4, $5::timestamptz, false)`,
+          [uid, id, awarded, max, at],
+        )
+      await ins(2, 5, '2026-10-01T00:00:00Z')
+      await ins(4, 5, '2026-10-02T00:00:00Z')
+      await ins(4, 6, '2026-10-03T00:00:00Z')
+      await ins(1, 5, '2026-10-04T00:00:00Z')
+      expect((await list(student, '?q=seri+skor')).data[0]?.bestScore).toEqual({ awarded: 4, max: 6 })
+    } finally {
+      await t.db.query('update questions set is_active = false where id = $1', [id])
+    }
+  })
+
   it('S5-T11 bestScore: null without an attempt, then the best total of the caller only', async () => {
     const id = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'Set skor terbaik' })
     try {

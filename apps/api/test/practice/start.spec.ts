@@ -476,6 +476,15 @@ describe('assigned work: mission, remedial, question_set (BE-18 port)', () => {
     expectError(await post(pelajar, { mode: 'question_set', questionSetId: '1' }), 'NOT_FOUND')
   })
 
+  it('question_set (R7): a resumed legacy in-progress session that stored a time limit returns timeLimitSec null', async () => {
+    t.assignments.set('question_set', '7498', { status: 'ok', subjectId: w.subject.math, questionIds: bank.random.slice(0, 3), maxAttempts: 2, timeLimitSec: 600 })
+    const first = await startSession(pelajar, { mode: 'question_set', questionSetId: '7498' })
+    await t.db.query('update practice_sessions set time_limit_sec = 600 where id = $1', [first.sessionId])
+    const again = await startSession(pelajar, { mode: 'question_set', questionSetId: '7498' })
+    expect(again.sessionId).toBe(first.sessionId)
+    expect(again.body.timeLimitSec).toBeNull()
+  })
+
   it('assigned questions that are no longer eligible are not served; none left is NOT_ENOUGH_QUESTIONS', async () => {
     const list = bank.random.slice(0, 3)
     t.assignments.set('remedial', '7701', { status: 'ok', subjectId: w.subject.math, questionIds: list })

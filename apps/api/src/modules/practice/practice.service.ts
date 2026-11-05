@@ -170,7 +170,8 @@ export class PracticeService {
         options: q.options.map((o, i) => ({ id: i, label: o.label, text: o.text })),
       })),
       ...(s.mode === 'revision' && revisionMeta ? { revisionMeta } : {}),
-      ...(s.mode === 'question_set' ? { timeLimitSec: s.timeLimitSec } : {}),
+      // R1/R7: a set has no timer, also when a resumed legacy session stored a limit.
+      ...(s.mode === 'question_set' ? { timeLimitSec: null } : {}),
     }
     // Strict schema: a stray key (a correct answer, an explanation) fails here instead of leaving the server.
     return StartSessionResponseSchema.parse(body)

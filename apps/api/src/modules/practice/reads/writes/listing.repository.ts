@@ -1,23 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common'
 
 import { idFromString, idToString } from '../../../../db/ids'
-import { Prisma } from '../../../../db/generated/client'
 import { PrismaService } from '../../../../db/prisma.service'
 
-/**
- * A usable scheme (`markable`): the version has at least one leaf part and every leaf has an answer key with content
- * (a non-empty accepted list, points or model text, a correct option; mapping and rubric keys count when present).
- */
-const SCHEME_USABLE = Prisma.sql`(
-  EXISTS (SELECT 1 FROM question_parts p WHERE p.question_version_id = v.id AND p.mode IS NOT NULL)
-  AND NOT EXISTS (
-    SELECT 1 FROM question_parts p WHERE p.question_version_id = v.id AND p.mode IS NOT NULL
-      AND NOT EXISTS (
-        SELECT 1 FROM answer_keys k WHERE k.part_id = p.id AND (
-          k.kind IN ('mapping', 'rubric')
-          OR (k.kind = 'accepted' AND jsonb_typeof(k.content -> 'values') = 'array' AND jsonb_array_length(k.content -> 'values') > 0)
-          OR (k.kind = 'points' AND ((jsonb_typeof(k.content -> 'points') = 'array' AND jsonb_array_length(k.content -> 'points') > 0) OR COALESCE(k.content ->> 'modelText', '') <> ''))
-          OR (k.kind = 'option' AND COALESCE(k.content ->> 'correct', '') <> '')))))`
+import { ALL_LEAVES_KEYED_SQL } from '../../../questions/learner-visibility'
 
 export interface ListingQuery {
   /** Education level ids a student may see (T4, T5), decimal strings. */
@@ -30,7 +16,7 @@ export interface ListingQuery {
   subjectOrder: boolean
   /** Case-insensitive text match on the stem or a linked stimulus body; null = no search (already trimmed, max 100). */
   q: string | null
-  /** true = only sets whose every leaf part has an answer key (a usable scheme). */
+  /** true = only sets whose every leaf part has an answer key (`ALL_LEAVES_KEYED_SQL`, the one rule of S1). */
   markable: boolean
   limit: number
   offset: number
@@ -64,7 +50,7 @@ export class StructuredListingRepository {
           AND (${like}::text IS NULL OR v.stem_ms ILIKE ${like}::text OR EXISTS (
                 SELECT 1 FROM question_version_stimuli qs JOIN stimuli st ON st.id = qs.stimulus_id
                 WHERE qs.question_version_id = v.id AND (st.body_ms ILIKE ${like}::text OR st.label ILIKE ${like}::text)))
-          AND (NOT ${q.markable}::boolean OR ${SCHEME_USABLE})
+          AND (NOT ${q.markable}::boolean OR ${ALL_LEAVES_KEYED_SQL})
         ORDER BY (CASE WHEN cardinality(${order}::bigint[]) > 0 THEN array_position(${order}::bigint[], v.subject_id) END) ASC NULLS FIRST,
                  COALESCE(v.published_at, q.created_at) DESC, q.id ASC
         LIMIT ${q.limit} OFFSET ${q.offset}`,
@@ -72,7 +58,7 @@ export class StructuredListingRepository {
         SELECT count(*) FILTER (WHERE NOT ${q.markable}::boolean OR ok)::int AS n,
                count(*) FILTER (WHERE NOT ok)::int AS pending
         FROM (
-          SELECT ${SCHEME_USABLE} AS ok
+          SELECT ${ALL_LEAVES_KEYED_SQL} AS ok
           FROM questions q
           JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
           WHERE q.is_active AND v.status = 'approved' AND v.type = 'structured'
@@ -86,4 +72,44 @@ export class StructuredListingRepository {
     ])
     return { ids: rows.map((r) => idToString(r.id)), total: totals[0]?.n ?? 0, pendingScheme: totals[0]?.pending ?? 0 }
   }
+
+  /**
+   * Card facts of sets the question bank cannot hydrate (a present but invalid stored key): read from the rows, no key parsing.
+   * The live version only; `subs` are the parts in depth-first order with their marks (null on a branch).
+   */
+  async degraded(ids: readonly string[]): Promise<DegradedSet[]> {
+    if (ids.length === 0) return []
+    const db = this.prisma.client
+    const sets = await db.$queryRaw<{ id: bigint; version_id: bigint; created_by_id: bigint | null; stem_ms: string | null; subject_id: bigint | null; cognitive_level: number | null; education_level_id: bigint | null }[]>`
+      SELECT q.id, v.id AS version_id, q.created_by_id, v.stem_ms, v.subject_id, v.cognitive_level, v.education_level_id
+      FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
+      WHERE q.id = ANY(${ids.map(idFromString)}::bigint[])`
+    const parts = await db.$queryRaw<{ version_id: bigint; top: boolean; marks: number | null; mode: string | null; prompt_ms: string }[]>`
+      SELECT p.question_version_id AS version_id, (p.parent_part_id IS NULL) AS top, p.marks, p.mode, p.prompt_ms FROM question_parts p
+      WHERE p.question_version_id = ANY(${sets.map((r) => r.version_id)}::bigint[]) ORDER BY p.depth, p.position, p.id`
+    return sets.map((r) => {
+      const mine = parts.filter((p) => p.version_id === r.version_id)
+      return {
+        id: idToString(r.id),
+        createdById: r.created_by_id === null ? null : idToString(r.created_by_id),
+        stemMs: r.stem_ms,
+        firstPrompt: mine[0]?.prompt_ms ?? '',
+        subjectId: r.subject_id === null ? null : idToString(r.subject_id),
+        cognitiveLevel: r.cognitive_level,
+        educationLevelId: r.education_level_id === null ? null : idToString(r.education_level_id),
+        subs: mine.map((p) => ({ top: p.top, marks: p.mode === null ? 0 : (p.marks ?? 0) })),
+      }
+    })
+  }
+}
+
+export interface DegradedSet {
+  id: string
+  createdById: string | null
+  stemMs: string | null
+  firstPrompt: string
+  subjectId: string | null
+  cognitiveLevel: number | null
+  educationLevelId: string | null
+  subs: { top: boolean; marks: number }[]
 }
