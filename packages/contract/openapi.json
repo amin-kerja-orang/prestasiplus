@@ -59827,6 +59827,41 @@
           "questionCount": {
             "type": "integer",
             "minimum": 0
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "code": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "name": {
+                  "type": "string"
+                },
+                "chapterCount": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "questionCount": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "id",
+                "code",
+                "name",
+                "chapterCount",
+                "questionCount"
+              ],
+              "additionalProperties": false
+            },
+            "description": "S5-T02 (FR-MUR-9-5): the offered levels of this subject that have at least one chapter with a servable question, with their own counts. `chapterCount` and `questionCount` above are the sums over these levels."
           }
         },
         "required": [
@@ -59835,7 +59870,8 @@
           "icon",
           "color",
           "chapterCount",
-          "questionCount"
+          "questionCount",
+          "levels"
         ],
         "additionalProperties": false
       },

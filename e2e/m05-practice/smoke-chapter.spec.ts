@@ -47,11 +47,11 @@ test.describe('M05 S4 / S5 / Q2 / S6 / S7 smoke', { tag: [TAG.smoke, moduleTag(5
         'Soalan by Chapter',
       )
       await expect(tid(page, 'chapter-random')).toHaveAttribute('href', '/practice')
-      await expect(tid(page, 'chapter-subject-grid').locator('> a')).toHaveCount(10)
+      await expect(tid(page, 'chapter-subject-grid').locator('> li > a')).toHaveCount(2)
       await expectNoHorizontalScroll(page)
 
       await tid(page, 'chapter-subject-MATH').click()
-      await expect(page).toHaveURL(/\/practice\/chapter\/MATH$/)
+      await expect(page).toHaveURL(/\/practice\/chapter\/MATH(\?level=[^&]+)?$/)
       await expectTabTitle(page, 'Chapter Matematik | PRESTASIPLUS')
       await expect(tid(page, 'shell-user-title')).toHaveText('Soalan by Chapter')
       await expect(tid(page, 'shell-user-subtitle')).toHaveText('Matematik')
