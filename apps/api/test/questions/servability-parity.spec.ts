@@ -126,10 +126,17 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     await q(`update question_versions set status = 'archived' where question_id = $1`, [made.archivedLive])
     await q(`update questions set live_version_no = null where id = $1`, [made.archivedLive])
 
-    // A secondary level the SPM activities do not offer (not T4 or T5), when the seed has one.
-    const other = await q(`select id::text id from education_levels where stage <> 'primary' and is_active and code not in ('T4', 'T5') order by id limit 1`)
-    await publish('otherLevel', 'Soalan tahap lain untuk kesamaan kebolehhidangan.')
-    if (other[0]) await q(`update question_versions set education_level_id = $2 where question_id = $1`, [made.otherLevel, other[0].id])
+    // S4-T06: every active secondary level is offered, T1 to T5 alike. A question on T3, T1 and T5 of a subject linked to that level is served;
+    // the same question flagged (S1-T07 `figure_only`) is refused at T1 by the flag alone.
+    const onLevel = async (key: string, text: string, code: string, flag?: string) => {
+      await publish(key, text)
+      await q(`update question_versions set education_level_id = (select id from education_levels where code = $2), stimulus_flag = $3 where question_id = $1`, [made[key], code, flag ?? null])
+      await q(`insert into subject_levels (subject_id, education_level_id) select $1, id from education_levels where code = $2 on conflict do nothing`, [tag.subjectId, code])
+    }
+    await onLevel('otherLevel', 'Soalan tahap lain untuk kesamaan kebolehhidangan.', 'T3')
+    await onLevel('levelT1', 'Soalan tahap satu untuk kesamaan kebolehhidangan.', 'T1')
+    await onLevel('levelT5', 'Soalan tahap lima untuk kesamaan kebolehhidangan.', 'T5')
+    await onLevel('flaggedT1', 'Soalan bertanda tahap satu untuk kesamaan kebolehhidangan.', 'T1', 'figure_only')
 
     // On a published paper (Simulasi), and one that is only a draft paper.
     for (const [key, status] of [['onPaper', 'published'], ['onDraftPaper', 'draft'], ['archivedOnPaper', 'published']] as const) {
@@ -289,9 +296,9 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     expect(reasonsOf('draft', 'latih_tubi_spm')).toEqual(['not_approved'])
     expect(reasonsOf('archivedLive', 'latih_tubi_spm')).toEqual(['archived'])
     expect(reasonsOf('withdrawn', 'latih_tubi_spm')).toEqual(['withdrawn'])
-    if ((await q(`select 1 from education_levels where stage <> 'primary' and is_active and code not in ('T4', 'T5')`)).length > 0) {
-      expect(reasonsOf('otherLevel', 'latih_tubi_spm')).toEqual(['level_not_offered'])
-    }
+    // S4-T06: T1 to T5 are all offered; the flag still excludes at T1.
+    for (const key of ['otherLevel', 'levelT1', 'levelT5'] as const) expect(reasonsOf(key, 'latih_tubi_spm'), key).toEqual([])
+    expect(reasonsOf('flaggedT1', 'latih_tubi_spm')).toEqual(['figure_only'])
     // The SQL half: every id the evaluator serves passes the filter, and every id that passes the filter and the practice
     // mapper is served (the filter is the reader's own `QuestionFilter`).
     const inScope = new Set(await repo.eligibleAmong(allIds, filterOf('latih_tubi_spm')))
@@ -326,10 +333,10 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     // The report evaluates the live version, and says which one.
     expect(reports.get(made.liveServedDraftMoves!)!.versionNo).toBe(1)
 
-    // Live v1 is on a level SPM does not offer and an unlinked subject: neither drawn nor served, whatever v2 says.
+    // Live v1 is on a level ('TZ', an extra active secondary level, now offered like T1 to T5) and an unlinked subject: neither drawn nor served, whatever v2 says.
     expect(drawn.has(made.liveOutDraftIn!)).toBe(false)
-    expect(await reasonsAlone('liveOutDraftIn', 'latih_tubi_spm')).toEqual(['level_not_offered', 'subject_unavailable'])
-    expect(reasonsOf('liveOutDraftIn', 'latih_tubi_spm')).toEqual(['level_not_offered', 'subject_unavailable'])
+    expect(await reasonsAlone('liveOutDraftIn', 'latih_tubi_spm')).toEqual(['subject_unavailable'])
+    expect(reasonsOf('liveOutDraftIn', 'latih_tubi_spm')).toEqual(['subject_unavailable'])
     expect(servedBy('latih_tubi_spm').has(made.liveOutDraftIn!)).toBe(false)
   })
 
@@ -354,6 +361,7 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     expect(reasonsOf('inactiveSubject', 'latih_tubi_spm')).toEqual(['subject_unavailable'])
     expect(reasonsOf('unlinkedSubject', 'latih_tubi_spm')).toEqual(['subject_unavailable'])
     expect(reasonsOf('noSubject', 'latih_tubi_spm')).toEqual(['subject_unavailable'])
+    // A question with no level at all keeps `level_not_offered` (the SQL twin's EXISTS on education_levels finds no row).
     expect(reasonsOf('noLevel', 'latih_tubi_spm')).toEqual(['level_not_offered', 'subject_unavailable'])
   })
 

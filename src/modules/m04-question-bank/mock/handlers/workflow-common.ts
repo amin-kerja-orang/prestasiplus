@@ -11,6 +11,8 @@ import { requireRole, type MockQuery, type MockRequest } from '@/mock/define'
 
 /** Every M04 workflow endpoint is admin-only (SRS §7, SEC-M04-01, SEC-M04-09). */
 export const adminOnly = requireRole('admin')
+/** S11 diagram audit is also open to the teacher and the school admin (S6-T18). */
+export const auditReaders = requireRole('admin', 'teacher', 'school_admin')
 
 export type Body = Record<string, unknown>
 
@@ -132,19 +134,14 @@ export function uploadedFile(value: unknown): UploadedFile | null {
   }
 }
 
-/** JPG / PNG / WebP / GIF; SVG and every other type are refused (SEC-M04-02). */
-export const DIAGRAM_MIMES: readonly string[] = [
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'image/gif',
-]
+/** JPG / PNG / WebP; GIF, SVG and every other type are refused (SEC-M04-02, S6-T18). */
+export const DIAGRAM_MIMES: readonly string[] = ['image/jpeg', 'image/png', 'image/webp']
 
 /**
  * The kept reference of an upload: a deterministic placeholder `blob:mock/{scope}/{file name}`.
  * No live object URL is kept (it would die on reload); the UI renders a placeholder image for a
  * `blob:mock/` reference. Shared by the S2/S4 question images and the S11 diagram images.
- * S2/S4 accept JPG/PNG/WebP (SRS §5); S11 accepts `image/*` = JPG/PNG/WebP/GIF (DIAGRAM_MIMES).
+ * S2/S4 accept JPG/PNG/WebP (SRS §5); S11 accepts JPG/PNG/WebP (DIAGRAM_MIMES).
  */
 export function storeUpload(scope: string, file: Pick<UploadedFile, 'name'>): string {
   return `blob:mock/${scope}/${encodeURIComponent(file.name)}`

@@ -2,9 +2,10 @@ import type { LayoutMode } from '@/app/router/meta'
 import type { Role } from '@/stores/session-types'
 
 /**
- * The mounts of the Kirkpatrick screens (shells.md v1.2; SRS M12 FR-M12-08, 13): the admin panel, the
- * `/guru` twin (admin shell, teacher and admin; provisional) and, for S1 only, the school-administrator
- * alias in the user shell. Shared by the `routes/<group>.ts` fragments of M12-T2 and M12-T3/T4.
+ * The mounts of the Kirkpatrick screens (shells.md v1.2; SRS M12 FR-M12-08, 13; S6-T02): the admin panel
+ * (admin shell), the `/guru` twin (user shell, teacher and admin) and the school-administrator mount
+ * `/admin-sekolah/kirkpatrick` (user shell, all seven screens, the pupil detail and the PDF, data forced to the
+ * viewer's school). Shared by the `routes/<group>.ts` fragments.
  */
 export interface KirkpatrickMount {
   /** Route name prefix. */
@@ -25,11 +26,11 @@ export const ADMIN_MOUNT: KirkpatrickMount = {
 export const GURU_MOUNT: KirkpatrickMount = {
   name: 'guru-kirkpatrick',
   prefix: '/guru/kirkpatrick',
-  layout: 'admin',
+  layout: 'user',
   roles: ['teacher', 'admin'],
 }
 
-/** S1 only: the other endpoints answer 403 for a school administrator (G4 decision F6). */
+/** All seven screens plus the pupil detail and the PDF; the API forces the viewer's own school (FR-AS-11-1). */
 export const SCHOOL_ADMIN_MOUNT: KirkpatrickMount = {
   name: 'admin-sekolah-kirkpatrick',
   prefix: '/admin-sekolah/kirkpatrick',
@@ -37,5 +38,8 @@ export const SCHOOL_ADMIN_MOUNT: KirkpatrickMount = {
   roles: ['school_admin'],
 }
 
-/** The mounts that carry every screen (S1-S8). */
+/** The admin and teacher mounts. */
 export const STAFF_MOUNTS: readonly KirkpatrickMount[] = [ADMIN_MOUNT, GURU_MOUNT]
+
+/** Every mount that carries every screen (S1-S8 and the PDF): the staff mounts and the school administrator's. */
+export const ALL_MOUNTS: readonly KirkpatrickMount[] = [...STAFF_MOUNTS, SCHOOL_ADMIN_MOUNT]
