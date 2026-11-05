@@ -148,10 +148,15 @@ export class IntakeProcessingService implements OnModuleInit {
    */
   async sweepBatchTimeouts(): Promise<number> {
     const due = await this.prisma.client.$queryRaw<{ id: bigint }[]>`
-      SELECT b.id
-        FROM intake_batches b
-       WHERE b.status = 'processing'
-         AND (
+      SELECT b.id FROM intake_batches b WHERE b.status = 'processing' AND ${this.batchIsStale()}`
+    let failed = 0
+    for (const { id } of due) if (await this.timeOutBatch(id)) failed += 1
+    return failed
+  }
+
+  /** The 15-minute rule on the batch alias `b`: the earliest `started_at` of its current file / extraction jobs is older than the limit. */
+  private batchIsStale(): Prisma.Sql {
+    return Prisma.sql`(
            SELECT min(j.started_at)
              FROM jobs j
             WHERE j.started_at IS NOT NULL
@@ -159,15 +164,15 @@ export class IntakeProcessingService implements OnModuleInit {
               AND ((j.entity_type = ${INTAKE_JOB_ENTITY} AND j.entity_id IN (SELECT f.id::text FROM intake_files f WHERE f.batch_id = b.id))
                 OR (j.entity_type = 'intake_batch' AND j.entity_id = b.id::text))
          ) < now() - make_interval(secs => ${this.config.batchTimeoutMs}::float8 / 1000.0)`
-    let failed = 0
-    for (const { id } of due) if (await this.timeOutBatch(id)) failed += 1
-    return failed
   }
 
   private async timeOutBatch(batchId: bigint): Promise<boolean> {
     return this.prisma.transaction(async (tx) => {
-      const locked = await tx.$queryRaw<{ status: string }[]>`SELECT status FROM intake_batches WHERE id = ${batchId} FOR UPDATE`
-      if (locked[0]?.status !== 'processing') return false
+      // Lock first, then decide again: a retry or a finishing job may have changed the batch since the sweep selected it.
+      await tx.$queryRaw`SELECT id FROM intake_batches WHERE id = ${batchId} FOR UPDATE`
+      const still = await tx.$queryRaw<{ id: bigint }[]>`
+        SELECT b.id FROM intake_batches b WHERE b.id = ${batchId} AND b.status = 'processing' AND ${this.batchIsStale()}`
+      if (still.length === 0) return false
       this.logger.warn(`${INTAKE_BATCH_TIMEOUT_CODE}: batch ${idToString(batchId)} is over ${this.config.batchTimeoutMs} ms`)
       const files = await tx.intakeFile.findMany({ where: { batchId }, select: { id: true } })
       const open = await tx.intakeFile.findMany({ where: { batchId, status: { in: ['uploaded', 'processing'] } }, select: { id: true } })

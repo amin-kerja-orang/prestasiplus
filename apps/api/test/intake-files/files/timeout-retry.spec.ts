@@ -149,6 +149,53 @@ describe('batch timeout (intake.batch_timeout)', () => {
     await t.drain()
   })
 
+  it('the 15-minute rule is checked again under the batch lock: a batch whose jobs were re-started, or whose status changed, after the sweep selected it is not failed', async () => {
+    const svc = t.app.get(IntakeProcessingService) as unknown as { timeOutBatch(id: bigint): Promise<boolean> }
+    const restarted = await createBatch(teacher)
+    await uploadOk(teacher, restarted.id, [{ bytes: pdf(1) }])
+    await ageBatch(restarted.id, 20) // stale when selected ...
+    await t.db.query(
+      `update jobs set started_at = now() where entity_type = 'intake_file' and entity_id in (select id::text from intake_files where batch_id = $1::bigint)`,
+      [restarted.id],
+    ) // ... but a retry started the jobs again before the lock
+    expect(await svc.timeOutBatch(BigInt(restarted.id))).toBe(false)
+    expect((await batchRow(restarted.id)).status).toBe('processing')
+
+    const finished = await createBatch(teacher)
+    await uploadOk(teacher, finished.id, [{ bytes: pdf(1) }])
+    await ageBatch(finished.id, 20)
+    await t.db.query(`update intake_batches set status = 'ready_for_review' where id = $1::bigint`, [finished.id]) // a job finished it first
+    expect(await svc.timeOutBatch(BigInt(finished.id))).toBe(false)
+    expect((await batchRow(finished.id)).status).toBe('ready_for_review')
+
+    const stale = await createBatch(teacher)
+    await uploadOk(teacher, stale.id, [{ bytes: pdf(1) }])
+    await ageBatch(stale.id, 20)
+    expect(await svc.timeOutBatch(BigInt(stale.id))).toBe(true)
+    expect((await batchRow(stale.id)).status).toBe('failed')
+    await t.drain()
+  })
+
+  it('a file swept while still uploaded (never started) is failed with OCR_TIMEOUT and a file retry runs it to the end', async () => {
+    const b = await createBatch(teacher)
+    const up = await uploadOk(teacher, b.id, [{ bytes: pdf(2) }])
+    const fileId = up.files[0]!.id
+    const fileStatus = async () => (await t.db.query<{ status: string; error_code: string | null }>(`select status, error_code from intake_files where id = $1::bigint`, [fileId]))[0]!
+    expect((await fileStatus()).status).toBe('uploaded')
+    await ageBatch(b.id, 20)
+    expect(await t.app.get(IntakeProcessingService).sweepBatchTimeouts()).toBeGreaterThanOrEqual(1) // direct call: the job's time bucket may already be used
+    expect(await fileStatus()).toEqual({ status: 'failed', error_code: 'OCR_TIMEOUT' })
+    expect((await batchRow(b.id)).status).toBe('failed')
+
+    const res = await retry(teacher, 'files', fileId)
+    expect(res.status, JSON.stringify(res.body)).toBe(202)
+    expect(res.body.data).toEqual({ attempt: 1, retriesLeft: 2 })
+    await t.drain()
+    expect((await fileStatus()).status).toBe('done')
+    expect((await pagesOf(fileId)).every((p) => p.ocr_status === 'done' || p.ocr_status === 'not_needed')).toBe(true)
+    expect((await batchRow(b.id)).status).toBe('ready_for_review')
+  })
+
   it('the job reschedules itself, one job per time bucket', async () => {
     const svc = t.app.get(IntakeProcessingService)
     await svc.scheduleBatchTimeout()
@@ -181,6 +228,15 @@ describe('retry routes (API-Q-26)', () => {
     expect(detail).toMatchObject({ status: 'ready_for_review' })
     expect(detail.files[0]).toMatchObject({ status: 'done', progress: { total: 3, done: 3, failed: 0 } })
     expect((await pagesOf(fileId)).every((p) => p.ocr_status === 'done' && p.error_code === null)).toBe(true)
+  })
+
+  it('two simultaneous retries of one file: one 202, one 409, retry_count goes up once', async () => {
+    const { fileId } = await batchWithFailedPage(3, 2)
+    const [a, b] = await Promise.all([retry(teacher, 'files', fileId), retry(teacher, 'files', fileId)])
+    expect([a.status, b.status].sort()).toEqual([202, 409])
+    expect(await retryCountOf(fileId)).toBe(1)
+    await t.drain()
+    expect(await retryCountOf(fileId)).toBe(1)
   })
 
   it('the 4th retry of a file is 409 with the ERR-INT-11 text and changes nothing; the first three count 1, 2, 3', async () => {
