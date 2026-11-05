@@ -3,12 +3,15 @@
 -- `reference_url`. A flag, not a second table, so Misi Harian answers keep the same practice_answers FK to question_versions. Every
 -- served or counted bank read adds `visibility = 'bank'` (parts B and C of S6-T16); the mission draw is the only reader of private rows.
 -- Additive: no backfill, every existing row becomes 'bank' through the default (adding a NOT NULL column with a constant default is a
--- catalogue-only change on PostgreSQL 11+). Constraints are added NOT VALID then VALIDATEd, as 0128, so the table is not scanned under
--- ACCESS EXCLUSIVE. Beyond the DM-42 check and index, three consistency checks keep the data honest: owner set iff private (a bank row
+-- catalogue-only change on PostgreSQL 11+). Constraints are added NOT VALID then VALIDATEd, as 0128; the whole file runs in ONE transaction, so this does not shorten the lock (the table
+-- stays locked until the file commits). The pattern is kept for consistency and costs nothing: on a table with no private row the scans are cheap. Beyond the DM-42 check and index, three consistency checks keep the data honest: owner set iff private (a bank row
 -- never carries an owner, a private row always has one), and the reference link is http(s) and at most 2048 characters (FR-GUR-44a-8).
--- The owner FK is RESTRICT (not SET NULL) because SET NULL would break the owner-iff-private check; users are soft-deleted in the app.
+-- The owner FK is RESTRICT (not SET NULL) because SET NULL would break the owner-iff-private check. Consequence: users ARE hard-deleted in the
+-- app (users.repository.ts), so a teacher who owns personal questions cannot be deleted until those questions are deleted (the delete is mapped
+-- to a conflict in users.service.ts); an owner-deleting flow must remove the teacher's personal questions first.
 -- Reversible: no down file (Prisma migrations are forward-only); to revert by hand (delete private rows first, they have no meaning without
--- the flag, and practice_answers may reference them): DELETE FROM "question_versions" WHERE "visibility" = 'teacher_private'; then
+-- the flag). The practice tables have no FK to questions (migration 0014), so a rollback leaves orphan history rows (practice_answers,
+-- practice_session_questions, revision_queue) that point at the deleted ids: DELETE FROM "question_versions" WHERE "visibility" = 'teacher_private'; then
 -- DROP INDEX "ix_question_versions_owner_private"; ALTER TABLE "question_versions" DROP CONSTRAINT "ck_question_versions_reference_url",
 -- DROP CONSTRAINT "ck_question_versions_owner_iff_private", DROP CONSTRAINT "ck_question_versions_visibility",
 -- DROP CONSTRAINT "fk_question_versions_owner_user_id", DROP COLUMN "reference_url", DROP COLUMN "owner_user_id", DROP COLUMN "visibility".
