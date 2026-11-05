@@ -43,6 +43,8 @@ import {
   bijakRuleLabel,
   BIJAK_BUILDER_BLOCKER_CODES,
   BIJAK_BUILDER_BLOCKER_OVERRIDABLE,
+  BijakBuilderPublishRequestSchema,
+  bijakBuilderBlockerOverridable,
   BijakBuilderQuestionSchema,
   BijakBuilderSchemeLineSchema,
 } from '../schema'
@@ -522,6 +524,23 @@ describe('publish, delete and preview results', () => {
     expect(BijakBuilderBlockerSchema.safeParse({ ...blocker, extra: 1 }).success).toBe(false)
     expect(BIJAK_BUILDER_BLOCKER_CODES).toHaveLength(26) // T34's 18 + T48's RULE_NOT_IN_CONTRACT, SECTION_NOT_IN_CONTRACT, RULE_N_EXCEEDS_QUESTIONS, SECTION_EMPTY + REQ-A-013's REFERENCE_IMAGE_INVALID + T43b's NO_QUESTIONS, ZERO_MARK_SECTION, TOTAL_MARKS_BELOW_ONE
     expect(BIJAK_BUILDER_BLOCKER_CODES.filter((c) => BIJAK_BUILDER_BLOCKER_OVERRIDABLE[c]).sort()).toEqual(['BLUEPRINT_NOT_VERIFIED', 'INELIGIBLE', 'RULE_NOT_IN_CONTRACT', 'SECTION_NOT_IN_CONTRACT'])
+  })
+
+  it('S3-T01: nothing is overridable under a Disahkan Kontrak; under any other Kontrak the map decides', () => {
+    for (const code of BIJAK_BUILDER_BLOCKER_CODES) {
+      expect(bijakBuilderBlockerOverridable(code, true), code).toBe(false)
+      expect(bijakBuilderBlockerOverridable(code, false), code).toBe(BIJAK_BUILDER_BLOCKER_OVERRIDABLE[code])
+    }
+  })
+
+  it('S3-T01: the exact BM strings of the Kontrak rules and the exception reason', () => {
+    expect(BIJAK_BUILDER_MESSAGES.dskpNotLoaded).toBe('DSKP belum dimuatkan untuk subjek ini. Kontrak tidak boleh dicipta.')
+    expect(BIJAK_BUILDER_MESSAGES.compulsoryChoose).toBe('Bahagian wajib dijawab tidak boleh digabungkan dengan Pilih N.')
+    expect(BIJAK_BUILDER_MESSAGES.chooseNRange).toBe('Nombor N tidak sah.')
+    expect(BIJAK_BUILDER_MESSAGES.marksPerQuestionMismatch).toBe('Markah setiap soalan mesti sama dengan markah bahagian.')
+    expect(BIJAK_BUILDER_MESSAGES.overrideReasonRequired).toBe('Sebab pengecualian diperlukan (sekurang-kurangnya 5 aksara).')
+    const short = BijakBuilderPublishRequestSchema.safeParse({ override: true, reason: 'abc' })
+    expect(short.error?.issues[0]?.message).toBe(BIJAK_BUILDER_MESSAGES.overrideReasonRequired)
   })
 
   it('requires the errors key and rejects the old union shapes', () => {

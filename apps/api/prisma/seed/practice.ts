@@ -16,6 +16,7 @@
  *   curriculum row it needs is missing, so it can run next to a partial seed list.
  */
 import type { PrismaClient } from '../../src/db/client'
+import { upsertAnswerRow } from '../../src/modules/practice/answer-log.port'
 import type { SeedModule } from './index'
 
 const MINUTE = 60_000
@@ -107,24 +108,38 @@ async function seedSession(db: PrismaClient, plan: SessionPlan, now: Date): Prom
         updatedAt: completedAt,
       },
     })
-    await tx.practiceAnswer.createMany({
-      data: Array.from({ length: plan.questions }, (_, i) => ({
+    // AC-PA-01: every write goes through the port's SQL. The session's mode is the answer's mode (the seed
+    // modes random / past_year are legacy modes, still valid under ck_practice_answers_mode) and attempt_id is the
+    // session id. No question is linked, so question_id is null and the idempotency index never matches: the
+    // `exists` check above is what keeps a re-run from writing twice.
+    for (let i = 0; i < plan.questions; i++) {
+      const isCorrect = i < plan.correct
+      await upsertAnswerRow(tx, {
+        userId: String(user.id),
+        attemptId: session.id,
         sessionId: session.id,
-        userId: user.id,
         questionId: null,
-        subjectId: subject.id,
-        educationLevelId: level?.id ?? null,
-        chapterId: chapter?.id ?? null,
+        questionVersionNo: null,
+        partRef: null,
+        mode: plan.mode,
+        subjectId: String(subject.id),
+        educationLevelId: level === null || level === undefined ? null : String(level.id),
+        chapterId: chapter === null ? null : String(chapter.id),
+        topicId: null,
+        difficulty: null,
         questionType: 'mcq',
-        // The first `correct` answers are right: a stable, easy to read pattern.
-        selectedLabel: pickedLabel(i < plan.correct),
-        isCorrect: i < plan.correct,
+        isCorrect,
+        marksAwarded: isCorrect ? 1 : 0,
+        marksMax: 1,
         answeredAt: new Date(startedAt.getTime() + (i + 1) * step),
-        historical: false,
-        clientUuid: plan.clientUuid,
-        createdAt: completedAt,
-      })),
-    })
+        isTest: false,
+        // The first `correct` answers are right: a stable, easy to read pattern.
+        selectedLabel: pickedLabel(isCorrect),
+        timeSeconds: null,
+      })
+    }
+    // The port does not set these two: keep the seed's earlier values (created_at = completion, the session's client key).
+    await tx.practiceAnswer.updateMany({ where: { sessionId: session.id }, data: { createdAt: completedAt, clientUuid: plan.clientUuid } })
     // BR-20: the counters follow the answers (raised only here, so a re-run cannot double count).
     await tx.mastery.upsert({
       where: { userId_subjectId: { userId: user.id, subjectId: subject.id } },
