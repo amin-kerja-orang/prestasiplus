@@ -45,6 +45,25 @@ export const MAP_SUBJECTS: readonly LearningMapSubject[] = Object.freeze([
   { code: 'SEJARAH', label: 'Sejarah', emoji: '🏛️', color: '#EF4444' },
 ])
 
+/**
+ * The pills from the active subjects (S4-T06, D11): the 7 known pills first while their subject is active, then every other active
+ * subject (Geografi included) in the repository order with its name, an empty emoji and an empty colour (neutral pill).
+ */
+export function mapSubjectPills(active: readonly { code: string; name: string }[]): LearningMapSubject[] {
+  const legacy = new Map(Object.entries(PRACTICE_CODE).map(([name, practice]) => [practice, name]))
+  const learner = (code: string): string => legacy.get(code) ?? code
+  const codes = new Set(active.map((s) => learner(s.code)))
+  const known = new Set(MAP_SUBJECTS.map((s) => s.code))
+  const seen = new Set<string>()
+  const others = active.flatMap((s) => {
+    const code = learner(s.code)
+    if (known.has(code) || seen.has(code)) return []
+    seen.add(code)
+    return [{ code, label: s.name, emoji: '', color: '' }]
+  })
+  return [...MAP_SUBJECTS.filter((s) => codes.has(s.code)).map((s) => ({ ...s })), ...others]
+}
+
 /** D54 (supersedes DV-M03-02): secondary school only; no Darjah on S12/S14. */
 export const MAP_GRADES = Object.freeze(['TINGKATAN_4', 'TINGKATAN_5'] as const)
 export const DEFAULT_MAP_SUBJECT = 'MATEMATIK'
@@ -190,12 +209,13 @@ export const studentCurriculumRoutes: RouteDef[] = [
     const average = progress.length
       ? Math.round(progress.reduce((sum, p) => sum + p.progress, 0) / progress.length)
       : 0
+    const pills = mapSubjectPills(curriculumRepo.subjects({ active: true }))
     const data: LearningMap = {
       subject,
-      subjectLabel: mapSubjectLabel(subject),
+      subjectLabel: pills.find((p) => p.code === subject)?.label ?? mapSubjectLabel(subject),
       grade,
       gradeOptions: [...MAP_GRADES],
-      subjects: MAP_SUBJECTS.map((s) => ({ ...s })),
+      subjects: pills,
       stats: { done, total: rows.length, progress: average },
       topics,
     }
