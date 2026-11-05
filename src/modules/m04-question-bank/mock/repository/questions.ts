@@ -17,6 +17,7 @@
  * function of its inputs. Repository methods are synchronous (overview §6.7.1).
  */
 
+import { BULK_CHAPTER_SKIP_REASONS } from '@pp/contract'
 import { toIsoMyt } from '@/lib/time'
 import { fnv1a32, mulberry32, type Prng } from '@/mock/determinism'
 import type { QueryResult } from '@/mock/db/store'
@@ -461,6 +462,28 @@ export const questionsRepo = defineRepository({
   validateAnchor: (row, contributor) => anchorIssues(row, contributor),
   methods: ({ store, stores, transaction, phase }) => {
     const get = (id: number): Question | null => store.get(id) ?? null
+
+    /** Count of the rows of the filter that a bulk-chapter run may link (approved, no Bab, the Bab's subject and level). */
+    const fitsCount = (
+      filter: AdminListFilter,
+      search: { term: string; fields: 'questionText'[] } | undefined,
+      target: { subjectId: number; educationLevelId: number | null },
+    ): number => {
+      if (target.educationLevelId === null) return 0
+      const compatible =
+        (filter.status === undefined || filter.status === 'approved') &&
+        (filter.subjectId === undefined || filter.subjectId === target.subjectId) &&
+        (filter.educationLevelId === undefined || filter.educationLevelId === target.educationLevelId)
+      if (!compatible) return 0
+      const w = {
+        ...adminWhere(filter),
+        status: 'approved',
+        curriculumChapterId: null,
+        subjectId: target.subjectId,
+        educationLevelId: levelScope(target.educationLevelId),
+      } as Where<Question>
+      return store.query({ where: w, search, page: 1, pageSize: 1 }).total
+    }
 
     const adminListImpl = (filter: AdminListFilter & { page?: number; pageSize?: number } = {}) => {
       const term = filter.search?.trim() ?? ''
@@ -920,60 +943,75 @@ export const questionsRepo = defineRepository({
         }
       },
       /**
-       * `POST /admin/curriculum/questions/bulk-chapter` (S2-T08, API-DSKP-09): `eligible` = matched rows that are approved, have no Bab and
-       * whose subject and level equal the Bab's; `refused` = matched - eligible. Sets `curriculumChapterId` in place (no status change);
-       * one run applies at most `cap` rows. `overwrite` is not modelled (never exposed in R1).
+       * `POST /admin/curriculum/questions/bulk-chapter` (S2-T08, API-DSKP-09), as the merged service: `eligible` = matched rows that are
+       * approved, have no Bab and whose subject and level equal the Bab's (a Bab without a level matches nothing); `refused` = matched -
+       * eligible; `skipped` lists the refused rows, question id ascending, at most `cap`, with the reason (mismatch first, then not approved,
+       * else already has a Bab). Sets `curriculumChapterId` in place (no status change); one run applies at most `cap` rows.
+       * `overwrite` is not modelled (never exposed in R1).
        */
       bulkChapter: (
         target: { chapterId: number; subjectId: number; educationLevelId: number | null },
         select: { ids: readonly number[] } | { filter: AdminListFilter },
         opts: { dryRun: boolean; now: number; cap: number },
-      ): { matched: number; eligible: number; applied: number; remaining: number } => {
+      ): {
+        matched: number
+        eligible: number
+        applied: number
+        remaining: number
+        skipped: { questionId: string; reason: string }[]
+      } => {
         const fits = (q: Question): boolean =>
+          target.educationLevelId !== null &&
           q.status === 'approved' &&
           q.curriculumChapterId === null &&
           q.subjectId === target.subjectId &&
           q.educationLevelId === target.educationLevelId
+        const reasonOf = (q: Question): string =>
+          target.educationLevelId === null ||
+          q.subjectId !== target.subjectId ||
+          q.educationLevelId !== target.educationLevelId
+            ? BULK_CHAPTER_SKIP_REASONS.chapterMismatch
+            : q.status !== 'approved'
+              ? BULK_CHAPTER_SKIP_REASONS.notApproved
+              : BULK_CHAPTER_SKIP_REASONS.alreadyHasChapter
         let matched = 0
-        const picked: number[] = []
         let eligible = 0
+        const picked: number[] = []
+        const skipped: { questionId: string; reason: string }[] = []
+        const visit = (q: Question): void => {
+          if (fits(q)) {
+            eligible++
+            if (picked.length < opts.cap) picked.push(q.id)
+          } else if (skipped.length < opts.cap) {
+            skipped.push({ questionId: String(q.id), reason: reasonOf(q) })
+          }
+        }
         if ('ids' in select) {
+          const rows: Question[] = []
           for (const id of new Set(select.ids)) {
             const row = get(id)
-            if (!row || row.pkskDomainId !== null) continue
-            matched++
-            if (fits(row)) {
-              eligible++
-              picked.push(id)
-            }
+            if (row && row.pkskDomainId === null) rows.push(row)
           }
+          rows.sort((x, y) => x.id - y.id)
+          matched = rows.length
+          rows.forEach(visit)
         } else {
           const where = { ...adminWhere(select.filter), educationLevelId: levelScope(select.filter.educationLevelId) }
           const term = select.filter.search?.trim() ?? ''
           const search = term !== '' ? { term, fields: ['questionText' as const] } : undefined
+          const sort = [{ field: 'id', dir: 'asc' }] as const
           matched = store.query({ where, search, page: 1, pageSize: 1 }).total
-          const compatible =
-            (select.filter.status === undefined || select.filter.status === 'approved') &&
-            (select.filter.subjectId === undefined || select.filter.subjectId === target.subjectId) &&
-            (select.filter.educationLevelId === undefined || select.filter.educationLevelId === target.educationLevelId)
-          if (compatible) {
-            const eligibleWhere = {
-              ...where,
-              status: 'approved',
-              curriculumChapterId: null,
-              subjectId: target.subjectId,
-              educationLevelId: target.educationLevelId,
-            } as Where<Question>
-            eligible = store.query({ where: eligibleWhere, search, page: 1, pageSize: 1 }).total
-            const want = opts.dryRun ? 0 : Math.min(eligible, opts.cap)
-            for (let page = 1; picked.length < want; page++) {
-              const rows = store.query({ where: eligibleWhere, search, page, pageSize: 500 }).rows
-              if (rows.length === 0) break
-              for (const r of rows) if (picked.length < want) picked.push(r.id)
-            }
+          // Id ascending, like the service: the first `cap` eligible rows are the ones applied, the first `cap` refused rows are listed.
+          for (let page = 1; ; page++) {
+            const rows = store.query({ where, search, sort, page, pageSize: 500 }).rows
+            if (rows.length === 0) break
+            rows.forEach(visit)
+            if (picked.length >= opts.cap && skipped.length >= opts.cap) break
           }
+          // `eligible` counts every eligible row, not only those visited before both lists filled.
+          eligible = fitsCount(select.filter, search, target)
         }
-        const toApply = opts.dryRun ? [] : picked.slice(0, opts.cap)
+        const toApply = opts.dryRun ? [] : picked
         if (toApply.length > 0) {
           transaction(() => {
             for (const id of toApply) setFields(id, { curriculumChapterId: target.chapterId }, opts.now)
@@ -984,6 +1022,7 @@ export const questionsRepo = defineRepository({
           eligible,
           applied: toApply.length,
           remaining: eligible - Math.min(eligible, opts.cap),
+          skipped,
         }
       },
       /** API-DSKP-10 (S2-T08): approved questions of one Subjek x Tingkatan, with and without a Bab. */

@@ -21,7 +21,13 @@
  * repository (`questions`) and `question-input.ts`.
  */
 
-import { BULK_CHAPTER_CAP, BULK_CHAPTER_MAX_IDS, QUESTION_MESSAGES } from '@pp/contract'
+import {
+  BULK_CHAPTER_CAP,
+  BULK_CHAPTER_MAX_IDS,
+  CURRICULUM_NOT_FOUND_MESSAGES,
+  QUESTION_MESSAGES,
+  type BulkChapterResult,
+} from '@pp/contract'
 import { curriculum } from '@/modules/m03-curriculum/mock'
 import {
   conflict,
@@ -346,9 +352,6 @@ function bulkByFilter(req: MockRequest, ctx: MockContext): MockResponse {
   return ok(result, { status: bulkFilterFlash(act, result.affected) })
 }
 
-/** S2-T08 copy of API-DSKP-09: the Bab is unknown / belongs to another Subjek x Tingkatan. */
-const CHAPTER_NOT_FOUND = 'Bab tidak dijumpai.'
-const CHAPTER_MISMATCH = 'Bab tidak sepadan dengan subjek dan tahap.'
 
 /** API-DSKP-09 (mounted under `/api/admin/curriculum`, served by this module because it owns the question rows). */
 function bulkChapter(req: MockRequest, ctx: MockContext): MockResponse {
@@ -400,19 +403,18 @@ function bulkChapter(req: MockRequest, ctx: MockContext): MockResponse {
   if (Object.keys(fields).length > 0) return validationError(fields)
 
   const chapter = curriculum.chapter(chapterId)
-  if (!chapter) return notFound(CHAPTER_NOT_FOUND)
+  if (!chapter) return notFound(CURRICULUM_NOT_FOUND_MESSAGES.chapter)
   const select: { ids: number[] } | { filter: AdminListFilter } = Array.isArray(ids)
     ? { ids: (ids as unknown[]).map(Number) }
     : { filter }
   const target = { chapterId, subjectId: chapter.subjectId, educationLevelId: chapter.educationLevelId }
-  if (!Array.isArray(ids) && (filter.subjectId !== chapter.subjectId || filter.educationLevelId !== chapter.educationLevelId)) {
-    return validationError({ chapterId: CHAPTER_MISMATCH })
-  }
   const probe = questions.bulkChapter(target, select, { dryRun: true, now: ctx.clock.now(), cap: BULK_CHAPTER_CAP })
-  const shape = (r: typeof probe, applied: number, dry: boolean) => ({
+  // Rows of another Subjek or Tingkatan than the Bab's are refused per row in `skipped` (200), never as a request error.
+  const shape = (r: typeof probe, applied: number, dry: boolean): BulkChapterResult => ({
     matched: r.matched,
     eligible: r.eligible,
     refused: r.matched - r.eligible,
+    skipped: r.skipped,
     applied,
     cap: BULK_CHAPTER_CAP,
     remaining: r.remaining,
@@ -426,18 +428,27 @@ function bulkChapter(req: MockRequest, ctx: MockContext): MockResponse {
   return ok(shape(done, done.applied, false))
 }
 
-/** API-DSKP-10: approved questions with and without a Bab per Subjek x Tingkatan (pairs that have approved questions). */
+/**
+ * API-DSKP-10: per offered Subjek x Tingkatan (an active subject linked to an active, non-primary level; zero pairs included) the
+ * approved questions with and without a Bab. The mock stores no stimulus flag, so "not flagged" holds for every row. 404 for an unknown id.
+ */
 function chapterCoverage(req: MockRequest): MockResponse {
   const subjectId = idFilter(req, 'subjectId')
   const levelId = idFilter(req, 'educationLevelId')
   if (subjectId === 'invalid' || levelId === 'invalid') return validationError({ [subjectId === 'invalid' ? 'subjectId' : 'educationLevelId']: FILTER_INVALID })
+  if (subjectId !== undefined && !curriculum.subject(subjectId)) return notFound(CURRICULUM_NOT_FOUND_MESSAGES.subject)
+  if (levelId !== undefined && !curriculum.level(levelId)) return notFound(CURRICULUM_NOT_FOUND_MESSAGES.level)
+  const offered = new Map(curriculum.levels().filter((l) => l.isActive && l.stage !== 'primary').map((l) => [l.id, l]))
   const rows = []
-  for (const s of curriculum.subjects({ active: true }).sort((a, b) => a.id - b.id)) {
+  for (const s of curriculum.subjects({ active: true }).sort((a, b) => a.order - b.order || a.id - b.id)) {
     if (subjectId !== undefined && s.id !== subjectId) continue
-    for (const l of curriculum.visibleLevels({ active: true })) {
+    const levels = s.educationLevelIds
+      .map((id) => offered.get(id))
+      .filter((l): l is NonNullable<typeof l> => l !== undefined)
+      .sort((a, b) => a.order - b.order || a.id - b.id)
+    for (const l of levels) {
       if (levelId !== undefined && l.id !== levelId) continue
       const c = questions.chapterCoverage(s.id, l.id)
-      if (c.approved === 0) continue
       rows.push({
         subjectId: String(s.id),
         subjectName: s.name,
