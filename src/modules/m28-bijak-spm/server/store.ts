@@ -430,7 +430,7 @@ export class BijakServer implements BijakApi {
       id,
       userId,
       paperId,
-      paperKind: def.kind as PaperKind,
+      paperKind: def.kind,
       title: def.title,
       subject: def.subject,
       kertas: def.kertas,
