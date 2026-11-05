@@ -24631,6 +24631,47 @@
         ],
         "additionalProperties": false
       },
+      "GamesSekolahBersaingBoardRow": {
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "school": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "accuracy": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Mean of per-session accuracy of the school, percent, one decimal."
+          },
+          "pupils": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Distinct pupils of the school with a session."
+          }
+        },
+        "required": [
+          "rank",
+          "school",
+          "state",
+          "accuracy",
+          "pupils"
+        ],
+        "additionalProperties": false
+      },
+      "GamesSekolahBersaingBoard": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/GamesSekolahBersaingBoardRow"
+        },
+        "description": "Rank order; [] when no school has a session."
+      },
       "GamesSekolahBersaingQuery": {
         "type": "object",
         "properties": {
