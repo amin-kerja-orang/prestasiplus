@@ -58,9 +58,10 @@ export class GroupMembers {
    * Makes `ordered` the members of the group, in that order. Adds, removals and reordering in one call; an unchanged list is a no-op.
    * Returns the members after the change.
    */
-  async set(groupId: string, ordered: readonly string[], field = 'questionIds', subjectMessage: string = M.memberScope): Promise<string[]> {
+  async set(groupId: string, ordered: readonly string[], field = 'questionIds', subjectMessage: string = M.memberScope, swap = false): Promise<string[]> {
     await this.lock(groupId)
-    // A draft copy stages its members in `draft_members`; the in-place member routes do not apply to it (S1-T01, the swap is not built yet).
+    // A draft copy stages its members in `draft_members`; the in-place member routes do not apply to it. Its members reach the live group
+    // only through the swap (`swap = true`: the publish of the copy, which is the one path that may change the members of a served group).
     const scope = await this.repo.groupScope(groupId)
     if (scope?.draftOfGroupId != null) throw conflict(M.conflict)
     if (new Set(ordered).size !== ordered.length) throw fail({ [field]: M.membersInvalid })
@@ -72,7 +73,7 @@ export class GroupMembers {
     if (unchanged) return [...current]
 
     // Served lock: the served members stay, in their order.
-    const serving = new Set(await this.repo.servingMemberIds(groupId))
+    const serving = new Set(swap ? [] : await this.repo.servingMemberIds(groupId))
     if (serving.size > 0) {
       const keptOrder = ordered.filter((q) => serving.has(q))
       const before = current.filter((q) => serving.has(q))
@@ -86,7 +87,7 @@ export class GroupMembers {
       if (f === undefined || f.pksk) throw fail({ [field]: M.membersInvalid })
       if (f.groupId !== null) throw fail({ [field]: f.groupId === groupId ? M.memberExists : M.memberTaken })
       if (!f.active || f.archived) throw fail({ [field]: M.memberInactive })
-      if (f.served) throw conflict(M.memberServed)
+      if (f.served && !swap) throw conflict(M.memberServed)
     }
     // The group's own scope (DM-51): an added member must match a non-null Subjek / Tingkatan / Kertas of the group.
     for (const q of added) {

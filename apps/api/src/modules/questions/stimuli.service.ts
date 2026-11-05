@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import {
   IMAGE_STIMULUS_KINDS,
   QUESTION_MESSAGES,
+  STIMULUS_LIMITS,
   STIMULUS_MEMBER_STEM_MAX,
   STIMULUS_MESSAGES,
   type StimulusCreateRequest,
@@ -354,16 +355,71 @@ export class StimuliService {
     return moving.map((m) => m.id)
   }
 
+  /**
+   * API-Q-31. On a draft copy (`draftOfGroupId` set) it is the SWAP (part 3b, lead decision 25): see `swapDraft`. On any other group every member
+   * `review` becomes `approved` in one transaction.
+   */
   async publishGroup(id: string, actor: GroupActor): Promise<StimulusWrite<StimulusGroupDetail>> {
-    await this.groupOrThrow(id)
+    const group = await this.groupOrThrow(id)
+    if (group.draftOfGroupId !== null) return this.swapDraft(group, actor)
     const moved = await this.prisma.transaction(async () => {
       await this.members.lock(id)
-      // A draft copy is swapped in by its own publish; the swap is not specified well enough to build (S1-T01 report), so it is refused.
-      if ((await this.repo.groupScope(id))?.draftOfGroupId != null) throw ApiError.of('CONFLICT', { message: STIMULUS_MESSAGES.conflict })
+      if ((await this.repo.groupScope(id))?.draftOfGroupId != null) throw ApiError.of('CONFLICT', { message: STIMULUS_MESSAGES.conflict }) // became a copy meanwhile
       return this.publishMembers(id, actor, true)
     }, TX)
     this.questions.invalidateOverview()
     return { result: await this.getGroup(id), audit: { approved: moved.length, ids: moved.slice(0, 200) } }
+  }
+
+  /**
+   * The swap (S1-T01 part 3b, lead decisions 25 and 26): publishing a draft copy replaces the served group, all or nothing, in ONE transaction.
+   * 1. the gate of group publish on the members staged in the copy (409 / 422, nothing changes);
+   * 2. the live group takes the copy's label, scope, option bank and stimuli (the copy's stimulus rows are relinked to the live group; the old rows are kept, unlinked);
+   * 3. the staged members become the members of the live group in the staged order (added ones join, removed ones are released, served ones included);
+   *    a member that was moved here from another group's copy is taken over from that group (it must no longer be staged there);
+   * 4. every member in Menunggu Semakan is approved through `setStatus` (the old live version is archived `superseded`);
+   * 5. the copy is deleted. The live group id never changes.
+   */
+  private async swapDraft(copy: GroupRow, actor: GroupActor): Promise<StimulusWrite<StimulusGroupDetail>> {
+    const draftId = idToString(copy.id)
+    const liveId = idToString(copy.draftOfGroupId as bigint)
+    const sortIds = (ids: string[]): string[] => ids.sort((a, b) => (BigInt(a) < BigInt(b) ? -1 : 1))
+    // Every group that holds a staged member is locked with the two groups, in ascending order, before any write (no deadlock between two swaps).
+    const holders = [...(await this.repo.groupsOfQuestions(copy.draftMembers ?? [])).values()]
+    const out = await this.prisma.transaction(async () => {
+      for (const key of sortIds([...new Set([draftId, liveId, ...holders])])) await this.members.lock(key)
+      const draft = await this.groupOrThrow(draftId)
+      if (draft.draftOfGroupId === null || idToString(draft.draftOfGroupId) !== liveId) throw ApiError.of('CONFLICT', { message: STIMULUS_MESSAGES.conflict })
+      const staged = draft.draftMembers ?? []
+      // The gate of group publish, before any write.
+      if (staged.length === 0) throw ApiError.of('CONFLICT', { message: STIMULUS_MESSAGES.builderBlocker })
+      const statuses = await this.repo.statusesOf(staged)
+      if (statuses.length !== staged.length || statuses.some((m) => m.status !== 'review' && m.status !== 'approved')) {
+        throw ApiError.of('CONFLICT', { message: STIMULUS_MESSAGES.publishNotReady })
+      }
+      const before = await this.repo.memberIds(liveId)
+      // A member moved here from another group (decision 26) leaves that group now; it must not be staged there any more.
+      for (const [questionId, holder] of await this.repo.groupsOfQuestions(staged)) {
+        if (holder === liveId) continue
+        const otherCopy = await this.repo.draftCopyOf(holder)
+        if (otherCopy === null || ((await this.groupOrThrow(otherCopy)).draftMembers ?? []).includes(questionId)) throw conflictOf(STIMULUS_MESSAGES.memberTaken)
+        await this.members.set(holder, (await this.repo.memberIds(holder)).filter((m) => m !== questionId), 'questionId', undefined, true)
+      }
+      await this.repo.replaceFromCopy(liveId, draftId)
+      await this.members.set(liveId, staged, 'questionIds', undefined, true)
+      // The members as they are now must all fit the scope the copy brings.
+      const scope = await this.repo.groupScope(liveId)
+      for (const trait of await this.repo.memberTraits(liveId)) this.members.assertScope(scope, trait, 'questionIds')
+      // The approve gate sees the final group (its stimuli); a refusal in any member rolls the whole swap back.
+      const moved = await this.publishMembers(liveId, actor, true)
+      await this.repo.deleteDraftCopy(draftId)
+      return { moved, added: staged.filter((m) => !before.includes(m)).length, removed: before.filter((m) => !staged.includes(m)).length, members: staged.length }
+    }, TX)
+    this.questions.invalidateOverview()
+    return {
+      result: await this.getGroup(liveId),
+      audit: { fromDraftId: draftId, approved: out.moved.length, ids: out.moved.slice(0, 200), added: out.added, removed: out.removed, members: out.members },
+    }
   }
 
   /** Draft or review for every member of a group (API-Q-04 `groupId`, and a whole group in an `ids` list). `apply = false` only checks. */
@@ -481,23 +537,50 @@ export class StimuliService {
     }, TX)
   }
 
-  /** API-Q-34: moves a member to another group (end of the target; the source closes up). Same rules as joining; a served member is refused. */
+  /** API-Q-34: moves a member to another group (end of the target; the source closes up). Same rules as joining; a served member is refused unless both groups are draft copies. */
   async moveMember(fromId: string, questionId: string, toGroupId: string): Promise<StimulusWrite<{ from: StimulusGroupDetail; to: StimulusGroupDetail }>> {
     await this.groupOrThrow(fromId)
     return this.prisma.transaction(async () => {
       if (toGroupId === fromId) throw fail({ toGroupId: STIMULUS_MESSAGES.requestInvalid })
       if ((await this.repo.groupScope(toGroupId)) === null) throw fail({ toGroupId: STIMULUS_MESSAGES.groupInvalid })
       for (const key of [fromId, toGroupId].sort((a, b) => (BigInt(a) < BigInt(b) ? -1 : 1))) await this.members.lock(key)
+      // Decision 26: between two draft copies the move changes the staged members and takes effect when both copies are published (the swap).
+      // A served member moves in no other way (memberServed below); a copy on one side only is not allowed (409).
+      const [fromCopy, toCopy] = [(await this.repo.groupScope(fromId))?.draftOfGroupId != null, (await this.repo.groupScope(toGroupId))?.draftOfGroupId != null]
+      if (fromCopy && toCopy) return this.moveStaged(fromId, questionId, toGroupId)
+      if (fromCopy || toCopy) throw conflictOf(STIMULUS_MESSAGES.conflict)
       const facts = (await this.repo.lockQuestions([questionId])).get(questionId)
       if (facts === undefined || facts.groupId === null) throw notFound(STIMULUS_MESSAGES.memberMissing)
       if (facts.groupId !== fromId) throw conflictOf(STIMULUS_MESSAGES.memberTaken)
-      // A member shown to pupils cannot move in place; the move through draft copies is not specified well enough to build (S1-T01 report).
       if (facts.served) throw conflictOf(STIMULUS_MESSAGES.memberServed)
       const rest = (await this.repo.memberIds(fromId)).filter((m) => m !== questionId)
       await this.members.set(fromId, rest, 'questionId')
       await this.members.set(toGroupId, [...(await this.repo.memberIds(toGroupId)), questionId], 'toGroupId', STIMULUS_MESSAGES.memberMixed)
       return { result: { from: await this.getGroup(fromId), to: await this.getGroup(toGroupId) }, audit: { questionId, from: fromId, to: toGroupId } }
     }, TX)
+  }
+
+  /** Decision 26: the staged move between two draft copies (end of the target; the source closes up). Same member rules as joining. */
+  private async moveStaged(fromId: string, questionId: string, toId: string): Promise<StimulusWrite<{ from: StimulusGroupDetail; to: StimulusGroupDetail }>> {
+    const [from, to] = [await this.groupOrThrow(fromId), await this.groupOrThrow(toId)]
+    const [fromStaged, toStaged] = [from.draftMembers ?? [], to.draftMembers ?? []]
+    if (!fromStaged.includes(questionId)) throw notFound(STIMULUS_MESSAGES.memberMissing)
+    if (toStaged.includes(questionId)) throw conflictOf(STIMULUS_MESSAGES.memberTaken)
+    if (toStaged.length >= STIMULUS_LIMITS.groupQuestions) throw fail({ toGroupId: STIMULUS_MESSAGES.membersTooMany })
+    const facts = await this.repo.lockQuestions([questionId, ...toStaged])
+    const f = facts.get(questionId)
+    if (f === undefined) throw notFound(STIMULUS_MESSAGES.memberMissing)
+    // It sits in the live group of the source copy (or in none, when it was added in the copy); never in a third group.
+    if (f.groupId !== null && f.groupId !== idToString(from.draftOfGroupId as bigint)) throw conflictOf(STIMULUS_MESSAGES.memberTaken)
+    this.members.assertScope(await this.repo.groupScope(toId), { subjectId: f.subjectId, levelId: f.levelId, kertas: f.kertas }, 'toGroupId', STIMULUS_MESSAGES.memberMixed)
+    for (const id of toStaged) {
+      const o = facts.get(id)
+      if (o !== undefined && o.subjectId !== f.subjectId) throw fail({ toGroupId: STIMULUS_MESSAGES.memberMixed })
+      if (o?.kertas != null && f.kertas !== null && o.kertas !== f.kertas) throw fail({ toGroupId: STIMULUS_MESSAGES.memberKertas })
+    }
+    await this.repo.setDraftMembers(fromId, fromStaged.filter((m) => m !== questionId))
+    await this.repo.setDraftMembers(toId, [...toStaged, questionId])
+    return { result: { from: await this.getGroup(fromId), to: await this.getGroup(toId) }, audit: { questionId, from: fromId, to: toId, staged: true } }
   }
 
   /** API-Q-35: merges `fromGroupId` into `intoGroupId` (members appended in order, stimuli linked once, at most 3); `from` is deleted. */
