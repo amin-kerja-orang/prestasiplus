@@ -190,7 +190,9 @@ describe('S6-T19 Databank Soalan (guru)', () => {
   it('paginates 20 units per page', async () => {
     guru.fetchDatabankQuestions.mockResolvedValue(result([single(41)], 45))
     const w = await mountPage()
-    expect(t(w, 'databank-pager-text').text()).toBe('Menunjukkan 1-1 daripada 45 hasil')
+    expect(t(w, 'databank-pager-text').text()).toBe('Menunjukkan 1 hingga 1 daripada 45 keputusan')
+    expect(t(w, 'databank-next').text()).toContain('Seterusnya')
+    expect(t(w, 'databank-prev').text()).toContain('Sebelumnya')
     await t(w, 'databank-next').trigger('click')
     await flushPromises()
     expect(guru.fetchDatabankQuestions.mock.lastCall?.[0]).toEqual({ page: 2 })

@@ -42,7 +42,7 @@ const COPY = {
   searchMin: DATABANK_MESSAGES.searchMin,
   empty: DATABANK_MESSAGES.empty,
   status: 'Diluluskan',
-  previous: 'Sebelum',
+  previous: 'Sebelumnya',
   next: 'Seterusnya',
 } as const
 
@@ -134,7 +134,7 @@ const lastPage = computed(() => meta.value?.totalPages ?? 1)
 const pagerText = computed(() => {
   const m = meta.value
   if (!m) return ''
-  return `Menunjukkan ${formatCount(m.from)}-${formatCount(m.to)} daripada ${formatCount(m.totalItems)} hasil`
+  return `Menunjukkan ${formatCount(m.from)} hingga ${formatCount(m.to)} daripada ${formatCount(m.totalItems)} keputusan`
 })
 
 const retryAll = (): void => {
