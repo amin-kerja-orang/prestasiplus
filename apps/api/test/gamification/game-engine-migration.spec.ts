@@ -57,7 +57,7 @@ const GAME_ROWS: readonly (readonly [string, number, string])[] = [
   ['sekolah_bersaing_top_n', 30, 'Bilangan sekolah dipaparkan'],
 ]
 
-/** The games on the hub with their hub names (ruling 2 on #499). */
+/** The games of 48 section 3.5 except tournament, plus roda-nasib, with their hub names (ruling 12 on #497). */
 const HUB_GAMES: readonly (readonly [string, string])[] = [
   ['papan-bijak', 'Papan Bijak'],
   ['battle', 'Battle Arena'],
@@ -70,7 +70,6 @@ const HUB_GAMES: readonly (readonly [string, string])[] = [
   ['cabaran-kilat', 'Cabaran Kilat'],
   ['tembak-jawapan', 'Tembak Jawapan'],
   ['susun-jawapan', 'Susun Jawapan'],
-  ['sambung-kata', 'Sambung Kata'],
   ['kad-memori', 'Kad Memori'],
   ['jutawan', 'Jutawan Ilmu'],
   ['roda-nasib', 'Roda Nasib'],
@@ -133,7 +132,7 @@ describe('migration 0224 game engine', () => {
   describe('DM-38 key rows', () => {
     it('has one row with the label and default of 48 section 2 for each key, and nothing else', async () => {
       const rows = await settings()
-      expect(rows.size).toBe(49)
+      expect(rows.size).toBe(48)
       for (const [key, value, label] of ROWS) expect(rows.get(key), key).toEqual({ value, label })
     })
 
@@ -153,7 +152,7 @@ describe('migration 0224 game engine', () => {
       for (const key of [...REWARD_KEYS, ...OTHER_OLD_KEYS, ...ROWS.map(([k]) => k)]) {
         await db.query(`insert into gamification_settings (key, value, label) values ($1, 1, 'Label')`, [key])
       }
-      expect((await settings()).size).toBe(59)
+      expect((await settings()).size).toBe(58)
     })
 
     it('the check refuses an unknown key', async () => {
@@ -167,7 +166,7 @@ describe('migration 0224 game engine', () => {
       const rows = await settings()
       expect(rows.get('flat_quiz_reward')).toEqual({ value: 3, label: 'Lama' })
       expect(rows.get('cash_rate_sen')).toEqual({ value: 8, label: 'Sen' })
-      expect(rows.size).toBe(51)
+      expect(rows.size).toBe(50)
     })
 
     it('a row that already exists is not overwritten', async () => {
@@ -189,11 +188,12 @@ describe('migration 0224 game engine', () => {
       expect(row?.boardgame_quiz_tiles).toBe(35)
     })
 
-    it('every hub game has game_enabled_<key> on, with its hub name; tournament has none (D-G, ruling 2 on #499)', async () => {
+    it('every game of ruling 12 has game_enabled_<key> on, with its hub name; tournament and sambung-kata have none (D-G, rulings 12 and 14 on #497)', async () => {
       const rows = await settings()
-      expect(HUB_GAMES).toHaveLength(15)
+      expect(HUB_GAMES).toHaveLength(14)
       for (const [key, name] of HUB_GAMES) expect(rows.get(`game_enabled_${key}`), key).toEqual({ value: 1, label: name })
       expect(rows.has('game_enabled_tournament')).toBe(false)
+      expect(rows.has('game_enabled_sambung-kata')).toBe(false)
       expect(await rejects(`insert into gamification_settings (key, value, label) values ('game_enabled_tournament', 1, 'Label')`)).toMatch(/ck_gamification_settings_key/)
     })
   })
