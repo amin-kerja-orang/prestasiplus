@@ -7,6 +7,7 @@ import type {
   KirkpatrickFilterOptionsSchema,
   KirkpatrickInterventionCreateRequestSchema,
   KirkpatrickInterventionListSchema,
+  KirkpatrickInterventionReviewSchema,
   KirkpatrickInterventionRowSchema,
   KirkpatrickLearningSchema,
   KirkpatrickMeSchema,
@@ -33,3 +34,4 @@ export type KirkpatrickInterventionCreateRequest = z.output<typeof KirkpatrickIn
 export type KirkpatrickFeedbackStatus = z.output<typeof KirkpatrickFeedbackStatusSchema>
 export type KirkpatrickFeedbackRequest = z.output<typeof KirkpatrickFeedbackRequestSchema>
 export type KirkpatrickFeedbackResponse = z.output<typeof KirkpatrickFeedbackResponseSchema>
+export type KirkpatrickInterventionReview = z.output<typeof KirkpatrickInterventionReviewSchema>

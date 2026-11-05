@@ -53,6 +53,19 @@ export interface FeedbackAggregateRow {
   npsSum: number
 }
 
+/** Level 1 figures beyond the per-role roll-up: usability, relevance, NPS bands, comments. */
+export interface FeedbackDetail {
+  usabilitySum: number
+  usabilityCount: number
+  relevanceSum: number
+  relevanceCount: number
+  promoters: number
+  detractors: number
+  writtenComments: number
+  /** Newest first, at most 10. Personal text: never logged. */
+  latest: { comment: string; nps: number | null; satisfaction: number | null; date: string }[]
+}
+
 export interface PupilFacts {
   id: string
   name: string
@@ -65,7 +78,7 @@ export interface PupilFacts {
 export interface InterventionRecord {
   id: string
   studentId: string
-  alertType: 'mood' | 'inactive' | 'declining'
+  alertType: 'mood' | 'inactive' | 'declining' | 'other'
   actionDate: string
   alertDescription: string
   actionTaken: string
@@ -315,6 +328,55 @@ export class KirkpatrickRepository {
     return rows.map((r) => ({ role: r.role, responses: r.responses, satSum: r.sat_sum, npsCount: r.nps_count, npsSum: r.nps_sum }))
   }
 
+  /** Usability, relevance, promoters, detractors and comments over the same rows as `feedbackAggregates`. */
+  async feedbackDetail(schoolId: string | null): Promise<FeedbackDetail> {
+    const where = schoolId === null ? Prisma.empty : Prisma.sql`AND school_id = ${idFromString(schoolId)}`
+    const [agg] = await this.db.$queryRaw<
+      {
+        usability_sum: number
+        usability_count: number
+        relevance_sum: number
+        relevance_count: number
+        promoters: number
+        detractors: number
+        written: number
+      }[]
+    >`
+      SELECT coalesce(sum(usability), 0)::int AS usability_sum, count(usability)::int AS usability_count,
+        coalesce(sum(relevance), 0)::int AS relevance_sum, count(relevance)::int AS relevance_count,
+        count(*) FILTER (WHERE nps >= 9)::int AS promoters,
+        count(*) FILTER (WHERE nps IS NOT NULL AND nps <= 6)::int AS detractors,
+        count(*) FILTER (WHERE comment IS NOT NULL AND btrim(comment) <> '')::int AS written
+      FROM feedback WHERE NOT is_test ${where}`
+    const latest = await this.db.$queryRaw<{ comment: string; nps: number | null; satisfaction: number | null; day: string }[]>`
+      SELECT btrim(comment) AS comment, nps::int AS nps, satisfaction::int AS satisfaction,
+        to_char(created_at AT TIME ZONE ${KL}, 'YYYY-MM-DD') AS day
+      FROM feedback WHERE NOT is_test AND comment IS NOT NULL AND btrim(comment) <> '' ${where}
+      ORDER BY created_at DESC, id DESC LIMIT 10`
+    return {
+      usabilitySum: agg?.usability_sum ?? 0,
+      usabilityCount: agg?.usability_count ?? 0,
+      relevanceSum: agg?.relevance_sum ?? 0,
+      relevanceCount: agg?.relevance_count ?? 0,
+      promoters: agg?.promoters ?? 0,
+      detractors: agg?.detractors ?? 0,
+      writtenComments: agg?.written ?? 0,
+      latest: latest.map((r) => ({ comment: r.comment, nps: r.nps, satisfaction: r.satisfaction, date: r.day })),
+    }
+  }
+
+  /** Active pupils (role student) of the schools in scope (`null` = every school): the mood population. */
+  async activePupilIds(schoolIds: readonly string[] | null): Promise<string[]> {
+    if (schoolIds !== null && schoolIds.length === 0) return []
+    const rows = await this.db.$queryRaw<{ id: string }[]>`
+      SELECT u.id::text AS id FROM users u
+      WHERE u.is_active AND u.school_id IS NOT NULL
+        AND EXISTS (SELECT 1 FROM user_roles r WHERE r.user_id = u.id AND r.role = 'student')
+        ${this.schoolClause(schoolIds, Prisma.sql`u.school_id`)}
+      ORDER BY u.id`
+    return rows.map((r) => r.id)
+  }
+
   /** Mod Pelajar (`isTest`) responses and real ones are separate: one never blocks the other. */
   async feedbackAnswered(userId: string, month: string, isTest: boolean): Promise<boolean> {
     const n = await this.db.feedback.count({ where: { userId: idFromString(userId), month: monthStart(month), isTest } })
@@ -397,6 +459,18 @@ export class KirkpatrickRepository {
     return rows[0] ?? { answered: 0, correct: 0 }
   }
 
+  /** Totals of the pupil's completed non-test practice answered on MYT days `fromDay` to `toDay` inclusive. */
+  async pupilTotalsBetween(userId: string, fromDay: string, toDay: string): Promise<{ answered: number; correct: number }> {
+    const rows = await this.db.$queryRaw<{ answered: number; correct: number }[]>`
+      SELECT count(*)::int AS answered, count(*) FILTER (WHERE a.is_correct)::int AS correct
+      FROM practice_answers a
+      JOIN practice_sessions s ON s.id = a.session_id AND s.status = 'completed' AND s.is_test = false
+      WHERE a.user_id = ${idFromString(userId)} AND a.is_test = false
+        AND (a.answered_at AT TIME ZONE ${KL})::date >= ${fromDay}::date
+        AND (a.answered_at AT TIME ZONE ${KL})::date <= ${toDay}::date`
+    return rows[0] ?? { answered: 0, correct: 0 }
+  }
+
   /** Distinct MYT days (`YYYY-MM-DD`, ascending) with a completed session. */
   async pupilDays(userId: string, isTest: boolean): Promise<string[]> {
     const rows = await this.db.$queryRaw<{ day: string }[]>`
@@ -441,6 +515,23 @@ export class KirkpatrickRepository {
       ${this.interventionWhere(scope)}
       ORDER BY i.created_at DESC, i.id DESC`
     return rows.map(toIntervention)
+  }
+
+  /** One intervention by id (with the pupil's name), or null. */
+  async interventionById(id: string): Promise<InterventionRecord | null> {
+    const rows = await this.db.$queryRaw<InterventionRow[]>`
+      SELECT i.id, i.student_id, i.alert_type, i.action_date, i.alert_description, i.action_taken,
+        i.before_accuracy, i.after_accuracy, i.before_mood, i.after_mood, i.created_by_id, i.created_at, i.updated_at,
+        u.name AS student_name
+      FROM interventions i LEFT JOIN users u ON u.id = i.student_id
+      WHERE i.id = ${idFromString(id)}`
+    const r = rows[0]
+    return r ? toIntervention(r) : null
+  }
+
+  /** Writes the reviewed accuracy (null = no answers in the window). */
+  async setAfterAccuracy(id: string, afterAccuracy: number | null, now: Date): Promise<void> {
+    await this.db.intervention.update({ where: { id: idFromString(id) }, data: { afterAccuracy, updatedAt: now } })
   }
 
   async insertIntervention(input: NewIntervention, now: Date): Promise<InterventionRecord> {

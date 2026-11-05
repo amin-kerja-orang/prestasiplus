@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { CLOCK, type Clock, mytDay } from '../../../../db/clock'
 import { ClassesRepository } from '../../../classes'
+import { MOOD_PORT, type MoodReadPort } from '../../../command-center'
 import {
   type Population,
   type SchoolAgg,
@@ -29,7 +30,7 @@ import {
   strengthOfR,
   tahapOfScore,
 } from '../domain/rules'
-import { type Cell, type FeedbackAggregateRow, KirkpatrickRepository } from '../kirkpatrick.repository'
+import { type Cell, type FeedbackAggregateRow, type FeedbackDetail, KirkpatrickRepository } from '../kirkpatrick.repository'
 import type {
   KirkpatrickBehavior,
   KirkpatrickChain,
@@ -81,6 +82,17 @@ export function feedbackOf(rows: readonly FeedbackAggregateRow[]): Feedback {
   }
 }
 
+const NO_DETAIL: FeedbackDetail = {
+  usabilitySum: 0,
+  usabilityCount: 0,
+  relevanceSum: 0,
+  relevanceCount: 0,
+  promoters: 0,
+  detractors: 0,
+  writtenComments: 0,
+  latest: [],
+}
+
 /** The figures of one scope, read once per request. */
 interface Stats {
   scope: Scope
@@ -108,6 +120,7 @@ export class LevelsService {
     @Inject(KirkpatrickRepository) private readonly repo: KirkpatrickRepository,
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(ClassesRepository) private readonly classes: ClassesRepository,
+    @Inject(MOOD_PORT) private readonly mood: MoodReadPort,
   ) {}
 
   private async statsOf(scope: Scope): Promise<Stats> {
@@ -131,9 +144,62 @@ export class LevelsService {
 
   // --- #2 Reaction ----------------------------------------------------------------------------------------
 
+  /**
+   * Level 1. The feedback figures read the `Feedback` rows of the viewer's view (the own school for the forced roles, the
+   * platform for admin). Comment text is returned to staff in scope and never logged. The mood block reads the Command
+   * Center mood port for the pupils in scope: a teacher sees the pupils of the own classes, the others every active pupil
+   * of the schools in scope.
+   */
   async reaction(ctx: Ctx): Promise<KirkpatrickReaction> {
-    const a = await this.feedbackFor(ctx)
-    return { npsStudent: a.npsStudent, npsTeacher: a.npsTeacher, npsAdmin: a.npsAdmin, satisfaction: a.satisfaction }
+    const forced = isSchoolForced(ctx.role)
+    const schoolId = forced ? ctx.schoolId : null
+    const empty = forced && ctx.schoolId === null
+    const [a, d, mood] = await Promise.all([
+      this.feedbackFor(ctx),
+      empty ? Promise.resolve(NO_DETAIL) : this.repo.feedbackDetail(schoolId),
+      this.moodOf(ctx),
+    ])
+    return {
+      npsStudent: a.npsStudent,
+      npsTeacher: a.npsTeacher,
+      npsAdmin: a.npsAdmin,
+      satisfaction: a.satisfaction,
+      responses: a.responses,
+      usability: d.usabilityCount > 0 ? mean1(d.usabilitySum, d.usabilityCount) : null,
+      relevance: d.relevanceCount > 0 ? mean1(d.relevanceSum, d.relevanceCount) : null,
+      promoters: d.promoters,
+      detractors: d.detractors,
+      writtenComments: d.writtenComments,
+      latestComments: d.latest,
+      mood,
+    }
+  }
+
+  private async moodOf(ctx: Ctx): Promise<KirkpatrickReaction['mood']> {
+    let studentIds: string[]
+    if (ctx.role === 'teacher') studentIds = await this.classes.teacherStudentIds(ctx.userId)
+    else studentIds = await this.repo.activePupilIds(platformScope(ctx).schoolIds)
+    const now = this.clock.now()
+    const [all, week, latest] = await Promise.all([
+      this.mood.counts(studentIds),
+      this.mood.counts(studentIds, { from: new Date(now.getTime() - 7 * 86_400_000), to: now }),
+      this.mood.latest(studentIds),
+    ])
+    const total = all.happy + all.okay + all.sad + all.stressed
+    const share = (n: number): number | null => (total > 0 ? Math.round((n / total) * 100) : null)
+    return {
+      positivePct: share(all.happy + all.okay),
+      checkIns: total,
+      engaged: latest.size,
+      pupils: studentIds.length,
+      last7Days: week.happy + week.okay + week.sad + week.stressed,
+      rows: [
+        { mood: 'Gembira', count: all.happy, pct: share(all.happy) },
+        { mood: 'Okay', count: all.okay, pct: share(all.okay) },
+        { mood: 'Sedih', count: all.sad, pct: share(all.sad) },
+        { mood: 'Tertekan', count: all.stressed, pct: share(all.stressed) },
+      ],
+    }
   }
 
   // --- #1 Overview ----------------------------------------------------------------------------------------
@@ -161,6 +227,10 @@ export class LevelsService {
     const current = today.slice(0, 7)
     const before = this.panelOf(cells, first, lastDayOf(first))
     const after = this.panelOf(cells, current, today)
+    // FR-X4-3: no data is not a decline. A panel with no answers makes the comparison meaningless.
+    if (before.answers === 0 || after.answers === 0) {
+      return { subtitle: `${monthLabel(first)} vs ${monthLabel(current)}`, before, after, delta: null, sentences: ['Data tidak mencukupi untuk perbandingan.'] }
+    }
     const delta = {
       active: after.active - before.active,
       accuracy: round1(after.accuracy - before.accuracy),

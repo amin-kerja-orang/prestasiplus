@@ -42,5 +42,7 @@ import { ScopeService } from './shared/scope.service'
     { provide: BADGE_READ_PORT, useClass: NoBadges },
     { provide: QUIZ_SET_PORT, useClass: NoQuizSets },
   ],
+  // The Kirkpatrick reaction level (S6-T02) reads the mood port; the owner card binds the real adapter here.
+  exports: [MOOD_PORT],
 })
 export class CommandCenterModule {}

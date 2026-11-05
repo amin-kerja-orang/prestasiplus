@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common'
 import { AuditModule } from '../../../common/audit'
 import { ThrottleModule } from '../../../common/throttle'
 import { ClassesModule } from '../../classes'
+import { CommandCenterModule } from '../../command-center'
 import { TextPdfAdapter } from './adapters/text-pdf.adapter'
 import { FeedbackController, KirkpatrickController } from './http/kirkpatrick.controllers'
 import { KirkpatrickRepository } from './kirkpatrick.repository'
@@ -19,7 +20,7 @@ import { StudentService } from './services/student.service'
  * from users, schools and practice. The PDF writer sits behind `PDF_PORT`.
  */
 @Module({
-  imports: [AuditModule, ThrottleModule, ClassesModule],
+  imports: [AuditModule, ThrottleModule, ClassesModule, CommandCenterModule],
   controllers: [KirkpatrickController, FeedbackController],
   providers: [
     KirkpatrickRepository,

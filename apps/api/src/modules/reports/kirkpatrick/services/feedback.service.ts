@@ -13,7 +13,7 @@ const whole = (v: number | string): number => (typeof v === 'number' ? v : Numbe
 const errorCode = (e: unknown): string | undefined =>
   typeof e === 'object' && e !== null && typeof (e as { code?: unknown }).code === 'string' ? (e as { code: string }).code : undefined
 
-/** Monthly NPS and satisfaction (M12 level 1). Free text is not collected, so nothing here is sensitive. */
+/** Monthly NPS and satisfaction (M12 level 1). This service collects no free text; the reaction read model (LevelsService) shows stored comments to staff and never logs them. */
 @Injectable()
 export class FeedbackService {
   constructor(

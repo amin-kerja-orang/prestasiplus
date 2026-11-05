@@ -5,13 +5,13 @@ import { AUDIT_ACTIONS } from '../../../../common/audit/audit-actions'
 import { AuditService } from '../../../../common/audit'
 import { ApiError } from '../../../../common/errors/api-error'
 import { toMytTimestamp } from '../../../../common/time/myt'
-import { CLOCK, type Clock } from '../../../../db/clock'
+import { CLOCK, type Clock, mytDay } from '../../../../db/clock'
 import { isIdString } from '../../../../db/ids'
 import { PrismaService } from '../../../../db/prisma.service'
 import { ClassesRepository } from '../../../classes'
-import { round1, statusOfIntervention } from '../domain/rules'
+import { pct1, round1, statusOfIntervention } from '../domain/rules'
 import { type InterventionRecord, type InterventionScope, KirkpatrickRepository } from '../kirkpatrick.repository'
-import type { KirkpatrickInterventionCreateRequest, KirkpatrickInterventionList, KirkpatrickInterventionRow } from '../types'
+import type { KirkpatrickInterventionCreateRequest, KirkpatrickInterventionList, KirkpatrickInterventionReview, KirkpatrickInterventionRow } from '../types'
 import type { Ctx } from './scope'
 
 /** Request facts the audit row needs; none of them is read from the body. */
@@ -21,6 +21,9 @@ export interface WriteCtx extends Ctx {
   sessionRowId: string
   scopeLevel: string
 }
+
+const DAY_MS = 86_400_000
+const addDays = (day: string, n: number): string => new Date(Date.parse(`${day}T00:00:00Z`) + n * DAY_MS).toISOString().slice(0, 10)
 
 const refuse = (field: string, message: string): ApiError => ApiError.of('VALIDATION_ERROR', { message, fields: { [field]: message } })
 
@@ -101,7 +104,8 @@ export class InterventionsService {
     // Mod Pelajar writes test data, but an intervention is a real, sensitive record: never create one.
     if (ctx.isTest) throw ApiError.of('FORBIDDEN')
     const studentId = await this.inScope(ctx, body.studentId)
-    if (studentId === null) throw refuse('studentId', KIRKPATRICK_MESSAGES.studentNotFound)
+    // Unknown, non-pupil and out-of-scope look the same (ERR-ACC-02, AC-AS-11-8): 404 and nothing is created.
+    if (studentId === null) throw ApiError.of('NOT_FOUND')
     if (!kirkpatrickIsCalendarDay(body.actionDate)) throw refuse('actionDate', KIRKPATRICK_MESSAGES.invalidDate)
 
     const now = this.clock.now()
@@ -140,5 +144,45 @@ export class InterventionsService {
       return created
     })
     return toRow(record)
+  }
+
+  /**
+   * API-RPT-17. The record must be in the caller's scope (school_admin: a pupil of the own school; teacher: the creator of
+   * the record and the pupil still in the own classes); otherwise 404 like an unknown id. Allowed once 7 days have passed
+   * since the action date (MYT), then `after_accuracy` = pooled accuracy of the 14 days after it, null with no answers.
+   */
+  async review(ctx: WriteCtx, rawId: string): Promise<KirkpatrickInterventionReview> {
+    if (ctx.isTest) throw ApiError.of('FORBIDDEN')
+    if (!isIdString(rawId)) throw ApiError.of('NOT_FOUND')
+    const record = await this.repo.interventionById(rawId)
+    if (record === null) throw ApiError.of('NOT_FOUND')
+    if (ctx.role === 'teacher' && record.createdBy !== ctx.userId) throw ApiError.of('NOT_FOUND')
+    if ((await this.inScope(ctx, record.studentId)) === null) throw ApiError.of('NOT_FOUND')
+
+    const now = this.clock.now()
+    if (mytDay(now) < addDays(record.actionDate, 7)) throw ApiError.of('CONFLICT', { message: KIRKPATRICK_MESSAGES.reviewTooEarly })
+
+    const totals = await this.repo.pupilTotalsBetween(record.studentId, addDays(record.actionDate, 1), addDays(record.actionDate, 14))
+    const afterAccuracy = totals.answered > 0 ? pct1(totals.correct, totals.answered) : null
+    await this.prisma.transaction(async (tx) => {
+      await this.repo.setAfterAccuracy(record.id, afterAccuracy, now)
+      await this.audit.record({
+        tx,
+        action: AUDIT_ACTIONS.KIRKPATRICK_INTERVENTION_REVIEWED,
+        actorUserId: ctx.userId,
+        actorRole: ctx.role,
+        sessionRowId: ctx.sessionRowId,
+        targetType: 'intervention',
+        targetId: record.id,
+        schoolId: ctx.schoolId,
+        scopeLevel: ctx.scopeLevel,
+        requestId: ctx.requestId,
+        ip: ctx.ip,
+        isTest: ctx.isTest,
+        // Never the notes: only the pupil.
+        details: { studentId: record.studentId },
+      })
+    })
+    return { id: record.id, actionDate: record.actionDate, afterAccuracy }
   }
 }

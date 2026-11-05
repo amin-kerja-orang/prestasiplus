@@ -167,7 +167,7 @@ describe('M12 levels S1 to S6 and filter options (AC 1 to 3)', () => {
     it('with no feedback every mean is 0; admin sees the platform, the others their school', async () => {
       for (const who of [admin, teacherA, adminB]) {
         const data = envelopeOf(KirkpatrickReactionSchema).parse((await who.get('/kirkpatrick/reaction')).body).data
-        expect(data).toEqual({ npsStudent: 0, npsTeacher: 0, npsAdmin: 0, satisfaction: 0 })
+        expect(data).toMatchObject({ npsStudent: 0, npsTeacher: 0, npsAdmin: 0, satisfaction: 0, responses: 0, usability: null, relevance: null })
       }
     })
 

@@ -26,6 +26,7 @@ import {
   KirkpatrickLearningSchema,
   KirkpatrickMeSchema,
   KirkpatrickOverviewSchema,
+  KirkpatrickAlertTypeSchema,
   KirkpatrickReactionSchema,
   KirkpatrickResultsSchema,
   KirkpatrickSchoolQuerySchema,
@@ -278,11 +279,19 @@ describe('OpenAPI registration', () => {
       expect(op(p).responses['403']?.description, p).toContain('role not admin, teacher or school_admin')
       expect(op(p).description, p).toMatch(/school_admin/)
     }
-    expect(op('/kirkpatrick/students/{id}').responses['403']?.description).toContain('pupil of another school')
+    expect(op('/kirkpatrick/students/{id}').responses['404']?.description).toContain('pupil out of scope')
     expect(op('/kirkpatrick/interventions').description).toContain('pupils of the own classes')
     expect(op('/kirkpatrick/interventions').description).toContain('pupils of the own school')
-    expect(op('/kirkpatrick/interventions', 'post').description).toContain('out-of-scope pupil gives the same typed 422')
+    expect(op('/kirkpatrick/interventions', 'post').description).toContain('out-of-scope pupil gives 404 NOT_FOUND')
     expect(op('/kirkpatrick/results').description).toContain('forced to the own school')
+  })
+  it('registers the review route with the exact 409 copy and the extended alert types', () => {
+    type D = { responses: Record<string, { description?: string }> }
+    const op = doc.paths['/kirkpatrick/interventions/{id}/review']?.post as unknown as D
+    expect(Object.keys(op.responses)).toEqual(expect.arrayContaining(['200', '401', '403', '404', '409', '429']))
+    expect(op.responses['409']?.description).toContain(M.reviewTooEarly)
+    expect(M.reviewTooEarly).toBe('Semakan hanya boleh dibuat selepas 7 hari daripada tarikh tindakan.')
+    expect(KirkpatrickAlertTypeSchema.safeParse('other').success).toBe(true)
   })
   it('exposes every component under the Kirkpatrick prefix', () => {
     for (const name of Object.keys(KIRKPATRICK_COMPONENT_SCHEMAS)) {

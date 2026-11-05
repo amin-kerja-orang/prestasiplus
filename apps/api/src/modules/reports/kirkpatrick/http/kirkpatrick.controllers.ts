@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Param, Post, Query, Req, Res, UseGuards, UseInterceptors } from '@nestjs/common'
+import { Body, Controller, Get, HttpCode, Inject, Param, Post, Query, Req, Res, UseGuards, UseInterceptors } from '@nestjs/common'
 import {
   KIRKPATRICK_PDF,
   KirkpatrickFeedbackRequestSchema,
@@ -129,6 +129,15 @@ export class KirkpatrickController {
     @Req() req: Req,
   ) {
     return ok(await overloadTo429(() => this.interventions.create(writeCtxOf(req), body)))
+  }
+
+  /** API-RPT-17: teacher (own record) and school_admin; the platform admin is refused. */
+  @Roles('teacher', 'school_admin')
+  @Post('interventions/:id/review')
+  @HttpCode(200)
+  @RateLimit(KIRKPATRICK_LIMITS.write)
+  async reviewIntervention(@Param('id', PupilIdPipe) id: string, @Req() req: Req) {
+    return ok(await overloadTo429(() => this.interventions.review(writeCtxOf(req), id)))
   }
 }
 

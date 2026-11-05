@@ -23,6 +23,7 @@ import {
   KirkpatrickInterventionInvalidDateSchema,
   KirkpatrickInterventionListSchema,
   KirkpatrickInterventionRefusalSchema,
+  KirkpatrickInterventionReviewSchema,
   KirkpatrickInterventionRowSchema,
   KirkpatrickInterventionStatusSchema,
   KirkpatrickInterventionStudentNotFoundSchema,
@@ -62,6 +63,7 @@ export const KIRKPATRICK_COMPONENT_SCHEMAS = {
   KirkpatrickInterventionStudentNotFound: KirkpatrickInterventionStudentNotFoundSchema,
   KirkpatrickInterventionInvalidDate: KirkpatrickInterventionInvalidDateSchema,
   KirkpatrickInterventionRefusal: KirkpatrickInterventionRefusalSchema,
+  KirkpatrickInterventionReview: KirkpatrickInterventionReviewSchema,
   KirkpatrickFeedbackStatus: KirkpatrickFeedbackStatusSchema,
   KirkpatrickFeedbackRequest: KirkpatrickFeedbackRequestSchema,
   KirkpatrickFeedbackResponse: KirkpatrickFeedbackResponseSchema,
@@ -85,6 +87,7 @@ const E429 = (what: string) =>
   json(ErrorBodySchema, `RATE_LIMITED with retryAfter and a Retry-After header: ${what}`, {
     'Retry-After': { description: 'Seconds until a retry is allowed.', schema: { type: 'string' } },
   })
+const E404 = (what: string) => err(`NOT_FOUND "${MSG.notFound}": ${what}`)
 const E403CSRF = err(`FORBIDDEN "${MSG.forbidden}", or CSRF_INVALID on a missing or invalid X-CSRF-Token.`)
 
 const SCOPED = 'role not admin, teacher or school_admin'
@@ -118,7 +121,7 @@ export function registerKirkpatrickPaths(registry: OpenAPIRegistry): void {
 
   // Levels
   get('/kirkpatrick/overview', 'Four-level summary with before and after comparison (S1)', KirkpatrickOverviewSchema, { 403: E403(SCOPED), 422: BAD_SCHOOL }, { query: KirkpatrickScopeQuerySchema }, `Admin, teacher, school_admin. ${SCOPE_NOTE}`)
-  get('/kirkpatrick/reaction', 'Level 1 reaction (S2)', KirkpatrickReactionSchema, { 403: E403(SCOPED) }, {}, 'Admin, teacher, school_admin. Platform-wide for admin and ignores every query; for teacher and school_admin the means are over the own school respondents (deviation from the mock, which is global).')
+  get('/kirkpatrick/reaction', 'Level 1 reaction (S2)', KirkpatrickReactionSchema, { 403: E403(SCOPED) }, {}, 'Admin, teacher, school_admin. Platform-wide for admin and ignores every query; teacher and school_admin are forced to the own school (deviation from the mock, which is global). Adds the response counts, usability and relevance means, promoters, detractors, written comments, the latest 10 comments (newest first) and the mood block (read through the Command Center mood port; zeros until a mood adapter is bound; a teacher sees the pupils of the own classes only).')
   get('/kirkpatrick/learning', 'Level 2 learning (S3)', KirkpatrickLearningSchema, { 403: E403(SCOPED), 422: BAD_SCHOOL }, { query: KirkpatrickSchoolQuerySchema }, `Admin, teacher, school_admin (deviation: the mock refuses school_admin). state is ignored. ${SCOPE_NOTE}`)
   get('/kirkpatrick/behavior', 'Level 3 behaviour (S4)', KirkpatrickBehaviorSchema, { 403: E403(SCOPED), 422: BAD_SCHOOL }, { query: KirkpatrickSchoolQuerySchema }, `Admin, teacher, school_admin (deviation: the mock refuses school_admin). ${SCOPE_NOTE}`)
   get('/kirkpatrick/results', 'Level 4 results (S5)', KirkpatrickResultsSchema, { 403: E403(SCOPED), 422: BAD_SCHOOL }, { query: KirkpatrickSchoolQuerySchema }, `Admin, teacher, school_admin (deviation: the mock refuses school_admin). ${SCOPE_NOTE} Lists pupils by name (predictions, ALESA rows): personal data of minors.`, true)
@@ -130,7 +133,7 @@ export function registerKirkpatrickPaths(registry: OpenAPIRegistry): void {
     '/kirkpatrick/students/{id}',
     'Kirkpatrick view of one pupil (S8)',
     KirkpatrickStudentSchema,
-    { 403: E403('role not admin, teacher or school_admin, or an id that is not a pupil in scope: one uniform 403 for an unknown id, a non-pupil and a pupil of another school (teacher, school_admin), so ids cannot be probed') },
+    { 403: E403(SCOPED), 404: E404('one uniform 404 for an unknown id, a non-pupil and, for teacher and school_admin, a pupil out of scope, so ids cannot be probed (ERR-ACC-02)') },
     { params: z.object({ id: IdSchema }) },
     'Admin: any pupil. Teacher and school_admin: pupils of the own school only (deviation: the mock has no school limit and refuses school_admin). A non-numeric id is 404 NOT_FOUND "Not Found." (no route). A pupil with no sessions gets the zero state.',
     true,
@@ -171,13 +174,30 @@ export function registerKirkpatrickPaths(registry: OpenAPIRegistry): void {
     tags: ['kirkpatrick'],
     summary: 'Record an intervention',
     description:
-      'Admin, teacher, school_admin (deviation: the mock refuses school_admin). Needs X-CSRF-Token. studentId must be a pupil in scope (admin any; school_admin own school; teacher own classes); an unknown or out-of-scope pupil gives the same typed 422 "Pelajar tidak dijumpai." so existence is not revealed. 422 fields use the copy "Medan ini diperlukan." (blank) and "Medan ini tidak sah." (invalid); the top-level message is the Laravel-style summary of the first field message. Stage order of the mock: field checks first, then the student check, then the calendar date. Notes are sensitive personal data of minors: never logged.',
+      'Admin, teacher, school_admin (deviation: the mock refuses school_admin). Needs X-CSRF-Token. studentId must be a pupil in scope (admin any; school_admin own school; teacher own classes); an unknown, non-pupil or out-of-scope pupil gives 404 NOT_FOUND (nothing is created) so existence is not revealed. 422 fields use the copy "Medan ini diperlukan." (blank) and "Medan ini tidak sah." (invalid); the top-level message is the Laravel-style summary of the first field message. Stage order of the mock: field checks first, then the student check, then the calendar date. Notes are sensitive personal data of minors: never logged.',
     request: { headers: csrf, body: body(KirkpatrickInterventionCreateRequestSchema) },
     responses: {
       201: json(envelopeOf(KirkpatrickInterventionRowSchema), 'The recorded intervention.', NO_STORE),
       401: E401,
       403: E403CSRF,
-      422: json(ErrorBodySchema, 'VALIDATION_ERROR with fields; the student and date refusals are pinned by KirkpatrickInterventionRefusal.'),
+      404: E404('the pupil is unknown, not a pupil or out of scope.'),
+      422: json(ErrorBodySchema, 'VALIDATION_ERROR with fields; the date refusal is pinned by KirkpatrickInterventionInvalidDate.'),
+      429: E429('writes are rate limited'),
+    },
+  })
+  registry.registerPath({
+    method: 'post',
+    path: '/kirkpatrick/interventions/{id}/review',
+    tags: ['kirkpatrick'],
+    summary: 'Review an intervention (API-RPT-17)',
+    description: `Teacher (own record) and school_admin (own school); admin is refused. Needs X-CSRF-Token. Before action date + 7 days (MYT) the answer is 409 CONFLICT "${KIRKPATRICK_MESSAGES.reviewTooEarly}". Otherwise writes after_accuracy = pooled correct / answered x 100 of the pupil over action date + 1 .. + 14 (MYT), one decimal, null with no answers; a repeat call recomputes. An unknown id, an out-of-scope record or a teacher who is not the creator gives 404.`,
+    request: { headers: csrf, params: z.object({ id: IdSchema }) },
+    responses: {
+      200: json(envelopeOf(KirkpatrickInterventionReviewSchema), 'The reviewed intervention.', NO_STORE),
+      401: E401,
+      403: E403CSRF,
+      404: E404('unknown id, out of scope, or a teacher who is not the creator.'),
+      409: err(`CONFLICT "${KIRKPATRICK_MESSAGES.reviewTooEarly}".`),
       429: E429('writes are rate limited'),
     },
   })

@@ -17,6 +17,7 @@ import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AuthModule } from '../../src/modules/auth'
 import { ClassesModule } from '../../src/modules/classes'
+import { MOOD_PORT, type MoodReadPort } from '../../src/modules/command-center'
 import { KirkpatrickModule } from '../../src/modules/reports/kirkpatrick'
 import { type LoggedIn, loginAs, START } from '../auth/helpers'
 import { createTestDatabase, type TestDatabase } from '../support/db'
@@ -39,6 +40,8 @@ export interface BootOptions {
   logStream?: Writable
   /** The fixed clock's start; the default is `START` (2026-10-19 09:00 +08:00). */
   start?: string
+  /** Replaces the Command Center mood port (the default adapter is the empty `NoMood`). */
+  moodPort?: MoodReadPort
 }
 
 /** Nest app with auth, classes and Kirkpatrick on a private migrated and seeded database. */
@@ -70,12 +73,13 @@ export async function bootKirkpatrickApp(opts: BootOptions = {}): Promise<Kirkpa
     else process.env[k] = v
   }
   const clock = new FixedClock(opts.start ?? START)
-  const moduleRef = await Test.createTestingModule({
+  let builder = Test.createTestingModule({
     imports: [defineAppModule([AuthModule, ClassesModule, KirkpatrickModule], opts.logStream ? { logStream: opts.logStream } : {})],
   })
     .overrideProvider(CLOCK)
     .useValue(clock)
-    .compile()
+  if (opts.moodPort) builder = builder.overrideProvider(MOOD_PORT).useValue(opts.moodPort)
+  const moduleRef = await builder.compile()
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)
   await app.init()

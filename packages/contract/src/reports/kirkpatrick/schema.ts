@@ -40,6 +40,7 @@ export const KIRKPATRICK_MESSAGES = {
   studentNotFound: 'Pelajar tidak dijumpai.',
   invalidDate: 'Tarikh tidak sah.',
   feedbackConflict: 'Anda sudah mengisi maklum balas untuk bulan ini.',
+  reviewTooEarly: 'Semakan hanya boleh dibuat selepas 7 hari daripada tarikh tindakan.',
 } as const
 const M = KIRKPATRICK_MESSAGES
 
@@ -56,7 +57,7 @@ export const KirkpatrickBandKeySchema = z.enum(KIRKPATRICK_BANDS).meta({
 })
 export const KIRKPATRICK_GRADES = ['A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G'] as const
 export const KirkpatrickGradeSchema = z.enum(KIRKPATRICK_GRADES).meta({ id: 'KirkpatrickGrade' })
-export const KIRKPATRICK_ALERT_TYPES = ['mood', 'inactive', 'declining'] as const
+export const KIRKPATRICK_ALERT_TYPES = ['mood', 'inactive', 'declining', 'other'] as const
 export const KirkpatrickAlertTypeSchema = z.enum(KIRKPATRICK_ALERT_TYPES).meta({ id: 'KirkpatrickAlertType' })
 export const KIRKPATRICK_MOODS = ['happy', 'okay', 'sad', 'stressed'] as const
 export const KirkpatrickMoodSchema = z.enum(KIRKPATRICK_MOODS).meta({ id: 'KirkpatrickMood' })
@@ -116,9 +117,44 @@ export const KirkpatrickOverviewSchema = z
   })
   .meta({ id: 'KirkpatrickOverview' })
 
+export const KIRKPATRICK_MOOD_LABELS = ['Gembira', 'Okay', 'Sedih', 'Tertekan'] as const
+
 export const KirkpatrickReactionSchema = z
-  .object({ npsStudent: z.number(), npsTeacher: z.number(), npsAdmin: z.number(), satisfaction: z.number() })
-  .meta({ id: 'KirkpatrickReaction', description: 'Means over all feedback responses; global, ignores the scope.' })
+  .object({
+    npsStudent: z.number(),
+    npsTeacher: z.number(),
+    npsAdmin: z.number(),
+    satisfaction: z.number(),
+    responses: count.meta({ description: 'Feedback rows in scope (non-test).' }),
+    usability: z.number().nullable().meta({ description: 'Mean of Feedback.usability, one decimal; null when none.' }),
+    relevance: z.number().nullable().meta({ description: 'Mean of Feedback.relevance, one decimal; null when none.' }),
+    promoters: count.meta({ description: 'Responses with nps >= 9.' }),
+    detractors: count.meta({ description: 'Responses with nps <= 6 (nps not null).' }),
+    writtenComments: count.meta({ description: 'Responses with a non-blank comment.' }),
+    latestComments: z
+      .array(
+        z.object({
+          comment: z.string(),
+          nps: z.number().nullable(),
+          satisfaction: z.number().nullable(),
+          date: DateOnlySchema.meta({ description: 'Malaysia day of the response, YYYY-MM-DD.' }),
+        }),
+      )
+      .meta({ description: 'Newest first, at most 10. Personal text: never logged.' }),
+    mood: z.object({
+      positivePct: pct.nullable().meta({ description: 'round((happy + okay) / total * 100); null when there is no check-in.' }),
+      checkIns: count,
+      engaged: count.meta({ description: 'Pupils in scope with at least one check-in.' }),
+      pupils: count.meta({ description: 'Pupils in scope.' }),
+      last7Days: count,
+      rows: z.array(z.object({ mood: z.enum(KIRKPATRICK_MOOD_LABELS), count, pct: pct.nullable() })),
+    }),
+  })
+  .meta({
+    id: 'KirkpatrickReaction',
+    description:
+      'Level 1. Admin: platform-wide. Teacher and school_admin: forced to the own school (a teacher sees the mood of the own classes only).',
+  })
 
 export const KirkpatrickLearningSchema = z
   .object({
@@ -413,3 +449,12 @@ export const KirkpatrickFeedbackConflictSchema = z
 
 /** Mock PDF layout contract: file name and content type of GET /kirkpatrick/export-pdf. */
 export const KIRKPATRICK_PDF = { filename: 'laporan-kirkpatrick.pdf', contentType: 'application/pdf', title: 'Model Kirkpatrick - Rantaian Impak' } as const
+
+/** API-RPT-17 response: the pooled accuracy of the 14 days after the action date, written to the record. */
+export const KirkpatrickInterventionReviewSchema = z
+  .object({
+    id: IdSchema,
+    actionDate: DateOnlySchema,
+    afterAccuracy: z.number().nullable().meta({ description: 'Pooled correct / answered x 100 over action date + 1 .. + 14 (MYT), one decimal; null with no answers.' }),
+  })
+  .meta({ id: 'KirkpatrickInterventionReview' })

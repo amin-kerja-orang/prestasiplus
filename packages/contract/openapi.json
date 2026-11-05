@@ -61786,7 +61786,8 @@
         "enum": [
           "mood",
           "inactive",
-          "declining"
+          "declining",
+          "other"
         ]
       },
       "KirkpatrickMood": {
@@ -62141,15 +62142,154 @@
           },
           "satisfaction": {
             "type": "number"
+          },
+          "responses": {
+            "type": "integer",
+            "description": "Feedback rows in scope (non-test)."
+          },
+          "usability": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Mean of Feedback.usability, one decimal; null when none."
+          },
+          "relevance": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Mean of Feedback.relevance, one decimal; null when none."
+          },
+          "promoters": {
+            "type": "integer",
+            "description": "Responses with nps >= 9."
+          },
+          "detractors": {
+            "type": "integer",
+            "description": "Responses with nps <= 6 (nps not null)."
+          },
+          "writtenComments": {
+            "type": "integer",
+            "description": "Responses with a non-blank comment."
+          },
+          "latestComments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "comment": {
+                  "type": "string"
+                },
+                "nps": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "satisfaction": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "date": {
+                  "type": "string",
+                  "format": "date",
+                  "description": "Malaysia day of the response, YYYY-MM-DD.",
+                  "example": "2026-10-16"
+                }
+              },
+              "required": [
+                "comment",
+                "nps",
+                "satisfaction",
+                "date"
+              ]
+            },
+            "description": "Newest first, at most 10. Personal text: never logged."
+          },
+          "mood": {
+            "type": "object",
+            "properties": {
+              "positivePct": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "round((happy + okay) / total * 100); null when there is no check-in."
+              },
+              "checkIns": {
+                "type": "integer"
+              },
+              "engaged": {
+                "type": "integer",
+                "description": "Pupils in scope with at least one check-in."
+              },
+              "pupils": {
+                "type": "integer",
+                "description": "Pupils in scope."
+              },
+              "last7Days": {
+                "type": "integer"
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "mood": {
+                      "type": "string",
+                      "enum": [
+                        "Gembira",
+                        "Okay",
+                        "Sedih",
+                        "Tertekan"
+                      ]
+                    },
+                    "count": {
+                      "type": "integer"
+                    },
+                    "pct": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "mood",
+                    "count",
+                    "pct"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "positivePct",
+              "checkIns",
+              "engaged",
+              "pupils",
+              "last7Days",
+              "rows"
+            ]
           }
         },
         "required": [
           "npsStudent",
           "npsTeacher",
           "npsAdmin",
-          "satisfaction"
+          "satisfaction",
+          "responses",
+          "usability",
+          "relevance",
+          "promoters",
+          "detractors",
+          "writtenComments",
+          "latestComments",
+          "mood"
         ],
-        "description": "Means over all feedback responses; global, ignores the scope."
+        "description": "Level 1. Admin: platform-wide. Teacher and school_admin: forced to the own school (a teacher sees the mood of the own classes only)."
       },
       "KirkpatrickLearning": {
         "type": "object",
@@ -63467,7 +63607,8 @@
             "enum": [
               "mood",
               "inactive",
-              "declining"
+              "declining",
+              "other"
             ]
           },
           "actionDate": {
@@ -63669,6 +63810,29 @@
           {
             "$ref": "#/components/schemas/KirkpatrickInterventionInvalidDate"
           }
+        ]
+      },
+      "KirkpatrickInterventionReview": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "actionDate": {
+            "$ref": "#/components/schemas/DateOnly"
+          },
+          "afterAccuracy": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Pooled correct / answered x 100 over action date + 1 .. + 14 (MYT), one decimal; null with no answers."
+          }
+        },
+        "required": [
+          "id",
+          "actionDate",
+          "afterAccuracy"
         ]
       },
       "KirkpatrickFeedbackStatus": {
@@ -112869,7 +113033,7 @@
           "kirkpatrick"
         ],
         "summary": "Level 1 reaction (S2)",
-        "description": "Admin, teacher, school_admin. Platform-wide for admin and ignores every query; for teacher and school_admin the means are over the own school respondents (deviation from the mock, which is global).",
+        "description": "Admin, teacher, school_admin. Platform-wide for admin and ignores every query; teacher and school_admin are forced to the own school (deviation from the mock, which is global). Adds the response counts, usability and relevance means, promoters, detractors, written comments, the latest 10 comments (newest first) and the mood block (read through the Command Center mood port; zeros until a mood adapter is bound; a teacher sees the pupils of the own classes only).",
         "responses": {
           "200": {
             "description": "Level 1 reaction (S2)",
@@ -113289,7 +113453,17 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin, or an id that is not a pupil in scope: one uniform 403 for an unknown id, a non-pupil and a pupil of another school (teacher, school_admin), so ids cannot be probed",
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\": one uniform 404 for an unknown id, a non-pupil and, for teacher and school_admin, a pupil out of scope, so ids cannot be probed (ERR-ACC-02)",
             "content": {
               "application/json": {
                 "schema": {
@@ -113461,7 +113635,7 @@
           "kirkpatrick"
         ],
         "summary": "Record an intervention",
-        "description": "Admin, teacher, school_admin (deviation: the mock refuses school_admin). Needs X-CSRF-Token. studentId must be a pupil in scope (admin any; school_admin own school; teacher own classes); an unknown or out-of-scope pupil gives the same typed 422 \"Pelajar tidak dijumpai.\" so existence is not revealed. 422 fields use the copy \"Medan ini diperlukan.\" (blank) and \"Medan ini tidak sah.\" (invalid); the top-level message is the Laravel-style summary of the first field message. Stage order of the mock: field checks first, then the student check, then the calendar date. Notes are sensitive personal data of minors: never logged.",
+        "description": "Admin, teacher, school_admin (deviation: the mock refuses school_admin). Needs X-CSRF-Token. studentId must be a pupil in scope (admin any; school_admin own school; teacher own classes); an unknown, non-pupil or out-of-scope pupil gives 404 NOT_FOUND (nothing is created) so existence is not revealed. 422 fields use the copy \"Medan ini diperlukan.\" (blank) and \"Medan ini tidak sah.\" (invalid); the top-level message is the Laravel-style summary of the first field message. Stage order of the mock: field checks first, then the student check, then the calendar date. Notes are sensitive personal data of minors: never logged.",
         "parameters": [
           {
             "schema": {
@@ -113533,8 +113707,136 @@
               }
             }
           },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\": the pupil is unknown, not a pupil or out of scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
           "422": {
-            "description": "VALIDATION_ERROR with fields; the student and date refusals are pinned by KirkpatrickInterventionRefusal.",
+            "description": "VALIDATION_ERROR with fields; the date refusal is pinned by KirkpatrickInterventionInvalidDate.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED with retryAfter and a Retry-After header: writes are rate limited",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kirkpatrick/interventions/{id}/review": {
+      "post": {
+        "tags": [
+          "kirkpatrick"
+        ],
+        "summary": "Review an intervention (API-RPT-17)",
+        "description": "Teacher (own record) and school_admin (own school); admin is refused. Needs X-CSRF-Token. Before action date + 7 days (MYT) the answer is 409 CONFLICT \"Semakan hanya boleh dibuat selepas 7 hari daripada tarikh tindakan.\". Otherwise writes after_accuracy = pooled correct / answered x 100 of the pupil over action date + 1 .. + 14 (MYT), one decimal, null with no answers; a repeat call recomputes. An unknown id, an out-of-scope record or a teacher who is not the creator gives 404.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf."
+            },
+            "required": true,
+            "description": "Value of Session.csrf.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The reviewed intervention.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body holds personal data.",
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/KirkpatrickInterventionReview"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\", or CSRF_INVALID on a missing or invalid X-CSRF-Token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\": unknown id, out of scope, or a teacher who is not the creator.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Semakan hanya boleh dibuat selepas 7 hari daripada tarikh tindakan.\".",
             "content": {
               "application/json": {
                 "schema": {
