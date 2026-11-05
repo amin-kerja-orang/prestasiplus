@@ -2617,7 +2617,7 @@ Route `/profile`. API: the existing account profile endpoint. Errors: ERR-REQ-01
 - **Reference [V1]** hero profile; for the school admin the school block (nama sekolah, "# Kod", PPD, negeri) is added (read-only).
 - **Functional requirements**
   - **FR-AS-A1-1** Hero as V1 plus the school block.
-  - **FR-AS-A1-2** "Kemaskini Profil" edits nama, telefon and e-mel (M01) with a BM message; password change by the existing flow.
+  - **FR-AS-A1-2** "Kemaskini Profil" edits nama and telefon (M01) with a BM message; the e-mel is shown READ-ONLY and cannot be changed here (PO decision 2026-11-05, item 19); password change by the existing flow.
   - **FR-AS-A1-3** Responsive RP-FORM, RP-TOUCH.
 - **Acceptance criteria**
   - **AC-AS-A1-1** Given the name "Admin Contoh", when changed to "Admin Contoh B" and saved, then the avatar initials and the shell user card update.
