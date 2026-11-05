@@ -244,6 +244,9 @@ export class FakeAssignments implements PracticeAssignmentSource {
   readonly items = new Map<string, AssignmentResolution>()
   readonly remedialCalls: { remedialTestId: string; userId: string; afterAccuracy: number; completedAt: Date; isTest: boolean }[] = []
   failRemedial: Error | null = null
+  /** S6-T07: the fake settlement: coins to pay on the next call (once), and the calls seen. */
+  nextBonus = 0
+  readonly rewardCalls: { userId: string; missionId: string | null; sessionId: string; isTest: boolean; at: Date }[] = []
   set(kind: AssignmentKind, id: string, value: AssignmentResolution): void {
     this.items.set(`${kind}:${id}`, value)
   }
@@ -253,6 +256,12 @@ export class FakeAssignments implements PracticeAssignmentSource {
   async remedialCompleted(input: (typeof this.remedialCalls)[number]): Promise<void> {
     this.remedialCalls.push(input)
     if (this.failRemedial) throw this.failRemedial
+  }
+  async payTargetReward(input: (typeof this.rewardCalls)[number]): Promise<{ paid: number }> {
+    this.rewardCalls.push(input)
+    const paid = this.nextBonus
+    this.nextBonus = 0
+    return { paid }
   }
 }
 

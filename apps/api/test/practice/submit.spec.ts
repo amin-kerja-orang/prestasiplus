@@ -49,6 +49,8 @@ beforeEach(async () => {
   t.assignments.remedialCalls.length = 0
   t.assignments.failRemedial = null
   t.assignments.items.clear()
+  t.assignments.nextBonus = 0
+  t.assignments.rewardCalls.length = 0
   bank = fillBank(t.bank, w)
 })
 
@@ -350,6 +352,24 @@ describe('BR-14 revision queue and BR-20 mastery counters', () => {
     const before = await trialUsed(t.db, ids.pelajar)
     await submit(pelajar, s.sessionId)
     expect(await trialUsed(t.db, ids.pelajar)).toBe(before)
+  })
+})
+
+describe('mission target reward at completion (S6-T07, AC-GM-20.2, AC-GUR-2b-7)', () => {
+  it('a mission session calls the port after the reward port with its mission id; coins it pays move only totalBalance', async () => {
+    t.assignments.set('mission', '9101', { status: 'ok', subjectId: w.subject.math, questionIds: bank.random.slice(0, 4), coinsPerCorrect: 3 })
+    t.assignments.nextBonus = 25
+    const first = await play(pelajar, t.bank, { mode: 'mission', missionId: '9101' }, 4)
+    expect(t.assignments.rewardCalls).toEqual([{ userId: ids.pelajar, missionId: '9101', sessionId: first.started.sessionId, isTest: false, at: expect.any(Date) }])
+    expect(SubmitSessionResponseSchema.parse(first.submit.body.data).results.gamification).toMatchObject({ coinsEarned: 7, totalBalance: 145 }) // FakeReward 120 + the 25 paid
+    const second = await play(pelajar, t.bank, { mode: 'mission', missionId: '9101' }, 4)
+    expect(t.assignments.rewardCalls).toHaveLength(2)
+    expect(SubmitSessionResponseSchema.parse(second.submit.body.data).results.gamification).toMatchObject({ totalBalance: 120 }) // the port paid nothing the second time
+  })
+
+  it('a session without a mission never calls the port', async () => {
+    await play(pelajar, t.bank, { mode: 'random', subjectCode: 'MATH', count: 5 }, 5)
+    expect(t.assignments.rewardCalls).toEqual([])
   })
 })
 
