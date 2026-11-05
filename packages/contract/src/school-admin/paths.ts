@@ -188,31 +188,31 @@ const IdempotencyKey = z.object({
 })
 
 const IdParams = z.object({
-  id: IdSchema.meta({ description: 'Digits only; a non-numeric segment does not match the route (404 "Not Found.").' }),
+  id: IdSchema.meta({ description: 'Digits only; a non-numeric segment does not match the route (404 "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?").' }),
 })
 const csrf = z.object({
   'X-CSRF-Token': z.string().min(1).meta({ description: 'Value of Session.csrf; required on mutating requests.' }),
 })
 
-const UNAUTHORIZED = err('UNAUTHORIZED "Unauthenticated." (no valid session).')
+const UNAUTHORIZED = err('UNAUTHORIZED "Sesi anda telah tamat. Sila log masuk semula." (no valid session).')
 /**
  * 403 of every M27 read: any role other than school_admin (Admin Pusat included: it has no school to
  * scope to), or a school admin without a school.
  */
 const FORBIDDEN_SA = err(
-  'FORBIDDEN "This action is unauthorized." (role is not school_admin, or the school admin has no school; a missing school never means "all schools"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.',
+  'FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not school_admin, or the school admin has no school; a missing school never means "all schools"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.',
 )
 const FORBIDDEN_SA_WRITE = err(
-  'FORBIDDEN "This action is unauthorized." (role is not school_admin, Admin Pusat included, or no school), or CSRF_INVALID (missing or wrong X-CSRF-Token).',
+  'FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not school_admin, Admin Pusat included, or no school), or CSRF_INVALID (missing or wrong X-CSRF-Token).',
 )
 const NOT_FOUND_USER = err(
-  'NOT_FOUND "Not Found." (unknown id, a user of another school, or a user of another role: indistinguishable). The owner message "Pengguna tidak ditemui." applies only if the account vanishes between the scope check and the write.',
+  'NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (unknown id, a user of another school, or a user of another role: indistinguishable). The owner message "Pengguna tidak ditemui." applies only if the account vanishes between the scope check and the write.',
 )
 const FORBIDDEN_INACTIVE = err(
-  'FORBIDDEN "This action is unauthorized." (the account is inactive), or the role/CSRF refusals of the guard; "Anda tidak boleh mengurus akaun ini." for an account outside the managed roles; "Akaun ini tidak aktif." when it turns inactive during the write; or CSRF_INVALID.',
+  'FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (the account is inactive), or the role/CSRF refusals of the guard; "Anda tidak boleh mengurus akaun ini." for an account outside the managed roles; "Akaun ini tidak aktif." when it turns inactive during the write; or CSRF_INVALID.',
 )
 const FORBIDDEN_INACTIVE_READ = err(
-  'FORBIDDEN "This action is unauthorized." (role/school guard, or the account is inactive).',
+  'FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role/school guard, or the account is inactive).',
 )
 
 const FIELD_RULES =
@@ -388,7 +388,7 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     path: '/admin-sekolah/guru/{id}/toggle-active',
     tags: ['school-admin'],
     summary: 'Switch a teacher active / inactive',
-    description: 'No body. Flips isActive in either direction, including an inactive teacher. Deactivating revokes all the teacher sessions. Writes an audit event with the actor. Pupils cannot be toggled (a pupil id is 404). SELF-TOGGLE: an admin cannot deactivate their own account. The M27 mock has no explicit refusal: the caller is a school_admin, not a teacher, so a self-target already answers 404 NOT_FOUND "Not Found." like any non-teacher id. If the managed roles ever widen so that the caller can be a target, the refusal is 422 VALIDATION_ERROR with fields.id "Anda tidak boleh menyahaktifkan akaun sendiri." (proposed copy, modelled on the M02 own-account refusals) and nothing changes. Rate limited (429).',
+    description: 'No body. Flips isActive in either direction, including an inactive teacher. Deactivating revokes all the teacher sessions. Writes an audit event with the actor. Pupils cannot be toggled (a pupil id is 404). SELF-TOGGLE: an admin cannot deactivate their own account. The M27 mock has no explicit refusal: the caller is a school_admin, not a teacher, so a self-target already answers 404 NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" like any non-teacher id. If the managed roles ever widen so that the caller can be a target, the refusal is 422 VALIDATION_ERROR with fields.id "Anda tidak boleh menyahaktifkan akaun sendiri." (proposed copy, modelled on the M02 own-account refusals) and nothing changes. Rate limited (429).',
     request: { params: IdParams, headers: [csrf] },
     responses: {
       200: json(SchoolAdminToggleActiveResultSchema, 'Toggled; data.isActive is the new state; status "Status pengguna berjaya dikemaskini.".'),
@@ -527,7 +527,7 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
   // -------------------------------------------------------------------------------------------
 
   const AMARAN_ACCESS =
-    'Roles in B1: admin, school_admin, teacher (student, parent, sponsor and ppd_officer get 403). School access: admin any school; school_admin its own school; teacher its own school or a school of a class it owns. A school outside the caller reach answers 404 NOT_FOUND "Not Found.", indistinguishable from an unknown school (BE-NFR-05, no school-id enumeration); 403 is only for a role that is not allowed. PDPA: the pupil lists show minors\' names, classes and risk scores; never cache them and show them only to staff who need them.'
+    'Roles in B1: admin, school_admin, teacher (student, parent, sponsor and ppd_officer get 403). School access: admin any school; school_admin its own school; teacher its own school or a school of a class it owns. A school outside the caller reach answers 404 NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?", indistinguishable from an unknown school (BE-NFR-05, no school-id enumeration); 403 is only for a role that is not allowed. PDPA: the pupil lists show minors\' names, classes and risk scores; never cache them and show them only to staff who need them.'
 
   registry.registerPath({
     method: 'get',
@@ -539,8 +539,8 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     responses: {
       200: json(envelopeOf(AmaranSchoolRiskSchema), 'The school risk page.'),
       401: UNAUTHORIZED,
-      403: err('FORBIDDEN "This action is unauthorized." (role not allowed).'),
-      404: err('NOT_FOUND "Not Found." (unknown school, or a school outside the caller scope: indistinguishable).'),
+      403: err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role not allowed).'),
+      404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (unknown school, or a school outside the caller scope: indistinguishable).'),
     },
   })
 
@@ -554,8 +554,8 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     responses: {
       200: json(envelopeOf(AmaranSummarySchema), 'The summary (generatedAt is epoch milliseconds).'),
       401: UNAUTHORIZED,
-      403: err('FORBIDDEN "This action is unauthorized." (role not allowed, the district / state scope for a role other than admin, or no default scope).'),
-      404: err('NOT_FOUND "Not Found." (unknown school, a school outside the caller reach, or a district / state with no schools).'),
+      403: err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role not allowed, the district / state scope for a role other than admin, or no default scope).'),
+      404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (unknown school, a school outside the caller reach, or a district / state with no schools).'),
       422: err(
         'VALIDATION_ERROR (English copy; the top-level message equals the field text): scope=school without an integer schoolId -> fields.schoolId "The school id is required."; scope=district without district and state -> fields.district "The district and state are required."; scope=state without a state -> fields.state "The state is required."; any other scope -> fields.scope "The scope must be school, district or state.".',
       ),
@@ -571,7 +571,7 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     responses: {
       200: json(envelopeOf(AmaranEffectivenessResultSchema), 'The school and its effectiveness report.'),
       401: UNAUTHORIZED,
-      403: err('FORBIDDEN "This action is unauthorized." (role not allowed, or the viewer has no school).'),
+      403: err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role not allowed, or the viewer has no school).'),
     },
   })
 
@@ -588,8 +588,8 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
         ...NO_STORE,
       }),
       401: UNAUTHORIZED,
-      403: err('FORBIDDEN "This action is unauthorized." (role not allowed, including a teacher; checked before the 404).'),
-      404: err('NOT_FOUND "Not Found." (unknown school, or a school outside the caller scope: indistinguishable).'),
+      403: err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role not allowed, including a teacher; checked before the 404).'),
+      404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (unknown school, or a school outside the caller scope: indistinguishable).'),
       429: RATE_LIMITED,
     },
   })

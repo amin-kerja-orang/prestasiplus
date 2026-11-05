@@ -21,6 +21,10 @@ on:
       - 'apps/api/prisma/**'
       - 'e2e/api/stack-smoke.spec.ts'
       - 'e2e/fixtures/**'
+      - 'e2e/r1/**'
+      - 'src/shells/**'
+      - 'src/app/**'
+      - 'playwright.http.config.ts'
       - '.github/workflows/e2e-http.yml'
 
 permissions:
@@ -85,6 +89,11 @@ jobs:
             -e "s|^IC_HASH_KEY=.*|IC_HASH_KEY=$(openssl rand -hex 32)|" \
             .env.api
           grep -q '^POSTGRES_USER=pp' .env.db && grep -q '^POSTGRES_DB=prestasiplus' .env.db
+          # The compose db published on loopback by compose.http.yaml; job-local password, masked in the log.
+          e2e_db_url="postgresql://pp:${db_pw}@127.0.0.1:55433/prestasiplus"
+          echo "::add-mask::${db_pw}"
+          echo "::add-mask::${e2e_db_url}"
+          echo "E2E_DATABASE_URL=${e2e_db_url}" >> "$GITHUB_ENV"
 
       # The migrate job (compose.http.yaml) runs the demo seed (poc profile) and then the T26 local/E2E seed
       # (`--profile=e2e`, E2E_SEED=1). BIJAK_POC_QUESTIONS stays false (the PoC papers are not served, R1-B07 / T36).
@@ -124,7 +133,16 @@ jobs:
       - name: stack-smoke
         run: npx playwright test -c playwright.http.config.ts e2e/api/stack-smoke.spec.ts
 
+      # Card S0-T06: the R1 specs (sidebar walk and role denials) run first with their own budget, so a slow full
+      # suite cannot cancel them before they report. The full suite below runs even if this step fails.
+      - name: E2E R1 specs (e2e/r1)
+        timeout-minutes: 20
+        run: npx playwright test -c playwright.http.config.ts e2e/r1 --project=desktop --project=mobile
+
       - name: E2E (real API)
+        if: ${{ !cancelled() }}
+        env:
+          E2E_SKIP_R1: '1'
         run: npm run test:e2e:http
 
       - name: Upload the Playwright report

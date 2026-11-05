@@ -187,14 +187,16 @@ describe('[CI] the swap: publishing a group draft copy (API-Q-31, API-Q-32, API-
       const added = await review()
       const copy = await copyOf(s.id)
       await q(`insert into stimulus_group_options (group_id, label, body_ms, position) values ($1, 'A', 'Pilihan A', 1)`, [copy.id])
-      await editedMember(a, 'Boleh')
-      await editedMember(b, 'Gagal gate')
+      await editedMember(a, 'Soalan ini boleh diluluskan')
+      await editedMember(b, 'Soalan ini gagal pada gate')
       await q(`update question_versions set difficulty_tp = null where question_id = $1 and version_no = 2`, [b])
       await stage(copy.id, [b, added, a])
       const before = (await audits()).length
       const res = await publish(copy.id)
       expect(res.status, JSON.stringify(res.body)).toBe(422)
-      expect(res.body.error.details.gate).toHaveLength(1)
+      // only the failing member is listed: its missing TP (stems are >= 10 characters for STEM_SHORT, S1-T02 #622)
+      const gate = res.body.error.details.gate as { questionId: string }[]
+      expect(gate.map((g) => g.questionId)).toEqual([b])
       // the original is intact
       expect(await members(s.id)).toEqual(s.ids)
       expect(await stimuliOf(s.id)).toEqual([s.stimulusId])

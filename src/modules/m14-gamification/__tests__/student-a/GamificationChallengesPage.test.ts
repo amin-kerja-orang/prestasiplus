@@ -42,7 +42,7 @@ describe('S13 challenges (AC-M14-09)', () => {
     await mountPage()
     expect(t('s13-hero').get('h1').text()).toBe('Cabaran Harian')
     expect(t('s13-hero').text()).toContain('Selesaikan cabaran untuk dapatkan syiling & XP bonus!')
-    expect(t('s13-counter-value').text()).toContain('0/10')
+    expect(t('s13-counter-value').text()).toBe('0/10')
     expect(t('s13-counter').text()).toContain('Selesai')
     const cards = w!.findAll('[data-testid="s13-card"]')
     expect(cards.map((c) => c.get('[data-testid="s13-title"]').text())).toEqual([
@@ -65,7 +65,7 @@ describe('S13 challenges (AC-M14-09)', () => {
       meta: { completed: 1, active: 2 },
     })
     await mountPage()
-    expect(t('s13-counter-value').text()).toContain('1/2')
+    expect(t('s13-counter-value').text()).toBe('1/2')
     const [done, open] = w!.findAll('[data-testid="s13-card"]')
     expect(done!.attributes('data-completed')).toBe('true')
     expect(done!.get('[data-testid="s13-title"]').text()).toBe('✅ Si Tepat')
