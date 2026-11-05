@@ -215,9 +215,15 @@ describe('Cross-endpoint differencing (school, levels, level)', () => {
     const x = build()
     x.bijak.addItem(item({ attemptId: 'at-x', userId: '201', questionId: '9', awarded: 0, chosenLetter: 'B' }))
     x.bijak.addSitting(sitting({ userId: '201', attemptId: 'at-x' }))
-    const r = await x.items.school(student, {})
-    expect(r.questions).toEqual([])
-    expect(r).toMatchObject({ answers: null, correct: null })
+    // An officer is the non-staff reader of the school item analysis (a student is refused, AC-MUR-6-5).
+    await expect(x.items.school(student, {})).rejects.toMatchObject({ status: 403 })
+    const r = await x.items.school(ctxOf('ppd_officer', 'o', { level: 'state', stateCode: 'Negeri A', label: 'x' }), {}, 's1')
+    // The item analysis reads the answer store now (S10-T03): the world's pupils answer q1 to q5, so the questions show, and the
+    // headline is exactly the sum of the shown rows, never the school totals.
+    expect(r.questions.length).toBeGreaterThan(0)
+    expect(r.answers).toBe(r.questions.reduce((a, q) => a + q.attempts, 0))
+    expect(r.questionsTested).toBe(r.questions.length)
+    expect(r.questions.every((q) => q.pupils >= 5)).toBe(true)
   })
 })
 

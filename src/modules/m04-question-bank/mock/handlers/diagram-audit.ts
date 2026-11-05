@@ -1,5 +1,5 @@
 /**
- * M04 diagram audit (SRS §7 #23–#25, BR-M04-19, FR-M04-95…101). Admin-only.
+ * M04 diagram audit (SRS §7 #23–#25, BR-M04-19, FR-M04-95…101). Admin, teacher and school_admin may list; upload and dismiss are admin-only (S6-T18).
  *
  * | # | Route | Notes |
  * |---|---|---|
@@ -10,8 +10,8 @@
  * `subjectId` filters both lists, `schoolId` the MCQ list only (matched against the school of the
  * question's creator, INFERRED). The stat cards are the filtered list counts (DV-M04-11); the subject
  * pills are the top 10 by MCQ count, unfiltered. An unknown or malformed filter value matches nothing.
- * The image upload is simulated: the MIME type (JPG, PNG, WebP, GIF; SVG refused, SEC-M04-02) and the
- * size (2 MB, INFERRED like the S2 images) are checked and an object URL is kept.
+ * The image upload is simulated: the MIME type (JPG, PNG, WebP; GIF and SVG refused, SEC-M04-02) and
+ * the size (2 MB, INFERRED like the S2 images) are checked and an object URL is kept.
  */
 
 import {
@@ -37,6 +37,7 @@ import { questionsRepo } from '../repository/questions'
 import { structuredRepo } from '../repository/structured'
 import {
   adminOnly,
+  auditReaders,
   bodyOf,
   DIAGRAM_MIMES,
   excerpt,
@@ -54,8 +55,8 @@ export const DIAGRAM_UPLOADED_TEXT = 'Gambar rajah berjaya dimuat naik.'
 export const DIAGRAM_DISMISSED_TEXT = 'Soalan telah dikeluarkan daripada senarai audit.'
 /** SRS §5 (S11 `image`) and the S2 image rule. */
 export const DIAGRAM_FILE_REQUIRED = 'Sila pilih fail gambar.'
-export const DIAGRAM_FILE_TYPE =
-  'Gambar mesti jenis JPG, PNG, WebP atau GIF dan tidak melebihi 2MB.'
+export const DIAGRAM_FILE_TYPE = 'Fail mesti berupa imej (jpg, png atau webp).'
+export const DIAGRAM_FILE_SIZE = 'Saiz imej tidak boleh melebihi 2 MB.'
 /** FR-M04-98: the structured text is cut at 400 characters. */
 export const DIAGRAM_EXCERPT_LENGTH = 400
 const PAGE_SIZE = 20
@@ -171,10 +172,8 @@ function audit(req: MockRequest, ctx: MockContext): MockResponse {
 function imageError(value: unknown): { image: string } | null {
   const file = uploadedFile(value)
   if (!file) return { image: DIAGRAM_FILE_REQUIRED }
-  if (!file.mime.startsWith('image/')) return { image: DIAGRAM_FILE_REQUIRED }
-  if (!DIAGRAM_MIMES.includes(file.mime) || file.size > IMAGE_MAX_BYTES) {
-    return { image: DIAGRAM_FILE_TYPE }
-  }
+  if (!DIAGRAM_MIMES.includes(file.mime)) return { image: DIAGRAM_FILE_TYPE }
+  if (file.size > IMAGE_MAX_BYTES) return { image: DIAGRAM_FILE_SIZE }
   return null
 }
 
@@ -231,7 +230,7 @@ function dismiss(req: MockRequest, ctx: MockContext): MockResponse {
 }
 
 export const diagramRoutes: RouteDef[] = [
-  route('GET', '/api/diagram-audit', [adminOnly], (req, ctx) => audit(req, ctx)),
+  route('GET', '/api/diagram-audit', [auditReaders], (req, ctx) => audit(req, ctx)),
   route('POST', '/api/diagram-audit/:kind/:id/image', [adminOnly], (req, ctx) => upload(req, ctx), {
     params: { kind: str(), id: int() },
   }),

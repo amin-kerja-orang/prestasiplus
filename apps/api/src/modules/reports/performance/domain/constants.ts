@@ -38,13 +38,16 @@ export const ATTENTION_BELOW = 50
 export const TOP_STUDENT_MIN_ANSWERS = 5
 export const TOP_STUDENT_LIMIT = 10
 export const SCHOOL_QUESTION_CAP = 50
-/** BR-M08-19: fewest members with a finished sitting for a discrimination table. */
-export const DISCRIMINATION_MIN_MEMBERS = 4
+/** R1 decision D113 (FR-GUR-6-9): fewest pupils with an answer to a question for its discrimination index. */
+export const DISCRIMINATION_MIN_MEMBERS = 10
 /** Share of members in the upper and the lower group. */
 export const DISCRIMINATION_GROUP_SHARE = 0.27
 
 /** Tingkatan 1 to 5, lower case (the route `/prestasi/tingkatan/t1..t5` and the reader's `levelCode`). */
 export const LEVEL_CODES = ['t1', 't2', 't3', 't4', 't5'] as const
+
+/** Tingkatan chips of the item analysis (R1-AS-6, D101): T1 to T5. */
+export const ITEM_TINGKATAN_CODES = ['t1', 't2', 't3', 't4', 't5'] as const
 export type LevelCode = (typeof LEVEL_CODES)[number]
 export const LEVEL_NAMES: Readonly<Record<LevelCode, string>> = {
   t1: 'Tingkatan 1',

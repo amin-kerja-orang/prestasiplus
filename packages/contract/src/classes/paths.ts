@@ -271,22 +271,4 @@ export function registerClassesPaths(registry: OpenAPIRegistry): void {
     description: 'School classes are not joined classes and are left out. Single-page list meta.',
     responses: { 200: json(listEnvelopeOf(ClassJoinedClassSchema), 'Joined classes.'), 401: unauthorized },
   })
-
-  registry.registerPath({
-    method: 'post',
-    path: '/kelas-saya/join',
-    tags: ['classes'],
-    summary: 'Join a class by code',
-    description:
-      'classCode is trimmed and compared case-insensitively. Only student (and admin) may join. The enrolment source is "code".',
-    request: { headers: [csrf], body: body(ClassJoinRequestSchema) },
-    responses: {
-      201: json(ClassJoinResponseSchema, '`{ data: { classroomId }, message }`.'),
-      401: unauthorized,
-      403: err('FORBIDDEN: role may not join; or CSRF_INVALID.'),
-      404: err('NOT_FOUND "Kod kelas tidak sah."'),
-      409: err('CONFLICT "Anda sudah menyertai kelas ini."'),
-      422: err('VALIDATION_ERROR fields.classCode "Sila masukkan kod kelas."'),
-    },
-  })
 }
