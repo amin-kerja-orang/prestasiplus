@@ -3,7 +3,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import { idFromString, idToString } from '../../../db/ids'
 import { PapersRepository } from './papers.repository'
 import { BijakPapersPorts } from './ports'
-import { ruleOf } from './rules'
+import { paperCodeOf, ruleOf } from './rules'
 import { bijakCodeOf } from './subject-codes'
 
 /*
@@ -32,6 +32,8 @@ export interface AttemptSectionSnapshot {
 export interface AttemptPaper {
   id: string
   kind: 'pilihan' | 'jana'
+  /** DM-23: a `subjektif` paper is sat as a Kertas Subjektif attempt (`paper_kind = 'subjektif'`, latihan, untimed). */
+  surface: 'simulasi' | 'subjektif'
   title: string
   /**
    * The BIJAK subject code (MAT, SN, SEJ), never the curriculum code (MATH, SCI). BE-16 stores it as
@@ -113,11 +115,12 @@ export class BijakPapersAttemptSource implements BijakPaperSource {
       paper: {
         id: idToString(paper.id),
         kind: paper.kind === 'jana' ? 'jana' : 'pilihan',
+        surface: paper.surface === 'subjektif' ? 'subjektif' : 'simulasi',
         title: paper.title,
         subject: code,
         subjectName: subject?.name ?? code,
         kertas: paper.kertas,
-        code: paper.paperCode ?? '',
+        code: paperCodeOf(paper),
         durationMin: paper.printedDurationMin,
         sections: paper.sections.map((s) => ({
           id: idToString(s.id),
