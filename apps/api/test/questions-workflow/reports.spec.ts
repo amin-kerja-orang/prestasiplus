@@ -147,19 +147,53 @@ describe('question reports (BE-10 AC 3, 4, 9, 11)', () => {
       expect(await count(t.db, `select count(*) n from question_reports`)).toBe(before)
     })
 
-    it('a second report by the same user for the same question is accepted (201, as the mock) and keeps one row', async () => {
+    it('AC-MUR-54-5: a second report by the same user for the same question version is 409 in BM and the first row is untouched', async () => {
       const id = seed({ brief: { type: 'structured' } })
       expect((await c.student.post('/api/question-reports', body(id))).status).toBe(201)
-      expect((await c.student.post('/api/question-reports', body(id, { reasons: ['typo'] }))).status).toBe(201)
-      const rows = await t.db.query<{ reasons: string[] }>(`select reasons from question_reports where question_id = $1::bigint`, [id])
-      expect(rows).toEqual([{ reasons: ['typo'] }])
+      const second = await c.student.post('/api/question-reports', body(id, { reasons: ['typo'], comment: 'lagi' }))
+      expectError(second, 'CONFLICT')
+      expect(second.body.error.message).toBe('Anda sudah melaporkan soalan ini.')
+      const rows = await t.db.query<{ reasons: string[]; comment: string | null }>(`select reasons, comment from question_reports where question_id = $1::bigint`, [id])
+      expect(rows).toEqual([{ reasons: ['wrong_answer'], comment: null }])
     })
 
-    it('two concurrent first reports by one user both succeed and leave one row', async () => {
+    it('a Guru also gets 409 on a second report of the same question version', async () => {
+      const id = seed()
+      expect((await c.teacher.post('/api/question-reports', body(id))).status).toBe(201)
+      const second = await c.teacher.post('/api/question-reports', body(id))
+      expectError(second, 'CONFLICT')
+      expect(second.body.error.message).toBe('Anda sudah melaporkan soalan ini.')
+    })
+
+    it('a new live version of the question can be reported again by the same user', async () => {
+      const id = seed({ latestVersionNo: 2, liveVersionNo: 1 })
+      expect((await c.teacher.post('/api/question-reports', body(id))).status).toBe(201)
+      t.fake.questions.get(id)!.liveVersionNo = 2
+      expect((await c.teacher.post('/api/question-reports', body(id))).status).toBe(201)
+      expect(await count(t.db, `select count(*) n from question_reports where question_id = $1::bigint`, [id])).toBe(2)
+    })
+
+    it('two concurrent first reports by one user: exactly one 201 and one 409, one row', async () => {
       const id = seed({ brief: { type: 'structured' } })
       const res = await Promise.all([c.student.post('/api/question-reports', body(id)), c.student.post('/api/question-reports', body(id))])
-      expect(res.map((r) => r.status)).toEqual([201, 201])
+      expect(res.map((r) => r.status).sort()).toEqual([201, 409])
       expect(await count(t.db, `select count(*) n from question_reports where question_id = $1::bigint`, [id])).toBe(1)
+    })
+
+    it('DM-82: reporter_role is murid for a pupil and guru for a teacher, and a body reporterRole is ignored', async () => {
+      const a = seed()
+      const b = seed()
+      const d = seed()
+      expect((await c.student.post('/api/question-reports', body(a, { reporterRole: 'guru' }))).status).toBe(201)
+      expect((await c.teacher.post('/api/question-reports', body(b))).status).toBe(201)
+      expect((await c.teacher.post('/api/question-reports', body(d, { reporterRole: 'murid' }))).status).toBe(201)
+      const role = async (id: string) => (await t.db.query<{ reporter_role: string }>(`select reporter_role from question_reports where question_id = $1::bigint`, [id]))[0]?.reporter_role
+      expect(await role(a)).toBe('murid')
+      expect(await role(b)).toBe('guru')
+      expect(await role(d)).toBe('guru')
+      const admin = QuestionReportListResponseSchema.parse((await c.admin.get('/api/question-reports?status=all')).body)
+      expect(admin.data.find((r) => r.questionId === a)?.reporterRole).toBe('murid')
+      expect(admin.data.find((r) => r.questionId === b)?.reporterRole).toBe('guru')
     })
 
     it('Admin Pusat outside Mod Pelajar is 403 on filing, and nothing is stored', async () => {
@@ -183,34 +217,37 @@ describe('question reports (BE-10 AC 3, 4, 9, 11)', () => {
       expect(t.fake.questions.get(structured)?.isActive).toBe(true)
     })
 
-    it('a pupil report without an owned context is 422 in BM and stores nothing', async () => {
+    it('AC-MUR-54-3: a pupil report without an owned context is 403 in BM and stores nothing', async () => {
       const id = seed()
       const plain = await loginAs(t, 'pelajar@demo.test') // no auto proof: a plain pupil client
       const res = await plain.post('/api/question-reports', body(id))
-      expect(res.status).toBe(422)
-      expect(fields(res)).toEqual({ context: 'Anda hanya boleh melapor soalan yang dipaparkan kepada anda.' })
+      expectError(res, 'FORBIDDEN')
+      expect(res.body.error.message).toBe('Anda hanya boleh melapor soalan yang dipaparkan kepada anda.')
       expect(await mineOf(id)).toBe(0)
       expect(t.fake.questions.get(id)?.isActive).toBe(true)
     })
 
-    it("someone else's practice session, an unknown one, and a session that never served the question are 422", async () => {
+    it("someone else's practice session, an unknown one, and a session that never served the question are 403; a malformed id is 422", async () => {
       const id = seed()
       const plain = await loginAs(t, 'pelajar@demo.test')
       const others = await answeredSession(t.db, c.otherTeacher.userId, id)
-      expect(fields(await plain.post('/api/question-reports', body(id, { quizSessionId: others })))).toEqual({ quizSessionId: 'Rujukan sesi tidak sah.' })
-      expect(fields(await plain.post('/api/question-reports', body(id, { quizSessionId: '00000000-0000-4000-8000-000000000000' })))).toEqual({ quizSessionId: 'Rujukan sesi tidak sah.' })
+      expectError(await plain.post('/api/question-reports', body(id, { quizSessionId: others })), 'FORBIDDEN')
+      expectError(await plain.post('/api/question-reports', body(id, { quizSessionId: '00000000-0000-4000-8000-000000000000' })), 'FORBIDDEN')
       const elsewhere = await answeredSession(t.db, plain.userId, seed())
-      expect(fields(await plain.post('/api/question-reports', body(id, { quizSessionId: elsewhere })))).toEqual({ quizSessionId: 'Soalan ini bukan sebahagian daripada sesi itu.' })
+      const wrong = await plain.post('/api/question-reports', body(id, { quizSessionId: elsewhere }))
+      expectError(wrong, 'FORBIDDEN')
+      expect(wrong.body.error.message).toBe('Anda hanya boleh melapor soalan yang dipaparkan kepada anda.')
+      expect(fields(await plain.post('/api/question-reports', body(id, { quizSessionId: 'bukan-uuid' })))).toEqual({ quizSessionId: 'Rujukan sesi tidak sah.' })
       expect(await mineOf(id)).toBe(0)
       const own = await answeredSession(t.db, plain.userId, id)
       expect((await plain.post('/api/question-reports', body(id, { quizSessionId: own }))).status).toBe(201)
     })
 
-    it('REQ-B-046: a pupil reports a live structured question before the first submit (no attempt, no session): 201, and a second report refreshes it', async () => {
+    it('REQ-B-046: a pupil reports a live structured question before the first submit (no attempt, no session): 201, and a second one is 409', async () => {
       const id = seed({ brief: { type: 'structured' } })
       const plain = await loginAs(t, 'pelajar@demo.test')
       expect((await plain.post('/api/question-reports', body(id, { questionType: 'structured' }))).status).toBe(201)
-      expect((await plain.post('/api/question-reports', body(id))).status).toBe(201) // no questionType sent: the stored type decides
+      expect((await plain.post('/api/question-reports', body(id))).status).toBe(409) // no questionType sent: the stored type decides
       expect(await mineOf(id)).toBe(1)
       await t.db.query(`delete from question_reports where question_id = $1::bigint`, [id]) // keep the later specs' counts
       // after a submit it is still accepted
@@ -222,45 +259,45 @@ describe('question reports (BE-10 AC 3, 4, 9, 11)', () => {
       await t.db.query(`delete from question_reports where question_id = $1::bigint`, [id])
     })
 
-    it('REP-N1: a pupil without a proof gets one answer (422 context) for an unknown, a not-live and a live MCQ question, and a wrong questionType is not told', async () => {
+    it('REP-N1: a pupil without a proof gets one answer (403 context) for an unknown, a not-live and a live MCQ question, and a wrong questionType is not told', async () => {
       const live = seed()
       const hidden = seed({ status: 'draft' })
       const plain = await loginAs(t, 'pelajar@demo.test')
-      const ctx = { context: 'Anda hanya boleh melapor soalan yang dipaparkan kepada anda.' }
+      const ctx = 'Anda hanya boleh melapor soalan yang dipaparkan kepada anda.'
       for (const id of [live, hidden, '99999991']) {
         const res = await plain.post('/api/question-reports', body(id))
-        expect(res.status, id).toBe(422)
-        expect(fields(res), id).toEqual(ctx)
+        expect(res.status, id).toBe(403)
+        expect(res.body.error.message, id).toBe(ctx)
       }
       // a mismatching questionType on a question the pupil has no proof for reveals neither the type nor the existence
-      expect(fields(await plain.post('/api/question-reports', body(live, { questionType: 'structured' })))).toEqual(ctx)
-      expect(fields(await plain.post('/api/question-reports', body(hidden, { questionType: 'mcq' })))).toEqual(ctx)
+      for (const res of [await plain.post('/api/question-reports', body(live, { questionType: 'structured' })), await plain.post('/api/question-reports', body(hidden, { questionType: 'mcq' }))]) {
+        expect(res.status).toBe(403)
+        expect(res.body.error.message).toBe(ctx)
+      }
       // a Guru still gets 404 for an unknown question
       expect((await c.teacher.post('/api/question-reports', body('99999991'))).status).toBe(404)
     })
 
-    it('REQ-B-049: a live structured question at a level outside T4/T5 gets the same uniform 422 as a question without proof; T5 is reported', async () => {
+    it('REQ-B-049: a live structured question at a level outside T4/T5 gets the same uniform 403 as a question without proof; T5 is reported', async () => {
       const plain = await loginAs(t, 'pelajar@demo.test')
-      const ctx = { context: 'Anda hanya boleh melapor soalan yang dipaparkan kepada anda.' }
       const t5 = seed({ brief: { type: 'structured', educationLevelId: '2' } })
       expect((await plain.post('/api/question-reports', body(t5, { questionType: 'structured' }))).status).toBe(201)
       await t.db.query(`delete from question_reports where question_id = $1::bigint`, [t5]) // keep the daily cap of the later specs
       const hiddenLevel = seed({ brief: { type: 'structured', educationLevelId: '9' } }) // e.g. a T1 to T3 set: not in the structured practice
       const res = await plain.post('/api/question-reports', body(hiddenLevel, { questionType: 'structured' }))
-      expect(res.status).toBe(422)
-      expect(fields(res)).toEqual(ctx)
+      expect(res.status).toBe(403)
+      expect(res.body.error.message).toBe('Anda hanya boleh melapor soalan yang dipaparkan kepada anda.')
       expect(await count(t.db, `select count(*) n from question_reports where question_id = $1::bigint`, [hiddenLevel])).toBe(0)
     })
 
-    it('REQ-B-049: a structured question that is not live (inactive, unpublished, unknown) gets the same uniform 422 (the live check, before the structured one)', async () => {
+    it('REQ-B-049: a structured question that is not live (inactive, unpublished, unknown) gets the same uniform 403 (the live check, before the structured one)', async () => {
       const plain = await loginAs(t, 'pelajar@demo.test')
-      const ctx = { context: 'Anda hanya boleh melapor soalan yang dipaparkan kepada anda.' }
       const inactive = seed({ isActive: false, brief: { type: 'structured' } })
       const unpublished = seed({ status: 'draft', brief: { type: 'structured' } })
       for (const id of [inactive, unpublished, '99999992']) {
         const res = await plain.post('/api/question-reports', body(id, { questionType: 'structured' }))
-        expect(res.status, id).toBe(422)
-        expect(fields(res), id).toEqual(ctx)
+        expect(res.status, id).toBe(403)
+        expect(res.body.error.message, id).toBe('Anda hanya boleh melapor soalan yang dipaparkan kepada anda.')
       }
       expect(await count(t.db, `select count(*) n from question_reports where question_id = any($1::bigint[])`, [[inactive, unpublished]])).toBe(0)
     })
@@ -289,25 +326,25 @@ describe('question reports (BE-10 AC 3, 4, 9, 11)', () => {
       expect((await c.teacher.post('/api/question-reports', body(seed(), { source: 'teacher_databank' }))).status).toBe(201)
     })
 
-    it('a re-POST after the admin dismissed the report leaves it dismissed; after a reactivate it stays as the admin left it', async () => {
+    it('a re-POST after the admin dismissed the report is 409 and leaves it as the admin left it', async () => {
       const id = seed()
       expect((await c.student.post('/api/question-reports', body(id))).status).toBe(201)
       const list = await c.admin.get('/api/question-reports?status=pending')
       const reportId = (list.body.data as { id: string; questionId: string }[]).find((r) => r.questionId === id)!.id
       expect((await c.admin.patch(`/api/question-reports/${reportId}`, { status: 'dismissed', adminNotes: 'Tiada masalah' })).status).toBe(200)
-      expect((await c.student.post('/api/question-reports', body(id, { reasons: ['typo'], comment: 'lagi' }))).status).toBe(201)
+      expectError(await c.student.post('/api/question-reports', body(id, { reasons: ['typo'], comment: 'lagi' })), 'CONFLICT')
       const [row] = await t.db.query<{ status: string; admin_notes: string; reasons: string[]; resolved_by_id: string | null }>(`select status, admin_notes, reasons, resolved_by_id::text from question_reports where question_id = $1::bigint`, [id])
       expect(row).toMatchObject({ status: 'dismissed', admin_notes: 'Tiada masalah', reasons: ['wrong_answer'] })
       expect(row?.resolved_by_id).not.toBeNull()
       expect(t.fake.questions.get(id)?.isActive).toBe(true)
-      // a pending report is still refreshed by the same pupil
+      // a pending report is not refreshed either
       const again = seed()
       await c.student.post('/api/question-reports', body(again))
-      await c.student.post('/api/question-reports', body(again, { reasons: ['typo'] }))
-      expect((await t.db.query<{ reasons: string[] }>(`select reasons from question_reports where question_id = $1::bigint`, [again]))[0]?.reasons).toEqual(['typo'])
+      expectError(await c.student.post('/api/question-reports', body(again, { reasons: ['typo'] })), 'CONFLICT')
+      expect((await t.db.query<{ reasons: string[] }>(`select reasons from question_reports where question_id = $1::bigint`, [again]))[0]?.reasons).toEqual(['wrong_answer'])
     })
 
-    it('at most 20 new reports per pupil per day (429 in BM); a refresh is not new; the next day is open again', async () => {
+    it('at most 20 new reports per pupil per day (429 in BM); a repeat at the cap is 409, not 429; the next day is open again', async () => {
       const plain = await loginAs(t, 'pelajarmaju@demo.test')
       const proven = answering(t, plain)
       const ids = Array.from({ length: 21 }, () => seed())
@@ -316,9 +353,8 @@ describe('question reports (BE-10 AC 3, 4, 9, 11)', () => {
       expect(over.status).toBe(429)
       expect(over.body.error).toMatchObject({ code: 'RATE_LIMITED', message: 'Anda telah mencapai had 20 laporan sehari. Sila cuba lagi esok.' })
       expect(await mineOf(ids[20]!)).toBe(0)
-      // REQ-B-046: at the cap a re-POST of a report the pupil already has is a refresh, not a new report
-      const again = await proven.post('/api/question-reports', body(ids[0]!, { reasons: ['typo'] }))
-      expect(again.status, JSON.stringify(again.body)).toBe(201)
+      // FR-MUR-54-10: the duplicate check comes before the cap, so a repeat at the cap is 409 (not 429)
+      expectError(await proven.post('/api/question-reports', body(ids[0]!, { reasons: ['typo'] })), 'CONFLICT')
       // the next Malaysia day: the 20 reports no longer count (their stored time moves back two days)
       await t.db.query(`update question_reports set created_at = created_at - interval '2 days' where reporter_id = $1::bigint`, [plain.userId])
       expect((await proven.post('/api/question-reports', body(ids[20]!))).status).toBe(201)
@@ -412,6 +448,52 @@ describe('question reports (BE-10 AC 3, 4, 9, 11)', () => {
       expect(parsed.meta.counts.all).toBe(parsed.data.length)
       expect(JSON.stringify(res.body)).not.toContain('Rahsia')
       expect(parsed.data.find((r) => r.questionId === id)?.question).toEqual({ exists: true, type: 'mcq', id })
+    })
+
+    /** A fresh pupil (a copy of `pelajar@demo.test`: same password, role and scope) whose `mine` list holds only what this spec files. */
+    const freshPupil = async (email: string): Promise<Client> => {
+      const cols = (await t.db.query<{ column_name: string }>(
+        `select column_name from information_schema.columns where table_schema = 'public' and table_name = 'users'
+          and is_identity = 'NO' and is_generated = 'NEVER' and column_name not in ('email', 'name', 'username') order by ordinal_position`,
+      )).map((x) => `"${x.column_name}"`).join(', ')
+      const [row] = await t.db.query<{ id: string }>(`insert into users (name, email, ${cols}) select 'Murid Baharu Demo', $1, ${cols} from users where email = 'pelajar@demo.test' returning id::text`, [email])
+      await t.db.query(`insert into user_roles (user_id, role) select $1::bigint, role from user_roles where user_id = (select id from users where email = 'pelajar@demo.test')`, [row!.id])
+      await t.db.query(
+        `insert into user_scopes (user_id, role, level, state_code, district_code, school_id)
+         select $1::bigint, role, level, state_code, district_code, school_id from user_scopes where user_id = (select id from users where email = 'pelajar@demo.test')`,
+        [row!.id],
+      )
+      return answering(t, await loginAs(t, email))
+    }
+
+    it('AC-MUR-54-7: five reports (pending, reviewed, fixed, dismissed, fixed on an archived question) count 1/1/2/1 with all 5; exactly one reads removed', async () => {
+      const pupil = await freshPupil('pelajar-kaunter@demo.test')
+      const ids = Array.from({ length: 5 }, () => seed())
+      const rid: string[] = []
+      for (const id of ids) {
+        expect((await pupil.post('/api/question-reports', body(id))).status).toBe(201)
+        rid.push((await t.db.query<{ id: string }>(`select id::text from question_reports where question_id = $1::bigint and reporter_id = $2::bigint`, [id, pupil.userId]))[0]!.id)
+      }
+      expect((await c.admin.patch(`/api/question-reports/${rid[1]}`, { status: 'reviewed' })).status).toBe(200)
+      expect((await c.admin.patch(`/api/question-reports/${rid[2]}`, { status: 'fixed' })).status).toBe(200)
+      expect((await c.admin.patch(`/api/question-reports/${rid[3]}`, { status: 'dismissed' })).status).toBe(200)
+      expect((await c.admin.patch(`/api/question-reports/${rid[4]}`, { status: 'fixed' })).status).toBe(200)
+      await t.fake.setStatus(ids[4]!, 'archived', '1') // the fixed report whose question is no longer served
+      const mine = QuestionReportMineResponseSchema.parse((await pupil.get('/api/question-reports/mine')).body)
+      expect(mine.meta.counts).toEqual({ pending: 1, reviewed: 1, fixed: 2, dismissed: 1, all: 5 })
+      expect(mine.data).toHaveLength(5)
+      expect(mine.data.filter((r) => r.displayStatus === 'removed').map((r) => r.questionId)).toEqual([ids[4]])
+      expect(mine.data.filter((r) => r.status === 'fixed')).toHaveLength(2)
+    })
+
+    it('AC-MUR-54-2: the note an admin writes on a report shows in the pupil own list', async () => {
+      const pupil = await freshPupil('pelajar-nota@demo.test')
+      const id = seed()
+      expect((await pupil.post('/api/question-reports', body(id))).status).toBe(201)
+      const rid = (await t.db.query<{ id: string }>(`select id::text from question_reports where question_id = $1::bigint and reporter_id = $2::bigint`, [id, pupil.userId]))[0]!.id
+      expect((await c.admin.patch(`/api/question-reports/${rid}`, { status: 'reviewed', adminNotes: 'Terima kasih, sedang disemak.' })).status).toBe(200)
+      const mine = QuestionReportMineResponseSchema.parse((await pupil.get('/api/question-reports/mine')).body)
+      expect(mine.data.find((r) => r.id === rid)).toMatchObject({ status: 'reviewed', adminNotes: 'Terima kasih, sedang disemak.', reporterRole: 'murid' })
     })
 
     it('the admin sees only the reports the admin filed, never the students', async () => {
