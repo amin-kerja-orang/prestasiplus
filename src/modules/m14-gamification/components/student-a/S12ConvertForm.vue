@@ -89,13 +89,24 @@ function onConfirm(): void {
       <DsSurface v-if="balance < rate" level="elevated" data-testid="s12-short">
         <DsStack gap="sm" align="start">
           <div>
-            <DsText variant="body">Anda perlu sekurang-kurangnya {{ formatCount(rate) }} syiling</DsText>
-            <DsText variant="body">untuk menukar 1 token. Teruskan berlatih untuk mengumpul syiling.</DsText>
+            <DsText variant="body"
+              >Anda perlu sekurang-kurangnya {{ formatCount(rate) }} syiling</DsText
+            >
+            <DsText variant="body"
+              >untuk menukar 1 token. Teruskan berlatih untuk mengumpul syiling.</DsText
+            >
           </div>
-          <UButton to="/practice" size="lg" data-testid="s12-short-practice">Mula Latih Tubi</UButton>
+          <UButton to="/practice" size="lg" data-testid="s12-short-practice"
+            >Mula Latih Tubi</UButton
+          >
         </DsStack>
       </DsSurface>
-      <form id="convertForm" class="flex flex-col gap-4" data-testid="s12-form" @submit.prevent="onSubmit">
+      <form
+        id="convertForm"
+        class="flex flex-col gap-4"
+        data-testid="s12-form"
+        @submit.prevent="onSubmit"
+      >
         <UFormField label="Syiling untuk ditukar" for="syilingInput">
           <UInput
             id="syilingInput"

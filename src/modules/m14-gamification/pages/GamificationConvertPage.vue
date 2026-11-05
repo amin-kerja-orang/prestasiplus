@@ -41,7 +41,12 @@ let unsettled: { amount: number; clientUuid: string } | null = null
 
 /** The server answered and moved nothing, so the next press is a new request; 408 and 429 may be repeated as they are. */
 function refused(err: unknown): boolean {
-  return err instanceof ApiError && err.status >= 400 && err.status < 500 && ![408, 429].includes(err.status)
+  return (
+    err instanceof ApiError &&
+    err.status >= 400 &&
+    err.status < 500 &&
+    ![408, 429].includes(err.status)
+  )
 }
 
 async function onConvert(amount: number): Promise<void> {
@@ -94,18 +99,24 @@ async function onConvert(amount: number): Promise<void> {
       <UCard data-testid="s12-hero">
         <div class="flex flex-wrap items-center justify-between gap-4">
           <div class="flex min-w-0 flex-col gap-1">
-            <h1 class="text-title text-highlighted">
-              Tukar Syiling → Token
-            </h1>
+            <h1 class="text-title text-highlighted">Tukar Syiling → Token</h1>
             <p class="text-body text-muted">Tukar syiling anda kepada token untuk tebus hadiah</p>
           </div>
           <div class="flex shrink-0 gap-4 text-center">
             <div class="flex flex-col items-center gap-1">
-              <DsRewardChip art="coin" :value="formatCount(syiling())" data-testid="s12-balance-syiling" />
+              <DsRewardChip
+                art="coin"
+                :value="formatCount(syiling())"
+                data-testid="s12-balance-syiling"
+              />
               <span class="text-caption text-muted">Baki Syiling</span>
             </div>
             <div class="flex flex-col items-center gap-1">
-              <DsRewardChip art="bolt" :value="formatCount(token())" data-testid="s12-balance-token" />
+              <DsRewardChip
+                art="bolt"
+                :value="formatCount(token())"
+                data-testid="s12-balance-token"
+              />
               <span class="text-caption text-muted">Baki Token</span>
             </div>
           </div>
@@ -148,7 +159,9 @@ async function onConvert(amount: number): Promise<void> {
             <li v-for="r in history.data.value.data" :key="r.id" class="min-w-0">
               <DsSurface padding="sm" shadow="lift" data-testid="s12-history-row">
                 <DsStack gap="2xs">
-                  <DsText as="p" variant="label" tone="highlighted" wrap="anywhere">{{ r.description }}</DsText>
+                  <DsText as="p" variant="label" tone="highlighted" wrap="anywhere">{{
+                    r.description
+                  }}</DsText>
                   <DsText variant="caption">{{ formatDateTime(r.createdAt) }}</DsText>
                 </DsStack>
               </DsSurface>
