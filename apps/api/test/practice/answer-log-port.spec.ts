@@ -5,7 +5,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 
 import { leavesOfGraded, modeOfAttempt, runBackfill, runLegacyMode, type SkipReason } from '../../scripts/uat-ops/backfill-bijak-answers'
 import { PrismaService } from '../../src/db/prisma.service'
-import { ANSWER_MODES, AnswerLogPort, type AnswerLogEntry, WRITABLE_ANSWER_MODES } from '../../src/modules/practice/answer-log.port'
+import { ANSWER_MODES, AnswerLogPort, type AnswerLogEntry, attemptUuidOf, WRITABLE_ANSWER_MODES } from '../../src/modules/practice/answer-log.port'
 import { type PracticeTestApp, type World, bootPracticeApp, countRows, fillBank, loadWorld, resetPractice, userIdByEmail } from './helpers'
 
 let t: PracticeTestApp
@@ -190,6 +190,29 @@ describe('record', () => {
     const a = randomUUID()
     await port.record(entry({ attemptId: a, questionId: '999999' }))
     expect(await rowsOf(a)).toEqual([expect.objectContaining({ subject_id: null, question_version_no: null })])
+  })
+
+  it('PKSK: a decimal exam attempt id is stored as its deterministic uuid, idempotent, no session', async () => {
+    const stored = attemptUuidOf('9007199254740993')
+    const first = await port.record(entry({ attemptId: '9007199254740993', mode: 'pksk', partRef: '1' }))
+    const again = await port.record(entry({ attemptId: '9007199254740993', mode: 'pksk', partRef: '1', isCorrect: false, marksAwarded: 0 }))
+    expect(first.created).toBe(true)
+    expect(again).toEqual({ id: first.id, created: false })
+    expect(await rowsOf(stored)).toEqual([expect.objectContaining({ session_id: null, is_correct: false })])
+  })
+})
+
+describe('attemptUuidOf', () => {
+  it('keeps a uuid (lower case) and maps a decimal id to a stable version-5 uuid', () => {
+    const u = randomUUID()
+    expect(attemptUuidOf(u.toUpperCase())).toBe(u)
+    expect(attemptUuidOf('42')).toBe(attemptUuidOf('42'))
+    expect(attemptUuidOf('42')).not.toBe(attemptUuidOf('43'))
+    expect(attemptUuidOf('42')).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
+  })
+
+  it('refuses anything else', () => {
+    expect(() => attemptUuidOf('not-an-id')).toThrow(/uuid or a decimal id/)
   })
 })
 
