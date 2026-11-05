@@ -15,17 +15,21 @@ import {
   PerformanceDifficultySchema,
   PerformanceGpsBandSchema,
   PerformanceGradeSchema,
+  PerformanceHeadcountArRequestSchema,
   PerformanceHeadcountAutoSetupRequestSchema,
   PerformanceHeadcountCreateRequestSchema,
   PerformanceHeadcountDashboardSchema,
+  PerformanceHeadcountDefaultsRequestSchema,
   PerformanceHeadcountDetailSchema,
   PerformanceHeadcountDropRequestSchema,
   PerformanceHeadcountFormOptionsSchema,
   PerformanceHeadcountListItemSchema,
   PerformanceHeadcountModeSchema,
+  PerformanceHeadcountSettingsRequestSchema,
   PerformanceHeadcountSortQuerySchema,
   PerformanceHeadcountStudentSchema,
   PerformanceHeadcountSummarySchema,
+  PerformanceHeadcountTovRequestSchema,
   PerformanceItemAnalysisQuerySchema,
   PerformanceLeaderboardQuerySchema,
   PerformanceLeaderboardSchema,
@@ -84,6 +88,10 @@ export const PERFORMANCE_COMPONENT_SCHEMAS = {
   PerformanceHeadcountCreateRequest: PerformanceHeadcountCreateRequestSchema,
   PerformanceHeadcountAutoSetupRequest: PerformanceHeadcountAutoSetupRequestSchema,
   PerformanceHeadcountDropRequest: PerformanceHeadcountDropRequestSchema,
+  PerformanceHeadcountArRequest: PerformanceHeadcountArRequestSchema,
+  PerformanceHeadcountTovRequest: PerformanceHeadcountTovRequestSchema,
+  PerformanceHeadcountSettingsRequest: PerformanceHeadcountSettingsRequestSchema,
+  PerformanceHeadcountDefaultsRequest: PerformanceHeadcountDefaultsRequestSchema,
   PerformanceHeadcountSortQuery: PerformanceHeadcountSortQuerySchema,
   PerformanceHeadcountStudent: PerformanceHeadcountStudentSchema,
   PerformanceHeadcountSummary: PerformanceHeadcountSummarySchema,
@@ -110,8 +118,10 @@ const csrf = z.object({
 
 /** The headcount staff guard: admin, teacher, school_admin; every other role gets 403. */
 const STAFF = 'role not admin, teacher or school_admin'
+/** S10-T02 write guard: the owning teacher only; a school admin or admin who can see the config gets 403, anyone else the uniform 404. */
+const OWNER = 'role not teacher (school_admin and admin never write), or a CSRF failure'
 
-/** Registers the 30 BE-19 (M08) endpoints. Success bodies are `{ data }`; errors are `{ error }`. */
+/** Registers the BE-19 (M08) endpoints (S10-T02 adds `/headcounts/me`, `/headcounts/me/detail` and four PUT writes). Success bodies are `{ data }`; errors are `{ error }`. */
 export function registerPerformancePaths(registry: OpenAPIRegistry): void {
   const get = (
     path: string,
@@ -317,6 +327,25 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
     'Create-form select options (S14)',
     PerformanceHeadcountFormOptionsSchema,
   )
+  // S10-T02 (API-RPT-08): the pupil's own view. Role student only; staff get 403.
+  get(
+    '/headcounts/me',
+    'The pupil\'s own headcount configs of the current MYT calendar year (class membership), newest first',
+    z.array(PerformanceHeadcountListItemSchema),
+    { 403: E403('role not student') },
+    {},
+    'entryStatus / statusReason are the pupil\'s own line; a pupil dropped from a config does not see it.',
+    'headcount',
+  )
+  get(
+    '/headcounts/me/detail',
+    'The pupil\'s own line of one config',
+    PerformanceHeadcountStudentSchema,
+    { 403: E403('role not student'), 404: E404('configId of a config that is not the pupil\'s own, or unknown') },
+    { query: z.object({ configId: IdSchema.optional() }) },
+    'Omitted configId: the config last updated (sections is empty when the pupil has none). Own line only; no classmate data.',
+    'headcount',
+  )
   hc(
     '/headcounts/students/{userId}',
     'Headcount sections of one student (S15)',
@@ -427,5 +456,69 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
     z.object({ deleted: z.literal(true) }),
     own,
     { params: idParam('id') },
+  )
+  registerHeadcountWritePaths(registry)
+}
+
+/** S10-T02 writes (API-RPT-10, API-RPT-16). Success answers the updated `PerformanceHeadcountDetail`. */
+function registerHeadcountWritePaths(registry: OpenAPIRegistry): void {
+  const put = (
+    path: string,
+    summary: string,
+    body: z.ZodType,
+    errors: Record<number, ReturnType<typeof err>>,
+    description?: string,
+  ) =>
+    registry.registerPath({
+      method: 'put',
+      path,
+      tags: ['headcount'],
+      summary,
+      ...(description ? { description } : {}),
+      request: {
+        headers: [csrf],
+        params: idParam('id'),
+        body: { required: true, content: { 'application/json': { schema: body } } },
+      },
+      responses: {
+        200: json(envelopeOf(PerformanceHeadcountDetailSchema), summary),
+        401: E401,
+        403: E403(OWNER),
+        404: E404('unknown id, a config outside the viewer scope or another teacher\'s config (uniform 404)'),
+        ...errors,
+      },
+    })
+  put(
+    '/headcounts/{id}/ar',
+    'Key-in AR of one checkpoint (Manual config)',
+    PerformanceHeadcountArRequestSchema,
+    { 422: err('VALIDATION_ERROR "Markah mesti antara 0 dan 100." (fields marks.{i}.value), or "Murid tidak sah." (marks.{i}.userId; an unknown or dropped pupil).') },
+    'An Auto config, or a checkpoint outside 1..activeOtrs, answers 404. 403 for school_admin and admin. Stored with 1 decimal.',
+  )
+  put(
+    '/headcounts/{id}/tov',
+    'Edit TOV / ETR / RS of pupils',
+    PerformanceHeadcountTovRequestSchema,
+    {
+      422: err(
+        'VALIDATION_ERROR "Markah mesti antara 0 dan 100." (rows.{i}.tov|etr|rs), "Tarikh tidak boleh lebih lewat daripada hari ini." (rows.{i}.rsRecordedAt), "Tarikh tidak sah.", "Murid tidak sah." (rows.{i}.userId).',
+      ),
+    },
+    'Only the keys present in a row are written; null clears. The RS date defaults to the MYT day of the first RS save; rs null clears the date.',
+  )
+  put(
+    '/headcounts/{id}/settings',
+    'Tetapan: Bilangan OTR',
+    PerformanceHeadcountSettingsRequestSchema,
+    {
+      409: err('CONFLICT "OTR{k} ke atas mempunyai markah. Padam markah tersebut?" (k = new count + 1); resend with confirm true to delete the marks above n and save.'),
+      422: err('VALIDATION_ERROR "Bilangan OTR mesti 2, 3, 4 atau 5." (field activeOtrs).'),
+    },
+  )
+  put(
+    '/headcounts/{id}/defaults',
+    'Simpan Sasaran: class default TOV and ETR',
+    PerformanceHeadcountDefaultsRequestSchema,
+    { 422: err('VALIDATION_ERROR "Markah mesti antara 0 dan 100." (fields defaultTov, defaultEtr).') },
   )
 }
