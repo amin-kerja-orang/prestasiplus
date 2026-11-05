@@ -335,7 +335,7 @@ describe('DM-42: the pupil Set Soalan does not serve a private question, and one
     const repo = { itemIds: () => Promise.resolve(new Map([['1', ['5']]])) }
     const svc = new QuestionSetsService(repo as never, {} as never, questions as never, {} as never)
     await svc.eligibleItems([{ id: '1', needsRebuild: false }] as never)
-    expect(seen).toEqual([BANK_ONLY])
+    expect(seen).toEqual([{ ...BANK_ONLY, lenientKeys: true }])
   })
 
   it('isBankVersion: bank and an unmarked (older) version are bank, teacher_private is not', () => {
