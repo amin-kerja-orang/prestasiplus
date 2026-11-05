@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   GRADE_CODES,
   MAP_SUBJECTS,
+  mapSubjectPills,
   NO_PROGRESS,
   PRACTICE_CODE,
   byOrderThenId,
@@ -135,6 +136,20 @@ describe('Peta Belajar rules (BR-14, BR-15)', () => {
 
   it('with no progress every topic is open (default provider state)', () => {
     expect(islandStates([NO_PROGRESS, NO_PROGRESS, NO_PROGRESS, NO_PROGRESS])).toEqual(['unlocked', 'unlocked', 'unlocked', 'unlocked'])
+  })
+
+  it('S4-T06: pills = the known ones that are active, then the other active subjects by name, in order', () => {
+    const pills = mapSubjectPills([
+      { code: 'GEO', name: 'Geografi' },
+      { code: 'SCI', name: 'Sains' },
+      { code: 'EKO', name: 'Ekonomi' },
+      { code: 'EKO', name: 'Ekonomi 2' },
+    ])
+    expect(pills.map((p) => [p.code, p.label, p.emoji, p.color])).toEqual([
+      ['SAINS', 'Sains', '🔬', '#F59E0B'],
+      ['GEOGRAFI', 'Geografi', '', ''],
+      ['EKO', 'Ekonomi', '', ''],
+    ])
   })
 
   it('BR-15: pill labels, Geografi and unknown codes title-cased', () => {

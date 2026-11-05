@@ -9,9 +9,11 @@ import { DEMO_HASH_ENV, DEMO_PASSWORD } from '../../prisma/seed/core/demo-passwo
 import { identitySeed } from '../../prisma/seed/core/identity'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
 import { examSeed } from '../../prisma/seed/exam'
+import { practiceSeed } from '../../prisma/seed/practice'
 import { questionsSeed } from '../../prisma/seed/questions'
 import { BIJAK_BANK_SITTINGS, BIJAK_DEMO_PUPILS, BIJAK_DEMO_SITTINGS, bijakSittingsSeed } from '../../prisma/seed/poc/bijak-sittings'
 import { classesSeed } from '../../prisma/seed/poc/classes'
+import { PracticeReadsModule } from '../../src/modules/practice/reads'
 import { CLOCK, type Clock } from '../../src/db/clock'
 import { ClassPerformanceService, ItemAnalysisService, PerformancePorts, SchoolPerformanceService } from '../../src/modules/reports/performance'
 import { DIRECTORY_PORT, type DirectoryPort } from '../../src/modules/reports/performance/ports'
@@ -25,7 +27,8 @@ import { apiOf, bootSchoolAdminApp, login, SCHOOL_ADMIN, type SchoolAdminTestApp
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
 const ALL_SITTINGS = BIJAK_DEMO_SITTINGS.length + BIJAK_BANK_SITTINGS.length
-const MODULES = [identitySeed, curriculumSeed, questionsSeed, examSeed, classesSeed, bijakSittingsSeed]
+// The practice seed follows the Bijak seed (as in the registry): the reports read the one answer store (D113), so the demo pupils need answer rows there.
+const MODULES = [identitySeed, curriculumSeed, questionsSeed, examSeed, classesSeed, bijakSittingsSeed, practiceSeed]
 
 /** Everything the seed wrote, ids included (the ids must be stable). */
 async function fingerprint(db: Pick<TestDatabase, 'query'>) {
@@ -53,8 +56,9 @@ describe('PoC Bijak sittings seed', () => {
   let before: Awaited<ReturnType<typeof fingerprint>>
 
   beforeAll(async () => {
-    t = await bootIntegrationApp()
-    await runSeeds([classesSeed, bijakSittingsSeed], { prisma: t.db.prisma })
+    // PracticeReadsModule binds the real shared answer reader into PerformancePorts (the class dashboard reads it).
+    t = await bootIntegrationApp({ extraModules: [PracticeReadsModule] })
+    await runSeeds([classesSeed, bijakSittingsSeed, practiceSeed], { prisma: t.db.prisma })
     before = await fingerprint(t.db)
   }, 180_000)
   afterAll(async () => {
@@ -185,7 +189,7 @@ describe('PoC Bijak sittings seed', () => {
   })
 
   it('is idempotent: a re-run creates nothing and keeps the ids', async () => {
-    await runSeeds([classesSeed, bijakSittingsSeed], { prisma: t.db.prisma })
+    await runSeeds([classesSeed, bijakSittingsSeed, practiceSeed], { prisma: t.db.prisma })
     expect(await fingerprint(t.db)).toEqual(before)
   })
 
@@ -228,7 +232,7 @@ describe('PoC Bijak sittings seed: BE-21 school-admin dashboard of DEMO001', () 
   beforeAll(async () => {
     // The full feature set, so the dashboard reads Bijak data through the real BE-19 wiring (BijakIntegrationModule).
     t = await bootSchoolAdminApp({ modules: featureModules, env: { BIJAK_POC_QUESTIONS: 'true' } })
-    await runSeeds([curriculumSeed, questionsSeed, examSeed, classesSeed, bijakSittingsSeed], { prisma: t.db.prisma })
+    await runSeeds([curriculumSeed, questionsSeed, examSeed, classesSeed, bijakSittingsSeed, practiceSeed], { prisma: t.db.prisma })
   }, 180_000)
   afterAll(async () => {
     await t.close()
@@ -242,19 +246,13 @@ describe('PoC Bijak sittings seed: BE-21 school-admin dashboard of DEMO001', () 
     expect(d.cards.pupils).toBeGreaterThanOrEqual(5)
   })
 
-  it('shows the seeded Bijak sittings in the practice block through the real BE-19 port', async () => {
+  it('shows the seeded pupil activity (answer rows of the shared reader) in the practice block through the real BE-19 port', async () => {
     const res = await apiOf(await login(t, SCHOOL_ADMIN)).get('/admin-sekolah/dashboard')
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     const d = SchoolAdminDashboardSchema.parse(res.body.data)
     expect(d.performance.practice.sessions).toBeGreaterThan(0)
-    // S6-T03: the practice accuracy is XS-5, pooled over the school's `practice_answers` (XS-4). Bijak sittings live in
-    // `exam_attempts`, so they reach this figure only through the AnswerFactsPort (#544). Until then it is null with no
-    // practice answers, and set when the school has some.
-    const [row] = await t.db.query(
-      `SELECT count(*)::int AS n FROM practice_answers pa JOIN users u ON u.id = pa.user_id JOIN schools s ON s.id = u.school_id
-        WHERE s.code = 'DEMO001' AND NOT pa.is_test`,
-    )
-    if (Number(row?.n ?? 0) === 0) expect(d.performance.practice.accuracy).toBeNull()
-    else expect(d.performance.practice.accuracy).not.toBeNull()
+    expect(d.performance.practice.accuracy).not.toBeNull()
+    // Never {accuracy: null, sessions: 0} for a school that has activity: 6 pupils (pelajar and murid4-8) of the Matematik class plus pelajarmaju.
+    expect(d.performance.practice.questions).toBeGreaterThan(0)
   })
 })

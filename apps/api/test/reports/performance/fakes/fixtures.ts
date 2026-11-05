@@ -12,7 +12,7 @@ import {
   SchoolPerformanceService,
   StudentPerformanceService,
 } from '../../../../src/modules/reports/performance/services'
-import { InMemoryAnswerFacts, InMemoryQuestionContent } from './in-memory-answer-facts'
+import { InMemoryAnswerFacts, InMemoryQuestionContent, type AnswerRow } from './in-memory-answer-facts'
 import { InMemoryBijakAggregate } from './in-memory-bijak-aggregate'
 import { InMemoryClasses } from './in-memory-classes'
 import { InMemoryDirectory } from './in-memory-directory'
@@ -72,6 +72,24 @@ export function item(over: Partial<BijakItemFact> & Pick<BijakItemFact, 'userId'
   }
 }
 
+let session = 0
+
+/**
+ * `n` answers of a pupil, `correct` of them right: one session (a distinct session id) of the given mode on the given day. The
+ * single answer store counts every mode, so this replaces a Bijak sitting in the figures (S10-T07).
+ */
+export function answers(
+  w: World,
+  userId: string,
+  n: number,
+  correct: number,
+  over: Partial<AnswerRow> = {},
+): World {
+  session += 1
+  w.answers.addMany(userId, n, correct, { mode: 'latih_tubi', subjectId: '1', answeredAt: new Date('2026-09-20T10:10:00+08:00'), sessionId: `fx${String(session)}`, ...over })
+  return w
+}
+
 export const ctxOf = (role: RoleCode, userId: string, scope: Ctx['scope'] = { level: 'school', schoolId: 's1', label: 'Sekolah' }): Ctx => ({
   userId,
   role,
@@ -105,7 +123,7 @@ export function world(): World {
   const classes = new InMemoryClasses()
   const gamification = new InMemoryGamification()
   const facts = new InMemoryHeadcountFacts()
-  const answers = new InMemoryAnswerFacts()
+  const answers = new InMemoryAnswerFacts((id) => ({ id, schoolId: directory.schoolOf(id), classroomIds: classes.classIdsOf(id) }))
   const practice = new InMemoryPracticeRead()
   const content = new InMemoryQuestionContent()
   const ports = new PerformancePorts(bijak, classes, practice, gamification, undefined, answers, content)

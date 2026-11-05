@@ -56,8 +56,8 @@ interface Ans {
 
 async function answer(a: Ans, user = me): Promise<void> {
   await t.db.query(
-    `insert into practice_answers (user_id, question_id, subject_id, chapter_id, topic_id, is_correct, answered_at, is_test)
-     values ($1, $2, $3, $4, $5, $6, $7::timestamptz, $8)`,
+    `insert into practice_answers (user_id, question_id, subject_id, chapter_id, topic_id, is_correct, answered_at, is_test, mode)
+     values ($1, $2, $3, $4, $5, $6, $7::timestamptz, $8, 'latih_tubi')`,
     [user, a.q ?? null, a.subject ?? w.subject.math, a.chapter ?? null, a.topic ?? null, a.correct, a.at ?? '2026-10-01T10:00:00+08:00', a.isTest ?? false],
   )
 }
@@ -65,8 +65,8 @@ async function answer(a: Ans, user = me): Promise<void> {
 /** `n` anonymous answers of a subject with `correct` of them right. */
 async function bulk(subject: string, n: number, correct: number, isTest = false): Promise<void> {
   await t.db.query(
-    `insert into practice_answers (user_id, subject_id, is_correct, answered_at, is_test)
-     select $1, $2, g <= $4, '2026-10-01T10:00:00+08:00'::timestamptz + (g || ' seconds')::interval, $5 from generate_series(1, $3::int) g`,
+    `insert into practice_answers (user_id, subject_id, is_correct, answered_at, is_test, mode)
+     select $1, $2, g <= $4, '2026-10-01T10:00:00+08:00'::timestamptz + (g || ' seconds')::interval, $5, 'latih_tubi' from generate_series(1, $3::int) g`,
     [me, subject, n, correct, isTest],
   )
 }
@@ -180,11 +180,11 @@ describe('completed sets', () => {
   it('gives Sebelum, Selepas, delta and the per-subject Set n, newest first; test and non-revision sessions are left out', async () => {
     // Before set 1: 4 answers, 1 right (25). Before set 2: 10 answers, 6 right (60).
     await t.db.query(
-      `insert into practice_answers (user_id, subject_id, is_correct, answered_at) values
-       ($1, $2, true, '2026-10-01T10:00:00+08:00'), ($1, $2, false, '2026-10-01T10:01:00+08:00'), ($1, $2, false, '2026-10-01T10:02:00+08:00'), ($1, $2, false, '2026-10-01T10:03:00+08:00'),
-       ($1, $2, true, '2026-10-05T10:00:00+08:00'), ($1, $2, true, '2026-10-05T10:01:00+08:00'), ($1, $2, true, '2026-10-05T10:02:00+08:00'),
-       ($1, $2, true, '2026-10-05T10:03:00+08:00'), ($1, $2, true, '2026-10-05T10:04:00+08:00'), ($1, $2, false, '2026-10-05T10:05:00+08:00'),
-       ($1, $2, true, '2026-10-02T10:30:00+08:00')`,
+      `insert into practice_answers (user_id, subject_id, is_correct, answered_at, mode) values
+       ($1, $2, true, '2026-10-01T10:00:00+08:00', 'latih_tubi'), ($1, $2, false, '2026-10-01T10:01:00+08:00', 'latih_tubi'), ($1, $2, false, '2026-10-01T10:02:00+08:00', 'latih_tubi'), ($1, $2, false, '2026-10-01T10:03:00+08:00', 'latih_tubi'),
+       ($1, $2, true, '2026-10-05T10:00:00+08:00', 'latih_tubi'), ($1, $2, true, '2026-10-05T10:01:00+08:00', 'latih_tubi'), ($1, $2, true, '2026-10-05T10:02:00+08:00', 'latih_tubi'),
+       ($1, $2, true, '2026-10-05T10:03:00+08:00', 'latih_tubi'), ($1, $2, true, '2026-10-05T10:04:00+08:00', 'latih_tubi'), ($1, $2, false, '2026-10-05T10:05:00+08:00', 'latih_tubi'),
+       ($1, $2, true, '2026-10-02T10:30:00+08:00', 'latih_tubi')`,
       [me, w.subject.math],
     )
     await revisionSet(w.subject.math, '2026-10-02T10:00:00+08:00', '2026-10-02T10:20:00+08:00', 20, 16) // set 1: before 1 of 4 = 25, after 80
