@@ -41,3 +41,12 @@ export { COGNITIVE_OPTIONS } from './lib/studio/dskp-tags'
 
 // REQ-B-061: the M28 Bank Soalan page applies its filters with the same 300 ms debounce and shows the same 429 text.
 export { FILTER_DEBOUNCE_MS, listLoadMessage, useDebouncedFilter } from './lib/list-load'
+
+// S6-T17 (M10 `/guru/soalan-berstruktur`): the two structured pages as lazy imports for the M10 route
+// records, with the route names, the list path and the teacher status words. Mount them with
+// `props: { portal: 'guru' }`; the default `portal` is 'admin'.
+export const structuredPages = {
+  list: () => import('./pages/StructuredListPage.vue'),
+  detail: () => import('./pages/StructuredDetailPage.vue'),
+}
+export { GURU_STRUCTURED_LIST_PATH, GURU_STRUCTURED_ROUTES } from './lib/audit-routes'
