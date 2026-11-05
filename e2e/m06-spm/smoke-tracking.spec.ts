@@ -48,7 +48,8 @@ test.describe('M06 S5 Tracking A hub', { tag: [moduleTag(6)] }, () => {
     await expectTabTitle(page, 'Tracking A SPM | PRESTASIPLUS')
     await expect(tid(page, 'shell-user-title')).toHaveText('Tracking A SPM')
     if (isDesktopShell(page)) {
-      await expect(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')
+      // Fact gone in v2, left failing (S3-T03 report): neither v2 shell prints this subtitle.
+      await expect.soft(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')
     }
     await expect(tid(page, 'spm-back')).toHaveText('Kembali ke Mod SPM')
     await expect(tid(page, 'spm-back')).toHaveAttribute('href', '/spm')
@@ -248,7 +249,8 @@ test.describe('M06 S5 Tracking A hub', { tag: [moduleTag(6)] }, () => {
     await loginAs(PELAJAR)
     await gotoApp('/spm/ramalan/BM')
     await expect(page).toHaveURL(/\/latihan-berstruktur\?subject_id=1&scope=spm&track=bahasa$/)
-    await expect(tid(page, 'shell-user-title')).toHaveText('Tracking A Bahasa')
+    // Product bug, left failing (S0, S3-T03 report): PembelajaranLayout ignores `usePageMeta` headers.
+    await expect.soft(shellTitle(page)).toHaveText('Tracking A Bahasa')
     await gotoApp('/spm/ramalan/BI')
     await expect(page).toHaveURL(/\/latihan-berstruktur\?subject_id=2&scope=spm&track=bahasa$/)
 
@@ -309,9 +311,10 @@ test.describe('M06 S6 Tracking A set list and Q3', { tag: [moduleTag(6)] }, () =
   }) => {
     await loginAs(PELAJAR)
     await gotoApp('/spm/ramalan/GEO')
-    await expectTabTitle(page, 'Tracking A SPM — Geografi')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Tracking A SPM — Geografi')
-    await expect(tid(page, 'shell-user-subtitle')).toHaveCount(0)
+    await expectTabTitle(page, 'Tracking A SPM — Geografi | PRESTASIPLUS')
+    // Product bug, left failing (S0, S3-T03 report): PembelajaranLayout ignores `usePageMeta` headers.
+    await expect.soft(shellTitle(page)).toHaveText('Tracking A SPM — Geografi')
+    await expect(tid(page, 'pembelajaran-header')).not.toContainText('Selamat datang kembali')
     await expect(tid(page, 'spm-back')).toHaveText('Kembali')
     await expect(tid(page, 'spm-back')).toHaveAttribute('href', '/spm/ramalan')
     await expect(tid(page, 'subject-title')).toHaveText('Geografi')
@@ -524,7 +527,8 @@ test.describe('M06 S6 Tracking A set list and Q3', { tag: [moduleTag(6)] }, () =
   }) => {
     await loginAs(PELAJAR)
     await gotoApp('/spm/ramalan/AKAUN')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Tracking A SPM — Prinsip Perakaunan')
+    // Product bug, left failing (S0, S3-T03 report): PembelajaranLayout ignores `usePageMeta` headers.
+    await expect.soft(shellTitle(page)).toHaveText('Tracking A SPM — Prinsip Perakaunan')
   })
 })
 
@@ -541,7 +545,8 @@ test.describe('M06 S8 Subjektif', { tag: [moduleTag(6)] }, () => {
     await expectTabTitle(page, 'Latihan Subjektif SPM | PRESTASIPLUS')
     await expect(tid(page, 'shell-user-title')).toHaveText('Subjektif SPM')
     if (isDesktopShell(page)) {
-      await expect(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')
+      // Fact gone in v2, left failing (S3-T03 report): neither v2 shell prints this subtitle.
+      await expect.soft(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')
     }
     await expect(tid(page, 'spm-back')).toHaveText('Kembali ke Mod SPM')
     await expect(tid(page, 'spm-back')).toHaveAttribute('href', '/spm')
@@ -648,7 +653,8 @@ test.describe('M06 S8 Subjektif', { tag: [moduleTag(6)] }, () => {
     await gotoApp('/spm/subjektif')
     await tid(page, 'subjektif-card-3').click()
     await expect(page).toHaveURL(/\/latihan-berstruktur\?subject_id=3&scope=spm$/)
-    await expect(tid(page, 'shell-user-title')).toHaveText('Subjektif SPM')
+    // Product bug, left failing (S0, S3-T03 report): PembelajaranLayout ignores `usePageMeta` headers.
+    await expect.soft(shellTitle(page)).toHaveText('Subjektif SPM')
   })
 
   test(

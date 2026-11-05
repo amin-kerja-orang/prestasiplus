@@ -26,7 +26,8 @@ test.describe('M06 S1 hub', { tag: [moduleTag(6)] }, () => {
     await expectTabTitle(page, 'Mod SPM | PRESTASIPLUS')
     await expect(tid(page, 'shell-user-title')).toHaveText('Mod SPM')
     if (isDesktopShell(page)) {
-      await expect(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')
+      // Fact gone in v2, left failing (S3-T03 report): neither v2 shell prints this subtitle.
+      await expect.soft(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')
     }
     await expect(tid(page, 'spm-pill')).toHaveText('MOD SPM')
     await expect(tid(page, 'spm-title')).toHaveText('Persediaan SPM')

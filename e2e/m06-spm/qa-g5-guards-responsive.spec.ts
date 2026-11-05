@@ -198,6 +198,10 @@ test.describe('QA-G5 M06 menus', { tag: [moduleTag(6)] }, () => {
       if (!(await link.isVisible())) await scope.getByText('SPM', { exact: true }).first().click()
     } else {
       await tid(page, 'shell-admin-bottom-nav').getByText('Lagi').click()
+    await scope.getByText('Kertas & SPM', { exact: true }).first().click()
+    await expect(scope.locator('a[href="/admin/spm/soalan"]').first()).toBeVisible()
+    // Fact gone, left failing (S0, S3-T03 report): D113 makes `src/shells/pentadbiran/menu.ts` the only
+    // admin menu, and it has no link to these pupil routes (KS-03 to KS-05 carry no route).
       scope = tid(page, 'shell-admin-lagi')
     }
     for (const [name, href] of [
