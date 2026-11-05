@@ -6,7 +6,9 @@
  * ever bound as input values, so they are never read as HTML.
  */
 import 'katex/dist/katex.min.css'
-import { computed, h, type VNode } from 'vue'
+import { computed, h, resolveComponent, type VNode } from 'vue'
+
+import { DsStack, DsText } from '@/ds'
 
 import { qdCopy } from './copy'
 import { MAX_GAP, renderMarkup } from './lib/rich-text'
@@ -32,8 +34,8 @@ const props = withDefaults(
 )
 const emit = defineEmits<{ 'update:modelValue': [Record<number, string>] }>()
 
-const INPUT_CLASS =
-  'qd-gap-input mx-1 inline-block min-h-11 w-32 max-w-full rounded-lg bg-default px-3 text-body text-default ring-1 ring-inset ring-default focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary read-only:bg-elevated read-only:text-toned'
+/** Width hook only (max width is a style): the field look and the 44px height come from the `UInput` theme. */
+const INPUT_CLASS = 'w-32'
 
 const html = computed(() => renderMarkup(props.text))
 const over = computed(() =>
@@ -46,28 +48,30 @@ const over = computed(() =>
 // one answer of leaf N (45 FR-QA-24 links each token to the leaf labelled N).
 function gapInput(n: number): VNode {
   const ex = props.exampleGap?.n === n ? props.exampleGap : undefined
-  return h('input', {
-    type: 'text',
+  return h(resolveComponent('UInput'), {
+    size: 'md',
     class: INPUT_CLASS,
+    style: { maxWidth: '100%' },
     'aria-label': qdCopy.gapAria(n),
-    'data-testid': ex ? `gap-example-${n}` : `gap-input-${n}`,
+    'data-testid': ['gap', ex ? 'example' : 'input', n].join('-'),
     autocomplete: 'off',
     readonly: ex !== undefined || props.readonly,
-    value: ex ? ex.answer : (props.modelValue[n] ?? ''),
-    onInput: ex
+    modelValue: ex ? ex.answer : (props.modelValue[n] ?? ''),
+    'onUpdate:modelValue': ex
       ? undefined
-      : (e: Event) =>
-          emit('update:modelValue', {
-            ...props.modelValue,
-            [n]: (e.target as HTMLInputElement).value,
-          }),
+      : (v: string | number | null | undefined) =>
+          emit('update:modelValue', { ...props.modelValue, [n]: String(v ?? '') }),
   })
 }
 
 function toVNode(node: Node): VNode | string | null {
   if (node.nodeType === 3) return node.textContent ?? ''
   if (!(node instanceof Element)) return null
-  if (node.matches('span.qd-gap[data-gap]')) {
+  if (
+    node.tagName === 'SPAN' &&
+    node.classList.contains('qd-gap') &&
+    node.hasAttribute('data-gap')
+  ) {
     const n = Number(node.getAttribute('data-gap'))
     if (Number.isInteger(n) && n >= 1 && n <= MAX_GAP) return gapInput(n)
   }
@@ -88,10 +92,12 @@ const Body = (): (VNode | string | null)[] => {
 </script>
 
 <template>
-  <div class="break-words text-body text-default" data-testid="cloze-gaps">
-    <Body />
-    <p v-if="over" class="mt-2 text-caption text-warning" role="status" data-testid="gap-max-hint">
+  <DsStack gap="sm" data-testid="cloze-gaps">
+    <DsText as="div" variant="body" wrap="anywhere">
+      <Body />
+    </DsText>
+    <DsText v-if="over" variant="caption" tone="warning" role="status" data-testid="gap-max-hint">
       {{ qdCopy.gapMax(maxWords!) }}
-    </p>
-  </div>
+    </DsText>
+  </DsStack>
 </template>

@@ -7,6 +7,8 @@
  */
 import { computed, ref } from 'vue'
 
+import { DsStack, DsText } from '@/ds'
+
 import { qdCopy } from './copy'
 import type { McqOptionData } from './types'
 
@@ -39,9 +41,7 @@ const props = withDefaults(
 )
 const emit = defineEmits<{ 'update:modelValue': [string | string[]]; 'image-error': [string] }>()
 
-const ticked = computed<string[]>(() =>
-  Array.isArray(props.modelValue) ? props.modelValue : [],
-)
+const ticked = computed<string[]>(() => (Array.isArray(props.modelValue) ? props.modelValue : []))
 function isOn(id: string): boolean {
   return props.multi ? ticked.value.includes(id) : props.modelValue === id
 }
@@ -49,7 +49,10 @@ function toggle(id: string, on: boolean): void {
   const next = new Set(ticked.value)
   if (on) next.add(id)
   else next.delete(id)
-  emit('update:modelValue', props.options.map((o) => o.id).filter((x) => next.has(x)))
+  emit(
+    'update:modelValue',
+    props.options.map((o) => o.id).filter((x) => next.has(x)),
+  )
 }
 
 const uid = `mcq-${Math.random().toString(36).slice(2, 8)}`
@@ -75,10 +78,16 @@ function onImgError(id: string): void {
 </script>
 
 <template>
-  <div class="flex flex-col gap-2">
-    <p v-if="multi" :id="`${groupName}-hint`" class="text-caption text-toned" data-testid="mcq-multi-hint">
+  <DsStack gap="sm">
+    <DsText
+      v-if="multi"
+      :id="`${groupName}-hint`"
+      variant="caption"
+      tone="toned"
+      data-testid="mcq-multi-hint"
+    >
       {{ qdCopy.mcqMultiHint }}
-    </p>
+    </DsText>
     <div
       :role="multi ? 'group' : 'radiogroup'"
       :aria-label="qdCopy.mcqAria"
@@ -170,5 +179,5 @@ function onImgError(id: string): void {
         </span>
       </label>
     </div>
-  </div>
+  </DsStack>
 </template>

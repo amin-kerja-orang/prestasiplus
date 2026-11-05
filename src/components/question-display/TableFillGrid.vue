@@ -33,37 +33,32 @@ function onInput(key: string, value: string): void {
 </script>
 
 <template>
-  <div
-    class="max-w-full overflow-x-auto rounded-xl ring-1 ring-inset ring-default"
-    data-testid="table-fill-scroll"
-  >
-    <table class="w-full border-collapse text-body text-default" data-testid="table-fill-grid">
-      <caption v-if="caption" class="p-2 text-left text-caption text-toned">
-        {{ caption }}
+  <div class="qd-grid-scroll max-w-full overflow-x-auto" data-testid="table-fill-scroll">
+    <table class="qd-grid w-full" data-testid="table-fill-grid">
+      <caption v-if="caption">
+        {{
+          caption
+        }}
       </caption>
       <tbody>
         <tr v-for="(row, ri) in grid.cells" :key="ri">
           <template v-for="(cell, ci) in row" :key="ci">
-            <th
-              v-if="cell.type === 'tajuk'"
-              scope="col"
-              class="min-w-28 border border-default bg-elevated p-2 text-left font-semibold"
-            >
+            <th v-if="cell.type === 'tajuk'" scope="col">
               <RichText :text="cell.text ?? ''" markup />
             </th>
-            <td v-else-if="cell.type === 'diberi'" class="min-w-28 border border-default p-2">
+            <td v-else-if="cell.type === 'diberi'">
               <RichText :text="cell.text ?? ''" markup />
             </td>
-            <td v-else class="min-w-28 border border-default p-1">
-              <input
-                type="text"
-                class="min-h-11 w-full rounded-lg bg-default px-3 text-body text-default ring-1 ring-inset ring-default focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            <td v-else class="qd-grid-input">
+              <UInput
+                size="md"
+                class="w-full"
                 autocomplete="off"
                 :aria-label="qdCopy.cellAria(ri + 1, ci + 1)"
                 :data-testid="`cell-${cellKey(ri + 1, ci + 1)}`"
                 :readonly="readonly"
-                :value="modelValue[cellKey(ri + 1, ci + 1)] ?? ''"
-                @input="onInput(cellKey(ri + 1, ci + 1), ($event.target as HTMLInputElement).value)"
+                :model-value="modelValue[cellKey(ri + 1, ci + 1)] ?? ''"
+                @update:model-value="onInput(cellKey(ri + 1, ci + 1), String($event ?? ''))"
               />
             </td>
           </template>
@@ -72,3 +67,37 @@ function onInput(key: string, value: string): void {
     </table>
   </div>
 </template>
+
+<style scoped>
+/* Token-driven grid chrome (no utility classes). The theme has no lines, so cells are separated by a gap. */
+.qd-grid-scroll {
+  border-radius: var(--ds-r-card);
+  background: var(--ui-bg-accented);
+}
+.qd-grid {
+  border-collapse: separate;
+  border-spacing: 2px;
+  color: var(--ui-text);
+  font-size: var(--text-body);
+}
+.qd-grid caption {
+  padding: 0.5rem;
+  text-align: start;
+  font-size: var(--text-caption);
+  color: var(--ui-text-toned);
+}
+.qd-grid th,
+.qd-grid td {
+  min-width: 7rem;
+  padding: 0.5rem;
+  background: var(--ui-bg);
+}
+.qd-grid th {
+  background: var(--ui-bg-elevated);
+  text-align: start;
+  font-weight: 600;
+}
+.qd-grid td.qd-grid-input {
+  padding: 0.25rem;
+}
+</style>
