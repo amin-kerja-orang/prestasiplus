@@ -38,12 +38,6 @@ import {
   GamesLeagueTypeSchema,
   GamesSekolahBersaingBoardRowSchema,
   GamesSekolahBersaingBoardSchema,
-<<<<<<< HEAD
-=======
-  GamesSekolahBersaingQuerySchema,
-  GamesSekolahBersaingRowSchema,
-  GamesSekolahBersaingSchema,
->>>>>>> origin/feature/v3-bijak-r1
 } from './leagues'
 import {
   GamesBoardTileSchema,
@@ -210,12 +204,6 @@ export const GAMES_COMPONENT_SCHEMAS = {
   GamesLeagueDetail: GamesLeagueDetailSchema,
   GamesSekolahBersaingBoardRow: GamesSekolahBersaingBoardRowSchema,
   GamesSekolahBersaingBoard: GamesSekolahBersaingBoardSchema,
-<<<<<<< HEAD
-=======
-  GamesSekolahBersaingQuery: GamesSekolahBersaingQuerySchema,
-  GamesSekolahBersaingRow: GamesSekolahBersaingRowSchema,
-  GamesSekolahBersaing: GamesSekolahBersaingSchema,
->>>>>>> origin/feature/v3-bijak-r1
   // admin
   GamesAdminOverview: GamesAdminOverviewSchema,
   GamesAdminSettingsUpdateRequest: GamesAdminSettingsUpdateRequestSchema,
