@@ -15,8 +15,9 @@ import GuruDashboardPage from '../../pages/GuruDashboardPage.vue'
 
 vi.mock('../../components/dashboard/copy', async (importOriginal) => {
   const mod = await importOriginal<typeof import('../../components/dashboard/copy')>()
-  const quick = mod.DASH_COPY.quick.map((q, i) =>
-    i === 3
+  // The entry replaces the tile that points at the profile edit; it is found by its `to`, not its position.
+  const quick = mod.DASH_COPY.quick.map((q) =>
+    q.to === '/guru/profil/edit'
       ? {
           title: 'Set Soalan',
           text: 'Bina & terbitkan set latihan.',

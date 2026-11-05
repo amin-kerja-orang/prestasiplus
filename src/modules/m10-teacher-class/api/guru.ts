@@ -489,9 +489,34 @@ export interface GuruSetResultsPage extends GuruSetResults {
 const setUrl = (id: string, tail = ''): string =>
   `/api/guru/question-sets/${encodeURIComponent(id)}${tail}`
 
-/** `GET /api/guru/question-sets`: own sets, newest update first, with the counters. */
-export function fetchGuruSets(options: Signal = {}): Promise<GuruSetList> {
-  return api.get<GuruSetList>('/api/guru/question-sets', withSignal(options))
+export interface GuruSetListPage extends GuruSetList {
+  page: number
+  totalPages: number
+  totalItems: number
+}
+
+/** Sets per page of the teacher list (the API default `pageSize`). */
+const GURU_SET_LIST_PAGE_SIZE = 20
+
+/** `GET /api/guru/question-sets?page=&pageSize=`: own sets, newest update first, with the counters and the page meta. */
+export async function fetchGuruSets(
+  params: { page?: number } = {},
+  options: Signal = {},
+): Promise<GuruSetListPage> {
+  const body = await api.get<{
+    data: GuruSetList
+    meta?: { page?: number; totalPages?: number; totalItems?: number }
+  }>('/api/guru/question-sets', {
+    query: { page: params.page ?? 1, pageSize: GURU_SET_LIST_PAGE_SIZE },
+    raw: true,
+    ...withSignal(options),
+  })
+  return {
+    ...body.data,
+    page: body.meta?.page ?? 1,
+    totalPages: body.meta?.totalPages ?? 1,
+    totalItems: body.meta?.totalItems ?? body.data.rows.length,
+  }
 }
 
 /** `GET /api/guru/question-sets/bank`: approved question units, 50 per call by cursor (422 `q` under 2 characters). */

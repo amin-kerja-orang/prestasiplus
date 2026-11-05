@@ -7,7 +7,7 @@ import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 import { ApiError } from '@/api'
 import { useFlashStore } from '@/stores/flash'
 
-import type { GuruSetList, QuestionSetRow } from '../../api/guru'
+import type { GuruSetListPage, QuestionSetRow } from '../../api/guru'
 import type { GuruClass } from '../../api/types'
 import SetSoalanGuruListPage from '../../pages/SetSoalanGuruListPage.vue'
 
@@ -35,7 +35,10 @@ const row = (id: string, extra: Partial<QuestionSetRow> = {}): QuestionSetRow =>
   updatedAt: '2026-10-03T09:00:00+08:00',
   ...extra,
 })
-const sets = (rows: QuestionSetRow[]): GuruSetList => ({
+const sets = (rows: QuestionSetRow[], extra: Partial<GuruSetListPage> = {}): GuruSetListPage => ({
+  page: 1,
+  totalPages: 1,
+  totalItems: rows.length,
   rows,
   counters: {
     published: rows.filter((r) => r.status === 'published').length,
@@ -43,6 +46,7 @@ const sets = (rows: QuestionSetRow[]): GuruSetList => ({
     participation: 7,
   },
   summary: { total: rows.length, siap: 0 },
+  ...extra,
 })
 const klass = (id: number, name: string): GuruClass =>
   ({ id: String(id) as unknown as number, name, isActive: true }) as GuruClass
@@ -102,6 +106,33 @@ describe('R1-GUR-8b list', () => {
     expect(w.get('[data-testid="set-counter-draft"]').text()).toContain('Draf')
     expect(w.get('[data-testid="set-counter-participation"]').text()).toContain('Penyertaan')
     expect(w.get('[data-testid="set-counter-participation"]').text()).toContain('7')
+  })
+
+  it('pages the list at 20 sets: 25 sets give 2 pages and "Seterusnya" asks for page 2', async () => {
+    const first = Array.from({ length: 20 }, (_, i) => row(String(i + 1)))
+    api.fetchGuruSets.mockResolvedValue(
+      sets(first, { totalPages: 2, totalItems: 25, summary: { total: 25, siap: 0 } }),
+    )
+    const w = await mountPage()
+    expect(api.fetchGuruSets).toHaveBeenCalledWith({ page: 1 }, expect.anything())
+    expect(w.findAll('[data-testid="set-card"]')).toHaveLength(20)
+    expect(w.get('[data-testid="set-count"]').text()).toBe('25 set soalan')
+    api.fetchGuruSets.mockResolvedValue(
+      sets(
+        Array.from({ length: 5 }, (_, i) => row(String(i + 21))),
+        { page: 2, totalPages: 2, totalItems: 25, summary: { total: 25, siap: 0 } },
+      ),
+    )
+    await w.get('[data-testid="set-pager"] [aria-label="Next page"]').trigger('click')
+    await flushPromises()
+    expect(api.fetchGuruSets).toHaveBeenLastCalledWith({ page: 2 }, expect.anything())
+    expect(w.findAll('[data-testid="set-card"]')).toHaveLength(5)
+  })
+
+  it('shows no pager for a single page', async () => {
+    api.fetchGuruSets.mockResolvedValue(sets([row('1')]))
+    const w = await mountPage()
+    expect(w.find('[data-testid="set-pager"]').exists()).toBe(false)
   })
 
   it('shows the empty state with "Cipta Set Pertama"', async () => {

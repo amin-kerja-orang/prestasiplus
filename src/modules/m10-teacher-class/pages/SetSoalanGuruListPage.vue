@@ -67,7 +67,13 @@ const COPY = {
 
 const flash = useFlash()
 const confirm = useConfirm()
-const { data, error, reload } = useApi((signal) => fetchGuruSets({ signal }))
+/** Sets per page: the API default `pageSize`. */
+const PAGE_SIZE = 20
+const page = ref(1)
+const { data, error, reload } = useApi(
+  (signal) => fetchGuruSets({ page: page.value }, { signal }),
+  page,
+)
 const { data: classList } = useApi((signal) => fetchGuruClasses({ signal }))
 const classes = computed(() => (classList.value?.data ?? []).filter((c) => c.isActive))
 
@@ -303,6 +309,16 @@ async function submitCopy(): Promise<void> {
           </DsPanel>
         </DsGridItem>
       </DsGrid>
+
+      <DsCluster v-if="data.totalPages > 1" justify="center" data-testid="set-pager">
+        <UPagination
+          v-model:page="page"
+          :total="data.totalItems"
+          :items-per-page="PAGE_SIZE"
+          :prev="{ 'aria-label': 'Sebelum' }"
+          :next="{ 'aria-label': 'Seterusnya' }"
+        />
+      </DsCluster>
     </template>
 
     <DsDialog v-model:open="copyOpen" :title="COPY.copyTitle" :loading="copying">
