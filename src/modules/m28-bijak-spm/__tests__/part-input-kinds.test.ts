@@ -11,7 +11,7 @@ import type { LeafKind } from '../domain/types'
  * #78 78-09 (AZ-17): after the BE-42 contract re-sync the bank has a `pksk_choice` leaf. It is not a
  * Bijak answer kind: the attempt contract (`BijakAttemptLeafKind`) does not carry it and the question
  * bridge refuses PKSK questions, so PartInput never needs a PKSK control. A kind outside the contract
- * must show the "not yet available" notice, never the working/numeric inputs.
+ * renders nothing (as AnswerWidget), never the working/numeric inputs.
  */
 
 const leaf = (kind: string): Leaf => ({
@@ -32,18 +32,19 @@ describe('PartInput answer kinds', () => {
     expect(BIJAK_ATTEMPT_LEAF_KINDS as readonly string[]).not.toContain('pksk_choice')
   })
 
-  it('every contract kind renders its own control; only table_fill shows the notice', () => {
+  it('every contract kind renders its own control; no kind shows an unavailable notice (D03)', () => {
     for (const kind of BIJAK_ATTEMPT_LEAF_KINDS) {
       const w = render(kind)
-      expect(w.find('[data-testid=kind-unavailable]').exists(), kind).toBe(kind === 'table_fill')
+      expect(w.find('[data-testid=kind-unavailable]').exists(), kind).toBe(false)
       w.unmount()
     }
   })
 
-  it('pksk_choice (or any unknown kind) shows the notice, not the working/numeric inputs', () => {
+  it('pksk_choice (or any unknown kind) renders nothing (no notice, no working/numeric inputs)', () => {
     for (const kind of ['pksk_choice', 'mcq', 'something_new']) {
       const w = render(kind)
-      expect(w.find('[data-testid=kind-unavailable]').exists(), kind).toBe(true)
+      expect(w.find('[data-testid=kind-unavailable]').exists(), kind).toBe(false)
+      expect(w.text(), kind).not.toContain('akan tersedia tidak lama lagi')
       expect(w.text(), kind).not.toContain('Jawapan akhir')
       expect(w.find('[data-testid=photo-button]').exists(), kind).toBe(false)
       w.unmount()
