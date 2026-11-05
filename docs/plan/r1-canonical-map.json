@@ -13692,6 +13692,16 @@
       "approved_by_card": null
     },
     {
+      "key": "POST /api/leagues/:p/schools",
+      "method": "POST",
+      "path": "/api/leagues/:p/schools",
+      "api_id": "API-ADM-25",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/games/leagues/leagues.controller.ts",
+      "approved_by_card": "S7-T06"
+    },
+    {
       "key": "GET /api/leagues/:p",
       "method": "GET",
       "path": "/api/leagues/:id",
