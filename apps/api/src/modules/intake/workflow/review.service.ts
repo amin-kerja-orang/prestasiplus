@@ -14,6 +14,7 @@ import {
   type IntakeItem,
   type IntakeItemCreateRequest,
   type IntakeItemListQuery,
+  type IntakeKirimanStatus,
   type IntakeItemListResponse,
   type IntakeItemPatch,
   type IntakeItemPatchResult,
@@ -123,13 +124,16 @@ export class IntakeReviewService {
       batch: {
         ...visibleBatches(auth),
         ...(q.subject === undefined ? {} : { subject: q.subject.toUpperCase() }),
+        ...(q.source === undefined ? {} : { source: q.source }),
         ...(isAdmin(auth) && q.uploaderId !== undefined ? { ownerUserId: parseId(q.uploaderId) ?? -1n } : {}),
       },
       ...(q.batchId === undefined ? {} : { batchId: parseId(q.batchId) ?? -1n }),
       ...(q.band === undefined ? {} : { OR: BAND_WHERE[q.band] }),
       ...(q.duplicate === undefined ? {} : DUPLICATE_WHERE[q.duplicate]),
     }
-    const where: Prisma.IntakeItemWhereInput = q.state === undefined ? base : { ...base, reviewState: q.state }
+    const stateWhere = q.state === undefined ? base : { ...base, reviewState: q.state }
+    const kiriman = q.kirimanStatus === undefined ? null : await this.kirimanWhere(q.kirimanStatus)
+    const where: Prisma.IntakeItemWhereInput = kiriman === null ? stateWhere : { AND: [stateWhere, kiriman] }
     const [total, rows, grouped] = await Promise.all([
       this.prisma.client.intakeItem.count({ where }),
       this.prisma.client.intakeItem.findMany({
@@ -144,6 +148,33 @@ export class IntakeReviewService {
     const counts = { generated: 0, needs_review: 0, accepted: 0, rejected: 0, duplicate: 0 }
     for (const g of grouped) if (g.reviewState in counts) counts[g.reviewState as IntakeItemState] = g._count._all
     return { data: await this.views.rows(auth, rows), meta: { ...listMeta(q.page, q.pageSize, total), counts } }
+  }
+
+  /**
+   * FR-ADM-Q12.1 / 40 OPT-KIRIMAN-STATUS: the display keys of Kiriman Guru over the stored item states. `Processing` and
+   * `Selesai` split the accepted items by the status of the resulting question (latest version `approved` = Diluluskan).
+   */
+  private async kirimanWhere(key: IntakeKirimanStatus): Promise<Prisma.IntakeItemWhereInput | null> {
+    switch (key) {
+      case 'Jumlah':
+        return null
+      case 'Pending':
+        return { reviewState: { in: [...OPEN] } }
+      case 'Ditolak':
+        return { reviewState: 'rejected' }
+      default: {
+        const rows = await this.prisma.client.$queryRaw<{ id: bigint }[]>`
+          SELECT DISTINCT i.question_id AS id
+          FROM intake_items i
+          JOIN questions q ON q.id = i.question_id
+          JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
+          WHERE i.review_state = 'accepted' AND v.status = 'approved'`
+        const approved = rows.map((r) => r.id)
+        return key === 'Selesai'
+          ? { reviewState: 'accepted', questionId: { in: approved } }
+          : { reviewState: 'accepted', NOT: { questionId: { in: approved } } }
+      }
+    }
   }
 
   async review(auth: AuthContext, idText: string): Promise<IntakeBatchReview> {
