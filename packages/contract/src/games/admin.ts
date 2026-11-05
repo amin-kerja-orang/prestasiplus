@@ -1,7 +1,7 @@
 import { z } from '../zod'
 import { GAMES_MESSAGES, gamesCount } from './common'
 
-/** Admin game settings (M16-51, M16-52). Role `admin` only; other roles 403 "This action is unauthorized.". */
+/** Admin game settings (M16-51, M16-52). Role `admin` only; other roles 403 "Anda tidak dibenarkan melakukan tindakan ini.". */
 
 export const GamesAdminOverviewSchema = z
   .strictObject({

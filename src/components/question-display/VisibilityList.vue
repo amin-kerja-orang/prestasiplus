@@ -28,7 +28,7 @@ const emit = defineEmits<{ retry: []; action: [family: string] }>()
 
 const open = ref(props.expanded)
 const visibleCount = computed(() => props.rows.filter((r) => r.visible).length)
-const summary = computed(() => visibleSummary(visibleCount.value, props.rows.length || 7))
+const summary = computed(() => visibleSummary(visibleCount.value, props.rows.length || 6))
 const listId = `vis-${Math.random().toString(36).slice(2, 8)}`
 const showList = computed(() => !props.collapsible || open.value)
 </script>

@@ -622,6 +622,62 @@ export const QuestionStructuredDetailSchema = z
   })
   .meta({ id: 'QuestionStructuredDetail' })
 
+/* ------------------------------------------------------------------ structured (teacher mount, API-GUR-26) */
+
+export const GURU_STRUCTURED_PAGE_SIZE = 20
+
+const GuruStructuredStatus = z.enum(['approved', 'review'])
+
+export const GuruStructuredRowSchema = z
+  .object({
+    id: IdSchema,
+    number: z.number().int().min(1).meta({ description: 'Position in the full ordered list (1-based): page offset + index.' }),
+    textExcerpt: z.string(),
+    level: Ref,
+    subject: Ref,
+    kbat: z.string().meta({ description: 'KBAT chip text from the question cognitive level: "LOTS 1", "LOTS 2", "MOTS 3", "HOTS 4" to "HOTS 6"; empty when the question has no level.' }),
+    subCount: z.number().int().min(0),
+    marks: z.number().int().min(0).meta({ description: 'Sum of the part marks.' }),
+    status: GuruStructuredStatus,
+  })
+  .meta({ id: 'GuruStructuredRow' })
+
+export const GuruStructuredListQuerySchema = z
+  .object({
+    subjectId: IdSchema.optional(),
+    educationLevelId: IdSchema.optional(),
+    status: GuruStructuredStatus.optional().meta({ description: 'Omitted: approved. `review` (the teacher\'s own submissions) is an empty page until the submission part exists.' }),
+    page: z.coerce.number().int().min(1).default(1),
+  })
+  .meta({ id: 'GuruStructuredListQuery' })
+
+export const GuruStructuredSubSchema = z
+  .object({
+    partLabel: z.string(),
+    questionText: z.string(),
+    marks: z.number().int().min(0).meta({ description: '0 for a branch (a part that only groups its children).' }),
+    cognitiveLevel: QuestionCognitiveLevelSchema.nullable().meta({ description: 'Bloom level of the part (Taksonomi Bloom), if set.' }),
+    modelAnswer: z.string().meta({ description: '"Skema Jawapan".' }),
+    depth: z.number().int().min(0),
+  })
+  .meta({ id: 'GuruStructuredSub' })
+
+export const GuruStructuredDetailSchema = z
+  .object({
+    id: IdSchema,
+    subject: Ref,
+    level: Ref,
+    kbat: z.string(),
+    status: GuruStructuredStatus,
+    stimulus: z.string().meta({ description: 'The stimulus text, once, above all the sub-questions.' }),
+    stimulusImage: z.string().nullable().meta({ description: 'Always null this round: the file read rule has no teacher branch for a question picture.' }),
+    totalMarks: z.number().int().min(0),
+    subCount: z.number().int().min(0),
+    subQuestions: z.array(GuruStructuredSubSchema),
+    createdAt: TimestampSchema,
+  })
+  .meta({ id: 'GuruStructuredDetail' })
+
 /* ---------------------------------------------------------------------------------- Guru routes */
 
 /** Owner-only contribution views; the owning teacher sees their own key by design. */

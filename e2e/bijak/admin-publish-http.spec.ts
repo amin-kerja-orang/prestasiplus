@@ -184,7 +184,7 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
     await login(page, ADMIN_USER ?? '', ADMIN_PASS ?? '')
     const loaded = [
       ['/admin/spm/soalan', 'bank-page'],
-      ['/admin/spm/semakan', 'review-queue-page'],
+      ['/admin/spm/semakan', 'studio-list-page'], // the list redirects to /admin/studio?status=review (S2-T03)
       ['/admin/spm/soalan/ekstrak', 'intake-list-page'],
     ] as const
     for (const [route, testId] of loaded) {
