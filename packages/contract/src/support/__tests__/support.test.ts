@@ -117,6 +117,12 @@ describe('admin queue', () => {
     expect(SupportQueueResponseSchema.safeParse({ data: [row], meta: { ...paged, page: 0 } }).success).toBe(false)
   })
 
+  it('takes the pager meta and the role and school of a row (defects on #507)', () => {
+    const paged = { total: 1, counts: [{ status: 'dibuka', count: 1 }], page: 1, perPage: 25, matched: 1 }
+    expect(SupportQueueResponseSchema.safeParse({ data: [{ ...row, roleLabel: 'Murid', school: null }], meta: paged }).success).toBe(true)
+    expect(SupportQueueResponseSchema.safeParse({ data: [row], meta: { ...paged, page: 0 } }).success).toBe(false)
+  })
+
   it('open count', () => {
     expect(SupportOpenCountSchema.safeParse({ count: 0 }).success).toBe(true)
     expect(SupportOpenCountSchema.safeParse({ count: -1 }).success).toBe(false)

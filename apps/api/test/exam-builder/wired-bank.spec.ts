@@ -37,10 +37,14 @@ describe('paper builder wired to the BE-09 question bank', () => {
   const q = (sql: string, params: unknown[] = []) => t.db.query<Record<string, unknown>>(sql, params)
 
   async function mk(over: Record<string, unknown> = {}): Promise<string> {
+    // S1-T02: aras per leaf (R-DSKP) and a Bab where the Subjek + Tingkatan has chapters (NO_CHAPTER)
+    const chapter = (await q(`select id::text id from chapters where subject_id = $1::bigint and education_level_id = $2::bigint and is_active and in_tree order by id limit 1`, [over.subjectId ?? subjects.mat, level]))[0]?.id
     const res = await admin.post('/api/questions', {
       subjectId: subjects.mat,
       educationLevelId: level,
       difficultyLevel: 3,
+      cognitiveLevel: 'mengaplikasi',
+      ...(chapter === undefined ? {} : { curriculumChapterId: chapter }),
       questionType: 'mcq',
       questionText: 'Berapakah hasil tambah 2 dan 3?',
       options: ['4', '5', '6', '7'],

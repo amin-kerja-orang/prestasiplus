@@ -135,6 +135,7 @@ async function submit(): Promise<void> {
     <DsLoadError
       v-if="failed"
       :message="COPY.loadFailed"
+      :error="loadError"
       testid="level-load-error"
       @retry="reload()"
     />

@@ -25,6 +25,11 @@ export const SUPPORT_TICKET_STATUS_LABELS = {
 
 export const SUPPORT_SUBJECT_MAX = 255
 export const SUPPORT_BODY_MAX = 5000
+<<<<<<< HEAD
+=======
+/** The admin queue returns the newest 200 tickets only (BR-M22-10). */
+export const SUPPORT_QUEUE_LIMIT = 200
+>>>>>>> origin/feature/v3-bijak-r1
 /** Rows per page of the admin queue (API-SUP-03). */
 export const SUPPORT_QUEUE_PER_PAGE = 25
 
@@ -142,6 +147,7 @@ export const SupportQueueQuerySchema = z
   })
   .meta({ id: 'SupportQueueQuery' })
 
+<<<<<<< HEAD
 /**
  * `meta` of `GET /admin/tiket`: `total` and `counts` cover the role-filtered tickets, whatever the status filter;
  * `counts` has all five statuses in vocabulary order; `matched` = rows matching both filters, for the pager.
@@ -153,6 +159,16 @@ export const SupportQueueMetaSchema = z
     page: z.number().int().min(1),
     perPage: z.number().int().min(1),
     matched: z.number().int().min(0),
+=======
+/** `meta` of `GET /admin/tiket`: `total` = all tickets; `counts` = statuses with a count above 0, in vocabulary order, over all tickets; `matched` = rows matching the filters, for the pager. */
+export const SupportQueueMetaSchema = z
+  .strictObject({
+    total: z.number().int().min(0),
+    counts: z.array(z.strictObject({ status: SupportTicketStatusSchema, count: z.number().int().min(1) })),
+    page: z.number().int().min(1).optional(),
+    perPage: z.number().int().min(1).optional(),
+    matched: z.number().int().min(0).optional(),
+>>>>>>> origin/feature/v3-bijak-r1
   })
   .meta({ id: 'SupportQueueMeta' })
 
