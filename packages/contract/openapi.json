@@ -5663,6 +5663,10 @@
             "type": "integer",
             "minimum": 0
           },
+          "maxRewarded": {
+            "type": "integer",
+            "minimum": 0
+          },
           "registerUrl": {
             "type": "string",
             "minLength": 1
@@ -5702,6 +5706,7 @@
           "code",
           "rewardReferrer",
           "rewardReferee",
+          "maxRewarded",
           "registerUrl",
           "whatsappUrl",
           "telegramUrl",
@@ -88418,7 +88423,7 @@
           "gamification"
         ],
         "summary": "Rujuk Kawan: referral code, share links and stats",
-        "description": "Side effect on a GET: the first read creates the caller referral code. The referral reward is credited at registration, not here.",
+        "description": "Side effect on a GET: the first read creates the caller referral code. The referral reward is credited at registration, not here; the amounts and the cap are the settings referral_referrer_syiling, referral_referee_syiling and referral_max_rewarded.",
         "responses": {
           "200": {
             "description": "Referral data.",

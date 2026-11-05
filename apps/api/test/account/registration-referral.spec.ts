@@ -67,7 +67,7 @@ describe('self-registration applies the referral code (XR-M14-02, BR-M14-19)', (
     await db.drop()
   })
 
-  it('a known code pays the new user 25 and the referrer 50, once each, with one referral row', async () => {
+  it('AC-GM-24.1, AC-MUR-36-1: a known code pays the referrer 100 (the setting) once and the new pupil nothing (0), with one rewarded referral row', async () => {
     const referrerBefore = (await syiling(db, referrerId)) ?? 0
     const referrerLedgerBefore = (await ledger(db, referrerId)).length
 
@@ -75,14 +75,12 @@ describe('self-registration applies the referral code (XR-M14-02, BR-M14-19)', (
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const b = (await userRow(db, 'b.rujuk@ujian.test'))!.id
 
-    expect(await ledger(db, b)).toEqual([
-      { type: 'bonus', source: 'referral', source_id: `referral:${b}`, amount: 25, description: `Bonus rujukan: kod ${code}`, is_test: false },
-    ])
-    expect(await syiling(db, b)).toBe(25)
+    expect(await ledger(db, b)).toEqual([]) // referral_referee_syiling = 0: no ledger row (`credit` refuses 0)
+    expect(await syiling(db, b)).toBeUndefined()
     const referrerLedger = await ledger(db, referrerId)
     expect(referrerLedger).toHaveLength(referrerLedgerBefore + 1)
-    expect(referrerLedger.at(-1)).toEqual({ type: 'bonus', source: 'referral', source_id: `referral:${b}`, amount: 50, description: 'Rujukan kawan berjaya', is_test: false })
-    expect(await syiling(db, referrerId)).toBe(referrerBefore + 50)
+    expect(referrerLedger.at(-1)).toEqual({ type: 'bonus', source: 'referral', source_id: `referral:${b}`, amount: 100, description: 'Rujukan kawan berjaya', is_test: false })
+    expect(await syiling(db, referrerId)).toBe(referrerBefore + 100)
     expect(await referrals(db)).toEqual([{ referrer_id: referrerId, referee_id: b, code_used: code, rewarded: true }])
   })
 
@@ -99,8 +97,8 @@ describe('self-registration applies the referral code (XR-M14-02, BR-M14-19)', (
     const res = await register(body({ email: 'c.rujuk@ujian.test', referralCode: ` ${code.toLowerCase()} ` }))
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const c = (await userRow(db, 'c.rujuk@ujian.test'))!.id
-    expect(await syiling(db, c)).toBe(25)
-    expect(await syiling(db, referrerId)).toBe((referrerBefore ?? 0) + 50)
+    expect(await syiling(db, c)).toBeUndefined()
+    expect(await syiling(db, referrerId)).toBe((referrerBefore ?? 0) + 100)
     expect(await referrals(db)).toHaveLength(before.length + 1)
     expect((await referrals(db)).at(-1)).toMatchObject({ referrer_id: referrerId, referee_id: c, code_used: code })
 
@@ -108,9 +106,8 @@ describe('self-registration applies the referral code (XR-M14-02, BR-M14-19)', (
     const b = (await userRow(db, 'b.rujuk@ujian.test'))!.id
     const again = await t.app.get(GamificationService).applyReferral(b, code, { isTest: false })
     expect(again).toEqual({ applied: false })
-    expect(await ledger(db, b)).toHaveLength(1)
-    expect(await syiling(db, b)).toBe(25)
-    expect(await syiling(db, referrerId)).toBe((referrerBefore ?? 0) + 50)
+    expect(await ledger(db, b)).toHaveLength(0)
+    expect(await syiling(db, referrerId)).toBe((referrerBefore ?? 0) + 100)
     expect(await referrals(db)).toHaveLength(before.length + 1)
     // And a second sign-up with the same e-mail is refused before anything is paid.
     errorOf(await register(body({ email: 'c.rujuk@ujian.test', referralCode: code })), 422, 'VALIDATION_ERROR')
@@ -137,14 +134,49 @@ describe('self-registration applies the referral code (XR-M14-02, BR-M14-19)', (
     expect(await count(db, 'coin_ledger')).toBe(ledgerBefore)
   })
 
-  it('a pending teacher with a known code is created inactive and the referral is applied (docs silent: applied on account creation)', async () => {
+  it('FR-GM-24.2, AC-MUR-AUTH-4: a pending teacher with a known code is created and nothing is paid or stored (new pupils only)', async () => {
     const referrerBefore = (await syiling(db, referrerId)) ?? 0
+    const referralsBefore = await count(db, 'referrals')
     const res = await register({ name: 'Guru Rujuk', email: 'guru.rujuk@ujian.test', role: 'teacher', schoolId, password: 'rahsia1', passwordConfirmation: 'rahsia1', referralCode: code })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const row = (await userRow(db, 'guru.rujuk@ujian.test'))!
     expect(row.school_id).toBeNull()
-    expect(await syiling(db, row.id)).toBe(25)
-    expect(await syiling(db, referrerId)).toBe(referrerBefore + 50)
+    expect(await syiling(db, row.id)).toBeUndefined()
+    expect(await ledger(db, row.id)).toEqual([])
+    expect(await syiling(db, referrerId)).toBe(referrerBefore)
+    expect(await count(db, 'referrals')).toBe(referralsBefore)
+  })
+
+  it('FR-GM-24.2, AC-GM-24.3: the 21st friend registers without a reward (rewarded = false, nothing paid)', async () => {
+    const { id: cappedId, code: cappedCode } = await (async () => {
+      const email = body().email
+      const r = await register(body({ email }))
+      expect(r.status, JSON.stringify(r.body)).toBe(201)
+      const id = (await userRow(db, email))!.id
+      return { id, code: (await t.app.get(GamificationService).referral(id)).code }
+    })()
+    // 20 rewarded friends of this referrer (rows written as a past registration would, then the 21st registers for real).
+    for (let i = 0; i < 20; i++) {
+      const friend = (await db.query<{ id: string }>(`insert into users (name) values ($1) returning id::text`, [`Kawan Had ${String(i)}`]))[0]!.id
+      await db.query(`insert into referrals (referrer_id, referee_id, code_used, rewarded) values ($1::bigint, $2::bigint, $3, true)`, [cappedId, friend, cappedCode])
+    }
+    const before = await syiling(db, cappedId)
+    const email = body().email
+    const res = await register(body({ email, referralCode: cappedCode }))
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    const id = (await userRow(db, email))!.id
+    const row = (await db.query<{ rewarded: boolean }>(`select rewarded from referrals where referee_id = $1::bigint`, [id]))[0]
+    expect(row).toEqual({ rewarded: false })
+    expect(await ledger(db, id)).toEqual([])
+    expect(await syiling(db, cappedId)).toBe(before)
+  })
+
+  it('AC-GM-24.4: a code of 8 letters that nobody holds is ignored silently', async () => {
+    const res = await register(body({ email: 'zzz.rujuk@ujian.test', referralCode: 'ZZZZZZZZ' }))
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    const id = (await userRow(db, 'zzz.rujuk@ujian.test'))!.id
+    expect(await ledger(db, id)).toEqual([])
+    expect(JSON.stringify(res.body)).not.toMatch(/ZZZZZZZZ|referral|syiling|bonus/i)
   })
 
   it('the referral is written in the registration transaction: a failure of the host after it rolls the new user and the credits back', async () => {
@@ -229,8 +261,8 @@ describe('self-registration applies the referral code (XR-M14-02, BR-M14-19)', (
       const email = body().email
       const res = await register(body({ email, referralCode: code }))
       expect(res.status, JSON.stringify(res.body)).toBe(201)
-      expect(await syiling(db, (await userRow(db, email))!.id)).toBe(25)
-      expect(await syiling(db, referrerId)).toBe(referrerBefore + 50)
+      expect(await ledger(db, (await userRow(db, email))!.id)).toEqual([])
+      expect(await syiling(db, referrerId)).toBe(referrerBefore + 100)
     })
   })
 })

@@ -24,6 +24,7 @@ import { idFromString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { toMytTimestamp } from '../../common/time/myt'
 import { ClassesRepository } from '../classes/classes.repository'
+import { GameSettingsService } from '../games/core/game-settings.service'
 import { RewardSettingsService } from '../shop'
 import { MAX_AMOUNT_PER_CALL, StreakService, WalletService, walletLockOrder } from '../wallet'
 import { lifetimeTierOf, titleOf } from '../wallet/rules'
@@ -36,8 +37,6 @@ import {
   RARITY_LABELS,
   DAILY_LOGIN_DESCRIPTION,
   DAILY_LOGIN_REWARD,
-  REFERRAL_REWARD_REFEREE,
-  REFERRAL_REWARD_REFERRER,
 } from './gamification.constants'
 import { GamificationRepository, type AchievementRecord, type ChallengeRecord, type Db } from './gamification.repository'
 import { RANKING_REDACTED_ID, canSeeRankedName, shortName, type NameScope, type RankingViewer } from './name-privacy'
@@ -156,6 +155,7 @@ export class GamificationService {
     @Inject(ConfigService) private readonly config: ConfigService<Env, true>,
     @Inject(StreakService) private readonly streaks: StreakService,
     @Inject(RewardSettingsService) private readonly rewardSettings: RewardSettingsService,
+    @Inject(GameSettingsService) private readonly gameSettings: GameSettingsService,
   ) {}
 
   private run<T>(tx: TxClient | undefined, fn: (db: Db) => Promise<T>): Promise<T> {
@@ -367,25 +367,29 @@ export class GamificationService {
     }
   }
 
-  /** `GET /gamification/referral` (S16): the first read creates the caller's code (BR-M14-18). */
+  /** `GET /gamification/referral` (S16): the first read creates the caller's code (BR-M14-18). Rewards and cap come from the settings (48 GAME-24). */
   async referral(userId: string): Promise<GamificationReferral> {
     const code = await this.referralCodeOf(userId)
-    const stats = await this.repo.referralStats(this.repo.handle(), userId)
+    const db = this.repo.handle()
+    const stats = await this.repo.referralStats(db, userId)
+    const settings = await this.gameSettings.getMany(['referral_referrer_syiling', 'referral_referee_syiling', 'referral_max_rewarded'])
+    const rewardReferee = settings.referral_referee_syiling
     const registerUrl = `${publicBaseUrl(this.config)}/register?ref=${code}`
-    const text = `Jom belajar matematik di PRESTASIPLUS! Guna kod ${code} untuk dapat ${String(REFERRAL_REWARD_REFEREE)} syiling PERCUMA! ${registerUrl}`
+    const text = `Jom belajar matematik di PRESTASIPLUS! Guna kod ${code} untuk dapat ${String(rewardReferee)} syiling PERCUMA! ${registerUrl}`
     return {
       code,
-      rewardReferrer: REFERRAL_REWARD_REFERRER,
-      rewardReferee: REFERRAL_REWARD_REFEREE,
+      rewardReferrer: settings.referral_referrer_syiling,
+      rewardReferee,
+      maxRewarded: settings.referral_max_rewarded,
       registerUrl,
       // As on live: only spaces are encoded; `:/?=&!` stay raw.
       whatsappUrl: `https://wa.me/?text=${shareEncode(text)}`,
       telegramUrl: `https://t.me/share/url?url=${encodeURIComponent(registerUrl)}&text=${shareEncode(`Jom belajar matematik di PRESTASIPLUS! Guna kod ${code}`)}`,
-      stats: { referrals: stats.referrals, rewarded: stats.rewarded, syilingEarned: stats.rewarded * REFERRAL_REWARD_REFERRER },
+      stats: { referrals: stats.referrals, rewarded: stats.rewarded, syilingEarned: await this.repo.referralSyilingEarned(db, userId) },
     }
   }
 
-  /** BR-M14-18: 7 characters of [A-Z0-9], deterministic from the user id; a clash takes the next salt. */
+  /** BR-M14-18 / 48 GAME-24: 8 characters of [A-Z0-9] for a new code (stored 7-character codes stay), deterministic from the user id; a clash takes the next salt. */
   private async referralCodeOf(userId: string): Promise<string> {
     const db = this.repo.handle()
     const existing = await this.repo.referralCodeOf(db, userId)
@@ -723,9 +727,12 @@ export class GamificationService {
   }
 
   /**
-   * XR-M14-02 / BR-M14-19 (called by registration): a known code of ANOTHER existing user, and a referee not
-   * referred before, pays the new user 25 and the referrer 50 (`bonus` / `referral`, key `referral:<referee id>`)
-   * and stores a rewarded referral. Otherwise nothing. The two wallets are written in ascending user id order.
+   * XR-M14-02 / GAME-24 (called by registration): a known code of ANOTHER existing pupil, given to a NEW pupil not
+   * referred before, stores a referral. The amounts are the settings `referral_referrer_syiling` and
+   * `referral_referee_syiling` (`bonus` / `referral`, key `referral:<referee id>`; an amount of 0 writes no ledger row).
+   * Beyond `referral_max_rewarded` rewarded friends the referral is stored with `rewarded = false` and pays nothing. The
+   * referrer's user row is locked before the count, so two sign-ups cannot both take the last place. Otherwise nothing.
+   * The two wallets are written in ascending user id order.
    */
   async applyReferral(newUserId: string, code: string | null | undefined, opts: EntryOptions): Promise<{ applied: boolean }> {
     const normalised = (code ?? '').trim().toUpperCase()
@@ -734,14 +741,22 @@ export class GamificationService {
       const tx = db as TxClient
       const referrerId = await this.repo.referralOwner(tx, normalised)
       if (!referrerId || referrerId === newUserId || !(await this.repo.userBasics(tx, referrerId))) return { applied: false }
+      // A new pupil, referred by a pupil (R6): a teacher, parent or admin on either side earns nothing.
+      if (!(await this.repo.isStudent(tx, newUserId)) || !(await this.repo.isStudent(tx, referrerId))) return { applied: false }
+      const settings = await this.gameSettings.getMany(['referral_referrer_syiling', 'referral_referee_syiling', 'referral_max_rewarded'], tx)
+      await this.repo.lockReferrer(tx, referrerId)
+      const rewarded = (await this.repo.rewardedReferralCount(tx, referrerId)) < settings.referral_max_rewarded
       const at = opts.at ?? this.clock.now()
-      if (!(await this.repo.insertReferral(tx, { referrerId, refereeId: newUserId, code: normalised, at }))) return { applied: false }
+      if (!(await this.repo.insertReferral(tx, { referrerId, refereeId: newUserId, code: normalised, rewarded, at }))) return { applied: false }
+      if (!rewarded) return { applied: true }
       for (const id of walletLockOrder([newUserId, referrerId])) {
         const isReferee = id === newUserId
+        const amount = isReferee ? settings.referral_referee_syiling : settings.referral_referrer_syiling
+        if (amount <= 0) continue // `credit` refuses 0
         await this.wallet.credit(
           {
             userId: id,
-            amount: isReferee ? REFERRAL_REWARD_REFEREE : REFERRAL_REWARD_REFERRER,
+            amount,
             type: 'bonus',
             source: 'referral',
             sourceId: `referral:${newUserId}`,
@@ -756,13 +771,13 @@ export class GamificationService {
   }
 }
 
-/** BR-M14-18: 7 characters of [A-Z0-9], deterministic from the user id and a salt. */
+/** 48 GAME-24: 8 characters of [A-Z0-9], deterministic from the user id and a salt. */
 export function referralCodeFor(userId: string, salt = 0): string {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
   const id = Number(BigInt.asIntN(32, idFromString(userId)))
   let h = (Math.imul(id ^ 0x5bd1e995, 0x27d4eb2d) + Math.imul(salt + 1, 0x165667b1)) >>> 0
   let out = ''
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 8; i++) {
     h = Math.imul(h ^ (h >>> 15), 0x2c1b3c6d) >>> 0
     h = (h ^ (h >>> 12)) >>> 0
     out += alphabet[h % alphabet.length]

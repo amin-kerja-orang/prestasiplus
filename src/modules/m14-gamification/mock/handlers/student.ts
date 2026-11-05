@@ -20,7 +20,7 @@
 import { ok, queryString, route, validationError, type RouteDef } from '@/mock/define'
 
 import { masteryLevel, masteryMultiplier, masteryNextTarget, MASTERY_LABELS } from '../data/mastery'
-import { REFERRAL_REWARD_REFEREE, REFERRAL_REWARD_REFERRER } from '../data/catalogue'
+import { REFERRAL_SETTINGS } from '../data/catalogue'
 import {
   achievementsRepo,
   challengesRepo,
@@ -260,11 +260,12 @@ export const studentRoutes: RouteDef[] = [
     const userId = viewerId(req)
     const code = referralsRepo.codeOf(userId)
     const registerUrl = `https://prestasiplus.my/register?ref=${code}`
-    const text = `Jom belajar matematik di PRESTASIPLUS! Guna kod ${code} untuk dapat ${String(REFERRAL_REWARD_REFEREE)} syiling PERCUMA! ${registerUrl}`
+    const text = `Jom belajar matematik di PRESTASIPLUS! Guna kod ${code} untuk dapat ${String(REFERRAL_SETTINGS.refereeSyiling)} syiling PERCUMA! ${registerUrl}`
     return ok({
       code,
-      rewardReferrer: REFERRAL_REWARD_REFERRER,
-      rewardReferee: REFERRAL_REWARD_REFEREE,
+      rewardReferrer: REFERRAL_SETTINGS.referrerSyiling,
+      rewardReferee: REFERRAL_SETTINGS.refereeSyiling,
+      maxRewarded: REFERRAL_SETTINGS.maxRewarded,
       registerUrl,
       // As on live (S16-referral.json): only spaces are encoded; `:/?=&!` stay raw.
       whatsappUrl: `https://wa.me/?text=${shareEncode(text)}`,
