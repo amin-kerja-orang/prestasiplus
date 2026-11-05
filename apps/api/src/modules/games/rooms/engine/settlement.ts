@@ -4,7 +4,6 @@
  */
 import type { GamesRoomGame } from '@pp/contract'
 
-import { ROOM_COINS } from './constants'
 import type { EnginePlayer, RoomState } from './types'
 
 /** M14 game tokens (as BE-23 `gameRow` expects them). */
@@ -29,11 +28,12 @@ export interface Report {
   userId: string
   game: string
   event: string
-  /** Fixed coins; undefined for Papan Bijak (the service computes them from the tier rates). */
-  coins?: number
   correct: number
   total: number
   won: boolean
+  /** What decides the reward (48 section 3.4). */
+  outcome: 'win' | 'draw' | 'play'
+  robotsOnly: boolean
   detail: { rank: number; roomCode: string }
 }
 
@@ -90,19 +90,11 @@ export function computeSettlement(input: SettleInput): Settlement {
   const me = humans.find((p) => p.userId === st.humanId)
   if (!me) return { standings, report: null }
   const won = winners.has(me.userId)
-  let coins: number | undefined = 0
   let event = won ? 'win' : 'finish'
-  if (game === 'papan-bijak') {
-    coins = undefined
-    event = won ? 'win' : 'correct'
-  } else if (game === 'benteng-ilmu') {
-    coins = won ? ROOM_COINS.bentengWin : ROOM_COINS.bentengPlay
-    event = won ? 'win' : 'play'
-  } else if (game === 'perang-fakta') coins = won ? ROOM_COINS.perangFaktaWin : 0
-  else if (game === 'perlumbaan-matematik') {
-    coins = ROOM_COINS.mathracePlay
-    event = 'play'
-  }
+  if (game === 'papan-bijak') event = won ? 'win' : 'correct'
+  else if (game === 'benteng-ilmu') event = won ? 'win' : 'play'
+  else if (game === 'perlumbaan-matematik') event = 'play'
+  const drawn = !won && game !== 'kuiz-relay' && st.winnerId === null
   const rank = 1 + ps.filter((p) => (st.meter[p.userId] ?? 0) > (st.meter[me.userId] ?? 0)).length
   return {
     standings,
@@ -110,10 +102,11 @@ export function computeSettlement(input: SettleInput): Settlement {
       userId: me.userId,
       game: ROOM_TOKENS[game],
       event,
-      ...(coins === undefined ? {} : { coins }),
       correct: me.correct,
       total: st.total,
       won,
+      outcome: won ? 'win' : drawn ? 'draw' : 'play',
+      robotsOnly,
       detail: { rank, roomCode: input.code },
     },
   }

@@ -7,7 +7,6 @@ import type { PrismaService } from '../../src/db/prisma.service'
 import { BattleModule } from '../../src/modules/battle'
 import { BattleDeps } from '../../src/modules/battle/battle.deps'
 import { BattleReadService } from '../../src/modules/battle/battle-read.service'
-import { GAME_RESULT_PORT, type GameResultPort } from '../../src/modules/battle/game-result.port'
 import { createTestApp } from '../support/app'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
@@ -95,11 +94,9 @@ describe('BattleModule wiring', () => {
     await db.drop()
   })
 
-  it('resolves the shared providers, the no-op M14 port, and exports the read service', async () => {
+  it('resolves the shared providers and exports the read service', async () => {
     expect(app.get(BattleDeps, { strict: false })).toBeInstanceOf(BattleDeps)
     expect(app.get(BattleReadService, { strict: false })).toBeInstanceOf(BattleReadService)
-    const port = app.get<GameResultPort>(GAME_RESULT_PORT, { strict: false })
-    await expect(port.onGameResult({ userId: '1', game: 'battle', event: 'win', coins: 0, xp: 0, correct: 1, total: 10, isTest: false })).resolves.toBeUndefined()
   })
 
   it('the skeleton adds no route: a battle path is still default-deny 401 or 404, never 500', async () => {

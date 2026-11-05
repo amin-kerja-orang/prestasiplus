@@ -800,7 +800,7 @@ describe('settlement (AC10)', () => {
       total: 50,
       detail: { roomCode: 'AB12CD' },
     })
-    expect(s.report?.coins).toBeUndefined()
+    expect(s.report).toMatchObject({ outcome: 'win', robotsOnly: false })
     const lost = computeSettlement({
       code: 'AB12CD',
       game: 'papan-bijak',
@@ -831,28 +831,29 @@ describe('settlement (AC10)', () => {
     expect(relay.report).toMatchObject({ userId: '10', won: true }) // same team as the MVP: the host's team won
   })
 
-  it('Benteng Ilmu 35 on a win / 8 played; Perang Fakta 10 on a win only; Perlumbaan 5 with the rank; relay and crossword 0', () => {
-    const coins = (
+  it('the report says the outcome and whether only robots played; the amounts are the reward formula, no constants here', () => {
+    const report = (
       game: Parameters<typeof computeSettlement>[0]['game'],
       st: Partial<RoomState>,
       pl = ps([{}, {}]),
     ) => computeSettlement({ code: 'X', game, state: finishedState(st), players: pl }).report
-    expect(coins('benteng-ilmu', { winnerId: '10' })).toMatchObject({ coins: 35, event: 'win' })
-    expect(coins('benteng-ilmu', { winnerId: '11' })).toMatchObject({ coins: 8, event: 'play' })
-    expect(coins('perang-fakta', { winnerId: '10' })).toMatchObject({
-      coins: 10,
+    expect(report('benteng-ilmu', { winnerId: '10' })).toMatchObject({ event: 'win', outcome: 'win', robotsOnly: true })
+    expect(report('benteng-ilmu', { winnerId: '11' })).toMatchObject({ event: 'play', outcome: 'play', robotsOnly: true })
+    expect(report('perang-fakta', { winnerId: '10' })).toMatchObject({
       event: 'win',
       game: 'perang_fakta',
     })
-    expect(coins('perang-fakta', { winnerId: null })).toMatchObject({ coins: 0, event: 'finish' })
+    expect(report('perang-fakta', { winnerId: null })).toMatchObject({ event: 'finish', outcome: 'draw' })
     expect(
-      coins(
+      report(
         'perlumbaan-matematik',
         { winnerId: '11', meter: { '10': 3, '11': 20, '12': 5 } },
         ps([{}, {}, { userId: '12' }]),
       ),
-    ).toMatchObject({ coins: 5, event: 'play', game: 'mathrace', detail: { rank: 3 } })
-    expect(coins('teka-silang-kata', { winnerId: '10' })).toMatchObject({ coins: 0 })
+    ).toMatchObject({ event: 'play', game: 'mathrace', detail: { rank: 3 } })
+    expect(report('teka-silang-kata', { winnerId: '10' })).toMatchObject({ outcome: 'win' })
+    expect(report('kuiz-relay', { winnerId: null, mvpId: null })).toMatchObject({ outcome: 'play' })
+    expect(report('benteng-ilmu', { winnerId: '10' }, ps([{}, { userId: '12', isBot: false }]))).toMatchObject({ robotsOnly: false })
   })
 
   it('Kuiz Relay: the acting MVP gets the win, the MVP team counts as winners; bots and joined humans get nothing', () => {
@@ -864,7 +865,7 @@ describe('settlement (AC10)', () => {
       players: players4,
     })
     expect(s.standings).toEqual([]) // the MVP is a joined human the engine simulated
-    expect(s.report).toMatchObject({ userId: '10', won: true, event: 'win', coins: 0 })
+    expect(s.report).toMatchObject({ userId: '10', won: true, event: 'win', outcome: 'win' })
     const hostMvp = computeSettlement({
       code: 'X',
       game: 'kuiz-relay',

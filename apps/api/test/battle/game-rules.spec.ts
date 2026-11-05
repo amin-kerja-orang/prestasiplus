@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { BattleAnswerResultSchema, BattleArenaViewSchema } from '@pp/contract'
 
 import { BattleEngine } from '../../src/modules/battle/engine'
-import { addMcqs, bootBattleApp, botBattle, client, parseData, STUDENT_G10, subjectsOf, type BattleTestApp, type Client, type Subjects } from './arena-helpers'
+import { addMcqs, bootBattleApp, botBattle, client, parseData, STUDENT_G10, STUDENT_G10_B, subjectsOf, type BattleTestApp, type Client, type Subjects } from './arena-helpers'
 
 /** S7-T01, part GAME-00 in Battle Arena (48 sections 3.3 to 3.6): the robot, the answer store, rewards, pace and clocks. */
 describe('GAME-00 common rules in Battle', () => {
@@ -51,6 +51,50 @@ describe('GAME-00 common rules in Battle', () => {
       ['battle#2', 'battle', false],
       ['battle#3', 'battle', false],
     ])
+  })
+
+  describe('FR-GM-00.3, FR-GM-00.6: rewards', () => {
+    const finish = async (who: Client, uuid: string, gapMs = 2000) => {
+      let last = await answer(who, uuid, true, gapMs)
+      while (!last.result) last = await answer(who, uuid, true, gapMs)
+      return last.result
+    }
+
+    it('rule 3: a battle won against the robot: 10 x 10 + the play XP, session and ledger key the battle uuid; the view repeats the block', async () => {
+      const uuid = await botBattle(a, s.math)
+      const result = await finish(a, uuid)
+      expect(result.winner).toBe('A')
+      expect(result.reward).toEqual({ xp: 105, syiling: 10, capped: false, reason: null })
+      expect(t.reports.at(-1)).toMatchObject({ userId: a.id, game: 'battle', event: 'win', xp: 105, coins: 10, session: uuid })
+      expect(parseData(BattleArenaViewSchema, await a.get(`/battle/arena/${uuid}`)).result?.reward).toEqual(result.reward)
+    })
+
+    it('a forfeit against a pupil: nothing for the one who left, the win XP for the other', async () => {
+      const b = await client(t, STUDENT_G10_B)
+      const invite = await a.post('/battle/invite', { question_type: 'biasa', subject_id: s.math, receiver_id: b.id })
+      expect(invite.status).toBe(200)
+      const uuid = (await b.get('/battle/invitations')).body.invitations[0].uuid as string
+      const accepted = await b.post(`/battle/invite/${uuid}/accept`)
+      const battle = accepted.body.battle_uuid as string
+      expect((await a.post(`/battle/forfeit/${battle}`)).status).toBe(200)
+      expect(t.reports.slice(-2).map((r) => [r.userId, r.event, r.xp])).toEqual([[b.id, 'forfeit_win', 20], [a.id, 'forfeit', 0]])
+    })
+
+    it('pace guard, any gap: the battle is scored and credits nothing; the view says the same', async () => {
+      await rows(`update gamification_settings set value = 1000 where key = 'games_min_ms_per_answer'`)
+      try {
+        const uuid = await botBattle(a, s.math)
+        const before = t.reports.length
+        await answer(a, uuid, true, 5000)
+        const result = await finish(a, uuid, 500)
+        expect(result.scoreA).toBeGreaterThan(0)
+        expect(result.reward).toEqual({ xp: 0, syiling: 0, capped: false, reason: 'pace_guard' })
+        expect(t.reports.length).toBe(before)
+        expect(parseData(BattleArenaViewSchema, await a.get(`/battle/arena/${uuid}`)).result?.reward).toEqual(result.reward)
+      } finally {
+        await rows(`update gamification_settings set value = 0 where key = 'games_min_ms_per_answer'`)
+      }
+    })
   })
 
   it('AC-GM-00.12: Mod Pelajar writes no answer row', async () => {

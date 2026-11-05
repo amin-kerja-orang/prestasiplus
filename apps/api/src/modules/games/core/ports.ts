@@ -24,9 +24,9 @@ export interface GameResultInput {
   /** M14 game token: `papan_bijak`, `benteng_ilmu`, `perang_fakta`, `mathrace`, `jutawan`, `roda_nasib`, `betul_salah`, `cabaran_kilat`... */
   game: string
   event: string
-  /** Absent for `papan_bijak`: the port uses the tier rates. */
+  /** What the result asks for, from `rewardNow`; the port applies `games_award_syiling` and the caps. */
   coins?: number
-  /** Always 0 for games (BR-M16-28). */
+  /** From `rewardNow` (FR-GM-00.3); 0 for Roda Nasib. */
   xp: number
   correct?: number
   total?: number
@@ -67,6 +67,8 @@ export interface GameRewardsPort {
    * still returns `{0, 0}` for `isTest` as a second guard.
    */
   onGameResult(userId: string, input: GameResultInput, options: { tx?: TxClient; isTest: boolean }): Promise<GameResultOutcome>
+  /** The first result of a session and pupil (DM-87), for a result read again later; null when no reward event exists. */
+  firstGameResult(sessionId: string, userId: string): Promise<GameResultOutcome | null>
 }
 
 /* ------------------------------------------------------------------------------ platform accuracy */

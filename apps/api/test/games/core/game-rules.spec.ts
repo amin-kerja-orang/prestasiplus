@@ -85,6 +85,118 @@ describe('GAME-00 common rules', () => {
     })
   })
 
+  describe('FR-GM-00.3, FR-GM-00.6, FR-PA-30: the reward block, caps and the pace guard', () => {
+    const events = (sessionId: string) =>
+      t.db.query<{ xp: number; syiling: number; capped_reason: string | null }>('select xp, syiling, capped_reason from game_reward_events where game_session_id = $1::uuid', [sessionId])
+    const xpOf = async (userId: string) => Number((await t.db.query<{ xp: number }>('select xp from wallets where user_id = $1::bigint', [userId]))[0]?.xp ?? 0)
+    const submit = (c: Client, id: string) => c.post('/api/games/solo/betul-salah/submit', { session_id: id })
+    /** Finishes a Perang Fakta room with every vote right. */
+    const finishRoom = async (c: Client, code: string, gapMs = 1000) => {
+      let v = parseRoom(await c.get(P('perang-fakta', code)))
+      while (v.status === 'playing') v = await vote(c, code, true, gapMs)
+      return v
+    }
+    /** The caps and the earned counters start clean for each test (one pupil plays them all). */
+    beforeEach(async () => {
+      await t.db.query('delete from game_reward_events')
+    })
+
+    it('AC-GM-00.1: a solo game with 3 correct, syiling off: XP 3 x 10 + the play XP, no syiling; stored once', async () => {
+      const before = await xpOf(student.userId)
+      const id = await playBetulSalah(student, 'TFTFT')
+      const res = await submit(student, id)
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect((res.body as { reward: unknown }).reward).toEqual({ xp: 35, syiling: 0, capped: false, reason: null })
+      expect(await xpOf(student.userId)).toBe(before + 35)
+      expect(await events(id)).toEqual([{ xp: 35, syiling: 0, capped_reason: null }])
+    })
+
+    it('rule 3: a room won against robots only gives the per-correct XP and the play XP; the view read again shows the same', async () => {
+      const code = await createRoom(student, 'perang-fakta')
+      parseRoom(await fillAndStart(t, student, 'perang-fakta', code))
+      const v = await finishRoom(student, code)
+      expect(v.result?.winnerId).toBe(student.userId)
+      expect(v.result?.reward).toEqual({ xp: 15 * 10 + 5, syiling: 0, capped: false, reason: null })
+      expect(parseRoom(await student.get(P('perang-fakta', code))).result?.reward).toEqual(v.result?.reward)
+      expect(await events(await sessionOf(code))).toHaveLength(1)
+    })
+
+    it('AC-GM-00.2 with the settings on: a room won against another pupil gives the win XP and the bonus; the ledger source is game:<key>', async () => {
+      await t.db.query(`update reward_settings set mini_games_give_coins = true, coins_per_correct = 1 where id = 1`)
+      try {
+        const student2 = await loginAs(t, ACCOUNTS.student2)
+        const code = await createRoom(student, 'perang-fakta', { ...FORM, match_mode: 'same_level' })
+        await student2.post(P('perang-fakta', undefined, '/join'), { room_code: code })
+        parseRoom(await student.post(P('perang-fakta', code, '/start')))
+        const v = await finishRoom(student, code)
+        expect(v.result?.reward).toMatchObject({ xp: 15 * 10 + 20, capped: false })
+        const session = await sessionOf(code)
+        const ledger = await t.db.query<{ source: string; source_id: string; amount: number }>('select source, source_id, amount from coin_ledger where source_id = $1', [`game:${session}`])
+        expect(ledger).toEqual([{ source: 'game:perang-fakta', source_id: `game:${session}`, amount: 15 + 5 }])
+      } finally {
+        await t.db.query(`update reward_settings set mini_games_give_coins = false where id = 1`)
+      }
+    })
+
+    it('AC-GM-00.5: with the daily XP cap reached the result gives 0 XP and says so', async () => {
+      await t.db.query('update gamification_settings set value = 10 where key = $1', ['games_daily_xp_cap'])
+      try {
+        const first = await playBetulSalah(student, 'TT')
+        expect((await submit(student, first)).body).toMatchObject({ reward: { xp: 10, capped: true, reason: 'xp_cap' } })
+        const second = await playBetulSalah(student, 'T')
+        expect((await submit(student, second)).body).toMatchObject({ reward: { xp: 0, capped: true, reason: 'xp_cap' } })
+      } finally {
+        await t.db.query('update gamification_settings set value = 500 where key = $1', ['games_daily_xp_cap'])
+      }
+    })
+
+    it('pace guard, any gap (48 section 3.4 rule 5): a solo game with one fast gap is scored and credits nothing, no event', async () => {
+      const { sessionId, items } = await openSolo(student, 'betul-salah')
+      t.clock.advance(5000)
+      expect((await checkBetulSalah(student, sessionId, items[0] as DbItem, true)).status).toBe(200)
+      t.clock.advance(999)
+      expect((await checkBetulSalah(student, sessionId, items[1] as DbItem, true)).status).toBe(200)
+      t.clock.advance(20_000) // a long total time does not help: any gap counts
+      const res = await submit(student, sessionId)
+      expect(res.body).toMatchObject({ score: 12 + 14, reward: { xp: 0, syiling: 0, capped: false, reason: 'pace_guard' } })
+      expect(await events(sessionId)).toEqual([])
+    })
+
+    it('pace guard in a room: the game finishes and is scored, the reward says pace_guard', async () => {
+      const code = await createRoom(student, 'perang-fakta')
+      parseRoom(await fillAndStart(t, student, 'perang-fakta', code))
+      const before = await xpOf(student.userId)
+      const v = await finishRoom(student, code, 200)
+      expect(v.status).toBe('finished')
+      expect(v.players.find((p) => p.id === student.userId)?.points).toBe(15)
+      expect(v.result?.reward).toEqual({ xp: 0, syiling: 0, capped: false, reason: 'pace_guard' })
+      expect(await xpOf(student.userId)).toBe(before)
+      expect(await events(await sessionOf(code))).toEqual([])
+    })
+
+    it('Jutawan: a wrong answer gives the play XP with correct = level; a fast gap credits nothing and writes no best', async () => {
+      const run = await startRun(student)
+      await answerRun(student, run.sessionId, run.items[0] as DbItem, true)
+      const end = await answerRun(student, run.sessionId, run.items[1] as DbItem, false)
+      expect((end.body as { data: { result: { reward: unknown } } }).data.result.reward).toEqual({ xp: 10 + 5, syiling: 0, capped: false, reason: null })
+      const best = async () => (await t.db.query<{ best_level: number }>('select best_level from jutawan_stats where user_id = $1::bigint', [student.userId]))[0]?.best_level
+      const was = (await best()) as number
+      const fast = await startRun(student)
+      for (let i = 0; i <= was; i++) await answerRun(student, fast.sessionId, fast.items[i] as DbItem, true, i === 0 ? 2000 : 1000)
+      const stop = await answerRun(student, fast.sessionId, fast.items[was + 1] as DbItem, false, 1000)
+      expect((stop.body as { data: { result: { reward: unknown } } }).data.result.reward).toEqual({ xp: 0, syiling: 0, capped: false, reason: 'pace_guard' })
+      expect(await best()).toBe(was)
+    })
+
+    it('Mod Pelajar: no reward block and no event', async () => {
+      const id = await playBetulSalah(mod, 'T')
+      const res = await submit(mod, id)
+      expect(res.status).toBe(200)
+      expect((res.body as Record<string, unknown>).reward).toBeUndefined()
+      expect(await events(id)).toEqual([])
+    })
+  })
+
   describe('FR-GM-00.5, FR-PA-28, FR-MUR-21-4: one answer row per answered or timed-out question', () => {
     it('AC-GM-00.1: Betul atau Salah, 5 answers, 3 correct: 5 rows `betul-salah#1..5`, mode game, marks 1 or 0', async () => {
       const id = await playBetulSalah(student, 'TFTFT')

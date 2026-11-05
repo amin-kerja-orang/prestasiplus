@@ -26,11 +26,3 @@ export const POOL_SIZE = {
   'kuiz-relay': KR_ROUNDS,
   'teka-silang-kata': CROSSWORD_WORDS,
 } as const
-
-/** M14 coin rates of the room games (BR-M16-28): benteng 8 / 35, perang fakta win 10, mathrace 5. */
-export const ROOM_COINS = {
-  bentengPlay: 8,
-  bentengWin: 35,
-  perangFaktaWin: 10,
-  mathracePlay: 5,
-} as const

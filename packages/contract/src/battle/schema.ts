@@ -1,6 +1,7 @@
 import { z } from '../zod'
 import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
+import { GamesRewardSchema } from '../games/common'
 import { PkskAccessSchema } from '../pksk/student'
 
 /**
@@ -320,7 +321,12 @@ const ArenaPlayerSchema = z.strictObject({
 const ScoresSchema = z.strictObject({ A: z.number().int().min(0), B: z.number().int().min(0) })
 
 export const BattleArenaResultSchema = z
-  .strictObject({ winner: BattleWinnerSchema, scoreA: z.number().int().min(0), scoreB: z.number().int().min(0) })
+  .strictObject({
+    winner: BattleWinnerSchema,
+    scoreA: z.number().int().min(0),
+    scoreB: z.number().int().min(0),
+    reward: GamesRewardSchema.optional().meta({ description: 'What this battle gave the caller.' }),
+  })
   .meta({ id: 'BattleArenaResult' })
 
 /**

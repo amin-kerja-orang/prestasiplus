@@ -4,7 +4,7 @@
  * the question just answered. A battle is visible to its two players only (anyone else: 404 "Battle tidak dijumpai.").
  */
 import { Inject, Injectable } from '@nestjs/common'
-import { BATTLE_MESSAGES, BATTLE_RULES, GAMES_ROBOT_NAME, battleArenaPoints, battleWinner } from '@pp/contract'
+import { BATTLE_MESSAGES, BATTLE_RULES, GAMES_ROBOT_NAME, battleArenaPoints, battleWinner, type GamesReward } from '@pp/contract'
 
 import { ApiError } from '../../../common/errors/api-error'
 import { CLOCK, type Clock } from '../../../db/clock'
@@ -24,6 +24,7 @@ interface Result {
   winner: Side | null
   scoreA: number
   scoreB: number
+  reward?: GamesReward
 }
 
 const notFound = (message: string = BATTLE_MESSAGES.battleNotFound): ApiError => ApiError.of('NOT_FOUND', { message })
@@ -95,6 +96,7 @@ export class ArenaService {
       question = row ? await this.engine.deps.arenaQuestion(idToString(row.questionId)) : null
       if (!question) throw notFound(BATTLE_MESSAGES.questionNotFound)
     }
+    const reward = active ? undefined : await this.engine.rewardOf(uuid, userId, battle.createdAt, battle.isTest)
     const people = await this.engine.deps.players([a, b].filter(hasUser).map((p) => idToString(p.userId)))
     // FR-GM-00.8, 48 section 3.10: the opponent by first given name, no school; `school` stays in the contract, always empty.
     // FR-MUR-21-9: a robot is "Robot PrestasiPlus", also on a seat from before FR-GM-00.4 that still points at a pupil.
@@ -113,7 +115,7 @@ export class ArenaService {
       total: BATTLE_RULES.arenaQuestions,
       question,
       secondsLeft: active ? BATTLE_RULES.questionSeconds : 0,
-      ...(active ? {} : { result: { winner: battle.winner as Side | null, scoreA: a.score, scoreB: b.score } as Result }),
+      ...(active ? {} : { result: { winner: battle.winner as Side | null, scoreA: a.score, scoreB: b.score, ...(reward ? { reward } : {}) } as Result }),
     }
   }
 
@@ -157,9 +159,8 @@ export class ArenaService {
     if (!bot) throw notFound()
 
     const points = graded.correct ? battleArenaPoints(whole) : 0
-    let ended: { side: Side; winner: Side | null; correct: number; total: number; isTest: boolean } | null = null
-    const out = await this.prisma
-      .transaction(async () => {
+    return this.prisma
+      .transaction(async (tx) => {
         await this.prisma.client.$queryRaw`SELECT id FROM battles WHERE id = ${uuid}::uuid FOR UPDATE`
         const locked = await this.prisma.client.battle.findUnique({ where: { id: uuid }, include: { participants: true } })
         if (!locked) throw notFound()
@@ -214,16 +215,13 @@ export class ArenaService {
         const scoreB = mine.side === 'A' ? oppNow.score : meNow.score
         const winner = battleWinner(scoreA, scoreB)
         await this.prisma.client.battle.update({ where: { id: uuid }, data: { status: 'finished', winner, finishedAt: now } })
-        ended = { side: mine.side as Side, winner, correct: meNow.correct, total: index, isTest: locked.isTest }
-        return { ...base, result: { winner, scoreA, scoreB } as Result }
+        const reward = await this.engine.report({ tx, battleId: uuid, startedAt: locked.createdAt, userId, side: mine.side as Side, winner, forfeited: false, robotsOnly: opp.isBot, correct: meNow.correct, total: index, isTest: locked.isTest })
+        return { ...base, result: { winner, scoreA, scoreB, ...(reward ? { reward } : {}) } as Result }
       })
       .catch((e: unknown) => {
         // A unique violation on (battle, user, position) is a replay of an answered position.
         if (typeof e === 'object' && e !== null && (e as { code?: unknown }).code === 'P2002') throw invalid('questionId', BATTLE_MESSAGES.questionInvalid)
         throw e
       })
-    const finished = ended as { side: Side; winner: Side | null; correct: number; total: number; isTest: boolean } | null
-    if (finished) await this.engine.reportSafely({ userId, forfeited: false, ...finished })
-    return out
   }
 }

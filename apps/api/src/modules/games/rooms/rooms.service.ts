@@ -10,6 +10,7 @@ import {
   gamesRoomMaxPlayers,
   type GamesHub,
   type GamesLobby,
+  type GamesReward,
   type GamesRoomGame,
   type GamesRoomSubject,
   type GamesRoomView,
@@ -39,6 +40,7 @@ import { GamesPorts, gameAnswerEntry } from '../core/ports'
 import { GameQuestions } from '../core/game-questions.service'
 import { GameSettingsService } from '../core/game-settings.service'
 import { GameSubjects } from '../core/subjects'
+import { PACE_GUARD_REWARD, rewardBlock, rewardNow } from '../core/wallet-rewards'
 import { GameUsers, type GameUser } from '../core/game-users'
 import { enumOfGrade, gradeFits, gradeLabel, gradeName } from '../core/grades'
 import { initialsOf, kadarOf, truncateName } from '../core/names'
@@ -58,7 +60,7 @@ import {
   type RoomAction,
   type RoomState,
 } from './engine'
-import { DEFAULT_GRADE, JUTAWAN_QUESTIONS, SOLO_INFO } from '../solo/play/solo.rules'
+import { DEFAULT_GRADE, hasFastGap, JUTAWAN_QUESTIONS, SOLO_INFO } from '../solo/play/solo.rules'
 import { RoomSecrets } from './room-secrets'
 import { type PlayerRow, type RoomRow, RoomsRepository } from './rooms.repository'
 
@@ -566,18 +568,15 @@ export class RoomsService {
     }
     const r = s.report
     if (!r || byId.get(r.userId)?.isTest) return // the Mod Pelajar actor never earns: no reward call at all
-    let coins = r.coins
-    if (coins === undefined) {
-      const rates = await this.ports.rewards.tierRates(r.userId, { tx })
-      coins = r.correct * rates.correct + (r.won ? rates.win : 0)
-    }
+    if (await this.paceTripped(room, out.state)) return // 48 section 3.4 rule 5: stored and scored, credits nothing
+    const reward = await rewardNow(this.settings, tx, { correct: r.correct, outcome: r.outcome, robotsOnly: r.robotsOnly, fastGap: false })
     await this.ports.rewards.onGameResult(
       r.userId,
       {
         game: r.game,
         event: r.event,
-        coins,
-        xp: 0,
+        coins: reward.coins,
+        xp: reward.xp,
         correct: r.correct,
         total: r.total,
         detail: r.detail,
@@ -586,6 +585,20 @@ export class RoomsService {
       },
       { tx, isTest: false },
     )
+  }
+
+  /** Rule 5 of 48 section 3.4: a gap between the acting human's answers (the first: from the start) is under the minimum. */
+  private async paceTripped(room: RoomRow, st: RoomState): Promise<boolean> {
+    const times = (st.answerMs ?? []).map((ms) => new Date(ms))
+    return hasFastGap(room.startedAt ?? room.createdAt, times, await this.settings.get('games_min_ms_per_answer'))
+  }
+
+  /** The reward block of the finished room for the acting human; nothing for a seat that did not play or for Mod Pelajar. */
+  private async rewardOf(caller: Caller, room: RoomRow, st: RoomState): Promise<GamesReward | undefined> {
+    if (room.isTest || st.humanId !== caller.userId) return undefined
+    const first = await this.ports.rewards.firstGameResult(room.sessionId, caller.userId)
+    if (first) return rewardBlock(first)
+    return (await this.paceTripped(room, st)) ? PACE_GUARD_REWARD : undefined
   }
 
   /** 48 GAME-R: the robots of a room that has waited `battle_bot_fallback_seconds` below its minimum; else the seats as they are. */
@@ -700,6 +713,8 @@ export class RoomsService {
           correct: p.correct,
         })),
       }
+      const reward = await this.rewardOf(caller, room, st)
+      if (reward) view.result.reward = reward
     }
     return view
   }

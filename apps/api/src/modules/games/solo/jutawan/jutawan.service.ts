@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto'
 
 import { Inject, Injectable } from '@nestjs/common'
-import { GamesJutawanQuerySchema } from '@pp/contract'
+import { GamesJutawanQuerySchema, type GamesReward } from '@pp/contract'
 
 import type { TxClient } from '../../../../db/client'
 import { CLOCK, type Clock } from '../../../../db/clock'
@@ -11,8 +11,10 @@ import { PrismaService } from '../../../../db/prisma.service'
 import type { GamesCaller } from '../../caller'
 import { CurriculumRepository } from '../../../curriculum'
 import { GameQuestions, type ServedQuestion } from '../../core/game-questions.service'
+import { GameSettingsService } from '../../core/game-settings.service'
 import { GamesPorts, gameAnswerEntry } from '../../core/ports'
 import { GameSubjects } from '../../core/subjects'
+import { PACE_GUARD_REWARD, rewardBlock, rewardNow } from '../../core/wallet-rewards'
 import {
   jutawanLifelineInvalid,
   jutawanNoLifeline,
@@ -27,7 +29,7 @@ import {
 } from '../../errors'
 import { secretRng } from '../play/secret-rng'
 import { shuffled } from '../play/solo-items'
-import { JUTAWAN_LIFELINES, JUTAWAN_MIN_MS_PER_QUESTION, JUTAWAN_QUESTIONS, jutawanCoins, jutawanDifficulty, hasFastGap } from '../play/solo.rules'
+import { JUTAWAN_LIFELINES, JUTAWAN_QUESTIONS, jutawanDifficulty, hasFastGap } from '../play/solo.rules'
 import { SoloRepository } from '../play/solo.repository'
 import { JutawanRepository, type JutawanSession } from './jutawan.repository'
 
@@ -72,6 +74,7 @@ export class JutawanService {
     @Inject(CurriculumRepository) private readonly curriculum: CurriculumRepository,
     @Inject(GamesPorts) private readonly ports: GamesPorts,
     @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(GameSettingsService) private readonly settings: GameSettingsService,
   ) {}
 
   private readonly tileCounts = new Map<string, { at: number; value: Promise<number> }>()
@@ -180,8 +183,8 @@ export class JutawanService {
         return { correct: true, level, next: next.question }
       }
       const level = correct ? s.level + 1 : s.level
-      const credited = await this.finish(caller, s, level, common, tx)
-      return { correct, level, result: { level, credited } }
+      const end = await this.finish(caller, s, level, common, tx)
+      return { correct, level, result: { level, credited: end.credited, ...(end.reward ? { reward: end.reward } : {}) } }
     })
   }
 
@@ -192,23 +195,27 @@ export class JutawanService {
     level: number,
     common: { checks: number; correctCount: number },
     tx: TxClient,
-  ): Promise<number> {
+  ): Promise<{ credited: number; reward?: GamesReward }> {
     const sessionId = s.id
     const subjectId = s.subjectId
     const now = this.clock.now()
-    // pacing guard: any answer less than 2 s after the previous one (the first: after the start) keeps the level but credits nothing
-    const fast = hasFastGap(s.createdAt, await this.repo.answerTimes(s.id), JUTAWAN_MIN_MS_PER_QUESTION)
-    const coins = jutawanCoins(level)
+    // pace guard: any answer under `jutawan_min_ms_per_answer` after the previous one (the first: after the start) keeps the level but credits nothing and writes no best
+    const fast = hasFastGap(s.createdAt, await this.repo.answerTimes(s.id), await this.settings.get('jutawan_min_ms_per_answer'))
+    // FR-GM-00.3, GAME-13: correct = level, level 15 is a win.
+    const asked = await rewardNow(this.settings, tx, { correct: level, outcome: level >= JUTAWAN_QUESTIONS ? 'win' : 'play', robotsOnly: false, fastGap: false })
     let credited = 0
+    let reward: GamesReward | undefined
     // Reported also while syiling is off, for the reward event (DM-87); the port decides what is paid.
+    if (fast && !caller.isTest) reward = PACE_GUARD_REWARD
     if (!fast && !caller.isTest) {
       const subject = subjectId === null ? null : await this.curriculum.subject(idFromString(subjectId))
       const out = await this.ports.rewards.onGameResult(
         caller.userId,
-        { game: 'jutawan', event: 'finish', coins, xp: 0, correct: level, total: JUTAWAN_QUESTIONS, detail: { level, subject: subject?.name ?? 'Bahasa Melayu' }, key: sessionId, session: { id: sessionId, gameKey: 'jutawan' } },
+        { game: 'jutawan', event: level >= JUTAWAN_QUESTIONS ? 'win' : 'finish', coins: asked.coins, xp: asked.xp, correct: level, total: JUTAWAN_QUESTIONS, detail: { level, subject: subject?.name ?? 'Bahasa Melayu' }, key: sessionId, session: { id: sessionId, gameKey: 'jutawan' } },
         { tx, isTest: false },
       )
       credited = out.coinsCredited
+      reward = rewardBlock(out)
     }
     await this.repo.update(sessionId, {
       ...common,
@@ -217,11 +224,11 @@ export class JutawanService {
       jutawanOver: true,
       submittedAt: now,
       score: level,
-      coinsComputed: coins,
+      coinsComputed: asked.coins,
       coinsCredited: credited,
     })
-    await this.repo.bumpStats(caller.userId, level, caller.isTest)
-    return credited
+    await this.repo.bumpStats(caller.userId, fast ? 0 : level, caller.isTest)
+    return { credited, ...(reward ? { reward } : {}) }
   }
 
   async lifeline(caller: GamesCaller, sessionId: string, body: unknown): Promise<Record<string, unknown>> {

@@ -110,7 +110,7 @@ describe('arena (M16-16, M16-17)', () => {
       expect(results.at(-1)?.you.score).toBe(total)
       expect(results.slice(0, 9).every((r) => r.next !== undefined && r.result === undefined)).toBe(true)
       expect(results[9]?.next).toBeUndefined()
-      expect(results[9]?.result).toEqual({ winner: 'A', scoreA: total, scoreB: 0 })
+      expect(results[9]?.result).toMatchObject({ winner: 'A', scoreA: total, scoreB: 0 })
 
       const [battle] = await rows<{ status: string; winner: string; answered: number; finished_at: Date }>(`select status, winner, answered, finished_at from battles where id = $1`, [uuid])
       expect(battle).toMatchObject({ status: 'finished', winner: 'A', answered: 10 })
@@ -125,8 +125,8 @@ describe('arena (M16-16, M16-17)', () => {
       // the finished arena shows the result and no question
       const done = parseData(BattleArenaViewSchema, await view(a, uuid))
       expect(done).toMatchObject({ status: 'finished', question: null, secondsLeft: 0, index: 10, result: { winner: 'A', scoreA: total, scoreB: 0 } })
-      // M14 report (AC 12): the caller, coins 0, xp 0
-      expect(t.reports.at(-1)).toEqual({ userId: a.id, game: 'battle', event: 'win', coins: 0, xp: 0, correct: 7, total: 10, isTest: false })
+      // FR-GM-00.3, 48 section 3.4 rule 3: against the robot 7 x 10 + the play XP, no win XP and no win bonus
+      expect(t.reports.at(-1)).toEqual({ userId: a.id, game: 'battle', event: 'win', coins: 7, xp: 75, correct: 7, total: 10, session: uuid })
     })
 
     it('time is the server\'s: the client cannot answer faster than the clock (question 1 from the battle start, then from the previous answer)', async () => {
@@ -165,7 +165,7 @@ describe('arena (M16-16, M16-17)', () => {
       setAccuracy(0)
       const zero = await botBattle(a, s.math)
       const zeroRes = await play(a, zero, ten(0, 5))
-      expect(zeroRes[9]?.result).toEqual({ winner: 'B', scoreA: 0, scoreB: 0 })
+      expect(zeroRes[9]?.result).toMatchObject({ winner: 'B', scoreA: 0, scoreB: 0 })
       expect(t.reports.at(-1)).toMatchObject({ event: 'finish', correct: 0 })
       // B wins: the bot answers right, the pupil wrong
       setAccuracy(1)
@@ -301,15 +301,16 @@ describe('arena (M16-16, M16-17)', () => {
   })
 
   describe('Mod Pelajar (is_test)', () => {
-    it('a test battle plays the same and reports isTest', async () => {
+    it('a test battle plays the same and reports nothing (AC-GM-00.12)', async () => {
       setAccuracy(0)
       const admin = await client(t, 'admin@demo.test', { modPelajar: true })
       const uuid = await botBattle(admin, s.math)
+      const before = t.reports.length
       const results = await play(admin, uuid, ten(1, 0))
       // a staff account has no grade, so the pool is every level: the seeded questions have other keys than B
       expect(results[9]?.result).toMatchObject({ winner: 'A', scoreB: 0 })
       expect(results[9]?.result?.scoreA).toBeGreaterThan(0)
-      expect(t.reports.at(-1)).toMatchObject({ userId: admin.id, isTest: true })
+      expect(t.reports.length).toBe(before)
       const [b2] = await rows<{ is_test: boolean }>(`select is_test from battles where id = $1`, [uuid])
       expect(b2?.is_test).toBe(true)
     })

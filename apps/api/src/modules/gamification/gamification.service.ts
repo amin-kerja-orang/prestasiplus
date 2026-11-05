@@ -755,6 +755,12 @@ export class GamificationService {
     return firstResult(event)
   }
 
+  /** The reward event of a session and pupil as `recordGameReward` returned it (DM-87); null when none exists. */
+  async firstGameResult(sessionId: string, userId: string): Promise<GameResultOutcome | null> {
+    const e = await this.repo.gameRewardEvent(this.repo.handle(), sessionId, userId)
+    return e ? { coinsCredited: e.syiling, xpAdded: e.xp, cappedReason: e.cappedReason } : null
+  }
+
   /**
    * XR-M14-02 / BR-M14-19 (called by registration): a known code of ANOTHER existing user, and a referee not
    * referred before, pays the new user 25 and the referrer 50 (`bonus` / `referral`, key `referral:<referee id>`)

@@ -11,6 +11,7 @@ import {
   GamesGradeLevelSchema,
   GamesKeylessQuestionSchema,
   GamesMatchModeSchema,
+  GamesRewardSchema,
   GamesRoomCodeSchema,
   GamesRoomGameSchema,
   GamesRoomStatusSchema,
@@ -249,6 +250,7 @@ export const GamesRoomResultSchema = z
     scores: z.array(
       z.strictObject({ userId: IdSchema, name: z.string(), points: z.number().int(), correct: gamesCount }),
     ),
+    reward: GamesRewardSchema.optional().meta({ description: 'What this game gave the caller.' }),
   })
   .meta({ id: 'GamesRoomResult' })
 export type GamesRoomResult = z.infer<typeof GamesRoomResultSchema>

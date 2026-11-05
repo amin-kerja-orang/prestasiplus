@@ -2,16 +2,16 @@
  * What the queue, the invitations and the arena share (BE-44): the pool pre-check, battle creation (ten questions drawn
  * once) and the report of a finished battle to M14.
  */
-import { Inject, Injectable, Logger } from '@nestjs/common'
-import { BATTLE_MESSAGES, BATTLE_RULES } from '@pp/contract'
+import { Inject, Injectable } from '@nestjs/common'
+import { BATTLE_MESSAGES, BATTLE_RULES, type GamesReward } from '@pp/contract'
 
+import type { TxClient } from '../../../db/client'
 import { CLOCK, type Clock } from '../../../db/clock'
 import { idFromString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { prngStream } from '../../../db/prng'
-import { GameSettingsService, GamesPorts, gameAnswerEntry } from '../../games'
+import { GameSettingsService, GamesPorts, PACE_GUARD_REWARD, gameAnswerEntry, hasFastGap, rewardBlock, rewardNow } from '../../games'
 import { BattleDeps, type BattleStudent } from '../battle.deps'
-import { GAME_RESULT_PORT, type GameResultEvent, type GameResultPort } from '../game-result.port'
 import { rawInvalid } from '../raw-response'
 import type { BattleParams } from './battle-params'
 
@@ -25,13 +25,10 @@ export interface BattleSide {
 
 @Injectable()
 export class BattleEngine {
-  private readonly logger = new Logger(BattleEngine.name)
-
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(CLOCK) readonly clock: Clock,
     @Inject(BattleDeps) readonly deps: BattleDeps,
-    @Inject(GAME_RESULT_PORT) private readonly port: GameResultPort,
     @Inject(GamesPorts) private readonly ports: GamesPorts,
     @Inject(GameSettingsService) private readonly settings: GameSettingsService,
   ) {}
@@ -125,19 +122,49 @@ export class BattleEngine {
     return row.id
   }
 
-  /** `report` after the battle is committed: a failing port is logged and never fails the response. */
-  async reportSafely(args: Parameters<BattleEngine['report']>[0]): Promise<void> {
-    try {
-      await this.report(args)
-    } catch (e) {
-      this.logger.error(`onGameResult failed for user ${args.userId}: ${e instanceof Error ? e.message : String(e)}`)
-    }
+  /** Rule 5 of 48 section 3.4: a gap between the pupil's answers (the first: from the battle start) is under the minimum. */
+  private async paceTripped(battleId: string, userId: string, startedAt: Date): Promise<boolean> {
+    const rows = await this.prisma.client.battleAnswer.findMany({ where: { battleId, userId: idFromString(userId) }, orderBy: { position: 'asc' }, select: { createdAt: true } })
+    return hasFastGap(startedAt, rows.map((r) => r.createdAt), await this.settings.get('games_min_ms_per_answer'))
   }
 
-  /** M14 `onGameResult` for the caller at the end of a battle (AC 12): coins 0, xp 0. */
-  async report(args: { userId: string; side: 'A' | 'B'; winner: 'A' | 'B' | null; forfeited: boolean; correct: number; total: number; isTest: boolean }): Promise<void> {
+  /**
+   * FR-GM-00.3, 48 section 3.4: the one reward of a pupil for a finished battle, in the caller's transaction. A forfeit gives
+   * the leaver nothing and the other pupil the win; a fast gap credits nothing and makes no call; Mod Pelajar never reports.
+   */
+  async report(args: {
+    tx: TxClient
+    battleId: string
+    startedAt: Date
+    userId: string
+    side: 'A' | 'B'
+    winner: 'A' | 'B' | null
+    forfeited: boolean
+    robotsOnly: boolean
+    correct: number
+    total: number
+    isTest: boolean
+  }): Promise<GamesReward | undefined> {
+    if (args.isTest) return undefined
     const won = args.winner === args.side
-    const event: GameResultEvent = args.forfeited ? (won ? 'forfeit_win' : 'forfeit') : won ? 'win' : 'finish'
-    await this.port.onGameResult({ userId: args.userId, game: 'battle', event, coins: 0, xp: 0, correct: args.correct, total: args.total, isTest: args.isTest })
+    const left = args.forfeited && !won
+    if (!left && (await this.paceTripped(args.battleId, args.userId, args.startedAt))) return PACE_GUARD_REWARD
+    const event = args.forfeited ? (won ? 'forfeit_win' : 'forfeit') : won ? 'win' : 'finish'
+    const outcome = left ? 'forfeit' : won ? 'win' : args.winner === null ? 'draw' : 'play'
+    const asked = await rewardNow(this.settings, args.tx, { correct: args.correct, outcome, robotsOnly: args.robotsOnly, fastGap: false })
+    const out = await this.ports.rewards.onGameResult(
+      args.userId,
+      { game: 'battle', event, coins: asked.coins, xp: asked.xp, correct: args.correct, total: args.total, key: args.battleId, session: { id: args.battleId, gameKey: 'battle' } },
+      { tx: args.tx, isTest: false },
+    )
+    return rewardBlock(out)
+  }
+
+  /** The reward block of a finished battle read again; nothing for Mod Pelajar. */
+  async rewardOf(battleId: string, userId: string, startedAt: Date, isTest: boolean): Promise<GamesReward | undefined> {
+    if (isTest) return undefined
+    const first = await this.ports.rewards.firstGameResult(battleId, userId)
+    if (first) return rewardBlock(first)
+    return (await this.paceTripped(battleId, userId, startedAt)) ? PACE_GUARD_REWARD : undefined
   }
 }

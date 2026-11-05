@@ -69,6 +69,8 @@ describe('start, actions, clocks and settlement (M16-26..28)', () => {
     rewards = new FakeRewards()
     accuracy = new FixedAccuracy(0)
     t = await bootGamesApp({ ports: { rewards, platformAccuracy: accuracy } })
+    // These specs answer on a frozen clock; the pace guard has its own spec (core/game-rules.spec).
+    await t.db.query(`update gamification_settings set value = 0 where key = 'games_min_ms_per_answer'`)
     student = await loginAs(t, ACCOUNTS.student)
     student2 = await loginAs(t, ACCOUNTS.student2)
     mathIds = (
@@ -480,7 +482,7 @@ describe('start, actions, clocks and settlement (M16-26..28)', () => {
   })
 
   describe('settlement', () => {
-    it('Benteng Ilmu win: standings +1 win for the host, one reward report (35, key = room code), settled once', async () => {
+    it('Benteng Ilmu win against a robot: no standing, one reward report by the formula (key = room code), settled once', async () => {
       const { code, view: v0 } = await started('benteng-ilmu', {
         ...FORM,
         match_mode: 'same_level',
@@ -505,8 +507,8 @@ describe('start, actions, clocks and settlement (M16-26..28)', () => {
         input: {
           game: 'benteng_ilmu',
           event: 'win',
-          coins: 35,
-          xp: 0,
+          coins: 3,
+          xp: 35,
           key: code,
           correct: 3,
           total: 30,
@@ -556,7 +558,7 @@ describe('start, actions, clocks and settlement (M16-26..28)', () => {
       await t.db.query(`delete from game_standings where game = 'benteng-ilmu'`)
     })
 
-    it('Benteng Ilmu loss: 8 coins, event play; a bot winner gets no standing', async () => {
+    it('Benteng Ilmu loss: only the play XP, event play; a bot winner gets no standing', async () => {
       accuracy.p = 1
       const { code, view: v0 } = await started('benteng-ilmu', {
         ...FORM,
@@ -578,13 +580,13 @@ describe('start, actions, clocks and settlement (M16-26..28)', () => {
       expect(v.status).toBe('finished')
       expect(v.result?.winnerId).not.toBe(student.userId)
       expect(rewards.calls).toHaveLength(1)
-      expect(rewards.calls[0]?.input).toMatchObject({ event: 'play', coins: 8 })
+      expect(rewards.calls[0]?.input).toMatchObject({ event: 'play', coins: 0, xp: 5 })
       expect(
         (await t.db.query<{ n: number }>(`select count(*)::int as n from game_standings`))[0]?.n,
       ).toBe(before)
     })
 
-    it('Papan Bijak: wins/jumlah/betul/skor for the acting host only, none for a joined human or bots; coins from the tier rates', async () => {
+    it('Papan Bijak: wins/jumlah/betul/skor for the acting host only, none for a joined human or bots; the reward by the formula', async () => {
       accuracy.p = 1
       const code = await createRoom(student, 'papan-bijak', {
         ...PB_FORM,
@@ -631,10 +633,8 @@ describe('start, actions, clocks and settlement (M16-26..28)', () => {
         input: {
           game: 'papan_bijak',
           event: winnerId === student.userId ? 'win' : 'correct',
-          coins:
-            (mine?.correct ?? 0) * rewards.rates.correct +
-            (winnerId === student.userId ? rewards.rates.win : 0),
-          xp: 0,
+          coins: (mine?.correct ?? 0) + (winnerId === student.userId ? 5 : 0),
+          xp: (mine?.correct ?? 0) * 10 + (winnerId === student.userId ? 20 : winnerId === null ? 10 : 5),
           key: code,
         },
       })
@@ -643,7 +643,7 @@ describe('start, actions, clocks and settlement (M16-26..28)', () => {
         expect(s.points).toBe(s.correct * 10 + (s.userId === winnerId ? 50 : 0))
     })
 
-    it('Perlumbaan Matematik: 20 right answers win; 5 coins with the rank; players score their steps', async () => {
+    it('Perlumbaan Matematik: 20 right answers win; the formula with the rank; players score their steps', async () => {
       const { code } = await started('perlumbaan-matematik')
       let v: GamesRoomView = await view(student, 'perlumbaan-matematik', code)
       for (let i = 0; i < 20 && v.status === 'playing'; i++)
@@ -654,13 +654,14 @@ describe('start, actions, clocks and settlement (M16-26..28)', () => {
       expect(rewards.calls[0]?.input).toMatchObject({
         game: 'mathrace',
         event: 'play',
-        coins: 5,
+        coins: 20,
+        xp: 205,
         detail: { rank: 1 },
       })
       expect(await standing('perlumbaan-matematik', student.userId)).toBeUndefined() // robots only
     })
 
-    it('Perang Fakta: 15 rounds, the host wins with the truth; 10 coins on a win', async () => {
+    it('Perang Fakta: 15 rounds, the host wins with the truth; the formula against robots', async () => {
       const { code } = await started('perang-fakta')
       let v: GamesRoomView = await view(student, 'perang-fakta', code)
       for (let i = 0; i < 15 && v.status === 'playing'; i++)
@@ -671,24 +672,25 @@ describe('start, actions, clocks and settlement (M16-26..28)', () => {
       expect(rewards.calls[0]?.input).toMatchObject({
         game: 'perang_fakta',
         event: 'win',
-        coins: 10,
+        coins: 15,
+        xp: 155,
         correct: 15,
         total: 15,
       })
     })
 
-    it('Teka Silang Kata: 8 words typed; 0 coins; the win is recorded', async () => {
+    it('Teka Silang Kata: 8 words typed; the formula against a robot', async () => {
       const { code } = await started('teka-silang-kata', { ...FORM, subject: 'BAHASA_INGGERIS' })
       let v: GamesRoomView = await view(student, 'teka-silang-kata', code)
       for (let i = 0; i < 8 && v.status === 'playing'; i++)
         v = await answerRight('teka-silang-kata', code)
       expect(v.status).toBe('finished')
       expect(v.state?.secondsLeft).toBeUndefined()
-      expect(rewards.calls[0]?.input).toMatchObject({ game: 'teka_silang_kata', coins: 0 })
+      expect(rewards.calls[0]?.input).toMatchObject({ game: 'teka_silang_kata', coins: 8, xp: 85 })
       expect(await standing('teka-silang-kata', student.userId)).toBeUndefined() // robots only
     })
 
-    it('Kuiz Relay: 10 rounds over 2 teams; the MVP of the leading team gets the win; 0 coins', async () => {
+    it('Kuiz Relay: 10 rounds over 2 teams; the MVP of the leading team; the formula against robots', async () => {
       accuracy.p = 1
       const { code } = await started('kuiz-relay')
       let v: GamesRoomView = await view(student, 'kuiz-relay', code)
@@ -699,7 +701,7 @@ describe('start, actions, clocks and settlement (M16-26..28)', () => {
       expect(v.result?.mvpId).not.toBeNull()
       expect(v.state?.teamScores).toBeDefined()
       expect(rewards.calls).toHaveLength(1)
-      expect(rewards.calls[0]?.input).toMatchObject({ game: 'kuiz_relay', coins: 0 })
+      expect(rewards.calls[0]?.input).toMatchObject({ game: 'kuiz_relay' })
       expect(await t.db.query(`select 1 from game_standings where game = 'kuiz-relay'`)).toEqual([]) // robots only
     })
 
