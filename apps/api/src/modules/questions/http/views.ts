@@ -79,6 +79,7 @@ function flatBase(q: QuestionView) {
     modelAnswer: f.modelAnswer,
     ...(f.essayTopics === null ? {} : { essayTopics: f.essayTopics }),
     explanation: f.explanation,
+    explanationEn: q.version.explanationEn,
     kertas: kertasOfPaperCode(q.version.paperCode),
     aiExplanation: c.aiExplanation,
     language: f.language,

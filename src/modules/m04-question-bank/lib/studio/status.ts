@@ -130,7 +130,8 @@ export const canArchive = (status: string): boolean => status === 'draft' || sta
 
 /* ---- approval refusal (S14) ---------------------------------------------------------------------- */
 
-export const STEP_NAMES: Readonly<Record<number, string>> = { 1: 'Langkah 1', 2: 'Langkah 2', 3: 'Langkah 3', 4: 'Langkah 4' }
+/** The gate still numbers its steps 1 Kertas, 2 Rangsangan, 3 Sub-bahagian, 4 Tag; the wizard reads 1 Tag first (FR-QA-16). */
+export const STEP_NAMES: Readonly<Record<number, string>> = { 1: 'Langkah 2', 2: 'Langkah 3', 3: 'Langkah 4', 4: 'Langkah 1' }
 
 /** One line per gap: the server sentence, then the wizard step in muted text (design S1.3). */
 export function gateLines(issues: readonly QuestionGateIssue[]): { text: string; step: string }[] {

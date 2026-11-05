@@ -241,7 +241,7 @@ test.describe('QA G5 S1 list', { tag: [moduleTag(4), '@qa'] }, () => {
     await expect(byId(page, 'questions-empty')).toContainText('Tiada soalan dijumpai')
     await expect(byId(page, 'questions-empty-add')).toHaveAttribute(
       'href',
-      '/admin/questions/create',
+      '/admin/studio/questions/create',
     )
     await expect(byId(page, 'questions-table')).toHaveCount(0)
   })
@@ -363,8 +363,8 @@ test.describe('QA G5 S1 list', { tag: [moduleTag(4), '@qa'] }, () => {
     await expect(page).toHaveURL(/\/admin\/questions\/564159\/edit$/)
   })
 
-  test('E2E-M04-10 create button opens S2 (AC-01.2)', async ({ page }) => {
-    await expect(byId(page, 'questions-add')).toHaveAttribute('href', '/admin/questions/create')
+  test('E2E-M04-10 create button opens the Studio wizard (AC-01.2, D113)', async ({ page }) => {
+    await expect(byId(page, 'questions-add')).toHaveAttribute('href', '/admin/studio/questions/create')
   })
 })
 
@@ -592,7 +592,6 @@ test.describe('QA G5 guards and nav', { tag: [moduleTag(4), '@qa'] }, () => {
     await loginAs(ADMIN)
     // [path, h1, subtitle under the title or null]
     const pairs: Array<[string, string, string | null]> = [
-      ['/admin/questions/create', 'Tambah Soalan Baru', 'Isi maklumat di bawah untuk menambah soalan baharu'],
       ['/admin/questions/564159/edit', 'Edit Soalan', 'Kemaskini maklumat soalan #564159'],
       ['/admin/questions/import', 'Import Soalan Secara Pukal', null],
       ['/admin/questions/quality', 'Dashboard Kualiti Soalan', null],

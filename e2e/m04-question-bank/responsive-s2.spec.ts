@@ -126,6 +126,29 @@ async function discover(page: Page): Promise<Ids> {
   }
 }
 
+/** Adds a new draft question to the group, so the member row with its badge and `Pindah ke kumpulan lain` is measured. */
+async function addMember(page: Page, csrf: string, groupId: string): Promise<void> {
+  const headers = { 'x-csrf-token': csrf }
+  const subjects = (await (await page.request.get('/api/subjects')).json()) as { data: { id: string }[] }
+  const levels = (await (await page.request.get('/api/education-levels')).json()) as { data: { id: string }[] }
+  const q = await page.request.post('/api/questions', {
+    headers,
+    data: {
+      subjectId: String(subjects.data[0]?.id),
+      educationLevelId: String(levels.data[0]?.id),
+      difficultyLevel: 3,
+      questionType: 'mcq',
+      questionText: 'Soalan ahli kumpulan yang panjang untuk ujian responsif pada skrin kecil.',
+      options: ['Satu', 'Dua', 'Tiga', 'Empat'],
+      correctAnswer: 1,
+    },
+  })
+  expect(q.status(), await q.text()).toBe(201)
+  const id = String(((await q.json()) as { data: { id: string } }).data.id)
+  const add = await page.request.post(`/api/stimulus-groups/${groupId}/members`, { headers, data: { questionId: id } })
+  expect(add.ok(), await add.text()).toBe(true)
+}
+
 /** A passage stimulus in a group of its own (no members), removed again by `drop`. */
 async function makeGroup(page: Page, csrf: string): Promise<{ groupId: string; stimulusId: string; text: string; drop: () => Promise<void> } | null> {
   const headers = { 'x-csrf-token': csrf }
@@ -213,8 +236,10 @@ test.describe('S2 responsive pass (S2-T07) @api', () => {
     const g = await makeGroup(page, csrf)
     test.skip(g === null, 'a stimulus group could not be created through the API on this stack')
     try {
+      await addMember(page, csrf, g!.groupId)
       await page.goto(`/admin/studio/groups/${g!.groupId}`)
       await expect(page.getByTestId('studio-group-panel')).toBeVisible()
+      await expect(page.locator('[data-testid$="-move"]').first()).toBeVisible()
       await settle(page)
       await expectResponsive(page, 'Studio group page')
     } finally {

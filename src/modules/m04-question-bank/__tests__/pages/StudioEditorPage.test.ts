@@ -97,6 +97,178 @@ afterEach(() => {
   wrapper = null
 })
 
+const SAVED = {
+  id: '501',
+  status: 'draft',
+  numberLabel: '1',
+  subjectId: '3',
+  educationLevelId: '7',
+  difficultyLevel: 3,
+  questionText: 'S1 berdasarkan Rajah 1, apakah ini?',
+  questionImage: null,
+  kertas: '1',
+  curriculumChapterId: '12',
+  stimulusGroup: null,
+  tag: { unitId: '40', spIds: ['41'], tp: 2 },
+  parts: [{ label: 'a', prompt: { ms: 'Pilih.' }, mode: 'mcq', marks: 1, difficultyTp: 2, cognitiveLevel: 'memahami', options: [{ label: 'A', body: { ms: 'x' } }, { label: 'B', body: { ms: 'y' } }, { label: 'C', body: { ms: 'z' } }], key: { kind: 'option', correct: 'A' } }],
+}
+
+describe('wizard order and completeness (FR-QA-16, FR-ADM-QE4.1)', () => {
+  it('the tabs read 1 Tag, 2 Kertas, 3 Rangsangan, 4 Sub-bahagian and Tag comes first (AC-ADM-QE2.4)', async () => {
+    const w = await render('/admin/studio/questions/create')
+    const sections = w.findAll('section').map((x) => x.attributes('id'))
+    expect(sections).toEqual(['studio-section-tag', 'studio-section-kertas', 'studio-section-rangsangan', 'studio-section-sub'])
+    for (const label of ['1 Tag', '2 Kertas', '3 Rangsangan', '4 Sub-bahagian']) expect(w.text()).toContain(label)
+    const tag = t(w, 'studio-subject').element.closest('section')
+    expect(tag?.getAttribute('id')).toBe('studio-section-tag')
+    expect(t(w, 'studio-unit').element.closest('section')?.getAttribute('id')).toBe('studio-section-tag')
+  })
+
+  it('names each gap and the link focuses its field; the count follows the panel (AC-ADM-QE4.1)', async () => {
+    const w = await render('/admin/studio/questions/create')
+    const rows = w.findAll('[data-testid="studio-completeness-row"]')
+    expect(rows.map((r) => r.text())).toContain('Sila pilih subjek.')
+    expect(t(w, 'studio-save-gaps').text()).toContain(`${String(rows.length)} belum lengkap`)
+    const subject = t(w, 'studio-subject').element as HTMLElement
+    subject.scrollIntoView = vi.fn()
+    await rows.find((r) => r.text() === 'Sila pilih subjek.')!.trigger('click')
+    expect(subject.closest('[data-ds="form-field"]')?.contains(document.activeElement)).toBe(true)
+  })
+
+  it('adds the API-Q-05 issues once, with their exact text and a link to the field', async () => {
+    serve({ ...SAVED, curriculumChapterId: null })
+    studio.fetchGateCheck.mockResolvedValue({ issues: [{ path: 'chapterId', code: 'NO_CHAPTER', message: 'Sila pilih Bab.', step: 4 }] })
+    const w = await render('/admin/studio/questions/501/sunting', '501')
+    expect(studio.fetchGateCheck).toHaveBeenCalledWith('501')
+    const rows = w.findAll('[data-testid="studio-completeness-row"]').map((r) => r.text())
+    expect(rows).toEqual(['Sila pilih Bab.'])
+    expect(t(w, 'studio-save-gaps').text()).toContain('1 belum lengkap')
+  })
+
+  it('never says complete when the gate read failed: it says the check could not load', async () => {
+    serve({ ...SAVED })
+    studio.fetchGateCheck.mockRejectedValue(new Error('network'))
+    const w = await render('/admin/studio/questions/501/sunting', '501')
+    expect(t(w, 'studio-completeness-failed').text()).toContain('tidak dapat dimuatkan')
+    expect(has(w, 'studio-completeness-empty')).toBe(false)
+  })
+
+  it('never says complete when the chapter or DSKP read failed', async () => {
+    serve({ ...SAVED })
+    studio.fetchGateCheck.mockResolvedValue({ issues: [] })
+    const w = await render('/admin/studio/questions/501/sunting', '501')
+    const panel = () => has(w, 'studio-completeness-failed')
+    expect(panel()).toBe(false)
+    w.getComponent({ name: 'ChapterSelect' }).vm.$emit('failed', true)
+    await flushPromises()
+    expect(panel()).toBe(true)
+    expect(has(w, 'studio-completeness-empty')).toBe(false)
+    w.getComponent({ name: 'ChapterSelect' }).vm.$emit('failed', false)
+    w.getComponent({ name: 'StudioDskpFields' }).vm.$emit('failed', true)
+    await flushPromises()
+    expect(panel()).toBe(true)
+  })
+
+  it('opens the preview on `?pratonton=1` (S2-T03 alias)', async () => {
+    serve({ ...SAVED })
+    studio.fetchGateCheck.mockResolvedValue({ issues: [] })
+    const w = await render('/admin/studio/questions/501/sunting?pratonton=1', '501')
+    expect(w.getComponent({ name: 'StudioPreview' }).props('open')).toBe(true)
+  })
+
+  it('on create with ?kumpulan= the group is read-only, linked, and prefills Subjek, Tingkatan and Kertas', async () => {
+    studio.fetchGroup.mockResolvedValue({ id: '9', label: null, scope: 'section', stimuli: [], questionIds: [], members: [], subjectId: '3', educationLevelId: '7', kertas: '2' })
+    const w = await render('/admin/studio/questions/create?kumpulan=9')
+    expect(w.getComponent({ name: 'StudioGroupEditor' }).props('disabled')).toBe(true)
+    expect(t(w, 'studio-open-group').attributes('href')).toBe('/admin/studio/groups/9')
+    expect((t(w, 'studio-level').element as HTMLSelectElement).value).toBe('7')
+    expect((t(w, 'studio-kertas').element as HTMLSelectElement).value).toBe('2')
+  })
+
+  it('saves Penjelasan and sends the English one only when the question has it (PO decision 3)', async () => {
+    serve({ ...SAVED, explanation: 'Sebab A.', explanationEn: null })
+    studio.updateStudioQuestion.mockResolvedValue({ data: { id: '501', status: 'draft' }, status: 'ok' })
+    const w = await render('/admin/studio/questions/501/sunting', '501')
+    expect((t(w, 'studio-explanation').element as HTMLTextAreaElement).value).toBe('Sebab A.')
+    expect(has(w, 'studio-explanation-en')).toBe(false)
+    await t(w, 'studio-explanation').setValue('Sebab B.')
+    await t(w, 'studio-form').trigger('submit')
+    await flushPromises()
+    const body = studio.updateStudioQuestion.mock.calls[0]?.[1] as Record<string, unknown>
+    expect(body.explanation).toBe('Sebab B.')
+    expect('explanationEn' in body).toBe(false)
+  })
+
+  it('keeps the English explanation of a bilingual question editable', async () => {
+    serve({ ...SAVED, explanation: 'Sebab A.', explanationEn: 'Reason A.' })
+    studio.updateStudioQuestion.mockResolvedValue({ data: { id: '501', status: 'draft' }, status: 'ok' })
+    const w = await render('/admin/studio/questions/501/sunting', '501')
+    await t(w, 'studio-explanation-en').setValue('Reason B.')
+    await t(w, 'studio-form').trigger('submit')
+    await flushPromises()
+    expect((studio.updateStudioQuestion.mock.calls[0]?.[1] as Record<string, unknown>).explanationEn).toBe('Reason B.')
+  })
+
+  it('asks Jenis tulisan only for the listed subjects; not Rumi shows the keyboard (PO decision 4)', async () => {
+    lookups.fetchSubjects.mockResolvedValue({ data: [{ id: 3, name: 'Matematik' }, { id: 8, name: 'Bahasa Arab' }], meta: {} })
+    serve({ ...SAVED, subjectId: '8', scriptType: 'mixed' })
+    studio.updateStudioQuestion.mockResolvedValue({ data: { id: '501', status: 'draft' }, status: 'ok' })
+    const w = await render('/admin/studio/questions/501/sunting', '501')
+    expect((t(w, 'studio-script').element as HTMLSelectElement).value).toBe('mixed')
+    expect(has(w, 'studio-keyboard-toggle')).toBe(true)
+    await t(w, 'studio-form').trigger('submit')
+    await flushPromises()
+    expect((studio.updateStudioQuestion.mock.calls[0]?.[1] as Record<string, unknown>).scriptType).toBe('mixed')
+  })
+
+  it('a subject outside the list has no Jenis tulisan, and the save leaves the script alone', async () => {
+    serve({ ...SAVED })
+    studio.updateStudioQuestion.mockResolvedValue({ data: { id: '501', status: 'draft' }, status: 'ok' })
+    const w = await render('/admin/studio/questions/501/sunting', '501')
+    expect(has(w, 'studio-script')).toBe(false)
+    expect(has(w, 'studio-keyboard-toggle')).toBe(false)
+    await t(w, 'studio-form').trigger('submit')
+    await flushPromises()
+    expect('scriptType' in (studio.updateStudioQuestion.mock.calls[0]?.[1] as Record<string, unknown>)).toBe(false)
+  })
+
+  it('after the first save on Cipta the same page reads the stored question and its gate', async () => {
+    studio.createStudioQuestion.mockResolvedValue({ data: { id: '501', status: 'draft' }, status: 'ok' })
+    serve({ ...SAVED, curriculumChapterId: null })
+    studio.fetchGateCheck.mockResolvedValue({ issues: [{ path: 'chapterId', code: 'NO_CHAPTER', message: 'Sila pilih Bab.', step: 4 }] })
+    const w = await render('/admin/studio/questions/create')
+    expect(studio.fetchGateCheck).not.toHaveBeenCalled()
+    await w.setProps({ id: '501' })
+    await flushPromises()
+    expect(studio.fetchGateCheck).toHaveBeenCalledWith('501')
+    expect(w.findAll('[data-testid="studio-completeness-row"]').map((r) => r.text())).toEqual(['Sila pilih Bab.'])
+  })
+
+  it('shows the all-complete text when nothing is missing', async () => {
+    const rowsOf = await import('../../components/studio/StudioCompletenessPanel.vue')
+    const w = mount(rowsOf.default, { props: { rows: [] }, global: { stubs: { UButton: true } } })
+    expect(w.get('[data-testid="studio-completeness-empty"]').text()).toBe('Semua medan wajib telah lengkap.')
+    w.unmount()
+  })
+
+  it('arriving from the old form shows the notice once and removes the query (FR-ADM-Q04.7)', async () => {
+    await render('/admin/studio/questions/create?dari=borang-lama')
+    await flushPromises()
+    expect(router.currentRoute.value.fullPath).toBe('/admin/studio/questions/create')
+    expect(useFlashStore().pending).toEqual({ type: 'success', message: 'Borang soalan lama telah dipindahkan ke Studio. Sila cipta soalan baharu di sini.' })
+  })
+
+  it('/admin/questions/create redirects to the wizard; the Studio /edit alias goes to /sunting', async () => {
+    const form = (await import('../../routes/questions-form')).default
+    const studioRoutes = (await import('../../routes/studio')).default
+    const r = createRouter({ history: createMemoryHistory(), routes: [...form, ...studioRoutes].map((x) => ({ ...x, ...('redirect' in x ? {} : { component: { template: '<div />' } }) }) as never) })
+    await r.push('/admin/questions/create')
+    expect(r.currentRoute.value.fullPath).toBe('/admin/studio/questions/create?dari=borang-lama')
+    await r.push('/admin/studio/questions/7/edit')
+    expect(r.currentRoute.value.fullPath).toBe('/admin/studio/questions/7/sunting')
+  })
+})
+
 describe('StudioEditorPage (R1-F03b)', () => {
   it('says so when the app is not connected to the real API', async () => {
     studio.studioAvailable.mockReturnValue(false)
@@ -248,7 +420,7 @@ describe('StudioEditorPage (R1-F03b)', () => {
     const KEY = 'pp:draft:studio:tetamu:baharu'
     const snapshot = (stem: string) =>
       JSON.stringify({
-        v: 1,
+        v: 2,
         savedAt: '2026-10-31T10:00:00Z',
         draft: {
           subjectId: '3', educationLevelId: '7', kertas: '', numberLabel: '1', stem, stemImageToken: null, chapterId: '', difficulty: 3, unitId: null, spIds: [], groupId: null,
@@ -345,6 +517,7 @@ describe('StudioEditorPage (R1-F03b)', () => {
     studio.createGroup.mockResolvedValue({ data: { ...GROUP, questionIds: [], warning: 'Kumpulan ini kini kosong.' }, status: 'ok' })
     studio.createQuestionInGroup.mockResolvedValue({ data: { id: '99', status: 'draft' }, status: 'ok' })
     const w = await render('/admin/studio/questions/create')
+    await t(w, 'studio-group-new-label').setValue('Petikan 1')
     await t(w, 'studio-group-new-body').setValue('Petikan tentang pasar tani.')
     await t(w, 'studio-group-create').trigger('click')
     await flushPromises()
@@ -354,7 +527,7 @@ describe('StudioEditorPage (R1-F03b)', () => {
     await t(w, 'studio-form').trigger('submit')
     await flushPromises()
     expect(studio.createStimulus).toHaveBeenCalledTimes(1)
-    expect(studio.createGroup).toHaveBeenCalledWith({ label: null, stimulusIds: ['70'], questionIds: [] })
+    expect(studio.createGroup).toHaveBeenCalledWith({ label: 'Petikan 1', stimulusIds: ['70'], questionIds: [] })
     expect(studio.createQuestionInGroup.mock.calls[0]?.[0]).toBe('9')
     expect(studio.createStudioQuestion).not.toHaveBeenCalled()
   })

@@ -13,6 +13,8 @@ import { MAX_SP, toggleSp } from '../../lib/studio/dskp-tags'
 import { LOAD_ERROR } from '../../lib/ui-errors'
 
 const props = defineProps<{ subjectId: string; levelId: string; disabled?: boolean; error?: string | undefined }>()
+/** Whether the Subjek + Tingkatan has DSKP nodes; the SP, TP and aras rules bind only then (FR-ADM-QE4.6). */
+const emit = defineEmits<{ nodes: [has: boolean | null]; failed: [failed: boolean] }>()
 const unitId = defineModel<string | null>('unitId', { required: true })
 const spIds = defineModel<string[]>('spIds', { required: true })
 
@@ -23,17 +25,23 @@ let seq = 0
 async function load(): Promise<void> {
   const token = ++seq
   failed.value = false
+  emit('failed', false)
+  emit('nodes', null)
   if (props.subjectId === '' || props.levelId === '') {
     dskp.value = null
     return
   }
   try {
     const res = await fetchStudioDskp(props.subjectId, props.levelId)
-    if (token === seq) dskp.value = res
+    if (token === seq) {
+      dskp.value = res
+      emit('nodes', res.units.length > 0)
+    }
   } catch {
     if (token === seq) {
       dskp.value = null
       failed.value = true
+      emit('failed', true)
     }
   }
 }
@@ -61,7 +69,7 @@ const full = computed(() => spIds.value.length >= MAX_SP)
 <template>
   <DsStack gap="md" data-testid="studio-dskp">
     <DsText v-if="failed" variant="body" tone="error" role="alert" data-testid="studio-dskp-error">{{ LOAD_ERROR }}</DsText>
-    <DsFormField v-slot="{ id }" native label="Topik" for="studio-unit" hint="Topik menentukan unit DSKP soalan ini." :error="error">
+    <DsFormField v-slot="{ id }" native label="Tajuk DSKP" for="studio-unit" hint="Tajuk DSKP menentukan unit DSKP soalan ini." :error="error">
       <DsNativeSelect
         :id="id"
         :model-value="unitId ?? ''"
