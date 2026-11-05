@@ -207,6 +207,7 @@ const TRACKER: readonly {
 ]
 
 const USER_ME_KEYS = [
+  'aspiration',
   'avatarUrl',
   'bio',
   'createdAt',
@@ -319,6 +320,7 @@ describe('GET /api/me', () => {
       grade: 10,
       schoolId: 900001,
       bio: null,
+      aspiration: null,
       avatarUrl: null,
       createdAt: '2026-02-06T09:00:00+08:00',
       updatedAt: '2026-02-06T09:00:00+08:00',

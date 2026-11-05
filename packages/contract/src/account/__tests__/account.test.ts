@@ -6,12 +6,18 @@ import { SessionSchema, type Session } from '../../session/session'
 import { ACCOUNT_COMPONENT_SCHEMAS } from '../paths'
 import {
   ACCOUNT_AUTH_MESSAGES,
+  ACCOUNT_ASPIRATION_MAX,
+  ACCOUNT_BIO_MAX,
   ACCOUNT_MESSAGES,
   ACCOUNT_PICTURE_MAX_KB,
   ACCOUNT_PICTURE_MESSAGES,
   ACCOUNT_RESET_IC_MAX_ATTEMPTS,
+  ACCOUNT_PROFILE_CALENDAR_DAYS,
+  ACCOUNT_PROFILE_MODE_LABELS,
+  ACCOUNT_PROFILE_RECENT_MAX,
   ACCOUNT_RESET_IC_WINDOW_MINUTES,
   ACCOUNT_SETTINGS_DEFAULTS,
+  AccountProfileActivitySchema,
   AccountPasswordChangeRequestSchema,
   AccountPasswordEmailRequestSchema,
   AccountPasswordResetIcRequestSchema,
@@ -22,6 +28,10 @@ import {
   AccountPlatformStatsSchema,
   AccountProfileUpdateRequestSchema,
   AccountRegisterRequestSchema,
+  AccountTeacherProfileSchema,
+  AccountTeacherProfileUpdateRequestSchema,
+  AccountTeacherPublicSchema,
+  ACCOUNT_TEACHER_PROFILE_MESSAGES as TEACHER_MESSAGES,
   AccountResetTokenSchema,
   AccountSettingsSchema,
   AccountSettingsUpdateRequestSchema,
@@ -376,8 +386,10 @@ describe('D57 security defaults', () => {
 })
 
 describe('profile', () => {
-  it('requires name, ignores email and any other key', () => {
-    expect(fields(AccountProfileUpdateRequestSchema, {})).toEqual({ name: 'The name field is required.' })
+  it('PUT /me is partial: name may be absent, a blank name is refused, email and any other key are ignored', () => {
+    expect(AccountProfileUpdateRequestSchema.parse({})).toEqual({})
+    expect(AccountProfileUpdateRequestSchema.parse({ bio: 'Saya suka Sains' })).toEqual({ bio: 'Saya suka Sains' })
+    expect(fields(AccountProfileUpdateRequestSchema, { name: '  ' })).toEqual({ name: 'The name field is required.' })
     const parsed = AccountProfileUpdateRequestSchema.parse({ name: ' Murid Baharu ', email: 'lain@contoh.test', role: 'admin', isActive: false })
     expect(parsed).toEqual({ name: 'Murid Baharu' })
   })
@@ -401,10 +413,26 @@ describe('profile', () => {
     }
   })
 
-  it('limits and copy', () => {
-    expect(fields(AccountProfileUpdateRequestSchema, { name: 'A', bio: 'b'.repeat(501) })).toEqual({
-      bio: 'The bio field must not be greater than 500 characters.',
+  it('aspiration ("Cita-Cita Saya", DM-80): optional, nullable, max 255, in the request and in UserMe', () => {
+    expect(AccountProfileUpdateRequestSchema.parse({ aspiration: ' Doktor ' })).toEqual({ aspiration: 'Doktor' })
+    expect(AccountProfileUpdateRequestSchema.parse({ aspiration: null })).toEqual({ aspiration: null })
+    expect('aspiration' in AccountProfileUpdateRequestSchema.parse({ bio: 'x' })).toBe(false)
+    expect(ACCOUNT_ASPIRATION_MAX).toBe(255)
+    expect(AccountProfileUpdateRequestSchema.safeParse({ aspiration: 'a'.repeat(255) }).success).toBe(true)
+    expect(fields(AccountProfileUpdateRequestSchema, { aspiration: 'a'.repeat(256) })).toEqual({
+      aspiration: 'The aspiration field must not be greater than 255 characters.',
     })
+    expect(AccountUserMeSchema.safeParse({ ...me, aspiration: 'Jurutera' }).success).toBe(true)
+    expect(AccountUserMeSchema.safeParse({ ...me, aspiration: null }).success).toBe(true)
+    expect(AccountUserMeSchema.safeParse({ ...me, aspiration: 'a'.repeat(256) }).success).toBe(false)
+  })
+
+  it('limits and copy', () => {
+    expect(fields(AccountProfileUpdateRequestSchema, { name: 'A', bio: 'b'.repeat(1001) })).toEqual({
+      bio: 'The bio field must not be greater than 1000 characters.',
+    })
+    expect(ACCOUNT_BIO_MAX).toBe(1000)
+    expect(AccountProfileUpdateRequestSchema.safeParse({ name: 'A', bio: 'b'.repeat(1000) }).success).toBe(true)
     expect(fields(AccountProfileUpdateRequestSchema, { name: 'A', phone: '1'.repeat(15) })).toEqual({
       phone: 'The phone field must not be greater than 14 characters.',
     })
@@ -532,13 +560,17 @@ describe('openapi registration', () => {
     ['post', '/me/picture'],
     ['get', '/me/settings'],
     ['put', '/me/settings'],
+    ['get', '/me/profile-activity'],
+    ['get', '/account/teacher-profile'],
+    ['put', '/account/teacher-profile'],
+    ['get', '/public/teachers/{id}'],
     ['get', '/public/stats'],
   ]
 
-  it('contains the 11 account routes and counts them by its own tag', () => {
+  it('contains the 15 account routes and counts them by its own tag', () => {
     for (const [method, path] of routes) expect(doc.paths[path]?.[method], `${method} ${path}`).toBeDefined()
     const tagged = Object.values(doc.paths).flatMap((p) => Object.values(p)).filter((o) => o.tags?.includes('account'))
-    expect(tagged).toHaveLength(11)
+    expect(tagged).toHaveLength(15)
   })
 
   it('contains every component, with the Account prefix', () => {
@@ -558,7 +590,7 @@ describe('openapi registration', () => {
   it('declares the error responses and CSRF on authenticated mutations only', () => {
     for (const [method, path] of routes) {
       const op = doc.paths[path]?.[method]
-      const authed = path.startsWith('/me')
+      const authed = path.startsWith('/me') || path.startsWith('/account/') || path.startsWith('/public/teachers')
       const csrf = op?.parameters?.some((p) => p.name === 'X-CSRF-Token') ?? false
       const mutating = method !== 'get'
       expect(csrf, `${method} ${path} csrf`).toBe(authed && mutating)
@@ -572,10 +604,119 @@ describe('openapi registration', () => {
   })
 
   it('exposes no password or IC number in any response component', () => {
-    const responseIds = ['AccountUserMe', 'AccountStatus', 'AccountResetToken', 'AccountPicture', 'AccountSettings', 'AccountPlatformStats', 'AccountSchoolSummary']
+    const responseIds = ['AccountUserMe', 'AccountStatus', 'AccountResetToken', 'AccountPicture', 'AccountSettings', 'AccountPlatformStats', 'AccountSchoolSummary', 'AccountTeacherProfile', 'AccountTeacherPublic']
     for (const id of responseIds) {
       const text = JSON.stringify(doc.components.schemas[id])
       expect(text, id).not.toMatch(/icNumber|passwordHash|"password"/)
     }
+  })
+})
+
+describe('profile activity (API-MUR-02)', () => {
+  const day = (i: number) => ({ date: `2026-10-${String(i + 1).padStart(2, '0')}`, answered: 0, sessions: 0 })
+  const valid = () => ({
+    tiles: { coins: 0, streakDays: 1, level: 1, practiceDays: 1, sessions: 2, accuracy: null, streakBest: 1, streakToday: 1 },
+    calendar30d: Array.from({ length: ACCOUNT_PROFILE_CALENDAR_DAYS }, (_, i) => day(i)),
+    badges: [
+      { code: '1', name: 'Langkah Pertama', unlocked: true, earnedAt: '2026-10-05T10:00:00+08:00' },
+      { code: '2', name: 'Rajin Berlatih', unlocked: false, earnedAt: null },
+    ],
+    recentSessions: [
+      { id: 's1', mode: 'past_year', modeLabel: 'Tahun Lepas', questions: 40, correct: 0, accuracy: 0, coins: 0, at: '2026-10-29T09:00:00+08:00' },
+    ],
+    publicProfilePath: '/pelajar/42',
+  })
+
+  it('accepts the decided shape: calendar {date, answered, sessions}, every badge with unlocked and earnedAt|null', () => {
+    expect(AccountProfileActivitySchema.safeParse(valid()).success).toBe(true)
+    const keys = Object.keys(AccountProfileActivitySchema.parse(valid()).calendar30d[0] ?? {})
+    expect(keys).toEqual(['date', 'answered', 'sessions'])
+  })
+
+  it('has exactly 30 calendar days and at most 10 recent sessions', () => {
+    expect(AccountProfileActivitySchema.safeParse({ ...valid(), calendar30d: valid().calendar30d.slice(1) }).success).toBe(false)
+    const one = valid().recentSessions[0] as ReturnType<typeof valid>['recentSessions'][number]
+    expect(AccountProfileActivitySchema.safeParse({ ...valid(), recentSessions: Array.from({ length: ACCOUNT_PROFILE_RECENT_MAX + 1 }, () => one) }).success).toBe(false)
+  })
+
+  it('accuracy is null or a number with at most one decimal (decision 11)', () => {
+    const tiles = (accuracy: unknown) => AccountProfileActivitySchema.safeParse({ ...valid(), tiles: { ...valid().tiles, accuracy } }).success
+    expect(tiles(null)).toBe(true)
+    expect(tiles(100)).toBe(true)
+    expect(tiles(66.7)).toBe(true)
+    expect(tiles(66.67)).toBe(false)
+    expect(tiles(101)).toBe(false)
+  })
+
+  it('names every session mode in BM, never snake_case', () => {
+    for (const label of Object.values(ACCOUNT_PROFILE_MODE_LABELS)) expect(label).not.toMatch(/_|^[a-z]/)
+    expect(ACCOUNT_PROFILE_MODE_LABELS.past_year).toBe('Tahun Lepas')
+  })
+
+  it('is registered as an own-data, student-only route with no parameter', () => {
+    const op = securityDoc().paths['/me/profile-activity']?.get
+    expect(JSON.stringify(op)).not.toContain('"parameters"')
+    expect(op?.responses['401']).toBeDefined()
+    expect(op?.responses['403']).toBeDefined()
+  })
+})
+
+describe('teacher profile (API-GUR-22)', () => {
+  const body = { name: 'Guru Demo', bio: 'Pendidik.', ic: '860101015432', subject: 'Matematik', qualification: 'Ijazah', experienceYears: 7 }
+
+  it('uses the exact BM messages of the 20 R1-GUR-A1 field table', () => {
+    expect(
+      fields(AccountTeacherProfileUpdateRequestSchema, { name: ' ', bio: 'b'.repeat(1001), ic: '12345678901', subject: 's'.repeat(101), qualification: 'q'.repeat(151), experienceYears: 61 }),
+    ).toEqual({
+      name: 'Sila isi nama penuh.',
+      bio: 'Bio tidak boleh melebihi 1000 aksara.',
+      ic: 'No. IC mesti 12 digit tanpa sempang.',
+      subject: 'Subjek utama tidak boleh melebihi 100 aksara.',
+      qualification: 'Kelayakan tidak boleh melebihi 150 aksara.',
+      experienceYears: 'Pengalaman mesti antara 0 dan 60 tahun.',
+    })
+    expect(fields(AccountTeacherProfileUpdateRequestSchema, { name: 'n'.repeat(256) })).toEqual({ name: 'Nama penuh tidak boleh melebihi 255 aksara.' })
+    expect(TEACHER_MESSAGES.icTaken).toBe('No. IC sudah didaftarkan.')
+    expect(TEACHER_MESSAGES.saved).toBe('Profil dikemaskini.')
+  })
+
+  it('accepts the boundaries and refuses a hyphenated IC and a fractional experience', () => {
+    for (const experienceYears of [0, 60]) expect(AccountTeacherProfileUpdateRequestSchema.safeParse({ ...body, experienceYears }).success).toBe(true)
+    expect(AccountTeacherProfileUpdateRequestSchema.safeParse({ ...body, subject: 's'.repeat(100), qualification: 'q'.repeat(150), bio: 'b'.repeat(1000) }).success).toBe(true)
+    expect(fields(AccountTeacherProfileUpdateRequestSchema, { ...body, ic: '860101-01-5432' })).toEqual({ ic: TEACHER_MESSAGES.icFormat })
+    expect(fields(AccountTeacherProfileUpdateRequestSchema, { ...body, experienceYears: 2.5 })).toEqual({ experienceYears: TEACHER_MESSAGES.experienceRange })
+    expect(AccountTeacherProfileUpdateRequestSchema.safeParse({ name: 'A' }).success).toBe(true)
+    expect(AccountTeacherProfileUpdateRequestSchema.safeParse({ ...body, ic: '' }).success).toBe(true)
+    expect(AccountTeacherProfileUpdateRequestSchema.safeParse({ ...body, ic: null }).success).toBe(true)
+  })
+
+  it('takes no schoolId, phone or e-mail: they are ignored, never parsed into the body', () => {
+    const parsed = AccountTeacherProfileUpdateRequestSchema.parse({ ...body, schoolId: '3', phone: '0123456789', email: 'x@y.test', role: 'admin' })
+    expect(Object.keys(parsed).sort()).toEqual(['bio', 'experienceYears', 'ic', 'name', 'qualification', 'subject'])
+  })
+
+  it('the own profile carries only the masked IC and the school name, never the e-mail or the phone', () => {
+    const own = { name: 'Guru Demo', bio: null, icMasked: 'xxxxxx-xx-xx32', subject: null, qualification: null, experienceYears: 0, school: { name: 'SMK Demo' } }
+    expect(AccountTeacherProfileSchema.safeParse(own).success).toBe(true)
+    expect(AccountTeacherProfileSchema.safeParse({ ...own, email: 'guru@demo.test' }).success).toBe(false)
+    expect(AccountTeacherProfileSchema.safeParse({ ...own, phone: '0123456789' }).success).toBe(false)
+    expect(AccountTeacherProfileSchema.safeParse({ ...own, ic: '860101015432' }).success).toBe(false)
+    expect(AccountTeacherProfileSchema.safeParse({ ...own, school: null }).success).toBe(true)
+  })
+
+  it('the teacher card has name, subject, bio, qualification and experience only', () => {
+    const card = { name: 'Guru Demo', subject: 'Sains', bio: null, qualification: null, experienceYears: 3 }
+    expect(AccountTeacherPublicSchema.safeParse(card).success).toBe(true)
+    for (const extra of [{ icMasked: 'xxxxxx-xx-xx32' }, { email: 'a@b.test' }, { phone: '1' }, { school: { name: 'S' } }]) {
+      expect(AccountTeacherPublicSchema.safeParse({ ...card, ...extra }).success).toBe(false)
+    }
+  })
+
+  it('is registered: own routes need a session (401), the card answers 401 and 404', () => {
+    const paths = securityDoc().paths
+    expect(paths['/account/teacher-profile']?.get?.responses['403']).toBeDefined()
+    expect(paths['/account/teacher-profile']?.put?.responses['422']).toBeDefined()
+    expect(paths['/public/teachers/{id}']?.get?.responses['401']).toBeDefined()
+    expect(paths['/public/teachers/{id}']?.get?.responses['404']).toBeDefined()
   })
 })
