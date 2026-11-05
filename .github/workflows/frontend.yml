@@ -185,6 +185,9 @@ jobs:
       - name: API - build, migrate, seed (poc profile, then e2e profile)
         working-directory: api
         shell: bash
+        env:
+          # CI seeds keep the fixed SEED_NOW calendar (ADR-0006 amendment 3); only a demo/UAT run follows the run date.
+          SEED_CLOCK: fixed
         run: |
           set -euo pipefail
           npm run be:build
