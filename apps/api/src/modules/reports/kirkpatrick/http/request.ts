@@ -80,7 +80,7 @@ export class BoundedQueryPipe implements PipeTransform<unknown, unknown> {
 }
 
 /**
- * A pupil id in the path: a non-numeric id has no route (404 "Not Found."); a numeric one that can never be an id
+ * A pupil id in the path: a non-numeric id has no route (404 NOT_FOUND (generic BM default)); a numeric one that can never be an id
  * (a leading zero, past bigint) becomes `0`, which no row has, so it answers like any unknown id.
  */
 @Injectable()

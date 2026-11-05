@@ -18,10 +18,8 @@ import { UsersRepository } from '../users'
 import { bulkFailureOf, isForeignKeyViolation, notFoundFailure, questionNotFound, transitionConflict, type BulkFailure, alreadyApprovedSkip, AlreadyInStatusError, type BulkSkipped } from './errors'
 import { gradeQuestion } from './grading'
 import {
-  difficultyOf,
   flatFromVersion,
   kertasOfPaperCode,
-  keyIndexOf,
   languageToStore,
   partsFromFlat,
   paperCodeWithKertas,
@@ -41,7 +39,6 @@ import { isLeaf, leavesOf } from './grading'
 import type {
   AdminListFilter,
   AdminListResult,
-  ContributionCounts,
   NamedRef,
   Page,
   PartAnswer,
@@ -51,8 +48,6 @@ import type {
   QuestionCreateInput,
   QuestionDetailView,
   QuestionGrade,
-  QuestionGuruCreateInput,
-  QuestionGuruUpdateInput,
   QuestionProvenance,
   QuestionRecord,
   QuestionVersionRecord,
@@ -64,6 +59,8 @@ import type {
   QuestionView,
   SetStatusOptions,
   StructuredListFilter,
+  GuruStructuredRecord,
+  TextbookRef,
   StructuredListResult,
 } from './types'
 
@@ -175,8 +172,12 @@ function statusAfterEdit(current: QuestionStatus): QuestionStatus {
 interface Normalized {
   subjectId: string
   educationLevelId: string
-  /** 1..6, stored in `difficulty_tp`. */
+  /** 1..6, stored in `difficulty_tp`. Working default: still falls back to the typed Kesukaran when no `tag.tp` is sent (S1-T01's save path). */
   tp: number
+  /** DM-47: the typed Kesukaran 1..5, stored in `difficulty_level` on every save. */
+  difficultyLevel: number
+  /** DM-56: a value sets the reference, null clears it, undefined keeps what is stored. */
+  textbookRef?: TextbookRef | null | undefined
   stem: string
   parts: QuestionPart[]
   language: VersionDraft['language']
@@ -203,7 +204,7 @@ interface Normalized {
 /**
  * Question bank use cases (M04, BE-09). Controllers (Part C) call the admin and Guru methods;
  * BE-10 calls `setStatus`, `getStatus`, `deactivate`; BE-12/15/41 call `getPublicForLearner` and
- * `gradeAnswer`; BE-17 calls `contributionCountsFor`.
+ * `gradeAnswer`.
  *
  * Errors: 404 `NOT_FOUND` for an unknown id and for a row the caller may not see; 422
  * `VALIDATION_ERROR` with `fields`; 409 `CONFLICT` for a status pair outside the contract table.
@@ -269,7 +270,7 @@ export class QuestionsService {
     return { ...(await this.detail(record)), ...(await this.repo.placementsOf(record.id)) }
   }
 
-  async create(raw: QuestionCreateInput, actor: QuestionActor, provenance?: QuestionProvenance): Promise<QuestionView> {
+  async create(raw: QuestionCreateInput & { curriculumTopicId?: string | null }, actor: QuestionActor, provenance?: QuestionProvenance): Promise<QuestionView> {
     const input = await this.withImageKeys(raw)
     const flat: FlatSource = {
       questionType: input.questionType,
@@ -291,6 +292,8 @@ export class QuestionsService {
         subjectId: input.subjectId,
         educationLevelId: input.educationLevelId,
         tp: input.tag?.tp ?? input.difficultyLevel,
+        difficultyLevel: input.difficultyLevel,
+        textbookRef: input.textbookRef,
         stem: input.questionText,
         parts,
         language: languageToStore(input.language, undefined),
@@ -298,6 +301,8 @@ export class QuestionsService {
         tag: input.tag,
         dskpSpId: input.dskpSpId,
         chapterId: input.curriculumChapterId,
+        // S1-T05: the CSV import (through the bank adapter) sets the topic of the Bab; the wire body of `POST /questions` has no such field.
+        topicId: input.curriculumTopicId,
         stimulusGroupId: input.stimulusGroupId,
         numberLabel: input.numberLabel,
         stemImage: input.questionImageFileId,
@@ -370,6 +375,7 @@ export class QuestionsService {
         tagReview: v.tagReview,
         catalogueVersion: v.catalogueVersion,
         difficultyTp: v.difficultyTp,
+        difficultyLevel: v.difficultyLevel,
         sourcePage: v.sourcePage,
         setLabel: v.setLabel,
         paperCode: v.paperCode ?? null,
@@ -392,7 +398,7 @@ export class QuestionsService {
   }
 
   /**
-   * The ONE hard delete of a question (admin route, bulk `delete`, Guru `removeOwn`). R1-delete-served-guard (B3 review of REQ-B-052): a question
+   * The ONE hard delete of a question (admin route, bulk `delete`; the Guru route deletes intake items since S6-T06). R1-delete-served-guard (B3 review of REQ-B-052): a question
    * that a paper which is still held (Terbit, or withdrawn with sittings) places is refused with 409 and kept. `paper_placements.question_id` has no
    * foreign key, so without this a delete leaves a placement on nothing and a running sitting answers 500. Every other state is deletable, as on the
    * live site. The question lock serialises it against an edit or a publish of the same question; Terbit takes FOR SHARE on the placed question
@@ -454,6 +460,7 @@ export class QuestionsService {
           tagReview: v.tagReview,
           catalogueVersion: v.catalogueVersion,
           difficultyTp: v.difficultyTp,
+          difficultyLevel: v.difficultyLevel,
           sourcePage: v.sourcePage,
           setLabel: v.setLabel,
           paperCode: v.paperCode ?? null,
@@ -578,12 +585,7 @@ export class QuestionsService {
         if (record.liveVersionNo !== null && record.liveVersionNo !== v.versionNo) {
           await this.repo.setVersionStatus(id, record.liveVersionNo, 'archived', { archiveReason: 'superseded' })
         }
-        // REQ-B-071 (Q17): the Bab is not required to approve; when the admin gave none, fill it from the DSKP unit (one chapter whose dskp_code is the unit code), so
-        // Soalan by Chapter, Peta Belajar and Latihan Bab still count the question. No match, or several: it stays chapterless.
-        if (v.chapterId === null) {
-          const derived = await this.repo.chapterOfUnit(v.subjectId, v.educationLevelId, v.unitId)
-          if (derived !== null) await this.repo.fillChapter(id, v.versionNo, derived)
-        }
+        // S1-T02 supersedes REQ-B-071: the Bab is a gate item (NO_CHAPTER) wherever the Subjek + Tingkatan has chapters, so it is no longer derived from the unit here.
         await this.repo.setVersionStatus(id, v.versionNo, 'approved', { publishedAt: this.clock.now() })
         await this.repo.setLiveVersion(id, v.versionNo)
         await this.repo.setLastEditor(id, v.versionNo, 'person') // a person approved it
@@ -595,7 +597,8 @@ export class QuestionsService {
         await this.repo.setVersionStatus(id, v.versionNo, status, { archiveReason: 'withdrawn' })
         await this.repo.setLiveVersion(id, null)
       } else {
-        await this.repo.setVersionStatus(id, v.versionNo, status)
+        // DM-58: "Tolak" (review to draft with a reason) stores `rejection_reason`; sending for review again clears it.
+        await this.repo.setVersionStatus(id, v.versionNo, status, status === 'review' ? { rejectionReason: null } : options.rejectionReason !== undefined && status === 'draft' ? { rejectionReason: options.rejectionReason } : {})
         // R1-H-A18: a person's status transition on the version (for example draft to review) is the person having seen it.
         await this.repo.setLastEditor(id, v.versionNo, 'person')
         if (status === 'archived' && record.liveVersionNo !== null && record.liveVersionNo !== v.versionNo) {
@@ -679,89 +682,29 @@ export class QuestionsService {
     return this.detail(record)
   }
 
-  // --- Guru (own rows only; another teacher id is 404) ------------------------------------------
+  // --- structured (teacher mount, API-GUR-26) ----------------------------------------------------
 
-  async listOwn(userId: string, page: number, pageSize = 20): Promise<Page<QuestionView>> {
-    const res = await this.repo.listOwn({ ownerId: userId, page, pageSize })
-    return { ...res, rows: await this.named(res.rows) }
+  /**
+   * One page of what a pupil is served (approved, live, figures present), newest first. `status=review` is the teacher's own submissions,
+   * which have no source yet: an empty page. The caller fixes the page size.
+   */
+  async listGuruStructured(filter: StructuredListFilter, status: 'approved' | 'review'): Promise<Page<QuestionView>> {
+    if (status === 'review') return { rows: [], page: filter.page, pageSize: filter.pageSize, total: 0 }
+    const page = await this.repo.structuredIds({ ...filter, served: true, newestFirst: true })
+    const records = await this.repo.getMany(page.ids, 'live')
+    return { rows: await this.named(records), page: filter.page, pageSize: filter.pageSize, total: page.total }
   }
 
-  async getOwn(id: string, userId: string): Promise<QuestionDetailView> {
-    return this.detail(await this.owned(id, userId))
-  }
-
-  async createGuru(raw: QuestionGuruCreateInput, userId: string): Promise<QuestionDetailView> {
-    const input = await this.withImageKeys(raw)
-    const flat: FlatSource = {
-      questionType: input.questionType,
-      questionText: input.questionText,
-      ...(input.options === undefined ? {} : { options: input.options }),
-      ...(input.correctAnswer === undefined ? {} : { correctAnswer: input.correctAnswer }),
-      ...(input.tfAnswer === undefined ? {} : { tfAnswer: input.tfAnswer }),
-      ...(input.correctAnswerText === undefined ? {} : { correctAnswerText: input.correctAnswerText }),
-      ...(input.altAnswers === undefined ? {} : { altAnswers: input.altAnswers }),
-      ...(input.modelAnswer === undefined ? {} : { modelAnswer: input.modelAnswer }),
-      ...(input.optionImageFileIds === undefined ? {} : { optionImageIds: input.optionImageFileIds }),
-    }
-    const parts = this.checkedParts(input.parts ?? partsFromFlat(flat), input.parts !== undefined)
-    const created = await this.createFrom(
-      {
-        subjectId: input.subjectId,
-        educationLevelId: input.educationLevelId,
-        tp: input.tag?.tp ?? difficultyOf(input.difficultyLevel),
-        stem: input.questionText,
-        parts,
-        language: languageToStore(undefined, input.scriptType),
-        explanation: input.explanation?.trim() || null,
-        tag: input.tag,
-        dskpSpId: input.dskpSpId,
-        chapterId: input.curriculumChapterId,
-        topicId: input.curriculumTopicId,
-        stemImage: input.questionImageFileId,
-        actor: { userId, role: 'teacher' },
-        flatSp: input.tag === undefined,
-      },
-      'review',
-      { userId, role: 'teacher' },
-    )
-    return this.detail(created)
-  }
-
-  async updateOwn(id: string, input: QuestionGuruUpdateInput, userId: string): Promise<QuestionDetailView> {
-    const record = await this.owned(id, userId)
-    const flat = flatFromVersion(record.version)
-    const touchesKey = input.options !== undefined || input.correctOptionId !== undefined
-    if (touchesKey && flat.questionType !== 'mcq') {
-      throw fail({ options: QUESTION_MESSAGES.options })
-    }
-    const body: QuestionUpdateInput = {
-      subjectId: record.version.subjectId ?? '',
-      educationLevelId: record.version.educationLevelId ?? '',
-      difficultyLevel: input.difficultyLevel === undefined ? flat.difficultyLevel : difficultyOf(input.difficultyLevel),
-      questionText: input.questionText,
-      ...(input.explanation === undefined ? {} : { explanation: input.explanation }),
-      ...(input.options === undefined
-        ? {}
-        : { options: [...input.options].sort((a, b) => Number((a as { id: number }).id) - Number((b as { id: number }).id)) }),
-      ...(input.correctOptionId === undefined ? {} : { correctAnswer: keyIndexOf(input.correctOptionId) ?? 0 }),
-      ...(input.questionImageFileId === undefined ? {} : { questionImageFileId: input.questionImageFileId }),
-      ...(input.optionImageFileIds === undefined ? {} : { optionImageFileIds: input.optionImageFileIds }),
-      ...(input.removeQuestionImage === undefined ? {} : { removeQuestionImage: input.removeQuestionImage }),
-      ...(input.removeOptionImage === undefined ? {} : { removeOptionImage: input.removeOptionImage }),
-    }
-    return this.detail(await this.applyUpdate(record, body, { userId, role: 'teacher' }, { keepSubject: true }))
-  }
-
-  async removeOwn(id: string, userId: string): Promise<void> {
-    await this.owned(id, userId)
-    // A teacher's own approved question may be on a Terbit paper with a running sitting: the same guard as the admin delete.
-    if (!(await this.removeGuarded(id))) throw questionNotFound()
-    this.overview?.invalidate()
-  }
-
-  async contributionCountsFor(userId: string): Promise<ContributionCounts> {
-    const byStatus = await this.repo.ownerStatusCounts(userId)
-    return { total: Object.values(byStatus).reduce((s, n) => s + n, 0), byStatus }
+  /**
+   * Detail for the teacher mount: 404 unless the list would show the question. Reads the LIVE version and the stimulus group, and never
+   * loads the creator (no personal data).
+   */
+  async getGuruStructured(id: string): Promise<GuruStructuredRecord> {
+    if (!(await this.repo.isStructuredServed(id))) throw questionNotFound()
+    const record = await this.repo.get(id, 'live')
+    if (!record) throw questionNotFound()
+    const stimulusGroup = record.groupId ? await this.repo.groupOf(record.id) : null
+    return { ...(await this.viewOf(record)), stimulusGroup }
   }
 
   // --- learners (BE-12, BE-15, BE-41); there is no student HTTP route (Q-3) ---------------------
@@ -796,14 +739,6 @@ export class QuestionsService {
   }
 
   // --- internals ----------------------------------------------------------------------------------
-
-  private async owned(id: string, userId: string): Promise<QuestionRecord> {
-    const owner = await this.repo.ownerOf(id)
-    if (owner === undefined || owner !== userId) throw questionNotFound()
-    const record = await this.repo.get(id, 'latest')
-    if (!record) throw questionNotFound()
-    return record
-  }
 
   /** Re-validates a built tree with the contract; a failure is a 422 on the first offending path. */
   private checkedParts(parts: QuestionPart[], supplied: boolean): QuestionPart[] {
@@ -899,11 +834,6 @@ export class QuestionsService {
     // R1-H-A18: who wrote this content and what total the intake declared. An AI variant is the AI's until a person acts on it.
     draft.lastEditor = provenance?.sourceType === 'ai_variant' ? 'ai' : 'person'
     draft.declaredMarks = provenance?.declaredMarks ?? null
-    if (status === 'approved' && draft.chapterId === null) {
-      // REQ-B-071 (Q17): created already approved without a Bab: derive it from the DSKP node, as the transition does.
-      const derived = await this.repo.chapterOfUnit(draft.subjectId === null ? null : idToString(draft.subjectId), draft.educationLevelId === null ? null : idToString(draft.educationLevelId), draft.unitNodeId === null ? null : idToString(draft.unitNodeId))
-      if (derived !== null) draft.chapterId = BigInt(derived)
-    }
     if (status === 'approved') {
       // Created already approved (an Admin Pusat shortcut that skips the Semakan step): the same merged approve gate as the transition,
       // on the same builder. The question is not stored yet, so the facts that need a stored row are the new-question ones.
@@ -917,10 +847,11 @@ export class QuestionsService {
             parts: n.parts,
             subjectId,
             educationLevelId: levelId,
-            chapterId: null,
+            chapterId: draft.chapterId === null ? null : idToString(draft.chapterId),
             unitId: draft.unitNodeId === null ? null : idToString(draft.unitNodeId),
             spIds: draft.spNodeIds.map(idToString),
             difficultyTp: draft.difficultyTp,
+            difficultyLevel: draft.difficultyLevel,
             paperCode: draft.paperCode ?? null,
           },
         },
@@ -930,6 +861,8 @@ export class QuestionsService {
           mediaResolved: await this.repo.mediaResolvedFor(draft.stimulusIds, n.stimulusGroupId ? BigInt(n.stimulusGroupId) : null),
           lastEditedByAi: draft.lastEditor === 'ai',
           declaredMarks: draft.declaredMarks ?? null,
+          ...(await this.repo.curriculumFactsFor(subjectId, levelId)),
+          spOutsideUnit: [],
         },
         await this.repo.isSpmBound(subjectId, levelId),
       )
@@ -1121,6 +1054,8 @@ export class QuestionsService {
       tagReview: v?.tagReview ?? false,
       catalogueVersion: v?.catalogueVersion ?? null,
       difficultyTp: n.tp,
+      difficultyLevel: n.difficultyLevel,
+      ...(n.textbookRef === undefined ? {} : { textbookRef: n.textbookRef }),
       sourcePage: v?.sourcePage ?? null,
       setLabel: v?.setLabel ?? null,
       spNodeIds: spKeys,
@@ -1216,6 +1151,8 @@ export class QuestionsService {
       subjectId: opts.keepSubject ? (v.subjectId ?? input.subjectId) : input.subjectId,
       educationLevelId: opts.keepSubject ? (v.educationLevelId ?? input.educationLevelId) : input.educationLevelId,
       tp: input.tag?.tp ?? (keepTp && v.difficultyTp !== null ? v.difficultyTp : input.difficultyLevel),
+      difficultyLevel: input.difficultyLevel,
+      textbookRef: input.textbookRef,
       stem: input.questionText,
       parts,
       language,

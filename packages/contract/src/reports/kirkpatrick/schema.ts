@@ -28,9 +28,9 @@ const count = z.number().int()
 const pct = z.number()
 
 export const KIRKPATRICK_ERROR_MESSAGES = {
-  unauthorized: 'Unauthenticated.',
-  forbidden: 'This action is unauthorized.',
-  notFound: 'Not Found.',
+  unauthorized: 'Sesi anda telah tamat. Sila log masuk semula.',
+  forbidden: 'Anda tidak dibenarkan melakukan tindakan ini.',
+  notFound: 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?',
 } as const
 
 /** Exact 422 / 409 copy of the mock. */

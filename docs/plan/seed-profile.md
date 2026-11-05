@@ -73,7 +73,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | game_sessions | 3 |
 | game_settings | 1 |
 | game_standings | 48 |
-| gamification_settings | 10 |
+| gamification_settings | 58 |
 | headcount_configs | 2 |
 | headcount_entries | 13 |
 | headcount_entry_marks | 36 |
@@ -113,11 +113,13 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | question_version_stimuli | 7 |
 | question_versions | 1271 |
 | questions | 1271 |
+| reward_settings | 1 |
 | rewards | 59 |
 | rph_plans | 2 |
 | school_packages | 4 |
 | schools | 4 |
 | sekolah_bersaing_weeks | 16 |
+| spin_segments | 8 |
 | spin_stats | 8 |
 | spm_subject_configs | 19 |
 | spm_tracking_set_questions | 493 |
@@ -142,7 +144,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | videos | 3 |
 | wallets | 3 |
 
-Tables with rows: 98 of 198. Total rows: 21891.
+Tables with rows: 100 of 200. Total rows: 21948.
 <!-- poc-counts:end -->
 
 Mod Pelajar (`is_test`) rows: none are seeded; the profile counts and `verify` rules exclude them anyway.

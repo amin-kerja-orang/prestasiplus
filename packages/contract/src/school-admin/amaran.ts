@@ -9,8 +9,7 @@ import { count } from './common'
  *
  * Wire spec: `src/modules/m18-ppd-jpn/mock/{handlers/amaran.ts,repository/amaran.ts,repository/types.ts}`.
  * B1 roles: admin, school_admin and teacher only (ppd_officer / jpn_officer have no B1 endpoints).
- * Error texts are the English Laravel defaults ("Unauthenticated.", "This action is unauthorized.",
- * "Not Found."), unlike the BM texts of the M27 routes.
+ * Generic error texts (401, 403, 404) are the shared BM defaults of the API error contract, like the M27 routes.
  */
 
 export const AMARAN_MESSAGES = {

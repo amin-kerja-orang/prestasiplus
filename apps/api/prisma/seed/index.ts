@@ -41,6 +41,7 @@ import { spmSeed } from './spm'
 import { spmSubjectConfigsSeed } from './spm-subject-configs'
 import { pocProfileSeed } from './poc'
 import { pkskSeed } from './pksk'
+import { uatLikeSeed } from './uat-like'
 
 export { assertSeedAllowed, countsAsProduction }
 
@@ -86,7 +87,29 @@ export interface SeedModule {
  * ALLOW_DEMO_SEED.
  * ORDER NOTE: `exam-retire-poc` (R1-B07) withdraws the seeded PoC papers once every seed that reads them has run (it sits before `gamification`); `core-wallet-tiers` sits right after `core-school-packages`, BEFORE `wallet` and `gamification` (the modules that read tiers); `questions-pool` sits BEFORE `spm-subject-configs` and `spm` (the SPM seed reads the SPM pool; test/seed/question-pool.spec.ts); the marketplace seeds sit BEFORE `gamification`; `gamification` then `poc-profile` stay at the END (test/gamification/seed.spec.ts, test/seed/poc.spec.ts).
  */
-export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, walletTiersSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, examLaunchBlueprintsSeed, e2eSeed, classesSeed, bijakSittingsSeed, battleSeed, gamesSeed, cikguSeed, pkskSeed, performanceSeed, questionPoolSeed, spmSubjectConfigsSeed, spmSeed, practiceSeed, marketplaceCategoriesSeed, marketplaceSeed, examRetirePocSeed, gamificationSeed, pocProfileSeed]
+export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, walletTiersSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, examLaunchBlueprintsSeed, e2eSeed, classesSeed, bijakSittingsSeed, battleSeed, gamesSeed, cikguSeed, pkskSeed, performanceSeed, questionPoolSeed, spmSubjectConfigsSeed, spmSeed, practiceSeed, marketplaceCategoriesSeed, marketplaceSeed, examRetirePocSeed, gamificationSeed, uatLikeSeed, pocProfileSeed]
+
+/** The CI fixture profile of S4-T01 (docs/ops/uat-like-data.md): CI fixtures only, not acceptance evidence. */
+export const UAT_LIKE_PROFILE = 'uat-like'
+
+/**
+ * Profile `uat-like` keeps ONLY the modules without `profiles` that are named here; every other module without `profiles` is skipped
+ * for that profile (modules WITH `profiles` follow their own list). Included, because the fixtures need them: `core-identity` (Admin Pusat,
+ * Admin Sekolah, Guru, the Tingkatan 4 and 5 pupils, schools DEMO001/DEMO002), `core-schools` (DEMO003/DEMO004: 4 schools in all),
+ * `core-school-packages`, `core-wallet-tiers`, `curriculum` (Sains Tingkatan 4 nodes and chapters), `spm-subject-configs`,
+ * `core-marketplace-categories`. Excluded: everything that creates papers, blueprints (Kontrak), sittings, practice data or a question
+ * bank (`questions`, `exam*`, `core-population`, `wallet`, `content`, `classes`, `bijak-sittings`, `battle`, `games`, `cikgu`, `pksk`,
+ * `performance`, `spm`, `practice`, `marketplace`, `gamification`, `exam-retire-poc`); the fixture questions come from `uat-like-fixtures`.
+ */
+export const UAT_LIKE_BASE_MODULES: ReadonlySet<string> = new Set([
+  'core-identity',
+  'core-schools',
+  'core-school-packages',
+  'core-wallet-tiers',
+  'curriculum',
+  'spm-subject-configs',
+  'core-marketplace-categories',
+])
 
 export interface RunSeedsOptions {
   /** Environment read by the demo guard (default `process.env`). */
@@ -129,6 +152,7 @@ export async function runSeeds(
   const skipped: string[] = []
   for (const m of modules) {
     if (m.profiles && !m.profiles.includes(profile)) continue
+    if (profile === UAT_LIKE_PROFILE && !m.profiles && !UAT_LIKE_BASE_MODULES.has(m.name)) continue
     if ((m.kind ?? 'demo') === 'demo' && !demoAllowed) {
       skipped.push(m.name)
       continue

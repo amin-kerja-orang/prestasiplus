@@ -128,7 +128,8 @@ function buildDirs(card) {
 const isTest = (p) => /(^|\/)__tests__\//.test(p) || /\.(spec|test)\.ts$/.test(p)
 const isProduct = (p) => /^(src|apps|packages)\//.test(p)
 const isPage = (p) => /^src\/(?:.*\/)?pages\/.*\.vue$/.test(p)
-const isRouteFile = (p) => /^src\/(?:.*\/)?routes\/[^/]+\.ts$/.test(p)
+// A test that sits under a `routes/` folder (e.g. `__tests__/routes/alias-table.test.ts`) is not a route file.
+const isRouteFile = (p) => !isTest(p) && /^src\/(?:.*\/)?routes\/[^/]+\.ts$/.test(p)
 const isController = (p) => /^apps\/api\/.*\.controller\.ts$/.test(p)
 const isSchema = (p) => /^apps\/api\/prisma\/schema\/[^/]+\.prisma$/.test(p)
 const migrationDir = (p) => (p.match(/^(apps\/api\/prisma\/migrations\/[^/]+)\/./) ?? [])[1] ?? null
@@ -686,6 +687,7 @@ function selfTest() {
   run('Fix adds Vue page, no ID', 'S9-T01', (c) => { touchA(c); write(c, 'src/mod/pages/New.vue', '<template/>\n') }, { fail: ['NEW_PAGE'], exact: true })
   run('Fix adds Vue page, with DM id -> ok', 'S9-T01 DM-12', (c) => { touchA(c); write(c, 'src/mod/pages/New.vue', '<template/>\n') }, { exact: true })
   run('Complete adds route file, no ID', 'S9-T02', (c) => { touchA(c); write(c, 'src/mod/routes/new.ts', 'export {}\n') }, { fail: ['NEW_ROUTE_FILE'], exact: true })
+  run('Complete adds a test under __tests__/routes/, no ID', 'S9-T02', (c) => { touchA(c); write(c, 'src/mod/__tests__/routes/alias-table.test.ts', 'export {}\n') }, { exact: true })
   run('Fix adds controller, API id -> ok', 'S9-T01 API-AUTH-17', (c) => { touchA(c); write(c, 'apps/api/src/mod/new.controller.ts', 'export {}\n') }, { exact: true })
   run('Fix adds controller, no ID', 'S9-T01', (c) => { touchA(c); write(c, 'apps/api/src/mod/new.controller.ts', 'export {}\n') }, { fail: ['NEW_CONTROLLER'], exact: true })
   run('Fix adds Prisma model, no ID', 'S9-T01', (c) => { touchA(c); write(c, 'apps/api/prisma/schema/core.prisma', 'model Existing {\n  id Int @id\n}\n\nmodel Brand {\n  id Int @id\n}\n') }, { fail: ['NEW_MODEL'], exact: true })

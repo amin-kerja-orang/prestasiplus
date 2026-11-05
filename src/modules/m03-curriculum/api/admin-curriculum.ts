@@ -51,6 +51,8 @@ export interface TopicNode extends CurriculumTopic {
 }
 
 export interface ChapterNode extends CurriculumChapter {
+  /** API-DSKP-04: live, active, approved questions linked to the Bab (absent on payloads without counts). */
+  questionCount?: number
   topics: TopicNode[]
 }
 
@@ -170,6 +172,45 @@ export function fetchCurriculumTree(
     query: { subjectId: String(subjectId), educationLevelId: String(educationLevelId) },
     ...sig(options),
   })
+}
+
+/** API-DSKP-11 row: one offered Subjek x Tingkatan with live DSKP counts (S4-T02, FR-ADM-C04.0). */
+export interface DskpReportRow {
+  subject: NamedRef
+  level: NamedRef
+  state: 'dimuatkan' | 'belum dimuatkan'
+  bab: number
+  sk: number
+  sp: number
+  tp: number
+  tpDescriptors: number
+}
+
+/** A DSKP node of the `DSKP` tab list, with its TP descriptors (read-only). */
+export interface DskpNode {
+  id: number
+  kind: 'grouping' | 'unit' | 'sk' | 'sp'
+  code: string
+  title: string
+  parentId: number | null
+  tpDescriptors: { tp: number; descriptor: string }[]
+}
+
+/** API-DSKP-11 `data`: `nodes` only when both ids are given (else null). */
+export interface DskpReport {
+  rows: DskpReportRow[]
+  nodes: DskpNode[] | null
+}
+
+/** API-DSKP-11 `GET /api/admin/curriculum/dskp` (both ids optional; 404 for an unknown subject or level). */
+export function fetchDskpReport(
+  filter: { subjectId?: string | number | null; levelId?: string | number | null } = {},
+  options: Opts = {},
+): Promise<DskpReport> {
+  const query: Record<string, string> = {}
+  if (filter.subjectId != null && filter.subjectId !== '') query.subjectId = String(filter.subjectId)
+  if (filter.levelId != null && filter.levelId !== '') query.levelId = String(filter.levelId)
+  return api.get<DskpReport>(`${base}/dskp`, { query, ...sig(options) })
 }
 
 /** #14 `GET …/chapters/:id` (404 -> "Bab tidak dijumpai."). */

@@ -16,8 +16,10 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { isAlesaAiOn } from '@/app/features'
-import { shellHomePath } from '@/app/prototype-scope'
+import { isPathAllowed, shellHomePath } from '@/app/prototype-scope'
 import { FlashOutlet } from '@/components/feedback'
+import { dsCopy } from '@/ds/copy'
+import { TournamentBanner } from '@/modules/m16-battle-games'
 import { useFlash } from '@/composables/useFlash'
 import { usePrototypeScope } from '@/composables/usePrototypeScope'
 import {
@@ -46,6 +48,7 @@ import {
   currentItem,
   labelTitle,
   drawerEntries,
+  LOGOUT_ROW_MIN_HEIGHT_CLASS,
   pembelajaranTabs,
   phClass,
   routeRoleCheck,
@@ -67,6 +70,8 @@ const modeOn = computed(() => useSessionStore().mode !== null)
 const { allows } = usePrototypeScope()
 // Logo link: the role's own dashboard (teacher `/guru`, school admin `/admin-sekolah`), scope on or off.
 const home = computed(() => shellHomePath(role.value))
+// FR-MUR-SH-12: the tournament banner, as in UserShell; roles without /tournament do not see it (D43).
+const showTournamentBanner = computed(() => isPathAllowed(role.value, '/tournament'))
 const { flash } = useFlash()
 const toast = useToast()
 
@@ -192,6 +197,7 @@ const accountMenu = computed(() => [
       icon: phClass('sign-out', learner.value),
       to: '/logout',
       color: 'error' as const,
+      class: LOGOUT_ROW_MIN_HEIGHT_CLASS,
     },
   ],
 ])
@@ -210,7 +216,7 @@ const lagiGroups = computed(() => [
       label: 'Log Keluar',
       icon: phClass('sign-out', learner.value),
       to: '/logout',
-      class: 'text-error',
+      class: `text-error ${LOGOUT_ROW_MIN_HEIGHT_CLASS}`,
     },
   ],
 ])
@@ -227,8 +233,8 @@ const lagiGroups = computed(() => [
 const navUi = computed(() => ({
   root: 'gap-0',
   link: learner.value
-    ? 'h-10 gap-2.5 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:bg-gradient-primary aria-[current=page]:before:bg-gradient-primary aria-[current=page]:text-primary-on aria-[current=page]:hover:text-primary-on aria-[current=page]:font-semibold'
-    : 'h-10 gap-2.5 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:bg-primary-soft aria-[current=page]:hover:bg-primary-soft aria-[current=page]:text-primary-t aria-[current=page]:hover:text-primary-t aria-[current=page]:font-semibold',
+    ? 'h-10 pointer-coarse:h-12 gap-2.5 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:bg-gradient-primary aria-[current=page]:before:bg-gradient-primary aria-[current=page]:text-primary-on aria-[current=page]:hover:text-primary-on aria-[current=page]:font-semibold'
+    : 'h-10 pointer-coarse:h-12 gap-2.5 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:bg-primary-soft aria-[current=page]:hover:bg-primary-soft aria-[current=page]:text-primary-t aria-[current=page]:hover:text-primary-t aria-[current=page]:font-semibold',
   linkLeadingIcon: 'size-4',
   linkLabel: 'truncate',
   linkTrailing: 'shrink-0',
@@ -444,7 +450,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
                 >
                   <button
                     type="button"
-                    class="grid size-10 shrink-0 place-items-center rounded-full"
+                    class="grid size-11 shrink-0 place-items-center rounded-full"
                     aria-label="Menu akaun"
                     data-testid="pembelajaran-account-top"
                   >
@@ -467,6 +473,8 @@ const chipClass = (chip: unknown, active: boolean): string =>
               data-testid="pembelajaran-main"
               tabindex="-1"
             >
+              <!-- FR-MUR-SH-12 / M16 S30: first child of <main>, before the flash (same order as UserShell). -->
+              <TournamentBanner v-if="showTournamentBanner" />
               <FlashOutlet :flash="flash" class="mb-4" />
               <DsPillNav
                 v-if="sectionTabs.length > 0"
@@ -541,15 +549,17 @@ const chipClass = (chip: unknown, active: boolean): string =>
             >
               <DsIcon :name="tab.icon" class="size-6" />
               <span
-                class="max-w-full text-center text-[0.6875rem] leading-tight break-normal sm:text-caption"
+                class="max-w-full text-center text-caption leading-tight break-normal"
                 :title="tab.label"
                 >{{ tab.label }}</span
               >
-              <span
-                v-if="tab.live"
-                class="absolute end-3 top-1.5 size-2 rounded-full bg-error"
-                aria-hidden="true"
-              />
+              <template v-if="tab.live">
+                <span
+                  class="absolute end-3 top-1.5 size-2 rounded-full bg-error"
+                  aria-hidden="true"
+                />
+                <span class="sr-only" data-testid="pembelajaran-tab-live">{{ dsCopy.statusLive }}</span>
+              </template>
             </RouterLink>
           </li>
           <li class="min-w-0 flex-1">

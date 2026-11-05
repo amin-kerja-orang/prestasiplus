@@ -89,7 +89,7 @@ async function copyLink(): Promise<void> {
           <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <UButton
               type="button"
-              size="xl"
+              size="lg"
               color="neutral"
               variant="soft"
               icon="i-ph-copy-duotone"
@@ -101,7 +101,7 @@ async function copyLink(): Promise<void> {
             </UButton>
             <UButton
               type="button"
-              size="xl"
+              size="lg"
               color="neutral"
               variant="soft"
               icon="i-ph-link-duotone"
@@ -115,7 +115,7 @@ async function copyLink(): Promise<void> {
               :href="data.whatsappUrl"
               target="_blank"
               rel="noopener noreferrer"
-              size="xl"
+              size="lg"
               color="success"
               block
               data-testid="referral-whatsapp"
@@ -127,7 +127,7 @@ async function copyLink(): Promise<void> {
               :href="data.telegramUrl"
               target="_blank"
               rel="noopener noreferrer"
-              size="xl"
+              size="lg"
               color="info"
               block
               data-testid="referral-telegram"
@@ -144,26 +144,29 @@ async function copyLink(): Promise<void> {
           {{ REFERRAL_COPY.statsTitle }}
         </h2>
         <div class="grid grid-cols-3 gap-3">
-          <div data-testid="stat-referrals">
+          <div>
             <DsStatTile
               icon="users"
               :value="formatNumber(data.stats.referrals)"
               :unit="REFERRAL_COPY.referrals"
+              value-testid="stat-referrals"
             />
           </div>
-          <div data-testid="stat-rewarded">
+          <div>
             <DsStatTile
               icon="gift"
               accent="win"
               :value="formatNumber(data.stats.rewarded)"
               :unit="REFERRAL_COPY.rewarded"
+              value-testid="stat-rewarded"
             />
           </div>
-          <div data-testid="stat-earned">
+          <div>
             <DsStatTile
               art="coin"
               :value="formatNumber(data.stats.syilingEarned)"
               :unit="REFERRAL_COPY.earned"
+              value-testid="stat-earned"
             />
           </div>
         </div>

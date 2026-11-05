@@ -24,9 +24,9 @@ const pct = z.number()
 const code = z.string().nullable()
 
 export const ANALYTICS_ERROR_MESSAGES = {
-  unauthorized: 'Unauthenticated.',
-  forbidden: 'This action is unauthorized.',
-  notFound: 'Not Found.',
+  unauthorized: 'Sesi anda telah tamat. Sila log masuk semula.',
+  forbidden: 'Anda tidak dibenarkan melakukan tindakan ini.',
+  notFound: 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?',
 } as const
 
 /** The only 422 of M11: the export format. Produced by zod's `error` param, verbatim from the mock. */

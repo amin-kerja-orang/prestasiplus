@@ -42,7 +42,9 @@ export class LifecycleController {
   async status(@Actor() actor: WorkflowActor, @Param('id') id: string, @Body() body: unknown) {
     const parsed = QuestionStatusRequestSchema.safeParse(typeof body === 'object' && body !== null && !Array.isArray(body) ? body : {})
     if (!parsed.success) throw invalid(parsed.error)
-    await this.workflow.transition(id, parsed.data.to, actor, { reason: parsed.data.reason ?? null })
+    // "rejected" is not a stored status: it is review to draft with `rejection_reason` (DM-58), the chip "Ditolak".
+    const rejected = parsed.data.to === 'rejected'
+    await this.workflow.transition(id, rejected ? 'draft' : parsed.data.to, actor, { reason: parsed.data.reason ?? null, ...(rejected ? { rejection: true } : {}) })
     const question = questionView(await this.questions.getAdmin(id))
     const servability = parsed.data.to === 'approved' ? await this.servability.report(id) : null
     return ok({ question, servability })

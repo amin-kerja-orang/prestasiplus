@@ -8,6 +8,7 @@
  */
 import type { QuestionGateData } from '../ports'
 import { checkDskpGate } from '../../dskp-gate'
+import { checkDifficultyGate, checkStemGate } from '../../publish-gate'
 import { checkKeysGate, checkTagGate, leavesOf } from './keys-gate'
 
 export type GateName = 'submit' | 'approve'
@@ -34,8 +35,8 @@ export function submitGate(d: QuestionGateData): GateFields {
   const f: GateFields = {}
   for (const name of d.missingRequiredFields) f[name] = GATE_MESSAGES.requiredField // required fields of the type
   for (const name of d.unconfirmedLowConfidenceFields) f[name] ??= GATE_MESSAGES.lowConfidence // low-confidence confirmed
-  // Subject and level set. The Bab is NOT asked here (R1 REQ-B-071, Q17): in V2 it is only a filter and report tag, AC-03.2 checks the DSKP
-  // nodes at Terbitkan; a chapterless question is just not counted in "Soalan by Chapter".
+  // Subject and level set. The Bab (NO_CHAPTER, 45 section 4.1 row 8) is an approve-only item (S1-T02 supersedes REQ-B-071).
+  Object.assign(f, checkDifficultyGate(d), checkStemGate(d.stem, d.parts)) // rows 9 and 10
   if (d.subjectId === null) f.subjectId = GATE_MESSAGES.subjectId
   if (d.educationLevelId === null) f.educationLevelId = GATE_MESSAGES.educationLevelId
   if (d.hasOpenDuplicateFlag) f.duplicate = GATE_MESSAGES.duplicate // duplicate resolved
@@ -47,6 +48,7 @@ export function approveGate(d: QuestionGateData, reviewerIsAi = false): GateFiel
   const f: GateFields = {}
   if (reviewerIsAi || d.lastEditedByAi) f.reviewer = GATE_MESSAGES.reviewerAi // reviewer is not the AI service
   Object.assign(f, checkTagGate(d)) // tags valid against the taxonomy
+  Object.assign(f, checkDifficultyGate(d), checkStemGate(d.stem, d.parts)) // rows 9 and 10 also bind at Terbitkan ("S" rows)
   if (d.marks !== null) {
     const sum = leavesOf(d.parts).reduce((s, { leaf }) => s + leaf.marks, 0)
     if (sum !== d.marks) f.marks = GATE_MESSAGES.marksTotal // marks total = sum of part marks
@@ -63,7 +65,7 @@ export function publishGate(d: QuestionGateData): GateFields {
   Object.assign(f, checkTagGate(d)) // difficulty TP, DSKP unit and SP chosen from the curriculum
   if (d.hasOpenDuplicateFlag) f.duplicate = GATE_MESSAGES.duplicate // no open duplicate flag
   // R1-B05 (ADR-0031): DSKP complete for a NEW approval of an SPM-bound question: a cognitive level on every leaf, and the kertas.
-  Object.assign(f, checkDskpGate({ parts: d.parts, tp: d.tp, unitId: d.unitId, spIds: d.spIds, paperCode: d.paperCode ?? null, spmBound: d.spmBound ?? false }))
+  Object.assign(f, checkDskpGate({ parts: d.parts, tp: d.tp, unitId: d.unitId, spIds: d.spIds, paperCode: d.paperCode ?? null, spmBound: d.spmBound ?? false, hasDskpNodes: d.hasDskpNodes !== false }))
   return f
 }
 

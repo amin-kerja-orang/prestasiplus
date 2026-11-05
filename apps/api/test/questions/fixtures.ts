@@ -54,6 +54,7 @@ export function mcqInput(tag: Tag, over: Partial<QuestionCreateInput> = {}): Que
     questionType: 'mcq',
     options: ['Satu', 'Dua', 'Tiga', 'Empat'],
     correctAnswer: 1,
+    cognitiveLevel: 'mengaplikasi', // S1-T02 R-DSKP: aras per leaf wherever DSKP nodes exist
     ...(tag.chapterId === undefined || over.subjectId !== undefined || over.educationLevelId !== undefined ? {} : { curriculumChapterId: tag.chapterId }),
     ...over,
   } as QuestionCreateInput

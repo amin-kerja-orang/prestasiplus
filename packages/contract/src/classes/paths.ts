@@ -79,8 +79,8 @@ const csrf = z.object({
 })
 const idParam = z.object({ id: IdSchema })
 
-const unauthorized = err('UNAUTHORIZED: no valid session ("Unauthenticated.").')
-const teacherOnly = err('FORBIDDEN ("This action is unauthorized."): role is not teacher; or CSRF_INVALID on a mutation.')
+const unauthorized = err('UNAUTHORIZED: no valid session ("Sesi anda telah tamat. Sila log masuk semula.").')
+const teacherOnly = err('FORBIDDEN ("Anda tidak dibenarkan melakukan tindakan ini."): role is not teacher; or CSRF_INVALID on a mutation.')
 
 /** Registers the BE-17 endpoints. Success bodies follow the mock: `{ data }`, `{ data, meta }` or bare. */
 export function registerClassesPaths(registry: OpenAPIRegistry): void {
@@ -125,7 +125,7 @@ export function registerClassesPaths(registry: OpenAPIRegistry): void {
       200: json(ClassQrDataSchema, 'Bare `{ name, school, joinUrl }`.'),
       401: unauthorized,
       403: teacherOnly,
-      404: err('NOT_FOUND "Not Found.": unknown, not owned, or a school class (never names a model).'),
+      404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?": unknown, not owned, or a school class (never names a model).'),
     },
   })
 

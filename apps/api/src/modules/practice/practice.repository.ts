@@ -6,7 +6,7 @@ import type { PracticeSession as SessionRow } from '../../db/generated/client'
 import { idFromString, idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { alreadySubmitted, notFound } from './errors'
-import { MAX_SECONDS_PER_QUESTION, POINTS_PER_CORRECT, sessionCoins } from './rules'
+import { MAX_SECONDS_PER_QUESTION, type OfferedLevel, offeredLevels, POINTS_PER_CORRECT, sessionCoins } from './rules'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -217,6 +217,14 @@ export interface HistoryStats {
   answered: number
 }
 
+/** One school's completed practice sessions (`sessionAccuracyBySchool`). `accuracy` is not rounded. */
+export interface SchoolSessionAccuracy {
+  schoolId: string
+  accuracy: number
+  pupils: number
+  sessions: number
+}
+
 export interface AnswerRecord {
   id: string
   sessionId: string | null
@@ -281,6 +289,11 @@ export class PracticeRepository {
 
   private get db() {
     return this.prisma.client
+  }
+
+  /** S4-T06: the offered levels (active, non-primary), see `offeredLevels`. */
+  offeredLevels(): Promise<OfferedLevel[]> {
+    return offeredLevels(this.db)
   }
 
   // --- sessions ---------------------------------------------------------------------------------
@@ -747,6 +760,24 @@ export class PracticeRepository {
     return out
   }
 
+  /**
+   * Sekolah Bersaing (API-AS-14, FR-AS-45-1): per school of the pupil, the mean of per-session accuracy (the formula of
+   * `historyStats`), the distinct pupils and the sessions, over completed non-test sessions of active Tingkatan 1-5 pupils
+   * (grade 7..11). A school with no such session is absent. One grouped statement. Read only.
+   */
+  async sessionAccuracyBySchool(): Promise<SchoolSessionAccuracy[]> {
+    const rows = await this.db.$queryRaw<{ school_id: bigint; avg: string; pupils: bigint; sessions: bigint }[]>`
+      SELECT u.school_id, avg(s.correct_count::numeric / s.question_count * 100)::text AS avg,
+             count(DISTINCT s.user_id) AS pupils, count(*) AS sessions
+        FROM practice_sessions s
+        JOIN users u ON u.id = s.user_id
+       WHERE s.status = 'completed' AND NOT s.is_test AND s.question_count > 0
+         AND u.school_id IS NOT NULL AND u.is_active AND u.grade BETWEEN 7 AND 11
+         AND EXISTS (SELECT 1 FROM user_roles r WHERE r.user_id = u.id AND r.role = 'student')
+       GROUP BY u.school_id`
+    return rows.map((r) => ({ schoolId: idToString(r.school_id), accuracy: Number(r.avg), pupils: Number(r.pupils), sessions: Number(r.sessions) }))
+  }
+
   /** The newest `completed_at` of completed sessions of `modes` per user (test rows excluded unless `includeTest`), one query per 1000-id chunk. */
   async lastActivityOf(userIds: readonly string[], options: Pick<HistoryOptions, 'modes' | 'includeTest'>): Promise<Map<string, Date>> {
     const modes = [...options.modes]
@@ -823,6 +854,30 @@ export class PracticeRepository {
         lastWrongAt: r.lastWrongAt,
       }))
       .sort(queueOrder)
+  }
+
+  /**
+   * S5-T07 (R7): the questions the user answered in one subject, grouped by topic (else chapter), for the revision top-up.
+   * Non-test answer rows of every mode; a group needs at least `minAttempts` answers. Order: the weakest group first
+   * (accuracy ascending, then more answers first, then key), inside a group the never-correct questions first, then the oldest
+   * last answer, then the id. At most `limit` ids (the servable filter is applied by the caller).
+   */
+  async weakTopicQuestionIds(userId: string, subjectId: string, minAttempts: number, limit: number): Promise<string[]> {
+    const rows = await this.db.$queryRaw<{ question_id: bigint }[]>`
+      WITH q AS (
+        SELECT question_id,
+               CASE WHEN topic_id IS NOT NULL THEN 't' || topic_id::text ELSE 'c' || chapter_id::text END AS gkey,
+               count(*) AS n, count(*) FILTER (WHERE is_correct) AS c, max(answered_at) AS last_at
+          FROM practice_answers
+         WHERE user_id = ${idFromString(userId)}::bigint AND subject_id = ${idFromString(subjectId)}::bigint
+           AND NOT is_test AND question_id IS NOT NULL AND (topic_id IS NOT NULL OR chapter_id IS NOT NULL)
+         GROUP BY question_id, 2),
+      g AS (SELECT gkey, sum(n) AS n, sum(c) AS c FROM q GROUP BY gkey HAVING sum(n) >= ${minAttempts}::bigint)
+      SELECT q.question_id
+        FROM q JOIN g USING (gkey)
+       ORDER BY g.c::numeric / g.n ASC, g.n DESC, q.gkey, (q.c = 0) DESC, q.last_at ASC, q.question_id ASC
+       LIMIT ${limit}::bigint`
+    return rows.map((r) => idToString(r.question_id))
   }
 
   /** The stored mastery counters of a user, by subject id. */

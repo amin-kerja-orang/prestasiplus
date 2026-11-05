@@ -2,11 +2,12 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { QuestionWorkflowService, type CreateGateInput } from '../../src/modules/questions/workflow'
 import { bootWorkflowApp, loginAll, type Client, type WorkflowTestApp } from './helpers'
+import type { QuestionPart } from '@pp/contract'
 import { actorOf, failure, workingPart } from './lifecycle-support'
 
 const passing = (status: CreateGateInput['status'], over: Partial<CreateGateInput> = {}): CreateGateInput => ({
   status,
-  parts: [workingPart(3, 3)],
+  parts: [{ ...workingPart(3, 3), cognitiveLevel: 'mengaplikasi' } as unknown as QuestionPart], // S1-T02 R-DSKP: aras per leaf
   marks: 3,
   subjectId: '1',
   educationLevelId: '1',

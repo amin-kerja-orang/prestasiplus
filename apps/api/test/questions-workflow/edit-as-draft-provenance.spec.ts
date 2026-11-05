@@ -52,6 +52,8 @@ describe('edit as draft keeps the declaration and provenance (SEC-C012-1)', () =
     subjectId: tag.subjectId,
     educationLevelId: tag.levelId,
     difficultyLevel: 2,
+    cognitiveLevel: 'mengaplikasi',
+    curriculumChapterId: tag.chapterId,
     options: ['4', '5', '6', '7'],
     correctAnswer: 1,
     tag: { unitId: tag.unitId, spIds: [tag.spId], tp: 3 },
