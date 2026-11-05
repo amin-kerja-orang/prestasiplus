@@ -19,8 +19,6 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { ApiError } from '@/api'
 import { useApi, useFlash } from '@/composables'
-import { RichText, StimulusFigure } from '@/components/question-display'
-import type { StimulusData } from '@/components/question-display'
 import {
   DsBackLink,
   DsCluster,
@@ -36,6 +34,8 @@ import {
   DsText,
 } from '@/ds'
 
+import { RichText, StimulusFigure } from '../../../components/question-display'
+import type { StimulusData } from '../../../components/question-display'
 import {
   createGuruSet,
   fetchGuruClasses,
@@ -70,7 +70,7 @@ const COPY = {
   subjectPlaceholder: '-- Pilih subjek --',
   level: 'Tingkatan (pilihan)',
   levelNone: '— Tiada —',
-  classes: 'Kelas',
+  classesLabel: 'Kelas',
   classesHelp: 'Pilih kelas yang akan melihat set ini.',
   noClasses: 'Anda belum ada kelas aktif.',
   bankTitle: 'Pilih Soalan Dari Bank',
@@ -459,7 +459,7 @@ function toggleClass(id: string, on: boolean): void {
           </DsFormField>
 
           <DsStack as="fieldset" gap="xs" data-testid="set-classes">
-            <DsText as="legend" variant="label">{{ COPY.classes }}</DsText>
+            <DsText as="legend" variant="label">{{ COPY.classesLabel }}</DsText>
             <DsText variant="caption">{{ COPY.classesHelp }}</DsText>
             <DsText
               v-if="classList && ownClasses.length === 0"
@@ -530,7 +530,7 @@ function toggleClass(id: string, on: boolean): void {
             v-else
             as="ul"
             gap="xs"
-            class="max-h-[32rem] overflow-y-auto"
+            class="max-h-96 overflow-y-auto"
             data-testid="set-bank"
           >
             <li v-for="u in units" :key="`${u.kind}-${u.id}`" data-testid="set-bank-row" :data-kind="u.kind">

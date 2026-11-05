@@ -29,7 +29,9 @@ vi.mock('../../api/guru', () => api)
 const subjects = vi.hoisted(() => ({ fetchSubjectOptions: vi.fn() }))
 vi.mock('../../components/kelas/subjects', () => subjects)
 
-const session = vi.hoisted(() => ({ user: { schoolId: 1 } as { schoolId: number | null } | null }))
+const session = vi.hoisted((): { user: { schoolId: number | null } | null } => ({
+  user: { schoolId: 1 },
+}))
 vi.mock('@/stores/session', () => ({ useSessionStore: () => session }))
 
 const cls = (id: number, extra: Partial<GuruClass> = {}): GuruClass => ({
