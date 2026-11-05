@@ -182,7 +182,8 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
       clearTimeout(timer)
       timer = undefined
     }
-    if (inFlight) await inFlight.catch(() => false)
+    // A loop, not one wait: flushes waiting on one request must not all send when it ends, or a newer one overlaps an older one.
+    while (inFlight) await inFlight.catch(() => false)
     for (let round = 0; round < 4; round++) {
       if (!doc.pending.length && !doc.metaDirty) {
         setStatus('saved')

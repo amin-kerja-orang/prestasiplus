@@ -93,6 +93,42 @@ describe('a change made while the blur save is in flight', () => {
   })
 })
 
+describe('flushes waiting on one request', () => {
+  it('a blur flush in flight, then a flag, Seterusnya and another blur: no overlap, and the last payload holds the latest flag and position', async () => {
+    let active = 0
+    let most = 0
+    const answers: (() => void)[] = []
+    server.saveAnswers.mockImplementation(() => {
+      active += 1
+      most = Math.max(most, active)
+      return new Promise((resolve) =>
+        answers.push(() => {
+          active -= 1
+          resolve({ closed: false })
+        }),
+      )
+    })
+    const input = type('jawapan')
+    input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    await flushPromises()
+    q('[data-testid=flag-button]')!.click()
+    await flushPromises()
+    q('[data-testid=next]')!.click() // waits on the first request
+    await flushPromises()
+    q('textarea')!.dispatchEvent(new FocusEvent('focusout', { bubbles: true })) // so does this one
+    await flushPromises()
+    expect(server.saveAnswers).toHaveBeenCalledTimes(1)
+    while (answers.length) {
+      answers.shift()!()
+      await flushPromises()
+    }
+    expect(most).toBe(1)
+    const last = server.saveAnswers.mock.calls.at(-1)![2] as { flags: string[]; position: number }
+    expect(last.flags).toEqual(['q1'])
+    expect(last.position).toBe(1)
+  })
+})
+
 describe('autosave triggers (FR-MUR-13-10)', () => {
   it('blur sends the field at once, before the debounce', async () => {
     const input = type('jawapan')
