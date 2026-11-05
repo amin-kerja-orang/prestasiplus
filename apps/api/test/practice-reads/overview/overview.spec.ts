@@ -283,20 +283,7 @@ describe('#1 GET /api/dashboard (S1)', () => {
     expect(ids).toEqual([...ids].sort((a, b) => (a < b ? -1 : 1)))
   })
 
-  it('"Soalan Terkini": the 5 newest published objective questions, text cut at 100 characters + "..."', async () => {
-    const long = 'x'.repeat(140)
-    for (let i = 0; i < 7; i++) await q({ subject: w.math, level: w.d1, stem: i === 6 ? long : `Soalan nombor ${i}` })
-    await q({ subject: w.math, level: w.t4, type: 'structured', stem: 'Struktur' }) // not objective
-    const off = await q({ subject: w.math, level: w.d1, stem: 'Dinyahaktif' })
-    await t.db.query('update questions set is_active = false where id = $1', [off]) // deactivated: not shown
-    await q({ subject: w.math, level: w.d1, status: 'draft', stem: 'Draf' })
-    const d = Dashboard.parse((await pelajar.get('/api/dashboard')).body).data
-    expect(d.recentQuestions.length).toBe(5)
-    expect(d.recentQuestions[0]).toMatchObject({ id: bankIds[6], subjectName: expect.any(String), levelCode: 'T4', difficulty: 1 })
-    expect(d.recentQuestions[0]?.text).toBe(`${'x'.repeat(100)}...`)
-    expect(d.recentQuestions[1]?.text).toBe('Soalan nombor 5')
-    expect(d.recentQuestions.map((r) => r.id)).toEqual([bankIds[6], bankIds[5], bankIds[4], bankIds[3], bankIds[2]])
-  })
+  // "Soalan Terkini" (FR-MUR-2-8: own form, servable only, 140 cut, figure) is covered by soalan-terkini.spec.ts on the full seed (bare rows here are not servable).
 
   it('AC2: figures from the answer dimensions do not change when question_id is cleared and rows are marked historical', async () => {
     const qs = [await q({ subject: w.math, level: w.d1, chapter: w.c1 }), await q({ subject: w.math, level: w.d1, chapter: w.c1 })]

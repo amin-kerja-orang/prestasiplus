@@ -65,7 +65,7 @@ const dashboard = {
   subjects: [subject],
   stats: { totalQuestions: 140, activeSubjects: 1, activeLevels: 4, approvedQuestions: 120 },
   levelPills: [{ code: 'D1', name: 'Darjah 1', stage: 'primary', count: 30 }],
-  recentQuestions: [{ id: '501', subjectName: 'Matematik', difficulty: 2, text: 'Berapakah 2 + 3?', createdAt: NOW, levelCode: 'D1' }],
+  recentQuestions: [{ id: '501', subjectName: 'Matematik', difficulty: 2, text: 'Berapakah 2 + 3?', createdAt: NOW, levelCode: 'D1', figureThumbUrl: null }],
   difficultyChart: [1, 2, 3, 4, 5].map((level) => ({ level, count: level })),
   subjectStats: [{ id: '3', name: 'Matematik', icon: null, color: '#2563eb', bankCount: 140, avgDifficulty: 2.41, usedCount: 0 }],
 }
@@ -110,6 +110,18 @@ describe('dashboard', () => {
       }).success,
     ).toBe(false)
     expect(PracticeReadDashboardSchema.safeParse({ ...dashboard, greetingPeriod: 'Subuh' }).success).toBe(false)
+  })
+  it('"Soalan Terkini" (FR-MUR-2-8): text up to 140 characters + "…", a nullable figure URL, no answer key', () => {
+    const withRow = (row: Record<string, unknown>) =>
+      PracticeReadDashboardSchema.safeParse({ ...dashboard, recentQuestions: [{ ...dashboard.recentQuestions[0], ...row }] }).success
+    expect(withRow({ text: `${'x'.repeat(140)}…` })).toBe(true)
+    expect(withRow({ text: 'x'.repeat(142) })).toBe(false)
+    expect(withRow({ figureThumbUrl: '/api/files/AbCdEfGhIjKlMnOpQrStUv' })).toBe(true)
+    expect(withRow({ figureThumbUrl: null })).toBe(true)
+    expect(withRow({ figureThumbUrl: undefined })).toBe(false) // required, nullable
+    expect(withRow({ figureThumbUrl: 7 })).toBe(false)
+    expect(withRow({ correctAnswer: 'A' })).toBe(false) // strict: no answer key on the wire
+    expect(withRow({ options: [] })).toBe(false)
   })
   it('rejects an unknown key (strict)', () => {
     expect(PracticeReadDashboardSchema.safeParse({ ...dashboard, secret: 1 }).success).toBe(false)

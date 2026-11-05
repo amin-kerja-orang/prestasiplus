@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common'
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common'
 import { ModuleRef } from '@nestjs/core'
 import type { z } from 'zod'
 import {
@@ -8,6 +8,7 @@ import {
   type PracticeReadSubject,
   type PracticeReadSubjectConfig,
   type RoleCode,
+  type ServabilityActivity,
 } from '@pp/contract'
 
 import { toMytTimestamp } from '../../../../common/time/myt'
@@ -17,10 +18,14 @@ import { idToString } from '../../../../db/ids'
 import { BannersRepository } from '../../../content/banners/banners.repository'
 import { ArticlesService } from '../../../content/articles/articles.service'
 import { CurriculumRepository, type SubjectWithLevels } from '../../../curriculum'
+import { FilesService } from '../../../files'
 import { QuestionsRepository } from '../../../questions'
+import { GROUP_SURFACES, filterOf } from '../../../questions/serving'
 import { SubscriptionService } from '../../../subscriptions'
 import { UsersRepository } from '../../../users'
+import { classLevelOfGrade } from '../../../users/class-level'
 import { StreakService, WalletService } from '../../../wallet'
+import { PRACTICE_GROUP_SURFACES } from '../../ports'
 import { BankFacts } from './bank-facts'
 import { OverviewRepository } from './overview.repository'
 import { bannerAudiences, cutQuestionText, difficultyLevelOfTp, greetingPeriod, pct, round, weekEndMyt, weekStartMyt } from './rules'
@@ -41,6 +46,10 @@ export interface OverviewOptions {
 export const OVERVIEW_OPTIONS = Symbol('OVERVIEW_OPTIONS')
 /** The bank counts are global and change only when staff publish; a few seconds of reuse keeps the dashboard under the card budget on a 130k-question bank (AC5). */
 export const DEFAULT_OVERVIEW_OPTIONS: OverviewOptions = { bankTtlMs: 60_000 }
+
+/** FR-MUR-2-8: five rows, read from a window of the newest candidates (the MCQ shape is checked on the window only). */
+const RECENT_LIMIT = 5
+const RECENT_WINDOW = 60
 
 const notFound = (): ApiError => ApiError.of('NOT_FOUND', { message: PRACTICE_READS_MESSAGES.notFound })
 
@@ -82,6 +91,8 @@ export class OverviewService {
     @Inject(ModuleRef) private readonly moduleRef: ModuleRef,
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(OVERVIEW_OPTIONS) private readonly options: OverviewOptions,
+    @Inject(FilesService) private readonly files: FilesService,
+    @Optional() @Inject(PRACTICE_GROUP_SURFACES) private readonly surfaces: readonly ServabilityActivity[] = GROUP_SURFACES,
   ) {}
 
   /**
@@ -147,7 +158,7 @@ export class OverviewService {
       this.repo.subjectUsage(),
       this.activeBanners(who.role, now),
       this.latestArticles(),
-      this.recentQuestions(),
+      this.recentQuestions(who),
     ])
     const views = subjects.map((s) => subjectView(s, bank, this.offeredOf(s, levels, offeredIds).map((l) => idToString(l.id))))
     const subjectStats = views
@@ -215,25 +226,83 @@ export class OverviewService {
     }
   }
 
-  /** BR-29: the five newest published objective questions, text cut at 100 characters. */
-  private async recentQuestions(): Promise<PracticeReadDashboard['recentQuestions']> {
-    const ids = await this.repo.newestPublishedMcqIds(5)
+  /**
+   * The Education level id of the caller's own form (D101: T1 to T5, from `users.grade`), `null` when the caller has no form (a staff
+   * role, or a user without a grade: no form filter), and `'none'` when the form has no level row (the list is then empty, never another form's).
+   */
+  private async formLevelId(userId: string): Promise<string | null | 'none'> {
+    const user = await this.users.get(userId)
+    const code = classLevelOfGrade(user?.grade ?? null)
+    if (code === null) return null
+    const level = (await this.curriculum.levels()).find((l) => l.code === code)
+    return level ? idToString(level.id) : 'none'
+  }
+
+  /**
+   * FR-MUR-2-8: the five newest SERVABLE questions of the caller's own form, text cut at 140 characters, with the first figure as a thumbnail and no
+   * answer key (the wire has no option or key field). "Servable" is the Latih Tubi definition (`filterOf('latih_tubi_spm')`, D91), so a card, a list and a draw agree:
+   * the window of the newest candidates is read through the shared scope (`scopeSql`), and the MCQ shape is checked on that window only (`eligibleAmong`).
+   */
+  private async recentQuestions(who: Reader): Promise<PracticeReadDashboard['recentQuestions']> {
+    const form = await this.formLevelId(who.userId)
+    if (form === 'none') return []
+    const servableFilter = filterOf('latih_tubi_spm', {}, this.surfaces)
+    const windowFilter = { ...servableFilter, mcqShape: undefined }
+    const formFilter = form === null ? {} : { educationLevelId: form }
+    const candidates = await this.repo.newestIdsOf(this.questions.scopeSql({ ...windowFilter, ...formFilter, status: 'approved', active: true }, true), RECENT_WINDOW)
+    const servable = new Set(await this.questions.eligibleAmong(candidates, { ...servableFilter, ...formFilter }))
+    const ids = candidates.filter((id) => servable.has(id)).slice(0, RECENT_LIMIT)
     // A stored question that fails to load (a bad stored key fails closed in the bank) must not take the dashboard down.
     const records = await this.questions.getMany(ids, 'live').catch((err: unknown) => {
       this.logger.warn(`dashboard: latest questions unavailable (${err instanceof Error ? err.message : String(err)})`)
       return []
     })
-    const [subjects, levels] = await Promise.all([this.curriculum.subjects(), this.curriculum.levels()])
+    const [subjects, levels, figures] = await Promise.all([this.curriculum.subjects(), this.curriculum.levels(), this.figureUrls(records)])
     const subjectName = new Map(subjects.map((s) => [idToString(s.id), s.name]))
     const levelCode = new Map(levels.map((l) => [idToString(l.id), l.code]))
     return records.map((r) => ({
-        id: r.id,
-        subjectName: (r.version.subjectId && subjectName.get(r.version.subjectId)) || '',
-        difficulty: difficultyLevelOfTp(r.version.difficultyTp ?? 1),
-        text: cutQuestionText(r.version.stemMs ?? r.version.stemEn ?? ''),
-        createdAt: toMytTimestamp(r.createdAt),
-        levelCode: (r.version.educationLevelId && levelCode.get(r.version.educationLevelId)) || '',
-      }))
+      id: r.id,
+      subjectName: (r.version.subjectId && subjectName.get(r.version.subjectId)) || '',
+      difficulty: difficultyLevelOfTp(r.version.difficultyTp ?? 1),
+      text: cutQuestionText(r.version.stemMs ?? r.version.stemEn ?? ''),
+      createdAt: toMytTimestamp(r.createdAt),
+      levelCode: (r.version.educationLevelId && levelCode.get(r.version.educationLevelId)) || '',
+      figureThumbUrl: figures.get(r.id) ?? null,
+    }))
+  }
+
+  /**
+   * The served file URL (`/api/files/<token>`, the form the question display uses) of the first figure of each question: its own first image
+   * (`stemImageId`), else the first picture of its stimulus group. A pupil may read it because the question passes the same servable rule
+   * (`pupilMayReadQuestionImageSql`). A figure whose file is gone gives no entry (null), never a broken link.
+   */
+  private async figureUrls(records: readonly { id: string; groupId: string | null; version: { stemImageId?: string | null } }[]): Promise<Map<string, string>> {
+    const own = new Map<string, string>()
+    const groupIds = new Set<string>()
+    for (const r of records) {
+      if (r.version.stemImageId) own.set(r.id, r.version.stemImageId)
+      else if (r.groupId) groupIds.add(r.groupId)
+    }
+    const firstOfGroup = new Map<string, string>()
+    if (groupIds.size > 0) {
+      for (const g of await this.questions.groupsByIds([...groupIds])) {
+        const pic = g.stimuli.find((s) => s.kind !== 'passage' && s.kind !== 'table' && s.assetFileId !== null)
+        if (pic?.assetFileId) firstOfGroup.set(g.id, pic.assetFileId)
+      }
+    }
+    const fileOf = new Map<string, string>()
+    for (const r of records) {
+      const file = own.get(r.id) ?? (r.groupId ? firstOfGroup.get(r.groupId) : undefined)
+      if (file) fileOf.set(r.id, file)
+    }
+    if (fileOf.size === 0) return new Map()
+    const tokens = await this.files.publicIdsOf([...new Set(fileOf.values())])
+    const out = new Map<string, string>()
+    for (const [questionId, file] of fileOf) {
+      const token = tokens.get(file)
+      if (token) out.set(questionId, `/api/files/${token}`)
+    }
+    return out
   }
 
   // --- S2 / S3 --------------------------------------------------------------------------------------

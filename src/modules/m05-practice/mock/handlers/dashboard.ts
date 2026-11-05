@@ -32,9 +32,41 @@ export function greetingPeriod(now: number): GreetingPeriod {
   return 'Malam'
 }
 
-const QUESTION_LIMIT = 100
+/** FR-MUR-2-8: the "Soalan Terkini" text is cut at 140 characters, then "…". */
+const QUESTION_LIMIT = 140
 const cut = (text: string) =>
-  text.length > QUESTION_LIMIT ? `${text.slice(0, QUESTION_LIMIT)}...` : text
+  text.length > QUESTION_LIMIT ? `${text.slice(0, QUESTION_LIMIT)}…` : text
+
+/**
+ * FR-MUR-2-8: the 5 newest servable questions of the caller's own form (grade 7 to 11 is T1 to T5, D101). A caller without a form
+ * (staff, no grade) has no form filter; a form with no level row has no questions. Servable is the Latih Tubi rule (approved, active,
+ * objective, T4/T5 of an SPM subject), as the API's `filterOf('latih_tubi_spm')`.
+ */
+function recentQuestions(grade: number | null | undefined): Dashboard['recentQuestions'] {
+  let levelId: number | undefined
+  if (grade !== null && grade !== undefined) {
+    const level = curriculum
+      .visibleLevels()
+      .find((l) => grade >= 7 && grade <= 11 && l.code === `T${String(grade - 6)}`)
+    if (!level) return []
+    levelId = level.id
+  }
+  return questions
+    .adminList({ status: 'approved', educationLevelId: levelId, page: 1, pageSize: 200 })
+    .rows.filter((q) => q.spmPool && questions.eligibleForPractice(q.id))
+    .slice(0, 5)
+    .map((q) => ({
+      id: q.id,
+      subjectName: (q.subjectId !== null ? curriculum.subject(q.subjectId)?.name : undefined) ?? '',
+      difficulty: q.difficultyLevel,
+      text: cut(q.questionText),
+      createdAt: q.createdAt,
+      levelCode:
+        (q.educationLevelId !== null ? curriculum.level(q.educationLevelId)?.code : undefined) ??
+        '',
+      figureThumbUrl: q.questionImage ? `/api/files/${q.questionImage}` : null,
+    }))
+}
 
 /**
  * BR-29: mean `difficultyLevel` of each subject's active questions, 2 decimals (0 when none).
@@ -147,20 +179,7 @@ function dashboard(userId: number, now: number): Dashboard {
       stage: l.stage,
       count: questions.count('Q-ACTIVE', undefined, l.id),
     })),
-    // BR-29: the 5 newest approved objective questions, text cut at 100 characters.
-    recentQuestions: questions
-      .adminList({ status: 'approved', page: 1, pageSize: 5 })
-      .rows.map((q) => ({
-        id: q.id,
-        subjectName:
-          (q.subjectId !== null ? curriculum.subject(q.subjectId)?.name : undefined) ?? '',
-        difficulty: q.difficultyLevel,
-        text: cut(q.questionText),
-        createdAt: q.createdAt,
-        levelCode:
-          (q.educationLevelId !== null ? curriculum.level(q.educationLevelId)?.code : undefined) ??
-          '',
-      })),
+    recentQuestions: recentQuestions(user?.grade),
     // FR-M05-27: Q-DIFFICULTY(1..5); Σ = Total Soalan.
     difficultyChart: [1, 2, 3, 4, 5].map((level) => ({
       level,

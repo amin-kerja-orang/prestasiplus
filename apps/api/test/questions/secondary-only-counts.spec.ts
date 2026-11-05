@@ -8,6 +8,7 @@ import { CurriculumRepository } from '../../src/modules/curriculum/curriculum.re
 import { CurriculumLearnerService } from '../../src/modules/curriculum/learner.service'
 import { DEFAULT_MAP_GRADE } from '../../src/modules/curriculum/rules'
 import { BankFacts } from '../../src/modules/practice/reads/overview/bank-facts'
+import { QuestionsRepository } from '../../src/modules/questions'
 import { OverviewRepository } from '../../src/modules/practice/reads/overview/overview.repository'
 import { subjectView } from '../../src/modules/practice/reads/overview/overview.service'
 
@@ -97,7 +98,8 @@ describe('B-HTTP-03: every question count shown to users leaves out primary leve
     const queries: string[] = []
     const repo = new OverviewRepository({ client: rawClient(queries) } as never)
     await repo.bankMatrix()
-    await repo.newestPublishedMcqIds(5)
+    // FR-MUR-2-8: the newest-list SQL is the shared servable scope (`scopeSql`, learner-visible) over this repo's ordered read.
+    await repo.newestIdsOf(new QuestionsRepository({ client: rawClient([]) } as never).scopeSql({ status: 'approved', active: true }, true), 60)
     await repo.chapterQuestionCounts(['1', '2'])
     expect(queries).toHaveLength(3)
     for (const q of queries) {

@@ -42,9 +42,9 @@ export function topicProgressPercent(correct: number): number {
   return Math.min(100, Math.round((100 * correct) / 20))
 }
 
-/** BR-29: the question text of the "latest questions" list is cut at 100 characters. */
-export const QUESTION_TEXT_LIMIT = 100
-export const cutQuestionText = (text: string): string => (text.length > QUESTION_TEXT_LIMIT ? `${text.slice(0, QUESTION_TEXT_LIMIT)}...` : text)
+/** FR-MUR-2-8: the question text of the "Soalan Terkini" list is cut at 140 characters (then "…"). */
+export const QUESTION_TEXT_LIMIT = 140
+export const cutQuestionText = (text: string): string => (text.length > QUESTION_TEXT_LIMIT ? `${text.slice(0, QUESTION_TEXT_LIMIT)}…` : text)
 
 /** Difficulty level of the wire (1 to 5) from a stored TP (1 to 6; 6 reads as 5). */
 export const difficultyLevelOfTp = (tp: number): number => Math.min(5, Math.max(1, tp))

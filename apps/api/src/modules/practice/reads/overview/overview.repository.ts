@@ -140,18 +140,13 @@ export class OverviewRepository {
   }
 
   /**
-   * BR-29: ids of the newest active, published objective questions (live version published, `is_active`, type mcq), newest first.
-   * `QuestionsRepository.listIds` also computes the total and the per-status counts (two more full scans of
-   * the bank), which the dashboard does not need; this reads the primary key backwards and stops at `limit`.
+   * FR-MUR-2-8: the ids of the newest questions of a servable scope, newest first (`q.id DESC`, the primary key read backwards, stopped at `limit`).
+   * `scope` is `QuestionsRepository.scopeSql(filter, true)`: the ONE servable definition of the reads (live version approved, active, not PKSK, learner level,
+   * source not taken down, not flagged, every leaf keyed, the form filter). The caller then checks the MCQ shape on this window only (`eligibleAmong`),
+   * so the shape check never scans the bank. `QuestionsRepository.listIds` also computes totals and per-status counts, which the dashboard does not need.
    */
-  async newestPublishedMcqIds(limit: number): Promise<string[]> {
-    const rows = await this.db.$queryRaw<{ id: bigint }[]>`
-      SELECT q.id
-        FROM questions q
-        JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE q.is_active AND v.status = 'approved' AND v.type = 'mcq' AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_FLAGGED_SQL}
-       ORDER BY q.id DESC
-       LIMIT ${limit}`
+  async newestIdsOf(scope: { from: Prisma.Sql; where: Prisma.Sql }, limit: number): Promise<string[]> {
+    const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${scope.from} WHERE ${scope.where} ORDER BY q.id DESC LIMIT ${limit}`
     return rows.map((r) => idToString(r.id))
   }
 
