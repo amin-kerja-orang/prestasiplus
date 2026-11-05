@@ -3,7 +3,7 @@
  * settings), activity (completions, unlocks, referrals, SPM targets), content and operations.
  * The sources Part B reads are all on the default read list in `preflight.ts`, so no group needs `reads`.
  */
-import { achievementsStep, challengesStep, settingsStep, tiersStep } from './catalogue-steps'
+import { achievementsStep, challengesStep, rewardSettingsStep, settingsStep, tiersStep } from './catalogue-steps'
 import type { ActivityGroup } from './context'
 import { completionsStep, referralCodesStep, referralsStep, spmTargetsStep, unlocksStep } from './gamification-steps'
 import { articlesStep, audioSetsStep, bannersStep, notesStep, videosStep } from './content-steps'
@@ -12,7 +12,7 @@ import { questionSetsStep } from './question-set-steps'
 
 export const catalogueGroup: ActivityGroup = {
   name: 'catalogue',
-  steps: (a) => [tiersStep(a), achievementsStep(a), challengesStep(a), settingsStep(a)],
+  steps: (a) => [tiersStep(a), achievementsStep(a), challengesStep(a), settingsStep(a), rewardSettingsStep(a)],
   notMigrated: [],
 }
 

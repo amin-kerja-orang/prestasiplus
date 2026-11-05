@@ -14,13 +14,17 @@ import type { LegacyRow } from '../../kit/upsert'
 import {
   challengeDifficulty,
   isPlatformChallenge,
+  REWARD_SETTING_KEYS,
   SETTING_KEYS,
   settingEntries,
   tierMatchKey,
   transformAchievement,
   transformChallenge,
+  transformRewardSetting,
   transformSetting,
   type AchievementValues,
+  type RewardSettingKey,
+  type RewardSettingValues,
   type SettingEntry,
 } from '../../transform/gamification'
 import { excludedResult, sumBatch } from '../../transform/activity-common'
@@ -218,14 +222,14 @@ export function challengesStep(a: ActivityContext): AnyEntityStep {
 
 // ---------------------------------------------------------------- gamification settings
 
-/** The single `reward_settings` row becomes one key/value row per non-empty column; legacy id `<row id>:<key>`. */
+/** The source column that is not a DM-48 value becomes a key/value row; legacy id `<row id>:<key>`. */
 export function settingsStep(a: ActivityContext): AnyEntityStep {
   const entity = 'gamification_settings'
   const columns = [...SETTING_KEYS, 'created_at', 'updated_at']
   return {
     entity,
     source: a.source,
-    extract: (after) => readExpanded<SettingEntry>(a.pool, { table: 'reward_settings', columns }, after, a.pageSize, (row) => settingEntries(row)),
+    extract: (after) => readExpanded<SettingEntry>(a.pool, { table: 'reward_settings', columns }, after, a.pageSize, (row) => settingEntries(row, SETTING_KEYS)),
     keyOf: (e: Expanded<SettingEntry>) => e.key,
     async load(rows: Expanded<SettingEntry>[], ctx: BatchContext): Promise<BatchResult> {
       let items: { legacyId: string; key: string; values: Record<string, unknown> }[] = []
@@ -246,6 +250,52 @@ export function settingsStep(a: ActivityContext): AnyEntityStep {
         items.map((i) => ({ legacyId: i.legacyId, values: i.values })),
         { register: false },
       )
+    },
+  }
+}
+
+/**
+ * The DM-48 values of the source row go to the `reward_settings` singleton (DM-38), which has no legacy columns: the ids go to `etl_id_map`
+ * (verify counts `idmap`), legacy id `<row id>:<key>`. A second source row naming a key already loaded is DUPLICATE_KEY.
+ */
+export function rewardSettingsStep(a: ActivityContext): AnyEntityStep {
+  const entity = 'reward_settings'
+  const columns = [...REWARD_SETTING_KEYS, 'created_at', 'updated_at']
+  return {
+    entity,
+    source: a.source,
+    extract: (after) => readExpanded<SettingEntry<RewardSettingKey>>(a.pool, { table: 'reward_settings', columns }, after, a.pageSize, (row) => settingEntries(row, REWARD_SETTING_KEYS)),
+    keyOf: (e: Expanded<SettingEntry<RewardSettingKey>>) => e.key,
+    async load(rows: Expanded<SettingEntry<RewardSettingKey>>[], ctx: BatchContext): Promise<BatchResult> {
+      const known = await ctx.db.query<{ legacy_id: string }>(`SELECT legacy_id FROM etl_id_map WHERE legacy_source = $1 AND entity = $2`, [ctx.source, entity])
+      const owner = new Map(known.rows.map((r) => [r.legacy_id.split(':')[1] as string, r.legacy_id]))
+      const items: { legacyId: string; values: RewardSettingValues }[] = []
+      for (const e of rows) {
+        const legacyId = `${e.row.id}:${e.entry.key}`
+        assertSurrogateLegacyId(legacyId, 'migrate:activity')
+        const out = transformRewardSetting(e.row, e.entry)
+        if (!out.ok) rejectRow(ctx, entity, legacyId, out.reject)
+        else if ((owner.get(e.entry.key) ?? legacyId) !== legacyId) rejectRow(ctx, entity, legacyId, { reason: 'DUPLICATE_KEY', column: e.entry.key })
+        else {
+          owner.set(e.entry.key, legacyId)
+          items.push({ legacyId, values: out.value })
+        }
+      }
+      if (items.length === 0) return { inserted: 0, updated: 0, unchanged: 0 }
+      // Migration 0223 always leaves the row; a table without it is refused rather than invented.
+      const row = await ctx.db.query(`SELECT 1 FROM reward_settings WHERE id = 1 FOR UPDATE`)
+      if (row.rows.length === 0) {
+        for (const i of items) rejectRow(ctx, entity, i.legacyId, { reason: 'UNSUPPORTED', column: i.values.column })
+        return { inserted: 0, updated: 0, unchanged: 0 }
+      }
+      let updated = 0
+      for (const { values } of items) {
+        const column = quoteIdent(values.column)
+        const res = await ctx.db.query(`UPDATE reward_settings SET ${column} = $1, updated_at = $2::timestamptz WHERE id = 1 AND ${column} IS DISTINCT FROM $1`, [values.value, values.updated_at])
+        updated += res.rowCount ?? 0
+      }
+      await ctx.idMap.registerMany(entity, items.map((i) => [i.legacyId, '1'] as const))
+      return { inserted: 0, updated, unchanged: items.length - updated }
     },
   }
 }

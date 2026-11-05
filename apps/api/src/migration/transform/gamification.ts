@@ -156,29 +156,38 @@ export function transformAchievement(row: Staged): Outcome<AchievementValues> {
 
 // ---------------------------------------------------------------- reward settings (pivot)
 
-/** The four `reward_settings` columns and the v2 `gamification_settings.key` they become (keys are the same text). */
-export const SETTING_KEYS = ['reward_budget_sen_month', 'flat_quiz_reward', 'current_session_year', 'games_award_syiling'] as const
+/** The source column that stays a `gamification_settings` key row (not one of the DM-48 values; the card leaves it untouched). */
+export const SETTING_KEYS = ['reward_budget_sen_month'] as const
 export type SettingKey = (typeof SETTING_KEYS)[number]
 
-/** Labels of the four keys: the same text the v2 seed uses (the staged row has no label). */
+/** Label of the key: the same text the v2 seed uses (the staged row has no label). */
 export const SETTING_LABELS: Readonly<Record<SettingKey, string>> = {
   reward_budget_sen_month: 'Sub-had nilai-kos tebus per pelajar per bulan (sen) — RM3',
-  flat_quiz_reward: 'Syiling flat per soalan akademik betul (tiada beza difficulty)',
-  current_session_year: 'Tahun sesi persekolahan semasa (kitar bajet)',
-  games_award_syiling: 'Mini-games beri syiling? (0 = XP sahaja, tutup exploit)',
 }
 
-export interface SettingEntry {
+/**
+ * The source columns that fill the `reward_settings` singleton (DM-38, DM-48), with the v2 column and the range of 48 section 2. The
+ * source has no `reward_budget_sen_session`, so `redeem_budget_sen` keeps the value of migration 0223.
+ */
+export const REWARD_SETTING_COLUMNS = {
+  flat_quiz_reward: { column: 'coins_per_correct', min: 0, max: 20 },
+  current_session_year: { column: 'session_year', min: 2020, max: 2100 },
+  games_award_syiling: { column: 'mini_games_give_coins', min: 0, max: 1 },
+} as const
+export type RewardSettingKey = keyof typeof REWARD_SETTING_COLUMNS
+export const REWARD_SETTING_KEYS = Object.keys(REWARD_SETTING_COLUMNS) as RewardSettingKey[]
+
+export interface SettingEntry<K extends string = SettingKey> {
   /** 0-based position of the key inside the source row (part of the resume key). */
   index: number
-  key: SettingKey
+  key: K
   raw: string
 }
 
-/** The non-empty setting columns of one `reward_settings` row, in key order. */
-export function settingEntries(row: Staged): SettingEntry[] {
-  const out: SettingEntry[] = []
-  SETTING_KEYS.forEach((key, index) => {
+/** The non-empty columns of one source `reward_settings` row among `keys`, in key order. */
+export function settingEntries<K extends string>(row: Staged, keys: readonly K[]): SettingEntry<K>[] {
+  const out: SettingEntry<K>[] = []
+  keys.forEach((key, index) => {
     const raw = text(row[key])
     if (raw !== null) out.push({ index, key, raw })
   })
@@ -197,6 +206,20 @@ export interface SettingValues {
 export function transformSetting(row: Staged, entry: SettingEntry): Outcome<SettingValues> {
   if (!/^\d{1,10}(\.\d{1,2})?$/.test(entry.raw)) return invalid(entry.key)
   return ok({ key: entry.key, value: entry.raw, label: SETTING_LABELS[entry.key], ...stamps(row) })
+}
+
+export interface RewardSettingValues {
+  column: (typeof REWARD_SETTING_COLUMNS)[RewardSettingKey]['column']
+  value: number | boolean
+  updated_at: string
+}
+
+/** A whole number inside the range of 48 section 2, else INVALID_VALUE; nothing is clamped or defaulted. The toggle is 0 or 1 at the source. */
+export function transformRewardSetting(row: Staged, entry: SettingEntry<RewardSettingKey>): Outcome<RewardSettingValues> {
+  const { column, min, max } = REWARD_SETTING_COLUMNS[entry.key]
+  const n = /^\d{1,10}$/.test(entry.raw) ? Number(entry.raw) : null
+  if (n === null || n < min || n > max) return invalid(entry.key)
+  return ok({ column, value: entry.key === 'games_award_syiling' ? n === 1 : n, updated_at: stamps(row).updated_at })
 }
 
 // ---------------------------------------------------------------- challenge completions

@@ -35,7 +35,7 @@ async function plant(): Promise<void> {
   await q(`insert into tiers (tier_name, label_ms, icon, color, min_syiling, conversion_rate, sort_order) values
     ('bronze', 'Gangsa', 'B', '#cd7f32', 0, 50, 1), ('silver', 'Perak', 'S', '#c0c0c0', 500, 45, 2)`)
   await q(`insert into achievements (name, criterion_kind, criterion_min, reward_syiling) values ('Latih Tubi Pertama', 'practice_sessions', 1, 10)`)
-  await q(`insert into gamification_settings (key, value, label) values ('flat_quiz_reward', 1, 'Syiling flat')`)
+  await q(`insert into gamification_settings (key, value, label) values ('reward_budget_sen_month', 1, 'Sub-had')`)
 
   // staged side
   for (const t of ['gamification_tiers', 'achievements', 'achievement_user', 'challenges', 'challenge_user', 'reward_settings']) {
@@ -182,15 +182,22 @@ describe('catalogue', () => {
     expect(Object.keys(notes).filter((k) => k.includes('sukar'))).toEqual([])
   })
 
-  it('pivots reward_settings into key/value rows, adopting the seeded key', async () => {
+  it('keeps the monthly key a gamification_settings row, adopting the seeded key, and writes none of the DM-48 values there (DM-38)', async () => {
     const rows = await h.q<{ key: string; value: string; legacy_id: string | null }>(`select key, value::text, legacy_id from gamification_settings order by key`)
-    expect(rows).toEqual([
-      { key: 'current_session_year', value: '2026.00', legacy_id: '1:current_session_year' },
-      { key: 'flat_quiz_reward', value: '2.00', legacy_id: '1:flat_quiz_reward' },
-      { key: 'reward_budget_sen_month', value: '300.00', legacy_id: '1:reward_budget_sen_month' },
+    expect(rows).toEqual([{ key: 'reward_budget_sen_month', value: '300.00', legacy_id: '1:reward_budget_sen_month' }])
+    expect(recon.gamification_settings).toEqual({ source: 1, eligible: 1, loaded: 1, rejected: 0 })
+  })
+
+  it('writes the DM-48 values to the reward_settings singleton; an invalid value is rejected and keeps what was there', async () => {
+    const rows = await h.q(`select id, coins_per_correct, session_year, mini_games_give_coins, redeem_budget_sen, updated_by from reward_settings`)
+    expect(rows).toEqual([{ id: 1, coins_per_correct: 2, session_year: 2026, mini_games_give_coins: false, redeem_budget_sen: 300, updated_by: null }])
+    expect(reject('reward_settings', 'INVALID_VALUE', 'games_award_syiling')).toBe(1)
+    expect(recon.reward_settings).toEqual({ source: 3, eligible: 3, loaded: 2, rejected: 1 })
+    const ids = await h.q<{ legacy_id: string; new_id: string }>(`select legacy_id, new_id from etl_id_map where entity = 'reward_settings' order by legacy_id`)
+    expect(ids).toEqual([
+      { legacy_id: '1:current_session_year', new_id: '1' },
+      { legacy_id: '1:flat_quiz_reward', new_id: '1' },
     ])
-    expect(reject('gamification_settings', 'INVALID_VALUE', 'games_award_syiling')).toBe(1)
-    expect(recon.gamification_settings).toEqual({ source: 4, eligible: 4, loaded: 3, rejected: 1 })
   })
 })
 
@@ -301,4 +308,18 @@ describe('re-run', () => {
     }
     expect(await h.contentHashes()).toEqual(before)
   }, 120_000)
+})
+
+// Last in the file: it changes the staged row and runs again.
+describe('reward_settings on a second run', () => {
+  it('sets the toggle to a boolean, changes nothing else, and rejects a second source row naming a key already loaded', async () => {
+    await h.env.pool.query(`update staging_cloud.reward_settings set games_award_syiling = 1 where id = 1`)
+    await h.env.pool.query(`insert into staging_cloud.reward_settings (id, flat_quiz_reward) values (2, 5)`)
+    expect((await h.run('dry-run', { groups })).report.status).toBe('succeeded')
+    const applied = await h.run('apply', { groups })
+    expect(applied.report.status).toBe('succeeded')
+    expect(await h.q(`select coins_per_correct, session_year, mini_games_give_coins from reward_settings`)).toEqual([{ coins_per_correct: 2, session_year: 2026, mini_games_give_coins: true }])
+    const rejected = await h.q<{ legacy_id: string; reason: string }>(`select legacy_id, reason from etl_rejects where entity = 'reward_settings' and run_id = $1`, [applied.report.runId])
+    expect(rejected).toEqual([{ legacy_id: '2:flat_quiz_reward', reason: 'DUPLICATE_KEY' }])
+  })
 })

@@ -23,6 +23,8 @@ import {
   challengeTarget,
   isPlatformChallenge,
   parseSpmTargets,
+  REWARD_SETTING_KEYS,
+  SETTING_KEYS,
   settingEntries,
   tierMatchKey,
   transformAchievement,
@@ -30,6 +32,7 @@ import {
   transformCompletion,
   transformReferral,
   transformReferralCode,
+  transformRewardSetting,
   transformSetting,
   transformSpmTarget,
   transformUnlock,
@@ -178,17 +181,32 @@ describe('tiers and challenges', () => {
 })
 
 describe('settings pivot', () => {
-  it('gives one entry per non-empty column, in key order', () => {
-    const entries = settingEntries({ reward_budget_sen_month: '300', flat_quiz_reward: null, current_session_year: '2026', games_award_syiling: '0' })
-    expect(entries.map((e) => `${e.key}=${e.raw}`)).toEqual(['reward_budget_sen_month=300', 'current_session_year=2026', 'games_award_syiling=0'])
+  const ROW = { reward_budget_sen_month: '300', flat_quiz_reward: null, current_session_year: '2026', games_award_syiling: '0' }
+
+  it('splits the source row: only the monthly key stays a gamification_settings row, the DM-48 values go to reward_settings (DM-38)', () => {
+    expect(settingEntries(ROW, SETTING_KEYS).map((e) => `${e.key}=${e.raw}`)).toEqual(['reward_budget_sen_month=300'])
+    expect(settingEntries(ROW, REWARD_SETTING_KEYS).map((e) => `${e.key}=${e.raw}`)).toEqual(['current_session_year=2026', 'games_award_syiling=0'])
   })
 
-  it('accepts numeric(12,2) and rejects negative or non-numeric values', () => {
-    const entry = (raw: string) => ({ index: 0, key: 'flat_quiz_reward' as const, raw })
+  it('the monthly key accepts numeric(12,2) and rejects negative or non-numeric values', () => {
+    const entry = (raw: string) => ({ index: 0, key: 'reward_budget_sen_month' as const, raw })
     expect(transformSetting({}, entry('2.5')).ok).toBe(true)
-    expect(rejectOf(transformSetting({}, entry('-1')))).toBe('INVALID_VALUE:flat_quiz_reward')
-    expect(rejectOf(transformSetting({}, entry('1.234')))).toBe('INVALID_VALUE:flat_quiz_reward')
-    expect(rejectOf(transformSetting({}, entry('abc')))).toBe('INVALID_VALUE:flat_quiz_reward')
+    for (const raw of ['-1', '1.234', 'abc']) expect(rejectOf(transformSetting({}, entry(raw)))).toBe('INVALID_VALUE:reward_budget_sen_month')
+  })
+
+  it('maps each reward setting to its reward_settings column, the toggle to a boolean, and keeps the source updated_at', () => {
+    const value = (key: (typeof REWARD_SETTING_KEYS)[number], raw: string) => transformRewardSetting({ updated_at: '2026-02-02T00:00:00Z' }, { index: 0, key, raw })
+    expect(value('flat_quiz_reward', '20')).toEqual({ ok: true, value: { column: 'coins_per_correct', value: 20, updated_at: '2026-02-02T00:00:00Z' } })
+    expect(value('current_session_year', '2026')).toEqual({ ok: true, value: { column: 'session_year', value: 2026, updated_at: '2026-02-02T00:00:00Z' } })
+    expect(value('games_award_syiling', '1')).toEqual({ ok: true, value: { column: 'mini_games_give_coins', value: true, updated_at: '2026-02-02T00:00:00Z' } })
+    expect(value('games_award_syiling', '0')).toEqual({ ok: true, value: { column: 'mini_games_give_coins', value: false, updated_at: '2026-02-02T00:00:00Z' } })
+  })
+
+  it('rejects a reward setting outside the range of 48 section 2; nothing is clamped or defaulted', () => {
+    const reject = (key: (typeof REWARD_SETTING_KEYS)[number], raw: string) => rejectOf(transformRewardSetting({}, { index: 0, key, raw }))
+    for (const raw of ['21', '-1', '2.5', 'abc']) expect(reject('flat_quiz_reward', raw)).toBe('INVALID_VALUE:flat_quiz_reward')
+    for (const raw of ['2019', '2101', '2026/2027']) expect(reject('current_session_year', raw)).toBe('INVALID_VALUE:current_session_year')
+    expect(reject('games_award_syiling', '2')).toBe('INVALID_VALUE:games_award_syiling')
   })
 })
 
