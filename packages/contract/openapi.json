@@ -1373,7 +1373,7 @@
         "properties": {
           "search": {
             "type": "string",
-            "description": "Title contains, case-insensitive."
+            "description": "Title or body contains, case-insensitive; at most 100 characters are used."
           },
           "category": {
             "type": "string",
@@ -1599,7 +1599,7 @@
         "properties": {
           "search": {
             "type": "string",
-            "description": "Title contains, case-insensitive."
+            "description": "Title or body contains, case-insensitive; at most 100 characters are used."
           },
           "category": {
             "type": "string",
@@ -75801,15 +75801,15 @@
           "content"
         ],
         "summary": "Published articles (reader list)",
-        "description": "Public (guests allowed). Only published articles; 18 per page, `publishedAt` desc then id. An out-of-range page is an empty list, not an error.",
+        "description": "Public (guests allowed). Only published articles; 12 per page, `publishedAt` desc then id. `meta.counts` holds the number of published articles per category code for the current `search` (ignoring `category`), so a pill can show its count. An out-of-range page is an empty list, not an error.",
         "parameters": [
           {
             "schema": {
               "type": "string",
-              "description": "Title contains, case-insensitive."
+              "description": "Title or body contains, case-insensitive; at most 100 characters are used."
             },
             "required": false,
-            "description": "Title contains, case-insensitive.",
+            "description": "Title or body contains, case-insensitive; at most 100 characters are used.",
             "name": "search",
             "in": "query"
           },
@@ -77366,10 +77366,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "Title contains, case-insensitive."
+              "description": "Title or body contains, case-insensitive; at most 100 characters are used."
             },
             "required": false,
-            "description": "Title contains, case-insensitive.",
+            "description": "Title or body contains, case-insensitive; at most 100 characters are used.",
             "name": "search",
             "in": "query"
           },

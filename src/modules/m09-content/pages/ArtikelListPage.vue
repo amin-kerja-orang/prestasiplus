@@ -6,7 +6,7 @@
  * hot heading, "Cari artikel menarik...", "Pilih Kategori:", clock before the date). The
  * router picks the layout; this page only reads `isLoggedIn` for the guest-only copy. The query
  * string (`search`, `category`, `page`) is the state; the hot section (6 random cards) is shown
- * only when neither `search` nor `category` is set (FR-M09-28). Page size 18; the pager keeps
+ * only when neither `search` nor `category` is set (FR-M09-28). Page size 12 (AC-MUR-20-4); the pager keeps
  * `search` and `category`.
  *
  * v2 restyle (B04): `DsPage`, `DsMediaCard` grid 1/2/3, `DsEmptyState`, `UPagination`.
@@ -136,6 +136,7 @@ function goToPage(page: number): void {
       :search="applied.search"
       :category="applied.category"
       :guest="guest"
+      :counts="data?.meta.counts"
       @submit="onSearch"
     />
 
