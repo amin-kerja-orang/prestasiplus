@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { BATTLE_MESSAGES, BattleArenaViewSchema, BattleEmptyBodySchema, BattlePollMatchResponseSchema, ErrorBodySchema } from '@pp/contract'
 
 import { startOfMytDay } from '../../src/db/clock'
-import { addMcqs, bootBattleApp, client, matchBot, parse, parseData, startQueue, STUDENT_G10, STUDENT_G10_B, STUDENT_G11, subjectsOf, type BattleTestApp, type Client, type Subjects } from './arena-helpers'
+import { addMcqs, bootBattleApp, client, matchBot, nextRound, parse, parseData, startQueue, STUDENT_G10, STUDENT_G10_B, STUDENT_G11, subjectsOf, type BattleTestApp, type Client, type Subjects } from './arena-helpers'
 
 /** A third and fourth pupil of Tingkatan 4 in the same school as the first two (population seed, fictitious). */
 const STUDENT_G10_C = 'murid.demo001.01@example.test'
@@ -101,12 +101,14 @@ describe('battle matchmaking (FR-GM-01.1, 01.5, 01.9)', () => {
         const res = await a.post(`/battle/arena/${uuid}/answer`, { questionId: view.question?.id, optionId: 1, seconds: 3 })
         expect(res.status, JSON.stringify(res.body)).toBe(200)
         last = res.body.data
-        expect(last.result === undefined, `answer ${i}`).toBe(i < 5)
+        // the robot answers 2 to 12 s into the round: the pupil's answer at its start leaves the round open
+        expect(last.result, `answer ${i}`).toBeUndefined()
+        await nextRound(t, a, uuid, i)
       }
       const [battle] = await rows<{ status: string; answered: number }>(`select status, answered from battles where id = $1`, [uuid])
       expect(battle).toEqual({ status: 'finished', answered: 5 })
       const done = parseData(BattleArenaViewSchema, await a.get(`/battle/arena/${uuid}`))
-      expect(done).toMatchObject({ status: 'finished', question: null })
+      expect(done).toMatchObject({ status: 'finished', question: null, index: 5, total: 5, result: { winner: 'A' } })
     })
 
     it('a human match needs the same count: 5 and 10 do not meet', async () => {

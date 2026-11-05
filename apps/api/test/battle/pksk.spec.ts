@@ -3,7 +3,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { BattleDeps } from '../../src/modules/battle/battle.deps'
 import { PkskQuestionsService } from '../../src/modules/questions'
-import { bootBattleApp, client, matchBot, parseData, STUDENT_G10, STUDENT_G10_B, type BattleTestApp, type Client } from './arena-helpers'
+import { bootBattleApp, client, matchBot, nextRound, parseData, STUDENT_G10, STUDENT_G10_B, type BattleTestApp, type Client } from './arena-helpers'
 
 type Option = { text: string; isCorrect: boolean }
 const one = (n = 4): Option[] => Array.from({ length: n }, (_, i) => ({ text: `Pilihan ${i + 1}`, isCorrect: i === 1 }))
@@ -185,6 +185,7 @@ describe('Battle PKSK tab', () => {
       const wrong = await a.post(`/battle/arena/${uuid}/answer`, { questionId: view.question?.id, optionId: 0, seconds: 1 })
       expect(wrong.status, JSON.stringify(wrong.body)).toBe(200)
       expect(wrong.body.data).toMatchObject({ correct: false, correctOptionId: 1 })
+      await nextRound(t, a, uuid, 1)
       const second = parseData(BattleArenaViewSchema, await a.get(`/battle/arena/${uuid}`))
       const right = await a.post(`/battle/arena/${uuid}/answer`, { questionId: second.question?.id, optionId: 1, seconds: 1 })
       expect(right.body.data).toMatchObject({ correct: true, correctOptionId: 1 })
