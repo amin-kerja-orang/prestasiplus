@@ -3,12 +3,13 @@
  * animation, the 10 s live-data poll and the 30 s daily-activity reload. Everything is cleared when the
  * page is left; tests drive it with fake timers.
  */
+import { getActivePinia } from 'pinia'
 import { onScopeDispose, ref, shallowRef, watch, type Ref } from 'vue'
 
 import { isApiError } from '@/api'
-import { isHttpMode } from '@/api/mode'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useIntervalWhileVisible } from '@/composables'
+import { useSession } from '@/composables/useSession'
 import { formatCount } from '@/lib/number'
 
 import {
@@ -33,8 +34,8 @@ function refusedAtFirstLoad(err: unknown, hasData: boolean): boolean {
  */
 export function useLiveBoard() {
   const data = shallowRef<CcLiveData | null>(null)
-  /** http mode only: the endpoint is not built yet (404), so polling stopped and the board says so. */
-  const unavailable = ref(false)
+  /** True while the board has no data and the last request failed: the page shows the standard load error. */
+  const loadError = ref(false)
   let controller: AbortController | null = null
   let inFlight = false
 
@@ -51,28 +52,28 @@ export function useLiveBoard() {
     }, S2_REQUEST_TIMEOUT_MS)
     try {
       const result = await fetchCcLiveData({ signal: current.signal })
-      if (!current.signal.aborted) data.value = result
+      if (!current.signal.aborted) {
+        data.value = result
+        loadError.value = false
+      }
     } catch (err) {
       if (timedOut) console.error('Fetch error:', err)
       if (current.signal.aborted) return
-      if (isHttpMode() && isApiError(err) && err.status === 404) {
-        unavailable.value = true
-        poll.stop()
-        return
-      }
       if (refusedAtFirstLoad(err, data.value !== null)) setRouteOutcome(403)
       console.error('Fetch error:', err)
+      // a failed poll keeps the old values silently; with no values yet the standard load error shows
+      if (data.value === null) loadError.value = true
     } finally {
       clearTimeout(timer)
       inFlight = false
     }
   }
 
-  const poll = useIntervalWhileVisible(() => void load(), S2_POLL_MS, { immediate: true })
+  useIntervalWhileVisible(() => void load(), S2_POLL_MS, { immediate: true })
   onScopeDispose(() => {
     controller?.abort()
   })
-  return { data, unavailable }
+  return { data, loadError, retry: () => void load() }
 }
 
 export type LoadStatus = 'loading' | 'ok' | 'error'
@@ -128,6 +129,8 @@ export interface DrillState {
 
 /** The school drill of S3 (FR-M17-42): a row click toggles it; a tab click closes it (`close`). */
 export function useSchoolDrill(period: Ref<CcPeriod>) {
+  // The route is admin only (API-AS-03 "AP only"): a school admin never calls it (defensive; the alias hides the panel).
+  const session = getActivePinia() !== undefined ? useSession() : null
   const state = ref<DrillState | null>(null)
   let controller: AbortController | null = null
   let token = 0
@@ -140,6 +143,7 @@ export function useSchoolDrill(period: Ref<CcPeriod>) {
   }
 
   async function toggle(schoolId: number | string): Promise<void> {
+    if (session?.role.value === 'school_admin') return
     if (state.value?.schoolId === schoolId) {
       close()
       return

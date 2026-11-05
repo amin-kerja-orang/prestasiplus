@@ -6,7 +6,7 @@ import type { PracticeSession as SessionRow } from '../../db/generated/client'
 import { idFromString, idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { alreadySubmitted, notFound } from './errors'
-import { MAX_SECONDS_PER_QUESTION, POINTS_PER_CORRECT, sessionCoins } from './rules'
+import { MAX_SECONDS_PER_QUESTION, type OfferedLevel, offeredLevels, POINTS_PER_CORRECT, sessionCoins } from './rules'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -289,6 +289,11 @@ export class PracticeRepository {
 
   private get db() {
     return this.prisma.client
+  }
+
+  /** S4-T06: the offered levels (active, non-primary), see `offeredLevels`. */
+  offeredLevels(): Promise<OfferedLevel[]> {
+    return offeredLevels(this.db)
   }
 
   // --- sessions ---------------------------------------------------------------------------------
@@ -867,6 +872,30 @@ export class PracticeRepository {
         lastWrongAt: r.lastWrongAt,
       }))
       .sort(queueOrder)
+  }
+
+  /**
+   * S5-T07 (R7): the questions the user answered in one subject, grouped by topic (else chapter), for the revision top-up.
+   * Non-test answer rows of every mode; a group needs at least `minAttempts` answers. Order: the weakest group first
+   * (accuracy ascending, then more answers first, then key), inside a group the never-correct questions first, then the oldest
+   * last answer, then the id. At most `limit` ids (the servable filter is applied by the caller).
+   */
+  async weakTopicQuestionIds(userId: string, subjectId: string, minAttempts: number, limit: number): Promise<string[]> {
+    const rows = await this.db.$queryRaw<{ question_id: bigint }[]>`
+      WITH q AS (
+        SELECT question_id,
+               CASE WHEN topic_id IS NOT NULL THEN 't' || topic_id::text ELSE 'c' || chapter_id::text END AS gkey,
+               count(*) AS n, count(*) FILTER (WHERE is_correct) AS c, max(answered_at) AS last_at
+          FROM practice_answers
+         WHERE user_id = ${idFromString(userId)}::bigint AND subject_id = ${idFromString(subjectId)}::bigint
+           AND NOT is_test AND question_id IS NOT NULL AND (topic_id IS NOT NULL OR chapter_id IS NOT NULL)
+         GROUP BY question_id, 2),
+      g AS (SELECT gkey, sum(n) AS n, sum(c) AS c FROM q GROUP BY gkey HAVING sum(n) >= ${minAttempts}::bigint)
+      SELECT q.question_id
+        FROM q JOIN g USING (gkey)
+       ORDER BY g.c::numeric / g.n ASC, g.n DESC, q.gkey, (q.c = 0) DESC, q.last_at ASC, q.question_id ASC
+       LIMIT ${limit}::bigint`
+    return rows.map((r) => idToString(r.question_id))
   }
 
   /** The stored mastery counters of a user, by subject id. */
