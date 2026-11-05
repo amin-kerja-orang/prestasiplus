@@ -24,6 +24,7 @@ import HomeDifficulty from '../components/dashboard-v2/HomeDifficulty.vue'
 import HomeGreeting from '../components/dashboard-v2/HomeGreeting.vue'
 import HomeKombo from '../components/dashboard-v2/HomeKombo.vue'
 import HomeLevels from '../components/dashboard-v2/HomeLevels.vue'
+import HomeMood from '../components/dashboard-v2/HomeMood.vue'
 import HomePlatform from '../components/dashboard-v2/HomePlatform.vue'
 import HomeQuests from '../components/dashboard-v2/HomeQuests.vue'
 import HomeQuickActions from '../components/dashboard-v2/HomeQuickActions.vue'
@@ -72,6 +73,7 @@ watch(
         <HomeQuests :quests="data.quests" :completed="data.questsCompleted" />
         <HomeBadges :badges="data.badges" />
       </div>
+      <HomeMood v-if="data.user.role === 'student'" />
       <HomeQuickActions
         :revision-total="data.revisionTotal"
         :is-admin="data.user.role === 'admin'"

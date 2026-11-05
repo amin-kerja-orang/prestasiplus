@@ -16,6 +16,9 @@ import type {
   HistoryTotals,
   MissionItem,
   Mastery,
+  MoodCheckin,
+  MoodToday,
+  MoodValue,
   PracticeMode,
   PracticeSubject,
   Progress,
@@ -52,6 +55,16 @@ const withSignal = (o: Signal) => (o.signal ? { signal: o.signal } : {})
 export async function fetchDashboard(options: Signal = {}): Promise<Dashboard> {
   const body = await api.get<Dashboard>('/api/dashboard', withSignal(options))
   return isHttpMode() ? normaliseDashboard(body) : body
+}
+
+/** S5-T04 API-MUR-11 `GET /api/me/mood/today`: today's mood check-in of the pupil (`mood` is null before the first tap of the day). */
+export async function fetchMoodToday(options: Signal = {}): Promise<MoodToday> {
+  return api.get<MoodToday>('/api/me/mood/today', withSignal(options))
+}
+
+/** S5-T04 API-MUR-11 `POST /api/me/mood`: record today's mood. A second call the same day is `409 ALREADY_CHECKED_IN`. */
+export async function postMood(mood: MoodValue): Promise<MoodCheckin> {
+  return api.post<MoodCheckin>('/api/me/mood', { body: { mood } })
 }
 
 /**

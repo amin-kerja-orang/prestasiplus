@@ -595,3 +595,17 @@ export interface RemedialPreview {
     correctOptionId: number | null
   }[]
 }
+
+/** S5-T04 (API-MUR-11, DM-84): the four stored values of the pupil's daily mood check-in. */
+export type MoodValue = 'gembira' | 'okay' | 'sedih' | 'tertekan'
+
+/** `GET /api/me/mood/today`: today's stored choice, or `null` when the pupil has not checked in today. */
+export interface MoodToday {
+  mood: MoodValue | null
+}
+
+/** `POST /api/me/mood`: the stored choice and the Malaysia day (`YYYY-MM-DD`). */
+export interface MoodCheckin {
+  mood: MoodValue
+  checkedOn: string
+}
