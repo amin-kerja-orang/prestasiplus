@@ -186,6 +186,8 @@ export interface QuestionView extends QuestionRecord {
   imageTokens?: Record<string, string>
   /** Name of the curriculum chapter of the version (the admin "Bab" label), or null. */
   chapterName?: string | null
+  /** S1-T07 (D12): the open stimulus flag of the LIVE approved version, as `flags[]` on the wire. Absent = none. */
+  openFlags?: ('stimulus_missing' | 'figure_only' | 'stem_duplicated')[]
 }
 
 /** Admin detail: DSKP chain (unit/sk/sp) and creator name resolved through the owners' repositories. */
@@ -236,6 +238,15 @@ export interface AdminListFilter {
   complianceFilter?: string
   sourceFilter?: string
   search?: string
+  /** S1-T07 (API-Q-01): level code T1..T5, chapter (`none` or id), unit node id, source, text-or-id and the open stimulus flag. */
+  tingkatan?: 'T1' | 'T2' | 'T3' | 'T4' | 'T5'
+  chapter?: string
+  unit?: string
+  source?: 'manual' | 'pdf' | 'csv' | 'guru'
+  q?: string
+  flag?: 'stimulus_missing' | 'figure_only' | 'stem_duplicated'
+  /** DM-58: rejection reason present (`true`) or absent (`false`). */
+  rejected?: 'true' | 'false'
   /** Keyset paging for `listIds`: only ids below this one (then `page` is ignored and no offset is used). */
   idBelow?: string
 }
@@ -270,7 +281,7 @@ export interface QuestionFilter {
   active?: boolean
   excludeIds?: readonly string[]
   type?: StoreQuestionType
-  /** R1-B06: `true` = SPM-servable (shared `SPM_SERVABLE_SQL`: offered level T4/T5, linked active subject), NOT the legacy `pool` tag; `false` = the complement. */
+  /** R1-B06: `true` = SPM-servable (shared `SPM_SERVABLE_SQL`: offered level: active and not primary, T1 to T5; linked active subject), NOT the legacy `pool` tag; `false` = the complement. */
   spmPool?: boolean
   /**
    * `true`: only questions outside any stimulus group (`questions.group_id IS NULL`), the practice, games and battle servable

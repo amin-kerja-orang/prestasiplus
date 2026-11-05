@@ -1403,6 +1403,18 @@ export class QuestionsRepository {
     }
   }
 
+  /** D12: the OPEN flag of the LIVE approved version of each question (one query), by question id. Absent = none. */
+  async openLiveFlags(ids: readonly string[]): Promise<Map<string, 'stimulus_missing' | 'figure_only' | 'stem_duplicated'>> {
+    const keys = ids.map(bi).filter((k): k is bigint => k !== null)
+    const out = new Map<string, 'stimulus_missing' | 'figure_only' | 'stem_duplicated'>()
+    if (keys.length === 0) return out
+    const rows = await this.db.$queryRaw<{ id: bigint; flag: string }[]>`
+      SELECT q.id, v.stimulus_flag AS flag FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
+       WHERE q.id IN (${Prisma.join(keys)}) AND v.status = 'approved' AND v.stimulus_flag IS NOT NULL AND v.flag_dismissed_at IS NULL`
+    for (const r of rows) out.set(idToString(r.id), r.flag as 'stimulus_missing' | 'figure_only' | 'stem_duplicated')
+    return out
+  }
+
   /** DM-05: stores the stimulus flag of one version (`refreshStimulusFlag` of effective-leaf.ts, the one writer). */
   async refreshStimulusFlag(questionId: bigint, versionNo: number, now: Date): Promise<StimulusFlag | null> {
     return refreshStimulusFlag(this.db, questionId, versionNo, now)

@@ -33,8 +33,8 @@ export const VIDEO_TITLES = {
 } as const
 
 /**
- * Roles that may publish a video for everyone (`visibility: global`). The API refuses `global` for any
- * other active role with a 422 under `visibility` (videos.service `STAFF_ROLES`), so the form hides it.
+ * Roles that may add, edit and delete videos (R1: teacher and admin; the API answers 403 for a pupil
+ * and a school admin). The server sets the visibility by role, so the form has no visibility field.
  */
 export const VIDEO_STAFF_ROLES: readonly string[] = ['admin', 'teacher']
 
@@ -45,6 +45,8 @@ export const COPY = {
   add: 'Tambah Video',
   all: 'Semua',
   resetSubject: 'Reset Subjek',
+  noVideosTitle: 'Tiada video buat masa ini',
+  noVideosBody: 'Video pembelajaran akan dipaparkan di sini',
   emptyTitle: 'Tiada Video Dijumpai',
   emptyBody: 'Cuba ubah carian atau pilih kategori lain.',
   emptyAction: 'Lihat Semua Video',
@@ -58,14 +60,14 @@ export const COPY = {
   remove: 'Padam',
   confirmDelete: 'Padam video ini?',
   related: 'Video Berkaitan',
-  addHeaderSubtitle: 'Kongsi video pembelajaran dari YouTube, Vimeo dan lain-lain',
+  addHeaderSubtitle: 'Kongsi video pembelajaran dari YouTube',
   addH1: 'Tambah Video Baru',
   addSub: 'Paste sahaja link video — kami akan buat selebihnya',
   editHeader: 'Edit Video',
   editSub: 'Kemaskini maklumat video',
-  urlLabel: 'URL Video',
+  urlLabel: 'Pautan YouTube',
   urlPlaceholder: 'https://www.youtube.com/watch?v=...',
-  urlHint: 'Sokongan: YouTube, Vimeo, Dailymotion, TikTok, Facebook',
+  urlHint: 'Contoh: https://www.youtube.com/watch?v=...',
   detected: (label: string): string => `Platform dikesan: ${label}`,
   titleLabel: 'Tajuk Video',
   titlePlaceholder: 'Contoh: Tips Skor A+ Matematik SPM',
@@ -74,19 +76,24 @@ export const COPY = {
   optional: '(opsional)',
   categoryLabel: 'Kategori',
   categoryPlaceholder: 'Pilih kategori...',
-  subjectLabel: 'Subjek',
-  subjectNone: 'Tiada subjek khusus',
-  visibilityLabel: 'Siapa boleh lihat?',
-  visibilityGlobal: 'Semua Pengguna',
-  visibilityGlobalHint: 'Boleh dilihat oleh semua',
-  visibilitySchool: 'Sekolah Saya',
-  visibilityNoSchool: 'Tiada sekolah',
+  subjectLabel: 'Subjek (pilihan)',
+  subjectNone: '— Tiada subjek —',
   uploaderNote: 'Nama anda akan dipaparkan bersama video',
-  publish: 'Terbitkan Video',
+  publish: 'Tambah Video',
+  saving: 'Menyimpan...',
+  created: 'Video ditambah.',
   save: 'Simpan Perubahan',
+  pagePrev: 'Sebelum',
+  pageNext: 'Seterusnya',
+  pageOf: (page: number, pages: number): string => `Halaman ${String(page)} daripada ${String(pages)}`,
+  searchDebounceMs: 300,
   cancel: 'Batal',
   genericError: 'Ralat berlaku. Sila cuba lagi.',
 } as const
+
+/** Page-size-free helper: `true` when the role may write videos. */
+export const canWriteVideos = (role: string | null | undefined): boolean =>
+  role !== null && role !== undefined && VIDEO_STAFF_ROLES.includes(role)
 
 export const CATEGORY_OPTIONS: readonly { value: VideoCategory; label: string }[] = [
   { value: 'motivasi', label: 'Motivasi' },
