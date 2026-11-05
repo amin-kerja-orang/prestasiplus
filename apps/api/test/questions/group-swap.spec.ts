@@ -154,17 +154,20 @@ describe('[CI] the swap: publishing a group draft copy (API-Q-31, API-Q-32, API-
     expect(res.body.data).toMatchObject({ id: s.id, subjectId: refs.mathId, educationLevelId: refs.t4Id, kertas: '2', scope: 'paper' })
   })
 
-  it('part 3b guard: set, remove and order on a draft copy are still 409 (add is checked in group-actions); the copy is unchanged', async () => {
+  it('part 3c (was the 3b guard): set, remove and order on a draft copy edit its staged members, never the live group', async () => {
     const s = await servedGroup(2)
     const copy = await copyOf(s.id)
     const extra = await review()
-    const calls = [
-      await admin.put(`/api/stimulus-groups/${copy.id}/members`, { questionIds: [extra] }),
-      await admin.delete(`/api/stimulus-groups/${copy.id}/members/${s.ids[0]}`),
-      await admin.put(`/api/stimulus-groups/${copy.id}/members/order`, { questionIds: [...s.ids].reverse() }),
-    ]
-    for (const res of calls) expect(res.status, JSON.stringify(res.body)).toBe(409)
-    expect(await staged(copy.id)).toEqual(s.ids)
+    const set = await admin.put(`/api/stimulus-groups/${copy.id}/members`, { questionIds: [extra] })
+    expect(set.status, JSON.stringify(set.body)).toBe(200)
+    expect(await staged(copy.id)).toEqual([extra])
+    const rm = await admin.delete(`/api/stimulus-groups/${copy.id}/members/${extra}`)
+    expect(rm.status, JSON.stringify(rm.body)).toBe(200)
+    expect(await staged(copy.id)).toEqual([])
+    expect((await admin.put(`/api/stimulus-groups/${copy.id}/members`, { questionIds: s.ids })).status).toBe(200)
+    const order = await admin.put(`/api/stimulus-groups/${copy.id}/members/order`, { questionIds: [...s.ids].reverse() })
+    expect(order.status, JSON.stringify(order.body)).toBe(200)
+    expect(await staged(copy.id)).toEqual([...s.ids].reverse())
     expect(await members(s.id)).toEqual(s.ids)
   })
 
@@ -190,14 +193,16 @@ describe('[CI] the swap: publishing a group draft copy (API-Q-31, API-Q-32, API-
       const added = await review()
       const copy = await copyOf(s.id)
       await q(`insert into stimulus_group_options (group_id, label, body_ms, position) values ($1, 'A', 'Pilihan A', 1)`, [copy.id])
-      await editedMember(a, 'Boleh')
-      await editedMember(b, 'Gagal gate')
+      await editedMember(a, 'Soalan ini boleh diluluskan')
+      await editedMember(b, 'Soalan ini gagal pada gate')
       await q(`update question_versions set difficulty_tp = null, difficulty_level = null where question_id = $1 and version_no = 2`, [b])
       await stage(copy.id, [b, added, a])
       const before = (await audits()).length
       const res = await publish(copy.id)
       expect(res.status, JSON.stringify(res.body)).toBe(422)
-      expect(res.body.error.details.gate).toHaveLength(1)
+      // only the failing member is listed: its missing TP (stems are >= 10 characters for STEM_SHORT, S1-T02 #622)
+      const gate = res.body.error.details.gate as { questionId: string }[]
+      expect(gate.map((g) => g.questionId)).toEqual([b])
       // the original is intact
       expect(await members(s.id)).toEqual(s.ids)
       expect(await stimuliOf(s.id)).toEqual([s.stimulusId])
@@ -276,6 +281,147 @@ describe('[CI] the swap: publishing a group draft copy (API-Q-31, API-Q-32, API-
       expect([r1.status, r2.status], JSON.stringify([r1.body, r2.body])).toEqual([200, 200])
       expect(await members(a.id)).toEqual([a1, b0])
       expect(await members(b.id)).toEqual([a0])
+    })
+  })
+
+  describe('part 3c: add, remove, order and set on a draft copy stage the members; the swap applies them', () => {
+    it('add, remove and reorder are visible in the copy (members, questionIds, order) and change nothing live; a served member may be staged and left out', async () => {
+      const s = await servedGroup(3)
+      const [a, b, c] = s.ids as [string, string, string]
+      const added = await review()
+      const copy = await copyOf(s.id)
+      const add = await admin.post(`/api/stimulus-groups/${copy.id}/members`, { questionId: added })
+      expect(add.status, JSON.stringify(add.body)).toBe(200)
+      expect(mutationEnvelopeOf(StimulusGroupDetailSchema).parse(add.body).data.questionIds).toEqual([a, b, c, added])
+      const rm = await admin.delete(`/api/stimulus-groups/${copy.id}/members/${c}`)
+      expect(rm.status, JSON.stringify(rm.body)).toBe(200)
+      expect(rm.body.data.group.questionIds).toEqual([a, b, added])
+      const order = await admin.put(`/api/stimulus-groups/${copy.id}/members/order`, { questionIds: [added, b, a] })
+      expect(order.status, JSON.stringify(order.body)).toBe(200)
+      expect(mutationEnvelopeOf(StimulusGroupDetailSchema).parse(order.body).data.members.map((m) => m.id)).toEqual([added, b, a])
+      expect(await staged(copy.id)).toEqual([added, b, a])
+      expect(await members(s.id)).toEqual([a, b, c]) // live untouched
+      // the set route: the complete list in one call
+      const set = await admin.put(`/api/stimulus-groups/${copy.id}/members`, { questionIds: [b, a, added] })
+      expect(set.status, JSON.stringify(set.body)).toBe(200)
+      expect(await staged(copy.id)).toEqual([b, a, added])
+      // the swap applies the staged list
+      const res = await publish(copy.id)
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(await members(s.id)).toEqual([b, a, added])
+      expect((await q(`select group_id from questions where id = $1`, [c]))[0]!.group_id).toBeNull()
+      expect(await live(added)).toBe(1)
+    })
+
+    it('the same rules as a normal group: duplicate, a member of another group, another Subjek, more than 40, an unknown question; the copy is unchanged', async () => {
+      const s = await servedGroup(1)
+      const other = await servedGroup(1)
+      const copy = await copyOf(s.id)
+      const taken = await admin.post(`/api/stimulus-groups/${copy.id}/members`, { questionId: other.ids[0] })
+      expect(taken.status, JSON.stringify(taken.body)).toBe(422)
+      expect(taken.body.error.fields.questionId).toBe(STIMULUS_MESSAGES.memberTaken)
+      const sci = await question({ subjectId: refs.sciId })
+      const scope = await admin.post(`/api/stimulus-groups/${copy.id}/members`, { questionId: sci })
+      expect(scope.status, JSON.stringify(scope.body)).toBe(422)
+      expect(scope.body.error.fields.questionId).toBe(STIMULUS_MESSAGES.memberMixed)
+      expect((await admin.post(`/api/stimulus-groups/${copy.id}/members`, { questionId: s.ids[0] })).status).toBe(422) // already staged
+      const dup = await admin.put(`/api/stimulus-groups/${copy.id}/members`, { questionIds: [s.ids[0], s.ids[0]] })
+      expect(dup.status).toBe(422)
+      expect(dup.body.error.fields.questionIds).toBe(STIMULUS_MESSAGES.membersInvalid)
+      const many = await admin.put(`/api/stimulus-groups/${copy.id}/members`, { questionIds: Array.from({ length: 41 }, (_, i) => String(900000 + i)) })
+      expect(many.status).toBe(422)
+      expect((await admin.post(`/api/stimulus-groups/${copy.id}/members`, { questionId: '987654321' })).status).toBe(422)
+      expect((await admin.delete(`/api/stimulus-groups/${copy.id}/members/${other.ids[0]}`)).status).toBe(404)
+      expect((await admin.put(`/api/stimulus-groups/${copy.id}/members/order`, { questionIds: [other.ids[0]!] })).status).toBe(422)
+      expect(await staged(copy.id)).toEqual(s.ids)
+      // a question staged in another copy is taken
+      const copyOther = await copyOf(other.id)
+      const elsewhere = await admin.post(`/api/stimulus-groups/${copy.id}/members`, { questionId: other.ids[0] })
+      expect(elsewhere.status).toBe(422)
+      expect(await staged(copyOther.id)).toEqual(other.ids)
+    })
+
+    it('a copy with a real scope applies it to the staged members: memberScope, memberKertas, an inactive and an archived question, and a 41st member through add', async () => {
+      const s = await servedGroup(1, { subjectId: refs.mathId, educationLevelId: refs.t4Id, kertas: '2' })
+      const copy = await copyOf(s.id)
+      expect(copy).toMatchObject({ subjectId: refs.mathId, educationLevelId: refs.t4Id, kertas: '2' })
+      const add = (questionId: string) => admin.post(`/api/stimulus-groups/${copy.id}/members`, { questionId })
+      const scope = await add(await question({ subjectId: refs.sciId }))
+      expect(scope.status, JSON.stringify(scope.body)).toBe(422)
+      expect(scope.body.error.fields.questionId).toBe(STIMULUS_MESSAGES.memberScope)
+      const level = await add(await question({ educationLevelId: refs.t5Id }))
+      expect(level.status).toBe(422)
+      expect(level.body.error.fields.questionId).toBe(STIMULUS_MESSAGES.memberScope)
+      const kertas = await add(await question({ kertas: '3' }))
+      expect(kertas.status, JSON.stringify(kertas.body)).toBe(422)
+      expect(kertas.body.error.fields.questionId).toBe(STIMULUS_MESSAGES.memberKertas)
+      const inactive = await question({ kertas: '2' })
+      await q(`update questions set is_active = false where id = $1`, [inactive])
+      const off = await add(inactive)
+      expect(off.status, JSON.stringify(off.body)).toBe(422)
+      expect(off.body.error.fields.questionId).toBe(STIMULUS_MESSAGES.memberInactive)
+      const archived = await question({ kertas: '2' })
+      await q(`update question_versions set status = 'archived', archive_reason = 'withdrawn' where question_id = $1`, [archived])
+      const gone = await add(archived)
+      expect(gone.status, JSON.stringify(gone.body)).toBe(422)
+      expect(gone.body.error.fields.questionId).toBe(STIMULUS_MESSAGES.memberInactive)
+      expect(await staged(copy.id)).toEqual(s.ids)
+      // a matching question is accepted
+      const fine = await question({ kertas: '2' })
+      expect((await add(fine)).status).toBe(200)
+      expect(await staged(copy.id)).toEqual([...s.ids, fine])
+      // the 41st member through add
+      const fakes = Array.from({ length: 39 }, (_, i) => String(900001 + i))
+      await stage(copy.id, [...s.ids, ...fakes])
+      const full = await add(await question({ kertas: '2' }))
+      expect(full.status, JSON.stringify(full.body)).toBe(422)
+      expect(full.body.error.fields.questionId).toBe(STIMULUS_MESSAGES.membersTooMany)
+      expect(await staged(copy.id)).toHaveLength(40)
+    })
+
+    it('PUT /questions with the id of a copy as stimulusGroupId is 409 and the staged members are not lost; so is leaving a copy', async () => {
+      const s = await servedGroup(2)
+      const copy = await copyOf(s.id)
+      const loose = await question()
+      const res = await admin.put(`/api/questions/${loose}`, mcqBody(refs, { stimulusGroupId: copy.id }))
+      expect(res.status, JSON.stringify(res.body)).toBe(409)
+      expect(await staged(copy.id)).toEqual(s.ids)
+      expect((await q(`select group_id from questions where id = $1`, [loose]))[0]!.group_id).toBeNull()
+      // a question that is a member of the live group cannot be re-pointed at the copy either
+      const move = await admin.put(`/api/questions/${s.ids[0]}`, mcqBody(refs, { stimulusGroupId: copy.id }))
+      expect(move.status).toBe(409) // `move` refuses a copy on either side first (409 conflict)
+      expect(await staged(copy.id)).toEqual(s.ids)
+    })
+
+    it('a question staged in the copy of another group cannot join a live group (422 memberTaken)', async () => {
+      const a = await servedGroup(1)
+      const b = await servedGroup(0)
+      const copyA = await copyOf(a.id)
+      const loose = await question()
+      expect((await admin.post(`/api/stimulus-groups/${copyA.id}/members`, { questionId: loose })).status).toBe(200)
+      for (const res of [await admin.post(`/api/stimulus-groups/${b.id}/members`, { questionId: loose }), await admin.put(`/api/stimulus-groups/${b.id}/members`, { questionIds: [loose] })]) {
+        expect(res.status, JSON.stringify(res.body)).toBe(422)
+        expect(Object.values(res.body.error.fields)).toEqual([STIMULUS_MESSAGES.memberTaken])
+      }
+      expect(await members(b.id)).toEqual([])
+      expect(await staged(copyA.id)).toEqual([...a.ids, loose])
+    })
+
+    it('removing the last staged member succeeds with the BM warning (a lone member is not blocked); publishing the empty copy is 409', async () => {
+      const s = await servedGroup(1)
+      const copy = await copyOf(s.id)
+      const rm = await admin.delete(`/api/stimulus-groups/${copy.id}/members/${s.ids[0]}`)
+      expect(rm.status, JSON.stringify(rm.body)).toBe(200)
+      expect(rm.body.data.warning).toBe(STIMULUS_MESSAGES.smallGroup())
+      expect((await publish(copy.id)).status).toBe(409)
+      expect(await members(s.id)).toEqual(s.ids)
+    })
+
+    it('a group that is not a copy behaves as before: the served lock still refuses to remove a served member (409)', async () => {
+      const s = await servedGroup(2)
+      const res = await admin.delete(`/api/stimulus-groups/${s.id}/members/${s.ids[0]}`)
+      expect(res.status, JSON.stringify(res.body)).toBe(409)
+      expect(await members(s.id)).toEqual(s.ids)
     })
   })
 
