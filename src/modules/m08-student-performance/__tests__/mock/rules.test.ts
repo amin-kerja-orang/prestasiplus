@@ -71,7 +71,7 @@ describe('grades and GPS (BR-M08-01…03)', () => {
   })
 
   it('percent to grade uses the BR-M08-02 table', () => {
-    expect([100, 90, 89.99, 80, 70, 65, 60, 55, 50, 45, 40, 39.99].map(gradeOfPercent)).toEqual([
+    expect([100, 90, 89.4, 80, 70, 65, 60, 55, 50, 45, 40, 39.4].map(gradeOfPercent)).toEqual([
       'A+',
       'A+',
       'A',
@@ -178,11 +178,11 @@ describe('headcount pair rules (BR-M08-07, 08)', () => {
     expect(pairStatus(entry([60], [null]))).toBe('none')
   })
 
-  it('±2 % band (DV-29): Above > OTR; On Track OTR − 2 … OTR; Below < OTR − 2', () => {
-    expect(bandStatus(82, 80)).toBe('above')
+  it('bands (HC-4): Above AR − OTR > 2; On Track 0…2; Below < 0', () => {
+    expect(bandStatus(83, 80)).toBe('above')
+    expect(bandStatus(82, 80)).toBe('on')
     expect(bandStatus(80, 80)).toBe('on')
-    expect(bandStatus(78, 80)).toBe('on')
-    expect(bandStatus(77.9, 80)).toBe('below')
+    expect(bandStatus(79.9, 80)).toBe('below')
     expect(bandStatus(null, 80)).toBe('na')
     expect(bandStatus(70, null)).toBe('na')
   })

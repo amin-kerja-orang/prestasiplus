@@ -6,12 +6,16 @@ import {
   PERFORMANCE_TIMELINE_MESSAGES,
   PerformanceClassAnalyticsSchema,
   PerformanceClassDashboardSchema,
+  PerformanceHeadcountArRequestSchema,
   PerformanceHeadcountAutoSetupRequestSchema,
   PerformanceHeadcountCreateRequestSchema,
+  PerformanceHeadcountDefaultsRequestSchema,
   PerformanceHeadcountDetailSchema,
   PerformanceHeadcountDropRequestSchema,
   PerformanceItemAnalysisMeQuerySchema,
   PerformanceItemAnalysisMeSchema,
+  PerformanceHeadcountSettingsRequestSchema,
+  PerformanceHeadcountTovRequestSchema,
   PerformanceLeaderboardSchema,
   PerformanceLevelDetailSchema,
   PerformancePublicProfileSchema,
@@ -233,8 +237,11 @@ describe('performance contract (BE-19)', () => {
         teacherName: 'Guru Contoh',
         status: 'active',
         activeOtrs: 2,
+        mode: 'manual',
+        defaultTov: 40,
+        defaultEtr: null,
       },
-      chips: { onTrack: 1, below: 0, empty: 0, total: 1 },
+      chips: { onTrack: 1, below: 0, empty: 0, total: 1, onTrackPct: 100 },
       rows: [
         {
           userId: '9',
@@ -244,6 +251,12 @@ describe('performance contract (BE-19)', () => {
           etr: null,
           etrGrade: null,
           dropped: false,
+          rs: null,
+          rsRecordedAt: null,
+          status: 'on',
+          statusReason: 'belum_ada_data',
+          entryStatus: 'draft',
+          projection: null,
           cells: [
             { target: 60, targetGrade: 'B', ar: 62, arGrade: 'B', tone: 'above' },
             { target: 65, targetGrade: 'B+', ar: null, arGrade: null, tone: 'na' },
@@ -259,6 +272,31 @@ describe('performance contract (BE-19)', () => {
         config: { ...detail.config, status: 'closed' },
       }).success,
     ).toBe(false)
+  })
+
+  it('S10-T02 request bodies: marks 0..100 with the exact BM copy, RS date shape, Bilangan OTR 2..5, defaults', () => {
+    const M = PERFORMANCE_HEADCOUNT_MESSAGES
+    const ar = (value: unknown) => PerformanceHeadcountArRequestSchema.safeParse({ checkpoint: 1, marks: [{ userId: '9', value }] })
+    for (const ok of [0, 66.5, 100, null]) expect(ar(ok).success, String(ok)).toBe(true)
+    for (const bad of [-0.1, 101, 'x']) expect(fieldMessages(ar(bad)), String(bad)).toEqual({ marks: M.markRange })
+    expect(PerformanceHeadcountArRequestSchema.safeParse({ marks: [] }).success).toBe(false)
+    const tov = (row: object) => PerformanceHeadcountTovRequestSchema.safeParse({ rows: [{ userId: '9', ...row }] })
+    expect(tov({}).success).toBe(true)
+    expect(tov({ tov: 40, etr: null, rs: 78.5, rsRecordedAt: '2026-10-01' }).success).toBe(true)
+    expect(tov({ rs: null, rsRecordedAt: null }).success).toBe(true)
+    expect(fieldMessages(tov({ tov: 101 }))).toEqual({ rows: M.markRange })
+    expect(fieldMessages(tov({ rsRecordedAt: '01/10/2026' }))).toEqual({ rows: M.rsDateInvalid })
+    for (const impossible of ['2025-13-01', '2026-02-31', '2025-02-29', '2026-04-31', '2026-00-10'])
+      expect(fieldMessages(tov({ rsRecordedAt: impossible })), impossible).toEqual({ rows: M.rsDateInvalid })
+    for (const real of ['2024-02-29', '2026-12-31']) expect(tov({ rsRecordedAt: real }).success, real).toBe(true)
+    expect(M.rsDateNeedsRs).toBe('Tarikh Rekod RS memerlukan RS.')
+    for (const n of [2, 3, '4', 5]) expect(PerformanceHeadcountSettingsRequestSchema.safeParse({ activeOtrs: n }).success, String(n)).toBe(true)
+    for (const n of [1, 6, 'x']) expect(fieldMessages(PerformanceHeadcountSettingsRequestSchema.safeParse({ activeOtrs: n }))).toEqual({ activeOtrs: M.otrInvalid })
+    expect(PerformanceHeadcountSettingsRequestSchema.safeParse({ activeOtrs: 2, confirm: true }).success).toBe(true)
+    expect(PerformanceHeadcountDefaultsRequestSchema.safeParse({ defaultTov: 40, defaultEtr: null }).success).toBe(true)
+    expect(PerformanceHeadcountDefaultsRequestSchema.safeParse({ defaultTov: 40 }).success).toBe(false)
+    expect(M.otrLoweringConfirm(3)).toBe('OTR3 ke atas mempunyai markah. Padam markah tersebut?')
+    expect(M.saved.ar(2)).toBe('AR OTR2 disimpan.')
   })
 
   it('parses ranking, leaderboard and public profile', () => {
@@ -570,8 +608,15 @@ describe('performance contract (BE-19)', () => {
       ['post', '/headcounts/{id}/drop-students'],
       ['post', '/headcounts/{id}/reset'],
       ['delete', '/headcounts/{id}'],
+      // S10-T02
+      ['get', '/headcounts/me'],
+      ['get', '/headcounts/me/detail'],
+      ['put', '/headcounts/{id}/ar'],
+      ['put', '/headcounts/{id}/tov'],
+      ['put', '/headcounts/{id}/settings'],
+      ['put', '/headcounts/{id}/defaults'],
     ]
-    expect(expected).toHaveLength(30)
+    expect(expected).toHaveLength(36)
     for (const [method, path] of expected)
       expect(doc.paths[path]?.[method], `${method} ${path}`).toBeDefined()
     for (const name of Object.keys(PERFORMANCE_COMPONENT_SCHEMAS))

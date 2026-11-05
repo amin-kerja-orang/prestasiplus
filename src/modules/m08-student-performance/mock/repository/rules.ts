@@ -10,7 +10,9 @@ export type Grade = (typeof GRADES)[number]
 export const gradePoints = (grade: Grade): number => GRADES.indexOf(grade)
 
 /** BR-M08-02: percentage → grade (A+ 90–100 … G < 40; INFERRED beyond the S15 values). */
-export function gradeOfPercent(value: number): Grade {
+export function gradeOfPercent(raw: number): Grade {
+  // HC-5: round to a whole number first (half away from zero), so 89.5 reads as 90 = A+.
+  const value = Math.sign(raw) * Math.round(Math.abs(raw) + Number.EPSILON)
   if (value >= 90) return 'A+'
   if (value >= 80) return 'A'
   if (value >= 70) return 'A-'

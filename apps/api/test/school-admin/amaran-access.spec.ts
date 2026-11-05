@@ -152,7 +152,7 @@ describe('BE-21 Amaran access: /amaran/*', () => {
     expect(names).toEqual(expect.arrayContaining(pupilIds.map((_, i) => `Murid Amaran ${i + 1}`)))
     expect(data.pupils.map((p) => p.rank)).toEqual(data.pupils.map((_, i) => i + 1))
     const scores = data.pupils.map((p) => p.score)
-    expect(scores).toEqual([...scores].sort((a, b) => b - a))
+    expect(scores).toEqual([...scores].sort((a, b) => (b ?? -1) - (a ?? -1)))
     expect(data.tally.total).toBe(data.pupils.length)
     expect(data.levelFilter).toBeNull()
     const weak = data.pupils.find((p) => p.name === 'Murid Amaran 1')
@@ -183,6 +183,17 @@ describe('BE-21 Amaran access: /amaran/*', () => {
     const none = AmaranSchoolRiskSchema.parse((await schoolAdmin.get(`/amaran/schools/${s1}?tingkatan=zzz`)).body.data)
     expect(none.levelFilter).toBeNull()
     expect(none.pupils.length).toBeGreaterThan(3)
+  })
+
+  it('tingkatan T1 to T3 are accepted (Tingkatan 1-5, D101 / FR-X3-3)', async () => {
+    for (const [q, code, label] of [['T1', 'T1', 'Tingkatan 1'], ['t2', 'T2', 'Tingkatan 2'], ['3', 'T3', 'Tingkatan 3']] as const) {
+      const res = await schoolAdmin.get(`/amaran/schools/${s1}?tingkatan=${q}`)
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      const data = AmaranSchoolRiskSchema.parse(res.body.data)
+      expect(data.levelFilter).toBe(code)
+      expect(data.levelSuffix).toBe(` — ${label}`)
+      expect(data.pupils).toHaveLength(0)
+    }
   })
 
   it('summary: the default scope is the own school for school_admin and teacher; admin has no default (403)', async () => {

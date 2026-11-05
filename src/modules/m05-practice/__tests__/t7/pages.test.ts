@@ -2,6 +2,7 @@
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
+import { createPinia } from 'pinia'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
 import { ApiError } from '@/api'
@@ -48,7 +49,9 @@ async function render(component: unknown, url: string): Promise<VueWrapper> {
     ],
   })
   await router.push(url)
-  wrapper = mount(component as never, { global: { plugins: [router], stubs: { teleport: true } } })
+  wrapper = mount(component as never, {
+    global: { plugins: [router, createPinia()], stubs: { teleport: true } },
+  })
   await flushPromises()
   return wrapper
 }
@@ -98,11 +101,14 @@ afterEach(() => {
 })
 
 describe('S10 StructuredListPage', () => {
-  it.each([4454, 'clx9abc123'])('links "Mula" for a card id of %s (mock number / API string)', async (id) => {
-    api.fetchStructured.mockResolvedValue(listOf([card({ id, subjectId: String(id) })]))
-    const w = await render(StructuredListPage, '/latihan-berstruktur')
-    expect(t(w, 'card-start').attributes('href')).toBe(`/latihan-berstruktur/${String(id)}/jawab`)
-  })
+  it.each([4454, 'clx9abc123'])(
+    'links "Mula" for a card id of %s (mock number / API string)',
+    async (id) => {
+      api.fetchStructured.mockResolvedValue(listOf([card({ id, subjectId: String(id) })]))
+      const w = await render(StructuredListPage, '/latihan-berstruktur')
+      expect(t(w, 'card-start').attributes('href')).toBe(`/latihan-berstruktur/${String(id)}/jawab`)
+    },
+  )
 
   it('shows cards with the KBAT badge, hides a null school and links "Mula"', async () => {
     api.fetchStructured.mockResolvedValue(listOf([card()]))
@@ -116,10 +122,9 @@ describe('S10 StructuredListPage', () => {
     expect(t(w, 'card-start').attributes('href')).toBe('/latihan-berstruktur/4454/jawab')
     expect(w.find('[data-testid=card-parts]').exists()).toBe(false)
     const subjectSelect = w.findAllComponents({ name: 'Select' })[0]
-    expect(((subjectSelect?.props('items') ?? []) as { label: string }[]).map((o) => o.label)).toEqual([
-      'Semua Subjek',
-      'Perniagaan',
-    ])
+    expect(
+      ((subjectSelect?.props('items') ?? []) as { label: string }[]).map((o) => o.label),
+    ).toEqual(['Semua Subjek', 'Perniagaan'])
   })
 
   it('shows the author school when present', async () => {
@@ -205,7 +210,7 @@ describe('Q3 StructuredAnswerPage', () => {
       expect.anything(),
     )
     expect(outcome.setRouteOutcome).not.toHaveBeenCalledWith(404)
-    await w.findAll('[data-testid=sub-answer]')[0]?.setValue('x')
+    for (const box of w.findAll('[data-testid=sub-answer]')) await box.setValue('x')
     await w.get('form').trigger('submit')
     await flushPromises()
     expect(api.submitStructuredAttempt).toHaveBeenCalledWith(String(id), expect.anything())
@@ -219,21 +224,26 @@ describe('Q3 StructuredAnswerPage', () => {
       { scope: 'spm', track: null },
       expect.anything(),
     )
-    expect(t(w, 'answer-stimulus').text()).toBe('<b>Teks</b> kes')
-    expect(w.find('[data-testid=answer-stimulus] b').exists()).toBe(false)
-    expect(w.find('[data-testid=answer-image]').exists()).toBe(false)
+    expect(t(w, 'answer-h1').text()).toBe('Soalan Berstruktur — Jawab')
+    expect(t(w, 'answer-summary').text()).toBe('2 bahagian · 6 markah')
+    // The stimulus shows once, as escaped text (never markup).
+    expect(w.findAll('[data-testid=stimulus-group]')).toHaveLength(1)
+    expect(t(w, 'stimulus-group').text()).toContain('<b>Teks</b> kes')
+    expect(w.find('[data-testid=stimulus-group] b').exists()).toBe(false)
+    expect(w.find('[data-testid=stimulus-group] img').exists()).toBe(false)
     expect(w.findAll('[data-testid=sub-marks]').map((m) => m.text())).toEqual([
       '[2 markah]',
       '[4 markah]',
     ])
-    expect(t(w, 'answer-hint').text()).toContain('Jawab semua sub-soalan, kemudian klik Hantar.')
+    expect(t(w, 'answer-hint').text()).toBe('✍️ Tulis jawapan anda, kemudian tekan Hantar & Semak.')
+    expect(t(w, 'answer-submit').text()).toBe('Hantar & Semak')
     expect(t(w, 'answer-back').attributes('href')).toBe(DETAIL.backUrl)
   })
 
   it('does not render an unsafe image', async () => {
     api.fetchStructuredDetail.mockResolvedValue({ ...DETAIL, stimulusImage: 'javascript:alert(1)' })
     const w = await render(StructuredAnswerPage, '/latihan-berstruktur/4454/jawab')
-    expect(w.find('[data-testid=answer-image]').exists()).toBe(false)
+    expect(w.find('[data-testid=stimulus-group] img').exists()).toBe(false)
   })
 
   it('posts the attempt with scope/track and shows marks and model answers', async () => {
@@ -255,13 +265,15 @@ describe('Q3 StructuredAnswerPage', () => {
       StructuredAnswerPage,
       '/latihan-berstruktur/4454/jawab?scope=spm&track=bahasa',
     )
-    await w.findAll('[data-testid=sub-answer]')[0]?.setValue('jawapan')
+    const boxes = w.findAll('[data-testid=sub-answer]')
+    await boxes[0]?.setValue('jawapan')
+    await boxes[1]?.setValue('lagi')
     await w.get('form').trigger('submit')
     await flushPromises()
     expect(api.submitStructuredAttempt).toHaveBeenCalledWith('4454', {
       answers: [
         { subQuestionId: 1, text: 'jawapan' },
-        { subQuestionId: 2, text: '' },
+        { subQuestionId: 2, text: 'lagi' },
       ],
       scope: 'spm',
       track: 'bahasa',
@@ -288,6 +300,7 @@ describe('Q3 StructuredAnswerPage', () => {
       }),
     )
     const w = await render(StructuredAnswerPage, '/latihan-berstruktur/4454/jawab')
+    for (const box of w.findAll('[data-testid=sub-answer]')) await box.setValue('x')
     await w.get('form').trigger('submit')
     await flushPromises()
     expect(t(w, 'answer-errors').text()).toContain('Jawapan tidak sah.')
