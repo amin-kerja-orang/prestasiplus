@@ -7,6 +7,8 @@
  */
 import { computed, ref } from 'vue'
 
+import { DsSurface } from '@/ds'
+
 import { isStemRow } from '@pp/exam-core/paper-model'
 import type { McqOption, PartAnswer, PartView } from '@/modules/m28-bijak-spm/domain/types'
 import { chipLabel } from './copy'
@@ -15,7 +17,9 @@ import { useStimulusGroup } from './lib/useStimulusOpen'
 import PartInput from './PartInput.vue'
 import RichText from './RichText.vue'
 import StimulusFigure from './StimulusFigure.vue'
-import type { StimulusData } from './types'
+import { useQuestionLang } from './lib/question-lang'
+import type { GridSpec, PadTemplate } from './lib/drawing'
+import type { LeafModeExtras, PartTwins, StimulusData } from './types'
 
 defineOptions({ name: 'PartNode' })
 
@@ -38,9 +42,28 @@ const leafStimulus = computed(() =>
     ? props.stimuli?.find((s) => s.id === props.part.stimulusId)
     : undefined,
 )
+/** Optional modeConfig fields (contract PR #679) that PartView does not type yet. */
+type RawTemplate = PadTemplate | { imageId: string } | { grid: GridSpec }
+const extras = computed(
+  () =>
+    props.part.answer as
+      (Omit<LeafModeExtras, 'answerTemplate'> & { answerTemplate?: RawTemplate }) | undefined,
+)
+/** The contract's `{imageId}` becomes the file URL (same builder as `imageSrc` in lib/rich-text); a grid passes as is. */
+const padTemplate = computed<PadTemplate | undefined>(() => {
+  const t = extras.value?.answerTemplate
+  if (!t) return undefined
+  return 'imageId' in t ? { imageUrl: `/api/files/${t.imageId}` } : t
+})
+const promptEn = computed(() => (props.part as PartTwins & typeof props.part).promptEn)
+const { lang } = useQuestionLang()
+const showMs = computed(() => !promptEn.value || lang.value !== 'en')
+const showEn = computed(() => !!promptEn.value && lang.value !== 'ms')
 const shown = ref(false)
 /** Already in the group's pinned panel: the leaf only links to it, it never draws it twice. */
-const inPanel = computed(() => !!leafStimulus.value && !!group?.stimuli().some((s) => s.id === leafStimulus.value!.id))
+const inPanel = computed(
+  () => !!leafStimulus.value && !!group?.stimuli().some((s) => s.id === leafStimulus.value!.id),
+)
 const emit = defineEmits<{ answer: [partId: string, answer: PartAnswer] }>()
 </script>
 
@@ -52,14 +75,13 @@ const emit = defineEmits<{ answer: [partId: string, answer: PartAnswer] }>()
   >
     <p class="flex flex-wrap items-baseline gap-x-2 text-body text-highlighted">
       <span v-if="part.label" class="font-bold">{{ part.label }}</span>
-      <template v-for="(seg, i) in segments" :key="i">
+      <template v-for="(seg, i) in showMs ? segments : []" :key="i">
         <UButton
           v-if="seg.kind === 'cite'"
           type="button"
           variant="link"
           color="primary"
           size="md"
-         
           data-testid="cite-link"
           :data-cite="seg.target"
           @click="group?.open(seg.target)"
@@ -67,6 +89,16 @@ const emit = defineEmits<{ answer: [partId: string, answer: PartAnswer] }>()
         >
         <RichText v-else :text="seg.text" />
       </template>
+      <DsSurface
+        v-if="showMs && showEn"
+        level="accented"
+        padding="none"
+        radius="none"
+        class="h-px w-full"
+        aria-hidden="true"
+        data-testid="lang-divider"
+      />
+      <RichText v-if="showEn" :text="promptEn as string" data-testid="lang-en-block" />
       <span v-if="!part.children?.length && !stem" class="tabular text-caption text-muted"
         >[{{ part.marks }} markah]</span
       >
@@ -124,6 +156,10 @@ const emit = defineEmits<{ answer: [partId: string, answer: PartAnswer] }>()
         kind: part.answer?.kind ?? 'short_text',
         unit: part.answer?.unit,
         wordRange: part.answer?.wordRange,
+        maxWords: extras?.maxWords,
+        hardLimit: extras?.hardLimit,
+        preFill: extras?.preFill,
+        answerTemplate: padTemplate,
         depth: depth ?? 0,
       }"
       :model-value="answers[part.id]"
