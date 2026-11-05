@@ -9,6 +9,7 @@ import { computed } from 'vue'
 
 import type { AccountProfileCalendarDay } from '@pp/contract'
 
+import { DsCluster, DsGrid, DsHeading, DsStack, DsText } from '@/ds'
 import { formatDateShortMs } from '@/lib/time'
 
 const props = defineProps<{
@@ -41,16 +42,16 @@ const cells = computed(() =>
 
 <template>
   <UCard data-testid="profile-calendar">
-    <div class="flex flex-col gap-3">
-      <div>
-        <h2 class="flex items-center gap-2 text-subheading text-highlighted">
+    <DsStack gap="sm">
+      <DsStack gap="none">
+        <DsCluster gap="xs">
           <UIcon name="i-ph-calendar-check" class="size-5" aria-hidden="true" />
-          Kalendar Kombo (30 Hari Terakhir)
-        </h2>
-        <p class="text-caption text-muted">Jejak latihan harian anda</p>
-      </div>
+          <DsHeading :level="2" variant="subheading">Kalendar Kombo (30 Hari Terakhir)</DsHeading>
+        </DsCluster>
+        <DsText variant="caption">Jejak latihan harian anda</DsText>
+      </DsStack>
 
-      <div class="grid grid-cols-6 gap-2 sm:grid-cols-10" data-testid="profile-calendar-grid">
+      <DsGrid gap="xs" :cols="6" data-testid="profile-calendar-grid">
         <!-- The shades are fixed hex values of the PRD (R1-MUR-A1 block 7), so the colour is an inline style. -->
         <!-- eslint-disable pp/ds-no-inline-style -->
         <UBadge
@@ -59,19 +60,19 @@ const cells = computed(() =>
           color="neutral"
           variant="solid"
           size="lg"
-          class="min-w-0 justify-center"
+          class="min-w-0"
           :style="cell.style"
           :title="cell.title"
           :aria-label="cell.title"
           role="img"
           data-testid="profile-calendar-cell"
         >
-          {{ cell.day }}
+          <span class="w-full text-center">{{ cell.day }}</span>
         </UBadge>
         <!-- eslint-enable pp/ds-no-inline-style -->
-      </div>
+      </DsGrid>
 
-      <p class="text-caption text-muted">Petak lebih gelap bermaksud lebih banyak sesi pada hari itu.</p>
-    </div>
+      <DsText variant="caption">Petak lebih gelap bermaksud lebih banyak sesi pada hari itu.</DsText>
+    </DsStack>
   </UCard>
 </template>

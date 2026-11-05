@@ -6,6 +6,8 @@
  */
 import { onBeforeUnmount, ref } from 'vue'
 
+import { DsCluster, DsHeading, DsStack, DsText } from '@/ds'
+
 const props = defineProps<{
   /** The absolute public profile URL. */
   url: string
@@ -45,26 +47,26 @@ onBeforeUnmount(() => {
 
 <template>
   <UCard data-testid="profile-public-card">
-    <div class="flex flex-col gap-3">
-      <div>
-        <h2 class="flex items-center gap-2 text-subheading text-highlighted">
+    <DsStack gap="sm">
+      <DsStack gap="none">
+        <DsCluster gap="xs">
           <UIcon name="i-ph-share-network" class="size-5" aria-hidden="true" />
-          Profil Awam Saya
-        </h2>
-        <p class="text-caption text-muted">Kongsi profil anda dengan kawan-kawan!</p>
-      </div>
+          <DsHeading :level="2" variant="subheading">Profil Awam Saya</DsHeading>
+        </DsCluster>
+        <DsText variant="caption">Kongsi profil anda dengan kawan-kawan!</DsText>
+      </DsStack>
 
-      <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <DsCluster gap="xs" stack-below="sm">
         <UInput
           ref="urlInput"
           :model-value="url"
           readonly
           size="lg"
-          class="min-w-0 flex-1"
+          class="min-w-0"
           aria-label="Pautan profil awam"
           data-testid="profile-public-url"
         />
-        <div class="flex items-center gap-2">
+        <DsCluster gap="xs" :wrap="false">
           <UButton
             color="primary"
             variant="soft"
@@ -87,12 +89,12 @@ onBeforeUnmount(() => {
             aria-label="Buka profil awam"
             data-testid="profile-open-public"
           />
-        </div>
-      </div>
+        </DsCluster>
+      </DsCluster>
 
-      <p v-if="manual" class="text-caption text-warning" role="status" data-testid="profile-copy-manual">
+      <DsText v-if="manual" variant="caption" tone="warning" role="status" data-testid="profile-copy-manual">
         Salin pautan secara manual.
-      </p>
-    </div>
+      </DsText>
+    </DsStack>
   </UCard>
 </template>

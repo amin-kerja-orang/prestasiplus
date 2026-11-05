@@ -72,8 +72,17 @@ export const ScreenshotUploadResultSchema = z
  * `data` of `GET /config/support` (#43, public): the contact shown in the help box. A value is the empty
  * string when it is not set; when no config row exists all four are empty (S5-T05, DM-33). `whatsapp` is the
  * stored `whatsapp_number`; `phone` and `hours` are always the empty string until S7-T09 stores them.
+ * `whatsappNumber` is the previous key for `whatsapp`; it stays as an optional property so no required
+ * property is removed from the response (the server may omit it).
  */
 export const ContentSupportConfigSchema = z
-  .strictObject({ email: z.string(), phone: z.string(), whatsapp: z.string(), hours: z.string() })
+  .strictObject({
+    email: z.string(),
+    phone: z.string(),
+    whatsapp: z.string(),
+    hours: z.string(),
+    /** @deprecated Use `whatsapp`. Optional; the server may omit it. */
+    whatsappNumber: z.string().optional().meta({ deprecated: true }),
+  })
   .meta({ id: 'ContentSupportConfig' })
 export type ContentSupportConfig = z.infer<typeof ContentSupportConfigSchema>
