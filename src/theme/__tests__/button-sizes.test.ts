@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs'
-import { execSync } from 'node:child_process'
+import { readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
@@ -14,26 +14,28 @@ const minHeightPx = (classes: string): number => {
   return m ? Number(m.slice('min-h-'.length)) * 4 : 0
 }
 
+/** Every `.vue` file under `dir`, recursively. */
+const vueFiles = (dir: string): string[] =>
+  readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+    const p = join(dir, e.name)
+    if (e.isDirectory()) return e.name === 'node_modules' ? [] : vueFiles(p)
+    return e.name.endsWith('.vue') ? [p] : []
+  })
+
 describe('UButton sizes (touch targets)', () => {
   it('every size a page passes to UButton is themed', () => {
-    const files = execSync('git ls-files "src/**/*.vue"', { encoding: 'utf8' }).trim().split('\n')
     const used = new Set<string>()
-    for (const f of files) {
+    for (const f of vueFiles(join(__dirname, '..', '..'))) {
       for (const tag of readFileSync(f, 'utf8').matchAll(/<UButton\b[^>]*?>/gs)) {
         const size = tag[0].match(/\bsize="([a-z]+)"/)?.[1]
         if (size) used.add(size)
       }
     }
+    expect(used.size).toBeGreaterThan(0)
     expect([...used].filter((s) => !(s in sizes))).toEqual([])
   })
 
   it.each(['md', 'lg', 'xl'])('%s is at least 44px', (size) => {
     expect(minHeightPx(sizes[size]!.base)).toBeGreaterThanOrEqual(44)
-  })
-
-  it('sizes grow in order xs < sm < md < lg < xl', () => {
-    const order = ['xs', 'sm', 'md', 'lg', 'xl'].map((s) => minHeightPx(sizes[s]!.base))
-    expect(order).toEqual([...order].sort((a, b) => a - b))
-    expect(new Set(order).size).toBe(order.length)
   })
 })

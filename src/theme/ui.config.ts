@@ -186,11 +186,9 @@ export const uiConfig = {
         lg: {
           base: 'min-h-12 gap-2.5 px-5 text-label learner:min-h-14 learner:rounded-md learner:px-6 learner:text-base',
         },
-        // `xl` is used by about 90 buttons (55 files). Unthemed it fell back to the stock Nuxt UI size
-        // (about 40px), under the 44px touch rule; one step above `lg` keeps the scale in order.
-        xl: {
-          base: 'min-h-13 gap-2.5 px-6 text-base learner:min-h-15 learner:rounded-md learner:px-7',
-        },
+        // `xl` is used by about 90 buttons (55 files). Unthemed it is the stock Nuxt UI size (about
+        // 40px), under the 44px touch rule: only the height floor is added; padding and text stay stock.
+        xl: { base: 'min-h-11' },
       },
     },
     compoundVariants: [
