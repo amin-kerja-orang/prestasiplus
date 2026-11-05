@@ -121,3 +121,19 @@ export const saveHeadcountDefaults = (
   input: SaveDefaultsInput,
   o: Signal = {},
 ) => api.put<HeadcountDetail>(`/api/headcounts/${String(id)}/defaults`, { body: input, ...withSignal(o) })
+
+/** API-RPT-08 `GET /api/headcounts/me` (pupil only, S10-T09): the pupil's own configs of the year, newest first. */
+export const fetchHeadcountMe = (o: Signal = {}) =>
+  api.get<HeadcountListItem[]>('/api/headcounts/me', withSignal(o))
+
+/**
+ * API-RPT-08 `GET /api/headcounts/me/detail?configId=` (pupil only): the pupil's own line of one config;
+ * no `configId` = the config last updated. 404 for a config that is not the pupil's own.
+ */
+export const fetchHeadcountMeDetail = (configId?: number | string | null, o: Signal = {}) =>
+  api.get<HeadcountStudent>('/api/headcounts/me/detail', {
+    ...withSignal(o),
+    ...(configId !== undefined && configId !== null && configId !== ''
+      ? { query: { configId: wireId(configId) } }
+      : {}),
+  })

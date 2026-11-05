@@ -139,7 +139,7 @@ describe('GET /command-center/student/:id/subject', () => {
     expect(res.status).toBe(200)
     const { data } = CommandCenterSessionListResponseSchema.parse(res.body)
     expect(data.sessions.map((s) => s.id)).toEqual([ids.bm, ids.late])
-    expect(data.sessions[0]).toMatchObject({ total: 3, correct: 2, accuracy: 66.67, minutes: 2, topic: null })
+    expect(data.sessions[0]).toMatchObject({ total: 3, correct: 2, accuracy: 66.7, minutes: 2, topic: null })
     expect(data).toMatchObject({ totalAnswers: 8, totalSessions: 2, accuracy: 87.5, timeSpentMinutes: 3 })
   })
 
@@ -150,7 +150,7 @@ describe('GET /command-center/student/:id/subject', () => {
     for (const q of ['?code=NOPE', '', '?code=']) {
       const res = await getAs(admin, `/command-center/student/${w.p.p1}/subject${q}`)
       expect(res.status).toBe(200)
-      expect(CommandCenterSessionListResponseSchema.parse(res.body).data).toEqual({ totalAnswers: 0, totalSessions: 0, accuracy: 0, timeSpentMinutes: 0, sessions: [] })
+      expect(CommandCenterSessionListResponseSchema.parse(res.body).data).toEqual({ totalAnswers: 0, totalSessions: 0, accuracy: null, timeSpentMinutes: 0, sessions: [] })
     }
   })
 
@@ -200,7 +200,7 @@ describe('GET /command-center/session/:sessionId', () => {
     expect(res.status).toBe(200)
     const { data } = CommandCenterSessionDetailResponseSchema.parse(res.body)
     const name = (await t.db.query<{ name: string }>(`select name from subjects where code = 'BM'`))[0]?.name
-    expect(data).toMatchObject({ subjectLabel: name, topic: null, total: 3, correctCount: 1, wrongCount: 2, accuracy: 33.33, timeSpent: { m: 2, s: 5 }, difficulty: null })
+    expect(data).toMatchObject({ subjectLabel: name, topic: null, total: 3, correctCount: 1, wrongCount: 2, accuracy: 33.3, timeSpent: { m: 2, s: 5 }, difficulty: null })
     expect(data.answers).toHaveLength(3)
     expect(data.answers[0]).toMatchObject({ no: 1, correct: false, questionText: `${'S'.repeat(150)}...`, selectedAnswer: 'B) Dua', correctAnswer: 'A) Satu' })
     expect(data.answers[1]).toMatchObject({ no: 2, correct: true, questionText: 'Pendek?', selectedAnswer: 'A) Satu', correctAnswer: 'A) Satu' })

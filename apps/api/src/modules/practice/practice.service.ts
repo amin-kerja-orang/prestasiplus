@@ -31,7 +31,7 @@ import {
   type SessionRecord,
   type StoredCheck,
 } from './practice.repository'
-import { HISTORY_PAGE_SIZE, feedbackText } from './rules'
+import { HISTORY_PAGE_SIZE, feedbackText, selectedLabelOf } from './rules'
 import { PracticeStartPlanner } from './start.planner'
 
 export interface Caller {
@@ -220,7 +220,7 @@ export class PracticeService {
         userId: caller.userId,
         questionId: ref.questionId,
         questionVersionNo: ref.versionNo,
-        selectedLabel: chosen.label,
+        selectedLabel: selectedLabelOf([chosen.label]) ?? chosen.label,
         isCorrect,
         checkedAt: now,
         isTest: caller.isTest || session.isTest,
