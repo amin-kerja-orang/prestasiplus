@@ -15,15 +15,27 @@ import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsBreadcrumb, DsLoadError, DsPage } from '@/ds'
+import { DsBreadcrumb, DsEmptyState, DsLoadError, DsPage } from '@/ds'
 
-import { fetchSchoolDskpHeatmap } from '../api/school-admin'
+import {
+  CENTRAL_EMPTY,
+  fetchSchoolDskpHeatmap,
+  isSchoolDataMissing,
+} from '../api/school-admin'
 import HeatmapFilters from '../components/heatmap/HeatmapFilters.vue'
 import HeatmapMap from '../components/heatmap/HeatmapMap.vue'
 
 const TITLE = 'DSKP Heatmap'
 
 const crumbs = [{ label: 'Dashboard Sekolah', to: '/admin-sekolah' }, { label: TITLE }]
+
+/**
+ * Central view (M17 `/admin/laporan-sekolah/...`, R1-ADM-M-07): `schoolId` is the school Admin Pusat picked (sent as
+ * `?schoolId=`), `schoolName` its name for the sub-line and `basePath` the route the pills link to. Without
+ * `schoolId` the school is the session's, as for the school admin.
+ */
+const props = defineProps<{ schoolId?: number | string; schoolName?: string; basePath?: string }>()
+const central = computed(() => props.schoolId !== undefined)
 
 const route = useRoute()
 const router = useRouter()
@@ -46,11 +58,13 @@ const { data, error, loading, reload } = useApi(
     fetchSchoolDskpHeatmap({
       subjectId: requested.value,
       tingkatan: levelParam.value,
+      schoolId: props.schoolId,
       signal,
     }),
-  [subjectParam, levelParam],
+  [subjectParam, levelParam, () => props.schoolId],
 )
 
+const missing = computed(() => central.value && isSchoolDataMissing(error.value))
 const refused = computed(() => isApiError(error.value) && error.value.status === 403)
 watch(
   refused,
@@ -97,7 +111,7 @@ function pickSubject(id: number) {
 <template>
   <DsPage data-testid="dh-page">
     <template #breadcrumb>
-      <DsBreadcrumb v-if="data" :items="crumbs" data-testid="dh-breadcrumb" />
+      <DsBreadcrumb v-if="data && !central" :items="crumbs" data-testid="dh-breadcrumb" />
     </template>
     <template v-if="data">
       <HeatmapFilters
@@ -112,6 +126,12 @@ function pickSubject(id: number) {
         :empty="empty"
       />
     </template>
+    <DsEmptyState
+      v-else-if="missing"
+      :title="CENTRAL_EMPTY"
+      icon="buildings"
+      data-testid="dh-central-empty"
+    />
     <DsLoadError v-else-if="error && !refused" testid="dh-error" @retry="reload" />
     <div v-else-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="dh-loading">
       <USkeleton class="h-24 w-full" />

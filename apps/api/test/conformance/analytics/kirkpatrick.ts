@@ -104,7 +104,7 @@ export const kirkpatrickScenarios: Scenario[] = [
     },
   },
   {
-    id: 'kirkpatrick-api/pupil views: one uniform 403 for ids that are not pupils in scope, 404 for a non-numeric id, me for every role',
+    id: 'kirkpatrick-api/pupil views: one uniform 404 for ids that are not pupils in scope (D-T02-2), 404 for a non-numeric id, me for every role',
     domain: 'kirkpatrick',
     targets: ['api'],
     async run(ctx) {
@@ -123,11 +123,11 @@ export const kirkpatrickScenarios: Scenario[] = [
       await enrolPupil(ctx, teacher, student, cls.id)
       ctx.expectStatus(await teacher.request('GET', `/kirkpatrick/students/${studentId}`), 200)
       for (const id of [UNKNOWN_ID, adminId, '0']) {
-        expectError(ctx, await admin.request('GET', `/kirkpatrick/students/${id}`), 403, 'FORBIDDEN')
-        expectError(ctx, await teacher.request('GET', `/kirkpatrick/students/${id}`), 403, 'FORBIDDEN')
+        expectError(ctx, await admin.request('GET', `/kirkpatrick/students/${id}`), 404, 'NOT_FOUND')
+        expectError(ctx, await teacher.request('GET', `/kirkpatrick/students/${id}`), 404, 'NOT_FOUND')
       }
-      // A non-numeric id is 404 "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (contract prose); the operation declares only 200, 401 and 403, so
-      // the runner would flag it as undocumented. It is asserted in test/kirkpatrick/pupil-export.spec.ts instead.
+      // Card S6-T02 D-T02-2: an unknown id, a non-pupil and an out-of-scope pupil share one 404 NOT_FOUND (ids cannot be probed).
+      // A non-numeric id is the same 404 (no route); it is asserted in test/kirkpatrick/pupil-export.spec.ts.
 
       for (const role of ['student', 'teacher', 'school_admin', 'admin'] as ActorRole[]) {
         const me = await (await ctx.as(role)).request('GET', '/kirkpatrick/me')
@@ -198,7 +198,7 @@ export const kirkpatrickScenarios: Scenario[] = [
     },
   },
   {
-    id: 'kirkpatrick-api/interventions: round trip, scope, typed 422 refusals and sensitive notes',
+    id: 'kirkpatrick-api/interventions: round trip, scope, typed 404/422 refusals and sensitive notes',
     domain: 'kirkpatrick',
     targets: ['api'],
     async run(ctx) {
@@ -232,8 +232,8 @@ export const kirkpatrickScenarios: Scenario[] = [
       const refusal = await teacher.request('POST', '/kirkpatrick/interventions', {
         body: { studentId: UNKNOWN_ID, alertType: 'mood', actionDate: '2026-10-15', alertDescription: 'x', actionTaken: 'y' },
       })
-      expectError(ctx, refusal, 422, 'VALIDATION_ERROR')
-      ctx.check((errorOf(refusal).fields as Record<string, string>).studentId === 'Pelajar tidak dijumpai.', 'unknown pupil must be "Pelajar tidak dijumpai."')
+      // Card S6-T02: an unknown, non-pupil or out-of-scope pupil is 404 NOT_FOUND (nothing is created), not a field error.
+      expectError(ctx, refusal, 404, 'NOT_FOUND')
       const badDate = await teacher.request('POST', '/kirkpatrick/interventions', {
         body: { studentId, alertType: 'mood', actionDate: '2026-02-30', alertDescription: 'x', actionTaken: 'y' },
       })
