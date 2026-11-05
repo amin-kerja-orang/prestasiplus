@@ -73733,6 +73733,13 @@
             "type": "string",
             "description": "BM label of `status` (INTAKE_BATCH_STATUS_LABELS)."
           },
+          "statusReason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "BM reason of the current status: why a batch is `failed` (for example ERR-INT-05 \"Pengecaman teks mengambil masa terlalu lama.\") or why it waits; null when there is none. S1-T04."
+          },
           "paperType": {
             "anyOf": [
               {
@@ -73891,6 +73898,13 @@
           "statusLabel": {
             "type": "string",
             "description": "BM label of `status` (INTAKE_BATCH_STATUS_LABELS)."
+          },
+          "statusReason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "BM reason of the current status: why a batch is `failed` (for example ERR-INT-05 \"Pengecaman teks mengambil masa terlalu lama.\") or why it waits; null when there is none. S1-T04."
           },
           "paperType": {
             "anyOf": [

@@ -114,6 +114,8 @@ describe('batch timeout (intake.batch_timeout)', () => {
     expect(await batchRow(b.id)).toEqual({ status: 'failed', status_reason: 'Pengecaman teks mengambil masa terlalu lama.' })
     expect(INTAKE_FILE_MESSAGES.ocrTimeout).toBe('Pengecaman teks mengambil masa terlalu lama.')
     expect((await getBatch(teacher, b.id)).files[0]).toMatchObject({ status: 'failed', errorCode: 'OCR_TIMEOUT', progress: { total: 2, done: 0, failed: 2 } })
+    // The batch summary carries the reason so the failed state can show it (lead ruling on #826).
+    expect(await getBatch(teacher, b.id)).toMatchObject({ status: 'failed', statusReason: 'Pengecaman teks mengambil masa terlalu lama.' })
     expect((await pagesOf(fileId)).every((p) => p.ocr_status === 'failed' && p.error_code === 'OCR_TIMEOUT')).toBe(true)
     const open = await t.db.query(`select 1 from jobs where entity_type = 'intake_file' and entity_id = $1 and state in ('queued', 'running')`, [fileId])
     expect(open).toHaveLength(0)

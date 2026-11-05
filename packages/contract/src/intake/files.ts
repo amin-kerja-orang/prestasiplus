@@ -231,6 +231,11 @@ export const IntakeBatchSummarySchema = z
     id: IdSchema,
     status: IntakeBatchStatusSchema,
     statusLabel: z.string().meta({ description: 'BM label of `status` (INTAKE_BATCH_STATUS_LABELS).' }),
+    statusReason: z
+      .string()
+      .nullable()
+      .optional()
+      .meta({ description: 'BM reason of the current status: why a batch is `failed` (for example ERR-INT-05 "Pengecaman teks mengambil masa terlalu lama.") or why it waits; null when there is none. S1-T04.' }),
     paperType: z.union([IntakePaperTypeSchema, z.enum(INTAKE_GURU_PAPER_TYPE_CODES)]).meta({ description: 'An admin code (IntakePaperType) or, for a teacher submission, an OPT-JENIS-HANTARAN slug.' }),
     subject: z.string().meta({ description: 'Admin: subject code. Teacher submission: free text (at most 100).' }),
     kertas: z.union([z.literal(1), z.literal(2)]).nullable().meta({ description: 'Null only for a teacher submission.' }),
