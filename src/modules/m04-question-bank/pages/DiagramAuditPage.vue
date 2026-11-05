@@ -11,8 +11,8 @@
  *   `str_page`; links keep the filters and drop the other list's page, DV-M04-16); a section is
  *   omitted when its count is 0. Both empty: "Semua soalan sudah lengkap dengan gambar rajah!".
  * - Upload and dismiss call the API and reload with the API `status` as the flash.
- * - S6-T18: a teacher / school_admin has no school filter and no Dismiss; their upload is sent for
- *   review (the card stays, chip "Menunggu Semakan").
+ * - S6-T18: a teacher / school_admin has no school filter and no Dismiss; the chip "Menunggu Semakan"
+ *   shows for items with `pendingReview`.
  */
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -42,12 +42,8 @@ const route = useRoute()
 const router = useRouter()
 const flash = useFlash()
 const session = useSessionStore()
-/** Only the admin sees the school filter and Dismiss (S6-T18). */
+/** Only the admin sees the school filter, upload and Dismiss (S6-T18). */
 const isAdmin = computed(() => session.role === 'admin')
-/** Ids (`kind:id`) whose teacher upload waits for review. */
-const pendingKeys = ref<string[]>([])
-const isPending = (kind: 'mcq' | 'structured', id: number): boolean =>
-  pendingKeys.value.includes(`${kind}:${String(id)}`)
 
 const applied = computed(() => ({
   subject_id: queryText(route.query.subject_id),
@@ -151,13 +147,6 @@ function goToPage(param: 'mcq_page' | 'str_page', page: number): void {
 }
 
 async function onDone(message: string): Promise<void> {
-  await reload()
-  flash.show({ type: 'success', message })
-}
-
-/** Teacher upload: the flag stays, the card shows the pending chip (S6-T18). */
-async function onSent(kind: 'mcq' | 'structured', id: number, message: string): Promise<void> {
-  pendingKeys.value = [...pendingKeys.value, `${kind}:${String(id)}`]
   await reload()
   flash.show({ type: 'success', message })
 }
@@ -276,8 +265,8 @@ const filterCount = computed(
           kind="mcq"
           :item="item"
           :can-dismiss="isAdmin"
-          :pending="isPending('mcq', item.id)"
-          @done="(m: string) => (isAdmin ? onDone(m) : onSent('mcq', item.id, m))"
+          :can-upload="isAdmin"
+          @done="onDone"
           @failed="onFailed"
         />
         <div v-if="mcq.meta.totalItems > mcq.meta.pageSize" data-testid="diagrams-mcq-pager">
@@ -307,8 +296,8 @@ const filterCount = computed(
           kind="structured"
           :item="item"
           :can-dismiss="isAdmin"
-          :pending="isPending('structured', item.id)"
-          @done="(m: string) => (isAdmin ? onDone(m) : onSent('structured', item.id, m))"
+          :can-upload="isAdmin"
+          @done="onDone"
           @failed="onFailed"
         />
         <div

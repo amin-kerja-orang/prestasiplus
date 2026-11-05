@@ -99,7 +99,7 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
     await expectNoHorizontalScroll(page)
   })
 
-  test('a teacher sees the audit without Dismiss or the school filter, with 44 px touch targets', async ({
+  test('a teacher sees the audit without upload, Dismiss or the school filter', async ({
     page,
     loginAs,
     gotoApp,
@@ -111,7 +111,8 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
     await expect(page.getByTestId('diagrams-stat-total')).toBeVisible()
     await expect(page.getByTestId('diagram-dismiss')).toHaveCount(0)
     await expect(page.getByTestId('diagrams-school')).toHaveCount(0)
-    await expectTouchTarget(mcqCards(page).first().getByTestId('diagram-upload'))
+    await expect(page.getByTestId('diagram-upload')).toHaveCount(0)
+    await expect(page.getByTestId('diagram-file')).toHaveCount(0)
     await expectTouchTarget(page.getByTestId('diagrams-filter-submit'), 44)
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),

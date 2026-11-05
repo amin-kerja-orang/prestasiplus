@@ -24,8 +24,6 @@ import {
   DIAGRAM_FILE_REQUIRED,
   DIAGRAM_FILE_SIZE,
   DIAGRAM_FILE_TYPE,
-  DIAGRAM_PENDING_TEXT,
-  clearDiagramAuditMemo,
   DIAGRAM_UPLOADED_TEXT,
 } from '../../mock/handlers/diagram-audit'
 import {
@@ -420,7 +418,6 @@ describe('S11 diagram audit for teacher and school_admin (S6-T18)', () => {
   it('copy: type and size messages', () => {
     expect(DIAGRAM_FILE_TYPE).toBe('Fail mesti berupa imej (jpg, png atau webp).')
     expect(DIAGRAM_FILE_SIZE).toBe('Saiz imej tidak boleh melebihi 2 MB.')
-    expect(DIAGRAM_PENDING_TEXT).toBe('Gambar dihantar untuk semakan.')
   })
 
   it.each([GURU, ADMIN_SEKOLAH])(
@@ -443,32 +440,26 @@ describe('S11 diagram audit for teacher and school_admin (S6-T18)', () => {
     expect((await call('POST', `${url}/mcq/563393/image`, PELAJAR, png())).status).toBe(403)
   })
 
-  it('a teacher upload is pending review: flag kept, item marked pendingReview', async () => {
-    dirty = true
-    clearDiagramAuditMemo()
-    const r = await call<DiagramMutation>('POST', `${url}/mcq/563393/image`, GURU, png())
-    expect(r.status).toBe(200)
-    expect(r.body.status).toBe('Gambar dihantar untuk semakan.')
-    expect(questions.get(563_393)?.needsDiagram).toBe(true)
-    const list = await call<DiagramAudit>('GET', url, GURU)
-    expect(list.body.meta.stats.mcq).toBe(6144)
-    const item = list.body.data.mcq.items.find((i) => i.id === 563_393)
-    expect(item?.pendingReview).toBe(true)
-    clearDiagramAuditMemo()
-  })
+  it.each([GURU, ADMIN_SEKOLAH])(
+    'user %i: image upload is 403 and the flag is kept',
+    async (as) => {
+      expect((await call('POST', `${url}/mcq/563393/image`, as, png())).status).toBe(403)
+      expect(questions.get(563_393)?.needsDiagram).toBe(true)
+    },
+  )
 
-  it('a teacher upload is validated: 3 MB and gif are refused', async () => {
+  it('the admin upload is validated: 3 MB and gif are refused', async () => {
     const big = await call(
       'POST',
       `${url}/mcq/563393/image`,
-      GURU,
+      ADMIN,
       form({}, { image: pngFile('big.png', 'image/png', 3 * 1024 * 1024) }),
     )
     expect(fieldsOf(big)).toEqual({ image: DIAGRAM_FILE_SIZE })
     const gif = await call(
       'POST',
       `${url}/mcq/563393/image`,
-      GURU,
+      ADMIN,
       form({}, { image: pngFile('a.gif', 'image/gif') }),
     )
     expect(fieldsOf(gif)).toEqual({ image: DIAGRAM_FILE_TYPE })

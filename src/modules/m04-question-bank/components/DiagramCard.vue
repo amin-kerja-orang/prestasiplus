@@ -5,7 +5,7 @@
  * image, icon submit, no confirm) and "Dismiss" (no confirm). Both calls clear the flag; the page then
  * reloads with the API `status` as the flash (FR-M04-100, FR-M04-101).
  * S6-T18: the file is checked before sending (jpg/png/webp, 2 MB, all roles); Dismiss is admin only
- * (`canDismiss`); a pending teacher upload shows the chip "Menunggu Semakan".
+ * (`canDismiss`) and upload is admin only (`canUpload`); `item.pendingReview` shows the chip "Menunggu Semakan".
  */
 import { ref } from 'vue'
 
@@ -24,7 +24,7 @@ const props = defineProps<{
   kind: DiagramKind
   item: DiagramMcqItem | DiagramStructuredItem
   canDismiss?: boolean
-  pending?: boolean
+  canUpload?: boolean
 }>()
 const emit = defineEmits<{ done: [status: string]; failed: [error: unknown] }>()
 const file = ref<File | null>(null)
@@ -94,7 +94,7 @@ async function dismiss(): Promise<void> {
           <span v-if="item.subject" class="text-label text-primary-t">{{ item.subject.name }}</span>
           <span class="text-muted">oleh {{ item.createdBy.name ?? '—' }}</span>
           <DsBadge
-            v-if="pending || item.pendingReview"
+            v-if="item.pendingReview"
             tone="warning"
             label="Menunggu Semakan"
             data-testid="diagram-pending"
@@ -114,7 +114,12 @@ async function dismiss(): Promise<void> {
       </div>
 
       <div class="flex flex-col gap-2 sm:w-72 sm:shrink-0">
-        <form method="post" class="flex items-center gap-2" @submit.prevent="upload">
+        <form
+          v-if="canUpload"
+          method="post"
+          class="flex items-center gap-2"
+          @submit.prevent="upload"
+        >
           <DsFileField
             v-model="file"
             name="image"

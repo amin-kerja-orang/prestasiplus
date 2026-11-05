@@ -329,11 +329,13 @@ describe('DiagramAuditPage (M04 S11)', () => {
   })
 
   it.each(['teacher', 'school_admin'] as const)(
-    '%s sees no Dismiss and no school filter, and sends no school_id',
+    '%s sees no upload, no Dismiss and no school filter, and sends no school_id',
     async (as) => {
       signIn(as)
       const w = await render('/admin/soalan-gambar?school_id=380')
       expect(w.find('[data-testid=diagram-dismiss]').exists()).toBe(false)
+      expect(w.find('[data-testid=diagram-upload]').exists()).toBe(false)
+      expect(w.find('[data-testid=diagram-file]').exists()).toBe(false)
       expect(w.find('[data-testid=diagrams-school]').exists()).toBe(false)
       expect(w.text()).not.toContain('Semua Sekolah')
       expect(w.get('[data-testid=diagrams-stat-mcq]').text()).toContain('6,144')
@@ -386,29 +388,6 @@ describe('DiagramAuditPage (M04 S11)', () => {
     await card.get('form').trigger('submit')
     await flushPromises()
     expect(api.uploadDiagramImage).toHaveBeenCalledTimes(1)
-  })
-
-  it('a teacher webp upload is sent for review: flash, chip, card stays listed', async () => {
-    signIn('teacher')
-    api.uploadDiagramImage.mockResolvedValue({
-      data: { id: 563393, needsDiagram: true },
-      status: 'Gambar dihantar untuk semakan.',
-    })
-    const w = await render()
-    const card = w.get('[data-testid=diagrams-mcq] [data-testid=diagram-card]')
-    expect(card.find('[data-testid=diagram-pending]').exists()).toBe(false)
-    pick(card, new File(['x'], 'rajah.webp', { type: 'image/webp' }))
-    await flushPromises()
-    await card.get('form').trigger('submit')
-    await flushPromises()
-    expect(api.uploadDiagramImage).toHaveBeenCalledWith('mcq', 563393, expect.any(File))
-    expect(useFlashStore().current).toEqual({
-      type: 'success',
-      message: 'Gambar dihantar untuk semakan.',
-    })
-    const after = w.get('[data-testid=diagrams-mcq] [data-testid=diagram-card]')
-    expect(after.attributes('data-question-id')).toBe('563393')
-    expect(after.get('[data-testid=diagram-pending]').text()).toBe('Menunggu Semakan')
   })
 
   it('shows the chip for an item the data marks pendingReview', async () => {
