@@ -16,10 +16,14 @@ import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsBreadcrumb, DsLoadError, DsPage } from '@/ds'
+import { DsBreadcrumb, DsEmptyState, DsLoadError, DsPage } from '@/ds'
 import { useSession } from '@/composables/useSession'
 
-import { fetchSchoolActivityReport } from '../api/school-admin'
+import {
+  CENTRAL_EMPTY,
+  fetchSchoolActivityReport,
+  isSchoolDataMissing,
+} from '../api/school-admin'
 import ActivityOverview from '../components/activity/ActivityOverview.vue'
 import ActivityPupilsTab from '../components/activity/ActivityPupilsTab.vue'
 import ActivityRangePills from '../components/activity/ActivityRangePills.vue'
@@ -31,6 +35,14 @@ const TITLE = 'Laporan Aktiviti'
 
 const crumbs = [{ label: 'Dashboard Sekolah', to: DASHBOARD_PATH }, { label: TITLE }]
 
+/**
+ * Central view (M17 `/admin/laporan-sekolah/...`, R1-ADM-M-07): `schoolId` is the school Admin Pusat picked (sent as
+ * `?schoolId=`), `schoolName` its name for the sub-line and `basePath` the route the pills link to. Without
+ * `schoolId` the school is the session's, as for the school admin.
+ */
+const props = defineProps<{ schoolId?: number | string; schoolName?: string; basePath?: string }>()
+const central = computed(() => props.schoolId !== undefined)
+
 const route = useRoute()
 const pageMeta = usePageMeta()
 const { user } = useSession()
@@ -38,8 +50,8 @@ const range = computed(() => normaliseRange(route.query.range))
 const tab = ref<ActivityTab>('overview')
 
 const { data, error, loading, reload } = useApi(
-  (signal) => fetchSchoolActivityReport({ range: range.value, signal }),
-  [range],
+  (signal) => fetchSchoolActivityReport({ range: range.value, schoolId: props.schoolId, signal }),
+  [range, () => props.schoolId],
 )
 
 // a range pill is a reload in M17: the tab resets to Overview
@@ -47,6 +59,7 @@ watch(range, () => {
   tab.value = 'overview'
 })
 
+const missing = computed(() => central.value && isSchoolDataMissing(error.value))
 const refused = computed(() => isApiError(error.value) && error.value.status === 403)
 watch(
   refused,
@@ -58,7 +71,7 @@ watch(
 
 // FR-M27-44: header title, sub-line = the school name.
 watch(
-  () => user.value?.school?.name,
+  () => (central.value ? props.schoolName : user.value?.school?.name),
   (name) => {
     pageMeta.setHeader(name ? { title: TITLE, subtitle: name } : { title: TITLE })
   },
@@ -69,10 +82,10 @@ watch(
 <template>
   <DsPage data-testid="la-page" :data-range="data?.range">
     <template #breadcrumb>
-      <DsBreadcrumb v-if="data" :items="crumbs" data-testid="la-breadcrumb" />
+      <DsBreadcrumb v-if="data && !central" :items="crumbs" data-testid="la-breadcrumb" />
     </template>
     <template v-if="data">
-      <ActivityRangePills :active="range" />
+      <ActivityRangePills :active="range" :base-path="basePath" />
       <ActivityTabs
         :active="tab"
         :teachers="data.tiles.teachers.total"
@@ -83,6 +96,12 @@ watch(
       <ActivityTeachersTab v-else-if="tab === 'guru'" :report="data" />
       <ActivityPupilsTab v-else :report="data" />
     </template>
+    <DsEmptyState
+      v-else-if="missing"
+      :title="CENTRAL_EMPTY"
+      icon="buildings"
+      data-testid="la-central-empty"
+    />
     <DsLoadError v-else-if="error && !refused" testid="la-error" @retry="reload" />
     <div v-else-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="la-loading">
       <USkeleton class="h-24 w-full" />

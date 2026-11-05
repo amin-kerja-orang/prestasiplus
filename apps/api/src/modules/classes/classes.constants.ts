@@ -4,8 +4,6 @@ import type { RateLimitSpec } from '../../common/throttle'
 export const CLASS_LIMITS = {
   read: { bucket: 'classes.read', env: 'THROTTLE_CLASSES_READ_PER_MINUTE', default: 300, per: 'user' },
   write: { bucket: 'classes.write', env: 'THROTTLE_CLASSES_WRITE_PER_MINUTE', default: 30, per: 'user' },
-  // Joining by code is a guessing target (the code is the only secret): its own, tighter bucket.
-  join: { bucket: 'classes.join', env: 'THROTTLE_CLASS_JOIN_PER_MINUTE', default: 10, per: 'user' },
 } as const satisfies Record<string, RateLimitSpec>
 
 /** Join code alphabet: upper-case letters and digits without the look-alikes I, L, O, 0 and 1. */
@@ -30,15 +28,11 @@ export const CONTRIBUTION_TIERS = [
 export const CONTRIBUTION_BREAKDOWN_TOP = 10
 export const CONTRIBUTION_BREAKDOWN_REST_LABEL = 'Lain'
 
-/** Roles that may join a class by code (SEC-M10-02): the student, and the admin who has the screen. */
-export const JOIN_ROLES = ['student', 'admin'] as const
-
 /** `audit_events.action` names of this module (ids only, never names or text). */
 export const CLASS_AUDIT = {
   CLASS_CREATED: 'classes.class.created',
   STUDENT_ADDED: 'classes.student.added',
   STUDENT_REMOVED: 'classes.student.removed',
-  JOINED: 'classes.class.joined',
   CHAPTER_CREATED: 'curriculum.chapter.created',
   TOPIC_CREATED: 'curriculum.topic.created',
 } as const
