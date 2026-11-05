@@ -90927,7 +90927,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (unknown id).",
+            "description": "NOT_FOUND \"Rekod tidak dijumpai.\" (unknown id).",
             "content": {
               "application/json": {
                 "schema": {
@@ -91115,7 +91115,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\"",
+            "description": "NOT_FOUND \"Rekod tidak dijumpai.\"",
             "content": {
               "application/json": {
                 "schema": {
@@ -91208,7 +91208,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\"",
+            "description": "NOT_FOUND \"Rekod tidak dijumpai.\"",
             "content": {
               "application/json": {
                 "schema": {

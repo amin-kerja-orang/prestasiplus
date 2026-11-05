@@ -130,8 +130,8 @@ describe('M15 admin routes (BE-23)', () => {
       expect(res.status).toBe(200)
       const item = RewardItemSchema.parse(res.body.data)
       expect(item).toMatchObject({ id, title: 'Baucar Baca', stockQuantity: 4, maxPerMonthPerStudent: 2, denominationRm: 10, imageUrl: null, isActive: true })
-      expectError(await admin.get('/admin/hadiah/999999'), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
-      expectError(await admin.get('/admin/hadiah/abc'), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+      expectError(await admin.get('/admin/hadiah/999999'), 404, 'NOT_FOUND', 'Rekod tidak dijumpai.')
+      expectError(await admin.get('/admin/hadiah/abc'), 404, 'NOT_FOUND', 'Rekod tidak dijumpai.')
     })
 
     it('does not read the static path "redemptions" as an id', async () => {
@@ -188,7 +188,7 @@ describe('M15 admin routes (BE-23)', () => {
       const res = await admin.put(`/admin/hadiah/${id}`, { ...MINIMAL, title: 'Tajuk Baharu', isActive: false })
       expect(res.status).toBe(200)
       expect(RewardItemSchema.parse(res.body.data)).toMatchObject({ id, title: 'Tajuk Baharu', isActive: false, stockQuantity: null, maxPerMonthPerStudent: null, displayOrder: 100 })
-      expectError(await admin.put('/admin/hadiah/999999', {}), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+      expectError(await admin.put('/admin/hadiah/999999', {}), 404, 'NOT_FOUND', 'Rekod tidak dijumpai.')
       expectError(await admin.put(`/admin/hadiah/${id}`, {}), 422, 'VALIDATION_ERROR')
       expect((await t.db.query(`select 1 from audit_events where action = 'shop.reward.updated' and target_id = $1`, [id]))).toHaveLength(1)
     })
@@ -285,8 +285,8 @@ describe('M15 admin routes (BE-23)', () => {
     })
 
     it('deliver: 404 unknown id (even with a bad body), 422 for a blank or 101-character code', async () => {
-      expectError(await admin.post('/admin/hadiah/redemptions/999999/deliver', {}), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
-      expectError(await admin.post('/admin/hadiah/redemptions/abc/deliver', { code: 'X' }), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+      expectError(await admin.post('/admin/hadiah/redemptions/999999/deliver', {}), 404, 'NOT_FOUND', 'Rekod tidak dijumpai.')
+      expectError(await admin.post('/admin/hadiah/redemptions/abc/deliver', { code: 'X' }), 404, 'NOT_FOUND', 'Rekod tidak dijumpai.')
       const r = await redemption(STUDENT_2)
       expect(expectError(await admin.post(`/admin/hadiah/redemptions/${r.id}/deliver`, {}), 422, 'VALIDATION_ERROR').fields).toEqual({ code: 'Kod baucar diperlukan.' })
       expect(expectError(await admin.post(`/admin/hadiah/redemptions/${r.id}/deliver`, { code: '   ' }), 422, 'VALIDATION_ERROR').fields).toEqual({ code: 'Kod baucar diperlukan.' })
@@ -320,7 +320,7 @@ describe('M15 admin routes (BE-23)', () => {
       await admin.post(`/admin/hadiah/redemptions/${d.id}/deliver`, { code: 'ABC' })
       expectError(await admin.post(`/admin/hadiah/redemptions/${d.id}/cancel`), 409, 'CONFLICT')
       expectError(await admin.post('/admin/hadiah/redemptions/999999/cancel'), 404, 'NOT_FOUND', 'Tebusan tidak dijumpai.')
-      expectError(await admin.post('/admin/hadiah/redemptions/abc/cancel'), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+      expectError(await admin.post('/admin/hadiah/redemptions/abc/cancel'), 404, 'NOT_FOUND', 'Rekod tidak dijumpai.')
     })
 
     it('a stored row waiting for parent consent has no filter of its own, shows under all, and can be cancelled with one refund and the reserved stock back, but not delivered', async () => {

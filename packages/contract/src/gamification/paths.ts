@@ -753,7 +753,7 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
       200: json(envelopeOf(RewardDeliverResultSchema), 'Delivered.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_ADMIN_WRITE,
-      404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (unknown id).'),
+      404: err('NOT_FOUND "Rekod tidak dijumpai." (unknown id).'),
       409: err('CONFLICT "Tebusan ini tidak lagi menunggu pemprosesan." (status is not pending_admin).'),
       422: err('VALIDATION_ERROR fields.code "Kod baucar diperlukan." / "Kod baucar tidak boleh melebihi 100 aksara.".'),
     },
@@ -785,7 +785,7 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
       200: json(envelopeOf(RewardItemSchema), 'The reward.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_ADMIN,
-      404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?"'),
+      404: err('NOT_FOUND "Rekod tidak dijumpai."'),
     },
   })
 
@@ -814,7 +814,7 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
       200: json(envelopeOf(RewardItemSchema), 'The updated reward.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_ADMIN_WRITE,
-      404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?"'),
+      404: err('NOT_FOUND "Rekod tidak dijumpai."'),
       422: err(VALIDATION_LARAVEL),
     },
   })
