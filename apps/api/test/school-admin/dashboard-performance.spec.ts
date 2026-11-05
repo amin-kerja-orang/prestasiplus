@@ -17,6 +17,7 @@ import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AuthModule } from '../../src/modules/auth'
 import { BijakIntegrationModule } from '../../src/modules/bijak/integration'
+import { PracticeReadsModule } from '../../src/modules/practice/reads'
 import { SchoolAdminModule } from '../../src/modules/school-admin'
 import { UsersModule } from '../../src/modules/users'
 import { createTestDatabase, type TestDatabase } from '../support/db'
@@ -24,9 +25,10 @@ import { START } from '../auth/helpers'
 import { apiOf, login, schoolIdOf, SCHOOL_ADMIN, type Api } from './helpers'
 
 /**
- * The dashboard performance block over the REAL BE-19 `SchoolPerformanceService` and the real Bijak aggregate
- * (`BijakIntegrationModule`), no fake port. Sittings are `exam_attempts` + `attempt_results` rows, as in the BE-19
- * port-contract spec.
+ * The dashboard performance block over the REAL BE-19 `SchoolPerformanceService` (shared answer reader, S10-T07), no fake port: `PracticeReadsModule` binds the real `AnswerFactsAdapter` into `PerformancePorts`
+ * (without it the reader is the empty default and the block reads {accuracy: null, sessions: 0}).
+ * The figures read `practice_answers` and `practice_sessions` only (D113, XS-8): a pupil's activity is a session with its answer
+ * rows. A Bijak sitting reaches that store through its own writer (S3-T04), not through a second path in the report.
  */
 let db: TestDatabase
 let close: () => Promise<void>
@@ -59,7 +61,7 @@ async function boot(): Promise<void> {
     else process.env[k] = v
   }
   const moduleRef = await Test.createTestingModule({
-    imports: [defineAppModule([AuthModule, UsersModule, SchoolAdminModule, BijakIntegrationModule])],
+    imports: [defineAppModule([AuthModule, UsersModule, SchoolAdminModule, BijakIntegrationModule, PracticeReadsModule])],
   })
     .overrideProvider(CLOCK)
     .useValue(new FixedClock(START))
@@ -83,43 +85,35 @@ async function boot(): Promise<void> {
 }
 
 /**
- * Graded JSON as the real marking stores it: one row per paper question, `attempted` true when the pupil gave a
- * non-blank response. 6 questions on the paper, 4 answered, so "questions answered" (4) differs from the paper's
- * question count (6) and its marks (10).
+ * One pupil's activity as the shared answer reader sees it (S10-T01, D113): one completed Latih Tubi session of 10 answers,
+ * 7 right, in Matematik. Rows are inserted by the test fixture, never by service code. 5 such pupils give 5 sessions, 50 answers and
+ * pooled accuracy 35/50 = 70.
  */
-const ANSWERED_PER_SITTING = 4
-const GRADED = JSON.stringify({
-  sections: [],
-  questions: Array.from({ length: 6 }, (_, n) => ({
-    questionId: `q${n + 1}`,
-    number: n + 1,
-    sectionId: 's',
-    marks: n < 4 ? 2 : 1,
-    awarded: 0,
-    counted: true,
-    attempted: n < ANSWERED_PER_SITTING,
-    parts: [],
-  })),
-})
+const ANSWERS_PER_PUPIL = 10
+const CORRECT_PER_PUPIL = 7
+let mathId: string | undefined
 
-/** A pupil of `schoolId`, optionally with one submitted, graded Bijak sitting (score 7 of 10, 4 of 6 questions answered). */
-async function pupil(schoolId: string, sitting: boolean): Promise<string> {
+/** A pupil of `schoolId`, optionally with one completed, answered practice session (10 answers, 7 right). */
+async function pupil(schoolId: string, active: boolean): Promise<string> {
   counter += 1
-  const [u] = await db.query<{ id: string }>(`insert into users (name, email, school_id) values ($1, $2, $3::bigint) returning id::text`, [
+  const [u] = await db.query<{ id: string }>(`insert into users (name, email, school_id, grade) values ($1, $2, $3::bigint, 10) returning id::text`, [
     `Murid Ujian ${counter}`,
     `perf${counter}@demo.test`,
     schoolId,
   ])
   await db.query(`insert into user_roles (user_id, role, created_at) values ($1::bigint, 'student', now())`, [u!.id])
-  if (!sitting) return u!.id
-  const [a] = await db.query<{ id: string }>(
-    `insert into exam_attempts (user_id, paper_kind, title, subject, subject_name, kertas, paper_code, mode, status, started_at, duration_min, submitted_at, is_test)
-     values ($1::bigint, 'pilihan', 'Kertas ujian', 'matematik', 'Matematik', 1, 'UJ/1', 'exam', 'submitted', now() - interval '1 hour', 60, now(), false) returning id::text`,
-    [u!.id],
+  if (!active) return u!.id
+  mathId ??= (await db.query<{ id: string }>(`select id::text from subjects where code = 'MATH'`))[0]!.id
+  const [s] = await db.query<{ id: string }>(
+    `insert into practice_sessions (user_id, mode, subject_id, question_count, status, correct_count, started_at, completed_at, is_test)
+     values ($1::bigint, 'latih_tubi', $2::bigint, $3, 'completed', $4, now() - interval '1 hour', now(), false) returning id::text`,
+    [u!.id, mathId, ANSWERS_PER_PUPIL, CORRECT_PER_PUPIL],
   )
   await db.query(
-    `insert into attempt_results (attempt_id, score, max_score, provisional, pending_review, graded) values ($1::uuid, 7, 10, false, 0, $2::jsonb)`,
-    [a!.id, GRADED],
+    `insert into practice_answers (session_id, user_id, subject_id, selected_label, is_correct, answered_at, is_test, mode)
+     select $1::uuid, $2::bigint, $3::bigint, case when n <= $4 then 'B' else 'C' end, n <= $4, now() - interval '1 hour' + n * interval '1 minute', false, 'latih_tubi'
+       from generate_series(1, $5::int) n`,
+    [s!.id, u!.id, mathId, CORRECT_PER_PUPIL, ANSWERS_PER_PUPIL],
   )
   return u!.id
 }
@@ -151,7 +145,8 @@ afterAll(async () => {
 })
 beforeEach(async () => {
   // Every case starts from a school with exactly the pupils it creates.
-  await db.query(`delete from exam_attempts`)
+  await db.query(`delete from practice_answers where user_id in (select id from users where email like 'perf%@demo.test')`)
+  await db.query(`delete from practice_sessions where user_id in (select id from users where email like 'perf%@demo.test')`)
   await db.query(`delete from enrolments`)
   await db.query(`delete from classrooms`)
   await db.query(`delete from user_roles where user_id in (select id from users where email like 'perf%@demo.test')`)
@@ -163,32 +158,33 @@ beforeEach(async () => {
 })
 
 describe('GET /admin-sekolah/dashboard with the real BE-19 SchoolPerformanceService', () => {
-  it('5 pupils with submitted sittings: the practice block carries BE-19 figures; levels and distribution keep their fixed rows', async () => {
+  it('5 pupils with answered sessions: the practice block carries BE-19 figures; levels and distribution keep their fixed rows', async () => {
     for (let i = 0; i < 5; i++) await pupil(s1, true)
     const d = await dashboard()
     expect(d.cards.pupils).toBe(5)
-    expect(d.performance.practice).toEqual({ accuracy: 70, sessions: 5, questions: 5 * ANSWERED_PER_SITTING })
+    expect(d.performance.practice).toEqual({ accuracy: 70, sessions: 5, questions: 5 * ANSWERS_PER_PUPIL })
     expect(d.performance.levels.map((l) => l.code)).toEqual(['t4', 't5'])
     // BE-19 has no per-level figures without BE-17 classes and no grade rows before the SPM slice: rows exist, counts stay 0.
     expect(d.performance.distribution.length).toBeGreaterThan(0)
     expect(d.performance.total).toBe(0)
   })
 
-  it('fewer than 5 pupils: the practice block stays suppressed (k = 5)', async () => {
+  it('fewer than 5 pupils: the practice block is shown (staff screen, no minimum cohort: PO decision 2026-11-05, #503 batch 3)', async () => {
     for (let i = 0; i < 4; i++) await pupil(s1, true)
     const d = await dashboard()
     expect(d.cards.pupils).toBe(4)
-    expect(d.performance.practice).toEqual({ accuracy: null, sessions: 0, questions: 0 })
+    // Changed from the suppressed { null, 0, 0 }: 40 practice_answers rows, 28 correct.
+    expect(d.performance.practice).toEqual({ accuracy: 70, sessions: 4, questions: 4 * ANSWERS_PER_PUPIL })
     expect(d.performance.levels.every((l) => l.accuracy === 0)).toBe(true)
     expect(d.performance.total).toBe(0)
   })
 
-  it('another school never leaks in: its sittings are not counted, whatever their number', async () => {
-    for (let i = 0; i < 5; i++) await pupil(s1, i < 2) // own school: 5 pupils, only 2 sat
-    for (let i = 0; i < 8; i++) await pupil(s2, true) // other school: 8 sittings
+  it('another school never leaks in: its answers are not counted, whatever their number', async () => {
+    for (let i = 0; i < 5; i++) await pupil(s1, i < 2) // own school: 5 pupils, only 2 answered
+    for (let i = 0; i < 8; i++) await pupil(s2, true) // other school: 8 pupils with answers
     const d = await dashboard()
     expect(d.cards.pupils).toBe(5)
-    expect(d.performance.practice).toEqual({ accuracy: 70, sessions: 2, questions: 2 * ANSWERED_PER_SITTING })
+    expect(d.performance.practice).toEqual({ accuracy: 70, sessions: 2, questions: 2 * ANSWERS_PER_PUPIL })
   })
 
   it('the class count is the number of ACTIVE classes of the own school (BE-17); another school and inactive classes are not counted', async () => {
@@ -199,7 +195,7 @@ describe('GET /admin-sekolah/dashboard with the real BE-19 SchoolPerformanceServ
     expect((await dashboard()).cards.activeClasses).toBe(4)
   })
 
-  it('levels: 5 pupils with sittings in one class of the level are shown; a level with fewer than 5 pupils stays 0', async () => {
+  it('levels: 5 pupils with answers in one class of the level are shown; a level with fewer than 5 pupils is shown too (no minimum cohort)', async () => {
     const five: string[] = []
     for (let i = 0; i < 5; i++) five.push(await pupil(s1, true))
     const small: string[] = []
@@ -208,6 +204,7 @@ describe('GET /admin-sekolah/dashboard with the real BE-19 SchoolPerformanceServ
     const little = await klass(s1, 11, { pupils: small })
     const d = await dashboard()
     expect(d.performance.levels.find((l) => l.code === big)?.accuracy).toBe(70)
-    expect(d.performance.levels.find((l) => l.code === little)?.accuracy).toBe(0)
+    // Changed from 0 (suppressed): the small level now shows its BE-19 figure.
+    expect(d.performance.levels.find((l) => l.code === little)?.accuracy).toBe(70)
   })
 })

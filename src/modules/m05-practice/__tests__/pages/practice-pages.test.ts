@@ -26,12 +26,6 @@ vi.mock('@/api', async (orig) => ({
   api: { get: topic.get },
 }))
 
-// The Tingkatan 1-3 hold-back reads the session store, which the `@/api` mock below cannot serve.
-vi.mock('@/lib/lower-form', async (orig) => {
-  const { ref } = await import('vue')
-  return { ...(await orig<typeof import('@/lib/lower-form')>()), useIsLowerForm: () => ref(false) }
-})
-
 const outcome = vi.hoisted(() => ({ setRouteOutcome: vi.fn() }))
 vi.mock('@/app/router/outcome', async (orig) => ({
   ...(await orig<typeof import('@/app/router/outcome')>()),
@@ -140,7 +134,7 @@ describe('S2 PracticeListPage', () => {
     expect(banner.text()).toContain('Mode Baru')
     expect(banner.text()).toContain('Soalan by Chapter')
     expect(banner.text()).toContain(
-      'Jawab bab demi bab ikut buku teks dan DSKP. Bab seterusnya terkunci sehingga bab semasa lengkap.',
+      'Jawab bab demi bab ikut buku teks dan DSKP.',
     )
     const cards = w.findAll('[data-testid^=subject-card-]')
     expect(cards.map((c) => c.attributes('href'))).toEqual([
@@ -335,6 +329,17 @@ describe('S3 PracticeConfigPage', () => {
     )
     await render(PracticeConfigPage, '/practice/XYZ')
     expect(outcome.setRouteOutcome).toHaveBeenCalledWith(404)
+  })
+
+  it('offers Tingkatan 1 to 5 from the API level list (D101, AC-X3-1)', async () => {
+    const levels = [1, 2, 3, 4, 5].map((n) => ({ id: n, code: `T${String(n)}`, name: `Tingkatan ${String(n)}`, count: 10 * n }))
+    api.fetchSubjectConfig.mockResolvedValue({ ...MATH, levels })
+    const w = await render(PracticeConfigPage, '/practice/MATH')
+    expect(w.findAll('[data-testid=config-levels] button').map((b) => b.text())).toEqual([
+      expect.stringContaining('Semua Tahap'),
+      ...levels.map((l) => expect.stringContaining(l.name)),
+    ])
+    expect(w.text()).not.toContain('akan datang')
   })
 
   it('offers no level buttons for a subject with none (BR-11)', async () => {

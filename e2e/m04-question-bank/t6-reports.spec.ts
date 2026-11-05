@@ -347,7 +347,7 @@ test.describe('M04 S13 and S14 as the pelajar', { tag: [TAG.smoke, moduleTag(4)]
     })
   })
 
-  test('host props: the source and failure text are passed through; a network failure shows the failure text', async ({
+  test('host props: the source and failure text are passed through; a network failure keeps the form open with the failure text, and a retry succeeds', async ({
     page,
     loginAs,
     gotoApp,
@@ -361,16 +361,17 @@ test.describe('M04 S13 and S14 as the pelajar', { tag: [TAG.smoke, moduleTag(4)]
     await page.getByTestId('report-reason-other').click()
     await mock.networkErrorNext('/api/question-reports')
     await page.getByTestId('report-submit').click()
-    await expect(page.getByTestId('report-done')).toContainText('Terima Kasih!')
-    await expect(page.getByTestId('report-message')).toHaveText(
+    await expect(page.getByTestId('report-submit-error')).toHaveText(
       'Gagal menghantar laporan. Sila cuba lagi.',
     )
-    await page.getByTestId('report-done-close').click()
+    await expect(page.getByTestId('report-done')).toHaveCount(0)
+    await expect(page.getByTestId('report-submit')).toBeEnabled()
+    await expect(page.getByTestId('report-reason-other')).toBeChecked()
 
-    await page.getByTestId('harness-open').click()
-    await page.getByTestId('report-reason-other').click()
     await page.getByTestId('report-submit').click()
+    await expect(page.getByTestId('report-done')).toContainText('Terima Kasih!')
     await expect(page.getByTestId('report-message')).toHaveText('Laporan berjaya dihantar.')
+    await page.getByTestId('report-done-close').click()
     const sent = await mock.lastRequest('POST /api/question-reports')
     expect(sent?.body).toMatchObject({ source: 'revision' })
   })

@@ -57,10 +57,10 @@ export function registerNotificationsPaths(registry: OpenAPIRegistry): void {
   const csrf = z.object({
     'X-CSRF-Token': z.string().min(1).meta({ description: 'Value of Session.csrf; required on mutating requests.' }),
   })
-  const unauthorized = err('UNAUTHORIZED "Unauthenticated." (no valid session).')
+  const unauthorized = err('UNAUTHORIZED "Sesi anda telah tamat. Sila log masuk semula." (no valid session).')
   const csrfInvalid = err('CSRF_INVALID (missing or wrong X-CSRF-Token), or PASSWORD_CHANGE_REQUIRED (shared common code, 403) while session.mustChangePassword is set.')
   const passwordChangeRequired = err('PASSWORD_CHANGE_REQUIRED (shared common code, 403): the account must change its password first (session.mustChangePassword).')
-  const notFound = err('NOT_FOUND "Not Found." (unknown id, or the notification belongs to another user).')
+  const notFound = err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (unknown id, or the notification belongs to another user).')
   const idParam = z.object({ id: IdSchema })
   const success = json(envelopeOf(NotificationSuccessSchema), '{ data: { success: true } }.')
   const bulkBody = { required: true, content: { 'application/json': { schema: NotificationBulkRequestSchema } } }

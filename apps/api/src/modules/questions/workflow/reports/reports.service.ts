@@ -87,13 +87,19 @@ export class QuestionReportsService {
         throw ApiError.of('VALIDATION_ERROR', { fields: { questionType: M.type } })
       }
       const versionNo = info!.liveVersionNo as number
-      // REQ-B-046: a re-POST of a report this reporter already has is a refresh, not a new report, so the cap does not apply to it.
-      if (!(await this.repo.exists(idFromString(actor.userId), v.questionId, versionNo))) await this.assertUnderDailyCap(actor)
-      await this.repo.upsert({
+      // FR-MUR-54-6/10: one report per reporter, question and version, for every reporter (a Guru too). The reporter lock (REP-L1, held to
+      // the end of this transaction) comes first so two concurrent first reports cannot both pass the check; a repeat is 409 before the cap.
+      const reporter = idFromString(actor.userId)
+      await this.repo.lockReporter(reporter)
+      if (await this.repo.exists(reporter, v.questionId, versionNo)) throw ApiError.of('CONFLICT', { message: M.duplicate })
+      await this.assertUnderDailyCap(actor)
+      // DM-82: the role the report was filed under comes from the session, never from the body.
+      const inserted = await this.repo.insert({
         questionId: v.questionId,
         questionVersionNo: versionNo,
         questionType: v.questionType,
-        reporterId: idFromString(actor.userId),
+        reporterId: reporter,
+        reporterRole: actor.role === 'student' ? 'murid' : 'guru',
         reasons: v.reasons,
         comment: v.comment,
         source: v.source,
@@ -103,6 +109,7 @@ export class QuestionReportsService {
         isTest: actor.isTest,
         now: this.clock.now(),
       })
+      if (!inserted) throw ApiError.of('CONFLICT', { message: M.duplicate }) // the unique index is the last guard
       return { success: true as const, message: M.created }
     })
   }
@@ -127,16 +134,18 @@ export class QuestionReportsService {
    * REQ-B-031 / REQ-B-046 (D98): a pupil can report only a question served to them. The proof is the attempt already checked by
    * `contextOf`, or a practice session of theirs that served the question (`quizSessionId`, unknown and someone else's answer alike).
    * A live structured question needs no proof: the structured practice keeps no session and the report is offered before the first
-   * submit, so serving it is the proof (the daily cap bounds abuse). A question that is not live gives a pupil the same 422 as an
-   * MCQ without proof. A Guru (Databank guru) is not asked for one; a given session id is still checked.
+   * submit, so serving it is the proof (the daily cap bounds abuse). A question that was not served (no proof, an unknown or someone
+   * else's session, an own session that did not serve it, a question that is not live) is 403 with `contextRequired` (FR-MUR-54-5), so the
+   * answer is not an existence oracle; a malformed session reference stays 422. A Guru (Databank guru) is not asked for a proof; a given
+   * session id is still checked.
    */
   private async assertServed(actor: WorkflowActor, sessionRef: string | null, hasAttempt: boolean, questionId: bigint, live: boolean, type: 'mcq' | 'structured'): Promise<void> {
     const me = idFromString(actor.userId)
     let session = false
     if (sessionRef !== null) {
       const s = await this.repo.sessionFacts(sessionRef, questionId)
-      if (!s || s.userId !== me) throw ApiError.of('VALIDATION_ERROR', { fields: { quizSessionId: M.session } })
-      if (!s.holds) throw ApiError.of('VALIDATION_ERROR', { fields: { quizSessionId: M.sessionQuestion } })
+      if (s === 'malformed') throw ApiError.of('VALIDATION_ERROR', { fields: { quizSessionId: M.session } })
+      if (!s || s.userId !== me || !s.holds) throw ApiError.of('FORBIDDEN', { message: M.contextRequired })
       session = true
     }
     if (actor.role !== 'student') return
@@ -147,13 +156,12 @@ export class QuestionReportsService {
     }
     // REQ-B-049: only what the structured practice would show this pupil (approved live version, active, structured, level T4/T5).
     if (live && type === 'structured' && (await this.bank.structuredVisible(String(questionId)))) return
-    throw ApiError.of('VALIDATION_ERROR', { fields: { context: M.contextRequired } })
+    throw ApiError.of('FORBIDDEN', { message: M.contextRequired })
   }
 
-  /** REQ-B-031: at most QUESTION_REPORT_DAILY_CAP new reports per reporter per Malaysia day (429, BM text). */
+  /** REQ-B-031: at most QUESTION_REPORT_DAILY_CAP new reports per reporter per Malaysia day (429, BM text). The caller holds the reporter lock (REP-L1). */
   private async assertUnderDailyCap(actor: WorkflowActor): Promise<void> {
     const since = mytDayStartOf(this.clock.now())
-    await this.repo.lockReporter(idFromString(actor.userId)) // REP-L1: held to the end of the filing transaction
     if ((await this.repo.countCreatedSince(idFromString(actor.userId), since)) >= QUESTION_REPORT_DAILY_CAP) {
       throw ApiError.of('RATE_LIMITED', { message: M.dailyCap, retryAfter: Math.max(1, Math.ceil((since.getTime() + 86_400_000 - this.clock.now().getTime()) / 1000)) })
     }
@@ -175,16 +183,25 @@ export class QuestionReportsService {
     }
   }
 
-  /** GET /question-reports/mine: only the caller's rows, no question content. */
+  /** GET /question-reports/mine: only the caller's rows; a pupil's rows add `subject` and a plain-text `questionText` of the reported version (DD1). */
   async mine(actor: WorkflowActor) {
     const reporter = idFromString(actor.userId)
     const [rows, by] = await Promise.all([this.repo.list({ reporterId: reporter }), this.repo.statusCounts({ reporterId: reporter })])
     const facts = await this.factsOf(rows)
     const names = await this.repo.userNames([reporter])
+    // DD1: a pupil's card shows the subject and a short text of the version they reported (it passed the served check at create time).
+    // A Guru's row keeps no question content.
+    const versions = await this.bank.describeVersions(rows.filter((r) => r.reporterRole === 'murid').map((r) => ({ questionId: idToString(r.questionId), versionNo: r.questionVersionNo })))
     const data: QuestionReportMineView[] = rows.map((r) => {
       const qid = idToString(r.questionId)
       const exists = facts.status.has(qid)
-      return { ...this.baseView(r, exists, facts, names), question: { exists, type: typeOf(r), id: qid } }
+      const v = r.reporterRole === 'murid' ? versions.get(`${qid}:${r.questionVersionNo}`) : undefined
+      return {
+        ...this.baseView(r, exists, facts, names),
+        question: { exists, type: typeOf(r), id: qid },
+        subject: v?.subjectId != null && v.subjectName != null ? { id: v.subjectId, name: v.subjectName } : null,
+        questionText: v ? plainPreview(v.stemText) || null : null,
+      }
     })
     return { data, meta: { ...listMeta(1, Math.max(1, data.length), data.length), counts: countsOf(by) } }
   }
@@ -296,6 +313,7 @@ export class QuestionReportsService {
       adminNotes: r.adminNotes,
       createdAt: toMytTimestamp(r.createdAt),
       updatedAt: toMytTimestamp(r.updatedAt),
+      reporterRole: r.reporterRole as 'murid' | 'guru',
       reporter: { id: r.reporterId === null ? '' : idToString(r.reporterId), name: r.reporterId === null ? null : (names.get(idToString(r.reporterId)) ?? null) },
     }
   }
@@ -335,4 +353,37 @@ export class QuestionReportsService {
     }
     return out
   }
+}
+
+/** Longest preview of a question stem sent to a reporter's own list. */
+export const PLAIN_PREVIEW_MAX = 200
+
+/**
+ * Markup the stems use (rich-text editor output). Only these tag names count as markup, so a maths comparison such as
+ * `x<y dan y>3` is never taken for a tag.
+ */
+const PREVIEW_TAG =
+  /<\/?(?:p|br|b|i|u|s|em|strong|span|div|sub|sup|small|mark|ul|ol|li|table|thead|tbody|tfoot|tr|td|th|img|a|h[1-6]|blockquote|pre|code|hr|figure|figcaption|math|mi|mn|mo|mrow|msup|msub|mfrac|msqrt|semantics|annotation)(?=[\s/>])[^<>]*>/gi
+
+/** A numeric entity outside the Unicode range stays as written (never throws). */
+function codePointOr(cp: number, raw: string): string {
+  return Number.isInteger(cp) && cp >= 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : raw
+}
+
+/** Plain-text preview of a stem that may hold markup: tags dropped, common entities decoded, whitespace collapsed, capped with an ellipsis. */
+export function plainPreview(html: string, max: number = PLAIN_PREVIEW_MAX): string {
+  const text = html
+    .replace(PREVIEW_TAG, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&#(\d+);/g, (m, d: string) => codePointOr(Number(d), m))
+    .replace(/&#x([0-9a-fA-F]+);/g, (m, h: string) => codePointOr(Number.parseInt(h, 16), m))
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ')
+    .trim()
+  const chars = Array.from(text)
+  return chars.length <= max ? text : `${chars.slice(0, max - 1).join('').trimEnd()}…`
 }

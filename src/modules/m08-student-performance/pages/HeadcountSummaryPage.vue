@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * S22 `/headcount/{id}/summary` "Ringkasan Kelas" (M08-T6; FR-M08-128…132, BR-M08-08 rule 2, BR-M08-32).
- * Four tiles, the per-OTR distribution (Above / On Track ±2% / Below / N/A) and the two buttons. "Export
+ * Four tiles, the per-OTR distribution (Above / On Track 0 hingga +2 / Below / N/A) and the two buttons. "Export
  * CSV" downloads the CSV of S23 (UNVERIFIED L-12). An unknown id is the 404 page, a config the viewer may
  * not open the 403 page.
  */
@@ -72,7 +72,7 @@ const series = computed(() => {
   const o = data.value?.otrs ?? []
   return [
     { label: 'Above Target', data: o.map((x) => x.above), slot: 2 },
-    { label: 'On Track (±2%)', data: o.map((x) => x.onTrack), slot: 1 },
+    { label: 'On Track (0 hingga +2)', data: o.map((x) => x.onTrack), slot: 1 },
     { label: 'Below Target', data: o.map((x) => x.below), slot: 3 },
     { label: 'Belum Diisi', data: o.map((x) => x.na), slot: 4 },
   ]

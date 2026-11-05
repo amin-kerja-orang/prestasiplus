@@ -7,7 +7,7 @@
 import { DsPanel } from '@/ds'
 
 import type { Learning, SubjectStatus } from '../../../api/types'
-import { pct1, plain, type KirkColor } from '../common'
+import { plain, type KirkColor, accuracyPct } from '../common'
 
 defineProps<{ subjects: Learning['subjects'] }>()
 
@@ -39,13 +39,13 @@ const STATUS: Record<SubjectStatus, KirkColor> = {
           :color="STATUS[s.status]"
           size="md"
           class="min-w-0 flex-1"
-          :aria-label="`${s.name} ${pct1(s.accuracy)}`"
+          :aria-label="`${s.name} ${accuracyPct(s.accuracy)}`"
           data-testid="kirk-subject-bar"
         />
         <span
           class="tabular w-14 shrink-0 text-right text-body text-muted"
           data-testid="kirk-subject-pct"
-          >{{ pct1(s.accuracy) }}</span
+          >{{ accuracyPct(s.accuracy) }}</span
         >
         <!-- Below sm the badge and the count wrap under the bar (320 px: the row cannot fit them beside it). -->
         <div class="flex w-full items-center justify-between gap-2 sm:contents">
@@ -56,7 +56,7 @@ const STATUS: Record<SubjectStatus, KirkColor> = {
             data-testid="kirk-subject-status"
           />
           <span
-            class="shrink-0 whitespace-nowrap text-right text-body text-muted sm:w-24"
+            class="shrink-0 text-right text-body whitespace-nowrap text-muted sm:w-24"
             data-testid="kirk-subject-count"
             >{{ plain(s.answers) }} soalan</span
           >

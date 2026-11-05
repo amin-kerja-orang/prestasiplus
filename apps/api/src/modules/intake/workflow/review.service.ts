@@ -14,6 +14,7 @@ import {
   type IntakeItem,
   type IntakeItemCreateRequest,
   type IntakeItemListQuery,
+  type IntakeKirimanStatus,
   type IntakeItemListResponse,
   type IntakeItemPatch,
   type IntakeItemPatchResult,
@@ -37,7 +38,7 @@ import { QuestionsRepository, QuestionsService } from '../../questions'
 import { isAdmin, parseId, visibleBatches } from '../files/intake-access'
 import { CurriculumFactsService } from './curriculum-facts'
 import { runToWire, type CallerInfo } from './extraction.service'
-import { batchLevelIssues, itemIssues, questionMarks, stimulusIssues } from './gate'
+import { batchLevelIssues, draftIssues, questionMarks, stimulusIssues } from './gate'
 import { attachToStimulus, groupsOf } from './grouping'
 import { stimulusTableOf } from '../../questions/stimulus-table'
 import { ITEM_INCLUDE, PayloadSchema, bandOf, payloadOf, questionOf, stateDuplicates, stimulusOf, type ItemRow, type StoredPayload } from './item-model'
@@ -123,13 +124,16 @@ export class IntakeReviewService {
       batch: {
         ...visibleBatches(auth),
         ...(q.subject === undefined ? {} : { subject: q.subject.toUpperCase() }),
+        ...(q.source === undefined ? {} : { source: q.source }),
         ...(isAdmin(auth) && q.uploaderId !== undefined ? { ownerUserId: parseId(q.uploaderId) ?? -1n } : {}),
       },
       ...(q.batchId === undefined ? {} : { batchId: parseId(q.batchId) ?? -1n }),
       ...(q.band === undefined ? {} : { OR: BAND_WHERE[q.band] }),
       ...(q.duplicate === undefined ? {} : DUPLICATE_WHERE[q.duplicate]),
     }
-    const where: Prisma.IntakeItemWhereInput = q.state === undefined ? base : { ...base, reviewState: q.state }
+    const stateWhere = q.state === undefined ? base : { ...base, reviewState: q.state }
+    const kiriman = q.kirimanStatus === undefined ? null : await this.kirimanWhere(q.kirimanStatus, base)
+    const where: Prisma.IntakeItemWhereInput = kiriman === null ? stateWhere : { AND: [stateWhere, kiriman] }
     const [total, rows, grouped] = await Promise.all([
       this.prisma.client.intakeItem.count({ where }),
       this.prisma.client.intakeItem.findMany({
@@ -144,6 +148,36 @@ export class IntakeReviewService {
     const counts = { generated: 0, needs_review: 0, accepted: 0, rejected: 0, duplicate: 0 }
     for (const g of grouped) if (g.reviewState in counts) counts[g.reviewState as IntakeItemState] = g._count._all
     return { data: await this.views.rows(auth, rows), meta: { ...listMeta(q.page, q.pageSize, total), counts } }
+  }
+
+  /**
+   * FR-ADM-Q12.1 / 40 OPT-KIRIMAN-STATUS: the display keys of Kiriman Guru over the stored item states. `Processing` and
+   * `Selesai` split the accepted items by the LIVE version of the resulting question (D12): `Selesai` = active question with
+   * `live_version_no` set and that version `approved`; `Processing` = every other accepted item.
+   */
+  private async kirimanWhere(key: IntakeKirimanStatus, base: Prisma.IntakeItemWhereInput): Promise<Prisma.IntakeItemWhereInput | null> {
+    switch (key) {
+      case 'Jumlah':
+        return null
+      case 'Pending':
+        return { reviewState: { in: [...OPEN] } }
+      case 'Ditolak':
+        return { reviewState: 'rejected' }
+      default: {
+        // Only the accepted items inside the caller scope and the other filters are looked at (never the whole table).
+        const accepted = await this.prisma.client.intakeItem.findMany({ where: { AND: [base, { reviewState: 'accepted' }] }, select: { id: true, questionId: true } })
+        const qids = [...new Set(accepted.flatMap((r) => (r.questionId === null ? [] : [r.questionId])))]
+        const live = qids.length === 0 ? [] : await this.prisma.client.$queryRaw<{ id: bigint }[]>`
+          SELECT q.id
+          FROM questions q
+          WHERE q.id = ANY(${qids}::bigint[]) AND q.is_active AND q.live_version_no IS NOT NULL
+            AND EXISTS (SELECT 1 FROM question_versions v WHERE v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'approved')`
+        const liveIds = new Set(live.map((r) => r.id))
+        // An accepted item whose question is gone (FK SET NULL) has no live approved question: it is Processing.
+        const done = accepted.filter((r) => r.questionId !== null && liveIds.has(r.questionId)).map((r) => r.id)
+        return key === 'Selesai' ? { id: { in: done } } : { reviewState: 'accepted', id: { notIn: done } }
+      }
+    }
   }
 
   async review(auth: AuthContext, idText: string): Promise<IntakeBatchReview> {
@@ -341,7 +375,7 @@ export class IntakeReviewService {
           numberLabel: next.label,
           itemType: next.type,
           pageNo: next.page,
-          payload: { ...parsed, ...(stored.origin ? { origin: stored.origin } : {}) } as unknown as Prisma.InputJsonValue,
+          payload: { ...parsed, ...(stored.origin ? { origin: stored.origin } : {}), ...(stored.guru ? { guru: stored.guru } : {}) } as unknown as Prisma.InputJsonValue,
           confirmedFields: confirmed,
           needsManual,
           humanEdited: edited,
@@ -519,8 +553,10 @@ export class IntakeReviewService {
     const q = questionOf(row)
     const stimulus = row.stimulus ? stimulusOf(row.stimulus) : undefined
     const resolved = await this.curriculum.resolver().resolve(q.tag)
-    const issues = itemIssues(q, stimulus, resolved.facts)
-    if (issues.length > 0 || resolved.ids === null) throw gateError(issues)
+    const issues = draftIssues(q, stimulus, resolved.facts)
+    if (issues.length > 0) throw gateError(issues)
+    // Unreachable in practice: `ids` is null only when the subject or level is unknown, which draftIssues already reports.
+    if (resolved.ids === null) throw gateError([{ itemId: q.id, where: `Soalan ${q.label}`, message: `Soalan ${q.label}: ${INTAKE_GATE_MESSAGES.subjectLevelMissing}` }])
 
     const ownerId = row.batch.ownerUserId === null ? auth.userId : idToString(row.batch.ownerUserId)
     const actor = { userId: ownerId, role: auth.active.role === 'admin' ? ('admin' as const) : ('teacher' as const) }
@@ -554,9 +590,9 @@ export class IntakeReviewService {
       // The bank stimulus, group and figure copy are written outside this transaction: a refused accept must not leave them behind
       // (one orphan object per retry otherwise).
       await this.discardMade(made)
-      if (err instanceof ConvertError) throw gateError([{ itemId: idToString(row.id), where: err.where, message: err.message }])
+      if (err instanceof ConvertError) throw gateError([{ itemId: idToString(row.id), where: err.where, message: `Soalan ${q.label}: ${err.message}` }])
       if (err instanceof ApiError && err.code === 'VALIDATION_ERROR' && err.fields) {
-        throw gateError(Object.values(err.fields).map((message) => ({ itemId: idToString(row.id), where: `Soalan ${q.label}`, message })))
+        throw gateError(Object.values(err.fields).map((message) => ({ itemId: idToString(row.id), where: `Soalan ${q.label}`, message: `Soalan ${q.label}: ${message}` })))
       }
       throw err
     }
