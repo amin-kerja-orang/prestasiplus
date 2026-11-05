@@ -198,7 +198,13 @@ describe('completed sets', () => {
     expect(set1).toMatchObject({ questionCount: 20, before: 25, after: 80, delta: 55, at: '2026-10-02T10:20:00.000+08:00' })
     // Set 2 sees the 4 + the answer at 10-02 10:30 (inside set 1's window) + the 6 of 10-05: 11 answers, 7 right (64); after 40.
     expect(completed[1]).toMatchObject({ questionCount: 10, before: 64, after: 40, delta: -24 })
-    expect(completed[0]).toMatchObject({ before: 0, after: 100, delta: 100 })
+    expect(completed[0]).toMatchObject({ before: null, after: 100, delta: null })
+  })
+
+  it('after is null (and so delta) for a session with no questions', async () => {
+    await bulk(w.subject.math, 4, 2)
+    await revisionSet(w.subject.math, '2026-10-12T10:00:00+08:00', '2026-10-12T10:05:00+08:00', 0, 0)
+    expect((await get()).completed[0]).toMatchObject({ questionCount: 0, before: 50, after: null, delta: null })
   })
 
   it('returns at most the newest 20 but keeps the ordinal of all', async () => {
@@ -237,6 +243,21 @@ describe('the revision drill: wrong first, then a top-up from the weakest topics
     expect(ids.slice(3, 13)).toEqual(never)
     expect(ids.slice(13)).toEqual(right.slice(0, 7))
     expect(started.body.revisionMeta).toEqual({ selected: 20, totalWrong: 3 })
+  })
+
+  it.each([4, 6])('%i wrong questions are served first and the drill is topped up to 20 (R6)', async (n) => {
+    const add = () => t.bank.add({ subjectId: w.subject.math, levelId: w.level.d1, chapterId: w.chapter.c1, topicId: topic })
+    const wrong = Array.from({ length: n }, add)
+    const others = Array.from({ length: 20 }, add)
+    for (const [i, q] of wrong.entries()) {
+      await queue(q, i)
+      await answer({ q, topic, chapter: w.chapter.c1, correct: false, at: `2026-10-03T10:${String(i).padStart(2, '0')}:00+08:00` })
+    }
+    for (const [i, q] of others.entries()) await answer({ q, topic, chapter: w.chapter.c1, correct: false, at: `2026-10-02T10:${String(i).padStart(2, '0')}:00+08:00` })
+    const ids = (await startSession(pelajar, { mode: 'revision', subjectCode: 'MATH' })).questions.map((q) => q.id)
+    expect(ids).toHaveLength(20)
+    expect(new Set(ids.slice(0, n))).toEqual(new Set(wrong))
+    expect(ids.slice(n)).toEqual(others.slice(0, 20 - n))
   })
 
   it('a topic of one answer is not a weak topic (at least 2 attempts); a chapter stands in for a missing topic', async () => {

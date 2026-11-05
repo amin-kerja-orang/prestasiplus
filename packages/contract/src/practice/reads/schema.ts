@@ -356,9 +356,9 @@ export const PracticeReadRemedialCompletedSchema = z
     subjectName: z.string(),
     setNo: z.number().int().min(1).meta({ description: '"Set {n}": per-subject ordinal of the completed revision drills by completed_at ascending.' }),
     questionCount: count(),
-    before: percent().meta({ description: 'Whole number: pooled subject accuracy over the answers given before the drill started ("Sebelum").' }),
-    after: percent().meta({ description: 'Whole number: the drill accuracy ("Selepas").' }),
-    delta: z.number().int().min(-100).max(100).meta({ description: 'after - before; the sign and colour are the client concern (FR-MUR-12-4).' }),
+    before: percent().nullable().meta({ description: 'Whole number: pooled subject accuracy over the answers given before the drill started ("Sebelum"); null when the pupil had no answers in the subject before it.' }),
+    after: percent().nullable().meta({ description: 'Whole number: the drill accuracy ("Selepas"); null when the session had no questions.' }),
+    delta: z.number().int().min(-100).max(100).nullable().meta({ description: 'after - before; null unless both sides exist. The sign and colour are the client concern (FR-MUR-12-4).' }),
     at: TimestampSchema,
   })
   .meta({ id: 'PracticeReadRemedialCompleted' })
