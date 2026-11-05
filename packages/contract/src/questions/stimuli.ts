@@ -64,6 +64,8 @@ export const STIMULUS_MESSAGES = {
   /** S1-T01 group actions (API-Q-31..35). */
   publishNotReady: 'Semua soalan dalam kumpulan mesti dihantar untuk semakan dahulu.',
   memberScope: 'Subjek dan Tingkatan ahli mesti sama dengan kumpulan.',
+  /** PRD 45 gate item 17 `BANK_LETTER` (the same rule: a key letter outside the bank), AC-QA-10. */
+  bankLetterKey: 'Huruf jawapan tiada dalam bank pilihan.',
   /** ERR-REQ-01 no-field text (40-cross-cutting X10): a body that is invalid with no field to point at. */
   requestInvalid: 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.',
   /** ERR-CON-01 (40-cross-cutting X10). */
@@ -164,8 +166,19 @@ export const StimulusDeleteResultSchema = z.object({ deleted: z.literal(1) }).me
 
 const GroupLabel = z.string().trim().max(STIMULUS_LIMITS.label)
 const OptionBank = z
-  .array(z.object({ label: z.string().regex(/^[A-H]$/), body: QuestionRichTextSchema }))
+  .array(
+    z.object({
+      label: z.string().regex(/^[A-H]$/),
+      body: QuestionRichTextSchema,
+      imageId: z.string().nullable().optional().meta({ description: 'S1-T01 (API-Q-08, DM-52): public token of a `question_image` file (as `Stimulus.imageId`); null or absent = no picture.' }),
+      isDistractor: z.boolean().optional().meta({ description: 'S1-T01 (API-Q-08, DM-52): the option is a distractor ("Pengganggu"); absent = false.' }),
+    }),
+  )
   .max(STIMULUS_LIMITS.optionBank)
+/** The bank as the group detail returns it: `imageId` is the public token or null, `isDistractor` is always present. Same keys as the request. */
+const OptionBankView = z
+  .array(z.object({ label: z.string().regex(/^[A-H]$/), body: QuestionRichTextSchema, imageId: z.string().nullable().optional(), isDistractor: z.boolean().optional() }))
+  .optional()
 
 /** `POST /stimulus-groups`: 1 to 3 existing stimuli and 0 to 40 existing questions (D90, D93: the Studio makes the group first, then adds the questions). No marks anywhere. */
 export const StimulusGroupCreateRequestSchema = z
@@ -192,6 +205,9 @@ export const StimulusGroupUpdateRequestSchema = z
     subjectId: IdSchema.optional().meta({ description: 'S1-T01 (DM-51): subject of the group; defaulted from the members when absent (60 makes it required, kept optional for additivity).' }),
     educationLevelId: IdSchema.optional().meta({ description: 'S1-T01: Tingkatan of the group; defaulted from the members when absent.' }),
     kertas: QuestionKertasSchema.nullish().meta({ description: 'S1-T01: kertas of the group (reuses `QuestionKertas`); defaulted from the members when absent.' }),
+    optionBank: OptionBank.optional().meta({
+      description: 'S1-T01 (API-Q-08): replaces the whole bank (send every row to keep it; `[]` clears). A letter that a leaf key of a member uses cannot be dropped (422 `optionBank`, AC-QA-10). A served group answers 409 like the stimuli change: edit it as a draft copy.',
+    }),
   })
   .refine((v) => Object.keys(v).length > 0, { message: STIMULUS_MESSAGES.noChange, path: ['_'] })
   .meta({ id: 'StimulusGroupUpdateRequest' })
@@ -226,7 +242,7 @@ export const StimulusGroupDetailSchema = z
     label: z.string().nullable(),
     scope: z.enum(['section', 'paper']),
     stimuli: QuestionStimulusGroupSchema.shape.stimuli,
-    optionBank: QuestionStimulusGroupSchema.shape.optionBank,
+    optionBank: OptionBankView,
     questionIds: z.array(IdSchema),
     members: z.array(StimulusGroupMemberSchema).meta({ description: 'The members in published order (same order as `questionIds`), one short form each.' }),
     subjectId: IdSchema.nullable().optional(),
@@ -234,6 +250,9 @@ export const StimulusGroupDetailSchema = z
     kertas: QuestionKertasSchema.nullable().optional(),
     draftOfGroupId: IdSchema.nullable().optional().meta({ description: 'S1-T01 (DM-51): the served group this draft copy replaces on publish; null for an ordinary group.' }),
     warning: z.string().nullable().optional().meta({ description: 'BM warning while the group has 0 questions (a draft group); null otherwise. The write went through.' }),
+    usedInPapers: z.array(z.object({ id: IdSchema, title: z.string() })).optional().meta({
+      description: 'S1-T01 (API-Q-08, ruling #685): the Terbit papers that place the group or any of its members, by paper id. Read only; the retire confirm dialog (API-Q-33) names them. Empty when none.',
+    }),
   })
   .meta({ id: 'StimulusGroupDetail' })
 export type StimulusGroupDetail = z.infer<typeof StimulusGroupDetailSchema>

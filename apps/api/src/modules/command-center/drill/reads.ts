@@ -40,7 +40,7 @@ export class DrillReads {
     return this.prisma.client.$queryRaw<Row[]>(query)
   }
 
-  /** Student users among the ids (active or not), with their active flag. */
+  /** Student users among the ids (active or not), with their active flag. Not XS-1 on purpose: the ids come from XS-1-filtered `classMembers`, and `isActive` is read back by the caller. */
   async studentsByIds(userIds: string[]): Promise<{ id: string; name: string; isActive: boolean }[]> {
     const rows = await this.q(Prisma.sql`
       SELECT u.id::text AS id, u.name, u.is_active FROM users u

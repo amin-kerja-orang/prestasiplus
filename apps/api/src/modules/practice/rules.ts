@@ -6,6 +6,7 @@
  */
 import { PRACTICE_COUNT_OPTIONS, PRACTICE_REVISION_LENGTH, type PracticeMode } from '@pp/contract'
 
+import type { PrismaClient, TxClient } from '../../db/client'
 import type { RateLimitSpec } from '../../common/throttle'
 
 /** Question counts of random and chapter sessions. */
@@ -37,9 +38,31 @@ export const LATIH_TUBI_TARGETS: Readonly<Record<string, number>> = {
   PSI: 40,
   ADDMATH: 20,
 }
-/** The SPM levels (T4, T5) a Latih Tubi session may name (by level code). */
+/**
+ * S4-T06 (DM-20): the practice levels are the active, non-primary education levels (T1..T5 on the seed), read from `education_levels`.
+ * `gradeKey` is `TINGKATAN_` + the digit of `code` (the seed `grade` column holds 7..11, so it is not used).
+ */
+export interface OfferedLevel {
+  id: string
+  code: string
+  order: number
+  gradeKey: string
+}
+
+/** The one place the offered levels are computed (practice, S5-T03 and the learner curriculum reads import it; no second calculation). */
+export async function offeredLevels(db: Pick<TxClient | PrismaClient, '$queryRaw'>): Promise<OfferedLevel[]> {
+  // The card writes `"order"`; the column is `sort_order` (prisma/schema/curriculum.prisma), aliased to `order`.
+  const rows = await db.$queryRaw<{ id: string; code: string; order: number }[]>`
+    SELECT id::text AS id, code, sort_order AS "order"
+    FROM education_levels
+    WHERE stage <> 'primary' AND is_active
+    ORDER BY sort_order, id`
+  return rows.map((r) => ({ id: r.id, code: r.code, order: Number(r.order), gradeKey: `TINGKATAN_${/\d/.exec(r.code)?.[0] ?? ''}` }))
+}
+
+/** TODO(S4-T06 PR3): remove after S1-T07. Temporary alias: `questions/learner-visibility.ts` and `questions/serving/rules.ts` (S1 files) still import them. */
 export const SPM_LEVEL_CODES: readonly string[] = ['T4', 'T5']
-/** BR-11 (secondary-only, 2026-10-29): the practice levels offered to random sessions are Tingkatan 4 and 5 (by level code). */
+/** TODO(S4-T06 PR3): remove after S1-T07. Practice no longer reads this; see `offeredLevels`. */
 export const OFFERED_LEVEL_CODES: readonly string[] = SPM_LEVEL_CODES
 
 /** BR-30: `timeSpent` cap per question. */

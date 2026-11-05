@@ -177,13 +177,14 @@ export class StimuliService {
       const stimulusIds = await this.checkStimuli(input.stimulusIds, fields)
       if (Object.keys(fields).length > 0) throw fail(fields)
       await this.checkScopeRefs(input, fields)
+      const optionBank = await this.bankRows(input.optionBank ?? [], fields)
       if (Object.keys(fields).length > 0) throw fail(fields)
       const given: GroupScope = { subjectId: input.subjectId ?? null, educationLevelId: input.educationLevelId ?? null, kertas: input.kertas === undefined || input.kertas === null ? null : Number(input.kertas) }
       const id = await this.repo.createGroup({
         label: input.label ?? null,
         scope: input.scope ?? 'section',
         stimulusIds,
-        optionBank: (input.optionBank ?? []).map((o) => ({ label: o.label, bodyMs: o.body.ms, bodyEn: o.body.en ?? null })),
+        optionBank,
         traits: given,
       })
       // D93: 0 or more members; the same rules as every later member change (a failure rolls the group back).
@@ -207,11 +208,14 @@ export class StimuliService {
       const stimulusIds = input.stimulusIds === undefined ? null : await this.checkStimuli(input.stimulusIds, fields)
       if (Object.keys(fields).length > 0) throw fail(fields)
       await this.checkScopeRefs(input, fields)
+      const optionBank = input.optionBank === undefined ? null : await this.bankRows(input.optionBank, fields)
       if (Object.keys(fields).length > 0) throw fail(fields)
-      if (stimulusIds !== null) await this.members.assertNotServed(id) // what the served questions show changes
+      if (stimulusIds !== null || optionBank !== null) await this.members.assertNotServed(id) // what the served questions show changes
+      if (optionBank !== null) await this.assertBankKeepsKeyLetters(id, optionBank.map((o) => o.label))
       if (input.subjectId !== undefined || input.educationLevelId !== undefined || input.kertas !== undefined) await this.changeScope(id, input)
       if (input.label !== undefined) await this.repo.setGroupLabel(id, input.label)
       if (stimulusIds !== null) await this.repo.replaceGroupStimuli(id, stimulusIds)
+      if (optionBank !== null) await this.repo.replaceOptionBank(id, optionBank)
       return { result: await this.getGroup(id), audit: { keys: Object.keys(input) } }
     }, TX)
   }
@@ -282,6 +286,31 @@ export class StimuliService {
     return this.questions.create({ ...input, stimulusGroupId: id }, actor)
   }
 
+
+  // --- option bank (S1-T01, API-Q-08, DM-52) ------------------------------------------------------
+
+  /** The request rows as stored rows. A picture must be a `question_image` file (the same check as a stimulus picture); a failure is `optionBank.{n}.imageId`. */
+  private async bankRows(
+    bank: NonNullable<StimulusGroupCreateRequest['optionBank']>,
+    fields: Record<string, string>,
+  ): Promise<{ label: string; bodyMs: string | null; bodyEn: string | null; imageFileId: bigint | null; isDistractor: boolean }[]> {
+    // The contract fixes a letter to /^[A-H]$/ (no trimming or case folding anywhere), so equal strings are the duplicates. Before any write.
+    if (new Set(bank.map((o) => o.label)).size !== bank.length) fields.optionBank = STIMULUS_MESSAGES.requestInvalid
+    const out = []
+    for (const [i, o] of bank.entries()) {
+      const own: Record<string, string> = {}
+      const imageFileId = await this.imageOf(o.imageId, own)
+      if (own.imageFileId !== undefined) fields[`optionBank.${String(i)}.imageId`] = own.imageFileId
+      out.push({ label: o.label, bodyMs: o.body.ms, bodyEn: o.body.en ?? null, imageFileId, isDistractor: o.isDistractor ?? false })
+    }
+    return out
+  }
+
+  /** AC-QA-10: a letter that an answer key of a member uses cannot be dropped from the bank (422 `optionBank`). */
+  private async assertBankKeepsKeyLetters(groupId: string, labels: readonly string[]): Promise<void> {
+    const used = await this.repo.keyLettersOf(await this.members.current(groupId))
+    if ([...used].some((letter) => !labels.includes(letter))) throw fail({ optionBank: STIMULUS_MESSAGES.bankLetterKey })
+  }
 
   // --- scope (S1-T01, DM-51) ----------------------------------------------------------------------
 
@@ -409,6 +438,8 @@ export class StimuliService {
         if (otherCopy === null || ((await this.groupOrThrow(otherCopy)).draftMembers ?? []).includes(questionId)) throw conflictOf(STIMULUS_MESSAGES.memberTaken)
         await this.members.set(holder, (await this.repo.memberIds(holder)).filter((m) => m !== questionId), 'questionId', undefined, true)
       }
+      // AC-QA-10: the bank the copy brings must keep every letter that a key of the final members uses (422, the swap rolls back).
+      await this.assertBankKeepsKeyLetters(draftId, draft.optionBank.map((o) => o.label))
       await this.repo.replaceFromCopy(liveId, draftId)
       await this.members.set(liveId, staged, 'questionIds', undefined, true)
       // The members as they are now must all fit the scope the copy brings.
@@ -697,6 +728,11 @@ export class StimuliService {
         }),
     )
     const draftBriefs = g.draftMembers === null ? null : await this.repo.memberBriefsOf(g.draftMembers, idToString(g.id))
+    const memberIds = draftBriefs === null ? g.questionIds.map(idToString) : draftBriefs.map((b) => b.id)
+    // One query for the Terbit papers that place any member (a group is placed as its members); the picture tokens of the bank in one lookup.
+    const usedInPapers = await this.repo.publishedPapersPlacing(memberIds)
+    const bankFiles = g.optionBank.flatMap((o) => (o.imageFileId === null ? [] : [idToString(o.imageFileId)]))
+    const bankTokens = bankFiles.length === 0 ? new Map<string, string>() : await this.files.publicIdsOf(bankFiles)
     return {
       id: idToString(g.id),
       label: g.label,
@@ -708,10 +744,18 @@ export class StimuliService {
       stimuli,
       ...(g.optionBank.length === 0
         ? {}
-        : { optionBank: g.optionBank.map((o) => ({ label: o.label, body: { ms: o.bodyMs ?? o.bodyEn ?? o.label, ...(o.bodyMs !== null && o.bodyEn !== null ? { en: o.bodyEn } : {}) } })) }),
-      questionIds: draftBriefs === null ? g.questionIds.map(idToString) : draftBriefs.map((b) => b.id),
+        : {
+            optionBank: g.optionBank.map((o) => ({
+              label: o.label,
+              body: { ms: o.bodyMs ?? o.bodyEn ?? o.label, ...(o.bodyMs !== null && o.bodyEn !== null ? { en: o.bodyEn } : {}) },
+              imageId: o.imageFileId === null ? null : (bankTokens.get(idToString(o.imageFileId)) ?? null),
+              isDistractor: o.isDistractor,
+            })),
+          }),
+      questionIds: memberIds,
       members: (draftBriefs ?? ((await this.repo.memberBriefs([idToString(g.id)])).get(idToString(g.id)) ?? [])).map(memberOf),
-      warning: this.members.warning(draftBriefs === null ? g.questionIds.length : draftBriefs.length),
+      warning: this.members.warning(memberIds.length),
+      usedInPapers,
     }
   }
 
