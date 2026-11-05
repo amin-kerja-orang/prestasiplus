@@ -9,7 +9,7 @@ import { computed, nextTick, reactive, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { isApiError } from '@/api'
-import { DsPage } from '@/ds'
+import { DsNativeSelect, DsPage } from '@/ds'
 
 import { submitFosterApplication } from '../api'
 import { FOSTER_APPLICATION_MESSAGES } from '../api/types'
@@ -43,14 +43,6 @@ const noticeEl = ref<HTMLElement | null>(null)
 /** A rejected field gets an error ring (no ARIA added, D10). */
 const errorClass = (field: FosterApplicationField): string =>
   failedFields.value.has(field) ? 'ring-2 ring-error' : ''
-const categoryItems = [
-  { label: MOHON_COPY.categoryPlaceholder, value: '' },
-  ...CATEGORY_OPTIONS.map((o) => ({ label: o.label, value: o.value })),
-]
-const incomeItems = [
-  { label: MOHON_COPY.incomePlaceholder, value: '' },
-  ...INCOME_OPTIONS.map((o) => ({ label: o.label, value: o.value })),
-]
 const hasNotice = computed(() => success.value !== '' || errors.value.length > 0)
 
 function pickExample(text: string): void {
@@ -101,7 +93,7 @@ async function onSubmit(): Promise<void> {
 </script>
 
 <template>
-  <DsPage class="max-w-2xl" data-testid="mohon-page">
+  <DsPage layout="form" data-testid="mohon-page">
     <MohonHero />
 
     <div v-show="hasNotice" ref="noticeEl" class="flex flex-col gap-2" data-testid="mohon-notice">
@@ -141,7 +133,7 @@ async function onSubmit(): Promise<void> {
           name="student_email"
           type="email"
           required
-          size="xl"
+          size="lg"
           class="w-full"
           :placeholder="MOHON_COPY.emailPlaceholder"
           :ui="{ base: errorClass('studentEmail') }"
@@ -159,15 +151,15 @@ async function onSubmit(): Promise<void> {
         <label for="student_category" class="mb-1 block text-label text-highlighted">{{
           MOHON_COPY.categoryLabel
         }}</label>
-        <UNativeSelect
+        <DsNativeSelect
           id="student_category"
           v-model="form.studentCategory"
           name="student_category"
           required
-          size="xl"
-          class="w-full"
-          :items="categoryItems"
-          :ui="{ base: errorClass('studentCategory') }"
+          size="lg"
+          :placeholder="MOHON_COPY.categoryPlaceholder"
+          :items="CATEGORY_OPTIONS"
+          :invalid="failedFields.has('studentCategory')"
         />
       </div>
 
@@ -175,14 +167,14 @@ async function onSubmit(): Promise<void> {
         <label for="family_income_range" class="mb-1 block text-label text-highlighted">{{
           MOHON_COPY.incomeLabel
         }}</label>
-        <UNativeSelect
+        <DsNativeSelect
           id="family_income_range"
           v-model="form.familyIncomeRange"
           name="family_income_range"
-          size="xl"
-          class="w-full"
-          :items="incomeItems"
-          :ui="{ base: errorClass('familyIncomeRange') }"
+          size="lg"
+          :placeholder="MOHON_COPY.incomePlaceholder"
+          :items="INCOME_OPTIONS"
+          :invalid="failedFields.has('familyIncomeRange')"
         />
       </div>
 

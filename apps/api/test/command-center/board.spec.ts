@@ -95,6 +95,19 @@ describe('GET /admin/command-center/live-data', () => {
     expect(school.dailyTrend.reduce((n, p) => n + p.count, 0)).toBe(40)
   })
 
+  it('S6-T07 / API-AS-02: "Sekolah Berdaftar" for a school admin is the own school (1), even with no active subscription', async () => {
+    await t.db.query(`create table s6t07_subs as select * from school_subscriptions where school_id = $1`, [w.school1])
+    await t.db.query(`delete from school_subscriptions where school_id = $1`, [w.school1])
+    try {
+      const school = await live(schoolAdmin)
+      expect(school.scope).toBe('school')
+      expect(school.totalSchools).toBe(1)
+    } finally {
+      await t.db.query(`insert into school_subscriptions overriding system value select * from s6t07_subs`)
+      await t.db.query(`drop table s6t07_subs`)
+    }
+  })
+
   it('top students: answers this ISO week desc, then accuracy desc, then id', async () => {
     const d = await live(admin)
     expect(d.topStudents.map((s) => [s.name, s.answersCount, s.accuracy])).toEqual([

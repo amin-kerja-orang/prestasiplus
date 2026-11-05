@@ -20,17 +20,17 @@ import {
   viewportWidth,
 } from '../support'
 
+import { expectAdminHeader, expectLearnerHeader, textContrast } from './helpers'
+
 const ADMIN = 'admin@demo.test'
 const PELAJAR = 'pelajar@demo.test'
 const MODULE = { tag: [moduleTag(15)] }
-const SUBTITLE = 'Selamat datang kembali'
+
+// These tests boot the app up to seven times and one boot may take the 15 s budget of `gotoApp`, so
+// the default 30 s only fits an idle machine. A longer limit, not a retry.
+test.describe.configure({ timeout: 90_000 })
 
 test.use({ mockInit: { latency: 0 } })
-
-async function expectHeader(page: Page, title: string): Promise<void> {
-  await expect(page.getByTestId('shell-user-title')).toHaveText(title)
-  await expect(page.getByTestId('shell-user-subtitle')).toHaveText(SUBTITLE)
-}
 
 /** Smallest text size among the text nodes inside `main` (DV-M15-13). */
 async function minTextSize(page: Page): Promise<number> {
@@ -56,8 +56,8 @@ test.describe('M15 S5 Kedai Hadiah', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/gamification/rewards')
-    await expectTabTitle(page, 'Kedai Hadiah')
-    await expectHeader(page, 'Kedai Hadiah')
+    await expectTabTitle(page, 'Kedai Hadiah | PRESTASIPLUS')
+    await expectAdminHeader(page, 'Kedai Hadiah')
     const h1 = page.getByTestId('shop-title')
     await expect(h1).toHaveText('🎁 Kedai Hadiah')
     await expect(page.getByText('Tebus token anda untuk hadiah menarik!')).toBeVisible()
@@ -66,10 +66,10 @@ test.describe('M15 S5 Kedai Hadiah', MODULE, () => {
     const empty = page.getByTestId('shop-empty')
     await expect(empty.getByRole('heading', { name: 'Tiada Hadiah Tersedia' })).toBeVisible()
     await expect(empty).toContainText('Hadiah akan ditambah tidak lama lagi. Tunggu ya!')
-    // h1: 14px below 640, 24px from 640 (FN-M15-5.1.1).
+    // `text-title` is 24px at every width for staff; the hero is a plain card (B06, 79b5fa2dc).
     const size = await h1.evaluate((el) => getComputedStyle(el).fontSize)
-    expect(size).toBe(viewportWidth(page) < 640 ? '14px' : '24px')
-    expect(await h1.evaluate((el) => getComputedStyle(el).color)).toBe('rgb(255, 255, 255)')
+    expect(size).toBe('24px')
+    expect(await textContrast(h1)).toBeGreaterThanOrEqual(4.5)
     await expectNoHorizontalScroll(page)
 
     await gotoApp('/gamification/rewards?category=gaming')
@@ -108,9 +108,9 @@ test.describe('M15 S5 Kedai Hadiah', MODULE, () => {
 test.describe('M15 S6 Kotak Misteri', MODULE, () => {
   const BOXES = [
     { id: 1, name: 'Kotak Gangsa', cost: 2, coins: '1-20', xp: '1-10', ribbon: null },
-    { id: 2, name: 'Kotak Perak', cost: 5, coins: '10-50', xp: '5-25', ribbon: 'RARE' },
-    { id: 3, name: 'Kotak Emas', cost: 10, coins: '25-150', xp: '10-50', ribbon: 'EPIC' },
-    { id: 4, name: 'Kotak Legenda', cost: 25, coins: '100-500', xp: '25-100', ribbon: 'LEGENDARY' },
+    { id: 2, name: 'Kotak Perak', cost: 5, coins: '10-50', xp: '5-25', ribbon: 'Rare' },
+    { id: 3, name: 'Kotak Emas', cost: 10, coins: '25-150', xp: '10-50', ribbon: 'Epic' },
+    { id: 4, name: 'Kotak Legenda', cost: 25, coins: '100-500', xp: '25-100', ribbon: 'Legendary' },
   ]
 
   test('SRS §12 #43 admin: hero, chip, four locked boxes, nothing sent on click @m15', async ({
@@ -122,12 +122,13 @@ test.describe('M15 S6 Kotak Misteri', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp('/gamification/mystery-box')
     await expectTabTitle(page, 'Kotak Misteri | PRESTASIPLUS')
-    await expectHeader(page, 'Kotak Misteri')
+    await expectAdminHeader(page, 'Kotak Misteri')
     await expect(page.getByTestId('box-title')).toHaveText('📦 Kotak Misteri')
     await expect(
       page.getByText('Buka kotak & menang ganjaran rawak — nasib baik menanti!'),
     ).toBeVisible()
-    await expect(page.getByTestId('box-chip')).toHaveText('🎫 Token Anda: 0')
+    await expect(page.getByTestId('box-chip')).toContainText('🎫 Token Anda:')
+    await expect(page.getByTestId('box-chip-value')).toHaveText('0')
     await expect(page.getByTestId('box-grid').locator('form')).toHaveCount(4)
     for (const b of BOXES) {
       const card = page.getByTestId(`box-${String(b.id)}`)
@@ -136,9 +137,10 @@ test.describe('M15 S6 Kotak Misteri', MODULE, () => {
       await expect(card).toContainText(b.coins)
       await expect(card).toContainText(`${b.xp} XP`)
       if (b.ribbon) {
+        // Badges are sentence case, no ALL CAPS (v2-design-language 3.3 rule 4).
         const ribbon = page.getByTestId(`box-${String(b.id)}-ribbon`)
-        await expect(ribbon).toBeVisible()
-        expect(await ribbon.evaluate((el) => getComputedStyle(el).textTransform)).toBe('uppercase')
+        await expect(ribbon).toHaveText(b.ribbon)
+        expect(await ribbon.evaluate((el) => getComputedStyle(el).textTransform)).toBe('none')
       } else {
         await expect(page.getByTestId(`box-${String(b.id)}-ribbon`)).toHaveCount(0)
       }
@@ -152,7 +154,7 @@ test.describe('M15 S6 Kotak Misteri', MODULE, () => {
     await expectNoHorizontalScroll(page)
   })
 
-  test('SRS §12 #54 S6 grid is 1 / 3 / 4 columns, no horizontal scroll, text >= 12px @m15', async ({
+  test('SRS §12 #54 S6 grid is 1 / 2 / 4 columns, no horizontal scroll, text >= 12px @m15', async ({
     page,
     gotoApp,
     loginAs,
@@ -166,7 +168,8 @@ test.describe('M15 S6 Kotak Misteri', MODULE, () => {
       .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)))
     const firstRow = tops.filter((t) => t === tops[0]).length
     const width = viewportWidth(page)
-    expect(firstRow).toBe(width < 640 ? 1 : isDesktopShell(page) ? 4 : 3)
+    // `grid-cols-1 sm:grid-cols-2 xl:grid-cols-4` (B06, 79b5fa2dc).
+    expect(firstRow).toBe(width < 640 ? 1 : isDesktopShell(page) ? 4 : 2)
     await expectNoHorizontalScroll(page)
     expect(await minTextSize(page)).toBeGreaterThanOrEqual(12)
   })
@@ -203,20 +206,26 @@ test.describe('M15 S6 Kotak Misteri', MODULE, () => {
       // The next-result override lives in the page, so it is set after the reload.
       await mock.hook('m15MysteryNext', { coins: 12, xp: 4 })
       await page.getByTestId('box-1-btn').click()
-      const modal = page.getByTestId('box-result')
-      await expect(modal).toBeVisible()
-      await expect(page.getByTestId('box-result-icon')).toHaveText('📦')
+      const result = page.getByTestId('box-result')
+      await expect(result).toBeVisible()
+      await expect(page.getByTestId('box-result-icon')).toHaveAttribute('data-art', 'party')
       await expect(page.getByTestId('box-result-name')).toHaveText('Kotak Gangsa')
       await expect(page.getByTestId('box-result-reward')).toHaveText('+12 🪙 · +4 XP')
-      const box = await modal.boundingBox()
+      // `DsDialog`: a bottom sheet below `sm`, a 32rem modal from `sm` (B06, 79b5fa2dc).
+      const dialog = page.getByRole('dialog')
       const width = viewportWidth(page)
-      if (width < 768) {
-        expect(box!.width).toBeGreaterThanOrEqual(width - 1)
-        expect(box!.height).toBeGreaterThanOrEqual(812 - 1)
+      const height = page.viewportSize()!.height
+      if (width < 640) {
+        await expect
+          .poll(async () => {
+            const box = (await dialog.boundingBox())!
+            return Math.round(box.width) === width && Math.round(box.y + box.height) === height
+          })
+          .toBe(true)
       } else {
-        expect(Math.round(box!.width)).toBe(400)
+        await expect.poll(async () => Math.round((await dialog.boundingBox())!.width)).toBe(512)
       }
-      await expect(page.getByTestId('box-chip')).toHaveText('🎫 Token Anda: 3')
+      await expect(page.getByTestId('box-chip-value')).toHaveText('3')
       await expectNoHorizontalScroll(page)
       const wallet = await mock.hook<{ currentSyiling: number; tokenBalance: number; xp: number }>(
         'getWallet',
@@ -226,9 +235,9 @@ test.describe('M15 S6 Kotak Misteri', MODULE, () => {
       const ledger = await mock.hook<{ description: string; amount: number }[]>('ledger', 1)
       expect(ledger[0]).toMatchObject({ description: 'Kotak Misteri: Kotak Gangsa', amount: 12 })
       await page.getByTestId('box-result-close').click()
-      await expect(modal).toHaveCount(0)
+      await expect(result).toHaveCount(0)
       await gotoApp('/cabutan')
-      await expect(page.getByTestId('cabutan-balance')).toHaveText('268 🪙')
+      await expect(page.getByTestId('cabutan-balance')).toHaveText('268')
     },
   )
 
@@ -257,7 +266,7 @@ test.describe('M15 S6 Kotak Misteri', MODULE, () => {
 })
 
 test.describe('M15 S7 Cabutan Bertuah', MODULE, () => {
-  test('SRS §12 #47 admin: header, tile "256 🪙", "Cabutan Dibuka" and the empty box @m15', async ({
+  test('SRS §12 #47 admin: header, tile "256", "Cabutan Dibuka" and the empty box @m15', async ({
     page,
     gotoApp,
     loginAs,
@@ -265,20 +274,26 @@ test.describe('M15 S7 Cabutan Bertuah', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp('/cabutan')
     await expectTabTitle(page, 'Cabutan Bertuah | PRESTASIPLUS')
-    await expectHeader(page, 'Cabutan Bertuah')
+    await expectAdminHeader(page, 'Cabutan Bertuah')
     await expect(page.getByTestId('cabutan-title')).toHaveText('🎟️ Cabutan Bertuah')
     await expect(
       page.getByText('Guna syiling untuk beli tiket & menangi hadiah hebat!'),
     ).toBeVisible()
     await expect(page.getByTestId('cabutan-tile')).toContainText('Syiling anda')
+    // No ALL CAPS (v2-design-language 3.3 rule 4); the coin is an image in `DsRewardChip` (B06, 79b5fa2dc).
     expect(
       await page
         .getByTestId('cabutan-tile')
         .getByText('Syiling anda')
         .evaluate((el) => getComputedStyle(el).textTransform),
-    ).toBe('uppercase')
-    await expect(page.getByTestId('cabutan-balance')).toHaveText('256 🪙')
-    await expect(page.getByRole('heading', { name: 'Cabutan Dibuka' })).toBeVisible()
+    ).toBe('none')
+    await expect(page.getByTestId('cabutan-balance')).toHaveText('256')
+    await expect(page.getByTestId('cabutan-balance').locator('img')).toHaveAttribute(
+      'data-art',
+      'coin',
+    )
+    // `exact`: the empty state title is a heading too and also contains "cabutan dibuka".
+    await expect(page.getByRole('heading', { name: 'Cabutan Dibuka', exact: true })).toBeVisible()
     await expect(page.getByTestId('cabutan-empty')).toHaveText(
       'Tiada cabutan dibuka buat masa ini. Nanti datang lagi! 🎈',
     )
@@ -309,7 +324,7 @@ test.describe('M15 S7 Cabutan Bertuah', MODULE, () => {
       const card = page.getByTestId('draw-1')
       await expect(card).toContainText('Cabutan Demo')
       await expect(card).toContainText('Cabutan ujian.')
-      await expect(card.getByTestId('draw-price')).toHaveText('Harga tiket: 50 🪙')
+      await expect(card.getByTestId('draw-price')).toHaveText('Harga tiket: 50')
       await expect(card.getByTestId('draw-owned')).toHaveText('Tiket anda: 0/10')
       await expect(card.getByTestId('draw-closes')).toHaveText('Tutup: 30/09/2026')
       await expect(card.getByTestId('draw-prize')).toHaveText([
@@ -339,7 +354,7 @@ test.describe('M15 S7 Cabutan Bertuah', MODULE, () => {
       })
       await gotoApp('/cabutan')
       await page.getByTestId('draw-buy').click()
-      await expect(page.getByTestId('cabutan-balance')).toHaveText('206 🪙')
+      await expect(page.getByTestId('cabutan-balance')).toHaveText('206')
       await expect(page.getByTestId('draw-owned')).toHaveText('Tiket anda: 1/10')
       const ledger = await mock.hook<{ type: string; description: string; amount: number }[]>(
         'ledger',
@@ -382,7 +397,7 @@ test.describe('M15 student pages: access and 404', MODULE, () => {
       ] as const) {
         await gotoApp(path)
         await expect(page).toHaveURL(new RegExp(path))
-        await expectHeader(page, title)
+        await expectLearnerHeader(page, title)
       }
     },
   )

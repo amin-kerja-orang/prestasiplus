@@ -11,11 +11,13 @@ import {
   SchoolPerformanceService,
   StudentPerformanceService,
 } from '../../../../src/modules/reports/performance/services'
+import { InMemoryAnswerFacts } from './in-memory-answer-facts'
 import { InMemoryBijakAggregate } from './in-memory-bijak-aggregate'
 import { InMemoryClasses } from './in-memory-classes'
 import { InMemoryDirectory } from './in-memory-directory'
 import { InMemoryGamification } from './in-memory-gamification'
 import { InMemoryHeadcountFacts } from './in-memory-headcount-facts'
+import { InMemoryPracticeRead } from './in-memory-practice-read'
 
 /** The clock of every unit test: Friday 2026-09-25 15:40 MYT. */
 export const NOW = '2026-09-25T15:40:00+08:00'
@@ -77,6 +79,8 @@ export const ctxOf = (role: RoleCode, userId: string, scope: Ctx['scope'] = { le
 })
 
 export interface World {
+  practice: InMemoryPracticeRead
+  answers: InMemoryAnswerFacts
   bijak: InMemoryBijakAggregate
   classes: InMemoryClasses
   directory: InMemoryDirectory
@@ -98,9 +102,13 @@ export function world(): World {
   const classes = new InMemoryClasses()
   const gamification = new InMemoryGamification()
   const facts = new InMemoryHeadcountFacts()
-  const ports = new PerformancePorts(bijak, classes, undefined, gamification)
+  const answers = new InMemoryAnswerFacts()
+  const practice = new InMemoryPracticeRead()
+  const ports = new PerformancePorts(bijak, classes, practice, gamification, undefined, answers)
   const clock = new FixedClock(NOW)
   return {
+    practice,
+    answers,
     bijak,
     classes,
     directory,
