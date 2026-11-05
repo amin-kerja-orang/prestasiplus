@@ -1,13 +1,13 @@
 /**
  * M16 S13–S19 single-player games, Roda Nasib and Jutawan Ilmu at 375 / 768 / 1280 (M16-T5; SRS M16 v1.6
  * §12: E2E-M16-20 (picker rows), 57 to 71). The items of a game are random per session, so the tests
- * read what the page shows (the ✅ / ❌ feedback, the `correct` class) and check the SOURCE scoring rule
+ * read what the page shows (the ✅ / ❌ feedback, the `data-state` of an option) and check the SOURCE scoring rule
  * against it. The clock is paused (`pauseAt`) once a game is running and driven with `mock.advanceTime`.
  * Not covered here: the level-up of S15 and a correct arrangement in S16 (the answer keys are not in the
  * DOM; both are covered by the unit tests), E2E-M16-63 (payload counts, covered by the mock handler tests).
  */
 
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 import { expect as baseExpect, test } from '../fixtures/test'
 import type { MockHandle } from '../fixtures/test'
@@ -18,6 +18,7 @@ import {
   moduleTag,
   provisional,
 } from '../support'
+import { expectAdminHeader } from './helpers'
 
 const expect = baseExpect.configure({ timeout: 10_000 })
 
@@ -71,6 +72,12 @@ async function openPaused(
   await gotoApp('/permainan/jutawan')
   await pause(page, mock)
   await go(page, path)
+}
+
+/** The verdict `DsQuizOption` shows on a picked option once the check has answered. */
+async function verdictOf(option: Locator): Promise<'correct' | 'wrong'> {
+  await expect(option).toHaveAttribute('data-state', /^(correct|wrong)$/)
+  return (await option.getAttribute('data-state')) as 'correct' | 'wrong'
 }
 
 /** Steps the paused countdown 3 → 2 → 1 → play (800 ms each). */
@@ -136,8 +143,8 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await openPaused(page, gotoApp, mock, '/permainan/betul-salah?darjah=4')
-    await expectTabTitle(page, 'Betul atau Salah ✅ | PRESTASIPLUS')
-    await expect(page.getByTestId('shell-user-title').first()).toHaveText('Betul atau Salah')
+    await expectTabTitle(page, 'Betul atau Salah | PRESTASIPLUS')
+    await expectAdminHeader(page, 'Betul atau Salah')
     await expect(page.getByText('✅❌ BETUL ATAU SALAH')).toBeVisible()
     await throughCountdown(page, mock)
     await expect(page.getByTestId('solo-clock')).toHaveText('45')
@@ -199,7 +206,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     await expectNoHorizontalScroll(page)
   })
 
-  test('E2E-M16-59 Cabaran Kilat: chip, options, correct / wrong classes, 400 ms step, result @m16', async ({
+  test('E2E-M16-59 Cabaran Kilat: chip, options, correct / wrong states, 400 ms step, result @m16', async ({
     page,
     gotoApp,
     loginAs,
@@ -207,7 +214,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await openPaused(page, gotoApp, mock, '/permainan/cabaran-kilat?darjah=4')
-    await expectTabTitle(page, 'Cabaran Kilat ⚡ | PRESTASIPLUS')
+    await expectTabTitle(page, 'Cabaran Kilat | PRESTASIPLUS')
     await expect(page.getByText('⚡ CABARAN KILAT')).toBeVisible()
     await throughCountdown(page, mock)
     await expect(page.getByText('Soalan 1')).toBeVisible()
@@ -215,9 +222,8 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     await expect(page.getByTestId('solo-clock')).toHaveText('60')
     const options = page.getByTestId('solo-option')
     await expect(options).toHaveCount(4)
-    for (const [i, letter] of ['A', 'B', 'C', 'D'].entries()) {
-      await expect(options.nth(i)).toHaveText(new RegExp(`^${letter}\\. `))
-    }
+    // The letter is a badge beside the option text (`DsQuizOption`), one per option in order.
+    await expect(options.locator('span.font-extrabold')).toHaveText(['A', 'B', 'C', 'D'])
     await expectNoHorizontalScroll(page)
 
     let combo = 0
@@ -226,14 +232,13 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     for (let q = 1; q <= 5; q++) {
       await expect(page.getByText(`Soalan ${String(q)}`, { exact: true })).toBeVisible()
       await options.first().click()
-      const cls = (await options.first().getAttribute('class')) ?? ''
-      for (let i = 0; i < 4; i++) await expect(options.nth(i)).toBeDisabled()
-      if (cls.includes('correct')) {
+      const verdict = await verdictOf(options.first())
+      for (let i = 1; i < 4; i++) await expect(options.nth(i)).toHaveAttribute('data-state', 'dimmed')
+      if (verdict === 'correct') {
         combo += 1
         maxCombo = Math.max(maxCombo, combo)
         score += 10 * Math.min(combo, 10)
       } else {
-        expect(cls).toContain('wrong')
         combo = 0
       }
       await mock.advanceTime(400)
@@ -272,8 +277,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
       let coins = 0
       for (let q = 0; q < 4; q++) {
         await options.first().click()
-        const cls = (await options.first().getAttribute('class')) ?? ''
-        if (cls.includes('correct')) {
+        if ((await verdictOf(options.first())) === 'correct') {
           combo += 1
           coins += Math.min(combo, 10)
         } else combo = 0
@@ -293,7 +297,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await openPaused(page, gotoApp, mock, '/permainan/tembak-jawapan?darjah=4')
-    await expectTabTitle(page, 'Tembak Jawapan 🎯 | PRESTASIPLUS')
+    await expectTabTitle(page, 'Tembak Jawapan | PRESTASIPLUS')
     await expect(page.getByText('🎯 TEMBAK JAWAPAN')).toBeVisible()
     await expect(page.getByText('Tap jawapan yang betul sebelum jatuh!')).toBeVisible()
     await throughCountdown(page, mock)
@@ -305,7 +309,8 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     await expect(page.getByText('⚠ GARIS MAUT')).toBeVisible()
     const zone = page.getByTestId('solo-fall-zone')
     const box = (await zone.boundingBox())!
-    expect(box.height).toBe(500)
+    // A 4:5 play area (at most `max-w-lg`), inside the viewport at every width.
+    expect(Math.abs(box.height / box.width - 5 / 4)).toBeLessThan(0.01)
     expect(box.width).toBeLessThanOrEqual(page.viewportSize()!.width)
     await expect(page.getByTestId('solo-tile').first()).toBeVisible()
     await expectNoHorizontalScroll(page)
@@ -314,7 +319,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     for (let miss = 1; miss <= 3; miss++) {
       await mock.advanceTime(29_100)
       if (miss < 3)
-        await expect(page.locator('[data-testid="solo-heart"].opacity-25')).toHaveCount(miss)
+        await expect(page.locator('[data-testid="solo-heart"][data-lost="true"]')).toHaveCount(miss)
     }
     await expect(page.getByTestId('solo-result')).toBeVisible()
     expect(await submits(mock, 'tembak-jawapan')).toBe(1)
@@ -335,7 +340,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/permainan/susun-jawapan?darjah=4')
-    await expectTabTitle(page, 'Susun Jawapan 🧩 | PRESTASIPLUS')
+    await expectTabTitle(page, 'Susun Jawapan | PRESTASIPLUS')
     await expect(page.getByText('Soalan 1 daripada 20')).toBeVisible()
     for (const s of [
       'Kembali',
@@ -413,27 +418,29 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     // Find the partner of card 0 by trying the others: a mismatch shows "wrong" and turns back after 800 ms.
     let moves = 0
     let sawMismatch = false
+    const stateOf = async (i: number) => cards.nth(i).getAttribute('data-state')
     const pairUp = async (a: number): Promise<void> => {
       for (let b = 0; b < 12; b++) {
         if (b === a) continue
-        const cls = (await cards.nth(a).getAttribute('class')) ?? ''
-        if (cls.includes('matched')) return
-        const other = (await cards.nth(b).getAttribute('class')) ?? ''
-        if (other.includes('matched')) continue
+        if ((await stateOf(a)) === 'matched') return
+        if ((await stateOf(b)) === 'matched') continue
         await cards.nth(a).click()
+        // The face of the first card comes from the reveal: the second flip waits for it.
+        await expect(cards.nth(a).locator('span')).not.toHaveText('')
         await cards.nth(b).click()
         moves += 1
-        if (((await cards.nth(a).getAttribute('class')) ?? '').includes('wrong')) {
+        await expect(cards.nth(a)).toHaveAttribute('data-state', /^(matched|wrong)$/)
+        if ((await stateOf(a)) === 'wrong') {
           sawMismatch = true
           await mock.advanceTime(799)
-          expect((await cards.nth(a).getAttribute('class')) ?? '').toContain('wrong')
+          await expect(cards.nth(a)).toHaveAttribute('data-state', 'wrong')
           await mock.advanceTime(1)
           await expect(cards.nth(a)).toHaveText('❓')
         } else return
       }
     }
     for (let a = 0; a < 12; a++) {
-      if (!((await cards.nth(a).getAttribute('class')) ?? '').includes('matched')) await pairUp(a)
+      if ((await stateOf(a)) !== 'matched') await pairUp(a)
       if ((await page.getByTestId('solo-overlay').count()) > 0) break
     }
     await expect(page.getByTestId('solo-moves')).toHaveText(
@@ -456,7 +463,10 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     ]) {
       await expect(overlay).toContainText(s)
     }
-    await expect(page.getByTestId('solo-coins')).toHaveText('+0')
+    // Syiling shown = credited (DV-M16-23): the tile of the overlay, nothing credited at the setting off.
+    await expect(
+      overlay.getByTestId('solo-result-tile').filter({ hasText: 'Syiling 🪙' }),
+    ).toContainText('+0')
     await page.mouse.click(2, 2)
     await expect(overlay).toBeVisible()
     await expectNoHorizontalScroll(page)
@@ -477,8 +487,11 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     await expect(page.getByTestId('spin-won')).toHaveText('🪙 0 Syiling dimenangkan')
     const canvas = page.getByTestId('wheel-canvas')
     await expect(canvas).toBeVisible()
-    const width = (await canvas.boundingBox())!.width
-    expect(width).toBe(page.viewportSize()!.width < 640 ? 320 : 380)
+    // A square wheel, full width up to `max-w-sm` (384 px), inside the viewport at every width.
+    const wheel = (await canvas.boundingBox())!
+    expect(wheel.width).toBeLessThanOrEqual(Math.min(384, page.viewportSize()!.width))
+    expect(Math.abs(wheel.width - wheel.height)).toBeLessThan(1)
+    await expect(canvas).toHaveAttribute('width', '380')
     const button = page.getByTestId('spin-button')
     await expect(button).toHaveText('🎯 SPIN!')
     await expectTouchTarget(button)
@@ -542,8 +555,13 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
       await expect(page.getByText('Ditambah ke akaun kamu!')).toBeVisible()
       await page.getByTestId('prize-close').click()
       await expect(page.getByTestId('spin-won')).toHaveText('🪙 5 Syiling dimenangkan')
-      await mock.advanceTime(24 * 3600 * 1000)
-      await go(page, '/permainan/jutawan')
+      // Past 00:00 MYT from the 15:40 test clock: a new spin day. In hops below the 120 min session
+      // lifetime, each with a request, because one long jump would sign the user out.
+      for (let hop = 0; hop < 5; hop++) {
+        await mock.advanceTime(110 * 60_000)
+        await go(page, hop % 2 === 0 ? '/permainan/jutawan' : '/permainan/roda-nasib')
+        await expect(page.getByTestId(hop % 2 === 0 ? 'jutawan-best' : 'spin-count')).toBeVisible()
+      }
       await go(page, '/permainan/roda-nasib')
       await expect(page.getByTestId('spin-button')).toHaveText('🎯 SPIN!')
     },
@@ -556,7 +574,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/permainan/jutawan')
-    await expectTabTitle(page, 'Jutawan Ilmu 💰 | PRESTASIPLUS')
+    await expectTabTitle(page, 'Jutawan Ilmu | PRESTASIPLUS')
     await expect(page.getByTestId('darjah-picker')).toBeVisible()
     await expect(
       page.getByText('Pilih subjek, jawab 15 soalan — menang sampai 1,000 Syiling!'),
@@ -566,7 +584,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     await expect(page.getByText('1,000🪙')).toBeVisible()
     await expect(page.getByText('Rekod Tertinggi')).toBeVisible()
     await expect(page.getByText('Hadiah Utama')).toBeVisible()
-    await expect(page.getByText('Pilih darjah atau tingkatan di atas untuk mula.')).toBeAttached()
+    await expect(page.getByText('Pilih tingkatan di atas untuk mula.')).toBeAttached()
 
     await go(page, '/permainan/jutawan?darjah=4')
     await expect(page.getByTestId('darjah-picker')).toHaveCount(0)
@@ -597,7 +615,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     async ({ page, gotoApp, loginAs, mock }) => {
       await loginAs(ADMIN)
       await gotoApp('/permainan/jutawan/main?subject=3&darjah=4')
-      await expectTabTitle(page, 'Jutawan Ilmu 💰 | PRESTASIPLUS')
+      await expectTabTitle(page, 'Jutawan Ilmu | PRESTASIPLUS')
       await expect(page.getByTestId('jutawan-rung')).toHaveCount(15)
       await expect(page.getByTestId('jutawan-option')).toHaveCount(4)
       const lifeline = page.getByTestId('jutawan-lifeline')

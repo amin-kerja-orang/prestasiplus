@@ -20,6 +20,7 @@ import {
   moduleTag,
   provisional,
 } from '../support'
+import { expectAdminHeader, rowStat } from './helpers'
 
 const expect = baseExpect.configure({ timeout: 10_000 })
 
@@ -30,8 +31,6 @@ const MODULE = { tag: [moduleTag(16)] }
 
 test.use({ mockInit: { latency: 0 } })
 
-const title = (page: Page) => page.getByTestId('shell-user-title').first()
-const subtitle = (page: Page) => page.getByTestId('shell-user-subtitle').first()
 const err = (page: Page) => page.getByTestId('battle-error')
 const timer = (page: Page) => page.getByTestId('battle-timer')
 const quick = (page: Page) => page.getByTestId('battle-quick-match')
@@ -49,6 +48,14 @@ async function pollOnce(mock: MockHandle, n: number, pattern?: string): Promise<
   await expect.poll(() => polls(mock, pattern)).toBe(n)
 }
 
+/** Runs the paused clock in 2 s steps until the search stops with `message`. */
+async function runClockUntilError(page: Page, mock: MockHandle, message: string): Promise<void> {
+  await expect(async () => {
+    await mock.advanceTime(2000)
+    await expect(err(page)).toHaveText(message, { timeout: 250 })
+  }).toPass({ timeout: 20_000 })
+}
+
 async function pickSubject(page: Page, name: string): Promise<void> {
   const tile = page.getByTestId('battle-subject').filter({ hasText: name })
   if (!(await tile.first().isVisible())) await page.getByTestId('battle-toggle-more').click()
@@ -63,45 +70,44 @@ async function freezeClock(page: Page, clock: Clock): Promise<void> {
   await clock.pauseAt((await page.evaluate(() => Date.now())) + 10_000)
 }
 
+/** S4 tiles in order: Jumlah Battle, Kemenangan, Ketepatan, Pelajar Aktif. */
+async function expectSchoolCards(page: Page, values: readonly string[]): Promise<void> {
+  const ids = ['battles', 'menang', 'ketepatan', 'pelajar']
+  for (const [i, id] of ids.entries()) {
+    await expect(page.getByTestId(`battle-card-${id}`).locator('span.tabular')).toHaveText(
+      values[i] as string,
+    )
+  }
+}
+
 async function openLobby(page: Page, gotoApp: (p: string) => Promise<void>): Promise<void> {
   await gotoApp('/battle')
   await expect(page.getByTestId('battle-lobby').locator('h2').first()).toHaveText('Battle Arena')
 }
 
 test.describe('M16 S1-S5 battle', MODULE, () => {
-  test('E2E-M16-03 S1-S5 header titles, subtitles and tab titles @m16', async ({
+  test('E2E-M16-03 S1-S5 header titles and tab titles @m16', async ({
     page,
     gotoApp,
     loginAs,
   }) => {
     await loginAs(ADMIN)
     const screens = [
-      ['/battle', 'Battle Arena', 'Bertanding kuiz 1v1 dengan pelajar lain!', 'Battle Arena'],
-      [
-        '/battle/leaderboard',
-        'Ranking Pelajar Battle',
-        'Siapa pejuang terhebat minggu ini?',
-        'Ranking Pelajar Battle',
-      ],
-      [
-        '/battle/ranking-sekolah',
-        'Papan Ranking Sekolah',
-        'Ranking 10,218 sekolah seluruh Malaysia',
-        'Papan Ranking Sekolah',
-      ],
-      ['/battle/history', 'Sejarah Battle', 'Rekod pertandingan anda', 'Sejarah Battle'],
+      ['/battle', 'Battle Arena'],
+      ['/battle/leaderboard', 'Ranking Pelajar Battle'],
+      ['/battle/ranking-sekolah', 'Papan Ranking Sekolah'],
+      ['/battle/history', 'Sejarah Battle'],
     ] as const
-    for (const [path, head, sub, tab] of screens) {
+    for (const [path, head] of screens) {
       await gotoApp(path)
-      await expect(title(page)).toHaveText(head)
-      await expect(subtitle(page)).toHaveText(sub)
-      await expectTabTitle(page, tab)
+      await expectAdminHeader(page, head)
+      await expectTabTitle(page, `${head} | PRESTASIPLUS`)
     }
     await gotoApp('/battle/ranking-sekolah/8106')
     const name = await page.getByTestId('battle-school-name').innerText()
-    await expect(title(page)).toHaveText(name)
-    await expect(subtitle(page)).toHaveText(/^Selangor · SMK$/)
-    await expectTabTitle(page, name)
+    await expectAdminHeader(page, name)
+    await expect(page.getByTestId('battle-school-line')).toContainText('Selangor · SMK')
+    await expectTabTitle(page, `${name} | PRESTASIPLUS`)
   })
 
   test('E2E-M16-16 S1 default: hero, Biasa active, 7 tiles, buttons disabled, 24 more @m16', async ({
@@ -115,7 +121,8 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
     await expect(page.getByTestId('battle-lobby')).toContainText(
       'Cabar kawan, cari lawan, atau wakili sekolah anda!',
     )
-    await expect(page.getByTestId('battle-type-biasa')).toHaveClass(/from-red-500/)
+    await expect(page.getByTestId('battle-type-biasa')).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByTestId('battle-type-pksk')).toHaveAttribute('aria-pressed', 'false')
     await expect(page.getByTestId('battle-subject')).toHaveCount(7)
     for (const b of [quick(page), friend(page), school(page)]) await expect(b).toBeDisabled()
     await page.getByTestId('battle-toggle-more').click()
@@ -125,9 +132,9 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
     await expect(page.getByTestId('battle-subject')).toHaveCount(7)
     await expect(page.getByTestId('battle-toggle-more')).toHaveText('Lagi 24 subjek lain')
     await pickSubject(page, 'Matematik')
-    await expect(page.getByTestId('battle-subject').filter({ hasText: 'Matematik' })).toHaveClass(
-      /border-red-500/,
-    )
+    const subject = (name: string) => page.getByTestId('battle-subject').filter({ hasText: name })
+    await expect(subject('Matematik')).toHaveAttribute('aria-pressed', 'true')
+    await expect(subject('Sains')).toHaveAttribute('aria-pressed', 'false')
     for (const b of [quick(page), friend(page), school(page)]) await expect(b).toBeEnabled()
     await expectNoHorizontalScroll(page)
   })
@@ -149,7 +156,7 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
     await expect(tip).toBeVisible()
     await page.getByTestId('battle-lobby').locator('h2').first().click()
     await expect(tip).toBeHidden()
-    await expect(page.getByTestId('battle-type-biasa')).toHaveClass(/from-red-500/)
+    await expect(page.getByTestId('battle-type-biasa')).toHaveAttribute('aria-pressed', 'true')
     await expect(page.getByTestId('battle-panel-biasa')).toBeVisible()
   })
 
@@ -166,7 +173,8 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
     await expect(page.getByTestId('battle-level-t4')).toHaveText('Tingkatan 4')
     await expect(quick(page)).toBeDisabled()
     await page.getByTestId('battle-domain').first().click()
-    await expect(page.getByTestId('battle-domain').first()).toHaveClass(/bg-indigo-500/)
+    await expect(page.getByTestId('battle-domain').first()).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByTestId('battle-domain').nth(1)).toHaveAttribute('aria-pressed', 'false')
     await expect(quick(page)).toBeDisabled()
     await page.getByTestId('battle-level-t4').click()
     for (const b of [quick(page), friend(page), school(page)]) await expect(b).toBeEnabled()
@@ -268,17 +276,21 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
   )
 
   test(
-    'E2E-M16-24 stop rules: 120 s, expired, 5 server errors, 5 network errors @m16',
+    'E2E-M16-24 stop rules: 120 s and expired @m16',
     provisional('simulated matchmaking and hooks (SIMULATION)'),
-    async ({ page, gotoApp, loginAs, mock }) => {
+    async ({ page, gotoApp, loginAs, mock, clock }) => {
       await loginAs(ADMIN)
       await openLobby(page, gotoApp)
       await pickSubject(page, 'Matematik')
+      await freezeClock(page, clock)
 
+      // The client's own 120 s stop, in exact 3 s steps: a single jump would leave a poll in flight
+      // when the clock passes 120 s, and the server's own expiry would answer it first.
       await mock.hook('battleSim', { mode: 'never' })
       await quick(page).click()
       await expect(timer(page)).toHaveText('0:00')
-      await mock.advanceTime(120_000)
+      for (let n = 1; n <= 39; n++) await pollOnce(mock, n)
+      await mock.advanceTime(3000)
       await expect(err(page)).toHaveText('Tiada lawan dijumpai dalam masa 2 minit. Sila cuba lagi.')
       await page.getByTestId('battle-error-close').click()
       await expect(err(page)).toBeHidden()
@@ -288,19 +300,40 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
       await expect(timer(page)).toBeVisible()
       await mock.advanceTime(3000)
       await expect(err(page)).toHaveText('Tiada lawan dijumpai. Sila cuba lagi.')
+    },
+  )
 
+  test(
+    'E2E-M16-24 stop rules: 5 server errors @m16',
+    provisional('simulated matchmaking and hooks (SIMULATION)'),
+    async ({ page, gotoApp, loginAs, mock, clock }) => {
+      await loginAs(ADMIN)
+      await openLobby(page, gotoApp)
+      await pickSubject(page, 'Matematik')
+      await freezeClock(page, clock)
+      // Five failed polls. Each one is a GET the client tries three times (S0-T12), with its retry
+      // timers on the same clock, so the clock runs in steps until the stop message shows.
       await mock.hook('battleSim', { mode: 'error:500' })
       await quick(page).click()
       await expect(timer(page)).toBeVisible()
-      await mock.advanceTime(15_000)
-      await expect(err(page)).toHaveText('Ralat berulang semasa mencari lawan. Sila cuba lagi.')
+      await runClockUntilError(page, mock, 'Ralat berulang semasa mencari lawan. Sila cuba lagi.')
+    },
+  )
 
+  test(
+    'E2E-M16-24 stop rules: 5 network errors @m16',
+    provisional('simulated matchmaking and hooks (SIMULATION)'),
+    async ({ page, gotoApp, loginAs, mock, clock }) => {
+      await loginAs(ADMIN)
+      await openLobby(page, gotoApp)
+      await pickSubject(page, 'Matematik')
+      await freezeClock(page, clock)
+      // 15 network errors = exactly 5 polls of 3 attempts; with any fewer a retry heals and no stop comes.
       await mock.hook('battleSim', { mode: 'never' })
       await quick(page).click()
       await expect(timer(page)).toBeVisible()
-      for (let i = 0; i < 5; i++) await mock.networkErrorNext('/api/battle/poll-match/*')
-      await mock.advanceTime(15_000)
-      await expect(err(page)).toHaveText('Ralat rangkaian berulang. Sila semak internet anda.')
+      for (let i = 0; i < 15; i++) await mock.networkErrorNext('/api/battle/poll-match/*')
+      await runClockUntilError(page, mock, 'Ralat rangkaian berulang. Sila semak internet anda.')
     },
   )
 
@@ -386,7 +419,7 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
     },
   )
 
-  test('E2E-M16-28 Cabar Kawan: 1 character sends nothing, no match shows the empty text, overlay closes @m16', async ({
+  test('E2E-M16-28 Cabar Kawan: 1 character sends nothing, no match shows the empty text, Tutup closes @m16', async ({
     page,
     gotoApp,
     loginAs,
@@ -404,7 +437,7 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
     await input.fill('zzqxv')
     await mock.advanceTime(400)
     await expect(page.getByTestId('battle-challenge-empty')).toHaveText('Tiada pelajar dijumpai')
-    await page.getByTestId('cmp-modal-backdrop').click({ position: { x: 5, y: 5 } })
+    await page.getByTestId('battle-challenge-close').click()
     await expect(page.getByTestId('battle-challenge-modal')).toBeHidden()
   })
 
@@ -420,7 +453,7 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
       await mock.advanceTime(400)
       const row = page.getByTestId('battle-challenge-result').first()
       await expect(row).toBeVisible()
-      const name = (await row.locator('span.font-semibold').innerText()).trim()
+      const name = (await row.locator('span.text-label').innerText()).trim()
       const dialog = acceptNextDialog(page, {
         type: 'alert',
         message: `Cabaran berjaya dihantar kepada ${name}!`,
@@ -488,7 +521,10 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
       await expect(page.getByTestId('battle-arena-score-A')).toHaveText('0')
       await expect(page.getByTestId('battle-arena-score-B')).toHaveText('0')
       await expect(page.getByTestId('battle-arena-option')).toHaveCount(4)
-      await expect(page.getByTestId('battle-arena-option').first()).toContainText('A.')
+      // The letter is a badge beside the option text (`DsQuizOption`), one per option in order.
+      await expect(page.getByTestId('battle-arena-option').locator('span.font-extrabold')).toHaveText(
+        ['A', 'B', 'C', 'D'],
+      )
       await expectNoHorizontalScroll(page)
 
       await mock.advanceTime(3000)
@@ -520,7 +556,8 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
     'E2E-M16-35/36 finish 10 questions: result, first in S5 ("baru sahaja"), S4 of the school @m16',
     provisional('the arena and the bot are SIMULATION / PROPOSED'),
     async ({ page, gotoApp, loginAs, mock }) => {
-      await loginAs(ADMIN)
+      // A pupil with a school: Admin Pusat has none, so it has no S4 to land on.
+      await loginAs(PELAJAR)
       await gotoApp('/battle/history')
       await expect(page.getByTestId('battle-history-empty')).toContainText('Tiada sejarah battle')
       await expect(page.getByTestId('battle-history-empty')).toContainText(
@@ -547,31 +584,23 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
       await expect(page).toHaveURL(/\/battle\/history$/)
       const first = page.getByTestId('battle-recent-row').first()
       await expect(first).toContainText('baru sahaja')
-      await expect(first.getByTestId('battle-player-a')).toHaveText('Admin Demo')
+      await expect(first.getByTestId('battle-player-a')).toHaveText('Pelajar Demo')
 
-      const schoolId = canonicalAccount(ADMIN)!.schoolId
+      const schoolId = canonicalAccount(PELAJAR)!.schoolId
       await gotoApp(`/battle/ranking-sekolah/${String(schoolId)}`)
       await expect(page.getByTestId('battle-recent-row').first()).toContainText('baru sahaja')
     },
   )
 
-  test('E2E-M16-37 S2 default: Mingguan active, 7 columns and the empty text @m16', async ({
+  test('E2E-M16-37 S2 default: Mingguan active and the empty text @m16', async ({
     page,
     gotoApp,
     loginAs,
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/battle/leaderboard')
-    await expect(page.getByTestId('battle-pill-weekly')).toHaveClass(/bg-red-500/)
-    await expect(page.locator('thead th')).toHaveText([
-      '#',
-      'Pelajar',
-      'Sekolah',
-      'M/S/K',
-      'Ketepatan',
-      'Streak',
-      'Skor',
-    ])
+    await expect(page.getByTestId('battle-pill-weekly')).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByTestId('battle-pill-monthly')).toHaveAttribute('aria-pressed', 'false')
     await expect(page.getByTestId('battle-leaderboard-empty')).toHaveText(
       'Belum ada data ranking. Mula battle untuk muncul di sini!',
     )
@@ -586,9 +615,15 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp('/battle/leaderboard')
     await page.getByTestId('battle-pill-monthly').click()
-    await expect(page.getByTestId('battle-pill-monthly')).toHaveClass(/bg-red-500/)
+    await expect(page.getByTestId('battle-pill-monthly')).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByTestId('battle-pill-weekly')).toHaveAttribute('aria-pressed', 'false')
     await expect(page.getByTestId('battle-leaderboard-row')).toHaveCount(2)
     await expect(page.getByTestId('battle-msk')).toHaveText(['2/0/2', '2/0/2'])
+    // One labelled row per pupil (the old table columns): rank, name, then the four figures.
+    const firstRow = page.getByTestId('battle-leaderboard-row').first()
+    await expect(firstRow.getByTestId('row-rank')).toHaveText('1')
+    await expect(firstRow.getByTestId('row-title')).not.toBeEmpty()
+    await expect(firstRow.locator('dt')).toHaveText(['M/S/K', 'Ketepatan', 'Streak', 'Skor'])
     await page.getByTestId('battle-pill-weekly').click()
     await expect(page.getByTestId('battle-leaderboard-empty')).toBeVisible()
   })
@@ -600,7 +635,8 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/battle/ranking-sekolah')
-    await expect(page.getByTestId('battle-period-weekly')).toHaveClass(/bg-blue-500/)
+    await expect(page.getByTestId('battle-period-weekly')).toHaveClass(/bg-gradient-primary/)
+    await expect(page.getByTestId('battle-period-monthly')).not.toHaveClass(/bg-gradient-primary/)
     await expect(page.getByTestId('battle-schools-empty')).toHaveText(
       'Belum ada data ranking. Mula battle untuk melihat ranking sekolah!',
     )
@@ -608,14 +644,15 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
     await page.getByTestId('battle-period-monthly').click()
     await expect(page).toHaveURL(/period=monthly/)
     await expect(page.getByTestId('battle-school-row')).toHaveCount(1)
-    await expect(page.getByTestId('battle-school-link')).toHaveAttribute(
+    await expect(page.getByTestId('battle-school-row').getByTestId('row-title')).toHaveAttribute(
       'href',
       '/battle/ranking-sekolah/8082',
     )
     await page.getByTestId('battle-period-all_time').click()
     await expect(page.getByTestId('battle-school-row')).toHaveCount(7)
     const hrefs = await page
-      .getByTestId('battle-school-link')
+      .getByTestId('battle-school-row')
+      .getByTestId('row-title')
       .evaluateAll((els) => els.map((e) => e.getAttribute('href')))
     expect(hrefs.slice(0, 4)).toEqual([
       '/battle/ranking-sekolah/8106',
@@ -628,9 +665,9 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
     const row8082 = page.getByTestId('battle-school-row').filter({
       has: page.locator('a[href$="/8082"]'),
     })
-    await expect(row8082.locator('td').nth(2)).toHaveText('10')
+    await expect(rowStat(row8082, 'Battle')).toHaveText('10')
     await expect(row8082.getByTestId('battle-msk')).toHaveText('5/0/5')
-    await expect(row8082.locator('td').nth(5)).toHaveText('4')
+    await expect(rowStat(row8082, 'Pelajar')).toHaveText('4')
     await expectNoHorizontalScroll(page)
   })
 
@@ -641,14 +678,16 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/battle/ranking-sekolah?period=all_time')
-    await page.getByTestId('battle-state-select').selectOption('Johor')
+    await page.getByTestId('battle-state-select').click()
+    await page.getByRole('option', { name: 'Johor', exact: true }).click()
     await expect(page).toHaveURL(/period=all_time&state=Johor/)
-    await expect(page.getByTestId('battle-state-select')).toHaveValue('Johor')
+    await expect(page.getByTestId('battle-state-select')).toHaveText('Johor')
     await expect(page.getByTestId('battle-period-weekly')).toHaveAttribute('href', /state=Johor/)
-    const ranks = await page.locator('tbody tr td:first-child').allInnerTexts()
+    await expect(page.getByTestId('battle-school-row').first()).toBeVisible()
+    const ranks = await page.getByTestId('battle-school-row').getByTestId('row-rank').allInnerTexts()
     expect(ranks.map((r) => r.trim())).toEqual(expect.arrayContaining(['5', '7']))
     await expect(page.getByTestId('battle-podium').locator('> div')).toHaveCount(3)
-    await page.getByTestId('battle-school-link').first().click()
+    await page.getByTestId('battle-school-row').getByTestId('row-title').first().click()
     await expect(page).toHaveURL(/\/battle\/ranking-sekolah\/\d+$/)
     await expect(page.getByTestId('battle-school-name')).toBeVisible()
   })
@@ -661,7 +700,7 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp('/battle/ranking-sekolah/8106')
     await expect(page.getByTestId('battle-school-line')).toHaveText('PPD HULU LANGAT · Selangor · SMK')
-    await expect(page.getByTestId('battle-card-value')).toHaveText(['19', '12', '69%', '7'])
+    await expectSchoolCards(page, ['19', '12', '69%', '7'])
     await expect(page.getByTestId('battle-box-empty')).toHaveText([
       'Tiada data minggu ini',
       'Tiada data bulan ini',
@@ -683,7 +722,7 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/battle/ranking-sekolah/900')
-    await expect(page.getByTestId('battle-card-value')).toHaveText(['0', '0', '0%', '0'])
+    await expectSchoolCards(page, ['0', '0', '0%', '0'])
     await expect(page.getByTestId('battle-recent-empty')).toHaveText('Tiada battle terkini')
     await expect(page.getByTestId('battle-box-empty')).toHaveCount(2)
 
@@ -691,8 +730,8 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
     await expect(page.getByText('Halaman Tidak Dijumpai')).toBeVisible()
 
     await gotoApp('/battle/ranking-sekolah/8880')
-    await expect(page.getByTestId('battle-card-value')).toHaveText(['3', '2', '33%', '1'])
-    const green = page.locator('[data-testid^="battle-score-"].text-green-600')
+    await expectSchoolCards(page, ['3', '2', '33%', '1'])
+    const green = page.locator('[data-testid^="battle-score-"].text-success')
     expect(await green.count()).toBeGreaterThan(0)
 
     await gotoApp('/battle/ranking-sekolah/8082')
@@ -703,7 +742,7 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
     await expect(month.getByTestId('battle-box-skor')).toHaveText('591')
   })
 
-  test('E2E-M16-13 no horizontal page scroll; tables and the S4 list scroll inside their card @m16', async ({
+  test('E2E-M16-13 no horizontal page scroll; the ranking list and the S4 list wrap inside their card @m16', async ({
     page,
     gotoApp,
     loginAs,
@@ -721,22 +760,21 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
       await expect(page.getByTestId(ready)).toBeVisible()
       await expectNoHorizontalScroll(page)
     }
-    const width = page.viewportSize()!.width
+    // v2: rows wrap under the name at every width, so neither list needs an inner sideways scroll.
     await gotoApp('/battle/ranking-sekolah/8106')
     await expect(page.getByTestId('battle-recent-scroll')).toBeVisible()
     const wide = await page.getByTestId('battle-recent-scroll').evaluate((el) => ({
       scroll: el.scrollWidth,
       client: el.clientWidth,
     }))
-    if (width < 768) expect(wide.scroll).toBeGreaterThan(wide.client)
+    expect(wide.scroll).toBeLessThanOrEqual(wide.client)
     await gotoApp('/battle/ranking-sekolah?period=all_time')
     await expect(page.getByTestId('battle-schools-scroll')).toBeVisible()
     const t = await page.getByTestId('battle-schools-scroll').evaluate((el) => ({
       scroll: el.scrollWidth,
       client: el.clientWidth,
     }))
-    if (width < 768) expect(t.scroll).toBeGreaterThan(t.client)
-    else expect(t.scroll).toBeLessThanOrEqual(t.client)
+    expect(t.scroll).toBeLessThanOrEqual(t.client)
   })
 
   test('touch targets: mode buttons and the type buttons are at least 44 px @m16', async ({
