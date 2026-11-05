@@ -399,7 +399,7 @@ describe('#7 / #8 chapter mode (S4, S5; BR-15, BR-16)', () => {
     await q({ subject: w.math, level: w.d1, chapter: w.c1, active: false })
     const tile = PracticeReadChapterSubjectListResponseSchema.parse((await pelajar.get('/api/practice/chapter-subjects')).body).data.find((s) => s.code === 'MATH')
     const detail = ChapterDetail.parse((await pelajar.get('/api/practice/chapter-subjects/MATH')).body).data
-    expect(detail.levels.map((l) => l.count)).toEqual([2, 2])
+    expect(detail.levels.map((l) => l.count)).toEqual([0, 0, 0, 2, 2]) // T1..T3 are offered since S4-T06 and listed with zero
     expect(tile?.questionCount).toBe(4)
     expect(tile?.questionCount).toBe(detail.levels.reduce((n, l) => n + l.count, 0))
   })
@@ -459,14 +459,14 @@ describe('#7 / #8 chapter mode (S4, S5; BR-15, BR-16)', () => {
     expect((await guru.get('/api/practice/chapter-subjects/MATH')).status).toBe(200)
   })
 
-  it('#8 ?levelId= picks an offered level; an unknown or non-numeric level falls back to the first offered one (T1 since S4-T06)', async () => {
+  it('#8 ?levelId= picks an offered level; an unknown or non-numeric level falls back to T4 (the default when offered) (T4 by default since S4-T06)', async () => {
     const d2c1 = await chapterIdOf(t.db, 'MATH', 'T5', 1)
     await q({ subject: w.math, level: w.d1, chapter: w.c1 })
     await q({ subject: w.math, level: w.d2, chapter: d2c1 })
     await q({ subject: w.math, level: w.d2, chapter: d2c1 })
     const get = async (qs: string) => ChapterDetail.parse((await pelajar.get(`/api/practice/chapter-subjects/MATH${qs}`)).body).data
     const first = await get('')
-    expect(first.levelId).toBe(w.d3)
+    expect(first.levelId).toBe(w.d1)
     expect(first.levels).toEqual([
       { id: w.d3, name: expect.any(String), count: 0 },
       { id: w.d4, name: expect.any(String), count: 0 },
@@ -478,7 +478,7 @@ describe('#7 / #8 chapter mode (S4, S5; BR-15, BR-16)', () => {
     const second = await get(`?levelId=${w.d2}`)
     expect(second.levelId).toBe(w.d2)
     expect(second.chapters.map((c) => c.id)).toEqual([d2c1])
-    for (const bad of ['?levelId=999999', '?levelId=abc', '?levelId=']) expect((await get(bad)).levelId, bad).toBe(w.d3)
+    for (const bad of ['?levelId=999999', '?levelId=abc', '?levelId=']) expect((await get(bad)).levelId, bad).toBe(w.d1)
   })
 
   it('#8 a subject offering no level answers empty levels and chapters; an unknown code is 404', async () => {
