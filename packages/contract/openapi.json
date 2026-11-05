@@ -4420,7 +4420,7 @@
                 },
                 "count": {
                   "type": "integer",
-                  "minimum": 1
+                  "minimum": 0
                 }
               },
               "required": [
@@ -4445,7 +4445,10 @@
         },
         "required": [
           "total",
-          "counts"
+          "counts",
+          "page",
+          "perPage",
+          "matched"
         ],
         "additionalProperties": false
       },
@@ -4457,7 +4460,7 @@
             "items": {
               "$ref": "#/components/schemas/SupportQueueRow"
             },
-            "maxItems": 200
+            "maxItems": 25
           },
           "meta": {
             "$ref": "#/components/schemas/SupportQueueMeta"
@@ -79570,7 +79573,7 @@
           "support"
         ],
         "summary": "Admin support queue",
-        "description": "Admin only. Newest first (createdAt desc, then id desc), 25 per page with `page`. `meta.total` = all tickets; `meta.counts` = statuses with a count above 0, in vocabulary order, over all tickets; `meta.matched` counts the rows matching the filters. A row has no body, no e-mail and no user id.",
+        "description": "Admin only. Newest first (createdAt desc, then id desc), 25 per page with `page`. `meta.total` and `meta.counts` cover the role-filtered tickets, whatever the status filter; `meta.counts` has all five statuses in vocabulary order; `meta.matched` counts the rows matching both filters. A row has no body, no e-mail and no user id.",
         "parameters": [
           {
             "schema": {
@@ -79845,7 +79848,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields.text: \"Sila isi balasan.\" or \"Balasan tidak boleh melebihi 5000 aksara.\"",
+            "description": "VALIDATION_ERROR with fields.text: \"Sila tulis balasan.\" or \"Balasan tidak boleh melebihi 5000 aksara.\"",
             "content": {
               "application/json": {
                 "schema": {
@@ -79946,7 +79949,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields.status: \"Sila pilih status.\"",
+            "description": "VALIDATION_ERROR with fields.status: \"Data yang dihantar tidak sah. Sila semak dan cuba lagi.\"",
             "content": {
               "application/json": {
                 "schema": {
