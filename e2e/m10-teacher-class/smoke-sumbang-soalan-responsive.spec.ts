@@ -118,6 +118,7 @@ test.describe('S6-T06 Sumbang Soalan responsive (AC-GUR-44-7)', MODULE, () => {
     const tiles = page.getByTestId('alat-tile')
     // The block renders only when a tool route is registered; the page is already loaded here
     // (stat-total asserted above), so a present block must hold tiles before they are measured.
+    // The Alat Soalan block renders only when its tool routes exist; that the tiles are there at all is AC-GUR-44-9's test. Here: when shown, each tile fits.
     if ((await page.getByTestId('alat-soalan').count()) > 0) await expect(tiles).not.toHaveCount(0)
     for (const t of await tiles.all()) {
       await expectTouchTarget(t)
