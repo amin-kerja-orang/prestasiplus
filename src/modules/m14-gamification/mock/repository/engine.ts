@@ -126,6 +126,8 @@ export interface EngineContext {
   completedToday: ReadonlySet<number>
   /** Achievements already unlocked. */
   unlocked: ReadonlySet<number>
+  /** Seed replay only: pay a challenge at completion (observed anchors). The runtime pays on the claim. */
+  payCompletions?: boolean
 }
 
 export interface EngineRow {
@@ -352,6 +354,10 @@ export function settleSession(
     if (ctx.completedToday.has(ch.id)) continue
     if (challengeProgress(ch, metrics) < ch.targetValue) continue
     completions.push(ch.id)
+    // Completion writes the completion only; the reward is paid by the claim (API-GAME-11, ruling 12 on #500).
+    // Only the designed seed replay sets `payCompletions`: its ledger rows are observed live rows (they were
+    // credited at completion) and the anchored totals must not move.
+    if (!ctx.payCompletions) continue
     earn(
       'daily_challenge',
       ch.rewardSyiling,
