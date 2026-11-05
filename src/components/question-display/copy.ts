@@ -28,6 +28,10 @@ export const qdCopy = {
   hide: 'Sembunyi',
   passageFallback: 'Petikan',
   figureFallback: 'Rajah',
+  /** PaperView (S8-T05), verbatim from the V3 PaperCoverPage and QuestionPreview. */
+  question: 'Soalan',
+  markah: 'markah',
+  compulsory: '(wajib)',
 } as const
 
 export const kindFallbackCaption: Record<string, string> = {
@@ -36,6 +40,28 @@ export const kindFallbackCaption: Record<string, string> = {
   graph: 'Graf',
   table: 'Jadual',
 }
+
+/** Marks in brackets, then the unit word. */
+export const marksLabel = (n: number): string => `[${n} ${qdCopy.markah}]`
+/** "Soalan 3" */
+export const questionLabel = (n: number): string => `${qdCopy.question} ${n}`
+/**
+ * V3 PaperCoverPage section line (148-159), after the bold label:
+ * " · [N markah] · {count} soalan · {instruction}", with " (wajib)" appended to the instruction when compulsory.
+ */
+export function sectionMeta(marks: number | undefined, count: number, instruction?: string, compulsory?: boolean): string {
+  const parts: string[] = []
+  if (marks !== undefined) parts.push(marksLabel(marks))
+  parts.push(`${count} ${qdCopy.question.toLowerCase()}`)
+  if (instruction) parts.push(`${instruction}${compulsory ? ` ${qdCopy.compulsory}` : ''}`)
+  else if (compulsory) parts.push(qdCopy.compulsory)
+  return ` · ${parts.join(' · ')}`
+}
+/** FR-QA-48: group cap line, shown only when the scheme is revealed. */
+export const maksLabel = (n: number): string => `Maks ${n}`
+/** D115 deduction line, e.g. "Potongan: kesalahan 7 x 1 (maks 5)". */
+export const deductionLine = (label: string, n: number, amount: number, cap?: number): string =>
+  `Potongan: ${label} ${n} x ${amount}${cap === undefined ? '' : ` (maks ${cap})`}`
 
 export function wordCountLabel(n: number): string {
   return `${n} patah perkataan`

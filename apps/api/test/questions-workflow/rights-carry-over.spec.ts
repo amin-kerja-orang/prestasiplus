@@ -33,6 +33,8 @@ describe('editing keeps the rights declaration and provenance (REQ-B-017)', () =
     subjectId: tag.subjectId,
     educationLevelId: tag.levelId,
     difficultyLevel: 2,
+    cognitiveLevel: 'mengaplikasi',
+    curriculumChapterId: tag.chapterId,
     options: ['4', '5', '6', '7'],
     correctAnswer: 1,
     tag: { unitId: tag.unitId, spIds: [tag.spId], tp: 3 },
