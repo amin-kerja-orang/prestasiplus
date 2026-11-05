@@ -52,6 +52,11 @@ export type DebitInput = MovementKey & {
    * them (or the syiling amount) from a request body.
    */
   tokens?: number
+  /**
+   * DM-79, FR-ERR-9: the client's idempotency key, stored on the ledger row. Per user: the same key with the same
+   * movement is a replay, and with another movement a 409 `CONFLICT` (nothing written).
+   */
+  clientUuid?: string
   /** REQUIRED (see `CreditInput.isTest`). */
   isTest: boolean
 }

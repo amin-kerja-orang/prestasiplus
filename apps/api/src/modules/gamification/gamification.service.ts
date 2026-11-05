@@ -401,40 +401,52 @@ export class GamificationService {
   // --- convert -------------------------------------------------------------------------------------
 
   /**
-   * `POST /gamification/convert` (S12, BR-M14-10/11): tokens = floor(syiling / rate), the rate read from the
-   * caller's tier in the database; the amount must be an integer, at least the rate and at most the balance
-   * (else 422 `fields.syilingAmount`). One transaction: the wallet row is locked, the amount is checked against
-   * the locked balance, then `WalletService.debit` (type `convert`) writes the ledger row and pays the tokens.
-   * Parallel conversions of one wallet therefore queue on the lock and can never drive the balance below zero.
+   * `POST /gamification/convert` (S12, GAME-18): tokens = floor(syilingAmount / rate), the rate read from the
+   * caller's tier in the database at this request (AC-GM-18.4), and the debit is tokens x rate, so the remainder is
+   * never taken (FR-GM-18.1, FR-MUR-29-2). The amount must be an integer, at least the rate and at most the balance
+   * (else 422 `fields.syilingAmount`). One transaction: the wallet row is locked, the amount is checked against the
+   * locked balance, then `WalletService.debit` (type `convert`) writes the ledger row and pays the tokens. Parallel
+   * conversions of one wallet therefore queue on the lock and can never drive the balance below zero.
    *
-   * IDEMPOTENCY. The mock has no key and there is no daily cap, so two legitimate conversions in a row must both
-   * run. A client MAY send `Idempotency-Key`: the ledger key is then `(token_conversion, convert:<key>)` and a
-   * repeat with the same key and amount returns the first result without a second debit (a different amount
-   * under the same key is a 409). Without the header the debit has no key (`noKeyReason`).
+   * IDEMPOTENCY (FR-GM-17.3, FR-ERR-9, DM-79). The key is the optional body `clientUuid`, per user. A repeat answers
+   * the first conversion before any check, moves nothing and carries the current balances (the balance may no longer
+   * cover the amount, and the amount of a repeat is not compared). The wallet lock above makes the read safe against a
+   * double press, and the partial unique index stands behind it. A key already held by another kind of movement cannot
+   * give a first result, so it is a 422 on `clientUuid`. Without a key, two conversions in a row both run.
    */
-  async convert(viewer: Viewer, syilingAmount: number, idempotencyKey: string | null): Promise<GamificationConvertResult> {
+  async convert(viewer: Viewer, syilingAmount: number, clientUuid: string | null): Promise<GamificationConvertResult> {
     const invalid = () => validationFailure({ syilingAmount: MSG.amountInvalid }, MSG.amountInvalid)
     if (!Number.isSafeInteger(syilingAmount) || syilingAmount < 1 || syilingAmount > MAX_AMOUNT_PER_CALL) throw invalid()
-    const sourceId = idempotencyKey === null ? null : `convert:${idempotencyKey}`
     return this.prisma.transaction(async (tx) => {
       const locked = await this.repo.lockWallet(tx, viewer.userId)
+      const first = clientUuid === null || locked === null ? null : await this.repo.ledgerByClientUuid(tx, viewer.userId, clientUuid)
+      if (first && locked) {
+        if (first.type !== 'convert' || first.tokens === null) throw validationFailure({ clientUuid: MSG.invalid })
+        return { syilingDebited: -first.amount, tokensCredited: first.tokens, currentSyiling: locked.currentSyiling, tokenBalance: locked.tokenBalance, transactionId: first.id }
+      }
       const tiers = await this.repo.tiers(tx)
       const tier = (locked?.tierId ? tiers.find((t) => t.id === locked.tierId) : undefined) ?? defaultTier(tiers)
       if (!tier) throw new Error('M14: no tier is defined')
       const rate = tier.conversionRate
-
-      // A repeat of a keyed conversion is answered from the first row (the balance may have changed since).
-      const prior = sourceId === null ? null : await this.repo.ledgerByKey(tx, viewer.userId, 'token_conversion', sourceId)
-      if (prior === null && (syilingAmount < rate || syilingAmount > (locked?.currentSyiling ?? 0))) throw invalid()
-      const tokens = prior?.tokens ?? Math.floor(syilingAmount / rate)
-
-      const description = `Tukar ${String(syilingAmount)} syiling → ${String(tokens)} token`
-      const key = sourceId === null ? { sourceId: null, noKeyReason: 'a conversion has no natural key: the client repeats legitimately' } : { sourceId }
+      if (syilingAmount < rate || syilingAmount > (locked?.currentSyiling ?? 0)) throw invalid()
+      const tokens = Math.floor(syilingAmount / rate)
+      const debit = tokens * rate
       const out = await this.wallet.debit(
-        { userId: viewer.userId, amount: syilingAmount, source: 'token_conversion', description, type: 'convert', tokens, isTest: viewer.isTest, ...key },
+        {
+          userId: viewer.userId,
+          amount: debit,
+          source: 'token_conversion',
+          description: `Tukar ${String(debit)} syiling → ${String(tokens)} token`,
+          type: 'convert',
+          tokens,
+          isTest: viewer.isTest,
+          sourceId: null,
+          noKeyReason: 'a conversion has no natural key: the client repeats legitimately, and clientUuid is the replay key',
+          ...(clientUuid === null ? {} : { clientUuid }),
+        },
         { tx },
       )
-      return { syilingDebited: syilingAmount, tokensCredited: tokens, currentSyiling: out.currentSyiling, tokenBalance: out.tokenBalance, transactionId: out.entryId }
+      return { syilingDebited: debit, tokensCredited: tokens, currentSyiling: out.currentSyiling, tokenBalance: out.tokenBalance, transactionId: out.entryId }
     })
   }
 

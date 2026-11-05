@@ -537,6 +537,14 @@ export class GamificationRepository {
     }))
   }
 
+  /** The movement that already holds this `client_uuid` of the user (DM-79), if any. */
+  async ledgerByClientUuid(db: Db, userId: string, clientUuid: string): Promise<LedgerRecord | null> {
+    const r = await db.coinLedger.findFirst({ where: { userId: idFromString(userId), clientUuid } })
+    return r
+      ? { id: idToString(r.id), userId: idToString(r.userId), type: r.type, amount: r.amount, balanceAfter: r.balanceAfter, source: r.source, sourceId: r.sourceId, tokens: r.tokens, description: r.description, createdAt: r.createdAt }
+      : null
+  }
+
   async ledgerByKey(db: Db, userId: string, source: string, sourceId: string): Promise<LedgerRecord | null> {
     const r = await db.coinLedger.findFirst({ where: { userId: idFromString(userId), source, sourceId } })
     return r

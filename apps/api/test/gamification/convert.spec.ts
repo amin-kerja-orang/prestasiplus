@@ -39,21 +39,32 @@ describe('POST /api/gamification/convert (AC3, AC4)', () => {
     expect(res.headers['cache-control']).toMatch(/no-store/)
   })
 
-  it('the remainder is not refunded (floor) and the GET view follows the new balance', async () => {
+  it('FR-GM-18.1: the debit is tokens x rate, the remainder stays, and the GET view follows the new balance', async () => {
     const before = await walletOf(t, studentId)
     const d = GamificationConvertResultSchema.parse(dataOf(await student.post('/gamification/convert', { syilingAmount: 99 })))
-    expect(d).toMatchObject({ syilingDebited: 99, tokensCredited: 1 })
+    expect(d).toMatchObject({ syilingDebited: 50, tokensCredited: 1, currentSyiling: before!.current_syiling - 50 })
+    const rows = await ledgerOf(t, studentId)
+    expect(rows.find((r) => r.id === d.transactionId)).toMatchObject({ amount: -50, tokens: 1, description: 'Tukar 50 syiling → 1 token', balance_after: d.currentSyiling })
     const view = GamificationConvertViewSchema.parse(dataOf(await student.get('/gamification/convert')))
-    expect(view).toMatchObject({ currentSyiling: before!.current_syiling - 99, tokenBalance: before!.token_balance + 1 })
-    expect(view.quick).toEqual([50, 250, before!.current_syiling - 99])
+    expect(view).toMatchObject({ currentSyiling: before!.current_syiling - 50, tokenBalance: before!.token_balance + 1 })
+    expect(view.quick).toEqual([50, 250, before!.current_syiling - 50])
   })
 
-  it('the rate itself is the smallest amount (1 token); a numeric string and the exact balance are accepted', async () => {
+  it('the rate itself is the smallest amount (1 token); a numeric string and the exact balance are accepted, and only the multiple is debited', async () => {
     expect(dataOf<{ tokensCredited: number }>(await student.post('/gamification/convert', { syilingAmount: 50 })).tokensCredited).toBe(1)
     const balance = (await walletOf(t, studentId))!.current_syiling
     const res = await student.post('/gamification/convert', { syilingAmount: String(balance) })
     expect(res.status).toBe(200)
-    expect(dataOf<{ currentSyiling: number }>(res).currentSyiling).toBe(0)
+    expect(dataOf<{ currentSyiling: number }>(res).currentSyiling).toBe(balance % 50)
+  })
+
+  it('AC-GM-18.1, AC-MUR-29-1, AC-MUR-29-4: 120 syiling at rate 50, as "Semua" (100) or as typed (120), debits 100, pays 2 tokens and leaves 20', async () => {
+    for (const syilingAmount of [100, 120]) {
+      const id = await bareUser(t, 'Baki Seratus Dua Puluh')
+      await t.wallet.credit({ userId: id, amount: 120, source: 'quiz_practice', sourceId: 'ac-18-1', description: 'Latih Tubi: 12 betul', isTest: false })
+      const d = await t.gamification.convert({ userId: id, isTest: false }, syilingAmount, null)
+      expect(d).toMatchObject({ syilingDebited: 100, tokensCredited: 2, currentSyiling: 20, tokenBalance: 2 })
+    }
   })
 
   it('422 "Jumlah syiling tidak sah." with fields.syilingAmount for every bad amount, and nothing changes', async () => {
@@ -74,41 +85,124 @@ describe('POST /api/gamification/convert (AC3, AC4)', () => {
     expect(await walletOf(t, id)).toBeUndefined()
   })
 
-  it('the rate is read from the database tier: an admin edit of the rate applies at once; silver pays at its own rate', async () => {
-    // maju (267, bronze) is lifted over 500 by a credit: the tier moves up to silver (rate 40).
-    await t.wallet.credit({ userId: majuId, amount: 300, source: 'quiz_practice', sourceId: 'conv-up', description: 'Latih Tubi: 30 betul', isTest: false })
+  it('AC-GM-18.4: the rate is read from the database tier at each request: an admin edit applies at once; silver pays at its own rate', async () => {
+    // maju (267, bronze) converts at 50, then a credit lifts the tier to silver (rate 40) before the next conversion.
+    const atBronze = GamificationConvertResultSchema.parse(dataOf(await maju.post('/gamification/convert', { syilingAmount: 100 })))
+    expect(atBronze).toMatchObject({ syilingDebited: 100, tokensCredited: 2 })
+    await t.wallet.credit({ userId: majuId, amount: 400, source: 'quiz_practice', sourceId: 'conv-up', description: 'Latih Tubi: 40 betul', isTest: false })
     expect((await walletOf(t, majuId))!.tier_name).toBe('silver')
     const d = GamificationConvertResultSchema.parse(dataOf(await maju.post('/gamification/convert', { syilingAmount: 100 })))
-    expect(d.tokensCredited).toBe(2) // floor(100 / 40)
+    expect(d).toMatchObject({ syilingDebited: 80, tokensCredited: 2 }) // floor(100 / 40) x 40
     await admin.put(`/admin/gamification/tiers/${(await t.db.query<{ id: string }>(`select id::text from tiers where tier_name = 'silver'`))[0]!.id}`, {
       labelMs: 'Perak', icon: '🥈', minSyiling: 500, conversionRate: 25, sortOrder: 2, quizRewardL1: 1, quizRewardL2: 2, quizRewardL3: 3, quizRewardL4: 4, quizRewardL5: 5, pkskRewardCorrect: 5, boardGameRewardCorrect: 5, boardGameRewardWin: 25,
     })
     expect(dataOf<{ tokensCredited: number }>(await maju.post('/gamification/convert', { syilingAmount: 100 })).tokensCredited).toBe(4)
   })
 
-  describe('idempotency (documented choice)', () => {
-    it('without a header two identical conversions both run (no key, no cap)', async () => {
-      const id = await bareUser(t, 'Dua Kali')
-      await t.wallet.credit({ userId: id, amount: 500, source: 'quiz_practice', sourceId: 'twice', description: 'Latih Tubi: 50 betul', isTest: false })
+  // FR-GM-17.3, FR-ERR-9, DM-79; rulings 1 and 2 on #500: the key is the body clientUuid, per user, and there is no header.
+  describe('idempotency per (user, clientUuid)', () => {
+    const KEY = '3f2b8c1e-5a47-4d0b-9c36-7e1f0a2b4c5d'
+    const funded = async (name: string, amount: number): Promise<string> => {
+      const id = await bareUser(t, name)
+      await t.wallet.credit({ userId: id, amount, source: 'quiz_practice', sourceId: 'idem-fund', description: 'Latih Tubi: 10 betul', isTest: false })
+      return id
+    }
+    const convertRows = async (id: string) => (await ledgerOf(t, id)).filter((r) => r.type === 'convert')
+
+    it('without a key two identical conversions both run (no key, no cap)', async () => {
+      const id = await funded('Dua Kali', 500)
       const a = await t.gamification.convert({ userId: id, isTest: false }, 100, null)
       const b = await t.gamification.convert({ userId: id, isTest: false }, 100, null)
       expect(a.transactionId).not.toBe(b.transactionId)
       expect((await walletOf(t, id))!.current_syiling).toBe(300)
     })
 
-    it('with Idempotency-Key a repeat returns the FIRST result and debits once; another amount under the key is 409', async () => {
-      await t.wallet.credit({ userId: majuId, amount: 400, source: 'quiz_practice', sourceId: 'idem-up', description: 'Latih Tubi: 40 betul', isTest: false })
+    it('a repeat returns the FIRST result and debits once; the key is stored on the one ledger row', async () => {
       const before = (await walletOf(t, majuId))!
-      const first = await maju.post('/gamification/convert', { syilingAmount: 100 }, { 'Idempotency-Key': 'k-0001' })
-      const second = await maju.post('/gamification/convert', { syilingAmount: 100 }, { 'Idempotency-Key': 'k-0001' })
+      const first = await maju.post('/gamification/convert', { syilingAmount: 100, clientUuid: KEY })
+      const second = await maju.post('/gamification/convert', { syilingAmount: 100, clientUuid: KEY.toUpperCase() })
       expect(first.status).toBe(200)
       expect(second.status).toBe(200)
-      expect(dataOf<{ transactionId: string }>(second).transactionId).toBe(dataOf<{ transactionId: string }>(first).transactionId)
-      expect(dataOf<{ tokensCredited: number }>(second).tokensCredited).toBe(dataOf<{ tokensCredited: number }>(first).tokensCredited)
-      expect((await walletOf(t, majuId))!.current_syiling).toBe(before.current_syiling - 100)
-      expect((await ledgerOf(t, majuId)).filter((r) => r.source_id === 'convert:k-0001')).toHaveLength(1)
-      fail(await maju.post('/gamification/convert', { syilingAmount: 120 }, { 'Idempotency-Key': 'k-0001' }), 409, 'CONFLICT')
-      expect((await maju.post('/gamification/convert', { syilingAmount: 100 }, { 'Idempotency-Key': 'bad key!' })).status).toBe(422)
+      expect(dataOf(second)).toEqual(dataOf(first))
+      const debited = dataOf<{ syilingDebited: number }>(first).syilingDebited
+      expect((await walletOf(t, majuId))!.current_syiling).toBe(before.current_syiling - debited)
+      expect(await t.db.query(`select id from coin_ledger where user_id = $1 and client_uuid = $2::uuid`, [majuId, KEY])).toHaveLength(1)
+    })
+
+    it('a repeat answers before any check: the balance no longer covers it, or the amount differs, and nothing moves', async () => {
+      const id = await funded('Ulang Baki', 120)
+      const first = await t.gamification.convert({ userId: id, isTest: false }, 120, KEY)
+      expect(first).toMatchObject({ syilingDebited: 100, tokensCredited: 2, currentSyiling: 20, tokenBalance: 2 })
+      expect(await t.gamification.convert({ userId: id, isTest: false }, 120, KEY)).toEqual(first)
+      expect(await t.gamification.convert({ userId: id, isTest: false }, 50, KEY)).toEqual(first)
+      expect(await walletOf(t, id)).toMatchObject({ current_syiling: 20, token_balance: 2 })
+      expect(await convertRows(id)).toHaveLength(1)
+    })
+
+    it('a repeat carries the current balances, and the key belongs to one user only', async () => {
+      const a = await funded('Kunci Satu', 300)
+      const b = await funded('Kunci Dua', 300)
+      const first = await t.gamification.convert({ userId: a, isTest: false }, 100, KEY)
+      await t.gamification.convert({ userId: a, isTest: false }, 100, null)
+      const repeat = await t.gamification.convert({ userId: a, isTest: false }, 100, KEY)
+      expect(repeat).toMatchObject({ transactionId: first.transactionId, syilingDebited: 100, tokensCredited: 2, currentSyiling: 100, tokenBalance: 4 })
+      const other = await t.gamification.convert({ userId: b, isTest: false }, 100, KEY)
+      expect(other.transactionId).not.toBe(first.transactionId)
+      expect((await walletOf(t, b))!.current_syiling).toBe(200)
+    })
+
+    it('AC-GM-18.3: simultaneous requests with one key move the wallet once and all answer the first result', async () => {
+      const id = await funded('Dua Tekan', 300)
+      const results = await Promise.all(Array.from({ length: 8 }, () => t.gamification.convert({ userId: id, isTest: false }, 100, KEY)))
+      expect(new Set(results.map((r) => r.transactionId)).size).toBe(1)
+      expect(await walletOf(t, id)).toMatchObject({ current_syiling: 200, token_balance: 2 })
+      expect(await convertRows(id)).toHaveLength(1)
+
+      const before = (await walletOf(t, studentId))!
+      const key = '9a1c4e77-2b3d-4f60-8a15-c6d7e8f90a1b'
+      await t.wallet.credit({ userId: studentId, amount: 200, source: 'quiz_practice', sourceId: 'idem-double', description: 'Latih Tubi: 20 betul', isTest: false })
+      const [one, two] = await Promise.all([
+        student.post('/gamification/convert', { syilingAmount: 100, clientUuid: key }),
+        student.post('/gamification/convert', { syilingAmount: 100, clientUuid: key }),
+      ])
+      expect([one!.status, two!.status]).toEqual([200, 200])
+      expect(dataOf<{ transactionId: string }>(one!).transactionId).toBe(dataOf<{ transactionId: string }>(two!).transactionId)
+      expect((await walletOf(t, studentId))!.current_syiling).toBe(before.current_syiling + 100)
+    })
+
+    it('422 on fields.clientUuid for a bad key, and nothing moves; a key held by another movement is the same 422', async () => {
+      const id = await funded('Kunci Rosak', 300)
+      const start = (await walletOf(t, majuId))!
+      for (const clientUuid of ['bad key!', 'k-0001', 7, true, {}]) {
+        const err = fail(await maju.post('/gamification/convert', { syilingAmount: 100, clientUuid }), 422, 'VALIDATION_ERROR')
+        expect(err.fields).toEqual({ clientUuid: 'Medan ini tidak sah.' })
+      }
+      expect(await walletOf(t, majuId)).toEqual(start)
+      await t.wallet.debit({ userId: id, amount: 10, source: 'shop', sourceId: 'held', description: 'Belanja', isTest: false, clientUuid: KEY })
+      await expect(t.gamification.convert({ userId: id, isTest: false }, 100, KEY)).rejects.toMatchObject({ code: 'VALIDATION_ERROR', fields: { clientUuid: 'Medan ini tidak sah.' } })
+      expect(await convertRows(id)).toHaveLength(0)
+    })
+
+    it('ruling 2 on #500: the Idempotency-Key header is not a mechanism here: it is ignored, whatever it holds', async () => {
+      const before = (await walletOf(t, majuId))!
+      const one = await maju.post('/gamification/convert', { syilingAmount: 100 }, { 'Idempotency-Key': 'k-0001' })
+      const two = await maju.post('/gamification/convert', { syilingAmount: 100 }, { 'Idempotency-Key': 'bad key!' })
+      expect([one.status, two.status]).toEqual([200, 200])
+      expect(dataOf<{ transactionId: string }>(one).transactionId).not.toBe(dataOf<{ transactionId: string }>(two).transactionId)
+      expect((await walletOf(t, majuId))!.current_syiling).toBeLessThan(before.current_syiling)
+    })
+
+    it('WalletService.debit with a client key: the same movement is a replay, another is a 409 and nothing is written', async () => {
+      const id = await funded('Dompet Kunci', 300)
+      const input = { userId: id, amount: 100, source: 'token_conversion', description: 'Tukar 100 syiling → 2 token', type: 'convert' as const, tokens: 2, isTest: false, sourceId: null, noKeyReason: 'test', clientUuid: KEY }
+      const first = await t.wallet.debit(input)
+      expect(first.replayed).toBe(false)
+      const again = await t.wallet.debit(input)
+      expect(again).toMatchObject({ replayed: true, entryId: first.entryId, currentSyiling: 200, tokenBalance: 2 })
+      await expect(t.wallet.debit({ ...input, amount: 50, tokens: 1 })).rejects.toMatchObject({ code: 'CONFLICT', details: { reason: 'IDEMPOTENCY_MISMATCH' } })
+      await expect(t.wallet.debit({ ...input, source: 'other' })).rejects.toMatchObject({ code: 'CONFLICT', details: { reason: 'IDEMPOTENCY_MISMATCH' } })
+      await expect(t.wallet.debit({ ...input, clientUuid: 'not-a-uuid' })).rejects.toThrow(RangeError)
+      expect(await walletOf(t, id)).toMatchObject({ current_syiling: 200, token_balance: 2 })
     })
   })
 

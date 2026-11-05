@@ -19,7 +19,7 @@ describe('coin_ledger is append-only in code (AC2)', () => {
     const methods = Object.getOwnPropertyNames(WalletRepository.prototype).filter((m) => m !== 'constructor')
     expect(methods).toContain('appendLedger')
     const ledgerMethods = methods.filter((m) => /ledger/i.test(m))
-    expect(ledgerMethods.sort()).toEqual(['appendLedger', 'ledgerByKey', 'ledgerOf'])
+    expect(ledgerMethods.sort()).toEqual(['appendLedger', 'ledgerByClientUuid', 'ledgerByKey', 'ledgerOf'])
     expect(methods.filter((m) => /^(update|delete|remove|upsert|patch|set|edit|rewrite)/i.test(m) && /ledger/i.test(m))).toEqual([])
   })
 
