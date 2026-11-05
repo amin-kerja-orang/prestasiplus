@@ -290,6 +290,8 @@ describe('intake client', () => {
       ['two leaves', { parts: [leaf, { ...leaf, label: '2' }] }],
       ['a grouped member', { stimulusGroup: { id: '9' } }],
       ['another mode', { parts: [{ ...leaf, mode: 'essay' }] }],
+      ['a prompt that differs from the stem', { parts: [{ ...leaf, prompt: { ms: 'Apakah fungsi X?' } }] }],
+      ['a leaf under a branch', { parts: [{ label: 'a', prompt: { ms: 'Induk' }, children: [leaf] }] }],
     ])('%s is out of scope, and a save is refused without a write', async (_name, over) => {
       const { server, requests } = setup(routes(over))
       expect((await server.getBankEditable('q')).quickEdit?.outOfScope).toBe(true)
@@ -298,9 +300,23 @@ describe('intake client', () => {
       expect(requests.some((r) => r.method !== 'GET')).toBe(false)
     })
 
-    it('locks Menunggu Semakan', async () => {
-      const { server } = setup(routes({ status: 'review' }))
+    it('locks Menunggu Semakan, on the read and on a late save', async () => {
+      const { server, requests } = setup(routes({ status: 'review' }))
       expect((await server.getBankEditable('q')).pendingRevision).toBe(true)
+      expect((await server.reviseQuestionFull('q', edited())).ok).toBe(false)
+      expect(requests.some((r) => r.method !== 'GET')).toBe(false)
+    })
+
+    it('a question with no subject makes no copy', async () => {
+      const { server, requests } = setup(routes({ subjectId: null }))
+      expect((await server.reviseQuestionFull('q', edited())).ok).toBe(false)
+      expect(requests.some((r) => r.method !== 'GET')).toBe(false)
+    })
+
+    it('a failed gate read keeps the form and says so', async () => {
+      const { server } = setup({ ...routes(), 'GET /api/questions/q/gate-check': fail(500, 'SERVER_ERROR', 'x') })
+      const e = await server.getBankEditable('q')
+      expect(e.quickEdit).toEqual({ outOfScope: false, gate: null })
     })
 
     it('a live question goes through edit-as-draft, then PUT keeps the rest of the leaf', async () => {

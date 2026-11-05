@@ -32,8 +32,10 @@ export interface QuestionImportRun {
 
 /** #9 result: the run plus the flash text "Import selesai: {x} soalan diimport, {y} gagal." */
 export interface QuestionImportResponse {
-  data: QuestionImportRun & { warnings?: string[] }
+  data: QuestionImportRun
   status: string
+  /** New header only: "Kolum {nama} tidak dikenali dan diabaikan." */
+  warnings?: string[]
 }
 
 export interface QuestionImportInput {

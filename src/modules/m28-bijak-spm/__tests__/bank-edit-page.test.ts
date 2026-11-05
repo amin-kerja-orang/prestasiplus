@@ -124,11 +124,19 @@ describe('Quick Edit on the real API (FR-ADM-Q24)', () => {
     expect(t(w, 'edit-completeness').text()).toContain('Sila pilih Bab.')
   })
 
-  it('shows a server refusal', async () => {
+  it('shows a server refusal under no gate heading', async () => {
     server.reviseQuestionFull.mockResolvedValue({ ok: false, errors: ['Ditolak pelayan.'] })
     const w = await render()
     await t(w, 'edit-submit').trigger('click')
     await flushPromises()
-    expect(t(w, 'edit-gate').text()).toContain('Ditolak pelayan.')
+    expect(t(w, 'edit-server-errors').text()).toContain('Ditolak pelayan.')
+    expect(w.find('[data-testid="edit-gate"]').exists()).toBe(false)
+  })
+
+  it('says when the completeness check could not load', async () => {
+    server.getBankEditable.mockResolvedValue(editable({ quickEdit: { outOfScope: false, gate: null } }))
+    const w = await render()
+    expect(t(w, 'edit-completeness-failed').text()).toContain('tidak dapat dimuatkan')
+    expect(w.find('[data-testid="edit-stem"]').exists()).toBe(true)
   })
 })

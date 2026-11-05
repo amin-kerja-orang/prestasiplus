@@ -5,7 +5,7 @@
  *   BASE_URL=http://localhost:5192 E2E_DEMO_PASSWORD=<demo password> \
  *     npx playwright test -c playwright.http.config.ts e2e/m04-question-bank/quick-edit-http.spec.ts
  *
- * Writes: one question, approved through the API, then edited; it is archived at the end.
+ * Writes: new questions per run and viewport, some published; there is no cleanup, the stack is thrown away.
  */
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
@@ -64,6 +64,33 @@ test.describe('R1-ADM-Q-24 Quick Edit @api', () => {
     const back = await data<{ status: string; parts: { options: { body: { ms: string } }[] }[] }>(page, `/api/questions/${q.id}`)
     expect(back.status).toBe('draft')
     expect(back.parts[0]?.options[2]?.body.ms).toBe(`Tiga ${token}`)
+  })
+
+  test('a live question gets a new draft and the live version keeps serving (AC-ADM-Q24.2) @api', async ({ page }) => {
+    const csrf = await login(page)
+    const token = `QL${String(Date.now())}`
+    const seeded = await data<{ id: string }[]>(page, '/api/questions?status=approved&pageSize=1')
+    const d = await data<{ subjectId: string; educationLevelId: string; tag: object }>(page, `/api/questions/${String(seeded[0]?.id)}`)
+    const tree = await data<{ chapters?: { id: string }[] }>(page, `/api/admin/curriculum?subjectId=${d.subjectId}&educationLevelId=${d.educationLevelId}`)
+    const q = await makeQuestion(page, csrf, token, {
+      subjectId: d.subjectId,
+      educationLevelId: d.educationLevelId,
+      tag: d.tag,
+      curriculumChapterId: tree.chapters?.[0]?.id,
+      kertas: '1',
+      cognitiveLevel: 'memahami',
+      status: 'approved',
+    })
+    const before = await data<{ status: string; liveVersionNo: number | null; parts: { options: { body: { ms: string } }[] }[] }>(page, `/api/questions/${q.id}`)
+    expect(before.status).toBe('approved')
+    await page.goto(`/admin/spm/soalan/${q.id}/sunting`)
+    await page.getByTestId('edit-option-C').fill(`Tiga ${token}`)
+    await page.getByTestId('edit-submit').click()
+    await expect(page.getByText(`Draf baharu #${q.id} dicipta.`)).toBeVisible()
+    const after = await data<{ status: string; liveVersionNo: number | null; parts: { options: { body: { ms: string } }[] }[] }>(page, `/api/questions/${q.id}`)
+    expect(after.status).toBe('draft')
+    expect(after.liveVersionNo).toBe(before.liveVersionNo)
+    expect(after.parts[0]?.options[2]?.body.ms).toBe(`Tiga ${token}`)
   })
 
   test('an empty option is named and Simpan stays off @api', async ({ page }) => {

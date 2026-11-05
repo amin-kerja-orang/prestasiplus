@@ -174,23 +174,29 @@ async function save(): Promise<void> {
             <DsFormField v-for="(o, i) in draft.options" :key="o.id" native :for="`edit-option-${o.id}`" :label="`Pilihan ${o.id}`" required>
               <UInput :id="`edit-option-${o.id}`" v-model="draft.options[i]!.text" maxlength="500" :disabled="locked" class="w-full" :data-testid="`edit-option-${o.id}`" />
             </DsFormField>
-            <DsFormField native for="edit-correct" label="Pilihan jawapan — pilih yang betul" required>
-              <URadioGroup id="edit-correct" v-model="correct" :items="correctItems" orientation="horizontal" variant="card" :disabled="locked" data-testid="edit-correct" />
-            </DsFormField>
+            <URadioGroup v-model="correct" legend="Pilihan jawapan — pilih yang betul" :items="correctItems" orientation="horizontal" variant="card" :disabled="locked" data-testid="edit-correct" />
             <DsFormField native for="edit-explanation" label="Penjelasan">
               <UTextarea id="edit-explanation" v-model="draft.explanation" :rows="3" :disabled="locked" class="w-full" data-testid="edit-explanation" />
             </DsFormField>
           </DsStack>
         </DsPanel>
 
-        <DsCallout v-if="issues.length > 0 || serverErrors.length > 0" tone="warning" data-testid="edit-gate">
+        <DsCallout v-if="issues.length > 0" tone="warning" data-testid="edit-gate">
           Soalan ini tidak boleh ditanda seperti sedia ada:
           <DsStack as="ul" gap="2xs">
-            <DsText v-for="e in [...new Set([...issues, ...serverErrors])]" :key="e" as="li" variant="body">{{ e }}</DsText>
+            <DsText v-for="e in issues" :key="e" as="li" variant="body">{{ e }}</DsText>
+          </DsStack>
+        </DsCallout>
+        <DsCallout v-if="serverErrors.length > 0" tone="error" role="alert" data-testid="edit-server-errors">
+          <DsStack as="ul" gap="2xs">
+            <DsText v-for="e in serverErrors" :key="e" as="li" variant="body">{{ e }}</DsText>
           </DsStack>
         </DsCallout>
 
-        <DsPanel v-if="quick.gate.length > 0" :title="`${quick.gate.length} belum lengkap`" data-testid="edit-completeness">
+        <DsCallout v-if="quick.gate === null" tone="warning" data-testid="edit-completeness-failed">
+          Semakan kelengkapan tidak dapat dimuatkan. Muat semula halaman untuk cuba lagi.
+        </DsCallout>
+        <DsPanel v-else-if="quick.gate.length > 0" :title="`${quick.gate.length} belum lengkap`" data-testid="edit-completeness">
           <DsStack as="ul" gap="2xs">
             <DsText v-for="m in quick.gate" :key="m" as="li" variant="body">{{ m }}</DsText>
           </DsStack>

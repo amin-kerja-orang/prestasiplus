@@ -56,7 +56,7 @@ const difficulty = ref('')
 
 const submitting = ref(false)
 const errors = ref<string[]>([])
-const report = ref<QuestionImportResponse['data'] | null>(null)
+const report = ref<(QuestionImportResponse['data'] & { warnings: string[] }) | null>(null)
 
 function toId(value: string): number | null {
   return value === '' ? null : Number(value)
@@ -80,7 +80,7 @@ async function submit(): Promise<void> {
     subjectId.value = ''
     levelId.value = ''
     difficulty.value = ''
-    report.value = result.data
+    report.value = { ...result.data, warnings: result.warnings ?? [] }
     flash.show({ type: 'success', message: result.status })
     window.scrollTo?.({ top: 0 })
   } catch (err) {
@@ -117,9 +117,9 @@ const FORMAT_GROUPS: { title: string; rows: { columns: string[]; note?: string }
   {
     title: 'Kolum opsional:',
     rows: [
-      { columns: ['option_d'] },
+      { columns: ['option_d', 'option_e', 'option_f', 'option_g', 'option_h'] },
       { columns: ['difficulty'], note: 'Kesukaran (1-5)' },
-      { columns: ['kbat', 'topik_kod', 'kertas', 'number_label', 'bahasa', 'jenis_tulisan'] },
+      { columns: ['explanation', 'kbat', 'topik_kod', 'kertas', 'number_label', 'bahasa', 'jenis_tulisan'] },
     ],
   },
 ]
@@ -312,12 +312,12 @@ async function downloadTemplate(): Promise<void> {
         </DsFormBar>
 
         <DsPanel
-          v-if="report && (report.failures.length > 0 || (report.warnings?.length ?? 0) > 0)"
+          v-if="report && (report.failures.length > 0 || report.warnings.length > 0)"
           title="Laporan import"
           data-testid="import-report"
         >
           <DsStack gap="sm">
-            <DsStack v-if="report.warnings?.length" as="ul" gap="2xs" data-testid="import-warnings">
+            <DsStack v-if="report.warnings.length > 0" as="ul" gap="2xs" data-testid="import-warnings">
               <DsText v-for="w in report.warnings" :key="w" as="li" variant="body" tone="warning">{{ w }}</DsText>
             </DsStack>
             <DsStack v-if="report.failures.length > 0" as="ul" gap="2xs" data-testid="import-failures">

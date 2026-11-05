@@ -1057,11 +1057,12 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
    */
   async getBankEditable(qid: string): Promise<BankEditable> {
     const d = await this.send<WireQuickEdit>('GET', `/api/questions/${enc(qid)}`)
-    const subjects = await this.ensureSubjects()
+    // Neither side read is needed to edit: a failure costs the display code or the completeness list, not the form.
+    const subjects = await this.ensureSubjects().catch(() => [])
     const name = d.subject?.name ?? ''
     const subject = subjects.find((s) => s.name.trim().toLowerCase() === name.trim().toLowerCase()) ?? { code: name, name }
     const leaf = quickEditLeaf(d)
-    const gate = await this.send<{ issues: { message: string }[] }>('GET', `/api/questions/${enc(qid)}/gate-check?gate=approve`)
+    const gate = await this.send<{ issues: { message: string }[] }>('GET', `/api/questions/${enc(qid)}/gate-check?gate=approve`).catch(() => null)
     return {
       row: bankRowFrom(d, d, subject),
       question: {
@@ -1082,7 +1083,7 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
       },
       pendingRevision: d.status === 'review',
       legacyTag: false,
-      quickEdit: { outOfScope: leaf === null, gate: gate.issues.map((i) => i.message) },
+      quickEdit: { outOfScope: leaf === null, gate: gate ? gate.issues.map((i) => i.message) : null },
     }
   }
 
@@ -1093,6 +1094,10 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
     const d = await this.send<WireQuickEdit>('GET', `/api/questions/${enc(qid)}`)
     const leaf = quickEditLeaf(d)
     if (!leaf) return { ok: false, errors: [QUICK_EDIT_OUT_OF_SCOPE] }
+    // The page locks this state; another tab may have sent the draft for review since it loaded.
+    if (d.status === 'review') return { ok: false, errors: ['Versi baharu menunggu semakan'] }
+    // Checked before the copy is made: a PUT refused for these would leave an unchanged draft on the live question.
+    if (!d.subjectId || !d.educationLevelId) return { ok: false, errors: [QUICK_EDIT_OUT_OF_SCOPE] }
     let message: string | undefined
     if (d.status === 'approved') {
       const res = await this.send<{ id: string }>('POST', `/api/questions/${enc(qid)}/edit-as-draft`, {})
@@ -1103,12 +1108,12 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
       subjectId: d.subjectId,
       educationLevelId: d.educationLevelId,
       difficultyLevel: d.difficultyLevel,
-      questionText: edited.stem,
+      questionText: edited.stem.trim(),
       explanation: edited.explanation?.trim() || null,
       parts: [
         {
           ...leaf,
-          prompt: { ...leaf.prompt, ms: edited.stem },
+          prompt: { ...leaf.prompt, ms: edited.stem.trim() },
           options: leaf.options.map((o, i) => ({ ...o, body: { ...o.body, ms: edited.options[i]?.text ?? o.body.ms } })),
           key: { kind: 'option', correct },
         },

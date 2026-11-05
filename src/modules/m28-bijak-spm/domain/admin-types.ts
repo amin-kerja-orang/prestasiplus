@@ -191,8 +191,8 @@ export interface BankEditable {
   /** Http only (FR-ADM-Q24): Quick Edit keeps to the flat fields of a single-leaf MCQ outside a group. */
   quickEdit?: {
     outOfScope: boolean
-    /** The approval gate of the stored question, by message (FR-QA-44). */
-    gate: string[]
+    /** The approval gate of the stored question, by message (FR-QA-44); null when the read failed. */
+    gate: string[] | null
   }
   /** Whether the live question carries no SP (legacy seed): the SP check is waived on save. */
   legacyTag: boolean

@@ -135,7 +135,7 @@ describe('QuestionImportPage (M04 S5)', () => {
     })
 
     it('lists each failed row and warning, and downloads the error CSV of the run', async () => {
-      imports.importQuestions.mockResolvedValue(run({ warnings: ['Kolum x tidak dikenali dan diabaikan.'] }))
+      imports.importQuestions.mockResolvedValue({ ...run(), warnings: ['Kolum x tidak dikenali dan diabaikan.'] })
       const blob = new Blob(['x'])
       imports.downloadImportErrors.mockResolvedValue({ blob, filename: null })
       const w = await render()
@@ -152,6 +152,16 @@ describe('QuestionImportPage (M04 S5)', () => {
       await flushPromises()
       expect(imports.downloadImportErrors).toHaveBeenCalledWith(12)
       expect(useFlashStore().current?.type).toBe('success')
+    })
+
+    it('shows the warnings of a run with no failed row', async () => {
+      imports.importQuestions.mockResolvedValue({ ...run({ failedCount: 0, failures: [] }), warnings: ['Kolum x tidak dikenali dan diabaikan.'] })
+      const w = await render()
+      await pickFile(w, new File(['x'], 'a.csv', { type: 'text/csv' }))
+      await t(w, 'import-form').trigger('submit')
+      await flushPromises()
+      expect(t(w, 'import-warnings').text()).toContain('Kolum x tidak dikenali')
+      expect(w.find('[data-testid=import-failures]').exists()).toBe(false)
     })
 
     it('shows no report for a clean run', async () => {
