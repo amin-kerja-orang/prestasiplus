@@ -8,6 +8,7 @@
  * saving a subtopic send the mutation, reload the same tree (collapsed again, as after a live redirect)
  * and show the flash. Redirect flashes (BR-18) are shown by the shell once, after navigation.
  */
+import { preferRateLimited } from '@/api/errors'
 import { computed, provide, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -177,6 +178,7 @@ provide(TREE_ACTIONS, actions)
     <DsLoadError
       v-if="optionsFailed || treeFailed"
       :message="LOAD_ERROR"
+      :error="preferRateLimited(subjectsError, levelsError, treeError)"
       testid="curriculum-load-error"
       @retry="retryLoad"
     />

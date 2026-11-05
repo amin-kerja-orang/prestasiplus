@@ -33,7 +33,7 @@ describe('R1-B05 cognitive level and gate schemas', () => {
   })
 
   it('a gate issue has a path, code, BM message and a wizard step 1 to 4', () => {
-    const issue = { path: 'parts.b.cognitiveLevel', code: 'LEAF_COGNITIVE_LEVEL_MISSING', message: 'Bahagian (b) belum ada aras pemikiran.', step: 3 }
+    const issue = { path: 'parts.b.cognitiveLevel', code: 'LEAF_NO_ARAS', message: 'Bahagian (b) belum ada aras pemikiran.', step: 3 }
     expect(QuestionGateIssueSchema.safeParse(issue).success).toBe(true)
     expect(QuestionGateIssueSchema.safeParse({ ...issue, step: 5 }).success).toBe(false)
     expect(QuestionGateCheckSchema.safeParse({ gate: 'approve', ok: false, issues: [issue] }).success).toBe(true)
@@ -42,7 +42,8 @@ describe('R1-B05 cognitive level and gate schemas', () => {
 
   it('the status request takes the four lifecycle codes only; `published` is gone (ADR-0027)', () => {
     for (const to of ['draft', 'review', 'approved', 'archived']) expect(QuestionStatusRequestSchema.safeParse({ to }).success).toBe(true)
-    for (const to of ['published', 'pending_review', 'rejected']) expect(QuestionStatusRequestSchema.safeParse({ to }).success).toBe(false)
+    for (const to of ['published', 'pending_review']) expect(QuestionStatusRequestSchema.safeParse({ to }).success).toBe(false)
+    expect(QuestionStatusRequestSchema.safeParse({ to: 'rejected', reason: 'Jawapan tidak jelas.' }).success).toBe(true) // S1-T02, API-Q-06: Tolak
     expect(QuestionStatusRequestSchema.safeParse({ to: 'draft', reason: 'Jawapan tidak jelas.' }).success).toBe(true)
     expect(QuestionStatusRequestSchema.safeParse({ to: 'draft', extra: 1 }).success).toBe(false)
   })

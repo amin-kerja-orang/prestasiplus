@@ -95,7 +95,7 @@ export const REWARD_MESSAGES = {
   redemptionNotFound: 'Tebusan tidak dijumpai.',
   boxNotFound: 'Kotak tidak dijumpai.',
   /** Default message of an unmatched id: unknown reward/redemption on the admin GET/PUT/deliver, or a non-numeric path id. */
-  notFound: 'Not Found.',
+  notFound: 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?',
 } as const
 
 /** Laravel-style validation messages of the admin writes (field -> message), as the mock emits them. */
