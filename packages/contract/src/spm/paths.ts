@@ -397,6 +397,7 @@ export function registerSpmPaths(registry: OpenAPIRegistry): void {
       401: UNAUTHORIZED,
       403: FORBIDDEN_ROLE,
       404: NOT_FOUND,
+      409: err('CONFLICT "Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi." (a concurrent save of this set won; nothing was written).'),
       422: err('VALIDATION_ERROR with fields.items carrying the reason in BM.'),
     },
   })

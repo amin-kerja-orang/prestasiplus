@@ -178,7 +178,7 @@ export type SpmBahasaSubject = z.infer<typeof SpmBahasaSubjectSchema>
 
 /** A locked set of a readiness tile. */
 export const SpmLockedSetSchema = z
-  .strictObject({ setNo: z.number().int().min(1), readyCount: count, target: count })
+  .strictObject({ year: z.number().int().meta({ description: 'Year of the set: a tile counts the sets of every year.' }), setNo: z.number().int().min(1), readyCount: count, target: count })
   .meta({ id: 'SpmLockedSet' })
 export type SpmLockedSet = z.infer<typeof SpmLockedSetSchema>
 
@@ -366,6 +366,7 @@ export const TRACKING_A_PROPOSED_COPY = {
   pickPlaceholder: 'Pilih daripada calon',
   pickAdd: 'Tambah',
   unsaved: 'Perubahan belum disimpan.',
+  discardDraft: 'Perubahan pada set ini belum disimpan dan akan hilang. Teruskan?',
   addCancel: 'Batal',
   addHeading: 'Set baharu',
 } as const
