@@ -44,8 +44,6 @@ const error = ref('')
 const AUTOSAVE_MS = 500
 let timer: ReturnType<typeof setTimeout> | undefined
 let again = false
-/** Set on unmount: nothing is saved after it (the page may already show another sitting). */
-let unmounted = false
 /** A change waits for its 500 ms (reactive twin of `timer`). */
 const pending = ref(false)
 
@@ -123,12 +121,14 @@ const dirty = computed(
 const emit = defineEmits<{ dirty: [partId: string, dirty: boolean] }>()
 watch(dirty, (d) => emit('dirty', props.part.partId, d))
 onBeforeUnmount(() => {
-  unmounted = true
-  again = false
-  // A change still waiting for its 500 ms is dropped: by now the page may show another sitting, and the page's leave guard
-  // already warned about the unsaved change (`dirty`).
-  if (timer) clearTimeout(timer)
-  timer = undefined
+  // A change still waiting for its 500 ms is saved now (a filter tab or another sitting may unmount the control). The page
+  // binds `save` to the sitting it rendered for, so the flush always reaches the right attempt.
+  if (timer) {
+    clearTimeout(timer)
+    timer = undefined
+    pending.value = false
+    void commit()
+  }
   emit('dirty', props.part.partId, false)
 })
 
@@ -151,7 +151,6 @@ const bandItems = computed(() =>
 )
 
 async function commit(): Promise<void> {
-  if (unmounted) return
   // A change made while a save is in flight is saved right after it.
   if (saving.value) {
     again = true
@@ -180,7 +179,7 @@ async function commit(): Promise<void> {
   }
   if (again) {
     again = false
-    if (!timer && !unmounted) void commit()
+    if (!timer) void commit()
   }
 }
 
