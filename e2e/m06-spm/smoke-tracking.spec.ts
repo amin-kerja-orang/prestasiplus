@@ -302,7 +302,7 @@ test.describe('M06 S5 Tracking A hub', { tag: [moduleTag(6)] }, () => {
 test.describe('M06 S6 Tracking A set list and Q3', { tag: [moduleTag(6)] }, () => {
   test.use({ mockInit: { latency: 0 } })
 
-  test('E2E-M06-21 GEO: header, chips, Set 1 link and texts, Sets 2-10 inert', async ({
+  test('E2E-M06-21 GEO: header, chips, Set 1 link and texts, Sets 2-10 not listed (FR-MUR-13-18)', async ({
     page,
     loginAs,
     gotoApp,
@@ -326,10 +326,10 @@ test.describe('M06 S6 Tracking A set list and Q3', { tag: [moduleTag(6)] }, () =
     await expect(tid(page, 'year-heading')).toHaveText('Tracking A 2026')
 
     const cards = page.locator('[data-testid^=set-card-]')
-    await expect(cards).toHaveCount(10)
+    await expect(cards).toHaveCount(1)
     const one = tid(page, 'set-card-1')
     await expect(one).toHaveAttribute('href', '/spm/ramalan/GEO?year=2026&set=1')
-    await expect(one.getByTestId('set-title')).toHaveText('Set 1')
+    await expect(one.getByTestId('set-title')).toHaveText('2026 · Set 1')
     await expect(one.getByTestId('set-badge')).toHaveText('Ready Bank Besar')
     await expect(one.getByTestId('set-ready')).toHaveText('40 soalan kuiz siap guna')
     await expect(one.getByTestId('set-format')).toHaveText('Format set: 40 / 40')
@@ -339,18 +339,8 @@ test.describe('M06 S6 Tracking A set list and Q3', { tag: [moduleTag(6)] }, () =
     await expect(one.getByTestId('set-dskp')).toHaveText('DSKP: 67/67 (100%)')
     await expectTouchTarget(one)
 
-    for (let n = 2; n <= 10; n++) {
-      const locked = tid(page, `set-card-${n}`)
-      await expect(locked.getByTestId('set-badge')).toHaveText('Belum Cukup')
-      await expect(locked.getByTestId('set-locked-note')).toHaveText(
-        'Belum cukup soalan untuk format KPM.',
-      )
-      await expect(locked).not.toHaveAttribute('href', /.+/)
-      await expect(locked).toHaveCSS('pointer-events', 'none')
-    }
-    await expect(tid(page, 'set-card-9').getByTestId('set-format')).toHaveText(
-      'Format set: 20 / 40',
-    )
+    for (let n = 2; n <= 10; n++) await expect(tid(page, `set-card-${n}`)).toHaveCount(0)
+    await expect(page.locator('[data-status=belum_cukup]')).toHaveCount(0)
 
     const width = viewportWidth(page)
     expect(await columnsOf(page, 'set-grid')).toBe(width >= 768 ? 2 : 1)
@@ -376,46 +366,26 @@ test.describe('M06 S6 Tracking A set list and Q3', { tag: [moduleTag(6)] }, () =
     await expect(tid(page, 'set-card-1').getByTestId('set-badge')).toHaveText('Set Bersih')
 
     await gotoApp('/spm/ramalan/PSI')
-    await expect(page.locator('[data-testid^=set-card-]').first()).toHaveAttribute(
-      'data-testid',
-      'set-card-4',
-    )
+    await expect(page.locator('[data-testid^=set-card-]')).toHaveCount(1)
+    await expect(tid(page, 'set-card-4')).toBeVisible()
     await expect(tid(page, 'sum-target')).toHaveText('Target Latihan: 40 / set')
 
     await gotoApp('/spm/ramalan/MATH')
-    await expect(page.locator('[data-testid^=set-card-]')).toHaveCount(11)
+    await expect(page.locator('[data-testid^=set-card-]')).toHaveCount(0)
     await expect(tid(page, 'sum-locked')).toHaveText('11 set belum cukup')
-    await expect(page.locator('[data-status=belum_cukup]')).toHaveCount(11)
+    await expect(tid(page, 'subject-empty')).toContainText('Belum Ada Set Tracking A')
 
     await gotoApp('/spm/ramalan/EKON')
     await expect(tid(page, 'sum-ready')).toHaveText('145 soalan kuiz siap guna')
-    await expect(tid(page, 'set-card-7').getByTestId('set-ready')).toHaveText(
-      '19 soalan kuiz siap guna',
-    )
-    await expect(tid(page, 'set-card-8').getByTestId('set-ready')).toHaveText(
-      '18 soalan kuiz siap guna',
-    )
+    await expect(page.locator('[data-testid^=set-card-]')).toHaveCount(0)
 
     await gotoApp('/spm/ramalan/SCI')
     await expect(tid(page, 'sum-ready')).toHaveText('35 soalan kuiz siap guna')
-    await expect(page.locator('[data-testid^=set-card-]').getByTestId('set-ready')).toContainText([
-      '22 soalan kuiz siap guna',
-    ])
-    for (const [n, c] of [
-      [32, '2'],
-      [33, '1'],
-      [34, '1'],
-    ] as const) {
-      await expect(tid(page, `set-card-${String(n)}`).getByTestId('set-ready')).toHaveText(
-        `${c} soalan kuiz siap guna`,
-      )
-    }
+    await expect(page.locator('[data-testid^=set-card-]')).toHaveCount(0)
 
     await gotoApp('/spm/ramalan/CHEM')
     await expect(tid(page, 'sum-ready')).toHaveText('22 soalan kuiz siap guna')
-    await expect(tid(page, 'set-card-9').getByTestId('set-ready')).toHaveText(
-      '2 soalan kuiz siap guna',
-    )
+    await expect(page.locator('[data-testid^=set-card-]')).toHaveCount(0)
   })
 
   test('E2E-M06-22 BA: zero chips, target chip and the empty block', async ({

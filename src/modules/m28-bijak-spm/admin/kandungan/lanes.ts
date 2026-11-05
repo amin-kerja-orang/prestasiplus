@@ -1,5 +1,5 @@
 /** Hub and lane copy (R1-ADM-Q-01, Q-02). The cards themselves come from the API (`overview.cards`). */
-import { SERVABILITY_HUB_COPY, type ServabilityHubLane } from '@pp/contract'
+import { SERVABILITY_HUB_COPY, type ServabilityHubLane, type SpmAdminTrackingACandidate } from '@pp/contract'
 import type { RouteLocationRaw, Router } from 'vue-router'
 
 import { KANDUNGAN_ROUTES, laneRouteOf } from './api'
@@ -82,3 +82,59 @@ export const paperStatusLabel = (code: string): string => PAPER_STATUS_OPTIONS.f
 /** Badge look of a paper status (the label always comes from `paperStatusLabel`). */
 export const paperStatusBadge = (code: string): 'draft' | 'awaiting-review' | 'published' | 'inactive' =>
   code === 'published' ? 'published' : code === 'ready' ? 'awaiting-review' : code === 'withdrawn' ? 'inactive' : 'draft'
+
+/** A unit of the Tracking A draft: a question outside a group, or a whole group. Nothing is committed until `Simpan` (R1-ADM-Q-17). */
+export type TrackingUnit = SpmAdminTrackingACandidate
+
+export const trackingUnitKey = (u: Pick<TrackingUnit, 'kind' | 'id'>): string => `${u.kind}:${u.id}`
+/** A group counts as its number of questions (FR-ADM-Q17.6). */
+export const trackingCount = (units: readonly TrackingUnit[]): number => units.reduce((sum, u) => sum + u.questions, 0)
+
+/** What the draft does not hold yet. */
+export const trackingFree = (draft: readonly TrackingUnit[], candidates: readonly TrackingUnit[]): TrackingUnit[] => {
+  const held = new Set(draft.map(trackingUnitKey))
+  return candidates.filter((c) => !held.has(trackingUnitKey(c)))
+}
+
+export interface TrackingFill {
+  units: TrackingUnit[]
+  added: number
+  /** The group that does not fit, where `Isi set` stopped; the admin decides what to do with it (PO 15). */
+  stopped: { label: string; questions: number; free: number } | null
+}
+
+/** `Isi set`: takes the candidates in order until the set is full, and stops at a group that does not fit. It skips nothing and never splits a group. */
+export function fillTrackingSet(draft: readonly TrackingUnit[], candidates: readonly TrackingUnit[], target: number): TrackingFill {
+  const units = [...draft]
+  let free = target - trackingCount(units)
+  let added = 0
+  for (const unit of trackingFree(draft, candidates)) {
+    if (free <= 0) break
+    if (unit.questions > free) return { units, added, stopped: { label: unit.label, questions: unit.questions, free } }
+    units.push(unit)
+    free -= unit.questions
+    added += 1
+  }
+  return { units, added, stopped: null }
+}
+
+/** `tukar`: the first other candidate that fits in the place of the unit at `index`, a group whole; `null` when none does. */
+export function swapTrackingUnit(draft: readonly TrackingUnit[], index: number, candidates: readonly TrackingUnit[], target: number): TrackingUnit[] | null {
+  const old = draft[index]
+  if (old === undefined) return null
+  const room = target - trackingCount(draft) + old.questions
+  const next = trackingFree(draft, candidates).find((c) => c.questions <= room)
+  if (next === undefined) return null
+  return [...draft.slice(0, index), next, ...draft.slice(index + 1)]
+}
+
+/** `Naik` and `Turun`: a group moves as one row. */
+export function moveTrackingUnit(draft: readonly TrackingUnit[], index: number, by: -1 | 1): TrackingUnit[] {
+  const to = index + by
+  const moved = draft[index]
+  if (moved === undefined || to < 0 || to >= draft.length) return [...draft]
+  const out = draft.filter((_, i) => i !== index)
+  out.splice(to, 0, moved)
+  return out
+}
+

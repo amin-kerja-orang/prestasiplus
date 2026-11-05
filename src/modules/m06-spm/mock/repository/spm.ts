@@ -106,6 +106,7 @@ export const spmRepo = defineRepository({
       const dskpTotal = bankSource ?? readyCount
       return {
         subjectId: row.subjectId,
+        year: row.year,
         setNo: row.setNo,
         status: setStatus(readyCount, bankSource, size),
         readyCount,

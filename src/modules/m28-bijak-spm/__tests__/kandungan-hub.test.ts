@@ -75,7 +75,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-/** The lanes with a screen in this card; Tracking A and Kertas Subjektif arrive with S3-T05 and S3-T06. */
+/** The lanes with a screen; Kertas Subjektif arrives with S3-T06. */
 async function mountAt(component: object, path: string, extraRoutes: RouteRecordRaw[] = []): Promise<void> {
   const stub = { template: '<i/>' }
   const router = createRouter({
@@ -86,6 +86,7 @@ async function mountAt(component: object, path: string, extraRoutes: RouteRecord
       { path: '/admin/spm/simulasi', name: KANDUNGAN_ROUTES.simulasi, component },
       { path: '/admin/spm/subjektif', name: KANDUNGAN_ROUTES.subjektif, component },
       { path: '/admin/spm/latih-tubi', name: KANDUNGAN_ROUTES.latihTubi, component },
+      { path: '/admin/spm/tracking-a', name: KANDUNGAN_ROUTES.trackingA, component },
       { path: '/spm/tahun-lepas', name: 'm06.spm.databank', component: stub },
       { path: '/spm/bijak', name: 'm28.bijak', component: stub },
       { path: '/admin/set-builder/:id', component: stub },
@@ -104,10 +105,10 @@ const cardNames = (): (string | null)[] => [...document.body.querySelectorAll('[
 describe('hub SPM (R1-ADM-Q-01)', () => {
   it('hides a card whose screen is not registered, in the PRD order (FR-ADM-Q01.4)', async () => {
     await mountAt(KandunganHubPage, '/admin/spm')
-    expect(cardNames()).toEqual(['Databank Soalan', 'Subjektif', 'Bijak SPM', 'Latih Tubi'])
+    expect(cardNames()).toEqual(['Databank Soalan', 'Tracking A', 'Subjektif', 'Bijak SPM', 'Latih Tubi'])
     expect(text('[data-testid=kandungan-card-databank]')).toContain('Bank soalan objektif SPM mengikut subjek.')
     expect(text('[data-testid=kandungan-card-simulasi]')).toContain('Kertas SPM penuh dalam format sebenar.')
-    for (const k of ['tracking-a', 'kertas-subjektif']) expect(q(`[data-testid=kandungan-card-${k}]`), k).toBeNull()
+    expect(q('[data-testid=kandungan-card-kertas-subjektif]')).toBeNull()
     expect(text('[data-testid=kandungan-intro]')).toBe(
       'Setiap kad di bawah ialah satu laluan yang pelajar boleh buka. Nombor merah menunjukkan berapa banyak item yang perlu diperiksa.',
     )
@@ -116,7 +117,6 @@ describe('hub SPM (R1-ADM-Q-01)', () => {
   it('shows all six cards in the PRD order once every screen exists (AC-ADM-Q01.1)', async () => {
     const stub = { template: '<i/>' }
     await mountAt(KandunganHubPage, '/admin/spm', [
-      { path: '/admin/spm/tracking-a', name: KANDUNGAN_ROUTES.trackingA, component: stub },
       { path: '/admin/spm/kertas-subjektif', name: KANDUNGAN_ROUTES.kertasSubjektif, component: stub },
     ])
     expect(cardNames()).toEqual(['Databank Soalan', 'Tracking A', 'Subjektif', 'Bijak SPM', 'Kertas Subjektif', 'Latih Tubi'])

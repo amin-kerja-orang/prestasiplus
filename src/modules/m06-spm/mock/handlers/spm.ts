@@ -254,7 +254,6 @@ function trackingSubject(code: string): TrackingASubject | { redirect: string } 
     }
   }
   const sets = spmRepo.setsOf(cfg.subjectId, TRACKING_YEAR)
-  const startable = sets.filter((s) => isStartable(s.status))
   const meta = subjectMeta(cfg.subjectId)
   return {
     code: cfg.code,
@@ -270,8 +269,9 @@ function trackingSubject(code: string): TrackingASubject | { redirect: string } 
       readyQuestions: sumReady(sets),
       belumCukup: sets.filter((s) => s.status === 'belum_cukup').length,
     },
-    // Startable first, then locked, each by set number (FR-M06-49).
-    sets: [...startable, ...sets.filter((s) => !isStartable(s.status))].map((s) => ({
+    // FR-MUR-13-18, AC-MUR-13-11: a set that is not complete is not listed.
+    sets: sets.filter((s) => isStartable(s.status)).map((s) => ({
+      year: s.year,
       setNo: s.setNo,
       status: s.status,
       readyCount: s.readyCount,

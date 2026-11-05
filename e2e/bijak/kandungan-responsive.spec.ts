@@ -21,7 +21,7 @@ test('Kandungan SPM hub and lanes fit the viewport', async ({ page, loginAs, got
   await expect(page.getByTestId('kandungan-card-databank')).toBeVisible()
   await expect(page.getByTestId('kandungan-card-subjektif')).toBeVisible()
   await expect(page.getByTestId('kandungan-card-latih-tubi')).toBeVisible()
-  await expect(page.getByTestId('kandungan-card-tracking-a')).toHaveCount(0) // S3-T05 adds the screen
+  await expect(page.getByTestId('kandungan-card-tracking-a')).toBeVisible()
   await expect(page.getByTestId('kandungan-card-kertas-subjektif')).toHaveCount(0) // S3-T06 adds the screen
   await fits(page, 'kandungan-hub')
 

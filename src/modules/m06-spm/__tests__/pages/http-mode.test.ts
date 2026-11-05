@@ -103,7 +103,7 @@ const HUB = {
 const TRACKING_SUBJECT = {
   code: 'MATH', name: 'Matematik', icon: 'calculator', color: '#EF4444', targetType: 'spm', targetSize: 40,
   summary: { bersih: 0, bankBesar: 1, readyQuestions: 40, belumCukup: 0 },
-  sets: [{ setNo: 1, status: 'bank_besar', readyCount: 40, bankSource: 49, dskpTagged: 49, dskpTotal: 49 }],
+  sets: [{ year: 2026, setNo: 1, status: 'bank_besar', readyCount: 40, bankSource: 49, dskpTagged: 49, dskpTotal: 49 }],
 } satisfies TrackingASubjectResult
 
 const REDIRECT = { redirect: '/latihan-berstruktur?subject_id=1&scope=spm&track=bahasa' } satisfies TrackingASubjectResult

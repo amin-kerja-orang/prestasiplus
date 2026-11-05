@@ -245,11 +245,12 @@ describe('#5 / #6 Tracking A (S5, S6)', () => {
     expect((await get<TrackingAHub>(GURU, '/api/spm/tracking-a')).readiness).toBeNull()
   })
 
-  it('S6 GEO: startable first, then locked by set number; chips', async () => {
+  it('S6 GEO: only the complete set is listed; the chips count all sets', async () => {
     const s = await get<TrackingASubject>(PELAJAR, '/api/spm/tracking-a/GEO')
     expect(s.summary).toEqual({ bersih: 0, bankBesar: 1, readyQuestions: 309, belumCukup: 9 })
-    expect(s.sets.map((x) => x.setNo)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    expect(s.sets.map((x) => x.setNo)).toEqual([1])
     expect(s.sets[0]).toEqual({
+      year: 2026,
       setNo: 1,
       status: 'bank_besar',
       readyCount: 40,
@@ -257,13 +258,13 @@ describe('#5 / #6 Tracking A (S5, S6)', () => {
       dskpTagged: 67,
       dskpTotal: 67,
     })
-    expect(s.sets[8]).toMatchObject({ setNo: 9, status: 'belum_cukup', readyCount: 20 })
+    expect(s.sets.some((x) => x.status === 'belum_cukup')).toBe(false)
     expect(s.targetType).toBe('spm')
   })
 
-  it('S6 PSI puts set 4 (40) first; MATH has 11 locked sets; PERNIAGA is empty', async () => {
+  it('S6 PSI lists set 4 (40) alone; MATH has 11 locked sets, none listed; PERNIAGA is empty', async () => {
     const psi = await get<TrackingASubject>(PELAJAR, '/api/spm/tracking-a/PSI')
-    expect(psi.sets.map((x) => x.setNo)).toEqual([4, 3, 5, 6, 7, 8])
+    expect(psi.sets.map((x) => x.setNo)).toEqual([4])
     expect(psi.sets[0]?.status).toBe('bersih')
     const math = await get<TrackingASubject>(PELAJAR, '/api/spm/tracking-a/MATH')
     expect(math.summary).toMatchObject({ belumCukup: 11, readyQuestions: 362 })

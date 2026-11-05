@@ -2910,6 +2910,26 @@
       "approved_by_card": "S3-T03"
     },
     {
+      "key": "/admin/spm/tracking-a|",
+      "path": "/admin/spm/tracking-a",
+      "name": null,
+      "status": "canonical",
+      "sector": "S3",
+      "component": "src/modules/m28-bijak-spm/admin/kandungan/pages/TrackingAListPage.vue",
+      "file": "src/modules/m28-bijak-spm/routes/admin-kandungan.ts",
+      "approved_by_card": "S3-T05"
+    },
+    {
+      "key": "/admin/spm/tracking-a/:set/sunting|",
+      "path": "/admin/spm/tracking-a/:set/sunting",
+      "name": null,
+      "status": "canonical",
+      "sector": "S3",
+      "component": "src/modules/m28-bijak-spm/admin/kandungan/pages/TrackingASetEditorPage.vue",
+      "file": "src/modules/m28-bijak-spm/routes/admin-kandungan.ts",
+      "approved_by_card": "S3-T05"
+    },
+    {
       "key": "/admin/spm/simulasi|",
       "path": "/admin/spm/simulasi",
       "name": null,

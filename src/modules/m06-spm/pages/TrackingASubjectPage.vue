@@ -2,9 +2,9 @@
 /**
  * S6 `/spm/ramalan/:code` "Tracking A SPM — {Subjek}" (M06-T3; FR-M06-42, 48…50, BR-M06-08).
  *
- * Summary chips, h2 "Tracking A 2026" and the set cards: startable first (links to `?year=2026&set=n`,
- * which opens Q3), then locked (inert). A subject without sets shows the empty block. BM and BI answer
- * a redirect to S7 and are replaced at once; an unknown code is the global 404 page.
+ * Summary chips, then per year (newest first, D-14) an h2 "Tracking A {tahun}" and the set cards, which link to `?year=&set=` and open
+ * Q3. A set that is not complete is not listed (FR-MUR-13-18, AC-MUR-13-11). A subject without a listed set shows the empty block. BM and
+ * BI answer a redirect to S7 and are replaced at once; an unknown code is the global 404 page.
  */
 import { computed, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
@@ -19,7 +19,7 @@ import { subjectGlyph } from '@/modules/m05-practice'
 import { fetchTrackingASubject, type TrackingASubject } from '../api'
 import SkeletonCards from '../components/SkeletonCards.vue'
 import { targetName } from '../lib/latih-tubi'
-import { SET_STATUS, dskpLine, isStartable, setHref, setSize } from '../lib/tracking'
+import { SET_STATUS, dskpLine, setHref, setRowTitle, setsByYear, setSize } from '../lib/tracking'
 import { LOAD_ERROR } from '../lib/copy'
 
 const route = useRoute()
@@ -74,7 +74,7 @@ const hasTarget = computed(
   () => subject.value?.targetType != null && subject.value.targetSize != null,
 )
 const size = computed(() => setSize(subject.value?.targetSize ?? null))
-
+const years = computed(() => setsByYear(subject.value?.sets ?? []))
 </script>
 
 <template>
@@ -140,69 +140,50 @@ const size = computed(() => setSize(subject.value?.targetSize ?? null))
       </div>
 
       <template v-if="subject.sets.length > 0">
-        <h2 class="flex items-center gap-2 text-heading text-highlighted" data-testid="year-heading">
-          <UIcon name="i-ph-calendar-blank-duotone" class="size-6 text-primary-t" aria-hidden="true" />
-          Tracking A 2026
-        </h2>
-        <div class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4" data-testid="set-grid">
-          <component
-            :is="isStartable(s.status) ? RouterLink : 'div'"
-            v-for="s in subject.sets"
-            :key="s.setNo"
-            v-bind="
-              isStartable(s.status)
-                ? { to: setHref(subject.code, s.setNo) }
-                : { 'data-inert': 'true' }
-            "
-            :class="isStartable(s.status) ? 'block min-w-0' : 'block min-w-0 pointer-events-none'"
-            :data-testid="`set-card-${s.setNo}`"
-            :data-status="s.status"
-          >
-            <UCard class="h-full" :ui="{ body: 'flex items-center gap-3 p-4' }">
-              <div class="flex min-w-0 flex-1 flex-col gap-1">
-                <div class="flex flex-wrap items-center gap-2">
-                  <h3 class="text-subheading text-highlighted" data-testid="set-title">
-                    Set {{ s.setNo }}
-                  </h3>
-                  <UBadge :color="SET_STATUS[s.status].color" variant="soft" data-testid="set-badge">{{
-                    SET_STATUS[s.status].label
-                  }}</UBadge>
+        <template v-for="y in years" :key="y.year">
+          <h2 class="flex items-center gap-2 text-heading text-highlighted" data-testid="year-heading">
+            <UIcon name="i-ph-calendar-blank-duotone" class="size-6 text-primary-t" aria-hidden="true" />
+            Tracking A {{ y.year }}
+          </h2>
+          <div class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4" data-testid="set-grid">
+            <RouterLink
+              v-for="s in y.sets"
+              :key="`${s.year}:${s.setNo}`"
+              :to="setHref(subject.code, s.year, s.setNo)"
+              class="block min-w-0"
+              :data-testid="`set-card-${s.setNo}`"
+              :data-status="s.status"
+            >
+              <UCard class="h-full" :ui="{ body: 'flex items-center gap-3 p-4' }">
+                <div class="flex min-w-0 flex-1 flex-col gap-1">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <h3 class="text-subheading text-highlighted" data-testid="set-title">
+                      {{ setRowTitle(s) }}
+                    </h3>
+                    <UBadge :color="SET_STATUS[s.status].color" variant="soft" data-testid="set-badge">{{
+                      SET_STATUS[s.status].label
+                    }}</UBadge>
+                  </div>
+                  <p class="text-body text-default" data-testid="set-ready">
+                    {{ formatCount(s.readyCount) }} soalan kuiz siap guna
+                  </p>
+                  <p v-if="hasTarget" class="text-caption text-muted" data-testid="set-format">
+                    Format set: {{ s.readyCount }} / {{ size }}
+                  </p>
+                  <p v-if="s.status === 'bank_besar'" class="text-caption text-info" data-testid="set-bank">
+                    Bank source: {{ s.bankSource }}. Sistem tetap ambil {{ size }} soalan ikut prioriti
+                    semasa.
+                  </p>
+                  <p class="inline-flex items-center gap-1 text-caption text-muted" data-testid="set-dskp">
+                    <UIcon name="i-ph-tag-bold" class="size-3.5" aria-hidden="true" />
+                    {{ dskpLine(s) }}
+                  </p>
                 </div>
-                <p class="text-body text-default" data-testid="set-ready">
-                  {{ formatCount(s.readyCount) }} soalan kuiz siap guna
-                </p>
-                <p
-                  v-if="hasTarget || !isStartable(s.status)"
-                  class="text-caption text-muted"
-                  data-testid="set-format"
-                >
-                  Format set: {{ s.readyCount }} / {{ size }}
-                </p>
-                <p v-if="s.status === 'bank_besar'" class="text-caption text-info" data-testid="set-bank">
-                  Bank source: {{ s.bankSource }}. Sistem tetap ambil {{ size }} soalan ikut prioriti
-                  semasa.
-                </p>
-                <p
-                  v-if="s.status === 'belum_cukup'"
-                  class="text-caption text-warning"
-                  data-testid="set-locked-note"
-                >
-                  Belum cukup soalan untuk format KPM.
-                </p>
-                <p class="inline-flex items-center gap-1 text-caption text-muted" data-testid="set-dskp">
-                  <UIcon name="i-ph-tag-bold" class="size-3.5" aria-hidden="true" />
-                  {{ dskpLine(s) }}
-                </p>
-              </div>
-              <DsIconChip
-                :icon="isStartable(s.status) ? 'i-ph-play-bold' : 'i-ph-lock-bold'"
-                :accent="isStartable(s.status) ? 'action' : 'trial'"
-                size="sm"
-                data-testid="set-tile"
-              />
-            </UCard>
-          </component>
-        </div>
+                <DsIconChip icon="i-ph-play-bold" accent="action" size="sm" data-testid="set-tile" />
+              </UCard>
+            </RouterLink>
+          </div>
+        </template>
       </template>
       <UCard v-else data-testid="subject-empty">
         <DsEmptyState

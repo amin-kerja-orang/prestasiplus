@@ -39,6 +39,18 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../admin/kandungan/pages/LaneLatihTubiPage.vue'),
     meta: { ...base, title: 'Latih Tubi - Admin PRESTASIPLUS', header: { title: 'Latih Tubi' } },
   },
+  {
+    path: '/admin/spm/tracking-a',
+    name: KANDUNGAN_ROUTES.trackingA,
+    component: () => import('../admin/kandungan/pages/TrackingAListPage.vue'),
+    meta: { ...base, title: 'Tracking A - Admin PRESTASIPLUS', header: { title: 'Tracking A' } },
+  },
+  {
+    path: '/admin/spm/tracking-a/:set/sunting',
+    name: KANDUNGAN_ROUTES.trackingAEdit,
+    component: () => import('../admin/kandungan/pages/TrackingASetEditorPage.vue'),
+    meta: { ...base, title: 'Tracking A - Admin PRESTASIPLUS', header: { title: 'Tracking A' } },
+  },
 ]
 
 export default routes

@@ -134,6 +134,7 @@ export interface TrackingAHub {
 }
 
 export interface TrackingASetCard {
+  year: number
   setNo: number
   status: SetStatus
   readyCount: number

@@ -9,12 +9,12 @@
 import { RouterLink } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsBackLink, DsCharacterCard, DsIconChip, DsPage, DsPanel, DsLoadError } from '@/ds'
+import { DsBackLink, DsCharacterCard, DsIconChip, DsLoadError, DsPage, DsPanel, DsText } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import { fetchTrackingAHub } from '../api'
 import SkeletonCards from '../components/SkeletonCards.vue'
-import { bahasaHref, lockChip, targetChip, tileTarget } from '../lib/tracking'
+import { TRACKING_EMPTY_TEXT, bahasaHref, lockChip, targetChip, tileTarget } from '../lib/tracking'
 import { LOAD_ERROR } from '../lib/copy'
 
 const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal }))
@@ -245,7 +245,10 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
       </section>
 
       <!-- Open objective subjects -->
-      <section data-testid="open-section">
+      <UCard v-if="data.openSubjects.length === 0" data-testid="open-empty">
+        <DsText as="p" variant="body" tone="muted">{{ TRACKING_EMPTY_TEXT }}</DsText>
+      </UCard>
+      <section v-else data-testid="open-section">
         <ul
           data-testid="open-subjects"
           class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3"

@@ -8,7 +8,10 @@ import {
   lockChip,
   parseSetQuery,
   setHref,
+  setRowTitle,
+  setsByYear,
   setSize,
+  TRACKING_EMPTY_TEXT,
   subjektifHref,
   tabSubjects,
   targetChip,
@@ -37,7 +40,11 @@ describe('tracking lib', () => {
     expect(targetChip('latihan', 20)).toBe('Target Latihan: 20')
     expect(tileTarget('BM', 34)).toBe('BM · Target set: 34 soalan')
     expect(lockChip({ setNo: 1, readyCount: 9, target: 34 })).toBe('2026 Set 1 · 9/34')
-    expect(setHref('GEO', 1)).toBe('/spm/ramalan/GEO?year=2026&set=1')
+    expect(setHref('GEO', 2026, 1)).toBe('/spm/ramalan/GEO?year=2026&set=1')
+    expect(setHref('GEO', 2025, 3)).toBe('/spm/ramalan/GEO?year=2025&set=3')
+    expect(setRowTitle({ year: 2026, setNo: 1 })).toBe('2026 · Set 1')
+    expect(setsByYear([{ year: 2026, setNo: 1 }, { year: 2026, setNo: 2 }, { year: 2025, setNo: 1 }]).map((g) => [g.year, g.sets.length])).toEqual([[2026, 2], [2025, 1]])
+    expect(TRACKING_EMPTY_TEXT).toBe('Tiada set objektif Tracking A yang bersedia lagi. Set sedang dibina — semua set semasa masih dalam proses pengisian. Semak semula tidak lama lagi!')
     expect(bahasaHref(2)).toBe('/latihan-berstruktur?subject_id=2&scope=spm&track=bahasa')
     expect(subjektifHref(17)).toBe('/latihan-berstruktur?subject_id=17&scope=spm')
   })

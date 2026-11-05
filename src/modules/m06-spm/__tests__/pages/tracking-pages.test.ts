@@ -283,6 +283,7 @@ const geoSubject: TrackingASubject = {
   summary: { bersih: 0, bankBesar: 1, readyQuestions: 309, belumCukup: 9 },
   sets: [
     {
+      year: 2026,
       setNo: 1,
       status: 'bank_besar',
       readyCount: 40,
@@ -291,18 +292,30 @@ const geoSubject: TrackingASubject = {
       dskpTotal: 67,
     },
     {
+      year: 2025,
       setNo: 2,
-      status: 'belum_cukup',
-      readyCount: 31,
+      status: 'bersih',
+      readyCount: 40,
       bankSource: null,
       dskpTagged: 31,
-      dskpTotal: 31,
+      dskpTotal: 40,
     },
   ],
 }
 
+describe('S5 TrackingAHubPage, nothing ready (AC-MUR-13-11)', () => {
+  it('shows the exact empty text and no subject list', async () => {
+    api.fetchTrackingAHub.mockResolvedValue({ ...hub(null), openSubjects: [] })
+    const w = await render(TrackingAHubPage, '/spm/ramalan')
+    expect(t(w, 'open-empty').text()).toBe(
+      'Tiada set objektif Tracking A yang bersedia lagi. Set sedang dibina — semua set semasa masih dalam proses pengisian. Semak semula tidak lama lagi!',
+    )
+    expect(w.find('[data-testid=open-subjects]').exists()).toBe(false)
+  })
+})
+
 describe('S6 TrackingASubjectPage', () => {
-  it('renders the header, chips and the startable then locked cards', async () => {
+  it('renders the header, chips and the complete sets of every year, newest first (D-14, FR-MUR-13-18)', async () => {
     api.fetchTrackingASubject.mockResolvedValue(geoSubject)
     const w = await render(TrackingACodePage, '/spm/ramalan/GEO')
     expect(api.fetchTrackingASubject).toHaveBeenCalledWith('GEO', expect.anything())
@@ -314,7 +327,7 @@ describe('S6 TrackingASubjectPage', () => {
     expect(t(w, 'sum-ready').text()).toBe('309 soalan kuiz siap guna')
     expect(t(w, 'sum-locked').text()).toBe('9 set belum cukup')
     expect(t(w, 'sum-target').text()).toBe('Target SPM: 40 / set')
-    expect(t(w, 'year-heading').text()).toBe('Tracking A 2026')
+    expect(w.findAll('[data-testid=year-heading]').map((h) => h.text())).toEqual(['Tracking A 2026', 'Tracking A 2025'])
 
     const one = t(w, 'set-card-1')
     expect(one.attributes('href')).toBe('/spm/ramalan/GEO?year=2026&set=1')
@@ -324,15 +337,12 @@ describe('S6 TrackingASubjectPage', () => {
     )
     expect(one.get('[data-testid=set-dskp]').text()).toBe('DSKP: 67/67 (100%)')
     expect(one.get('[data-testid=set-format]').text()).toBe('Format set: 40 / 40')
+    expect(one.get('[data-testid=set-title]').text()).toBe('2026 · Set 1')
 
     const two = t(w, 'set-card-2')
-    expect(two.attributes('href')).toBeUndefined()
-    expect(two.classes()).toContain('pointer-events-none')
-    expect(two.get('[data-testid=set-badge]').text()).toBe('Belum Cukup')
-    expect(two.get('[data-testid=set-locked-note]').text()).toBe(
-      'Belum cukup soalan untuk format KPM.',
-    )
-    expect(two.get('[data-testid=set-format]').text()).toBe('Format set: 31 / 40')
+    expect(two.attributes('href')).toBe('/spm/ramalan/GEO?year=2025&set=2')
+    expect(two.get('[data-testid=set-title]').text()).toBe('2025 · Set 2')
+    expect(w.find('[data-testid=set-locked-note]').exists()).toBe(false)
   })
 
   it('has no target line, no "Format set" and no locked chip for AKAUN', async () => {
@@ -345,6 +355,7 @@ describe('S6 TrackingASubjectPage', () => {
       summary: { bersih: 1, bankBesar: 0, readyQuestions: 40, belumCukup: 0 },
       sets: [
         {
+          year: 2026,
           setNo: 1,
           status: 'bersih',
           readyCount: 40,
