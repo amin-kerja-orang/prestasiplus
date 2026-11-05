@@ -474,6 +474,22 @@ describe('stimulus flags, regroup and undo (S1-T07 part 2, real database)', () =
       expect(detail.body.data.flags).toEqual([])
     })
 
+    it('[CI] AC-QA-32 rejected=true|false reads rejection_reason (DM-58): status=draft&rejected=true lists the rejected, false the rest; the bulk filter accepts it', async () => {
+      const rej = await served('Soalan ditolak untuk penapis. Tolak.')
+      const ok = await served('Soalan tidak ditolak untuk penapis. Tolak.')
+      await q(`update question_versions set status = 'draft', rejection_reason = 'Gambar rajah tidak jelas.' where question_id = $1`, [rej])
+      const yes = (await list('status=draft&rejected=true')).data.map((r) => r.id)
+      expect(yes).toContain(rej)
+      expect(yes).not.toContain(ok)
+      expect((await list('rejected=false')).data.map((r) => r.id)).toEqual(expect.arrayContaining([ok]))
+      expect((await list('rejected=false')).data.map((r) => r.id)).not.toContain(rej)
+      const dry = await admin.post('/api/questions/bulk-action/filter', { action: 'archived', filter: { status: 'draft', rejected: 'true' }, dryRun: true })
+      expect(dry.status, JSON.stringify(dry.body)).toBe(200)
+      const bad = await admin.get('/api/questions?rejected=maybe')
+      expect(bad.status).toBe(422)
+      expect(bad.body.error.fields.rejected).toBe(QUESTION_MESSAGES.filterInvalid)
+    })
+
     it('[CI] AC-ADM-QE3.14 scope note: a bad value of any new filter is 422 "Nilai penapis tidak sah."', async () => {
       for (const qs of ['tingkatan=T9', 'chapter=abc', 'source=lain', 'flag=lain']) {
         const res = await admin.get(`/api/questions?${qs}`)

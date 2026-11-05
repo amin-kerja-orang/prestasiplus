@@ -245,6 +245,8 @@ export interface AdminListFilter {
   source?: 'manual' | 'pdf' | 'csv' | 'guru'
   q?: string
   flag?: 'stimulus_missing' | 'figure_only' | 'stem_duplicated'
+  /** DM-58: rejection reason present (`true`) or absent (`false`). */
+  rejected?: 'true' | 'false'
   /** Keyset paging for `listIds`: only ids below this one (then `page` is ignored and no offset is used). */
   idBelow?: string
 }

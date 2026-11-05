@@ -108,7 +108,7 @@ function pageOf(text: string | undefined, max: number, fallback: number, key: st
 /** `GET /questions`. Unknown filter values match nothing; a bad `status` is a 422 on `status`. */
 export function parseAdminList(raw: unknown): AdminListFilter {
   const fields = newFields()
-  const q = cleanQuery(raw, ['page', 'pageSize', 'subjectId', 'educationLevelId', 'difficultyLevel', 'status', 'dskpFilter', 'complianceFilter', 'sourceFilter', 'search', 'tagReview', 'missing', 'tahun', 'negeri', 'kertas', 'jenis', 'tingkatan', 'chapter', 'unit', 'source', 'q', 'flag'], fields)
+  const q = cleanQuery(raw, ['page', 'pageSize', 'subjectId', 'educationLevelId', 'difficultyLevel', 'status', 'dskpFilter', 'complianceFilter', 'sourceFilter', 'search', 'tagReview', 'missing', 'tahun', 'negeri', 'kertas', 'jenis', 'tingkatan', 'chapter', 'unit', 'source', 'q', 'flag', 'rejected'], fields)
   const page = pageOf(q.page, MAX_PAGE, 1, 'page', fields)
   const pageSize = pageOf(q.pageSize, 100, ADMIN_PAGE_SIZE, 'pageSize', fields)
   for (const key of ['subjectId', 'educationLevelId', 'difficultyLevel', 'dskpFilter', 'complianceFilter', 'sourceFilter'] as const) {
@@ -153,6 +153,7 @@ function filterV2Fields(d: {
   source?: AdminListFilter['source'] | undefined
   q?: string | undefined
   flag?: AdminListFilter['flag'] | undefined
+  rejected?: AdminListFilter['rejected'] | undefined
 }): Partial<AdminListFilter> {
   return {
     ...(d.tahun === undefined ? {} : { tahun: d.tahun }),
@@ -166,6 +167,7 @@ function filterV2Fields(d: {
     ...(d.source === undefined ? {} : { source: d.source }),
     ...(d.q === undefined ? {} : { q: d.q }),
     ...(d.flag === undefined ? {} : { flag: d.flag }),
+    ...(d.rejected === undefined ? {} : { rejected: d.rejected }),
   }
 }
 

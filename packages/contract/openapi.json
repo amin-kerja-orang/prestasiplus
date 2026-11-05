@@ -40718,6 +40718,13 @@
               "figure_only",
               "stem_duplicated"
             ]
+          },
+          "rejected": {
+            "type": "string",
+            "enum": [
+              "true",
+              "false"
+            ]
           }
         },
         "additionalProperties": false
@@ -104595,6 +104602,18 @@
             },
             "required": false,
             "name": "flag",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "required": false,
+            "name": "rejected",
             "in": "query"
           }
         ],

@@ -196,6 +196,8 @@ export const questionFilterShape = {
   q: z.string().max(100, 'Carian tidak boleh melebihi 100 aksara.').optional(),
   /** An OPEN flag (not dismissed) on the version the list shows. */
   flag: z.enum(STIMULUS_FLAGS, QUESTION_MESSAGES.filterInvalid).optional(),
+  /** DM-58 (AC-QA-32): `true` = a question with a rejection reason (the chip "Ditolak"), `false` = none. */
+  rejected: z.enum(['true', 'false'], QUESTION_MESSAGES.filterInvalid).optional(),
 } as const
 
 export const QuestionListQuerySchema = PageQuerySchema.extend(questionFilterShape).meta({ id: 'QuestionListQuery' })

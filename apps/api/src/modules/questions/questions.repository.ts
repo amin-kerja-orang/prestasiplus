@@ -735,6 +735,7 @@ export class QuestionsRepository {
     }
     // The OPEN flag of the version the list shows (dismissed = not open).
     if (f.flag !== undefined) conds.push(Prisma.sql`(v.stimulus_flag = ${f.flag} AND v.flag_dismissed_at IS NULL)`)
+    if (f.rejected !== undefined) conds.push(f.rejected === 'true' ? Prisma.sql`v.rejection_reason IS NOT NULL` : Prisma.sql`v.rejection_reason IS NULL`)
     return conds
   }
 
