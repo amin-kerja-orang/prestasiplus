@@ -230,6 +230,9 @@ function shapeArraySql(candidates: Prisma.Sql, shape: QuestionFilter['mcqShape']
     GROUP BY sp.question_version_id HAVING ${Prisma.join(having, ' AND ')})`
 }
 
+/** The base of `GET /questions/summary` and the Admin Pusat dashboard counts: latest version, no PKSK, no Darjah (aliases `q`, `v`). */
+const SUMMARY_BASE = Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no WHERE ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL}`
+
 const NO_STATUS_COUNTS = (): Record<QuestionStatus, number> => ({ draft: 0, review: 0, approved: 0, archived: 0 })
 
 /**
@@ -722,7 +725,7 @@ export class QuestionsRepository {
   async subjectTotals(): Promise<{ total: number; bySubject: Map<string, { total: number; published: number }> }> {
     const rows = await this.db.$queryRaw<{ subject_id: bigint | null; total: number; published: number }[]>`
       SELECT v.subject_id, count(*)::int AS total, count(q.live_version_no)::int AS published
-      FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no WHERE ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL} GROUP BY 1`
+      ${SUMMARY_BASE} GROUP BY 1`
     const bySubject = new Map<string, { total: number; published: number }>()
     let total = 0
     for (const r of rows) {
@@ -730,6 +733,25 @@ export class QuestionsRepository {
       if (r.subject_id !== null) bySubject.set(idToString(r.subject_id), { total: r.total, published: r.published })
     }
     return { total, bySubject }
+  }
+
+  /**
+   * Questions per latest-version status and those created at or after `since`, over the SAME base as `subjectTotals` (S6-T11, the Admin Pusat
+   * dashboard), so the dashboard total always equals the summary total.
+   */
+  async statusSummary(since: Date): Promise<{ total: number; byStatus: Record<QuestionStatus, number>; createdSince: number }> {
+    const rows = await this.db.$queryRaw<{ status: string; n: number; recent: number }[]>`
+      SELECT v.status AS status, count(*)::int AS n, (count(*) FILTER (WHERE q.created_at >= ${since}))::int AS recent
+      ${SUMMARY_BASE} GROUP BY 1`
+    const byStatus = NO_STATUS_COUNTS()
+    let total = 0
+    let createdSince = 0
+    for (const r of rows) {
+      total += r.n
+      createdSince += r.recent
+      if (isQuestionStatus(r.status)) byStatus[r.status] = r.n
+    }
+    return { total, byStatus, createdSince }
   }
 
   /** The owner of a question (decimal id) or `undefined` when the question does not exist. */
@@ -1377,6 +1399,18 @@ export class QuestionsRepository {
       lastEditor: c.lastEditor ?? 'person',
       declaredMarks: c.declaredMarks ?? null,
     }
+  }
+
+  /** D12: the OPEN flag of the LIVE approved version of each question (one query), by question id. Absent = none. */
+  async openLiveFlags(ids: readonly string[]): Promise<Map<string, 'stimulus_missing' | 'figure_only' | 'stem_duplicated'>> {
+    const keys = ids.map(bi).filter((k): k is bigint => k !== null)
+    const out = new Map<string, 'stimulus_missing' | 'figure_only' | 'stem_duplicated'>()
+    if (keys.length === 0) return out
+    const rows = await this.db.$queryRaw<{ id: bigint; flag: string }[]>`
+      SELECT q.id, v.stimulus_flag AS flag FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
+       WHERE q.id IN (${Prisma.join(keys)}) AND v.status = 'approved' AND v.stimulus_flag IS NOT NULL AND v.flag_dismissed_at IS NULL`
+    for (const r of rows) out.set(idToString(r.id), r.flag as 'stimulus_missing' | 'figure_only' | 'stem_duplicated')
+    return out
   }
 
   /** DM-05: stores the stimulus flag of one version (`refreshStimulusFlag` of effective-leaf.ts, the one writer). */
