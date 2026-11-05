@@ -86,6 +86,20 @@ describe('FR-GUR-10-1 Guru index route', () => {
     expect((index?.beforeEnter as Guard)()).toBe(true)
   })
 
+  it('a teacher may open only their own school drill-downs; another school goes back to the index', () => {
+    const guard = (name: string, schoolId: string) =>
+      ((guru.find((r) => r.name === name)?.beforeEnter) as (to: unknown) => unknown)({
+        params: { schoolId },
+      })
+    for (const name of ['g-sekolah', 'g-pelajar', 'g-guru']) {
+      login('teacher')
+      expect(guard(name, '5')).toBe(true)
+      expect(guard(name, '6')).toBe('/guru/monitoring')
+      login('admin')
+      expect(guard(name, '6')).toBe(true)
+    }
+  })
+
   it('the default mount (overview) has no guard and the no-"T4/T5" subtitle', () => {
     const overview = routes.find((r) => r.name === 'x-monitoring')
     expect(overview?.beforeEnter).toBeUndefined()

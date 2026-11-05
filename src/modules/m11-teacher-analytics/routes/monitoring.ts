@@ -55,6 +55,12 @@ export function monitoringRoutes({
     module: 'M11' as const,
     v2: true,
   }
+  // A teacher may open only their own school's drill-downs; another school's id goes back to the index.
+  const ownSchoolGuard = (to: RouteLocationNormalized) => {
+    const user = useSessionStore().user
+    if (user?.role !== 'teacher') return true
+    return String(to.params.schoolId) === String(user.schoolId) ? true : prefix
+  }
   return [
     ownSchool
       ? {
@@ -83,6 +89,7 @@ export function monitoringRoutes({
     {
       path: `${prefix}/sekolah/:schoolId(\\d+)`,
       name: `${name}-sekolah`,
+      beforeEnter: ownSchoolGuard,
       component: () => import('../pages/MonitoringSchoolPage.vue'),
       props: (route) => ({ basePath: prefix, schoolId: routeId(route, 'schoolId') }),
       meta: { ...meta, title: 'Monitoring', header: { title: 'Detail Sekolah' } },
@@ -90,6 +97,7 @@ export function monitoringRoutes({
     {
       path: `${prefix}/sekolah/:schoolId(\\d+)/pelajar/:userId(\\d+)`,
       name: `${name}-pelajar`,
+      beforeEnter: ownSchoolGuard,
       component: () => import('../pages/MonitoringStudentPage.vue'),
       props: (route) => ({
         basePath: prefix,
@@ -101,6 +109,7 @@ export function monitoringRoutes({
     {
       path: `${prefix}/sekolah/:schoolId(\\d+)/guru/:userId(\\d+)`,
       name: `${name}-guru`,
+      beforeEnter: ownSchoolGuard,
       component: () => import('../pages/MonitoringTeacherPage.vue'),
       props: (route) => ({
         basePath: prefix,

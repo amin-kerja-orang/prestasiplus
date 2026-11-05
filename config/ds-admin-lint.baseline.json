@@ -740,7 +740,7 @@
       "pp/ds-ui-allowlist": 1
     },
     "src/modules/m11-teacher-analytics/components/monitoring/monitoring-format.ts": {
-      "pp/ds-no-class-literal-in-script": 9
+      "pp/ds-no-class-literal-in-script": 8
     },
     "src/modules/m11-teacher-analytics/components/monitoring/MonitoringEngagementTable.vue": {
       "pp/ds-no-raw-html": 16,

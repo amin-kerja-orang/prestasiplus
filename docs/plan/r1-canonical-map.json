@@ -10383,7 +10383,8 @@
       "sector": "S7",
       "file": "apps/api/prisma/schema/gamification.prisma",
       "approved_by_card": null
-    },    {
+    },
+    {
       "name": "RewardSetting",
       "table": "reward_settings",
       "status": "canonical",
@@ -10409,7 +10410,6 @@
       "file": "apps/api/prisma/schema/gamification.prisma",
       "approved_by_card": null
     },
-
     {
       "name": "User",
       "table": "users",
