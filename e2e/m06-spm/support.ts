@@ -1,6 +1,6 @@
 /** Shared helpers of the M06 specs (M06-T2). */
 
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 import { expect } from './fixtures'
 
@@ -10,6 +10,22 @@ export const ADMIN = 'admin@demo.test'
 export const NOT_FOUND = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 
 export const tid = (page: Page, id: string) => page.getByTestId(id)
+
+/**
+ * The page title printed in the shell header, whichever v2 frame the role gets: the Pembelajaran
+ * navbar (`h1`, or `shell-title` on a page that owns its `h1`) or the Portal Pentadbiran navbar (`h1`).
+ */
+export const shellTitle = (page: Page) =>
+  page
+    .locator('[data-testid=pembelajaran-header], [data-testid=pentadbiran-header]')
+    .locator('h1, [data-testid=shell-title]')
+
+/** The figure of each `DsStatTile` under `scope` (the tiles have no part test ids on these pages). */
+export const statValues = (scope: Locator) => scope.locator('[data-ds=stat-tile] span.tabular')
+
+/** The label printed under the figure of each `DsStatTile` under `scope`. */
+export const statLabels = (scope: Locator) =>
+  scope.locator('[data-ds=stat-tile] span.tabular + span')
 
 /** Number of tracks of a CSS grid container. */
 export const columnsOf = (page: Page, testId: string) =>

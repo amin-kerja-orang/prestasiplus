@@ -163,4 +163,4 @@ export const REPORT_REASONS_MAX = 8
 export const REPORT_NOTES_MAX = 1000
 
 /** S14 network-failure text (FR-M04-69; the `failureText` prop default). */
-export const REPORT_FAILURE_TEXT = 'Ralat. Sila cuba lagi.'
+export const REPORT_FAILURE_TEXT = 'Gagal menghantar laporan. Sila cuba lagi.'

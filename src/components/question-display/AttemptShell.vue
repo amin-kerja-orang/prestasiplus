@@ -14,6 +14,7 @@ import '@/ds/states.css'
     <div
       class="fixed inset-0 z-50 flex h-dvh flex-col bg-default text-default"
       data-testid="attempt-shell"
+      data-qd="attempt-shell"
     >
       <div class="shrink-0 px-3 pt-3 pb-2 sm:px-6" data-part="header">
         <slot name="header" />

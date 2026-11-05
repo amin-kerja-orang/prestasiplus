@@ -9,7 +9,11 @@ import {
   ServabilityBatchRequestSchema,
   ServabilityBatchResultSchema,
   ServabilityDatabankRowSchema,
+  ServabilityLaneAttentionSchema,
   ServabilityLaneQuerySchema,
+  ServabilityLaneRowSchema,
+  ServabilityLatihTubiCellSchema,
+  ServabilityLatihTubiLaneSchema,
   ServabilityLaneSubjectSchema,
   servabilityLaneListOf,
   ServabilityOverviewActivitySchema,
@@ -40,6 +44,9 @@ export const SERVABILITY_COMPONENT_SCHEMAS = {
   ServabilityOverview: ServabilityOverviewSchema,
   ServabilityLaneQuery: ServabilityLaneQuerySchema,
   ServabilityLaneSubject: ServabilityLaneSubjectSchema,
+  ServabilityLaneAttention: ServabilityLaneAttentionSchema,
+  ServabilityLaneRow: ServabilityLaneRowSchema,
+  ServabilityLatihTubiCell: ServabilityLatihTubiCellSchema,
   ServabilityDatabankRow: ServabilityDatabankRowSchema,
   ServabilityAttentionCount: ServabilityAttentionCountSchema,
   ServabilityPaperRow: ServabilityPaperRowSchema,
@@ -125,4 +132,17 @@ export function registerServabilityPaths(registry: OpenAPIRegistry): void {
     request: { query: ServabilityLaneQuerySchema },
     responses: { 200: json(servabilityLaneListOf(ServabilityPaperRowSchema), 'A page of papers, newest first, and `subjects` (the options of the Subjek filter). `status` is draft, ready, published or withdrawn.'), 401: unauthorized, 403: forbidden, 422: invalid },
   })
+  const lane = (name: string, summary: string, schema: z.ZodType, description: string) =>
+    registry.registerPath({
+      method: 'get',
+      path: `/admin/servability/lanes/${name}`,
+      tags,
+      summary,
+      request: { query: ServabilityLaneQuerySchema },
+      responses: { 200: json(schema, description), 401: unauthorized, 403: forbidden, 422: invalid },
+    })
+  lane('latih-tubi', 'Lane "Latih Tubi": subjects x Tingkatan with servable counts and the switch state', ServabilityLatihTubiLaneSchema, 'A page of cells; `count` counts questions; `meta.switchEnabled` is the `latih-tubi` switch. `status` is ignored.')
+  lane('tracking-a', 'Lane "Tracking A": one row per set, with the sets that are not complete', servabilityLaneListOf(ServabilityLaneRowSchema), 'A page of sets, sorted by title. `status` is ignored.')
+  lane('subjektif', 'Lane "Subjektif": structured and essay questions', servabilityLaneListOf(ServabilityLaneRowSchema), 'A page of questions, newest first. `status` filters the lifecycle code.')
+  lane('kertas-subjektif', 'Lane "Kertas Subjektif": the Kertas Subjektif papers', servabilityLaneListOf(ServabilityLaneRowSchema), 'A page of papers, newest first; empty until papers carry a surface (DM-23).')
 }

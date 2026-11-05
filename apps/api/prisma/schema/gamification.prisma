@@ -228,6 +228,8 @@ model DrawTicket {
   id        BigInt   @id @default(autoincrement())
   drawId    BigInt   @map("draw_id")
   userId    BigInt   @map("user_id")
+  /// DM-78: partial unique (user_id, client_uuid), written in migration 0230 only (Prisma cannot express partial indexes).
+  clientUuid String? @map("client_uuid") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   draw Draw @relation(fields: [drawId], references: [id], onDelete: Restrict, map: "fk_draw_tickets_draw_id")
@@ -341,6 +343,8 @@ model RewardRedemption {
   cancelledAt        DateTime? @map("cancelled_at") @db.Timestamptz(6)
   /// admin, parent (check).
   cancelledBy        String?   @map("cancelled_by")
+  /// DM-78: partial unique (user_id, client_uuid), written in migration 0230 only (Prisma cannot express partial indexes).
+  clientUuid         String?   @map("client_uuid") @db.Uuid
   createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   legacySource       String?   @map("legacy_source")
@@ -384,4 +388,22 @@ model GamificationSetting {
   @@unique([key], map: "uq_gamification_settings_key")
   @@unique([legacySource, legacyId], map: "uq_gamification_settings_legacy")
   @@map("gamification_settings")
+}
+
+/// Singleton (check id = 1) of the Kawalan Reward settings (DM-48): the one source of the coin rate. Migration
+/// 0223 creates the row with the values of `gamification_settings`. `updated_by` is null until the first admin save.
+model RewardSetting {
+  id                 Int      @id @default(1) @db.SmallInt
+  /// `flat_quiz_reward`, API `flatCoins`: Syiling per correct answer, 0..20 (check).
+  coinsPerCorrect    Int      @default(1) @map("coins_per_correct") @db.SmallInt
+  /// `reward_budget_sen_session`: the one global redemption budget of the academic session, in sen.
+  redeemBudgetSen    Int      @default(300) @map("redeem_budget_sen")
+  /// `current_session_year`.
+  sessionYear        Int      @map("session_year") @db.SmallInt
+  /// `games_award_syiling`.
+  miniGamesGiveCoins Boolean  @default(false) @map("mini_games_give_coins")
+  updatedBy          BigInt?  @map("updated_by")
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("reward_settings")
 }

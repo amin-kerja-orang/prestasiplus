@@ -157,7 +157,7 @@ describe('R1-T45 builder AC proofs: Tambah soalan errors and the candidate searc
 
   describe('AC-R1-21.6: the candidate search ("Cari soalan") of the Set Builder on the real bank', () => {
     it('finds a Terbit question of the paper subject by its text, says whether it is placed, and a miss is an empty list with total 0', async () => {
-      const marker = 'Rajah kuasa tiga unik zq'
+      const marker = 'Pangkat kuasa tiga unik zq'
       const hit = await approved({ questionText: `${marker} berapakah nilai x?` })
       await setPool(hit, ['MAT2-A'])
       const paper = await newPaper()

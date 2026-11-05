@@ -7,6 +7,7 @@
 
 import { expect, test } from '../fixtures/test'
 import { expectNoHorizontalScroll, expectTabTitle, moduleTag, provisional } from '../support'
+import { expectAdminHeader, shellMain } from './helpers'
 
 const ADMIN = 'admin@demo.test'
 const STUDENT = 'pelajar@demo.test'
@@ -22,11 +23,8 @@ test.describe('S23 Tournament list', () => {
     async ({ page, gotoApp, loginAs }) => {
       await loginAs(ADMIN)
       await gotoApp('/tournament')
-      await expectTabTitle(page, 'Liga & Tournament')
-      await expect(page.getByTestId('shell-user-title')).toHaveText('Liga & Tournament')
-      await expect(page.getByTestId('shell-user-subtitle')).toHaveText(
-        'Senarai tournament antara sekolah',
-      )
+      await expectTabTitle(page, 'Liga & Tournament | PRESTASIPLUS')
+      await expectAdminHeader(page, 'Liga & Tournament')
       await expect(page.getByRole('heading', { level: 2, name: 'Liga & Tournament' })).toBeVisible()
       await expect(
         page.getByText('Bertanding antara sekolah dalam format liga, kalah mati, atau hibrid!'),
@@ -97,7 +95,7 @@ test.describe('S30 Tournament banner', () => {
       async ({ page, gotoApp, loginAs, mock }) => {
         await loginAs(STUDENT)
         await gotoApp(path)
-        await expect(page.getByTestId('shell-user-main')).toBeVisible()
+        await expect(shellMain(page)).toBeVisible()
         await expect.poll(async () => (await mock.requests(BANNER)).length).toBe(1)
         const last = await mock.lastRequest(BANNER)
         expect(last?.status).toBe(200)
@@ -112,11 +110,12 @@ test.describe('S30 Tournament banner', () => {
     async ({ page, gotoApp, loginAs, mock }) => {
       await loginAs(ADMIN)
       await gotoApp('/tournament')
-      await mock.failNext(BANNER, 500)
+      // The client tries a failed GET three times (S0-T12): all three attempts fail.
+      for (let i = 0; i < 3; i++) await mock.failNext(BANNER, 500)
       await gotoApp('/tournament')
       await expect(page.getByTestId('tournament-empty')).toBeVisible()
       await expect(page.getByTestId('tournament-banner')).toHaveCount(0)
-      await expect(page.getByTestId('shell-user-main').getByRole('alert')).toHaveCount(0)
+      await expect(shellMain(page).getByRole('alert')).toHaveCount(0)
     },
   )
 
@@ -131,9 +130,7 @@ test.describe('S30 Tournament banner', () => {
       const banner = page.getByTestId('tournament-banner')
       await expect(banner).toBeVisible()
       // First child of <main>.
-      const first = await page
-        .getByTestId('shell-user-main')
-        .evaluate((m) => (m.firstElementChild as HTMLElement | null)?.dataset.testid)
+      const first = await shellMain(page).evaluate((m) => (m.firstElementChild as HTMLElement | null)?.dataset.testid)
       expect(first).toBe('tournament-banner')
 
       const items = banner.locator('a')
