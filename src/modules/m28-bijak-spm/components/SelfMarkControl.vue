@@ -1,10 +1,11 @@
 <script setup lang="ts">
 /**
- * Markah kendiri (R1-B12, V2 Semakan): a stepper 0..max for one subjective part, with a band picker
- * for rubric parts. Choosing a band presets the stepper to the band midpoint and narrows it to the
- * band range. The stepper starts at the awarded mark (the keyword suggestion when there is one) and
- * stays "Belum disahkan" until the pupil saves; a saved self-mark shows as confirmed. The server
- * clamps the mark again, so this only guides.
+ * Markah kendiri (R1-B12, V2 Semakan; 46 section 3.4): a stepper 0..max with a numeric input for one part a person marks,
+ * with a band picker for rubric parts. Choosing a band presets the stepper to the band midpoint and narrows it to the
+ * band range. The stepper starts at the awarded mark (the keyword suggestion when there is one) and stays "Belum disahkan"
+ * until it is saved. S3-T06 (46 section 3.4 items 6-7): a typed value rounds half up, a negative becomes 0 and a value over
+ * the maximum becomes the maximum; every change by the pupil is saved 500 ms after the last one ("menyimpan…", then
+ * "disimpan"), with no save button. The server clamps the mark again, so this only guides. Shared by S5-T11.
  */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
@@ -37,7 +38,14 @@ function initialBand(): string | undefined {
 const draft = ref(props.part.awarded)
 const band = ref<string | undefined>(initialBand())
 const saving = ref(false)
+const saved = ref(false)
 const error = ref('')
+/** 46 section 3.4 item 7: the save waits this long after the last change. */
+const AUTOSAVE_MS = 500
+let timer: ReturnType<typeof setTimeout> | undefined
+let again = false
+/** A change waits for its 500 ms (reactive twin of `timer`). */
+const pending = ref(false)
 
 const selected = computed(() => bands.value.find((b) => b.name === band.value))
 const lo = computed(() => selected.value?.from ?? 0)
@@ -51,14 +59,36 @@ watch(
   },
 )
 
+/** A change by the pupil: (re)starts the 500 ms autosave. */
+function changed(): void {
+  saved.value = false
+  error.value = ''
+  if (timer) clearTimeout(timer)
+  pending.value = true
+  timer = setTimeout(() => {
+    timer = undefined
+    pending.value = false
+    void commit()
+  }, AUTOSAVE_MS)
+}
+
 function step(by: number): void {
   draft.value = clampMark(draft.value + by, hi.value, lo.value)
+  changed()
+}
+
+/** The numeric input: round half up, negative to 0 (or the band floor), over the maximum to the maximum (AC-MUR-13-22). */
+function typed(raw: string | number): void {
+  const n = typeof raw === 'number' ? raw : Number(String(raw).replace(',', '.'))
+  draft.value = clampMark(Number.isFinite(n) ? Math.floor(n + 0.5) : lo.value, hi.value, lo.value)
+  changed()
 }
 
 function pickBand(name: string | undefined): void {
   band.value = name
   const b = bands.value.find((x) => x.name === name)
   if (b) draft.value = bandMidpoint(b)
+  changed()
 }
 
 const dirty = computed(
@@ -69,7 +99,13 @@ const dirty = computed(
 /** Tells the page about an unsaved change so it can warn before leaving (and clears it on unmount). */
 const emit = defineEmits<{ dirty: [partId: string, dirty: boolean] }>()
 watch(dirty, (d) => emit('dirty', props.part.partId, d))
-onBeforeUnmount(() => emit('dirty', props.part.partId, false))
+onBeforeUnmount(() => {
+  // A change still waiting for its 500 ms is dropped: by now the page may show another sitting, and the page's leave guard
+  // already warned about the unsaved change (`dirty`).
+  if (timer) clearTimeout(timer)
+  timer = undefined
+  emit('dirty', props.part.partId, false)
+})
 
 const confirmed = computed(() => !!props.part.selfMarked && !dirty.value)
 
@@ -90,7 +126,11 @@ const bandItems = computed(() =>
 )
 
 async function commit(): Promise<void> {
-  if (saving.value) return
+  // A change made while a save is in flight is saved right after it.
+  if (saving.value) {
+    again = true
+    return
+  }
   saving.value = true
   error.value = ''
   try {
@@ -101,15 +141,25 @@ async function commit(): Promise<void> {
     })
     // A save can answer with the same values, so the watcher above stays quiet: show what the server holds.
     await nextTick()
-    draft.value = props.part.awarded
-    band.value = initialBand()
+    if (!again && !timer) {
+      draft.value = props.part.awarded
+      band.value = initialBand()
+      saved.value = true
+    }
   } catch (e) {
     error.value =
       e instanceof Error && e.message ? e.message : 'Markah tidak dapat disimpan. Cuba lagi.'
   } finally {
     saving.value = false
   }
+  if (again) {
+    again = false
+    if (!timer) void commit()
+  }
 }
+
+/** 46 section 3.4 item 7. */
+const saveState = computed(() => (saving.value || pending.value ? 'menyimpan…' : saved.value ? 'disimpan' : ''))
 
 const labelId = computed(() => `selfmark-label-${props.part.partId}`)
 </script>
@@ -148,8 +198,21 @@ const labelId = computed(() => `selfmark-label-${props.part.partId}`)
         data-testid="selfmark-dec"
         @click="step(-1)"
       />
+      <UInput
+        type="number"
+        inputmode="numeric"
+        :model-value="draft"
+        :min="lo"
+        :max="hi"
+        step="1"
+        class="w-20"
+        :ui="{ base: 'tabular text-center' }"
+        aria-label="Markah kendiri"
+        data-testid="selfmark-input"
+        @change="typed(($event.target as HTMLInputElement).value)"
+      />
       <output
-        class="tabular min-w-20 text-center text-heading text-highlighted"
+        class="tabular min-w-12 text-heading text-highlighted"
         aria-live="polite"
         data-testid="selfmark-value"
         >{{ draft }} / {{ max }}</output
@@ -175,13 +238,13 @@ const labelId = computed(() => `selfmark-label-${props.part.partId}`)
       data-testid="selfmark-error"
     />
 
-    <UButton
-      class="min-h-11 justify-center"
-      :loading="saving"
-      :disabled="saving || confirmed"
-      data-testid="selfmark-save"
-      @click="commit"
-      >Simpan markah</UButton
+    <p
+      v-if="saveState"
+      class="text-caption text-muted"
+      aria-live="polite"
+      data-testid="selfmark-save-state"
     >
+      {{ saveState }}
+    </p>
   </div>
 </template>
