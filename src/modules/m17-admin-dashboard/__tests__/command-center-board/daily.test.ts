@@ -93,7 +93,7 @@ describe('S3 admin', () => {
     expect(texts(w, 'cc-school-name')).toEqual(['1. SMK CONTOH SATU', '2. SMK CONTOH EMPAT'])
     expect(rows[0]?.text()).toContain('guru')
     expect(rows[1]?.text()).toContain('login')
-    expect(texts(w, 'cc-school-accuracy')).toEqual(['95.0%', '-'])
+    expect(texts(w, 'cc-school-accuracy')).toEqual(['95%', '—'])
     expect(w.findAll('[data-testid="cc-school-accuracy"]')[0]?.attributes('data-tone')).toBe('success')
     w.unmount()
   })
@@ -155,7 +155,7 @@ describe('S3 admin', () => {
     expect(api.fetchCcSchoolDrill).toHaveBeenCalledWith(8082, 'today', expect.anything())
     expect(get(w, 'cc-drill-teachers').text()).toContain('Guru Aktif (1)')
     expect(get(w, 'cc-drill-teacher').text()).toContain('9 pelajar')
-    expect(get(w, 'cc-drill-teacher').text()).toContain('80.2%')
+    expect(get(w, 'cc-drill-teacher').text()).toContain('80%')
     expect(get(w, 'cc-drill-teacher').find('a').attributes('href')).toBe(
       '/admin/command-center/school/8082/teacher/1919',
     )

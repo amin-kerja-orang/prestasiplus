@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /** "Top Pelajar" of S3 (FR-M17-46, FN-M17-4.4.5): up to 5 rows - rank, pupil link to S7, school, "{n} jwb", accuracy. */
-import { DsEmptyState, DsListRow, DsStack, formatCount, formatPercent } from '@/ds'
+import { DsEmptyState, DsListRow, DsStack, formatCount } from '@/ds'
 
-import type { CcDailyActivity } from '../../api/command-center-board'
+import { accuracyText, type CcDailyActivity } from '../../api/command-center-board'
 import { ccPaths } from '../command-center/cc-paths'
 import { shortSchool } from '../command-center/cc-format'
 import { S3_COPY } from './board-copy'
@@ -35,7 +35,7 @@ const paths = ccPaths(props.basePath)
         <template #meta
           ><span class="flex flex-col items-end"
             ><span data-testid="cc-daily-top-answers">{{ formatCount(s.answers) }} jwb</span
-            ><span class="text-caption text-success">{{ formatPercent(s.accuracy) }}</span></span
+            ><span class="text-caption text-success">{{ accuracyText(s.accuracy) }}</span></span
           ></template
         >
       </DsListRow>

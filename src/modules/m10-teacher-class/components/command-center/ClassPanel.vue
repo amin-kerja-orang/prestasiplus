@@ -3,7 +3,7 @@
 import type { CcClassRow } from '../../api/command-center-types'
 import BoardPanel from './BoardPanel.vue'
 import { useOpenTab } from './composables'
-import { classPath, levelText, S2_COPY } from './copy'
+import { accuracyText, classPath, levelText, S2_COPY } from './copy'
 
 defineProps<{ classes: CcClassRow[] }>()
 const openTab = useOpenTab()
@@ -36,7 +36,7 @@ const openTab = useOpenTab()
               levelText(c.educationLevel)
             }}</span>
             <span class="tabular text-caption text-toned" data-testid="cc-class-stats"
-              >{{ c.studentCount }} plj | {{ c.active }} aktif | {{ c.accuracy }}%</span
+              >{{ c.studentCount }} plj | {{ c.active }} aktif | {{ accuracyText(c.accuracy) }}</span
             >
           </span>
         </UButton>

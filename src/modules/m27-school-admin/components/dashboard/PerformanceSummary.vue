@@ -14,9 +14,23 @@ import { DsEmptyState, DsIconChip, DsPanel } from '@/ds'
 
 import type { SchoolDashboard } from '../../api/dashboard'
 import GradeList from './GradeList.vue'
-import { barWidth, count, gps, PATHS, percent } from './dashboard-format'
+import { barWidth, count, gps, PATHS, percent, shownAccuracy } from './dashboard-format'
 
 const props = defineProps<{ performance: SchoolDashboard['performance'] }>()
+
+/** Band of a level row from the WHOLE number the screen shows (49.5 shows 50, which is not below 50; 60 section 4.6). */
+type LevelTone = 'error' | 'warning' | 'success' | 'muted'
+function levelTone(accuracy: number | null): LevelTone {
+  const shown = shownAccuracy(accuracy)
+  if (shown === null) return 'muted'
+  return shown < 50 ? 'error' : shown < 70 ? 'warning' : 'success'
+}
+const TONE_TEXT: Record<LevelTone, string> = {
+  error: 'text-error',
+  warning: 'text-warning',
+  success: 'text-success',
+  muted: 'text-muted',
+}
 
 /** Http mode only: the block is built from Bijak SPM sittings, so it is labelled as such (US-33). */
 const bijak = isHttpMode()
@@ -151,13 +165,7 @@ const isEmpty = computed(() => {
               <span class="text-label text-highlighted">{{ level.name }}</span>
               <span
                 class="tabular text-label"
-                :class="
-                  level.accuracy < 50
-                    ? 'text-error'
-                    : level.accuracy < 70
-                      ? 'text-warning'
-                      : 'text-success'
-                "
+                :class="TONE_TEXT[levelTone(level.accuracy)]"
                 data-testid="sd-level-pct"
                 >{{ percent(level.accuracy) }}</span
               >
@@ -166,7 +174,7 @@ const isEmpty = computed(() => {
               :model-value="barWidth(level.accuracy)"
               :max="100"
               size="sm"
-              :color="level.accuracy < 50 ? 'error' : level.accuracy < 70 ? 'warning' : 'success'"
+              :color="levelTone(level.accuracy) === 'muted' ? 'neutral' : levelTone(level.accuracy)"
               :aria-label="`Ketepatan ${level.name}`"
               data-testid="sd-level-bar"
             />

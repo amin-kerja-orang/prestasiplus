@@ -1,11 +1,11 @@
 <script setup lang="ts">
-/** Accuracy bar and 1-decimal percent (S5 and S6 "Ketepatan"). */
+/** Accuracy bar and whole-number percent (S5 and S6 "Ketepatan"). */
 import { computed } from 'vue'
 
-import { accuracyTone, pct1 } from './cc-format'
+import { accuracyText, accuracyTone } from './cc-format'
 
-const props = defineProps<{ value: number }>()
-const width = computed(() => Math.max(0, Math.min(100, props.value)))
+const props = defineProps<{ value: number | null }>()
+const width = computed(() => Math.max(0, Math.min(100, props.value ?? 0)))
 </script>
 
 <template>
@@ -17,6 +17,6 @@ const width = computed(() => Math.max(0, Math.min(100, props.value)))
       :color="accuracyTone(value)"
       aria-hidden="true"
     />
-    <span class="tabular text-body text-default" data-testid="cc-accuracy">{{ pct1(value) }}</span>
+    <span class="tabular text-body text-default" data-testid="cc-accuracy">{{ accuracyText(value) }}</span>
   </div>
 </template>

@@ -36,7 +36,7 @@ describe('rules of S2 (FN-M10-2.2.3-2.2.13)', () => {
 
   it('builds the insight from the engagement ratio, accuracy and GPS', () => {
     expect(insightText(live({ gpsOverall: 4.69 }))).toBe(
-      '"0% pelajar terlibat aktif. Ketepatan purata 0%. GPS sekolah: 4.69."',
+      '"0% pelajar terlibat aktif. Ketepatan purata —. GPS sekolah: 4.69."',
     )
     const d = live({
       accuracy: 46,

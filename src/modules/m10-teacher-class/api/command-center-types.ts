@@ -23,14 +23,14 @@ export interface CcClassRow {
   studentCount: number
   /** Members with at least one answer in the last 7 days. */
   active: number
-  accuracy: number
+  accuracy: number | null
 }
 
 export interface CcStudentRank {
   studentId: number
   name: string
   answered: number
-  accuracy: number
+  accuracy: number | null
 }
 
 export interface CcFeedItem {
@@ -85,7 +85,7 @@ export interface CcLiveData {
   /** round((week − previous 7 days) ÷ previous × 100); 0 when the previous week has no answer. */
   weekChange: number
   /** round(correct ÷ answered × 100) over all answers; 0 when none. */
-  accuracy: number
+  accuracy: number | null
   /** GPS of the viewer's headcount entries (2 decimals); `null` shows "--"; the admin mirror is 4.69. */
   gpsOverall: number | null
   classes: CcClassRow[]
@@ -102,9 +102,9 @@ export interface CcLiveData {
   kirkT1: number
   kirkT1Count: number
   /** Accuracy of the last 30 days, the 30 before, and the difference. */
-  kirkT2Accuracy: number
+  kirkT2Accuracy: number | null
   kirkT2Delta: number
-  kirkT2Prev: number
+  kirkT2Prev: number | null
   /** Students with an answer in the last 30 days, the difference to the 30 before, and that count. */
   kirkT3Active: number
   kirkT3Delta: number
@@ -148,7 +148,7 @@ export interface CcDrillStudentRow {
   /** The viewer's classes the student is in, joined by ", ". */
   className: string
   answered: number
-  accuracy: number
+  accuracy: number | null
   lastActiveAt: string | null
   /** "Aktif" when the student answered today, else "Login". */
   status: 'Aktif' | 'Login'
@@ -162,14 +162,14 @@ export interface CcDrillTodayRow {
   subject: string
   answered: number
   correct: number
-  accuracy: number
+  accuracy: number | null
 }
 
 export interface CcDrillSubjectRow {
   subject: string
   answered: number
   correct: number
-  accuracy: number
+  accuracy: number | null
   students: number
 }
 
@@ -213,14 +213,14 @@ export interface CcDrillEngagementRow {
   /** Distinct answer days in the last 7 days. */
   days: number
   answeredWeek: number
-  accuracy: number
+  accuracy: number | null
   lastActiveAt: string | null
 }
 
 /** The "vs" cards of `kirk` t2–t4 ("Bulan Ini" / "Bulan Lepas" = last 30 days / the 30 before). */
 export interface CcDrillVs {
-  accuracyNow: number
-  accuracyPrev: number
+  accuracyNow: number | null
+  accuracyPrev: number | null
   accuracyChange: number
   answersNow: number
   answersPrev: number

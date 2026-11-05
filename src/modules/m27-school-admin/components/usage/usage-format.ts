@@ -3,7 +3,7 @@
  * separator, accuracy one decimal, the dash when there is no data.
  */
 
-import { formatCount, formatNumber } from '@/lib/number'
+import { formatCount, formatPercent } from '@/lib/number'
 
 import type { UsagePeriod } from '../../api/school-admin'
 
@@ -29,6 +29,6 @@ export const count = (n: number): string => formatCount(n)
 /** Integer percent ("68%"). */
 export const wholePercent = (n: number): string => `${formatCount(n)}%`
 
-/** One decimal ("61.4%") or the dash. */
+/** Whole number, half up ("58%" for 57.9, 40 FR-X4-5) or the dash (never 0%). */
 export const accuracy = (n: number | null): string =>
-  n === null ? NO_DATA : `${formatNumber(n, { decimals: 1 })}%`
+  n === null ? NO_DATA : formatPercent(n, { decimals: 0 })

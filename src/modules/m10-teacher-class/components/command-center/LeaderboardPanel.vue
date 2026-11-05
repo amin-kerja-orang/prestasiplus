@@ -6,7 +6,7 @@
 import type { CcRecentBadge, CcStudentRank } from '../../api/command-center-types'
 import BoardPanel from './BoardPanel.vue'
 import { useOpenTab } from './composables'
-import { accuracyTone, S2_COPY, studentPath } from './copy'
+import { accuracyText, accuracyTone, S2_COPY, studentPath } from './copy'
 
 defineProps<{ rows: CcStudentRank[]; badges: CcRecentBadge[] }>()
 const openTab = useOpenTab()
@@ -33,7 +33,7 @@ const openTab = useOpenTab()
           <span class="min-w-0 flex-1 text-label break-words text-highlighted">{{ r.name }}</span>
           <span class="tabular shrink-0 text-body text-toned">{{ r.answered }} jwb</span>
           <span :class="['tabular w-12 shrink-0 text-end text-body', accuracyTone(r.accuracy)]"
-            >{{ r.accuracy }}%</span
+            >{{ accuracyText(r.accuracy) }}</span
           >
         </UButton>
       </li>

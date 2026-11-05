@@ -12,6 +12,7 @@
  */
 
 import { api } from '@/api'
+import { formatPercent, roundHalfUp } from '@/lib/number'
 
 import type {
   CcDailyActivity,
@@ -21,6 +22,16 @@ import type {
 } from './command-center-board-types'
 
 export type * from './command-center-board-types'
+
+/** The "no data" dash of an accuracy (XS-5: never 0%). */
+export const NO_DATA = '—'
+
+/** The whole number a screen shows for an accuracy: half up from the one-decimal wire value (57.9 -> 58, 40 FR-X4-5). */
+export const shownAccuracy = (value: number | null): number | null => (value === null ? null : roundHalfUp(value))
+
+/** "58%" for 57.9, the dash for null. The one accuracy text of the Command Center screens (m17). */
+export const accuracyText = (value: number | null): string =>
+  value === null ? NO_DATA : formatPercent(value, { decimals: 0 })
 
 interface Signal {
   signal?: AbortSignal
@@ -82,7 +93,7 @@ export function ccAlesaSentence(d: CcLiveData): CcAlesaSentence {
   const before = d.scope === 'school' ? 'Sekolah anda menunjukkan ' : 'Platform menunjukkan '
   const after =
     ` ${String(Math.abs(d.weekChange))}% minggu ini. ${ratio.toFixed(1)}% pelajar terlibat aktif. ` +
-    `Ketepatan purata ${d.accuracy.toFixed(1)}% dengan ${String(d.totalSchools)} sekolah aktif. ` +
+    `Ketepatan purata ${accuracyText(d.accuracy)} dengan ${String(d.totalSchools)} sekolah aktif. ` +
     `GPS keseluruhan: ${d.gpsOverall.toFixed(2)}.`
   return { before, trend, after, text: `${before}${trend}${after}` }
 }
@@ -103,7 +114,7 @@ export function ccKirkpatrickBars(d: CcLiveData): {
   const clamp = (n: number) => Math.max(0, Math.min(1, n))
   return {
     t1: clamp(d.kirk.t1.value / 5),
-    t2: clamp(d.kirk.t2Accuracy / 100),
+    t2: clamp((d.kirk.t2Accuracy ?? 0) / 100),
     t3: clamp(d.kirk.t3Active / 500),
     t4: clamp(d.kirk.t4Gps / 5),
   }
@@ -165,8 +176,8 @@ export const ccLoginRoleLine = (byRole: Record<string, number>): string =>
 export const ccAvgSessionLabel = (seconds: number): string =>
   `Purata: ${String(Math.floor(seconds / 60))}m ${String(Math.floor(seconds % 60))}s`
 
-/** "Ketepatan: {n}%" with ".0" dropped (FR-M17-39, BR-M17-06): 95.0 → "95", 84.6 → "84.6". */
-export const ccAccuracyLabel = (accuracy: number): string => `Ketepatan: ${String(accuracy)}%`
+/** "Ketepatan: {n}%", the whole number half up (84.6 -> "85", 40 FR-X4-5); "Ketepatan: —" with no answers. */
+export const ccAccuracyLabel = (accuracy: number | null): string => `Ketepatan: ${accuracyText(accuracy)}`
 
 /** The S3 header title per view (FR-M17-116): "AKTIVITI PLATFORM" or, for a school admin, "AKTIVITI SEKOLAH". */
 export const ccDailyTitle = (scope: CcLiveData['scope']): string =>

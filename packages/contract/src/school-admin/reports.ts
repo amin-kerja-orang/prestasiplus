@@ -74,7 +74,7 @@ export const SchoolAdminDashboardSchema = z
         questions: count,
       }),
       levels: z.array(
-        z.object({ code: z.enum(['t4', 't5']), name: z.string(), accuracy: z.number() }),
+        z.object({ code: z.enum(['t4', 't5']), name: z.string(), accuracy: z.number().nullable() }),
       ),
       distribution: z.array(z.object({ grade: z.string(), count, pct: z.number() })),
       total: count.meta({ description: 'Sum of the distribution counts.' }),
@@ -151,7 +151,7 @@ export const SchoolAdminActivityPupilRowSchema = z
     name: z.string(),
     className: z.string().nullable(),
     sessions: count,
-    accuracy: z.number().min(0).max(100).meta({ description: 'correct / answered x 100, 1 decimal, never above 100.' }),
+    accuracy: z.number().min(0).max(100).nullable().meta({ description: 'correct / answered x 100, 1 decimal, never above 100; null ("—", never 0%) with 0 answers.' }),
     seconds: count,
     coins: count,
     lastLoginAt: TimestampSchema.nullable(),
@@ -206,7 +206,7 @@ export const SchoolAdminActivityReportSchema = z
       .meta({ description: 'The pills Semua, Aktif, Login Sahaja, Belum Login; up to 200 rows each.' }),
     tiles: z.object({
       teachers: z.object({ total: count, logged: count, questions: count, coins: count }),
-      pupils: z.object({ total: count, practised: count, sessions: count, accuracy: z.number() }),
+      pupils: z.object({ total: count, practised: count, sessions: count, accuracy: z.number().nullable() }),
     }),
   })
   .meta({ id: 'SchoolAdminActivityReport' })

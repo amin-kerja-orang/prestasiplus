@@ -142,13 +142,13 @@ describe('S2 board (FR-M10-14..18)', () => {
     ])
   })
 
-  it('keeps "--" on the two count tiles while the value is 0, "0%" and 4.69 for the admin mirror', async () => {
+  it('keeps "--" on the two count tiles while the value is 0, "—" (accuracy null, never 0%) and 4.69 for the admin mirror', async () => {
     api.fetchCommandCenterLiveData.mockResolvedValue(live({ gpsOverall: 4.69, kirkT4Gps: 4.69 }))
     await mountPage()
     await settle()
-    expect(all('cc-kpi-value').map((v) => v.text())).toEqual(['--', '--', '0%', '4.69'])
+    expect(all('cc-kpi-value').map((v) => v.text())).toEqual(['--', '--', '—', '4.69'])
     expect(text('cc-insight')).toBe(
-      '"0% pelajar terlibat aktif. Ketepatan purata 0%. GPS sekolah: 4.69."',
+      '"0% pelajar terlibat aktif. Ketepatan purata —. GPS sekolah: 4.69."',
     )
     expect(text('cc-classes-empty')).toBe('Tiada data')
     expect(text('cc-feed-empty')).toBe('Tiada aktiviti terkini')
@@ -157,7 +157,7 @@ describe('S2 board (FR-M10-14..18)', () => {
     expect(text('cc-week-change')).toBe('Sama dengan minggu lepas')
     expect(all('cc-kirk-text').map((v) => v.text())).toEqual([
       '☆☆☆☆☆ 0/10',
-      '0% ketepatan',
+      '— ketepatan',
       '0 aktif 30h',
       'GPS 4.69',
     ])
@@ -275,7 +275,7 @@ describe('polling (FR-M10-15, NFR-M10-02)', () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined)
     api.fetchCommandCenterLiveData.mockRejectedValue(new Error('down'))
     await mountPage()
-    expect(all('cc-kpi-value').map((v) => v.text())).toEqual(['--', '--', '0%', '--'])
+    expect(all('cc-kpi-value').map((v) => v.text())).toEqual(['--', '--', '—', '--'])
   })
 })
 
@@ -548,9 +548,9 @@ describe('"🔬 Remedial" (FR-M10-22, FR-M10-23)', () => {
     const rows = all('cc-remedial-row')
       .map((r) => trOf(r))
       .map((r) => trOf(r))
-    expect(rows[0]!.text()).toContain('Polimer (12.5%)')
+    expect(rows[0]!.text()).toContain('Polimer (13%)')
     expect(rows[0]!.text()).toContain('Getah Asli (30%)')
-    expect(rows[0]!.text()).toContain('12.5%')
+    expect(rows[0]!.text()).toContain('13%')
     // student 3002: one "Jana Kimia" button for the two Kimia topics
     expect(rows[0]!.findAll('[data-testid="cc-remedial-generate"]').map((b) => b.text())).toEqual([
       'Jana Kimia',
@@ -577,7 +577,7 @@ describe('"🔬 Remedial" (FR-M10-22, FR-M10-23)', () => {
     await mountPage()
     await openRemedial()
     const done = t('cc-remedial-done')
-    expect(done.text()).toBe('Selesai (62.5%)')
+    expect(done.text()).toBe('Selesai (63%)')
     expect(done.attributes('href')).toBe('/remedial/7602')
     expect(t('cc-remedial-cancel').exists()).toBe(false)
     expect(t('cc-remedial-generate').text()).toBe('Jana Kimia')

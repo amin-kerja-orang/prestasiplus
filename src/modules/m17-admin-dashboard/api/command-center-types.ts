@@ -32,7 +32,7 @@ export interface CcSchoolCards {
   active: number
   /** Q-M17-SCH-ANS: answers of P at the school. */
   answers: number
-  accuracy: number
+  accuracy: number | null
 }
 
 export interface CcSchoolTeacher {
@@ -65,7 +65,7 @@ export interface CcTeacherClass {
   students: number
   active30d: number
   answers: number
-  accuracy: number
+  accuracy: number | null
 }
 
 export interface CcTeacher {
@@ -82,7 +82,7 @@ export interface CcClassStudent {
   userId: number
   name: string
   answers: number
-  accuracy: number
+  accuracy: number | null
   /** Latest answer, `null` when the pupil never answered ("-"). */
   lastActiveAt: string | null
   status: CcPupilStatus
@@ -101,7 +101,7 @@ export interface CcClass {
 
 export interface CcStudentCards {
   answers: number
-  accuracy: number
+  accuracy: number | null
   activeDays: number
   streak: number
   /** round(days with an answer in the last 56 days ÷ 56 × 100). */
@@ -115,7 +115,7 @@ export interface CcSubjectRow {
   label: string
   correct: number
   total: number
-  pct: number
+  pct: number | null
 }
 
 export interface CcWeek {
@@ -178,7 +178,7 @@ export interface CcSessionRow {
   total: number
   correct: number
   /** 2 decimals ("80.00%"). */
-  accuracy: number
+  accuracy: number | null
   /** floor(seconds ÷ 60). */
   minutes: number
 }
@@ -187,7 +187,7 @@ export interface CcSessionList {
   totalAnswers: number
   totalSessions: number
   /** 1 decimal. */
-  accuracy: number
+  accuracy: number | null
   timeSpentMinutes: number
   sessions: CcSessionRow[]
 }
@@ -212,7 +212,7 @@ export interface CcSessionDetail {
   total: number
   correctCount: number
   wrongCount: number
-  accuracy: number
+  accuracy: number | null
   timeSpent: { m: number; s: number }
   difficulty: number | null
   answers: CcSessionAnswer[]

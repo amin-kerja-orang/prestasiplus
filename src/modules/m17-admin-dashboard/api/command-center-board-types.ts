@@ -45,7 +45,7 @@ export interface CcTopStudent {
   /** `null` for a pupil without a school. */
   schoolName: string | null
   answersCount: number
-  accuracy: number
+  accuracy: number | null
 }
 
 export interface CcFeedRow {
@@ -64,7 +64,7 @@ export interface CcKirkpatrick {
   /** M12 Q-M12-T1 satisfaction mean on its 1–5 scale (DV-M17-08). */
   t1: { value: number; scale: 5; count: number }
   /** Accuracy % (T2). */
-  t2Accuracy: number
+  t2Accuracy: number | null
   /** Pupils with an answer in the last 30 days (T3). */
   t3Active: number
   /** SPM subject GPS of the scope (T4, 3 decimals; 0 when the scope has no GPS rows). */
@@ -116,7 +116,7 @@ export interface CcLiveData {
   answeredLastWeek: number
   /** BR-M17-07, whole percent. */
   weekChange: number
-  accuracy: number
+  accuracy: number | null
   /** Five rows on the platform view, empty on the school view. */
   topSchools: CcTopSchool[]
   topStudents: CcTopStudent[]
@@ -176,7 +176,7 @@ export interface CcDailyTopStudent {
   schoolId: number | null
   schoolName: string | null
   answers: number
-  accuracy: number
+  accuracy: number | null
 }
 
 export interface CcSubjectBar {
@@ -206,7 +206,7 @@ export interface CcDailyActivity {
   practice: {
     totalAnswers: number
     correctAnswers: number
-    accuracy: number
+    accuracy: number | null
     activeStudents: number
     sessionsStarted: number
     sessionsCompleted: number
@@ -245,7 +245,7 @@ export interface CcDrillTeacher {
   name: string
   /** Their answering pupils of the school in the period ("{n} pelajar"). */
   students: number
-  accuracy: number
+  accuracy: number | null
   lastActiveHuman: string
 }
 
@@ -253,7 +253,7 @@ export interface CcDrillStudent {
   userId: number
   name: string
   answers: number
-  accuracy: number
+  accuracy: number | null
   lastActiveHuman: string
 }
 

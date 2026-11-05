@@ -321,12 +321,12 @@ describe('empty state', () => {
     try {
       const who = await loginRole(e, 'admin')
       const d = CommandCenterLiveDataResponseSchema.parse((await getAs(who, '/admin/command-center/live-data')).body).data
-      expect(d).toMatchObject({ totalAnswered: 0, activeStudents: 0, answeredToday: 0, answeredWeek: 0, answeredLastWeek: 0, weekChange: 0, accuracy: 0 })
+      expect(d).toMatchObject({ totalAnswered: 0, activeStudents: 0, answeredToday: 0, answeredWeek: 0, answeredLastWeek: 0, weekChange: 0, accuracy: null })
       expect(d.topSchools).toEqual([])
       expect(d.topStudents).toEqual([])
       expect(d.recentFeed).toEqual([])
       const day = CommandCenterDailyActivityResponseSchema.parse((await getAs(who, '/command-center/daily-activity')).body).data
-      expect(day.practice).toMatchObject({ totalAnswers: 0, accuracy: 0, sessionsCompleted: 0, avgSessionSeconds: 0 })
+      expect(day.practice).toMatchObject({ totalAnswers: 0, accuracy: null, sessionsCompleted: 0, avgSessionSeconds: 0 })
       expect(day.subjectBreakdown).toEqual([])
       expect(Object.keys(day.hourlyHeatmap)).toHaveLength(24)
       const sa = await loginRole(e, 'school_admin')

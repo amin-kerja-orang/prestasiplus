@@ -311,7 +311,7 @@ describe('S4 school', () => {
       'Jumlah Pelajar1,234',
       'Pelajar Aktif56',
       'Jumlah Jawapan130,077',
-      'Ketepatan82.3%',
+      'Ketepatan82%',
     ])
     expect(panelTitles(w)[0]?.text()).toBe('Senarai Guru (2)')
     const rows = w.findAll('[data-testid=cc-teacher-row]')
@@ -388,7 +388,7 @@ describe('S5 teacher', () => {
     const cells = trOf(w.get('[data-testid=cc-class-row]'))
       .findAll('td')
       .map((c) => c.text())
-    expect(cells).toEqual(['1', '5 PERNIAGAAN', 'T5', '30', '3', '1,234', '77.8%'])
+    expect(cells).toEqual(['1', '5 PERNIAGAAN', 'T5', '30', '3', '1,234', '78%'])
     expect(document.title).toBe('Cikgu Contoh - Command Center | PRESTASIPLUS')
     await w.get('[data-testid=cc-class-row]').trigger('click')
     await flushPromises()
@@ -421,12 +421,12 @@ describe('S6 class', () => {
         .findAll('td')
         .map((c) => c.text())
         .slice(0, 6),
-    ).toEqual(['1', 'Murid Satu', '2,378', '93.5%', '25/09 01:22', 'Aktif'])
+    ).toEqual(['1', 'Murid Satu', '2,378', '94%', '25/09 01:22', 'Aktif'])
     expect(
       trOf(rows[1])
         .findAll('td')
         .map((c) => c.text()),
-    ).toEqual(['2', 'Murid Dua', '12', '40.0%', '-', 'Tidak Aktif', '-'])
+    ).toEqual(['2', 'Murid Dua', '12', '40%', '-', 'Tidak Aktif', '-'])
     expect(trOf(rows[0]).findAll('[data-testid=cc-status]')[0]?.text()).toBe('Aktif')
     expect(trOf(rows[1]).findAll('[data-testid=cc-status]')[0]?.text()).toBe('Tidak Aktif')
     await rows[0]?.trigger('click')
@@ -486,7 +486,7 @@ describe('S7 student', () => {
     expect(crumbCurrent(w)).toBe('Murid Satu')
     expect(cards(w)).toEqual([
       'Jumlah Jawapan2,378',
-      'Ketepatan93.5%',
+      'Ketepatan94%',
       'Hari Aktif15',
       'Streak1',
       'Konsistensi27%',
@@ -533,7 +533,7 @@ describe('S7 student', () => {
     expect(modalStats()).toEqual([
       '452Jawapan',
       '23Sesi',
-      '99.6%Ketepatan',
+      '100%Ketepatan',
       '14mJumlah Masa',
     ])
     const row = body('cc-session-row')
@@ -543,7 +543,7 @@ describe('S7 student', () => {
       'Umum',
       '20',
       '19',
-      '95.00%',
+      '95%',
       '0m',
     ])
     ;(body('cc-modal-close') as HTMLElement).click()
@@ -622,7 +622,7 @@ describe('S7 student', () => {
     expect(text).toContain('Jawapan anda: B) objek')
     expect(text).toContain('Jawapan betul: D) subjek')
     expect(text).toContain('03:13:56')
-    expect(text).toContain('50.00%')
+    expect(text).toContain('50%')
     const rows = bodyAll('cc-answer-row')
     expect(rows.map((r) => r.getAttribute('data-correct'))).toEqual(['false', 'true'])
   })

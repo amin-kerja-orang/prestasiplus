@@ -124,7 +124,7 @@ export interface ActivityPupilRow {
   className: string | null
   sessions: number
   /** correct / answered x 100, one decimal, never above 100. */
-  accuracy: number
+  accuracy: number | null
   seconds: number
   coins: number
   lastLoginAt: string | null
@@ -181,7 +181,7 @@ export interface SchoolActivityReport {
       questions: number
       coins: number
     }
-    pupils: { total: number; practised: number; sessions: number; accuracy: number }
+    pupils: { total: number; practised: number; sessions: number; accuracy: number | null }
   }
 }
 

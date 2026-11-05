@@ -6,7 +6,7 @@
 import { formatMyt } from '@/lib/time'
 
 import type { CcDrillRowMap, CcDrillType } from '../../api/command-center-types'
-import { accuracyTone, gpsTone, plain } from './copy'
+import { accuracyText, accuracyTone, gpsTone, plain } from './copy'
 
 export type DrillCell = {
   text: string
@@ -24,8 +24,8 @@ export interface DrillTable {
   rows: DrillRow[]
 }
 
-const pct = (value: number): DrillCell => ({
-  text: `${plain(value)}%`,
+const pct = (value: number | null): DrillCell => ({
+  text: accuracyText(value),
   tone: accuracyTone(value),
   mono: true,
 })

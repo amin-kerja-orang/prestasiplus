@@ -161,7 +161,8 @@ export function pupilView(p: ScoredPupil, rank: number): AmaranPupilRisk {
     accuracy,
     engagement,
     mastery,
-    accuracyText: accuracy !== null ? `Purata ketepatan: ${accuracy}%` : p.risk.neverActive ? 'Tiada data latihan' : 'Tiada data',
+    // The screen text shows the whole number, half up (40 FR-X4-5); `accuracy` stays the one-decimal number.
+    accuracyText: accuracy !== null ? `Purata ketepatan: ${Math.floor(accuracy + 0.5)}%` : p.risk.neverActive ? 'Tiada data latihan' : 'Tiada data',
     engagementText: engagement !== null ? `Terakhir aktif: ${engagement}` : 'Tiada aktiviti',
     masteryText: p.risk.masteryMean !== null ? `Purata tahap: L${Math.round(p.risk.masteryMean)}` : p.risk.neverActive ? 'Tiada data penguasaan' : 'Tiada data',
   }

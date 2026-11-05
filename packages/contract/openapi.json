@@ -15963,7 +15963,10 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100
           }
@@ -16053,7 +16056,10 @@
             ]
           },
           "t2Accuracy": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100
           },
@@ -16221,7 +16227,10 @@
             "description": "Whole percent, half away from zero; 0 when last week is 0."
           },
           "accuracy": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100
           },
@@ -16508,7 +16517,10 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100
           }
@@ -16666,7 +16678,10 @@
                 "minimum": 0
               },
               "accuracy": {
-                "type": "number",
+                "type": [
+                  "number",
+                  "null"
+                ],
                 "minimum": 0,
                 "maximum": 100
               },
@@ -16866,7 +16881,10 @@
                   "minimum": 0
                 },
                 "accuracy": {
-                  "type": "number",
+                  "type": [
+                    "number",
+                    "null"
+                  ],
                   "minimum": 0,
                   "maximum": 100
                 },
@@ -16900,7 +16918,10 @@
                   "minimum": 0
                 },
                 "accuracy": {
-                  "type": "number",
+                  "type": [
+                    "number",
+                    "null"
+                  ],
                   "minimum": 0,
                   "maximum": 100
                 },
@@ -16988,7 +17009,10 @@
                 "minimum": 0
               },
               "accuracy": {
-                "type": "number",
+                "type": [
+                  "number",
+                  "null"
+                ],
                 "minimum": 0,
                 "maximum": 100
               }
@@ -17100,7 +17124,10 @@
                   "minimum": 0
                 },
                 "accuracy": {
-                  "type": "number",
+                  "type": [
+                    "number",
+                    "null"
+                  ],
                   "minimum": 0,
                   "maximum": 100
                 }
@@ -17179,7 +17206,10 @@
                   "minimum": 0
                 },
                 "accuracy": {
-                  "type": "number",
+                  "type": [
+                    "number",
+                    "null"
+                  ],
                   "minimum": 0,
                   "maximum": 100
                 },
@@ -17261,9 +17291,13 @@
             "minimum": 0
           },
           "pct": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
-            "maximum": 100
+            "maximum": 100,
+            "description": "XS-5 pooled, 1 decimal; null = no answers (\"—\")."
           }
         },
         "required": [
@@ -17438,7 +17472,10 @@
                 "minimum": 0
               },
               "accuracy": {
-                "type": "number",
+                "type": [
+                  "number",
+                  "null"
+                ],
                 "minimum": 0,
                 "maximum": 100
               },
@@ -17567,10 +17604,13 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100,
-            "description": "2 decimals."
+            "description": "XS-5, 1 decimal (60 section 4.6, no exception); null with no questions (\"—\")."
           },
           "minutes": {
             "type": "integer",
@@ -17601,10 +17641,13 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100,
-            "description": "1 decimal."
+            "description": "1 decimal; null with no sessions (\"—\")."
           },
           "timeSpentMinutes": {
             "type": "integer",
@@ -17704,7 +17747,10 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100
           },
@@ -18058,9 +18104,13 @@
             "description": "Members with at least one answer in the last 7 days."
           },
           "accuracy": {
-            "type": "integer",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
-            "description": "Whole percent over all answers of the members; 0 when none."
+            "maximum": 100,
+            "description": "XS-5, 1 decimal, over all answers of the members; null when none."
           }
         },
         "required": [
@@ -18086,8 +18136,12 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "integer",
-            "minimum": 0
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100
           }
         },
         "required": [
@@ -18262,9 +18316,13 @@
             "description": "round((week - previous 7 days) / previous * 100); 0 when the previous week has no answer."
           },
           "accuracy": {
-            "type": "integer",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
-            "description": "round(correct / answered * 100) over all answers; 0 when none."
+            "maximum": 100,
+            "description": "XS-5 pooled correct / answered x 100, 1 decimal; null when none."
           },
           "gpsOverall": {
             "type": [
@@ -18320,17 +18378,25 @@
             "minimum": 0
           },
           "kirkT2Accuracy": {
-            "type": "integer",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
+            "maximum": 100,
             "description": "Accuracy of the last 30 days."
           },
           "kirkT2Delta": {
             "type": "integer",
-            "description": "Difference to the 30 days before."
+            "description": "Difference to the 30 days before, whole points from the 1-decimal values; 0 when either side is null."
           },
           "kirkT2Prev": {
-            "type": "integer",
-            "minimum": 0
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100
           },
           "kirkT3Active": {
             "type": "integer",
@@ -18445,8 +18511,12 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "integer",
-            "minimum": 0
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100
           },
           "lastActiveAt": {
             "allOf": [
@@ -18506,8 +18576,12 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "integer",
-            "minimum": 0
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100
           }
         },
         "required": [
@@ -18535,8 +18609,12 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "integer",
-            "minimum": 0
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100
           },
           "students": {
             "type": "integer",
@@ -18699,8 +18777,12 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "integer",
-            "minimum": 0
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100
           },
           "lastActiveAt": {
             "allOf": [
@@ -18730,12 +18812,20 @@
         "type": "object",
         "properties": {
           "accuracyNow": {
-            "type": "integer",
-            "minimum": 0
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100
           },
           "accuracyPrev": {
-            "type": "integer",
-            "minimum": 0
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100
           },
           "accuracyChange": {
             "type": "integer"
@@ -18817,12 +18907,20 @@
             "type": "object",
             "properties": {
               "accuracyNow": {
-                "type": "integer",
-                "minimum": 0
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 100
               },
               "accuracyPrev": {
-                "type": "integer",
-                "minimum": 0
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 100
               },
               "accuracyChange": {
                 "type": "integer"
@@ -18913,8 +19011,10 @@
             "type": "string"
           },
           "overallAccuracy": {
-            "type": "integer",
-            "minimum": 0
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "XS-5, 1 decimal; students here have >= 10 answers so never null."
           },
           "trend": {
             "type": "integer",
@@ -19265,8 +19365,12 @@
                   "type": "string"
                 },
                 "accuracy": {
-                  "type": "integer",
-                  "minimum": 0
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "maximum": 100
                 },
                 "awardedAt": {
                   "$ref": "#/components/schemas/Timestamp"
@@ -28794,7 +28898,10 @@
                       "type": "string"
                     },
                     "accuracy": {
-                      "type": "number"
+                      "type": [
+                        "number",
+                        "null"
+                      ]
                     }
                   },
                   "required": [
@@ -28999,10 +29106,13 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100,
-            "description": "correct / answered x 100, 1 decimal, never above 100."
+            "description": "correct / answered x 100, 1 decimal, never above 100; null (\"—\", never 0%) with 0 answers."
           },
           "seconds": {
             "type": "integer",
@@ -29344,7 +29454,10 @@
                     "minimum": 0
                   },
                   "accuracy": {
-                    "type": "number"
+                    "type": [
+                      "number",
+                      "null"
+                    ]
                   }
                 },
                 "required": [

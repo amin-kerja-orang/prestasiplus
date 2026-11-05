@@ -7,7 +7,7 @@ import { computed } from 'vue'
 
 import type { CcLiveData } from '../../api/command-center-types'
 import BoardPanel from './BoardPanel.vue'
-import { type DrillRequest, plain, stars } from './copy'
+import { type DrillRequest, accuracyText, plain, stars } from './copy'
 
 const props = defineProps<{ d: CcLiveData }>()
 const emit = defineEmits<{ drill: [req: DrillRequest] }>()
@@ -17,7 +17,7 @@ const rows = computed(() => {
   const d = props.d
   return [
     { id: 't1', width: clamp(d.kirkT1 * 10), text: `${stars(d.kirkT1)} ${plain(d.kirkT1)}/10` },
-    { id: 't2', width: clamp(d.kirkT2Accuracy), text: `${String(d.kirkT2Accuracy)}% ketepatan` },
+    { id: 't2', width: clamp(d.kirkT2Accuracy ?? 0), text: `${accuracyText(d.kirkT2Accuracy)} ketepatan` },
     {
       id: 't3',
       width: clamp(d.totalStudentsRaw === 0 ? 0 : (d.kirkT3Active / d.totalStudentsRaw) * 100),

@@ -116,7 +116,7 @@ const EMPTY: SchoolActivityReport = report({
   pupils: { semua: [], aktif: [], loginSahaja: [], belumLogin: [] },
   tiles: {
     teachers: { total: 0, logged: 0, questions: 0, coins: 0 },
-    pupils: { total: 0, practised: 0, sessions: 0, accuracy: 0 },
+    pupils: { total: 0, practised: 0, sessions: 0, accuracy: null },
   },
 })
 
@@ -419,7 +419,7 @@ describe('Murid tab (FR-M27-72; AC 20.2, 20.3)', () => {
       'Jumlah Sesi',
       'Purata Ketepatan',
     ])
-    expect(texts(w, 'la-tile-value')).toEqual(['1,234', '600', '1,500', '68.2%'])
+    expect(texts(w, 'la-tile-value')).toEqual(['1,234', '600', '1,500', '68%'])
     expect(w.findAll('[data-testid="la-murid-table"] th').map((e) => e.text())).toEqual([
       '#',
       'Nama',
@@ -433,12 +433,12 @@ describe('Murid tab (FR-M27-72; AC 20.2, 20.3)', () => {
     expect(w.find('select').exists()).toBe(false)
   })
 
-  it('formats the row cells: dash class, one-decimal accuracy, "{h}j {m}m", coins, login text', async () => {
+  it('formats the row cells: dash class, whole-number accuracy, "{h}j {m}m", coins, login text', async () => {
     const w = await murid()
     expect(texts(w, 'la-murid-name')[0]).toBe('Murid 1')
     expect(texts(w, 'la-murid-kelas')[0]).toBe('4 Contoh')
     expect(texts(w, 'la-murid-sesi')[0]).toBe('3')
-    expect(texts(w, 'la-murid-ketepatan')[0]).toBe('66.7%')
+    expect(texts(w, 'la-murid-ketepatan')[0]).toBe('67%')
     expect(texts(w, 'la-murid-masa')[0]).toBe('1j 2m')
     expect(texts(w, 'la-murid-syiling')[0]).toBe('1,200')
     expect(texts(w, 'la-murid-last')[0]).toBe('Belum login')

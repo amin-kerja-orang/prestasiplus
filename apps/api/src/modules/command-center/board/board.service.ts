@@ -33,11 +33,10 @@ const ROLE_SHOWN = ['admin', 'school_admin', 'teacher', 'parent', 'student'] as 
 const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const
 
 /**
- * XS-5 (`xsAccuracy`): pooled correct / answers, one decimal half up, never above 100. Without answers it is 0 because every
- * accuracy field of the board contract is a non-nullable `pct` (the contract part of S6-T03 makes them nullable, "—" in the UI).
- * The school row `accuracy` is already nullable and is null for a school without answers.
+ * XS-5 (`xsAccuracy`): pooled correct / answers, one decimal half up, never above 100; `null` (shown "—", never 0%) without
+ * answers (every accuracy field of the board contract is nullable).
  */
-const accuracyOf = (correct: number, answers: number): number => xsAccuracy(correct, answers) ?? 0
+const accuracyOf = (correct: number, answers: number): number | null => xsAccuracy(correct, answers)
 
 /** Half away from zero. */
 function weekChangeOf(week: number, last: number): number {
@@ -338,7 +337,7 @@ export class BoardService {
         .sort((a, b) => b.students - a.students || a.name.localeCompare(b.name) || idCompare(a.userId, b.userId)),
       students: pupils
         .map((p) => ({ userId: p.userId, name: p.name, answers: p.answers, accuracy: accuracyOf(p.correct, p.answers), lastActiveHuman: diffForHumans(p.lastAt, now) }))
-        .sort((a, b) => b.answers - a.answers || b.accuracy - a.accuracy || idCompare(a.userId, b.userId)),
+        .sort((a, b) => b.answers - a.answers || (b.accuracy ?? 0) - (a.accuracy ?? 0) || idCompare(a.userId, b.userId)),
       logins: logins.map((l) => ({ userId: l.userId, name: l.name, role: roleShown(l.roles), timeAgo: diffForHumans(l.lastLoginAt, now) })),
     }
   }

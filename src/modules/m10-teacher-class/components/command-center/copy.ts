@@ -4,7 +4,7 @@
  */
 
 import type { DsStatus } from '@/ds'
-import { formatNumber } from '@/lib/number'
+import { formatNumber, formatPercent, roundHalfUp } from '@/lib/number'
 
 import type {
   CcDrillType,
@@ -87,7 +87,7 @@ export const EMPTY_LIVE: CcLiveData = {
   answeredWeek: '0',
   answeredWeekRaw: 0,
   weekChange: 0,
-  accuracy: 0,
+  accuracy: null,
   gpsOverall: null,
   classes: [],
   topStudents: [],
@@ -97,9 +97,9 @@ export const EMPTY_LIVE: CcLiveData = {
   recentFeed: [],
   kirkT1: 0,
   kirkT1Count: 0,
-  kirkT2Accuracy: 0,
+  kirkT2Accuracy: null,
   kirkT2Delta: 0,
-  kirkT2Prev: 0,
+  kirkT2Prev: null,
   kirkT3Active: 0,
   kirkT3Delta: 0,
   kirkT3Prev: 0,
@@ -110,6 +110,16 @@ export const EMPTY_LIVE: CcLiveData = {
 
 /** GPS shown with 2 decimals; `null` shows "--" (FN-M10-2.2.3). */
 export const gpsText = (gps: number | null): string => (gps === null ? '--' : gps.toFixed(2))
+
+/** The "no data" dash of an accuracy (XS-5: never 0%). */
+export const NO_DATA = '—'
+
+/** The whole number a screen shows for an accuracy: half up from the one-decimal wire value (57.9 -> 58, 40 FR-X4-5). */
+export const shownAccuracy = (value: number | null): number | null => (value === null ? null : roundHalfUp(value))
+
+/** "58%" for 57.9, "—" for null. The one accuracy text of the guru Command Center. */
+export const accuracyText = (value: number | null): string =>
+  value === null ? NO_DATA : formatPercent(value, { decimals: 0 })
 
 /** A number without a forced fraction ("0", "46", "7.5"). */
 export const plain = (value: number, decimals = 1): string =>
@@ -126,7 +136,7 @@ export function insightText(d: CcLiveData): string {
   const e = d.engagement
   const total = e.champion + e.consistent + e.developing + e.minimum + e.disengaged
   const active = total === 0 ? 0 : ((e.champion + e.consistent + e.developing) / total) * 100
-  return `"${plain(active)}% pelajar terlibat aktif. Ketepatan purata ${String(d.accuracy)}%. GPS sekolah: ${gpsText(d.gpsOverall)}."`
+  return `"${plain(active)}% pelajar terlibat aktif. Ketepatan purata ${accuracyText(d.accuracy)}. GPS sekolah: ${gpsText(d.gpsOverall)}."`
 }
 
 /** FN-M10-2.2.5: width (percent) of the "Aktiviti Hari Ini" bar. */
@@ -142,10 +152,12 @@ export function weekChangeText(change: number): { text: string; tone: string } {
   return { text: `▼ ${String(Math.abs(change))}% vs minggu lepas`, tone: 'text-error' }
 }
 
-/** FN-M10-2.2.5 / 2.2.7: accuracy >= 70 emerald, < 50 rose, else amber. */
-export function accuracyTone(value: number): string {
-  if (value >= 70) return 'text-success'
-  if (value < 50) return 'text-error'
+/** FN-M10-2.2.5 / 2.2.7: accuracy >= 70 emerald, < 50 rose, else amber; compared on the displayed whole number (49.5 shows 50). */
+export function accuracyTone(value: number | null): string {
+  const shown = shownAccuracy(value)
+  if (shown === null) return 'text-muted'
+  if (shown >= 70) return 'text-success'
+  if (shown < 50) return 'text-error'
   return 'text-warning'
 }
 

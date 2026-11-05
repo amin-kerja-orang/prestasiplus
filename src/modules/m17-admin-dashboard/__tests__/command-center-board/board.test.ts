@@ -81,7 +81,7 @@ describe('S2 admin board', () => {
     }
     expect(w.find('[data-testid="cc-s2-subtitle"]').exists()).toBe(false)
 
-    expect(texts(w, 'cc-kpi-value')).toEqual(['9', '3,152', '477,743', '82.9%'])
+    expect(texts(w, 'cc-kpi-value')).toEqual(['9', '3,152', '477,743', '83%'])
     expect(texts(w, 'cc-kpi-sub')).toEqual([
       'langganan aktif',
       '1,563 aktif menjawab',
@@ -100,13 +100,13 @@ describe('S2 admin board', () => {
     )
     expect(texts(w, 'cc-kirk-text')).toEqual([
       '★★★★★ 4.6/5',
-      '82.9% ketepatan',
+      '83% ketepatan',
       '91 aktif 30h',
       'GPS 2.880',
     ])
     expect(text(w, 'cc-alesa')).toBe(
       '"Platform menunjukkan penurunan 67% minggu ini. 3.6% pelajar terlibat aktif. ' +
-        'Ketepatan purata 82.9% dengan 9 sekolah aktif. GPS keseluruhan: 2.88."',
+        'Ketepatan purata 83% dengan 9 sekolah aktif. GPS keseluruhan: 2.88."',
     )
     expect(text(w, 'cc-today-bar')).toBe('340 soalan')
     expect(text(w, 'cc-week')).toBe('Minggu ini: 2,508')
@@ -115,7 +115,7 @@ describe('S2 admin board', () => {
     expect(
       w.findAll('[data-testid="cc-panel-top-pupils"] [data-ds="list-row-rank"]').map((e) => e.text()),
     ).toEqual(['1', '2', '3', '4', '5'])
-    expect(texts(w, 'cc-top-pupil-stat')[0]).toBe('452 jwb99.6%')
+    expect(texts(w, 'cc-top-pupil-stat')[0]).toBe('452 jwb100%')
     expect(w.get('[data-testid="cc-top-pupil"] a').attributes('href')).toBe(
       '/admin/command-center/student/2022',
     )
@@ -331,7 +331,7 @@ describe('S2 Admin Sekolah alias', () => {
     expect(w.find('[data-testid="cc-panel-top-schools"]').exists()).toBe(false)
     expect(w.text()).not.toContain('keseluruhan platform')
     expect(w.text()).not.toContain('Top Sekolah')
-    expect(texts(w, 'cc-kpi-value')).toEqual(['1', '12', '3', '66.7%'])
+    expect(texts(w, 'cc-kpi-value')).toEqual(['1', '12', '3', '67%'])
     expect(text(w, 'cc-alesa')).toContain('Sekolah anda menunjukkan stabil 0%')
     expect(w.text()).not.toContain('Platform menunjukkan')
     w.unmount()

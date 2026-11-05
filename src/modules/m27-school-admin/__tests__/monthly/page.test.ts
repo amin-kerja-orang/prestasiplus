@@ -197,7 +197,7 @@ describe('cards (FR-M27-82, 83; AC-M27-23.2, 23.4)', () => {
     const w = await mountPage(report())
     const labels = texts(w, 'lb-card-label')
     expect(labels).toEqual(['Penglibatan', 'Soalan Dijawab', 'Ketepatan', 'Sesi Latihan'])
-    expect(texts(w, 'lb-card-value')).toEqual(['60%', '1,234', '61.4%', '82'])
+    expect(texts(w, 'lb-card-value')).toEqual(['60%', '1,234', '61%', '82'])
     expect(texts(w, 'lb-card-sub')).toEqual(['6 aktif / 10 daftar', '206 soalan/pelajar'])
   })
 
@@ -225,9 +225,9 @@ describe('Statistik Bulanan (FR-M27-84; AC-M27-24.1, 24.2)', () => {
     // the "Jumlah" row closes the table
     const rows = w.findAll('[data-testid="lb-table"] tbody tr')
     expect(rows.map((r) => r.findAll('td').map((c) => c.text()))).toEqual([
-      ['Ogos 2026', '200', '100', '4', '50.0', '50.0%'],
-      ['September 2026', '1,234', '666', '6', '205.7', '61.4%'],
-      ['Jumlah', '1,434', '766', '—', '—', '53.4%'],
+      ['Ogos 2026', '200', '100', '4', '50.0', '50%'],
+      ['September 2026', '1,234', '666', '6', '205.7', '61%'],
+      ['Jumlah', '1,434', '766', '—', '—', '53%'],
     ])
   })
 
@@ -253,14 +253,14 @@ describe('Prestasi Mengikut Subjek (FR-M27-85; AC-M27-24.3)', () => {
     expect(text(w, 'lb-subjects-title')).toBe('Prestasi Mengikut Subjek')
     expect(text(w, 'lb-strongest')).toContain('SUBJEK TERKUAT')
     expect(text(w, 'lb-strongest-name')).toBe('Sejarah')
-    expect(text(w, 'lb-strongest-figure')).toBe('71.3% (400 soalan)')
+    expect(text(w, 'lb-strongest-figure')).toBe('71% (400 soalan)')
     expect(text(w, 'lb-weakest')).toContain('SUBJEK PERLU PERHATIAN')
     expect(text(w, 'lb-weakest-name')).toBe('Kimia')
-    expect(text(w, 'lb-weakest-figure')).toBe('40.0% (100 soalan)')
+    expect(text(w, 'lb-weakest-figure')).toBe('40% (100 soalan)')
     expect(texts(w, 'lb-subject-name')).toEqual(['Sejarah', 'Kimia'])
     expect(texts(w, 'lb-subject-figure')).toEqual([
-      '71.3% · 400 soalan · 5 pelajar',
-      '40.0% · 100 soalan · 3 pelajar',
+      '71% · 400 soalan · 5 pelajar',
+      '40% · 100 soalan · 3 pelajar',
     ])
   })
 

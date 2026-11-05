@@ -12,7 +12,7 @@ import { fetchCommandCenterPredictive } from '../../api/command-center'
 import CcDialog from './CcDialog.vue'
 import CcTable from './CcTable.vue'
 import { statItems, useOpenTab } from './composables'
-import { accuracyTone, GRADES, plain, riskLabel, S2_COPY, signedPct, studentPath } from './copy'
+import { accuracyText, accuracyTone, GRADES, plain, riskLabel, S2_COPY, signedPct, studentPath } from './copy'
 import type { DrillRow } from './drill-table'
 
 defineEmits<{ close: [] }>()
@@ -59,7 +59,7 @@ const rows = computed<DrillRow[]>(() =>
     cells: [
       { text: String(i + 1) },
       { text: p.studentName },
-      { text: `${String(p.overallAccuracy)}%`, tone: accuracyTone(p.overallAccuracy), mono: true },
+      { text: accuracyText(p.overallAccuracy), tone: accuracyTone(p.overallAccuracy), mono: true },
       { text: `${p.trendLabel} (${signedPct(p.trend)})`, tone: TREND_TONE[p.trendLabel] },
       { text: `${plain(p.consistency)}%`, mono: true },
       { text: p.predictedGrade },

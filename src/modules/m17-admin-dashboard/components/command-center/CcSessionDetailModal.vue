@@ -9,7 +9,7 @@ import { useApi } from '@/composables'
 import { DsDialog, DsLoadError, DsStatRow } from '@/ds'
 
 import { fetchCcSession } from '../../api/command-center'
-import { dmyTime, hms, MODAL_ERROR_COPY, pct2, statItems } from './cc-format'
+import { accuracyText, dmyTime, hms, MODAL_ERROR_COPY, statItems } from './cc-format'
 import { useCcDialog } from './use-cc-dialog'
 
 const props = defineProps<{ sessionId: string }>()
@@ -35,7 +35,7 @@ const stats = computed(() => {
     { label: 'Soalan', value: String(d.total) },
     { label: 'Betul', value: String(d.correctCount) },
     { label: 'Salah', value: String(d.wrongCount) },
-    { label: 'Ketepatan', value: pct2(d.accuracy) },
+    { label: 'Ketepatan', value: accuracyText(d.accuracy) },
   ]
 })
 </script>

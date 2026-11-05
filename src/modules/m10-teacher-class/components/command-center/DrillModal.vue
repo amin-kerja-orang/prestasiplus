@@ -14,7 +14,7 @@ import type { CcDrillType } from '../../api/command-center-types'
 import CcDialog from './CcDialog.vue'
 import CcTable from './CcTable.vue'
 import { statItems, useOpenTab } from './composables'
-import { plain, S2_COPY, studentPath } from './copy'
+import { accuracyText, plain, S2_COPY, studentPath } from './copy'
 import { drillTable } from './drill-table'
 
 const props = defineProps<{ type: CcDrillType; filter?: string; label: string }>()
@@ -34,8 +34,8 @@ const vsCards = computed(() => {
   const e = extra.value
   if (!e) return []
   return [
-    { label: 'Ketepatan Kini', value: `${plain(e.accuracyNow)}%` },
-    { label: 'Ketepatan Lepas', value: `${plain(e.accuracyPrev)}%` },
+    { label: 'Ketepatan Kini', value: accuracyText(e.accuracyNow) },
+    { label: 'Ketepatan Lepas', value: accuracyText(e.accuracyPrev) },
     {
       label: 'Perubahan',
       value: `${e.accuracyChange > 0 ? '+' : ''}${plain(e.accuracyChange)}%`,

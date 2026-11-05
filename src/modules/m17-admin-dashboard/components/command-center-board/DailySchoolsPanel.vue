@@ -4,11 +4,11 @@
  * activity in the period; a row click toggles its drill (Guru Aktif, Pelajar, Login, "Lihat penuh →"). Admin
  * only: the page does not render it for the school admin (FR-M17-116).
  */
-import { DsBadge, DsEmptyState, EMPTY_VALUE, formatCount, formatPercent } from '@/ds'
+import { DsBadge, DsEmptyState, formatCount } from '@/ds'
 
 import type { CcDailyActivity, CcSchoolActivity } from '../../api/command-center-board'
 import { ccPaths } from '../command-center/cc-paths'
-import { shortSchool } from '../command-center/cc-format'
+import { accuracyText, shortSchool, shownAccuracy } from '../command-center/cc-format'
 import { roleLabel, S3_COPY } from './board-copy'
 import type { DrillState, LoadStatus } from './composables'
 import DailyPanel from './DailyPanel.vue'
@@ -24,13 +24,17 @@ defineEmits<{ toggle: [schoolId: number | string] }>()
 const paths = ccPaths(props.basePath)
 
 const hasAnswers = (s: CcSchoolActivity) => s.totalAnswers > 0
-const accuracy = (s: CcSchoolActivity) =>
-  s.accuracy === null ? EMPTY_VALUE : formatPercent(s.accuracy)
-const toneOf = (value: number | null) =>
-  value === null ? 'neutral' : value >= 70 ? 'success' : value >= 50 ? 'warning' : 'error'
-const toneClass = (value: number) =>
-  value >= 70 ? 'text-success' : value >= 50 ? 'text-warning' : 'text-error'
-const pct1 = formatPercent
+const accuracy = (s: CcSchoolActivity) => accuracyText(s.accuracy)
+// Bands compare the displayed whole number (49.5 shows 50, which is not below 50).
+const toneOf = (value: number | null) => {
+  const shown = shownAccuracy(value)
+  return shown === null ? 'neutral' : shown >= 70 ? 'success' : shown >= 50 ? 'warning' : 'error'
+}
+const toneClass = (value: number | null) => {
+  const shown = shownAccuracy(value)
+  return shown === null ? 'text-muted' : shown >= 70 ? 'text-success' : shown >= 50 ? 'text-warning' : 'text-error'
+}
+const pct1 = accuracyText
 </script>
 
 <template>

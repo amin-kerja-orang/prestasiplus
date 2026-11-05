@@ -2,7 +2,7 @@
  * S5 formats (SRS M27 BR-M27-39; FR-M27-81…86): `ms-MY` counts, one-decimal accuracy, BM month names.
  */
 
-import { formatCount, formatNumber } from '@/lib/number'
+import { formatCount, formatNumber, formatPercent } from '@/lib/number'
 import { formatMyt, monthName } from '@/lib/time'
 
 /** The "no data" dash of an accuracy (FR-M27-82). */
@@ -13,9 +13,9 @@ export const count = (n: number): string => formatCount(n)
 /** Integer percent, e.g. "60%". */
 export const pct0 = (n: number): string => `${formatNumber(n)}%`
 
-/** One decimal, e.g. "61.4%"; the dash when null. */
+/** Accuracy as the whole number, half up (57.9 -> "58%", 40 FR-X4-5); the dash when null (never 0%). */
 export const pct1 = (n: number | null): string =>
-  n === null ? NO_DATA : `${formatNumber(n, { decimals: 1 })}%`
+  n === null ? NO_DATA : formatPercent(n, { decimals: 0 })
 
 /** One decimal without a unit (Purata/Pelajar). */
 export const dec1 = (n: number): string => formatNumber(n, { decimals: 1 })

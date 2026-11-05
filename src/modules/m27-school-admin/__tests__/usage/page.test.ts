@@ -196,7 +196,7 @@ describe('tiles (FR-M27-52, 53; AC 15.1, 15.2)', () => {
       '66%',
       '1,500',
       '21,000',
-      '61.4%',
+      '61%',
     ])
     expect(w.findAll('[data-testid="su-tile-sub"]').map((e) => e.text())).toEqual([
       'daripada 1,234',
@@ -242,9 +242,9 @@ describe('Mengikut Mod Latihan (FR-M27-54; AC 16.1)', () => {
       '100',
     ])
     expect(w.findAll('[data-testid="su-mode-accuracy"]').map((e) => e.text())).toEqual([
-      '55.3%',
+      '55%',
       '—',
-      '40.0%',
+      '40%',
     ])
     expect(has(w, 'su-empty')).toBe(false)
   })

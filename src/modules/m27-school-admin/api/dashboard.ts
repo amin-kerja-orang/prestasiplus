@@ -25,7 +25,7 @@ export interface DashboardRisk {
 export interface DashboardLevel {
   code: 't4' | 't5'
   name: string
-  accuracy: number
+  accuracy: number | null
 }
 
 export interface DashboardGrade {

@@ -143,7 +143,7 @@ describe('ALESA AI sentence (FN-M17-3.3.3, DV-M17-09)', () => {
     expect(s.trend).toBe('penurunan')
     expect(s.text).toBe(
       'Platform menunjukkan penurunan 65% minggu ini. 3.6% pelajar terlibat aktif. ' +
-        'Ketepatan purata 82.9% dengan 9 sekolah aktif. GPS keseluruhan: 2.88.',
+        'Ketepatan purata 83% dengan 9 sekolah aktif. GPS keseluruhan: 2.88.',
     )
   })
 
@@ -162,7 +162,7 @@ describe('ALESA AI sentence (FN-M17-3.3.3, DV-M17-09)', () => {
     )
     expect(s.text).toBe(
       'Sekolah anda menunjukkan peningkatan 168% minggu ini. 25.0% pelajar terlibat aktif. ' +
-        'Ketepatan purata 82.9% dengan 1 sekolah aktif. GPS keseluruhan: 0.00.',
+        'Ketepatan purata 83% dengan 1 sekolah aktif. GPS keseluruhan: 0.00.',
     )
     expect(s.text.toLowerCase()).not.toContain('platform')
   })
@@ -242,12 +242,12 @@ describe('S3 card texts (FR-M17-37…40, DV-M17-10)', () => {
     expect(ccLoginRoleLine({})).toBe('')
   })
 
-  it('"Purata: {m}m {s}s" and "Ketepatan: {n}%" with the ".0" dropped', () => {
+  it('"Purata: {m}m {s}s" and "Ketepatan: {n}%", the whole number half up', () => {
     expect(ccAvgSessionLabel(168)).toBe('Purata: 2m 48s')
     expect(ccAvgSessionLabel(0)).toBe('Purata: 0m 0s')
     expect(ccAvgSessionLabel(114)).toBe('Purata: 1m 54s')
     expect(ccAccuracyLabel(95)).toBe('Ketepatan: 95%')
-    expect(ccAccuracyLabel(84.6)).toBe('Ketepatan: 84.6%')
+    expect(ccAccuracyLabel(84.6)).toBe('Ketepatan: 85%')
   })
 
   it('the S3 title swaps "PLATFORM" for "SEKOLAH" on the school view (FR-M17-116)', () => {

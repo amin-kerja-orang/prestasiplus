@@ -79,7 +79,7 @@ describe('badges with a populated port', () => {
     const body = CommandCenterGuruBadgeHoldersSchema.parse((await getAs(teacher, '/guru/command-center/badge-holders?badgeId=1')).body)
     expect(body.badge).toEqual({ name: 'Pemula', description: '' })
     expect(body.holders.map((h) => h.studentId)).toEqual([w.pupils[1], w.pupils[0]])
-    expect(body.holders[0]).toMatchObject({ name: 'Murid 2', accuracy: 67 })
+    expect(body.holders[0]).toMatchObject({ name: 'Murid 2', accuracy: 66.7 })
     expect(JSON.stringify(body)).not.toContain(w.otherPupil)
     const none = CommandCenterGuruBadgeHoldersSchema.parse((await getAs(teacher, '/guru/command-center/badge-holders?badgeId=2')).body)
     expect(none.holders).toEqual([])

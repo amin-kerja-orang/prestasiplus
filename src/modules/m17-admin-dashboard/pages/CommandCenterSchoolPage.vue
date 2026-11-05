@@ -12,7 +12,7 @@ import { DsDrillTable, DsLoadError, DsPanel, DsStatRow, type StatItem } from '@/
 
 import { fetchCcSchool } from '../api/command-center'
 import type { CcSchoolTeacher } from '../api/command-center-types'
-import { count, pct1 } from '../components/command-center/cc-format'
+import { accuracyText, count } from '../components/command-center/cc-format'
 import { ccPaths } from '../components/command-center/cc-paths'
 import CcFrame from '../components/command-center/CcFrame.vue'
 import { useCcPage } from '../components/command-center/use-cc-page'
@@ -49,7 +49,7 @@ const cards = computed<StatItem[]>(() => {
       value: count(c.answers),
       icon: 'i-ph-clipboard-text', accent: 'trial',
     },
-    { key: 'accuracy', label: 'Ketepatan', value: pct1(c.accuracy), icon: 'i-ph-target', accent: 'win' },
+    { key: 'accuracy', label: 'Ketepatan', value: accuracyText(c.accuracy), icon: 'i-ph-target', accent: 'win' },
   ]
 })
 const columns: TableColumn<Row>[] = [

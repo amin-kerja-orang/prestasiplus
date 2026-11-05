@@ -5,10 +5,10 @@
  */
 import { computed } from 'vue'
 
-import { DsBadge, DsCluster, DsProgress, DsStack, DsText, formatCount, formatPercent } from '@/ds'
+import { DsBadge, DsCluster, DsProgress, DsStack, DsText, formatCount } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
-import { ccKirkpatrickBars, ccStars, type CcLiveData } from '../../api/command-center-board'
+import { accuracyText, ccKirkpatrickBars, ccStars, type CcLiveData } from '../../api/command-center-board'
 import { S2_COPY } from './board-copy'
 import BoardPanel from './BoardPanel.vue'
 
@@ -29,7 +29,7 @@ const rows = computed(() => {
       id: 't2',
       label: 'T2',
       width: bars.t2 * 100,
-      text: `${formatPercent(d.kirk.t2Accuracy)} ketepatan`,
+      text: `${accuracyText(d.kirk.t2Accuracy)} ketepatan`,
     },
     {
       id: 't3',
