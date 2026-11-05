@@ -92,9 +92,12 @@ async function submit(): Promise<void> {
   }
   saving.value = true
   try {
+    // The school admin's values are sent trimmed, as they were checked (S5-T14).
+    const sentName = isSchoolAdmin.value ? name.value.trim() : name.value
+    const sentPhone = isSchoolAdmin.value ? phone.value.trim() : phone.value
     const result = await updateProfile({
-      name: name.value,
-      phone: phone.value === '' ? null : phone.value,
+      name: sentName,
+      phone: sentPhone === '' ? null : sentPhone,
       bio: bio.value === '' ? null : bio.value,
     })
     session.setUser(result.data)

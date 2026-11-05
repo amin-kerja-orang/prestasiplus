@@ -292,6 +292,38 @@ describe('S5-T14 school admin "Kemaskini Profil" (20 R1-AS-A1: FR-AS-A1-2, FR-AS
     expect(useFlashStore().current).toEqual({ type: 'success', message: 'Profil dikemaskini.' })
   })
 
+  it.each([
+    ['12345678', false],
+    ['123456789', true],
+    ['12345678901234', true],
+    ['123456789012345', false],
+    ['+60-123-456789', true],
+    ['   ', true],
+    ['60+123456789', false],
+  ])('Telefon %j passes the check: %s (9-14 digits, optional leading "+")', async (value, ok) => {
+    apiMocks.updateProfile.mockResolvedValue({ data: ADMIN, status: 'x' })
+    const w = await render(ProfileEditPage, ADMIN)
+    await w.get('[data-testid=profile-phone-input]').setValue(value)
+    await w.get('[data-testid=profile-form]').trigger('submit')
+    await flushPromises()
+    expect(apiMocks.updateProfile).toHaveBeenCalledTimes(ok ? 1 : 0)
+    if (ok) expect(apiMocks.updateProfile.mock.calls[0]?.[0]).toMatchObject({ phone: value.trim() === '' ? null : value.trim() })
+  })
+
+  it('a Nama of exactly 255 characters saves (trimmed); a bad Nama and a bad Telefon show two lines', async () => {
+    apiMocks.updateProfile.mockResolvedValue({ data: ADMIN, status: 'x' })
+    const w = await render(ProfileEditPage, ADMIN)
+    await w.get('[data-testid=profile-name-input]').setValue(` ${'A'.repeat(255)} `)
+    await w.get('[data-testid=profile-form]').trigger('submit')
+    await flushPromises()
+    expect(apiMocks.updateProfile).toHaveBeenCalledWith(expect.objectContaining({ name: 'A'.repeat(255) }))
+    await w.get('[data-testid=profile-name-input]').setValue('')
+    await w.get('[data-testid=profile-phone-input]').setValue('123')
+    await w.get('[data-testid=profile-form]').trigger('submit')
+    await flushPromises()
+    expect(useFlashStore().current).toEqual({ type: 'error', message: ['Sila isi nama.', 'Format telefon tidak sah.'] })
+  })
+
   it('a blank or over-long Nama is refused with its BM line and nothing is saved', async () => {
     const w = await render(ProfileEditPage, ADMIN)
     await w.get('[data-testid=profile-name-input]').setValue('   ')
