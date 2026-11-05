@@ -152,6 +152,10 @@ export interface Dashboard {
   streak: { count: number; practisedToday: boolean }
   wallet: { coins: number; points: number; level: number; levelProgressPct: number }
   week: { sessions: number; accuracyPct: number }
+  /** Pupil's pooled accuracy (all modes), at most one decimal; `null` = 0 answers. */
+  accuracyPct: number | null
+  /** The active package (complimentary or school subscription); `null` = none (then the trial card may show). */
+  package: { name: string; validUntil: string } | null
   banners: DashboardBanner[]
   quests: DashboardQuest[]
   questsCompleted: number
@@ -183,6 +187,8 @@ export interface ChapterSubject {
   color: string
   chapterCount: number
   questionCount: number
+  /** Levels with chapters and their own counts (FR-MUR-9-5); ids are numbers in the mock, strings on the real API. */
+  levels: { id: EntityId; code: string; name: string; chapterCount: number; questionCount: number }[]
 }
 
 export interface ChapterCard {

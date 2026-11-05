@@ -4,11 +4,14 @@ import { AuditModule } from '../../common/audit/audit.module'
 import { ThrottleModule } from '../../common/throttle'
 import { AccountRepository as AuthAccountRepository } from '../auth/account.repository'
 import { AuthModule, AuthPortsModule } from '../auth'
+import { ClassesModule } from '../classes'
 import { FilesModule } from '../files'
 import { NotificationsModule } from '../notifications'
+import { PracticeModule } from '../practice'
 import { SchoolsModule } from '../schools'
 import { IcService } from '../users/credentials'
 import { UsersModule } from '../users'
+import { WalletModule } from '../wallet'
 import { NotificationsAdapter } from './notifications.adapter'
 import { AccountPublicController, MeController, PictureInterceptor, PublicStatsController } from './account.controller'
 import { AccountDataRepository } from './account-data.repository'
@@ -19,10 +22,13 @@ import { MoodController } from './mood.controller'
 import { MoodReadAdapter } from './mood-read.adapter'
 import { MoodService } from './mood.service'
 import { LoggingMailPort, MAIL_PORT, NOTIFICATION_PORT } from './ports'
+import { ProfileActivityService } from './profile-activity.service'
 import { ProfileService } from './profile.service'
 import { RegistrationService } from './registration.service'
 import { SessionIssuer } from './session-issuer.service'
 import { SettingsService, StatsService } from './settings.service'
+import { TeacherCardController, TeacherProfileController } from './teacher-profile.controller'
+import { TeacherProfileService } from './teacher-profile.service'
 
 /**
  * M01 account basics, part A of BE-06: self-registration, password reset (e-mail link and IC),
@@ -32,12 +38,20 @@ import { SettingsService, StatsService } from './settings.service'
  * - `MAIL_PORT`: logging only in B1 (OD-7); nothing is e-mailed.
  * - `NOTIFICATION_PORT`: bound to part B's `NotificationsService.push` (D59a); sent after commit.
  *
+ * API-MUR-02 (`GET /me/profile-activity`) reads wallet/streak (M14 `WalletModule`), the badge catalogue (M14
+ * `GamificationModule`, resolved lazily) and sessions (M05 `PracticeModule`) through their exported services, read-only.
+ * `GamificationModule` is NOT imported here: it pulls `QuestionsModule` in through `GamesCoreModule`, and this module is listed early in
+ * `modules/index.ts`, so `GET /guru/questions/:id` would register before `/guru/questions/template` (see the ORDER NOTE there).
+ *
+ * API-GUR-22 (`/account/teacher-profile`, `/public/teachers/:id`) lives in `teacher-profile.{controller,service}.ts`; the teaching
+ * details are read and written through `ClassesRepository` (M10 owns `teacher_profiles`).
+ *
  * The auth `AccountRepository` is stateless and not exported by `AuthModule`,
  * so it is provided here again.
  */
 @Module({
-  imports: [AuditModule, ThrottleModule, AccountPortsModule, AuthModule, AuthPortsModule, UsersModule, SchoolsModule, FilesModule, NotificationsModule],
-  controllers: [AccountPublicController, MeController, MoodController, PublicStatsController],
+  imports: [AuditModule, ThrottleModule, AccountPortsModule, AuthModule, AuthPortsModule, UsersModule, SchoolsModule, FilesModule, NotificationsModule, WalletModule, PracticeModule, ClassesModule],
+  controllers: [AccountPublicController, MeController, MoodController, PublicStatsController, TeacherProfileController, TeacherCardController],
   providers: [
     AccountDataRepository,
     AccountThrottle,
@@ -45,6 +59,8 @@ import { SettingsService, StatsService } from './settings.service'
     RegistrationService,
     PasswordResetService,
     ProfileService,
+    ProfileActivityService,
+    TeacherProfileService,
     SettingsService,
     StatsService,
     MoodService,
