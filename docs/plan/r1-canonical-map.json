@@ -2301,6 +2301,46 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/hadiah|m15.admin-hadiah",
+      "path": "/admin/hadiah",
+      "name": "m15.admin-hadiah",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m15-rewards-shop/pages/AdminHadiahPage.vue",
+      "file": "src/modules/m15-rewards-shop/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/hadiah/baharu|m15.admin-hadiah-new",
+      "path": "/admin/hadiah/baharu",
+      "name": "m15.admin-hadiah-new",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m15-rewards-shop/pages/AdminHadiahPage.vue",
+      "file": "src/modules/m15-rewards-shop/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/hadiah/tebusan|m15.admin-redemptions",
+      "path": "/admin/hadiah/tebusan",
+      "name": "m15.admin-redemptions",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m15-rewards-shop/pages/AdminRedemptionsPage.vue",
+      "file": "src/modules/m15-rewards-shop/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/hadiah/:id(\\d+)/edit|m15.admin-hadiah-edit",
+      "path": "/admin/hadiah/:id(\\d+)/edit",
+      "name": "m15.admin-hadiah-edit",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m15-rewards-shop/pages/AdminHadiahPage.vue",
+      "file": "src/modules/m15-rewards-shop/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "/cikgu/hadiah|m15.digital-shop",
       "path": "/cikgu/hadiah",
       "name": "m15.digital-shop",
@@ -9030,14 +9070,14 @@
       "source": "pentadbiran",
       "id": "PG-06",
       "label": "Kedai Hadiah",
-      "route": "/admin/p/pg-06",
+      "route": "/admin/hadiah",
       "roles": [
         "admin"
       ],
       "status": "canonical",
-      "sector": "S0",
+      "sector": "S7",
       "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
+      "built": true,
       "group": "penglibatan",
       "approved_by_card": null
     },

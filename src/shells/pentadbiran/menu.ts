@@ -169,7 +169,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
       ['PG-03', 'Cabaran', undefined, G],
       ['PG-04', 'Pelajar', undefined, G],
       ['PG-05', 'Transaksi', undefined, G],
-      ['PG-06', 'Kedai Hadiah', undefined, G],
+      ['PG-06', 'Kedai Hadiah', '/admin/hadiah', G],
       ['PG-07', 'Gamifikasi Guru', undefined, G],
       ['PG-08', 'Lencana Guru', undefined, G],
       ['PG-09', 'Cabutan', undefined, G],
