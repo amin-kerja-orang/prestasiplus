@@ -52,9 +52,9 @@ test.describe('M04 S4 edit question', { tag: [TAG.smoke, moduleTag(4)] }, () => 
   test('is pre-filled, has no type select or keyboard, and shows the saved DSKP chain', async ({
     page,
   }) => {
-    await expectTabTitle(page, 'Edit Soalan')
-    await expect(page.getByRole('heading', { name: '✏️ Edit Soalan' })).toBeVisible()
-    await expect(page.getByText('Kemaskini maklumat soalan #564159')).toBeVisible()
+    await expectTabTitle(page, 'Edit Soalan | PRESTASIPLUS')
+    await expect(page.getByRole('heading', { name: 'Edit Soalan' })).toBeVisible()
+    await expect(byId(page, 'pentadbiran-subtitle')).toHaveText('Kemaskini maklumat soalan #564159')
     await expect(byId(page, 'q-text')).toHaveValue(/Apakah maksud satelit buatan/)
     await expect(byId(page, 'q-type')).toHaveCount(0)
     await expect(byId(page, 'vkb-toggle')).toHaveCount(0)

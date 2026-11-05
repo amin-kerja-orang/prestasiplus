@@ -6,7 +6,7 @@ import type { PracticeSession as SessionRow } from '../../db/generated/client'
 import { idFromString, idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { alreadySubmitted, notFound } from './errors'
-import { MAX_SECONDS_PER_QUESTION, POINTS_PER_CORRECT, sessionCoins } from './rules'
+import { MAX_SECONDS_PER_QUESTION, type OfferedLevel, offeredLevels, POINTS_PER_CORRECT, sessionCoins } from './rules'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -41,7 +41,7 @@ export interface SessionRecord {
   questionSetId: string | null
   timeLimitSec: number | null
   questionCount: number
-  status: 'in_progress' | 'completed'
+  status: 'in_progress' | 'completed' | 'abandoned'
   correctCount: number
   timeSpentSec: number
   coinsEarned: number
@@ -289,6 +289,11 @@ export class PracticeRepository {
 
   private get db() {
     return this.prisma.client
+  }
+
+  /** S4-T06: the offered levels (active, non-primary), see `offeredLevels`. */
+  offeredLevels(): Promise<OfferedLevel[]> {
+    return offeredLevels(this.db)
   }
 
   // --- sessions ---------------------------------------------------------------------------------
@@ -643,6 +648,24 @@ export class PracticeRepository {
   // --- reads ------------------------------------------------------------------------------------
 
   /**
+   * DM-66 sweeper statement: every `in_progress` session whose last activity (the newest of its
+   * `practice_checks.checked_at` and `started_at`) is before `cutoff` becomes `abandoned`. Its checks are kept, no
+   * answer row is written, no reward is paid, `completed_at` stays null. Returns the rows changed.
+   */
+  async abandonIdle(cutoff: Date, limit = 500): Promise<number> {
+    return this.db.$executeRaw`
+      UPDATE practice_sessions SET status = 'abandoned', updated_at = now()
+       WHERE id IN (
+         SELECT s.id FROM practice_sessions s
+          WHERE s.status = 'in_progress'
+            AND greatest(s.started_at, coalesce((SELECT max(c.checked_at) FROM practice_checks c WHERE c.session_id = s.id), s.started_at)) < ${cutoff}::timestamptz
+          ORDER BY s.started_at
+          LIMIT ${limit}::int
+          FOR UPDATE OF s SKIP LOCKED)
+         AND status = 'in_progress'`
+  }
+
+  /**
    * Completed sessions of a user in `modes`, newest first (completed_at desc, then id desc). Other modules
    * leave `includeTest` unset: rows written under Mod Pelajar are excluded.
    */
@@ -849,6 +872,30 @@ export class PracticeRepository {
         lastWrongAt: r.lastWrongAt,
       }))
       .sort(queueOrder)
+  }
+
+  /**
+   * S5-T07 (R7): the questions the user answered in one subject, grouped by topic (else chapter), for the revision top-up.
+   * Non-test answer rows of every mode; a group needs at least `minAttempts` answers. Order: the weakest group first
+   * (accuracy ascending, then more answers first, then key), inside a group the never-correct questions first, then the oldest
+   * last answer, then the id. At most `limit` ids (the servable filter is applied by the caller).
+   */
+  async weakTopicQuestionIds(userId: string, subjectId: string, minAttempts: number, limit: number): Promise<string[]> {
+    const rows = await this.db.$queryRaw<{ question_id: bigint }[]>`
+      WITH q AS (
+        SELECT question_id,
+               CASE WHEN topic_id IS NOT NULL THEN 't' || topic_id::text ELSE 'c' || chapter_id::text END AS gkey,
+               count(*) AS n, count(*) FILTER (WHERE is_correct) AS c, max(answered_at) AS last_at
+          FROM practice_answers
+         WHERE user_id = ${idFromString(userId)}::bigint AND subject_id = ${idFromString(subjectId)}::bigint
+           AND NOT is_test AND question_id IS NOT NULL AND (topic_id IS NOT NULL OR chapter_id IS NOT NULL)
+         GROUP BY question_id, 2),
+      g AS (SELECT gkey, sum(n) AS n, sum(c) AS c FROM q GROUP BY gkey HAVING sum(n) >= ${minAttempts}::bigint)
+      SELECT q.question_id
+        FROM q JOIN g USING (gkey)
+       ORDER BY g.c::numeric / g.n ASC, g.n DESC, q.gkey, (q.c = 0) DESC, q.last_at ASC, q.question_id ASC
+       LIMIT ${limit}::bigint`
+    return rows.map((r) => idToString(r.question_id))
   }
 
   /** The stored mastery counters of a user, by subject id. */

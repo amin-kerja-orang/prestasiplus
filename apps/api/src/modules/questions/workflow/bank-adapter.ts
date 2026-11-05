@@ -26,6 +26,7 @@ import {
   type QuestionRecord,
 } from '../index'
 import { gateDataOf } from '../gate-data'
+import { partsFromFlat } from '../projection'
 import type {
   DiagramCandidate,
   ExplanationSource,
@@ -35,6 +36,7 @@ import type {
   QuestionBrief,
   QuestionGateData,
   QuestionStatusInfo,
+  QuestionVersionBrief,
   SetStatusOptions,
 } from './ports'
 
@@ -170,8 +172,30 @@ export class QuestionBankAdapter implements QuestionBankPort {
       explanation: input.explanation,
       pointsValue: input.marks ?? 1,
       ...(input.kertas === undefined ? {} : { kertas: input.kertas }),
+      // S1-T05: the DSKP and curriculum fields go through the same create as the wizard (no second path), so the gate reads real data.
+      ...(input.unitId === undefined && input.spIds === undefined && input.tp === undefined
+        ? {}
+        : { tag: { unitId: input.unitId ?? null, spIds: input.spIds ?? [], tp: input.tp ?? null } }),
+      ...(input.cognitiveLevel === undefined ? {} : { cognitiveLevel: input.cognitiveLevel }),
+      ...(input.chapterId === undefined ? {} : { curriculumChapterId: input.chapterId }),
+      ...(input.topicId === undefined ? {} : { curriculumTopicId: input.topicId }),
+      ...(input.numberLabel === undefined ? {} : { numberLabel: input.numberLabel }),
+      ...(input.language === undefined ? {} : { language: input.language }),
       status: input.status,
     } as unknown as QuestionCreateInput
+    if (input.kbat !== undefined) {
+      // An explicit KBAT value lives on the leaf and the flat body has no field for it: the one leaf is built here and sent as `parts`.
+      const parts = partsFromFlat({
+        questionType: 'mcq',
+        questionText: input.stemMs,
+        options: present.map((o) => o.text),
+        correctAnswer: Math.max(0, correctAnswer),
+        pointsValue: input.marks ?? 1,
+        ...(input.cognitiveLevel === undefined ? {} : { cognitiveLevel: input.cognitiveLevel }),
+      })
+      ;(parts[0] as { kbat?: string }).kbat = input.kbat
+      ;(body as unknown as { parts: QuestionPart[] }).parts = parts
+    }
     const view = await this.service.create(body, { userId: input.createdById, role: 'teacher' })
     return view.id
   }
@@ -230,6 +254,22 @@ export class QuestionBankAdapter implements QuestionBankPort {
         educationLevelId: v.educationLevelId,
         levelName: v.educationLevelId === null ? null : (levels.get(v.educationLevelId) ?? null),
         chapterName: v.chapterId === null ? null : (chapters.get(v.chapterId) ?? null),
+      })
+    }
+    return out
+  }
+
+  async describeVersions(refs: readonly { questionId: string; versionNo: number }[]): Promise<ReadonlyMap<string, QuestionVersionBrief>> {
+    const out = new Map<string, QuestionVersionBrief>()
+    const records = await this.repo.getVersions(refs)
+    if (records.length === 0) return out
+    const { subjects } = await this.names()
+    for (const r of records) {
+      const v = r.version
+      out.set(`${r.id}:${v.versionNo}`, {
+        stemText: v.stemMs ?? v.stemEn ?? '',
+        subjectId: v.subjectId,
+        subjectName: v.subjectId === null ? null : (subjects.get(v.subjectId) ?? null),
       })
     }
     return out
