@@ -16,10 +16,12 @@ import type { PartAnswer, QuestionResult, QuestionView } from '@/modules/m28-bij
 
 import { qdCopy } from './copy'
 import { toOptionData, toStimulusData } from './lib/stimulus-data'
+import { useStimulusGroup } from './lib/useStimulusOpen'
 import McqOptions from './McqOptions.vue'
 import PartNode from './PartNode.vue'
 import RichText from './RichText.vue'
 import StimulusGroup from './StimulusGroup.vue'
+import type { StimulusData } from './types'
 
 const props = defineProps<{
   question: QuestionView
@@ -50,6 +52,12 @@ const correctOption = computed(() => props.check?.parts[0]?.scheme.correctOption
 const partResults = computed(() => props.check?.parts ?? [])
 /** The question's own stimuli above the stem (V2 section 1.5); `stemImage` only when `stimuli` is absent, so a picture shows once. */
 const ownStimuli = computed(() => props.question.stimuli ?? (props.question.stemImage ? [props.question.stemImage] : []))
+const group = useStimulusGroup()
+/** Lookup for a leaf's `stimulusId`: the group's stimuli (from the group above), then the question's own. */
+const stimulusLookup = computed<StimulusData[]>(() => [
+  ...((group?.stimuli() ?? []) as StimulusData[]),
+  ...ownStimuli.value.map(toStimulusData),
+])
 const reportVariant = computed(() => (props.question.mcq ? ('mcq' as const) : ('structured' as const)))
 const leaves = computed(() => leavesOf(props.question.parts ?? []))
 /** An option with a picture switches the choices to the shared `McqOptions` (picture boxes, load-failure state). */
@@ -185,6 +193,7 @@ function pick(id: string): void {
         :attempt-id="attemptId"
         :disabled="locked"
         :option-bank="question.optionBank"
+        :stimuli="stimulusLookup"
         @answer="(id, a) => emit('answer', id, a)"
       />
     </template>

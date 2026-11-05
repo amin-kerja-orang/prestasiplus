@@ -422,8 +422,9 @@ describe('stimulus group actions (admin, real database)', () => {
       // the copy is not in the group list and takes no members in place
       const list = await admin.get('/api/stimulus-groups?pageSize=100')
       expect((list.body.data as { id: string }[]).some((g) => g.id === copy.id)).toBe(false)
-      const add = await admin.post(`/api/stimulus-groups/${copy.id}/members`, { questionId: await draft() })
-      expect(add.status).toBe(409)
+      // the copy's member routes stage the change (S1-T01 part 3c; group-swap.spec.ts)
+      expect((await admin.post(`/api/stimulus-groups/${copy.id}/members`, { questionId: await draft() })).status).toBe(200)
+      expect(await members(s.id)).toEqual(s.ids)
       expect((await admin.post(`/api/stimulus-groups/${copy.id}/edit-as-draft`)).status).toBe(409)
     })
 
@@ -484,17 +485,19 @@ describe('stimulus group actions (admin, real database)', () => {
       expect((await auditRows('stimulus.group.deleted')).length).toBe(before)
     })
 
-    it('every member route on a draft copy answers 409 (add, set, remove, order); nothing changes', async () => {
+    it('every member route on a draft copy edits its staged members only; the live group is unchanged (part 3c)', async () => {
       const s = await servedGroup(2)
       const copy = (await admin.post(`/api/stimulus-groups/${s.id}/edit-as-draft`)).body.data as { id: string }
       const extra = await draft()
-      const calls = [
-        await admin.post(`/api/stimulus-groups/${copy.id}/members`, { questionId: extra }),
-        await admin.put(`/api/stimulus-groups/${copy.id}/members`, { questionIds: [extra] }),
-        await admin.delete(`/api/stimulus-groups/${copy.id}/members/${s.ids[0]}`),
-        await admin.put(`/api/stimulus-groups/${copy.id}/members/order`, { questionIds: [...s.ids].reverse() }),
-      ]
-      for (const res of calls) expect(res.status, JSON.stringify(res.body)).toBe(409)
+      const staged = async () => ((await t.db.query<{ d: unknown[] }>(`select draft_members d from stimulus_groups where id = $1`, [copy.id]))[0]!.d).map(String)
+      expect((await admin.post(`/api/stimulus-groups/${copy.id}/members`, { questionId: extra })).status).toBe(200)
+      expect(await staged()).toEqual([...s.ids, extra])
+      expect((await admin.delete(`/api/stimulus-groups/${copy.id}/members/${s.ids[0]}`)).status).toBe(200)
+      expect(await staged()).toEqual([s.ids[1], extra])
+      expect((await admin.put(`/api/stimulus-groups/${copy.id}/members/order`, { questionIds: [extra, s.ids[1]!] })).status).toBe(200)
+      expect(await staged()).toEqual([extra, s.ids[1]])
+      expect((await admin.put(`/api/stimulus-groups/${copy.id}/members`, { questionIds: s.ids })).status).toBe(200)
+      expect(await staged()).toEqual(s.ids)
       expect(await members(s.id)).toEqual(s.ids)
     })
 

@@ -6,6 +6,7 @@ import { idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { stimulusTableOf, stimulusTableParts, type StimulusTable } from './stimulus-table'
 import { NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL } from './learner-visibility'
+import { refreshStimulusFlagsOf } from './effective-leaf'
 import { kertasOfPaperCode } from './projection'
 import { QUESTION_SERVED, VERSION_SERVED } from './served-rule'
 import type { StimulusKind } from './types'
@@ -450,6 +451,7 @@ export class StimuliRepository {
     const members = await this.db.question.findMany({ where: { groupId }, orderBy: { groupPosition: 'asc' }, select: { id: true } })
     await this.db.question.updateMany({ where: { groupId }, data: { groupId: null, groupPosition: null } })
     await this.db.stimulusGroup.delete({ where: { id: groupId } })
+    await refreshStimulusFlagsOf(this.db, members.map((m) => m.id), new Date())
     return members.map((m) => idToString(m.id))
   }
 
@@ -562,10 +564,12 @@ export class StimuliRepository {
     for (const [i, q] of questionIds.entries()) {
       await this.db.question.update({ where: { id: BigInt(q) }, data: { groupId: BigInt(groupId), groupPosition: from + i } })
     }
+    await refreshStimulusFlagsOf(this.db, questionIds.map((q) => BigInt(q)), new Date())
   }
 
   async detachQuestion(questionId: string): Promise<void> {
     await this.db.question.update({ where: { id: BigInt(questionId) }, data: { groupId: null, groupPosition: null } })
+    await refreshStimulusFlagsOf(this.db, [BigInt(questionId)], new Date())
   }
 
   /**
@@ -649,6 +653,24 @@ export class StimuliRepository {
     const rows = await this.db.$queryRaw<{ id: bigint; group_id: bigint }[]>`SELECT id, group_id FROM questions WHERE id IN (${Prisma.join(keys)}) AND group_id IS NOT NULL`
     for (const r of rows) out.set(idToString(r.id), idToString(r.group_id))
     return out
+  }
+
+  /** The ordered question ids staged in a draft copy (empty for a group that is not a copy). */
+  async stagedMembers(draftId: string): Promise<string[]> {
+    const key = bi(draftId)
+    if (key === null) return []
+    const g = await this.db.stimulusGroup.findUnique({ where: { id: key }, select: { draftMembers: true } })
+    return draftMembersOf(g?.draftMembers) ?? []
+  }
+
+  /** Of the given question ids, those staged in a draft copy other than `exceptDraftId`. */
+  async stagedElsewhere(exceptDraftId: string | null, ids: readonly string[]): Promise<Set<string>> {
+    const key = exceptDraftId === null ? 0n : bi(exceptDraftId)
+    if (key === null || ids.length === 0) return new Set()
+    const rows = await this.db.$queryRaw<{ m: string }[]>`
+      SELECT DISTINCT m FROM stimulus_groups g, jsonb_array_elements_text(g.draft_members) AS m
+       WHERE g.draft_of_group_id IS NOT NULL AND g.id <> ${key} AND m IN (${Prisma.join(ids)})`
+    return new Set(rows.map((r) => r.m))
   }
 
   /** Replaces the ordered question ids staged in a draft copy. */

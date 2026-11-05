@@ -3,7 +3,15 @@
  * a group id appears, afterwards whatever the pupil left. Memory only (module-level Map, no storage), so it
  * survives a remount (rotation, moving between member screens) and is gone with the page.
  */
-import { ref, type Ref } from 'vue'
+import { inject, ref, type InjectionKey, type Ref } from 'vue'
+
+/** What a group offers to the questions in its slot: its stimuli and a way to open one (or 'all') of them (FR-PA-37). */
+export interface StimulusGroupContext {
+  stimuli: () => readonly { id: string; label?: string }[]
+  open: (id: string) => void
+}
+export const STIMULUS_GROUP_KEY: InjectionKey<StimulusGroupContext> = Symbol('stimulus-group')
+export const useStimulusGroup = (): StimulusGroupContext | undefined => inject(STIMULUS_GROUP_KEY, undefined)
 
 const states = new Map<string, Ref<boolean>>()
 
