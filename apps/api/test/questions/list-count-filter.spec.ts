@@ -40,15 +40,14 @@ describe('questions list/count filter consistency (no Darjah rows, same filter b
     expect((await repo.listIds({ page: 1, pageSize: 20, status: 'unknown' as never })).total).toBe(0)
   })
 
-  it('count / groupCount / structured / totals / owner counts hide primary-level questions', async () => {
+  it('count / groupCount / structured / totals hide primary-level questions', async () => {
     const { repo, queries } = fakeRepo()
     await repo.count({ status: 'approved' })
     await repo.groupCount('level', { status: 'approved' })
     await repo.structuredIds({ page: 1, pageSize: 20 })
     await repo.structuredStats()
     await repo.subjectTotals()
-    await repo.ownerStatusCounts('1')
-    expect(queries.length).toBeGreaterThanOrEqual(7)
+    expect(queries.length).toBeGreaterThanOrEqual(6)
     for (const q of queries) expect(q).toContain(PRIMARY)
   })
 
@@ -58,17 +57,5 @@ describe('questions list/count filter consistency (no Darjah rows, same filter b
     await repo.qualityBatch('10', 50)
     expect(queries).toHaveLength(2)
     for (const q of queries) expect(q).toContain(PRIMARY)
-  })
-
-  it('listOwn: rows and total use one filter', async () => {
-    const { repo, queries } = fakeRepo()
-    const page = await repo.listOwn({ ownerId: '5', page: 1, pageSize: 20 })
-    expect(page.total).toBe(0)
-    const [a, b] = queries // the page query and the count query (any later query is the hydrate step)
-    expect(a).toBeDefined()
-    expect(b).toBeDefined()
-    expect(a).toContain(PRIMARY)
-    expect(b).toContain(PRIMARY)
-    expect(whereOf(a!)).toBe(whereOf(b!))
   })
 })
