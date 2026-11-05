@@ -405,6 +405,27 @@
   ],
   "levels": [
     {
+      "code": "t1",
+      "accuracy": 0,
+      "classes": 10,
+      "students": 0,
+      "sessions": 0
+    },
+    {
+      "code": "t2",
+      "accuracy": 0,
+      "classes": 12,
+      "students": 0,
+      "sessions": 0
+    },
+    {
+      "code": "t3",
+      "accuracy": 0,
+      "classes": 9,
+      "students": 0,
+      "sessions": 0
+    },
+    {
       "code": "t4",
       "accuracy": 63.9,
       "classes": 13,
@@ -579,7 +600,7 @@
       "classCount": 2,
       "studentCount": 9,
       "accuracy": 79.5,
-      "onTrack": 3,
+      "onTrack": 4,
       "below": 3
     },
     {
@@ -1335,8 +1356,8 @@
       "classCount": 2,
       "studentCount": 9,
       "accuracy": 79.8,
-      "onTrack": 5,
-      "below": 1
+      "onTrack": 4,
+      "below": 2
     },
     {
       "userId": 1644,
@@ -1480,7 +1501,7 @@
       "studentCount": 7,
       "accuracy": 90,
       "onTrack": 2,
-      "below": 2
+      "below": 1
     },
     {
       "userId": 1967,
@@ -2146,7 +2167,7 @@
       "studentCount": 9,
       "accuracy": 80.2,
       "onTrack": 1,
-      "below": 1
+      "below": 0
     },
     {
       "userId": 3290,
