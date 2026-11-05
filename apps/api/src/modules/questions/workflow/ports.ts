@@ -153,6 +153,12 @@ export interface ImportedQuestionInput {
   numberLabel?: string
   /** `en` when the row says `bahasa = en`; absent = Bahasa Melayu. */
   language?: 'en'
+  /**
+   * S1-T05 part 5a: `true_false` / `mcq_multi` rows (absent = mcq). `parts` is the one V3 leaf the importer built and validated with the
+   * contract schemas (`QuestionTrueFalseLeafSchema` / `QuestionLeafPartV3Schema`); the adapter sends it as `parts` to `QuestionsService.create`.
+   */
+  questionType?: 'true_false' | 'mcq_multi'
+  parts?: unknown[]
 }
 
 /** The stem and subject of one exact version (the version a report was filed against), for the reporter's own list. */

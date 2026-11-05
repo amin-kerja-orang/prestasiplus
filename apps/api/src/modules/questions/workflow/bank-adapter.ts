@@ -183,7 +183,10 @@ export class QuestionBankAdapter implements QuestionBankPort {
       ...(input.language === undefined ? {} : { language: input.language }),
       status: input.status,
     } as unknown as QuestionCreateInput
-    if (input.kbat !== undefined) {
+    if (input.parts !== undefined) {
+      // S1-T05 part 5a: a `true_false` / `mcq_multi` row arrives as the V3 leaf the importer already validated; it goes through the same create.
+      ;(body as unknown as { parts: unknown[] }).parts = input.parts
+    } else if (input.kbat !== undefined) {
       // An explicit KBAT value lives on the leaf and the flat body has no field for it: the one leaf is built here and sent as `parts`.
       const parts = partsFromFlat({
         questionType: 'mcq',
