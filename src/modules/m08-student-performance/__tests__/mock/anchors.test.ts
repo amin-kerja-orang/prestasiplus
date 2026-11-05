@@ -125,28 +125,28 @@ describe('S1 Dashboard Sekolah (admin: the platform)', () => {
     expect(s1.distribution.reduce((a, d) => a + d.count, 0)).toBe(744)
   })
 
-  it('the 16 subject rows of discovery A.2 (entries, GPS, On Track, Below, Tiada Sasaran), GPS ascending', () => {
+  it('the 16 subject rows (entries, GPS, On Track, Below, Tiada Sasaran with computed targets), GPS ascending', () => {
     expect(
       s1.subjects
         .slice(0, 16)
         .map((r) => [r.name, r.entries, r.gps, r.onTrack, r.below, r.noTarget]),
     ).toEqual([
-      ['Tasawwur Islam', 7, 0.29, 0, 0, 7],
-      ['Pendidikan Islam', 48, 0.98, 0, 1, 47],
-      ['Prinsip Perakaunan', 5, 1.4, 0, 3, 2],
-      ['Ekonomi', 28, 1.86, 9, 7, 12],
-      ['Biologi', 23, 1.96, 19, 4, 0],
-      ['Fizik', 2, 2.5, 1, 0, 1],
-      ['Bahasa Inggeris', 37, 2.57, 13, 16, 8],
-      ['Sains', 131, 2.79, 74, 36, 21],
-      ['Bahasa Melayu', 109, 2.84, 22, 4, 83],
-      ['Kimia', 56, 3.21, 8, 4, 44],
-      ['Pendidikan Moral', 9, 3.44, 3, 2, 4],
-      ['Sejarah', 101, 3.56, 27, 34, 40],
+      ['Tasawwur Islam', 7, 0.29, 4, 3, 0],
+      ['Pendidikan Islam', 48, 0.98, 45, 3, 0],
+      ['Prinsip Perakaunan', 5, 1.4, 5, 0, 0],
+      ['Ekonomi', 28, 1.86, 26, 2, 0],
+      ['Biologi', 23, 1.96, 22, 1, 0],
+      ['Fizik', 2, 2.5, 2, 0, 0],
+      ['Bahasa Inggeris', 37, 2.57, 36, 1, 0],
+      ['Sains', 131, 2.79, 125, 6, 0],
+      ['Bahasa Melayu', 109, 2.84, 101, 8, 0],
+      ['Kimia', 56, 3.21, 49, 4, 3],
+      ['Pendidikan Moral', 9, 3.44, 6, 3, 0],
+      ['Sejarah', 101, 3.56, 95, 6, 0],
       ['Matematik Tambahan', 3, 3.67, 3, 0, 0],
       ['Sains Komputer', 1, 4, 1, 0, 0],
-      ['Matematik', 100, 4.54, 24, 28, 48],
-      ['Perniagaan', 84, 7.15, 7, 61, 16],
+      ['Matematik', 100, 4.54, 94, 6, 0],
+      ['Perniagaan', 84, 7.15, 75, 9, 0],
     ])
     expect(s1.subjects.map((r) => r.grade).slice(0, 3)).toEqual(['A+', 'A', 'A'])
   })
@@ -170,11 +170,11 @@ describe('S1 for the school admin (own school, INFERRED)', () => {
       ['D', 1],
       ['G', 1],
     ])
-    // 3 On Track (3001 Kimia, 3003 Kimia, 3001 BM 2025) and 3 Below: the designed configs only.
+    // Computed targets (HC-2): 1 On Track and 2 Below of the designed configs.
     expect([
       s1.subjects.reduce((a, r) => a + r.onTrack, 0),
       s1.subjects.reduce((a, r) => a + r.below, 0),
-    ]).toEqual([3, 3])
+    ]).toEqual([1, 2])
   })
 })
 
@@ -256,11 +256,12 @@ describe('S2 / S3 levels', () => {
     expect((await getAs(runtime, null, '/api/performance/levels/t4')).status).toBe(401)
   })
 
-  it('S3 Tingkatan 4: 34 On Track / 41 Below (45 %), "4 Simulasi" 13 / 2; Murid Berisiko by the answer rule (R1-AS-4, DOC DEFECT 5)', async () => {
+  it('S3 Tingkatan 4: computed targets (HC-2) leave every seeded pair On Track; Murid Berisiko by the answer rule', async () => {
     const t4 = await get<LevelDetail>(ADMIN, '/api/performance/levels/t4')
-    expect([t4.onTrack, t4.below, t4.onTrackPct]).toEqual([34, 41, 45])
-    expect(t4.classRows.find((r) => r.classId === 516)).toMatchObject({ onTrack: 13, below: 2 })
-    // Whole-number accuracy below 50 or no answer in 7 days; 10 rows; accuracy ascending, pupils with no answer last.
+    expect([t4.onTrack, t4.below, t4.onTrackPct]).toEqual([75, 0, 100])
+    expect(t4.classRows.find((r) => r.classId === 516)).toMatchObject({ onTrack: 15, below: 0 })
+    // Murid Berisiko by the answer rule (R1-AS-4, DOC DEFECT 5): whole-number accuracy below 50 or no answer in 7 days; 10 rows;
+    // accuracy ascending, pupils with no answer last. The rule does not read the targets, so the list stays full while Below is 0.
     expect(t4.atRisk).toHaveLength(10)
     expect(t4.atRisk[0]).toMatchObject({ userId: 156, className: '4 Cemerlang - BM', answered: 35, accuracy: 8.6 })
     const accs = t4.atRisk.map((r) => r.accuracy)
@@ -270,9 +271,9 @@ describe('S2 / S3 levels', () => {
     for (const r of t4.atRisk) expect('checkpoint' in r).toBe(false)
   })
 
-  it('S3 Tingkatan 5: 114 On Track / 289 Below (28 %) and the at-risk rows of the answer rule, the observed Kimia pupils first', async () => {
+  it('S3 Tingkatan 5: 309 On Track / 94 Below (77 %) and the at-risk rows of the answer rule, the observed Kimia pupils first', async () => {
     const t5 = await get<LevelDetail>(ADMIN, '/api/performance/levels/t5')
-    expect([t5.onTrack, t5.below, t5.onTrackPct]).toEqual([114, 289, 28])
+    expect([t5.onTrack, t5.below, t5.onTrackPct]).toEqual([309, 94, 77])
     expect(t5.atRisk).toHaveLength(10)
     expect(t5.atRisk.slice(0, 2).map((r) => [r.userId, r.answered, r.accuracy])).toEqual([
       [3008, 8, 12.5],

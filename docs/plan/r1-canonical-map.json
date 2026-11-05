@@ -1705,6 +1705,16 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/videos|",
+      "path": "/admin/videos",
+      "name": null,
+      "status": "canonical",
+      "sector": "S5",
+      "component": "src/modules/m09-content/pages/VideoAdminListPage.vue",
+      "file": "src/modules/m09-content/routes/admin-media.ts",
+      "approved_by_card": "S5-T08"
+    },
+    {
       "key": "/admin/audio-kbat|",
       "path": "/admin/audio-kbat",
       "name": null,
@@ -1938,6 +1948,26 @@
       "approved_by_card": null
     },
     {
+      "key": "/guru/profil/edit|guru-profil-edit",
+      "path": "/guru/profil/edit",
+      "name": "guru-profil-edit",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m10-teacher-class/pages/TeacherProfileEditPage.vue",
+      "file": "src/modules/m10-teacher-class/routes/teacher-profile.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/guru/profil/:id|guru-profil",
+      "path": "/guru/profil/:id",
+      "name": "guru-profil",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m10-teacher-class/pages/TeacherProfilePage.vue",
+      "file": "src/modules/m10-teacher-class/routes/teacher-profile.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "/set-soalan-saya|",
       "path": "/set-soalan-saya",
       "name": null,
@@ -1988,6 +2018,26 @@
       "approved_by_card": null
     },
     {
+      "key": "/guru/soalan-berstruktur|",
+      "path": "/guru/soalan-berstruktur",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m04-question-bank/pages/StructuredListPage.vue",
+      "file": "src/modules/m10-teacher-class/routes/soalan.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
+      "key": "/guru/soalan-berstruktur/:id([0-9]+)|",
+      "path": "/guru/soalan-berstruktur/:id([0-9]+)",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m04-question-bank/pages/StructuredDetailPage.vue",
+      "file": "src/modules/m10-teacher-class/routes/soalan.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
       "key": "/guru/analisis-item|guru-analisis-item",
       "path": "/guru/analisis-item",
       "name": "guru-analisis-item",
@@ -2003,7 +2053,7 @@
       "name": "m11.laporan-mingguan-kelas",
       "status": "canonical",
       "sector": "S6",
-      "component": "src/pages/PrototypeUnavailablePage.vue",
+      "component": "src/pages/NotFoundPage.vue",
       "file": "src/modules/m11-teacher-analytics/routes/laporan-mingguan.ts",
       "approved_by_card": null
     },
@@ -11242,6 +11292,16 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/me/profile-activity",
+      "method": "GET",
+      "path": "/api/me/profile-activity",
+      "api_id": "API-MUR-02",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/src/modules/account/account.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "GET /api/me/settings",
       "method": "GET",
       "path": "/api/me/settings",
@@ -11269,6 +11329,36 @@
       "status": "canonical",
       "sector": "S5",
       "file": "apps/api/src/modules/account/account.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/account/teacher-profile",
+      "method": "GET",
+      "path": "/api/account/teacher-profile",
+      "api_id": "API-GUR-22",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/src/modules/account/teacher-profile.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "PUT /api/account/teacher-profile",
+      "method": "PUT",
+      "path": "/api/account/teacher-profile",
+      "api_id": "API-GUR-22",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/src/modules/account/teacher-profile.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/public/teachers/:p",
+      "method": "GET",
+      "path": "/api/public/teachers/:id",
+      "api_id": "API-GUR-22",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/src/modules/account/teacher-profile.controller.ts",
       "approved_by_card": null
     },
     {
@@ -11955,16 +12045,6 @@
       "key": "GET /api/kelas-saya",
       "method": "GET",
       "path": "/api/kelas-saya",
-      "api_id": "API-MUR-04",
-      "status": "canonical",
-      "sector": "S5",
-      "file": "apps/api/src/modules/classes/kelas-saya.controller.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "POST /api/kelas-saya/join",
-      "method": "POST",
-      "path": "/api/kelas-saya/join",
       "api_id": "API-MUR-04",
       "status": "canonical",
       "sector": "S5",
@@ -14893,6 +14973,16 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/practice/remedial-suggestions",
+      "method": "GET",
+      "path": "/api/practice/remedial-suggestions",
+      "api_id": "API-PRAC-08",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/src/modules/practice/reads/analytics/analytics.controller.ts",
+      "approved_by_card": "S5-T07"
+    },
+    {
       "key": "GET /api/practice/progress",
       "method": "GET",
       "path": "/api/practice/progress",
@@ -15183,6 +15273,46 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/admin/questions/regroup-worklist",
+      "method": "GET",
+      "path": "/api/admin/questions/regroup-worklist",
+      "api_id": "API-Q-13",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/regroup.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin/questions/regroup",
+      "method": "POST",
+      "path": "/api/admin/questions/regroup",
+      "api_id": "API-Q-24",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/regroup.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin/questions/regroup/:p/undo",
+      "method": "POST",
+      "path": "/api/admin/questions/regroup/:auditId/undo",
+      "api_id": "API-Q-36",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/regroup.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin/questions/:p/flags/dismiss",
+      "method": "POST",
+      "path": "/api/admin/questions/:id/flags/dismiss",
+      "api_id": null,
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/regroup.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "POST /api/admin/servability/questions/batch",
       "method": "POST",
       "path": "/api/admin/servability/questions/batch",
@@ -15231,6 +15361,46 @@
       "sector": "S1",
       "file": "apps/api/src/modules/questions/http/servability.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/servability/lanes/tracking-a",
+      "method": "GET",
+      "path": "/api/admin/servability/lanes/tracking-a",
+      "api_id": "API-BIJAK-12",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/servability.controller.ts",
+      "approved_by_card": "S3-T03"
+    },
+    {
+      "key": "GET /api/admin/servability/lanes/subjektif",
+      "method": "GET",
+      "path": "/api/admin/servability/lanes/subjektif",
+      "api_id": "API-BIJAK-12",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/servability.controller.ts",
+      "approved_by_card": "S3-T03"
+    },
+    {
+      "key": "GET /api/admin/servability/lanes/kertas-subjektif",
+      "method": "GET",
+      "path": "/api/admin/servability/lanes/kertas-subjektif",
+      "api_id": "API-BIJAK-12",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/servability.controller.ts",
+      "approved_by_card": "S3-T03"
+    },
+    {
+      "key": "GET /api/admin/servability/lanes/latih-tubi",
+      "method": "GET",
+      "path": "/api/admin/servability/lanes/latih-tubi",
+      "api_id": "API-BIJAK-12",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/servability.controller.ts",
+      "approved_by_card": "S3-T03"
     },
     {
       "key": "GET /api/admin/questions/:p/paper-servability",
@@ -15974,6 +16144,26 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/headcounts/me",
+      "method": "GET",
+      "path": "/api/headcounts/me",
+      "api_id": "API-RPT-08",
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/headcount/headcount.controllers.ts",
+      "approved_by_card": "S10-T02"
+    },
+    {
+      "key": "GET /api/headcounts/me/detail",
+      "method": "GET",
+      "path": "/api/headcounts/me/detail",
+      "api_id": "API-RPT-08",
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/headcount/headcount.controllers.ts",
+      "approved_by_card": "S10-T02"
+    },
+    {
       "key": "GET /api/headcounts/students/:p",
       "method": "GET",
       "path": "/api/headcounts/students/:userId",
@@ -16032,6 +16222,46 @@
       "sector": "S10",
       "file": "apps/api/src/modules/reports/performance/headcount/headcount.controllers.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "PUT /api/headcounts/:p/ar",
+      "method": "PUT",
+      "path": "/api/headcounts/:id/ar",
+      "api_id": "API-RPT-10",
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/headcount/headcount.controllers.ts",
+      "approved_by_card": "S10-T02"
+    },
+    {
+      "key": "PUT /api/headcounts/:p/tov",
+      "method": "PUT",
+      "path": "/api/headcounts/:id/tov",
+      "api_id": "API-RPT-10",
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/headcount/headcount.controllers.ts",
+      "approved_by_card": "S10-T02"
+    },
+    {
+      "key": "PUT /api/headcounts/:p/settings",
+      "method": "PUT",
+      "path": "/api/headcounts/:id/settings",
+      "api_id": "API-RPT-10",
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/headcount/headcount.controllers.ts",
+      "approved_by_card": "S10-T02"
+    },
+    {
+      "key": "PUT /api/headcounts/:p/defaults",
+      "method": "PUT",
+      "path": "/api/headcounts/:id/defaults",
+      "api_id": "API-RPT-16",
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/headcount/headcount.controllers.ts",
+      "approved_by_card": "S10-T02"
     },
     {
       "key": "POST /api/headcounts/:p/drop-students",
@@ -17161,6 +17391,26 @@
       "sector": "S7",
       "file": "apps/api/src/modules/support/support.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/tiket/:p",
+      "method": "GET",
+      "path": "/api/admin/tiket/:id",
+      "api_id": "API-SUP-05",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/support/support.controller.ts",
+      "approved_by_card": "S7-T09"
+    },
+    {
+      "key": "PATCH /api/admin/tiket/:p/status",
+      "method": "PATCH",
+      "path": "/api/admin/tiket/:id/status",
+      "api_id": "API-SUP-05",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/support/support.controller.ts",
+      "approved_by_card": "S7-T09"
     },
     {
       "key": "GET /api/config/support",

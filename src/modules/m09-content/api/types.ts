@@ -123,6 +123,9 @@ export interface VideoCard {
   views: number
   createdAt: string
   uploader: VideoUploader
+  category: VideoCategory
+  categoryLabel: string
+  subject: { id: number; name: string } | null
 }
 
 export interface VideoFacets {
@@ -140,8 +143,9 @@ export interface VideoListMeta {
 export interface VideoListQuery {
   search?: string
   category?: VideoCategory | 'all'
-  subject?: number
+  subject?: number | string
   page?: number
+  pageSize?: number
 }
 
 /**
@@ -153,9 +157,6 @@ export interface VideoDetail extends VideoCard {
   embedUrl: string | null
   platform: string
   description: string | null
-  category: VideoCategory
-  categoryLabel: string
-  subject: { id: number; name: string } | null
   visibility: VideoVisibility
   canManage: boolean
   related: VideoCard[]
@@ -168,7 +169,6 @@ export interface VideoInput {
   category: VideoCategory
   /** A string on the wire in http mode (contract `IdSchema`), a number in mock mode. */
   subjectId?: number | string | null
-  visibility: VideoVisibility
 }
 
 /** #32. `school` is the user's video-form school (BR-M09-21), not the profile school. */
