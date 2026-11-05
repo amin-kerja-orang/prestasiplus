@@ -21,6 +21,7 @@ import {
   QUESTION_IMPORT_MESSAGES,
   QUESTION_IMPORT_REQUIRED_COLUMNS,
   QUESTION_IMPORT_ROW_MESSAGES,
+  QUESTION_IMPORT_CODE_HEADER,
   QUESTION_IMPORT_TEMPLATE_CSV,
   QUESTION_QUALITY_BANDS,
   QUESTION_REPORT_DISPLAY_LABELS,
@@ -240,13 +241,14 @@ describe('reports', () => {
 })
 
 describe('imports', () => {
-  it('keeps the mock template header, required columns and sample file', () => {
+  it('keeps the legacy header and required columns; the template is the code header with one MCQ and one group', () => {
     expect(QUESTION_IMPORT_HEADER.join(',')).toBe('question_text,option_a,option_b,option_c,option_d,correct_answer,subject_id,education_level_id,difficulty_level,marks,explanation,kertas')
     expect([...QUESTION_IMPORT_REQUIRED_COLUMNS]).toEqual(['question_text', 'option_a', 'option_b', 'correct_answer'])
     const lines = QUESTION_IMPORT_TEMPLATE_CSV.split('\r\n')
-    expect(lines).toHaveLength(4)
-    expect(lines[0]).toBe(QUESTION_IMPORT_HEADER.join(','))
-    expect(lines[3]).toBe('')
+    expect(lines).toHaveLength(5)
+    expect(lines[0]).toBe(QUESTION_IMPORT_CODE_HEADER.join(','))
+    expect(lines[4]).toBe('')
+    for (const l of lines.slice(1, 4)) expect(l.split(',').length).toBeGreaterThanOrEqual(QUESTION_IMPORT_CODE_HEADER.length)
   })
 
   it('keeps the exact BM copy of the file and row messages', () => {

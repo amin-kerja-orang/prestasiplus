@@ -106,6 +106,8 @@ export const QUESTION_IMPORT_CODE_ROW_MESSAGES = {
   stimulusPassage: 'Petikan mesti mempunyai teks.',
   stimulusTable: 'Jadual mesti mempunyai kepala dan sekurang-kurangnya satu baris, atau imej.',
   stimulusImage: 'Imej rangsangan tidak dapat dimuat turun.',
+  /** 30 Q-11 row 11-02: an image of the ZIP that is not JPG, PNG or WebP (by its bytes) or is over 2 MB. */
+  stimulusImageType: 'Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB.',
   stimulusAlt: 'Sila isi teks alternatif imej.',
   stimulusCaption: 'Kapsyen tidak boleh melebihi 300 aksara.',
   stimuliCount: 'Satu kumpulan mesti mempunyai 1 hingga 3 rangsangan.',
@@ -123,7 +125,7 @@ export const QUESTION_IMPORT_ERROR_CODES = [
   'CORRECT_REQUIRED', 'MARKS_MIN', 'MARKS_MAX',
   'GROUP_NOT_CONSECUTIVE', 'GROUP_ALREADY_IMPORTED', 'GROUP_MIXED', 'GROUP_STIMULUS_FIRST_ROW_ONLY', 'GROUP_ORDER_INVALID', 'GROUP_UNAVAILABLE',
   'GROUP_FIELDS_INVALID', 'GROUP_REJECTED', 'STIMULI_COUNT', 'STIMULUS_LABEL_REQUIRED', 'STIMULUS_KIND_INVALID', 'STIMULUS_TEXT_REQUIRED',
-  'STIMULUS_TABLE_INVALID', 'STIMULUS_IMAGE_UNAVAILABLE', 'STIMULUS_ALT_REQUIRED', 'STIMULUS_CAPTION_LONG', 'PART_STIMULUS_INVALID',
+  'STIMULUS_TABLE_INVALID', 'STIMULUS_IMAGE_UNAVAILABLE', 'STIMULUS_IMAGE_INVALID', 'STIMULUS_ALT_REQUIRED', 'STIMULUS_CAPTION_LONG', 'PART_STIMULUS_INVALID',
 ] as const
 export type QuestionImportErrorCode = (typeof QUESTION_IMPORT_ERROR_CODES)[number]
 
@@ -179,14 +181,33 @@ export const QUESTION_IMPORT_MAX_ROWS = 2000
 export const QUESTION_IMPORT_REQUIRED_COLUMNS = ['question_text', 'option_a', 'option_b', 'correct_answer'] as const
 
 /**
- * Template file text: header plus two sample rows, CRLF, trailing CRLF (`IMPORT_TEMPLATE_CSV`). The
- * sample `subject_id` / `education_level_id` cells are the mock's numeric ids; the real API writes
- * the ids of its own seed rows (decimal strings), which is why the sample cells are not asserted.
+ * Template file text (S1-T05 part 3): the header of 30 Q-11 (`QUESTION_IMPORT_CODE_HEADER`, all columns in order), one MCQ example and one
+ * example group of two questions with one Petikan stimulus. CRLF, trailing CRLF. The codes (`MATH`, `4.0`, `4.1.1`, bab 4) are examples
+ * to replace with codes of the Kurikulum. Fictional content only. The legacy header (`QUESTION_IMPORT_HEADER`) is still accepted on upload.
  */
+const templateCell = (v: string): string => (/[",\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v)
+const templateRow = (values: Record<string, string>): string => QUESTION_IMPORT_CODE_HEADER.map((c) => templateCell(values[c] ?? '')).join(',')
+const TEMPLATE_DSKP = { subject_code: 'MATH', tingkatan: '4', kertas: '1', unit_code: '4.0', sp_kod: '4.1.1', tp: '3', aras: 'mengaplikasi', bab_kod: '4', topik_kod: '1', difficulty: '3', marks: '1', type: 'mcq' }
 export const QUESTION_IMPORT_TEMPLATE_CSV = [
-  QUESTION_IMPORT_HEADER.join(','),
-  '"Apakah ibu negara Malaysia?",Kuala Lumpur,Putrajaya,Johor Bahru,Ipoh,A,1,7,1,1,"Kuala Lumpur ialah ibu negara.",',
-  '"2 + 3 = ?",4,5,6,7,B,3,10,1,1,,1',
+  QUESTION_IMPORT_CODE_HEADER.join(','),
+  templateRow({ ...TEMPLATE_DSKP, question_key: 'S1', number_label: '1', prompt_ms: 'Berapakah hasil tambah dua dan tiga?', option_a: '4', option_b: '5', option_c: '6', option_d: '7', correct: 'B' }),
+  templateRow({
+    ...TEMPLATE_DSKP,
+    question_key: 'K1',
+    number_label: '2',
+    group_key: 'KUMPULAN1',
+    group_order: '1',
+    stimulus_label: 'Petikan 1',
+    stimulus_kind: 'passage',
+    stimulus_text: 'Pasar tani dibuka setiap hari Sabtu. Penduduk kampung membeli sayur dan buah di sana.',
+    prompt_ms: 'Pada hari apakah pasar tani dibuka?',
+    option_a: 'Jumaat',
+    option_b: 'Sabtu',
+    option_c: 'Ahad',
+    option_d: 'Isnin',
+    correct: 'B',
+  }),
+  templateRow({ ...TEMPLATE_DSKP, question_key: 'K2', number_label: '3', group_key: 'KUMPULAN1', group_order: '2', prompt_ms: 'Apakah yang dibeli oleh penduduk kampung?', option_a: 'Pakaian', option_b: 'Kasut', option_c: 'Sayur dan buah', option_d: 'Buku', correct: 'C' }),
   '',
 ].join('\r\n')
 
@@ -252,6 +273,15 @@ export type QuestionImportRun = z.infer<typeof QuestionImportRunSchema>
 
 /* ------------------------------------------------------------------------------------ requests */
 
+/** Optional ZIP of the images named by `stimulus_image` (30 Q-11 row 11-02): at most 20 MB, JPG, PNG or WebP of at most 2 MB each, matched by file name. */
+export const QUESTION_IMPORT_ZIP_MAX_BYTES = 20 * 1024 * 1024
+const zipFile = questionWorkflowFile({
+  maxBytes: QUESTION_IMPORT_ZIP_MAX_BYTES,
+  mimes: ['application/zip', 'application/x-zip-compressed', 'application/octet-stream'],
+  extensions: ['zip'],
+  description: 'Optional ZIP, at most 20 MB. Entry names are matched by base name to the `stimulus_image` column; images are JPG, PNG or WebP (by their bytes), at most 2 MB each.',
+})
+
 const csvFile = questionWorkflowFile({
   maxBytes: QUESTION_WORKFLOW_CSV_MAX_BYTES,
   mimes: QUESTION_IMPORT_MIME_TYPES,
@@ -271,6 +301,7 @@ const csvFile = questionWorkflowFile({
 export const QuestionImportCreateRequestSchema = z
   .object({
     csvFile,
+    zipFile: zipFile.optional(),
     defaultSubjectId: IdSchema.optional(),
     defaultEducationLevelId: IdSchema.optional(),
     defaultDifficultyLevel: z.coerce.number(QUESTION_IMPORT_MESSAGES.difficulty).int(QUESTION_IMPORT_MESSAGES.difficulty).min(1, QUESTION_IMPORT_MESSAGES.difficulty).max(5, QUESTION_IMPORT_MESSAGES.difficulty).optional(),

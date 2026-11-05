@@ -408,7 +408,7 @@ describe('imports: groups and stimuli (S1-T05 part 2, Q-11 and FR-ADM-QE6.4)', (
     expect(p.rows).toHaveLength(0)
     expect(p.groups).toHaveLength(1)
     expect(p.groups[0]?.members.map((m) => m.questionKey)).toEqual(['B', 'C', 'A'])
-    expect(p.groups[0]?.stimuli).toEqual([{ kind: 'passage', label: 'Rajah 1', caption: null, bodyMs: 'Petikan ringkas tentang pasar.', bodyEn: null, alt: null, sourceCitation: null, tableData: null }])
+    expect(p.groups[0]?.stimuli).toEqual([{ kind: 'passage', label: 'Rajah 1', caption: null, bodyMs: 'Petikan ringkas tentang pasar.', bodyEn: null, alt: null, sourceCitation: null, tableData: null, imageName: null }])
     expect(p.groups[0]).toMatchObject({ key: 'G1', existingGroupId: null })
   })
 
