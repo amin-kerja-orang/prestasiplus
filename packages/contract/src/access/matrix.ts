@@ -320,6 +320,7 @@ const STUDENT_ROWS: readonly ProtoRow[] = [
   [14, 'Pusat AI', 'Heatmap Topik Lemah'],
   [15, '—', 'Mohon Keluarga Angkat'],
   ...PEMBELAJARAN_LABELS.map((label, i): ProtoRow => [16 + i, 'Pembelajaran', label]),
+  [54, 'Killer Features', 'Laporan Soalan'],
 ]
 const TEACHER_ROWS: readonly ProtoRow[] = [
   [1, '(top)', 'Command Center'],

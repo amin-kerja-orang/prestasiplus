@@ -6,6 +6,13 @@ import { ErrorBodySchema } from '../common/error'
 import { IdSchema } from '../common/ids'
 import { rateLimitedResponse } from '../schools/http'
 import {
+  BulkChapterRequestSchema,
+  BulkChapterResultSchema,
+  ChapterCoverageQuerySchema,
+  ChapterCoverageRowSchema,
+  ChapterCoverageSchema,
+} from './bulk-chapter'
+import {
   CURRICULUM_CONFLICT_MESSAGES as CF,
   CURRICULUM_FLASH_MESSAGES as FLASH,
   CURRICULUM_NOT_FOUND_MESSAGES as NF,
@@ -110,6 +117,11 @@ export const CURRICULUM_COMPONENT_SCHEMAS = {
   CurriculumDskpTpDescriptor: CurriculumDskpTpDescriptorSchema,
   CurriculumDskpNode: CurriculumDskpNodeSchema,
   CurriculumDskpReport: CurriculumDskpReportSchema,
+  CurriculumBulkChapterRequest: BulkChapterRequestSchema,
+  CurriculumBulkChapterResult: BulkChapterResultSchema,
+  CurriculumChapterCoverageQuery: ChapterCoverageQuerySchema,
+  CurriculumChapterCoverageRow: ChapterCoverageRowSchema,
+  CurriculumChapterCoverage: ChapterCoverageSchema,
 } as const
 
 const json = (schema: z.ZodType, description: string) => ({
@@ -132,7 +144,7 @@ const invalid = (extra = '') =>
 
 type Method = 'get' | 'post' | 'put' | 'patch' | 'delete'
 
-/** Registers the 30 M03 endpoints. Every body is `{ data }`, `{ data, meta }`, `{ data, status }` or `{ error }`. */
+/** Registers the 32 M03 endpoints. Every body is `{ data }`, `{ data, meta }`, `{ data, status }` or `{ error }`. */
 export function registerCurriculumPaths(registry: OpenAPIRegistry): void {
   const admin = (
     method: Method,
@@ -148,6 +160,8 @@ export function registerCurriculumPaths(registry: OpenAPIRegistry): void {
       validation?: boolean
       /** The 409 copy of a delete that still has children. */
       conflict?: string
+      /** A 409 that is not a delete conflict: the full response text. */
+      conflictText?: string
       description?: string
     },
   ) =>
@@ -169,6 +183,7 @@ export function registerCurriculumPaths(registry: OpenAPIRegistry): void {
         403: ADMIN_ONLY,
         ...(opts.notFound ? { 404: notFound(opts.notFound) } : {}),
         ...(opts.conflict ? { 409: err(`CONFLICT with message "${opts.conflict}"; nothing is deleted.`) } : {}),
+        ...(opts.conflictText ? { 409: err(opts.conflictText) } : {}),
         ...(opts.validation ? { 422: invalid() } : {}),
         // Every admin write is rate limited per user (D57a, BE-08 follow-up); admin reads are not.
         ...(method === 'get' ? {} : { 429: rateLimitedResponse }),
@@ -292,6 +307,19 @@ export function registerCurriculumPaths(registry: OpenAPIRegistry): void {
     ok: { status: 200, schema: envelopeOf(CurriculumDskpReportSchema), text: 'Live counts and state per offered Subjek x Tingkatan; with subjectId and levelId also the node list with TP descriptors.' },
     notFound: `${NF.subject} or ${NF.level}`, validation: true,
     description: '422 fields.subjectId / fields.levelId when an id is not a positive integer. Nothing is stored (D11/D12); the rejected rows of a load stay in the CLI report (D115).',
+  })
+  admin('get', '/admin/curriculum/chapter-coverage', 'Bab coverage of approved questions per Subjek x Tingkatan (API-DSKP-10)', {
+    tag: 'curriculum-admin', query: ChapterCoverageQuerySchema,
+    ok: { status: 200, schema: envelopeOf(ChapterCoverageSchema), text: 'Per offered Subjek x Tingkatan: approved, withChapter, withoutChapter (live, active, approved versions).' },
+    notFound: `${NF.subject} or ${NF.level}`, validation: true,
+    description: 'The counts behind the work-list "Soalan tanpa Bab" (the list itself is `GET /questions` with `chapter=none`). 422 when an id is not a positive integer.',
+  })
+  admin('post', '/admin/curriculum/questions/bulk-chapter', 'Set the Bab of many questions (API-DSKP-09)', {
+    tag: 'curriculum-admin', req: BulkChapterRequestSchema, validation: true, notFound: NF.chapter,
+    conflictText: 'CONFLICT: the live matched count differs from expectedCount (details.expected, details.actual); nothing is written.',
+    ok: { status: 200, schema: envelopeOf(BulkChapterResultSchema), text: 'Counts of the run; with dryRun nothing is written and auditId is null.' },
+    description:
+      'Strict body: exactly one of `ids` (1 to 64) or `filter` (with subjectId and educationLevelId), else 422; `expectedCount` is required unless `dryRun` and is compared with `matched` (409 when it differs, nothing written). Sets `chapter_id` in place on the live approved version when the Bab subject and level equal the question\'s; no new version, no status change. At most 10,000 rows per run (`cap`); a larger match reports `remaining` and `capped`. Counts-only audit row `curriculum.questions.bulk_chapter`.',
   })
   admin('get', '/admin/curriculum/chapters/{id}', 'Get a chapter', {
     tag: 'curriculum-admin', params: true, notFound: NF.chapter,
