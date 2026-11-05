@@ -243,6 +243,7 @@ interface QuestionListAnswer<T> {
 const EMPTY_COUNTS: IntakeItemStateCounts = { generated: 0, needs_review: 0, accepted: 0, rejected: 0, duplicate: 0 }
 const REMOVED_REASON = 'Dibuang oleh penyemak.'
 const REJECT_REASON_REQUIRED = 'Sebab penolakan diperlukan.'
+const NO_QUESTION_YET = 'Item ini belum mempunyai soalan.'
 
 /** 409 of an item that was accepted or rejected meanwhile (contract INTAKE_MESSAGES.itemLocked / itemAlreadyAccepted). */
 const ITEM_LOCKED = [
@@ -287,10 +288,6 @@ export function decisionErrors(e: ApiError): string[] {
   if (issues && issues.length > 0) return issues.map((i) => `${i.where}: ${i.message}`)
   if (e.fields && Object.keys(e.fields).length > 0) return Object.values(e.fields)
   return [e.message]
-}
-
-function unavailable<T>(): Promise<T> {
-  return Promise.reject(new BijakError('unavailable', UNAVAILABLE_MESSAGE))
 }
 
 /** 413 / 422 of the upload to the UI copy (the 422 body names the rule in `fields.files`). */
@@ -874,7 +871,7 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
     key: string,
     d: { action: DecisionAction; reason?: string; by?: string },
   ): Promise<DecisionResult> {
-    if (d.action === 'betulkan') return unavailable()
+    if (d.action === 'betulkan') return this.moveQuestion(key, 'draft', d.reason?.trim() ?? '')
     const reason = d.reason?.trim() ?? ''
     if (d.action === 'tolak' && !reason) return { ok: false, errors: [REJECT_REASON_REQUIRED] }
     try {
@@ -1087,7 +1084,36 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
     }
   }
 
-  reviseQuestion: BijakAdminMethods['reviseQuestion'] = () => unavailable()
+  /** Text-only revision: the same `edit-as-draft` then `PUT` as `reviseQuestionFull`, with the other flat fields kept as they are (the note has no field in `PUT`). */
+  async reviseQuestion(qid: string, stem: string): Promise<DecisionResult> {
+    if (!stem.trim()) return { ok: false, errors: ['Teks soalan tidak boleh kosong'] }
+    const d = await this.send<WireQuickEdit>('GET', `/api/questions/${enc(qid)}`)
+    const leaf = quickEditLeaf(d)
+    if (!leaf) return { ok: false, errors: [QUICK_EDIT_OUT_OF_SCOPE] }
+    return this.reviseQuestionFull(qid, {
+      stem,
+      options: leaf.options.map((o) => ({ id: o.label, text: o.body.ms })),
+      explanation: d.explanation ?? '',
+    } as unknown as IntakeQuestion)
+  }
+
+  /**
+   * Moves the question an accepted review item created along the lifecycle (API-Q-06, `POST /api/questions/:id/status`).
+   * An item not accepted yet has no question; a refused pair (409) or a gate failure (422) comes back as `errors`.
+   */
+  private async moveQuestion(itemKey: string, to: 'draft' | 'review', reason: string): Promise<DecisionResult> {
+    const item = await this.send<WireItem>('GET', `/api/intake/items/${enc(itemKey)}`)
+    if (!item.question) return { ok: false, errors: [NO_QUESTION_YET] }
+    try {
+      await this.exec('POST', `/api/questions/${enc(item.question.id)}/status`, to === 'draft' ? { to, reason } : { to })
+      return { ok: true, errors: [] }
+    } catch (e) {
+      if (e instanceof ApiError && (e.status === 409 || e.status === 422)) {
+        return { ok: false, errors: decisionErrors(e) }
+      }
+      throw toBijakError(e)
+    }
+  }
 
   /** `POST edit-as-draft` for a question still live on its latest version (API-Q-03), then `PUT` with its one leaf rewritten. */
   async reviseQuestionFull(qid: string, edited: IntakeQuestion): Promise<DecisionResult> {
@@ -1120,8 +1146,10 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
     return { ok: true, errors: [], message: message ?? 'Soalan dikemas kini.' }
   }
 
-  // An accepted or rejected item is final (409); the queue has no correction or resubmit step.
-  resubmit: BijakAdminMethods['resubmit'] = () => unavailable()
+  /** The question of an accepted item goes back to review (API-Q-06, `to: review`). */
+  resubmit(key: string): Promise<DecisionResult> {
+    return this.moveQuestion(key, 'review', '')
+  }
 }
 
 export function createHttpBijakAdminServer(options: HttpBijakOptions = {}): HttpBijakAdminServer {

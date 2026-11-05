@@ -261,10 +261,11 @@ export const QUICK_EDIT_OUT_OF_SCOPE = 'Soalan ini di luar skop suntingan Panel 
 /**
  * FR-ADM-Q24.1: the one MCQ leaf Quick Edit can hold, or null for a grouped member, several parts, a nested part, another
  * mode, a question with no Subjek or Tingkatan (`PUT` requires both), or a prompt that differs from the stem (the form has
- * one text, so the other would be lost).
+ * one text, so the other would be lost), or a question with a mark scheme (`modelAnswer`, "Skema Jawapan"; the form cannot hold it).
  */
 export function quickEditLeaf(d: WireQuickEdit): Extract<Leaf, { mode: 'mcq' }> | null {
   if (d.stimulusGroup || !d.subjectId || !d.educationLevelId) return null
+  if (d.modelAnswer?.trim()) return null
   const only = d.parts?.length === 1 ? d.parts[0] : undefined
   if (!only || !isLeaf(only) || only.mode !== 'mcq') return null
   return only.prompt.ms.trim() === d.questionText.trim() ? only : null

@@ -291,6 +291,7 @@ describe('intake client', () => {
       ['a grouped member', { stimulusGroup: { id: '9' } }],
       ['another mode', { parts: [{ ...leaf, mode: 'essay' }] }],
       ['a prompt that differs from the stem', { parts: [{ ...leaf, prompt: { ms: 'Apakah fungsi X?' } }] }],
+      ['a mark scheme (Skema Jawapan)', { modelAnswer: 'Jawapan: A kerana X.' }],
       ['a leaf under a branch', { parts: [{ label: 'a', prompt: { ms: 'Induk' }, children: [leaf] }] }],
     ])('%s is out of scope, and a save is refused without a write', async (_name, over) => {
       const { server, requests } = setup(routes(over))
@@ -298,6 +299,28 @@ describe('intake client', () => {
       const res = await server.reviseQuestionFull('q', edited())
       expect(res.ok).toBe(false)
       expect(requests.some((r) => r.method !== 'GET')).toBe(false)
+    })
+
+    it('an MCQ with a blank mark scheme stays in scope', async () => {
+      const { server } = setup(routes({ modelAnswer: '  ' }))
+      expect((await server.getBankEditable('q')).quickEdit?.outOfScope).toBe(false)
+    })
+
+    it('reviseQuestion keeps the options and explanation, changes the stem, and refuses a scheme without a write', async () => {
+      const { server, requests } = setup(routes({ explanation: 'Asal' }))
+      expect(await server.reviseQuestion('q', ' Teks baharu. ')).toMatchObject({ ok: true })
+      const put = requests.find((r) => r.method === 'PUT')
+      expect(put?.url).toBe('/api/questions/q')
+      expect(put?.body).toMatchObject({
+        questionText: 'Teks baharu.',
+        explanation: 'Asal',
+        parts: [{ key: { kind: 'option', correct: 'A' }, options: [{ body: { ms: 'Pilihan A' } }, { body: { ms: 'Pilihan B' } }, { body: { ms: 'Pilihan C' } }] }],
+      })
+      expect(requests.filter((r) => r.method !== 'GET').map((r) => r.url)).toEqual(['/api/questions/q/edit-as-draft', '/api/questions/q'])
+      const withScheme = setup(routes({ modelAnswer: 'Skema' }))
+      expect((await withScheme.server.reviseQuestion('q', 'Teks')).ok).toBe(false)
+      expect(withScheme.requests.some((r) => r.method !== 'GET')).toBe(false)
+      expect((await server.reviseQuestion('q', '  ')).ok).toBe(false)
     })
 
     it('locks Menunggu Semakan, on the read and on a late save', async () => {
@@ -346,9 +369,49 @@ describe('intake client', () => {
     })
   })
 
-  it('keeps the routes without a controller unavailable', async () => {
-    const { server } = setup({})
-    await expect(server.resubmit('k')).rejects.toMatchObject({ code: 'unavailable' })
+  describe('resubmit and Betulkan (API-Q-06)', () => {
+    const item = (question: unknown) => ok({ id: 'k', batchId: 'b1', question })
+    const accepted = { id: 'q', version: 1, status: 'review' }
+
+    it('resubmit sends the accepted question back to review', async () => {
+      const { server, requests } = setup({
+        'GET /api/intake/items/k': item(accepted),
+        'POST /api/questions/q/status': ok({ question: {}, servability: null }),
+      })
+      expect(await server.resubmit('k')).toEqual({ ok: true, errors: [] })
+      const post = requests.find((r) => r.method === 'POST')
+      expect(post?.url).toBe('/api/questions/q/status')
+      expect(post?.body).toEqual({ to: 'review' })
+    })
+
+    it('Betulkan sends it back to draft with the reviewer note as the reason', async () => {
+      const { server, requests } = setup({
+        'GET /api/intake/items/k': item(accepted),
+        'POST /api/questions/q/status': ok({ question: {}, servability: null }),
+      })
+      expect(await server.reviewDecision('k', { action: 'betulkan', reason: ' Betulkan jawapan ' })).toEqual({ ok: true, errors: [] })
+      expect(requests.find((r) => r.method === 'POST')?.body).toEqual({ to: 'draft', reason: 'Betulkan jawapan' })
+    })
+
+    it('an item with no question yet is refused without a write', async () => {
+      const { server, requests } = setup({ 'GET /api/intake/items/k': item(null) })
+      const res = await server.resubmit('k')
+      expect(res).toEqual({ ok: false, errors: ['Item ini belum mempunyai soalan.'] })
+      expect(requests.some((r) => r.method === 'POST')).toBe(false)
+    })
+
+    it('maps a refused pair (409) and a missing reason (422) to errors', async () => {
+      const a = setup({
+        'GET /api/intake/items/k': item(accepted),
+        'POST /api/questions/q/status': fail(409, 'CONFLICT', 'Peralihan tidak dibenarkan'),
+      })
+      expect(await a.server.resubmit('k')).toEqual({ ok: false, errors: ['Peralihan tidak dibenarkan'] })
+      const b = setup({
+        'GET /api/intake/items/k': item(accepted),
+        'POST /api/questions/q/status': fail(422, 'VALIDATION_ERROR', 'Data tidak sah', { reason: 'Sebab diperlukan.' }),
+      })
+      expect(await b.server.reviewDecision('k', { action: 'betulkan' })).toEqual({ ok: false, errors: ['Sebab diperlukan.'] })
+    })
   })
 
   it('submitForReview drops the wire status/label so the badge shows Semakan (R1E2E-C1)', async () => {
