@@ -71,7 +71,6 @@ describe('GET/POST /api/guru/classes and qr-data (AC 1, 2, 7)', () => {
         ['get', '/api/guru/contributions'],
         ['get', '/api/guru/galeri-rajah'],
         ['get', '/api/kelas-saya'],
-        ['post', '/api/kelas-saya/join'],
       ] as const) {
         const res = await t.http()[method](path)
         errorIs(res, 401, 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')

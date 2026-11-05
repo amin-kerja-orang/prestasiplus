@@ -244,7 +244,7 @@ Field constraints per leaf mode (D115, from V3 code): `mcq` 3 to 8 options (`lib
 
 ### 2.7 Bilingual text
 
-- Field `Bahasa soalan` (stored `language`): `Bahasa Melayu` (`ms`, default; `bm` is accepted on input and stored as `ms`), `English` (`en`), `BM + English (dwibahasa)` (`ms+en` on the wire and in CSV; stored as `ms_en`, a value the V3 database check already allows; D115). Field `Jenis tulisan` (`rumi` default, `arab`, `jawi`, `mixed`) is shown only for the Islamic and Arabic subjects (OPT).
+- Field `Bahasa soalan` (stored `language`): `Bahasa Melayu` (`ms`, default; `bm` is accepted on input and stored as `ms`), `English` (`en`), `BM + English (dwibahasa)` (`ms+en` on the wire and in CSV; stored as `ms_en`, a value the V3 database check already allows; D115). Field `Jenis tulisan` (`rumi` default, `arab`, `jawi`, `mixed`) is shown only for the Islamic and Arabic subjects (OPT). **Deviation (PO decision 2026-11-05, item 4):** `Campuran` / `mixed` is kept stored as `ms_en` (no new storage token); English twin fields (`stem_en`, `body_en`, `caption_en`, option `body_en`, `explanationEn`) are shown and required only when `Bahasa soalan` = `ms+en`, never because of `Campuran` alone. [lead to confirm: the exact live meaning of `Campuran` is read as the mixed-language value]
 - On the wire every rich text is `QuestionRichText = { ms, en? }` (already in `packages/contract/src/questions/parts.ts`): prompts, options, stimulus body, option-bank body, scheme point text. For `ms+en` both keys are filled. Where the ERD stores plain text columns (`stem_ms`, stimulus `body_ms`, `caption`) the `_en` twin is added (DM-50).
 - In the editors, `ms+en` shows two stacked editors per text field, labelled `BM` and `English`. Validation: "Teks English diperlukan untuk soalan dwibahasa." for prompt, option and stimulus text; scheme text may stay BM only.
 - Table cells stay single strings; a bilingual header is typed in the one cell as `BM / English`.
@@ -383,7 +383,7 @@ Pickers list only `curriculum_nodes` of the chosen Subjek and Tingkatan. If the 
 | T-06 | `TP` (soalan) | select OPT-TP | default for the leaves; question TP = highest leaf TP | none (leaf message in L-06) |
 | T-07 | `Aras pemikiran` (default soalan) | select OPT-ARAS | optional default inherited by leaves | none |
 | T-08 | `KBAT` | read-only badge | derived: the four upper levels; per-leaf override in L-08 | none |
-| T-09 | `Bab` | select (`ChapterSelect.vue`), option `Bab {no}: {nama}` | required to publish when the Subjek and Tingkatan have chapters (D-QA-12); hidden when none exist; clears on T-01/T-02 change | "Sila pilih Bab."; "Bab tidak sah."; "Bab tidak sepadan dengan subjek dan tahap." |
+| T-09 | `Bab` | select (`ChapterSelect.vue`), option `Bab {no}: {nama}` | optional while the intake item is tagged (PO decision 2026-11-05, item 10: `bab`, `topik`, `kbat`, `difficulty` are optional in `IntakeCurriculumTagSchema`); required to publish when the Subjek and Tingkatan have chapters (D-QA-12); hidden when none exist; clears on T-01/T-02 change | "Sila pilih Bab."; "Bab tidak sah."; "Bab tidak sepadan dengan subjek dan tahap." |
 | T-10 | `Topik` | select | optional; topics of T-09 | "Topik tidak sah." |
 | T-11 | `Rujukan buku teks` | `Bab` text <=20, `Tingkatan` select, `Muka surat` integer 1..999, optional `Hingga` | optional (Sejarah mainly), stored in `textbook_ref` (DM-56) | "Muka surat mesti nombor antara 1 dan 999." (R1 copy, D113) |
 | T-12 | `Tahap kesukaran` | select OPT-KESUKARAN-5, first option `— Pilih —` | required; separate from TP (D-QA-9); pre-filled `min(5, TP)` (3 when there is no TP) until the admin touches it (`difficultyTouched`); a later TP change never overwrites a touched value; lists show the derived 3-way label. Backfill (migration 0128, DM-47, U-OP-19): `difficulty_level` is written only where `difficulty_tp` is 1..6 (value `min(5, tp)`, so TP 6 becomes 5); rows with no TP stay null, and every reader falls back to `least(5, tp)`, else 3 | "Sila pilih tahap kesukaran." |
@@ -391,6 +391,7 @@ Pickers list only `curriculum_nodes` of the chosen Subjek and Tingkatan. If the 
 | T-14 | `Jenis tulisan` | select `Rumi` (default), `Arab`, `Jawi`, `Campuran` | shown only for Pendidikan Islam, Bahasa Arab, Jawi, Pendidikan Al-Quran & As-Sunnah, Tasawwur Islam, Pendidikan Syariah Islamiah | "Jenis tulisan tidak sah." |
 | T-15 | `Asal tingkatan` | select | shown only when no unit exists for the content: `— Tiada —`, `Tingkatan 1-3`, `Tingkatan 4`, `Tingkatan 5` (R1 copy, D113) | none |
 | T-16 | `Sumber soalan` | read-only badge | from the batch (D99); not editable | none |
+| T-17 | `Penjelasan` | textarea `explanationMs`; a second textarea `explanationEn` shown only when T-13 is `BM + English (dwibahasa)` | optional; editable in the Studio wizard and in the editor of an approved question (PO decision 2026-11-05, item 3); shown to the pupil with the answer | length limit [lead to confirm] |
 
 For each chosen SP the page shows the SP text and the unit's TP descriptors 1 to 6 (AC-ADM-G5.1: an SP outside the chosen unit cannot be selected). Optional convenience (OQ-C1): a Bab to Tajuk DSKP lookup may pre-filter the unit list; it is a suggestion only.
 
@@ -541,7 +542,7 @@ Screens: R1-ADM-Q-07 (`Import & Semakan`), Q-08 (`Muat Naik Kertas`), Q-09 (`Sem
 | U-03 | `Kertas` | required, OPT-KERTAS 1 to 4 (DM-08) | "Kertas tidak sah." |
 | U-04 | `Bahagian` | optional: the default Bahagian label (from the contract) given to every extracted item for which no "Bahagian X" heading was detected; empty = the detection alone decides, and an item with no detected heading and no U-04 falls in "Bahagian A". It is copied into `intake_items.section_label` of each such item at extraction (like U-01 to U-09); the per-item Bahagian (`intake_items.section_label`) is detected, editable in `Semak Ekstrak` (field `Bahagian` in the item editor) and authoritative once the admin accepts the item | none |
 | U-05 | `Tahun` | required, 2015 to the current year | "Tahun diperlukan." (R1 copy, D113) |
-| U-06 | `Negeri / badan` | required, OPT-NEGERI-KERTAS | "Negeri atau badan diperlukan." (R1 copy, D113) |
+| U-06 | `Negeri / badan` | required; options from API-REF-01 set `badan-peperiksaan` (`SPM (LP)` plus the 16 Negeri, OPT-RUJUKAN-PUSAT); stored `intake_batches.exam_board` (DM-85) and copied by extraction to `source_papers.exam_board`, also on the known-paper path (PO decision 2026-11-05, item 2) | "Negeri atau badan diperlukan." (R1 copy, D113) |
 | U-07 | `Jenis` | required, OPT-JENIS-KERTAS | "Jenis kertas diperlukan." (R1 copy, D113) |
 | U-08 | `Set` | optional <=20, e.g. `Set 1` | "Set tidak boleh melebihi 20 aksara." (R1 copy, D113) |
 | U-09 | `Kod kertas` | optional, `^[0-9]{4}/[0-9]$`; one code per upload (an upload is one batch and one paper); blank is stored as `K{kertas}`; stored as `intake_batches.paper_code` and copied to the paper at 3.5 | "Kod kertas tidak sah. Contoh: 1449/1." (R1 copy, D113) |
@@ -681,6 +682,8 @@ All 30 rows are assembled into one function by card S1-T02 (owner of API-Q-05 an
 | 30 | `GATE_STATUS` | "Perubahan status ini tidak dibenarkan daripada status semasa." | transition | 409 | S1-T02 |
 
 **Code kept from V3 (D115):** `TP_MISSING` (the question-level TP at path `tp`, message as in V3 `errors.ts`) is not a numbered row: it belongs to rule R-DSKP beside rows 3 to 6 (A) and keeps its V3 name; it is skipped when the Subjek + Tingkatan has no DSKP nodes. S1-T02 neither renames nor removes it.
+
+**Code added by the scheme validator (S1-T09a):** `SCHEME_PENALTY` "Jumlah penalti melebihi markah bahagian." (when the deductions of a leaf or of the question exceed the part marks; applies to a leaf with `schemeRules`; When S; owner S1-T09a). Like `TP_MISSING` it is not a numbered row. Every new scheme code (`SCHEME_*`, `BAND_RANGE`) is reported at `step` 4 in the issue shape of API-Q-05 and API-Q-30.
 
 The flag `stem_duplicated` is not a gate item (the question is complete; the text shows once and DM-40 cleans the data). A flag is cleared by attaching a group or stimulus (QE-08) or by `Bukan masalah` (`POST /api/admin/questions/:id/flags/dismiss`).
 
@@ -924,7 +927,7 @@ A question is examined when it has no stimulus, no group and no image. Text exam
 | missing image | reason `gambar tiada` | the figure existed in V1/V2 but its file was never copied (D80 Q-03) |
 | duplicated stem | `stem_duplicated` | stem equals its only leaf prompt after trimming and normalising; not excluded, text shown once |
 
-An item naming two figures is a conflict for a single group: the work-list suggests a multi-stimulus group (max 3). Unnumbered references are **never auto-linked**: they set `stimulus_missing` with ref kind `unnumbered` (DM-53) and show in the list with the column `Rujukan` = "tanpa nombor". Detection runs on every version write and by the backfill script `uat-ops/flag-stimulus.ts` (dry-run default, batches of 5,000, idempotent, prints counts per subject and Tingkatan; the designated UAT developer runs dry-run, report, the user's approval, then the real run, U-OP-05). A question flagged `stimulus_missing` or `figure_only` is excluded from every pupil surface (FR-ADM-G7.3). A question flagged only `stem_duplicated` is shown once and is never excluded.
+An item naming two figures is a conflict for a single group: the work-list suggests a multi-stimulus group (max 3). Unnumbered references are **never auto-linked**: they set `stimulus_missing` with ref kind `unnumbered` (DM-53) and show in the list with the column `Rujukan` = "tanpa nombor". Detection runs on every version write and by the backfill script `uat-ops/flag-stimulus.ts` (dry-run default, batches of 5,000, idempotent, prints counts per subject and Tingkatan; the designated UAT developer runs dry-run, report, the user's approval, then the real run, U-OP-05). PO decision 2026-11-05 (item 1): this section replaces the older card rule of S1-T07; the dry-run count of `uat-ops/flag-stimulus.ts` is posted to the product owner before the rule is switched on in UAT. A question flagged `stimulus_missing` or `figure_only` is excluded from every pupil surface (FR-ADM-G7.3). A question flagged only `stem_duplicated` is shown once and is never excluded.
 
 #### 6.6.2 The screen
 
@@ -1083,7 +1086,7 @@ Structure: every prompt and mark label in BM and English; a data table with bili
   "parts": [
     { "label": "(a)", "mode": "numeric", "marks": 2, "prompt": { "ms": "[...]", "en": "[...]" }, "difficultyTp": 3, "cognitiveLevel": "mengaplikasi",
       "key": { "kind": "accepted", "values": [ { "v": 4.2, "tol": 0.1, "tolKind": "abs", "unit": "m s^-1", "unitAlt": ["m/s"] } ] } },
-    { "label": "(b)", "mode": "working", "marks": 3, "prompt": { "ms": "[...]", "en": "[...]" }, "dependsOnPart": "(a)",
+    { "label": "(b)", "mode": "working", "marks": 3, "prompt": { "ms": "[...]", "en": "[...]" }, "modeConfig": { "dependsOnPart": "(a)" },
       "key": { "kind": "points", "marks": 3,
                "points": [ { "id": "m1", "code": "M", "label": "Formula betul", "marks": 1 },
                            { "id": "m2", "code": "M", "label": "Gantian betul", "marks": 1, "requires": ["m1"] },
@@ -1091,14 +1094,18 @@ Structure: every prompt and mark label in BM and English; a data table with bili
                              "ecf": { "fromPart": "(a)", "rule": { "op": "same" } }, "unit": { "value": "J", "mandatory": true } } ] } },
     { "label": "(c)", "mode": "essay", "marks": 10, "prompt": { "ms": "[...]", "en": "[...]" },
       "key": { "kind": "points", "marks": 10,
-               "points": [ { "id": "c1", "code": "M", "label": "Ciri 1", "marks": 1 }, { "id": "r1", "code": "M", "label": "Sebab 1", "marks": 1 } ],
-               "groups": [ { "id": "p1", "type": "pair", "pointIds": ["c1", "r1"], "cap": 8 } ],
+               "points": [ { "id": "c1", "code": "M", "label": "Ciri 1", "marks": 1 }, { "id": "r1", "code": "M", "label": "Sebab 1", "marks": 1 },
+                           { "id": "c2", "code": "M", "label": "Ciri 2", "marks": 1 }, { "id": "r2", "code": "M", "label": "Sebab 2", "marks": 1 },
+                           { "id": "c3", "code": "M", "label": "Ciri 3", "marks": 1 }, { "id": "r3", "code": "M", "label": "Sebab 3", "marks": 1 },
+                           { "id": "c4", "code": "M", "label": "Ciri 4", "marks": 1 }, { "id": "r4", "code": "M", "label": "Sebab 4", "marks": 1 } ],
+               "groups": [ { "id": "p1", "type": "pair", "pointIds": ["c1", "r1"], "cap": 2 }, { "id": "p2", "type": "pair", "pointIds": ["c2", "r2"], "cap": 2 },
+                           { "id": "p3", "type": "pair", "pointIds": ["c3", "r3"], "cap": 2 }, { "id": "p4", "type": "pair", "pointIds": ["c4", "r4"], "cap": 2 } ],
                "bonus": { "ifAllCorrect": true, "marks": 2, "label": "[Semua ciri dinyatakan betul]" } } }
   ]
 }
 ```
 
-Fields `type: "pair"`, `cap`, `bonus` and `dependsOnPart` are scheme v2 (DM-54, DM-55). A real (c) has four pair groups; one is shown. Gate: sum of reachable marks with the cap and bonus = 10.
+Fields `type: "pair"`, `cap`, `bonus` and `dependsOnPart` are scheme v2 (DM-54, DM-55). (c) has four `pair` groups (4 pairs x 2 marks = 8 marks, group caps summing to the cap of 8) plus a bonus of 2 when all are correct: 8 + 2 = 10. `dependsOnPart` is a `modeConfig` field (DM-55), never a top-level part field. Gate: sum of reachable marks with the cap and bonus = 10.
 
 ### 7.4 Bahasa Melayu Kertas 2: an essay with a word range and a rubric
 
@@ -1264,7 +1271,7 @@ Each FR names the DM / API change (new IDs are in 8.4 and 8.5; "rule" = no schem
 | FR-QA-44 | `Sunting Pantas` works against the real API, shows completeness, and is limited to single-leaf non-grouped MCQ. | none | S2-T05 |
 | FR-QA-45 | `jana_kertas` is not served or counted in R1; the indicator reads "n daripada 6". | API-Q-11 | S1-T07 |
 | FR-QA-46 | A structured question with marks, from any path, opens and saves in the wizard. | none | S2-T10 |
-| FR-QA-47 | Studio list: search by question id, a notice or pager when a list is capped, working `Source` and `Compliance` filters, a warning on bulk archive of questions in Terbit papers, `Mula` disabled on an affected paper. | API-Q-01 change | S2-T03, S2-T06 |
+| FR-QA-47 | Studio list: search by question id, a notice or pager when a list is capped, working `Source` and `Compliance` filters, a warning on bulk archive of questions in Terbit papers, `Mula` disabled on an affected paper. | API-Q-01 change + API-BIJAK-02 (cover `unavailable`) | S2-T03, S2-T06 |
 | FR-QA-48 | In key kind `rubric`, the optional content points C1..Cn accept the same group rules as `points` (`Mana-mana N daripada M`, `Markah maksimum kumpulan`); the pupil self-mark applies the cap, and the reveal shows 'Maks {N}'. | none (DM-54 carries it); pupil side FR-PA-40 | S1-T09a, S3-T06, S8-T05 |
 | FR-QA-49 | Deduction codes are `spelling`, `punctuation`, `grammar`, `unit`, `sf`, `dp`, `copy` and `other` (with a required free `Label`); each has `Jumlah` and an optional `Had`; the option set is OPT-KOD-POTONGAN (40 X11). | none (DM-54 carries it) | S1-T09a, S3-T06, S8-T05 |
 | FR-QA-50 | A group moves through review as one unit: `Hantar kumpulan untuk semakan` moves every `Draf` member to `Menunggu Semakan` in one transaction (API-Q-04 with `groupId`); `Terbitkan kumpulan` (API-Q-31) is allowed only when every member is `Menunggu Semakan` or already `Diluluskan`, else 409 "Semua soalan dalam kumpulan mesti dihantar untuk semakan dahulu."; a per-member `Hantar untuk semakan` inside a group is disabled (title "Hantar melalui kumpulan."). Ungrouped questions keep `Hantar untuk semakan` and `Terbitkan`. | API-Q-04 (`groupId`), API-Q-31 | S1-T01, S2-T01 |

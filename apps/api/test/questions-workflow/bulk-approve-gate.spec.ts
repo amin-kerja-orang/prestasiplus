@@ -11,6 +11,7 @@ import { bootWorkflowApp, expectError, loginAll, type Client, type WorkflowTestA
 describe('bulk approve and create-as-approved run the merged approve gate (real bank)', () => {
   let t: WorkflowTestApp
   let admin: Client
+  let chapterId: string
   let tag: { subjectId: string; levelId: string; unitId: string; spId: string }
 
   beforeAll(async () => {
@@ -22,6 +23,7 @@ describe('bulk approve and create-as-approved run the merged approve gate (real 
          from question_versions v where v.number_label = 'SEED-MCQ-MATH-T4'`,
     )
     tag = { subjectId: row!.subject_id, levelId: row!.education_level_id, unitId: row!.unit_node_id, spId: row!.sp }
+    chapterId = (await t.db.query<{ id: string }>('select id::text from chapters where subject_id = $1::bigint and education_level_id = $2::bigint order by id limit 1', [tag.subjectId, tag.levelId]))[0]!.id
   })
   afterAll(async () => {
     await t.close()
@@ -35,6 +37,8 @@ describe('bulk approve and create-as-approved run the merged approve gate (real 
     difficultyLevel: 2,
     options: ['4', '5', '6', '7'],
     correctAnswer: 1,
+    cognitiveLevel: 'mengaplikasi',
+    curriculumChapterId: chapterId,
     tag: { unitId: tag.unitId, spIds: [tag.spId], tp: 3 },
     ...over,
   })
@@ -67,7 +71,7 @@ describe('bulk approve and create-as-approved run the merged approve gate (real 
     })
 
     it('a DSKP-incomplete question (no cognitive level, no kertas) is refused per row; a complete one passes', async () => {
-      const incomplete = await review()
+      const incomplete = await review({ cognitiveLevel: undefined })
       const complete = await review({ cognitiveLevel: 'menganalisis', kertas: '1' })
       const out = await bulk([incomplete, complete])
       expect(out.affected).toBe(1)
@@ -83,7 +87,7 @@ describe('bulk approve and create-as-approved run the merged approve gate (real 
 
     it('creating a question already approved runs the same gate: incomplete is 422 and nothing is stored; complete is 201 and live', async () => {
       const before = Number((await t.db.query<{ n: string }>('select count(*)::text n from questions'))[0]!.n)
-      const refused = await admin.post('/api/questions', body({ status: 'approved' }))
+      const refused = await admin.post('/api/questions', body({ status: 'approved', cognitiveLevel: undefined }))
       const err = expectError(refused, 'VALIDATION_ERROR')
       expect(err.fields).toMatchObject({ kertas: 'Sila pilih kertas untuk soalan SPM.' })
       expect(Number((await t.db.query<{ n: string }>('select count(*)::text n from questions'))[0]!.n)).toBe(before)
