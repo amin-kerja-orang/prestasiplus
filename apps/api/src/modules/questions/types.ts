@@ -232,6 +232,13 @@ export interface AdminListFilter {
   complianceFilter?: string
   sourceFilter?: string
   search?: string
+  /** S1-T07 (API-Q-01): level code T1..T5, chapter (`none` or id), unit node id, source, text-or-id and the open stimulus flag. */
+  tingkatan?: 'T1' | 'T2' | 'T3' | 'T4' | 'T5'
+  chapter?: string
+  unit?: string
+  source?: 'manual' | 'pdf' | 'csv' | 'guru'
+  q?: string
+  flag?: 'stimulus_missing' | 'figure_only' | 'stem_duplicated'
   /** Keyset paging for `listIds`: only ids below this one (then `page` is ignored and no offset is used). */
   idBelow?: string
 }

@@ -707,6 +707,30 @@ export class QuestionsRepository {
       const like = likePattern(f.search.trim())
       conds.push(Prisma.sql`(v.stem_ms ILIKE ${like} ESCAPE '\\' OR v.stem_en ILIKE ${like} ESCAPE '\\')`)
     }
+    // S1-T07 (API-Q-01, FR-ADM-Q03.8). `q` = a question id when all digits (AC-QA-47), else the stem text; ANDed with `search` when both come.
+    if (f.q !== undefined && f.q.trim() !== '') {
+      const text = f.q.trim()
+      const like = likePattern(text)
+      const key = /^\d{1,18}$/.test(text) ? BigInt(text) : null
+      conds.push(
+        key === null
+          ? Prisma.sql`(v.stem_ms ILIKE ${like} ESCAPE '\\' OR v.stem_en ILIKE ${like} ESCAPE '\\')`
+          : Prisma.sql`(q.id = ${key} OR v.stem_ms ILIKE ${like} ESCAPE '\\' OR v.stem_en ILIKE ${like} ESCAPE '\\')`,
+      )
+    }
+    if (f.tingkatan !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM education_levels tl WHERE tl.id = v.education_level_id AND tl.code = ${f.tingkatan})`)
+    if (f.chapter !== undefined) conds.push(f.chapter === 'none' ? Prisma.sql`v.chapter_id IS NULL` : Prisma.sql`v.chapter_id = ${BigInt(f.chapter)}`)
+    id(f.unit, Prisma.sql`v.unit_node_id`)
+    if (f.source !== undefined) {
+      // OPT-SUMBER-SOALAN: Manual, Import (PDF/DOCX), Kiriman Guru, CSV. `csv` is the stored `excel`; `guru` = created by a teacher.
+      conds.push(
+        f.source === 'guru'
+          ? Prisma.sql`EXISTS (SELECT 1 FROM user_roles gr WHERE gr.user_id = q.created_by_id AND gr.role = 'teacher')`
+          : Prisma.sql`q.source_type = ${f.source === 'csv' ? 'excel' : f.source}`,
+      )
+    }
+    // The OPEN flag of the version the list shows (dismissed = not open).
+    if (f.flag !== undefined) conds.push(Prisma.sql`(v.stimulus_flag = ${f.flag} AND v.flag_dismissed_at IS NULL)`)
     return conds
   }
 

@@ -1993,7 +1993,7 @@
       "name": "m11.laporan-mingguan-kelas",
       "status": "canonical",
       "sector": "S6",
-      "component": "src/pages/PrototypeUnavailablePage.vue",
+      "component": "src/pages/NotFoundPage.vue",
       "file": "src/modules/m11-teacher-analytics/routes/laporan-mingguan.ts",
       "approved_by_card": null
     },
@@ -15110,6 +15110,46 @@
       "status": "canonical",
       "sector": "S1",
       "file": "apps/api/src/modules/questions/http/guru.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/questions/regroup-worklist",
+      "method": "GET",
+      "path": "/api/admin/questions/regroup-worklist",
+      "api_id": "API-Q-13",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/regroup.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin/questions/regroup",
+      "method": "POST",
+      "path": "/api/admin/questions/regroup",
+      "api_id": "API-Q-24",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/regroup.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin/questions/regroup/:p/undo",
+      "method": "POST",
+      "path": "/api/admin/questions/regroup/:auditId/undo",
+      "api_id": "API-Q-36",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/regroup.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin/questions/:p/flags/dismiss",
+      "method": "POST",
+      "path": "/api/admin/questions/:id/flags/dismiss",
+      "api_id": null,
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/regroup.controller.ts",
       "approved_by_card": null
     },
     {

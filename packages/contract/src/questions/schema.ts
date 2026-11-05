@@ -111,6 +111,10 @@ export function mutationEnvelopeOf<T extends z.ZodType>(data: T) {
 
 /* ------------------------------------------------------------------------------- list, summary */
 
+/** DM-05 (S1-T07): the stored stimulus flag of a question version. */
+export const STIMULUS_FLAGS = ['stimulus_missing', 'figure_only', 'stem_duplicated'] as const
+export const StimulusFlagSchema = z.enum(STIMULUS_FLAGS).meta({ id: 'StimulusFlag' })
+export type StimulusFlag = z.infer<typeof StimulusFlagSchema>
 export const QuestionRowSchema = z
   .object({
     id: IdSchema,
@@ -132,8 +136,15 @@ export const QuestionRowSchema = z
     numberLabel: z.string().nullable(),
     /** R1-H-A7: present only on an `essay_choice` (esei pilihan) question: its 2 to 6 topics. `questionType` stays `essay`. */
     essayTopics: z.array(QuestionEssayTopicSchema).optional(),
+    /** S1-T07 (API-Q-12, DM-05): the open stimulus flags; empty or absent = none. */
+    flags: z.array(StimulusFlagSchema).optional(),
   })
   .meta({ id: 'QuestionRow' })
+
+/** API-Q-01 `tingkatan`: the secondary levels the lists offer (30 03-02; Darjah never). */
+export const QUESTION_TINGKATAN = ['T1', 'T2', 'T3', 'T4', 'T5'] as const
+/** API-Q-01 `source`: OPT-SUMBER-SOALAN (30 03-07) as query values; D15 of the S1-T07 gap check. */
+export const QUESTION_SOURCE_FILTERS = ['manual', 'pdf', 'csv', 'guru'] as const
 
 /** Exam type of the source paper ("Jenis", V2 aria "jenis peperiksaan"): the `source_papers.exam_type` set. */
 export const QUESTION_JENIS = ['sebenar', 'percubaan', 'modul', 'topikal', 'latihan'] as const
@@ -173,6 +184,18 @@ export const questionFilterShape = {
   kertas: z.enum(['1', '2', '3'], QUESTION_MESSAGES.filterInvalid).optional(),
   /** V2 "Jenis" ("jenis peperiksaan"). */
   jenis: z.enum(QUESTION_JENIS, QUESTION_MESSAGES.filterInvalid).optional(),
+  // --- S1-T07 (API-Q-01, 30 FR-ADM-Q03.8): all validated, 422 "Nilai penapis tidak sah." ---
+  /** The level code `T1` to `T5` (`education_levels.code`). */
+  tingkatan: z.enum(QUESTION_TINGKATAN, QUESTION_MESSAGES.filterInvalid).optional(),
+  /** `none` = no Bab (C-05 work-list "Soalan tanpa Bab"), else a chapter id. */
+  chapter: z.string({ error: QUESTION_MESSAGES.filterInvalid }).regex(/^(none|[1-9]\d{0,18})$/, QUESTION_MESSAGES.filterInvalid).optional(),
+  /** One curriculum unit node id (the "Tajuk DSKP" filter). */
+  unit: IdSchema.optional(),
+  source: z.enum(QUESTION_SOURCE_FILTERS, QUESTION_MESSAGES.filterInvalid).optional(),
+  /** Text in the stem, or a question id when it is all digits (AC-QA-47). */
+  q: z.string().max(100, 'Carian tidak boleh melebihi 100 aksara.').optional(),
+  /** An OPEN flag (not dismissed) on the version the list shows. */
+  flag: z.enum(STIMULUS_FLAGS, QUESTION_MESSAGES.filterInvalid).optional(),
 } as const
 
 export const QuestionListQuerySchema = PageQuerySchema.extend(questionFilterShape).meta({ id: 'QuestionListQuery' })
@@ -261,6 +284,8 @@ export const QuestionSchema = z
     catalogueVersion: z.string().nullable().optional(),
     stimulusGroup: QuestionStimulusGroupSchema.nullable().optional(),
     numberLabel: z.string().nullable().optional(),
+    /** S1-T07 (API-Q-12, DM-05): the open stimulus flags; empty or absent = none. */
+    flags: z.array(StimulusFlagSchema).optional(),
   })
   .meta({ id: 'Question' })
 

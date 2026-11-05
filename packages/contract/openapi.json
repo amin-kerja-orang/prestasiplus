@@ -39035,6 +39035,12 @@
             "items": {
               "$ref": "#/components/schemas/QuestionEssayTopic"
             }
+          },
+          "flags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StimulusFlag"
+            }
           }
         },
         "required": [
@@ -39076,6 +39082,14 @@
           "marking_scheme",
           "ai_generated",
           null
+        ]
+      },
+      "StimulusFlag": {
+        "type": "string",
+        "enum": [
+          "stimulus_missing",
+          "figure_only",
+          "stem_duplicated"
         ]
       },
       "QuestionSummary": {
@@ -39476,6 +39490,12 @@
               "string",
               "null"
             ]
+          },
+          "flags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StimulusFlag"
+            }
           }
         },
         "required": [
@@ -39857,6 +39877,12 @@
               "string",
               "null"
             ]
+          },
+          "flags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StimulusFlag"
+            }
           },
           "subject": {
             "allOf": [
@@ -40590,6 +40616,44 @@
               "modul",
               "topikal",
               "latihan"
+            ]
+          },
+          "tingkatan": {
+            "type": "string",
+            "enum": [
+              "T1",
+              "T2",
+              "T3",
+              "T4",
+              "T5"
+            ]
+          },
+          "chapter": {
+            "type": "string",
+            "pattern": "^(none|[1-9]\\d{0,18})$"
+          },
+          "unit": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "pdf",
+              "csv",
+              "guru"
+            ]
+          },
+          "q": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "flag": {
+            "type": "string",
+            "enum": [
+              "stimulus_missing",
+              "figure_only",
+              "stem_duplicated"
             ]
           }
         },
@@ -42820,6 +42884,330 @@
           "intoGroupId"
         ],
         "additionalProperties": false
+      },
+      "FlagDismissRequest": {
+        "type": "object",
+        "properties": {
+          "flag": {
+            "type": "string",
+            "enum": [
+              "stimulus_missing",
+              "figure_only",
+              "stem_duplicated"
+            ]
+          }
+        },
+        "required": [
+          "flag"
+        ],
+        "additionalProperties": false
+      },
+      "FlagDismissResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "flags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StimulusFlag"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "flags"
+        ]
+      },
+      "RegroupStimulus": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/QuestionStimulusKind"
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 100
+          },
+          "caption": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300
+          },
+          "body": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "ms": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 20000
+              },
+              "en": {
+                "type": "string",
+                "maxLength": 20000
+              }
+            },
+            "required": [
+              "ms"
+            ]
+          },
+          "alt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1000
+          },
+          "sourceCitation": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300
+          },
+          "tableData": {
+            "$ref": "#/components/schemas/QuestionStimulusTable"
+          },
+          "imageFileId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "additionalProperties": false
+      },
+      "RegroupRequest": {
+        "type": "object",
+        "properties": {
+          "figureQuestionId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "stimulusId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "stimulus": {
+            "$ref": "#/components/schemas/RegroupStimulus"
+          },
+          "memberQuestionIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "minItems": 1,
+            "maxItems": 40
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "memberQuestionIds"
+        ],
+        "additionalProperties": false
+      },
+      "RegroupUndoResult": {
+        "type": "object",
+        "properties": {
+          "restored": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "restored"
+        ]
+      },
+      "RegroupWorklistRow": {
+        "type": "object",
+        "properties": {
+          "questionId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "numberLabel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "stemExcerpt": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string"
+          },
+          "flag": {
+            "$ref": "#/components/schemas/StimulusFlag"
+          },
+          "reference": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "numbered",
+              "unnumbered",
+              null
+            ]
+          },
+          "paper": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "paperCode": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "year": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "examType": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "paperCode",
+              "year",
+              "examType"
+            ]
+          }
+        },
+        "required": [
+          "questionId",
+          "numberLabel",
+          "stemExcerpt",
+          "subject",
+          "level",
+          "flag",
+          "reference",
+          "paper"
+        ]
+      },
+      "RegroupWorklistMeta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "totalItems": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "from": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "to": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "bySubject": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "number"
+                }
+              },
+              "byLevel": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "number"
+                }
+              },
+              "byFlag": {
+                "type": "object",
+                "properties": {
+                  "stimulus_missing": {
+                    "type": "number"
+                  },
+                  "figure_only": {
+                    "type": "number"
+                  },
+                  "stem_duplicated": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "stimulus_missing",
+                  "figure_only",
+                  "stem_duplicated"
+                ]
+              },
+              "open": {
+                "type": "number",
+                "description": "Open `stimulus_missing` and `figure_only` rows (\"perlu tindakan\"); the count of the Latih Tubi lane Perhatian."
+              },
+              "done": {
+                "type": "number",
+                "description": "\"selesai\": rows whose flag was dismissed with \"Bukan masalah\"."
+              }
+            },
+            "required": [
+              "bySubject",
+              "byLevel",
+              "byFlag",
+              "open",
+              "done"
+            ]
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages",
+          "counts"
+        ],
+        "additionalProperties": {}
       },
       "StudioFigureLinks": {
         "type": "object",
@@ -73833,6 +74221,29 @@
           "removed"
         ]
       },
+      "RegroupResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/StimulusGroupDetail"
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "auditId": {
+                "$ref": "#/components/schemas/Id"
+              }
+            },
+            "required": [
+              "auditId"
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
       "IntakeExtractionRunEnvelope": {
         "type": "object",
         "properties": {
@@ -103786,6 +104197,75 @@
             "required": false,
             "name": "jenis",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "T1",
+                "T2",
+                "T3",
+                "T4",
+                "T5"
+              ]
+            },
+            "required": false,
+            "name": "tingkatan",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^(none|[1-9]\\d{0,18})$"
+            },
+            "required": false,
+            "name": "chapter",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "unit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "manual",
+                "pdf",
+                "csv",
+                "guru"
+              ]
+            },
+            "required": false,
+            "name": "source",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "required": false,
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "stimulus_missing",
+                "figure_only",
+                "stem_duplicated"
+              ]
+            },
+            "required": false,
+            "name": "flag",
+            "in": "query"
           }
         ],
         "responses": {
@@ -107453,6 +107933,430 @@
           },
           "422": {
             "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/questions/{id}/flags/dismiss": {
+      "post": {
+        "tags": [
+          "questions",
+          "regroup"
+        ],
+        "summary": "\"Bukan masalah\": dismiss the stimulus flag of a question (API-Q-12)",
+        "description": "Sets `flag_dismissed_at/by` on the live version (and on the latest version when it is another row with the same flag); the flag stays stored and stops excluding. `flag` must equal the stored flag, else 409. Dismissing again answers 200. Audited (`question.flag_dismissed`).",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FlagDismissRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The flags still open on the question.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/FlagDismissResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: `flag` is not the stored flag.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/questions/regroup-worklist": {
+      "get": {
+        "tags": [
+          "questions",
+          "regroup"
+        ],
+        "summary": "The regroup work-list: questions with an open stimulus flag (API-Q-13)",
+        "description": "Rows are questions whose LIVE approved version carries an open flag (not dismissed). Without `flag` only `stimulus_missing` and `figure_only` are listed (the excluded ones); `flag=stem_duplicated` lists those. `meta.counts` covers the whole filter without paging.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "subjectId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "educationLevelId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "levelId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/StimulusFlag"
+            },
+            "required": false,
+            "name": "flag",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "required": false,
+            "name": "pageSize",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/RegroupWorklistRow"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/RegroupWorklistMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/questions/regroup": {
+      "post": {
+        "tags": [
+          "questions",
+          "regroup"
+        ],
+        "summary": "Regroup: members under one stimulus, in one audited transaction (API-Q-24)",
+        "description": "Creates the group, attaches 1 to 40 members (served and flagged members are accepted; no new version, no status change, no DSKP gate), removes the members' own copy of the stimulus image, archives a `figure_only` question with `archive_reason=regrouped`, refreshes the flags and writes the audit row whose id is `meta.auditId`. 404 unknown id; 409 a member is in another group or the figure question sits on a published paper; 422 fields.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegroupRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The new group.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegroupResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/questions/regroup/{auditId}/undo": {
+      "post": {
+        "tags": [
+          "questions",
+          "regroup"
+        ],
+        "summary": "Undo a regroup (API-Q-36)",
+        "description": "Body none. Restores membership, images, the archived figure question and the flags. 409 \"Kumpulan telah diubah selepas kumpul semula; tidak boleh dibuat asal.\" after a later edit of the group or its members, a draft copy of the group, or a second undo; 404 unknown audit id.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "auditId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Restored.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RegroupUndoResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: Kumpulan telah diubah selepas kumpul semula; tidak boleh dibuat asal.",
             "content": {
               "application/json": {
                 "schema": {
