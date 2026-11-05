@@ -16,7 +16,20 @@ export const battleConformanceEnv: Record<string, string> = {
 
 /** Id of the subject the scenarios battle on; set by `seedBattleConformance`. */
 /** `emptyId`: a subject with no question at all (SEJ), for the "no SPM pool" refusal. */
-export const battleFixture = { mathId: '', emptyId: '' }
+export const battleFixture = {
+  mathId: '',
+  emptyId: '',
+  /**
+   * Moves the injected clock of the booted app forward (`boot.ts` sets it). The robot comes once a queue entry has waited
+   * `battle_bot_fallback_seconds` (30 s, FR-PA-29), so the scenarios advance the clock instead of counting polls.
+   */
+  advanceClock: ((): void => {
+    throw new Error('battle conformance: the clock is not wired (boot.ts sets battleFixture.advanceClock)')
+  }) as (ms: number) => void,
+}
+
+/** The default `battle_bot_fallback_seconds` (48 GAME-01) in milliseconds. */
+export const BATTLE_ROBOT_WAIT_MS = 30_000
 
 const QUESTIONS = 12
 const PUBLISHED_AT = new Date('2026-10-19T09:00:00+08:00')
