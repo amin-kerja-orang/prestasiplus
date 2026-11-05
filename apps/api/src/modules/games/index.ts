@@ -20,3 +20,4 @@ export type { GameQuestionFilter, ServedQuestion } from './core/game-questions.s
 export { GameSubjects, ROOM_SUBJECT_CODES } from './core/subjects'
 export { GameUsers } from './core/game-users'
 export type { GameUser } from './core/game-users'
+export { RoomsRepository } from './rooms/rooms.repository'
