@@ -87,8 +87,8 @@ describe('AC3 start: every module error with its exact status, code and BM messa
     expect(mode.body.error.fields.mode).toBe('Nilai tidak sah.')
     // pksk sessions are created by M07, never by this route.
     expect((await post(pelajar, { mode: 'pksk' })).status).toBe(422)
-    // A level that is not offered (Tingkatan 4 and 5 only) for random.
-    const level = await post(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5, levelId: w.level.t3 })
+    // A level that is not offered (a primary / inactive level; T1..T5 are offered since S4-T06) for random.
+    const level = await post(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5, levelId: w.level.primary })
     expect(level.body.error.fields.levelId).toBe('Nilai tidak sah.')
     const difficulty = await post(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5, difficulty: 9 })
     expect(difficulty.status).toBe(422)
@@ -370,8 +370,8 @@ describe('SPM modes: past_year, latih_tubi, ramalan', () => {
     expect((await post(pelajar, { mode: 'latih_tubi', subjectCode: 'PERNIAGA', count: 3 })).body.error.fields.count).toBe('Nilai tidak sah.')
   })
 
-  it('latih_tubi levelId must be an SPM level and difficulty 2 to 5', async () => {
-    expect((await post(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 40, levelId: w.level.t3 })).body.error.fields.levelId).toBe('Nilai tidak sah.')
+  it('latih_tubi levelId must be an offered (non-primary) level and difficulty 2 to 5', async () => {
+    expect((await post(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 40, levelId: w.level.primary })).body.error.fields.levelId).toBe('Nilai tidak sah.')
     expect((await post(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 40, difficulty: 1 })).body.error.fields.difficulty).toBe('Nilai tidak sah.')
     const s = await startSession(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 40, levelId: w.level.t4, difficulty: 2 })
     for (const q of s.questions) expect(t.bank.get(q.id).difficulty).toBe(2)

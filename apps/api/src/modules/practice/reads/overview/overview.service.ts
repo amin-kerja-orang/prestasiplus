@@ -21,7 +21,6 @@ import { QuestionsRepository } from '../../../questions'
 import { SubscriptionService } from '../../../subscriptions'
 import { UsersRepository } from '../../../users'
 import { StreakService, WalletService } from '../../../wallet'
-import { OFFERED_LEVEL_CODES } from '../../rules'
 import { BankFacts } from './bank-facts'
 import { OverviewRepository } from './overview.repository'
 import { bannerAudiences, cutQuestionText, difficultyLevelOfTp, greetingPeriod, pct, round, weekEndMyt, weekStartMyt } from './rules'
@@ -130,9 +129,10 @@ export class OverviewService {
     const now = this.clock.now()
     const from = weekStartMyt(now)
     const to = weekEndMyt(from)
-    const [subjects, levels, bank, user, trial, streak, wallet, week, weekSessions, revisionTotal, usage, banners, articles, recent] = await Promise.all([
+    const [subjects, levels, offeredIds, bank, user, trial, streak, wallet, week, weekSessions, revisionTotal, usage, banners, articles, recent] = await Promise.all([
       this.curriculum.subjects({ active: true }),
       this.curriculum.levels({ active: true }),
+      this.offeredIds(),
       this.bankFacts(),
       this.users.get(who.userId),
       this.subscriptions.trial(who.userId, now),
@@ -146,7 +146,7 @@ export class OverviewService {
       this.latestArticles(),
       this.recentQuestions(),
     ])
-    const views = subjects.map((s) => subjectView(s, bank, this.offeredOf(s, levels).map((l) => idToString(l.id))))
+    const views = subjects.map((s) => subjectView(s, bank, this.offeredOf(s, levels, offeredIds).map((l) => idToString(l.id))))
     const subjectStats = views
       .map((v) => ({
         id: v.id,
@@ -236,8 +236,8 @@ export class OverviewService {
   // --- S2 / S3 --------------------------------------------------------------------------------------
 
   async subjects(): Promise<PracticeReadSubject[]> {
-    const [subjects, levels, bank] = await Promise.all([this.curriculum.subjects({ active: true }), this.curriculum.levels(), this.bankFacts()])
-    return subjects.map((s) => subjectView(s, bank, this.offeredOf(s, levels).map((l) => idToString(l.id))))
+    const [subjects, levels, offeredIds, bank] = await Promise.all([this.curriculum.subjects({ active: true }), this.curriculum.levels(), this.offeredIds(), this.bankFacts()])
+    return subjects.map((s) => subjectView(s, bank, this.offeredOf(s, levels, offeredIds).map((l) => idToString(l.id))))
   }
 
   async subjectConfig(who: Reader, code: string): Promise<PracticeReadSubjectConfig> {
@@ -265,8 +265,8 @@ export class OverviewService {
   async chapterSubjects(): Promise<{ code: string; name: string; icon: string | null; color: string; chapterCount: number; questionCount: number }[]> {
     const subjects = await this.curriculum.subjects({ active: true })
     const out = []
-    const levels = await this.curriculum.levels()
-    const perSubject = subjects.map((s) => ({ s, offered: this.offeredOf(s, levels) }))
+    const [levels, offeredIds] = await Promise.all([this.curriculum.levels(), this.offeredIds()])
+    const perSubject = subjects.map((s) => ({ s, offered: this.offeredOf(s, levels, offeredIds) }))
     // One chapter read per pair, then ONE question count over every chapter id.
     const { byPair, counts } = await this.practiceChaptersOf(perSubject.flatMap(({ s, offered }) => offered.map((l) => ({ subject: s, levelId: l.id }))))
     for (const { s, offered } of perSubject) {
@@ -344,12 +344,18 @@ export class OverviewService {
 
   /** BR-11: the subject's level links at Darjah 1 to 4 (by code), in level order. */
   private async offeredLevels(subject: SubjectWithLevels) {
-    return this.offeredOf(subject, await this.curriculum.levels())
+    const [levels, offeredIds] = await Promise.all([this.curriculum.levels(), this.offeredIds()])
+    return this.offeredOf(subject, levels, offeredIds)
   }
 
-  private offeredOf(subject: SubjectWithLevels, levels: Awaited<ReturnType<CurriculumRepository['levels']>>) {
+  /** S4-T06: the level ids offered (active, non-primary, `offeredLevels`), read once per request by the callers. */
+  private async offeredIds(): Promise<Set<string>> {
+    return new Set((await this.repo.offeredLevels()).map((l) => l.id))
+  }
+
+  private offeredOf(subject: SubjectWithLevels, levels: Awaited<ReturnType<CurriculumRepository['levels']>>, offeredIds: ReadonlySet<string>) {
     const linked = new Set(subject.educationLevelIds.map(idToString))
-    return levels.filter((l) => linked.has(idToString(l.id)) && OFFERED_LEVEL_CODES.includes(l.code))
+    return levels.filter((l) => linked.has(idToString(l.id)) && offeredIds.has(idToString(l.id)))
   }
 
   /**

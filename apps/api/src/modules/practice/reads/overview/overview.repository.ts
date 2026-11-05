@@ -7,6 +7,7 @@ import { PrismaService } from '../../../../db/prisma.service'
 import { GROUP_SURFACES } from '../../../questions/serving'
 import { groupCompleteSql } from '../../../questions'
 import { PRACTICE_GROUP_SURFACES } from '../../ports'
+import { type OfferedLevel, offeredLevels } from '../../rules'
 import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_SOURCE_TAKEN_DOWN_SQL } from '../../../questions/learner-visibility'
 
 export interface AnswerFigures {
@@ -65,6 +66,11 @@ export class OverviewRepository {
 
   private get db() {
     return this.prisma.client
+  }
+
+  /** S4-T06: the offered levels (active, non-primary), see `offeredLevels`. */
+  offeredLevels(): Promise<OfferedLevel[]> {
+    return offeredLevels(this.db)
   }
 
   /** BR-25: answers of the caller in `[from, to)`, with or without a session. Index: `ix_practice_answers_user_id_subject_id_answered_at`. */
