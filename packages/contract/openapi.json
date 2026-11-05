@@ -40497,6 +40497,19 @@
             "items": {
               "$ref": "#/components/schemas/StimulusFlag"
             }
+          },
+          "stimulusGroupId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
           }
         },
         "required": [
@@ -49495,7 +49508,8 @@
               "string",
               "null"
             ],
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "G-01: required (a missing, empty or blank label is a 422 on `label`, checked with the other rules so every missing field is reported at once)."
           },
           "caption": {
             "type": [
@@ -49601,11 +49615,9 @@
         "type": "object",
         "properties": {
           "label": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "maxLength": 100
+            "type": "string",
+            "maxLength": 100,
+            "description": "G-01: cannot be cleared (null or blank is a 422 on `label`)."
           },
           "caption": {
             "type": [

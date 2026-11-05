@@ -142,6 +142,7 @@ export class StimuliService {
       if (data.kind === 'passage' && !data.bodyMs) fields.body ??= STIMULUS_MESSAGES.bodyRequired
       if (data.kind === 'table' && data.tableData === null && data.assetFileId === null && !stimulusTableParts('table', null, data.bodyMs).table) fields.tableData ??= STIMULUS_MESSAGES.tableRequired
       if ((IMAGE_STIMULUS_KINDS as readonly string[]).includes(data.kind) && data.assetFileId === null) fields.imageFileId ??= STIMULUS_MESSAGES.imageRequired
+      if ((IMAGE_STIMULUS_KINDS as readonly string[]).includes(data.kind) && !data.altText?.trim()) fields.alt ??= STIMULUS_MESSAGES.altRequired
       if (Object.keys(fields).length > 0) throw fail(fields)
       await this.repo.updateStimulus(id, data)
       return { result: await this.getStimulus(id), audit: { kind: data.kind, keys: Object.keys(input) } }

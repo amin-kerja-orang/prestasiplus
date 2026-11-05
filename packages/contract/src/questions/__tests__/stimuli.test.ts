@@ -24,40 +24,63 @@ const fieldsOf = (r: { success: boolean; error?: { issues: { path: PropertyKey[]
 describe('R1-T32 stimulus request schemas (D90)', () => {
   it('accepts each of the seven kinds with the content the kind needs', () => {
     const ok = [
-      { kind: 'passage', body: { ms: 'Teks' } },
-      { kind: 'image', imageFileId: 'abc' },
-      { kind: 'diagram', imageFileId: 'abc', caption: 'Rajah 1' },
-      { kind: 'table', tableData: { head: ['a'], rows: [['1']] } },
-      { kind: 'table', imageFileId: 'abc' },
-      { kind: 'map', imageFileId: 'abc' },
-      { kind: 'infographic', imageFileId: 'abc' },
-      { kind: 'graph', imageFileId: 'abc' },
+      { label: 'Teks 1', kind: 'passage', body: { ms: 'Teks' } },
+      { label: 'Rajah 1', kind: 'image', imageFileId: 'abc', alt: 'Gambar' },
+      { label: 'Rajah 1', kind: 'diagram', imageFileId: 'abc', alt: 'Gambar', caption: 'Rajah 1' },
+      { label: 'Jadual 1', kind: 'table', tableData: { head: ['a'], rows: [['1']] } },
+      { label: 'Jadual 1', kind: 'table', imageFileId: 'abc' },
+      { label: 'Peta 1', kind: 'map', imageFileId: 'abc', alt: 'Peta' },
+      { label: 'Info 1', kind: 'infographic', imageFileId: 'abc', alt: 'Info' },
+      { label: 'Graf 1', kind: 'graph', imageFileId: 'abc', alt: 'Graf' },
     ]
     for (const body of ok) expect(StimulusCreateRequestSchema.safeParse(body).success, JSON.stringify(body)).toBe(true)
   })
 
   it('DM-70: style is optional and nullable, trimmed, 1 to 32 characters, on create and update', () => {
-    expect(StimulusCreateRequestSchema.safeParse({ kind: 'passage', body: { ms: 'x' } }).success).toBe(true)
+    expect(StimulusCreateRequestSchema.safeParse({ label: 'L', kind: 'passage', body: { ms: 'x' } }).success).toBe(true)
     for (const style of ['kotak', 'mono', null]) {
-      expect(StimulusCreateRequestSchema.safeParse({ kind: 'passage', body: { ms: 'x' }, style }).success, String(style)).toBe(true)
+      expect(StimulusCreateRequestSchema.safeParse({ label: 'L', kind: 'passage', body: { ms: 'x' }, style }).success, String(style)).toBe(true)
       expect(StimulusUpdateRequestSchema.safeParse({ style }).success, String(style)).toBe(true)
     }
-    expect(StimulusCreateRequestSchema.safeParse({ kind: 'passage', body: { ms: 'x' }, style: 'k'.repeat(33) }).success).toBe(false)
-    expect(StimulusCreateRequestSchema.safeParse({ kind: 'passage', body: { ms: 'x' }, style: '  ' }).success).toBe(false)
+    expect(StimulusCreateRequestSchema.safeParse({ label: 'L', kind: 'passage', body: { ms: 'x' }, style: 'k'.repeat(33) }).success).toBe(false)
+    expect(StimulusCreateRequestSchema.safeParse({ label: 'L', kind: 'passage', body: { ms: 'x' }, style: '  ' }).success).toBe(false)
     expect(StimulusUpdateRequestSchema.safeParse({ style: 'k'.repeat(33) }).success).toBe(false)
   })
 
   it('names the missing content in BM on the right field', () => {
-    expect(fieldsOf(StimulusCreateRequestSchema.safeParse({ kind: 'passage' }))).toEqual({ body: STIMULUS_MESSAGES.bodyRequired })
-    expect(fieldsOf(StimulusCreateRequestSchema.safeParse({ kind: 'diagram' }))).toEqual({ imageFileId: STIMULUS_MESSAGES.imageRequired })
-    expect(fieldsOf(StimulusCreateRequestSchema.safeParse({ kind: 'table' }))).toEqual({ tableData: STIMULUS_MESSAGES.tableRequired })
-    expect(fieldsOf(StimulusCreateRequestSchema.safeParse({ kind: 'poster' }))).toEqual({ kind: STIMULUS_MESSAGES.kind })
+    expect(fieldsOf(StimulusCreateRequestSchema.safeParse({ label: 'L', kind: 'passage' }))).toEqual({ body: STIMULUS_MESSAGES.bodyRequired })
+    expect(fieldsOf(StimulusCreateRequestSchema.safeParse({ label: 'L', kind: 'diagram', alt: 'x' }))).toEqual({ imageFileId: STIMULUS_MESSAGES.imageRequired })
+    expect(fieldsOf(StimulusCreateRequestSchema.safeParse({ label: 'L', kind: 'table' }))).toEqual({ tableData: STIMULUS_MESSAGES.tableRequired })
+    expect(fieldsOf(StimulusCreateRequestSchema.safeParse({ label: 'L', kind: 'poster' }))).toEqual({ kind: STIMULUS_MESSAGES.kind })
     expect(fieldsOf(StimulusCreateRequestSchema.safeParse({ kind: 'audio', body: { ms: 'x' } })).kind).toBe(STIMULUS_MESSAGES.kind)
   })
 
+  it('G-01: the label is required on create and cannot be cleared on update (AC-ADM-Q05.3)', () => {
+    expect(STIMULUS_MESSAGES.labelRequired).toBe('Sila isi label rangsangan.')
+    const base = { kind: 'passage', body: { ms: 'x' } }
+    for (const label of [undefined, null, '', '   ']) {
+      expect(fieldsOf(StimulusCreateRequestSchema.safeParse({ ...base, label })), String(label)).toEqual({ label: STIMULUS_MESSAGES.labelRequired })
+    }
+    expect(StimulusCreateRequestSchema.safeParse({ ...base, label: 'Rajah 3' }).success).toBe(true)
+    for (const label of [null, '', '  ']) expect(fieldsOf(StimulusUpdateRequestSchema.safeParse({ label })), String(label)).toEqual({ label: STIMULUS_MESSAGES.labelRequired })
+    expect(StimulusUpdateRequestSchema.safeParse({ label: 'Rajah 4' }).success).toBe(true)
+    expect(StimulusUpdateRequestSchema.safeParse({ caption: null }).success).toBe(true)
+  })
+
+  it('G-06: an image kind needs alt text on create; other kinds do not (AC-QA-10)', () => {
+    expect(STIMULUS_MESSAGES.altRequired).toBe('Sila isi teks alternatif untuk imej ini.')
+    for (const kind of ['image', 'diagram', 'map', 'infographic', 'graph']) {
+      for (const alt of [undefined, null, '', '  ']) {
+        expect(fieldsOf(StimulusCreateRequestSchema.safeParse({ label: 'L', kind, imageFileId: 'abc', alt })), `${kind} ${String(alt)}`).toEqual({ alt: STIMULUS_MESSAGES.altRequired })
+      }
+    }
+    expect(StimulusCreateRequestSchema.safeParse({ label: 'L', kind: 'table', imageFileId: 'abc' }).success).toBe(true)
+    expect(StimulusCreateRequestSchema.safeParse({ label: 'L', kind: 'passage', body: { ms: 'x' } }).success).toBe(true)
+  })
+
   it('is strict: inline svg or html is never accepted; the update cannot change the kind', () => {
-    expect(StimulusCreateRequestSchema.safeParse({ kind: 'diagram', imageFileId: 'a', svg: '<svg/>' }).success).toBe(false)
-    expect(StimulusCreateRequestSchema.safeParse({ kind: 'passage', body: { ms: 'x' }, html: '<b>' }).success).toBe(false)
+    expect(StimulusCreateRequestSchema.safeParse({ label: 'L', kind: 'diagram', imageFileId: 'a', alt: 'x', svg: '<svg/>' }).success).toBe(false)
+    expect(StimulusCreateRequestSchema.safeParse({ label: 'L', kind: 'passage', body: { ms: 'x' }, html: '<b>' }).success).toBe(false)
     expect(StimulusUpdateRequestSchema.safeParse({ kind: 'image' }).success).toBe(false)
     expect(StimulusUpdateRequestSchema.safeParse({}).success).toBe(false)
     expect(StimulusUpdateRequestSchema.safeParse({ caption: null, imageFileId: null }).success).toBe(true)
@@ -66,10 +89,10 @@ describe('R1-T32 stimulus request schemas (D90)', () => {
   it('bounds every free text and the table grid', () => {
     const long = (n: number) => 'x'.repeat(n)
     expect(StimulusCreateRequestSchema.safeParse({ kind: 'passage', body: { ms: long(STIMULUS_LIMITS.body + 1) } }).success).toBe(false)
-    expect(StimulusCreateRequestSchema.safeParse({ kind: 'passage', body: { ms: 'x' }, caption: long(STIMULUS_LIMITS.caption + 1) }).success).toBe(false)
-    expect(StimulusCreateRequestSchema.safeParse({ kind: 'passage', body: { ms: 'x' }, alt: long(STIMULUS_LIMITS.alt + 1) }).success).toBe(false)
-    expect(StimulusCreateRequestSchema.safeParse({ kind: 'table', tableData: { head: Array.from({ length: STIMULUS_LIMITS.columns + 1 }, () => 'h'), rows: [['1']] } }).success).toBe(false)
-    expect(StimulusCreateRequestSchema.safeParse({ kind: 'table', tableData: { head: ['h'], rows: Array.from({ length: STIMULUS_LIMITS.rows + 1 }, () => ['1']) } }).success).toBe(false)
+    expect(StimulusCreateRequestSchema.safeParse({ label: 'L', kind: 'passage', body: { ms: 'x' }, caption: long(STIMULUS_LIMITS.caption + 1) }).success).toBe(false)
+    expect(StimulusCreateRequestSchema.safeParse({ label: 'L', kind: 'passage', body: { ms: 'x' }, alt: long(STIMULUS_LIMITS.alt + 1) }).success).toBe(false)
+    expect(StimulusCreateRequestSchema.safeParse({ label: 'L', kind: 'table', tableData: { head: Array.from({ length: STIMULUS_LIMITS.columns + 1 }, () => 'h'), rows: [['1']] } }).success).toBe(false)
+    expect(StimulusCreateRequestSchema.safeParse({ label: 'L', kind: 'table', tableData: { head: ['h'], rows: Array.from({ length: STIMULUS_LIMITS.rows + 1 }, () => ['1']) } }).success).toBe(false)
   })
 
   it('a group has 1 to 3 stimuli and 0 to 40 member questions (D93), and no marks key', () => {

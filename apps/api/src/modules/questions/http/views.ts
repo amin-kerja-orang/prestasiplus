@@ -171,6 +171,7 @@ export function rowView(q: QuestionView): QuestionRow {
     numberLabel: q.version.numberLabel,
     ...(f.essayTopics === null ? {} : { essayTopics: f.essayTopics }),
     flags: q.openFlags ?? [],
+    ...(q.groupId === null ? {} : { stimulusGroupId: q.groupId }),
   })
 }
 

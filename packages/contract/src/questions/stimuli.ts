@@ -57,6 +57,10 @@ export const STIMULUS_MESSAGES = {
   stimulusServed: 'Rangsangan ini sedang dipaparkan kepada murid melalui soalan yang diterbitkan. Cipta rangsangan baharu dan gunakan pada draf soalan, atau arkibkan soalan itu dahulu.',
   membersInvalid: 'Soalan tidak sah, berulang atau tidak boleh dikumpulkan.',
   memberTaken: 'Soalan ini sudah berada dalam kumpulan rangsangan lain.',
+  /** G-01 (PRD 30:660, 45:416): the label is required on the API request. */
+  labelRequired: 'Sila isi label rangsangan.',
+  /** G-06 / ALT_REQUIRED (PRD 30:660, 45:421, 45:676): an image kind needs alt text. */
+  altRequired: 'Sila isi teks alternatif untuk imej ini.',
   memberExists: 'Soalan ini sudah berada dalam kumpulan ini.',
   memberMissing: 'Soalan ini bukan ahli kumpulan ini.',
   orderInvalid: 'Susunan mesti menyenaraikan semua soalan kumpulan tepat sekali.',
@@ -107,7 +111,7 @@ const imageFile = z.string().min(1).max(64).meta({ description: 'Public token (o
 export const StimulusCreateRequestSchema = z
   .strictObject({
     kind: z.enum(QUESTION_STIMULUS_KINDS, { error: STIMULUS_MESSAGES.kind }).meta({ description: 'V2 `Jenis rangsangan` (default passage in the Studio).' }),
-    label: Label.nullish(),
+    label: Label.nullish().meta({ description: 'G-01: required (a missing, empty or blank label is a 422 on `label`, checked with the other rules so every missing field is reported at once).' }),
     caption: Caption.nullish().meta({ description: 'V2 `Kapsyen (pilihan)`.' }),
     body: Body.nullish(),
     alt: Alt.nullish(),
@@ -118,9 +122,11 @@ export const StimulusCreateRequestSchema = z
   })
   .superRefine((v, ctx) => {
     const bad = (path: string, message: string) => ctx.addIssue({ code: 'custom', path: [path], message })
+    if (!v.label) bad('label', STIMULUS_MESSAGES.labelRequired)
     if (v.kind === 'passage' && !v.body) bad('body', STIMULUS_MESSAGES.bodyRequired)
     if (v.kind === 'table' && !v.tableData && !v.imageFileId) bad('tableData', STIMULUS_MESSAGES.tableRequired)
     if ((IMAGE_STIMULUS_KINDS as readonly string[]).includes(v.kind) && !v.imageFileId) bad('imageFileId', STIMULUS_MESSAGES.imageRequired)
+    if ((IMAGE_STIMULUS_KINDS as readonly string[]).includes(v.kind) && !v.alt) bad('alt', STIMULUS_MESSAGES.altRequired)
   })
   .meta({ id: 'StimulusCreateRequest' })
 export type StimulusCreateRequest = z.infer<typeof StimulusCreateRequestSchema>
@@ -128,7 +134,7 @@ export type StimulusCreateRequest = z.infer<typeof StimulusCreateRequestSchema>
 /** `PUT /stimuli/{id}`: only the keys sent change; `null` clears an optional field. The kind never changes. */
 export const StimulusUpdateRequestSchema = z
   .strictObject({
-    label: Label.nullable().optional(),
+    label: Label.nullable().optional().refine((v) => v === undefined || (v !== null && v.length > 0), { message: STIMULUS_MESSAGES.labelRequired }).meta({ description: 'G-01: cannot be cleared (null or blank is a 422 on `label`).' }),
     caption: Caption.nullable().optional(),
     body: Body.nullable().optional().meta({ description: 'Replaces the whole text (ms and en): send both languages to keep both; null clears (only allowed when the kind does not need it).' }),
     alt: Alt.nullable().optional(),
