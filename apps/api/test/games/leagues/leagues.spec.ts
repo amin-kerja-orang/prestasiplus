@@ -4,12 +4,12 @@ import {
   GamesLeagueDetailSchema,
   GamesLeagueIdResultSchema,
   GamesLeagueListSchema,
-  GamesSekolahBersaingSchema,
+  GamesSekolahBersaingBoardSchema,
 } from '@pp/contract'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 import { gamesSeed } from '../../../prisma/seed/games'
-import { weekStartOf } from '../../../src/modules/games/leagues/leagues.service'
+import { rankSekolahBersaing } from '../../../src/modules/games/leagues/leagues.rules'
 import { ACCOUNTS, bootGamesApp, expectCsrfInvalid, expectError, loginAs, parseData, type GamesTestApp } from '../helpers'
 
 const VALID = {
@@ -284,52 +284,113 @@ describe('leagues and Sekolah Bersaing (BE-45, M16-46 to M16-50)', () => {
     })
   })
 
-  describe('Sekolah Bersaing (M16-50)', () => {
+  describe('Sekolah Bersaing (API-AS-14, S7-T02)', () => {
     const board = async (q = '') => {
-      const s = await loginAs(t, ACCOUNTS.student)
+      const s = await loginAs(t, ACCOUNTS.schoolAdmin)
       const res = await s.get(`/api/sekolah-bersaing${q}`)
       expect(res.status, JSON.stringify(res.body)).toBe(200)
-      return parseData(res, GamesSekolahBersaingSchema)
+      return parseData(res, GamesSekolahBersaingBoardSchema)
     }
+    const pupilsOf = async (code: string, n: number) => {
+      const rows = await t.db.query<{ id: string }>(
+        `select u.id::text as id from users u join schools s on s.id = u.school_id join user_roles r on r.user_id = u.id and r.role = 'student'
+          where s.code = $1 order by u.id limit $2`,
+        [code, n],
+      )
+      expect(rows, code).toHaveLength(n)
+      await t.db.query(`update users set grade = 10, is_active = true where id = any($1::bigint[])`, [rows.map((r) => r.id)])
+      return rows.map((r) => r.id)
+    }
+    const session = (userId: string, count: number, correct: number) =>
+      t.db.query(
+        `insert into practice_sessions (user_id, mode, question_count, correct_count, status, started_at, completed_at)
+         values ($1, 'random', $2, $3, 'completed', '2026-10-01T00:00:00Z', '2026-10-01T00:10:00Z')`,
+        [userId, count, correct],
+      )
+    const clear = () => t.db.query(`delete from practice_sessions`)
 
-    it('no week = the current week (frozen Monday 2026-10-19: empty), anything else never errors', async () => {
-      const b = await board()
-      expect(b).toEqual({ weekStart: '2026-10-19', count: 0, rows: [] })
-      for (const q of ['?week=', '?week=abc', '?week=2026-13-45', '?week=2026-02-30', '?week=0000-01-01', '?week=99999-01-01', '?week=%00', '?week[]=x', '?week=2026-09-21&week=2026-09-14', `?week=${'9'.repeat(5000)}`, '?week=%E0%A4%A']) {
-        const res = await (await loginAs(t, ACCOUNTS.student)).get(`/api/sekolah-bersaing${q}`)
-        expect(res.status, q).toBe(200)
-        expect(GamesSekolahBersaingSchema.safeParse(res.body.data).success, q).toBe(true)
+    afterEach(clear)
+
+    it('AC-AS-45-2: no sessions: an empty array and 200, even with the stored weekly rows present (DM-31)', async () => {
+      const weekly = await t.db.query<{ n: string }>(`select count(*)::text as n from sekolah_bersaing_weeks`)
+      expect(Number(weekly[0]!.n)).toBeGreaterThan(0)
+      expect(await board()).toEqual([])
+    })
+
+    it('AC-AS-45-1: the mean of session accuracy per school, in order, with the register name and state', async () => {
+      for (const id of await pupilsOf('DEMO002', 3)) await session(id, 10, 6)
+      const a = await pupilsOf('DEMO003', 5)
+      for (const id of a) await session(id, 10, 8)
+      const rows = await t.db.query<{ name: string; state: string }>(`select name, state from schools where code in ('DEMO003', 'DEMO002') order by code desc`)
+      expect(await board()).toEqual([
+        { rank: 1, school: rows[0]!.name, state: rows[0]!.state, accuracy: 80, pupils: 5 },
+        { rank: 2, school: rows[1]!.name, state: rows[1]!.state, accuracy: 60, pupils: 3 },
+      ])
+    })
+
+    it('FR-AS-45-1: a mean of sessions, not pooled answers; a school with no session is absent; a primary school is left out', async () => {
+      const [id] = await pupilsOf('DEMO002', 1)
+      await session(id!, 2, 1) // 50
+      await session(id!, 10, 9) // 90, pooled would be 83.3
+      expect((await board()).map((r) => [r.accuracy, r.pupils])).toEqual([[70, 1]])
+      await t.db.query(`update schools set type = 'SK' where code = 'DEMO002'`)
+      expect(await board()).toEqual([])
+      await t.db.query(`update schools set type = 'SMK' where code = 'DEMO002'`)
+    })
+
+    it('FR-AS-45-3: an unknown query parameter is ignored', async () => {
+      const [id] = await pupilsOf('DEMO002', 1)
+      await session(id!, 10, 5)
+      const expected = await board()
+      expect(expected).toHaveLength(1)
+      for (const q of ['?week=abc', '?week=2026-09-21', '?foo=1']) expect(await board(q), q).toEqual(expected)
+    })
+
+    it('OQ-API-09: school admin and admin read the same board; pupil and teacher get 403', async () => {
+      const [id] = await pupilsOf('DEMO002', 1)
+      await session(id!, 10, 5)
+      const a = parseData(await (await loginAs(t, ACCOUNTS.admin)).get('/api/sekolah-bersaing'), GamesSekolahBersaingBoardSchema)
+      expect(a).toEqual(await board())
+      for (const who of [ACCOUNTS.student, ACCOUNTS.teacher]) {
+        const res = await (await loginAs(t, who)).get('/api/sekolah-bersaing')
+        expect(res.status, who).toBe(403)
+        expectError(res, 'FORBIDDEN')
       }
     })
+  })
 
-    it('a valid date selects the Monday of its week; stored rank order; school name and state from the register', async () => {
-      for (const day of ['2026-09-21', '2026-09-23', '2026-09-27']) {
-        const b = await board(`?week=${day}`)
-        expect(b.weekStart).toBe('2026-09-21')
-        expect(b.count).toBe(4)
-        expect(b.rows.map((r) => r.rank)).toEqual([1, 2, 3, 4])
-        expect(b.rows.map((r) => r.state)).toEqual(['Johor', 'Selangor', 'Selangor', 'Johor'])
-        expect(b.rows.map((r) => r.streakAvg)).toEqual([9.3, 8.2, 8.1, 7.9])
-        expect(b.rows.every((r) => !r.anonymous && r.schoolName !== '')).toBe(true)
-      }
-      expect((await board('?week=2026-08-31')).weekStart).toBe('2026-08-31')
-      expect((await board('?week=2026-01-01')).rows).toEqual([]) // a week with no snapshot
+  describe('rankSekolahBersaing (FR-AS-45-6, FR-GM-16.4)', () => {
+    const OPTIONS = { minPupils: 1, topN: 30 }
+    const fact = (schoolId: string, accuracy: number, pupils = 1, sessions = 1) => ({ schoolId, accuracy, pupils, sessions })
+    const school = (id: string, name = `Sekolah ${id}`) => ({ id, name, state: 'Johor' })
+
+    it('AC-AS-45-6: equal accuracy: more pupils first, then more sessions, then school name', () => {
+      const schools = [school('1', 'SMK Zapin'), school('2', 'SMK Bakti'), school('3', 'SMK Cempaka'), school('4', 'SMK Delima')]
+      const out = rankSekolahBersaing([fact('1', 70, 40, 9), fact('2', 70, 40, 9), fact('3', 70, 40, 12), fact('4', 70, 50, 1)], schools, OPTIONS)
+      expect(out.map((r) => r.school)).toEqual(['SMK Delima', 'SMK Cempaka', 'SMK Bakti', 'SMK Zapin'])
+      expect(out.map((r) => r.rank)).toEqual([1, 2, 3, 4])
     })
 
-    it('an anonymous row shows "Sekolah anonim" (name hidden, flag set)', async () => {
-      await t.db.query(`update sekolah_bersaing_weeks set is_anonymous = true where week_start = '2026-09-14' and rank = 2`)
-      const b = await board('?week=2026-09-14')
-      expect(b.rows[1]).toMatchObject({ rank: 2, schoolName: 'Sekolah anonim', anonymous: true })
-      expect(b.rows[0]!.schoolName).not.toBe('Sekolah anonim')
-      await t.db.query(`update sekolah_bersaing_weeks set is_anonymous = false where week_start = '2026-09-14'`)
+    it('the order uses the unrounded accuracy; the wire carries one decimal', () => {
+      const out = rankSekolahBersaing([fact('1', 66.66, 1), fact('2', 66.68, 1)], [school('1'), school('2')], OPTIONS)
+      expect(out.map((r) => [r.school, r.accuracy])).toEqual([['Sekolah 2', 66.7], ['Sekolah 1', 66.7]])
     })
 
-    it('is a national board: every role and school sees the same rows', async () => {
-      const a = parseData(await (await loginAs(t, ACCOUNTS.student)).get('/api/sekolah-bersaing?week=2026-09-21'), GamesSekolahBersaingSchema)
-      const b = parseData(await (await loginAs(t, ACCOUNTS.schoolAdmin)).get('/api/sekolah-bersaing?week=2026-09-21'), GamesSekolahBersaingSchema)
-      const c = parseData(await (await loginAs(t, ACCOUNTS.admin)).get('/api/sekolah-bersaing?week=2026-09-21'), GamesSekolahBersaingSchema)
-      expect(b).toEqual(a)
-      expect(c).toEqual(a)
+    it('AC-AS-45-3: 40 schools give exactly 30 rows', () => {
+      const ids = Array.from({ length: 40 }, (_, i) => String(i + 1))
+      const out = rankSekolahBersaing(ids.map((id, i) => fact(id, i)), ids.map((id) => school(id)), OPTIONS)
+      expect(out).toHaveLength(30)
+      expect(out[0]).toMatchObject({ rank: 1, accuracy: 39 })
+      expect(out[29]).toMatchObject({ rank: 30, accuracy: 10 })
+    })
+
+    it('AC-GM-16.5: one pupil is listed with minimum 1 and absent with minimum 5', () => {
+      expect(rankSekolahBersaing([fact('1', 80, 1)], [school('1')], OPTIONS)).toHaveLength(1)
+      expect(rankSekolahBersaing([fact('1', 80, 1)], [school('1')], { ...OPTIONS, minPupils: 5 })).toEqual([])
+    })
+
+    it('a school outside the given list is left out', () => {
+      expect(rankSekolahBersaing([fact('9', 80)], [school('1')], OPTIONS)).toEqual([])
     })
   })
 
@@ -397,19 +458,6 @@ describe('leagues and Sekolah Bersaing (BE-45, M16-46 to M16-50)', () => {
       for (const rows of Object.values(d.standings)) expect((rows ?? []).map((r) => r.name)).not.toContain('SK Demo Dua')
     } finally {
       await t.db.query(`update schools set type = 'SMK' where code = 'DEMO002'`)
-    }
-  })
-})
-
-describe('weekStartOf', () => {
-  const now = new Date('2026-10-21T09:00:00+08:00') // Wednesday
-  it('maps a valid date to its Monday and anything else to the current week', () => {
-    expect(weekStartOf('2026-09-21', now)).toBe('2026-09-21')
-    expect(weekStartOf('2026-09-27', now)).toBe('2026-09-21')
-    expect(weekStartOf('2026-09-28', now)).toBe('2026-09-28')
-    expect(weekStartOf('2024-02-29', now)).toBe('2024-02-26')
-    for (const bad of [undefined, null, 5, ['2026-09-21'], {}, '', '2026-9-21', '2026-02-30', '2026-13-01', '0001-01-01', ' 2026-09-21', '2026-09-21\n']) {
-      expect(weekStartOf(bad, now)).toBe('2026-10-19')
     }
   })
 })
