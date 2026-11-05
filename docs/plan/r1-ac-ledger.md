@@ -85,7 +85,6 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
-| S1-T08 | AC-ADM-Q12.1 | CI | Pass | 2026-11-05 | team-aa/S-3 | kiriman-filter.spec.ts::meta.kirimanCounts: each count equals the totalItems of its kirimanStatus filter; absent without source=guru; kiriman-filter.spec.ts::a zero-item in-progress guru batch counts in processing and jumlah; admin batches and finished or failed empty ones never do |
 | S1-T08 | AC-ADM-Q12.2 | CI | Pass | 2026-11-05 | team-aa/S-3 | papers-guru-intake.spec.ts::201 with a QuestionSetPaper; the admin sees the guru batch; ?source accepts only guru |
 | S1-T08 | AC-QA-39 | CI | Pass | 2026-11-05 | team-aa/S-3 | papers-guru-intake.spec.ts::201 with a QuestionSetPaper; the admin sees the guru batch; ?source accepts only guru |
 | S1-T08 | AC-GUR-44-2 | CI | Pass | 2026-11-05 | team-aa/S-3 | papers-guru-intake.spec.ts::201 with a QuestionSetPaper; the admin sees the guru batch; ?source accepts only guru |
