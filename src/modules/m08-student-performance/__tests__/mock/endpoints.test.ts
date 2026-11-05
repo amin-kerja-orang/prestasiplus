@@ -326,3 +326,57 @@ describe('S1 / S3 follow writes of other modules (no stale memo)', () => {
     expect(after.header.studentCount).toBe(before.header.studentCount + 1)
   }, 120_000)
 })
+
+describe('Tingkatan view of a teacher (S10-T07, R1-GUR-4: own classes only)', () => {
+  const codes = ['t1', 't2', 't3', 't4', 't5'] as const
+
+  it('level detail lists only own classes and their pupils; the school admin still sees the rest', async () => {
+    // Another teacher of the same school and level, with a pupil of her own (a pupil the teacher does not teach).
+    const other = classrooms.create(
+      { name: '4 Guru Lain', teacherId: GURU + 1000, schoolId: 900001, subjectId: null, educationLevel: 'tingkatan-4' },
+      Date.parse('2026-09-25T15:40:00+08:00'),
+    )
+    classrooms.enrol(
+      { kind: 'classroom', classId: other.classId, studentId: PELAJAR2, source: 'teacher' },
+      Date.parse('2026-09-25T15:40:00+08:00'),
+    )
+    const own = new Set(
+      classrooms
+        .forTeacher(GURU)
+        .filter((c) => c.kind === 'classroom' && c.isActive)
+        .map((c) => c.classId),
+    )
+    const ownPupils = new Set(
+      classrooms
+        .forTeacher(GURU)
+        .filter((c) => own.has(c.classId))
+        .flatMap((c) => classrooms.memberIds(c.kind, c.classId)),
+    )
+    expect(own.has(other.classId)).toBe(false)
+    let otherClassesSeenByAdmin = 0
+    for (const code of codes) {
+      const guru = await dataAs<LevelDetail>(runtime, GURU, `/api/performance/levels/${code}`)
+      expect(
+        guru.classRows.every((r) => own.has(r.classId)),
+        `${code} class rows`,
+      ).toBe(true)
+      expect(guru.classes).toBe(guru.classRows.length)
+      expect(guru.topStudents.every((t) => ownPupils.has(t.userId))).toBe(true)
+      expect(guru.atRisk.every((t) => ownPupils.has(t.userId))).toBe(true)
+      if (!ownPupils.has(PELAJAR2)) {
+        expect([...guru.topStudents, ...guru.atRisk].some((t) => t.userId === PELAJAR2)).toBe(false)
+      }
+      const boss = await dataAs<LevelDetail>(runtime, ADMIN_SEKOLAH, `/api/performance/levels/${code}`)
+      otherClassesSeenByAdmin += boss.classRows.filter((r) => !own.has(r.classId)).length
+      expect(boss.classes).toBeGreaterThanOrEqual(guru.classes)
+    }
+    // Not vacuous: the school has classes the teacher does not teach, and the school admin sees them.
+    expect(otherClassesSeenByAdmin).toBeGreaterThan(0)
+  })
+
+  it('the Tingkatan cards count the own classes only', async () => {
+    const own = classrooms.forTeacher(GURU).filter((c) => c.kind === 'classroom' && c.isActive)
+    const cards = await dataAs<{ code: string; classes: number }[]>(runtime, GURU, '/api/performance/levels')
+    expect(cards.reduce((n, c) => n + c.classes, 0)).toBe(own.length)
+  })
+})

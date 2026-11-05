@@ -112,12 +112,14 @@ export interface LevelAggregate {
 }
 
 /** Kelas / Murid / Sesi (distinct) / Purata Ketepatan (session mean) / subjects of a level in a scope. */
-export function levelAggregate(code: LevelCode, scope: Scope): LevelAggregate {
+export function levelAggregate(code: LevelCode, scope: Scope, ownClassIds?: ReadonlySet<number>): LevelAggregate {
   const slug = LEVEL_SLUG[code]
   const classes = classrooms
     .list({ educationLevel: slug })
     .filter((c) => scope.kind === 'platform' || c.schoolId === scope.schoolId)
-  const studentIds = scope.kind === 'platform' ? levelStudentIds(slug) : studentsOfClasses(classes)
+    // A teacher's Tingkatan view covers the own classes only (R1-GUR-4, OPT-KELAS-OWN); the school-wide comparison is R1-AS-4.
+    .filter((c) => ownClassIds === undefined || ownClassIds.has(c.classId))
+  const studentIds = scope.kind === 'platform' && ownClassIds === undefined ? levelStudentIds(slug) : studentsOfClasses(classes)
   const totals = sumTotals(studentIds, 'all')
   return {
     code,
@@ -424,10 +426,18 @@ function groupKey(c: ClassroomRow): [number, string] {
   return [1, curriculum.subject(c.subjectId)?.name ?? '']
 }
 
-export function levelDetail(code: LevelCode, scope: Scope, now: number = Date.now()): LevelDetail {
-  const agg = levelAggregate(code, scope)
+/** `ownClassIds` is given for a teacher: every pupil-level output is limited to those classes. */
+export function levelDetail(
+  code: LevelCode,
+  scope: Scope,
+  now: number = Date.now(),
+  ownClassIds?: ReadonlySet<number>,
+): LevelDetail {
+  const agg = levelAggregate(code, scope, ownClassIds)
   const levelId = LEVEL_ID[code]
-  const entries = scopedEntries(scope).filter((e) => e.levelId === levelId)
+  const entries = scopedEntries(scope).filter(
+    (e) => e.levelId === levelId && (ownClassIds === undefined || ownClassIds.has(e.classroomId)),
+  )
   const pairs = entries.filter((e) => e.classroomKind === 'classroom')
   let on = 0
   let below = 0
