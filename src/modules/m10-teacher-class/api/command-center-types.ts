@@ -103,7 +103,7 @@ export interface CcLiveData {
   kirkT1Count: number
   /** Accuracy of the last 30 days, the 30 before, and the difference. */
   kirkT2Accuracy: number | null
-  kirkT2Delta: number
+  kirkT2Delta: number | null
   kirkT2Prev: number | null
   /** Students with an answer in the last 30 days, the difference to the 30 before, and that count. */
   kirkT3Active: number
@@ -221,7 +221,7 @@ export interface CcDrillEngagementRow {
 export interface CcDrillVs {
   accuracyNow: number | null
   accuracyPrev: number | null
-  accuracyChange: number
+  accuracyChange: number | null
   answersNow: number
   answersPrev: number
   activeNow: number
@@ -317,8 +317,8 @@ export interface CcPrediction {
   /** Whole percent over all answers. */
   overallAccuracy: number
   /** Accuracy of the last 14 days minus the 14 before (0 when either has no answer). */
-  trend: number
-  trendLabel: CcTrendLabel
+  trend: number | null
+  trendLabel: CcTrendLabel | null
   /** Active days in the last 30 ÷ 30 × 100, whole percent. */
   consistency: number
   predictedGrade: string

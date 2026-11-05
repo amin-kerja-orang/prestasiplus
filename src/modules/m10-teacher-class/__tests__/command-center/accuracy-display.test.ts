@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { accuracyText, accuracyTone } from '../../components/command-center/copy'
+import { accuracyText, accuracyTone, signedPct } from '../../components/command-center/copy'
 
 /** XS-5 / 40 FR-X4-5: the guru Command Center shows the whole number, half up, and the dash for null (never 0%). */
 describe('guru Command Center accuracy display', () => {
@@ -20,5 +20,11 @@ describe('guru Command Center accuracy display', () => {
     expect(accuracyTone(49.4)).toBe('text-error')
     expect(accuracyTone(69.5)).toBe('text-success')
     expect(accuracyTone(null)).toBe('text-muted')
+  })
+
+  it('a delta with a null side is no delta: the dash, never +0%', () => {
+    expect(signedPct(null)).toBe('—')
+    expect(signedPct(6)).toBe('+6%')
+    expect(signedPct(-3)).toBe('-3%')
   })
 })

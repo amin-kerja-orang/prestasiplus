@@ -90,7 +90,7 @@ describe('GET /guru/command-center/drill: rows', () => {
       expect(body.title).toBe(`Kirkpatrick ${f.toUpperCase()}`)
       expect(body.students).toEqual([])
       expect(body.vsLabel).toBe('Bulan Ini vs Bulan Lepas')
-      expect(body.extra).toEqual({ accuracyNow: 72.2, accuracyPrev: null, accuracyChange: 0, answersNow: 36, answersPrev: 0, activeNow: 3, activePrev: 0, newStudents: 3 })
+      expect(body.extra).toEqual({ accuracyNow: 72.2, accuracyPrev: null, accuracyChange: null, answersNow: 36, answersPrev: 0, activeNow: 3, activePrev: 0, newStudents: 3 })
     }
   })
 

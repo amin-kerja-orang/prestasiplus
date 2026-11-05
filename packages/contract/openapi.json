@@ -18387,8 +18387,11 @@
             "description": "Accuracy of the last 30 days."
           },
           "kirkT2Delta": {
-            "type": "integer",
-            "description": "Difference to the 30 days before, whole points from the 1-decimal values; 0 when either side is null."
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Difference to the 30 days before, whole points from the 1-decimal values; null (no delta, shown \"—\") when either side is null."
           },
           "kirkT2Prev": {
             "type": [
@@ -18828,7 +18831,11 @@
             "maximum": 100
           },
           "accuracyChange": {
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Null when accuracyNow or accuracyPrev is null (no delta, never 0)."
           },
           "answersNow": {
             "type": "integer",
@@ -18923,7 +18930,11 @@
                 "maximum": 100
               },
               "accuracyChange": {
-                "type": "integer"
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Null when accuracyNow or accuracyPrev is null (no delta, never 0)."
               },
               "answersNow": {
                 "type": "integer",
@@ -19017,17 +19028,24 @@
             "description": "XS-5, 1 decimal; students here have >= 10 answers so never null."
           },
           "trend": {
-            "type": "integer",
-            "description": "Accuracy of the last 14 days minus the 14 before; 0 when either window has no answer."
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Accuracy of the last 14 days minus the 14 before; null (no delta, never 0) when either window has no answer."
           },
           "trendLabel": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "enum": [
               "Naik",
               "Turun",
-              "Stabil"
+              "Stabil",
+              null
             ],
-            "description": "> 5 Naik, < -5 Turun, else Stabil."
+            "description": "> 5 Naik, < -5 Turun, else Stabil; null when trend is null."
           },
           "consistency": {
             "type": "integer",

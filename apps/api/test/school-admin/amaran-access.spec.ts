@@ -263,4 +263,14 @@ describe('BE-21 Amaran access: /amaran/*', () => {
     const data = AmaranEffectivenessResultSchema.parse((await teacher.get('/amaran/effectiveness')).body.data)
     expect(data.report.cards.total).toBe(1)
   })
+  it('the accuracy is pooled (correct / answered), never the mean of the session percentages (XS-5)', async () => {
+    const id = await insertUser(t.db, { name: 'Murid Amaran Terkumpul', email: 'terkumpul@ujian.test', roles: ['student'], schoolId: s1, grade: 10 })
+    // Session A 1/1 (100%) and session B 1/9 (11.1%): pooled 2/10 = 20.0, the mean of the two session percentages would be 55.6.
+    await addSession(t.db, id, { mode: 'chapter', questions: 1, correct: 1, completedAt: '2026-10-17T10:00:00+08:00', subjectId: subject })
+    await addSession(t.db, id, { mode: 'chapter', questions: 9, correct: 1, completedAt: '2026-10-17T11:00:00+08:00', subjectId: subject })
+    const data = AmaranSchoolRiskSchema.parse((await schoolAdmin.get(`/amaran/schools/${s1}`)).body.data)
+    const row = data.pupils.find((p) => p.name === 'Murid Amaran Terkumpul')
+    expect(row?.accuracy).toBe(20)
+    expect(row?.accuracyText).toBe('Purata ketepatan: 20%')
+  })
 })

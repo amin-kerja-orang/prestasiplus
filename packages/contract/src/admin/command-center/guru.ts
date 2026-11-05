@@ -128,7 +128,11 @@ export const CommandCenterGuruLiveDataSchema = z
     kirkT1: num.min(0).meta(FIELD("Mean reaction score 0-10 (NPS) of the students' feedback, 1 dp; 0 when none.")),
     kirkT1Count: count,
     kirkT2Accuracy: acc.meta(FIELD('Accuracy of the last 30 days.')),
-    kirkT2Delta: z.number().int().meta(FIELD('Difference to the 30 days before, whole points from the 1-decimal values; 0 when either side is null.')),
+    kirkT2Delta: z
+      .number()
+      .int()
+      .nullable()
+      .meta(FIELD('Difference to the 30 days before, whole points from the 1-decimal values; null (no delta, shown "—") when either side is null.')),
     kirkT2Prev: acc,
     kirkT3Active: count.meta(FIELD('Students with an answer in the last 30 days.')),
     kirkT3Delta: z.number().int(),
@@ -265,7 +269,7 @@ export const CommandCenterGuruDrillVsSchema = z
   .object({
     accuracyNow: acc,
     accuracyPrev: acc,
-    accuracyChange: z.number().int(),
+    accuracyChange: z.number().int().nullable().meta(FIELD('Null when accuracyNow or accuracyPrev is null (no delta, never 0).')),
     answersNow: count,
     answersPrev: count,
     activeNow: count,
@@ -329,8 +333,9 @@ export const CommandCenterGuruPredictionSchema = z
     trend: z
       .number()
       .int()
-      .meta(FIELD('Accuracy of the last 14 days minus the 14 before; 0 when either window has no answer.')),
-    trendLabel: CommandCenterGuruTrendLabelSchema.meta(FIELD('> 5 Naik, < -5 Turun, else Stabil.')),
+      .nullable()
+      .meta(FIELD('Accuracy of the last 14 days minus the 14 before; null (no delta, never 0) when either window has no answer.')),
+    trendLabel: CommandCenterGuruTrendLabelSchema.nullable().meta(FIELD('> 5 Naik, < -5 Turun, else Stabil; null when trend is null.')),
     consistency: count.meta(FIELD('Distinct answer days in the last 30 / 30 * 100, whole percent.')),
     predictedGrade: CommandCenterGuruGradeSchema,
     predictedGps: z.number().int().min(0).max(9).meta(FIELD('Grade points: A+ 0 ... G 9.')),

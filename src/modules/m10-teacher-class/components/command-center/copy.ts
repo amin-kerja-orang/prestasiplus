@@ -98,7 +98,7 @@ export const EMPTY_LIVE: CcLiveData = {
   kirkT1: 0,
   kirkT1Count: 0,
   kirkT2Accuracy: null,
-  kirkT2Delta: 0,
+  kirkT2Delta: null,
   kirkT2Prev: null,
   kirkT3Active: 0,
   kirkT3Delta: 0,
@@ -199,7 +199,8 @@ export const riskStatus = (risk: AnyRisk): DsStatus => RISK_STATUS[RISK[risk].co
 export const riskLabel = (risk: AnyRisk) => RISK[risk].label
 
 /** The signed percent of a predictive trend ("+8%", "-3%", "0%"). */
-export const signedPct = (value: number): string => `${value > 0 ? '+' : ''}${plain(value)}%`
+export const signedPct = (value: number | null): string =>
+  value === null ? NO_DATA : `${value > 0 ? '+' : ''}${plain(value)}%`
 
 /** FN-M10-2.2.14: the mounted M17 pages (new tab). */
 export const studentPath = (id: number) => `${S2_BASE}/student/${String(id)}`

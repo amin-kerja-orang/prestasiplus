@@ -78,7 +78,7 @@ export async function buildDrill(deps: GuruDeps, ctx: GuruContext, type: Command
         extra: {
           accuracyNow,
           accuracyPrev,
-          accuracyChange: accuracyNow === null || accuracyPrev === null ? 0 : round(accuracyNow - accuracyPrev),
+          accuracyChange: accuracyNow === null || accuracyPrev === null ? null : round(accuracyNow - accuracyPrev),
           answersNow: sNow.answers,
           answersPrev: sPrev.answers,
           activeNow: now.size,

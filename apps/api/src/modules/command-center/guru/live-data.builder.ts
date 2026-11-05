@@ -118,7 +118,7 @@ export async function buildLiveData(deps: GuruDeps, ctx: GuruContext): Promise<C
     kirkT1,
     kirkT1Count: t1.count,
     kirkT2Accuracy: accNow,
-    kirkT2Delta: accNow === null || accPrev === null ? 0 : round(accNow - accPrev),
+    kirkT2Delta: accNow === null || accPrev === null ? null : round(accNow - accPrev),
     kirkT2Prev: accPrev,
     kirkT3Active: d30.size,
     kirkT3Delta: d30.size - prev30.size,

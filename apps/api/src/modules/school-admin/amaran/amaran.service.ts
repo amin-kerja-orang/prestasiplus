@@ -21,6 +21,7 @@ import { KirkpatrickRepository } from '../../reports/kirkpatrick'
 import { SchoolsRepository, type SchoolRow } from '../../schools'
 import { UsersRepository } from '../../users'
 import { K_COHORT, SCHOOL_ADMIN_AUDIT } from '../school-admin.constants'
+import { pooledAccuracy, XsQueries } from '../xs-queries'
 import { canReadSchool, schoolIdOf, type AmaranCaller } from './amaran.access'
 import { amaranCsv } from './amaran.csv'
 import {
@@ -101,6 +102,7 @@ export class AmaranService {
     @Inject(ClassesRepository) private readonly classes: ClassesRepository,
     @Inject(PracticeRepository) private readonly practice: PracticeRepository,
     @Inject(KirkpatrickRepository) private readonly interventions: KirkpatrickRepository,
+    @Inject(XsQueries) private readonly xs: XsQueries,
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
@@ -316,13 +318,16 @@ export class AmaranService {
     }
     const ids = students.map((s) => s.id)
     const classOf = await this.classesOf(school.id, ids)
-    const [stats, newest, masteryOf] = await Promise.all([
+    const [stats, newest, masteryOf, tallies] = await Promise.all([
       this.practice.statsOf(ids, { modes: PRACTICE_SESSION_MODES }),
       this.practice.lastActivityOf(ids, { modes: PRACTICE_SESSION_MODES }),
       this.practice.masteryOf(ids),
+      // XS-5: the accuracy is pooled (correct / answered over all answer rows, all time), never a mean of session percentages.
+      this.xs.tallyByPupil({ kind: 'school', schoolId: school.id }),
     ])
     const facts = students.map((s) => {
       const st = stats.get(s.id)
+      const tally = tallies.get(s.id)
       const mastery = (masteryOf.get(s.id) ?? []).filter((m) => m.answered > 0)
       const stamps = [newest.get(s.id) ?? null, ...mastery.map((m) => m.lastAnsweredAt)].filter((d): d is Date => d !== null).map((d) => d.getTime())
       const pupil: PupilFacts = {
@@ -330,7 +335,7 @@ export class AmaranService {
         name: s.name,
         grade: s.grade,
         classes: classOf.get(s.id) ?? [],
-        accuracy: st && st.sessions > 0 ? st.avgAccuracyPct : null,
+        accuracy: st && st.sessions > 0 && tally ? pooledAccuracy(tally.correct, tally.answered) : null,
         sessions: st?.sessions ?? 0,
         lastActiveAt: stamps.length === 0 ? null : Math.max(...stamps),
         masteryLevels: mastery.map((m) => masteryLevelOf(m.correct)),
