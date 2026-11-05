@@ -1,133 +1,136 @@
 <script setup lang="ts">
 /**
- * S28 `/sekolah-bersaing` (`?week=`; FR-M16-127..131, BR-M16-35; URS FN-M16-10.1.1 ... 10.1.6): the
- * heading, the week line "Minggu {dd Mon yyyy} · {n} sekolah dalam pertandingan", the stored rows in
- * stored rank order (staff table, card list below `md`) and the footer tip. A week without a snapshot
- * shows the heading and the plain "Data minggu ini belum dijana." (no week line). `?week=` has no UI
- * control (as live); an invalid value is ignored by #50 (DV-M16-30). User shell for every role
- * (DV-M16-02), the school admin included.
+ * `/sekolah-bersaing` (R1-AS-45, FR-AS-45-1..6, API-AS-14): the live board of the top schools by
+ * average session accuracy, in the rank order of the API, with no week of its own. Ranks 1 to 3 are
+ * medals; the accuracy is a whole-number pill whose colour follows the rounded value, so 69.6 shows a
+ * green "70%". `DsDataTable` gives the table from 768 px and cards below it; the card slot carries the
+ * same pill and hides no field (FR-AS-45-5). Text is at least 14 px at 375, hence the body type on the
+ * card labels and the large pill. An empty array is the empty state (FR-AS-45-3).
  */
 import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsDataTable, DsPage, type CardField, DsLoadError } from '@/ds'
-import { formatDateEn } from '@/lib/time'
+import { DsDataTable, DsEmptyState, DsPage, DsLoadError } from '@/ds'
+import { formatCount, roundHalfUp } from '@/lib/number'
 
 import { fetchSekolahBersaing } from '../api'
 import { SB_COPY as COPY, SB_MEDALS } from '../components/sekolah-bersaing/copy'
 import { LOAD_COPY } from '../components/competition/copy'
 
-const route = useRoute()
-
-/** The raw `?week=` text (a repeated key uses its first value); `undefined` when absent. */
-const week = computed(() => {
-  const q = route.query.week
-  const v = Array.isArray(q) ? q[0] : q
-  return typeof v === 'string' && v !== '' ? v : undefined
-})
-
-const view = useApi((signal) => fetchSekolahBersaing(week.value, { signal }), week)
+const view = useApi((signal) => fetchSekolahBersaing({ signal }))
 const data = computed(() => view.data.value)
-const weekLabel = computed(() => (data.value ? formatDateEn(data.value.weekStart) : ''))
 
 interface Row extends Record<string, unknown> {
   rank: number
   rankText: string
   school: string
   state: string
-  anonymous: boolean
-  aktif: string
-  streak: string
-  nota: string
+  accuracyText: string
+  accuracyColor: 'success' | 'warning' | 'error'
+  pupilsText: string
+}
+
+/** FR-AS-45-2: the colour of the value shown, not of the decimal on the wire. */
+function accuracyColor(rounded: number): Row['accuracyColor'] {
+  if (rounded >= 70) return 'success'
+  return rounded >= 50 ? 'warning' : 'error'
 }
 
 const rows = computed<Row[]>(() =>
-  (data.value?.rows ?? []).map((r) => ({
-    rank: r.rank,
-    rankText: r.rank >= 1 && r.rank <= 3 ? (SB_MEDALS[r.rank - 1] ?? '') : `#${String(r.rank)}`,
-    school: r.anonymous ? COPY.anonymous : r.schoolName,
-    state: r.anonymous ? '' : r.state,
-    anonymous: r.anonymous,
-    aktif: `${r.aktifPct.toFixed(1)}% ${COPY.aktif}`,
-    streak: `${r.streakAvg.toFixed(1)} ${COPY.hari}`,
-    nota: `${r.notaPer10.toFixed(1)} ${COPY.per10}`,
-  })),
+  (data.value ?? []).map((r) => {
+    const rounded = roundHalfUp(r.accuracy)
+    return {
+      rank: r.rank,
+      rankText: SB_MEDALS[r.rank - 1] ?? String(r.rank),
+      school: r.school,
+      state: r.state,
+      accuracyText: `${String(rounded)}%`,
+      accuracyColor: accuracyColor(rounded),
+      pupilsText: formatCount(r.pupils),
+    }
+  }),
 )
 
 const columns: TableColumn<Row>[] = [
   { accessorKey: 'rankText', header: COPY.headers[0] },
   { accessorKey: 'school', header: COPY.headers[1] },
-  { accessorKey: 'aktif', header: COPY.headers[2] },
-  { accessorKey: 'streak', header: COPY.headers[3] },
-  { accessorKey: 'nota', header: COPY.headers[4] },
-]
-const cardFields: CardField[] = [
-  { key: 'rankText', label: COPY.headers[0] },
-  { key: 'state', label: 'Negeri' },
-  { key: 'aktif', label: COPY.headers[2] },
-  { key: 'streak', label: COPY.headers[3] },
-  { key: 'nota', label: COPY.headers[4] },
+  { accessorKey: 'state', header: COPY.headers[2] },
+  { accessorKey: 'accuracyText', header: COPY.headers[3] },
+  { accessorKey: 'pupilsText', header: COPY.headers[4] },
 ]
 </script>
 
 <template>
   <DsPage :title="COPY.heading" :subtitle="COPY.sub" data-testid="m16-sekolah-bersaing-page">
+    <p class="text-label text-muted" data-testid="sb-label">{{ COPY.label }}</p>
 
     <DsLoadError v-if="view.error.value" :message="LOAD_COPY.failed" testid="m16-load-error" retry-testid="m16-retry" @retry="view.reload()" />
     <USkeleton v-else-if="!data" class="h-48 w-full" data-testid="sb-loading" />
 
-    <UCard v-else-if="data.rows.length === 0" data-testid="sb-empty">
-      <div class="flex flex-col items-center gap-1 py-6 text-center">
-        <UIcon name="i-ph-chart-bar-duotone" class="size-10 text-dimmed" />
-        <p class="text-subheading text-highlighted">{{ COPY.emptyTitle }}</p>
-        <p class="text-body text-muted">{{ COPY.emptyHint }}</p>
-      </div>
-    </UCard>
+    <DsEmptyState
+      v-else-if="data.length === 0"
+      :title="COPY.emptyTitle"
+      :description="COPY.emptyHint"
+      icon="chart-bar"
+      data-testid="sb-empty"
+    />
 
-    <template v-else>
-      <p class="text-body text-default" data-testid="sb-week">
-        {{ COPY.weekPrefix }}
-        <strong class="text-highlighted" data-testid="sb-week-date">{{ weekLabel }}</strong> ·
-        <strong class="text-highlighted" data-testid="sb-count">{{ data.count }}</strong>
-        {{ COPY.weekSuffix }}
-      </p>
+    <DsDataTable
+      v-else
+      :data="rows"
+      :columns="columns"
+      :page-size="Math.max(rows.length, 1)"
+      :caption="COPY.label"
+      data-testid="sb-table"
+    >
+      <template #rankText-cell="{ row }">
+        <span data-testid="sb-rank">{{ row.original.rankText }}</span>
+      </template>
+      <template #school-cell="{ row }">
+        <span :data-rank="row.original.rank" data-testid="sb-row">
+          <span data-testid="sb-school">{{ row.original.school }}</span>
+        </span>
+      </template>
+      <template #state-cell="{ row }">
+        <span data-testid="sb-state">{{ row.original.state }}</span>
+      </template>
+      <template #accuracyText-cell="{ row }">
+        <UBadge :color="row.original.accuracyColor" variant="soft" size="lg" data-testid="sb-accuracy">{{
+          row.original.accuracyText
+        }}</UBadge>
+      </template>
+      <template #pupilsText-cell="{ row }">
+        <span data-testid="sb-pupils">{{ row.original.pupilsText }}</span>
+      </template>
 
-      <DsDataTable
-        :data="rows"
-        :columns="columns"
-        :page-size="Math.max(rows.length, 1)"
-        caption="Leaderboard sekolah mingguan"
-        card-title="school"
-        :card-fields="cardFields"
-        data-testid="sb-table"
-      >
-        <template #rankText-cell="{ row }">
-          <span class="text-label text-highlighted" data-testid="sb-rank">{{
-            row.original.rankText
-          }}</span>
-        </template>
-        <template #school-cell="{ row }">
-          <div class="flex min-w-0 flex-col" :data-rank="row.original.rank" data-testid="sb-row">
-            <span class="truncate text-label text-highlighted" data-testid="sb-school">{{
-              row.original.school
-            }}</span>
-            <span
-              v-if="!row.original.anonymous"
-              class="truncate text-caption text-muted"
-              data-testid="sb-state"
-              >{{ row.original.state }}</span
-            >
-          </div>
-        </template>
-      </DsDataTable>
-
-      <UAlert color="neutral" variant="soft" icon="i-ph-lightbulb-duotone" data-testid="sb-tip">
-        <template #description>
-          <strong>{{ COPY.tipLabel }}</strong> {{ COPY.tip }}
-        </template>
-      </UAlert>
-    </template>
+      <template #card="{ row }">
+        <div class="flex min-w-0 flex-col gap-1" :data-rank="row.rank" data-testid="sb-row">
+          <p class="text-label text-highlighted">
+            <span data-testid="sb-rank">{{ row.rankText }}</span>
+            {{ ' ' }}
+            <span data-testid="sb-school">{{ row.school }}</span>
+          </p>
+          <dl class="grid grid-cols-2 gap-1">
+            <div class="min-w-0">
+              <dt class="text-body text-muted">{{ COPY.headers[2] }}</dt>
+              <dd data-testid="sb-state">{{ row.state }}</dd>
+            </div>
+            <div class="min-w-0">
+              <dt class="text-body text-muted">{{ COPY.headers[3] }}</dt>
+              <dd>
+                <UBadge :color="row.accuracyColor" variant="soft" size="lg" data-testid="sb-accuracy">{{
+                  row.accuracyText
+                }}</UBadge>
+              </dd>
+            </div>
+            <div class="min-w-0">
+              <dt class="text-body text-muted">{{ COPY.headers[4] }}</dt>
+              <dd data-testid="sb-pupils">{{ row.pupilsText }}</dd>
+            </div>
+          </dl>
+        </div>
+      </template>
+    </DsDataTable>
   </DsPage>
 </template>

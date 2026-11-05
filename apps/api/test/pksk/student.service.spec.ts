@@ -1,4 +1,4 @@
-import { PkskDashboardSchema, PkskExamSchema, PkskPracticeSchema, PkskDomainSectionsSchema } from '@pp/contract'
+import { PkskDashboardSchema, PkskExamSchema, PkskPracticeResultSchema, PkskPracticeSchema, PkskDomainSectionsSchema } from '@pp/contract'
 import { describe, expect, it } from 'vitest'
 
 import { ApiError } from '../../src/common/errors/api-error'
@@ -193,7 +193,8 @@ describe('practice submit (AC 7)', () => {
     expect(world.loads).toHaveLength(0)
     expect(world.sessions).toHaveLength(1)
     expect(world.sessions[0]?.startedAt.getTime()).toBeLessThanOrEqual(world.sessions[0]?.completedAt.getTime() as number)
-    // one row per user, level and domain: a second submission updates it
+    // one row per user, level and domain: a second submission (of a new set) updates it
+    await student.practiceSet(STUDENT, 'T1', 'PKSK_MATH')
     await student.submitPractice(STUDENT, 'T1', 'PKSK_MATH', { answers: [{ questionId: qs[0]?.id, optionIndex: 0 }] })
     expect(world.mastery).toHaveLength(1)
     expect(world.mastery[0]?.pct).toBe(100)
@@ -201,13 +202,14 @@ describe('practice submit (AC 7)', () => {
 
   it('a start time after now is clamped to now', async () => {
     const { student, world, qs } = setup()
-    world.loads.push({ userId: '10', level: 'T1', domainId: '2', at: new Date(world.clock.now().getTime() + 3600_000) })
+    world.loads.push({ userId: '10', level: 'T1', domainId: '2', at: new Date(world.clock.now().getTime() + 3600_000), servedIds: qs.map((q) => q.id) })
     await student.submitPractice(STUDENT, 'T1', 'PKSK_MATH', { answers: [{ questionId: qs[0]?.id, optionIndex: 0 }] })
     expect(world.sessions[0]?.startedAt.getTime()).toBe(world.clock.now().getTime())
   })
 
   it('Mod Pelajar stamps the session and mastery as test', async () => {
     const { student, world, qs } = setup()
+    await student.practiceSet({ ...STUDENT, isTest: true }, 'T1', 'PKSK_MATH')
     await student.submitPractice({ ...STUDENT, isTest: true }, 'T1', 'PKSK_MATH', { answers: [{ questionId: qs[0]?.id, optionIndex: 0 }] })
     expect(world.sessions[0]?.isTest).toBe(true)
     expect(world.mastery[0]?.isTest).toBe(true)
@@ -225,8 +227,10 @@ describe('practice submit (AC 7)', () => {
   it('essay: 50 trimmed characters are accepted by the simulated marker', async () => {
     const { student, world } = setup()
     const essay = seedQuestions(world, 'PKSK_ESSAY', 'T1', 1)[0]
+    await student.practiceSet(STUDENT, 'T1', 'PKSK_ESSAY')
     const bad = await student.submitPractice(STUDENT, 'T1', 'PKSK_ESSAY', { answers: [{ questionId: essay?.id, text: 'x'.repeat(49) }] })
     expect(bad.masteryPct).toBe(0)
+    await student.practiceSet(STUDENT, 'T1', 'PKSK_ESSAY')
     const good = await student.submitPractice(STUDENT, 'T1', 'PKSK_ESSAY', { answers: [{ questionId: essay?.id, text: ` ${'x'.repeat(50)} ` }] })
     expect(good.masteryPct).toBe(100)
   })
@@ -294,5 +298,153 @@ describe('exam (AC 8, 9)', () => {
     const list = await student.attempts(STUDENT, 'T1')
     expect(list).toHaveLength(1)
     expect(list[0]).toMatchObject({ scorePct: 10, grade: 'E' })
+  })
+})
+
+describe('submit only the served set, once (S5-T13 anti-cheat)', () => {
+  const setup = () => {
+    const w = buildWorld()
+    grant(w.world, '10', 'T1')
+    return { ...w, qs: seedQuestions(w.world, 'PKSK_MATH', 'T1', 14) }
+  }
+  const refused = { status: 422, code: 'VALIDATION_ERROR', message: 'Jawapan tidak sah.', fields: { answers: 'Jawapan tidak sah.' } }
+
+  it('no served set: 422 and nothing in the body but the standard error', async () => {
+    const { student, world, qs } = setup()
+    const e = await code(student.submitPractice(STUDENT, 'T1', 'PKSK_MATH', { answers: [{ questionId: qs[0]?.id, optionIndex: 0 }] }))
+    expect(e).toMatchObject(refused)
+    expect(Object.keys(e).sort()).toEqual(['code', 'fields', 'message', 'status'])
+    expect(world.sessions).toHaveLength(0)
+    expect(world.mastery).toHaveLength(0)
+  })
+
+  it('an approved id that was not served is refused with no review or key, and the set stays open', async () => {
+    const { student, world, qs } = setup()
+    const set = await student.practiceSet(STUDENT, 'T1', 'PKSK_MATH')
+    const servedIds = new Set(set.questions.map((q) => q.id))
+    const guessed = qs.find((q) => !servedIds.has(q.id))
+    expect(guessed).toBeDefined()
+    const e = await code(student.submitPractice(STUDENT, 'T1', 'PKSK_MATH', { answers: [{ questionId: guessed?.id, optionIndex: 0 }] }))
+    expect(e).toMatchObject(refused)
+    expect(JSON.stringify(e)).not.toMatch(/review|correctIndex|Penjelasan/)
+    expect(world.sessions).toHaveLength(0)
+    expect(world.loads).toHaveLength(1) // the refusal rolled back the take
+    const ok = await student.submitPractice(STUDENT, 'T1', 'PKSK_MATH', { answers: [{ questionId: set.questions[0]?.id, optionIndex: 0 }] })
+    expect(ok.total).toBe(1)
+  })
+
+  it('a second submit of the same set is refused: no second session, mastery change or coins', async () => {
+    const { student, world } = setup()
+    const set = await student.practiceSet(STUDENT, 'T1', 'PKSK_MATH')
+    const body = { answers: set.questions.map((q) => ({ questionId: q.id, optionIndex: 0 })) }
+    const first = await student.submitPractice(STUDENT, 'T1', 'PKSK_MATH', body)
+    expect(first.review).toHaveLength(10)
+    expect(world.sessions).toHaveLength(1)
+    const again = await code(student.submitPractice(STUDENT, 'T1', 'PKSK_MATH', body))
+    expect(again).toMatchObject(refused)
+    expect(world.sessions).toHaveLength(1)
+    expect(world.loads).toHaveLength(0)
+  })
+
+  it('a normal submit of a subset of the served set still works', async () => {
+    const { student } = setup()
+    const set = await student.practiceSet(STUDENT, 'T1', 'PKSK_MATH')
+    const res = await student.submitPractice(STUDENT, 'T1', 'PKSK_MATH', { answers: set.questions.slice(0, 3).map((q) => ({ questionId: q.id, optionIndex: 0 })) })
+    expect(res).toMatchObject({ total: 3 })
+  })
+})
+
+describe('answer reveal and domain counts (S5-T13)', () => {
+  const setup = () => {
+    const w = buildWorld()
+    grant(w.world, '10', 'T1')
+    return { ...w, qs: seedQuestions(w.world, 'PKSK_MATH', 'T1', 4) }
+  }
+
+  it('submit returns correct, total and a review with the key and the explanation', async () => {
+    const { student, qs } = setup()
+    await student.practiceSet(STUDENT, 'T1', 'PKSK_MATH')
+    const res = await student.submitPractice(STUDENT, 'T1', 'PKSK_MATH', {
+      answers: [
+        { questionId: qs[0]?.id, optionIndex: 0 }, // correct
+        { questionId: qs[1]?.id, optionIndex: 0 }, // wrong, key is 1
+        { questionId: qs[2]?.id },
+      ],
+    })
+    expect(PkskPracticeResultSchema.parse(res)).toBeTruthy()
+    expect(res).toMatchObject({ correct: 1, total: 3 })
+    expect(res.review).toEqual([
+      { questionId: qs[0]?.id, selectedIndex: 0, correctIndex: 0, isCorrect: true, explanation: 'Penjelasan.' },
+      { questionId: qs[1]?.id, selectedIndex: 0, correctIndex: 1, isCorrect: false, explanation: 'Penjelasan.' },
+      { questionId: qs[2]?.id, selectedIndex: null, correctIndex: 0, isCorrect: false, explanation: 'Penjelasan.' },
+    ])
+  })
+
+  it('Bahagian C: null selectedIndex and correctIndex; a missing explanation is null', async () => {
+    const { student, world } = setup()
+    const essay = seedQuestions(world, 'PKSK_ESSAY', 'T1', 1)[0]
+    if (essay) essay.explanation = null
+    await student.practiceSet(STUDENT, 'T1', 'PKSK_ESSAY')
+    const res = await student.submitPractice(STUDENT, 'T1', 'PKSK_ESSAY', { answers: [{ questionId: essay?.id, text: 'x'.repeat(60) }] })
+    expect(res).toMatchObject({ correct: 1, total: 1 })
+    expect(res.review).toEqual([{ questionId: essay?.id, selectedIndex: null, correctIndex: null, isCorrect: true, explanation: null }])
+  })
+
+  it('the served set and the exam never carry the key or the explanation', async () => {
+    const { student, world } = setup()
+    seedQuestions(world, 'PKSK_INSANIAH', 'T1', 3)
+    seedQuestions(world, 'PKSK_ESSAY', 'T1', 1)
+    for (const served of [await student.practiceSet(STUDENT, 'T1', 'PKSK_MATH'), await student.exam(STUDENT, 'T1')]) {
+      const keys = keysDeep(served)
+      for (const forbidden of ['isCorrect', 'correct', 'correctIndex', 'correctIndexes', 'explanation', 'review']) expect(keys.has(forbidden)).toBe(false)
+      expect(JSON.stringify(served)).not.toContain('Penjelasan')
+    }
+  })
+
+  it('domain list: questionCount counts a T1 + T4 question once, only approved, no question text', async () => {
+    const { student, world } = buildWorld()
+    seedQuestions(world, 'PKSK_MATH', 'T1', 3)
+    seedQuestions(world, 'PKSK_MATH', 'T4', 2)
+    seedQuestions(world, 'PKSK_MATH', 'T1', 4, 'pending')
+    seedQuestions(world, 'PKSK_ESSAY', 'T4', 1)
+    const list = await student.domainList()
+    expect(list.find((d) => d.code === 'PKSK_MATH')?.questionCount).toBe(5)
+    expect(list.find((d) => d.code === 'PKSK_ESSAY')?.questionCount).toBe(1)
+    expect(list.find((d) => d.code === 'PKSK_SCI')?.questionCount).toBe(0)
+    expect(JSON.stringify(list)).not.toContain('Soalan')
+  })
+})
+
+describe('grant gate on the four answering routes (AC-MUR-19-1, -3)', () => {
+  const QUESTION_TEXT = /Soalan \d+/
+  const routes = (student: ReturnType<typeof buildWorld>['student'], qid: string): [string, () => Promise<unknown>][] => [
+    ['practiceSet', () => student.practiceSet(STUDENT, 'T1', 'PKSK_MATH')],
+    ['submitPractice', () => student.submitPractice(STUDENT, 'T1', 'PKSK_MATH', { answers: [{ questionId: qid, optionIndex: 0 }] })],
+    ['exam', () => student.exam(STUDENT, 'T1')],
+    ['submitExam', () => student.submitExam(STUDENT, 'T1', { answers: [{ questionId: qid, optionIndex: 0 }] })],
+  ]
+
+  it.each([
+    ['none', undefined],
+    ['expired', '2026-10-20'],
+  ])('%s grant: 403 FORBIDDEN, no question text, nothing written', async (_name, expiresAt) => {
+    const { student, world } = buildWorld()
+    if (expiresAt) grant(world, '10', 'T1', { expiresAt })
+    const [q] = seedQuestions(world, 'PKSK_MATH', 'T1', 3)
+    for (const [, run] of routes(student, q?.id as string)) {
+      const e = await code(run())
+      expect(e).toMatchObject({ status: 403, code: 'FORBIDDEN', message: 'Anda tidak dibenarkan melakukan tindakan ini.' })
+      expect(JSON.stringify(e)).not.toMatch(QUESTION_TEXT)
+    }
+    expect(world.sessions).toHaveLength(0)
+    expect(world.attempts).toHaveLength(0)
+    expect(world.loads).toHaveLength(0)
+  })
+
+  it('valid grant (today is the last day): all four routes are allowed', async () => {
+    const { student, world } = buildWorld()
+    grant(world, '10', 'T1', { expiresAt: '2026-10-21' })
+    const [q] = seedQuestions(world, 'PKSK_MATH', 'T1', 3)
+    for (const [, run] of routes(student, q?.id as string)) await run()
   })
 })
