@@ -349,6 +349,13 @@ describe('S8 AnalitikKelasPage (R1-GUR-5, R1-AS-5)', () => {
     expect(w.findAll('th').map((h) => h.text())).toEqual(['#', 'Pelajar', 'Ketepatan', 'Soalan', 'Trend', 'Unjuran', 'Risiko', 'Tindakan'])
   })
 
+  it('the platform admin never sees "Rekod Intervensi" (teacher only)', async () => {
+    signIn('admin')
+    api.fetchClassAnalytics.mockResolvedValue(mixed)
+    const w = await render(AnalitikKelasPage, '/analitik/kelas', '/analitik/kelas')
+    expect(w.find('[data-testid=rekod-intervensi]').exists()).toBe(false)
+  })
+
   it('a school admin has the "Kelas" column after Pelajar and never "Rekod Intervensi"', async () => {
     signIn('school_admin')
     api.fetchClassAnalytics.mockResolvedValue(mixed)

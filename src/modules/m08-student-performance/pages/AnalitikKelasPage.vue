@@ -29,8 +29,8 @@ const icon = usePhIcon()
 const session = useSessionStore()
 /** FR-AS-5-2: the school admin sees the extra column "Kelas". */
 const isSchoolAdmin = computed(() => session.role === 'school_admin')
-/** FR-GUR-5-4, FR-AS-5-3: "Rekod Intervensi" is the teacher's (and the platform admin's), never the school admin's. */
-const mayRecordIntervention = computed(() => session.role === 'teacher' || session.role === 'admin')
+/** FR-GUR-5-4, FR-AS-5-3: "Rekod Intervensi" is the teacher's only (lead ruling, 5 Nov); never the school admin's or the admin's. */
+const mayRecordIntervention = computed(() => session.role === 'teacher')
 
 const queryInt = (key: string): number | undefined => {
   const raw = route.query[key]
