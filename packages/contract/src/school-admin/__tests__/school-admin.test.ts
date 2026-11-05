@@ -24,6 +24,7 @@ import {
   SchoolAdminDskpHeatmapSchema,
   SchoolAdminMonthlyReportSchema,
   SchoolAdminUsageSchema,
+  REPORT_SCOPE_MESSAGES,
 } from '../reports'
 import {
   SchoolAdminTeacherCreateRequestSchema,
@@ -675,7 +676,7 @@ describe('school-admin contract: OpenAPI document', () => {
 
   it('excludes Admin Pusat from /admin-sekolah/*, documents the self-toggle refusal and the 404 scope rule', () => {
     const dash = doc.paths['/admin-sekolah/dashboard']!.get!
-    expect(JSON.stringify(dash.responses['403'])).toMatch(/Admin \(Pusat\) role is EXCLUDED/)
+    expect(JSON.stringify(dash.responses['403'])).toMatch(/Admin \(Pusat\) role gets 403 on every \/admin-sekolah\/\* route except the five read reports/)
     const toggle = doc.paths['/admin-sekolah/guru/{id}/toggle-active']!.post! as Operation
     expect(toggle.description).toMatch(/cannot deactivate their own account/)
     expect(toggle.description).toContain(SCHOOL_ADMIN_MESSAGES.selfToggle)
@@ -755,9 +756,16 @@ describe('school-admin contract: OpenAPI document', () => {
     expect(pw).toMatch(/not retrievable again/i)
   })
 
-  it('no school id can be sent: no M27 request schema or query has schoolId', () => {
+  it('API-ADM-22 422 text is the BM M-07 copy', () => {
+    expect(REPORT_SCOPE_MESSAGES.schoolIdRequired).toBe('Sila pilih sekolah.')
+    expect(JSON.stringify(doc.paths['/admin-sekolah/usage']!.get)).toContain('Sila pilih sekolah.')
+  })
+
+  it('no school id can be sent: no M27 request schema or query has schoolId, except the five API-ADM-22 report queries', () => {
+    const central = ['SchoolAdminUsageQuery', 'SchoolAdminActivityQuery', 'SchoolAdminMonthlyQuery', 'SchoolAdminHeatmapQuery', 'SchoolAdminClassListQuery']
+    for (const name of central) expect(Object.keys((doc.components.schemas[name]!.properties ?? {}) as object), name).toContain('schoolId')
     for (const [name, schema] of Object.entries(doc.components.schemas)) {
-      if (!/^SchoolAdmin.*(Request|Query)$/.test(name)) continue
+      if (!/^SchoolAdmin.*(Request|Query)$/.test(name) || central.includes(name)) continue
       expect(Object.keys((schema.properties ?? {}) as object), name).not.toContain('schoolId')
     }
   })
