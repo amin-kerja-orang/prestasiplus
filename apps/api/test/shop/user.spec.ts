@@ -316,7 +316,7 @@ describe('M15 student routes (BE-23)', () => {
   })
 
   describe('clientUuid over HTTP (S7-T05, DM-78)', () => {
-    it('a repeated redeem and a repeated ticket answer 201 with the same result; a bad key is 422 fields.clientUuid', async () => {
+    it('a repeated redeem and a repeated ticket answer 201 with the same result; a bad key, or a ticket key reused on another draw, is 422 fields.clientUuid', async () => {
       const api = await as(STUDENT_MAJU)
       const uid = await userIdOf(t.db, STUDENT_MAJU)
       await fund(t, uid, { tokens: 5, syiling: 10 }, 'http-key')
@@ -335,6 +335,8 @@ describe('M15 student routes (BE-23)', () => {
       expect(a.status, JSON.stringify(a.body)).toBe(201)
       expect(RewardTicketBoughtSchema.parse(b.body.data)).toEqual(RewardTicketBoughtSchema.parse(a.body.data))
       expectError(await api.post(`/cabutan/${draw}/tickets`, { clientUuid: 'x' }), 422, 'VALIDATION_ERROR')
+      const reused = await api.post(`/cabutan/${await insertDraw(t, { cost: 1, max: 5 })}/tickets`, ticket)
+      expect(Object.keys(expectError(reused, 422, 'VALIDATION_ERROR').fields ?? {})).toEqual(['clientUuid'])
     })
   })
 
