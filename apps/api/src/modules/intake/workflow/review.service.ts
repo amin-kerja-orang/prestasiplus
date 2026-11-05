@@ -649,7 +649,9 @@ export class IntakeReviewService {
     if (sourceFileId === null && s.figureId === null) {
       const token = guruStimulusImageOf(row.payload)
       if (token !== null) {
-        const own = await this.prisma.client.file.findFirst({ where: { publicId: token, purpose: 'question_image', ownerUserId: row.batch.ownerUserId }, select: { id: true } })
+        // A guru batch always has an owner; never match an unowned file (a null owner would).
+        const owner = row.batch.ownerUserId
+        const own = owner === null ? null : await this.prisma.client.file.findFirst({ where: { publicId: token, purpose: 'question_image', ownerUserId: owner }, select: { id: true } })
         if (!own) throw invalid('stimulus', INTAKE_GATE_MESSAGES.figureNotResolved)
         sourceFileId = idToString(own.id)
         kind = 'image'
