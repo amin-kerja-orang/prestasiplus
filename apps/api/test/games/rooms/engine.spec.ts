@@ -1011,15 +1011,16 @@ describe('multi-human seats: Papan Bijak (GAME-02) and Kuiz Relay (GAME-06)', ()
     expect(r.players.find((x) => x.userId === A)?.points).toBe(11) // floor(9.9) = 9 s: 10 + max(0, 10 - 9)
   })
 
-  it('markSeen resets absence and writes at most once per gap; youAnswered is true only for the question the seat answered', () => {
+  it('markSeen writes presence at most once per gap and never resets the timeout count (ruling 49.1); youAnswered is true only for the question the seat answered', () => {
     const o = begin('papan-bijak')
     const st = structuredClone(o.state)
     expect(seatOf(st, B).seenMs).toBe(T0) // everybody is present at the start
     expect(markSeen(st, B, T0 + 6_000, 5_000)).toBe(true) // past the gap: writes
     expect(markSeen(st, B, T0 + 7_000, 5_000)).toBe(false) // inside the gap
     seatOf(st, B).missed = 2
-    expect(markSeen(st, B, T0 + 7_500, 5_000)).toBe(true) // a miss streak ends at once
-    expect(seatOf(st, B).missed).toBe(0)
+    expect(markSeen(st, B, T0 + 7_500, 5_000)).toBe(false) // a miss streak does not write the poll sooner
+    expect(markSeen(st, B, T0 + 12_000, 5_000)).toBe(true)
+    expect(seatOf(st, B).missed).toBe(2) // a poll never resets the count
     const q = { ...st, awaiting: 'answer' as const, pendingQ: '1000' }
     expect(youAnswered(q, A)).toBe(false)
     seatOf(q, A).answeredAt = `${String(q.round)}:${String(q.turn)}:1000`

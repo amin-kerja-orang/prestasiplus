@@ -240,6 +240,23 @@ describe('multi-human rooms (R2): Papan Bijak and Kuiz Relay', () => {
     }
   }, 120_000)
 
+  /** Rounds of 15 s: a and b act on their turns and everybody polls; `idle` polls every round but never acts. Stops when `idle` is gone. */
+  async function playWithIdlePoller(code: string, idle: Client, polls = true): Promise<GamesRoomView> {
+    let v: GamesRoomView = parseRoom(await a.get(P('papan-bijak', code)))
+    for (let i = 0; i < 400 && v.status === 'playing' && v.players.some((p) => p.id === idle.userId); i++) {
+      t.clock.advance(15_000)
+      if (polls) await idle.get(P('papan-bijak', code)) // present, polling every round, never acting
+      v = parseRoom(await a.get(P('papan-bijak', code)))
+      if (v.status === 'playing' && (v.state?.humanId === a.userId || v.state?.humanId === b.userId)) {
+        const c = v.state.humanId === a.userId ? a : b
+        const st = await stateOf(t.db, code)
+        v = parseRoom(await c.post(P('papan-bijak', code, '/action'), v.state.awaiting === 'roll' ? { type: 'roll' } : { type: 'answer', questionId: st.pendingQ, optionId: (st.qs[st.pendingQ as string] as { keyIndex: number }).keyIndex }))
+      }
+      await b.get(P('papan-bijak', code))
+    }
+    return parseRoom(await a.get(P('papan-bijak', code)))
+  }
+
   it('ruling 50.1: robots off, an absent human (3 timeouts) is skipped the same way', async () => {
     await t.db.query(`update gamification_settings set value = 0 where key = 'games_room_bots_enabled'`)
     try {
@@ -247,20 +264,60 @@ describe('multi-human rooms (R2): Papan Bijak and Kuiz Relay', () => {
       await join(b, 'papan-bijak', code)
       await join(solo, 'papan-bijak', code)
       parseRoom(await a.post(P('papan-bijak', code, '/start')))
-      const rooms = t.app.get(RoomsService, { strict: false })
-      let v: GamesRoomView = parseRoom(await a.get(P('papan-bijak', code)))
-      for (let i = 0; i < 60 && v.players.length === 3; i++) {
-        t.clock.advance(31_000)
-        await b.get(P('papan-bijak', code)) // b and a stay present; solo never polls
-        await rooms.sweepClocks()
-        v = parseRoom(await a.get(P('papan-bijak', code)))
-      }
+      const v = await playWithIdlePoller(code, solo, false) // solo never polls; a and b play their turns
       expect(v.status).toBe('playing')
       expect(v.players.map((p) => p.id).sort()).toEqual([a.userId, b.userId].sort())
       expect(v.players.some((p) => p.isBot)).toBe(false)
     } finally {
       await t.db.query(`update gamification_settings set value = 1 where key = 'games_room_bots_enabled'`)
     }
+  }, 120_000)
+
+  it('ruling 49.1 (lead Q3): a human who polls every turn but never acts is still removed after 3 timeouts: a robot takes the seat', async () => {
+    const code = await createRoom(a, 'papan-bijak', { ...PB_FORM, match_mode: 'same_level' })
+    await join(b, 'papan-bijak', code)
+    await join(solo, 'papan-bijak', code)
+    parseRoom(await a.post(P('papan-bijak', code, '/start')))
+    const v = await playWithIdlePoller(code, solo)
+    expect(v.status).toBe('playing')
+    expect(v.players.find((p) => p.id === solo.userId)).toBeUndefined()
+    expect(v.players.map((p) => p.isBot).sort()).toEqual([false, false, true])
+    expect(await standing('papan-bijak', solo.userId)).toMatchObject({ wins: 0, jumlah: 1 })
+  }, 120_000)
+
+  it('ruling 49.1: the same idle poller with robots off is skipped, not replaced', async () => {
+    await t.db.query(`update gamification_settings set value = 0 where key = 'games_room_bots_enabled'`)
+    try {
+      const code = await createRoom(a, 'papan-bijak', { ...PB_FORM, match_mode: 'same_level' })
+      await join(b, 'papan-bijak', code)
+      await join(solo, 'papan-bijak', code)
+      parseRoom(await a.post(P('papan-bijak', code, '/start')))
+      const v = await playWithIdlePoller(code, solo)
+      expect(v.status).toBe('playing')
+      expect(v.players.map((p) => p.id).sort()).toEqual([a.userId, b.userId].sort())
+      expect(v.players.some((p) => p.isBot)).toBe(false)
+    } finally {
+      await t.db.query(`update gamification_settings set value = 1 where key = 'games_room_bots_enabled'`)
+    }
+  }, 120_000)
+
+  it('ruling 49.1: with two humans, the one who only polls is removed and the other (present) wins by default', async () => {
+    const code = await createRoom(a, 'papan-bijak', { ...PB_FORM, match_mode: 'same_level' })
+    await join(b, 'papan-bijak', code)
+    parseRoom(await a.post(P('papan-bijak', code, '/start')))
+    let v: GamesRoomView = parseRoom(await a.get(P('papan-bijak', code)))
+    for (let i = 0; i < 80 && v.status === 'playing'; i++) {
+      t.clock.advance(15_000)
+      await b.get(P('papan-bijak', code)) // b polls every round and never acts
+      v = parseRoom(await a.get(P('papan-bijak', code)))
+      if (v.status === 'playing' && v.state?.humanId === a.userId) {
+        const st = await stateOf(t.db, code)
+        v = parseRoom(await a.post(P('papan-bijak', code, '/action'), v.state.awaiting === 'roll' ? { type: 'roll' } : { type: 'answer', questionId: st.pendingQ, optionId: (st.qs[st.pendingQ as string] as { keyIndex: number }).keyIndex }))
+      }
+    }
+    expect(v.status).toBe('finished')
+    expect(v.result?.winnerId).toBe(a.userId)
+    expect(await standing('papan-bijak', b.userId)).toMatchObject({ wins: 0, jumlah: 1 })
   }, 120_000)
 
   it('ruling 50.3: a lone human who is absent (3 timeouts, the sweep runs) ends the game with nothing settled', async () => {

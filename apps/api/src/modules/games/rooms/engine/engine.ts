@@ -89,11 +89,10 @@ export function seatPresent(s: RoomState, id: string, nowMs: number, windowMs: n
   return seen !== null && seen !== undefined && nowMs - seen <= windowMs
 }
 
-/** The player is polling or acting: absence starts again (3 timeouts "with no poll in between"). Returns whether the state changed. */
+/** The player is polling or acting: presence only (ruling 49.1: a poll never resets the timeout count). Returns whether the state changed. */
 export function markSeen(s: RoomState, id: string, nowMs: number, minGapMs: number): boolean {
   const seat = seatOf(s, id)
-  if (seat.missed === 0 && seat.seenMs !== null && nowMs - seat.seenMs < minGapMs) return false
-  seat.missed = 0
+  if (seat.seenMs !== null && nowMs - seat.seenMs < minGapMs) return false
   seat.seenMs = nowMs
   return true
 }
@@ -299,7 +298,9 @@ export function applyAction(input: ActionInput): EngineOut {
     if (room.game !== 'papan-bijak' || c.s.awaiting !== 'roll') {
       throw new EngineRefusal('conflict', 'Bukan giliran anda untuk gulung dadu.')
     }
-    return stamp(input.state, pbRoll(c), input.nowMs)
+    const rolled = stamp(input.state, pbRoll(c), input.nowMs)
+    seatOf(rolled.state, input.state.humanId).missed = 0 // a roll in time is an action: the timeout count restarts
+    return rolled
   }
   if (c.s.awaiting !== 'answer' || c.s.pendingQ === null) {
     throw new EngineRefusal('conflict', 'Tiada soalan untuk dijawab.')
@@ -347,7 +348,7 @@ export interface TimeoutInput {
  */
 export function applyTimeout(input: TimeoutInput): EngineOut {
   const res = timeoutStep(input)
-  // The seat the clock ran out on missed its turn: 3 in a row with no poll in between remove it (FR-GM-R.4).
+  // The seat the clock ran out on missed its turn: 3 in a row, polled or not, remove it (FR-GM-R.4, ruling 49).
   const actor = input.players.find((x) => x.userId === input.state.humanId)
   if (actor && !actor.isBot) seatOf(res.state, actor.userId).missed += 1
   return res

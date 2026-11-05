@@ -78,7 +78,7 @@ export interface SeatState {
   answerCount: number
   /** When this human really answered, in order; a timeout is no answer (the pace guard reads it). */
   answerMs: number[]
-  /** Consecutive timeouts with no poll or action in between; 3 remove the seat (FR-GM-R.4). */
+  /** Consecutive timeouts of this seat's own turns, polled or not; an in-time action resets it, a poll does not; 3 remove the seat (FR-GM-R.4, ruling 49). */
   missed: number
   /** When this human last polled or acted (ms); null before the first. Presence for the default win. */
   seenMs: number | null

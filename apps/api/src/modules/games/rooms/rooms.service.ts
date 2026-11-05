@@ -136,7 +136,7 @@ const CREATE_RANK = ['subject', 'grade_level', 'match_mode', 'grade_min', 'max_p
 /** The shortest clock of a room (Perang Fakta): a room moved more recently has nothing due. */
 const SHORTEST_CLOCK_MS = 10_000
 const SWEEP_ROOMS = 200
-/** FR-GM-R.4: this many timeouts in a row with no poll in between remove a seat. */
+/** FR-GM-R.4, ruling 49: this many timeouts of a seat's own turns in a row, polled or not, remove it. Only an in-time action resets the count. */
 const ABSENT_TIMEOUTS = 3
 /** A poll refreshes a seat's presence at most this often (one write per seat per 5 s). */
 const SEEN_GAP_MS = 5_000
@@ -599,14 +599,18 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
   ): Promise<{ room: RoomRow; players: PlayerRow[] }> {
     const st = room.state as RoomState
     const now = this.clock.now()
-    if (!room.isTest && !seat.isTest && seat.userId !== null && startedHumans(st, enginePlayers(players)) >= 2) {
-      await this.repo.bumpStanding(room.game, seat.userId, { wins: 0, jumlah: 1, betul: 0, skor: 0 }, now)
+    // Ruling 50.4: the leaver's jumlah + 1 is written once the outcome is known; when nothing is settled they get none either.
+    const bump = async (): Promise<void> => {
+      if (!room.isTest && !seat.isTest && seat.userId !== null && startedHumans(st, enginePlayers(players)) >= 2) {
+        await this.repo.bumpStanding(room.game, seat.userId, { wins: 0, jumlah: 1, betul: 0, skor: 0 }, now)
+      }
     }
     const left = players.filter((p) => !p.isBot && p !== seat)
     // `game_rooms.host_id` is not moved when the host leaves: host-only actions (start, close) exist in the waiting room only,
     // so in a playing room it is display only.
     if (left.length >= 2 && (await this.settings.get('games_room_bots_enabled')) !== 1) {
       // Ruling 50.1: robots off, so the seat is skipped and never a robot; the humans left play on.
+      await bump()
       await this.repo.removeSeat(seat.id)
       const rest = players.filter((p) => p !== seat)
       const out = skipSeat({
@@ -622,6 +626,7 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
       return this.applyOut(tx, room, rest, out)
     }
     if (left.length >= 2) {
+      await bump()
       await this.repo.seatToRobot(seat.id)
       const after = await this.repo.players(room.code)
       const remap: Record<string, string> = {}
@@ -649,6 +654,7 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
     // `seenMs` is written at most every SEEN_GAP_MS, so the window is the absence limit plus that gap.
     const present = last !== undefined && seatPresent(st, last.seat, now.getTime(), absentMs + SEEN_GAP_MS)
     if (last && present) {
+      await bump()
       const state: RoomState = { ...st, humanId: last.seat, awaiting: null, pendingQ: null, winnerId: last.seat, mvpId: last.seat }
       return this.applyOut(tx, room, rest, { state, players: enginePlayers(rest), finished: true })
     }
@@ -673,8 +679,8 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * The one locked advance of a playing room, shared by the poll, the 5 s sweep and the action (the caller holds the room row
-   * lock): marks the caller present, resolves the server clocks (idempotent: same time, same result) and removes the seats
-   * that missed 3 turns in a row. Calling it again moves nothing.
+   * lock): marks the caller present (a poll never resets the timeout count), resolves the server clocks (idempotent: same time,
+   * same result) and removes the seats that missed 3 turns in a row, polled or not (ruling 49). Calling it again moves nothing.
    */
   private async advance(
     tx: TxClient,
@@ -689,14 +695,6 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
       await this.repo.updateRoom(room.code, { state: room.state }, this.clock.now())
     }
     cur = await this.runClocks(tx, cur.room, cur.players)
-    // The caller is here now: timeouts the catch-up applied to their own seat do not remove them. The sweep or another
-    // player's poll is what removes an absent seat.
-    const mine = seen === undefined || cur.room.status !== 'playing' ? undefined : cur.room.state?.seats?.[seen]
-    if (mine && mine.missed > 0 && cur.room.state) {
-      mine.missed = 0
-      mine.seenMs = this.clock.now().getTime()
-      await this.repo.updateRoom(cur.room.code, { state: cur.room.state }, this.clock.now())
-    }
     for (let i = 0; i < 8; i++) {
       const st = cur.room.state
       if (cur.room.status !== 'playing' || !st) break

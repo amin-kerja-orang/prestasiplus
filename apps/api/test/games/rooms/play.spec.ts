@@ -743,9 +743,9 @@ describe('start, actions, clocks and settlement (M16-26..28)', () => {
       expect(v.players.find((p) => p.id === student.userId)?.points).toBe(0)
       expect(await view(student, 'perang-fakta', one.code)).toEqual(v)
       const long = await started('perang-fakta')
-      advance(35)
+      advance(25) // 2 rounds missed; a 3rd would remove the lone absent human (ruling 49: a poll does not reset the count)
       const l = await view(student, 'perang-fakta', long.code)
-      expect(l.state).toMatchObject({ round: 4, roundSecondsLeft: 5 })
+      expect(l.state).toMatchObject({ round: 3, roundSecondsLeft: 5 })
     })
 
     it('a host who never comes back: the room finishes once with a result and settles once, under concurrent polls', async () => {

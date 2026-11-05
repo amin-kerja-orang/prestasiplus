@@ -213,6 +213,8 @@ describe('room join and lifecycle (S7-T01 part GAME-R): FR-GM-R.1..R.7, ruling 1
       expect(room.settled_at).not.toBeNull()
       expect(rewards.calls.length).toBe(before)
       expect(await t.db.query(`select 1 from game_standings where user_id = $1 and wins > 0`, [student2.userId])).toHaveLength(0)
+      // ruling 50.4: nothing is settled, so the leaver gets no jumlah either
+      expect(await t.db.query(`select 1 from game_standings where game = 'papan-bijak' and user_id = $1`, [student.userId])).toHaveLength(0)
     })
   })
 
