@@ -22618,11 +22618,19 @@
               "battled"
             ],
             "additionalProperties": false
+          },
+          "enabledGames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Game keys (48 section 3.5, plus `roda-nasib`) switched on in `game_enabled_*` whose pool for the caller's Tingkatan holds the draw size (FR-GM-00.1; Battle 5). A hub card of a game not listed is absent."
           }
         },
         "required": [
           "openRooms",
-          "chips"
+          "chips",
+          "enabledGames"
         ],
         "additionalProperties": false
       },
@@ -97614,7 +97622,17 @@
             }
           },
           "409": {
-            "description": "CONFLICT \"Permainan sudah dimulakan.\" (not waiting), \"Pemain belum mencukupi.\" (below the minimum players) or \"Soalan tidak mencukupi.\" (question pool).",
+            "description": "CONFLICT \"Permainan sudah dimulakan.\" (not waiting) or \"Pemain belum mencukupi.\" (below the minimum players).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Soalan tidak mencukupi.\" (ERR-GAME-01: the pool is smaller than the draw; nothing starts).",
             "content": {
               "application/json": {
                 "schema": {
@@ -98070,7 +98088,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR \"Tahap tidak sah.\" (fields.darjah): darjah outside 1..11.",
+            "description": "VALIDATION_ERROR \"Tahap tidak sah.\" (fields.darjah): darjah outside 1..11; or \"Soalan tidak mencukupi.\" (ERR-GAME-01: the pool is smaller than the draw; nothing starts).",
             "content": {
               "application/json": {
                 "schema": {

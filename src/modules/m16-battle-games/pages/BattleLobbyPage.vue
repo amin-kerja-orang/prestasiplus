@@ -405,7 +405,7 @@ onBeforeUnmount(() => {
             {{
               sel.openToAll
                 ? 'Menunggu pelajar dari mana-mana gred'
-                : 'Menunggu pelajar sama darjah & subjek'
+                : 'Menunggu pelajar sama tingkatan & subjek'
             }}
           </p>
           <p class="tabular text-title text-primary-t" data-testid="battle-timer">

@@ -377,7 +377,8 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
       401: UNAUTHORIZED,
       403: FORBIDDEN_CSRF_OR('"Hanya hos boleh memulakan permainan." (caller is not the host)'),
       404: err('NOT_FOUND "Bilik tidak dijumpai." or "Permainan tidak dijumpai.".'),
-      409: err('CONFLICT "Permainan sudah dimulakan." (not waiting), "Pemain belum mencukupi." (below the minimum players) or "Soalan tidak mencukupi." (question pool).'),
+      409: err('CONFLICT "Permainan sudah dimulakan." (not waiting) or "Pemain belum mencukupi." (below the minimum players).'),
+      422: err('VALIDATION_ERROR "Soalan tidak mencukupi." (ERR-GAME-01: the pool is smaller than the draw; nothing starts).'),
     },
   })
 
@@ -454,7 +455,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
       200: json(envelopeOf(GamesSoloPayloadSchema), 'The session id and the keyless items of the game.'),
       401: UNAUTHORIZED,
       404: err(GAME_404),
-      422: err('VALIDATION_ERROR "Tahap tidak sah." (fields.darjah): darjah outside 1..11.'),
+      422: err('VALIDATION_ERROR "Tahap tidak sah." (fields.darjah): darjah outside 1..11; or "Soalan tidak mencukupi." (ERR-GAME-01: the pool is smaller than the draw; nothing starts).'),
     },
   })
 

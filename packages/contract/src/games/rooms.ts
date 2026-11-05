@@ -50,6 +50,9 @@ export const GamesHubSchema = z
       papanBijakPlayed: z.boolean().meta({ description: 'The caller has a Papan Bijak standing with jumlah > 0.' }),
       battled: z.boolean().meta({ description: 'The caller has a finished or forfeited battle (BE-44 read).' }),
     }),
+    enabledGames: z.array(z.string()).meta({
+      description: 'Game keys (48 section 3.5, plus `roda-nasib`) switched on in `game_enabled_*` whose pool for the caller\'s Tingkatan holds the draw size (FR-GM-00.1; Battle 5). A hub card of a game not listed is absent.',
+    }),
   })
   .meta({ id: 'GamesHub' })
 export type GamesHub = z.infer<typeof GamesHubSchema>
