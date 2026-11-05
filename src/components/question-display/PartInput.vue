@@ -126,22 +126,24 @@ async function dropPhoto(key: string): Promise<void> {
             : wordCountLabel(words)
         }}
       </p>
-      <p
+      <DsText
         v-if="leaf.kind === 'essay' && leaf.wordRange && words > leaf.wordRange.max"
-        class="text-caption text-error"
+        variant="caption"
+        tone="error"
         role="status"
         data-testid="word-hint"
       >
         {{ overLabel(leaf.wordRange.max) }}
-      </p>
-      <p
+      </DsText>
+      <DsText
         v-else-if="leaf.kind === 'essay' && leaf.wordRange && words > 0 && words < leaf.wordRange.min"
-        class="text-caption text-error"
+        variant="caption"
+        tone="error"
         role="status"
         data-testid="word-hint"
       >
         {{ shortLabel(words, leaf.wordRange.min) }}
-      </p>
+      </DsText>
     </template>
 
     <template v-else-if="leaf.kind === 'match_letter'">

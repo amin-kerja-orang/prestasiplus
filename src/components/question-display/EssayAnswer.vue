@@ -6,6 +6,7 @@
  */
 import { computed } from 'vue'
 
+import { DsText } from '@/ds'
 import { overLabel, qdCopy, shortLabel, wordCountLabel, wordTargetLabel } from './copy'
 import type { EssayChoiceValue, EssayTopic } from './types'
 import { countWords } from './words'
@@ -120,13 +121,14 @@ function pick(id: string): void {
       <UIcon v-if="over" name="i-ph-warning" class="size-4" aria-hidden="true" />
       {{ counter }}
     </p>
-    <p
+    <DsText
       v-if="over || tooShort"
-      class="text-caption text-error"
+      variant="caption"
+      tone="error"
       role="status"
       data-testid="word-hint"
     >
       {{ over ? overLabel(maxWords as number) : shortLabel(words, range!.min) }}
-    </p>
+    </DsText>
   </div>
 </template>

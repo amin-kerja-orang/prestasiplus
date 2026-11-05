@@ -99,6 +99,6 @@ describe('S8-T07 StimulusFigure (D04, D05)', () => {
   it('D05 the zoom trigger is transparent, not opacity 0, so the focus ring shows', async () => {
     const b = (await open({ label: 'Rajah 1' })).find('[data-testid=stimulus-zoom-open]')
     expect(b.attributes('style') ?? '').not.toContain('opacity')
-    expect(b.classes()).toContain('bg-transparent')
+    expect(b.attributes('style') ?? '').toContain('background: transparent')
   })
 })
