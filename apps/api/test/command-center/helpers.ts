@@ -111,6 +111,8 @@ export interface NewUser {
   role: 'student' | 'teacher' | 'school_admin' | 'admin'
   schoolId?: string | null
   isActive?: boolean
+  /** `users.grade`; a student defaults to 10 (Tingkatan 4) so that XS-1 (grade 7..11) counts it. `null` leaves it unset. */
+  grade?: number | null
   /** Last login instant (for the daily board). */
   lastLoginAt?: Date | string | null
 }
@@ -120,9 +122,9 @@ export async function createUser(db: TestDatabase, u: NewUser): Promise<{ id: st
   const n = uniq()
   const email = `cc${n}@fixture.test`
   const rows = await db.query<{ id: string }>(
-    `insert into users (name, email, password_hash, is_active, school_id, last_login_at, created_at, updated_at)
-     values ($1, $2, (select password_hash from users where email = $3), $4, $5::bigint, $6::timestamptz, now(), now()) returning id::text`,
-    [u.name ?? `Pengguna ${n}`, email, ADMIN, u.isActive ?? true, u.schoolId ?? null, u.lastLoginAt ?? null],
+    `insert into users (name, email, password_hash, is_active, school_id, last_login_at, grade, created_at, updated_at)
+     values ($1, $2, (select password_hash from users where email = $3), $4, $5::bigint, $6::timestamptz, $7::int, now(), now()) returning id::text`,
+    [u.name ?? `Pengguna ${n}`, email, ADMIN, u.isActive ?? true, u.schoolId ?? null, u.lastLoginAt ?? null, u.grade === undefined ? (u.role === 'student' ? 10 : null) : u.grade],
   )
   const id = rows[0]?.id as string
   await db.query(`insert into user_roles (user_id, role, created_at) values ($1::bigint, $2, now())`, [id, u.role])

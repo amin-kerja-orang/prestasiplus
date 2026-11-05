@@ -102,10 +102,13 @@ const GRADED = JSON.stringify({
   })),
 })
 
-/** A pupil of `schoolId`, optionally with one submitted, graded Bijak sitting (score 7 of 10, 4 of 6 questions answered). */
+/**
+ * A pupil of `schoolId` (Tingkatan 4, so XS-1 counts it), optionally with one submitted, graded Bijak sitting (score 7 of 10, 4 of 6
+ * questions answered) and, for XS-4 / XS-5, the 4 matching `practice_answers` rows (3 correct, 1 wrong).
+ */
 async function pupil(schoolId: string, sitting: boolean): Promise<string> {
   counter += 1
-  const [u] = await db.query<{ id: string }>(`insert into users (name, email, school_id) values ($1, $2, $3::bigint) returning id::text`, [
+  const [u] = await db.query<{ id: string }>(`insert into users (name, email, school_id, grade) values ($1, $2, $3::bigint, 10) returning id::text`, [
     `Murid Ujian ${counter}`,
     `perf${counter}@demo.test`,
     schoolId,
@@ -121,6 +124,10 @@ async function pupil(schoolId: string, sitting: boolean): Promise<string> {
     `insert into attempt_results (attempt_id, score, max_score, provisional, pending_review, graded) values ($1::uuid, 7, 10, false, 0, $2::jsonb)`,
     [a!.id, GRADED],
   )
+  for (let i = 0; i < ANSWERED_PER_SITTING; i++) {
+    // The table needs a subject or a question; a plain id stands for the question (no foreign key yet).
+    await db.query(`insert into practice_answers (user_id, question_id, is_correct, answered_at, created_at) values ($1::bigint, $2::bigint, $3, now(), now())`, [u!.id, 9000 + i, i < 3])
+  }
   return u!.id
 }
 
@@ -154,6 +161,7 @@ beforeEach(async () => {
   await db.query(`delete from exam_attempts`)
   await db.query(`delete from enrolments`)
   await db.query(`delete from classrooms`)
+  await db.query(`delete from practice_answers where user_id in (select id from users where email like 'perf%@demo.test')`)
   await db.query(`delete from user_roles where user_id in (select id from users where email like 'perf%@demo.test')`)
   await db.query(`delete from users where email like 'perf%@demo.test'`)
   await db.query(
@@ -167,18 +175,20 @@ describe('GET /admin-sekolah/dashboard with the real BE-19 SchoolPerformanceServ
     for (let i = 0; i < 5; i++) await pupil(s1, true)
     const d = await dashboard()
     expect(d.cards.pupils).toBe(5)
-    expect(d.performance.practice).toEqual({ accuracy: 70, sessions: 5, questions: 5 * ANSWERED_PER_SITTING })
+    // S6-T03: `sessions` is BE-19's; `questions` and `accuracy` are XS-4 / XS-5 over practice_answers (20 rows, 15 correct = 75), not BE-19's 70.
+    expect(d.performance.practice).toEqual({ accuracy: 75, sessions: 5, questions: 5 * ANSWERED_PER_SITTING })
     expect(d.performance.levels.map((l) => l.code)).toEqual(['t4', 't5'])
     // BE-19 has no per-level figures without BE-17 classes and no grade rows before the SPM slice: rows exist, counts stay 0.
     expect(d.performance.distribution.length).toBeGreaterThan(0)
     expect(d.performance.total).toBe(0)
   })
 
-  it('fewer than 5 pupils: the practice block stays suppressed (k = 5)', async () => {
+  it('fewer than 5 pupils: the practice block is shown (staff screen, no minimum cohort: PO decision 2026-11-05, #503 batch 3)', async () => {
     for (let i = 0; i < 4; i++) await pupil(s1, true)
     const d = await dashboard()
     expect(d.cards.pupils).toBe(4)
-    expect(d.performance.practice).toEqual({ accuracy: null, sessions: 0, questions: 0 })
+    // Changed from the suppressed { null, 0, 0 }: 16 practice_answers rows, 12 correct.
+    expect(d.performance.practice).toEqual({ accuracy: 75, sessions: 4, questions: 4 * ANSWERED_PER_SITTING })
     expect(d.performance.levels.every((l) => l.accuracy === 0)).toBe(true)
     expect(d.performance.total).toBe(0)
   })
@@ -188,7 +198,8 @@ describe('GET /admin-sekolah/dashboard with the real BE-19 SchoolPerformanceServ
     for (let i = 0; i < 8; i++) await pupil(s2, true) // other school: 8 sittings
     const d = await dashboard()
     expect(d.cards.pupils).toBe(5)
-    expect(d.performance.practice).toEqual({ accuracy: 70, sessions: 2, questions: 2 * ANSWERED_PER_SITTING })
+    // S6-T03: accuracy is XS-5 over the 8 practice_answers rows (6 correct = 75), not BE-19's 70.
+    expect(d.performance.practice).toEqual({ accuracy: 75, sessions: 2, questions: 2 * ANSWERED_PER_SITTING })
   })
 
   it('the class count is the number of ACTIVE classes of the own school (BE-17); another school and inactive classes are not counted', async () => {
@@ -199,7 +210,7 @@ describe('GET /admin-sekolah/dashboard with the real BE-19 SchoolPerformanceServ
     expect((await dashboard()).cards.activeClasses).toBe(4)
   })
 
-  it('levels: 5 pupils with sittings in one class of the level are shown; a level with fewer than 5 pupils stays 0', async () => {
+  it('levels: 5 pupils with sittings in one class of the level are shown; a level with fewer than 5 pupils is shown too (no minimum cohort)', async () => {
     const five: string[] = []
     for (let i = 0; i < 5; i++) five.push(await pupil(s1, true))
     const small: string[] = []
@@ -208,6 +219,7 @@ describe('GET /admin-sekolah/dashboard with the real BE-19 SchoolPerformanceServ
     const little = await klass(s1, 11, { pupils: small })
     const d = await dashboard()
     expect(d.performance.levels.find((l) => l.code === big)?.accuracy).toBe(70)
-    expect(d.performance.levels.find((l) => l.code === little)?.accuracy).toBe(0)
+    // Changed from 0 (suppressed): the small level now shows its BE-19 figure.
+    expect(d.performance.levels.find((l) => l.code === little)?.accuracy).toBe(70)
   })
 })

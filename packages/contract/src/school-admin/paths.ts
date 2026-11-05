@@ -24,6 +24,13 @@ import {
 } from './amaran'
 import { SchoolAdminInitialCredentialSchema, SchoolAdminSchoolInfoSchema, SchoolAdminSchoolRefSchema } from './common'
 import {
+  SchoolAdminPupilImportErrorSchema,
+  SchoolAdminPupilImportLevelSchema,
+  SchoolAdminPupilImportMultipartSchema,
+  SchoolAdminPupilImportPreviewRowSchema,
+  SchoolAdminPupilImportQuerySchema,
+  SchoolAdminPupilImportRequestSchema,
+  SchoolAdminPupilImportResultSchema,
   SchoolAdminPupilCreateRequestSchema,
   SchoolAdminPupilCreatedResultSchema,
   SchoolAdminPupilFormOptionsSchema,
@@ -128,6 +135,13 @@ export const SCHOOL_ADMIN_COMPONENT_SCHEMAS = {
   SchoolAdminPupilFormOptions: SchoolAdminPupilFormOptionsSchema,
   SchoolAdminPupilCreateRequest: SchoolAdminPupilCreateRequestSchema,
   SchoolAdminPupilCreatedResult: SchoolAdminPupilCreatedResultSchema,
+  SchoolAdminPupilImportLevel: SchoolAdminPupilImportLevelSchema,
+  SchoolAdminPupilImportQuery: SchoolAdminPupilImportQuerySchema,
+  SchoolAdminPupilImportRequest: SchoolAdminPupilImportRequestSchema,
+  SchoolAdminPupilImportMultipartRequest: SchoolAdminPupilImportMultipartSchema,
+  SchoolAdminPupilImportError: SchoolAdminPupilImportErrorSchema,
+  SchoolAdminPupilImportPreviewRow: SchoolAdminPupilImportPreviewRowSchema,
+  SchoolAdminPupilImportResult: SchoolAdminPupilImportResultSchema,
   // M18 Amaran
   AmaranRiskStatus: AmaranRiskStatusSchema,
   AmaranScope: AmaranScopeSchema,
@@ -450,6 +464,41 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
       200: csv('The CSV file (text/csv; charset=utf-8).', { 'Content-Disposition': contentDisposition, ...NO_STORE }),
       401: UNAUTHORIZED,
       403: FORBIDDEN_SA,
+      429: RATE_LIMITED,
+    },
+  })
+
+  registry.registerPath({
+    method: 'post',
+    path: '/admin-sekolah/pelajar/import',
+    tags: ['school-admin'],
+    summary: 'Import pupils from a CSV file (API-AS-06, S6-T09)',
+    description:
+      'Matches before the {id} route. multipart/form-data `csvFile` (.csv or .txt, at most 2 MB = 2,097,152 bytes, at most 1000 data rows; header nama,email,kelas, comma or semicolon, `nama` required) and `level` T1 to T5 (optional; used only for a row whose kelas names no class of the school). `?dryRun=true` validates the file and returns the first 10 rows as `preview`, creating and auditing nothing. ' +
+      'Only new accounts are created, always `is_active = false` (pending Admin Pusat approval) with role student, the school of the session and, when kelas names an active classroom of THIS school (case-insensitive), an enrolment (source school_admin); another school class is never matched. Valid rows import even when others fail. ' +
+      'Quota: remaining seats = student_quota of the latest active or grace subscription minus ALL pupils of the school, pending ones included; more new pupils than the remaining seats refuses the WHOLE file with 409 QUOTA_FULL "Kuota penuh! Sila tingkatkan kuota dahulu." (checked before hashing and again under a per-school lock); no active subscription is 409 NO_SUBSCRIPTION "Sekolah ini tiada langganan aktif. Import pelajar tidak dibenarkan.". ' +
+      'Row messages: "Sila isi nama.", "Nama penuh tidak boleh melebihi 255 aksara.", "Format e-mel tidak sah.", "E-mel berulang dalam fail." (a later duplicate inside the file), "Kelas tidak dijumpai." (no class match and no level), "E-mel sudah wujud (dilangkau)." (e-mail already on the platform: counted in `skipped` AND listed in `errors`). ' +
+      'The imported pupils get one shared initial password that is hashed once and never returned, shown or sent (PUPIL_IMPORT_DEFAULT_PASSWORD, at least 8 characters, else a random value nobody knows); the school admin uses "Tetapkan semula kata laluan" once a pupil is approved. One audit event (counts and ids only). Rate limited. ' +
+      SCHOOL_ONLY,
+    request: {
+      query: SchoolAdminPupilImportQuerySchema,
+      headers: [csrf],
+      body: {
+        required: true,
+        content: {
+          'multipart/form-data': { schema: SchoolAdminPupilImportMultipartSchema },
+          'application/json': { schema: SchoolAdminPupilImportRequestSchema },
+        },
+      },
+    },
+    responses: {
+      200: { ...json(envelopeOf(SchoolAdminPupilImportResultSchema), 'The result (or the preview with dryRun=true).'), headers: NO_STORE },
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_SA_WRITE,
+      409: err('QUOTA_FULL "Kuota penuh! Sila tingkatkan kuota dahulu." (the whole file is refused, nothing is created), or NO_SUBSCRIPTION "Sekolah ini tiada langganan aktif. Import pelajar tidak dibenarkan.".'),
+      413: err('PAYLOAD_TOO_LARGE "Fail atau data terlalu besar. Saiz maksimum ialah 2 MB." (file over 2,097,152 bytes) or "Fail melebihi 1000 baris." (more than 1000 data rows).'),
+      415: err('UNSUPPORTED_MEDIA_TYPE "Jenis fail tidak disokong. Format dibenarkan: CSV, TXT." (not a .csv or .txt file).'),
+      422: err('VALIDATION_ERROR with fields: csvFile "Sila pilih fail." (none), "Tiada data untuk diimport." (no data row), "Lajur wajib tiada: nama. Gunakan templat yang disediakan." (no nama header); level "The selected level is invalid.".'),
       429: RATE_LIMITED,
     },
   })

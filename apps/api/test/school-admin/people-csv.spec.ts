@@ -152,6 +152,30 @@ describe('BE-21 user CSV exports: /admin-sekolah/guru/export.csv and /pelajar/ex
     expect(none).toBe(`﻿${HEADER}\n`)
   })
 
+  it('the pupil export honours the Tingkatan and Kelas filters of the list (FR-AS-51-5)', async () => {
+    const s2 = await schoolIdOf(t.db, 'DEMO002')
+    const clsA = await insertClass(t.db, { name: '4 Filter Csv', schoolId: s1 })
+    const clsOther = await insertClass(t.db, { name: '4 Luar Csv', schoolId: s2 })
+    const inA = await insertUser(t.db, { name: 'Murid Filter Satu', email: 'filtercsv1@ujian.test', roles: ['student'], schoolId: s1, grade: 10 })
+    const inA5 = await insertUser(t.db, { name: 'Murid Filter Dua', email: 'filtercsv2@ujian.test', roles: ['student'], schoolId: s1, grade: 11 })
+    await insertUser(t.db, { name: 'Murid Filter Tiga', email: 'filtercsv3@ujian.test', roles: ['student'], schoolId: s1, grade: 10 })
+    await enrolIn(t.db, clsA, inA)
+    await enrolIn(t.db, clsA, inA5)
+    const emails = async (qs: string) => parseCsv((await admin.get(`/admin-sekolah/pelajar/export.csv?${qs}`)).text.slice(1)).slice(1).map((r) => r[2]).sort()
+    expect(await emails(`classroomId=${clsA}`)).toEqual(['filtercsv1@ujian.test', 'filtercsv2@ujian.test'])
+    expect(await emails(`classroomId=${clsA}&level=T4`)).toEqual(['filtercsv1@ujian.test'])
+    expect(await emails(`classroomId=${clsA}&level=T5`)).toEqual(['filtercsv2@ujian.test'])
+    expect(await emails(`classroomId=${clsOther}`)).toEqual([])
+    const t4 = await emails('level=T4&search=filtercsv')
+    expect(t4).toEqual(['filtercsv1@ujian.test', 'filtercsv3@ujian.test'])
+    // Same rows as the list for the same filters.
+    const list = (await admin.get(`/admin-sekolah/pelajar?classroomId=${clsA}&level=T4`)).body as { data: { id: string }[] }
+    expect(list.data.map((r) => r.id)).toEqual([inA])
+    // The teacher export ignores the pupil filters.
+    const teachers = parseCsv((await admin.get(`/admin-sekolah/guru/export.csv?level=T4&classroomId=${clsOther}`)).text.slice(1)).slice(1)
+    expect(teachers.length).toBeGreaterThan(0)
+  })
+
   it('every export writes one audit row: file name, row count and flags, never the content, the search text or a name', async () => {
     const before = (await auditRows(t.db, 'school_admin.pupil.exported')).length
     const res = await admin.get('/admin-sekolah/pelajar/export.csv?search=Murid&is_active=1')

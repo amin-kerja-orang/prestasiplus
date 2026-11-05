@@ -592,7 +592,6 @@ test.describe('S8 Kelas Sekolah', MODULE, () => {
       'Tingkatan',
       'Guru',
       'Murid',
-      'Kod Kelas',
     ])
     const rows = await page.getByTestId('kl-row').evaluateAll((trs) =>
       trs.map((tr) => ({
@@ -611,7 +610,6 @@ test.describe('S8 Kelas Sekolah', MODULE, () => {
     expect(sejarah?.[3]).toBe('Tingkatan 5')
     expect(kimia?.[4]).toMatch(/\S/)
     expect(kimia?.[5]).toMatch(/^\d[\d,]*$/)
-    expect(kimia?.[6]).toMatch(/\S/)
     // row numbers run 1..n
     expect(rows.map((r) => r.cells[0])).toEqual(rows.map((_, i) => String(i + 1)))
     await expectNoHorizontalScroll(page)

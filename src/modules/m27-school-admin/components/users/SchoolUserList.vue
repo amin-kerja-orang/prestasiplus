@@ -6,7 +6,8 @@
  * ("{n} pengguna dijumpai", "Eksport CSV", "Tambah Pelajar" / "Cipta Pengguna"), the filter bar, the table
  * (card list below `md`).
  *
- * The query string is the state (`is_active`, `search`, `page`). "Eksport CSV" sends the Status and Cari values
+ * The query string is the state (`is_active`, `search`, `page`, and for pupils `level` T1..T5 and `classroomId`, R1-AS-51
+ * FR-AS-51-1: `/admin-sekolah/pelajar?classroomId={id}` opens the list pre-filtered, the link of Kelas Sekolah "Murid"). "Eksport CSV" sends the Status and Cari values
  * as they stand in the form, whether or not "Cari" was pressed (FR-M27-119). The S7 "Aktif?" button asks the
  * confirm (`useConfirm`) and switches the teacher (FR-M27-102); S6 shows a read-only badge (G1-1). Errors: the
  * server message in an alert (FR-M27-48, no M27 copy); a 403 renders the global 403 page in place.
@@ -46,9 +47,11 @@ import { saveBlob } from '@/lib/save-blob'
 import {
   downloadPupilsCsv,
   downloadTeachersCsv,
+  fetchSchoolClasses,
   fetchSchoolPupils,
   fetchSchoolTeachers,
   toggleSchoolTeacherActive,
+  type SchoolClassRow,
   type SchoolPupilRow,
   type SchoolTeacherRow,
   type SchoolUserListMeta,
@@ -65,8 +68,10 @@ import {
   lastLoginText,
   phoneText,
   PUPIL_CREATE_PATH,
+  PUPIL_IMPORT_PATH,
   PUPIL_LIST_PATH,
   ROLE_CONFIG,
+  TINGKATAN_OPTIONS,
   TEACHER_CREATE_PATH,
   TEACHER_LIST_PATH,
   type SchoolUserRole,
@@ -121,12 +126,17 @@ function queryText(value: LocationQueryValue | LocationQueryValue[] | undefined)
   return first ?? ''
 }
 
+const validLevel = (v: string): string => (TINGKATAN_OPTIONS.some((o) => o.value === v) ? v : '')
+const validClassroomId = (v: string): string => (/^\d+$/.test(v.trim()) ? v.trim() : '')
+
 /** The applied filters, read from the URL (the source of truth, as the live GET form). */
 const applied = computed(() => {
   const active = queryText(route.query.is_active)
   return {
     isActive: active === '1' ? true : active === '0' ? false : null,
     search: queryText(route.query.search).trim(),
+    level: isPupil.value ? validLevel(queryText(route.query.level)) : '',
+    classroomId: isPupil.value ? validClassroomId(queryText(route.query.classroomId)) : '',
     page: Math.max(1, Number.parseInt(queryText(route.query.page), 10) || 1),
   }
 })
@@ -134,18 +144,62 @@ const applied = computed(() => {
 // Draft values of the form controls; re-synced when the URL changes (back / forward).
 const status = ref(queryText(route.query.is_active))
 const search = ref(queryText(route.query.search))
+const level = ref(validLevel(queryText(route.query.level)))
+const classroomId = ref(validClassroomId(queryText(route.query.classroomId)))
 watch(
-  () => [route.query.is_active, route.query.search] as const,
-  ([a, q]) => {
+  () => [route.query.is_active, route.query.search, route.query.level, route.query.classroomId] as const,
+  ([a, q, l, c]) => {
     status.value = queryText(a)
     search.value = queryText(q)
+    level.value = validLevel(queryText(l))
+    classroomId.value = validClassroomId(queryText(c))
   },
 )
+
+// "Kelas" select (pupils): the classes of the school, only those of the chosen Tingkatan when one is chosen, Tingkatan then name.
+interface ClassOption {
+  id: number
+  name: string
+}
+const classOptions = ref<ClassOption[]>([])
+const CLASS_PAGES_MAX = 40
+const gradeOrder = (label: string): number => {
+  const m = /^(Darjah|Tingkatan) (\d+)$/.exec(label)
+  return m ? Number(m[2]) + (m[1] === 'Tingkatan' ? 6 : 0) : 99
+}
+let classLoad = 0
+
+async function loadClassOptions(levelCode: string): Promise<void> {
+  if (!isPupil.value) return
+  const ticket = ++classLoad
+  const tingkatan = /^T([1-5])$/.exec(levelCode)?.[1]
+  const rows: SchoolClassRow[] = []
+  try {
+    for (let page = 1; page <= CLASS_PAGES_MAX; page++) {
+      const res = await fetchSchoolClasses({ level: tingkatan ? `tingkatan-${tingkatan}` : null, page })
+      rows.push(...res.data)
+      if (page >= res.meta.totalPages) break
+    }
+  } catch {
+    // The select keeps the options it has; the list itself reports its own errors.
+  }
+  if (ticket !== classLoad) return
+  classOptions.value = rows
+    .filter((c) => !tingkatan || c.levelLabel === `Tingkatan ${tingkatan}`)
+    .sort((a, b) => gradeOrder(a.levelLabel) - gradeOrder(b.levelLabel) || a.name.localeCompare(b.name, 'ms'))
+    .map((c) => ({ id: c.id, name: c.name }))
+  // A class that is not of the chosen Tingkatan cannot stay selected.
+  if (tingkatan && classroomId.value !== '' && !classOptions.value.some((c) => String(c.id) === classroomId.value)) {
+    classroomId.value = ''
+  }
+}
+watch(level, (l) => void loadClassOptions(l), { immediate: true })
 
 function fetchPage(signal: AbortSignal): Promise<ListResult<ListRow, SchoolUserListMeta>> {
   const q = {
     isActive: applied.value.isActive,
     search: applied.value.search || null,
+    ...(isPupil.value ? { level: applied.value.level || null, classroomId: applied.value.classroomId || null } : {}),
     page: applied.value.page,
     signal,
   }
@@ -156,6 +210,8 @@ const { data, error, reload } = useApi(fetchPage, [
   () => props.role,
   () => route.query.is_active,
   () => route.query.search,
+  () => route.query.level,
+  () => route.query.classroomId,
   () => route.query.page,
 ])
 
@@ -171,7 +227,14 @@ watch(
 const rowCount = computed(() => data.value?.data.length ?? 0)
 const firstLoad = computed(() => data.value === null && error.value === null)
 const from = computed(() => data.value?.meta.from ?? 1)
-const activeCount = computed(() => (status.value !== '' ? 1 : 0))
+const activeCount = computed(
+  () => [status.value, isPupil.value ? level.value : '', isPupil.value ? classroomId.value : ''].filter((v) => v !== '').length,
+)
+
+/** R1-AS-51 FR-AS-51-2 / R1-AS-52 FR-AS-52-1: the tile is XS-1 / XS-3 (the school total when the server sends no `xs`). */
+const tileCount = computed(() => data.value?.meta.counts?.xs ?? data.value?.meta.counts?.total ?? 0)
+/** Pupils the tile leaves out (pending, suspended or deactivated); shown only when there are some. */
+const notCounted = computed(() => (isPupil.value ? (data.value?.meta.counts?.notCounted ?? 0) : 0))
 
 const items = computed<Item[]>(() =>
   (data.value?.data ?? []).map((row, i) => {
@@ -206,6 +269,8 @@ function filterQuery(): Record<string, string> {
   if (status.value !== '') out.is_active = status.value
   const s = search.value.trim()
   if (s !== '') out.search = s
+  if (isPupil.value && level.value !== '') out.level = level.value
+  if (isPupil.value && classroomId.value !== '') out.classroomId = classroomId.value
   return out
 }
 
@@ -214,6 +279,8 @@ const pagerQuery = computed(() => {
   const out: Record<string, string> = {}
   if (applied.value.isActive !== null) out.is_active = applied.value.isActive ? '1' : '0'
   if (applied.value.search !== '') out.search = applied.value.search
+  if (applied.value.level !== '') out.level = applied.value.level
+  if (applied.value.classroomId !== '') out.classroomId = applied.value.classroomId
   return out
 })
 
@@ -230,6 +297,8 @@ async function submitFilter(): Promise<void> {
 async function resetFilter(): Promise<void> {
   status.value = ''
   search.value = ''
+  level.value = ''
+  classroomId.value = ''
   await router.push({ path: cfg.value.listPath, query: {} })
 }
 
@@ -265,6 +334,8 @@ async function exportCsv(): Promise<void> {
     const q = {
       isActive: status.value === '' ? null : status.value,
       search: search.value.trim() === '' ? null : search.value.trim(),
+      ...(isPupil.value && level.value !== '' ? { level: level.value } : {}),
+      ...(isPupil.value && classroomId.value !== '' ? { classroomId: classroomId.value } : {}),
     }
     const file = isPupil.value ? await downloadPupilsCsv(q) : await downloadTeachersCsv(q)
     const fallback = `users-${isPupil.value ? 'pelajar' : 'guru'}-${formatDateKey(clock.now())}.csv`
@@ -388,16 +459,20 @@ function openRow(row: Item): void {
   <DsPage :data-testid="`${cfg.testid}-page`">
     <DsBackLink :to="DASHBOARD_PATH" label="Dashboard Sekolah" data-testid="user-crumb-back" />
 
-    <!-- FR-M27-88 / 99: one count tile, unaffected by the filters. -->
+    <!-- FR-M27-88 / 99: one count tile, unaffected by the filters. The figure is XS-1 / XS-3 (FR-AS-51-2, FR-AS-52-1);
+         pupils XS-1 leaves out are named beside it, only when there are some. -->
     <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" data-testid="user-count-card">
       <USkeleton v-if="!data" class="h-24 w-full" />
       <DsStatTile
         v-else
-        :value="formatCount(data.meta.counts?.total ?? 0)"
+        :value="formatCount(tileCount)"
         :unit="cfg.cardLabel"
         :icon="isPupil ? 'graduation-cap' : 'chalkboard-teacher'"
         :accent="isPupil ? 'action' : 'friend'"
       />
+      <p v-if="notCounted > 0" class="text-body text-muted self-center" data-testid="user-not-counted">
+        {{ formatCount(notCounted) }} menunggu kelulusan atau tidak aktif
+      </p>
     </section>
 
     <!-- FR-M27-88: text left, buttons right; at 375 the buttons wrap below the text. -->
@@ -424,6 +499,17 @@ function openRow(row: Item): void {
           >Eksport CSV</UButton
         >
         <UButton
+          v-if="isPupil"
+          :to="PUPIL_IMPORT_PATH"
+          color="neutral"
+          variant="soft"
+          size="lg"
+          icon="i-ph-upload-simple"
+          class="min-h-11 justify-center"
+          data-testid="user-import"
+          >Import Pelajar</UButton
+        >
+        <UButton
           :to="isPupil ? PUPIL_CREATE_PATH : TEACHER_CREATE_PATH"
           size="lg"
           icon="i-ph-user-plus"
@@ -436,7 +522,7 @@ function openRow(row: Item): void {
 
     <PendingTeacherCallout v-if="!isPupil" />
 
-    <!-- FR-M27-89: Status, Cari, submit "Cari"; no role, school or class control. -->
+    <!-- FR-M27-89: Status, Cari, submit "Cari"; no role or school control (pupils: Tingkatan and Kelas, FR-AS-51-1). -->
     <DsFilterBar
       :active-count="activeCount"
       data-testid="user-filter"
@@ -466,6 +552,24 @@ function openRow(row: Item): void {
           <option value="">Semua</option>
           <option value="1">Aktif</option>
           <option value="0">Tidak Aktif</option>
+        </DsNativeSelect>
+      </DsFormField>
+      <!-- FR-AS-51-1: Tingkatan and Kelas (pupils only); the classes follow the chosen Tingkatan. -->
+      <DsFormField v-if="isPupil" label="Tingkatan" native for="user-level" class="min-w-40">
+        <DsNativeSelect id="user-level" v-model="level" name="level" data-testid="user-level-filter">
+          <option value="">Semua Tingkatan</option>
+          <option v-for="o in TINGKATAN_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
+        </DsNativeSelect>
+      </DsFormField>
+      <DsFormField v-if="isPupil" label="Kelas" native for="user-class" class="min-w-40">
+        <DsNativeSelect
+          id="user-class"
+          v-model="classroomId"
+          name="classroomId"
+          data-testid="user-class-filter"
+        >
+          <option value="">Semua Kelas</option>
+          <option v-for="c in classOptions" :key="c.id" :value="String(c.id)">{{ c.name }}</option>
         </DsNativeSelect>
       </DsFormField>
     </DsFilterBar>

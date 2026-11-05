@@ -5,7 +5,9 @@ import { ThrottleModule } from '../../../common/throttle'
 import { AuthModule } from '../../auth'
 import { ClassesModule } from '../../classes'
 import { SchoolsModule } from '../../schools'
+import { SubscriptionsModule } from '../../subscriptions'
 import { UsersModule } from '../../users'
+import { XsQueries } from '../xs-queries'
 import { ManagedUsersService } from './managed-users.service'
 import { PupilsController } from './pupils.controller'
 import { PupilsService } from './pupils.service'
@@ -17,8 +19,8 @@ import { TeachersService } from './teachers.service'
  * No tables of its own: users, classes, schools and audit go through their owners' repositories.
  */
 @Module({
-  imports: [AuditModule, AuthModule, ClassesModule, SchoolsModule, ThrottleModule, UsersModule],
+  imports: [AuditModule, AuthModule, ClassesModule, SchoolsModule, SubscriptionsModule, ThrottleModule, UsersModule],
   controllers: [TeachersController, PupilsController],
-  providers: [ManagedUsersService, TeachersService, PupilsService],
+  providers: [XsQueries, ManagedUsersService, TeachersService, PupilsService],
 })
 export class PeopleModule {}

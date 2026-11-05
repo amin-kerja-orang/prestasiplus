@@ -34,7 +34,6 @@ function row(id: number, over: Partial<SchoolClassRow> = {}): SchoolClassRow {
     levelLabel: 'Tingkatan 5',
     teacherName: 'Cikgu Contoh',
     members: 1234,
-    joinCode: 'ABC123',
     isActive: true,
     link: `/prestasi/kelas/${String(id)}`,
     ...over,
@@ -137,7 +136,7 @@ describe('tile and count line (FR-M27-111; AC-M27-31.1)', () => {
 })
 
 describe('table (FR-M27-112, 113, 115; AC-M27-31.2, 32.3)', () => {
-  it('shows the seven columns in order', async () => {
+  it('shows the six columns in order, no "Kod Kelas" (FR-AS-53-5)', async () => {
     const w = await mountPage(list([row(1)]))
     expect(w.findAll('[data-testid="kl-table"] th').map((e) => e.text())).toEqual([
       '#',
@@ -146,15 +145,15 @@ describe('table (FR-M27-112, 113, 115; AC-M27-31.2, 32.3)', () => {
       'Tingkatan',
       'Guru',
       'Murid',
-      'Kod Kelas',
     ])
+    expect(w.text()).not.toContain('Kod Kelas')
   })
 
   it('shows the values, the class name as a link to M08 S5 and "Tiada Subjek" without a subject', async () => {
     const w = await mountPage(
       list([
         row(2001, { name: '5 MARIKH - Kimia' }),
-        row(2002, { subject: null, teacherName: null, joinCode: null }),
+        row(2002, { subject: null, teacherName: null }),
       ]),
     )
     const rows = w.findAll('tbody tr')
@@ -166,7 +165,6 @@ describe('table (FR-M27-112, 113, 115; AC-M27-31.2, 32.3)', () => {
       'Tingkatan 5',
       'Cikgu Contoh',
       '1,234',
-      'ABC123',
     ])
     expect(w.findAll('[data-testid="kl-name"]')[0]?.attributes('href')).toBe('/prestasi/kelas/2001')
     expect(texts(w, 'kl-subject')).toEqual(['Kimia', 'Tiada Subjek'])
@@ -177,8 +175,23 @@ describe('table (FR-M27-112, 113, 115; AC-M27-31.2, 32.3)', () => {
       'Tingkatan 5',
       '-',
       '1,234',
-      '-',
     ])
+  })
+
+  it('the class name links to the class dashboard and "Murid" to Senarai Pelajar filtered by the class (FR-AS-53-3, AC-AS-53-2)', async () => {
+    const w = await mountPage(list([row(2001, { members: 6 })]))
+    expect(w.get('[data-testid="kl-name"]').attributes('href')).toBe('/prestasi/kelas/2001')
+    const murid = w.get('[data-testid="kl-members"]')
+    expect(murid.element.tagName).toBe('A')
+    expect(murid.text()).toBe('6')
+    expect(murid.attributes('href')).toBe('/admin-sekolah/pelajar?classroomId=2001')
+  })
+
+  it('clicking "Murid" goes to Senarai Pelajar, not to the class dashboard', async () => {
+    const w = await mountPage(list([row(2001, { members: 6 })]))
+    await w.get('[data-testid="kl-members"]').trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.fullPath).toBe('/admin-sekolah/pelajar?classroomId=2001')
   })
 
   it('shows the badge "Tidak Aktif" for an inactive class only', async () => {

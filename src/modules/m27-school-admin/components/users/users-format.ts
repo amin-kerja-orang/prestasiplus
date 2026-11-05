@@ -13,7 +13,11 @@ export type SchoolUserRole = 'student' | 'teacher'
 
 export const PUPIL_LIST_PATH = '/admin-sekolah/pelajar'
 export const TEACHER_LIST_PATH = '/admin-sekolah/guru'
+/** OPT-TINGKATAN of the pupil list filter: the `level` query value and its label. */
+export const TINGKATAN_OPTIONS = [1, 2, 3, 4, 5].map((n) => ({ value: `T${n}`, label: `Tingkatan ${n}` }))
+
 export const PUPIL_CREATE_PATH = `${PUPIL_LIST_PATH}/baru`
+export const PUPIL_IMPORT_PATH = `${PUPIL_LIST_PATH}/import`
 export const TEACHER_CREATE_PATH = `${TEACHER_LIST_PATH}/baru`
 export const DASHBOARD_PATH = '/admin-sekolah'
 

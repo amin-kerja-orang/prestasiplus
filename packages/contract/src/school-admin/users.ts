@@ -40,6 +40,8 @@ export const SchoolAdminUserListQuerySchema = z
   .object({
     is_active: z.string().optional().meta({ description: '1 = active only, 0 = inactive only; anything else = all.' }),
     search: z.string().optional().meta({ description: 'Name or e-mail contains, case-insensitive.' }),
+    level: z.string().optional().meta({ description: 'Pupils only (ignored by /guru): Tingkatan T1..T5 (R1-AS-51, FR-AS-51-1); anything else = all.' }),
+    classroomId: z.string().optional().meta({ description: 'Pupils only (ignored by /guru): pupils actively enrolled in this class of the school; a class of another school lists nobody.' }),
     page: z.string().optional().meta({ description: '25 rows per page.' }),
   })
   .meta({ id: 'SchoolAdminUserListQuery' })
@@ -50,13 +52,25 @@ export const SchoolAdminUserExportQuerySchema = z
   .object({
     is_active: z.string().optional().meta({ description: '1 = active only, 0 = inactive only; anything else = all.' }),
     search: z.string().optional().meta({ description: 'Name or e-mail contains, case-insensitive.' }),
+    level: z.string().optional().meta({ description: 'Pupils only (ignored by /guru): Tingkatan T1..T5; anything else = all.' }),
+    classroomId: z.string().optional().meta({ description: 'Pupils only (ignored by /guru): pupils actively enrolled in this class of the school.' }),
   })
   .meta({ id: 'SchoolAdminUserExportQuery' })
 export type SchoolAdminUserExportQuery = z.infer<typeof SchoolAdminUserExportQuerySchema>
 
-/** List meta: `counts` are the school totals and ignore the filters. `pageSize` is always 25. */
+/**
+ * List meta: `counts` are the school totals and ignore the filters. `pageSize` is always 25.
+ * `counts.xs` (R1-AS-51 FR-AS-51-2 / R1-AS-52 FR-AS-52-1) is the cross-screen figure: XS-1 for pupils, XS-3 for teachers.
+ * `counts.notCounted` (pupils only) is the number of listed pupils that XS-1 leaves out (pending, suspended or deactivated).
+ */
 export const SchoolAdminUserListMetaSchema = ListMetaSchema.extend({
-  counts: z.object({ total: count, active: count, inactive: count }),
+  counts: z.object({
+    total: count,
+    active: count,
+    inactive: count,
+    xs: count.optional(),
+    notCounted: count.optional(),
+  }),
 }).meta({ id: 'SchoolAdminUserListMeta' })
 export type SchoolAdminUserListMeta = z.infer<typeof SchoolAdminUserListMetaSchema>
 

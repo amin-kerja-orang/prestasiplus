@@ -765,7 +765,7 @@ test.describe('QA S8 Kelas Sekolah', TAG, () => {
     expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, 'ms')))
     const nos = await page.getByTestId('kl-no').allInnerTexts()
     expect(nos).toEqual(nos.map((_, i) => String(i + 1)))
-    await expect(page.locator('thead th')).toHaveText(['#', 'Kelas', 'Subjek', 'Tingkatan', 'Guru', 'Murid', 'Kod Kelas'])
+    await expect(page.locator('thead th')).toHaveText(['#', 'Kelas', 'Subjek', 'Tingkatan', 'Guru', 'Murid'])
     for (const m of await page.getByTestId('kl-members').allInnerTexts()) expect(m.trim()).toMatch(/^\d[\d,]*$/)
     for (const s of await page.getByTestId('kl-subject').allInnerTexts()) expect(s.trim()).not.toBe('')
   })

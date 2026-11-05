@@ -41,7 +41,7 @@ const ROLE_WORD: Readonly<Record<SchoolRole, string>> = { student: 'pelajar', te
 export function usersCsv(
   viewer: SchoolViewer,
   role: SchoolRole,
-  query: Pick<UserListQuery, 'isActive' | 'search'>,
+  query: Pick<UserListQuery, 'isActive' | 'search' | 'level' | 'classroomId'>,
 ): string {
   const school = schoolRowOf(viewer).name
   const rows: UserRow[] = filteredUsers(viewer.schoolId, role, query).sort((a, b) => a.id - b.id)

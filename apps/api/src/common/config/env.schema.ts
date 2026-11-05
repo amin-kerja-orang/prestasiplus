@@ -79,6 +79,9 @@ export const EnvSchema = z.object({
   THROTTLE_SCHOOL_ADMIN_CREATE_PER_MINUTE: z.coerce.number().int().min(1).default(10),
   THROTTLE_SCHOOL_ADMIN_RESET_PER_MINUTE: z.coerce.number().int().min(1).default(10),
   THROTTLE_SCHOOL_ADMIN_EXPORT_PER_MINUTE: z.coerce.number().int().min(1).default(5),
+  // S6-T09 (API-AS-06): the initial password of every pupil a school admin imports (at least 8 characters; never returned, shown or logged).
+  // Unset or blank: one random password nobody knows is used, so an imported pupil gets a password only through "Tetapkan semula kata laluan".
+  PUPIL_IMPORT_DEFAULT_PASSWORD: z.preprocess((v) => (v === '' ? undefined : v), z.string().min(8).max(255).optional()),
   // BE-05 (users): HMAC key of the IC number hash. Unset: SESSION_SECRET is used (required in production). Rotating it breaks IC lookups until every ic_hash is recomputed.
   IC_HASH_KEY: z.preprocess((v) => (v === '' ? undefined : v), z.string().min(16).optional()),
   /** BE-24: extra origins (comma separated, e.g. https://app.example) whose /api/files/<token> URLs an article or banner image may use, besides the API's own origin. */

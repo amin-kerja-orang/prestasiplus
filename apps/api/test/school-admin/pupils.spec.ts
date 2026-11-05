@@ -9,6 +9,7 @@ import {
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { login, SCHOOL_ADMIN, schoolIdOf, STUDENT, TEACHER, userIdOf, type SchoolAdminTestApp } from './helpers'
+import { xsPupilCount } from './reports-fixtures'
 import { auditRows, bootPeopleApp, countOf, enrolIn, errorOf, expectNoCache, insertClass, insertUser, loginWith, peopleApiOf, userRow, type PeopleApi } from './people-helpers'
 
 /** BE-21 Part A: the seven pupil routes under /admin-sekolah/pelajar. DB spec (Testcontainers). */
@@ -68,7 +69,10 @@ describe('BE-21 pupils: /admin-sekolah/pelajar', () => {
     expect(ids).not.toContain(teacher)
     const desc = (xs: string[]) => [...xs].sort((x, y) => (BigInt(y) > BigInt(x) ? 1 : -1))
     expect(ids).toEqual([...desc([p1, pMaju, pKosong, pNoEmail]), ...desc([pInactive, pSuspended])])
-    expect(body.meta.counts).toEqual({ total: 6, active: 4, inactive: 2 })
+    // FR-AS-51-2: xs = XS-1 (active, not suspended, Tingkatan 1-5); notCounted = listed pupils XS-1 leaves out (pending, suspended, Darjah).
+    const xs = await xsPupilCount(t.db, s1)
+    expect(xs).toBeLessThan(6)
+    expect(body.meta.counts).toEqual({ total: 6, active: 4, inactive: 2, xs, notCounted: 6 - xs })
     expect(body.data.find((r) => r.id === p1)).toMatchObject({ gradeLabel: 'Tingkatan 4', classNames: ['4 Amanah', 'Kelas Sekolah'], isActive: true, canEdit: true })
     expect(body.data.find((r) => r.id === pMaju)).toMatchObject({ gradeLabel: 'Tingkatan 5', classNames: [] })
     expect(body.data.find((r) => r.id === pNoEmail)).toMatchObject({ gradeLabel: 'Darjah 3', email: '' })
@@ -81,6 +85,47 @@ describe('BE-21 pupils: /admin-sekolah/pelajar', () => {
     expect(inactive.data.map((r) => r.id).sort()).toEqual([pInactive, pSuspended].sort())
     expect(SchoolAdminPupilListResponseSchema.parse((await admin.get('/admin-sekolah/pelajar?search=maju')).body).data.map((r) => r.id)).toEqual([pMaju])
     expect(SchoolAdminPupilListResponseSchema.parse((await admin.get('/admin-sekolah/pelajar?page=50')).body).meta).toMatchObject({ page: 1, totalPages: 1 })
+  })
+
+  it('xs counts the XS-1 pupils only: a pending and a suspended pupil are listed but go to notCounted (AC-AS-51-1, AC-AS-51-7)', async () => {
+    const before = SchoolAdminPupilListResponseSchema.parse((await admin.get('/admin-sekolah/pelajar')).body).meta.counts
+    const pending = await insertUser(t.db, { name: 'Murid Menunggu Lulus', email: 'menunggu-lulus@ujian.test', roles: ['student'], schoolId: s1, grade: 10, isActive: false })
+    const suspended = await insertUser(t.db, { name: 'Murid Digantung Baru', email: 'digantung-baru@ujian.test', roles: ['student'], schoolId: s1, grade: 10, isSuspended: true })
+    const fresh = await insertUser(t.db, { name: 'Murid Aktif Baru', email: 'aktif-baru@ujian.test', roles: ['student'], schoolId: s1, grade: 9 })
+    const res = SchoolAdminPupilListResponseSchema.parse((await admin.get('/admin-sekolah/pelajar?search=Murid%20Menunggu%20Lulus')).body)
+    expect(res.data.map((r) => r.id)).toEqual([pending]) // the list still shows the pending pupil
+    // The counts ignore the filters.
+    expect(res.meta.counts).toEqual({ total: before.total + 3, active: before.active + 1, inactive: before.inactive + 2, xs: (before.xs ?? 0) + 1, notCounted: (before.notCounted ?? 0) + 2 })
+    expect(res.meta.counts.xs).toBe(await xsPupilCount(t.db, s1))
+    await t.db.query(`delete from user_roles where user_id = any($1::bigint[])`, [[pending, suspended, fresh]])
+    await t.db.query(`delete from users where id = any($1::bigint[])`, [[pending, suspended, fresh]])
+  })
+
+  it('filters by Tingkatan (level T1..T5) and Kelas (classroomId); the class is limited to its own pupils (FR-AS-51-1, AC-AS-51-2)', async () => {
+    await enrolIn(t.db, clsBestari, pMaju) // pMaju is Tingkatan 5
+    await enrolIn(t.db, clsBestari, pNoEmail, 'removed') // removed enrolment: not a member
+    const ids = async (qs: string) => SchoolAdminPupilListResponseSchema.parse((await admin.get(`/admin-sekolah/pelajar?${qs}`)).body).data.map((r) => r.id)
+    const sql = async (grade: number) =>
+      (await t.db.query<{ id: string }>(`select id::text from users u where school_id = $1::bigint and grade = $2 and exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'student')`, [s1, grade])).map((r) => r.id).sort()
+    expect((await ids('level=T4')).sort()).toEqual(await sql(10))
+    expect(await ids('level=T4')).toContain(p1)
+    expect(await ids('level=T4')).not.toContain(pMaju)
+    expect(await ids('level=T5')).toEqual([pMaju])
+    expect(await ids('level=T1')).toEqual([])
+    expect(await ids(`classroomId=${clsBestari}`)).toEqual([pMaju])
+    expect(await ids(`classroomId=${clsBestari}&level=T5`)).toEqual([pMaju])
+    expect(await ids(`classroomId=${clsBestari}&level=T4`)).toEqual([])
+    expect(await ids(`classroomId=${clsAmanah}`)).toContain(p1)
+    // Another school's class, an unknown class: nobody. The school never comes from the query.
+    expect(await ids(`classroomId=${clsForeign}`)).toEqual([])
+    expect(await ids('classroomId=999999999')).toEqual([])
+    // The filters narrow the list and its paging; the counts stay the school totals.
+    const filtered = SchoolAdminPupilListResponseSchema.parse((await admin.get(`/admin-sekolah/pelajar?classroomId=${clsBestari}`)).body)
+    expect(filtered.meta).toMatchObject({ totalItems: 1 })
+    expect(filtered.meta.counts.total).toBeGreaterThan(1)
+    // Anything but T1..T5 is ignored (nothing is rejected).
+    expect((await ids('level=T9')).length).toBe((await ids('')).length)
+    expect((await ids('level=D4')).length).toBe((await ids('')).length)
   })
 
   it('form-options matches before :id: the school and the ACTIVE classrooms of the school A to Z, no password field', async () => {

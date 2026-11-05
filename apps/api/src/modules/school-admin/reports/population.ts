@@ -1,10 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common'
 
-import { AnalyticsRepository, type PupilStat, type SessionDayRow, type TeacherLine } from '../../reports/analytics/analytics.repository'
+import { AnalyticsRepository, type SessionDayRow, type TeacherLine } from '../../reports/analytics/analytics.repository'
 import { byName } from '../../reports/analytics/domain/rules'
 import { ApiError } from '../../../common/errors/api-error'
 import { SchoolsRepository } from '../../schools'
-import { UsersRepository } from '../../users'
+import { XS_ALL_TIME, XsQueries, type XsAnswerTotals, type XsMonthTally, type XsPupilTally, type XsScope, type XsWindow } from '../xs-queries'
 import { chunk } from './windows'
 
 export interface PupilFact {
@@ -20,18 +20,23 @@ async function each<T>(ids: readonly string[], fn: (part: string[]) => Promise<T
   return out
 }
 
+/** The school scope of the session (XS-6a: the school id is always the session's, never the request's). */
+export const schoolScope = (schoolId: string): XsScope => ({ kind: 'school', schoolId })
+
 /**
  * The people of one school and the chunked practice reads over them (BE-21 Part B). The school id is always the session's.
- * Pupils and teachers are the managed population of S0/S6/S7 (`UsersRepository.managedIdsBySchoolRole`, the rule of
- * `countsBySchoolRole`), so the report counts equal the dashboard cards (FR-M27-50, BR-M27-22; SW6-04). Every `IN` list sent to
- * the database is cut into pieces of 1000 ids, so a large school never builds one huge statement.
+ * The population is defined once, in `xs-queries.ts` (S6-T03): pupils are XS-1 (active accounts, Tingkatan 1-5; pending,
+ * deactivated and suspended accounts are not counted), teachers are XS-3 (approved, no school-admin account), "practised" is XS-2
+ * and every answered / correct figure is XS-4 / XS-5 over the same rows. So the report counts equal the dashboard cards and the
+ * Command Center (AC-XS-1). Session figures (completed sessions, seconds) stay session reads. Every `IN` list sent to the
+ * database is cut into pieces of 1000 ids, so a large school never builds one huge statement.
  */
 @Injectable()
 export class SchoolPopulation {
   constructor(
-    @Inject(UsersRepository) private readonly users: UsersRepository,
     @Inject(AnalyticsRepository) private readonly analytics: AnalyticsRepository,
     @Inject(SchoolsRepository) private readonly schools: SchoolsRepository,
+    @Inject(XsQueries) private readonly xs: XsQueries,
   ) {}
 
   /** `{ id, name }` of the session school. */
@@ -41,16 +46,16 @@ export class SchoolPopulation {
     return { id: row.id, name: row.name }
   }
 
-  /** The managed pupils of the school (the S0/S6 population: inactive and suspended included), name A to Z, with their last login. */
+  /** The XS-1 pupils of the school, name A to Z, with their last login. */
   async pupils(schoolId: string): Promise<PupilFact[]> {
-    const ids = await this.users.managedIdsBySchoolRole(schoolId, 'student')
+    const { ids } = await this.xs.pupils(schoolScope(schoolId))
     const lines = (await each(ids, (c) => this.analytics.studentsAmong(c))).flat()
     return lines.map((l) => ({ id: l.id, name: l.name, lastLoginAt: l.lastLoginAt })).sort(byName)
   }
 
-  /** The managed teachers of the school (the S0/S7 population: no peer school admin, inactive included), id ascending. */
+  /** The XS-3 teachers of the school, id ascending. */
   async teachers(schoolId: string): Promise<TeacherLine[]> {
-    const ids = await this.users.managedIdsBySchoolRole(schoolId, 'teacher')
+    const { ids } = await this.xs.teachers(schoolId)
     return (await each(ids, (c) => this.analytics.teachersAmong(c))).flat()
   }
 
@@ -58,16 +63,38 @@ export class SchoolPopulation {
     return (await each(ids, (c) => this.analytics.sessionsByDay(c, new Date(from), new Date(to)))).flat()
   }
 
-  async stats(ids: readonly string[]): Promise<Map<string, PupilStat>> {
-    const out = new Map<string, PupilStat>()
-    for (const part of await each(ids, (c) => this.analytics.pupilStats(c))) for (const [k, v] of part) out.set(k, v)
-    return out
+  private window(from: number | null, to: number | null): XsWindow {
+    return { from: from === null ? null : new Date(from), to: to === null ? null : new Date(to) }
   }
 
-  async practised(ids: readonly string[]): Promise<Set<string>> {
-    const out = new Set<string>()
-    for (const part of await each(ids, (c) => this.analytics.practisedAmong(c))) for (const id of part) out.add(id)
-    return out
+  /** XS-2 all time ("pernah menjawab"): the XS-1 pupils with at least one answer row. */
+  async practised(schoolId: string): Promise<Set<string>> {
+    return new Set((await this.xs.activePupils(schoolScope(schoolId), XS_ALL_TIME)).ids)
+  }
+
+  /** XS-4 and XS-5 of the school in the window (epoch ms; inclusive bounds). */
+  async answerTotals(schoolId: string, from: number | null, to: number | null): Promise<XsAnswerTotals> {
+    return this.xs.answerTotals(schoolScope(schoolId), this.window(from, to))
+  }
+
+  /** XS-2 of the window: the number of XS-1 pupils with at least one answer row. */
+  async activeCount(schoolId: string, from: number | null, to: number | null): Promise<number> {
+    return this.xs.activePupilCount(schoolScope(schoolId), this.window(from, to))
+  }
+
+  /** XS-4 per pupil in the window (`null` bounds = all time). */
+  async tallyByPupil(schoolId: string, from: number | null, to: number | null): Promise<Map<string, XsPupilTally>> {
+    return this.xs.tallyByPupil(schoolScope(schoolId), this.window(from, to))
+  }
+
+  /** XS-4 and XS-2 per MYT month in the window. */
+  async tallyByMonth(schoolId: string, from: number, to: number): Promise<Map<string, XsMonthTally>> {
+    return this.xs.tallyByMonth(schoolScope(schoolId), this.window(from, to))
+  }
+
+  /** XS-4 and XS-2 per subject in the window (answer rows, all modes; rows without a subject are left out). */
+  async tallyBySubject(schoolId: string, from: number, to: number): Promise<Map<string, XsMonthTally>> {
+    return this.xs.tallyBySubject(schoolScope(schoolId), this.window(from, to))
   }
 
   async seconds(ids: readonly string[], from: number, to: number): Promise<Map<string, number>> {
@@ -78,7 +105,4 @@ export class SchoolPopulation {
     return out
   }
 
-  async subjectTallies(ids: readonly string[], from: number, to: number) {
-    return (await each(ids, (c) => this.analytics.subjectTallies(c, new Date(from), new Date(to)))).flat()
-  }
 }

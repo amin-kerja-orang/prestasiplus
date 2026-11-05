@@ -19,7 +19,7 @@ export async function buildLiveData(deps: GuruDeps, ctx: GuruContext): Promise<C
   ])
   const days = await answerDaysOf(deps, ctx)
   const [feedRows, moodCounts, gps, t1, awards, catalogue] = await Promise.all([
-    deps.repo.latestAnswers({ to: ctx.now, studentIds: ctx.ids, includeInactive: true }, 10),
+    deps.repo.latestAnswers({ to: ctx.now, studentIds: ctx.ids }, 10),
     deps.mood.counts(ctx.ids),
     deps.headcount.gpsOverall(ctx.ids),
     deps.feedback.t1(ctx.ids),

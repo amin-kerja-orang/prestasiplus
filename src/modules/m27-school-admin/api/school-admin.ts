@@ -15,7 +15,7 @@
  * M27-T1b and M27-T1d; their client functions are here so every screen builds against one file.
  */
 
-import { api, type ListResult } from '@/api'
+import { api, IMPORT_TIMEOUT_MS, type ListResult } from '@/api'
 import type { UserMe } from '@/modules/m01-authentication'
 
 const BASE = '/api/admin-sekolah'
@@ -291,13 +291,25 @@ export interface SchoolTeacherRow {
 
 /** `meta` of #6 and #10: cards ignore the filters. */
 export interface SchoolUserListMeta {
-  counts: { total: number; active: number; inactive: number }
+  counts: {
+    total: number
+    active: number
+    inactive: number
+    /** XS-1 (pupils) / XS-3 (teachers): the figure shown as "{n} pelajar" / "{n} guru". */
+    xs?: number
+    /** Pupils only: listed pupils XS-1 leaves out (pending, suspended or deactivated). */
+    notCounted?: number
+  }
 }
 
 export interface SchoolUserListQuery {
   /** `1` or `0`; anything else = all. */
   isActive?: boolean | string | null
   search?: string | null
+  /** Pupils only: Tingkatan `T1`..`T5`. */
+  level?: string | null
+  /** Pupils only: a class id; the pupils actively enrolled in it. */
+  classroomId?: string | null
   page?: number | null
   signal?: AbortSignal
 }
@@ -305,6 +317,8 @@ export interface SchoolUserListQuery {
 const userListQuery = (o: SchoolUserListQuery) => ({
   is_active: o.isActive === true ? '1' : o.isActive === false ? '0' : o.isActive,
   search: o.search,
+  level: o.level || undefined,
+  classroomId: o.classroomId || undefined,
   page: o.page,
 })
 
@@ -324,10 +338,15 @@ export const fetchSchoolTeachers = (o: SchoolUserListQuery = {}) =>
 
 /** #17 `GET /api/admin-sekolah/pelajar/export.csv` ("Eksport CSV", S6): `users-pelajar-{yyyy-mm-dd}.csv`. */
 export const downloadPupilsCsv = (
-  o: Pick<SchoolUserListQuery, 'isActive' | 'search' | 'signal'> = {},
+  o: Pick<SchoolUserListQuery, 'isActive' | 'search' | 'level' | 'classroomId' | 'signal'> = {},
 ) =>
   api.blob(`${BASE}/pelajar/export.csv`, {
-    query: { is_active: userListQuery(o).is_active, search: o.search },
+    query: {
+      is_active: userListQuery(o).is_active,
+      search: o.search,
+      level: userListQuery(o).level,
+      classroomId: userListQuery(o).classroomId,
+    },
     ...(o.signal ? { signal: o.signal } : {}),
   })
 
@@ -473,6 +492,46 @@ export const fetchSchoolPupilFormOptions = (o: { signal?: AbortSignal } = {}) =>
     o.signal ? { signal: o.signal } : {},
   )
 
+// --- API-AS-06 R1-AS-51 Import Pelajar ---------------------------------------------------------
+
+export type PupilImportLevel = 'T1' | 'T2' | 'T3' | 'T4' | 'T5'
+
+export interface PupilImportResult {
+  dryRun: boolean
+  /** Data rows of the file. */
+  rows: number
+  /** Pending pupils created (0 on `dryRun`). */
+  created: number
+  /** E-mails that already exist; each is also in `errors`. */
+  skipped: number
+  /** Every row that was not created ("{b} baris gagal" = `errors.length`). */
+  errors: { row: number; message: string }[]
+  /** `dryRun` only: the first 10 rows of the file. */
+  preview?: { row: number; name: string; email: string | null; className: string | null }[]
+}
+
+/**
+ * API-AS-06 `POST /api/admin-sekolah/pelajar/import?dryRun=` (multipart `csvFile` + `level`). `dryRun` previews the first 10
+ * rows and creates nothing; the real call creates the valid rows as pending pupils. 409 `QUOTA_FULL` / `NO_SUBSCRIPTION`
+ * refuse the whole file; 413 too large or more than 1000 rows; 415 wrong type; 422 header or file missing.
+ */
+export function importSchoolPupils(input: {
+  file: File
+  level: PupilImportLevel | ''
+  dryRun: boolean
+  signal?: AbortSignal
+}): Promise<PupilImportResult> {
+  const form = new FormData()
+  if (input.level !== '') form.append('level', input.level)
+  form.append('csvFile', input.file)
+  return api.post<PupilImportResult>(`${BASE}/pelajar/import`, {
+    body: form,
+    query: { dryRun: input.dryRun },
+    timeoutMs: IMPORT_TIMEOUT_MS,
+    ...(input.signal ? { signal: input.signal } : {}),
+  })
+}
+
 // --- #16 S8 classes ----------------------------------------------------------------------------
 
 export interface SchoolClassRow {
@@ -485,9 +544,8 @@ export interface SchoolClassRow {
   /** "Tingkatan n" / "Darjah n". */
   levelLabel: string
   teacherName: string | null
-  /** Active enrolments (may include pupils of another school). */
+  /** XS-1 pupils of the school with an active enrolment in the class. */
   members: number
-  joinCode: string | null
   isActive: boolean
   /** `/prestasi/kelas/{id}`. */
   link: string

@@ -142,7 +142,7 @@ describe('repository and scope on a seeded world (is_test never counted)', () =>
     expect(await repo.userBrief('x')).toBeNull()
     expect((await repo.schoolRef(w.school1))?.name).toBeTruthy()
     expect(await repo.schoolRef('999999')).toBeNull()
-    const expected = Number((await t.db.query<{ c: string }>(`select count(*)::int c from users u where u.school_id = $1::bigint and u.is_active and exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'student')`, [w.school1]))[0]?.c)
+    const expected = Number((await t.db.query<{ c: string }>(`select count(*)::int c from users u where u.school_id = $1::bigint and u.is_active and not u.is_suspended and u.grade between 7 and 11 and exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'student')`, [w.school1]))[0]?.c)
     expect(await repo.studentCount({ schoolId: w.school1 })).toBe(expected)
     expect((await repo.studentsOfSchool(w.school1)).length).toBe(expected)
     expect((await repo.teachersOfSchool(w.school1)).map((x) => x.id)).toContain(w.teacherId)
