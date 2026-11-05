@@ -17,6 +17,8 @@ import { useRoute, useRouter, type LocationQueryValue } from 'vue-router'
 import { isHttpMode } from '@/api/mode'
 import { useApi, useFlash, useSession } from '@/composables'
 import {
+  DsCallout,
+  DsCluster,
   DsDataTable,
   DsEmptyState,
   DsFilterBar,
@@ -26,6 +28,7 @@ import {
   DsPanel,
   DsRowActions,
   DsStatusBadge,
+  DsText,
   type DsStatus,
   type RowAction,
   useConfirm,
@@ -491,30 +494,28 @@ const COLUMNS: TableColumn<UserRow>[] = [
     <UserStatCards :counts="counts" :active-role="applied.role" />
 
     <!-- U-01 approval banner: accounts that cannot log in until approved. -->
-    <UAlert
+    <DsCallout
       v-if="pendingCount > 0"
-      color="warning"
-      variant="subtle"
-      icon="i-ph-hourglass"
+      tone="warning"
+      icon="hourglass"
       data-testid="users-pending-banner"
     >
-      <template #description>
-        <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span data-testid="users-pending-text"
-            ><strong data-testid="users-pending-count">{{ pendingCount }}</strong> akaun menunggu
-            kelulusan — belum boleh log masuk.</span
-          >
-          <UButton
-            :to="pendingLink"
-            color="warning"
-            variant="link"
-            label="Semak & luluskan"
-            class="min-h-11"
-            data-testid="users-pending-review"
-          />
-        </div>
-      </template>
-    </UAlert>
+      <DsCluster gap="sm">
+        <DsText variant="body" as="span" data-testid="users-pending-text"
+          ><DsText variant="body" as="strong" data-testid="users-pending-count">{{
+            pendingCount
+          }}</DsText>
+          akaun menunggu kelulusan — belum boleh log masuk.</DsText
+        >
+        <UButton
+          :to="pendingLink"
+          color="warning"
+          variant="link"
+          label="Semak & luluskan"
+          data-testid="users-pending-review"
+        />
+      </DsCluster>
+    </DsCallout>
 
     <DsFilterBar
       :chips="chips"
@@ -576,19 +577,17 @@ const COLUMNS: TableColumn<UserRow>[] = [
 
     <!-- Bulk bar (FR-M02-15): only while at least one row is ticked. -->
     <DsPanel v-if="selected.length > 0" behavior="bulk" data-testid="users-bulk-bar">
-      <div class="flex flex-wrap items-center justify-between gap-4">
+      <DsCluster justify="between" gap="md">
         <span class="flex items-center gap-2 text-body text-default">
           <UIcon name="i-ph-check-square" class="size-5" aria-hidden="true" />
           <span data-testid="users-selected-count">{{ selected.length }}</span> dipilih
         </span>
-        <div class="flex flex-wrap items-center gap-2">
+        <DsCluster gap="sm">
           <template v-if="pendingSelected.length > 0">
             <UButton
               type="button"
               color="success"
-              icon="i-ph-check-circle"
               label="Luluskan"
-              class="min-h-11"
               :disabled="approving"
               :loading="approving"
               data-testid="users-bulk-approve"
@@ -598,9 +597,7 @@ const COLUMNS: TableColumn<UserRow>[] = [
               type="button"
               color="error"
               variant="soft"
-              icon="i-ph-x-circle"
               label="Tolak"
-              class="min-h-11"
               :disabled="approving"
               data-testid="users-bulk-reject"
               @click="openBulk(pendingSelected)"
@@ -615,8 +612,8 @@ const COLUMNS: TableColumn<UserRow>[] = [
             data-testid="users-bulk-delete"
             @click="openBulk([...selected])"
           />
-        </div>
-      </div>
+        </DsCluster>
+      </DsCluster>
     </DsPanel>
 
     <DsLoadError

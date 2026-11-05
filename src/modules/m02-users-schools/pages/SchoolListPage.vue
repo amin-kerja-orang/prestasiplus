@@ -286,7 +286,6 @@ const COLUMNS: TableColumn<SchoolRow>[] = [
         v-model="includePrimary"
         name="includePrimary"
         label="Tunjuk sekolah rendah (SK, SJK)"
-        class="min-h-11 items-center"
         data-testid="schools-include-primary"
       />
     </DsFilterBar>
