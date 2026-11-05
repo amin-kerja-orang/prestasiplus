@@ -127,16 +127,16 @@ const csrf = z.object({
   'X-CSRF-Token': z.string().min(1).meta({ description: 'Value of Session.csrf; required on mutating requests.' }),
 })
 const CodeParams = z.object({
-  code: z.string().min(1).meta({ description: 'Curriculum subject code (BM, MATH, ...), case-insensitive. An unknown code is 404 "Not Found.".' }),
+  code: z.string().min(1).meta({ description: 'Curriculum subject code (BM, MATH, ...), case-insensitive. An unknown code is 404 "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?".' }),
 })
 const MockParams = z.object({
-  id: IdSchema.meta({ description: 'Mock exam id. An unknown id or another user\'s mock is 404 "Not Found." (BR-M06-26).' }),
+  id: IdSchema.meta({ description: 'Mock exam id. An unknown id or another user\'s mock is 404 "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (BR-M06-26).' }),
 })
 
-const UNAUTHORIZED = err('UNAUTHORIZED "Unauthenticated." (no valid session).')
+const UNAUTHORIZED = err('UNAUTHORIZED "Sesi anda telah tamat. Sila log masuk semula." (no valid session).')
 const FORBIDDEN_CSRF = err('FORBIDDEN with code CSRF_INVALID (missing or wrong X-CSRF-Token).')
-const NOT_FOUND = err('NOT_FOUND "Not Found."')
-const NOT_FOUND_MOCK = err('NOT_FOUND "Not Found." (unknown id, or a mock that belongs to another user).')
+const NOT_FOUND = err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?"')
+const NOT_FOUND_MOCK = err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (unknown id, or a mock that belongs to another user).')
 
 /**
  * Registers the 14 M06 routes of BE-41 (SPM hub). All routes need a signed-in user of any role;

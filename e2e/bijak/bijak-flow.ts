@@ -9,7 +9,7 @@
  */
 import type { Page } from '@playwright/test'
 
-import { expect } from '../fixtures/test'
+import { APP_BOOT_TIMEOUT_MS, expect } from '../fixtures/test'
 import { expectNoHorizontalScroll, H_SCROLL_SAMPLE_GAP_MS, H_SCROLL_SAMPLES } from '../support'
 
 /**
@@ -22,9 +22,18 @@ export const HTTP_MODE = !!(API_BASE || process.env.BASE_URL)
 
 /**
  * Http-mode twin of `expectNoHorizontalScroll` (e2e/support/assertions.ts): same sampling, but the
- * app has booted when `#app.__vue_app__` exists; there is no `window.__mock` in http mode.
+ * app has booted when `#app.__vue_app__` exists; there is no `window.__mock` in http mode. A caller
+ * may come straight from `page.goto`, so it waits for the mount before the first sample.
  */
 export async function expectNoHorizontalScrollHttp(page: Page): Promise<void> {
+  await page.waitForFunction(
+    () => {
+      const app = document.querySelector('#app') as (Element & { __vue_app__?: unknown }) | null
+      return !!app?.__vue_app__
+    },
+    null,
+    { timeout: APP_BOOT_TIMEOUT_MS },
+  )
   const samples: number[] = []
   for (let i = 0; i < H_SCROLL_SAMPLES; i++) {
     if (i > 0) await page.waitForTimeout(H_SCROLL_SAMPLE_GAP_MS)

@@ -33,6 +33,10 @@ import {
   GAMIFICATION_MESSAGES,
   GamificationAchievementsSchema,
   GamificationAchievementsQuerySchema,
+  GAMIFICATION_CLAIM_ERROR_CODES,
+  GAMIFICATION_CLAIM_ERRORS,
+  GamificationChallengeClaimRequestSchema,
+  GamificationChallengeClaimResultSchema,
   GamificationChallengesResponseSchema,
   GamificationConvertRequestSchema,
   GamificationConvertResultSchema,
@@ -161,6 +165,8 @@ describe('student: dashboard and convert', () => {
     expect(GamificationConvertRequestSchema.safeParse({ syilingAmount: 5.5 }).success).toBe(false)
     expect(GamificationConvertRequestSchema.safeParse({ syilingAmount: '50' }).success).toBe(false)
     expect(GamificationConvertRequestSchema.safeParse({}).success).toBe(false)
+    expect(GamificationConvertRequestSchema.safeParse({ syilingAmount: 50, clientUuid: '7f3c2a10-5b1e-4c6d-9a2f-1e8b7c6d5a40' }).success).toBe(true)
+    expect(GamificationConvertRequestSchema.safeParse({ syilingAmount: 50, clientUuid: 'not-a-uuid' }).success).toBe(false)
   })
 
   it('parses the convert result', () => {
@@ -188,6 +194,28 @@ describe('student: challenges, leaderboard, achievements, share cards, referral'
     expect(GamificationChallengesResponseSchema.safeParse(ok).success).toBe(true)
     expect(GamificationChallengesResponseSchema.safeParse({ data: [challenge], meta }).success).toBe(false)
     expect(GamificationChallengesResponseSchema.safeParse({ data: [{ ...challenge, difficulty: 'expert' }], meta: ok.meta }).success).toBe(false)
+  })
+
+  it('takes optional claimed and meta.claimed, and still parses a response without them', () => {
+    const with_ = { data: [{ ...challenge, claimed: true }], meta: { completed: 1, active: 1, claimed: 1 } }
+    expect(GamificationChallengesResponseSchema.safeParse(with_).success).toBe(true)
+    expect(GamificationChallengesResponseSchema.safeParse({ data: [{ ...challenge, claimed: 'yes' }], meta: { completed: 1, active: 1 } }).success).toBe(false)
+    expect(GamificationChallengesResponseSchema.safeParse({ data: [challenge], meta: { completed: 1, active: 1, claimed: -1 } }).success).toBe(false)
+  })
+
+  it('validates the claim body and result of API-GAME-11; the body key is optional', () => {
+    expect(GamificationChallengeClaimRequestSchema.safeParse({}).success).toBe(true)
+    expect(GamificationChallengeClaimRequestSchema.safeParse({ clientUuid: '7f3c2a10-5b1e-4c6d-9a2f-1e8b7c6d5a40' }).success).toBe(true)
+    expect(GamificationChallengeClaimRequestSchema.safeParse({ clientUuid: 'not-a-uuid' }).success).toBe(false)
+    expect(GamificationChallengeClaimResultSchema.safeParse({ claimed: true, rewardSyiling: 15, rewardXp: 10 }).success).toBe(true)
+    expect(GamificationChallengeClaimResultSchema.safeParse({ claimed: false, rewardSyiling: 15, rewardXp: 10 }).success).toBe(false)
+    expect(GamificationChallengeClaimResultSchema.safeParse({ claimed: true, rewardSyiling: 15 }).success).toBe(false)
+  })
+
+  it('carries the exact claim errors (ERR-GAME-18, ERR-GAME-19)', () => {
+    expect(Object.keys(GAMIFICATION_CLAIM_ERRORS).sort()).toEqual([...GAMIFICATION_CLAIM_ERROR_CODES].sort())
+    expect(GAMIFICATION_CLAIM_ERRORS.CHALLENGE_NOT_DONE).toEqual({ status: 409, message: 'Cabaran belum selesai.' })
+    expect(GAMIFICATION_CLAIM_ERRORS.CHALLENGE_CLAIMED).toEqual({ status: 409, message: 'Ganjaran sudah dituntut.' })
   })
 
   it('parses the leaderboard podium and rows with fictitious names', () => {
@@ -327,6 +355,8 @@ describe('admin: students, award, transactions', () => {
       xp: 45,
     }
     expect(GamificationAdminStudentsResponseSchema.safeParse({ data: [row], meta }).success).toBe(true)
+    expect(GamificationAdminStudentsResponseSchema.safeParse({ data: [{ ...row, streak: 3 }], meta }).success).toBe(true)
+    expect(GamificationAdminStudentsResponseSchema.safeParse({ data: [{ ...row, streak: -1 }], meta }).success).toBe(false)
     expect(GamificationAdminStudentsQuerySchema.parse({ search: 'ain', sort: 'level', page: '2' })).toEqual({ search: 'ain', sort: 'level', page: 2 })
     expect(GamificationAdminStudentsQuerySchema.safeParse({ page: '0' }).success).toBe(false)
   })
@@ -443,6 +473,13 @@ describe('openapi registration', () => {
     has('/gamification/achievements', 'get')
     has('/gamification/share-cards', 'get')
     has('/gamification/referral', 'get')
+  })
+
+  it('contains the claim of API-GAME-11, with its body optional', () => {
+    has('/gamification/challenges/{id}/claim', 'post')
+    const post = doc.paths['/gamification/challenges/{id}/claim']!.post as { requestBody: { required: boolean }; responses: Record<string, unknown> }
+    expect(post.requestBody.required).toBe(false)
+    expect(Object.keys(post.responses)).toEqual(['200', '401', '403', '404', '409', '422'])
   })
 
   it('contains the 13 admin economy and 6 admin operations operations', () => {
