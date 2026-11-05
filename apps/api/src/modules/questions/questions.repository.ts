@@ -31,7 +31,7 @@ import type {
   StructuredListFilter,
   ViewMode,
 } from './types'
-import { STIMULUS_KINDS } from './types'
+import { STIMULUS_KINDS, type TextbookRef } from './types'
 
 /** Columns of `question_versions` a writer may set (ids are bigint, the service already parsed them). */
 export interface VersionDraft {
@@ -54,6 +54,10 @@ export interface VersionDraft {
   tagReview: boolean
   catalogueVersion: string | null
   difficultyTp: number | null
+  /** DM-47: the typed Kesukaran 1..5, written on every save (null only when nothing typed and no TP exists). */
+  difficultyLevel: number | null
+  /** DM-56: `undefined` keeps what is stored (a new version inherits it); an object writes the jsonb and the three int columns; `null` clears them. */
+  textbookRef?: TextbookRef | null
   sourcePage: number | null
   setLabel: string | null
   /**
@@ -949,7 +953,8 @@ export class QuestionsRepository {
    */
   async gateFacts(questionId: string, versionNo: number): Promise<GateFacts> {
     const key = bi(questionId)
-    const none: GateFacts = { unconfirmedLowConfidenceFields: [], hasOpenDuplicateFlag: false, mediaResolved: true, lastEditedByAi: false, declaredMarks: null }
+    // Unknown id or version: no DSKP nodes or chapters are assumed, so the R-DSKP and NO_CHAPTER rows stay inert (the gate has nothing to check).
+    const none: GateFacts = { unconfirmedLowConfidenceFields: [], hasOpenDuplicateFlag: false, mediaResolved: true, lastEditedByAi: false, declaredMarks: null, hasDskpNodes: false, hasChapters: false, spOutsideUnit: [] }
     if (key === null) return none
     const rows = await this.db.$queryRaw<
       {
@@ -959,9 +964,20 @@ export class QuestionsRepository {
         low_fields: string[] | null
         confirmed_fields: string[] | null
         media_ok: boolean
+        has_dskp: boolean
+        has_chapters: boolean
+        sp_outside: string[] | null
       }[]
     >`
       SELECT v.last_editor, v.declared_marks,
+             EXISTS (SELECT 1 FROM curriculum_nodes cn WHERE cn.subject_id = v.subject_id AND cn.education_level_id = v.education_level_id) AS has_dskp,
+             EXISTS (SELECT 1 FROM chapters ch WHERE ch.subject_id = v.subject_id AND ch.education_level_id = v.education_level_id AND ch.is_active AND ch.in_tree) AS has_chapters,
+             CASE WHEN v.unit_node_id IS NULL THEN NULL ELSE ARRAY(
+               SELECT sp.code FROM question_version_sp_nodes qs JOIN curriculum_nodes sp ON sp.id = qs.node_id
+                WHERE qs.question_version_id = v.id
+                  AND NOT EXISTS (WITH RECURSIVE up(id, parent_id) AS (SELECT sp.id, sp.parent_id UNION ALL SELECT n.id, n.parent_id FROM curriculum_nodes n JOIN up ON n.id = up.parent_id)
+                                  SELECT 1 FROM up WHERE up.id = v.unit_node_id)
+                ORDER BY sp.code) END AS sp_outside,
              EXISTS (SELECT 1 FROM intake_items di JOIN duplicate_links dl ON dl.item_id = di.id
                       WHERE di.question_id = q.id AND dl.decision = 'pending' AND dl.kind IN ('exact', 'near')) AS duplicate_open,
              ii.low_fields, ii.confirmed_fields,
@@ -981,7 +997,21 @@ export class QuestionsRepository {
       mediaResolved: r.media_ok,
       lastEditedByAi: r.last_editor === 'ai',
       declaredMarks: r.declared_marks,
+      hasDskpNodes: r.has_dskp,
+      hasChapters: r.has_chapters,
+      spOutsideUnit: r.sp_outside ?? [],
     }
+  }
+
+  /** R-DSKP and the Bab rule for a version that is not stored yet (the create-as-approved shortcut): the same two lookups as `gateFacts`. */
+  async curriculumFactsFor(subjectId: string | null, levelId: string | null): Promise<{ hasDskpNodes: boolean; hasChapters: boolean }> {
+    const subject = subjectId === null ? null : bi(subjectId)
+    const level = levelId === null ? null : bi(levelId)
+    if (subject === null || level === null) return { hasDskpNodes: false, hasChapters: false }
+    const rows = await this.db.$queryRaw<{ has_dskp: boolean; has_chapters: boolean }[]>`
+      SELECT EXISTS (SELECT 1 FROM curriculum_nodes WHERE subject_id = ${subject} AND education_level_id = ${level}) AS has_dskp,
+             EXISTS (SELECT 1 FROM chapters WHERE subject_id = ${subject} AND education_level_id = ${level} AND is_active AND in_tree) AS has_chapters`
+    return { hasDskpNodes: rows[0]?.has_dskp === true, hasChapters: rows[0]?.has_chapters === true }
   }
 
   /** The AI service's write of `explanation_ms` on a version nobody is served (a draft or a review version): in place, marked as the AI's. */
@@ -1119,6 +1149,7 @@ export class QuestionsRepository {
         textbookBab: true,
         textbookTingkatan: true,
         textbookPage: true,
+        textbookRef: true,
         sourcePaperId: true,
         sourceFileId: true,
         sourceRegion: true,
@@ -1215,7 +1246,7 @@ export class QuestionsRepository {
     questionId: string,
     versionNo: number,
     status: QuestionStatus,
-    extra: { archiveReason?: 'superseded' | 'withdrawn' | 'source_takedown' | null; publishedAt?: Date | null } = {},
+    extra: { archiveReason?: 'superseded' | 'withdrawn' | 'source_takedown' | null; publishedAt?: Date | null; rejectionReason?: string | null } = {},
   ): Promise<void> {
     const id = bi(questionId)
     if (id === null) return
@@ -1225,6 +1256,7 @@ export class QuestionsRepository {
         status,
         archiveReason: status === 'archived' ? (extra.archiveReason ?? null) : null,
         ...(extra.publishedAt === undefined ? {} : { publishedAt: extra.publishedAt }),
+        ...(extra.rejectionReason === undefined ? {} : { rejectionReason: extra.rejectionReason }),
       },
     })
     // DM-05: detectors also run when a version is approved (the content may have changed since the last write, e.g. by a group move).
@@ -1405,6 +1437,12 @@ export class QuestionsRepository {
       tagReview: c.tagReview,
       catalogueVersion: c.catalogueVersion,
       difficultyTp: c.difficultyTp,
+      difficultyLevel: c.difficultyLevel,
+      ...(c.textbookRef === undefined
+        ? {}
+        : c.textbookRef === null
+          ? { textbookRef: Prisma.DbNull, textbookBab: null, textbookTingkatan: null, textbookPage: null }
+          : { textbookRef: c.textbookRef as unknown as Prisma.InputJsonValue, textbookBab: smallInt(c.textbookRef.bab), textbookTingkatan: smallInt(c.textbookRef.tingkatan.replace(/^T/i, '')), textbookPage: c.textbookRef.mukaSurat }),
       sourcePage: c.sourcePage,
       setLabel: c.setLabel,
       ...(c.paperCode === undefined ? {} : { paperCode: c.paperCode }),
@@ -1441,6 +1479,7 @@ export class QuestionsRepository {
       textbookBab: number | null
       textbookTingkatan: number | null
       textbookPage: number | null
+      textbookRef: unknown
       sourcePaperId: bigint | null
       sourceFileId: bigint | null
       sourceRegion: unknown
@@ -1460,7 +1499,7 @@ export class QuestionsRepository {
         ...this.versionColumns(columns),
         ...(inherited === undefined
           ? {}
-          : { ...inherited, sourceRegion: inherited.sourceRegion === null || inherited.sourceRegion === undefined ? undefined : (inherited.sourceRegion as object) }),
+          : { ...inheritedOf(inherited, draft.textbookRef !== undefined), sourceRegion: inherited.sourceRegion === null || inherited.sourceRegion === undefined ? undefined : (inherited.sourceRegion as object) }),
         ...(provenance === undefined
           ? {}
           : {
@@ -1727,6 +1766,9 @@ export class QuestionsRepository {
       tagReview: v.tagReview,
       catalogueVersion: v.catalogueVersion,
       difficultyTp: v.difficultyTp,
+      difficultyLevel: v.difficultyLevel,
+      textbookRef: textbookRefOf(v.textbookRef),
+      rejectionReason: v.rejectionReason,
       sourcePage: v.sourcePage,
       setLabel: v.setLabel,
       sourceFile: null,
@@ -1752,3 +1794,27 @@ export class QuestionsRepository {
   }
 }
 
+
+/**
+ * The provenance a new version inherits from the one it edits. The textbook reference (jsonb and its three int columns) is inherited only when
+ * the save did not send one (`textbookSent` false); a sent value, or a cleared one, is written by `versionColumns` instead.
+ */
+function inheritedOf<T extends { textbookBab: number | null; textbookTingkatan: number | null; textbookPage: number | null; textbookRef: unknown }>(inherited: T, textbookSent: boolean) {
+  const { textbookBab, textbookTingkatan, textbookPage, textbookRef, ...rest } = inherited
+  if (textbookSent) return rest
+  return { ...rest, textbookBab, textbookTingkatan, textbookPage, textbookRef: textbookRef === null || textbookRef === undefined ? Prisma.DbNull : (textbookRef as Prisma.InputJsonValue) }
+}
+
+/** The stored `textbook_ref` jsonb as a `TextbookRef`, or null when it is empty or not shaped like one. */
+function textbookRefOf(raw: unknown): TextbookRef | null {
+  if (typeof raw !== 'object' || raw === null) return null
+  const r = raw as Record<string, unknown>
+  if (typeof r.bab !== 'string' || typeof r.tingkatan !== 'string' || typeof r.mukaSurat !== 'number') return null
+  return { bab: r.bab, tingkatan: r.tingkatan, mukaSurat: r.mukaSurat, ...(typeof r.hingga === 'number' ? { hingga: r.hingga } : {}) }
+}
+
+/** The int column twin of a textbook field: the number when the text is all digits and fits a smallint, else null (the jsonb keeps the text). */
+function smallInt(text: string): number | null {
+  const t = text.trim()
+  return /^\d{1,5}$/.test(t) && Number(t) <= 32767 ? Number(t) : null
+}

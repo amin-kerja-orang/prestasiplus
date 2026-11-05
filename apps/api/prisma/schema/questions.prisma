@@ -186,6 +186,12 @@ model QuestionVersion {
   textbookBab       Int?    @map("textbook_bab") @db.SmallInt
   textbookTingkatan Int?    @map("textbook_tingkatan") @db.SmallInt
   textbookPage      Int?    @map("textbook_page")
+  /// DM-47: the typed Kesukaran 1..5 (check); TP stays in difficultyTp. NULL on legacy rows until the U-OP-19 backfill.
+  difficultyLevel   Int?    @map("difficulty_level") @db.SmallInt
+  /// DM-56: Rujukan buku teks {bab, tingkatan, mukaSurat, hingga?}; the three int columns above are written with it.
+  textbookRef       Json?   @map("textbook_ref")
+  /// DM-58: why the version was sent back from Semakan to Draf (5..500 characters); cleared on the next send for review.
+  rejectionReason   String? @map("rejection_reason")
 
   // Provenance (all optional).
   year          Int?    @db.SmallInt

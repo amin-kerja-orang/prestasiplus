@@ -44,6 +44,11 @@ services:
       # Demo accounts with a published password: dev and e2e only. The production base job never sets this.
       ALLOW_DEMO_SEED: 'true'
 
+  db:
+    # E2E/CI only: the trial-exhausted spec resets a pupil with psql from the runner (E2E_DATABASE_URL), loopback only.
+    ports:
+      - '127.0.0.1:${E2E_DB_PORT:-55433}:5432'
+
   api:
     environment:
       COOKIE_SECURE: ${COOKIE_SECURE:-false}

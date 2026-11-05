@@ -40,9 +40,9 @@ const csrf = z.object({
   'X-CSRF-Token': z.string().min(1).meta({ description: 'Value of Session.csrf; required on mutating requests.' }),
 })
 
-const UNAUTHORIZED = err('UNAUTHORIZED "Unauthenticated." (no valid session).')
-const GATE_403 = err('FORBIDDEN "This action is unauthorized." (the caller has no access to this level).')
-const GATE_404 = err('NOT_FOUND "Not Found." (the level is not exactly T1 or T4; checked before the access test).')
+const UNAUTHORIZED = err('UNAUTHORIZED "Sesi anda telah tamat. Sila log masuk semula." (no valid session).')
+const GATE_403 = err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (the caller has no access to this level).')
+const GATE_404 = err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (the level is not exactly T1 or T4; checked before the access test).')
 const RATE_LIMITED = {
   description:
     'RATE_LIMITED with retryAfter (seconds). The Retry-After header carries the same value. Limited per user.',
@@ -121,7 +121,7 @@ export function registerPkskStudentPaths(registry: OpenAPIRegistry): void {
       401: UNAUTHORIZED,
       403: GATE_403,
       404: err(
-        'NOT_FOUND "Not Found." (bad level, checked first; or an unknown domain code).',
+        'NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (bad level, checked first; or an unknown domain code).',
       ),
     },
   })
@@ -151,8 +151,8 @@ export function registerPkskStudentPaths(registry: OpenAPIRegistry): void {
     responses: {
       201: json(envelopeOf(PkskPracticeResultSchema), 'Scored and recorded.', NO_STORE),
       401: UNAUTHORIZED,
-      403: err('FORBIDDEN "This action is unauthorized." (no access to the level), or CSRF_INVALID (missing or wrong X-CSRF-Token).'),
-      404: err('NOT_FOUND "Not Found." (bad level, checked first; or an unknown domain code).'),
+      403: err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (no access to the level), or CSRF_INVALID (missing or wrong X-CSRF-Token).'),
+      404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (bad level, checked first; or an unknown domain code).'),
       422: err(
         'VALIDATION_ERROR "Jawapan tidak sah." with fields.answers "Jawapan tidak sah." (empty list, duplicate questionId, mistyped field, unknown key, or any question that is not an approved PKSK question of this domain and level). Nothing is written.',
       ),
@@ -185,7 +185,7 @@ export function registerPkskStudentPaths(registry: OpenAPIRegistry): void {
     responses: {
       201: json(envelopeOf(PkskExamAttemptSchema), 'The stored attempt.', NO_STORE),
       401: UNAUTHORIZED,
-      403: err('FORBIDDEN "This action is unauthorized." (no access to the level), or CSRF_INVALID (missing or wrong X-CSRF-Token).'),
+      403: err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (no access to the level), or CSRF_INVALID (missing or wrong X-CSRF-Token).'),
       404: GATE_404,
       422: err(
         'VALIDATION_ERROR "Jawapan tidak sah." with fields.answers "Jawapan tidak sah." (invalid list, unknown / unapproved / other-level question, or more answers in a Bahagian than 30 / 70 / 1). Nothing is written.',

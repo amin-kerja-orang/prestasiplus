@@ -226,6 +226,23 @@ export const QuestionKertasSchema = z.enum(['1', '2', '3'], 'Kertas tidak sah.')
 /** Id of an already uploaded `question_image` file (`POST /files?purpose=question_image`); never a client URL. */
 const ImageFileId = IdSchema.nullable()
 
+/** DM-56 `Rujukan buku teks` (45 T-11): Bab text (at most 20 characters), Tingkatan T1 to T5, Muka surat 1 to 999 and an optional last page. */
+export const QUESTION_TEXTBOOK_PAGE_MESSAGE = 'Muka surat mesti nombor antara 1 dan 999.'
+export const QuestionTextbookRefSchema = z
+  .object({
+    bab: z.string().trim().min(1).max(20),
+    tingkatan: z.enum(['T1', 'T2', 'T3', 'T4', 'T5']),
+    mukaSurat: z.coerce.number({ error: QUESTION_TEXTBOOK_PAGE_MESSAGE }).int(QUESTION_TEXTBOOK_PAGE_MESSAGE).min(1, QUESTION_TEXTBOOK_PAGE_MESSAGE).max(999, QUESTION_TEXTBOOK_PAGE_MESSAGE),
+    hingga: z.coerce.number({ error: QUESTION_TEXTBOOK_PAGE_MESSAGE }).int(QUESTION_TEXTBOOK_PAGE_MESSAGE).min(1, QUESTION_TEXTBOOK_PAGE_MESSAGE).max(999, QUESTION_TEXTBOOK_PAGE_MESSAGE).optional(),
+  })
+  .meta({ id: 'QuestionTextbookRef', description: 'Rujukan buku teks: {bab, tingkatan, mukaSurat, hingga?} (DM-56).' })
+export type QuestionTextbookRef = z.infer<typeof QuestionTextbookRefSchema>
+
+/** The compact form of a textbook reference shown in the scheme panel: `B3T4 M56`, or `B3T4 M56-58` when it spans pages. */
+export function textbookRefCompact(ref: QuestionTextbookRef): string {
+  return `B${ref.bab}${ref.tingkatan} M${ref.mukaSurat}${ref.hingga === undefined ? '' : `-${ref.hingga}`}`
+}
+
 /* ------------------------------------------------------------------------------ question, detail */
 
 /** Admin/editor view: carries the answer key (`correctAnswer`, `tfAnswer`, `correctAnswerText`, `parts[].key`). */
@@ -286,6 +303,10 @@ export const QuestionSchema = z
     numberLabel: z.string().nullable().optional(),
     /** S1-T07 (API-Q-12, DM-05): the open stimulus flags; empty or absent = none. */
     flags: z.array(StimulusFlagSchema).optional(),
+    /** DM-56 Rujukan buku teks (null = none). */
+    textbookRef: QuestionTextbookRefSchema.nullable().optional(),
+    /** DM-58: why an admin sent the question back from Semakan to Draf; with the status `draft` it is the chip "Ditolak". Null otherwise. */
+    rejectionReason: z.string().nullable().optional(),
   })
   .meta({ id: 'Question' })
 
@@ -409,6 +430,8 @@ const baseInput = z.object({
   /** R1-B05: cognitive level of the single leaf of a flat question (a `parts` body carries it per leaf). */
   cognitiveLevel: QuestionCognitiveLevelSchema.nullable().optional(),
   stimulusGroupId: IdSchema.nullable().optional(),
+  /** DM-56 Rujukan buku teks; null clears it, omitted keeps it. */
+  textbookRef: QuestionTextbookRefSchema.nullable().optional(),
 })
 
 /**

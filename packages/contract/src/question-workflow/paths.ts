@@ -191,17 +191,17 @@ const csrf = z.object({
 })
 const idParams = z.object({ id: IdSchema })
 
-const UNAUTHORIZED = err('UNAUTHORIZED "Unauthenticated." (no valid session).')
-const FORBIDDEN_ADMIN = err('FORBIDDEN "This action is unauthorized." (role is not admin; Admin Sekolah and every other role included).')
+const UNAUTHORIZED = err('UNAUTHORIZED "Sesi anda telah tamat. Sila log masuk semula." (no valid session).')
+const FORBIDDEN_ADMIN = err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not admin; Admin Sekolah and every other role included).')
 const FORBIDDEN_ADMIN_WRITE = err(
-  'FORBIDDEN "This action is unauthorized." (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).',
+  'FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).',
 )
-const FORBIDDEN_TEACHER = err('FORBIDDEN "This action is unauthorized." (role is not teacher or admin).')
+const FORBIDDEN_TEACHER = err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not teacher or admin).')
 const FORBIDDEN_TEACHER_WRITE = err(
-  'FORBIDDEN "This action is unauthorized." (role is not teacher or admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).',
+  'FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not teacher or admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).',
 )
 const FORBIDDEN_CSRF = err('CSRF_INVALID (missing or wrong X-CSRF-Token).')
-const NOT_FOUND = err('NOT_FOUND "Not Found." (unknown id, or a segment that does not match the route).')
+const NOT_FOUND = err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (unknown id, or a segment that does not match the route).')
 
 const CSV_422 =
   'VALIDATION_ERROR with fields.csvFile: "Sila pilih fail CSV." (missing), "Fail mesti jenis CSV atau TXT dan tidak melebihi 5MB." (extension, MIME or size), "Fail CSV mesti mempunyai kolum <missing columns joined by comma and space>." or "Fail CSV tiada baris data."'
@@ -242,7 +242,7 @@ export function registerQuestionWorkflowPaths(registry: OpenAPIRegistry): void {
       201: json(QuestionReportCreatedSchema, 'Report filed: { success: true, message: "Laporan berjaya dihantar." }.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_CSRF,
-      404: err('NOT_FOUND "Not Found." (the question does not exist).'),
+      404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (the question does not exist).'),
       422: err(
         'VALIDATION_ERROR with fields: questionType "Jenis soalan tidak sah."; questionId "Sila pilih soalan."; reasons "Sila pilih sekurang-kurangnya satu sebab laporan." or "Sebab laporan tidak sah."; source "Sumber laporan tidak sah."; comment "Komen tidak boleh melebihi 500 aksara."; quizSessionId and roomCode "Rujukan sesi atau bilik tidak sah.". Top-level message is the first field message plus " (and N more error(s))" when several.',
       ),
@@ -405,7 +405,7 @@ export function registerQuestionWorkflowPaths(registry: OpenAPIRegistry): void {
       200: json(DiagramAuditMutationSchema, 'Image attached; status is the flash text.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_ADMIN_WRITE,
-      404: err('NOT_FOUND "Not Found." (kind is not mcq or structured, or the question does not exist; a PKSK MCQ row is also 404).'),
+      404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (kind is not mcq or structured, or the question does not exist; a PKSK MCQ row is also 404).'),
       422: err(
         `VALIDATION_ERROR fields.image "${DIAGRAM_AUDIT_MESSAGES.fileRequired}" (missing or not an image) or "${DIAGRAM_AUDIT_MESSAGES.fileType}".`,
       ),
@@ -423,7 +423,7 @@ export function registerQuestionWorkflowPaths(registry: OpenAPIRegistry): void {
       200: json(DiagramAuditMutationSchema, 'Dismissed; status is the flash text.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_ADMIN_WRITE,
-      404: err('NOT_FOUND "Not Found." (kind is not mcq or structured, or the question does not exist).'),
+      404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (kind is not mcq or structured, or the question does not exist).'),
     },
   })
 
@@ -492,7 +492,7 @@ export function registerQuestionWorkflowPaths(registry: OpenAPIRegistry): void {
       200: json(MasterNoteActionResultSchema, 'Done.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_ADMIN_WRITE,
-      404: err('NOT_FOUND "Not Found." (unknown id, or an action that is not approve|regen|unflag).'),
+      404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (unknown id, or an action that is not approve|regen|unflag).'),
     },
   })
 
@@ -512,7 +512,7 @@ export function registerQuestionWorkflowPaths(registry: OpenAPIRegistry): void {
       200: json(QuestionWorkflowAiExplanationResultSchema, 'Generated, or kept.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_ADMIN_WRITE,
-      404: err('NOT_FOUND "Not Found." (unknown question, or a PKSK row).'),
+      404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (unknown question, or a PKSK row).'),
     },
   })
 }

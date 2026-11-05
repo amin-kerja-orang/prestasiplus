@@ -11,6 +11,7 @@ import type {
   Subtopic,
   Topic,
 } from '../../db/generated/client'
+import { Prisma } from '../../db/generated/client'
 import { PrismaService } from '../../db/prisma.service'
 import { byOrderThenId, chapterOrder, compareIds, MAP_GRADES, topicOrder } from './rules'
 
@@ -21,6 +22,20 @@ export type { Chapter, CurriculumNode, CurriculumTpDescriptor, EducationLevel, L
 
 /** A subject with the ids of its linked levels, in level order (BR-08). */
 export type SubjectWithLevels = Subject & { educationLevelIds: bigint[] }
+
+/** One offered Subjek x Tingkatan with its live DSKP counts (API-DSKP-11, S4-T02). */
+export interface DskpReportRow {
+  subjectId: bigint
+  subjectName: string
+  levelId: bigint
+  levelName: string
+  nodes: number
+  bab: number
+  sk: number
+  sp: number
+  tp: number
+  tpGeneral: number
+}
 
 export interface LevelInput {
   name: string
@@ -495,6 +510,53 @@ export class CurriculumRepository {
       if (current) chain.push(current)
     }
     return chain
+  }
+
+  /**
+   * API-DSKP-11 (S4-T02): every offered Subjek x Tingkatan (an active subject linked through `subject_levels`
+   * to an active, non-primary level), optionally narrowed to one subject and/or level, with live counts:
+   * all nodes, `unit` (the Bab, D109), `sk`, `sp`, the TP descriptor rows of those nodes and the subject's
+   * general-level rows (`node_id` null). Nothing is stored (D11/D12). Subject order, then level order.
+   */
+  async dskpReport(filter: { subjectId?: bigint; levelId?: bigint } = {}): Promise<DskpReportRow[]> {
+    const bySubject = filter.subjectId === undefined ? Prisma.empty : Prisma.sql`AND s.id = ${filter.subjectId}`
+    const byLevel = filter.levelId === undefined ? Prisma.empty : Prisma.sql`AND l.id = ${filter.levelId}`
+    const rows = await this.db.$queryRaw<
+      { subject_id: bigint; subject_name: string; level_id: bigint; level_name: string; nodes: number; bab: number; sk: number; sp: number; tp: number; tp_general: number }[]
+    >`
+      SELECT s.id AS subject_id, s.name AS subject_name, l.id AS level_id, l.name AS level_name,
+             COALESCE(n.total, 0)::int AS nodes, COALESCE(n.bab, 0)::int AS bab, COALESCE(n.sk, 0)::int AS sk, COALESCE(n.sp, 0)::int AS sp,
+             (SELECT count(*) FROM curriculum_tp_descriptors d JOIN curriculum_nodes dn ON dn.id = d.node_id
+               WHERE dn.subject_id = s.id AND dn.education_level_id = l.id)::int AS tp,
+             (SELECT count(*) FROM curriculum_tp_descriptors g WHERE g.subject_id = s.id AND g.node_id IS NULL)::int AS tp_general
+        FROM subject_levels sl
+        JOIN subjects s ON s.id = sl.subject_id AND s.is_active
+        JOIN education_levels l ON l.id = sl.education_level_id AND l.is_active AND l.stage <> 'primary'
+        LEFT JOIN LATERAL (
+          SELECT count(*) AS total, count(*) FILTER (WHERE c.kind = 'unit') AS bab,
+                 count(*) FILTER (WHERE c.kind = 'sk') AS sk, count(*) FILTER (WHERE c.kind = 'sp') AS sp
+            FROM curriculum_nodes c WHERE c.subject_id = s.id AND c.education_level_id = l.id
+        ) n ON true
+       WHERE true ${bySubject} ${byLevel}
+       ORDER BY s.sort_order, s.id, l.sort_order, l.id`
+    return rows.map((r) => ({
+      subjectId: r.subject_id,
+      subjectName: r.subject_name,
+      levelId: r.level_id,
+      levelName: r.level_name,
+      nodes: r.nodes,
+      bab: r.bab,
+      sk: r.sk,
+      sp: r.sp,
+      tp: r.tp,
+      tpGeneral: r.tp_general,
+    }))
+  }
+
+  /** TP descriptors of many nodes at once, in TP order (the `DSKP` tab node list, API-DSKP-11). */
+  tpDescriptorsOfNodes(nodeIds: readonly bigint[]): Promise<CurriculumTpDescriptor[]> {
+    if (nodeIds.length === 0) return Promise.resolve([])
+    return this.db.curriculumTpDescriptor.findMany({ where: { nodeId: { in: [...nodeIds] } }, orderBy: [{ nodeId: 'asc' }, { tp: 'asc' }] })
   }
 
   /** TP descriptors of a node (`nodeId`), or the subject's general levels when `nodeId` is null. */

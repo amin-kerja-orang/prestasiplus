@@ -12942,6 +12942,16 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/admin/curriculum/dskp",
+      "method": "GET",
+      "path": "/api/admin/curriculum/dskp",
+      "api_id": "API-DSKP-11",
+      "status": "canonical",
+      "sector": "S4",
+      "file": "apps/api/src/modules/curriculum/admin.controller.ts",
+      "approved_by_card": "S4-T02"
+    },
+    {
       "key": "GET /api/admin/curriculum/chapters/:p",
       "method": "GET",
       "path": "/api/admin/curriculum/chapters/:id",
