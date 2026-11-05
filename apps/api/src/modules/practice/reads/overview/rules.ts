@@ -34,6 +34,12 @@ export function round(value: number, digits: number): number {
   return Math.round((value + Number.EPSILON) * f) / f
 }
 
+/** FR-MUR-2-11: the "Tahap Pendidikan" pills list Tingkatan 1 to 5 only (no Darjah). */
+export const DASHBOARD_LEVEL_CODES: readonly string[] = ['T1', 'T2', 'T3', 'T4', 'T5']
+
+/** FR-MUR-2-2 / decision 11: pooled accuracy to ONE decimal (a whole number has no fraction); null with 0 answers. */
+export const pooledAccuracy = (correct: number, answered: number): number | null => (answered === 0 ? null : round(pct(correct, answered), 1))
+
 /** Percentage `part / whole * 100`, or 0 when `whole` is 0. */
 export const pct = (part: number, whole: number): number => (whole === 0 ? 0 : (part / whole) * 100)
 

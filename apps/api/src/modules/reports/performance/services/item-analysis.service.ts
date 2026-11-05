@@ -11,13 +11,7 @@ import {
   schoolAccess,
   viewerSchoolId,
 } from '../domain/access-policy'
-import {
-  COUNTED_MODES,
-  DISCRIMINATION_GROUP_SHARE,
-  DISCRIMINATION_MIN_MEMBERS,
-  REDACTED_ID,
-  SCHOOL_QUESTION_CAP,
-} from '../domain/constants'
+import { COUNTED_MODES, ITEM_TINGKATAN_CODES, REDACTED_ID, SCHOOL_QUESTION_CAP } from '../domain/constants'
 import { canSeeName, isStaff, meetsCohort, nameFor } from '../domain/privacy'
 import {
   capPercent,
@@ -27,6 +21,7 @@ import {
   discriminationStatus,
   pct,
   round,
+  type DifficultyLevel,
 } from '../domain/rules'
 import { HeadcountFactsService } from '../headcount/headcount-facts.service'
 import {
@@ -40,7 +35,7 @@ import {
 } from '../ports'
 import type { HeadcountEntryView, HeadcountFacts } from './headcount-facts.types'
 import { gpsByYear, liveEntries, schoolGps } from './headcount-figures'
-import { groupBy, nameMap, ownPupilIds, toCard } from './support'
+import { discriminationOf, groupBy, itemStats, nameMap, ownPupilIds, pooledByPupil, toCard } from './support'
 import type {
   Ctx,
   ItemAnalysisSchoolQuery,
@@ -48,6 +43,9 @@ import type {
   PerformanceClassItemAnalysis,
   PerformanceSchoolItemAnalysis,
 } from './types'
+
+type ItemTingkatan = NonNullable<PerformanceSchoolItemAnalysis['tingkatan']>
+const TINGKATAN_LABELS: readonly ItemTingkatan[] = ITEM_TINGKATAN_CODES.map((c) => c.toUpperCase() as ItemTingkatan)
 
 const isCorrect = (f: BijakItemFact): boolean => f.awarded >= f.max
 
@@ -75,7 +73,12 @@ function popularWrong(facts: readonly BijakItemFact[]): { letter: OptionLetter; 
 
 const emptySchoolRef = (id: string): SchoolRef => ({ id, name: '', code: null, type: '', district: null, state: '' })
 
-/** Analisa Item (S9, S11). Exported for BE-21. school(): 403 for role or scope, 404 when the viewer has no school; classAnalysis(): 403 for unknown or not-openable (same status, no leak). schoolId undefined = the viewer's own school (variant own). */
+/**
+ * Analisa Item (S9, S11). Exported for BE-21. school(): 403 for role or scope, 404 when the viewer has no school; classAnalysis(): 403 for unknown or not-openable (same status, no leak). schoolId undefined = the viewer's own school (variant own).
+ * S10-T03: every count (Cubaan, Betul, Salah, pupils, Soalan Diuji) and the discrimination index read the shared reader `answerFacts`, all modes (XS-8).
+ * The chosen letter, the option texts, the topic chips and the stem snapshot exist only in Bijak sittings: those display-only fields still come
+ * from the Bijak port where the question has a sitting fact (the stem falls back to the S1 question content), else they are empty.
+ */
 @Injectable()
 export class ItemAnalysisService {
   constructor(
@@ -84,6 +87,36 @@ export class ItemAnalysisService {
     @Inject(CLOCK) protected readonly clock: Clock,
     @Optional() @Inject(HeadcountFactsService) protected readonly facts?: HeadcountFacts,
   ) {}
+
+  /** Bijak snapshot facts of some questions for display (stem, options, topic, chosen letters), by question; none when no ids. */
+  private async bijakByQuestion(scope: { schoolIds?: string[]; userIds?: string[] }, questionIds: readonly string[]): Promise<Map<string, BijakItemFact[]>> {
+    if (questionIds.length === 0) return new Map()
+    return groupBy(await this.ports.bijak.items({ ...scope, questionIds, modes: COUNTED_MODES.items }), (i) => i.questionId)
+  }
+
+  /** Stem of the questions that have no Bijak snapshot, from the S1 question content (read-only); '' when unknown. */
+  private async stemsOf(questionIds: readonly string[]): Promise<Map<string, string>> {
+    if (questionIds.length === 0) return new Map()
+    const content = await this.ports.questionContent.questionContent(questionIds)
+    return new Map([...content].map(([id, c]) => [id, c.question.questionText]))
+  }
+
+  /** Tingkatan (T1 to T5) of each pupil: the level of an active class, else the grade level. */
+  private async levelsOfPupils(pupils: readonly { id: string; levelSlug: string | null }[]): Promise<Map<string, Set<string>>> {
+    const classIds = await this.ports.classes.classIdsOfStudents(pupils.map((u) => u.id))
+    const classes = new Map((await this.ports.classes.classesByIds([...new Set([...classIds.values()].flat())])).map((c) => [c.id, c]))
+    const out = new Map<string, Set<string>>()
+    for (const u of pupils) {
+      const levels = new Set<string>()
+      for (const cid of classIds.get(u.id) ?? []) {
+        const c = classes.get(cid)
+        if (c && c.isActive) levels.add(c.levelSlug)
+      }
+      if (levels.size === 0 && u.levelSlug !== null) levels.add(u.levelSlug)
+      out.set(u.id, levels)
+    }
+    return out
+  }
 
   /** Live headcount entries of a school; [] without the reader. With a tingkatan, only the entries of its pupils. */
   private async schoolEntries(schoolId: string, onlyPupils: ReadonlySet<string> | null): Promise<HeadcountEntryView[]> {
@@ -97,8 +130,9 @@ export class ItemAnalysisService {
   async school(ctx: Ctx, query: ItemAnalysisSchoolQuery, schoolId?: string): Promise<PerformanceSchoolItemAnalysis> {
     if (!ITEM_SCHOOL_ROLES.includes(ctx.role)) throw ApiError.of('FORBIDDEN')
     const variant = schoolId === undefined ? ('own' as const) : ('byId' as const)
+    const staff = isStaff(ctx.role)
     // Non-staff always get the all-levels view: three views of one school would let a small level be recovered by subtraction.
-    const tingkatan = isStaff(ctx.role) && (query.tingkatan === 'T4' || query.tingkatan === 'T5') ? query.tingkatan : null
+    const tingkatan = staff ? (TINGKATAN_LABELS.find((t) => t === query.tingkatan) ?? null) : null
 
     let targetId: string
     if (schoolId === undefined) {
@@ -121,131 +155,140 @@ export class ItemAnalysisService {
       throw ApiError.of('NOT_FOUND')
     }
 
-    // Pupils of the school, narrowed to the tingkatan (class level of an active class, else the grade level).
+    // Every answer of the school, all modes, in one read (XS-8). Tingkatan narrows the PUPILS (class level of an active class, else the grade level).
     const users = await this.directory.users(await this.directory.pupilIdsOfSchool(targetId))
     let pupils = [...users.values()].filter((u) => u.isActive)
-    if (tingkatan !== null) {
-      const slug = tingkatan.toLowerCase()
-      const classIds = await this.ports.classes.classIdsOfStudents(pupils.map((u) => u.id))
-      const classes = new Map((await this.ports.classes.classesByIds([...new Set([...classIds.values()].flat())])).map((c) => [c.id, c]))
-      pupils = pupils.filter((u) => {
-        const levels = new Set<string>()
-        for (const cid of classIds.get(u.id) ?? []) {
-          const c = classes.get(cid)
-          if (c && c.isActive) levels.add(c.levelSlug)
-        }
-        return levels.size > 0 ? levels.has(slug) : u.levelSlug === slug
-      })
+    let rows = await this.ports.answerFacts.answerFacts({ schoolIds: [targetId] })
+    let tingkatanOptions: ItemTingkatan[] = []
+    if (staff) {
+      const levels = await this.levelsOfPupils(pupils)
+      const withData = new Set(rows.map((r) => r.userId))
+      tingkatanOptions = TINGKATAN_LABELS.filter((t) => pupils.some((u) => withData.has(u.id) && levels.get(u.id)?.has(t.toLowerCase()) === true))
+      if (tingkatan !== null) {
+        pupils = pupils.filter((u) => levels.get(u.id)?.has(tingkatan.toLowerCase()) === true)
+        const keep = new Set(pupils.map((u) => u.id))
+        rows = rows.filter((r) => keep.has(r.userId))
+      }
     }
     const pupilIds = pupils.map((u) => u.id)
-    const scopeQuery = tingkatan === null ? { schoolIds: [targetId] } : { userIds: pupilIds }
-    const items = pupilIds.length === 0 && tingkatan !== null ? [] : await this.ports.bijak.items({ ...scopeQuery, modes: COUNTED_MODES.items })
-    const hasSittings = items.length > 0 || (await this.ports.bijak.totals({ ...scopeQuery, modes: COUNTED_MODES.items }, 'school')).length > 0
 
     const own = await ownPupilIds(this.ports, ctx)
-    const contributors = new Set(items.map((i) => i.userId)).size
+    const hasAnswers = rows.length > 0
+    const contributors = new Set(rows.map((r) => r.userId)).size
     const suppressed = !meetsCohort(ctx.role, contributors)
-    const usable = suppressed ? [] : items
+    const usable = suppressed ? [] : rows
 
     // Questions: one row per question, hardest first.
     const denominator = Math.max(1, pupils.length)
-    const labels = await this.classLabels(usable)
-    const wrongNames = await nameMap(this.directory, [...new Set(usable.filter((i) => !isCorrect(i)).map((i) => i.userId))])
-    const all = [...groupBy(usable, (i) => i.questionId)]
-      .map(([questionId, facts]) => {
-        const first = facts[0] as BijakItemFact
-        const attempts = facts.length
-        const right = facts.filter(isCorrect).length
-        const pupilSet = new Set(facts.map((f) => f.userId))
-        const pop = popularWrong(facts)
-        return { questionId, facts, first, attempts, right, pupilSet, pop }
-      })
-      .filter((q) => meetsCohort(ctx.role, q.pupilSet.size))
+    const all = [...itemStats(usable).values()]
+      .filter((q) => meetsCohort(ctx.role, q.pupils.size))
       .sort(
         (a, b) =>
-          pct(b.attempts - b.right, b.attempts) - pct(a.attempts - a.right, a.attempts) ||
+          pct(b.attempts - b.correct, b.attempts) - pct(a.attempts - a.correct, a.attempts) ||
           b.attempts - a.attempts ||
           compareIds(a.questionId, b.questionId),
       )
+    const levelOf = (q: { attempts: number; correct: number }): DifficultyLevel => difficultyLevel(pct(q.correct, q.attempts))
     const difficulty = { mudah: 0, sederhana: 0, sukar: 0 }
     for (const q of all) {
-      const level = difficultyLevel(difficultyIndex(q.right, q.attempts))
+      const level = levelOf(q)
       if (level === 'Mudah') difficulty.mudah++
       else if (level === 'Sederhana') difficulty.sederhana++
       else difficulty.sukar++
     }
+    const shown = all.slice(0, SCHOOL_QUESTION_CAP)
     // Non-staff totals cover only the questions that are shown, so none can be recovered by subtraction.
-    const basis = isStaff(ctx.role) ? usable : all.slice(0, SCHOOL_QUESTION_CAP).flatMap((q) => q.facts)
-    const correct = basis.filter(isCorrect).length
-    const answers = hasSittings && !suppressed ? basis.length : null
-    const subjects = [...groupBy(basis, (i) => i.subjectId)]
+    const shownIds = new Set(shown.map((q) => q.questionId))
+    const basis = staff ? usable : usable.filter((r) => shownIds.has(r.questionId))
+    const answered = basis.reduce((n, r) => n + r.attempts, 0)
+    const correct = basis.reduce((n, r) => n + r.correct, 0)
+    const answers = hasAnswers && !suppressed ? answered : null
+
+    const subjectIds = [...new Set([...basis.map((r) => r.subjectId), ...shown.map((q) => q.subjectId)])].filter((id) => id !== '0')
+    const subjectNames = await this.directory.subjectsOfIds(subjectIds)
+    const subjectNameOf = (id: string): string => subjectNames.get(id)?.name ?? ''
+    const subjects = [...groupBy(basis.filter((r) => r.subjectId !== '0'), (r) => r.subjectId)]
       .map(([subjectId, list]) => {
-        const p = new Set(list.map((i) => i.userId)).size
+        const p = new Set(list.map((r) => r.userId)).size
         const ok = meetsCohort(ctx.role, p)
-        const good = list.filter(isCorrect).length
+        const n = list.reduce((sum, r) => sum + r.attempts, 0)
+        const good = list.reduce((sum, r) => sum + r.correct, 0)
         return {
           subjectId,
-          name: (list[0] as BijakItemFact).subjectName,
+          name: subjectNameOf(subjectId),
           pupils: ok ? p : 0,
-          questions: ok ? new Set(list.map((i) => i.questionId)).size : 0,
-          accuracy: ok ? round(capPercent(pct(good, list.length)), 1) : 0,
-          wrong: ok ? list.length - good : 0,
+          questions: ok ? new Set(list.map((r) => r.questionId).filter((id) => id !== '0')).size : 0,
+          accuracy: ok ? round(capPercent(pct(good, n)), 1) : 0,
+          wrong: ok ? n - good : 0,
         }
       })
       .sort((a, b) => a.name.localeCompare(b.name) || compareIds(a.subjectId, b.subjectId))
 
-    const questions = all.slice(0, SCHOOL_QUESTION_CAP).map((q, i) => {
-      const wrong = q.facts.filter((f) => !isCorrect(f))
-      const byPupil = groupBy(wrong, (f) => f.userId)
-      const wrongPupils =
-        ctx.role === 'student'
-          ? []
-          : [...byPupil.entries()]
-              .sort(([a], [b]) => compareIds(a, b))
-              .flatMap(([userId, list]) => {
-                const letter = popularWrong(list)?.letter
-                if (!letter) return []
-                const visible = canSeeName(ctx.role, ctx.userId, userId, own)
-                return [
-                  {
-                    userId: visible ? userId : REDACTED_ID,
-                    name: nameFor(wrongNames.get(userId) ?? '', visible),
-                    classLabel: labels.get(userId) ?? '',
-                    wrongOption: letter,
-                  },
-                ]
-              })
+    // Display-only fields of the shown questions (stem, options, topic, chosen letters): the Bijak snapshot, else the S1 question content for the stem.
+    const bijak = await this.bijakByQuestion(tingkatan === null ? { schoolIds: [targetId] } : { userIds: pupilIds }, shown.map((q) => q.questionId))
+    const inScope = new Set(rows.map((r) => r.userId))
+    const factsOf = (questionId: string): BijakItemFact[] => (bijak.get(questionId) ?? []).filter((f) => inScope.has(f.userId))
+    const stems = await this.stemsOf(shown.filter((q) => factsOf(q.questionId).length === 0).map((q) => q.questionId))
+    const labels = await this.classLabels(
+      shown.flatMap((q) => factsOf(q.questionId).filter((f) => !isCorrect(f)).map((f) => f.userId)),
+    )
+    const wrongNames = await nameMap(this.directory, [...labels.keys()])
+
+    const questions = shown.map((q, i) => {
+      const facts = factsOf(q.questionId)
+      const first = facts[0]
+      const pop = popularWrong(facts)
+      const byPupil = groupBy(
+        facts.filter((f) => !isCorrect(f)),
+        (f) => f.userId,
+      )
+      const wrongPupils = [...byPupil.entries()]
+        .sort(([a], [b]) => compareIds(a, b))
+        .flatMap(([userId, list]) => {
+          const letter = popularWrong(list)?.letter
+          if (!letter) return []
+          const visible = canSeeName(ctx.role, ctx.userId, userId, own)
+          return [
+            {
+              userId: visible ? userId : REDACTED_ID,
+              name: nameFor(wrongNames.get(userId) ?? '', visible),
+              classLabel: labels.get(userId) ?? '',
+              wrongOption: letter,
+            },
+          ]
+        })
       return {
         rank: i + 1,
         questionId: q.questionId,
-        stem: q.first.stem,
-        subjectName: q.first.subjectName,
-        chips: [q.first.topic, q.first.subtopic].filter((c): c is string => c !== null),
-        level: difficultyLevel(difficultyIndex(q.right, q.attempts)),
-        wrongPct: round(pct(q.attempts - q.right, q.attempts), 1),
+        stem: first?.stem ?? stems.get(q.questionId) ?? '',
+        subjectName: first?.subjectName ?? subjectNameOf(q.subjectId),
+        chips: first ? [first.topic, first.subtopic].filter((c): c is string => c !== null) : [],
+        level: levelOf(q),
+        wrongPct: round(pct(q.attempts - q.correct, q.attempts), 1),
         attempts: q.attempts,
-        pupils: q.pupilSet.size,
-        pupilsPct: round(pct(q.pupilSet.size, denominator), 1),
+        pupils: q.pupils.size,
+        pupilsPct: round(pct(q.pupils.size, denominator), 1),
         wrongPupils,
-        correctOption: optionOf(q.facts, q.first.correctLetter),
-        popularWrongOption: q.pop ? optionOf(q.facts, q.pop.letter) : null,
-        popularWrongCount: q.pop?.times ?? 0,
+        correctOption: first ? optionOf(facts, first.correctLetter) : null,
+        popularWrongOption: pop ? optionOf(facts, pop.letter) : null,
+        popularWrongCount: pop?.times ?? 0,
       }
     })
 
     // DV-M08-31: the GPS card is the school's own headcount GPS, the figure of Prestasi sekolah (same rule and suppression), with its yearly series.
     const headcount = await this.schoolEntries(targetId, tingkatan === null ? null : new Set(pupilIds))
-    const staff = isStaff(ctx.role)
     const gps = { ...schoolGps(headcount, staff), years: gpsByYear(headcount, staff) }
 
     return {
       school,
       variant,
       tingkatan,
+      tingkatanOptions,
       students: pupils.length,
       answers,
+      questionsTested: answers === null ? null : new Set(basis.map((r) => r.questionId).filter((id) => id !== '0')).size,
       correct: answers === null ? null : correct,
-      accuracy: answers === null ? null : round(capPercent(pct(correct, basis.length)), 1),
+      accuracy: answers === null ? null : round(capPercent(pct(correct, answered)), 1),
       difficulty,
       gps: gps.value === null ? { ...gps, years: [] } : gps,
       subjects,
@@ -253,13 +296,15 @@ export class ItemAnalysisService {
     }
   }
 
-  private emptySchool(school: SchoolRef, variant: 'own' | 'byId', tingkatan: 'T4' | 'T5' | null): PerformanceSchoolItemAnalysis {
+  private emptySchool(school: SchoolRef, variant: 'own' | 'byId', tingkatan: ItemTingkatan | null): PerformanceSchoolItemAnalysis {
     return {
       school,
       variant,
       tingkatan,
+      tingkatanOptions: [],
       students: 0,
       answers: null,
+      questionsTested: null,
       correct: null,
       accuracy: null,
       difficulty: { mudah: 0, sederhana: 0, sukar: 0 },
@@ -269,10 +314,10 @@ export class ItemAnalysisService {
     }
   }
 
-  /** Name of the lowest-id class of each pupil behind the facts. */
-  private async classLabels(facts: readonly BijakItemFact[]): Promise<Map<string, string>> {
+  /** Name of the lowest-id class of each given pupil. */
+  private async classLabels(userIdList: readonly string[]): Promise<Map<string, string>> {
     const out = new Map<string, string>()
-    const userIds = [...new Set(facts.filter((f) => !isCorrect(f)).map((f) => f.userId))]
+    const userIds = [...new Set(userIdList)]
     const classIds = await this.ports.classes.classIdsOfStudents(userIds)
     const lowest = new Map<string, string>()
     for (const userId of userIds) {
@@ -280,9 +325,9 @@ export class ItemAnalysisService {
       if (first !== undefined) lowest.set(userId, first)
     }
     const classes = new Map((await this.ports.classes.classesByIds([...new Set(lowest.values())])).map((c) => [c.id, c]))
-    for (const [userId, cid] of lowest) {
-      const c = classes.get(cid)
-      if (c) out.set(userId, c.name)
+    for (const userId of userIds) {
+      const c = classes.get(lowest.get(userId) ?? '')
+      out.set(userId, c ? c.name : '')
     }
     return out
   }
@@ -307,41 +352,45 @@ export class ItemAnalysisService {
 
     const members = await this.ports.classes.memberIds(cls.id)
     const subjectFilter = cls.subjectId !== null ? { subjectId: cls.subjectId } : {}
-    const items = members.length === 0 ? [] : await this.ports.bijak.items({ userIds: members, ...subjectFilter, modes: COUNTED_MODES.items })
+    // All modes (XS-8); the class subject narrows the rows when the class has one.
+    const rows = members.length === 0 ? [] : await this.ports.answerFacts.answerFacts({ userIds: members, ...subjectFilter })
     const names = await nameMap(this.directory, members)
     const nameOf = (uid: string): string => names.get(uid) ?? ''
+    const stats = [...itemStats(rows).values()]
 
-    const byQuestion = groupBy(items, (i) => i.questionId)
-    const difficulty = [...byQuestion.entries()]
-      .map(([questionId, facts]) => {
-        const first = facts[0] as BijakItemFact
-        const right = facts.filter(isCorrect).length
-        const index = difficultyIndex(right, facts.length)
-        const wrongBy = groupBy(
-          facts.filter((f) => !isCorrect(f)),
-          (f) => f.userId,
-        )
+    const subjectNames = await this.directory.subjectsOfIds([...new Set(stats.map((q) => q.subjectId))].filter((s) => s !== '0'))
+    const bijak = await this.bijakByQuestion({ userIds: [...members] }, stats.map((q) => q.questionId))
+    const stems = await this.stemsOf(stats.filter((q) => (bijak.get(q.questionId) ?? []).length === 0).map((q) => q.questionId))
+
+    const difficulty = stats
+      .map((q) => {
+        const facts = bijak.get(q.questionId) ?? []
+        const first = facts[0]
+        const accuracy = round(capPercent(pct(q.correct, q.attempts)), 1)
+        const index = difficultyIndex(q.correct, q.attempts)
         const pop = popularWrong(facts)
         return {
-          questionId,
-          text: first.stem,
-          subject: first.subjectName,
-          topic: first.topic,
-          subtopic: first.subtopic,
-          attempts: facts.length,
-          students: new Set(facts.map((f) => f.userId)).size,
-          accuracy: round(capPercent(pct(right, facts.length)), 1),
+          questionId: q.questionId,
+          text: first?.stem ?? stems.get(q.questionId) ?? '',
+          subject: first?.subjectName ?? subjectNames.get(q.subjectId)?.name ?? '',
+          topic: first?.topic ?? null,
+          subtopic: first?.subtopic ?? null,
+          attempts: q.attempts,
+          students: q.pupils.size,
+          accuracy,
           index,
-          level: difficultyLevel(index),
-          wrongStudents: [...wrongBy.entries()]
+          level: difficultyLevel(accuracy),
+          wrongStudents: [...q.pupils.entries()]
+            .filter(([, p]) => p.attempts > p.correct)
             .sort(([a], [b]) => compareIds(a, b))
-            .map(([userId, list]) => ({ userId, name: nameOf(userId), times: list.length })),
-          correctOption: optionOf(facts, first.correctLetter),
+            .map(([userId, p]) => ({ userId, name: nameOf(userId), times: p.attempts - p.correct })),
+          correctOption: first ? optionOf(facts, first.correctLetter) : null,
           popularWrong: pop ? { ...optionOf(facts, pop.letter), times: pop.times } : null,
         }
       })
       .sort((a, b) => b.index - a.index || compareIds(a.questionId, b.questionId))
 
+    // Tahap on the whole-number % betul; each question is in exactly one tier, so the tiers sum to the question count.
     const summary = { mudah: 0, sederhana: 0, sukar: 0 }
     for (const d of difficulty) {
       if (d.level === 'Mudah') summary.mudah++
@@ -349,48 +398,23 @@ export class ItemAnalysisService {
       else summary.sukar++
     }
 
-    // BR-M08-19: members with a finished (graded) sitting in the class subject.
-    const sittings = members.length === 0 ? [] : await this.ports.bijak.sittings({ userIds: members, ...subjectFilter, modes: COUNTED_MODES.items })
-    const finished = new Set(sittings.filter((s) => !s.provisional).map((s) => s.userId))
-    const n = finished.size
-    const sufficient = n >= DISCRIMINATION_MIN_MEMBERS
-    const rows: PerformanceClassItemAnalysis['analysis']['discrimination']['rows'] = []
-    if (sufficient) {
-      const perMember = new Map<string, { n: number; c: number }>()
-      for (const f of items) {
-        const m = perMember.get(f.userId) ?? { n: 0, c: 0 }
-        m.n++
-        if (isCorrect(f)) m.c++
-        perMember.set(f.userId, m)
-      }
-      const ranked = [...finished].sort((a, b) => {
-        const ma = perMember.get(a) ?? { n: 0, c: 0 }
-        const mb = perMember.get(b) ?? { n: 0, c: 0 }
-        return pct(mb.c, mb.n) - pct(ma.c, ma.n) || compareIds(a, b)
+    // FR-GUR-6-9: per question, N = the pupils with an answer to it (any mode); the index needs at least DISCRIMINATION_MIN_MEMBERS of them.
+    const pooled = pooledByPupil(rows)
+    const textOf = new Map(difficulty.map((d) => [d.questionId, d.text]))
+    const discriminationRows: PerformanceClassItemAnalysis['analysis']['discrimination']['rows'] = []
+    for (const q of stats) {
+      const d = discriminationOf(q, pooled)
+      if (d === null) continue
+      discriminationRows.push({
+        questionId: q.questionId,
+        text: textOf.get(q.questionId) ?? '',
+        upperPct: d.upperPct,
+        lowerPct: d.lowerPct,
+        index: d.index,
+        status: discriminationStatus(d.index),
       })
-      const g = Math.max(1, Math.round(DISCRIMINATION_GROUP_SHARE * n))
-      const upper = new Set(ranked.slice(0, g))
-      const lower = new Set(ranked.slice(-g))
-      for (const [questionId, facts] of byQuestion) {
-        const stat = (group: Set<string>) => {
-          const mine = facts.filter((f) => group.has(f.userId))
-          return { n: mine.length, c: mine.filter(isCorrect).length }
-        }
-        const u = stat(upper)
-        const l = stat(lower)
-        if (u.n === 0 || l.n === 0) continue
-        const d = round(u.c / u.n - l.c / l.n, 3)
-        rows.push({
-          questionId,
-          text: (facts[0] as BijakItemFact).stem,
-          upperPct: round(pct(u.c, u.n), 1),
-          lowerPct: round(pct(l.c, l.n), 1),
-          index: d,
-          status: discriminationStatus(d),
-        })
-      }
-      rows.sort((a, b) => b.index - a.index || compareIds(a.questionId, b.questionId))
     }
+    discriminationRows.sort((a, b) => b.index - a.index || compareIds(a.questionId, b.questionId))
 
     return {
       class: {
@@ -401,7 +425,12 @@ export class ItemAnalysisService {
         year: cls.year,
         students: members.length,
       },
-      analysis: { questionCount: difficulty.length, summary, difficulty, discrimination: { sufficient, rows } },
+      analysis: {
+        questionCount: difficulty.length,
+        summary,
+        difficulty,
+        discrimination: { sufficient: discriminationRows.length > 0, rows: discriminationRows },
+      },
     }
   }
 }
