@@ -9,7 +9,7 @@ import { useToast } from '@nuxt/ui/composables'
 import { onMounted, ref } from 'vue'
 
 import { ApiError } from '@/api'
-import { DsCharacterCard } from '@/ds'
+import { DsCharacterCard, DsGrid, DsText } from '@/ds'
 
 import { fetchMoodToday, postMood } from '../../api/practice'
 import type { MoodValue } from '../../api/types'
@@ -73,10 +73,10 @@ onMounted(async () => {
     :title="TITLE"
     data-testid="dash-mood"
   >
-    <p v-if="chosen" class="text-subheading text-highlighted" data-testid="dash-mood-done">
+    <DsText v-if="chosen" variant="subheading" data-testid="dash-mood-done">
       ✓ {{ wordOf(chosen) }}
-    </p>
-    <div v-else class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4" data-testid="dash-mood-choices">
+    </DsText>
+    <DsGrid v-else :cols="{ base: 2, sm: 4 }" gap="sm" data-testid="dash-mood-choices">
       <UButton
         v-for="c in CHOICES"
         :key="c.value"
@@ -89,6 +89,6 @@ onMounted(async () => {
         @click="choose(c.value)"
         >{{ c.label }}</UButton
       >
-    </div>
+    </DsGrid>
   </DsCharacterCard>
 </template>
