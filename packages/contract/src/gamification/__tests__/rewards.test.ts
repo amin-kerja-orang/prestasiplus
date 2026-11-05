@@ -274,6 +274,7 @@ describe('errors', () => {
     expect(REWARD_ERRORS.MONTHLY_CAP.messages).toEqual(['Had tebusan bulanan dicapai.'])
     expect(REWARD_ERRORS.INSUFFICIENT_TOKENS.messages).toEqual(['Token tidak mencukupi.'])
     expect(REWARD_ERRORS.DRAW_CLOSED.messages).toEqual(['Cabutan ditutup.'])
+    expect(REWARD_ERRORS.DRAW_CANCELLED.messages).toEqual(['Cabutan dibatalkan.'])
     expect(REWARD_ERRORS.TICKET_LIMIT.messages).toEqual(['Had tiket dicapai.'])
     expect(REWARD_ERRORS.INSUFFICIENT_BALANCE.messages).toEqual(['Baki syiling tidak mencukupi.'])
     for (const code of REWARD_ERROR_CODES) {
@@ -320,12 +321,12 @@ describe('openapi registration', () => {
     has('/admin/hadiah/{id}', 'put')
   })
 
-  it('registers exactly 43 operations: the 42 of BE-23 and the claim of API-GAME-11', () => {
+  it('registers exactly 50 operations: the 42 of BE-23, the claim of API-GAME-11 and the draw list, Buka, Tutup, Cabut pemenang, Tandakan Dihantar, edit and cancel of S7-T07', () => {
     // Count by BE-23 tags, not by path prefix: BE-11 adds /gamification/wallet and /gamification/transactions (tag 'wallet').
     const be23Tags = ['gamification', 'gamification-admin', 'rewards', 'rewards-admin', 'shop']
     const count = Object.values(doc.paths)
       .flatMap((ops) => Object.values(ops as Record<string, { tags?: string[] }>))
       .filter((op) => op.tags?.some((t) => be23Tags.includes(t))).length
-    expect(count).toBe(43)
+    expect(count).toBe(50)
   })
 })

@@ -68,6 +68,7 @@ export const REWARD_ERROR_CODES = [
   'MONTHLY_CAP',
   'INSUFFICIENT_TOKENS',
   'DRAW_CLOSED',
+  'DRAW_CANCELLED',
   'TICKET_LIMIT',
   'INSUFFICIENT_BALANCE',
   'CONFLICT',
@@ -81,6 +82,7 @@ export const REWARD_ERRORS = {
   MONTHLY_CAP: { status: 409, messages: ['Had tebusan bulanan dicapai.'] },
   INSUFFICIENT_TOKENS: { status: 409, messages: ['Token tidak mencukupi.'] },
   DRAW_CLOSED: { status: 409, messages: ['Cabutan ditutup.'] },
+  DRAW_CANCELLED: { status: 409, messages: ['Cabutan dibatalkan.'] },
   TICKET_LIMIT: { status: 409, messages: ['Had tiket dicapai.'] },
   INSUFFICIENT_BALANCE: { status: 409, messages: ['Baki syiling tidak mencukupi.'] },
   CONFLICT: {

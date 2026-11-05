@@ -140,9 +140,55 @@ export class RewardControlController {
     return ok(await this.admin.setRewardCost(actor, id, body))
   }
 
+  @Get('draws')
+  async draws() {
+    return ok(await this.admin.draws())
+  }
+
   @Post('draws')
   @RateLimit(GAMIFICATION_LIMITS.adminWrite)
   async createDraw(@Actor() actor: AuditActor, @Body() body: unknown) {
     return ok(await this.admin.createDraw(actor, body))
+  }
+
+  @Put('draws/:id')
+  @RateLimit(GAMIFICATION_LIMITS.adminWrite)
+  async updateDraw(@Actor() actor: AuditActor, @Param('id') id: string, @Body() body: unknown) {
+    return ok(await this.admin.updateDraw(actor, id, body))
+  }
+
+  @Post('draws/:id/open')
+  @HttpCode(200)
+  @RateLimit(GAMIFICATION_LIMITS.adminWrite)
+  async openDraw(@Actor() actor: AuditActor, @Param('id') id: string) {
+    return ok(await this.admin.openDraw(actor, id))
+  }
+
+  @Post('draws/:id/close')
+  @HttpCode(200)
+  @RateLimit(GAMIFICATION_LIMITS.adminWrite)
+  async closeDraw(@Actor() actor: AuditActor, @Param('id') id: string) {
+    return ok(await this.admin.closeDraw(actor, id))
+  }
+
+  @Post('draws/:id/cancel')
+  @HttpCode(200)
+  @RateLimit(GAMIFICATION_LIMITS.adminWrite)
+  async cancelDraw(@Actor() actor: AuditActor, @Param('id') id: string) {
+    return ok(await this.admin.cancelDraw(actor, id))
+  }
+
+  @Post('draws/:id/winners')
+  @HttpCode(200)
+  @RateLimit(GAMIFICATION_LIMITS.adminWrite)
+  async drawWinners(@Actor() actor: AuditActor, @Param('id') id: string) {
+    return ok(await this.admin.drawWinners(actor, id))
+  }
+
+  @Post('draws/:id/winners/:winnerId/deliver')
+  @HttpCode(200)
+  @RateLimit(GAMIFICATION_LIMITS.adminWrite)
+  async deliverWinner(@Actor() actor: AuditActor, @Param('id') id: string, @Param('winnerId') winnerId: string) {
+    return ok(await this.admin.deliverWinner(actor, id, winnerId))
   }
 }

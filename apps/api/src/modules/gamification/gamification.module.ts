@@ -25,7 +25,7 @@ import { GamificationPorts } from './ports'
  * M14 gamification beyond the wallet core (BE-23): the student routes (dashboard, challenges, achievements,
  * leaderboard, referral, share cards, convert), the admin economy and operations routes, and the entry points
  * other cards call inside their own transaction (`GamificationService.settleChallenges`, `claimChallenge`,
- * `unlockAchievement`, `onGameResult`, `canEarnSyiling`, `applyReferral`; `GamificationAdminService.runDraw`).
+ * `unlockAchievement`, `onGameResult`, `canEarnSyiling`, `applyReferral`).
  * Every movement goes through `WalletService` (BE-11); the repository reads the wallet tables and writes none of
  * them. The teacher economy is NOT built (D53/OWN-10): no `/guru/gamification*` route exists.
  *

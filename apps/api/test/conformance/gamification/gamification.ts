@@ -12,7 +12,7 @@ const TIER = { labelMs: 'Perak Konformans', icon: 'x', color: '#c0c0c0', minSyil
 const CHALLENGE = { title: 'Cabaran Konformans', description: 'Selesaikan 2 kuiz', icon: 'x', challengeType: 'quiz_count', targetValue: 2, rewardSyiling: 10, rewardXp: 5, difficulty: 'easy', sortOrder: 10 }
 
 const STUDENT_READS = ['dashboard', 'challenges', 'achievements', 'leaderboard', 'referral', 'share-cards', 'convert']
-const ADMIN_READS = ['/admin/gamification/overview', '/admin/gamification/students', '/admin/gamification/transactions', '/admin/gamification/tiers', '/admin/gamification/challenges', '/admin/gamification/settings', '/admin/reward-control']
+const ADMIN_READS = ['/admin/gamification/overview', '/admin/gamification/students', '/admin/gamification/transactions', '/admin/gamification/tiers', '/admin/gamification/challenges', '/admin/gamification/settings', '/admin/reward-control', '/admin/reward-control/draws']
 const ADMIN_WRITES: [string, string][] = [
   ['POST', '/admin/gamification/award'],
   ['POST', '/admin/gamification/challenges'],
@@ -24,6 +24,10 @@ const ADMIN_WRITES: [string, string][] = [
   ['POST', '/admin/gamification/tiers/1/toggle'],
   ['PUT', '/admin/gamification/settings'],
   ['POST', '/admin/reward-control/draws'],
+  ['PUT', '/admin/reward-control/draws/1'],
+  ['POST', '/admin/reward-control/draws/1/open'],
+  ['POST', '/admin/reward-control/draws/1/cancel'],
+  ['POST', '/admin/reward-control/draws/1/close'],
   ['PUT', '/admin/reward-control/rewards/1/cost'],
   ['PUT', '/admin/reward-control/settings'],
 ]
@@ -149,6 +153,25 @@ export const gamificationScenarios: Scenario[] = [
       })
       ctx.expectStatus(draw, 201)
       ctx.check(dataOf(draw).status === 'draft', 'a new draw must be a draft')
+      const drawId = String(dataOf(draw).id)
+      ctx.check(listOf(await admin.request('GET', '/admin/reward-control/draws')).some((d) => d.id === drawId), 'the draw list must hold the new draw')
+      expectError(ctx, await admin.request('POST', `/admin/reward-control/draws/${drawId}/close`), 409, 'CONFLICT')
+      ctx.check(dataOf(await admin.request('POST', `/admin/reward-control/draws/${drawId}/open`)).status === 'open', 'Buka must open a draft')
+      expectError(ctx, await admin.request('POST', `/admin/reward-control/draws/${drawId}/open`), 409, 'CONFLICT')
+      ctx.check(dataOf(await admin.request('POST', `/admin/reward-control/draws/${drawId}/close`)).status === 'closed', 'Tutup must close an open draw')
+      const second = await admin.request('POST', '/admin/reward-control/draws', {
+        body: { title: nextTag('Cabutan '), description: 'Ujian', ticketCostSyiling: 20, maxTicketsPerStudent: 5, closesAt: '2030-12-31', prizePool: [{ label: 'A', value_sen: 100, qty: 1 }] },
+      })
+      const secondId = String(dataOf(second).id)
+      const edited = dataOf(await admin.request('PUT', `/admin/reward-control/draws/${secondId}`, { body: { title: 'Disunting', ticketCostSyiling: 30, maxTicketsPerStudent: 4, prizePool: [{ label: 'B', value_sen: 200, qty: 1 }, { label: 'C', value_sen: 50, qty: 2 }] } }))
+      ctx.check(edited.title === 'Disunting' && (edited.prizePool as unknown[]).length === 2, 'PUT must replace the fields and the prize lines of a draft')
+      expectError(ctx, await admin.request('PUT', `/admin/reward-control/draws/${secondId}`, { body: {} }), 422, 'VALIDATION_ERROR')
+      expectError(ctx, await admin.request('PUT', '/admin/reward-control/draws/999999', { body: { title: 'x', ticketCostSyiling: 30, maxTicketsPerStudent: 4, prizePool: [{ label: 'B', value_sen: 200, qty: 1 }] } }), 404, 'NOT_FOUND')
+      expectError(ctx, await admin.request('PUT', `/admin/reward-control/draws/${drawId}`, { body: { title: 'x', ticketCostSyiling: 30, maxTicketsPerStudent: 4, prizePool: [{ label: 'B', value_sen: 200, qty: 1 }] } }), 409, 'CONFLICT')
+      ctx.check(dataOf(await admin.request('POST', `/admin/reward-control/draws/${secondId}/cancel`)).status === 'cancelled', 'a draft draw must cancel')
+      expectError(ctx, await admin.request('POST', `/admin/reward-control/draws/${secondId}/cancel`), 409, 'CONFLICT')
+      expectError(ctx, await admin.request('POST', '/admin/reward-control/draws/999999/cancel'), 404, 'NOT_FOUND')
+      ctx.check(dataOf(await admin.request('POST', `/admin/reward-control/draws/${drawId}/cancel`)).status === 'cancelled', 'a closed draw must cancel')
       expectError(ctx, await admin.request('POST', '/admin/reward-control/draws', { body: {} }), 422, 'VALIDATION_ERROR')
       expectError(ctx, await admin.request('PUT', '/admin/reward-control/rewards/999999/cost', { body: { costValueSen: 100 } }), 404, 'NOT_FOUND')
     },

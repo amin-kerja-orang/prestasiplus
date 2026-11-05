@@ -10368,6 +10368,16 @@
       "approved_by_card": null
     },
     {
+      "name": "DrawWinner",
+      "table": "draw_winners",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/gamification.prisma",
+      "note": "One winner per prize slot of a drawn Cabutan Bertuah draw (48 GAME-22): ticket, slot, drawn by, delivered.",
+      "approved_by_card": "S7-T07",
+      "dm": "DM-36"
+    },
+    {
       "name": "SyilingReward",
       "table": "syiling_rewards",
       "status": "legacy-retire",
@@ -14132,6 +14142,16 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/admin/reward-control/draws",
+      "method": "GET",
+      "path": "/api/admin/reward-control/draws",
+      "api_id": "API-GAME-09",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/gamification/admin.controller.ts",
+      "approved_by_card": "S7-T07"
+    },
+    {
       "key": "POST /api/admin/reward-control/draws",
       "method": "POST",
       "path": "/api/admin/reward-control/draws",
@@ -14140,6 +14160,66 @@
       "sector": "S7",
       "file": "apps/api/src/modules/gamification/admin.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "PUT /api/admin/reward-control/draws/:p",
+      "method": "PUT",
+      "path": "/api/admin/reward-control/draws/:id",
+      "api_id": "API-ADM-24",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/gamification/admin.controller.ts",
+      "approved_by_card": "S7-T07"
+    },
+    {
+      "key": "POST /api/admin/reward-control/draws/:p/open",
+      "method": "POST",
+      "path": "/api/admin/reward-control/draws/:id/open",
+      "api_id": "API-ADM-24",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/gamification/admin.controller.ts",
+      "approved_by_card": "S7-T07"
+    },
+    {
+      "key": "POST /api/admin/reward-control/draws/:p/close",
+      "method": "POST",
+      "path": "/api/admin/reward-control/draws/:id/close",
+      "api_id": "API-GAME-09",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/gamification/admin.controller.ts",
+      "approved_by_card": "S7-T07"
+    },
+    {
+      "key": "POST /api/admin/reward-control/draws/:p/cancel",
+      "method": "POST",
+      "path": "/api/admin/reward-control/draws/:id/cancel",
+      "api_id": "API-ADM-24",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/gamification/admin.controller.ts",
+      "approved_by_card": "S7-T07"
+    },
+    {
+      "key": "POST /api/admin/reward-control/draws/:p/winners",
+      "method": "POST",
+      "path": "/api/admin/reward-control/draws/:id/winners",
+      "api_id": "API-GAME-09",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/gamification/admin.controller.ts",
+      "approved_by_card": "S7-T07"
+    },
+    {
+      "key": "POST /api/admin/reward-control/draws/:p/winners/:p/deliver",
+      "method": "POST",
+      "path": "/api/admin/reward-control/draws/:id/winners/:winnerId/deliver",
+      "api_id": "API-ADM-24",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/gamification/admin.controller.ts",
+      "approved_by_card": "S7-T07"
     },
     {
       "key": "GET /api/gamification/dashboard",
