@@ -19,7 +19,7 @@ import {
 } from '@/ds'
 import { useMedia } from '@/ds/useMedia'
 
-import { AttemptShell, NavigatorPanel, QuestionBlock, StimulusChip, StimulusStack } from '../../../components/question-display'
+import { AttemptShell, NavigatorPanel, QuestionBlock, StimulusGroup } from '../../../components/question-display'
 import type { NavState } from '../../../components/question-display'
 import PartResultCard from '../components/PartResultCard.vue'
 import ReportQuestionButton from '../components/ReportQuestionButton.vue'
@@ -34,7 +34,7 @@ import {
   type ChooseState,
 } from '../domain/choose-n'
 import { formatClock, isAnswered, sectionRuleLine } from '../domain/paper-model'
-import { groupLabel, stimuliOf } from '../lib/stimulus-data'
+import { groupLabel, stimuliOf, toStimulusData } from '../lib/stimulus-data'
 import type { AttemptPaperView, PartAnswer, QuestionResult } from '../domain/types'
 import { createAutosave, clearLocal, type Autosave, type SaveStatus } from '../lib/autosave'
 import { useBijakUser, useLearnerTheme } from '../lib/use-bijak'
@@ -63,7 +63,6 @@ const submitting = ref(false)
 const confirmSubmit = ref(false)
 const confirmExit = ref(false)
 const navOpen = ref(false)
-const stimOpen = ref(false)
 /** Phones (below sm): the footer buttons use the compact size so they fit 320 px. */
 const phone = useMedia('(width < 640px)', false)
 const now = ref(Date.now())
@@ -86,6 +85,20 @@ const group = computed(() =>
 )
 /** The stimuli of the current question's group: one panel for the whole group, never one per question (D90). */
 const groupStimuli = computed(() => (group.value ? stimuliOf(group.value) : []))
+/** The display shape for the shared StimulusGroup; the Bijak StimulusDef never crosses the barrel. */
+const groupData = computed(() => groupStimuli.value.map(toStimulusData))
+/** Group props for the one StimulusGroup; a question outside a group gets a plain wrapper. */
+const groupBind = computed(() =>
+  group.value
+    ? {
+        stimuli: groupData.value,
+        groupId: group.value.id,
+        split: 'sitting' as const,
+        onError: onStimError,
+        onLoaded: onStimLoaded,
+      }
+    : { gap: 'md' as const },
+)
 const groupText = computed(() => (group.value ? groupLabel(groupStimuli.value) : undefined))
 /** Stimulus ids whose picture failed to load (AC-07.4): Seterusnya / Semak wait for "Cuba lagi" to succeed. */
 const failedStimuli = ref<string[]>([])
@@ -434,7 +447,7 @@ const feedback = computed(() => {
 </script>
 
 <template>
-  <AttemptShell :has-stimulus="!!group">
+  <AttemptShell>
     <template #header>
       <DsQuizHeader
         close-label="Keluar daripada kertas"
@@ -479,13 +492,6 @@ const feedback = computed(() => {
       >
         Amaran: masa berbaki kurang 5 minit.
       </p>
-    </template>
-
-    <template v-if="group" #stimulus>
-      <StimulusStack :stimuli="groupStimuli" @error="onStimError" @loaded="onStimLoaded" />
-    </template>
-    <template v-if="group" #chip>
-      <StimulusChip :stimuli="groupStimuli" @open="stimOpen = true" />
     </template>
 
     <template #main>
@@ -540,44 +546,46 @@ const feedback = computed(() => {
           </DsText>
         </div>
 
-        <QuestionBlock
-          ref="questionRef"
-          :key="current.id"
-          :question="current"
-          :answers="answers"
-          :attempt-id="attemptId"
-          :stimulus-label="groupText"
-          :stimulus-blocked="stimulusBlocked"
-          :flagged="flags.includes(current.id)"
-          :check="currentCheck"
-          :disabled="submitting"
-          :choose="choose"
-          @answer="onAnswer"
-          @toggle-flag="toggleFlag"
-          @toggle-choose="toggleChoose"
-        >
-          <template #report="p"><ReportQuestionButton v-bind="p" /></template>
-          <template #result="p"><PartResultCard v-bind="p" /></template>
-        </QuestionBlock>
+        <component :is="group ? StimulusGroup : DsStack" v-bind="groupBind">
+          <QuestionBlock
+            ref="questionRef"
+            :key="current.id"
+            :question="current"
+            :answers="answers"
+            :attempt-id="attemptId"
+            :stimulus-label="groupText"
+            :stimulus-blocked="stimulusBlocked"
+            :flagged="flags.includes(current.id)"
+            :check="currentCheck"
+            :disabled="submitting"
+            :choose="choose"
+            @answer="onAnswer"
+            @toggle-flag="toggleFlag"
+            @toggle-choose="toggleChoose"
+          >
+            <template #report="p"><ReportQuestionButton v-bind="p" /></template>
+            <template #result="p"><PartResultCard v-bind="p" /></template>
+          </QuestionBlock>
 
-        <DsFeedbackSheet
-          v-if="feedback && !isExam"
-          :tone="feedback.tone"
-          :title="feedback.title"
-          :body="feedback.body"
-          :combo="feedback.combo"
-          :continue-label="isLast ? 'Selesai' : 'Seterusnya'"
-          @continue="isLast ? (confirmSubmit = true) : goTo(index + 1)"
-        />
+          <DsFeedbackSheet
+            v-if="feedback && !isExam"
+            :tone="feedback.tone"
+            :title="feedback.title"
+            :body="feedback.body"
+            :combo="feedback.combo"
+            :continue-label="isLast ? 'Selesai' : 'Seterusnya'"
+            @continue="isLast ? (confirmSubmit = true) : goTo(index + 1)"
+          />
 
-        <UAlert
-          v-if="submitError"
-          color="warning"
-          variant="soft"
-          :description="submitError"
-          role="alert"
-          data-testid="submit-error"
-        />
+          <UAlert
+            v-if="submitError"
+            color="warning"
+            variant="soft"
+            :description="submitError"
+            role="alert"
+            data-testid="submit-error"
+          />
+        </component>
       </div>
     </template>
 
@@ -679,21 +687,6 @@ const feedback = computed(() => {
       </div>
     </template>
   </AttemptShell>
-
-  <UDrawer
-    v-model:open="stimOpen"
-    :title="groupText ?? 'Rajah'"
-    description="Rajah kekal boleh dibuka semasa menjawab."
-  >
-    <template #body>
-      <StimulusStack
-        v-if="group"
-        :stimuli="groupStimuli"
-        @error="onStimError"
-        @loaded="onStimLoaded"
-      />
-    </template>
-  </UDrawer>
 
   <UDrawer
     v-model:open="navOpen"
