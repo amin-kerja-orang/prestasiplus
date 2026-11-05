@@ -372,7 +372,7 @@ model MysteryBoxOpening {
 /// Key/value gamification settings (mock `gamification.settings`); toggles are 0/1.
 model GamificationSetting {
   id           BigInt   @id @default(autoincrement())
-  /// One of the ten setting keys (check).
+  /// One of the setting keys (check): the ten of 0019 plus every key of 48 section 2 (0224).
   key          String
   value        Decimal  @db.Decimal(12, 2)
   label        String

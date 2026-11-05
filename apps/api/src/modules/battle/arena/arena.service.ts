@@ -31,6 +31,9 @@ const invalid = (field: string, message: string): ApiError => ApiError.of('VALID
 const asRecord = (body: unknown): Record<string, unknown> =>
   typeof body === 'object' && body !== null && !Array.isArray(body) ? (body as Record<string, unknown>) : {}
 
+/** A participant that is a user; a robot has no `user_id` (DM-60). */
+const hasUser = <P extends { userId: bigint | null }>(p: P): p is P & { userId: bigint } => p.userId !== null
+
 @Injectable()
 export class ArenaService {
   constructor(
@@ -67,7 +70,7 @@ export class ArenaService {
     if (!isUuid(uuid)) throw notFound()
     const battle = await this.prisma.client.battle.findUnique({ where: { id: uuid }, include: { participants: true } })
     // A pupil used as a simulated opponent (side B, is_bot) is not a participant of the battle: same not-found as a stranger.
-    const mine = battle?.participants.find((p) => idToString(p.userId) === userId && !p.isBot)
+    const mine = battle?.participants.filter(hasUser).find((p) => idToString(p.userId) === userId && !p.isBot)
     if (!battle || !mine) throw notFound()
     return { battle, mine }
   }
@@ -90,10 +93,10 @@ export class ArenaService {
       question = row ? await this.engine.deps.arenaQuestion(idToString(row.questionId)) : null
       if (!question) throw notFound(BATTLE_MESSAGES.questionNotFound)
     }
-    const people = await this.engine.deps.players([idToString(a.userId), idToString(b.userId)])
+    const people = await this.engine.deps.players([a, b].filter(hasUser).map((p) => idToString(p.userId)))
     const schools = await this.engine.deps.schoolsByIds([a, b].flatMap((p) => (p.schoolId === null ? [] : [idToString(p.schoolId)])))
     const player = (p: typeof a) => ({
-      name: people.get(idToString(p.userId))?.name ?? 'Pelajar',
+      name: (p.userId === null ? undefined : people.get(idToString(p.userId)))?.name ?? 'Pelajar',
       school: p.schoolId === null ? '' : (schools.get(idToString(p.schoolId))?.name ?? ''),
     })
     return {
@@ -159,7 +162,7 @@ export class ArenaService {
         if (locked.status !== 'active') throw ApiError.of('CONFLICT', { message: BATTLE_MESSAGES.battleOver })
         // Another answer of the caller got in first: this position is no longer the next one.
         if ((await this.prisma.client.battleAnswer.count({ where: { battleId: uuid, userId: mine.userId } })) !== done) throw invalid('questionId', BATTLE_MESSAGES.questionInvalid)
-        const opp = locked.participants.find((p) => p.userId !== mine.userId)
+        const opp = locked.participants.filter(hasUser).find((p) => p.userId !== mine.userId)
         if (!opp) throw notFound()
         await this.prisma.client.battleAnswer.create({
           data: { battleId: uuid, userId: mine.userId, position: index, questionId: expected.questionId, optionId: timedOut ? null : optionId, correct: graded.correct, seconds: whole, points, createdAt: now },

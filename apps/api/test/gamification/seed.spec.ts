@@ -40,7 +40,7 @@ describe('gamification seed (BE-23 data layer)', () => {
 
   it('loads the mock catalogues', async () => {
     const c = await counts()
-    expect(c).toMatchObject({ challenges: 10, achievements: 25, learner_badges: 3, syiling_rewards: 11, rewards: 59, draws: 1, draw_prizes: 2, gamification_settings: 10 })
+    expect(c).toMatchObject({ challenges: 10, achievements: 25, learner_badges: 3, syiling_rewards: 11, rewards: 59, draws: 1, draw_prizes: 2, gamification_settings: 45 }) // 35 key rows of migration 0224 plus the 10 of this seed
     expect([CHALLENGE_ROWS.length, ACHIEVEMENT_ROWS.length, LEARNER_BADGE_ROWS.length, SYILING_REWARD_ROWS.length, HADIAH_ROWS.length, SETTING_ROWS.length]).toEqual([10, 25, 3, 11, 59, 10])
   })
 

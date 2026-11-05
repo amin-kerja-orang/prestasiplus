@@ -10160,6 +10160,16 @@
       "approved_by_card": null
     },
     {
+      "name": "SpinSegment",
+      "table": "spin_segments",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/games.prisma",
+      "approved_by_card": "S7-T01",
+      "dm": "DM-64",
+      "note": "The 8 Roda Nasib wheel segments (48 GAME-14) as admin data, replacing SPIN_SEGMENTS in the GAME-14 part."
+    },
+    {
       "name": "League",
       "table": "leagues",
       "status": "canonical",

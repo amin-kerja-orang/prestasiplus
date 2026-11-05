@@ -10,30 +10,32 @@
 /// A battle (.cloud `battles`). `winner` is stored when the battle ends (0-0 goes to side B, DV-M16-35; a draw is null).
 model Battle {
   /// uuid, also the id on the wire.
-  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   /// quick_match, school_battle, challenge, queue_join (check).
-  mode            String
+  mode             String
   /// biasa, pksk, spm (check).
-  questionType    String    @map("question_type")
-  subjectId       BigInt?   @map("subject_id")
+  questionType     String    @map("question_type")
+  subjectId        BigInt?   @map("subject_id")
   /// No foreign key: PKSK domains are backlog (Open question 6).
-  pkskDomainId    BigInt?   @map("pksk_domain_id")
+  pkskDomainId     BigInt?   @map("pksk_domain_id")
   /// T1, T4 (check).
-  pkskTargetLevel String?   @map("pksk_target_level")
+  pkskTargetLevel  String?   @map("pksk_target_level")
   /// The queue owner's level at creation (education_levels.id).
-  levelId         BigInt?   @map("level_id")
-  answered        Int       @default(0) @db.SmallInt
+  levelId          BigInt?   @map("level_id")
+  answered         Int       @default(0) @db.SmallInt
   /// A, B (check); null = draw or not decided.
-  winner          String?
+  winner           String?
   /// active, finished, forfeited, abandoned (check).
-  status          String    @default("active")
-  finishedAt      DateTime? @map("finished_at") @db.Timestamptz(6)
+  status           String    @default("active")
+  finishedAt       DateTime? @map("finished_at") @db.Timestamptz(6)
   /// Written while an admin or school admin is in Mod Pelajar (G-07): excluded from standings and counts.
-  isTest          Boolean   @default(false) @map("is_test")
-  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  legacySource    String?   @map("legacy_source")
-  legacyId        String?   @map("legacy_id")
-  legacyHash      String?   @map("legacy_hash")
+  isTest           Boolean   @default(false) @map("is_test")
+  /// DM-60: false for a battle against "Robot PrestasiPlus", which must not count for ranking.
+  countsForRanking Boolean   @default(true) @map("counts_for_ranking")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  legacySource     String?   @map("legacy_source")
+  legacyId         String?   @map("legacy_id")
+  legacyHash       String?   @map("legacy_hash")
 
   participants BattleParticipant[]
   questions    BattleQuestion[]
@@ -50,7 +52,8 @@ model BattleParticipant {
   battleId     String   @map("battle_id") @db.Uuid
   /// A, B (check).
   side         String
-  userId       BigInt   @map("user_id")
+  /// DM-60: null for a robot (`isBot`), which is no user.
+  userId       BigInt?  @map("user_id")
   schoolId     BigInt?  @map("school_id")
   isBot        Boolean  @default(false) @map("is_bot")
   score        Int      @default(0)

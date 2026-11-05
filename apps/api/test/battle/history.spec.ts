@@ -53,6 +53,14 @@ describe('own battle history (M16-21)', () => {
     expect(times).toEqual([...times].sort((a, b) => b - a))
   })
 
+  it('a robot side (DM-60: no user) is listed with no id and the fallback name', async () => {
+    const uuid = await addBattle(t.db, { a: S.PELAJAR, b: S.D1(1), scoreA: 3000, scoreB: 1000, at: '2026-10-20T10:00:00+08:00' })
+    await t.db.query(`update battle_participants set user_id = null, is_bot = true where battle_id = $1::uuid and side = 'B'`, [uuid])
+    const rows = await history()
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ uuid, playerA: { id: await userIdOf(t.db, S.PELAJAR) }, playerB: { id: null, name: 'Pelajar' } })
+  })
+
   it('row shape: A is the first side, B the second, winner A|B|null, createdAt in +08:00, homeHere false, names only', async () => {
     const me1 = await userIdOf(t.db, S.PELAJAR)
     const other = await userIdOf(t.db, S.D2(1))

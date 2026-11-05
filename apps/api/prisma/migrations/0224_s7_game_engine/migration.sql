@@ -1,0 +1,102 @@
+-- 0224_s7_game_engine (S7-T01 part 1): the game engine schema and the settings rows every game reads.
+--   DM-60: `battles.counts_for_ranking` (false for a robot battle); nullable `battle_participants.user_id` (a robot has none).
+--   DM-64: `spin_segments` with the 8 rows of 48 GAME-14.
+--   DM-38: `ck_gamification_settings_key` allows the ten existing keys plus every key of 48 section 2, and one row
+--          (BM label, default) is inserted for every key of 48 section 2 that is not stored in `reward_settings`.
+-- The four `reward_settings` keys (flat_quiz_reward, games_award_syiling, reward_budget_sen_session, current_session_year,
+-- DM-48) stay in the check and out of the INSERT, so this file works whether or not they have been moved.
+-- The rows of 48 section 2 named `tier`, mystery prize and `spin_segments` are table rows, not keys.
+-- `boardgame_quiz_tiles` starts from the current `game_settings` value, so a saved admin value survives; 35 is its default.
+--
+-- Additive (expand only): nothing is removed, and existing battles count for ranking.
+-- Reversible, in this order (assumes no robot participant and no row with a new key needs keeping):
+--   DELETE FROM "gamification_settings" WHERE "key" NOT IN ('coins_per_question', 'cash_rate_coins', 'cash_rate_sen', 'min_cash_withdrawal', 'cash_withdrawal_enabled', 'reward_budget_sen_session', 'reward_budget_sen_month', 'current_session_year', 'flat_quiz_reward', 'games_award_syiling');
+--   ALTER TABLE "gamification_settings" DROP CONSTRAINT "ck_gamification_settings_key";
+--   ALTER TABLE "gamification_settings" ADD CONSTRAINT "ck_gamification_settings_key" CHECK ("key" IN ('coins_per_question', 'cash_rate_coins', 'cash_rate_sen', 'min_cash_withdrawal', 'cash_withdrawal_enabled', 'reward_budget_sen_session', 'reward_budget_sen_month', 'current_session_year', 'flat_quiz_reward', 'games_award_syiling'));
+--   DROP TABLE "spin_segments";
+--   DELETE FROM "battle_participants" WHERE "user_id" IS NULL;
+--   ALTER TABLE "battle_participants" ALTER COLUMN "user_id" SET NOT NULL;
+--   ALTER TABLE "battles" DROP COLUMN "counts_for_ranking";
+
+-- DM-60
+ALTER TABLE "battles" ADD COLUMN "counts_for_ranking" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "battle_participants" ALTER COLUMN "user_id" DROP NOT NULL;
+
+-- DM-64
+CREATE TABLE "spin_segments" (
+    "position" SMALLINT NOT NULL,
+    "label" TEXT NOT NULL,
+    "syiling" INTEGER NOT NULL,
+    "weight" INTEGER NOT NULL,
+    "active" BOOLEAN NOT NULL DEFAULT true,
+
+    CONSTRAINT "spin_segments_pkey" PRIMARY KEY ("position"),
+    CONSTRAINT "ck_spin_segments_position" CHECK ("position" BETWEEN 1 AND 8),
+    CONSTRAINT "ck_spin_segments_label" CHECK (char_length("label") BETWEEN 1 AND 20),
+    CONSTRAINT "ck_spin_segments_syiling" CHECK ("syiling" BETWEEN 0 AND 100),
+    CONSTRAINT "ck_spin_segments_weight" CHECK ("weight" BETWEEN 0 AND 100)
+);
+
+INSERT INTO "spin_segments" ("position", "label", "syiling", "weight") VALUES
+    (1, '1 Syiling', 1, 25),
+    (2, '3 Syiling', 3, 20),
+    (3, '5 Syiling', 5, 15),
+    (4, '10 Syiling', 10, 8),
+    (5, '20 Syiling', 20, 3),
+    (6, 'Cuba Lagi', 0, 15),
+    (7, '2 Syiling', 2, 10),
+    (8, '7 Syiling', 7, 4)
+ON CONFLICT ("position") DO NOTHING;
+
+-- DM-38
+ALTER TABLE "gamification_settings" DROP CONSTRAINT "ck_gamification_settings_key";
+ALTER TABLE "gamification_settings" ADD CONSTRAINT "ck_gamification_settings_key" CHECK ("key" IN (
+    'coins_per_question', 'cash_rate_coins', 'cash_rate_sen', 'min_cash_withdrawal', 'cash_withdrawal_enabled',
+    'reward_budget_sen_session', 'reward_budget_sen_month', 'current_session_year', 'flat_quiz_reward', 'games_award_syiling',
+    'xp_per_correct', 'xp_level_size', 'games_daily_syiling_cap', 'games_daily_xp_cap', 'game_win_xp', 'game_draw_xp', 'game_play_xp',
+    'game_win_bonus_syiling', 'games_min_ms_per_answer', 'jutawan_min_ms_per_answer', 'jutawan_question_seconds',
+    'battle_questions_default', 'battle_question_seconds', 'battle_grace_seconds', 'battle_queue_seconds',
+    'battle_bot_fallback_seconds', 'battle_bot_accuracy_pct', 'battle_invitation_hours', 'battle_daily_max',
+    'games_room_bots_enabled', 'games_absent_seconds', 'room_waiting_minutes', 'boardgame_quiz_tiles',
+    'challenge_accuracy_min_questions', 'daily_login_syiling', 'spm_first_session_syiling',
+    'mystery_box_cost', 'mystery_box_daily_max', 'draw_max_tickets_per_pupil',
+    'referral_referrer_syiling', 'referral_referee_syiling', 'referral_max_rewarded', 'mission_reward_max',
+    'sekolah_bersaing_min_pupils', 'sekolah_bersaing_top_n'));
+
+INSERT INTO "gamification_settings" ("key", "value", "label") VALUES
+    ('xp_per_correct', 10, 'Mata (XP) setiap jawapan betul'),
+    ('xp_level_size', 1000, 'Saiz tahap (mata)'),
+    ('games_daily_syiling_cap', 100, 'Had syiling permainan sehari'),
+    ('games_daily_xp_cap', 500, 'Had mata permainan sehari'),
+    ('game_win_xp', 20, 'Mata untuk menang'),
+    ('game_draw_xp', 10, 'Mata untuk seri'),
+    ('game_play_xp', 5, 'Mata untuk bermain'),
+    ('game_win_bonus_syiling', 5, 'Bonus syiling untuk menang'),
+    ('games_min_ms_per_answer', 1000, 'Masa minimum setiap jawapan (ms)'),
+    ('jutawan_min_ms_per_answer', 2000, 'Masa minimum setiap jawapan Jutawan (ms)'),
+    ('jutawan_question_seconds', 60, 'Masa setiap soalan Jutawan (saat)'),
+    ('battle_questions_default', 10, 'Bilangan soalan Battle (lalai)'),
+    ('battle_question_seconds', 15, 'Masa setiap soalan Battle (saat)'),
+    ('battle_grace_seconds', 3, 'Masa tambahan Battle (saat)'),
+    ('battle_queue_seconds', 120, 'Tempoh menunggu lawan (saat)'),
+    ('battle_bot_fallback_seconds', 30, 'Saat sebelum Robot PrestasiPlus'),
+    ('battle_bot_accuracy_pct', 60, 'Ketepatan Robot PrestasiPlus (%)'),
+    ('battle_invitation_hours', 24, 'Tempoh cabaran kawan (jam)'),
+    ('battle_daily_max', 20, 'Had Battle sehari'),
+    ('games_room_bots_enabled', 1, 'Robot dalam bilik permainan'),
+    ('games_absent_seconds', 30, 'Saat sebelum pemain dianggap tiada'),
+    ('room_waiting_minutes', 15, 'Tempoh bilik menunggu (minit)'),
+    ('boardgame_quiz_tiles', COALESCE((SELECT "boardgame_quiz_tiles" FROM "game_settings" WHERE "id" = 1), 35), 'Bilangan Petak Soalan'),
+    ('challenge_accuracy_min_questions', 5, 'Soalan minimum untuk cabaran ketepatan'),
+    ('daily_login_syiling', 2, 'Syiling log masuk harian'),
+    ('spm_first_session_syiling', 7, 'Syiling sesi SPM pertama sehari'),
+    ('mystery_box_cost', 50, 'Kos satu kotak (syiling)'),
+    ('mystery_box_daily_max', 5, 'Had kotak sehari'),
+    ('draw_max_tickets_per_pupil', 10, 'Max tiket / pelajar'),
+    ('referral_referrer_syiling', 100, 'Syiling untuk pemberi rujukan'),
+    ('referral_referee_syiling', 0, 'Syiling untuk kawan yang dirujuk'),
+    ('referral_max_rewarded', 20, 'Had kawan berganjaran setiap pelajar'),
+    ('mission_reward_max', 100, 'Had ganjaran misi (syiling)'),
+    ('sekolah_bersaing_min_pupils', 1, 'Pelajar minimum setiap sekolah'),
+    ('sekolah_bersaing_top_n', 30, 'Bilangan sekolah dipaparkan')
+ON CONFLICT ("key") DO NOTHING;
