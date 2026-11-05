@@ -127,6 +127,12 @@ export const FEATURE_ROUTE_PREFIXES: Readonly<Record<string, FeatureRoutePrefixe
 }
 
 /**
+ * Locked keys (D102, INV-29) and their state when the table cannot be read and nothing is cached: they stay OFF, never
+ * fail open. Unlocked keys stay ON (FR-ADM-N06.4). Also merged over every map, so a locked key is never ON.
+ */
+export const LOCKED_OFF_FALLBACK: Readonly<Record<string, false>> = { 'cikgu-alesa': false, 'keluarga-angkat': false }
+
+/**
  * True when `path` equals `prefix` or lies below it (`/api/games` matches `/api/games/hub`, not `/api/gamesx`).
  * A `:id` segment in `prefix` matches one all-digit segment (`/prestasi/:id` is `/prestasi/3001` and below, not `/prestasi/kelas`).
  */
@@ -137,13 +143,16 @@ export function pathHasPrefix(path: string, prefix: string): boolean {
   return got.length >= want.length && want.every((seg, i) => (seg === ':id' ? /^\d+$/.test(got[i] ?? '') : seg === got[i]))
 }
 
-/** The flag key whose api prefix covers `path` (query string ignored), or null. */
-export function featureKeyForApiPath(path: string): string | null {
+/** The flag key whose api prefix covers `path` (query string ignored), or null. The longest (most specific) prefix wins. */
+export function featureKeyForApiPath(path: string, table: Readonly<Record<string, FeatureRoutePrefixes>> = FEATURE_ROUTE_PREFIXES): string | null {
   const clean = path.split('?')[0] ?? path
-  for (const [key, p] of Object.entries(FEATURE_ROUTE_PREFIXES)) {
-    if (p.api.some((prefix) => pathHasPrefix(clean, prefix))) return key
+  let best: { key: string; length: number } | null = null
+  for (const [key, p] of Object.entries(table)) {
+    for (const prefix of p.api) {
+      if (pathHasPrefix(clean, prefix) && (best === null || prefix.length > best.length)) best = { key, length: prefix.length }
+    }
   }
-  return null
+  return best?.key ?? null
 }
 
 const json = (schema: z.ZodType, description: string) => ({

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { FEATURE_LOCKED_CODE, FEATURE_MESSAGES, type FeatureToggle } from '@pp/contract'
+import { FEATURE_LOCKED_CODE, FEATURE_MESSAGES, LOCKED_OFF_FALLBACK, type FeatureToggle } from '@pp/contract'
 
 import { CLOCK, type Clock } from '../../db/clock'
 import { PrismaService } from '../../db/prisma.service'
@@ -47,7 +47,7 @@ export class FeatureFlagsService {
   /**
    * Effective state per stored key (a locked key is OFF whatever `enabled` says). A key with no row is absent here and
    * counts as ON for the caller (FR-ADM-N06.4). Cached for 5 s. When the database cannot be read the last map is used
-   * (any age); with none, an empty map (fail-open), which is not cached.
+   * (any age); with none, only the locked keys (OFF) and every other key is ON (fail-open); that fallback is not cached.
    */
   async featureMap(): Promise<Record<string, boolean>> {
     return Object.fromEntries(await this.effective())
@@ -98,10 +98,12 @@ export class FeatureFlagsService {
     try {
       const rows = await this.prisma.client.featureFlag.findMany({ select: { key: true, enabled: true, locked: true } })
       const map = new Map(rows.map((r) => [r.key, r.enabled && !r.locked] as const))
+      for (const [key, on] of Object.entries(LOCKED_OFF_FALLBACK)) map.set(key, on) // a locked key is never ON
       if (generation === this.generation) this.snapshot = { at: now, map }
       return map
     } catch {
-      return held?.map ?? new Map()
+      // No snapshot: the locked keys stay OFF (D102, INV-29); every other key is ON (fail-open).
+      return held?.map ?? new Map(Object.entries(LOCKED_OFF_FALLBACK))
     }
   }
 }

@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { All, Controller, type CanActivate, type ExecutionContext, type INestApplication, Injectable } from '@nestjs/common'
 import { APP_FILTER, APP_GUARD } from '@nestjs/core'
 import { Test } from '@nestjs/testing'
-import { ErrorBodySchema, FEATURE_ROUTE_PREFIXES, featureKeyForApiPath } from '@pp/contract'
+import { ErrorBodySchema, FEATURE_ROUTE_PREFIXES, LOCKED_OFF_FALLBACK, featureKeyForApiPath } from '@pp/contract'
 import request from 'supertest'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
@@ -41,6 +41,9 @@ const FE_ONLY_KEYS = [
 ] as const
 
 const apiKeys = ALL_KEYS.filter((k) => !(FE_ONLY_KEYS as readonly string[]).includes(k))
+// Locked keys (D102, INV-29: cikgu-alesa, keluarga-angkat) are never ON, whatever their row says (S0-T10).
+const lockedKeys = Object.keys(LOCKED_OFF_FALLBACK)
+const switchableApiKeys = apiKeys.filter((k) => !lockedKeys.includes(k))
 
 describe('FEATURE_ROUTE_PREFIXES coverage (S0-T11)', () => {
   it('has exactly the 32 keys, each with at least one front-end prefix', () => {
@@ -180,10 +183,10 @@ describe('per-key OFF -> 404, ON -> normal answer (API keys)', () => {
     expect(apiKeys).toHaveLength(32 - FE_ONLY_KEYS.length)
   })
 
-  for (const key of apiKeys) {
+  for (const key of switchableApiKeys) {
     const prefixes = FEATURE_ROUTE_PREFIXES[key]?.api ?? []
     it(`${key}: OFF answers 404 NOT_FOUND on ${prefixes.join(', ')}, other keys stay reachable, ON answers normally`, async () => {
-      const other = apiKeys.find((k) => k !== key && (FEATURE_ROUTE_PREFIXES[k]?.api.length ?? 0) > 0) ?? 'permainan'
+      const other = switchableApiKeys.find((k) => k !== key && (FEATURE_ROUTE_PREFIXES[k]?.api.length ?? 0) > 0) ?? 'permainan'
       const otherPrefix = FEATURE_ROUTE_PREFIXES[other]?.api[0] ?? '/api/games'
       for (const prefix of prefixes) {
         // ON: anonymous reaches AuthGuard (401), signed in reaches the handler.
@@ -209,10 +212,24 @@ describe('per-key OFF -> 404, ON -> normal answer (API keys)', () => {
     })
   }
 
+  for (const key of lockedKeys) {
+    const prefixes = FEATURE_ROUTE_PREFIXES[key]?.api ?? []
+    it(`${key} is locked: 404 NOT_FOUND on ${prefixes.join(', ')} even with its row enabled (D102)`, async () => {
+      expect(prefixes.length).toBeGreaterThan(0)
+      for (const prefix of prefixes) {
+        for (const headers of [{}, signed]) {
+          const res = await http().get(`${prefix}/1`).set(headers)
+          expect(res.status, prefix).toBe(404)
+          expect(ErrorBodySchema.parse(res.body).error.code).toBe('NOT_FOUND')
+        }
+      }
+    })
+  }
+
   it('a fe-only key switched OFF never changes an api answer', async () => {
     for (const key of FE_ONLY_KEYS) rows.set(key, false)
     service.invalidate()
-    for (const key of apiKeys) {
+    for (const key of switchableApiKeys) {
       for (const prefix of FEATURE_ROUTE_PREFIXES[key]?.api ?? []) {
         expect((await http().get(`${prefix}/1`).set(signed)).status, prefix).toBe(200)
       }

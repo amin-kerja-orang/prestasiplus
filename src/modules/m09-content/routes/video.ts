@@ -9,8 +9,9 @@ import { COPY, VIDEO_PATH, VIDEO_ROUTES, VIDEO_TITLES } from '../lib/video'
  *
  * - S17 `/video` and S18 `/video/:id` are `public-or-user`: guests get the F-20 public layout, the
  *   logged in the user shell. S18 is guest-visible (build-plan L-7, decided in M09-T3).
- * - S20 `/video/tambah` and S19 `/video/:id/edit` need a session (a guest goes to `/login`). S19's
- *   uploader-or-admin rule is applied by the page and the API (403 → landing).
+ * - S20 `/video/tambah` and S19 `/video/:id/edit` need a session (a guest goes to `/login`) and the role
+ *   teacher or admin (R1: pupil and school admin never write). S19's uploader-or-admin rule is applied by
+ *   the page and the API (403 → landing).
  * - `/video/tambah` is a static segment and is listed before `:id`; ids are digits only, so any other
  *   segment falls to the global 404.
  */
@@ -38,6 +39,7 @@ const routes: RouteRecordRaw[] = [
       ownsH1: true,
       layout: 'user',
       access: 'auth',
+      roles: ['teacher', 'admin'],
       title: VIDEO_TITLES.add,
       header: { title: VIDEO_TITLES.add, subtitle: COPY.addHeaderSubtitle },
       module: 'M09',
@@ -66,6 +68,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       layout: 'user',
       access: 'auth',
+      roles: ['teacher', 'admin'],
       title: VIDEO_TITLES.editFallback,
       header: { title: COPY.editHeader },
       module: 'M09',

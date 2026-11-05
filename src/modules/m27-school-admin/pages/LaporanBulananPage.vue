@@ -16,9 +16,9 @@ import { isApiError, isHttpMode } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsBreadcrumb, DsLoadError, DsPage } from '@/ds'
+import { DsBreadcrumb, DsEmptyState, DsLoadError, DsPage } from '@/ds'
 
-import { fetchMonthlyReport } from '../api/school-admin'
+import { CENTRAL_EMPTY, fetchMonthlyReport, isSchoolDataMissing } from '../api/school-admin'
 import MonthlyCards from '../components/monthly/MonthlyCards.vue'
 import MonthlyTable from '../components/monthly/MonthlyTable.vue'
 import { generatedAtLabel, monthLabel } from '../components/monthly/monthly-format'
@@ -27,6 +27,14 @@ import SubjectPerformance from '../components/monthly/SubjectPerformance.vue'
 const TITLE = 'Laporan Bulanan'
 
 const crumbs = [{ label: 'Dashboard Sekolah', to: '/admin-sekolah' }, { label: TITLE }]
+
+/**
+ * Central view (M17 `/admin/laporan-sekolah/...`, R1-ADM-M-07): `schoolId` is the school Admin Pusat picked (sent as
+ * `?schoolId=`), `schoolName` its name for the sub-line and `basePath` the route the pills link to. Without
+ * `schoolId` the school is the session's, as for the school admin.
+ */
+const props = defineProps<{ schoolId?: number | string; schoolName?: string; basePath?: string }>()
+const central = computed(() => props.schoolId !== undefined)
 
 const route = useRoute()
 const pageMeta = usePageMeta()
@@ -37,8 +45,8 @@ const bulan = computed(() => {
 })
 
 const { data, error, loading, reload } = useApi(
-  (signal) => fetchMonthlyReport({ bulan: bulan.value, signal }),
-  [bulan],
+  (signal) => fetchMonthlyReport({ bulan: bulan.value, schoolId: props.schoolId, signal }),
+  [bulan, () => props.schoolId],
 )
 
 /**
@@ -54,6 +62,7 @@ const cohortHidden = computed(
     data.value.months.length === 0,
 )
 
+const missing = computed(() => central.value && isSchoolDataMissing(error.value))
 const refused = computed(() => isApiError(error.value) && error.value.status === 403)
 watch(
   refused,
@@ -82,7 +91,7 @@ function print() {
 <template>
   <DsPage data-testid="lb-page">
     <template #breadcrumb>
-      <DsBreadcrumb v-if="data" :items="crumbs" data-testid="lb-breadcrumb" />
+      <DsBreadcrumb v-if="data && !central" :items="crumbs" data-testid="lb-breadcrumb" />
     </template>
     <template v-if="data">
 
@@ -141,6 +150,12 @@ function print() {
         />
       </div>
     </template>
+    <DsEmptyState
+      v-else-if="missing"
+      :title="CENTRAL_EMPTY"
+      icon="buildings"
+      data-testid="lb-central-empty"
+    />
     <DsLoadError
       v-else-if="error && !refused"
       testid="lb-error"

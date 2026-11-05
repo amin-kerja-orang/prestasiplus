@@ -1,6 +1,7 @@
 -- 0250_s0_feature_flags (S0-T10, DM-34): the server-side feature flags behind Kawalan Ciri and the API FeatureGuard.
--- Seeds 4 rows: `permainan` and `latih-tubi` (ON) and the locked-OFF `cikgu-alesa` and `keluarga-angkat` (D102).
--- The other 28 keys of N-06 / P2-19 are inserted by S0-T11. A key with no row is ON (fail-open).
+-- Seeds 32 rows: the 4 S0-T10 keys (`permainan` and `latih-tubi` ON; the locked-OFF `cikgu-alesa` and `keluarga-angkat`, D102)
+-- plus the 28 S0-T11 keys of N-06 / P2-19 (folded in per #417 D-1). A key with no row is ON (fail-open).
+-- Both INSERTs are ON CONFLICT DO NOTHING, so a re-run after a partial apply is safe.
 --
 -- Additive (expand only): no existing table is touched.
 -- Reversible: DROP TABLE "feature_flags";
@@ -33,7 +34,8 @@ INSERT INTO "feature_flags" ("key", "label_ms", "audience", "enabled", "locked",
     ('permainan', 'Zona Permainan', 'pelajar', true, false, 10),
     ('latih-tubi', 'Latih Tubi', 'pelajar', true, false, 200),
     ('cikgu-alesa', 'Cikgu Alesa', 'pelajar', false, true, 900),
-    ('keluarga-angkat', 'Mohon Keluarga Angkat', 'pelajar', false, true, 910);
+    ('keluarga-angkat', 'Mohon Keluarga Angkat', 'pelajar', false, true, 910)
+ON CONFLICT ("key") DO NOTHING;
 
 -- The other 28 keys of the N-06 / P2-19 list (S0-T11 rows, folded into 0250 by the team-aa and team-dd lead ruling
 -- on #417 D-1, so there is one migration). All ON except `tiket-bantuan` (Delivery B: OFF until S7-T10 passes, D-2).
@@ -66,4 +68,5 @@ INSERT INTO "feature_flags" ("key", "label_ms", "audience", "enabled", "locked",
     ('guru.gamifikasi', 'Gamifikasi', 'guru', true, false, 360),
     ('guru.broadcast', 'Broadcast', 'guru', true, false, 370),
     ('guru.databank', 'Databank', 'guru', true, false, 380),
-    ('guru.sumbang-soalan', 'Sumbang Soalan', 'guru', true, false, 390);
+    ('guru.sumbang-soalan', 'Sumbang Soalan', 'guru', true, false, 390)
+ON CONFLICT ("key") DO NOTHING;
