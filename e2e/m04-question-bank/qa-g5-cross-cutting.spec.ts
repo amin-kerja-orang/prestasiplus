@@ -6,6 +6,7 @@
 
 import type { Page } from '@playwright/test'
 
+import { STRUCTURED_NEEDS_DIAGRAM } from '../../src/modules/m04-question-bank/mock/data/tables'
 import { waitForApp } from '../fixtures/mock-handle'
 import { expect, test } from '../fixtures/test'
 import { expectNoHorizontalScroll, isDesktopShell, moduleTag, viewportWidth } from '../support'
@@ -173,7 +174,8 @@ test.describe('QA G5 lookups, counts, PKSK', { tag: [moduleTag(4), '@qa'] }, () 
     await gotoApp('/admin/structured-questions')
     await expect(byId(page, 'structured-stat-total')).toContainText('4,064')
     await gotoApp('/admin/soalan-gambar')
-    await expect(byId(page, 'diagrams-stat-structured')).toContainText('522')
+    // Read from `STRUCTURED_NEEDS_DIAGRAM` (m04 mock/data/tables.ts), the count the audit handler is seeded with.
+    await expect(byId(page, 'diagrams-stat-structured')).toContainText(STRUCTURED_NEEDS_DIAGRAM.toLocaleString('en-US'))
     const stat = async (id: string): Promise<number> => toCount((await byId(page, id).innerText()).split('\n')[0] ?? '')
     expect((await stat('diagrams-stat-mcq')) + (await stat('diagrams-stat-structured'))).toBe(
       await stat('diagrams-stat-total'),

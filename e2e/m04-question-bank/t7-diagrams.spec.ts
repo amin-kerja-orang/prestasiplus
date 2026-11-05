@@ -7,6 +7,10 @@
 
 import type { Page } from '@playwright/test'
 
+import {
+  NEEDS_DIAGRAM,
+  STRUCTURED_NEEDS_DIAGRAM,
+} from '../../src/modules/m04-question-bank/mock/data/tables'
 import { expect, test } from '../fixtures/test'
 import {
   expectNoHorizontalScroll,
@@ -21,6 +25,13 @@ import {
 import { openFilters } from './list-helpers'
 
 const ADMIN = 'admin@demo.test'
+/**
+ * Figures read from the mock tables the audit is computed from (`m04 mock/data/tables.ts`): `NEEDS_DIAGRAM` is the
+ * per-subject MCQ count (Biologi 11, Kimia 10, Fizik 9, Pendidikan Moral 7 = the 10th pill) and
+ * `STRUCTURED_NEEDS_DIAGRAM` the Struktur count. The spec compares the page with them, it does not re-pin them.
+ */
+const STRUCT = STRUCTURED_NEEDS_DIAGRAM
+const en = (n: number): string => n.toLocaleString('en-US')
 const PATH = '/admin/soalan-gambar'
 /** 1x1 transparent PNG. */
 const PNG = Buffer.from(
@@ -72,14 +83,14 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
     // No MCQ figure is pinned: the admin reads hide Darjah (D72, D96), so it is below Q-FLAGGED-MCQ of SRS 4.1.
     const mcqTotal = await stat(page, 'diagrams-stat-mcq')
     expect(mcqTotal).toBeGreaterThan(0)
-    await expect(page.getByTestId('diagrams-stat-structured')).toContainText('522')
-    expect(await stat(page, 'diagrams-stat-total')).toBe(mcqTotal + 522)
+    await expect(page.getByTestId('diagrams-stat-structured')).toContainText(en(STRUCT))
+    expect(await stat(page, 'diagrams-stat-total')).toBe(mcqTotal + STRUCT)
 
     const pills = page.getByTestId('diagrams-pill')
     await expect(pills).toHaveCount(10)
-    await expect(pills.first()).toHaveText('Biologi: 1,587')
-    await expect(pills.nth(1)).toHaveText('Kimia: 1,077')
-    await expect(pills.nth(9)).toHaveText('Pendidikan Moral: 60')
+    await expect(pills.first()).toHaveText(`Biologi: ${en(NEEDS_DIAGRAM[11] ?? 0)}`)
+    await expect(pills.nth(1)).toHaveText(`Kimia: ${en(NEEDS_DIAGRAM[10] ?? 0)}`)
+    await expect(pills.nth(9)).toHaveText(`Pendidikan Moral: ${en(NEEDS_DIAGRAM[7] ?? 0)}`)
 
     await openFilters(page)
     await expect(page.getByTestId('diagrams-subject').locator('option')).toHaveCount(32)
@@ -89,7 +100,7 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
 
     await expect(page.getByTestId('diagrams-mcq').locator('h2')).toHaveText(`MCQ (${String(mcqTotal)})`)
     await expect(mcqCards(page)).toHaveCount(20)
-    await expect(page.getByTestId('diagrams-structured').locator('h2')).toHaveText('Struktur (522)')
+    await expect(page.getByTestId('diagrams-structured').locator('h2')).toHaveText(`Struktur (${en(STRUCT)})`)
     await expect(strCards(page)).toHaveCount(20)
     const card = mcqCards(page).first()
     await expect(card.getByTestId('diagram-file')).toHaveAttribute('accept', 'image/*')
@@ -113,18 +124,18 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
     await page.getByTestId('diagrams-subject').selectOption({ label: 'Fizik' })
     await applyButton(page).click()
     await expect(page).toHaveURL(/subject_id=9/)
-    await expect(page.getByTestId('diagrams-stat-mcq')).toContainText('718')
+    await expect(page.getByTestId('diagrams-stat-mcq')).toContainText(en(NEEDS_DIAGRAM[9] ?? 0))
     // DV-M04-11: the cards follow the filter, "Jumlah" is their sum.
     expect(await stat(page, 'diagrams-stat-total')).toBe(
       (await stat(page, 'diagrams-stat-mcq')) + (await stat(page, 'diagrams-stat-structured')),
     )
     // The pills are global (as live).
-    await expect(page.getByTestId('diagrams-pill').first()).toHaveText('Biologi: 1,587')
+    await expect(page.getByTestId('diagrams-pill').first()).toHaveText(`Biologi: ${en(NEEDS_DIAGRAM[11] ?? 0)}`)
 
     // DV-M04-16: the MCQ pager keeps subject_id, uses mcq_page and never carries str_page.
     await page.getByTestId('diagrams-mcq-pager').getByRole('button', { name: 'Seterusnya' }).click()
     await expect(page).toHaveURL(/subject_id=9&mcq_page=2$/)
-    await expect(page.getByTestId('diagrams-stat-mcq')).toContainText('718')
+    await expect(page.getByTestId('diagrams-stat-mcq')).toContainText(en(NEEDS_DIAGRAM[9] ?? 0))
     await expectNoHorizontalScroll(page)
   })
 
@@ -140,7 +151,7 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
     await applyButton(page).click()
     await expect(page).toHaveURL(/school_id=\d+/)
     await expect(page.getByTestId('diagrams-mcq')).toHaveCount(0)
-    await expect(page.getByTestId('diagrams-structured').locator('h2')).toHaveText('Struktur (522)')
+    await expect(page.getByTestId('diagrams-structured').locator('h2')).toHaveText(`Struktur (${en(STRUCT)})`)
     await expect(page.getByTestId('diagrams-empty')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
   })
@@ -188,7 +199,7 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
 
       // Without a file the native required check stops the submit.
       await card.getByTestId('diagram-upload').click()
-      await expect(page.getByTestId('diagrams-stat-structured')).toContainText('522')
+      await expect(page.getByTestId('diagrams-stat-structured')).toContainText(en(STRUCT))
       expect(
         await card
           .getByTestId('diagram-file')
