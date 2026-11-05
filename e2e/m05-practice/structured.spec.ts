@@ -38,7 +38,7 @@ test.describe('M05 S10 structured list', { tag: [moduleTag(5)] }, () => {
   test('header, heading, filter options and cards', async ({ page, loginAs, gotoApp }) => {
     await loginAs(PELAJAR)
     await gotoApp('/latihan-berstruktur')
-    await expectTabTitle(page, 'Soalan Berstruktur | PRESTASIPLUS')
+    await expectTabTitle(page, 'Soalan Berstruktur — Jawab | PRESTASIPLUS')
     // DV-M05-01: no subtitle in the shell header.
     await expect(tid(page, 'shell-user-title')).toHaveText('Soalan Berstruktur')
     await expect(tid(page, 'structured-h1')).toHaveText('Soalan Berstruktur')
@@ -152,7 +152,7 @@ test.describe('M05 S10 structured list', { tag: [moduleTag(5)] }, () => {
     async ({ page, loginAs, gotoApp }) => {
       await loginAs(PELAJAR)
       await gotoApp('/latihan-berstruktur?scope=spm')
-      await expectTabTitle(page, 'Soalan Berstruktur | PRESTASIPLUS')
+      await expectTabTitle(page, 'Soalan Berstruktur — Jawab | PRESTASIPLUS')
       await expect(tid(page, 'shell-user-title')).toHaveText('Subjektif SPM')
       await expect(tid(page, 'structured-h1')).toHaveText('Subjektif SPM')
       await expect(tid(page, 'structured-sub')).toHaveText(
@@ -238,14 +238,15 @@ test.describe('M05 Q3 structured answer', { tag: [moduleTag(5)] }, () => {
         .getByTestId('card-start')
         .click()
       await expect(page).toHaveURL(/\/latihan-berstruktur\/\d+\/jawab$/)
-      await expectTabTitle(page, 'Soalan Berstruktur | PRESTASIPLUS')
+      await expectTabTitle(page, 'Soalan Berstruktur — Jawab | PRESTASIPLUS')
       await expect(tid(page, 'shell-user-title')).toHaveText('Soalan Berstruktur')
-      await expect(tid(page, 'answer-stimulus')).not.toBeEmpty()
+      await expect(tid(page, 'stimulus-group')).not.toBeEmpty()
       expect(await page.getByTestId('sub-answer').count()).toBeGreaterThan(0)
       await expect(page.getByTestId('sub-marks').first()).toHaveText(/^\[\d+ markah\]$/)
-      await expect(tid(page, 'answer-hint')).toContainText(
-        'Jawab semua sub-soalan, kemudian klik Hantar.',
+      await expect(tid(page, 'answer-hint')).toHaveText(
+        '✍️ Tulis jawapan anda, kemudian tekan Hantar & Semak.',
       )
+      await expect(tid(page, 'answer-submit')).toHaveText('Hantar & Semak')
       await expectTouchTarget(tid(page, 'answer-report'))
       await expectTouchTarget(tid(page, 'answer-submit'))
       await expectNoHorizontalScroll(page)
@@ -256,7 +257,18 @@ test.describe('M05 Q3 structured answer', { tag: [moduleTag(5)] }, () => {
       await page.keyboard.press('Escape')
       await expect(page.getByText('Sebab Laporan')).toHaveCount(0)
 
+      // A blank leaf asks first (46 2.8); "Kembali" is the safe button and has focus.
       await page.getByTestId('sub-answer').first().fill('Jawapan saya')
+      if ((await page.getByTestId('sub-answer').count()) > 1) {
+        await tid(page, 'answer-submit').click()
+        await expect(page.getByText('Hantar & Semak sekarang?')).toBeVisible()
+        await expect(tid(page, 'blank-back')).toBeFocused()
+        await expectTouchTarget(tid(page, 'blank-back'))
+        await tid(page, 'blank-back').click()
+        await expect(page.getByText('Hantar & Semak sekarang?')).toHaveCount(0)
+        const all = page.getByTestId('sub-answer')
+        for (let i = 0; i < (await all.count()); i++) await all.nth(i).fill(`Jawapan ${String(i)}`)
+      }
       await tid(page, 'answer-submit').click()
       await expect(tid(page, 'answer-total')).toHaveText(/Jumlah: \d+\/\d+ markah/)
       await expect(page.getByTestId('sub-awarded').first()).toHaveText(/\d+\/\d+ markah/)
@@ -271,17 +283,51 @@ test.describe('M05 Q3 structured answer', { tag: [moduleTag(5)] }, () => {
   )
 
   test(
+    'AC-MUR-17-4 at 375x667 the focused input and "Hantar & Semak" are inside the viewport, wide, with no sideways scroll',
+    async ({ page, loginAs, gotoApp }) => {
+      await page.setViewportSize({ width: 375, height: 667 })
+      await loginAs(PELAJAR)
+      await gotoApp('/latihan-berstruktur/4454/jawab')
+      const inputs = page.getByTestId('sub-answer')
+      await expect(inputs.first()).toBeVisible()
+      const target = inputs.nth(Math.min(2, (await inputs.count()) - 1))
+      await target.focus()
+      await expect(target).toBeFocused()
+      const fit = await page.evaluate(() => {
+        const vp = window.visualViewport
+        const h = vp ? vp.height : window.innerHeight
+        const el = document.activeElement as HTMLElement
+        const card = el.closest('[data-testid^=part-]') as HTMLElement
+        const btn = document.querySelector('[data-testid=answer-submit]') as HTMLElement
+        const r = el.getBoundingClientRect()
+        const b = btn.getBoundingClientRect()
+        return {
+          inputIn: r.top >= 0 && r.top < h,
+          buttonIn: b.top >= 0 && b.bottom <= h,
+          ratio: r.width / card.getBoundingClientRect().width,
+          scrollOk: document.documentElement.scrollWidth <= window.innerWidth,
+        }
+      })
+      expect(fit.inputIn).toBe(true)
+      expect(fit.buttonIn).toBe(true)
+      expect(fit.ratio).toBeGreaterThanOrEqual(0.9)
+      expect(fit.scrollOk).toBe(true)
+    },
+  )
+
+  test(
     'with scope=spm the back link is the SPM list and the attempt is posted with scope',
     provisional('LS-7: live never opened the answer page'),
     async ({ page, loginAs, gotoApp, mock }) => {
       await loginAs(PELAJAR)
       await gotoApp('/latihan-berstruktur/4454/jawab?scope=spm')
-      await expect(tid(page, 'answer-stimulus')).toBeVisible()
+      await expect(tid(page, 'stimulus-group')).toBeVisible()
       await expect(tid(page, 'answer-back')).toHaveAttribute(
         'href',
         /^\/latihan-berstruktur\?subject_id=\d+&scope=spm$/,
       )
       await tid(page, 'answer-submit').click()
+      await tid(page, 'blank-submit').click()
       await expect(tid(page, 'answer-total')).toBeVisible()
       const req = await mock.lastRequest('/api/practice/structured/*/attempts')
       expect((req?.body as { scope?: string }).scope).toBe('spm')
@@ -323,7 +369,7 @@ test.describe('M05 Q3 structured answer', { tag: [moduleTag(5)] }, () => {
   }) => {
     await loginAs(PELAJAR)
     await gotoApp('/latihan-berstruktur/4454/jawab')
-    await expect(tid(page, 'answer-stimulus')).toBeVisible()
+    await expect(tid(page, 'stimulus-group')).toBeVisible()
     await expectNoHorizontalScroll(page)
     // Sidebar from 1024 px, drawer below (shell sanity).
     expect(isDesktopShell(page)).toBe(viewportWidth(page) >= 1024)
