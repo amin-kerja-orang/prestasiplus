@@ -54,6 +54,9 @@ export const subjectView = (s: SubjectWithLevels, bank: BankFacts, offeredIds: r
   return { id, code: s.code, name: s.name, nameEn: s.nameEn, icon: s.icon, color: s.color, isCore: s.isCore, approvedCount: n, bankCount: n }
 }
 
+/** The Bab-mode level shown first when the subject offers it; otherwise the first offered level. */
+const DEFAULT_CHAPTER_LEVEL_CODE = 'T4'
+
 /**
  * Overview reads of M05 (SRS section 7 #1, #2, #3, #7, #8): the dashboard (S1), the practice subjects (S2, S3)
  * and the chapter lists (S4, S5). Nothing is stored here; every figure is derived at call time. The mock
@@ -297,9 +300,10 @@ export class OverviewService {
       name: p.level.name,
       count: p.chapters.reduce((n, c) => n + (counts.get(idToString(c.id)) ?? 0), 0),
     }))
-    // Default: the first offered level; an unknown, non-offered or non-numeric `levelId` falls back to it.
+    // Default: Tingkatan 4 when the subject offers it, otherwise the first offered level (S4-T06 keeps T4 as the Bab-mode default now that T1..T3 are offered).
+    // An unknown, non-offered or non-numeric `levelId` falls back to it.
     const asked = levelIdQuery !== undefined && /^\d+$/.test(levelIdQuery.trim()) ? BigInt(levelIdQuery.trim()).toString() : undefined
-    const shown = perLevel.find((p) => idToString(p.level.id) === asked) ?? perLevel[0]
+    const shown = perLevel.find((p) => idToString(p.level.id) === asked) ?? perLevel.find((p) => p.level.code === DEFAULT_CHAPTER_LEVEL_CODE) ?? perLevel[0]
     const chapters: PracticeReadChapterSubjectDetail['chapters'] = []
     if (shown) {
       const ids = shown.chapters.map((c) => idToString(c.id))

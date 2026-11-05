@@ -5,12 +5,13 @@ import type { CurriculumTestApp } from '../../curriculum/helpers'
 
 /**
  * S4-T06: the overview reads offer every active non-primary level (`offeredLevels(db)`), so a subject with T1 and T5
- * questions reports both with counts, and the practice chapter list opens on T1.
+ * questions reports both with counts, and the practice chapter list opens on T4 (the default when offered).
  */
 let t: CurriculumTestApp
 let pelajar: Client
 let math: string
 let t1: string
+let t4: string
 let t5: string
 
 beforeAll(async () => {
@@ -18,6 +19,7 @@ beforeAll(async () => {
   pelajar = await loginAs(t, 'pelajar@demo.test')
   math = await idOf(t.db, 'subjects', 'MATH')
   t1 = await idOf(t.db, 'education_levels', 'T1')
+  t4 = await idOf(t.db, 'education_levels', 'T4')
   t5 = await idOf(t.db, 'education_levels', 'T5')
 }, 120_000)
 
@@ -45,10 +47,24 @@ describe('offered levels in the overview reads', () => {
     expect(res.body.data.total).toBe(3)
   })
 
-  it('GET /api/practice/chapter-subjects/MATH offers T1 to T5 and opens on T1', async () => {
+  it('GET /api/practice/chapter-subjects/MATH offers T1 to T5 and opens on T4', async () => {
     const res = await pelajar.get('/api/practice/chapter-subjects/MATH')
     expect(res.status).toBe(200)
-    expect(res.body.data.levelId).toBe(t1)
+    expect(res.body.data.levelId).toBe(t4)
     expect(res.body.data.levels.map((l: { id: string }) => l.id)).toContain(t5)
+  })
+})
+
+describe('Bab-mode default level', () => {
+  it('falls back to the first offered level when the subject does not offer T4', async () => {
+    const t4Id = t4
+    await t.db.query('delete from subject_levels where subject_id = $1::bigint and education_level_id = $2::bigint', [math, t4Id])
+    try {
+      const res = await pelajar.get('/api/practice/chapter-subjects/MATH')
+      expect(res.status).toBe(200)
+      expect(res.body.data.levelId).toBe(t1)
+    } finally {
+      await t.db.query('insert into subject_levels (subject_id, education_level_id) values ($1::bigint, $2::bigint) on conflict do nothing', [math, t4Id])
+    }
   })
 })
