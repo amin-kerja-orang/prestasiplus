@@ -956,7 +956,7 @@ describe('#6 convert', () => {
     wallet.setFields(4034, { syiling: 120 })
     const before = wallet.summary(4034)
     const rows = coinLedger.forUser(4034).length
-    const key = '3f2b8c1e-5a47-4d0b-9c36-7e1f0a2b4c5d'
+    const key = crypto.randomUUID()
     const post = (body: Record<string, unknown>) =>
       send(runtime, 'POST', '/api/gamification/convert', { token: gold, body })
     const first = await post({ syilingAmount: 90, clientUuid: key })

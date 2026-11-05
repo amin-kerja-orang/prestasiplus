@@ -101,7 +101,7 @@ describe('POST /api/gamification/convert (AC3, AC4)', () => {
 
   // FR-GM-17.3, FR-ERR-9, DM-79; rulings 1 and 2 on #500: the key is the body clientUuid, per user, and there is no header.
   describe('idempotency per (user, clientUuid)', () => {
-    const KEY = '3f2b8c1e-5a47-4d0b-9c36-7e1f0a2b4c5d'
+    const KEY = crypto.randomUUID()
     const funded = async (name: string, amount: number): Promise<string> => {
       const id = await bareUser(t, name)
       await t.wallet.credit({ userId: id, amount, source: 'quiz_practice', sourceId: 'idem-fund', description: 'Latih Tubi: 10 betul', isTest: false })
@@ -159,7 +159,7 @@ describe('POST /api/gamification/convert (AC3, AC4)', () => {
       expect(await convertRows(id)).toHaveLength(1)
 
       const before = (await walletOf(t, studentId))!
-      const key = '9a1c4e77-2b3d-4f60-8a15-c6d7e8f90a1b'
+      const key = crypto.randomUUID()
       await t.wallet.credit({ userId: studentId, amount: 200, source: 'quiz_practice', sourceId: 'idem-double', description: 'Latih Tubi: 20 betul', isTest: false })
       const [one, two] = await Promise.all([
         student.post('/gamification/convert', { syilingAmount: 100, clientUuid: key }),
