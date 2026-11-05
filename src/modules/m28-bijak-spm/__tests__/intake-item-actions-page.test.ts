@@ -15,6 +15,8 @@ const server = vi.hoisted(() => ({
   subjects: () => [],
 }))
 vi.mock('../server/client', () => ({ bijakAdminServer: () => server }))
+const confirm = vi.hoisted(() => vi.fn())
+vi.mock('@/ds', async (original) => ({ ...(await original<typeof import('@/ds')>()), useConfirm: () => confirm }))
 vi.mock('@/composables/usePageMeta', () => ({ usePageMeta: () => ({ setHeader: vi.fn(), setTitle: vi.fn() }) }))
 
 const batchOf = (n: number): IntakeBatch =>
@@ -55,6 +57,7 @@ afterEach(() => {
 })
 
 beforeEach(() => {
+  confirm.mockReset().mockResolvedValue(true)
   for (const f of Object.values(server)) if (typeof f === 'function' && 'mockReset' in f) (f as ReturnType<typeof vi.fn>).mockReset()
   server.getIntakeBatch.mockResolvedValue(batchOf(2))
   server.saveExtracted.mockResolvedValue(batchOf(2))
@@ -109,12 +112,33 @@ describe('IntakeReviewPage V2 item actions (I6, I7)', () => {
     expect(server.decideIntakeItem).toHaveBeenCalledTimes(1)
   })
 
+  it('Terima semua asks first; a refusal sends nothing', async () => {
+    confirm.mockResolvedValue(false)
+    const w = await mountPage()
+    await w.get('[data-testid=accept-all]').trigger('click')
+    await flushPromises()
+    expect(confirm.mock.calls[0]?.[0]).toMatchObject({ confirmLabel: 'Ya, Terima Semua', cancelLabel: 'Batal' })
+    expect(confirm.mock.calls[0]?.[0].message).toMatch(/^Terima \d+ item yang belum disemak\?$/)
+    expect(server.acceptUnreviewed).not.toHaveBeenCalled()
+  })
+
+  it('Sebelum and Seterusnya move along the batch, stopping at each end', async () => {
+    server.getIntakeBatch.mockResolvedValue(batchOf(2))
+    const w = await mountPage()
+    expect(w.get('[data-testid=item-counter]').text()).toContain('Item 1 / 2')
+    expect(w.get('[data-testid=item-prev]').attributes('disabled')).toBeDefined()
+    await w.get('[data-testid=item-next]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-testid=item-counter]').text()).toContain('Item 2 / 2')
+    expect(w.get('[data-testid=item-next]').attributes('disabled')).toBeDefined()
+  })
+
   it('Terima semua reports how many were skipped', async () => {
     server.acceptUnreviewed.mockResolvedValue({ done: 1, skipped: [{ id: 'q', reason: 'BELOW_THRESHOLD' }], batch: batchOf(1) })
     const w = await mountPage()
     await w.get('[data-testid=accept-all]').trigger('click')
     await flushPromises()
-    expect(w.get('[data-testid=decision-note]').text()).toContain('1 soalan diterima sebagai draf. 1 dilangkau')
+    expect(w.get('[data-testid=decision-note]').text()).toBe('1 diterima, 1 gagal')
   })
 
   it('does not decide when the save before it failed', async () => {

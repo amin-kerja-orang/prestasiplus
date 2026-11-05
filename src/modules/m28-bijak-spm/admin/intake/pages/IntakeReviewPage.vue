@@ -8,7 +8,7 @@
 import { computed, h, nextTick, onBeforeUnmount, onMounted, ref, watch, type FunctionalComponent } from 'vue'
 
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsBadge, DsEmptyState, DsPage, DsPanel, DsSplitPane, DsStack, DsStateView, DsStatusBadge, DsText } from '@/ds'
+import { useConfirm, DsBadge, DsCluster, DsEmptyState, DsPage, DsPanel, DsSplitPane, DsStack, DsStateView, DsStatusBadge, DsText } from '@/ds'
 
 import { StimulusView } from '../../../../../components/question-display'
 import { formatDateTime } from '../../../lib/use-bijak'
@@ -382,15 +382,27 @@ const current = ref<string | null>(null)
 const deciding = ref(false)
 const decisionErrors = ref<string[]>([])
 const decisionNote = ref('')
+const confirm = useConfirm()
 const rejectingId = ref<string | null>(null)
 const rejectReason = ref('')
 const canDecide = computed(() => !readonly.value && !batch.value?.itemsUnavailable && !!server.decideIntakeItem)
 
-function afterDecision(next: IntakeBatch): void {
+function afterDecision(next: IntakeBatch, first?: string): void {
   loaded = false // this replacement is not an edit: the autosave watcher skips it
   batch.value = next
-  open.value = new Set(next.questions[0] ? [next.questions[0].id] : [])
-  current.value = next.questions[0]?.id ?? null
+  const at = next.questions.find((q) => q.id === first)?.id ?? next.questions[0]?.id
+  open.value = new Set(at ? [at] : [])
+  current.value = at ?? null
+}
+
+/** `Sebelum` and `Seterusnya` (09-06): moves the open item along the batch. */
+function step(id: string, by: -1 | 1): void {
+  const list = batch.value?.questions ?? []
+  const next = list[list.findIndex((q) => q.id === id) + by]
+  if (!next) return
+  open.value = new Set([next.id])
+  current.value = next.id
+  void nextTick(() => document.getElementById(`q-${next.id}`)?.scrollIntoView?.({ block: 'start', behavior: 'smooth' }))
 }
 
 /** Saves pending edits first; a decision is taken only on saved content (never on a failed save). */
@@ -462,17 +474,21 @@ async function confirmReject(): Promise<void> {
 async function acceptAll(): Promise<void> {
   const b = batch.value
   if (!b || deciding.value) return
+  const ok = await confirm({
+    message: `Terima ${b.questions.length} item yang belum disemak?`,
+    confirmLabel: 'Ya, Terima Semua',
+    cancelLabel: 'Batal',
+  })
+  if (!ok) return
   deciding.value = true
   decisionErrors.value = []
   decisionNote.value = ''
   try {
     if (!(await settle())) return
     const r = await server.acceptUnreviewed(b.id)
-    decisionNote.value =
-      r.skipped.length > 0
-        ? `${r.done} soalan diterima sebagai draf. ${r.skipped.length} dilangkau: keyakinan rendah atau semakan kualiti belum lulus.`
-        : `${r.done} soalan diterima sebagai draf.`
-    afterDecision(r.batch)
+    decisionNote.value = `${r.done} diterima, ${r.skipped.length} gagal`
+    // Failed items open first (09-06).
+    afterDecision(r.batch, r.skipped[0]?.id)
   } catch (e) {
     decisionErrors.value = [failMessage(e)]
   } finally {
@@ -804,8 +820,7 @@ async function submit(): Promise<void> {
           color="success"
           variant="subtle"
           icon="i-ph-check-circle"
-          title="Semua soalan telah diputuskan"
-          description="Setiap soalan ekstrak ini sudah diterima atau ditolak. Lihat Baris Gilir Semakan."
+          title="Tiada item untuk disemak."
           data-testid="all-decided"
         />
 
@@ -1093,6 +1108,28 @@ async function submit(): Promise<void> {
                         <p class="text-caption text-muted" data-testid="item-counter">
                           Item {{ batch.questions.findIndex((x) => x.id === q.id) + 1 }} / {{ batch.questions.length }}
                         </p>
+                        <DsCluster gap="xs" data-testid="item-nav">
+                          <UButton
+                            type="button"
+                            color="neutral"
+                            variant="soft"
+                            :disabled="batch.questions[0]?.id === q.id"
+                            data-testid="item-prev"
+                            @click="step(q.id, -1)"
+                          >
+                            Sebelum
+                          </UButton>
+                          <UButton
+                            type="button"
+                            color="neutral"
+                            variant="soft"
+                            :disabled="batch.questions[batch.questions.length - 1]?.id === q.id"
+                            data-testid="item-next"
+                            @click="step(q.id, 1)"
+                          >
+                            Seterusnya
+                          </UButton>
+                        </DsCluster>
                         <div
                           class="flex flex-wrap gap-2 max-sm:sticky max-sm:bottom-0 max-sm:z-10 max-sm:border-t max-sm:border-default max-sm:bg-default max-sm:py-2"
                           data-testid="item-buttons"
