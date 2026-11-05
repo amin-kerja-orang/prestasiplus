@@ -9,6 +9,7 @@
  *   question sets, and runs the build checks (a failure stops the boot).
  */
 
+import { guruSubmissions } from '../repository/guru-structured-submit'
 import { checkNamedQueries } from '@/mock/dataset'
 import type { SeedContext } from '@/mock/define'
 import { questions } from '@/modules/m04-question-bank/mock'
@@ -34,6 +35,8 @@ export function seedM10(ctx: SeedContext): void {
   questionSetsRepo.beginSeed(() => ctx.clock.now())
   dskpRepo.seed()
   seedTeacherProfiles()
+  // S6-T17: the teacher's structured submissions start empty on every boot.
+  guruSubmissions.reset()
 }
 
 /** Five eligible Kimia T5 ids: the M08 anchors when M04 holds them, else a deterministic draw. */

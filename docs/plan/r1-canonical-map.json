@@ -1988,12 +1988,32 @@
       "approved_by_card": "S6-T17"
     },
     {
-      "key": "/guru/soalan-berstruktur/:id([0-9]+)|",
-      "path": "/guru/soalan-berstruktur/:id([0-9]+)",
+      "key": "/guru/soalan-berstruktur/:id([0-9]+|g[0-9]+)|",
+      "path": "/guru/soalan-berstruktur/:id([0-9]+|g[0-9]+)",
       "name": null,
       "status": "canonical",
       "sector": "S6",
       "component": "src/modules/m04-question-bank/pages/StructuredDetailPage.vue",
+      "file": "src/modules/m10-teacher-class/routes/soalan.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
+      "key": "/guru/soalan-berstruktur/cipta|",
+      "path": "/guru/soalan-berstruktur/cipta",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m10-teacher-class/pages/SoalanBerstrukturCiptaPage.vue",
+      "file": "src/modules/m10-teacher-class/routes/soalan.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
+      "key": "/guru/soalan-berstruktur/:id(g[0-9]+)/edit|",
+      "path": "/guru/soalan-berstruktur/:id(g[0-9]+)/edit",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m10-teacher-class/pages/SoalanBerstrukturEditPage.vue",
       "file": "src/modules/m10-teacher-class/routes/soalan.ts",
       "approved_by_card": "S6-T17"
     },

@@ -13,12 +13,18 @@ const session = (role: 'student' | 'teacher' | 'admin' | null) => ({
 })
 
 describe('S6-T17 structured routes (R1-GUR-44b)', () => {
-  const structured = routes.filter((r) => r.path.startsWith('/guru/soalan-berstruktur'))
+  // The two M04 pages (the submit form routes are covered by berstruktur/routes.test.ts).
+  const structured = routes.filter(
+    (r) =>
+      r.props !== undefined &&
+      r.component !== undefined &&
+      ['m10.soalan.berstruktur', 'm10.soalan.berstruktur.detail'].includes(String(r.name)),
+  )
 
-  it('mounts the list and the numeric detail for the teacher shell with portal guru', () => {
+  it('mounts the list and the detail (question or own g{n}) for the teacher shell with portal guru', () => {
     expect(structured.map((r) => r.path)).toEqual([
       '/guru/soalan-berstruktur',
-      '/guru/soalan-berstruktur/:id([0-9]+)',
+      '/guru/soalan-berstruktur/:id([0-9]+|g[0-9]+)',
     ])
     expect(structured.map((r) => r.name)).toEqual([
       'm10.soalan.berstruktur',
@@ -26,7 +32,7 @@ describe('S6-T17 structured routes (R1-GUR-44b)', () => {
     ])
     expect(structured[0]?.props).toEqual({ portal: 'guru' })
     const detailProps = structured[1]?.props as (r: unknown) => unknown
-    expect(detailProps({ params: { id: '4454' } })).toEqual({ id: 4454, portal: 'guru' })
+    expect(detailProps({ params: { id: '4454' } })).toEqual({ id: '4454', portal: 'guru' })
     for (const r of structured) {
       expect(r.meta?.layout).toBe('user')
       expect(r.meta?.roles).toEqual(['teacher', 'admin'])
