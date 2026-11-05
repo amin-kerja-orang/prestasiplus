@@ -43,6 +43,7 @@ import { reportRoutes } from './handlers/reports'
 // REQ-A-018: paper-level "Dilihat murid di".
 import { paperServabilityRoutes } from './handlers/paper-servability'
 import { qualityAuditRepo, qualityAuditTable } from './repository/audit-state'
+import { diagramReviewsRepo, diagramReviewsTable } from './repository/diagram-review'
 import { masterNotesRepo, masterNotesTable } from './repository/master-notes'
 import { submissionsRepo, submissionsTable } from './repository/submissions'
 import { finaliseWorkflow, MASTER_NOTES_OVERRIDE, seedWorkflow } from './seeds/workflow'
@@ -51,13 +52,14 @@ const plugin = defineMockModule({
   id: 'M04',
   // M01: creator names (`users`); M02: teacher schools. Handlers read them at request time.
   dependsOn: ['core', 'M01', 'M02', 'M03'],
-  version: 7,
+  version: 8,
   tables: {
     reports: reportsTable,
     importRuns: importRunsTable,
     submissions: submissionsTable,
     masterNotes: masterNotesTable,
     qualityAudit: qualityAuditTable,
+    diagramReviews: diagramReviewsTable,
   },
   datasets: {
     questions: questionsDataset,
@@ -72,6 +74,7 @@ const plugin = defineMockModule({
     submissions: submissionsRepo,
     masterNotes: masterNotesRepo,
     qualityAudit: qualityAuditRepo,
+    diagramReviews: diagramReviewsRepo,
   },
   overrides: [QUESTION_STORE_OVERRIDE, IMPORT_RUNS_OVERRIDE, MASTER_NOTES_OVERRIDE],
   seed(ctx) {
