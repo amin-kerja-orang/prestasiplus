@@ -48219,6 +48219,27 @@
           },
           "students": {
             "type": "integer"
+          },
+          "teacherName": {
+            "type": "string"
+          },
+          "entryStatus": {
+            "type": "string",
+            "enum": [
+              "active",
+              "draft"
+            ]
+          },
+          "statusReason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "belum_ada_data",
+              "belum_ada_tov",
+              null
+            ]
           }
         },
         "required": [
@@ -48229,7 +48250,10 @@
           "year",
           "mode",
           "activeOtrs",
-          "students"
+          "students",
+          "teacherName",
+          "entryStatus",
+          "statusReason"
         ]
       },
       "PerformanceHeadcountDashboard": {
@@ -48257,6 +48281,12 @@
                 },
                 "year": {
                   "type": "integer"
+                },
+                "mode": {
+                  "$ref": "#/components/schemas/PerformanceHeadcountMode"
+                },
+                "teacherName": {
+                  "type": "string"
                 },
                 "onTrack": {
                   "type": "integer"
@@ -48312,6 +48342,8 @@
                 "className",
                 "subjectName",
                 "year",
+                "mode",
+                "teacherName",
                 "onTrack",
                 "offTrack",
                 "noData",
@@ -48499,6 +48531,143 @@
           "studentIds"
         ]
       },
+      "PerformanceHeadcountArRequest": {
+        "type": "object",
+        "properties": {
+          "checkpoint": {
+            "type": "integer"
+          },
+          "marks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "value": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "maximum": 100
+                }
+              },
+              "required": [
+                "userId",
+                "value"
+              ]
+            }
+          }
+        },
+        "required": [
+          "checkpoint",
+          "marks"
+        ]
+      },
+      "PerformanceHeadcountTovRequest": {
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "tov": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "etr": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "rs": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "rsRecordedAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                }
+              },
+              "required": [
+                "userId"
+              ]
+            }
+          }
+        },
+        "required": [
+          "rows"
+        ]
+      },
+      "PerformanceHeadcountSettingsRequest": {
+        "type": "object",
+        "properties": {
+          "activeOtrs": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string",
+                "pattern": "^-?\\d+$"
+              }
+            ]
+          },
+          "confirm": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "activeOtrs"
+        ]
+      },
+      "PerformanceHeadcountDefaultsRequest": {
+        "type": "object",
+        "properties": {
+          "defaultTov": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100
+          },
+          "defaultEtr": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "defaultTov",
+          "defaultEtr"
+        ]
+      },
       "PerformanceHeadcountSortQuery": {
         "type": "object",
         "properties": {
@@ -48559,12 +48728,57 @@
                 "year": {
                   "type": "integer"
                 },
+                "mode": {
+                  "$ref": "#/components/schemas/PerformanceHeadcountMode"
+                },
                 "status": {
                   "type": "string",
                   "enum": [
                     "on",
                     "below",
                     "none"
+                  ]
+                },
+                "statusReason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "belum_ada_data",
+                    "belum_ada_tov",
+                    null
+                  ]
+                },
+                "entryStatus": {
+                  "type": "string",
+                  "enum": [
+                    "active",
+                    "draft"
+                  ]
+                },
+                "jurang": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "unjuran": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "keyakinan": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "Tinggi",
+                    "Sederhana",
+                    "Rendah",
+                    null
                   ]
                 },
                 "tov": {
@@ -48804,7 +49018,13 @@
                 "levelName",
                 "className",
                 "year",
+                "mode",
                 "status",
+                "statusReason",
+                "entryStatus",
+                "jurang",
+                "unjuran",
+                "keyakinan",
                 "tov",
                 "etr",
                 "rs",
@@ -48941,6 +49161,21 @@
               },
               "activeOtrs": {
                 "type": "integer"
+              },
+              "mode": {
+                "$ref": "#/components/schemas/PerformanceHeadcountMode"
+              },
+              "defaultTov": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "defaultEtr": {
+                "type": [
+                  "number",
+                  "null"
+                ]
               }
             },
             "required": [
@@ -48951,7 +49186,10 @@
               "year",
               "teacherName",
               "status",
-              "activeOtrs"
+              "activeOtrs",
+              "mode",
+              "defaultTov",
+              "defaultEtr"
             ]
           },
           "chips": {
@@ -48968,13 +49206,17 @@
               },
               "total": {
                 "type": "integer"
+              },
+              "onTrackPct": {
+                "type": "integer"
               }
             },
             "required": [
               "onTrack",
               "below",
               "empty",
-              "total"
+              "total",
+              "onTrackPct"
             ]
           },
           "rows": {
@@ -49090,6 +49332,92 @@
                 },
                 "dropped": {
                   "type": "boolean"
+                },
+                "rs": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "rsRecordedAt": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/DateOnly"
+                    },
+                    {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "on",
+                    "below",
+                    "none"
+                  ]
+                },
+                "statusReason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "belum_ada_data",
+                    "belum_ada_tov",
+                    null
+                  ]
+                },
+                "entryStatus": {
+                  "type": "string",
+                  "enum": [
+                    "active",
+                    "draft"
+                  ]
+                },
+                "projection": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "value": {
+                      "type": "number"
+                    },
+                    "variant": {
+                      "type": "string",
+                      "enum": [
+                        "green",
+                        "amber",
+                        "red"
+                      ]
+                    },
+                    "trend": {
+                      "type": "string",
+                      "enum": [
+                        "Meningkat",
+                        "Stabil",
+                        "Menurun"
+                      ]
+                    },
+                    "confidence": {
+                      "type": "string",
+                      "enum": [
+                        "Tinggi",
+                        "Sederhana",
+                        "Rendah"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "value",
+                    "variant",
+                    "trend",
+                    "confidence"
+                  ]
                 }
               },
               "required": [
@@ -49100,7 +49428,13 @@
                 "cells",
                 "etr",
                 "etrGrade",
-                "dropped"
+                "dropped",
+                "rs",
+                "rsRecordedAt",
+                "status",
+                "statusReason",
+                "entryStatus",
+                "projection"
               ]
             }
           },
@@ -113342,6 +113676,128 @@
         }
       }
     },
+    "/headcounts/me": {
+      "get": {
+        "tags": [
+          "headcount"
+        ],
+        "summary": "The pupil's own headcount configs of the current MYT calendar year (class membership), newest first",
+        "description": "entryStatus / statusReason are the pupil's own line; a pupil dropped from a config does not see it.",
+        "responses": {
+          "200": {
+            "description": "The pupil's own headcount configs of the current MYT calendar year (class membership), newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PerformanceHeadcountListItem"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not student",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/headcounts/me/detail": {
+      "get": {
+        "tags": [
+          "headcount"
+        ],
+        "summary": "The pupil's own line of one config",
+        "description": "Omitted configId: the config last updated (sections is empty when the pupil has none). Own line only; no classmate data.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "configId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pupil's own line of one config",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceHeadcountStudent"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not student",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": configId of a config that is not the pupil's own, or unknown",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/headcounts/students/{userId}": {
       "get": {
         "tags": [
@@ -113999,6 +114455,418 @@
           },
           "404": {
             "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown id, or a config outside the viewer scope (uniform 404)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/headcounts/{id}/ar": {
+      "put": {
+        "tags": [
+          "headcount"
+        ],
+        "summary": "Key-in AR of one checkpoint (Manual config)",
+        "description": "An Auto config, or a checkpoint outside 1..activeOtrs, answers 404. 403 for school_admin and admin. Stored with 1 decimal.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf."
+            },
+            "required": true,
+            "description": "Value of Session.csrf.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PerformanceHeadcountArRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Key-in AR of one checkpoint (Manual config)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceHeadcountDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not teacher (school_admin and admin never write), or a CSRF failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown id, a config outside the viewer scope or another teacher's config (uniform 404)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Markah mesti antara 0 dan 100.\" (fields marks.{i}.value), or \"Murid tidak sah.\" (marks.{i}.userId; an unknown or dropped pupil).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/headcounts/{id}/tov": {
+      "put": {
+        "tags": [
+          "headcount"
+        ],
+        "summary": "Edit TOV / ETR / RS of pupils",
+        "description": "Only the keys present in a row are written; null clears. The RS date defaults to the MYT day of the first RS save; rs null clears the date.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf."
+            },
+            "required": true,
+            "description": "Value of Session.csrf.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PerformanceHeadcountTovRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edit TOV / ETR / RS of pupils",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceHeadcountDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not teacher (school_admin and admin never write), or a CSRF failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown id, a config outside the viewer scope or another teacher's config (uniform 404)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Markah mesti antara 0 dan 100.\" (rows.{i}.tov|etr|rs), \"Tarikh tidak boleh lebih lewat daripada hari ini.\" (rows.{i}.rsRecordedAt), \"Tarikh tidak sah.\", \"Murid tidak sah.\" (rows.{i}.userId).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/headcounts/{id}/settings": {
+      "put": {
+        "tags": [
+          "headcount"
+        ],
+        "summary": "Tetapan: Bilangan OTR",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf."
+            },
+            "required": true,
+            "description": "Value of Session.csrf.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PerformanceHeadcountSettingsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tetapan: Bilangan OTR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceHeadcountDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not teacher (school_admin and admin never write), or a CSRF failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown id, a config outside the viewer scope or another teacher's config (uniform 404)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"OTR{k} ke atas mempunyai markah. Padam markah tersebut?\" (k = new count + 1); resend with confirm true to delete the marks above n and save.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Bilangan OTR mesti 2, 3, 4 atau 5.\" (field activeOtrs).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/headcounts/{id}/defaults": {
+      "put": {
+        "tags": [
+          "headcount"
+        ],
+        "summary": "Simpan Sasaran: class default TOV and ETR",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf."
+            },
+            "required": true,
+            "description": "Value of Session.csrf.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PerformanceHeadcountDefaultsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Simpan Sasaran: class default TOV and ETR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceHeadcountDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not teacher (school_admin and admin never write), or a CSRF failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown id, a config outside the viewer scope or another teacher's config (uniform 404)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Markah mesti antara 0 dan 100.\" (fields defaultTov, defaultEtr).",
             "content": {
               "application/json": {
                 "schema": {
