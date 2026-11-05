@@ -1373,7 +1373,7 @@
         "properties": {
           "search": {
             "type": "string",
-            "description": "Title contains, case-insensitive."
+            "description": "Title or body contains, case-insensitive; at most 100 characters are used."
           },
           "category": {
             "type": "string",
@@ -1599,7 +1599,7 @@
         "properties": {
           "search": {
             "type": "string",
-            "description": "Title contains, case-insensitive."
+            "description": "Title or body contains, case-insensitive; at most 100 characters are used."
           },
           "category": {
             "type": "string",
@@ -4420,7 +4420,7 @@
                 },
                 "count": {
                   "type": "integer",
-                  "minimum": 1
+                  "minimum": 0
                 }
               },
               "required": [
@@ -4445,7 +4445,10 @@
         },
         "required": [
           "total",
-          "counts"
+          "counts",
+          "page",
+          "perPage",
+          "matched"
         ],
         "additionalProperties": false
       },
@@ -4457,7 +4460,7 @@
             "items": {
               "$ref": "#/components/schemas/SupportQueueRow"
             },
-            "maxItems": 200
+            "maxItems": 25
           },
           "meta": {
             "$ref": "#/components/schemas/SupportQueueMeta"
@@ -8720,6 +8723,30 @@
           },
           "question": {
             "$ref": "#/components/schemas/QuestionReportQuestionRef"
+          },
+          "subject": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "questionText": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -18387,9 +18414,10 @@
             "description": "Members with at least one answer in the last 7 days."
           },
           "accuracy": {
-            "type": "integer",
+            "type": "number",
             "minimum": 0,
-            "description": "Whole percent over all answers of the members; 0 when none."
+            "maximum": 100,
+            "description": "Pooled accuracy, one decimal (XS-5); 0 when none."
           }
         },
         "required": [
@@ -18415,8 +18443,9 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "integer",
-            "minimum": 0
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
           }
         },
         "required": [
@@ -18591,9 +18620,10 @@
             "description": "round((week - previous 7 days) / previous * 100); 0 when the previous week has no answer."
           },
           "accuracy": {
-            "type": "integer",
+            "type": "number",
             "minimum": 0,
-            "description": "round(correct / answered * 100) over all answers; 0 when none."
+            "maximum": 100,
+            "description": "Pooled accuracy, one decimal (XS-5); 0 when none."
           },
           "gpsOverall": {
             "type": [
@@ -18649,17 +18679,22 @@
             "minimum": 0
           },
           "kirkT2Accuracy": {
-            "type": "integer",
+            "type": "number",
             "minimum": 0,
-            "description": "Accuracy of the last 30 days."
+            "maximum": 100,
+            "description": "Pooled accuracy of the last 30 days, one decimal (XS-5); 0 when none."
           },
           "kirkT2Delta": {
-            "type": "integer",
-            "description": "Difference to the 30 days before."
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Difference to the 30 days before, one decimal; null when either side has no answers."
           },
           "kirkT2Prev": {
-            "type": "integer",
-            "minimum": 0
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
           },
           "kirkT3Active": {
             "type": "integer",
@@ -18774,8 +18809,9 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "integer",
-            "minimum": 0
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
           },
           "lastActiveAt": {
             "allOf": [
@@ -18835,8 +18871,9 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "integer",
-            "minimum": 0
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
           }
         },
         "required": [
@@ -18864,8 +18901,9 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "integer",
-            "minimum": 0
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
           },
           "students": {
             "type": "integer",
@@ -19028,8 +19066,9 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "integer",
-            "minimum": 0
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
           },
           "lastActiveAt": {
             "allOf": [
@@ -19059,15 +19098,21 @@
         "type": "object",
         "properties": {
           "accuracyNow": {
-            "type": "integer",
-            "minimum": 0
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
           },
           "accuracyPrev": {
-            "type": "integer",
-            "minimum": 0
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
           },
           "accuracyChange": {
-            "type": "integer"
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Difference to the 30 days before, one decimal; null when either side has no answers."
           },
           "answersNow": {
             "type": "integer",
@@ -19146,15 +19191,21 @@
             "type": "object",
             "properties": {
               "accuracyNow": {
-                "type": "integer",
-                "minimum": 0
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
               },
               "accuracyPrev": {
-                "type": "integer",
-                "minimum": 0
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
               },
               "accuracyChange": {
-                "type": "integer"
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Difference to the 30 days before, one decimal; null when either side has no answers."
               },
               "answersNow": {
                 "type": "integer",
@@ -19594,8 +19645,9 @@
                   "type": "string"
                 },
                 "accuracy": {
-                  "type": "integer",
-                  "minimum": 0
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
                 },
                 "awardedAt": {
                   "$ref": "#/components/schemas/Timestamp"
@@ -25129,84 +25181,6 @@
           "$ref": "#/components/schemas/GamesSekolahBersaingBoardRow"
         },
         "description": "Rank order; [] when no school has a session."
-      },
-      "GamesSekolahBersaingQuery": {
-        "type": "object",
-        "properties": {
-          "week": {
-            "type": "string",
-            "description": "Any text; an invalid value is ignored."
-          }
-        }
-      },
-      "GamesSekolahBersaingRow": {
-        "type": "object",
-        "properties": {
-          "rank": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "schoolName": {
-            "type": "string"
-          },
-          "state": {
-            "type": "string"
-          },
-          "aktifPct": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 100
-          },
-          "streakAvg": {
-            "type": "number",
-            "minimum": 0
-          },
-          "notaPer10": {
-            "type": "number",
-            "minimum": 0
-          },
-          "anonymous": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "rank",
-          "schoolName",
-          "state",
-          "aktifPct",
-          "streakAvg",
-          "notaPer10",
-          "anonymous"
-        ],
-        "additionalProperties": false
-      },
-      "GamesSekolahBersaing": {
-        "type": "object",
-        "properties": {
-          "weekStart": {
-            "type": "string",
-            "format": "date",
-            "description": "Monday of the selected week.",
-            "example": "2026-10-16"
-          },
-          "count": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "rows": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/GamesSekolahBersaingRow"
-            },
-            "description": "Stored rank order; [] for an empty week."
-          }
-        },
-        "required": [
-          "weekStart",
-          "count",
-          "rows"
-        ],
-        "additionalProperties": false
       },
       "GamesAdminOverview": {
         "type": "object",
@@ -30934,9 +30908,10 @@
         "enum": [
           "on_track",
           "watch",
-          "high"
+          "high",
+          "not_started"
         ],
-        "description": "score < 40 on_track, < 60 watch, otherwise high. Labels: \"On Track\", \"Perlu Perhatian\", \"Berisiko Tinggi\"."
+        "description": "score < 40 on_track, < 60 watch, otherwise high; a pupil with no practice data at all is not_started (no score, outside the three groups). Labels: \"On Track\", \"Perlu Perhatian\", \"Berisiko Tinggi\", \"Belum Bermula\"."
       },
       "AmaranScope": {
         "type": "string",
@@ -30985,9 +30960,15 @@
             "minimum": 0,
             "description": "high."
           },
+          "notStarted": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "not_started: pupils with no practice data, outside green, yellow, red and total. Always sent by the API; optional so existing consumers keep compiling (additive change)."
+          },
           "total": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "description": "green + yellow + red (not_started excluded)."
           },
           "pct": {
             "type": "object",
@@ -31059,7 +31040,7 @@
         "properties": {
           "tingkatan": {
             "type": "string",
-            "description": "T4 | T5 | 4 | 5 (case-insensitive). Anything else = no filter. The filter is class based."
+            "description": "T1 to T5 | 1 to 5 (case-insensitive). Anything else = no filter. The filter is class based."
           }
         }
       },
@@ -31110,10 +31091,13 @@
             "description": "\"Tingkatan n {class}\", \"Darjah n {class}\" or \"-\"."
           },
           "score": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100,
-            "description": "0.4A + 0.3E + 0.3M, 1 decimal."
+            "description": "0.4A + 0.3E + 0.3M, 1 decimal; null for not_started."
           },
           "status": {
             "$ref": "#/components/schemas/AmaranRiskStatus"
@@ -31209,10 +31193,22 @@
               "null"
             ],
             "enum": [
+              "T1",
+              "T2",
+              "T3",
               "T4",
               "T5",
               null
             ]
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            },
+            "description": "The Tingkatan numbers (ascending) that have pupils in the school; the level pills list only these."
           },
           "levelSuffix": {
             "type": "string",
@@ -31232,7 +31228,7 @@
             "items": {
               "$ref": "#/components/schemas/AmaranPupilRisk"
             },
-            "description": "Score descending, 1-based rank. Inactive pupils are included."
+            "description": "Score descending (not_started last), 1-based rank. Inactive pupils are included."
           }
         },
         "required": [
@@ -42845,6 +42841,17 @@
                 },
                 "body": {
                   "$ref": "#/components/schemas/QuestionRichText"
+                },
+                "imageId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "S1-T01 (API-Q-08, DM-52): public token of a `question_image` file (as `Stimulus.imageId`); null or absent = no picture."
+                },
+                "isDistractor": {
+                  "type": "boolean",
+                  "description": "S1-T01 (API-Q-08, DM-52): the option is a distractor (\"Pengganggu\"); absent = false."
                 }
               },
               "required": [
@@ -42931,6 +42938,38 @@
               null
             ],
             "description": "S1-T01: kertas of the group (reuses `QuestionKertas`); defaulted from the members when absent."
+          },
+          "optionBank": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "pattern": "^[A-H]$"
+                },
+                "body": {
+                  "$ref": "#/components/schemas/QuestionRichText"
+                },
+                "imageId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "S1-T01 (API-Q-08, DM-52): public token of a `question_image` file (as `Stimulus.imageId`); null or absent = no picture."
+                },
+                "isDistractor": {
+                  "type": "boolean",
+                  "description": "S1-T01 (API-Q-08, DM-52): the option is a distractor (\"Pengganggu\"); absent = false."
+                }
+              },
+              "required": [
+                "label",
+                "body"
+              ]
+            },
+            "maxItems": 8,
+            "description": "S1-T01 (API-Q-08): replaces the whole bank (send every row to keep it; `[]` clears). A letter that a leaf key of a member uses cannot be dropped (422 `optionBank`, AC-QA-10). A served group answers 409 like the stimuli change: edit it as a draft copy."
           }
         },
         "additionalProperties": false
@@ -43018,6 +43057,15 @@
                 },
                 "body": {
                   "$ref": "#/components/schemas/QuestionRichText"
+                },
+                "imageId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "isDistractor": {
+                  "type": "boolean"
                 }
               },
               "required": [
@@ -43084,6 +43132,25 @@
               "null"
             ],
             "description": "BM warning while the group has 0 questions (a draft group); null otherwise. The write went through."
+          },
+          "usedInPapers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "title": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "title"
+              ]
+            },
+            "description": "S1-T01 (API-Q-08, ruling #685): the Terbit papers that place the group or any of its members, by paper id. Read only; the retire confirm dialog (API-Q-33) names them. Empty when none."
           }
         },
         "required": [
@@ -43699,7 +43766,8 @@
         "enum": [
           "latih_tubi",
           "tracking_a",
-          "youtube"
+          "youtube",
+          "harian"
         ]
       },
       "MissionStatus": {
@@ -43754,6 +43822,17 @@
           },
           "status": {
             "$ref": "#/components/schemas/MissionStatus"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "S6-T07 additive: mission description (null when none)."
+          },
+          "rewardCoins": {
+            "type": "integer",
+            "description": "S6-T07 additive: coins paid once at the target."
           }
         },
         "required": [
@@ -43785,6 +43864,164 @@
         "required": [
           "data",
           "meta"
+        ]
+      },
+      "TeacherMission": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "targetQuestions": {
+            "type": "integer"
+          },
+          "rewardCoins": {
+            "type": "integer"
+          },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "classroomId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "subjectId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "subjectName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "global": {
+            "type": "boolean"
+          },
+          "completedCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Pupils of the teacher's classes who completed it."
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "targetQuestions",
+          "rewardCoins",
+          "date",
+          "classroomId",
+          "subjectId",
+          "subjectName",
+          "global",
+          "completedCount"
+        ]
+      },
+      "TeacherMissionCreate": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500
+          },
+          "targetQuestions": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "default": 10
+          },
+          "rewardCoins": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "default": 10
+          },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "classroomId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "null or absent = all own classes.",
+            "example": "1042"
+          },
+          "subjectId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "title",
+          "date",
+          "subjectId"
+        ]
+      },
+      "TeacherMissionListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TeacherMission"
+            }
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "TeacherMissionResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TeacherMission"
+          }
+        },
+        "required": [
+          "data"
         ]
       },
       "RemedialStatus": {
@@ -47982,6 +48219,27 @@
           },
           "students": {
             "type": "integer"
+          },
+          "teacherName": {
+            "type": "string"
+          },
+          "entryStatus": {
+            "type": "string",
+            "enum": [
+              "active",
+              "draft"
+            ]
+          },
+          "statusReason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "belum_ada_data",
+              "belum_ada_tov",
+              null
+            ]
           }
         },
         "required": [
@@ -47992,7 +48250,10 @@
           "year",
           "mode",
           "activeOtrs",
-          "students"
+          "students",
+          "teacherName",
+          "entryStatus",
+          "statusReason"
         ]
       },
       "PerformanceHeadcountDashboard": {
@@ -48020,6 +48281,12 @@
                 },
                 "year": {
                   "type": "integer"
+                },
+                "mode": {
+                  "$ref": "#/components/schemas/PerformanceHeadcountMode"
+                },
+                "teacherName": {
+                  "type": "string"
                 },
                 "onTrack": {
                   "type": "integer"
@@ -48075,6 +48342,8 @@
                 "className",
                 "subjectName",
                 "year",
+                "mode",
+                "teacherName",
                 "onTrack",
                 "offTrack",
                 "noData",
@@ -48262,6 +48531,143 @@
           "studentIds"
         ]
       },
+      "PerformanceHeadcountArRequest": {
+        "type": "object",
+        "properties": {
+          "checkpoint": {
+            "type": "integer"
+          },
+          "marks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "value": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "maximum": 100
+                }
+              },
+              "required": [
+                "userId",
+                "value"
+              ]
+            }
+          }
+        },
+        "required": [
+          "checkpoint",
+          "marks"
+        ]
+      },
+      "PerformanceHeadcountTovRequest": {
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "tov": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "etr": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "rs": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "rsRecordedAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                }
+              },
+              "required": [
+                "userId"
+              ]
+            }
+          }
+        },
+        "required": [
+          "rows"
+        ]
+      },
+      "PerformanceHeadcountSettingsRequest": {
+        "type": "object",
+        "properties": {
+          "activeOtrs": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string",
+                "pattern": "^-?\\d+$"
+              }
+            ]
+          },
+          "confirm": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "activeOtrs"
+        ]
+      },
+      "PerformanceHeadcountDefaultsRequest": {
+        "type": "object",
+        "properties": {
+          "defaultTov": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100
+          },
+          "defaultEtr": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "defaultTov",
+          "defaultEtr"
+        ]
+      },
       "PerformanceHeadcountSortQuery": {
         "type": "object",
         "properties": {
@@ -48322,12 +48728,57 @@
                 "year": {
                   "type": "integer"
                 },
+                "mode": {
+                  "$ref": "#/components/schemas/PerformanceHeadcountMode"
+                },
                 "status": {
                   "type": "string",
                   "enum": [
                     "on",
                     "below",
                     "none"
+                  ]
+                },
+                "statusReason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "belum_ada_data",
+                    "belum_ada_tov",
+                    null
+                  ]
+                },
+                "entryStatus": {
+                  "type": "string",
+                  "enum": [
+                    "active",
+                    "draft"
+                  ]
+                },
+                "jurang": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "unjuran": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "keyakinan": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "Tinggi",
+                    "Sederhana",
+                    "Rendah",
+                    null
                   ]
                 },
                 "tov": {
@@ -48567,7 +49018,13 @@
                 "levelName",
                 "className",
                 "year",
+                "mode",
                 "status",
+                "statusReason",
+                "entryStatus",
+                "jurang",
+                "unjuran",
+                "keyakinan",
                 "tov",
                 "etr",
                 "rs",
@@ -48704,6 +49161,21 @@
               },
               "activeOtrs": {
                 "type": "integer"
+              },
+              "mode": {
+                "$ref": "#/components/schemas/PerformanceHeadcountMode"
+              },
+              "defaultTov": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "defaultEtr": {
+                "type": [
+                  "number",
+                  "null"
+                ]
               }
             },
             "required": [
@@ -48714,7 +49186,10 @@
               "year",
               "teacherName",
               "status",
-              "activeOtrs"
+              "activeOtrs",
+              "mode",
+              "defaultTov",
+              "defaultEtr"
             ]
           },
           "chips": {
@@ -48731,13 +49206,17 @@
               },
               "total": {
                 "type": "integer"
+              },
+              "onTrackPct": {
+                "type": "integer"
               }
             },
             "required": [
               "onTrack",
               "below",
               "empty",
-              "total"
+              "total",
+              "onTrackPct"
             ]
           },
           "rows": {
@@ -48853,6 +49332,92 @@
                 },
                 "dropped": {
                   "type": "boolean"
+                },
+                "rs": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "rsRecordedAt": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/DateOnly"
+                    },
+                    {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "on",
+                    "below",
+                    "none"
+                  ]
+                },
+                "statusReason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "belum_ada_data",
+                    "belum_ada_tov",
+                    null
+                  ]
+                },
+                "entryStatus": {
+                  "type": "string",
+                  "enum": [
+                    "active",
+                    "draft"
+                  ]
+                },
+                "projection": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "value": {
+                      "type": "number"
+                    },
+                    "variant": {
+                      "type": "string",
+                      "enum": [
+                        "green",
+                        "amber",
+                        "red"
+                      ]
+                    },
+                    "trend": {
+                      "type": "string",
+                      "enum": [
+                        "Meningkat",
+                        "Stabil",
+                        "Menurun"
+                      ]
+                    },
+                    "confidence": {
+                      "type": "string",
+                      "enum": [
+                        "Tinggi",
+                        "Sederhana",
+                        "Rendah"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "value",
+                    "variant",
+                    "trend",
+                    "confidence"
+                  ]
                 }
               },
               "required": [
@@ -48863,7 +49428,13 @@
                 "cells",
                 "etr",
                 "etrGrade",
-                "dropped"
+                "dropped",
+                "rs",
+                "rsRecordedAt",
+                "status",
+                "statusReason",
+                "entryStatus",
+                "projection"
               ]
             }
           },
@@ -57700,6 +58271,11 @@
           "isActive": {
             "type": "boolean"
           },
+          "questionCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Approved, active PKSK questions of the domain over both levels; a question tagged T1 and T4 counts once."
+          },
           "createdAt": {
             "$ref": "#/components/schemas/Timestamp"
           },
@@ -57717,6 +58293,7 @@
           "nameEn",
           "order",
           "isActive",
+          "questionCount",
           "createdAt",
           "updatedAt"
         ]
@@ -58038,6 +58615,60 @@
           "sessionId": {
             "$ref": "#/components/schemas/PracticeSessionId"
           },
+          "correct": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of answers scored correct."
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of answers scored (the set size)."
+          },
+          "review": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "questionId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "selectedIndex": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "description": "Null for a Bahagian C (essay) answer or a blank."
+                },
+                "correctIndex": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "description": "Null for a Bahagian C question."
+                },
+                "isCorrect": {
+                  "type": "boolean"
+                },
+                "explanation": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "questionId",
+                "selectedIndex",
+                "correctIndex",
+                "isCorrect",
+                "explanation"
+              ]
+            },
+            "description": "Revealed only after the answers are scored and stored; the served set never carries it."
+          },
           "gamification": {
             "type": "object",
             "properties": {
@@ -58069,6 +58700,9 @@
         "required": [
           "masteryPct",
           "sessionId",
+          "correct",
+          "total",
+          "review",
           "gamification"
         ]
       },
@@ -59556,6 +60190,41 @@
           "questionCount": {
             "type": "integer",
             "minimum": 0
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "code": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "name": {
+                  "type": "string"
+                },
+                "chapterCount": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "questionCount": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "id",
+                "code",
+                "name",
+                "chapterCount",
+                "questionCount"
+              ],
+              "additionalProperties": false
+            },
+            "description": "S5-T02 (FR-MUR-9-5): the offered levels of this subject that have at least one chapter with a servable question, with their own counts. `chapterCount` and `questionCount` above are the sums over these levels."
           }
         },
         "required": [
@@ -59564,7 +60233,8 @@
           "icon",
           "color",
           "chapterCount",
-          "questionCount"
+          "questionCount",
+          "levels"
         ],
         "additionalProperties": false
       },
@@ -59815,6 +60485,129 @@
         "required": [
           "subject",
           "count"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadRemedialCompleted": {
+        "type": "object",
+        "properties": {
+          "subjectCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "subjectName": {
+            "type": "string"
+          },
+          "setNo": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "\"Set {n}\": per-subject ordinal of the completed revision drills by completed_at ascending."
+          },
+          "questionCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "before": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Whole number: pooled subject accuracy over the answers given before the drill started (\"Sebelum\"); null when the pupil had no answers in the subject before it."
+          },
+          "after": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Whole number: the drill accuracy (\"Selepas\"); null when the session had no questions."
+          },
+          "delta": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": -100,
+            "maximum": 100,
+            "description": "after - before; null unless both sides exist. The sign and colour are the client concern (FR-MUR-12-4)."
+          },
+          "at": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "subjectCode",
+          "subjectName",
+          "setNo",
+          "questionCount",
+          "before",
+          "after",
+          "delta",
+          "at"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadRemedialNeeded": {
+        "type": "object",
+        "properties": {
+          "subjectCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "subjectName": {
+            "type": "string"
+          },
+          "answered": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "\"{n} soalan\": the pupil answer rows of the subject (sum of attempts, not distinct questions)."
+          },
+          "accuracy": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Whole number, half up, pooled correct / answered over all non-test modes; always below `target`."
+          },
+          "target": {
+            "type": "number",
+            "enum": [
+              60
+            ]
+          }
+        },
+        "required": [
+          "subjectCode",
+          "subjectName",
+          "answered",
+          "accuracy",
+          "target"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadRemedialSuggestions": {
+        "type": "object",
+        "properties": {
+          "completed": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeReadRemedialCompleted"
+            },
+            "description": "Completed non-test revision sessions, newest 20 first."
+          },
+          "needed": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeReadRemedialNeeded"
+            },
+            "description": "Subjects below 60 whose drill has at least one servable question; BR-01 order. Empty for staff roles and for a pupil with no answers."
+          }
+        },
+        "required": [
+          "completed",
+          "needed"
         ],
         "additionalProperties": false
       },
@@ -62776,6 +63569,202 @@
         "required": [
           "options",
           "rows"
+        ]
+      },
+      "GuruWeeklyReportQuery": {
+        "type": "object",
+        "properties": {
+          "classroomId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "week": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "Any date YYYY-MM-DD inside the wanted week; the report covers Monday 00:00 to Sunday 23:59 MYT containing it. Default: the current week."
+          }
+        },
+        "required": [
+          "classroomId"
+        ],
+        "additionalProperties": false
+      },
+      "GuruWeeklyReport": {
+        "type": "object",
+        "properties": {
+          "classroom": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "week": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                "description": "Monday, YYYY-MM-DD."
+              },
+              "to": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                "description": "Sunday, YYYY-MM-DD."
+              },
+              "label": {
+                "type": "string",
+                "example": "02 Nov 2026 — 08 Nov 2026"
+              }
+            },
+            "required": [
+              "from",
+              "to",
+              "label"
+            ],
+            "description": "Monday 00:00 to Sunday 23:59 MYT of the week containing the requested date (default: current week). The previous week is the 7 days before."
+          },
+          "summary": {
+            "type": "object",
+            "properties": {
+              "answered": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Answers of the class in the week, all modes of practice_answers (XS-8)."
+              },
+              "activePupils": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Class pupils with >= 1 answer in the week (XS-2)."
+              },
+              "improvedPupils": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Count of ALL pupils that qualify for mostImproved, not only the 5 listed."
+              },
+              "attentionSubjects": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Length of attentionSubjects."
+              }
+            },
+            "required": [
+              "answered",
+              "activePupils",
+              "improvedPupils",
+              "attentionSubjects"
+            ]
+          },
+          "topPerformers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "rank": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "name": {
+                  "type": "string"
+                },
+                "answered": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "accuracy": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "Pooled correct / answered x 100 over all modes of practice_answers (XS-8), ONE decimal at most on the wire (a value with no fraction has none: 100, not 100.0). The screen shows the whole number rounded half up (4.6, D-T10-1)."
+                }
+              },
+              "required": [
+                "rank",
+                "name",
+                "answered",
+                "accuracy"
+              ]
+            },
+            "maxItems": 5,
+            "description": "Pupils with answered >= 5, sorted by whole-number accuracy desc, ties answered desc then name; max 5."
+          },
+          "mostImproved": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "previousAccuracy": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "Pooled correct / answered x 100 over all modes of practice_answers (XS-8), ONE decimal at most on the wire (a value with no fraction has none: 100, not 100.0). The screen shows the whole number rounded half up (4.6, D-T10-1)."
+                },
+                "accuracy": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "Pooled correct / answered x 100 over all modes of practice_answers (XS-8), ONE decimal at most on the wire (a value with no fraction has none: 100, not 100.0). The screen shows the whole number rounded half up (4.6, D-T10-1)."
+                },
+                "delta": {
+                  "type": "integer",
+                  "description": "whole(accuracy) - whole(previousAccuracy); the shown \"+{delta}%\"."
+                }
+              },
+              "required": [
+                "name",
+                "previousAccuracy",
+                "accuracy",
+                "delta"
+              ]
+            },
+            "maxItems": 5,
+            "description": "Pupils with answers in both weeks and delta > 0, delta desc, ties by name; max 5. summary.improvedPupils counts all of them."
+          },
+          "attentionSubjects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "subject": {
+                  "type": "string"
+                },
+                "accuracy": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "Pooled correct / answered x 100 over all modes of practice_answers (XS-8), ONE decimal at most on the wire (a value with no fraction has none: 100, not 100.0). The screen shows the whole number rounded half up (4.6, D-T10-1)."
+                },
+                "answered": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "subject",
+                "accuracy",
+                "answered"
+              ]
+            },
+            "description": "Subjects whose whole-number weekly accuracy is < 50, ascending by accuracy."
+          }
+        },
+        "required": [
+          "classroom",
+          "week",
+          "summary",
+          "topPerformers",
+          "mostImproved",
+          "attentionSubjects"
         ]
       },
       "KirkpatrickBandKey": {
@@ -75539,15 +76528,15 @@
           "content"
         ],
         "summary": "Published articles (reader list)",
-        "description": "Public (guests allowed). Only published articles; 18 per page, `publishedAt` desc then id. An out-of-range page is an empty list, not an error.",
+        "description": "Public (guests allowed). Only published articles; 12 per page, `publishedAt` desc then id. `meta.counts` holds the number of published articles per category code for the current `search` (ignoring `category`), so a pill can show its count. An out-of-range page is an empty list, not an error.",
         "parameters": [
           {
             "schema": {
               "type": "string",
-              "description": "Title contains, case-insensitive."
+              "description": "Title or body contains, case-insensitive; at most 100 characters are used."
             },
             "required": false,
-            "description": "Title contains, case-insensitive.",
+            "description": "Title or body contains, case-insensitive; at most 100 characters are used.",
             "name": "search",
             "in": "query"
           },
@@ -77104,10 +78093,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "Title contains, case-insensitive."
+              "description": "Title or body contains, case-insensitive; at most 100 characters are used."
             },
             "required": false,
-            "description": "Title contains, case-insensitive.",
+            "description": "Title or body contains, case-insensitive; at most 100 characters are used.",
             "name": "search",
             "in": "query"
           },
@@ -78905,7 +79894,7 @@
           "support"
         ],
         "summary": "Admin support queue",
-        "description": "Admin only. Newest first (createdAt desc, then id desc), 25 per page with `page`. `meta.total` = all tickets; `meta.counts` = statuses with a count above 0, in vocabulary order, over all tickets; `meta.matched` counts the rows matching the filters. A row has no body, no e-mail and no user id.",
+        "description": "Admin only. Newest first (createdAt desc, then id desc), 25 per page with `page`. `meta.total` and `meta.counts` cover the role-filtered tickets, whatever the status filter; `meta.counts` has all five statuses in vocabulary order; `meta.matched` counts the rows matching both filters. A row has no body, no e-mail and no user id.",
         "parameters": [
           {
             "schema": {
@@ -79180,7 +80169,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields.text: \"Sila isi balasan.\" or \"Balasan tidak boleh melebihi 5000 aksara.\"",
+            "description": "VALIDATION_ERROR with fields.text: \"Sila tulis balasan.\" or \"Balasan tidak boleh melebihi 5000 aksara.\"",
             "content": {
               "application/json": {
                 "schema": {
@@ -79281,7 +80270,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields.status: \"Sila pilih status.\"",
+            "description": "VALIDATION_ERROR with fields.status: \"Data yang dihantar tidak sah. Sila semak dan cuba lagi.\"",
             "content": {
               "application/json": {
                 "schema": {
@@ -93277,6 +94266,45 @@
         }
       }
     },
+    "/practice/remedial-suggestions": {
+      "get": {
+        "tags": [
+          "practice-reads"
+        ],
+        "summary": "Own remedial suggestions: completed drills and subjects needing recovery (S5-T07)",
+        "description": "GET /api/practice/remedial-suggestions (API-PRAC-08). completed: the newest 20 completed non-test revision sessions with Sebelum / Selepas. needed: subjects whose pooled accuracy (correct / answered over the non-test answer rows, whole number half up) is below 60 and whose revision drill has at least one servable question (FD-MUR-36). Pupils only; staff roles get empty arrays. Assigned tests stay on GET /remedial-tests/mine. Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
+        "responses": {
+          "200": {
+            "description": "The completed sets and the needed subjects.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PracticeReadRemedialSuggestions"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/practice/progress": {
       "get": {
         "tags": [
@@ -99258,30 +100286,18 @@
         "tags": [
           "games"
         ],
-        "summary": "Sekolah Bersaing weekly board (M16-50)",
-        "description": "National board, no school scope. `week`: a valid YYYY-MM-DD selects the Monday of that week; anything else the current week; never an error. An anonymous row shows \"Sekolah anonim\".",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "description": "Any text; an invalid value is ignored."
-            },
-            "required": false,
-            "description": "Any text; an invalid value is ignored.",
-            "name": "week",
-            "in": "query"
-          }
-        ],
+        "summary": "Sekolah Bersaing live board (API-AS-14)",
+        "description": "National board, no school scope, computed on request. School admin and admin only. Top 30 schools by mean session accuracy; ties by pupils, sessions, school name. An unknown query parameter is ignored.",
         "responses": {
           "200": {
-            "description": "Weekly snapshot.",
+            "description": "Rank order; [] when no school has a session.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/components/schemas/GamesSekolahBersaing"
+                      "$ref": "#/components/schemas/GamesSekolahBersaingBoard"
                     }
                   },
                   "required": [
@@ -99293,6 +100309,16 @@
           },
           "401": {
             "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not school_admin or admin).",
             "content": {
               "application/json": {
                 "schema": {
@@ -105615,10 +106641,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "T4 | T5 | 4 | 5 (case-insensitive). Anything else = no filter. The filter is class based."
+              "description": "T1 to T5 | 1 to 5 (case-insensitive). Anything else = no filter. The filter is class based."
             },
             "required": false,
-            "description": "T4 | T5 | 4 | 5 (case-insensitive). Anything else = no filter. The filter is class based.",
+            "description": "T1 to T5 | 1 to 5 (case-insensitive). Anything else = no filter. The filter is class based.",
             "name": "tingkatan",
             "in": "query"
           }
@@ -105837,7 +106863,7 @@
           "amaran"
         ],
         "summary": "School risk list as CSV",
-        "description": "Roles: admin (any school) and school_admin (own school); a teacher or any other role gets 403. Check order: the role check (403) comes BEFORE the 404; then an unknown school and a school outside the caller scope are both 404 (indistinguishable; the mock answered 403 for the latter). File name amaran-sekolah-{id}-{yyyymmdd}.csv (date in Malaysia time). Headers: Content-Type text/csv; charset=utf-8, Cache-Control no-store. Body: UTF-8 BOM, CRLF line ends with a trailing CRLF; header Bil,Pelajar,Tingkatan / Kelas,Skor Risiko,Status,Ketepatan,Penglibatan,Penguasaan; one line per pupil of the school (no tingkatan filter), score with one decimal, status label, then the three BM cell texts of the risk page. Cells starting with = + - @ tab or CR are prefixed with an apostrophe; quoting follows RFC 4180. No IC, e-mail or phone. PDPA: the file lists minors' names, classes and risk scores, the most sensitive derived data; it is never cached and rate limited (429, proposed on top of D57a because it is a bulk dump of minors). Every accepted download writes an audit event (actor, school, file name) and never personal content.",
+        "description": "Roles: admin (any school) and school_admin (own school); a teacher or any other role gets 403. Check order: the role check (403) comes BEFORE the 404; then an unknown school and a school outside the caller scope are both 404 (indistinguishable; the mock answered 403 for the latter). File name amaran-sekolah-{id}-{yyyymmdd}.csv (date in Malaysia time). Headers: Content-Type text/csv; charset=utf-8, Cache-Control no-store. Body: UTF-8 BOM, CRLF line ends with a trailing CRLF; header Bil,Pelajar,Sekolah,Tingkatan / Kelas,Skor Risiko,Status,Ketepatan,Penglibatan,Penguasaan; one line per pupil of the school (no tingkatan filter), score with one decimal, status label, then the three BM cell texts of the risk page. Cells starting with = + - @ tab or CR are prefixed with an apostrophe; quoting follows RFC 4180. No IC, e-mail or phone. PDPA: the file lists minors' names, classes and risk scores, the most sensitive derived data; it is never cached and rate limited (429, proposed on top of D57a because it is a bulk dump of minors). Every accepted download writes an audit event (actor, school, file name) and never personal content.",
         "parameters": [
           {
             "schema": {
@@ -110492,6 +111518,247 @@
         }
       }
     },
+    "/guru/missions": {
+      "get": {
+        "tags": [
+          "missions"
+        ],
+        "summary": "Misi Harian of the signed-in teacher (API-GUR-11)",
+        "description": "Teacher only. Own missions plus Global (platform) missions (global = true), date descending then created descending. completedCount counts pupils of the teacher's classes.",
+        "responses": {
+          "200": {
+            "description": "Missions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherMissionListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "missions"
+        ],
+        "summary": "Create a mission (API-GUR-11)",
+        "description": "Teacher only. Recipients are a snapshot at creation (classroomId null = all pupils of all own active classes). 422 VALIDATION_ERROR with fields for the body check and for a date before today (MYT); 422 VALIDATION_ERROR without fields and message \"Had 5 misi sehari telah dicapai.\" when the teacher already has 5 missions on that MYT day; 422 MISSION_REWARD_TOO_HIGH \"Ganjaran misi melebihi had.\" (ERR-GAME-17) when rewardCoins is over the limit. UI toast \"Misi dicipta.\".",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeacherMissionCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The created mission.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherMissionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: fields per invalid input, or the daily cap refusal (no fields); or MISSION_REWARD_TOO_HIGH \"Ganjaran misi melebihi had.\" (ERR-GAME-17) when the reward is over the limit (emitted by the API part, #643).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (D57): too many writes. Body error.code RATE_LIMITED with retryAfter (seconds); Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/missions/{id}": {
+      "delete": {
+        "tags": [
+          "missions"
+        ],
+        "summary": "Delete an own mission (API-GUR-11)",
+        "description": "Teacher only. Rewards already paid stay. A Global mission answers 403 \"Misi global tidak boleh dipadam.\"; another teacher's or an unknown id answers 404.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ data: { deleted: 1 } }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "deleted": {
+                          "type": "number",
+                          "enum": [
+                            1
+                          ]
+                        }
+                      },
+                      "required": [
+                        "deleted"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Misi global tidak boleh dipadam.\"; or the generic role text; or CSRF_INVALID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id or not the caller's mission.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (D57): too many writes. Body error.code RATE_LIMITED with retryAfter (seconds); Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/remedial-tests/mine": {
       "get": {
         "tags": [
@@ -112414,6 +113681,128 @@
         }
       }
     },
+    "/headcounts/me": {
+      "get": {
+        "tags": [
+          "headcount"
+        ],
+        "summary": "The pupil's own headcount configs of the current MYT calendar year (class membership), newest first",
+        "description": "entryStatus / statusReason are the pupil's own line; a pupil dropped from a config does not see it.",
+        "responses": {
+          "200": {
+            "description": "The pupil's own headcount configs of the current MYT calendar year (class membership), newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PerformanceHeadcountListItem"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not student",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/headcounts/me/detail": {
+      "get": {
+        "tags": [
+          "headcount"
+        ],
+        "summary": "The pupil's own line of one config",
+        "description": "Omitted configId: the config last updated (sections is empty when the pupil has none). Own line only; no classmate data.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "configId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pupil's own line of one config",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceHeadcountStudent"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not student",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": configId of a config that is not the pupil's own, or unknown",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/headcounts/students/{userId}": {
       "get": {
         "tags": [
@@ -113082,6 +114471,418 @@
         }
       }
     },
+    "/headcounts/{id}/ar": {
+      "put": {
+        "tags": [
+          "headcount"
+        ],
+        "summary": "Key-in AR of one checkpoint (Manual config)",
+        "description": "An Auto config, or a checkpoint outside 1..activeOtrs, answers 404. 403 for school_admin and admin. Stored with 1 decimal.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf."
+            },
+            "required": true,
+            "description": "Value of Session.csrf.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PerformanceHeadcountArRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Key-in AR of one checkpoint (Manual config)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceHeadcountDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not teacher (school_admin and admin never write), or a CSRF failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown id, a config outside the viewer scope or another teacher's config (uniform 404)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Markah mesti antara 0 dan 100.\" (fields marks.{i}.value), or \"Murid tidak sah.\" (marks.{i}.userId; an unknown or dropped pupil).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/headcounts/{id}/tov": {
+      "put": {
+        "tags": [
+          "headcount"
+        ],
+        "summary": "Edit TOV / ETR / RS of pupils",
+        "description": "Only the keys present in a row are written; null clears. The RS date defaults to the MYT day of the first RS save; rs null clears the date.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf."
+            },
+            "required": true,
+            "description": "Value of Session.csrf.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PerformanceHeadcountTovRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Edit TOV / ETR / RS of pupils",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceHeadcountDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not teacher (school_admin and admin never write), or a CSRF failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown id, a config outside the viewer scope or another teacher's config (uniform 404)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Markah mesti antara 0 dan 100.\" (rows.{i}.tov|etr|rs), \"Tarikh tidak boleh lebih lewat daripada hari ini.\" (rows.{i}.rsRecordedAt), \"Tarikh tidak sah.\", \"Murid tidak sah.\" (rows.{i}.userId).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/headcounts/{id}/settings": {
+      "put": {
+        "tags": [
+          "headcount"
+        ],
+        "summary": "Tetapan: Bilangan OTR",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf."
+            },
+            "required": true,
+            "description": "Value of Session.csrf.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PerformanceHeadcountSettingsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tetapan: Bilangan OTR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceHeadcountDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not teacher (school_admin and admin never write), or a CSRF failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown id, a config outside the viewer scope or another teacher's config (uniform 404)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"OTR{k} ke atas mempunyai markah. Padam markah tersebut?\" (k = new count + 1); resend with confirm true to delete the marks above n and save.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Bilangan OTR mesti 2, 3, 4 atau 5.\" (field activeOtrs).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/headcounts/{id}/defaults": {
+      "put": {
+        "tags": [
+          "headcount"
+        ],
+        "summary": "Simpan Sasaran: class default TOV and ETR",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf."
+            },
+            "required": true,
+            "description": "Value of Session.csrf.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PerformanceHeadcountDefaultsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Simpan Sasaran: class default TOV and ETR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceHeadcountDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not teacher (school_admin and admin never write), or a CSRF failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown id, a config outside the viewer scope or another teacher's config (uniform 404)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Markah mesti antara 0 dan 100.\" (fields defaultTov, defaultEtr).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/pksk/me/access": {
       "get": {
         "tags": [
@@ -113127,7 +114928,7 @@
           "pksk"
         ],
         "summary": "The 15 PKSK domains",
-        "description": "Who: any signed-in role. Reference data ordered by `order`; no meta.",
+        "description": "Who: any signed-in role. Reference data ordered by `order`; no meta. Each domain carries `questionCount` (approved, active questions over both levels, each counted once); no question text.",
         "responses": {
           "200": {
             "description": "The domains.",
@@ -113664,7 +115465,7 @@
           "pksk"
         ],
         "summary": "Submit a domain practice set",
-        "description": "Who: any signed-in role (student, parent, teacher, admin ...), then the level gate: unknown level 404 first, then 403 unless the caller has access to the level (an active unexpired grant of a package for that level or ALL, the PKSK subscription flag, or role admin). Scope: own data only. Scored on the server (A and B: the chosen option must be flagged correct; C: a trimmed text of at least 50 characters, simulated marker). Recorded as one completed M05 practice session with mode pksk; mastery of the domain is stored; wallet and streak are credited by M05/M14. Contract is stricter than the mock (D57): unknown keys are rejected, at most 101 answers, text at most 10000 characters, optionIndex 0 to 5. Every body problem is 422 fields.answers \"Jawapan tidak sah.\".",
+        "description": "Who: any signed-in role (student, parent, teacher, admin ...), then the level gate: unknown level 404 first, then 403 unless the caller has access to the level (an active unexpired grant of a package for that level or ALL, the PKSK subscription flag, or role admin). Scope: own data only. Scored on the server (A and B: the chosen option must be flagged correct; C: a trimmed text of at least 50 characters, simulated marker). Recorded as one completed M05 practice session with mode pksk; mastery of the domain is stored; the response carries correct, total and a per-question review (selectedIndex, correctIndex, isCorrect, explanation), revealed only after scoring and storing; wallet and streak are credited by M05/M14. Contract is stricter than the mock (D57): unknown keys are rejected, at most 101 answers, text at most 10000 characters, optionIndex 0 to 5. Every body problem is 422 fields.answers \"Jawapan tidak sah.\".",
         "parameters": [
           {
             "schema": {
@@ -115461,6 +117262,96 @@
           },
           "403": {
             "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin or teacher (school_admin included)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/weekly-report": {
+      "get": {
+        "tags": [
+          "performance"
+        ],
+        "summary": "Teacher weekly class report (API-GUR-21)",
+        "description": "Role teacher only; own classes only. Pupil names are those of the own class. Accuracy fields carry at most one decimal.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "classroomId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "description": "Any date YYYY-MM-DD inside the wanted week; the report covers Monday 00:00 to Sunday 23:59 MYT containing it. Default: the current week."
+            },
+            "required": false,
+            "description": "Any date YYYY-MM-DD inside the wanted week; the report covers Monday 00:00 to Sunday 23:59 MYT containing it. Default: the current week.",
+            "name": "week",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Weekly report.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: holds pupil names.",
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GuruWeeklyReport"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: not a teacher, or the class belongs to another teacher (AC-GUR-43-6).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: classroomId missing, or week malformed.",
             "content": {
               "application/json": {
                 "schema": {

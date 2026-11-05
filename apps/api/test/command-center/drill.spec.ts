@@ -46,14 +46,14 @@ describe('GET /command-center/school/:id', () => {
     expect(res.status).toBe(200)
     const { data } = CommandCenterSchoolResponseSchema.parse(res.body)
     expect(data.school).toEqual({ id: w.schoolA, name: 'Sekolah Kajian A' })
-    // 6 students (p1 p2 p5 p3 p4 p6); 4 active pupils answered (p5 is inactive, p3 never answered); is_test rows never count.
-    expect(data.cards).toEqual({ students: 6, active: 4, answers: 26, accuracy: 65.4 })
+    // XS-1 (S6-T03): 5 pupils (p1 p2 p3 p4 p6; the inactive p5 is no longer counted, it was 6); 4 active pupils answered (p3 never answered); is_test rows never count.
+    expect(data.cards).toEqual({ students: 5, active: 4, answers: 26, accuracy: 65.4 })
     expect(data.teachers.map((x) => [x.name, x.ownerOnly])).toEqual([
       ['Guru Alpha', false],
       ['Guru Beta', false],
       ['Guru Pemilik', true],
     ])
-    expect(data.teachers[0]).toMatchObject({ userId: w.ta.id, subjectText: 'Matematik', classes: 2, students: 4, active30d: 2 })
+    expect(data.teachers[0]).toMatchObject({ userId: w.ta.id, subjectText: 'Matematik', classes: 2, students: 3, active30d: 2 })
     expect(data.teachers[1]).toMatchObject({ userId: w.tb.id, subjectText: null, classes: 1, students: 1, active30d: 1 })
     expect(data.teachers[2]).toMatchObject({ userId: w.to.id, classes: 1, students: 1, active30d: 1 })
   })
@@ -61,7 +61,7 @@ describe('GET /command-center/school/:id', () => {
   it('school admin: the own school only', async () => {
     const res = await getAs(schoolAdmin, `/command-center/school/${w.schoolA}`)
     expect(res.status).toBe(200)
-    expect(CommandCenterSchoolResponseSchema.parse(res.body).data.cards.students).toBe(6)
+    expect(CommandCenterSchoolResponseSchema.parse(res.body).data.cards.students).toBe(5)
     await expect404(schoolAdmin, `/command-center/school/${w.schoolB}`)
   })
 
@@ -69,8 +69,8 @@ describe('GET /command-center/school/:id', () => {
     const res = await getAs(teacher, `/command-center/school/${w.schoolA}`)
     expect(res.status).toBe(200)
     const { data } = CommandCenterSchoolResponseSchema.parse(res.body)
-    // A1 (p1 p2 p5) + A2 (p3): 4 students, 2 active pupils with answers (p1 p2): 19 answers, 13 correct.
-    expect(data.cards).toEqual({ students: 4, active: 2, answers: 19, accuracy: 68.4 })
+    // A1 (p1 p2; p5 is inactive and no longer counted) + A2 (p3): 3 XS-1 students, 2 active pupils with answers (p1 p2): 19 answers, 13 correct.
+    expect(data.cards).toEqual({ students: 3, active: 2, answers: 19, accuracy: 68.4 })
     expect(data.teachers.map((x) => x.userId)).toEqual([w.ta.id])
     await expect404(teacher, `/command-center/school/${w.schoolB}`)
   })
@@ -102,7 +102,7 @@ describe('GET /command-center/school/:sid/teacher/:uid', () => {
     expect(data.school.id).toBe(w.schoolA)
     expect(data.teacher).toEqual({ id: w.ta.id, name: 'Guru Alpha' })
     expect(data.classes).toEqual([
-      { id: w.a1, name: 'Kelas A1', level: 'T4', students: 3, active30d: 2, answers: 19, accuracy: 68.4 },
+      { id: w.a1, name: 'Kelas A1', level: 'T4', students: 2, active30d: 2, answers: 19, accuracy: 68.4 },
       { id: w.a2, name: 'Kelas A2', level: 'D3', students: 1, active30d: 0, answers: 0, accuracy: 0 },
     ])
   })
@@ -132,12 +132,11 @@ describe('GET /command-center/classroom/:id', () => {
     expect(data.school).toEqual({ id: w.schoolA, name: 'Sekolah Kajian A' })
     expect(data.teacher).toEqual({ id: w.ta.id, name: 'Guru Alpha' })
     expect(data.class).toEqual({ id: w.a1, name: 'Kelas A1', level: 'T4' })
-    // The is_test member is not listed.
-    expect(data.students.map((s) => s.userId)).toEqual([w.p.p1, w.p.p2, w.p.p5])
+    // The is_test member is not listed, and neither is the inactive p5 (XS-1: active accounts only).
+    expect(data.students.map((s) => s.userId)).toEqual([w.p.p1, w.p.p2])
     expect(data.students[0]).toMatchObject({ name: 'Murid Satu', answers: 14, accuracy: 78.6, status: 'aktif', mood: null })
     expect(data.students[0]?.lastActiveAt).toMatch(/^2026-10-19T08:00:10(\.000)?\+08:00$/)
     expect(data.students[1]).toMatchObject({ answers: 5, accuracy: 40, status: 'tidak_aktif' })
-    expect(data.students[2]).toMatchObject({ answers: 0, accuracy: 0, lastActiveAt: null, status: 'tidak_aktif' })
   })
 
   it('scope: teacher own active classes only, school admin classes of the own school, inactive and unknown classes 404', async () => {
