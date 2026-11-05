@@ -13,10 +13,13 @@ import type {
 import type { z } from 'zod'
 
 import { toMytTimestamp } from '../../../../common/time/myt'
+import { mytDay } from '../../../../db/clock'
 import type { HeadcountMode } from '../domain/headcount'
 import { compareIds } from '../domain/rules'
+import { round } from '../domain/rules'
 import {
   bandStatus,
+  entryStatusOf,
   gradeOrNull,
   latestAr,
   meanOrNull,
@@ -24,6 +27,7 @@ import {
   predictionOf,
   projectionOf,
   rowTone,
+  statusReasonOf,
   type HeadcountMarks,
 } from './headcount.rules'
 
@@ -46,6 +50,9 @@ export interface ConfigInfo {
   mode: HeadcountMode
   activeOtrs: number
   teacherName: string
+  /** Class defaults (DM-49). */
+  defaultTov: number | null
+  defaultEtr: number | null
 }
 
 /** One roster line: the pupil, the name and the marks (blank slots when there is no entry). */
@@ -64,7 +71,16 @@ const byName = (a: string, b: string): number => collator.compare(a, b)
 
 export const live = (lines: readonly RosterLine[]): RosterLine[] => lines.filter((l) => !l.dropped)
 
-export function listItem(c: ConfigInfo, lines: readonly RosterLine[]): HeadcountListItem {
+/** Jurang = ETR - TOV, 1 decimal; null when either is missing. */
+export const jurangOf = (m: Pick<HeadcountMarks, 'tov' | 'etr'>): number | null => (m.tov === null || m.etr === null ? null : round(m.etr - m.tov, 1))
+
+/** Config level pill of the staff list: Active when the class default or any live pupil has an ETR, else Draft. */
+const configEntryStatus = (c: ConfigInfo, lines: readonly RosterLine[]): 'active' | 'draft' =>
+  c.defaultEtr !== null || live(lines).some((l) => l.marks.etr !== null) ? 'active' : 'draft'
+
+export function listItem(c: ConfigInfo, lines: readonly RosterLine[], own?: RosterLine): HeadcountListItem {
+  // A pupil's own list (`me`): the pill and the reason are those of the pupil's own line.
+  const m = own?.marks
   return {
     id: c.id,
     className: c.className,
@@ -74,6 +90,9 @@ export function listItem(c: ConfigInfo, lines: readonly RosterLine[]): Headcount
     mode: c.mode,
     activeOtrs: c.activeOtrs,
     students: live(lines).length,
+    teacherName: c.teacherName,
+    entryStatus: m ? entryStatusOf(m) : configEntryStatus(c, lines),
+    statusReason: m ? statusReasonOf(m) : null,
   }
 }
 
@@ -96,6 +115,8 @@ export function dashboardItem(c: ConfigInfo, all: readonly RosterLine[]): Headco
     className: c.className,
     subjectName: c.subjectName,
     year: c.year,
+    mode: c.mode,
+    teacherName: c.teacherName,
     onTrack: on,
     offTrack: off,
     noData: none,
@@ -147,6 +168,12 @@ export function detailOf(c: ConfigInfo, lines: readonly RosterLine[], sort: Head
       etr: m.etr,
       etrGrade: gradeOrNull(m.etr),
       dropped: l.dropped,
+      rs: m.rs,
+      rsRecordedAt: l.rsRecordedAt === null ? null : mytDay(l.rsRecordedAt),
+      status: pairStatus(m),
+      statusReason: statusReasonOf(m),
+      entryStatus: entryStatusOf(m),
+      projection: projectionOf(m),
     }
     return { row, latest: latestAr(m)?.ar ?? null }
   })
@@ -163,10 +190,9 @@ export function detailOf(c: ConfigInfo, lines: readonly RosterLine[], sort: Head
   let below = 0
   let empty = 0
   for (const l of live(lines)) {
-    const last = latestAr(l.marks)
-    const band = last === null ? 'na' : bandStatus(last.ar, last.target)
-    if (band === 'above' || band === 'on') onTrack++
-    else if (band === 'below') below++
+    const st = pairStatus(l.marks)
+    if (st === 'on') onTrack++
+    else if (st === 'below') below++
     else empty++
   }
   return {
@@ -179,8 +205,11 @@ export function detailOf(c: ConfigInfo, lines: readonly RosterLine[], sort: Head
       teacherName: c.teacherName,
       status: 'active',
       activeOtrs: c.activeOtrs,
+      mode: c.mode,
+      defaultTov: c.defaultTov,
+      defaultEtr: c.defaultEtr,
     },
-    chips: { onTrack, below, empty, total: shown.length },
+    chips: { onTrack, below, empty, total: shown.length, onTrackPct: onTrack + below === 0 ? 0 : Math.round((onTrack / (onTrack + below)) * 100) },
     rows,
     averages: {
       tov: meanOrNull(shown.map((r) => r.tov)),
@@ -222,7 +251,13 @@ export function sectionOf(c: ConfigInfo, line: RosterLine, school: string | null
     levelName: c.levelName,
     className: c.className,
     year: c.year,
+    mode: c.mode,
     status: pairStatus(m),
+    statusReason: statusReasonOf(m),
+    entryStatus: entryStatusOf(m),
+    jurang: jurangOf(m),
+    unjuran: projection?.value ?? null,
+    keyakinan: projection?.confidence ?? null,
     tov: m.tov,
     etr: m.etr,
     rs: m.rs === null ? null : { value: m.rs, recordedAt: line.rsRecordedAt === null ? null : toMytTimestamp(line.rsRecordedAt) },

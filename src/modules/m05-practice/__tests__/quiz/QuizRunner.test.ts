@@ -678,3 +678,65 @@ describe('QuizRunner hideRetry', () => {
     expect(hidden.find('[data-testid=result-back]').exists()).toBe(true)
   })
 })
+
+describe('QuizRunner confirmExit (S5-T02, chapter quiz)', () => {
+  // The runner and the dialog both teleport to the body: mount for real, attached to the document.
+  async function renderReal(props: Record<string, unknown> = {}): Promise<void> {
+    window.matchMedia = ((query: string) => ({
+      matches: true,
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+    })) as unknown as typeof window.matchMedia
+    router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/:p(.*)*', component: { template: '<div />' } }],
+    })
+    await router.push('/practice/BM/quiz')
+    wrapper = mount(QuizRunner, {
+      props: {
+        start: { mode: 'chapter', chapterId: 1, count: 2 },
+        headerTitle: (s: StartSessionResponse) => s.subject?.name ?? '',
+        backUrl: '/practice/BM',
+        report: { source: 'latihan' },
+        api: api as unknown as QuizApi,
+        ...props,
+      },
+      global: { plugins: [router] },
+    })
+    await flushPromises()
+  }
+  const closeButton = (): HTMLElement =>
+    document.body.querySelector<HTMLElement>('[aria-label="Keluar latihan"]')!
+  const bodyButton = (label: string): HTMLElement | undefined =>
+    [...document.body.querySelectorAll<HTMLElement>('button')].find(
+      (b) => b.textContent.trim() === label,
+    )
+  const click = async (el: HTMLElement | undefined): Promise<void> => {
+    el?.click()
+    await flushPromises()
+  }
+  it('leaves at once without confirmExit', async () => {
+    await renderReal()
+    await click(closeButton())
+    expect(router.currentRoute.value.fullPath).toBe('/practice/BM')
+    expect(document.body.textContent).not.toContain('Keluar daripada kuiz?')
+  })
+
+  it('asks "Keluar daripada kuiz?"; "Teruskan Kuiz" stays and "Keluar" leaves', async () => {
+    await renderReal({ confirmExit: true })
+    await click(closeButton())
+    expect(router.currentRoute.value.fullPath).toBe('/practice/BM/quiz')
+    expect(document.body.textContent).toContain('Keluar daripada kuiz?')
+    expect(document.body.textContent).toContain(
+      'Jawapan yang sudah disemak telah disimpan. Anda boleh menyambung semula kuiz ini.',
+    )
+    await click(bodyButton('Teruskan Kuiz'))
+    expect(router.currentRoute.value.fullPath).toBe('/practice/BM/quiz')
+    await click(closeButton())
+    await click(bodyButton('Keluar'))
+    expect(router.currentRoute.value.fullPath).toBe('/practice/BM')
+  })
+})
