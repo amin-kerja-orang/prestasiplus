@@ -7422,6 +7422,10 @@
           },
           "createdAt": {
             "$ref": "#/components/schemas/Timestamp"
+          },
+          "doubleSubmit": {
+            "type": "boolean",
+            "description": "The same pupil has another non-cancelled redemption of the same reward within 60 seconds of this one (FR-ADM-P2-08.3); computed, never stored."
           }
         },
         "required": [
@@ -7433,7 +7437,8 @@
           "denominationRm",
           "tokenCost",
           "status",
-          "createdAt"
+          "createdAt",
+          "doubleSubmit"
         ]
       },
       "RewardRedemptionListMeta": {

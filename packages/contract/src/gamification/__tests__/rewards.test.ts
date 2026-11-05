@@ -168,8 +168,10 @@ describe('admin catalogue', () => {
       tokenCost: 20,
       status: 'pending_admin',
       createdAt: AT,
+      doubleSubmit: false,
     }
     expect(RewardRedemptionListResponseSchema.safeParse({ data: [row], meta: { ...meta, activeStatus: 'pending_admin' } }).success).toBe(true)
+    expect(RewardRedemptionListResponseSchema.safeParse({ data: [{ ...row, doubleSubmit: undefined }], meta: { ...meta, activeStatus: 'pending_admin' } }).success).toBe(false)
     expect(RewardRedemptionListResponseSchema.safeParse({ data: [], meta: { ...meta, activeStatus: null } }).success).toBe(true)
     expect(RewardRedemptionListResponseSchema.safeParse({ data: [{ ...row, status: 'shipped' }], meta: { ...meta, activeStatus: 'all' } }).success).toBe(false)
     expect(RewardRedemptionListQuerySchema.safeParse({}).success).toBe(true)

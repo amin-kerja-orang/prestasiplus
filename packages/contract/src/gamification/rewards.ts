@@ -282,6 +282,9 @@ export const RewardRedemptionListItemSchema = z
     tokenCost: z.number().int().min(1),
     status: RewardRedemptionStatusSchema,
     createdAt: TimestampSchema,
+    doubleSubmit: z
+      .boolean()
+      .meta(FIELD('The same pupil has another non-cancelled redemption of the same reward within 60 seconds of this one (FR-ADM-P2-08.3); computed, never stored.')),
   })
   .meta({ id: 'RewardRedemptionListItem' })
 export type RewardRedemptionListItem = z.infer<typeof RewardRedemptionListItemSchema>

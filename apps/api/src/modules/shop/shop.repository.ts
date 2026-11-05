@@ -229,6 +229,22 @@ export class ShopRepository {
     return { total, rows: rows.map((r) => ({ ...r, userName: byId.get(r.userId)?.name ?? '', userEmail: byId.get(r.userId)?.email ?? '' })) }
   }
 
+  /**
+   * Which of `ids` (one page of the queue) count as a double submission (FR-ADM-P2-08.3): the same pupil has another non-cancelled
+   * redemption of the same reward within 60 seconds. Computed from `created_at` (ix_reward_redemptions_user_id_reward_id_created_at).
+   * A redemption whose reward was deleted has no reward to compare, so it is never flagged.
+   */
+  async doubleSubmits(ids: bigint[]): Promise<Set<bigint>> {
+    if (ids.length === 0) return new Set()
+    const rows = await this.db.$queryRaw<{ id: bigint }[]>`
+      SELECT r.id FROM reward_redemptions r
+       WHERE r.id IN (${Prisma.join(ids)}) AND r.reward_id IS NOT NULL AND EXISTS (
+         SELECT 1 FROM reward_redemptions o
+          WHERE o.user_id = r.user_id AND o.reward_id = r.reward_id AND o.id <> r.id AND o.status <> 'cancelled'
+            AND o.created_at BETWEEN r.created_at - interval '60 seconds' AND r.created_at + interval '60 seconds')`
+    return new Set(rows.map((r) => r.id))
+  }
+
   // --- mystery boxes ----------------------------------------------------------------------------------
 
   countOpenings(userId: bigint): Promise<number> {

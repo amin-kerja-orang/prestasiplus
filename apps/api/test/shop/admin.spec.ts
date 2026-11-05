@@ -8,7 +8,7 @@ import {
 } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { ADMIN, STUDENT, STUDENT_2, STUDENT_MAJU, TEACHER, actorFor, apiOf, bootShopApp, expectError, fund, insertReward, login, stockOf, userIdOf, walletRow, type Api, type ShopTestApp } from './helpers'
+import { ADMIN, STUDENT, STUDENT_2, STUDENT_MAJU, TEACHER, actorFor, apiOf, bareUser, bootShopApp, expectError, fund, insertReward, login, stockOf, userIdOf, walletRow, type Api, type ShopTestApp } from './helpers'
 
 const MINIMAL = { category: 'ewallet', vendor: 'Vendor Ujian', title: 'Baucar Baharu', denominationRm: 10, tokenCost: 12 }
 
@@ -254,6 +254,68 @@ describe('M15 admin routes (BE-23)', () => {
       const cards = RewardListResponseSchema.parse((await admin.get('/admin/hadiah')).body).meta.cards
       expect(cards.pendingAdmin).toBeGreaterThanOrEqual(2)
       expect(cards.redemptionsThisMonth).toBeGreaterThanOrEqual(2)
+    })
+  })
+
+  describe('doubleSubmit on the queue (S7-T05, FR-ADM-P2-08.3)', () => {
+    const FAR = '2031-05-05T10:00:00+08:00'
+    const redemption = async (userId: string, rewardId: string | null, secondsAfter: number, status = 'pending_admin') =>
+      (
+        await t.db.query<{ id: string }>(
+          `insert into reward_redemptions (user_id, reward_id, reward_title, reward_vendor, denomination_rm, token_cost, token_cost_snapshot, cost_value_sen_snapshot, status, created_at)
+           values ($1, $2, 'Hadiah', 'Vendor', 1, 1, 1, 0, $3, $4::timestamptz + make_interval(secs => $5)) returning id::text`,
+          [userId, rewardId, status, FAR, secondsAfter],
+        )
+      )[0]!.id
+    const flags = async (query = 'status=all') => {
+      // Not parsed: a row whose reward was deleted answers rewardId '', which the contract's IdSchema refuses (older than this field).
+      const rows = (await admin.get(`/admin/hadiah/redemptions?${query}`)).body.data as { id: string; doubleSubmit: boolean }[]
+      return new Map(rows.map((r) => [r.id, r.doubleSubmit]))
+    }
+    const tidy = (ids: string[]) => t.db.query(`delete from reward_redemptions where id = any($1::bigint[])`, [ids])
+
+    it('flags both rows of one pupil and one reward at up to 60 seconds, not at 61, not across pupils or rewards', async () => {
+      const [a, b] = [await bareUser(t, 'Dua Kali A'), await bareUser(t, 'Dua Kali B')]
+      const [r1, r2, r3] = [await insertReward(t), await insertReward(t), await insertReward(t)]
+      const near = [await redemption(a, r1, 0), await redemption(a, r1, 60)]
+      const far = [await redemption(a, r2, 0), await redemption(a, r2, 61)]
+      const others = [await redemption(a, r3, 0), await redemption(b, r3, 1), await redemption(a, r2, 300)]
+      const got = await flags()
+      expect(near.map((id) => got.get(id))).toEqual([true, true])
+      expect(far.map((id) => got.get(id))).toEqual([false, false])
+      expect(others.map((id) => got.get(id))).toEqual([false, false, false])
+      await tidy([...near, ...far, ...others])
+    })
+
+    it('a cancelled partner does not flag; a delivered partner outside the filter does; a row with no reward is never flagged', async () => {
+      const a = await bareUser(t, 'Dua Kali C')
+      const [r1, r2] = [await insertReward(t), await insertReward(t)]
+      const cancelled = await redemption(a, r1, 0, 'cancelled')
+      const alone = await redemption(a, r1, 10)
+      const delivered = await redemption(a, r2, 0, 'delivered')
+      const pending = await redemption(a, r2, 10)
+      const orphans = [await redemption(a, null, 0), await redemption(a, null, 1)]
+      const got = await flags('status=pending_admin')
+      expect(got.get(alone)).toBe(false)
+      expect(got.get(pending)).toBe(true)
+      expect(got.has(delivered)).toBe(false)
+      expect(orphans.map((id) => got.get(id))).toEqual([false, false])
+      // Read literally: the cancelled row itself has another non-cancelled redemption within 60 seconds.
+      expect((await flags('status=cancelled')).get(cancelled)).toBe(true)
+      await tidy([cancelled, alone, delivered, pending, ...orphans])
+    })
+
+    it('a row of the page sees a partner on the next page', async () => {
+      const a = await bareUser(t, 'Dua Kali D')
+      const reward = await insertReward(t)
+      const ids: string[] = []
+      for (let i = 0; i < 51; i++) ids.push(await redemption(a, reward, i === 1 ? 30 : i * 120))
+      const page = async (n: number) => RewardRedemptionListResponseSchema.parse((await admin.get(`/admin/hadiah/redemptions?status=all&page=${String(n)}`)).body).data
+      const first = await page(1)
+      expect(first).toHaveLength(50)
+      expect(first.filter((r) => r.doubleSubmit).map((r) => r.id)).toEqual([ids[1]])
+      expect((await page(2)).find((r) => r.id === ids[0])?.doubleSubmit).toBe(true)
+      await tidy(ids)
     })
   })
 
