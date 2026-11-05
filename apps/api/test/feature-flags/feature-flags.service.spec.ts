@@ -79,9 +79,10 @@ describe('FeatureFlagsController (API-ADM-09)', () => {
     expect(record).not.toHaveBeenCalled()
   })
 
-  it('PUT {enabled:false} on a locked key is accepted (idempotent)', async () => {
-    const { controller } = build()
+  it('PUT {enabled:false} on a locked key is accepted (idempotent, not audited)', async () => {
+    const { controller, record } = build()
     expect((await controller.toggle(ACTOR, 'keluarga-angkat', { enabled: false })).data).toMatchObject({ enabled: false, locked: true })
+    expect(record).not.toHaveBeenCalled()
   })
 
   it('PUT on an unknown key is 404 NOT_FOUND', async () => {
@@ -115,10 +116,12 @@ describe('FeatureFlagsService audit', () => {
     expect(featureFlag.update).toHaveBeenCalledWith({ where: { key: 'permainan' }, data: { enabled: false, updatedBy: 7n } })
   })
 
-  it('a PUT that sets the same value still records old and new', async () => {
-    const { service, record } = build()
-    await service.setEnabled(ACTOR, 'latih-tubi', true)
-    expect(record).toHaveBeenCalledWith(expect.objectContaining({ details: { key: 'latih-tubi', old: true, new: true } }))
+  it('a PUT that sets the value already stored is a no-op: no update, no audit row', async () => {
+    const { service, record, featureFlag } = build()
+    expect((await service.setEnabled(ACTOR, 'latih-tubi', true)).enabled).toBe(true)
+    expect((await service.setEnabled(ACTOR, 'cikgu-alesa', false)).enabled).toBe(false) // locked and already OFF
+    expect(featureFlag.update).not.toHaveBeenCalled()
+    expect(record).not.toHaveBeenCalled()
   })
 })
 

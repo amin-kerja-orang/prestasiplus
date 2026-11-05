@@ -70,6 +70,8 @@ export class FeatureFlagsService {
       if (!row) throw ApiError.of('NOT_FOUND', { message: FEATURE_MESSAGES.unknownKey })
       // INV-29 (also a CHECK in the table): a locked key is never switched on.
       if (row.locked && enabled) throw new ApiError({ code: FEATURE_LOCKED_CODE, status: 409, message: FEATURE_MESSAGES.lockedOn })
+      // A write of the value already stored is a no-op: no update, no audit row, the cache stays valid.
+      if (row.enabled === enabled) return row
       const next = await tx.featureFlag.update({ where: { key }, data: { enabled, updatedBy: BigInt(actor.userId) } })
       await this.audit.record({
         action: AUDIT_ACTIONS.FEATURE_FLAG_TOGGLED,

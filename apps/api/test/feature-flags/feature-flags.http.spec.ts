@@ -99,6 +99,11 @@ describe('Kawalan Ciri (S0-T10)', () => {
     expectError(await api.put('/admin/feature-toggles/cikgu-alesa', { enabled: true }), 'CONFLICT')
     expectError(await api.put('/admin/feature-toggles/tiada', { enabled: true }), 'NOT_FOUND')
     expect((await db.query<{ enabled: boolean }>(`select enabled from feature_flags where key = 'cikgu-alesa'`))[0]!.enabled).toBe(false)
+    // A PUT of the stored value is a no-op: 200 and no audit row.
+    const before = (await auditRows()).length
+    expect((await api.put('/admin/feature-toggles/cikgu-alesa', { enabled: false })).status).toBe(200)
+    expect((await api.put('/admin/feature-toggles/permainan', { enabled: true })).status).toBe(200)
+    expect((await auditRows()).length).toBe(before)
   })
 
   it('PUT off: audited, shown in the session map, and the games prefix answers 404 to anonymous and admin; PUT on restores it', async () => {
