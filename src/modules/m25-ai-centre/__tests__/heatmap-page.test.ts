@@ -201,6 +201,24 @@ describe('HeatmapTopikLemahPage', () => {
     expect(api.getDutaRecommendation).not.toHaveBeenCalled()
   })
 
+  it('renders a Bab tile and an SP tile that share an id as two cells', async () => {
+    const mixed: HeatmapResponse = {
+      subjects: [
+        {
+          id: '9',
+          code: 'SN',
+          name: 'Sains',
+          chapters: [tile('7', 1, 'Bab Satu', 2, 1, 50, 'amber'), tile('7', null, '1.1.1 Standard', 1, 1, 100, 'green')],
+        },
+      ],
+    }
+    const w = await mountPage(mixed)
+    expect(w.findAll('[data-testid="heatmap-cell"]').map((c) => c.text())).toEqual([
+      expect.stringContaining('Bab Satu'),
+      expect.stringContaining('1.1.1 Standard'),
+    ])
+  })
+
   it('calls only #1, once, with no user parameter', async () => {
     await mountPage(DATA)
     expect(api.getHeatmap).toHaveBeenCalledTimes(1)

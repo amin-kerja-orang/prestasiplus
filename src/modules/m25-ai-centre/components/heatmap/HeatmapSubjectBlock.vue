@@ -22,7 +22,7 @@ defineProps<{ subject: HeatmapSubject }>()
     <DsGrid min-item="sm" fit="fill" gap="sm" :equal-height="false" data-testid="heatmap-grid">
       <RouterLink
         v-for="topic in subject.chapters"
-        :key="topic.id"
+        :key="`${topic.number === null ? 'sp' : 'bab'}-${topic.id}`"
         :to="cellHref(subject)"
         class="block min-h-11 min-w-0 rounded-chip px-3 py-2.5 hover:opacity-80"
         :class="bandCellClass(topic.state)"
