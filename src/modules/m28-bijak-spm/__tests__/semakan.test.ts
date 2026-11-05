@@ -415,7 +415,7 @@ describe('SelfMarkControl: a new part object from a refreshed result', () => {
     expect(value()).toBe('3 / 4')
     await autosave()
     // Nothing waits any more: the server's value is shown.
-    await w.setProps({ part: part({ awarded: 2, band: undefined, selfMarked: false, status: 'separa' }) })
+    await w.setProps({ part: part({ awarded: 2, status: 'separa' }) })
     await w.setProps({ part: part({ awarded: 2, selfMarked: true, status: 'separa' }) })
     await flushPromises()
     expect(value()).toBe('2 / 4')
