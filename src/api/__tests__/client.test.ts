@@ -515,26 +515,23 @@ describe('ApiError: requestId, details and generic codes (S0-T12 part B)', () =>
     expect((await catchError(bare.c.post('/api/x'))).requestId).toBe('req-b')
   })
 
-  const SYS =
-    'Sesuatu tidak kena di pihak kami. Pasukan teknikal telah dimaklumkan. Sila cuba sebentar lagi.'
   it.each([
-    [400, 'BAD_REQUEST', 'Permintaan tidak sah. Sila muat semula halaman dan cuba lagi.'],
-    [413, 'PAYLOAD_TOO_LARGE', 'Fail atau data terlalu besar.'],
-    [415, 'UNSUPPORTED_MEDIA_TYPE', 'Jenis fail tidak disokong.'],
-    [422, 'VALIDATION_ERROR', 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.'],
-    [500, 'SERVER_ERROR', SYS],
-    [502, 'BAD_GATEWAY', SYS],
-    [
-      503,
-      'SERVICE_UNAVAILABLE',
-      'Sistem sedang diselenggara buat sementara waktu. Sila cuba semula dalam beberapa minit.',
-    ],
-    [504, 'TIMEOUT', 'Permintaan mengambil masa terlalu lama. Cuba lagi.'],
-  ])('maps a bodiless %i to %s with the BM text', async (status, code, message) => {
-    const { c } = client(json(status, null))
-    const err = await catchError(c.post('/api/x'))
-    expect(err).toMatchObject({ status, code, message })
-  })
+    [400, 'BAD_REQUEST'],
+    [413, 'PAYLOAD_TOO_LARGE'],
+    [415, 'UNSUPPORTED_MEDIA_TYPE'],
+    [422, 'VALIDATION_ERROR'],
+    [500, 'SERVER_ERROR'],
+    [502, 'BAD_GATEWAY'],
+    [503, 'SERVICE_UNAVAILABLE'],
+    [504, 'TIMEOUT'],
+  ])(
+    'maps a bodiless %i to %s and keeps the `HTTP <status>` marker for module copy',
+    async (status, code) => {
+      const { c } = client(json(status, null))
+      const err = await catchError(c.post('/api/x'))
+      expect(err).toMatchObject({ status, code, message: `HTTP ${status}` })
+    },
+  )
 })
 
 describe('ApiClient: timeout, abort and GET retry (S0-T12 part B)', () => {
