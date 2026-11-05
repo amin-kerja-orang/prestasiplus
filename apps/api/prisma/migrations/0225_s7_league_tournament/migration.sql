@@ -13,6 +13,7 @@
 --   ALTER TABLE "tournaments" DROP COLUMN "start_date", DROP COLUMN "rounds";
 --   restore ck_tournaments_status to ('draft','registration','ongoing','completed') only if no row is `cancelled` (else move them first);
 --   SET NOT NULL on the three columns only if no row holds NULL (else give them the old defaults 60, 10, 1 first).
+--   then `prisma migrate resolve --rolled-back 0225_s7_league_tournament`, or a later deploy skips this file.
 
 -- AlterTable
 ALTER TABLE "tournaments" ADD COLUMN "start_date" DATE;
@@ -70,7 +71,10 @@ CREATE TABLE "tournament_round_scores" (
     "finished_at" TIMESTAMPTZ(6),
     "attempt_id" UUID NOT NULL DEFAULT gen_random_uuid(),
 
-    CONSTRAINT "tournament_round_scores_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "tournament_round_scores_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "ck_tournament_round_scores_score" CHECK ("score" >= 0),
+    CONSTRAINT "ck_tournament_round_scores_answered" CHECK ("correct" >= 0 AND "answered" >= "correct"),
+    CONSTRAINT "ck_tournament_round_scores_total_ms" CHECK ("total_ms" >= 0)
 );
 
 -- CreateTable
@@ -81,18 +85,22 @@ CREATE TABLE "league_contributions" (
     "user_id" BIGINT NOT NULL,
     "points" INTEGER NOT NULL DEFAULT 0,
 
-    CONSTRAINT "league_contributions_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "league_contributions_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "ck_league_contributions_points" CHECK ("points" >= 0)
 );
 
 -- CreateIndex
 CREATE UNIQUE INDEX "uq_tournament_rounds_tournament_id_n" ON "tournament_rounds"("tournament_id", "n");
 CREATE UNIQUE INDEX "uq_tournament_entries_tournament_id_user_id" ON "tournament_entries"("tournament_id", "user_id");
 CREATE INDEX "ix_tournament_entries_user_id" ON "tournament_entries"("user_id");
+CREATE INDEX "ix_tournament_entries_school_id" ON "tournament_entries"("school_id");
 CREATE UNIQUE INDEX "uq_tournament_round_scores_round_id_user_id" ON "tournament_round_scores"("round_id", "user_id");
 CREATE UNIQUE INDEX "uq_tournament_round_scores_attempt_id" ON "tournament_round_scores"("attempt_id");
 CREATE INDEX "ix_tournament_round_scores_user_id" ON "tournament_round_scores"("user_id");
 CREATE UNIQUE INDEX "uq_league_contributions_league_id_user_id" ON "league_contributions"("league_id", "user_id");
 CREATE INDEX "ix_league_contributions_league_id_school_id" ON "league_contributions"("league_id", "school_id");
+CREATE INDEX "ix_league_contributions_school_id" ON "league_contributions"("school_id");
+CREATE INDEX "ix_league_contributions_user_id" ON "league_contributions"("user_id");
 
 -- AddForeignKey
 ALTER TABLE "tournament_rounds" ADD CONSTRAINT "fk_tournament_rounds_tournament_id" FOREIGN KEY ("tournament_id") REFERENCES "tournaments"("id") ON DELETE CASCADE ON UPDATE CASCADE;

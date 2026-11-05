@@ -231,6 +231,7 @@ model TournamentEntry {
 
   @@unique([tournamentId, userId], map: "uq_tournament_entries_tournament_id_user_id")
   @@index([userId], map: "ix_tournament_entries_user_id")
+  @@index([schoolId], map: "ix_tournament_entries_school_id")
   @@map("tournament_entries")
 }
 

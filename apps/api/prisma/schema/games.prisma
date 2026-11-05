@@ -334,6 +334,8 @@ model LeagueContribution {
 
   @@unique([leagueId, userId], map: "uq_league_contributions_league_id_user_id")
   @@index([leagueId, schoolId], map: "ix_league_contributions_league_id_school_id")
+  @@index([schoolId], map: "ix_league_contributions_school_id")
+  @@index([userId], map: "ix_league_contributions_user_id")
   @@map("league_contributions")
 }
 

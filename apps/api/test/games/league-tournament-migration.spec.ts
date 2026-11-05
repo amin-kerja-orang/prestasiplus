@@ -192,6 +192,20 @@ describe('migration 0225 league and tournament schema', () => {
     expect(await db.query(`select 1 from league_contributions where league_id = $1`, [l])).toHaveLength(0)
   })
 
+  it('refuses an impossible score or contribution, and indexes the school and user keys', async () => {
+    const t = await tournament()
+    const [round] = await db.query<{ id: string }>(`insert into tournament_rounds (tournament_id, n, opens_at, closes_at) values ($1, 1, now(), now() + interval '1 day') returning id::text`, [t])
+    const score = (column: string, value: number, extra = '', extraValue = '') =>
+      rejects(`insert into tournament_round_scores (round_id, user_id, ${column}${extra}) values ($1, $2, ${String(value)}${extraValue})`, [round!.id, userId])
+    expect(await score('score', -1)).toContain('ck_tournament_round_scores_score')
+    expect(await score('total_ms', -1)).toContain('ck_tournament_round_scores_total_ms')
+    expect(await score('correct', 2, ', answered', ', 1')).toContain('ck_tournament_round_scores_answered')
+    expect(await score('correct', -1, ', answered', ', 0')).toContain('ck_tournament_round_scores_answered')
+    expect(await rejects(`insert into league_contributions (league_id, school_id, user_id, points) values ($1, $2, $3, -1)`, [await league(), schoolId, userId])).toContain('ck_league_contributions_points')
+    const indexes = (await db.query<{ indexname: string }>(`select indexname from pg_indexes where tablename in ('tournament_entries', 'league_contributions')`)).map((i) => i.indexname)
+    expect(indexes).toEqual(expect.arrayContaining(['ix_tournament_entries_school_id', 'ix_league_contributions_school_id', 'ix_league_contributions_user_id']))
+  })
+
   it('runs again on rows written before it: nothing is dropped or rewritten', async () => {
     // The rollback of the header needs no `cancelled` row and no NULL in the three columns: the earlier cases wrote some.
     await db.query('delete from tournaments')
