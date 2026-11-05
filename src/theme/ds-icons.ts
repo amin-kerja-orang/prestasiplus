@@ -126,6 +126,8 @@ export const dsIconBaseNames = [
   'percent',
   // m09 VideoAdminListPage (DsEmptyState), S5-T08.
   'film-slate',
+  // m07 PkskAccessPage (`icon: 'key'`) and m27 SchoolUserEditForm (`icon="key"`): the duotone weight lost its only literal in #676.
+  'key',
 ] as const
 
 export const dsIconWeights = ['regular', 'duotone', 'bold'] as const
