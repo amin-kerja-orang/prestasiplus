@@ -298,9 +298,9 @@ describe('learner reads (AC1, AC7, AC8, AC9)', () => {
       expect(d.topics[0]).toMatchObject({ progress: 0, sessions: 0, questionsAnswered: 0 })
     })
 
-    it('lists the 7 subject pills with the observed colours; Geografi is not a pill', async () => {
+    it('lists the 7 known pills first with the observed colours, then every other active subject (Geografi too) by name with no emoji', async () => {
       const d = await map()
-      expect(d.subjects.map((s) => [s.code, s.label, s.emoji, s.color])).toEqual([
+      expect(d.subjects.slice(0, 7).map((s) => [s.code, s.label, s.emoji, s.color])).toEqual([
         ['MATEMATIK', 'Matematik', '🔢', '#3B82F6'],
         ['BAHASA_MELAYU', 'Bahasa Melayu', '📝', '#10B981'],
         ['BAHASA_INGGERIS', 'Bahasa Inggeris', '🇬🇧', '#8B5CF6'],
@@ -309,6 +309,10 @@ describe('learner reads (AC1, AC7, AC8, AC9)', () => {
         ['PENDIDIKAN_MORAL', 'Pend. Moral', '🤝', '#F97316'],
         ['SEJARAH', 'Sejarah', '🏛️', '#EF4444'],
       ])
+      const rows = await t.db.query<{ code: string; name: string }>(`select code, name from subjects where is_active order by sort_order, id`)
+      const legacy = new Set(['MATH', 'BM', 'BI', 'SCI', 'PI', 'PM', 'SEJ'])
+      const rest = rows.filter((r) => !legacy.has(r.code))
+      expect(d.subjects.slice(7).map((s) => [s.label, s.emoji, s.color])).toEqual(rest.map((r) => [r.name, '', '']))
     })
 
     it('accepts every offered grade (TINGKATAN_1 to 5); anything else (a Darjah included, or a lower-case code) is served as TINGKATAN_4 (BR-15, D72)', async () => {
