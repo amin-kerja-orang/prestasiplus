@@ -260,7 +260,8 @@ export const studentRoutes: RouteDef[] = [
     const userId = viewerId(req)
     const code = referralsRepo.codeOf(userId)
     const registerUrl = `https://prestasiplus.my/register?ref=${code}`
-    const text = `Jom belajar matematik di PRESTASIPLUS! Guna kod ${code} untuk dapat ${String(REFERRAL_SETTINGS.refereeSyiling)} syiling PERCUMA! ${registerUrl}`
+    // [PROPOSED] 0-variant: at a friend reward of 0 the clause "untuk dapat {n} syiling PERCUMA" is dropped.
+    const text = referralShareText(code, registerUrl, REFERRAL_SETTINGS.refereeSyiling)
     return ok({
       code,
       rewardReferrer: REFERRAL_SETTINGS.referrerSyiling,
@@ -274,3 +275,10 @@ export const studentRoutes: RouteDef[] = [
     })
   }),
 ]
+
+/** The WhatsApp share text; at a friend reward of 0 the "untuk dapat {n} syiling PERCUMA" clause is dropped ([PROPOSED]). */
+export function referralShareText(code: string, registerUrl: string, refereeSyiling: number): string {
+  return refereeSyiling > 0
+    ? `Jom belajar matematik di PRESTASIPLUS! Guna kod ${code} untuk dapat ${String(refereeSyiling)} syiling PERCUMA! ${registerUrl}`
+    : `Jom belajar matematik di PRESTASIPLUS! Guna kod ${code}! ${registerUrl}`
+}

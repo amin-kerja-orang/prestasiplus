@@ -355,7 +355,7 @@ test.describe('M14 S16 /gamification/referral', MODULE, () => {
     const waHref = (await page.getByTestId('referral-whatsapp').getAttribute('href')) ?? ''
     expect(waHref.startsWith('https://wa.me/?text=')).toBe(true)
     expect(decodeURIComponent(waHref)).toBe(
-      'https://wa.me/?text=Jom belajar matematik di PRESTASIPLUS! Guna kod 4JURJTT untuk dapat 0 syiling PERCUMA! https://prestasiplus.my/register?ref=4JURJTT',
+      'https://wa.me/?text=Jom belajar matematik di PRESTASIPLUS! Guna kod 4JURJTT! https://prestasiplus.my/register?ref=4JURJTT',
     )
     await expect(page.getByTestId('referral-whatsapp')).toHaveAttribute('target', '_blank')
     const tgHref = (await page.getByTestId('referral-telegram').getAttribute('href')) ?? ''

@@ -938,6 +938,16 @@ describe('games, tokens, draws, referrals, teacher events (BR-M14-19/21/22/23/26
     expect(referrals.onRegistered(11, '4JURJTT')).toBeNull() // the code of a non-pupil
   })
 
+  it('referral share text: a friend reward above 0 keeps the live clause; at 0 it is dropped', async () => {
+    const { referralShareText } = await import('../../mock/handlers/student')
+    expect(referralShareText('ABCD1234', 'https://x.test/register?ref=ABCD1234', 0)).toBe(
+      'Jom belajar matematik di PRESTASIPLUS! Guna kod ABCD1234! https://x.test/register?ref=ABCD1234',
+    )
+    expect(referralShareText('ABCD1234', 'https://x.test/register?ref=ABCD1234', 25)).toBe(
+      'Jom belajar matematik di PRESTASIPLUS! Guna kod ABCD1234 untuk dapat 25 syiling PERCUMA! https://x.test/register?ref=ABCD1234',
+    )
+  })
+
   it('referrals.onRegistered: beyond the cap the referral is stored without a reward', () => {
     const code = referrals.codeOf(2)
     const pupils = Array.from({ length: 58 }, (_, i) => i + 3).filter(

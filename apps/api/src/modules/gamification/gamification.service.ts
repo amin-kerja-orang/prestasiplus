@@ -375,7 +375,12 @@ export class GamificationService {
     const settings = await this.gameSettings.getMany(['referral_referrer_syiling', 'referral_referee_syiling', 'referral_max_rewarded'])
     const rewardReferee = settings.referral_referee_syiling
     const registerUrl = `${publicBaseUrl(this.config)}/register?ref=${code}`
-    const text = `Jom belajar matematik di PRESTASIPLUS! Guna kod ${code} untuk dapat ${String(rewardReferee)} syiling PERCUMA! ${registerUrl}`
+    // With a friend reward above 0 the text is the live one. At 0 (the default) the clause "untuk dapat {n} syiling PERCUMA" is dropped:
+    // [PROPOSED] 0-variant "Jom belajar matematik di PRESTASIPLUS! Guna kod {kod}! {pautan}" (no doc gives it).
+    const text =
+      rewardReferee > 0
+        ? `Jom belajar matematik di PRESTASIPLUS! Guna kod ${code} untuk dapat ${String(rewardReferee)} syiling PERCUMA! ${registerUrl}`
+        : `Jom belajar matematik di PRESTASIPLUS! Guna kod ${code}! ${registerUrl}`
     return {
       code,
       rewardReferrer: settings.referral_referrer_syiling,

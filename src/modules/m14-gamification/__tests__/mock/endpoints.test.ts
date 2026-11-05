@@ -478,11 +478,11 @@ describe('#11 referral', () => {
       stats: { referrals: 0, rewarded: 0, syilingEarned: 0 },
     })
     expect(decodeURIComponent(d.whatsappUrl)).toBe(
-      'https://wa.me/?text=Jom belajar matematik di PRESTASIPLUS! Guna kod 4JURJTT untuk dapat 0 syiling PERCUMA! https://prestasiplus.my/register?ref=4JURJTT',
+      'https://wa.me/?text=Jom belajar matematik di PRESTASIPLUS! Guna kod 4JURJTT! https://prestasiplus.my/register?ref=4JURJTT',
     )
     // Exactly the live hrefs (S16-referral.json): only spaces encoded, `:/?=&!` raw.
     expect(d.whatsappUrl).toBe(
-      'https://wa.me/?text=Jom%20belajar%20matematik%20di%20PRESTASIPLUS!%20Guna%20kod%204JURJTT%20untuk%20dapat%200%20syiling%20PERCUMA!%20https://prestasiplus.my/register?ref=4JURJTT',
+      'https://wa.me/?text=Jom%20belajar%20matematik%20di%20PRESTASIPLUS!%20Guna%20kod%204JURJTT!%20https://prestasiplus.my/register?ref=4JURJTT',
     )
     expect(d.telegramUrl).toBe(
       'https://t.me/share/url?url=https://prestasiplus.my/register?ref=4JURJTT&text=Jom%20belajar%20matematik%20di%20PRESTASIPLUS!%20Guna%20kod%204JURJTT',

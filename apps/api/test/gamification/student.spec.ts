@@ -238,7 +238,7 @@ describe('M14 student reads (BE-23, AC4, AC6, AC7)', () => {
       expect(again.code).toBe(a.code)
       expect(other.code).not.toBe(a.code)
       expect(a).toMatchObject({ rewardReferrer: 100, rewardReferee: 0, maxRewarded: 20, registerUrl: `https://app.example.test/register?ref=${a.code}`, stats: { referrals: 0, rewarded: 0, syilingEarned: 0 } })
-      expect(a.whatsappUrl).toBe(`https://wa.me/?text=Jom%20belajar%20matematik%20di%20PRESTASIPLUS!%20Guna%20kod%20${a.code}%20untuk%20dapat%200%20syiling%20PERCUMA!%20https://app.example.test/register?ref=${a.code}`)
+      expect(a.whatsappUrl).toBe(`https://wa.me/?text=Jom%20belajar%20matematik%20di%20PRESTASIPLUS!%20Guna%20kod%20${a.code}!%20https://app.example.test/register?ref=${a.code}`)
       expect(a.telegramUrl).toBe(`https://t.me/share/url?url=${encodeURIComponent(a.registerUrl)}&text=Jom%20belajar%20matematik%20di%20PRESTASIPLUS!%20Guna%20kod%20${a.code}`)
       expect(await t.db.query(`select 1 from referral_codes where user_id = $1`, [await userIdOf(t.db, STUDENT)])).toHaveLength(1)
     })
@@ -281,7 +281,7 @@ describe('M14 student reads (BE-23, AC4, AC6, AC7)', () => {
       try {
         const view = await t.gamification.referral(referrer)
         expect(view).toMatchObject({ rewardReferrer: 80, rewardReferee: 10 })
-        expect(view.whatsappUrl).toContain('dapat%2010%20syiling')
+        expect(decodeURIComponent(view.whatsappUrl)).toContain(`Guna kod ${code} untuk dapat 10 syiling PERCUMA!`)
         const friend = await bareStudent(t, 'Kawan Tetapan')
         expect(await t.gamification.applyReferral(friend, code, { isTest: false })).toEqual({ applied: true })
         expect((await walletOf2(referrer))!.current_syiling).toBe(80)
@@ -330,7 +330,37 @@ describe('M14 student reads (BE-23, AC4, AC6, AC7)', () => {
       }
     })
 
-    it('FR-GM-24.2: new pupils only, referred by pupils only (R6): a referee or a referrer that is not a pupil earns nothing and no referral is stored', async () => {
+    it('referralSyilingEarned counts only the referrer\'s own referral rows (2 rewarded, 1 unrewarded; a referee bonus and a non-referral row are ignored)', async () => {
+      const { id: referrer, code } = await pupilWithCode('Rujuk Jumlah')
+      await setSetting('referral_max_rewarded', 2)
+      await setSetting('referral_referee_syiling', 7)
+      try {
+        const friends = await Promise.all([1, 2, 3].map((n) => bareStudent(t, `Kawan Jumlah ${String(n)}`)))
+        for (const f of friends) await t.gamification.applyReferral(f, code, { isTest: false })
+        // The referrer is a referee of somebody else too: that bonus has the same source but is not theirs to count.
+        const up = await pupilWithCode('Rujuk Atas')
+        await t.gamification.applyReferral(referrer, up.code, { isTest: false })
+        await t.wallet.credit({ userId: referrer, amount: 40, source: 'quiz_practice', sourceId: 'sum-other', description: 'Latih Tubi: 40 betul', isTest: false })
+        expect((await ledgerOf(referrer)).map((r) => r.amount).sort((x, y) => x - y)).toEqual([7, 100, 100])
+        expect((await t.gamification.referral(referrer)).stats).toEqual({ referrals: 3, rewarded: 2, syilingEarned: 200 })
+      } finally {
+        await unsetSetting('referral_max_rewarded')
+        await unsetSetting('referral_referee_syiling')
+      }
+    })
+
+    it('share text: a friend reward above 0 keeps the live clause; at 0 the clause is dropped', async () => {
+      const { id, code } = await pupilWithCode('Rujuk Teks')
+      expect(decodeURIComponent((await t.gamification.referral(id)).whatsappUrl)).not.toContain('syiling PERCUMA')
+      await setSetting('referral_referee_syiling', 5)
+      try {
+        expect(decodeURIComponent((await t.gamification.referral(id)).whatsappUrl)).toContain(`Guna kod ${code} untuk dapat 5 syiling PERCUMA!`)
+      } finally {
+        await unsetSetting('referral_referee_syiling')
+      }
+    })
+
+    it('FR-GM-24.2: new pupils only, referred by pupils only (R6): a referee, a teacher referrer or an admin referrer that is not a pupil earns nothing and no referral is stored', async () => {
       const { id: referrer, code } = await pupilWithCode('Rujuk Murid')
       const notPupil = await bareUser(t, 'Bukan Murid')
       expect(await t.gamification.applyReferral(notPupil, code, { isTest: false })).toEqual({ applied: false })
@@ -343,6 +373,17 @@ describe('M14 student reads (BE-23, AC4, AC6, AC7)', () => {
       expect(await referralRow(friend)).toBeUndefined()
       expect(await ledgerOf(friend)).toEqual([])
       expect(await ledgerOf(referrer)).toEqual([])
+
+      // An ADMIN referrer (also what a Mod Pelajar test actor is): no referral stored, nothing paid to either side.
+      const adminId = await userIdOf(t.db, ADMIN)
+      const adminCode = (await t.gamification.referral(adminId)).code
+      const adminBefore = (await walletOf2(adminId))?.current_syiling
+      const friend2 = await bareStudent(t, 'Kawan Admin')
+      expect(await t.gamification.applyReferral(friend2, adminCode, { isTest: false })).toEqual({ applied: false })
+      expect(await referralRow(friend2)).toBeUndefined()
+      expect(await ledgerOf(friend2)).toEqual([])
+      expect(await ledgerOf(adminId)).toEqual([])
+      expect((await walletOf2(adminId))?.current_syiling).toBe(adminBefore)
     })
   })
 
