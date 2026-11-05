@@ -162,7 +162,8 @@ function groupSurfaceShapeReasons(f: ServabilityFacts, record: QuestionRecord, a
   else if (only === undefined || !('mode' in only) || only.mode !== 'mcq') refusal = 'the only part is not an MCQ leaf'
   else if (!only.options.some((o) => o.label === only.key.correct)) refusal = 'the key names no option'
   if (refusal !== null) return [reason('shape_unsupported', activity, refusal)]
-  if (f.groupIncomplete !== undefined) return [reason('group_incomplete', activity, undefined, undefined, f.groupIncomplete)]
+  // 0 gap members = the group's own stimulus cannot be shown (no file, no text): the bridge below names that reason.
+  if (f.groupIncomplete !== undefined && f.groupIncomplete > 0) return [reason('group_incomplete', activity, undefined, undefined, f.groupIncomplete)]
   return bridgeReasons(f, activity, record)
 }
 

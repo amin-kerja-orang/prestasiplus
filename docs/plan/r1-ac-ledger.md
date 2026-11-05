@@ -90,6 +90,7 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S1-T06 | AC-MUR-QP-6 | CI | Pass | 2026-11-05 | team-aa/S-3 | kuiz-whole-groups.spec.ts::[CI] AC-QP-6: a whole group is served together, contiguous and in group order |
 | S8-T03 | AC-QA-18 | CI | Pass | 2026-11-05 | team-aa/S-3 | sanitize.test.ts::keeps allowed tags; render-markup.test.ts::sanitises before expanding |
 | S4-T07 | AC-ADM-C01.1 | CI | Pass | 2026-11-05 | team-bb/S-3 | CurriculumBrowserPage.test.ts |
+| S1-T06 | AC-ADM-QE7.2 | CI | Pass | 2026-11-05 | team-aa/S-3 | exam-builder/builder-placements.spec.ts::D90: a stimulus group is one unit > placing ONE member places the whole group, contiguous in group order |
 
 ## Sprint 4
 

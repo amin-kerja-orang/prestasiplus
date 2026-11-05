@@ -160,6 +160,15 @@ const PKSK_TAG = 'pksk_domain'
 const NOT_PKSK = NOT_PKSK_SQL
 const IS_PKSK = Prisma.sql`EXISTS (SELECT 1 FROM question_tags pt WHERE pt.question_id = q.id AND pt.kind = 'pksk_domain')`
 
+/** SQL twin of `stimulusTableOf` for a stored grid (`s.table_data`): an array whose first row is a non-empty head, or an object with a non-empty `head`/`headers`/`columns` and a `rows` array. */
+const TABLE_GRID_READABLE_SQL = Prisma.sql`(CASE jsonb_typeof(s.table_data)
+    WHEN 'array' THEN CASE WHEN jsonb_typeof(s.table_data -> 0) = 'array' THEN jsonb_array_length(s.table_data -> 0) > 0 ELSE false END
+    WHEN 'object' THEN CASE
+      WHEN jsonb_typeof(coalesce(s.table_data -> 'head', s.table_data -> 'headers', s.table_data -> 'columns')) = 'array'
+        THEN jsonb_array_length(coalesce(s.table_data -> 'head', s.table_data -> 'headers', s.table_data -> 'columns')) > 0 AND jsonb_typeof(s.table_data -> 'rows') = 'array'
+      ELSE false END
+    ELSE false END)`
+
 /**
  * `true` when every stimulus the question shows can be shown: a picture kind has its file, a table has a grid, a file or a pipe table in the
  * body, a passage has text, and the version carries no `legacy_image_unresolved` import hold. `stimuli` is a statement selecting `sid`.
@@ -168,7 +177,7 @@ const mediaResolvedSql = (stimuli: Prisma.Sql, importIssues: Prisma.Sql): Prisma
   NOT EXISTS (
     SELECT 1 FROM (${stimuli}) l JOIN stimuli s ON s.id = l.sid
      WHERE (s.kind IN ('image', 'diagram', 'map', 'infographic', 'graph') AND s.asset_file_id IS NULL)
-        OR (s.kind = 'table' AND s.table_data IS NULL AND s.asset_file_id IS NULL AND (s.body_ms IS NULL OR s.body_ms NOT LIKE '%|%'))
+        OR (s.kind = 'table' AND s.asset_file_id IS NULL AND (s.body_ms IS NULL OR s.body_ms NOT LIKE '%|%') AND NOT coalesce(${TABLE_GRID_READABLE_SQL}, false))
         OR (s.kind = 'passage' AND btrim(coalesce(s.body_ms, '')) = '' AND btrim(coalesce(s.body_en, '')) = '')
   )
   AND NOT (coalesce(${importIssues}, '[]'::jsonb) @> '[{"code": "legacy_image_unresolved"}]'::jsonb)
@@ -237,7 +246,7 @@ const NO_STATUS_COUNTS = (): Record<QuestionStatus, number> => ({ draft: 0, revi
 
 /**
  * S1-T06 (D105, FR-MUR-QP-6/7, AC-QP-7, FR-QA-01): the whole-group predicate. A group member is served only when its WHOLE group can be:
- * the group holds a stimulus and no member is a gap. A member (bar those whose latest version is archived) is a gap when it is
+ * the group holds a stimulus the screen can show (a picture kind has its file, a passage has text: `mediaResolvedSql`) and no member is a gap. A member (bar those whose latest version is archived) is a gap when it is
  * inactive, has no live approved version, or is not a single MCQ leaf (part mode `mcq`) whose key names one of its options (the draw's `groupSurfaceShapeReasons`). One definition for the SQL draw (`QuestionFilter.wholeGroups`)
  * and the indicator (`incompleteGroups`), so the card, the details and the draw agree (D91).
  */
@@ -255,7 +264,8 @@ const groupGapCountSql = (groupId: Prisma.Sql): Prisma.Sql =>
 
 /** SQL boolean: the group `groupId` (a bigint expression) has a stimulus and no gap member. */
 export const groupCompleteSql = (groupId: Prisma.Sql): Prisma.Sql =>
-  Prisma.sql`(EXISTS (SELECT 1 FROM stimulus_group_stimuli wgs WHERE wgs.group_id = ${groupId}) AND ${groupGapCountSql(groupId)} = 0)`
+  Prisma.sql`(EXISTS (SELECT 1 FROM stimulus_group_stimuli wgs WHERE wgs.group_id = ${groupId}) AND ${groupGapCountSql(groupId)} = 0
+    AND ${mediaResolvedSql(Prisma.sql`SELECT wms.stimulus_id AS sid FROM stimulus_group_stimuli wms WHERE wms.group_id = ${groupId}`, Prisma.sql`NULL::jsonb`)})`
 
 /** The PKSK tags of a question (`pksk_domain` code and `pksk_level`), or null when it carries no domain tag. */
 function pkskOf(tags: readonly { kind: string; code: string }[]): { domainCode: string; level: 'T1' | 'T4' } | null {
