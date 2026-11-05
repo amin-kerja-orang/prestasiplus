@@ -12,6 +12,8 @@ import DashboardPage from '../../pages/DashboardPage.vue'
 
 const api = vi.hoisted(() => ({
   fetchDashboard: vi.fn(),
+  fetchMoodToday: vi.fn(),
+  postMood: vi.fn(),
   fetchChallengesToday: vi.fn(),
   fetchBestStreak: vi.fn(),
 }))
@@ -180,6 +182,7 @@ const has = (w: VueWrapper, id: string) => w.find(`[data-testid=${id}]`).exists(
 
 beforeEach(() => {
   api.fetchDashboard.mockReset()
+  api.fetchMoodToday.mockReset().mockResolvedValue({ mood: null })
   api.fetchChallengesToday.mockReset()
   api.fetchChallengesToday.mockResolvedValue([])
   api.fetchBestStreak.mockReset()
@@ -196,6 +199,21 @@ afterEach(() => {
 })
 
 describe('S1 DashboardPage (v2 Murid Home)', () => {
+  it('shows the mood check-in for a student only, after the quests/badges grid and before the quick actions (S5-T04)', async () => {
+    const w = await render(dash({ user: { id: 1, name: 'Murid Demo', role: 'student' } }))
+    const html = w.html()
+    expect(has(w, 'dash-mood')).toBe(true)
+    expect(html.indexOf('dash-mood')).toBeGreaterThan(html.indexOf('dash-badges'))
+    expect(html.indexOf('dash-mood')).toBeLessThan(html.indexOf('dash-quick'))
+    w.unmount()
+    for (const role of ['admin', 'teacher', 'school_admin'] as const) {
+      const other = await render(dash({ user: { id: 2, name: 'Pengguna Demo', role } }))
+      expect(has(other, 'dash-mood'), role).toBe(false)
+      other.unmount()
+    }
+    expect(api.fetchMoodToday).toHaveBeenCalledTimes(1)
+  })
+
   it('shows the greeting card with the friend bubble and the trial card (FR-M05-02, 03)', async () => {
     const w = await render()
     expect(t(w, 'dash-hero').text()).toContain('Selamat Petang, Admin Demo 👋')

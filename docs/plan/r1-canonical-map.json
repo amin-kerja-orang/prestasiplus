@@ -10033,6 +10033,14 @@
       "approved_by_card": null
     },
     {
+      "name": "MoodCheckin",
+      "table": "mood_checkins",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/prisma/schema/content.prisma",
+      "approved_by_card": "S5-T04"
+    },
+    {
       "name": "EducationLevel",
       "table": "education_levels",
       "status": "canonical",
@@ -11402,6 +11410,26 @@
       "sector": "S5",
       "file": "apps/api/src/modules/account/account.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "POST /api/me/mood",
+      "method": "POST",
+      "path": "/api/me/mood",
+      "api_id": "API-MUR-11",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/src/modules/account/mood.controller.ts",
+      "approved_by_card": "S5-T04"
+    },
+    {
+      "key": "GET /api/me/mood/today",
+      "method": "GET",
+      "path": "/api/me/mood/today",
+      "api_id": "API-MUR-11",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/src/modules/account/mood.controller.ts",
+      "approved_by_card": "S5-T04"
     },
     {
       "key": "GET /api/public/stats",
