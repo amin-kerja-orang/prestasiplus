@@ -78,7 +78,7 @@ export interface SeedModule {
  * The set is minimal and explicit: today it contains the school_packages catalogue (`core-school-packages`), the 4 wallet tiers
  * (`core-wallet-tiers`, P11-B1: without them every student dashboard and wallet read answers 500 in production;
  * LEAD approval: pending (P11-B1, #113)), the marketplace categories
- * (`core-marketplace-categories`, BE-46) and the
+ * (`core-marketplace-categories`, BE-46), the 15 Global Misi Harian rows (`missions-global`, S6-T07, issue #483: teacher list only, never served to pupils) and the
  * 19 SPM subject configuration rows (`spm-subject-configs`, BE-41; LEAD to confirm, it extends the BE-25 set),
  * pinned by test/subscriptions/seed-production.spec.ts.
  * Adding a reference module needs LEAD approval first, because demo data must never reach production.

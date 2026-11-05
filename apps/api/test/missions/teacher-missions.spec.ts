@@ -167,4 +167,11 @@ describe('S6-T07 cap race and seed idempotency (DB)', () => {
     expect(new Set(rows.map((r) => r.title)).size).toBe(15)
     expect(await count(t, `missions where scope = 'global' and mission_type = 'harian' and teacher_id is null and subject_id is null`)).toBe(15)
   })
+
+  it('the Global missions seed is reference data: it also runs in production without the demo flag', async () => {
+    expect(missionsSeed.kind).toBe('reference')
+    const ran = await runSeeds([missionsSeed], { prisma: t.db.prisma, env: { NODE_ENV: 'production' } })
+    expect(ran).toEqual(['missions-global'])
+    expect(await count(t, `missions where scope = 'global'`)).toBe(15)
+  })
 })

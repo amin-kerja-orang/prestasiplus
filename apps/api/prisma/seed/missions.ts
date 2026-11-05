@@ -5,10 +5,10 @@
  *
  * Idempotent (found by title among the global rows, partial unique index `uq_missions_global_title`; an existing row is left
  * as it is), deterministic (the mission date is the Malaysia day of the fixed seed clock) and free of personal data; `legacy_*`
- * is never set. Runs after the classes seed and before gamification (see the ORDER NOTE in `./index.ts`).
+ * is never set. Reference data (`kind: 'reference'`, PRD 20 R1-GUR-2b, issue #483): it loads in every environment including
+ * production, is listed to teachers only and is never served to pupils. Runs after the classes seed and before gamification (see the ORDER NOTE in `./index.ts`).
  */
 import { mytDay } from '../../src/db/clock'
-import { assertSeedAllowed } from './guard'
 import type { SeedModule } from './index'
 
 export interface GlobalMissionSeed {
@@ -39,9 +39,8 @@ export const GLOBAL_MISSIONS: readonly GlobalMissionSeed[] = [
 
 export const missionsSeed: SeedModule = {
   name: 'missions-global',
-  kind: 'demo',
+  kind: 'reference',
   async run(ctx) {
-    assertSeedAllowed()
     const { prisma } = ctx
     const now = ctx.clock.now()
     const missionDate = new Date(`${mytDay(now)}T00:00:00.000Z`)
