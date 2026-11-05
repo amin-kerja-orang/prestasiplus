@@ -39,12 +39,6 @@ const props = withDefaults(
 )
 const emit = defineEmits<{ 'update:modelValue': [string | string[]]; 'image-error': [string] }>()
 
-/** `mcq_multi` is served with 2 to 8 options only (FR-PA-02); outside that nothing is rendered. */
-const MULTI_MIN = 2
-const MULTI_MAX = 8
-const servable = computed(
-  () => !props.multi || (props.options.length >= MULTI_MIN && props.options.length <= MULTI_MAX),
-)
 const ticked = computed<string[]>(() =>
   Array.isArray(props.modelValue) ? props.modelValue : [],
 )
@@ -81,7 +75,7 @@ function onImgError(id: string): void {
 </script>
 
 <template>
-  <div v-if="servable" class="flex flex-col gap-2">
+  <div class="flex flex-col gap-2">
   <p v-if="multi" :id="`${groupName}-hint`" class="text-caption text-toned" data-testid="mcq-multi-hint">
     {{ qdCopy.mcqMultiHint }}
   </p>

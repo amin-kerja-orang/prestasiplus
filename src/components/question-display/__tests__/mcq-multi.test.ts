@@ -45,15 +45,13 @@ describe('mcq_multi v-model', () => {
     expect(w.emitted('update:modelValue')![2]).toEqual([['A']])
   })
 
-  it('accepts 2 and 8 options and renders nothing for 1 or 9', () => {
-    for (const [n, shown] of [
-      [1, false],
-      [2, true],
-      [8, true],
-      [9, false],
-    ] as const) {
+  // The 2-8 option rule is the write gate's (S1-T09a): the pupil widget renders whatever it is given,
+  // so a bad question is never silently unanswerable (lead review #700).
+  it('renders the options as given, also outside 2-8 (1 and 9 options)', () => {
+    for (const n of [1, 2, 8, 9]) {
       const w = mount(McqOptions, { props: { options: make(n), multi: true, modelValue: [] }, global })
-      expect(w.find('[data-testid=mcq-options]').exists()).toBe(shown)
+      expect(w.find('[data-testid=mcq-options]').exists()).toBe(true)
+      expect(w.findAll('input[type=checkbox]')).toHaveLength(n)
     }
   })
 
