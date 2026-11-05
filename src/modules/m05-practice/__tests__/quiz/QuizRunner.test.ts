@@ -61,6 +61,8 @@ function session(extra: Partial<StartSessionResponse> = {}): StartSessionRespons
         wrongTimes: 3,
         hasDskp: true,
         contributor: { name: 'Cikgu Contoh', profileUrl: 'https://contoh.my/guru/1' },
+        stimuli: [],
+        group: null,
         options: [
           { id: 0, label: 'A', text: 'Johor Bahru' },
           { id: 1, label: 'B', text: 'Kuala Lumpur' },
@@ -74,6 +76,8 @@ function session(extra: Partial<StartSessionResponse> = {}): StartSessionRespons
         wrongTimes: 1,
         hasDskp: false,
         contributor: { name: 'Cikgu Tanpa Pautan', profileUrl: 'javascript:alert(1)' },
+        stimuli: [],
+        group: null,
         options: [
           { id: 0, label: 'A', text: 'x' },
           { id: 1, label: 'B', text: 'y' },

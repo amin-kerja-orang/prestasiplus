@@ -20,6 +20,8 @@ function session(n = 3, extra: Partial<StartSessionResponse> = {}): StartSession
       wrongTimes: 0,
       hasDskp: i % 2 === 0,
       contributor: null,
+      stimuli: [],
+      group: null,
       options: [
         { id: 0, label: 'A', text: 'a' },
         { id: 1, label: 'B', text: 'b' },

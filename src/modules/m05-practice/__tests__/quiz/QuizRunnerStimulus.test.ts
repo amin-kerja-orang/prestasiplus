@@ -23,7 +23,7 @@ const DrawerStub = defineComponent({
   setup:
     (p, { slots }) =>
     () =>
-      h('div', { 'data-testid': 'drawer' }, p.open ? slots.body?.() : null),
+      h('div', { 'data-testid': 'drawer' }, p.open ? slots.body?.() : undefined),
 })
 
 const base = { textDirection: 'ltr', scriptType: 'rumi', wrongTimes: 0, hasDskp: true, contributor: null } as const

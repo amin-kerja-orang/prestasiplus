@@ -85,6 +85,8 @@ describe('options and answers', () => {
       wrongTimes: 0,
       hasDskp: true,
       contributor: null,
+      stimuli: [],
+      group: null,
       options,
     }
     expect(
