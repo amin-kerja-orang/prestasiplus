@@ -16,6 +16,7 @@ import {
   DsQuizHeader,
   DsLoadError,
   DsStack,
+  DsSurface,
   DsText,
 } from '@/ds'
 import { useMedia } from '@/ds/useMedia'
@@ -614,24 +615,34 @@ const feedback = computed(() => {
     </template>
 
     <template #banner>
-      <p
+      <DsSurface
         v-if="offline && !timeUp"
-        class="shrink-0 bg-elevated px-3 py-2 text-center text-label text-warning sm:px-6"
+        level="elevated"
+        radius="none"
+        shadow="none"
+        padding="sm"
         role="status"
         data-short-compact
         data-testid="offline-banner"
       >
-        Anda luar talian. Jawapan disimpan pada peranti ini dan akan dihantar apabila sambungan pulih.
-      </p>
-      <p
+        <DsText variant="label" tone="warning" align="center">
+          Anda luar talian. Jawapan disimpan pada peranti ini dan akan dihantar apabila sambungan pulih.
+        </DsText>
+      </DsSurface>
+      <DsSurface
         v-else-if="reconnected"
-        class="shrink-0 bg-elevated px-3 py-2 text-center text-label text-success sm:px-6"
+        level="elevated"
+        radius="none"
+        shadow="none"
+        padding="sm"
         role="status"
         data-short-compact
         data-testid="reconnected-banner"
       >
-        Sambungan pulih. Jawapan telah disimpan.
-      </p>
+        <DsText variant="label" tone="success" align="center">
+          Sambungan pulih. Jawapan telah disimpan.
+        </DsText>
+      </DsSurface>
       <!-- One bar for both notices: the 5-minute warning (timer still running) and, at 0 while
            offline, "Masa tamat" (the two never show together). -->
       <p
