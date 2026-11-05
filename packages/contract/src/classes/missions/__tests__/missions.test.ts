@@ -4,9 +4,7 @@ import { buildOpenApiDocument } from '../../../openapi'
 import { MISSIONS_COMPONENT_SCHEMAS } from '../paths'
 import {
   MISSION_TYPE_LABELS,
-  MISSION_GOAL_KINDS,
   MissionTodayResponseSchema,
-  MissionTodaySchema,
   REMEDIAL_MESSAGES,
   RemedialCancelRequestSchema,
   RemedialCancelResponseSchema,
@@ -272,17 +270,7 @@ describe('teacher mission create (API-GUR-11)', () => {
     expect(m({ ...ok, date: '2026-02-30' }).date).toBeDefined()
   })
   it('list response parses', () => {
-    const row = { id: '1', title: 'T', description: null, targetQuestions: 3, rewardCoins: 15, date: '2026-11-05', classroomId: null, subjectId: null, subjectName: null, global: true, goalKind: 'sessions_per_day', completedCount: 0 }
+    const row = { id: '1', title: 'T', description: null, targetQuestions: 3, rewardCoins: 15, date: '2026-11-05', classroomId: null, subjectId: null, subjectName: null, global: true, completedCount: 0 }
     expect(TeacherMissionListResponseSchema.safeParse({ data: [row] }).success).toBe(true)
-    expect(TeacherMissionListResponseSchema.safeParse({ data: [{ ...row, global: false, goalKind: null }] }).success).toBe(true)
-    expect(TeacherMissionListResponseSchema.safeParse({ data: [{ ...row, goalKind: 'nope' }] }).success).toBe(false)
-    expect(TeacherMissionListResponseSchema.safeParse({ data: [{ ...row, goalKind: undefined }] }).success).toBe(false)
-  })
-  it('the goal kinds are the seven of the PO decision and a Global goal row of /missions/today parses with its optional fields', () => {
-    expect(MISSION_GOAL_KINDS).toEqual(['sessions_per_day', 'correct_per_day', 'correct_in_session', 'accuracy_in_session', 'minutes_per_day', 'topics_per_day', 'streak_days'])
-    const today = { id: '1', title: 'T', typeLabel: 'Misi Harian', subjectName: '', questionCount: 3, coinsPerCorrect: 3, resourceTitle: null, resourceUrl: null, resourceNote: null, status: 'new', global: true, goalKind: 'sessions_per_day', target: 3, progress: 1, completed: false }
-    expect(MissionTodayResponseSchema.safeParse({ data: [today], meta: meta(1) }).success).toBe(true)
-    expect(MissionTodaySchema.safeParse({ ...today, goalKind: 'x' }).success).toBe(false)
-    expect(MissionTodaySchema.safeParse(MissionTodaySchema.omit({ global: true, goalKind: true, target: true, progress: true, completed: true }).parse(today)).success).toBe(true)
   })
 })

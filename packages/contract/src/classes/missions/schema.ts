@@ -54,25 +54,6 @@ const accuracy = z.number().meta({ description: 'Percent with 1 decimal; not bou
 export const MISSION_TYPES = ['latih_tubi', 'tracking_a', 'youtube', 'harian'] as const
 export const MissionTypeSchema = z.enum(MISSION_TYPES).meta({ id: 'MissionType' })
 
-/**
- * How a Global (platform) mission is measured from the pupil's practice activity on the mission date (S6-T07, PO decision on #483).
- * `sessions_per_day`: completed sessions that day; `correct_per_day`: correct answers that day; `correct_in_session`: most correct
- * answers in one session that day; `accuracy_in_session`: best accuracy percent (0..100) of one completed session that day;
- * `minutes_per_day`: minutes practised that day; `topics_per_day`: distinct topics answered that day; `streak_days`: the pupil's
- * current streak (kombo) in days. The target is the mission's `targetQuestions`.
- */
-export const MISSION_GOAL_KINDS = [
-  'sessions_per_day',
-  'correct_per_day',
-  'correct_in_session',
-  'accuracy_in_session',
-  'minutes_per_day',
-  'topics_per_day',
-  'streak_days',
-] as const
-export const MissionGoalKindSchema = z.enum(MISSION_GOAL_KINDS).meta({ id: 'MissionGoalKind' })
-export type MissionGoalKind = z.infer<typeof MissionGoalKindSchema>
-
 /** INFERRED labels of the mission types (M10 S12), as `MISSION_TYPE_LABELS` of the mock. */
 export const MISSION_TYPE_LABELS: Readonly<Record<(typeof MISSION_TYPES)[number], string>> = {
   latih_tubi: 'Latih Tubi SPM',
@@ -102,11 +83,6 @@ export const MissionTodaySchema = z
     status: MissionStatusSchema,
     description: z.string().nullable().optional().meta({ description: 'S6-T07 additive: mission description (null when none).' }),
     rewardCoins: z.number().int().optional().meta({ description: 'S6-T07 additive: coins paid once at the target.' }),
-    global: z.boolean().optional().meta({ description: 'S6-T07 additive: true for a Global (platform) goal; it is not a question set and starts no session.' }),
-    goalKind: MissionGoalKindSchema.optional().meta({ description: 'S6-T07 additive: how a Global goal is measured.' }),
-    target: z.number().int().optional().meta({ description: 'S6-T07 additive: the goal target in the unit of `goalKind` (Global goals).' }),
-    progress: z.number().optional().meta({ description: 'S6-T07 additive: the pupil progress towards `target` today (Global goals).' }),
-    completed: z.boolean().optional().meta({ description: 'S6-T07 additive: the reward has been paid (Global goals).' }),
   })
   .meta({ id: 'MissionToday' })
 export type MissionToday = z.infer<typeof MissionTodaySchema>
@@ -357,8 +333,7 @@ export const TeacherMissionSchema = z
     subjectId: IdSchema.nullable(),
     subjectName: z.string().nullable(),
     global: z.boolean(),
-    goalKind: MissionGoalKindSchema.nullable().meta({ description: 'How a Global mission is measured; null for a teacher mission.' }),
-    completedCount: z.number().int().min(0).meta({ description: "Pupils of the teacher's classes who completed it (a Global goal: those with a reward row)." }),
+    completedCount: z.number().int().min(0).meta({ description: "Pupils of the teacher's classes who completed it." }),
   })
   .meta({ id: 'TeacherMission' })
 export type TeacherMission = z.infer<typeof TeacherMissionSchema>
