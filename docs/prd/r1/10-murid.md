@@ -1574,19 +1574,19 @@ Same template as section 3 (Action, Screen specification (from V2), change list)
   | Kategori | select | Tidak | Semua | Semua plus the admin-defined categories | - | - | query | marketplace read |
   | Keadaan | select | Tidak | Semua | Semua, Baharu, Terpakai | - | - | query | same |
   | Susun | select | Tidak | Terbaru | Terbaru, Harga: Rendah ke Tinggi, Harga: Tinggi ke Rendah | - | - | query | same |
-  | Order dialog: Kuantiti | number | Ya | 1 | integer 1..stock | `Nilai mesti antara 1 dan {stok}.` | - | - | order API |
-  | Order dialog: Catatan (pilihan) | text | Tidak | empty | max 255 | `Catatan tidak boleh melebihi 255 aksara.` | - | - | same |
-  | Batal / Hantar Pesanan | buttons | - | - | success `Pesanan anda telah direkodkan. Penjual akan menghubungi anda.` | - | - | order row | same |
+  | ~~Order dialog: Kuantiti~~ | - | - | - | STRUCK (PO decision 2026-11-05, item 21: no order dialog) | - | - | - | - |
+  | ~~Order dialog: Catatan (pilihan)~~ | - | - | - | STRUCK (PO decision 2026-11-05, item 21: no order dialog) | - | - | - | - |
+  | ~~Batal / Hantar Pesanan~~ | - | - | - | STRUCK (PO decision 2026-11-05, item 21: no order dialog) | - | - | - | - |
   - Behaviour: prices are in Ringgit (RM), no online payment (FR-MUR-32-4); the filter and order values above are R1 decision D113.
   - New requirements: FR-MUR-32-6 The sample products are replaced by admin-managed products. 
-  - New acceptance criteria: AC-MUR-32-5 Given a quantity above stock, then `Nilai mesti antara 1 dan {stok}.` shows.
+  - New acceptance criteria: ~~AC-MUR-32-5 Given a quantity above stock, then `Nilai mesti antara 1 dan {stok}.` shows.~~ STRUCK (PO decision 2026-11-05, item 21: no order dialog).
 - **Name**: "Marketplace" (sub "Produk pembelajaran daripada penjual yang diluluskan"). **Route**: `/marketplace`. **Row**: 32. **Priority**: P2.
 - **Current status**: V3 sample products with filters category/condition/sort and discounts; "Pesanan saya" not visible; V2 empty "Tiada produk tersedia" / "Belum ada penjual diluluskan yang menyenaraikan produk aktif." and "Anda belum membuat sebarang pesanan.".
 - **Outcome**: browse and order learning products from approved sellers.
 - **Reference (V2 `marketplace.blade.php`, M20)**: product cards, filters, order list.
-- **FRs**: FR-MUR-32-1 only active products of approved sellers show. FR-MUR-32-2 filters (category, condition, sort) work. FR-MUR-32-3 ordering creates an order with status and the pupil sees "Pesanan saya" with the empty text "Anda belum membuat sebarang pesanan.". FR-MUR-32-4 prices are in Ringgit; there is no online payment: the order is recorded and the seller contacts the buyer, with the page note "Harga di Marketplace dalam Ringgit (RM) — bukan syiling atau token. Pesanan anda direkodkan di sini dan penjual akan menghubungi anda untuk pembayaran." (V2 route `/marketplace`). FR-MUR-32-5 sample/demo products never reach production.
+- **FRs**: FR-MUR-32-1 only active products of approved sellers show. FR-MUR-32-2 filters (category, condition, sort) work. ~~FR-MUR-32-3 ordering creates an order with status and the pupil sees "Pesanan saya" with the empty text "Anda belum membuat sebarang pesanan."~~ STRUCK (PO decision 2026-11-05, item 21): there is no order, no "Pesanan saya" and no order table; each product shows the note "Hubungi penjual melalui WhatsApp" with the existing WhatsApp action. FR-MUR-32-4 prices are in Ringgit; there is no online payment: the pupil contacts the seller through WhatsApp ("Hubungi penjual melalui WhatsApp"); no order is recorded (PO decision 2026-11-05, item 21). Page price note: "Harga di Marketplace dalam Ringgit (RM) — bukan syiling atau token." [lead to confirm the final note text] (V2 route `/marketplace`). FR-MUR-32-5 sample/demo products never reach production.
 - **Data**: products, sellers, orders (owner M20); admin Marketplace screens (missing; cross-ref).
-- **ACs**: AC-MUR-32-1 Given an approved product, then it lists and can be ordered and the order shows in "Pesanan saya". AC-MUR-32-2 Given no products, then V2 empty text. AC-MUR-32-3 Given a seller not approved, then products hidden. AC-MUR-32-4 Given 375 px, then filters collapse into a drawer.
+- **ACs**: AC-MUR-32-1 Given an approved product, then it lists and shows "Hubungi penjual melalui WhatsApp" (the order clause is struck, PO decision 2026-11-05, item 21). AC-MUR-32-2 Given no products, then V2 empty text. AC-MUR-32-3 Given a seller not approved, then products hidden. AC-MUR-32-4 Given 375 px, then filters collapse into a drawer.
 - **Gap**: sample data, no admin, BE read-only. **FD**: none. **Decided**: OQ-MUR-18 (section 6.1).
 
 ### R1-MUR-33 Papan Pendahulu
@@ -2078,7 +2078,7 @@ Each item is a need cited by an FR/AC of this file. Existing DM/API IDs are name
 | 30 | Game coins setting `games_award_syiling` default off, caps, robot label "Robot PrestasiPlus" after 30 s, `battle` rows | FR-MUR-21-8, FR-MUR-21-9, AC-MUR-21-7 | DM-38, DM-48, DM-60, DM-44 |
 | 31 | Dashboard: mood check-in built (D114(b), reverses D113): table `mood_checkins` and `POST /api/me/mood` | FR-MUR-2-12, AC-MUR-2-8..2-12 | DM-84, API-MUR-11 (OD-11 superseded) |
 | 32 | Schools search `GET /api/schools/search?state=&q=` (min 2 characters, 20 results) | FR-MUR-AUTH-1 | API-ADM-04 |
-| 33 | Timeline: post text max 500 and type enum; Marketplace: category/condition/sort filters and order (quantity, note) | FR-MUR-39-6, FR-MUR-32-6, AC-MUR-39-5, AC-MUR-32-5 | API-RPT-14, API-ADM-19 |
+| 33 | Timeline: post text max 500 and type enum; Marketplace: category/condition/sort filters (the order quantity and note are struck, PO decision 2026-11-05, item 21) | FR-MUR-39-6, FR-MUR-32-6, AC-MUR-39-5, AC-MUR-32-5 | API-RPT-14, API-ADM-19 |
 | 34 | Tournament, PKSK start sets (A/B/C = 10, domain = 5) and Cabutan purchase idempotency | FR-MUR-19-7, FR-MUR-22-6, AC-MUR-22-5 | API-PRAC-12, API-GAME-12, DM-78 |
 
 ---
@@ -2171,7 +2171,7 @@ Every question that was open in earlier drafts is decided here by the product-ow
 | OQ-MUR-15 | Daily report cap | 20 per day (ERR-QUOTA-02). | D113 |
 | OQ-MUR-16 | V2 "belum tersedia" wording for data-empty states | The exact V2 sentences stay only where they say missing data or access, never a missing feature. | D100, D113 |
 | OQ-MUR-17 | Tournament empty copy | `Tiada liga atau tournament buat masa ini.` | D113 |
-| OQ-MUR-18 | Marketplace payment | Orders are recorded, prices in Ringgit, no online payment (FR-MUR-32-4). | V2 page, D113 |
+| OQ-MUR-18 | Marketplace payment | No order is recorded; prices in Ringgit, no online payment; the pupil contacts the seller by WhatsApp (FR-MUR-32-4; PO decision 2026-11-05, item 21). | V2 page, D113, PO 2026-11-05 |
 | OQ-MUR-19 | Kotak Misteri and Rujuk Kawan rules | One 50-Syiling box with the V2 odds; 100 Syiling per referred friend, both admin settings (FR-MUR-35-1, FR-MUR-36-2). | K18, D113 |
 | OQ-X-3 | Join a class by code | No pupil join (FR-MUR-8-3). | D-A8 |
 
