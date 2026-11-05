@@ -354,7 +354,7 @@ describe('S3 PracticeConfigPage', () => {
 describe('Q1 PracticeQuizPage', () => {
   const sessionBody = {
     sessionId: 's9',
-    mode: 'random',
+    mode: 'latih_tubi',
     subject: { code: 'MATH', name: 'Matematik', color: '#EF4444' },
     questions: [
       {
@@ -373,11 +373,11 @@ describe('Q1 PracticeQuizPage', () => {
     ],
   }
 
-  it('starts a random session with the query parameters and shows the subject title', async () => {
+  it('starts a latih_tubi session with the query parameters and shows the subject title', async () => {
     api.startSession.mockResolvedValue(sessionBody)
     const w = await render(PracticeQuizPage, '/practice/MATH/quiz?level=2&difficulty=3&count=15')
     expect(api.startSession).toHaveBeenCalledWith({
-      mode: 'random',
+      mode: 'latih_tubi',
       subjectCode: 'MATH',
       levelId: 2,
       difficulty: 3,
@@ -393,7 +393,7 @@ describe('Q1 PracticeQuizPage', () => {
     api.startSession.mockResolvedValue(sessionBody)
     await render(PracticeQuizPage, '/practice/MATH/quiz?count=10')
     expect(api.startSession).toHaveBeenCalledWith({
-      mode: 'random',
+      mode: 'latih_tubi',
       subjectCode: 'MATH',
       count: 10,
     })

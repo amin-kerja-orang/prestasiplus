@@ -36,7 +36,6 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-const RANDOM = { mode: 'random', subjectCode: 'MATH', levelId: undefined as string | undefined, count: 5 }
 
 /** Starts a session, answers every question wrongly and submits (so only the session count moves). */
 async function play(who: Client, body: Record<string, unknown>): Promise<string> {
@@ -51,7 +50,7 @@ async function play(who: Client, body: Record<string, unknown>): Promise<string>
   expect(done.status, JSON.stringify(done.body)).toBe(200)
   return data.sessionId
 }
-const random = () => ({ ...RANDOM, levelId: w.level.d1 })
+const random = () => ({ mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
 const unlocks = (userId: string) => t.db.query<{ name: string; is_test: boolean }>(`select a.name, ua.is_test from user_achievements ua join achievements a on a.id = ua.achievement_id where ua.user_id = $1 order by ua.id`, [userId])
 const achievementRows = (userId: string) =>
   t.db.query<{ source_id: string; amount: number; description: string; is_test: boolean }>(`select source_id, amount::int, description, is_test from coin_ledger where user_id = $1 and source = 'achievement' order by id`, [userId])

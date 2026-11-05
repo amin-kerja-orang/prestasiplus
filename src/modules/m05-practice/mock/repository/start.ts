@@ -18,13 +18,13 @@ import {
   LATIH_TUBI_COUNTS,
   LATIH_TUBI_TARGETS,
   MESSAGES,
-  MISSION_COINS_PER_CORRECT,
   offeredPracticeLevelIds,
   PAST_YEAR_COUNTS,
   PracticeError,
   REVISION_LENGTH,
   SPM_LEVEL_IDS,
-  isMode,
+  INVALID_MODE_MESSAGE,
+  isStartMode,
 } from './rules'
 import { seams } from './seams'
 
@@ -133,17 +133,17 @@ function linked(
 }
 
 /**
- * Resolves a start. `sessionSeed` keys the random draws (the session id, BR-13); `now` is the mock
+ * Resolves a start. `_sessionSeed` (the session id, BR-13) keyed the removed `random` draw and is kept for the call shape; `now` is the mock
  * clock (epoch ms).
  */
 export function planStart(
   userId: number,
   req: StartRequest,
   now: number,
-  sessionSeed: string,
+  _sessionSeed: string,
   rng: Prng,
 ): StartPlan {
-  if (!isMode(req.mode) || req.mode === 'pksk') throw invalid('mode')
+  if (!isStartMode(req.mode)) throw invalid('mode', INVALID_MODE_MESSAGE)
   const plan = blank(req.mode)
 
   // BR-07: a user without a subscription and no trial left cannot start (402, LS-8 provisional).
@@ -153,30 +153,6 @@ export function planStart(
   }
 
   switch (req.mode) {
-    case 'random': {
-      const s = subjectOf(req.subjectCode)
-      const offered = s.educationLevelIds.filter((l) => offeredPracticeLevelIds().includes(l))
-      const levelId = optionalInt(req.levelId, 'levelId', (l) => offered.includes(l))
-      const difficulty = optionalInt(req.difficulty, 'difficulty', (d) => d >= 1 && d <= 5)
-      const count = countIn(req.count, COUNT_OPTIONS)
-      const levels = levelId !== null ? [levelId] : offered
-      if (levels.length === 0) throw notEnough()
-      const rows = questions.practiceQuery({
-        subjectId: s.id,
-        educationLevelIds: levels,
-        ...(difficulty !== null ? { difficultyLevel: difficulty } : {}),
-        limit: count,
-        seed: sessionSeed,
-      })
-      if (rows.length < count) throw notEnough()
-      Object.assign(plan, {
-        subjectId: s.id,
-        levelId,
-        difficulty,
-        questionIds: rows.map((q) => q.id),
-      })
-      return plan
-    }
     case 'chapter': {
       if (!isInt(req.chapterId)) throw notFound()
       const ch = curriculum.chapter(req.chapterId)
@@ -221,7 +197,7 @@ export function planStart(
       const levelId = optionalInt(req.levelId, 'levelId', (l) =>
         (SPM_LEVEL_IDS as readonly number[]).includes(l),
       )
-      const difficulty = optionalInt(req.difficulty, 'difficulty', (d) => d >= 2 && d <= 5)
+      const difficulty = optionalInt(req.difficulty, 'difficulty', (d) => d >= 1 && d <= 5)
       if (req.targetQuestionId !== undefined && req.targetQuestionId !== null) {
         // M04 BR-M04-17 "Buka Soalan Sama": one eligible SPM-pool question of the subject.
         if (req.count !== 1) throw invalid('count')
@@ -238,7 +214,7 @@ export function planStart(
       }
       const target = LATIH_TUBI_TARGETS[s.id]
       const count =
-        target !== undefined ? countIn(req.count, [target]) : countIn(req.count, LATIH_TUBI_COUNTS)
+        countIn(req.count, target !== undefined ? [target, ...COUNT_OPTIONS] : [...LATIH_TUBI_COUNTS, ...COUNT_OPTIONS])
       const rows = questions
         .spmPool({
           subjectId: s.id,
@@ -283,7 +259,7 @@ export function planStart(
         subjectId: mission.subjectId,
         missionId: mission.id,
         questionIds: ids,
-        coinsPerCorrect: mission.coinsPerCorrect || MISSION_COINS_PER_CORRECT,
+        coinsPerCorrect: null,
       })
       return plan
     }

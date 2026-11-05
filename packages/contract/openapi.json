@@ -57462,7 +57462,6 @@
       "PracticeStartMode": {
         "type": "string",
         "enum": [
-          "random",
           "chapter",
           "revision",
           "past_year",

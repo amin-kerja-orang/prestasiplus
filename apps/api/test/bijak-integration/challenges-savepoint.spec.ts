@@ -36,7 +36,7 @@ afterEach(() => {
 
 /** Starts a MATH D1 `random` session, answers every question wrongly (so only the `sessions` metric moves) and submits. */
 async function play(who: Client): Promise<string> {
-  const start = await who.post('/api/practice/sessions', { mode: 'random', subjectCode: 'MATH', levelId: w.level.d1, count: 5 })
+  const start = await who.post('/api/practice/sessions', { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
   expect(start.status, JSON.stringify(start.body)).toBe(201)
   const data = start.body.data as StartSessionResponse
   for (const q of data.questions) {

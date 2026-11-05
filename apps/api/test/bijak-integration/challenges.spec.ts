@@ -38,7 +38,7 @@ afterAll(async () => {
 })
 
 /** Starts a MATH D1 `random` session, answers every question wrongly (so only the `sessions` metric moves) and submits. */
-async function play(who: Client, startBody: Record<string, unknown> = { mode: 'random', subjectCode: 'MATH', levelId: w.level.d1, count: 5 }): Promise<string> {
+async function play(who: Client, startBody: Record<string, unknown> = { mode: 'chapter', chapterId: w.chapter.c1, count: 5 }): Promise<string> {
   const start = await who.post('/api/practice/sessions', startBody)
   expect(start.status, JSON.stringify(start.body)).toBe(201)
   const data = start.body.data as StartSessionResponse

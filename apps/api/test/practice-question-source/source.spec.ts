@@ -152,9 +152,9 @@ describe('random sessions start with published questions only', () => {
     expect(live.has(ineligible.deactivated as string)).toBe(false)
   })
 
-  it('POST /practice/sessions (random) is 201 with exactly the eligible questions and no answer key', async () => {
+  it('POST /practice/sessions (latih_tubi) is 201 with exactly the eligible questions and no answer key', async () => {
     const subjectCode = c.w.subjectCode
-    const res = await start({ mode: 'random', subjectCode, levelId: c.dLevel, count: 5 })
+    const res = await start({ mode: 'latih_tubi', subjectCode, levelId: c.dLevel, count: 40 })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const questions = res.body.data.questions as { id: string; options: unknown[]; questionText: string; contributor: unknown; hasDskp: boolean }[]
     expect(questions).toHaveLength(5)
@@ -170,12 +170,6 @@ describe('random sessions start with published questions only', () => {
     const check = await c.s1.post(`${START_URL}/${sessionId}/check-answer`, { questionId: first.id, selectedOptionId: 1 })
     expect(check.status, JSON.stringify(check.body)).toBe(200)
     expect(check.body.data).toMatchObject({ isCorrect: true, correctOptionId: 1, explanation: SECRET_EXPLANATION })
-  })
-
-  it('too few eligible questions is still 422 NOT_ENOUGH_QUESTIONS', async () => {
-    const res = await start({ mode: 'random', subjectCode: c.w.subjectCode, levelId: c.dLevel, count: 10 })
-    expect(res.status, JSON.stringify(res.body)).toBe(422)
-    expect(res.body.error.code).toBe('NOT_ENOUGH_QUESTIONS')
   })
 
   it('a deactivated or unpublished question is never served, over many draws', async () => {

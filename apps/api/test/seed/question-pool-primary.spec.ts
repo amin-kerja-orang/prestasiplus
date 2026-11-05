@@ -245,13 +245,13 @@ describe('PoC question pool at Darjah 1 to 4 (database and API)', () => {
           )
         ).map((r) => r.code)
       for (const subjectCode of PRIMARY_SUBJECTS) {
-        const res = await p.post('/api/practice/sessions', { mode: 'random', subjectCode, count: PRACTICE_MAX })
+        const res = await p.post('/api/practice/sessions', { mode: 'latih_tubi', subjectCode, count: PRACTICE_MAX })
         expect(res.status, `${subjectCode}: ${JSON.stringify(res.body)}`).toBe(201)
         const ids = (res.body.data.questions as { id: string }[]).map((x) => x.id)
         for (const code of await levelsOf(ids)) expect(OFFERED_LEVEL_CODES, subjectCode).toContain(code)
       }
       // A Darjah level is refused on the practice start and on Jutawan.
-      const d1 = await p.post('/api/practice/sessions', { mode: 'random', subjectCode: 'MATH', count: PRACTICE_MAX, levelId: levelId.get('D1') })
+      const d1 = await p.post('/api/practice/sessions', { mode: 'latih_tubi', subjectCode: 'MATH', count: PRACTICE_MAX, levelId: levelId.get('D1') })
       expect(d1.status).toBe(422)
       expect((await p.get('/api/games/jutawan?darjah=1')).status).toBe(422)
       // Kad Memori draws over Tingkatan 1 to 5 only.
