@@ -73,7 +73,7 @@ export interface FeatureRoutePrefixes {
  *
  * A key with `api: []` is enforced on the front-end only (D115, S0-T11 D-7): it has no dedicated API controller, or its
  * endpoint is shared with other screens (`latih-tubi`: `/api/practice/sessions` serves Latih Bab, Ulang Kaji, Permainan and the
- * dashboard; `prestasi`: `/api/performance/*`; `guru.kelas`: `/api/guru/classes` also feeds Cikgu Alesa). The locked keys
+ * dashboard; `prestasi`: `/api/performance/*`; `guru.kelas`: `/api/guru/classes` also feeds Cikgu Alesa; `guru.monitoring`, `analisa-item`, `video-pembelajaran`: admin, school admin and teacher screens share the endpoint; `perutusan` keeps only the public read, the writers use `/api/perutusan`). The locked keys
  * `cikgu-alesa` and `keluarga-angkat` are OFF for ever (INV-29).
  */
 export const FEATURE_ROUTE_PREFIXES: Readonly<Record<string, FeatureRoutePrefixes>> = {
@@ -89,7 +89,7 @@ export const FEATURE_ROUTE_PREFIXES: Readonly<Record<string, FeatureRoutePrefixe
   universiti: { fe: ['/cita-cita/universiti'], api: [] },
   biasiswa: { fe: ['/cita-cita/biasiswa'], api: [] },
   'target-spm': { fe: ['/target-spm'], api: ['/api/spm-targets'] },
-  'analisa-item': { fe: ['/analisa-item'], api: ['/api/item-analysis'] },
+  'analisa-item': { fe: ['/analisa-item'], api: [] },
   prestasi: {
     fe: ['/prestasi'],
     api: [],
@@ -99,8 +99,8 @@ export const FEATURE_ROUTE_PREFIXES: Readonly<Record<string, FeatureRoutePrefixe
   'profil-cerah': { fe: ['/profil-cerah'], api: [] },
   'kemajuan-saya': { fe: ['/practice/progress'], api: [] },
   'sejarah-latihan': { fe: ['/practice/history'], api: [] },
-  'video-pembelajaran': { fe: ['/video'], api: ['/api/videos'] },
-  perutusan: { fe: ['/perutusan'], api: ['/api/perutusan', '/api/public/perutusan'] },
+  'video-pembelajaran': { fe: ['/video'], api: [] },
+  perutusan: { fe: ['/perutusan'], api: ['/api/public/perutusan'] },
   'panduan-pengguna': { fe: ['/panduan'], api: [] },
   'tiket-bantuan': { fe: ['/pusat-tuisyen/tiket'], api: ['/api/tiket'] },
   'latih-tubi': {
@@ -111,11 +111,13 @@ export const FEATURE_ROUTE_PREFIXES: Readonly<Record<string, FeatureRoutePrefixe
   'cikgu-alesa': { fe: ['/cikgu'], api: ['/api/cikgu'] },
   'keluarga-angkat': { fe: ['/mohon-keluarga-angkat'], api: ['/api/mohon-keluarga-angkat'] },
   // Guru
+  // Per D-3 the label owns the page for every role: /headcount and /api/headcounts go OFF for all roles.
+  // D-3: the label owns the page for every role, so /headcount and /api/headcounts go OFF for pupil, teacher, school admin and admin alike.
   'guru.headcount': { fe: ['/headcount'], api: ['/api/headcounts'] },
   'guru.misi-harian': { fe: ['/guru/misi-harian'], api: [] },
   'guru.kelas': { fe: ['/guru/kelas'], api: [] },
   'guru.prestasi': { fe: ['/prestasi/kelas', '/prestasi/sekolah', '/prestasi/tingkatan'], api: [] },
-  'guru.monitoring': { fe: ['/guru/monitoring'], api: ['/api/monitoring'] },
+  'guru.monitoring': { fe: ['/guru/monitoring'], api: [] },
   'guru.analisis-item': { fe: ['/guru/analisis-item'], api: ['/api/teacher/item-analysis'] },
   'guru.gamifikasi': { fe: ['/guru/gamifikasi'], api: [] },
   'guru.broadcast': { fe: ['/guru/broadcast'], api: [] },

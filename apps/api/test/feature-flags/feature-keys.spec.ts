@@ -32,10 +32,11 @@ const ALL_KEYS = [
   'guru.gamifikasi', 'guru.broadcast', 'guru.databank', 'guru.sumbang-soalan',
 ] as const
 
-/** Keys enforced on the front-end only: no dedicated API controller, or an endpoint shared with other screens. */
+/** Keys enforced on the front-end only (D-7): no dedicated API controller, or an endpoint shared with other roles or screens. */
 const FE_ONLY_KEYS = [
   'kombo', 'cita-cita', 'universiti', 'biasiswa', 'prestasi', 'psikometrik', 'profil-cerah', 'kemajuan-saya',
   'sejarah-latihan', 'panduan-pengguna', 'latih-tubi', 'guru.misi-harian', 'guru.kelas', 'guru.prestasi',
+  'guru.monitoring', 'analisa-item', 'video-pembelajaran',
   'guru.gamifikasi', 'guru.broadcast', 'guru.databank',
 ] as const
 
@@ -198,6 +199,14 @@ describe('per-key OFF -> 404, ON -> normal answer (API keys)', () => {
       }
     }
     expect((await http().get('/api/practice/sessions').set(signed)).status).toBe(200)
+  })
+
+  it('perutusan OFF closes only the public read; the shared writer endpoints stay reachable (D-7)', async () => {
+    rows.set('perutusan', false)
+    service.invalidate()
+    expect((await http().get('/api/public/perutusan/1').set(signed)).status).toBe(404)
+    expect((await http().post('/api/perutusan').set(signed).send({})).status).toBe(200)
+    expect((await http().get('/api/monitoring/overview').set(signed)).status).toBe(200)
   })
 
   it('tiket-bantuan OFF leaves /api/admin/tiket reachable', async () => {
