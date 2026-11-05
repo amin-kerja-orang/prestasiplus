@@ -12,6 +12,8 @@
  * abort). Mock network faults should reject with `TransportNetworkError`.
  */
 
+import { NETWORK_ERROR_MESSAGE_BM } from './errors'
+
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
 /** Query parameters after serialisation: plain strings, or repeated values. */
@@ -52,7 +54,7 @@ export interface Transport {
 export class TransportNetworkError extends Error {
   override readonly name = 'TransportNetworkError'
 
-  constructor(message = 'Anda sedang luar talian. Semak sambungan internet anda.', options?: { cause?: unknown }) {
+  constructor(message = NETWORK_ERROR_MESSAGE_BM, options?: { cause?: unknown }) {
     super(message, options)
   }
 }

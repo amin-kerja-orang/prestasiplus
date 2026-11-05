@@ -138,7 +138,9 @@ describe('window.__mock built-ins', () => {
 
     hooks.networkErrorNext('/api/notes')
     // A POST: a GET network fault is retried automatically (X10.3.4) and would be absorbed.
-    const err: unknown = await api.post('/api/notes', { body: { text: 'x' } }).catch((e: unknown) => e)
+    const err: unknown = await api
+      .post('/api/notes', { body: { text: 'x' } })
+      .catch((e: unknown) => e)
     expect(err instanceof TransportNetworkError || (err as ApiError).code === 'NETWORK_ERROR').toBe(
       true,
     )

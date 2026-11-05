@@ -700,7 +700,9 @@ describe('ApiClient: timeout, abort and GET retry (S0-T12 part B)', () => {
   })
 
   it('does not retry a GET 429 with retryAfter 30 (body or header)', async () => {
-    const body = client(json(429, { error: { code: 'RATE_LIMITED', message: 'x', retryAfter: 30 } }))
+    const body = client(
+      json(429, { error: { code: 'RATE_LIMITED', message: 'x', retryAfter: 30 } }),
+    )
     expect((await catchError(body.c.get('/api/x'))).retryAfter).toBe(30)
     expect(body.request).toHaveBeenCalledTimes(1)
     const header = client(json(429, null, { 'retry-after': '30' }))
