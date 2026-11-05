@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** S11 "Transaksi Terkini" (FN-M14-2.1.7; FR-M14-19; AC-MUR-28-3, 28-5): latest ledger rows or "Tiada transaksi.", "Semua →". */
-import { DsIconChip } from '@/ds'
+import { DsIconChip, DsText } from '@/ds'
 
 import type { LedgerEntry } from '../../api'
 import { gamLedgerIcon, gamRelativeTime, gamSignedAmount } from '../../lib/student/s11-format'
@@ -24,9 +24,9 @@ defineProps<{ rows: readonly LedgerEntry[] }>()
           >Semua →</UButton
         >
       </div>
-      <p v-if="rows.length === 0" class="text-body text-muted" data-testid="s11-recent-empty">
+      <DsText v-if="rows.length === 0" variant="body" tone="muted" data-testid="s11-recent-empty">
         Tiada transaksi.
-      </p>
+      </DsText>
       <ul v-else class="flex flex-col gap-3">
         <li
           v-for="r in rows"
