@@ -2,10 +2,10 @@
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createMemoryHistory, createRouter } from 'vue-router'
+import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
 import PanduanPage from '../../pages/PanduanPage.vue'
-import { GUIDE_ROLES, roleFromHash } from '../../lib/panduan-content'
+import { GUIDE_ROLES, resolveGuideRole, roleFromHash, roleFromQuery } from '../../lib/panduan-content'
 import panduanRoutes from '../../routes/panduan'
 
 const api = vi.hoisted(() => ({ fetchSupportConfig: vi.fn() }))
@@ -19,6 +19,7 @@ vi.mock('@/composables/useSession', async () => {
 
 const scrollTo = vi.fn()
 let wrapper: VueWrapper | null = null
+let currentRouter: Router | null = null
 
 async function render(url = '/panduan', loggedIn = false): Promise<VueWrapper> {
   const pinia = createPinia()
@@ -33,6 +34,7 @@ async function render(url = '/panduan', loggedIn = false): Promise<VueWrapper> {
   })
   await router.push(url)
   await router.isReady()
+  currentRouter = router
   wrapper = mount(PanduanPage, { global: { plugins: [pinia, router] } })
   await flushPromises()
   return wrapper
@@ -41,7 +43,8 @@ async function render(url = '/panduan', loggedIn = false): Promise<VueWrapper> {
 beforeEach(() => {
   api.fetchSupportConfig.mockResolvedValue({
     email: 'support@prestasiplus.my',
-    whatsappNumber: '60123456789',
+    phone: '',
+    whatsapp: '60123456789',
     hours: '',
   })
   window.scrollTo = scrollTo
@@ -69,6 +72,76 @@ describe('roleFromHash', () => {
     expect(roleFromHash('')).toBe('pelajar')
     expect(roleFromHash('#guru')).toBe('guru')
     expect(roleFromHash('#xyz')).toBe('xyz')
+  })
+})
+
+describe('?peranan= mapping', () => {
+  it.each([
+    ['pelajar', 'pelajar'],
+    ['guru', 'guru'],
+    ['ibu-bapa', 'ibubapa'],
+    ['admin-sekolah', 'admin'],
+    ['ppd', 'ppd'],
+  ] as const)('%s opens the %s tab', (query, id) => {
+    expect(roleFromQuery(query)).toBe(id)
+  })
+
+  it('an unknown, empty or missing value gives pelajar', () => {
+    for (const v of ['xyz', '', undefined, null, 'ibubapa', 'constructor', ['xyz']]) {
+      expect(roleFromQuery(v)).toBe('pelajar')
+    }
+    expect(roleFromQuery(['guru', 'ppd'])).toBe('guru')
+  })
+
+  it('the hash wins over the query and the default stays pelajar', () => {
+    expect(resolveGuideRole('#ppd', 'guru')).toBe('ppd')
+    expect(resolveGuideRole('', 'guru')).toBe('guru')
+    expect(resolveGuideRole('', undefined)).toBe('pelajar')
+  })
+})
+
+describe('PanduanPage ?peranan=', () => {
+  it.each([
+    ['pelajar', 'pelajar'],
+    ['guru', 'guru'],
+    ['ibu-bapa', 'ibubapa'],
+    ['admin-sekolah', 'admin'],
+    ['ppd', 'ppd'],
+  ] as const)('?peranan=%s opens the %s panel', async (query, id) => {
+    const w = await render(`/panduan?peranan=${query}`)
+    expect(w.find(`[data-testid="panduan-tab-${id}"]`).attributes('data-active')).toBe('true')
+    expect(w.find(`[data-testid="panduan-panel-${id}"]`).exists()).toBe(true)
+  })
+
+  it('an unknown ?peranan= opens pelajar', async () => {
+    const w = await render('/panduan?peranan=xyz')
+    expect(w.find('[data-testid="panduan-tab-pelajar"]').attributes('data-active')).toBe('true')
+    expect(w.find('[data-testid="panduan-panel-pelajar"]').exists()).toBe(true)
+  })
+
+  it('the hash beats the query', async () => {
+    const w = await render('/panduan?peranan=guru#ppd')
+    expect(w.find('[data-testid="panduan-panel-ppd"]').exists()).toBe(true)
+    expect(w.find('[data-testid="panduan-panel-guru"]').exists()).toBe(false)
+  })
+
+  it('reacts when only the query changes', async () => {
+    const w = await render('/panduan?peranan=guru')
+    expect(w.find('[data-testid="panduan-panel-guru"]').exists()).toBe(true)
+    await currentRouter!.push('/panduan?peranan=ibu-bapa')
+    await flushPromises()
+    expect(w.find('[data-testid="panduan-panel-ibubapa"]').exists()).toBe(true)
+    expect(w.find('[data-testid="panduan-panel-guru"]').exists()).toBe(false)
+  })
+})
+
+describe('Guru steps', () => {
+  it('renames "Kongsi Kod Kelas" to "Tambah Pelajar" with the new sentence', async () => {
+    const w = await render('/panduan#guru')
+    expect(w.text()).toContain('Tambah Pelajar')
+    expect(w.text()).toContain('Tambah pelajar ke kelas anda daripada Kelas Saya.')
+    expect(w.text()).not.toContain('Kongsi Kod Kelas')
+    expect(w.text()).not.toContain('LZ0942')
   })
 })
 
@@ -120,16 +193,27 @@ describe('PanduanPage', () => {
     expect(answers[0]!.text()).toContain('Kombo bermaksud')
   })
 
-  it('shows the service hours only when they are set (PO decision 18)', async () => {
+  it('shows the service hours inside the contact block only when they are set (PO decision 18)', async () => {
     const none = await render()
     expect(none.find('[data-testid="panduan-hours"]').exists()).toBe(false)
-    api.fetchSupportConfig.mockResolvedValue({ email: 'a@b.my', whatsappNumber: '60111111111', hours: 'Isnin - Jumaat' })
+    api.fetchSupportConfig.mockResolvedValue({ email: 'a@b.my', phone: '', whatsapp: '60111111111', hours: 'Isnin - Jumaat' })
     const set = await render()
-    expect(set.get('[data-testid="panduan-hours"]').text()).toBe('Waktu perkhidmatan: Isnin - Jumaat')
+    expect(set.get('[data-testid="panduan-contact"] [data-testid="panduan-hours"]').text()).toBe('Waktu perkhidmatan: Isnin - Jumaat')
+  })
+
+  it('FAQ toggle buttons carry aria-expanded that follows each item', async () => {
+    const w = await render()
+    const buttons = w.findAll('[data-testid="panduan-faq-toggle"]')
+    expect(buttons[0]!.attributes('aria-expanded')).toBe('false')
+    await buttons[0]!.trigger('click')
+    expect(buttons[0]!.attributes('aria-expanded')).toBe('true')
+    expect(buttons[1]!.attributes('aria-expanded')).toBe('false')
+    await buttons[0]!.trigger('click')
+    expect(buttons[0]!.attributes('aria-expanded')).toBe('false')
   })
 
   it('builds the help box links from the support config', async () => {
-    api.fetchSupportConfig.mockResolvedValue({ email: 'a@b.my', whatsappNumber: '60111111111', hours: '' })
+    api.fetchSupportConfig.mockResolvedValue({ email: 'a@b.my', phone: '', whatsapp: '60111111111', hours: '' })
     const w = await render()
     expect(w.find('[data-testid="panduan-email"]').attributes('href')).toBe('mailto:a@b.my')
     const wa = w.find('[data-testid="panduan-whatsapp"]')
@@ -137,11 +221,46 @@ describe('PanduanPage', () => {
     expect(wa.attributes('target')).toBe('_blank')
   })
 
-  it('falls back to the live defaults when the config call fails', async () => {
+  it('hides the contact block for an empty config but keeps the guest register button', async () => {
+    api.fetchSupportConfig.mockResolvedValue({ email: '', phone: '', whatsapp: '', hours: '' })
+    const w = await render()
+    expect(w.find('[data-testid="panduan-contact"]').exists()).toBe(false)
+    expect(w.find('[data-testid="panduan-email"]').exists()).toBe(false)
+    expect(w.find('[data-testid="panduan-whatsapp"]').exists()).toBe(false)
+    expect(w.text()).not.toContain('E-mel Kami')
+    expect(w.find('[data-testid="panduan-register"]').exists()).toBe(true)
+  })
+
+  it('hides the whole help card for an empty config when logged in', async () => {
+    api.fetchSupportConfig.mockResolvedValue({ email: '', phone: '', whatsapp: '', hours: '' })
+    const w = await render('/panduan', true)
+    expect(w.find('[data-testid="panduan-help"]').exists()).toBe(false)
+  })
+
+  it('shows nothing, and no default contact, when the config call fails', async () => {
     api.fetchSupportConfig.mockRejectedValue(new Error('x'))
     const w = await render()
+    expect(w.find('[data-testid="panduan-contact"]').exists()).toBe(false)
+    expect(w.find('[data-testid="panduan-email"]').exists()).toBe(false)
+    expect(w.find('[data-testid="panduan-whatsapp"]').exists()).toBe(false)
+    expect(w.html()).not.toContain('support@prestasiplus.my')
+    expect(w.html()).not.toContain('60123456789')
+  })
+
+  it('shows only the e-mail button when only the e-mail is set', async () => {
+    api.fetchSupportConfig.mockResolvedValue({ email: 'a@b.my', phone: '', whatsapp: '', hours: '' })
+    const w = await render()
+    expect(w.find('[data-testid="panduan-contact"]').exists()).toBe(true)
+    expect(w.find('[data-testid="panduan-email"]').attributes('href')).toBe('mailto:a@b.my')
+    expect(w.find('[data-testid="panduan-whatsapp"]').exists()).toBe(false)
+  })
+
+  it('shows only the WhatsApp button when only the number is set', async () => {
+    api.fetchSupportConfig.mockResolvedValue({ email: '', phone: '', whatsapp: '60111111111', hours: '' })
+    const w = await render()
+    expect(w.find('[data-testid="panduan-email"]').exists()).toBe(false)
     expect(w.find('[data-testid="panduan-whatsapp"]').attributes('href')).toBe(
-      'https://wa.me/60123456789',
+      'https://wa.me/60111111111',
     )
   })
 

@@ -319,7 +319,12 @@ describe('S6 Prestasi 360', () => {
   it('admin (id 1): no practice-mode session, streak 1 / 5, Koin 256, 13 practice days', async () => {
     const s = await get<StudentPerformance>(ADMIN, '/api/performance/students/1')
     expect(s.user).toEqual({ id: 1, name: 'Admin Demo', initial: 'A' })
-    expect(s.stats).toEqual({ sessions: 0, accuracy: 0, answered: 0, seconds: 0 })
+    expect(s.stats).toEqual({ sessions: 0, accuracy: null, answered: 0, seconds: 0 })
+    expect(s.heroAccuracy).toBeNull()
+    expect(s.trend).toHaveLength(12)
+    expect(s.trend.every((w) => w.accuracy === null && w.sessions === 0)).toBe(true)
+    expect(s.trend[0]?.label).toBe('Mgg 1')
+    expect(s.trend[11]?.label).toBe('Mgg 12')
     expect(s.streak).toBe(1)
     expect(s.activity).toEqual({
       streakCurrent: 1,

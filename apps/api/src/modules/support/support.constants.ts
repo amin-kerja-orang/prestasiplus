@@ -24,5 +24,3 @@ export const NOTIFY_BATCH = 10
 
 /** The singleton row of `support_config`. */
 export const SUPPORT_CONFIG_ID = 1n
-
-export const SUPPORT_CONFIG_MISSING = 'Konfigurasi sokongan tidak dijumpai.'

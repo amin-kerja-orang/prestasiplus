@@ -68,8 +68,24 @@ export const ScreenshotUploadResultSchema = z
   })
   .meta({ id: 'ScreenshotUploadResult' })
 
-/** `data` of `GET /config/support` (#43, public): the contact shown in the help box. */
+/**
+ * `data` of `GET /config/support` (#43, public): the contact shown in the help box. A value is the empty
+ * string when it is not set; when no config row exists all four are empty (S5-T05, DM-33). `whatsapp` is the
+ * stored `whatsapp_number`; `phone` and `hours` are always the empty string until S7-T09 stores them.
+ * `whatsappNumber` is the previous key for `whatsapp`; it stays as an optional property so no required
+ * property is removed from the response (the server may omit it).
+ */
 export const ContentSupportConfigSchema = z
-  .strictObject({ email: z.string().min(1), whatsappNumber: z.string().min(1), hours: z.string().max(120).meta({ description: "Service hours; '' when not set." }) })
+  .strictObject({
+    email: z.string(),
+    phone: z.string(),
+    whatsapp: z.string(),
+    hours: z
+      .string()
+      .max(120, 'Waktu perkhidmatan tidak boleh melebihi 120 aksara.')
+      .meta({ description: "Service hours; '' when not set." }),
+    /** @deprecated Use `whatsapp`. Optional; the server may omit it. */
+    whatsappNumber: z.string().optional().meta({ deprecated: true }),
+  })
   .meta({ id: 'ContentSupportConfig' })
 export type ContentSupportConfig = z.infer<typeof ContentSupportConfigSchema>

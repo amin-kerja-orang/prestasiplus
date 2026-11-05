@@ -146,7 +146,7 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
     '/performance/students/{userId}',
     'Prestasi 360 of a student (S6)',
     PerformanceStudentSchema,
-    { 403: E403('student not visible to the viewer'), 404: E404('unknown user id') },
+    { 404: E404('unknown user id, or a pupil the viewer may not open (one outcome, no existence leak)') },
     { params: idParam('userId') },
     'Admin any; teacher pupils of own classes; school_admin own school; student self; PPD/JPN officers in scope.',
   )
@@ -156,23 +156,23 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
     '/performance/school',
     'School (admin: platform) performance (S1)',
     PerformanceSchoolSchema,
-    {},
+    { 403: E403('role not admin, teacher or school_admin') },
     {},
     'Admin sees the platform; every other role the own school (a user without a school gets an empty school scope).',
   )
-  get('/performance/levels', 'Level cards T4/T5 (S2)', z.array(PerformanceLevelCardSchema), {})
+  get('/performance/levels', 'Level cards T4/T5 (S2)', z.array(PerformanceLevelCardSchema), { 403: E403('role not admin, teacher or school_admin') })
   get(
     '/performance/levels/{code}',
     'Level detail (S3)',
     PerformanceLevelDetailSchema,
-    { 404: E404('code is not t4 or t5') },
+    { 403: E403('role not admin, teacher or school_admin'), 404: E404('code is not t4 or t5') },
     { params: z.object({ code: PerformanceLevelCodeSchema }) },
   )
   get(
     '/performance/classes',
     'Own classes (S4)',
     z.array(PerformanceClassCardSchema),
-    {},
+    { 403: E403('role not admin, teacher or school_admin') },
     {},
     'A teacher gets the own active classrooms; every other role gets [].',
   )
@@ -180,7 +180,7 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
     '/performance/classes/{id}',
     'Class dashboard (S5)',
     PerformanceClassDashboardSchema,
-    { 404: E404('unknown class, school class, or a class the viewer may not open') },
+    { 403: E403('role not admin, teacher or school_admin'), 404: E404('unknown class, school class, or a class the viewer may not open') },
     { params: idParam('id') },
     'Admin any classroom; teacher own; school_admin classrooms of the own school.',
   )
