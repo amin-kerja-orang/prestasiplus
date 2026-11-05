@@ -4,12 +4,15 @@
  * this file only converts. A key that does not parse as the contract leaf for its mode fails
  * closed (`StoredKeyError`, mapped to a 500 by the service with the part id logged).
  */
-import { QuestionLeafPartSchema, type QuestionCognitiveLevel, type QuestionPart } from '@pp/contract'
+import { QuestionLeafPartSchema, type ModeConfigSchema, type QuestionCognitiveLevel, type QuestionPart } from '@pp/contract'
+import type { z } from 'zod'
 
 import type { AnswerKey, PartOption, QuestionPart as PartRow } from '../../db/generated/client'
 import { idFromString, idToString } from '../../db/ids'
 import { kbatOfCognitive } from './effective-leaf'
 import { isLeaf, type QuestionLeaf } from './grading'
+
+type ModeConfig = z.infer<typeof ModeConfigSchema>
 
 export class StoredKeyError extends Error {
   constructor(readonly partId: string) {
@@ -80,6 +83,8 @@ function leafFromRow(row: PartRow, options: PartOption[], key: AnswerKey | undef
   if (row.mode === 'short_text' && row.blankCount !== null) candidate.blankCount = row.blankCount
   if ((row.mode === 'essay' || row.mode === 'essay_choice') && row.wordMin !== null && row.wordMax !== null) candidate.wordRange = { min: row.wordMin, max: row.wordMax }
   if (row.mode === 'essay_choice') candidate.topics = row.topics
+  // DM-55: mode_config round-trips as `modeConfig`; NULL stays absent.
+  if (row.modeConfig !== null) candidate.modeConfig = row.modeConfig
   const parsed = QuestionLeafPartSchema.safeParse(candidate)
   if (!parsed.success) {
     if (lenient && key === undefined) return candidate as unknown as QuestionLeaf
@@ -111,6 +116,8 @@ export interface PartDraft {
   wordMax: number | null
   /** essay_choice only: the topics `[{ id, label }]`. */
   topics: { id: string; label: string }[] | null
+  /** DM-55: the leaf's `modeConfig` (ModeConfigSchema), null on a branch or when absent. */
+  modeConfig: ModeConfig | null
   stimulusId: bigint | null
   reveal: 'after_submit' | 'never'
   unitNodeId: bigint | null
@@ -143,6 +150,7 @@ export function draftsFromParts(parts: readonly QuestionPart[], depth = 1): Part
         wordMin: null,
         wordMax: null,
         topics: null,
+        modeConfig: null,
         stimulusId: null,
         reveal: 'after_submit' as const,
         unitNodeId: null,
@@ -163,6 +171,7 @@ export function draftsFromParts(parts: readonly QuestionPart[], depth = 1): Part
       wordMin: part.mode === 'essay' || part.mode === 'essay_choice' ? (part.wordRange?.min ?? null) : null,
       wordMax: part.mode === 'essay' || part.mode === 'essay_choice' ? (part.wordRange?.max ?? null) : null,
       topics: part.mode === 'essay_choice' ? part.topics.map((t) => ({ id: t.id, label: t.label })) : null,
+      modeConfig: part.modeConfig ?? null,
       stimulusId: part.stimulusId === undefined ? null : idFromString(part.stimulusId),
       reveal: part.reveal ?? 'after_submit',
       unitNodeId: part.unitNodeId == null ? null : idFromString(part.unitNodeId),

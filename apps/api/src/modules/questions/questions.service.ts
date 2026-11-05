@@ -3,7 +3,7 @@ import {
   QUESTION_WORKFLOW_STATUSES,
   isQuestionWorkflowTransitionAllowed,
   QUESTION_MESSAGES,
-  QuestionPartSchema,
+  QuestionWritePartSchema,
   type QuestionPart,
 } from '@pp/contract'
 
@@ -817,7 +817,7 @@ export class QuestionsService {
     if (parts.length > MAX_TOP_PARTS || treeSize(parts, 1) > MAX_TOTAL_PARTS || treeDepth(parts) > MAX_PART_DEPTH) {
       throw fail({ parts: PARTS_TOO_LARGE })
     }
-    const res = QuestionPartSchema.array().min(1).max(20).safeParse(parts)
+    const res = QuestionWritePartSchema.array().min(1).max(20).safeParse(parts)
     if (res.success) {
       // BE-42: the PKSK leaf is valid only on a question tagged `pksk_domain`, which only PkskQuestionsService writes.
       if (leavesOf(res.data).some(({ leaf }) => leaf.mode === 'pksk_choice')) throw fail({ [supplied ? 'parts' : 'questionType']: PKSK_LEAF_REFUSED })
