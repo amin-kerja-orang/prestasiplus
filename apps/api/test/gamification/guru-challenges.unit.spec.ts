@@ -34,7 +34,7 @@ function build(now: string, byDay: Record<string, Record<string, number>>) {
       return new Map(Object.entries(byDay[day] ?? {}))
     },
   }
-  const svc = new GamificationService(repo as never, {} as never, {} as never, new FixedClock(now), {} as never, {} as never, {} as never, {} as never)
+  const svc = new GamificationService(repo as never, {} as never, {} as never, new FixedClock(now), {} as never, {} as never, {} as never, {} as never, {} as never)
   return { svc, asked }
 }
 
@@ -48,7 +48,7 @@ describe('GamificationService.challengesForTeacher (S6-T07)', () => {
     expect(asked).toEqual([{ day: '2026-11-05', ids: [10n, 11n] }])
   })
 
-  it('uses the Malaysia day: 16:30 UTC is already tomorrow, so yesterday\'s completions are not counted', async () => {
+  it('uses the Malaysia day: 16:00 UTC is already tomorrow, so yesterday\'s completions are not counted', async () => {
     const data = { '2026-11-05': { '1': 4 }, '2026-11-06': { '1': 1 } }
     expect((await build('2026-11-05T15:59:00Z', data).svc.challengesForTeacher(['10']))[0]!.completedToday).toBe(4)
     expect((await build('2026-11-05T16:00:00Z', data).svc.challengesForTeacher(['10']))[0]!.completedToday).toBe(1)
