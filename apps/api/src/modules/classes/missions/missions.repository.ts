@@ -1,3 +1,4 @@
+import { MISSION_GOAL_KINDS, type MissionGoalKind } from '@pp/contract'
 import { Inject, Injectable } from '@nestjs/common'
 
 import type { TxClient } from '../../../db/client'
@@ -8,6 +9,7 @@ import { VISIBLE_USER_SQL } from '../../command-center/shared/visibility'
 
 export type MissionType = 'latih_tubi' | 'tracking_a' | 'youtube' | 'harian'
 export type MissionScope = 'teacher' | 'global'
+export type { MissionGoalKind }
 export type RemedialStatus = 'active' | 'completed' | 'cancelled'
 
 /** A mission as the student reads and the practice adapter resolve it. Ids are decimal strings. */
@@ -29,6 +31,8 @@ export interface MissionRecord {
   /** Coins paid once at the target (S6-T07); null for the older types. */
   rewardCoins: number | null
   scope: MissionScope
+  /** How a Global mission is measured; null for a teacher mission (S6-T07). */
+  goalKind: MissionGoalKind | null
   resourceTitle: string | null
   resourceUrl: string | null
   resourceNote: string | null
@@ -115,6 +119,7 @@ const toMission = (r: {
   description: string | null
   rewardCoins: number | null
   scope: string
+  goalKind: string | null
   resourceTitle: string | null
   resourceUrl: string | null
   resourceNote: string | null
@@ -134,6 +139,7 @@ const toMission = (r: {
   description: r.description,
   rewardCoins: r.rewardCoins,
   scope: r.scope === 'global' ? 'global' : 'teacher',
+  goalKind: (MISSION_GOAL_KINDS as readonly string[]).includes(r.goalKind ?? '') ? (r.goalKind as MissionGoalKind) : null,
   resourceTitle: r.resourceTitle,
   resourceUrl: r.resourceUrl,
   resourceNote: r.resourceNote,
