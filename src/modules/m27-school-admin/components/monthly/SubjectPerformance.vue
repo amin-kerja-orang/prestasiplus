@@ -7,15 +7,16 @@
 import { computed } from 'vue'
 
 import { DsChart, DsPanel } from '@/ds'
+import { roundHalfUp } from '@/lib/number'
 
 import type { MonthlyReport } from '../../api/school-admin'
-import { count, dec1 } from './monthly-format'
+import { count, pct1 } from './monthly-format'
 
 const props = defineProps<{ subjects: MonthlyReport['subjects'] }>()
 
 const labels = computed(() => props.subjects.rows.map((r) => r.name))
 const series = computed(() => [
-  { label: 'Ketepatan', data: props.subjects.rows.map((r) => Math.round(r.accuracy * 10) / 10) },
+  { label: 'Ketepatan', data: props.subjects.rows.map((r) => roundHalfUp(r.accuracy)) },
 ])
 </script>
 
@@ -38,7 +39,7 @@ const series = computed(() => [
             {{ subjects.strongest.name }}
           </p>
           <p class="tabular text-body text-muted" data-testid="lb-strongest-figure">
-            {{ dec1(subjects.strongest.accuracy) }}% ({{ count(subjects.strongest.answers) }}
+            {{ pct1(subjects.strongest.accuracy) }} ({{ count(subjects.strongest.answers) }}
             soalan)
           </p>
         </DsPanel>
@@ -53,7 +54,7 @@ const series = computed(() => [
             {{ subjects.weakest.name }}
           </p>
           <p class="tabular text-body text-muted" data-testid="lb-weakest-figure">
-            {{ dec1(subjects.weakest.accuracy) }}% ({{ count(subjects.weakest.answers) }} soalan)
+            {{ pct1(subjects.weakest.accuracy) }} ({{ count(subjects.weakest.answers) }} soalan)
           </p>
         </DsPanel>
       </div>
@@ -80,7 +81,7 @@ const series = computed(() => [
             r.name
           }}</span>
           <span class="tabular text-caption text-muted" data-testid="lb-subject-figure"
-            >{{ dec1(r.accuracy) }}% · {{ count(r.answers) }} soalan ·
+            >{{ pct1(r.accuracy) }} · {{ count(r.answers) }} soalan ·
             {{ count(r.pupils) }} pelajar</span
           >
         </li>

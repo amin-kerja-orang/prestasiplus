@@ -174,7 +174,7 @@ describe('AC6 the answer row', () => {
     await submit(pelajar, s.sessionId)
     const rows = await t.db.query<Record<string, unknown>>(
       `select session_id::text, user_id::text, question_id::text, question_version_no, subject_id::text, education_level_id::text, chapter_id::text,
-              topic_id::text, difficulty, question_type, selected_label, is_correct, answered_at, historical, client_uuid::text, is_test,
+              topic_id::text, difficulty, question_type, selected_label, is_correct, answered_at, historical, is_test, mode, attempt_id::text, marks_awarded::float8, marks_max::float8,
               legacy_source, legacy_id, legacy_hash, legacy_question_ref, legacy_content_hash, source_natural_key, number_label, time_seconds
          from practice_answers where session_id = $1 order by id`,
       [s.sessionId],
@@ -194,8 +194,11 @@ describe('AC6 the answer row', () => {
       selected_label: 'C',
       is_correct: true,
       historical: false,
-      client_uuid: clientUuid,
       is_test: false,
+      mode: 'chapter',
+      attempt_id: s.sessionId,
+      marks_awarded: 1,
+      marks_max: 1,
       legacy_source: null,
       legacy_id: null,
       legacy_hash: null,
@@ -212,8 +215,9 @@ describe('AC6 the answer row', () => {
     expect(await countRows(t.db, 'practice_checks')).toBe(0)
   })
 
-  it('a session without clientUuid gives answers without clientUuid', async () => {
-    await play(pelajar, t.bank, { mode: 'random', subjectCode: 'MATH', count: 5 }, 1)
+  it('the answer rows no longer carry the session clientUuid (nothing reads practice_answers.client_uuid, S5-T15 part 2)', async () => {
+    const clientUuid = '1a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d'
+    await play(pelajar, t.bank, { mode: 'random', subjectCode: 'MATH', count: 5, clientUuid }, 1)
     expect(await countRows(t.db, 'practice_answers', 'client_uuid is null')).toBe(5)
   })
 })
