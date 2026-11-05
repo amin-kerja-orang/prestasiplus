@@ -67,7 +67,8 @@ export interface BatchItemCounts {
 
 export const NO_ITEMS: BatchItemCounts = { itemCount: 0, reviewedCount: 0 }
 
-export function toBatchSummary(row: BatchRow, counts: BatchItemCounts = NO_ITEMS): IntakeBatchSummary {
+/** `targetPaperId`: the paper whose `source_batch_id` is this batch (DM-45), from one set-based lookup; null when none. */
+export function toBatchSummary(row: BatchRow, counts: BatchItemCounts = NO_ITEMS, targetPaperId: bigint | null = null): IntakeBatchSummary {
   return {
     id: idToString(row.id),
     status: row.status as IntakeBatchStatus,
@@ -85,6 +86,7 @@ export function toBatchSummary(row: BatchRow, counts: BatchItemCounts = NO_ITEMS
     itemCount: counts.itemCount,
     reviewedCount: counts.reviewedCount,
     owner: row.owner ? { id: idToString(row.owner.id), name: row.owner.name } : null,
+    targetPaperId: targetPaperId === null ? null : idToString(targetPaperId),
     createdAt: toMytTimestamp(row.createdAt),
     updatedAt: toMytTimestamp(row.updatedAt),
     submittedAt: row.submittedAt ? toMytTimestamp(row.submittedAt) : null,

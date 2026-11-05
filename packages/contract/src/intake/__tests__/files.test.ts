@@ -54,6 +54,7 @@ const summary = {
   itemCount: 3,
   reviewedCount: 2,
   owner: { id: 'u1', name: 'Guru Contoh' },
+  targetPaperId: null,
   createdAt: '2026-10-16T09:30:00+08:00',
   updatedAt: '2026-10-16T09:30:00+08:00',
   submittedAt: null,

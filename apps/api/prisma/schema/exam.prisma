@@ -168,6 +168,8 @@ model Paper {
   kertas             Int       @db.SmallInt
   year               Int?      @db.SmallInt
   paperCode          String?   @map("paper_code")
+  /// DM-45 (0163): the intake batch this draft paper was imported from; FK set null. Partial unique (source_batch_id, paper_code) where not null (SQL only).
+  sourceBatchId      BigInt?   @map("source_batch_id")
   /// t4, t5, t4_t5 (check).
   levelScope         String?   @map("level_scope")
   /// The printed duration (Q-S1), stored per paper.
@@ -192,8 +194,9 @@ model Paper {
   createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  blueprint Blueprint?     @relation(fields: [blueprintId], references: [id], onDelete: Restrict, map: "fk_papers_blueprint_id")
-  sections  PaperSection[]
+  blueprint   Blueprint?     @relation(fields: [blueprintId], references: [id], onDelete: Restrict, map: "fk_papers_blueprint_id")
+  sourceBatch IntakeBatch?   @relation(fields: [sourceBatchId], references: [id], onDelete: SetNull, map: "fk_papers_source_batch_id")
+  sections    PaperSection[]
 
   @@index([status], map: "ix_papers_status")
   @@index([subjectId, kertas, status], map: "ix_papers_subject_id_kertas_status")
