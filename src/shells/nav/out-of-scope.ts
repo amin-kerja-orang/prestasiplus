@@ -81,7 +81,6 @@ export const OUT_OF_SCOPE_ROUTES: readonly OutOfScopeRoute[] = [
   { to: '/guru/soalan-guru', ...GURU_TOOLS },
   { to: '/guru/soalan-berstruktur', ...GURU_TOOLS },
   { to: '/guru/databank', ...GURU_TOOLS },
-  { to: '/guru/set-soalan', ...GURU_TOOLS },
   { to: '/guru/kertas-peperiksaan', ...GURU_TOOLS },
   { to: '/guru/penjana-peperiksaan', ...GURU_TOOLS },
   { to: '/guru/gamifikasi', ...GURU_TOOLS },

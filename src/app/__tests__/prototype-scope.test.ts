@@ -115,6 +115,7 @@ describe('isPathInScope', () => {
       '/laporan-soalan',
       '/admin',
       '/guru',
+      '/guru/set-soalan',
       '/notifikasi',
       '/gamification/unknown',
     ]) {
@@ -128,6 +129,11 @@ describe('isPathInScope', () => {
       '/guru/command-center/classroom/3',
       '/guru/remedial-progress',
       '/guru/kelas/cipta',
+      // S6-T14: Set Soalan (teacher), reached from the Dashboard tile "Set Soalan".
+      '/guru/set-soalan',
+      '/guru/set-soalan/cipta',
+      '/guru/set-soalan/5',
+      '/guru/set-soalan/5/keputusan',
       '/guru/kirkpatrick/reaction',
       '/guru/kirkpatrick/pelajar/5',
       '/guru/soalan/cipta',
@@ -182,6 +188,7 @@ describe('isPathInScope', () => {
       '/admin-sekolah/invois',
       '/admin-sekolah/aktiviti-guru',
       '/amaran/intervensi/5',
+      '/guru/set-soalan',
       '/perutusan',
       '/dashboard',
       '/liga',

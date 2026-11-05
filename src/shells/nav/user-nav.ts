@@ -750,6 +750,13 @@ const SETTINGS_ID = 'tetapan-peribadi'
 const STUDENT_HIDDEN_IDS: ReadonlySet<string> = new Set([
   'laporan-mingguan',
 ])
+/**
+ * Items that have a route but no sidebar item (S6-T14, R1-GUR-8b): the teacher reaches Set Soalan from the
+ * Dashboard tile "Set Soalan" ("Urus set →"), so the entries `t-set-soalan` (teacher) and `guru-set-soalan`
+ * (admin menu: the page is teacher-only) stay out of every menu, in both scope modes. The route itself is
+ * in scope (`prototype-scope.ts`, teacher Dashboard row).
+ */
+export const ROLE_HIDDEN_IDS: ReadonlySet<string> = new Set(['t-set-soalan', 'guru-set-soalan'])
 /** Profile entries of each role: scope mode puts "Tetapan Peribadi" right after them. */
 const PROFILE_IDS: readonly string[] = ['profil-saya', 't-profil-saya', 'sa-profil-saya']
 
@@ -808,11 +815,15 @@ export function navFor(
     isPrototypeScopeOn() ||
     entry.kind !== 'item' ||
     (!isOutOfScope(entry.to) && !(role === 'student' && STUDENT_HIDDEN_IDS.has(entry.id)))
+  const shown = (entry: NavEntry): boolean =>
+    options.includeOutOfScope === true || entry.kind !== 'item' || !ROLE_HIDDEN_IDS.has(entry.id)
   const visible = scopeEntries(
     withoutKeluargaAngkat(withoutAlesa(entries))
-      .filter((entry) => visibleTo(entry, role, surface) && inScope(entry))
+      .filter((entry) => visibleTo(entry, role, surface) && inScope(entry) && shown(entry))
       .map((entry) =>
-        entry.kind === 'group' ? { ...entry, children: entry.children.filter(inScope) } : entry,
+        entry.kind === 'group'
+          ? { ...entry, children: entry.children.filter((c) => inScope(c) && shown(c)) }
+          : entry,
       )
       .filter((entry) => entry.kind !== 'group' || entry.children.length > 0),
     role,
