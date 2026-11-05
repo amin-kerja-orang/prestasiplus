@@ -186,6 +186,9 @@ export class NoRamalan implements PracticeRamalanSource {
 
 /* ---------------------------------------------------------------------- BE-11 / BE-23: rewards */
 
+/** Injection token of the group-surface list (tests inject one that includes a drill); absent = `GROUP_SURFACES`. */
+export const PRACTICE_GROUP_SURFACES = Symbol('PRACTICE_GROUP_SURFACES')
+
 /** Ledger `source` of the practice modes (`random`, `chapter`, `revision`, `mission`, `remedial`, `question_set`). */
 export const PRACTICE_REWARD_SOURCE = 'quiz_practice'
 

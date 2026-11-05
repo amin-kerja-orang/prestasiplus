@@ -6,7 +6,7 @@ import { Prisma } from '../../../../db/generated/client'
 import { PrismaService } from '../../../../db/prisma.service'
 import { GROUP_SURFACES } from '../../../questions/serving'
 import { groupCompleteSql } from '../../../questions'
-import { PRACTICE_GROUP_SURFACES } from '../../question-bridge/be09-practice-question-source'
+import { PRACTICE_GROUP_SURFACES } from '../../ports'
 import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_SOURCE_TAKEN_DOWN_SQL } from '../../../questions/learner-visibility'
 
 export interface AnswerFigures {

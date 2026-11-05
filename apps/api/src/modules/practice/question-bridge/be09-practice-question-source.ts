@@ -8,11 +8,9 @@ import { GROUP_SURFACES, drawUnits, filterOf as servingFilterOf, type DrawCandid
 import type { QuestionFilter, QuestionRecord, StimulusGroupRecord } from '../../questions/types'
 import { UsersRepository } from '../../users'
 import type { PracticeDrillActivity, PracticeQuestion, PracticeQuestionSource, PracticeSelection } from '../ports'
-import { versionKey } from '../ports'
+import { PRACTICE_GROUP_SURFACES, versionKey } from '../ports'
 import { servableMcq, toPracticeQuestion, tpsOfDifficulty } from './be09-practice-mapping'
 
-/** Injection token of the surface list (tests inject one that includes a drill); absent = `GROUP_SURFACES`. */
-export const PRACTICE_GROUP_SURFACES = Symbol('PRACTICE_GROUP_SURFACES')
 const DRILLS: readonly PracticeDrillActivity[] = ['latih_tubi_spm', 'databank', 'bab']
 
 /** A complete group: the stimulus content (`questionIds` narrowed to the SERVABLE members) and those members' records, in group order. */

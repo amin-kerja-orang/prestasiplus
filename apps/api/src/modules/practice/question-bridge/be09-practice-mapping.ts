@@ -30,12 +30,6 @@ export const tpsOfDifficulty = (difficulty: number): number[] => (difficulty >= 
 /** The SQL shape of what `servableMcq` accepts (one text MCQ leaf, no stimulus, key names an option): counts and draws agree with serving. */
 export const PRACTICE_SHAPE = { minOptions: 1, maxOptions: 8 } as const
 
-/**
- * S1-T06 (D105): the same shape on a surface of `GROUP_SURFACES`: a figure, an option image, a stimulus and a group member are allowed
- * (the whole-group rule is `QuestionFilter.wholeGroups`); the one MCQ leaf, the option count and the key are still checked.
- */
-export const PRACTICE_SHAPE_WITH_STIMULUS = { ...PRACTICE_SHAPE, allowStimulus: true } as const
-
 export interface ServableOptions {
   /** True only on a surface in `GROUP_SURFACES`; false (default) is the text-only rule of today. */
   allowStimulus?: boolean
