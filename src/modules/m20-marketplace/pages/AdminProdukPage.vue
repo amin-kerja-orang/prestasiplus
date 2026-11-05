@@ -229,7 +229,7 @@ const cardFields: CardField[] = [
 </script>
 
 <template>
-  <DsPage :subtitle="data ? ADMIN_COPY.productsFound(total) : undefined" subtitle-testid="admin-products-count" data-testid="admin-products-page">
+  <DsPage layout="list" :subtitle="data ? ADMIN_COPY.productsFound(total) : undefined" subtitle-testid="admin-products-count" data-testid="admin-products-page">
     <template #actions>
       <UButton
         :to="{ name: ADMIN_ROUTES.productCreate }"
@@ -266,11 +266,11 @@ const cardFields: CardField[] = [
           data-testid="admin-products-search"
         />
       </template>
-      <DsNativeSelect v-model="category" name="categoryId" :aria-label="ADMIN_COPY.allCategories" class="md:w-48" data-testid="admin-products-category">
+      <DsNativeSelect v-model="category" :aria-label="ADMIN_COPY.allCategories" class="md:w-48" data-testid="admin-products-category">
         <option value="all">{{ ADMIN_COPY.allCategories }}</option>
         <option v-for="c in categories.data.value ?? []" :key="c.id" :value="String(c.id)">{{ c.name }}</option>
       </DsNativeSelect>
-      <DsNativeSelect v-model="status" name="status" :aria-label="ADMIN_COPY.allStatuses" class="md:w-44" data-testid="admin-products-status">
+      <DsNativeSelect v-model="status" :aria-label="ADMIN_COPY.allStatuses" class="md:w-44" data-testid="admin-products-status">
         <option value="all">{{ ADMIN_COPY.allStatuses }}</option>
         <option v-for="s in MARKETPLACE_PRODUCT_STATUSES" :key="s" :value="s">{{ MARKETPLACE_PRODUCT_STATUS_LABELS[s] }}</option>
       </DsNativeSelect>

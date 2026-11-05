@@ -2676,7 +2676,7 @@
       "name": null,
       "status": "canonical",
       "sector": "S7",
-      "component": "src/modules/m20-marketplace/pages/AdminProdukFormPage.vue",
+      "component": "src/modules/m20-marketplace/pages/ProdukFormPage.vue",
       "file": "src/modules/m20-marketplace/routes/admin.ts",
       "approved_by_card": null
     },
@@ -2686,7 +2686,7 @@
       "name": null,
       "status": "canonical",
       "sector": "S7",
-      "component": "src/modules/m20-marketplace/pages/AdminProdukFormPage.vue",
+      "component": "src/modules/m20-marketplace/pages/ProdukFormPage.vue",
       "file": "src/modules/m20-marketplace/routes/admin.ts",
       "approved_by_card": null
     },
@@ -2706,7 +2706,7 @@
       "name": null,
       "status": "canonical",
       "sector": "S7",
-      "component": "src/modules/m20-marketplace/pages/AdminPenjualDetailPage.vue",
+      "component": "src/modules/m20-marketplace/pages/PenjualDetailPage.vue",
       "file": "src/modules/m20-marketplace/routes/admin.ts",
       "approved_by_card": null
     },

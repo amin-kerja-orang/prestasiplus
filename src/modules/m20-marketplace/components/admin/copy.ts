@@ -90,7 +90,6 @@ export const ADMIN_COPY = {
   productStatus: 'Status Produk',
   save: 'Simpan Perubahan',
   submitCreate: 'Tambah Produk',
-  back: 'Kembali ke Senarai',
   productNotFound: 'Produk tidak dijumpai.',
   // Seller detail
   sellerDetailTitle: 'Semak Penjual',
@@ -107,7 +106,6 @@ export const ADMIN_COPY = {
   productsLabel: 'Produk',
   clicks: 'Klik WhatsApp',
   joined: 'Didaftar',
-  backToSellers: 'Kembali ke Senarai Penjual',
   sellerNotFound: 'Penjual tidak dijumpai.',
 } as const
 

@@ -31,7 +31,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/admin/marketplace/products/create',
     name: ADMIN_ROUTES.productCreate,
-    component: () => import('../pages/AdminProdukFormPage.vue'),
+    component: () => import('../pages/ProdukFormPage.vue'),
     props: { mode: 'create' },
     meta: meta('Tambah Produk Marketplace - PRESTASIPLUS', {
       title: 'Tambah Produk Marketplace',
@@ -41,7 +41,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/admin/marketplace/products/:id/edit',
     name: ADMIN_ROUTES.productEdit,
-    component: () => import('../pages/AdminProdukFormPage.vue'),
+    component: () => import('../pages/ProdukFormPage.vue'),
     props: (route) => ({ mode: 'edit', id: String(route.params.id) }),
     meta: meta('Edit Produk Marketplace - PRESTASIPLUS', {
       title: 'Edit Produk Marketplace',
@@ -60,7 +60,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/admin/marketplace/sellers/:id',
     name: ADMIN_ROUTES.seller,
-    component: () => import('../pages/AdminPenjualDetailPage.vue'),
+    component: () => import('../pages/PenjualDetailPage.vue'),
     props: (route) => ({ id: String(route.params.id) }),
     meta: meta('Semak Penjual - PRESTASIPLUS', {
       title: 'Semak Penjual',

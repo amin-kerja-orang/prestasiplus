@@ -140,7 +140,7 @@ const detailTo = (id: string): string => `${ADMIN_SELLERS_PATH}/${id}`
 </script>
 
 <template>
-  <DsPage :subtitle="data ? ADMIN_COPY.sellersFound(total) : undefined" subtitle-testid="admin-sellers-count" data-testid="admin-sellers-page">
+  <DsPage layout="list" :subtitle="data ? ADMIN_COPY.sellersFound(total) : undefined" subtitle-testid="admin-sellers-count" data-testid="admin-sellers-page">
     <DsStatRow :items="statItems" prefix="stat" :cols="3" />
 
     <DsFilterBar
@@ -153,7 +153,7 @@ const detailTo = (id: string): string => `${ADMIN_SELLERS_PATH}/${id}`
       @reset="resetFilter"
       @remove-chip="removeChip"
     >
-      <DsNativeSelect v-model="status" name="status" :aria-label="ADMIN_COPY.allStatuses" class="md:w-48" data-testid="admin-sellers-status">
+      <DsNativeSelect v-model="status" :aria-label="ADMIN_COPY.allStatuses" class="md:w-48" data-testid="admin-sellers-status">
         <option value="all">{{ ADMIN_COPY.allStatuses }}</option>
         <option v-for="s in MARKETPLACE_SELLER_STATUSES" :key="s" :value="s">{{ MARKETPLACE_SELLER_STATUS_LABELS[s] }}</option>
       </DsNativeSelect>

@@ -223,7 +223,7 @@ const invalid = (name: string): 'error' | undefined => (messages.value[name] ? '
 </script>
 
 <template>
-  <DsPage :back-to="ADMIN_PRODUCTS_PATH" :back-label="ADMIN_COPY.back" data-testid="admin-product-form-page">
+  <DsPage layout="form" :back-to="ADMIN_PRODUCTS_PATH" data-testid="admin-product-form-page">
     <DsLoadError v-if="loadFailed" :message="ADMIN_COPY.loadFailed" testid="admin-product-load-error" @retry="retry" />
 
     <DsPanel v-else-if="!ready" data-testid="admin-product-form-skeleton">
@@ -232,14 +232,14 @@ const invalid = (name: string): 'error' | undefined => (messages.value[name] ? '
       </DsStack>
     </DsPanel>
 
-    <DsStack v-else as="form" gap="lg" method="post" novalidate data-testid="admin-product-form" @submit.prevent="submit">
+    <DsStack v-else as="form" gap="lg" data-testid="admin-product-form" @submit.prevent="submit">
       <DsHeading :level="2" variant="heading" data-testid="admin-product-form-title">{{ editing ? ADMIN_COPY.editTitle : ADMIN_COPY.createTitle }}</DsHeading>
 
       <UAlert v-if="topError" color="error" variant="subtle" icon="i-ph-warning-circle" role="alert" :description="topError" data-testid="admin-product-form-alert" />
 
       <DsFormSection :title="ADMIN_COPY.createTitle" icon="storefront" accent="action">
         <DsFormField native for="mp-seller" :label="ADMIN_COPY.seller" required :error="messages.sellerId">
-          <DsNativeSelect id="mp-seller" v-model="form.sellerId" name="sellerId" :aria-invalid="invalid('sellerId') ? 'true' : undefined" data-testid="mp-seller">
+          <DsNativeSelect id="mp-seller" v-model="form.sellerId" :aria-invalid="invalid('sellerId') ? 'true' : undefined" data-testid="mp-seller">
             <option v-for="o in sellers.data.value ?? []" :key="sellerOptionValue(o)" :value="sellerOptionValue(o)">{{ o.label }}</option>
           </DsNativeSelect>
         </DsFormField>
@@ -249,7 +249,7 @@ const invalid = (name: string): 'error' | undefined => (messages.value[name] ? '
         </DsFormField>
 
         <DsFormField native for="mp-category" :label="ADMIN_COPY.category" required :error="messages.categoryId">
-          <DsNativeSelect id="mp-category" v-model="form.categoryId" name="categoryId" :aria-invalid="invalid('categoryId') ? 'true' : undefined" data-testid="mp-category">
+          <DsNativeSelect id="mp-category" v-model="form.categoryId" :aria-invalid="invalid('categoryId') ? 'true' : undefined" data-testid="mp-category">
             <option value="">{{ ADMIN_COPY.categoryPlaceholder }}</option>
             <option v-for="c in categories.data.value ?? []" :key="c.id" :value="String(c.id)">{{ c.name }}</option>
           </DsNativeSelect>
@@ -279,7 +279,7 @@ const invalid = (name: string): 'error' | undefined => (messages.value[name] ? '
 
         <DsGrid :cols="{ base: 1, md: 2 }" gap="lg">
           <DsFormField native for="mp-shipping" :label="ADMIN_COPY.shippingMethod" required :error="messages.shippingMethod">
-            <DsNativeSelect id="mp-shipping" v-model="form.shippingMethod" name="shippingMethod" :aria-invalid="invalid('shippingMethod') ? 'true' : undefined" data-testid="mp-shipping">
+            <DsNativeSelect id="mp-shipping" v-model="form.shippingMethod" :aria-invalid="invalid('shippingMethod') ? 'true' : undefined" data-testid="mp-shipping">
               <option value="">Pilih kaedah</option>
               <option v-for="o in SHIPPING_CHOICES" :key="o.value" :value="o.value">{{ o.label }}</option>
             </DsNativeSelect>
@@ -351,7 +351,7 @@ const invalid = (name: string): 'error' | undefined => (messages.value[name] ? '
         </DsFormField>
       </DsFormSection>
 
-      <DsFormSection v-if="editing" :title="ADMIN_COPY.productStatus" icon="toggle-left" accent="win">
+      <DsFormSection v-if="editing" :title="ADMIN_COPY.productStatus" icon="check-circle" accent="win">
         <DsFormField native :label="ADMIN_COPY.productStatus" required :error="messages.status">
           <URadioGroup v-model="form.status" :items="[...PRODUCT_STATUS_CHOICES]" variant="card" orientation="horizontal" class="w-full" data-testid="mp-status" />
         </DsFormField>

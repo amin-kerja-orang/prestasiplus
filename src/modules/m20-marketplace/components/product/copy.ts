@@ -51,7 +51,8 @@ export const SORT_OPTIONS = [
 
 /** BR-M20-19: "RM 89.90" (price) from a decimal string. */
 export function formatPrice(value: string): string {
-  return `RM ${Number(value).toFixed(2)}`
+  const [whole = '0', fraction = ''] = value.trim().split('.')
+  return `RM ${whole}.${fraction.padEnd(2, '0').slice(0, 2)}`
 }
 
 /** Query values as the page keeps them (`q`, `category`, `condition`, `sort`). */

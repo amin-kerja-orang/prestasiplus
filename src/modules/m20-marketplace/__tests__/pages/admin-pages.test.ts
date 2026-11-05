@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
- * S7-T08 admin screens (R1-ADM-P2-12, R1-ADM-P2-13): AdminProdukPage, AdminProdukFormPage, AdminPenjualPage and
- * AdminPenjualDetailPage against a mocked client: stat cards, filters, count lines, empty states, the actions each
+ * S7-T08 admin screens (R1-ADM-P2-12, R1-ADM-P2-13): AdminProdukPage, ProdukFormPage, AdminPenjualPage and
+ * PenjualDetailPage against a mocked client: stat cards, filters, count lines, empty states, the actions each
  * status allows, the confirms, a refused (409) transition, the PRD field messages and the 5-image limit.
  */
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
@@ -15,9 +15,9 @@ import { confirmHost, confirmState, settleConfirm } from '@/ds/useConfirm'
 import { useFlashStore } from '@/stores/flash'
 
 import adminRoutes from '../../routes/admin'
-import AdminPenjualDetailPage from '../../pages/AdminPenjualDetailPage.vue'
+import PenjualDetailPage from '../../pages/PenjualDetailPage.vue'
 import AdminPenjualPage from '../../pages/AdminPenjualPage.vue'
-import AdminProdukFormPage from '../../pages/AdminProdukFormPage.vue'
+import ProdukFormPage from '../../pages/ProdukFormPage.vue'
 import AdminProdukPage from '../../pages/AdminProdukPage.vue'
 import { CATEGORIES } from '../fixtures'
 
@@ -354,7 +354,7 @@ describe('AdminPenjualPage (P2-13)', () => {
   })
 })
 
-describe('AdminPenjualDetailPage (Semak Penjual)', () => {
+describe('PenjualDetailPage (Semak Penjual)', () => {
   const detail = (extra: Row = {}) => ({
     ...seller(2, 'pending', ['approve', 'ban']),
     description: 'Kedai ujian',
@@ -367,7 +367,7 @@ describe('AdminPenjualDetailPage (Semak Penjual)', () => {
 
   it('shows "Semak Penjual", "Maklumat Perniagaan", the masked owner, the status and the allowed actions', async () => {
     api.fetchAdminSeller.mockResolvedValue(detail())
-    const w = await mountAt(AdminPenjualDetailPage, '/admin/marketplace/sellers/:id', '/admin/marketplace/sellers/2')
+    const w = await mountAt(PenjualDetailPage, '/admin/marketplace/sellers/:id', '/admin/marketplace/sellers/2')
     expect(api.fetchAdminSeller).toHaveBeenCalledWith('2', expect.anything())
     const text = w.get(t('admin-seller-detail')).text()
     expect(text).toContain('Semak Penjual')
@@ -380,7 +380,7 @@ describe('AdminPenjualDetailPage (Semak Penjual)', () => {
   it('an action replaces the shown seller with the answer (actions follow the new status)', async () => {
     api.fetchAdminSeller.mockResolvedValue(detail())
     api.runAdminSellerAction.mockResolvedValue(detail({ status: 'active', actions: ['verify', 'suspend', 'ban'] }))
-    const w = await mountAt(AdminPenjualDetailPage, '/admin/marketplace/sellers/:id', '/admin/marketplace/sellers/2')
+    const w = await mountAt(PenjualDetailPage, '/admin/marketplace/sellers/:id', '/admin/marketplace/sellers/2')
     await w.get(t('seller-action-approve')).trigger('click')
     await answerConfirm(true)
     expect(w.findAll(t('seller-actions') + ' button').map((b) => b.text())).toEqual(['Sahkan', 'Gantung', 'Haramkan'])
@@ -389,14 +389,14 @@ describe('AdminPenjualDetailPage (Semak Penjual)', () => {
 
   it('an unknown seller returns to the list with a message', async () => {
     api.fetchAdminSeller.mockRejectedValue(new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Rekod tidak dijumpai.' }))
-    await mountAt(AdminPenjualDetailPage, '/admin/marketplace/sellers/:id', '/admin/marketplace/sellers/99')
+    await mountAt(PenjualDetailPage, '/admin/marketplace/sellers/:id', '/admin/marketplace/sellers/99')
     await flushPromises()
     expect(router.currentRoute.value.path).toBe('/admin/marketplace/sellers')
     expect(queuedFlash()).toBe('Penjual tidak dijumpai.')
   })
 })
 
-describe('AdminProdukFormPage (P12-02..11)', () => {
+describe('ProdukFormPage (P12-02..11)', () => {
   const detailOf = (extra: Row = {}) => ({
     ...product(7),
     description: 'Beg',
@@ -411,7 +411,7 @@ describe('AdminProdukFormPage (P12-02..11)', () => {
     ...extra,
   })
 
-  const create = () => mountAt(AdminProdukFormPage, '/admin/marketplace/products/create', '/admin/marketplace/products/create', { mode: 'create' })
+  const create = () => mountAt(ProdukFormPage, '/admin/marketplace/products/create', '/admin/marketplace/products/create', { mode: 'create' })
   const fill = async (w: VueWrapper, values: Record<string, string>) => {
     for (const [id, v] of Object.entries(values)) await w.get(t(id)).setValue(v)
   }
@@ -532,7 +532,7 @@ describe('AdminProdukFormPage (P12-02..11)', () => {
 
   it('edit: loads the product, shows "Gambar Sedia Ada (2)" and the Status Produk radios', async () => {
     api.fetchAdminProduct.mockResolvedValue(detailOf())
-    const w = await mountAt(AdminProdukFormPage, '/admin/marketplace/products/:id/edit', '/admin/marketplace/products/7/edit', { mode: 'edit' })
+    const w = await mountAt(ProdukFormPage, '/admin/marketplace/products/:id/edit', '/admin/marketplace/products/7/edit', { mode: 'edit' })
     expect(api.fetchAdminProduct).toHaveBeenCalledWith('7', expect.anything())
     expect(w.get<HTMLInputElement>(t('mp-name')).element.value).toBe('Produk 7')
     expect(w.get<HTMLInputElement>(t('mp-price')).element.value).toBe('35.00')
@@ -546,7 +546,7 @@ describe('AdminProdukFormPage (P12-02..11)', () => {
   it('AC-ADM-P2-12.2: deleting one saved image is its own request and keeps the form and the other images', async () => {
     api.fetchAdminProduct.mockResolvedValue(detailOf())
     api.deleteAdminProductImage.mockResolvedValue(detailOf({ images: [{ id: '71', position: 2, url: '/images/b.jpg' }] }))
-    const w = await mountAt(AdminProdukFormPage, '/admin/marketplace/products/:id/edit', '/admin/marketplace/products/7/edit', { mode: 'edit' })
+    const w = await mountAt(ProdukFormPage, '/admin/marketplace/products/:id/edit', '/admin/marketplace/products/7/edit', { mode: 'edit' })
     await w.get(t('mp-name')).setValue('Nama baharu')
     await w.findAll(t('mp-existing-image-delete'))[0]!.trigger('click')
     await flushPromises()
@@ -561,7 +561,7 @@ describe('AdminProdukFormPage (P12-02..11)', () => {
     api.fetchAdminProduct.mockResolvedValue(detailOf({ images: [1, 2, 3, 4].map((n) => ({ id: String(n), position: n, url: `/images/${String(n)}.jpg` })) }))
     api.updateAdminProduct.mockResolvedValue({})
     api.uploadMarketplaceImage.mockResolvedValue('/api/files/AAAAAAAAAAAAAAAAAAAAAA')
-    const w = await mountAt(AdminProdukFormPage, '/admin/marketplace/products/:id/edit', '/admin/marketplace/products/7/edit', { mode: 'edit' })
+    const w = await mountAt(ProdukFormPage, '/admin/marketplace/products/:id/edit', '/admin/marketplace/products/7/edit', { mode: 'edit' })
     await pick(w, [png('a.png'), png('b.png')])
     await flushPromises()
     expect(api.uploadMarketplaceImage).toHaveBeenCalledTimes(1)
@@ -575,7 +575,7 @@ describe('AdminProdukFormPage (P12-02..11)', () => {
 
   it('edit: an unknown product returns to the list with a message', async () => {
     api.fetchAdminProduct.mockRejectedValue(new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Rekod tidak dijumpai.' }))
-    await mountAt(AdminProdukFormPage, '/admin/marketplace/products/:id/edit', '/admin/marketplace/products/99/edit', { mode: 'edit' })
+    await mountAt(ProdukFormPage, '/admin/marketplace/products/:id/edit', '/admin/marketplace/products/99/edit', { mode: 'edit' })
     await flushPromises()
     expect(router.currentRoute.value.path).toBe('/admin/marketplace/products')
     expect(queuedFlash()).toBe('Produk tidak dijumpai.')

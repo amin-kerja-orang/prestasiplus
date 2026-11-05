@@ -1606,6 +1606,34 @@
     },
     "src/shells/pentadbiran/menu.ts": {
       "pp/ds-copy-glossary": 1
+    },
+    "src/modules/m20-marketplace/components/admin/SellerActions.vue": {
+      "pp/ds-no-class-attr": 2
+    },
+    "src/modules/m20-marketplace/components/admin/copy.ts": {
+      "pp/ds-copy-glossary": 2
+    },
+    "src/modules/m20-marketplace/components/product/copy.ts": {
+      "pp/ds-copy-glossary": 1
+    },
+    "src/modules/m20-marketplace/pages/AdminPenjualPage.vue": {
+      "pp/ds-no-class-attr": 1,
+      "pp/ds-ui-allowlist": 2
+    },
+    "src/modules/m20-marketplace/pages/AdminProdukPage.vue": {
+      "pp/ds-icon-names": 7,
+      "pp/ds-no-class-attr": 11
+    },
+    "src/modules/m20-marketplace/pages/PenjualDetailPage.vue": {
+      "pp/ds-ui-allowlist": 2,
+      "pp/ds-no-class-attr": 2
+    },
+    "src/modules/m20-marketplace/pages/ProdukFormPage.vue": {
+      "pp/ds-ui-allowlist": 1,
+      "pp/ds-no-class-attr": 13,
+      "pp/ds-no-ui-duplicate": 1,
+      "pp/ds-icon-names": 2,
+      "pp/ds-no-raw-html": 2
     }
   }
 }

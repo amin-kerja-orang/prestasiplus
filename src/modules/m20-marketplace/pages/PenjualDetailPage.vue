@@ -61,7 +61,7 @@ const items = computed(() => {
 </script>
 
 <template>
-  <DsPage :back-to="ADMIN_SELLERS_PATH" :back-label="ADMIN_COPY.backToSellers" data-testid="admin-seller-detail-page">
+  <DsPage layout="detail" :back-to="ADMIN_SELLERS_PATH" data-testid="admin-seller-detail-page">
     <DsLoadError v-if="failed" :message="errorText(error)" testid="admin-seller-detail-error" @retry="reload()" />
     <DsStack v-else-if="!current" gap="sm" aria-busy="true" data-testid="admin-seller-detail-loading">
       <USkeleton class="h-28 w-full" />

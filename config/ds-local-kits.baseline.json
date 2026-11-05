@@ -1,5 +1,5 @@
 {
-  "$comment": "L1 allowlist (consolidation plan): genuine domain files outside src/ds whose names match the local-kit patterns (Admin portal pages and shell). May only shrink: eslint/__tests__/no-local-kits.test.mjs fails on any new match and on any entry whose file no longer exists.",
+  "$comment": "L1 allowlist (consolidation plan): genuine domain files outside src/ds whose names match the local-kit patterns (Admin portal pages and shell). May only shrink: eslint/__tests__/no-local-kits.test.mjs fails on any new match and on any entry whose file no longer exists. S7-T08: AdminProdukPage.vue and AdminPenjualPage.vue are card-mandated names; pages built on DS components (ruling on #751).",
   "allowed": [
     "src/modules/m02-users-schools/components/AdminSchoolPicker.vue",
     "src/modules/m09-content/pages/AdminArticleFormPage.vue",
@@ -8,6 +8,8 @@
     "src/modules/m09-content/pages/AdminNoteFormPage.vue",
     "src/modules/m09-content/pages/AdminNoteListPage.vue",
     "src/modules/m09-content/pages/AdminNotePreviewPage.vue",
+    "src/modules/m20-marketplace/pages/AdminPenjualPage.vue",
+    "src/modules/m20-marketplace/pages/AdminProdukPage.vue",
     "src/modules/m22-support-tickets/pages/AdminTicketsPage.vue",
     "src/shells/admin/AdminBottomNav.vue",
     "src/shells/admin/AdminHeader.vue",
