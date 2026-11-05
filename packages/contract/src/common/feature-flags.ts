@@ -73,7 +73,7 @@ export interface FeatureRoutePrefixes {
  */
 export const FEATURE_ROUTE_PREFIXES: Readonly<Record<string, FeatureRoutePrefixes>> = {
   permainan: { fe: ['/permainan'], api: ['/api/games', '/api/papan-bijak'] },
-  'latih-tubi': { fe: ['/practice'], api: [], feExcept: ['/practice/chapter', '/practice/revision'] },
+  'latih-tubi': { fe: ['/practice'], api: [], feExcept: ['/practice/chapter', '/practice/revision', '/practice/progress', '/practice/history'] },
   'cikgu-alesa': { fe: ['/cikgu'], api: ['/api/cikgu'] },
   'keluarga-angkat': { fe: ['/mohon-keluarga-angkat'], api: ['/api/mohon-keluarga-angkat'] },
 }

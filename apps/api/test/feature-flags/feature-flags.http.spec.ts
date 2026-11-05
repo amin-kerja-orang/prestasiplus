@@ -68,14 +68,19 @@ describe('Kawalan Ciri (S0-T10)', () => {
     await close()
   })
 
-  it('migration 0250 seeds exactly 4 rows; the CHECK refuses a locked row that is ON (INV-29)', async () => {
+  it('migration 0250 seeds the 32 N-06 rows (S0-T10 four plus the S0-T11 28, #417 D-1); the CHECK refuses a locked row that is ON (INV-29)', async () => {
     const rows = await db.query<{ key: string; label_ms: string; audience: string; enabled: boolean; locked: boolean; sort_order: number }>(`select key, label_ms, audience, enabled, locked, sort_order from feature_flags order by sort_order`)
-    expect(rows).toEqual([
+    expect(rows).toHaveLength(32)
+    const byKey = new Map(rows.map((r) => [r.key, r]))
+    expect([byKey.get('permainan'), byKey.get('latih-tubi'), byKey.get('cikgu-alesa'), byKey.get('keluarga-angkat')]).toEqual([
       { key: 'permainan', label_ms: 'Zona Permainan', audience: 'pelajar', enabled: true, locked: false, sort_order: 10 },
       { key: 'latih-tubi', label_ms: 'Latih Tubi', audience: 'pelajar', enabled: true, locked: false, sort_order: 200 },
       { key: 'cikgu-alesa', label_ms: 'Cikgu Alesa', audience: 'pelajar', enabled: false, locked: true, sort_order: 900 },
       { key: 'keluarga-angkat', label_ms: 'Mohon Keluarga Angkat', audience: 'pelajar', enabled: false, locked: true, sort_order: 910 },
     ])
+    expect(rows.filter((r) => r.audience === 'guru')).toHaveLength(10)
+    // Only the two locked rows and the Delivery B key `tiket-bantuan` (D-2) are OFF.
+    expect(rows.filter((r) => !r.enabled).map((r) => r.key).sort()).toEqual(['cikgu-alesa', 'keluarga-angkat', 'tiket-bantuan'])
     await expect(db.query(`update feature_flags set enabled = true where key = 'cikgu-alesa'`)).rejects.toThrow(/ck_feature_flags_locked_off/)
     await expect(db.query(`insert into feature_flags (key, label_ms, audience) values ('x', 'X', 'ibu')`)).rejects.toThrow(/ck_feature_flags_audience/)
   })
@@ -85,7 +90,10 @@ describe('Kawalan Ciri (S0-T10)', () => {
     expectError(await apiOf(student).get('/admin/feature-toggles'), 'FORBIDDEN')
     const res = await apiOf(admin).get('/admin/feature-toggles')
     expect(res.status).toBe(200)
-    expect(FeatureToggleListResponseSchema.parse(res.body).data.map((r) => r.key)).toEqual(['permainan', 'latih-tubi', 'cikgu-alesa', 'keluarga-angkat'])
+    const keys = FeatureToggleListResponseSchema.parse(res.body).data.map((r) => r.key)
+    expect(keys).toHaveLength(32)
+    expect(keys.slice(0, 2)).toEqual(['permainan', 'misi-harian'])
+    expect(keys.slice(-2)).toEqual(['cikgu-alesa', 'keluarga-angkat'])
   })
 
   it('PUT needs the admin and the CSRF header; a student gets 403', async () => {

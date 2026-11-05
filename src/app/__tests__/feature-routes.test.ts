@@ -54,6 +54,9 @@ describe('isFeatureRouteOff', () => {
     expect(isFeatureRouteOff('/practice/chapter')).toBe(false)
     expect(isFeatureRouteOff('/practice/chapter/3')).toBe(false)
     expect(isFeatureRouteOff('/practice/revision')).toBe(false)
+    // #417 D-5: Kemajuan Saya and Sejarah Latihan stay up when Latih Tubi is OFF.
+    expect(isFeatureRouteOff('/practice/progress')).toBe(false)
+    expect(isFeatureRouteOff('/practice/history')).toBe(false)
   })
 
   it('the locked keys are OFF by the map: /cikgu and /mohon-keluarga-angkat', () => {
