@@ -41,7 +41,10 @@ describe('Pentadbiran navigation groups', () => {
     expect(groups[0]?.key).toBe('pintasan')
     expect('label' in (groups[0] ?? {})).toBe(false)
     expect(groups.slice(1).every((g) => !!g.label)).toBe(true)
-    expect(buildSearchGroups(PENTADBIRAN_MENU)[0]?.label).toBe('')
+    const search = buildSearchGroups(PENTADBIRAN_MENU)
+    expect('label' in (search[0] ?? {})).toBe(false)
+    expect(search[0]?.items.map((i) => i.label)).toEqual(['Command Center', 'Aktiviti Harian', 'Audio KBAT'])
+    expect(search.slice(1).every((g) => !!g.label)).toBe(true)
   })
 
   it('emits the Bank Lama (Legasi) heading once, before its indented links', () => {

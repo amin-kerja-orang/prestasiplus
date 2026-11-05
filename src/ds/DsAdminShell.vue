@@ -191,10 +191,21 @@ const accountMenu = computed(() =>
               <template #item-leading="{ item }">
                 <span
                   v-if="item.icon"
-                  class="grid size-7 shrink-0 place-items-center rounded-md"
+                  class="relative grid size-7 shrink-0 place-items-center rounded-md"
                   :class="chipOf(item.value)"
-                  ><UIcon :name="item.icon" class="size-4"
-                /></span>
+                  ><UIcon :name="item.icon" class="size-4" />
+                  <!-- Icon rail: the label and its pill are hidden, so a dot and a screen-reader name carry the badge. -->
+                  <template v-if="item.dsBadge && collapsed">
+                    <span
+                      class="absolute end-0 top-0 size-2 rounded-full bg-error"
+                      aria-hidden="true"
+                      data-testid="pentadbiran-nav-badge-dot"
+                    />
+                    <span class="sr-only" data-testid="pentadbiran-nav-badge-sr"
+                      >{{ item.label }} {{ item.dsBadge }}</span
+                    >
+                  </template></span
+                >
               </template>
               <template #item-label="{ item }"
                 ><span class="truncate" :title="item.label">{{ item.label }}</span

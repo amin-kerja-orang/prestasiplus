@@ -40,7 +40,8 @@ export interface DsShellAccountItem {
 
 export interface DsShellSearchGroup {
   id: string
-  label: string
+  /** Omitted = no heading in the palette. */
+  label?: string
   items: readonly {
     id: string
     label: string

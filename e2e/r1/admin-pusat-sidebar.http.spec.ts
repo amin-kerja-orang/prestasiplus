@@ -197,6 +197,22 @@ async function problemsOf(page: Page, link: Link): Promise<string[]> {
   return problems
 }
 
+/** Pages whose width is checked at every viewport (page scroll, not an inner scroller). */
+const WIDTH_PAGES = ['/admin/command-center', '/admin/studio', '/admin/questions', '/admin/users', '/admin/spm']
+
+async function overflowFailures(page: Page, hrefs: string[], width: number): Promise<string[]> {
+  const failures: string[] = []
+  for (const href of hrefs) {
+    await gotoApi(page, href)
+    await expect(page.locator('[data-testid="pentadbiran-main"], main').first()).toBeVisible()
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    )
+    if (overflow > 0) failures.push(`${href}: ${overflow}px of horizontal page scroll at ${width}`)
+  }
+  return failures
+}
+
 test.describe('Admin Pusat sidebar (S0-T07)', () => {
   test('@api the sidebar is the target menu and every link opens a real screen (1280)', async ({ page }, info) => {
     test.skip(!onDesktop(info), 'viewport-independent: runs on the desktop project only')
@@ -254,8 +270,30 @@ test.describe('Admin Pusat sidebar (S0-T07)', () => {
     await page.waitForURL((u) => normalPath(u.pathname) === '/admin/monitoring')
     await expect(page.locator(NAV)).toHaveCount(0)
     // No horizontal page scroll at 375.
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
-    expect(overflow, 'horizontal page scroll at 375').toBeLessThanOrEqual(0)
+    expect(await overflowFailures(page, WIDTH_PAGES, 375), 'horizontal page scroll').toEqual([])
+  })
+
+  test('@api no horizontal page scroll on the sidebar pages (1280)', async ({ page }, info) => {
+    test.skip(!onDesktop(info), 'desktop test runs on the desktop project only')
+    test.setTimeout(120_000)
+    page.setDefaultTimeout(WAIT_MS)
+    await login(page, info)
+    expect(await overflowFailures(page, WIDTH_PAGES, 1280), 'horizontal page scroll').toEqual([])
+  })
+
+  test('@api the LIVE badge stays accessible when the sidebar is collapsed to the icon rail (1280)', async ({ page }, info) => {
+    test.skip(!onDesktop(info), 'the icon rail exists on the desktop project only (below lg the menu is a drawer)')
+    page.setDefaultTimeout(WAIT_MS)
+    await login(page, info)
+    await expect(page.locator('[data-testid="pentadbiran-nav-badge"]')).toBeVisible()
+    await page.getByRole('button', { name: 'Tukar saiz menu' }).click()
+    // Rail: the label and its pill are hidden; a dot and a screen-reader name carry the badge.
+    await expect(page.locator('[data-testid="pentadbiran-nav-badge"]')).toBeHidden()
+    await expect(page.locator('[data-testid="pentadbiran-nav-badge-dot"]')).toBeVisible()
+    await expect(page.locator('[data-testid="pentadbiran-nav-badge-sr"]')).toHaveText('Command Center LIVE')
+    // Put the rail back so the saved sidebar width does not leak into later tests of this session.
+    await page.getByRole('button', { name: 'Tukar saiz menu' }).click()
+    await expect(page.locator('[data-testid="pentadbiran-nav-badge"]')).toBeVisible()
   })
 
   test('@api no horizontal page scroll on the sidebar pages (768)', async ({ page }, info) => {
@@ -263,15 +301,7 @@ test.describe('Admin Pusat sidebar (S0-T07)', () => {
     test.setTimeout(120_000)
     page.setDefaultTimeout(WAIT_MS)
     await login(page, info)
-    const failures: string[] = []
-    for (const href of ['/admin/command-center', '/admin/studio', '/admin/questions', '/admin/users', '/admin/spm']) {
-      await gotoApi(page, href)
-      await expect(page.locator('[data-testid="pentadbiran-main"], main').first()).toBeVisible()
-      const overflow = await page.evaluate(
-        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-      )
-      if (overflow > 0) failures.push(`${href}: ${overflow}px of horizontal page scroll`)
-    }
+    const failures = await overflowFailures(page, WIDTH_PAGES, 768)
     expect(failures).toEqual([])
   })
 })

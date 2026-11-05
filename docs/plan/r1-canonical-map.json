@@ -5504,21 +5504,6 @@
       "approved_by_card": null
     },
     {
-      "key": "user-nav|command-center-guru",
-      "source": "user-nav",
-      "id": "command-center-guru",
-      "label": "Command Center",
-      "route": "/guru/command-center",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S6",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
       "key": "user-nav|command-center-ppd",
       "source": "user-nav",
       "id": "command-center-ppd",
@@ -5681,66 +5666,6 @@
       "status": "canonical",
       "sector": "S0",
       "file": "src/shells/nav/user-nav.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|ke-admin-panel",
-      "source": "user-nav",
-      "id": "ke-admin-panel",
-      "label": "Ke Admin Panel",
-      "route": "/admin",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|billing-dashboard",
-      "source": "user-nav",
-      "id": "billing-dashboard",
-      "label": "Billing Dashboard",
-      "route": "/admin/billing",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|urus-produk",
-      "source": "user-nav",
-      "id": "urus-produk",
-      "label": "Urus Produk",
-      "route": "/admin/marketplace/products",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
-      "key": "user-nav|urus-penjual",
-      "source": "user-nav",
-      "id": "urus-penjual",
-      "label": "Urus Penjual",
-      "route": "/admin/marketplace/sellers",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S0",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
       "approved_by_card": null
     },
     {

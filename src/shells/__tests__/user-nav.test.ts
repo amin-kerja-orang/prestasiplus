@@ -84,7 +84,15 @@ const REPLACED_LIVE_HREFS: Record<string, string> = {
  * S0-T07): Admin Pusat is framed by the Pentadbiran menu, which lists these screens itself (or, for
  * the gift links, will when the card that builds them lands).
  */
-const RETIRED_LIVE_HREFS = new Set(['/cikgu/kelulusan-hadiah', '/admin/hadiah'])
+const RETIRED_LIVE_HREFS = new Set([
+  '/cikgu/kelulusan-hadiah',
+  '/admin/hadiah',
+  '/admin',
+  '/admin/billing',
+  '/admin/marketplace/products',
+  '/admin/marketplace/sellers',
+  '/guru/command-center',
+])
 /** Student-only entries: seen in the murid screenshots, not in the admin-identity capture. */
 const STUDENT_ONLY_IDS = new Set(
   items(USER_NAV)
@@ -170,7 +178,7 @@ describe('USER_NAV data', () => {
     expect(STUDENT_ONLY_IDS.size).toBeGreaterThan(0)
   })
 
-  it('the admin-only copies retired by F-02 are gone (guru-*, admin-soalan-by-chapter, admin-tebusan, urus-hadiah, kelulusan-hadiah)', () => {
+  it('the admin-only copies retired by F-02 are gone (guru-*, admin-soalan-by-chapter, admin-tebusan, urus-hadiah, kelulusan-hadiah, command-center-guru, ke-admin-panel, billing-dashboard, urus-produk, urus-penjual)', () => {
     const all = [
       ...USER_NAV.map((e) => e.id),
       ...USER_NAV.flatMap((e) => (e.kind === 'group' ? e.children.map((c) => c.id) : [])),
@@ -179,7 +187,17 @@ describe('USER_NAV data', () => {
       all.filter(
         (id) =>
           id.startsWith('guru-') ||
-          ['admin-soalan-by-chapter', 'admin-tebusan', 'urus-hadiah', 'kelulusan-hadiah'].includes(id),
+          [
+            'admin-soalan-by-chapter',
+            'admin-tebusan',
+            'urus-hadiah',
+            'kelulusan-hadiah',
+            'command-center-guru',
+            'ke-admin-panel',
+            'billing-dashboard',
+            'urus-produk',
+            'urus-penjual',
+          ].includes(id),
       ),
     ).toEqual([])
   })
@@ -258,10 +276,14 @@ describe('navFor (role filter: hidden, not disabled)', () => {
 
   it('admin sees every captured entry, including the admin-only ones', () => {
     const menu = labels(navFor('admin', 'sidebar', USER_NAV, FULL))
-    for (const label of ['Ke Admin Panel', 'Portal Guru', 'Amaran Awal', 'Pakej', 'Urus Tiket']) {
+    for (const label of ['Portal Guru', 'Amaran Awal', 'Pakej', 'Urus Tiket']) {
       expect(menu).toContain(label)
     }
     expect(menu).not.toContain('Heatmap Topik Lemah')
+    // retired admin-only copies (F-02) are gone
+    for (const label of ['Ke Admin Panel', 'Billing Dashboard', 'Urus Produk', 'Urus Penjual']) {
+      expect(menu).not.toContain(label)
+    }
   })
 
   it('teacher: the full live guru sidebar, in order (roles-matrix/guru)', () => {

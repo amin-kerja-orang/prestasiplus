@@ -252,18 +252,11 @@ export function flatItems(entries: readonly AdminNavEntry[]): AdminNavItem[] {
   )
 }
 
-/**
- * The id of the one active item for `current`, or `null`. `extra` are the footer links, which
- * take part in the same rule (they come after the menu, so they lose ties).
- */
-export function activeItemId(
-  entries: readonly AdminNavEntry[],
-  current: string,
-  extra: readonly AdminNavItem[] = [],
-): string | null {
+/** The id of the one active item for `current`, or `null`. */
+export function activeItemId(entries: readonly AdminNavEntry[], current: string): string | null {
   let bestId: string | null = null
   let best = 0
-  for (const candidate of [...flatItems(entries), ...extra]) {
+  for (const candidate of flatItems(entries)) {
     const length = itemMatch(candidate, current)
     if (length > best) {
       best = length

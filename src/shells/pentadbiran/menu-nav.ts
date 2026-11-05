@@ -80,7 +80,7 @@ export function sectionTabs(
 export function buildSearchGroups(groups: readonly PentadbiranGroup[]): DsShellSearchGroup[] {
   return groups.map((g) => ({
     id: g.key,
-    label: g.label ?? '',
+    ...(g.label ? { label: g.label } : {}),
     items: g.items.map((i) => ({
       id: i.id,
       label: i.label,

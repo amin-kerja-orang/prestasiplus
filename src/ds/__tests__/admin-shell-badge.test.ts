@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /* eslint-disable @typescript-eslint/unbound-method -- jsdom polyfill checks */
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
@@ -99,6 +99,44 @@ describe('DsAdminShell nav badge', () => {
     expect(navText).toContain('Analitik')
     expect(navText.indexOf('Analitik')).toBeGreaterThan(navText.indexOf('Aktiviti Harian'))
     expect(navText.trimStart().startsWith('Command Center')).toBe(true)
+    w.unmount()
+  })
+
+  it('on the icon rail the pill is replaced by a dot and a screen-reader name', async () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/:p(.*)*', component: { render: () => null } }],
+    })
+    await router.push('/admin/command-center')
+    const w = mount(DsAdminShell, {
+      props: {
+        groups,
+        searchGroups: [],
+        crumbs: [],
+        title: 'Command Center',
+        brandTo: '/admin',
+        brandLabel: 'Pentadbiran',
+        accountName: 'Admin',
+        accountCaption: 'Admin Pusat',
+        initials: 'A',
+        accountItems: [],
+        dark: false,
+        themeLabel: 'Tukar tema',
+      },
+      global: { plugins: [router, createPinia()] },
+      attachTo: document.body,
+    })
+    await router.isReady()
+    // expanded: the pill, no dot
+    expect(w.findAll('[data-testid="pentadbiran-nav-badge"]')).toHaveLength(1)
+    expect(w.findAll('[data-testid="pentadbiran-nav-badge-dot"]')).toHaveLength(0)
+    await w.get('button[aria-label="Tukar saiz menu"]').trigger('click')
+    await flushPromises()
+    // collapsed: the dot and an accessible name that carries the label and the badge
+    expect(w.findAll('[data-testid="pentadbiran-nav-badge-dot"]')).toHaveLength(1)
+    expect(w.get('[data-testid="pentadbiran-nav-badge-sr"]').text()).toBe('Command Center LIVE')
+    // the label and its pill stay in a `hidden` wrapper on the rail (display: none)
+    expect(w.get('a[href="/admin/command-center"] [data-slot="linkLabel"]').classes()).toContain('hidden')
     w.unmount()
   })
 })

@@ -245,7 +245,6 @@ describe('AdminShell: menu per role', () => {
       '/guru/command-center',
     )
     // No footer links for the teacher.
-    expect(w.find('[data-testid="shell-admin-footer-links"]').exists()).toBe(false)
   })
 
   it('teacher: no server-status pill and no request to /api/admin/server-status', async () => {

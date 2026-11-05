@@ -486,10 +486,6 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'item', id: 'sumbang-soalan', label: 'Sumbang Soalan', to: '/guru/soalan', fa: 'fa-pen-fancy', color: 'text-emerald-500', roles: A },
   { kind: 'item', id: 'databank-soalan', label: 'Databank Soalan', to: '/guru/databank', fa: 'fa-database', color: 'text-violet-500', roles: A },
 
-  // ── Teacher block as captured in the ADMIN identity's drawer (admin only; the teacher's own
-  //    sidebar is transcribed above from the guru screenshots) ──
-  { kind: 'item', id: 'command-center-guru', label: 'Command Center', to: '/guru/command-center', fa: 'fa-satellite-dish', color: 'text-indigo-200', variant: 'command', target: '_blank', badge: { text: 'LIVE', cls: B_LIVE }, roles: A },
-
   // ── PPD / JPN (sidebar capture + drawer-only items) ──
   { kind: 'section', id: 'sec-ppd-jpn', label: 'PPD / JPN', text: 'text-indigo-700', rule: 'from-indigo-300', roles: ['admin', 'ppd_officer', 'jpn_officer'] },
   { kind: 'item', id: 'command-center-ppd', label: 'Command Center', to: '/ppd/command-center', fa: 'fa-satellite-dish', color: 'text-indigo-200', variant: 'command', target: '_blank', badge: { text: 'LIVE', cls: B_LIVE }, roles: ['admin', 'ppd_officer'] },
@@ -506,10 +502,6 @@ export const USER_NAV: readonly NavEntry[] = [
 
   // ── Admin ──
   { kind: 'section', id: 'sec-admin', label: 'Admin', text: 'text-red-700', rule: 'from-red-300', roles: A },
-  { kind: 'item', id: 'ke-admin-panel', label: 'Ke Admin Panel', to: '/admin', fa: 'fa-shield-halved', color: 'text-indigo-600', variant: 'admin-link', roles: A },
-  { kind: 'item', id: 'billing-dashboard', label: 'Billing Dashboard', to: '/admin/billing', fa: 'fa-chart-line', color: 'text-emerald-500', roles: A },
-  { kind: 'item', id: 'urus-produk', label: 'Urus Produk', to: '/admin/marketplace/products', fa: 'fa-store', color: 'text-orange-500', roles: A },
-  { kind: 'item', id: 'urus-penjual', label: 'Urus Penjual', to: '/admin/marketplace/sellers', fa: 'fa-user-tie', color: 'text-teal-500', roles: A },
   { kind: 'item', id: 'gamifikasi-guru', label: 'Gamifikasi Guru', to: '/admin/gamifikasi/guru', fa: 'fa-chalkboard-teacher', color: 'text-amber-500', roles: A },
   { kind: 'item', id: 'kertas-soalan-guru', label: 'Kertas Soalan Guru', to: '/admin/question-submissions', fa: 'fa-file-upload', color: 'text-blue-500', surfaces: ['sidebar'], roles: A },
 

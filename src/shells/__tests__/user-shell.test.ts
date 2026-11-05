@@ -139,9 +139,7 @@ describe('UserShell: menu per role (hidden, not disabled)', () => {
     expect(labels).toContain('Latih Tubi')
     expect(labels).toContain('Tetapan Peribadi')
     expect(labels).toContain('Profil Saya')
-    expect(labels).not.toContain('Ke Admin Panel')
     expect(labels.some((l) => l.startsWith('Command Center'))).toBe(false)
-    expect(w.find('[data-nav-id="ke-admin-panel"]').exists()).toBe(false)
     // User card (FR-M01-52) and logout (FR-M01-36).
     const card = w.get('[data-testid="shell-user-sidebar-card"]')
     expect(card.text()).toContain('Pelajar Demo')
@@ -153,7 +151,6 @@ describe('UserShell: menu per role (hidden, not disabled)', () => {
   it('admin: admin-only entries and the static sidebar counts', async () => {
     const w = await open('/peta-belajar', ADMIN)
     const side = sidebar(w)
-    expect(side.get('[data-nav-id="ke-admin-panel"]').attributes('href')).toBe('/admin')
     expect(side.get('[data-nav-id="gambar-rajah"]').text()).toContain('6,144')
     expect(side.get('[data-nav-id="urus-tiket"]').text()).toContain('2')
   })
