@@ -21,6 +21,7 @@ import {
   SERVABILITY_ACTIVITIES,
   SERVABILITY_ACTIVITY_LABELS,
   servabilityReasonMs,
+  type QuestionPart,
   type ServabilityActivity,
   type ServabilityActivityResult,
   type ServabilityReason,
@@ -28,6 +29,7 @@ import {
   type ServabilityReport,
 } from '@pp/contract'
 
+import { stimulusReferenceOf } from '../../intake/workflow/figure-links'
 import { markableLeaf, leavesOf, optionImageIds, resolveStimuli } from '../../bijak/kuiz/kuiz.mapper'
 import { BRIDGE_REFUSAL_REASONS_MS } from '../../bijak/question-bridge/refusals'
 import { mapBe09Question, UnsupportedQuestionError, type BridgeMedia } from '../../bijak/question-bridge/be09-mapping'
@@ -74,7 +76,55 @@ function commonReasons(f: ServabilityFacts, activity: ServabilityActivity): Serv
     if (f.level.stage === 'primary') out.push(reason('level_primary', activity))
     else if (!f.level.isActive) out.push(reason('level_inactive', activity))
   }
+  // S1-T07: the flag and the key checks are part of the servable rule (JS twins of NOT_FLAGGED_SQL and ALL_LEAVES_KEYED_SQL).
+  out.push(...flagReasons(live, activity), ...keyReasons(live, activity))
   return out
+}
+
+/** The text a question shows: stem, every part prompt and every option, Malay then English (what the detectors read, 45 section 6.6.1). */
+function textsOf(version: QuestionRecord['version']): string[] {
+  const out: (string | undefined | null)[] = [version.stemMs, version.stemEn]
+  const walk = (parts: readonly QuestionPart[]): void => {
+    for (const p of parts) {
+      out.push(p.prompt.ms, p.prompt.en)
+      if ('options' in p) for (const o of p.options) out.push(o.body.ms, o.body.en)
+      if ('children' in p) walk(p.children)
+    }
+  }
+  walk(version.parts)
+  return out.filter((t): t is string => typeof t === 'string' && t !== '')
+}
+
+/**
+ * JS twin of `NOT_FLAGGED_SQL` (S1-T07, FR-ADM-G7.3): the LIVE version carries `stimulus_missing` or `figure_only` and nobody dismissed it. The same
+ * verdict on every pupil surface; `stem_duplicated` is shown once and never a reason. For `stimulus_missing` the sentence names the reference the text
+ * contains ("Rajah 14"); `detail` is the stored reference kind (`numbered`, `unnumbered`).
+ */
+function flagReasons(live: QuestionRecord, activity: ServabilityActivity): ServabilityReason[] {
+  const v = live.version
+  if (v.flagDismissedAt != null) return []
+  if (v.stimulusFlag === 'figure_only') return [reason('figure_only', activity, v.stimulusFlagRef ?? undefined)]
+  if (v.stimulusFlag !== 'stimulus_missing') return []
+  const found = textsOf(v).map((t) => stimulusReferenceOf(t)).find((r) => r !== null)
+  return [reason('stimulus_missing', activity, v.stimulusFlagRef ?? undefined, found?.text)]
+}
+
+/**
+ * JS twin of `ALL_LEAVES_KEYED_SQL` (S1-T07, lead decision on #424): a leaf with no `answer_keys` row cannot be marked, so it is not served. An MCQ
+ * leaf reads `no_key` (45 row 16), any other leaf `no_scheme` (the structured "tiada skema — tidak disajikan"). The servability read loads such a
+ * leaf leniently (`key` undefined); every rule that reads a key runs after this check, so none sees it.
+ */
+function keyReasons(live: QuestionRecord, activity: ServabilityActivity): ServabilityReason[] {
+  const modes = new Set<'no_key' | 'no_scheme'>()
+  const walk = (parts: readonly QuestionPart[]): void => {
+    for (const p of parts) {
+      if ('mode' in p) {
+        if (p.key == null) modes.add(p.mode === 'mcq' ? 'no_key' : 'no_scheme')
+      } else walk(p.children)
+    }
+  }
+  walk(live.version.parts)
+  return [...modes].map((code) => reason(code, activity))
 }
 
 /** JS twin of `SPM_SERVABLE_SQL` beyond the learner level: offered level (T4, T5), active subject linked to that level. */
@@ -164,6 +214,8 @@ function simulasiPaperReasons(f: ServabilityFacts): ServabilityReason[] {
   const activity = 'simulasi_paper' as const
   if (f.live === null) return [reason(f.latest.version.status === 'archived' ? 'archived' : 'not_approved', activity)]
   if (!SERVABLE_STATUSES.includes(f.live.version.status)) return [reason('not_approved', activity)]
+  const keys = keyReasons(f.live, activity)
+  if (keys.length > 0) return keys
   return [...bridgeReasons(f, activity, f.live), ...(f.onPublishedPaper ? [] : [reason('not_on_published_paper', activity)])]
 }
 

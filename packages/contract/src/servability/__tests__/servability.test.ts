@@ -104,4 +104,12 @@ describe('servability reads contract (R1-T30)', () => {
       expect(doc.paths[p] ?? doc.paths[`/api${p}`], p).toBeDefined()
     }
   })
+
+  it('[CI] S1-T07: stimulus_missing names the reference, figure_only has its own sentence (PRD 30 FR-ADM-G7.3, 45 gate row 26)', () => {
+    expect(servabilityReasonMs('stimulus_missing', 'databank', 'Rajah 14')).toBe('Rangsangan tiada — soalan merujuk Rajah 14 tetapi tiada gambar.')
+    expect(servabilityReasonMs('stimulus_missing', 'bab')).toBe('Rangsangan tiada — soalan merujuk rajah tetapi tiada gambar.')
+    expect(servabilityReasonMs('figure_only', 'latih_tubi_spm')).toBe('Soalan ini hanya mengandungi rangsangan. Tukarkan kepada rangsangan kumpulan.')
+    expect(SERVABILITY_REASON_SOURCE.stimulus_missing).toBe('PRD')
+    expect(SERVABILITY_REASON_SOURCE.figure_only).toBe('PRD')
+  })
 })

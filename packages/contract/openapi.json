@@ -15173,7 +15173,9 @@
           "paper_empty",
           "stimulus_shared_ungrouped",
           "question_missing",
-          "group_incomplete"
+          "group_incomplete",
+          "stimulus_missing",
+          "figure_only"
         ]
       },
       "ServabilityReason": {
