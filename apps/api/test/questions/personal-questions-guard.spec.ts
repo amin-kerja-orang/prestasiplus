@@ -26,7 +26,7 @@ describe('personal question in-use guard (DB)', () => {
     (await q(`insert into missions (teacher_id, title, mission_type, mission_date, subject_id, question_count) values ($1, 'M', 'latih_tubi', $2::date, $3, 5) returning id::text id`, [teacher, date, tag.subjectId]))[0]!.id
   const session = async (missionId: string | null, status: 'in_progress' | 'completed', questionId: string) => {
     const [s] = await q(
-      `insert into practice_sessions (user_id, mode, mission_id, question_count, status, started_at) values ($1, $2, $3, 1, $4, now()) returning id::text id`,
+      `insert into practice_sessions (user_id, mode, mission_id, question_count, status, started_at, completed_at) values ($1, $2, $3, 1, $4::text, now(), case when $4::text = 'completed' then now() end) returning id::text id`,
       [pupil, missionId === null ? 'random' : 'mission', missionId, status],
     )
     await q(`insert into practice_session_questions (session_id, position, question_id, question_version_no) values ($1::uuid, 1, $2, 1)`, [s!.id, questionId])
