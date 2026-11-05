@@ -301,7 +301,7 @@ How it connects: [60-api-contract.md](60-api-contract.md) §1.4 carries the enve
 ### X10.1 API envelope and code rules
 
 - **FR-ERR-1 Envelope.** Every error response has the shape `{ "error": { "code", "message", "fields"?, "details"?, "retryAfter"?, "requestId" } }`. `requestId` is always present (the exception filter guarantees it) and is also sent in the `x-request-id` response header. `message` is Bahasa Melayu and may be shown to the user.
-- **FR-ERR-2 Two code families.** An envelope `code` is `UPPER_SNAKE` (for example `VALIDATION_ERROR`). A publish-gate or import issue code inside `details.gate[]` or `issues[]` is `lower_snake` (for example `chapter_missing`, `stimulus_group_split`, `stimulus_missing`, `figure_only`, `paper_empty`, `question_missing`). A new code is added to §X10.11 and to the contract in the same pull request.
+- **FR-ERR-2 Two code families.** An envelope `code` is `UPPER_SNAKE` (for example `VALIDATION_ERROR`). A publish-gate or import issue code inside `details.gate[]` or `issues[]` is `lower_snake` (for example `no_chapter`, `stimulus_group_split`, `stimulus_missing`, `figure_only`, `paper_empty`, `question_missing`). A new code is added to §X10.11 and to the contract in the same pull request.
 - **FR-ERR-3 Generic codes and statuses.**
 
   | Code | HTTP | Meaning |
