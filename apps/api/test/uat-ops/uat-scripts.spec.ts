@@ -31,7 +31,7 @@ describe('uat:* npm scripts', () => {
   it.each(uatEntries)('%s points to an existing file', (_name, cmd) => {
     const m = /^tsx (scripts\/uat-ops\/[\w.-]+\.ts)$/.exec(cmd)
     expect(m, `unexpected command shape: ${cmd}`).not.toBeNull()
-    expect(existsSync(join(API, m![1]))).toBe(true)
+    expect(existsSync(join(API, m![1] ?? ""))).toBe(true)
   })
 
   it('does not add trim-duplicate-stem (PR #715 is not merged)', () => {
@@ -68,7 +68,7 @@ describe('runbook U-OP table', () => {
 
   it('every uat: / npm command named in the table exists in package.json', () => {
     const named = new Set<string>()
-    for (const r of rows) for (const m of r.matchAll(/`((?:be:)?uat:[\w-]+|dskp:load)[^`]*`/g)) named.add(m[1])
+    for (const r of rows) for (const m of r.matchAll(/`((?:be:)?uat:[\w-]+|dskp:load)[^`]*`/g)) named.add(m[1] ?? "")
     expect(named.size).toBeGreaterThan(5)
     for (const n of named) {
       const exists = n.startsWith('be:') ? n in rootPkg.scripts : n in pkg.scripts
