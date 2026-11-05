@@ -318,10 +318,11 @@ describe('AdminPaper and AdminPaperSummary (mock shapes)', () => {
     expect(BijakBuilderPaperListQuerySchema.parse({ page: '2', status: 'terbit' })).toEqual({
       page: 2,
       status: 'terbit',
+      surface: 'simulasi',
     })
     expect(BijakBuilderPaperListQuerySchema.safeParse({ status: 'ready' }).success).toBe(false)
     // R12 filters; REQ-C-008 title bound
-    expect(BijakBuilderPaperListQuerySchema.parse({ subject: ' MAT ', search: '  kuarto ' })).toEqual({ subject: 'MAT', search: 'kuarto' })
+    expect(BijakBuilderPaperListQuerySchema.parse({ subject: ' MAT ', search: '  kuarto ' })).toEqual({ subject: 'MAT', search: 'kuarto', surface: 'simulasi' })
     expect(BijakBuilderPaperListQuerySchema.safeParse({ search: 'x'.repeat(101) }).success).toBe(false)
     expect(BijakBuilderPaperListQuerySchema.safeParse({ subject: 'x'.repeat(33) }).success).toBe(false)
     expect(BijakBuilderPaperCreateSchema.parse({ subject: 'MAT', kertas: 2, title: ` ${'T'.repeat(200)} ` }).title).toBe('T'.repeat(200))
@@ -530,7 +531,7 @@ describe('publish, delete and preview results', () => {
     expect(BijakBuilderBlockerSchema.safeParse({ code: 'MADE_UP', message: 'x', overridable: false }).success).toBe(false)
     expect(BijakBuilderBlockerSchema.safeParse({ code: 'NOT_SERVABLE', message: 'x' }).success).toBe(false)
     expect(BijakBuilderBlockerSchema.safeParse({ ...blocker, extra: 1 }).success).toBe(false)
-    expect(BIJAK_BUILDER_BLOCKER_CODES).toHaveLength(29) // T34's 18 + T48's RULE_NOT_IN_CONTRACT, SECTION_NOT_IN_CONTRACT, RULE_N_EXCEEDS_QUESTIONS, SECTION_EMPTY + REQ-A-013's REFERENCE_IMAGE_INVALID + T43b's NO_QUESTIONS, ZERO_MARK_SECTION, TOTAL_MARKS_BELOW_ONE + S3-T02's CHOICE_UNITS_UNEQUAL, COMPULSORY_CHOOSE, MARKS_NOT_IN_CONTRACT
+    expect(BIJAK_BUILDER_BLOCKER_CODES).toHaveLength(31) // T34's 18 + T48's RULE_NOT_IN_CONTRACT, SECTION_NOT_IN_CONTRACT, RULE_N_EXCEEDS_QUESTIONS, SECTION_EMPTY + REQ-A-013's REFERENCE_IMAGE_INVALID + T43b's NO_QUESTIONS, ZERO_MARK_SECTION, TOTAL_MARKS_BELOW_ONE + S3-T02's CHOICE_UNITS_UNEQUAL, COMPULSORY_CHOOSE, MARKS_NOT_IN_CONTRACT + S3-T06's TOTAL_MARKS_MISMATCH, NO_SCHEME
     expect(BIJAK_BUILDER_BLOCKER_CODES.filter((c) => BIJAK_BUILDER_BLOCKER_OVERRIDABLE[c]).sort()).toEqual(['BLUEPRINT_NOT_VERIFIED', 'INELIGIBLE', 'MARKS_NOT_IN_CONTRACT', 'RULE_NOT_IN_CONTRACT', 'SECTION_NOT_IN_CONTRACT'])
   })
 

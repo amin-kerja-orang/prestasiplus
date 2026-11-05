@@ -11,6 +11,12 @@ export type BlueprintWithSections = Blueprint & { sections: BlueprintSection[] }
 export interface PaperListFilter {
   subjectId?: bigint
   search?: string
+  /** S3-T06: `simulasi` (the Set Builder list) or `subjektif`. Omitted = both (never the case for the list route, which always sends one). */
+  surface?: 'simulasi' | 'subjektif'
+  kertas?: number
+  year?: number
+  /** S3-T06: a `bijakNegeriSlug`; `exam_board` is stored as that slug. */
+  examBoardSlug?: string
 }
 
 export interface SubjectRef {
@@ -38,11 +44,18 @@ export interface NewPaper {
   subjectId: bigint
   kertas: number
   year: number
-  paperCode: string
+  /** Null on a Kertas Subjektif paper: reads show `K{kertas}` (`paperCodeOf`). */
+  paperCode: string | null
   printedDurationMin: number
   instructions: string[]
   referenceSheets: Prisma.InputJsonValue
-  blueprintId: bigint
+  /** Null on a Kertas Subjektif paper (no Kontrak). */
+  blueprintId: bigint | null
+  /** S3-T06: omitted = `simulasi`. */
+  surface?: 'simulasi' | 'subjektif'
+  examBoard?: string | null
+  durationMinutes?: number | null
+  totalMarks?: number | null
   createdById: bigint
   isTest: boolean
   /** S3-T02 `Dilihat murid`; null (not restricted) only for a copy of a paper older than PO decision item 6, and for a paper a seed writes. */
@@ -107,6 +120,10 @@ export class BuilderRepository {
     const search = filter?.search?.replace(/[\\%_]/g, (c) => `\\${c}`)
     return {
       kind: 'pilihan',
+      ...(filter?.surface ? { surface: filter.surface } : {}),
+      ...(filter?.kertas !== undefined ? { kertas: filter.kertas } : {}),
+      ...(filter?.year !== undefined ? { year: filter.year } : {}),
+      ...(filter?.examBoardSlug ? { examBoard: filter.examBoardSlug } : {}),
       ...(statuses ? { status: { in: [...statuses] } } : {}),
       ...(filter?.subjectId !== undefined ? { subjectId: filter.subjectId } : {}),
       ...(search ? { OR: [{ title: { contains: search, mode: 'insensitive' } }, { paperCode: { contains: search, mode: 'insensitive' } }] } : {}),
@@ -160,6 +177,10 @@ export class BuilderRepository {
         instructions: input.instructions,
         referenceSheets: input.referenceSheets,
         blueprintId: input.blueprintId,
+        ...(input.surface ? { surface: input.surface } : {}),
+        examBoard: input.examBoard ?? null,
+        durationMinutes: input.durationMinutes ?? null,
+        totalMarks: input.totalMarks ?? null,
         levelScope: input.levelScope ?? null,
         status: 'draft',
         version: 1,
@@ -210,7 +231,7 @@ export class BuilderRepository {
     })
   }
 
-  /** R1-T48 "Tambah bahagian": appends an admin-added Bahagian (rule Jawab Semua; its counts follow its placements). */
+  /** R1-T48 "Tambah bahagian": appends an admin-added Bahagian (rule Jawab Semua; its counts follow its placements). Also the one Bahagian of a new Kertas Subjektif (S3-T06). */
   async addSection(paperId: bigint, position: number, label: string): Promise<void> {
     await this.prisma.client.paperSection.create({
       data: { paperId, position, label, ruleType: 'all', ruleN: null, questionCount: 0, markBudget: 0, compulsory: false, adminCreated: true },
