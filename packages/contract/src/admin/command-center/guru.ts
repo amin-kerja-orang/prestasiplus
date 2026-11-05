@@ -15,9 +15,9 @@ import { DateOnlySchema, TimestampSchema } from '../../common/time'
  */
 
 const count = z.number().int().min(0)
-/** XS-5 accuracy: 0..100 with one decimal; 0 when there are no answers. */
-const accuracy1 = z.number().min(0).max(100)
 const num = z.number()
+/** XS-5 (R1 S6-T03): pooled accuracy, ONE decimal, null (shown "—", never 0) with 0 answers. */
+const acc = z.number().min(0).max(100).nullable()
 const FIELD = (description: string) => ({ description })
 const HHMM = /^\d{2}:\d{2}$/
 
@@ -45,7 +45,7 @@ export const CommandCenterGuruClassRowSchema = z
     }),
     studentCount: count,
     active: count.meta(FIELD('Members with at least one answer in the last 7 days.')),
-    accuracy: accuracy1.meta(FIELD('Pooled accuracy, one decimal (XS-5); 0 when none.')),
+    accuracy: acc.meta(FIELD('XS-5, 1 decimal, over all answers of the members; null when none.')),
   })
   .meta({ id: 'CommandCenterGuruClassRow' })
 
@@ -54,7 +54,7 @@ export const CommandCenterGuruStudentRankSchema = z
     studentId: IdSchema,
     name: z.string(),
     answered: count,
-    accuracy: accuracy1,
+    accuracy: acc,
   })
   .meta({ id: 'CommandCenterGuruStudentRank' })
 
@@ -109,7 +109,7 @@ export const CommandCenterGuruLiveDataSchema = z
       .number()
       .int()
       .meta(FIELD('round((week - previous 7 days) / previous * 100); 0 when the previous week has no answer.')),
-    accuracy: accuracy1.meta(FIELD('Pooled accuracy, one decimal (XS-5); 0 when none.')),
+    accuracy: acc.meta(FIELD('XS-5 pooled correct / answered x 100, 1 decimal; null when none.')),
     gpsOverall: num
       .nullable()
       .meta(FIELD('GPS over graded headcount entries (2 dp); null when none. For the seed snapshot user (id 1) the value is the documented display constant 4.69 (D11 exception).')),
@@ -127,9 +127,12 @@ export const CommandCenterGuruLiveDataSchema = z
     recentFeed: z.array(CommandCenterGuruFeedItemSchema).meta(FIELD('Last 10 answers, newest first.')),
     kirkT1: num.min(0).meta(FIELD("Mean reaction score 0-10 (NPS) of the students' feedback, 1 dp; 0 when none.")),
     kirkT1Count: count,
-    kirkT2Accuracy: accuracy1.meta(FIELD('Pooled accuracy of the last 30 days, one decimal (XS-5); 0 when none.')),
-    kirkT2Delta: z.number().nullable().meta(FIELD('Difference to the 30 days before, one decimal; null when either side has no answers.')),
-    kirkT2Prev: accuracy1,
+    kirkT2Accuracy: acc.meta(FIELD('Accuracy of the last 30 days.')),
+    kirkT2Delta: z
+      .number()
+      .nullable()
+      .meta(FIELD('Difference to the 30 days before, one decimal; null (no delta, shown "—") when either side is null.')),
+    kirkT2Prev: acc,
     kirkT3Active: count.meta(FIELD('Students with an answer in the last 30 days.')),
     kirkT3Delta: z.number().int(),
     kirkT3Prev: count,
@@ -179,7 +182,7 @@ export const CommandCenterGuruDrillStudentRowSchema = z
     name: z.string(),
     className: z.string().meta(FIELD('The viewer\'s classes the student is in, joined by ", ".')),
     answered: count,
-    accuracy: accuracy1,
+    accuracy: acc,
     lastActiveAt: TimestampSchema.nullable(),
     status: z.enum(['Aktif', 'Login']).meta(FIELD('"Aktif" when the student answered today, else "Login".')),
   })
@@ -193,7 +196,7 @@ export const CommandCenterGuruDrillTodayRowSchema = z
     subject: z.string(),
     answered: count,
     correct: count,
-    accuracy: accuracy1,
+    accuracy: acc,
   })
   .meta({ id: 'CommandCenterGuruDrillTodayRow' })
 
@@ -202,7 +205,7 @@ export const CommandCenterGuruDrillSubjectRowSchema = z
     subject: z.string(),
     answered: count,
     correct: count,
-    accuracy: accuracy1,
+    accuracy: acc,
     students: count,
   })
   .meta({ id: 'CommandCenterGuruDrillSubjectRow' })
@@ -256,16 +259,16 @@ export const CommandCenterGuruDrillEngagementRowSchema = z
     band: CommandCenterGuruEngagementBandSchema,
     days: count.meta(FIELD('Distinct answer days in the last 7 days.')),
     answeredWeek: count,
-    accuracy: accuracy1,
+    accuracy: acc,
     lastActiveAt: TimestampSchema.nullable(),
   })
   .meta({ id: 'CommandCenterGuruDrillEngagementRow' })
 
 export const CommandCenterGuruDrillVsSchema = z
   .object({
-    accuracyNow: accuracy1,
-    accuracyPrev: accuracy1,
-    accuracyChange: z.number().nullable().meta(FIELD('Difference to the 30 days before, one decimal; null when either side has no answers.')),
+    accuracyNow: acc,
+    accuracyPrev: acc,
+    accuracyChange: z.number().nullable().meta(FIELD('One decimal; null when accuracyNow or accuracyPrev is null (no delta, never 0).')),
     answersNow: count,
     answersPrev: count,
     activeNow: count,
@@ -325,12 +328,13 @@ export const CommandCenterGuruPredictionSchema = z
   .object({
     studentId: IdSchema,
     studentName: z.string(),
-    overallAccuracy: count,
+    overallAccuracy: z.number().min(0).max(100).meta(FIELD('XS-5, 1 decimal; students here have >= 10 answers so never null.')),
     trend: z
       .number()
       .int()
-      .meta(FIELD('Accuracy of the last 14 days minus the 14 before; 0 when either window has no answer.')),
-    trendLabel: CommandCenterGuruTrendLabelSchema.meta(FIELD('> 5 Naik, < -5 Turun, else Stabil.')),
+      .nullable()
+      .meta(FIELD('Accuracy of the last 14 days minus the 14 before; null (no delta, never 0) when either window has no answer.')),
+    trendLabel: CommandCenterGuruTrendLabelSchema.nullable().meta(FIELD('> 5 Naik, < -5 Turun, else Stabil; null when trend is null.')),
     consistency: count.meta(FIELD('Distinct answer days in the last 30 / 30 * 100, whole percent.')),
     predictedGrade: CommandCenterGuruGradeSchema,
     predictedGps: z.number().int().min(0).max(9).meta(FIELD('Grade points: A+ 0 ... G 9.')),
@@ -459,7 +463,7 @@ export const CommandCenterGuruBadgeHoldersSchema = z
         z.object({
           studentId: IdSchema,
           name: z.string(),
-          accuracy: accuracy1,
+          accuracy: acc,
           awardedAt: TimestampSchema,
         }),
       )

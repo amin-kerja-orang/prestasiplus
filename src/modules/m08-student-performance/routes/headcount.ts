@@ -1,18 +1,26 @@
 import type { RouteRecordRaw, RouteMeta } from 'vue-router'
 
+import type { Role } from '@/stores/session-types'
+
 /**
  * M08 route fragment "headcount" (M08-T6; build-plan §S.3 rule 2): S12 `/headcount`, S13, S14, S15, S22,
- * S23, the L-12 page shells (FR-M08-137) and the CSV download `/headcount/{id}/export` (FR-M08-132).
- * Every route is for the admin, the teacher and the school admin only; any other role, pelajar included,
- * gets the standalone 403 page in place (SRS §9, OD-R3, FR-M08-08). The API decides the rest (own configs,
+ * S23, the four action pages (Key-in AR, Edit TOV/ETR, Unjuran, Tetapan; S10-T02) and the CSV download `/headcount/{id}/export` (FR-M08-132).
+ * Every route is for the admin, the teacher and the school admin; the pelajar (S10-T09) opens only `/headcount`
+ * and `/headcount/student/{ownId}`; the write pages (Key-in AR, Edit TOV/ETR, Tetapan) are the admin and the
+ * teacher only (the school admin is read-only, Unjuran stays readable). Any other role gets the standalone 403
+ * page in place (SRS §9, OD-R3, FR-M08-08). The API decides the rest (own configs,
  * own school). Titles are exact (SRS §2); S15 and S23 replace theirs once the name / subject is known.
  */
 const HOME = 'Selamat datang kembali'
 
-const base = (title: string, header: string): RouteMeta => ({
+const base = (
+  title: string,
+  header: string,
+  roles: Role[] = ['admin', 'teacher', 'school_admin'],
+): RouteMeta => ({
   layout: 'user',
   access: 'auth',
-  roles: ['admin', 'teacher', 'school_admin'],
+  roles,
   onForbidden: '403',
   title,
   header: { title: header, subtitle: HOME },
@@ -20,15 +28,22 @@ const base = (title: string, header: string): RouteMeta => ({
   v2: true,
 })
 
-/** L-12 shells: the shell header names the action (INFERRED from the S23 button label). */
-const shell = (header: string): RouteMeta => base(`${header} - PRESTASIPLUS`, header)
+/** The four action pages (S10-T02): the header names the action. */
+const action = (header: string, roles?: Role[]): RouteMeta =>
+  base(`${header} - PRESTASIPLUS`, header, roles)
+
+/** The write pages (R1-AS-3: the school admin is read-only, 403 by URL). */
+const WRITERS: Role[] = ['admin', 'teacher']
+/** The two pupil read screens. */
+const WITH_PUPIL: Role[] = ['admin', 'teacher', 'school_admin', 'student']
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/headcount',
     name: 'm08.headcount',
-    component: () => import('../pages/HeadcountListPage.vue'),
-    meta: base('Headcount - PRESTASIPLUS', 'Headcount'),
+    // S10-T09: the pupil gets the read view, every other role the list (same route name).
+    component: () => import('../pages/HeadcountIndexPage.vue'),
+    meta: base('Headcount - PRESTASIPLUS', 'Headcount', WITH_PUPIL),
   },
   {
     path: '/headcount/dashboard',
@@ -40,13 +55,13 @@ const routes: RouteRecordRaw[] = [
     path: '/headcount/create',
     name: 'm08.headcount.create',
     component: () => import('../pages/HeadcountCreatePage.vue'),
-    meta: base('Buat Headcount Baru - PRESTASIPLUS', 'Buat Headcount Baru'),
+    meta: base('Buat Headcount Baru - PRESTASIPLUS', 'Buat Headcount Baru', WRITERS),
   },
   {
     path: '/headcount/student/:id([0-9]+)',
     name: 'm08.headcount.student',
     component: () => import('../pages/HeadcountStudentPage.vue'),
-    meta: base('Headcount - PRESTASIPLUS', 'Headcount — Prestasi Individu'),
+    meta: base('Headcount - PRESTASIPLUS', 'Headcount — Prestasi Individu', WITH_PUPIL),
   },
   {
     path: '/headcount/:id([0-9]+)',
@@ -69,26 +84,26 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/headcount/:id([0-9]+)/results/:n([0-9]+)',
     name: 'm08.headcount.results',
-    component: () => import('../pages/HeadcountShellPage.vue'),
-    meta: shell('Key-in AR'),
+    component: () => import('../pages/HeadcountResultsPage.vue'),
+    meta: action('Key-in AR', WRITERS),
   },
   {
     path: '/headcount/:id([0-9]+)/edit',
     name: 'm08.headcount.edit',
-    component: () => import('../pages/HeadcountShellPage.vue'),
-    meta: shell('Edit TOV/ETR'),
+    component: () => import('../pages/HeadcountEditPage.vue'),
+    meta: action('Edit TOV/ETR', WRITERS),
   },
   {
     path: '/headcount/:id([0-9]+)/unjuran',
     name: 'm08.headcount.unjuran',
-    component: () => import('../pages/HeadcountShellPage.vue'),
-    meta: shell('Unjuran'),
+    component: () => import('../pages/HeadcountUnjuranPage.vue'),
+    meta: action('Unjuran'),
   },
   {
     path: '/headcount/:id([0-9]+)/settings',
     name: 'm08.headcount.settings',
-    component: () => import('../pages/HeadcountShellPage.vue'),
-    meta: shell('Tetapan'),
+    component: () => import('../pages/HeadcountSettingsPage.vue'),
+    meta: action('Tetapan', WRITERS),
   },
 ]
 

@@ -131,17 +131,13 @@ describe('guards (SRS §7 T and S, §9)', () => {
     }
   })
 
-  it('answers 401 to a guest on the S routes and 403 to a teacher joining a class', async () => {
+  it('answers 401 to a guest on the S routes', async () => {
     for (const [method, url] of [
       ['GET', '/api/kelas-saya'],
-      ['POST', '/api/kelas-saya/join'],
       ['GET', '/api/set-soalan-saya'],
     ] as const) {
       expect((await call(method, url, { as: null, body: {} })).status, url).toBe(401)
     }
-    expect((await call('POST', '/api/kelas-saya/join', { body: { classCode: 'X' } })).status).toBe(
-      403,
-    )
   })
 })
 
@@ -1132,58 +1128,15 @@ describe('#73–#75 student classes and sets (S33, S34; BR-M10-02, BR-M10-18)', 
     })
   })
 
-  it('#74 joins by code (trimmed, any case, any stored length); refusals 422 / 404 / 409', async () => {
-    const blank = await call('POST', '/api/kelas-saya/join', {
-      as: PELAJAR,
-      body: { classCode: '  ' },
-    })
-    expect(blank.status).toBe(422)
-    expect(Object.keys(fieldsOf(blank))).toEqual(['classCode'])
-    expect((await call('POST', '/api/kelas-saya/join', { as: PELAJAR, body: {} })).status).toBe(422)
-    const unknown = await call<ErrorBody>('POST', '/api/kelas-saya/join', {
-      as: PELAJAR,
-      body: { classCode: 'ZZZ999' },
-    })
-    expect(unknown.status).toBe(404)
-    expect(unknown.body.error.code).toBe('NOT_FOUND')
-
-    const joined = await call<{ data: { classroomId: number }; message: string }>(
-      'POST',
-      '/api/kelas-saya/join',
-      { as: PELAJAR, body: { classCode: ` ${newClassCode.toLowerCase()} ` } },
-    )
-    expect(joined.status).toBe(201)
-    expect(joined.body.data).toEqual({ classroomId: newClassId })
-    expect(joined.body.message).toContain('5 Kimia Cemerlang')
-    expect(classrooms.memberIds('classroom', newClassId)).toEqual([PELAJAR])
-    expect(classrooms.enrolmentsOf(PELAJAR).find((e) => e.classroomId === newClassId)?.source).toBe(
-      'code',
-    )
-    const again = await call('POST', '/api/kelas-saya/join', {
+  it('#74 has no join route any more (API-MUR-04): the pupil POST is a 404, nothing is enrolled', async () => {
+    const res = await call('POST', '/api/kelas-saya/join', {
       as: PELAJAR,
       body: { classCode: newClassCode },
     })
-    expect(again.status).toBe(409)
-
-    // the observed 7-character code "DEMO-4S" of class 516 (longer than the S33 maxlength)
-    const demo = await call<{ data: { classroomId: number } }>('POST', '/api/kelas-saya/join', {
-      as: 3,
-      body: { classCode: 'demo-4s' },
-    })
-    expect(demo.status).toBe(201)
-    expect(demo.body.data.classroomId).toBe(516)
-
-    const list = await call<{ data: Joined[] }>('GET', '/api/kelas-saya', { as: PELAJAR })
-    expect(list.body.data).toEqual([
-      {
-        id: newClassId,
-        name: '5 Kimia Cemerlang',
-        subjectName: 'Kimia',
-        teacherName: 'Guru Demo',
-        levelLabel: 'Ting. 5',
-      },
-    ])
-    // the admin has the screen too
+    expect(res.status).toBe(404)
+    expect(classrooms.memberIds('classroom', newClassId)).toEqual([])
+    expect((await call('GET', '/api/kelas-saya', { as: PELAJAR })).body).toMatchObject({ data: [] })
+    // the admin has the screen
     expect((await call('GET', '/api/kelas-saya', { as: ADMIN })).status).toBe(200)
   })
 
