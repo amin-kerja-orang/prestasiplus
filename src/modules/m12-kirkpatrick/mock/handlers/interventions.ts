@@ -1,16 +1,42 @@
 /**
- * SRS M12 v1.6 §7 #8 `GET /api/kirkpatrick/interventions` (S7) and #9 `POST /api/kirkpatrick/interventions`.
- * Admin and teacher (provisional). The KPIs count the whole store (BR-M12-26); the student must be a user with
- * role `student` ("Pelajar tidak dijumpai.", PROPOSED COPY, BR-M12-27). Both camelCase and the form's snake_case
- * field names are accepted; a malformed body answers 422, never a crash.
+ * SRS M12 v1.6 §7 #8 `GET /api/kirkpatrick/interventions` (S7), #9 `POST /api/kirkpatrick/interventions` and
+ * API-RPT-17 `POST /api/kirkpatrick/interventions/:id/review` ("Semak keputusan"). Admin, teacher and school
+ * administrator; the school administrator reads the interventions of the own school only. The KPIs count the rows
+ * the viewer sees (BR-M12-26); the student must be a user with role `student` ("Pelajar tidak dijumpai.", PROPOSED
+ * COPY, BR-M12-27); a pupil of another school answers 404 for a teacher and a school administrator (AC-AS-11-8).
+ * Both camelCase and the form's snake_case field names are accepted; a malformed body answers 422, never a crash.
+ *
+ * Review: teacher (own records only) and school administrator (records of pupils of the own school); anything else
+ * is 404, the admin 403. Before 7 calendar days (Asia/Kuala_Lumpur) after `actionDate` it answers 409; otherwise it
+ * writes `afterAccuracy` = the pooled accuracy of the 14 days from the action date (`null` without answers).
  */
 
-import { created, ok, route, validationError, type RouteDef } from '@/mock/define'
+import { DAY_MS } from '@/lib/time'
+import { conflict, created, int, notFound, ok, route, validationError, type RouteDef } from '@/mock/define'
+import { users } from '@/modules/m01-authentication/mock'
+import { practice } from '@/modules/m05-practice/mock'
 
 import type { InterventionInput } from '../../api/types'
 import { interventionsRepo } from '../repository'
+import { dayKey, pct1 } from '../repository/common'
 import { ALERT_TYPES, MOODS } from '../data/rules-data'
-import { FIELD_INVALID, FIELD_REQUIRED, refusal, staffRoles, viewerOf } from './common'
+import {
+  FIELD_INVALID,
+  FIELD_REQUIRED,
+  outsideSchool,
+  refusal,
+  reviewRoles,
+  scopedRoles,
+  viewerOf,
+} from './common'
+
+/** "Semak keputusan" opens 7 days after the action date. */
+export const REVIEW_AFTER_DAYS = 7
+/** PROPOSED COPY (D-T02-3). */
+export const REVIEW_TOO_EARLY = 'Semakan hanya boleh dibuat selepas 7 hari daripada tarikh tindakan.'
+const REVIEW_WINDOW_DAYS = 14
+
+const dayMs = (day: string): number => Date.parse(`${day}T00:00:00+08:00`)
 
 /** Maximum length of the two free texts (INFERRED hardening, not observed on live). */
 const MAX_TEXT = 2000
@@ -41,9 +67,46 @@ function text(v: unknown): string | undefined {
 }
 
 export const interventionRoutes: RouteDef[] = [
-  route('GET', '/api/kirkpatrick/interventions', [staffRoles], () => ok(interventionsRepo.list())),
+  route('GET', '/api/kirkpatrick/interventions', [scopedRoles], (req) => {
+    const viewer = viewerOf(req)
+    if (viewer.role !== 'school_admin') return ok(interventionsRepo.list())
+    return ok(
+      interventionsRepo.list(
+        (r) => viewer.schoolId !== null && users.get(r.studentId)?.schoolId === viewer.schoolId,
+      ),
+    )
+  }),
 
-  route('POST', '/api/kirkpatrick/interventions', [staffRoles], (req) => {
+  route(
+    'POST',
+    '/api/kirkpatrick/interventions/:id/review',
+    [reviewRoles],
+    (req, ctx) => {
+      const viewer = viewerOf(req)
+      const record = interventionsRepo.get(Number(req.params.id))
+      if (!record) return notFound()
+      const pupil = users.get(record.studentId)
+      if (viewer.role === 'teacher' ? record.createdBy !== viewer.id : outsideSchool(viewer, pupil?.schoolId ?? null)) {
+        return notFound()
+      }
+      const now = ctx.clock.now()
+      const age = Math.round((dayMs(dayKey(now)) - dayMs(record.actionDate)) / DAY_MS)
+      if (age < REVIEW_AFTER_DAYS) return conflict(REVIEW_TOO_EARLY)
+
+      const from = dayMs(record.actionDate)
+      const answers = practice.answers(record.studentId, {
+        from,
+        to: from + REVIEW_WINDOW_DAYS * DAY_MS,
+      })
+      const correct = answers.filter((a) => a.isCorrect).length
+      const after = answers.length === 0 ? null : pct1(correct, answers.length)
+      const updated = interventionsRepo.setAfterAccuracy(record.id, after)
+      return ok({ id: updated.id, actionDate: updated.actionDate, afterAccuracy: updated.afterAccuracy })
+    },
+    { params: { id: int() } },
+  ),
+
+  route('POST', '/api/kirkpatrick/interventions', [scopedRoles], (req) => {
     const body =
       typeof req.body === 'object' && req.body !== null && !Array.isArray(req.body)
         ? (req.body as Record<string, unknown>)
@@ -111,8 +174,11 @@ export const interventionRoutes: RouteDef[] = [
       beforeMood: blank(moods[0]?.[1]) ? null : (moods[0]?.[1] as InterventionInput['beforeMood']),
       afterMood: blank(moods[1]?.[1]) ? null : (moods[1]?.[1] as InterventionInput['afterMood']),
     }
+    const viewer = viewerOf(req)
+    const pupil = users.get(input.studentId)
+    if (pupil?.role === 'student' && outsideSchool(viewer, pupil.schoolId)) return notFound()
     try {
-      return created(interventionsRepo.create(input, viewerOf(req).id))
+      return created(interventionsRepo.create(input, viewer.id))
     } catch (error) {
       return refusal(error)
     }

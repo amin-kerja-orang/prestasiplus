@@ -40,16 +40,35 @@ export const TICKET_CREATED_FLASH =
 /** Rows per page of the admin queue (API-SUP-03). */
 export const QUEUE_PER_PAGE = 25
 
-/** Admin ticket messages with a source: ERR-REQ-01, ERR-ACC-04 (40 X10; rulings on #507). */
+/** Admin ticket messages with a source: 30 P20-03, ERR-REQ-12, ERR-REQ-01, ERR-ACC-04 (40 X10; rulings on #507). */
 export const ADMIN_TICKET_MESSAGES = {
+  replyRequired: 'Sila tulis balasan.',
+  replyTooLong: 'Balasan tidak boleh melebihi 5000 aksara.',
   statusInvalid: 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.',
-  ticketNotFound: 'Rekod tidak dijumpai. Ia mungkin telah dipadam.',
+  ticketNotFound: 'Rekod tidak dijumpai.',
 } as const
 
-/** Flash after a status save, approved by the product owner (PO batch 2 on #503). */
+/** Flashes after an admin save, approved by the product owner (PO batch 2 on #503). */
 export const ADMIN_TICKET_FLASH = {
+  replySaved: 'Balasan disimpan.',
   statusSaved: 'Status dikemas kini.',
 } as const
+
+/** Role filter of the admin queue (30 P20-02, the word Murid as ruled on #507): the value is the stored role. */
+export const ROLE_FILTER_ITEMS = [
+  { label: 'Semua Peranan', value: '' },
+  { label: 'Murid', value: 'student' },
+  { label: 'Guru', value: 'teacher' },
+  { label: 'Admin Sekolah', value: 'school_admin' },
+] as const
+
+/** Role words of a queue row (AC-CHAIN-7, AC-MUR-A4-5). */
+export const ROLE_LABELS: Readonly<Record<string, string>> = {
+  student: 'Murid',
+  teacher: 'Guru',
+  school_admin: 'Admin Sekolah',
+  admin: 'Admin Pusat',
+}
 
 /** `Ticket` of §7. */
 export interface Ticket {
@@ -75,6 +94,8 @@ export interface QueueRow {
   subject: string
   status: TicketStatus
   replied: boolean
+  roleLabel: string | null
+  school: string | null
 }
 
 export interface QueueList {

@@ -120,6 +120,7 @@ interface SessionInfo {
   subject_id: string | null
   client_uuid: string | null
   started_at: string
+  mode: string
 }
 
 export function practiceAnswersStep(a: ActivityContext): AnyEntityStep {
@@ -155,6 +156,7 @@ export function practiceAnswersStep(a: ActivityContext): AnyEntityStep {
           sessionId,
           clientUuid: session?.client_uuid ?? null,
           sessionStartedAt: session?.started_at ?? null,
+          sessionMode: session?.mode ?? null,
           dims,
         })
         if (!out.ok) rejectRow(ctx, entity, legacyId, out.reject)
@@ -170,15 +172,15 @@ export function practiceAnswersStep(a: ActivityContext): AnyEntityStep {
   }
 }
 
-/** Subject, client key and start of the v2 sessions (by uuid), for the subject fallback and the copied key. */
+/** Subject, client key, start and mode of the v2 sessions (by uuid), for the subject fallback, the copied key and the answer mode. */
 async function sessionInfo(ctx: BatchContext, sessionIds: readonly string[]): Promise<Map<string, SessionInfo>> {
   const out = new Map<string, SessionInfo>()
   if (sessionIds.length === 0) return out
   const res = await ctx.db.query<{ id: string } & SessionInfo>(
-    `SELECT id::text AS id, subject_id::text AS subject_id, client_uuid::text AS client_uuid, started_at::text AS started_at
+    `SELECT id::text AS id, subject_id::text AS subject_id, client_uuid::text AS client_uuid, started_at::text AS started_at, mode
      FROM practice_sessions WHERE id = ANY($1::uuid[])`,
     [[...new Set(sessionIds)]],
   )
-  for (const r of res.rows) out.set(r.id, { subject_id: r.subject_id, client_uuid: r.client_uuid, started_at: r.started_at })
+  for (const r of res.rows) out.set(r.id, { subject_id: r.subject_id, client_uuid: r.client_uuid, started_at: r.started_at, mode: r.mode })
   return out
 }
