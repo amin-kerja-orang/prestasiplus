@@ -74,3 +74,21 @@ export const SECTION_STYLE: Record<Bahagian, { accent: DsAccent }> = {
   B: { accent: 'friend' },
   C: { accent: 'heat' },
 }
+
+/**
+ * "Pakej PKSK" display list of the hub (R1-MUR-19, D115): the five packages as observed on V2.
+ * Display only: the prices are never used for billing.
+ */
+export const PKSK_PACKAGES: readonly { name: string; price: string }[] = [
+  { name: 'PKSK Tingkatan 1 (SBP/MRSM)', price: 'RM0.00' },
+  { name: 'PKSK Tingkatan 4 (SBP/MRSM)', price: 'RM0.00' },
+  { name: 'PKSK Kombo (T1 + T4)', price: 'RM0.00' },
+  { name: 'PKSK Asas', price: 'RM39.00' },
+  { name: 'PKSK Premium', price: 'RM79.00' },
+]
+
+/** The levels in the order the hub offers them (T1 before T4). */
+export const LEVEL_ORDER: readonly PkskLevel[] = ['T1', 'T4']
+
+/** How many domains "Domain teratas" lists. */
+export const TOP_DOMAIN_COUNT = 12
