@@ -45,6 +45,7 @@ import type {
   NamedRef,
   Page,
   PartAnswer,
+  PersonalQuestionWrite,
   PublicQuestion,
   QuestionActor,
   QuestionBulkAction,
@@ -779,6 +780,73 @@ export class QuestionsService {
   async contributionCountsFor(userId: string): Promise<ContributionCounts> {
     const byStatus = await this.repo.ownerStatusCounts(userId)
     return { total: Object.values(byStatus).reduce((s, n) => s + n, 0), byStatus }
+  }
+
+  // --- personal questions (S6-T16, API-GUR-24, DM-42) ------------------------------------------------------------
+  // A teacher's own MCQ: `visibility = 'teacher_private'`, `owner_user_id` = the teacher, `created_by_id` NULL (so no Sumbang count or badge
+  // sees it, FR-GUR-44a-4), saved already `approved` and live. It skips the approve gate (it never enters Semakan, the bank or a paper) and
+  // `assertServableSomewhere` (it is served by the owner's mission draw only). The caller (classes/teacher-tools) validates the curriculum
+  // rules (D112) and owns the 404/409 rules; this method only builds and writes the version.
+
+  private personalNormalized(input: PersonalQuestionWrite, userId: string): Normalized {
+    const spIds = [...new Set(input.spIds ?? [])]
+    const parts = this.checkedParts(
+      partsFromFlat({
+        questionType: 'mcq',
+        questionText: input.text,
+        options: input.options.map((o) => o.text),
+        correctAnswer: input.correctIndex,
+        ...(input.cognitiveLevel ? { cognitiveLevel: input.cognitiveLevel } : {}),
+      }),
+      false,
+    )
+    return {
+      subjectId: input.subjectId,
+      educationLevelId: input.educationLevelId,
+      tp: input.tp ?? input.difficulty,
+      difficultyLevel: input.difficulty,
+      stem: input.text,
+      parts,
+      language: languageToStore(undefined, undefined),
+      explanation: null,
+      ...(spIds.length === 0 ? {} : { tag: { unitId: null, spIds, tp: input.tp ?? null } }),
+      chapterId: input.chapterId ?? undefined,
+      actor: { userId, role: 'teacher' },
+      flatSp: spIds.length === 0,
+    }
+  }
+
+  /** Creates the personal question and returns its question id (decimal). */
+  async createPersonal(input: PersonalQuestionWrite, ownerUserId: string): Promise<string> {
+    const owner = parse(ownerUserId)
+    if (owner === null) throw questionNotFound()
+    const { draft } = await this.draftOf(this.personalNormalized(input, ownerUserId), 'approved', null)
+    draft.visibility = 'teacher_private'
+    draft.ownerUserId = owner
+    draft.referenceUrl = input.referenceUrl ?? null
+    return this.prisma.transaction(
+      () =>
+        this.repo.create({ sourceType: 'manual', createdById: null, groupId: null, groupPosition: null, now: this.clock.now(), version: draft }),
+      TX,
+    )
+  }
+
+  /** Rewrites the content of a personal question in place (one version, no history). Owner and visibility never change. */
+  async rewritePersonal(questionId: string, versionNo: number, input: PersonalQuestionWrite, ownerUserId: string): Promise<void> {
+    const { draft } = await this.draftOf(this.personalNormalized(input, ownerUserId), 'approved', null)
+    draft.referenceUrl = input.referenceUrl ?? null
+    await this.prisma.transaction(async () => {
+      if (!(await this.repo.lock(questionId))) throw questionNotFound()
+      await this.repo.rewriteVersion(questionId, versionNo, draft, this.clock.now())
+    }, TX)
+  }
+
+  /** Hard-deletes a personal question (cascades to its version, parts, options and key). False when it is already gone. */
+  async removePersonal(questionId: string): Promise<boolean> {
+    return this.prisma.transaction(async () => {
+      if (!(await this.repo.lock(questionId))) return false
+      return this.repo.remove(questionId)
+    }, TX)
   }
 
   // --- learners (BE-12, BE-15, BE-41); there is no student HTTP route (Q-3) ---------------------

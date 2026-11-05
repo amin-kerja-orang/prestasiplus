@@ -27,7 +27,8 @@ export class QuestionPool {
 
   /**
    * Up to `n` eligible `mcq` question ids of `filter` (live published, active), drawn in SQL (seeded, LIMIT `n`): the draw
-   * for a mission start or a remedial topic. Nothing is loaded beyond the `n` ids, whatever the size of the bank.
+   * for a mission start or a remedial topic. Nothing is loaded beyond the `n` ids, whatever the size of the bank. A mission filter may carry
+   * `ownerPrivateUserId` (DM-42): the owner's personal questions then join the pool at equal weight (the one place a private question is drawn).
    */
   async draw(filter: QuestionFilter, n: number, rng: Prng): Promise<string[]> {
     return this.questions.sample({ ...filter, type: 'mcq' }, n, rng)

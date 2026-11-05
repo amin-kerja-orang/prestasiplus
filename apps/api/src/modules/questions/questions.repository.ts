@@ -74,6 +74,12 @@ export interface VersionDraft {
   lastEditor?: 'person' | 'ai'
   /** R1-H-A18: question total declared at intake accept (null = none). A person's edit stores null. */
   declaredMarks?: number | null
+  /** DM-42: `undefined` leaves the stored value untouched on a rewrite and stores `bank` on a new version. */
+  visibility?: 'bank' | 'teacher_private'
+  /** DM-42: the owner of a private version (set if and only if `visibility = teacher_private`); `undefined` leaves it untouched on a rewrite. */
+  ownerUserId?: bigint | null
+  /** DM-42: http(s) reference link; `undefined` leaves it untouched on a rewrite, `null` clears it. */
+  referenceUrl?: string | null
   spNodeIds: bigint[]
   stimulusIds: bigint[]
   parts: PartDraft[]
@@ -1419,6 +1425,9 @@ export class QuestionsRepository {
       ...(c.importIssues === undefined ? {} : { importIssues: c.importIssues === null || c.importIssues.length === 0 ? Prisma.DbNull : (c.importIssues as unknown as Prisma.InputJsonValue) }),
       lastEditor: c.lastEditor ?? 'person',
       declaredMarks: c.declaredMarks ?? null,
+      ...(c.visibility === undefined ? {} : { visibility: c.visibility }),
+      ...(c.ownerUserId === undefined ? {} : { ownerUserId: c.ownerUserId }),
+      ...(c.referenceUrl === undefined ? {} : { referenceUrl: c.referenceUrl }),
     }
   }
 
@@ -1550,7 +1559,10 @@ export class QuestionsRepository {
       : Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
     const conds: Prisma.Sql[] = [NOT_PKSK]
     if (filter.status) conds.push(Prisma.sql`v.status = ${filter.status}`)
-    conds.push(NOT_PRIMARY_LEVEL_SQL, BANK_VISIBLE_SQL)
+    // DM-42: bank rows only, unconditionally; the mission draw alone adds the owner's own private rows (`ownerPrivateUserId`).
+    const ownerKey = filter.ownerPrivateUserId === undefined ? null : bi(filter.ownerPrivateUserId)
+    const ownPrivate = ownerKey === null ? null : Prisma.sql`(v.visibility = 'teacher_private' AND v.owner_user_id = ${ownerKey})`
+    conds.push(NOT_PRIMARY_LEVEL_SQL, ownPrivate === null ? BANK_VISIBLE_SQL : Prisma.sql`(${BANK_VISIBLE_SQL} OR ${ownPrivate})`)
     if (learnerVisible) conds.push(LEARNER_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL)
     if (filter.active !== undefined) conds.push(filter.active ? Prisma.sql`q.is_active` : Prisma.sql`NOT q.is_active`)
     const eq = (text: string | undefined, column: Prisma.Sql): void => {
@@ -1561,7 +1573,12 @@ export class QuestionsRepository {
     eq(filter.subjectId, Prisma.sql`v.subject_id`)
     eq(filter.educationLevelId, Prisma.sql`v.education_level_id`)
     eq(filter.unitId, Prisma.sql`v.unit_node_id`)
-    eq(filter.chapterId, Prisma.sql`v.chapter_id`)
+    if (ownPrivate === null) eq(filter.chapterId, Prisma.sql`v.chapter_id`)
+    else if (filter.chapterId !== undefined) {
+      // The Bab narrows the bank part only; the owner's personal questions of the Subjek + Tingkatan stay in the pool.
+      const key = bi(filter.chapterId)
+      conds.push(key === null ? ownPrivate : Prisma.sql`(v.chapter_id = ${key} OR ${ownPrivate})`)
+    }
     if (filter.educationLevelIds !== undefined) {
       const keys = filter.educationLevelIds.map(bi).filter((k): k is bigint => k !== null)
       conds.push(keys.length === 0 ? Prisma.sql`FALSE` : Prisma.sql`v.education_level_id IN (${Prisma.join(keys)})`)
@@ -1586,7 +1603,7 @@ export class QuestionsRepository {
     }
     if (filter.spmPool !== undefined) {
       // R1-B06: the shared SPM-servable definition (offered level, linked active subject), no longer the `pool` tag.
-      conds.push(filter.spmPool ? SPM_SERVABLE_SQL : Prisma.sql`NOT ${SPM_SERVABLE_SQL}`)
+      conds.push(filter.spmPool ? (ownPrivate === null ? SPM_SERVABLE_SQL : Prisma.sql`(${SPM_SERVABLE_SQL} OR ${ownPrivate})`) : Prisma.sql`NOT ${SPM_SERVABLE_SQL}`)
     }
     if (filter.spId !== undefined) {
       const key = bi(filter.spId)

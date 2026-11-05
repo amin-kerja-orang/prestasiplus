@@ -13,6 +13,7 @@ import { CompClassroomAdapter } from './comp-classroom.adapter'
 import { KelasSayaController } from './kelas-saya.controller'
 import { PerformanceClassesReadAdapter } from './performance-classes-read.adapter'
 import { ClassesPorts } from './ports'
+import { TeacherToolsModule } from './teacher-tools/teacher-tools.module'
 import { TeacherClassroomsAdapter } from './teacher-classrooms.adapter'
 import { TeacherClassesController } from './teacher.controller'
 
@@ -26,7 +27,7 @@ import { TeacherClassesController } from './teacher.controller'
  * (the admin teacher classrooms lookup).
  */
 @Module({
-  imports: [AuditModule, ThrottleModule, CurriculumModule, UsersModule, PerformanceModule],
+  imports: [AuditModule, ThrottleModule, CurriculumModule, UsersModule, PerformanceModule, TeacherToolsModule],
   controllers: [TeacherClassesController, KelasSayaController],
   providers: [ClassesRepository, ClassesService, ClassesPorts, CompClassroomAdapter, TeacherClassroomsAdapter, PerformanceClassesReadAdapter, { provide: COMP_CLASSROOM_PORT, useExisting: CompClassroomAdapter }],
   exports: [ClassesRepository, ClassesPorts, COMP_CLASSROOM_PORT],

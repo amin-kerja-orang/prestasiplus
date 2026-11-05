@@ -26,6 +26,23 @@ export type QuestionGuruCreateInput = z.output<typeof QuestionGuruCreateRequestS
 export type QuestionGuruUpdateInput = z.output<typeof QuestionGuruUpdateRequestSchema>
 export type QuestionBulkAction = z.output<typeof QuestionBulkRequestSchema>['action']
 export type QuestionTag = z.output<typeof QuestionCurriculumTagSchema>
+/** S6-T16 (API-GUR-24): what a teacher's personal question writes; already validated against the curriculum by the caller's service rules. */
+export interface PersonalQuestionWrite {
+  subjectId: string
+  educationLevelId: string
+  chapterId?: string | null | undefined
+  spIds?: readonly string[] | null | undefined
+  tp?: number | null | undefined
+  cognitiveLevel?: string | null | undefined
+  /** The typed Kesukaran 1..5. */
+  difficulty: number
+  text: string
+  /** Exactly four, A to D. */
+  options: readonly { text: string }[]
+  correctIndex: number
+  referenceUrl?: string | null | undefined
+}
+
 /** What a learner may see (`QuestionPublicSchema`): never a key, explanation, model answer or source. */
 export type PublicQuestion = z.output<typeof QuestionPublicSchema>
 
@@ -300,6 +317,12 @@ export interface QuestionFilter {
   idIn?: readonly string[]
   /** Keyset: only ids strictly above this one (use with `eligibleIdsPage`, ascending id). */
   idAfter?: string
+  /**
+   * DM-42 / FR-GUR-44a-10 (the mission draw, the ONLY reader of `teacher_private`): besides the bank, the live personal questions OWNED by this
+   * user (users.id, decimal) are in the pool, at equal weight. The subject and level filters apply to both; `chapterId` and `spmPool` narrow
+   * the bank part only (a personal question carries no SPM pool and its Bab is optional). Any other owner's private question stays out.
+   */
+  ownerPrivateUserId?: string
 }
 export type SampleFilter = QuestionFilter
 export type GroupCountBy = 'subject' | 'level' | 'status' | 'difficultyTp' | 'unit' | 'chapter'

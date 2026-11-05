@@ -50,6 +50,7 @@ import { ACCOUNT_COMPONENT_SCHEMAS, registerAccountPaths } from './account/paths
 import { NOTIFICATIONS_COMPONENT_SCHEMAS, registerNotificationsPaths } from './notifications/paths'
 import { MISSIONS_COMPONENT_SCHEMAS, registerMissionsPaths } from './classes/missions/paths'
 import { QUESTION_SETS_COMPONENT_SCHEMAS, registerQuestionSetsPaths } from './classes/question-sets/paths'
+import { registerTeacherToolsPaths, TEACHER_TOOLS_COMPONENT_SCHEMAS } from './classes/teacher-tools/paths'
 import { PKSK_COMPONENT_SCHEMAS, registerPkskPaths } from './pksk/paths'
 import { ANALYTICS_COMPONENT_SCHEMAS, registerAnalyticsPaths } from './reports/analytics/paths'
 import { KIRKPATRICK_COMPONENT_SCHEMAS, registerKirkpatrickPaths } from './reports/kirkpatrick/paths'
@@ -113,6 +114,7 @@ export const COMPONENT_SCHEMAS = {
   ...QUESTION_GATE_COMPONENT_SCHEMAS, // R1-B05
   ...MISSIONS_COMPONENT_SCHEMAS, // BE-18 (M10 missions, remedial)
   ...QUESTION_SETS_COMPONENT_SCHEMAS, // BE-18 (M10 question sets, DSKP)
+  ...TEACHER_TOOLS_COMPONENT_SCHEMAS, // S6-T16 (Soalan & Rujukan)
   ...PERFORMANCE_COMPONENT_SCHEMAS, // BE-19
   ...PARENT_INVITE_COMPONENT_SCHEMAS, // BE-25
   ...SUBSCRIPTION_COMPONENT_SCHEMAS, // BE-25
@@ -183,6 +185,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerQuestionGatePaths(registry) // R1-B05
   registerMissionsPaths(registry) // BE-18 (M10 missions, remedial)
   registerQuestionSetsPaths(registry) // BE-18 (M10 question sets, DSKP)
+  registerTeacherToolsPaths(registry) // S6-T16 (Soalan & Rujukan)
   registerPerformancePaths(registry) // BE-19
   registerPkskPaths(registry) // BE-42
   registerAnalyticsPaths(registry) // BE-20 (M11)

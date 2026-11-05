@@ -15129,6 +15129,56 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/guru/personal-questions",
+      "method": "GET",
+      "path": "/api/guru/personal-questions",
+      "api_id": "API-GUR-24",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
+      "key": "POST /api/guru/personal-questions",
+      "method": "POST",
+      "path": "/api/guru/personal-questions",
+      "api_id": "API-GUR-24",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
+      "key": "GET /api/guru/personal-questions/:p",
+      "method": "GET",
+      "path": "/api/guru/personal-questions/:id",
+      "api_id": "API-GUR-24",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
+      "key": "PUT /api/guru/personal-questions/:p",
+      "method": "PUT",
+      "path": "/api/guru/personal-questions/:id",
+      "api_id": "API-GUR-24",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
+      "key": "DELETE /api/guru/personal-questions/:p",
+      "method": "DELETE",
+      "path": "/api/guru/personal-questions/:id",
+      "api_id": "API-GUR-24",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
       "key": "POST /api/admin/servability/questions/batch",
       "method": "POST",
       "path": "/api/admin/servability/questions/batch",
