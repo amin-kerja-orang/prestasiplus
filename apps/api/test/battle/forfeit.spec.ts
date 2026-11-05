@@ -37,6 +37,13 @@ describe('forfeit (M16-14)', () => {
     expect(answer.status).toBe(409)
   })
 
+  it('a robot opponent (DM-60: no user): the arena still shows the battle and the player can forfeit', async () => {
+    const uuid = await botBattle(a, s.math)
+    await rows(`update battle_participants set user_id = null where battle_id = $1 and side = 'B'`, [uuid])
+    expect(parseData(BattleArenaViewSchema, await a.get(`/battle/arena/${uuid}`))).toMatchObject({ uuid, status: 'active', you: 'A', players: { B: { name: 'Pelajar' } } })
+    expect((await a.post(`/battle/forfeit/${uuid}`)).status).toBe(200)
+  })
+
   it('a second forfeit is 409 {error: "Battle sudah tamat."}', async () => {
     const uuid = await botBattle(a, s.math)
     expect((await a.post(`/battle/forfeit/${uuid}`)).status).toBe(200)
