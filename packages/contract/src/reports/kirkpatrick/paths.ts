@@ -190,7 +190,7 @@ export function registerKirkpatrickPaths(registry: OpenAPIRegistry): void {
     path: '/kirkpatrick/interventions/{id}/review',
     tags: ['kirkpatrick'],
     summary: 'Review an intervention (API-RPT-17)',
-    description: `Teacher (own record) and school_admin (own school); admin is refused. Needs X-CSRF-Token. Before action date + 7 days (MYT) the answer is 409 CONFLICT "${KIRKPATRICK_MESSAGES.reviewTooEarly}". Otherwise writes after_accuracy = pooled correct / answered x 100 of the pupil over action date + 1 .. + 14 (MYT), one decimal, null with no answers; a repeat call recomputes. An unknown id, an out-of-scope record or a teacher who is not the creator gives 404.`,
+    description: `Teacher (own record) and school_admin (own school); admin is refused. Needs X-CSRF-Token. Before action date + 7 days (MYT) the answer is 409 CONFLICT "${KIRKPATRICK_MESSAGES.reviewTooEarly}". Otherwise writes after_accuracy = pooled correct / answered x 100 of the pupil over the 14 days starting on the action date (day 0 to day 13, MYT), one decimal, null with no answers; a repeat call recomputes. An unknown id, an out-of-scope record or a teacher who is not the creator gives 404.`,
     request: { headers: csrf, params: z.object({ id: IdSchema }) },
     responses: {
       200: json(envelopeOf(KirkpatrickInterventionReviewSchema), 'The reviewed intervention.', NO_STORE),

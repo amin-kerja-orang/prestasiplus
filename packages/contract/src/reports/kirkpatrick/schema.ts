@@ -450,11 +450,11 @@ export const KirkpatrickFeedbackConflictSchema = z
 /** Mock PDF layout contract: file name and content type of GET /kirkpatrick/export-pdf. */
 export const KIRKPATRICK_PDF = { filename: 'laporan-kirkpatrick.pdf', contentType: 'application/pdf', title: 'Model Kirkpatrick - Rantaian Impak' } as const
 
-/** API-RPT-17 response: the pooled accuracy of the 14 days after the action date, written to the record. */
+/** API-RPT-17 response: the pooled accuracy of the 14 days starting on the action date (day 0 to day 13, MYT), written to the record. */
 export const KirkpatrickInterventionReviewSchema = z
   .object({
     id: IdSchema,
     actionDate: DateOnlySchema,
-    afterAccuracy: z.number().nullable().meta({ description: 'Pooled correct / answered x 100 over action date + 1 .. + 14 (MYT), one decimal; null with no answers.' }),
+    afterAccuracy: z.number().nullable().meta({ description: 'Pooled correct / answered x 100 over the 14 days starting on the action date (day 0 to day 13, MYT), one decimal; null with no answers.' }),
   })
   .meta({ id: 'KirkpatrickInterventionReview' })

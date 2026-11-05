@@ -149,7 +149,7 @@ export class InterventionsService {
   /**
    * API-RPT-17. The record must be in the caller's scope (school_admin: a pupil of the own school; teacher: the creator of
    * the record and the pupil still in the own classes); otherwise 404 like an unknown id. Allowed once 7 days have passed
-   * since the action date (MYT), then `after_accuracy` = pooled accuracy of the 14 days after it, null with no answers.
+   * since the action date (MYT), then `after_accuracy` = pooled accuracy of the 14 days starting on it (day 0 to day 13, MYT), null with no answers.
    */
   async review(ctx: WriteCtx, rawId: string): Promise<KirkpatrickInterventionReview> {
     if (ctx.isTest) throw ApiError.of('FORBIDDEN')
@@ -162,7 +162,7 @@ export class InterventionsService {
     const now = this.clock.now()
     if (mytDay(now) < addDays(record.actionDate, 7)) throw ApiError.of('CONFLICT', { message: KIRKPATRICK_MESSAGES.reviewTooEarly })
 
-    const totals = await this.repo.pupilTotalsBetween(record.studentId, addDays(record.actionDate, 1), addDays(record.actionDate, 14))
+    const totals = await this.repo.pupilTotalsBetween(record.studentId, record.actionDate, addDays(record.actionDate, 13))
     const afterAccuracy = totals.answered > 0 ? pct1(totals.correct, totals.answered) : null
     await this.prisma.transaction(async (tx) => {
       await this.repo.setAfterAccuracy(record.id, afterAccuracy, now)

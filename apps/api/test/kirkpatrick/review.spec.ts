@@ -83,28 +83,28 @@ describe('POST /api/kirkpatrick/interventions/:id/review (API-RPT-17, FR-GUR-11-
     expect(audits).toHaveLength(0)
   })
 
-  it('7 days after: 200, afterAccuracy = pooled accuracy of action date + 1 .. + 14 (MYT), one decimal', async () => {
+  it('7 days after: 200, afterAccuracy = pooled accuracy of the 14 days from the action date (day 0 .. day 13, MYT), one decimal', async () => {
     const id = await create(teacherA, w.ids.p1, '2026-10-12') // today = action date + 7
     const { p1 } = w.ids
     const [s0] = w.subjects
-    await addSession(t, { userId: p1, subjectId: s0, at: '2026-10-12T10:00:00+08:00', answered: 10, correct: 0 }) // the action day: outside
+    await addSession(t, { userId: p1, subjectId: s0, at: '2026-10-12T10:00:00+08:00', answered: 10, correct: 5 }) // the action day (day 0): inside
     await addSession(t, { userId: p1, subjectId: s0, at: '2026-10-14T10:00:00+08:00', answered: 10, correct: 7 })
-    await addSession(t, { userId: p1, subjectId: s0, at: '2026-10-26T23:30:00+08:00', answered: 4, correct: 3 }) // day + 14: inside
-    await addSession(t, { userId: p1, subjectId: s0, at: '2026-10-27T00:30:00+08:00', answered: 10, correct: 10 }) // day + 15: outside
+    await addSession(t, { userId: p1, subjectId: s0, at: '2026-10-25T23:30:00+08:00', answered: 4, correct: 3 }) // day + 13: inside
+    await addSession(t, { userId: p1, subjectId: s0, at: '2026-10-26T00:30:00+08:00', answered: 10, correct: 10 }) // day + 14: outside
     await addSession(t, { userId: p1, subjectId: s0, at: '2026-10-15T10:00:00+08:00', answered: 9, correct: 9, isTest: true }) // test row: outside
     await addSession(t, { userId: p1, subjectId: s0, at: '2026-10-15T11:00:00+08:00', answered: 9, correct: 9, status: 'in_progress' }) // unfinished: outside
 
     const res = await review(teacherA, id)
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     expect(res.headers['cache-control']).toContain('no-store')
-    expect(envelopeOf(KirkpatrickInterventionReviewSchema).parse(res.body).data).toEqual({ id, actionDate: '2026-10-12', afterAccuracy: 71.4 }) // 10 / 14
-    expect(await stored(id)).toBe('71.40')
+    expect(envelopeOf(KirkpatrickInterventionReviewSchema).parse(res.body).data).toEqual({ id, actionDate: '2026-10-12', afterAccuracy: 62.5 }) // 15 / 24
+    expect(await stored(id)).toBe('62.50')
 
     // A repeat call recomputes.
     await addSession(t, { userId: p1, subjectId: s0, at: '2026-10-20T10:00:00+08:00', answered: 6, correct: 6 })
     const again = await review(teacherA, id)
-    expect(again.body.data.afterAccuracy).toBe(80) // 16 / 20
-    expect(await stored(id)).toBe('80.00')
+    expect(again.body.data.afterAccuracy).toBe(70) // 21 / 30
+    expect(await stored(id)).toBe('70.00')
 
     const audit = await t.db.query<{ actor_role: string; detail: Record<string, unknown> }>(
       `select actor_role, detail from audit_events where action = 'kirkpatrick.intervention.reviewed' and target_id = $1 order by id`,
