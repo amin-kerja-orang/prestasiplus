@@ -196,6 +196,23 @@ describe('latihan (practice mode)', () => {
   })
 })
 
+describe('a sitting that earns 0 marks still touches the streak (PRD 48:755) and writes no coin or XP', () => {
+  it.each(['latihan', 'exam'] as const)('7. %s with no answers: streak row appears, no ledger row, balance and XP unchanged', async (mode) => {
+    const paper = await paperId(student, '1449/1', 1)
+    await t.db.query('delete from streaks where user_id = $1', [student.userId])
+    const before = await balance(student.userId)
+    const xp0 = await xpOf(student.userId)
+    const s = await start(student, paper.id, mode)
+    const res = await submit(student, s.attemptId, `integ-zero-${mode}`)
+    expect(res.status, JSON.stringify(res.body)).toBe(200)
+    expect((await result(student, s.attemptId)).result.score).toBe(0)
+    expect((await t.db.query<{ current: number }>('select current from streaks where user_id = $1', [student.userId]))[0]?.current).toBeGreaterThanOrEqual(1)
+    expect(await ledgerRows(s.attemptId)).toHaveLength(0)
+    expect(await balance(student.userId)).toBe(before)
+    expect(await xpOf(student.userId)).toBe(xp0)
+  })
+})
+
 describe('Mod Pelajar (admin in student mode)', () => {
   it('6. flags the attempt and aggregate is_test, credits NO reward (AC-20.3) and keeps them out of the shared aggregate reads', async () => {
     const paper = await paperId(admin, '1449/1', 1)

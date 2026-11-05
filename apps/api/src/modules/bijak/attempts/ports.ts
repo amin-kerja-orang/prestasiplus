@@ -84,7 +84,7 @@ export interface BijakRewardInput {
   userId: string
   /** True under Mod Pelajar: the wallet must flag the line as test data. */
   isTest: boolean
-  /** The display values of the result (`score * 2` coins, `score * 10` points). */
+  /** The display values of the result (coins = marks x `coinsPerCorrect()`, points = marks x 10). */
   coins: number
   points: number
   /** When the attempt closed (the streak day); absent for a caller that has no time. */

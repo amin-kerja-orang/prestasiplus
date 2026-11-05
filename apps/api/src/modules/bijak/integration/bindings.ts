@@ -31,11 +31,11 @@ export const wholeCount = (v: number): number => (Number.isFinite(v) && v > 0 ? 
  * wallet):
  * - the streak ("kombo") is touched on the day the attempt closed (idempotent per day), like a practice session;
  * - the syiling are credited with `sourceId = attemptId`, so a repeated call is a replay that writes nothing (BE-11 idempotency);
- * - the XP (`points`, 10 per mark, 2 syiling and 10 XP per mark as V2 `PracticeRecorder`, `docs/discovery/BIJAK-SPM-cloud.md` 4.5) is added to the wallet only when that credit was NEW (`addXp` has no ledger key of its own),
+ * - the XP (`points`, 10 per mark as V2 `PracticeRecorder`, `docs/discovery/BIJAK-SPM-cloud.md` 4.5; the syiling are marks x `coinsPerCorrect()`) is added to the wallet only when that credit was NEW (`addXp` has no ledger key of its own),
  *   so a replay never pays the XP twice.
  *
  * Evidence against AC-R1-10.1 (`docs/requirements/v3-bijak-spm-scope.md`): the V2 notes (`docs/discovery/BIJAK-SPM-cloud.md` 4.5) document the
- * aggregate `practice_sessions` row and the rates (2 syiling and 10 XP per mark), but do NOT document the kombo (streak) step of V2
+ * aggregate `practice_sessions` row and the rates (V2: 2 syiling and 10 XP per mark; V3: marks x `coinsPerCorrect()` and 10 XP), but do NOT document the kombo (streak) step of V2
  * `PracticeRecorder` line by line. The streak touch here is therefore parity with the V3 practice reward port (`WalletPracticeReward`: a
  * completed session touches the streak) and with the M14 rule that kombo is the daily streak; confirm against the V2 code when it is available.
  * AC-R1-10.2 (lead decision): Cuba Lagi is a new attempt and earns again, as V2 does (one award per ATTEMPT, key = attemptId).
@@ -83,7 +83,7 @@ export class WalletBijakReward implements BijakRewardPort {
    * BIJAK-SPM-cloud.md 4.5). `score` is the best-N score of the attempt now (counted questions only, so a choose-N paper never pays
    * both alternatives and a raise that displaces a counted question pays only the net change); `base` is the best-N score of the
    * automatic grading (paid at submit). `reached` is the higher of `base` and the highest level already paid by an earlier self-mark,
-   * read from the ledger (`quiz_spm`, `sourceId = <attemptId>:score:<level>`). Only `score - reached` marks are paid, at 2 syiling
+   * read from the ledger (`quiz_spm`, `sourceId = <attemptId>:score:<level>`). Only `score - reached` marks are paid, at `coinsPerCorrect()` syiling per mark
    * and 10 XP per mark; a lower or equal total pays nothing and takes nothing back. The key per level makes a replay or a repeated
    * self-mark a no-op, and the advisory lock serialises two self-marks of one attempt. Mod Pelajar: nothing (AC-20.3).
    *

@@ -122,17 +122,17 @@ export function lockedParts(mode: string, checkCounts: ReadonlyMap<string, numbe
 export const XP_PER_MARK = 10
 
 /**
- * 46 D-PA-13: the marks a Mod Latihan sitting may be paid for = the awarded marks of the COUNTED questions' parts that "Semak" never
+ * Marks to pay for a closed attempt (0 is valid: streak only), or null when the mode is not rewarded. 46 D-PA-13: the marks a Mod Latihan sitting may be paid for = the awarded marks of the COUNTED questions' parts that "Semak" never
  * revealed (DM-68 `revealed`). Part marks are whole or half marks; a choose-N section pays only its counted questions.
  */
 export function rewardMarks(mode: string, result: BijakAttemptResult, revealed: ReadonlySet<string>): number | null {
   if (mode === 'exam') return result.score
   if (mode !== 'latihan') return null
-  const marks = unrevealedScore(result, revealed)
-  // A Latihan that earns nothing never reaches the reward port (its award also touches the daily streak, which a Latihan never did).
-  return marks > 0 ? marks : null
+  // 0 marks still reaches the reward port: a completed sitting of any mode is a streak event (PRD 48:755); the port credits nothing for 0.
+  return unrevealedScore(result, revealed)
 }
 
+/** Awarded marks of the counted questions' parts that are not in `revealed`. */
 export function unrevealedScore(result: BijakAttemptResult, revealed: ReadonlySet<string>): number {
   return result.questions.filter((q) => q.counted).flatMap((q) => q.parts).filter((p) => !revealed.has(p.partId)).reduce((n, p) => n + p.awarded, 0)
 }
@@ -185,9 +185,9 @@ export function gradeAttempt(composition: readonly SectionSnapshot[], bundles: B
 /**
  * Sections, choose-N ranking and totals from graded questions. Used by the first grading and again when
  * a self-mark changes a part (R1-B12), so a raised mark can change WHICH questions count (V2 recomputeScore
- * -> ExamBestNScorer). Sets `counted` on the questions it is given.
+ * -> ExamBestNScorer). Sets `counted` on the questions it is given. `coinRate` is Syiling per mark (S5-T15 `coinsPerCorrect()`,
+ * resolved by the caller; this function stays pure).
  */
-/** `coinRate`: Syiling per mark (S5-T15 `coinsPerCorrect()`, resolved by the caller; this function stays pure). */
 export function assembleResult(composition: readonly SectionSnapshot[], questions: QuestionResult[], coinRate: number): BijakAttemptResult {
   const byId = new Map(questions.map((q) => [q.questionId, q]))
   const sections: SectionResult[] = []

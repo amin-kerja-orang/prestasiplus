@@ -4,6 +4,7 @@ import type { BijakAttemptResult } from '@pp/contract'
 import { idFromString, idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import type { PartAnswer, SectionSnapshot } from './exam-core.adapter'
+import { XP_PER_MARK } from './marking'
 import type { SelfMarks } from './self-mark'
 
 export type AttemptStatus = 'in_progress' | 'submitted' | 'auto_submitted' | 'abandoned'
@@ -278,8 +279,8 @@ export class AttemptsRepository {
       pendingReview: r.pendingReview,
       sections: graded.sections,
       questions: graded.questions,
-      coins: r.coins ?? score * 2,
-      points: r.points ?? score * 10,
+      coins: r.coins ?? 0, // never invent a pay figure
+      points: r.points ?? score * XP_PER_MARK,
     }
     return { result: base, selfMarks: graded.selfMarks ?? {} }
   }

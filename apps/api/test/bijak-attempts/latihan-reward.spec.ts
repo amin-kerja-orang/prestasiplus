@@ -88,12 +88,14 @@ describe('Mod Latihan reward, rate 1 (no reward_settings row)', () => {
     expect(call.points).toBe(unrevealed * 10)
   })
 
-  it('every question revealed: the reward port is not called at all (no streak touch for an empty Latihan)', async () => {
+  it('every question revealed: the port is still called once, with 0 coins and 0 points (streak event only)', async () => {
     const all = await startAttempt(me, PAPER.matK1, 'latihan')
     const qs = await questions(all)
     for (const q of qs) await check(all, q, [change(q, { choice: correctChoice(q) })])
     expect((await submit(all, allCorrect(qs))).status).toBe(200)
-    expect(t.reward.calls).toHaveLength(0)
+    expect(t.reward.calls).toHaveLength(1)
+    expect(t.reward.calls[0]).toMatchObject({ attemptId: all, coins: 0, points: 0 })
+    t.reward.calls.length = 0
     const none = await startAttempt(me, PAPER.matK1, 'latihan')
     expect((await submit(none, allCorrect(await questions(none)))).status).toBe(200)
     expect(t.reward.calls).toHaveLength(1)
@@ -190,5 +192,18 @@ describe('the Syiling rate comes from coinsPerCorrect()', () => {
     await setRate(null)
     const b = await qsOf('exam')
     expect(b.call.coins).toBe(b.qs.length)
+  })
+})
+
+describe('a stored result with NULL coins and points columns', () => {
+  it('shows 0 coins (no invented pay figure) and points = score x 10', async () => {
+    await setRate(3)
+    const id = await startAttempt(me, PAPER.matK1, 'exam')
+    const qs = await questions(id)
+    expect((await submit(id, allCorrect(qs))).status).toBe(200)
+    await t.db.query('update attempt_results set coins = null, points = null where attempt_id = $1', [id])
+    const r = await result(id)
+    expect(r.coins).toBe(0)
+    expect(r.points).toBe(r.score * 10)
   })
 })
