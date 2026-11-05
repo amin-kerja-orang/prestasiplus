@@ -77,7 +77,6 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S4-T03 | AC-ADM-C05.1 | CI | Pass | 2026-11-05 | team-bb/S-3 | bulk-chapter.spec.ts::sets the Bab in place on the eligible rows, with expectedCount = matched, and writes one counts-only audit entry (no new version, status and live version unchanged); bulk-chapter.spec.ts::is live: a bulk run moves the counts at once |
 | S4-T03 | AC-ADM-C05.2 | CI | Pass | 2026-11-05 | team-bb/S-3 | bulk-chapter.spec.ts::counts a question of another subject or level as refused and leaves it alone (AC-ADM-C05.2) |
 | S4-T03 | AC-ADM-C05.4 | CI | Pass | 2026-11-05 | team-bb/S-3 | bulk-chapter.spec.ts::overwrite=false keeps an existing Bab (AC-ADM-C05.4: 10 selected, 4 with a Bab -> 6 linked, 4 refused); bulk-chapter.spec.ts::overwrite=true replaces an existing Bab (AC-ADM-C05.4: all 10 linked) |
-| S4-T06 | AC-X3-1 | CI | Pass | 2026-11-05 | team-bb/S-3 | offered-levels.spec.ts::returns T1 to T5 in level order with TINGKATAN_<digit of code> grade keys; offered-levels-serving.spec.ts::starts at a T1 level and at a T5 level; overview/offered-levels.spec.ts::GET /api/practice/subjects/MATH lists T1 to T5; T1 and T5 carry their counts; StudentPages.test.ts::a Tingkatan 1 pupil gets the same page as Tingkatan 5: own form, five chips, no "akan datang" (D101) |
 
 ## Sprint 3
 
