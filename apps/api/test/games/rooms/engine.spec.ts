@@ -18,7 +18,11 @@ import {
   clocksOf,
   cmpId,
   computeSettlement,
+  handOverSeat,
+  markSeen,
   questionView,
+  seatOf,
+  youAnswered,
   resolveClocks,
   startGame,
   stateView,
@@ -722,7 +726,12 @@ describe('Kuiz Relay (10 rounds, two teams)', () => {
       p: 1,
       nowMs: T0,
     })
-    while (!o.finished) o = step(r, o, answerRight(o.state, { seconds: 4 }), 1)
+    // 48 GAME-06: the seconds are the SERVER's (4 s after the turn began), not the `seconds` the client sends.
+    let now = T0
+    while (!o.finished) {
+      now += 4_000
+      o = step(r, o, answerRight(o.state, { seconds: 0 }), 1, now)
+    }
     expect(o.state.round).toBeGreaterThan(KR_ROUNDS)
     const mvp = o.players.find((x) => x.userId === o.state.mvpId)
     expect(mvp).toBeDefined()
@@ -762,7 +771,7 @@ describe('refusals and purity', () => {
   })
 })
 
-describe('settlement (AC10)', () => {
+describe('settlement (AC10, FR-GM-R.6)', () => {
   const finishedState = (over: Partial<RoomState>): RoomState => ({
     ...start('benteng-ilmu', 2, 0).state,
     awaiting: null,
@@ -778,58 +787,53 @@ describe('settlement (AC10)', () => {
       isBot: i > 0,
       ...o,
     }))
+  const human = (userId: string, over: Partial<EnginePlayer> = {}): Partial<EnginePlayer> => ({ userId, isBot: false, ...over })
 
-  it('Papan Bijak: wins/jumlah/betul/skor for the acting human only (not a joined human); coins are left to the tier rates', () => {
-    const st = finishedState({ winnerId: '10', total: 50 })
+  it('Papan Bijak: wins/jumlah/betul/skor and one report for EVERY human; a robot gets neither', () => {
+    const st = finishedState({ winnerId: '10', total: 50, startHumans: 2 })
     const s = computeSettlement({
       code: 'AB12CD',
       game: 'papan-bijak',
       state: st,
       players: ps([
         { correct: 4, points: 90 },
-        { correct: 2, points: 20 },
-        { userId: '12', isBot: false, correct: 1, points: 10 },
+        { userId: 'robot-1', correct: 2, points: 20 },
+        human('12', { correct: 1, points: 10 }),
       ]),
     })
-    expect(s.standings).toEqual([{ userId: '10', wins: 1, jumlah: 1, betul: 4, skor: 90 }])
-    expect(s.report).toMatchObject({
-      userId: '10',
-      game: 'papan_bijak',
-      event: 'win',
-      won: true,
-      correct: 4,
-      total: 50,
-      detail: { roomCode: 'AB12CD' },
-    })
-    expect(s.report).toMatchObject({ outcome: 'win', robotsOnly: false })
-    const lost = computeSettlement({
-      code: 'AB12CD',
-      game: 'papan-bijak',
-      state: finishedState({ winnerId: '11' }),
-      players: ps([{ correct: 1 }, {}, { userId: '12', isBot: false }]),
-    })
-    expect(lost.report).toMatchObject({ event: 'correct', won: false })
-    expect(lost.standings).toEqual([{ userId: '10', wins: 0, jumlah: 1, betul: 1, skor: 0 }]) // the bot winner has no standing
-    // FR-PA-29, 48 GAME-R: against robots only, nobody's standing moves
-    const robots = computeSettlement({ code: 'AB12CD', game: 'papan-bijak', state: finishedState({ winnerId: '10' }), players: ps([{ correct: 1 }, { userId: 'robot-1' }]) })
-    expect(robots.standings).toEqual([])
+    expect(s.standings).toEqual([
+      { userId: '10', wins: 1, jumlah: 1, betul: 4, skor: 90 },
+      { userId: '12', wins: 0, jumlah: 1, betul: 1, skor: 10 },
+    ])
+    expect(s.reports.map((r) => r.userId)).toEqual(['10', '12'])
+    expect(s.reports[0]).toMatchObject({ game: 'papan_bijak', event: 'win', won: true, correct: 4, total: 50, outcome: 'win', robotsOnly: false, detail: { roomCode: 'AB12CD' } })
+    expect(s.reports[1]).toMatchObject({ event: 'correct', won: false, outcome: 'play', robotsOnly: false })
   })
 
-  it('a joined human the engine simulated never gets a standing, even as the winner or the MVP', () => {
-    const joined = { userId: '11', isBot: false }
-    for (const game of ['benteng-ilmu', 'perang-fakta', 'perlumbaan-matematik', 'teka-silang-kata'] as const) {
-      const s = computeSettlement({ code: 'X', game, state: finishedState({ winnerId: '11' }), players: ps([{}, joined]) })
-      expect(s.standings).toEqual([])
-      expect(s.report).toMatchObject({ userId: '10', won: false })
+  it('a robot-only game and a single-human game change no standing (FR-PA-29, AC-GM-R.5), but the human still gets a report', () => {
+    for (const game of ['papan-bijak', 'kuiz-relay', 'benteng-ilmu'] as const) {
+      const one = computeSettlement({ code: 'X', game, state: finishedState({ winnerId: '10', mvpId: '10', startHumans: 1 }), players: ps([{ correct: 1 }, { userId: 'robot-1' }]) })
+      expect(one.standings).toEqual([])
+      expect(one.reports).toHaveLength(1)
+      expect(one.reports[0]).toMatchObject({ robotsOnly: true })
     }
-    const relay = computeSettlement({
-      code: 'X',
-      game: 'kuiz-relay',
-      state: finishedState({ mvpId: '11' }),
-      players: ps([{ team: 0 }, { ...joined, team: 0 }]),
-    })
-    expect(relay.standings).toEqual([])
-    expect(relay.report).toMatchObject({ userId: '10', won: true }) // same team as the MVP: the host's team won
+    const none = computeSettlement({ code: 'X', game: 'papan-bijak', state: finishedState({ winnerId: 'robot-1', startHumans: 0 }), players: ps([{ isBot: true }, { userId: 'robot-1' }]) })
+    expect(none).toEqual({ standings: [], reports: [] })
+  })
+
+  it('two humans started and one left: the last human still has the standing and the report (the leaver was settled at the leave)', () => {
+    const s = computeSettlement({ code: 'X', game: 'papan-bijak', state: finishedState({ winnerId: '10', startHumans: 2 }), players: ps([{ correct: 3 }, { userId: 'robot-1' }]) })
+    expect(s.standings).toEqual([{ userId: '10', wins: 1, jumlah: 1, betul: 3, skor: 0 }])
+    expect(s.reports).toHaveLength(1)
+  })
+
+  it('OWN PART (GAME-03/04/05/07): a joined human the engine still simulates gets no standing and no report, even as the winner', () => {
+    for (const game of ['benteng-ilmu', 'perang-fakta', 'perlumbaan-matematik', 'teka-silang-kata'] as const) {
+      const s = computeSettlement({ code: 'X', game, state: finishedState({ winnerId: '11', startHumans: 2 }), players: ps([{}, human('11')]) })
+      expect(s.standings).toEqual([{ userId: '10', wins: 0, jumlah: 1, betul: 0, skor: 0 }]) // jumlah + 1 (R1 Q2), menang 0
+      expect(s.reports).toHaveLength(1)
+      expect(s.reports[0]).toMatchObject({ userId: '10', won: false })
+    }
   })
 
   it('the report says the outcome and whether only robots played; the amounts are the reward formula, no constants here', () => {
@@ -837,51 +841,30 @@ describe('settlement (AC10)', () => {
       game: Parameters<typeof computeSettlement>[0]['game'],
       st: Partial<RoomState>,
       pl = ps([{}, {}]),
-    ) => computeSettlement({ code: 'X', game, state: finishedState(st), players: pl }).report
+    ) => computeSettlement({ code: 'X', game, state: finishedState(st), players: pl }).reports[0]
     expect(report('benteng-ilmu', { winnerId: '10' })).toMatchObject({ event: 'win', outcome: 'win', robotsOnly: true })
     expect(report('benteng-ilmu', { winnerId: '11' })).toMatchObject({ event: 'play', outcome: 'play', robotsOnly: true })
-    expect(report('perang-fakta', { winnerId: '10' })).toMatchObject({
-      event: 'win',
-      game: 'perang_fakta',
-    })
+    expect(report('perang-fakta', { winnerId: '10' })).toMatchObject({ event: 'win', game: 'perang_fakta' })
     expect(report('perang-fakta', { winnerId: null })).toMatchObject({ event: 'finish', outcome: 'draw' })
     expect(
-      report(
-        'perlumbaan-matematik',
-        { winnerId: '11', meter: { '10': 3, '11': 20, '12': 5 } },
-        ps([{}, {}, { userId: '12' }]),
-      ),
+      report('perlumbaan-matematik', { winnerId: '11', meter: { '10': 3, '11': 20, '12': 5 } }, ps([{}, {}, { userId: '12' }])),
     ).toMatchObject({ event: 'play', game: 'mathrace', detail: { rank: 3 } })
     expect(report('teka-silang-kata', { winnerId: '10' })).toMatchObject({ outcome: 'win' })
     expect(report('kuiz-relay', { winnerId: null, mvpId: null })).toMatchObject({ outcome: 'play' })
-    expect(report('benteng-ilmu', { winnerId: '10' }, ps([{}, { userId: '12', isBot: false }]))).toMatchObject({ robotsOnly: false })
+    expect(report('benteng-ilmu', { winnerId: '10', startHumans: 2 }, ps([{}, human('12')]))).toMatchObject({ robotsOnly: false })
   })
 
-  it('Kuiz Relay: the acting MVP gets the win, the MVP team counts as winners; bots and joined humans get nothing', () => {
-    const players4 = ps([{ team: 1 }, { team: 2 }, { team: 1, isBot: false }, { team: 2 }])
-    const s = computeSettlement({
-      code: 'X',
-      game: 'kuiz-relay',
-      state: finishedState({ mvpId: '12' }),
-      players: players4,
-    })
-    expect(s.standings).toEqual([]) // the MVP is a joined human the engine simulated
-    expect(s.report).toMatchObject({ userId: '10', won: true, event: 'win', outcome: 'win' })
-    const hostMvp = computeSettlement({
-      code: 'X',
-      game: 'kuiz-relay',
-      state: finishedState({ mvpId: '10' }),
-      players: players4,
-    })
-    expect(hostMvp.standings).toEqual([{ userId: '10', wins: 1, jumlah: 0, betul: 0, skor: 0 }])
-    const miss = computeSettlement({
-      code: 'X',
-      game: 'kuiz-relay',
-      state: finishedState({ mvpId: '13' }),
-      players: players4,
-    })
-    expect(miss.standings).toEqual([]) // the MVP is a bot
-    expect(miss.report).toMatchObject({ won: false })
+  it('Kuiz Relay: the MVP gets the win, the MVP team counts as winners; every human gets a report; bots get nothing', () => {
+    const four = ps([{ team: 1, isBot: false }, { team: 2 }, { team: 1, isBot: false }, { team: 2 }])
+    const humanMvp = computeSettlement({ code: 'X', game: 'kuiz-relay', state: finishedState({ mvpId: '12', startHumans: 2 }), players: four })
+    expect(humanMvp.standings).toEqual([
+      { userId: '10', wins: 0, jumlah: 1, betul: 0, skor: 0 },
+      { userId: '12', wins: 1, jumlah: 1, betul: 0, skor: 0 },
+    ])
+    expect(humanMvp.reports.map((r) => [r.userId, r.won, r.outcome])).toEqual([['10', true, 'win'], ['12', true, 'win']])
+    const botMvp = computeSettlement({ code: 'X', game: 'kuiz-relay', state: finishedState({ mvpId: '13', startHumans: 2 }), players: four })
+    expect(botMvp.standings.map((d) => d.wins)).toEqual([0, 0]) // the MVP is a robot: nobody's win
+    expect(botMvp.reports.every((r) => !r.won)).toBe(true)
   })
 })
 
@@ -912,7 +895,7 @@ describe('FR-GM-00.7: the clock of each room game', () => {
     expect(due.changed).toBe(true)
     expect(due.state.round).toBe(2)
     expect(due.answered).toEqual([expect.objectContaining({ position: 1, correct: false, atMs: ms })])
-    expect(due.state.answerMs ?? []).toEqual([]) // a timeout is no answer for the pace guard
+    expect(due.state.seats?.['10']?.answerMs ?? []).toEqual([]) // a timeout is no answer for the pace guard
     expect(due.state.roundStartedMs).toBe(ms)
   })
 
@@ -948,5 +931,149 @@ describe('FR-GM-00.7: the clock of each room game', () => {
     expect(cmpId('10', 'robot-1')).toBeLessThan(0)
     expect(cmpId('robot-2', 'robot-1')).toBeGreaterThan(0)
     expect(cmpId('9', '10')).toBeLessThan(0)
+  })
+})
+
+describe('multi-human seats: Papan Bijak (GAME-02) and Kuiz Relay (GAME-06)', () => {
+  const A = '10'
+  const B = '11'
+  const seatsOf = (game: EngineRoom['game']): EnginePlayer[] =>
+    game === 'kuiz-relay'
+      ? [
+          { userId: A, team: null, points: 0, correct: 0, isBot: false },
+          { userId: B, team: null, points: 0, correct: 0, isBot: false },
+          { userId: 'robot-1', team: null, points: 0, correct: 0, isBot: true },
+          { userId: 'robot-2', team: null, points: 0, correct: 0, isBot: true },
+        ]
+      : [
+          { userId: A, team: null, points: 0, correct: 0, isBot: false },
+          { userId: B, team: null, points: 0, correct: 0, isBot: false },
+          { userId: 'robot-1', team: null, points: 0, correct: 0, isBot: true },
+        ]
+  const begin = (game: EngineRoom['game'], p = 0.5) =>
+    startGame({ room: room(game), players: seatsOf(game), humanId: A, seed: 'seed-m', pool: pool(POOL_SIZE[game]), quizTiles: 35, p, nowMs: T0 })
+
+  it('both humans are awaited on their own turn; the other seat is refused by the route (humanId names the seat)', () => {
+    let o = begin('papan-bijak')
+    expect(o.state).toMatchObject({ humanId: A, awaiting: 'roll', startHumans: 2 })
+    const seen = new Set<string>([o.state.humanId])
+    for (let i = 0; i < 400 && !o.finished; i++) {
+      o = step(room('papan-bijak'), o, o.state.awaiting === 'roll' ? { type: 'roll' } : answerRight(o.state), 0.5, T0 + i * 1000)
+      seen.add(o.state.humanId)
+    }
+    expect([...seen].sort()).toEqual([A, B]) // never the robot
+    expect(o.finished).toBe(true)
+  })
+
+  it('Papan Bijak plays to the end with two humans and a robot; each human has their own answer count and pace', () => {
+    let o = begin('papan-bijak', 1)
+    for (let i = 0; i < 800 && !o.finished; i++) {
+      o = step(room('papan-bijak'), o, o.state.awaiting === 'roll' ? { type: 'roll' } : answerRight(o.state), 1, T0 + i * 2000)
+    }
+    expect(o.finished).toBe(true)
+    const a = o.state.seats?.[A]
+    const b = o.state.seats?.[B]
+    expect(a?.answerCount).toBe(o.players.find((x) => x.userId === A)?.correct)
+    expect(b?.answerCount).toBe(o.players.find((x) => x.userId === B)?.correct)
+    expect((a?.answerMs.length ?? 0) + (b?.answerMs.length ?? 0)).toBeGreaterThan(0)
+    expect(o.state.seats?.['robot-1']).toBeUndefined() // a robot keeps no seat state and writes no answer rows
+  })
+
+  it('Papan Bijak: a timeout belongs to the seat whose turn ran out and counts one miss for that seat only', () => {
+    const o = begin('papan-bijak')
+    const t = applyTimeout({ room: room('papan-bijak'), players: o.players, state: o.state, p: 0, roundStartMs: T0 + 30_000 })
+    expect(t.state.seats?.[A]?.missed).toBe(1)
+    expect(t.state.seats?.[B]?.missed ?? 0).toBe(0)
+    expect(t.state.humanId === B || t.state.humanId === A).toBe(true)
+  })
+
+  it('Kuiz Relay: humans answer on their rounds only (seat of round r), robots on theirs, to the end', () => {
+    let o = begin('kuiz-relay', 1)
+    const who: string[] = []
+    let now = T0
+    while (!o.finished) {
+      who.push(`${String(o.state.round)}:${o.state.humanId}`)
+      now += 3_000
+      o = step(room('kuiz-relay'), o, answerRight(o.state), 1, now)
+    }
+    // seats A, B, robot-1, robot-2 repeat over 10 rounds: A on 1, 5, 9; B on 2, 6, 10
+    expect(who).toEqual(['1:10', '2:11', '5:10', '6:11', '9:10', '10:11'])
+    expect(o.state.seats?.[A]?.answerCount).toBe(3)
+    expect(o.state.seats?.[B]?.answerCount).toBe(3)
+    expect(o.state.mvpId).not.toBeNull()
+  })
+
+  it('Kuiz Relay: the seconds are the server clock (a client claiming 0 s after 9 s gets 10 + 1)', () => {
+    const o = begin('kuiz-relay', 1)
+    const r = step(room('kuiz-relay'), o, answerRight(o.state, { seconds: 0 }), 1, T0 + 9_900)
+    expect(r.players.find((x) => x.userId === A)?.points).toBe(11) // floor(9.9) = 9 s: 10 + max(0, 10 - 9)
+  })
+
+  it('markSeen resets absence and writes at most once per gap; youAnswered is true only for the question the seat answered', () => {
+    const o = begin('papan-bijak')
+    const st = structuredClone(o.state)
+    expect(seatOf(st, B).seenMs).toBe(T0) // everybody is present at the start
+    expect(markSeen(st, B, T0 + 6_000, 5_000)).toBe(true) // past the gap: writes
+    expect(markSeen(st, B, T0 + 7_000, 5_000)).toBe(false) // inside the gap
+    seatOf(st, B).missed = 2
+    expect(markSeen(st, B, T0 + 7_500, 5_000)).toBe(true) // a miss streak ends at once
+    expect(seatOf(st, B).missed).toBe(0)
+    const q = { ...st, awaiting: 'answer' as const, pendingQ: '1000' }
+    expect(youAnswered(q, A)).toBe(false)
+    seatOf(q, A).answeredAt = `${String(q.round)}:${String(q.turn)}:1000`
+    expect(youAnswered(q, A)).toBe(true)
+    expect(youAnswered({ ...q, turn: q.turn + 1 }, A)).toBe(false)
+  })
+})
+
+describe('a human leaves a game in play: a robot takes the seat (ruling 50)', () => {
+  const room_ = room('papan-bijak')
+  const seats3 = (): EnginePlayer[] => [
+    { userId: '10', team: null, points: 0, correct: 0, isBot: false },
+    { userId: '11', team: null, points: 0, correct: 0, isBot: false },
+    { userId: '12', team: null, points: 0, correct: 0, isBot: false },
+  ]
+  const begin = () => startGame({ room: room_, players: seats3(), humanId: '10', seed: 'seed-l', pool: pool(40), quizTiles: 35, p: 0.5, nowMs: T0 })
+
+  it('the leaver was on turn: the robot plays that turn at once and the room waits for the next human', () => {
+    const o = begin()
+    expect(o.state.humanId).toBe('10')
+    const after = seats3().map((x) => (x.userId === '10' ? { ...x, userId: 'robot-1', isBot: true } : x))
+    const h = handOverSeat({ room: room_, players: after, state: o.state, remap: { '10': 'robot-1' }, leaver: '10', p: 0.5, nowMs: T0 + 5_000 })
+    expect(h.state.humanId).toBe('11')
+    expect(h.state.positions['robot-1']).toBeDefined()
+    expect(h.state.positions['10']).toBeUndefined()
+    expect(h.state.seats?.['10']).toBeUndefined()
+    expect(h.state.roundStartedMs).toBe(T0 + 5_000)
+  })
+
+  it('the leaver was not on turn: only the keys change and the turn stays', () => {
+    const o = begin()
+    const after = seats3().map((x) => (x.userId === '12' ? { ...x, userId: 'robot-1', isBot: true } : x))
+    const h = handOverSeat({ room: room_, players: after, state: o.state, remap: { '12': 'robot-1' }, leaver: '12', p: 0.5, nowMs: T0 + 5_000 })
+    expect(h.state.humanId).toBe('10')
+    expect(h.state.awaiting).toBe('roll')
+    expect(h.state.positions).toEqual({ '10': 1, '11': 1, 'robot-1': 1 })
+    expect(h.finished).toBe(false)
+  })
+
+  it('the robots are renumbered when a middle seat becomes a robot: every key follows', () => {
+    const o = begin()
+    const st = { ...o.state, positions: { '10': 4, '11': 5, '12': 6, 'robot-1': 7 } }
+    const after: EnginePlayer[] = [
+      { userId: 'robot-1', team: null, points: 0, correct: 0, isBot: true },
+      { userId: '11', team: null, points: 0, correct: 0, isBot: false },
+      { userId: '12', team: null, points: 0, correct: 0, isBot: false },
+      { userId: 'robot-2', team: null, points: 0, correct: 0, isBot: true },
+    ]
+    const h = handOverSeat({ room: room_, players: after, state: { ...st, humanId: '11' }, remap: { '10': 'robot-1', 'robot-1': 'robot-2' }, leaver: '10', p: 0.5, nowMs: T0 })
+    expect(h.state.positions).toEqual({ 'robot-1': 4, '11': 5, '12': 6, 'robot-2': 7 })
+  })
+
+  it('OWN PART: the acting seat passes to the next human', () => {
+    const own = startGame({ room: room('benteng-ilmu'), players: [seats3()[0] as EnginePlayer, seats3()[1] as EnginePlayer], humanId: '10', seed: 's', pool: pool(30), quizTiles: 0, p: 0, nowMs: T0 })
+    const after = [{ userId: 'robot-1', team: null, points: 0, correct: 0, isBot: true }, seats3()[1] as EnginePlayer]
+    const h = handOverSeat({ room: room('benteng-ilmu'), players: after, state: own.state, remap: { '10': 'robot-1' }, leaver: '10', p: 0, nowMs: T0 })
+    expect(h.state.humanId).toBe('11')
   })
 })

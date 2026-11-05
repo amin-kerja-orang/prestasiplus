@@ -1,10 +1,13 @@
 /**
- * The room game engine (SRS M16 BR-M16-19/20, PROVISIONAL): a PURE port of the mock `room-engine.ts`. Every
- * other player is a SIMULATION (D53(a)): only the acting player (`humanId`, the host) is awaited; bots answer
- * correctly with probability `p` (the platform answer accuracy). Dice, boards and bot answers come from named
- * streams `m16:room:<code>:...`, so the same room and the same actions give the same game. The clock is injected
- * as `nowMs`; the engine never reads the system time, never touches the database and never throws anything but
- * `EngineRefusal`.
+ * The room game engine (SRS M16 BR-M16-19/20, PROVISIONAL): a PURE port of the mock `room-engine.ts`, keyed by SEAT.
+ * `state.humanId` is the seat the room waits for now. Papan Bijak (GAME-02) and Kuiz Relay (GAME-06) are multi-human:
+ * every seat that is not a robot is awaited on its own turn, and robots act through the simulated path for their
+ * seats only. The simultaneous games are "own part" (Perang Fakta GAME-03, Benteng Ilmu GAME-04, Perlumbaan Matematik
+ * GAME-05, Teka Silang Kata GAME-07): they still wait for one acting human (the host) and simulate the other seats,
+ * until their own cards build the simultaneous rounds. Bots answer correctly with probability `p` (the platform answer
+ * accuracy). Dice, boards and bot answers come from named streams `m16:room:<code>:...`, so the same room and the same
+ * actions give the same game. The clock is injected as `nowMs`; the engine never reads the system time, never touches
+ * the database and never throws anything but `EngineRefusal`.
  */
 import { prngStream, type Prng } from '../../../../db/prng'
 import {
@@ -27,6 +30,7 @@ import {
   type PoolQuestion,
   type RoomPlayAction,
   type RoomState,
+  type SeatState,
   type StreamFactory,
 } from './types'
 
@@ -53,13 +57,46 @@ const nextQ = (c: Ctx): string => {
   return id
 }
 const clampSeconds = (v: number): number => Math.min(15, Math.max(0, Math.floor(v)))
+/** Whole seconds since the current turn began, by the injected clock. */
+const ctxSeconds = (c: Ctx): number => (c.nowMs - (c.s.roundStartedMs ?? c.nowMs)) / 1000
 
-/** Notes one answer of the acting human for the answer store; `timedOut` is a wrong answer that is no answer for the pace guard. */
-function logAnswer(c: Ctx, questionId: string, correct: boolean, timedOut: boolean): void {
-  const position = (c.s.answerCount ?? 0) + 1
-  c.s.answerCount = position
-  if (!timedOut) (c.s.answerMs ??= []).push(c.nowMs)
-  c.answered.push({ questionId, position, correct, atMs: c.nowMs })
+const newSeat = (): SeatState => ({ answerCount: 0, answerMs: [], missed: 0, seenMs: null, answeredAt: null })
+
+/** The state of a human seat (created on first use). */
+export function seatOf(s: RoomState, id: string): SeatState {
+  s.seats ??= {}
+  return (s.seats[id] ??= newSeat())
+}
+
+/** The turn marker of the question on the table (`youAnswered` compares it with the seat's last answer). */
+const markerOf = (s: RoomState, qId: string | null): string => `${String(s.round)}:${String(s.turn)}:${qId ?? ''}`
+
+/** Whether `id` has already answered the question the room awaits now (the waiting state of a simultaneous round). */
+export function youAnswered(s: RoomState, id: string): boolean {
+  return s.awaiting === 'answer' && s.pendingQ !== null && s.seats?.[id]?.answeredAt === markerOf(s, s.pendingQ)
+}
+
+/** The player is polling or acting: absence starts again (3 timeouts "with no poll in between"). Returns whether the state changed. */
+export function markSeen(s: RoomState, id: string, nowMs: number, minGapMs: number): boolean {
+  const seat = seatOf(s, id)
+  if (seat.missed === 0 && seat.seenMs !== null && nowMs - seat.seenMs < minGapMs) return false
+  seat.missed = 0
+  seat.seenMs = nowMs
+  return true
+}
+
+/** Notes one answer of a human seat for the answer store; `timedOut` is a wrong answer that is no answer for the pace guard. A robot's is never one. */
+function logAnswer(c: Ctx, pl: EnginePlayer, questionId: string, correct: boolean, timedOut: boolean): void {
+  if (pl.isBot) return
+  const seat = seatOf(c.s, pl.userId)
+  const position = seat.answerCount + 1
+  seat.answerCount = position
+  seat.answeredAt = markerOf(c.s, questionId)
+  if (!timedOut) {
+    seat.answerMs.push(c.nowMs)
+    seat.missed = 0
+  }
+  c.answered.push({ userId: pl.userId, questionId, position, correct, atMs: c.nowMs })
 }
 
 /** An answer with no pick and no value: the client's explicit "time ran out", or the server's. */
@@ -74,6 +111,8 @@ export function emptyState(humanId: string, seed: string): RoomState {
     cursor: 0,
     qs: {},
     humanId,
+    startHumans: 0,
+    seats: {},
     awaiting: null,
     pendingQ: null,
     board: [],
@@ -125,6 +164,8 @@ export function startGame(input: StartInput): EngineOut {
     nowMs: input.nowMs,
     answered: [],
   }
+  c.s.startHumans = c.players.filter((x) => !x.isBot).length
+  for (const pl of c.players) if (!pl.isBot) seatOf(c.s, pl.userId).seenMs = input.nowMs
   c.s.qIds = pool.map((q) => q.id)
   for (const q of pool) {
     c.s.qs[q.id] = { text: q.text, options: q.options, keyIndex: q.keyIndex, keyText: q.keyText }
@@ -292,6 +333,14 @@ export interface TimeoutInput {
  * Silang Kata game ends with the words found so far; a Papan Bijak roll rolls itself; any other question is a wrong answer.
  */
 export function applyTimeout(input: TimeoutInput): EngineOut {
+  const res = timeoutStep(input)
+  // The seat the clock ran out on missed its turn: 3 in a row with no poll in between remove it (FR-GM-R.4).
+  const actor = input.players.find((x) => x.userId === input.state.humanId)
+  if (actor && !actor.isBot) seatOf(res.state, actor.userId).missed += 1
+  return res
+}
+
+function timeoutStep(input: TimeoutInput): EngineOut {
   const { room } = input
   const c: Ctx = {
     room,
@@ -315,7 +364,7 @@ export function applyTimeout(input: TimeoutInput): EngineOut {
   }
   if (room.game === 'teka-silang-kata') {
     // AC-GM-07.3: the words not attempted at 300 s are wrong and written as timeouts.
-    for (const word of c.s.words.slice(c.s.round - 1)) logAnswer(c, word.qId, false, true)
+    for (const word of c.s.words.slice(c.s.round - 1)) logAnswer(c, human(c), word.qId, false, true)
     c.s.winnerId = topWinner(c, (x) => x.points)
     return stamp(input.state, finish(c), input.roundStartMs)
   }
@@ -419,7 +468,9 @@ function pbRun(c: Ctx): EngineOut {
     if (c.s.winnerId !== null) return pbSettle(c)
     if (c.s.turn >= PB_MAX_ROUNDS * c.players.length) return pbSafety(c)
     const pl = c.players[c.s.turn % c.players.length] as EnginePlayer
-    if (pl.userId === c.s.humanId) {
+    if (!pl.isBot) {
+      // A human seat: the room waits for this seat's roll (30 s) and nobody else may act.
+      c.s.humanId = pl.userId
       c.s.awaiting = 'roll'
       c.s.pendingQ = null
       return out(c)
@@ -452,11 +503,12 @@ function pbRoll(c: Ctx): EngineOut {
 }
 
 function pbAnswer(c: Ctx, a: Answer): EngineOut {
-  const pl = human(c)
+  const me = human(c)
+
   const right = mcqRight(c, c.s.pendingQ as string, a.optionId)
-  logAnswer(c, c.s.pendingQ as string, right, noPick(a))
-  if (right) pl.correct += 1
-  else c.s.positions[pl.userId] = c.s.meter[pl.userId] ?? 1
+  logAnswer(c, me, c.s.pendingQ as string, right, noPick(a))
+  if (right) me.correct += 1
+  else c.s.positions[me.userId] = c.s.meter[me.userId] ?? 1
   c.s.pendingQ = null
   c.s.awaiting = null
   c.s.turn += 1
@@ -481,7 +533,7 @@ function pfAnswer(c: Ctx, a: Answer): EngineOut {
 
 function pfAdvance(c: Ctx, humanRight: boolean, timedOut: boolean): EngineOut {
   const me = human(c)
-  logAnswer(c, c.s.pendingQ as string, humanRight, timedOut)
+  logAnswer(c, me, c.s.pendingQ as string, humanRight, timedOut)
   if (humanRight) {
     me.correct += 1
     me.points += 1
@@ -508,7 +560,7 @@ function bentengAnswer(c: Ctx, a: Answer): EngineOut {
   const foe = others(c)[0] as EnginePlayer
   const hp = (pl: EnginePlayer): number => c.s.meter[pl.userId] ?? BENTENG_HP
   const right = mcqRight(c, c.s.pendingQ as string, a.optionId)
-  logAnswer(c, c.s.pendingQ as string, right, noPick(a))
+  logAnswer(c, me, c.s.pendingQ as string, right, noPick(a))
   if (right) {
     me.correct += 1
     me.points += 10
@@ -547,7 +599,7 @@ function bentengAnswer(c: Ctx, a: Answer): EngineOut {
 function mathraceAnswer(c: Ctx, a: Answer): EngineOut {
   const me = human(c)
   const right = mcqRight(c, c.s.pendingQ as string, a.optionId)
-  logAnswer(c, c.s.pendingQ as string, right, noPick(a))
+  logAnswer(c, me, c.s.pendingQ as string, right, noPick(a))
   if (right) {
     me.correct += 1
     c.s.meter[me.userId] = (c.s.meter[me.userId] ?? 0) + 1
@@ -591,7 +643,9 @@ function relayRun(c: Ctx): EngineOut {
     if (c.s.round > c.s.total) return relayEnd(c)
     const pl = c.players[(c.s.round - 1) % c.players.length] as EnginePlayer
     const qId = c.s.qIds[(c.s.round - 1) % c.s.qIds.length] as string
-    if (pl.userId === c.s.humanId) {
+    if (!pl.isBot) {
+      // A human seat: the room waits for this seat's answer (15 s).
+      c.s.humanId = pl.userId
       c.s.pendingQ = qId
       c.s.awaiting = 'answer'
       return out(c)
@@ -612,9 +666,10 @@ function relayRun(c: Ctx): EngineOut {
 function relayAnswer(c: Ctx, a: Answer): EngineOut {
   const me = human(c)
   const right = mcqRight(c, c.s.pendingQ as string, a.optionId)
-  logAnswer(c, c.s.pendingQ as string, right, noPick(a))
+  logAnswer(c, me, c.s.pendingQ as string, right, noPick(a))
   if (right) {
-    const gain = relayScore(clampSeconds(a.seconds))
+    // 48 GAME-06: whole seconds used by the SERVER clock since the turn began; the client's `seconds` is not trusted.
+    const gain = relayScore(clampSeconds(ctxSeconds(c)))
     me.correct += 1
     me.points += gain
     c.s.teamScores[String(me.team)] = (c.s.teamScores[String(me.team)] ?? 0) + gain
@@ -642,7 +697,7 @@ function crosswordAnswer(c: Ctx, a: Answer): EngineOut {
   const me = human(c)
   const word = c.s.words[c.s.round - 1] as { answer: string }
   const right = typeof a.value === 'string' && norm(a.value) === norm(word.answer)
-  logAnswer(c, c.s.pendingQ as string, right, noPick(a))
+  logAnswer(c, me, c.s.pendingQ as string, right, noPick(a))
   if (right) {
     me.correct += 1
     me.points += 1
@@ -662,4 +717,76 @@ function crosswordAnswer(c: Ctx, a: Answer): EngineOut {
   }
   c.s.pendingQ = (c.s.words[c.s.round - 1] as { qId: string }).qId
   return out(c)
+}
+
+// --- a seat changes hands -----------------------------------------------------------------------------------------------
+
+export interface HandOverInput {
+  room: EngineRoom
+  /** The seats after the change: the leaver's seat is now a robot. */
+  players: EnginePlayer[]
+  state: RoomState
+  /** Old seat key to new seat key, for every seat whose key changed (the leaver's, and the robots renumbered). */
+  remap: Record<string, string>
+  /** The old seat key of the human who left. */
+  leaver: string
+  p: number
+  nowMs: number
+  streams?: StreamFactory
+}
+
+const mapKeys = <T>(rec: Record<string, T>, m: (k: string) => string): Record<string, T> =>
+  Object.fromEntries(Object.entries(rec).map(([k, v]) => [m(k), v]))
+
+/**
+ * A human left a game in play and a robot took the seat (ruling 50, while 2 or more humans remain). The state is re-keyed
+ * to the new seat keys; when the room was waiting for the leaver, the robot plays that turn at once (Papan Bijak,
+ * Kuiz Relay) or the acting seat passes to the next human (the own-part games, which wait for one human).
+ */
+export function handOverSeat(input: HandOverInput): EngineOut {
+  const m = (k: string): string => input.remap[k] ?? k
+  const c: Ctx = {
+    room: input.room,
+    players: input.players.map((x) => ({ ...x })),
+    s: structuredClone(input.state),
+    streams: input.streams ?? defaultStreams,
+    p: input.p,
+    nowMs: input.nowMs,
+    answered: [],
+  }
+  const s = c.s
+  s.positions = mapKeys(s.positions, m)
+  s.meter = mapKeys(s.meter, m)
+  if (s.seats) s.seats = Object.fromEntries(Object.entries(s.seats).filter(([k]) => k !== input.leaver))
+  s.humanId = m(s.humanId)
+  if (s.winnerId !== null) s.winnerId = m(s.winnerId)
+  if (s.mvpId !== null) s.mvpId = m(s.mvpId)
+  if (input.state.humanId !== input.leaver) return { state: s, players: c.players, finished: false, answered: [] }
+  const game = input.room.game
+  if (game !== 'papan-bijak' && game !== 'kuiz-relay') {
+    // Own part (GAME-03/04/05/07): the one acting seat passes to the next human.
+    const next = c.players.find((x) => !x.isBot)
+    if (next) s.humanId = next.userId
+    return { state: s, players: c.players, finished: false, answered: [] }
+  }
+  let res: EngineOut
+  if (game === 'kuiz-relay') {
+    s.awaiting = null
+    s.pendingQ = null
+    res = relayRun(c)
+  } else if (s.awaiting === 'answer') {
+    // The leaver stood on a quiz tile: the robot answers it with the platform accuracy.
+    const pl = human(c)
+    if (draw(c).next() < c.p) pl.correct += 1
+    else s.positions[pl.userId] = s.meter[pl.userId] ?? 1
+    s.pendingQ = null
+    s.awaiting = null
+    s.turn += 1
+    res = pbRun(c)
+  } else {
+    s.awaiting = null
+    s.pendingQ = null
+    res = pbRun(c)
+  }
+  return stamp(input.state, res, input.nowMs)
 }

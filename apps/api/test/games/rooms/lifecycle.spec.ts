@@ -122,7 +122,7 @@ describe('room join and lifecycle (S7-T01 part GAME-R): FR-GM-R.1..R.7, ruling 1
   })
 
   describe('leave a playing room: forfeit, 0 XP, no reward (48 GAME-R, ruling 50)', () => {
-    it('the host leaving ends the game with no winner, no reward call and no settlement', async () => {
+    it('the only human leaving ends the game with no winner, no reward call and no settlement (nobody is left to win by default)', async () => {
       const before = rewards.calls.length
       const code = await createRoom(student, 'perang-fakta')
       parseRoom(await fillAndStart(t, student, 'perang-fakta', code))
@@ -157,16 +157,62 @@ describe('room join and lifecycle (S7-T01 part GAME-R): FR-GM-R.1..R.7, ruling 1
       expect(await t.db.query(`select 1 from game_standings where user_id = $1`, [teacher.userId])).toHaveLength(0)
     })
 
-    it('a non-host leaving a room that stays at the minimum gives the seat up and the game goes on', async () => {
+    it('R1 Q1 (lead answers on #983): with 3 humans one leaving, a robot takes the seat and the game goes on; the leaver gets jumlah + 1 and no reward', async () => {
+      await t.db.query("delete from game_standings where game = 'papan-bijak'")
+      const before = rewards.calls.length
       const code = await createRoom(student, 'papan-bijak', PB_FORM)
       await join(student2, 'papan-bijak', code)
       await join(teacher, 'papan-bijak', code)
       parseRoom(await student.post(P('papan-bijak', code, '/start')))
-      const res = await leave(student2, 'papan-bijak', code)
-      const view = parseRoom(res)
+      const view = parseRoom(await leave(student2, 'papan-bijak', code))
       expect(view.status).toBe('playing')
-      expect(view.players).toHaveLength(2)
-      expect((await seats(t, code)).map((s) => s.user_id)).toEqual([student.userId, teacher.userId])
+      expect(view.players.map((p) => p.isBot)).toEqual([false, true, false]) // the seat keeps its place
+      expect((await seats(t, code)).map((s) => s.user_id)).toEqual([student.userId, null, teacher.userId])
+      expect(await t.db.query(`select wins, jumlah, skor, betul from game_standings where game = 'papan-bijak' and user_id = $1`, [student2.userId])).toEqual([
+        { wins: 0, jumlah: 1, skor: 0, betul: 0 },
+      ])
+      expect(rewards.calls.length).toBe(before)
+      expect(await t.db.query("select 1 from game_room_players where room_code = $1 and is_bot and user_id is not null", [code])).toHaveLength(0)
+    })
+
+    it('R1 Q1: the HOST leaving with 2 humans left does not end the game: the default win is not tied to the host role', async () => {
+      await t.db.query("delete from game_standings where game = 'papan-bijak'")
+      const code = await createRoom(student, 'papan-bijak', PB_FORM)
+      await join(student2, 'papan-bijak', code)
+      await join(teacher, 'papan-bijak', code)
+      parseRoom(await student.post(P('papan-bijak', code, '/start')))
+      expect(parseRoom(await leave(student, 'papan-bijak', code)).status).toBe('playing')
+      // the second leaver leaves exactly one human: that human (present) wins by default, whoever hosts
+      const done = parseRoom(await leave(student2, 'papan-bijak', code))
+      expect(done.status).toBe('finished')
+      expect(done.result?.winnerId).toBe(teacher.userId)
+      expect(await t.db.query(`select wins, jumlah from game_standings where game = 'papan-bijak' and user_id = $1`, [teacher.userId])).toEqual([{ wins: 1, jumlah: 1 }])
+      expect(await t.db.query(`select wins, jumlah from game_standings where game = 'papan-bijak' and user_id = $1`, [student.userId])).toEqual([{ wins: 0, jumlah: 1 }])
+    })
+
+    it('R1 Q2: the leaver of another room game (Kuiz Relay) also gets jumlah + 1, menang 0', async () => {
+      await t.db.query(`delete from game_standings where game = 'kuiz-relay'`)
+      const code = await createRoom(student, 'kuiz-relay', { ...FORM, max_players: 4 })
+      await join(student2, 'kuiz-relay', code)
+      await ageRoom(t, code)
+      parseRoom(await student.post(P('kuiz-relay', code, '/start')))
+      parseRoom(await leave(student2, 'kuiz-relay', code))
+      expect(await t.db.query(`select wins, jumlah from game_standings where game = 'kuiz-relay' and user_id = $1`, [student2.userId])).toEqual([{ wins: 0, jumlah: 1 }])
+    })
+
+    it('ruling 50: with nobody present left nothing is settled (the last human is absent)', async () => {
+      await t.db.query("delete from game_standings where game = 'papan-bijak'")
+      const before = rewards.calls.length
+      const code = await createRoom(student, 'papan-bijak', PB_FORM)
+      await join(student2, 'papan-bijak', code)
+      parseRoom(await student.post(P('papan-bijak', code, '/start')))
+      t.clock.advance(45_000) // the other human has not polled for longer than games_absent_seconds (30 s)
+      parseRoom(await leave(student, 'papan-bijak', code))
+      const room = await roomOf(t.db, code)
+      expect(room.status).toBe('finished')
+      expect(room.settled_at).not.toBeNull()
+      expect(rewards.calls.length).toBe(before)
+      expect(await t.db.query(`select 1 from game_standings where user_id = $1 and wins > 0`, [student2.userId])).toHaveLength(0)
     })
   })
 
@@ -255,7 +301,7 @@ describe('room join and lifecycle (S7-T01 part GAME-R): FR-GM-R.1..R.7, ruling 1
     const roomsOfHost = async (id: string) =>
       t.db.query<{ code: string }>(`select code from game_rooms where host_id = $1 and game = 'papan-bijak'`, [id])
 
-    it('two compatible pupils end in one room, both seated as real players, with no robot (engine still host-driven until R2)', async () => {
+    it('two compatible pupils end in one room, both seated as real players, with no robot (each pupil plays their own turns since R2)', async () => {
       await t.db.query('delete from pb_searches')
       await student.post(QM, FORM_QM)
       expect(await poll(student)).toEqual({ status: 'searching' })

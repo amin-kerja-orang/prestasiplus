@@ -553,7 +553,8 @@ describe('start, actions, clocks and settlement (M16-26..28)', () => {
       await student2.post(P('benteng-ilmu', undefined, '/join'), { room_code: code })
       let v = parseRoom(await student.post(P('benteng-ilmu', code, '/start')))
       while (v.status === 'playing') v = await answerRight('benteng-ilmu', code)
-      expect(await standing('benteng-ilmu', student.userId)).toMatchObject({ wins: 1, jumlah: 0 })
+      // OWN PART (GAME-04): the joined human is still simulated, so only the acting host has a standing; jumlah + 1 since R1 Q2.
+      expect(await standing('benteng-ilmu', student.userId)).toMatchObject({ wins: 1, jumlah: 1 })
       expect(await standing('benteng-ilmu', student2.userId)).toBeUndefined()
       await t.db.query(`delete from game_standings where game = 'benteng-ilmu'`)
     })
@@ -586,61 +587,49 @@ describe('start, actions, clocks and settlement (M16-26..28)', () => {
       ).toBe(before)
     })
 
-    it('Papan Bijak: wins/jumlah/betul/skor for the acting host only, none for a joined human or bots; the reward by the formula', async () => {
+    it('Papan Bijak (multi-human): standings and the reward by the formula for BOTH humans; robots get neither', async () => {
       accuracy.p = 1
-      const code = await createRoom(student, 'papan-bijak', {
-        ...PB_FORM,
-        match_mode: 'same_level',
-      })
-      expect(
-        (await student2.post(P('papan-bijak', undefined, '/join'), { room_code: code })).status,
-      ).toBe(200)
+      const code = await createRoom(student, 'papan-bijak', { ...PB_FORM, match_mode: 'same_level' })
+      expect((await student2.post(P('papan-bijak', undefined, '/join'), { room_code: code })).status).toBe(200)
       await student.get(P('papan-bijak', code))
       let v = parseRoom(await student.post(P('papan-bijak', code, '/start')))
-      const bot = v.players.find((p) => p.isBot)
-      expect(v.players).toHaveLength(2 + (bot ? 1 : 0))
-      for (let i = 0; i < 700 && v.status === 'playing'; i++) {
-        v =
-          v.state?.awaiting === 'roll'
-            ? await act(student, 'papan-bijak', code, { type: 'roll' })
-            : await answerRight('papan-bijak', code)
+      expect(v.players.filter((p) => !p.isBot)).toHaveLength(2)
+      const clients: Record<string, Client> = { [student.userId]: student, [student2.userId]: student2 }
+      for (let i = 0; i < 900 && v.status === 'playing'; i++) {
+        const actor = clients[v.state?.humanId as string] as Client
+        if (v.state?.awaiting === 'roll') v = await act(actor, 'papan-bijak', code, { type: 'roll' })
+        else {
+          const st = await stateOf(t.db, code)
+          const key = (st.qs[st.pendingQ as string] as { keyIndex: number }).keyIndex
+          v = await act(actor, 'papan-bijak', code, { type: 'answer', questionId: st.pendingQ, optionId: key })
+        }
       }
       expect(v.status).toBe('finished')
-      const humans = v.players.filter((p) => !p.isBot)
       const winnerId = v.result?.winnerId as string
-      expect(humans.map((h) => h.id)).toContain(student2.userId)
+      const humans = v.players.filter((p) => !p.isBot)
       for (const h of humans) {
-        const row = await standing('papan-bijak', h.id)
         const score = v.result?.scores.find((s) => s.userId === h.id)
-        if (h.id !== student.userId) {
-          // The joined human never acts (the engine simulates them): no standing from a game they did not play.
-          expect(row).toBeUndefined()
-          continue
-        }
-        expect(row).toMatchObject({
-          jumlah: 1,
-          wins: h.id === winnerId ? 1 : 0,
-          skor: score?.points,
+        expect(await standing('papan-bijak', h.id)).toMatchObject({ jumlah: 1, wins: h.id === winnerId ? 1 : 0, skor: score?.points, betul: score?.correct })
+      }
+      for (const b of v.players.filter((p) => p.isBot)) expect(await standing('papan-bijak', b.id)).toBeUndefined()
+      expect(rewards.calls.map((c) => c.userId).sort()).toEqual(humans.map((h) => h.id).sort()) // one onGameResult per human
+      for (const h of humans) {
+        const mine = v.result?.scores.find((s) => s.userId === h.id)
+        const won = winnerId === h.id
+        expect(rewards.calls.find((c) => c.userId === h.id)).toMatchObject({
+          isTest: false,
+          input: {
+            game: 'papan_bijak',
+            event: won ? 'win' : 'correct',
+            coins: (mine?.correct ?? 0) + (won ? 5 : 0),
+            xp: (mine?.correct ?? 0) * 10 + (won ? 20 : winnerId === null ? 10 : 5),
+            key: code,
+          },
         })
       }
-      for (const b of v.players.filter((p) => p.isBot))
-        expect(await standing('papan-bijak', b.id)).toBeUndefined()
-      const mine = v.result?.scores.find((s) => s.userId === student.userId)
-      expect(rewards.calls).toHaveLength(1)
-      expect(rewards.calls[0]).toMatchObject({
-        userId: student.userId,
-        isTest: false,
-        input: {
-          game: 'papan_bijak',
-          event: winnerId === student.userId ? 'win' : 'correct',
-          coins: (mine?.correct ?? 0) + (winnerId === student.userId ? 5 : 0),
-          xp: (mine?.correct ?? 0) * 10 + (winnerId === student.userId ? 20 : winnerId === null ? 10 : 5),
-          key: code,
-        },
-      })
       // points rule: 10 per correct answer + 50 for the winner
-      for (const s of v.result?.scores ?? [])
-        expect(s.points).toBe(s.correct * 10 + (s.userId === winnerId ? 50 : 0))
+      for (const s of v.result?.scores ?? []) expect(s.points).toBe(s.correct * 10 + (s.userId === winnerId ? 50 : 0))
+      await t.db.query(`delete from game_standings where game = 'papan-bijak'`)
     })
 
     it('Perlumbaan Matematik: 20 right answers win; the formula with the rank; players score their steps', async () => {

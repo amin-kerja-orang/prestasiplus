@@ -232,7 +232,7 @@ export const GamesRoomStateSchema = z
     awaiting: z.enum(['roll', 'answer']).nullable(),
     round: z.number().int().min(0),
     total: z.number().int().min(0),
-    humanId: IdSchema.meta({ description: 'The only player who may act (the host; every other player is a bot).' }),
+    humanId: IdSchema.meta({ description: 'The seat the room waits for now: the seat whose turn it is (Papan Bijak, Kuiz Relay); in the games with simultaneous rounds (own part) the one acting human, the host.' }),
     board: z.array(GamesBoardTileSchema).optional().meta({ description: 'Papan Bijak: the 50 tiles.' }),
     positions: z.record(z.string(), z.number().int()).optional().meta({ description: 'Papan Bijak: tile by user id.' }),
     meter: z
@@ -281,6 +281,9 @@ export const GamesRoomViewSchema = z
       description: 'A waiting room below its minimum with robots on: seconds until robots may join, counted from the creation of the room (48 GAME-R). Absent otherwise.',
     }),
     question: GamesKeylessQuestionSchema.optional(),
+    youAnswered: z.literal(true).optional().meta({
+      description: 'The caller has already answered the question the room awaits now; the page shows the waiting state. Absent otherwise.',
+    }),
     result: GamesRoomResultSchema.optional(),
   })
   .meta({ id: 'GamesRoomView' })

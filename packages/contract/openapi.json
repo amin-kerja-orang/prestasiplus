@@ -23239,7 +23239,7 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 64,
-            "description": "The only player who may act (the host; every other player is a bot).",
+            "description": "The seat the room waits for now: the seat whose turn it is (Papan Bijak, Kuiz Relay); in the games with simultaneous rounds (own part) the one acting human, the host.",
             "example": "1042"
           },
           "board": {
@@ -23475,6 +23475,13 @@
           },
           "question": {
             "$ref": "#/components/schemas/GamesKeylessQuestion"
+          },
+          "youAnswered": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "The caller has already answered the question the room awaits now; the page shows the waiting state. Absent otherwise."
           },
           "result": {
             "$ref": "#/components/schemas/GamesRoomResult"

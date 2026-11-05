@@ -201,6 +201,11 @@ export class RoomsRepository {
     })
   }
 
+  /** A human who left a game in play: a robot takes the seat (the row keeps its place, points and correct count). */
+  async seatToRobot(id: bigint): Promise<void> {
+    await this.db.gameRoomPlayer.update({ where: { id }, data: { userId: null, isBot: true } })
+  }
+
   async removeSeat(id: bigint): Promise<void> {
     await this.db.gameRoomPlayer.delete({ where: { id } })
   }

@@ -54,12 +54,18 @@ import {
   applyAction,
   computeSettlement,
   EngineRefusal,
+  handOverSeat,
+  isMultiHuman,
+  markSeen,
+  playedHumans,
   POOL_SIZE,
   questionView,
   resolveClocks,
   roundEndsAtMs,
+  startedHumans,
   startGame,
   stateView,
+  youAnswered,
   type EngineOut,
   type EnginePlayer,
   type EngineRoom,
@@ -129,6 +135,10 @@ const CREATE_RANK = ['subject', 'grade_level', 'match_mode', 'grade_min', 'max_p
 /** The shortest clock of a room (Perang Fakta): a room moved more recently has nothing due. */
 const SHORTEST_CLOCK_MS = 10_000
 const SWEEP_ROOMS = 200
+/** FR-GM-R.4: this many timeouts in a row with no poll in between remove a seat. */
+const ABSENT_TIMEOUTS = 3
+/** A poll refreshes a seat's presence at most this often (one write per seat per 5 s). */
+const SEEN_GAP_MS = 5_000
 
 @Injectable()
 export class RoomsService implements OnModuleInit, OnModuleDestroy {
@@ -171,7 +181,7 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
           await this.repo.lock(code)
           const room = await this.repo.room(code)
           if (room?.status !== 'playing') return false
-          return (await this.runClocks(tx, room, await this.repo.players(code))).room !== room
+          return (await this.advance(tx, room, await this.repo.players(code))).room !== room
         })
         if (changed) moved += 1
       } catch (err) {
@@ -422,7 +432,7 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
         players = await this.robotsAfterWait(room, players)
       }
       if (room.status === 'playing') {
-        const after = await this.runClocks(tx, room, players)
+        const after = await this.advance(tx, room, players, caller.userId)
         room = after.room
         players = after.players
       }
@@ -506,7 +516,7 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
       const before = await this.mustPlayer(caller, game, rawCode)
       const clocked =
         before.room.status === 'playing'
-          ? await this.runClocks(tx, before.room, before.players)
+          ? await this.advance(tx, before.room, before.players, caller.userId)
           : before
       // The clock ended the game just now: the answer arrived too late, so answer with the finished room.
       if (before.room.status === 'playing' && clocked.room.status === 'finished')
@@ -514,6 +524,7 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
       const { room, players } = clocked
       const movedByClock = room !== before.room
       if (room.status !== 'playing' || !room.state) throw actionNotStarted()
+      // Seat-keyed: the room waits for one seat (its turn, or the one acting human of an own-part game); nobody else may act.
       if (room.state.humanId !== caller.userId) throw actionNotYourTurn()
       try {
         const out = applyAction({
@@ -548,12 +559,16 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
       await this.repo.lock(probe.room.code)
       let { room, players } = await this.mustPlayer(caller, game, rawCode)
       if (room.status === 'playing') {
-        const after = await this.runClocks(tx, room, players)
+        const after = await this.advance(tx, room, players, caller.userId)
         room = after.room
         players = after.players
       }
       if (room.status === 'waiting') return this.leaveWaiting(caller, room, players)
-      if (room.status === 'playing' && room.state) return this.leavePlaying(tx, caller, room, room.state, players)
+      const seat = players.find((p) => p.userId === caller.userId)
+      if (room.status === 'playing' && room.state && seat) {
+        const rest = await this.dropSeat(tx, room, players, seat)
+        return this.viewOf(caller, rest.room, rest.players)
+      }
       return this.viewOf(caller, room, players)
     })
   }
@@ -568,47 +583,66 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
     return this.viewOf(caller, room, players.filter((p) => p !== seat))
   }
 
-  /** Ruling 50: a leaver of a Papan Bijak game that has another human gets jumlah + 1, menang 0, no XP. Robot games move no standing. */
-  private async forfeitStanding(room: RoomRow, caller: Caller, players: PlayerRow[]): Promise<void> {
-    if (room.game !== 'papan-bijak' || room.isTest) return
-    if (!players.some((p) => p.userId !== null && p.userId !== caller.userId)) return
-    await this.repo.bumpStanding('papan-bijak', caller.userId, { wins: 0, jumlah: 1, betul: 0, skor: 0 }, this.clock.now())
-  }
-
   /**
-   * The host leaving ends the game with no winner, no standing and no reward (the settle path is never entered; `settledAt`
-   * is set so nothing settles later). Under the single-human engine the host is the only acting seat. Another player's seat
-   * is simply given up; when fewer than the minimum players remain, the game ends with the host as default winner (48 section
-   * 3.6) through the normal settle path.
+   * Ruling 50 and R1 Q1-Q3 (lead answers on #983): a human leaves a game in play (Keluar, or 3 timeouts in a row). A leaver always
+   * gets jumlah + 1, menang 0, XP 0 and no reward, in every room game that writes standings (2 or more humans started). While
+   * 2 or more humans remain a robot takes the seat and the game goes on (the seat keeps its place and points). With exactly 1
+   * human left that human wins by default if present (polled within `games_absent_seconds`); with no human left, or one who is
+   * not present, the game ends and nothing is settled. This is not tied to the host role.
    */
-  private async leavePlaying(
+  private async dropSeat(
     tx: TxClient,
-    caller: Caller,
     room: RoomRow,
-    st: RoomState,
     players: PlayerRow[],
-  ): Promise<GamesRoomView> {
+    seat: PlayerRow,
+  ): Promise<{ room: RoomRow; players: PlayerRow[] }> {
+    const st = room.state as RoomState
     const now = this.clock.now()
-    await this.forfeitStanding(room, caller, players)
-    if (st.humanId === caller.userId) {
-      const state: RoomState = { ...st, awaiting: null, pendingQ: null, winnerId: null, mvpId: null }
-      const result = {
-        winnerId: null,
-        mvpId: null,
-        scores: players.map((p) => ({ userId: p.seat, points: p.points, correct: p.correct })),
-        forfeitedBy: caller.userId,
-      }
-      await this.repo.updateRoom(room.code, { state, status: 'finished', finishedAt: now, result, settledAt: now }, now)
-      return this.viewOf(caller, { ...room, state, status: 'finished', finishedAt: now, result, settledAt: now }, players)
+    if (!room.isTest && !seat.isTest && seat.userId !== null && startedHumans(st, enginePlayers(players)) >= 2) {
+      await this.repo.bumpStanding(room.game, seat.userId, { wins: 0, jumlah: 1, betul: 0, skor: 0 }, now)
     }
-    const seat = players.find((p) => p.userId === caller.userId)
-    if (!seat) return this.viewOf(caller, room, players)
-    await this.repo.removeSeat(seat.id)
-    const rest = players.filter((p) => p !== seat)
-    if (rest.length >= GAMES_ROOM_LIMITS[room.game as GamesRoomGame].minPlayers) return this.viewOf(caller, room, rest)
-    const state: RoomState = { ...st, awaiting: null, pendingQ: null, winnerId: st.humanId, mvpId: st.humanId }
-    const done = await this.applyOut(tx, room, rest, { state, players: enginePlayers(rest), finished: true })
-    return this.viewOf(caller, done.room, done.players)
+    const left = players.filter((p) => !p.isBot && p !== seat)
+    if (left.length >= 2) {
+      await this.repo.seatToRobot(seat.id)
+      const after = await this.repo.players(room.code)
+      const remap: Record<string, string> = {}
+      for (const old of players) {
+        const next = after.find((p) => p.id === old.id)
+        if (next && next.seat !== old.seat) remap[old.seat] = next.seat
+      }
+      const out = handOverSeat({
+        room: engineRoom(room),
+        players: enginePlayers(after),
+        state: st,
+        remap,
+        leaver: seat.seat,
+        p: await this.botAccuracy(),
+        nowMs: now.getTime(),
+      })
+      return this.applyOut(tx, room, after, out)
+    }
+    const last = left[0]
+    // The leaver gives the seat up when a human stays to win by default; with nobody left the seat stays as the record of the
+    // ended game (the leaver can still read the finished room).
+    if (last) await this.repo.removeSeat(seat.id)
+    const rest = last ? players.filter((p) => p !== seat) : players
+    const absentMs = (await this.settings.get('games_absent_seconds')) * 1000
+    const seen = last ? st.seats?.[last.seat]?.seenMs : null
+    const present = seen !== null && seen !== undefined && now.getTime() - seen <= absentMs
+    if (last && present) {
+      const state: RoomState = { ...st, humanId: last.seat, awaiting: null, pendingQ: null, winnerId: last.seat, mvpId: last.seat }
+      return this.applyOut(tx, room, rest, { state, players: enginePlayers(rest), finished: true })
+    }
+    // Nobody present is left: the game ends with no winner, no standing and no reward (`settledAt` is set so nothing settles later).
+    const state: RoomState = { ...st, awaiting: null, pendingQ: null, winnerId: null, mvpId: null }
+    const result = {
+      winnerId: null,
+      mvpId: null,
+      scores: rest.map((p) => ({ userId: p.seat, points: p.points, correct: p.correct })),
+      forfeitedBy: seat.userId,
+    }
+    await this.repo.updateRoom(room.code, { state, status: 'finished', finishedAt: now, result, settledAt: now }, now)
+    return { room: { ...room, state, status: 'finished', finishedAt: now, result, settledAt: now }, players: rest }
   }
 
   // --- engine plumbing -------------------------------------------------------------------------------------------
@@ -616,6 +650,37 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
   private async botAccuracy(): Promise<number> {
     const p = await this.ports.platformAccuracy.accuracy()
     return Number.isFinite(p) ? Math.min(1, Math.max(0, p)) : 0
+  }
+
+  /**
+   * The one locked advance of a playing room, shared by the poll, the 5 s sweep and the action (the caller holds the room row
+   * lock): marks the caller present, resolves the server clocks (idempotent: same time, same result) and removes the seats
+   * that missed 3 turns in a row. Calling it again moves nothing.
+   */
+  private async advance(
+    tx: TxClient,
+    room: RoomRow,
+    players: PlayerRow[],
+    seen?: string,
+  ): Promise<{ room: RoomRow; players: PlayerRow[] }> {
+    if (room.status !== 'playing' || !room.state) return { room, players }
+    let cur = { room, players }
+    // Presence is written in place: the room object stays the same, so a caller can tell the clock moved the room.
+    if (seen !== undefined && markSeen(room.state, seen, this.clock.now().getTime(), SEEN_GAP_MS)) {
+      await this.repo.updateRoom(room.code, { state: room.state }, this.clock.now())
+    }
+    cur = await this.runClocks(tx, cur.room, cur.players)
+    for (let i = 0; i < 8; i++) {
+      const st = cur.room.state
+      if (cur.room.status !== 'playing' || !st) break
+      // Multi-human games only (Papan Bijak, Kuiz Relay) and only while another human could carry on; a lone human or an
+      // own-part game keeps timing out as before, and the game ends by its own rules.
+      if (!isMultiHuman(cur.room.game as GamesRoomGame) || cur.players.filter((p) => !p.isBot).length < 2) break
+      const absent = cur.players.find((p) => !p.isBot && (st.seats?.[p.seat]?.missed ?? 0) >= ABSENT_TIMEOUTS)
+      if (!absent) break
+      cur = await this.dropSeat(tx, cur.room, cur.players, absent)
+    }
+    return cur.room === room ? { room, players } : cur
   }
 
   /** Resolves the server clocks of a playing room (idempotent) and writes the outcome back. */
@@ -658,7 +723,7 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
       for (const a of out.answered ?? []) {
         await this.ports.answers.record(
           gameAnswerEntry({
-            userId: out.state.humanId,
+            userId: a.userId,
             attemptId: room.sessionId,
             questionId: a.questionId,
             gameKey: room.game,
@@ -711,7 +776,11 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  /** AC10: standings for human, non-test players and one reward report for the acting human. */
+  /**
+   * AC10, 48 GAME-R: standings for every human of a game that 2 or more humans started (none otherwise), and one reward report
+   * per human who stayed: one `onGameResult` each (the port keeps one reward event per session and pupil), each from the one
+   * formula, the pace guard per player. The Mod Pelajar actor never earns.
+   */
   private async settle(
     tx: TxClient,
     room: RoomRow,
@@ -726,40 +795,41 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
       if (byId.get(d.userId)?.isTest || (d.wins === 0 && d.jumlah === 0)) continue
       await this.repo.bumpStanding(game, d.userId, d, now)
     }
-    const r = s.report
-    if (!r || byId.get(r.userId)?.isTest) return // the Mod Pelajar actor never earns: no reward call at all
-    if (await this.paceTripped(room, out.state)) return // 48 section 3.4 rule 5: stored and scored, credits nothing
-    const reward = await rewardNow(this.settings, tx, { correct: r.correct, outcome: r.outcome, robotsOnly: r.robotsOnly, fastGap: false })
-    await this.ports.rewards.onGameResult(
-      r.userId,
-      {
-        game: r.game,
-        event: r.event,
-        coins: reward.coins,
-        xp: reward.xp,
-        correct: r.correct,
-        total: r.total,
-        detail: r.detail,
-        key: room.code,
-        session: { id: room.sessionId, gameKey: room.game },
-      },
-      { tx, isTest: false },
-    )
+    for (const r of s.reports) {
+      if (byId.get(r.userId)?.isTest) continue // the Mod Pelajar actor never earns: no reward call at all
+      if (this.paceTripped(room, out.state, r.userId, await this.settings.get('games_min_ms_per_answer'))) continue // 48 section 3.4 rule 5: stored and scored, credits nothing
+      const reward = await rewardNow(this.settings, tx, { correct: r.correct, outcome: r.outcome, robotsOnly: r.robotsOnly, fastGap: false })
+      await this.ports.rewards.onGameResult(
+        r.userId,
+        {
+          game: r.game,
+          event: r.event,
+          coins: reward.coins,
+          xp: reward.xp,
+          correct: r.correct,
+          total: r.total,
+          detail: r.detail,
+          key: room.code,
+          session: { id: room.sessionId, gameKey: room.game },
+        },
+        { tx, isTest: false },
+      )
+    }
   }
 
-  /** Rule 5 of 48 section 3.4: a gap between the acting human's answers (the first: from the start) is under the minimum. */
-  private async paceTripped(room: RoomRow, st: RoomState): Promise<boolean> {
-    const times = (st.answerMs ?? []).map((ms) => new Date(ms))
-    return hasFastGap(room.startedAt ?? room.createdAt, times, await this.settings.get('games_min_ms_per_answer'))
+  /** Rule 5 of 48 section 3.4, per player: a gap between this human's answers (the first: from the start) is under the minimum. */
+  private paceTripped(room: RoomRow, st: RoomState, userId: string, minMs: number): boolean {
+    const times = (st.seats?.[userId]?.answerMs ?? []).map((ms) => new Date(ms))
+    return hasFastGap(room.startedAt ?? room.createdAt, times, minMs)
   }
 
-  /** The reward block of the finished room for the acting human; nothing for a seat that did not play or for Mod Pelajar. */
-  private async rewardOf(caller: Caller, room: RoomRow, st: RoomState): Promise<GamesReward | undefined> {
-    const forfeited = isRecord(room.result) && room.result.forfeitedBy === caller.userId // Keluar in playing: no reward, not even the pace guard note
-    if (room.isTest || st.humanId !== caller.userId || forfeited) return undefined
+  /** The reward block of the finished room for the caller; nothing for a seat that did not play or left, or for Mod Pelajar. */
+  private async rewardOf(caller: Caller, room: RoomRow, st: RoomState, players: PlayerRow[]): Promise<GamesReward | undefined> {
+    if (room.isTest || isRecord(room.result) && room.result.forfeitedBy !== undefined) return undefined
+    if (!playedHumans(room.game as GamesRoomGame, st, enginePlayers(players)).some((p) => p.userId === caller.userId)) return undefined
     const first = await this.ports.rewards.firstGameResult(room.sessionId, caller.userId)
     if (first) return rewardBlock(first)
-    return (await this.paceTripped(room, st)) ? PACE_GUARD_REWARD : undefined
+    return this.paceTripped(room, st, caller.userId, await this.settings.get('games_min_ms_per_answer')) ? PACE_GUARD_REWARD : undefined
   }
 
   /** 48 GAME-R: the robots of a room that has waited `battle_bot_fallback_seconds` below its minimum; else the seats as they are. */
@@ -868,6 +938,7 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
         : null,
     }
     if (st) view.round = st.round
+    if (st && youAnswered(st, caller.userId)) view.youAnswered = true
     if (room.status === 'waiting') {
       const robotIn = await this.robotInSeconds(room, players.length)
       if (robotIn !== null) view.robotInSeconds = robotIn
@@ -889,7 +960,7 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
           correct: p.correct,
         })),
       }
-      const reward = await this.rewardOf(caller, room, st)
+      const reward = await this.rewardOf(caller, room, st, players)
       if (reward) view.result.reward = reward
     }
     return view
