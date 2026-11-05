@@ -117,6 +117,8 @@ model Mission {
   rewardCoins     Int?     @map("reward_coins") @db.SmallInt
   /// teacher, global (check constraint). Partial unique index uq_missions_global_title (title) WHERE scope = 'global' lives in migration 0205.
   scope           String   @default("teacher")
+  /// How a Global mission is measured (7 kinds, check constraint ck_missions_goal_kind); null for a teacher mission (ck_missions_goal_kind_scope), S6-T07.
+  goalKind        String?  @map("goal_kind")
   resourceTitle   String?  @map("resource_title")
   resourceUrl     String?  @map("resource_url")
   resourceNote    String?  @map("resource_note")

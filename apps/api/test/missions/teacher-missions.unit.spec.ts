@@ -1,4 +1,4 @@
-import { MISSION_DAILY_CAP, MISSION_MESSAGES, MISSION_REWARD_MAX, TeacherMissionSchema } from '@pp/contract'
+import { MISSION_DAILY_CAP, MISSION_GOAL_KINDS, MISSION_MESSAGES, MISSION_REWARD_MAX, TeacherMissionSchema } from '@pp/contract'
 import { describe, expect, it } from 'vitest'
 
 import { ApiError } from '../../src/common/errors/api-error'
@@ -73,6 +73,7 @@ function build(clockAt = NOW) {
         description: input.description,
         rewardCoins: input.rewardCoins,
         scope: 'teacher',
+        goalKind: null,
         resourceTitle: null,
         resourceUrl: null,
         resourceNote: null,
@@ -269,6 +270,7 @@ describe('S6-T07 list and delete', () => {
     description: null,
     rewardCoins: 15,
     scope: 'global',
+    goalKind: 'sessions_per_day',
     resourceTitle: null,
     resourceUrl: null,
     resourceNote: null,
@@ -285,8 +287,8 @@ describe('S6-T07 list and delete', () => {
     world.completed.set('1', 2)
     const rows = await service.list(actor())
     expect(rows.map((r) => r.title)).toEqual(['Jawab 20 soalan', 'Rajin Berlatih'])
-    expect(rows[0]).toMatchObject({ global: false, completedCount: 4, date: '2026-11-20' })
-    expect(rows[1]).toMatchObject({ global: true, completedCount: 2, subjectId: null, subjectName: null, rewardCoins: 15, description: null })
+    expect(rows[0]).toMatchObject({ global: false, goalKind: null, completedCount: 4, date: '2026-11-20' })
+    expect(rows[1]).toMatchObject({ global: true, completedCount: 2, subjectId: null, subjectName: null, rewardCoins: 15, description: null, goalKind: 'sessions_per_day' })
     for (const r of rows) TeacherMissionSchema.parse(r)
   })
 
@@ -328,6 +330,7 @@ describe('S6-T07 the practice adapter serves harian like latih_tubi', () => {
     description: null,
     rewardCoins: 10,
     scope: 'teacher',
+    goalKind: null,
     resourceTitle: null,
     resourceUrl: null,
     resourceNote: null,
@@ -367,5 +370,14 @@ describe('S6-T07 Global missions seed list', () => {
     }
     expect(GLOBAL_MISSIONS.filter((m) => m.reward > MISSION_REWARD_MAX).map((m) => m.title)).toEqual(['Kombo 10'])
     expect(GLOBAL_MISSIONS.find((m) => m.title === 'Kombo 10')).toMatchObject({ target: 10, reward: 120 })
+    // Every row is a goal with a description and one of the seven kinds (ck_missions_goal_kind_scope).
+    for (const m of GLOBAL_MISSIONS) {
+      expect(MISSION_GOAL_KINDS).toContain(m.goalKind)
+      expect(m.description.length).toBeGreaterThan(0)
+    }
+    expect(Object.fromEntries(GLOBAL_MISSIONS.map((m) => [m.title, m.goalKind]))).toMatchObject({
+      'Rajin Berlatih': 'sessions_per_day', 'Si Tepat': 'accuracy_in_session', 'Penjelajah Topik': 'topics_per_day', 'Kilat Matematik': 'correct_per_day',
+      'Ketepatan 80%': 'accuracy_in_session', 'Kombo 2 Hari': 'streak_days', 'Latihan 10 Minit': 'minutes_per_day', 'Cabaran Kilat': 'correct_in_session',
+    })
   })
 })
