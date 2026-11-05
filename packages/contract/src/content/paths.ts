@@ -262,7 +262,7 @@ export function registerContentPaths(registry: OpenAPIRegistry): void {
     path: '/articles',
     tags: ['content'],
     summary: 'Published articles (reader list)',
-    description: 'Public (guests allowed). Only published articles; 18 per page, `publishedAt` desc then id. An out-of-range page is an empty list, not an error.',
+    description: 'Public (guests allowed). Only published articles; 12 per page, `publishedAt` desc then id. `meta.counts` holds the number of published articles per category code for the current `search` (ignoring `category`), so a pill can show its count. An out-of-range page is an empty list, not an error.',
     request: { query: ArticleListQuerySchema },
     responses: { 200: json(listEnvelopeOf(ArticleCardSchema), 'Article cards with ListMeta.') },
   })

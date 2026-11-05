@@ -1373,7 +1373,7 @@
         "properties": {
           "search": {
             "type": "string",
-            "description": "Title contains, case-insensitive."
+            "description": "Title or body contains, case-insensitive; at most 100 characters are used."
           },
           "category": {
             "type": "string",
@@ -1599,7 +1599,7 @@
         "properties": {
           "search": {
             "type": "string",
-            "description": "Title contains, case-insensitive."
+            "description": "Title or body contains, case-insensitive; at most 100 characters are used."
           },
           "category": {
             "type": "string",
@@ -75704,15 +75704,15 @@
           "content"
         ],
         "summary": "Published articles (reader list)",
-        "description": "Public (guests allowed). Only published articles; 18 per page, `publishedAt` desc then id. An out-of-range page is an empty list, not an error.",
+        "description": "Public (guests allowed). Only published articles; 12 per page, `publishedAt` desc then id. `meta.counts` holds the number of published articles per category code for the current `search` (ignoring `category`), so a pill can show its count. An out-of-range page is an empty list, not an error.",
         "parameters": [
           {
             "schema": {
               "type": "string",
-              "description": "Title contains, case-insensitive."
+              "description": "Title or body contains, case-insensitive; at most 100 characters are used."
             },
             "required": false,
-            "description": "Title contains, case-insensitive.",
+            "description": "Title or body contains, case-insensitive; at most 100 characters are used.",
             "name": "search",
             "in": "query"
           },
@@ -77279,10 +77279,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "Title contains, case-insensitive."
+              "description": "Title or body contains, case-insensitive; at most 100 characters are used."
             },
             "required": false,
-            "description": "Title contains, case-insensitive.",
+            "description": "Title or body contains, case-insensitive; at most 100 characters are used.",
             "name": "search",
             "in": "query"
           },
@@ -79670,11 +79670,11 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 64,
-              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
               "example": "1042"
             },
             "required": true,
-            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
             "name": "id",
             "in": "path"
           },
@@ -79720,7 +79720,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {

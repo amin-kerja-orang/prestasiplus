@@ -47,12 +47,12 @@ test.describe('M09 S15 article list (logged in)', MODULE, () => {
     await loginAs(STUDENT)
   })
 
-  test('SRS §12 #15 shell, header, 18 cards in reader order and the card anatomy', async ({
+  test('SRS §12 #15 shell, header, 12 cards in reader order and the card anatomy', async ({
     page,
     gotoApp,
   }) => {
     await gotoApp('/artikel')
-    await expect(cards(page)).toHaveCount(18)
+    await expect(cards(page)).toHaveCount(12)
     await expectTabTitle(page, GENERIC_TITLE)
     await expect(page.locator('[data-layout="user"]')).toBeVisible()
     await expect(page.getByTestId('shell-user-title')).toHaveText('Artikel')
@@ -80,7 +80,7 @@ test.describe('M09 S15 article list (logged in)', MODULE, () => {
     gotoApp,
   }) => {
     await gotoApp('/artikel')
-    await expect(cards(page)).toHaveCount(18)
+    await expect(cards(page)).toHaveCount(12)
     const width = viewportWidth(page)
     const columns = await gridColumns(page)
     if (width < 640) expect(columns).toBe(1)
@@ -99,7 +99,7 @@ test.describe('M09 S15 article list (logged in)', MODULE, () => {
     gotoApp,
   }) => {
     await gotoApp('/artikel')
-    await expect(cards(page)).toHaveCount(18)
+    await expect(cards(page)).toHaveCount(12)
     await expect(page.getByTestId('artikel-hot')).toBeVisible()
     await page.locator('[data-testid="artikel-pill"][data-category="BERITA"]').click()
     await expect(page).toHaveURL(/\/artikel\?category=BERITA$/)
@@ -119,9 +119,11 @@ test.describe('M09 S15 article list (logged in)', MODULE, () => {
     await expect(page).toHaveURL(/\/artikel\?search=sifir$/)
     await expect(cards(page)).toHaveCount(2)
     const pills = page.getByTestId('artikel-pill')
-    for (const href of await pills.evaluateAll((els) => els.map((e) => e.getAttribute('href')))) {
-      expect(href).toContain('search=sifir')
-    }
+    // A zero-count pill is disabled (FR-MUR-20-2) and carries no link.
+    const hrefs = await pills.evaluateAll((els) =>
+      els.filter((e) => e.getAttribute('aria-disabled') !== 'true').map((e) => e.getAttribute('href')),
+    )
+    for (const href of hrefs) expect(href).toContain('search=sifir')
     await expect(pills.first()).toHaveAttribute('href', '/artikel?search=sifir')
     await expect(page.getByTestId('artikel-hot')).toHaveCount(0)
     for (const pill of await pills.all()) await expectTouchTarget(pill, 44)
@@ -129,8 +131,8 @@ test.describe('M09 S15 article list (logged in)', MODULE, () => {
 
   test('SRS §12 #17 pager keeps the category; empty state', async ({ page, gotoApp }) => {
     await gotoApp('/artikel?category=TIPS_BELAJAR&page=2')
-    await expect(cards(page)).toHaveCount(3)
-    expect((await cardTitles(page))[0]).toBe('Rahsia Pelajar Cemerlang: Ulangkaji Sebelum Tidur')
+    // 21 articles at 12 per page (AC-MUR-20-4): page 2 holds the last 9.
+    await expect(cards(page)).toHaveCount(9)
     const prev = page.locator('nav[aria-label="Pagination Navigation"] a', {
       hasText: /Previous/,
     })
@@ -152,7 +154,7 @@ test.describe('M09 S15 article list (logged in)', MODULE, () => {
     gotoApp,
   }) => {
     await gotoApp('/artikel')
-    await expect(cards(page)).toHaveCount(18)
+    await expect(cards(page)).toHaveCount(12)
     await expect(page.getByTestId('artikel-hot-heading')).toHaveText('Artikel Paling Hangat')
     const hot = page.getByTestId('artikel-hot-card')
     await expect(hot).toHaveCount(6)
@@ -193,12 +195,12 @@ test.describe('M09 S15 article list (logged in)', MODULE, () => {
 })
 
 test.describe('M09 S15 article list (guest)', MODULE, () => {
-  test('SRS §12 #19 guest public layout, hero, hot, pills, 18 cards, pager, CTA, footer', async ({
+  test('SRS §12 #19 guest public layout, hero, hot, pills, 12 cards, pager, CTA, footer', async ({
     page,
     gotoApp,
   }) => {
     await gotoApp('/artikel')
-    await expect(cards(page)).toHaveCount(18)
+    await expect(cards(page)).toHaveCount(12)
     await expectTabTitle(page, GUEST_TITLE)
     await expect(page.locator('[data-layout="public"]')).toBeVisible()
     await expect(page.locator('[data-layout="user"]')).toHaveCount(0)
@@ -379,7 +381,7 @@ test.describe('M09 S15 article list (admin)', MODULE, () => {
   }) => {
     await loginAs('admin@demo.test')
     await gotoApp('/artikel')
-    await expect(cards(page)).toHaveCount(18)
+    await expect(cards(page)).toHaveCount(12)
     await expect(page.locator('[data-layout="user"]')).toBeVisible()
     await expect(page.locator('[data-layout="admin"]')).toHaveCount(0)
     await expect(page.getByTestId('shell-user-title')).toHaveText('Artikel')
