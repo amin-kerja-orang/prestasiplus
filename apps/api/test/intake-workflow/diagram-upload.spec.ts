@@ -29,6 +29,8 @@ let otherStimulus: string
 let goneQuestion: string // group removed before accept
 let overwriteQuestion: string // stimulus gets a file before accept
 let overwriteStimulus: string
+let kindQuestion: string // stimulus kind changed before accept
+let kindStimulus: string
 let foreignQuestion: string
 let goneGroup: string // image file not the batch owner's at accept
 const png = { data: makePng(), name: 'rajah.png', type: 'image/png' }
@@ -101,11 +103,14 @@ beforeAll(async () => {
   const over = await groupOf('Timpa')
   overwriteQuestion = await inGroup(9, over.group)
   overwriteStimulus = over.diagram
+  const kind = await groupOf('Jenis')
+  kindQuestion = await inGroup(11, kind.group)
+  kindStimulus = kind.diagram
   const foreign = await groupOf('Asing')
   foreignQuestion = await inGroup(10, foreign.group)
 
   // The questions a teacher may see: approved and active (the rest are admin drafts). `hiddenQuestion` stays a draft of another author.
-  const approved = new Set([...groupQuestions, otherGroupQuestion, loneQuestion, dismissedQuestion, goneQuestion, overwriteQuestion, foreignQuestion])
+  const approved = new Set([...groupQuestions, otherGroupQuestion, loneQuestion, dismissedQuestion, goneQuestion, overwriteQuestion, foreignQuestion, kindQuestion])
   const bank = t.app.get(QuestionBankAdapter)
   const realStatus = bank.getStatus.bind(bank)
   vi.spyOn(bank, 'getStatus').mockImplementation(async (id: string) => {
@@ -117,7 +122,7 @@ beforeAll(async () => {
   const candidate = (id: string): DiagramCandidate => ({
     id, kind: 'mcq', text: `Soalan ${id}`, subjectId: tag!.s, subjectName: 'Matematik', createdBy: { id: '1', name: null, schoolId: null }, sourceFile: null, sourcePage: null,
   })
-  vi.spyOn(t.app.get(QuestionBankAdapter), 'listDiagramCandidates').mockImplementation(async () => [...groupQuestions, otherGroupQuestion, loneQuestion, hiddenQuestion, dismissedQuestion, goneQuestion, overwriteQuestion, foreignQuestion].map(candidate))
+  vi.spyOn(t.app.get(QuestionBankAdapter), 'listDiagramCandidates').mockImplementation(async () => [...groupQuestions, otherGroupQuestion, loneQuestion, hiddenQuestion, dismissedQuestion, goneQuestion, overwriteQuestion, foreignQuestion, kindQuestion].map(candidate))
 }, 180_000)
 afterAll(async () => {
   vi.restoreAllMocks()
@@ -346,6 +351,15 @@ describe('accept guards', () => {
     await q('update stimuli set asset_file_id = $2::bigint where id = $1::bigint', [overwriteStimulus, file!.id])
     expectError(await post(admin, `/intake/items/${id}/accept`), 'CONFLICT', WORKFLOW_MESSAGES.diagramTargetGone)
     expect(await assetOf(overwriteStimulus)).toBe(file!.id)
+    expect(await stateOf(id)).toBe('needs_review')
+  })
+
+  it('a stimulus whose kind changed to passage before the accept never gets a file: 409 diagramTargetGone', async () => {
+    expect((await image(teacher, kindQuestion)).status).toBe(200)
+    const id = await itemOf(kindQuestion)
+    await q(`update stimuli set kind = 'passage' where id = $1::bigint`, [kindStimulus])
+    expectError(await post(admin, `/intake/items/${id}/accept`), 'CONFLICT', WORKFLOW_MESSAGES.diagramTargetGone)
+    expect(await assetOf(kindStimulus)).toBeNull()
     expect(await stateOf(id)).toBe('needs_review')
   })
 

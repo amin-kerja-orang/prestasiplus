@@ -114,10 +114,13 @@ export class StimuliService {
   async attachFirstAsset(id: string, fileId: bigint): Promise<boolean> {
     if (!(await this.repo.lockStimulus(id))) return false
     const current = await this.repo.getStimulus(id)
-    if (current === null || current.assetFileId !== null) return false
-    // Lead ruling on #494 (option b): a served stimulus may still receive its FIRST file. FR-X1-4f made an image kind without a file unservable,
-    // so no pupil has seen it. A paper that is still held and pins it keeps the 409 (that paper's pinned content must not change).
-    if ((await this.repo.stimulusServed(id)) && (!(IMAGE_STIMULUS_KINDS as readonly string[]).includes(current.kind) || (await this.repo.stimulusHeldByPaper(id)))) {
+    // Only an image kind ever gets a file, served or not (an admin may have changed the kind since the image was sent): the caller answers 409.
+    if (current === null || current.assetFileId !== null || !(IMAGE_STIMULUS_KINDS as readonly string[]).includes(current.kind)) return false
+    // Lead ruling on #494 (option b): a served stimulus may still receive its FIRST file. The approve gate (`media_ok`, questions.repository.ts)
+    // refuses to approve a question whose image stimulus has no file, so attaching the first file fills a gap; it does not replace an image a
+    // pupil has seen. A pupil-side FR-X1-4f guard does not exist yet and is out of scope here. A paper that is still held and pins the stimulus
+    // keeps the 409 (that paper's pinned content must not change).
+    if ((await this.repo.stimulusServed(id)) && (await this.repo.stimulusHeldByPaper(id))) {
       throw ApiError.of('CONFLICT', { message: STIMULUS_MESSAGES.stimulusServed })
     }
     await this.repo.setAssetFile(id, fileId)
