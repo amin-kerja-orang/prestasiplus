@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
 import { createMemoryHistory, createRouter, type RouteLocationNormalized } from 'vue-router'
 
 import { decideAccess, type GuardSession } from '@/app/router/guards'
+import { useSessionStore } from '@/stores/session'
 import type { Role } from '@/stores/session-types'
 
 import analitik from '../../routes/analitik'
@@ -24,7 +26,8 @@ const ALL_ROLES: readonly Role[] = [
   'jpn_officer',
   'admin',
 ]
-const SCHOOL_VIEW_ROLES: readonly Role[] = ['admin', 'teacher', 'school_admin', 'student', 'parent']
+const SCHOOL_VIEW_ROLES: readonly Role[] = ['admin', 'teacher', 'school_admin', 'parent']
+const CLASS_VIEW_ROLES: readonly Role[] = ['admin', 'teacher', 'school_admin']
 
 const session = (role: Role | null): GuardSession => ({
   isLoggedIn: role !== null,
@@ -41,7 +44,7 @@ describe('M08 prestasi route roles (SW4-04)', () => {
     ['/prestasi/tingkatan', 'm08.prestasi.tingkatan'],
     ['/prestasi/tingkatan/t4', 'm08.prestasi.tingkatan.detail'],
   ])(
-    'S1-S3 %s admits admin, teacher, school_admin, student, parent and answers 403 to the rest',
+    'S1-S3 %s admits admin, teacher, school_admin, parent and answers 403 to the rest, the pupil included (FR-MUR-4-2)',
     (path, name) => {
       const resolved = router.resolve(path)
       expect(resolved.name).toBe(name)
@@ -55,17 +58,63 @@ describe('M08 prestasi route roles (SW4-04)', () => {
     },
   )
 
-  it('S4 /prestasi/kelas is for admin, teacher, school_admin and student (empty S4, SRS §9); a parent or PPD officer gets the 403 page', () => {
+  it('S4 /prestasi/kelas is for admin, teacher and school_admin; a pupil, parent or PPD officer gets the 403 page (AC-MUR-4-3)', () => {
     const meta = router.resolve('/prestasi/kelas').meta
-    expect(meta.roles).toEqual(['admin', 'teacher', 'school_admin', 'student'])
+    expect(meta.roles).toEqual(CLASS_VIEW_ROLES)
     expect(meta.onForbidden).toBe('403')
-    for (const role of ['admin', 'teacher', 'school_admin', 'student'] as const) {
+    for (const role of CLASS_VIEW_ROLES) {
       expect(decide('/prestasi/kelas', role)).toEqual({ kind: 'allow' })
     }
-    for (const role of ['parent', 'ppd_officer', 'jpn_officer', 'sponsor'] as const) {
+    for (const role of ['student', 'parent', 'ppd_officer', 'jpn_officer', 'sponsor'] as const) {
       expect(decide('/prestasi/kelas', role)).toEqual({ kind: 'in-place', status: 403 })
     }
   })
+
+  it('a pupil gets 403 on every school-wide Prestasi route', () => {
+    for (const path of ['/prestasi/sekolah', '/prestasi/tingkatan', '/prestasi/tingkatan/t4', '/prestasi/kelas']) {
+      expect(decide(path, 'student')).toEqual({ kind: 'in-place', status: 403 })
+    }
+  })
+
+  it('/prestasi is a component route "Prestasi Saya" (no redirect, no ownsH1), open to every signed-in role', () => {
+    const resolved = router.resolve('/prestasi')
+    expect(resolved.name).toBe('m08.prestasi.own')
+    const record = resolved.matched[0]
+    expect(record?.redirect).toBeUndefined()
+    expect(record?.components?.default).toBeTypeOf('function')
+    expect(resolved.meta.title).toBe('Prestasi Saya')
+    expect(resolved.meta.header).toEqual({
+      title: 'Prestasi Saya',
+      subtitle: 'Analisis pencapaian latihan anda',
+    })
+    expect(resolved.meta.ownsH1).toBeUndefined()
+    expect(resolved.meta.roles).toBeUndefined()
+    expect(decide('/prestasi', 'student')).toEqual({ kind: 'allow' })
+    expect(decide('/prestasi', null)).toEqual({ kind: 'redirect', to: '/login' })
+  })
+
+  it.each(['admin', 'teacher', 'school_admin'] as const)(
+    '/prestasi beforeEnter sends %s to /prestasi/sekolah and keeps the pupil on /prestasi (FR-MUR-4-13)',
+    (role) => {
+      setActivePinia(createPinia())
+      const guard = router.resolve('/prestasi').matched[0]?.beforeEnter as () => unknown
+      const sessionStore = useSessionStore()
+      sessionStore.setSession({
+        token: 't',
+        remember: false,
+        expiresAt: '2099-01-01T00:00:00+08:00',
+        user: { id: 2, role, landingPath: '/dashboard' } as never,
+      })
+      expect(guard()).toBe('/prestasi/sekolah')
+      sessionStore.setSession({
+        token: 't',
+        remember: false,
+        expiresAt: '2099-01-01T00:00:00+08:00',
+        user: { id: 3, role: 'student', landingPath: '/dashboard' } as never,
+      })
+      expect(guard()).toBe(true)
+    },
+  )
 
   it('a guest still goes to /login', () => {
     expect(decide('/prestasi/kelas', null)).toEqual({ kind: 'redirect', to: '/login' })
