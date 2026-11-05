@@ -5,7 +5,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 
 import { leavesOfGraded, modeOfAttempt, runBackfill, runLegacyMode, type SkipReason } from '../../scripts/uat-ops/backfill-bijak-answers'
 import { PrismaService } from '../../src/db/prisma.service'
-import { ANSWER_MODES, AnswerLogPort, type AnswerLogEntry, attemptUuidOf, WRITABLE_ANSWER_MODES } from '../../src/modules/practice/answer-log.port'
+import { ANSWER_MODES, AnswerLogPort, type AnswerLogEntry, attemptUuidOf, validateAnswerEntry, WRITABLE_ANSWER_MODES } from '../../src/modules/practice/answer-log.port'
 import { type PracticeTestApp, type World, bootPracticeApp, countRows, fillBank, loadWorld, resetPractice, userIdByEmail } from './helpers'
 
 let t: PracticeTestApp
@@ -229,6 +229,15 @@ describe('refusals (nothing is written)', () => {
     await expect(port.record(entry({ marksMax: 2, marksAwarded: 3 }))).rejects.toThrow(/above marksMax/)
     await expect(port.record(entry({ marksAwarded: -1 }))).rejects.toThrow(/0 or more/)
     expect(await countRows(t.db, 'practice_answers')).toBe(0)
+  })
+})
+
+describe('selectedLabel (DM-44, migration 0262)', () => {
+  it.each([[null], ['A'], ['A,C'], ['A,B,C,D,E,F,G,H']])('accepts %j', (v) => {
+    expect(() => validateAnswerEntry(entry({ selectedLabel: v }))).not.toThrow()
+  })
+  it.each([['AC'], ['A,,C'], ['C,A'], ['A,A'], ['a'], ['I'], ['A,'], ['']])('refuses %j', (v) => {
+    expect(() => validateAnswerEntry(entry({ selectedLabel: v }))).toThrow(/selectedLabel/)
   })
 })
 
