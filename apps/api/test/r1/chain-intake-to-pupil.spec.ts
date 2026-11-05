@@ -32,10 +32,10 @@ vi.setConfig({ testTimeout: 180_000, hookTimeout: 300_000 })
 /**
  * R1 chain QA (the one link the other chain specs do not cross): an exam paper that INTAKE produced.
  *   teacher uploads a PDF -> AI extraction (a scripted double) -> review -> accept (a figure becomes ONE stimulus group with its image)
- *   -> admin approves (REQ-B-071: Semakan needs no Bab; Terbitkan runs the DSKP gate and derives the Bab from the curriculum node) -> builds a MAT kertas 2 paper (D90 group is one unit, section pools)
+ *   -> admin approves (Semakan needs no Bab; Terbitkan runs the DSKP gate and asks for the Bab, S1-T02) -> builds a MAT kertas 2 paper (D90 group is one unit, section pools)
  *   -> Terbit (versions pinned) -> a pupil sits it (stimulus served once, with the image; no key leaks) -> submits -> Cuba Lagi.
  * `pipeline-chain.spec.ts` builds its questions through the Studio API; the intake specs stop at "approved". This one joins them.
- * REQ-B-071 (Q17): the questions go through Semakan and Terbitkan WITHOUT a Bab (steps 3a to 3); a missing curriculum node is refused by the DSKP gate (3b).
+ * S1-T02: the questions go through Semakan WITHOUT a Bab (3a); Terbitkan asks for the Bab and a missing curriculum node is refused by the DSKP gate (3b, 3, 3c).
  */
 const REGION = { page: 1, x: 0.1, y: 0.1, w: 0.5, h: 0.4 }
 const START = '2026-10-19T09:00:00+08:00'
@@ -194,7 +194,7 @@ let xpBefore = 0 // the seeded pupil already has XP: the reward is checked as a 
     expect(status.map((r) => r.status)).toEqual(['draft'])
   })
 
-  it('3a. REQ-B-071: Semakan without a Bab passes (no Bab rule at submit): all six move to Semakan with no failed[] entry', async () => {
+  it('3a. Semakan without a Bab passes (no Bab rule at submit): all six move to Semakan with no failed[] entry', async () => {
     await q(`update question_versions set paper_code = 'MATH/2', chapter_id = null where question_id = any($1::bigint[])`, [questionIds])
     const res = await admin.post('/api/questions/bulk-action', { action: 'review', ids: questionIds })
     expect(res.status, JSON.stringify(res.body)).toBe(200)
@@ -203,7 +203,7 @@ let xpBefore = 0 // the seeded pupil already has XP: the reward is checked as a 
     expect((await q(`select distinct v.chapter_id from question_versions v where v.question_id = any($1::bigint[])`, [questionIds])).map((r) => r.chapter_id)).toEqual([null]) // still no Bab
   })
 
-  it('3b. REQ-B-071: Terbitkan without a curriculum node (no unit, no SP) is refused with the DSKP unit and SP issues and no Bab issue, and nothing moves', async () => {
+  it('3b. S1-T02: Terbitkan without a curriculum node (no unit, no SP) and no Bab is refused with the DSKP unit, SP and Bab issues, and nothing moves', async () => {
     const solo = questionIds[5]!
     const [before] = await q(`select v.id::text version, v.unit_node_id::text unit from question_versions v where v.question_id = $1::bigint`, [solo])
     expect(before!.unit).not.toBeNull()
@@ -218,8 +218,8 @@ let xpBefore = 0 // the seeded pupil already has XP: the reward is checked as a 
       const failed = res.body.data.failed as { id: string; code: string; fields: Record<string, string> }[]
       expect(failed).toHaveLength(1)
       expect(failed[0]).toMatchObject({ id: solo, code: 'VALIDATION_ERROR' })
-      // EXACTLY the DSKP unit and SP issues (UNIT_MISSING + SP_MISSING); no chapterId: a missing Bab is not an issue
-      expect(failed[0]!.fields).toEqual({ unitId: 'Sila pilih unit DSKP.', spIds: 'Sila pilih sekurang-kurangnya satu SP DSKP.' })
+      // EXACTLY the unit, SP and Bab issues (NO_UNIT + NO_SP + NO_CHAPTER: MATH T4 has chapters, so the Bab is asked, S1-T02)
+      expect(failed[0]!.fields).toEqual({ unitId: 'Sila pilih unit DSKP.', spIds: 'Sila pilih sekurang-kurangnya satu SP DSKP.', chapterId: 'Sila pilih Bab.' })
       expect((await q(`select v.status from question_versions v where v.question_id = $1::bigint`, [solo])).map((r) => r.status)).toEqual(['review'])
     } finally {
       await q(`update question_versions set unit_node_id = $2::bigint where id = $1::bigint`, [before!.version, before!.unit])
@@ -227,26 +227,24 @@ let xpBefore = 0 // the seeded pupil already has XP: the reward is checked as a 
     }
   })
 
-  it('3. REQ-B-071 (A): Terbitkan with a curriculum node and no manual Bab passes (T33 cognitive level + kertas); with no chapters.dskp_code link the Bab stays empty and Latihan Bab does not serve them (no_chapter)', async () => {
-    const five = questionIds.slice(0, 5) // the sixth is approved in 3c, with a seeded dskp_code link
+  it('3. S1-T02: Terbitkan needs the Bab (MATH T4 has chapters): without one the five are refused NO_CHAPTER; with a Bab chosen by hand they are approved and carry it', async () => {
+    const five = questionIds.slice(0, 5) // the sixth is approved in 3c
+    const refused = await admin.post('/api/questions/bulk-action', { action: 'approved', ids: five })
+    expect(refused.status, JSON.stringify(refused.body)).toBe(200)
+    expect(refused.body.data.affected).toBe(0)
+    expect((refused.body.data.failed as { fields: Record<string, string> }[]).map((f) => f.fields)).toEqual(Array(5).fill({ chapterId: 'Sila pilih Bab.' }))
+    const [bab] = await q(`select c.id::text id from chapters c join question_versions v on v.subject_id = c.subject_id and v.education_level_id = c.education_level_id where v.question_id = $1::bigint and c.is_active and c.in_tree order by c.id limit 1`, [five[0]!])
+    expect(bab, 'a MATH T4 chapter').toBeDefined()
+    await q(`update question_versions set chapter_id = $2::bigint where question_id = any($1::bigint[])`, [five, bab!.id])
     const res = await admin.post('/api/questions/bulk-action', { action: 'approved', ids: five })
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     expect(res.body.data, JSON.stringify(res.body.data)).toMatchObject({ affected: 5, failed: [] })
-    const live = await q(`select v.status, v.chapter_id from questions qq join question_versions v on v.question_id = qq.id and v.version_no = qq.live_version_no where qq.id = any($1::bigint[])`, [five])
+    const live = await q(`select v.status, v.chapter_id::text chapter from questions qq join question_versions v on v.question_id = qq.id and v.version_no = qq.live_version_no where qq.id = any($1::bigint[])`, [five])
     expect(live.map((r) => r.status)).toEqual(Array(5).fill('approved'))
-    // Q17: the Bab is derived ONLY through chapters.dskp_code = the unit code, and that column is null in the seed, so nothing is derived here.
-    expect(live.map((r) => r.chapter_id)).toEqual(Array(5).fill(null))
-    // nothing in steps 4 to 9 needs a Bab, so none is given by hand; the admin report says why Latihan Bab does not serve them
-    for (const id of five) {
-      const report = await admin.get(`/api/admin/servability/questions/${id}`)
-      expect(report.status, JSON.stringify(report.body)).toBe(200)
-      const bab = (report.body.data.activities as { activity: string; served: boolean; reasons: { code: string }[] }[]).find((a) => a.activity === 'bab')!
-      expect(bab, id).toMatchObject({ served: false })
-      expect(bab.reasons.map((r) => r.code), id).toContain('no_chapter') // a figure-group member also carries has_stimulus
-    }
+    expect(live.map((r) => r.chapter)).toEqual(Array(5).fill(bab!.id))
   })
 
-  it('3c. REQ-B-071 (B): with ONE chapters.dskp_code equal to the unit code (same subject and level) and no manual Bab, Terbitkan derives chapter_id from that chapter', async () => {
+  it('3c. S1-T02: the Bab is not derived from the unit any more: a unique chapters.dskp_code match does not satisfy NO_CHAPTER; once the Bab is chosen it is approved', async () => {
     const solo = questionIds[5]!
     const [row] = await q(
       `select v.subject_id::text subject, v.education_level_id::text level, n.code unit_code, v.chapter_id::text chapter
@@ -258,12 +256,12 @@ let xpBefore = 0 // the seeded pupil already has XP: the reward is checked as a 
     expect(target, 'the fixture needs a chapter of the unit subject and level').toBeDefined()
     await q(`update chapters set dskp_code = $2 where id = $1::bigint`, [target!.id, row!.unit_code])
     try {
-      expect(await q(`select 1 from chapters where subject_id = $1::bigint and education_level_id = $2::bigint and dskp_code = $3`, [row!.subject, row!.level, row!.unit_code])).toHaveLength(1) // a UNIQUE match
+      const refused = await admin.post('/api/questions/bulk-action', { action: 'approved', ids: [solo] })
+      expect(refused.body.data, JSON.stringify(refused.body.data)).toMatchObject({ affected: 0, failed: [{ id: solo, fields: { chapterId: 'Sila pilih Bab.' } }] })
+      await q(`update question_versions set chapter_id = $2::bigint where question_id = $1::bigint`, [solo, target!.id])
       const res = await admin.post('/api/questions/bulk-action', { action: 'approved', ids: [solo] })
       expect(res.status, JSON.stringify(res.body)).toBe(200)
       expect(res.body.data, JSON.stringify(res.body.data)).toMatchObject({ affected: 1, failed: [] })
-      const [after] = await q(`select v.status, v.chapter_id::text chapter from questions qq join question_versions v on v.question_id = qq.id and v.version_no = qq.live_version_no where qq.id = $1::bigint`, [solo])
-      expect(after).toMatchObject({ status: 'approved', chapter: target!.id })
     } finally {
       await q(`update chapters set dskp_code = null where id = $1::bigint`, [target!.id]) // scope: nothing after this step depends on the link
     }

@@ -154,7 +154,8 @@ describe('fault injection (failNext)', () => {
       runtime.transport.request({ method: 'GET', url: '/api/notes', headers: {} }),
     ).rejects.toBeInstanceOf(TransportNetworkError)
     runtime.faults.failNext('/api/notes', 'network')
-    const err = (await api.get('/api/notes').catch((e: unknown) => e)) as ApiError
+    // A POST: a one-shot GET network fault is retried automatically (X10.3.4) and would be absorbed.
+    const err = (await api.post('/api/notes', { body: {} }).catch((e: unknown) => e)) as ApiError
     expect(err).toBeInstanceOf(ApiError)
     expect(err).toMatchObject({ status: 0, code: 'NETWORK_ERROR' })
     expect(runtime.log.last('/api/notes')).toMatchObject({

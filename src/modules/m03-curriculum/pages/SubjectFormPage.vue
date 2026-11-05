@@ -10,6 +10,7 @@
  * (UNVERIFIED COPY, from the API `status`) and returns to S6. An unknown id goes back to S6 with
  * the one-time flash "Subjek tidak dijumpai." (FR-45, BR-18). No "Aktif" field (FR-56).
  */
+import { preferRateLimited } from '@/api/errors'
 import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -159,6 +160,7 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
     <DsLoadError
       v-if="failed"
       :message="COPY.loadFailed"
+      :error="preferRateLimited(levelsError, loadError)"
       testid="subject-load-error"
       @retry="retryLoad()"
     />

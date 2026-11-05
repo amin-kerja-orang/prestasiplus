@@ -3,20 +3,25 @@ import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi'
 import { z } from '../zod'
 import { ErrorBodySchema } from '../common/error'
 import { envelopeOf } from '../common/envelope'
+import { IdSchema } from '../common/ids'
 import {
+  SUPPORT_ADMIN_MESSAGES,
+  SUPPORT_SETTINGS_MESSAGES,
+  SupportSettingsSchema,
+  SupportSettingsUpdateRequestSchema,
   SupportOpenCountSchema,
   SupportQueueMetaSchema,
   SupportQueueQuerySchema,
   SupportQueueResponseSchema,
-  SUPPORT_SETTINGS_MESSAGES,
   SupportQueueRowSchema,
-  SupportSettingsSchema,
-  SupportSettingsUpdateRequestSchema,
   SupportTicketCreateRequestSchema,
+  SupportTicketDetailSchema,
   SupportTicketListMetaSchema,
   SupportTicketListQuerySchema,
   SupportTicketListResponseSchema,
+  SupportTicketReplyRequestSchema,
   SupportTicketSchema,
+  SupportTicketStatusRequestSchema,
   SupportTicketStatusSchema,
 } from './schema'
 
@@ -35,6 +40,9 @@ export const SUPPORT_COMPONENT_SCHEMAS = {
   SupportOpenCount: SupportOpenCountSchema,
   SupportSettings: SupportSettingsSchema,
   SupportSettingsUpdateRequest: SupportSettingsUpdateRequestSchema,
+  SupportTicketDetail: SupportTicketDetailSchema,
+  SupportTicketReplyRequest: SupportTicketReplyRequestSchema,
+  SupportTicketStatusRequest: SupportTicketStatusRequestSchema,
 } as const
 
 const json = (schema: z.ZodType, description: string) => ({
@@ -43,13 +51,16 @@ const json = (schema: z.ZodType, description: string) => ({
 })
 const err = (description: string) => json(ErrorBodySchema, description)
 
-/** Registers the support endpoints (M22). Bodies are `{ data, meta? }` or `{ error }`. */
+/** Registers the support-ticket endpoints (M22). Bodies are `{ data, meta? }` or `{ error }`. */
 export function registerSupportPaths(registry: OpenAPIRegistry): void {
   const csrf = z.object({
     'X-CSRF-Token': z.string().min(1).meta({ description: 'Value of Session.csrf; required on mutating requests.' }),
   })
   const unauthorized = err('UNAUTHORIZED: no valid session.')
   const adminOnly = err('FORBIDDEN "This action is unauthorized." (not an admin).')
+  const adminWrite = err('FORBIDDEN (not an admin) or CSRF_INVALID (missing or wrong X-CSRF-Token).')
+  const idParams = z.object({ id: IdSchema })
+  const ticketNotFound = err(`NOT_FOUND "${SUPPORT_ADMIN_MESSAGES.ticketNotFound}" (unknown id).`)
 
   registry.registerPath({
     method: 'get',
@@ -87,9 +98,9 @@ export function registerSupportPaths(registry: OpenAPIRegistry): void {
     method: 'get',
     path: '/admin/tiket',
     tags: ['support'],
-    summary: 'Admin support queue (read-only)',
+    summary: 'Admin support queue',
     description:
-      'Admin only (D27: read-only, no reply or status change). Newest first (createdAt desc, then id desc), first 200 rows only. `meta.total` = all tickets; `meta.counts` = statuses with a count above 0, in vocabulary order, over all tickets (not the filtered ones).',
+      'Admin only. Newest first (createdAt desc, then id desc), 25 per page with `page`. `meta.total` = all tickets; `meta.counts` = statuses with a count above 0, in vocabulary order, over all tickets; `meta.matched` counts the rows matching the filters. A row has no body, no e-mail and no user id.',
     request: { query: SupportQueueQuerySchema },
     responses: { 200: json(SupportQueueResponseSchema, 'Queue rows with meta.total and meta.counts.'), 401: unauthorized, 403: adminOnly },
   })
@@ -122,8 +133,50 @@ export function registerSupportPaths(registry: OpenAPIRegistry): void {
     responses: {
       200: json(envelopeOf(SupportSettingsSchema), 'The saved contact.'),
       401: unauthorized,
-      403: err('FORBIDDEN (not an admin) or CSRF_INVALID (missing or wrong X-CSRF-Token).'),
+      403: adminWrite,
       422: err(`VALIDATION_ERROR with fields: email "${SUPPORT_SETTINGS_MESSAGES.emailInvalid}"; whatsapp "${SUPPORT_SETTINGS_MESSAGES.phoneInvalid}".`),
+    },
+  })
+
+  registry.registerPath({
+    method: 'get',
+    path: '/admin/tiket/{id}',
+    tags: ['support'],
+    summary: 'One support ticket (API-SUP-05)',
+    description: 'Admin only. The ticket with its single reply. No e-mail is returned.',
+    request: { params: idParams },
+    responses: { 200: json(envelopeOf(SupportTicketDetailSchema), 'The ticket.'), 401: unauthorized, 403: adminOnly, 404: ticketNotFound },
+  })
+
+  registry.registerPath({
+    method: 'put',
+    path: '/admin/tiket/{id}/reply',
+    tags: ['support'],
+    summary: 'Save the single reply (API-SUP-05)',
+    description: 'Admin only. Sets the reply, the replier and the time; a second save replaces the text. The status does not change. The owner gets an in-app notification.',
+    request: { params: idParams, headers: [csrf], body: { required: true, content: { 'application/json': { schema: SupportTicketReplyRequestSchema } } } },
+    responses: {
+      200: json(envelopeOf(SupportTicketDetailSchema), 'The updated ticket.'),
+      401: unauthorized,
+      403: adminWrite,
+      404: ticketNotFound,
+      422: err(`VALIDATION_ERROR with fields.text: "${SUPPORT_ADMIN_MESSAGES.replyRequired}" or "${SUPPORT_ADMIN_MESSAGES.replyTooLong}"`),
+    },
+  })
+
+  registry.registerPath({
+    method: 'patch',
+    path: '/admin/tiket/{id}/status',
+    tags: ['support'],
+    summary: 'Set the ticket status (API-SUP-05)',
+    description: 'Admin only. The reply does not change.',
+    request: { params: idParams, headers: [csrf], body: { required: true, content: { 'application/json': { schema: SupportTicketStatusRequestSchema } } } },
+    responses: {
+      200: json(envelopeOf(SupportTicketDetailSchema), 'The updated ticket.'),
+      401: unauthorized,
+      403: adminWrite,
+      404: ticketNotFound,
+      422: err(`VALIDATION_ERROR with fields.status: "${SUPPORT_ADMIN_MESSAGES.statusRequired}"`),
     },
   })
 }

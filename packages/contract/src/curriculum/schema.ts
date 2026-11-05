@@ -49,6 +49,14 @@ export const CURRICULUM_CONFLICT_MESSAGES = {
   topic: 'Topik ini masih mempunyai subtopik.',
 } as const
 
+/**
+ * 409 CONFLICT copy when a write would leave a primary (Darjah) level active: only Tingkatan 1-5 are
+ * active (FR-X3-1, FR-ADM-C03.3a, DM-13). PROPOSED copy (D115), owner to confirm (docs/qa/r1-proposed-copy.md).
+ */
+export const CURRICULUM_LEVEL_RULE_MESSAGES = {
+  primaryActive: 'Darjah tidak boleh diaktifkan. Hanya Tingkatan 1 hingga 5 digunakan.',
+} as const
+
 export const CURRICULUM_FLASH_MESSAGES = {
   chapter: { created: 'Bab berjaya ditambah.', updated: 'Bab berjaya dikemaskini.', deleted: 'Bab berjaya dipadam.' },
   topic: { created: 'Topik berjaya ditambah.', updated: 'Topik berjaya dikemaskini.', deleted: 'Topik berjaya dipadam.' },
@@ -430,6 +438,54 @@ export const CurriculumNodeSchema = z
     isElective: z.boolean(),
   })
   .meta({ id: 'CurriculumNode' })
+
+// --- DSKP load report (API-DSKP-11, S4-T02) ----------------------------------------------------
+
+/** `dimuatkan` when the Subjek x Tingkatan has at least one `curriculum_nodes` row of any kind (FR-ADM-C04.0). */
+export const CurriculumDskpStateSchema = z.enum(['dimuatkan', 'belum dimuatkan']).meta({ id: 'CurriculumDskpState' })
+
+/** Query of `GET /admin/curriculum/dskp`: both optional; with both, the node list is returned too. */
+export const CurriculumDskpQuerySchema = z
+  .object({ subjectId: IdSchema.optional(), levelId: IdSchema.optional() })
+  .meta({ id: 'CurriculumDskpQuery' })
+
+/**
+ * One offered Subjek x Tingkatan (an active subject linked to an active, non-primary level through
+ * `subject_levels`), counted live from `curriculum_nodes` / `curriculum_tp_descriptors` (D11/D12: nothing
+ * stored). `bab` = nodes of kind `unit` (D109 calls the unit the Bab), `sk` / `sp` = nodes of that kind,
+ * `tp` = descriptor rows of those nodes, `tpDescriptors` = the subject's general-level rows (`node_id` null,
+ * the same number on every level row of the subject). A row with no node is `belum dimuatkan` with zeros.
+ */
+export const CurriculumDskpReportRowSchema = z
+  .object({
+    subject: CurriculumRefSchema,
+    level: CurriculumRefSchema,
+    state: CurriculumDskpStateSchema,
+    bab: z.int().min(0),
+    sk: z.int().min(0),
+    sp: z.int().min(0),
+    tp: z.int().min(0),
+    tpDescriptors: z.int().min(0),
+  })
+  .meta({ id: 'CurriculumDskpReportRow' })
+
+/** A TP descriptor of a node (TP 1 to 6). */
+export const CurriculumDskpTpDescriptorSchema = z
+  .object({ tp: CurriculumTpSchema, descriptor: z.string() })
+  .meta({ id: 'CurriculumDskpTpDescriptor' })
+
+/** A DSKP node of the `DSKP` tab list, with its TP descriptors (read-only). */
+export const CurriculumDskpNodeSchema = CurriculumNodeSchema.extend({
+  tpDescriptors: z.array(CurriculumDskpTpDescriptorSchema),
+}).meta({ id: 'CurriculumDskpNode' })
+
+/** `GET /admin/curriculum/dskp` body: the rows, and `nodes` only when both ids were given (else null). */
+export const CurriculumDskpReportSchema = z
+  .object({
+    rows: z.array(CurriculumDskpReportRowSchema),
+    nodes: z.array(CurriculumDskpNodeSchema).nullable(),
+  })
+  .meta({ id: 'CurriculumDskpReport' })
 
 // --- Envelopes ---------------------------------------------------------------------------------
 
