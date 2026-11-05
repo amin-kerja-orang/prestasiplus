@@ -1,2 +1,11 @@
 # Fake image token in a unit test fixture (not a secret): 'abcDEF0123456789abcdef', a sequential placeholder.
 db83978c99f31ce0a037a3145f9d0f7e24113615:src/modules/m28-bijak-spm/__tests__/kuiz-pages.test.ts:generic-api-key:229
+
+# Fake UUIDs in tests (not secrets): clientUuid idempotency keys and test constants written by hand, S7-T04 and S7-T05.
+50cb92400be8090d6389094b80b5323892facba4:src/modules/m14-gamification/__tests__/mock/endpoints.test.ts:generic-api-key:959
+25dcd1bb6548807660c472256e469147cbfce393:apps/api/test/gamification/convert.spec.ts:generic-api-key:104
+25dcd1bb6548807660c472256e469147cbfce393:apps/api/test/gamification/convert.spec.ts:generic-api-key:162
+083ed11c89aabd6d9e887fa2569c4977dcefe4a2:apps/api/test/wallet/ledger-idempotency-migration.spec.ts:generic-api-key:13
+083ed11c89aabd6d9e887fa2569c4977dcefe4a2:apps/api/test/wallet/ledger-idempotency-migration.spec.ts:generic-api-key:14
+9f47bc3df7c3452462f31647a23cf82ea8ce00b0:apps/api/test/shop/user.spec.ts:generic-api-key:124
+71fc5320b646eda2412cce92e2102c06caf18675:apps/api/test/shop/concurrency.spec.ts:generic-api-key:30
