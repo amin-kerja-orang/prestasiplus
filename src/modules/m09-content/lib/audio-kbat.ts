@@ -33,7 +33,7 @@ export const PLAYER_COPY = {
   noAudio: 'Audio tidak tersedia.',
   audioFailed: 'Fail audio tidak dapat dimuatkan.',
   audioRetry: 'Cuba Semula',
-  resultTitle: 'Keputusan Ujian Mendengar',
+  resultTitle: 'Skor anda',
 } as const
 
 /** Positive integer from a query value, else `undefined` (an unknown value filters nothing). */

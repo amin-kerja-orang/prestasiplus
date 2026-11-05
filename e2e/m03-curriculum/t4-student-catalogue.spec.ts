@@ -481,7 +481,7 @@ test.describe('M03 S14 Peta Belajar', MODULE, () => {
     await openMap(page, gotoApp, '?subject=GEOGRAFI&grade=DARJAH_1')
     await expect(page.getByTestId('map-empty')).toContainText('Peta Belum Tersedia')
     await expect(page.getByTestId('map-empty')).toContainText(
-      'Pilih subjek dan darjah yang lain untuk melihat peta belajar',
+      'Bab DSKP untuk subjek ini belum dimuatkan.',
     )
     await expect(page.getByTestId('map-empty')).toContainText('🗺️')
     await expect(page.getByTestId('map-subtitle')).toContainText('Terokai perjalanan Geografi —')
