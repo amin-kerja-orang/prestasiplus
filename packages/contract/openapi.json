@@ -111731,6 +111731,16 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: unknown `tapis` or `subjectCode` over 32 characters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
