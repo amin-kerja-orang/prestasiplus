@@ -2,7 +2,7 @@ import 'reflect-metadata'
 
 import { Controller, Get, Module } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
-import { FeatureToggleListResponseSchema, SessionSchema } from '@pp/contract'
+import { FEATURE_ROUTE_PREFIXES, FeatureToggleListResponseSchema, SessionSchema } from '@pp/contract'
 import request from 'supertest'
 import type TestAgent from 'supertest/lib/agent'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -68,14 +68,22 @@ describe('Kawalan Ciri (S0-T10)', () => {
     await close()
   })
 
-  it('migration 0250 seeds exactly 4 rows; the CHECK refuses a locked row that is ON (INV-29)', async () => {
+  it('migrations 0250 + 0251 seed exactly 32 rows (4 + 28); the CHECK refuses a locked row that is ON (INV-29)', async () => {
     const rows = await db.query<{ key: string; label_ms: string; audience: string; enabled: boolean; locked: boolean; sort_order: number }>(`select key, label_ms, audience, enabled, locked, sort_order from feature_flags order by sort_order`)
-    expect(rows).toEqual([
+    expect(rows).toHaveLength(32)
+    expect(rows.filter((r) => r.audience === 'pelajar')).toHaveLength(22)
+    expect(rows.filter((r) => r.audience === 'guru')).toHaveLength(10)
+    // The four rows of 0250 are untouched by 0251.
+    expect(rows.filter((r) => ['permainan', 'latih-tubi', 'cikgu-alesa', 'keluarga-angkat'].includes(r.key))).toEqual([
       { key: 'permainan', label_ms: 'Zona Permainan', audience: 'pelajar', enabled: true, locked: false, sort_order: 10 },
       { key: 'latih-tubi', label_ms: 'Latih Tubi', audience: 'pelajar', enabled: true, locked: false, sort_order: 200 },
       { key: 'cikgu-alesa', label_ms: 'Cikgu Alesa', audience: 'pelajar', enabled: false, locked: true, sort_order: 900 },
       { key: 'keluarga-angkat', label_ms: 'Mohon Keluarga Angkat', audience: 'pelajar', enabled: false, locked: true, sort_order: 910 },
     ])
+    // Every key has a route-prefix entry, and the 28 new rows are ON except Tiket Bantuan (Delivery B, D-2) and never locked.
+    expect(rows.map((r) => r.key).sort()).toEqual(Object.keys(FEATURE_ROUTE_PREFIXES).sort())
+    expect(rows.filter((r) => !r.enabled).map((r) => r.key).sort()).toEqual(['cikgu-alesa', 'keluarga-angkat', 'tiket-bantuan'])
+    expect(rows.filter((r) => r.locked).map((r) => r.key).sort()).toEqual(['cikgu-alesa', 'keluarga-angkat'])
     await expect(db.query(`update feature_flags set enabled = true where key = 'cikgu-alesa'`)).rejects.toThrow(/ck_feature_flags_locked_off/)
     await expect(db.query(`insert into feature_flags (key, label_ms, audience) values ('x', 'X', 'ibu')`)).rejects.toThrow(/ck_feature_flags_audience/)
   })
@@ -85,7 +93,11 @@ describe('Kawalan Ciri (S0-T10)', () => {
     expectError(await apiOf(student).get('/admin/feature-toggles'), 'FORBIDDEN')
     const res = await apiOf(admin).get('/admin/feature-toggles')
     expect(res.status).toBe(200)
-    expect(FeatureToggleListResponseSchema.parse(res.body).data.map((r) => r.key)).toEqual(['permainan', 'latih-tubi', 'cikgu-alesa', 'keluarga-angkat'])
+    const keys = FeatureToggleListResponseSchema.parse(res.body).data.map((r) => r.key)
+    expect(keys).toHaveLength(32)
+    expect(keys.slice(0, 2)).toEqual(['permainan', 'misi-harian']) // ordered by sort_order
+    expect(keys.slice(-2)).toEqual(['cikgu-alesa', 'keluarga-angkat'])
+    expect(keys.indexOf('guru.headcount')).toBeLessThan(keys.indexOf('guru.sumbang-soalan'))
   })
 
   it('PUT needs the admin and the CSRF header; a student gets 403', async () => {
@@ -120,11 +132,30 @@ describe('Kawalan Ciri (S0-T10)', () => {
     expectError(await http().get('/api/games/probe'), 'NOT_FOUND')
     expectError(await admin.agent.get('/api/games/probe'), 'NOT_FOUND')
     const session = SessionSchema.parse((await admin.agent.get('/api/session')).body.data)
-    expect(session.features).toEqual({ permainan: false, 'latih-tubi': true, 'cikgu-alesa': false, 'keluarga-angkat': false })
+    expect(Object.keys(session.features ?? {})).toHaveLength(32)
+    expect(session.features).toMatchObject({ permainan: false, 'latih-tubi': true, 'cikgu-alesa': false, 'keluarga-angkat': false, leaderboard: true, 'tiket-bantuan': false })
+    expect(Object.entries(session.features ?? {}).filter(([, on]) => !on).map(([k]) => k).sort()).toEqual(['cikgu-alesa', 'keluarga-angkat', 'permainan', 'tiket-bantuan'])
 
     expect((await api.put('/admin/feature-toggles/permainan', { enabled: true })).status).toBe(200)
     expect((await http().get('/api/games/probe')).status).toBe(200)
     expect((await auditRows()).at(-1)).toMatchObject({ detail: { key: 'permainan', old: false, new: true } })
+  })
+
+  it('every unlocked key can be switched OFF and back ON by the admin, audited, and shows in the session map (S0-T11)', async () => {
+    const api = apiOf(admin)
+    const keys = Object.keys(FEATURE_ROUTE_PREFIXES).filter((k) => k !== 'cikgu-alesa' && k !== 'keluarga-angkat' && k !== 'permainan')
+    expect(keys).toHaveLength(29)
+    const before = (await auditRows()).length
+    for (const key of keys) {
+      const row = (await db.query<{ enabled: boolean }>(`select enabled from feature_flags where key = $1`, [key]))[0]!
+      const flip = await api.put(`/admin/feature-toggles/${key}`, { enabled: !row.enabled })
+      expect(flip.status, key).toBe(200)
+      expect(flip.body.data).toMatchObject({ key, enabled: !row.enabled, locked: false })
+      expect((await admin.agent.get('/api/session')).body.data.features[key]).toBe(!row.enabled)
+      expect((await api.put(`/admin/feature-toggles/${key}`, { enabled: row.enabled })).status, key).toBe(200)
+    }
+    expect((await auditRows()).length - before).toBe(keys.length * 2)
+    expectError(await api.put('/admin/feature-toggles/cikgu-alesa', { enabled: true }), 'CONFLICT')
   })
 
   it('a key with no row is ON: deleting the permainan row reopens the prefix', async () => {

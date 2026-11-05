@@ -155,8 +155,10 @@ describe('FeatureGuard (API-AUTH-16)', () => {
 })
 
 describe('FEATURE_ROUTE_PREFIXES', () => {
-  it('has exactly the 4 seeded keys', () => {
-    expect(Object.keys(FEATURE_ROUTE_PREFIXES).sort()).toEqual(['cikgu-alesa', 'keluarga-angkat', 'latih-tubi', 'permainan'])
+  it('has the 32 keys of N-06 / P2-19 (S0-T10 seeded 4, S0-T11 the other 28); the full list is asserted in feature-keys.spec.ts', () => {
+    const keys = Object.keys(FEATURE_ROUTE_PREFIXES)
+    expect(keys).toHaveLength(32)
+    expect(keys).toEqual(expect.arrayContaining(['cikgu-alesa', 'keluarga-angkat', 'latih-tubi', 'permainan']))
   })
 
   it('maps api paths to their key on a segment boundary', () => {

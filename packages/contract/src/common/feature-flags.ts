@@ -6,7 +6,7 @@ import { ErrorBodySchema } from './error'
 
 /**
  * Kawalan Ciri (S0-T10, DM-34, API-ADM-09, API-AUTH-16). Server-side feature flags: the admin list/toggle,
- * the API `FeatureGuard` and the `features` map of `GET /api/session`. S0-T11 adds the other 28 keys.
+ * the API `FeatureGuard` and the `features` map of `GET /api/session`. S0-T11 completes the 32 keys.
  */
 
 export const FEATURE_AUDIENCES = ['pelajar', 'guru'] as const
@@ -65,17 +65,60 @@ export interface FeatureRoutePrefixes {
 }
 
 /**
- * Route prefixes per flag key (API-AUTH-16). Only the 4 keys seeded by S0-T10; S0-T11 adds the others.
+ * Route prefixes per flag key (API-AUTH-16): the 32 keys of Kawalan Ciri (S0-T10 seeded 4, S0-T11 the other 28).
  *
- * `latih-tubi` has NO api prefix on purpose (D115 default): its endpoints (`/api/practice/sessions`,
- * `/api/practice/subjects`, ...) are shared with Latih Bab, Ulang Kaji, Permainan answers and the dashboard,
- * so the key is enforced on the front-end prefix only. `/practice/chapter` and `/practice/revision` are other modules.
+ * Audience-blind (S0-T11 D-3): one URL cannot be split by audience, so the key whose label a shared page carries governs it
+ * for every role (`/headcount` -> guru.headcount, `/video` -> video-pembelajaran, `/panduan`, `/perutusan`, `/kombo`). A pupil key
+ * owns the pupil route and what no guru key claims; a guru key owns its `/guru/...` paths and `/prestasi/kelas|sekolah|tingkatan`.
+ *
+ * A key with `api: []` is enforced on the front-end only (D115, S0-T11 D-7): it has no dedicated API controller, or its
+ * endpoint is shared with other screens (`latih-tubi`: `/api/practice/sessions` serves Latih Bab, Ulang Kaji, Permainan and the
+ * dashboard; `prestasi`: `/api/performance/*`; `guru.kelas`: `/api/guru/classes` also feeds Cikgu Alesa). The locked keys
+ * `cikgu-alesa` and `keluarga-angkat` are OFF for ever (INV-29).
  */
 export const FEATURE_ROUTE_PREFIXES: Readonly<Record<string, FeatureRoutePrefixes>> = {
+  // Pelajar
   permainan: { fe: ['/permainan'], api: ['/api/games', '/api/papan-bijak'] },
-  'latih-tubi': { fe: ['/practice'], api: [], feExcept: ['/practice/chapter', '/practice/revision'] },
+  'misi-harian': { fe: ['/misi-harian'], api: ['/api/missions'] },
+  kombo: { fe: ['/kombo'], api: [] },
+  leaderboard: { fe: ['/gamification/leaderboard'], api: ['/api/gamification/leaderboard'] },
+  remedial: { fe: ['/remedial'], api: ['/api/remedial-tests'] },
+  'cita-cita': { fe: ['/cita-cita'], api: [], feExcept: ['/cita-cita/universiti', '/cita-cita/biasiswa'] },
+  universiti: { fe: ['/cita-cita/universiti'], api: [] },
+  biasiswa: { fe: ['/cita-cita/biasiswa'], api: [] },
+  'target-spm': { fe: ['/target-spm'], api: ['/api/spm-targets'] },
+  'analisa-item': { fe: ['/analisa-item'], api: ['/api/item-analysis'] },
+  prestasi: {
+    fe: ['/prestasi'],
+    api: [],
+    feExcept: ['/prestasi/kelas', '/prestasi/sekolah', '/prestasi/tingkatan'],
+  },
+  psikometrik: { fe: ['/psikometrik'], api: [] },
+  'profil-cerah': { fe: ['/profil-cerah'], api: [] },
+  'kemajuan-saya': { fe: ['/practice/progress'], api: [] },
+  'sejarah-latihan': { fe: ['/practice/history'], api: [] },
+  'video-pembelajaran': { fe: ['/video'], api: ['/api/videos'] },
+  perutusan: { fe: ['/perutusan'], api: ['/api/perutusan', '/api/public/perutusan'] },
+  'panduan-pengguna': { fe: ['/panduan'], api: [] },
+  'tiket-bantuan': { fe: ['/pusat-tuisyen/tiket'], api: ['/api/tiket'] },
+  'latih-tubi': {
+    fe: ['/practice'],
+    api: [],
+    feExcept: ['/practice/chapter', '/practice/revision', '/practice/progress', '/practice/history'],
+  },
   'cikgu-alesa': { fe: ['/cikgu'], api: ['/api/cikgu'] },
   'keluarga-angkat': { fe: ['/mohon-keluarga-angkat'], api: ['/api/mohon-keluarga-angkat'] },
+  // Guru
+  'guru.headcount': { fe: ['/headcount'], api: ['/api/headcounts'] },
+  'guru.misi-harian': { fe: ['/guru/misi-harian'], api: [] },
+  'guru.kelas': { fe: ['/guru/kelas'], api: [] },
+  'guru.prestasi': { fe: ['/prestasi/kelas', '/prestasi/sekolah', '/prestasi/tingkatan'], api: [] },
+  'guru.monitoring': { fe: ['/guru/monitoring'], api: ['/api/monitoring'] },
+  'guru.analisis-item': { fe: ['/guru/analisis-item'], api: ['/api/teacher/item-analysis'] },
+  'guru.gamifikasi': { fe: ['/guru/gamifikasi'], api: [] },
+  'guru.broadcast': { fe: ['/guru/broadcast'], api: [] },
+  'guru.databank': { fe: ['/guru/databank'], api: [] },
+  'guru.sumbang-soalan': { fe: ['/guru/soalan'], api: ['/api/guru/questions'] },
 }
 
 /** True when `path` equals `prefix` or lies below it (`/api/games` matches `/api/games/hub`, not `/api/gamesx`). */
