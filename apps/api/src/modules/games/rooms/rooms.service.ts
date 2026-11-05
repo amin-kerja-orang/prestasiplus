@@ -599,7 +599,7 @@ export class RoomsService {
     const st = room.status === 'waiting' ? null : room.state // a waiting room only stores its secret seed
     if (st?.winnerId) ids.push(st.winnerId)
     const names = await this.users.getMany(ids)
-    // Children's names rule: players, host, winner and scores show a name the caller may see, else first name + initial.
+    // Children's names rule: players, host, winner and scores show a name the caller may see, else first given name.
     // Ids stay: they key `state.positions` / `meter` and `humanId`, which the room client needs to draw the game.
     const seen = await this.privacy.resolver(caller)
     const nameOf = (id: string): string => {

@@ -195,7 +195,7 @@ describe('S1 lobby', () => {
     await mountPage(BattleLobbyPage)
     const modal = document.body.querySelector('[data-testid="battle-invitations-modal"]')
     expect(modal?.textContent).toContain('Murid A')
-    expect(modal?.textContent).toContain('SK Satu')
+    expect(modal?.textContent).not.toContain('SK Satu') // FR-GM-00.8: no school next to a pupil name
   })
 })
 

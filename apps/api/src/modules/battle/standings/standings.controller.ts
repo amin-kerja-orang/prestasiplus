@@ -24,7 +24,7 @@ const viewerOf = (req: Req): BattleViewer => {
 
 /**
  * Battle standings, school page and own history (M16-18..21), any signed-in role (the global guard makes anonymous
- * calls 401). Names and schools of players only; pupils outside the viewer's scope show first name + initial and no id (privacy.ts).
+ * calls 401). Names and schools of players only; pupils outside the viewer's scope show first given name and no id (privacy.ts).
  */
 @Controller('battle')
 @UseGuards(RateLimitGuard)

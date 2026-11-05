@@ -13,6 +13,7 @@ import { idFromString, idToString, isIdString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import type { BattleStudent } from '../battle.deps'
 import { type BattleParams, BattleEngine, gradeLabel, parseBattleParams, ParamRefusal, type QueueMode } from '../engine'
+import { displayName } from '../privacy'
 import { rawForbidden, rawInvalid, rawNotFound } from '../raw-response'
 
 type Challenger = { name: string; grade_label: string; school: string }
@@ -118,7 +119,8 @@ export class QueueService {
   private async challengerOf(userId: bigint): Promise<Challenger> {
     const p = await this.engine.player(idToString(userId))
     if (!p) throw rawNotFound(BATTLE_MESSAGES.noOpponent)
-    return { name: p.name, grade_label: gradeLabel(p.grade), school: p.schoolName ?? '' }
+    // FR-GM-00.8: first given name, no school (`school` stays in the contract, always empty).
+    return { name: displayName(p.name) || 'Pelajar', grade_label: gradeLabel(p.grade), school: '' }
   }
 
   /** M16-04. */

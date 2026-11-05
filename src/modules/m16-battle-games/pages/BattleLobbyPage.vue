@@ -438,9 +438,6 @@ onBeforeUnmount(() => {
             <UBadge color="neutral" variant="soft" size="lg">{{
               search.challenger.value.grade_label
             }}</UBadge>
-            <UBadge color="neutral" variant="soft" size="lg">{{
-              search.challenger.value.school
-            }}</UBadge>
           </div>
           <p class="flex items-start justify-center gap-2 text-caption text-muted">
             <UIcon name="i-ph-info-duotone" class="mt-1 size-4 shrink-0" aria-hidden="true" />

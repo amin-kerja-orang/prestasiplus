@@ -71,7 +71,7 @@ export class StandingsService {
     return viewer.role === 'teacher' ? this.deps.ownPupilIdsOfTeacher(viewer.userId) : Promise.resolve(NO_PUPILS)
   }
 
-  /** Children's names rule (LEAD 2026-10-21, issue #76): full name and id inside the viewer's scope, else first name + initial and no id. */
+  /** Children's names rule (LEAD 2026-10-21, issue #76): full name and id inside the viewer's scope, else first given name and no id. */
   private async masker(viewer: BattleViewer) {
     const own = await this.ownPupils(viewer)
     return (id: string, schoolId: string | null, name: string): { id: string | null; name: string } =>
