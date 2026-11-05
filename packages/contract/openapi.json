@@ -4214,6 +4214,10 @@
           },
           "hours": {
             "type": "string"
+          },
+          "whatsappNumber": {
+            "type": "string",
+            "deprecated": true
           }
         },
         "required": [
