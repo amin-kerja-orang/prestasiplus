@@ -1373,7 +1373,7 @@
         "properties": {
           "search": {
             "type": "string",
-            "description": "Title contains, case-insensitive."
+            "description": "Title or body contains, case-insensitive; at most 100 characters are used."
           },
           "category": {
             "type": "string",
@@ -1599,7 +1599,7 @@
         "properties": {
           "search": {
             "type": "string",
-            "description": "Title contains, case-insensitive."
+            "description": "Title or body contains, case-insensitive; at most 100 characters are used."
           },
           "category": {
             "type": "string",
@@ -18387,9 +18387,10 @@
             "description": "Members with at least one answer in the last 7 days."
           },
           "accuracy": {
-            "type": "integer",
+            "type": "number",
             "minimum": 0,
-            "description": "Whole percent over all answers of the members; 0 when none."
+            "maximum": 100,
+            "description": "Pooled accuracy, one decimal (XS-5); 0 when none."
           }
         },
         "required": [
@@ -18415,8 +18416,9 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "integer",
-            "minimum": 0
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
           }
         },
         "required": [
@@ -18591,9 +18593,10 @@
             "description": "round((week - previous 7 days) / previous * 100); 0 when the previous week has no answer."
           },
           "accuracy": {
-            "type": "integer",
+            "type": "number",
             "minimum": 0,
-            "description": "round(correct / answered * 100) over all answers; 0 when none."
+            "maximum": 100,
+            "description": "Pooled accuracy, one decimal (XS-5); 0 when none."
           },
           "gpsOverall": {
             "type": [
@@ -18649,17 +18652,22 @@
             "minimum": 0
           },
           "kirkT2Accuracy": {
-            "type": "integer",
+            "type": "number",
             "minimum": 0,
-            "description": "Accuracy of the last 30 days."
+            "maximum": 100,
+            "description": "Pooled accuracy of the last 30 days, one decimal (XS-5); 0 when none."
           },
           "kirkT2Delta": {
-            "type": "integer",
-            "description": "Difference to the 30 days before."
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Difference to the 30 days before, one decimal; null when either side has no answers."
           },
           "kirkT2Prev": {
-            "type": "integer",
-            "minimum": 0
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
           },
           "kirkT3Active": {
             "type": "integer",
@@ -18774,8 +18782,9 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "integer",
-            "minimum": 0
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
           },
           "lastActiveAt": {
             "allOf": [
@@ -18835,8 +18844,9 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "integer",
-            "minimum": 0
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
           }
         },
         "required": [
@@ -18864,8 +18874,9 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "integer",
-            "minimum": 0
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
           },
           "students": {
             "type": "integer",
@@ -19028,8 +19039,9 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "integer",
-            "minimum": 0
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
           },
           "lastActiveAt": {
             "allOf": [
@@ -19059,15 +19071,21 @@
         "type": "object",
         "properties": {
           "accuracyNow": {
-            "type": "integer",
-            "minimum": 0
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
           },
           "accuracyPrev": {
-            "type": "integer",
-            "minimum": 0
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
           },
           "accuracyChange": {
-            "type": "integer"
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Difference to the 30 days before, one decimal; null when either side has no answers."
           },
           "answersNow": {
             "type": "integer",
@@ -19146,15 +19164,21 @@
             "type": "object",
             "properties": {
               "accuracyNow": {
-                "type": "integer",
-                "minimum": 0
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
               },
               "accuracyPrev": {
-                "type": "integer",
-                "minimum": 0
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
               },
               "accuracyChange": {
-                "type": "integer"
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Difference to the 30 days before, one decimal; null when either side has no answers."
               },
               "answersNow": {
                 "type": "integer",
@@ -19594,8 +19618,9 @@
                   "type": "string"
                 },
                 "accuracy": {
-                  "type": "integer",
-                  "minimum": 0
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
                 },
                 "awardedAt": {
                   "$ref": "#/components/schemas/Timestamp"
@@ -30934,9 +30959,10 @@
         "enum": [
           "on_track",
           "watch",
-          "high"
+          "high",
+          "not_started"
         ],
-        "description": "score < 40 on_track, < 60 watch, otherwise high. Labels: \"On Track\", \"Perlu Perhatian\", \"Berisiko Tinggi\"."
+        "description": "score < 40 on_track, < 60 watch, otherwise high; a pupil with no practice data at all is not_started (no score, outside the three groups). Labels: \"On Track\", \"Perlu Perhatian\", \"Berisiko Tinggi\", \"Belum Bermula\"."
       },
       "AmaranScope": {
         "type": "string",
@@ -30985,9 +31011,15 @@
             "minimum": 0,
             "description": "high."
           },
+          "notStarted": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "not_started: pupils with no practice data, outside green, yellow, red and total. Always sent by the API; optional so existing consumers keep compiling (additive change)."
+          },
           "total": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "description": "green + yellow + red (not_started excluded)."
           },
           "pct": {
             "type": "object",
@@ -31059,7 +31091,7 @@
         "properties": {
           "tingkatan": {
             "type": "string",
-            "description": "T4 | T5 | 4 | 5 (case-insensitive). Anything else = no filter. The filter is class based."
+            "description": "T1 to T5 | 1 to 5 (case-insensitive). Anything else = no filter. The filter is class based."
           }
         }
       },
@@ -31110,10 +31142,13 @@
             "description": "\"Tingkatan n {class}\", \"Darjah n {class}\" or \"-\"."
           },
           "score": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100,
-            "description": "0.4A + 0.3E + 0.3M, 1 decimal."
+            "description": "0.4A + 0.3E + 0.3M, 1 decimal; null for not_started."
           },
           "status": {
             "$ref": "#/components/schemas/AmaranRiskStatus"
@@ -31209,10 +31244,22 @@
               "null"
             ],
             "enum": [
+              "T1",
+              "T2",
+              "T3",
               "T4",
               "T5",
               null
             ]
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            },
+            "description": "The Tingkatan numbers (ascending) that have pupils in the school; the level pills list only these."
           },
           "levelSuffix": {
             "type": "string",
@@ -31232,7 +31279,7 @@
             "items": {
               "$ref": "#/components/schemas/AmaranPupilRisk"
             },
-            "description": "Score descending, 1-based rank. Inactive pupils are included."
+            "description": "Score descending (not_started last), 1-based rank. Inactive pupils are included."
           }
         },
         "required": [
@@ -43770,7 +43817,8 @@
         "enum": [
           "latih_tubi",
           "tracking_a",
-          "youtube"
+          "youtube",
+          "harian"
         ]
       },
       "MissionStatus": {
@@ -43825,6 +43873,17 @@
           },
           "status": {
             "$ref": "#/components/schemas/MissionStatus"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "S6-T07 additive: mission description (null when none)."
+          },
+          "rewardCoins": {
+            "type": "integer",
+            "description": "S6-T07 additive: coins paid once at the target."
           }
         },
         "required": [
@@ -43856,6 +43915,164 @@
         "required": [
           "data",
           "meta"
+        ]
+      },
+      "TeacherMission": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "targetQuestions": {
+            "type": "integer"
+          },
+          "rewardCoins": {
+            "type": "integer"
+          },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "classroomId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "subjectId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "subjectName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "global": {
+            "type": "boolean"
+          },
+          "completedCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Pupils of the teacher's classes who completed it."
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "targetQuestions",
+          "rewardCoins",
+          "date",
+          "classroomId",
+          "subjectId",
+          "subjectName",
+          "global",
+          "completedCount"
+        ]
+      },
+      "TeacherMissionCreate": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500
+          },
+          "targetQuestions": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "default": 10
+          },
+          "rewardCoins": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "default": 10
+          },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "classroomId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "null or absent = all own classes.",
+            "example": "1042"
+          },
+          "subjectId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "title",
+          "date",
+          "subjectId"
+        ]
+      },
+      "TeacherMissionListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TeacherMission"
+            }
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "TeacherMissionResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TeacherMission"
+          }
+        },
+        "required": [
+          "data"
         ]
       },
       "RemedialStatus": {
@@ -59884,6 +60101,129 @@
         ],
         "additionalProperties": false
       },
+      "PracticeReadRemedialCompleted": {
+        "type": "object",
+        "properties": {
+          "subjectCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "subjectName": {
+            "type": "string"
+          },
+          "setNo": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "\"Set {n}\": per-subject ordinal of the completed revision drills by completed_at ascending."
+          },
+          "questionCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "before": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Whole number: pooled subject accuracy over the answers given before the drill started (\"Sebelum\"); null when the pupil had no answers in the subject before it."
+          },
+          "after": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Whole number: the drill accuracy (\"Selepas\"); null when the session had no questions."
+          },
+          "delta": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": -100,
+            "maximum": 100,
+            "description": "after - before; null unless both sides exist. The sign and colour are the client concern (FR-MUR-12-4)."
+          },
+          "at": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "subjectCode",
+          "subjectName",
+          "setNo",
+          "questionCount",
+          "before",
+          "after",
+          "delta",
+          "at"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadRemedialNeeded": {
+        "type": "object",
+        "properties": {
+          "subjectCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "subjectName": {
+            "type": "string"
+          },
+          "answered": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "\"{n} soalan\": the pupil answer rows of the subject (sum of attempts, not distinct questions)."
+          },
+          "accuracy": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Whole number, half up, pooled correct / answered over all non-test modes; always below `target`."
+          },
+          "target": {
+            "type": "number",
+            "enum": [
+              60
+            ]
+          }
+        },
+        "required": [
+          "subjectCode",
+          "subjectName",
+          "answered",
+          "accuracy",
+          "target"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadRemedialSuggestions": {
+        "type": "object",
+        "properties": {
+          "completed": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeReadRemedialCompleted"
+            },
+            "description": "Completed non-test revision sessions, newest 20 first."
+          },
+          "needed": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeReadRemedialNeeded"
+            },
+            "description": "Subjects below 60 whose drill has at least one servable question; BR-01 order. Empty for staff roles and for a pupil with no answers."
+          }
+        },
+        "required": [
+          "completed",
+          "needed"
+        ],
+        "additionalProperties": false
+      },
       "PracticeReadProgressSubject": {
         "type": "object",
         "properties": {
@@ -75801,15 +76141,15 @@
           "content"
         ],
         "summary": "Published articles (reader list)",
-        "description": "Public (guests allowed). Only published articles; 18 per page, `publishedAt` desc then id. An out-of-range page is an empty list, not an error.",
+        "description": "Public (guests allowed). Only published articles; 12 per page, `publishedAt` desc then id. `meta.counts` holds the number of published articles per category code for the current `search` (ignoring `category`), so a pill can show its count. An out-of-range page is an empty list, not an error.",
         "parameters": [
           {
             "schema": {
               "type": "string",
-              "description": "Title contains, case-insensitive."
+              "description": "Title or body contains, case-insensitive; at most 100 characters are used."
             },
             "required": false,
-            "description": "Title contains, case-insensitive.",
+            "description": "Title or body contains, case-insensitive; at most 100 characters are used.",
             "name": "search",
             "in": "query"
           },
@@ -77366,10 +77706,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "Title contains, case-insensitive."
+              "description": "Title or body contains, case-insensitive; at most 100 characters are used."
             },
             "required": false,
-            "description": "Title contains, case-insensitive.",
+            "description": "Title or body contains, case-insensitive; at most 100 characters are used.",
             "name": "search",
             "in": "query"
           },
@@ -93539,6 +93879,45 @@
         }
       }
     },
+    "/practice/remedial-suggestions": {
+      "get": {
+        "tags": [
+          "practice-reads"
+        ],
+        "summary": "Own remedial suggestions: completed drills and subjects needing recovery (S5-T07)",
+        "description": "GET /api/practice/remedial-suggestions (API-PRAC-08). completed: the newest 20 completed non-test revision sessions with Sebelum / Selepas. needed: subjects whose pooled accuracy (correct / answered over the non-test answer rows, whole number half up) is below 60 and whose revision drill has at least one servable question (FD-MUR-36). Pupils only; staff roles get empty arrays. Assigned tests stay on GET /remedial-tests/mine. Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
+        "responses": {
+          "200": {
+            "description": "The completed sets and the needed subjects.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PracticeReadRemedialSuggestions"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/practice/progress": {
       "get": {
         "tags": [
@@ -105877,10 +106256,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "T4 | T5 | 4 | 5 (case-insensitive). Anything else = no filter. The filter is class based."
+              "description": "T1 to T5 | 1 to 5 (case-insensitive). Anything else = no filter. The filter is class based."
             },
             "required": false,
-            "description": "T4 | T5 | 4 | 5 (case-insensitive). Anything else = no filter. The filter is class based.",
+            "description": "T1 to T5 | 1 to 5 (case-insensitive). Anything else = no filter. The filter is class based.",
             "name": "tingkatan",
             "in": "query"
           }
@@ -106099,7 +106478,7 @@
           "amaran"
         ],
         "summary": "School risk list as CSV",
-        "description": "Roles: admin (any school) and school_admin (own school); a teacher or any other role gets 403. Check order: the role check (403) comes BEFORE the 404; then an unknown school and a school outside the caller scope are both 404 (indistinguishable; the mock answered 403 for the latter). File name amaran-sekolah-{id}-{yyyymmdd}.csv (date in Malaysia time). Headers: Content-Type text/csv; charset=utf-8, Cache-Control no-store. Body: UTF-8 BOM, CRLF line ends with a trailing CRLF; header Bil,Pelajar,Tingkatan / Kelas,Skor Risiko,Status,Ketepatan,Penglibatan,Penguasaan; one line per pupil of the school (no tingkatan filter), score with one decimal, status label, then the three BM cell texts of the risk page. Cells starting with = + - @ tab or CR are prefixed with an apostrophe; quoting follows RFC 4180. No IC, e-mail or phone. PDPA: the file lists minors' names, classes and risk scores, the most sensitive derived data; it is never cached and rate limited (429, proposed on top of D57a because it is a bulk dump of minors). Every accepted download writes an audit event (actor, school, file name) and never personal content.",
+        "description": "Roles: admin (any school) and school_admin (own school); a teacher or any other role gets 403. Check order: the role check (403) comes BEFORE the 404; then an unknown school and a school outside the caller scope are both 404 (indistinguishable; the mock answered 403 for the latter). File name amaran-sekolah-{id}-{yyyymmdd}.csv (date in Malaysia time). Headers: Content-Type text/csv; charset=utf-8, Cache-Control no-store. Body: UTF-8 BOM, CRLF line ends with a trailing CRLF; header Bil,Pelajar,Sekolah,Tingkatan / Kelas,Skor Risiko,Status,Ketepatan,Penglibatan,Penguasaan; one line per pupil of the school (no tingkatan filter), score with one decimal, status label, then the three BM cell texts of the risk page. Cells starting with = + - @ tab or CR are prefixed with an apostrophe; quoting follows RFC 4180. No IC, e-mail or phone. PDPA: the file lists minors' names, classes and risk scores, the most sensitive derived data; it is never cached and rate limited (429, proposed on top of D57a because it is a bulk dump of minors). Every accepted download writes an audit event (actor, school, file name) and never personal content.",
         "parameters": [
           {
             "schema": {
@@ -110743,6 +111122,247 @@
           },
           "401": {
             "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/missions": {
+      "get": {
+        "tags": [
+          "missions"
+        ],
+        "summary": "Misi Harian of the signed-in teacher (API-GUR-11)",
+        "description": "Teacher only. Own missions plus Global (platform) missions (global = true), date descending then created descending. completedCount counts pupils of the teacher's classes.",
+        "responses": {
+          "200": {
+            "description": "Missions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherMissionListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "missions"
+        ],
+        "summary": "Create a mission (API-GUR-11)",
+        "description": "Teacher only. Recipients are a snapshot at creation (classroomId null = all pupils of all own active classes). 422 VALIDATION_ERROR with fields for the body check and for a date before today (MYT); 422 VALIDATION_ERROR without fields and message \"Had 5 misi sehari telah dicapai.\" when the teacher already has 5 missions on that MYT day; 422 MISSION_REWARD_TOO_HIGH \"Ganjaran misi melebihi had.\" (ERR-GAME-17) when rewardCoins is over the limit. UI toast \"Misi dicipta.\".",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeacherMissionCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The created mission.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeacherMissionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: fields per invalid input, or the daily cap refusal (no fields); or MISSION_REWARD_TOO_HIGH \"Ganjaran misi melebihi had.\" (ERR-GAME-17) when the reward is over the limit (emitted by the API part, #643).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (D57): too many writes. Body error.code RATE_LIMITED with retryAfter (seconds); Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/missions/{id}": {
+      "delete": {
+        "tags": [
+          "missions"
+        ],
+        "summary": "Delete an own mission (API-GUR-11)",
+        "description": "Teacher only. Rewards already paid stay. A Global mission answers 403 \"Misi global tidak boleh dipadam.\"; another teacher's or an unknown id answers 404.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ data: { deleted: 1 } }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "deleted": {
+                          "type": "number",
+                          "enum": [
+                            1
+                          ]
+                        }
+                      },
+                      "required": [
+                        "deleted"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Misi global tidak boleh dipadam.\"; or the generic role text; or CSRF_INVALID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id or not the caller's mission.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (D57): too many writes. Body error.code RATE_LIMITED with retryAfter (seconds); Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
