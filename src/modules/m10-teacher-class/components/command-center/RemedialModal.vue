@@ -20,7 +20,7 @@ import type { CcExistingRemedial, CcWeakStudent } from '../../api/command-center
 import { moduleMessage } from '../../lib/generic-server-text'
 import CcDialog from './CcDialog.vue'
 import { useOpenTab } from './composables'
-import { plain, remedialPath, S2_COPY, studentPath } from './copy'
+import { accuracyText, remedialPath, S2_COPY, studentPath } from './copy'
 
 /** The DS table wants an index signature, which a mapped alias gives an interface. */
 type Row = { [K in keyof CcWeakStudent]: CcWeakStudent[K] }
@@ -170,11 +170,11 @@ async function cancel(s: CcWeakStudent, quizId: number) {
           </template>
           <template #topics-cell="{ row }">
             <div v-for="(t, i) in row.original.weakTopics" :key="i" class="text-body">
-              {{ t.topicName }} ({{ plain(t.accuracy) }}%)
+              {{ t.topicName }} ({{ accuracyText(t.accuracy) }})
             </div>
           </template>
           <template #low-cell="{ row }">
-            <span class="tabular text-error">{{ plain(row.original.weakestAccuracy) }}%</span>
+            <span class="tabular text-error">{{ accuracyText(row.original.weakestAccuracy) }}</span>
           </template>
           <template #act-cell="{ row }">
             <div data-testid="cc-remedial-actions" class="flex min-w-0 flex-col gap-2">
@@ -219,7 +219,7 @@ async function cancel(s: CcWeakStudent, quizId: number) {
                   variant="link"
                   color="success"
                   class="w-fit"
-                  :label="`Selesai (${plain(doneTestOf(row.original.studentId)!.afterAccuracy ?? 0)}%)`"
+                  :label="`Selesai (${accuracyText(doneTestOf(row.original.studentId)!.afterAccuracy ?? 0)})`"
                   data-testid="cc-remedial-done"
                 />
                 <p
