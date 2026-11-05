@@ -126,6 +126,8 @@ const status = ref<'draft' | 'published'>('draft')
 const fields = ref<Record<string, string>>({})
 const failure = ref<string[]>([])
 const submitting = ref<'draft' | 'published' | null>(null)
+/** A published set keeps its status on save; it goes back to draft only through "Jadikan Draf" on the list. */
+const publishedEdit = computed(() => isEdit.value && status.value === 'published')
 const INLINE_FIELDS = ['title', 'subjectId', 'educationLevelId', 'questionIds', 'classroomIds']
 
 const {
@@ -164,6 +166,8 @@ const bankFailed = ref(false)
 const bankLoadedOnce = ref(false)
 let bankSeq = 0
 let bankAbort: AbortController | null = null
+/** The subject and level of the last (re)load, so a filter change that matches it is not loaded twice. */
+let lastFilters = ''
 
 async function loadBank(reset: boolean): Promise<void> {
   const q = searchText.value.trim()
@@ -174,6 +178,7 @@ async function loadBank(reset: boolean): Promise<void> {
     }
     searchError.value = ''
   } else if (bankLoading.value || nextCursor.value === null) return
+  if (reset) lastFilters = `${filterSubject.value}|${filterLevel.value}`
   bankAbort?.abort()
   const controller = new AbortController()
   bankAbort = controller
@@ -213,7 +218,9 @@ async function loadBank(reset: boolean): Promise<void> {
 watch([subjectId, levelId], ([s, l]) => {
   filterSubject.value = s
   filterLevel.value = l
-  if (bankLoadedOnce.value) void loadBank(true)
+  // Reload on every change, also while the first load is in flight: `loadBank` aborts the older request
+  // (seq guard), so a stale answer never lands. A change equal to the last load (edit mode fill) is skipped.
+  if (`${s}|${l}` !== lastFilters) void loadBank(true)
 })
 
 const unitChecked = (u: GuruSetBankUnit): boolean =>
@@ -589,6 +596,7 @@ function toggleClass(id: string, on: boolean): void {
           >{{ COPY.cancel }}</UButton
         >
         <UButton
+          v-if="!publishedEdit"
           type="button"
           color="neutral"
           variant="soft"

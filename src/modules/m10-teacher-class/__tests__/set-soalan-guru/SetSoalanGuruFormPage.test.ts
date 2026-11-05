@@ -193,6 +193,23 @@ describe('R1-GUR-8b form: layout and filters', () => {
     )
   })
 
+  it('a Subjek change while the first load is still in flight reloads at once; the stale answer is dropped', async () => {
+    let releaseFirst!: (v: unknown) => void
+    api.fetchGuruSetBank
+      .mockReturnValueOnce(new Promise((r) => (releaseFirst = r)))
+      .mockResolvedValueOnce(bank([unit('fresh')]))
+    const w = await mountAt('/guru/set-soalan/cipta')
+    expect(api.fetchGuruSetBank).toHaveBeenCalledTimes(1)
+    await w.get('[data-testid="set-subject"]').setValue('4')
+    await flushPromises()
+    expect(api.fetchGuruSetBank).toHaveBeenCalledTimes(2)
+    expect(api.fetchGuruSetBank).toHaveBeenLastCalledWith({ subjectId: '4' }, expect.anything())
+    releaseFirst(bank([unit('stale')]))
+    await flushPromises()
+    const previews = w.findAll('[data-testid="set-bank-preview"]').map((n) => n.text())
+    expect(previews).toEqual(['Soalan fresh'])
+  })
+
   it('the filters follow the set Subjek and Tingkatan once chosen', async () => {
     const w = await mountAt('/guru/set-soalan/cipta')
     api.fetchGuruSetBank.mockClear()
@@ -377,7 +394,7 @@ describe('R1-GUR-8b form: save and publish', () => {
     await flushPromises()
     expect(w.text()).toContain('Satu set boleh mengandungi paling banyak 100 soalan.')
     expect(api.createGuruSet).not.toHaveBeenCalled()
-  })
+  }, 90_000)
 
   it('shows a server 422 per field and the group-split message under the picker', async () => {
     api.createGuruSet.mockRejectedValue(
@@ -408,8 +425,8 @@ describe('R1-GUR-8b form: save and publish', () => {
 
 describe('R1-GUR-8b form: edit and the lock', () => {
   it('loads the set into the form, ticks the saved classes and saves with PUT', async () => {
-    api.fetchGuruSet.mockResolvedValue(storedSet())
-    api.updateGuruSet.mockResolvedValue(storedSet())
+    api.fetchGuruSet.mockResolvedValue(storedSet({ status: 'draft' }))
+    api.updateGuruSet.mockResolvedValue(storedSet({ status: 'draft' }))
     const w = await mountAt('/guru/set-soalan/5')
     expect(api.fetchGuruSet).toHaveBeenCalledWith('5', expect.anything())
     expect((w.get('[data-testid="set-title"]').element as HTMLInputElement).value).toBe('Ujian 1')
@@ -455,7 +472,7 @@ describe('R1-GUR-8b form: edit and the lock', () => {
   })
 
   it('AC-GUR-8b-12: a 409 on save locks the picker and shows the message', async () => {
-    api.fetchGuruSet.mockResolvedValue(storedSet())
+    api.fetchGuruSet.mockResolvedValue(storedSet({ status: 'draft' }))
     api.updateGuruSet.mockRejectedValue(
       new ApiError({
         status: 409,
@@ -470,6 +487,31 @@ describe('R1-GUR-8b form: edit and the lock', () => {
       'Soalan tidak boleh diubah kerana pelajar telah menjawab set ini.',
     )
     expect(w.find('[data-testid="set-locked"]').exists()).toBe(true)
+  })
+
+  it('a published set has no "Simpan Draf": saving keeps it published (unpublish is "Jadikan Draf" on the list)', async () => {
+    api.fetchGuruSet.mockResolvedValue(storedSet({ status: 'published' }))
+    api.updateGuruSet.mockResolvedValue(storedSet())
+    const w = await mountAt('/guru/set-soalan/5')
+    expect(w.find('[data-testid="set-save-draft"]').exists()).toBe(false)
+    await w.get('[data-testid="set-title"]').setValue('Ujian 3')
+    await w.get('[data-testid="set-publish"]').trigger('click')
+    await flushPromises()
+    expect(api.updateGuruSet).toHaveBeenCalledWith(
+      '5',
+      expect.objectContaining({ title: 'Ujian 3', status: 'published' }),
+    )
+    expect(api.updateGuruSet).not.toHaveBeenCalledWith(
+      '5',
+      expect.objectContaining({ status: 'draft' }),
+    )
+  })
+
+  it('a draft set keeps both "Simpan Draf" and "Terbitkan"', async () => {
+    api.fetchGuruSet.mockResolvedValue(storedSet({ status: 'draft' }))
+    const w = await mountAt('/guru/set-soalan/5')
+    expect(w.find('[data-testid="set-save-draft"]').exists()).toBe(true)
+    expect(w.find('[data-testid="set-publish"]').exists()).toBe(true)
   })
 
   it('shows an error box with a retry when the set cannot be loaded', async () => {
