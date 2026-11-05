@@ -3,12 +3,10 @@ import {
   GamesLeagueDetailSchema,
   GamesLeagueIdResultSchema,
   GamesLobbySchema,
-  GamesWeeklyCompetitionSchema,
 } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { classesSeed } from '../../../prisma/seed/poc/classes'
-import type { WeeklyPracticeSource } from '../../../src/modules/games'
 import { displayName } from '../../../src/modules/games/core/name-privacy'
 import { ACCOUNTS, bootGamesApp, loginAs, parseData, type Client, type GamesTestApp } from '../helpers'
 import { P, createRoom, parseRoom, userId } from '../rooms/support'
@@ -52,14 +50,8 @@ describe("children's names rule in the games rankings (issue #76)", () => {
   const expectedName = (v: (typeof VIEWERS)[number], k: Key): string => (v.sees.includes(k) ? full[k] : displayName(full[k]))
   const expectedId = (v: (typeof VIEWERS)[number], k: Key): string | null => (v.sees.includes(k) ? id[k] : null)
 
-  const weekly: WeeklyPracticeSource = {
-    async week() {
-      return { me: null, rows: KEYS.map((k, i) => ({ rank: i + 1, userId: id[k], name: full[k], sesi: 3, betul: 20 - i, tepat: 80 })) }
-    },
-  }
-
   beforeAll(async () => {
-    t = await bootGamesApp({ seeds: [classesSeed], ports: { weeklyPractice: weekly } })
+    t = await bootGamesApp({ seeds: [classesSeed] })
     for (const k of KEYS) {
       id[k] = await userId(t.db, EMAILS[k])
       full[k] = (await t.db.query<{ name: string }>('select name from users where id = $1', [id[k]]))[0]?.name as string
@@ -113,16 +105,6 @@ describe("children's names rule in the games rankings (issue #76)", () => {
         const lobby = parseData(await as(v).get('/api/games/kuiz-relay/lobby'), GamesLobbySchema)
         if (!('leaders' in lobby)) throw new Error('expected leaders')
         expect(lobby.leaders.map((l) => [l.userId, l.name])).toEqual(KEYS.map((k) => [expectedId(v, k), expectedName(v, k)]))
-      })
-    }
-  })
-
-  describe('weekly competition board', () => {
-    for (const v of VIEWERS) {
-      it(`rows for ${v.who}`, async () => {
-        const board = parseData(await as(v).get('/api/games/pertandingan'), GamesWeeklyCompetitionSchema)
-        expect(board.rows.map((r) => [r.userId, r.name])).toEqual(KEYS.map((k) => [expectedId(v, k), expectedName(v, k)]))
-        expect(board.rows.map((r) => r.betul)).toEqual([20, 19, 18, 17]) // figures untouched
       })
     }
   })

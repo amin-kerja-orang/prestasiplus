@@ -16,7 +16,7 @@ import { SoloGamesModule } from './solo/solo.module'
  * BE-23 / BE-44 bindings.
  *
  * ROUTE ORDER: Express matches in registration order. `SoloGamesModule` is imported BEFORE `RoomsModule`, so the
- * static paths (`/games/solo/...`, `/games/roda-nasib`, `/games/jutawan`, `/games/pertandingan`, `/games/uji-minda`)
+ * static paths (`/games/solo/...`, `/games/roda-nasib`, `/games/jutawan`)
  * win over `/games/:game/...` of the rooms controller. `GET /games/hub` lives in `RoomsModule`: declare it before
  * any `:game` route in that controller (it is a different tail from `/games/:game/lobby`, but keep it first).
  * Do not reorder the imports below.

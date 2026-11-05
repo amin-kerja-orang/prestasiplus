@@ -201,17 +201,13 @@ export const gamesScenarios: Scenario[] = [
     },
   },
   {
-    id: 'games-api/weekly competition board and Uji Minda (constant)',
+    id: 'games-api/weekly competition board and Uji Minda answer 404 in R1 (FR-GM-00.1)',
     domain: 'games',
     targets: API_ONLY,
     async run(ctx) {
       const s = await ctx.as('student')
-      const board = await s.request('GET', '/games/pertandingan')
-      ctx.expectStatus(board, 200)
-      ctx.check(JSON.stringify(dataOf(board).prizes) === '[100,50,25]', 'prizes are 100, 50, 25')
-      const uji = await s.request('GET', '/games/uji-minda')
-      ctx.expectStatus(uji, 200)
-      ctx.check(JSON.stringify(uji.body) === JSON.stringify({ data: { challenge: null } }), 'Uji Minda is the constant { data: { challenge: null } }')
+      ctx.expectStatus(await s.request('GET', '/games/pertandingan'), 404)
+      ctx.expectStatus(await s.request('GET', '/games/uji-minda'), 404)
     },
   },
   {
