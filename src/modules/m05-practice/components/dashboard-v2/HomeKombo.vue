@@ -7,7 +7,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { DsCharacterCard } from '@/ds'
+import { DsBadge, DsCharacterCard, DsText } from '@/ds'
 
 import { bestStreakText } from '../dashboard/dashboard-lib'
 
@@ -32,7 +32,7 @@ const record = computed(() => bestStreakText(props.best, props.count))
     data-testid="dash-kombo"
     @cta="router.push('/practice')"
   >
-    <p v-if="record" class="text-label text-muted" data-testid="dash-kombo-best">{{ record }}</p>
+    <DsText v-if="record" variant="label" tone="muted" data-testid="dash-kombo-best">{{ record }}</DsText>
   </DsCharacterCard>
   <DsCharacterCard
     v-else
@@ -46,13 +46,11 @@ const record = computed(() => bestStreakText(props.best, props.count))
     "
     data-testid="dash-kombo"
   >
-    <UBadge
-      :color="practisedToday ? 'success' : 'neutral'"
-      variant="subtle"
-      class="w-fit"
+    <DsBadge
+      :tone="practisedToday ? 'success' : 'neutral'"
+      :label="practisedToday ? 'Selesai' : 'Belum'"
       data-testid="dash-kombo-pill"
-      >{{ practisedToday ? 'Selesai' : 'Belum' }}</UBadge
-    >
-    <p v-if="record" class="text-label text-muted" data-testid="dash-kombo-best">{{ record }}</p>
+    />
+    <DsText v-if="record" variant="label" tone="muted" data-testid="dash-kombo-best">{{ record }}</DsText>
   </DsCharacterCard>
 </template>
