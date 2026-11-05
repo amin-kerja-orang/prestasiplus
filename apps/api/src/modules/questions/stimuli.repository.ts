@@ -6,6 +6,7 @@ import { idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { stimulusTableOf, stimulusTableParts, type StimulusTable } from './stimulus-table'
 import { NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL } from './learner-visibility'
+import { refreshStimulusFlagsOf } from './effective-leaf'
 import { kertasOfPaperCode } from './projection'
 import { QUESTION_SERVED, VERSION_SERVED } from './served-rule'
 import type { StimulusKind } from './types'
@@ -413,6 +414,7 @@ export class StimuliRepository {
     const members = await this.db.question.findMany({ where: { groupId }, orderBy: { groupPosition: 'asc' }, select: { id: true } })
     await this.db.question.updateMany({ where: { groupId }, data: { groupId: null, groupPosition: null } })
     await this.db.stimulusGroup.delete({ where: { id: groupId } })
+    await refreshStimulusFlagsOf(this.db, members.map((m) => m.id), new Date())
     return members.map((m) => idToString(m.id))
   }
 
@@ -525,10 +527,12 @@ export class StimuliRepository {
     for (const [i, q] of questionIds.entries()) {
       await this.db.question.update({ where: { id: BigInt(q) }, data: { groupId: BigInt(groupId), groupPosition: from + i } })
     }
+    await refreshStimulusFlagsOf(this.db, questionIds.map((q) => BigInt(q)), new Date())
   }
 
   async detachQuestion(questionId: string): Promise<void> {
     await this.db.question.update({ where: { id: BigInt(questionId) }, data: { groupId: null, groupPosition: null } })
+    await refreshStimulusFlagsOf(this.db, [BigInt(questionId)], new Date())
   }
 
   /**

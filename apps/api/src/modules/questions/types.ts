@@ -143,6 +143,12 @@ export interface QuestionVersionRecord {
   stemImageId?: string | null
   /** `question_versions.paper_code`; the paper builder reads the kertas from its trailing digit. */
   paperCode?: string | null
+  /** DM-05: the stored stimulus flag (detectors in effective-leaf.ts); `stimulus_missing` and `figure_only` exclude the question unless dismissed. Absent = no flag. */
+  stimulusFlag?: 'stimulus_missing' | 'figure_only' | 'stem_duplicated' | null
+  /** DM-53: `numbered` or `unnumbered`, with `stimulus_missing`. */
+  stimulusFlagRef?: 'numbered' | 'unnumbered' | null
+  /** "Bukan masalah": set = the flag no longer excludes. */
+  flagDismissedAt?: Date | null
   /** The part tree (keys included): admin/owner only; never hand it to a learner. */
   parts: QuestionPart[]
   createdAt: Date

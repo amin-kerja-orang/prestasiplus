@@ -5,7 +5,9 @@
  * Cognitive level / KBAT is intentionally absent until the KBAT encoding is decided (decision A9).
  */
 import { Prisma } from '../../db/generated/client'
+import type { PrismaClient, TxClient } from '../../db/client'
 import { idToString } from '../../db/ids'
+import { stimulusReferenceOf } from '../intake/workflow/figure-links'
 
 export interface EffectiveLeaf {
   partId: string
@@ -112,4 +114,137 @@ export function unitMarks(leaves: readonly EffectiveLeaf[]): Map<string | null, 
   const out = new Map<string | null, number>()
   for (const l of leaves) out.set(l.unitNodeId, (out.get(l.unitNodeId) ?? 0) + l.marks)
   return out
+}
+
+// --- S1-T07 (DM-05, DM-53): the stimulus flag detectors ---------------------------------------------------------------------------
+
+export type StimulusFlag = 'stimulus_missing' | 'figure_only' | 'stem_duplicated'
+export type StimulusFlagRef = 'numbered' | 'unnumbered'
+
+/** A part of the tree, flattened, as the detectors read it. */
+export interface FlagPart {
+  /** A leaf part (it has a `mode`). */
+  isLeaf: boolean
+  promptMs: string | null
+  promptEn: string | null
+  /** Option texts (Malay and English) of the part; empty strings are allowed. */
+  optionTexts: readonly (string | null)[]
+  /** The part links a stimulus, or one of its options has a picture. */
+  hasStimulus: boolean
+  hasOptionImage: boolean
+}
+
+export interface FlagInput {
+  stemMs: string | null
+  stemEn: string | null
+  /** The question belongs to a stimulus group. */
+  hasGroup: boolean
+  /** The version links at least one stimulus: a stem image (the flat stem image is an image stimulus). */
+  hasStemStimulus: boolean
+  parts: readonly FlagPart[]
+}
+
+export interface StimulusFlagResult {
+  flag: StimulusFlag
+  /** Set with `stimulus_missing` only. */
+  ref: StimulusFlagRef | null
+}
+
+const blank = (s: string | null | undefined): boolean => s == null || s.trim() === ''
+const squash = (s: string): string => s.trim().replace(/\s+/g, ' ')
+
+/**
+ * The three detectors of 50 DM-05 (pure; the ONE place the flag is decided). One flag per version; when two apply the excluding one wins
+ * (`figure_only`, then `stimulus_missing`, then `stem_duplicated`):
+ *  - `figure_only`: an image on the stem, no group, the stem empty after trimming, no text in any part prompt and no option text (a bare figure
+ *    imported as a question; 45 6.6.1 "no question sentence, no options");
+ *  - `stimulus_missing`: no group, no stimulus and no image anywhere, and the stem, a part prompt or an option names a figure
+ *    (`stimulusReferenceOf`, the keyword code of `figure-links.ts`: "Rajah 14", "Jadual 2", "Graf", whole word, case-insensitive);
+ *  - `stem_duplicated`: the question has exactly one leaf and its prompt equals the stem after trimming and collapsing spaces.
+ */
+export function detectStimulusFlag(input: FlagInput): StimulusFlagResult | null {
+  const prompts = input.parts.flatMap((p) => [p.promptMs, p.promptEn])
+  const options = input.parts.flatMap((p) => p.optionTexts)
+  const attached = input.hasGroup || input.hasStemStimulus || input.parts.some((p) => p.hasStimulus || p.hasOptionImage)
+
+  if (!input.hasGroup && input.hasStemStimulus && blank(input.stemMs) && blank(input.stemEn) && prompts.every(blank) && options.every(blank)) {
+    return { flag: 'figure_only', ref: null }
+  }
+  if (!attached) {
+    const texts = [input.stemMs, input.stemEn, ...prompts, ...options]
+    for (const t of texts) {
+      if (t == null) continue
+      const ref = stimulusReferenceOf(t)
+      if (ref !== null) return { flag: 'stimulus_missing', ref: ref.kind }
+    }
+  }
+  const leaves = input.parts.filter((p) => p.isLeaf)
+  const only = leaves.length === 1 ? leaves[0] : undefined
+  if (only !== undefined) {
+    const same = (stem: string | null, prompt: string | null): boolean => !blank(stem) && !blank(prompt) && squash(stem as string) === squash(prompt as string)
+    if (same(input.stemMs, only.promptMs) || same(input.stemEn, only.promptEn)) return { flag: 'stem_duplicated', ref: null }
+  }
+  return null
+}
+
+/**
+ * DM-05 / DM-53: runs the detectors on one stored version and writes `stimulus_flag`, `stimulus_flag_ref` and `stimulus_flag_at`. Every write path
+ * calls it (create, new version, rewrite, approve, group attach / detach, see `QuestionsRepository` and `StimuliRepository`), so the stored flag
+ * never drifts; the backfill script `uat-ops/flag-stimulus.ts` calls it too. A flag that stays the same keeps its dismissal ("Bukan masalah");
+ * a changed or cleared flag drops it (a new problem needs a new dismissal). Returns the flag now stored.
+ */
+export async function refreshStimulusFlag(db: TxClient | PrismaClient, questionId: bigint, versionNo: number, now: Date): Promise<StimulusFlag | null> {
+  const v = await db.questionVersion.findUnique({ where: { questionId_versionNo: { questionId, versionNo } }, include: FLAG_INCLUDE })
+  if (!v) return null
+  const found = detectStimulusFlag(flagInputOfRow(v))
+  const flag = found?.flag ?? null
+  const ref = found?.ref ?? null
+  if (flag === v.stimulusFlag && ref === v.stimulusFlagRef) return flag
+  await db.questionVersion.update({ where: { id: v.id }, data: flagWrite(flag, ref, now) })
+  return flag
+}
+
+/** What the detectors read of a stored version (`include` of the Prisma read). */
+export const FLAG_INCLUDE = {
+  question: { select: { groupId: true } },
+  stimuli: { select: { stimulusId: true } },
+  parts: { select: { mode: true, promptMs: true, promptEn: true, stimulusId: true, options: { select: { bodyMs: true, bodyEn: true, imageFileId: true } } } },
+} as const
+
+/** The detector input of a version read with `FLAG_INCLUDE`. */
+export function flagInputOfRow(v: {
+  stemMs: string | null
+  stemEn: string | null
+  question: { groupId: bigint | null }
+  stimuli: readonly unknown[]
+  parts: readonly { mode: string | null; promptMs: string; promptEn: string | null; stimulusId: bigint | null; options: readonly { bodyMs: string | null; bodyEn: string | null; imageFileId: bigint | null }[] }[]
+}): FlagInput {
+  return {
+    stemMs: v.stemMs,
+    stemEn: v.stemEn,
+    hasGroup: v.question.groupId !== null,
+    hasStemStimulus: v.stimuli.length > 0,
+    parts: v.parts.map((p) => ({
+      isLeaf: p.mode !== null,
+      promptMs: p.promptMs,
+      promptEn: p.promptEn,
+      optionTexts: p.options.flatMap((o) => [o.bodyMs, o.bodyEn]),
+      hasStimulus: p.stimulusId !== null,
+      hasOptionImage: p.options.some((o) => o.imageFileId !== null),
+    })),
+  }
+}
+
+/** The columns a changed flag writes: a changed or cleared flag drops its dismissal. */
+export function flagWrite(flag: StimulusFlag | null, ref: StimulusFlagRef | null, now: Date) {
+  return { stimulusFlag: flag, stimulusFlagRef: ref, stimulusFlagAt: flag === null ? null : now, flagDismissedAt: null, flagDismissedBy: null }
+}
+
+/** `refreshStimulusFlag` for the live and the latest version of each question (a group move changes what both read). */
+export async function refreshStimulusFlagsOf(db: TxClient | PrismaClient, questionIds: readonly bigint[], now: Date): Promise<void> {
+  if (questionIds.length === 0) return
+  const rows = await db.question.findMany({ where: { id: { in: [...questionIds] } }, select: { id: true, latestVersionNo: true, liveVersionNo: true } })
+  for (const q of rows) {
+    for (const no of new Set([q.latestVersionNo, ...(q.liveVersionNo === null ? [] : [q.liveVersionNo])])) await refreshStimulusFlag(db, q.id, no, now)
+  }
 }

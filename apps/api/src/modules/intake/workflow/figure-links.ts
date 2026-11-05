@@ -38,6 +38,27 @@ export function figureKeys(text: string): string[] {
   return keys
 }
 
+/**
+ * S1-T07 (D115, 45 section 6.6.1): the figure words that count as a reference even without a number ("Graf", "Rajah di atas").
+ * Whole word only: "Rajahnya" or "petakan" is not a reference. The numbered form reuses `REF` above (every figure word and its English twin).
+ */
+const BARE_REF = /(?<![\p{L}\p{N}])(rajah|jadual|graf|petikan|peta|carta)(?![\p{L}\p{N}])/iu
+
+export interface StimulusReference {
+  /** `numbered` = "Rajah 14" (a figure word followed by a number); `unnumbered` = the bare word (DM-53 `stimulus_flag_ref`). */
+  kind: 'numbered' | 'unnumbered'
+  /** The text as written, e.g. "Rajah 14" or "Graf". */
+  text: string
+}
+
+/** The first reference to a figure in `text` (the numbered form wins over a bare word), or null. Pure; case-insensitive. */
+export function stimulusReferenceOf(text: string): StimulusReference | null {
+  const numbered = text.matchAll(REF).next()
+  if (numbered.done !== true) return { kind: 'numbered', text: numbered.value[0] }
+  const bare = BARE_REF.exec(text)
+  return bare === null ? null : { kind: 'unnumbered', text: bare[0] }
+}
+
 /** The key a stimulus label stands for ("Rajah 1" gives "rajah1"); null when the label names no numbered figure. */
 export function stimulusKey(label: string): string | null {
   return figureKeys(label)[0] ?? null
