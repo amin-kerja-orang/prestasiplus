@@ -359,7 +359,8 @@ onBeforeUnmount(() => {
   window.removeEventListener('offline', onOffline)
   clearTimeout(reconnectedTimer)
   stopDeferring()
-  void autosave?.flush()
+  // ERR-AUTH-01: no token now, so this save would answer 401 with no deferral and drop `?redirect=`. The local mirror replays after login.
+  if (!sessionExpired.value) void autosave?.flush()
   autosave?.dispose()
 })
 function onVisibility(): void {

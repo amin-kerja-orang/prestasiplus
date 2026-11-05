@@ -4,8 +4,10 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import { connectUnauthorizedRedirect } from '@/app/router'
 import { setUnauthorizedRedirect, useSessionStore } from '@/stores/session'
 
+import { LOCAL_PREFIX } from '../lib/autosave'
 import AttemptPage from '../pages/AttemptPage.vue'
 
 /** R1-MUR-13 field table: B-051 and the choose-N refusal; 46 section 2.6: ERR-NET-01, ERR-NET-03, ERR-AUTH-01. */
@@ -140,6 +142,51 @@ describe('offline banner, a save already done', () => {
     await flushPromises()
     expect(q('[data-testid=offline-banner]')).toBeNull()
     expect(q('[data-testid=reconnected-banner]')).not.toBeNull()
+  })
+})
+
+describe('session expiry with an unsent answer (ERR-AUTH-01, 46:364)', () => {
+  it('"Log Masuk Semula" keeps redirect in the final route, and the answer stays in the local mirror', async () => {
+    // The save mock applies the client's 401 policy: every 401 runs the session store's handler first (src/api/client.ts).
+    server.saveAnswers.mockImplementation(async () => {
+      await useSessionStore().handleUnauthorized()
+      throw new Error('401')
+    })
+    server.getAttemptView.mockResolvedValue(view('exam'))
+    const stub = { template: '<i/>' }
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/spm/bijak/percubaan/:attemptId', name: 'm28.bijak.attempt', component: AttemptPage },
+        { path: '/r/:attemptId', name: 'm28.bijak.result', component: stub },
+        { path: '/spm/bijak', name: 'm28.bijak', component: stub },
+        { path: '/login', component: stub },
+      ],
+    })
+    const disconnect = connectUnauthorizedRedirect(router)
+    try {
+      await router.push('/spm/bijak/percubaan/a1')
+      wrapper = mount({ template: '<RouterView/>' }, { global: { plugins: [router] }, attachTo: document.body })
+      await flushPromises()
+      q('[data-testid=option-a]')!.click()
+      await flushPromises()
+      window.dispatchEvent(new Event('online')) // the save goes now and gets the 401
+      await flushPromises()
+      expect(server.saveAnswers).toHaveBeenCalledTimes(1)
+      expect(q('[data-testid=session-login]')).not.toBeNull()
+      q('[data-testid=session-login]')!.click()
+      await flushPromises()
+      await router.isReady()
+      await flushPromises()
+      expect(router.currentRoute.value.path).toBe('/login')
+      expect(router.currentRoute.value.query).toEqual({ redirect: '/spm/bijak/percubaan/a1' })
+      expect(server.saveAnswers).toHaveBeenCalledTimes(1)
+      const mirror = JSON.parse(window.localStorage.getItem(`${LOCAL_PREFIX}a1`)!) as { answers: Record<string, { answer: { choice?: string } }>; pending: string[] }
+      expect(mirror.answers.q1!.answer.choice).toBe('a')
+      expect(mirror.pending).toContain('q1')
+    } finally {
+      disconnect()
+    }
   })
 })
 
