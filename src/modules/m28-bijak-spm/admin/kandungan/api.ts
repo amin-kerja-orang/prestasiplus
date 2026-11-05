@@ -38,6 +38,8 @@ export const KANDUNGAN_ROUTES = {
   hub: 'm28.admin.kandungan',
   databank: 'm28.admin.kandungan.databank',
   simulasi: 'm28.admin.kandungan.simulasi',
+  /** S3-T06: Kertas Subjektif list (`/admin/kertas-subjektif`). */
+  kertasSubjektif: 'm28.admin.kandungan.kertas-subjektif',
 } as const
 
 /** The V2 hub path (`/admin/spm`, DISC A1/P1). Lane pages: `/admin/spm/{lane}` (DISC A2/P2). */

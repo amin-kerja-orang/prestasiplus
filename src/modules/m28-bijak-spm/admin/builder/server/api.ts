@@ -28,13 +28,16 @@ export type BuilderErrorKind =
 
 export class BuilderError extends Error {
   readonly shortages: BijakGenerateShortage[]
+  /** 422 `fields` (field name to BM message), for example S3-T06 `title`, `examBoard`, `year`. */
+  readonly fields: Record<string, string>
   constructor(
     readonly kind: BuilderErrorKind,
     message: string,
-    extra: { shortages?: BijakGenerateShortage[] } = {},
+    extra: { shortages?: BijakGenerateShortage[]; fields?: Record<string, string> } = {},
   ) {
     super(message)
     this.shortages = extra.shortages ?? []
+    this.fields = extra.fields ?? {}
   }
 }
 
@@ -69,6 +72,46 @@ export interface HeaderPatch {
   year?: number
   durationMin?: number
   instructions?: string[]
+  /** S3-T06 (Kertas Subjektif `Sunting`): `Negeri`, `Tempoh (minit)` (null = untimed) and `Jumlah Markah`. */
+  examBoard?: string
+  durationMinutes?: number | null
+  totalMarks?: number
+}
+
+/** S3-T06 list query of the Kertas Subjektif lane (`GET /admin/papers?surface=subjektif`). */
+export interface SubjektifQuery {
+  subject?: string
+  kertas?: number
+  status?: 'draf' | 'terbit'
+  year?: number
+  negeri?: string
+  page?: number
+  pageSize?: number
+}
+
+export interface SubjektifCounts {
+  total: number
+  published: number
+  withScheme: number
+}
+
+export interface SubjektifPage {
+  rows: AdminPaperSummary[]
+  /** Rows matching the filters (all pages). */
+  total: number
+  /** The three tiles. */
+  counts: SubjektifCounts
+}
+
+/** S3-T06 create form 18-02..18-08. `durationMinutes` null or absent = untimed. */
+export interface SubjektifCreate {
+  title: string
+  subject: string
+  kertas: number
+  examBoard: string
+  year: number
+  durationMinutes?: number | null
+  totalMarks: number
 }
 
 /**
@@ -134,6 +177,19 @@ export interface BuilderApi {
   /** Salin set: a new draft copy. Returns the new paper id. */
   copy(id: string): Promise<string>
   units(subject: string): Promise<BijakDskpUnit[]>
+  /** S3-T06: the Kertas Subjektif list with the tile counts. */
+  listSubjektif(query?: SubjektifQuery): Promise<SubjektifPage>
+  /** S3-T06: `Baharu`; a Draf paper with `surface: 'subjektif'`. A 422 arrives as `BuilderError('invalid')` with `fields`. */
+  createSubjektif(input: SubjektifCreate): Promise<{ id: string }>
+  /** S3-T06: `Padam`. */
+  deletePaper(id: string): Promise<void>
+  /**
+   * S3-T06, field 18-09 (API-BIJAK-14): `Muat naik PDF sumber`, multipart `paper` and optional `scheme`.
+   * Answers the intake batch created for this paper.
+   */
+  uploadSource(id: string, files: { paper: File; scheme?: File | null }): Promise<{ batchId: string }>
+  /** S3-T06, API-BIJAK-14: `{ apply: true }` appends the accepted items of the paper's source batch. */
+  applySource(id: string): Promise<{ placements: number }>
 }
 
 export const BUILDER_ROUTES = {
@@ -142,6 +198,11 @@ export const BUILDER_ROUTES = {
 } as const
 
 export const BUILDER_PATH = '/admin/studio/sets'
+
+/** S3-T06 Kertas Subjektif admin paths. The pupil route is `/kertas-subjektif/:id`. */
+export const SUBJEKTIF_PATH = '/admin/kertas-subjektif'
+export const subjektifPath = (paperId: string): string => `${SUBJEKTIF_PATH}/${encodeURIComponent(paperId)}`
+export const subjektifPupilPath = (paperId: string): string => `/kertas-subjektif/${encodeURIComponent(paperId)}`
 export const builderPath = (paperId: string): string => `${BUILDER_PATH}/${encodeURIComponent(paperId)}/builder`
 
 /** The BM text of any thrown value (the server's own line when it sent one). */

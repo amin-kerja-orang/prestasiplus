@@ -26,7 +26,7 @@ const ALIASES: Alias[] = [
   { from: '/admin/spm/soalan?status=approved', to: '/admin/spm/databank', owner: 'S2-T03 after S2-T01', pending: true },
   { from: '/admin/spm/kertas', to: '/admin/studio/sets', owner: 'S3-T02', pending: true },
   { from: '/admin/spm/kertas/baharu', to: '/admin/studio/sets', owner: 'S3-T02', pending: true },
-  { from: '/admin/spm/kertas-subjektif', to: '/admin/kertas-subjektif', owner: 'S3-T06', pending: true },
+  { from: '/admin/spm/kertas-subjektif', to: '/admin/kertas-subjektif', owner: 'S3-T06' },
 ]
 
 /** Same prefix as a redirected list, so each must keep its own screen. */

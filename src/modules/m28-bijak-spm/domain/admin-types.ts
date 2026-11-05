@@ -210,6 +210,14 @@ export interface AdminPaper extends Omit<PaperDef, 'sections'> {
   updatedAt: number
   publishedAt?: number
   sections: SectionDef[]
+  /** S3-T06 (DM-23): `subjektif` = a Kertas Subjektif paper. */
+  surface?: 'simulasi' | 'subjektif'
+  /** S3-T06 `Negeri` (OPT-NEGERI-KERTAS slug). */
+  examBoard?: string | null
+  /** S3-T06 `Tempoh (minit)`; null or 0 = untimed. */
+  durationMinutes?: number | null
+  /** S3-T06 `Jumlah Markah` typed by the admin. */
+  totalMarks?: number | null
 }
 
 export interface BlueprintView {
@@ -246,6 +254,14 @@ export interface AdminPaperSummary {
   budget: number
   ok: boolean
   updatedAt: number
+  /** S3-T06 (DM-23) fields of a Kertas Subjektif row. */
+  surface?: 'simulasi' | 'subjektif'
+  examBoard?: string | null
+  year?: number
+  /** Placed questions that have a scheme (`{s}` of `{q} soalan, {s} bersekema`). */
+  schemeCount?: number
+  totalMarks?: number | null
+  durationMinutes?: number | null
 }
 
 /** A question as the builder shows it (picker and section lists). */
@@ -265,6 +281,9 @@ export interface BuilderQuestion {
    * builder answer carries it (request to team A: `pinned` per placed question).
    */
   pinned?: boolean
+  /** S3-T02: false when pupils cannot be served the question (for a Kertas Subjektif paper: no scheme). */
+  servable?: boolean
+  notServedReason?: string
 }
 
 export interface BuilderGroup {
