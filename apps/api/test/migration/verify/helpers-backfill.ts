@@ -114,8 +114,8 @@ export async function bootBackfill(): Promise<BackfillHarness> {
       const rows = await q<{ id: string }>(
         `insert into practice_answers
            (user_id, question_id, subject_id, difficulty, question_type, selected_label, is_correct, time_seconds, answered_at,
-            historical, legacy_question_ref, legacy_content_hash, source_natural_key, number_label, legacy_source, legacy_id, legacy_hash)
-         values ($1, $2, $3, 3, 'objektif', 'B', $4, 42, '2026-03-10T02:00:00Z', true, $5, $6, $7, $8, $9, $10, $11)
+            historical, legacy_question_ref, legacy_content_hash, source_natural_key, number_label, legacy_source, legacy_id, legacy_hash, mode)
+         values ($1, $2, $3, 3, 'objektif', 'B', $4, 42, '2026-03-10T02:00:00Z', true, $5, $6, $7, $8, $9, $10, $11, 'latih_tubi')
          returning id::text as id`,
         [
           userId,
