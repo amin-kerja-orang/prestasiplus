@@ -1,7 +1,7 @@
 /**
  * The single answer store write path (S5-T15, DM-44, 60 section 2.17.5): `AnswerLogPort.record` is the one writer of
  * `practice_answers` for every R1 activity (the practice writers moved here in part 2; the allow-list of `answer-store-writers.spec.ts`
- * keeps only the ETL loader and the demo seed until migration 0188). Idempotency key: (attempt_id, user_id,
+ * is empty; migration 0188 validates the mode check and sets NOT NULL). Idempotency key: (attempt_id, user_id,
  * question_id, coalesce(part_ref, '')), the partial unique index of migration 0181; a second `record` with the same
  * key updates the row and returns `created: false`.
  *
@@ -99,7 +99,8 @@ export interface AnswerRow {
   attemptId: string
   /** Set when `attemptId` is a practice session id of this user. */
   sessionId: string | null
-  questionId: string
+  /** Null only for the demo seed (an answer not linked to a question); `record` always passes a question. */
+  questionId: string | null
   questionVersionNo: number | null
   partRef: string | null
   mode: AnswerMode
@@ -159,7 +160,7 @@ export async function upsertAnswerRow(db: Pick<TxClient, '$queryRaw'>, row: Answ
       subject_id, education_level_id, chapter_id, topic_id, difficulty, question_type,
       is_correct, marks_awarded, marks_max, answered_at, is_test, historical, selected_label, time_seconds)
     VALUES (
-      ${row.sessionId}::uuid, ${row.attemptId}::uuid, ${idFromString(row.userId)}::bigint, ${idFromString(row.questionId)}::bigint,
+      ${row.sessionId}::uuid, ${row.attemptId}::uuid, ${idFromString(row.userId)}::bigint, ${row.questionId === null ? null : idFromString(row.questionId)}::bigint,
       ${row.questionVersionNo}::int, ${row.partRef}::text, ${row.mode}::text,
       ${row.subjectId === null ? null : idFromString(row.subjectId)}::bigint,
       ${row.educationLevelId === null ? null : idFromString(row.educationLevelId)}::bigint,

@@ -52,10 +52,10 @@ beforeAll(async () => {
   ids.detail = await createSession(t.db, { userId: w.p.p3, completedAt: '2026-10-19T08:45:00+08:00', subjectCode: 'BM', questionCount: 3, correctCount: 1, timeSpentSec: 125 })
   await t.db.query(`insert into practice_session_questions (session_id, position, question_id, question_version_no) values ($1::uuid, 0, 9001, 3), ($1::uuid, 1, 9002, 3)`, [ids.detail])
   await t.db.query(
-    `insert into practice_answers (user_id, session_id, question_id, question_version_no, subject_id, selected_label, is_correct, answered_at)
-     values ($1::bigint, $2::uuid, 9001, 3, (select id from subjects where code = 'BM'), 'B', false, '2026-10-19T08:41:00+08:00'),
-            ($1::bigint, $2::uuid, 9002, 3, (select id from subjects where code = 'BM'), 'A', true, '2026-10-19T08:42:00+08:00'),
-            ($1::bigint, $2::uuid, null, null, (select id from subjects where code = 'BM'), null, false, '2026-10-19T08:43:00+08:00')`,
+    `insert into practice_answers (user_id, session_id, question_id, question_version_no, subject_id, selected_label, is_correct, answered_at, mode)
+     values ($1::bigint, $2::uuid, 9001, 3, (select id from subjects where code = 'BM'), 'B', false, '2026-10-19T08:41:00+08:00', 'latih_tubi'),
+            ($1::bigint, $2::uuid, 9002, 3, (select id from subjects where code = 'BM'), 'A', true, '2026-10-19T08:42:00+08:00', 'latih_tubi'),
+            ($1::bigint, $2::uuid, null, null, (select id from subjects where code = 'BM'), null, false, '2026-10-19T08:43:00+08:00', 'latih_tubi')`,
     [w.p.p3, ids.detail],
   )
 

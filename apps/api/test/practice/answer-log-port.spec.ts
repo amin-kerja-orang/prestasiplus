@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 
 import { Logger } from '@nestjs/common'
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { leavesOfGraded, modeOfAttempt, runBackfill, runLegacyMode, type SkipReason } from '../../scripts/uat-ops/backfill-bijak-answers'
 import { PrismaService } from '../../src/db/prisma.service'
@@ -354,6 +354,15 @@ describe('backfill-bijak-answers (UAT script)', () => {
   })
 
   describe('--legacy-mode (U-OP-20)', () => {
+    // Since 0188 mode is NOT NULL; the backfill only matters on a database that still holds NULL rows, so the column is relaxed
+    // for these tests (the documented reverse of 0188) and restored afterwards.
+    beforeEach(async () => {
+      await t.db.query(`alter table practice_answers alter column mode drop not null`)
+    })
+    afterEach(async () => {
+      await t.db.query(`delete from practice_answers where mode is null`)
+      await t.db.query(`alter table practice_answers alter column mode set not null`)
+    })
     const modeOf = async (qid: number) => (await t.db.query<{ mode: string | null }>(`select mode from practice_answers where question_id = $1`, [qid]))[0]?.mode
     async function seedLegacy(): Promise<void> {
       const chapter = randomUUID()
