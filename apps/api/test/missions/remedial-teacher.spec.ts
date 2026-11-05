@@ -31,8 +31,8 @@ describe('teacher remedial progress and Command Center scan (S3, BR-M10-11, BR-M
 
     it('401 anonymous and 403 "This action is unauthorized." for a pupil on both reads', async () => {
       for (const path of routes) {
-        errorIs(await t.http().get(`/api${path}`), 401, 'UNAUTHORIZED', 'Unauthenticated.')
-        errorIs(await student.get(path), 403, 'FORBIDDEN', 'This action is unauthorized.')
+        errorIs(await t.http().get(`/api${path}`), 401, 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
+        errorIs(await student.get(path), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
       }
     })
 
@@ -40,7 +40,7 @@ describe('teacher remedial progress and Command Center scan (S3, BR-M10-11, BR-M
       const schoolAdmin = await client(t, 'adminsekolah@demo.test')
       const admin = await client(t, ADMIN)
       for (const path of routes) {
-        errorIs(await schoolAdmin.get(path), 403, 'FORBIDDEN', 'This action is unauthorized.')
+        errorIs(await schoolAdmin.get(path), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
         expect((await admin.get(path)).status).toBe(200)
       }
     })

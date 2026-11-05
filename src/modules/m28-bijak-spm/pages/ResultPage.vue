@@ -21,7 +21,7 @@ import PartResultCard from '../components/PartResultCard.vue'
 import ReportQuestionButton from '../components/ReportQuestionButton.vue'
 import PastSittingsLink from '../components/PastSittingsLink.vue'
 import ResultGroup from '../components/ResultGroup.vue'
-import { RichText, StimulusStack } from '../../../components/question-display'
+import { RichText, StimulusGroup } from '../../../components/question-display'
 import SelfMarkControl from '../components/SelfMarkControl.vue'
 import { needsAttention, sectionRuleLine } from '../domain/paper-model'
 import type { ReviewPart } from '../domain/semakan'
@@ -35,7 +35,7 @@ import type {
   SubjectCode,
 } from '../domain/types'
 import { rewardItems } from '../lib/rewards'
-import { stimuliOf } from '../lib/stimulus-data'
+import { stimuliOf, toStimulusData } from '../lib/stimulus-data'
 import { useBijakUser, useLearnerTheme } from '../lib/use-bijak'
 import { bijakServer } from '../server/client'
 
@@ -418,11 +418,12 @@ const home = computed(() => landingPath.value || '/dashboard')
                   :attempt-id="attemptId"
                   :variant="questionMap.get(q.questionId)?.mcq ? 'mcq' : 'structured'"
                 /></div>
-              <StimulusStack
-                v-if="ownStimuliOf(q.questionId).length"
-                :stimuli="ownStimuliOf(q.questionId)"
-                data-testid="own-stimuli"
-              />
+              <div v-if="ownStimuliOf(q.questionId).length" :data-count="ownStimuliOf(q.questionId).length" data-testid="own-stimuli">
+                <StimulusGroup
+                  :stimuli="ownStimuliOf(q.questionId).map(toStimulusData)"
+                  :hint="false"
+                />
+              </div>
               <p v-if="questionMap.get(q.questionId)?.stem" class="text-body text-default">
                 <RichText :text="questionMap.get(q.questionId)!.stem" />
               </p>
