@@ -1,9 +1,10 @@
-import { AMARAN_MESSAGES, AmaranEffectivenessResultSchema, AmaranSchoolRiskSchema, AmaranSummarySchema } from '@pp/contract'
+import { AMARAN_MESSAGES, AmaranEffectivenessResultSchema, AmaranSchoolRiskSchema, AmaranSummarySchema, SchoolAdminDashboardSchema } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { ADMIN, login, SCHOOL_ADMIN, schoolIdOf, STUDENT, TEACHER, userIdOf, type SchoolAdminTestApp } from './helpers'
 import { bootPeopleApp, enrolIn, errorOf, expectNoCache, insertClass, insertSchoolAdmin, insertUser, peopleApiOf, type PeopleApi } from './people-helpers'
-import { addSession, addSubject } from './reports-fixtures'
+import { XsQueries } from '../../src/modules/school-admin/xs-queries'
+import { addSession, addSubject, suspend } from './reports-fixtures'
 
 /**
  * BE-21 Part C: who may read the Amaran routes and which school. DB spec (Testcontainers). All data is fictitious.
@@ -269,5 +270,56 @@ describe('BE-21 Amaran access: /amaran/*', () => {
   it('a teacher sees the interventions of the own pupils only', async () => {
     const data = AmaranEffectivenessResultSchema.parse((await teacher.get('/amaran/effectiveness')).body.data)
     expect(data.report.cards.total).toBe(1)
+  })
+  it('the accuracy is pooled (correct / answered), never the mean of the session percentages (XS-5)', async () => {
+    const id = await insertUser(t.db, { name: 'Murid Amaran Terkumpul', email: 'terkumpul@ujian.test', roles: ['student'], schoolId: s1, grade: 10 })
+    // Session A 1/1 (100%) and session B 1/9 (11.1%): pooled 2/10 = 20.0, the mean of the two session percentages would be 55.6.
+    await addSession(t.db, id, { mode: 'chapter', questions: 1, correct: 1, completedAt: '2026-10-17T10:00:00+08:00', subjectId: subject })
+    await addSession(t.db, id, { mode: 'chapter', questions: 9, correct: 1, completedAt: '2026-10-17T11:00:00+08:00', subjectId: subject })
+    const data = AmaranSchoolRiskSchema.parse((await schoolAdmin.get(`/amaran/schools/${s1}`)).body.data)
+    const row = data.pupils.find((p) => p.name === 'Murid Amaran Terkumpul')
+    expect(row?.accuracy).toBe(20)
+    expect(row?.accuracyText).toBe('Purata ketepatan: 20%')
+  })
+
+  it('an active pupil shows the pooled accuracy; a suspended pupil is outside XS-1 and not listed (FR-AS-49-3)', async () => {
+    const active = await insertUser(t.db, { name: 'Murid Amaran Aktif', email: 'aktif@ujian.test', roles: ['student'], schoolId: s1, grade: 10 })
+    const id = await insertUser(t.db, { name: 'Murid Amaran Digantung', email: 'digantung@ujian.test', roles: ['student'], schoolId: s1, grade: 10 })
+    for (const u of [active, id]) await addSession(t.db, u, { mode: 'chapter', questions: 4, correct: 3, completedAt: '2026-10-17T10:00:00+08:00', subjectId: subject })
+    await suspend(t.db, id)
+    const data = AmaranSchoolRiskSchema.parse((await schoolAdmin.get(`/amaran/schools/${s1}`)).body.data)
+    const row = data.pupils.find((p) => p.name === 'Murid Amaran Aktif')
+    expect(row?.accuracy).toBe(75)
+    expect(row?.accuracyText).toBe('Purata ketepatan: 75%')
+    expect(row?.status).not.toBe('not_started')
+    expect(data.pupils.find((p) => p.name === 'Murid Amaran Digantung')).toBeUndefined()
+  })
+
+  it('the population is XS-1: Amaran tally = dashboard cards.pupils = XsQueries.pupilCount; suspended, inactive and no-Tingkatan pupils are left out (FR-AS-49-3, AC-AS-49-6)', async () => {
+    const mk = (name: string, o: { grade?: number | null; isActive?: boolean; isSuspended?: boolean }) =>
+      insertUser(t.db, { name, email: `${name.toLowerCase().replace(/ /g, '.')}@xs1.test`, roles: ['student'], schoolId: s2, grade: o.grade === undefined ? 9 : o.grade, isActive: o.isActive, isSuspended: o.isSuspended })
+    const practised = await mk('Murid Xs Satu', {})
+    await mk('Murid Xs Dua', {})
+    await mk('Murid Xs Tiga', { grade: 11 })
+    const suspended = await mk('Murid Xs Digantung', {})
+    const inactive = await mk('Murid Xs Tidak Aktif', { isActive: false })
+    const noLevel = await mk('Murid Xs Tanpa Tingkatan', { grade: null })
+    for (const id of [practised, suspended, inactive, noLevel]) {
+      await addSession(t.db, id, { mode: 'chapter', questions: 10, correct: 8, completedAt: '2026-10-17T10:00:00+08:00', subjectId: subject })
+    }
+    await suspend(t.db, suspended)
+
+    const risk = AmaranSchoolRiskSchema.parse((await otherAdmin.get(`/amaran/schools/${s2}`)).body.data)
+    const tally = risk.tally
+    const population = tally.green + tally.yellow + tally.red + (tally.notStarted ?? 0)
+    const cards = SchoolAdminDashboardSchema.parse((await otherAdmin.get('/admin-sekolah/dashboard')).body.data).cards.pupils
+    const xs = t.app.get(XsQueries, { strict: false })
+    expect(population).toBe(await xs.pupilCount({ kind: 'school', schoolId: s2 }))
+    expect(population).toBe(cards)
+    expect(risk.pupils).toHaveLength(population)
+    const listed = risk.pupils.map((p) => p.userId)
+    expect(listed).toContain(practised)
+    for (const id of [suspended, inactive, noLevel]) expect(listed).not.toContain(id)
+    expect(tally.notStarted).toBeGreaterThanOrEqual(2)
   })
 })

@@ -21,6 +21,7 @@ import { KirkpatrickRepository } from '../../reports/kirkpatrick'
 import { SchoolsRepository, type SchoolRow } from '../../schools'
 import { UsersRepository } from '../../users'
 import { SCHOOL_ADMIN_AUDIT } from '../school-admin.constants'
+import { pooledAccuracy, XsQueries } from '../xs-queries'
 import { canReadSchool, schoolIdOf, type AmaranCaller } from './amaran.access'
 import { amaranCsv } from './amaran.csv'
 import {
@@ -105,6 +106,7 @@ export class AmaranService {
     @Inject(ClassesRepository) private readonly classes: ClassesRepository,
     @Inject(PracticeRepository) private readonly practice: PracticeRepository,
     @Inject(KirkpatrickRepository) private readonly interventions: KirkpatrickRepository,
+    @Inject(XsQueries) private readonly xs: XsQueries,
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
@@ -313,26 +315,33 @@ export class AmaranService {
   }
 
   /**
-   * Pupils of one school (active and inactive), their classes and their practice facts. A teacher sees only the active members
+   * Pupils of one school (the XS-1 population), their classes and their practice facts. A teacher sees only the active members
    * of the own classes (as `/effectiveness`); admin and school_admin see the whole school. The practice facts are three
    * set-based reads (one query per 1000 pupils each), never one read per pupil.
    */
   private async load(school: SchoolRow, now: number, caller: AmaranCaller): Promise<SchoolData> {
-    // S6-T03: switch to XsQueries.pupils (XS-1) after merge
-    let students = (await this.users.studentsOfSchool(school.id, '', '')).filter((s) => s.schoolId === school.id)
+    // XS-1: active, non-suspended pupils of Tingkatan 1-5 of the school, the same named query as the dashboard `cards.pupils`.
+    const population = await this.xs.pupils({ kind: 'school', schoolId: school.id })
+    let students = (await each(population.ids, (c) => this.users.getMany(c)))
+      .flat()
+      .filter((s) => s.schoolId === school.id)
     if (caller.role === 'teacher') {
       const own = new Set(await this.classes.teacherStudentIds(caller.userId))
       students = students.filter((s) => own.has(s.id))
     }
     const ids = students.map((s) => s.id)
     const classOf = await this.classesOf(school.id, ids)
-    const [stats, newest, masteryOf] = await Promise.all([
+    const [stats, newest, masteryOf, tallies] = await Promise.all([
       this.practice.statsOf(ids, { modes: PRACTICE_SESSION_MODES }),
       this.practice.lastActivityOf(ids, { modes: PRACTICE_SESSION_MODES }),
       this.practice.masteryOf(ids),
+      // XS-5: the accuracy is pooled (correct / answered over all answer rows, all time), never a mean of session percentages.
+      // Pooled over the listed ids, so an inactive or suspended pupil who is listed keeps its own accuracy.
+      this.xs.tallyOfPupils(ids),
     ])
     const facts = students.map((s) => {
       const st = stats.get(s.id)
+      const tally = tallies.get(s.id)
       const mastery = (masteryOf.get(s.id) ?? []).filter((m) => m.answered > 0)
       const stamps = [newest.get(s.id) ?? null, ...mastery.map((m) => m.lastAnsweredAt)].filter((d): d is Date => d !== null).map((d) => d.getTime())
       const pupil: PupilFacts = {
@@ -340,7 +349,7 @@ export class AmaranService {
         name: s.name,
         grade: s.grade,
         classes: classOf.get(s.id) ?? [],
-        accuracy: st && st.sessions > 0 ? st.avgAccuracyPct : null,
+        accuracy: st && st.sessions > 0 && tally ? pooledAccuracy(tally.correct, tally.answered) : null,
         sessions: st?.sessions ?? 0,
         lastActiveAt: stamps.length === 0 ? null : Math.max(...stamps),
         masteryLevels: mastery.map((m) => masteryLevelOf(m.correct)),

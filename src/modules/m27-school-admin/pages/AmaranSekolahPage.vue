@@ -16,10 +16,11 @@ import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi, useFlash, useSession } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsLoadError, DsPage, DsText } from '@/ds'
+import { DsEmptyState, DsLoadError, DsPage, DsText } from '@/ds'
 import { saveBlob } from '@/lib/save-blob'
 
 import { downloadSchoolRiskCsv, fetchSchoolRisk } from '../api/amaran'
+import { CENTRAL_EMPTY, isSchoolDataMissing } from '../api/school-admin'
 import AmaranActions from '../components/amaran/AmaranActions.vue'
 import AmaranDistribution from '../components/amaran/AmaranDistribution.vue'
 import AmaranLevelPills from '../components/amaran/AmaranLevelPills.vue'
@@ -29,12 +30,22 @@ import AmaranTiles from '../components/amaran/AmaranTiles.vue'
 import { loadErrorMessage, normaliseLevel, notStartedLine, TITLE } from '../components/amaran/amaran-format'
 import { errorLines } from '../components/users/users-format'
 
+/**
+ * Central view (M17 `/admin/laporan-sekolah/amaran-wellbeing` and `amaran-awal`, R1-ADM-M-07): `schoolId` is the school
+ * Admin Pusat picked (M18 #21 already admits the admin) and `basePath` the route the level pills link to. Without
+ * `schoolId` the school is the session's, as for the school admin.
+ */
+const props = defineProps<{ schoolId?: number | string; schoolName?: string; basePath?: string }>()
+const central = computed(() => props.schoolId !== undefined)
+
 const route = useRoute()
 const pageMeta = usePageMeta()
 const flash = useFlash()
 const { user } = useSession()
 
-const schoolId = computed(() => user.value?.schoolId ?? null)
+const schoolId = computed(() =>
+  central.value ? Number(props.schoolId) : (user.value?.schoolId ?? null),
+)
 const level = computed(() => normaliseLevel(route.query.tingkatan))
 
 const { data, error, loading, reload } = useApi(
@@ -45,6 +56,7 @@ const { data, error, loading, reload } = useApi(
   [schoolId, level],
 )
 
+const missing = computed(() => central.value && isSchoolDataMissing(error.value))
 const refused = computed(
   () => schoolId.value === null || (isApiError(error.value) && error.value.status === 403),
 )
@@ -83,7 +95,7 @@ async function download(): Promise<void> {
 <template>
   <DsPage data-testid="am-page" :data-level="data?.levelFilter ?? 'all'">
     <template v-if="data && schoolId !== null">
-      <AmaranLevelPills :active="level" :levels="data.levels ?? []" />
+      <AmaranLevelPills :active="level" :levels="data.levels ?? []" :base-path="basePath" />
       <AmaranTiles :tally="data.tally" />
       <DsText variant="body" tone="muted" data-testid="am-not-started">
         {{ notStartedLine(data.tally.notStarted ?? 0) }}
@@ -93,6 +105,12 @@ async function download(): Promise<void> {
       <AmaranSubjectCard v-if="data.weakness.length > 0" :rows="data.weakness" />
       <AmaranPupilTable :rows="data.pupils" />
     </template>
+    <DsEmptyState
+      v-else-if="missing"
+      :title="CENTRAL_EMPTY"
+      icon="buildings"
+      data-testid="am-central-empty"
+    />
     <DsLoadError
       v-else-if="error && !refused"
       :message="loadErrorMessage(error)"
