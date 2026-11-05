@@ -324,6 +324,8 @@ export class ArenaService implements OnModuleInit, OnModuleDestroy {
     const secondsLeft = phase === 'answering' ? Math.min(timing.questionSeconds, Math.max(0, left)) : 0
     const roundEndsAt = phase === 'answering' ? start.getTime() + timing.limitMs : phase === 'reveal' ? start.getTime() : null
     const reward = active ? undefined : await this.engine.rewardOf(uuid, userId, battle.createdAt, battle.isTest)
+    // Own seat only: a row of the caller for the round on screen (always true in the reveal of a closed round).
+    const youAnswered = active ? (await this.prisma.client.battleAnswer.count({ where: { battleId: uuid, userId: mine.userId, position: shown } })) > 0 : undefined
     const people = await this.engine.deps.players([a, b].filter(hasUser).map((p) => idToString(p.userId)))
     // FR-GM-00.8, 48 section 3.10: the opponent by first given name, no school; `school` stays in the contract, always empty.
     // FR-MUR-21-9: a robot is "Robot PrestasiPlus", also on a seat from before FR-GM-00.4 that still points at a pupil.
@@ -344,6 +346,7 @@ export class ArenaService implements OnModuleInit, OnModuleDestroy {
       secondsLeft,
       ...(roundEndsAt !== null ? { roundEndsAt: toMytTimestamp(new Date(roundEndsAt)) } : {}),
       phase,
+      ...(youAnswered !== undefined ? { youAnswered } : {}),
       ...(reveal ? { reveal } : {}),
       ...(active ? {} : { result: { winner: battle.winner as Side | null, scoreA: a.score, scoreB: b.score, ...(reward ? { reward } : {}) } as Result }),
     }
@@ -392,7 +395,7 @@ export class ArenaService implements OnModuleInit, OnModuleDestroy {
     const accuracy = battle.participants.some((p) => p.isBot) ? await this.engine.botAccuracy() : 0
     const now = this.clock.now()
 
-    const out = await this.prisma
+    await this.prisma
       .transaction(async (tx) => {
         const locked = await this.lock(uuid)
         if (!locked) throw notFound()
@@ -414,7 +417,7 @@ export class ArenaService implements OnModuleInit, OnModuleDestroy {
         })
         if (!locked.isTest) await this.engine.recordAnswer({ userId, battleId: uuid, questionId, position: round, isCorrect: correct, answeredAt: at })
         await this.runRounds(tx, locked, now, timing, accuracy)
-        return { points, correct, timedOut }
+        return undefined
       })
       .catch((e: unknown) => {
         // A unique violation on (battle, user, position) is a replay of an answered position.
@@ -422,19 +425,14 @@ export class ArenaService implements OnModuleInit, OnModuleDestroy {
         throw e
       })
 
+    // Nothing about the key or the correctness while the round is open: the view gives it at the reveal (FR-GM-01.3).
     const after = await this.load(uuid, userId)
-    const rows: AnswerRow[] = await this.prisma.client.battleAnswer.findMany({ where: { battleId: uuid, position: round } })
-    const theirs = after.battle.participants.find((p) => p.side !== after.mine.side)
-    const theirRow = theirs ? rows.find((r) => r.userId === theirs.userId) : undefined
-    const closed = after.battle.answered >= round
-    const base = {
-      correct: out.correct,
-      correctOptionId: graded.correctOptionId,
-      points: out.points,
-      you: { score: after.mine.score + (closed ? 0 : out.points) },
-      opponent: closed && theirs && theirRow ? { answered: true as const, correct: theirRow.correct, score: theirs.score } : { answered: false as const },
-    }
-    if (after.battle.status === 'active') return base
+    const stamp = this.clock.now().getTime() < roundStart(after.battle).getTime()
+    const active = after.battle.status === 'active'
+    const phase = !active ? ('finished' as const) : stamp ? ('reveal' as const) : ('answering' as const)
+    const ends = phase === 'answering' ? roundStart(after.battle).getTime() + timing.limitMs : phase === 'reveal' ? roundStart(after.battle).getTime() : null
+    const base = { accepted: true as const, phase, ...(ends !== null ? { roundEndsAt: toMytTimestamp(new Date(ends)) } : {}) }
+    if (active) return base
     const a = after.battle.participants.find((p) => p.side === 'A')
     const b = after.battle.participants.find((p) => p.side === 'B')
     const reward = await this.engine.rewardOf(uuid, userId, after.battle.createdAt, after.battle.isTest)

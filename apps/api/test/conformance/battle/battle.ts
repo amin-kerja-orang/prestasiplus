@@ -119,7 +119,7 @@ export const battleScenarios: Scenario[] = [
 
       const first = await student.request('POST', `/battle/arena/${uuid}/answer`, { body: { questionId: question.id, optionId: 1, seconds: 0 } })
       ctx.expectStatus(first, 200)
-      ctx.check(dataOf(first).correct === true && dataOf(first).correctOptionId === 1 && dataOf(first).points === 1000, 'a correct answer at 0 s scores 1000')
+      ctx.check(dataOf(first).accepted === true && dataOf(first).phase === 'answering' && dataOf(first).correctOptionId === undefined && dataOf(first).correct === undefined && dataOf(first).points === undefined, 'an answer in an open round is accepted and carries no key, correctness or points')
       const end = await playToEnd(ctx, student, uuid, true)
       const result = dataOf(end).result as { winner: string | null; scoreA: number } | undefined
       ctx.check(result !== undefined && result.scoreA > 0, 'the last round must end the battle with a result carrying the caller score')

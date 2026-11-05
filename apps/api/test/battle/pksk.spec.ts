@@ -167,6 +167,15 @@ describe('Battle PKSK tab', () => {
   })
 
   describe('arena', () => {
+    const untilReveal = async (uuid: string) => {
+      for (let i = 0; i < 13; i++) {
+        t.clock.advance(1_000)
+        const v = parseData(BattleArenaViewSchema, await a.get(`/battle/arena/${uuid}`))
+        if (v.phase === 'reveal') return v
+      }
+      throw new Error('no reveal')
+    }
+
     it('serves text and options with no key, and grades the one correct option', async () => {
       await grant(a, 'ALL')
       const pick = domains[5]!
@@ -184,11 +193,16 @@ describe('Battle PKSK tab', () => {
 
       const wrong = await a.post(`/battle/arena/${uuid}/answer`, { questionId: view.question?.id, optionId: 0, seconds: 1 })
       expect(wrong.status, JSON.stringify(wrong.body)).toBe(200)
-      expect(wrong.body.data).toMatchObject({ correct: false, correctOptionId: 1 })
+      expect(wrong.body.data).toEqual({ accepted: true, phase: 'answering', roundEndsAt: expect.any(String) }) // no key while the round is open
+      // the robot answers 2 to 12 s in: the round closes and the view reveals the key
+      const revealed = await untilReveal(uuid)
+      expect(revealed.reveal).toMatchObject({ index: 1, correctOptionId: 1, you: { optionId: 0, correct: false } })
       await nextRound(t, a, uuid, 1)
       const second = parseData(BattleArenaViewSchema, await a.get(`/battle/arena/${uuid}`))
       const right = await a.post(`/battle/arena/${uuid}/answer`, { questionId: second.question?.id, optionId: 1, seconds: 1 })
-      expect(right.body.data).toMatchObject({ correct: true, correctOptionId: 1 })
+      expect(right.status).toBe(200)
+      const second2 = await untilReveal(uuid)
+      expect(second2.reveal).toMatchObject({ index: 2, correctOptionId: 1, you: { optionId: 1, correct: true } })
     })
   })
 })

@@ -39,16 +39,19 @@ describe('arena (M16-16, M16-17)', () => {
    * clock waits for the robot and the reveal like a client (`nextRound`), so the next entry is the next round.
    */
   const play = async (who: Client, uuid: string, plan: { option: number | null; seconds: number }[]) => {
-    const out: ReturnType<typeof BattleAnswerResultSchema.parse>[] = []
+    const stored: { points: number; correct: boolean; option_id: number | null }[] = []
     for (const p of plan) {
       const round = (await roundOf(t, uuid)).answered + 1
       const res = await answer(who, uuid, { questionId: await questionOf(who, uuid), optionId: p.option, seconds: p.seconds })
       expect(res.status, JSON.stringify(res.body)).toBe(200)
-      out.push(parseData(BattleAnswerResultSchema, res))
+      expect(res.body.data.accepted).toBe(true)
+      stored.push((await lastRow(who, uuid)) as { points: number; correct: boolean; option_id: number | null })
       await nextRound(t, who, uuid, round)
     }
-    return out
+    return stored
   }
+  /** The caller's stored row of its latest answer: the answer response no longer says points or correctness (the key comes with the reveal). */
+  const lastRow = async (who: Client, uuid: string) => (await rows<{ points: number; correct: boolean; option_id: number | null }>(`select points, correct, option_id from battle_answers where battle_id = $1 and user_id = $2 order by position desc limit 1`, [uuid, who.id]))[0]
   /** The finished arena of a game `play` ran to its end. */
   const finalView = async (who: Client, uuid: string) => parseData(BattleArenaViewSchema, await view(who, uuid))
   const ten = (option: number | null, seconds: number) => Array.from({ length: 10 }, () => ({ option, seconds }))
@@ -144,13 +147,15 @@ describe('arena (M16-16, M16-17)', () => {
       expect(va.roundEndsAt).toBe(vb.roundEndsAt)
       t.clock.advance(4_000)
       const a1 = parseData(BattleAnswerResultSchema, await answer(a, uuid, { questionId: va.question?.id, optionId: 1, seconds: 0 }))
-      expect(a1).toMatchObject({ points: battleArenaPoints(4), opponent: { answered: false } })
+      expect(a1).toEqual({ accepted: true, phase: 'answering', roundEndsAt: va.roundEndsAt })
+      expect(await lastRow(a, uuid)).toMatchObject({ points: battleArenaPoints(4), correct: true })
       // A is waiting for B: still round 1 for both, A's score not counted yet, the key not shown in the view
       expect(await arenaOf(b, uuid)).toMatchObject({ index: 1, phase: 'answering', scores: { A: 0, B: 0 } })
       expect(await roundOf(t, uuid)).toMatchObject({ answered: 0 })
       t.clock.advance(1_000)
       const b1 = parseData(BattleAnswerResultSchema, await answer(b, uuid, { questionId: vb.question?.id, optionId: 0, seconds: 0 }))
-      expect(b1).toMatchObject({ correct: false, points: 0, opponent: { answered: true, correct: true, score: battleArenaPoints(4) }, you: { score: 0 } })
+      expect(b1).toEqual({ accepted: true, phase: 'reveal', roundEndsAt: expect.any(String) }) // the key comes from the view
+      expect(await lastRow(b, uuid)).toMatchObject({ points: 0, correct: false })
       // closed at B's answer: both are in the reveal of round 1 for 3 s
       const closedAt = t.clock.now().getTime()
       expect(await roundOf(t, uuid)).toMatchObject({ answered: 1, status: 'active' })
@@ -216,11 +221,13 @@ describe('arena (M16-16, M16-17)', () => {
         expect(new Date(v.roundEndsAt as string).getTime()).toBe(t.clock.now().getTime() + 12_000)
         // 4.9 s with N = 10: s = 4, 1000 - round(500 x 4 / 10) = 800
         t.clock.advance(4_900)
-        expect(parseData(BattleAnswerResultSchema, await answer(a, uuid, { questionId: v.question?.id, optionId: 1, seconds: 0 })).points).toBe(800)
+        expect((await answer(a, uuid, { questionId: v.question?.id, optionId: 1, seconds: 0 })).status).toBe(200)
+        expect((await lastRow(a, uuid))?.points).toBe(800)
         expect(await arenaOf(a, uuid)).toMatchObject({ secondsLeft: 6 })
         // 11 s: inside the grace window, 500 points
         t.clock.advance(6_100)
-        expect(parseData(BattleAnswerResultSchema, await answer(b, uuid, { questionId: v.question?.id, optionId: 1, seconds: 0 })).points).toBe(500)
+        expect((await answer(b, uuid, { questionId: v.question?.id, optionId: 1, seconds: 0 })).status).toBe(200)
+        expect((await lastRow(b, uuid))?.points).toBe(500)
         t.clock.advance(3_000)
         const second = await arenaOf(a, uuid)
         expect(second).toMatchObject({ index: 2, scores: { A: 800, B: 500 } })
@@ -229,8 +236,8 @@ describe('arena (M16-16, M16-17)', () => {
         const late = await answer(b, uuid, { questionId: second.question?.id, optionId: 1, seconds: 10.5 })
         expect(late.status).toBe(422)
         expect(ErrorBodySchema.parse(late.body).error.fields).toEqual({ seconds: 'Masa tidak sah.' })
-        const lateOk = parseData(BattleAnswerResultSchema, await answer(b, uuid, { questionId: second.question?.id, optionId: 1, seconds: 0 }))
-        expect(lateOk).toMatchObject({ correct: false, points: 0 })
+        expect((await answer(b, uuid, { questionId: second.question?.id, optionId: 1, seconds: 0 })).status).toBe(200)
+        expect(await lastRow(b, uuid)).toMatchObject({ correct: false, points: 0, option_id: null })
         expect(battleArenaPoints(18.5, 15, 3)).toBe(0)
       } finally {
         await setSetting(t, 'battle_question_seconds', 15)
@@ -361,13 +368,9 @@ describe('arena (M16-16, M16-17)', () => {
       const expected = plan.map((p) => (p.option === 1 ? battleArenaPoints(p.seconds) : 0))
       expect(results.map((r) => r.points)).toEqual(expected)
       expect(results.map((r) => r.correct)).toEqual(plan.map((p) => p.option === 1))
-      expect(results.every((r) => r.correctOptionId === 1)).toBe(true)
       expect(results.map((r) => r.points).slice(0, 3)).toEqual([1000, 500, 767])
       const total = expected.reduce((x, y) => x + y, 0)
-      // the pupil answers at the start of the round, before the robot: the round is still open, no `next` (the next question comes with the view), and the last answer has no result yet
-      expect(results.every((r) => r.next === undefined && r.result === undefined && r.opponent.answered === false)).toBe(true)
-      expect(results.at(-1)?.you.score).toBe(total)
-
+      
       const [battle] = await rows<{ status: string; winner: string; answered: number; finished_at: Date }>(`select status, winner, answered, finished_at from battles where id = $1`, [uuid])
       expect(battle).toMatchObject({ status: 'finished', winner: 'A', answered: 10 })
       expect(battle?.finished_at.toISOString()).toBe(t.clock.now().toISOString())
@@ -392,17 +395,20 @@ describe('arena (M16-16, M16-17)', () => {
       const roundNo = async () => (await roundOf(t, uuid)).answered + 1
       t.clock.advance(8_000)
       const r1 = await answer(a, uuid, { questionId: await questionOf(a, uuid), optionId: 1, seconds: 0 })
-      expect(parseData(BattleAnswerResultSchema, r1).points).toBe(battleArenaPoints(8))
+      expect(r1.status).toBe(200)
+      expect((await lastRow(a, uuid))?.points).toBe(battleArenaPoints(8))
       await nextRound(t, a, uuid, 1)
       // a slower client claim is kept; the round clock restarted with the round, not with the previous answer
       t.clock.advance(2_000)
       const r2 = await answer(a, uuid, { questionId: await questionOf(a, uuid), optionId: 1, seconds: 6 })
-      expect(parseData(BattleAnswerResultSchema, r2).points).toBe(battleArenaPoints(6))
+      expect(r2.status).toBe(200)
+      expect((await lastRow(a, uuid))?.points).toBe(battleArenaPoints(6))
       await nextRound(t, a, uuid, 2)
       // exactly 18 s is still an answer (15 + 3 s grace), clamped to 15
       t.clock.advance(18_000)
       const r3 = await answer(a, uuid, { questionId: await questionOf(a, uuid), optionId: 1, seconds: 0 })
-      expect(parseData(BattleAnswerResultSchema, r3).points).toBe(battleArenaPoints(15))
+      expect(r3.status).toBe(200)
+      expect((await lastRow(a, uuid))?.points).toBe(battleArenaPoints(15))
       await nextRound(t, a, uuid, 3)
       // 19 s: a timeout, still stored, the round closes; the next one opens 3 s after the window ended
       const fourth = await questionOf(a, uuid)
@@ -410,7 +416,8 @@ describe('arena (M16-16, M16-17)', () => {
       expect(await roundNo()).toBe(4)
       t.clock.advance(19_000)
       const r4 = await answer(a, uuid, { questionId: fourth, optionId: 1, seconds: 0 })
-      expect(parseData(BattleAnswerResultSchema, r4)).toMatchObject({ correct: false, points: 0, correctOptionId: 1 })
+      expect(r4.status).toBe(200)
+      expect(await lastRow(a, uuid)).toMatchObject({ correct: false, points: 0, option_id: null })
       const stored = await rows<{ seconds: number; points: number; option_id: number | null; created_at: Date }>(`select seconds, points, option_id, created_at from battle_answers where battle_id = $1 and user_id = $2 order by position`, [uuid, a.id])
       expect(stored.map((r) => r.seconds)).toEqual([8, 6, 15, 15])
       expect(stored[3]).toMatchObject({ points: 0, option_id: null })
@@ -427,7 +434,7 @@ describe('arena (M16-16, M16-17)', () => {
       const uuid = await botBattle(a, s.math)
       const res = await answer(a, uuid, { questionId: await questionOf(a, uuid), seconds: 15 })
       expect(res.status).toBe(200)
-      expect(parseData(BattleAnswerResultSchema, res)).toMatchObject({ correct: false, points: 0, correctOptionId: 1 })
+      expect(await lastRow(a, uuid)).toMatchObject({ correct: false, points: 0, option_id: null })
     })
 
     it('winner rules: 0-0 is a draw (AC-GM-01.3), a higher total wins, equal non-zero totals are a draw (null)', async () => {
@@ -470,11 +477,13 @@ describe('arena (M16-16, M16-17)', () => {
       // the pupil answers after the robot's time: the answer closes the round and carries the opponent's
       t.clock.advance(12_000)
       const first = await answer(a, uuid, { questionId: await questionOf(a, uuid), optionId: 1, seconds: 0 })
-      expect(parseData(BattleAnswerResultSchema, first).opponent).toEqual({ answered: true, correct: true, score: bot[0]?.points })
+      // the answer closes the round (the robot was due): the response only says so, the picks and points come with the view's reveal
+      expect(parseData(BattleAnswerResultSchema, first)).toMatchObject({ accepted: true, phase: 'reveal' })
+      expect((await finalView(a, uuid)).reveal).toMatchObject({ index: 1, opponent: { correct: true, points: bot[0]?.points } })
       await nextRound(t, a, uuid, 1)
       // before the robot's time the opponent has not answered, and says nothing about it
       const second = await answer(a, uuid, { questionId: await questionOf(a, uuid), optionId: 1, seconds: 0 })
-      expect(parseData(BattleAnswerResultSchema, second).opponent).toEqual({ answered: false })
+      expect(parseData(BattleAnswerResultSchema, second)).toMatchObject({ accepted: true, phase: 'answering' }) // the robot's time has not come
       await nextRound(t, a, uuid, 2)
       await play(a, uuid, ten(1, 9).slice(2))
       const stored = await rows<{ position: number; seconds: number; correct: boolean; points: number }>(
@@ -521,7 +530,7 @@ describe('arena (M16-16, M16-17)', () => {
       const uuid = await botBattle(a, s.math)
       const res = await answer(a, uuid, { questionId: await questionOf(a, uuid), optionId: 0, seconds: 0, points: 1000, correct: true, correctOptionId: 0, score: 9999, userId: b.id, you: { score: 5000 }, opponent: { score: 0 } })
       expect(res.status).toBe(200)
-      expect(parseData(BattleAnswerResultSchema, res)).toMatchObject({ correct: false, points: 0, correctOptionId: 1, you: { score: 0 } })
+      expect(await lastRow(a, uuid)).toMatchObject({ correct: false, points: 0, option_id: 0 })
       const [p] = await rows<{ score: number }>(`select score from battle_participants where battle_id = $1 and side = 'A'`, [uuid])
       expect(p?.score).toBe(0)
       // another user's answers cannot be written either: b is not a player
@@ -550,17 +559,59 @@ describe('arena (M16-16, M16-17)', () => {
       expect(ErrorBodySchema.parse(res.body).error).toMatchObject({ code: 'CONFLICT', message: 'Battle sudah tamat.' })
     })
 
-    it('no response of the arena flow carries the answer key before the question is answered', async () => {
+    it('no response of the arena flow carries the answer key or correctness while a round is open, the answer response never does', async () => {
       const uuid = await botBattle(a, s.math)
       for (let i = 0; i < 10; i++) {
         const v = await view(a, uuid)
         expect(leakedKeys(v.body), `view ${i}`).toEqual([])
         const res = await answer(a, uuid, { questionId: parseData(BattleArenaViewSchema, v).question?.id, optionId: 2, seconds: 4 })
-        // the key of the question just answered is the only key allowed, at the top level; there is no `next` and, with the round open, no `result`
-        expect(Object.keys(res.body.data).sort()).toEqual(['correct', 'correctOptionId', 'opponent', 'points', 'you'])
+        // accepted, the phase and when it ends: no key, no correctness, no points, no opponent, no `next`, and with the round open no `result`
+        expect(Object.keys(res.body.data).sort()).toEqual(['accepted', 'phase', 'roundEndsAt'])
+        expect(leakedKeys(res.body)).toEqual([])
+        // still answering (the pupil answered, the robot has not): the view has no key either
+        expect(leakedKeys((await view(a, uuid)).body), `view after answer ${i}`).toEqual([])
         await nextRound(t, a, uuid, i + 1)
       }
       expect(leakedKeys((await view(a, uuid)).body.data.result)).toEqual([])
+    })
+
+    it('between two pupils neither the answer responses nor the views carry the key during answering, for both seats; the view at the reveal does', async () => {
+      const uuid = await humanBattle(a, b, s.math)
+      const q = await questionOf(a, uuid)
+      for (const who of [a, b]) expect(leakedKeys((await view(who, uuid)).body), 'view before answering').toEqual([])
+      const ra = await answer(a, uuid, { questionId: q, optionId: 1, seconds: 0 })
+      expect(ra.body.data).toEqual({ accepted: true, phase: 'answering', roundEndsAt: expect.any(String) })
+      for (const who of [a, b]) {
+        const v = await view(who, uuid)
+        expect(leakedKeys(v.body), 'view while the other seat is answering').toEqual([])
+        expect(parseData(BattleArenaViewSchema, v).phase).toBe('answering')
+      }
+      const rb = await answer(b, uuid, { questionId: q, optionId: 0, seconds: 0 })
+      expect(rb.body.data).toEqual({ accepted: true, phase: 'reveal', roundEndsAt: expect.any(String) })
+      expect(leakedKeys(rb.body)).toEqual([])
+      for (const who of [a, b]) {
+        const v = parseData(BattleArenaViewSchema, await view(who, uuid))
+        expect(v.phase).toBe('reveal')
+        expect(v.reveal).toMatchObject({ correctOptionId: 1 })
+        expect(leakedKeys((await view(who, uuid)).body)).toContain('correctOptionId')
+      }
+      // the next round hides the key again
+      t.clock.advance(3_000)
+      for (const who of [a, b]) expect(leakedKeys((await view(who, uuid)).body)).toEqual([])
+    })
+
+    it('youAnswered: a refresh after answering shows true while the round is open (own seat only), false in the next round', async () => {
+      const uuid = await humanBattle(a, b, s.math)
+      const q = await questionOf(a, uuid)
+      expect(await finalView(a, uuid)).toMatchObject({ phase: 'answering', youAnswered: false })
+      expect((await answer(a, uuid, { questionId: q, optionId: 1, seconds: 0 })).status).toBe(200)
+      // a refresh of A, and B who has not answered: the flag says nothing about the other seat
+      expect(await finalView(a, uuid)).toMatchObject({ phase: 'answering', index: 1, youAnswered: true })
+      expect(await finalView(b, uuid)).toMatchObject({ phase: 'answering', index: 1, youAnswered: false })
+      expect((await answer(b, uuid, { questionId: q, optionId: 1, seconds: 0 })).status).toBe(200)
+      expect(await finalView(a, uuid)).toMatchObject({ phase: 'reveal', youAnswered: true })
+      t.clock.advance(3_000)
+      for (const who of [a, b]) expect(await finalView(who, uuid)).toMatchObject({ phase: 'answering', index: 2, youAnswered: false })
     })
 
     it('a battle against another pupil (invitation): both sides see the same round and a score is added when the round closes', async () => {
@@ -571,7 +622,8 @@ describe('arena (M16-16, M16-17)', () => {
       expect(bView.players.B.name).toBe('Murid Demo Kosong')
       const res = await answer(b, uuid, { questionId: bView.question?.id, optionId: 1, seconds: 0 })
       expect(res.status, JSON.stringify(res.body)).toBe(200)
-      expect(parseData(BattleAnswerResultSchema, res)).toMatchObject({ points: 1000, you: { score: 1000 }, opponent: { answered: false } })
+      expect(parseData(BattleAnswerResultSchema, res)).toMatchObject({ accepted: true, phase: 'answering' })
+      expect((await lastRow(b, uuid))?.points).toBe(1000)
       // a third pupil is not a player
       expect((await view(c, uuid)).status).toBe(404)
       // the round is still open for A: nothing is added yet, and a human is never simulated

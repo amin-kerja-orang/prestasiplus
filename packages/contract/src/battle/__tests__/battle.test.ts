@@ -341,6 +341,13 @@ describe('arena', () => {
     const last = { ...answerNext, next: undefined, result: { winner: 'B', scoreA: 0, scoreB: 0 } }
     expect(BattleAnswerResultSchema.safeParse(last).success).toBe(true)
     expect(BattleAnswerResultSchema.safeParse({ ...answerNext, result: last.result }).success).toBe(false)
+    // the answer of an open round carries no key, correctness or score: only acceptance, phase and when it ends
+    expect(BattleAnswerResultSchema.safeParse({ accepted: true, phase: 'answering', roundEndsAt: '2026-10-19T09:00:36.000+08:00' }).success).toBe(true)
+    expect(BattleAnswerResultSchema.safeParse({ accepted: true, phase: 'reveal' }).success).toBe(true)
+    expect(BattleAnswerResultSchema.safeParse({ accepted: true, phase: 'open' }).success).toBe(false)
+    // the arena view says whether the caller answered the round on screen
+    expect(BattleArenaViewSchema.safeParse({ ...activeArena, youAnswered: true }).success).toBe(true)
+    expect(BattleArenaViewSchema.safeParse({ ...activeArena, youAnswered: 'yes' }).success).toBe(false)
     // the round is open for the other side: neither next nor result, and the opponent has not answered
     expect(BattleAnswerResultSchema.safeParse({ ...answerNext, next: undefined, opponent: { answered: false } }).success).toBe(true)
     expect(BattleAnswerResultSchema.safeParse({ ...answerNext, opponent: { answered: true } }).success).toBe(false)

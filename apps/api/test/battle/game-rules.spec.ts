@@ -110,12 +110,13 @@ describe('GAME-00 common rules in Battle', () => {
       const uuid = await botBattle(a, s.math)
       const view = parseData(BattleArenaViewSchema, await a.get(`/battle/arena/${uuid}`))
       expect(new Date(view.roundEndsAt as string).getTime()).toBe(t.clock.now().getTime() + 18_000)
-      expect((await answer(a, uuid, true, 17_000)).points).toBe(500)
+      await answer(a, uuid, true, 17_000)
+      expect(await lastAnswer(uuid)).toEqual({ option_id: 1, points: 500 })
       const question = await questionOf(a, uuid)
       t.clock.advance(18_500)
       const res = await a.post(`/battle/arena/${uuid}/answer`, { questionId: question, optionId: 1, seconds: 2 })
       // the poll for the question was before the deadline: the late answer itself is the timeout
-      expect(parseData(BattleAnswerResultSchema, res).points).toBe(0)
+      expect(res.status).toBe(200)
       expect(await lastAnswer(uuid)).toEqual({ option_id: null, points: 0 })
     })
 

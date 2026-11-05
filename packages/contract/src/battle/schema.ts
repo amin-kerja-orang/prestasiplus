@@ -394,6 +394,7 @@ export const BattleArenaViewSchema = z
     secondsLeft: z.number().int().min(0).max(BATTLE_QUESTION_SECONDS_MAX),
     roundEndsAt: TimestampSchema.optional().meta({ description: 'While active: when the current phase ends (answering: the window incl. grace, 48 section 3.3; reveal: the next round opens).' }),
     phase: BattleArenaPhaseSchema.optional(),
+    youAnswered: z.boolean().optional().meta({ description: 'While active: the caller has a row for the round on screen (own seat only; nothing about the opponent).' }),
     reveal: BattleArenaRevealSchema.optional(),
     result: BattleArenaResultSchema.optional(),
   })
@@ -429,18 +430,23 @@ export const BattleAnswerRequestSchema = z
 export type BattleAnswerRequest = z.infer<typeof BattleAnswerRequestSchema>
 
 /**
- * `data` of M16-17. The caller's own key (`correctOptionId`) is revealed here, after the answer is stored. Rounds are shared (48
- * GAME-01): `opponent.answered` is false while the other side has not answered yet, and then carries neither `correct` nor
- * `score`. `result` is present when this answer closed the last round. `next` is no longer sent: the next question arrives with
- * the arena view when the next round opens. At most one of `next` and `result` is present.
+ * `data` of M16-17. Rounds are shared (48 GAME-01) and the key is never shown while a round is open: the answer is accepted and
+ * the response says only `accepted`, the `phase` the battle is in now and when it ends (`roundEndsAt`). The key and the
+ * correctness of both seats come only from the arena view in `phase` `reveal` (`reveal`). `result` is present when this answer
+ * closed the last round. `correct`, `correctOptionId`, `points`, `you`, `opponent` and `next` are no longer sent (kept optional so
+ * the schema only widens); an `opponent` that answered still carries `correct` and `score` when present. At most one of `next`
+ * and `result` is present.
  */
 export const BattleAnswerResultSchema = z
   .strictObject({
-    correct: z.boolean(),
-    correctOptionId: z.number().int().min(0).max(3),
-    points: z.number().int().min(0).max(1000),
-    you: z.strictObject({ score: z.number().int().min(0) }),
-    opponent: z.strictObject({ answered: z.boolean(), correct: z.boolean().optional(), score: z.number().int().min(0).optional() }),
+    accepted: z.boolean().optional().meta({ description: 'True when the answer was stored for the open round.' }),
+    phase: BattleArenaPhaseSchema.optional().meta({ description: 'The phase of the battle after the answer: reveal when it closed the round.' }),
+    roundEndsAt: TimestampSchema.optional().meta({ description: 'When the current phase ends (answering: the window incl. grace; reveal: the next round opens). Absent when finished.' }),
+    correct: z.boolean().optional(),
+    correctOptionId: z.number().int().min(0).max(3).optional(),
+    points: z.number().int().min(0).max(1000).optional(),
+    you: z.strictObject({ score: z.number().int().min(0) }).optional(),
+    opponent: z.strictObject({ answered: z.boolean(), correct: z.boolean().optional(), score: z.number().int().min(0).optional() }).optional(),
     next: BattleArenaQuestionSchema.optional(),
     result: BattleArenaResultSchema.optional(),
   })
@@ -448,7 +454,7 @@ export const BattleAnswerResultSchema = z
     message: 'at most one of next and result is present',
     path: ['next'],
   })
-  .refine((r) => !r.opponent.answered || (r.opponent.correct !== undefined && r.opponent.score !== undefined), {
+  .refine((r) => r.opponent === undefined || !r.opponent.answered || (r.opponent.correct !== undefined && r.opponent.score !== undefined), {
     message: 'an opponent that answered carries correct and score',
     path: ['opponent'],
   })

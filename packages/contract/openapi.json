@@ -21775,6 +21775,10 @@
           "phase": {
             "$ref": "#/components/schemas/BattleArenaPhase"
           },
+          "youAnswered": {
+            "type": "boolean",
+            "description": "While active: the caller has a row for the round on screen (own seat only; nothing about the opponent)."
+          },
           "reveal": {
             "$ref": "#/components/schemas/BattleArenaReveal"
           },
@@ -21911,6 +21915,26 @@
       "BattleAnswerResult": {
         "type": "object",
         "properties": {
+          "accepted": {
+            "type": "boolean",
+            "description": "True when the answer was stored for the open round."
+          },
+          "phase": {
+            "type": "string",
+            "enum": [
+              "answering",
+              "reveal",
+              "finished"
+            ],
+            "description": "The phase of the battle after the answer: reveal when it closed the round."
+          },
+          "roundEndsAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "When the current phase ends (answering: the window incl. grace; reveal: the next round opens). Absent when finished.",
+            "example": "2026-10-16T09:30:00+08:00"
+          },
           "correct": {
             "type": "boolean"
           },
@@ -21963,13 +21987,6 @@
             "$ref": "#/components/schemas/BattleArenaResult"
           }
         },
-        "required": [
-          "correct",
-          "correctOptionId",
-          "points",
-          "you",
-          "opponent"
-        ],
         "additionalProperties": false
       },
       "BattleStudentStandingsQuery": {
