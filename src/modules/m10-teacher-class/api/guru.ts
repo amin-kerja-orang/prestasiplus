@@ -27,7 +27,6 @@ import {
 import type {
   BidangOption,
   ChapterOption,
-  ClassQrData,
   ClassroomStudent,
   ContributedQuestion,
   ContributedQuestionDetail,
@@ -100,11 +99,6 @@ export function updateGuruClass(id: number | string, body: GuruClassBody): Promi
   return api.put<GuruClass>(`/api/guru/classes/${encodeURIComponent(String(id))}`, {
     body: classBody(body),
   })
-}
-
-/** #14 `GET /api/guru/classes/:id/qr-data` (404 for every role in R1; removed with the QR modal in the S5 PR). */
-export function fetchClassQrData(classId: number, options: Signal = {}): Promise<ClassQrData> {
-  return api.get<ClassQrData>(`/api/guru/classes/${String(classId)}/qr-data`, withSignal(options))
 }
 
 // --- students (S6) --------------------------------------------------------------------------

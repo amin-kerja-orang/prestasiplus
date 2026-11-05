@@ -98,14 +98,6 @@ export interface GuruClass {
   studentCount: number
 }
 
-export interface ClassQrData {
-  name: string
-  /** School name, or `null` when the class has none. */
-  school: string | null
-  /** BR-M10-02: `https://prestasiplus.my/kelas-saya?kod={code}` (PROPOSED). */
-  joinUrl: string
-}
-
 // ---------------------------------------------------------------------------------------------
 // #15–#17 students (S6)
 // ---------------------------------------------------------------------------------------------

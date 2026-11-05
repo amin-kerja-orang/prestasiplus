@@ -1,17 +1,10 @@
-/** Exact BM copy of S4 and S5 (SRS M10 §8.1; URS FN-M10-3.1, 3.2). */
+/** BM copy of the class list and form (R1-GUR-8, S6-T14; earlier S4 and S5, SRS M10 §8.1). */
 export const KELAS_COPY = {
   title: 'Kelas Saya',
-  create: 'Cipta Kelas Baru',
-  createShort: 'Cipta Kelas',
-  emptyTitle: 'Belum Ada Kelas',
-  emptyBody: 'Cipta kelas pertama anda untuk memulakan pengajaran',
+  create: 'Cipta Kelas',
+  empty: 'Belum ada kelas. Cipta kelas pertama anda untuk mula.',
   noSubject: 'Tiada Subjek',
-  joinLink: 'Pautan sertai:',
-  copied: 'Disalin!',
-  print: 'Cetak',
-  close: 'Tutup',
   loadFailed: 'Gagal memuatkan senarai kelas. Sila cuba lagi.',
-  qrFailed: 'Gagal memuatkan kod QR. Sila cuba lagi.',
   // S5 / S6-T14 (R1-GUR-8: the class form, create and edit)
   back: 'Kembali',
   info: 'Maklumat Kelas',

@@ -1,23 +1,28 @@
 <script setup lang="ts">
 /**
- * S4 `/guru/kelas` (FR-M10-28..30; URS FT-M10-3.1): "{n} kelas aktif", "Cipta Kelas Baru", the
- * empty card, PROPOSED class cards (1 / 2 / 3 per row) and the quick-QR modal.
+ * R1-GUR-8 `/guru/kelas` "Kelas Saya" (S6-T14; was S4): the counter "{n} kelas · {n} pelajar" (distinct
+ * pupils of the own classes), the button "Cipta Kelas", the class cards (1 / 2 / 3 per row, each with an
+ * "Edit" link) or the empty state. No join code and no QR modal (DV-GUR-8-1).
  */
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsPage, DsPanel, DsLoadError } from '@/ds'
+import { DsEmptyState, DsGrid, DsLoadError, DsPage, DsPanel, DsText } from '@/ds'
 
-import { fetchGuruClasses } from '../api/guru'
+import { fetchGuruClasses, fetchGuruStudents } from '../api/guru'
 import ClassCard from '../components/kelas/ClassCard.vue'
 import { KELAS_COPY } from '../components/kelas/copy'
-import QrModal from '../components/kelas/QrModal.vue'
 
 const { data, error, reload } = useApi((signal) => fetchGuruClasses({ signal }))
-// Only active classes are listed, as the "n kelas aktif" counter counts them.
+// Distinct pupils of the own classes: the "mine" roster lists each pupil once, whatever the classes.
+const { data: roster } = useApi((signal) => fetchGuruStudents({ tab: 'mine' }, { signal }))
+
+// Only active classes are listed and counted.
 const classes = computed(() => (data.value?.data ?? []).filter((c) => c.isActive))
-const activeCount = computed(() => classes.value.length)
-const qrClassId = ref<number | null>(null)
+const counter = computed(() => {
+  const kelas = `${String(classes.value.length)} kelas`
+  return roster.value ? `${kelas} · ${String(roster.value.data.length)} pelajar` : kelas
+})
 </script>
 
 <template>
@@ -31,9 +36,7 @@ const qrClassId = ref<number | null>(null)
         >{{ KELAS_COPY.create }}</UButton
       >
     </template>
-    <p class="-mt-2 text-body text-muted" data-testid="kelas-active-count">
-      {{ activeCount }} kelas aktif
-    </p>
+    <DsText variant="body" tone="muted" data-testid="kelas-active-count">{{ counter }}</DsText>
 
     <DsLoadError
       v-if="error"
@@ -42,38 +45,31 @@ const qrClassId = ref<number | null>(null)
       testid="kelas-error"
       @retry="reload"
     />
-    <div
+    <DsGrid
       v-else-if="!data"
-      class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+      :cols="{ base: 1, sm: 2, lg: 3 }"
       aria-busy="true"
       data-testid="kelas-loading"
     >
       <USkeleton v-for="n in 3" :key="n" class="h-40 w-full" />
-    </div>
+    </DsGrid>
 
     <DsPanel v-else-if="classes.length === 0" data-testid="kelas-empty">
-      <div class="flex flex-col items-center gap-2 py-6 text-center">
-        <UIcon name="i-ph-chalkboard-teacher-duotone" class="size-12 text-dimmed" />
-        <h2 class="text-subheading text-highlighted">{{ KELAS_COPY.emptyTitle }}</h2>
-        <p class="text-body text-muted">{{ KELAS_COPY.emptyBody }}</p>
-        <UButton
-          to="/guru/kelas/cipta"
-          icon="i-ph-plus-circle-duotone"
-          class="mt-3 min-h-11"
-          data-testid="kelas-empty-create"
-          >{{ KELAS_COPY.createShort }}</UButton
-        >
-      </div>
+      <DsEmptyState :title="KELAS_COPY.empty" icon="chalkboard-teacher">
+        <template #actions>
+          <UButton
+            to="/guru/kelas/cipta"
+            icon="i-ph-plus-circle-duotone"
+            class="min-h-11"
+            data-testid="kelas-empty-create"
+            >{{ KELAS_COPY.create }}</UButton
+          >
+        </template>
+      </DsEmptyState>
     </DsPanel>
 
-    <ul
-      v-else
-      class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
-      data-testid="kelas-grid"
-    >
-      <ClassCard v-for="item in classes" :key="item.id" :item="item" @qr="qrClassId = $event" />
-    </ul>
-
-    <QrModal :class-id="qrClassId" @close="qrClassId = null" />
+    <DsGrid v-else as="ul" :cols="{ base: 1, sm: 2, lg: 3 }" data-testid="kelas-grid">
+      <ClassCard v-for="item in classes" :key="item.id" :item="item" />
+    </DsGrid>
   </DsPage>
 </template>

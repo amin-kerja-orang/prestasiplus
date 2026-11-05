@@ -10,7 +10,7 @@ import KelasListPage from '../../pages/KelasListPage.vue'
 
 const api = vi.hoisted(() => ({
   fetchGuruClasses: vi.fn(),
-  fetchClassQrData: vi.fn(),
+  fetchGuruStudents: vi.fn(),
 }))
 vi.mock('../../api/guru', () => api)
 
@@ -65,6 +65,7 @@ async function mountPage(component: Component) {
 beforeEach(() => {
   setActivePinia(createPinia())
   vi.clearAllMocks()
+  api.fetchGuruStudents.mockResolvedValue({ data: [], meta: { count: 0, schoolSet: true } })
   subjects.fetchSubjectOptions.mockResolvedValue([
     { id: 1, name: 'Bahasa Melayu' },
     { id: 4, name: 'Sains' },
@@ -76,18 +77,35 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-describe('S4 KelasListPage', () => {
-  it('shows "0 kelas aktif", the create link and the empty card with no class', async () => {
+describe('R1-GUR-8 KelasListPage', () => {
+  it('shows "0 kelas · 0 pelajar", "Cipta Kelas" and the PRD empty state with no class', async () => {
     api.fetchGuruClasses.mockResolvedValue(list([]))
     const w = await mountPage(KelasListPage)
     expect(w.get('h1').text()).toBe('Kelas Saya')
-    expect(w.get('[data-testid="kelas-active-count"]').text()).toBe('0 kelas aktif')
+    expect(w.get('[data-testid="kelas-active-count"]').text()).toBe('0 kelas · 0 pelajar')
     expect(w.get('[data-testid="kelas-create"]').attributes('href')).toBe('/guru/kelas/cipta')
-    expect(w.get('[data-testid="kelas-create"]').text()).toBe('Cipta Kelas Baru')
+    expect(w.get('[data-testid="kelas-create"]').text()).toBe('Cipta Kelas')
     const empty = w.get('[data-testid="kelas-empty"]')
-    expect(empty.text()).toContain('Belum Ada Kelas')
-    expect(empty.text()).toContain('Cipta kelas pertama anda untuk memulakan pengajaran')
+    expect(empty.text()).toContain('Belum ada kelas. Cipta kelas pertama anda untuk mula.')
     expect(w.get('[data-testid="kelas-empty-create"]').attributes('href')).toBe('/guru/kelas/cipta')
+    expect(w.get('[data-testid="kelas-empty-create"]').text()).toBe('Cipta Kelas')
+  })
+
+  it('counts each pupil once, even a pupil who is in two classes (distinct pupils)', async () => {
+    api.fetchGuruClasses.mockResolvedValue(list([cls(2001), cls(2002)]))
+    api.fetchGuruStudents.mockResolvedValue({
+      data: [{ id: 1 }, { id: 2 }, { id: 3 }],
+      meta: { count: 3, schoolSet: true },
+    })
+    const w = await mountPage(KelasListPage)
+    // Two classes of 8 each, but 3 distinct pupils in the roster.
+    expect(w.get('[data-testid="kelas-active-count"]').text()).toBe('2 kelas · 3 pelajar')
+  })
+
+  it('the card "pelajar" counts equal the class studentCount; the cards show no join code', async () => {
+    api.fetchGuruClasses.mockResolvedValue(list([cls(2001, { studentCount: 3 })]))
+    const w = await mountPage(KelasListPage)
+    expect(w.get('[data-testid="class-count"]').text()).toBe('3 pelajar')
   })
 
   it('R1-GUR-8: a class card has an Edit link and no join code or QR button', async () => {
@@ -106,7 +124,7 @@ describe('S4 KelasListPage', () => {
       list([cls(2001), cls(2002, { subjectName: null }), cls(2003, { isActive: false })]),
     )
     const w = await mountPage(KelasListPage)
-    expect(w.get('[data-testid="kelas-active-count"]').text()).toBe('2 kelas aktif')
+    expect(w.get('[data-testid="kelas-active-count"]').text()).toBe('2 kelas · 0 pelajar')
     const cards = w.findAll('[data-testid="class-card"]')
     expect(cards).toHaveLength(2)
     expect(cards[0]?.text()).toContain('8 pelajar')
