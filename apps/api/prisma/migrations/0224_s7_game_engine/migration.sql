@@ -1,5 +1,9 @@
 -- 0224_s7_game_engine (S7-T01 part 1): the game engine schema and the settings rows every game reads.
 --   DM-60: `battles.counts_for_ranking` (false for a robot battle); nullable `battle_participants.user_id` (a robot has none).
+--          With the columns 48 GAME-01 needs (ruling 5 on #497, no new DM id): `battles.round_started_at` (48 3.3); `question_count`
+--          on `battles`, `battle_queues` and `battle_invitations` (the chips 5, 10, 15, 20; every existing row drew 10);
+--          `battle_participants.last_polled_at` and `consecutive_timeouts` (absent player, forfeit); `cancelled` in
+--          `ck_battle_queues_status` (a battle is never `cancelled`: `BATTLE_STATUSES` is kept); nullable `battle_answers.user_id`.
 --   DM-64: `spin_segments` with the 8 rows of 48 GAME-14.
 --   DM-38: `ck_gamification_settings_key` allows the ten existing keys plus every key of 48 section 2, and one row
 --          (BM label, default) is inserted for every key of 48 section 2 that is not stored in `reward_settings`.
@@ -9,8 +13,8 @@
 -- `boardgame_quiz_tiles` stays in `game_settings` and is not a key here (ruling 5 on #499).
 -- `game_enabled_<game_key>`, default 1: one per game on the hub, with its hub name as the label (D-G, ruling 2 on #499).
 --
--- Additive (expand only): nothing is removed, and existing battles count for ranking.
--- Reversible, in this order (assumes no robot participant and no row with a new key needs keeping):
+-- Additive (expand only): nothing is removed, existing battles count for ranking, and every existing row is valid.
+-- Reversible, in this order (assumes no robot participant, robot answer, cancelled queue entry or row with a new key needs keeping):
 --   DELETE FROM "gamification_settings" WHERE "key" NOT IN ('coins_per_question', 'cash_rate_coins', 'cash_rate_sen', 'min_cash_withdrawal', 'cash_withdrawal_enabled', 'reward_budget_sen_session', 'reward_budget_sen_month', 'current_session_year', 'flat_quiz_reward', 'games_award_syiling');
 --   ALTER TABLE "gamification_settings" DROP CONSTRAINT "ck_gamification_settings_key";
 --   ALTER TABLE "gamification_settings" ADD CONSTRAINT "ck_gamification_settings_key" CHECK ("key" IN ('coins_per_question', 'cash_rate_coins', 'cash_rate_sen', 'min_cash_withdrawal', 'cash_withdrawal_enabled', 'reward_budget_sen_session', 'reward_budget_sen_month', 'current_session_year', 'flat_quiz_reward', 'games_award_syiling'));
@@ -18,10 +22,36 @@
 --   DELETE FROM "battle_participants" WHERE "user_id" IS NULL;
 --   ALTER TABLE "battle_participants" ALTER COLUMN "user_id" SET NOT NULL;
 --   ALTER TABLE "battles" DROP COLUMN "counts_for_ranking";
+--   DELETE FROM "battle_answers" WHERE "user_id" IS NULL;
+--   ALTER TABLE "battle_answers" ALTER COLUMN "user_id" SET NOT NULL;
+--   DELETE FROM "battle_queues" WHERE "status" = 'cancelled';
+--   ALTER TABLE "battle_queues" DROP CONSTRAINT "ck_battle_queues_status";
+--   ALTER TABLE "battle_queues" ADD CONSTRAINT "ck_battle_queues_status" CHECK ("status" IN ('waiting', 'incoming_challenge', 'matched', 'expired', 'abandoned'));
+--   ALTER TABLE "battle_participants" DROP COLUMN "consecutive_timeouts";
+--   ALTER TABLE "battle_participants" DROP COLUMN "last_polled_at";
+--   ALTER TABLE "battle_invitations" DROP COLUMN "question_count";
+--   ALTER TABLE "battle_queues" DROP COLUMN "question_count";
+--   ALTER TABLE "battles" DROP COLUMN "question_count";
+--   ALTER TABLE "battles" DROP COLUMN "round_started_at";
 
 -- DM-60
 ALTER TABLE "battles" ADD COLUMN "counts_for_ranking" BOOLEAN NOT NULL DEFAULT true;
 ALTER TABLE "battle_participants" ALTER COLUMN "user_id" DROP NOT NULL;
+
+-- DM-60, the columns of 48 GAME-01 (ruling 5 on #497)
+ALTER TABLE "battles" ADD COLUMN "round_started_at" TIMESTAMPTZ(6);
+ALTER TABLE "battles" ADD COLUMN "question_count" SMALLINT NOT NULL DEFAULT 10;
+ALTER TABLE "battles" ADD CONSTRAINT "ck_battles_question_count" CHECK ("question_count" IN (5, 10, 15, 20));
+ALTER TABLE "battle_queues" ADD COLUMN "question_count" SMALLINT NOT NULL DEFAULT 10;
+ALTER TABLE "battle_queues" ADD CONSTRAINT "ck_battle_queues_question_count" CHECK ("question_count" IN (5, 10, 15, 20));
+ALTER TABLE "battle_invitations" ADD COLUMN "question_count" SMALLINT NOT NULL DEFAULT 10;
+ALTER TABLE "battle_invitations" ADD CONSTRAINT "ck_battle_invitations_question_count" CHECK ("question_count" IN (5, 10, 15, 20));
+ALTER TABLE "battle_participants" ADD COLUMN "last_polled_at" TIMESTAMPTZ(6);
+ALTER TABLE "battle_participants" ADD COLUMN "consecutive_timeouts" SMALLINT NOT NULL DEFAULT 0;
+ALTER TABLE "battle_participants" ADD CONSTRAINT "ck_battle_participants_consecutive_timeouts" CHECK ("consecutive_timeouts" >= 0);
+ALTER TABLE "battle_queues" DROP CONSTRAINT "ck_battle_queues_status";
+ALTER TABLE "battle_queues" ADD CONSTRAINT "ck_battle_queues_status" CHECK ("status" IN ('waiting', 'incoming_challenge', 'matched', 'expired', 'abandoned', 'cancelled'));
+ALTER TABLE "battle_answers" ALTER COLUMN "user_id" DROP NOT NULL;
 
 -- DM-64
 CREATE TABLE "spin_segments" (
