@@ -1,8 +1,10 @@
+import { isDeepStrictEqual } from 'node:util'
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common'
 import {
   QUESTION_WORKFLOW_STATUSES,
   isQuestionWorkflowTransitionAllowed,
   QUESTION_MESSAGES,
+  QuestionPartSchema,
   QuestionWritePartSchema,
   type QuestionPart,
 } from '@pp/contract'
@@ -811,20 +813,37 @@ export class QuestionsService {
     return record
   }
 
+  /** Parses each top-level part with the strict write schema, or the lenient read schema when `unchanged(part, index)`. */
+  private parseParts(parts: QuestionPart[], unchanged: (p: QuestionPart, i: number) => boolean):
+    | { success: true; data: QuestionPart[] }
+    | { success: false; error: { issues: { path: PropertyKey[]; message: string }[] } } {
+    if (parts.length < 1 || parts.length > 20) return { success: false, error: { issues: [{ path: [], message: 'Data tidak sah.' }] } }
+    const data: QuestionPart[] = []
+    for (const [i, p] of parts.entries()) {
+      const r = (unchanged(p, i) ? QuestionPartSchema : QuestionWritePartSchema).safeParse(p)
+      if (!r.success) return { success: false, error: { issues: r.error.issues.map((x) => ({ ...x, path: [i, ...x.path] })) as never } }
+      data.push(r.data as QuestionPart)
+    }
+    return { success: true, data }
+  }
+
   /** Re-validates a built tree with the contract; a failure is a 422 on the first offending path. */
-  private checkedParts(parts: QuestionPart[], supplied: boolean): QuestionPart[] {
+  private checkedParts(parts: QuestionPart[], supplied: boolean, stored?: readonly QuestionPart[]): QuestionPart[] {
     // Size caps run on the raw input, before the schema walks it (DoS): top level, total and depth.
     if (parts.length > MAX_TOP_PARTS || treeSize(parts, 1) > MAX_TOTAL_PARTS || treeDepth(parts) > MAX_PART_DEPTH) {
       throw fail({ parts: PARTS_TOO_LARGE })
     }
-    const res = QuestionWritePartSchema.array().min(1).max(20).safeParse(parts)
+    // Strict (write) rules for new and changed top-level parts; a part carried over unchanged from the stored version keeps the
+    // lenient read rules, so a legacy row (marks 0, duplicate labels) can still have its stem or tag fixed (#692).
+    const unchanged = (p: QuestionPart, i: number): boolean => stored?.[i] !== undefined && isDeepStrictEqual(stored[i], p)
+    const res = this.parseParts(parts, unchanged)
     if (res.success) {
       // BE-42: the PKSK leaf is valid only on a question tagged `pksk_domain`, which only PkskQuestionsService writes.
       if (leavesOf(res.data).some(({ leaf }) => leaf.mode === 'pksk_choice')) throw fail({ [supplied ? 'parts' : 'questionType']: PKSK_LEAF_REFUSED })
       return res.data
     }
     const issue = res.error.issues[0]
-    const deepest = issue ? deepestIssue(issue as UnionLike, []) : { path: [] as PropertyKey[], message: 'Data tidak sah.' }
+    const deepest = issue ? deepestIssue(issue as unknown as UnionLike, []) : { path: [] as PropertyKey[], message: 'Data tidak sah.' }
     const key = supplied ? ['parts', ...deepest.path.map(String)].join('.') : this.flatKeyOf(deepest.path)
     throw fail({ [key]: deepest.message })
   }
@@ -1175,7 +1194,7 @@ export class QuestionsService {
 
     let parts: QuestionPart[]
     if (input.parts) {
-      parts = this.checkedParts(input.parts, true)
+      parts = this.checkedParts(input.parts, true, v.parts)
     } else if (flatShaped) {
       // Remove wins; else a sent id (or null = no image) replaces the stored one; an omitted position keeps it.
       const optionImageIds = flat.optionImageIds.map((id, i) =>
@@ -1196,7 +1215,7 @@ export class QuestionsService {
         cognitiveLevel: input.cognitiveLevel === undefined ? ((single as { cognitiveLevel?: string | null } | undefined)?.cognitiveLevel ?? null) : input.cognitiveLevel,
       }
       if (flat.questionType === 'mcq' && src.options !== undefined && src.options.length !== 4) throw fail({ options: QUESTION_MESSAGES.options })
-      parts = this.checkedParts(partsFromFlat(src), false)
+      parts = this.checkedParts(partsFromFlat(src), false, v.parts)
     } else {
       // REQ-B-021c: an essay_choice question has no flat model answer or points field (its key and marks live on the part). A
       // flat edit that CHANGES either is refused; echoing the stored value (what the edit form reads back) is not a change.
