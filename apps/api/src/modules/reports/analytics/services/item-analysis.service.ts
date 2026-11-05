@@ -3,7 +3,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import { isIdString } from '../../../../db/ids'
 import { ClassesRepository } from '../../../classes'
 import { AnalyticsRepository } from '../analytics.repository'
-import { bandOf, compareIds, percent, round1, round3, stripHtml } from '../domain/rules'
+import { DISCRIMINATION_MIN_PUPILS, bandOf, compareIds, discriminationGroup, percent, round1, round2, stripHtml } from '../domain/rules'
 import type { ItemAnalysis } from '../types'
 import type { Ctx } from './scope'
 import { classOptions, ownClasses, populationOf } from './teacher-scope'
@@ -12,7 +12,8 @@ import { classOptions, ownClasses, populationOf } from './teacher-scope'
  * S6 item analysis (SRS M11 section 6.4; BR-M11-28; M08 BR-M08-17 to 19). Scope: the answers of the S1 population to
  * the questions of the selected subject (all when none; a selected own class without an explicit subject uses its
  * own subject). p = correct / attempts per question; D = upper-group p minus lower-group p with a group of
- * round(27 percent x N), N = the pupils with at least one finished session in scope (computed from 4 pupils).
+ * ceil(27 percent x N), N = the pupils with at least one finished session in scope (computed from 10 pupils, R1 decision D113),
+ * D to 2 decimals.
  */
 @Injectable()
 export class ItemAnalysisService {
@@ -42,19 +43,19 @@ export class ItemAnalysisService {
 
     // BR-M08-19 discrimination.
     const discrimination = new Map<string, number>()
-    if (finished.size >= 4) {
+    if (finished.size >= DISCRIMINATION_MIN_PUPILS) {
       const pct = (id: string): number => {
         const m = totals.get(id)
         return m ? percent(m.c, m.n) : 0
       }
       const ranked = [...finished].sort((a, b) => pct(b) - pct(a) || compareIds(a, b))
-      const g = Math.max(1, Math.round(0.27 * finished.size))
+      const g = discriminationGroup(finished.size)
       const [upper, lower] = await Promise.all([this.repo.groupTallies(ranked.slice(0, g), subjectId), this.repo.groupTallies(ranked.slice(-g), subjectId)])
       for (const t of tallies) {
         const u = upper.get(t.questionId)
         const l = lower.get(t.questionId)
         if (!u || !l || u.n === 0 || l.n === 0) continue
-        discrimination.set(t.questionId, round3(u.c / u.n - l.c / l.n))
+        discrimination.set(t.questionId, round2(u.c / u.n - l.c / l.n))
       }
     }
 
@@ -77,6 +78,8 @@ export class ItemAnalysisService {
             textPlain: stem ? stripHtml(stem.stem) : '',
             subjectName: sid === null ? '' : (subjectNames.get(sid) ?? ''),
             attempts: t.attempts,
+            correct: t.correct,
+            wrong: t.attempts - t.correct,
             pct: round1(p),
             band: bandOf(p),
             discrimination: discrimination.get(t.questionId) ?? null,
