@@ -2,7 +2,7 @@
 /**
  * S23 `/guru/soalan/:id` "Detail Soalan" (M10-T6; FR-M10-107; FN-M10-7.3.1–7.3.3): chips subject /
  * source / "Tahap {n}" / type, the question and its image, options "A)" … "D)" (correct highlighted),
- * "Penerangan" and "Statistik". A question that is not own or unknown is the standard 404 (BR-M10-01).
+ * "Penerangan" and "Statistik". A question that is not own or unknown is the standard 404 (BR-M10-01). The status chip, the "Sebab: {reason}" of a rejected item and "Edit Soalan" (editable only) follow FR-GUR-44-10.
  */
 import { computed, watch } from 'vue'
 
@@ -16,11 +16,21 @@ import {
   DsPage,
   DsPanel,
   DsStatRow,
+  DsStatusBadge,
   type StatItem,
 } from '@/ds'
 
 import { fetchContributedQuestion } from '../api/guru'
-import { COPY, isLoadableImage, OPTION_LETTERS } from '../components/soalan/lib'
+import {
+  COPY,
+  difficultyStars,
+  difficultyWord,
+  isLoadableImage,
+  OPTION_LETTERS,
+  rejectionLine,
+  STATUS_BADGE,
+  STATUS_WORDS,
+} from '../components/soalan/lib'
 
 const props = defineProps<{ id: number }>()
 
@@ -33,9 +43,21 @@ const usageStats = computed<StatItem[]>(() => {
   const u = data.value?.usage
   if (!u) return []
   return [
-    { key: 'attempts', label: 'Kali Digunakan', value: u.attempts, icon: 'repeat', accent: 'action' },
+    {
+      key: 'attempts',
+      label: 'Kali Digunakan',
+      value: u.attempts,
+      icon: 'repeat',
+      accent: 'action',
+    },
     { key: 'correct', label: 'Jawab Betul', value: u.correct, icon: 'check-circle', accent: 'win' },
-    { key: 'accuracy', label: 'Ketepatan', value: `${String(u.accuracy)}%`, icon: 'target', accent: 'heat' },
+    {
+      key: 'accuracy',
+      label: 'Ketepatan',
+      value: `${String(u.accuracy)}%`,
+      icon: 'target',
+      accent: 'heat',
+    },
   ]
 })
 
@@ -63,6 +85,7 @@ watch(notFound, (is404) => {
       <div class="flex flex-wrap items-center justify-between gap-3">
         <DsBackLink to="/guru/soalan" data-testid="detail-back" />
         <UButton
+          v-if="data.editable"
           :to="`/guru/soalan/${String(data.id)}/edit`"
           icon="i-ph-pencil-simple-duotone"
           class="min-h-11"
@@ -79,13 +102,34 @@ watch(notFound, (is404) => {
           <UBadge v-if="data.source" color="neutral" variant="subtle" data-testid="detail-source">{{
             data.source
           }}</UBadge>
-          <UBadge color="neutral" variant="subtle" data-testid="detail-tahap"
-            >Tahap {{ data.difficultyLevel }}</UBadge
+          <UBadge
+            color="neutral"
+            variant="subtle"
+            :aria-label="`Kesukaran: ${difficultyWord(data.difficultyLevel)}`"
+            :title="difficultyWord(data.difficultyLevel)"
+            data-testid="detail-tahap"
+            >{{ difficultyStars(data.difficultyLevel) }}</UBadge
           >
+          <UBadge v-if="data.tp !== null" color="neutral" variant="subtle" data-testid="detail-tp"
+            >TP {{ data.tp }}</UBadge
+          >
+          <DsStatusBadge
+            :status="STATUS_BADGE[data.status]"
+            :label="STATUS_WORDS[data.status]"
+            :emphasis="data.status === 'rejected' ? 'strong' : 'soft'"
+            data-testid="detail-status"
+          />
           <UBadge color="primary" variant="subtle" data-testid="detail-type">{{
             data.questionType
           }}</UBadge>
         </div>
+        <p
+          v-if="data.status === 'rejected' && data.rejectionReason"
+          class="mb-3 min-w-0 text-body break-words text-error"
+          data-testid="detail-reason"
+        >
+          {{ rejectionLine(data.rejectionReason) }}
+        </p>
         <p
           class="min-w-0 text-body break-words whitespace-pre-wrap text-default"
           data-testid="detail-text"
@@ -108,19 +152,19 @@ watch(notFound, (is404) => {
             data-testid="detail-option"
           >
             <DsPanel tone="inset">
-<div class="flex min-w-0 items-center justify-between gap-2">
-              <span class="min-w-0 text-body break-words text-default"
-                ><strong>{{ OPTION_LETTERS[i] }})</strong> {{ opt }}</span
-              >
-              <UBadge
-                v-if="data.correctAnswer === i"
-                color="success"
-                variant="subtle"
-                icon="i-ph-check-circle-duotone"
-                >Betul</UBadge
-              >
-            </div>
-</DsPanel>
+              <div class="flex min-w-0 items-center justify-between gap-2">
+                <span class="min-w-0 text-body break-words text-default"
+                  ><strong>{{ OPTION_LETTERS[i] }})</strong> {{ opt }}</span
+                >
+                <UBadge
+                  v-if="data.correctAnswer === i"
+                  color="success"
+                  variant="subtle"
+                  icon="i-ph-check-circle-duotone"
+                  >Betul</UBadge
+                >
+              </div>
+            </DsPanel>
           </li>
         </ul>
       </DsPanel>

@@ -10,20 +10,13 @@ import { useFlashStore } from '@/stores/flash'
 import { COPY } from '../../components/soalan/lib'
 import SumbangSoalanCiptaPage from '../../pages/SumbangSoalanCiptaPage.vue'
 import { detail, makeRouter } from './fixtures'
-import { pickFiles } from './pick-file'
 
 const guru = vi.hoisted(() => ({
   createContributedQuestion: vi.fn(),
   fetchChapters: vi.fn(() => Promise.resolve([])),
-  fetchTopics: vi.fn(() => Promise.resolve([])),
   fetchBidang: vi.fn(() => Promise.resolve([])),
   fetchSk: vi.fn(() => Promise.resolve([])),
   fetchSp: vi.fn(() => Promise.resolve([])),
-  createChapter: vi.fn(),
-  createTopic: vi.fn(),
-  createBidang: vi.fn(),
-  createSk: vi.fn(),
-  createSp: vi.fn(),
 }))
 vi.mock('../../api/guru', () => guru)
 vi.mock('../../components/soalan/data', () => ({
@@ -44,9 +37,10 @@ async function mountPage(): Promise<VueWrapper> {
 async function fill(w: VueWrapper): Promise<void> {
   await t(w, 'q-level').setValue('11')
   await t(w, 'q-subject').setValue('1')
-  await t(w, 'q-difficulty').setValue('hard')
+  await t(w, 'q-difficulty').setValue('4')
   await t(w, 'q-text').setValue('Soalan baharu?')
   for (const i of [0, 1, 2, 3]) await t(w, `q-option-${String(i)}`).setValue(`P${String(i)}`)
+  await w.findAll('[data-testid="q-correct"] [role="radio"]')[0]!.trigger('click')
   await flushPromises()
 }
 
@@ -57,45 +51,25 @@ beforeEach(() => {
 afterEach(() => vi.clearAllMocks())
 
 describe('S22 save path', () => {
-  it('201 goes to /guru/soalan with the created flash @provisional UNVERIFIED COPY', async () => {
+  it('AC-GUR-44-1: 201 goes to /guru/soalan with "Soalan dihantar untuk semakan."', async () => {
     guru.createContributedQuestion.mockResolvedValue(detail({ id: 9000001 }))
     const w = await mountPage()
     await fill(w)
     await w.find('form').trigger('submit')
     await flushPromises()
     expect(guru.createContributedQuestion).toHaveBeenCalledTimes(1)
-    const [body, images] = guru.createContributedQuestion.mock.calls[0] as unknown as [
+    const [body] = guru.createContributedQuestion.mock.calls[0] as unknown as [
       Record<string, unknown>,
-      { questionImage: File | null; optionImages: (File | null)[] },
     ]
     expect(body).toMatchObject({
       questionType: 'mcq',
-      difficultyLevel: 'hard',
+      difficultyLevel: 4,
       questionText: 'Soalan baharu?',
       correctAnswer: 0,
     })
-    expect(images.questionImage).toBeNull()
-    expect(images.optionImages).toEqual([null, null, null, null])
+    expect(COPY.created).toBe('Soalan dihantar untuk semakan.')
     expect(router.currentRoute.value.path).toBe('/guru/soalan')
     expect(useFlashStore().pending).toEqual({ type: 'success', message: COPY.created })
-  })
-
-  it('sends the option images and the question image through the client', async () => {
-    guru.createContributedQuestion.mockResolvedValue(detail())
-    const w = await mountPage()
-    await fill(w)
-    const png = new File(['x'], 'a.png', { type: 'image/png' })
-    const rajah = new File(['y'], 'rajah.png', { type: 'image/png' })
-    await pickFiles(w, 'q-option-image-1-input', [png])
-    await pickFiles(w, 'q-image-input', [rajah])
-    await w.find('form').trigger('submit')
-    await flushPromises()
-    const images = guru.createContributedQuestion.mock.calls[0]![1] as unknown as {
-      questionImage: File | null
-      optionImages: (File | null)[]
-    }
-    expect(images.questionImage).toBe(rajah)
-    expect(images.optionImages).toEqual([null, png, null, null])
   })
 
   it('422 shows the field errors, stays on S22 and keeps the values', async () => {

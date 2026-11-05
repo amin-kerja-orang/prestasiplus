@@ -147,25 +147,26 @@ describe('createChapter / createTopic wire ids', () => {
 
 /**
  * SW7-08: `POST /api/guru/questions` (the JSON path, no image) sends `educationLevelId`, `subjectId`
- * and the optional chapter / topic / SP ids as string ids (`QuestionGuruCreateRequestSchema`); a
- * number was 422 "Sila pilih tahap pendidikan." / "Sila pilih subjek." / "Bab tidak sah.".
+ * and the optional `chapterId` / `spIds` as string ids (`QuestionGuruCreateRequestSchema`); a
+ * number was 422 "Sila pilih tingkatan." / "Sila pilih subjek." / "Sila pilih bab.". R1-GUR-44 / API-GUR-18.
  */
 describe('createContributedQuestion wire ids', () => {
   const base: CreateQuestionRequest = {
     educationLevelId: 4,
     subjectId: 3,
     questionType: 'mcq',
-    difficultyLevel: 'easy',
+    difficultyLevel: 2,
     questionText: 'Soalan ujian?',
     options: ['a', 'b', 'c', 'd'],
     correctAnswer: 1,
     scriptType: 'rumi',
-    dskpSpId: 7,
-    curriculumChapterId: 12,
-    curriculumTopicId: 21,
+    spIds: [7],
+    chapterId: 12,
+    tp: 3,
+    cognitiveLevel: 'mengaplikasi',
   }
 
-  it('http mode: the five ids go out as strings; other fields are untouched', async () => {
+  it('http mode: the ids go out as strings; other fields are untouched', async () => {
     vi.stubEnv('VITE_API_MODE', 'http')
     await createContributedQuestion(base)
     expect(sent).toHaveLength(1)
@@ -174,52 +175,37 @@ describe('createContributedQuestion wire ids', () => {
       ...base,
       educationLevelId: '4',
       subjectId: '3',
-      dskpSpId: '7',
-      curriculumChapterId: '12',
-      curriculumTopicId: '21',
+      spIds: ['7'],
+      chapterId: '12',
     })
   })
 
-  it('http mode: null ids stay null and absent ids stay absent', async () => {
+  it('http mode: a null chapter stays null and absent DSKP fields stay absent', async () => {
     vi.stubEnv('VITE_API_MODE', 'http')
-    await createContributedQuestion({
-      ...base,
-      dskpSpId: null,
-      curriculumChapterId: null,
-      curriculumTopicId: null,
-    })
+    await createContributedQuestion({ ...base, chapterId: null })
     const nulls = sent[0]?.body as Record<string, unknown>
-    expect(nulls).toMatchObject({
-      educationLevelId: '4',
-      subjectId: '3',
-      dskpSpId: null,
-      curriculumChapterId: null,
-      curriculumTopicId: null,
-    })
+    expect(nulls).toMatchObject({ educationLevelId: '4', subjectId: '3', chapterId: null })
 
     const bare: CreateQuestionRequest = { ...base }
-    delete bare.dskpSpId
-    delete bare.curriculumChapterId
-    delete bare.curriculumTopicId
+    delete bare.chapterId
+    delete bare.spIds
     await createContributedQuestion(bare)
     const absent = sent[1]?.body as Record<string, unknown>
     expect(absent).toMatchObject({ educationLevelId: '4', subjectId: '3' })
-    expect('dskpSpId' in absent).toBe(false)
-    expect('curriculumChapterId' in absent).toBe(false)
-    expect('curriculumTopicId' in absent).toBe(false)
+    expect('chapterId' in absent).toBe(false)
+    expect('spIds' in absent).toBe(false)
   })
 
   it('mock mode: the values are unchanged (numbers and nulls)', async () => {
     vi.stubEnv('VITE_API_MODE', 'mock')
     await createContributedQuestion(base)
-    await createContributedQuestion({ ...base, dskpSpId: null, curriculumChapterId: null })
+    await createContributedQuestion({ ...base, chapterId: null })
     expect(sent[0]?.body).toEqual(base)
     expect(sent[1]?.body).toMatchObject({
       educationLevelId: 4,
       subjectId: 3,
-      dskpSpId: null,
-      curriculumChapterId: null,
-      curriculumTopicId: 21,
+      chapterId: null,
+      spIds: [7],
     })
   })
 })

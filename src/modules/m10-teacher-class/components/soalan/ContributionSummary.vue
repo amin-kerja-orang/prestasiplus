@@ -29,10 +29,34 @@ const tierIcon = (icon: string): string =>
 
 /** The four stat tiles, each with its own categorical accent. */
 const stats = computed<StatItem[]>(() => [
-  { key: 'total', label: '📝 Jumlah', value: props.summary.stats.total, icon: 'note-pencil', accent: 'action' },
-  { key: 'approved', label: '✅ Diluluskan', value: props.summary.stats.approved, icon: 'check-circle', accent: 'win' },
-  { key: 'pending', label: '⏳ Menunggu', value: props.summary.stats.pending, icon: 'hourglass', accent: 'heat' },
-  { key: 'used', label: '📊 Digunakan', value: props.summary.stats.used, icon: 'chart-bar', accent: 'trial' },
+  {
+    key: 'total',
+    label: '📝 Jumlah',
+    value: props.summary.stats.total,
+    icon: 'note-pencil',
+    accent: 'action',
+  },
+  {
+    key: 'approved',
+    label: '✅ Diluluskan',
+    value: props.summary.stats.approved,
+    icon: 'check-circle',
+    accent: 'win',
+  },
+  {
+    key: 'pending',
+    label: '⏳ Menunggu',
+    value: props.summary.stats.pending,
+    icon: 'hourglass',
+    accent: 'heat',
+  },
+  {
+    key: 'used',
+    label: '📊 Digunakan',
+    value: props.summary.stats.used,
+    icon: 'chart-bar',
+    accent: 'trial',
+  },
 ])
 
 /** FR-M10-93: all chips by count descending ("Lain" takes its count position, stable for ties). */
@@ -56,6 +80,9 @@ const chips = computed(() => [...props.summary.breakdown].sort((a, b) => b.count
         dihargai dalam membina masa depan pendidikan negara.
       </template>
     </UAlert>
+
+    <!-- "Alat Soalan" (FR-GUR-44-8): between the info paragraph and the badges. -->
+    <slot name="tools" />
 
     <DsPanel data-testid="tiers-card">
       <h2 class="mb-3 flex items-center gap-2 text-subheading text-highlighted">

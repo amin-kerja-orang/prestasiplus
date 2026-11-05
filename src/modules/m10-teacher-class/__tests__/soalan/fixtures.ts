@@ -2,7 +2,11 @@ import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
 import type { ContributedQuestion, ContributedQuestionDetail, Contributions } from '../../api/types'
 
-export function makeRouter(): Router {
+/** `extra` registers more stub routes (the Alat Soalan targets); `meta` sets route meta by path. */
+export function makeRouter(
+  extra: string[] = [],
+  meta: Record<string, Record<string, unknown>> = {},
+): Router {
   const stub = { template: '<div />' }
   return createRouter({
     history: createMemoryHistory(),
@@ -14,6 +18,7 @@ export function makeRouter(): Router {
       { path: '/guru/soalan/:id/edit', component: stub },
       { path: '/admin/audio-kbat', component: stub },
       { path: '/admin/audio-kbat/create', component: stub },
+      ...extra.map((path) => ({ path, component: stub, meta: meta[path] ?? {} })),
     ],
   })
 }
@@ -45,10 +50,10 @@ export function question(overrides: Partial<ContributedQuestion> = {}): Contribu
     educationLevelId: 6,
     levelName: 'Darjah 6',
     difficultyLevel: 4,
-    difficultyLabel: 'Sukar',
     dskpTagged: true,
     status: 'approved',
-    statusLabel: 'Diluluskan',
+    rejectionReason: null,
+    editable: false,
     isActive: true,
     options: ['Satu', 'Dua', 'Tiga', 'Empat'],
     correctAnswer: 2,
@@ -66,16 +71,13 @@ export function detail(
     ...question(),
     questionImage: null,
     optionImages: [null, null, null, null],
-    tfAnswer: null,
-    correctAnswerText: null,
-    altAnswers: [],
-    modelAnswer: null,
     language: 'bm',
     scriptType: 'rumi',
     textDirection: 'ltr',
-    curriculumChapterId: null,
-    curriculumTopicId: null,
-    dskpSpId: null,
+    chapterId: null,
+    spIds: [],
+    tp: null,
+    cognitiveLevel: null,
     usage: { attempts: 0, correct: 0, accuracy: 0 },
     ...overrides,
   }

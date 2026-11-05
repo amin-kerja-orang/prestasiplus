@@ -1,9 +1,10 @@
 <script setup lang="ts">
 /**
- * S21 card "Import Soalan (CSV/Excel)" (FR-M10-94; FN-M10-7.1.5, DV-M10-08): "Template" downloads the
- * M04 CSV template, "Import CSV" toggles the form (`csv_file`, `required`, `.csv,.txt`), "Import" posts
- * #58 and reports the result: imported count and the failed rows (the valid rows are kept). The result
- * summary is UNVERIFIED COPY (SRS §8.3).
+ * S21 card "Import Soalan (CSV/Excel)" (44-F3; FR-GUR-44-4, FR-GUR-44-12; API-GUR-19): "Template" downloads
+ * `templat-soalan.csv`, "Import CSV" toggles the form (`.csv` only, 2 MB, 500 data rows, all checked in the browser
+ * first), "Import" posts the file and reports "{a} soalan diimport, {b} baris gagal." with a Baris / Sebab table
+ * (the valid rows are kept). The failed rows can be downloaded as `ralat-import-{yyyymmdd}.csv`, built here from the
+ * response `errors` and the uploaded text.
  */
 import { ref } from 'vue'
 
@@ -13,6 +14,13 @@ import { saveBlob } from '@/lib/save-blob'
 
 import { downloadQuestionTemplate, importQuestions } from '../../api/guru'
 import type { ImportResult } from '../../api/types'
+import {
+  buildErrorCsv,
+  errorFileName,
+  TEMPLATE_FALLBACK_NAME,
+  validateCsvFile,
+  validateCsvRows,
+} from './csv-rules'
 import { COPY } from './lib'
 
 const emit = defineEmits<{ imported: [result: ImportResult] }>()
@@ -20,26 +28,59 @@ const emit = defineEmits<{ imported: [result: ImportResult] }>()
 const open = ref(false)
 const file = ref<File | null>(null)
 const busy = ref(false)
+const fileError = ref('')
 const errors = ref<string[]>([])
 const result = ref<ImportResult | null>(null)
+/** The uploaded text of the last import (kept for the error file). */
+const uploaded = ref('')
 
 async function template(): Promise<void> {
   errors.value = []
   try {
     const res = await downloadQuestionTemplate()
-    saveBlob(res.blob, res.filename ?? 'template-import-soalan.csv')
+    saveBlob(res.blob, res.filename ?? TEMPLATE_FALLBACK_NAME)
   } catch {
     errors.value = [COPY.templateFailed]
   }
 }
 
+/** Reads a file as text (`Blob.text`, else `FileReader`). */
+function readText(f: Blob): Promise<string> {
+  if (typeof f.text === 'function') return f.text()
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(reader.error)
+    reader.readAsText(f)
+  })
+}
+
+function onFile(value: File | File[] | null): void {
+  file.value = Array.isArray(value) ? (value[0] ?? null) : value
+  fileError.value = file.value ? (validateCsvFile(file.value) ?? '') : ''
+}
+
 async function submit(): Promise<void> {
-  if (busy.value || !file.value) return
-  busy.value = true
+  if (busy.value) return
   errors.value = []
   result.value = null
+  const picked = file.value
+  const bad = validateCsvFile(picked)
+  if (bad || !picked) {
+    fileError.value = bad ?? ''
+    return
+  }
+  busy.value = true
   try {
-    const res = await importQuestions(file.value)
+    const text = await readText(picked)
+    const rows = validateCsvRows(text)
+    if (rows) {
+      fileError.value = rows
+      return
+    }
+    fileError.value = ''
+    const res = await importQuestions(picked)
+    uploaded.value = text
     result.value = res
     file.value = null
     emit('imported', res)
@@ -48,6 +89,12 @@ async function submit(): Promise<void> {
   } finally {
     busy.value = false
   }
+}
+
+function downloadErrors(): void {
+  if (!result.value) return
+  const csv = buildErrorCsv(uploaded.value, result.value.errors)
+  saveBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), errorFileName(new Date()))
 }
 </script>
 
@@ -100,36 +147,60 @@ async function submit(): Promise<void> {
     <UAlert
       v-if="result"
       class="mt-3"
-      color="success"
+      :color="result.errors.length ? 'warning' : 'success'"
       variant="subtle"
-      icon="i-ph-check-circle-duotone"
+      :icon="result.errors.length ? 'i-ph-warning-duotone' : 'i-ph-check-circle-duotone'"
       data-testid="import-result"
     >
       <template #description>
-        <p data-testid="import-result-summary">{{ COPY.importDone(result.imported) }}</p>
-        <ul v-if="result.failed.length" class="mt-2 flex flex-col gap-1 pl-4">
-          <li v-for="f in result.failed" :key="f.row" data-testid="import-failure">
-            Baris {{ f.row }}: {{ f.message }}
-          </li>
-        </ul>
+        <p data-testid="import-result-summary">
+          {{ COPY.importDone(result.imported, result.errors.length) }}
+        </p>
+        <div v-if="result.errors.length" class="mt-2 min-w-0 overflow-x-auto">
+          <table class="w-full min-w-64 text-left text-body" data-testid="import-failures">
+            <thead>
+              <tr>
+                <th scope="col" class="py-1 pr-3 text-label text-highlighted">Baris</th>
+                <th scope="col" class="py-1 text-label text-highlighted">Sebab</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="f in result.errors" :key="f.row" data-testid="import-failure">
+                <td class="tabular py-1 pr-3 align-top">{{ f.row }}</td>
+                <td class="py-1 break-words">{{ f.message }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <UButton
+          v-if="result.errors.length"
+          type="button"
+          color="neutral"
+          variant="soft"
+          icon="i-ph-download-simple-duotone"
+          class="mt-3 min-h-11"
+          data-testid="import-errors-download"
+          @click="downloadErrors"
+          >Muat Turun Ralat (CSV)</UButton
+        >
       </template>
     </UAlert>
 
     <form
       v-if="open"
       class="mt-4 flex flex-col gap-3"
+      novalidate
       data-testid="import-form"
       @submit.prevent="submit"
     >
-      <DsFormField label="Pilih Fail CSV" name="csv-file">
+      <DsFormField label="Pilih Fail CSV" name="csv-file" :error="fileError">
         <DsFileField
           :model-value="file"
           name="csv_file"
-          accept=".csv,.txt"
+          accept=".csv"
           preview="none"
-          required
           data-testid="import-file"
-          @update:model-value="file = Array.isArray($event) ? ($event[0] ?? null) : $event"
+          @update:model-value="onFile"
         />
       </DsFormField>
       <UButton
@@ -139,7 +210,7 @@ async function submit(): Promise<void> {
         icon="i-ph-cloud-arrow-up-duotone"
         class="min-h-11 self-start"
         data-testid="import-submit"
-        >Import</UButton
+        >{{ busy ? 'Mengimport...' : 'Import' }}</UButton
       >
       <DsPanel tone="inset" data-testid="import-guide">
         <p class="mb-1 flex items-center gap-2 text-label text-highlighted">
@@ -149,7 +220,8 @@ async function submit(): Promise<void> {
         <ul class="flex flex-col gap-1 pl-4">
           <li>Muat turun template → isi soalan → import kembali</li>
           <li>
-            Format: subjek, tahap, soalan, 4 pilihan, jawapan (A/B/C/D), kesukaran, penerangan
+            Format: subjek, tahap, bab, SP, TP, aras, soalan, 4 pilihan, jawapan (A/B/C/D),
+            kesukaran, penerangan
           </li>
           <li>Soalan akan dihantar sebagai "Menunggu Semakan" untuk kelulusan admin</li>
           <li>Baris yang ada ralat akan dilaporkan — soalan sah tetap diimport</li>

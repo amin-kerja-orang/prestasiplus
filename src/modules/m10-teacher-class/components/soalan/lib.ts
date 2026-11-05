@@ -2,11 +2,13 @@
  * Shared copy, option lists and pure helpers of S21–S24 (M10-T6; FN-M10-7.1–7.4). Copy is the live
  * BM text of URS §7; flashes and server messages are UNVERIFIED COPY (SRS §8.3).
  */
-import type { QuestionType, ScriptType } from '../../api/types'
+import type { DsStatus } from '@/ds'
+import type { QuestionStatus, ScriptType } from '../../api/types'
 
 /**
  * Texts that are not the live copy. Every entry except `confirmDelete` is UNVERIFIED COPY (SRS §8.3):
- * the live pages redirect with flashes that were never observed, or show nothing.
+ * the live pages redirect with flashes that were never observed, or show nothing. `created`, `paperSent`,
+ * `importDone` and the empty state are the R1 texts of PRD-20 R1-GUR-44.
  */
 export const COPY = {
   /** Live (FR-M10-97). */
@@ -16,39 +18,59 @@ export const COPY = {
   loadFailed: 'Gagal memuatkan data. Sila cuba lagi.',
   retry: 'Cuba Semula',
   deleted: 'Soalan berjaya dipadam.',
-  created: 'Soalan berjaya dihantar untuk semakan.',
+  /** 44-F1 success. */
+  created: 'Soalan dihantar untuk semakan.',
   updated: 'Soalan berjaya dikemas kini.',
   saveFailed: 'Gagal menyimpan soalan. Sila cuba lagi.',
-  importDone: (n: number): string => `${String(n)} soalan berjaya diimport.`,
+  /** ERR-IMP-01 as 44-F3 words it. */
+  importDone: (imported: number, failed: number): string =>
+    `${String(imported)} soalan diimport, ${String(failed)} baris gagal.`,
   templateFailed: 'Gagal memuat turun template.',
-  listEmpty: 'Belum ada soalan.',
-  paperSent: 'Kertas soalan berjaya dihantar kepada admin.',
+  /** 44-F2 empty state. */
+  emptyTitle: 'Belum ada soalan dihantar',
+  emptyHint: 'Klik "Tambah Soalan" untuk mula menyumbang!',
+  addFirst: 'Tambah Soalan Pertama',
+  /** 44-F4 success. */
+  paperSent: 'Kertas dihantar kepada admin.',
   paperFailed: 'Gagal menghantar kertas soalan.',
-  /** The API's 503 reason while the paper intake is off (`PAPER_INTAKE_UNAVAILABLE`, SW12-08). */
-  paperUnavailable: 'Muat naik kertas soalan belum tersedia buat masa ini.',
 } as const
 
-export const QUESTION_TYPES: readonly { value: QuestionType; label: string }[] = [
-  { value: 'mcq', label: 'Aneka Pilihan (MCQ)' },
-  { value: 'true_false', label: 'Betul / Salah' },
-  { value: 'short_answer', label: 'Jawapan Pendek' },
-  { value: 'fill_blank', label: 'Isi Tempat Kosong' },
-  { value: 'essay', label: 'Esei' },
-]
-
-/** S22 difficulty (BR-M10-22): the three live options. */
-export const DIFFICULTIES = [
-  { value: 'easy', label: 'Mudah' },
-  { value: 'medium', label: 'Sederhana' },
-  { value: 'hard', label: 'Sukar' },
+/** Kesukaran (OPT-KESUKARAN, FR-GUR-44-9): five typed options, stored 1 to 5, never derived from TP. */
+export const DIFFICULTY_OPTIONS = [
+  { value: 1, label: '⭐ — Sangat mudah' },
+  { value: 2, label: '⭐⭐ — Mudah' },
+  { value: 3, label: '⭐⭐⭐ — Sederhana' },
+  { value: 4, label: '⭐⭐⭐⭐ — Sukar' },
+  { value: 5, label: '⭐⭐⭐⭐⭐ — Sangat sukar' },
 ] as const
 
-/** S24 options (DV-M10-15): M04 difficulty 2 / 3 / 4. */
-export const EDIT_DIFFICULTIES = [
-  { value: 2, label: 'Mudah' },
-  { value: 3, label: 'Sederhana' },
-  { value: 4, label: 'Sukar' },
-] as const
+/** The list display of a Kesukaran: the star repeated n times (OPT-KESUKARAN). */
+export const difficultyStars = (level: number): string =>
+  '⭐'.repeat(Math.min(5, Math.max(0, level)))
+
+/** The word of a Kesukaran (OPT-KESUKARAN). */
+export const difficultyWord = (level: number): string =>
+  ['', 'Sangat Mudah', 'Mudah', 'Sederhana', 'Sukar', 'Sangat Sukar'][level] ?? ''
+
+/** Kesukaran pre-filled from a chosen TP until the teacher touches it: min(5, TP) (44-F1). */
+export const difficultyFromTp = (tp: number): number => Math.min(5, tp)
+
+/** FR-GUR-44-10: the status words shown to the teacher. */
+export const STATUS_WORDS: Readonly<Record<QuestionStatus, string>> = {
+  pending: 'Menunggu Semakan',
+  approved: 'Diluluskan',
+  rejected: 'Ditolak',
+}
+
+/** The `DsStatusBadge` status (icon and colour) of each word: Ditolak is the error tone. */
+export const STATUS_BADGE: Readonly<Record<QuestionStatus, DsStatus>> = {
+  pending: 'awaiting-review',
+  approved: 'approved',
+  rejected: 'rejected',
+}
+
+/** "Sebab: {reason}" of a rejected item. */
+export const rejectionLine = (reason: string): string => `Sebab: ${reason}`
 
 export const SCRIPTS: readonly { value: ScriptType; label: string }[] = [
   { value: 'rumi', label: 'Rumi (Latin)' },
@@ -62,22 +84,16 @@ export const OPTION_LETTERS = ['A', 'B', 'C', 'D'] as const
 /** `URadioGroup` items of the MCQ "Jawapan betul" group; the group `id` gives each radio the id `<id>:<index>`. */
 export const correctItems = () => OPTION_LETTERS.map((letter, i) => ({ label: letter, value: i }))
 
-/** `URadioGroup` items of the true / false answer. */
-export const TF_ITEMS = [
-  { label: 'Betul', value: 'true' },
-  { label: 'Salah', value: 'false' },
-]
-
 /** `arab` / `jawi` write right to left; `mixed` stays left to right (R-M04-07). */
 export const isRtlScript = (script: ScriptType): boolean => script === 'arab' || script === 'jawi'
 
-/** "Bab {n}: {name}" in chapter-number order (FN-M10-11.1.1). */
+/** "{nombor}. {nama}" in chapter-number order (44-F1; name alone without a number). */
 export const chapterLabel = (c: { chapterNumber: number | null; name: string }): string =>
-  c.chapterNumber === null ? c.name : `Bab ${String(c.chapterNumber)}: ${c.name}`
+  c.chapterNumber === null ? c.name : `${String(c.chapterNumber)}. ${c.name}`
 
-/** "{code} — {name}" (name alone when the code is empty). */
-export const bidangLabel = (b: { code: string | null; name: string }): string =>
-  b.code ? `${b.code} — ${b.name}` : b.name
+/** "{kod} {nama}" of an SP option (44-F1). */
+export const spLabel = (sp: { code: string; description: string }): string =>
+  `${sp.code} ${sp.description}`
 
 /** "{x.xx} MB" of FN-M10-7.1.11. */
 export const megabytes = (bytes: number): string => `${(bytes / (1024 * 1024)).toFixed(2)} MB`
@@ -94,19 +110,3 @@ export function fileKind(name: string): 'pdf' | 'word' | 'excel' | 'file' {
 /** A stored `blob:mock/...` image cannot load (D22): show nothing instead of a broken image. */
 export const isLoadableImage = (value: string | null): value is string =>
   value !== null && value !== '' && !value.startsWith('blob:mock/')
-
-/** A field of an inline add panel (AddRow). */
-export interface PanelField {
-  key: string
-  placeholder: string
-  type?: 'text' | 'number'
-  min?: number
-  max?: number
-  /** Narrow field (the code / number input). */
-  narrow?: boolean
-}
-
-export interface SelectOption {
-  value: string
-  label: string
-}

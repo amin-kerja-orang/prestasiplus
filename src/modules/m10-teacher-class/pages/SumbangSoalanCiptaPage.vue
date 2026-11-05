@@ -24,17 +24,13 @@ const saving = ref(false)
 const general = ref<string[]>([])
 const fields = ref<Record<string, string>>({})
 
-async function save(
-  body: CreateQuestionRequest,
-  image: File | null,
-  optionImages: (File | null)[],
-): Promise<void> {
+async function save(body: CreateQuestionRequest): Promise<void> {
   if (saving.value) return
   saving.value = true
   general.value = []
   fields.value = {}
   try {
-    await createContributedQuestion(body, { questionImage: image, optionImages })
+    await createContributedQuestion(body)
     flash.success(COPY.created)
     await router.push('/guru/soalan')
   } catch (err) {

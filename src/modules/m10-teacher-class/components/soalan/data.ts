@@ -9,9 +9,12 @@ export interface NamedLookup {
   name: string
 }
 
+/** Tingkatan 1 to 5 only (OPT-TINGKATAN; no Darjah, D72). */
 export async function fetchLevelOptions(signal?: AbortSignal): Promise<NamedLookup[]> {
   const res = await api.list<NamedLookup>('/api/education-levels', signal ? { signal } : {})
-  return res.data.map((l) => ({ id: l.id, name: l.name }))
+  return res.data
+    .filter((l) => /^Tingkatan [1-5]$/.test(l.name))
+    .map((l) => ({ id: l.id, name: l.name }))
 }
 
 /** Subjects A→Z (FN-M10-7.2.2). */

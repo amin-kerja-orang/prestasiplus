@@ -12,15 +12,15 @@
  *   `reached` ⇔ Jumlah ≥ threshold; `nextTier` = the first tier not reached (`null` when all are);
  *   `breakdown` = top 10 subjects by count (ties by name) + "Lain" for the rest.
  * - #52: the viewer's questions, ids ascending, 20 per page.
- * - #53 (BR-M10-22, §5): `difficultyLevel` `easy`/`medium`/`hard` → 2/3/4 (or the M04 number 1–5); a
- *   new row is `pending_review`, active, `createdBy` = the viewer. An image arrives as a file
- *   (`questionImage`, JPEG/PNG/WebP ≤ 2 MB, only a `blob:mock/` reference is stored, D22) or as
- *   `questionImageUrl`.
+ * - #53 (API-GUR-18, 44-F1): MCQ only; `difficultyLevel` is an int 1–5 (the words easy/medium/hard are refused);
+ *   `chapterId` is required iff the Subjek + Tingkatan has chapters, `spIds` / `tp` / `cognitiveLevel` iff it has DSKP
+ *   nodes (D112); a new row is `pending_review` (shown "Menunggu Semakan"), active, `createdBy` = the viewer. No image fields in this flow.
  * - #54/#55/#56 (BR-M10-01, SEC-M10-07): a question that is not the viewer's own, or unknown, is a
  *   404. #55 keeps the saved difficulty when none is sent (DV-M10-15, INFERRED); an MCQ edit sends
  *   all four options by index (`id` 0–3, never trusted as a record id) and `correctOptionId`.
  * - #57: the CSV template. #58: the import of `csvFile` (see `csv.ts`); 422 for a missing or wrong
- *   file, missing columns or no data rows; otherwise 200 with `imported` and the failed rows.
+ *   file (`.csv`, 2 MB, 500 rows), missing columns or no data rows; otherwise 200 with `imported` and `errors`.
+ * - #55/#56 act only while the item is pending (else 409). Status words: pending / approved / rejected.
  */
 
 import {
@@ -39,6 +39,7 @@ import {
   type RouteDef,
 } from '@/mock/define'
 import { QUESTION_MESSAGES } from '@pp/contract'
+import { parseCsv } from '@/modules/m04-question-bank/mock'
 import { curriculum } from '@/modules/m03-curriculum/mock'
 import {
   questions,
@@ -57,25 +58,16 @@ import {
   MSG,
   teacherOnly,
   textOf,
-  uploadRef,
   viewerId,
   type Body,
 } from './common'
-import { planImport, TEMPLATE_CSV, TEMPLATE_NAME } from './csv'
+import { MAX_ROWS, MSG_TOO_MANY, planImport, TEMPLATE_CSV, TEMPLATE_NAME } from './csv'
 
 const PAGE_SIZE = 20
 const TEXT_MAX = 2000
 const OPTION_MAX = 500
-const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
-const IMAGE_MAX_BYTES = 2 * 1024 * 1024
-const CSV_MAX_BYTES = 5 * 1024 * 1024
-const QUESTION_TYPES: readonly QuestionType[] = [
-  'mcq',
-  'true_false',
-  'short_answer',
-  'fill_blank',
-  'essay',
-]
+const CSV_MAX_BYTES = 2 * 1024 * 1024
+const QUESTION_TYPES: readonly QuestionType[] = ['mcq']
 const SCRIPT_TYPES = ['rumi', 'arab', 'jawi', 'mixed'] as const
 
 /** BR-M10-23 / FN-M10-7.1.3. */
@@ -90,6 +82,31 @@ const TIERS = [
   { name: 'Legenda Terulung', threshold: 50000, icon: 'fa-crown' },
 ] as const
 
+/** The 44-F1 / 44-F3 texts (the same strings as the real API). */
+const QMSG = {
+  level: 'Sila pilih tingkatan.',
+  subject: 'Sila pilih subjek.',
+  difficulty: 'Sila pilih kesukaran.',
+  chapterId: 'Sila pilih bab.',
+  spIds: 'Sila pilih Standard Pembelajaran (SP).',
+  tp: 'Sila pilih TP.',
+  tpRange: 'Tahap Penguasaan (TP) mesti antara 1 dan 6.',
+  cognitiveLevel: 'Sila pilih aras pemikiran.',
+  csvNone: 'Sila pilih fail.',
+  csvType: 'Jenis fail tidak disokong. Format dibenarkan: CSV.',
+  csvSize: 'Fail melebihi saiz maksimum 2 MB.',
+  csvColumns: (cols: string): string =>
+    `Lajur wajib tiada: ${cols}. Gunakan templat yang disediakan.`,
+  locked: 'Soalan ini sudah diterima atau diluluskan dan tidak boleh diubah.',
+} as const
+const ARAS = ['mengingat', 'memahami', 'mengaplikasi', 'menganalisis', 'menilai', 'mencipta']
+
+/** DSKP fields the M04 store has no column for (the mock keeps them beside the question). */
+const dskpExtra = new Map<
+  number,
+  { spIds: number[]; tp: number | null; cognitiveLevel: string | null }
+>()
+
 const DIFFICULTY_LABELS: Readonly<Record<number, string>> = {
   1: 'Sangat Mudah',
   2: 'Mudah',
@@ -97,15 +114,17 @@ const DIFFICULTY_LABELS: Readonly<Record<number, string>> = {
   4: 'Sukar',
   5: 'Sangat Sukar',
 }
-
-/** M04 BR-M04-02 labels. */
-const STATUS_LABELS: Readonly<Record<string, string>> = {
-  draft: 'Draf',
-  pending_review: 'Menunggu Semakan',
+const STATUS_WORDS = {
+  pending: 'Menunggu Semakan',
   approved: 'Diluluskan',
   rejected: 'Ditolak',
-  archived: 'Diarkibkan',
-  pending: 'Menunggu',
+} as const
+
+/** M04 status → the teacher's three words (FR-GUR-44-10). */
+function statusOf(q: Question): 'pending' | 'approved' | 'rejected' {
+  if (q.status === 'approved') return 'approved'
+  if (q.status === 'rejected') return 'rejected'
+  return 'pending'
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -127,8 +146,10 @@ function summaryOf(q: Question) {
     difficultyLevel: q.difficultyLevel,
     difficultyLabel: DIFFICULTY_LABELS[q.difficultyLevel] ?? '',
     dskpTagged: q.dskpTagged,
-    status: q.status,
-    statusLabel: STATUS_LABELS[q.status] ?? q.status,
+    status: statusOf(q),
+    statusLabel: STATUS_WORDS[statusOf(q)],
+    rejectionReason: null,
+    editable: statusOf(q) === 'pending',
     isActive: q.isActive,
     options: q.options,
     correctAnswer: q.correctAnswer,
@@ -145,16 +166,13 @@ function detailOf(q: Question) {
     ...summaryOf(q),
     questionImage: q.questionImage,
     optionImages: q.optionImages,
-    tfAnswer: q.tfAnswer,
-    correctAnswerText: q.correctAnswerText,
-    altAnswers: q.altAnswers,
-    modelAnswer: q.modelAnswer,
     language: q.language,
     scriptType: q.scriptType,
     textDirection: q.textDirection,
-    curriculumChapterId: q.curriculumChapterId,
-    curriculumTopicId: q.curriculumTopicId,
-    dskpSpId: q.dskpSpId,
+    chapterId: q.curriculumChapterId,
+    spIds: dskpExtra.get(q.id)?.spIds ?? (q.dskpSpId === null ? [] : [q.dskpSpId]),
+    tp: dskpExtra.get(q.id)?.tp ?? null,
+    cognitiveLevel: dskpExtra.get(q.id)?.cognitiveLevel ?? null,
     usage: {
       attempts,
       correct: q.usage.correct,
@@ -173,21 +191,11 @@ function ownQuestion(req: MockRequest, id: number): Question | undefined {
 // Validation (§5)
 // ---------------------------------------------------------------------------------------------
 
-/** BR-M10-22: `easy`/`medium`/`hard` → 2/3/4, or the M04 number 1–5; `undefined` = not valid. */
+/** Kesukaran: an int 1 to 5 (a word such as `easy` is refused); `undefined` = not valid. */
 export function mapDifficulty(value: unknown): number | undefined {
-  if (value === 'easy') return 2
-  if (value === 'medium') return 3
-  if (value === 'hard') return 4
+  if (typeof value === 'string' && !/^\s*\d+\s*$/.test(value)) return undefined
   const n = intOf(value)
   return n !== undefined && n >= 1 && n <= 5 ? n : undefined
-}
-
-/** `undefined` = nothing uploaded, a reference = accepted, `false` = refused (§5). */
-function acceptImage(scope: string, value: unknown): string | false | undefined {
-  const file = fileOf(value)
-  if (!file) return undefined
-  if (!IMAGE_TYPES.includes(file.type) || file.size > IMAGE_MAX_BYTES) return false
-  return uploadRef(scope, file.name)
 }
 
 /** An option as sent: a string, `{text}` or `{optionText}`. */
@@ -208,62 +216,75 @@ function keyIndex(value: unknown): number | undefined {
   return t !== undefined && /^[A-D]$/.test(t) ? t.charCodeAt(0) - 65 : undefined
 }
 
-/** A comma list or the items: trimmed, empty items dropped. */
-function altList(value: unknown): string[] {
-  const items = Array.isArray(value) ? value : typeof value === 'string' ? value.split(',') : []
-  return items
-    .filter((v): v is string => typeof v === 'string')
-    .map((v) => v.trim())
-    .filter((v) => v !== '')
+type Parsed =
+  | { ok: true; input: QuestionInput; extra?: Place['extra'] }
+  | { ok: false; fields: Record<string, string> }
+
+type Place = Pick<QuestionInput, 'curriculumChapterId' | 'dskpSpId' | 'scriptType'> & {
+  extra: { spIds: number[]; tp: number | null; cognitiveLevel: string | null }
 }
 
-type Parsed = { ok: true; input: QuestionInput } | { ok: false; fields: Record<string, string> }
+/** The SP of a Subjek + Tingkatan (flattened Bidang → SK → SP): "DSKP nodes exist" when not empty. */
+function spsOf(subjectId: number, levelId: number): number[] {
+  return dskpRepo
+    .bidang({ subjectId, educationLevelId: levelId })
+    .flatMap((b) => dskpRepo.sk(b.id))
+    .flatMap((k) => dskpRepo.sp(k.id))
+    .map((sp) => sp.id)
+}
 
-/** The chapter, topic, DSKP and script fields shared by create (#53). */
+/** The Bab, SP, TP, Aras and script fields of create (#53) under the conditional rule of D112. */
 function placement(
   b: Body,
   subjectId: number | undefined,
   levelId: number | undefined,
   fields: Record<string, string>,
-): Pick<QuestionInput, 'curriculumChapterId' | 'curriculumTopicId' | 'dskpSpId' | 'scriptType'> {
-  const out: Pick<
-    QuestionInput,
-    'curriculumChapterId' | 'curriculumTopicId' | 'dskpSpId' | 'scriptType'
-  > = {}
+): Place {
   const blank = (v: unknown) => v === undefined || v === null || v === ''
+  const known = subjectId !== undefined && levelId !== undefined
+  const chapters = known ? curriculum.chapters(subjectId, levelId).filter((c) => c.isActive) : []
+  const spPool = known ? spsOf(subjectId, levelId) : []
 
   let chapterId: number | null = null
-  if (!blank(b.curriculumChapterId)) {
-    const id = intOf(b.curriculumChapterId)
-    const chapter = id === undefined ? undefined : curriculum.chapter(id)
-    if (
-      !chapter ||
-      (subjectId !== undefined && chapter.subjectId !== subjectId) ||
-      (levelId !== undefined && chapter.educationLevelId !== levelId)
-    ) {
-      fields.curriculumChapterId = MSG.chapter
-    } else chapterId = chapter.id
-  }
-  out.curriculumChapterId = chapterId
+  if (!blank(b.chapterId)) {
+    const id = intOf(b.chapterId)
+    const chapter = chapters.find((c) => c.id === id)
+    if (!chapter) fields.chapterId = QMSG.chapterId
+    else chapterId = chapter.id
+  } else if (chapters.length > 0 && known) fields.chapterId = QMSG.chapterId
 
-  let topicId: number | null = null
-  if (!blank(b.curriculumTopicId)) {
-    const id = intOf(b.curriculumTopicId)
-    const topic = id === undefined ? undefined : curriculum.topic(id)
-    if (!topic || chapterId === null || topic.chapterId !== chapterId) {
-      fields.curriculumTopicId = MSG.topic
-    } else topicId = topic.id
-  }
-  out.curriculumTopicId = topicId
+  const spIds = (listOf(b, 'spIds') ?? [])
+    .filter((v) => !blank(v))
+    .map((v) => intOf(v))
+    .filter((v): v is number => v !== undefined)
+  if (
+    spIds.length > 3 ||
+    spIds.some((id) => !dskpRepo.hasSp(id) || (known && spPool.length > 0 && !spPool.includes(id)))
+  ) {
+    fields.spIds = QMSG.spIds
+  } else if (spIds.length === 0 && spPool.length > 0) fields.spIds = QMSG.spIds
 
-  let spId: number | null = null
-  if (!blank(b.dskpSpId)) {
-    const id = intOf(b.dskpSpId)
-    if (id === undefined || !dskpRepo.hasSp(id)) fields.dskpSpId = MSG.sp
-    else spId = id
+  let tp: number | null = null
+  if (blank(b.tp)) {
+    if (spPool.length > 0) fields.tp = QMSG.tp
+  } else {
+    const n = intOf(b.tp)
+    if (n === undefined || n < 1 || n > 6) fields.tp = QMSG.tpRange
+    else tp = n
   }
-  out.dskpSpId = spId
 
+  let cognitiveLevel: string | null = null
+  const aras = textOf(b.cognitiveLevel) ?? ''
+  if (aras === '') {
+    if (spPool.length > 0) fields.cognitiveLevel = QMSG.cognitiveLevel
+  } else if (!ARAS.includes(aras)) fields.cognitiveLevel = QMSG.cognitiveLevel
+  else cognitiveLevel = aras
+
+  const out: Place = {
+    curriculumChapterId: chapterId,
+    dskpSpId: spIds[0] ?? null,
+    extra: { spIds, tp, cognitiveLevel },
+  }
   const script = textOf(b.scriptType)
   if (script === undefined || script === '') out.scriptType = 'rumi'
   else if ((SCRIPT_TYPES as readonly string[]).includes(script)) {
@@ -277,71 +298,39 @@ export function parseCreate(b: Body): Parsed {
   const fields: Record<string, string> = {}
 
   const levelId = intOf(b.educationLevelId)
-  if (levelId === undefined || !curriculum.level(levelId)) fields.educationLevelId = MSG.level
+  if (levelId === undefined || !curriculum.level(levelId)) fields.educationLevelId = QMSG.level
   const subjectId = intOf(b.subjectId)
-  if (subjectId === undefined || !curriculum.subject(subjectId)) fields.subjectId = MSG.subject
+  if (subjectId === undefined || !curriculum.subject(subjectId)) fields.subjectId = QMSG.subject
 
   const type = textOf(b.questionType) as QuestionType | undefined
   if (type === undefined || !QUESTION_TYPES.includes(type)) fields.questionType = MSG.questionType
 
   const difficulty = mapDifficulty(b.difficultyLevel)
-  if (difficulty === undefined) fields.difficultyLevel = MSG.difficulty
+  if (difficulty === undefined) fields.difficultyLevel = QMSG.difficulty
 
   const text = textOf(b.questionText) ?? ''
   if (text === '') fields.questionText = MSG.questionText
   else if ([...text].length > TEXT_MAX) fields.questionText = MSG.questionTextLong
 
-  const image = acceptImage('question', b.questionImage)
-  if (image === false) fields.questionImage = MSG.image
-  const url = textOf(b.questionImageUrl)
-
   const values: Partial<QuestionInput> = {}
-  if (type === 'mcq') {
-    const options = (listOf(b, 'options', 4) ?? Array.from({ length: 4 }, () => undefined)).map(
-      optionText,
-    )
-    if (options.some((o) => o === '')) fields.options = MSG.options
-    else if (options.some((o) => [...o].length > OPTION_MAX)) fields.options = MSG.optionLong
-    values.options = options
-    const key = keyIndex(b.correctAnswer)
-    if (key === undefined) fields.correctAnswer = MSG.correctAnswer
-    else values.correctAnswer = key
-    const images = (listOf(b, 'optionImages', 4) ?? []).map((v, i) => {
-      const accepted = acceptImage('option', v)
-      if (accepted === false) fields[`optionImages.${String(i)}`] = MSG.image
-      return typeof accepted === 'string' ? accepted : null
-    })
-    if (images.length > 0)
-      values.optionImages = Array.from({ length: 4 }, (_, i) => images[i] ?? null)
-  } else if (type === 'true_false') {
-    const tf = b.tfAnswer
-    const flag =
-      tf === true || tf === 'true' || tf === '1' || tf === 1
-        ? true
-        : tf === false || tf === 'false' || tf === '0' || tf === 0
-          ? false
-          : undefined
-    if (flag === undefined) fields.tfAnswer = MSG.tfAnswer
-    else values.tfAnswer = flag
-  } else if (type === 'short_answer' || type === 'fill_blank') {
-    const answer = textOf(b.correctAnswerText) ?? textOf(b.correctAnswer) ?? ''
-    if (answer === '') fields.correctAnswer = MSG.correctAnswerText
-    else if ([...answer].length > OPTION_MAX) fields.correctAnswer = MSG.correctAnswerLong
-    else values.correctAnswerText = answer
-    values.altAnswers = altList(b.altAnswers ?? b['altAnswers[]'])
-  } else if (type === 'essay') {
-    const model = textOf(b.modelAnswer) ?? ''
-    values.modelAnswer = model === '' ? null : model
-  }
-
+  const options = (listOf(b, 'options', 4) ?? Array.from({ length: 4 }, () => undefined)).map(
+    optionText,
+  )
+  if (options.some((o) => o === '')) fields.options = MSG.options
+  else if (options.some((o) => [...o].length > OPTION_MAX)) fields.options = MSG.optionLong
+  values.options = options
+  const key = keyIndex(b.correctAnswer)
+  if (key === undefined) fields.correctAnswer = MSG.correctAnswer
+  else values.correctAnswer = key
   const explanation = textOf(b.explanation) ?? ''
   if (explanation !== '') values.explanation = explanation
 
-  const place = placement(b, subjectId, levelId, fields)
+  const { extra, ...place } = placement(b, subjectId, levelId, fields)
 
   if (Object.keys(fields).length > 0) return { ok: false, fields }
   return {
     ok: true,
+    extra,
     input: {
       ...values,
       ...place,
@@ -350,8 +339,6 @@ export function parseCreate(b: Body): Parsed {
       difficultyLevel: difficulty as number,
       questionType: type,
       questionText: text,
-      questionImage:
-        typeof image === 'string' ? image : url !== undefined && url !== '' ? url : null,
     },
   }
 }
@@ -369,7 +356,7 @@ function parseUpdate(b: Body, current: Question): Parsed {
   const d = b.difficultyLevel
   if (d !== undefined && d !== null && d !== '') {
     const mapped = mapDifficulty(d)
-    if (mapped === undefined) fields.difficultyLevel = MSG.difficulty
+    if (mapped === undefined) fields.difficultyLevel = QMSG.difficulty
     else patch.difficultyLevel = mapped
   }
 
@@ -402,10 +389,6 @@ function parseUpdate(b: Body, current: Question): Parsed {
     const e = textOf(b.explanation) ?? ''
     patch.explanation = e === '' ? null : e
   }
-
-  const image = acceptImage('question', b.image ?? b.questionImage)
-  if (image === false) fields.image = MSG.image
-  else if (typeof image === 'string') patch.questionImage = image
 
   if (Object.keys(fields).length > 0) return { ok: false, fields }
   return { ok: true, input: patch as QuestionInput }
@@ -456,6 +439,7 @@ export const questionRoutes: RouteDef[] = [
     const row = ctx.transaction(() => {
       const made = questions.createFromTeacher({ id: userId }, parsed.input, now)
       teacherGamification.onQuestionContributed(userId, made.id, now)
+      if (parsed.extra) dskpExtra.set(made.id, parsed.extra)
       return made
     })
     return created(detailOf(row))
@@ -470,25 +454,26 @@ export const questionRoutes: RouteDef[] = [
     const value = bodyOf(req).csvFile
     let text: string
     if (value === undefined || value === null || value === '') {
-      return validationError({ csvFile: MSG.csvRequired })
+      return validationError({ csvFile: QMSG.csvNone })
     }
     if (typeof value === 'string') {
       // JSON bodies (scripts, tests) may carry the file's text.
       if (new TextEncoder().encode(value).length > CSV_MAX_BYTES) {
-        return validationError({ csvFile: MSG.csvFile })
+        return validationError({ csvFile: QMSG.csvSize })
       }
       text = value
     } else {
       const file = fileOf(value)
-      if (!file) return validationError({ csvFile: MSG.csvRequired })
-      if (!/\.(csv|txt)$/i.test(file.name) || file.size > CSV_MAX_BYTES || file.blob === null) {
-        return validationError({ csvFile: MSG.csvFile })
-      }
+      if (!file) return validationError({ csvFile: QMSG.csvNone })
+      if (!/\.csv$/i.test(file.name)) return validationError({ csvFile: QMSG.csvType })
+      if (file.size > CSV_MAX_BYTES) return validationError({ csvFile: QMSG.csvSize })
+      if (file.blob === null) return validationError({ csvFile: QMSG.csvNone })
       text = await file.blob.text()
     }
+    if (parseCsv(text).length - 1 > MAX_ROWS) return validationError({ csvFile: MSG_TOO_MANY })
     const plan = planImport(text)
     if (plan.missingColumns.length > 0) {
-      return validationError({ csvFile: MSG.csvColumns(plan.missingColumns.join(', ')) })
+      return validationError({ csvFile: QMSG.csvColumns(plan.missingColumns.join(', ')) })
     }
     if (plan.dataRows === 0) return validationError({ csvFile: MSG.csvNoData })
 
@@ -499,7 +484,7 @@ export const questionRoutes: RouteDef[] = [
       for (const q of rows) teacherGamification.onQuestionContributed(userId, q.id, now)
       return rows
     })
-    return ok({ imported: made.length, failed: plan.failures })
+    return ok({ imported: made.length, errors: plan.failures })
   }),
 
   route(
@@ -520,6 +505,7 @@ export const questionRoutes: RouteDef[] = [
     (req, ctx) => {
       const current = ownQuestion(req, Number(req.params.id))
       if (!current) return notFound()
+      if (statusOf(current) !== 'pending') return conflict(QMSG.locked)
       const parsed = parseUpdate(bodyOf(req), current)
       if (!parsed.ok) return validationError(parsed.fields)
       const row = questions.updateOwn(
@@ -538,10 +524,14 @@ export const questionRoutes: RouteDef[] = [
     '/api/guru/questions/:id',
     [teacherOnly],
     (req) => {
+      const own = ownQuestion(req, Number(req.params.id))
+      if (own && statusOf(own) !== 'pending') return conflict(QMSG.locked)
       const result = questions.deleteOwn({ id: viewerId(req) }, Number(req.params.id))
       // REQ-A-023b: only a question a held paper places (served) or a set / test / battle uses (in_use) is refused, as the real API.
       if (typeof result === 'string') {
-        return conflict(result === 'in_use' ? QUESTION_MESSAGES.deleteInUse : QUESTION_MESSAGES.deleteRefused)
+        return conflict(
+          result === 'in_use' ? QUESTION_MESSAGES.deleteInUse : QUESTION_MESSAGES.deleteRefused,
+        )
       }
       return result ? ok({ removed: 1 }) : notFound()
     },

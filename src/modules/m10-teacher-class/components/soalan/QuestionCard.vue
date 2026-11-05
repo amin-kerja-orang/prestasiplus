@@ -1,16 +1,25 @@
 <script setup lang="ts">
 /**
- * One card of "Soalan Saya" (FR-M10-96, 97; FN-M10-7.1.8, 7.1.9). Clicking the head toggles it open:
+ * One card of "Soalan Saya" (44-F2; FR-M10-96, 97; FR-GUR-44-10). Clicking the head toggles it open:
  * the question, options "A." … "D." (correct highlighted), "Penjelasan", footer "#{id}", source and
- * "Aktif", and the actions "Edit" (→ S24) and "Padam" (the owner confirms and deletes).
+ * "Aktif", and the actions "Edit" (→ S24) and "Padam" (the owner confirms and deletes), which show only
+ * while the server says the item is `editable`. The status chip says Menunggu Semakan / Diluluskan / Ditolak and a
+ * rejected item shows "Sebab: {reason}".
  */
-import { DsPanel } from '@/ds'
+import { DsPanel, DsStatusBadge } from '@/ds'
 import { ref } from 'vue'
 
 import { formatDateEn } from '@/lib/time'
 
 import type { ContributedQuestion } from '../../api/types'
-import { OPTION_LETTERS } from './lib'
+import {
+  difficultyStars,
+  difficultyWord,
+  OPTION_LETTERS,
+  rejectionLine,
+  STATUS_BADGE,
+  STATUS_WORDS,
+} from './lib'
 
 defineProps<{ question: ContributedQuestion; deleting?: boolean }>()
 const emit = defineEmits<{ remove: [id: number] }>()
@@ -41,9 +50,14 @@ const open = ref(false)
           <UBadge color="neutral" variant="subtle" data-testid="chip-level">{{
             question.levelName
           }}</UBadge>
-          <UBadge color="neutral" variant="subtle" data-testid="chip-difficulty">{{
-            question.difficultyLabel
-          }}</UBadge>
+          <UBadge
+            color="neutral"
+            variant="subtle"
+            :aria-label="`Kesukaran: ${difficultyWord(question.difficultyLevel)}`"
+            :title="difficultyWord(question.difficultyLevel)"
+            data-testid="chip-difficulty"
+            >{{ difficultyStars(question.difficultyLevel) }}</UBadge
+          >
           <UBadge
             v-if="question.dskpTagged"
             color="primary"
@@ -52,27 +66,26 @@ const open = ref(false)
             data-testid="chip-dskp"
             >DSKP</UBadge
           >
-          <UBadge
-            v-if="question.status === 'approved'"
-            color="success"
-            variant="subtle"
-            icon="i-ph-check-circle-duotone"
+          <DsStatusBadge
+            :status="STATUS_BADGE[question.status]"
+            :label="STATUS_WORDS[question.status]"
+            :emphasis="question.status === 'rejected' ? 'strong' : 'soft'"
+            :data-status-word="question.status"
             data-testid="chip-status"
-            >{{ question.statusLabel }}</UBadge
-          >
-          <UBadge
-            v-else
-            color="warning"
-            variant="subtle"
-            icon="i-ph-hourglass-duotone"
-            data-testid="chip-status"
-            >{{ question.statusLabel }}</UBadge
-          >
+          />
           <span class="text-caption text-muted" data-testid="question-date">
             {{ formatDateEn(question.createdAt) }}
           </span>
         </span>
       </UButton>
+
+      <p
+        v-if="question.status === 'rejected' && question.rejectionReason"
+        class="mt-2 min-w-0 text-body break-words text-error"
+        data-testid="question-reason"
+      >
+        {{ rejectionLine(question.rejectionReason) }}
+      </p>
 
       <div v-if="open" class="mt-4 flex min-w-0 flex-col gap-3" data-testid="question-body">
         <p class="min-w-0 text-body break-words text-default">{{ question.questionText }}</p>
@@ -85,26 +98,22 @@ const open = ref(false)
             data-testid="question-option"
           >
             <DsPanel tone="inset">
-<div class="flex min-w-0 items-start gap-2">
-              <span class="min-w-0 grow text-body break-words text-default"
-                ><strong>{{ OPTION_LETTERS[i] }}.</strong> {{ opt }}</span
-              >
-              <UBadge
-                v-if="question.correctAnswer === i"
-                color="success"
-                variant="subtle"
-                icon="i-ph-check-circle-duotone"
-                >Betul</UBadge
-              >
-            </div>
-</DsPanel>
+              <div class="flex min-w-0 items-start gap-2">
+                <span class="min-w-0 grow text-body break-words text-default"
+                  ><strong>{{ OPTION_LETTERS[i] }}.</strong> {{ opt }}</span
+                >
+                <UBadge
+                  v-if="question.correctAnswer === i"
+                  color="success"
+                  variant="subtle"
+                  icon="i-ph-check-circle-duotone"
+                  >Betul</UBadge
+                >
+              </div>
+            </DsPanel>
           </li>
         </ul>
-        <DsPanel
-          v-if="question.explanation"
-          tone="inset"
-          data-testid="question-explanation"
-        >
+        <DsPanel v-if="question.explanation" tone="inset" data-testid="question-explanation">
           <p class="mb-1 flex items-center gap-2 text-label text-highlighted">
             <UIcon name="i-ph-lightbulb-duotone" class="size-4 text-primary-t" />
             Penjelasan
@@ -127,7 +136,7 @@ const open = ref(false)
               {{ question.isActive ? 'Aktif' : 'Tidak Aktif' }}
             </span>
           </div>
-          <div class="flex gap-2">
+          <div v-if="question.editable" class="flex gap-2" data-testid="question-actions">
             <UButton
               :to="`/guru/soalan/${String(question.id)}/edit`"
               color="neutral"

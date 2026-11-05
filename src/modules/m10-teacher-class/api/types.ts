@@ -213,9 +213,10 @@ export interface Contributions {
   breakdown: { label: string; count: number }[]
 }
 
-export type QuestionType = 'mcq' | 'true_false' | 'short_answer' | 'fill_blank' | 'essay'
-export type QuestionStatus =
-  'draft' | 'pending_review' | 'approved' | 'rejected' | 'archived' | 'pending'
+/** The teacher form is multiple choice only (FR-GUR-44-9, API-GUR-18). */
+export type QuestionType = 'mcq'
+/** The teacher's three status words (FR-GUR-44-10): Menunggu Semakan / Diluluskan / Ditolak. */
+export type QuestionStatus = 'pending' | 'approved' | 'rejected'
 export type ScriptType = 'rumi' | 'arab' | 'jawi' | 'mixed'
 
 /** One card of "Soalan Saya" (FN-M10-7.1.8). */
@@ -228,14 +229,14 @@ export interface ContributedQuestion {
   educationLevelId: number | null
   /** M03 level name ("Darjah 6"). */
   levelName: string
-  /** M04 scale 1–5. */
+  /** Kesukaran 1 (Sangat mudah) to 5 (Sangat sukar); never derived from TP. */
   difficultyLevel: number
-  /** 1 Sangat Mudah … 5 Sangat Sukar. */
-  difficultyLabel: string
   dskpTagged: boolean
   status: QuestionStatus
-  /** "Diluluskan", "Menunggu Semakan", … (M04 BR-M04-02). */
-  statusLabel: string
+  /** The admin's reason of a `rejected` item ("Sebab: {reason}"); `null` otherwise. */
+  rejectionReason: string | null
+  /** Edit and Padam show only when true (a rejected item can be editable). */
+  editable: boolean
   isActive: boolean
   options: string[] | null
   /** Index 0–3 of the correct option (MCQ). */
@@ -250,51 +251,47 @@ export interface ContributedQuestion {
 export interface ContributedQuestionDetail extends ContributedQuestion {
   questionImage: string | null
   optionImages: (string | null)[]
-  tfAnswer: boolean | null
-  correctAnswerText: string | null
-  altAnswers: string[]
-  modelAnswer: string | null
   language: 'bm' | 'en'
   scriptType: ScriptType
   textDirection: 'ltr' | 'rtl'
-  curriculumChapterId: number | null
-  curriculumTopicId: number | null
-  dskpSpId: number | null
+  /** DSKP fields of 44-F1; `null` / empty when the item was sent without them. */
+  chapterId: number | null
+  spIds: number[]
+  tp: number | null
+  cognitiveLevel: string | null
   /** Kali Digunakan / Jawab Betul / Ketepatan (FN-M10-7.3.3). */
   usage: { attempts: number; correct: number; accuracy: number }
 }
 
-/** Difficulty as S22 sends it (BR-M10-22): `easy` 2, `medium` 3, `hard` 4, or the M04 number 1–5. */
-export type DifficultyInput = 'easy' | 'medium' | 'hard' | number
-
-/** #53 request (M04 #3 fields, camelCase). */
+/** #53 request (API-GUR-18 `QuestionGuruCreateRequest`, camelCase). MCQ only. */
 export interface CreateQuestionRequest {
   educationLevelId: number
   subjectId: number
-  questionType: QuestionType
-  difficultyLevel: DifficultyInput
+  questionType: 'mcq'
+  /** Kesukaran, an int 1 to 5 (required). */
+  difficultyLevel: number
   questionText: string
-  /** MCQ: four option texts A–D. */
-  options?: string[]
-  /** MCQ: the correct option index 0–3 (or the letter A–D); short answer / fill blank: the text. */
-  correctAnswer?: number | string
-  tfAnswer?: boolean
-  /** Short answer / fill blank: alternative answers. */
-  altAnswers?: string[] | string
-  modelAnswer?: string
+  /** The four option texts A–D. */
+  options: string[]
+  /** The correct option index 0–3. */
+  correctAnswer: number
   explanation?: string
-  dskpSpId?: number | null
-  curriculumChapterId?: number | null
-  curriculumTopicId?: number | null
+  /** Bab; required iff the Subjek + Tingkatan has chapters (D112). */
+  chapterId?: number | null
+  /** One SP (the form is a single select) sent as a one-element array; required iff DSKP nodes exist. */
+  spIds?: number[]
+  /** TP 1 to 6; required iff DSKP nodes exist. */
+  tp?: number | null
+  /** Aras Pemikiran (OPT-ARAS); required iff DSKP nodes exist. */
+  cognitiveLevel?: string | null
   scriptType?: ScriptType
-  questionImageUrl?: string | null
 }
 
 /** #55 request. */
 export interface UpdateQuestionRequest {
   questionText: string
-  /** Empty / omitted keeps the saved difficulty (INFERRED, DV-M10-15). */
-  difficultyLevel?: DifficultyInput | '' | null
+  /** Kesukaran 1 to 5; the edit form preselects the saved value. */
+  difficultyLevel?: number
   /** MCQ only: `id` is the option index 0–3. */
   options?: { id: number; optionText: string }[]
   correctOptionId?: number
@@ -307,9 +304,10 @@ export interface ImportFailure {
   message: string
 }
 
+/** API-GUR-19: valid rows were imported, bad rows are listed under `errors`. */
 export interface ImportResult {
   imported: number
-  failed: ImportFailure[]
+  errors: ImportFailure[]
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -355,43 +353,28 @@ export interface RajahGallery {
   images?: never[]
 }
 
-/** The seven paper types of the S21 form (value = label). */
+/** OPT-JENIS-HANTARAN stored slugs (the labels are in `paper-rules.ts`). */
 export type PaperType =
-  | 'Soalan Umum'
-  | 'Trial Paper'
-  | 'Soalan DSKP'
-  | 'Buku Teks'
-  | 'Buku Latihan'
-  | 'Soalan Peperiksaan'
-  | 'Lain-lain'
+  'umum' | 'trial' | 'dskp' | 'buku_teks' | 'buku_latihan' | 'peperiksaan' | 'lain'
 
-/** #60 request fields (the files travel apart). */
+/** API-GUR-17 request fields (the files travel apart). */
 export interface QuestionPaperRequest {
-  jenisSoalan: PaperType
-  /** "Matapelajaran", at most 100 characters. */
+  paperType: PaperType
+  /** "Matapelajaran", free text, at most 100 characters. */
   subject: string
-  /** 1–5, or empty. */
-  tingkatan?: number | ''
-  /** 2000–2099, or empty; empty is stored as the year of the mock clock. */
-  tahun?: number | ''
-  /** At most 150 characters. */
-  disediakanOleh?: string
-  /** At most 1000 characters. */
-  catatan?: string
+  /** Tingkatan 1–5, or empty. */
+  levelId?: number | ''
+  /** 2000–2099, or empty. */
+  year?: number | ''
+  /** "Disediakan Oleh", at most 150 characters. */
+  preparedBy?: string
+  /** "Catatan Tambahan", at most 1000 characters. */
+  note?: string
+  /** The teacher confirms the answer scheme is attached; must be `true`. */
+  answerSchemeConfirmed: boolean
 }
 
-/** #60 `data`: the M04 QuestionSubmission. */
+/** API-GUR-17 `data`: the id of the `source = guru` intake batch. */
 export interface QuestionPaper {
-  id: number
-  teacherId: number
-  subjectText: string
-  levelCode: string | null
-  year: number
-  paperType: string
-  authorCredit: string
-  note: string | null
-  files: { index: number; name: string; size: number; mime: string }[]
-  status: 'pending' | 'processing' | 'done' | 'rejected'
-  adminNotes: string | null
-  createdAt: string
+  batchId: number | string
 }

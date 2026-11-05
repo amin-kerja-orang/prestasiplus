@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * S21 `/guru/soalan` "Sumbang Soalan" (M10-T6; FR-M10-91..98, 129): contribution stats, tiers and
- * subject breakdown (#51), CSV import, Audio KBAT and AI cards, "Soalan Saya" (#52, 20 per page,
+ * S21 `/guru/soalan` "Sumbang Soalan" (M10-T6; FR-M10-91..98, 129; R1-GUR-44): contribution stats, the info
+ * paragraph, the "Alat Soalan" block, tiers and subject breakdown (#51), CSV import, Audio KBAT and AI cards, "Soalan Saya" (#52, 20 per page,
  * `?page=`) with edit / delete (#56), and "Hantar Kertas Soalan kepada Admin". The list and the stats
  * reload after a delete or an import.
  */
@@ -16,6 +16,7 @@ import {
   fetchContributedQuestions,
   fetchContributions,
 } from '../api/guru'
+import AlatSoalanBlock from '../components/soalan/AlatSoalanBlock.vue'
 import AudioKbatCard from '../components/soalan/AudioKbatCard.vue'
 import ContributionSummary from '../components/soalan/ContributionSummary.vue'
 import HantarKertasCard from '../components/soalan/HantarKertasCard.vue'
@@ -43,8 +44,7 @@ const deleting = ref(false)
 const deleteError = ref<string[]>([])
 
 async function remove(id: number): Promise<void> {
-  if (deleting.value || !(await confirm({ message: COPY.confirmDelete(id), tone: 'error' })))
-    return
+  if (deleting.value || !(await confirm({ message: COPY.confirmDelete(id), tone: 'error' }))) return
   deleting.value = true
   deleteError.value = []
   try {
@@ -99,7 +99,9 @@ const retry = (): void => {
     >
       <USkeleton v-for="n in 4" :key="n" class="h-28 w-full" />
     </div>
-    <ContributionSummary v-else :summary="summary.data.value" />
+    <ContributionSummary v-else :summary="summary.data.value">
+      <template #tools><AlatSoalanBlock /></template>
+    </ContributionSummary>
 
     <ImportCard @imported="onImported" />
     <AudioKbatCard v-if="allows('/guru/audio-kbat')" />
@@ -143,7 +145,19 @@ const retry = (): void => {
         <DsPanel v-if="list.data.value.data.length === 0 && page === 1" data-testid="soalan-empty">
           <div class="flex flex-col items-center gap-2 py-6 text-center">
             <UIcon name="i-ph-note-pencil-duotone" class="size-12 text-dimmed" />
-            <p class="text-body text-muted">{{ COPY.listEmpty }}</p>
+            <p class="text-label text-highlighted" data-testid="soalan-empty-title">
+              {{ COPY.emptyTitle }}
+            </p>
+            <p class="text-body text-muted" data-testid="soalan-empty-hint">
+              {{ COPY.emptyHint }}
+            </p>
+            <UButton
+              to="/guru/soalan/cipta"
+              icon="i-ph-plus-circle-duotone"
+              class="mt-2 min-h-11"
+              data-testid="soalan-add-first"
+              >{{ COPY.addFirst }}</UButton
+            >
           </div>
         </DsPanel>
         <ul v-else class="grid min-w-0 grid-cols-1 gap-3" data-testid="soalan-list">

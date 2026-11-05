@@ -9,7 +9,6 @@ import { ApiError } from '@/api'
 import { useRouteOutcome } from '@/app/router/outcome'
 import { useFlashStore } from '@/stores/flash'
 
-import { pickFiles } from './pick-file'
 import { COPY } from '../../components/soalan/lib'
 import SumbangSoalanDetailPage from '../../pages/SumbangSoalanDetailPage.vue'
 import SumbangSoalanEditPage from '../../pages/SumbangSoalanEditPage.vue'
@@ -44,12 +43,17 @@ afterEach(() => vi.clearAllMocks())
 describe('S23 detail', () => {
   it('shows the chips, options, explanation and statistics', async () => {
     guru.fetchContributedQuestion.mockResolvedValue(
-      detail({ usage: { attempts: 4, correct: 3, accuracy: 75 } }),
+      detail({
+        status: 'pending',
+        editable: true,
+        usage: { attempts: 4, correct: 3, accuracy: 75 },
+      }),
     )
     const w = await mountPage(SumbangSoalanDetailPage)
     expect(t(w, 'detail-subject').text()).toBe('Bahasa Melayu')
     expect(t(w, 'detail-source').text()).toBe('textbook_content_rebuild')
-    expect(t(w, 'detail-tahap').text()).toBe('Tahap 4')
+    expect(t(w, 'detail-tahap').text()).toBe('⭐⭐⭐⭐')
+    expect(t(w, 'detail-status').text()).toBe('Menunggu Semakan')
     expect(t(w, 'detail-type').text()).toBe('mcq')
     expect(t(w, 'detail-text').text()).toBe('Pilih ayat yang betul?')
     const options = all(w, 'detail-option')
@@ -75,6 +79,24 @@ describe('S23 detail', () => {
     expect(t(w, 'detail-edit').attributes('href')).toBe('/guru/soalan/522425/edit')
   })
 
+  it('FR-GUR-44-10: a rejected item shows Ditolak and "Sebab: {reason}"; Edit follows `editable`', async () => {
+    guru.fetchContributedQuestion.mockResolvedValue(
+      detail({ status: 'rejected', rejectionReason: 'Soalan kabur.', editable: false }),
+    )
+    const w = await mountPage(SumbangSoalanDetailPage)
+    expect(t(w, 'detail-status').text()).toBe('Ditolak')
+    expect(t(w, 'detail-status').attributes('data-status')).toBe('rejected')
+    expect(t(w, 'detail-reason').text()).toBe('Sebab: Soalan kabur.')
+    expect(t(w, 'detail-edit').exists()).toBe(false)
+  })
+
+  it('FR-GUR-44-10: an approved item shows Diluluskan and no Edit button', async () => {
+    const w = await mountPage(SumbangSoalanDetailPage)
+    expect(t(w, 'detail-status').text()).toBe('Diluluskan')
+    expect(t(w, 'detail-reason').exists()).toBe(false)
+    expect(t(w, 'detail-edit').exists()).toBe(false)
+  })
+
   it('never renders a stored mock image', async () => {
     guru.fetchContributedQuestion.mockResolvedValue(
       detail({ questionImage: 'blob:mock/question/a' }),
@@ -91,33 +113,52 @@ describe('S23 detail', () => {
 })
 
 describe('S24 edit', () => {
-  it('preloads the text, the saved difficulty and the correct option', async () => {
+  it('AC-GUR-44-6: preloads the text, the saved difficulty (4 stars), TP and the correct option', async () => {
+    guru.fetchContributedQuestion.mockResolvedValue(detail({ tp: 5 }))
     const w = await mountPage(SumbangSoalanEditPage)
     expect(t(w, 'edit-source').text()).toContain('textbook_content_rebuild')
     expect((t(w, 'e-text').element as HTMLTextAreaElement).value).toBe('Pilih ayat yang betul?')
-    expect(t(w, 'e-text').attributes('required')).toBeDefined()
     expect(
       t(w, 'e-difficulty')
         .findAll('option')
         .map((o) => o.text()),
-    ).toEqual(['-- Pilih --', 'Mudah', 'Sederhana', 'Sukar'])
+    ).toEqual([
+      '-- Pilih kesukaran --',
+      '⭐ — Sangat mudah',
+      '⭐⭐ — Mudah',
+      '⭐⭐⭐ — Sederhana',
+      '⭐⭐⭐⭐ — Sukar',
+      '⭐⭐⭐⭐⭐ — Sangat sukar',
+    ])
     expect((t(w, 'e-difficulty').element as HTMLSelectElement).value).toBe('4')
-    expect(w.findAll('[data-testid="e-correct"] [role="radio"]')[2]!.attributes('aria-checked')).toBe('true')
+    expect(t(w, 'e-tp').text()).toContain('5')
+    expect(
+      w.findAll('[data-testid="e-correct"] [role="radio"]')[2]!.attributes('aria-checked'),
+    ).toBe('true')
     expect((t(w, 'e-option-1').element as HTMLTextAreaElement).value).toBe('Dua')
     expect((t(w, 'e-explanation').element as HTMLTextAreaElement).value).toBe('Kerana tiga.')
     expect(t(w, 'form-cancel').attributes('href')).toBe('/guru/soalan/522425')
     expect(t(w, 'edit-back').attributes('href')).toBe('/guru/soalan/522425')
   })
 
-  it('shows "-- Pilih --" for a saved difficulty outside 2-4 and sends no difficulty', async () => {
+  it('FR-GUR-44-6: a saved difficulty of 1 or 5 is preselected and sent as saved', async () => {
     guru.fetchContributedQuestion.mockResolvedValue(detail({ difficultyLevel: 1 }))
     guru.updateContributedQuestion.mockResolvedValue(detail())
     const w = await mountPage(SumbangSoalanEditPage)
-    expect((t(w, 'e-difficulty').element as HTMLSelectElement).value).toBe('')
+    expect((t(w, 'e-difficulty').element as HTMLSelectElement).value).toBe('1')
     await t(w, 'edit-form').trigger('submit')
     await flushPromises()
     const body = guru.updateContributedQuestion.mock.calls[0]![1] as Record<string, unknown>
-    expect(body.difficultyLevel).toBeUndefined()
+    expect(body.difficultyLevel).toBe(1)
+  })
+
+  it('shows the BM text and sends nothing when the difficulty is cleared', async () => {
+    const w = await mountPage(SumbangSoalanEditPage)
+    await t(w, 'e-difficulty').setValue('')
+    await t(w, 'edit-form').trigger('submit')
+    await flushPromises()
+    expect(w.text()).toContain('Sila pilih kesukaran.')
+    expect(guru.updateContributedQuestion).not.toHaveBeenCalled()
   })
 
   it('saves the changed fields, flashes and goes to S23', async () => {
@@ -128,50 +169,30 @@ describe('S24 edit', () => {
     await w.findAll('[data-testid="e-correct"] [role="radio"]')[0]!.trigger('click')
     await t(w, 'edit-form').trigger('submit')
     await flushPromises()
-    expect(guru.updateContributedQuestion).toHaveBeenCalledWith(
-      522425,
-      {
-        questionText: 'Pilih ayat yang betul?',
-        explanation: 'Penjelasan baharu',
-        difficultyLevel: 3,
-        options: [
-          { id: 0, optionText: 'Satu' },
-          { id: 1, optionText: 'Dua' },
-          { id: 2, optionText: 'Tiga' },
-          { id: 3, optionText: 'Empat' },
-        ],
-        correctOptionId: 0,
-      },
-      null,
-    )
+    expect(guru.updateContributedQuestion).toHaveBeenCalledWith(522425, {
+      questionText: 'Pilih ayat yang betul?',
+      explanation: 'Penjelasan baharu',
+      difficultyLevel: 3,
+      options: [
+        { id: 0, optionText: 'Satu' },
+        { id: 1, optionText: 'Dua' },
+        { id: 2, optionText: 'Tiga' },
+        { id: 3, optionText: 'Empat' },
+      ],
+      correctOptionId: 0,
+    })
     expect(router.currentRoute.value.path).toBe('/guru/soalan/522425')
     expect(useFlashStore().pending?.type).toBe('success')
   })
 
-  it('saves a chosen image in one call through the client', async () => {
+  it('has no image field (API-GUR-18 dropped the image fields)', async () => {
     guru.updateContributedQuestion.mockResolvedValue(detail())
     const w = await mountPage(SumbangSoalanEditPage)
-    const png = new File(['x'], 'rajah.png', { type: 'image/png' })
-    await pickFiles(w, 'e-image', [png])
+    expect(t(w, 'e-image').exists()).toBe(false)
     await t(w, 'edit-form').trigger('submit')
     await flushPromises()
     expect(guru.updateContributedQuestion).toHaveBeenCalledTimes(1)
-    const [id, body, image] = guru.updateContributedQuestion.mock.calls[0] as unknown as [
-      number,
-      Record<string, unknown>,
-      File | null,
-    ]
-    expect(id).toBe(522425)
-    expect(body.questionText).toBe('Pilih ayat yang betul?')
-    expect(image).toBe(png)
-  })
-
-  it('sends no image when none is chosen', async () => {
-    guru.updateContributedQuestion.mockResolvedValue(detail())
-    const w = await mountPage(SumbangSoalanEditPage)
-    await t(w, 'edit-form').trigger('submit')
-    await flushPromises()
-    expect(guru.updateContributedQuestion.mock.calls[0]![2]).toBeNull()
+    expect(guru.updateContributedQuestion.mock.calls[0]).toHaveLength(2)
   })
 
   it('keeps the form and shows the server messages on a 422', async () => {
@@ -209,12 +230,9 @@ describe('S24 edit', () => {
     expect(t(w, 'form-errors').text()).toContain('Soalan sedang disemak.')
   })
 
-  it('offers no option block for a question that is not MCQ', async () => {
-    guru.fetchContributedQuestion.mockResolvedValue(
-      detail({ questionType: 'essay', options: null, correctAnswer: null }),
-    )
+  it('always offers the option block (MCQ only)', async () => {
     const w = await mountPage(SumbangSoalanEditPage)
-    expect(t(w, 'edit-options').exists()).toBe(false)
+    expect(t(w, 'edit-options').exists()).toBe(true)
   })
 
   it('raises the in-place 404', async () => {

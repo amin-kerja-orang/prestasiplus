@@ -5,20 +5,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import QuestionForm from '../../components/soalan/QuestionForm.vue'
 import { makeRouter } from './fixtures'
-import { pickFiles } from './pick-file'
 
 const guru = vi.hoisted(() => ({
   fetchChapters: vi.fn(),
-  fetchTopics: vi.fn(),
   fetchBidang: vi.fn(),
   fetchSk: vi.fn(),
   fetchSp: vi.fn(),
-  createChapter: vi.fn(),
-  createTopic: vi.fn(),
-  createBidang: vi.fn(),
-  createSk: vi.fn(),
-  createSp: vi.fn(),
-  fetchRajahGallery: vi.fn(() => Promise.resolve({ folders: [] })),
 }))
 vi.mock('../../api/guru', () => guru)
 vi.mock('../../components/soalan/data', () => ({
@@ -57,7 +49,6 @@ beforeEach(() => {
     { id: 7, chapterNumber: 2, name: 'Dua' },
     { id: 6, chapterNumber: 1, name: 'Satu' },
   ])
-  guru.fetchTopics.mockResolvedValue([{ id: 70, topicNumber: '1.1', name: 'Topik satu' }])
   guru.fetchBidang.mockResolvedValue([{ id: 1, code: '1.0', name: 'Bunyi' }])
   guru.fetchSk.mockResolvedValue([{ id: 11, code: '1.1', description: 'SK satu' }])
   guru.fetchSp.mockResolvedValue([{ id: 111, code: '1.1.1', description: 'SP satu' }])
@@ -67,136 +58,180 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-describe('S22 form fields', () => {
-  it('renders the live selects, options and defaults', async () => {
+const opts = (w: VueWrapper, id: string) =>
+  t(w, id)
+    .findAll('option')
+    .map((o) => o.text())
+
+/** Fills every field of the form except the ones named in `skip`. */
+async function fillAll(w: VueWrapper, skip: string[] = []): Promise<void> {
+  await pickLevelAndSubject(w)
+  if (!skip.includes('chapter')) await t(w, 'q-chapter').setValue('6')
+  if (!skip.includes('sp')) await t(w, 'q-sp').setValue('111')
+  if (!skip.includes('tp')) await t(w, 'q-tp').setValue('4')
+  if (!skip.includes('aras')) await t(w, 'q-aras').setValue('menilai')
+  await t(w, 'q-text').setValue('Soalan baharu?')
+  for (const i of [0, 1, 2, 3]) await t(w, `q-option-${String(i)}`).setValue(`P${String(i)}`)
+  await w.findAll('[data-testid="q-correct"] [role="radio"]')[3]!.trigger('click')
+}
+
+describe('S22 form fields (44-F1)', () => {
+  it('renders the PRD selects, options and defaults', async () => {
     const w = await mountForm()
-    expect(t(w, 'q-level').attributes('required')).toBeDefined()
-    expect(
-      t(w, 'q-subject')
-        .findAll('option')
-        .map((o) => o.text()),
-    ).toEqual(['-- Pilih Subjek --', 'Bahasa Melayu', 'Kimia'])
-    expect(
-      t(w, 'q-type')
-        .findAll('option')
-        .map((o) => o.text()),
-    ).toEqual([
-      'Aneka Pilihan (MCQ)',
-      'Betul / Salah',
-      'Jawapan Pendek',
-      'Isi Tempat Kosong',
-      'Esei',
+    expect(w.text()).toContain('Tingkatan *')
+    expect(w.text()).toContain('Subjek *')
+    expect(opts(w, 'q-level')).toEqual(['-- Pilih tingkatan --', 'Tingkatan 5'])
+    expect(opts(w, 'q-subject')).toEqual(['-- Pilih subjek --', 'Bahasa Melayu', 'Kimia'])
+    expect(opts(w, 'q-tp')).toEqual(['-- Pilih TP --', '1', '2', '3', '4', '5', '6'])
+    expect(opts(w, 'q-aras')[0]).toBe('-- Pilih aras --')
+    expect(opts(w, 'q-aras')).toContain('Mengaplikasi')
+    expect(opts(w, 'q-script')).toEqual([
+      'Rumi (Latin)',
+      'Arab',
+      'Jawi',
+      'Campuran (Rumi + Arab/Jawi)',
     ])
-    expect(
-      t(w, 'q-difficulty')
-        .findAll('option')
-        .map((o) => o.text()),
-    ).toEqual(['-- Pilih Tahap --', 'Mudah', 'Sederhana', 'Sukar'])
-    expect(
-      t(w, 'q-script')
-        .findAll('option')
-        .map((o) => o.text()),
-    ).toEqual(['Rumi (Latin)', 'Arab', 'Jawi', 'Campuran (Rumi + Arab/Jawi)'])
     expect(t(w, 'q-text').attributes('maxlength')).toBe('2000')
-    expect(w.findAll('[data-testid="q-correct"] [role="radio"]')[0]!.attributes('aria-checked')).toBe('true')
     expect(t(w, 'q-option-0').attributes('placeholder')).toBe('Pilihan A')
     expect(t(w, 'q-option-3').attributes('maxlength')).toBe('500')
   })
 
-  it('shows only the answer block of the chosen type', async () => {
+  it('FR-GUR-44-9: Kesukaran offers five star options and a placeholder', async () => {
     const w = await mountForm()
-    expect(t(w, 'mcq-card').exists()).toBe(true)
-    await t(w, 'q-type').setValue('true_false')
-    expect(t(w, 'mcq-card').exists()).toBe(false)
-    expect(t(w, 'tf-card').text()).toContain('Pilih jawapan yang betul untuk pernyataan ini.')
-    await t(w, 'q-type').setValue('short_answer')
-    expect(t(w, 'short-card').text()).toContain('Pelajar akan dipadankan secara automatik.')
-    await t(w, 'q-type').setValue('fill_blank')
-    expect(t(w, 'short-card').text()).toContain('Gunakan ___ dalam soalan')
-    await t(w, 'q-type').setValue('essay')
-    expect(t(w, 'essay-card').text()).toContain('Jawapan Contoh (Model Answer)')
+    expect(opts(w, 'q-difficulty')).toEqual([
+      '-- Pilih kesukaran --',
+      '⭐ — Sangat mudah',
+      '⭐⭐ — Mudah',
+      '⭐⭐⭐ — Sederhana',
+      '⭐⭐⭐⭐ — Sukar',
+      '⭐⭐⭐⭐⭐ — Sangat sukar',
+    ])
   })
 
-  it('loads Bab, Topik and the DSKP chain from the chosen level and subject', async () => {
+  it('FR-GUR-44-9: MCQ only, no type select, no true/false, short or essay block, no Topik', async () => {
     const w = await mountForm()
-    expect(t(w, 'q-chapter-add').attributes('disabled')).toBeDefined()
+    expect(t(w, 'q-type').exists()).toBe(false)
+    expect(t(w, 'mcq-card').exists()).toBe(true)
+    for (const id of ['tf-card', 'short-card', 'essay-card', 'q-topic', 'q-bidang', 'q-sk']) {
+      expect(t(w, id).exists()).toBe(false)
+    }
+    expect(w.text()).not.toContain('Jenis Soalan')
+    expect(w.text()).not.toContain('Topik')
+  })
+
+  it('44-F1: no correct answer is preselected on create', async () => {
+    const w = await mountForm()
+    for (const r of w.findAll('[data-testid="q-correct"] [role="radio"]')) {
+      expect(r.attributes('aria-checked')).toBe('false')
+    }
+  })
+
+  it('44-F1: Bab label "{nombor}. {nama}" in order; SP label "{kod} {nama}"; both load from the pair', async () => {
+    const w = await mountForm()
+    expect(t(w, 'q-chapter').attributes('disabled')).toBeDefined()
     await pickLevelAndSubject(w)
     expect(guru.fetchChapters).toHaveBeenCalledWith({ subjectId: 1, educationLevelId: 11 })
-    expect(
-      t(w, 'q-chapter-select')
-        .findAll('option')
-        .map((o) => o.text()),
-    ).toEqual(['-- Pilih Bab --', 'Bab 1: Satu', 'Bab 2: Dua'])
-    await t(w, 'q-chapter-select').setValue('6')
-    await flushPromises()
-    expect(t(w, 'q-topic-select').findAll('option')[1]!.text()).toBe('Topik satu')
-
-    expect(t(w, 'q-sk-select').attributes('disabled')).toBeDefined()
-    await t(w, 'q-bidang-select').setValue('1')
-    await flushPromises()
-    expect(t(w, 'q-sk-select').attributes('disabled')).toBeUndefined()
-    await t(w, 'q-sk-select').setValue('11')
-    await flushPromises()
-    expect(t(w, 'q-sp-select').findAll('option')[1]!.text()).toBe('1.1.1 — SP satu')
+    expect(guru.fetchBidang).toHaveBeenCalledWith({ subjectId: 1, educationLevelId: 11 }, {})
+    expect(opts(w, 'q-chapter')).toEqual(['-- Pilih bab --', '1. Satu', '2. Dua'])
+    expect(opts(w, 'q-sp')).toEqual(['-- Pilih SP --', '1.1.1 SP satu'])
+    expect(w.text()).toContain('Bab *')
+    expect(w.text()).toContain('SP *')
+    expect(w.text()).toContain('TP *')
+    expect(w.text()).toContain('Aras Pemikiran *')
   })
 
-  it('clears chapter and topic when the subject changes', async () => {
+  it('AC-GUR-44-10: with no chapters and no DSKP nodes the fields say so and are not required', async () => {
+    guru.fetchChapters.mockResolvedValue([])
+    guru.fetchBidang.mockResolvedValue([])
     const w = await mountForm()
     await pickLevelAndSubject(w)
-    await t(w, 'q-chapter-select').setValue('6')
+    expect(opts(w, 'q-chapter')).toEqual(['Tiada bab untuk subjek dan tingkatan ini.'])
+    expect(opts(w, 'q-sp')).toEqual(['Tiada SP untuk subjek dan tingkatan ini.'])
+    expect(w.text()).not.toContain('Bab *')
+    await t(w, 'q-difficulty').setValue('3')
+    await t(w, 'q-text').setValue('Soalan?')
+    for (const i of [0, 1, 2, 3]) await t(w, `q-option-${String(i)}`).setValue(`P${String(i)}`)
+    await w.findAll('[data-testid="q-correct"] [role="radio"]')[0]!.trigger('click')
+    await w.find('form').trigger('submit')
     await flushPromises()
+    const [body] = w.emitted('submit')![0] as [Record<string, unknown>]
+    expect(body.chapterId).toBeUndefined()
+    expect(body.spIds).toBeUndefined()
+    expect(body.tp).toBeUndefined()
+  })
+
+  it('clears Bab and SP when the subject changes', async () => {
+    const w = await mountForm()
+    await pickLevelAndSubject(w)
+    await t(w, 'q-chapter').setValue('6')
+    await t(w, 'q-sp').setValue('111')
     await t(w, 'q-subject').setValue('10')
     await flushPromises()
-    expect((t(w, 'q-chapter-select').element as HTMLSelectElement).value).toBe('')
+    expect((t(w, 'q-chapter').element as HTMLSelectElement).value).toBe('')
+    expect((t(w, 'q-sp').element as HTMLSelectElement).value).toBe('')
+  })
+
+  it('44-F1: Kesukaran defaults to min(5, TP) until it is touched', async () => {
+    const w = await mountForm()
+    await pickLevelAndSubject(w)
+    await t(w, 'q-tp').setValue('6')
+    expect((t(w, 'q-difficulty').element as HTMLSelectElement).value).toBe('5')
+    await t(w, 'q-tp').setValue('2')
+    expect((t(w, 'q-difficulty').element as HTMLSelectElement).value).toBe('2')
+    await t(w, 'q-difficulty').setValue('4')
+    await t(w, 'q-tp').setValue('1')
+    expect((t(w, 'q-difficulty').element as HTMLSelectElement).value).toBe('4')
   })
 })
 
-describe('S22 inline add', () => {
-  it('adds a chapter, selects it and loads its topics', async () => {
-    guru.createChapter.mockResolvedValue({ id: 99, chapterNumber: 10, name: 'Bab Ujian' })
+describe('S22 validation (FR-GUR-44-11; AC-GUR-44-10, AC-GUR-44-12)', () => {
+  it('an empty form shows every BM text, a banner, and sends nothing', async () => {
     const w = await mountForm()
-    await pickLevelAndSubject(w)
-    await t(w, 'q-chapter-add').trigger('click')
-    await t(w, 'q-chapter-field-number').setValue('10')
-    await t(w, 'q-chapter-field-name').setValue('Bab Ujian')
-    await t(w, 'q-chapter-save').trigger('click')
+    await w.find('form').trigger('submit')
     await flushPromises()
-    expect(guru.createChapter).toHaveBeenCalledWith({
-      subjectId: 1,
-      educationLevelId: 11,
-      name: 'Bab Ujian',
-      chapterNumber: 10,
-    })
-    expect((t(w, 'q-chapter-select').element as HTMLSelectElement).value).toBe('99')
-    expect(t(w, 'q-chapter-select').findAll('option').at(-1)!.text()).toBe('Bab 10: Bab Ujian')
+    expect(w.emitted('submit')).toBeUndefined()
+    const text = w.text()
+    for (const m of [
+      'Sila pilih tingkatan.',
+      'Sila pilih subjek.',
+      'Sila pilih kesukaran.',
+      'Sila isi soalan.',
+      'Sila isi pilihan A.',
+      'Sila tanda satu jawapan yang betul.',
+    ]) {
+      expect(text).toContain(m)
+    }
+    expect(t(w, 'form-banner').text()).toBe('6 medan perlu dibetulkan.')
   })
 
-  it('does nothing when the number or name is missing', async () => {
+  it('AC-GUR-44-12: every field except Bab filled shows "Sila pilih bab." and nothing is created', async () => {
     const w = await mountForm()
-    await pickLevelAndSubject(w)
-    await t(w, 'q-chapter-add').trigger('click')
-    await t(w, 'q-chapter-field-name').setValue('Tanpa nombor')
-    await t(w, 'q-chapter-save').trigger('click')
-    expect(guru.createChapter).not.toHaveBeenCalled()
+    await fillAll(w, ['chapter'])
+    await t(w, 'q-difficulty').setValue('3')
+    await w.find('form').trigger('submit')
+    await flushPromises()
+    expect(w.emitted('submit')).toBeUndefined()
+    expect(w.text()).toContain('Sila pilih bab.')
+    expect(w.text()).not.toContain('Sila pilih Standard Pembelajaran (SP).')
   })
 
-  it('keeps the typed values when the panel is cancelled and ignores a refused add', async () => {
-    guru.createSp.mockResolvedValue({ error: 'SP sudah wujud.' })
+  it('AC-GUR-44-10: SP, TP and Aras left empty show their exact texts', async () => {
     const w = await mountForm()
-    await pickLevelAndSubject(w)
-    await t(w, 'q-bidang-select').setValue('1')
+    await fillAll(w, ['sp', 'tp', 'aras'])
+    await t(w, 'q-difficulty').setValue('3')
+    await w.find('form').trigger('submit')
     await flushPromises()
-    await t(w, 'q-sk-select').setValue('11')
-    await flushPromises()
-    await t(w, 'q-sp-add').trigger('click')
-    await t(w, 'q-sp-field-code').setValue('2.2.2')
-    await t(w, 'q-sp-cancel').trigger('click')
-    expect((t(w, 'q-sp-field-code').element as HTMLInputElement).value).toBe('2.2.2')
-    await t(w, 'q-sp-field-description').setValue('Baharu')
-    await t(w, 'q-sp-save').trigger('click')
-    await flushPromises()
-    expect(guru.createSp).toHaveBeenCalledWith({ skId: 11, code: '2.2.2', description: 'Baharu' })
-    expect((t(w, 'q-sp-select').element as HTMLSelectElement).value).toBe('')
+    expect(w.emitted('submit')).toBeUndefined()
+    expect(w.text()).toContain('Sila pilih Standard Pembelajaran (SP).')
+    expect(w.text()).toContain('Sila pilih TP.')
+    expect(w.text()).toContain('Sila pilih aras pemikiran.')
+  })
+
+  it('uses no native validation (the BM text shows, not a browser tooltip)', async () => {
+    const w = await mountForm()
+    expect(t(w, 'question-form').attributes('novalidate')).toBeDefined()
+    expect(t(w, 'q-level').attributes('required')).toBeUndefined()
+    expect(t(w, 'q-text').attributes('required')).toBeUndefined()
   })
 })
 
@@ -247,65 +282,39 @@ describe('S22 Arabic text, keyboard and gallery', () => {
     await flushPromises()
     expect(document.querySelector('[data-testid="vkb-panel"]')).toBeNull()
   })
-
-  it('shows the live empty texts in the Galeri Rajah modal', async () => {
-    const w = await mountForm()
-    await t(w, 'galeri-open').trigger('click')
-    await flushPromises()
-    const body = document.body.textContent ?? ''
-    expect(body).toContain('Galeri Rajah')
-    expect(body).toContain('Tiada galeri rajah tersedia')
-    expect(body).toContain('Sila muat naik imej secara manual menggunakan butang "Muat Naik"')
-    ;(document.querySelector('[data-testid="galeri-cancel"]') as HTMLElement).click()
-    await flushPromises()
-    expect(document.querySelector('[data-testid="galeri-empty"]')).toBeNull()
-  })
 })
 
 describe('S22 submit', () => {
-  it('emits the body, the images and shows the server messages', async () => {
+  it('emits the MCQ body with the DSKP fields and an int difficultyLevel; shows server messages', async () => {
     const w = await mountForm({
-      general: ['Sila pilih tahap kesukaran.'],
-      fields: { difficultyLevel: 'Sila pilih tahap kesukaran.' },
+      general: ['Sila pilih bab.'],
+      fields: { chapterId: 'Sila pilih bab.' },
     })
-    expect(t(w, 'form-errors').text()).toContain('Sila pilih tahap kesukaran.')
-    await pickLevelAndSubject(w)
-    await t(w, 'q-difficulty').setValue('medium')
-    await t(w, 'q-text').setValue('Soalan baharu?')
-    for (const i of [0, 1, 2, 3]) await t(w, `q-option-${String(i)}`).setValue(`P${String(i)}`)
-    await w.findAll('[data-testid="q-correct"] [role="radio"]')[3]!.trigger('click')
+    expect(t(w, 'form-errors').text()).toContain('Sila pilih bab.')
+    await fillAll(w)
     await w.find('form').trigger('submit')
-    const [body, image, optionImages] = w.emitted('submit')![0] as [
-      Record<string, unknown>,
-      File | null,
-      (File | null)[],
-    ]
+    await flushPromises()
+    const [body] = w.emitted('submit')![0] as [Record<string, unknown>]
     expect(body).toMatchObject({
       educationLevelId: 11,
       subjectId: 1,
       questionType: 'mcq',
-      difficultyLevel: 'medium',
+      difficultyLevel: 4,
+      chapterId: 6,
+      spIds: [111],
+      tp: 4,
+      cognitiveLevel: 'menilai',
       questionText: 'Soalan baharu?',
       options: ['P0', 'P1', 'P2', 'P3'],
       correctAnswer: 3,
     })
-    expect(image).toBeNull()
-    expect(optionImages).toEqual([null, null, null, null])
+    expect(body).not.toHaveProperty('questionImage')
+    expect(w.find('[data-testid="q-image"]').exists()).toBe(false)
   })
 
   it('has Batal to the list and the submit label of the live footer', async () => {
     const w = await mountForm()
     expect(t(w, 'form-cancel').attributes('href')).toBe('/guru/soalan')
     expect(t(w, 'form-submit').text()).toBe('Hantar untuk Semakan')
-  })
-
-  it('takes a chosen question image into the model and drops it again', async () => {
-    const w = await mountForm()
-    const upload = () =>
-      w.findAllComponents({ name: 'FileUpload' }).find((c) => { const el = t(w, 'q-image-input').element; return c.element === el || c.element.contains(el) || el.contains(c.element) })!
-    await pickFiles(w, 'q-image-input', [new File(['x'], 'rajah.png', { type: 'image/png' })])
-    expect((upload().props('modelValue') as File).name).toBe('rajah.png')
-    await pickFiles(w, 'q-image-input', [])
-    expect(upload().props('modelValue')).toBeNull()
   })
 })

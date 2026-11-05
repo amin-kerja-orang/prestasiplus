@@ -2,13 +2,17 @@ import { describe, expect, it } from 'vitest'
 
 import { buildBody, emptyValues } from '../../components/soalan/form'
 import {
-  bidangLabel,
   chapterLabel,
   COPY,
+  DIFFICULTY_OPTIONS,
+  difficultyFromTp,
   fileKind,
   isLoadableImage,
   isRtlScript,
   megabytes,
+  rejectionLine,
+  spLabel,
+  STATUS_WORDS,
 } from '../../components/soalan/lib'
 
 describe('S21-S24 helpers', () => {
@@ -19,11 +23,7 @@ describe('S21-S24 helpers', () => {
   })
 
   it('formats labels', () => {
-    expect(chapterLabel({ chapterNumber: 99, name: 'Kemahiran Bahasa' })).toBe(
-      'Bab 99: Kemahiran Bahasa',
-    )
-    expect(bidangLabel({ code: '1.0', name: 'Bunyi' })).toBe('1.0 — Bunyi')
-    expect(bidangLabel({ code: null, name: 'Bunyi' })).toBe('Bunyi')
+    expect(chapterLabel({ chapterNumber: null, name: 'Kemahiran Bahasa' })).toBe('Kemahiran Bahasa')
     expect(megabytes(1.5 * 1024 * 1024)).toBe('1.50 MB')
     expect(fileKind('a.PDF')).toBe('pdf')
     expect(fileKind('a.docx')).toBe('word')
@@ -45,60 +45,87 @@ describe('S21-S24 helpers', () => {
   })
 })
 
-describe('buildBody', () => {
+describe('buildBody (44-F1, MCQ only)', () => {
   const base = () => ({
     ...emptyValues(),
     levelId: '11',
     subjectId: '1',
-    difficulty: 'hard' as const,
+    difficulty: '4',
     questionText: 'Soalan?',
+    options: ['a', 'b', 'c', 'd'],
+    correct: 2,
   })
 
-  it('sends the MCQ options and the correct index, keeping the difficulty keyword', () => {
-    const body = buildBody({ ...base(), options: ['a', 'b', 'c', 'd'], correct: 2 })
+  it('sends questionType mcq, an int difficultyLevel, the options and the correct index', () => {
+    const body = buildBody(base())
     expect(body).toMatchObject({
       educationLevelId: 11,
       subjectId: 1,
       questionType: 'mcq',
-      difficultyLevel: 'hard',
+      difficultyLevel: 4,
       options: ['a', 'b', 'c', 'd'],
       correctAnswer: 2,
-      dskpSpId: null,
     })
-    expect(body.tfAnswer).toBeUndefined()
+    expect(body.chapterId).toBeUndefined()
+    expect(body.spIds).toBeUndefined()
+    expect(body.tp).toBeUndefined()
   })
 
-  it('sends only the active answer block', () => {
-    expect(buildBody({ ...base(), questionType: 'true_false', tfAnswer: 'false' })).toMatchObject({
-      tfAnswer: false,
-    })
-    const short = buildBody({
-      ...base(),
-      questionType: 'short_answer',
-      correctAnswerText: 'Jawapan',
-      altAnswers: 'a, b',
-    })
-    expect(short).toMatchObject({ correctAnswer: 'Jawapan', altAnswers: 'a, b' })
-    expect(short.options).toBeUndefined()
-    const essay = buildBody({ ...base(), questionType: 'essay', modelAnswer: 'Contoh' })
-    expect(essay.modelAnswer).toBe('Contoh')
-  })
-
-  it('sends the curriculum ids and the explanation when set', () => {
+  it('sends Bab, a one-element spIds, TP and Aras when chosen, and the explanation', () => {
     const body = buildBody({
       ...base(),
       chapterId: '5',
-      topicId: '9',
       spId: '221',
+      tp: '3',
+      cognitiveLevel: 'mengaplikasi',
       explanation: 'Sebab',
       scriptType: 'jawi',
     })
     expect(body).toMatchObject({
-      curriculumChapterId: 5,
-      curriculumTopicId: 9,
-      dskpSpId: 221,
+      chapterId: 5,
+      spIds: [221],
+      tp: 3,
+      cognitiveLevel: 'mengaplikasi',
       explanation: 'Sebab',
       scriptType: 'jawi',
     })
+  })
+})
+
+describe('R1-GUR-44 labels and status words', () => {
+  it('FR-GUR-44-9: five star options from Sangat mudah to Sangat sukar', () => {
+    expect(DIFFICULTY_OPTIONS.map((d) => d.label)).toEqual([
+      '⭐ — Sangat mudah',
+      '⭐⭐ — Mudah',
+      '⭐⭐⭐ — Sederhana',
+      '⭐⭐⭐⭐ — Sukar',
+      '⭐⭐⭐⭐⭐ — Sangat sukar',
+    ])
+    expect(DIFFICULTY_OPTIONS.map((d) => d.value)).toEqual([1, 2, 3, 4, 5])
+  })
+
+  it('44-F1: Kesukaran defaults to min(5, TP)', () => {
+    expect(difficultyFromTp(3)).toBe(3)
+    expect(difficultyFromTp(6)).toBe(5)
+  })
+
+  it('FR-GUR-44-10: the three status words and the rejection line', () => {
+    expect(STATUS_WORDS).toEqual({
+      pending: 'Menunggu Semakan',
+      approved: 'Diluluskan',
+      rejected: 'Ditolak',
+    })
+    expect(rejectionLine('Salah jawapan')).toBe('Sebab: Salah jawapan')
+  })
+
+  it('44-F1: Bab label "{nombor}. {nama}" and SP label "{kod} {nama}"', () => {
+    expect(chapterLabel({ chapterNumber: 2, name: 'Bunyi' })).toBe('2. Bunyi')
+    expect(spLabel({ code: '1.1.1', description: 'Menyebut' })).toBe('1.1.1 Menyebut')
+  })
+
+  it('FR-GUR-44-3, 44-F3: success and result texts', () => {
+    expect(COPY.paperSent).toBe('Kertas dihantar kepada admin.')
+    expect(COPY.created).toBe('Soalan dihantar untuk semakan.')
+    expect(COPY.importDone(2, 1)).toBe('2 soalan diimport, 1 baris gagal.')
   })
 })
