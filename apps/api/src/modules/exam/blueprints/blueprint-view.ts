@@ -9,7 +9,7 @@ import type {
 import type { BlueprintSection, Blueprint } from '../../../db/generated/client'
 import { bijakCodeOf } from '../../bijak/papers'
 import { referencePanels, ruleOf, sectionInstruction, sourceToWire } from '../../bijak/papers/rules'
-import { profileOfDoc, quotaOfDoc, type UnitInfo } from './blueprint-standard'
+import { marksPerQuestionOfDoc, profileOfDoc, quotaOfDoc, type UnitInfo } from './blueprint-standard'
 
 export type BlueprintWithSections = Blueprint & { sections: BlueprintSection[] }
 
@@ -94,6 +94,7 @@ export function blueprintView(
         kbatMarks: s.kbatMarks,
         kbatReviewed: s.kbatReviewed,
         allowedModes: s.allowedModes as BijakBlueprintView['sections'][number]['allowedModes'],
+        marksPerQuestion: marksPerQuestionOfDoc(s.marksPerQuestion),
       }
     })
   return {
@@ -114,6 +115,7 @@ export function blueprintView(
     subPartRamp: row.subPartRamp,
     autoMarkable: row.autoMarkable ?? null,
     kbatMarks: row.kbatMarks,
+    questionCount: row.questionCount,
     levelShare: (row.levelShare as { t4: number; t5: number } | null) ?? null,
     warnings: ctx.warnings,
     needsReview: ctx.needsReview,

@@ -1,7 +1,7 @@
-import { BIJAK_BUILDER_BLOCKER_OVERRIDABLE, BijakBuilderReviewSchema, BijakBuilderPublishResultSchema, type BijakBuilderBlocker } from '@pp/contract'
+import { BIJAK_BUILDER_BLOCKER_OVERRIDABLE, bijakBuilderBlockerOverridable, BijakBuilderReviewSchema, BijakBuilderPublishResultSchema, type BijakBuilderBlocker } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
-import { NOT_SERVING, serveSeededBlueprints } from '../support/serve-blueprints'
+import { NOT_SERVING, SERVING, serveSeededBlueprints } from '../support/serve-blueprints'
 import { bootFullApp, loginFull, type FullApp, type FullClient } from '../r1/full-app'
 import { giveBab } from '../support/bab'
 import { ACCOUNTS, auditRows } from './helpers'
@@ -96,7 +96,7 @@ describe('R1-T34 structured blockers: review and publish agree', () => {
     return res.body.data as { ok: boolean; errors: string[]; blockerDetails: Detail[]; canOverride: boolean; overridden?: string[] }
   }
   /** The review and the publish refusal carry the same lines, the same structured list and the same verdict. */
-  async function expectAgree(paper: string) {
+  async function expectAgree(paper: string, contractDisahkan = true) {
     const review = await reviewOf(paper)
     const pub = await publishOf(paper)
     expect(pub.ok).toBe(false)
@@ -105,7 +105,7 @@ describe('R1-T34 structured blockers: review and publish agree', () => {
     expect(pub.canOverride).toBe(review.canOverride)
     expect(review.blockerDetails.map((b) => b.message)).toEqual(review.blockers)
     expect(BijakBuilderReviewSchema.safeParse({ ...review, paperId: paper, status: 'draf', notes: [], blueprintNeedsReview: false, visibleToStudents: false, totalMarks: 0, totalBudget: 0, rows: [] }).success).toBe(true)
-    for (const b of review.blockerDetails) expect(b.overridable, b.code).toBe(BIJAK_BUILDER_BLOCKER_OVERRIDABLE[b.code as keyof typeof BIJAK_BUILDER_BLOCKER_OVERRIDABLE])
+    for (const b of review.blockerDetails) expect(b.overridable, b.code).toBe(bijakBuilderBlockerOverridable(b.code as keyof typeof BIJAK_BUILDER_BLOCKER_OVERRIDABLE, contractDisahkan))
     return review
   }
 
@@ -118,15 +118,17 @@ describe('R1-T34 structured blockers: review and publish agree', () => {
     expect(BijakBuilderPublishResultSchema.safeParse(pub).success).toBe(true)
   })
 
-  it('a structural blueprint blocker (INELIGIBLE, a legacy question without a DSKP unit) is overridable and names the question', async () => {
+  it('a structural blueprint blocker (INELIGIBLE, a legacy question without a DSKP unit) names the question; under this Disahkan Kontrak the override cannot lift it', async () => {
     const { paper, ids } = await fullPaper()
     await q(`update question_versions set unit_node_id = null where question_id = $1`, [ids[0]])
     const review = await expectAgree(paper)
-    expect(review.canOverride).toBe(true)
-    expect(review.blockerDetails).toEqual([{ code: 'INELIGIBLE', message: expect.stringContaining(`Soalan ${ids[0]} tidak layak`), overridable: true, section: 'Bahagian A', questionId: ids[0] }])
-    const ok = await publishOf(paper, { override: true, reason: 'Soalan lama menunggu tag DSKP' })
-    expect(ok).toMatchObject({ ok: true, errors: [] })
-    expect(ok.overridden).toHaveLength(1)
+    expect(review.canOverride).toBe(false)
+    expect(review.blockerDetails).toEqual([{ code: 'INELIGIBLE', message: expect.stringContaining(`Soalan ${ids[0]} tidak layak`), overridable: false, section: 'Bahagian A', questionId: ids[0] }])
+    const forced = await publishOf(paper, { override: true, reason: 'Soalan lama menunggu tag DSKP' })
+    expect(forced).toMatchObject({ ok: false, canOverride: false })
+    expect(forced.overridden).toBeUndefined()
+    expect((await q(`select status from papers where id = $1`, [paper]))[0]?.status).toBe('draft')
+    expect((await auditRows(t.db, 'bijak.paper.published_override')).filter((r) => r.target_id === paper)).toHaveLength(0)
   })
 
   it('an extra question is a hard COUNT_TOO_MANY with its section; the override cannot lift it', async () => {
@@ -151,7 +153,7 @@ describe('R1-T34 structured blockers: review and publish agree', () => {
     expect(review.canOverride).toBe(false)
     const missing = review.blockerDetails.find((b) => b.code === 'UNKNOWN_QUESTION')
     expect(missing).toMatchObject({ overridable: false, questionId: ids[1], section: 'Bahagian A' })
-    expect(review.blockerDetails.find((b) => b.code === 'INELIGIBLE')).toMatchObject({ overridable: true, questionId: ids[0] })
+    expect(review.blockerDetails.find((b) => b.code === 'INELIGIBLE')).toMatchObject({ overridable: false, questionId: ids[0] })
     const forced = await publishOf(paper, { override: true, reason: 'sebab yang sah' })
     expect(forced).toMatchObject({ ok: false, canOverride: false })
     expect(forced.blockerDetails).toEqual(review.blockerDetails)
@@ -269,13 +271,13 @@ describe('R1-T34 structured blockers: review and publish agree', () => {
       await refuseOverride(paper)
     })
 
-    it('a no-unit question next to a no-key question: the override is refused as a whole (canOverride false) but the unit row stays overridable', async () => {
+    it('a no-unit question next to a no-key question: the override is refused as a whole (canOverride false); under this Disahkan Kontrak the unit row is hard too', async () => {
       const bad = await written()
       const { paper, ids } = await fullPaper({ last: bad })
       await q(`update question_versions set unit_node_id = null where question_id = $1`, [ids[0]])
       await dropKey(bad)
       const review = await reviewOf(paper)
-      expect(review.blockerDetails.find((b) => b.questionId === ids[0])).toMatchObject({ code: 'INELIGIBLE', overridable: true })
+      expect(review.blockerDetails.find((b) => b.questionId === ids[0])).toMatchObject({ code: 'INELIGIBLE', overridable: false })
       expect(review.blockerDetails.find((b) => b.questionId === bad)).toMatchObject({ code: 'NO_KEY', overridable: false })
       expect(review.canOverride).toBe(false)
       await refuseOverride(paper)
@@ -286,13 +288,13 @@ describe('R1-T34 structured blockers: review and publish agree', () => {
     it('as the only blocker it is overridable and canOverride is true; next to a hard blocker canOverride is false but its row stays overridable', async () => {
       await q(`update blueprints set ${NOT_SERVING} where status = 'active' and kertas = 2 and subject_id = $1`, [subject])
       const { paper, sections } = await fullPaper()
-      const sole = await expectAgree(paper)
+      const sole = await expectAgree(paper, false)
       expect(sole.canOverride).toBe(true)
       expect(sole.blockerDetails).toEqual([{ code: 'BLUEPRINT_NOT_VERIFIED', message: expect.stringMatching(/^Kontrak Simulasi 1449\/2 .*belum Disahkan \(status: Spec\)/), overridable: true }])
 
       const extra = await approved()
       expect((await place(paper, sections[0]!, extra)).status).toBe(201)
-      const mixed = await expectAgree(paper)
+      const mixed = await expectAgree(paper, false)
       expect(mixed.canOverride).toBe(false)
       expect(mixed.blockerDetails.map((b) => [b.code, b.overridable])).toEqual([
         ['COUNT_TOO_MANY', false],
@@ -311,6 +313,62 @@ describe('R1-T34 structured blockers: review and publish agree', () => {
       expect((await auditRows(t.db, 'bijak.paper.published_override')).filter((r) => r.target_id === paper)).toHaveLength(1)
       // a repeated Terbit of the (overridden) paper stays ok
       expect(await publishOf(paper)).toMatchObject({ ok: true, errors: [] })
+    })
+  })
+
+  describe('S3-T01: the exception path is for a Kontrak that is not Disahkan', () => {
+    const setContract = (state: string) => q(`update blueprints set ${state} where status = 'active' and kertas = 2 and subject_id = $1`, [subject])
+    const auditOf = async (paper: string) => (await auditRows(t.db, 'bijak.paper.published_override')).filter((r) => r.target_id === paper)
+    /** A paper with the three codes that are hard under a Disahkan Kontrak: INELIGIBLE, RULE_NOT_IN_CONTRACT (Bahagian B) and SECTION_NOT_IN_CONTRACT (Bahagian D, filled). */
+    async function paperOffContract(): Promise<string> {
+      const { paper, ids, sections } = await fullPaper()
+      await q(`update question_versions set unit_node_id = null where question_id = $1`, [ids[0]])
+      expect((await admin.put(`/api/admin/papers/${paper}`, { sections: [{ id: sections[1], rule: { type: 'choose', n: 1 } }] })).status).toBe(200)
+      const added = await admin.post(`/api/admin/papers/${paper}/sections`, { label: 'Bahagian D' })
+      expect(added.status, JSON.stringify(added.body)).toBe(201)
+      const d = (added.body.data.paper.sections as { id: string; label: string }[]).find((s) => s.label === 'Bahagian D')!.id
+      expect((await place(paper, d, await approved())).status).toBe(201)
+      return paper
+    }
+    const THREE = ['INELIGIBLE', 'RULE_NOT_IN_CONTRACT', 'SECTION_NOT_IN_CONTRACT']
+
+    it('Disahkan: all three are hard, the review and the publish agree, the forced override changes nothing', async () => {
+      await setContract(SERVING)
+      const paper = await paperOffContract()
+      const review = await expectAgree(paper)
+      expect(review.blockerDetails.map((b) => [b.code, b.overridable]).sort()).toEqual(THREE.map((c) => [c, false]))
+      expect(review.canOverride).toBe(false)
+      const forced = await publishOf(paper, { override: true, reason: 'sebab yang sah' })
+      expect(forced).toMatchObject({ ok: false, canOverride: false, blockerDetails: review.blockerDetails })
+      expect((await q(`select status from papers where id = $1`, [paper]))[0]?.status).toBe('draft')
+      expect(await auditOf(paper)).toHaveLength(0)
+    })
+
+    it('Disahkan: a clean paper publishes with no exception and no audit row of one', async () => {
+      await setContract(SERVING)
+      const { paper } = await fullPaper()
+      const review = await reviewOf(paper)
+      expect(review).toMatchObject({ ok: true, blockerDetails: [], canOverride: false })
+      expect(await publishOf(paper)).toMatchObject({ ok: true, errors: [] })
+      expect(await auditOf(paper)).toHaveLength(0)
+    })
+
+    it('Spec: all three stay overridable beside BLUEPRINT_NOT_VERIFIED, and the override with a reason publishes and is audited', async () => {
+      await setContract(SERVING)
+      const paper = await paperOffContract()
+      await setContract(NOT_SERVING)
+      const review = await expectAgree(paper, false)
+      expect(review.blockerDetails.map((b) => [b.code, b.overridable]).sort()).toEqual(['BLUEPRINT_NOT_VERIFIED', ...THREE].map((c) => [c, true]))
+      expect(review.canOverride).toBe(true)
+      const noReason = await admin.post(`/api/admin/papers/${paper}/publish`, { override: true, reason: 'abcd' })
+      expect(noReason.status, JSON.stringify(noReason.body)).toBe(422)
+      expect(noReason.body.error.fields.reason).toBe('Sebab pengecualian diperlukan (sekurang-kurangnya 5 aksara).')
+      expect((await admin.post(`/api/admin/papers/${paper}/publish`, { override: true, reason: 'x'.repeat(501) })).status).toBe(422)
+      expect(await publishOf(paper, { override: true, reason: 'x'.repeat(5) })).toMatchObject({ ok: true, errors: [] })
+      const audit = await auditOf(paper)
+      expect(audit).toHaveLength(1)
+      expect(audit[0]!.detail).toMatchObject({ reason: 'xxxxx', count: 4 })
+      await setContract(SERVING)
     })
   })
 

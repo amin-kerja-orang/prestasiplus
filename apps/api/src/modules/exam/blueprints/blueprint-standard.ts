@@ -46,6 +46,11 @@ export function quotaOfDoc(doc: unknown): BijakTopicQuotaView | null {
   return BijakTopicQuotaViewSchema.parse({ ...raw, lines })
 }
 
+/** DM-57 list as stored: a jsonb array of integers; null = no list. */
+export function marksPerQuestionOfDoc(doc: unknown): number[] | null {
+  return Array.isArray(doc) ? (doc as number[]) : null
+}
+
 /** Profile as written by the admin: a plain jsonb document (the strict input schema already vetted it). */
 export function profileToDoc(profile: BijakDifficultyProfile | null | undefined): Prisma.InputJsonValue | null {
   return profile ? (profile as unknown as Prisma.InputJsonValue) : null
@@ -113,6 +118,7 @@ export function toStandard(row: BlueprintWithSections, subjectCode: string): Sta
       quota: quotaOfDoc(s.quota),
       kbatMarks: s.kbatMarks,
       kbatReviewed: s.kbatReviewed,
+      marksPerQuestion: marksPerQuestionOfDoc(s.marksPerQuestion),
     }))
   return {
     subject: subjectCode,
@@ -125,6 +131,7 @@ export function toStandard(row: BlueprintWithSections, subjectCode: string): Sta
     kbatMarks: row.kbatMarks,
     levelShare: (row.levelShare as { t4: number; t5: number } | null) ?? null,
     subPartRamp: row.subPartRamp,
+    questionCount: row.questionCount,
   }
 }
 

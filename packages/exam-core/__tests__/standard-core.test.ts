@@ -46,6 +46,22 @@ describe('standard model', () => {
     expect(canonicalStructure(a)).toBe(canonicalStructure(b))
     expect(canonicalStructure(a)).not.toBe(canonicalStructure(c))
   })
+
+  it('canonicalStructure emits the DM-57 keys only when set, so an old blueprint keeps its string', () => {
+    const old = blueprint([section({ allowedModes: ['working', 'mcq'] })], { durationMin: 90 })
+    const withNulls = blueprint([section({ allowedModes: ['working', 'mcq'], marksPerQuestion: null })], { durationMin: 90, questionCount: null })
+    expect(canonicalStructure(withNulls)).toBe(canonicalStructure(old))
+    expect(canonicalStructure(old)).not.toContain('marksPerQuestion')
+    expect(JSON.parse(canonicalStructure(old))).not.toHaveProperty('questionCount')
+  })
+
+  it('canonicalStructure changes with the DM-57 fields, including the order of the list', () => {
+    const base = canonicalStructure(blueprint([section()]))
+    const list = canonicalStructure(blueprint([section({ marksPerQuestion: [3, 5] })]))
+    expect(list).not.toBe(base)
+    expect(list).not.toBe(canonicalStructure(blueprint([section({ marksPerQuestion: [5, 3] })])))
+    expect(canonicalStructure(blueprint([section()], { questionCount: 40 }))).not.toBe(base)
+  })
 })
 
 describe('describeQuestion', () => {
@@ -178,6 +194,24 @@ describe('validateBlueprint', () => {
   it('CHOOSE_N_RANGE: N above the count, or a budget N does not divide', () => {
     expect(codes(blueprint([section({ rule: { type: 'choose', n: 3 } })]))).toContain('CHOOSE_N_RANGE')
     expect(codes(blueprint([section({ rule: { type: 'choose', n: 3 }, questionCount: 4, markBudget: 10 })]))).toContain('CHOOSE_N_RANGE')
+  })
+
+  it('COMPULSORY_CHOOSE: a compulsory section cannot also be Pilih N (FR-QA-41)', () => {
+    expect(codes(blueprint([section({ compulsory: true, rule: { type: 'choose', n: 1 }, markBudget: 4 })]))).toEqual(['COMPULSORY_CHOOSE'])
+    expect(codes(blueprint([section({ compulsory: true })]))).toEqual([])
+    expect(codes(blueprint([section({ compulsory: false, rule: { type: 'choose', n: 1 }, markBudget: 4 })]))).toEqual([])
+  })
+
+  it('MARKS_PER_QUESTION: one mark per offered question, the sum against the marks offered (DM-57)', () => {
+    const part3 = (marksPerQuestion: number[]) => section({ rule: { type: 'choose', n: 1 }, questionCount: 3, markBudget: 20, marksPerQuestion })
+    const problemsOf = (bp: ReturnType<typeof blueprint>) => validateBlueprint(bp).problems
+    expect(problemsOf(blueprint([part3([20, 20, 20])]))).toEqual([])
+    expect(problemsOf(blueprint([section({ questionCount: 5, markBudget: 18, marksPerQuestion: [3, 3, 3, 5, 4] })]))).toEqual([])
+    expect(problemsOf(blueprint([part3([20, 20])]))).toEqual([{ code: 'MARKS_PER_QUESTION', sectionPosition: 1, expected: 3, actual: 2 }])
+    // A choose list is compared with the marks offered (60), not with the budget (20).
+    expect(problemsOf(blueprint([part3([10, 5, 5])]))).toEqual([{ code: 'MARKS_PER_QUESTION', sectionPosition: 1, expected: 60, actual: 20 }])
+    expect(problemsOf(blueprint([section({ questionCount: 2, markBudget: 8, marksPerQuestion: [3, 4] })]))).toEqual([{ code: 'MARKS_PER_QUESTION', sectionPosition: 1, expected: 8, actual: 7 }])
+    expect(problemsOf(blueprint([section({ marksPerQuestion: null })]))).toEqual([])
   })
 
   it('SLOT_OVERLAP and SLOT_GAP', () => {

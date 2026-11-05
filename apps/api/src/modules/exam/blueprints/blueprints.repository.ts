@@ -30,6 +30,8 @@ export interface NewBlueprintSection {
   quota: Prisma.InputJsonValue | null
   kbatMarks: number | null
   kbatReviewed: boolean
+  /** DM-57; null = SQL NULL. */
+  marksPerQuestion: number[] | null
 }
 
 export interface NewBlueprint {
@@ -48,6 +50,8 @@ export interface NewBlueprint {
   autoMarkable?: boolean | null
   kbatMarks: number | null
   levelShare: Prisma.InputJsonValue | null
+  /** DM-57 "Bilangan soalan dalam kertas". */
+  questionCount: number | null
   structureHash: string
   /** Set only by a carried (cosmetic) verified version; the client can never cause it. */
   verificationId?: bigint | null
@@ -96,6 +100,9 @@ const WITH_SECTIONS = { sections: { orderBy: { position: 'asc' } } } as const
 
 const jsonOrNull = (v: Prisma.InputJsonValue | null) => (v === null ? Prisma.JsonNull : v)
 
+/** A DSKP unit a Kontrak can use: kind unit at T4 or T5 (`unitsOfSubject`, the offered subjects, the create check). */
+const DSKP_UNIT = { kind: 'unit', educationLevel: { code: { in: ['T4', 'T5'] } } } satisfies Prisma.CurriculumNodeWhereInput
+
 /** Blueprint ("Kontrak") rows of BE-15's tables, for the admin writes of BE-39 and BJS-08/09. Runs on the open transaction when there is one. */
 @Injectable()
 export class BlueprintsRepository {
@@ -117,10 +124,10 @@ export class BlueprintsRepository {
     return this.db.subject.findMany({ where: { id: { in: ids } }, select: { id: true, code: true, name: true } })
   }
 
-  /** Every active subject (architecture 15.2), by display order then name. */
-  activeSubjects(): Promise<SubjectRef[]> {
+  /** Subjects a Kontrak can be created for (FR-ADM-Q16.7): active with at least one DSKP unit, by display order then name. */
+  subjectsWithDskp(): Promise<SubjectRef[]> {
     return this.db.subject.findMany({
-      where: { isActive: true },
+      where: { isActive: true, nodes: { some: DSKP_UNIT } },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }, { id: 'asc' }],
       select: { id: true, code: true, name: true },
     })
@@ -138,10 +145,15 @@ export class BlueprintsRepository {
     return level === 'T4' || level === 'T5' ? { nodeId: n.id.toString(), code: n.code, level, title: n.title } : null
   }
 
+  /** True when the subject has a DSKP unit (FR-ADM-Q16.7). */
+  async hasDskpUnit(subjectId: bigint): Promise<boolean> {
+    return (await this.db.curriculumNode.findFirst({ where: { subjectId, ...DSKP_UNIT }, select: { id: true } })) !== null
+  }
+
   /** Units (kind unit) of a subject at T4 and T5, by `sortOrder` (architecture 15.1). */
   async unitsOfSubject(subjectId: bigint, level?: 'T4' | 'T5'): Promise<(UnitInfo & { elective: boolean })[]> {
     const rows = await this.db.curriculumNode.findMany({
-      where: { subjectId, kind: 'unit', educationLevel: { code: level ?? { in: ['T4', 'T5'] } } },
+      where: { subjectId, ...DSKP_UNIT, ...(level ? { educationLevel: { code: level } } : {}) },
       orderBy: [{ educationLevel: { code: 'asc' } }, { sortOrder: 'asc' }, { id: 'asc' }],
       select: { id: true, code: true, title: true, isElective: true, educationLevel: { select: { code: true } } },
     })
@@ -273,6 +285,7 @@ export class BlueprintsRepository {
         autoMarkable: input.autoMarkable ?? null,
         kbatMarks: input.kbatMarks,
         levelShare: jsonOrNull(input.levelShare),
+        questionCount: input.questionCount,
         structureHash: input.structureHash,
         verificationId: input.verificationId ?? null,
         servesStudents: input.servesStudents ?? false,
@@ -294,6 +307,7 @@ export class BlueprintsRepository {
             quota: jsonOrNull(s.quota),
             kbatMarks: s.kbatMarks,
             kbatReviewed: s.kbatReviewed,
+            ...(s.marksPerQuestion === null ? {} : { marksPerQuestion: s.marksPerQuestion }),
           })),
         },
       },

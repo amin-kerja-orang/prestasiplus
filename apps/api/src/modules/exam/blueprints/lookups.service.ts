@@ -21,9 +21,9 @@ export class BlueprintLookupsService {
     return ok(units.map((u): BijakDskpUnit => ({ nodeId: u.nodeId, code: u.code, level: u.level, title: u.title, elective: u.elective })))
   }
 
-  /** All active subjects with their Bijak codes (not only those of the student hub). */
+  /** The subjects `Baharu` offers, with their Bijak codes (not only those of the student hub): active, DSKP loaded (FR-ADM-Q16.7). */
   async subjects() {
-    const rows = await this.repo.activeSubjects()
+    const rows = await this.repo.subjectsWithDskp()
     return ok(rows.map((s): BijakSubject => ({ code: bijakCodeOf(s.code), name: s.name })))
   }
 }

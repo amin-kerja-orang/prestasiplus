@@ -12,7 +12,8 @@ import { z } from 'zod'
 
 import type { BijakProgressSource, PaperProgress } from '../../src/modules/bijak/papers'
 import golden from './golden-mock.json'
-import { allKeys, bootPapersApp, expectError, loginAs, serveSeededBlueprints, setPocMarkBudgets, type Client, type PapersTestApp } from './helpers'
+import { NOT_SERVING } from '../support/serve-blueprints'
+import { allKeys, bootPapersApp, count, expectError, loginAs, serveSeededBlueprints, setPocMarkBudgets, type Client, type PapersTestApp } from './helpers'
 
 /** Keys that would reveal an answer key, a scheme or a question (AC 6, US-15). */
 const FORBIDDEN_KEYS = [
@@ -143,34 +144,43 @@ describe('Bijak papers API (BE-15)', () => {
   })
 
   describe('GET /api/bijak/contracts and /api/bijak/subjects', () => {
-    it('lists the blueprints with their sections and take, source tags included (golden)', async () => {
+    const contracts = async () => envelopeOf(z.array(BijakBlueprintContractSchema)).parse((await student.get('/api/bijak/contracts')).body).data
+
+    it('S3-T01: a Spec contract is never listed: the seeded Spec blueprints give an empty list', async () => {
+      expect(await count(t.db, `select count(*) n from blueprints where status = 'active' and source = 'spec'`)).toBe(4)
+      expect(await contracts()).toEqual([])
+    })
+
+    it('lists the Disahkan versions with their sections and take (golden)', async () => {
+      await serveSeededBlueprints(t.db)
       const res = await student.get('/api/bijak/contracts')
       expect(res.status).toBe(200)
       const data = envelopeOf(z.array(BijakBlueprintContractSchema)).parse(res.body).data
-      // The mock golden predates BJS-01 `canGenerate`; for a student it is true only for a serving (Disahkan) version.
+      // The mock golden predates BJS-01 `canGenerate` and shows the seeded source Spec; only a serving (Disahkan) version reaches a pupil.
       expect(
         data.map((c) => {
           const rest: Record<string, unknown> = { ...c }
           delete rest.canGenerate
-          delete rest.unavailableReason
           return rest
         }),
-      ).toEqual(golden.contracts)
+      ).toEqual(golden.contracts.map((c) => ({ ...c, source: 'Disahkan' })))
       for (const c of data) {
-        expect(c.canGenerate, c.code).toBe(c.source === 'Disahkan')
-        expect(c.unavailableReason, c.code).toBe(c.canGenerate ? undefined : 'NO_BLUEPRINT')
+        expect(c.canGenerate, c.code).toBe(true)
+        expect(c.unavailableReason, c.code).toBeUndefined()
       }
       expect(allKeys(res.body).has('pool')).toBe(false)
+      await t.db.query(`update blueprints set ${NOT_SERVING} where status = 'active'`)
     })
 
-    it('lists only active blueprints; a Draf source is listed, a retired or draft version is not', async () => {
+    it('S3-T01: a Draf or Spec head, or a contract retired for good, is not listed', async () => {
+      await serveSeededBlueprints(t.db)
+      expect((await contracts()).map((c) => c.code)).toContain('4541/1')
+      await t.db.query(`update blueprints set ${NOT_SERVING} where code = '4541/1'`)
+      expect((await contracts()).map((c) => c.code)).not.toContain('4541/1')
       await t.db.query(`update blueprints set source = 'draft' where code = '4541/1'`)
-      let data = envelopeOf(z.array(BijakBlueprintContractSchema)).parse((await student.get('/api/bijak/contracts')).body).data
-      expect(data.find((c) => c.code === '4541/1')?.source).toBe('Draf')
-      await t.db.query(`update blueprints set source = 'spec', status = 'retired' where code = '4541/1'`)
-      data = envelopeOf(z.array(BijakBlueprintContractSchema)).parse((await student.get('/api/bijak/contracts')).body).data
-      expect(data.map((c) => c.code)).not.toContain('4541/1')
-      await t.db.query(`update blueprints set status = 'active' where code = '4541/1'`)
+      expect((await contracts()).map((c) => c.code)).not.toContain('4541/1')
+      await t.db.query(`update blueprints set source = 'spec' where code = '4541/1'`)
+      await t.db.query(`update blueprints set ${NOT_SERVING} where status = 'active'`)
     })
 
     it('serves the hub subjects with the Bijak codes (MAT, SN, SEJ)', async () => {

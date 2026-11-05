@@ -2,7 +2,7 @@ import { BijakBlueprintViewSchema } from '@pp/contract'
 import { describe, expect, it } from 'vitest'
 
 import type { Blueprint, BlueprintSection } from '../../src/db/generated/client'
-import { profileOfDoc, quotaOfDoc, quotaToDoc, structureHashOf, toStandard, unitLevelsOf } from '../../src/modules/exam/blueprints/blueprint-standard'
+import { marksPerQuestionOfDoc, profileOfDoc, quotaOfDoc, quotaToDoc, structureHashOf, toStandard, unitLevelsOf } from '../../src/modules/exam/blueprints/blueprint-standard'
 import { blueprintView, type BlueprintWithSections } from '../../src/modules/exam/blueprints/blueprint-view'
 
 const section = (over: Partial<BlueprintSection> = {}): BlueprintSection => ({
@@ -22,6 +22,7 @@ const section = (over: Partial<BlueprintSection> = {}): BlueprintSection => ({
   quota: null,
   kbatMarks: null,
   kbatReviewed: true,
+  marksPerQuestion: null,
   ...over,
 })
 
@@ -37,6 +38,7 @@ const row = (over: Partial<Blueprint> = {}, sections: BlueprintSection[] = [sect
   confidence: null,
   durationMin: 60,
   totalMarks: 8,
+  questionCount: null,
   languageMode: null,
   autoMarkable: null,
   instructions: [],
@@ -89,9 +91,16 @@ describe('structure hash (architecture 3.5)', () => {
     ['question count', {}, [section({ questionCount: 5 })]],
     ['allowed modes', {}, [section({ allowedModes: ['mcq'] })]],
     ['section KBAT marks', {}, [section({ kbatMarks: 0 })]],
+    ['marks per question', {}, [section({ marksPerQuestion: [2, 2, 2, 2] })]],
+    ['paper question count', { questionCount: 40 }, [section()]],
     ['quota value', {}, [section({ quota: { ...quota, lines: [{ unit: quota.lines[0]!.unit, value: 2 }, quota.lines[1]!] } })]],
   ])('changes with a structural edit: %s', (_name, over, sections) => {
     expect(hash(row(over, sections))).not.toBe(hash(row({}, [section({ quota })])))
+  })
+
+  it('S3-T01: a blueprint without the DM-57 fields keeps the hash it had before they existed', () => {
+    // Computed with exam-core at the commit before DM-57.
+    expect(hash(row())).toBe('94df1b0c2106f837ddd20b588966346abf3d861ad751b138eb0f5cf256b5c286')
   })
 
   it('is independent of the key order of the stored documents', () => {
@@ -119,6 +128,12 @@ describe('stored documents', () => {
     expect(() => profileOfDoc({ kind: 'nope', groups: [] })).toThrow()
   })
 
+  it('reads the DM-57 list, and anything that is not an array as no list', () => {
+    expect(marksPerQuestionOfDoc([3, 3, 5])).toEqual([3, 3, 5])
+    expect(marksPerQuestionOfDoc(null)).toBeNull()
+    expect(marksPerQuestionOfDoc(undefined)).toBeNull()
+  })
+
   it('maps unit rows to the unitLevels record of the validator', () => {
     expect(unitLevelsOf([{ nodeId: '1', code: '1.0', level: 'T4', title: 'a' }, { nodeId: '2', code: '5.0', level: 'T5', title: 'b' }])).toEqual({ '1': 'T4', '2': 'T5' })
   })
@@ -143,7 +158,14 @@ describe('blueprintView', () => {
       dependentPaperCount: 0,
     })
     expect(view.servingVersion).toBeUndefined()
-    expect(view.sections[0]).toMatchObject({ position: 1, profile: null, quota: null, kbatMarks: null, kbatReviewed: true, allowedModes: [], pool: null })
+    expect(view.sections[0]).toMatchObject({ position: 1, profile: null, quota: null, kbatMarks: null, kbatReviewed: true, allowedModes: [], pool: null, marksPerQuestion: null })
+    expect(view.questionCount).toBeNull()
+  })
+
+  it('shows the DM-57 fields of the row', () => {
+    const view = BijakBlueprintViewSchema.parse(blueprintView(row({ questionCount: 40 }, [section({ marksPerQuestion: [2, 2, 2, 2] })]), subject))
+    expect(view.questionCount).toBe(40)
+    expect(view.sections[0]?.marksPerQuestion).toEqual([2, 2, 2, 2])
   })
 
   it('shows quota lines with their reviewed flag and enriches known units', () => {

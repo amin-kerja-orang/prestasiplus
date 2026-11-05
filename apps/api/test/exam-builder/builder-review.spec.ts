@@ -215,16 +215,18 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
       expect((await q(`select status from papers where id = $1`, [paper]))[0]?.status).toBe('draft')
     })
 
-    it('with a reason it publishes, lists the overridden lines and writes the audit row; the pupil then sees the paper', async () => {
+    it('with a reason it publishes on a Spec contract, lists the overridden lines and writes the audit row; the pupil then sees the paper', async () => {
       const { paper, ids } = await paperWithLegacyBlocker()
+      await q(`update blueprints set ${NOT_SERVING} where status = 'active' and kertas = 2 and subject_id = $1`, [subject])
       const res = await admin.post(`/api/admin/papers/${paper}/publish`, { override: true, reason: 'Soalan lama menunggu tag DSKP' })
+      await q(`update blueprints set ${SERVING} where status = 'active' and kertas = 2 and subject_id = $1`, [subject])
       expect(res.status, JSON.stringify(res.body)).toBe(200)
       expect(res.body.data).toMatchObject({ ok: true, errors: [] })
       expect((res.body.data.overridden as string[]).some((l) => l.includes(`Soalan ${ids[0]} tidak layak`))).toBe(true)
       expect((await q(`select status from papers where id = $1`, [paper]))[0]?.status).toBe('published')
       const audit = (await auditRows(t.db, 'bijak.paper.published_override')).filter((r) => r.target_id === paper)
       expect(audit).toHaveLength(1)
-      expect(audit[0]!.detail).toMatchObject({ reason: 'Soalan lama menunggu tag DSKP', count: 1 })
+      expect(audit[0]!.detail).toMatchObject({ reason: 'Soalan lama menunggu tag DSKP', count: 2 })
       expect(((await student.get('/api/bijak/papers')).body.data as { id: string }[]).some((p) => p.id === paper)).toBe(true)
     })
 

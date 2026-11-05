@@ -1,4 +1,5 @@
 import {
+  BIJAK_BUILDER_MESSAGES as MSG,
   BIJAK_STANDARDS_MESSAGES as STD,
   BijakBlueprintInvalidErrorSchema,
   BijakBlueprintVersionItemSchema,
@@ -738,7 +739,7 @@ describe('§15 pickers', () => {
     }
   })
 
-  it('lists the active subjects with Bijak codes (MAT, not MATH)', async () => {
+  it('lists the active subjects whose DSKP is loaded, with Bijak codes (MAT, not MATH)', async () => {
     const res = await admin.get('/api/admin/bijak/subjects')
     expect(res.status).toBe(200)
     const items = envelopeOf(z.array(BijakSubjectSchema)).parse(res.body).data
@@ -747,7 +748,164 @@ describe('§15 pickers', () => {
     expect(codes).toContain('SN')
     expect(codes).not.toContain('MATH')
     expect(codes).not.toContain('SCI')
-    expect(items.length).toBe(await count(t.db, `select count(*) n from subjects where is_active`))
+    expect(items.length).toBe(
+      await count(
+        t.db,
+        `select count(*) n from subjects s where s.is_active and exists (
+           select 1 from curriculum_nodes n join education_levels l on l.id = n.education_level_id
+            where n.subject_id = s.id and n.kind = 'unit' and l.code in ('T4', 'T5'))`,
+      ),
+    )
+  })
+})
+
+describe('S3-T01 FR-ADM-Q16.7: a Kontrak only for a Subjek whose DSKP is loaded (API-DSKP-06, API-BIJAK-09)', () => {
+  const offered = async () => envelopeOf(z.array(BijakSubjectSchema)).parse((await admin.get('/api/admin/bijak/subjects')).body).data.map((s) => s.code)
+  const plain = (code: string, subject: string) => ({ subject, kertas: 1, source: 'Spec', code, durationMin: 60, sections: [{ label: 'Bahagian A', markBudget: 4, questionCount: 4, rule: { type: 'all' } }] })
+  const addNode = async (subject: string, level: string, kind: string, code: string) =>
+    rows(
+      `insert into curriculum_nodes (subject_id, education_level_id, kind, code, title, edition)
+       select s.id, l.id, $3, $4, 'Unit ujian', 'ujian' from subjects s, education_levels l where s.code = $1 and l.code = $2`,
+      [subject, level, kind, code],
+    )
+  /** A fresh active subject with no node at all. */
+  const newSubject = async (code: string) => {
+    await rows(`insert into subjects (code, name, name_en, color) values ($1, $2, $2, '#000000')`, [code, `Subjek ${code}`])
+    return code
+  }
+
+  it('hides a subject with no DSKP unit, and refuses a direct create with the exact text on fields.subject', async () => {
+    const code = await newSubject('UJIA')
+    expect(await offered()).not.toContain(code)
+    const before = (await auditRows(t.db, 'bijak.blueprint.created')).length
+    const e = expectError(await admin.post('/api/admin/blueprints', plain('UJIA/1', code)), 'VALIDATION_ERROR', 422, MSG.dskpNotLoaded)
+    expect(e.fields).toEqual({ subject: 'DSKP belum dimuatkan untuk subjek ini. Kontrak tidak boleh dicipta.' })
+    expect(await count(t.db, `select count(*) n from blueprints where code = 'UJIA/1'`)).toBe(0)
+    expect(await auditRows(t.db, 'bijak.blueprint.created')).toHaveLength(before)
+  })
+
+  it('once the DSKP is loaded the subject is offered and the contract can be created (AC-ADM-Q16.4)', async () => {
+    const code = await newSubject('UJIB')
+    expectError(await admin.post('/api/admin/blueprints', plain('UJIB/1', code)), 'VALIDATION_ERROR', 422, MSG.dskpNotLoaded)
+    await addNode(code, 'T5', 'unit', '1.0')
+    expect(await offered()).toContain(code)
+    expect((await admin.post('/api/admin/blueprints', plain('UJIB/1', code))).status).toBe(201)
+  })
+
+  it('a unit at T1 to T3 only, or a node that is not a unit at T4, does not count: the unit picker would be empty', async () => {
+    const code = await newSubject('UJIC')
+    await addNode(code, 'T3', 'unit', '1.0')
+    await addNode(code, 'T4', 'sk', '1.1')
+    expect((await admin.get(`/api/admin/bijak/dskp/units?subject=${code}`)).body.data).toEqual([])
+    expect(await offered()).not.toContain(code)
+    expectError(await admin.post('/api/admin/blueprints', plain('UJIC/1', code)), 'VALIDATION_ERROR', 422, MSG.dskpNotLoaded)
+  })
+
+  it('an inactive subject with DSKP units (LNR, KNP) is not offered', async () => {
+    expect(await count(t.db, `select count(*) n from curriculum_nodes n join subjects s on s.id = n.subject_id where s.code = 'LNR' and n.kind = 'unit'`)).toBeGreaterThan(0)
+    const codes = await offered()
+    expect(codes).not.toContain('LNR')
+    expect(codes).not.toContain('KNP')
+  })
+
+  it('a new version of an existing contract is not refused: the check is on create only', async () => {
+    await newSubject('UJID')
+    await addNode('UJID', 'T4', 'unit', '1.0')
+    expect((await admin.post('/api/admin/blueprints', plain('UJID/1', 'UJID'))).status).toBe(201)
+    await rows(`delete from curriculum_nodes where subject_id = (select id from subjects where code = 'UJID')`)
+    const res = await admin.post('/api/admin/blueprints/UJID/1/versions', { source: 'Spec', code: 'UJID/2', durationMin: 60, sections: plain('UJID/2', 'UJID').sections })
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+  })
+})
+
+describe('S3-T01 DM-57: Markah setiap soalan and Bilangan soalan dalam kertas', () => {
+  const part3 = (over: Record<string, unknown> = {}) => ({ label: 'Part 3', markBudget: 20, questionCount: 3, rule: { type: 'choose', n: 1 }, ...over })
+  const stored = (code: string) => rows(`select b.question_count, s.marks_per_question, s.marks_per_question is null as is_null from blueprints b join blueprint_sections s on s.blueprint_id = b.id where b.code = $1 order by s.position`, [code])
+
+  it('stores and returns both: choose 1 of 3 at budget 20 keeps [20, 20, 20]', async () => {
+    const res = await admin.post('/api/admin/blueprints', create(70, { questionCount: 3, sections: [part3({ marksPerQuestion: [20, 20, 20] })] }))
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    const view = BijakBlueprintViewSchema.parse(res.body.data)
+    expect(view.questionCount).toBe(3)
+    expect(view.sections[0]?.marksPerQuestion).toEqual([20, 20, 20])
+    expect(await stored('MAT/S70')).toEqual([{ question_count: 3, marks_per_question: [20, 20, 20], is_null: false }])
+    expect(BijakBlueprintViewSchema.parse((await admin.get(url(70))).body.data).sections[0]?.marksPerQuestion).toEqual([20, 20, 20])
+  })
+
+  it('Jawab Semua: the list adds up to the budget (3,3,3,5,4 = 18)', async () => {
+    const res = await admin.post('/api/admin/blueprints', create(71, { sections: [{ label: 'Bahagian A', markBudget: 18, questionCount: 5, rule: { type: 'all' }, marksPerQuestion: [3, 3, 3, 5, 4] }] }))
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+  })
+
+  it('without them both stay SQL NULL and read back as null', async () => {
+    const res = await admin.post('/api/admin/blueprints', create(72, { questionCount: null }))
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    const view = BijakBlueprintViewSchema.parse(res.body.data)
+    expect(view.questionCount).toBeNull()
+    expect(view.sections[0]?.marksPerQuestion).toBeNull()
+    expect(await stored('MAT/S72')).toEqual([{ question_count: null, marks_per_question: null, is_null: true }])
+  })
+
+  it('refuses a list of the wrong length or sum with MARKS_PER_QUESTION; the sum is against the marks offered, not the budget', async () => {
+    const problemsOf = async (kertas: number, section: Record<string, unknown>) => {
+      const res = await admin.post('/api/admin/blueprints', create(kertas, { sections: [section] }))
+      expect(res.status, JSON.stringify(res.body)).toBe(422)
+      return BijakBlueprintInvalidErrorSchema.parse(res.body).error.details.problems
+    }
+    expect(await problemsOf(73, part3({ marksPerQuestion: [20, 20] }))).toEqual([{ code: 'MARKS_PER_QUESTION', sectionPosition: 1, expected: 3, actual: 2 }])
+    expect(await problemsOf(73, part3({ marksPerQuestion: [10, 5, 5] }))).toEqual([{ code: 'MARKS_PER_QUESTION', sectionPosition: 1, expected: 60, actual: 20 }])
+    expect(await count(t.db, `select count(*) n from blueprints where code = 'MAT/S73'`)).toBe(0)
+  })
+
+  it('both are structural: a change on a Disahkan head makes a Spec version, an unchanged value keeps Disahkan', async () => {
+    const list = [1, 1, 1, 1]
+    const v1 = await verified(74, { questionCount: 40, sections: [fullSection({ marksPerQuestion: list })] })
+    expect(v1).toMatchObject({ source: 'Disahkan', questionCount: 40 })
+    const same = await admin.post(url(74, '/versions'), body({ code: 'MAT/S74', notes: 'nota sahaja', questionCount: 40, sections: [fullSection({ marksPerQuestion: list })] }))
+    expect(same.status, JSON.stringify(same.body)).toBe(201)
+    expect(same.body.data).toMatchObject({ source: 'Disahkan', version: 2, servesStudents: true })
+    const changedCount = await admin.post(url(74, '/versions'), body({ code: 'MAT/S74', notes: 'nota sahaja', questionCount: 41, sections: [fullSection({ marksPerQuestion: list })] }))
+    expect(changedCount.status, JSON.stringify(changedCount.body)).toBe(201)
+    expect(changedCount.body.data).toMatchObject({ source: 'Spec', version: 3, servingVersion: 2 })
+
+    expect((await verified(75, { sections: [fullSection({ marksPerQuestion: list })] })).source).toBe('Disahkan')
+    const changedList = await admin.post(url(75, '/versions'), body({ code: 'MAT/S75', sections: [fullSection()] }))
+    expect(changedList.status, JSON.stringify(changedList.body)).toBe(201)
+    expect(changedList.body.data).toMatchObject({ source: 'Spec', version: 2, servingVersion: 1 })
+    expect(changedList.body.data.sections[0].marksPerQuestion).toBeNull()
+  })
+})
+
+describe('S3-T01 FR-QA-41: section rules on the server', () => {
+  const chooseSection = (over: Record<string, unknown> = {}) => ({ label: 'Bahagian A', markBudget: 4, questionCount: 4, rule: { type: 'choose', n: 2 }, ...over })
+
+  it('refuses Wajib dijawab with Pilih N on create and on a new version, with the exact text', async () => {
+    const e = expectError(await admin.post('/api/admin/blueprints', create(76, { sections: [chooseSection({ compulsory: true })] })), 'VALIDATION_ERROR', 422, MSG.compulsoryChoose)
+    expect(e.fields).toEqual({ 'sections.0.compulsory': 'Bahagian wajib dijawab tidak boleh digabungkan dengan Pilih N.' })
+    expect(await count(t.db, `select count(*) n from blueprints where code = 'MAT/S76'`)).toBe(0)
+    expect((await admin.post('/api/admin/blueprints', create(76, { sections: [chooseSection()] }))).status).toBe(201)
+    const onVersion = expectError(await admin.post(url(76, '/versions'), body({ code: 'MAT/S76', sections: [chooseSection({ compulsory: true })] })), 'VALIDATION_ERROR', 422, MSG.compulsoryChoose)
+    expect(onVersion.fields).toHaveProperty(['sections.0.compulsory'])
+  })
+
+  it('Wajib dijawab with Jawab Semua is allowed', async () => {
+    const res = await admin.post('/api/admin/blueprints', create(77, { sections: [{ ...chooseSection({ compulsory: true }), rule: { type: 'all' } }] }))
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    expect(res.body.data.sections[0]).toMatchObject({ compulsory: true, rule: { type: 'all' } })
+  })
+
+  it('N above the question count answers "Nombor N tidak sah."', async () => {
+    const e = expectError(await admin.post('/api/admin/blueprints', create(78, { sections: [chooseSection({ rule: { type: 'choose', n: 5 } })] })), 'VALIDATION_ERROR', 422, 'Nombor N tidak sah.')
+    expect(e.fields).toEqual({ 'sections.0.rule.n': 'Nombor N tidak sah.' })
+  })
+
+  it('a stored row with both is refused at Sahkan with COMPULSORY_CHOOSE', async () => {
+    expect((await admin.post('/api/admin/blueprints', create(79, { sections: [chooseSection()] }))).status).toBe(201)
+    await rows(`update blueprint_sections set compulsory = true where blueprint_id = (select id from blueprints where code = 'MAT/S79')`)
+    const res = await admin.post(url(79, '/verify'), { note: 'x' })
+    expect(res.status).toBe(422)
+    const check = BijakVerificationFailedErrorSchema.parse(res.body).error.details.check
+    expect(check.blueprintProblems.map((p) => p.code)).toContain('COMPULSORY_CHOOSE')
   })
 })
 

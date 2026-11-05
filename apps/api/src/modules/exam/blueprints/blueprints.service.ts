@@ -48,18 +48,25 @@ interface BlueprintBody {
   autoMarkable?: boolean | null | undefined
   kbatMarks?: number | null | undefined
   levelShare?: { t4: number; t5: number } | null | undefined
+  questionCount?: number | null | undefined
   instructions?: string[] | undefined
   reference?: unknown[] | undefined
   sections: BijakBlueprintAdminSectionInput[]
 }
 
-/** A choose rule cannot ask for more answers than the section holds (also keeps `n` inside smallint). */
+/**
+ * A choose rule cannot ask for more answers than the section holds (also keeps `n` inside smallint), and a compulsory
+ * section cannot also be Pilih N (FR-QA-41; exam-core reports the same case as COMPULSORY_CHOOSE at verify, for a stored row).
+ */
 function assertRuleBounds(sections: BijakBlueprintAdminSectionInput[]): void {
   const fields: Record<string, string> = {}
   sections.forEach((s, i) => {
-    if (s.rule.type === 'choose' && s.rule.n > s.questionCount) fields[`sections.${String(i)}.rule.n`] = INVALID_FIELD_MESSAGE
+    if (s.rule.type !== 'choose') return
+    if (s.rule.n > s.questionCount) fields[`sections.${String(i)}.rule.n`] = MSG.chooseNRange
+    if (s.compulsory === true) fields[`sections.${String(i)}.compulsory`] = MSG.compulsoryChoose
   })
-  if (Object.keys(fields).length > 0) throw ApiError.of('VALIDATION_ERROR', { fields })
+  const first = Object.values(fields)[0]
+  if (first !== undefined) throw ApiError.of('VALIDATION_ERROR', { message: first, fields })
 }
 
 const errorCodeOf = (e: unknown): string | undefined =>
@@ -84,6 +91,7 @@ function standardOfBody(subject: string, kertas: number, version: number, b: Blu
     kbatMarks: b.kbatMarks ?? null,
     levelShare: b.levelShare ?? null,
     subPartRamp: b.subPartRamp ?? false,
+    questionCount: b.questionCount ?? null,
     sections: b.sections.map((s, i) => ({
       position: i + 1,
       label: s.label,
@@ -97,6 +105,7 @@ function standardOfBody(subject: string, kertas: number, version: number, b: Blu
       quota: s.quota ? { ...s.quota, lines: s.quota.lines.map((l) => ({ unit: l.unit, value: l.value, reviewed: true })) } : null,
       kbatMarks: s.kbatMarks ?? null,
       kbatReviewed: true,
+      marksPerQuestion: s.marksPerQuestion ?? null,
     })),
   }
 }
@@ -183,6 +192,7 @@ export class BlueprintsService {
     assertRuleBounds(body.sections)
     const subject = await this.repo.subjectByCode(curriculumCodeOf(body.subject))
     if (!subject) throw ApiError.of('VALIDATION_ERROR', { fields: { subject: INVALID_FIELD_MESSAGE } })
+    if (!(await this.repo.hasDskpUnit(subject.id))) throw ApiError.of('VALIDATION_ERROR', { message: MSG.dskpNotLoaded, fields: { subject: MSG.dskpNotLoaded } })
     if (body.kertas > KERTAS_MAX) throw ApiError.of('VALIDATION_ERROR', { fields: { kertas: INVALID_FIELD_MESSAGE } })
     const exists = () => ApiError.of('CONFLICT', { message: MSG.blueprintExists })
     const reference = await this.checkedReference(actor, body.reference, [])
@@ -368,6 +378,7 @@ export class BlueprintsService {
       autoMarkable: b.autoMarkable ?? null,
       kbatMarks: b.kbatMarks ?? null,
       levelShare: b.levelShare ?? null,
+      questionCount: b.questionCount ?? null,
       structureHash: extra.structureHash,
       sections: b.sections.map((s, i) => {
         const before = previous?.sections.find((p) => p.position === i + 1)
@@ -386,6 +397,7 @@ export class BlueprintsService {
         kbatMarks: s.kbatMarks ?? null,
         // A changed or added value is reviewed by the save; an unchanged one keeps its flag (AC-39.9).
         kbatReviewed: !before || s.kbatMarks == null || before.kbatMarks !== s.kbatMarks ? true : before.kbatReviewed,
+        marksPerQuestion: s.marksPerQuestion ?? null,
         }
       }),
     }

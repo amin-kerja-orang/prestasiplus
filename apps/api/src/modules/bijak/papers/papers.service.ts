@@ -127,17 +127,15 @@ export class PapersService {
   }
 
   async listContracts(): Promise<BijakBlueprintContract[]> {
-    const blueprints = await this.repo.listActiveBlueprints()
+    // S3-T01 (D76): a pupil sees Disahkan contracts only. The rows are exactly what `findServingBlueprint` finds (the same predicate generate
+    // uses, N1), so an older Disahkan version still serving while a Spec head is edited is the row shown, and the list never offers a pair
+    // that generate would answer NO_BLUEPRINT.
+    const blueprints = await this.repo.listServingBlueprints()
     const subjects = await this.repo.subjectsByIds(blueprints.map((b) => b.subjectId))
-    // N1: `canGenerate` is exactly "findServingBlueprint finds a row" (the same predicate generate uses), so an
-    // older Disahkan version still serving while a Spec head is edited stays generable, and the list never
-    // offers a pair that generate would answer NO_BLUEPRINT.
-    const serving = new Set((await this.repo.listServingBlueprints()).map((r) => `${r.subjectId.toString()}:${String(r.kertas)}`))
     const out: BijakBlueprintContract[] = []
     for (const b of blueprints) {
       const subject = subjects.get(b.subjectId.toString())
       if (!subject || b.sections.length === 0) continue
-      const canGenerate = serving.has(`${b.subjectId.toString()}:${String(b.kertas)}`)
       out.push({
         subject: bijakCodeOf(subject.code),
         subjectName: subject.name,
@@ -146,8 +144,7 @@ export class PapersService {
         code: b.code,
         durationMin: b.durationMin,
         sections: b.sections.map((s) => ({ label: s.label, take: s.questionCount })),
-        canGenerate,
-        ...(canGenerate ? {} : { unavailableReason: 'NO_BLUEPRINT' as const }),
+        canGenerate: true,
       })
     }
     return out
