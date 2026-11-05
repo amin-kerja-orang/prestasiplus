@@ -139,7 +139,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
       ['KK-05', 'Banner', '/admin/banners'],
       ['KK-06', 'Artikel', '/admin/articles'],
       ['KK-07', 'Nota', '/admin/notes'],
-      ['KK-08', 'Video'],
+      ['KK-08', 'Video', '/admin/videos'],
       ['KK-09', 'Laluan Kerjaya'],
       ['KK-10', 'Universiti'],
       ['KK-11', 'Biasiswa'],

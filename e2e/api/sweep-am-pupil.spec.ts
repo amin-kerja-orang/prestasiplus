@@ -6,14 +6,11 @@
  *   (b) /prestasi/tingkatan/t4: no "Lihat →" link to /prestasi/kelas/:id (staff only), no 404 page;
  *   (c) own /prestasi/:id: no "Lihat Penuh" link to /headcount/student/:id (staff only);
  *   (d) a teacher keeps the class links on the same page (no regression);
- *   (e) /kelas-saya: the "already joined" refusal clears when the code is emptied.
+ *   (e) /kelas-saya: there is no join box and no POST to /api/kelas-saya/join (API-MUR-04).
  * Preconditions are asserted (the page rendered its data), never skipped, so an empty page cannot pass.
  *
- * (e) joins only a class the pupil already belongs to, so the API answers 409 and nothing is written.
- * The join code is not in `GET /api/kelas-saya`, so it is the seeded demo class code (DEMO4S,
- * apps/api/prisma/seed/poc/classes.ts DEMO_CLASS_CODE); `SWP_JOINED_CODE` overrides it. The test first
- * asserts that the pupil is already a member of THAT class (its card, "Kelas Demo Tingkatan 4", is listed on
- * Kelas Saya; `SWP_JOINED_CLASS_NAME` overrides the name), so it fails loudly instead of creating a membership.
+ * (e) only reads: it asserts the pupil is already a member of the seeded demo class ("Kelas Demo Tingkatan 4",
+ * listed on Kelas Saya; `SWP_JOINED_CLASS_NAME` overrides the name) and that the page offers no join control.
  *
  * Test (a) needs a build with `VITE_PROTOTYPE_SCOPE=on` (the default in compose and in CI): the scope is what
  * keeps /pelajar/:id away from the pupil, so with the scope off the box is rightly shown and (a) fails.
@@ -27,8 +24,6 @@ import { expect, loginViaUi, test } from '../fixtures/api'
 import { account, expectNoHScroll } from './helpers'
 
 const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
-const ALREADY_JOINED = 'Anda sudah menyertai kelas ini.'
-const JOINED_CODE = process.env.SWP_JOINED_CODE || 'DEMO4S'
 const JOINED_CLASS_NAME = process.env.SWP_JOINED_CLASS_NAME || 'Kelas Demo Tingkatan 4'
 
 /** The pupil's own user id, from the session the app itself uses. */
@@ -122,20 +117,17 @@ test.describe('pupil sweep: no dead links @api', () => {
     await expectNoHScroll(page)
   })
 
-  test('(e) pupil /kelas-saya: the "already joined" refusal clears when the code is emptied @api', async ({
-    page,
-  }) => {
+  test('(e) pupil /kelas-saya: no join box and no join request @api', async ({ page }) => {
     const { user, pass } = account('studentB')
     await loginViaUi(page, user, pass)
 
-    // Precondition: the pupil is already a member of the class behind JOINED_CODE, so joining it again is
-    // refused (409) and nothing is written. If not, stop here: submitting would create a membership.
+    // Precondition: the pupil is already a member of the demo class, so the card below must be listed.
     const mine = await page.request.get('/api/kelas-saya')
     expect(mine.status(), 'GET /api/kelas-saya').toBe(200)
     const body = (await mine.json()) as { data: { name: string }[] }
     expect(
       body.data.map((c) => c.name),
-      `the pupil is already in "${JOINED_CLASS_NAME}" (join code ${JOINED_CODE})`,
+      `the pupil is already in "${JOINED_CLASS_NAME}"`,
     ).toContain(JOINED_CLASS_NAME)
 
     await page.goto('/kelas-saya')
@@ -143,31 +135,15 @@ test.describe('pupil sweep: no dead links @api', () => {
       page.getByTestId('joined-class').filter({ hasText: JOINED_CLASS_NAME }),
       'its card is listed on Kelas Saya',
     ).toBeVisible({ timeout: 20_000 })
-    const input = page.getByTestId('class-code')
-    const submit = page.getByTestId('join-submit')
-    await expect(input).toBeVisible({ timeout: 20_000 })
-
+    // The join box is gone (API-MUR-04, D-A8): no control, and nothing posts to the removed route.
     let posts = 0
     page.on('request', (r) => {
       if (r.method() === 'POST' && r.url().endsWith('/api/kelas-saya/join')) posts += 1
     })
-
-    await input.fill(JOINED_CODE)
-    const refused = page.waitForResponse(
-      (r) => r.url().endsWith('/api/kelas-saya/join') && r.request().method() === 'POST',
-    )
-    await submit.click()
-    expect((await refused).status(), 'POST /api/kelas-saya/join of an already-joined code').toBe(
-      409,
-    )
-    await expect(page.getByTestId('join-error')).toContainText(ALREADY_JOINED)
-
-    // Empty the field and press "Sertai": the native `required` blocks the request; the message must go.
-    await input.fill('')
-    await submit.click()
-    await expect(page.getByTestId('join-error')).toHaveCount(0)
-    await expect(page.getByTestId('join-success')).toHaveCount(0)
-    expect(posts, 'the empty submit sent no second request').toBe(1)
+    await expect(page.getByTestId('join-submit')).toHaveCount(0)
+    await expect(page.getByTestId('class-code')).toHaveCount(0)
+    await expect(page.getByText('Masukkan Kod Kelas')).toHaveCount(0)
+    expect(posts, 'no POST to /api/kelas-saya/join').toBe(0)
     await expectNoHScroll(page)
   })
 })

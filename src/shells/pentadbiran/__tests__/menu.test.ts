@@ -60,6 +60,14 @@ describe('Pentadbiran menu data', () => {
     expect(byId.get('BS-08')).toMatchObject({ label: 'Bank Soalan (Studio)', to: '/admin/studio' })
   })
 
+  it('S5-T08: Video (KK-08) is built and opens the admin video list', () => {
+    expect(ALL_ITEMS.find((i) => i.id === 'KK-08')).toMatchObject({
+      label: 'Video',
+      to: '/admin/videos',
+    })
+    expect(itemsOf('Kurikulum & Kandungan')).toContain('KK-08')
+  })
+
   it('REQ-B-039: Bank Soalan (Studio) opens the Studio list', () => {
     const bs08 = ALL_ITEMS.find((i) => i.id === 'BS-08')
     expect(bs08).toMatchObject({ label: 'Bank Soalan (Studio)', to: '/admin/studio' })
