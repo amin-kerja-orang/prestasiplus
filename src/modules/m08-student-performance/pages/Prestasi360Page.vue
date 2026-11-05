@@ -68,6 +68,9 @@ watch(
   { immediate: true },
 )
 
+/** The session year of the Headcount empty copy: the current calendar year, as the API's `me` read (FR-MUR-3-2). */
+const sessionYear = new Date().getFullYear()
+
 /** The back control is the browser history back (FR-M08-37); a pupil has no list to go back to. */
 const back = (): void => {
   router.back()
@@ -171,9 +174,10 @@ const activity = computed(() => {
       <DsStatRow :items="statItems(stats)" data-testid="stat-cards" :cols="4" prefix="stat" />
 
       <HeadcountCards
-        v-if="data.headcount.length > 0"
+        v-if="data.headcount.length > 0 || isStudent"
         :user-id="data.user.id"
         :cards="data.headcount"
+        :year="sessionYear"
       />
 
       <DsPanel data-testid="trend-card">

@@ -195,7 +195,9 @@ export class StudentPerformanceService {
     if (!this.facts) return []
     const scope = this.factsScope(ctx, userId)
     if (scope === null) return []
-    const entries = (await this.facts.entriesOfStudent(userId, scope)).filter((e) => !e.dropped)
+    // The pupil's own block is the `GET /headcounts/me` set: the current MYT year, a dropped pupil has none (FR-MUR-4-6, S10-T02).
+    const year = Number(mytDay(this.clock.now()).slice(0, 4))
+    const entries = (await this.facts.entriesOfStudent(userId, scope)).filter((e) => !e.dropped && e.academicYear === year)
     if (entries.length === 0) return []
     const classes = new Map((await this.ports.classes.classesByIds([...new Set(entries.map((e) => e.classroomId))])).map((c) => [c.id, c]))
     return [...entries]

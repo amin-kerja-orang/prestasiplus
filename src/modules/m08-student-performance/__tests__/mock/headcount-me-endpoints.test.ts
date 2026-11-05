@@ -9,6 +9,7 @@ import type { MockRuntime } from '@/mock/index'
 import { classrooms } from '@/modules/m10-teacher-class/mock'
 
 import type { HeadcountListItem, HeadcountStudent } from '../../api/headcount-types'
+import type { StudentPerformance } from '../../api/types'
 import { headcount } from '../../mock'
 import { MemoryStorage, bootM08 } from './boot'
 import { ADMIN, ADMIN_SEKOLAH, GURU, call, data, type ErrorBody } from './headcount-helpers'
@@ -27,6 +28,32 @@ afterAll(() => {
 
 const get = <T>(as: number | null, url: string) => data<T>(runtime, as, 'GET', url)
 const send = (as: number | null, url: string) => call<ErrorBody>(runtime, as, 'GET', url)
+
+describe('Prestasi 360 Headcount block (FR-MUR-4-6, S10-T01 part 2)', () => {
+  it('is the pupil own `me` set: the same configs, subjects and the TOV / ETR / AR of the own detail', async () => {
+    const list = await get<HeadcountListItem[]>(PUPIL, '/api/headcounts/me')
+    const prestasi = await get<StudentPerformance>(PUPIL, `/api/performance/students/${String(PUPIL)}`)
+    expect(prestasi.headcount.length).toBeGreaterThan(0)
+    // Every card is a config of `me`; a config of `me` with an entry row is a card.
+    const ids = new Set(list.map((i) => i.id))
+    for (const card of prestasi.headcount) expect(ids.has(card.configId)).toBe(true)
+    for (const card of prestasi.headcount) {
+      const detail = await get<HeadcountStudent>(PUPIL, `/api/headcounts/me/detail?configId=${String(card.configId)}`)
+      const section = detail.sections[0]
+      expect(card).toMatchObject({ configId: section?.configId, tov: section?.tov, etr: section?.etr, status: section?.status })
+      const ars = (section?.rows ?? []).filter((r) => r.ar !== null).map((r) => r.ar)
+      expect(card.chips.filter((c) => c.label.startsWith('OTR')).map((c) => c.value)).toEqual(ars)
+    }
+  })
+
+  it('a pupil outside every configured class has no card', async () => {
+    const members = new Set(headcount.configs().flatMap((c) => classrooms.memberIds('classroom', c.classroomId)))
+    const lonely = [2, 3, 4, 7].find((id) => !members.has(id))
+    if (lonely === undefined) return
+    const prestasi = await get<StudentPerformance>(ADMIN, `/api/performance/students/${String(lonely)}`)
+    expect(prestasi.headcount).toEqual([])
+  })
+})
 
 describe('GET /api/headcounts/me', () => {
   it('lists exactly the configs of the pupil own classes, with the own pill and the teacher name', async () => {
