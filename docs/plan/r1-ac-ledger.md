@@ -44,6 +44,13 @@ Example of one row (format only; this is not a result):
 
 During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lead asks the designated UAT developer in #503; the rows are written in the same way.
 
+| card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
+|---|---|---|---|---|---|---|
+| S8-T03 | AC-PA-04 | CI | Pass | 2026-11-05 | team-aa/S-1 | bilingual-wiring.test.ts, language-toggle.test.ts |
+| S8-T03 | AC-PA-16 | CI | Pass | 2026-11-05 | team-aa/S-1 | drawing-pad.test.ts, drawing-photo.test.ts |
+| S8-T03 | AC-PA-37 | CI | Pass | 2026-11-05 | team-aa/S-1 | word-limit.test.ts |
+| S8-T03 | AC-PA-40 | CI | Pass | 2026-11-05 | team-aa/S-1 | prefill.test.ts |
+
 ## Sprint 0
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |

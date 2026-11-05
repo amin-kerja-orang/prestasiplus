@@ -5,10 +5,11 @@
  * vector history; "Simpan lukisan" exports one merged PNG `lukisan.png` (<= 5 MB) and emits `save`;
  * the parent stores it through the photo path. `change` tells the parent whether the pad is empty.
  */
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { DsStack, DsText } from '@/ds'
 import {
+  PAD_AUTOSAVE_MS,
   PAD_HEIGHT,
   PAD_WIDTH,
   addStroke,
@@ -34,8 +35,16 @@ const props = withDefaults(
     disabled?: boolean
     width?: number
     height?: number
+    /** Receives the pending drawing when the pad unmounts (an emit is lost after unmount). */
+    onFlush?: (file: File) => void
   }>(),
-  { template: undefined, disabled: false, width: PAD_WIDTH, height: PAD_HEIGHT },
+  {
+    template: undefined,
+    disabled: false,
+    width: PAD_WIDTH,
+    height: PAD_HEIGHT,
+    onFlush: undefined,
+  },
 )
 const emit = defineEmits<{ save: [File]; change: [{ empty: boolean }] }>()
 
@@ -46,6 +55,7 @@ const error = ref('')
 const saving = ref(false)
 let current: Stroke | null = null
 let activeId: number | null = null
+let timer: ReturnType<typeof setTimeout> | null = null
 
 const empty = computed(() => strokes.value.length === 0)
 const grid = computed(() => (isGridTemplate(props.template) ? props.template.grid : null))
@@ -77,7 +87,7 @@ function point(ev: PointerEvent): Point {
 }
 
 function onDown(ev: PointerEvent): void {
-  if (props.disabled || current) return
+  if (props.disabled || current || ev.button !== 0) return
   const p = point(ev)
   current = { tool: tool.value, points: [p] }
   activeId = ev.pointerId
@@ -112,22 +122,35 @@ function setStrokes(next: Stroke[]): void {
   error.value = ''
   repaint()
   emit('change', { empty: next.length === 0 })
+  if (timer) clearTimeout(timer)
+  timer = null
+  if (next.length) timer = setTimeout(() => void save(), PAD_AUTOSAVE_MS)
 }
 const undo = (): void => setStrokes(undoStroke(strokes.value))
 const clear = (): void => setStrokes(clearStrokes())
 
-async function save(): Promise<void> {
-  if (!canvas.value || empty.value || props.disabled) return
+/** Immediate save (button) and the debounced auto-save share this; `onDone` overrides the emit (unmount). */
+async function save(onDone?: (f: File) => void): Promise<void> {
+  if (timer) clearTimeout(timer)
+  timer = null
+  const el = canvas.value
+  if (!el || empty.value || props.disabled) return
   saving.value = true
   error.value = ''
   try {
-    const res = pngToFile(await exportPng(canvas.value, props.template, props.width, props.height))
+    const res = pngToFile(await exportPng(el, props.template, props.width, props.height))
     if (!res.ok) error.value = res.message
+    else if (onDone) onDone(res.file)
     else emit('save', res.file)
   } finally {
     saving.value = false
   }
 }
+
+onBeforeUnmount(() => {
+  if (timer && props.onFlush) void save(props.onFlush)
+  else if (timer) clearTimeout(timer)
+})
 
 onMounted(() => repaint())
 watch(
@@ -238,7 +261,7 @@ watch(
         :disabled="disabled || empty || saving"
         class="min-h-11"
         data-testid="pad-save"
-        @click="save"
+        @click="save()"
         >Simpan lukisan</UButton
       >
     </div>

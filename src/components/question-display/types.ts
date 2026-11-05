@@ -143,3 +143,14 @@ export interface LeafModeExtras {
   /** `drawing` template for the Papan Lukisan, resolved by the page adapter from `modeConfig.answerTemplate` (image URL or graph grid). */
   answerTemplate?: PadTemplate
 }
+
+/** Optional English twins of the texts a question shows (FR-PA-04); until the contract's `{ms, en?}` reaches the views. */
+export interface QuestionTwins {
+  stemEn?: string
+}
+export interface PartTwins {
+  promptEn?: string
+}
+export interface OptionTwins {
+  textEn?: string
+}

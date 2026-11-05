@@ -25,6 +25,8 @@ describe('AC-PA-40 answer template', () => {
     const w = mount(PartInput, { props: { leaf, modelValue: {}, attemptId: 'a' }, global })
     const block = w.find('[data-testid=answer-prefill]')
     expect(block.text()).toBe('Pendahuluan:\nIsi:\nPenutup:')
+    expect(block.attributes('role')).toBe('note')
+    expect(block.attributes('aria-label')).toBe('Templat jawapan')
     expect(block.classes()).toContain('whitespace-pre-line')
     expect(block.element.tagName).not.toBe('TEXTAREA')
     const html = w.html()

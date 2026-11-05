@@ -50,26 +50,60 @@ describe('capWords', () => {
 
 describe('AC-PA-37 essay hardLimit', () => {
   const range = { min: 50, max: 120 }
-  it('125 typed words keep 120 and show the cap hint', async () => {
+  /** One word at a time, like a keyboard. */
+  const typeFrom = async (w: ReturnType<typeof essay>, start: number, to: number) => {
+    for (let n = start + 1; n <= to; n++) await type(w, words(n))
+  }
+  const pasteText = async (w: ReturnType<typeof essay>, v: string) => {
+    await w.find('textarea').trigger('paste')
+    await type(w, v)
+  }
+  const saved = (w: ReturnType<typeof essay>) => (w.props('modelValue') as { text: string }).text
+  it('typing 125 words keeps 120 and shows the cap hint', async () => {
     const w = essay({ wordRange: range, hardLimit: true })
-    await type(w, words(125))
-    expect(countWords((w.props('modelValue') as { text: string }).text)).toBe(120)
+    await pasteText(w, words(118))
+    await typeFrom(w, 118, 125)
+    expect(countWords(saved(w))).toBe(120)
     expect(w.find('[data-testid=word-cap-hint]').text()).toBe('Had 120 patah perkataan dicapai.')
     expect(w.find('[data-testid=word-count]').text()).toContain('120 /')
     expect(countWords((w.find('textarea').element as HTMLTextAreaElement).value)).toBe(120)
   })
   it('300 pasted words are cut at 120', async () => {
     const w = essay({ wordRange: range, hardLimit: true })
-    await type(w, words(300))
-    expect(countWords((w.props('modelValue') as { text: string }).text)).toBe(120)
+    await pasteText(w, words(300))
+    expect(countWords(saved(w))).toBe(120)
   })
-  it('typing past the cap again is ignored and the box is put back', async () => {
+  it('a space typed mid-text at the cap keeps every word', async () => {
     const w = essay({ wordRange: range, hardLimit: true })
-    await type(w, words(120))
-    await type(w, `${words(120)} more`)
+    await pasteText(w, words(120))
+    await type(w, `a  ${words(119)}`)
+    expect(countWords(saved(w))).toBe(120)
+    expect(saved(w)).toBe(`a  ${words(119)}`)
+  })
+  it('a typed word past the cap is ignored: the previous text stays, the box is put back', async () => {
+    const w = essay({ wordRange: range, hardLimit: true })
+    await pasteText(w, words(120))
+    const before = saved(w)
+    await type(w, `${before} more`)
     await w.vm.$nextTick()
-    expect(countWords((w.props('modelValue') as { text: string }).text)).toBe(120)
-    expect(countWords((w.find('textarea').element as HTMLTextAreaElement).value)).toBe(120)
+    expect(saved(w)).toBe(before)
+    expect((w.find('textarea').element as HTMLTextAreaElement).value).toBe(before)
+  })
+  it('an IME composition is not altered mid-way; the cut applies on compositionend', async () => {
+    const w = essay({ wordRange: range, hardLimit: true })
+    await pasteText(w, words(120))
+    const ta = w.find('textarea')
+    const el = ta.element as HTMLTextAreaElement
+    await ta.trigger('compositionstart')
+    const mid = `${words(120)} あい`
+    await type(w, mid)
+    await w.vm.$nextTick()
+    expect(el.value).toBe(mid)
+    expect(saved(w)).toBe(mid)
+    await ta.trigger('compositionend')
+    await w.vm.$nextTick()
+    expect(countWords(saved(w))).toBe(120)
+    expect(countWords(el.value)).toBe(120)
   })
   it('below the minimum only the short hint shows; nothing disables the box', async () => {
     const w = essay({ wordRange: range, hardLimit: true })
@@ -83,7 +117,7 @@ describe('AC-PA-37 essay hardLimit', () => {
   it('hardLimit off keeps 125 words and shows the over line', async () => {
     const w = essay({ wordRange: range })
     await type(w, words(125))
-    expect(countWords((w.props('modelValue') as { text: string }).text)).toBe(125)
+    expect(countWords(saved(w))).toBe(125)
     expect(w.find('[data-testid=word-cap-hint]').exists()).toBe(false)
     expect(w.find('[data-testid=word-hint]').text()).toBe('Jawapan melebihi 120 patah perkataan.')
   })

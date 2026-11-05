@@ -12,6 +12,7 @@ import {
   toLogical,
   undoStroke,
 } from '../lib/drawing'
+import { MSG_PAD_EXPORT } from '../lib/drawing'
 import { MAX_PHOTO_BYTES, MSG_PHOTO_TYPE } from '../lib/photo-store'
 
 const GRID = { xMin: -5, xMax: 5, yMin: -5, yMax: 5, step: 1, scale: '1 petak = 1 unit' }
@@ -39,7 +40,7 @@ function ptr(type: string, x: number, y: number): PointerEvent {
     string,
     unknown
   >
-  Object.assign(e, { clientX: x, clientY: y, pointerId: 1 })
+  Object.assign(e, { clientX: x, clientY: y, pointerId: 1, button: 0 })
   return e as unknown as PointerEvent
 }
 async function stroke(
@@ -82,13 +83,50 @@ describe('lib/drawing', () => {
   it('pngToFile enforces 5 MB', () => {
     const ok = pngToFile(new Blob(['x'], { type: 'image/png' }))
     expect(ok.ok && ok.file.name).toBe('lukisan.png')
-    expect(pngToFile(null).ok).toBe(false)
+    expect(pngToFile(null)).toEqual({ ok: false, message: MSG_PAD_EXPORT })
     const big = { size: MAX_PHOTO_BYTES + 1 } as Blob
     expect(pngToFile(big)).toEqual({ ok: false, message: MSG_PHOTO_TYPE })
   })
 })
 
 describe('DrawingPad', () => {
+  it('ignores a right-click', () => {
+    const w = mount(DrawingPad)
+    const c = w.get('[data-testid="pad-canvas"]').element
+    const down = ptr('pointerdown', 5, 5) as unknown as { button: number }
+    down.button = 2
+    c.dispatchEvent(down as unknown as Event)
+    c.dispatchEvent(ptr('pointerup', 9, 9))
+    expect(w.emitted('change')).toBeUndefined()
+  })
+
+  it('auto-saves 800 ms after the last stroke change; clear cancels it', async () => {
+    vi.useFakeTimers()
+    try {
+      const w = mount(DrawingPad)
+      await stroke(w)
+      await vi.advanceTimersByTimeAsync(700)
+      expect(w.emitted('save')).toBeUndefined()
+      await vi.advanceTimersByTimeAsync(150)
+      expect(w.emitted('save')).toHaveLength(1)
+      await stroke(w)
+      await btn(w, 'pad-clear').trigger('click')
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(w.emitted('save')).toHaveLength(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('flushes a pending drawing to onFlush on unmount', async () => {
+    const onFlush = vi.fn()
+    const w = mount(DrawingPad, { props: { onFlush } })
+    await stroke(w)
+    w.unmount()
+    await vi.waitFor(() => expect(onFlush).toHaveBeenCalledTimes(1))
+    expect((onFlush.mock.calls[0]![0] as File).name).toBe('lukisan.png')
+  })
+
   it('shows labels and switches tools with aria-pressed', async () => {
     const w = mount(DrawingPad)
     expect(w.text()).toContain('Papan Lukisan')

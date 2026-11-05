@@ -4,12 +4,13 @@
  * (pick one topic, then write; counter shows the target range). `readonly` = Semakan.
  * The counter is announced politely; "over" carries an icon and the words "melebihi had".
  */
-import { computed, nextTick, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { DsText } from '@/ds'
 import { capLabel, overLabel, qdCopy, shortLabel, wordCountLabel, wordTargetLabel } from './copy'
 import type { EssayChoiceValue, EssayTopic } from './types'
-import { capWords, countWords } from './words'
+import { useHardLimit } from './lib/hard-limit'
+import { countWords } from './words'
 
 const props = withDefaults(
   defineProps<{
@@ -62,17 +63,15 @@ const groupName = computed(() => props.name ?? `topic-${Math.random().toString(3
 
 const cap = computed(() => (props.hardLimit ? maxWords.value : undefined))
 const atCap = computed(() => cap.value !== undefined && words.value >= cap.value)
-function onText(raw: string): void {
-  const v = cap.value === undefined ? raw : capWords(raw, cap.value)
-  if (v !== raw) {
-    void nextTick(() => {
-      const el = root.value?.querySelector('textarea')
-      if (el && el.value !== v) el.value = v
-    })
-  }
-  if (isChoice.value) emit('update:choice', { topic: props.choice?.topic, text: v })
-  else emit('update:modelValue', v)
-}
+const limit = useHardLimit({
+  max: () => cap.value,
+  prev: () => text.value,
+  root,
+  commit: (v) => {
+    if (isChoice.value) emit('update:choice', { topic: props.choice?.topic, text: v })
+    else emit('update:modelValue', v)
+  },
+})
 function pick(id: string): void {
   emit('update:choice', { topic: id, text: props.choice?.text ?? '' })
 }
@@ -121,7 +120,10 @@ function pick(id: string): void {
       autoresize
       class="w-full"
       data-testid="answer-textarea"
-      @update:model-value="onText(String($event ?? ''))"
+      @update:model-value="limit.onText(String($event ?? ''))"
+      @paste="limit.onPaste"
+      @compositionstart="limit.onCompositionStart"
+      @compositionend="limit.onCompositionEnd"
     />
 
     <p

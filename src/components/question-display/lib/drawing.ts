@@ -30,6 +30,8 @@ export const PEN_WIDTH = 3
 export const ERASER_WIDTH = 18
 export const MAX_GRID_LINES = 200
 export const PNG_FILE_NAME = 'lukisan.png'
+export const MSG_PAD_EXPORT = 'Lukisan tidak dapat disimpan. Cuba lagi.'
+export const PAD_AUTOSAVE_MS = 800
 
 export interface GridLine {
   x1: number
@@ -193,8 +195,9 @@ export async function exportPng(
 
 export type PngCheck = { ok: true; file: File } | { ok: false; message: string }
 
-/** Wrap the blob as `lukisan.png`, or fail with the photo message when empty or over 5 MB. */
+/** Wrap the blob as `lukisan.png`; > 5 MB gets the photo message, an export failure its own. */
 export function pngToFile(blob: Blob | null): PngCheck {
-  if (!blob || blob.size > MAX_PHOTO_BYTES) return { ok: false, message: MSG_PHOTO_TYPE }
+  if (!blob) return { ok: false, message: MSG_PAD_EXPORT }
+  if (blob.size > MAX_PHOTO_BYTES) return { ok: false, message: MSG_PHOTO_TYPE }
   return { ok: true, file: new File([blob], PNG_FILE_NAME, { type: 'image/png' }) }
 }

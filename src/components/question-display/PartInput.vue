@@ -10,7 +10,7 @@
  * Known gap: `table_fill` has no input here until `TableFillGrid` is wired in (S2-T10 / S3-T04).
  * Every change emits a whole new answer; the page autosaves it.
  */
-import { computed, nextTick, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { capLabel, maxWordsLabel, overLabel, shortLabel, wordCountLabel, wordTargetLabel } from './copy'
 import DrawingPad from './DrawingPad.vue'
@@ -20,10 +20,11 @@ import { DsStack, DsText } from '@/ds'
 import { isReadableNumber, latexToPlain } from '@pp/exam-core/math-expr'
 import type { Leaf } from '@pp/exam-core/paper-model'
 import type { McqOption, PartAnswer } from '@/modules/m28-bijak-spm/domain/types'
+import { useHardLimit } from './lib/hard-limit'
 import { checkPhoto, photoUrl, putPhoto, removePhoto } from './lib/photo-store'
 import MathField from './MathField.vue'
 import type { LeafModeExtras } from './types'
-import { capWords, countWords } from './words'
+import { countWords } from './words'
 
 const props = defineProps<{
   leaf: Leaf & LeafModeExtras
@@ -44,17 +45,12 @@ const hardMax = computed(() =>
 )
 const atCap = computed(() => hardMax.value !== undefined && words.value >= hardMax.value)
 const textBox = ref<HTMLElement | null>(null)
-function onText(v: string): void {
-  const kept = hardMax.value === undefined ? v : capWords(v, hardMax.value)
-  update({ text: kept })
-  if (kept !== v) {
-    // The model value may not change (already at the cap): put the box back to the kept text.
-    void nextTick(() => {
-      const el = textBox.value?.querySelector('textarea')
-      if (el && el.value !== kept) el.value = kept
-    })
-  }
-}
+const limit = useHardLimit({
+  max: () => hardMax.value,
+  prev: () => answer.value.text ?? '',
+  root: textBox,
+  commit: (text) => update({ text }),
+})
 /** Numeric leaf: the final answer must be something the marker can read (FB-050). */
 // The hint shows once the field was left, or at once for a stored answer that cannot be read.
 const finalTouched = ref(!isReadableNumber(props.modelValue?.final ?? ''))
@@ -98,9 +94,41 @@ async function onFiles(ev: Event): Promise<void> {
   await addPhotos(Array.from(input.files ?? []))
   input.value = ''
 }
-/** The Papan Lukisan PNG takes the same photo path as a camera photo (FR-PA-08): no new answer field. */
-async function onDrawingSave(file: File): Promise<void> {
-  await addPhotos([file])
+const PAD_PHOTO = 'lukisan.png'
+let padQueue: Promise<void> = Promise.resolve()
+/**
+ * The Papan Lukisan PNG takes the photo path (FR-PA-08), but REPLACES the previous pad drawing:
+ * at most one `lukisan.png` per leaf; camera/file photos stay and count toward the cap with it.
+ */
+function onDrawingSave(file: File): Promise<void> {
+  padQueue = padQueue.then(async () => {
+    photoError.value = ''
+    const all = answer.value.photos ?? []
+    const others = all.filter((p) => p.name !== PAD_PHOTO)
+    const ok = checkPhoto(file, others.length)
+    if (!ok.ok) {
+      photoError.value = ok.message
+      return
+    }
+    await Promise.all(all.filter((p) => p.name === PAD_PHOTO).map((p) => removePhoto(p.key)))
+    const meta = await putPhoto(props.attemptId, props.leaf.id, file, others.length)
+    const u = await photoUrl(meta.key)
+    if (u) urls.value = { ...urls.value, [meta.key]: u }
+    update({ photos: [...others, meta] })
+  })
+  return padQueue
+}
+/** An emptied pad removes its photo, so an empty pad and no other photo stays `kosong`. */
+function onDrawingChange(ev: { empty: boolean }): Promise<void> {
+  if (!ev.empty) return Promise.resolve()
+  padQueue = padQueue.then(async () => {
+    const all = answer.value.photos ?? []
+    const pad = all.filter((p) => p.name === PAD_PHOTO)
+    if (!pad.length) return
+    await Promise.all(pad.map((p) => removePhoto(p.key)))
+    update({ photos: all.filter((p) => p.name !== PAD_PHOTO) })
+  })
+  return padQueue
 }
 async function addPhotos(files: File[]): Promise<void> {
   photoError.value = ''
@@ -129,6 +157,8 @@ async function dropPhoto(key: string): Promise<void> {
     <template v-if="leaf.kind === 'short_text' || leaf.kind === 'essay'">
       <p
         v-if="leaf.preFill"
+        role="note"
+        aria-label="Templat jawapan"
         class="whitespace-pre-line rounded-xl bg-muted p-3 text-body text-toned"
         data-testid="answer-prefill"
       >{{ leaf.preFill }}</p>
@@ -141,7 +171,10 @@ async function dropPhoto(key: string): Promise<void> {
           :placeholder="leaf.kind === 'essay' ? 'Tulis jawapan anda di sini…' : 'Tulis jawapan…'"
           class="w-full"
           data-testid="short-text-input"
-          @update:model-value="onText(String($event ?? ''))"
+          @update:model-value="limit.onText(String($event ?? ''))"
+          @paste="limit.onPaste"
+          @compositionstart="limit.onCompositionStart"
+          @compositionend="limit.onCompositionEnd"
         />
       </UFormField>
       <p
@@ -221,7 +254,9 @@ async function dropPhoto(key: string): Promise<void> {
       <DrawingPad
         :template="leaf.answerTemplate"
         :disabled="disabled"
+        :on-flush="onDrawingSave"
         @save="onDrawingSave"
+        @change="onDrawingChange"
       />
       <p class="text-body text-toned">
         Lukis jawapan anda pada kertas, kemudian ambil gambarnya. Guru menyemak senarai semak (garis
