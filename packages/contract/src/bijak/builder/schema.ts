@@ -126,6 +126,10 @@ export const BIJAK_BUILDER_MESSAGES = {
   sourceBatchMissing: 'Muat naik PDF sumber dahulu.',
   /** S3-T06, API-BIJAK-14 upload: the paper already has a source batch. [DOC DEFECT: no BM text in the PRD; default] */
   sourceBatchExists: 'Kertas ini sudah mempunyai PDF sumber.',
+  /** S3-T06, API-BIJAK-14 apply: the source batch is still being processed or was cancelled. [DOC DEFECT: no BM text in the PRD; default] */
+  sourceBatchNotReady: 'Kelompok sumber masih diproses atau telah dibatalkan.',
+  /** S3-T06, API-BIJAK-14 apply: `{id}` = an accepted item whose question no longer exists or has no version. [DOC DEFECT: no BM text in the PRD; default] */
+  sourceItemQuestionMissing: 'Item {id} tiada soalan yang sah; tidak boleh dimasukkan ke kertas.',
   /** S3-T06, API-BIJAK-14 upload: the copyright declaration is not ticked. [DOC DEFECT: no BM text in the PRD; default] */
   declarationRequired: 'Sila akui perakuan hak cipta.',
   /** S3-T06, flashes of PRD30 field 18-11. */

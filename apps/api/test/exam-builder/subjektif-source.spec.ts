@@ -63,7 +63,10 @@ describe('S3-T06 Kertas Subjektif source PDF (API-BIJAK-14)', () => {
       `insert into intake_items (batch_id, position, item_type, payload, review_state, reject_reason, question_id, question_version_no) values ($1, $2, 'mcq', '{}'::jsonb, $3, $4, $5, $6)`,
       [batch, position, state, state === 'rejected' ? 'bukan untuk kertas ini' : null, questionId, questionId ? 1 : null],
     )
+    await ready(batch)
   }
+  /** The extraction has finished: apply refuses a batch that is still processing. */
+  const ready = (batch: string) => q(`update intake_batches set status = 'ready_for_review' where id = $1`, [batch])
   const batchOf = async (paper: string) => String((await q(`select source_batch_id from papers where id = $1`, [paper]))[0]!.source_batch_id)
   const placed = async (paper: string) =>
     (await q(`select s.label, pl.question_id::text qid from paper_placements pl join paper_sections s on s.id = pl.paper_section_id where s.paper_id = $1 order by s.position, pl.position`, [paper])).map((r) => `${String(r.label)}:${String(r.qid)}`)
@@ -109,6 +112,7 @@ describe('S3-T06 Kertas Subjektif source PDF (API-BIJAK-14)', () => {
         ['wrong scheme content', () => upload(id, { declaration: 'true', scheme: Buffer.from('bukan pdf') }), M.sourcePdfInvalid],
         ['no paper part', () => upload(id, { declaration: 'true', paper: null }), M.sourcePdfInvalid],
         ['over 30 MB', () => upload(id, { declaration: 'true', paper: Buffer.concat([Buffer.from('%PDF-1.4\n'), Buffer.alloc(31 * 1024 * 1024)]) }), M.sourcePdfTooLarge],
+        ['scheme over 30 MB', () => upload(id, { declaration: 'true', scheme: Buffer.concat([Buffer.from('%PDF-1.4\n'), Buffer.alloc(31 * 1024 * 1024)]) }), M.sourcePdfTooLarge],
         ['no declaration', () => upload(id), M.declarationRequired],
         ['declaration not true', () => upload(id, { declaration: 'false' }), M.declarationRequired],
       ]
@@ -116,7 +120,12 @@ describe('S3-T06 Kertas Subjektif source PDF (API-BIJAK-14)', () => {
         const res = await req()
         expect(res.status, `${name}: ${JSON.stringify(res.body)}`).toBe(422)
         expect(JSON.stringify(res.body), name).toContain(message)
+        if (name === 'scheme over 30 MB') expect(res.body.error.fields).toEqual({ scheme: M.sourcePdfTooLarge })
+        if (name === 'over 30 MB') expect(res.body.error.fields).toEqual({ paper: M.sourcePdfTooLarge })
       }
+      // the declaration is reported before the file
+      const both = await upload(id, { paper: Buffer.from('bukan pdf') })
+      expect(both.body.error.fields).toEqual({ declaration: M.declarationRequired })
       expect((await q(`select count(*)::int n from intake_batches`))[0]!.n).toBe(before)
       expect(await q(`select source_batch_id from papers where id = $1`, [id])).toEqual([{ source_batch_id: null }])
     })
@@ -208,6 +217,33 @@ describe('S3-T06 Kertas Subjektif source PDF (API-BIJAK-14)', () => {
       expect(editor.paper.sections[0]!.questionIds).toEqual([b, a, c])
     })
 
+    it('409 with the item id and nothing written when an accepted item has no question any more', async () => {
+      const id = await paperOf()
+      const batch = String((await upload(id, { declaration: 'true' })).body.data.batchId)
+      await item(batch, 1, 'accepted', await question('Ada soalan'))
+      // a question row with no version: the bank does not know it (an accepted item always keeps a question id, ck_intake_items_accepted_question)
+      const stub = String((await q(`insert into questions (source_type, latest_version_no, is_active) values ('manual', 1, false) returning id`))[0]!.id)
+      await item(batch, 2, 'accepted', stub)
+      const missingId = await one(`select id::text id from intake_items where batch_id = ${batch} and question_id = ${stub}`)
+      const res = await apply(id)
+      expect(res.status, JSON.stringify(res.body)).toBe(409)
+      expect(JSON.stringify(res.body)).toContain(M.sourceItemQuestionMissing.replace('{id}', missingId))
+      expect(await placed(id)).toEqual([])
+    })
+
+    it('409 while the source batch is processing or after it was cancelled', async () => {
+      const id = await paperOf()
+      const batch = String((await upload(id, { declaration: 'true' })).body.data.batchId)
+      await item(batch, 1, 'accepted', await question('Kelompok belum siap'))
+      for (const status of ['processing', 'cancelled']) {
+        await q(`update intake_batches set status = $1 where id = $2`, [status, batch])
+        const res = await apply(id)
+        expect(res.status, `${status}: ${JSON.stringify(res.body)}`).toBe(409)
+        expect(JSON.stringify(res.body)).toContain(M.sourceBatchNotReady)
+      }
+      expect(await placed(id)).toEqual([])
+    })
+
     it('reuses the existing section with the same label (trimmed, case-insensitive) and adds it when the paper has none', async () => {
       const id = await paperOf()
       await q(`update paper_sections set label = ' bahagian a ' where paper_id = $1`, [id])
@@ -254,16 +290,57 @@ describe('S3-T06 Kertas Subjektif source PDF (API-BIJAK-14)', () => {
         expect(await placed(id)).toEqual([`Bahagian A:${members[0]}`, `Bahagian A:${members[1]}`, `Bahagian A:${lone}`])
       })
 
-      it('422 fields.items when a group member is not accepted (a placement would split the group); nothing is written', async () => {
+      it('a rejected member is not placed and does not block: the accepted members are placed contiguously, in published order', async () => {
+        const { members } = await group()
+        const extra = (await admin.post('/api/questions', mcq('Ahli kumpulan tiga'))).body.data.id as string
+        const stim = await admin.post('/api/stimuli', { kind: 'passage', label: 'Petikan tiga', body: { ms: 'Petikan tiga ahli.' } })
+        const g3 = await admin.post('/api/stimulus-groups', { label: 'Petikan tiga', stimulusIds: [stim.body.data.id], questionIds: [extra] })
+        expect(g3.status, JSON.stringify(g3.body)).toBe(201)
+        await approve([extra])
+        const id = await paperOf()
+        const batch = String((await upload(id, { declaration: 'true' })).body.data.batchId)
+        await item(batch, 1, 'accepted', members[1]!)
+        await item(batch, 2, 'rejected', null)
+        const res = await apply(id)
+        expect(res.status, JSON.stringify(res.body)).toBe(201)
+        expect(res.body.data).toEqual({ placements: 1 })
+        expect(await placed(id)).toEqual([`Bahagian A:${members[1]}`])
+      })
+
+      it('a group with no accepted member is not placed', async () => {
+        await group()
+        const lone = await question('Sendiri selain kumpulan')
+        const id = await paperOf()
+        const batch = String((await upload(id, { declaration: 'true' })).body.data.batchId)
+        await item(batch, 1, 'rejected', null)
+        await item(batch, 2, 'rejected', null)
+        await item(batch, 3, 'accepted', lone)
+        expect((await apply(id)).body.data).toEqual({ placements: 1 })
+        expect(await placed(id)).toEqual([`Bahagian A:${lone}`])
+      })
+
+      it('a member already placed in ANY Bahagian counts as placed: 422 when its group mate would land in another Bahagian; never added twice', async () => {
         const { members } = await group()
         const id = await paperOf()
         const batch = String((await upload(id, { declaration: 'true' })).body.data.batchId)
+        await q(`insert into paper_sections (paper_id, position, label, rule_type, question_count, mark_budget, compulsory, admin_created) values ($1, 2, 'Bahagian B', 'all', 0, 0, false, true)`, [id])
+        const secB = await one(`select id::text id from paper_sections where paper_id = ${id} and label = 'Bahagian B'`)
+        await q(`insert into paper_placements (paper_section_id, question_id, pinned_version_no, position) values ($1, $2, 1, 1)`, [secB, members[0]])
         await item(batch, 1, 'accepted', members[0]!)
-        await item(batch, 2, 'rejected', null)
+        await item(batch, 2, 'accepted', members[1]!)
         const res = await apply(id)
         expect(res.status, JSON.stringify(res.body)).toBe(422)
         expect(res.body.error.fields.items).toBe(QUESTION_MESSAGES.groupSplit)
-        expect(await placed(id)).toEqual([])
+        expect(await placed(id)).toEqual([`Bahagian B:${members[0]}`])
+        // a plain question placed in another Bahagian is not added a second time
+        const lone = await question('Sudah ada di Bahagian B')
+        const id2 = await paperOf({ title: 'Dua bahagian' })
+        const b2 = String((await upload(id2, { declaration: 'true' })).body.data.batchId)
+        const sec2 = await one(`select id::text id from paper_sections where paper_id = ${id2}`)
+        await q(`insert into paper_placements (paper_section_id, question_id, pinned_version_no, position) values ($1, $2, 1, 1)`, [sec2, lone])
+        await item(b2, 1, 'accepted', lone)
+        expect((await apply(id2)).body.data).toEqual({ placements: 0 })
+        expect(await placed(id2)).toEqual([`Bahagian A:${lone}`])
       })
     })
   })
