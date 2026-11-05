@@ -183,12 +183,13 @@ describe('arena (M16-16, M16-17)', () => {
       expect(parseData(BattleAnswerResultSchema, res)).toMatchObject({ correct: false, points: 0, correctOptionId: 1 })
     })
 
-    it('winner rules: 0-0 is player B, a higher total wins, equal non-zero totals are a draw (null)', async () => {
+    it('winner rules: 0-0 is a draw (AC-GM-01.3), a higher total wins, equal non-zero totals are a draw (null)', async () => {
       // 0-0: nobody scores
       setAccuracy(0)
       const zero = await botBattle(a, s.math)
       const zeroRes = await play(a, zero, ten(0, 5))
-      expect(zeroRes[9]?.result).toMatchObject({ winner: 'B', scoreA: 0, scoreB: 0 })
+      // AC-GM-01.3: DV-M16-35 (0-0 goes to B) is replaced; equal totals, 0-0 included, are a draw
+      expect(zeroRes[9]?.result).toMatchObject({ winner: null, scoreA: 0, scoreB: 0 })
       expect(t.reports.at(-1)).toMatchObject({ event: 'finish', correct: 0 })
       // B wins: the bot answers right, the pupil wrong
       setAccuracy(1)

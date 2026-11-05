@@ -19,6 +19,7 @@ import {
   BattleLobbySchema,
   BattlePollChallengerResponseSchema,
   BattlePollMatchResponseSchema,
+  BattleQuestionCountSchema,
   BattleRawErrorSchema,
   BattleSchoolDetailSchema,
   BattleSchoolStandingsResultSchema,
@@ -164,6 +165,11 @@ describe('queue and matchmaking (raw)', () => {
       expect(BattlePollMatchResponseSchema.safeParse({ status }).success).toBe(true)
     }
     expect(BattlePollMatchResponseSchema.safeParse({ status: 'matched', battle_uuid: 'b1' }).success).toBe(true)
+    // FR-GM-01.5: `robot` is optional and additive; only a boolean, and only on `matched`.
+    expect(BattlePollMatchResponseSchema.safeParse({ status: 'matched', battle_uuid: 'b1', robot: true }).success).toBe(true)
+    expect(BattlePollMatchResponseSchema.safeParse({ status: 'matched', battle_uuid: 'b1', robot: false }).success).toBe(true)
+    expect(BattlePollMatchResponseSchema.safeParse({ status: 'matched', battle_uuid: 'b1', robot: 'yes' }).success).toBe(false)
+    expect(BattlePollMatchResponseSchema.safeParse({ status: 'waiting', robot: true }).success).toBe(false)
     const incoming = { status: 'incoming_challenge', challenger: { name: 'Budi Ujian', grade_label: 'Tingkatan 4', school: 'SMK Ujian' } }
     expect(BattlePollMatchResponseSchema.safeParse(incoming).success).toBe(true)
     expect(
@@ -352,11 +358,30 @@ describe('rules', () => {
     expect(battleArenaPoints(-5)).toBe(1000)
   })
 
-  it('picks the winner: higher total, draw when equal and non-zero, 0-0 is player B', () => {
+  it('picks the winner: higher total, a draw when equal, 0-0 included (AC-GM-01.3)', () => {
     expect(battleWinner(10, 5)).toBe('A')
     expect(battleWinner(5, 10)).toBe('B')
     expect(battleWinner(700, 700)).toBeNull()
-    expect(battleWinner(0, 0)).toBe('B')
+    expect(battleWinner(0, 0)).toBeNull()
+    expect(battleWinner(0, 1)).toBe('B')
+    expect(battleWinner(1, 0)).toBe('A')
+  })
+
+  it('the chips are 5, 10, 15, 20, sent as the optional body property question_count (FR-GM-01.1)', () => {
+    for (const n of [5, 10, 15, 20]) expect(BattleQuestionCountSchema.safeParse(n).success).toBe(true)
+    for (const n of [0, 1, 7, 25, '10', null]) expect(BattleQuestionCountSchema.safeParse(n).success).toBe(false)
+    const biasa = { question_type: 'biasa', subject_id: '3' }
+    expect(BattleStartRequestSchema.safeParse(biasa).success).toBe(true)
+    for (const n of [5, 10, 15, 20]) {
+      expect(BattleStartRequestSchema.safeParse({ ...biasa, question_count: n }).success).toBe(true)
+      expect(BattleInviteRequestSchema.safeParse({ ...biasa, receiver_id: '9', question_count: n }).success).toBe(true)
+    }
+    for (const n of [7, 0, '10', null]) expect(BattleStartRequestSchema.safeParse({ ...biasa, question_count: n }).success).toBe(false)
+  })
+
+  it('carries the ERR-GAME-05 and expiry texts of 48', () => {
+    expect(BATTLE_MESSAGES.dailyLimit).toBe('Had battle hari ini telah dicapai. Cuba lagi esok.')
+    expect(BATTLE_MESSAGES.invitationExpired).toBe('Cabaran tamat tempoh.')
   })
 
   it('fixes the simulation constants of the mock', () => {
@@ -627,11 +652,43 @@ describe('openapi registration', () => {
     }
   })
 
-  it('states the D59c scope of the opponent search (all schools, display fields only, rate-limited)', () => {
+  it('states the FR-GM-01.6 scope of the opponent search (own school only, display fields only, rate-limited)', () => {
     const op = get('get', '/battle/search-opponent') as { description?: string; responses: Record<string, unknown> }
-    expect(op.description).toContain('D59c')
-    expect(op.description).toContain('all schools')
+    expect(op.description).toContain('FR-GM-01.6')
+    expect(op.description).toContain('own school only')
+    expect(op.description).not.toContain('all schools')
     expect(op.responses['429']).toBeDefined()
+  })
+
+  it('FR-GM-01.1: question_count is an optional body property of the three start bodies, never a query', () => {
+    type Branch = { properties: Record<string, { enum?: unknown[] }>; required?: string[] }
+    for (const name of ['BattleStartRequest', 'BattleInviteRequest']) {
+      const schema = doc.components.schemas[name] as { oneOf: Branch[] }
+      expect(schema.oneOf, name).toHaveLength(3)
+      for (const b of schema.oneOf) {
+        expect(b.properties.question_count, name).toBeDefined()
+        expect(b.required ?? [], name).not.toContain('question_count')
+      }
+    }
+    expect(doc.components.schemas).toHaveProperty('BattleQuestionCount')
+    for (const { path, op } of own) {
+      expect(((op.parameters ?? []) as { name: string }[]).map((p) => p.name), path).not.toContain('question_count')
+    }
+  })
+
+  it('FR-GM-01.9: the start routes document the daily limit in their 429 and keep Retry-After', () => {
+    for (const path of ['/battle/quick-match', '/battle/school-battle']) {
+      const r = get('post', path)?.responses['429'] as { description: string; headers: Record<string, unknown> }
+      expect(r.description, path).toContain('BATTLE_DAILY_LIMIT')
+      expect(r.description, path).toContain(BATTLE_MESSAGES.dailyLimit)
+      expect(r.description, path).toContain('RATE_LIMITED')
+      expect(r.headers['Retry-After'], path).toBeDefined()
+    }
+  })
+
+  it('FR-GM-01.9 / expiry: the accept route documents "Cabaran tamat tempoh." in its 404', () => {
+    const r = get('post', '/battle/invite/{uuid}/accept')?.responses['404'] as { description: string }
+    expect(r.description).toContain('Cabaran tamat tempoh.')
   })
 
   it('every operation declares 401, and admin routes declare 403', () => {
