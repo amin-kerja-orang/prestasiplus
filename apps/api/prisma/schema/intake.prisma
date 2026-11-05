@@ -20,6 +20,14 @@ model IntakeBatch {
   /// 1 to 4 (Kertas; ck_intake_batches_kertas, DM-08). Null only for a guru batch (check constraint).
   kertas       Int?      @db.SmallInt
   year         Int?      @db.SmallInt
+  /// DM-09 (0125): the level (education_levels) of every item of the batch. FK RESTRICT in the migration SQL. Null on a batch made before S1-T03.
+  educationLevelId BigInt? @map("education_level_id")
+  /// DM-09 (0125): the printed paper code, ^[0-9]{4}/[0-9]$ (e.g. 1449/2). Null when left blank.
+  paperCode    String?   @map("paper_code")
+  /// D2 (0125): the Set label (U-08), max 20.
+  setLabel     String?   @map("set_label")
+  /// DM-85 (0138): the exam board (negeri or badan peperiksaan), copied to source_papers.exam_board by extraction.
+  examBoard    String?   @map("exam_board")
   /// Source declaration text (max 200).
   sourceText   String    @map("source_text")
   /// own, official_lpm, third_party (the wire codes sendiri, rasmi, pihak-ketiga are mapped in the service).
@@ -58,6 +66,8 @@ model IntakeFile {
   /// SHA-256 (hex) of the original; duplicate detection across batches. Never in a response.
   sha256       String
   sizeBytes    BigInt   @map("size_bytes")
+  /// D8 (0123): paper, scheme (check constraint). A scheme PDF is a marking scheme linked by question number.
+  role         String   @default("paper")
   pageCount    Int?     @map("page_count")
   /// uploaded, processing, done, failed, cancelled (check constraint).
   status       String   @default("uploaded")
@@ -203,6 +213,8 @@ model IntakeStimulus {
   tableData Json?    @map("table_data") @db.JsonB
   /// BE-37 figure crop. FK intake_figures ON DELETE SET NULL (migration SQL).
   figureId  BigInt?  @map("figure_id")
+  /// D6 (0123): an uploaded image for a stimulus without a crop (FR-QA-36). FK files ON DELETE SET NULL (migration SQL).
+  imageFileId BigInt? @map("image_file_id")
   pageNo    Int?     @map("page_no")
   /// { page, x, y, w, h } of the crop.
   region    Json?    @db.JsonB
@@ -211,6 +223,7 @@ model IntakeStimulus {
 
   batch IntakeBatch  @relation(fields: [batchId], references: [id], onDelete: Cascade, map: "fk_intake_stimuli_batch_id")
   items IntakeItem[]
+  itemLinks IntakeItemStimulus[]
 
   @@unique([batchId, ref], map: "uq_intake_stimuli_batch_id_ref")
   @@map("intake_stimuli")
@@ -227,6 +240,8 @@ model IntakeItem {
   stimulusId       BigInt?   @map("stimulus_id")
   /// Order of the item in the paper.
   position         Int
+  /// DM-07 (0123): the paper's Bahagian, e.g. "Bahagian A" (max 100).
+  sectionLabel     String?   @map("section_label")
   /// pdf, manual (check constraint).
   sourceType       String    @default("pdf") @map("source_type")
   numberLabel      String    @default("") @map("number_label")
@@ -259,6 +274,7 @@ model IntakeItem {
   stimulus  IntakeStimulus?      @relation(fields: [stimulusId], references: [id], onDelete: SetNull, map: "fk_intake_items_stimulus_id")
   events    IntakeItemEvent[]
   duplicates DuplicateLink[]     @relation("ItemDuplicates")
+  stimulusLinks IntakeItemStimulus[]
 
   @@index([batchId, reviewState], map: "ix_intake_items_batch_id_review_state")
   @@index([reviewState, lowestConfidence], map: "ix_intake_items_review_state_lowest_confidence")
@@ -266,6 +282,21 @@ model IntakeItem {
   @@index([stimulusId], map: "ix_intake_items_stimulus_id")
   @@index([questionId], map: "ix_intake_items_question_id")
   @@map("intake_items")
+}
+
+/// D4 (0123): the stimuli an item names, at most 3 (position 1..3). `intake_items.stimulus_id` stays the primary one. Schema only in S1-T03 part 1.
+model IntakeItemStimulus {
+  intakeItemId     BigInt @map("intake_item_id")
+  intakeStimulusId BigInt @map("intake_stimulus_id")
+  /// 1..3 (check constraint).
+  position         Int    @db.SmallInt
+
+  item     IntakeItem     @relation(fields: [intakeItemId], references: [id], onDelete: Cascade, map: "fk_intake_item_stimuli_intake_item_id")
+  stimulus IntakeStimulus @relation(fields: [intakeStimulusId], references: [id], onDelete: Cascade, map: "fk_intake_item_stimuli_intake_stimulus_id")
+
+  @@id([intakeItemId, intakeStimulusId])
+  @@index([intakeStimulusId], map: "ix_intake_item_stimuli_intake_stimulus_id")
+  @@map("intake_item_stimuli")
 }
 
 /// Append-only (G-17): rows are inserted, never updated or deleted by code. Who, when, from, to, reason; the previous

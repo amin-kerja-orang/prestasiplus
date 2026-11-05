@@ -198,6 +198,14 @@ function partTree(q: IntakeQuestion): QuestionPart[] {
   return roots as QuestionPart[]
 }
 
+/** PO item 10: the item's KBAT override goes onto every leaf that has none of its own (the leaf is where the bank stores KBAT). */
+function withKbat(parts: QuestionPart[], kbat: NonNullable<IntakeQuestion['tag']['kbat']>): QuestionPart[] {
+  return parts.map((p) => {
+    if ('children' in p) return { ...p, children: withKbat(p.children as QuestionPart[], kbat) } as QuestionPart
+    return (p as Leaf).kbat === undefined || (p as Leaf).kbat === null ? ({ ...p, kbat } as QuestionPart) : p
+  })
+}
+
 const FLAT_TYPE = { mcq: 'mcq', essay: 'essay', short: 'short_answer', structured: 'short_answer' } as const
 
 /**
@@ -210,11 +218,16 @@ export function toQuestionInput(q: IntakeQuestion, ids: TagIds, stimulusGroupId:
   if (q.type === 'mcq') parts = [mcqLeaf(q, where)]
   else if (q.parts.length > 0) parts = partTree(q)
   else parts = [leaf('1', q.stem.trim(), q.marks, q.mode, q.scheme, { wordRange: q.wordRange, cognitiveLevel: q.cognitiveLevel, where })]
+  const t = q.tag
+  if (t.kbat) parts = withKbat(parts, t.kbat)
   return {
     questionType: FLAT_TYPE[q.type],
     subjectId: ids.subjectId,
     educationLevelId: ids.educationLevelId,
-    difficultyLevel: Math.min(5, Math.max(1, ids.tp)),
+    // PO item 10: the typed Tahap kesukaran wins; without it the bank keeps deriving it from the TP as before.
+    difficultyLevel: t.difficulty ?? Math.min(5, Math.max(1, ids.tp)),
+    ...(t.bab ? { curriculumChapterId: t.bab } : {}),
+    ...(t.topik ? { curriculumTopicId: t.topik } : {}),
     questionText: q.stem,
     parts,
     tag: { unitId: ids.unitId, spIds: ids.spIds, tp: ids.tp },

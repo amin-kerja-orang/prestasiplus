@@ -1,7 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common'
 import {
+  INTAKE_BATCH_MESSAGES,
   INTAKE_FILE_MESSAGES,
   INTAKE_MAX_RETRIES,
+  INTAKE_MIN_ADMIN_YEAR,
   INTAKE_RETRYABLE_PAGE_CODES,
   type IntakeBatchCreate,
   type IntakeBatchDetail,
@@ -67,8 +69,36 @@ export class IntakeFilesService {
 
   // ---- batches ---------------------------------------------------------------------------------
 
+  /**
+   * S1-T03 (DM-09, DM-85): the declared header of a batch. An Admin Pusat batch must name the level (U-02) and a year between 2015 and
+   * this year (D11); a paper code, when typed, must end in the Kertas digit (D10b); a blank paper code, exam board or set is stored as null (D10a).
+   */
+  private async checkedHeader(auth: AuthContext, body: IntakeBatchCreate): Promise<{ educationLevelId: bigint | null; paperCode: string | null; examBoard: string | null; setLabel: string | null }> {
+    const fields: Record<string, string> = {}
+    if (isAdmin(auth) && (body.year < INTAKE_MIN_ADMIN_YEAR || body.year > new Date().getFullYear())) fields.year = INTAKE_BATCH_MESSAGES.yearRequired
+    let educationLevelId: bigint | null = null
+    if (body.educationLevelId === undefined) {
+      if (isAdmin(auth)) fields.educationLevelId = INTAKE_BATCH_MESSAGES.levelRequired
+    } else {
+      const key = parseId(body.educationLevelId)
+      const level = key === null ? null : await this.prisma.client.educationLevel.findUnique({ where: { id: key }, select: { id: true, stage: true } })
+      if (!level || level.stage === 'primary') fields.educationLevelId = INTAKE_BATCH_MESSAGES.levelRequired
+      else educationLevelId = level.id
+    }
+    const paperCode = body.paperCode === undefined || body.paperCode === '' ? null : body.paperCode
+    if (paperCode !== null && Number(paperCode.slice(-1)) !== body.kertas) fields.paperCode = INTAKE_BATCH_MESSAGES.paperCodeKertas(body.kertas)
+    if (Object.keys(fields).length > 0) throw ApiError.of('VALIDATION_ERROR', { fields })
+    return {
+      educationLevelId,
+      paperCode,
+      examBoard: body.examBoard === undefined || body.examBoard === '' ? null : body.examBoard,
+      setLabel: body.setLabel === undefined || body.setLabel === '' ? null : body.setLabel,
+    }
+  }
+
   async createBatch(auth: AuthContext, body: IntakeBatchCreate, who: CallerInfo): Promise<IntakeBatchSummary> {
     const ownerId = idFromString(auth.userId)
+    const header = await this.checkedHeader(auth, body)
     const row = await this.prisma.transaction(async (tx) => {
       if (!isAdmin(auth)) {
         // One create at a time per user, so two parallel requests cannot both pass the count.
@@ -86,6 +116,7 @@ export class IntakeFilesService {
           subject: body.subject,
           kertas: body.kertas,
           year: body.year,
+          ...header,
           sourceText: body.source,
           rightsStatus: RIGHTS_TO_DB[body.copyright],
           note: body.notes ?? null,

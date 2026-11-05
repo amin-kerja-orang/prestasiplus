@@ -116,7 +116,7 @@ export type IntakeMcqOption = z.infer<typeof IntakeMcqOptionSchema>
 export const IntakeCurriculumTagSchema = z
   .strictObject({
     subject: z.string().min(1).max(32).meta({ example: 'MAT' }),
-    level: z.enum(['T4', 'T5', 'T4+T5']),
+    level: z.enum(['T1', 'T2', 'T3', 'T4', 'T5', 'T4+T5']).meta({ description: 'S1-T03 (DM-09): the level of the item; T1 to T5, or `T4+T5` when it is not decided. The batch level is the default.' }),
     unit: z.string().min(1).max(64).nullable().meta({ description: 'DSKP unit code from the controlled list, or null.' }),
     unitLabel: z.string().max(200),
     sp: z.array(z.string().min(1).max(64)).max(20).meta({ description: 'Standard Pembelajaran codes.' }),
@@ -124,6 +124,10 @@ export const IntakeCurriculumTagSchema = z
       description: 'Tahap Penguasaan 1..6, as the prototype gate ("Tahap Penguasaan (TP) mesti antara 1 dan 6.") and BE-36 AiCurriculumTag. The prototype empty tag (lib/dskp.ts emptyTag) uses 3, so 0 is never needed.',
     }),
     formOrigin: z.enum(['T1-T3', 'T4', 'T5']),
+    bab: IdSchema.nullable().optional().meta({ description: 'S1-T03 (PO item 10): the Bab (chapter id) of the item. Optional while intake; must belong to the Subjek and Tingkatan of the item (Terima refuses otherwise). Required only to publish.' }),
+    topik: IdSchema.nullable().optional().meta({ description: 'S1-T03 (PO item 10): the topic id inside the Bab.' }),
+    kbat: z.enum(['mengaplikasi', 'menganalisis', 'menilai', 'mencipta']).nullable().optional().meta({ description: 'S1-T03 (PO item 10): the KBAT override; null or absent = follows the cognitive level.' }),
+    difficulty: z.number().int().min(1).max(5).nullable().optional().meta({ description: 'S1-T03 (PO item 10): Tahap kesukaran 1 to 5. Absent = the bank derives it from the TP as before.' }),
   })
   .meta({ id: 'IntakeCurriculumTag', description: 'Prototype CurriculumTag, field for field.' })
 export type IntakeCurriculumTag = z.infer<typeof IntakeCurriculumTagSchema>
@@ -430,6 +434,12 @@ export const INTAKE_GATE_MESSAGES = {
   /** [PROPOSED] new copy (AC4: tags valid against the taxonomy). */
   unitNotInTaxonomy: 'Unit DSKP tiada dalam senarai kurikulum.',
   /** [PROPOSED] REQ-B-034: an SP code typed in the editor that is not an SP of the subject and level (`SP "1.1" tiada dalam senarai kurikulum. ...`). */
+  /** S1-T03 (DM-09 / 45 T-09): the Bab of the item is not a Bab of its Subjek and Tingkatan. Same copy as the bank (`QUESTION_MESSAGES.chapterMismatch`). */
+  chapterMismatch: 'Bab tidak sepadan dengan subjek dan tahap.',
+  /** S1-T03 (45 T-09): the Bab id is not a Bab at all. */
+  chapterInvalid: 'Bab tidak sah.',
+  /** S1-T03 (FR-ADM-Q09.3 / 30 04-25): an MCQ stem under 10 characters. Same copy as the bank. */
+  mcqStemShort: 'Teks soalan mesti sekurang-kurangnya 10 aksara.',
   spNotInTaxonomy: (code: string) => `SP "${code}" tiada dalam senarai kurikulum. Pilih SP daripada senarai DSKP.`,
   /** [PROPOSED] new copy (AC4: figure references resolve to a stored crop). */
   figureNotResolved: 'Rajah belum mempunyai imej tersimpan.',

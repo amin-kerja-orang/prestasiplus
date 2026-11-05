@@ -25,6 +25,11 @@ export interface CurriculumFacts {
   unitKnown: boolean | null
   /** The codes of `tag.sp` that are not an SP of the subject and level (REQ-B-034); empty when all are known or the subject/level is not. */
   unknownSp: readonly string[]
+  /**
+   * S1-T03: what the curriculum owner says about `tag.bab`: `ok`, `unknown` (not a Bab) or `mismatch` (a Bab of another Subjek or Tingkatan).
+   * Absent = the item has no Bab or it was not looked up.
+   */
+  babState?: 'ok' | 'unknown' | 'mismatch'
 }
 
 /** Marks a scheme can award, counting "any N of M" groups as N points (prototype `schemeTotal`). */
@@ -104,6 +109,18 @@ function spTaxonomyCheck(facts: CurriculumFacts, c: Collector): void {
   for (const code of facts.unknownSp) c.add(c.where, G.spNotInTaxonomy(code))
 }
 
+/** FR-ADM-Q09.3: an MCQ stem under 10 characters (a blank stem is `stemEmpty`, not this). */
+function mcqStemCheck(q: IntakeQuestion, c: Collector): void {
+  const text = q.stem.trim()
+  if (q.type === 'mcq' && text !== '' && Array.from(text).length < 10) c.add(c.where, G.mcqStemShort)
+}
+
+/** FR-ADM-Q09.3: a Bab outside the Subjek and Tingkatan of the item. */
+function babCheck(facts: CurriculumFacts, c: Collector): void {
+  if (facts.babState === 'unknown') c.add(c.where, G.chapterInvalid)
+  else if (facts.babState === 'mismatch') c.add(c.where, G.chapterMismatch)
+}
+
 function stimulusChecks(q: IntakeQuestion, stimulus: IntakeStimulus | undefined, c: Collector): void {
   if (q.stimulusId !== undefined && !stimulus) c.add(c.where, G.stimulusMissing)
   if (stimulus) {
@@ -141,6 +158,9 @@ export function draftIssues(q: IntakeQuestion, stimulus: IntakeStimulus | undefi
   subjectLevelCheck(q, facts, c)
   unitTaxonomyCheck(q, facts, c)
   spTaxonomyCheck(facts, c)
+  babCheck(facts, c)
+  mcqStemCheck(q, c)
+  // The item that cites two stimuli in two groups (FR-ADM-Q09.3) needs the item to stimulus join to have behaviour; it is added with it.
   stimulusChecks(q, stimulus, c)
   const no = q.label.trim()
   return no === '' ? c.issues : c.issues.map((i) => ({ ...i, message: `Soalan ${no}: ${i.message}` }))

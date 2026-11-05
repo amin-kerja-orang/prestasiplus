@@ -146,6 +146,22 @@ export const INTAKE_SOURCE_MAX = 200
 export const INTAKE_NOTES_MAX = 1000
 export const INTAKE_BATCH_PAGE_SIZE_MAX = 100
 export const INTAKE_UPLOAD_FIELD = 'files'
+/** U-08: the Set label is at most 20 characters. */
+export const INTAKE_SET_LABEL_MAX = 20
+/** U-05 (D11): the first year an admin batch may declare; the last is the current year. */
+export const INTAKE_MIN_ADMIN_YEAR = 2015
+export const INTAKE_BATCH_MESSAGES = {
+  /** U-02. */
+  levelRequired: 'Sila pilih tahap pendidikan.',
+  /** U-05 (R1 copy, D113): an admin batch year outside 2015 to the current year. */
+  yearRequired: 'Tahun diperlukan.',
+  /** U-09 (R1 copy, D113). */
+  paperCodeInvalid: 'Kod kertas tidak sah. Contoh: 1449/1.',
+  /** D10b (lead ruling, issue 420): the trailing digit of the paper code differs from the Kertas. */
+  paperCodeKertas: (kertas: number) => `Kod kertas tidak sepadan dengan Kertas ${String(kertas)}.`,
+  /** U-08 (R1 copy, D113). */
+  setTooLong: 'Set tidak boleh melebihi 20 aksara.',
+} as const
 
 /** 202 body of POST /intake/files/{id}/retry and /intake/batches/{id}/retry (API-Q-26). */
 export const IntakeRetryResultSchema = z
@@ -163,7 +179,16 @@ export const IntakeBatchCreateSchema = z
     paperType: IntakePaperTypeSchema,
     subject: z.string().regex(/^[A-Z0-9]{2,32}$/).meta({ description: 'Subject code (upper-case), e.g. MAT.', example: 'MAT' }),
     kertas: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
-    year: z.number().int().min(1990).max(2100),
+    year: z.number().int().min(1990).max(2100).meta({ description: 'An Admin Pusat batch takes 2015 to the current year (D11, 422 `fields.year` otherwise).' }),
+    educationLevelId: IdSchema.optional().meta({ description: 'S1-T03 (DM-09, U-02): the level (education_levels id) of every item. Required for an Admin Pusat batch (422 `fields.educationLevelId`), optional for a Guru.' }),
+    paperCode: z
+      .string()
+      .trim()
+      .regex(/^([0-9]{4}\/[0-9])?$/, { message: INTAKE_BATCH_MESSAGES.paperCodeInvalid })
+      .optional()
+      .meta({ description: 'S1-T03 (DM-09, U-09): the printed paper code, e.g. `1449/2`. Blank or absent is stored as null (D10a). Its trailing digit must equal `kertas` (422 `fields.paperCode`, D10b).', example: '1449/2' }),
+    examBoard: z.string().trim().max(100).optional().meta({ description: 'S1-T03 (DM-85, U-06): the exam board code or name (Negeri or badan). Blank or absent is null. Extraction copies it to `source_papers.exam_board`.' }),
+    setLabel: z.string().trim().max(INTAKE_SET_LABEL_MAX, { message: INTAKE_BATCH_MESSAGES.setTooLong }).optional().meta({ description: 'S1-T03 (D2, U-08): the Set label, e.g. `Set 1` (max 20). Blank or absent is null.' }),
     source: z.string().trim().min(1).max(INTAKE_SOURCE_MAX).meta({ description: 'Source declaration text (max 200).' }),
     copyright: IntakeCopyrightSchema,
     notes: z.string().max(INTAKE_NOTES_MAX).optional().meta({ description: 'Uploader notes (max 1000). Never sent to an AI provider.' }),
@@ -240,6 +265,10 @@ export const IntakeBatchSummarySchema = z
     subject: z.string().meta({ description: 'Admin: subject code. Teacher submission: free text (at most 100).' }),
     kertas: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]).nullable().meta({ description: 'Null only for a teacher submission.' }),
     year: z.number().int().nullable().meta({ description: 'Null only when a teacher submission has no year.' }),
+    educationLevelId: IdSchema.nullable().optional().meta({ description: 'S1-T03 (DM-09): the declared level; null for a batch made before it and for a Guru who left it out.' }),
+    paperCode: z.string().nullable().optional().meta({ description: 'S1-T03 (DM-09): the declared paper code (`1449/2`) or null.' }),
+    examBoard: z.string().nullable().optional().meta({ description: 'S1-T03 (DM-85): the declared exam board or null.' }),
+    setLabel: z.string().nullable().optional().meta({ description: 'S1-T03 (D2): the declared Set label or null.' }),
     source: z.string(),
     copyright: IntakeCopyrightSchema,
     notes: z.string().nullable(),

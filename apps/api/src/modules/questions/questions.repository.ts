@@ -98,6 +98,11 @@ export interface VersionProvenance {
   sourceFileId?: bigint | null
   aiRunId?: bigint | null
   aiModel?: string | null
+  /** S1-T03: declared once per upload (QE3.6) and kept by later versions through `inherited`. */
+  year?: number | null
+  examType?: string | null
+  examBoard?: string | null
+  sectionLabel?: string | null
 }
 
 export interface NewQuestion {
@@ -1151,6 +1156,7 @@ export class QuestionsRepository {
         year: true,
         examType: true,
         examBoard: true,
+        sectionLabel: true,
         textbookBab: true,
         textbookTingkatan: true,
         textbookPage: true,
@@ -1481,6 +1487,7 @@ export class QuestionsRepository {
       year: number | null
       examType: string | null
       examBoard: string | null
+      sectionLabel: string | null
       textbookBab: number | null
       textbookTingkatan: number | null
       textbookPage: number | null
@@ -1514,6 +1521,10 @@ export class QuestionsRepository {
               sourceFileId: provenance.sourceFileId ?? null,
               aiRunId: provenance.aiRunId ?? null,
               aiModel: provenance.aiModel ?? null,
+              ...(provenance.year === undefined ? {} : { year: provenance.year }),
+              ...(provenance.examType === undefined ? {} : { examType: provenance.examType }),
+              ...(provenance.examBoard === undefined ? {} : { examBoard: provenance.examBoard }),
+              ...(provenance.sectionLabel === undefined ? {} : { sectionLabel: provenance.sectionLabel }),
             }),
       },
     })

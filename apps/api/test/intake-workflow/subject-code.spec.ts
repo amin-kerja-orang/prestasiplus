@@ -1,4 +1,4 @@
-import { INTAKE_GATE_MESSAGES as G, type IntakeQuestion } from '@pp/contract'
+import { INTAKE_GATE_MESSAGES as G, type AiQuestionDraft, type IntakeQuestion } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { CurriculumFactsService } from '../../src/modules/intake/workflow/curriculum-facts'
@@ -26,8 +26,8 @@ afterAll(async () => {
   await t.close()
 })
 
-const tagOf = (subject: string, level: string, unit: string | null = null, sp: string[] = []): IntakeQuestion['tag'] =>
-  ({ subject, level, unit, unitLabel: '', sp, tp: 3, formOrigin: level === 'T5' ? 'T5' : 'T4' }) as IntakeQuestion['tag']
+const tagOf = (subject: string, level: string, unit: string | null = null, sp: string[] = []) =>
+  ({ subject, level, unit, unitLabel: '', sp, tp: 3, formOrigin: level === 'T5' ? 'T5' : 'T4' }) as IntakeQuestion['tag'] & AiQuestionDraft['tag']
 
 const question = (tag: IntakeQuestion['tag']): IntakeQuestion =>
   ({

@@ -77,6 +77,7 @@ export async function bootIntakeApp(
   ocr: FakeOcrEngine = new FakeOcrEngine(),
 ): Promise<IntakeTestApp> {
   const db: TestDatabase = reuse?.db ?? (await createTestDatabase())
+  activeDb = db
   if (!reuse) await runSeeds([identitySeed], { prisma: db.prisma })
   const dir = reuse?.dir ?? (await mkdtemp(join(tmpdir(), 'pp-intake-test-')))
 
@@ -177,8 +178,32 @@ export interface Who {
   csrf: string
 }
 
+let activeDb: TestDatabase | null = null
+
+/** Names the database `levelId` reads (a suite that boots its own app calls this). */
+export function useLevelDb(db: TestDatabase): void {
+  activeDb = db
+}
+
+/** The id of an education level by code (T1 to T5; the default T4 matches the MATH T4 unit and SP of the workflow fixtures). A suite that did not seed the curriculum gets the row inserted. */
+export async function levelId(code = 'T4'): Promise<string> {
+  if (!activeDb) throw new Error('bootIntakeApp first')
+  const found = await activeDb.query<{ id: string }>(`select id::text from education_levels where code = $1`, [code])
+  if (found[0]) return found[0].id
+  const made = await activeDb.query<{ id: string }>(
+    `insert into education_levels (code, name, name_en, stage, curriculum, sort_order) values ($1, $2, $3, 'upper_secondary', 'KSSM', $4) returning id::text`,
+    [code, `Tingkatan ${code.slice(1)}`, `Form ${code.slice(1)}`, Number(code.slice(1))],
+  )
+  return made[0]!.id
+}
+
 export async function createBatch(who: Who, over: Partial<IntakeBatchCreate> = {}): Promise<IntakeBatchSummary> {
-  const res = await who.agent.post('/api/intake/batches').set('X-CSRF-Token', who.csrf).send({ ...DECLARATION, ...over })
+  const post = (extra: Partial<IntakeBatchCreate>) => who.agent.post('/api/intake/batches').set('X-CSRF-Token', who.csrf).send({ ...DECLARATION, ...over, ...extra })
+  let res = await post({})
+  // S1-T03: an Admin Pusat batch must name its level (U-02); a Guru's need not. Try without, add a level when the API asks for one.
+  if (res.status === 422 && (res.body as { error?: { fields?: Record<string, string> } }).error?.fields?.educationLevelId) {
+    res = await post({ educationLevelId: await levelId() })
+  }
   expect(res.status, JSON.stringify(res.body)).toBe(201)
   return IntakeBatchSummaryEnvelopeSchema.parse(res.body).data
 }

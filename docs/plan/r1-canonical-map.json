@@ -10514,6 +10514,14 @@
       "approved_by_card": null
     },
     {
+      "name": "IntakeItemStimulus",
+      "table": "intake_item_stimuli",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/prisma/schema/intake.prisma",
+      "approved_by_card": null
+    },
+    {
       "name": "IntakeItemEvent",
       "table": "intake_item_events",
       "status": "canonical",

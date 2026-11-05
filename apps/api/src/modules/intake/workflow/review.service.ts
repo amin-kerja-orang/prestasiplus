@@ -41,6 +41,7 @@ import { runToWire, type CallerInfo } from './extraction.service'
 import { batchLevelIssues, draftIssues, questionMarks, stimulusIssues } from './gate'
 import { attachToStimulus, groupsOf } from './grouping'
 import { stimulusTableOf } from '../../questions/stimulus-table'
+import { batchTagLevel, examTypeOfPaperType } from './paper-identity'
 import { ITEM_INCLUDE, PayloadSchema, bandOf, payloadOf, questionOf, stateDuplicates, stimulusOf, type ItemRow, type StoredPayload } from './item-model'
 import { ItemViews } from './item-views'
 import { toQuestionInput, ConvertError } from './to-question'
@@ -255,19 +256,21 @@ export class IntakeReviewService {
       // Scope first, lock second: a caller who cannot see the batch must not queue on its row lock.
       const visible = await tx.intakeBatch.findFirst({ where: { id: batchId, ...visibleBatches(auth) }, select: { id: true } })
       if (!visible) throw batchNotFound()
-      const locked = await tx.$queryRaw<{ id: bigint; subject: string }[]>`SELECT id, subject FROM intake_batches WHERE id = ${batchId} FOR UPDATE`
+      const locked = await tx.$queryRaw<{ id: bigint; subject: string; education_level_id: bigint | null }[]>`SELECT id, subject, education_level_id FROM intake_batches WHERE id = ${batchId} FOR UPDATE`
       if (!locked[0]) throw batchNotFound()
       const items = await tx.intakeItem.findMany({ where: { batchId }, select: { numberLabel: true, position: true } })
       if (items.length >= this.config.maxItemsPerBatch) throw invalid('batchId', WORKFLOW_MESSAGES.tooManyItems)
       const nextLabel = items.reduce((m, r) => Math.max(m, Number.parseInt(r.numberLabel, 10) || 0), 0) + 1
       const d = INTAKE_BLANK_ITEM_DEFAULTS
+      const batchLevel = await batchTagLevel(tx, locked[0].education_level_id)
       const payload: StoredPayload = {
         stem: d.stem,
         options: [],
         marks: d.marks,
         mode: d.mode,
         parts: [],
-        tag: { subject: locked[0].subject, level: d.tag.level, unit: null, unitLabel: '', sp: [], tp: d.tag.tp, formOrigin: d.tag.formOrigin },
+        // S1-T03 (DM-09): the batch level is the level of a hand-added item too (T4+T5 only for a batch that declared none).
+        tag: { subject: locked[0].subject, ...(batchLevel ?? { level: d.tag.level, formOrigin: d.tag.formOrigin }), unit: null, unitLabel: '', sp: [], tp: d.tag.tp },
       }
       const page = body.page ?? d.page
       const row = await tx.intakeItem.create({
@@ -565,9 +568,9 @@ export class IntakeReviewService {
     let created
     try {
       groupId = row.stimulus ? await this.bankGroupFor(row, ownerId, auth.mode !== null, made) : null
-      // The kertas comes from the source paper (the paper builder reads it from the trailing digit of the paper code).
-      const paper = row.batch.sourcePaperId === null ? null : await tx.sourcePaper.findUnique({ where: { id: row.batch.sourcePaperId }, select: { paperCode: true, kertas: true } })
-      const kertas = kertasOfSourcePaper(paper)
+      // S1-T03 (D115): the paper identity is the one declared on the batch; the source paper only fills what the batch left empty.
+      const paper = row.batch.sourcePaperId === null ? null : await tx.sourcePaper.findUnique({ where: { id: row.batch.sourcePaperId }, select: { paperCode: true, kertas: true, examBoard: true } })
+      const kertas = row.batch.kertas !== null && row.batch.kertas >= 1 && row.batch.kertas <= 4 ? (String(row.batch.kertas) as '1' | '2' | '3' | '4') : kertasOfSourcePaper(paper)
       const input = { ...toQuestionInput(q, resolved.ids, groupId), ...(kertas === null ? {} : { kertas }) }
       const file = row.intakeFileId === null ? null : await tx.intakeFile.findUnique({ where: { id: row.intakeFileId }, select: { fileId: true } })
       created = await this.questions.createFromIntake(input, actor, {
@@ -584,7 +587,12 @@ export class IntakeReviewService {
         // Only a question with NO parts declares a total: for a parted question the intake total is 0 (its marks are the parts'), and the
         // gate would compare that 0 with the sum of the parts.
         declaredMarks: q.parts.length === 0 && Number.isInteger(q.marks) && q.marks > 0 && q.marks <= 999 ? q.marks : null,
-        paperCode: paper?.paperCode && /\/[0-9]\s*$/.test(paper.paperCode) ? paper.paperCode : null,
+        paperCode: row.batch.paperCode ?? (paper?.paperCode && /\/[0-9]\s*$/.test(paper.paperCode) ? paper.paperCode : null),
+        year: row.batch.year,
+        setLabel: row.batch.setLabel,
+        examBoard: row.batch.examBoard ?? paper?.examBoard ?? null,
+        examType: examTypeOfPaperType(row.batch.paperType),
+        sectionLabel: row.sectionLabel,
       })
     } catch (err) {
       // The bank stimulus, group and figure copy are written outside this transaction: a refused accept must not leave them behind

@@ -933,6 +933,8 @@ export class QuestionsService {
     // R1-H-A18: who wrote this content and what total the intake declared. An AI variant is the AI's until a person acts on it.
     draft.lastEditor = provenance?.sourceType === 'ai_variant' ? 'ai' : 'person'
     draft.declaredMarks = provenance?.declaredMarks ?? null
+    // S1-T03: the Set is a column of the draft; year, exam board, exam type and Bahagian go with the provenance below.
+    if (provenance?.setLabel != null) draft.setLabel = provenance.setLabel
     if (status === 'approved') {
       // Created already approved (an Admin Pusat shortcut that skips the Semakan step): the same merged approve gate as the transition,
       // on the same builder. The question is not stored yet, so the facts that need a stored row are the new-question ones.
@@ -989,6 +991,10 @@ export class QuestionsService {
                 sourceFileId: parse(provenance.sourceFileId ?? ''),
                 aiRunId: parse(provenance.aiRunId ?? ''),
                 aiModel: provenance.aiModel,
+                ...(provenance.year === undefined ? {} : { year: provenance.year }),
+                ...(provenance.examType === undefined ? {} : { examType: provenance.examType }),
+                ...(provenance.examBoard === undefined ? {} : { examBoard: provenance.examBoard }),
+                ...(provenance.sectionLabel === undefined ? {} : { sectionLabel: provenance.sectionLabel }),
               },
             }
           : {}),

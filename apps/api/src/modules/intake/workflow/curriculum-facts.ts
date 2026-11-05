@@ -13,8 +13,8 @@ const MAX_SP = 3
 
 /** Education level codes a tag may mean, in the order they are tried (`T4+T5` is decided by the form of origin). */
 function levelCandidates(tag: Pick<Tag, 'level' | 'formOrigin'>): string[] {
-  if (tag.level === 'T4') return ['T4']
-  if (tag.level === 'T5') return ['T5']
+  // S1-T03 (DM-09): a declared level T1 to T5 is that level alone.
+  if (tag.level !== 'T4+T5') return [tag.level]
   return tag.formOrigin === 'T5' ? ['T5', 'T4'] : ['T4', 'T5']
 }
 
@@ -32,6 +32,7 @@ export class TagResolver {
   private readonly subjects = new Map<string, Promise<{ id: bigint } | null>>()
   private readonly levels = new Map<string, Promise<{ id: bigint } | null>>()
   private readonly nodes = new Map<string, Promise<{ id: bigint } | null>>()
+  private readonly chapters = new Map<string, Promise<{ subjectId: bigint; educationLevelId: bigint | null } | null>>()
 
   constructor(private readonly curriculum: CurriculumRepository) {}
 
@@ -101,6 +102,23 @@ export class TagResolver {
     )
   }
 
+  private chapter(id: string): Promise<{ subjectId: bigint; educationLevelId: bigint | null } | null> {
+    let p = this.chapters.get(id)
+    if (!p) {
+      p = /^[1-9][0-9]{0,18}$/.test(id) ? this.curriculum.chapter(BigInt(id)) : Promise.resolve(null)
+      this.chapters.set(id, p)
+    }
+    return p
+  }
+
+  /** S1-T03: is the Bab of the tag a Bab of the item's Subjek and one of its levels (a `T4+T5` item may sit in either). */
+  private async babState(tag: Tag, subjectId: bigint, levels: readonly bigint[]): Promise<CurriculumFacts['babState']> {
+    if (!tag.bab) return undefined
+    const chapter = await this.chapter(tag.bab)
+    if (!chapter) return 'unknown'
+    return chapter.subjectId === subjectId && chapter.educationLevelId !== null && levels.includes(chapter.educationLevelId) ? 'ok' : 'mismatch'
+  }
+
   /** The SP codes of a tag at one level: the ids found (at most MAX_SP are kept) and the codes that are not an SP there (each once). */
   private async spAt(codes: readonly string[], subjectId: bigint, levelId: bigint): Promise<{ ids: string[]; unknown: string[] }> {
     const ids: string[] = []
@@ -146,7 +164,8 @@ export class TagResolver {
       }
     }
     const unit = unitAt.get(levelId) ?? null
-    const facts: CurriculumFacts = { subjectKnown: true, levelKnown: true, unitKnown: tag.unit === null ? null : unit !== null, unknownSp: sp.unknown }
+    const babState = await this.babState(tag, subject.id, levels)
+    const facts: CurriculumFacts = { subjectKnown: true, levelKnown: true, unitKnown: tag.unit === null ? null : unit !== null, unknownSp: sp.unknown, ...(babState === undefined ? {} : { babState }) }
     return {
       facts,
       ids: {

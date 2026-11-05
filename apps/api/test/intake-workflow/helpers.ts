@@ -29,7 +29,7 @@ import { QuestionsModule } from '../../src/modules/questions'
 import { QuestionWorkflowModule } from '../../src/modules/questions/workflow'
 import { type AuthTestApp, START } from '../auth/helpers'
 import { createTestDatabase, type TestDatabase } from '../support/db'
-import { FakeOcrEngine, createBatch, uploadOk, type LoggedIn } from '../intake-files/helpers'
+import { FakeOcrEngine, createBatch, uploadOk, useLevelDb, type LoggedIn } from '../intake-files/helpers'
 import { textPdf } from '../intake-files/pdf-fixtures'
 
 export { addAccount, loginAs, type LoggedIn } from '../intake-files/helpers'
@@ -83,6 +83,7 @@ export interface BootWorkflowOptions {
 
 export async function bootWorkflowApp(env: Record<string, string | undefined> = {}, opts: BootWorkflowOptions = {}): Promise<WorkflowTestApp> {
   const db: TestDatabase = await createTestDatabase()
+  useLevelDb(db)
   await runSeeds([identitySeed, curriculumSeed], { prisma: db.prisma })
   const dir = await mkdtemp(join(tmpdir(), 'pp-workflow-test-'))
   const full: Record<string, string | undefined> = {

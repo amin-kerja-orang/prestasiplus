@@ -61,6 +61,12 @@ export interface QuestionProvenance {
   paperCode?: string | null
   /** R1-H-A18: the question total the intake item declared; the approve gate compares it with the sum of the leaf marks. */
   declaredMarks?: number | null
+  /** S1-T03 (QE3.6): the year, Set, exam board, exam type (sebenar, percubaan, modul, topikal, latihan) and Bahagian declared once per upload; written on the first version. */
+  year?: number | null
+  setLabel?: string | null
+  examBoard?: string | null
+  examType?: string | null
+  sectionLabel?: string | null
 }
 
 /** Who performs a write. `role` is the ACTIVE role of the session. */

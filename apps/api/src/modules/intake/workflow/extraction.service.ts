@@ -34,6 +34,7 @@ import { signatureOf, textOfQuestion, type Signature } from './duplicates'
 import { linkReferencingItems } from './figure-links'
 import { gatherByRef } from './grouping'
 import { PayloadSchema, stateDuplicates, type StoredPayload } from './item-model'
+import { batchTagLevel, DEFAULT_SECTION_LABEL, examTypeOfPaperType } from './paper-identity'
 import { INTAKE_AUDIT, MAX_STIMULI_PER_BATCH, WORKFLOW_JOB_ENTITY, WORKFLOW_JOB_TYPE } from './workflow.constants'
 import { IntakeWorkflowConfig } from './workflow.config'
 
@@ -330,8 +331,15 @@ export class IntakeExtractionService implements OnModuleInit {
 
   /** Points the batch at a `source_papers` row (find or create); BE-10 owns the table but has no writer for it. */
   private async ensureSourcePaper(tx: TxClient, batchId: bigint, current: bigint | null, fileHash: string | null): Promise<void> {
-    if (current !== null) return
-    const b = await tx.intakeBatch.findUniqueOrThrow({ where: { id: batchId }, select: { subject: true, kertas: true, year: true, paperType: true, rightsStatus: true } })
+    const b = await tx.intakeBatch.findUniqueOrThrow({ where: { id: batchId }, select: { subject: true, kertas: true, year: true, paperType: true, rightsStatus: true, examBoard: true } })
+    // DM-85: the declared exam board is filled on a paper that has none; a different value already there is never overwritten.
+    const fillBoard = async (paperId: bigint): Promise<void> => {
+      if (b.examBoard !== null) await tx.sourcePaper.updateMany({ where: { id: paperId, examBoard: null }, data: { examBoard: b.examBoard } })
+    }
+    if (current !== null) {
+      await fillBoard(current)
+      return
+    }
     // ONE canonical subject code (the curriculum one) for the lookup and the natural key: an MAT batch and a MATH batch of the same paper
     // are the same paper (REQ-B-015).
     const code = curriculumCodeOf(b.subject.toUpperCase())
@@ -345,17 +353,21 @@ export class IntakeExtractionService implements OnModuleInit {
       const known = await tx.sourcePaper.findFirst({ where: { naturalKey: { in: [naturalKey, legacyKey] } }, orderBy: { id: 'asc' }, select: { id: true } })
       if (known) {
         await tx.intakeBatch.update({ where: { id: batchId }, data: { sourcePaperId: known.id } })
+        await fillBoard(known.id)
         return
       }
     }
-    const examType = b.paperType === 'exam' ? 'sebenar' : b.paperType === 'trial' ? 'percubaan' : b.paperType === 'exercise_book' ? 'latihan' : null
+    const examType = examTypeOfPaperType(b.paperType)
     const inserted = await tx.$queryRaw<{ id: bigint }[]>`
-      INSERT INTO source_papers (natural_key, file_hash, subject_id, kertas, year, exam_type, rights_status)
-      VALUES (${naturalKey}, ${fileHash}, ${subject?.id ?? null}, ${b.kertas === null ? null : `K${b.kertas}`}, ${b.year}, ${examType}, ${b.rightsStatus})
+      INSERT INTO source_papers (natural_key, file_hash, subject_id, kertas, year, exam_type, exam_board, rights_status)
+      VALUES (${naturalKey}, ${fileHash}, ${subject?.id ?? null}, ${b.kertas === null ? null : `K${b.kertas}`}, ${b.year}, ${examType}, ${b.examBoard}, ${b.rightsStatus})
       ON CONFLICT (natural_key) DO NOTHING
       RETURNING id`
     const paperId = inserted[0]?.id ?? (await tx.sourcePaper.findFirst({ where: { naturalKey }, select: { id: true } }))?.id
-    if (paperId !== undefined) await tx.intakeBatch.update({ where: { id: batchId }, data: { sourcePaperId: paperId } })
+    if (paperId !== undefined) {
+      await tx.intakeBatch.update({ where: { id: batchId }, data: { sourcePaperId: paperId } })
+      await fillBoard(paperId)
+    }
   }
 
   // ---- job handler -------------------------------------------------------------------------------
@@ -371,7 +383,7 @@ export class IntakeExtractionService implements OnModuleInit {
     const wait = typeof payload.wait === 'number' && Number.isInteger(payload.wait) && payload.wait >= 0 ? payload.wait : 0
     const run = await this.prisma.client.intakeExtractionRun.findUnique({ where: { id: runId } })
     if (!run || !ACTIVE_RUN.includes(run.state)) return // finished, replaced or removed: nothing to do (idempotent)
-    const batch = await this.prisma.client.intakeBatch.findUnique({ where: { id: run.batchId }, select: { id: true, status: true, subject: true } })
+    const batch = await this.prisma.client.intakeBatch.findUnique({ where: { id: run.batchId }, select: { id: true, status: true, subject: true, educationLevelId: true } })
     if (!batch || batch.status === 'cancelled') {
       await this.finish(run.id, 'failed', 'EXTRACTION_FAILED')
       return
@@ -402,8 +414,10 @@ export class IntakeExtractionService implements OnModuleInit {
 
     let paper: AiExtractedPaper | null
     let pageMap: PageRef[]
+    // S1-T03 (DM-09): the declared level of the batch is the level of every extracted item.
+    const level = await batchTagLevel(this.prisma.client, batch.educationLevelId)
     try {
-      const prepared = await this.prepare(batch.id, batch.subject)
+      const prepared = await this.prepare(batch.id, batch.subject, level)
       pageMap = prepared.pageMap
       // A pages run with no page read again has nothing new to extract: no provider call, no cost.
       const readAgain = targets === null ? true : (await this.readAgain(targets)) > 0
@@ -413,7 +427,7 @@ export class IntakeExtractionService implements OnModuleInit {
       return
     }
     try {
-      await this.persist(run.id, batch.id, batch.subject, paper, pageMap, signal, targets)
+      await this.persist(run.id, batch.id, batch.subject, paper, pageMap, signal, targets, level)
     } catch (err) {
       if (err instanceof JobError) throw err
       await this.prisma.client.intakeExtractionRun.update({ where: { id: run.id }, data: { state: 'queued' } })
@@ -429,7 +443,7 @@ export class IntakeExtractionService implements OnModuleInit {
    * local-OCR text only (v2-threat-model rows 46 and 50). The request is built field by field, so an `images` entry
    * that a later change to `IntakeExtractionInput` might add is not copied (and BE-36's service drops one as well).
    */
-  private async prepare(batchId: bigint, subject: string): Promise<{ request: AiExtractRequest; pageMap: PageRef[] }> {
+  private async prepare(batchId: bigint, subject: string, level: BatchLevel): Promise<{ request: AiExtractRequest; pageMap: PageRef[] }> {
     const built = await this.input.build(idToString(batchId))
     const files = await this.prisma.client.intakeFile.findMany({
       where: { batchId, status: 'done' },
@@ -443,7 +457,8 @@ export class IntakeExtractionService implements OnModuleInit {
         pageMap.push({ fileId: f.id, pageId: p.id, pageNo: p.pageNo })
       }
     }
-    const taxonomy = await this.curriculum.taxonomy(subject)
+    // The units offered to the extractor are those of the batch level (T4 or T5); T1 to T3 and an undeclared level keep the whole list.
+    const taxonomy = (await this.curriculum.taxonomy(subject)).filter((u) => level === null || (level.level !== 'T4' && level.level !== 'T5') || u.form === level.level)
     const request: AiExtractRequest = {
       pages: built.pages,
       subject: built.subject,
@@ -537,6 +552,7 @@ export class IntakeExtractionService implements OnModuleInit {
     pageMap: PageRef[],
     signal: AbortSignal,
     onlyPages: readonly PageTarget[] | null = null,
+    level: BatchLevel = null,
   ): Promise<void> {
     const drafts = paper?.questions ?? []
     const stimuliIn = (paper?.stimuli ?? []).slice(0, MAX_STIMULI_PER_BATCH)
@@ -553,7 +569,7 @@ export class IntakeExtractionService implements OnModuleInit {
       return p.success ? [{ id: idToString(e.id), sig: signatureOf(textOfQuestion(p.data)) }] : []
     })
     const room = Math.max(0, this.config.maxItemsPerBatch - existing.length)
-    let mapped = drafts.slice(0, room).map((d) => this.mapDraft(d, subject, pageMap))
+    let mapped = drafts.slice(0, room).map((d) => this.mapDraft(d, subject, pageMap, level))
     // A pages run adds the items of the pages it read again only; the items of the other pages already exist.
     if (onlyPages) mapped = mapped.filter((m) => m.page !== null && onlyPages.some((t) => t.fileId === m.page?.fileId && t.pageNo === m.page.pageNo))
     // D90: a figure belongs to EVERY question that names it. Add the links the extractor missed (never move one it made).
@@ -612,6 +628,8 @@ export class IntakeExtractionService implements OnModuleInit {
             aiRunId: runId,
             stimulusId: m.stimulusRef === null ? null : (stimulusIdByRef.get(m.stimulusRef) ?? null),
             position: base + i + 1,
+            // DM-07 (U-04): the Bahagian. The parser reports no heading, so every item gets the default; the reviewer edits it per item.
+            sectionLabel: DEFAULT_SECTION_LABEL,
             sourceType: 'pdf',
             numberLabel: m.label,
             itemType: m.type,
@@ -682,7 +700,7 @@ export class IntakeExtractionService implements OnModuleInit {
   }
 
   /** One provider draft as the columns of an item. The provider never sets `confirmed`, a state or an id. */
-  private mapDraft(d: AiQuestionDraft, subject: string, pageMap: readonly PageRef[]) {
+  private mapDraft(d: AiQuestionDraft, subject: string, pageMap: readonly PageRef[], level: BatchLevel) {
     const page = this.pageOf(pageMap, d.page)
     const regionPage = this.pageOf(pageMap, d.region?.page)
     const region = d.region && regionPage ? { page: regionPage.pageNo, x: d.region.x, y: d.region.y, w: d.region.w, h: d.region.h } : null
@@ -717,6 +735,7 @@ export class IntakeExtractionService implements OnModuleInit {
           parts: [],
           tag: { subject, level: 'T4+T5', unit: DEFAULT_TAG_UNIT, unitLabel: '', sp: [], tp: 3, formOrigin: 'T4' },
         })
+    if (level !== null) payload.tag = { ...payload.tag, level: level.level, formOrigin: level.formOrigin }
     return {
       label: scrubContactDetails(d.label).slice(0, 32),
       type: d.type,
@@ -732,6 +751,8 @@ export class IntakeExtractionService implements OnModuleInit {
     }
   }
 }
+
+type BatchLevel = Awaited<ReturnType<typeof batchTagLevel>>
 
 function isUniqueViolation(err: unknown): boolean {
   if (typeof err !== 'object' || err === null) return false

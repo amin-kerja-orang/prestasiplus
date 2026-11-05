@@ -83,12 +83,22 @@ describe('intake shapes behave exactly like the merged BE-36 shapes', () => {
       { ...t, subject: '' },
       { ...t, subject: text(32) },
       { ...t, subject: text(33) },
-      { ...t, level: 'T3' },
+      { ...t, level: 'T6' },
       { ...t, level: 'T4+T5' },
       { ...t, formOrigin: 'T1-T3' },
       { ...t, formOrigin: 'T6' },
       { ...t, extra: 1 },
     ])
+  })
+
+  it('CurriculumTag: the intake tag is wider on purpose (S1-T03, DM-09 and PO item 10): levels T1 to T3 and the optional bab, topik, kbat, difficulty', () => {
+    const t = { subject: 'MAT', level: 'T4', unit: null, unitLabel: '', sp: [], tp: 3, formOrigin: 'T4' }
+    for (const level of ['T1', 'T2', 'T3']) {
+      expect(IntakeCurriculumTagSchema.safeParse({ ...t, level, formOrigin: 'T1-T3' }).success).toBe(true)
+      expect(AiCurriculumTagSchema.safeParse({ ...t, level, formOrigin: 'T1-T3' }).success).toBe(false)
+    }
+    expect(IntakeCurriculumTagSchema.safeParse({ ...t, bab: '12', topik: null, kbat: 'menilai', difficulty: 5 }).success).toBe(true)
+    expect(AiCurriculumTagSchema.safeParse({ ...t, bab: '12' }).success).toBe(false)
   })
 
   it('WordRange: 0..5000 integers and min <= max', () => {

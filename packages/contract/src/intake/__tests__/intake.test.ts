@@ -224,7 +224,16 @@ describe('question content (prototype types.ts, field for field)', () => {
     expect(ok(IntakeQuestionSchema, { ...mcq, type: 'objektif' })).toBe(false)
     expect(ok(IntakeQuestionSchema, { ...mcq, mode: 'mcq' })).toBe(false)
     expect(ok(IntakeQuestionSchema, { ...mcq, options: [{ id: 'A' }] })).toBe(false)
-    expect(ok(IntakeQuestionSchema, { ...mcq, tag: { ...tag, level: 'T3' } })).toBe(false)
+    expect(ok(IntakeQuestionSchema, { ...mcq, tag: { ...tag, level: 'T6' } })).toBe(false)
+  })
+
+  it('S1-T03: the tag level is T1 to T5 or T4+T5; bab, topik, kbat and difficulty are optional and checked', () => {
+    for (const level of ['T1', 'T2', 'T3', 'T4', 'T5', 'T4+T5']) expect(ok(IntakeQuestionSchema, { ...mcq, tag: { ...tag, level } })).toBe(true)
+    expect(ok(IntakeQuestionSchema, { ...mcq, tag: { ...tag, bab: '12', topik: '34', kbat: 'mencipta', difficulty: 3 } })).toBe(true)
+    expect(ok(IntakeQuestionSchema, { ...mcq, tag: { ...tag, bab: null, topik: null, kbat: null, difficulty: null } })).toBe(true)
+    for (const bad of [{ bab: '' }, { kbat: 'tinggi' }, { difficulty: 0 }, { difficulty: 6 }, { difficulty: 2.5 }]) {
+      expect(ok(IntakeQuestionSchema, { ...mcq, tag: { ...tag, ...bad } })).toBe(false)
+    }
   })
 
   it('keeps a draft with gaps savable (the gate runs on accept, not on parse)', () => {

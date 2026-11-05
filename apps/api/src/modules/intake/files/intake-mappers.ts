@@ -49,6 +49,10 @@ export interface BatchRow {
   subject: string
   kertas: number | null
   year: number | null
+  educationLevelId?: bigint | null
+  paperCode?: string | null
+  examBoard?: string | null
+  setLabel?: string | null
   sourceText: string
   rightsStatus: string
   note: string | null
@@ -83,6 +87,10 @@ export function toBatchSummary(row: BatchRow, counts: BatchItemCounts = NO_ITEMS
     subject: row.subject,
     kertas: row.kertas === null ? null : kertasOf(row.kertas),
     year: row.year,
+    educationLevelId: row.educationLevelId == null ? null : idToString(row.educationLevelId),
+    paperCode: row.paperCode ?? null,
+    examBoard: row.examBoard ?? null,
+    setLabel: row.setLabel ?? null,
     source: row.sourceText,
     copyright: rightsToWire(row.rightsStatus),
     notes: row.note,

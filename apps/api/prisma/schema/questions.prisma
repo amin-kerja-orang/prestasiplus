@@ -198,6 +198,8 @@ model QuestionVersion {
   examType      String? @map("exam_type")
   examBoard     String? @map("exam_board")
   setLabel      String? @map("set_label")
+  /// DM-07 (0123): the paper's Bahagian (max 100).
+  sectionLabel  String? @map("section_label")
   paperCode     String? @map("paper_code")
   sourceKind    String? @map("source_kind")
   rightsStatus  String? @map("rights_status")

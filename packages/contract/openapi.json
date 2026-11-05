@@ -69548,10 +69548,14 @@
           "level": {
             "type": "string",
             "enum": [
+              "T1",
+              "T2",
+              "T3",
               "T4",
               "T5",
               "T4+T5"
-            ]
+            ],
+            "description": "S1-T03 (DM-09): the level of the item; T1 to T5, or `T4+T5` when it is not decided. The batch level is the default."
           },
           "unit": {
             "type": [
@@ -69589,6 +69593,49 @@
               "T4",
               "T5"
             ]
+          },
+          "bab": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "S1-T03 (PO item 10): the Bab (chapter id) of the item. Optional while intake; must belong to the Subjek and Tingkatan of the item (Terima refuses otherwise). Required only to publish.",
+            "example": "1042"
+          },
+          "topik": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "S1-T03 (PO item 10): the topic id inside the Bab.",
+            "example": "1042"
+          },
+          "kbat": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "mengaplikasi",
+              "menganalisis",
+              "menilai",
+              "mencipta",
+              null
+            ],
+            "description": "S1-T03 (PO item 10): the KBAT override; null or absent = follows the cognitive level."
+          },
+          "difficulty": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 5,
+            "description": "S1-T03 (PO item 10): Tahap kesukaran 1 to 5. Absent = the bank derives it from the TP as before."
           }
         },
         "required": [
@@ -73573,7 +73620,31 @@
           "year": {
             "type": "integer",
             "minimum": 1990,
-            "maximum": 2100
+            "maximum": 2100,
+            "description": "An Admin Pusat batch takes 2015 to the current year (D11, 422 `fields.year` otherwise)."
+          },
+          "educationLevelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "S1-T03 (DM-09, U-02): the level (education_levels id) of every item. Required for an Admin Pusat batch (422 `fields.educationLevelId`), optional for a Guru.",
+            "example": "1042"
+          },
+          "paperCode": {
+            "type": "string",
+            "pattern": "^([0-9]{4}\\/[0-9])?$",
+            "description": "S1-T03 (DM-09, U-09): the printed paper code, e.g. `1449/2`. Blank or absent is stored as null (D10a). Its trailing digit must equal `kertas` (422 `fields.paperCode`, D10b).",
+            "example": "1449/2"
+          },
+          "examBoard": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "S1-T03 (DM-85, U-06): the exam board code or name (Negeri or badan). Blank or absent is null. Extraction copies it to `source_papers.exam_board`."
+          },
+          "setLabel": {
+            "type": "string",
+            "maxLength": 20,
+            "description": "S1-T03 (D2, U-08): the Set label, e.g. `Set 1` (max 20). Blank or absent is null."
           },
           "source": {
             "type": "string",
@@ -73832,6 +73903,37 @@
             ],
             "description": "Null only when a teacher submission has no year."
           },
+          "educationLevelId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "S1-T03 (DM-09): the declared level; null for a batch made before it and for a Guru who left it out.",
+            "example": "1042"
+          },
+          "paperCode": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "S1-T03 (DM-09): the declared paper code (`1449/2`) or null."
+          },
+          "examBoard": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "S1-T03 (DM-85): the declared exam board or null."
+          },
+          "setLabel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "S1-T03 (D2): the declared Set label or null."
+          },
           "source": {
             "type": "string"
           },
@@ -74009,6 +74111,37 @@
               "null"
             ],
             "description": "Null only when a teacher submission has no year."
+          },
+          "educationLevelId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "S1-T03 (DM-09): the declared level; null for a batch made before it and for a Guru who left it out.",
+            "example": "1042"
+          },
+          "paperCode": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "S1-T03 (DM-09): the declared paper code (`1449/2`) or null."
+          },
+          "examBoard": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "S1-T03 (DM-85): the declared exam board or null."
+          },
+          "setLabel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "S1-T03 (D2): the declared Set label or null."
           },
           "source": {
             "type": "string"
