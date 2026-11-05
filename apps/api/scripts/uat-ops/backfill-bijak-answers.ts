@@ -5,6 +5,16 @@
  *   DATABASE_URL=postgresql://... npx tsx scripts/uat-ops/backfill-bijak-answers.ts --apply    (writes)
  *   optional: --limit <n> (attempts to look at), --batch <n> (attempts per page, default 200)
  *
+ *   DATABASE_URL=postgresql://... npx tsx scripts/uat-ops/backfill-bijak-answers.ts --legacy-mode            (dry run)
+ *   DATABASE_URL=postgresql://... npx tsx scripts/uat-ops/backfill-bijak-answers.ts --legacy-mode --apply    (writes)
+ *   optional: --batch <n> (rows per batch, default 5000)
+ *
+ * U-OP-20 `--legacy-mode` runs ALONE (the Bijak step below is not run with it): it gives `practice_answers.mode` to rows
+ * written before migration 0181 (the session's mode; 'latih_tubi' for a row without a session). Dry run by default
+ * (prints how many rows would be set per mode, writes nothing). `--apply` writes in batches of `id` ranges, each batch
+ * its own short statement with `WHERE mode IS NULL`, so a row that already has a mode is never touched and a re-run is a
+ * no-op. Re-run it right before part 2's migration 0188 (VALIDATE CONSTRAINT + SET NOT NULL on mode).
+ *
  * No route, no auth. Source: closed attempts (`exam_attempts` status submitted / auto_submitted with an
  * `attempt_results` row). One row per answered leaf of `attempt_results.graded.questions[].parts[]`, with the pupil's
  * self-mark (`graded.selfMarks`) applied on top. Idempotent: the same ON CONFLICT key as `AnswerLogPort.record`
@@ -191,6 +201,48 @@ export async function runBackfill(db: PrismaClient, opts: { apply: boolean; limi
   return report
 }
 
+export interface LegacyModeReport {
+  rowsByMode: Map<string, number>
+  updated: number
+  batches: number
+}
+
+/** U-OP-20: set `mode` on rows that have none. Dry run counts per mode; apply updates by `id` range, one statement per batch. */
+export async function runLegacyMode(db: PrismaClient, opts: { apply: boolean; batch?: number }): Promise<LegacyModeReport> {
+  const report: LegacyModeReport = { rowsByMode: new Map(), updated: 0, batches: 0 }
+  const batch = opts.batch ?? 5000
+  let after = 0n
+  for (;;) {
+    const [range] = await db.$queryRaw<{ hi: bigint | null }[]>`
+      SELECT max(id) AS hi FROM (SELECT id FROM practice_answers WHERE mode IS NULL AND id > ${after} ORDER BY id LIMIT ${batch}::int) t`
+    const hi = range?.hi ?? null
+    if (hi === null) break
+    if (opts.apply) {
+      const rows = await db.$queryRaw<{ mode: string; n: bigint }[]>`
+        WITH upd AS (
+          UPDATE practice_answers a
+             SET mode = coalesce((SELECT s.mode FROM practice_sessions s WHERE s.id = a.session_id), CASE WHEN a.session_id IS NULL THEN 'latih_tubi' END)
+           WHERE a.mode IS NULL AND a.id > ${after} AND a.id <= ${hi}
+          RETURNING a.mode)
+        SELECT mode, count(*) AS n FROM upd WHERE mode IS NOT NULL GROUP BY mode`
+      for (const r of rows) {
+        report.rowsByMode.set(r.mode, (report.rowsByMode.get(r.mode) ?? 0) + Number(r.n))
+        report.updated += Number(r.n)
+      }
+    } else {
+      const rows = await db.$queryRaw<{ mode: string; n: bigint }[]>`
+        SELECT coalesce(s.mode, CASE WHEN a.session_id IS NULL THEN 'latih_tubi' END) AS mode, count(*) AS n
+          FROM practice_answers a LEFT JOIN practice_sessions s ON s.id = a.session_id
+         WHERE a.mode IS NULL AND a.id > ${after} AND a.id <= ${hi}
+         GROUP BY 1`
+      for (const r of rows) if (r.mode !== null) report.rowsByMode.set(r.mode, (report.rowsByMode.get(r.mode) ?? 0) + Number(r.n))
+    }
+    report.batches++
+    after = hi
+  }
+  return report
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2)
   const apply = args.includes('--apply')
@@ -208,6 +260,13 @@ async function main(): Promise<void> {
   try {
     const limit = num('--limit')
     const batch = num('--batch')
+    if (args.includes('--legacy-mode')) {
+      const legacy = await runLegacyMode(db, { apply, ...(batch !== undefined ? { batch } : {}) })
+      process.stdout.write(`${apply ? 'APPLY' : 'DRY RUN (nothing written; pass --apply to write)'} --legacy-mode\n`)
+      for (const [m, n] of [...legacy.rowsByMode].sort()) process.stdout.write(`rows ${apply ? 'set' : 'to set'} for mode ${m}: ${String(n)}\n`)
+      process.stdout.write(`batches: ${String(legacy.batches)}\n`)
+      return
+    }
     const report = await runBackfill(db, { apply, ...(limit !== undefined ? { limit } : {}), ...(batch !== undefined ? { batch } : {}) })
     const out = process.stdout
     out.write(`${apply ? 'APPLY' : 'DRY RUN (nothing written; pass --apply to write)'}\nattempts looked at: ${String(report.attempts)}\n`)

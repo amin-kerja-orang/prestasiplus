@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { Logger } from '@nestjs/common'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { leavesOfGraded, modeOfAttempt, runBackfill, type SkipReason } from '../../scripts/uat-ops/backfill-bijak-answers'
+import { leavesOfGraded, modeOfAttempt, runBackfill, runLegacyMode, type SkipReason } from '../../scripts/uat-ops/backfill-bijak-answers'
 import { PrismaService } from '../../src/db/prisma.service'
 import { ANSWER_MODES, AnswerLogPort, type AnswerLogEntry, WRITABLE_ANSWER_MODES } from '../../src/modules/practice/answer-log.port'
 import { type PracticeTestApp, type World, bootPracticeApp, countRows, fillBank, loadWorld, resetPractice, userIdByEmail } from './helpers'
@@ -351,5 +351,43 @@ describe('backfill-bijak-answers (UAT script)', () => {
     const second = await runBackfill(prisma, { apply: true })
     expect([second.created, second.updated]).toEqual([0, 5])
     expect(await countRows(t.db, 'practice_answers', 'attempt_id = $1', [attempt])).toBe(5)
+  })
+
+  describe('--legacy-mode (U-OP-20)', () => {
+    const modeOf = async (qid: number) => (await t.db.query<{ mode: string | null }>(`select mode from practice_answers where question_id = $1`, [qid]))[0]?.mode
+    async function seedLegacy(): Promise<void> {
+      const chapter = randomUUID()
+      const pksk = randomUUID()
+      for (const [id, mode] of [[chapter, 'chapter'], [pksk, 'pksk']] as const)
+        await t.db.query(`insert into practice_sessions (id, user_id, mode, question_count, started_at) values ($1, $2, $3, 1, $4)`, [id, u1, mode, AT])
+      const ins = (qid: number, sessionId: string | null, mode: string | null) =>
+        t.db.query(`insert into practice_answers (user_id, session_id, question_id, mode, is_correct, answered_at) values ($1, $2, $3, $4, true, $5)`, [u1, sessionId, qid, mode, AT])
+      await ins(901, chapter, null)
+      await ins(902, chapter, null)
+      await ins(903, pksk, null)
+      await ins(904, null, null)
+      await ins(905, null, null)
+      await ins(906, chapter, 'kuiz') // already has a mode: must stay
+    }
+
+    it('dry run writes nothing and reports counts per mode', async () => {
+      await seedLegacy()
+      const r = await runLegacyMode(prisma, { apply: false, batch: 2 })
+      expect(Object.fromEntries(r.rowsByMode)).toEqual({ chapter: 2, pksk: 1, latih_tubi: 2 })
+      expect(r.updated).toBe(0)
+      expect(await countRows(t.db, 'practice_answers', 'mode is null')).toBe(5)
+    })
+
+    it('--apply sets the session mode or latih_tubi, across several batches; rows with a mode are untouched; a re-run is a no-op', async () => {
+      await seedLegacy()
+      const r = await runLegacyMode(prisma, { apply: true, batch: 2 })
+      expect(r.batches).toBe(3) // 5 null rows, 2 per batch
+      expect(r.updated).toBe(5)
+      expect(Object.fromEntries(r.rowsByMode)).toEqual({ chapter: 2, pksk: 1, latih_tubi: 2 })
+      expect(await Promise.all([901, 902, 903, 904, 905, 906].map(modeOf))).toEqual(['chapter', 'chapter', 'pksk', 'latih_tubi', 'latih_tubi', 'kuiz'])
+      const again = await runLegacyMode(prisma, { apply: true, batch: 2 })
+      expect([again.updated, again.batches]).toEqual([0, 0])
+      expect(await modeOf(906)).toBe('kuiz')
+    })
   })
 })

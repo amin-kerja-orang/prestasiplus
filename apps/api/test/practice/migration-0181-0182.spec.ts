@@ -84,18 +84,13 @@ describe('0181 practice_answers', () => {
     await expect(insertAnswer({ question_id: 2, mode: 'bogus' })).rejects.toThrow(/ck_practice_answers_mode/)
   })
 
-  it('the backfill statements give the session mode, and latih_tubi to a row without a session', async () => {
+  it('0181 is DDL only: it has no UPDATE and leaves mode NULL on pre-existing rows', async () => {
+    expect(sql0181).not.toMatch(/^\s*UPDATE\b/im)
     const chapter = await insertSession('chapter')
-    const pksk = await insertSession('pksk')
     await insertAnswer({ session_id: chapter, question_id: 10 })
-    await insertAnswer({ session_id: pksk, question_id: 11 })
     await insertAnswer({ question_id: 12 })
-    await db.query(`update practice_answers set mode = null where question_id in (10, 11, 12)`)
-    const updates = sql0181.match(/^UPDATE[\s\S]*?;/gm) ?? []
-    expect(updates).toHaveLength(2)
-    for (const u of updates) await db.query(u)
-    const rows = await db.query<{ question_id: string; mode: string }>(`select question_id::text, mode from practice_answers where question_id in (10, 11, 12) order by question_id`)
-    expect(rows.map((r) => r.mode)).toEqual(['chapter', 'pksk', 'latih_tubi'])
+    const rows = await db.query<{ mode: string | null }>(`select mode from practice_answers where question_id in (10, 12)`)
+    expect(rows.map((r) => r.mode)).toEqual([null, null])
   })
 })
 
