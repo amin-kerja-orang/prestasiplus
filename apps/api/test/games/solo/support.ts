@@ -56,6 +56,19 @@ export function expectKeyless(body: unknown): void {
   }
 }
 
+/** The text a question is served with, read from the question tables (oracle for a Kad Memori question face; the draw may pick any servable MCQ). */
+export async function servedTextOf(db: TestDatabase, questionId: string): Promise<string> {
+  const [row] = await db.query<{ stem: string }>(
+    `select coalesce(nullif(btrim(v.stem_ms), ''), p.prompt_ms) as stem
+       from questions q
+       join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no
+       join question_parts p on p.question_version_id = v.id
+      where q.id = $1::bigint`,
+    [questionId],
+  )
+  return (row as { stem: string }).stem
+}
+
 /** The text of the key option of a question, read from the question tables (oracle for Susun Jawapan). */
 export async function keyTextOf(db: TestDatabase, questionId: string, keyIndex: number): Promise<string> {
   const [row] = await db.query<{ body_ms: string }>(

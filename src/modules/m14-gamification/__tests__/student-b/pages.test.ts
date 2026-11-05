@@ -281,7 +281,7 @@ describe('S16 ReferralPage', () => {
     expect(wa.attributes('href')).toBe(referral().whatsappUrl)
     expect(wa.attributes('target')).toBe('_blank')
     expect(w.get('[data-testid=referral-telegram]').attributes('href')).toBe(referral().telegramUrl)
-    expect(tid(w, 'stat-referrals')[0]?.text()).toContain('0')
+    expect(tid(w, 'stat-referrals')[0]?.text()).toBe('0')
     expect(w.get('[data-testid=referral-stats]').text()).toContain('Statistik Rujukan')
     expect(w.get('[data-testid=referral-stats]').text()).toContain('Syiling Diperolehi')
   })
