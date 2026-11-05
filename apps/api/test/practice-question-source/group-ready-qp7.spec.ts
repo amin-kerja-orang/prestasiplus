@@ -89,6 +89,28 @@ describe('[CI] S1-T06 building block of AC-MUR-QP-7 (injected surfaces; the live
     expect(facts).toBeDefined()
     const verdict = evaluate(facts as NonNullable<typeof facts>, 'latih_tubi_spm', ALL_GROUP_SURFACES)
     expect(verdict.served).toBe(false)
-    expect(verdict.reasons.map((r) => r.code)).toEqual(expect.arrayContaining([expect.stringMatching(/^(image_missing|bridge_refused|group_incomplete)$/)]))
+    // `files` is `ON DELETE SET NULL` (migration 0011), so a missing figure file is a stimulus with no asset: the bridge names it `stimulus_empty` (a bridge refusal).
+    expect(verdict.reasons.filter((r) => r.code === 'image_missing' || r.code === 'bridge_refused').map((r) => [r.code, r.detail])).toEqual([['bridge_refused', 'shape_unsupported:stimulus_empty']])
+  })
+
+  // The admin verdict and the pupil draw / card share one answer for a stimulus the screen cannot show (D91): both "not served", with a reason.
+  describe.each([
+    ['an empty passage', `insert into stimuli (kind, label, body_ms, body_en) values ('passage', 'Petikan kosong', '   ', null) returning id::text id`],
+    ['a table with no grid', `insert into stimuli (kind, label, table_data) values ('table', 'Jadual kosong', '{"head": [], "rows": []}'::jsonb) returning id::text id`],
+  ])('%s as the only stimulus of a group', (_name, insertSql) => {
+    it('admin evaluate and the draw / card agree: not served, with a reason', async () => {
+      const before = await cardTotal()
+      const [row] = await q(insertSql)
+      const groupId = await t.app.get(QuestionsService).createStimulusGroup({ label: 'Kumpulan tanpa paparan', scope: 'section', stimulusIds: [row?.id as string], optionBank: [] })
+      const two = [await publish('e1', { stimulusGroupId: groupId }), await publish('e2', { stimulusGroupId: groupId })]
+      const ids = await draw()
+      const facts = (await t.app.get(ServabilityService).factsOf([two[0] as string])).get(two[0] as string)
+      const verdict = evaluate(facts as NonNullable<typeof facts>, 'latih_tubi_spm', ALL_GROUP_SURFACES)
+      for (const m of two) expect(ids.includes(m)).toBe(verdict.served)
+      expect(verdict.served).toBe(false)
+      expect(verdict.reasons.length).toBeGreaterThan(0)
+      expect(await cardTotal()).toBe(before)
+      expect((await overview.chapterQuestionCounts([chapterId])).get(chapterId)).toBe(before)
+    })
   })
 })

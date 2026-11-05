@@ -160,6 +160,15 @@ const PKSK_TAG = 'pksk_domain'
 const NOT_PKSK = NOT_PKSK_SQL
 const IS_PKSK = Prisma.sql`EXISTS (SELECT 1 FROM question_tags pt WHERE pt.question_id = q.id AND pt.kind = 'pksk_domain')`
 
+/** SQL twin of `stimulusTableOf` for a stored grid (`s.table_data`): an array whose first row is a non-empty head, or an object with a non-empty `head`/`headers`/`columns` and a `rows` array. */
+const TABLE_GRID_READABLE_SQL = Prisma.sql`(CASE jsonb_typeof(s.table_data)
+    WHEN 'array' THEN CASE WHEN jsonb_typeof(s.table_data -> 0) = 'array' THEN jsonb_array_length(s.table_data -> 0) > 0 ELSE false END
+    WHEN 'object' THEN CASE
+      WHEN jsonb_typeof(coalesce(s.table_data -> 'head', s.table_data -> 'headers', s.table_data -> 'columns')) = 'array'
+        THEN jsonb_array_length(coalesce(s.table_data -> 'head', s.table_data -> 'headers', s.table_data -> 'columns')) > 0 AND jsonb_typeof(s.table_data -> 'rows') = 'array'
+      ELSE false END
+    ELSE false END)`
+
 /**
  * `true` when every stimulus the question shows can be shown: a picture kind has its file, a table has a grid, a file or a pipe table in the
  * body, a passage has text, and the version carries no `legacy_image_unresolved` import hold. `stimuli` is a statement selecting `sid`.
@@ -168,7 +177,7 @@ const mediaResolvedSql = (stimuli: Prisma.Sql, importIssues: Prisma.Sql): Prisma
   NOT EXISTS (
     SELECT 1 FROM (${stimuli}) l JOIN stimuli s ON s.id = l.sid
      WHERE (s.kind IN ('image', 'diagram', 'map', 'infographic', 'graph') AND s.asset_file_id IS NULL)
-        OR (s.kind = 'table' AND s.table_data IS NULL AND s.asset_file_id IS NULL AND (s.body_ms IS NULL OR s.body_ms NOT LIKE '%|%'))
+        OR (s.kind = 'table' AND s.asset_file_id IS NULL AND (s.body_ms IS NULL OR s.body_ms NOT LIKE '%|%') AND NOT coalesce(${TABLE_GRID_READABLE_SQL}, false))
         OR (s.kind = 'passage' AND btrim(coalesce(s.body_ms, '')) = '' AND btrim(coalesce(s.body_en, '')) = '')
   )
   AND NOT (coalesce(${importIssues}, '[]'::jsonb) @> '[{"code": "legacy_image_unresolved"}]'::jsonb)
