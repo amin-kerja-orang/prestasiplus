@@ -2,16 +2,16 @@
 /**
  * S1 "Perbandingan Sebelum & Selepas" (FN-M12-2.4.1..2.4.4; FR-M12-26..28): subtitle, the SEBELUM / SELEPAS
  * panels (side by side from `md`), four delta tiles (2 x 2 below `md`) and the "Ringkasan:" box. A panel
- * without data shows "-" ranges and 0 values; no data at all gives the "Tiada Data vs Tiada Data" state.
+ * without data shows "-" ranges and 0 values; no data at all gives the "Tiada Data vs Tiada Data" state. When one side has
+ * no answers `delta` is `null`: the delta tiles print a neutral "\u2014" (no arrow, no tone; FR-X4-3) and the box carries only the sentence
+ * "Data tidak mencukupi untuk perbandingan.".
  */
 import { computed } from 'vue'
 
 import { DsPanel } from '@/ds'
 
-import { formatPercent } from '@/lib/number'
-
 import type { Comparison, ComparisonPanel } from '../../../api/types'
-import { count, dateEn, pct, plain } from '../common'
+import { count, dateEn, plain, accuracyPct } from '../common'
 
 const props = defineProps<{ comparison: Comparison }>()
 
@@ -25,7 +25,7 @@ interface Metric {
 }
 const metrics = (p: ComparisonPanel | null): Metric[] => [
   { key: 'active', label: 'Pelajar Aktif', value: plain(p?.active ?? 0) },
-  { key: 'accuracy', label: 'Ketepatan', value: pct(p?.accuracy ?? 0) },
+  { key: 'accuracy', label: 'Ketepatan', value: accuracyPct(p?.accuracy ?? 0) },
   { key: 'answers', label: 'Jumlah Jawapan', value: count(p?.answers ?? 0) },
   { key: 'champions', label: 'Champion', value: plain(p?.champions ?? 0) },
 ]
@@ -52,7 +52,7 @@ const deltas = computed(() => {
       key: 'accuracy',
       label: 'Ketepatan',
       n: d?.accuracy ?? 0,
-      text: formatPercent(d?.accuracy ?? 0, { decimals: 1, dropZeroFraction: true, signed: true }),
+      text: accuracyPct(d?.accuracy ?? 0, { signed: true }),
     },
     { key: 'answers', label: 'Jumlah Jawapan', n: d?.answers ?? 0, text: signed(d?.answers ?? 0) },
     {
@@ -61,7 +61,11 @@ const deltas = computed(() => {
       n: d?.champions ?? 0,
       text: signed(d?.champions ?? 0),
     },
-  ]
+  ].map((t) =>
+    d === null
+      ? { ...t, text: '\u2014', tone: 'none' as const }
+      : { ...t, tone: t.n >= 0 ? ('up' as const) : ('down' as const) },
+  )
 })
 </script>
 
@@ -112,16 +116,20 @@ const deltas = computed(() => {
           <div
             v-for="d in deltas"
             :key="d.key"
-            class="flex min-w-0 flex-col items-center gap-1"
+            :class="[
+              'flex min-w-0 flex-col items-center gap-1',
+              d.tone === 'up' ? 'text-success' : d.tone === 'down' ? 'text-error' : '',
+            ]"
             :data-testid="`kirk-delta-${d.key}`"
-            :data-tone="d.n >= 0 ? 'up' : 'down'"
+            :data-tone="d.tone"
           >
             <UIcon
-              :name="d.n >= 0 ? 'i-ph-arrow-up' : 'i-ph-arrow-down'"
-              :class="['size-5', d.n >= 0 ? 'text-success' : 'text-error']"
+              v-if="d.tone !== 'none'"
+              :name="d.tone === 'up' ? 'i-ph-arrow-up' : 'i-ph-arrow-down'"
+              class="size-5"
             />
             <p
-              :class="['tabular text-subheading', d.n >= 0 ? 'text-success' : 'text-error']"
+              :class="['tabular text-subheading', d.tone === 'none' ? 'text-muted' : '']"
               data-testid="kirk-delta-value"
             >
               {{ d.text }}
@@ -132,9 +140,7 @@ const deltas = computed(() => {
       </UCard>
 
       <UAlert color="primary" variant="soft" icon="i-ph-chart-line" data-testid="kirk-summary">
-        <template #description>
-          <strong>Ringkasan:</strong> {{ summary }}
-        </template>
+        <template #description> <strong>Ringkasan:</strong> {{ summary }} </template>
       </UAlert>
     </div>
   </DsPanel>
