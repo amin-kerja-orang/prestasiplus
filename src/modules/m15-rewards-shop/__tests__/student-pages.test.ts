@@ -7,7 +7,13 @@ import type { Component } from 'vue'
 import { ApiError } from '@/api'
 import { useFlashStore } from '@/stores/flash'
 
-import type { CabutanView, MysteryBoxView, MysteryBoxesView, OpenDrawView } from '../api'
+import type {
+  CabutanView,
+  MysteryBoxOpened,
+  MysteryBoxView,
+  MysteryBoxesView,
+  OpenDrawView,
+} from '../api'
 import { errorMessage, formatDate, formatDayMonthTime } from '../components/format'
 import CabutanPage from '../pages/CabutanPage.vue'
 import MysteryResultModal from '../components/MysteryResultModal.vue'
@@ -316,6 +322,19 @@ describe('S6 MysteryBoxPage', () => {
     await flushPromises()
     expect(useFlashStore().current?.message).toBe('Ralat berlaku. Sila cuba lagi.')
     expect(w.find('[data-testid="box-result"]').exists()).toBe(false)
+  })
+})
+
+describe('MysteryResultModal', () => {
+  // The e2e hook sits in the dialog body, because UModal / UDrawer drop attrs given to DsDialog.
+  it('carries data-testid="box-result" in the dialog body, only with a result', () => {
+    const stubs = { DsDialog: { template: '<section><slot /></section>' } }
+    const opened = { boxName: 'Kotak Gangsa', coins: 12, xp: 4 } as MysteryBoxOpened
+    const shown = mount(MysteryResultModal, { props: { result: opened }, global: { stubs } })
+    expect(shown.get('[data-testid="box-result"]').text()).toContain('Kotak Gangsa')
+    expect(shown.element.getAttribute('data-testid')).toBeNull()
+    const closed = mount(MysteryResultModal, { props: { result: null }, global: { stubs } })
+    expect(closed.find('[data-testid="box-result"]').exists()).toBe(false)
   })
 })
 
