@@ -66,7 +66,7 @@ export class ShopController {
 
   @Post('cabutan/:drawId/tickets')
   @RateLimit(SHOP_LIMITS.write)
-  async buyTicket(@Actor() actor: ShopActor, @Param('drawId') drawId: string) {
-    return ok(await guard(() => this.shop.buyTicket(actor, drawId)))
+  async buyTicket(@Actor() actor: ShopActor, @Param('drawId') drawId: string, @Body() body: unknown) {
+    return ok(await guard(() => this.shop.buyTicket(actor, drawId, body)))
   }
 }
