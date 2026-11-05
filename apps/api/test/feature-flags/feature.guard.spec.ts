@@ -148,6 +148,22 @@ describe('FeatureGuard (API-AUTH-16)', () => {
     expect((await http().get('/api/games/hub').set(as(true))).status).toBe(200)
   })
 
+  it('table unreadable with a cold cache: /api/cikgu and /api/mohon-keluarga-angkat stay 404, other keys stay ON', async () => {
+    const failing = prisma.client.featureFlag.findMany
+    prisma.client.featureFlag.findMany = async () => {
+      throw new Error('db down')
+    }
+    try {
+      service.invalidate()
+      expect404(await http().get('/api/cikgu/threads').set(as(false)))
+      expect404(await http().get('/api/cikgu/threads').set(as(true)))
+      expect404(await http().post('/api/mohon-keluarga-angkat').set(as(true)).send({}))
+      expect((await http().get('/api/games/hub').set(as(true))).status).toBe(200)
+    } finally {
+      prisma.client.featureFlag.findMany = failing
+    }
+  })
+
   it('paths no flag covers never read the table', async () => {
     await http().get('/api/other').set(as(true))
     expect(reads).toBe(0)
@@ -157,6 +173,19 @@ describe('FeatureGuard (API-AUTH-16)', () => {
 describe('FEATURE_ROUTE_PREFIXES', () => {
   it('has exactly the 4 seeded keys', () => {
     expect(Object.keys(FEATURE_ROUTE_PREFIXES).sort()).toEqual(['cikgu-alesa', 'keluarga-angkat', 'latih-tubi', 'permainan'])
+  })
+
+  it('the longest (most specific) prefix wins on nested prefixes', () => {
+    const table = {
+      broad: { fe: [], api: ['/api/games'] },
+      narrow: { fe: [], api: ['/api/games/x'] },
+    }
+    expect(featureKeyForApiPath('/api/games/x/play', table)).toBe('narrow')
+    expect(featureKeyForApiPath('/api/games/x', table)).toBe('narrow')
+    expect(featureKeyForApiPath('/api/games/y', table)).toBe('broad')
+    // order of the table does not matter
+    expect(featureKeyForApiPath('/api/games/x/play', { narrow: table.narrow, broad: table.broad })).toBe('narrow')
+    expect(featureKeyForApiPath('/api/games/xy', table)).toBe('broad')
   })
 
   it('maps api paths to their key on a segment boundary', () => {

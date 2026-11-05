@@ -167,8 +167,25 @@ describe('FeatureFlagsService reads (cache, fail-open)', () => {
     findMany.mockRejectedValue(new Error('db down'))
     clock.advance(FEATURE_CACHE_TTL_MS + 1)
     expect(await service.isEnabled('cikgu-alesa')).toBe(false)
+  })
+
+  it('read failure with an empty cache: the locked keys stay OFF, every unlocked key is ON, and the session map shows it', async () => {
     const cold = build()
     cold.findMany.mockRejectedValue(new Error('db down'))
-    expect(await cold.service.isEnabled('cikgu-alesa')).toBe(true)
+    expect(await cold.service.isEnabled('cikgu-alesa')).toBe(false)
+    expect(await cold.service.isEnabled('keluarga-angkat')).toBe(false)
+    expect(await cold.service.isEnabled('permainan')).toBe(true)
+    expect(await cold.service.isEnabled('misi-harian')).toBe(true)
+    expect(await cold.service.featureMap()).toEqual({ 'cikgu-alesa': false, 'keluarga-angkat': false })
+    // the fallback is not cached: the next read after the database recovers sees the stored rows
+    cold.findMany.mockImplementation(async () => cold.rows.map((r) => ({ ...r })))
+    expect(await cold.service.featureMap()).toEqual({ permainan: true, 'latih-tubi': true, 'cikgu-alesa': false, 'keluarga-angkat': false })
+  })
+
+  it('a locked key is OFF in the map even when the row (corrupt) says enabled', async () => {
+    const { service, rows } = build()
+    rows.find((r) => r.key === 'keluarga-angkat')!.enabled = true
+    rows.find((r) => r.key === 'keluarga-angkat')!.locked = false // even with no lock flag, the fallback map keeps it OFF
+    expect((await service.featureMap())['keluarga-angkat']).toBe(false)
   })
 })
