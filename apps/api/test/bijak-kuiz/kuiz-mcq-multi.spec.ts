@@ -173,4 +173,47 @@ describe('mcq_multi in the Simulasi Kuiz', () => {
     )
     expect(rows).toEqual([{ is_correct: true, question_type: 'mcq_multi' }])
   })
+
+  it('[CI] the finished answer row of a multi check keeps the first tick in practice_answers.selected_label', async () => {
+    const s = await startBm()
+    expect((await student.post(`/api/bijak/kuiz/sessions/${s.sessionId}/check`, { itemId: multiId, optionId: 'A', optionIds: ['A', 'B'] })).status).toBe(200)
+    expect((await student.post(`/api/bijak/kuiz/sessions/${s.sessionId}/finish`, { timeSpent: 5 })).status).toBe(200)
+    const rows = await t.db.query<{ selected_label: string | null }>(`select selected_label from practice_answers where session_id = $1::uuid and question_id = $2::bigint`, [s.sessionId, multiId])
+    expect(rows).toEqual([{ selected_label: 'A' }])
+  })
+
+  it('[CI] two concurrent random-quiz checks on the same mcq_multi item get the same verdict and leave one practice_checks row', async () => {
+    const s = await startBm()
+    const body = { itemId: multiId, optionId: 'A', optionIds: ['A', 'B'] }
+    const [x, y] = await Promise.all([
+      student.post(`/api/bijak/kuiz/sessions/${s.sessionId}/check`, body),
+      student.post(`/api/bijak/kuiz/sessions/${s.sessionId}/check`, body),
+    ])
+    expect([x.status, y.status]).toEqual([200, 200])
+    expect(BijakKuizCheckResultSchema.parse(x.body.data).correct).toBe(true)
+    expect(BijakKuizCheckResultSchema.parse(y.body.data).correct).toBe(true)
+    const rows = await t.db.query(`select 1 from practice_checks where session_id = $1::uuid and question_id = $2::bigint`, [s.sessionId, multiId])
+    expect(rows).toHaveLength(1)
+  })
+
+  it('[CI] a GROUPED mcq_multi (a member of a stimulus group) is not drawn by the random quiz, and the indicator says shape_unsupported', async () => {
+    const stim = (await t.db.query<{ id: string }>(`insert into stimuli (kind, label, body_ms) values ('passage', 'Petikan multi', 'Petikan untuk kumpulan.') returning id::text`))[0]!.id
+    const groupId = (await t.db.query<{ id: string }>(`insert into stimulus_groups (scope) values ('section') returning id::text`))[0]!.id
+    await t.db.query(`insert into stimulus_group_stimuli (group_id, stimulus_id, position) values ($1::bigint, $2::bigint, 1)`, [groupId, stim])
+    await t.db.query(`update questions set group_id = $1::bigint, group_position = case id when $2::bigint then 1 else 2 end where id = any($3::bigint[])`, [groupId, multiId, [multiId, plainId]])
+    try {
+      const s = await startBm()
+      expect(s.items.some((i) => i.id === multiId)).toBe(false)
+      const kuiz = (await t.app.get(ServabilityService).report(multiId))!.activities.find((a) => a.activity === 'simulasi_kuiz')!
+      expect(kuiz.served).toBe(false)
+      expect(JSON.stringify(kuiz)).toContain('shape_unsupported')
+      expect(await t.app.get(QuestionsRepository).sampleIds({ ...filterOf('simulasi_kuiz'), wholeGroups: true }, 20_000, 3)).not.toContain(multiId)
+      expect(await t.app.get(QuestionsRepository).sampleIds(filterOf('simulasi_kuiz'), 20_000, 3)).not.toContain(multiId)
+    } finally {
+      await t.db.query(`update questions set group_id = null, group_position = null where id = any($1::bigint[])`, [[multiId, plainId]])
+      await t.db.query(`delete from stimulus_group_stimuli where group_id = $1::bigint`, [groupId])
+      await t.db.query(`delete from stimulus_groups where id = $1::bigint`, [groupId])
+      await t.db.query(`delete from stimuli where id = $1::bigint`, [stim])
+    }
+  })
 })

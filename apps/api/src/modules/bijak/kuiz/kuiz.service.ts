@@ -187,13 +187,15 @@ export class KuizService {
       // A multi check keeps its verdict in `is_correct` (the stored label is the comma-joined ticks, not one letter to compare).
       const storedVerdict = (c: StoredCheck): boolean => (multiKeyOf(leaf) !== null ? c.isCorrect : c.selectedLabel === marked.correctOptionId)
       if (stored) return verdict(storedVerdict(stored))
+      const label = selectedLabelOf(selected)
+      if (label === null) throw invalidAnswer('optionId')
       const correct = marked.correct
       const inserted = await this.practice.insertCheck({
         sessionId: session.id,
         userId: caller.userId,
         questionId,
         questionVersionNo: served.versionNo,
-        selectedLabel: selectedLabelOf(selected) as string,
+        selectedLabel: label,
         isCorrect: correct,
         checkedAt: now,
         isTest: caller.isTest || session.isTest,
@@ -265,7 +267,7 @@ export class KuizService {
       // `practice_answers.selected_label` still allows ONE letter (`^[A-H]$`; migration 0261 relaxed only `practice_checks`), so the answer
       // row of a multi check keeps the first tick. The verdict above is graded from all the ticks.
       return {
-        check: multi ? { ...check, selectedLabel: check.selectedLabel.split(',')[0] as string } : check,
+        check: multi ? { ...check, selectedLabel: check.selectedLabel.split(',')[0] ?? check.selectedLabel } : check,
         isCorrect,
         subjectId: v?.subjectId ?? null,
         educationLevelId: v?.educationLevelId ?? null,
