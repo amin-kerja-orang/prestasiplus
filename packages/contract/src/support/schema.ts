@@ -36,18 +36,18 @@ export const SUPPORT_MESSAGES = {
   bodyTooLong: 'Butiran tidak boleh melebihi 5000 aksara.',
 } as const
 
-/** Admin ticket messages with a source: 30 P20-03, ERR-REQ-12, ERR-REQ-11, ERR-ACC-04 (40 X10). */
+/** Admin ticket messages with a source: 30 P20-03, ERR-REQ-12, ERR-REQ-01, ERR-ACC-04 (40 X10; rulings on #507). */
 export const SUPPORT_ADMIN_MESSAGES = {
   replyRequired: 'Sila tulis balasan.',
   replyTooLong: 'Balasan tidak boleh melebihi 5000 aksara.',
-  statusRequired: 'Sila pilih status.',
+  statusInvalid: 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.',
   ticketNotFound: 'Rekod tidak dijumpai. Ia mungkin telah dipadam.',
 } as const
 
-/** [PROPOSED] Copy with no source in the SRS or the ERR catalogue, waiting for product-owner approval (D94, #507). */
-export const SUPPORT_ADMIN_PROPOSED_COPY = {
-  replySavedFlash: 'Balasan disimpan.',
-  statusSavedFlash: 'Status dikemas kini.',
+/** Flashes after an admin save, approved by the product owner (PO batch 2 on #503). */
+export const SUPPORT_ADMIN_FLASH = {
+  replySaved: 'Balasan disimpan.',
+  statusSaved: 'Status dikemas kini.',
 } as const
 
 /** Role words of the admin queue row (AC-CHAIN-7, AC-MUR-A4-5); another role has no label and shows as a dash. */
@@ -193,7 +193,7 @@ export type SupportTicketReplyRequest = z.infer<typeof SupportTicketReplyRequest
 
 /** Body of `PATCH /admin/tiket/{id}/status`. */
 export const SupportTicketStatusRequestSchema = z
-  .object({ status: z.enum(SUPPORT_TICKET_STATUSES, { error: SUPPORT_ADMIN_MESSAGES.statusRequired }) })
+  .object({ status: z.enum(SUPPORT_TICKET_STATUSES, { error: SUPPORT_ADMIN_MESSAGES.statusInvalid }) })
   .meta({ id: 'SupportTicketStatusRequest' })
 export type SupportTicketStatusRequest = z.infer<typeof SupportTicketStatusRequestSchema>
 

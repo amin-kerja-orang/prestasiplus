@@ -78710,7 +78710,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields.status: \"Sila pilih status.\"",
+            "description": "VALIDATION_ERROR with fields.status: \"Data yang dihantar tidak sah. Sila semak dan cuba lagi.\"",
             "content": {
               "application/json": {
                 "schema": {

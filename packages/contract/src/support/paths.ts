@@ -147,7 +147,7 @@ export function registerSupportPaths(registry: OpenAPIRegistry): void {
       401: unauthorized,
       403: adminWrite,
       404: ticketNotFound,
-      422: err(`VALIDATION_ERROR with fields.status: "${SUPPORT_ADMIN_MESSAGES.statusRequired}"`),
+      422: err(`VALIDATION_ERROR with fields.status: "${SUPPORT_ADMIN_MESSAGES.statusInvalid}"`),
     },
   })
 }

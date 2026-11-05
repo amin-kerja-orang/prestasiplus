@@ -362,7 +362,7 @@ describe('S2 admin queue (AC-M22-07, 08, 09)', () => {
     const select = tid(w, 'tq-role')
     expect(Array.from((select.element as HTMLSelectElement).options).map((o) => o.text)).toEqual([
       'Semua Peranan',
-      'Pelajar',
+      'Murid',
       'Guru',
       'Admin Sekolah',
     ])

@@ -40,24 +40,24 @@ export const TICKET_CREATED_FLASH =
 /** Rows per page of the admin queue (API-SUP-03). */
 export const QUEUE_PER_PAGE = 25
 
-/** Admin ticket messages with a source: 30 P20-03, ERR-REQ-12, ERR-REQ-11, ERR-ACC-04 (40 X10). */
+/** Admin ticket messages with a source: 30 P20-03, ERR-REQ-12, ERR-REQ-01, ERR-ACC-04 (40 X10; rulings on #507). */
 export const ADMIN_TICKET_MESSAGES = {
   replyRequired: 'Sila tulis balasan.',
   replyTooLong: 'Balasan tidak boleh melebihi 5000 aksara.',
-  statusRequired: 'Sila pilih status.',
+  statusInvalid: 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.',
   ticketNotFound: 'Rekod tidak dijumpai. Ia mungkin telah dipadam.',
 } as const
 
-/** [PROPOSED] Copy with no source in the SRS or the ERR catalogue, waiting for product-owner approval (D94, #507). */
-export const ADMIN_TICKET_PROPOSED_COPY = {
-  replySavedFlash: 'Balasan disimpan.',
-  statusSavedFlash: 'Status dikemas kini.',
+/** Flashes after an admin save, approved by the product owner (PO batch 2 on #503). */
+export const ADMIN_TICKET_FLASH = {
+  replySaved: 'Balasan disimpan.',
+  statusSaved: 'Status dikemas kini.',
 } as const
 
-/** Role filter of the admin queue (30 P20-02): the value is the stored role. */
+/** Role filter of the admin queue (30 P20-02, the word Murid as ruled on #507): the value is the stored role. */
 export const ROLE_FILTER_ITEMS = [
   { label: 'Semua Peranan', value: '' },
-  { label: 'Pelajar', value: 'student' },
+  { label: 'Murid', value: 'student' },
   { label: 'Guru', value: 'teacher' },
   { label: 'Admin Sekolah', value: 'school_admin' },
 ] as const

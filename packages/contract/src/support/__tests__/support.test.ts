@@ -5,7 +5,7 @@ import { buildOpenApiDocument } from '../../openapi'
 import { SUPPORT_COMPONENT_SCHEMAS } from '../paths'
 import {
   SUPPORT_ADMIN_MESSAGES,
-  SUPPORT_ADMIN_PROPOSED_COPY,
+  SUPPORT_ADMIN_FLASH,
   SUPPORT_BODY_MAX,
   SUPPORT_MESSAGES,
   SUPPORT_NEW_TICKET_NOTIFICATION,
@@ -148,11 +148,11 @@ describe('admin ticket detail, reply and status (API-SUP-05)', () => {
 
   it('the status is one of the five codes', () => {
     for (const status of SUPPORT_TICKET_STATUSES) expect(SupportTicketStatusRequestSchema.safeParse({ status }).success).toBe(true)
-    expect(SupportTicketStatusRequestSchema.safeParse({ status: 'baru' }).error?.issues[0]?.message).toBe(SUPPORT_ADMIN_MESSAGES.statusRequired)
+    expect(SupportTicketStatusRequestSchema.safeParse({ status: 'baru' }).error?.issues[0]?.message).toBe(SUPPORT_ADMIN_MESSAGES.statusInvalid)
   })
 
-  it('keeps the unapproved copy in one [PROPOSED] constant', () => {
-    expect(Object.keys(SUPPORT_ADMIN_PROPOSED_COPY).sort()).toEqual(['replySavedFlash', 'statusSavedFlash'])
+  it('keeps the two approved flashes', () => {
+    expect(SUPPORT_ADMIN_FLASH).toEqual({ replySaved: 'Balasan disimpan.', statusSaved: 'Status dikemas kini.' })
   })
 })
 

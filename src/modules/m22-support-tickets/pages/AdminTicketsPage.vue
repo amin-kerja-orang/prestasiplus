@@ -32,7 +32,7 @@ import { formatDateTimeRaw } from '@/lib/time'
 
 import { fetchQueue, fetchTicketDetail, replyToTicket, setTicketStatus } from '../api/tickets'
 import {
-  ADMIN_TICKET_PROPOSED_COPY,
+  ADMIN_TICKET_FLASH,
   ROLE_FILTER_ITEMS,
   TICKET_STATUSES,
   TICKET_STATUS_LABELS,
@@ -330,7 +330,7 @@ async function changeStatus(value: unknown): Promise<void> {
             <DsCallout
               v-if="replyFlash"
               tone="success"
-              :title="ADMIN_TICKET_PROPOSED_COPY.replySavedFlash"
+              :title="ADMIN_TICKET_FLASH.replySaved"
               data-testid="tq-reply-flash"
             />
           </DsStack>
@@ -346,7 +346,7 @@ async function changeStatus(value: unknown): Promise<void> {
           <DsCallout
             v-if="statusFlash"
             tone="success"
-            :title="ADMIN_TICKET_PROPOSED_COPY.statusSavedFlash"
+            :title="ADMIN_TICKET_FLASH.statusSaved"
             data-testid="tq-detail-flash"
           />
         </DsStack>
