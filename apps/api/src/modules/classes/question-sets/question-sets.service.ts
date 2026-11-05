@@ -9,10 +9,9 @@ import type { ClassActor } from '../actor'
 import { ClassesRepository } from '../classes.repository'
 import { QuestionSetsRepository, type QuestionSetRecord } from './question-sets.repository'
 
-/** A set is visible to a member at `at`: published, or scheduled and due; a draft never (BR-M10-18). */
-export function isVisibleAt(set: Pick<QuestionSetRecord, 'status' | 'scheduledAt'>, at: Date): boolean {
-  if (set.status === 'published') return true
-  return set.status === 'scheduled' && set.scheduledAt !== null && set.scheduledAt.getTime() <= at.getTime()
+/** A set is visible to a member when it is published; a draft never (BR-M10-18). `scheduled` is never produced in R1 (DM-46). */
+export function isVisibleAt(set: Pick<QuestionSetRecord, 'status'>): boolean {
+  return set.status === 'published'
 }
 
 /** The student list "Set Soalan Guru" (S34) and the shared item rules used by the practice adapter. */
@@ -42,9 +41,11 @@ export class QuestionSetsService {
   }
 
   /** `GET /set-soalan-saya`: the sets of the caller's active classes. */
+  // `at` stays in the signature of both readers (callers pass the clock); R1 sets are published or draft, so no time rule is left.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async listForStudent(actor: ClassActor, at: Date): Promise<QuestionSetStudentItem[]> {
     const classes = await this.classes.forStudent(actor.userId, { isTest: actor.isTest })
-    const sets = await this.repo.visibleIn(classes.map((c) => c.id), at)
+    const sets = await this.repo.visibleIn(classes.map((c) => c.id))
     if (sets.length === 0) return []
     const [items, teachers] = await Promise.all([
       this.eligibleItems(sets),
@@ -80,15 +81,17 @@ export class QuestionSetsService {
 
   /**
    * The practice adapter's view of one set for one student: null unless the student is an active member of
-   * the set's class (real or Mod Pelajar enrolment) and the set is visible at `at`. A set without a class
-   * (migrated header, Q4 A) is never served until it is rebuilt into a class.
+   * ANY class the set is assigned to (`question_set_classrooms`, real or Mod Pelajar enrolment) and the set is
+   * published. A set with no assigned class (a draft, a migrated header) is never served.
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async visibleSetFor(userId: string, id: string, at: Date): Promise<QuestionSetRecord | null> {
     if (!isIdString(id) || !isIdString(userId)) return null
     const set = await this.repo.get(id)
-    if (!set || set.classroomId === null || !isVisibleAt(set, at)) return null
-    const classroomId = set.classroomId
-    const member = (await this.classes.isMember(classroomId, userId, false)) || (await this.classes.isMember(classroomId, userId, true))
-    return member ? set : null
+    if (!set || !isVisibleAt(set)) return null
+    for (const classroomId of await this.repo.assignedClassroomIds(set.id)) {
+      if ((await this.classes.isMember(classroomId, userId, false)) || (await this.classes.isMember(classroomId, userId, true))) return set
+    }
+    return null
   }
 }

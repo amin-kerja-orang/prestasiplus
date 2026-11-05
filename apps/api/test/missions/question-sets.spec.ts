@@ -78,20 +78,52 @@ describe('BE-18 B: GET /set-soalan-saya and QuestionSetAssignments', () => {
     expect((await list(s1)).map((r) => r.title)).not.toContain('Set Keluar')
   })
 
-  it('never shows a draft; shows a scheduled set only once due', async () => {
+  it('never shows a draft; a scheduled set is never shown (R1 produces only draft and published, DM-46)', async () => {
     const c = await classWith(t, teacher, [s2], 'Kelas Jadual')
     await insertSet(t, { teacherId, classroomId: c.id, title: 'Draf', status: 'draft', questionIds: qs.slice(0, 1) })
     await insertSet(t, { teacherId, classroomId: c.id, title: 'Belum Tiba', status: 'scheduled', scheduledAt: '2026-10-19T09:10:00+08:00', questionIds: qs.slice(0, 1) })
     await insertSet(t, { teacherId, classroomId: c.id, title: 'Sudah Tiba', status: 'scheduled', scheduledAt: '2026-10-19T09:00:00+08:00', questionIds: qs.slice(0, 1) })
     await insertSet(t, { teacherId, classroomId: c.id, title: 'Terbit', status: 'published', questionIds: qs.slice(0, 1) })
     const titles = (await list(s2)).map((r) => r.title)
-    expect(titles).toContain('Sudah Tiba')
     expect(titles).toContain('Terbit')
     expect(titles).not.toContain('Draf')
+    expect(titles).not.toContain('Sudah Tiba')
     expect(titles).not.toContain('Belum Tiba')
     t.clock.advance(11 * 60 * 1000)
-    expect((await list(s2)).map((r) => r.title)).toContain('Belum Tiba')
+    expect((await list(s2)).map((r) => r.title)).not.toContain('Belum Tiba')
     t.clock.set(NOW)
+  })
+
+  describe('assignment through question_set_classrooms (S6-T14, DM-46)', () => {
+    it('a set assigned to two classes shows once to a pupil of either, never to a pupil of a third class', async () => {
+      const c1 = await classWith(t, teacher, [s1], 'Kelas Tugas Satu')
+      const c2 = await classWith(t, teacher, [s2], 'Kelas Tugas Dua')
+      const c3 = await classWith(t, teacher, [], 'Kelas Tugas Tiga')
+      await t.db.query(`insert into enrolments (classroom_id, student_id, status, source) values ($1, $2, 'active', 'teacher')`, [c1.id, s2Id])
+      await insertSet(t, { teacherId, classroomId: null, classroomIds: [c1.id, c2.id], title: 'Set Dua Kelas', questionIds: qs.slice(0, 2) })
+      await insertSet(t, { teacherId, classroomId: null, classroomIds: [c3.id], title: 'Set Kelas Ketiga', questionIds: qs.slice(0, 1) })
+      const forS2 = (await list(s2)).map((r) => r.title)
+      expect(forS2.filter((x) => x === 'Set Dua Kelas')).toHaveLength(1)
+      expect(forS2).not.toContain('Set Kelas Ketiga')
+      expect((await list(s1)).map((r) => r.title)).toContain('Set Dua Kelas')
+    })
+
+    it('the legacy question_sets.classroom_id is not read: a row without an assignment is not shown or resolved', async () => {
+      const c = await classWith(t, teacher, [s1], 'Kelas Warisan')
+      const id = await insertSet(t, { teacherId, classroomId: c.id, classroomIds: [], title: 'Set Warisan', questionIds: qs.slice(0, 1) })
+      expect((await list(s1)).map((r) => r.title)).not.toContain('Set Warisan')
+      expect(await t.get(QuestionSetAssignments).resolve({ userId: s1Id, id, at: new Date(NOW) })).toEqual({ status: 'not_found' })
+    })
+
+    it('resolve works for a member of any assigned class and for kind kertas', async () => {
+      const c1 = await classWith(t, teacher, [], 'Kelas Resolve Satu')
+      const c2 = await classWith(t, teacher, [s1], 'Kelas Resolve Dua')
+      const id = await insertSet(t, { teacherId, classroomId: null, classroomIds: [c1.id, c2.id], questionIds: qs.slice(0, 1) })
+      expect(await t.get(QuestionSetAssignments).resolve({ userId: s1Id, id, at: new Date(NOW) })).toMatchObject({ status: 'ok' })
+      const paper = await insertSet(t, { teacherId, classroomId: null, classroomIds: [c2.id], title: 'Kertas Kongsi', questionIds: qs.slice(0, 1) })
+      await t.db.query(`update question_sets set kind = 'kertas' where id = $1`, [paper])
+      expect((await list(s1)).map((r) => r.title)).toContain('Kertas Kongsi')
+    })
   })
 
   it('attemptsLeft = maxAttempts minus completed sessions, floored at 0, null when unlimited; in-progress does not count', async () => {
@@ -155,7 +187,8 @@ describe('BE-18 B: GET /set-soalan-saya and QuestionSetAssignments', () => {
       expect(await a.resolve({ userId: s1Id, id: draft, at })).toEqual({ status: 'not_found' })
       expect(await a.resolve({ userId: s1Id, id: future, at })).toEqual({ status: 'not_found' })
       expect(await a.resolve({ userId: s1Id, id: mine, at: new Date('2026-10-26T09:00:00+08:00') })).toMatchObject({ status: 'ok' })
-      expect(await a.resolve({ userId: s1Id, id: future, at: new Date('2026-10-26T09:00:00+08:00') })).toMatchObject({ status: 'ok' })
+      // scheduled is never produced in R1 (DM-46): not served even when its time has passed
+      expect(await a.resolve({ userId: s1Id, id: future, at: new Date('2026-10-26T09:00:00+08:00') })).toEqual({ status: 'not_found' })
       // s2 is not in `cls`
       expect(await a.resolve({ userId: s2Id, id: mine, at })).toEqual({ status: 'not_found' })
       expect(await a.resolve({ userId: s1Id, id: '999999999', at })).toEqual({ status: 'not_found' })
@@ -207,8 +240,9 @@ describe('BE-18 B: GET /set-soalan-saya and QuestionSetAssignments', () => {
       const id = await header({ status: 'published', questionIds: [qs[0] as string] })
       const a = t.get(QuestionSetAssignments)
       for (const userId of [s1Id, s2Id, teacherId]) expect(await a.resolve({ userId, id, at })).toEqual({ status: 'not_found' })
-      // a rebuild gives it a class: from then on the normal rules apply
-      await t.db.query(`update question_sets set classroom_id = $2, needs_rebuild = false where id = $1`, [id, cls.id])
+      // a rebuild assigns it to a class (DM-46: a row in question_set_classrooms): from then on the normal rules apply
+      await t.db.query(`update question_sets set needs_rebuild = false where id = $1`, [id])
+      await t.db.query(`insert into question_set_classrooms (question_set_id, classroom_id, assigned_by) values ($1, $2, $3)`, [id, cls.id, teacherId])
       expect(await a.resolve({ userId: s1Id, id, at })).toMatchObject({ status: 'ok', questionIds: [qs[0]] })
     })
   })

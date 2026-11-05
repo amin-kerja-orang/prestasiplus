@@ -119,7 +119,7 @@ describe('question-set headers (Q4 A)', () => {
 
   it('a loaded header is never visible to a student (draft, no class, nothing for a class list to match)', async () => {
     const rows = await h.q<{ id: string; status: string; scheduled_at: Date | null }>(`select id::text, status, scheduled_at from question_sets`)
-    for (const r of rows) expect(isVisibleAt({ status: r.status as 'draft', scheduledAt: r.scheduled_at }, new Date('2030-01-01T00:00:00Z'))).toBe(false)
+    for (const r of rows) expect(isVisibleAt({ status: r.status as 'draft' })).toBe(false)
     expect(await h.count('question_sets', `t.classroom_id = any((select array_agg(id) from classrooms)::bigint[])`)).toBe(0)
   })
 

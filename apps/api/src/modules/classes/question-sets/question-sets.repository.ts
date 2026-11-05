@@ -6,7 +6,7 @@ import { PrismaService } from '../../../db/prisma.service'
 export interface QuestionSetRecord {
   id: string
   teacherId: string
-  /** Null only for a migrated header (needs a rebuild, Q4 A): never listed to a student, never served. */
+  /** LEGACY (DM-46, migration 0201): no longer read to decide who sees the set; assignments are `question_set_classrooms`. */
   classroomId: string | null
   subjectId: string | null
   title: string
@@ -42,20 +42,31 @@ export class QuestionSetsRepository {
   }
 
   /**
-   * The sets a student of `classroomIds` may start at `at`: published, or scheduled and due (BR-M10-18);
-   * a draft never. Oldest created first. A set without a class (migrated header) never matches.
+   * The sets a student of `classroomIds` may start: published and assigned to at least one of those classes through
+   * `question_set_classrooms` (DM-46, S6-T14; `question_sets.classroom_id` is legacy and no longer read), of kind `set` or `kertas`
+   * (a shared teacher paper reaches the pupil through the same feed). A draft never; `scheduled` is never produced in R1. A set
+   * assigned to two of the pupil's classes is listed once. Oldest created first.
    */
-  async visibleIn(classroomIds: readonly string[], at: Date): Promise<QuestionSetRecord[]> {
+  async visibleIn(classroomIds: readonly string[]): Promise<QuestionSetRecord[]> {
     const keys = [...new Set(classroomIds)].flatMap((i) => (idOf(i) === null ? [] : [idFromString(i)]))
     if (keys.length === 0) return []
     const rows = await this.db.questionSet.findMany({
       where: {
-        classroomId: { in: keys },
-        OR: [{ status: 'published' }, { status: 'scheduled', scheduledAt: { lte: at } }],
+        kind: { in: ['set', 'kertas'] },
+        status: 'published',
+        classrooms: { some: { classroomId: { in: keys } } },
       },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     })
     return rows.map(toRecord)
+  }
+
+  /** The class ids a set is assigned to (`question_set_classrooms`), ascending. */
+  async assignedClassroomIds(setId: string): Promise<string[]> {
+    const key = idOf(setId)
+    if (key === null) return []
+    const rows = await this.db.questionSetClassroom.findMany({ where: { questionSetId: key }, orderBy: { classroomId: 'asc' }, select: { classroomId: true } })
+    return rows.map((r) => idToString(r.classroomId))
   }
 
   /** One set by id (any status), or null. */
