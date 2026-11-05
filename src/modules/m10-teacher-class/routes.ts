@@ -23,7 +23,7 @@ const misiHarian: RouteRecordRaw[] = [
       layout: 'user',
       access: 'auth',
       roles: ['teacher'],
-      title: 'Misi Harian - PRESTASIPLUS',
+      title: 'Misi Harian — PRESTASIPLUS',
       header: { title: 'Misi Harian', subtitle: 'Assign misi harian kepada pelajar' },
       module: 'M10',
       v2: true,
