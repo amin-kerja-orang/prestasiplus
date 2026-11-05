@@ -367,24 +367,57 @@ export interface SetStatusOptions {
 /** One answer of a learner, addressed by the part path (labels joined with `.`, e.g. `a.i`). */
 export type PartAnswerValue =
   | { kind: 'option'; label: string }
+  /** `mcq_multi` (S1-T09a): the labels of the options ticked. */
+  | { kind: 'options'; labels: readonly string[] }
   | { kind: 'text'; text: string }
   | { kind: 'number'; value: number; unit?: string }
   | { kind: 'mapping'; map: Readonly<Record<string, string>> }
   | { kind: 'cells'; cells: Readonly<Record<string, string>> }
+  /** `working` (S1-T09a, M-WORK): working lines, the final box with its unit field, free text and the number of photos given. */
+  | { kind: 'working'; steps?: readonly string[]; final?: string; unit?: string; text?: string; photos?: number }
+  /** A file or pad drawing (`drawing`, or a photo of an essay). */
+  | { kind: 'photo'; count: number }
 export interface PartAnswer {
   /** Omit for a question with a single leaf. */
   path?: string
   value: PartAnswerValue
 }
 
-/** `needs_review`: a subjective or unchecked mode; BE-14 (`@pp/exam-core`) marks it, never a score here. */
+/** OPT-STATUS-BAHAGIAN (46 section 3.1). Codes only; the labels are UI copy. */
+export const PART_STATUSES = ['betul', 'separa', 'salah', 'kosong', 'belum_dimarkah'] as const
+export type PartStatus = (typeof PART_STATUSES)[number]
+
+/** What one matched or missed scheme point contributed (M-WORK). `message` is set only where the PRD gives the text. */
+export interface PointOutcome {
+  id: string
+  hit: boolean
+  /** `manual`: no matcher field, never auto. */
+  manual?: boolean
+  code: 'HIT' | 'ECF' | 'NO_MATCH' | 'REQUIRES' | 'UNIT_MISSING' | 'UNIT_WRONG' | 'MANUAL'
+  message?: string
+}
+
+/** The automatic suggestion of a `belum_dimarkah` part ("Cadangan automatik"); the pupil decides. */
+export interface GradeSuggestion {
+  marks: number
+  /** `table_fill`: "Cadangan automatik: {k} daripada {n} sel sepadan". */
+  message?: string
+  points?: PointOutcome[]
+}
+
+/**
+ * `graded`: the engine awarded `marks`. `needs_review`: a subjective or unreadable answer; `suggestion` is provisional and the
+ * self-mark replaces it. `blank`: nothing was entered (`kosong`): no mark row is written.
+ */
 export type GradeResult =
-  | { kind: 'graded'; correct: boolean; marks: number; maxMarks: number }
-  | { kind: 'needs_review'; maxMarks: number }
+  | { kind: 'graded'; correct: boolean; marks: number; maxMarks: number; reasons?: string[]; points?: PointOutcome[] }
+  | { kind: 'needs_review'; maxMarks: number; suggestion?: GradeSuggestion; reasons?: string[]; acceptedShown?: string[] }
+  | { kind: 'blank'; maxMarks: number }
 
 export interface QuestionGrade {
   questionId: string
-  parts: { path: string; result: GradeResult }[]
+  /** One entry per marked leaf in reading order; a worked-example leaf (`modeConfig.example`) has none. */
+  parts: { path: string; result: GradeResult; status: PartStatus }[]
   marks: number
   maxMarks: number
   needsReview: boolean

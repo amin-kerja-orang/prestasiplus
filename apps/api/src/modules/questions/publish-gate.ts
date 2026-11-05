@@ -7,6 +7,9 @@ import { INTAKE_GATE_MESSAGES, type QuestionPart } from '@pp/contract'
 
 import { PUBLISH_TAG_MESSAGES } from './errors'
 import { isLeaf, leavesOf } from './grading'
+import { reachableIds, schemeTotal, type SchemeDeduction, type SchemeKeyLike } from './scheme-total'
+
+export { schemeTotal, reachableIds, type SchemeKeyLike }
 
 export interface TagGateInput {
   subjectId: string | null
@@ -79,95 +82,6 @@ function pointsTotal(key: Extract<QuestionPart, { mode: 'working' }>['key']): nu
  * The key is read structurally (v1 and v2 shapes), so the engine does not depend on the parse path that produced it.
  * ------------------------------------------------------------------------------------------------- */
 
-interface SchemePoint {
-  id: string
-  label?: string
-  marks: number
-  requires?: readonly string[]
-  ecf?: { fromPart: string }
-}
-interface SchemeGroup {
-  id: string
-  pointIds: readonly string[]
-  type?: 'pair'
-  anyN?: number
-  eachMarks?: number
-  cap?: number
-}
-interface SchemeDeduction {
-  code: string
-  amount: number
-  cap?: number
-  scope?: 'question' | 'part'
-}
-/** A key as the engine reads it: v1 (`scheme_v` absent) or v2 (`scheme_v: 2`). Other kinds only carry `kind`. */
-export interface SchemeKeyLike {
-  kind: string
-  scheme_v?: number
-  marks?: number
-  points?: readonly SchemePoint[]
-  groups?: readonly SchemeGroup[]
-  paths?: readonly { id: string; pointIds: readonly string[] }[]
-  alternatives?: readonly { id: string; pointIds: readonly string[] }[]
-  bonus?: { marks: number }
-  countMarks?: { marks: readonly number[] }
-  deductions?: readonly SchemeDeduction[]
-  scoring?: 'overall' | 'perCriterion'
-  criteria?: readonly { id: string; max?: number }[]
-  bands?: readonly { range: readonly [number, number] }[]
-  floorBand?: { range: readonly [number, number] }
-  contentPoints?: { points?: readonly SchemePoint[] }
-}
-
-/** Ids reachable inside the point set: a point is reachable only when every `requires` id is reachable (least fixpoint, so a cycle is unreachable). */
-function reachableIds(points: readonly SchemePoint[]): Set<string> {
-  const ok = new Set<string>()
-  for (let changed = true; changed; ) {
-    changed = false
-    for (const p of points) {
-      if (!ok.has(p.id) && (p.requires ?? []).every((r) => ok.has(r))) {
-        ok.add(p.id)
-        changed = true
-      }
-    }
-  }
-  return ok
-}
-
-/** One alternative of a v2 points key (45 7.0 steps 2 to 5). `ids` is the point set it holds. */
-function alternativeTotal(key: SchemeKeyLike, ids: ReadonlySet<string>): number {
-  const points = (key.points ?? []).filter((p) => ids.has(p.id))
-  const ok = reachableIds(points)
-  const marksOf = new Map(points.map((p) => [p.id, p.marks]))
-  const used = new Set<string>()
-  let sum = 0
-  for (const g of key.groups ?? []) {
-    const members = g.pointIds.filter((id) => ids.has(id) && !used.has(id))
-    members.forEach((id) => used.add(id))
-    // Units: a plain group counts each reachable member; a pair group counts consecutive (first, second) pairs, the second only with the first.
-    const units: number[] = []
-    const mark = (id: string): number => g.eachMarks ?? marksOf.get(id) ?? 0
-    if (g.type === 'pair') {
-      for (let i = 0; i < members.length; i += 2) {
-        const first = members[i]!
-        const second = members[i + 1]
-        if (!ok.has(first)) continue
-        units.push(mark(first) + (second !== undefined && ok.has(second) ? mark(second) : 0))
-      }
-    } else {
-      for (const id of members) if (ok.has(id)) units.push(mark(id))
-    }
-    units.sort((x, y) => y - x)
-    const taken = g.anyN === undefined ? units : units.slice(0, g.anyN)
-    const total = taken.reduce((s, x) => s + x, 0)
-    sum += g.cap === undefined ? total : Math.min(total, g.cap)
-  }
-  for (const p of points) if (!used.has(p.id) && ok.has(p.id)) sum += p.marks
-  if (key.countMarks) sum = Math.max(0, ...key.countMarks.marks)
-  if (key.bonus && points.every((p) => ok.has(p.id))) sum += key.bonus.marks
-  return sum
-}
-
 /**
  * The maximum marks a scheme can award (45 section 7.0 "Best reachable marks").
  * - v1 key (`scheme_v` absent): the existing `pointsTotal` semantics; a points key with `paths` returns null (not evaluated).
@@ -179,9 +93,7 @@ function alternativeTotal(key: SchemeKeyLike, ids: ReadonlySet<string>): number 
 export function bestReachable(key: SchemeKeyLike, marks?: number): number | null {
   if (key.kind === 'points') {
     if (key.scheme_v !== 2) return pointsTotal(key as unknown as Parameters<typeof pointsTotal>[0])
-    const all = new Set((key.points ?? []).map((p) => p.id))
-    if (!key.alternatives || key.alternatives.length === 0) return alternativeTotal(key, all)
-    return Math.max(0, ...key.alternatives.map((a) => alternativeTotal(key, new Set(a.pointIds))))
+    return schemeTotal(key)
   }
   if (key.kind === 'rubric') {
     if (key.scheme_v === 2 && key.scoring === 'perCriterion') return (key.criteria ?? []).reduce((s, c) => s + (c.max ?? 0), 0)

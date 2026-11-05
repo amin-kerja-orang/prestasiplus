@@ -104,7 +104,8 @@ describe('essay_choice storage (migration 0101)', () => {
     const parts = [leaf()] as never
     const grade = gradeQuestion('1', parts, [{ value: { kind: 'text', text: 'Karangan saya' } }])
     expect(JSON.stringify(grade)).toContain('needs_review')
-    expect(JSON.stringify(gradeQuestion('1', parts, []))).toContain('needs_review')
+    // No essay text is `kosong` (46 section 3.1), not a review.
+    expect(gradeQuestion('1', parts, []).parts[0]).toMatchObject({ status: 'kosong', result: { kind: 'blank' } })
   })
 
   it('refuses a bad topics set with a BM message and stores nothing', async () => {

@@ -771,7 +771,7 @@ export class QuestionsService {
   async gradeAnswer(id: string, answers: readonly PartAnswer[]): Promise<QuestionGrade> {
     const record = await this.repo.get(id, 'live')
     if (!record || !record.isActive || record.version.status !== 'approved') throw questionNotFound()
-    return gradeQuestion(record.id, record.version.parts, answers)
+    return gradeQuestion(record.id, record.version.parts, answers, { schemeRules: record.version.schemeRules })
   }
 
   // --- stimuli and groups (tests and later cards; no HTTP route in this contract) ---------------
