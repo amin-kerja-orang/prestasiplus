@@ -43,15 +43,6 @@ export interface StandingRecord {
   purata: number
 }
 
-export interface SekolahBersaingRecord {
-  rank: number
-  schoolId: string
-  aktifPct: number
-  streakAvg: number
-  notaPer10: number
-  isAnonymous: boolean
-}
-
 const toRecord = (r: {
   id: bigint
   name: string
@@ -85,7 +76,7 @@ const toRecord = (r: {
 })
 
 /**
- * Leagues and the Sekolah Bersaing board (BE-45, M16-46 to M16-50). Test rows (Mod Pelajar) are visible only to
+ * Leagues (BE-45, M16-46 to M16-49). Test rows (Mod Pelajar) are visible only to
  * Mod Pelajar callers: a normal caller never sees a test league or a test school membership. Everything goes
  * through `prisma.client`, so a call inside `transaction()` joins it.
  */
@@ -208,22 +199,6 @@ export class LeaguesRepository {
       orderBy: [{ level: 'asc' }, { sortOrder: 'asc' }, { id: 'asc' }],
     })
     return rows.map((r) => ({ level: r.level, schoolId: idToString(r.schoolId), peserta: r.peserta, skor: Number(r.skor), purata: Number(r.purata) }))
-  }
-
-  /** Stored Sekolah Bersaing rows of the week (`YYYY-MM-DD` Monday), in rank order. */
-  async sekolahBersaing(weekStart: string): Promise<SekolahBersaingRecord[]> {
-    const rows = await this.db.sekolahBersaingWeek.findMany({
-      where: { weekStart: new Date(`${weekStart}T00:00:00.000Z`) },
-      orderBy: { rank: 'asc' },
-    })
-    return rows.map((r) => ({
-      rank: r.rank,
-      schoolId: idToString(r.schoolId),
-      aktifPct: Number(r.aktifPct),
-      streakAvg: Number(r.streakAvg),
-      notaPer10: Number(r.notaPer10),
-      isAnonymous: r.isAnonymous,
-    }))
   }
 }
 

@@ -139,6 +139,30 @@ export function writeReport(name: string, content: readonly CheckLine[] | object
   return path
 }
 
+/** One CSV field: quoted (quotes doubled) when it holds a comma, quote or line break; `undefined`/`null` become empty. */
+export function csvField(value: string | number | boolean | null | undefined): string {
+  const text = value === null || value === undefined ? '' : String(value)
+  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
+}
+
+/** A CSV text (header, then rows; `\n` line ends, trailing newline). */
+export function toCsv(header: readonly string[], rows: ReadonlyArray<ReadonlyArray<string | number | boolean | null | undefined>>): string {
+  return `${[header, ...rows].map((r) => r.map(csvField).join(',')).join('\n')}\n`
+}
+
+/** Writes `<root>/.evidence/uat-ops/<name>-<ISO timestamp>.csv` (same name rule and scrubbing as `writeReport`) and returns its path. */
+export function writeCsvReport(
+  name: string,
+  header: readonly string[],
+  rows: ReadonlyArray<ReadonlyArray<string | number | boolean | null | undefined>>,
+  options: ReportOptions = {},
+): string {
+  const path = reportPath(name, 'txt', options).replace(/\.txt$/, '.csv')
+  mkdirSync(join(path, '..'), { recursive: true })
+  writeFileSync(path, scrubSecrets(toCsv(header, rows)), 'utf8')
+  return path
+}
+
 export interface UatDb {
   client: pg.Client
   /** Runs `fn` inside `BEGIN READ ONLY ... ROLLBACK`: the callback cannot write even by mistake. */

@@ -97,5 +97,7 @@ export const AUDIT_ACTIONS = {
   HEADCOUNT_CONFIG_CREATED: 'headcount.config.created',
   HEADCOUNT_CONFIGS_AUTO_SETUP: 'headcount.configs.auto_setup',
   HEADCOUNT_STUDENTS_DROPPED: 'headcount.students.dropped',
+  // S10-T02: Bilangan OTR changed in Tetapan (CF-05 deletes the marks above the new count in the same transaction).
+  HEADCOUNT_CONFIG_OTRS_CHANGED: 'headcount.config.otrs_changed',
 } as const
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS]
