@@ -14193,6 +14193,26 @@
       "approved_by_card": null
     },
     {
+      "key": "POST /api/intake/files/:p/retry",
+      "method": "POST",
+      "path": "/api/intake/files/:id/retry",
+      "api_id": "API-Q-26",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/intake/files/intake-files.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/intake/batches/:p/retry",
+      "method": "POST",
+      "path": "/api/intake/batches/:id/retry",
+      "api_id": "API-Q-26",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/intake/files/intake-files.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "GET /api/intake/files/:p/pages",
       "method": "GET",
       "path": "/api/intake/files/:id/pages",
