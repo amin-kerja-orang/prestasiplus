@@ -147,6 +147,7 @@ describe('servability reads contract (R1-T30)', () => {
     it('builds the exact BM attention sentences', () => {
       expect(trackingSetAttentionMs(8, 40, 28471)).toBe('Hanya 8 daripada 40 soalan — 28471 tersedia untuk diisi')
       expect(latihTubiCellAttentionMs(3)).toBe('3 tidak boleh ditanda')
+      expect(latihTubiCellAttentionMs(1234)).toBe('1,234 tidak boleh ditanda')
     })
   })
 
