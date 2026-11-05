@@ -59721,6 +59721,41 @@
           "questionCount": {
             "type": "integer",
             "minimum": 0
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "code": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "name": {
+                  "type": "string"
+                },
+                "chapterCount": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "questionCount": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "id",
+                "code",
+                "name",
+                "chapterCount",
+                "questionCount"
+              ],
+              "additionalProperties": false
+            },
+            "description": "S5-T02 (FR-MUR-9-5): the offered levels of this subject that have at least one chapter with a servable question, with their own counts. `chapterCount` and `questionCount` above are the sums over these levels."
           }
         },
         "required": [
@@ -59729,7 +59764,8 @@
           "icon",
           "color",
           "chapterCount",
-          "questionCount"
+          "questionCount",
+          "levels"
         ],
         "additionalProperties": false
       },
@@ -79670,11 +79706,11 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 64,
-              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
               "example": "1042"
             },
             "required": true,
-            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
             "name": "id",
             "in": "path"
           },
@@ -79720,7 +79756,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {

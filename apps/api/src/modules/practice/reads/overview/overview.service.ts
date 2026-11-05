@@ -262,7 +262,7 @@ export class OverviewService {
 
   // --- S4 / S5 --------------------------------------------------------------------------------------
 
-  async chapterSubjects(): Promise<{ code: string; name: string; icon: string | null; color: string; chapterCount: number; questionCount: number }[]> {
+  async chapterSubjects(): Promise<{ code: string; name: string; icon: string | null; color: string; chapterCount: number; questionCount: number; levels: { id: string; code: string; name: string; chapterCount: number; questionCount: number }[] }[]> {
     const subjects = await this.curriculum.subjects({ active: true })
     const out = []
     const levels = await this.curriculum.levels()
@@ -273,11 +273,19 @@ export class OverviewService {
       const chapterCount = offered.reduce((n, l) => n + (byPair.get(`${s.id}:${l.id}`)?.length ?? 0), 0)
       // BR-15: subjects with at least one chapter at an offered level.
       if (chapterCount === 0) continue
+      // FR-MUR-9-5 (S5-T02): the levels that have chapters, each with its own counts (the page filters by the chosen level).
+      const levelRows = offered
+        .map((l) => {
+          const chapters = byPair.get(`${s.id}:${l.id}`) ?? []
+          return { id: idToString(l.id), code: l.code, name: l.name, chapterCount: chapters.length, questionCount: chapters.reduce((m, c) => m + (counts.get(idToString(c.id)) ?? 0), 0) }
+        })
+        .filter((l) => l.chapterCount > 0)
       out.push({
         code: s.code,
         name: s.name,
         icon: s.icon,
         color: s.color,
+        levels: levelRows,
         chapterCount,
         // FR-M05-58, D91, V2 section 2.3 (R1E2E-09): the tile counts what the chapter draw can serve (chaptered, ungrouped, approved),
         // the sum of the per-chapter counts, not Q-PRACTICE(subject).
