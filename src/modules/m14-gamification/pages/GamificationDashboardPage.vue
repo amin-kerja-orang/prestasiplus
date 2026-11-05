@@ -2,12 +2,16 @@
 /**
  * S11 `/gamification` "Gamifikasi Dashboard" (M14-T2a; FR-M14-14…22, BR-M14-05…09). Reads #3 once;
  * shell header and tab title come from the route meta (DV-M14-01). v2 look: DS composites only.
+ * "Transaksi Terkini" is the last 10 rows (AC-MUR-28-5) of #4: the contract caps `recent` of #3 at 6, and widening
+ * it is a breaking change, so #3 only fills the card until #4 answers or when #4 fails.
  */
+import { computed } from 'vue'
+
 import { DsCharacterCard, DsPage } from '@/ds'
 import { useApi } from '@/composables'
 import { formatCount } from '@/lib/number'
 
-import { fetchGamificationDashboard } from '../api'
+import { fetchGamificationDashboard, fetchGamificationTransactions } from '../api'
 import S11ChallengesCard from '../components/student-a/S11ChallengesCard.vue'
 import S11Hero from '../components/student-a/S11Hero.vue'
 import S11MasteryCard from '../components/student-a/S11MasteryCard.vue'
@@ -15,7 +19,13 @@ import S11RecentCard from '../components/student-a/S11RecentCard.vue'
 import WalletTiles from '../components/student-a/WalletTiles.vue'
 import S11TierSystem from '../components/student-a/S11TierSystem.vue'
 
+const HUB_RECENT_ROWS = 10
+
 const dashboard = useApi((signal) => fetchGamificationDashboard({ signal }))
+const ledger = useApi((signal) => fetchGamificationTransactions({}, { signal }))
+const recent = computed(() =>
+  (ledger.data.value?.data ?? dashboard.data.value?.recent ?? []).slice(0, HUB_RECENT_ROWS),
+)
 </script>
 
 <template>
@@ -45,7 +55,7 @@ const dashboard = useApi((signal) => fetchGamificationDashboard({ signal }))
 
       <div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
         <S11ChallengesCard :challenges="dashboard.data.value.challenges.slice(0, 4)" />
-        <S11RecentCard :rows="dashboard.data.value.recent.slice(0, 6)" />
+        <S11RecentCard :rows="recent" />
       </div>
 
       <S11MasteryCard
