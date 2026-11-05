@@ -5,26 +5,28 @@ import type { Role } from '@/stores/session-types'
 import { useSessionStore } from '@/stores/session'
 
 /**
- * `/analisa-item` (the sidebar "Analisa Item"; FR-M08-09, OD-R4): admin and teacher → S10, school admin →
- * S9 (the dead-link fix of DV-M08-02, INFERRED), every other role, pelajar included → the role's own home
- * (`shellHomePath`: `/dashboard`, or the student home in http mode; DV-M08-40) without a message (INFERRED,
- * provisional); a guest goes to `/login` as on every M08 route (FR-M08-05).
+ * `/analisa-item` (the sidebar "Analisa Item"; FR-M08-09, OD-R4; S10-T03 change 6): the pupil's own page
+ * (`AnalisaItemMuridPage`, R1-MUR-6) stays where it is; admin and teacher → S10, school admin → S9 (the
+ * dead-link fix of DV-M08-02, INFERRED), every other role → the role's own home (`shellHomePath`: `/dashboard`,
+ * or the student home in http mode; DV-M08-40) without a message (INFERRED, provisional); a guest goes to
+ * `/login` as on every M08 route (FR-M08-05).
  */
 export function analisaItemTarget(role: string | null): string {
   if (role === null) return '/login'
   if (role === 'admin' || role === 'teacher') return '/analisa-item/kelas'
   if (role === 'school_admin') return '/analisa-item/sekolah'
+  if (role === 'student') return '/analisa-item'
   return shellHomePath(role as Role)
 }
 
 /**
- * Every role except `admin` for the id-less S9 `/analisa-item/sekolah` (SW5-15, DV-M08-50): that route is
- * the viewer's OWN school, and Admin Pusat has none (`GET /api/item-analysis/school` answers 404). The
- * admin reaches a school through `/analisa-item/sekolah/{id}`, which stays open. The other roles keep the
- * API as the judge (own school, else 403).
+ * Every role except `admin` and `student` for the id-less S9 `/analisa-item/sekolah` (SW5-15, DV-M08-50):
+ * that route is the viewer's OWN school, and Admin Pusat has none (`GET /api/item-analysis/school` answers
+ * 404). The admin reaches a school through `/analisa-item/sekolah/{id}`, which stays open. The pupil is
+ * refused with the in-place 403 page (FR-MUR-6-2, AC-MUR-6-5: school figures are not for pupils). The other
+ * roles keep the API as the judge (own school, else 403).
  */
 const ANALISA_SEKOLAH_OWN_ROLES: Role[] = [
-  'student',
   'teacher',
   'parent',
   'sponsor',
@@ -40,7 +42,27 @@ const ANALISA_SEKOLAH_OWN_ROLES: Role[] = [
  * id-less S9 refuses the admin with the same in-place 403 page (SW5-15, DV-M08-50).
  */
 const routes: RouteRecordRaw[] = [
-  { path: '/analisa-item', redirect: () => analisaItemTarget(useSessionStore().role) },
+  {
+    path: '/analisa-item',
+    name: 'm08.analisa-item.murid',
+    component: () => import('../pages/AnalisaItemMuridPage.vue'),
+    // Non-students are sent on by `analisaItemTarget` (guest → /login); the pupil stays.
+    beforeEnter: () => {
+      const target = analisaItemTarget(useSessionStore().role)
+      return target === '/analisa-item' ? true : target
+    },
+    meta: {
+      layout: 'user',
+      access: 'auth',
+      title: 'Analisa Item | PRESTASIPLUS',
+      header: {
+        title: 'Analisa Item',
+        subtitle: 'Pemulihan & Pengukuhan berdasarkan jawapan sebenar anda',
+      },
+      module: 'M08',
+      v2: true,
+    },
+  },
   {
     path: '/analisa-item/sekolah',
     name: 'm08.analisa-item.sekolah',

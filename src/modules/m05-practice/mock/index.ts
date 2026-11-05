@@ -37,6 +37,7 @@ import { assignedRoutes, remedialPreviewRoutes } from './handlers/assigned'
 import { chapterRoutes } from './handlers/chapters'
 import { dashboardRoutes } from './handlers/dashboard'
 import { learnerRoutes } from './handlers/learner'
+import { moodCheckinsTable, moodRoutes } from './handlers/mood'
 import { revisionRoutes } from './handlers/revision'
 import { sessionRoutes } from './handlers/sessions'
 import { structuredRoutes } from './handlers/structured'
@@ -67,7 +68,7 @@ const plugin = defineMockModule({
   // dependencies: the F-26 tests boot M05 without M14, and M14 in turn reads M05 (a cycle).
   dependsOn: ['core', 'M01', 'M02', 'M03', 'M04'],
   version: 7,
-  tables: { ...M05_TABLES, pupilSubjectAccuracy: pupilAccuracyTable, ...FIXTURE_TABLES },
+  tables: { ...M05_TABLES, pupilSubjectAccuracy: pupilAccuracyTable, ...FIXTURE_TABLES, moodCheckins: moodCheckinsTable },
   datasets: {
     practiceAnswers: answersDataset,
     practiceSessions: sessionsDataset,
@@ -84,6 +85,8 @@ const plugin = defineMockModule({
   routes: [
     ...sessionRoutes,
     ...dashboardRoutes,
+    // S5-T04: API-MUR-11 mood check-in.
+    ...moodRoutes,
     ...subjectRoutes,
     ...chapterRoutes,
     ...revisionRoutes,
