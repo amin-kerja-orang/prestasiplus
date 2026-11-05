@@ -192,7 +192,7 @@ function readiness(): Readiness {
       readiness: sets.length === 0 ? 0 : Math.round(((bersih + bankBesar) / sets.length) * 100),
       lockedSets: locked
         .slice(0, 6)
-        .map((s) => ({ setNo: s.setNo, readyCount: s.readyCount, target: s.size })),
+        .map((s) => ({ year: s.year, setNo: s.setNo, readyCount: s.readyCount, target: s.size })),
       hasBankBesar: bankBesar > 0,
     }
   })

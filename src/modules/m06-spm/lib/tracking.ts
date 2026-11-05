@@ -33,9 +33,9 @@ export function targetChip(type: TargetType, size: number): string {
 export const tileTarget = (code: string, size: number): string =>
   `${code} · Target set: ${String(size)} soalan`
 
-/** "2026 Set {n} · {ready}/{target}" (locked chip of a readiness tile). */
-export const lockChip = (set: { setNo: number; readyCount: number; target: number }): string =>
-  `2026 Set ${String(set.setNo)} · ${String(set.readyCount)}/${String(set.target)}`
+/** "{tahun} Set {n} · {ready}/{target}" (locked chip of a readiness tile). */
+export const lockChip = (set: { year: number; setNo: number; readyCount: number; target: number }): string =>
+  `${String(set.year)} Set ${String(set.setNo)} · ${String(set.readyCount)}/${String(set.target)}`
 
 /** Link that starts a ready set (Q3). */
 export const setHref = (code: string, year: number, setNo: number): string =>

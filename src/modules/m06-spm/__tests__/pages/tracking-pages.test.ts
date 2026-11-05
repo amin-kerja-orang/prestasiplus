@@ -210,6 +210,7 @@ describe('S5 TrackingAHubPage', () => {
             locked: 11,
             total: 11,
             lockedSets: [1, 2, 3, 4, 5, 6].map((n) => ({
+              year: 2026,
               setNo: 42 + n,
               readyCount: 30 + n,
               target: 40,
@@ -221,7 +222,7 @@ describe('S5 TrackingAHubPage', () => {
             total: 10,
             readiness: 10,
             hasBankBesar: true,
-            lockedSets: [{ setNo: 2, readyCount: 31, target: 40 }],
+            lockedSets: [{ year: 2025, setNo: 2, readyCount: 31, target: 40 }],
           }),
         ],
       }),

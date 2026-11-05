@@ -175,7 +175,7 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
                 <div class="flex flex-wrap gap-2">
                   <UBadge
                     v-for="s in t.lockedSets"
-                    :key="s.setNo"
+                    :key="`${s.year}:${s.setNo}`"
                     color="warning"
                     variant="soft"
                     data-testid="tile-lock-chip"
