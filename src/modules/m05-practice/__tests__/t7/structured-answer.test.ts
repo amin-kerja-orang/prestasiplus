@@ -39,7 +39,7 @@ const DETAIL = {
     { id: 6, label: '(b)', text: 'Bahagian b', marks: 3 },
   ],
 }
-const KEY = 'pp:structured-draft:anon:7'
+const KEY = 'pp:draft:structured:5:7'
 
 let wrapper: VueWrapper | null = null
 let router: Router
@@ -72,7 +72,7 @@ const settle = async (): Promise<void> => {
 beforeEach(() => {
   vi.useFakeTimers()
   window.localStorage.clear()
-  who.id = null
+  who.id = 5
   window.scrollTo = vi.fn()
   api.fetchStructuredDetail.mockReset().mockResolvedValue(DETAIL)
   api.submitStructuredAttempt.mockReset()
@@ -135,7 +135,7 @@ describe('S5-T11 structured answer: autosave and restore (AC-MUR-17-2)', () => {
   })
 
   it('keeps one draft per user and question', async () => {
-    window.localStorage.setItem('pp:structured-draft:anon:8', JSON.stringify({ 2: 'soalan lain' }))
+    window.localStorage.setItem('pp:draft:structured:5:8', JSON.stringify({ 2: 'soalan lain' }))
     const w = await open()
     expect((boxes(w)[0]?.element as HTMLTextAreaElement).value).toBe('')
   })
@@ -170,11 +170,11 @@ describe('S5-T11 structured answer: autosave and restore (AC-MUR-17-2)', () => {
     // eslint-disable-next-line @typescript-eslint/unbound-method -- re-called with the right `this` below
     const real = Storage.prototype.getItem
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(function (this: Storage, k: string) {
-      if (k.startsWith('pp:structured-draft')) throw new Error('blocked')
+      if (k.startsWith('pp:draft:structured')) throw new Error('blocked')
       return real.call(this, k)
     })
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (k: string) {
-      if (k.startsWith('pp:structured-draft')) throw new Error('full')
+      if (k.startsWith('pp:draft:structured')) throw new Error('full')
     })
     const w = await open()
     await boxes(w)[0]?.setValue('masih boleh')
@@ -339,7 +339,7 @@ describe('S5-T11 structured answer: review fixes', () => {
     const a = await open()
     await boxes(a)[0]?.setValue('milik 11')
     a.unmount()
-    expect(window.localStorage.getItem('pp:structured-draft:11:7')).not.toBeNull()
+    expect(window.localStorage.getItem('pp:draft:structured:11:7')).not.toBeNull()
     who.id = 12
     const b = await open()
     expect((boxes(b)[0]?.element as HTMLTextAreaElement).value).toBe('')
@@ -437,5 +437,29 @@ describe('S5-T11 structured answer: tree by label chain', () => {
     expect(w.findAll('[data-testid^=part-]')).toHaveLength(1)
     expect(w.findAll('[data-testid=sub-label]').map((l) => l.text())).toEqual(['(a)', '(a)(i)'])
     expect(boxes(w)).toHaveLength(1)
+  })
+})
+
+describe('S5-T11 structured answer: shared draft prefix', () => {
+  it('sign-out (the real store) removes the saved draft', async () => {
+    const w = await open()
+    await boxes(w)[0]?.setValue('rahsia')
+    window.dispatchEvent(new Event('pagehide'))
+    expect(window.localStorage.getItem(KEY)).not.toBeNull()
+    const { useSessionStore } = await import('@/stores')
+    await useSessionStore().logout()
+    expect(window.localStorage.getItem(KEY)).toBeNull()
+  })
+
+  it('without a signed-in user nothing is saved or restored', async () => {
+    who.id = null
+    window.localStorage.setItem('pp:draft:structured:null:7', JSON.stringify({ 2: 'x' }))
+    const w = await open()
+    expect((boxes(w)[0]?.element as HTMLTextAreaElement).value).toBe('')
+    await boxes(w)[0]?.setValue('tidak disimpan')
+    window.dispatchEvent(new Event('pagehide'))
+    expect(
+      Object.keys(window.localStorage).filter((k) => k !== 'pp:draft:structured:null:7'),
+    ).toEqual([])
   })
 })

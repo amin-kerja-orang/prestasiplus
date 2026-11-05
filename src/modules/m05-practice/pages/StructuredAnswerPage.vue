@@ -22,6 +22,7 @@ import { setRouteOutcome } from '@/app/router/outcome'
 import { RichText, StimulusGroup } from '../../../components/question-display'
 import type { StimulusData } from '../../../components/question-display'
 import { useApi, useSession } from '@/composables'
+import { LOCAL_DRAFT_PREFIX } from '@/stores'
 import { DsCluster, DsDialog, DsHeading, DsLoadError, DsStack, DsStickyActions, DsText } from '@/ds'
 import { ReportQuestionModal } from '@/modules/m04-question-bank'
 
@@ -64,7 +65,7 @@ watch(
   { immediate: true },
 )
 
-const answers = reactive<Record<number, string>>({})
+const answers = reactive<Record<string, string>>({})
 const result = ref<StructuredAttemptResult | null>(null)
 const sending = ref(false)
 const errors = ref<string[]>([])
@@ -148,21 +149,23 @@ const modelOf = (subId: number) =>
 
 // ---- autosave and restore (AC-MUR-17-2) -------------------------------------------------------------
 
-const draftKey = computed(
-  () =>
-    `pp:structured-draft:${String(user.value?.id ?? 'anon')}:${id.value}${
-      variant.value.scope ? `:spm${variant.value.track ? ':bahasa' : ''}` : ''
-    }`,
+/** Under the shared draft prefix, so sign-out clears it. No signed-in user: no draft at all. */
+const draftKey = computed<string | null>(() =>
+  user.value?.id === undefined || user.value.id === null
+    ? null
+    : `${LOCAL_DRAFT_PREFIX}structured:${String(user.value.id)}:${id.value}${
+        variant.value.scope ? `:spm${variant.value.track ? ':bahasa' : ''}` : ''
+      }`,
 )
 
-function readDraft(key: string): Record<number, string> {
+function readDraft(key: string): Record<string, string> {
   try {
     const raw = window.localStorage.getItem(key)
     if (!raw) return {}
     const parsed: unknown = JSON.parse(raw)
     if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return {}
-    const out: Record<number, string> = {}
-    for (const [k, v] of Object.entries(parsed)) if (typeof v === 'string') out[Number(k)] = v
+    const out: Record<string, string> = {}
+    for (const [k, v] of Object.entries(parsed)) if (typeof v === 'string') out[k] = v
     return out
   } catch {
     return {}
@@ -193,6 +196,7 @@ function flushDraft(): void {
   dirtyKey = null
 }
 function scheduleSave(): void {
+  if (draftKey.value === null) return
   dirtyKey = draftKey.value
   clearTimeout(timer)
   timer = setTimeout(flushDraft, SAVE_DEBOUNCE_MS)
@@ -203,12 +207,15 @@ watch(
   [() => data.value?.id, draftKey],
   () => {
     flushDraft()
-    for (const k of Object.keys(answers)) delete answers[Number(k)]
+    for (const k of Object.keys(answers)) delete answers[k]
     result.value = null
     errors.value = []
-    if (!data.value) return
+    if (!data.value || draftKey.value === null) return
     const saved = readDraft(draftKey.value)
-    for (const r of leaves.value) if (saved[r.id] !== undefined) answers[r.id] = saved[r.id] ?? ''
+    for (const r of leaves.value) {
+      const v = saved[String(r.id)]
+      if (v !== undefined) answers[r.id] = v
+    }
   },
   { immediate: true, flush: 'post' },
 )
@@ -255,7 +262,7 @@ async function submit(): Promise<void> {
     })
     clearTimeout(timer)
     dirtyKey = null
-    clearDraft(draftKey.value)
+    if (draftKey.value !== null) clearDraft(draftKey.value)
     blankOpen.value = false
     window.scrollTo?.({ top: 0, behavior: 'smooth' })
   } catch (e) {
