@@ -1002,6 +1002,14 @@ export class BijakServer implements BijakApi {
     }
   }
 
+  /** A mock batch has no `batchStatus`, so the page never offers `Batalkan`; removing it is enough here. */
+  async cancelIntakeBatch(id: string): Promise<void> {
+    await this.tick()
+    const store = this.intakeStore()
+    this.state.intake = Object.fromEntries(Object.entries(store).filter(([key]) => key !== id))
+    this.persist()
+  }
+
   async listIntakeBatches(
     filter: { status?: IntakeStatus; subject?: SubjectCode; q?: string } = {},
   ): Promise<IntakeSummary[]> {

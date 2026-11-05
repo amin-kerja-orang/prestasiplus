@@ -17,9 +17,12 @@ export interface IntakeForm {
   source: string
   copyright: string
   notes: string
+  /** Field 08-12: refused at submit with "Pengisytiharan sumber diperlukan." */
+  declared: boolean
 }
 
 const form = defineModel<IntakeForm>({ required: true })
+defineProps<{ declarationError?: string }>()
 // Staff pages read the subjects from the admin blueprints (the student route is 403 for staff).
 const subjects = bijakAdminServer().subjects()
 </script>
@@ -84,6 +87,20 @@ const subjects = bijakAdminServer().subjects()
     </DsFormField>
     <DsFormField native for="in-notes" label="Catatan">
       <UInput id="in-notes" v-model="form.notes" class="w-full" />
+    </DsFormField>
+    <DsFormField
+      native
+      for="in-declaration"
+      label="Pengisytiharan"
+      required
+      :error="declarationError"
+    >
+      <UCheckbox
+        id="in-declaration"
+        v-model="form.declared"
+        label="Saya mengesahkan sumber kertas ini dan berhak menggunakannya."
+        data-testid="intake-declaration"
+      />
     </DsFormField>
   </DsFormSection>
 </template>

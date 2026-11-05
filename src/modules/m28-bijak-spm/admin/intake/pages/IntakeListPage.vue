@@ -1,18 +1,21 @@
 <script setup lang="ts">
-/** Senarai Ekstrak: the intake batches with status, counts and filters (v2-question-bank 4.2). */
+/** Import & Semakan, tab `Kelompok Item` (R1-ADM-Q-07): the intake batches with status, counts and filters. */
 import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
 
-import { useApi } from '@/composables/useApi'
-import { DsDataTable, DsEmptyState, DsFilterBar, DsNativeSelect, DsPage, DsStatusBadge } from '@/ds'
+import { useApi, useFlash } from '@/composables'
+import { DsDataTable, DsEmptyState, DsFilterBar, DsNativeSelect, DsPage, DsStatusBadge, useConfirm } from '@/ds'
 
 import { bijakAdminServer } from '../../../server/client'
 import { isUnavailable, UNAVAILABLE_TITLE } from '../../../server/errors'
+import ImportTabs from '../components/ImportTabs.vue'
 import { intakeBadge } from '../lib/intake-badge'
 import { INTAKE_CSV_IMPORT_PATH, INTAKE_MANUAL_PATH, INTAKE_UPLOAD_PATH, intakeReviewPath } from '../lib/intake-routes'
 import type { IntakeStatus, IntakeSummary } from '../types'
 
 const server = bijakAdminServer()
+const confirm = useConfirm()
+const flash = useFlash()
 
 const status = ref<'semua' | IntakeStatus>('semua')
 const subject = ref('semua')
@@ -59,6 +62,25 @@ function removeChip(key: string): void {
   apply()
 }
 
+/** Field 07-05: a batch can be cancelled only before it is ready. */
+const cancellable = (row: Row): boolean =>
+  row.batchStatus === 'submitted' || row.batchStatus === 'processing'
+
+async function cancel(row: Row): Promise<void> {
+  const yes = await confirm({
+    message: 'Batalkan kelompok ini?',
+    confirmLabel: 'Ya, Batalkan',
+    cancelLabel: 'Batal',
+  })
+  if (!yes) return
+  try {
+    await server.cancelIntakeBatch(row.id)
+  } catch (err) {
+    flash.show({ type: 'error', message: err instanceof Error ? err.message : 'Tindakan gagal.' })
+  }
+  await reload()
+}
+
 // V2 "Import & Semakan" > "Kelompok Item": Fail Sumber, Subjek, Bilangan Soalan, Disemak, Status, Semak.
 const COLUMNS: TableColumn<Row>[] = [
   { id: 'fileName', header: 'Fail Sumber' },
@@ -73,11 +95,29 @@ const COLUMNS: TableColumn<Row>[] = [
 <template>
   <DsPage
     layout="list"
-    title="Senarai Ekstrak"
+    title="Import & Semakan"
     subtitle="Kertas SPM yang dimuat naik dan diekstrak."
     data-testid="intake-list-page"
   >
     <template #actions>
+      <UButton
+        :to="INTAKE_UPLOAD_PATH"
+        icon="i-ph-upload-simple"
+        size="lg"
+        data-testid="intake-new"
+      >
+        Muat Naik Kertas
+      </UButton>
+      <UButton
+        :to="INTAKE_MANUAL_PATH"
+        icon="i-ph-pencil-simple-line"
+        size="lg"
+        variant="outline"
+        color="neutral"
+        data-testid="intake-manual"
+      >
+        Tulis Soalan Manual
+      </UButton>
       <UButton
         :to="INTAKE_CSV_IMPORT_PATH"
         icon="i-ph-file-csv"
@@ -88,24 +128,10 @@ const COLUMNS: TableColumn<Row>[] = [
       >
         Import CSV
       </UButton>
-      <UButton
-        :to="INTAKE_MANUAL_PATH"
-        icon="i-ph-pencil-simple-line"
-        size="lg"
-        variant="outline"
-        color="neutral"
-        data-testid="intake-manual"
-      >
-        Tulis soalan manual
-      </UButton>
-      <UButton
-        :to="INTAKE_UPLOAD_PATH"
-        icon="i-ph-upload-simple"
-        size="lg"
-        data-testid="intake-new"
-      >
-        Muat naik kertas
-      </UButton>
+    </template>
+
+    <template #tabs>
+      <ImportTabs />
     </template>
 
     <DsFilterBar
@@ -143,13 +169,13 @@ const COLUMNS: TableColumn<Row>[] = [
       :data="rows"
       :columns="COLUMNS"
       variant="flush"
-      caption="Senarai ekstrak kertas"
+      caption="Kelompok item"
+      :page-size="20"
       card-title="title"
       :loading="data === null && error === null"
       :error="error ? 'Tidak dapat memuatkan senarai ekstrak.' : undefined"
       :filtered="filtered"
-      empty-title="Belum ada kertas dimuat naik"
-      empty-description="Muat naik PDF kertas SPM atau tulis soalan manual untuk mula."
+      empty-title="Tiada kelompok item lagi."
       data-testid="intake-table"
       @retry="reload"
     >
@@ -190,6 +216,17 @@ const COLUMNS: TableColumn<Row>[] = [
           :aria-label="`Buka ${row.original.title}`"
         >
           Semak
+        </UButton>
+        <UButton
+          v-if="cancellable(row.original)"
+          type="button"
+          variant="ghost"
+          color="error"
+          class="ml-2"
+          data-testid="batch-cancel"
+          @click="cancel(row.original)"
+        >
+          Batalkan
         </UButton>
       </template>
     </DsDataTable>

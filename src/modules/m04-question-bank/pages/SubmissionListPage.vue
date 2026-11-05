@@ -28,6 +28,7 @@ import {
   type StatItem,
 } from '@/ds'
 import { formatNumber } from '@/lib/number'
+import { ImportTabs } from '@/modules/m28-bijak-spm'
 import { saveBlob } from '@/lib/save-blob'
 
 import {
@@ -172,6 +173,10 @@ const asRow = (row: Record<string, unknown>): SubmissionTableRow => row as Submi
     subtitle="Kertas yang dihantar guru diproses melalui aliran import Studio (DOCX/OCR → semakan → terbit)."
     data-testid="submissions-page"
   >
+    <template #tabs>
+      <ImportTabs />
+    </template>
+
     <!-- Tiles: 2 per row, 4 from xl. -->
     <DsStatRow :items="countItems" :cols="4" :loading="!counts" prefix="submissions-count" />
 

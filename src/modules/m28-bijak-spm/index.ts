@@ -3,3 +3,4 @@
  * and its data are this module's own store and are not shared with M04 / M05 / M06.
  */
 export { default as bijakRoutes } from './routes'
+export { default as ImportTabs } from './admin/intake/components/ImportTabs.vue'

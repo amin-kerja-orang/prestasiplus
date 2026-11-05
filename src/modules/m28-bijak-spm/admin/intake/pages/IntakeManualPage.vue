@@ -46,7 +46,9 @@ const form = reactive<IntakeForm>({
   source: '',
   copyright: '',
   notes: '',
+  declared: false,
 })
+const declarationError = ref('')
 const busy = ref(false)
 const failure = ref('')
 
@@ -56,6 +58,8 @@ const canSubmit = computed(
 
 async function submit(): Promise<void> {
   if (!canSubmit.value) return
+  declarationError.value = form.declared ? '' : 'Pengisytiharan sumber diperlukan.'
+  if (!form.declared) return
   busy.value = true
   failure.value = ''
   try {
@@ -97,7 +101,7 @@ async function submit(): Promise<void> {
       data-testid="manual-paper-note"
     />
     <DsStack as="form" gap="lg" @submit.prevent="submit">
-      <IntakeMetaFields v-model="form" />
+      <IntakeMetaFields v-model="form" :declaration-error="declarationError" />
 
       <UAlert
         v-if="failure"

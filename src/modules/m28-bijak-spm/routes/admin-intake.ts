@@ -22,8 +22,8 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../admin/intake/pages/IntakeListPage.vue'),
     meta: {
       ...base,
-      title: 'Senarai Ekstrak - Admin PRESTASIPLUS',
-      header: { title: 'Senarai Ekstrak', subtitle: 'Kertas SPM yang dimuat naik' },
+      title: 'Import & Semakan - Admin PRESTASIPLUS',
+      header: { title: 'Import & Semakan', subtitle: 'Kertas SPM yang dimuat naik' },
     },
   },
   {

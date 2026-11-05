@@ -117,6 +117,7 @@ export type BijakAdminMethods = Omit<
   | 'sectionPool'
   | 'listBlueprints'
   | 'listIntakeBatches'
+  | 'cancelIntakeBatch'
   | 'getIntakeBatch'
   | 'createManualBatch'
   | 'saveExtracted'
@@ -467,6 +468,11 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
       .filter((b) => !filter.status || b.status === filter.status)
       .filter((b) => !filter.subject || b.subject === filter.subject)
       .filter((b) => !needle || `${b.title} ${b.fileName}`.toLowerCase().includes(needle))
+  }
+
+  /** `Batalkan` of a batch before it is ready (field 07-05). */
+  async cancelIntakeBatch(id: string): Promise<void> {
+    await this.exec('POST', `/api/intake/batches/${enc(id)}/cancel`)
   }
 
   async getIntakeBatch(id: string): Promise<IntakeBatch> {

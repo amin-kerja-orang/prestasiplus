@@ -5,6 +5,8 @@
  * question drafts and an intake batch (Draf) is created. Nothing is published from here.
  */
 import { computed, reactive, ref } from 'vue'
+
+import { isHttpMode } from '@/api'
 import { useRouter } from 'vue-router'
 
 import { DsFileField, DsFormSection, DsPage, DsPanel } from '@/ds'
@@ -35,7 +37,9 @@ const form = reactive<IntakeForm>({
   source: '',
   copyright: '',
   notes: '',
+  declared: false,
 })
+const declarationError = ref('')
 const file = ref<File | null>(null)
 const fileError = ref('')
 const busy = ref(false)
@@ -112,6 +116,8 @@ async function run(
 
 async function submit(): Promise<void> {
   if (!canSubmit.value || !file.value) return
+  declarationError.value = form.declared ? '' : 'Pengisytiharan sumber diperlukan.'
+  if (!form.declared) return
   busy.value = true
   failure.value = ''
   donePages.value = []
@@ -164,7 +170,7 @@ async function useSample(): Promise<void> {
     data-testid="intake-upload-page"
   >
     <form class="flex w-full min-w-0 flex-col gap-6" @submit.prevent="submit">
-      <IntakeMetaFields v-model="form" />
+      <IntakeMetaFields v-model="form" :declaration-error="declarationError" />
 
       <DsFormSection
         title="Fail kertas"
@@ -228,6 +234,7 @@ async function useSample(): Promise<void> {
           Muat naik dan ekstrak
         </UButton>
         <UButton
+          v-if="!isHttpMode()"
           type="button"
           size="lg"
           variant="outline"

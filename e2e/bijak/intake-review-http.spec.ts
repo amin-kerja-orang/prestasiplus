@@ -168,6 +168,7 @@ test.describe('Intake review over HTTP @bijak @api', () => {
       await page.getByTestId('intake-kertas').selectOption('2')
       await page.getByTestId('intake-source').fill(`Sekolah Contoh ${token}`)
       await page.getByTestId('intake-copyright').selectOption('sendiri')
+      await page.getByTestId('intake-declaration').click()
       await page.getByTestId('intake-file').setInputFiles({
         name: `kertas-${token}.pdf`,
         mimeType: 'application/pdf',
