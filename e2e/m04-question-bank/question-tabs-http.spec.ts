@@ -275,22 +275,23 @@ test.describe('S2-T06 Laporan Soalan row actions (gap 5.1) @api', () => {
     } finally {
       // An archived version goes back only through draft, review and approve (lifecycle.ts). The question is unplaced (no paper depends
       // on it), but restore it anyway. A seeded question may not pass today's approve gate: the refused `fields` (approveFields,
-      // gates.ts) are logged and attached so the cause is visible, and the final status is attached too.
-      let refused: unknown = null
+      // gates.ts) are logged and attached so the cause is visible, and the test fails loudly unless the question is live again.
+      const refused: { action: string; failed: unknown[] }[] = []
       for (const action of ['draft', 'review', 'approved']) {
         const res = await page.request.post('/api/questions/bulk-action', {
           headers: { 'x-csrf-token': csrf },
           data: { action, ids: [r.questionId] },
         })
         const body = (await res.json().catch(() => null)) as { data?: { failed?: unknown[] } } | null
-        if ((body?.data?.failed ?? []).length > 0) refused = { action, failed: body?.data?.failed }
+        const failed = body?.data?.failed ?? []
+        if (failed.length > 0) refused.push({ action, failed })
       }
       const status = ((await (await page.request.get(`/api/questions/${r.questionId}`)).json()) as { data: { status: string } }).data.status
       const note = JSON.stringify({ questionId: r.questionId, status, refused })
       console.log(`[S2-T06 Arkib restore] ${note}`)
       await test.info().attach('arkib-restore', { body: note, contentType: 'application/json' })
-      // Never left archived; if the approve gate refuses a seeded question it stays in review and the refused fields are in the log.
-      expect(status, `restore: ${note}`).not.toBe('archived')
+      // Back to live; a refusal by the approve gate fails here, with the refused fields in the message and the log.
+      expect(status, `restore: ${note}`).toBe('approved')
     }
   })
 })
