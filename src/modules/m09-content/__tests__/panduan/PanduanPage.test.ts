@@ -193,6 +193,17 @@ describe('PanduanPage', () => {
     expect(answers[0]!.text()).toContain('Kombo bermaksud')
   })
 
+  it('FAQ toggle buttons carry aria-expanded that follows each item', async () => {
+    const w = await render()
+    const buttons = w.findAll('[data-testid="panduan-faq-toggle"]')
+    expect(buttons[0]!.attributes('aria-expanded')).toBe('false')
+    await buttons[0]!.trigger('click')
+    expect(buttons[0]!.attributes('aria-expanded')).toBe('true')
+    expect(buttons[1]!.attributes('aria-expanded')).toBe('false')
+    await buttons[0]!.trigger('click')
+    expect(buttons[0]!.attributes('aria-expanded')).toBe('false')
+  })
+
   it('builds the help box links from the support config', async () => {
     api.fetchSupportConfig.mockResolvedValue({ email: 'a@b.my', phone: '', whatsapp: '60111111111', hours: '' })
     const w = await render()
