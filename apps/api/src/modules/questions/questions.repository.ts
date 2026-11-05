@@ -34,6 +34,12 @@ import type {
 import { STIMULUS_KINDS, type TextbookRef } from './types'
 
 /** Columns of `question_versions` a writer may set (ids are bigint, the service already parsed them). */
+/** Options of the by-id reads. `bankOnly`: a `teacher_private` question is NOT FOUND (every admin, structured, builder and workflow path). */
+export interface ReadOpts {
+  bankOnly?: boolean
+}
+export const BANK_ONLY: ReadOpts = { bankOnly: true }
+
 export interface VersionDraft {
   status: QuestionStatus
   type: StoreQuestionType
@@ -315,16 +321,17 @@ export class QuestionsRepository {
 
   // --- reads for other modules ----------------------------------------------------------------------
 
-  async get(id: string, view: ViewMode = 'live'): Promise<QuestionRecord | null> {
-    const [row] = await this.getMany([id], view)
+  async get(id: string, view: ViewMode = 'live', opts: ReadOpts = {}): Promise<QuestionRecord | null> {
+    const [row] = await this.getMany([id], view, 'exclude', opts)
     return row ?? null
   }
 
   /** `scope`: M04 reads never return a PKSK question (default `exclude`); the PKSK service reads them with `only`. */
-  async getMany(ids: readonly string[], view: ViewMode = 'live', scope: 'exclude' | 'only' = 'exclude'): Promise<QuestionRecord[]> {
+  async getMany(ids: readonly string[], view: ViewMode = 'live', scope: 'exclude' | 'only' = 'exclude', opts: ReadOpts = {}): Promise<QuestionRecord[]> {
     const wanted = [...new Set(ids)].map(bi).filter((v): v is bigint => v !== null)
     if (wanted.length === 0) return []
-    const records = await this.hydrate(wanted, view, scope)
+    // DM-42: a by-id read keeps a private question (the mission path needs it) unless the caller is a bank path (`bankOnly`): then it is not found.
+    const records = (await this.hydrate(wanted, view, scope)).filter((r) => opts.bankOnly !== true || r.version.visibility !== 'teacher_private')
     const byId = new Map(records.map((r) => [r.id, r]))
     return [...new Set(ids)].flatMap((id) => {
       const r = byId.get(id)
@@ -458,7 +465,7 @@ export class QuestionsRepository {
     const rows = await this.db.$queryRaw<{ ok: boolean }[]>`
       SELECT true AS ok FROM questions q
       JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-      WHERE q.id = ${key} AND q.is_active AND v.status = 'approved' AND ${NOT_PKSK}`
+      WHERE q.id = ${key} AND q.is_active AND v.status = 'approved' AND ${NOT_PKSK} AND ${BANK_VISIBLE_SQL}`
     return rows.length > 0
   }
 
@@ -1137,6 +1144,10 @@ export class QuestionsRepository {
         aiRunId: true,
         aiModel: true,
         intakeItemId: true,
+        // DM-42: a new version never changes who may see the question: visibility, owner and link are carried forward.
+        visibility: true,
+        ownerUserId: true,
+        referenceUrl: true,
       },
     })
     await this.insertVersion(id, versionNo, draft, now, null, undefined, prev ?? undefined)
@@ -1455,6 +1466,9 @@ export class QuestionsRepository {
       aiRunId: bigint | null
       aiModel: string | null
       intakeItemId: bigint | null
+      visibility?: string
+      ownerUserId?: bigint | null
+      referenceUrl?: string | null
     },
   ): Promise<void> {
     const { parts, spNodeIds, stimulusIds, ...columns } = draft
@@ -1466,6 +1480,9 @@ export class QuestionsRepository {
         createdAt: now,
         updatedAt: now,
         ...this.versionColumns(columns),
+        // DM-42: carried from the previous version (a new bank version stays bank, a private one stays private).
+        ...(inherited?.visibility === undefined ? {} : { visibility: inherited.visibility, ownerUserId: inherited.ownerUserId ?? null }),
+        ...(inherited?.referenceUrl === undefined ? {} : { referenceUrl: inherited.referenceUrl }),
         ...(inherited === undefined
           ? {}
           : { ...inheritedOf(inherited, draft.textbookRef !== undefined), sourceRegion: inherited.sourceRegion === null || inherited.sourceRegion === undefined ? undefined : (inherited.sourceRegion as object) }),
