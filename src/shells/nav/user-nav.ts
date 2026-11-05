@@ -281,10 +281,10 @@ export const USER_NAV: readonly NavEntry[] = [
     ],
   },
   // INFERRED hrefs (the student items of the same label).
-  { kind: 'item', id: 't-analitik-adaptif', label: 'Analitik Adaptif', to: '/analitik/pelajar', fa: 'fa-brain', color: 'text-violet-500', roles: T },
+  { kind: 'item', id: 't-analitik-adaptif', label: 'Analitik Adaptif', to: '/analitik/kelas', fa: 'fa-brain', color: 'text-violet-500', roles: T },
   { kind: 'item', id: 't-analisa-item', label: 'Analisa Item', to: '/analisa-item', fa: 'fa-magnifying-glass-chart', color: 'text-rose-500', roles: T },
   { kind: 'item', id: 't-perbandingan-kelas', label: 'Perbandingan Kelas', to: '/guru/perbandingan-kelas', fa: 'fa-balance-scale', color: 'text-purple-500', roles: T },
-  { kind: 'item', id: 't-laporan-mingguan', label: 'Laporan Mingguan', to: '/laporan-mingguan', fa: 'fa-calendar-week', color: 'text-emerald-500', roles: T },
+  { kind: 'item', id: 't-laporan-mingguan', label: 'Laporan Mingguan', to: '/guru/laporan-mingguan-kelas', fa: 'fa-calendar-week', color: 'text-emerald-500', roles: T },
 
   // ── Pusat AI (one live partial, same markup in sidebar and drawer) ──
   { kind: 'section', id: 'sec-pusat-ai', label: 'Pusat AI', text: '', rule: 'from-purple-300', variant: 'gradient', badge: { text: 'NEW', cls: B_NEW_SECTION }, roles: AI_ALL },
@@ -395,7 +395,7 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'item', id: 'sa-monitoring', label: 'Monitoring', to: '/admin-sekolah/monitoring', fa: 'fa-binoculars', color: 'text-teal-500', roles: SCH },
   // Shown collapsed in the screenshot (its sub-items are not visible): rendered as a link.
   { kind: 'item', id: 'sa-kirkpatrick', label: 'Kirkpatrick', to: '/admin-sekolah/kirkpatrick', fa: 'fa-microscope', color: 'text-cyan-500', roles: SCH },
-  { kind: 'item', id: 'sa-analitik-adaptif', label: 'Analitik Adaptif', to: '/analitik/pelajar', fa: 'fa-brain', color: 'text-violet-500', roles: SCH },
+  { kind: 'item', id: 'sa-analitik-adaptif', label: 'Analitik Adaptif', to: '/analitik/kelas', fa: 'fa-brain', color: 'text-violet-500', roles: SCH },
   { kind: 'item', id: 'sa-statistik-penggunaan', label: 'Statistik Penggunaan', to: '/admin-sekolah/statistik-penggunaan', fa: 'fa-chart-pie', color: 'text-purple-500', roles: SCH },
   { kind: 'item', id: 'sa-dskp-heatmap', label: 'DSKP Heatmap', to: '/admin-sekolah/dskp-heatmap', fa: 'fa-table-cells', color: 'text-emerald-500', roles: SCH },
   { kind: 'item', id: 'sa-analisa-item', label: 'Analisa Item', to: '/analisa-item', fa: 'fa-magnifying-glass-chart', color: 'text-purple-500', roles: SCH },

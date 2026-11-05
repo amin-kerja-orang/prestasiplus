@@ -27,17 +27,17 @@
 }
 
 /* Navigator state cues (FR-MUR-QP-16): the icon sits in the button corner; the legend lines up icon and text. */
-[data-testid='navigator'] button {
+[data-qd='navigator'] button {
   position: relative;
 }
 
-[data-testid='navigator'] button > [data-icon] {
+[data-qd='navigator'] button > [data-icon] {
   position: absolute;
   inset-block-start: 0.25rem;
   inset-inline-end: 0.25rem;
 }
 
-[data-testid='nav-legend'] > li {
+[data-qd='nav-legend'] > li {
   display: flex;
   align-items: center;
   gap: 0.25rem;
@@ -52,12 +52,12 @@
  *    state stay), the banner becomes one compact line and the footer padding shrinks, so the
  *    scrolling question keeps most of the height.
  */
-[data-testid='attempt-shell'] > [data-part='footer'] {
+[data-qd='attempt-shell'] > [data-part='footer'] {
   padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 @media (max-height: 420px) {
-  [data-testid='attempt-shell'] > [data-part='header'] {
+  [data-qd='attempt-shell'] > [data-part='header'] {
     display: flex;
     align-items: center;
     gap: 0.75rem;
@@ -65,26 +65,26 @@
     padding-bottom: 0.25rem;
   }
 
-  [data-testid='attempt-shell'] > [data-part='header'] > :first-child {
+  [data-qd='attempt-shell'] > [data-part='header'] > :first-child {
     flex: 1 1 0%;
     min-width: 0;
   }
 
-  [data-testid='attempt-shell'] > [data-part='header'] > :not(:first-child) {
+  [data-qd='attempt-shell'] > [data-part='header'] > :not(:first-child) {
     margin-top: 0;
     flex-shrink: 0;
   }
 
-  [data-testid='attempt-shell'] [data-short-hide] {
+  [data-qd='attempt-shell'] [data-short-hide] {
     display: none;
   }
 
-  [data-testid='attempt-shell'] > [data-short-compact] {
+  [data-qd='attempt-shell'] > [data-short-compact] {
     padding-top: 0.125rem;
     padding-bottom: 0.125rem;
   }
 
-  [data-testid='attempt-shell'] > [data-part='footer'] {
+  [data-qd='attempt-shell'] > [data-part='footer'] {
     padding-top: 0.25rem;
     padding-bottom: calc(0.25rem + env(safe-area-inset-bottom, 0px));
   }
@@ -120,4 +120,24 @@
 /* Sticky bars (DsFormBar, DsStickyActions) must not cover the focused field: room under every focusable control (the browser reads the focused element's own margin) (FR-X6-5). */
 [data-ds='form-field'] :is(input, select, textarea, [contenteditable], [tabindex]) {
   scroll-margin-bottom: 6rem;
+}
+
+/* A stimulus a question link just pointed at (FR-PA-37): ring until the group clears it. */
+[data-stimulus-lit='true'] {
+  box-shadow: 0 0 0 2px var(--ui-primary);
+}
+
+/* Leaf stimulus (FR-PA-37): collapsed behind "Lihat {label}" below 768px, inline from 768px. */
+[data-leaf-stim='closed'] {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  [data-leaf-stim='closed'] {
+    display: block;
+  }
+
+  [data-leaf-toggle] {
+    display: none;
+  }
 }
