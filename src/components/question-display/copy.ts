@@ -1,6 +1,15 @@
 /** Verbatim .cloud labels (DISC 1.4/1.5) and the [PROPOSED] lines of docs/design/v2-admin-student-pipeline.md 11. */
 export const qdCopy = {
   mcqAria: 'Pilihan jawapan',
+  /** 46 section 2.2 `mcq_multi` helper line. */
+  mcqMultiHint: 'Pilih semua jawapan yang betul.',
+  /** Fixed true_false labels (FR-PA-02). */
+  trueLabel: 'Betul',
+  falseLabel: 'Salah',
+  /** Inline gap and table cell labels. */
+  gapAria: (n: number): string => `Ruang kosong ${n}`,
+  gapMax: (n: number): string => `Maksimum ${n} patah perkataan.`,
+  cellAria: (row: number, col: number): string => `Baris ${row}, lajur ${col}`,
   shortTextPlaceholder: 'Tulis jawapan…',
   shortTextAria: 'Jawapan',
   numericPlaceholder: 'cth. 3.14…',

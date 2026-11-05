@@ -18,7 +18,7 @@ export const CONVERT_MESSAGES = {
   schemeEmpty: 'Skema pemarkahan tiada.',
   mappingLetters: 'Skema padanan mesti menggunakan huruf pilihan A hingga H.',
   numericValue: 'Jawapan berangka mesti nombor.',
-  mcqOptions: 'Soalan objektif perlu 3 hingga 8 pilihan.',
+  mcqOptions: 'Soalan objektif perlu 2 hingga 8 pilihan.',
 } as const
 
 const LETTERS = 'ABCDEFGH'
@@ -157,7 +157,7 @@ function leaf(label: string, prompt: string, marks: number, mode: IntakePart['mo
 function mcqLeaf(q: IntakeQuestion, where: string): Leaf {
   const key = q.scheme?.kind === 'option' ? q.scheme.correct : ''
   const at = q.options.findIndex((o) => o.id === key)
-  if (q.options.length < 3 || q.options.length > 8) throw new ConvertError(CONVERT_MESSAGES.mcqOptions, where)
+  if (q.options.length < 2 || q.options.length > 8) throw new ConvertError(CONVERT_MESSAGES.mcqOptions, where)
   if (at < 0) throw new ConvertError(CONVERT_MESSAGES.schemeEmpty, where)
   return {
     label: '1',

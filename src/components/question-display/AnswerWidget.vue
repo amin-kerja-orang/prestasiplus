@@ -7,6 +7,7 @@
  */
 import { computed } from 'vue'
 
+import { qdCopy } from './copy'
 import EssayAnswer from './EssayAnswer.vue'
 import McqOptions from './McqOptions.vue'
 import TextAnswer from './TextAnswer.vue'
@@ -14,7 +15,7 @@ import type { AnswerMode, EssayChoiceValue, EssayTopic, McqOptionData } from './
 
 const props = defineProps<{
   mode: AnswerMode
-  modelValue?: string | EssayChoiceValue
+  modelValue?: string | string[] | EssayChoiceValue
   options?: McqOptionData[]
   topics?: EssayTopic[]
   unit?: string
@@ -23,19 +24,47 @@ const props = defineProps<{
   readonly?: boolean
   reveal?: boolean
   correctId?: string
+  correctIds?: string[]
 }>()
-const emit = defineEmits<{ 'update:modelValue': [string | EssayChoiceValue] }>()
+const emit = defineEmits<{ 'update:modelValue': [string | string[] | EssayChoiceValue] }>()
 
 const asString = computed(() => (typeof props.modelValue === 'string' ? props.modelValue : undefined))
+const asList = computed(() => (Array.isArray(props.modelValue) ? props.modelValue : []))
 const asChoice = computed(() =>
-  typeof props.modelValue === 'object' ? props.modelValue : undefined,
+  typeof props.modelValue === 'object' && !Array.isArray(props.modelValue)
+    ? props.modelValue
+    : undefined,
 )
+/** true_false: always these two options, in this order; any `options` passed in are ignored. */
+const TRUE_FALSE: McqOptionData[] = [
+  { id: 'A', letter: 'A', text: qdCopy.trueLabel },
+  { id: 'B', letter: 'B', text: qdCopy.falseLabel },
+]
 </script>
 
 <template>
   <McqOptions
     v-if="mode === 'mcq'"
     :options="options ?? []"
+    :model-value="asString"
+    :disabled="readonly"
+    :reveal="reveal"
+    :correct-id="correctId"
+    @update:model-value="emit('update:modelValue', $event)"
+  />
+  <McqOptions
+    v-else-if="mode === 'mcq_multi'"
+    multi
+    :options="options ?? []"
+    :model-value="asList"
+    :disabled="readonly"
+    :reveal="reveal"
+    :correct-ids="correctIds"
+    @update:model-value="emit('update:modelValue', $event)"
+  />
+  <McqOptions
+    v-else-if="mode === 'true_false'"
+    :options="TRUE_FALSE"
     :model-value="asString"
     :disabled="readonly"
     :reveal="reveal"

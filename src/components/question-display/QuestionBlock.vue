@@ -163,7 +163,7 @@ function pick(id: string): void {
       :name="`mcq-${question.id}`"
       :reveal="!!check"
       :correct-id="correctOption"
-      @update:model-value="!disabled && pick($event)"
+      @update:model-value="!disabled && pick($event as string)"
     />
 
     <div
