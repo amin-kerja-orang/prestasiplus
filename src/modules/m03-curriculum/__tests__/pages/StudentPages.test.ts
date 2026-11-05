@@ -323,6 +323,22 @@ describe('LearningMapPage (S14)', () => {
     expect(islands[2]?.text()).toContain('2 sesi · 7 soalan dijawab')
   })
 
+  it('draws a subject outside the 7 known ones as a plain pill (name, no emoji) after them, active when selected', async () => {
+    api.fetchLearningMap.mockResolvedValue(
+      map([island(1, 'unlocked')], {
+        subject: 'EKONOMI',
+        subjectLabel: 'Ekonomi Asas',
+        subjects: [...SUBJECTS, { code: 'EKONOMI', label: 'Ekonomi Asas', emoji: '', color: '' }],
+      }),
+    )
+    const w = await render(LearningMapPage, '/peta-belajar', '/peta-belajar?subject=EKONOMI')
+    const pills = w.findAll('[data-testid=map-subject-pill]')
+    expect(pills.map((p) => p.text())).toEqual(['🔢 Matematik', '🔬 Sains', 'Ekonomi Asas'])
+    expect(pills[2]?.attributes('href')).toBe('/peta-belajar?subject=EKONOMI&grade=TINGKATAN_4')
+    expect(pills.map((p) => p.attributes('data-active'))).toEqual(['false', 'false', 'true'])
+    expect(w.get('[data-testid=map-subtitle]').text()).toContain('Terokai perjalanan Ekonomi Asas —')
+  })
+
   it('shows the empty card and 0/0 for a map without topics', async () => {
     api.fetchLearningMap.mockResolvedValue(
       map([], { subject: 'ZZZ', subjectLabel: 'Zzz', stats: { done: 0, total: 0, progress: 0 } }),
