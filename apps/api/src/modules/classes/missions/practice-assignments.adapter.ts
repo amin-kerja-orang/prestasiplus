@@ -44,7 +44,7 @@ export class PracticeAssignmentsAdapter implements PracticeAssignmentSource {
 
   private async mission(input: { userId: string; id: string; at: Date }): Promise<AssignmentResolution> {
     const mission = await this.repo.missionOfRecipient(input.id, input.userId)
-    if (!mission || mission.subjectId === null || mission.missionDate !== mytDay(input.at)) return { status: 'not_found' }
+    if (!mission || mission.missionDate !== mytDay(input.at)) return { status: 'not_found' }
     return {
       status: 'ok',
       subjectId: mission.subjectId,
@@ -55,8 +55,8 @@ export class PracticeAssignmentsAdapter implements PracticeAssignmentSource {
 
   /** BR-M10-35: eligible question ids of the mission for the student (empty = no pool). */
   private async missionQuestionIds(mission: MissionRecord, userId: string): Promise<string[]> {
-    // `harian` (S6-T07) is served like `latih_tubi`: by the mission's subject (a Global mission has none and is never a recipient row).
-    if ((mission.missionType !== 'latih_tubi' && mission.missionType !== 'harian') || mission.subjectId === null) return []
+    // `harian` (S6-T07) is served like `latih_tubi`: by the mission's subject.
+    if (mission.missionType !== 'latih_tubi' && mission.missionType !== 'harian') return []
     const subjectId = mission.subjectId
     const rng = prngStream(`m10:mission:${mission.id}:${userId}`)
     if (mission.chapterId !== null) {
@@ -127,7 +127,7 @@ export class PracticeAssignmentsAdapter implements PracticeAssignmentSource {
    * Count rule: "reaches targetQuestions" = the pupil's answered count is at least `question_count`, where the answered count is
    * the number of `practice_answers` rows (every answer, right or wrong) of the pupil's COMPLETED sessions linked to the mission,
    * summed over all of them; the session being completed is already stored in `tx`, so it counts. Only the Mod Pelajar flag
-   * must match (`is_test`). A Global mission, a pupil who is not a stored recipient, and a reward of 0 or null pay nothing.
+   * must match (`is_test`). A pupil who is not a stored recipient, and a reward of 0 or null pay nothing.
    * Returns the coins paid by THIS call: 0 when not met, when ineligible, or when already paid (unique `mission_rewards`).
    * Crediting the wallet is the caller's job (S7), in the same transaction.
    */
@@ -138,7 +138,7 @@ export class PracticeAssignmentsAdapter implements PracticeAssignmentSource {
     if (!isRealId(input.missionId) || !isRealId(input.userId)) return { paid: 0 }
     await this.repo.lockTargetReward(tx, input.missionId, input.userId)
     const facts = await this.repo.targetRewardFacts(tx, { missionId: input.missionId, studentId: input.userId, isTest: input.isTest })
-    if (!facts || facts.scope !== 'teacher' || !facts.recipient) return { paid: 0 }
+    if (!facts || !facts.recipient) return { paid: 0 }
     const coins = facts.rewardCoins ?? 0
     if (coins <= 0 || facts.answered < facts.questionCount) return { paid: 0 }
     const inserted = await this.repo.insertReward(tx, {

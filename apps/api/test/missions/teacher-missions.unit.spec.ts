@@ -1,4 +1,4 @@
-import { MISSION_DAILY_CAP, MISSION_GOAL_KINDS, MISSION_MESSAGES, MISSION_REWARD_MAX, TeacherMissionSchema } from '@pp/contract'
+import { MISSION_DAILY_CAP, MISSION_MESSAGES, MISSION_REWARD_MAX, TeacherMissionSchema } from '@pp/contract'
 import { describe, expect, it } from 'vitest'
 
 import { ApiError } from '../../src/common/errors/api-error'
@@ -8,7 +8,6 @@ import type { ClassRecord } from '../../src/modules/classes/classes.repository'
 import { MissionsService } from '../../src/modules/classes/missions/missions.service'
 import type { MissionRecord, NewTeacherMission } from '../../src/modules/classes/missions/missions.repository'
 import { PracticeAssignmentsAdapter } from '../../src/modules/classes/missions/practice-assignments.adapter'
-import { GLOBAL_MISSIONS } from '../../prisma/seed/missions'
 
 // 2026-11-05 23:30 UTC is 2026-11-06 07:30 in Malaysia: the MYT day is already the 6th.
 const NOW = '2026-11-05T23:30:00Z'
@@ -49,11 +48,11 @@ function build(clockAt = NOW) {
     listForTeacher: (teacherId: string) =>
       Promise.resolve(
         world.missions
-          .filter((m) => m.teacherId === teacherId || m.scope === 'global')
+          .filter((m) => m.teacherId === teacherId)
           .sort((a, b) => (a.missionDate === b.missionDate ? b.createdAt.getTime() - a.createdAt.getTime() : a.missionDate < b.missionDate ? 1 : -1)),
       ),
     countCreatedOnDay: (teacherId: string, day: string) =>
-      Promise.resolve(world.missions.filter((m) => m.teacherId === teacherId && m.scope === 'teacher' && m.createdAt.toISOString().slice(0, 10) <= day && new Date(m.createdAt.getTime() + 8 * 3600_000).toISOString().slice(0, 10) === day).length),
+      Promise.resolve(world.missions.filter((m) => m.teacherId === teacherId && m.createdAt.toISOString().slice(0, 10) <= day && new Date(m.createdAt.getTime() + 8 * 3600_000).toISOString().slice(0, 10) === day).length),
     createWithItems: async (input: NewTeacherMission) => {
       // Mirrors the repository: cap re-check, then the snapshot of the chosen class or of all the teacher's active classes.
       if ((await repo.countCreatedOnDay(input.teacherId, input.creationDay)) >= input.cap) return { status: 'capReached' as const }
@@ -72,8 +71,6 @@ function build(clockAt = NOW) {
         coinsPerCorrect: 3,
         description: input.description,
         rewardCoins: input.rewardCoins,
-        scope: 'teacher',
-        goalKind: null,
         resourceTitle: null,
         resourceUrl: null,
         resourceNote: null,
@@ -84,12 +81,10 @@ function build(clockAt = NOW) {
       world.items.set(mission.id, pupils)
       return { status: 'created' as const, mission, recipients: pupils.length }
     },
-    rewardedCounts: (ids: string[]) => Promise.resolve(new Map(ids.map((id) => [id, world.completed.get(id) ?? 0]))),
-    globalMissionsOfDay: () => Promise.resolve([]),
     completedCounts: (ids: string[]) => Promise.resolve(new Map(ids.map((id) => [id, world.completed.get(id) ?? 0]))),
     findById: (id: string) => Promise.resolve(world.missions.find((m) => m.id === id) ?? null),
     deleteOwn: (id: string, teacherId: string) => {
-      const i = world.missions.findIndex((m) => m.id === id && m.teacherId === teacherId && m.scope === 'teacher')
+      const i = world.missions.findIndex((m) => m.id === id && m.teacherId === teacherId)
       if (i >= 0) world.missions.splice(i, 1)
       return Promise.resolve(i >= 0)
     },
@@ -104,7 +99,7 @@ function build(clockAt = NOW) {
   const practice = { linkedSessions: () => Promise.resolve([]) }
   const audit = { record: (e: { action: string }) => (world.audits.push(e.action), Promise.resolve()) }
   const prisma = { transaction: <T>(fn: (tx: unknown) => Promise<T>) => fn({}) }
-  const service = new MissionsService(repo as never, classes as never, practice as never, audit as never, prisma as never, new FixedClock(clockAt), { get: () => Promise.resolve({ current: 0 }) } as never)
+  const service = new MissionsService(repo as never, classes as never, practice as never, audit as never, prisma as never, new FixedClock(clockAt))
   return { world, repo, service }
 }
 
@@ -169,7 +164,7 @@ describe('S6-T07 create validation (AC-GM-20.1)', () => {
     const { service, world } = build()
     const m = await service.create(actor(), { title: 'Misi saya', date: TODAY, subjectId: SUBJECT })
     expect(TeacherMissionSchema.parse(m)).toMatchObject({ targetQuestions: 10, rewardCoins: 10, global: false, completedCount: 0, subjectName: 'Matematik', classroomId: null })
-    expect(world.missions[0]).toMatchObject({ missionType: 'harian', scope: 'teacher', questionCount: 10 })
+    expect(world.missions[0]).toMatchObject({ missionType: 'harian', questionCount: 10 })
     expect(world.audits).toEqual(['classes.mission.created'])
   })
 })
@@ -258,56 +253,25 @@ describe('S6-T07 class ownership and the recipients snapshot (D-T07-3)', () => {
 })
 
 describe('S6-T07 list and delete', () => {
-  const globalMission = (): MissionRecord => ({
-    id: '1',
-    teacherId: null,
-    classroomId: null,
-    title: 'Rajin Berlatih',
-    missionType: 'harian',
-    missionDate: TODAY,
-    subjectId: null,
-    chapterId: null,
-    questionCount: 3,
-    coinsPerCorrect: 3,
-    description: null,
-    rewardCoins: 15,
-    scope: 'global',
-    goalKind: 'sessions_per_day',
-    resourceTitle: null,
-    resourceUrl: null,
-    resourceNote: null,
-    isTest: false,
-    createdAt: new Date(NOW),
-  })
-
-  it('lists own and Global missions with global flag, completedCount and a null subject for Global', async () => {
+  it('lists only the own missions with global false and completedCount', async () => {
     const { service, world } = build()
-    world.missions.push(globalMission())
     const own = await service.create(actor(), body({ date: '2026-11-20' }))
     await service.create(actor({ userId: OTHER_TEACHER }), body({ title: 'Guru lain' }))
     world.completed.set(own.id, 4)
-    world.completed.set('1', 2)
     const rows = await service.list(actor())
-    expect(rows.map((r) => r.title)).toEqual(['Jawab 20 soalan', 'Rajin Berlatih'])
-    expect(rows[0]).toMatchObject({ global: false, goalKind: null, completedCount: 4, date: '2026-11-20' })
-    expect(rows[1]).toMatchObject({ global: true, completedCount: 2, subjectId: null, subjectName: null, rewardCoins: 15, description: null, goalKind: 'sessions_per_day' })
+    expect(rows.map((r) => r.title)).toEqual(['Jawab 20 soalan'])
+    expect(rows[0]).toMatchObject({ global: false, completedCount: 4, date: '2026-11-20' })
     for (const r of rows) TeacherMissionSchema.parse(r)
   })
 
-  it('delete: own OK (and gone), Global 403 with its message, foreign and unknown 404', async () => {
+  it('delete: own OK (and gone), foreign and unknown 404', async () => {
     const { service, world } = build()
-    world.missions.push(globalMission())
     const own = await service.create(actor(), body())
     const foreign = await service.create(actor({ userId: OTHER_TEACHER }), body())
 
     expect(await service.remove(actor(), own.id)).toEqual({ deleted: 1 })
     expect(world.missions.some((m) => m.id === own.id)).toBe(false)
     expect(world.audits).toContain('classes.mission.deleted')
-
-    const g = await refusal(service.remove(actor(), '1'))
-    expect(g.code).toBe('FORBIDDEN')
-    expect(g.getStatus()).toBe(403)
-    expect(g.message).toBe(MISSION_MESSAGES.globalNotDeletable)
 
     for (const id of [foreign.id, '987654', 'abc']) {
       const err = await refusal(service.remove(actor(), id))
@@ -331,8 +295,6 @@ describe('S6-T07 the practice adapter serves harian like latih_tubi', () => {
     coinsPerCorrect: 3,
     description: null,
     rewardCoins: 10,
-    scope: 'teacher',
-    goalKind: null,
     resourceTitle: null,
     resourceUrl: null,
     resourceNote: null,
@@ -357,29 +319,5 @@ describe('S6-T07 the practice adapter serves harian like latih_tubi', () => {
   it('latih_tubi still draws, youtube still has no source, a mission without a subject is not found', async () => {
     expect(await adapterFor(record('latih_tubi')).adapter.resolve('mission', { userId: 'p1', id: '7', at })).toMatchObject({ questionIds: ['q1', 'q2', 'q3'] })
     expect(await adapterFor(record('youtube')).adapter.resolve('mission', { userId: 'p1', id: '7', at })).toMatchObject({ questionIds: [] })
-    expect(await adapterFor({ ...record('harian'), subjectId: null }).adapter.resolve('mission', { userId: 'p1', id: '7', at })).toEqual({ status: 'not_found' })
-  })
-})
-
-describe('S6-T07 Global missions seed list', () => {
-  it('has the 15 observed missions: unique titles, targets 1..1000, rewards >= 0 (only "Kombo 10" is above the teacher ceiling of 100)', () => {
-    expect(GLOBAL_MISSIONS).toHaveLength(15)
-    expect(new Set(GLOBAL_MISSIONS.map((m) => m.title)).size).toBe(15)
-    for (const m of GLOBAL_MISSIONS) {
-      expect(m.target).toBeGreaterThanOrEqual(1)
-      expect(m.target).toBeLessThanOrEqual(1000)
-      expect(m.reward).toBeGreaterThanOrEqual(0)
-    }
-    expect(GLOBAL_MISSIONS.filter((m) => m.reward > MISSION_REWARD_MAX).map((m) => m.title)).toEqual(['Kombo 10'])
-    expect(GLOBAL_MISSIONS.find((m) => m.title === 'Kombo 10')).toMatchObject({ target: 10, reward: 120 })
-    // Every row is a goal with a description and one of the seven kinds (ck_missions_goal_kind_scope).
-    for (const m of GLOBAL_MISSIONS) {
-      expect(MISSION_GOAL_KINDS).toContain(m.goalKind)
-      expect(m.description.length).toBeGreaterThan(0)
-    }
-    expect(Object.fromEntries(GLOBAL_MISSIONS.map((m) => [m.title, m.goalKind]))).toMatchObject({
-      'Rajin Berlatih': 'sessions_per_day', 'Si Tepat': 'accuracy_in_session', 'Penjelajah Topik': 'topics_per_day', 'Kilat Matematik': 'correct_per_day',
-      'Ketepatan 80%': 'accuracy_in_session', 'Kombo 2 Hari': 'streak_days', 'Latihan 10 Minit': 'minutes_per_day', 'Cabaran Kilat': 'correct_in_session',
-    })
   })
 })

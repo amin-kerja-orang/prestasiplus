@@ -1,4 +1,3 @@
-import { MISSION_GOAL_KINDS, type MissionGoalKind } from '@pp/contract'
 import { Inject, Injectable } from '@nestjs/common'
 
 import type { TxClient } from '../../../db/client'
@@ -8,31 +7,24 @@ import { PrismaService } from '../../../db/prisma.service'
 import { VISIBLE_USER_SQL } from '../../command-center/shared/visibility'
 
 export type MissionType = 'latih_tubi' | 'tracking_a' | 'youtube' | 'harian'
-export type MissionScope = 'teacher' | 'global'
-export type { MissionGoalKind }
 export type RemedialStatus = 'active' | 'completed' | 'cancelled'
 
 /** A mission as the student reads and the practice adapter resolve it. Ids are decimal strings. */
 export interface MissionRecord {
   id: string
-  /** Null for a Global (platform) mission. */
-  teacherId: string | null
+  teacherId: string
   classroomId: string | null
   title: string
   missionType: MissionType
   /** Malaysia calendar day `YYYY-MM-DD`. */
   missionDate: string
-  /** Null for a Global mission. */
-  subjectId: string | null
+  subjectId: string
   chapterId: string | null
   questionCount: number
   coinsPerCorrect: number
   description: string | null
   /** Coins paid once at the target (S6-T07); null for the older types. */
   rewardCoins: number | null
-  scope: MissionScope
-  /** How a Global mission is measured; null for a teacher mission (S6-T07). */
-  goalKind: MissionGoalKind | null
   resourceTitle: string | null
   resourceUrl: string | null
   resourceNote: string | null
@@ -94,7 +86,6 @@ export interface NewRemedial {
 
 /** What `settleTargetReward` needs to decide (S6-T07): the mission's terms and the pupil's progress. */
 export interface TargetRewardFacts {
-  scope: MissionScope
   questionCount: number
   rewardCoins: number | null
   /** The pupil is a stored recipient (`mission_items`). */
@@ -107,19 +98,17 @@ const idOf = (id: string): bigint | null => (isIdString(id) ? idFromString(id) :
 
 const toMission = (r: {
   id: bigint
-  teacherId: bigint | null
+  teacherId: bigint
   classroomId: bigint | null
   title: string
   missionType: string
   missionDate: Date
-  subjectId: bigint | null
+  subjectId: bigint
   chapterId: bigint | null
   questionCount: number
   coinsPerCorrect: number
   description: string | null
   rewardCoins: number | null
-  scope: string
-  goalKind: string | null
   resourceTitle: string | null
   resourceUrl: string | null
   resourceNote: string | null
@@ -127,19 +116,17 @@ const toMission = (r: {
   createdAt: Date
 }): MissionRecord => ({
   id: idToString(r.id),
-  teacherId: r.teacherId === null ? null : idToString(r.teacherId),
+  teacherId: idToString(r.teacherId),
   classroomId: r.classroomId === null ? null : idToString(r.classroomId),
   title: r.title,
   missionType: r.missionType as MissionType,
   missionDate: r.missionDate.toISOString().slice(0, 10),
-  subjectId: r.subjectId === null ? null : idToString(r.subjectId),
+  subjectId: idToString(r.subjectId),
   chapterId: r.chapterId === null ? null : idToString(r.chapterId),
   questionCount: r.questionCount,
   coinsPerCorrect: r.coinsPerCorrect,
   description: r.description,
   rewardCoins: r.rewardCoins,
-  scope: r.scope === 'global' ? 'global' : 'teacher',
-  goalKind: (MISSION_GOAL_KINDS as readonly string[]).includes(r.goalKind ?? '') ? (r.goalKind as MissionGoalKind) : null,
   resourceTitle: r.resourceTitle,
   resourceUrl: r.resourceUrl,
   resourceNote: r.resourceNote,
@@ -219,24 +206,24 @@ export class MissionsRepository {
 
   // --- teacher Misi Harian (S6-T07, API-GUR-11) --------------------------------------------------
 
-  /** The teacher's own missions plus every Global one, mission date descending, then created descending (ties by id). */
+  /** The teacher's own missions, mission date descending, then created descending (ties by id). */
   async listForTeacher(teacherId: string, isTest: boolean): Promise<MissionRecord[]> {
     const key = idOf(teacherId)
     if (key === null) return []
     const rows = await this.db.mission.findMany({
-      where: { OR: [{ teacherId: key, isTest }, { scope: 'global' }] },
+      where: { teacherId: key, isTest },
       orderBy: [{ missionDate: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
     })
     return rows.map(toMission)
   }
 
-  /** Missions the teacher created on one Malaysia creation day (`created_at`, MYT), Global rows never counted. It counts existing rows: a deleted mission frees a slot (known limit). */
+  /** Missions the teacher created on one Malaysia creation day (`created_at`, MYT). It counts existing rows: a deleted mission frees a slot (known limit). */
   async countCreatedOnDay(teacherId: string, day: string, isTest: boolean): Promise<number> {
     const key = idOf(teacherId)
     if (key === null) return 0
     const start = new Date(`${day}T00:00:00+08:00`)
     const end = new Date(start.getTime() + 24 * 60 * 60 * 1000)
-    return this.db.mission.count({ where: { teacherId: key, scope: 'teacher', isTest, createdAt: { gte: start, lt: end } } })
+    return this.db.mission.count({ where: { teacherId: key, isTest, createdAt: { gte: start, lt: end } } })
   }
 
   /**
@@ -268,7 +255,6 @@ export class MissionsRepository {
           title: input.title,
           description: input.description,
           missionType: 'harian',
-          scope: 'teacher',
           missionDate: new Date(`${input.date}T00:00:00.000Z`),
           subjectId: idFromString(input.subjectId),
           questionCount: input.targetQuestions,
@@ -316,12 +302,12 @@ export class MissionsRepository {
     return row ? toMission(row) : null
   }
 
-  /** Deletes a mission the teacher owns (never a Global one); recipient rows go with it (cascade). False when nothing matched. */
+  /** Deletes a mission the teacher owns; recipient rows go with it (cascade). False when nothing matched. */
   async deleteOwn(id: string, teacherId: string): Promise<boolean> {
     const key = idOf(id)
     const teacher = idOf(teacherId)
     if (key === null || teacher === null) return false
-    const res = await this.db.mission.deleteMany({ where: { id: key, teacherId: teacher, scope: 'teacher' } })
+    const res = await this.db.mission.deleteMany({ where: { id: key, teacherId: teacher } })
     return res.count > 0
   }
 
@@ -448,8 +434,8 @@ export class MissionsRepository {
     const mission = idOf(input.missionId)
     const student = idOf(input.studentId)
     if (mission === null || student === null) return null
-    const rows = await tx.$queryRaw<{ scope: string; question_count: number; reward_coins: number | null; recipient: boolean; answered: number }[]>`
-      SELECT m.scope, m.question_count, m.reward_coins,
+    const rows = await tx.$queryRaw<{ question_count: number; reward_coins: number | null; recipient: boolean; answered: number }[]>`
+      SELECT m.question_count, m.reward_coins,
              EXISTS (SELECT 1 FROM mission_items i WHERE i.mission_id = m.id AND i.student_id = ${student}) AS recipient,
              (SELECT COUNT(*)::int
                 FROM practice_answers a JOIN practice_sessions s ON s.id = a.session_id
@@ -458,7 +444,7 @@ export class MissionsRepository {
        WHERE m.id = ${mission}`
     const r = rows[0]
     if (!r) return null
-    return { scope: r.scope === 'global' ? 'global' : 'teacher', questionCount: r.question_count, rewardCoins: r.reward_coins, recipient: r.recipient, answered: r.answered }
+    return { questionCount: r.question_count, rewardCoins: r.reward_coins, recipient: r.recipient, answered: r.answered }
   }
 
   /** Records the payment; true only for the call that inserted it (unique on mission and pupil: a repeat inserts nothing). */
@@ -471,47 +457,5 @@ export class MissionsRepository {
       VALUES (${mission}, ${student}, ${input.coins}, ${input.sessionId}::uuid, ${input.isTest}, ${input.paidAt})
       ON CONFLICT (mission_id, student_id) DO NOTHING`
     return inserted === 1
-  }
-
-  // --- Global goals (S6-T07, DM-88) -----------------------------------------------------------------
-
-  /** The Global missions dated `day` (a Malaysia day), oldest first. Read inside the caller's transaction when `tx` is given. */
-  async globalMissionsOfDay(day: string, tx?: TxClient): Promise<MissionRecord[]> {
-    const rows = await (tx ?? this.db).mission.findMany({
-      where: { scope: 'global', missionDate: new Date(`${day}T00:00:00.000Z`) },
-      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
-    })
-    return rows.map(toMission)
-  }
-
-  /** The ids among `missionIds` that already have a reward row for the pupil. */
-  async paidMissionIds(studentId: string, missionIds: readonly string[], tx?: TxClient): Promise<Set<string>> {
-    const student = idOf(studentId)
-    const ids = missionIds.flatMap((id) => (isIdString(id) ? [idFromString(id)] : []))
-    if (student === null || ids.length === 0) return new Set()
-    const rows = await (tx ?? this.db).missionReward.findMany({ where: { studentId: student, missionId: { in: ids } }, select: { missionId: true } })
-    return new Set(rows.map((r) => idToString(r.missionId)))
-  }
-
-  /**
-   * "{n} pelajar selesai" of a Global mission: distinct pupils of the teacher's active classes with a reward row for it
-   * (every asked id present, 0 when none).
-   */
-  async rewardedCounts(missionIds: readonly string[], teacherId: string, isTest: boolean): Promise<Map<string, number>> {
-    const out = new Map<string, number>(missionIds.map((id) => [id, 0]))
-    const keys = missionIds.flatMap((id) => (isIdString(id) ? [idFromString(id)] : []))
-    const teacher = idOf(teacherId)
-    if (keys.length === 0 || teacher === null) return out
-    const rows = await this.db.$queryRaw<{ mission_id: bigint; n: number }[]>`
-      SELECT r.mission_id, COUNT(DISTINCT r.student_id)::int AS n
-        FROM mission_rewards r
-       WHERE r.mission_id = ANY(${keys}::bigint[])
-         AND EXISTS (
-           SELECT 1 FROM enrolments e JOIN classrooms c ON c.id = e.classroom_id
-            WHERE e.student_id = r.student_id AND e.status = 'active' AND e.is_test = ${isTest}
-              AND c.teacher_id = ${teacher} AND c.kind = 'classroom' AND c.is_active)
-       GROUP BY r.mission_id`
-    for (const r of rows) out.set(idToString(r.mission_id), r.n)
-    return out
   }
 }

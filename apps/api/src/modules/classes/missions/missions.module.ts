@@ -5,7 +5,6 @@ import { ThrottleModule } from '../../../common/throttle'
 import { CurriculumModule } from '../../curriculum'
 import { PracticeModule, PracticePorts } from '../../practice'
 import { QuestionsModule } from '../../questions'
-import { WalletModule } from '../../wallet'
 import { ClassesModule } from '../classes.module'
 import { ClassesPorts } from '../ports'
 import { QuestionSetsModule } from '../question-sets'
@@ -25,7 +24,7 @@ import { RemedialService } from './remedial.service'
  * plugged in before `app.init()`) is left as it is and logged, never overwritten.
  */
 @Module({
-  imports: [AuditModule, ThrottleModule, CurriculumModule, QuestionsModule, ClassesModule, PracticeModule, QuestionSetsModule, WalletModule],
+  imports: [AuditModule, ThrottleModule, CurriculumModule, QuestionsModule, ClassesModule, PracticeModule, QuestionSetsModule],
   controllers: [MissionsController, RemedialController],
   providers: [MissionsRepository, MissionsService, RemedialService, QuestionPool, PracticeAssignmentsAdapter],
   exports: [MissionsRepository],

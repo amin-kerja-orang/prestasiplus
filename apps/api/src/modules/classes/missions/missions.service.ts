@@ -4,7 +4,6 @@ import {
   MISSION_MESSAGES,
   MISSION_REWARD_MAX,
   MISSION_TYPE_LABELS,
-  type MissionGoalKind,
   type MissionToday,
   type TeacherMission,
   TeacherMissionCreateSchema,
@@ -12,12 +11,10 @@ import {
 
 import { AuditService } from '../../../common/audit'
 import { ApiError } from '../../../common/errors/api-error'
-import { CLOCK, type Clock, mytDay, startOfMytDay } from '../../../db/clock'
+import { CLOCK, type Clock, mytDay } from '../../../db/clock'
 import { isIdString } from '../../../db/ids'
-import type { TxClient } from '../../../db/client'
 import { PrismaService } from '../../../db/prisma.service'
 import { PracticeRepository } from '../../practice'
-import { StreakService } from '../../wallet'
 import type { ClassActor } from '../actor'
 import { ClassesRepository } from '../classes.repository'
 import { invalid, tryParseStrict } from '../strict-body'
@@ -45,22 +42,17 @@ export class MissionsService {
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(CLOCK) private readonly clock: Clock,
-    @Inject(StreakService) private readonly streaks: StreakService,
   ) {}
 
   /**
    * The M10 missions whose mission date is today (Malaysia day) and whose stored recipients include the caller,
    * oldest first. Status (Q-SESS-LINK) comes from the caller's sessions linked by `missionId`: a completed
    * session beats an in-progress one, none gives `new`.
-   *
-   * S6-T07: then, for EVERY pupil, the Global goals dated today (Malaysia day): `global: true`, `goalKind`, `target` (the goal
-   * target), `progress` (computed read-only from the pupil's practice of today) and `completed` (the reward row exists). A Global goal
-   * has no subject, no questions and starts no session; `status` is `completed` once paid, else `new`.
    */
   async today(actor: ClassActor): Promise<MissionToday[]> {
-    const day = mytDay(this.clock.now())
-    const missions = await this.repo.missionsForStudent(actor.userId, day, actor.isTest)
-    const subjects = missions.length === 0 ? new Map<string, string>() : await this.classes.subjectNames(missions.map((m) => m.subjectId))
+    const missions = await this.repo.missionsForStudent(actor.userId, mytDay(this.clock.now()), actor.isTest)
+    if (missions.length === 0) return []
+    const subjects = await this.classes.subjectNames(missions.map((m) => m.subjectId))
     const out: MissionToday[] = []
     for (const m of missions) {
       const sessions = (await this.practice.linkedSessions(actor.userId, 'missionId', m.id)).filter((s) => s.isTest === actor.isTest)
@@ -80,91 +72,20 @@ export class MissionsService {
         ...(m.rewardCoins !== null ? { rewardCoins: m.rewardCoins } : {}),
       })
     }
-    const globals = await this.repo.globalMissionsOfDay(day)
-    if (globals.length > 0) {
-      const [facts, paid] = await Promise.all([this.goalFacts(actor.userId, day, actor.isTest), this.repo.paidMissionIds(actor.userId, globals.map((g) => g.id))])
-      for (const g of globals) {
-        if (g.goalKind === null) continue
-        const progress = goalProgress(g.goalKind, facts)
-        const completed = paid.has(g.id)
-        out.push({
-          id: g.id,
-          title: g.title,
-          typeLabel: MISSION_TYPE_LABELS[g.missionType],
-          subjectName: '',
-          questionCount: g.questionCount,
-          coinsPerCorrect: g.coinsPerCorrect,
-          resourceTitle: null,
-          resourceUrl: null,
-          resourceNote: null,
-          status: completed ? 'completed' : 'new',
-          description: g.description,
-          ...(g.rewardCoins !== null ? { rewardCoins: g.rewardCoins } : {}),
-          global: true,
-          goalKind: g.goalKind,
-          target: g.questionCount,
-          progress,
-          completed,
-        })
-      }
-    }
-    return out
-  }
-
-  /**
-   * The pupil's practice facts of a Malaysia day for the goal rules, READ-ONLY through S5's existing reads
-   * (`PracticeRepository.dayFacts` for the completed sessions and `answers` for the answers, both with the day's `[00:00, 24:00)` +08:00
-   * window) and the stored streak (`StreakService.get`). Only rows of the same Mod Pelajar mode count.
-   */
-  async goalFacts(userId: string, day: string, isTest: boolean, tx?: TxClient): Promise<GoalFacts> {
-    const { from, to } = mytDayWindow(day)
-    const [{ sessions }, answers, streak] = await Promise.all([
-      this.practice.dayFacts(userId, from, to),
-      this.practice.answers(userId, { from, to, includeTest: isTest }),
-      this.streaks.get(userId, tx ? { tx } : {}),
-    ])
-    return {
-      sessions: sessions.filter((x) => x.isTest === isTest).map((x) => ({ correct: x.correctCount, total: x.questionCount, timeSpentSec: x.timeSpentSec })),
-      answers: answers.filter((a) => a.isTest === isTest).map((a) => ({ isCorrect: a.isCorrect, topicId: a.topicId })),
-      streak: streak.current,
-    }
-  }
-
-  /**
-   * S6-T07: pays the Global goals dated `day` that the pupil has now reached and not been paid for, once each (`mission_rewards`,
-   * unique on mission and pupil; the insert is `ON CONFLICT DO NOTHING`). Runs inside the caller's transaction `tx` (the practice submit),
-   * under a per-pupil lock so two sessions completing at once each see the other's rows. Returns the rewards paid by THIS call; the wallet
-   * credit is the caller's. A goal with a reward of 0 or null pays nothing and writes no row.
-   */
-  async evaluateGlobalGoals(input: { userId: string; day: string; isTest: boolean; at: Date; sessionId?: string | null }, tx: TxClient): Promise<{ missionId: string; coins: number }[]> {
-    const globals = (await this.repo.globalMissionsOfDay(input.day, tx)).filter((g) => g.goalKind !== null && (g.rewardCoins ?? 0) > 0)
-    if (globals.length === 0) return []
-    await this.repo.lockTargetReward(tx, 'goals', input.userId)
-    const paid = await this.repo.paidMissionIds(input.userId, globals.map((g) => g.id), tx)
-    const open = globals.filter((g) => !paid.has(g.id))
-    if (open.length === 0) return []
-    const facts = await this.goalFacts(input.userId, input.day, input.isTest, tx)
-    const out: { missionId: string; coins: number }[] = []
-    for (const g of open) {
-      if (g.goalKind === null || !goalMet(goalProgress(g.goalKind, facts), g.questionCount)) continue
-      const coins = g.rewardCoins ?? 0
-      if (await this.repo.insertReward(tx, { missionId: g.id, studentId: input.userId, coins, sessionId: input.sessionId ?? null, isTest: input.isTest, paidAt: input.at })) out.push({ missionId: g.id, coins })
-    }
     return out
   }
 
   // --- teacher Misi Harian (API-GUR-11) ---------------------------------------------------------
 
-  /** `GET /guru/missions`: own and Global missions, date descending then created descending, with the completion count. */
+  /** `GET /guru/missions`: the teacher's own missions, date descending then created descending, with the completion count. */
   async list(actor: ClassActor): Promise<TeacherMission[]> {
     const missions = await this.repo.listForTeacher(actor.userId, actor.isTest)
     if (missions.length === 0) return []
-    const [subjects, completed, rewarded] = await Promise.all([
+    const [subjects, completed] = await Promise.all([
       this.classes.subjectNames(missions.map((m) => m.subjectId)),
-      this.repo.completedCounts(missions.filter((m) => m.scope !== 'global').map((m) => m.id), actor.userId, actor.isTest),
-      this.repo.rewardedCounts(missions.filter((m) => m.scope === 'global').map((m) => m.id), actor.userId, actor.isTest),
+      this.repo.completedCounts(missions.map((m) => m.id), actor.userId, actor.isTest),
     ])
-    return missions.map((m) => toTeacherMission(m, m.subjectId !== null ? (subjects.get(m.subjectId) ?? null) : null, (m.scope === 'global' ? rewarded : completed).get(m.id) ?? 0))
+    return missions.map((m) => toTeacherMission(m, m.subjectId !== null ? (subjects.get(m.subjectId) ?? null) : null, completed.get(m.id) ?? 0))
   }
 
   /**
@@ -235,13 +156,12 @@ export class MissionsService {
   }
 
   /**
-   * `DELETE /guru/missions/:id`: an own mission goes with its recipient rows (rewards already paid stay). A Global mission
-   * is 403 "Misi global tidak boleh dipadam."; another teacher's mission and an unknown id are the generic 404.
+   * `DELETE /guru/missions/:id`: an own mission goes with its recipient rows. Another teacher's mission and an unknown id
+   * are the generic 404.
    */
   async remove(actor: ClassActor, id: string): Promise<{ deleted: 1 }> {
     const mission = isIdString(id) ? await this.repo.findById(id) : null
     if (!mission) throw notFound()
-    if (mission.scope === 'global') throw ApiError.of('FORBIDDEN', { message: MISSION_MESSAGES.globalNotDeletable })
     if (mission.teacherId !== actor.userId) throw notFound()
     await this.prisma.transaction(async (tx) => {
       if (!(await this.repo.deleteOwn(mission.id, actor.userId))) throw notFound()
@@ -276,74 +196,7 @@ function toTeacherMission(m: MissionRecord, subjectName: string | null, complete
     classroomId: m.classroomId,
     subjectId: m.subjectId,
     subjectName,
-    global: m.scope === 'global',
-    goalKind: m.goalKind,
+    global: false,
     completedCount,
   }
 }
-
-// --- Global goal rules (pure; S6-T07) ---------------------------------------------------------------
-
-/**
- * Pure rules of a Global (platform) mission goal (S6-T07, PO decision on #483). A Global mission is an achievement goal measured from
- * the pupil's practice activity on one Malaysia day; the target is the mission's `question_count` in the unit of its goal kind.
- */
-
-/** A completed practice session of the day. */
-export interface GoalSession {
-  correct: number
-  total: number
-  timeSpentSec: number
-}
-
-/** One practice answer of the day (all modes, the pupil's own, matching Mod Pelajar). */
-export interface GoalAnswer {
-  isCorrect: boolean
-  topicId: string | null
-}
-
-export interface GoalFacts {
-  /** Sessions COMPLETED on the day (`completed_at` inside the Malaysia day). */
-  sessions: readonly GoalSession[]
-  /** Answers given on the day (`answered_at` inside the Malaysia day). */
-  answers: readonly GoalAnswer[]
-  /** The pupil's stored current streak (kombo) in days. */
-  streak: number
-}
-
-/** `[from, to)` of a Malaysia day `YYYY-MM-DD`: 00:00 +08:00 up to, not including, the next 00:00 +08:00. */
-export function mytDayWindow(day: string): { from: Date; to: Date } {
-  const from = startOfMytDay(new Date(`${day}T12:00:00+08:00`))
-  return { from, to: new Date(from.getTime() + 24 * 3600_000) }
-}
-
-/**
- * Progress towards the target, a whole number in the unit of the kind (the goal is met at `progress >= target`):
- * - `sessions_per_day`: completed sessions of the day;
- * - `correct_per_day`: correct answers of the day;
- * - `correct_in_session`: the most correct answers in one completed session of the day;
- * - `accuracy_in_session`: the best accuracy percent of one completed session of the day, rounded DOWN (79.9 is 79, never 80);
- * - `minutes_per_day`: whole minutes practised (sum of the completed sessions' time spent, rounded down: 599 s is 9);
- * - `topics_per_day`: distinct topics among the day's answers (an answer without a topic counts for none);
- * - `streak_days`: the stored current streak.
- */
-export function goalProgress(kind: MissionGoalKind, f: GoalFacts): number {
-  switch (kind) {
-    case 'sessions_per_day':
-      return f.sessions.length
-    case 'correct_per_day':
-      return f.answers.filter((a) => a.isCorrect).length
-    case 'correct_in_session':
-      return f.sessions.reduce((best, s) => Math.max(best, s.correct), 0)
-    case 'accuracy_in_session':
-      return f.sessions.reduce((best, s) => (s.total > 0 ? Math.max(best, Math.floor((s.correct * 100) / s.total)) : best), 0)
-    case 'minutes_per_day':
-      return Math.floor(f.sessions.reduce((sum, s) => sum + Math.max(0, s.timeSpentSec), 0) / 60)
-    case 'topics_per_day':
-      return new Set(f.answers.flatMap((a) => (a.topicId === null ? [] : [a.topicId]))).size
-    case 'streak_days':
-      return Math.max(0, f.streak)
-  }
-}
-
-export const goalMet = (progress: number, target: number): boolean => target > 0 && progress >= target
