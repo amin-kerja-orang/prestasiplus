@@ -11,7 +11,7 @@ import { RouterLink } from 'vue-router'
 import { DsDataTable, DsPanel } from '@/ds'
 
 import type { SpmGrade, WireId } from '../../../api/types'
-import { count, pct } from '../common/kirkpatrick-format'
+import { count, accuracyPct } from '../common/kirkpatrick-format'
 import { COLOR_TEXT, GRADE_PILL } from './results-format'
 import type { ResultsPrediction } from './results-types'
 
@@ -42,7 +42,7 @@ const data = computed<Row[]>(() =>
     schoolId: r.schoolId,
     schoolName: r.schoolName,
     answers: count(r.answers),
-    accuracy: pct(r.accuracy),
+    accuracy: accuracyPct(r.accuracy),
     grade: r.grade,
   })),
 )
