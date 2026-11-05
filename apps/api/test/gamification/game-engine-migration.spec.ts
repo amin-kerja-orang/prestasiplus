@@ -176,6 +176,7 @@ describe('migration 0224 game engine', () => {
       await db.query('alter table battle_queues drop column question_count')
       await db.query('alter table battle_invitations drop column question_count')
       await db.query('alter table battle_participants drop column last_polled_at, drop column consecutive_timeouts')
+      await db.query('drop index uq_battle_answers_robot_battle_id_position')
       await db.query(`update gamification_settings set value = 50, label = 'Disimpan' where key = 'xp_per_correct'`)
       await apply()
       expect((await settings()).get('xp_per_correct')).toEqual({ value: 50, label: 'Disimpan' })
@@ -295,6 +296,105 @@ describe('migration 0224 game engine', () => {
       expect(rows).toEqual([{ user_id: null }, { user_id: user }])
       expect(await rejects(insert, [battle, user, 1, question])).toMatch(/uq_battle_answers_battle_id_user_id_position/)
       expect(await rejects(insert, [battle, '999999999', 2, question])).toMatch(/fk_battle_answers_user_id/)
+    })
+  })
+
+  describe('DM-60, the limits of 48 GAME-01 (ruling 5 on #497)', () => {
+    const answer = `insert into battle_answers (battle_id, user_id, position, question_id, option_id, correct, seconds, points) values ($1::uuid, $2::bigint, $3, $4::bigint, $5, false, 1, 0)`
+
+    it('ck_battle_invitations_status adds cancelled, keeps every old status and refuses an unknown one', async () => {
+      const invitation = await addInvitation()
+      for (const status of ['pending', 'accepted', 'declined', 'expired', 'cancelled']) {
+        await db.query(`update battle_invitations set status = $1 where id = $2::uuid`, [status, invitation])
+      }
+      expect(await rejects(`update battle_invitations set status = 'abandoned' where id = $1::uuid`, [invitation])).toMatch(/ck_battle_invitations_status/)
+    })
+
+    it('ck_battles_answered and ck_battle_participants_correct reach 20 (the largest chip) and refuse 21', async () => {
+      const battle = await addBattle()
+      await db.query(`update battles set answered = 20 where id = $1::uuid`, [battle])
+      expect(await rejects(`update battles set answered = 21 where id = $1::uuid`, [battle])).toMatch(/ck_battles_answered/)
+      await db.query(`insert into battle_participants (battle_id, side, user_id, is_bot, correct) values ($1::uuid, 'B', null, true, 20)`, [battle])
+      expect(await rejects(`update battle_participants set correct = 21 where battle_id = $1::uuid`, [battle])).toMatch(/ck_battle_participants_correct/)
+    })
+
+    it('ck_battle_questions_position and ck_battle_answers_position reach 20 and refuse 21 and 0', async () => {
+      const battle = await addBattle()
+      const question = await addQuestion()
+      const user = await addUser()
+      const row = `insert into battle_questions (battle_id, position, question_id) values ($1::uuid, $2, $3::bigint)`
+      await db.query(row, [battle, 20, question])
+      expect(await rejects(row, [battle, 21, question])).toMatch(/ck_battle_questions_position/)
+      expect(await rejects(row, [battle, 0, question])).toMatch(/ck_battle_questions_position/)
+      await db.query(answer, [battle, user, 20, question, null])
+      expect(await rejects(answer, [battle, user, 21, question, null])).toMatch(/ck_battle_answers_position/)
+      expect(await rejects(answer, [battle, user, 0, question, null])).toMatch(/ck_battle_answers_position/)
+    })
+
+    it('ck_battle_answers_option_id allows null and 0..7 (48 3.2: 2-8 options) and refuses 8 and -1', async () => {
+      const battle = await addBattle()
+      const question = await addQuestion()
+      const user = await addUser()
+      await db.query(answer, [battle, user, 1, question, null])
+      for (let option = 0; option <= 7; option++) await db.query(answer, [battle, user, option + 2, question, option])
+      expect(await rejects(answer, [battle, user, 10, question, 8])).toMatch(/ck_battle_answers_option_id/)
+      expect(await rejects(answer, [battle, user, 10, question, -1])).toMatch(/ck_battle_answers_option_id/)
+    })
+
+    it('a robot has one answer per battle and position; a human answer stays protected and does not collide with the robot', async () => {
+      const [battle, other] = [await addBattle(), await addBattle()]
+      const question = await addQuestion()
+      const user = await addUser()
+      await db.query(answer, [battle, null, 1, question, 0])
+      expect(await rejects(answer, [battle, null, 1, question, 1])).toMatch(/uq_battle_answers_robot_battle_id_position/)
+      await db.query(answer, [battle, null, 2, question, 1])
+      await db.query(answer, [other, null, 1, question, 1])
+      await db.query(answer, [battle, user, 1, question, 2])
+      expect(await rejects(answer, [battle, user, 1, question, 3])).toMatch(/uq_battle_answers_battle_id_user_id_position/)
+    })
+
+    it('existing rows at the old limits stay as they were', async () => {
+      await reverse()
+      const battle = await addBattle()
+      const question = await addQuestion()
+      const user = await addUser()
+      await db.query(`update battles set answered = 10 where id = $1::uuid`, [battle])
+      await db.query(`insert into battle_participants (battle_id, side, user_id, correct) values ($1::uuid, 'A', $2::bigint, 10)`, [battle, user])
+      await db.query(`insert into battle_questions (battle_id, position, question_id) values ($1::uuid, 10, $2::bigint)`, [battle, question])
+      await db.query(answer, [battle, user, 10, question, 3])
+      await apply()
+      expect(await db.query(`select answered from battles where id = $1::uuid`, [battle])).toEqual([{ answered: 10 }])
+      expect(await db.query(`select correct from battle_participants where battle_id = $1::uuid`, [battle])).toEqual([{ correct: 10 }])
+      expect(await db.query(`select position from battle_questions where battle_id = $1::uuid`, [battle])).toEqual([{ position: 10 }])
+      expect(await db.query(`select position, option_id from battle_answers where battle_id = $1::uuid`, [battle])).toEqual([{ position: 10, option_id: 3 }])
+    })
+
+    it('the reversal puts the old limits back, and removes only the rows they cannot hold', async () => {
+      const [wide, narrow] = [await addBattle(), await addBattle()]
+      const question = await addQuestion()
+      const user = await addUser()
+      const invitation = await addInvitation()
+      const kept = await addInvitation()
+      await db.query(`update battle_invitations set status = 'cancelled' where id = $1::uuid`, [invitation])
+      await db.query(`update battles set question_count = 20, answered = 20 where id = $1::uuid`, [wide])
+      await db.query(`insert into battle_participants (battle_id, side, user_id, correct) values ($1::uuid, 'A', $2::bigint, 20)`, [wide, user])
+      await db.query(`insert into battle_questions (battle_id, position, question_id) values ($1::uuid, 20, $2::bigint)`, [wide, question])
+      await db.query(answer, [wide, user, 20, question, 7])
+      await db.query(answer, [narrow, user, 1, question, 3])
+      await db.query(answer, [narrow, user, 2, question, 7])
+      await reverse()
+      expect(await db.query<{ id: string }>(`select id::text from battles where id = any($1::uuid[])`, [[wide, narrow]])).toEqual([{ id: narrow }])
+      expect(await db.query<{ position: number }>(`select position from battle_answers where battle_id = $1::uuid`, [narrow])).toEqual([{ position: 1 }])
+      expect(await db.query<{ id: string }>(`select id::text from battle_invitations where id = any($1::uuid[])`, [[invitation, kept]])).toEqual([{ id: kept }])
+      expect(await rejects(`update battle_invitations set status = 'cancelled' where id = $1::uuid`, [kept])).toMatch(/ck_battle_invitations_status/)
+      expect(await rejects(`update battles set answered = 11 where id = $1::uuid`, [narrow])).toMatch(/ck_battles_answered/)
+      expect(await rejects(`insert into battle_participants (battle_id, side, user_id, correct) values ($1::uuid, 'A', $2::bigint, 11)`, [narrow, user])).toMatch(/ck_battle_participants_correct/)
+      expect(await rejects(`insert into battle_questions (battle_id, position, question_id) values ($1::uuid, 11, $2::bigint)`, [narrow, question])).toMatch(/ck_battle_questions_position/)
+      expect(await rejects(answer, [narrow, user, 11, question, null])).toMatch(/ck_battle_answers_position/)
+      expect(await rejects(answer, [narrow, user, 3, question, 4])).toMatch(/ck_battle_answers_option_id/)
+      expect(await db.query(`select 1 from pg_indexes where indexname = 'uq_battle_answers_robot_battle_id_position'`)).toHaveLength(0)
+      await db.query('delete from gamification_settings')
+      await apply()
     })
   })
 
