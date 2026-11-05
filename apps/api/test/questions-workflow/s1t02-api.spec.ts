@@ -82,12 +82,10 @@ describe('S1-T02 part 1: difficulty_level, textbook_ref, rejection, SP outside t
       expect(await read()).toBe(3)
     })
 
-    it('NO_DIFFICULTY (step 4) at both gates only when the typed value and the TP are both missing', async () => {
+    it('NO_DIFFICULTY (step 4) at both gates whenever the typed value is missing, whatever the TP (team-dd ruling on #503)', async () => {
       const id = await create({}) // review below
       await t.db.query(`update question_versions set difficulty_level = null where question_id = $1::bigint`, [id])
-      expect((await gate(id, 'submit')).issues.map((i) => i.code)).not.toContain('NO_DIFFICULTY') // TP 3 is there
-      await t.db.query(`update question_versions set difficulty_tp = null where question_id = $1::bigint`, [id])
-      const submit = await gate(id, 'submit')
+      const submit = await gate(id, 'submit') // TP 3 is there, and does not stand in for the Kesukaran
       expect(submit.issues).toContainEqual({ path: 'difficultyLevel', code: 'NO_DIFFICULTY', message: 'Sila pilih tahap kesukaran.', step: 4 })
       const refused = await status(id, 'review')
       expect(refused.status).toBe(422)
