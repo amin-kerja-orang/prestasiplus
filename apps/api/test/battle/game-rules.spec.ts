@@ -1,6 +1,8 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { BattleAnswerResultSchema, BattleArenaViewSchema } from '@pp/contract'
+import { Logger } from '@nestjs/common'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { BATTLE_MESSAGES, BattleAnswerResultSchema, BattleArenaViewSchema } from '@pp/contract'
 
+import { ApiError } from '../../src/common/errors/api-error'
 import { ArenaService } from '../../src/modules/battle/arena/arena.service'
 import { BattleEngine } from '../../src/modules/battle/engine'
 import { addMcqs, bootBattleApp, botBattle, client, parseData, STUDENT_G10, STUDENT_G10_B, subjectsOf, type BattleTestApp, type Client, type Subjects } from './arena-helpers'
@@ -135,6 +137,50 @@ describe('GAME-00 common rules in Battle', () => {
       expect((await rows<{ status: string }>(`select status from battles where id = $1`, [uuid]))[0]?.status).toBe('finished')
       expect(await answerRows(uuid)).toHaveLength(10)
       expect(t.reports.filter((r) => r.session === uuid)).toHaveLength(1)
+    })
+  })
+
+  describe('the sweep and a question that cannot be served', () => {
+    /** The questions of the battle lose their live version: the owner's reads give nothing. */
+    const archive = (uuid: string) => rows(`update questions set live_version_no = null where id in (select question_id from battle_questions where battle_id = $1)`, [uuid])
+    const restore = (uuid: string) => rows(`update questions set live_version_no = 1 where id in (select question_id from battle_questions where battle_id = $1)`, [uuid])
+    beforeEach(() => rows(`update battles set status = 'finished' where status = 'active'`)) // the counts below are of one battle
+
+    it('a battle whose questions were archived still times out to its end, with its rows and its reward', async () => {
+      const uuid = await botBattle(a, s.math)
+      await archive(uuid)
+      try {
+        const arena = t.get(ArenaService)
+        for (let i = 0; i < 10; i++) {
+          t.clock.advance(18_001)
+          expect(await arena.sweepClocks()).toBe(1)
+        }
+        expect((await rows<{ status: string }>(`select status from battles where id = $1`, [uuid]))[0]?.status).toBe('finished')
+        expect(await answerRows(uuid)).toHaveLength(10)
+      } finally {
+        await restore(uuid)
+      }
+    })
+
+    it('only "moved first" stays silent; any other refusal is logged', async () => {
+      await botBattle(a, s.math)
+      const arena = t.get(ArenaService)
+      const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+      const store = vi.spyOn(arena as unknown as { store: () => Promise<unknown> }, 'store')
+      try {
+        t.clock.advance(18_001)
+        store.mockRejectedValueOnce(ApiError.of('CONFLICT', { message: BATTLE_MESSAGES.battleOver }))
+        expect(await arena.sweepClocks()).toBe(0)
+        store.mockRejectedValueOnce(ApiError.of('VALIDATION_ERROR', { message: BATTLE_MESSAGES.questionInvalid }))
+        expect(await arena.sweepClocks()).toBe(0)
+        expect(warn).not.toHaveBeenCalled()
+        store.mockRejectedValueOnce(ApiError.of('NOT_FOUND', { message: BATTLE_MESSAGES.questionNotFound }))
+        expect(await arena.sweepClocks()).toBe(0)
+        expect(warn).toHaveBeenCalledTimes(1)
+      } finally {
+        store.mockRestore()
+        warn.mockRestore()
+      }
     })
   })
 

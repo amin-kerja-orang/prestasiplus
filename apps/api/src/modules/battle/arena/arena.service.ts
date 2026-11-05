@@ -91,11 +91,13 @@ export class ArenaService implements OnModuleInit, OnModuleDestroy {
     const expected = await this.questionAt(uuid, done + 1)
     if (!expected) return false
     try {
-      await this.store(uuid, seat, done, expected, null, BATTLE_RULES.questionSeconds, served)
+      await this.store(uuid, seat, done, expected, null, BATTLE_RULES.questionSeconds, served, true)
       return true
     } catch (err) {
-      if (err instanceof ApiError) return false // the pupil's own answer got in first, or the battle ended
-      throw err
+      if (!(err instanceof ApiError)) throw err
+      // The pupil's own answer got in first, or the battle ended: nothing to do. Anything else must be seen.
+      if (err.message !== BATTLE_MESSAGES.battleOver && err.message !== BATTLE_MESSAGES.questionInvalid) this.logger.warn(`Battle clock refused for ${uuid}: ${err.message}`)
+      return false
     }
   }
 
@@ -213,8 +215,10 @@ export class ArenaService implements OnModuleInit, OnModuleDestroy {
   /**
    * Grades and stores one answer or timeout of a seat. Time is the server's: the question was served when the battle started
    * (question 1) or when the previous answer was stored. The client's `seconds` can only make the answer slower, never faster.
+   * `byClock` is the sweep's own timeout: nobody reads the response, so a question that can no longer be served (archived) still
+   * times out and the battle reaches its end.
    */
-  private async store(uuid: string, mine: { id: bigint; side: string; userId: bigint }, done: number, expected: { questionId: bigint }, optionId: number | null, seconds: number, served: Date) {
+  private async store(uuid: string, mine: { id: bigint; side: string; userId: bigint }, done: number, expected: { questionId: bigint }, optionId: number | null, seconds: number, served: Date, byClock = false) {
     const userId = idToString(mine.userId)
     const questionId = idToString(expected.questionId)
     const now = this.clock.now()
@@ -222,13 +226,13 @@ export class ArenaService implements OnModuleInit, OnModuleDestroy {
     const elapsed = Math.max(0, Math.floor(elapsedMs / 1000))
     const timedOut = elapsedMs > (await this.engine.questionLimitMs())
     const whole = timedOut ? BATTLE_RULES.questionSeconds : Math.min(BATTLE_RULES.questionSeconds, Math.max(Math.floor(seconds), elapsed))
-    const graded = await this.engine.deps.gradeAnswer(questionId, timedOut ? null : optionId)
+    const graded = (await this.engine.deps.gradeAnswer(questionId, timedOut ? null : optionId)) ?? (byClock ? { correct: false, correctOptionId: 0 } : null)
     if (!graded) throw notFound(BATTLE_MESSAGES.questionNotFound)
     const index = done + 1
     const last = index >= BATTLE_RULES.arenaQuestions
-    const nextRow = last ? null : await this.questionAt(uuid, index + 1)
+    const nextRow = last || byClock ? null : await this.questionAt(uuid, index + 1)
     const next = nextRow ? await this.engine.deps.arenaQuestion(idToString(nextRow.questionId)) : null
-    if (!last && !next) throw notFound(BATTLE_MESSAGES.questionNotFound)
+    if (!last && !next && !byClock) throw notFound(BATTLE_MESSAGES.questionNotFound)
     const bot = botAnswers(uuid, await this.engine.botAccuracy())[done]
     if (!bot) throw notFound()
 
