@@ -23,7 +23,11 @@ import { UsersRepository } from '../../../users'
 import { StreakService, WalletService } from '../../../wallet'
 import { BankFacts } from './bank-facts'
 import { OverviewRepository } from './overview.repository'
-import { bannerAudiences, cutQuestionText, difficultyLevelOfTp, greetingPeriod, pct, round, weekEndMyt, weekStartMyt } from './rules'
+import { DASHBOARD_LEVEL_CODES, bannerAudiences, cutQuestionText, difficultyLevelOfTp, greetingPeriod, pct, pooledAccuracy, round, weekEndMyt, weekStartMyt } from './rules'
+
+/** An open window over the answer store (all time) for the pooled accuracy. */
+const ALL_TIME_FROM = new Date(0)
+const ALL_TIME_TO = new Date('9999-12-31T00:00:00Z')
 
 /** The caller of a read: own data only (card AC4), in the mode (real or Mod Pelajar) of the request. */
 export interface Reader {
@@ -132,7 +136,7 @@ export class OverviewService {
     const now = this.clock.now()
     const from = weekStartMyt(now)
     const to = weekEndMyt(from)
-    const [subjects, levels, offeredIds, bank, user, trial, streak, wallet, week, weekSessions, revisionTotal, usage, banners, articles, recent] = await Promise.all([
+    const [subjects, levels, offeredIds, bank, user, trial, streak, wallet, week, weekSessions, revisionTotal, usage, banners, articles, recent, pooled, activePackage] = await Promise.all([
       this.curriculum.subjects({ active: true }),
       this.curriculum.levels({ active: true }),
       this.offeredIds(),
@@ -148,6 +152,8 @@ export class OverviewService {
       this.activeBanners(who.role, now),
       this.latestArticles(),
       this.recentQuestions(),
+      this.repo.answerFigures(who.userId, ALL_TIME_FROM, ALL_TIME_TO, who.isTest),
+      this.subscriptions.activePackage(who.userId, now),
     ])
     const views = subjects.map((s) => subjectView(s, bank, this.offeredOf(s, levels, offeredIds).map((l) => idToString(l.id))))
     const subjectStats = views
@@ -169,6 +175,8 @@ export class OverviewService {
       streak: { count: streak.current, practisedToday: streak.lastActivityDate === mytDay(now) },
       wallet: { coins: wallet.currentSyiling, points: wallet.xp, level: wallet.level, levelProgressPct: wallet.levelProgressPct },
       week: { sessions: weekSessions, accuracyPct: Math.round(pct(week.correct, week.answered)) },
+      accuracyPct: pooledAccuracy(pooled.correct, pooled.answered),
+      package: activePackage,
       banners,
       // BE-23 (challenges, badges) has not merged: nothing to show yet (open question).
       quests: [],
@@ -184,7 +192,17 @@ export class OverviewService {
         activeLevels: levels.length,
         approvedQuestions: bank.count(),
       },
-      levelPills: levels.map((l) => ({ code: l.code, name: l.name, stage: l.stage as 'primary' | 'lower_secondary' | 'upper_secondary', count: bank.count({ levelId: idToString(l.id) }) })),
+      // FR-MUR-2-11, D91: Tingkatan 1-5 only; each count is the Latih Tubi figure the subject chips use (`bank.practice` per subject that offers the level, summed).
+      levelPills: levels
+        .filter((l) => DASHBOARD_LEVEL_CODES.includes(l.code))
+        .map((l) => {
+          const levelId = idToString(l.id)
+          const count = subjects.reduce(
+            (n, s) => (this.offeredOf(s, levels, offeredIds).some((o) => idToString(o.id) === levelId) ? n + bank.practice(idToString(s.id), [levelId]) : n),
+            0,
+          )
+          return { code: l.code, name: l.name, stage: l.stage as 'primary' | 'lower_secondary' | 'upper_secondary', count }
+        }),
       recentQuestions: recent,
       difficultyChart: bank.difficultyChart(),
       subjectStats,
@@ -265,7 +283,7 @@ export class OverviewService {
 
   // --- S4 / S5 --------------------------------------------------------------------------------------
 
-  async chapterSubjects(): Promise<{ code: string; name: string; icon: string | null; color: string; chapterCount: number; questionCount: number }[]> {
+  async chapterSubjects(): Promise<{ code: string; name: string; icon: string | null; color: string; chapterCount: number; questionCount: number; levels: { id: string; code: string; name: string; chapterCount: number; questionCount: number }[] }[]> {
     const subjects = await this.curriculum.subjects({ active: true })
     const out = []
     const [levels, offeredIds] = await Promise.all([this.curriculum.levels(), this.offeredIds()])
@@ -276,11 +294,19 @@ export class OverviewService {
       const chapterCount = offered.reduce((n, l) => n + (byPair.get(`${s.id}:${l.id}`)?.length ?? 0), 0)
       // BR-15: subjects with at least one chapter at an offered level.
       if (chapterCount === 0) continue
+      // FR-MUR-9-5 (S5-T02): the levels that have chapters, each with its own counts (the page filters by the chosen level).
+      const levelRows = offered
+        .map((l) => {
+          const chapters = byPair.get(`${s.id}:${l.id}`) ?? []
+          return { id: idToString(l.id), code: l.code, name: l.name, chapterCount: chapters.length, questionCount: chapters.reduce((m, c) => m + (counts.get(idToString(c.id)) ?? 0), 0) }
+        })
+        .filter((l) => l.chapterCount > 0)
       out.push({
         code: s.code,
         name: s.name,
         icon: s.icon,
         color: s.color,
+        levels: levelRows,
         chapterCount,
         // FR-M05-58, D91, V2 section 2.3 (R1E2E-09): the tile counts what the chapter draw can serve (chaptered, ungrouped, approved),
         // the sum of the per-chapter counts, not Q-PRACTICE(subject).

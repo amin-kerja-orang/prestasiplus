@@ -1,5 +1,4 @@
 import { Prisma } from '../../db/generated/client'
-import { OFFERED_LEVEL_CODES } from '../practice/rules'
 
 /**
  * SQL predicates (aliases `q` = questions, `v` = the question version) that decide what a learner may be served. One definition
@@ -56,13 +55,12 @@ export const ALL_LEAVES_KEYED_SQL = Prisma.sql`NOT EXISTS (SELECT 1 FROM questio
  * the Misi fallback, Battle SPM mode). It replaces the legacy `pool:spm` tag (`spmPool`): a question qualifies by what it IS,
  * not by a tag only the QLOAD import wrote, so admin-created questions reach the same activities. Aliases: `q`, `v`.
  *
- * Pieces: learner-visible level (LEARNER_LEVEL_SQL), not flagged (NOT_FLAGGED_SQL, S1-T07), not PKSK (NOT_PKSK_SQL), the level is one of OFFERED_LEVEL_CODES
- * (T4, T5), of an active subject linked to that level (the same rule as the practice cards and the login count). The servable
+ * Pieces: learner-visible level (LEARNER_LEVEL_SQL), not flagged (NOT_FLAGGED_SQL, S1-T07), not PKSK (NOT_PKSK_SQL), the level is an offered level (active and not primary, T1 to T5: the SQL form of `offeredLevels` in
+ * practice/rules.ts, S4-T06), of an active subject linked to that level (the same rule as the practice cards and the login count). The servable
  * status, active flag, subject and MCQ-leaf shape are applied by the callers (`QuestionsRepository.scope`, the overview SQL),
  * so the status constant stays in one place.
  */
-const OFFERED_LIST = OFFERED_LEVEL_CODES.map((c) => `'${c.replaceAll("'", '')}'`).join(', ')
 /** R1-T08 follow-up (REQ-B-013): the question's subject is active (a deactivated subject offers no question to pupils or to the paper builder). */
 export const ACTIVE_SUBJECT_SQL = Prisma.sql`EXISTS (SELECT 1 FROM subjects sj WHERE sj.id = v.subject_id AND sj.is_active)`
 
-export const SPM_SERVABLE_SQL = Prisma.sql`(${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_FLAGGED_SQL} AND ${ALL_LEAVES_KEYED_SQL} AND ${NOT_PKSK_SQL} AND EXISTS (SELECT 1 FROM education_levels ol WHERE ol.id = v.education_level_id AND ol.code IN (${Prisma.raw(OFFERED_LIST)})) AND EXISTS (SELECT 1 FROM subjects sj WHERE sj.id = v.subject_id AND sj.is_active) AND EXISTS (SELECT 1 FROM subject_levels sl WHERE sl.subject_id = v.subject_id AND sl.education_level_id = v.education_level_id))`
+export const SPM_SERVABLE_SQL = Prisma.sql`(${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_FLAGGED_SQL} AND ${ALL_LEAVES_KEYED_SQL} AND ${NOT_PKSK_SQL} AND EXISTS (SELECT 1 FROM education_levels ol WHERE ol.id = v.education_level_id AND ol.stage <> 'primary' AND ol.is_active) AND EXISTS (SELECT 1 FROM subjects sj WHERE sj.id = v.subject_id AND sj.is_active) AND EXISTS (SELECT 1 FROM subject_levels sl WHERE sl.subject_id = v.subject_id AND sl.education_level_id = v.education_level_id))`
