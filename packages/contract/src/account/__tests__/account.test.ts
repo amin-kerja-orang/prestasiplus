@@ -649,6 +649,9 @@ describe('mood check-in (S5-T04, API-MUR-11)', () => {
     expect(doc.paths['/me/mood']?.post?.responses['409']).toBeDefined()
     expect(doc.paths['/me/mood']?.post?.responses['403']).toBeDefined()
     expect(doc.paths['/me/mood/today']?.get?.responses['403']).toBeDefined()
+  })
+})
+
 describe('profile activity (API-MUR-02)', () => {
   const day = (i: number) => ({ date: `2026-10-${String(i + 1).padStart(2, '0')}`, answered: 0, sessions: 0 })
   const valid = () => ({
