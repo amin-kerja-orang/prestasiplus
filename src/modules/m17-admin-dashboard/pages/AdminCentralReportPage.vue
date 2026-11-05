@@ -19,6 +19,7 @@ import {
   LaporanBulananPage,
   StatistikPenggunaanPage,
 } from '@/modules/m27-school-admin'
+import { DsPage, DsStack } from '@/ds'
 import { AdminSchoolPicker, type SchoolSummary } from '@/modules/m02-users-schools'
 
 import type { CentralReportView } from '../routes/laporan'
@@ -30,6 +31,8 @@ const router = useRouter()
 
 const REQUIRED_ERROR = 'Sila pilih sekolah.'
 const PLACEHOLDER = 'Pilih sekolah'
+// our own error shows instead of the browser bubble (DsStack declares no `novalidate` prop)
+const FORM_ATTRS = { novalidate: true }
 
 const school = ref<SchoolSummary | null>(null)
 const submitted = ref(false)
@@ -59,15 +62,15 @@ const schoolPage = computed(() =>
 </script>
 
 <template>
-  <div class="flex min-w-0 flex-col gap-4" :data-view="view" data-testid="central-page">
-    <form
-      class="min-w-0 max-w-xl"
-      novalidate
+  <DsPage layout="report" :data-view="view" data-testid="central-page">
+    <DsStack
+      as="form"
+      v-bind="FORM_ATTRS"
       data-testid="central-form"
       @submit.prevent="submitted = true"
     >
       <AdminSchoolPicker v-model="school" required :placeholder="PLACEHOLDER" :error="error" />
-    </form>
+    </DsStack>
     <component
       :is="schoolPage"
       v-if="school && schoolPage"
@@ -76,5 +79,5 @@ const schoolPage = computed(() =>
       :school-name="school.name"
       :base-path="route.path"
     />
-  </div>
+  </DsPage>
 </template>
