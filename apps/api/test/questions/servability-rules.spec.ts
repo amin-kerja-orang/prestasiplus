@@ -117,12 +117,17 @@ describe('servability rules (pure)', () => {
     expect(codes(facts({ live: null, latest: draft, onPublishedPaper: true }), 'simulasi_paper')).toEqual(['not_approved'])
   })
 
-  it('level rules: inactive level, primary level, and a level the SPM activities do not offer (Bab does not mind)', () => {
+  it('level rules: inactive level, primary level; T1 to T5 are all offered and only a question with no level is refused (S4-T06)', () => {
     expect(codes(facts({ level: { id: '4', code: 'T4', stage: 'upper_secondary', isActive: false } }), 'bab')).toEqual(['level_inactive'])
     expect(codes(facts({ level: { id: '1', code: 'D1', stage: 'primary', isActive: true } }), 'bab')).toEqual(['level_primary'])
-    const t3 = facts({ level: { id: '3', code: 'T3', stage: 'lower_secondary', isActive: true } })
-    expect(codes(t3, 'latih_tubi_spm')).toEqual(['level_not_offered'])
-    expect(evaluate(t3, 'bab').served).toBe(true)
+    for (const [id, code, stage] of [['1', 'T1', 'lower_secondary'], ['3', 'T3', 'lower_secondary'], ['5', 'T5', 'upper_secondary']] as const) {
+      const f = facts({ level: { id, code, stage, isActive: true } })
+      expect(codes(f, 'latih_tubi_spm'), code).toEqual([])
+      expect(evaluate(f, 'latih_tubi_spm').served, code).toBe(true)
+      expect(evaluate(f, 'bab').served, code).toBe(true)
+    }
+    expect(codes(facts({ level: null }), 'latih_tubi_spm')).toEqual(['level_not_offered'])
+    expect(codes(facts({ level: null }), 'bab')).toEqual([])
   })
 
   it('subject rules: unlinked or inactive subject, and the Databank list narrower than the Latih Tubi list', () => {
