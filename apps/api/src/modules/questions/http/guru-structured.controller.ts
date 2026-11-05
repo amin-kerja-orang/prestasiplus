@@ -69,8 +69,8 @@ export class GuruStructuredSubmissionsController {
   @Put(':id')
   @RateLimit(QUESTIONS_WRITE_LIMIT)
   async update(@Actor() actor: HttpActor, @Param('id') id: string, @Body() body: unknown) {
-    // Ownership first: another teacher's id is 404 before the body is read.
-    await this.submissions.getStructured(actor.userId, id)
+    // Ownership first (404), then "still editable" (409), then the body (422).
+    await this.submissions.assertStructuredOpen(actor.userId, id)
     return ok(await this.submissions.updateStructured(actor, id, parseBody(GuruStructuredUpdateRequestSchema, body)))
   }
 

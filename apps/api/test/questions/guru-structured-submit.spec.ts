@@ -106,14 +106,19 @@ describe('Guru structured submission: POST/PUT/DELETE /guru/intake/structured an
     expect(rows[0]).toMatchObject({ source: 'guru', owner: teacher.userId, paper_type: 'umum', item_type: 'structured', state: 'needs_review', n: '1' })
   })
 
-  it('stores the stimulus ONCE on the group (the item stem) and the parts as parts', async () => {
+  it('stores the stimulus ONCE as the batch stimulus the item links to (the stem and the parts do not carry it)', async () => {
     const d = await created(teacher, { stimulus: 'Petikan rangsangan tunggal.' })
-    const p = (await t.db.query<{ payload: { stem: string; marks: number; parts: { prompt: string; marks: number }[]; guru: { questionType: string } } }>(`select payload from intake_items where id = $1`, [d.id.slice(1)]))[0]!.payload
-    expect(p.stem).toBe('Petikan rangsangan tunggal.')
-    expect(p.marks).toBe(5)
-    expect(p.parts.map((x) => x.prompt).join('|')).not.toContain('Petikan rangsangan tunggal.')
-    expect(p.parts).toHaveLength(2)
-    expect(p.guru.questionType).toBe('structured')
+    const row = (await t.db.query<{ payload: { stem: string; marks: number; parts: { prompt: string; marks: number; mode: string }[]; guru: { questionType: string } }; stimulus_id: string | null; batch_id: string }>(
+      `select payload, stimulus_id::text, batch_id::text from intake_items where id = $1`,
+      [d.id.slice(1)],
+    ))[0]!
+    expect(row.payload.stem).toBe('')
+    expect(JSON.stringify(row.payload.parts)).not.toContain('Petikan rangsangan tunggal.')
+    expect(row.payload.parts).toHaveLength(2)
+    expect(row.payload.guru.questionType).toBe('structured')
+    const stimuli = await t.db.query<{ id: string; kind: string; body: string | null; alt_text: string }>(`select id::text, kind, body, alt_text from intake_stimuli where batch_id = $1`, [row.batch_id])
+    expect(stimuli).toHaveLength(1)
+    expect(stimuli[0]).toMatchObject({ id: row.stimulus_id, kind: 'passage', body: 'Petikan rangsangan tunggal.', alt_text: 'Rangsangan' })
     expect(d.stimulus).toBe('Petikan rangsangan tunggal.')
   })
 
@@ -142,6 +147,7 @@ describe('Guru structured submission: POST/PUT/DELETE /guru/intake/structured an
   it('an item with no stimulus is accepted (the stimulus is optional)', async () => {
     const d = await created(teacher, { stimulus: null })
     expect(d.stimulus).toBe('')
+    expect(await count(`select count(*)::text n from intake_items where id = ${d.id.slice(1)} and stimulus_id is null`)).toBe(1)
   })
 
   it('the union: the owner sees the review item, another teacher does not; status filters work', async () => {
@@ -221,11 +227,94 @@ describe('Guru structured submission: POST/PUT/DELETE /guru/intake/structured an
     expect(Detail.parse(res.body).data.form?.rejectionReason).toBeNull()
   })
 
+  describe('stimulus image (jpg, png or webp, at most 2 MB, the caller own question_image upload)', () => {
+    let n = 0
+    const file = async (owner: string, over: { purpose?: string; mime?: string; size?: number } = {}): Promise<string> => {
+      n += 1
+      const token = `imgTok${String(Date.now())}${String(n)}`.padEnd(22, 'x').slice(0, 22)
+      await t.db.query(`insert into files (public_id, owner_user_id, purpose, mime, size_bytes, sha256, storage_key) values ($1, $2, $3, $4, $5, repeat('b', 64), $1)`, [
+        token,
+        owner,
+        over.purpose ?? 'question_image',
+        over.mime ?? 'image/png',
+        over.size ?? 1000,
+      ])
+      return token
+    }
+    const refused = async (token: string, message: string) =>
+      expect(expectError(await teacher.post('/api/guru/intake/structured', body({ stimulusImageId: token })), 'VALIDATION_ERROR').fields?.stimulusImageId).toBe(message)
+
+    it('happy path: the detail shows the file URL and the token is stored in the item', async () => {
+      const token = await file(teacher.userId)
+      const d = await created(teacher, { stimulusImageId: token, stimulus: null })
+      expect(d.stimulusImage).toBe(`/api/files/${token}`)
+      expect(d.form?.stimulusImageId).toBe(token)
+      expect(await count(`select count(*)::text n from intake_stimuli s join intake_items i on i.stimulus_id = s.id where i.id = ${d.id.slice(1)}`)).toBe(1)
+    })
+    it('refuses another user token, the wrong purpose, the wrong mime and a file over 2 MB', async () => {
+      await refused(await file(teacher2.userId), 'Fail mesti berupa imej (jpg, png atau webp).')
+      await refused(await file(teacher.userId, { purpose: 'avatar' }), 'Fail mesti berupa imej (jpg, png atau webp).')
+      await refused(await file(teacher.userId, { mime: 'image/gif' }), 'Fail mesti berupa imej (jpg, png atau webp).')
+      await refused(await file(teacher.userId, { size: 2 * 1024 * 1024 + 1 }), 'Saiz imej tidak boleh melebihi 2 MB.')
+      expect((await teacher.post('/api/guru/intake/structured', body({ stimulusImageId: await file(teacher.userId, { size: 2 * 1024 * 1024 }) }))).status).toBe(201)
+    })
+    it('PUT replaces the image and discards the old file; DELETE discards the current one', async () => {
+      const first = await file(teacher.userId)
+      const second = await file(teacher.userId)
+      const d = await created(teacher, { stimulusImageId: first })
+      const res = await teacher.put(`/api/guru/intake/structured/${d.id}`, body({ stimulusImageId: second }))
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      const exists = async (tok: string) => count(`select count(*)::text n from files where public_id = '${tok}'`)
+      expect(await exists(first)).toBe(0)
+      expect(await exists(second)).toBe(1)
+      expect((await teacher.delete(`/api/guru/intake/structured/${d.id}`)).status).toBe(200)
+      expect(await exists(second)).toBe(0)
+    })
+  })
+
+  it('PUT checks "still editable" (409) before the body (422)', async () => {
+    const d = await created(teacher)
+    await t.db.query(`update intake_items set review_state = 'accepted' where id = $1`, [d.id.slice(1)])
+    expectError(await teacher.put(`/api/guru/intake/structured/${d.id}`, body({ parts: [] })), 'CONFLICT')
+  })
+
+  it('the detail status and editable follow the real item state', async () => {
+    const a = await created(teacher)
+    await t.db.query(`update intake_items set review_state = 'accepted' where id = $1`, [a.id.slice(1)])
+    expect(Detail.parse((await teacher.get(`/api/guru/structured-questions/${a.id}`)).body).data).toMatchObject({ status: 'review', editable: false })
+    // Accepted and the question is published (a live version): approved, not editable.
+    const live = (await t.db.query<{ id: string }>(`select id::text from questions where live_version_no is not null limit 1`))[0]?.id
+    expect(live).toBeDefined()
+    const b = await created(teacher)
+    await t.db.query(`update intake_items set review_state = 'accepted', question_id = $2 where id = $1`, [b.id.slice(1), live])
+    expect(Detail.parse((await teacher.get(`/api/guru/structured-questions/${b.id}`)).body).data).toMatchObject({ status: 'approved', editable: false })
+    const c = await created(teacher)
+    expect(Detail.parse((await teacher.get(`/api/guru/structured-questions/${c.id}`)).body).data).toMatchObject({ status: 'review', editable: true })
+  })
+
   it('a structured item is not in the single-MCQ list, and the roles are enforced', async () => {
     const d = await created(teacher)
     const mcq = await teacher.get('/api/guru/questions')
     expect(JSON.stringify(mcq.body)).not.toContain(`"id":"${d.id.slice(1)}"`)
     const student = await loginAs(t, 'student')
     expectError(await student.post('/api/guru/intake/structured', body()), 'FORBIDDEN')
+  })
+  it('the union crosses the boundary between own and approved rows (more than 20 own items)', async () => {
+    const mine: string[] = []
+    for (let i = 0; i < 21; i += 1) mine.push((await created(teacher2, { stimulus: `Rangsangan sempadan ${String(i)}.` })).id)
+    const approved = (await list(teacher2, '?status=approved')).meta.totalItems
+    const p1 = await list(teacher2)
+    const p2 = await list(teacher2, '?page=2')
+    expect(p1.meta.totalItems).toBe(21 + approved)
+    expect(p1.data).toHaveLength(20)
+    expect(p1.data.every((r) => r.source === 'submission')).toBe(true)
+    // Page 2: the last own item first, then approved questions up to 20 rows.
+    expect(p2.data[0]).toMatchObject({ source: 'submission', number: 21 })
+    expect(p2.data.slice(1).every((r) => r.source === 'question')).toBe(true)
+    expect(p2.data).toHaveLength(Math.min(20, 21 + approved - 20))
+    expect(p2.data.map((r) => r.number)).toEqual(p2.data.map((_, i) => 21 + i))
+    const ids = [...p1.data, ...p2.data].map((r) => r.id)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(mine.every((id) => ids.includes(id))).toBe(true)
   })
 })

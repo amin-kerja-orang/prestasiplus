@@ -18,6 +18,7 @@ import type { z } from 'zod'
 
 import { AUDIT_ACTIONS } from '../../../common/audit'
 import { AuditService } from '../../../common/audit/audit.service'
+import { FilesService } from '../../files'
 import { ApiError } from '../../../common/errors/api-error'
 import { toMytTimestamp } from '../../../common/time/myt'
 import type { TxClient } from '../../../db/client'
@@ -30,9 +31,12 @@ import {
   GURU_EDITABLE_STATES,
   GURU_PAPER_TYPE_QUESTION,
   GURU_QUESTION_SOURCE_TEXT,
+  GURU_STIMULUS_LABEL,
+  GURU_STIMULUS_REF,
   GURU_STRUCTURED_ITEM,
   GURU_SUBMISSION_ITEM,
   guruLowFields,
+  guruStimulusImageOf,
   guruPayloadOf,
   guruStructuredPayloadOf,
   guruStructuredTotal,
@@ -105,6 +109,7 @@ export class GuruSubmissionsService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(FilesService) private readonly files: FilesService,
   ) {}
 
   // ---- validation ------------------------------------------------------------------------------
@@ -411,6 +416,7 @@ export class GuruSubmissionsService {
         },
         select: { id: true },
       })
+      const stimulusId = await this.syncStimulus(tx, batch.id, null, row.input)
       const item = await tx.intakeItem.create({
         data: {
           batchId: batch.id,
@@ -418,6 +424,7 @@ export class GuruSubmissionsService {
           sourceType: 'manual',
           numberLabel: '1',
           itemType: 'structured',
+          stimulusId,
           payload: guruStructuredPayloadOf(row.input, row.codes, { label: '1', page: 1 }) as Prisma.InputJsonValue,
           pageNo: 1,
           lowFields: guruLowFields(row.input),
@@ -436,15 +443,22 @@ export class GuruSubmissionsService {
   async updateStructured(actor: GuruActor, wireId: string, body: GuruStructuredCreateRequest): Promise<StructuredOwnView['detail']> {
     const itemId = structuredItemId(wireId)
     const first = await this.ownItem(actor.userId, itemId, this.prisma.client, 'structured')
+    // 409 (not editable any more) before 422 (the body).
+    this.assertOpen(first)
     const row = await this.prepareStructured(actor.userId, body)
+    const replaced: { token: string | null } = { token: null }
     await this.prisma.transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM intake_items WHERE id = ${first.id} FOR UPDATE`
       const item = await this.ownItem(actor.userId, itemId, tx, 'structured')
       this.assertOpen(item)
       const stored = item.payload as { origin?: { label: string; page: number } } | null
+      const oldImage = guruStimulusImageOf(item.payload)
+      if (oldImage !== null && oldImage !== row.input.stimulusImageId) replaced.token = oldImage
+      const stimulusId = await this.syncStimulus(tx, item.batchId, item.stimulusId, row.input)
       await tx.intakeItem.update({
         where: { id: item.id },
         data: {
+          stimulusId,
           payload: guruStructuredPayloadOf(row.input, row.codes, stored?.origin) as Prisma.InputJsonValue,
           reviewState: 'needs_review',
           rejectReason: null,
@@ -461,12 +475,47 @@ export class GuruSubmissionsService {
       await tx.intakeBatch.update({ where: { id: item.batchId }, data: { subject: row.subjectName.slice(0, SUBJECT_TEXT_MAX) } })
       await this.record(INTAKE_AUDIT.itemEdited, actor, 'intake_item', item.id, { from: item.reviewState, to: 'needs_review' }, tx)
     })
+    await this.discardImage(replaced.token)
     return this.getStructured(actor.userId, wireId)
   }
 
   /** DELETE: removes an own structured item (and its batch). */
   async removeStructured(actor: GuruActor, wireId: string): Promise<void> {
-    await this.remove(actor, structuredItemId(wireId), 'structured')
+    const itemId = structuredItemId(wireId)
+    const image = guruStimulusImageOf((await this.ownItem(actor.userId, itemId, this.prisma.client, 'structured')).payload)
+    await this.remove(actor, itemId, 'structured')
+    await this.discardImage(image)
+  }
+
+  /** 409 when an own structured item is no longer open to the teacher (404 first when it is not theirs). */
+  async assertStructuredOpen(userId: string, wireId: string): Promise<void> {
+    this.assertOpen(await this.ownItem(userId, structuredItemId(wireId), this.prisma.client, 'structured'))
+  }
+
+  /** Removes a replaced or deleted stimulus image, unless another submission still names it. Never throws. */
+  private async discardImage(token: string | null): Promise<void> {
+    if (token === null) return
+    const still = await this.prisma.client.intakeItem.count({ where: { payload: { path: ['guru', 'stimulusImageId'], equals: token } } })
+    if (still === 0) await this.files.discard(token, 'question_image')
+  }
+
+  /**
+   * The batch stimulus of a structured submission: ONE `IntakeStimulus` (kind passage, never an image kind, so the gate needs no figure) with the
+   * text; the picture travels as `payload.guru.stimulusImageId` and is copied to the bank on accept. No text and no picture means no stimulus.
+   * Returns the id the item links to.
+   */
+  private async syncStimulus(tx: TxClient, batchId: bigint, current: bigint | null, input: GuruStructuredInput): Promise<bigint | null> {
+    const has = input.stimulus.trim() !== '' || input.stimulusImageId !== null
+    if (!has) {
+      if (current !== null) await tx.intakeStimulus.deleteMany({ where: { id: current, batchId } })
+      return null
+    }
+    const data = { kind: 'passage', label: GURU_STIMULUS_LABEL, altText: GURU_STIMULUS_LABEL, body: input.stimulus.trim() === '' ? null : input.stimulus }
+    if (current !== null) {
+      await tx.intakeStimulus.update({ where: { id: current }, data })
+      return current
+    }
+    return (await tx.intakeStimulus.create({ data: { batchId, ref: GURU_STIMULUS_REF, ...data }, select: { id: true } })).id
   }
 
   /** One own structured submission; 404 for an unknown id or another teacher's item. */
@@ -502,10 +551,25 @@ export class GuruSubmissionsService {
 
   private async structuredViews(items: readonly Prisma.IntakeItemGetPayload<Record<string, never>>[]): Promise<StructuredOwnView[]> {
     const db = this.prisma.client
+    const stimulusIds = items.flatMap((i) => (i.stimulusId === null ? [] : [i.stimulusId]))
+    const stimulusBody = new Map(
+      (stimulusIds.length === 0 ? [] : await db.intakeStimulus.findMany({ where: { id: { in: stimulusIds } }, select: { id: true, body: true } })).map((x) => [x.id, x.body]),
+    )
     const stored = items.flatMap((item) => {
-      const sub = readGuruStructured(item.payload)
+      const sub = readGuruStructured(item.payload, item.stimulusId === null ? null : (stimulusBody.get(item.stimulusId) ?? null))
       return sub ? [{ item, sub }] : []
     })
+    // The real state, as for the single MCQ (`guruStatusOf`): an accepted item whose question is published is `approved`; a returned or
+    // pending one is `review` (a returned one with its reason). An accepted item is not editable.
+    const questionIds = items.flatMap((i) => (i.questionId === null ? [] : [i.questionId]))
+    const questions = questionIds.length === 0 ? [] : await db.question.findMany({ where: { id: { in: questionIds } }, select: { id: true, liveVersionNo: true, latestVersionNo: true } })
+    const latest = new Map(
+      (questions.length === 0
+        ? []
+        : await db.questionVersion.findMany({ where: { OR: questions.map((q) => ({ questionId: q.id, versionNo: q.latestVersionNo })) }, select: { questionId: true, status: true, rejectionReason: true } })
+      ).map((v) => [v.questionId, v]),
+    )
+    const questionById = new Map(questions.map((q) => [q.id, q]))
     const ids = (pick: (g: { subjectId: string; educationLevelId: string }) => string) => [...new Set(stored.map((s) => parse(pick(s.sub.guru))).filter((k): k is bigint => k !== null))]
     const [subjects, levels] = await Promise.all([
       db.subject.findMany({ where: { id: { in: ids((g) => g.subjectId) } }, select: { id: true, name: true } }),
@@ -523,7 +587,14 @@ export class GuruSubmissionsService {
       const lvl = { id: g.educationLevelId, name: levelName.get(g.educationLevelId) ?? '' }
       const excerptSource = sub.stimulus.trim() === '' ? (sub.parts[0]?.text ?? '') : sub.stimulus
       const editable = GURU_EDITABLE_STATES.includes(item.reviewState) && item.questionId === null
-      const rejected = item.reviewState === 'rejected'
+      const q = item.questionId === null ? undefined : questionById.get(item.questionId)
+      const lv = q === undefined ? undefined : latest.get(q.id)
+      const state = guruStatusOf({
+        reviewState: item.reviewState,
+        rejectReason: item.rejectReason,
+        question: q ? { liveVersionNo: q.liveVersionNo, latestStatus: lv?.status ?? null, latestRejectionReason: lv?.rejectionReason ?? null } : null,
+      })
+      const status = state.status === 'approved' ? ('approved' as const) : ('review' as const)
       return {
         row: {
           id: wireId,
@@ -533,7 +604,7 @@ export class GuruSubmissionsService {
           kbat,
           subCount: sub.parts.length,
           marks: total,
-          status: 'review' as const,
+          status,
           source: 'submission' as const,
           editable,
         },
@@ -542,7 +613,7 @@ export class GuruSubmissionsService {
           subject,
           level: lvl,
           kbat,
-          status: 'review' as const,
+          status,
           stimulus: sub.stimulus,
           stimulusImage: g.stimulusImageId === null ? null : `/api/files/${g.stimulusImageId}`,
           totalMarks: total,
@@ -567,7 +638,7 @@ export class GuruSubmissionsService {
             cognitiveLevel: g.cognitiveLevel,
             difficultyLevel: g.difficultyLevel,
             stimulusImageId: g.stimulusImageId,
-            rejectionReason: rejected ? item.rejectReason : null,
+            rejectionReason: state.status === 'rejected' ? state.reason : null,
           },
         },
       }

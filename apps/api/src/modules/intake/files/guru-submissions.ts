@@ -142,9 +142,22 @@ const PART_LABELS = 'abcdefghij'
 /** Total marks of a structured submission: the sum of the part marks (never sent by the client). */
 export const guruStructuredTotal = (parts: readonly { marks: number }[]): number => parts.reduce((n, p) => n + p.marks, 0)
 
+/** Ref, label and alt text of the batch stimulus a teacher's structured submission owns (at most one per batch). */
+export const GURU_STIMULUS_REF = 'guru-1'
+export const GURU_STIMULUS_LABEL = 'Rangsangan'
+
+/** The `question_image` token a structured submission carries in `payload.guru` (null when none or not a structured item). */
+export function guruStimulusImageOf(payload: unknown): string | null {
+  const g = typeof payload === 'object' && payload !== null ? GuruStructuredSubmissionSchema.safeParse((payload as { guru?: unknown }).guru) : null
+  return g?.success ? g.data.stimulusImageId : null
+}
+
 /**
- * The stored `payload` of a structured submission: an intake `structured` question whose `stem` is the stimulus (attached ONCE to the group) and
- * whose `parts` are the sub-questions; the model answer of a part is its `scheme.model`. A part without its own Aras takes the question's.
+ * The stored `payload` of a structured submission, shaped like a paper-intake structured item so the admin's "Terima" works unchanged
+ * (`itemIssues` + `toQuestionInput`): the STIMULUS is not in the payload but is the batch stimulus (`IntakeStimulus`, ref `GURU_STIMULUS_REF`)
+ * the item links through `stimulusId`, so it is attached ONCE to a stimulus group on accept; the `stem` is empty. Every part is an `essay` leaf
+ * whose scheme is ONE `points` entry worth the part marks (kind `manual`) whose label and `model` carry the teacher's model answer ("Skema
+ * Jawapan"). A part without its own Aras takes the question's.
  */
 export function guruStructuredPayloadOf(input: GuruStructuredInput, codes: GuruTagCodes, origin?: { label: string; page: number }): Record<string, unknown> {
   const { level, formOrigin } = tagLevel(codes.levelCode)
@@ -161,9 +174,9 @@ export function guruStructuredPayloadOf(input: GuruStructuredInput, codes: GuruT
     stimulusImageId: input.stimulusImageId,
   }
   return {
-    stem: input.stimulus,
+    stem: '',
     options: [],
-    marks: guruStructuredTotal(input.parts),
+    marks: 0,
     mode: 'short_text',
     parts: input.parts.map((p, i) => {
       const cognitiveLevel = p.cognitiveLevel ?? input.cognitiveLevel
@@ -172,8 +185,8 @@ export function guruStructuredPayloadOf(input: GuruStructuredInput, codes: GuruT
         label: `(${PART_LABELS[i] as string})`,
         prompt: p.text,
         marks: p.marks,
-        mode: 'short_text',
-        scheme: { kind: 'points', marks: p.marks, points: [], model: p.scheme },
+        mode: 'essay',
+        scheme: { kind: 'points', marks: p.marks, points: [{ id: `k${String(i + 1)}`, code: 'B', marks: p.marks, label: p.scheme, match: { type: 'manual' } }], model: p.scheme },
         ...(cognitiveLevel === null ? {} : { cognitiveLevel }),
       }
     }),
@@ -191,10 +204,13 @@ export function guruStructuredPayloadOf(input: GuruStructuredInput, codes: GuruT
   }
 }
 
-/** The structured submission as the teacher edits it, from the stored payload (`null` when the item is not one). */
-export function readGuruStructured(payload: unknown): { guru: GuruStructuredSubmission; stimulus: string; parts: { text: string; marks: number; scheme: string; cognitiveLevel: GuruMcqSubmission['cognitiveLevel'] }[] } | null {
+/** The structured submission as the teacher edits it, from the stored payload and the text of the item's batch stimulus (`null` when the item is not one). */
+export function readGuruStructured(
+  payload: unknown,
+  stimulus: string | null,
+): { guru: GuruStructuredSubmission; stimulus: string; parts: { text: string; marks: number; scheme: string; cognitiveLevel: GuruMcqSubmission['cognitiveLevel'] }[] } | null {
   if (typeof payload !== 'object' || payload === null) return null
-  const p = payload as { guru?: unknown; stem?: unknown; parts?: unknown }
+  const p = payload as { guru?: unknown; parts?: unknown }
   const g = GuruStructuredSubmissionSchema.safeParse(p.guru)
   if (!g.success) return null
   const parts = Array.isArray(p.parts)
@@ -209,7 +225,7 @@ export function readGuruStructured(payload: unknown): { guru: GuruStructuredSubm
         }
       })
     : []
-  return { guru: g.data, stimulus: typeof p.stem === 'string' ? p.stem : '', parts }
+  return { guru: g.data, stimulus: stimulus ?? '', parts }
 }
 
 /** The item's submission as the teacher edits it, from the stored payload (`null` when the item is not a teacher question submission). */
