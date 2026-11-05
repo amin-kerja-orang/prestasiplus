@@ -1,7 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common'
 
 import type { Blueprint, BlueprintSection, Paper, PaperPlacement, PaperSection, Prisma } from '../../../db/generated/client'
+import { idFromString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
+import { levelScopeAllows } from './rules'
 
 export type { Blueprint, BlueprintSection, Paper, PaperPlacement, PaperSection }
 
@@ -64,10 +66,23 @@ export class PapersRepository {
   /** Published curated papers (Kertas Pilihan), oldest first. */
   listPublishedPilihan(): Promise<PaperWithTree[]> {
     return this.prisma.client.paper.findMany({
-      where: { kind: 'pilihan', status: 'published' },
+      // Kertas Subjektif papers (`surface = 'subjektif'`, S3-T06) have their own pupil list; the Bijak hub lists the others.
+      where: { kind: 'pilihan', status: 'published', surface: { not: 'subjektif' } },
       include: TREE,
       orderBy: { id: 'asc' },
     })
+  }
+
+  /** `users.grade` (1..11) of a user, or null when the user has none or does not exist. Read-only, one column (the owner is M01). */
+  async gradeOf(userId: string): Promise<number | null> {
+    let id: bigint
+    try {
+      id = idFromString(userId)
+    } catch {
+      return null
+    }
+    const row = await this.prisma.client.user.findUnique({ where: { id }, select: { grade: true } })
+    return row?.grade ?? null
   }
 
   findPaper(id: bigint): Promise<PaperWithTree | null> {
@@ -120,12 +135,16 @@ export class PapersRepository {
   }
 
   /** Subjects with an active blueprint or a published curated paper, in curriculum order. */
-  async hubSubjects(): Promise<SubjectRef[]> {
+  async hubSubjects(grade: number | null): Promise<SubjectRef[]> {
     const [bp, papers] = await Promise.all([
       this.prisma.client.blueprint.findMany({ where: { status: 'active' }, select: { subjectId: true } }),
-      this.prisma.client.paper.findMany({ where: { kind: 'pilihan', status: 'published' }, select: { subjectId: true } }),
+      this.prisma.client.paper.findMany({
+        // Same predicate as the list (S3-T07): no Kertas Subjektif, and only the papers in the pupil's form, so no subject shows with zero papers.
+        where: { kind: 'pilihan', status: 'published', surface: { not: 'subjektif' } },
+        select: { subjectId: true, levelScope: true },
+      }),
     ])
-    const ids = [...bp, ...papers].map((r) => r.subjectId)
+    const ids = [...bp, ...papers.filter((p) => levelScopeAllows(p.levelScope, grade))].map((r) => r.subjectId)
     if (ids.length === 0) return []
     return this.prisma.client.subject.findMany({
       where: { id: { in: [...new Set(ids)] }, isActive: true },

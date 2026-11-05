@@ -3,7 +3,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import { idFromString, idToString } from '../../../db/ids'
 import { PapersRepository } from './papers.repository'
 import { BijakPapersPorts } from './ports'
-import { ruleOf } from './rules'
+import { levelScopeAllows, ruleOf } from './rules'
 import { bijakCodeOf } from './subject-codes'
 
 /*
@@ -91,6 +91,8 @@ export class BijakPapersAttemptSource implements BijakPaperSource {
     const paper = await this.repo.findPaper(id)
     if (!paper || paper.status !== 'published') return { ok: false, reason: 'not_found' }
     if (paper.kind === 'jana' && paper.generatedForUserId?.toString() !== input.userId) return { ok: false, reason: 'not_found' }
+    // S3-T07: a curated paper outside the pupil's form (`level_scope`) cannot be started through its id (same 404 as an unknown paper).
+    if (paper.kind === 'pilihan' && !levelScopeAllows(paper.levelScope, await this.repo.gradeOf(input.userId))) return { ok: false, reason: 'not_found' }
 
     const questionIds = paper.sections.flatMap((s) => s.placements.map((p) => idToString(p.questionId)))
     if (questionIds.length === 0) return { ok: false, reason: 'not_eligible' }
