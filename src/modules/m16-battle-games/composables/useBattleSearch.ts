@@ -125,6 +125,11 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
     }, delay)
   }
 
+  /** The battle uuid of a `matched` poll body, else `null`. */
+  function matchedUuid(body: { status?: string; battle_uuid?: unknown } | null): string | null {
+    return body?.status === 'matched' && typeof body.battle_uuid === 'string' ? body.battle_uuid : null
+  }
+
   // --- search (#4) -------------------------------------------------------------------------------
 
   async function searchTick(mySession: number): Promise<void> {
@@ -155,8 +160,9 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
     }
     failures = 0
     const body = bodyOf<PollMatchResponse & { battle_uuid: string; challenger: Challenger }>(res)
-    if (body?.status === 'matched' && typeof body.battle_uuid === 'string') {
-      matched(body.battle_uuid)
+    const uuid = matchedUuid(body)
+    if (uuid !== null) {
+      matched(uuid)
       return
     }
     if (body?.status === 'expired' || body?.status === 'not_found') {
@@ -227,15 +233,28 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
 
   /**
    * "Batal": resets the page state at once (optimistic). While searching, the own queue entry is also
-   * cancelled on the server (API-GAME-14); a failure (404 already matched, network) changes nothing on
-   * screen. The waiting phase holds somebody else's entry (#12), so it sends nothing.
+   * cancelled on the server (API-GAME-14). A 404 means the entry already matched: the entry is polled once
+   * and, if it matched, the arena opens as for a normal matched poll. Any other failure (network) changes
+   * nothing on screen. The waiting phase holds somebody else's entry (#12), so it sends nothing.
    */
   function cancel(): void {
     const dropId = phase.value === 'searching' ? queueId : null
     stopWith('')
     waitingName.value = ''
     waitingGrade.value = ''
-    if (dropId !== null) cancelQueue(dropId).catch(() => undefined)
+    if (dropId === null) return
+    const mySession = session
+    cancelQueue(dropId).catch(async (err: unknown) => {
+      if ((err as { status?: unknown } | null)?.status !== 404) return
+      try {
+        const res = await pollMatch(dropId)
+        if (mySession !== session || !isOk(res.status)) return
+        const uuid = matchedUuid(bodyOf<PollMatchResponse & { battle_uuid: string }>(res))
+        if (uuid !== null) matched(uuid)
+      } catch {
+        // the poll failed: nothing changes on screen
+      }
+    })
   }
 
   // --- incoming challenger (#5, #6) --------------------------------------------------------------
