@@ -448,7 +448,7 @@ export class AdminCentralService {
       subjects: { total: subjects.length, active: subjects.filter((s) => s.isActive).length },
       // Tingkatan 1 to 5: `levels()` never returns a primary (Darjah) level.
       levels: levels.length,
-      // One pupil/teacher definition with Analitik and Laporan; XS-1 / XS-3 (S6-T03) replace it.
+      // XS-1 pupils and XS-3 teachers (`school-admin/xs-queries.ts`): the repository totals use the shared S6-T03 predicates.
       users: { total: users.total, students: pupils.pupils, teachers: teachers.teachers },
       battles: { total: stats.rooms, active: stats.playing, finished: stats.finished },
     }

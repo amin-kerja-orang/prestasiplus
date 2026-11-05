@@ -37,8 +37,9 @@ export interface BattleRowData {
   scoreB: number
   winner: string | null
   createdAt: Date
-  playerA: string
-  playerB: string
+  /** Null for a robot side (DM-60). */
+  playerA: string | null
+  playerB: string | null
   schoolA: string | null
   schoolB: string | null
 }
@@ -49,8 +50,8 @@ interface RawBattle {
   score_b: number
   winner: string | null
   created_at: Date
-  user_a: bigint
-  user_b: bigint
+  user_a: bigint | null
+  user_b: bigint | null
   school_a: bigint | null
   school_b: bigint | null
 }
@@ -175,8 +176,8 @@ export class StandingsRepository {
       scoreB: r.score_b,
       winner: r.winner,
       createdAt: r.created_at,
-      playerA: idToString(r.user_a),
-      playerB: idToString(r.user_b),
+      playerA: r.user_a === null ? null : idToString(r.user_a),
+      playerB: r.user_b === null ? null : idToString(r.user_b),
       schoolA: r.school_a === null ? null : idToString(r.school_a),
       schoolB: r.school_b === null ? null : idToString(r.school_b),
     }

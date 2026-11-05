@@ -21,6 +21,11 @@ import {
   AccountPictureSchema,
   AccountPictureUploadRequestSchema,
   AccountPlatformStatsSchema,
+  AccountProfileActivitySchema,
+  AccountProfileBadgeSchema,
+  AccountProfileCalendarDaySchema,
+  AccountProfileSessionSchema,
+  AccountProfileTilesSchema,
   AccountProfileUpdateRequestSchema,
   AccountRegisterPendingSchema,
   AccountRegisterResponseSchema,
@@ -57,6 +62,11 @@ export const ACCOUNT_COMPONENT_SCHEMAS = {
   AccountSettings: AccountSettingsSchema,
   AccountSettingsUpdateRequest: AccountSettingsUpdateRequestSchema,
   AccountPlatformStats: AccountPlatformStatsSchema,
+  AccountProfileTiles: AccountProfileTilesSchema,
+  AccountProfileCalendarDay: AccountProfileCalendarDaySchema,
+  AccountProfileBadge: AccountProfileBadgeSchema,
+  AccountProfileSession: AccountProfileSessionSchema,
+  AccountProfileActivity: AccountProfileActivitySchema,
 } as const
 
 const json = (schema: z.ZodType, description: string) => ({
@@ -94,7 +104,7 @@ export function registerAccountPaths(registry: OpenAPIRegistry): void {
     'X-CSRF-Token': z.string().min(1).meta({ description: 'Value of Session.csrf; required on authenticated mutating requests.' }),
   })
   const body = (schema: z.ZodType) => ({ required: true, content: { 'application/json': { schema } } })
-  const unauthorized = err('UNAUTHORIZED "Unauthenticated." (no valid session).')
+  const unauthorized = err('UNAUTHORIZED "Sesi anda telah tamat. Sila log masuk semula." (no valid session).')
   const csrfInvalid = err('CSRF_INVALID (missing or wrong X-CSRF-Token).')
   const PCR = 'PASSWORD_CHANGE_REQUIRED (shared common code, 403): while the account must change its password (session.mustChangePassword) every authenticated route except GET /session, PUT /me/password and POST /auth/logout answers this.'
   const csrfOrPcr = err('CSRF_INVALID (missing or wrong X-CSRF-Token), or ' + PCR)
@@ -177,19 +187,29 @@ export function registerAccountPaths(registry: OpenAPIRegistry): void {
   })
 
   registry.registerPath({
+    method: 'get',
+    path: '/me/profile-activity',
+    tags: ['account'],
+    summary: 'Own profile activity (API-MUR-02)',
+    description:
+      'Student role only, own data only (there is no user id parameter). Tiles, the 30-day calendar (exactly 30 Malaysia days, today last; the shade uses `sessions`), every configured badge (locked ones greyed: `unlocked` false, `earnedAt` null) and the newest 10 sessions of every mode with the BM mode name. `tiles.accuracy` is pooled correct / answered x 100 with one decimal, null with 0 answers. Any other role is 403 FORBIDDEN. no-store.',
+    responses: { 200: jsonNoStore(envelopeOf(AccountProfileActivitySchema), 'The pupil own activity.'), 401: unauthorized, 403: err('FORBIDDEN (a role other than student), or ' + PCR) },
+  })
+
+  registry.registerPath({
     method: 'put',
     path: '/me',
     tags: ['account'],
     summary: 'Update own profile',
     description:
-      'Any signed-in role, own record only. `email` and any other key in the body are ignored (BR-13). An absent key keeps the stored value; null or blank clears phone, bio, grade, schoolId. schoolId is ignored for school_admin, ppd_officer and admin accounts. ' + WRITE_THROTTLE_TEXT,
+      'Any signed-in role, own record only. `email` and any other key in the body are ignored (BR-13). An absent key keeps the stored value; null or blank clears phone, bio and aspiration. `grade`, `schoolId` and `role` are accepted and ignored for every role (API-AUTH-09). ' + WRITE_THROTTLE_TEXT,
     request: { headers: [csrf], body: body(AccountProfileUpdateRequestSchema) },
     responses: {
       200: json(accountStatusEnvelopeOf(AccountUserMeSchema), `Saved. status = "${ACCOUNT_MESSAGES.profileSaved}".`),
       401: unauthorized,
       403: csrfOrPcr,
       422: validation(
-        `name required, max 255; phone max 14; bio max 500; grade "${ACCOUNT_AUTH_MESSAGES.gradeInvalid}"; school "${ACCOUNT_AUTH_MESSAGES.schoolInvalid}".`,
+        `name required, max 255; phone max 14; bio max 1000; aspiration max 255; grade "${ACCOUNT_AUTH_MESSAGES.gradeInvalid}" and school "${ACCOUNT_AUTH_MESSAGES.schoolInvalid}" when the value has the wrong type (a valid value is ignored).`,
       ),
       429: rateLimited(`"${AUTH_ERROR_MESSAGES.RATE_LIMITED}" (D57a).`),
     },

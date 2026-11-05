@@ -5,6 +5,7 @@ import { listMeta } from '../../../common/http'
 import { ClassesRepository, slugOfGrade, type ClassRecord } from '../../classes'
 import { gradeOfLevel } from '../../classes/classes.mapper'
 import { compareIds } from '../../reports/analytics/domain/rules'
+import { XsQueries } from '../xs-queries'
 import { pageOf } from './windows'
 
 const nameOrder = (a: { name: string; id: string }, b: { name: string; id: string }): number =>
@@ -128,11 +129,14 @@ export class ClassesService {
 /**
  * API-ADM-05: the class list of Admin Pusat across all schools (S6-T11). The same list core as the school list; the school and teacher
  * filters narrow the repository read, the level filter is the slug of the contract query (already validated), 20 per page by default.
- * `pupils` is the repository's active member count; the XS-1 query of S6-T03 is not merged yet (replace it there when it is).
+ * `pupils` is the XS-1 count of the class (`XsQueries.pupilCountsByClass`, S6-T03): active pupil accounts of Tingkatan 1-5 with an active enrolment.
  */
 @Injectable()
 export class AdminClassesService {
-  constructor(@Inject(ClassesRepository) private readonly classes: ClassesRepository) {}
+  constructor(
+    @Inject(ClassesRepository) private readonly classes: ClassesRepository,
+    @Inject(XsQueries) private readonly xs: XsQueries,
+  ) {}
 
   async list(query: AdminClassListQuery): Promise<AdminClassListResponse> {
     const all = await this.classes.classroomsOf({ schoolId: query.schoolId, teacherId: query.teacherId })
@@ -143,14 +147,17 @@ export class AdminClassesService {
       pageOfTotal: (totalPages) => Math.min(query.page, totalPages),
       pageSize: query.pageSize,
     })
-    const schools = await this.classes.schoolNames(items.map((i) => i.record.schoolId))
-    const data: AdminClass[] = items.map(({ record: c, levelLabel, teacher, members }) => ({
+    const [schools, pupils] = await Promise.all([
+      this.classes.schoolNames(items.map((i) => i.record.schoolId)),
+      this.xs.pupilCountsByClass(items.map((i) => i.record.id)),
+    ])
+    const data: AdminClass[] = items.map(({ record: c, levelLabel, teacher }) => ({
       id: c.id,
       name: c.name,
       level: levelLabel,
       teacher: teacher === null ? null : { id: teacher.id, name: teacher.name ?? '' },
       school: c.schoolId === null ? null : { id: c.schoolId, name: schools.get(c.schoolId) ?? '' },
-      pupils: members,
+      pupils: pupils.get(c.id) ?? 0,
       joinCode: c.joinCode === null || c.joinCode.trim() === '' ? null : c.joinCode,
       isActive: c.isActive,
     }))

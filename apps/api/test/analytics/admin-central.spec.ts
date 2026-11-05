@@ -31,6 +31,9 @@ describe('Admin Pusat central screens (S6-T11)', () => {
     t = await bootAnalyticsApp()
     w = await buildWorld(t)
     const q = t.db.query.bind(t.db)
+    // The school B pupil of the fixture is a Tingkatan 4 pupil, so school B is a secondary school here. The seed makes DEMO002 a primary
+    // school (SK), whose pupils the XS-1 platform scope leaves out (D72); the primary-school case has its own test below.
+    await q(`update schools set type = 'SMK' where id = $1::bigint`, [w.schoolB])
 
     // Questions: three approved (live) and one draft; created_at pinned around the Monday boundary of the clock week.
     const a1 = await addQuestion(t.db, { stem: 'Soalan admin satu', subjectId: w.subjects[0], correct: 'A' })
@@ -102,8 +105,8 @@ describe('Admin Pusat central screens (S6-T11)', () => {
       const mk = async (email: string, active: boolean, pending: boolean, roles: string[]) => {
         const row = (
           await q<{ id: string }>(
-            `insert into users (name, email, is_active, school_id, pending_school_id, created_at, updated_at)
-             values ('Ujian Pusat', $1, $2, $3::bigint, $4, now(), now()) returning id::text`,
+            `insert into users (name, email, is_active, school_id, pending_school_id, grade, created_at, updated_at)
+             values ('Ujian Pusat', $1, $2, $3::bigint, $4, 10, now(), now()) returning id::text`,
             [email, active, pending ? null : w.schoolA, pending ? w.schoolA : null],
           )
         )[0] as { id: string }
@@ -118,6 +121,29 @@ describe('Admin Pusat central screens (S6-T11)', () => {
       const after = AdminDashboardResponseSchema.parse((await admin.get('/admin/dashboard')).body).data.users
       expect(after.teachers - before.teachers).toBe(1)
       expect(after.students - before.students).toBe(1)
+    })
+
+    it('XS-1 platform scope: a pupil without a Tingkatan grade, a suspended pupil and a pupil of a primary school (SK) are not counted', async () => {
+      const read = async () => AdminDashboardResponseSchema.parse((await admin.get('/admin/dashboard')).body).data.users.students
+      const before = await read()
+      const q = t.db.query.bind(t.db)
+      const primary = (await q<{ id: string }>(`select id::text from schools where type = 'SK' limit 1`))[0] as { id: string }
+      const mk = async (email: string, school: string, grade: number | null, suspended: boolean) => {
+        const row = (
+          await q<{ id: string }>(
+            `insert into users (name, email, is_active, is_suspended, school_id, grade, created_at, updated_at)
+             values ('Ujian XS1', $1, true, $2, $3::bigint, $4, now(), now()) returning id::text`,
+            [email, suspended, school, grade],
+          )
+        )[0] as { id: string }
+        await q(`insert into user_roles (user_id, role, created_at) values ($1::bigint, 'student', now())`, [row.id])
+      }
+      await mk('xs1.sk@central.test', primary.id, 10, false)
+      await mk('xs1.nograde@central.test', w.schoolA, null, false)
+      await mk('xs1.suspended@central.test', w.schoolA, 10, true)
+      expect(await read()).toBe(before)
+      await mk('xs1.ok@central.test', w.schoolA, 8, false)
+      expect(await read()).toBe(before + 1)
     })
 
     it('battles count game rooms: test rooms out, active = playing', async () => {

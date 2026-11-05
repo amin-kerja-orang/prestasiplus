@@ -77,7 +77,7 @@ describe('GET /admin/command-center/live-data', () => {
     expect(d.kirk.t2Accuracy).toBe(d.accuracy)
     expect(d.kirk.t3Active).toBe(5)
     const students = await t.db.query<{ c: number }>(
-      `select count(*)::int c from users u where u.is_active and (u.grade is null or u.grade >= 7) and exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'student')`,
+      `select count(*)::int c from users u where u.is_active and not u.is_suspended and u.grade between 7 and 11 and exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'student')`,
     )
     expect(d.totalStudents).toBe(students[0]?.c)
   })
@@ -93,6 +93,19 @@ describe('GET /admin/command-center/live-data', () => {
     const school = await live(schoolAdmin)
     expect(school.totalAnswered).toBe(40)
     expect(school.dailyTrend.reduce((n, p) => n + p.count, 0)).toBe(40)
+  })
+
+  it('S6-T07 / API-AS-02: "Sekolah Berdaftar" for a school admin is the own school (1), even with no active subscription', async () => {
+    await t.db.query(`create table s6t07_subs as select * from school_subscriptions where school_id = $1`, [w.school1])
+    await t.db.query(`delete from school_subscriptions where school_id = $1`, [w.school1])
+    try {
+      const school = await live(schoolAdmin)
+      expect(school.scope).toBe('school')
+      expect(school.totalSchools).toBe(1)
+    } finally {
+      await t.db.query(`insert into school_subscriptions overriding system value select * from s6t07_subs`)
+      await t.db.query(`drop table s6t07_subs`)
+    }
   })
 
   it('top students: answers this ISO week desc, then accuracy desc, then id', async () => {

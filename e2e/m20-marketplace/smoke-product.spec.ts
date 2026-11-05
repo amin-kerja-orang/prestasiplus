@@ -11,6 +11,8 @@ import type { Page } from '@playwright/test'
 import { APP_BOOT_TIMEOUT_MS, expect, test } from '../fixtures/test'
 import { expectNoHorizontalScroll, expectTabTitle, moduleTag, viewportWidth } from '../support'
 
+import { expectShellTitle } from './helpers'
+
 const PELAJAR = 'pelajar@demo.test'
 const MODULE = { tag: [moduleTag(20)] }
 
@@ -19,11 +21,6 @@ const SLUG_5 = 'e-book-1001-soalan-sains-tingkatan-3-pdf-tqd84'
 const SLUG_7 = 'kamus-dewan-edisi-keempat-terpakai-8axTV'
 
 test.use({ mockInit: { latency: 0, now: '2026-09-25T15:40:00+08:00' } })
-
-async function expectHeader(page: Page, title: string, subtitle: string): Promise<void> {
-  await expect(page.getByTestId('shell-user-title')).toHaveText(title)
-  await expect(page.getByTestId('shell-user-subtitle')).toHaveText(subtitle)
-}
 
 const mainSrc = (page: Page) => page.getByTestId('gallery-main').getAttribute('src')
 
@@ -36,7 +33,7 @@ test.describe('M20 S7 Product page', MODULE, () => {
     await loginAs(PELAJAR)
     await gotoApp(`/marketplace/${SLUG_1}`)
     await expectTabTitle(page, 'Beg Sekolah Anti-Air Premium - Marketplace | PRESTASIPLUS')
-    await expectHeader(page, 'Marketplace', 'Peralatan Sekolah')
+    await expectShellTitle(page, 'Marketplace')
     await expect(page.getByTestId('marketplace-back')).toHaveText('Kembali ke Marketplace')
     await expect(page.getByTestId('marketplace-back')).toHaveAttribute('href', '/marketplace')
     await expect(page.getByTestId('gallery-thumb')).toHaveCount(4)
@@ -60,7 +57,9 @@ test.describe('M20 S7 Product page', MODULE, () => {
     await expect(wa).toHaveText('Hubungi Penjual di WhatsApp')
     await expect(wa).toHaveAttribute('href', `/marketplace/${SLUG_1}/whatsapp`)
     await expect(wa).toHaveAttribute('target', '_blank')
-    expect(await wa.getAttribute('rel')).toBeNull()
+    // B06 (79b5fa2dc) made it a `UButton`, whose link adds this `rel` to every new-tab link; the
+    // hand-off still works through it (E2E-M20-61/62).
+    await expect(wa).toHaveAttribute('rel', 'noopener noreferrer')
     await expectNoHorizontalScroll(page)
   })
 
@@ -98,8 +97,10 @@ test.describe('M20 S7 Product page', MODULE, () => {
     await expect(page.getByTestId('reviews-title')).toHaveText('Ulasan (0)')
     await expect(page.getByTestId('reviews-empty')).toHaveText('Belum ada ulasan untuk produk ini')
     await expect(page.getByTestId('reviews-empty')).toHaveCSS('text-align', 'center')
-    await expect(page.getByTestId('seller-panel').locator('h2')).toHaveCSS('text-transform', 'uppercase')
-    await expect(page.getByTestId('seller-verified')).toHaveClass(/fill-blue-500/)
+    // No ALL CAPS outside the nav group label (v2-design-language 3.3 rule 4; B06, 79b5fa2dc).
+    await expect(page.getByTestId('seller-panel').locator('h2')).toHaveText('Penjual')
+    await expect(page.getByTestId('seller-panel').locator('h2')).toHaveCSS('text-transform', 'none')
+    await expect(page.getByTestId('seller-verified')).toHaveClass(/text-primary-t/)
     await expect(page.locator('main form, main textarea')).toHaveCount(0)
     await page.getByTestId('seller-link').click()
     await expect(page).toHaveURL(/\/marketplace\/penjual\/1$/)
@@ -118,7 +119,8 @@ test.describe('M20 S7 Product page', MODULE, () => {
     await expect(related.first()).toContainText('RM 22.90')
 
     await gotoApp(`/marketplace/${SLUG_7}`)
-    await expectHeader(page, 'Marketplace', 'Buku & Rujukan')
+    await expectShellTitle(page, 'Marketplace')
+    await expect(page.getByTestId('product-category')).toHaveText('Buku & Rujukan')
     await expect(page.getByTestId('product-condition')).toHaveText('Terpakai')
     await expect(page.getByTestId('product-price')).toHaveText('RM 25.00')
     await expect(page.getByTestId('product-original')).toHaveText('RM 68.00')
@@ -137,7 +139,7 @@ test.describe('M20 S7 Product page', MODULE, () => {
       page,
       'E-Book: 1001 Soalan Sains Tingkatan 3 (PDF) - Marketplace | PRESTASIPLUS',
     )
-    await expectHeader(page, 'Marketplace', 'Buku & Rujukan')
+    await expectShellTitle(page, 'Marketplace')
     await expect(page.getByTestId('product-price')).toHaveText('RM 19.90')
     await expect(page.getByTestId('product-original')).toHaveCount(0)
     await expect(page.getByTestId('product-discount')).toHaveCount(0)
@@ -218,7 +220,10 @@ test.describe('M20 S7 Product page', MODULE, () => {
     const h1 = await page
       .getByTestId('product-name')
       .evaluate((el) => parseFloat(getComputedStyle(el).fontSize))
-    expect(h1).toBe(24)
+    // `text-title` of the learner theme, clamp(1.875rem, 1.668rem + 0.88vw, 2.5rem) in
+    // src/theme/tokens.css (M-32: "title, price `text-title`"; B06, 79b5fa2dc).
+    const fluid = 1.668 * 16 + 0.0088 * viewportWidth(page)
+    expect(h1).toBeCloseTo(Math.min(40, Math.max(30, fluid)), 1)
     const wa = await page.getByTestId('product-whatsapp').boundingBox()
     expect(wa!.height).toBeGreaterThanOrEqual(43.9)
     await expectNoHorizontalScroll(page)

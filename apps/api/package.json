@@ -24,6 +24,7 @@
     "migrate:link-questions": "tsx src/migration/orchestrate.ts migrate:link-questions",
     "migrate:export-question-reports": "tsx src/migration/orchestrate.ts migrate:export-question-reports",
     "migrate:archive-minimise": "tsx src/migration/orchestrate.ts migrate:archive-minimise",
+    "uat:terbit-papers": "tsx scripts/uat-ops/terbit-papers.ts",
     "dskp:load": "tsx src/modules/curriculum/dskp/cli.ts",
     "curriculum:load-dskp": "tsx src/modules/curriculum/dskp/cli.ts",
     "admin:bootstrap": "tsx src/ops/admin-bootstrap/cli.ts",

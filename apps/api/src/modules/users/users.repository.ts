@@ -23,6 +23,7 @@ export interface UserRecord {
   schoolId: string | null
   grade: number | null
   bio: string | null
+  aspiration: string | null
   idDelima: string | null
   icMasked: string | null
   isActive: boolean
@@ -93,6 +94,7 @@ export interface UserPatchRow {
   username?: string | null
   phone?: string | null
   bio?: string | null
+  aspiration?: string | null
   schoolId?: string | null
   grade?: number | null
   icHash?: string | null
@@ -188,6 +190,7 @@ function toRecord(u: UserDb): UserRecord {
     schoolId: u.schoolId === null ? null : idToString(u.schoolId),
     grade: u.grade,
     bio: u.bio,
+    aspiration: u.aspiration,
     idDelima: u.idDelima,
     icMasked: u.icMasked,
     isActive: u.isActive,
@@ -461,7 +464,7 @@ export class UsersRepository {
 
   /**
    * Total accounts the caller can see (Admin Pusat dashboard, S6-T11). Students and teachers come from the analytics pupil/teacher
-   * definition (`AnalyticsRepository.pupilTotals` / `teacherTotals`) so the dashboard, Analitik and Laporan agree; XS-1 (S6-T03) replaces it.
+   * definition (`AnalyticsRepository.pupilTotals` / `teacherTotals`, which use XS-1 / XS-3 of `school-admin/xs-queries.ts`) so the dashboard, Analitik and Laporan agree.
    */
   async centralCounts(caller: Caller): Promise<{ total: number }> {
     return { total: await this.prisma.client.user.count({ where: this.visibleWhere(caller) }) }
@@ -733,6 +736,7 @@ export class UsersRepository {
         ...(rest.username !== undefined ? { username: rest.username } : {}),
         ...(rest.phone !== undefined ? { phone: rest.phone } : {}),
         ...(rest.bio !== undefined ? { bio: rest.bio } : {}),
+        ...(rest.aspiration !== undefined ? { aspiration: rest.aspiration } : {}),
         ...(rest.grade !== undefined ? { grade: rest.grade } : {}),
         ...(rest.icHash !== undefined ? { icHash: rest.icHash } : {}),
         ...(rest.icMasked !== undefined ? { icMasked: rest.icMasked } : {}),
