@@ -92739,7 +92739,7 @@
             }
           },
           "409": {
-            "description": "ALREADY_COMPLETED \"Misi ini sudah diselesaikan.\" (mission) or \"Ujian ini sudah selesai.\" (remedial); NO_ATTEMPTS_LEFT \"Tiada percubaan lagi untuk set ini.\".",
+            "description": "ALREADY_COMPLETED \"Misi ini sudah diselesaikan.\" (mission) or \"Ujian ini sudah selesai.\" (remedial). A question_set has no attempt cap in R1.",
             "content": {
               "application/json": {
                 "schema": {
