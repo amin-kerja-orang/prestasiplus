@@ -18,6 +18,7 @@ import { Injectable } from '@nestjs/common'
 
 import type { TxClient } from '../../db/client'
 import type { Prng } from '../../db/prng'
+import type { StimulusGroupRecord } from '../questions/types'
 import type { PracticeMode } from '@pp/contract'
 
 /* --------------------------------------------------------------------------------- BE-09: questions */
@@ -47,7 +48,16 @@ export interface PracticeQuestion {
   /** Teacher who wrote the question ("Soalan oleh:"), else null. */
   contributor: { name: string; profileUrl: string | null } | null
   /** Options in served order; the zero-based index is the wire `selectedOptionId`. Labels `A`..`H`. */
-  options: { label: string; text: string }[]
+  options: { label: string; text: string; /** Only on a surface that allows figures (S1-T06). */ imageId?: string }[]
+  /** Flat stem figure file id; set only on a surface that allows figures (S1-T06). */
+  stemImageId?: string
+  /**
+   * Set only on a surface in `GROUP_SURFACES` for a stimulus-group member (S1-T06, DM-27). `questionIds` is narrowed to the
+   * SERVABLE members in `group_position` order: the unit the planner keeps whole. The wire field is S5-T03's.
+   */
+  groupId?: string
+  groupPosition?: number | null
+  stimulusGroup?: StimulusGroupRecord
   /** SERVER ONLY: the key label. Never put it in a start response (AC 4). */
   correctLabel: string | null
   /** SERVER ONLY until the check. */
@@ -62,7 +72,14 @@ export interface PracticeSelection {
   difficulty?: number
   /** True = only SPM-servable questions (shared SPM_SERVABLE_SQL: offered level, not the pool tag). */
   spmPool?: boolean
+  /**
+   * The drill surface of the draw (S1-T06): decides whether it is whole-group (when the activity is in `GROUP_SURFACES`) or text-only.
+   * Absent = `latih_tubi_spm` with `spmPool`, else `databank`.
+   */
+  activity?: PracticeDrillActivity
 }
+
+export type PracticeDrillActivity = 'latih_tubi_spm' | 'databank' | 'bab'
 
 export interface PracticeQuestionSource {
   /** `QuestionsRepository.sample`: up to `n` eligible ids drawn in SQL (seeded hash order, LIMIT) with a seed taken from `rng`. */
@@ -79,7 +96,7 @@ export interface PracticeQuestionSource {
    * The LIVE version of each id that is eligible for practice NOW (`eligibleForPractice`: published, active).
    * An ineligible or unknown id is omitted, so it is never served (AC 4).
    */
-  live(ids: readonly string[]): Promise<ReadonlyMap<string, PracticeQuestion>>
+  live(ids: readonly string[], activity?: PracticeDrillActivity): Promise<ReadonlyMap<string, PracticeQuestion>>
   /**
    * The ids among `ids` that the SPM activities (Databank, Latih Tubi SPM, Mock K1) may serve NOW: the same rule as a draw with
    * `spmPool: true` (`SPM_SERVABLE_SQL`: offered level, active subject and subject-level, not PKSK, approved and active). A single
@@ -168,6 +185,9 @@ export class NoRamalan implements PracticeRamalanSource {
 }
 
 /* ---------------------------------------------------------------------- BE-11 / BE-23: rewards */
+
+/** Injection token of the group-surface list (tests inject one that includes a drill); absent = `GROUP_SURFACES`. */
+export const PRACTICE_GROUP_SURFACES = Symbol('PRACTICE_GROUP_SURFACES')
 
 /** Ledger `source` of the practice modes (`random`, `chapter`, `revision`, `mission`, `remedial`, `question_set`). */
 export const PRACTICE_REWARD_SOURCE = 'quiz_practice'

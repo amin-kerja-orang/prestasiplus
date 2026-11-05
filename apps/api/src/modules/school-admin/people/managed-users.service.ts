@@ -92,7 +92,7 @@ export type NewAccount = { name: string; email: string; phone: string | null }
  * The write and read logic shared by the teacher and pupil routes (BE-21 Part A). Security rules, in one place:
  * - the school ALWAYS comes from `ctx.actor.schoolId` (the session); no argument is fed from the request;
  * - a target is found with `UsersRepository.findVisible(caller, id)` (school scope) and then must be in the SAME school and
- *   hold the route's role: anything else (unknown, other school, other role, malformed id) is the same 404 "Not Found.";
+ *   hold the route's role: anything else (unknown, other school, other role, malformed id) is the same 404 NOT_FOUND (generic BM default);
  * - a suspended account is shown as inactive and every WRITE on it answers 404 (OQ-8);
  * - passwords are hashed BEFORE the transaction; the plaintext of a created account lives in this call stack only and is
  *   never logged, audited or stored; a new password revokes the target's sessions in the SAME transaction;
@@ -330,7 +330,7 @@ export class ManagedUsersService {
 
   /**
    * The target, or null. Out of scope, another school, another role and a malformed id are all null (the caller answers 404
-   * "Not Found." and never says which). With `forWrite` a suspended account is null too (OQ-8).
+   * the generic NOT_FOUND default and never says which). With `forWrite` a suspended account is null too (OQ-8).
    */
   private async resolve(ctx: PeopleCtx, kind: PeopleKind, id: string, forWrite: boolean): Promise<UserRecord | null> {
     if (!isIdString(id)) return null
