@@ -11,9 +11,9 @@ import type { SchoolPerformance } from '../../api/types'
 import {
   TONE_COLOR,
   TONE_TEXT,
-  accuracyTone,
+  accuracyToneWhole,
   levelNumber,
-  pct1,
+  pctWhole,
   plain,
 } from '../../lib/prestasi/format'
 
@@ -40,14 +40,14 @@ const teacherBar = (on: number, below: number): number =>
         >
           <span class="flex items-baseline justify-between gap-3">
             <span class="text-label text-highlighted">Tingkatan {{ levelNumber(l.code) }}</span>
-            <span :class="[TONE_TEXT[accuracyTone(l.accuracy)], 'tabular text-heading']">{{
-              pct1(l.accuracy)
+            <span :class="[TONE_TEXT[accuracyToneWhole(l.accuracy)], 'tabular text-heading']">{{
+              pctWhole(l.accuracy)
             }}</span>
           </span>
           <UProgress
-            :model-value="Math.floor(l.accuracy)"
+            :model-value="Math.round(l.accuracy)"
             :max="100"
-            :color="TONE_COLOR[accuracyTone(l.accuracy)]"
+            :color="TONE_COLOR[accuracyToneWhole(l.accuracy)]"
             :aria-label="`Ketepatan Tingkatan ${levelNumber(l.code)}`"
           />
           <span class="flex flex-wrap gap-x-4 text-caption text-muted">
@@ -78,8 +78,8 @@ const teacherBar = (on: number, below: number): number =>
             <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-caption">
               <span class="text-muted"
                 >Ketepatan:
-                <span :class="TONE_TEXT[accuracyTone(t.accuracy)]"
-                  ><strong>{{ pct1(t.accuracy) }}</strong></span></span
+                <span :class="TONE_TEXT[accuracyToneWhole(t.accuracy)]"
+                  ><strong>{{ pctWhole(t.accuracy) }}</strong></span></span
               >
               <span v-if="t.onTrack === null || t.below === null" class="text-dimmed"
                 >Tiada data headcount</span

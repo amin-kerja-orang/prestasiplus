@@ -6,7 +6,7 @@
 import { DsPanel } from '@/ds'
 
 import type { Results } from '../../../api/types'
-import { gps, pct, plain } from '../common/kirkpatrick-format'
+import { gps, pct, plain, accuracyPct } from '../common/kirkpatrick-format'
 
 defineProps<{ insights: Results['insights'] }>()
 </script>
@@ -26,8 +26,8 @@ defineProps<{ insights: Results['insights'] }>()
         <li class="flex items-start gap-3 bg-muted p-3" data-testid="insight-row">
           <UIcon name="i-ph-info" class="mt-1 size-4 shrink-0 text-info" />
           <span
-            >Purata ketepatan pelajar aktif dalam platform: {{ pct(insights.accuracy) }}. Ini
-            bersamaan anggaran gred {{ insights.grade }}.</span
+            >Purata ketepatan pelajar aktif dalam platform: {{ accuracyPct(insights.accuracy) }}.
+            Ini bersamaan anggaran gred {{ insights.grade }}.</span
           >
         </li>
         <li

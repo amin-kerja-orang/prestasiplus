@@ -9,7 +9,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import type { MockRuntime } from '@/mock/index'
 
-import type { ClassAnalytics, ClassDashboard } from '../../api/types'
+import type { ClassAnalytics, ClassCard, ClassDashboard, ClassesAggregate } from '../../api/types'
 import { ADMIN, ADMIN_SEKOLAH, GURU, MemoryStorage, PELAJAR, bootM08, dataAs, getAs } from './boot'
 
 let runtime: MockRuntime
@@ -41,7 +41,7 @@ describe('#5 class dashboard: class 2001 anchors (§6.10)', () => {
     expect(d.class.school).not.toBe('')
   })
 
-  it('stats: 8 · 42.6% · 11 · 68 · 6.1m · 6', async () => {
+  it('stats: 8 · 42.6% · 11 · 68 · 6, Purata Masa/Sesi 6.1 minutes', async () => {
     const d = await s5(2001)
     expect(d.stats).toEqual({
       students: 8,
@@ -89,13 +89,16 @@ describe('#5 class dashboard: class 2001 anchors (§6.10)', () => {
     expect(d.headcount?.pct.none).toBeCloseTo(87.5, 5)
   })
 
-  it('trend: one point per active date of the last 30 days, oldest first', async () => {
+  it('trend: 30 zero-filled days, oldest first, today last; the active days carry the sessions', async () => {
     const d = await s5(2001)
-    expect(d.trend.map((t) => [t.date, t.sessions, t.activeStudents, t.avgAccuracy])).toEqual([
+    expect(d.trend).toHaveLength(30)
+    expect(d.trend.map((t) => t.date)).toEqual([...d.trend.map((t) => t.date)].sort())
+    expect(d.trend.filter((t) => t.activeStudents > 0).map((t) => [t.date, t.sessions, t.activeStudents, t.avgAccuracy])).toEqual([
       ['2026-09-15', 4, 4, 56.3],
       ['2026-09-22', 4, 4, 28.1],
       ['2026-09-24', 3, 3, 50],
     ])
+    expect(d.trend.filter((t) => t.activeStudents === 0).every((t) => t.sessions === 0 && t.avgAccuracy === 0)).toBe(true)
   })
 })
 
@@ -115,12 +118,13 @@ describe('#5 class dashboard: other classes', () => {
       accuracy: 0,
       sessions: 0,
       answered: 0,
-      avgMinutes: 0,
+      avgMinutes: null,
       active7d: 0,
     })
     expect(d.attention).toHaveLength(58)
     expect(d.attention.every((a) => a.accuracy === null && a.sessions === 0)).toBe(true)
-    expect(d.trend).toEqual([])
+    expect(d.trend).toHaveLength(30)
+    expect(d.trend.every((t) => t.sessions === 0 && t.activeStudents === 0)).toBe(true)
     expect(d.headcount).toBeNull()
     expect(d.ranking.every((r) => r.accuracy === null && r.lastActiveAt === null)).toBe(true)
   })
@@ -283,7 +287,7 @@ describe('teacher variants of #4, #10 and #11 (S4, S10, S11; BR-M08-26)', () => 
 })
 
 describe('class 228 anchors (SRS §6.3)', () => {
-  it('S5 class 228: 93 · 77.6% · 1,618 · 34,882 · 10.4m · 2 active', async () => {
+  it('S5 class 228: 93 · 77.6% · 1,618 · 34,882 · 2 active', async () => {
     const d = await s5(228, ADMIN)
     expect(d.stats).toEqual({
       students: 93,
@@ -300,5 +304,26 @@ describe('class 228 anchors (SRS §6.3)', () => {
   it.skip('S5 class 228: Perlu Perhatian 57', async () => {
     const d = await s5(228, ADMIN)
     expect(d.attention).toHaveLength(57)
+  })
+})
+
+describe('#4 own classes: school admin picker and the aggregate block (R1-AS-4, R1-GUR-4)', () => {
+  it('the school admin gets the active classrooms of the own school; the admin none', async () => {
+    const own = await dataAs<ClassCard[]>(runtime, ADMIN_SEKOLAH, '/api/performance/classes')
+    expect(own.length).toBeGreaterThan(0)
+    expect(own.every((c) => c.isActive)).toBe(true)
+    expect(await dataAs<ClassCard[]>(runtime, ADMIN, '/api/performance/classes')).toEqual([])
+  })
+
+  it('classes/aggregate: the cards, Pelajar Terbaik (at least 5 answers, accuracy descending) and the subject rows', async () => {
+    const plain = await dataAs<ClassCard[]>(runtime, GURU, '/api/performance/classes')
+    const agg = await dataAs<ClassesAggregate>(runtime, GURU, '/api/performance/classes/aggregate')
+    expect(agg.classes).toEqual(plain)
+    expect(agg.topStudents.length).toBeLessThanOrEqual(10)
+    expect(agg.topStudents.every((t) => t.answered >= 5 && t.accuracy <= 100)).toBe(true)
+    const acc = agg.topStudents.map((t) => t.accuracy)
+    expect(acc).toEqual([...acc].sort((a, b) => b - a))
+    const sub = agg.subjects.map((x) => x.accuracy)
+    expect(sub).toEqual([...sub].sort((a, b) => b - a))
   })
 })
