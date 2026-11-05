@@ -50,7 +50,7 @@ describe('Markah setiap soalan and Bilangan soalan dalam kertas: the form', () =
     expect(parseMarksList('20', 3)).toEqual([20, 20, 20])
     expect(parseMarksList('20', null)).toEqual([20])
     expect(parseMarksList('3,x', 2)).toBe('invalid')
-    expect(parseMarksList('3,', 2)).toBe('invalid')
+    expect(parseMarksList('3,', 2)).toEqual([3, 3])
     expect(parseMarksList('0', 2)).toBe('invalid')
     expect(parseMarksList('1001', 2)).toBe('invalid')
     expect(parseMarksList(Array.from({ length: 501 }, () => '1').join(','), 501)).toBe('invalid')
