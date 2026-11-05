@@ -4,6 +4,7 @@
  * is stored). Every unobserved rule is marked INFERRED where it is used.
  */
 
+import { toIsoMyt } from '@/lib/time'
 import { users } from '@/modules/m01-authentication/mock'
 import { curriculum } from '@/modules/m03-curriculum/mock'
 import { classrooms, type ClassroomRow } from '@/modules/m10-teacher-class/mock'
@@ -21,7 +22,9 @@ import {
   type HeadcountEntryView,
 } from './headcount-port'
 import {
+  LEVEL_CODES,
   LEVEL_SLUG,
+  type LevelCode,
   checkStamp,
   performanceMemo,
   levelStudentIds,
@@ -29,6 +32,7 @@ import {
   studentsOfClasses,
   sumTotals,
   totalsOf,
+  answerActivityOf,
   answerTotalsOf,
 } from './reads'
 import {
@@ -47,8 +51,11 @@ import { schoolSpmHistoryRepo } from './stores'
 /** BR-M08-04 Pencapaian bar: round((9.5 − GPS) ÷ 9.5 × 100)%; 9.5 is the observed scale base. */
 const GPS_BAR_BASE = 9.5
 
-const LEVEL_ID: Readonly<Record<'t4' | 't5', number>> = { t4: 10, t5: 11 }
-export const LEVEL_NAME: Readonly<Record<'t4' | 't5', string>> = {
+const LEVEL_ID: Readonly<Record<LevelCode, number>> = { t1: 7, t2: 8, t3: 9, t4: 10, t5: 11 }
+export const LEVEL_NAME: Readonly<Record<LevelCode, string>> = {
+  t1: 'Tingkatan 1',
+  t2: 'Tingkatan 2',
+  t3: 'Tingkatan 3',
   t4: 'Tingkatan 4',
   t5: 'Tingkatan 5',
 }
@@ -96,7 +103,7 @@ export function classesOf(scope: Scope): ClassroomRow[] {
 // ---------------------------------------------------------------------------------------------
 
 export interface LevelAggregate {
-  code: 't4' | 't5'
+  code: LevelCode
   classes: ClassroomRow[]
   studentIds: number[]
   sessions: number
@@ -105,12 +112,14 @@ export interface LevelAggregate {
 }
 
 /** Kelas / Murid / Sesi (distinct) / Purata Ketepatan (session mean) / subjects of a level in a scope. */
-export function levelAggregate(code: 't4' | 't5', scope: Scope): LevelAggregate {
+export function levelAggregate(code: LevelCode, scope: Scope, ownClassIds?: ReadonlySet<number>): LevelAggregate {
   const slug = LEVEL_SLUG[code]
   const classes = classrooms
     .list({ educationLevel: slug })
     .filter((c) => scope.kind === 'platform' || c.schoolId === scope.schoolId)
-  const studentIds = scope.kind === 'platform' ? levelStudentIds(slug) : studentsOfClasses(classes)
+    // A teacher's Tingkatan view covers the own classes only (R1-GUR-4, OPT-KELAS-OWN); the school-wide comparison is R1-AS-4.
+    .filter((c) => ownClassIds === undefined || ownClassIds.has(c.classId))
+  const studentIds = scope.kind === 'platform' && ownClassIds === undefined ? levelStudentIds(slug) : studentsOfClasses(classes)
   const totals = sumTotals(studentIds, 'all')
   return {
     code,
@@ -329,15 +338,19 @@ function computeSchoolPerformance(scope: Scope, clockYear: number): SchoolPerfor
     })
   }
 
-  const levels = (['t4', 't5'] as const).map((code) => {
+  // t4 and t5 are always listed (zeros when empty); t1 to t3 only when the scope has classes or pupils at that level (R1-AS-4).
+  const levels = LEVEL_CODES.flatMap((code) => {
     const a = levelAggregate(code, scope)
-    return {
-      code,
-      accuracy: round(a.accuracy, 1),
-      classes: a.classes.length,
-      students: a.studentIds.length,
-      sessions: a.sessions,
-    }
+    if (code !== 't4' && code !== 't5' && a.classes.length === 0 && a.studentIds.length === 0) return []
+    return [
+      {
+        code,
+        accuracy: round(a.accuracy, 1),
+        classes: a.classes.length,
+        students: a.studentIds.length,
+        sessions: a.sessions,
+      },
+    ]
   })
 
   return {
@@ -413,10 +426,18 @@ function groupKey(c: ClassroomRow): [number, string] {
   return [1, curriculum.subject(c.subjectId)?.name ?? '']
 }
 
-export function levelDetail(code: 't4' | 't5', scope: Scope): LevelDetail {
-  const agg = levelAggregate(code, scope)
+/** `ownClassIds` is given for a teacher: every pupil-level output is limited to those classes. */
+export function levelDetail(
+  code: LevelCode,
+  scope: Scope,
+  now: number = Date.now(),
+  ownClassIds?: ReadonlySet<number>,
+): LevelDetail {
+  const agg = levelAggregate(code, scope, ownClassIds)
   const levelId = LEVEL_ID[code]
-  const entries = scopedEntries(scope).filter((e) => e.levelId === levelId)
+  const entries = scopedEntries(scope).filter(
+    (e) => e.levelId === levelId && (ownClassIds === undefined || ownClassIds.has(e.classroomId)),
+  )
   const pairs = entries.filter((e) => e.classroomKind === 'classroom')
   let on = 0
   let below = 0
@@ -468,39 +489,53 @@ export function levelDetail(code: 't4' | 't5', scope: Scope): LevelDetail {
         href: c.kind === 'classroom' ? `/prestasi/kelas/${String(c.classId)}` : null,
       }
     })
+    // Perbandingan Kelas: accuracy descending (R1-AS-4).
+    .sort((a, b) => b.accuracy - a.accuracy || b.students - a.students || a.name.localeCompare(b.name) || a.classId - b.classId)
 
-  // Murid Terbaik: ≥ 3 sessions, mean session accuracy descending, ties by user id (BR-M08-07).
+  // Murid Terbaik: at least 5 answers, accuracy descending, ties by answers (R1-AS-4; the pooled answer figures).
+  const answers = new Map(agg.studentIds.map((id) => [id, answerTotalsOf(id)]))
   const top = agg.studentIds
-    .map((id) => ({ id, t: totalsOf(id).all }))
-    .filter((x) => x.t.sessions >= 3)
-    .map((x) => ({ ...x, acc: meanAccuracy(x.t) }))
-    .sort((a, b) => b.acc - a.acc || a.id - b.id)
+    .flatMap((id) => {
+      const t = answers.get(id) as { answered: number; correct: number }
+      return t.answered >= 5 ? [{ id, t, acc: pct(t.correct, t.answered) }] : []
+    })
+    .sort((a, b) => b.acc - a.acc || b.t.answered - a.t.answered || a.id - b.id)
     .slice(0, 10)
     .map((x) => ({
       userId: x.id,
       name: users.get(x.id)?.name ?? `Murid ${String(x.id)}`,
-      sessions: x.t.sessions,
-      answered: x.t.questions,
+      sessions: Math.max(totalsOf(x.id).all.sessions, answerActivityOf(x.id).sessions),
+      answered: x.t.answered,
       accuracy: round(capPercent(x.acc), 1),
     }))
 
-  // Murid Berisiko: Below pairs with a target and an AR, gap ascending, then config, then user (≤ 15).
-  const risk = entries
-    .flatMap((e) => {
-      const l = latestAr(e)
-      if (l === null || l.target === null || l.ar >= l.target) return []
-      return [{ e, l, gap: l.ar - l.target }]
+  // Murid Berisiko: whole-number accuracy below 50 or no answer in the last 7 days; accuracy ascending, 10 rows.
+  const sevenDaysAgo = now - 7 * 86_400_000
+  // Latest activity: the session log, or the answer log for a pupil whose answers have no completed session.
+  const lastAtMs = (id: number): number => {
+    const fromSessions = totalsOf(id).all.lastAtMs
+    // Only a pupil with answers and no completed session needs the (slower) answer-log scan.
+    return fromSessions > 0 || (answers.get(id)?.answered ?? 0) === 0 ? fromSessions : answerActivityOf(id).lastMs
+  }
+  const classNameOf = new Map<number, string>()
+  for (const c of [...agg.classes].sort((a, b) => a.name.localeCompare(b.name) || a.classId - b.classId))
+    for (const id of classrooms.memberIds(c.kind, c.classId)) if (!classNameOf.has(id)) classNameOf.set(id, c.name)
+  const risk = agg.studentIds
+    .flatMap((id) => {
+      const t = answers.get(id) as { answered: number; correct: number }
+      const acc = t.answered === 0 ? null : round(capPercent(pct(t.correct, t.answered)), 1)
+      const inactive = lastAtMs(id) < sevenDaysAgo
+      return (acc !== null && Math.round(acc) < 50) || inactive ? [{ id, t, acc, last: lastAtMs(id) }] : []
     })
-    .sort((a, b) => a.gap - b.gap || a.e.configId - b.e.configId || a.e.studentId - b.e.studentId)
-    .slice(0, 15)
-    .map(({ e, l, gap }) => ({
-      userId: e.studentId,
-      name: users.get(e.studentId)?.name ?? `Murid ${String(e.studentId)}`,
-      className: classrooms.get(e.classroomKind, e.classroomId)?.name ?? '',
-      checkpoint: l.n,
-      ar: l.ar,
-      target: l.target as number,
-      gap: round(gap, 1),
+    .sort((a, b) => (a.acc === null ? 1 : 0) - (b.acc === null ? 1 : 0) || (a.acc ?? 0) - (b.acc ?? 0) || a.id - b.id)
+    .slice(0, 10)
+    .map((x) => ({
+      userId: x.id,
+      name: users.get(x.id)?.name ?? `Murid ${String(x.id)}`,
+      className: classNameOf.get(x.id) ?? '',
+      answered: x.t.answered,
+      accuracy: x.acc,
+      lastAnsweredAt: x.last > 0 ? toIsoMyt(x.last) : null,
     }))
 
   const stats = { on, below }

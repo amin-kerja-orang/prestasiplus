@@ -10,6 +10,7 @@ import { api } from '@/api'
 import type {
   Analytics,
   ClassCard,
+  ClassesAggregate,
   ClassItemAnalysis,
   ItemAnalysisMe,
   ItemMeTapis,
@@ -41,13 +42,17 @@ export const fetchSchoolPerformance = (o: Signal = {}) =>
 export const fetchLevels = (o: Signal = {}) =>
   api.get<LevelCard[]>('/api/performance/levels', withSignal(o))
 
-/** #3 `GET /api/performance/levels/:code` (S3); 404 for a code other than t4 / t5. */
+/** #3 `GET /api/performance/levels/:code` (S3); 404 for a code other than t1 to t5. */
 export const fetchLevelDetail = (code: string, o: Signal = {}) =>
   api.get<LevelDetail>(`/api/performance/levels/${encodeURIComponent(code)}`, withSignal(o))
 
 /** #4 `GET /api/performance/classes` (S4, the viewer's own classes). */
 export const fetchOwnClasses = (o: Signal = {}) =>
   api.get<ClassCard[]>('/api/performance/classes', withSignal(o))
+
+/** #4 `GET /api/performance/classes/aggregate` (S4, R1-GUR-4): the cards plus "Pelajar Terbaik" and "Prestasi Mengikut Subjek". */
+export const fetchOwnClassesAggregate = (o: Signal = {}) =>
+  api.get<ClassesAggregate>('/api/performance/classes/aggregate', withSignal(o))
 
 /** #6 `GET /api/performance/students/:userId` (S6); 404 unknown, 403 not permitted. */
 export const fetchStudentPerformance = (userId: number | string, o: Signal = {}) =>
