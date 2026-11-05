@@ -36,15 +36,15 @@ async function insertSession(mode: string, status = 'in_progress', completedAt: 
   return id
 }
 const insertAnswer = (extra: Record<string, unknown> = {}) => {
-  const cols = { user_id: uid, is_correct: true, answered_at: new Date(), ...extra }
+  const cols = { user_id: uid, is_correct: true, answered_at: new Date(), mode: 'latih_tubi', ...extra }
   const keys = Object.keys(cols)
   return db.query(`insert into practice_answers (${keys.join(', ')}) values (${keys.map((_, i) => `$${i + 1}`).join(', ')})`, Object.values(cols))
 }
 
 describe('0181 practice_answers', () => {
-  it('ck_practice_answers_mode lists the 19 registry values and is NOT VALID', async () => {
+  it('ck_practice_answers_mode lists the 19 registry values (validated since 0188)', async () => {
     const c = await def('ck_practice_answers_mode')
-    expect(c?.validated).toBe(false)
+    expect(c?.validated).toBe(true)
     expect(quoted(c?.def ?? '').sort()).toEqual([...ANSWER_MODES].sort())
     expect(ANSWER_MODES).toHaveLength(19)
     expect(c?.def).toMatch(/mode IS NULL/)
@@ -59,11 +59,11 @@ describe('0181 practice_answers', () => {
     await insertAnswer({ attempt_id: a, question_id: 1, mode: 'simulasi' })
     await expect(insertAnswer({ attempt_id: a, question_id: 1, mode: 'simulasi', part_ref: '' })).rejects.toThrow(/uq_practice_answers_attempt_key/)
     await insertAnswer({ attempt_id: a, question_id: 1, mode: 'simulasi', part_ref: '1.a' })
-    await insertAnswer({ question_id: 1 }) // attempt_id null: outside the index
-    await insertAnswer({ question_id: 1 })
+    await insertAnswer({ question_id: 1, mode: 'simulasi' }) // attempt_id null: outside the index
+    await insertAnswer({ question_id: 1, mode: 'simulasi' })
   })
 
-  it('the new columns exist with the right types and are nullable', async () => {
+  it('the new columns exist with the right types (mode is NOT NULL since 0188)', async () => {
     const cols = await db.query<{ column_name: string; data_type: string; is_nullable: string; numeric_precision: number | null; numeric_scale: number | null }>(
       `select column_name, data_type, is_nullable, numeric_precision, numeric_scale from information_schema.columns
         where table_name = 'practice_answers' and column_name in ('mode', 'attempt_id', 'part_ref', 'marks_awarded', 'marks_max') order by column_name`,
@@ -72,25 +72,19 @@ describe('0181 practice_answers', () => {
       ['attempt_id', 'uuid', 'YES'],
       ['marks_awarded', 'numeric', 'YES'],
       ['marks_max', 'numeric', 'YES'],
-      ['mode', 'text', 'YES'],
+      ['mode', 'text', 'NO'],
       ['part_ref', 'text', 'YES'],
     ])
     expect(cols.filter((c) => c.column_name.startsWith('marks')).every((c) => c.numeric_precision === 6 && c.numeric_scale === 2)).toBe(true)
   })
 
-  it('accepts a NULL mode and each registry value, rejects an unknown one', async () => {
-    await insertAnswer({ question_id: 2 })
+  it('accepts each registry value, rejects an unknown one', async () => {
     for (const m of ANSWER_MODES) await insertAnswer({ question_id: 2, mode: m })
     await expect(insertAnswer({ question_id: 2, mode: 'bogus' })).rejects.toThrow(/ck_practice_answers_mode/)
   })
 
-  it('0181 is DDL only: it has no UPDATE and leaves mode NULL on pre-existing rows', async () => {
+  it('0181 is DDL only: it has no UPDATE (the legacy backfill is U-OP-20)', () => {
     expect(sql0181).not.toMatch(/^\s*UPDATE\b/im)
-    const chapter = await insertSession('chapter')
-    await insertAnswer({ session_id: chapter, question_id: 10 })
-    await insertAnswer({ question_id: 12 })
-    const rows = await db.query<{ mode: string | null }>(`select mode from practice_answers where question_id in (10, 12)`)
-    expect(rows.map((r) => r.mode)).toEqual([null, null])
   })
 })
 
