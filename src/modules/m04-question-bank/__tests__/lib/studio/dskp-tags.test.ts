@@ -14,7 +14,7 @@ describe('DSKP tags per leaf (ADR-0031)', () => {
   it('names every gap: unit, SP, and the TP and the level of each leaf', () => {
     const gaps = dskpGaps({ unitId: null, spIds: [], leaves: [{ label: 'a', tp: null, cognitive: null }, { label: 'b', tp: 3, cognitive: 'memahami' }] })
     expect(gaps).toEqual([
-      'Soalan belum dipautkan kepada topik DSKP.',
+      'Sila pilih unit DSKP.',
       'Sila pilih sekurang-kurangnya satu SP DSKP.',
       'Bahagian (a) belum ada TP.',
       'Bahagian (a) belum ada aras pemikiran.',

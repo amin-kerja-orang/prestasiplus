@@ -8,7 +8,8 @@ import { LEAF_MODES, SCRIPT_TYPES, newUid, type LeafDraft, type StudioDraft } fr
 import { isCognitive } from './dskp-tags'
 
 export const RECOVERY_MESSAGE = 'Terdapat kerja yang belum disimpan daripada sesi sebelum ini.'
-const VERSION = 1
+/** 2: the draft holds Penjelasan and Jenis tulisan; an older snapshot would clear them on save. */
+const VERSION = 2
 /** `pp:draft:` is the prefix the session store clears at sign-out; the user id keeps one person's draft from another's. */
 const PREFIX = 'pp:draft:studio:'
 
@@ -74,7 +75,6 @@ export function parseSnapshot(text: string | null): StudioDraft | null {
     subjectId: d.subjectId, educationLevelId: d.educationLevelId, kertas: d.kertas as StudioDraft['kertas'], numberLabel: d.numberLabel, stem: d.stem,
     stemImageToken: d.stemImageToken, chapterId: d.chapterId, difficulty: d.difficulty, unitId: d.unitId, spIds: d.spIds, groupId: d.groupId,
     leaves: leaves as LeafDraft[],
-    // A snapshot from before these fields opens with their defaults.
     explanation: isStr(d.explanation) ? d.explanation : '',
     explanationEn: isStr(d.explanationEn) ? d.explanationEn : null,
     scriptType: SCRIPT_TYPES.find((k) => k.value === d.scriptType)?.value ?? 'rumi',

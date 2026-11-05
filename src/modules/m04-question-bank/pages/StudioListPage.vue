@@ -297,7 +297,7 @@ async function hide(row: StudioRow): Promise<void> {
   try {
     await moveQuestionStatus(row.id, 'archived', REASON.archive)
     flash.show({ type: 'success', message: FLASH.archived })
-    await list.reload()
+    await Promise.all([list.reload(), summary.reload()])
   } catch (err) {
     flash.show({ type: 'error', message: errorLines(err) })
   } finally {

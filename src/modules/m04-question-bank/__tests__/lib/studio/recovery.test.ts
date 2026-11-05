@@ -49,9 +49,9 @@ describe('Studio draft recovery (V2 flow 1 step 2)', () => {
     const back = loadSnapshot(store, recoveryKey('1', '5'))
     expect(back?.inheritedTp).toBe(3)
     expect(sameDraft(back!, d)).toBe(true)
-    expect(parseSnapshot(JSON.stringify({ v: 1, draft: { ...d, inheritedTp: 9 } }))).toBeNull()
-    expect(parseSnapshot(JSON.stringify({ v: 1, draft: { ...d, inheritedTp: '3' } }))).toBeNull()
-    const nulled = parseSnapshot(JSON.stringify({ v: 1, draft: { ...d, inheritedTp: null } }))
+    expect(parseSnapshot(JSON.stringify({ v: 2, draft: { ...d, inheritedTp: 9 } }))).toBeNull()
+    expect(parseSnapshot(JSON.stringify({ v: 2, draft: { ...d, inheritedTp: '3' } }))).toBeNull()
+    const nulled = parseSnapshot(JSON.stringify({ v: 2, draft: { ...d, inheritedTp: null } }))
     expect(nulled).not.toBeNull()
     // null, absent and undefined are the same "none" for sameDraft, whatever the key order
     const { inheritedTp: _drop, ...bare } = d
@@ -59,7 +59,7 @@ describe('Studio draft recovery (V2 flow 1 step 2)', () => {
     expect(sameDraft(nulled!, bare)).toBe(true)
     expect(sameDraft({ ...bare, inheritedTp: null }, bare)).toBe(true)
     expect(sameDraft({ ...bare, inheritedTp: 3 }, bare)).toBe(false)
-    expect(parseSnapshot(JSON.stringify({ v: 1, draft: { ...d, leaves: [{ ...d.leaves[0], tp: 2.5 }] } }))).toBeNull()
+    expect(parseSnapshot(JSON.stringify({ v: 2, draft: { ...d, leaves: [{ ...d.leaves[0], tp: 2.5 }] } }))).toBeNull()
   })
 
   it('clears the snapshot', () => {
@@ -72,12 +72,12 @@ describe('Studio draft recovery (V2 flow 1 step 2)', () => {
   it('ignores a value that is damaged, from another version or of the wrong shape', () => {
     expect(parseSnapshot(null)).toBeNull()
     expect(parseSnapshot('{bukan json')).toBeNull()
-    expect(parseSnapshot(JSON.stringify({ v: 2, draft: filled() }))).toBeNull()
-    expect(parseSnapshot(JSON.stringify({ v: 1, draft: { ...filled(), spIds: ['1', '2', '3', '4'] } }))).toBeNull()
-    expect(parseSnapshot(JSON.stringify({ v: 1, draft: { ...filled(), kertas: '9' } }))).toBeNull()
-    expect(parseSnapshot(JSON.stringify({ v: 1, draft: { ...filled(), leaves: [{ label: 'a', mode: 'essay' }] } }))).toBeNull()
-    expect(parseSnapshot(JSON.stringify({ v: 1, draft: { ...filled(), stem: 5 } }))).toBeNull()
-    expect(parseSnapshot(JSON.stringify({ v: 1, draft: '<script>' }))).toBeNull()
+    expect(parseSnapshot(JSON.stringify({ v: 1, draft: filled() }))).toBeNull()
+    expect(parseSnapshot(JSON.stringify({ v: 2, draft: { ...filled(), spIds: ['1', '2', '3', '4'] } }))).toBeNull()
+    expect(parseSnapshot(JSON.stringify({ v: 2, draft: { ...filled(), kertas: '9' } }))).toBeNull()
+    expect(parseSnapshot(JSON.stringify({ v: 2, draft: { ...filled(), leaves: [{ label: 'a', mode: 'essay' }] } }))).toBeNull()
+    expect(parseSnapshot(JSON.stringify({ v: 2, draft: { ...filled(), stem: 5 } }))).toBeNull()
+    expect(parseSnapshot(JSON.stringify({ v: 2, draft: '<script>' }))).toBeNull()
   })
 
   it('a blocked or full storage is never an error', () => {

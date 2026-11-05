@@ -4,7 +4,7 @@
  * the DSKP tags `difficultyTp` (TP) and `kbat` (Aras pemikiran). Pure, no I/O.
  */
 import { DIFFICULTY_LABELS } from '../question-list'
-import { dskpGaps, isCognitive, isKbat, questionTp, type CognitiveValue } from './dskp-tags'
+import { dskpItems, isCognitive, isKbat, leafName, questionTp, type CognitiveValue } from './dskp-tags'
 
 export type LeafMode = 'mcq' | 'short_text' | 'numeric'
 export const LEAF_MODES: readonly { value: LeafMode; label: string }[] = [
@@ -176,41 +176,48 @@ export interface Gap {
   message: string
   /** `data-testid` of the field the jump link focuses. */
   field: string
-}
-
-/** The field of a leaf, by its label; the leaf row when the label is unknown. */
-function leafField(leaves: readonly Pick<LeafDraft, 'label'>[], label: string, part: string): string {
-  const i = leaves.findIndex((l) => l.label === label)
-  return i < 0 ? 'studio-add-leaf' : `studio-leaf-${String(i)}${part}`
+  /** The path the server gate uses for the same gap. */
+  path: string
+  /** A DSKP item: the server decides it (no DSKP nodes, no such rule; FR-ADM-QE4.6). */
+  dskp?: boolean
 }
 
 /** What stops a draft being ready to approve. A draft may be saved with gaps; the gate is at Terbitkan (V2 S1.2). */
 export function draftGaps(d: StudioDraft, levelName = ''): Gap[] {
   const gaps: Gap[] = []
-  if (d.subjectId === '') gaps.push({ step: 1, field: 'studio-subject', message: 'Sila pilih subjek.' })
-  if (d.educationLevelId === '') gaps.push({ step: 1, field: 'studio-level', message: 'Sila pilih tahap pendidikan.' })
-  if (d.numberLabel.trim() === '') gaps.push({ step: 2, field: 'studio-number', message: 'Sila isi nombor soalan.' })
-  if (d.kertas === '' && /\b[45]\b/.test(levelName)) gaps.push({ step: 2, field: 'studio-kertas', message: 'Soalan SPM belum ada kertas.' })
-  if ([...d.stem.trim()].length < STEM_MIN) gaps.push({ step: 2, field: 'studio-stem', message: 'Teks soalan mesti sekurang-kurangnya 10 aksara.' })
-  if (d.leaves.length === 0) gaps.push({ step: 4, field: 'studio-add-leaf', message: 'Soalan tiada sub-bahagian — tiada apa untuk dijawab.' })
+  if (d.subjectId === '') gaps.push({ step: 1, field: 'studio-subject', path: 'subjectId', message: 'Sila pilih subjek.' })
+  if (d.educationLevelId === '') gaps.push({ step: 1, field: 'studio-level', path: 'educationLevelId', message: 'Sila pilih tahap pendidikan.' })
+  if (d.numberLabel.trim() === '') gaps.push({ step: 2, field: 'studio-number', path: 'numberLabel', message: 'Sila isi nombor soalan.' })
+  if (d.kertas === '' && /\b[45]\b/.test(levelName)) gaps.push({ step: 2, field: 'studio-kertas', path: 'kertas', message: 'Sila pilih kertas untuk soalan SPM.' })
+  if ([...d.stem.trim()].length < STEM_MIN) gaps.push({ step: 2, field: 'studio-stem', path: 'questionText', message: 'Teks soalan mesti sekurang-kurangnya 10 aksara.' })
+  if (d.leaves.length === 0) gaps.push({ step: 4, field: 'studio-add-leaf', path: 'parts', message: 'Soalan tiada sub-bahagian — tiada apa untuk dijawab.' })
   d.leaves.forEach((l, i) => {
-    const row = `studio-leaf-${String(i)}`
-    if (l.prompt.trim() === '') gaps.push({ step: 4, field: row, message: `Bahagian (${l.label}) belum ada arahan.` })
+    const leaf = { step: 4 as const, field: `studio-leaf-${String(i)}`, path: `parts.${l.label}` }
+    const name = leafName(l.label)
+    if (l.prompt.trim() === '') gaps.push({ ...leaf, message: `${name} belum ada arahan.` })
     if (l.mode === 'mcq') {
-      if (l.options.some((o) => o.text.trim() === '' && o.imageToken === null)) gaps.push({ step: 4, field: row, message: `Bahagian (${l.label}) ada pilihan kosong.` })
-      if (!l.options.some((o) => o.label === l.correct)) gaps.push({ step: 4, field: row, message: `Bahagian (${l.label}) mempunyai 0 pilihan betul — mesti tepat 1.` })
+      if (l.options.some((o) => o.text.trim() === '' && o.imageToken === null)) gaps.push({ ...leaf, message: `${name} ada pilihan kosong.` })
+      if (!l.options.some((o) => o.label === l.correct)) gaps.push({ ...leaf, message: `${name} mempunyai 0 pilihan betul — mesti tepat 1.` })
     } else if (l.mode === 'short_text') {
-      if (acceptedValues(l).length === 0) gaps.push({ step: 4, field: row, message: `Bahagian (${l.label}) tiada skema jawapan.` })
+      if (acceptedValues(l).length === 0) gaps.push({ ...leaf, message: `${name} tiada skema jawapan.` })
     } else if (!Number.isFinite(Number(l.numeric.value)) || l.numeric.value.trim() === '') {
-      gaps.push({ step: 4, field: row, message: `Bahagian (${l.label}) tiada skema jawapan.` })
+      gaps.push({ ...leaf, message: `${name} tiada skema jawapan.` })
     }
   })
-  for (const m of dskpGaps({ unitId: d.unitId, spIds: d.spIds, leaves: d.leaves.map((l) => ({ ...l, tp: l.tp ?? d.inheritedTp ?? null })) })) {
-    const leaf = /Bahagian \((.+?)\)/.exec(m)?.[1]
-    if (leaf !== undefined) gaps.push({ step: 4, field: leafField(d.leaves, leaf, ''), message: m })
-    else gaps.push({ step: 1, field: m.includes(' SP') ? 'studio-dskp' : 'studio-unit', message: m })
+  for (const g of dskpItems({ unitId: d.unitId, spIds: d.spIds, leaves: d.leaves.map((l) => ({ ...l, tp: l.tp ?? d.inheritedTp ?? null })) })) {
+    const field = g.leaf !== undefined ? `studio-leaf-${String(g.leaf)}` : g.path === 'spIds' ? 'studio-sp' : 'studio-unit'
+    gaps.push({ step: g.leaf !== undefined ? 4 : 1, field, path: g.path, message: g.message, dskp: true })
   }
   return gaps
+}
+
+/** The leaf a gate path names (`parts.<label>.<field>`): the longest label wins, as a label may hold a dot. */
+function leafOfPath(path: string, leaves: readonly Pick<LeafDraft, 'label'>[]): number {
+  let hit = -1
+  leaves.forEach((l, i) => {
+    if (path.startsWith(`parts.${l.label}.`) && l.label.length > (leaves[hit]?.label.length ?? -1)) hit = i
+  })
+  return hit
 }
 
 /** The field a gate issue `path` names (API-Q-05), for the jump link of the completeness panel. */
@@ -224,15 +231,49 @@ export function issueField(path: string, leaves: readonly Pick<LeafDraft, 'label
     stem: 'studio-stem',
     media: 'studio-stem-image',
     unitId: 'studio-unit',
-    spIds: 'studio-dskp',
-    tp: 'studio-dskp',
+    spIds: 'studio-sp',
+    tp: 'studio-leaf-0',
     chapterId: 'q-chapter',
     difficultyLevel: 'studio-difficulty',
   }
   const hit = known[path]
   if (hit !== undefined) return hit
-  const leaf = /^parts\.([^.]+)/.exec(path)?.[1]
-  return leaf === undefined ? 'studio-add-leaf' : leafField(leaves, leaf, '')
+  const leaf = leafOfPath(path, leaves)
+  return leaf < 0 ? 'studio-add-leaf' : `studio-leaf-${String(leaf)}`
+}
+
+/** A stored gate issue the form has since fixed: the panel drops it before the next save. */
+function fixedInForm(path: string, d: StudioDraft): boolean {
+  if (path === 'unitId') return d.unitId !== null && d.unitId !== ''
+  if (path === 'spIds') return d.spIds.length > 0
+  if (path === 'chapterId') return d.chapterId !== ''
+  if (path === 'tp') return draftTp(d) !== null
+  const leaf = d.leaves[leafOfPath(path, d.leaves)]
+  if (leaf === undefined) return false
+  if (path.endsWith('.difficultyTp')) return (leaf.tp ?? d.inheritedTp ?? null) !== null
+  if (path.endsWith('.cognitiveLevel')) return leaf.cognitive !== null
+  return false
+}
+
+export interface CompletenessRow {
+  message: string
+  /** `data-testid` of the field. */
+  field: string
+}
+
+/**
+ * The rows of the completeness panel. `issues` is API-Q-05 for the stored question, null before a save or when the read
+ * failed. The gate decides the DSKP items (FR-ADM-QE4.6) once it has answered; the form decides what it can see itself.
+ */
+export function completenessRows(d: StudioDraft, gaps: readonly Gap[], issues: readonly { path: string; message: string }[] | null): CompletenessRow[] {
+  const own = gaps.filter((g) => issues === null || g.dskp !== true)
+  const rows: CompletenessRow[] = own.map((g) => ({ message: g.message, field: g.field }))
+  const leafTpGap = (issues ?? []).some((i) => i.path.endsWith('.difficultyTp'))
+  for (const i of issues ?? []) {
+    if (own.some((g) => g.path === i.path) || fixedInForm(i.path, d) || (i.path === 'tp' && leafTpGap)) continue
+    if (!rows.some((r) => r.message === i.message)) rows.push({ message: i.message, field: issueField(i.path, d.leaves) })
+  }
+  return rows
 }
 
 export const acceptedValues = (l: Pick<LeafDraft, 'accepted'>): string[] =>

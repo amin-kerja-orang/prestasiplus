@@ -16,6 +16,8 @@ import {
   totalMarks,
   withMode,
   type StudioDraft,
+  completenessRows,
+  issueField,
 } from '../../../lib/studio/draft'
 
 function filled(): StudioDraft {
@@ -55,14 +57,14 @@ describe('Studio draft', () => {
     expect(gaps).toContain('Bahagian (a) belum ada TP.')
     expect(gaps).toContain('Bahagian (a) belum ada aras pemikiran.')
     expect(gaps).toContain('Sila isi nombor soalan.')
-    expect(gaps).toContain('Soalan belum dipautkan kepada topik DSKP.')
+    expect(gaps).toContain('Sila pilih unit DSKP.')
     expect(draftGaps(filled())).toEqual([])
   })
 
   it('asks for a kertas on an SPM level (Tingkatan 4 or 5) and not on others', () => {
     const d = filled()
     d.kertas = ''
-    expect(draftGaps(d, 'Tingkatan 4').map((g) => g.message)).toEqual(['Soalan SPM belum ada kertas.'])
+    expect(draftGaps(d, 'Tingkatan 4').map((g) => g.message)).toEqual(['Sila pilih kertas untuk soalan SPM.'])
     expect(draftGaps(d, 'Tingkatan 2')).toEqual([])
   })
 
@@ -251,6 +253,71 @@ describe('Studio draft', () => {
       const body = editAsDraftBody(q)
       expect(Object.keys(body).sort()).toEqual(['difficultyLevel', 'educationLevelId', 'parts', 'questionText', 'subjectId'])
       expect(body.parts).toBe(q.parts)
+    })
+  })
+
+  describe('completenessRows (AC-ADM-QE4.1, AC-ADM-QE4.5)', () => {
+    const full = (): StudioDraft => {
+      const d = blankDraft()
+      d.subjectId = '3'
+      d.educationLevelId = '7'
+      d.numberLabel = '1'
+      d.kertas = '1'
+      d.stem = 'Soalan yang cukup panjang.'
+      const leaf = d.leaves[0]!
+      leaf.prompt = 'Pilih.'
+      leaf.options = leaf.options.map((o) => ({ ...o, text: 'x' }))
+      leaf.correct = 'A'
+      leaf.tp = 2
+      leaf.cognitive = 'memahami'
+      return d
+    }
+    const rows = (d: StudioDraft, issues: { path: string; message: string }[] | null) =>
+      completenessRows(d, draftGaps(d), issues).map((r) => r.message)
+    const UNIT = { path: 'unitId', message: 'Sila pilih unit DSKP.' }
+    const SP = { path: 'spIds', message: 'Sila pilih sekurang-kurangnya satu SP DSKP.' }
+
+    it('a draft missing unit and SP lists the two, once each, with a count of 2', () => {
+      expect(rows(full(), [UNIT, SP])).toEqual([UNIT.message, SP.message])
+      expect(rows(full(), null)).toEqual([UNIT.message, SP.message])
+    })
+
+    it('the gate decides the DSKP items: with no DSKP nodes it names none, so the panel does not', () => {
+      expect(rows(full(), [])).toEqual([])
+    })
+
+    it('a stored issue the form has since fixed is dropped', () => {
+      const d = full()
+      d.unitId = '40'
+      d.spIds = ['41']
+      expect(rows(d, [UNIT, SP])).toEqual([])
+      d.chapterId = '12'
+      expect(rows(d, [{ path: 'chapterId', message: 'Sila pilih Bab.' }])).toEqual([])
+    })
+
+    it('a server-only gap stays, with its link; the question TP row yields to the leaf row', () => {
+      const d = full()
+      d.unitId = '40'
+      d.spIds = ['41']
+      d.leaves[0]!.tp = null
+      const out = completenessRows(d, draftGaps(d), [
+        { path: 'tp', message: 'Sila pilih tahap penguasaan (TP).' },
+        { path: 'parts.a.difficultyTp', message: 'Bahagian (a) belum ada TP.' },
+        { path: 'marks', message: 'Markah tidak sepadan.' },
+      ])
+      expect(out.map((r) => r.message)).toEqual(['Bahagian (a) belum ada TP.', 'Markah tidak sepadan.'])
+      expect(out[0]?.field).toBe('studio-leaf-0')
+    })
+
+    it('a label with brackets or a dot keeps one row and the right leaf', () => {
+      const d = full()
+      d.unitId = '40'
+      d.spIds = ['41']
+      d.leaves[0]!.label = '(a)'
+      d.leaves[0]!.tp = null
+      expect(draftGaps(d).find((g) => g.dskp === true)).toMatchObject({ message: 'Bahagian (a) belum ada TP.', field: 'studio-leaf-0' })
+      expect(issueField('parts.1.1.cognitiveLevel', [{ label: '1' }, { label: '1.1' }])).toBe('studio-leaf-1')
+      expect(issueField('parts.1.cognitiveLevel', [{ label: 'b' }, { label: '1' }])).toBe('studio-leaf-1')
     })
   })
 })

@@ -30,7 +30,7 @@ import {
 } from '../api/studio'
 import ArabicKeyboardPanel from '../components/ArabicKeyboardPanel.vue'
 import ChapterSelect from '../components/ChapterSelect.vue'
-import StudioCompletenessPanel, { type CompletenessRow } from '../components/studio/StudioCompletenessPanel.vue'
+import StudioCompletenessPanel from '../components/studio/StudioCompletenessPanel.vue'
 import StudioDskpFields from '../components/studio/StudioDskpFields.vue'
 import StudioGroupEditor from '../components/studio/StudioGroupEditor.vue'
 import StudioImageField from '../components/studio/StudioImageField.vue'
@@ -46,11 +46,11 @@ import {
   asksScript,
   blankDraft,
   blankLeaf,
+  completenessRows,
   draftGaps,
   draftTp,
   draftTpNote,
   hydrate,
-  issueField,
   KESUKARAN,
   nextLeafLabel,
   SCRIPT_TYPES,
@@ -154,9 +154,15 @@ function trackField(e: FocusEvent): void {
   const el = e.target
   if (el instanceof HTMLTextAreaElement || (el instanceof HTMLInputElement && el.type === 'text')) keyboardTarget.value = el
 }
+function toggleKeyboard(): void {
+  keyboardOpen.value = !keyboardOpen.value
+  if (keyboardOpen.value && !keyboardTarget.value?.isConnected) {
+    keyboardTarget.value = document.querySelector<HTMLTextAreaElement>('[data-testid="studio-stem"]')
+  }
+}
 async function keyEdit(compute: (v: string, s: number, e: number) => { value: string; caret: number }): Promise<void> {
   const el = keyboardTarget.value
-  if (!el) return
+  if (!el?.isConnected) return
   const next = compute(el.value, el.selectionStart ?? el.value.length, el.selectionEnd ?? el.value.length)
   el.value = next.value
   el.dispatchEvent(new Event('input', { bubbles: true }))
@@ -167,13 +173,9 @@ async function keyEdit(compute: (v: string, s: number, e: number) => { value: st
 
 const levelName = computed(() => levels.value.find((l) => l.id === draft.value.educationLevelId)?.name ?? '')
 const gaps = computed(() => draftGaps(draft.value, levelName.value))
-/** What API-Q-05 says about the stored question; the panel adds it to the client gaps of the form. */
-const gateIssues = ref<CompletenessRow[]>([])
-const completeness = computed<CompletenessRow[]>(() => {
-  const rows: CompletenessRow[] = gaps.value.map((g) => ({ message: g.message, field: g.field }))
-  for (const i of gateIssues.value) if (!rows.some((r) => r.message === i.message)) rows.push(i)
-  return rows
-})
+/** What API-Q-05 says about the stored question; null before a save or when the read failed. */
+const gateIssues = ref<{ path: string; message: string }[] | null>(null)
+const completeness = computed(() => completenessRows(draft.value, gaps.value, gateIssues.value))
 const tabs = [
   { key: 'tag', label: '1 Tag' },
   { key: 'kertas', label: '2 Kertas' },
@@ -190,7 +192,8 @@ function go(key: TabKey): void {
 
 /** The jump link of the panel: scroll to the field and focus it, or the first control inside it. */
 function jump(field: string): void {
-  const el = document.querySelector<HTMLElement>(`[data-testid="${field}"]`)
+  // The SP block exists once a Tajuk DSKP is chosen.
+  const el = document.querySelector<HTMLElement>(`[data-testid="${field}"]`) ?? (field === 'studio-sp' ? document.querySelector<HTMLElement>('[data-testid="studio-unit"]') : null)
   if (!el) return
   el.scrollIntoView({ behavior: 'smooth', block: 'center' })
   // A themed select hides its native control, so the focus goes to the first control of the field.
@@ -201,10 +204,9 @@ function jump(field: string): void {
 
 async function readGate(id: string): Promise<void> {
   try {
-    const check = await fetchGateCheck(id)
-    gateIssues.value = check.issues.map((i) => ({ message: i.message, field: issueField(i.path, draft.value.leaves) }))
+    gateIssues.value = (await fetchGateCheck(id)).issues
   } catch {
-    gateIssues.value = []
+    gateIssues.value = null
   }
 }
 
@@ -220,6 +222,8 @@ function noteOldForm(): void {
 async function load(): Promise<void> {
   loading.value = true
   loadFailed.value = false
+  keyboardOpen.value = false
+  keyboardTarget.value = null
   try {
     const [s, l] = await Promise.all([fetchSubjects(), fetchEducationLevels()])
     subjects.value = s.data.map((x) => ({ id: String(x.id), name: x.name }))
@@ -247,6 +251,13 @@ onMounted(() => {
   if (studioAvailable()) void load()
   else loading.value = false
 })
+// The route to `/sunting` after the first save keeps this page instance: read the stored question and its gate.
+watch(
+  () => props.id,
+  (id, was) => {
+    if (id !== undefined && id !== was && studioAvailable()) void load()
+  },
+)
 
 function addLeaf(): void {
   draft.value.leaves.push(blankLeaf(nextLeafLabel(draft.value.leaves)))
@@ -384,7 +395,7 @@ async function save(): Promise<void> {
             </DsNativeSelect>
           </DsFormField>
           <DsCluster v-if="showKeyboard" gap="sm">
-            <UButton type="button" color="neutral" variant="soft" icon="keyboard" title="Papan kekunci Arab / Jawi" data-testid="studio-keyboard-toggle" @mousedown.prevent @click="keyboardOpen = !keyboardOpen">Papan kekunci</UButton>
+            <UButton type="button" color="neutral" variant="soft" icon="keyboard" title="Papan kekunci Arab / Jawi" data-testid="studio-keyboard-toggle" @mousedown.prevent @click="toggleKeyboard">Papan kekunci</UButton>
           </DsCluster>
           <DsFormField v-slot="{ id: fid }" native label="Teks soalan (stem)" for="studio-stem" required :error="fieldProblems.questionText">
             <UTextarea :id="fid" v-model="draft.stem" :rows="4" placeholder="Contoh: Rajah 1 menunjukkan litar bersiri." :disabled="readOnly" data-testid="studio-stem" />
@@ -444,6 +455,7 @@ async function save(): Promise<void> {
     </DsStack>
     <ArabicKeyboardPanel
       v-if="keyboardOpen"
+      :key="keyboardTarget?.id ?? ''"
       v-model:mode="keyboardMode"
       :anchor="keyboardTarget"
       @insert="(text: string) => keyEdit((v, a, b) => insertAtCaret(v, a, b, text))"

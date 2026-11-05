@@ -1216,7 +1216,7 @@ export class QuestionsService {
     // Level 5 on the flat scale may be TP 5 or 6: keep the stored TP when the body repeats what was read.
     const keepTp = v.difficultyTp !== null && input.difficultyLevel === flat.difficultyLevel
     const language = input.scriptType !== undefined
-      ? languageToStore(v.language === 'en' ? 'en' : undefined, input.scriptType)
+      ? languageToStore(input.language ?? (v.language === 'en' ? 'en' : undefined), input.scriptType)
       : input.language === undefined
         ? v.language
         : v.language === 'ar' || v.language === 'jawi' || v.language === 'ms_en'

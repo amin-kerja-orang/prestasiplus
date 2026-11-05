@@ -103,7 +103,7 @@ describe('StudioStatusBar', () => {
     expect(studio.fetchGateCheck).toHaveBeenCalledWith('9', 'approve')
     expect(t(w, 'studio-gate-refusal').text()).toContain('Soalan belum boleh diterbitkan — sila betulkan isu di bawah.')
     const lines = w.findAll('[data-testid="studio-gate-line"]').map((l) => l.text())
-    expect(lines).toEqual(['Bahagian (b) belum ada aras pemikiran. — Langkah 3', 'Soalan SPM belum ada kertas. — Langkah 1'])
+    expect(lines).toEqual(['Bahagian (b) belum ada aras pemikiran. — Langkah 4', 'Soalan SPM belum ada kertas. — Langkah 2'])
     expect(flashNow()).toBeNull()
   })
 

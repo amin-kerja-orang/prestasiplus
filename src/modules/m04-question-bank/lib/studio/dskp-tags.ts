@@ -36,17 +36,29 @@ export interface QuestionDskp {
   leaves: readonly LeafTag[]
 }
 
+/** "Bahagian (b)"; a label that already has its brackets is not wrapped twice, an empty one reads "Soalan" (as `dskp-gate.ts`). */
+export const leafName = (label: string): string => (label === '' ? 'Soalan' : label.startsWith('(') ? `Bahagian ${label}` : `Bahagian (${label})`)
+
+/** One gap, in the words of the server gate (`DSKP_MESSAGES`); `path` is its gate path, `leaf` the leaf index. */
+export interface DskpGap {
+  path: string
+  message: string
+  leaf?: number
+}
+
 /** Gaps in the order the author fixes them: `Belum ditanda DSKP` when any is present. */
-export function dskpGaps(d: QuestionDskp): string[] {
-  const gaps: string[] = []
-  if (d.unitId === null || d.unitId === '') gaps.push('Soalan belum dipautkan kepada topik DSKP.')
-  if (d.spIds.length < 1) gaps.push('Sila pilih sekurang-kurangnya satu SP DSKP.')
-  for (const leaf of d.leaves) {
-    if (leaf.tp === null) gaps.push(`Bahagian (${leaf.label}) belum ada TP.`)
-    if (leaf.cognitive === null) gaps.push(`Bahagian (${leaf.label}) belum ada aras pemikiran.`)
-  }
+export function dskpItems(d: QuestionDskp): DskpGap[] {
+  const gaps: DskpGap[] = []
+  if (d.unitId === null || d.unitId === '') gaps.push({ path: 'unitId', message: 'Sila pilih unit DSKP.' })
+  if (d.spIds.length < 1) gaps.push({ path: 'spIds', message: 'Sila pilih sekurang-kurangnya satu SP DSKP.' })
+  d.leaves.forEach((leaf, i) => {
+    if (leaf.tp === null) gaps.push({ path: `parts.${leaf.label}.difficultyTp`, message: `${leafName(leaf.label)} belum ada TP.`, leaf: i })
+    if (leaf.cognitive === null) gaps.push({ path: `parts.${leaf.label}.cognitiveLevel`, message: `${leafName(leaf.label)} belum ada aras pemikiran.`, leaf: i })
+  })
   return gaps
 }
+
+export const dskpGaps = (d: QuestionDskp): string[] => dskpItems(d).map((g) => g.message)
 
 export const isDskpComplete = (d: QuestionDskp): boolean => dskpGaps(d).length === 0
 

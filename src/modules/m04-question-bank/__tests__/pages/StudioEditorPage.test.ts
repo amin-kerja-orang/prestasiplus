@@ -192,6 +192,18 @@ describe('wizard order and completeness (FR-QA-16, FR-ADM-QE4.1)', () => {
     expect('scriptType' in (studio.updateStudioQuestion.mock.calls[0]?.[1] as Record<string, unknown>)).toBe(false)
   })
 
+  it('after the first save on Cipta the same page reads the stored question and its gate', async () => {
+    studio.createStudioQuestion.mockResolvedValue({ data: { id: '501', status: 'draft' }, status: 'ok' })
+    serve({ ...SAVED, curriculumChapterId: null })
+    studio.fetchGateCheck.mockResolvedValue({ issues: [{ path: 'chapterId', code: 'NO_CHAPTER', message: 'Sila pilih Bab.', step: 4 }] })
+    const w = await render('/admin/studio/questions/create')
+    expect(studio.fetchGateCheck).not.toHaveBeenCalled()
+    await w.setProps({ id: '501' })
+    await flushPromises()
+    expect(studio.fetchGateCheck).toHaveBeenCalledWith('501')
+    expect(w.findAll('[data-testid="studio-completeness-row"]').map((r) => r.text())).toEqual(['Sila pilih Bab.'])
+  })
+
   it('shows the all-complete text when nothing is missing', async () => {
     const rowsOf = await import('../../components/studio/StudioCompletenessPanel.vue')
     const w = mount(rowsOf.default, { props: { rows: [] }, global: { stubs: { UButton: true } } })
@@ -368,7 +380,7 @@ describe('StudioEditorPage (R1-F03b)', () => {
     const KEY = 'pp:draft:studio:tetamu:baharu'
     const snapshot = (stem: string) =>
       JSON.stringify({
-        v: 1,
+        v: 2,
         savedAt: '2026-10-31T10:00:00Z',
         draft: {
           subjectId: '3', educationLevelId: '7', kertas: '', numberLabel: '1', stem, stemImageToken: null, chapterId: '', difficulty: 3, unitId: null, spIds: [], groupId: null,

@@ -5,11 +5,7 @@
  */
 import { DsPanel, DsStack, DsText } from '@/ds'
 
-export interface CompletenessRow {
-  message: string
-  /** `data-testid` of the field. */
-  field: string
-}
+import type { CompletenessRow } from '../../lib/studio/draft'
 
 defineProps<{ rows: readonly CompletenessRow[] }>()
 const emit = defineEmits<{ jump: [field: string] }>()

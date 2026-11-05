@@ -80,6 +80,14 @@ describe('admin question CRUD (AC 1, AC 2)', () => {
     expect((await read()).scriptType).toBe('rumi')
   })
 
+  it('PO decision 4: scriptType rumi leaves an English question English', async () => {
+    const { data } = await created({ language: 'en' })
+    const read = async () => parseData(await admin.get(`/api/questions/${data.id}`), QuestionDetailSchema)
+    const base = { subjectId: refs.mathId, educationLevelId: refs.t4Id, difficultyLevel: 3, questionText: data.questionText }
+    expect((await admin.put(`/api/questions/${data.id}`, { ...base, scriptType: 'rumi' })).status).toBe(200)
+    expect(await read()).toMatchObject({ language: 'en', scriptType: 'rumi' })
+  })
+
   it('round-trips a 3-level tree ((a)(i)(A)) with marks only on the leaves', async () => {
     const parts = [{ label: 'a', prompt: { ms: 'Bahagian (a).' }, children: [{ label: 'i', prompt: { ms: 'Bahagian (i).' }, children: [leaf('A'), leaf('B')] }] }]
     const res = await admin.post('/api/questions', mcqBody(refs, { questionType: 'essay', questionText: 'Soalan berstruktur tiga peringkat.', options: undefined, correctAnswer: undefined, parts }))
