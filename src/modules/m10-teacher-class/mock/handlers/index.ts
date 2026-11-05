@@ -14,6 +14,7 @@ import { lookupRoutes } from './lookups'
 import { questionRoutes } from './questions'
 import { studentRoutes } from './students'
 import { studentSideRoutes } from './student-side'
+import { teacherProfileRoutes } from './teacher-profile'
 
 export const m10Routes: RouteDef[] = [
   ...dashboardRoutes,
@@ -24,4 +25,5 @@ export const m10Routes: RouteDef[] = [
   ...questionRoutes,
   ...extraRoutes,
   ...studentSideRoutes,
+  ...teacherProfileRoutes,
 ]

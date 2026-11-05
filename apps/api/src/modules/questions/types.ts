@@ -190,6 +190,8 @@ export interface QuestionView extends QuestionRecord {
   imageTokens?: Record<string, string>
   /** Name of the curriculum chapter of the version (the admin "Bab" label), or null. */
   chapterName?: string | null
+  /** S1-T07 (D12): the open stimulus flag of the LIVE approved version, as `flags[]` on the wire. Absent = none. */
+  openFlags?: ('stimulus_missing' | 'figure_only' | 'stem_duplicated')[]
 }
 
 /** Admin detail: DSKP chain (unit/sk/sp) and creator name resolved through the owners' repositories. */
@@ -240,6 +242,15 @@ export interface AdminListFilter {
   complianceFilter?: string
   sourceFilter?: string
   search?: string
+  /** S1-T07 (API-Q-01): level code T1..T5, chapter (`none` or id), unit node id, source, text-or-id and the open stimulus flag. */
+  tingkatan?: 'T1' | 'T2' | 'T3' | 'T4' | 'T5'
+  chapter?: string
+  unit?: string
+  source?: 'manual' | 'pdf' | 'csv' | 'guru'
+  q?: string
+  flag?: 'stimulus_missing' | 'figure_only' | 'stem_duplicated'
+  /** DM-58: rejection reason present (`true`) or absent (`false`). */
+  rejected?: 'true' | 'false'
   /** Keyset paging for `listIds`: only ids below this one (then `page` is ignored and no offset is used). */
   idBelow?: string
 }
@@ -421,6 +432,14 @@ export interface TextbookRef {
   /** Last page, when the reference spans pages. */
   hingga?: number
 }
+
+/**
+ * S1-T09a (D4, DM-69): the stored `question_versions.type` values once the DB check is widened (a later S1-T09a part): the 8 above plus
+ * `mcq_multi`, `true_false` and `fill_blank`. The API names and the mapping are `QUESTION_TYPES` / `questionTypeToDb` /
+ * `questionTypeFromDb` in `@pp/contract`. The DB is not changed by this part.
+ */
+export const STORE_QUESTION_TYPES_V3 = [...STORE_QUESTION_TYPES, 'mcq_multi', 'true_false', 'fill_blank'] as const
+export type StoreQuestionTypeV3 = (typeof STORE_QUESTION_TYPES_V3)[number]
 
 /** Teacher structured detail source: the question view of the LIVE version plus its stimulus group (no creator, no DSKP chain). */
 export type GuruStructuredRecord = QuestionView & { stimulusGroup: StimulusGroupRecord | null }
