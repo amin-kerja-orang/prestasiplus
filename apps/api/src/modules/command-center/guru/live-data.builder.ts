@@ -1,6 +1,6 @@
 import type { CommandCenterGuruLiveData } from '@pp/contract'
 
-import { accuracyPct, formatCount, round, round1, weekChange } from '../shared/math'
+import { accuracyPct, formatCount, round1, weekChange } from '../shared/math'
 import { dateKey, timeOfDay, toMytTimestamp } from '../shared/windows'
 import { answerDaysOf, type GuruContext, type GuruDeps, sum, tallies, cmpId } from './context'
 import { PREDICT_MIN_ANSWERS, engagementBand, gradeCode } from './rules'
@@ -118,7 +118,7 @@ export async function buildLiveData(deps: GuruDeps, ctx: GuruContext): Promise<C
     kirkT1,
     kirkT1Count: t1.count,
     kirkT2Accuracy: accNow,
-    kirkT2Delta: accNow === null || accPrev === null ? null : round(accNow - accPrev),
+    kirkT2Delta: accNow === null || accPrev === null ? null : round1(accNow - accPrev),
     kirkT2Prev: accPrev,
     kirkT3Active: d30.size,
     kirkT3Delta: d30.size - prev30.size,

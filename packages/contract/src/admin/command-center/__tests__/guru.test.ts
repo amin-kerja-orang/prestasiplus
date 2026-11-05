@@ -43,7 +43,7 @@ const liveData = {
   kirkT1: 8.5,
   kirkT1Count: 2,
   kirkT2Accuracy: 70,
-  kirkT2Delta: -3,
+  kirkT2Delta: -2.5,
   kirkT2Prev: 73,
   kirkT3Active: 9,
   kirkT3Delta: 1,
@@ -97,6 +97,7 @@ describe('CommandCenterGuruDrill', () => {
       extra: { accuracyNow: 70, accuracyPrev: 73, accuracyChange: -3, answersNow: 100, answersPrev: 90, activeNow: 9, activePrev: 8, newStudents: 1 },
     }
     expect(CommandCenterGuruDrillSchema.safeParse(t2).success).toBe(true)
+    expect(CommandCenterGuruDrillSchema.safeParse({ ...t2, extra: { ...t2.extra, accuracyNow: 66.7, accuracyChange: null } }).success).toBe(true)
   })
   it('parses gps, mood and engagement rows', () => {
     const gps = { title: 'GPS Sekolah', students: [{ subject: 'Sains', gps: 2.5, grade: 'A-', students: 12, source: 'Anggaran OTR' }] }

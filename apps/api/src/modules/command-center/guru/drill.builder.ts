@@ -1,7 +1,7 @@
 import type { CommandCenterGuruDrill } from '@pp/contract'
 
 import type { CommandCenterGuruDrillType } from '../http/request'
-import { accuracyPct, round } from '../shared/math'
+import { accuracyPct, round1 } from '../shared/math'
 import { dateKey, timeOfDay, toMytTimestamp } from '../shared/windows'
 import { answerDaysOf, cmpId, type GuruContext, type GuruDeps, sum, tallies } from './context'
 import { drillGradeOfGps, engagementBand } from './rules'
@@ -78,7 +78,7 @@ export async function buildDrill(deps: GuruDeps, ctx: GuruContext, type: Command
         extra: {
           accuracyNow,
           accuracyPrev,
-          accuracyChange: accuracyNow === null || accuracyPrev === null ? null : round(accuracyNow - accuracyPrev),
+          accuracyChange: accuracyNow === null || accuracyPrev === null ? null : round1(accuracyNow - accuracyPrev),
           answersNow: sNow.answers,
           answersPrev: sPrev.answers,
           activeNow: now.size,

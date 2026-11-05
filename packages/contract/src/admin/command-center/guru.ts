@@ -130,9 +130,8 @@ export const CommandCenterGuruLiveDataSchema = z
     kirkT2Accuracy: acc.meta(FIELD('Accuracy of the last 30 days.')),
     kirkT2Delta: z
       .number()
-      .int()
       .nullable()
-      .meta(FIELD('Difference to the 30 days before, whole points from the 1-decimal values; null (no delta, shown "—") when either side is null.')),
+      .meta(FIELD('Difference to the 30 days before, one decimal; null (no delta, shown "—") when either side is null.')),
     kirkT2Prev: acc,
     kirkT3Active: count.meta(FIELD('Students with an answer in the last 30 days.')),
     kirkT3Delta: z.number().int(),
@@ -269,7 +268,7 @@ export const CommandCenterGuruDrillVsSchema = z
   .object({
     accuracyNow: acc,
     accuracyPrev: acc,
-    accuracyChange: z.number().int().nullable().meta(FIELD('Null when accuracyNow or accuracyPrev is null (no delta, never 0).')),
+    accuracyChange: z.number().nullable().meta(FIELD('One decimal; null when accuracyNow or accuracyPrev is null (no delta, never 0).')),
     answersNow: count,
     answersPrev: count,
     activeNow: count,

@@ -18388,10 +18388,10 @@
           },
           "kirkT2Delta": {
             "type": [
-              "integer",
+              "number",
               "null"
             ],
-            "description": "Difference to the 30 days before, whole points from the 1-decimal values; null (no delta, shown \"—\") when either side is null."
+            "description": "Difference to the 30 days before, one decimal; null (no delta, shown \"—\") when either side is null."
           },
           "kirkT2Prev": {
             "type": [
@@ -18832,10 +18832,10 @@
           },
           "accuracyChange": {
             "type": [
-              "integer",
+              "number",
               "null"
             ],
-            "description": "Null when accuracyNow or accuracyPrev is null (no delta, never 0)."
+            "description": "One decimal; null when accuracyNow or accuracyPrev is null (no delta, never 0)."
           },
           "answersNow": {
             "type": "integer",
@@ -18931,10 +18931,10 @@
               },
               "accuracyChange": {
                 "type": [
-                  "integer",
+                  "number",
                   "null"
                 ],
-                "description": "Null when accuracyNow or accuracyPrev is null (no delta, never 0)."
+                "description": "One decimal; null when accuracyNow or accuracyPrev is null (no delta, never 0)."
               },
               "answersNow": {
                 "type": "integer",
