@@ -324,11 +324,6 @@ export interface JoinedClass {
   levelLabel: string
 }
 
-export interface JoinClassResponse {
-  data: { classroomId: number }
-  message: string
-}
-
 // ---------------------------------------------------------------------------------------------
 // #75 GET /api/set-soalan-saya (S34)
 // ---------------------------------------------------------------------------------------------

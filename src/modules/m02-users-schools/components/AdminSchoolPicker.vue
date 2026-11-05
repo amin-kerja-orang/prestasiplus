@@ -19,7 +19,13 @@ import { schoolMeta, SEARCH_MIN_CHARS, STATE_FILTER_OPTIONS } from '../lib/user-
 
 const school = defineModel<SchoolSummary | null>({ required: true })
 
-defineProps<{ required?: boolean }>()
+defineProps<{
+  required?: boolean
+  /** Replaces the search placeholder (M17 central views: "Pilih sekolah"). */
+  placeholder?: string
+  /** The field error line (M17 central views: "Sila pilih sekolah."). */
+  error?: string
+}>()
 
 const root = ref<HTMLElement | null>(null)
 const state = ref('')
@@ -80,7 +86,13 @@ function clear(): void {
 
 <template>
   <div ref="root" data-testid="admin-school">
-    <DsFormField native for="admin-school-search" label="Sekolah" :required="required">
+    <DsFormField
+      native
+      for="admin-school-search"
+      label="Sekolah"
+      :required="required"
+      :error="error"
+    >
       <DsPanel v-if="school" tone="tint" data-testid="admin-school-chip">
         <div class="flex min-h-14 items-center gap-3">
           <UIcon name="i-ph-buildings" class="size-6 shrink-0 text-primary-t" aria-hidden="true" />
@@ -124,7 +136,7 @@ function clear(): void {
               :model-value="term"
               type="text"
               autocomplete="off"
-              placeholder="Taip nama sekolah (min. 2 huruf)..."
+              :placeholder="placeholder ?? 'Taip nama sekolah (min. 2 huruf)...'"
               :loading="searching"
               class="w-full"
               data-testid="admin-school-search"

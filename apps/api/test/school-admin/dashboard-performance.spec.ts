@@ -126,7 +126,7 @@ async function pupil(schoolId: string, sitting: boolean): Promise<string> {
   )
   for (let i = 0; i < ANSWERED_PER_SITTING; i++) {
     // The table needs a subject or a question; a plain id stands for the question (no foreign key yet).
-    await db.query(`insert into practice_answers (user_id, question_id, is_correct, answered_at, created_at) values ($1::bigint, $2::bigint, $3, now(), now())`, [u!.id, 9000 + i, i < 3])
+    await db.query(`insert into practice_answers (user_id, question_id, is_correct, answered_at, created_at, mode) values ($1::bigint, $2::bigint, $3, now(), now(), 'latih_tubi')`, [u!.id, 9000 + i, i < 3])
   }
   return u!.id
 }
