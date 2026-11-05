@@ -257,7 +257,7 @@ export class FakeAssignments implements PracticeAssignmentSource {
     this.remedialCalls.push(input)
     if (this.failRemedial) throw this.failRemedial
   }
-  async settleMissionRewards(input: (typeof this.rewardCalls)[number]): Promise<{ paid: number }> {
+  async payTargetReward(input: (typeof this.rewardCalls)[number]): Promise<{ paid: number }> {
     this.rewardCalls.push(input)
     const paid = this.nextBonus
     this.nextBonus = 0

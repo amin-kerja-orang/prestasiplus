@@ -355,8 +355,8 @@ describe('BR-14 revision queue and BR-20 mastery counters', () => {
   })
 })
 
-describe('mission rewards at completion (S6-T07, AC-GM-20.2, AC-GUR-2b-7)', () => {
-  it('every completion calls the port after the reward port with the session mission id; coins it pays move only totalBalance', async () => {
+describe('mission target reward at completion (S6-T07, AC-GM-20.2, AC-GUR-2b-7)', () => {
+  it('a mission session calls the port after the reward port with its mission id; coins it pays move only totalBalance', async () => {
     t.assignments.set('mission', '9101', { status: 'ok', subjectId: w.subject.math, questionIds: bank.random.slice(0, 4), coinsPerCorrect: 3 })
     t.assignments.nextBonus = 25
     const first = await play(pelajar, t.bank, { mode: 'mission', missionId: '9101' }, 4)
@@ -367,10 +367,9 @@ describe('mission rewards at completion (S6-T07, AC-GM-20.2, AC-GUR-2b-7)', () =
     expect(SubmitSessionResponseSchema.parse(second.submit.body.data).results.gamification).toMatchObject({ totalBalance: 120 }) // the port paid nothing the second time
   })
 
-  it('a session without a mission still calls the port (Global goals) with a null mission id', async () => {
+  it('a session without a mission never calls the port', async () => {
     await play(pelajar, t.bank, { mode: 'random', subjectCode: 'MATH', count: 5 }, 5)
-    expect(t.assignments.rewardCalls).toHaveLength(1)
-    expect(t.assignments.rewardCalls[0]).toMatchObject({ userId: ids.pelajar, missionId: null })
+    expect(t.assignments.rewardCalls).toEqual([])
   })
 })
 

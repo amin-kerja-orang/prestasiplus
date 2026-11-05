@@ -263,9 +263,8 @@ export class PracticeService {
             },
             tx,
           )
-          // S6-T07: once-only mission target reward and Global goals, paid after the streak was touched; the coins are credited to the wallet by
-          // the port. The response keeps the session coins; only `totalBalance` moves with the bonus.
-          const bonus = (await this.ports.assignments.settleMissionRewards({ userId: s.userId, missionId: s.missionId, sessionId: s.id, isTest: test, at: completed.completedAt }, tx)).paid
+          // S6-T07: the once-only target reward of the session's mission, credited after the streak was touched. The response keeps the session coins; only `totalBalance` moves.
+          const bonus = s.missionId !== null ? (await this.ports.assignments.payTargetReward({ userId: s.userId, missionId: s.missionId, sessionId: s.id, isTest: test, at: completed.completedAt }, tx)).paid : 0
           if (s.mode === 'remedial' && s.remedialTestId !== null) {
             const accuracy = completed.total === 0 ? 0 : (completed.correct / completed.total) * 100
             await this.ports.assignments.remedialCompleted(
