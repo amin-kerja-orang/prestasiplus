@@ -40,6 +40,7 @@ describe('authentication', () => {
     '/api/performance/levels',
     '/api/performance/levels/t4',
     '/api/performance/classes',
+    '/api/performance/classes/aggregate',
     `/api/performance/classes/${w.classId}`,
     '/api/item-analysis/school',
     `/api/item-analysis/school/${w.schools.demo1}`,
@@ -155,7 +156,7 @@ describe('contract shapes and no-store', () => {
     noStore(await (as.pelajar as Client).get(`/api/performance/students/${w.ids['pelajarmaju@demo.test']}`))
   })
 
-  it('the figures come from the injected Bijak facts and exclude the test sitting', async () => {
+  it('the class figures come from the injected answer facts (one session per pupil) and exclude the test row', async () => {
     const dash = parseData(await (as.guru as Client).get(`/api/performance/classes/${w.classId}`), PerformanceClassDashboardSchema)
     expect(dash.stats.sessions).toBe(9)
   })
