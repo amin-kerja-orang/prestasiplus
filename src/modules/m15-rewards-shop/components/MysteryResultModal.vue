@@ -21,10 +21,13 @@ function onOpen(value: boolean): void {
   <DsDialog
     :open="result !== null"
     :title="result?.boxName ?? BOX_COPY.heading"
-    data-testid="box-result"
     @update:open="onOpen"
   >
-    <div v-if="result" class="flex flex-col items-center gap-4 text-center">
+    <div
+      v-if="result"
+      class="flex flex-col items-center gap-4 text-center"
+      data-testid="box-result"
+    >
       <DsArt3D name="party" size="hero" float data-testid="box-result-icon" />
       <p class="text-heading text-highlighted" data-testid="box-result-name">
         {{ result.boxName }}

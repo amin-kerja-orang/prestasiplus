@@ -64,6 +64,7 @@ import type {
   QuestionView,
   SetStatusOptions,
   StructuredListFilter,
+  TextbookRef,
   StructuredListResult,
 } from './types'
 
@@ -176,8 +177,12 @@ function statusAfterEdit(current: QuestionStatus): QuestionStatus {
 interface Normalized {
   subjectId: string
   educationLevelId: string
-  /** 1..6, stored in `difficulty_tp`. */
+  /** 1..6, stored in `difficulty_tp`. Working default: still falls back to the typed Kesukaran when no `tag.tp` is sent (S1-T01's save path). */
   tp: number
+  /** DM-47: the typed Kesukaran 1..5, stored in `difficulty_level` on every save. */
+  difficultyLevel: number
+  /** DM-56: a value sets the reference, null clears it, undefined keeps what is stored. */
+  textbookRef?: TextbookRef | null | undefined
   stem: string
   parts: QuestionPart[]
   language: VersionDraft['language']
@@ -292,6 +297,8 @@ export class QuestionsService {
         subjectId: input.subjectId,
         educationLevelId: input.educationLevelId,
         tp: input.tag?.tp ?? input.difficultyLevel,
+        difficultyLevel: input.difficultyLevel,
+        textbookRef: input.textbookRef,
         stem: input.questionText,
         parts,
         language: languageToStore(input.language, undefined),
@@ -371,6 +378,7 @@ export class QuestionsService {
         tagReview: v.tagReview,
         catalogueVersion: v.catalogueVersion,
         difficultyTp: v.difficultyTp,
+        difficultyLevel: v.difficultyLevel,
         sourcePage: v.sourcePage,
         setLabel: v.setLabel,
         paperCode: v.paperCode ?? null,
@@ -455,6 +463,7 @@ export class QuestionsService {
           tagReview: v.tagReview,
           catalogueVersion: v.catalogueVersion,
           difficultyTp: v.difficultyTp,
+          difficultyLevel: v.difficultyLevel,
           sourcePage: v.sourcePage,
           setLabel: v.setLabel,
           paperCode: v.paperCode ?? null,
@@ -587,12 +596,7 @@ export class QuestionsService {
         if (record.liveVersionNo !== null && record.liveVersionNo !== v.versionNo) {
           await this.repo.setVersionStatus(id, record.liveVersionNo, 'archived', { archiveReason: 'superseded' })
         }
-        // REQ-B-071 (Q17): the Bab is not required to approve; when the admin gave none, fill it from the DSKP unit (one chapter whose dskp_code is the unit code), so
-        // Soalan by Chapter, Peta Belajar and Latihan Bab still count the question. No match, or several: it stays chapterless.
-        if (v.chapterId === null) {
-          const derived = await this.repo.chapterOfUnit(v.subjectId, v.educationLevelId, v.unitId)
-          if (derived !== null) await this.repo.fillChapter(id, v.versionNo, derived)
-        }
+        // S1-T02 supersedes REQ-B-071: the Bab is a gate item (NO_CHAPTER) wherever the Subjek + Tingkatan has chapters, so it is no longer derived from the unit here.
         await this.repo.setVersionStatus(id, v.versionNo, 'approved', { publishedAt: this.clock.now() })
         await this.repo.setLiveVersion(id, v.versionNo)
         await this.repo.setLastEditor(id, v.versionNo, 'person') // a person approved it
@@ -604,7 +608,8 @@ export class QuestionsService {
         await this.repo.setVersionStatus(id, v.versionNo, status, { archiveReason: 'withdrawn' })
         await this.repo.setLiveVersion(id, null)
       } else {
-        await this.repo.setVersionStatus(id, v.versionNo, status)
+        // DM-58: "Tolak" (review to draft with a reason) stores `rejection_reason`; sending for review again clears it.
+        await this.repo.setVersionStatus(id, v.versionNo, status, status === 'review' ? { rejectionReason: null } : options.rejectionReason !== undefined && status === 'draft' ? { rejectionReason: options.rejectionReason } : {})
         // R1-H-A18: a person's status transition on the version (for example draft to review) is the person having seen it.
         await this.repo.setLastEditor(id, v.versionNo, 'person')
         if (status === 'archived' && record.liveVersionNo !== null && record.liveVersionNo !== v.versionNo) {
@@ -718,6 +723,7 @@ export class QuestionsService {
         subjectId: input.subjectId,
         educationLevelId: input.educationLevelId,
         tp: input.tag?.tp ?? difficultyOf(input.difficultyLevel),
+        difficultyLevel: difficultyOf(input.difficultyLevel),
         stem: input.questionText,
         parts,
         language: languageToStore(undefined, input.scriptType),
@@ -908,11 +914,6 @@ export class QuestionsService {
     // R1-H-A18: who wrote this content and what total the intake declared. An AI variant is the AI's until a person acts on it.
     draft.lastEditor = provenance?.sourceType === 'ai_variant' ? 'ai' : 'person'
     draft.declaredMarks = provenance?.declaredMarks ?? null
-    if (status === 'approved' && draft.chapterId === null) {
-      // REQ-B-071 (Q17): created already approved without a Bab: derive it from the DSKP node, as the transition does.
-      const derived = await this.repo.chapterOfUnit(draft.subjectId === null ? null : idToString(draft.subjectId), draft.educationLevelId === null ? null : idToString(draft.educationLevelId), draft.unitNodeId === null ? null : idToString(draft.unitNodeId))
-      if (derived !== null) draft.chapterId = BigInt(derived)
-    }
     if (status === 'approved') {
       // Created already approved (an Admin Pusat shortcut that skips the Semakan step): the same merged approve gate as the transition,
       // on the same builder. The question is not stored yet, so the facts that need a stored row are the new-question ones.
@@ -926,10 +927,11 @@ export class QuestionsService {
             parts: n.parts,
             subjectId,
             educationLevelId: levelId,
-            chapterId: null,
+            chapterId: draft.chapterId === null ? null : idToString(draft.chapterId),
             unitId: draft.unitNodeId === null ? null : idToString(draft.unitNodeId),
             spIds: draft.spNodeIds.map(idToString),
             difficultyTp: draft.difficultyTp,
+            difficultyLevel: draft.difficultyLevel,
             paperCode: draft.paperCode ?? null,
           },
         },
@@ -939,6 +941,8 @@ export class QuestionsService {
           mediaResolved: await this.repo.mediaResolvedFor(draft.stimulusIds, n.stimulusGroupId ? BigInt(n.stimulusGroupId) : null),
           lastEditedByAi: draft.lastEditor === 'ai',
           declaredMarks: draft.declaredMarks ?? null,
+          ...(await this.repo.curriculumFactsFor(subjectId, levelId)),
+          spOutsideUnit: [],
         },
         await this.repo.isSpmBound(subjectId, levelId),
       )
@@ -1130,6 +1134,8 @@ export class QuestionsService {
       tagReview: v?.tagReview ?? false,
       catalogueVersion: v?.catalogueVersion ?? null,
       difficultyTp: n.tp,
+      difficultyLevel: n.difficultyLevel,
+      ...(n.textbookRef === undefined ? {} : { textbookRef: n.textbookRef }),
       sourcePage: v?.sourcePage ?? null,
       setLabel: v?.setLabel ?? null,
       spNodeIds: spKeys,
@@ -1225,6 +1231,8 @@ export class QuestionsService {
       subjectId: opts.keepSubject ? (v.subjectId ?? input.subjectId) : input.subjectId,
       educationLevelId: opts.keepSubject ? (v.educationLevelId ?? input.educationLevelId) : input.educationLevelId,
       tp: input.tag?.tp ?? (keepTp && v.difficultyTp !== null ? v.difficultyTp : input.difficultyLevel),
+      difficultyLevel: input.difficultyLevel,
+      textbookRef: input.textbookRef,
       stem: input.questionText,
       parts,
       language,
