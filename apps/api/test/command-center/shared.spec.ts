@@ -47,6 +47,7 @@ describe('windows and math (pure)', () => {
     expect(round1(66.65)).toBe(66.7)
     expect(percent(1, 0)).toBe(0)
     expect(percent(2, 3, 1)).toBe(66.7)
+    expect(percent(2, 3, 1)).toBe(66.7)
     expect(weekChange(5, 0)).toBe(0)
     expect(weekChange(15, 10)).toBe(50)
     expect(formatCount(1234567)).toBe('1,234,567')

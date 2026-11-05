@@ -1,11 +1,12 @@
 import type { CommandCenterGuruLiveData } from '@pp/contract'
 
-import { formatCount, percent, round, round1, weekChange } from '../shared/math'
+import { xsAccuracy } from '../../school-admin/xs-queries'
+import { formatCount, percent, round1, weekChange } from '../shared/math'
 import { dateKey, timeOfDay, toMytTimestamp } from '../shared/windows'
 import { answerDaysOf, type GuruContext, type GuruDeps, sum, tallies, cmpId } from './context'
 import { PREDICT_MIN_ANSWERS, engagementBand, gradeCode } from './rules'
 
-const rank = (id: string, name: string, c: { answers: number; correct: number }) => ({ studentId: id, name, answered: c.answers, accuracy: percent(c.correct, c.answers) })
+const rank = (id: string, name: string, c: { answers: number; correct: number }) => ({ studentId: id, name, answered: c.answers, accuracy: percent(c.correct, c.answers, 1) })
 
 export async function buildLiveData(deps: GuruDeps, ctx: GuruContext): Promise<CommandCenterGuruLiveData> {
   const w = ctx.windows
@@ -34,8 +35,8 @@ export async function buildLiveData(deps: GuruDeps, ctx: GuruContext): Promise<C
   const active = today.size
   const sNow30 = sum(d30)
   const sPrev30 = sum(prev30)
-  const accNow = percent(sNow30.correct, sNow30.answers)
-  const accPrev = percent(sPrev30.correct, sPrev30.answers)
+  const rawNow = xsAccuracy(sNow30.correct, sNow30.answers)
+  const rawPrev = xsAccuracy(sPrev30.correct, sPrev30.answers)
 
   const classes = ctx.classes.flatMap((c) => {
     const educationLevel = gradeCode(c.educationGrade)
@@ -49,7 +50,7 @@ export async function buildLiveData(deps: GuruDeps, ctx: GuruContext): Promise<C
         educationLevel,
         studentCount: members.length,
         active: members.filter((id) => (week.get(id)?.answers ?? 0) > 0).length,
-        accuracy: percent(total.correct, total.answers),
+        accuracy: percent(total.correct, total.answers, 1),
       },
     ]
   })
@@ -101,7 +102,7 @@ export async function buildLiveData(deps: GuruDeps, ctx: GuruContext): Promise<C
     answeredWeek: formatCount(sWeek.answers),
     answeredWeekRaw: sWeek.answers,
     weekChange: weekChange(sWeek.answers, sPrevWeek.answers),
-    accuracy: percent(sAll.correct, sAll.answers),
+    accuracy: percent(sAll.correct, sAll.answers, 1),
     gpsOverall: gps,
     classes,
     topStudents,
@@ -117,9 +118,9 @@ export async function buildLiveData(deps: GuruDeps, ctx: GuruContext): Promise<C
     })),
     kirkT1,
     kirkT1Count: t1.count,
-    kirkT2Accuracy: accNow,
-    kirkT2Delta: round(accNow - accPrev),
-    kirkT2Prev: accPrev,
+    kirkT2Accuracy: rawNow ?? 0,
+    kirkT2Delta: rawNow === null || rawPrev === null ? null : round1(rawNow - rawPrev),
+    kirkT2Prev: rawPrev ?? 0,
     kirkT3Active: d30.size,
     kirkT3Delta: d30.size - prev30.size,
     kirkT3Prev: prev30.size,

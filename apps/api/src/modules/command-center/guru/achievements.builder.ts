@@ -48,7 +48,7 @@ export async function buildBadgeHolders(deps: GuruDeps, ctx: GuruContext, badgeI
       .sort((a, b) => a.awardedAt.getTime() - b.awardedAt.getTime() || cmpId(a.userId, b.userId))
       .map((a) => {
         const t = sum(all, [a.userId])
-        return { studentId: a.userId, name: ctx.byId.get(a.userId)?.name ?? '', accuracy: percent(t.correct, t.answers), awardedAt: toMytTimestamp(a.awardedAt) }
+        return { studentId: a.userId, name: ctx.byId.get(a.userId)?.name ?? '', accuracy: percent(t.correct, t.answers, 1), awardedAt: toMytTimestamp(a.awardedAt) }
       }),
   }
 }

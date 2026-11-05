@@ -18058,9 +18058,10 @@
             "description": "Members with at least one answer in the last 7 days."
           },
           "accuracy": {
-            "type": "integer",
+            "type": "number",
             "minimum": 0,
-            "description": "Whole percent over all answers of the members; 0 when none."
+            "maximum": 100,
+            "description": "Pooled accuracy, one decimal (XS-5); 0 when none."
           }
         },
         "required": [
@@ -18086,8 +18087,9 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "integer",
-            "minimum": 0
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
           }
         },
         "required": [
@@ -18262,9 +18264,10 @@
             "description": "round((week - previous 7 days) / previous * 100); 0 when the previous week has no answer."
           },
           "accuracy": {
-            "type": "integer",
+            "type": "number",
             "minimum": 0,
-            "description": "round(correct / answered * 100) over all answers; 0 when none."
+            "maximum": 100,
+            "description": "Pooled accuracy, one decimal (XS-5); 0 when none."
           },
           "gpsOverall": {
             "type": [
@@ -18320,17 +18323,22 @@
             "minimum": 0
           },
           "kirkT2Accuracy": {
-            "type": "integer",
+            "type": "number",
             "minimum": 0,
-            "description": "Accuracy of the last 30 days."
+            "maximum": 100,
+            "description": "Pooled accuracy of the last 30 days, one decimal (XS-5); 0 when none."
           },
           "kirkT2Delta": {
-            "type": "integer",
-            "description": "Difference to the 30 days before."
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Difference to the 30 days before, one decimal; null when either side has no answers."
           },
           "kirkT2Prev": {
-            "type": "integer",
-            "minimum": 0
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
           },
           "kirkT3Active": {
             "type": "integer",
@@ -18445,8 +18453,9 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "integer",
-            "minimum": 0
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
           },
           "lastActiveAt": {
             "allOf": [
@@ -18506,8 +18515,9 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "integer",
-            "minimum": 0
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
           }
         },
         "required": [
@@ -18535,8 +18545,9 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "integer",
-            "minimum": 0
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
           },
           "students": {
             "type": "integer",
@@ -18699,8 +18710,9 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "integer",
-            "minimum": 0
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
           },
           "lastActiveAt": {
             "allOf": [
@@ -18730,15 +18742,21 @@
         "type": "object",
         "properties": {
           "accuracyNow": {
-            "type": "integer",
-            "minimum": 0
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
           },
           "accuracyPrev": {
-            "type": "integer",
-            "minimum": 0
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
           },
           "accuracyChange": {
-            "type": "integer"
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Difference to the 30 days before, one decimal; null when either side has no answers."
           },
           "answersNow": {
             "type": "integer",
@@ -18817,15 +18835,21 @@
             "type": "object",
             "properties": {
               "accuracyNow": {
-                "type": "integer",
-                "minimum": 0
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
               },
               "accuracyPrev": {
-                "type": "integer",
-                "minimum": 0
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
               },
               "accuracyChange": {
-                "type": "integer"
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "Difference to the 30 days before, one decimal; null when either side has no answers."
               },
               "answersNow": {
                 "type": "integer",
@@ -19265,8 +19289,9 @@
                   "type": "string"
                 },
                 "accuracy": {
-                  "type": "integer",
-                  "minimum": 0
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
                 },
                 "awardedAt": {
                   "$ref": "#/components/schemas/Timestamp"
