@@ -14893,6 +14893,16 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/practice/remedial-suggestions",
+      "method": "GET",
+      "path": "/api/practice/remedial-suggestions",
+      "api_id": "API-PRAC-08",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/src/modules/practice/reads/analytics/analytics.controller.ts",
+      "approved_by_card": "S5-T07"
+    },
+    {
       "key": "GET /api/practice/progress",
       "method": "GET",
       "path": "/api/practice/progress",

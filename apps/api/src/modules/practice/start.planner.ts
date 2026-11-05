@@ -18,6 +18,7 @@ import {
 } from './errors'
 import { type AssignmentKind, type AssignmentResolution, type PracticeDrillActivity, type PracticeQuestion, PracticePorts } from './ports'
 import { PracticeRepository, type SessionRecord } from './practice.repository'
+import { RemedialSelector } from './remedial.selector'
 import {
   COUNT_OPTIONS,
   LATIH_TUBI_COUNTS,
@@ -98,6 +99,9 @@ export class PracticeStartPlanner {
     @Inject(PracticeRepository) private readonly repo: PracticeRepository,
     @Inject(SubscriptionService) private readonly subscriptions: SubscriptionService,
   ) {}
+
+  /** The shared revision drill rule (S5-T07); stateless, built from the same repository and ports (also provided by `PracticeModule` for the suggestions). */
+  private readonly drills = new RemedialSelector(this.repo, this.ports)
 
   async plan(userId: string, req: StartSessionRequest, now: Date, isTest: boolean): Promise<StartPlan> {
     // BR-07: a user without a subscription and no trial left cannot start (402).
@@ -257,14 +261,10 @@ export class PracticeStartPlanner {
     const subject = await this.subjectOf(req.subjectCode)
     if (req.count !== undefined && req.count !== REVISION_LENGTH) throw invalidField('count')
     const subjectId = idToString(subject.id)
-    const queue = await this.repo.queue(userId, { subjectId })
-    // XL-19: only questions eligible for practice are served and counted.
-    const live = await this.ports.questions.live(queue.map((q) => q.questionId))
-    const eligible = queue.filter((q) => live.has(q.questionId))
-    if (eligible.length === 0) throw noWrongQuestions()
-    const picked = eligible.slice(0, REVISION_LENGTH)
-    const served = picked.map((q) => live.get(q.questionId)).filter((q): q is PracticeQuestion => q !== undefined)
-    return Object.assign(plan, { subjectId, served, revisionMeta: { selected: picked.length, totalWrong: eligible.length } })
+    // S5-T07: wrong servable questions first, topped up from the weakest topics (the selector shared with the remedial suggestions).
+    const drill = await this.drills.select(userId, subjectId)
+    if (drill.served.length === 0) throw noWrongQuestions()
+    return Object.assign(plan, { subjectId, served: drill.served, revisionMeta: { selected: drill.served.length, totalWrong: drill.totalWrong } })
   }
 
   private async pastYear(plan: StartPlan, userId: string, req: StartSessionRequest, now: Date): Promise<StartPlan> {

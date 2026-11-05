@@ -7,6 +7,7 @@ import {
   type PracticeReadHistoryItem,
   type PracticeReadMastery,
   type PracticeReadProgress,
+  type PracticeReadRemedialSuggestionsSchema,
 } from '@pp/contract'
 import type { z } from 'zod'
 
@@ -14,6 +15,9 @@ import { ApiError } from '../../../../common/errors/api-error'
 import { listMeta } from '../../../../common/http/respond'
 import { toMytTimestamp } from '../../../../common/time/myt'
 import { CLOCK, type Clock } from '../../../../db/clock'
+import { AnswerFactsAdapter } from '../answer-facts.adapter'
+import { RemedialSelector } from '../../remedial.selector'
+import type { AnswerFactsPort } from '../../../reports/performance/ports'
 import {
   DAY_MS,
   dayLabel,
@@ -33,9 +37,17 @@ import {
 } from './analytics.calc'
 import { PracticeAnalyticsRepository, type SubjectRow } from './analytics.repository'
 
+type RemedialSuggestions = z.infer<typeof PracticeReadRemedialSuggestionsSchema>
+
 type Corrections = z.infer<typeof PracticeReadCorrectionsSchema>
 
 const PERIOD_DAYS: Readonly<Record<string, number>> = { '7': 7, '30': 30, '90': 90 }
+
+const REMEDIAL_TARGET = 60 as const
+const REMEDIAL_COMPLETED_LIMIT = 20
+
+/** Whole-number percent, half up, in integer arithmetic (59.5 gives 60); 0 when nothing was answered. */
+const wholePct = (part: number, whole: number): number => (whole <= 0 ? 0 : Math.floor((200 * part + whole) / (2 * whole)))
 
 const notFound = (): ApiError => ApiError.of('NOT_FOUND', { message: PRACTICE_READS_MESSAGES.notFound })
 
@@ -56,6 +68,8 @@ export class PracticeAnalyticsService {
   constructor(
     @Inject(PracticeAnalyticsRepository) private readonly repo: PracticeAnalyticsRepository,
     @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(RemedialSelector) private readonly remedial: RemedialSelector,
+    @Inject(AnswerFactsAdapter) private readonly facts: AnswerFactsPort,
   ) {}
 
   /** S6. Distinct queued questions per active subject (BR-01 order); `total` counts every eligible queue row. */
@@ -70,6 +84,57 @@ export class PracticeAnalyticsService {
         return count > 0 ? [{ code: s.code, name: s.name, nameEn: s.nameEn, icon: s.icon, color: s.color, count }] : []
       }),
     }
+  }
+
+  /**
+   * S5-T07 (API-PRAC-08, R1-MUR-12). Pupils only (R10): any other active role gets empty lists.
+   * needed: every active subject with answers whose pooled accuracy (correct / answered over the non-test answer rows of every
+   * mode, from the shared `AnswerFactsPort`) rounds half up to below 60 AND whose revision drill has a question (the shared
+   * `RemedialSelector`, FD-MUR-36). completed: the newest 20 completed revision sets with Sebelum / Selepas (whole numbers).
+   */
+  async remedialSuggestions(userId: string, role: string): Promise<RemedialSuggestions> {
+    if (role !== 'student') return { completed: [], needed: [] }
+    const [subjects, rows, sets] = await Promise.all([
+      this.repo.subjects(),
+      this.facts.answerFacts({ userIds: [userId] }),
+      this.repo.completedRevisionSets(userId, REMEDIAL_COMPLETED_LIMIT),
+    ])
+    const totals = new Map<string, { answered: number; correct: number }>()
+    for (const r of rows) {
+      const t = totals.get(r.subjectId) ?? { answered: 0, correct: 0 }
+      t.answered += r.attempts
+      t.correct += r.correct
+      totals.set(r.subjectId, t)
+    }
+    const byId = new Map(subjects.map((s) => [s.id, s]))
+    const needed: RemedialSuggestions['needed'] = []
+    for (const s of subjects) {
+      const t = totals.get(s.id)
+      if (!s.isActive || !t || t.answered === 0) continue
+      const accuracy = wholePct(t.correct, t.answered)
+      if (accuracy >= REMEDIAL_TARGET) continue
+      if ((await this.remedial.select(userId, s.id)).served.length === 0) continue
+      needed.push({ subjectCode: s.code, subjectName: s.name, answered: t.answered, accuracy, target: REMEDIAL_TARGET })
+    }
+    const completed: RemedialSuggestions['completed'] = sets.flatMap((r) => {
+      const subject = byId.get(r.subjectId)
+      if (!subject) return []
+      const before = wholePct(r.beforeCorrect, r.beforeAnswered)
+      const after = wholePct(r.correctCount, r.questionCount)
+      return [
+        {
+          subjectCode: subject.code,
+          subjectName: subject.name,
+          setNo: r.setNo,
+          questionCount: r.questionCount,
+          before,
+          after,
+          delta: after - before,
+          at: toMytTimestamp(r.completedAt),
+        },
+      ]
+    })
+    return { completed, needed }
   }
 
   /** S7 guard. Unknown or inactive code is 404; a count of 0 is still 200. */
