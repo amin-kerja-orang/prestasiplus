@@ -7643,6 +7643,11 @@
         "properties": {
           "rewardId": {
             "$ref": "#/components/schemas/Id"
+          },
+          "clientUuid": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Idempotency key (DM-78), per user: a repeat returns the first redemption and moves nothing."
           }
         },
         "required": [
@@ -7935,6 +7940,16 @@
           "ticketsOwned",
           "syilingBalance"
         ]
+      },
+      "RewardTicketRequest": {
+        "type": "object",
+        "properties": {
+          "clientUuid": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Idempotency key (DM-78), per user: a repeat answers for the first ticket and moves nothing."
+          }
+        }
       },
       "ShopDigitalItemsQuery": {
         "type": "object",
@@ -81027,7 +81042,7 @@
           "rewards"
         ],
         "summary": "Redeem a catalogue reward with tokens",
-        "description": "One transaction: snapshot redemption row, token debit (source hadiah_redeem, ref redemption:{id}), stock - 1 when stock is limited. Checks run in this order: reward exists and is active, stock, monthly cap (non-cancelled redemptions of that reward in the Malaysia calendar month), token balance. Any refusal rolls back everything.",
+        "description": "One transaction: snapshot redemption row, token debit (source hadiah_redeem, ref redemption:{id}), stock - 1 when stock is limited. Checks run in this order: reward exists and is active, stock, monthly cap (non-cancelled redemptions of that reward in the Malaysia calendar month), token balance. Any refusal rolls back everything. A repeat with the same clientUuid from the same user returns the first redemption before any of these checks; no header and no time window (DM-78).",
         "parameters": [
           {
             "schema": {
@@ -81111,7 +81126,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR fields.rewardId \"The reward id field is required.\" (missing, non-numeric or below 1; the top-level message is the same text).",
+            "description": "VALIDATION_ERROR fields.rewardId \"The reward id field is required.\" (missing, non-numeric or below 1; the top-level message is the same text); fields.clientUuid \"The client uuid field must be a valid UUID.\".",
             "content": {
               "application/json": {
                 "schema": {
@@ -81301,7 +81316,7 @@
           "rewards"
         ],
         "summary": "Buy one draw ticket with syiling",
-        "description": "Debits ticketCostSyiling (ledger spend, source cabutan_ticket, description \"Tiket Cabutan: {title}\", ref draw:{id}) and inserts one ticket. No body.",
+        "description": "Debits ticketCostSyiling (ledger spend, source cabutan_ticket, description \"Tiket Cabutan: {title}\", ref draw:{id}) and inserts one ticket. The body is optional. A repeat with the same clientUuid from the same user answers for the first ticket before any check and moves nothing (DM-78).",
         "parameters": [
           {
             "schema": {
@@ -81328,6 +81343,16 @@
             "in": "header"
           }
         ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RewardTicketRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": "Ticket bought.",
@@ -81369,6 +81394,16 @@
           },
           "409": {
             "description": "DRAW_CLOSED \"Cabutan ditutup.\" (missing, not open, or closed by date); TICKET_LIMIT \"Had tiket dicapai.\"; INSUFFICIENT_BALANCE \"Baki syiling tidak mencukupi.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR fields.clientUuid \"The client uuid field must be a valid UUID.\".",
             "content": {
               "application/json": {
                 "schema": {
