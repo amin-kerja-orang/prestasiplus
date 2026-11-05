@@ -152,6 +152,10 @@ export interface Dashboard {
   streak: { count: number; practisedToday: boolean }
   wallet: { coins: number; points: number; level: number; levelProgressPct: number }
   week: { sessions: number; accuracyPct: number }
+  /** Pupil's pooled accuracy (all modes), at most one decimal; `null` = 0 answers. */
+  accuracyPct: number | null
+  /** The active package (complimentary or school subscription); `null` = none (then the trial card may show). */
+  package: { name: string; validUntil: string } | null
   banners: DashboardBanner[]
   quests: DashboardQuest[]
   questsCompleted: number
@@ -233,6 +237,39 @@ export interface RevisionOverview {
 export interface RevisionSubject {
   subject: { id: number; code: string; name: string; color: string }
   count: number
+}
+
+// ---------------------------------------------------------------------------------------------
+// API-PRAC-08 Remedial suggestions (S5-T07; contract `PracticeReadRemedialSuggestions`)
+// ---------------------------------------------------------------------------------------------
+
+/** A completed revision drill ("Remedial Set {setNo}"); all percentages are whole numbers. */
+export interface RemedialCompletedSet {
+  subjectCode: string
+  subjectName: string
+  setNo: number
+  questionCount: number
+  /** Pooled subject accuracy before the drill ("Sebelum"); `null` when there was no earlier answer. */
+  before: number | null
+  /** The drill accuracy ("Selepas"); `null` when the drill had no questions. */
+  after: number | null
+  /** `after - before`; `null` unless both sides exist. */
+  delta: number | null
+  at: string
+}
+
+/** A subject below the target ("Perlu Pemulihan"). */
+export interface RemedialNeededSubject {
+  subjectCode: string
+  subjectName: string
+  answered: number
+  accuracy: number
+  target: 60
+}
+
+export interface RemedialSuggestions {
+  completed: RemedialCompletedSet[]
+  needed: RemedialNeededSubject[]
 }
 
 // ---------------------------------------------------------------------------------------------

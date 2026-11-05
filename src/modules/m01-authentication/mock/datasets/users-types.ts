@@ -35,6 +35,8 @@ export interface UserRow {
   grade: number | null
   schoolId: number | null
   bio: string | null
+  /** "Cita-Cita Saya" (DM-80), max 255; students only in practice. */
+  aspiration?: string | null
   avatarUrl: string | null
   /** Inactive → login refused (M01 BR-23, M02 BR-05). */
   isActive: boolean
