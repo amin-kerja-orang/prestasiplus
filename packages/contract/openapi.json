@@ -108348,7 +108348,7 @@
           "missions"
         ],
         "summary": "Misi Harian of the signed-in teacher (API-GUR-11)",
-        "description": "Teacher or admin. Own missions plus Global (platform) missions (global = true), date descending then created descending. completedCount counts pupils of the teacher's classes.",
+        "description": "Teacher only. Own missions plus Global (platform) missions (global = true), date descending then created descending. completedCount counts pupils of the teacher's classes.",
         "responses": {
           "200": {
             "description": "Missions.",
@@ -108387,7 +108387,7 @@
           "missions"
         ],
         "summary": "Create a mission (API-GUR-11)",
-        "description": "Teacher or admin. Recipients are a snapshot at creation (classroomId null = all pupils of all own active classes). 422 VALIDATION_ERROR with fields for the body check and for a date before today (MYT); 422 VALIDATION_ERROR without fields and message \"Had 5 misi sehari telah dicapai.\" when the teacher already has 5 missions on that MYT day. UI toast \"Misi dicipta.\".",
+        "description": "Teacher only. Recipients are a snapshot at creation (classroomId null = all pupils of all own active classes). 422 VALIDATION_ERROR with fields for the body check and for a date before today (MYT); 422 VALIDATION_ERROR without fields and message \"Had 5 misi sehari telah dicapai.\" when the teacher already has 5 missions on that MYT day. UI toast \"Misi dicipta.\".",
         "parameters": [
           {
             "schema": {
@@ -108479,7 +108479,7 @@
           "missions"
         ],
         "summary": "Delete an own mission (API-GUR-11)",
-        "description": "Teacher or admin. Rewards already paid stay. A Global mission answers 403 \"Misi global tidak boleh dipadam.\"; another teacher's or an unknown id answers 404.",
+        "description": "Teacher only. Rewards already paid stay. A Global mission answers 403 \"Misi global tidak boleh dipadam.\"; another teacher's or an unknown id answers 404.",
         "parameters": [
           {
             "schema": {

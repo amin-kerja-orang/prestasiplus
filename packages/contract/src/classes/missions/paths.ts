@@ -98,7 +98,7 @@ export function registerMissionsPaths(registry: OpenAPIRegistry): void {
     path: '/guru/missions',
     tags: ['missions'],
     summary: 'Misi Harian of the signed-in teacher (API-GUR-11)',
-    description: 'Teacher or admin. Own missions plus Global (platform) missions (global = true), date descending then created descending. completedCount counts pupils of the teacher\'s classes.',
+    description: 'Teacher only. Own missions plus Global (platform) missions (global = true), date descending then created descending. completedCount counts pupils of the teacher\'s classes.',
     responses: { 200: json(TeacherMissionListResponseSchema, 'Missions.'), 401: unauthorized, 403: teacherOnly },
   })
 
@@ -108,7 +108,7 @@ export function registerMissionsPaths(registry: OpenAPIRegistry): void {
     tags: ['missions'],
     summary: 'Create a mission (API-GUR-11)',
     description:
-      'Teacher or admin. Recipients are a snapshot at creation (classroomId null = all pupils of all own active classes). 422 VALIDATION_ERROR with fields for the body check and for a date before today (MYT); 422 VALIDATION_ERROR without fields and message "Had 5 misi sehari telah dicapai." when the teacher already has 5 missions on that MYT day. UI toast "Misi dicipta.".',
+      'Teacher only. Recipients are a snapshot at creation (classroomId null = all pupils of all own active classes). 422 VALIDATION_ERROR with fields for the body check and for a date before today (MYT); 422 VALIDATION_ERROR without fields and message "Had 5 misi sehari telah dicapai." when the teacher already has 5 missions on that MYT day. UI toast "Misi dicipta.".',
     request: { headers: [csrf], body: body(TeacherMissionCreateSchema) },
     responses: {
       201: json(TeacherMissionResponseSchema, 'The created mission.'),
@@ -124,7 +124,7 @@ export function registerMissionsPaths(registry: OpenAPIRegistry): void {
     path: '/guru/missions/{id}',
     tags: ['missions'],
     summary: 'Delete an own mission (API-GUR-11)',
-    description: 'Teacher or admin. Rewards already paid stay. A Global mission answers 403 "Misi global tidak boleh dipadam."; another teacher\'s or an unknown id answers 404.',
+    description: 'Teacher only. Rewards already paid stay. A Global mission answers 403 "Misi global tidak boleh dipadam."; another teacher\'s or an unknown id answers 404.',
     request: { headers: [csrf], params: idParam },
     responses: {
       200: json(envelopeOf(z.object({ deleted: z.literal(1) })), '{ data: { deleted: 1 } }.'),

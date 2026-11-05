@@ -346,7 +346,13 @@ export const TeacherMissionCreateSchema = z
       .trim()
       .min(1, MISSION_MESSAGES.titleRequired)
       .max(255, MISSION_MESSAGES.titleTooLong),
-    description: z.string().max(500, MISSION_MESSAGES.descriptionTooLong).nullable().optional(),
+    description: z
+      .string()
+      .trim()
+      .max(500, MISSION_MESSAGES.descriptionTooLong)
+      .nullable()
+      .optional()
+      .transform((v) => (v === undefined || v === null || v === '' ? null : v)),
     targetQuestions: z
       .number({ error: MISSION_MESSAGES.target })
       .int(MISSION_MESSAGES.target)
