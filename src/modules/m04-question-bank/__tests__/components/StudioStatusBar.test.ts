@@ -93,8 +93,8 @@ describe('StudioStatusBar', () => {
       gate: 'approve',
       ok: false,
       issues: [
-        { path: 'parts.b.cognitiveLevel', code: 'LEAF_COGNITIVE_LEVEL_MISSING', message: 'Bahagian (b) belum ada aras pemikiran.', step: 3 },
-        { path: 'kertas', code: 'KERTAS_MISSING', message: 'Soalan SPM belum ada kertas.', step: 1 },
+        { path: 'parts.b.cognitiveLevel', code: 'LEAF_NO_ARAS', message: 'Bahagian (b) belum ada aras pemikiran.', step: 3 },
+        { path: 'kertas', code: 'NO_KERTAS', message: 'Soalan SPM belum ada kertas.', step: 1 },
       ],
     })
     const w = await mountBar({ status: 'review' })
