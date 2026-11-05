@@ -453,7 +453,6 @@ export class GuruSubmissionsService {
       this.assertOpen(item)
       const stored = item.payload as { origin?: { label: string; page: number } } | null
       const oldImage = guruStimulusImageOf(item.payload)
-      if (oldImage !== null && oldImage !== row.input.stimulusImageId) replaced.token = oldImage
       const stimulusId = await this.syncStimulus(tx, item.batchId, item.stimulusId, row.input)
       await tx.intakeItem.update({
         where: { id: item.id },
@@ -474,6 +473,8 @@ export class GuruSubmissionsService {
       })
       await tx.intakeBatch.update({ where: { id: item.batchId }, data: { subject: row.subjectName.slice(0, SUBJECT_TEXT_MAX) } })
       await this.record(INTAKE_AUDIT.itemEdited, actor, 'intake_item', item.id, { from: item.reviewState, to: 'needs_review' }, tx)
+      // Counted inside the transaction (after the update), so a concurrent edit cannot make the file look unused while it is not.
+      if (oldImage !== null && oldImage !== row.input.stimulusImageId) replaced.token = await this.unusedImage(tx, oldImage)
     })
     await this.discardImage(replaced.token)
     return this.getStructured(actor.userId, wireId)
@@ -481,10 +482,7 @@ export class GuruSubmissionsService {
 
   /** DELETE: removes an own structured item (and its batch). */
   async removeStructured(actor: GuruActor, wireId: string): Promise<void> {
-    const itemId = structuredItemId(wireId)
-    const image = guruStimulusImageOf((await this.ownItem(actor.userId, itemId, this.prisma.client, 'structured')).payload)
-    await this.remove(actor, itemId, 'structured')
-    await this.discardImage(image)
+    await this.discardImage(await this.remove(actor, structuredItemId(wireId), 'structured'))
   }
 
   /** 409 when an own structured item is no longer open to the teacher (404 first when it is not theirs). */
@@ -492,11 +490,14 @@ export class GuruSubmissionsService {
     this.assertOpen(await this.ownItem(userId, structuredItemId(wireId), this.prisma.client, 'structured'))
   }
 
-  /** Removes a replaced or deleted stimulus image, unless another submission still names it. Never throws. */
+  /** The token when no intake item names the image any more (called inside the transaction that dropped the reference), else null. */
+  private async unusedImage(tx: TxClient, token: string): Promise<string | null> {
+    return (await tx.intakeItem.count({ where: { payload: { path: ['guru', 'stimulusImageId'], equals: token } } })) === 0 ? token : null
+  }
+
+  /** Removes a stimulus image found unused by `unusedImage`, after the transaction committed. Never throws. */
   private async discardImage(token: string | null): Promise<void> {
-    if (token === null) return
-    const still = await this.prisma.client.intakeItem.count({ where: { payload: { path: ['guru', 'stimulusImageId'], equals: token } } })
-    if (still === 0) await this.files.discard(token, 'question_image')
+    if (token !== null) await this.files.discard(token, 'question_image')
   }
 
   /**
@@ -682,9 +683,9 @@ export class GuruSubmissionsService {
   }
 
   /** DELETE: removes the item (and its batch when that leaves the batch empty). */
-  async remove(actor: GuruActor, itemId: string, kind: GuruItemKind = 'mcq'): Promise<void> {
+  async remove(actor: GuruActor, itemId: string, kind: GuruItemKind = 'mcq'): Promise<string | null> {
     const first = await this.ownItem(actor.userId, itemId, this.prisma.client, kind)
-    await this.prisma.transaction(async (tx) => {
+    return this.prisma.transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM intake_items WHERE id = ${first.id} FOR UPDATE`
       const item = await this.ownItem(actor.userId, itemId, tx, kind)
       this.assertOpen(item)
@@ -693,6 +694,9 @@ export class GuruSubmissionsService {
         await tx.intakeBatch.deleteMany({ where: { id: item.batchId, source: 'guru' } })
       }
       await this.record(INTAKE_AUDIT.itemDeleted, actor, 'intake_item', item.id, { from: item.reviewState }, tx)
+      // The stimulus image of a deleted structured item, when no other submission names it any more (counted in this transaction).
+      const image = guruStimulusImageOf(item.payload)
+      return image === null ? null : this.unusedImage(tx, image)
     })
   }
 
