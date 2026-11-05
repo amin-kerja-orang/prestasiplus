@@ -45,12 +45,13 @@ describe('tag gate rows 1 to 8 (R-DSKP and NO_CHAPTER)', () => {
   })
 })
 
-describe('row 9 NO_DIFFICULTY (refused only when the typed Kesukaran and the TP are both null)', () => {
+describe('row 9 NO_DIFFICULTY (the typed Kesukaran is required on its own, whatever the TP)', () => {
   it.each([
     { difficultyLevel: null, tp: null, refused: true },
     { difficultyLevel: undefined, tp: null, refused: true },
-    { difficultyLevel: null, tp: 3, refused: false },
+    { difficultyLevel: null, tp: 3, refused: true },
     { difficultyLevel: 2, tp: null, refused: false },
+    { difficultyLevel: 0, tp: null, refused: false },
     { difficultyLevel: 5, tp: 6, refused: false },
   ])('level $difficultyLevel, tp $tp', ({ difficultyLevel, tp, refused }) => {
     const out = checkDifficultyGate({ difficultyLevel, tp })

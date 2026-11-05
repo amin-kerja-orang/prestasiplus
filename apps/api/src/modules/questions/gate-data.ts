@@ -1,6 +1,7 @@
 import type { QuestionPart } from '@pp/contract'
 
 import { stimulusReferenceOf } from '../intake/workflow/figure-links'
+import type { FlagPart } from './effective-leaf'
 import { leavesOf } from './grading'
 import type { GateFacts, QuestionVersionRecord } from './types'
 import type { QuestionGateData } from './workflow/ports'
@@ -27,6 +28,27 @@ export function missingRequiredFieldsOf(stem: string | null, parts: readonly Que
 /** What the builder reads of a version (a stored one, or a draft that is not stored yet). */
 export type GateVersion = Pick<QuestionVersionRecord, 'stemMs' | 'parts' | 'subjectId' | 'educationLevelId' | 'chapterId' | 'unitId' | 'spIds' | 'difficultyTp' | 'difficultyLevel' | 'paperCode'> &
   Partial<Pick<QuestionVersionRecord, 'stimulusFlag' | 'stimulusFlagRef' | 'flagDismissedAt' | 'stemEn'>>
+
+/** The parts of a draft tree, flattened as the stimulus-flag detector reads them (the create-as-approved gate decides the flag before the row exists). */
+export function flagPartsOf(parts: readonly QuestionPart[]): FlagPart[] {
+  const out: FlagPart[] = []
+  const walk = (list: readonly QuestionPart[]): void => {
+    for (const p of list) {
+      const options = 'options' in p ? p.options : []
+      out.push({
+        isLeaf: 'mode' in p,
+        promptMs: p.prompt?.ms ?? null,
+        promptEn: p.prompt?.en ?? null,
+        optionTexts: options.flatMap((o) => [o.body?.ms ?? null, o.body?.en ?? null]),
+        hasStimulus: (p as { stimulusId?: string }).stimulusId != null,
+        hasOptionImage: options.some((o) => o.imageId != null),
+      })
+      if ('children' in p) walk(p.children)
+    }
+  }
+  walk(parts)
+  return out
+}
 
 /** The first figure reference the question text names ("Rajah 3"), as the servability read finds it (rows 25 text). */
 function stimulusRefTextOf(v: GateVersion): string | null {

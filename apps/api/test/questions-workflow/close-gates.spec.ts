@@ -133,4 +133,56 @@ describe('S1-T02 close-out: R-DSKP contrast and the stimulus flag rows', () => {
       expect((await move(id, 'review')).status).toBe(200)
     })
   })
+
+  describe('AC-ADM-QE3.3 and AC-QA-31: Kesukaran is required on its own', () => {
+    it('a draft with a TP and no Kesukaran is refused on submit and approve with "Sila pilih tahap kesukaran."; once typed it passes', async () => {
+      const id = await create({ subjectId: tag.subjectId, educationLevelId: tag.levelId, curriculumChapterId: tag.chapterId, cognitiveLevel: 'mengaplikasi', tag: { unitId: tag.unitId, spIds: [tag.spId], tp: 3 }, questionText: 'Soalan tanpa tahap kesukaran untuk ujian QE3.3.' })
+      await t.db.query('update question_versions set difficulty_level = null where question_id = $1::bigint', [id])
+      for (const which of ['submit', 'approve'] as const) {
+        expect((await gate(id, which)).issues).toContainEqual({ path: 'difficultyLevel', code: 'NO_DIFFICULTY', message: 'Sila pilih tahap kesukaran.', step: 4 })
+      }
+      const refused = await move(id, 'review')
+      expect(refused.status, JSON.stringify(refused.body)).toBe(422)
+      expect(refused.body.error.fields.difficultyLevel).toBe('Sila pilih tahap kesukaran.')
+      await t.db.query('update question_versions set difficulty_level = 4 where question_id = $1::bigint', [id])
+      expect((await move(id, 'review')).status).toBe(200)
+      expect((await move(id, 'approved')).status).toBe(200)
+    })
+  })
+
+  describe('rows 25/26 on create-as-approved and the bulk action', () => {
+    const okBody = (over: Record<string, unknown>) => ({
+      questionType: 'mcq', difficultyLevel: 2, options: ['4', '5', '6', '7'], correctAnswer: 1, subjectId: tag.subjectId, educationLevelId: tag.levelId,
+      curriculumChapterId: tag.chapterId, cognitiveLevel: 'mengaplikasi', tag: { unitId: tag.unitId, spIds: [tag.spId], tp: 3 }, ...over,
+    })
+    const count = async () => Number((await t.db.query<{ n: string }>('select count(*)::text n from questions'))[0]!.n)
+
+    it('POST /api/questions with status approved and a stem that names a figure with no stimulus answers 422 STIMULUS_MISSING and creates nothing', async () => {
+      const before = await count()
+      const res = await c.admin.post('/api/questions', okBody({ status: 'approved', questionText: 'Rajah 1 menunjukkan sebuah bulatan. Berapakah jejarinya?' }))
+      expect(res.status, JSON.stringify(res.body)).toBe(422)
+      expect(res.body.error.fields.stimulusMissing).toBe(STIMULUS_FLAG_MESSAGES.missing('Rajah 1'))
+      expect(await count()).toBe(before)
+      const ok = await c.admin.post('/api/questions', okBody({ status: 'approved', questionText: 'Berapakah jejari bulatan berdiameter sepuluh sentimeter?' }))
+      expect(ok.status, JSON.stringify(ok.body)).toBe(201)
+    })
+
+    it('bulk-action approved refuses the flagged question with the code and lets the unflagged one through', async () => {
+      const flagged = await create(okBody({ questionText: 'Rajah 2 menunjukkan sebuah segi empat. Berapakah lilitnya?' }))
+      const clean = await create(okBody({ questionText: 'Berapakah lilit segi empat bersisi empat sentimeter?' }))
+      expect((await move(flagged, 'review')).status).toBe(422) // the submit gate already holds it back
+      await t.db.query(`update question_versions set flag_dismissed_at = now() where question_id = $1::bigint`, [flagged])
+      expect((await move(flagged, 'review')).status).toBe(200)
+      await t.db.query(`update question_versions set flag_dismissed_at = null where question_id = $1::bigint`, [flagged])
+      expect((await move(clean, 'review')).status).toBe(200)
+      const res = await c.admin.post('/api/questions/bulk-action', { action: 'approved', ids: [flagged, clean] })
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(res.body.data.affected).toBe(1)
+      expect(res.body.data.failed).toHaveLength(1)
+      expect(JSON.stringify(res.body.data.failed)).toContain(flagged)
+      expect(JSON.stringify(res.body.data.failed)).toContain(STIMULUS_FLAG_MESSAGES.missing('Rajah 2'))
+      expect(await statusOf(flagged)).toBe('review')
+      expect(await statusOf(clean)).toBe('approved')
+    })
+  })
 })

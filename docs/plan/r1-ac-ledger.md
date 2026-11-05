@@ -59,7 +59,8 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S1-T02 | AC-QA-42 | CI | Pass | 2026-11-05 | team-aa/S-3 | close-gates.spec.ts::AC-QA-42: the unloaded subject publishes; MATH (loaded) refuses unit, SP, TP and the aras of the leaf |
 | S1-T02 | AC-QA-29 | CI | Pass | 2026-11-05 | team-aa/S-3 | textbook-ref.test.ts::AC-QA-29 Rujukan buku teks the compact form is "B3T4 M56", and "B3T4 M56-58" with hingga |
 | S1-T02 | AC-ADM-QE4.6 | CI | Pass | 2026-11-05 | team-aa/S-3 | close-gates.spec.ts::a stem that names a figure with no stimulus: the detector flags it; submit and approve answer 422 with STIMULUS_MISSING; Bukan masalah lets it pass |
-| S1-T02 | AC-QA-11 | CI | Pass | 2026-11-05 | team-aa/S-3 | close-gates.spec.ts::a stem that names a figure with no stimulus: the detector flags it; submit and approve answer 422 with STIMULUS_MISSING; Bukan masalah lets it pass |
+| S1-T02 | AC-ADM-QE3.3 | CI | Pass | 2026-11-05 | team-aa/S-3 | close-gates.spec.ts::AC-ADM-QE3.3 and AC-QA-31: Kesukaran is required on its own a draft with a TP and no Kesukaran is refused on submit and approve with "Sila pilih tahap kesukaran."; once typed it passes |
+| S1-T02 | AC-QA-31 | CI | Pass | 2026-11-05 | team-aa/S-3 | close-gates.spec.ts::AC-ADM-QE3.3 and AC-QA-31: Kesukaran is required on its own a draft with a TP and no Kesukaran is refused on submit and approve with "Sila pilih tahap kesukaran."; once typed it passes |
 
 ## Sprint 2
 

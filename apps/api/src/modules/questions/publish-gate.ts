@@ -47,9 +47,9 @@ export function checkTagGate(input: TagGateInput): Record<string, string> {
   return fields
 }
 
-/** NO_DIFFICULTY (row 9, S): refused only when neither the typed Kesukaran nor a TP exists (readers fall back to `least(5, tp)`, else 3). */
+/** NO_DIFFICULTY (row 9, S): the typed Kesukaran is required on its own, whatever the TP (FR-ADM-QE3.7, AC-ADM-QE3.3; team-dd ruling on #503). */
 export function checkDifficultyGate(input: { difficultyLevel?: number | null; tp: number | null }): Record<string, string> {
-  return (input.difficultyLevel ?? null) === null && input.tp === null ? { difficultyLevel: PUBLISH_TAG_MESSAGES.difficultyLevel } : {}
+  return (input.difficultyLevel ?? null) === null ? { difficultyLevel: PUBLISH_TAG_MESSAGES.difficultyLevel } : {}
 }
 
 /** STEM_SHORT (row 10, S): the stem of an MCQ (one top-level MCQ leaf) has at least 10 characters. A blank stem is the REQUIRED_FIELD item, not this one. */
