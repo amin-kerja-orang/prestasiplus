@@ -106,7 +106,8 @@ let reconnectedTimer: ReturnType<typeof setTimeout> | undefined
 const RECONNECTED_MS = 3000
 watch(saveStatus, (status) => {
   if (status === 'offline') offline.value = true
-  else if (status === 'saved' && offline.value) showReconnected()
+  // A flush with nothing unsent also says "saved" (a hidden tab while offline): that is not a connection back.
+  else if (status === 'saved' && offline.value && navigator.onLine !== false) showReconnected()
 })
 function showReconnected(): void {
   offline.value = false
@@ -124,7 +125,7 @@ let loginAgain: () => void = () => undefined
 const stopDeferring = deferUnauthorizedRedirect((proceed) => {
   // Only a timed attempt asks first; Mod Latihan and a page that failed to load take the normal redirect.
   if (!isExam.value) return proceed()
-  loginAgain = proceed
+  loginAgain = () => proceed(route.fullPath)
   sessionExpired.value = true
 })
 const questions = computed(() => view.value?.questions ?? [])

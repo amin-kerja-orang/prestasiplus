@@ -143,6 +143,26 @@ describe('offline banner, a save already done', () => {
   })
 })
 
+describe('offline banner, a flush while still offline', () => {
+  it('a hidden tab that moves the status to saved does not say the connection is back', async () => {
+    Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false })
+    try {
+      server.getAttemptView.mockResolvedValue(view('exam'))
+      await render()
+      window.dispatchEvent(new Event('offline'))
+      await flushPromises()
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' })
+      document.dispatchEvent(new Event('visibilitychange'))
+      await flushPromises()
+      expect(q('[data-testid=reconnected-banner]')).toBeNull()
+      expect(q('[data-testid=offline-banner]')).not.toBeNull()
+    } finally {
+      delete (document as unknown as Record<string, unknown>).visibilityState
+      delete (navigator as unknown as Record<string, unknown>).onLine
+    }
+  })
+})
+
 describe('session expiry (ERR-AUTH-01)', () => {
   const expire = async (): Promise<void> => {
     const store = useSessionStore()
@@ -161,6 +181,7 @@ describe('session expiry (ERR-AUTH-01)', () => {
     q('[data-testid=session-login]')!.click()
     await flushPromises()
     expect(redirect).toHaveBeenCalledOnce()
+    expect(redirect).toHaveBeenCalledWith('/a/a1') // 46:364: the pupil returns to this sitting after login
   })
 
   it('Mod Latihan takes the normal redirect, and after the page leaves the policy is back to normal', async () => {

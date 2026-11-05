@@ -18,7 +18,7 @@ import { setUnauthorizedRedirect } from '@/stores/session'
 
 import { modules, type ModuleManifest } from '../modules'
 import { catchAllRoute, devRoutes, leadingCoreRoutes } from './core-routes'
-import { installGuards, LOGIN_PATH } from './guards'
+import { installGuards, isSafeRedirect, LOGIN_PATH } from './guards'
 
 export * from './guards'
 export * from './layouts'
@@ -58,11 +58,12 @@ export function createAppRouter(options: CreateAppRouterOptions = {}): Router {
 
 /**
  * 401 policy (FR-M01-14): after the session store has cleared the session, go to `/login` with no
- * query and no message. Returns the unregister function.
+ * query and no message, unless a page that deferred the redirect names where to return
+ * (ERR-AUTH-01, timed Bijak sitting). Returns the unregister function.
  */
 export function connectUnauthorizedRedirect(router: Router): () => void {
-  return setUnauthorizedRedirect(() => {
+  return setUnauthorizedRedirect((returnTo) => {
     useNotificationBadgeStore().reset()
-    return router.replace(LOGIN_PATH)
+    return router.replace(isSafeRedirect(returnTo) ? { path: LOGIN_PATH, query: { redirect: returnTo } } : LOGIN_PATH)
   })
 }
