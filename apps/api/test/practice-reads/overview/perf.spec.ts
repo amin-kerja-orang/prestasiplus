@@ -51,9 +51,9 @@ describe.skipIf(!ENABLED)('AC5: dashboard read on 20 students and a generated an
       [QUESTIONS, math, bm, sej, d1, chapter],
     )
     await t.db.query(
-      `insert into practice_answers (user_id, question_id, subject_id, chapter_id, is_correct, answered_at)
+      `insert into practice_answers (user_id, question_id, subject_id, chapter_id, is_correct, answered_at, mode)
        select u.id, 1 + (g * 7919 % $1::int), (array[$2::bigint, $3::bigint, $4::bigint])[1 + (g % 3)], case when g % 5 = 0 then $5::bigint else null end,
-              (g % 3 <> 0), timestamptz '2026-10-19 12:00+08' - ((g * 104729 % 180) || ' days')::interval - ((g % 86400) || ' seconds')::interval
+              (g % 3 <> 0), timestamptz '2026-10-19 12:00+08' - ((g * 104729 % 180) || ' days')::interval - ((g % 86400) || ' seconds')::interval, 'latih_tubi'
          from (select id, row_number() over (order by id) as n from users where email like 'perf.%') u
          cross join generate_series(1, ($6::int / 20)) g`,
       [QUESTIONS, math, bm, sej, chapter, ROWS],
