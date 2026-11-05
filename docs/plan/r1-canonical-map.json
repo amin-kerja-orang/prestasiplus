@@ -11101,7 +11101,8 @@
       "status": "canonical",
       "sector": "S6",
       "file": "apps/api/prisma/schema/classes.prisma",
-      "approved_by_card": null
+      "approved_by_card": "S6-T14",
+      "dm": "DM-46"
     }
   ],
   "apis": [
@@ -17243,7 +17244,7 @@
       "status": "canonical",
       "sector": "S6",
       "file": "apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts",
-      "approved_by_card": null
+      "approved_by_card": "S6-T14"
     },
     {
       "key": "GET /api/guru/question-sets/bank",
@@ -17253,7 +17254,7 @@
       "status": "canonical",
       "sector": "S6",
       "file": "apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts",
-      "approved_by_card": null
+      "approved_by_card": "S6-T14"
     },
     {
       "key": "POST /api/guru/question-sets",
@@ -17263,7 +17264,7 @@
       "status": "canonical",
       "sector": "S6",
       "file": "apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts",
-      "approved_by_card": null
+      "approved_by_card": "S6-T14"
     },
     {
       "key": "GET /api/guru/question-sets/:p",
@@ -17273,7 +17274,7 @@
       "status": "canonical",
       "sector": "S6",
       "file": "apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts",
-      "approved_by_card": null
+      "approved_by_card": "S6-T14"
     },
     {
       "key": "PUT /api/guru/question-sets/:p",
@@ -17283,7 +17284,7 @@
       "status": "canonical",
       "sector": "S6",
       "file": "apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts",
-      "approved_by_card": null
+      "approved_by_card": "S6-T14"
     },
     {
       "key": "DELETE /api/guru/question-sets/:p",
@@ -17293,7 +17294,7 @@
       "status": "canonical",
       "sector": "S6",
       "file": "apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts",
-      "approved_by_card": null
+      "approved_by_card": "S6-T14"
     },
     {
       "key": "POST /api/guru/question-sets/:p/status",
@@ -17303,7 +17304,7 @@
       "status": "canonical",
       "sector": "S6",
       "file": "apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts",
-      "approved_by_card": null
+      "approved_by_card": "S6-T14"
     },
     {
       "key": "POST /api/guru/question-sets/:p/copy",
@@ -17313,7 +17314,7 @@
       "status": "canonical",
       "sector": "S6",
       "file": "apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts",
-      "approved_by_card": null
+      "approved_by_card": "S6-T14"
     },
     {
       "key": "GET /api/guru/question-sets/:p/results",
@@ -17323,7 +17324,7 @@
       "status": "canonical",
       "sector": "S6",
       "file": "apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts",
-      "approved_by_card": null
+      "approved_by_card": "S6-T14"
     },
     {
       "key": "PUT /api/guru/classes/:p",
@@ -17333,7 +17334,7 @@
       "status": "canonical",
       "sector": "S6",
       "file": "apps/api/src/modules/classes/teacher.controller.ts",
-      "approved_by_card": null
+      "approved_by_card": "S6-T14"
     }
   ],
   "concepts": [
