@@ -1,9 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common'
 import {
+  GAMES_ADMIN_GAMES,
   GAMES_ADMIN_SETTING_KEYS,
   GAMES_ADMIN_SETTINGS,
+  GamesAdminGameActiveRequestSchema,
   GamesAdminSettingsUpdateRequestSchema,
   GamesAdminSpinSegmentsUpdateRequestSchema,
+  type GamesAdminGame,
   type GamesAdminOverview,
   type GamesAdminSettingsResult,
   type GamesAdminSpinSegments,
@@ -15,7 +18,7 @@ import { CLOCK, type Clock } from '../../../../db/clock'
 import type { TxClient } from '../../../../db/client'
 import { PrismaService } from '../../../../db/prisma.service'
 import { GameSettingsService } from '../../core/game-settings.service'
-import { adminSettingsInvalid } from '../../errors'
+import { adminSettingsInvalid, gameRecordNotFound } from '../../errors'
 import { DEFAULT_QUIZ_TILES, GAMES_ADMIN_WRITE_TX, GAMES_AUDIT } from '../../games.constants'
 import { RoomsRepository } from '../rooms.repository'
 
@@ -37,6 +40,18 @@ type Issues = Parameters<typeof strictFieldsOf>[0]
 function invalid(issues: Issues) {
   return adminSettingsInvalid(strictFieldsOf(issues), issues.find((i) => i.code !== 'unrecognized_keys')?.message)
 }
+
+type ListedGame = (typeof GAMES_ADMIN_GAMES)[number]
+
+const enabledKeyOf = (game: ListedGame) => `game_enabled_${game.key}` as const
+
+/** The row of a stored flag; the description is there only where 30 N-05 gives one. */
+const gameRow = (game: ListedGame, active: boolean): GamesAdminGame => ({
+  key: game.key,
+  name: game.name,
+  active,
+  ...('description' in game ? { description: game.description } : {}),
+})
 
 const sameSegments = (a: GamesAdminSpinSegments, b: GamesAdminSpinSegments): boolean =>
   a.length === b.length &&
@@ -66,7 +81,7 @@ export class AdminGamesService {
   ) {}
 
   async overview(): Promise<GamesAdminOverview> {
-    return { stats: await this.repo.stats(), settings: await this.readSettings() }
+    return { stats: await this.repo.stats(), settings: await this.readSettings(), games: await this.readGames() }
   }
 
   /** Partial and all or nothing: a parse failure saves nothing; a save that changes nothing writes no audit row. */
@@ -99,6 +114,32 @@ export class AdminGamesService {
     }, GAMES_ADMIN_WRITE_TX)
   }
 
+  /**
+   * N05-04: stores `game_enabled_<game_key>`. Only the flag changes here: no hub or game reads it yet (S7-T01 part
+   * GAME-00). A key outside the list is 404, before the body is looked at. The same value writes no audit row.
+   */
+  async setGameActive(actor: GamesAdminActor, gameKey: string, body: unknown): Promise<GamesAdminGame> {
+    const game = GAMES_ADMIN_GAMES.find((g) => g.key === gameKey)
+    if (!game) throw gameRecordNotFound()
+    const parsed = GamesAdminGameActiveRequestSchema.safeParse(body)
+    if (!parsed.success) throw invalid(parsed.error.issues)
+    const { active } = parsed.data
+    const key = enabledKeyOf(game)
+    const now = this.clock.now()
+    return this.prisma.transaction(async (tx) => {
+      await this.repo.lockAdminSettings('settings')
+      const before = (await this.settings.get(key, tx)) === 1
+      if (before === active) return gameRow(game, before)
+      await this.settings.setMany([{ key, value: active ? 1 : 0, label: game.name }], now, tx)
+      await this.record(tx, actor, GAMES_AUDIT.GAME_ACTIVE_UPDATED, 'game', {
+        gameKey: game.key,
+        before: { active: before },
+        after: { active },
+      })
+      return gameRow(game, active)
+    }, GAMES_ADMIN_WRITE_TX)
+  }
+
   async spinSegments(): Promise<GamesAdminSpinSegments> {
     return this.repo.spinSegments()
   }
@@ -116,6 +157,11 @@ export class AdminGamesService {
       await this.record(tx, actor, GAMES_AUDIT.SPIN_SEGMENTS_UPDATED, 'spin_segments', { before, after: rows })
       return rows
     }, GAMES_ADMIN_WRITE_TX)
+  }
+
+  private async readGames(): Promise<GamesAdminGame[]> {
+    const values = await this.settings.getMany(GAMES_ADMIN_GAMES.map(enabledKeyOf))
+    return GAMES_ADMIN_GAMES.map((game) => gameRow(game, values[enabledKeyOf(game)] === 1))
   }
 
   private async readSettings(tx?: TxClient): Promise<GamesAdminSettingsResult> {

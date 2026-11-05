@@ -1,8 +1,10 @@
 import {
+  GAMES_ADMIN_GAMES,
   GAMES_ADMIN_QUIZ_TILES,
   GAMES_ADMIN_SETTINGS,
   GAMES_ADMIN_SETTING_KEYS,
   GAMES_MESSAGES,
+  GamesAdminGameSchema,
   GamesAdminOverviewSchema,
   GamesAdminSettingsResultSchema,
   GamesAdminSpinSegmentsSchema,
@@ -29,6 +31,9 @@ const SESSION_ENDED = 'Sesi anda telah tamat. Sila log masuk semula.'
 const NOT_ALLOWED = 'Anda tidak dibenarkan melakukan tindakan ini.'
 const SETTINGS_ACTION = 'games.settings.updated'
 const SEGMENTS_ACTION = 'games.spin_segments.updated'
+const GAME_ACTION = 'games.game_active.updated'
+const NO_RECORD = 'Rekod tidak dijumpai. Ia mungkin telah dipadam.'
+const gameUrl = (key: string) => `/api/admin/games/${key}/active`
 
 const DEFAULT_SEGMENTS = [
   { position: 1, label: '1 Syiling', syiling: 1, weight: 25, active: true },
@@ -68,7 +73,8 @@ describe('Tetapan Permainan (S7-T03, API-ADM-08, API-ADM-23)', () => {
     await t.close()
   })
   beforeEach(async () => {
-    await t.db.query(`delete from audit_events where action in ($1, $2)`, [SETTINGS_ACTION, SEGMENTS_ACTION])
+    await t.db.query(`delete from audit_events where action in ($1, $2, $3)`, [SETTINGS_ACTION, SEGMENTS_ACTION, GAME_ACTION])
+    await t.db.query(`update gamification_settings set value = 1 where key like 'game\\_enabled\\_%'`)
     for (const key of GAMES_ADMIN_SETTING_KEYS) {
       await t.db.query(`update gamification_settings set value = $2 where key = $1`, [key, GAMES_ADMIN_SETTINGS[key].default])
     }
@@ -213,13 +219,11 @@ describe('Tetapan Permainan (S7-T03, API-ADM-08, API-ADM-23)', () => {
       expect(await t.db.query(`select count(*)::text as n from coin_ledger`)).toEqual(coins)
     })
 
-    it('quiz tiles stay in game_settings: the gamification_settings row of that key is neither read nor written', async () => {
-      await t.db.query(`update gamification_settings set value = 7 where key = 'boardgame_quiz_tiles'`)
-      expect((await overview()).boardgameQuizTiles).toBe(35)
+    it('quiz tiles stay in game_settings: gamification_settings has no row of that key, before or after a save', async () => {
       const saved = parseData(await admin.put(SETTINGS_URL, { boardgame_quiz_tiles: 12 }), GamesAdminSettingsResultSchema)
       expect(saved.boardgameQuizTiles).toBe(12)
       expect(await storedTiles()).toBe(12)
-      expect(await stored('boardgame_quiz_tiles')).toBe('7.00')
+      expect(await stored('boardgame_quiz_tiles')).toBeUndefined()
     })
 
     it('a key whose row is gone is created with its label', async () => {
@@ -231,10 +235,85 @@ describe('Tetapan Permainan (S7-T03, API-ADM-08, API-ADM-23)', () => {
 
     it('GameSettingsService.setMany refuses quiz tiles and an out-of-range value (a programming error)', async () => {
       await t.db.prisma.$transaction(async (tx) => {
-        await expect(settings.setMany([{ key: 'boardgame_quiz_tiles' as 'game_win_xp', value: 1, label: 'x' }], new Date(), tx)).rejects.toThrow()
+        await expect(settings.setMany([{ key: 'boardgame_quiz_tiles' as GameSettingKey, value: 1, label: 'x' }], new Date(), tx)).rejects.toThrow()
         await expect(settings.setMany([{ key: 'game_win_xp', value: 101, label: 'x' }], new Date(), tx)).rejects.toThrow()
       })
       expect(await stored('game_win_xp')).toBe('20.00')
+    })
+  })
+
+  describe('Senarai Permainan (N05-04)', () => {
+    it('GET lists the 14 games by hub name, all active by default; no tournament, no sambung-kata', async () => {
+      const { games } = parseData(await admin.get('/api/admin/games'), GamesAdminOverviewSchema)
+      expect(games.map((g) => g.key)).toEqual(GAMES_ADMIN_GAMES.map((g) => g.key))
+      expect(games).toHaveLength(14)
+      expect(games.every((g) => g.active)).toBe(true)
+      const keys: string[] = games.map((g) => g.key)
+      expect(keys).toContain('roda-nasib')
+      expect(keys).not.toContain('tournament')
+      expect(keys).not.toContain('sambung-kata')
+    })
+
+    it('a description only where 30 N-05 gives one', async () => {
+      const { games } = parseData(await admin.get('/api/admin/games'), GamesAdminOverviewSchema)
+      expect(games.filter((g) => g.description !== undefined).map((g) => [g.name, g.description])).toEqual([
+        ['Papan Bijak', 'Ular & tangga dengan soalan kuiz. Multiplayer 2-4 pemain.'],
+        ['Battle Arena', '1v1 kuiz battle masa nyata. Pilih lawan & subjek.'],
+        ['Kad Memori', 'Padankan soalan dengan jawapan. 6 pasangan (12 kad).'],
+      ])
+    })
+
+    it('every name is the row label of migration 0224', async () => {
+      const rows = await t.db.query<{ key: string; label: string }>(`select key, label from gamification_settings`)
+      const labels = new Map(rows.map((r) => [r.key, r.label]))
+      for (const game of GAMES_ADMIN_GAMES) expect(labels.get(`game_enabled_${game.key}`), game.key).toBe(game.name)
+    })
+
+    it('PUT answers the row, stores the flag, and GET and GameSettingsService follow', async () => {
+      const row = parseData(await admin.put(gameUrl('kad-memori'), { active: false }), GamesAdminGameSchema)
+      expect(row).toEqual({ key: 'kad-memori', name: 'Kad Memori', active: false, description: 'Padankan soalan dengan jawapan. 6 pasangan (12 kad).' })
+      expect(await settings.get('game_enabled_kad-memori')).toBe(0)
+      const { games } = parseData(await admin.get('/api/admin/games'), GamesAdminOverviewSchema)
+      expect(games.filter((g) => !g.active).map((g) => g.key)).toEqual(['kad-memori'])
+      expect(parseData(await admin.put(gameUrl('kad-memori'), { active: true }), GamesAdminGameSchema).active).toBe(true)
+      expect(await settings.get('game_enabled_kad-memori')).toBe(1)
+    })
+
+    it('audits before and after; the same value writes no audit row', async () => {
+      await admin.put(gameUrl('battle'), { active: true })
+      expect(await audits(GAME_ACTION)).toEqual([])
+      await admin.put(gameUrl('battle'), { active: false })
+      await admin.put(gameUrl('battle'), { active: false })
+      const rows = await audits(GAME_ACTION)
+      expect(rows).toHaveLength(1)
+      expect(rows[0]).toMatchObject({ actor_user_id: admin.userId, actor_role: 'admin' })
+      expect(rows[0]?.detail).toMatchObject({ gameKey: 'battle', before: { active: true }, after: { active: false } })
+    })
+
+    it('a key outside the list is 404 ERR-ACC-04, tournament and sambung-kata included, and stores nothing', async () => {
+      for (const key of ['tournament', 'sambung-kata', 'nope', '__proto__', 'constructor']) {
+        expectError(await admin.put(gameUrl(key), { active: false }), 'NOT_FOUND', NO_RECORD)
+      }
+      expect(await audits(GAME_ACTION)).toEqual([])
+    })
+
+    it('a strict body: a bad active or an unknown key is 422 and stores nothing', async () => {
+      for (const body of [{}, { active: 1 }, { active: 'ya' }, { active: null }]) {
+        const err = expectError(await admin.put(gameUrl('battle'), body), 'VALIDATION_ERROR', 'Nilai tidak sah.')
+        expect(err.fields).toEqual({ active: 'Nilai tidak sah.' })
+      }
+      const extra = expectError(await admin.put(gameUrl('battle'), { active: false, extra: 1 }), 'VALIDATION_ERROR')
+      expect(extra.fields).toEqual({ extra: 'The extra field is not allowed.' })
+      expect(await stored('game_enabled_battle')).toBe('1.00')
+    })
+
+    it('does not change the pupil hub: the flag is only stored here (S7-T01 part GAME-00 reads it)', async () => {
+      const student = await loginAs(t, ACCOUNTS.student)
+      const before = await student.get('/api/games/hub')
+      await admin.put(gameUrl('papan-bijak'), { active: false })
+      const after = await student.get('/api/games/hub')
+      expect(after.status).toBe(before.status)
+      expect(after.body).toEqual(before.body)
     })
   })
 
@@ -311,6 +390,7 @@ describe('Tetapan Permainan (S7-T03, API-ADM-08, API-ADM-23)', () => {
     const SEGMENTS_BODY = { segments: DEFAULT_SEGMENTS }
 
     it('no session: 401 on the new routes and on the settings save', async () => {
+      expectError(await t.http().put(gameUrl('battle')).send({ active: false }), 'UNAUTHORIZED', SESSION_ENDED)
       expectError(await t.http().get(SEGMENTS_URL), 'UNAUTHORIZED', SESSION_ENDED)
       expectError(await t.http().put(SEGMENTS_URL).send(SEGMENTS_BODY), 'UNAUTHORIZED', SESSION_ENDED)
       expectError(await t.http().put(SETTINGS_URL).send({ game_win_xp: 30 }), 'UNAUTHORIZED', SESSION_ENDED)
@@ -327,6 +407,8 @@ describe('Tetapan Permainan (S7-T03, API-ADM-08, API-ADM-23)', () => {
         expectError(await c.get(SEGMENTS_URL), 'FORBIDDEN', NOT_ALLOWED)
         expectError(await c.put(SETTINGS_URL, { game_win_xp: 30 }), 'FORBIDDEN', NOT_ALLOWED)
         expectError(await c.put(SEGMENTS_URL, SEGMENTS_BODY), 'FORBIDDEN', NOT_ALLOWED)
+        expectError(await c.put(gameUrl('battle'), { active: false }), 'FORBIDDEN', NOT_ALLOWED)
+        expect(await stored('game_enabled_battle')).toBe('1.00')
         expect(await stored('game_win_xp')).toBe('20.00')
         expect(await audits(SETTINGS_ACTION)).toEqual([])
       })
@@ -335,6 +417,7 @@ describe('Tetapan Permainan (S7-T03, API-ADM-08, API-ADM-23)', () => {
     it('PUT without the CSRF token is CSRF_INVALID on both saves', async () => {
       expectCsrfInvalid(await admin.noCsrf.put(SETTINGS_URL, { game_win_xp: 30 }))
       expectCsrfInvalid(await admin.noCsrf.put(SEGMENTS_URL, SEGMENTS_BODY))
+      expectCsrfInvalid(await admin.noCsrf.put(gameUrl('battle'), { active: false }))
       expect(await stored('game_win_xp')).toBe('20.00')
     })
 

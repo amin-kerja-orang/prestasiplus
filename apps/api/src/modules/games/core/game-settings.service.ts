@@ -84,9 +84,8 @@ export function isGameSettingValueInRange(key: GameSettingKey, value: number): b
   return 'oneOf' in spec ? spec.oneOf.includes(value) : value >= spec.min && value <= spec.max
 }
 
-/** `boardgame_quiz_tiles` is written to `game_settings` by `RoomsRepository.setQuizTiles`, never here (48 section 2 ruling on S7-T03). */
 export interface GameSettingWrite {
-  key: Exclude<GameSettingKey, 'boardgame_quiz_tiles'>
+  key: GameSettingKey
   value: number
   /** The BM label of 48 section 2, for a row that the migration did not leave behind. */
   label: string
@@ -126,7 +125,7 @@ export class GameSettingsService {
    */
   async setMany(writes: readonly GameSettingWrite[], at: Date, tx: TxClient): Promise<void> {
     for (const { key, value } of writes) {
-      if ((key as GameSettingKey) === 'boardgame_quiz_tiles' || !isGameSettingKey(key) || !isGameSettingValueInRange(key, value)) {
+      if (!isGameSettingKey(key) || !isGameSettingValueInRange(key, value)) {
         throw new Error(`Not a writable game setting: ${String(key)}=${String(value)}`)
       }
     }

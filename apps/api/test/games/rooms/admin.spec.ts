@@ -1,4 +1,5 @@
 import {
+  GAMES_ADMIN_GAMES,
   GAMES_ADMIN_SETTINGS,
   GamesAdminOverviewSchema,
   GamesAdminSettingsResultSchema,
@@ -40,6 +41,7 @@ describe('admin game settings (M16-51, M16-52)', () => {
     expect(parseData(res, GamesAdminOverviewSchema)).toEqual({
       stats: { rooms: 0, playing: 0, finished: 0, players: 0 },
       settings: { boardgameQuizTiles: 35, ...DEFAULTS },
+      games: GAMES_ADMIN_GAMES.map(({ key, name, ...rest }) => ({ key, name, active: true, ...rest })),
     })
   })
 

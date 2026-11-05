@@ -22,6 +22,7 @@ export const GAMES_LIMITS = {
 export const GAMES_AUDIT = {
   SETTINGS_UPDATED: 'games.settings.updated',
   SPIN_SEGMENTS_UPDATED: 'games.spin_segments.updated',
+  GAME_ACTIVE_UPDATED: 'games.game_active.updated',
 } as const
 
 /** The admin saves wait a little longer than the default for a connection: they are rare and must not fail on a busy pool. */

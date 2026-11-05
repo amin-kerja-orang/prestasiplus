@@ -18,6 +18,8 @@ export const gameNotFound = (): ApiError => ApiError.of('NOT_FOUND', { message: 
 export const roomNotFound = (): ApiError => ApiError.of('NOT_FOUND', { message: M.roomNotFound })
 export const jutawanSessionNotFound = (): ApiError => ApiError.of('NOT_FOUND', { message: M.jutawanSessionNotFound })
 export const jutawanQuestionNotFound = (): ApiError => ApiError.of('NOT_FOUND', { message: M.jutawanQuestionNotFound })
+/** ERR-ACC-04: an action on a game that is not in the list. */
+export const gameRecordNotFound = (): ApiError => ApiError.of('NOT_FOUND', { message: M.gameRecordNotFound })
 export const leagueNotFound = (): ApiError => ApiError.of('NOT_FOUND', { message: M.leagueNotFound })
 /** [PROPOSED] check/reveal 404s (standard envelope; copy reused from Jutawan). */
 export const soloSessionNotFound = (): ApiError => ApiError.of('NOT_FOUND', { message: M.soloSessionNotFound })

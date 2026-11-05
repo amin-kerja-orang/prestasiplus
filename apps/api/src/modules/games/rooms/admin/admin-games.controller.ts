@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Put, Req, UseGuards } from '@nestjs/common'
+import { Body, Controller, Get, Inject, Param, Put, Req, UseGuards } from '@nestjs/common'
 import type { Request } from 'express'
 
 import { ApiError } from '../../../../common/errors/api-error'
@@ -52,6 +52,12 @@ export class AdminGamesController {
   @RateLimit(GAMES_LIMITS.write)
   async settings(@Req() req: AdminRequest, @Body() body: unknown) {
     return ok(await this.admin.saveSettings(actorOf(req), objectBody(body)))
+  }
+
+  @Put(':gameKey/active')
+  @RateLimit(GAMES_LIMITS.write)
+  async setGameActive(@Req() req: AdminRequest, @Param('gameKey') gameKey: string, @Body() body: unknown) {
+    return ok(await this.admin.setGameActive(actorOf(req), gameKey, objectBody(body)))
   }
 
   @Get('spin-segments')

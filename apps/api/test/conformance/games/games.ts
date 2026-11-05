@@ -305,6 +305,27 @@ export const gamesScenarios: Scenario[] = [
     },
   },
   {
+    id: 'games-api/Senarai Permainan: the list, the switch, 404 outside the list, admin only',
+    domain: 'games',
+    targets: API_ONLY,
+    async run(ctx) {
+      const admin = await ctx.as('admin')
+      const games = dataOf(await admin.request('GET', '/admin/games')).games as { key: string; active: boolean }[]
+      ctx.check(games.length === 14, 'GET lists the 14 games')
+      ctx.check(!games.some((g) => g.key === 'tournament' || g.key === 'sambung-kata'), 'no tournament and no sambung-kata')
+
+      const off = await admin.request('PUT', '/admin/games/kuiz-relay/active', { body: { active: false } })
+      ctx.expectStatus(off, 200)
+      ctx.check(dataOf(off).active === false && dataOf(off).name === 'Kuiz Relay', 'PUT answers the game row')
+      expectError(ctx, await admin.request('PUT', '/admin/games/kuiz-relay/active', { body: { active: 'x' } }), 422, 'VALIDATION_ERROR')
+      expectError(ctx, await admin.request('PUT', '/admin/games/tournament/active', { body: { active: false } }), 404, 'NOT_FOUND')
+      ctx.expectStatus(await admin.request('PUT', '/admin/games/kuiz-relay/active', { body: { active: true } }), 200)
+
+      const student = await ctx.as('student')
+      expectError(ctx, await student.request('PUT', '/admin/games/kuiz-relay/active', { body: { active: false } }), 403, 'FORBIDDEN')
+    },
+  },
+  {
     id: 'games-api/Segmen Roda Nasib: 8 rows totalling 100, admin only',
     domain: 'games',
     targets: API_ONLY,
