@@ -3,7 +3,7 @@
  * S1 "Perbandingan Sebelum & Selepas" (FN-M12-2.4.1..2.4.4; FR-M12-26..28): subtitle, the SEBELUM / SELEPAS
  * panels (side by side from `md`), four delta tiles (2 x 2 below `md`) and the "Ringkasan:" box. A panel
  * without data shows "-" ranges and 0 values; no data at all gives the "Tiada Data vs Tiada Data" state. When one side has
- * no answers `delta` is `null`: the delta tiles print 0 (never a decline) and the box carries only the sentence
+ * no answers `delta` is `null`: the delta tiles print a neutral "\u2014" (no arrow, no tone; FR-X4-3) and the box carries only the sentence
  * "Data tidak mencukupi untuk perbandingan.".
  */
 import { computed } from 'vue'
@@ -63,7 +63,11 @@ const deltas = computed(() => {
       n: d?.champions ?? 0,
       text: signed(d?.champions ?? 0),
     },
-  ]
+  ].map((t) =>
+    d === null
+      ? { ...t, text: '\u2014', tone: 'none' as const }
+      : { ...t, tone: t.n >= 0 ? ('up' as const) : ('down' as const) },
+  )
 })
 </script>
 
@@ -116,14 +120,18 @@ const deltas = computed(() => {
             :key="d.key"
             class="flex min-w-0 flex-col items-center gap-1"
             :data-testid="`kirk-delta-${d.key}`"
-            :data-tone="d.n >= 0 ? 'up' : 'down'"
+            :data-tone="d.tone"
           >
             <UIcon
-              :name="d.n >= 0 ? 'i-ph-arrow-up' : 'i-ph-arrow-down'"
-              :class="['size-5', d.n >= 0 ? 'text-success' : 'text-error']"
+              v-if="d.tone !== 'none'"
+              :name="d.tone === 'up' ? 'i-ph-arrow-up' : 'i-ph-arrow-down'"
+              :class="['size-5', d.tone === 'up' ? 'text-success' : 'text-error']"
             />
             <p
-              :class="['tabular text-subheading', d.n >= 0 ? 'text-success' : 'text-error']"
+              :class="[
+                'tabular text-subheading',
+                d.tone === 'none' ? 'text-muted' : d.tone === 'up' ? 'text-success' : 'text-error',
+              ]"
               data-testid="kirk-delta-value"
             >
               {{ d.text }}
@@ -134,9 +142,7 @@ const deltas = computed(() => {
       </UCard>
 
       <UAlert color="primary" variant="soft" icon="i-ph-chart-line" data-testid="kirk-summary">
-        <template #description>
-          <strong>Ringkasan:</strong> {{ summary }}
-        </template>
+        <template #description> <strong>Ringkasan:</strong> {{ summary }} </template>
       </UAlert>
     </div>
   </DsPanel>

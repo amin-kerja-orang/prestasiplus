@@ -113,16 +113,8 @@ describe('S1 level cards and flow (AC-M12-06.1, 06.2, 07.1)', () => {
 describe('S1 filter (AC-M12-05.1, 05.2)', () => {
   it('lists the options, no Reset by default, and calls the API without a scope', async () => {
     const { wrapper: w } = await open()
-    expect(nativeLabels(w, 'school_id')).toEqual([
-      'Semua Sekolah',
-      'SMK Demo Satu',
-      'SMK Demo Dua',
-    ])
-    expect(nativeLabels(w, 'state')).toEqual([
-      'Semua Negeri',
-      'Johor',
-      'Kelantan',
-    ])
+    expect(nativeLabels(w, 'school_id')).toEqual(['Semua Sekolah', 'SMK Demo Satu', 'SMK Demo Dua'])
+    expect(nativeLabels(w, 'state')).toEqual(['Semua Negeri', 'Johor', 'Kelantan'])
     expect(t(w, 'kirk-filter').get('button[type="submit"]').text()).toBe('Tapis')
     expect(resetLink(w).exists()).toBe(false)
     expect(api.fetchKirkpatrickOverview).toHaveBeenCalledWith(
@@ -223,7 +215,14 @@ describe('S1 comparison (AC-M12-08.1..08.5)', () => {
         .findAll('[data-testid="kirk-panel-value"]')
         .map((e) => e.text()),
     ).toEqual(['0', '0%', '0', '0'])
-    expect(values(w, 'kirk-delta-value')).toEqual(['0', '0%', '0', '0'])
+    expect(values(w, 'kirk-delta-value')).toEqual(['\u2014', '\u2014', '\u2014', '\u2014'])
+    const deltas = t(w, 'kirk-deltas')
+    expect(deltas.findAll('i, svg, [class*="i-ph-arrow"]')).toHaveLength(0)
+    expect(deltas.html()).not.toMatch(/arrow-up|arrow-down|text-success|text-error/)
+    for (const d of deltas.element.children) {
+      expect(d.getAttribute('data-tone')).toBe('none')
+      expect(d.querySelector('[data-testid="kirk-delta-value"]')?.className).toContain('text-muted')
+    }
     expect(t(w, 'kirk-summary').text()).toContain('Data tidak mencukupi untuk perbandingan.')
   })
 })
@@ -351,7 +350,11 @@ describe('S1 alias with a forced scope (BUG-11)', () => {
       { detailLinks: true, scopeForced: true },
       SESSION_SCHOOL,
     )
-    expect(t(w, 'kirk-levels').findAll('a').map((c) => c.attributes('href'))).toEqual([
+    expect(
+      t(w, 'kirk-levels')
+        .findAll('a')
+        .map((c) => c.attributes('href')),
+    ).toEqual([
       '/admin-sekolah/kirkpatrick/reaction',
       '/admin-sekolah/kirkpatrick/learning',
       '/admin-sekolah/kirkpatrick/behavior',
