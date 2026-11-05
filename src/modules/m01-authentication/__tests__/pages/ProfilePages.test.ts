@@ -279,6 +279,21 @@ describe('S5-T14 school admin "Kemaskini Profil" (20 R1-AS-A1: FR-AS-A1-2, FR-AS
     expect(apiMocks.updateProfile).not.toHaveBeenCalled()
   })
 
+  it('an empty Nama shows "Sila isi nama." (no native required to block it) and makes no save call', async () => {
+    const w = await render(ProfileEditPage, ADMIN)
+    expect(w.get('[data-testid=profile-name-input]').attributes('required')).toBeUndefined()
+    await w.get('[data-testid=profile-name-input]').setValue('')
+    await w.get('[data-testid=profile-form]').trigger('submit')
+    await flushPromises()
+    expect(useFlashStore().current).toEqual({ type: 'error', message: ['Sila isi nama.'] })
+    expect(apiMocks.updateProfile).not.toHaveBeenCalled()
+  })
+
+  it('another role keeps the native required on Nama', async () => {
+    const w = await render(ProfileEditPage, { ...USER, role: 'teacher' })
+    expect(w.get('[data-testid=profile-name-input]').attributes('required')).toBeDefined()
+  })
+
   it('a new name updates the session user (avatar initials and shell card); the e-mel stays read-only', async () => {
     apiMocks.updateProfile.mockResolvedValue({ data: { ...ADMIN, name: 'Admin Contoh B' }, status: 'x' })
     const w = await render(ProfileEditPage, ADMIN)
