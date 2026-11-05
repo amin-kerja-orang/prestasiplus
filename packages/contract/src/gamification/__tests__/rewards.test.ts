@@ -241,13 +241,20 @@ describe('student redeem, Kotak Misteri, Cabutan', () => {
           ticketCostSyiling: 50,
           maxTicketsPerStudent: 10,
           ticketsOwned: 1,
+          ticketsSold: 6,
           closesAt: '2026-12-31',
           prizePool: [{ label: 'Baucar Buku RM10', valueSen: 1000, qty: 3 }],
         },
-        { id: '5', title: 'Tanpa tarikh', description: '', ticketCostSyiling: 10, maxTicketsPerStudent: 1, ticketsOwned: 0, closesAt: null, prizePool: [] },
+        { id: '5', title: 'Tanpa tarikh', description: '', ticketCostSyiling: 10, maxTicketsPerStudent: 1, ticketsOwned: 0, ticketsSold: 0, closesAt: null, prizePool: [] },
       ],
+      results: [{ id: '3', title: 'Cabutan Merdeka', winners: [{ prize: 'Hadiah Utama', name: 'Zahra', isYou: false }] }],
     }
     expect(RewardCabutanViewSchema.safeParse(draws).success).toBe(true)
+    expect(RewardCabutanViewSchema.safeParse({ ...draws, results: [] }).success).toBe(true)
+    // ticketsSold and results are part of the view; a winner carries a name and the isYou flag.
+    expect(RewardCabutanViewSchema.safeParse({ ...draws, results: undefined }).success).toBe(false)
+    expect(RewardCabutanViewSchema.safeParse({ ...draws, draws: [{ ...draws.draws[0], ticketsSold: undefined }] }).success).toBe(false)
+    expect(RewardCabutanViewSchema.safeParse({ ...draws, results: [{ id: '3', title: 'X', winners: [{ prize: 'P', name: 'Z' }] }] }).success).toBe(false)
     expect(RewardCabutanViewSchema.safeParse({ ...draws, draws: [{ ...draws.draws[0], closesAt: '31-12-2026' }] }).success).toBe(false)
     expect(RewardTicketBoughtSchema.safeParse({ drawId: '4', ticketsOwned: 2, syilingBalance: 70 }).success).toBe(true)
     expect(RewardTicketBoughtSchema.safeParse({ drawId: 4, ticketsOwned: 2, syilingBalance: 70 }).success).toBe(false)
@@ -320,12 +327,12 @@ describe('openapi registration', () => {
     has('/admin/hadiah/{id}', 'put')
   })
 
-  it('registers exactly 43 operations: the 42 of BE-23 and the claim of API-GAME-11', () => {
+  it('registers exactly 48 operations: the 42 of BE-23, the claim of API-GAME-11 and the draw list, Buka, Tutup, Cabut pemenang and Tandakan Dihantar of S7-T07', () => {
     // Count by BE-23 tags, not by path prefix: BE-11 adds /gamification/wallet and /gamification/transactions (tag 'wallet').
     const be23Tags = ['gamification', 'gamification-admin', 'rewards', 'rewards-admin', 'shop']
     const count = Object.values(doc.paths)
       .flatMap((ops) => Object.values(ops as Record<string, { tags?: string[] }>))
       .filter((op) => op.tags?.some((t) => be23Tags.includes(t))).length
-    expect(count).toBe(43)
+    expect(count).toBe(48)
   })
 })

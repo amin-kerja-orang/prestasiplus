@@ -25,6 +25,7 @@ import {
   GamificationDrawPrizeSchema,
   GamificationDrawSchema,
   GamificationDrawStatusSchema,
+  GamificationDrawWinnerSchema,
   GamificationEconomySettingsSchema,
   GamificationEconomySettingsUpdateSchema,
   GamificationRewardControlSchema,
@@ -41,7 +42,9 @@ import {
   RewardBulkRequestSchema,
   RewardBulkResultSchema,
   RewardCabutanDrawSchema,
+  RewardCabutanResultSchema,
   RewardCabutanViewSchema,
+  RewardCabutanWinnerSchema,
   RewardCancelResultSchema,
   RewardCategorySchema,
   RewardDeliverRequestSchema,
@@ -166,6 +169,7 @@ export const GAMIFICATION_COMPONENT_SCHEMAS = {
   GamificationDrawPrize: GamificationDrawPrizeSchema,
   GamificationDrawPrizeInput: GamificationDrawPrizeInputSchema,
   GamificationDrawStatus: GamificationDrawStatusSchema,
+  GamificationDrawWinner: GamificationDrawWinnerSchema,
   GamificationDraw: GamificationDrawSchema,
   GamificationDrawCreateRequest: GamificationDrawCreateRequestSchema,
   GamificationRewardControl: GamificationRewardControlSchema,
@@ -197,6 +201,8 @@ export const GAMIFICATION_COMPONENT_SCHEMAS = {
   RewardMysteryBoxesView: RewardMysteryBoxesViewSchema,
   RewardMysteryBoxOpened: RewardMysteryBoxOpenedSchema,
   RewardCabutanDraw: RewardCabutanDrawSchema,
+  RewardCabutanWinner: RewardCabutanWinnerSchema,
+  RewardCabutanResult: RewardCabutanResultSchema,
   RewardCabutanView: RewardCabutanViewSchema,
   RewardTicketBought: RewardTicketBoughtSchema,
   RewardTicketRequest: RewardTicketRequestSchema,
@@ -589,20 +595,101 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
   })
 
   registry.registerPath({
+    method: 'get',
+    path: '/admin/reward-control/draws',
+    tags: ['gamification-admin'],
+    summary: 'List the lucky draws (Cabutan Bertuah), newest first (API-GAME-09)',
+    description:
+      'Every draw with its prize pool, ticketsSold and winners (empty until the draw is drawn). An open draw whose closing day (Malaysia time) has passed reads closed: the state is derived on read and nothing is written.',
+    responses: { 200: json(envelopeOf(z.array(GamificationDrawSchema)), 'The draws, newest first.'), 401: UNAUTHORIZED, 403: FORBIDDEN_ADMIN },
+  })
+
+  registry.registerPath({
     method: 'post',
     path: '/admin/reward-control/draws',
     tags: ['gamification-admin'],
     summary: 'Create a lucky draw (Cabutan Bertuah)',
     description:
-      'status is open when openNow is true, else draft. The prize pool is stored as ordered prize lines; the draw cannot award more prizes than the sum of qty. Ticket purchase is M15 (POST /cabutan/{drawId}/tickets); there is no route that draws winners (open question).',
+      'status is open when openNow is true, else draft. The prize pool is stored as ordered prize lines and holds at least one; the draw cannot award more prizes than the sum of qty. Ticket purchase is M15 (POST /cabutan/{drawId}/tickets). Limits (30 P10-01..05): title 120, description 500, ticket price 1 to 10000, tickets per pupil 1 to 100, prize label 120, closesAt today or later.',
     request: { headers: [csrf], body: body(GamificationDrawCreateRequestSchema) },
     responses: {
       201: json(envelopeOf(GamificationDrawSchema), 'The created draw (ticketsSold 0).'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_ADMIN_WRITE,
       422: err(
-        `${VALIDATION_FIELDS} Or VALIDATION_ERROR "Format JSON kolam hadiah tidak sah." with fields.prizePool (also the top-level message), or "Tarikh tutup tidak sah." (closesAt), or fields.closesAt "Medan ini tidak sah." (not a real date).`,
+        `${VALIDATION_FIELDS} Field messages: fields.title "Tajuk diperlukan." (missing or blank), fields.ticketCostSyiling "Harga tiket tidak sah.", fields.prizePool "Hadiah diperlukan." (no prize line, or a blank label; also the top-level message when it is the only error), fields.closesAt "Tarikh tutup mesti pada masa hadapan." (a past day) or "Medan ini tidak sah." (not a real date). Or VALIDATION_ERROR "Format JSON kolam hadiah tidak sah." with fields.prizePool (also the top-level message).`,
       ),
+    },
+  })
+
+  registry.registerPath({
+    method: 'post',
+    path: '/admin/reward-control/draws/{id}/open',
+    tags: ['gamification-admin'],
+    summary: 'Open a draft draw: Buka (API-ADM-24)',
+    description: 'No body. draft to open; the draw then sells tickets until its closing day ends or the admin closes it.',
+    request: { params: IdParams, headers: [csrf] },
+    responses: {
+      200: json(envelopeOf(GamificationDrawSchema), 'The draw, status open.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_ADMIN_WRITE,
+      404: err('NOT_FOUND (no such draw; a non-numeric id gets the router default message).'),
+      409: err('CONFLICT "Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi." (the draw is not a draft).'),
+      422: err('VALIDATION_ERROR with fields.closesAt "Tarikh tutup mesti pada masa hadapan." (the closing day of the draft has passed).'),
+    },
+  })
+
+  registry.registerPath({
+    method: 'post',
+    path: '/admin/reward-control/draws/{id}/close',
+    tags: ['gamification-admin'],
+    summary: 'Close an open draw: Tutup (API-GAME-09)',
+    description: 'No body. open to closed; tickets can no longer be bought. Winners are drawn from a closed draw by POST /admin/reward-control/draws/{id}/winners.',
+    request: { params: IdParams, headers: [csrf] },
+    responses: {
+      200: json(envelopeOf(GamificationDrawSchema), 'The draw, status closed.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_ADMIN_WRITE,
+      404: err('NOT_FOUND (no such draw; a non-numeric id gets the router default message).'),
+      409: err('CONFLICT "Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi." (the stored state of the draw is not open).'),
+    },
+  })
+
+  registry.registerPath({
+    method: 'post',
+    path: '/admin/reward-control/draws/{id}/winners',
+    tags: ['gamification-admin'],
+    summary: 'Cabut pemenang: draw the winners of a closed draw (API-GAME-09)',
+    description:
+      'No body. One press draws every prize slot in prize order, in one transaction, and sets the draw to drawn (final: no redraw). Each slot takes one ticket uniformly at random (CSPRNG) among the remaining tickets; the winner\'s other tickets then leave the pool, so a pupil wins at most one prize per draw. Fewer pupils than prizes gives fewer winners. Allowed on a closed draw, and on an open draw whose closing day (Malaysia time) has passed. Each winner gets the in-app notice "Tahniah! Anda memenangi {prize} dalam {title}.". Audited. Safe on a double press: the second answers 409.',
+    request: { params: IdParams, headers: [csrf] },
+    responses: {
+      200: json(envelopeOf(GamificationDrawSchema), 'The draw, status drawn, with its winners.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_ADMIN_WRITE,
+      404: err('NOT_FOUND (no such draw; a non-numeric id gets the router default message).'),
+      409: err(
+        'CONFLICT "Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi." (the draw is not closed: draft, still open, already drawn or cancelled), or NO_PARTICIPANTS "Tiada peserta" (no ticket was sold; the draw stays closed).',
+      ),
+    },
+  })
+
+  registry.registerPath({
+    method: 'post',
+    path: '/admin/reward-control/draws/{id}/winners/{winnerId}/deliver',
+    tags: ['gamification-admin'],
+    summary: 'Tandakan Dihantar: mark a prize as handed over (API-ADM-24)',
+    description: 'No body. Sets deliveredAt on the winner (the prize is handed over outside the app). Audited. A winner already marked answers 409.',
+    request: {
+      params: z.object({ id: IdParams.shape.id, winnerId: IdSchema.meta({ description: 'Digits only; the id of a winner of this draw (GamificationDrawWinner.id).' }) }),
+      headers: [csrf],
+    },
+    responses: {
+      200: json(envelopeOf(GamificationDrawSchema), 'The draw with the winner marked delivered.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_ADMIN_WRITE,
+      404: err('NOT_FOUND (no such draw, or the winner is not a winner of this draw; a non-numeric id gets the router default message).'),
+      409: err('CONFLICT "Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi." (the winner is already marked delivered).'),
     },
   })
 
@@ -678,9 +765,10 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
     method: 'get',
     path: '/cabutan',
     tags: ['rewards'],
-    summary: 'Cabutan Bertuah: open draws',
-    description: 'Only status open with closesAt today or later (Malaysia time) or null; ordered by closesAt ascending (null last), then id.',
-    responses: { 200: json(envelopeOf(RewardCabutanViewSchema), 'Open draws with the caller ticket counts.'), 401: UNAUTHORIZED },
+    summary: 'Cabutan Bertuah: open draws and results (API-GAME-08)',
+    description:
+      'draws: only status open with closesAt today or later (Malaysia time) or null; ordered by closesAt ascending (null last), then id; each carries ticketsOwned (the caller) and ticketsSold (all pupils). results ("Keputusan Cabutan"): drawn draws only, newest 10 by drawn time, never cancelled draws; winners in prize order then slot, shown by first given name; the caller\'s own win has isYou true.',
+    responses: { 200: json(envelopeOf(RewardCabutanViewSchema), 'Open draws with the caller ticket counts, and the latest results.'), 401: UNAUTHORIZED },
   })
 
   registry.registerPath({

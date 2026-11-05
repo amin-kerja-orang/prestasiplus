@@ -67,9 +67,12 @@ export function fetchCabutan(options: Options = {}): Promise<CabutanView> {
   return api.get<CabutanView>('/api/cabutan', withSignal(options))
 }
 
-/** #13 `POST /api/cabutan/:drawId/tickets` (201; 409 `DRAW_CLOSED` | `TICKET_LIMIT` | `INSUFFICIENT_BALANCE`). */
-export function buyCabutanTicket(drawId: number): Promise<TicketBought> {
-  return api.post<TicketBought>(`/api/cabutan/${String(drawId)}/tickets`)
+/**
+ * #13 `POST /api/cabutan/:drawId/tickets` (201; 409 `DRAW_CLOSED` | `TICKET_LIMIT` | `INSUFFICIENT_BALANCE`).
+ * `clientUuid` is the idempotency key of one press (DM-78): a repeat buys no second ticket.
+ */
+export function buyCabutanTicket(drawId: number, clientUuid: string): Promise<TicketBought> {
+  return api.post<TicketBought>(`/api/cabutan/${String(drawId)}/tickets`, { body: { clientUuid } })
 }
 
 /** #14 `GET /api/parent/hadiah-approvals` (S8; scoped to the viewer's linked children). */

@@ -34,6 +34,14 @@ export interface HadiahRedemption {
   createdAt: string
 }
 
+/** DM-78: a ticket press already served; a repeat of the key answers for the same draw and buys nothing. */
+export interface DrawTicketKey {
+  id: number
+  userId: number
+  clientUuid: string
+  drawId: number
+}
+
 /** DATA-M15-03 (constants). */
 export type MysteryBox = MysteryBoxView
 

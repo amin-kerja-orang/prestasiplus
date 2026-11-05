@@ -250,15 +250,32 @@ export interface OpenDrawView {
   ticketCostSyiling: number
   maxTicketsPerStudent: number
   ticketsOwned: number
+  /** Tickets sold to all pupils ("Jumlah tiket terjual"). */
+  ticketsSold: number
   /** Local date `yyyy-MM-dd`, or `null` (M14). */
   closesAt: string | null
   prizePool: PrizeLineView[]
 }
 
-/** #12 data: open draws ordered by close date (null last) then id. */
+/** One winner of a drawn draw: the first given name only; `isYou` is the pupil's own win ("Anda menang!"). */
+export interface DrawWinnerView {
+  prize: string
+  name: string
+  isYou: boolean
+}
+
+/** One "Keputusan Cabutan" entry: a drawn draw, winners in prize order. */
+export interface DrawResultView {
+  id: number
+  title: string
+  winners: DrawWinnerView[]
+}
+
+/** #12 data: open draws ordered by close date (null last) then id; `results` are the newest 10 drawn draws. */
 export interface CabutanView {
   syilingBalance: number
   draws: OpenDrawView[]
+  results: DrawResultView[]
 }
 
 /** #13 data. */

@@ -7,12 +7,13 @@ import type {
   GamificationAdminTransactionRow,
   GamificationAdminStudentRow,
   GamificationDraw,
+  GamificationDrawWinner,
   GamificationEconomySettings,
   GamificationRewardControl,
   GamificationSetting,
   GamificationSyilingReward,
 } from '@pp/contract'
-import { GAMIFICATION_AWARD_MAX, GAMIFICATION_DEFAULT_TIER_COLOR, GAMIFICATION_MESSAGES as MSG, GAMIFICATION_SETTING_KEYS } from '@pp/contract'
+import { GAMIFICATION_AWARD_MAX, GAMIFICATION_DEFAULT_TIER_COLOR, GAMIFICATION_DRAW_LIMITS as DRAW_LIMITS, GAMIFICATION_DRAW_MESSAGES as DRAW_MSG, GAMIFICATION_MESSAGES as MSG, GAMIFICATION_SETTING_KEYS } from '@pp/contract'
 
 import { AUDIT_ACTIONS, AuditService } from '../../common/audit'
 import { ApiError } from '../../common/errors/api-error'
@@ -20,9 +21,9 @@ import { toMytTimestamp } from '../../common/time/myt'
 import type { TxClient } from '../../db/client'
 import { CLOCK, type Clock, mytDay } from '../../db/clock'
 import { Prisma } from '../../db/generated/client'
-import { idFromString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
-import { isRewardSettingKey, rewardSettingError, rewardSettingsByKey, RewardSettingsService } from '../shop'
+import { DrawWinnersService, isRewardSettingKey, rewardSettingError, rewardSettingsByKey, RewardSettingsService, type DrawWinnerRecord } from '../shop'
+import { drawStillOpen } from '../shop/shop.time'
 import { MAX_AMOUNT_PER_CALL, WalletService } from '../wallet'
 import type { AuditActor } from './actor'
 import {
@@ -35,9 +36,8 @@ import {
   TOGGLE_SETTING_KEYS,
   TRANSACTIONS_PAGE_SIZE,
 } from './gamification.constants'
-import { GamificationPorts } from './ports'
 import { GamificationRepository, type ChallengeRecord, type DrawRecord, type Db, isStudentSort, type PrizeLine, type StudentSort, type SyilingRewardRecord, type TierInput, type TierRecord } from './gamification.repository'
-import { bodyOf, boolOf, idParam, intOf, isRealDate, notFoundError, pageOf, queryText, readFields, validationFailure, type FieldSpec } from './validation'
+import { bodyOf, boolOf, collectFields, idParam, intOf, isRealDate, notFoundError, pageOf, queryText, readFields, validationFailure, type FieldSpec } from './validation'
 
 const PERSONAL_DATA_REASON = 'Sebab tidak boleh mengandungi maklumat peribadi.'
 const EMAIL_RE = /[^\s@]+@[^\s@]+\.[^\s@]+/
@@ -135,7 +135,23 @@ const rewardView = (r: SyilingRewardRecord): GamificationSyilingReward => ({
   costRm: r.costValueSen / 100,
 })
 
-const drawView = (d: DrawRecord): GamificationDraw => ({
+/** The state the admin reads: an `open` draw whose closing day (Malaysia time) has passed is `closed` (48 GAME-22); nothing is written for it. */
+const drawStatusOf = (d: DrawRecord, now: Date): GamificationDraw['status'] =>
+  d.status === 'open' && !drawStillOpen(d.closesAt, now) ? 'closed' : (d.status as GamificationDraw['status'])
+
+const winnerView = (w: DrawWinnerRecord): GamificationDrawWinner => ({
+  id: w.id,
+  prizePosition: w.prizePosition,
+  prizeLabel: w.prizeLabel,
+  slot: w.slot,
+  userId: w.userId,
+  name: w.name,
+  ticketId: w.ticketId,
+  drawnAt: toMytTimestamp(w.drawnAt),
+  deliveredAt: w.deliveredAt === null ? null : toMytTimestamp(w.deliveredAt),
+})
+
+const drawView = (d: DrawRecord, now: Date, winners: readonly DrawWinnerRecord[] = []): GamificationDraw => ({
   id: d.id,
   title: d.title,
   description: d.description,
@@ -143,24 +159,26 @@ const drawView = (d: DrawRecord): GamificationDraw => ({
   maxTicketsPerStudent: d.maxTicketsPerStudent,
   prizePool: d.prizes.map((p) => ({ label: p.label, valueSen: p.valueSen, qty: p.qty })),
   closesAt: d.closesAt === null ? null : mytDay(d.closesAt),
-  status: d.status as 'draft',
+  status: drawStatusOf(d, now),
   createdAt: toMytTimestamp(d.createdAt),
   ticketsSold: d.ticketsSold,
+  winners: winners.map(winnerView),
 })
 
 const isUniqueViolation = (e: unknown): boolean => e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002'
 
 /**
- * V-M14-12: the prize pool as ordered lines. Absent or blank is an empty pool; a JSON text or an array of
- * `{label, value_sen | valueSen, qty}` otherwise. Anything else, and a line the `draw_prizes` checks would
- * refuse (negative value, quantity below 1), is "Format JSON kolam hadiah tidak sah.".
+ * V-M14-12: the prize pool as ordered lines. A JSON text or an array of `{label, value_sen | valueSen, qty}`. Anything
+ * else, and a line the `draw_prizes` checks would refuse (negative value, quantity below 1, a label over 120), is "Format
+ * JSON kolam hadiah tidak sah.". No line at all, or a blank label, is "Hadiah diperlukan." (30 P10-05).
  */
 export function parsePrizePool(raw: unknown): PrizeLine[] {
   const invalid = () => validationFailure({ prizePool: MSG.prizePoolInvalid }, MSG.prizePoolInvalid)
-  if (raw === undefined || raw === null) return []
+  const required = () => validationFailure({ prizePool: DRAW_MSG.prizeRequired }, DRAW_MSG.prizeRequired)
+  if (raw === undefined || raw === null) throw required()
   let list: unknown
   if (typeof raw === 'string') {
-    if (raw.trim() === '') return []
+    if (raw.trim() === '') throw required()
     try {
       list = JSON.parse(raw)
     } catch {
@@ -168,13 +186,15 @@ export function parsePrizePool(raw: unknown): PrizeLine[] {
     }
   } else list = raw
   if (!Array.isArray(list) || list.length > MAX_PRIZE_LINES) throw invalid()
+  if (list.length === 0) throw required()
   return list.map((p: unknown) => {
     const o = typeof p === 'object' && p !== null ? (p as Record<string, unknown>) : {}
     const value = o.value_sen ?? o.valueSen
-    if (typeof o.label !== 'string' || [...o.label].length > 200) throw invalid()
+    if (typeof o.label !== 'string' || [...o.label.trim()].length > DRAW_LIMITS.prizeLabelMax) throw invalid()
+    if (o.label.trim() === '') throw required()
     if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0 || value > 2_147_483_647) throw invalid()
     if (typeof o.qty !== 'number' || !Number.isSafeInteger(o.qty) || o.qty < 1 || o.qty > MAX_PRIZE_QTY) throw invalid()
-    return { label: o.label, valueSen: value, qty: o.qty }
+    return { label: o.label.trim(), valueSen: value, qty: o.qty }
   })
 }
 
@@ -187,7 +207,7 @@ export class GamificationAdminService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(CLOCK) private readonly clock: Clock,
-    @Inject(GamificationPorts) private readonly ports: GamificationPorts,
+    @Inject(DrawWinnersService) private readonly winners: DrawWinnersService,
     @Inject(RewardSettingsService) private readonly rewardSettings: RewardSettingsService,
   ) {}
 
@@ -504,11 +524,13 @@ export class GamificationAdminService {
     const valid = Number.isInteger(year) && year >= 1970 && year <= 9998
     const tiles = valid ? await this.repo.claimTiles(db, new Date(`${String(year).padStart(4, '0')}-01-01T00:00:00+08:00`), new Date(`${String(year + 1).padStart(4, '0')}-01-01T00:00:00+08:00`)) : { claims: 0, students: 0, costSen: 0 }
     const [rewards, draws] = await Promise.all([this.repo.syilingRewards(db), this.repo.draws(db)])
+    const now = this.clock.now()
+    const winners = await this.winners.winnersOf(draws.map((d) => d.id))
     return {
       tiles: { sessionYear: year, liabilityRm: tiles.costSen / 100, students: tiles.students, claims: tiles.claims },
       settings,
       rewards: rewards.map(rewardView),
-      draws: draws.map(drawView),
+      draws: draws.map((d) => drawView(d, now, winners.get(d.id))),
     }
   }
 
@@ -551,89 +573,121 @@ export class GamificationAdminService {
     })
   }
 
+  /** `GET /admin/reward-control/draws` (API-GAME-09): every draw, newest first, with its winners. */
+  async draws(): Promise<GamificationDraw[]> {
+    const now = this.clock.now()
+    const draws = await this.repo.draws(this.repo.handle())
+    const winners = await this.winners.winnersOf(draws.map((d) => d.id))
+    return draws.map((d) => drawView(d, now, winners.get(d.id)))
+  }
+
+  /** One draw as the list shows it, read after a write has committed. */
+  private async drawNow(id: bigint): Promise<GamificationDraw> {
+    const draw = await this.repo.draw(this.repo.handle(), id)
+    if (!draw) throw notFoundError()
+    return drawView(draw, this.clock.now(), (await this.winners.winnersOf([draw.id])).get(draw.id))
+  }
+
+  /** `POST /admin/reward-control/draws/:id/winners` (API-GAME-09): "Cabut pemenang", see `DrawWinnersService.draw`. */
+  async drawWinners(actor: AuditActor, rawId: string): Promise<GamificationDraw> {
+    const id = idParam(rawId)
+    await this.winners.draw(actor, id)
+    return this.drawNow(id)
+  }
+
+  /** `POST /admin/reward-control/draws/:id/winners/:winnerId/deliver` (API-ADM-24): "Tandakan Dihantar". */
+  async deliverWinner(actor: AuditActor, rawId: string, rawWinnerId: string): Promise<GamificationDraw> {
+    const id = idParam(rawId)
+    const winnerId = idParam(rawWinnerId)
+    await this.winners.deliver(actor, id, winnerId)
+    return this.drawNow(id)
+  }
+
   /**
-   * V-M14-12 / OD-28: the draw and its prize pool as ordered `draw_prizes` rows (position 0..n-1) in one
-   * transaction; `open` when "Buka serta-merta", else `draft`. A closing date is stored as the END of that Malaysia
-   * day (23:59:59.999 +08:00), so the draw stays open through its last day and `mytDay(closes_at)` is the date shown.
+   * The draw form of 30 R1-ADM-P2-10 (P10-01..05), read in one pass so every failing field is reported together. The
+   * prize pool is the V-M14-12 ordered lines; `closesAt` is a Malaysia day, stored as the END of that day (23:59:59.999
+   * +08:00) so the draw stays open through its last day and `mytDay(closes_at)` is the date shown. A day before today is
+   * refused; today is allowed (sales run through 23:59:59, AC-GM-22.3).
    */
-  async createDraw(actor: AuditActor, body: unknown): Promise<GamificationDraw> {
-    const v = readFields(body, {
-      title: { kind: 'text', max: 150 },
-      description: { kind: 'text', max: 1000, optional: true },
-      ticketCostSyiling: { kind: 'int', min: 1, max: INT_MAX },
-      maxTicketsPerStudent: { kind: 'int', min: 1, max: 32_767 },
+  private readDrawBody(body: unknown, now: Date) {
+    const { value: v, fields } = collectFields(body, {
+      title: { kind: 'text', max: DRAW_LIMITS.titleMax, required: DRAW_MSG.titleRequired },
+      description: { kind: 'text', max: DRAW_LIMITS.descriptionMax, optional: true },
+      ticketCostSyiling: { kind: 'int', min: DRAW_LIMITS.ticketPriceMin, max: DRAW_LIMITS.ticketPriceMax, required: DRAW_MSG.ticketPriceInvalid, invalid: DRAW_MSG.ticketPriceInvalid },
+      maxTicketsPerStudent: { kind: 'int', min: DRAW_LIMITS.maxTicketsMin, max: DRAW_LIMITS.maxTicketsMax },
       closesAt: { kind: 'text', max: 10, pattern: DATE_RE, optional: true },
       openNow: { kind: 'bool', optional: true },
     })
     const raw = bodyOf(body)
-    const prizes = parsePrizePool(raw.prizePool)
-    if (v.closesAt !== undefined && !isRealDate(v.closesAt)) throw validationFailure({ closesAt: MSG.invalid })
-    const closesAt = v.closesAt === undefined ? null : new Date(Date.parse(`${v.closesAt}T23:59:59.999Z`) - MYT_OFFSET_MS)
-    const openNow = v.openNow ?? boolOf(raw.openNow) ?? false
-    return this.write(actor, AUDIT_ACTIONS.GAMIFICATION_DRAW_CREATED, { type: 'draw', id: null }, { title: v.title, prizeLines: prizes.length, status: openNow ? 'open' : 'draft' }, async (tx) =>
+    let prizes: PrizeLine[] = []
+    let poolOnly: string | undefined
+    try {
+      prizes = parsePrizePool(raw.prizePool)
+    } catch (e) {
+      if (!(e instanceof ApiError) || e.fields?.prizePool === undefined) throw e
+      fields.prizePool = e.fields.prizePool
+      poolOnly = e.message
+    }
+    let closesAt: Date | null = null
+    if (v.closesAt !== undefined) {
+      if (!isRealDate(v.closesAt)) fields.closesAt = MSG.invalid
+      else {
+        closesAt = new Date(Date.parse(`${v.closesAt}T23:59:59.999Z`) - MYT_OFFSET_MS)
+        if (v.closesAt < mytDay(now)) fields.closesAt = DRAW_MSG.closeDatePast
+      }
+    }
+    // A pool that is the only problem keeps the top-level message of its own error (the mock's V-M14-12).
+    if (Object.keys(fields).length > 0) throw Object.keys(fields).length === 1 && poolOnly !== undefined ? validationFailure(fields, poolOnly) : validationFailure(fields)
+    return { title: v.title, description: v.description ?? '', ticketCostSyiling: v.ticketCostSyiling, maxTicketsPerStudent: v.maxTicketsPerStudent, closesAt, openNow: v.openNow ?? boolOf(raw.openNow) ?? false, prizes }
+  }
+
+  /**
+   * V-M14-12 / OD-28: the draw and its prize pool as ordered `draw_prizes` rows (position 0..n-1) in one
+   * transaction; `open` when "Buka serta-merta", else `draft`.
+   */
+  async createDraw(actor: AuditActor, body: unknown): Promise<GamificationDraw> {
+    const now = this.clock.now()
+    const v = this.readDrawBody(body, now)
+    const status = v.openNow ? 'open' : 'draft'
+    return this.write(actor, AUDIT_ACTIONS.GAMIFICATION_DRAW_CREATED, { type: 'draw', id: null }, { title: v.title, prizeLines: v.prizes.length, status }, async (tx) =>
       drawView(
         await this.repo.createDraw(
           tx,
-          { title: v.title, description: v.description ?? '', ticketCostSyiling: v.ticketCostSyiling, maxTicketsPerStudent: v.maxTicketsPerStudent, closesAt, status: openNow ? 'open' : 'draft', prizes },
-          this.clock.now(),
+          { title: v.title, description: v.description, ticketCostSyiling: v.ticketCostSyiling, maxTicketsPerStudent: v.maxTicketsPerStudent, closesAt: v.closesAt, status, prizes: v.prizes },
+          now,
         ),
+        now,
       ),
     )
   }
 
   /**
-   * Draws the winners of an OPEN draw (AC5, AC9). There is no HTTP route for it (the contract has none); the
-   * method is the doorway for the draw run. Prize slots are the pool lines in order, each repeated `qty` times, so
-   * the number of awards can never pass the sum of `qty` (nor the number of tickets). Tickets are shuffled
-   * (Fisher-Yates) with the random source of `GamificationPorts` (the OS CSPRNG in production, so winners are
-   * neither predictable nor choosable; tests override it with a seeded stream for the AC5 determinism). Each
-   * ticket wins at most once, and the draw is closed (`status = closed`, first winner stored). The draw row is
-   * locked `FOR UPDATE` before the tickets are read. The audit event (same transaction) holds what is needed to
-   * audit the result: the ticket ids in ascending order, the shuffled order and the winning tickets in prize order.
+   * `Buka` (API-ADM-24) and `Tutup` (API-GAME-09): moves a draw one step of the 48 GAME-22 diagram, `draft` to `open` or
+   * `open` to `closed`, on the STORED state under the row lock (a second press, or a ticket purchase racing the close,
+   * sees the new state). Any other stored state is 409 `CONFLICT`. A draft whose closing day has passed cannot be
+   * opened ("Tarikh tutup mesti pada masa hadapan."), else it would read closed at once.
    */
-  async runDraw(drawId: string, actor: AuditActor | null): Promise<{ drawId: string; awards: { position: number; label: string; ticketId: string; userId: string }[] }> {
-    const id = idFromString(drawId)
-    return this.prisma.transaction(async (tx) => {
+  private async moveDraw(actor: AuditActor, rawId: string, from: 'draft' | 'open', to: 'open' | 'closed', action: string): Promise<GamificationDraw> {
+    const id = idParam(rawId)
+    return this.write(actor, action, { type: 'draw', id: rawId }, { from, to }, async (tx) => {
+      const at = this.clock.now()
       await this.repo.lockDraw(tx, id)
       const draw = await this.repo.draw(tx, id)
       if (!draw) throw notFoundError()
-      if (draw.status !== 'open') throw new ApiError({ code: 'DRAW_CLOSED', status: 409, message: 'Cabutan ditutup.' })
-      const slots: { position: number; label: string }[] = []
-      draw.prizes.forEach((p, position) => {
-        for (let i = 0; i < p.qty; i++) slots.push({ position, label: p.label })
-      })
-      const tickets = await this.repo.ticketsOf(tx, id)
-      const pick = this.ports.drawRandom(drawId)
-      const pool = [...tickets]
-      for (let i = pool.length - 1; i > 0; i--) {
-        const j = pick(i)
-        const t = pool[i] as (typeof pool)[number]
-        pool[i] = pool[j] as (typeof pool)[number]
-        pool[j] = t
-      }
-      const count = Math.min(slots.length, pool.length)
-      const awards = slots.slice(0, count).map((s, i) => ({ position: s.position, label: s.label, ticketId: (pool[i] as (typeof pool)[number]).id, userId: (pool[i] as (typeof pool)[number]).userId }))
-      const at = this.clock.now()
-      if (!(await this.repo.closeDraw(tx, id, awards[0]?.userId ?? null, at))) throw new ApiError({ code: 'DRAW_CLOSED', status: 409, message: 'Cabutan ditutup.' })
-      await this.audit.record({
-        action: AUDIT_ACTIONS.GAMIFICATION_DRAW_DRAWN,
-        actorUserId: actor?.userId ?? null,
-        actorRole: actor?.role ?? null,
-        requestId: actor?.requestId ?? null,
-        ip: actor?.ip ?? null,
-        isTest: actor?.isTest ?? false,
-        targetType: 'draw',
-        targetId: drawId,
-        details: {
-          ticketCount: tickets.length,
-          ticketIds: tickets.map((x) => x.id),
-          shuffledTicketIds: pool.map((x) => x.id),
-          winningTicketIds: awards.map((a) => a.ticketId),
-          awards: awards.map((a) => ({ position: a.position, ticketId: a.ticketId, userId: a.userId })),
-        },
-        tx,
-      })
-      return { drawId, awards }
+      if (draw.status !== from) throw ApiError.of('CONFLICT')
+      if (to === 'open' && !drawStillOpen(draw.closesAt, at)) throw validationFailure({ closesAt: DRAW_MSG.closeDatePast })
+      if (!(await this.repo.setDrawStatus(tx, id, from, to, at))) throw ApiError.of('CONFLICT')
+      const moved = await this.repo.draw(tx, id)
+      if (!moved) throw notFoundError()
+      return drawView(moved, at)
     })
+  }
+
+  openDraw(actor: AuditActor, rawId: string): Promise<GamificationDraw> {
+    return this.moveDraw(actor, rawId, 'draft', 'open', AUDIT_ACTIONS.GAMIFICATION_DRAW_OPENED)
+  }
+
+  closeDraw(actor: AuditActor, rawId: string): Promise<GamificationDraw> {
+    return this.moveDraw(actor, rawId, 'open', 'closed', AUDIT_ACTIONS.GAMIFICATION_DRAW_CLOSED)
   }
 }

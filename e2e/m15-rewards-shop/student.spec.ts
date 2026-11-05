@@ -325,7 +325,8 @@ test.describe('M15 S7 Cabutan Bertuah', MODULE, () => {
       await expect(card).toContainText('Cabutan Demo')
       await expect(card).toContainText('Cabutan ujian.')
       await expect(card.getByTestId('draw-price')).toHaveText('Harga tiket: 50')
-      await expect(card.getByTestId('draw-owned')).toHaveText('Tiket anda: 0/10')
+      await expect(card.getByTestId('draw-owned')).toHaveText('Tiket anda: 0 / 10')
+      await expect(card.getByTestId('draw-counter')).toHaveText('0/10')
       await expect(card.getByTestId('draw-closes')).toHaveText('Tutup: 30/09/2026')
       await expect(card.getByTestId('draw-prize')).toHaveText([
         'Baucar Topup RM50 × 1',
@@ -338,7 +339,7 @@ test.describe('M15 S7 Cabutan Bertuah', MODULE, () => {
   )
 
   test(
-    'SRS §12 #49 buy a ticket: tile 206, "Tiket anda: 1/10", ledger row; limits and clock @m15',
+    'SRS §12 #49 buy a ticket: tile 206, "Tiket anda: 1 / 10", ledger row; limits and clock @m15',
     provisional('the ticket flow is PROPOSED; needs M15-T1 handlers and the M14 hooks'),
     async ({ page, gotoApp, loginAs, mock }) => {
       await loginAs(ADMIN)
@@ -354,8 +355,15 @@ test.describe('M15 S7 Cabutan Bertuah', MODULE, () => {
       })
       await gotoApp('/cabutan')
       await page.getByTestId('draw-buy').click()
+      // B-056a: the confirm dialog opens on "Batal"; the ticket is bought only after "Beli Tiket".
+      await expect(page.getByTestId('draw-confirm-body')).toHaveText(
+        '50 syiling akan ditolak daripada baki anda (256 syiling).',
+      )
+      await expect(page.getByTestId('draw-confirm-cancel')).toBeFocused()
+      await page.getByTestId('draw-confirm-buy').click()
       await expect(page.getByTestId('cabutan-balance')).toHaveText('206')
-      await expect(page.getByTestId('draw-owned')).toHaveText('Tiket anda: 1/10')
+      await expect(page.getByTestId('draw-owned')).toHaveText('Tiket anda: 1 / 10')
+      await expect(page.getByTestId('draw-counter')).toHaveText('1/10')
       const ledger = await mock.hook<{ type: string; description: string; amount: number }[]>(
         'ledger',
         1,
