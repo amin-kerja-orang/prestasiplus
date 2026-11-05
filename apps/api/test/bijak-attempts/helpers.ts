@@ -26,6 +26,7 @@ import {
   type BijakRewardInput,
   type BijakRewardPort,
   type BijakSelfMarkRewardInput,
+  type AttemptPaper,
   type PaperResolution,
 } from '../../src/modules/bijak/attempts/ports'
 import { AnswerLogPort, type AnswerLogEntry } from '../../src/modules/practice'
@@ -43,6 +44,8 @@ const SLUG: Record<string, string> = { [PAPER.matK1]: 'mat-k1-2025-a', [PAPER.ma
 
 export class FakePaperSource implements BijakPaperSource {
   calls: { userId: string; paperId: string; isTest: boolean }[] = []
+  /** Fields laid over every resolved paper (e.g. `{ durationMin: 0 }` for an untimed Kertas Subjektif paper); reset it in a test. */
+  patch: Partial<AttemptPaper> = {}
   async resolveForAttempt(input: { userId: string; paperId: string; isTest: boolean }): Promise<PaperResolution> {
     this.calls.push(input)
     if (input.paperId === PAPER.notEligible) return { ok: false, reason: 'not_eligible' }
@@ -67,6 +70,7 @@ export class FakePaperSource implements BijakPaperSource {
           rule: s.rule,
           questionIds: [...s.questionIds],
         })),
+        ...this.patch,
       },
     }
   }

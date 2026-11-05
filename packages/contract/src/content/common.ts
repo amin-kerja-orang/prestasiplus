@@ -80,7 +80,7 @@ export const CONTENT_FLASH = {
     deleted: 'Banner berjaya dipadam.',
   },
   video: {
-    created: 'Video berjaya diterbitkan.',
+    created: 'Video ditambah.',
     updated: 'Video berjaya dikemaskini.',
     deleted: 'Video berjaya dipadam.',
   },
