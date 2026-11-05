@@ -38,6 +38,6 @@ export interface BijakAttemptAggregatePort {
   recordGraded(input: BijakAttemptAggregateInput): Promise<void>
 }
 
-/** `exam_attempts.paper_kind` as kept in `practice_attempt_aggregates.start_type` (DM-83, migration 0190). */
+/** `exam_attempts.paper_kind` as kept in `practice_attempt_aggregates.start_type` (DM-83, migration 0166). */
 export const ATTEMPT_START_TYPES: readonly AttemptStartType[] = ['pilihan', 'jana', 'subjektif', 'structured']
 export type AttemptStartType = 'pilihan' | 'jana' | 'subjektif' | 'structured'
