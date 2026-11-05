@@ -464,7 +464,7 @@ export class UsersRepository {
 
   /**
    * Total accounts the caller can see (Admin Pusat dashboard, S6-T11). Students and teachers come from the analytics pupil/teacher
-   * definition (`AnalyticsRepository.pupilTotals` / `teacherTotals`) so the dashboard, Analitik and Laporan agree; XS-1 (S6-T03) replaces it.
+   * definition (`AnalyticsRepository.pupilTotals` / `teacherTotals`, which use XS-1 / XS-3 of `school-admin/xs-queries.ts`) so the dashboard, Analitik and Laporan agree.
    */
   async centralCounts(caller: Caller): Promise<{ total: number }> {
     return { total: await this.prisma.client.user.count({ where: this.visibleWhere(caller) }) }

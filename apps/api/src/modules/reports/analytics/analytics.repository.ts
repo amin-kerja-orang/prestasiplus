@@ -3,6 +3,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import { Prisma } from '../../../db/generated/client'
 import { idFromString, isIdString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
+import { isXs3Teacher, xsPupilScopeSql } from '../../school-admin/xs-queries'
 import { M1_START_MS } from './domain/rules'
 
 /**
@@ -613,8 +614,8 @@ export class AnalyticsRepository {
 
   // --- Admin Pusat central screens (S6-T11): platform-wide aggregates, no per-user lists ---------------------------------------
 
-  /** Platform pupils: active, role student, secondary (Darjah pupils are hidden everywhere, D72). Alias `u`. */
-  private static readonly PUPIL = Prisma.sql`u.is_active AND (u.grade IS NULL OR u.grade > 6) AND EXISTS (SELECT 1 FROM user_roles r WHERE r.user_id = u.id AND r.role = 'student')`
+  /** Platform pupils = XS-1 over the platform scope (S6-T03 `xs-queries.ts`: active, not suspended, Tingkatan 1-5, no primary-school pupils). Alias `u`. */
+  private static readonly PUPIL = xsPupilScopeSql({ kind: 'platform' }, 'u')
 
   /** Platform pupils, those with a recorded login and those with a completed non-test session (any time). */
   async pupilTotals(): Promise<{ pupils: number; accessed: number; practised: number }> {
@@ -626,16 +627,14 @@ export class AnalyticsRepository {
   }
 
   /**
-   * Platform teachers, XS-3: role teacher, approved (no pending school request), active, not also a school admin; and those with a
-   * recorded login. The one teacher definition of the dashboard and the Laporan.
+   * Platform teachers, XS-3 (`isXs3Teacher` of S6-T03 `xs-queries.ts`) with a school; and those with a recorded login. The one
+   * teacher definition of the dashboard, Analitik and the Laporan.
    */
   async teacherTotals(): Promise<{ teachers: number; accessed: number }> {
     const rows = await this.db.$queryRaw<{ teachers: number; accessed: number }[]>`
       SELECT count(*)::int AS teachers, (count(*) FILTER (WHERE u.last_login_at IS NOT NULL))::int AS accessed
       FROM users u
-      WHERE u.is_active AND u.pending_school_id IS NULL
-        AND EXISTS (SELECT 1 FROM user_roles r WHERE r.user_id = u.id AND r.role = 'teacher')
-        AND NOT EXISTS (SELECT 1 FROM user_roles r WHERE r.user_id = u.id AND r.role = 'school_admin')`
+      WHERE u.school_id IS NOT NULL AND ${isXs3Teacher('u')}`
     return rows[0] ?? { teachers: 0, accessed: 0 }
   }
 

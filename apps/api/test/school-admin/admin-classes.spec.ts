@@ -20,6 +20,8 @@ describe('GET /admin/classes', () => {
     const t4 = await addLevel(t.db, 'T4', 'Tingkatan 4', 10)
     const t5 = await addLevel(t.db, 'T5', 'Tingkatan 5', 11)
     const d1 = await addLevel(t.db, 'D1', 'Darjah 1', 1)
+    // `addLevel` makes every level upper secondary; Darjah 1 is a primary-stage level (its classes are hidden, D72).
+    await t.db.query(`update education_levels set stage = 'primary', is_active = false where id = $1::bigint`, [d1])
     const mat = await addSubject(t.db, 'MATADM', 'Matematik Ujian')
     teacher1 = await addTeacher(t.db, s1, 'Guru Pusat Satu')
     amanah = await addClassroom(t.db, { schoolId: s1, name: 'Kelas 4 Amanah', levelId: t4, teacherId: teacher1, subjectId: mat, joinCode: 'AMANAH9' })
