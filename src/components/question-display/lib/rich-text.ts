@@ -28,6 +28,8 @@ export function renderMath(latex: string, display = false): string {
       displayMode: display,
       trust: false,
       strict: 'ignore',
+      // Caps `\\rule`/sizing commands (in em) so one formula cannot blow up the layout.
+      maxSize: 20,
       output: 'htmlAndMathml',
     })
   } catch {
@@ -49,6 +51,9 @@ export function renderRich(text: string): string {
 const imageSrc = (token: string): string => `/api/files/${token}`
 
 const IMG_TOKEN = /^[A-Za-z0-9_-]{22}$/
+/** Highest `{{gap:N}}` that expands (ClozeGaps uses the same cap); a larger N stays literal. */
+export const MAX_GAP = 99
+
 const MARKER = /\{\{(?:img:([^{}\s]*)|gap:(\d+))\}\}/g
 
 /** Escapes plain text and expands `{{img:token}}` / `{{gap:N}}`; bad markers stay literal. */
@@ -60,7 +65,7 @@ function plainWithMarkers(text: string): string {
     at = m.index + m[0].length
     if (m[1] !== undefined && IMG_TOKEN.test(m[1])) {
       out += `<img src="${imageSrc(m[1])}" alt="">`
-    } else if (m[2] !== undefined && Number(m[2]) >= 1 && m[2].length <= 3) {
+    } else if (m[2] !== undefined && m[2].length <= 2 && Number(m[2]) >= 1 && Number(m[2]) <= MAX_GAP) {
       out += `<span class="qd-gap" data-gap="${Number(m[2])}"></span>`
     } else out += escapeHtml(m[0])
   }

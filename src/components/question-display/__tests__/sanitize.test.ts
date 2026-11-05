@@ -58,3 +58,15 @@ describe('sanitizeQuestionHtml: allow-list', () => {
     expect(s(html)).toBe(html)
   })
 })
+
+describe('sanitizeQuestionHtml: hardening (review #694)', () => {
+  it('drops noscript, template and math with their content', () => {
+    expect(s('a<noscript><p>n</p></noscript>b')).toBe('ab')
+    expect(s('a<template><p>t</p></template>b')).toBe('ab')
+    expect(s('a<math><mi>x</mi></math>b')).toBe('ab')
+  })
+  it('strips javascript: and any other non-allowed token inside class', () => {
+    expect(s('<p class="javascript:alert(1)">x</p>')).toBe('<p>x</p>')
+    expect(s('<div class="box javascript:x()">x</div>')).toBe('<div class="box">x</div>')
+  })
+})
