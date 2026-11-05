@@ -6,6 +6,7 @@ import { NoStoreInterceptor } from '../../common/http/no-store.interceptor'
 import { ok } from '../../common/http/respond'
 import { type RequestWithAuth, ScopeContext } from '../../common/scope'
 import { RateLimit, RateLimitGuard } from '../../common/throttle'
+import { retryable } from '../shop/shop.guard'
 import { SPM_LIMITS } from './config'
 import { type SpmCaller, SpmHubService } from './hub.service'
 import { SpmTrackingService } from './tracking.service'
@@ -88,6 +89,7 @@ export class SpmAdminTrackingController {
   @Put(':id')
   @RateLimit(SPM_LIMITS.trackingWrite)
   async save(@Param('id') id: string, @Body() body: unknown) {
-    return ok(await this.tracking.saveSet(id, body))
+    // A deadlock between two saves has rolled back: a retryable 429, never a raw 500.
+    return ok(await retryable(() => this.tracking.saveSet(id, body)))
   }
 }

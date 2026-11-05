@@ -11,9 +11,11 @@ import {
   type SpmAdminTrackingASet,
   type SpmTrackingASubject,
 } from '@pp/contract'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import pg from 'pg'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { SpmTrackingService } from '../../src/modules/spm'
+import { SpmRepository } from '../../src/modules/spm/spm.repository'
 import { addPool, addQuestion, addSet, bootSpmApp, expectCsrfInvalid, expectError, idOf, loginAs, parseData, type Client, type SpmTestApp } from './helpers'
 
 /** API-BIJAK-13 (S3-T05, DM-24, FR-ADM-Q17.1..6) and the pupil half FR-MUR-13-18. Real database, real session guard. */
@@ -40,10 +42,11 @@ describe('Tracking A admin', () => {
   const reasonOf = (res: { status: number; body: unknown }): string => expectError(res as never, 'VALIDATION_ERROR').fields?.items as string
   const members = async (setId: string): Promise<string[]> =>
     (await q<{ id: string }>(`select question_id::text id from spm_tracking_set_questions where set_id = $1 order by position`, [setId])).map((r) => r.id)
-  /** A clean subject: its questions and sets go, leaving `n` new servable questions at the given target. */
+  /** A clean subject: its sets go and its questions stop being eligible, leaving `n` new servable questions at the given target. */
   const fresh = async (code: string, n: number, target: number): Promise<{ subjectId: string; ids: string[] }> => {
     const subjectId = await idOf(t.db, 'subjects', code)
     await q(`delete from spm_tracking_sets where subject_id = $1`, [subjectId])
+    await q(`update questions set is_active = false where id in (select question_id from question_versions where subject_id = $1)`, [subjectId])
     await q(`update spm_subject_configs set target_type = 'latihan', target_size = $2 where subject_id = $1`, [subjectId, target])
     const ids: string[] = []
     for (let i = 0; i < n; i++) ids.push(await addQuestion(t.db, { subject: code, pool: false }))
@@ -109,7 +112,7 @@ describe('Tracking A admin', () => {
     it('[CI] AC-ADM-Q17.1, AC-ADM-Q17.2: an empty set, target 20, 30 candidates: save 20, the pupil sees it unlocked and can start it', async () => {
       const { subjectId, ids } = await fresh('ADDMATH', 30, 20)
       const empty = await create(subjectId, 1)
-      expect(empty.candidates).toBeGreaterThanOrEqual(30)
+      expect(empty.candidates).toBe(30)
       const before = parseData(await student.get('/api/spm/tracking-a/ADDMATH'), SpmTrackingASubjectResultSchema) as SpmTrackingASubject
       expect(before.sets).toEqual([])
       const saved = parse(await admin.put(`${ROUTE}/${empty.id}`, { items: qs(ids.slice(0, 20)) }))
@@ -186,6 +189,75 @@ describe('Tracking A admin', () => {
     })
   })
 
+  describe('saveSet against the index: a race lost after the checks', () => {
+    /** The sibling check sees nothing, as a save that ran it just before another save committed would. */
+    const blindSiblingCheck = (times: number): void => {
+      const spy = vi.spyOn(SpmRepository.prototype, 'siblingHolders')
+      for (let i = 0; i < times; i++) spy.mockResolvedValueOnce(new Map())
+    }
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+    const dskpOf = async (setId: string): Promise<number | undefined> => (await q<{ dskp_tagged: number }>(`select dskp_tagged from spm_tracking_sets where id = $1`, [setId]))[0]?.dskp_tagged
+
+    it('[CI] PO 14: the index error answers the exact sibling text, and the rollback keeps the rows and dskp_tagged the delete and the update touched', async () => {
+      const { subjectId, ids } = await fresh('SCI', 3, 4)
+      const tagged = await addQuestion(t.db, { subject: 'SCI', level: 'T4', chapterNumber: 1 })
+      const one = await create(subjectId, 1)
+      const two = await create(subjectId, 2)
+      parse(await admin.put(`${ROUTE}/${one.id}`, { items: qs(ids.slice(0, 1)) }))
+      parse(await admin.put(`${ROUTE}/${two.id}`, { items: qs([tagged]) }))
+      expect(await dskpOf(two.id)).toBe(1)
+      blindSiblingCheck(1)
+      const res = await admin.put(`${ROUTE}/${two.id}`, { items: qs([ids[1] as string, ids[0] as string]) })
+      expect(reasonOf(res)).toBe('Soalan No. 2 sudah ada dalam Set 1 untuk subjek dan tahun ini. Buang atau tukar soalan itu.')
+      expect(await members(two.id)).toEqual([tagged])
+      expect(await dskpOf(two.id)).toBe(1)
+    })
+
+    it('[CI] an index error no sibling explains is a 409, and the rollback keeps the set', async () => {
+      const { subjectId, ids } = await fresh('CHEM', 3, 4)
+      const one = await create(subjectId, 1)
+      const two = await create(subjectId, 2)
+      parse(await admin.put(`${ROUTE}/${one.id}`, { items: qs(ids.slice(0, 1)) }))
+      parse(await admin.put(`${ROUTE}/${two.id}`, { items: qs(ids.slice(1, 2)) }))
+      blindSiblingCheck(2)
+      const res = await admin.put(`${ROUTE}/${two.id}`, { items: qs([ids[2] as string, ids[0] as string]) })
+      expectError(res as never, 'CONFLICT')
+      expect(res.status).toBe(409)
+      expect(await members(two.id)).toEqual(ids.slice(1, 2))
+    })
+
+    it('[CI] a real deadlock between two saves answers a retryable 429, not a 500, and the set keeps its rows', async () => {
+      const { subjectId, ids } = await fresh('BIO', 3, 4)
+      const one = await create(subjectId, 1)
+      const two = await create(subjectId, 2)
+      const [first, second, kept] = ids as [string, string, string]
+      parse(await admin.put(`${ROUTE}/${two.id}`, { items: qs([kept]) }))
+      vi.spyOn(SpmRepository.prototype, 'siblingHolders').mockResolvedValue(new Map())
+      const other = new pg.Client({ connectionString: t.db.url })
+      await other.connect()
+      try {
+        const insert = (question: string, position: number) =>
+          other.query(`insert into spm_tracking_set_questions (set_id, question_id, position, subject_id, year) values ($1, $2, $3, $4, 2026)`, [one.id, question, position, subjectId])
+        await other.query('begin')
+        await insert(first, 1)
+        // The save inserts `second`, then waits on `first`. The other transaction then waits on `second`: a cycle.
+        const save = (async () => admin.put(`${ROUTE}/${two.id}`, { items: qs([second, first]) }))()
+        await vi.waitFor(async () => expect((await q<{ n: string }>(`select count(*)::text n from pg_stat_activity where datname = current_database() and wait_event_type = 'Lock'`))[0]?.n).toBe('1'), { timeout: 10_000, interval: 25 })
+        const blocked = insert(second, 2).catch((e: { code?: string }) => e)
+        const res = await save
+        expectError(res as never, 'RATE_LIMITED')
+        expect(res.status).toBe(429)
+        expect(await blocked).toMatchObject({ rowCount: 1 })
+      } finally {
+        await other.query('rollback').catch(() => undefined)
+        await other.end()
+      }
+      expect(await members(two.id)).toEqual([kept])
+    }, 30_000)
+  })
+
   describe('FR-ADM-Q17.6: a stimulus group is one unit', () => {
     it('[CI] AC-ADM-Q17.3, PO 15: a group of 4 with 3 free slots is refused whole; with 4 free it goes in together, in group order', async () => {
       const { subjectId, ids } = await fresh('AKAUN', 10, 8)
@@ -224,12 +296,39 @@ describe('Tracking A admin', () => {
       expect(set.candidateItems.find((c) => c.id === ids[4])).toMatchObject({ kind: 'question', questions: 1 })
     })
 
+    it('[CI] D90: on the wire a group counts once in candidates and is one candidate item with its size', async () => {
+      const { subjectId, ids } = await fresh('GEO', 5, 10)
+      const groupId = await group('Rajah 5', ids.slice(0, 3))
+      const set = await create(subjectId, 1)
+      expect(set.candidates).toBe(3)
+      expect(set.candidateItems.map((c) => [c.kind, c.id, c.questions])).toEqual([['group', groupId, 3], ['question', ids[3], 1], ['question', ids[4], 1]])
+    })
+
+    it('[CI] a group with a member of another subject is never split: refused on PUT, and no candidate in either subject', async () => {
+      const { subjectId, ids } = await fresh('PHY', 3, 5)
+      const other = await fresh('EKON', 1, 5)
+      const groupId = await group('Rajah 6', [ids[0] as string, other.ids[0] as string, ids[1] as string])
+      const set = await create(subjectId, 1)
+      expect(set.candidates).toBe(1)
+      expect(set.candidateItems.map((c) => c.id)).toEqual([ids[2]])
+      const otherSet = await create(other.subjectId, 1)
+      expect(otherSet.candidates).toBe(0)
+      expect(otherSet.candidateItems).toEqual([])
+      expect(reasonOf(await admin.put(`${ROUTE}/${set.id}`, { items: [...qs([ids[2] as string]), { kind: 'group', id: groupId }] }))).toBe(PROPOSED.notServable(2))
+      expect(await members(set.id)).toEqual([])
+      // An archived member is out of the group and no gap: the rest are still whole.
+      await q(`update question_versions set status = 'archived' where question_id = $1`, [other.ids[0]])
+      const saved = parse(await admin.put(`${ROUTE}/${set.id}`, { items: [{ kind: 'group', id: groupId }] }))
+      expect(await members(set.id)).toEqual(ids.slice(0, 2))
+      expect(saved.candidates).toBe(2)
+    })
+
     it('[CI] candidateItems is capped while candidates counts them all (PO 16)', async () => {
       const { subjectId } = await fresh('TI', 0, 40)
       await addPool(t.db, 'TI', TRACKING_A_CANDIDATE_CAP + 5, { pool: false })
       const set = await create(subjectId, 1)
       expect(set.candidateItems).toHaveLength(TRACKING_A_CANDIDATE_CAP)
-      expect(set.candidates).toBeGreaterThanOrEqual(TRACKING_A_CANDIDATE_CAP + 5)
+      expect(set.candidates).toBe(TRACKING_A_CANDIDATE_CAP + 5)
     })
   })
 
