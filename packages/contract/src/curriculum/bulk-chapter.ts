@@ -53,7 +53,7 @@ export const BulkChapterRequestSchema = z
  * Result of a bulk-chapter call. `matched` = the rows of the filter or ids; `eligible` = matched rows whose live version is approved,
  * has no Bab (unless `overwrite`) and whose subject and level equal the Bab's; `refused` = matched - eligible, ONE number with no
  * per-reason breakdown (a question that is not approved counts here too). `applied` = rows updated (0 on a dry run); `cap` =
- * `BULK_CHAPTER_CAP`; `remaining` = eligible - applied after a capped run (0 on a dry run, which reports `capped` from the match);
+ * `BULK_CHAPTER_CAP`; `remaining` = eligible - min(eligible, cap), the rows a further run would still try (a dry run reports the same preview), and `capped` = remaining > 0;
  * `auditId` = the audit row, null on a dry run.
  */
 export const BulkChapterResultSchema = z

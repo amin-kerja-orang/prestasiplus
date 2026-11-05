@@ -20,14 +20,12 @@ import { PasswordService } from '../auth/password.service'
 import { LANDING_PATHS } from '../auth/session-view'
 import { FilesService } from '../files'
 import { SchoolsRepository } from '../schools'
-import { UsersRepository, uniqueField, type UserRecord } from '../users'
+import { UsersRepository, type UserRecord } from '../users'
 import {
   ACCOUNT_AUDIT,
-  ACCOUNT_SCHOOL_USERNAME_TAKEN_MESSAGE,
   ACCOUNT_TX,
   PASSWORD_CHANGE_CEILING,
   PASSWORD_MUST_DIFFER_MESSAGE,
-  SELF_SCHOOL_ROLES,
 } from './account.constants'
 import { fieldsOf, invalid } from './account.errors'
 import { AccountDataRepository } from './account-data.repository'
@@ -113,32 +111,11 @@ export class ProfileService {
     return overloadTo429(async () => {
       const parsed = AccountProfileUpdateRequestSchema.safeParse(raw)
       const fields: Record<string, string> = parsed.success ? {} : fieldsOf(parsed.error)
-      const body = typeof raw === 'object' && raw !== null ? (raw as Record<string, unknown>) : {}
       const user = await this.users.get(auth.userId)
       if (!user) throw ApiError.of('UNAUTHORIZED')
-      // ALLOW-list (security review L1): only a student or a parent may set their own school; every other role, and any
-      // role added later, ignores the body value (school membership is managed by school_admin/admin). Fail closed.
-      const mayChooseSchool =
-        user.roles.length > 0 && user.roles.every((r) => SELF_SCHOOL_ROLES.includes(r))
-      const schoolId =
-        typeof body.schoolId === 'string'
-          ? body.schoolId
-          : body.schoolId === null
-            ? null
-            : undefined
-
-      if (
-        fields.schoolId === undefined &&
-        typeof schoolId === 'string' &&
-        !(await this.schools.existsSecondary(schoolId))
-      ) {
-        fields.schoolId = ACCOUNT_AUTH_MESSAGES.schoolInvalid
-      }
-      // Secondary-only (2026-10-29): a Darjah grade cannot be newly chosen (an unchanged stored grade is kept).
-      if (fields.grade === undefined && typeof body.grade === 'number' && body.grade < 7 && body.grade !== user.grade) fields.grade = ACCOUNT_AUTH_MESSAGES.gradeInvalid
       if (Object.keys(fields).length > 0 || !parsed.success) {
         const ordered: Record<string, string> = {}
-        for (const key of ['name', 'phone', 'bio', 'grade', 'schoolId', ...Object.keys(fields)]) {
+        for (const key of ['name', 'phone', 'bio', ...Object.keys(fields)]) {
           const message = fields[key]
           if (message !== undefined) ordered[key] = message
         }
@@ -148,39 +125,28 @@ export class ProfileService {
 
       // BR-13: `email` (and any other key) in the body is not part of the schema and never reaches this patch.
       const now = this.clock.now()
-      try {
-        await this.prisma.transaction(async () => {
-          await this.users.update(user.id, {
-            name: data.name,
-            ...(data.phone !== undefined ? { phone: blankToNull(data.phone) } : {}),
-            ...(data.bio !== undefined ? { bio: blankToNull(data.bio) } : {}),
-            ...(data.grade !== undefined ? { grade: data.grade } : {}),
-            ...(data.schoolId !== undefined && mayChooseSchool ? { schoolId: data.schoolId } : {}),
-            now,
-          })
-          await this.audit.record({
-            action: ACCOUNT_AUDIT.PROFILE_UPDATED,
-            actorUserId: auth.userId,
-            actorRole: auth.active.role,
-            targetType: 'user',
-            targetId: auth.userId,
-            requestId: info.requestId,
-            ip: info.ip,
-            isTest: auth.mode !== null,
-            // Field names only, never the values.
-            details: {
-              fields: Object.keys(data).filter(
-                (k) => (data as Record<string, unknown>)[k] !== undefined,
-              ),
-            },
-          })
-        }, ACCOUNT_TX)
-      } catch (err) {
-        // The school change collided with an existing username of the target school (unique per school).
-        if (!(err instanceof ApiError) && uniqueField(err) === 'username')
-          throw invalid({ schoolId: ACCOUNT_SCHOOL_USERNAME_TAKEN_MESSAGE })
-        throw err
-      }
+      await this.prisma.transaction(async () => {
+        await this.users.update(user.id, {
+          name: data.name,
+          ...(data.phone !== undefined ? { phone: blankToNull(data.phone) } : {}),
+          ...(data.bio !== undefined ? { bio: blankToNull(data.bio) } : {}),
+          now,
+        })
+        await this.audit.record({
+          action: ACCOUNT_AUDIT.PROFILE_UPDATED,
+          actorUserId: auth.userId,
+          actorRole: auth.active.role,
+          targetType: 'user',
+          targetId: auth.userId,
+          requestId: info.requestId,
+          ip: info.ip,
+          isTest: auth.mode !== null,
+          // Field names only, never the values.
+          details: {
+            fields: (['name', 'phone', 'bio'] as const).filter((k) => data[k] !== undefined),
+          },
+        })
+      }, ACCOUNT_TX)
       return this.me(auth)
     })
   }
