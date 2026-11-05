@@ -12,11 +12,6 @@ import { users } from '@/modules/m01-authentication/mock'
 import type { DiagramAudit, DiagramMutation } from '../../api/diagram-audit'
 import type { MasterNoteListMeta, MasterNoteRow } from '../../api/master-notes'
 import type { StructuredDetail, StructuredListMeta, StructuredRow } from '../../api/structured'
-import type {
-  QuestionSubmission,
-  SubmissionListMeta,
-  SubmissionMutation,
-} from '../../api/submissions'
 import { masterNotes, questions, structured, submissions } from '../../mock'
 import { showPrimaryLevels } from '../../mock/repository/visible-levels'
 import {
@@ -25,13 +20,8 @@ import {
   DIAGRAM_FILE_TYPE,
   DIAGRAM_UPLOADED_TEXT,
 } from '../../mock/handlers/diagram-audit'
-import {
-  SUBMISSION_NOTES_MESSAGE,
-  SUBMISSION_SAVED_TEXT,
-  SUBMISSION_STATUS_MESSAGE,
-} from '../../mock/handlers/submissions'
 import { CANNED_NOTES } from '../../mock/repository/master-notes'
-import { defaultMasterNotes, SEED_SUBMISSIONS } from '../../mock/seeds/workflow'
+import { defaultMasterNotes } from '../../mock/seeds/workflow'
 import {
   ADMIN,
   bootM04,
@@ -87,9 +77,6 @@ describe('admin guards (SEC-M04-01, SEC-M04-07, SEC-M04-09)', () => {
   const endpoints: ['GET' | 'POST' | 'PATCH', string][] = [
     ['GET', '/api/structured-questions'],
     ['GET', '/api/structured-questions/3698'],
-    ['GET', '/api/question-submissions'],
-    ['PATCH', '/api/question-submissions/4/status'],
-    ['GET', '/api/question-submissions/4/files/0'],
     ['GET', '/api/diagram-audit'],
     ['POST', '/api/diagram-audit/mcq/563393/image'],
     ['POST', '/api/diagram-audit/mcq/563393/dismiss'],
@@ -109,10 +96,8 @@ describe('admin guards (SEC-M04-01, SEC-M04-07, SEC-M04-09)', () => {
   })
 
   it('a refused mutation changes nothing', async () => {
-    await call('PATCH', '/api/question-submissions/4/status', PELAJAR, { status: 'rejected' })
     await call('POST', '/api/master-notes/1/approve', GURU)
     await call('POST', '/api/diagram-audit/mcq/563393/dismiss', PELAJAR)
-    expect(submissions.get(4)?.status).toBe('done')
     expect(masterNotes.get(1)?.teacherApproved).toBe(false)
     expect(questions.get(563_393)?.needsDiagram).toBe(true)
   })
@@ -247,148 +232,8 @@ describe('#19 S9 structured detail (BR-M04-27)', () => {
   })
 })
 
-describe('#20–#22 S10 question papers (BR-M04-18, E2E-M04-48/49)', () => {
-  const list = (query = '') =>
-    call<Page<QuestionSubmission, SubmissionListMeta>>(
-      'GET',
-      `/api/question-submissions${query}`,
-      ADMIN,
-    )
-  const patch = (id: number, body: unknown) =>
-    call<SubmissionMutation | ErrorBody>(
-      'PATCH',
-      `/api/question-submissions/${String(id)}/status`,
-      ADMIN,
-      body,
-    )
-
-  it('lists the 6 papers, id descending, with the teacher name, e-mail and school and the global counts', async () => {
-    const r = await list()
-    expect(r.status).toBe(200)
-    expect(r.body.data.map((s) => s.id)).toEqual([6, 5, 4, 3, 2, 1])
-    expect(r.body.meta.counts).toEqual({ all: 6, pending: 1, processing: 3, done: 1, rejected: 1 })
-    const four = r.body.data.find((s) => s.id === 4)
-    expect(four).toMatchObject({
-      subjectText: 'Perniagaan',
-      levelCode: 'T4',
-      year: 2026,
-      status: 'done',
-      files: [{ index: 0, name: 'PPSA K1 T4 2026.docx' }],
-    })
-    expect(four?.teacher).toEqual({
-      id: 4504,
-      name: 'Cikgu Demo 4504',
-      email: 'cikgu4504@demo.test',
-      school: expect.any(String) as string,
-    })
-    expect(r.body.data.find((s) => s.id === 1)).toMatchObject({
-      note: 'Latih tubi kelas 5 Alfa pada 13 Mac 2026',
-      files: [{ name: 'GEAR UP 1 TINGKATAN 5.pdf' }],
-    })
-    expect(r.body.data.find((s) => s.id === 3)?.files[0]?.name).toBe(
-      'HIMPUNAN_SOALAN_SEJARAH_K1_IKUT_BAB_PERUBAAN_SPM_NEGERI_2024_TINGKATAN copy.pdf',
-    )
-    // Every teacher and every paper type is a seeded, fictitious account / a DATA-M04-05 value.
-    for (const s of r.body.data) {
-      expect(users.get(s.teacherId)?.role).toBe('teacher')
-      expect(s.teacher.name).toMatch(/Demo/)
-    }
-    expect(
-      r.body.data
-        .filter((s) => s.files.length === 2)
-        .map((s) => s.id)
-        .sort(),
-    ).toEqual([5, 6])
-    expect(SEED_SUBMISSIONS).toHaveLength(6)
-  })
-
-  it('filters by status; the counts stay global; an unknown status is an empty list', async () => {
-    const processing = await list('?status=processing')
-    expect(processing.body.data.map((s) => s.id)).toEqual([3, 2, 1])
-    expect(processing.body.meta.counts.all).toBe(6)
-    expect((await list('?status=rejected')).body.data.map((s) => s.id)).toEqual([6])
-    expect((await list('?status=pending')).body.data.map((s) => s.id)).toEqual([5])
-    expect((await list('?status=done')).body.data.map((s) => s.id)).toEqual([4])
-    expect((await list('?status=zzz')).body.data).toEqual([])
-    expect((await list('?status=')).body.data).toHaveLength(6)
-  })
-
-  it('#21 saves status and note, answers the flash, recounts and lets any status follow any other', async () => {
-    dirty = true
-    const r = await patch(4, { status: 'done', adminNotes: 'Sudah diproses ke bank soalan.' })
-    expect(r.status).toBe(200)
-    expect((r.body as SubmissionMutation).status).toBe(SUBMISSION_SAVED_TEXT)
-    expect(SUBMISSION_SAVED_TEXT).toBe('Status kertas soalan berjaya dikemaskini.')
-    expect((r.body as SubmissionMutation).data).toMatchObject({
-      id: 4,
-      status: 'done',
-      adminNotes: 'Sudah diproses ke bank soalan.',
-      teacher: { id: 4504 },
-    })
-    const back = await patch(4, { status: 'pending' })
-    expect((back.body as SubmissionMutation).data).toMatchObject({
-      status: 'pending',
-      // An omitted note is kept (INFERRED).
-      adminNotes: 'Sudah diproses ke bank soalan.',
-    })
-    expect((await list()).body.meta.counts).toEqual({
-      all: 6,
-      pending: 2,
-      processing: 3,
-      done: 0,
-      rejected: 1,
-    })
-    // An empty note clears it.
-    const cleared = await patch(4, { status: 'rejected', adminNotes: '' })
-    expect((cleared.body as SubmissionMutation).data.adminNotes).toBeNull()
-    expect((await list()).body.meta.counts).toEqual({
-      all: 6,
-      pending: 1,
-      processing: 3,
-      done: 0,
-      rejected: 2,
-    })
-  })
-
-  it('#21 refuses an unknown or missing status and a note over 1,000 characters (422 with fields)', async () => {
-    const bad = await patch(4, { status: 'archived' })
-    expect(bad.status).toBe(422)
-    expect(errorCode(bad)).toBe('VALIDATION_ERROR')
-    expect(fieldsOf(bad)).toEqual({ status: SUBMISSION_STATUS_MESSAGE })
-    expect(fieldsOf(await patch(4, {}))).toEqual({ status: SUBMISSION_STATUS_MESSAGE })
-    expect(fieldsOf(await patch(4, { status: 'done', adminNotes: 'x'.repeat(1001) }))).toEqual({
-      adminNotes: SUBMISSION_NOTES_MESSAGE,
-    })
-    expect(SUBMISSION_NOTES_MESSAGE).toContain('1000')
-    // Exactly 1,000 is allowed.
-    dirty = true
-    expect((await patch(4, { status: 'done', adminNotes: 'x'.repeat(1000) })).status).toBe(200)
-    expect(submissions.get(4)?.adminNotes).toHaveLength(1000)
-  })
-
-  it('#21 answers 404 for an unknown id (before validating the body)', async () => {
-    const r = await patch(99_999, { status: 'zzz' })
-    expect(r.status).toBe(404)
-    expect(errorCode(r)).toBe('NOT_FOUND')
-  })
-
-  it('#22 downloads a placeholder text file that carries the file name', async () => {
-    const r = await call<Blob>('GET', '/api/question-submissions/4/files/0', ADMIN)
-    expect(r.status).toBe(200)
-    expect(r.headers['content-type']).toBe('text/plain')
-    expect(r.headers['content-disposition']).toContain('PPSA K1 T4 2026.docx')
-    expect(await r.body.text()).toContain('PPSA K1 T4 2026.docx')
-    const second = await call<Blob>('GET', '/api/question-submissions/5/files/1', ADMIN)
-    expect(await second.body.text()).toContain('SKEMA MATEMATIK K1 T4 2026.pdf')
-  })
-
-  it('#22 answers 404 for an unknown paper or file index', async () => {
-    expect((await call('GET', '/api/question-submissions/4/files/1', ADMIN)).status).toBe(404)
-    expect((await call('GET', '/api/question-submissions/99999/files/0', ADMIN)).status).toBe(404)
-    expect((await call('GET', '/api/question-submissions/4/files/-1', ADMIN)).status).toBe(404)
-  })
-
-  it('M10 uploads a paper through the repository: it starts pending and gets the next id', async () => {
+describe('the question papers store of M10 (R1-ADM-Q-12 reads intake items, not this store)', () => {
+  it('M10 uploads a paper through the repository: it starts pending and gets the next id', () => {
     dirty = true
     const row = submissions.create(
       {
@@ -408,7 +253,6 @@ describe('#20–#22 S10 question papers (BR-M04-18, E2E-M04-48/49)', () => {
       adminNotes: null,
       files: [{ index: 0, name: 'a.pdf' }],
     })
-    expect((await list()).body.meta.counts).toMatchObject({ all: 7, pending: 2 })
     expect(() => submissions.create({ ...row, files: [] }, 0)).toThrow()
   })
 })

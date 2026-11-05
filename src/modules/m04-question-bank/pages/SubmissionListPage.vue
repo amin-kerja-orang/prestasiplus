@@ -1,22 +1,22 @@
 <script setup lang="ts">
 /**
- * S10 `/admin/question-submissions` "Kertas Soalan - Admin" (M04-T7; FR-M04-91..94, FN-M04-5.1.1..5.1.8).
+ * `/admin/question-submissions` "Kertas Soalan Guru" (R1-ADM-Q-12, FR-ADM-Q12.1, FR-ADM-Q12.5).
  *
- * - Four counter cards (Jumlah, Pending, Processing, Selesai; no Ditolak card), unaffected by the
- *   filter.
+ * - Four tiles (Jumlah, Pending, Processing, Selesai; no Ditolak tile), unaffected by the filter.
  * - GET filter (`status`, "Tapis"); "Reset" only while filtered. The query string is the state.
- * - Table of papers, id descending, not paged; "Tiada rekod ditemui" when empty. Each row updates its
- *   status through the inline "Kemaskini" panel; the list then reloads with the API `status` flash.
+ * - Every row is an intake item of a teacher submission, shown by role label, never by e-mail; each
+ *   links to `Semak` on the review screen of its batch.
  * - The table scrolls inside its card below its natural width (design-system §7.4).
  */
 import type { TableColumn } from '@nuxt/ui'
+import type { IntakeFileSummary, IntakeItemRow } from '@pp/contract'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import { ApiError } from '@/api'
 import { useApi, useFlash } from '@/composables'
 import {
   DsDataTable,
-  DsEmptyState,
   DsFilterBar,
   DsFormField,
   DsLoadError,
@@ -32,19 +32,20 @@ import { saveBlob } from '@/lib/save-blob'
 
 import {
   downloadSubmissionFile,
-  fetchQuestionSubmissions,
-  type QuestionSubmission,
+  fetchBatchFiles,
+  fetchSubmissionCounts,
+  fetchSubmissionItems,
+  SUBMISSION_PAGE_SIZE,
 } from '../api/submissions'
-import SubmissionActions from '../components/SubmissionActions.vue'
 import { formatEnDate, formatTime } from '../lib/audit-format'
-import { SUBMISSIONS_PATH } from '../lib/audit-routes'
+import { SUBMISSIONS_PATH, submissionReviewPath } from '../lib/audit-routes'
+import { pageOf, queryText } from '../lib/route-query'
 import {
   SUBMISSION_STATUS_DS,
-  SUBMISSION_STATUS_LABEL,
   SUBMISSION_STATUS_OPTIONS,
+  submissionStatusOf,
+  type SubmissionStatus,
 } from '../lib/submission-options'
-import { queryText } from '../lib/route-query'
-import { SUBMISSIONS_UNAVAILABLE_TITLE, isSubmissionsUnavailable } from '../lib/submissions-unavailable'
 import { LOAD_ERROR, errorLines } from '../lib/ui-errors'
 
 const route = useRoute()
@@ -52,20 +53,35 @@ const router = useRouter()
 const flash = useFlash()
 
 const applied = computed(() => queryText(route.query.status))
+const page = computed(() => pageOf(route.query.page))
 const status = ref(applied.value)
 watch(applied, (value) => {
   status.value = value
 })
 
 const { data, error, reload } = useApi(
-  (signal) => fetchQuestionSubmissions({ status: applied.value || null, signal }),
-  () => route.query.status,
+  async (signal) => {
+    const [list, counts] = await Promise.all([
+      fetchSubmissionItems({ status: applied.value || null, page: page.value, signal }),
+      fetchSubmissionCounts(signal),
+    ])
+    const files = await fetchBatchFiles(
+      list.data.map((row) => row.batchId),
+      signal,
+    )
+    return { list, counts, files }
+  },
+  () => [route.query.status, route.query.page],
 )
 
-const unavailable = computed(() => isSubmissionsUnavailable(error.value))
-const rows = computed(() => data.value?.data ?? [])
-const counts = computed(() => data.value?.meta.counts ?? null)
+const counts = computed(() => data.value?.counts ?? null)
 const firstLoad = computed(() => data.value === null && error.value === null)
+/** Field 12-01: the server answers 422 for a status that is not an OPT-KIRIMAN-STATUS key. */
+const errorText = computed(() =>
+  error.value instanceof ApiError && error.value.status === 422
+    ? 'Nilai penapis tidak sah.'
+    : LOAD_ERROR,
+)
 
 const countItems = computed<StatItem[]>(() => [
   { key: 'all', label: 'Jumlah', value: formatNumber(counts.value?.all ?? 0), icon: 'stack', accent: 'action' },
@@ -89,79 +105,81 @@ async function submitFilter(): Promise<void> {
     })
 }
 
-async function onSaved(message: string): Promise<void> {
-  await reload()
-  flash.show({ type: 'success', message })
+async function resetFilter(): Promise<void> {
+  status.value = ''
+  await router.push({ path: SUBMISSIONS_PATH })
 }
 
-function onFailed(err: unknown): void {
-  flash.show({ type: 'error', message: errorLines(err) })
+function goToPage(next: number): void {
+  void router.push({
+    path: SUBMISSIONS_PATH,
+    query: { ...(applied.value ? { status: applied.value } : {}), page: String(next) },
+  })
 }
 
 interface SubmissionTableRow extends Record<string, unknown> {
-  id: number
-  teacherName: string
-  paperTitle: string
-  fileCount: number
-  statusLabel: string
+  id: string
+  roleLabel: string
+  title: string
+  statusLabel: SubmissionStatus
   dateText: string
-  raw: QuestionSubmission
+  files: IntakeFileSummary[]
+  raw: IntakeItemRow
 }
 
 const tableRows = computed<SubmissionTableRow[]>(() =>
-  rows.value.map((s) => ({
-    id: s.id,
-    teacherName: s.teacher.name ?? '',
-    paperTitle: s.subjectText,
-    fileCount: s.files.length,
-    statusLabel: SUBMISSION_STATUS_LABEL[s.status],
-    dateText: `${formatEnDate(s.createdAt)} ${formatTime(s.createdAt)}`,
-    raw: s,
+  (data.value?.list.data ?? []).map((row) => ({
+    id: row.id,
+    roleLabel: 'Guru',
+    title: row.stemPreview,
+    // A filtered list keeps the filter's word: the server reads the live version, the row the latest.
+    statusLabel: (applied.value as SubmissionStatus) || submissionStatusOf(row),
+    dateText: `${formatEnDate(row.createdAt)} ${formatTime(row.createdAt)}`,
+    files: data.value?.files.get(row.batchId) ?? [],
+    raw: row,
   })),
 )
 
 const columns: TableColumn<SubmissionTableRow>[] = [
-  { accessorKey: 'teacherName', header: 'Guru / Sekolah' },
-  { accessorKey: 'paperTitle', header: 'Soalan' },
+  { accessorKey: 'roleLabel', header: 'Guru / Sekolah' },
+  { accessorKey: 'title', header: 'Tajuk' },
   { id: 'files', header: 'Fail' },
   { accessorKey: 'statusLabel', header: 'Status' },
   { accessorKey: 'dateText', header: 'Tarikh' },
   { id: 'actions', header: 'Tindakan' },
 ]
 const cardFields: CardField[] = [
-  { key: 'paperTitle', label: 'Soalan' },
+  { key: 'roleLabel', label: 'Guru / Sekolah' },
   { key: 'statusLabel', label: 'Status' },
   { key: 'dateText', label: 'Tarikh' },
 ]
 
-async function download(submission: QuestionSubmission, index: number): Promise<void> {
+async function download(file: IntakeFileSummary): Promise<void> {
   try {
-    const file = await downloadSubmissionFile(submission.id, index)
-    saveBlob(file.blob, file.filename ?? submission.files[index]?.name ?? 'fail')
+    const result = await downloadSubmissionFile(file.id)
+    saveBlob(result.blob, result.filename ?? file.originalName)
   } catch (err) {
-    onFailed(err)
+    flash.show({ type: 'error', message: errorLines(err) })
   }
 }
 
-/** The raw submission of a card row (the card slot passes the row object). */
-const rawOf = (row: Record<string, unknown>): QuestionSubmission => row.raw as QuestionSubmission
-
-async function resetFilter(): Promise<void> {
-  status.value = ''
-  await router.push({ path: SUBMISSIONS_PATH })
-}
+/** The card slot passes the row object. */
+const asRow = (row: Record<string, unknown>): SubmissionTableRow => row as SubmissionTableRow
 </script>
 
 <template>
-  <DsPage data-testid="submissions-page">
-    <!-- Counters: 2 per row, 4 from xl. -->
-    <DsStatRow v-if="!unavailable" :items="countItems" :cols="4" :loading="!counts" prefix="submissions-count" />
+  <DsPage
+    subtitle="Kertas yang dihantar guru diproses melalui aliran import Studio (DOCX/OCR → semakan → terbit)."
+    data-testid="submissions-page"
+  >
+    <!-- Tiles: 2 per row, 4 from xl. -->
+    <DsStatRow :items="countItems" :cols="4" :loading="!counts" prefix="submissions-count" />
 
     <!-- Filter (the URL is the state). -->
     <DsFilterBar
-      v-if="!unavailable"
       :active-count="applied !== '' ? 1 : 0"
       apply-label="Tapis"
+      sheet-apply-label="Tapis"
       reset-label="Reset"
       data-testid="submissions-filter"
       @apply="submitFilter"
@@ -176,24 +194,15 @@ async function resetFilter(): Promise<void> {
             data-testid="submissions-status"
           >
             <option value="">Semua Status</option>
-            <option v-for="o in SUBMISSION_STATUS_OPTIONS" :key="o.value" :value="o.value">
-              {{ o.label }}
-            </option>
+            <option v-for="o in SUBMISSION_STATUS_OPTIONS" :key="o" :value="o">{{ o }}</option>
           </DsNativeSelect>
         </DsFormField>
       </div>
     </DsFilterBar>
 
-    <DsEmptyState
-      v-if="unavailable"
-      :title="SUBMISSIONS_UNAVAILABLE_TITLE"
-      icon="stack"
-      data-testid="unavailable-state"
-    />
-
     <DsLoadError
-      v-else-if="error"
-      :message="LOAD_ERROR"
+      v-if="error"
+      :message="errorText"
       testid="submissions-error"
       retry-testid="submissions-retry"
       @retry="reload()"
@@ -206,79 +215,52 @@ async function resetFilter(): Promise<void> {
       :columns="columns"
       caption="Kertas soalan guru"
       :loading="firstLoad"
-      :page-size="Math.max(tableRows.length, 1)"
-      card-title="teacherName"
+      :page="page"
+      :page-size="SUBMISSION_PAGE_SIZE"
+      :total="data?.list.meta.totalItems ?? 0"
+      card-title="title"
       :card-fields="cardFields"
-      empty-title="Tiada rekod ditemui"
+      empty-title="Tiada kertas soalan dihantar oleh guru lagi."
       :filtered="applied !== ''"
       data-testid="submissions-table"
+      @update:page="goToPage"
     >
       <template #empty>
-        <span data-testid="submissions-empty">Tiada rekod ditemui</span>
+        <span data-testid="submissions-empty">Tiada kertas soalan dihantar oleh guru lagi.</span>
       </template>
-      <template #teacherName-cell="{ row }">
+      <template #title-cell="{ row }">
         <div class="min-w-40">
-          <div class="text-label text-highlighted">{{ row.original.raw.teacher.name }}</div>
-          <ULink
-            v-if="row.original.raw.teacher.email"
-            :href="`mailto:${row.original.raw.teacher.email}`"
-            class="block text-caption break-all text-muted"
-            >{{ row.original.raw.teacher.email }}</ULink
-          >
-          <div v-if="row.original.raw.teacher.school" class="mt-1 flex gap-1 text-caption text-muted">
-            <UIcon name="i-ph-buildings" class="mt-1 size-4 shrink-0" />
-            <span>{{ row.original.raw.teacher.school }}</span>
+          <div class="line-clamp-2 text-label text-highlighted" data-testid="submission-title">
+            {{ row.original.title }}
           </div>
-        </div>
-      </template>
-      <template #paperTitle-cell="{ row }">
-        <div class="min-w-40">
-          <div class="text-label text-highlighted">
-            {{ row.original.raw.subjectText }}
-            <span v-if="row.original.raw.levelCode" class="text-caption text-muted">{{
-              row.original.raw.levelCode
-            }}</span>
-            <span class="text-caption text-muted"> ({{ row.original.raw.year }})</span>
-          </div>
-          <div class="text-caption text-primary-t">{{ row.original.raw.paperType }}</div>
-          <div class="text-caption text-muted">Oleh: {{ row.original.raw.authorCredit }}</div>
-          <div v-if="row.original.raw.note" class="mt-1 line-clamp-2 text-caption text-muted">
-            {{ row.original.raw.note }}
+          <div class="text-caption text-muted">
+            {{ row.original.raw.subject }} · {{ row.original.raw.label }}
           </div>
         </div>
       </template>
       <template #files-cell="{ row }">
         <div class="min-w-36">
           <UButton
-            v-for="file in row.original.raw.files"
-            :key="file.index"
+            v-for="file in row.original.files"
+            :key="file.id"
             type="button"
             color="neutral"
             variant="link"
             icon="i-ph-download-simple"
             class="max-w-52 min-h-11 justify-start"
             data-testid="submission-file"
-            @click="download(row.original.raw, file.index)"
+            @click="download(file)"
           >
-            <span class="truncate">{{ file.name }}</span>
+            <span class="truncate">{{ file.originalName }}</span>
           </UButton>
         </div>
       </template>
       <template #statusLabel-cell="{ row }">
-        <div class="min-w-28">
-          <DsStatusBadge
-            :status="SUBMISSION_STATUS_DS[row.original.raw.status as keyof typeof SUBMISSION_STATUS_DS]"
-            :label="SUBMISSION_STATUS_LABEL[row.original.raw.status as keyof typeof SUBMISSION_STATUS_LABEL]"
-            data-testid="submission-status"
-          />
-          <div
-            v-if="row.original.raw.adminNotes"
-            class="mt-1 text-caption break-words text-muted"
-            data-testid="submission-admin-notes"
-          >
-            {{ row.original.raw.adminNotes }}
-          </div>
-        </div>
+        <DsStatusBadge
+          :status="SUBMISSION_STATUS_DS[row.original.statusLabel]"
+          :label="row.original.statusLabel"
+          data-testid="submission-status"
+        />
       </template>
       <template #dateText-cell="{ row }">
         <div class="text-caption whitespace-nowrap text-muted">
@@ -287,10 +269,38 @@ async function resetFilter(): Promise<void> {
         </div>
       </template>
       <template #actions-cell="{ row }">
-        <SubmissionActions :submission="row.original.raw" @saved="onSaved" @failed="onFailed" />
+        <UButton
+          :to="submissionReviewPath(row.original.raw.batchId)"
+          color="neutral"
+          variant="outline"
+          class="min-h-11"
+          data-testid="submission-semak"
+        >
+          Semak
+        </UButton>
       </template>
       <template #card-actions="{ row }">
-        <SubmissionActions :submission="rawOf(row)" @saved="onSaved" @failed="onFailed" />
+        <UButton
+          v-for="file in asRow(row).files"
+          :key="file.id"
+          type="button"
+          color="neutral"
+          variant="link"
+          class="max-w-full min-h-11 justify-start"
+          data-testid="submission-file"
+          @click="download(file)"
+        >
+          <span class="truncate">{{ file.originalName }}</span>
+        </UButton>
+        <UButton
+          :to="submissionReviewPath(asRow(row).raw.batchId)"
+          color="neutral"
+          variant="outline"
+          class="min-h-11"
+          data-testid="submission-semak"
+        >
+          Semak
+        </UButton>
       </template>
     </DsDataTable>
   </DsPage>

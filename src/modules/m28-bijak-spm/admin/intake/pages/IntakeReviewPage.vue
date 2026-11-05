@@ -636,13 +636,13 @@ async function submit(): Promise<void> {
           >
             <template #actions>
               <UButton
-                to="/admin/spm/semakan"
+                :to="INTAKE_LIST_PATH"
                 color="success"
                 variant="outline"
                 icon="i-ph-seal-check"
                 data-testid="goto-queue"
               >
-                Buka Baris Gilir Semakan
+                Buka Import &amp; Semakan
               </UButton>
               <UButton
                 v-if="paperBack"

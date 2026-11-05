@@ -597,7 +597,11 @@ test.describe('QA G5 guards and nav', { tag: [moduleTag(4), '@qa'] }, () => {
       ['/admin/questions/import', 'Import Soalan Secara Pukal', null],
       ['/admin/questions/quality', 'Dashboard Kualiti Soalan', null],
       ['/admin/structured-questions', 'Soalan Berstruktur', 'Semua soalan berstruktur SPM dalam sistem'],
-      ['/admin/question-submissions', 'Kertas Soalan Guru', null],
+      [
+        '/admin/question-submissions',
+        'Kertas Soalan Guru',
+        'Kertas yang dihantar guru diproses melalui aliran import Studio (DOCX/OCR → semakan → terbit).',
+      ],
       ['/admin/soalan-gambar', 'Soalan Perlu Gambar Rajah', null],
     ]
     for (const [path, title, sub] of pairs) {

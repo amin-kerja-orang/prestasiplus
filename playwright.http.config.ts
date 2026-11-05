@@ -34,6 +34,7 @@ export default defineConfig({
     '**/bijak/http-*.spec.ts',
     '**/r1/**/*.http.spec.ts',
     '**/m04-question-bank/responsive-s2.spec.ts',
+    '**/m04-question-bank/t7-submissions.spec.ts',
   ],
   // E2E_SKIP_R1=1 (set by the full-suite step of e2e-http.yml): e2e/r1 already ran in its own step, so skip it here.
   testIgnore: process.env.E2E_SKIP_R1 === '1' ? ['**/r1/**'] : [],

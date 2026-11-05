@@ -220,9 +220,12 @@ test.describe('Intake review over HTTP @bijak @api', () => {
       /* ---- the gate passes: "Hantar untuk semakan" goes to the queue */
       await page.getByTestId('submit-review').click()
       await expect(page.getByTestId('submitted-note')).toBeVisible()
+      await expect(page.getByTestId('goto-queue')).toHaveText('Buka Import & Semakan')
       await page.getByTestId('goto-queue').click()
+      await expect(page).toHaveURL(/\/admin\/spm\/soalan\/ekstrak$/)
 
       /* ---- review queue */
+      await page.goto('/admin/spm/semakan')
       await expect(page.getByTestId('review-queue-page')).toBeVisible()
       await expectNoHorizontalScrollHttp(page)
       const table = page.getByTestId('queue-table')

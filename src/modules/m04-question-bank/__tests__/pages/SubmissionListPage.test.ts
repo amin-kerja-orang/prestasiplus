@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import type { IntakeItemRow } from '@pp/contract'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -7,52 +8,38 @@ import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 import { ApiError } from '@/api'
 import { useFlashStore } from '@/stores/flash'
 
-import type { QuestionSubmission } from '../../api/submissions'
-import { SubmissionsUnavailableError } from '../../lib/submissions-unavailable'
 import SubmissionListPage from '../../pages/SubmissionListPage.vue'
 
 const api = vi.hoisted(() => ({
-  fetchQuestionSubmissions: vi.fn(),
-  updateSubmissionStatus: vi.fn(),
+  SUBMISSION_PAGE_SIZE: 20,
+  fetchSubmissionItems: vi.fn(),
+  fetchSubmissionCounts: vi.fn(),
+  fetchBatchFiles: vi.fn(),
   downloadSubmissionFile: vi.fn(),
 }))
 vi.mock('../../api/submissions', () => api)
+const save = vi.hoisted(() => ({ saveBlob: vi.fn() }))
+vi.mock('@/lib/save-blob', () => save)
 
-function paper(id: number, extra: Partial<QuestionSubmission> = {}): QuestionSubmission {
+const INTRO = 'Kertas yang dihantar guru diproses melalui aliran import Studio (DOCX/OCR → semakan → terbit).'
+
+function item(id: string, extra: Partial<IntakeItemRow> = {}): IntakeItemRow {
   return {
     id,
-    teacherId: 4501,
-    subjectText: 'Perniagaan',
-    levelCode: 'T5',
-    year: 2026,
-    paperType: 'Buku Latihan',
-    authorCredit: 'Cikgu Demo 01',
-    note: 'Latih tubi kelas',
-    files: [{ index: 0, name: 'kertas-a.docx', size: 10, mime: 'application/msword' }],
-    status: 'done',
-    adminNotes: 'nota lama',
+    label: '1',
+    stemPreview: `Soalan ujian ${id}`,
+    subject: 'Sains',
+    batchId: '40',
+    state: 'generated',
+    question: null,
+    uploader: { id: '9', name: 'Cikgu Demo 01' },
     createdAt: '2026-03-09T08:49:00+08:00',
-    teacher: {
-      id: 4501,
-      name: 'Cikgu Demo 01',
-      email: 'demo01@example.test',
-      school: 'SMK Contoh',
-    },
     ...extra,
-  }
+  } as IntakeItemRow
 }
 
-function result(rows: QuestionSubmission[]) {
-  return {
-    data: rows,
-    meta: {
-      page: 1,
-      pageSize: 100,
-      totalItems: rows.length,
-      totalPages: 1,
-      counts: { all: 6, pending: 1, processing: 3, done: 1, rejected: 1 },
-    },
-  }
+function result(rows: IntakeItemRow[], totalItems = rows.length) {
+  return { data: rows, meta: { page: 1, pageSize: 20, totalItems, totalPages: 1 } }
 }
 
 let wrapper: VueWrapper | null = null
@@ -61,7 +48,10 @@ let router: Router
 async function render(url = '/admin/question-submissions'): Promise<VueWrapper> {
   router = createRouter({
     history: createMemoryHistory(),
-    routes: [{ path: '/admin/question-submissions', component: SubmissionListPage }],
+    routes: [
+      { path: '/admin/question-submissions', component: SubmissionListPage },
+      { path: '/admin/spm/soalan/ekstrak/:id', component: { template: '<div />' } },
+    ],
   })
   await router.push(url)
   wrapper = mount(SubmissionListPage, { global: { plugins: [router] } })
@@ -71,9 +61,15 @@ async function render(url = '/admin/question-submissions'): Promise<VueWrapper> 
 
 beforeEach(() => {
   setActivePinia(createPinia())
-  for (const fn of Object.values(api)) fn.mockReset()
-  api.fetchQuestionSubmissions.mockResolvedValue(
-    result([paper(6), paper(5, { status: 'processing', adminNotes: null, note: null })]),
+  api.fetchSubmissionItems.mockReset()
+  api.fetchSubmissionCounts.mockReset()
+  api.fetchBatchFiles.mockReset()
+  api.downloadSubmissionFile.mockReset()
+  save.saveBlob.mockReset()
+  api.fetchSubmissionItems.mockResolvedValue(result([item('1'), item('2')]))
+  api.fetchSubmissionCounts.mockResolvedValue({ all: 6, pending: 2, processing: 3, done: 1 })
+  api.fetchBatchFiles.mockResolvedValue(
+    new Map([['40', [{ id: '7', originalName: 'kertas-a.pdf' }]]]),
   )
 })
 
@@ -82,26 +78,31 @@ afterEach(() => {
   wrapper = null
 })
 
-describe('SubmissionListPage (M04 S10)', () => {
-  it('shows the four counters and no Ditolak card', async () => {
+describe('SubmissionListPage (R1-ADM-Q-12)', () => {
+  it('shows the four tiles and no Ditolak tile', async () => {
     const w = await render()
     expect(w.get('[data-testid=submissions-count-all]').text()).toBe('6Jumlah')
-    expect(w.get('[data-testid=submissions-count-pending]').text()).toBe('1Pending')
+    expect(w.get('[data-testid=submissions-count-pending]').text()).toBe('2Pending')
     expect(w.get('[data-testid=submissions-count-processing]').text()).toBe('3Processing')
     expect(w.get('[data-testid=submissions-count-done]').text()).toBe('1Selesai')
     expect(w.findAll('[data-ds="stat-row"] li')).toHaveLength(4)
     expect(w.get('[data-ds="stat-row"]').text()).not.toContain('Ditolak')
   })
 
-  it('offers the status filter with Tapis and resets from the filter bar', async () => {
+  it('gives DsPage the intro, which the portal header reads', async () => {
+    const w = await render()
+    expect(w.text()).toContain(INTRO)
+  })
+
+  it('offers the status filter with the display keys and Tapis, and resets', async () => {
     let w = await render()
     const options = w.findAll('[data-testid=submissions-status] option').map((o) => o.text())
     expect(options).toEqual(['Semua Status', 'Pending', 'Processing', 'Selesai', 'Ditolak'])
     expect(w.get('[data-testid=submissions-filter] button[type=submit]').text()).toBe('Tapis')
     w.unmount()
-    w = await render('/admin/question-submissions?status=done')
-    expect(api.fetchQuestionSubmissions).toHaveBeenLastCalledWith(
-      expect.objectContaining({ status: 'done' }),
+    w = await render('/admin/question-submissions?status=Selesai')
+    expect(api.fetchSubmissionItems).toHaveBeenLastCalledWith(
+      expect.objectContaining({ status: 'Selesai' }),
     )
     const reset = w
       .get('[data-testid=submissions-filter]')
@@ -114,163 +115,119 @@ describe('SubmissionListPage (M04 S10)', () => {
 
   it('submits the status filter as the query string', async () => {
     const w = await render()
-    await w.get('[data-testid=submissions-status]').setValue('pending')
+    await w.get('[data-testid=submissions-status]').setValue('Pending')
     await w.get('[data-testid=submissions-filter]').trigger('submit')
     await flushPromises()
-    expect(router.currentRoute.value.query).toEqual({ status: 'pending' })
+    expect(router.currentRoute.value.query).toEqual({ status: 'Pending' })
   })
 
-  it('renders the columns and a row with teacher, paper, file, status pill and date', async () => {
+  it('renders the columns and a row by role label, never by name or e-mail', async () => {
     const w = await render()
     expect(w.findAll('thead th').map((th) => th.text())).toEqual([
       'Guru / Sekolah',
-      'Soalan',
+      'Tajuk',
       'Fail',
       'Status',
       'Tarikh',
       'Tindakan',
     ])
-    const row = w.findAll('tbody tr')[0]
-    const text = row?.text() ?? ''
-    expect(text).toContain('Cikgu Demo 01')
-    expect(text).toContain('demo01@example.test')
-    expect(text).toContain('SMK Contoh')
-    expect(text).toContain('Perniagaan')
-    expect(text).toContain('T5')
-    expect(text).toContain('(2026)')
-    expect(text).toContain('Buku Latihan')
-    expect(text).toContain('Oleh: Cikgu Demo 01')
-    expect(text).toContain('Latih tubi kelas')
-    expect(text).toContain('kertas-a.docx')
-    expect(row?.get('[data-testid=submission-status]').text()).toBe('Selesai')
-    expect(row?.get('[data-testid=submission-admin-notes]').text()).toBe('nota lama')
-    expect(text).toContain('09 Mar 2026')
-    expect(text).toContain('08:49')
-    const second = w.findAll('tbody tr')[1]
-    expect(second?.get('[data-testid=submission-status]').text()).toBe('Processing')
-    expect(second?.find('[data-testid=submission-admin-notes]').exists()).toBe(false)
+    const text = w.findAll('tbody tr')[0]?.text() ?? ''
+    expect(text).toContain('Guru')
+    expect(text).not.toContain('Cikgu Demo 01')
+    expect(text).not.toContain('@')
+    expect(text).toContain('Soalan ujian 1')
+    expect(text).toContain('Sains')
+    expect(text).toContain('kertas-a.pdf')
+    expect(text).toContain('Pending')
   })
 
-  it('shows "Tiada rekod ditemui" when there is no paper', async () => {
-    api.fetchQuestionSubmissions.mockResolvedValue(result([]))
-    const w = await render('/admin/question-submissions?status=rejected')
-    expect(w.get('[data-testid=submissions-empty]').text()).toBe('Tiada rekod ditemui')
-  })
-
-  it('"Kemaskini" toggles the inline panel with the current status and note', async () => {
+  it('links each row to Semak on the review screen of its batch', async () => {
     const w = await render()
-    const row = w.findAll('tbody tr')[0]
-    expect(row?.find('[data-testid=submission-panel]').exists()).toBe(false)
-    await row?.get('[data-testid=submission-toggle]').trigger('click')
-    const status = row?.get('[data-testid=submission-panel-status]')
-    expect((status?.element as HTMLSelectElement).value).toBe('done')
-    expect(status?.attributes('required')).toBeDefined()
-    const notes = row?.get('[data-testid=submission-panel-notes]')
-    expect((notes?.element as HTMLTextAreaElement).value).toBe('nota lama')
-    expect(notes?.attributes('maxlength')).toBe('1000')
-    expect(notes?.attributes('placeholder')).toBe('Nota admin (pilihan)...')
-    expect(row?.get('[data-testid=submission-panel-save]').text()).toBe('Simpan')
-    await row?.get('[data-testid=submission-toggle]').trigger('click')
-    expect(row?.find('[data-testid=submission-panel]').exists()).toBe(false)
+    const link = w.get('[data-testid=submission-semak]')
+    expect(link.text()).toBe('Semak')
+    expect(link.attributes('href')).toBe('/admin/spm/soalan/ekstrak/40')
   })
 
-  it('re-syncs the panel fields from the stored paper each time it opens', async () => {
-    const w = await render()
-    const row = w.findAll('tbody tr')[0]
-    await row?.get('[data-testid=submission-toggle]').trigger('click')
-    await row?.get('[data-testid=submission-panel-status]').setValue('rejected')
-    await row?.get('[data-testid=submission-panel-notes]').setValue('belum disimpan')
-    await row?.get('[data-testid=submission-toggle]').trigger('click')
-    await row?.get('[data-testid=submission-toggle]').trigger('click')
-    const status = row?.get('[data-testid=submission-panel-status]').element as HTMLSelectElement
-    const notes = row?.get('[data-testid=submission-panel-notes]').element as HTMLTextAreaElement
-    expect(status.value).toBe('done')
-    expect(notes.value).toBe('nota lama')
-  })
-
-  it('saves without a confirm, reloads and flashes the API status', async () => {
-    api.updateSubmissionStatus.mockResolvedValue({
-      data: paper(6),
-      status: 'Status kertas soalan berjaya dikemaskini.',
-    })
-    const confirm = vi.spyOn(window, 'confirm')
-    const w = await render()
-    const calls = api.fetchQuestionSubmissions.mock.calls.length
-    const row = w.findAll('tbody tr')[0]
-    await row?.get('[data-testid=submission-toggle]').trigger('click')
-    await row?.get('[data-testid=submission-panel-status]').setValue('rejected')
-    await row?.get('[data-testid=submission-panel-notes]').setValue('tidak lengkap')
-    await row?.get('[data-testid=submission-panel]').trigger('submit')
-    await flushPromises()
-    expect(confirm).not.toHaveBeenCalled()
-    expect(api.updateSubmissionStatus).toHaveBeenCalledWith(6, {
-      status: 'rejected',
-      adminNotes: 'tidak lengkap',
-    })
-    expect(api.fetchQuestionSubmissions.mock.calls.length).toBe(calls + 1)
-    expect(useFlashStore().current).toEqual({
-      type: 'success',
-      message: 'Status kertas soalan berjaya dikemaskini.',
-    })
-  })
-
-  it('shows a non-validation failure as a red flash', async () => {
-    api.updateSubmissionStatus.mockRejectedValue(
-      new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Kertas tidak dijumpai.' }),
+  it('maps the row status: accepted is Processing until the question is approved', async () => {
+    api.fetchSubmissionItems.mockResolvedValue(
+      result([
+        item('1', { state: 'accepted', question: { id: '5', version: 1, status: 'draft' } }),
+        item('2', { state: 'accepted', question: { id: '6', version: 1, status: 'approved' } }),
+        item('3', { state: 'rejected' }),
+      ]),
     )
     const w = await render()
-    const row = w.findAll('tbody tr')[0]
-    await row?.get('[data-testid=submission-toggle]').trigger('click')
-    await row?.get('[data-testid=submission-panel]').trigger('submit')
-    await flushPromises()
-    expect(useFlashStore().current).toEqual({ type: 'error', message: ['Kertas tidak dijumpai.'] })
+    expect(w.findAll('[data-testid=submission-status]').map((b) => b.text())).toEqual([
+      'Processing',
+      'Selesai',
+      'Ditolak',
+    ])
   })
 
-  it('shows a server field message under its field (SRS §5), not as a flash', async () => {
-    api.updateSubmissionStatus.mockRejectedValue(
-      new ApiError({
-        status: 422,
-        code: 'VALIDATION_ERROR',
-        message: 'Data tidak sah.',
-        fields: { adminNotes: 'Nota terlalu panjang.' },
-      }),
+  it('a filtered list keeps the word of the filter (the server reads the live version)', async () => {
+    api.fetchSubmissionItems.mockResolvedValue(
+      result([item('1', { state: 'accepted', question: { id: '5', version: 2, status: 'draft' } })]),
     )
-    const w = await render()
-    const row = w.findAll('tbody tr')[0]
-    await row?.get('[data-testid=submission-toggle]').trigger('click')
-    await row?.get('[data-testid=submission-panel]').trigger('submit')
-    await flushPromises()
-    expect(row?.get('[data-testid=submission-notes-error]').text()).toBe('Nota terlalu panjang.')
-    expect(useFlashStore().current).toBeNull()
+    const w = await render('/admin/question-submissions?status=Selesai')
+    expect(w.get('[data-testid=submission-status]').text()).toBe('Selesai')
   })
 
-  it('shows the red box with "Cuba Semula" when the list cannot load', async () => {
-    api.fetchQuestionSubmissions.mockRejectedValueOnce(
-      new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'HTTP 500' }),
-    )
+  it('shows the PRD empty text', async () => {
+    api.fetchSubmissionItems.mockResolvedValue(result([]))
+    api.fetchBatchFiles.mockResolvedValue(new Map())
     const w = await render()
-    expect(w.get('[data-testid=submissions-error]').text()).toContain('Cuba Semula')
-    await w.get('[data-testid=submissions-retry]').trigger('click')
-    await flushPromises()
-    expect(w.findAll('tbody tr')).toHaveLength(2)
-  })
-
-  it('shows the demo unavailable state, not the load error, when the adapter is unavailable', async () => {
-    api.fetchQuestionSubmissions.mockRejectedValueOnce(new SubmissionsUnavailableError())
-    const w = await render()
-    expect(w.get('[data-testid=unavailable-state]').text()).toContain(
-      'Fungsi ini belum tersedia dalam demo',
+    expect(w.get('[data-testid=submissions-empty]').text()).toBe(
+      'Tiada kertas soalan dihantar oleh guru lagi.',
     )
     expect(w.find('[data-testid=submissions-error]').exists()).toBe(false)
-    expect(w.find('[data-testid=submissions-table]').exists()).toBe(false)
-    expect(w.find('[data-ds="stat-row"]').exists()).toBe(false)
-    expect(w.find('[data-testid=submissions-filter]').exists()).toBe(false)
   })
 
-  it('keeps the stat row and filter bar in normal mode', async () => {
+  it('names a refused filter value (field 12-01)', async () => {
+    api.fetchSubmissionItems.mockRejectedValue(
+      new ApiError({ status: 422, code: 'VALIDATION_ERROR', message: 'x' }),
+    )
+    const w = await render('/admin/question-submissions?status=done')
+    expect(w.get('[data-testid=submissions-error]').text()).toContain('Nilai penapis tidak sah.')
+  })
+
+  it('offers a retry after any other load failure', async () => {
+    api.fetchSubmissionItems.mockRejectedValueOnce(new Error('network'))
     const w = await render()
-    expect(w.find('[data-ds="stat-row"]').exists()).toBe(true)
-    expect(w.find('[data-testid=submissions-filter]').exists()).toBe(true)
-    expect(w.find('[data-testid=unavailable-state]').exists()).toBe(false)
+    expect(w.get('[data-testid=submissions-error]').text()).not.toContain('Nilai penapis')
+    await w.get('[data-testid=submissions-retry]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-testid=submissions-error]').exists()).toBe(false)
+    expect(w.text()).toContain('Soalan ujian 1')
+  })
+
+  it('downloads a file by its id and name', async () => {
+    const blob = new Blob(['x'])
+    api.downloadSubmissionFile.mockResolvedValue({ blob, filename: null })
+    const w = await render()
+    await w.get('[data-testid=submission-file]').trigger('click')
+    await flushPromises()
+    expect(api.downloadSubmissionFile).toHaveBeenCalledWith('7')
+    expect(save.saveBlob).toHaveBeenCalledWith(blob, 'kertas-a.pdf')
+  })
+
+  it('flashes a failed download', async () => {
+    api.downloadSubmissionFile.mockRejectedValue(new Error('gagal'))
+    const w = await render()
+    await w.get('[data-testid=submission-file]').trigger('click')
+    await flushPromises()
+    expect(useFlashStore().current?.type).toBe('error')
+  })
+
+  it('moves to another page through the URL, keeping the filter', async () => {
+    api.fetchSubmissionItems.mockResolvedValue(
+      result(Array.from({ length: 20 }, (_, i) => item(String(i))), 45),
+    )
+    const w = await render('/admin/question-submissions?status=Pending')
+    w.getComponent({ name: 'DsDataTable' }).vm.$emit('update:page', 2)
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({ status: 'Pending', page: '2' })
+    expect(api.fetchSubmissionItems).toHaveBeenLastCalledWith(
+      expect.objectContaining({ status: 'Pending', page: 2 }),
+    )
   })
 })
