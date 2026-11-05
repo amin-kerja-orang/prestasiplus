@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url'
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
-import { GAME_SETTINGS } from '../../src/modules/games'
+import { GAME_SETTINGS, isGameSettingKey } from '../../src/modules/games'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
 /**
@@ -17,6 +17,8 @@ const REVERSE = MIGRATION.split('\n')
   .join('\n')
 
 const REWARD_KEYS = ['flat_quiz_reward', 'games_award_syiling', 'reward_budget_sen_session', 'current_session_year']
+/** The row 0224 inserted and the reader no longer serves. */
+const UNREAD_KEY = 'mystery_box_cost'
 const OTHER_OLD_KEYS = ['coins_per_question', 'cash_rate_coins', 'cash_rate_sen', 'min_cash_withdrawal', 'cash_withdrawal_enabled', 'reward_budget_sen_month']
 
 /** 48 section 2: key, default, BM label. */
@@ -136,10 +138,16 @@ describe('migration 0224 game engine', () => {
       for (const [key, value, label] of ROWS) expect(rows.get(key), key).toEqual({ value, label })
     })
 
-    it('every row is the default the reader falls back to', async () => {
+    it('every row is the default the reader falls back to, except mystery_box_cost, which the reader no longer serves', async () => {
       const rows = await settings()
-      expect(Object.keys(GAME_SETTINGS).sort()).toEqual(ROWS.map(([key]) => key).sort())
+      expect(Object.keys(GAME_SETTINGS).sort()).toEqual(ROWS.map(([key]) => key).filter((key) => key !== UNREAD_KEY).sort())
       for (const [key, spec] of Object.entries(GAME_SETTINGS)) expect(rows.get(key)?.value, key).toBe(spec.default)
+    })
+
+    it('mystery_box_cost (ruling 2 on #505: the cost lives only in mystery_boxes.cost_syiling) stays a row and an allowed key, but is not a game setting', async () => {
+      expect((await settings()).get(UNREAD_KEY)).toEqual({ value: 50, label: 'Kos satu kotak (syiling)' })
+      expect(Object.hasOwn(GAME_SETTINGS, UNREAD_KEY)).toBe(false)
+      expect(isGameSettingKey(UNREAD_KEY)).toBe(false)
     })
 
     it('does not insert the four reward_settings keys or the other old keys', async () => {
