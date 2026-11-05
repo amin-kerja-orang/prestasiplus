@@ -4,6 +4,7 @@ import { ErrorBodySchema } from '../../common/error'
 import { buildOpenApiDocument } from '../../openapi'
 import { QUESTION_WORKFLOW_COMPONENT_SCHEMAS } from '../paths'
 import {
+  DIAGRAM_AUDIT_IMAGE_MIME_TYPES,
   DIAGRAM_AUDIT_MESSAGES,
   DiagramAuditImageRequestSchema,
   DiagramAuditKindSchema,
@@ -196,6 +197,7 @@ describe('reports', () => {
     createdAt: AT,
     updatedAt: AT,
     question,
+    reporterRole: 'murid',
     reporter: { id: '12', name: 'Aina Pelapor' },
   }
   const counts = { pending: 0, reviewed: 0, fixed: 1, dismissed: 0, all: 1 }
@@ -369,11 +371,15 @@ describe('diagram audit', () => {
 
   it('validates the image part', () => {
     expect(ok(DiagramAuditImageRequestSchema, { image: new File(['x'], 'rajah.png', { type: 'image/png' }) })).toBe(true)
-    expect(ok(DiagramAuditImageRequestSchema, { image: new File(['x'], 'rajah.gif', { type: 'image/gif' }) })).toBe(true)
+    expect(ok(DiagramAuditImageRequestSchema, { image: new File(['x'], 'rajah.webp', { type: 'image/webp' }) })).toBe(true)
+    expect(ok(DiagramAuditImageRequestSchema, { image: new File(['x'], 'rajah.gif', { type: 'image/gif' }) })).toBe(false)
+    expect(DIAGRAM_AUDIT_IMAGE_MIME_TYPES).toEqual(['image/jpeg', 'image/png', 'image/webp'])
     expect(ok(DiagramAuditImageRequestSchema, { image: new File(['<svg/>'], 'rajah.svg', { type: 'image/svg+xml' }) })).toBe(false)
     expect(ok(DiagramAuditImageRequestSchema, { image: new File([new Uint8Array(2 * 1024 * 1024 + 1)], 'besar.png', { type: 'image/png' }) })).toBe(false)
     expect(ok(DiagramAuditImageRequestSchema, {})).toBe(false)
-    expect(DIAGRAM_AUDIT_MESSAGES.fileType).toBe('Gambar mesti jenis JPG, PNG, WebP atau GIF dan tidak melebihi 2MB.')
+    expect(DIAGRAM_AUDIT_MESSAGES.fileType).toBe('Fail mesti berupa imej (jpg, png atau webp).')
+    expect(DIAGRAM_AUDIT_MESSAGES.fileSize).toBe('Saiz imej tidak boleh melebihi 2 MB.')
+    expect(DIAGRAM_AUDIT_MESSAGES.submittedForReview).toBe('Gambar dihantar untuk semakan.')
   })
 
   it('answers image and dismiss with needsDiagram false and the flash', () => {
@@ -445,7 +451,7 @@ describe('openapi registration', () => {
 
   const ROUTES: readonly [string, string][] = [
     ['get', '/question-reports'], ['post', '/question-reports'], ['get', '/question-reports/mine'], ['patch', '/question-reports/{id}'],
-    ['get', '/question-imports'], ['post', '/question-imports'], ['get', '/question-imports/template'],
+    ['get', '/question-imports'], ['post', '/question-imports'], ['get', '/question-imports/template'], ['get', '/question-imports/{id}/errors'],
     ['get', '/guru/questions/template'], ['post', '/guru/questions/import'],
     ['get', '/question-quality'], ['post', '/question-quality/audit'],
     ['get', '/diagram-audit'], ['post', '/diagram-audit/{kind}/{id}/image'], ['post', '/diagram-audit/{kind}/{id}/dismiss'],
@@ -460,9 +466,9 @@ describe('openapi registration', () => {
         .map(([method, op]): [string, string, Operation] => [method, path, op]),
     )
 
-  it('registers the 20 routes, and only those, under the question-workflow tag', () => {
-    expect(ROUTES).toHaveLength(20)
-    expect(operations()).toHaveLength(20)
+  it('registers the 21 routes, and only those, under the question-workflow tag', () => {
+    expect(ROUTES).toHaveLength(21)
+    expect(operations()).toHaveLength(21)
     for (const [method, path] of ROUTES) {
       const op = doc.paths[path]?.[method]
       expect(op, `${method} ${path}`).toBeDefined()

@@ -78,27 +78,32 @@ export class PerformanceController {
     return ok(await overloadTo429(async () => this.students.student(await this.ctx.of(req), userId)))
   }
 
+  @Roles('admin', 'teacher', 'school_admin')
   @Get('school')
   async schoolScope(@Req() req: Req) {
     return ok(await overloadTo429(async () => this.school.school(await this.ctx.of(req))))
   }
 
+  @Roles('admin', 'teacher', 'school_admin')
   @Get('levels')
   async levels(@Req() req: Req) {
     return ok(await overloadTo429(async () => this.school.levels(await this.ctx.of(req))))
   }
 
   /** The level code is t4 or t5; the service answers 404 for anything else. */
+  @Roles('admin', 'teacher', 'school_admin')
   @Get('levels/:code')
   async level(@Param('code') code: string, @Req() req: Req) {
     return ok(await overloadTo429(async () => this.school.level(await this.ctx.of(req), code.slice(0, 16))))
   }
 
+  @Roles('admin', 'teacher', 'school_admin')
   @Get('classes')
   async ownClasses(@Req() req: Req) {
     return ok(await overloadTo429(async () => this.classes.ownClasses(await this.ctx.of(req))))
   }
 
+  @Roles('admin', 'teacher', 'school_admin')
   @Get('classes/:id')
   async classDashboard(@Param('id', SafeIdPipe) id: string, @Req() req: Req) {
     return ok(await overloadTo429(async () => this.classes.classDashboard(await this.ctx.of(req), id)))

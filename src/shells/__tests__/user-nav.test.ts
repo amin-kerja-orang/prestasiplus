@@ -278,7 +278,6 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       '🤖 Cikgu Alesa AI',
       'Cikgu Alesa Chat',
       '✨ Visi & Pertandingan',
-      'Sekolah Bersaing',
       'Tetapan Peribadi',
       '🤖 AI Pintar (Pelajar)',
       'Wellbeing Alerts',
@@ -570,7 +569,7 @@ describe('S0-T06 nav integrity (scope on)', () => {
   const SIDEBAR_IDS: Record<'student' | 'teacher' | 'school_admin', string[]> = {
     student: [
       'dashboard', 'remedial', 'spm', 'bijak-spm', 'headcount', 'prestasi', 'analitik-adaptif',
-      'analisa-item', 'heatmap-topik-lemah', 'latih-tubi', 'soalan-by-chapter',
+      'analisa-item', 'heatmap-topik-lemah', 'laporan-soalan', 'latih-tubi', 'soalan-by-chapter',
       'soalan-berstruktur', 'kedudukan', 'pksk', 'artikel', 'video', 'permainan', 'cabutan',
       'tournament', 'topik', 'peta-belajar', 'kelas-saya', 'set-soalan-guru', 'audio-kbat',
       'syiling-token', 'tukar-token', 'cabaran-harian', 'kedai-hadiah', 'marketplace',
