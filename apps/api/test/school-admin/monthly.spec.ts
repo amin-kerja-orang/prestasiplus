@@ -84,13 +84,14 @@ describe('GET /admin-sekolah/laporan-bulanan', () => {
     expect(r.subjects).toEqual({ strongest: null, weakest: null, rows: [] })
   })
 
-  it('a school with fewer than 5 active pupils in the month is suppressed (no accuracy, no series, no subjects) but keeps its counts', async () => {
+  it('a school with fewer than 5 active pupils in the month is shown in full (no minimum cohort for staff)', async () => {
     const res = await adminB.get(`/admin-sekolah/laporan-bulanan?schoolId=${s1}`)
     const r = SchoolAdminMonthlyReportSchema.parse(res.body.data)
     expect(r.school.id).toBe(s2)
-    expect(r.cards).toMatchObject({ active: 2, answers: 20, accuracy: null })
-    expect(r.months).toEqual([])
-    expect(r.subjects).toEqual({ strongest: null, weakest: null, rows: [] })
+    // Changed from accuracy null, no series, no subjects (suppressed).
+    expect(r.cards).toMatchObject({ active: 2, answers: 20, accuracy: 100 })
+    expect(r.months).toEqual([{ month: '2026-10', label: 'Oktober 2026', answers: 20, correct: 20, activePupils: 2, perPupil: 10, accuracy: 100 }])
+    expect(r.subjects.rows).toEqual([{ name: 'Matematik Ujian', accuracy: 100, answers: 20, pupils: 2 }])
   })
 
   it('a school-B admin never sees school A figures', async () => {
