@@ -1,5 +1,10 @@
-import { Body, Controller, Get, HttpCode, Post, Put, Query, Req, UseGuards, UseInterceptors } from '@nestjs/common'
-import { CONTENT_MESSAGES, SupportSettingsUpdateRequestSchema, SupportTicketCreateRequestSchema } from '@pp/contract'
+import { Body, Controller, Get, HttpCode, Param, Patch, Post, Put, Query, Req, UseGuards, UseInterceptors } from '@nestjs/common'
+import {
+  CONTENT_MESSAGES,
+  SupportSettingsUpdateRequestSchema,
+  SupportTicketCreateRequestSchema,
+  SupportTicketStatusRequestSchema,
+} from '@pp/contract'
 import type { Request } from 'express'
 
 import { ApiError } from '../../common/errors/api-error'
@@ -39,6 +44,7 @@ const one = (v: unknown): string | undefined => (typeof v === 'string' ? v : Arr
 const StrictSupportTicketCreateRequestSchema = SupportTicketCreateRequestSchema.strict()
 /** `phone` and `hours` are refused by name until they have a store (open on #458, #507). */
 const StrictSupportSettingsUpdateRequestSchema = SupportSettingsUpdateRequestSchema.strict()
+const StrictSupportTicketStatusRequestSchema = SupportTicketStatusRequestSchema.strict()
 
 /** A body that is not a JSON object is treated as empty (both fields then fail as required). */
 const objectOf = (raw: unknown): Record<string, unknown> =>
@@ -46,7 +52,7 @@ const objectOf = (raw: unknown): Record<string, unknown> =>
 
 /**
  * M22 support tickets. Every answer is `no-store` (a ticket is personal). The own list and the create are
- * for any signed-in user (the global guards give 401 and CSRF 403); the queue is admin only and read-only (D27).
+ * for any signed-in user (the global guards give 401 and CSRF 403); the queue, the detail and the status are admin only.
  */
 @Controller()
 @UseGuards(RateLimitGuard)
@@ -78,7 +84,7 @@ export class SupportController {
   @Roles('admin')
   @RateLimit(SUPPORT_LIMITS.read)
   async queue(@Query() query: Record<string, unknown>) {
-    return this.support.queue(one(query.status))
+    return this.support.queue(one(query.status), one(query.page))
   }
 
   @Get('admin/tiket/open-count')
@@ -105,6 +111,23 @@ export class SupportController {
     for (const key of ['email', 'whatsapp'] as const) if (hasNul(body[key])) fields[key] = CONTENT_MESSAGES.fieldInvalid
     if (!parsed.success || Object.keys(fields).length > 0) throw invalid(fields)
     return ok(await this.support.saveSettings(actorOf(req), parsed.data))
+  }
+
+  /** After `open-count`, so that literal path is matched first. */
+  @Get('admin/tiket/:id')
+  @Roles('admin')
+  @RateLimit(SUPPORT_LIMITS.read)
+  async ticket(@Param('id') id: string) {
+    return ok(await this.support.ticket(id))
+  }
+
+  @Patch('admin/tiket/:id/status')
+  @Roles('admin')
+  @RateLimit(SUPPORT_LIMITS.adminWrite)
+  async setStatus(@Req() req: Req, @Param('id') id: string, @Body() raw: unknown) {
+    const parsed = StrictSupportTicketStatusRequestSchema.safeParse(objectOf(raw))
+    if (!parsed.success) throw invalid(strictFieldsOf(parsed.error.issues))
+    return ok(await this.support.setStatus(actorOf(req), id, parsed.data.status))
   }
 }
 

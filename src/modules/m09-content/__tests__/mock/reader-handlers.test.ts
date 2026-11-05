@@ -181,22 +181,25 @@ describe('access', () => {
 // Articles #6–#9
 // ---------------------------------------------------------------------------------------------
 
+/** `meta.counts` of the reader list (published articles per category code). */
+type CountsMeta = { counts: Record<string, number> }
+
 describe('#6 GET /api/articles (S15)', () => {
-  it('lists the 72 published articles, 18 per page, in reader order (BR-M09-03)', async () => {
+  it('lists the 72 published articles, 12 per page, in reader order (BR-M09-03)', async () => {
     const r = await get<ListBody<ArticleCard>>('/api/articles', null)
     expect(r.status).toBe(200)
     expect(r.body.meta).toMatchObject({
       page: 1,
-      pageSize: 18,
+      pageSize: 12,
       totalItems: 72,
-      totalPages: 4,
+      totalPages: 6,
       from: 1,
-      to: 18,
+      to: 12,
     })
     expect(ids(r.body.data).slice(0, 10)).toEqual([9, 1, 2, 3, 4, 5, 6, 7, 8, 72])
-    const p4 = await get<ListBody<ArticleCard>>('/api/articles?page=4', null)
-    expect(ids(p4.body.data)).toEqual(range(10, 27).reverse())
-    expect(p4.body.meta).toMatchObject({ page: 4, from: 55, to: 72 })
+    const p6 = await get<ListBody<ArticleCard>>('/api/articles?page=6', null)
+    expect(ids(p6.body.data)).toEqual(range(10, 21).reverse())
+    expect(p6.body.meta).toMatchObject({ page: 6, from: 61, to: 72 })
   })
 
   it('carries the category label, the featured flag and the author of each card', async () => {
@@ -224,8 +227,20 @@ describe('#6 GET /api/articles (S15)', () => {
     expect(ids(berita.body.data)).toEqual(range(59, 65).reverse())
     const search = await get<ListBody<ArticleCard>>('/api/articles?search=SIFIR', null)
     expect(ids(search.body.data).sort((a, b) => a - b)).toEqual([6, 17])
-    const all = await get<ListBody<ArticleCard>>('/api/articles?category=all', null)
+    const all = await get<ListBody<ArticleCard, CountsMeta>>('/api/articles?category=all', null)
     expect(all.body.meta.totalItems).toBe(72)
+    // FR-MUR-20-2: meta.counts is the per-category count, whichever category is open
+    expect(all.body.meta.counts).toEqual(counts)
+    const inBerita = await get<ListBody<ArticleCard, CountsMeta>>('/api/articles?category=BERITA', null)
+    expect(inBerita.body.meta.counts).toEqual(counts)
+  })
+
+  it('counts follow the search term and the term is cut at 100 characters (FR-MUR-20-5)', async () => {
+    const sifir = await get<ListBody<ArticleCard, CountsMeta>>('/api/articles?search=SIFIR', null)
+    const total = Object.values(sifir.body.meta.counts ?? {}).reduce<number>((a, b) => a + b, 0)
+    expect(total).toBe(sifir.body.meta.totalItems)
+    const long = await get<ListBody<ArticleCard>>(`/api/articles?search=${'sifir'.padEnd(100, ' ')}xyz`, null)
+    expect(long.status).toBe(200)
   })
 
   it('answers an empty page for no match, an unknown category or a page past the end', async () => {
@@ -1126,7 +1141,7 @@ describe('#40 GET /api/public/perutusan/:id (S28)', () => {
 describe('hot articles pool (BR-M09-05)', () => {
   it('only ever draws from the featured articles plus the 10 most viewed non-featured ones', async () => {
     const all: ArticleCard[] = []
-    for (const page of [1, 2, 3, 4]) {
+    for (const page of [1, 2, 3, 4, 5, 6]) {
       const r = await get<ListBody<ArticleCard>>(`/api/articles?page=${String(page)}`, null)
       all.push(...r.body.data)
     }

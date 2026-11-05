@@ -6,9 +6,8 @@ import { TimestampSchema } from '../common/time'
  * M22 support tickets wire contract (BE-24, contract-only). Mock:
  * `src/modules/m22-support-tickets/mock/handlers/tickets.ts`, types in `.../api/types.ts`.
  *
- * Learners (any signed-in user) create and list their own tickets; the admin queue is read-only
- * (D27, DV-M22-07). There is no reply or status-change route (OQ-API-B4-21), so `adminReply` is
- * always null and new tickets stay `dibuka`. Ids are opaque strings (`Id`), not the mock integers.
+ * Learners (any signed-in user) create and list their own tickets. Admin Pusat reads the queue and
+ * sets the status (API-SUP-03, API-SUP-05). Ids are opaque strings (`Id`), not the mock integers.
  */
 
 export const SUPPORT_TICKET_STATUSES = ['dibuka', 'dalam_proses', 'menunggu_balas', 'selesai', 'ditutup'] as const
@@ -26,8 +25,6 @@ export const SUPPORT_TICKET_STATUS_LABELS = {
 
 export const SUPPORT_SUBJECT_MAX = 255
 export const SUPPORT_BODY_MAX = 5000
-/** The admin queue returns the newest 200 tickets only (BR-M22-10). */
-export const SUPPORT_QUEUE_LIMIT = 200
 /** Rows per page of the admin queue (API-SUP-03). */
 export const SUPPORT_QUEUE_PER_PAGE = 25
 
@@ -39,24 +36,18 @@ export const SUPPORT_MESSAGES = {
   bodyTooLong: 'Butiran tidak boleh melebihi 5000 aksara.',
 } as const
 
-/** Admin ticket messages with a source: ERR-REQ-10, ERR-REQ-12, ERR-REQ-11, ERR-ACC-04 (40 X10). */
+/** Admin ticket messages with a source: 30 P20-03, ERR-REQ-12, ERR-REQ-01, ERR-ACC-04 (40 X10; rulings on #507). */
 export const SUPPORT_ADMIN_MESSAGES = {
-  replyRequired: 'Sila isi balasan.',
+  replyRequired: 'Sila tulis balasan.',
   replyTooLong: 'Balasan tidak boleh melebihi 5000 aksara.',
-  statusRequired: 'Sila pilih status.',
+  statusInvalid: 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.',
   ticketNotFound: 'Rekod tidak dijumpai. Ia mungkin telah dipadam.',
 } as const
 
-/** Notice to the ticket owner when the admin saves a reply: the body is from 30 FR-ADM-P2-20.2 (D113). */
-export const SUPPORT_REPLY_NOTICE_BODY = 'Tiket anda telah dibalas.'
-
-/** [PROPOSED] Copy with no source in the SRS or the ERR catalogue, waiting for product-owner approval (D94, #507). */
-export const SUPPORT_ADMIN_PROPOSED_COPY = {
-  replySavedFlash: 'Balasan disimpan.',
-  statusSavedFlash: 'Status dikemas kini.',
-  allRolesOption: 'Semua peranan',
-  replyNoticeType: 'ticket_replied',
-  replyNoticeTitle: 'Tiket dibalas',
+/** Flashes after an admin save, approved by the product owner (PO batch 2 on #503). */
+export const SUPPORT_ADMIN_FLASH = {
+  replySaved: 'Balasan disimpan.',
+  statusSaved: 'Status dikemas kini.',
 } as const
 
 /** Page flash after a create (FR-M22-06). Client-side text: the create response carries no `status` key. */
@@ -145,19 +136,22 @@ export const SupportQueueQuerySchema = z
   })
   .meta({ id: 'SupportQueueQuery' })
 
-/** `meta` of `GET /admin/tiket`: `total` = all tickets; `counts` = statuses with a count above 0, in vocabulary order, over all tickets; `matched` = rows matching the filters, for the pager. */
+/**
+ * `meta` of `GET /admin/tiket`: `total` and `counts` cover the role-filtered tickets, whatever the status filter;
+ * `counts` has all five statuses in vocabulary order; `matched` = rows matching both filters, for the pager.
+ */
 export const SupportQueueMetaSchema = z
   .strictObject({
     total: z.number().int().min(0),
-    counts: z.array(z.strictObject({ status: SupportTicketStatusSchema, count: z.number().int().min(1) })),
-    page: z.number().int().min(1).optional(),
-    perPage: z.number().int().min(1).optional(),
-    matched: z.number().int().min(0).optional(),
+    counts: z.array(z.strictObject({ status: SupportTicketStatusSchema, count: z.number().int().min(0) })),
+    page: z.number().int().min(1),
+    perPage: z.number().int().min(1),
+    matched: z.number().int().min(0),
   })
   .meta({ id: 'SupportQueueMeta' })
 
 export const SupportQueueResponseSchema = z
-  .object({ data: z.array(SupportQueueRowSchema).max(SUPPORT_QUEUE_LIMIT), meta: SupportQueueMetaSchema })
+  .object({ data: z.array(SupportQueueRowSchema).max(SUPPORT_QUEUE_PER_PAGE), meta: SupportQueueMetaSchema })
   .meta({ id: 'SupportQueueResponse' })
 export type SupportQueueResponse = z.infer<typeof SupportQueueResponseSchema>
 
@@ -191,7 +185,7 @@ export type SupportTicketReplyRequest = z.infer<typeof SupportTicketReplyRequest
 
 /** Body of `PATCH /admin/tiket/{id}/status`. */
 export const SupportTicketStatusRequestSchema = z
-  .object({ status: z.enum(SUPPORT_TICKET_STATUSES, { error: SUPPORT_ADMIN_MESSAGES.statusRequired }) })
+  .object({ status: z.enum(SUPPORT_TICKET_STATUSES, { error: SUPPORT_ADMIN_MESSAGES.statusInvalid }) })
   .meta({ id: 'SupportTicketStatusRequest' })
 export type SupportTicketStatusRequest = z.infer<typeof SupportTicketStatusRequestSchema>
 
