@@ -332,9 +332,9 @@ export function registerQuestionWorkflowPaths(registry: OpenAPIRegistry): void {
     method: 'get',
     path: '/guru/questions/template',
     tags: ['question-workflow', 'guru-question-import'],
-    summary: 'Guru CSV template (same file as the admin template)',
+    summary: 'Guru CSV template (templat-soalan.csv)',
     description:
-      'Teacher or admin. `template-import-soalan.csv`, text/csv with Content-Disposition attachment; the same bytes as GET /question-imports/template. A static path: it matches before `/guru/questions/{id}` of the BE-09 contract.',
+      'Teacher or admin. `templat-soalan.csv`, text/csv with Content-Disposition attachment: the header `subjek,tingkatan,bab,sp,tp,aras,kesukaran,soalan,pilihan_a,pilihan_b,pilihan_c,pilihan_d,jawapan,penerangan` and the example row (44-F3). A static path: it matches before `/guru/questions/{id}`.',
     responses: { 200: templateResponse('The template file.'), 401: UNAUTHORIZED, 403: FORBIDDEN_TEACHER },
   })
 
@@ -342,9 +342,9 @@ export function registerQuestionWorkflowPaths(registry: OpenAPIRegistry): void {
     method: 'post',
     path: '/guru/questions/import',
     tags: ['question-workflow', 'guru-question-import'],
-    summary: 'Guru CSV contribution (same import service, no defaults)',
+    summary: 'Guru CSV contribution (items of one guru intake batch)',
     description:
-      'Teacher or admin. multipart/form-data `csvFile` (.csv or .txt, up to 5 MB). Same parser and template as the admin import but no form defaults: each row must carry subject_id, education_level_id and difficulty_level; extra caps question text up to 2000 and each option up to 500 characters. Valid rows are created as `review` questions owned by the caller (D54a; the mock says pending_review) and each counts as a contribution; bad rows are listed ordered by file row. Answers 200 (not 201) with { data: { imported, failed } } and no flash. Row messages as the admin import plus "Soalan tidak boleh melebihi 2000 aksara." and "Pilihan jawapan tidak boleh melebihi 500 aksara.". A static path: it matches before `/guru/questions/{id}` of the BE-09 contract.',
+      'Teacher or admin. multipart/form-data `csvFile` (.csv only, UTF-8, up to 2 MB and 500 data rows) or JSON `{ csv }`. Rows are matched by column NAME (`subjek,tingkatan,bab,sp,tp,aras,kesukaran,soalan,pilihan_a..d,jawapan,penerangan`); each valid row becomes an item of ONE `source = guru` intake batch, shown as "Menunggu Semakan" (S6-T06, D113); bad rows are listed in `errors` ordered by file row and never block the valid ones. Answers 200 with { data: { imported, errors: [{ row, message }] } }. 422 `fields.csvFile`: "Sila pilih fail.", "Jenis fail tidak disokong. Format dibenarkan: CSV.", "Fail melebihi saiz maksimum 2 MB.", "Fail melebihi 500 baris.", "Lajur wajib tiada: ...". A static path: it matches before `/guru/questions/{id}`.',
     request: { headers: [csrf], body: multipart(QuestionImportGuruRequestSchema) },
     responses: {
       200: json(envelopeOf(QuestionImportGuruResultSchema), 'Imported count and failed rows.'),

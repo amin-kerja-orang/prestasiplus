@@ -173,25 +173,92 @@ export const QuestionImportListQuerySchema = z
 
 /* --------------------------------------------------------------------------------- Guru import */
 
+/**
+ * S6-T06 (API-GUR-19, docs/prd/r1/20-guru-admin-sekolah.md 44-F3): the teacher's CSV is its own format (BM columns by NAME, not by id) and
+ * its rows become items of ONE `source = 'guru'` intake batch (L-6), "Menunggu Semakan". The admin import above is unchanged.
+ */
+export const QUESTION_IMPORT_GURU_HEADER = [
+  'subjek',
+  'tingkatan',
+  'bab',
+  'sp',
+  'tp',
+  'aras',
+  'kesukaran',
+  'soalan',
+  'pilihan_a',
+  'pilihan_b',
+  'pilihan_c',
+  'pilihan_d',
+  'jawapan',
+  'penerangan',
+] as const
+
+/** Columns the file must have; `bab`, `sp`, `tp`, `aras`, `kesukaran` and `penerangan` may be left out (the admin completes them, D112). */
+export const QUESTION_IMPORT_GURU_REQUIRED_COLUMNS = ['subjek', 'tingkatan', 'soalan', 'pilihan_a', 'pilihan_b', 'pilihan_c', 'pilihan_d', 'jawapan'] as const
+
+/** The template file text: the header and the PRD example row, CRLF, trailing CRLF. */
+export const QUESTION_IMPORT_GURU_TEMPLATE_CSV = [
+  QUESTION_IMPORT_GURU_HEADER.join(','),
+  'Matematik,4,Bab 1,1.1.1,3,mengaplikasi,3,Contoh soalan?,A,B,C,D,A,Contoh penerangan',
+  '',
+].join('\r\n')
+export const QUESTION_IMPORT_GURU_TEMPLATE_FILENAME = 'templat-soalan.csv'
+/** Teacher caps (44-F3): at most 2 MB and 500 data rows. */
+export const QUESTION_IMPORT_GURU_MAX_BYTES = 2 * 1024 * 1024
+export const QUESTION_IMPORT_GURU_MAX_ROWS = 500
+
+export const QUESTION_IMPORT_GURU_MESSAGES = {
+  /** ERR-REQ-04 with the list "CSV". */
+  fileType: 'Jenis fail tidak disokong. Format dibenarkan: CSV.',
+  /** ERR-REQ-05 with 2. */
+  fileSize: 'Fail melebihi saiz maksimum 2 MB.',
+  /** ERR-REQ-07. */
+  fileRequired: 'Sila pilih fail.',
+  tooManyRows: 'Fail melebihi 500 baris.',
+  noData: 'Fail CSV tiada baris data.',
+  /** ERR-IMP-02. */
+  missingColumns: (columns: readonly string[]): string => `Lajur wajib tiada: ${columns.join(', ')}. Gunakan templat yang disediakan.`,
+  /** ERR-IMP-01 (the screen builds it from the counts). */
+  imported: (imported: number, failed: number): string => `${String(imported)} soalan diimport, ${String(failed)} baris gagal.`,
+} as const
+
+/** Row reasons (`errors[].message`), exact copy of 44-F3 and the next ERR-GUR ids of 40 X10. */
+export const QUESTION_IMPORT_GURU_ROW_MESSAGES = {
+  subject: 'Subjek tidak dikenali.',
+  level: 'Tingkatan mesti antara 1 dan 5.',
+  tp: 'Tahap Penguasaan (TP) mesti antara 1 dan 6.',
+  cognitive: 'Aras pemikiran tidak sah.',
+  difficulty: 'Kesukaran mesti antara 1 dan 5.',
+  answer: 'Jawapan mesti A, B, C atau D.',
+  chapterNotFound: (value: string): string => `Bab tidak dijumpai: ${value}`,
+  spNotFound: (value: string): string => `SP tidak dijumpai: ${value}`,
+  text: 'Soalan diperlukan.',
+  option: (letter: string): string => `Pilihan ${letter} diperlukan.`,
+  textTooLong: 'Soalan tidak boleh melebihi 2000 aksara.',
+  optionTooLong: (letter: string): string => `Pilihan ${letter} tidak boleh melebihi 500 aksara.`,
+  explanationTooLong: 'Penerangan tidak boleh melebihi 2000 aksara.',
+} as const
+
 const guruCsvFile = questionWorkflowFile({
-  maxBytes: QUESTION_WORKFLOW_CSV_MAX_BYTES,
+  maxBytes: QUESTION_IMPORT_GURU_MAX_BYTES,
   mimes: QUESTION_IMPORT_MIME_TYPES,
-  extensions: ['csv', 'txt'],
-  description: 'CSV or TXT file, UTF-8, at most 5 MB. Every row must carry subject_id, education_level_id and difficulty_level.',
+  extensions: ['csv'],
+  description: 'CSV file, UTF-8, at most 2 MB and 500 data rows (or the JSON field `csv` with the file text).',
 })
 
 /**
- * Body of `POST /guru/questions/import`, `multipart/form-data`. There are no form defaults, so each
- * row must carry `subject_id`, `education_level_id` and `difficulty_level`; the Guru caps apply on
- * top (question text up to 2000, each option up to 500 characters). Same `csvFile` 422 messages.
+ * Body of `POST /guru/questions/import`: `multipart/form-data` with `csvFile`, or JSON `{ csv: "<file text>" }`. 422 `fields.csvFile` for:
+ * none chosen, not CSV, over 2 MB, over 500 data rows ("Fail melebihi 500 baris."), a missing required column, no data row. A bad ROW never
+ * fails the request: it is listed in `errors` and the valid rows still become intake items.
  */
 export const QuestionImportGuruRequestSchema = z.object({ csvFile: guruCsvFile }).meta({ id: 'QuestionImportGuruRequest' })
 
-/** `data` of the Guru import (200, not 201): valid rows are created, bad rows listed ordered by file row. */
+/** `data` of the Guru import (200, not 201): `imported` valid rows became items of one guru batch; bad rows are listed ordered by file row. */
 export const QuestionImportGuruResultSchema = z
   .strictObject({
     imported: z.number().int().min(0),
-    failed: z.array(QuestionImportFailureSchema),
+    errors: z.array(QuestionImportFailureSchema),
   })
   .meta({ id: 'QuestionImportGuruResult' })
 export type QuestionImportGuruResult = z.infer<typeof QuestionImportGuruResultSchema>

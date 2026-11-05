@@ -303,7 +303,7 @@ describe('imports', () => {
   })
 
   it('parses the Guru result (200, no flash)', () => {
-    expect(ok(QuestionImportGuruResultSchema, { imported: 2, failed: [{ row: 3, message: 'Soalan tidak boleh melebihi 2000 aksara.' }] })).toBe(true)
+    expect(ok(QuestionImportGuruResultSchema, { imported: 2, errors: [{ row: 3, message: 'Soalan tidak boleh melebihi 2000 aksara.' }] })).toBe(true)
     expect(ok(QuestionImportGuruResultSchema, { imported: 2 })).toBe(false)
   })
 })

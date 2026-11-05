@@ -8,8 +8,6 @@ import type {
   QuestionBulkRequestSchema,
   QuestionCreateRequestSchema,
   QuestionCurriculumTagSchema,
-  QuestionGuruCreateRequestSchema,
-  QuestionGuruUpdateRequestSchema,
   QuestionPart,
   QuestionPublicSchema,
   QuestionStatus,
@@ -22,8 +20,44 @@ export type { QuestionPart, QuestionStatus }
 /** The parsed bodies the controllers hand to the service (contract schemas, already validated). */
 export type QuestionCreateInput = z.output<typeof QuestionCreateRequestSchema>
 export type QuestionUpdateInput = z.output<typeof QuestionUpdateRequestSchema>
-export type QuestionGuruCreateInput = z.output<typeof QuestionGuruCreateRequestSchema>
-export type QuestionGuruUpdateInput = z.output<typeof QuestionGuruUpdateRequestSchema>
+/**
+ * Service-level input of the legacy owner-question methods (`createGuru`, `updateOwn`). The HTTP guru routes no longer reach them: since S6-T06
+ * (API-GUR-18, D113) a teacher submission is an intake item (`intake/files/guru-submissions.service.ts`), not a question row.
+ */
+export interface QuestionGuruCreateInput {
+  subjectId: string
+  educationLevelId: string
+  questionType: 'mcq' | 'true_false' | 'short_answer' | 'fill_blank' | 'essay'
+  difficultyLevel: 'easy' | 'medium' | 'hard' | number
+  questionText: string
+  options?: unknown[]
+  correctAnswer?: number | string
+  tfAnswer?: boolean | string | number | null
+  correctAnswerText?: string
+  altAnswers?: string | string[]
+  modelAnswer?: string
+  explanation?: string
+  questionImageUrl?: string
+  questionImageFileId?: string | null
+  optionImageFileIds?: (string | null)[]
+  curriculumChapterId?: string | null
+  curriculumTopicId?: string | null
+  dskpSpId?: string | null
+  scriptType?: 'rumi' | 'arab' | 'jawi' | 'mixed'
+  parts?: QuestionPart[]
+  tag?: z.output<typeof QuestionCurriculumTagSchema>
+}
+export interface QuestionGuruUpdateInput {
+  questionText: string
+  difficultyLevel?: 'easy' | 'medium' | 'hard' | number
+  options?: unknown[]
+  correctOptionId?: number | string
+  explanation?: string | null
+  questionImageFileId?: string | null
+  optionImageFileIds?: (string | null)[]
+  removeQuestionImage?: boolean
+  removeOptionImage?: boolean[]
+}
 export type QuestionBulkAction = z.output<typeof QuestionBulkRequestSchema>['action']
 export type QuestionTag = z.output<typeof QuestionCurriculumTagSchema>
 /** What a learner may see (`QuestionPublicSchema`): never a key, explanation, model answer or source. */

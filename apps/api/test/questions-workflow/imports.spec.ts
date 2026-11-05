@@ -1,4 +1,7 @@
 import {
+  QUESTION_IMPORT_GURU_HEADER,
+  QUESTION_IMPORT_GURU_TEMPLATE_CSV,
+  QUESTION_IMPORT_GURU_TEMPLATE_FILENAME,
   QUESTION_IMPORT_HEADER,
   QUESTION_IMPORT_TEMPLATE_CONTENT_TYPE,
   QUESTION_IMPORT_TEMPLATE_CSV,
@@ -52,15 +55,14 @@ describe('question imports (BE-10 AC 5, 9)', () => {
       expect(text.endsWith('\r\n')).toBe(true)
     })
 
-    it('Guru template has the same bytes; an admin may download it too', async () => {
-      const a = await c.admin.get('/api/question-imports/template')
+    it('Guru template is templat-soalan.csv with the BM header and the PRD example row; an admin may download it too', async () => {
       const g = await c.teacher.get('/api/guru/questions/template')
       const ag = await c.admin.get('/api/guru/questions/template')
       expect(g.status).toBe(200)
-      expect(g.headers['content-disposition']).toBe(`attachment; filename="${QUESTION_IMPORT_TEMPLATE_FILENAME}"`)
-      expect(g.text).toBe(a.text)
-      expect(ag.text).toBe(a.text)
-      expect(a.text).toBe(QUESTION_IMPORT_TEMPLATE_CSV)
+      expect(g.headers['content-disposition']).toBe(`attachment; filename="${QUESTION_IMPORT_GURU_TEMPLATE_FILENAME}"`)
+      expect(g.text).toBe(QUESTION_IMPORT_GURU_TEMPLATE_CSV)
+      expect(g.text.split('\r\n')[0]).toBe(QUESTION_IMPORT_GURU_HEADER.join(','))
+      expect(ag.text).toBe(g.text)
     })
 
     it('template roles: 401, Admin Sekolah, student and (admin route) Guru are 403', async () => {
@@ -211,72 +213,63 @@ describe('question imports (BE-10 AC 5, 9)', () => {
     })
   })
 
-  describe('POST /api/guru/questions/import', () => {
-    it('creates review questions owned by the caller, answers 200 { imported, failed } with no flash, and stores the run', async () => {
-      const before = created().length
-      const runsBefore = await runs()
-      const res = await teacher.upload('/api/guru/questions/import', { name: 'guru.csv', body: fixture('import-mixed.csv', ids) })
+  describe('POST /api/guru/questions/import (S6-T06, API-GUR-19)', () => {
+    const HEAD = QUESTION_IMPORT_GURU_HEADER.join(',')
+    const row = (over: string[] = []): string => ['Matematik', '4', '', '', '', '', '2', 'Soalan?', 'a', 'b', 'c', 'd', 'A', '', ...over].slice(0, 14).join(',')
+    const itemsOf = async (owner: string) =>
+      t.db.query<{ batch: string; state: string }>(`select i.batch_id::text batch, i.review_state state from intake_items i join intake_batches b on b.id = i.batch_id where b.source = 'guru' and b.owner_user_id = $1`, [owner])
+
+    it('valid rows become items of ONE guru batch ("Menunggu Semakan"); a bad row is reported and does not block the rest', async () => {
+      const before = (await itemsOf(teacher.userId)).length
+      const file = [HEAD, row(), row().replace(',A,', ',E,'), row()].join('\r\n')
+      const res = await teacher.upload('/api/guru/questions/import', { name: 'guru.csv', body: file })
       expect(res.status, JSON.stringify(res.body)).toBe(200)
       expect(res.body.status).toBeUndefined()
-      const data = parseData(res, QuestionImportGuruResultSchema)
-      expect(data.imported).toBe(2)
-      expect(data.failed.map((f) => f.row)).toEqual([3, 4, 5, 6, 7])
-      const made = created().slice(before).map((x) => x.args[0] as Record<string, unknown>)
-      expect(made).toHaveLength(2)
-      expect(made.every((m) => m.status === 'review' && m.createdById === teacher.userId)).toBe(true)
-      expect(await runs()).toBe(runsBefore + 1)
+      expect(parseData(res, QuestionImportGuruResultSchema)).toEqual({ imported: 2, errors: [{ row: 3, message: 'Jawapan mesti A, B, C atau D.' }] })
+      const items = (await itemsOf(teacher.userId)).slice(before)
+      expect(items).toHaveLength(2)
+      expect(new Set(items.map((i) => i.batch)).size).toBe(1)
+      expect(items.every((i) => i.state === 'needs_review')).toBe(true)
+      expect(created()).toHaveLength(0)
     })
 
-    it('has no form defaults: a file without subject columns fails every row', async () => {
-      const res = await teacher.upload('/api/guru/questions/import', { name: 'guru.csv', body: fixture('import-defaults.csv', ids) }, { defaultSubjectId: ids.subject })
+    it('only the teacher caps apply: more than 500 rows is "Fail melebihi 500 baris." and nothing is created', async () => {
+      const before = (await itemsOf(teacher.userId)).length
+      const file = [HEAD, ...Array.from({ length: 501 }, () => row())].join('\n')
+      const res = await teacher.upload('/api/guru/questions/import', { name: 'besar.csv', body: file })
+      expect(expectError(res, 'VALIDATION_ERROR').fields?.csvFile).toBe('Fail melebihi 500 baris.')
+      expect((await itemsOf(teacher.userId)).length).toBe(before)
+    })
+
+    it('accepts the JSON field csv; 500 rows exactly is accepted', async () => {
+      const res = await c.teacher.post('/api/guru/questions/import', { csv: [HEAD, ...Array.from({ length: 500 }, () => row())].join('\n') })
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(res.body.data).toEqual({ imported: 500, errors: [] })
+    })
+
+    it('an admin may use it too', async () => {
+      const res = await admin.upload('/api/guru/questions/import', { name: 'a.csv', body: [HEAD, row()].join('\n') })
       expect(res.status).toBe(200)
-      expect(res.body.data).toEqual({
-        imported: 0,
-        failed: [{ row: 2, message: 'Subjek tidak sah.' }, { row: 3, message: 'Subjek tidak sah.' }],
-      })
-    })
-
-    it('applies the length caps and orders failures by file row', async () => {
-      const head = 'question_text,option_a,option_b,option_c,correct_answer,subject_id,education_level_id,difficulty_level'
-      const tail = `${ids.subject},${ids.level},1`
-      const file = [
-        head,
-        `"${'x'.repeat(2001)}",A,B,C,A,${tail}`,
-        `"ok",A,B,C,Z,${tail}`,
-        `"ok",${'y'.repeat(501)},B,C,A,${tail}`,
-        `"${'x'.repeat(2000)}",${'y'.repeat(500)},B,C,A,${tail}`,
-      ].join('\n')
-      const res = await teacher.upload('/api/guru/questions/import', { name: 'had.csv', body: file })
       expect(res.body.data.imported).toBe(1)
-      expect(res.body.data.failed).toEqual([
-        { row: 2, message: 'Soalan tidak boleh melebihi 2000 aksara.' },
-        { row: 3, message: 'Jawapan betul mesti A, B, C atau D.' },
-        { row: 4, message: 'Pilihan jawapan tidak boleh melebihi 500 aksara.' },
-      ])
     })
 
-    it('an admin may use it; the questions are owned by the admin and saved as review', async () => {
-      const before = created().length
-      const res = await admin.upload('/api/guru/questions/import', { name: 'a.csv', body: fixture('import-mixed.csv', ids) })
-      expect(res.status).toBe(200)
-      expect(created().slice(before).every((x) => (x.args[0] as { createdById: string }).createdById === admin.userId)).toBe(true)
-    })
-
-    it('422 csvFile for a missing file, a wrong type, missing columns and no data rows', async () => {
-      expect((await teacher.upload('/api/guru/questions/import', null)).body.error.fields.csvFile).toBe('Sila pilih fail CSV.')
-      expect((await teacher.upload('/api/guru/questions/import', { name: 'a.pdf', body: 'x' })).body.error.fields.csvFile).toBe(FILE_TYPE)
-      expect((await teacher.upload('/api/guru/questions/import', { name: 'a.csv', body: fixture('import-no-columns.csv', ids) })).status).toBe(422)
-      expect((await teacher.upload('/api/guru/questions/import', { name: 'a.csv', body: fixture('import-header-only.csv', ids) })).body.error.fields.csvFile).toBe('Fail CSV tiada baris data.')
+    it('422 csvFile for none chosen, a non-CSV file, over 2 MB, a missing column and no data rows', async () => {
+      const f = async (r: Promise<{ body: { error: { fields: { csvFile: string } } } }>) => (await r).body.error.fields.csvFile
+      expect(await f(teacher.upload('/api/guru/questions/import', null))).toBe('Sila pilih fail.')
+      expect(await f(teacher.upload('/api/guru/questions/import', { name: 'a.xlsx', body: 'x' }))).toBe('Jenis fail tidak disokong. Format dibenarkan: CSV.')
+      expect(await f(teacher.upload('/api/guru/questions/import', { name: 'a.csv', body: 'x'.repeat(2 * 1024 * 1024 + 1) }))).toBe('Fail melebihi saiz maksimum 2 MB.')
+      expect(await f(teacher.upload('/api/guru/questions/import', { name: 'a.csv', body: 'subjek,tingkatan\nMatematik,4' }))).toMatch(/^Lajur wajib tiada: .*soalan.*\. Gunakan templat yang disediakan\.$/)
+      expect(await f(teacher.upload('/api/guru/questions/import', { name: 'a.csv', body: HEAD }))).toBe('Fail CSV tiada baris data.')
     })
 
     it('roles: 401, CSRF 403, Admin Sekolah and student 403', async () => {
-      const file = { name: 'x.csv', body: fixture('import-mixed.csv', ids) }
-      const before = created().length
+      const file = { name: 'x.csv', body: [HEAD, row()].join('\n') }
+      const before = (await itemsOf(teacher.userId)).length
       expectError(await t.agent().post('/api/guru/questions/import').attach('csvFile', Buffer.from('a'), 'x.csv'), 'UNAUTHORIZED')
       expectCsrfInvalid(await teacher.upload('/api/guru/questions/import', file, {}, false))
       expectError(await schoolAdmin.upload('/api/guru/questions/import', file), 'FORBIDDEN')
       expectError(await student.upload('/api/guru/questions/import', file), 'FORBIDDEN')
-      expect(created().length).toBe(before)
+      expect((await itemsOf(teacher.userId)).length).toBe(before)
     })
   })
 })

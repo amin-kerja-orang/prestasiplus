@@ -341,7 +341,7 @@ export class IntakeReviewService {
           numberLabel: next.label,
           itemType: next.type,
           pageNo: next.page,
-          payload: { ...parsed, ...(stored.origin ? { origin: stored.origin } : {}) } as unknown as Prisma.InputJsonValue,
+          payload: { ...parsed, ...(stored.origin ? { origin: stored.origin } : {}), ...(stored.guru ? { guru: stored.guru } : {}) } as unknown as Prisma.InputJsonValue,
           confirmedFields: confirmed,
           needsManual,
           humanEdited: edited,

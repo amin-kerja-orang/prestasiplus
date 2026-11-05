@@ -279,7 +279,7 @@ export const questionsScenarios: Scenario[] = [
       })
       ctx.expectStatus(created, 201)
       const id = String(dataOf(created).id)
-      ctx.check(dataOf(created).status === 'review', `a Guru submission is ${String(dataOf(created).status)}, expected review`)
+      ctx.check(dataOf(created).status === 'pending', `a Guru submission is ${String(dataOf(created).status)}, expected pending`)
 
       const mine = await teacher.request('GET', '/guru/questions')
       ctx.expectStatus(mine, 200)
@@ -312,7 +312,7 @@ export const questionsScenarios: Scenario[] = [
       expectError(ctx, empty, 422, 'VALIDATION_ERROR')
       const fields = (errorOf(empty).fields ?? {}) as Json
       const text = (key: string): string => JSON.stringify(fields[key] ?? '')
-      ctx.check(text('educationLevelId').includes('Sila pilih tahap pendidikan.'), 'educationLevelId message is not the mock copy')
+      ctx.check(text('educationLevelId').includes('Sila pilih tingkatan.'), 'educationLevelId message is not the mock copy')
       ctx.check(text('subjectId').includes('Sila pilih subjek.'), 'subjectId message is not the mock copy')
       ctx.check(text('questionText').includes('Sila isi soalan.'), 'questionText message is not the mock copy')
     },

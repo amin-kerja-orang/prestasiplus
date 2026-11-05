@@ -4,6 +4,7 @@ import { AuditModule } from '../../common/audit'
 import { ThrottleModule } from '../../common/throttle'
 import { CurriculumModule, CurriculumPorts } from '../curriculum'
 import { FilesModule } from '../files'
+import { IntakeFilesModule } from '../intake/files/intake-files.module'
 import { UsersModule } from '../users'
 import { QuestionsBijakPoolSource } from './bijak-pool'
 import { ServabilityReadsService, ServabilityService } from './serving'
@@ -29,7 +30,7 @@ import { StudioController, StudioDskpService } from './studio'
  * The three controllers live in `http/` (BE-09 Part C).
  */
 @Module({
-  imports: [CurriculumModule, UsersModule, FilesModule, AuditModule, ThrottleModule],
+  imports: [CurriculumModule, UsersModule, FilesModule, AuditModule, ThrottleModule, IntakeFilesModule],
   controllers: [AdminQuestionsController, StructuredQuestionsController, GuruQuestionsController, StimuliController, StudioController, ServabilityController, QuestionPaperServabilityController],
   providers: [QuestionsRepository, QuestionsService, StimuliRepository, GroupMembers, StimuliService, PkskQuestionsService, QuestionCountsAdapter, QuestionsBijakPoolSource, StudioDskpService, ServabilityService, ServabilityReadsService, PaperServabilityService, OverviewCache, OverviewWarmer],
   exports: [QuestionsRepository, QuestionsService, StimuliService, PkskQuestionsService, QuestionsBijakPoolSource, ServabilityService, PaperServabilityService, OverviewCache],

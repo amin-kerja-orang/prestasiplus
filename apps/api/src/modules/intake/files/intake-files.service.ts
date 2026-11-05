@@ -115,6 +115,8 @@ export class IntakeFilesService {
           where: {
             ownerUserId: ownerId,
             source: 'guru',
+            // A teacher's question submission (no files) is not a paper: it never counts against the paper limit.
+            files: { some: {} },
             OR: [
               { status: { in: ['submitted', 'processing'] } },
               { status: 'ready_for_review', OR: [{ items: { none: {} } }, { items: { some: { reviewState: { notIn: ['accepted', 'rejected'] } } } }] },

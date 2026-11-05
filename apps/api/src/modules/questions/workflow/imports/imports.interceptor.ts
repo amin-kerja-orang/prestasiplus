@@ -7,7 +7,7 @@ import {
   PayloadTooLargeException,
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
-import { QUESTION_IMPORT_MAX_BYTES, QUESTION_IMPORT_MESSAGES } from '@pp/contract'
+import { QUESTION_IMPORT_GURU_MAX_BYTES, QUESTION_IMPORT_GURU_MESSAGES, QUESTION_IMPORT_MAX_BYTES, QUESTION_IMPORT_MESSAGES } from '@pp/contract'
 import type { Observable } from 'rxjs'
 
 import { ApiError } from '../../../../common/errors/api-error'
@@ -35,6 +35,30 @@ export class CsvUploadInterceptor implements NestInterceptor {
       }
       if (err instanceof BadRequestException) {
         throw ApiError.of('VALIDATION_ERROR', { fields: { csvFile: QUESTION_IMPORT_MESSAGES.fileRequired } })
+      }
+      throw err
+    }
+  }
+}
+
+const GuruInner = FileInterceptor('csvFile', {
+  limits: { files: 1, fields: 4, fieldSize: QUESTION_IMPORT_GURU_MAX_BYTES, parts: 6, headerPairs: 50, fileSize: QUESTION_IMPORT_GURU_MAX_BYTES },
+})
+
+/** The teacher's upload (API-GUR-19): cut off at 2 MB; a JSON body (`{ csv }`) passes through untouched. Refusals are 422 `fields.csvFile`. */
+@Injectable()
+export class GuruCsvUploadInterceptor implements NestInterceptor {
+  private readonly inner = new GuruInner({})
+
+  async intercept(ctx: ExecutionContext, next: CallHandler): Promise<Observable<unknown>> {
+    try {
+      return await this.inner.intercept(ctx, next)
+    } catch (err) {
+      if (err instanceof PayloadTooLargeException) {
+        throw ApiError.of('VALIDATION_ERROR', { fields: { csvFile: QUESTION_IMPORT_GURU_MESSAGES.fileSize } })
+      }
+      if (err instanceof BadRequestException) {
+        throw ApiError.of('VALIDATION_ERROR', { fields: { csvFile: QUESTION_IMPORT_GURU_MESSAGES.fileRequired } })
       }
       throw err
     }

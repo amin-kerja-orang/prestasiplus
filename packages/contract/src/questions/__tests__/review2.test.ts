@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  GURU_QUESTION_MESSAGES,
   QUESTION_MESSAGES,
+  guruDskpFields,
+  guruKeyIndex,
+  guruOptionTexts,
   QuestionCreateRequestSchema,
   QuestionGuruCreateRequestSchema,
   QuestionGuruUpdateRequestSchema,
@@ -36,90 +40,53 @@ describe('admin options key and status copy', () => {
   })
 })
 
-describe('Guru create: one test per mock rule (field key and exact copy)', () => {
-  const base = { educationLevelId: '10', subjectId: '3', questionType: 'essay', difficultyLevel: 'medium', questionText: 'Soalan?' }
+describe('Guru submission body (S6-T06, API-GUR-18): field key and exact copy', () => {
+  const base = { subjectId: '3', educationLevelId: '10', difficultyLevel: 3, questionType: 'mcq', questionText: 'Soalan?', options: ['a', 'b', 'c', 'd'], correctAnswer: 'B' }
   const probe = (patch: Record<string, unknown>) => keyed(QuestionGuruCreateRequestSchema.safeParse({ ...base, ...patch }))
-  it('accepts a valid essay', () => expect(QuestionGuruCreateRequestSchema.safeParse(base).success).toBe(true))
-  it('level, subject, difficulty, type, text', () => {
-    expect(probe({ educationLevelId: undefined }).educationLevelId).toBe(m.level)
-    expect(probe({ subjectId: undefined }).subjectId).toBe(m.subject)
-    expect(probe({ difficultyLevel: undefined }).difficultyLevel).toBe(m.difficulty)
-    expect(probe({ difficultyLevel: 'extreme' }).difficultyLevel).toBe(m.difficulty)
-    expect(probe({ questionType: undefined }).questionType).toBe(m.type)
-    expect(probe({ questionText: undefined }).questionText).toBe(m.guruText)
-    expect(probe({ questionText: '   ' }).questionText).toBe(m.guruText)
-    expect(probe({ questionText: 'x'.repeat(2001) }).questionText).toBe(m.guruTextLong)
+  it('accepts a valid MCQ (create and update share the body)', () => {
+    expect(QuestionGuruCreateRequestSchema.safeParse(base).success).toBe(true)
+    expect(QuestionGuruUpdateRequestSchema.safeParse({ ...base, options: [0, 1, 2, 3].map((id) => ({ id, optionText: `o${String(id)}` })), correctOptionId: 2 }).success).toBe(true)
   })
-  it('mcq without options or key', () => {
-    const r = probe({ questionType: 'mcq' })
-    expect(r.options).toBe(m.options)
-    expect(r.correctAnswer).toBe(m.correctAnswer)
+  it('level, subject, difficulty and type', () => {
+    expect(probe({ educationLevelId: '' }).educationLevelId).toBe(GURU_QUESTION_MESSAGES.level)
+    expect(probe({ subjectId: undefined }).subjectId).toBe(GURU_QUESTION_MESSAGES.subject)
+    for (const d of ['medium', 'easy', 0, 6, undefined]) expect(probe({ difficultyLevel: d }).difficultyLevel).toBe(GURU_QUESTION_MESSAGES.difficulty)
+    for (const q of ['true_false', 'essay', 'short_answer']) expect(probe({ questionType: q }).questionType).toBe(GURU_QUESTION_MESSAGES.type)
   })
-  it('mcq blank and over-500 options sit under the single key options', () => {
-    const mcq = { questionType: 'mcq', correctAnswer: 'A' }
-    expect(probe({ ...mcq, options: ['a', { text: '' }, 'c', 'd'] }).options).toBe(m.options)
-    expect(probe({ ...mcq, options: ['a', { optionText: 'x'.repeat(501) }, 'c', 'd'] }).options).toBe(m.guruOptionLong)
-    expect(pathsOf(QuestionGuruCreateRequestSchema.safeParse({ ...base, ...mcq, options: ['a', '', 'c', 'd'] }))).toEqual(['options'])
+  it('text, options, key, explanation, tp, aras', () => {
+    expect(probe({ questionText: ' ' }).questionText).toBe(GURU_QUESTION_MESSAGES.text)
+    expect(probe({ questionText: 'x'.repeat(2001) }).questionText).toBe(GURU_QUESTION_MESSAGES.textLong)
+    expect(probe({ options: ['a', '', 'c', 'd'] }).options).toBe('Sila isi pilihan B.')
+    expect(probe({ options: ['a', 'b', 'c', 'x'.repeat(501)] }).options).toBe('Pilihan D tidak boleh melebihi 500 aksara.')
+    expect(probe({ options: ['a', 'b'] }).options).toBe(GURU_QUESTION_MESSAGES.options)
+    expect(probe({ correctAnswer: 'E' }).correctAnswer).toBe(GURU_QUESTION_MESSAGES.correct)
+    expect(probe({ correctAnswer: undefined }).correctAnswer).toBe(GURU_QUESTION_MESSAGES.correct)
+    expect(probe({ explanation: 'x'.repeat(2001) }).explanation).toBe(GURU_QUESTION_MESSAGES.explanationLong)
+    expect(probe({ tp: 7 }).tp).toBe(GURU_QUESTION_MESSAGES.tpRange)
+    expect(probe({ cognitiveLevel: 'x' }).cognitiveLevel).toBe(GURU_QUESTION_MESSAGES.cognitive)
+    expect(probe({ spIds: ['1', '2', '3', '4'] }).spIds).toBe(GURU_QUESTION_MESSAGES.spMax)
   })
-  it('mcq key: letter, digit and index accepted; others refused', () => {
-    const mcq = { questionType: 'mcq', options: ['a', 'b', 'c', 'd'] }
-    for (const k of ['B', 'd', '2', 0, 3]) expect(QuestionGuruCreateRequestSchema.safeParse({ ...base, ...mcq, correctAnswer: k }).success).toBe(true)
-    for (const k of ['E', '4', 4, -1]) expect(probe({ ...mcq, correctAnswer: k }).correctAnswer).toBe(m.correctAnswer)
-  })
-  it('true_false needs a boolean-like tfAnswer', () => {
-    expect(probe({ questionType: 'true_false' }).tfAnswer).toBe(m.guruTf)
-    expect(probe({ questionType: 'true_false', tfAnswer: 'maybe' }).tfAnswer).toBe(m.guruTf)
-    for (const v of [true, false, 'true', '0', 1]) expect(QuestionGuruCreateRequestSchema.safeParse({ ...base, questionType: 'true_false', tfAnswer: v }).success).toBe(true)
-  })
-  it('short_answer and fill_blank: answer text is keyed on correctAnswer', () => {
-    for (const questionType of ['short_answer', 'fill_blank']) {
-      expect(probe({ questionType }).correctAnswer).toBe(m.answerText)
-      expect(probe({ questionType, correctAnswerText: '  ' }).correctAnswer).toBe(m.answerText)
-      expect(probe({ questionType, correctAnswerText: 'x'.repeat(501) }).correctAnswer).toBe(m.guruAnswerLong)
-      expect(QuestionGuruCreateRequestSchema.safeParse({ ...base, questionType, correctAnswer: 'jawapan' }).success).toBe(true)
-    }
-  })
-  it('chapter, topic, SP and script type copy', () => {
-    expect(probe({ curriculumChapterId: 5 }).curriculumChapterId).toBe(m.guruChapter)
-    expect(probe({ curriculumTopicId: 5 }).curriculumTopicId).toBe(m.guruTopic)
-    expect(probe({ dskpSpId: 5 }).dskpSpId).toBe(m.sp)
-    expect(probe({ scriptType: 'tulisan' }).scriptType).toBe(m.guruScript)
-    expect(QuestionGuruCreateRequestSchema.safeParse({ ...base, curriculumChapterId: '', curriculumTopicId: null, scriptType: 'jawi' }).success).toBe(true)
+  it('key letters, digits and the correctOptionId alias; options placed by id', () => {
+    expect(guruKeyIndex('c')).toBe(2)
+    expect(guruKeyIndex('3')).toBe(3)
+    expect(guruKeyIndex(4)).toBeUndefined()
+    expect(guruOptionTexts([{ id: 1, optionText: 'b' }, { id: 0, optionText: 'a' }, { id: 3, optionText: 'd' }, { id: 2, optionText: 'c' }])).toEqual(['a', 'b', 'c', 'd'])
   })
 })
 
-describe('Guru update: one test per mock rule (field key and exact copy)', () => {
-  const opts = [0, 1, 2, 3].map((id) => ({ id, optionText: `Pilihan ${String(id)}` }))
-  const probe = (v: unknown) => keyed(QuestionGuruUpdateRequestSchema.safeParse(v))
-  it('accepts a text-only and a full MCQ edit', () => {
-    expect(QuestionGuruUpdateRequestSchema.safeParse({ questionText: 'Baru' }).success).toBe(true)
-    expect(QuestionGuruUpdateRequestSchema.safeParse({ questionText: 'Baru', options: opts, correctOptionId: 'C' }).success).toBe(true)
+describe('guruDskpFields (D112): Bab, SP, TP, Aras only where they exist', () => {
+  const M = GURU_QUESTION_MESSAGES
+  it('nothing is required where the Subjek + Tingkatan has neither chapters nor DSKP nodes', () => {
+    expect(guruDskpFields({}, { hasChapters: false, hasDskpNodes: false })).toEqual({})
   })
-  it('questionText missing, blank, over 2000', () => {
-    expect(probe({}).questionText).toBe(m.guruText)
-    expect(probe({ questionText: '' }).questionText).toBe(m.guruText)
-    expect(probe({ questionText: 'x'.repeat(2001) }).questionText).toBe(m.guruTextLong)
+  it('chapters only: Bab is required, the rest is not', () => {
+    expect(guruDskpFields({}, { hasChapters: true, hasDskpNodes: false })).toEqual({ chapterId: M.chapter })
   })
-  it('difficulty', () => expect(probe({ questionText: 'a', difficultyLevel: 9 }).difficultyLevel).toBe(m.difficulty))
-  it('an empty option text is reported once under options', () => {
-    const bad = opts.map((o, i) => (i === 1 ? { ...o, optionText: '' } : o))
-    const r = QuestionGuruUpdateRequestSchema.safeParse({ questionText: 'a', options: bad, correctOptionId: 0 })
-    expect(pathsOf(r)).toEqual(['options'])
-    expect(keyed(r).options).toBe(m.options)
+  it('DSKP nodes: SP, TP and Aras are required', () => {
+    expect(guruDskpFields({}, { hasChapters: false, hasDskpNodes: true })).toEqual({ spIds: M.sp, tp: M.tp, cognitiveLevel: M.cognitive })
+    expect(guruDskpFields({ spIds: ['1'], tp: 3, cognitiveLevel: 'memahami' }, { hasChapters: false, hasDskpNodes: true })).toEqual({})
   })
-  it('an option over 500 characters', () => {
-    const bad = opts.map((o, i) => (i === 0 ? { ...o, optionText: 'x'.repeat(501) } : o))
-    expect(probe({ questionText: 'a', options: bad, correctOptionId: 0 }).options).toBe(m.guruOptionLong)
-  })
-  it('four unique ids 0 to 3 are required', () => {
-    const dup = opts.map((o, i) => (i === 3 ? { ...o, id: 2 } : o))
-    expect(probe({ questionText: 'a', options: dup, correctOptionId: 0 }).options).toBe(m.options)
-    expect(probe({ questionText: 'a', options: opts.slice(0, 3), correctOptionId: 0 }).options).toBe(m.options)
-    expect(probe({ questionText: 'a', options: opts.map((o) => ({ ...o, id: o.id + 1 })), correctOptionId: 0 }).options).toBe(m.options)
-  })
-  it('correctOptionId is required with options, and options with correctOptionId', () => {
-    expect(probe({ questionText: 'a', options: opts }).correctOptionId).toBe(m.correctAnswer)
-    expect(probe({ questionText: 'a', options: opts, correctOptionId: 5 }).correctOptionId).toBe(m.correctAnswer)
-    expect(probe({ questionText: 'a', correctOptionId: 'B' }).options).toBe(m.options)
+  it('a TP outside 1 to 6 is refused even where optional', () => {
+    expect(guruDskpFields({ tp: 9 }, { hasChapters: false, hasDskpNodes: false })).toEqual({ tp: M.tpRange })
   })
 })

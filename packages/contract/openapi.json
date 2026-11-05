@@ -9222,7 +9222,7 @@
           "csvFile": {
             "type": "string",
             "format": "binary",
-            "description": "CSV or TXT file, UTF-8, at most 5 MB. Every row must carry subject_id, education_level_id and difficulty_level."
+            "description": "CSV file, UTF-8, at most 2 MB and 500 data rows (or the JSON field `csv` with the file text)."
           }
         },
         "required": [
@@ -9236,7 +9236,7 @@
             "type": "integer",
             "minimum": 0
           },
-          "failed": {
+          "errors": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/QuestionImportFailure"
@@ -9245,7 +9245,7 @@
         },
         "required": [
           "imported",
-          "failed"
+          "errors"
         ],
         "additionalProperties": false
       },
@@ -41379,7 +41379,10 @@
             "$ref": "#/components/schemas/Id"
           },
           "questionType": {
-            "$ref": "#/components/schemas/QuestionType"
+            "type": "string",
+            "enum": [
+              "mcq"
+            ]
           },
           "questionText": {
             "type": "string"
@@ -41428,38 +41431,32 @@
             "type": "boolean"
           },
           "status": {
-            "$ref": "#/components/schemas/QuestionStatus"
+            "$ref": "#/components/schemas/GuruSubmissionStatus"
           },
           "statusLabel": {
             "type": "string"
           },
-          "isActive": {
-            "type": "boolean"
-          },
-          "options": {
-            "type": [
-              "array",
-              "null"
-            ],
-            "items": {
-              "type": "string"
-            }
-          },
-          "correctAnswer": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "minimum": 0,
-            "maximum": 3
-          },
-          "explanation": {
+          "rejectionReason": {
             "type": [
               "string",
               "null"
             ]
           },
-          "source": {
+          "editable": {
+            "type": "boolean"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "correctAnswer": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          },
+          "explanation": {
             "type": [
               "string",
               "null"
@@ -41482,12 +41479,20 @@
           "dskpTagged",
           "status",
           "statusLabel",
-          "isActive",
+          "rejectionReason",
+          "editable",
           "options",
           "correctAnswer",
           "explanation",
-          "source",
           "createdAt"
+        ]
+      },
+      "GuruSubmissionStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "approved",
+          "rejected"
         ]
       },
       "QuestionGuruDetail": {
@@ -41497,7 +41502,10 @@
             "$ref": "#/components/schemas/Id"
           },
           "questionType": {
-            "$ref": "#/components/schemas/QuestionType"
+            "type": "string",
+            "enum": [
+              "mcq"
+            ]
           },
           "questionText": {
             "type": "string"
@@ -41546,28 +41554,28 @@
             "type": "boolean"
           },
           "status": {
-            "$ref": "#/components/schemas/QuestionStatus"
+            "$ref": "#/components/schemas/GuruSubmissionStatus"
           },
           "statusLabel": {
             "type": "string"
           },
-          "isActive": {
+          "rejectionReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "editable": {
             "type": "boolean"
           },
           "options": {
-            "type": [
-              "array",
-              "null"
-            ],
+            "type": "array",
             "items": {
               "type": "string"
             }
           },
           "correctAnswer": {
-            "type": [
-              "integer",
-              "null"
-            ],
+            "type": "integer",
             "minimum": 0,
             "maximum": 3
           },
@@ -41577,138 +41585,38 @@
               "null"
             ]
           },
-          "source": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "createdAt": {
             "$ref": "#/components/schemas/Timestamp"
           },
-          "questionImage": {
-            "type": [
-              "string",
-              "null"
+          "chapterId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
             ]
           },
-          "optionImages": {
+          "spIds": {
             "type": "array",
             "items": {
-              "type": [
-                "string",
-                "null"
-              ]
+              "$ref": "#/components/schemas/Id"
             }
           },
-          "tfAnswer": {
+          "tp": {
             "type": [
-              "boolean",
+              "integer",
               "null"
-            ]
+            ],
+            "minimum": 1,
+            "maximum": 6
           },
-          "correctAnswerText": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "altAnswers": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "modelAnswer": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "language": {
-            "type": "string",
-            "enum": [
-              "bm",
-              "en"
-            ]
-          },
-          "scriptType": {
-            "type": "string",
-            "enum": [
-              "rumi",
-              "arab",
-              "jawi",
-              "mixed"
-            ]
-          },
-          "textDirection": {
-            "type": "string",
-            "enum": [
-              "ltr",
-              "rtl"
-            ]
-          },
-          "curriculumChapterId": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Id"
-              },
-              {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            ]
-          },
-          "curriculumTopicId": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Id"
-              },
-              {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            ]
-          },
-          "dskpSpId": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Id"
-              },
-              {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            ]
-          },
-          "usage": {
-            "type": "object",
-            "properties": {
-              "attempts": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "correct": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "accuracy": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 100
-              }
-            },
-            "required": [
-              "attempts",
-              "correct",
-              "accuracy"
-            ]
+          "cognitiveLevel": {
+            "$ref": "#/components/schemas/QuestionCognitiveLevel"
           }
         },
         "required": [
@@ -41724,59 +41632,84 @@
           "dskpTagged",
           "status",
           "statusLabel",
-          "isActive",
+          "rejectionReason",
+          "editable",
           "options",
           "correctAnswer",
           "explanation",
-          "source",
           "createdAt",
-          "questionImage",
-          "optionImages",
-          "tfAnswer",
-          "correctAnswerText",
-          "altAnswers",
-          "modelAnswer",
-          "language",
-          "scriptType",
-          "textDirection",
-          "curriculumChapterId",
-          "curriculumTopicId",
-          "dskpSpId",
-          "usage"
+          "chapterId",
+          "spIds",
+          "tp",
+          "cognitiveLevel"
         ]
       },
       "QuestionGuruCreateRequest": {
         "type": "object",
         "properties": {
-          "educationLevelId": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 64
-          },
           "subjectId": {
             "type": "string",
             "minLength": 1,
             "maxLength": 64
           },
-          "questionType": {
-            "$ref": "#/components/schemas/QuestionType"
+          "educationLevelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "chapterId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64
+          },
+          "spIds": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 3
+          },
+          "tp": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 6
+          },
+          "cognitiveLevel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "mengingat",
+              "memahami",
+              "mengaplikasi",
+              "menganalisis",
+              "menilai",
+              "mencipta",
+              null
+            ]
           },
           "difficultyLevel": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "easy",
-                  "medium",
-                  "hard"
-                ]
-              },
-              {
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 5
-              }
-            ]
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "questionType": {
+            "type": "string",
+            "enum": [
+              "mcq"
+            ],
+            "default": "mcq"
           },
           "questionText": {
             "type": "string",
@@ -41788,27 +41721,7 @@
             "minItems": 4,
             "maxItems": 4,
             "items": {
-              "oneOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "text": {
-                      "type": "string"
-                    }
-                  }
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "optionText": {
-                      "type": "string"
-                    }
-                  }
-                }
-              ]
+              "type": "string"
             }
           },
           "correctAnswer": {
@@ -41820,175 +41733,6 @@
                 "type": "string"
               }
             ]
-          },
-          "tfAnswer": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "string"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "correctAnswerText": {
-            "type": "string"
-          },
-          "altAnswers": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              }
-            ]
-          },
-          "modelAnswer": {
-            "type": "string"
-          },
-          "explanation": {
-            "type": "string"
-          },
-          "questionImageUrl": {
-            "type": "string"
-          },
-          "questionImageFileId": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Id"
-              },
-              {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            ]
-          },
-          "optionImageFileIds": {
-            "type": "array",
-            "items": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Id"
-                },
-                {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                }
-              ]
-            },
-            "maxItems": 4
-          },
-          "curriculumChapterId": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "maxLength": 64
-          },
-          "curriculumTopicId": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "maxLength": 64
-          },
-          "dskpSpId": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "maxLength": 64
-          },
-          "scriptType": {
-            "type": "string",
-            "enum": [
-              "rumi",
-              "arab",
-              "jawi",
-              "mixed"
-            ]
-          },
-          "parts": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/QuestionPart"
-            },
-            "minItems": 1
-          },
-          "tag": {
-            "$ref": "#/components/schemas/QuestionCurriculumTag"
-          }
-        },
-        "required": [
-          "educationLevelId",
-          "subjectId",
-          "questionType",
-          "difficultyLevel",
-          "questionText"
-        ]
-      },
-      "QuestionGuruUpdateRequest": {
-        "type": "object",
-        "properties": {
-          "questionText": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 2000
-          },
-          "difficultyLevel": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "easy",
-                  "medium",
-                  "hard"
-                ]
-              },
-              {
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 5
-              }
-            ]
-          },
-          "options": {
-            "type": "array",
-            "minItems": 4,
-            "maxItems": 4,
-            "items": {
-              "type": "object",
-              "required": [
-                "id",
-                "optionText"
-              ],
-              "properties": {
-                "id": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 3
-                },
-                "optionText": {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 500
-                }
-              }
-            }
           },
           "correctOptionId": {
             "anyOf": [
@@ -42004,51 +41748,132 @@
             "type": [
               "string",
               "null"
-            ]
-          },
-          "questionImageFileId": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Id"
-              },
-              {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            ]
-          },
-          "optionImageFileIds": {
-            "type": "array",
-            "items": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Id"
-                },
-                {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                }
-              ]
-            },
-            "maxItems": 4
-          },
-          "removeQuestionImage": {
-            "type": "boolean"
-          },
-          "removeOptionImage": {
-            "type": "array",
-            "items": {
-              "type": "boolean"
-            },
-            "maxItems": 4
+            ],
+            "maxLength": 2000
           }
         },
         "required": [
-          "questionText"
+          "subjectId",
+          "educationLevelId",
+          "difficultyLevel",
+          "questionText",
+          "options"
+        ]
+      },
+      "QuestionGuruUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "educationLevelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "chapterId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64
+          },
+          "spIds": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 3
+          },
+          "tp": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 6
+          },
+          "cognitiveLevel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "mengingat",
+              "memahami",
+              "mengaplikasi",
+              "menganalisis",
+              "menilai",
+              "mencipta",
+              null
+            ]
+          },
+          "difficultyLevel": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "questionType": {
+            "type": "string",
+            "enum": [
+              "mcq"
+            ],
+            "default": "mcq"
+          },
+          "questionText": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "options": {
+            "type": "array",
+            "minItems": 4,
+            "maxItems": 4,
+            "items": {
+              "type": "string"
+            }
+          },
+          "correctAnswer": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "correctOptionId": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "explanation": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "subjectId",
+          "educationLevelId",
+          "difficultyLevel",
+          "questionText",
+          "options"
         ]
       },
       "QuestionPublic": {
@@ -82135,8 +81960,8 @@
           "question-workflow",
           "guru-question-import"
         ],
-        "summary": "Guru CSV template (same file as the admin template)",
-        "description": "Teacher or admin. `template-import-soalan.csv`, text/csv with Content-Disposition attachment; the same bytes as GET /question-imports/template. A static path: it matches before `/guru/questions/{id}` of the BE-09 contract.",
+        "summary": "Guru CSV template (templat-soalan.csv)",
+        "description": "Teacher or admin. `templat-soalan.csv`, text/csv with Content-Disposition attachment: the header `subjek,tingkatan,bab,sp,tp,aras,kesukaran,soalan,pilihan_a,pilihan_b,pilihan_c,pilihan_d,jawapan,penerangan` and the example row (44-F3). A static path: it matches before `/guru/questions/{id}`.",
         "responses": {
           "200": {
             "description": "The template file.",
@@ -82186,8 +82011,8 @@
           "question-workflow",
           "guru-question-import"
         ],
-        "summary": "Guru CSV contribution (same import service, no defaults)",
-        "description": "Teacher or admin. multipart/form-data `csvFile` (.csv or .txt, up to 5 MB). Same parser and template as the admin import but no form defaults: each row must carry subject_id, education_level_id and difficulty_level; extra caps question text up to 2000 and each option up to 500 characters. Valid rows are created as `review` questions owned by the caller (D54a; the mock says pending_review) and each counts as a contribution; bad rows are listed ordered by file row. Answers 200 (not 201) with { data: { imported, failed } } and no flash. Row messages as the admin import plus \"Soalan tidak boleh melebihi 2000 aksara.\" and \"Pilihan jawapan tidak boleh melebihi 500 aksara.\". A static path: it matches before `/guru/questions/{id}` of the BE-09 contract.",
+        "summary": "Guru CSV contribution (items of one guru intake batch)",
+        "description": "Teacher or admin. multipart/form-data `csvFile` (.csv only, UTF-8, up to 2 MB and 500 data rows) or JSON `{ csv }`. Rows are matched by column NAME (`subjek,tingkatan,bab,sp,tp,aras,kesukaran,soalan,pilihan_a..d,jawapan,penerangan`); each valid row becomes an item of ONE `source = guru` intake batch, shown as \"Menunggu Semakan\" (S6-T06, D113); bad rows are listed in `errors` ordered by file row and never block the valid ones. Answers 200 with { data: { imported, errors: [{ row, message }] } }. 422 `fields.csvFile`: \"Sila pilih fail.\", \"Jenis fail tidak disokong. Format dibenarkan: CSV.\", \"Fail melebihi saiz maksimum 2 MB.\", \"Fail melebihi 500 baris.\", \"Lajur wajib tiada: ...\". A static path: it matches before `/guru/questions/{id}`.",
         "parameters": [
           {
             "schema": {

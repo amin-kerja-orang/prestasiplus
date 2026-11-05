@@ -4,6 +4,7 @@ import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
 import {
   QUESTION_STATUS_MESSAGE,
+  QUESTION_COGNITIVE_LEVELS,
   QuestionCognitiveLevelSchema,
   QuestionCurriculumTagSchema,
   QuestionEssayTopicSchema,
@@ -624,11 +625,169 @@ export const QuestionStructuredDetailSchema = z
 
 /* ---------------------------------------------------------------------------------- Guru routes */
 
-/** Owner-only contribution views; the owning teacher sees their own key by design. */
+/**
+ * S6-T06 (API-GUR-18, R1 decision D113, L-6): a teacher's single-MCQ submission is an intake item of an `intake_batches` row with
+ * `source = 'guru'`, not a question row. These are the BM texts of the form 44-F1 (docs/prd/r1/20-guru-admin-sekolah.md) and of the shared
+ * conditional DSKP rule (D112), so the screen and the server show the same strings. Messages of the CSV import are in question-workflow.
+ */
+export const GURU_QUESTION_MESSAGES = {
+  level: 'Sila pilih tingkatan.',
+  subject: 'Sila pilih subjek.',
+  chapter: 'Sila pilih bab.',
+  chapterInvalid: 'Bab tidak sah.',
+  chapterMismatch: 'Bab tidak sepadan dengan subjek dan tingkatan.',
+  sp: 'Sila pilih Standard Pembelajaran (SP).',
+  spInvalid: 'SP tidak sah.',
+  spMax: 'Satu soalan boleh mempunyai 1 hingga 3 SP sahaja.',
+  tp: 'Sila pilih TP.',
+  tpRange: 'Tahap Penguasaan (TP) mesti antara 1 dan 6.',
+  cognitive: 'Sila pilih aras pemikiran.',
+  difficulty: 'Sila pilih kesukaran.',
+  type: 'Jenis soalan tidak sah.',
+  text: 'Sila isi soalan.',
+  textLong: 'Soalan tidak boleh melebihi 2000 aksara.',
+  options: 'Sila isi semua pilihan jawapan.',
+  option: (letter: string): string => `Sila isi pilihan ${letter}.`,
+  optionLong: (letter: string): string => `Pilihan ${letter} tidak boleh melebihi 500 aksara.`,
+  correct: 'Sila tanda satu jawapan yang betul.',
+  explanationLong: 'Penerangan tidak boleh melebihi 2000 aksara.',
+  /** Success text of the create (the screen shows it as the toast). */
+  submitted: 'Soalan dihantar untuk semakan.',
+  /** 409 of an edit or delete of an item that is no longer open to the teacher. */
+  locked: 'Soalan ini sudah diterima atau diluluskan dan tidak boleh diubah.',
+} as const
+
+/** The teacher-facing state of a submission item (OPT-KIRIMAN-STATUS): review, approved, draft (returned). */
+export const GURU_SUBMISSION_STATUSES = ['pending', 'approved', 'rejected'] as const
+export const GuruSubmissionStatusSchema = z.enum(GURU_SUBMISSION_STATUSES).meta({ id: 'GuruSubmissionStatus' })
+export type GuruSubmissionStatus = z.infer<typeof GuruSubmissionStatusSchema>
+export const GURU_SUBMISSION_STATUS_LABELS: Readonly<Record<GuruSubmissionStatus, string>> = {
+  pending: 'Menunggu Semakan',
+  approved: 'Diluluskan',
+  rejected: 'Ditolak',
+}
+
+/** The inputs of the shared conditional DSKP rule (D112) of a teacher submission. */
+export interface GuruDskpInput {
+  chapterId?: string | null | undefined
+  spIds?: readonly string[] | null | undefined
+  tp?: number | null | undefined
+  cognitiveLevel?: string | null | undefined
+}
+
+/** What the Subjek + Tingkatan has: active chapters (Bab required) and DSKP nodes (SP, TP and Aras required). */
+export interface GuruDskpFacts {
+  hasChapters: boolean
+  hasDskpNodes: boolean
+}
+
+/**
+ * The conditional DSKP rule of 44-F1 / FR-GUR-44-9 as one pure function (API-GUR-18 now, API-GUR-24 later): Bab is required only where the
+ * Subjek + Tingkatan has active chapters; SP (at least one), TP (1 to 6) and Aras only where it has DSKP nodes. Returns the `fields` map of the
+ * 422 (empty when the input passes). A value that is sent but out of range is refused whether or not it is required.
+ */
+export function guruDskpFields(input: GuruDskpInput, facts: GuruDskpFacts): Record<string, string> {
+  const fields: Record<string, string> = {}
+  const M = GURU_QUESTION_MESSAGES
+  if (facts.hasChapters && (input.chapterId === undefined || input.chapterId === null || input.chapterId === '')) fields.chapterId = M.chapter
+  const sp = input.spIds ?? []
+  if (facts.hasDskpNodes && sp.length === 0) fields.spIds = M.sp
+  if (input.tp === undefined || input.tp === null) {
+    if (facts.hasDskpNodes) fields.tp = M.tp
+  } else if (!Number.isInteger(input.tp) || input.tp < 1 || input.tp > 6) fields.tp = M.tpRange
+  if (facts.hasDskpNodes && (input.cognitiveLevel === undefined || input.cognitiveLevel === null || input.cognitiveLevel === '')) fields.cognitiveLevel = M.cognitive
+  return fields
+}
+
+/** MCQ key: index 0..3, a digit string, or a letter A to D. */
+const keyIndex = (v: unknown): number | undefined => {
+  if (typeof v === 'number') return Number.isInteger(v) && v >= 0 && v <= 3 ? v : undefined
+  if (typeof v !== 'string') return undefined
+  const t = v.trim().toUpperCase()
+  if (/^\d+$/.test(t)) return Number(t) <= 3 ? Number(t) : undefined
+  return /^[A-D]$/.test(t) ? t.charCodeAt(0) - 65 : undefined
+}
+
+/** The index 0..3 of a submitted MCQ key (a number, a digit string or a letter A to D), or undefined. */
+export const guruKeyIndex = keyIndex
+
+const GURU_OPTION_MAX = 500
+const GuruId = (message: string) => z.string({ error: message }).trim().min(1, message).max(64, message)
+const guruLetter = (i: number): string => String.fromCharCode(65 + i)
+const guruOptionText = (v: unknown): string => {
+  if (typeof v === 'string') return v.trim()
+  if (typeof v === 'object' && v !== null) {
+    const o = v as { text?: unknown; optionText?: unknown }
+    return (typeof o.optionText === 'string' ? o.optionText : typeof o.text === 'string' ? o.text : '').trim()
+  }
+  return ''
+}
+
+/** The four option texts in A to D order; items that all carry a unique numeric `id` 0..3 (the edit form) are placed by it. */
+export function guruOptionTexts(options: readonly unknown[]): string[] {
+  const ids = options.map((e) => (typeof e === 'object' && e !== null ? (e as { id?: unknown }).id : undefined))
+  const placed = options.length === 4 && ids.every((i) => typeof i === 'number' && Number.isInteger(i) && i >= 0 && i <= 3) && new Set(ids).size === 4
+  const ordered = placed ? [...options].sort((a, b) => Number((a as { id: number }).id) - Number((b as { id: number }).id)) : options
+  return ordered.map(guruOptionText)
+}
+
+/**
+ * Body of POST /guru/questions and of PUT /guru/questions/:id (the same form edits, 44-F1). MCQ only: `questionType` is `mcq` (any other value
+ * is 422); exactly four options A to D (strings, `{ text }` or `{ optionText }` items) and one correct answer (`correctAnswer` or its alias
+ * `correctOptionId`: index 0..3 or a letter A to D). `difficultyLevel` is the typed 1 to 5 Kesukaran (required; the words easy/medium/hard are
+ * no longer accepted) and is separate from `tp`. `spIds` holds 1 to 3 SP ids. The conditional DSKP rule (Bab, SP, TP, Aras required only where
+ * the Subjek + Tingkatan has chapters or DSKP nodes) is a service rule, `guruDskpFields`.
+ * 422 `fields` keys: subjectId, educationLevelId, chapterId, spIds, tp, cognitiveLevel, difficultyLevel, questionType, questionText, options,
+ * correctAnswer, explanation.
+ */
+const guruBody = () =>
+  z
+  .object({
+    subjectId: GuruId(GURU_QUESTION_MESSAGES.subject),
+    educationLevelId: GuruId(GURU_QUESTION_MESSAGES.level),
+    chapterId: z.string({ error: GURU_QUESTION_MESSAGES.chapterInvalid }).max(64, GURU_QUESTION_MESSAGES.chapterInvalid).nullable().optional(),
+    spIds: z
+      .array(z.string({ error: GURU_QUESTION_MESSAGES.spInvalid }).min(1, GURU_QUESTION_MESSAGES.spInvalid).max(64, GURU_QUESTION_MESSAGES.spInvalid), { error: GURU_QUESTION_MESSAGES.spInvalid })
+      .max(3, GURU_QUESTION_MESSAGES.spMax)
+      .nullable()
+      .optional(),
+    tp: z.number({ error: GURU_QUESTION_MESSAGES.tpRange }).int(GURU_QUESTION_MESSAGES.tpRange).min(1, GURU_QUESTION_MESSAGES.tpRange).max(6, GURU_QUESTION_MESSAGES.tpRange).nullable().optional(),
+    cognitiveLevel: z.enum(QUESTION_COGNITIVE_LEVELS, { error: GURU_QUESTION_MESSAGES.cognitive }).nullable().optional(),
+    difficultyLevel: z.coerce
+      .number({ error: GURU_QUESTION_MESSAGES.difficulty })
+      .int(GURU_QUESTION_MESSAGES.difficulty)
+      .min(1, GURU_QUESTION_MESSAGES.difficulty)
+      .max(5, GURU_QUESTION_MESSAGES.difficulty),
+    questionType: z.literal('mcq', { error: GURU_QUESTION_MESSAGES.type }).default('mcq'),
+    questionText: z.string({ error: GURU_QUESTION_MESSAGES.text }).trim().min(1, GURU_QUESTION_MESSAGES.text).max(2000, GURU_QUESTION_MESSAGES.textLong),
+    options: z.array(z.unknown(), { error: GURU_QUESTION_MESSAGES.options }).meta({ type: 'array', minItems: 4, maxItems: 4, items: { type: 'string' } }),
+    correctAnswer: z.union([z.number(), z.string()]).optional(),
+    correctOptionId: z.union([z.number(), z.string()]).optional(),
+    explanation: z.string({ error: GURU_QUESTION_MESSAGES.explanationLong }).max(2000, GURU_QUESTION_MESSAGES.explanationLong).nullable().optional(),
+  })
+  .superRefine((v, ctx) => {
+    const bad = (path: string, message: string) => ctx.addIssue({ code: 'custom', path: [path], message })
+    if (v.options.length !== 4) bad('options', GURU_QUESTION_MESSAGES.options)
+    else {
+      const texts = guruOptionTexts(v.options)
+      const empty = texts.findIndex((t) => t === '')
+      const long = texts.findIndex((t) => charLen(t) > GURU_OPTION_MAX)
+      if (empty >= 0) bad('options', GURU_QUESTION_MESSAGES.option(guruLetter(empty)))
+      else if (long >= 0) bad('options', GURU_QUESTION_MESSAGES.optionLong(guruLetter(long)))
+    }
+    if (keyIndex(v.correctAnswer ?? v.correctOptionId) === undefined) bad('correctAnswer', GURU_QUESTION_MESSAGES.correct)
+  })
+export const QuestionGuruCreateRequestSchema = guruBody().meta({ id: 'QuestionGuruCreateRequest' })
+export type QuestionGuruCreateRequest = z.output<typeof QuestionGuruCreateRequestSchema>
+
+/** PUT /guru/questions/:id: the same form and rules as the create (the edit form sends every field); only a pending or returned own item. */
+export const QuestionGuruUpdateRequestSchema = guruBody().meta({ id: 'QuestionGuruUpdateRequest' })
+
+/** Owner-only views of a teacher's submissions: `id` is the intake item id (API-GUR-18). */
 export const QuestionGuruSummarySchema = z
   .object({
     id: IdSchema,
-    questionType: QuestionTypeSchema,
+    questionType: z.literal('mcq'),
     questionText: z.string(),
     subjectId: IdSchema.nullable(),
     subjectName: z.string(),
@@ -637,122 +796,26 @@ export const QuestionGuruSummarySchema = z
     difficultyLevel: Difficulty,
     difficultyLabel: z.string(),
     dskpTagged: z.boolean(),
-    status: QuestionStatusSchema,
-    /** BM label of the status (Draf, Semakan, Lulus, Diterbitkan, Diarkib). */
+    status: GuruSubmissionStatusSchema,
+    /** BM label of the status: Menunggu Semakan, Diluluskan, Ditolak. */
     statusLabel: z.string(),
-    isActive: z.boolean(),
-    options: z.array(z.string()).nullable(),
-    correctAnswer: z.number().int().min(0).max(3).nullable(),
+    /** The admin's reason ("Sebab: {reason}") while `status` is `rejected`, else null. */
+    rejectionReason: z.string().nullable(),
+    /** True while the teacher may edit or delete the item (not yet accepted by the admin); the screen shows Edit and Padam from it. */
+    editable: z.boolean(),
+    options: z.array(z.string()),
+    correctAnswer: z.number().int().min(0).max(3),
     explanation: z.string().nullable(),
-    source: z.string().nullable(),
     createdAt: TimestampSchema,
   })
   .meta({ id: 'QuestionGuruSummary' })
 
 export const QuestionGuruDetailSchema = QuestionGuruSummarySchema.extend({
-  questionImage: z.string().nullable(),
-  optionImages: z.array(z.string().nullable()),
-  tfAnswer: z.boolean().nullable(),
-  correctAnswerText: z.string().nullable(),
-  altAnswers: z.array(z.string()),
-  modelAnswer: z.string().nullable(),
-  language: Language,
-  scriptType: ScriptType,
-  textDirection: z.enum(['ltr', 'rtl']),
-  curriculumChapterId: IdSchema.nullable(),
-  curriculumTopicId: IdSchema.nullable(),
-  dskpSpId: IdSchema.nullable(),
-  usage: z.object({ attempts: z.number().int().min(0), correct: z.number().int().min(0), accuracy: z.number().int().min(0).max(100) }),
+  chapterId: IdSchema.nullable(),
+  spIds: z.array(IdSchema),
+  tp: z.number().int().min(1).max(6).nullable(),
+  cognitiveLevel: QuestionCognitiveLevelSchema.nullable(),
 }).meta({ id: 'QuestionGuruDetail' })
-
-const GuruDifficulty = z.union([z.enum(['easy', 'medium', 'hard'], QUESTION_MESSAGES.difficulty), z.coerce.number({ error: QUESTION_MESSAGES.difficulty }).int(QUESTION_MESSAGES.difficulty).min(1, QUESTION_MESSAGES.difficulty).max(5, QUESTION_MESSAGES.difficulty)], { error: QUESTION_MESSAGES.difficulty })
-const GuruText = z.string({ error: QUESTION_MESSAGES.guruText }).trim().min(1, QUESTION_MESSAGES.guruText).max(2000, QUESTION_MESSAGES.guruTextLong)
-
-/** MCQ key as the mock reads it: index 0..3, a digit string, or a letter A to D. */
-const keyIndex = (v: unknown): number | undefined => {
-  if (typeof v === 'number') return Number.isInteger(v) && v >= 0 && v <= 3 ? v : undefined
-  if (typeof v !== 'string') return undefined
-  const t = v.trim().toUpperCase()
-  if (/^\d+$/.test(t)) return Number(t) <= 3 ? Number(t) : undefined
-  return /^[A-D]$/.test(t) ? t.charCodeAt(0) - 65 : undefined
-}
-const tfValid = (v: unknown) => v === true || v === false || v === 'true' || v === 'false' || v === '1' || v === '0' || v === 1 || v === 0
-
-const GuruOptionItem = { oneOf: [{ type: 'string' }, { type: 'object', properties: { text: { type: 'string' } } }, { type: 'object', properties: { optionText: { type: 'string' } } }] }
-
-/**
- * POST /guru/questions: saved as `review`, owner = caller. Difficulty may be easy/medium/hard (2/3/4).
- * Rules per type are the mock's `parseCreate`; the issue key is the `fields` key: `options` (empty item,
- * or item over 500), `correctAnswer` (MCQ key; for short_answer/fill_blank the answer text, empty or over
- * 500), `tfAnswer`. Image errors use the key `questionImage` / `optionImages.<i>`. Chapter,
- * topic and SP ownership checks need the curriculum and are service rules (same keys and copy).
- */
-export const QuestionGuruCreateRequestSchema = z
-  .object({
-    educationLevelId: idWith(QUESTION_MESSAGES.level),
-    subjectId: idWith(QUESTION_MESSAGES.subject),
-    questionType: QuestionTypeSchema,
-    difficultyLevel: GuruDifficulty,
-    questionText: GuruText,
-    options: optionList({ long: QUESTION_MESSAGES.guruOptionLong, item: GuruOptionItem }).optional(),
-    correctAnswer: z.union([z.number(), z.string()]).optional(),
-    tfAnswer: z.union([z.boolean(), z.string(), z.number()]).nullable().optional(),
-    correctAnswerText: z.string().optional(),
-    altAnswers: z.union([z.string(), z.array(z.string())]).optional(),
-    modelAnswer: z.string().optional(),
-    explanation: z.string().optional(),
-    questionImageUrl: z.string().optional(),
-    questionImageFileId: ImageFileId.optional(),
-    optionImageFileIds: z.array(ImageFileId).max(4).optional(),
-    curriculumChapterId: idOrBlank(QUESTION_MESSAGES.guruChapter),
-    curriculumTopicId: idOrBlank(QUESTION_MESSAGES.guruTopic),
-    dskpSpId: idOrBlank(QUESTION_MESSAGES.sp),
-    scriptType: z.enum(['rumi', 'arab', 'jawi', 'mixed'], QUESTION_MESSAGES.guruScript).optional(),
-    parts: z.array(QuestionPartSchema).min(1).optional(),
-    tag: QuestionCurriculumTagSchema.optional(),
-  })
-  .superRefine((v, ctx) => {
-    const bad = (path: string, message: string) => ctx.addIssue({ code: 'custom', path: [path], message })
-    if (v.questionType === 'mcq') {
-      if (v.options === undefined) bad('options', QUESTION_MESSAGES.options)
-      if (keyIndex(v.correctAnswer) === undefined) bad('correctAnswer', QUESTION_MESSAGES.correctAnswer)
-    } else if (v.questionType === 'true_false') {
-      if (!tfValid(v.tfAnswer)) bad('tfAnswer', QUESTION_MESSAGES.guruTf)
-    } else if (v.questionType === 'short_answer' || v.questionType === 'fill_blank') {
-      const answer = (typeof v.correctAnswerText === 'string' ? v.correctAnswerText : typeof v.correctAnswer === 'string' ? v.correctAnswer : '').trim()
-      if (answer === '') bad('correctAnswer', QUESTION_MESSAGES.answerText)
-      else if (charLen(answer) > OPTION_MAX) bad('correctAnswer', QUESTION_MESSAGES.guruAnswerLong)
-    }
-  })
-  .meta({ id: 'QuestionGuruCreateRequest' })
-
-/**
- * PUT /guru/questions/:id (own only). MCQ options are `{ id: 0..3, optionText }` with four unique ids.
- * When `options` or `correctOptionId` is sent, both are required (`options`, `correctOptionId` keys);
- * that they apply only to an MCQ is a service rule (the saved type is not in the body).
- */
-export const QuestionGuruUpdateRequestSchema = z
-  .object({
-    questionText: GuruText,
-    difficultyLevel: GuruDifficulty.optional(),
-    options: optionList({
-      long: QUESTION_MESSAGES.guruOptionLong,
-      indexed: true,
-      item: { type: 'object', required: ['id', 'optionText'], properties: { id: { type: 'integer', minimum: 0, maximum: 3 }, optionText: { type: 'string', minLength: 1, maxLength: 500 } } },
-    }).optional(),
-    correctOptionId: z.union([z.number(), z.string()]).optional(),
-    explanation: z.string().nullable().optional(),
-    questionImageFileId: ImageFileId.optional(),
-    optionImageFileIds: z.array(ImageFileId).max(4).optional(),
-    removeQuestionImage: z.boolean().optional(),
-    removeOptionImage: z.array(z.boolean()).max(4).optional(),
-  })
-  .superRefine((v, ctx) => {
-    if (v.options === undefined && v.correctOptionId === undefined) return
-    if (v.options === undefined) ctx.addIssue({ code: 'custom', path: ['options'], message: QUESTION_MESSAGES.options })
-    if (keyIndex(v.correctOptionId) === undefined) ctx.addIssue({ code: 'custom', path: ['correctOptionId'], message: QUESTION_MESSAGES.correctAnswer })
-  })
-  .meta({ id: 'QuestionGuruUpdateRequest' })
 
 export const QuestionGuruQuerySchema = z.object({ page: z.coerce.number().int().min(1).default(1) }).meta({ id: 'QuestionGuruQuery' })
 export const QuestionGuruRemoveResultSchema = z.object({ removed: z.literal(1) }).meta({ id: 'QuestionGuruRemoveResult' })

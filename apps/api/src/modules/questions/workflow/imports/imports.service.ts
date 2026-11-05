@@ -4,6 +4,9 @@ import {
   QUESTION_IMPORT_MIME_TYPES,
   QUESTION_IMPORT_PAGE_SIZE,
   QUESTION_IMPORT_MAX_BYTES,
+  QUESTION_IMPORT_GURU_MAX_BYTES,
+  QUESTION_IMPORT_GURU_MESSAGES as GURU_MSG,
+  QUESTION_IMPORT_GURU_TEMPLATE_CSV,
   QUESTION_IMPORT_TEMPLATE_CSV,
   QuestionImportListQuerySchema,
   type QuestionImportFailure,
@@ -23,7 +26,19 @@ import type { WorkflowActor } from '../actor'
 import { type ImportedQuestionInput, QuestionWorkflowPorts } from '../ports'
 import type { CreateGateInput } from '../lifecycle'
 import { QuestionWorkflowService } from '../question-workflow.service'
-import { GURU_IMPORT_CAPS, type ImportDefaults, type ImportLookups, NO_IMPORT_DEFAULTS, planImport } from './csv'
+import { GuruSubmissionsService } from '../../../intake/files/guru-submissions.service'
+import { type ImportDefaults, type ImportLookups, planImport } from './csv'
+import {
+  guruLevelOf,
+  guruPairKey,
+  guruSubjectOf,
+  planGuruRows,
+  readGuruCsv,
+  type GuruChapterRef,
+  type GuruCsvLookups,
+  type GuruCsvRow,
+  type GuruSpRef,
+} from './guru-csv'
 
 /** What the controller hands over from multer (memory storage). */
 export interface UploadedCsv {
@@ -78,11 +93,17 @@ export class QuestionImportsService {
     @Inject(CurriculumRepository) private readonly curriculum: CurriculumRepository,
     @Inject(QuestionWorkflowPorts) private readonly ports: QuestionWorkflowPorts,
     @Inject(QuestionWorkflowService) private readonly workflow: QuestionWorkflowService,
+    @Inject(GuruSubmissionsService) private readonly guruSubmissions: GuruSubmissionsService,
   ) {}
 
   /** The template file text (mock `IMPORT_TEMPLATE_CSV`; no cell starts with a formula character). */
   template(): string {
     return QUESTION_IMPORT_TEMPLATE_CSV
+  }
+
+  /** The teacher's template file text (44-F3): the BM header and the example row. */
+  guruTemplate(): string {
+    return QUESTION_IMPORT_GURU_TEMPLATE_CSV
   }
 
   // --- history ---------------------------------------------------------------------------------
@@ -119,15 +140,55 @@ export class QuestionImportsService {
 
   // --- Guru import -----------------------------------------------------------------------------
 
-  async importGuru(actor: WorkflowActor, file: UploadedCsv | undefined): Promise<{ data: QuestionImportGuruResult }> {
-    const fields: Record<string, string> = {}
-    const text = readFile(file, fields)
-    if (Object.keys(fields).length > 0) throw ApiError.of('VALIDATION_ERROR', { fields })
+  /**
+   * API-GUR-19 (S6-T06): the teacher's CSV (columns by NAME, 2 MB, 500 data rows). Each valid row becomes an item of ONE `source = 'guru'` intake
+   * batch ("Menunggu Semakan", L-6); a bad row is listed in `errors` with its reason and never blocks the valid ones.
+   */
+  async importGuru(actor: WorkflowActor, file: UploadedCsv | undefined, body: unknown): Promise<{ data: QuestionImportGuruResult }> {
+    const read = readGuruCsv(readGuruText(file, body))
+    if (read.missingColumns.length > 0) throw guruRefusal(GURU_MSG.missingColumns(read.missingColumns))
+    if (read.rows.length === 0) throw guruRefusal(GURU_MSG.noData)
+    if (read.tooMany) throw guruRefusal(GURU_MSG.tooManyRows)
 
-    const plan = planImport(text as string, await this.lookups(), NO_IMPORT_DEFAULTS, GURU_IMPORT_CAPS)
-    refuseUnusable(plan)
-    const run = await this.execute(actor, file as UploadedCsv, plan, NO_IMPORT_DEFAULTS, 'review', null)
-    return { data: { imported: run.importedCount, failed: asFailures(run.failures) } }
+    const plan = planGuruRows(read.rows, await this.guruLookups(read.rows))
+    if (plan.valid.length > 0) {
+      await this.guruSubmissions.createBatch(
+        { userId: actor.userId, roleCode: actor.role, requestId: actor.requestId, ip: actor.ip, isTest: actor.isTest },
+        plan.valid,
+      )
+    }
+    return { data: { imported: plan.valid.length, errors: plan.errors } }
+  }
+
+  /** Subjects and Tingkatan 1 to 5, plus the Bab and SP lists of the Subjek + Tingkatan pairs the file uses (only where a row names a Bab or SP). */
+  private async guruLookups(rows: readonly GuruCsvRow[]): Promise<GuruCsvLookups> {
+    const [subjectRows, levelRows] = await Promise.all([this.curriculum.subjects({ active: true }), this.curriculum.levels({ active: true })])
+    const subjects = subjectRows.map((s) => ({ id: s.id.toString(), code: s.code, name: s.name }))
+    const levels = new Map<number, { id: string; code: string }>()
+    for (const l of levelRows) {
+      const m = /^T([1-5])$/.exec(l.code)
+      if (m && l.stage !== 'primary') levels.set(Number(m[1]), { id: l.id.toString(), code: l.code })
+    }
+    const wanted = new Map<string, { subjectId: string; levelId: string; bab: boolean; sps: Set<string> }>()
+    for (const r of rows) {
+      const subject = guruSubjectOf(subjects, r.get('subjek'))
+      const level = guruLevelOf(levels, r.get('tingkatan'))
+      if (!subject || !level) continue
+      const key = guruPairKey(subject.id, level.id)
+      const w = wanted.get(key) ?? { subjectId: subject.id, levelId: level.id, bab: false, sps: new Set<string>() }
+      if (r.get('bab').trim() !== '') w.bab = true
+      if (r.get('sp').trim() !== '') w.sps.add(r.get('sp').trim())
+      wanted.set(key, w)
+    }
+    const refs = new Map<string, { chapters: readonly GuruChapterRef[]; sps: readonly GuruSpRef[] }>()
+    for (const [key, w] of wanted) {
+      const subjectId = BigInt(w.subjectId)
+      const educationLevelId = BigInt(w.levelId)
+      const chapters = w.bab ? (await this.curriculum.chapters(subjectId, educationLevelId, { active: true })).map((c) => ({ id: c.id.toString(), number: c.chapterNumber, name: c.name })) : []
+      const sps = w.sps.size === 0 ? [] : (await this.curriculum.nodesByCodes([...w.sps], { subjectId, educationLevelId })).filter((n) => n.kind === 'sp').map((n) => ({ id: n.id.toString(), code: n.code }))
+      refs.set(key, { chapters, sps })
+    }
+    return { subjects, levels, refs }
   }
 
   // --- shared ----------------------------------------------------------------------------------
@@ -174,6 +235,24 @@ export class QuestionImportsService {
       })
     }, IMPORT_TX)
   }
+}
+
+const guruRefusal = (message: string): ApiError => ApiError.of('VALIDATION_ERROR', { fields: { csvFile: message } })
+
+/** Text of the teacher's file: the `csvFile` part (.csv only, 2 MB) or the JSON field `csv`; the 422 message is on `fields.csvFile`. */
+function readGuruText(file: UploadedCsv | undefined, body: unknown): string {
+  if (file) {
+    const name = file.originalname
+    const ext = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1).toLowerCase() : ''
+    if (ext !== 'csv' || !(file.mimetype === '' || MIMES.includes(file.mimetype))) throw guruRefusal(GURU_MSG.fileType)
+    if (file.size > QUESTION_IMPORT_GURU_MAX_BYTES) throw guruRefusal(GURU_MSG.fileSize)
+    if (file.size === 0) throw guruRefusal(GURU_MSG.fileRequired)
+    return file.buffer.toString('utf8')
+  }
+  const csv = typeof body === 'object' && body !== null ? (body as { csv?: unknown }).csv : undefined
+  if (typeof csv !== 'string' || csv.trim() === '') throw guruRefusal(GURU_MSG.fileRequired)
+  if (Buffer.byteLength(csv, 'utf8') > QUESTION_IMPORT_GURU_MAX_BYTES) throw guruRefusal(GURU_MSG.fileSize)
+  return csv
 }
 
 /** Text of the `csvFile` part, or the 422 message in `fields`. */
