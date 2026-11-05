@@ -335,6 +335,8 @@ export interface StoredAnswer {
 export type AttemptMode = 'exam' | 'latihan'
 export type AttemptStatus = 'in_progress' | 'submitted' | 'auto_submitted' | 'abandoned'
 export type PaperKind = 'pilihan' | 'jana'
+/** Kind of an attempt (`exam_attempts.paper_kind`, DM-83): the paper kinds plus `subjektif` (S3-T06) and `structured` (S5-T11). */
+export type AttemptKind = PaperKind | 'subjektif' | 'structured'
 
 export interface SectionSnapshot {
   id: string
@@ -355,7 +357,7 @@ export interface Attempt {
   id: string
   userId: number
   paperId: string
-  paperKind: PaperKind
+  paperKind: AttemptKind
   title: string
   subject: SubjectCode
   kertas: number
@@ -608,7 +610,7 @@ export interface HistoryRow {
   subject: SubjectCode
   subjectName: string
   kertas: number
-  kind: PaperKind
+  kind: AttemptKind
   mode: AttemptMode
   status: AttemptStatus
   startedAt: number

@@ -146,7 +146,7 @@ function drawJoinCode(): string {
 
 /**
  * The only doorway to `classrooms`, `enrolments` and `teacher_profiles` (ADR-0014). Other cards call
- * `forTeacher`, `forStudent`, `roster`, `schoolClasses`, `findByJoinCode`, `memberIds` and `enrol`; they never
+ * `forTeacher`, `forStudent`, `roster`, `schoolClasses`, `memberIds` and `enrol`; they never
  * query these tables. Scope is applied by the caller's choice of method (a teacher id, a school id, a student
  * id): the service resolves those from the session and never from the request. Ids are decimal strings.
  *
@@ -258,16 +258,6 @@ export class ClassesRepository {
       orderBy: NEWEST_FIRST,
     })
     return rows.map(toClass)
-  }
-
-  /** BR-M10-02: the teacher class with this join code, trimmed and compared ignoring case. */
-  async findByJoinCode(code: string): Promise<ClassRecord | null> {
-    const wanted = code.trim().toUpperCase()
-    if (wanted === '') return null
-    const rows = await this.db.$queryRaw<{ id: bigint }[]>`
-      SELECT id FROM classrooms WHERE kind = 'classroom' AND upper(join_code) = ${wanted} LIMIT 1`
-    const first = rows[0]
-    return first ? this.get(idToString(first.id)) : null
   }
 
   /**

@@ -457,3 +457,57 @@ export function studentOf(
   sections.sort((a, b) => a.configId - b.configId)
   return { student: { id: user.id, name: user.name, school }, sections }
 }
+
+// ---------------------------------------------------------------------------------------------
+// API-RPT-08 the pupil's own views (S10-T09)
+// ---------------------------------------------------------------------------------------------
+
+/** The pupil's own live roster line of a config (class member or entry holder, not dropped), else undefined. */
+function ownLineOf(c: HeadcountConfigRow, studentId: number): RosterLine | undefined {
+  const line = rosterOf(c).find((l) => l.studentId === studentId)
+  return line && !line.dropped ? line : undefined
+}
+
+/** The configs the pupil sees: own class configs where the pupil is not dropped, newest first. */
+export function ownConfigsOf(studentId: number): HeadcountConfigRow[] {
+  return headcountRepo
+    .configs()
+    .filter((c) => ownLineOf(c, studentId) !== undefined)
+    // like the API (FR-MUR-3-2): only the current year; the seeds are dated, so the latest seeded year stands in
+    .filter((c, _i, all) => c.academicYear === Math.max(...all.map((x) => x.academicYear)))
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || b.id - a.id)
+}
+
+/** One card of `GET /headcounts/me`: the pupil's own pill (Active iff an ETR, own or default) and reason. */
+export function ownListItem(c: HeadcountConfigRow, studentId: number): HeadcountListItem {
+  const line = ownLineOf(c, studentId) as RosterLine
+  const { entryStatus, statusReason } = statusOf(line.view)
+  return { ...listItem(c), entryStatus, statusReason }
+}
+
+/** `GET /headcounts/me/detail`: the pupil's own line of one config only (no classmate data). */
+export function ownStudentOf(
+  studentId: number,
+  c: HeadcountConfigRow | undefined,
+): HeadcountStudent | undefined {
+  const user = users.get(studentId)
+  if (!user) return undefined
+  const school = user.schoolId === null ? null : (schools.get(user.schoolId)?.name ?? null)
+  const student = { id: user.id, name: user.name, school }
+  if (!c) return { student, sections: [] }
+  const line = ownLineOf(c, studentId)
+  if (!line) return undefined
+  const entry: HeadcountEntryRow = line.entry ?? {
+    id: 0,
+    configId: c.id,
+    studentId,
+    tov: null,
+    targets: blank(c.activeOtrs),
+    actuals: blank(c.activeOtrs),
+    etr: null,
+    rs: null,
+    rsRecordedAt: null,
+    dropped: false,
+  }
+  return { student, sections: [sectionOf(c, entry, school)] }
+}

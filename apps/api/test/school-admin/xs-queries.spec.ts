@@ -13,8 +13,10 @@ import {
 } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { PrismaService } from '../../src/db/prisma.service'
 import { AuthModule } from '../../src/modules/auth'
 import { CommandCenterModule } from '../../src/modules/command-center'
+import { AnswerFactsAdapter } from '../../src/modules/practice/reads/answer-facts.adapter'
 import { CommandCenterRepository } from '../../src/modules/command-center/shared/command-center.repository'
 import { SchoolAdminModule, SCHOOL_PERFORMANCE_PORT } from '../../src/modules/school-admin'
 import { XS_ALL_TIME, XsQueries, xsAccuracy } from '../../src/modules/school-admin/xs-queries'
@@ -361,12 +363,18 @@ describe('XsQueries edge cases', () => {
     expect((await repo.teachersOfSchool(e)).map((x) => x.id).sort()).toEqual([...r.ids].sort())
   })
 
-  // Lead ruling (#479). Enable after PR #544 (AnswerFactsPort) merges. The exact assertion to add, on the fixture school above:
-  //   const facts = await port.answerFacts(<the fixture school's XS-1 pupil ids>, {})   // AnswerFactsPort.answerFacts
-  //   const answered = facts.length; const correct = facts.filter((f) => f.isCorrect).length
-  //   expect(answered).toBe((await xs.answerTotals(SCHOOL())).answered)            // 24
-  //   expect(xsAccuracy(correct, answered)).toBe((await xs.answerTotals(SCHOOL())).accuracy)   // 62.5
-  it.todo('XS-4/XS-5 equal the AnswerFactsPort sums (enable after #544 merges)')
+  // Lead ruling (#479): XS-4/XS-5 agree with the shared S10-T01 reader (AnswerFactsPort, #544) on the same pupils.
+  it('XS-4/XS-5 equal the AnswerFactsPort sums of the XS-1 pupils', async () => {
+    const port = new AnswerFactsAdapter(t.app.get(PrismaService, { strict: false }))
+    const { ids } = await xs.pupils(SCHOOL())
+    const facts = await port.answerFacts({ userIds: ids })
+    const answered = facts.reduce((n, f) => n + f.attempts, 0)
+    const correct = facts.reduce((n, f) => n + f.correct, 0)
+    const totals = await xs.answerTotals(SCHOOL())
+    expect(answered).toBeGreaterThan(0)
+    expect(answered).toBe(totals.answered)
+    expect(xsAccuracy(correct, answered)).toBe(totals.accuracy)
+  })
 
   it('a pupil enrolled in two classes of the same teacher is counted once', async () => {
     const tc = await createUser(t.db, { role: 'teacher', schoolId: e, name: 'Tepi Guru Dua Kelas' })
