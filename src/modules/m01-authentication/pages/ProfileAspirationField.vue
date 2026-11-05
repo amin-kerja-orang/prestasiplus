@@ -3,9 +3,8 @@
  * R1-MUR-A1 field "Cita-Cita Saya" (FR-MUR-A1-3, FR-MUR-A1-10): text, placeholder "cth: Doktor, Jurutera, Saintis
  * Data...", max 255, never on the public page.
  *
- * NOT WIRED AND NOT RENDERED YET (S5-T05 part B): the column `users.aspiration` waits for S0's migration 0184
- * (DM-80), and `PUT /api/me` has no `aspiration` key until then. When the column and the contract key exist,
- * render this field in the "Kemaskini Profil" form of `ProfilePage.vue` and send `{bio, aspiration}`.
+ * Rendered in the "Kemaskini Profil" form of `ProfilePage.vue` (pupil); saved with `PUT /api/me {bio, aspiration}`
+ * (column `users.aspiration`, migration 0184, DM-80).
  */
 import { computed } from 'vue'
 

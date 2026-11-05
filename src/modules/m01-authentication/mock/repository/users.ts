@@ -294,6 +294,7 @@ export interface UserInput {
   schoolId?: number | null
   isActive?: boolean
   bio?: string | null
+  aspiration?: string | null
   avatarUrl?: string | null
   ppdState?: string | null
   ppdDistrict?: string | null

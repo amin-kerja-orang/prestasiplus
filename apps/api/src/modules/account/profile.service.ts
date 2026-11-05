@@ -82,6 +82,7 @@ export class ProfileService {
       username: user.username,
       phone: user.phone,
       bio: user.bio,
+      aspiration: user.aspiration,
       avatarUrl: avatar ? `/api/files/${avatar}` : null,
       grade: user.grade,
       schoolId: school ? user.schoolId : null,
@@ -115,7 +116,7 @@ export class ProfileService {
       if (!user) throw ApiError.of('UNAUTHORIZED')
       if (Object.keys(fields).length > 0 || !parsed.success) {
         const ordered: Record<string, string> = {}
-        for (const key of ['name', 'phone', 'bio', ...Object.keys(fields)]) {
+        for (const key of ['name', 'phone', 'bio', 'aspiration', ...Object.keys(fields)]) {
           const message = fields[key]
           if (message !== undefined) ordered[key] = message
         }
@@ -130,6 +131,7 @@ export class ProfileService {
           ...(data.name !== undefined ? { name: data.name } : {}),
           ...(data.phone !== undefined ? { phone: blankToNull(data.phone) } : {}),
           ...(data.bio !== undefined ? { bio: blankToNull(data.bio) } : {}),
+          ...(data.aspiration !== undefined ? { aspiration: blankToNull(data.aspiration) } : {}),
           now,
         })
         await this.audit.record({
@@ -143,7 +145,7 @@ export class ProfileService {
           isTest: auth.mode !== null,
           // Field names only, never the values.
           details: {
-            fields: (['name', 'phone', 'bio'] as const).filter((k) => data[k] !== undefined),
+            fields: (['name', 'phone', 'bio', 'aspiration'] as const).filter((k) => data[k] !== undefined),
           },
         })
       }, ACCOUNT_TX)

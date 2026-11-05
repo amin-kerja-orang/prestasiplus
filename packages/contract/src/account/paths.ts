@@ -202,14 +202,14 @@ export function registerAccountPaths(registry: OpenAPIRegistry): void {
     tags: ['account'],
     summary: 'Update own profile',
     description:
-      'Any signed-in role, own record only. `email` and any other key in the body are ignored (BR-13). An absent key keeps the stored value; null or blank clears phone and bio. `grade`, `schoolId` and `role` are accepted and ignored for every role (API-AUTH-09). ' + WRITE_THROTTLE_TEXT,
+      'Any signed-in role, own record only. `email` and any other key in the body are ignored (BR-13). An absent key keeps the stored value; null or blank clears phone, bio and aspiration. `grade`, `schoolId` and `role` are accepted and ignored for every role (API-AUTH-09). ' + WRITE_THROTTLE_TEXT,
     request: { headers: [csrf], body: body(AccountProfileUpdateRequestSchema) },
     responses: {
       200: json(accountStatusEnvelopeOf(AccountUserMeSchema), `Saved. status = "${ACCOUNT_MESSAGES.profileSaved}".`),
       401: unauthorized,
       403: csrfOrPcr,
       422: validation(
-        `name required, max 255; phone max 14; bio max 1000; grade "${ACCOUNT_AUTH_MESSAGES.gradeInvalid}" and school "${ACCOUNT_AUTH_MESSAGES.schoolInvalid}" when the value has the wrong type (a valid value is ignored).`,
+        `name required, max 255; phone max 14; bio max 1000; aspiration max 255; grade "${ACCOUNT_AUTH_MESSAGES.gradeInvalid}" and school "${ACCOUNT_AUTH_MESSAGES.schoolInvalid}" when the value has the wrong type (a valid value is ignored).`,
       ),
       429: rateLimited(`"${AUTH_ERROR_MESSAGES.RATE_LIMITED}" (D57a).`),
     },

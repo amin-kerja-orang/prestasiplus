@@ -269,7 +269,7 @@ describe('ProfileRecentSessions (FR-MUR-A1-6)', () => {
   })
 })
 
-describe('ProfileAspirationField (created, not rendered yet)', () => {
+describe('ProfileAspirationField (FR-MUR-A1-10)', () => {
   it('has the label and placeholder and refuses over 255 characters with the BM text', async () => {
     const w = track(mount(ProfileAspirationField, { props: { modelValue: 'Doktor' } }))
     expect(w.text()).toContain('Cita-Cita Saya')
@@ -277,18 +277,6 @@ describe('ProfileAspirationField (created, not rendered yet)', () => {
     expect(w.text()).not.toContain('Cita-cita tidak boleh melebihi 255 aksara.')
     await w.setProps({ modelValue: 'x'.repeat(256) })
     expect(w.text()).toContain('Cita-cita tidak boleh melebihi 255 aksara.')
-  })
-
-  it('is not part of the profile page yet', async () => {
-    const pinia = createPinia()
-    setActivePinia(pinia)
-    const session = useSessionStore()
-    session.setSession({ token: 't', remember: false, expiresAt: '2099-01-01T00:00:00+08:00', user: USER })
-    vi.spyOn(session, 'refreshUser').mockResolvedValue(null)
-    vi.spyOn(api, 'get').mockResolvedValue(ACTIVITY)
-    const w = track(mount(ProfilePage, { global: { plugins: [pinia, router()] } }))
-    await flushPromises()
-    expect(w.text()).not.toContain('Cita-Cita Saya')
   })
 })
 
@@ -339,16 +327,42 @@ describe('ProfilePage, pupil (FR-MUR-A1-1, 3)', () => {
     expect(w.get('[data-testid=profile-save]').text()).toBe('Simpan')
   })
 
-  it('"Simpan" sends PUT /api/me with the bio only and shows the success line', async () => {
+  it('"Simpan" sends PUT /api/me with the bio and the aspiration and shows the success line', async () => {
     vi.spyOn(api, 'get').mockResolvedValue(ACTIVITY)
     const put = vi.spyOn(api, 'put').mockResolvedValue({ data: { ...USER, bio: 'Saya suka Sains' }, status: 'Profil berjaya dikemaskini.' })
     const w = await render()
     await w.get('[data-testid=profile-bio-input]').setValue('Saya suka Sains')
     await w.get('[data-testid=profile-bio-form]').trigger('submit')
     await flushPromises()
-    expect(put).toHaveBeenCalledWith('/api/me', { body: { bio: 'Saya suka Sains' }, raw: true })
+    expect(put).toHaveBeenCalledWith('/api/me', { body: { bio: 'Saya suka Sains', aspiration: null }, raw: true })
     expect(w.get('[data-testid=profile-form-saved]').text()).toBe('Profil berjaya dikemaskini.')
     expect(useSessionStore().user?.bio).toBe('Saya suka Sains')
+  })
+
+  it('"Cita-Cita Saya" shows under "Kemaskini Profil", is filled from the user and is sent with the bio (DM-80)', async () => {
+    vi.spyOn(api, 'get').mockResolvedValue(ACTIVITY)
+    const put = vi.spyOn(api, 'put').mockResolvedValue({ data: { ...USER, bio: 'Suka belajar', aspiration: 'Jurutera' }, status: 'ok' })
+    const w = await render({ ...USER, aspiration: 'Doktor' })
+    const form = w.get('[data-testid=profile-form-card]')
+    expect(form.text()).toContain('Cita-Cita Saya')
+    const input = w.get('[data-testid=profile-aspiration-input]')
+    expect((input.element as HTMLInputElement).value).toBe('Doktor')
+    await input.setValue('  Jurutera ')
+    await w.get('[data-testid=profile-bio-form]').trigger('submit')
+    await flushPromises()
+    expect(put).toHaveBeenCalledWith('/api/me', { body: { bio: 'Suka belajar', aspiration: 'Jurutera' }, raw: true })
+    expect(useSessionStore().user?.aspiration).toBe('Jurutera')
+  })
+
+  it('256 characters of aspiration: the BM error shows and nothing is sent', async () => {
+    vi.spyOn(api, 'get').mockResolvedValue(ACTIVITY)
+    const put = vi.spyOn(api, 'put')
+    const w = await render()
+    await w.get('[data-testid=profile-aspiration-input]').setValue('x'.repeat(256))
+    await w.get('[data-testid=profile-bio-form]').trigger('submit')
+    await flushPromises()
+    expect(put).not.toHaveBeenCalled()
+    expect(w.get('[data-testid=profile-form-error]').text()).toBe('Cita-cita tidak boleh melebihi 255 aksara.')
   })
 
   it('a blank bio clears it (null)', async () => {
@@ -358,7 +372,7 @@ describe('ProfilePage, pupil (FR-MUR-A1-1, 3)', () => {
     await w.get('[data-testid=profile-bio-input]').setValue('   ')
     await w.get('[data-testid=profile-bio-form]').trigger('submit')
     await flushPromises()
-    expect(put).toHaveBeenCalledWith('/api/me', { body: { bio: null }, raw: true })
+    expect(put).toHaveBeenCalledWith('/api/me', { body: { bio: null, aspiration: null }, raw: true })
   })
 
   it('1001 characters: the BM error shows, nothing is sent and the typed text stays (AC-MUR-A1-8)', async () => {

@@ -6,10 +6,9 @@
  * "Kemaskini Profil" -> `/profile/edit`.
  *
  * Pupil (R1-MUR-A1, S5-T05 part B; FR-MUR-A1-1, in this order): hero, "Profil Awam Saya", six tiles, the in-page
- * form "Kemaskini Profil" (Bio Saya, "Simpan"; replaces the button, FR-MUR-A1-7), three combo tiles, "Koleksi
+ * form "Kemaskini Profil" (Bio Saya, Cita-Cita Saya, "Simpan"; replaces the button, FR-MUR-A1-7), three combo tiles, "Koleksi
  * Lencana", "Kalendar Kombo (30 Hari Terakhir)" and "Sesi Terkini". Figures come from `GET /api/me/profile-activity`
- * (API-MUR-02). The call lives here: the m01 api client belongs to S0. "Cita-Cita Saya" waits for the column
- * (`ProfileAspirationField.vue`, not rendered yet).
+ * (API-MUR-02). The call lives here: the m01 api client belongs to S0.
  * The user comes from the cached session; a background `GET /api/me` keeps it fresh.
  */
 import type { AccountProfileActivity } from '@pp/contract'
@@ -22,6 +21,7 @@ import { useSessionStore } from '@/stores/session'
 
 import type { UserMe } from '../api'
 import { errorLines } from '../lib/error-lines'
+import ProfileAspirationField from './ProfileAspirationField.vue'
 import ProfileBadgeCollection from './ProfileBadgeCollection.vue'
 import ProfileKomboCalendar from './ProfileKomboCalendar.vue'
 import ProfilePublicCard from './ProfilePublicCard.vue'
@@ -30,6 +30,8 @@ import ProfileStatTiles from './ProfileStatTiles.vue'
 
 const BIO_MAX = 1000
 const BIO_TOO_LONG = 'Bio tidak boleh melebihi 1000 aksara.'
+const ASPIRATION_MAX = 255
+const ASPIRATION_TOO_LONG = 'Cita-cita tidak boleh melebihi 255 aksara.'
 const SAVED_TEXT = 'Profil berjaya dikemaskini.'
 const SAVED_MS = 4000
 
@@ -59,29 +61,39 @@ const publicUrl = computed(() =>
 // --- the in-page form "Kemaskini Profil" (FR-MUR-A1-3) ---------------------------------------------
 const bio = ref(user.value?.bio ?? '')
 const bioTouched = ref(false)
+const aspiration = ref(user.value?.aspiration ?? '')
+const aspirationTouched = ref(false)
 const saving = ref(false)
 const saved = ref(false)
 const formErrors = ref<string[]>([])
 let savedTimer: ReturnType<typeof setTimeout> | undefined
 
 const bioTooLong = computed(() => bio.value.length > BIO_MAX)
+const aspirationTooLong = computed(() => aspiration.value.length > ASPIRATION_MAX)
 
 async function save(): Promise<void> {
   formErrors.value = []
   saved.value = false
-  if (bioTooLong.value) {
-    formErrors.value = [BIO_TOO_LONG]
+  if (bioTooLong.value || aspirationTooLong.value) {
+    formErrors.value = [
+      ...(bioTooLong.value ? [BIO_TOO_LONG] : []),
+      ...(aspirationTooLong.value ? [ASPIRATION_TOO_LONG] : []),
+    ]
     return
   }
   saving.value = true
   try {
-    // Partial update (FR-MUR-A1-9): only the bio is sent; a blank bio clears it.
+    // Partial update (FR-MUR-A1-9): only bio and aspiration are sent; a blank value clears it.
     const result = await api.put<{ data: UserMe; status: string }>('/api/me', {
-      body: { bio: bio.value.trim() === '' ? null : bio.value.trim() },
+      body: {
+        bio: bio.value.trim() === '' ? null : bio.value.trim(),
+        aspiration: aspiration.value.trim() === '' ? null : aspiration.value.trim(),
+      },
       raw: true,
     })
     session.setUser(result.data)
     bio.value = result.data.bio ?? ''
+    aspiration.value = result.data.aspiration ?? ''
     saved.value = true
     clearTimeout(savedTimer)
     savedTimer = setTimeout(() => {
@@ -98,6 +110,7 @@ async function save(): Promise<void> {
 onMounted(() => {
   void session.refreshUser().then(() => {
     if (!bioTouched.value) bio.value = session.user?.bio ?? ''
+    if (!aspirationTouched.value) aspiration.value = session.user?.aspiration ?? ''
   })
   if (isPupil.value) void load()
 })
@@ -199,6 +212,10 @@ onMounted(() => {
                 >
               </template>
             </UFormField>
+
+            <div @input="aspirationTouched = true">
+              <ProfileAspirationField v-model="aspiration" />
+            </div>
 
             <p
               v-for="line in formErrors"

@@ -27,6 +27,7 @@ export interface UserMe {
   grade: number | null
   schoolId: number | null
   bio: string | null
+  aspiration?: string | null
   avatarUrl: string | null
   createdAt: string
   updatedAt: string
@@ -45,6 +46,7 @@ export function toUserMe(user: SessionUserRow): UserMe {
     grade: user.grade,
     schoolId: user.schoolId,
     bio: user.bio,
+    aspiration: user.aspiration ?? null,
     avatarUrl: user.avatarUrl,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,

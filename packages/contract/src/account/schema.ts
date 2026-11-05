@@ -152,6 +152,8 @@ export const ACCOUNT_PHONE_MAX = 14
 export const ACCOUNT_IC_MAX = 14
 /** Decision 7 (issue 458, FR-MUR-A1-11): the Bio limit is 1000 on every screen. */
 export const ACCOUNT_BIO_MAX = 1000
+/** FR-MUR-A1-10 (DM-80): "Cita-Cita Saya", `users.aspiration varchar(255)`. */
+export const ACCOUNT_ASPIRATION_MAX = 255
 export const ACCOUNT_GRADE_MIN = 1
 export const ACCOUNT_GRADE_MAX = 11
 /** A reset token is valid 60 minutes, single use (BR-10, BR-11); a new request per e-mail needs 60 s between. */
@@ -252,6 +254,7 @@ export const AccountUserMeSchema = z
     username: z.string().nullable(),
     phone: z.string().nullable(),
     bio: z.string().nullable(),
+    aspiration: z.string().max(ACCOUNT_ASPIRATION_MAX).nullable().optional().meta({ description: 'Student aspiration ("Cita-Cita Saya"), max 255; null when not set.' }),
     avatarUrl: z.string().nullable(),
     grade: z.number().int().min(ACCOUNT_GRADE_MIN).max(ACCOUNT_GRADE_MAX).nullable().meta({ description: 'Students only.' }),
     schoolId: IdSchema.nullable(),
@@ -431,7 +434,7 @@ export type AccountPasswordResetResponse = z.infer<typeof AccountPasswordResetRe
 
 /**
  * Body of `PUT /me`. `email`, `role` and any other key in the body are ignored (BR-13). An ABSENT key keeps
- * the stored value; `null` or a blank text clears `phone` and `bio`. `grade` and `schoolId` keep their original types
+ * the stored value; `null` or a blank text clears `phone`, `bio` and `aspiration`. `grade` and `schoolId` keep their original types
  * and constraints (an invalid value is still a 422) but a valid value is IGNORED by the server for every role
  * (API-AUTH-09, S5-T05); a pupil's Tingkatan and school change only through the admin or school-admin user edit.
  */
@@ -441,6 +444,7 @@ export const AccountProfileUpdateRequestSchema = z
     name: requiredText('name', ACCOUNT_NAME_MAX).optional(),
     phone: optionalText('phone', ACCOUNT_PHONE_MAX),
     bio: optionalText('bio', ACCOUNT_BIO_MAX),
+    aspiration: optionalText('aspiration', ACCOUNT_ASPIRATION_MAX),
     grade: z
       .number({ error: ACCOUNT_AUTH_MESSAGES.gradeInvalid })
       .int({ error: ACCOUNT_AUTH_MESSAGES.gradeInvalid })

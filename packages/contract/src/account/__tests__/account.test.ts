@@ -6,6 +6,7 @@ import { SessionSchema, type Session } from '../../session/session'
 import { ACCOUNT_COMPONENT_SCHEMAS } from '../paths'
 import {
   ACCOUNT_AUTH_MESSAGES,
+  ACCOUNT_ASPIRATION_MAX,
   ACCOUNT_BIO_MAX,
   ACCOUNT_MESSAGES,
   ACCOUNT_PICTURE_MAX_KB,
@@ -406,6 +407,20 @@ describe('profile', () => {
     for (const extra of [{}, { grade: null, schoolId: null }, { grade: 11, schoolId: '3' }]) {
       expect(AccountProfileUpdateRequestSchema.safeParse({ name: 'A', ...extra }).success).toBe(true)
     }
+  })
+
+  it('aspiration ("Cita-Cita Saya", DM-80): optional, nullable, max 255, in the request and in UserMe', () => {
+    expect(AccountProfileUpdateRequestSchema.parse({ aspiration: ' Doktor ' })).toEqual({ aspiration: 'Doktor' })
+    expect(AccountProfileUpdateRequestSchema.parse({ aspiration: null })).toEqual({ aspiration: null })
+    expect('aspiration' in AccountProfileUpdateRequestSchema.parse({ bio: 'x' })).toBe(false)
+    expect(ACCOUNT_ASPIRATION_MAX).toBe(255)
+    expect(AccountProfileUpdateRequestSchema.safeParse({ aspiration: 'a'.repeat(255) }).success).toBe(true)
+    expect(fields(AccountProfileUpdateRequestSchema, { aspiration: 'a'.repeat(256) })).toEqual({
+      aspiration: 'The aspiration field must not be greater than 255 characters.',
+    })
+    expect(AccountUserMeSchema.safeParse({ ...me, aspiration: 'Jurutera' }).success).toBe(true)
+    expect(AccountUserMeSchema.safeParse({ ...me, aspiration: null }).success).toBe(true)
+    expect(AccountUserMeSchema.safeParse({ ...me, aspiration: 'a'.repeat(256) }).success).toBe(false)
   })
 
   it('limits and copy', () => {

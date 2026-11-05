@@ -101,6 +101,7 @@ function updateProfile(req: MockRequest, ctx: MockContext): MockResponse {
     name: 'name' in body ? [required(), max(255)] : [],
     phone: [max(14)],
     bio: [max(1000)],
+    aspiration: [max(255)],
     grade: [optionalGrade],
     schoolId: [optionalSchool],
   })
@@ -111,6 +112,7 @@ function updateProfile(req: MockRequest, ctx: MockContext): MockResponse {
   if ('name' in body) patch.name = String(body.name)
   if ('phone' in body) patch.phone = textOrNull(body.phone)
   if ('bio' in body) patch.bio = textOrNull(body.bio)
+  if ('aspiration' in body) patch.aspiration = textOrNull(body.aspiration)
   if ('grade' in body) patch.grade = intOrNull(body.grade)
   // Security: a staff account's school is its tenant scope (M27 `schoolOf`); only a student or
   // teacher may pick a school here, so a staff `schoolId` in the body is ignored (kept as stored).

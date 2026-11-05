@@ -172,6 +172,27 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
       expect(odd.status, JSON.stringify(odd.body)).toBe(200)
     })
 
+    it('aspiration (DM-80, "Cita-Cita Saya"): GET /me returns null at first; PUT saves it trimmed, an absent key keeps it, null or blank clears it, 256 characters is 422', async () => {
+      const who = await login(t, 'pelajar2@demo.test')
+      expect(AccountUserMeSchema.parse((await get(who, '/me')).body.data).aspiration ?? null).toBeNull()
+      const saved = AccountUserMeSchema.parse((await put(who, '/me', { aspiration: '  Doktor Pakar  ' })).body.data)
+      expect(saved.aspiration).toBe('Doktor Pakar')
+      expect(AccountUserMeSchema.parse((await get(who, '/me')).body.data).aspiration).toBe('Doktor Pakar')
+      const kept = AccountUserMeSchema.parse((await put(who, '/me', { bio: 'Motto' })).body.data)
+      expect(kept.aspiration).toBe('Doktor Pakar')
+      const max = AccountUserMeSchema.parse((await put(who, '/me', { aspiration: 'a'.repeat(255) })).body.data)
+      expect(max.aspiration).toBe('a'.repeat(255))
+      const long = await put(who, '/me', { aspiration: 'a'.repeat(256) })
+      expect(fieldsOf(long)).toEqual({ aspiration: 'The aspiration field must not be greater than 255 characters.' })
+      expect(AccountUserMeSchema.parse((await get(who, '/me')).body.data).aspiration).toBe('a'.repeat(255))
+      for (const blank of [null, '   ']) {
+        const cleared = AccountUserMeSchema.parse((await put(who, '/me', { aspiration: blank })).body.data)
+        expect(cleared.aspiration).toBeNull()
+      }
+      const row = await t.db.query<{ aspiration: string | null }>(`select aspiration from users where email = $1`, ['pelajar2@demo.test'])
+      expect(row[0]?.aspiration).toBeNull()
+    })
+
     // API-AUTH-09 / AC-MUR-A2-6: grade, schoolId and role are ignored for every role (the identity seed of this app has no parent account; the parent path is the same code).
     it.each(['pelajar@demo.test', 'guru@demo.test', 'adminsekolah@demo.test', 'admin@demo.test', 'guruadmin@demo.test'])(
       'ignores grade, schoolId and role for %s: 200 and the stored values do not change',

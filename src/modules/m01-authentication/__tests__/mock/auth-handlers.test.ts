@@ -713,6 +713,21 @@ describe('profile, picture and password (#8, #9, #10)', () => {
     expect(blank.status).toBe(422)
   })
 
+  it('PUT /api/me saves "Cita-Cita Saya" (aspiration, max 255): trimmed to null when blank, kept when absent, 422 over 255 (DM-80)', async () => {
+    const token = await loginToken('pelajar@demo.test')
+    expect((await call('GET', '/api/me', undefined, token)).body.data).toMatchObject({ aspiration: null })
+    const saved = await call('PUT', '/api/me', { bio: 'Saya suka Sains', aspiration: 'Doktor' }, token)
+    expect(saved.status).toBe(200)
+    expect(saved.body.data).toMatchObject({ bio: 'Saya suka Sains', aspiration: 'Doktor' })
+    const kept = await call('PUT', '/api/me', { bio: 'Lain' }, token)
+    expect(kept.body.data).toMatchObject({ bio: 'Lain', aspiration: 'Doktor' })
+    expect((await call('GET', '/api/me', undefined, token)).body.data).toMatchObject({ aspiration: 'Doktor' })
+    const long = await call('PUT', '/api/me', { aspiration: 'a'.repeat(256) }, token)
+    expect(long.status).toBe(422)
+    const cleared = await call('PUT', '/api/me', { aspiration: '   ' }, token)
+    expect(cleared.body.data).toMatchObject({ aspiration: null })
+  })
+
   it('GET /api/me/profile-activity answers the decided shape for a pupil and 403 for another role (API-MUR-02)', async () => {
     const token = await loginToken('pelajar@demo.test')
     const r = await call('GET', '/api/me/profile-activity', undefined, token)
@@ -935,6 +950,7 @@ describe('expireSession hook and the API contract', () => {
     expect(Object.keys(session).sort()).toEqual(['expiresAt', 'remember', 'token', 'user'])
     expect(Object.keys(session.user).sort()).toEqual(
       [
+        'aspiration',
         'avatarUrl',
         'bio',
         'createdAt',

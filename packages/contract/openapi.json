@@ -27487,6 +27487,14 @@
               "null"
             ]
           },
+          "aspiration": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 255,
+            "description": "Student aspiration (\"Cita-Cita Saya\"), max 255; null when not set."
+          },
           "avatarUrl": {
             "type": [
               "string",
@@ -27837,6 +27845,13 @@
               "null"
             ],
             "maxLength": 1000
+          },
+          "aspiration": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 255
           },
           "grade": {
             "type": [
@@ -100457,7 +100472,7 @@
           "account"
         ],
         "summary": "Update own profile",
-        "description": "Any signed-in role, own record only. `email` and any other key in the body are ignored (BR-13). An absent key keeps the stored value; null or blank clears phone and bio. `grade`, `schoolId` and `role` are accepted and ignored for every role (API-AUTH-09). D57a: this write route is rate limited (RATE_LIMITED, retryAfter, Retry-After); the per-user limit is a platform setting of the implementation.",
+        "description": "Any signed-in role, own record only. `email` and any other key in the body are ignored (BR-13). An absent key keeps the stored value; null or blank clears phone, bio and aspiration. `grade`, `schoolId` and `role` are accepted and ignored for every role (API-AUTH-09). D57a: this write route is rate limited (RATE_LIMITED, retryAfter, Retry-After); the per-user limit is a platform setting of the implementation.",
         "parameters": [
           {
             "schema": {
@@ -100526,7 +100541,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields (one message per field, the first failing rule). name required, max 255; phone max 14; bio max 1000; grade \"The selected grade is invalid.\" and school \"The selected school id is invalid.\" when the value has the wrong type (a valid value is ignored). Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
+            "description": "VALIDATION_ERROR with fields (one message per field, the first failing rule). name required, max 255; phone max 14; bio max 1000; aspiration max 255; grade \"The selected grade is invalid.\" and school \"The selected school id is invalid.\" when the value has the wrong type (a valid value is ignored). Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
             "content": {
               "application/json": {
                 "schema": {

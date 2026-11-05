@@ -23,6 +23,7 @@ export interface UserRecord {
   schoolId: string | null
   grade: number | null
   bio: string | null
+  aspiration: string | null
   idDelima: string | null
   icMasked: string | null
   isActive: boolean
@@ -93,6 +94,7 @@ export interface UserPatchRow {
   username?: string | null
   phone?: string | null
   bio?: string | null
+  aspiration?: string | null
   schoolId?: string | null
   grade?: number | null
   icHash?: string | null
@@ -188,6 +190,7 @@ function toRecord(u: UserDb): UserRecord {
     schoolId: u.schoolId === null ? null : idToString(u.schoolId),
     grade: u.grade,
     bio: u.bio,
+    aspiration: u.aspiration,
     idDelima: u.idDelima,
     icMasked: u.icMasked,
     isActive: u.isActive,
@@ -725,6 +728,7 @@ export class UsersRepository {
         ...(rest.username !== undefined ? { username: rest.username } : {}),
         ...(rest.phone !== undefined ? { phone: rest.phone } : {}),
         ...(rest.bio !== undefined ? { bio: rest.bio } : {}),
+        ...(rest.aspiration !== undefined ? { aspiration: rest.aspiration } : {}),
         ...(rest.grade !== undefined ? { grade: rest.grade } : {}),
         ...(rest.icHash !== undefined ? { icHash: rest.icHash } : {}),
         ...(rest.icMasked !== undefined ? { icMasked: rest.icMasked } : {}),
