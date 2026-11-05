@@ -95,7 +95,7 @@ const hook = <T = unknown>(name: string, ...args: unknown[]): Promise<T> =>
 const code = (b: unknown) => (b as ErrorBody).error.code
 
 /** The M04 order (created desc, then id asc), read through the public repository. */
-const plainIds = (page: number) => structured.visible({ page, pageSize: 20 }).rows.map((q) => q.id)
+const plainIds = (page: number) => structured.visible({ page, pageSize: 12 }).rows.map((q) => q.id)
 const count = (subjectId?: number, kbatLevel?: number) =>
   structured.visible({
     ...(subjectId !== undefined ? { subjectId } : {}),
@@ -133,18 +133,18 @@ describe('access (FR-M05-130)', () => {
 // ---------------------------------------------------------------------------------------------
 
 describe('#15 GET /api/practice/structured', () => {
-  it('plain S10: the M04 student-visible sets, newest first, 20 per page, 31 subject options', async () => {
+  it('plain S10: the M04 student-visible sets, newest first, 12 per page, 31 subject options', async () => {
     const r = await listOf(PELAJAR, '/api/practice/structured')
     expect(r.status).toBe(200)
     const { data, meta } = r.body
     // M04 FR-M04-115: 4,064 sets, 5 inactive -> 4,059 visible.
     expect(meta).toMatchObject({
       page: 1,
-      pageSize: 20,
+      pageSize: 12,
       totalItems: 4059,
-      totalPages: 203,
+      totalPages: 339,
       from: 1,
-      to: 20,
+      to: 12,
       scope: null,
       track: null,
     })
@@ -219,11 +219,25 @@ describe('#15 GET /api/practice/structured', () => {
     }
   })
 
+  it('q filters on the stimulus or a sub-question text and pages the matches (12 per page)', async () => {
+    const first = (await listOf(PELAJAR, '/api/practice/structured')).body.data[0]!
+    const word = first.preview.split(/\s+/).find((w) => w.length >= 5) ?? first.preview.slice(0, 5)
+    const r = await listOf(PELAJAR, `/api/practice/structured?q=${encodeURIComponent(word.toUpperCase())}`)
+    expect(r.status).toBe(200)
+    expect(r.body.data.length).toBeGreaterThan(0)
+    expect(r.body.data.length).toBeLessThanOrEqual(12)
+    expect(r.body.meta.pageSize).toBe(12)
+    expect(r.body.meta.totalItems).toBeLessThan(4059)
+    const none = await listOf(PELAJAR, '/api/practice/structured?q=zzqxjvkw-tiada')
+    expect(none.body.data).toEqual([])
+    expect(none.body.meta.totalItems).toBe(0)
+  })
+
   it('a page past the end is an empty page that keeps the requested number', async () => {
     const r = await listOf(PELAJAR, '/api/practice/structured?page=999')
     expect(r.status).toBe(200)
     expect(r.body.data).toEqual([])
-    expect(r.body.meta).toMatchObject({ page: 999, totalItems: 4059, totalPages: 203 })
+    expect(r.body.meta).toMatchObject({ page: 999, totalItems: 4059, totalPages: 339 })
     expect((await listOf(PELAJAR, '/api/practice/structured?page=abc')).body.meta.page).toBe(1)
   })
 
@@ -260,13 +274,13 @@ describe('#15 GET /api/practice/structured', () => {
 
     it('merges the subjects in the M04 order (newest first): pages equal the plain list', async () => {
       // 60 and 150 lie past the first 100-row chunk of every subject cursor (merged()).
-      for (const page of [1, 2, 7, 60, 150, 203]) {
+      for (const page of [1, 2, 7, 60, 150, 339]) {
         const r = await listOf(PELAJAR, `/api/practice/structured?scope=spm&page=${String(page)}`)
         expect(
           r.body.data.map((c) => c.id),
           `page ${String(page)}`,
         ).toEqual(plainIds(page))
-        expect(r.body.meta.from).toBe((page - 1) * 20 + 1)
+        expect(r.body.meta.from).toBe((page - 1) * 12 + 1)
       }
     })
 
@@ -295,22 +309,22 @@ describe('#15 GET /api/practice/structured', () => {
 
     it('BM sets precede BI sets across the page boundary', async () => {
       const bm = count(1)
-      const page = Math.floor(bm / 20) + 1
+      const page = Math.floor(bm / 12) + 1
       const r = await listOf(
         PELAJAR,
         `/api/practice/structured?scope=spm&track=bahasa&page=${String(page)}`,
       )
-      const split = bm - (page - 1) * 20
+      const split = bm - (page - 1) * 12
       expect(r.body.data.slice(0, split).every((c) => c.subjectId === 1)).toBe(true)
       expect(r.body.data.slice(split).every((c) => c.subjectId === 2)).toBe(true)
       expect(r.body.data.slice(split).length).toBeGreaterThan(0)
       // Each subject keeps the M04 order.
-      const bmIds = structured.visible({ subjectId: 1, page, pageSize: 20 }).rows.map((q) => q.id)
+      const bmIds = structured.visible({ subjectId: 1, page, pageSize: 12 }).rows.map((q) => q.id)
       expect(r.body.data.slice(0, split).map((c) => c.id)).toEqual(bmIds.slice(0, split))
       const biIds = structured
-        .visible({ subjectId: 2, page: 1, pageSize: 20 })
+        .visible({ subjectId: 2, page: 1, pageSize: 12 })
         .rows.map((q) => q.id)
-      expect(r.body.data.slice(split).map((c) => c.id)).toEqual(biIds.slice(0, 20 - split))
+      expect(r.body.data.slice(split).map((c) => c.id)).toEqual(biIds.slice(0, 12 - split))
     })
 
     it('kbatLevel passes through (BM KBAT 6 = 3 sets) and a subject filter narrows it', async () => {

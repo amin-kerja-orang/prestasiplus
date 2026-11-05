@@ -6,7 +6,7 @@
  * - Filter (Subjek, Aras KBAT, "Cari"): navigates with both parameters (empty values kept, page
  *   reset) and keeps `scope` / `track`.
  * - Cards from #15 (1 / `md` 2 / `xl` 3 columns) with the KBAT badge; "Mula" → Q3 with the variant.
- * - The pager keeps `subject_id`, `kbat_level`, `scope`, `track`.
+ * - The pager keeps `subjectId` (reads `subject_id` too), `q`, `kbat_level`, `scope`, `track`.
  * - The variants replace the heading (back link, h1, Tracking A info card) and the shell header
  *   title (M06 DV-M06-07, no subtitle). A null `school` hides " · {school}".
  */
@@ -26,7 +26,8 @@ import {
 } from '../components/structured/structured-lib'
 
 const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
-const PAGE_SIZE = 20
+const PAGE_SIZE = 12
+const SEARCH_MAX = 100
 /** Reka selects cannot hold an empty value: "Semua" travels as this word. */
 const ALL = 'semua'
 const BAHASA_CHIPS = [
@@ -40,20 +41,24 @@ const route = useRoute()
 const router = useRouter()
 const pageMeta = usePageMeta()
 
-const q = (key: string): string => {
+const qv = (key: string): string => {
   const v = route.query[key]
   const x = Array.isArray(v) ? v[0] : v
   return typeof x === 'string' ? x : ''
 }
 
 const variant = computed(() => parseVariant(route.query))
-const subjectId = ref(q('subject_id'))
-const kbat = ref(q('kbat_level'))
+/** Hand-over (R10): other screens link with `subjectId` or the older `subject_id`; this page writes `subjectId`. */
+const subjectParam = (): string => qv('subjectId') || qv('subject_id')
+const subjectId = ref(subjectParam())
+const kbat = ref(qv('kbat_level'))
+const search_ = ref(qv('q'))
 watch(
   () => route.query,
   () => {
-    subjectId.value = q('subject_id')
-    kbat.value = q('kbat_level')
+    subjectId.value = subjectParam()
+    kbat.value = qv('kbat_level')
+    search_.value = qv('q')
   },
 )
 
@@ -61,8 +66,9 @@ const { data, error, reload } = useApi(
   (signal) =>
     fetchStructured(
       {
-        subjectId: q('subject_id') || null,
-        kbatLevel: q('kbat_level') || null,
+        subjectId: subjectParam() || null,
+        kbatLevel: qv('kbat_level') || null,
+        q: qv('q').trim() || null,
         page: parsePage(route.query),
         scope: variant.value.scope,
         track: variant.value.track,
@@ -100,7 +106,9 @@ watch(
 )
 
 function search(): void {
-  const query: Record<string, string> = { subject_id: subjectId.value, kbat_level: kbat.value }
+  const query: Record<string, string> = { subjectId: subjectId.value, kbat_level: kbat.value }
+  const term = search_.value.trim().slice(0, SEARCH_MAX)
+  if (term) query.q = term
   if (variant.value.scope) query.scope = 'spm'
   if (variant.value.track) query.track = 'bahasa'
   void router.push({ path: '/latihan-berstruktur', query })
@@ -108,9 +116,10 @@ function search(): void {
 
 function goPage(page: number): void {
   const query: Record<string, string> = {
-    subject_id: q('subject_id'),
-    kbat_level: q('kbat_level'),
+    subjectId: subjectParam(),
+    kbat_level: qv('kbat_level'),
   }
+  if (qv('q')) query.q = qv('q')
   if (variant.value.scope) query.scope = 'spm'
   if (variant.value.track) query.track = 'bahasa'
   query.page = String(page)
@@ -208,6 +217,17 @@ function goPage(page: number): void {
             data-testid="filter-kbat"
           />
         </UFormField>
+        <UFormField label="Cari" class="w-full sm:w-72">
+          <UInput
+            v-model="search_"
+            :maxlength="SEARCH_MAX"
+            type="search"
+            size="xl"
+            class="w-full"
+            placeholder="Cari soalan"
+            data-testid="filter-search"
+          />
+        </UFormField>
         <UButton
           type="submit"
           size="xl"
@@ -222,8 +242,8 @@ function goPage(page: number): void {
     <template v-if="data">
       <DsEmptyState
         v-if="items.length === 0"
-        title="Tiada soalan berstruktur buat masa ini"
-        description="Soalan akan ditambah oleh guru dan admin"
+        title="Tiada soalan berstruktur ditemui"
+        description="Tiada soalan sepadan dengan tapisan anda. Cuba tapisan lain."
         icon="clipboard-text"
         data-testid="structured-empty"
       />
@@ -246,14 +266,17 @@ function goPage(page: number): void {
                   data-testid="card-kbat"
                   >{{ kbatBadge(c.kbatLevel).label }}</UBadge
                 >
+                <UBadge
+                  v-if="c.kbatLevel >= 3"
+                  color="neutral"
+                  variant="outline"
+                  data-testid="card-kbat-flag"
+                  >KBAT</UBadge
+                >
                 <UBadge color="neutral" variant="soft" data-testid="card-minutes"
                   >{{ c.estimatedMinutes }}m</UBadge
                 >
-                <UBadge
-                  v-if="variant.scope"
-                  color="neutral"
-                  variant="soft"
-                  data-testid="card-level-chip"
+                <UBadge color="neutral" variant="soft" data-testid="card-level-chip"
                   >{{ c.levelName }}</UBadge
                 >
                 <UBadge v-if="c.isTrial" color="success" variant="soft" data-testid="card-trial"
@@ -275,7 +298,6 @@ function goPage(page: number): void {
                 <span class="min-w-0 break-words">{{ c.topic }}</span>
               </p>
               <p
-                v-if="variant.scope"
                 class="flex items-start gap-2 text-caption text-muted"
                 data-testid="card-parts"
               >

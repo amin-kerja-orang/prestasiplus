@@ -48,11 +48,11 @@ test.describe('M05 S10 structured list', { tag: [moduleTag(5)] }, () => {
     // "Semua Subjek" + the 31 subjects; "Semua" + KBAT 1–6.
     await expect(page.locator('[data-testid=filter-subject] option')).toHaveCount(32)
     await expect(page.locator('[data-testid=filter-kbat] option')).toHaveCount(7)
-    await expect(page.locator('[data-testid=filter-kbat] option').nth(1)).toHaveText('1. Mengingat')
-    await expect(page.locator('[data-testid=filter-kbat] option').nth(6)).toHaveText('6. Mencipta')
+    await expect(page.locator('[data-testid=filter-kbat] option').nth(1)).toHaveText('LOTS 1')
+    await expect(page.locator('[data-testid=filter-kbat] option').nth(6)).toHaveText('HOTS 6')
 
     const cards = page.locator('[data-testid^=structured-card-]')
-    await expect(cards).toHaveCount(20)
+    await expect(cards).toHaveCount(12)
     const card = cards.first()
     await expect(card.getByTestId('card-subject')).not.toBeEmpty()
     await expect(card.getByTestId('card-minutes')).toHaveText(/^\d+m$/)
@@ -130,17 +130,15 @@ test.describe('M05 S10 structured list', { tag: [moduleTag(5)] }, () => {
     await gotoApp('/latihan-berstruktur')
     await tid(page, 'filter-subject').selectOption({ label: 'Matematik' })
     await tid(page, 'filter-submit').click()
-    await expect(page).toHaveURL(/subject_id=\d+&kbat_level=(&|$)/)
+    await expect(page).toHaveURL(/subjectId=\d+&kbat_level=(&|$)/)
     await expect(tid(page, 'filter-subject').locator('option:checked')).toHaveText('Matematik')
     await expect(page.locator('[data-testid=card-subject]').first()).toHaveText('Matematik')
 
     await tid(page, 'filter-subject').selectOption({ label: 'Sains Sukan' })
     await tid(page, 'filter-submit').click()
+    await expect(tid(page, 'structured-empty')).toContainText('Tiada soalan berstruktur ditemui')
     await expect(tid(page, 'structured-empty')).toContainText(
-      'Tiada soalan berstruktur buat masa ini',
-    )
-    await expect(tid(page, 'structured-empty')).toContainText(
-      'Soalan akan ditambah oleh guru dan admin',
+      'Tiada soalan sepadan dengan tapisan anda. Cuba tapisan lain.',
     )
     await expect(page.getByTestId('structured-pager')).toHaveCount(0)
     await expectNoHorizontalScroll(page)

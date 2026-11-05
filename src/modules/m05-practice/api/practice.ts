@@ -246,7 +246,7 @@ export function fetchSessions(
 // #15–#21 (M05-T2)
 // ---------------------------------------------------------------------------------------------
 
-/** #15 `GET /api/practice/structured?subjectId=&kbatLevel=&page=&scope=spm&track=bahasa` (20 per page). */
+/** #15 `GET /api/practice/structured?subjectId=&kbatLevel=&page=&scope=spm&track=bahasa&q=` (12 per page). */
 export function fetchStructured(
   query: {
     subjectId?: number | string | null
@@ -254,6 +254,7 @@ export function fetchStructured(
     page?: number | null
     scope?: StructuredScope | null
     track?: StructuredTrack | null
+    q?: string | null
   } = {},
   options: Signal = {},
 ): Promise<ListResult<StructuredCard, StructuredListMeta>> {
@@ -264,6 +265,7 @@ export function fetchStructured(
       page: query.page ?? null,
       scope: query.scope ?? null,
       track: query.track ?? null,
+      q: query.q ?? null,
     },
     ...withSignal(options),
   })

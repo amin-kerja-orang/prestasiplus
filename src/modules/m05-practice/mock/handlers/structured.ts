@@ -4,7 +4,7 @@
  *
  * | # | Route | Notes |
  * |---|---|---|
- * | 15 | `GET /api/practice/structured` | `subjectId`, `kbatLevel`, `page`, `scope=spm`, `track=bahasa`; 20 per page |
+ * | 15 | `GET /api/practice/structured` | `subjectId`, `kbatLevel`, `q`, `page`, `scope=spm`, `track=bahasa`; 12 per page |
  * | 16 | `GET /api/practice/structured/:id` | `scope`, `track` only decide `backUrl` (FR-M05-137); 404 |
  * | 17 | `POST /api/practice/structured/:id/attempts` | `{answers, scope?, track?}`; `markStructured` placeholder; 201 / 404 / 422 |
  *
@@ -56,6 +56,8 @@ type Track = 'bahasa' | null
 
 /** INFERRED: the card preview is the first 200 characters of the stimulus plus "...". */
 export const PREVIEW_LENGTH = 200
+/** Longest accepted search text. */
+const SEARCH_MAX = 100
 /** Shown for sets whose creator is not a teacher (the observed live label, M04 anchor 4454). */
 export const DEFAULT_AUTHOR = 'Guru Pakar'
 
@@ -235,6 +237,14 @@ function subjectOptions(scope: Scope, track: Track): { id: number; name: string 
   })
 }
 
+/** The search (max 100 characters) matches the stimulus or any sub-question text, case-insensitively. */
+function matchesTerm(q: StructuredQuestion, term: string): boolean {
+  return (
+    q.stimulus.toLowerCase().includes(term) ||
+    q.subQuestions.some((s) => s.questionText.toLowerCase().includes(term))
+  )
+}
+
 function listStructured(req: MockRequest) {
   const { scope, track } = variant(req.query)
   const options = subjectOptions(scope, track)
@@ -243,6 +253,7 @@ function listStructured(req: MockRequest) {
   const subject = filterOf(req.query, 'subjectId')
   const kbat = filterOf(req.query, 'kbatLevel')
 
+  const term = (queryString(req.query, 'q') ?? '').trim().slice(0, SEARCH_MAX).toLowerCase()
   let rows: StructuredQuestion[] = []
   let total = 0
   const empty =
@@ -253,29 +264,36 @@ function listStructured(req: MockRequest) {
     (scope === null && subject.kind === 'value' && !curriculum.subject(subject.value))
   if (!empty) {
     const kbatLevel = kbat.kind === 'value' ? kbat.value : undefined
-    if (subject.kind === 'value') {
-      const r = {
-        rows: slice(subject.value, kbatLevel, offset, offset + page.pageSize),
-        total: count(subject.value, kbatLevel),
+    /** Rows `[from, from + limit)` of the list before the text search. */
+    const read = (from: number, limit: number) => {
+      if (subject.kind === 'value') {
+        return {
+          rows: slice(subject.value, kbatLevel, from, from + limit),
+          total: count(subject.value, kbatLevel),
+        }
       }
-      rows = r.rows
-      total = r.total
-    } else if (scope === null) {
-      const r = structured.visible({
-        ...(kbatLevel !== undefined ? { kbatLevel } : {}),
-        page: page.page,
-        pageSize: page.pageSize,
-      })
+      if (scope === null) {
+        // `visible` pages by whole pages: `from` is always a multiple of `limit` here.
+        return structured.visible({
+          ...(kbatLevel !== undefined ? { kbatLevel } : {}),
+          page: Math.floor(from / limit) + 1,
+          pageSize: limit,
+        })
+      }
+      const q: ListQuery = { subjectIds: options.map((o) => o.id), kbatLevel }
+      return track === 'bahasa' ? concatenated(q, from, limit) : merged(q, from, limit)
+    }
+    if (term === '') {
+      const r = read(offset, page.pageSize)
       rows = r.rows
       total = r.total
     } else {
-      const q: ListQuery = { subjectIds: options.map((o) => o.id), kbatLevel }
-      const r =
-        track === 'bahasa'
-          ? concatenated(q, offset, page.pageSize)
-          : merged(q, offset, page.pageSize)
-      rows = r.rows
-      total = r.total
+      // The text search (stem or stimulus) filters the whole list, then pages the matches.
+      const all = read(0, Math.max(read(0, 1).total, 1)).rows.filter((row) =>
+        matchesTerm(row, term),
+      )
+      total = all.length
+      rows = all.slice(offset, offset + page.pageSize)
     }
   }
   const items = rows.map(card)
