@@ -8,7 +8,7 @@ export const WORKFLOW_ADMIN_WRITE_LIMIT = {
   per: 'user',
 } as const satisfies RateLimitSpec
 
-/** A teacher's or school admin's diagram image for review (S6-T18 part 2): lower than the admin bucket, per user. */
+/** A teacher's diagram image for review (S6-T18 part 2): lower than the admin bucket, per user. */
 export const WORKFLOW_DIAGRAM_GURU_LIMIT = {
   bucket: 'questions.workflow.diagram.guru',
   env: 'THROTTLE_DIAGRAM_GURU_PER_MINUTE',

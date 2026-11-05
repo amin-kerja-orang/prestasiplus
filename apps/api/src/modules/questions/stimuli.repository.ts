@@ -8,7 +8,7 @@ import { stimulusTableOf, stimulusTableParts, type StimulusTable } from './stimu
 import { NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL } from './learner-visibility'
 import { refreshStimulusFlagsOf } from './effective-leaf'
 import { kertasOfPaperCode } from './projection'
-import { QUESTION_SERVED, VERSION_SERVED } from './served-rule'
+import { QUESTION_SERVED, QUESTION_SERVED_BY_PAPER, VERSION_SERVED, VERSION_SERVED_BY_PAPER } from './served-rule'
 import type { StimulusKind } from './types'
 
 /** The five columns a stimulus write may set. `null` clears. */
@@ -548,6 +548,28 @@ export class StimuliRepository {
         JOIN question_versions v ON v.id = p.question_version_id
         JOIN questions q ON q.id = v.question_id
        WHERE p.stimulus_id = ${key} AND ${VERSION_SERVED}
+      LIMIT 1`
+    return rows.length > 0
+  }
+
+  /** Is the stimulus pinned by a paper that is still held (`paperHeld`)? Same three ways as `stimulusServed`, paper reason only. */
+  async stimulusHeldByPaper(stimulusId: string): Promise<boolean> {
+    const key = bi(stimulusId)
+    if (key === null) return false
+    const rows = await this.db.$queryRaw<{ one: number }[]>`
+      SELECT 1 AS one FROM stimulus_group_stimuli gs
+        JOIN questions q ON q.group_id = gs.group_id
+       WHERE gs.stimulus_id = ${key} AND ${QUESTION_SERVED_BY_PAPER}
+      UNION ALL
+      SELECT 1 FROM question_version_stimuli vs
+        JOIN question_versions v ON v.id = vs.question_version_id
+        JOIN questions q ON q.id = v.question_id
+       WHERE vs.stimulus_id = ${key} AND ${VERSION_SERVED_BY_PAPER}
+      UNION ALL
+      SELECT 1 FROM question_parts p
+        JOIN question_versions v ON v.id = p.question_version_id
+        JOIN questions q ON q.id = v.question_id
+       WHERE p.stimulus_id = ${key} AND ${VERSION_SERVED_BY_PAPER}
       LIMIT 1`
     return rows.length > 0
   }

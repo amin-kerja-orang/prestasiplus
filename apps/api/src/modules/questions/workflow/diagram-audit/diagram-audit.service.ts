@@ -13,7 +13,7 @@ import type { TxClient } from '../../../../db/client'
 import { PrismaService } from '../../../../db/prisma.service'
 import { FilesService } from '../../../files'
 import type { AuthContext } from '../../../../common/scope/auth-context'
-import type { DiagramCandidate } from '../ports'
+import type { DiagramCandidate, QuestionBrief } from '../ports'
 import { QuestionWorkflowPorts } from '../ports'
 import { GuruDiagramService } from '../../../intake/files/guru-diagram.service'
 import type { GuruActor } from '../../../intake/files/guru-submissions.service'
@@ -131,30 +131,36 @@ export class DiagramAuditService {
     }
   }
 
-  /** The candidate must exist in the bank's list for `kind` (resolved ones included: re-upload is allowed). */
-  async assertExists(kind: DiagramKind, id: string, viewer?: DiagramViewer): Promise<void> {
-    await this.requireQuestion(kind, id, viewer)
+  /**
+   * The candidate must exist in the bank's list for `kind`; resolved ones count too, so Admin Pusat may re-upload (also after a dismissal).
+   * The stricter checks apply to the teacher path only (a non-admin `viewer`): 404 for a `kind` that is not the question's real type, a dismissed
+   * question, and a question they may not see (another author's, unless approved and active; S6-T16 `visibility` will apply through the shared
+   * scope when it lands).
+   */
+  async assertExists(kind: DiagramKind, id: string, viewer?: DiagramViewer): Promise<QuestionBrief | undefined> {
+    return this.requireQuestion(kind, id, viewer)
   }
 
-  /**
-   * 404 for an unknown id, a `kind` that is not the question's real type, a dismissed question and, for a non-admin viewer, a question
-   * they may not see. Visibility here is the author's own question, or an approved and active one; S6-T16 `visibility` will apply
-   * through the shared scope when it lands.
-   */
-  private async requireQuestion(kind: DiagramKind, id: string, viewer?: DiagramViewer): Promise<void> {
+  /** Returns the question's brief on the teacher path (read once for the guard, reused by the submit); undefined for admin. */
+  private async requireQuestion(kind: DiagramKind, id: string, viewer?: DiagramViewer): Promise<QuestionBrief | undefined> {
     if (!isIdString(id)) throw ApiError.of('NOT_FOUND')
     const status = await this.ports.questionBank.getStatus(id)
     if (!status) throw ApiError.of('NOT_FOUND')
-    if (viewer && !viewer.isAdmin && status.createdById !== viewer.userId && !(status.status === 'approved' && status.isActive)) throw ApiError.of('NOT_FOUND')
-    const brief = (await this.ports.questionBank.describe([id])).get(id)
-    if (!brief || brief.type !== kind) throw ApiError.of('NOT_FOUND')
+    const restricted = viewer !== undefined && !viewer.isAdmin
+    let brief: QuestionBrief | undefined
+    if (restricted) {
+      if (status.createdById !== viewer.userId && !(status.status === 'approved' && status.isActive)) throw ApiError.of('NOT_FOUND')
+      brief = (await this.ports.questionBank.describe([id])).get(id)
+      if (!brief || brief.type !== kind) throw ApiError.of('NOT_FOUND')
+    }
     const flagged = await this.ports.questionBank.listDiagramCandidates(kind)
     const resolved = await this.prisma.client.diagramAuditResolution.findUnique({
       where: { kind_questionId: { kind, questionId: idFromString(id) } },
       select: { resolution: true },
     })
-    if (resolved?.resolution === 'dismissed') throw ApiError.of('NOT_FOUND')
+    if (restricted && resolved?.resolution === 'dismissed') throw ApiError.of('NOT_FOUND')
     if (!resolved && !flagged.some((c) => c.id === id)) throw ApiError.of('NOT_FOUND')
+    return brief
   }
 
   async uploadImage(
@@ -194,10 +200,11 @@ export class DiagramAuditService {
     kind: DiagramKind,
     id: string,
     bytes: Buffer,
+    brief?: QuestionBrief,
   ): Promise<{ data: { id: string; needsDiagram: true }; status: string }> {
-    await this.requireQuestion(kind, id, { userId: actor.userId, isAdmin: false })
-    const brief = (await this.ports.questionBank.describe([id])).get(id)
-    await this.guruDiagram.submit(actor, { kind, questionId: id, subjectName: brief?.subjectName ?? null, bytes })
+    // The controller has already run the guard (`assertExists`) and passes its brief; called without one the guard runs here.
+    const checked = brief ?? (await this.requireQuestion(kind, id, { userId: actor.userId, isAdmin: false }))
+    await this.guruDiagram.submit(actor, { kind, questionId: id, subjectName: checked?.subjectName ?? null, bytes })
     return { data: { id, needsDiagram: true }, status: DIAGRAM_AUDIT_MESSAGES.submittedForReview }
   }
 

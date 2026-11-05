@@ -224,6 +224,19 @@ describe('target guard', () => {
   })
 })
 
+describe('admin direct upload is unchanged', () => {
+  it('Admin Pusat may still upload on a dismissed question (the dismissed check is for the teacher path only)', async () => {
+    const attach = vi.spyOn(t.app.get(QuestionBankAdapter), 'attachDiagram').mockResolvedValue(true)
+    try {
+      const res = await image(admin, dismissedQuestion)
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(res.body.data).toEqual({ id: dismissedQuestion, needsDiagram: false })
+    } finally {
+      attach.mockRestore()
+    }
+  })
+})
+
 describe('admin review of the diagram item', () => {
   it('reject leaves the question and the stimulus unchanged; the group may then take a new image', async () => {
     const [item] = await q<{ id: string; file: string }>(`select id::text, payload -> 'target' ->> 'imageFileId' as file from intake_items where payload -> 'target' ->> 'questionId' = $1`, [otherGroupQuestion])
@@ -269,6 +282,10 @@ describe('admin review of the diagram item', () => {
 describe('accept guards', () => {
   const itemOf = async (questionId: string) =>
     (await q<{ id: string }>(`select id::text from intake_items where payload -> 'target' ->> 'questionId' = $1 and review_state = 'needs_review'`, [questionId]))[0]!.id
+  const serveQuestion = async (questionId: string) => {
+    await q(`update question_versions set status = 'approved' where question_id = $1::bigint and version_no = (select latest_version_no from questions where id = $1::bigint)`, [questionId])
+    await q('update questions set live_version_no = latest_version_no, is_active = true where id = $1::bigint', [questionId])
+  }
   const stateOf = async (id: string) => (await q<{ review_state: string }>('select review_state from intake_items where id = $1::bigint', [id]))[0]!.review_state
 
   it('a teacher accepting their own diagram item is 403 (INTAKE_TEACHER_ENABLED is on); the stimulus and the item stay unchanged', async () => {
@@ -279,26 +296,34 @@ describe('accept guards', () => {
     expect(await stateOf(id)).toBe('needs_review')
   })
 
-  it('a stimulus shown to pupils is 409 stimulusServed: nothing is set and the copy is removed', async () => {
+  it('a stimulus pinned by a held paper is 409 stimulusServed: nothing is set and the copy is removed', async () => {
     const id = await itemOf(otherGroupQuestion)
     const files = (await q('select id from files where purpose = $1', ['question_image'])).length
-    const served = vi.spyOn(t.app.get(StimuliRepository), 'stimulusServed').mockResolvedValue(true)
+    const repo = t.app.get(StimuliRepository)
+    await serveQuestion(otherGroupQuestion) // real QUESTION_SERVED predicate
+    expect(await repo.stimulusServed(otherStimulus)).toBe(true)
+    // A real held paper needs a published paper with placements; only that half is stubbed.
+    const held = vi.spyOn(repo, 'stimulusHeldByPaper').mockResolvedValue(true)
     try {
       expectError(await post(admin, `/intake/items/${id}/accept`), 'CONFLICT', STIMULUS_MESSAGES.stimulusServed)
     } finally {
-      served.mockRestore()
+      held.mockRestore()
     }
     expect(await assetOf(otherStimulus)).toBeNull()
     expect(await stateOf(id)).toBe('needs_review')
     expect((await q('select id from files where purpose = $1', ['question_image'])).length).toBe(files)
   })
 
-  it('the edit path keeps the target, and a bulk accept sets the asset', async () => {
+  it('the edit path keeps the target, and a bulk accept sets the asset even while the question is served (lead ruling on #494, FR-X1-4f)', async () => {
     const id = await itemOf(otherGroupQuestion)
     const before = (await q<{ t: unknown }>(`select payload -> 'target' as t from intake_items where id = $1::bigint`, [id]))[0]!.t
     const patched = await admin.agent.patch(`/api/intake/items/${id}`).set('X-CSRF-Token', admin.csrf).send({ stem: 'Gambar rajah graf untuk soalan ini.' })
     expect(patched.status, JSON.stringify(patched.body)).toBe(200)
     expect((await q<{ t: unknown }>(`select payload -> 'target' as t from intake_items where id = $1::bigint`, [id]))[0]!.t).toEqual(before)
+    // Served by a live approved question but not pinned by a held paper: a stimulus with no file was unservable, so the first file is allowed.
+    // The question is live, approved and active (real QUESTION_SERVED) and no held paper pins it.
+    await serveQuestion(otherGroupQuestion)
+    expect(await t.app.get(StimuliRepository).stimulusServed(otherStimulus)).toBe(true)
     const res = await post(admin, '/intake/items/bulk', { action: 'accept', ids: [id] })
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     expect(res.body.data.results[0].outcome, JSON.stringify(res.body)).toBe('done')

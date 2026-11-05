@@ -115,7 +115,11 @@ export class StimuliService {
     if (!(await this.repo.lockStimulus(id))) return false
     const current = await this.repo.getStimulus(id)
     if (current === null || current.assetFileId !== null) return false
-    if (await this.repo.stimulusServed(id)) throw ApiError.of('CONFLICT', { message: STIMULUS_MESSAGES.stimulusServed })
+    // Lead ruling on #494 (option b): a served stimulus may still receive its FIRST file. FR-X1-4f made an image kind without a file unservable,
+    // so no pupil has seen it. A paper that is still held and pins it keeps the 409 (that paper's pinned content must not change).
+    if ((await this.repo.stimulusServed(id)) && (!(IMAGE_STIMULUS_KINDS as readonly string[]).includes(current.kind) || (await this.repo.stimulusHeldByPaper(id)))) {
+      throw ApiError.of('CONFLICT', { message: STIMULUS_MESSAGES.stimulusServed })
+    }
     await this.repo.setAssetFile(id, fileId)
     return true
   }

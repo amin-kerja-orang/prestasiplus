@@ -156,7 +156,7 @@ export class DiagramAuditController {
     // Teacher: the lower dedicated bucket, counted before any lookup or body work.
     if (!isAdminPusat(actor)) this.limiter.consume(WORKFLOW_DIAGRAM_GURU_LIMIT, auth.userId)
     // 404 (unknown question) is decided before the body is judged, like the mock.
-    await this.audit.assertExists(k, qid, { userId: actor.userId, isAdmin: isAdminPusat(actor) })
+    const brief = await this.audit.assertExists(k, qid, { userId: actor.userId, isAdmin: isAdminPusat(actor) })
     const bytes = checkedBytes(file)
     // The active role decides: only Admin Pusat changes the question directly; the teacher submits the image for review.
     if (isAdminPusat(actor)) return this.audit.uploadImage(auth, k, qid, bytes, { ip: actor.ip, requestId: actor.requestId })
@@ -165,6 +165,7 @@ export class DiagramAuditController {
       k,
       qid,
       bytes,
+      brief,
     )
   }
 
