@@ -15,6 +15,7 @@ import { QuestionsBijakPoolSource } from '../../src/modules/questions/bijak-pool
 import { QuestionSetsService } from '../../src/modules/classes/question-sets/question-sets.service'
 import { BANK_VISIBLE_SQL, isBankVersion } from '../../src/modules/questions/learner-visibility'
 import { BANK_ONLY, QuestionsRepository } from '../../src/modules/questions/questions.repository'
+import { QuestionBankAdapter } from '../../src/modules/questions/workflow/bank-adapter'
 import { QuestionsService } from '../../src/modules/questions/questions.service'
 import { databankLaneConds, janaEligibleScope } from '../../src/modules/questions/serving/filters'
 import { AnalyticsRepository } from '../../src/modules/reports/analytics/analytics.repository'
@@ -266,5 +267,47 @@ describe('DM-42: the pupil Set Soalan does not serve a private question, and one
     expect(isBankVersion({ visibility: 'bank' })).toBe(true)
     expect(isBankVersion({})).toBe(true)
     expect(isBankVersion({ visibility: 'teacher_private' })).toBe(false)
+  })
+})
+
+describe('DM-42 (R-1 nits): report resolution never acts on a private question; Guru removeOwn still deletes its own bank question', () => {
+  it('QuestionBankAdapter deactivate/reactivate answer false for a private question and touch nothing', async () => {
+    const acted: string[] = []
+    const priv = { id: '5', version: { visibility: 'teacher_private' } }
+    const repo = {
+      get: (_id: string, _v: string, opts?: { bankOnly?: boolean }) => Promise.resolve(opts?.bankOnly === true ? null : priv),
+      deactivate: () => (acted.push('deactivate'), Promise.resolve(true)),
+      reactivate: () => (acted.push('reactivate'), Promise.resolve(true)),
+    }
+    const adapter = Object.create(QuestionBankAdapter.prototype) as QuestionBankAdapter
+    Object.assign(adapter, { repo })
+    expect(await adapter.deactivate('5')).toBe(false)
+    expect(await adapter.reactivate('5')).toBe(false)
+    expect(acted).toEqual([])
+  })
+
+  it('a bank question is still deactivated by the same adapter', async () => {
+    const acted: string[] = []
+    const repo = { get: () => Promise.resolve({ id: '6', version: { visibility: 'bank' } }), deactivate: () => (acted.push('deactivate'), Promise.resolve(true)) }
+    const adapter = Object.create(QuestionBankAdapter.prototype) as QuestionBankAdapter
+    Object.assign(adapter, { repo })
+    expect(await adapter.deactivate('6')).toBe(true)
+    expect(acted).toEqual(['deactivate'])
+  })
+
+  it('Guru removeOwn deletes the teacher\'s own bank question (the admin guard is not on this path)', async () => {
+    const calls: string[] = []
+    const svc = Object.create(QuestionsService.prototype) as QuestionsService
+    const repo = {
+      ownerOf: () => Promise.resolve('7'),
+      get: (_id: string, _v: string, opts?: { bankOnly?: boolean }) => (calls.push(opts?.bankOnly === true ? 'get:bankOnly' : 'get'), Promise.resolve({ id: '9', version: { visibility: 'bank' } })),
+      lock: () => Promise.resolve(true),
+      deletionBlock: () => Promise.resolve(null),
+      remove: () => (calls.push('remove'), Promise.resolve(true)),
+    }
+    Object.assign(svc, { repo, prisma: { transaction: (fn: () => unknown) => fn() }, overview: undefined })
+    await expect(svc.removeOwn('9', '7')).resolves.toBeUndefined()
+    expect(calls).toContain('remove')
+    expect(calls).not.toContain('get:bankOnly')
   })
 })
