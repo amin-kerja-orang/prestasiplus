@@ -1,15 +1,16 @@
 <script setup lang="ts">
 /**
- * S12 "💱 Penukaran" card (FN-M14-3.1.2–3.1.5, 3.1.8; FR-M14-28…31, 33). `#convertForm`: number input
- * (min = rate, max = balance, required, placeholder "0", initial value = rate), quick buttons that set
- * the amount and mark themselves active, the live token preview and "Tukar Sekarang".
+ * S12 "💱 Penukaran" card (GAME-18, R1-MUR-29). `#convertForm`: number input (min = rate, max = balance,
+ * required, placeholder "0", initial value = rate), the fixed choices 50, 250 and Semua, each disabled
+ * when unaffordable (FR-GM-18.2), the live token preview and "Tukar Sekarang", which asks first with the
+ * real debit (dialog B-055). The free input follows the same debit rule (ruling on defect 14, #500).
  */
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch, type ComponentPublicInstance } from 'vue'
 
-import { DsIconChip } from '@/ds'
+import { DsDialog, DsIconChip } from '@/ds'
 import { formatCount } from '@/lib/number'
 
-import { s12CanConvert, s12ParseAmount, s12Tokens } from '../../lib/student/s12-convert'
+import { s12CanConvert, s12Debit, s12ParseAmount, s12Tokens } from '../../lib/student/s12-convert'
 
 const props = defineProps<{
   balance: number
@@ -21,13 +22,23 @@ const emit = defineEmits<{ (e: 'convert', amount: number): void }>()
 
 const text = ref<string>(String(props.rate))
 const activeQuick = ref<number | null>(null)
+const confirming = ref(false)
+const cancelButton = ref<ComponentPublicInstance | null>(null)
 
 const amount = computed(() => s12ParseAmount(String(text.value)))
 const tokens = computed(() => s12Tokens(amount.value ?? 0, props.rate))
+const debit = computed(() => s12Debit(amount.value ?? 0, props.rate))
 const canConvert = computed(
   () => !props.submitting && s12CanConvert(amount.value, props.rate, props.balance),
 )
-const quick = computed(() => [props.rate, props.rate * 5, props.balance])
+/** "Semua" is the largest multiple of the rate not above the balance (AC-GM-18.1). */
+const quick = computed(() =>
+  [
+    { testid: 's12-quick-50', label: '50', value: 50 },
+    { testid: 's12-quick-250', label: '250', value: 250 },
+    { testid: 's12-quick-all', label: 'Semua', value: s12Debit(props.balance, props.rate) },
+  ].map((q) => ({ ...q, usable: s12CanConvert(q.value, props.rate, props.balance) })),
+)
 
 /** After a conversion the page re-renders with the new balance: the value returns to the rate (live reloads). */
 watch(
@@ -38,8 +49,17 @@ watch(
   },
 )
 
+/** `Batal` is the safe choice and holds the first focus (B-055). */
+watch(confirming, async (open) => {
+  if (!open) return
+  await nextTick()
+  requestAnimationFrame(() => (cancelButton.value?.$el as HTMLElement | undefined)?.focus())
+})
+
 function setAmount(index: number): void {
-  text.value = String(quick.value[index])
+  const choice = quick.value[index]
+  if (!choice?.usable) return
+  text.value = String(choice.value)
   activeQuick.value = index
 }
 
@@ -48,8 +68,14 @@ function onInput(): void {
 }
 
 function onSubmit(): void {
+  if (canConvert.value) confirming.value = true
+}
+
+/** A second click of a double click finds the dialog already closing and does nothing (AC-GM-18.3). */
+function onConfirm(): void {
   const n = amount.value
-  if (n === null || !canConvert.value) return
+  if (!confirming.value || n === null) return
+  confirming.value = false
   emit('convert', n)
 }
 </script>
@@ -60,6 +86,17 @@ function onSubmit(): void {
       <h2 class="flex items-center gap-2 font-display text-subheading font-bold text-highlighted">
         <DsIconChip icon="arrows-clockwise" size="sm" />Penukaran
       </h2>
+      <div
+        v-if="balance < rate"
+        class="flex flex-col items-start gap-3 rounded-card bg-elevated p-4"
+        data-testid="s12-short"
+      >
+        <div class="text-body text-default">
+          <p>Anda perlu sekurang-kurangnya {{ formatCount(rate) }} syiling</p>
+          <p>untuk menukar 1 token. Teruskan berlatih untuk mengumpul syiling.</p>
+        </div>
+        <UButton to="/practice" size="lg" data-testid="s12-short-practice">Mula Latih Tubi</UButton>
+      </div>
       <form id="convertForm" class="flex flex-col gap-4" data-testid="s12-form" @submit.prevent="onSubmit">
         <UFormField label="Syiling untuk ditukar" for="syilingInput">
           <UInput
@@ -79,34 +116,17 @@ function onSubmit(): void {
         </UFormField>
         <div class="flex flex-wrap gap-2">
           <UButton
+            v-for="(q, i) in quick"
+            :key="q.testid"
             type="button"
             size="lg"
-            :color="activeQuick === 0 ? 'secondary' : 'neutral'"
-            :variant="activeQuick === 0 ? 'solid' : 'soft'"
-            :data-active="activeQuick === 0 ? 'true' : 'false'"
-            data-testid="s12-quick-rate"
-            @click="setAmount(0)"
-            >{{ formatCount(rate) }} syiling</UButton
-          >
-          <UButton
-            type="button"
-            size="lg"
-            :color="activeQuick === 1 ? 'secondary' : 'neutral'"
-            :variant="activeQuick === 1 ? 'solid' : 'soft'"
-            :data-active="activeQuick === 1 ? 'true' : 'false'"
-            data-testid="s12-quick-five"
-            @click="setAmount(1)"
-            >{{ formatCount(rate * 5) }} syiling</UButton
-          >
-          <UButton
-            type="button"
-            size="lg"
-            :color="activeQuick === 2 ? 'secondary' : 'neutral'"
-            :variant="activeQuick === 2 ? 'solid' : 'soft'"
-            :data-active="activeQuick === 2 ? 'true' : 'false'"
-            data-testid="s12-quick-all"
-            @click="setAmount(2)"
-            >Semua ({{ formatCount(balance) }})</UButton
+            :color="activeQuick === i ? 'secondary' : 'neutral'"
+            :variant="activeQuick === i ? 'solid' : 'soft'"
+            :data-active="activeQuick === i ? 'true' : 'false'"
+            :disabled="!q.usable"
+            :data-testid="q.testid"
+            @click="setAmount(i)"
+            >{{ q.label }}</UButton
           >
         </div>
 
@@ -127,9 +147,14 @@ function onSubmit(): void {
             {{ formatCount(tokens) }}
           </p>
           <p class="text-label text-muted">Token 🎫</p>
-          <p class="text-caption text-muted" data-testid="s12-rate-line">
-            Kadar: {{ rate }} syiling = 1 token ({{ tierLabel }})
-          </p>
+          <div class="flex flex-wrap items-center justify-center gap-2">
+            <p class="text-caption text-muted" data-testid="s12-rate-line">
+              Kadar tahap anda: {{ formatCount(rate) }} syiling = 1 token
+            </p>
+            <UBadge color="neutral" variant="soft" size="sm" data-testid="s12-tier-chip">{{
+              tierLabel
+            }}</UBadge>
+          </div>
         </div>
 
         <UButton
@@ -144,5 +169,25 @@ function onSubmit(): void {
         >
       </form>
     </div>
+    <DsDialog v-model:open="confirming" title="Tukar syiling kepada token?">
+      <p class="text-body text-default" data-testid="s12-confirm-text">
+        Tukar {{ formatCount(debit) }} syiling kepada {{ formatCount(tokens) }} token?
+      </p>
+      <template #footer>
+        <UButton
+          ref="cancelButton"
+          type="button"
+          color="neutral"
+          variant="ghost"
+          size="lg"
+          data-testid="s12-confirm-cancel"
+          @click="confirming = false"
+          >Batal</UButton
+        >
+        <UButton type="button" size="lg" data-testid="s12-confirm-ok" @click="onConfirm"
+          >Tukar</UButton
+        >
+      </template>
+    </DsDialog>
   </UCard>
 </template>

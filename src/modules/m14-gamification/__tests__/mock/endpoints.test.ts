@@ -896,7 +896,7 @@ describe('#31 / #36 / #38 / #40 admin reads', () => {
 // ---------------------------------------------------------------------------------------------
 
 describe('#6 convert', () => {
-  it('converts 100 syiling at the gold rate 30: 3 tokens, the remainder is not refunded, lifetime unchanged', async () => {
+  it('FR-GM-18.1: 100 syiling at the gold rate 30 debits 90 for 3 tokens, the remainder stays, lifetime unchanged', async () => {
     const before = wallet.summary(4034)
     expect(before.tier.key).toBe('gold')
     const res = await send(runtime, 'POST', '/api/gamification/convert', {
@@ -912,9 +912,9 @@ describe('#6 convert', () => {
       transactionId: number
     }>(res)
     expect(d).toMatchObject({
-      syilingDebited: 100,
+      syilingDebited: 90,
       tokensCredited: 3,
-      currentSyiling: before.currentSyiling - 100,
+      currentSyiling: before.currentSyiling - 90,
       tokenBalance: before.tokenBalance + 3,
     })
     const after = wallet.summary(4034)
@@ -924,9 +924,9 @@ describe('#6 convert', () => {
     expect(row).toMatchObject({
       type: 'convert',
       source: 'token_conversion',
-      amount: -100,
+      amount: -90,
       tokens: 3,
-      description: 'Tukar 100 syiling → 3 token',
+      description: 'Tukar 90 syiling → 3 token',
       balanceAfter: after.currentSyiling,
     })
   })
@@ -952,14 +952,36 @@ describe('#6 convert', () => {
     expect(coinLedger.forUser(4034)).toHaveLength(rowsBefore)
   })
 
-  it('accepts a numeric string and the exact balance', async () => {
+  it('FR-ERR-9: a repeat with one clientUuid answers the first result and moves nothing; a bad key is 422', async () => {
+    wallet.setFields(4034, { syiling: 120 })
+    const before = wallet.summary(4034)
+    const rows = coinLedger.forUser(4034).length
+    const key = '3f2b8c1e-5a47-4d0b-9c36-7e1f0a2b4c5d'
+    const post = (body: Record<string, unknown>) =>
+      send(runtime, 'POST', '/api/gamification/convert', { token: gold, body })
+    const first = await post({ syilingAmount: 90, clientUuid: key })
+    expect(first.status).toBe(200)
+    const second = await post({ syilingAmount: 90, clientUuid: key })
+    expect(second.status).toBe(200)
+    expect(dataOf(second)).toEqual(dataOf(first))
+    expect(wallet.summary(4034).currentSyiling).toBe(before.currentSyiling - 90)
+    expect(coinLedger.forUser(4034)).toHaveLength(rows + 1)
+    const bad = await post({ syilingAmount: 30, clientUuid: 'bad key!' })
+    expect(bad.status).toBe(422)
+    expect((bad.body as { error: { fields: unknown } }).error.fields).toEqual({
+      clientUuid: 'Medan ini tidak sah.',
+    })
+    expect(coinLedger.forUser(4034)).toHaveLength(rows + 1)
+  })
+
+  it('accepts a numeric string and the exact balance; only the multiple is debited', async () => {
     const balance = wallet.summary(4034).currentSyiling
     const res = await send(runtime, 'POST', '/api/gamification/convert', {
       token: gold,
       body: { syilingAmount: String(balance) },
     })
     expect(res.status).toBe(200)
-    expect(wallet.summary(4034).currentSyiling).toBe(0)
+    expect(wallet.summary(4034).currentSyiling).toBe(balance % 30)
   })
 
   it('a refusal inside a failed request leaves the whole step undone (failNext fault)', async () => {

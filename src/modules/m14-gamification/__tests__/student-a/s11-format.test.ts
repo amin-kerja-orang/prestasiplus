@@ -14,7 +14,7 @@ import {
   gamTierTint,
   gamTrimNumber,
 } from '../../lib/student/s11-format'
-import { s12CanConvert, s12ParseAmount, s12Tokens } from '../../lib/student/s12-convert'
+import { s12CanConvert, s12Debit, s12NewClientUuid, s12ParseAmount, s12Tokens } from '../../lib/student/s12-convert'
 
 describe('S11 format helpers', () => {
   it('BR-M14-06: next-tier pct has 1 decimal and is capped at 100', () => {
@@ -74,6 +74,20 @@ describe('S12 conversion rules', () => {
     expect(s12Tokens(30, 50)).toBe(0)
     expect(s12Tokens(300, 50)).toBe(6)
     expect(s12Tokens(0, 50)).toBe(0)
+  })
+
+  it('FR-GM-18.1: the debit is tokens x rate', () => {
+    expect(s12Debit(120, 50)).toBe(100)
+    expect(s12Debit(256, 50)).toBe(250)
+    expect(s12Debit(49, 50)).toBe(0)
+    expect(s12Debit(50, 40)).toBe(40)
+    expect(s12Debit(250, 30)).toBe(240)
+  })
+
+  it('a new client key per call, a v4 uuid, without crypto.randomUUID (plain HTTP has none)', () => {
+    const a = s12NewClientUuid()
+    expect(a).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
+    expect(s12NewClientUuid()).not.toBe(a)
   })
 
   it('valid only between rate and balance, integers', () => {

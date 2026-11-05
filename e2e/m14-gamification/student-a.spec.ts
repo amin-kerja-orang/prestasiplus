@@ -282,19 +282,24 @@ test.describe('S12 convert', MODULE, () => {
     await expect(input).toHaveAttribute('max', '256')
     await expect(input).toHaveAttribute('placeholder', '0')
     await expect(text(page, 's12-preview-tokens')).toHaveText('1')
-    await expect(text(page, 's12-rate-line')).toHaveText('Kadar: 50 syiling = 1 token (Gangsa)')
-    await text(page, 's12-quick-five').click()
+    // FR-MUR-29-1, FR-GM-18.2.
+    await expect(text(page, 's12-rate-line')).toHaveText('Kadar tahap anda: 50 syiling = 1 token')
+    await expect(text(page, 's12-tier-chip')).toHaveText('🥉 Gangsa')
+    await expect(text(page, 's12-quick-50')).toHaveText('50')
+    await expect(text(page, 's12-quick-250')).toHaveText('250')
+    await text(page, 's12-quick-250').click()
     await expect(input).toHaveValue('250')
     await expect(text(page, 's12-preview-tokens')).toHaveText('5')
     // The chosen amount has the solid `secondary` colour and the others stay neutral (B05, 147793363).
-    await expect(text(page, 's12-quick-five')).toHaveAttribute('data-active', 'true')
-    await expect(text(page, 's12-quick-five')).toHaveClass(/\bbg-highlight\b/)
-    await expect(text(page, 's12-quick-rate')).toHaveAttribute('data-active', 'false')
-    await expect(text(page, 's12-quick-rate')).not.toHaveClass(/\bbg-highlight\b/)
+    await expect(text(page, 's12-quick-250')).toHaveAttribute('data-active', 'true')
+    await expect(text(page, 's12-quick-250')).toHaveClass(/\bbg-highlight\b/)
+    await expect(text(page, 's12-quick-50')).toHaveAttribute('data-active', 'false')
+    await expect(text(page, 's12-quick-50')).not.toHaveClass(/\bbg-highlight\b/)
+    // AC-MUR-29-4: "Semua" is the largest multiple of the rate, not the whole balance.
     await text(page, 's12-quick-all').click()
-    await expect(input).toHaveValue('256')
+    await expect(input).toHaveValue('250')
     await expect(text(page, 's12-preview-tokens')).toHaveText('5')
-    await expect(text(page, 's12-quick-all')).toHaveText('Semua (256)')
+    await expect(text(page, 's12-quick-all')).toHaveText('Semua')
     const tiers = page.getByTestId('s12-tier')
     await expect(tiers).toHaveCount(4)
     await expect(tiers.nth(0)).toContainText('ANDA')
@@ -307,7 +312,7 @@ test.describe('S12 convert', MODULE, () => {
       'Naik tier untuk dapatkan kadar penukaran yang lebih baik!',
     )
     await expectTouchTarget(input)
-    await expectTouchTarget(text(page, 's12-quick-rate'))
+    await expectTouchTarget(text(page, 's12-quick-50'))
     await expectTouchTarget(text(page, 's12-submit'))
     await expectNoHorizontalScroll(page)
   })
@@ -330,6 +335,27 @@ test.describe('S12 convert', MODULE, () => {
     await expect(text(page, 's12-submit')).toBeEnabled()
   })
 
+  for (const width of [375, 768, 1280]) {
+    test(`E2E-M14-25 the choices, the dialog and the history fit at ${String(width)} px`, async ({
+      page,
+      gotoApp,
+      loginAs,
+    }) => {
+      await page.setViewportSize({ width, height: 800 })
+      await loginAs(ADMIN)
+      await gotoApp(S12)
+      await expect(text(page, 's12-history')).toBeVisible()
+      await expectTouchTarget(text(page, 's12-quick-all'))
+      await expectNoHorizontalScroll(page)
+      await text(page, 's12-quick-all').click()
+      await text(page, 's12-submit').click()
+      await expect(text(page, 's12-confirm-text')).toHaveText('Tukar 250 syiling kepada 5 token?')
+      await expect(text(page, 's12-confirm-cancel')).toBeFocused()
+      await expectTouchTarget(text(page, 's12-confirm-cancel'))
+      await expectNoHorizontalScroll(page)
+    })
+  }
+
   test(
     'E2E-M14-24 convert 250: S12, S11 and S17 agree',
     provisional('FN-M14-3.1.8 effect INFERRED; success copy and 🔄 icon PROPOSED', [moduleTag(14)]),
@@ -337,11 +363,28 @@ test.describe('S12 convert', MODULE, () => {
       test.slow() // several app boots in one test
       await loginAs(ADMIN)
       await gotoApp(S12)
-      await text(page, 's12-quick-five').click()
+      await expect(text(page, 's12-history-empty')).toHaveText('Belum ada penukaran.')
+      await text(page, 's12-quick-250').click()
       await text(page, 's12-submit').click()
-      await expect(page.getByText('Berjaya! 250 syiling ditukar kepada 5 token.')).toBeVisible()
+      // AC-GM-18.1, dialog B-055: the real debit, with `Batal` holding the first focus.
+      await expect(text(page, 's12-confirm-text')).toHaveText('Tukar 250 syiling kepada 5 token?')
+      await expect(text(page, 's12-confirm-cancel')).toBeFocused()
+      await expectTouchTarget(text(page, 's12-confirm-ok'))
+      // AC-GM-18.3: a double click is one conversion.
+      await text(page, 's12-confirm-ok').dblclick()
+      await expect(page.getByText('Berjaya menukar 250 syiling kepada 5 token.')).toBeVisible()
+      await expect(page.getByTestId('s12-history-row')).toHaveCount(1)
+      await expect(page.getByTestId('s12-history-row')).toContainText('Tukar 250 syiling → 5 token')
       await expect(text(page, 's12-balance-syiling')).toHaveText('6')
       await expect(text(page, 's12-balance-token')).toHaveText('5')
+      // AC-GM-18.2: 6 syiling is below the rate.
+      await expect(text(page, 's12-short')).toContainText('Anda perlu sekurang-kurangnya 50 syiling')
+      await expect(text(page, 's12-short-practice')).toHaveAttribute('href', '/practice')
+      await expectTouchTarget(text(page, 's12-short-practice'))
+      for (const id of ['s12-quick-50', 's12-quick-250', 's12-quick-all', 's12-submit']) {
+        await expect(text(page, id)).toBeDisabled()
+      }
+      await expectNoHorizontalScroll(page)
       await gotoApp(S11)
       await expect(text(page, 's11-hero-syiling')).toHaveText('6')
       await expect(text(page, 's11-hero-token')).toHaveText('5')
