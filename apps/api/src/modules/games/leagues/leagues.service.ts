@@ -11,7 +11,7 @@ import {
   type GamesLeagueList,
   type GamesLeagueStandingRow,
   type GamesLeagueStatus,
-  type GamesSekolahBersaing,
+  type GamesSekolahBersaingBoard,
 } from '@pp/contract'
 
 import type { Env } from '../../../common/config/env.schema'
@@ -19,14 +19,15 @@ import { publicBaseUrl } from '../../../common/config/public-base-url'
 import { CLOCK, type Clock } from '../../../db/clock'
 import { idFromString, isIdString } from '../../../db/ids'
 import { CurriculumRepository } from '../../curriculum'
+import { PracticeRepository } from '../../practice'
 import { isPrimarySchoolType, SchoolsRepository } from '../../schools'
+import { SEKOLAH_BERSAING_MIN_PUPILS, SEKOLAH_BERSAING_TOP_N } from '../games.constants'
 import { fieldError, leagueAlreadyIn, leagueEnded, leagueFull, leagueInviteInvalid, leagueNeedsSchool, leagueNotFound } from '../errors'
 import { GameUsers } from '../core/game-users'
 import { NamePrivacy } from '../core/name-privacy.service'
-import { mytDateOf, startOfMytWeek } from '../core/time'
 import type { GamesCaller } from '../caller'
 import { type LeagueRecord, LeaguesRepository } from './leagues.repository'
-import { dateOnly, INVITE_ALPHABET, LABELS, type LeagueInput, shareUrl } from './leagues.rules'
+import { dateOnly, INVITE_ALPHABET, LABELS, type LeagueInput, rankSekolahBersaing, shareUrl } from './leagues.rules'
 
 const M = GAMES_MESSAGES
 type GamesLeagueClassLevel = (typeof GAMES_LEAGUE_CLASS_LEVELS)[number]
@@ -42,6 +43,7 @@ export class LeaguesService {
     @Inject(NamePrivacy) private readonly privacy: NamePrivacy,
     @Inject(SchoolsRepository) private readonly schools: SchoolsRepository,
     @Inject(CurriculumRepository) private readonly curriculum: CurriculumRepository,
+    @Inject(PracticeRepository) private readonly practice: PracticeRepository,
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(ConfigService) private readonly config: ConfigService<Env, true>,
   ) {}
@@ -200,47 +202,11 @@ export class LeaguesService {
     })
   }
 
-  /** M16-50: the stored weekly snapshot. `week`: a valid YYYY-MM-DD gives its Monday, anything else the current week. */
-  async sekolahBersaing(week: unknown): Promise<GamesSekolahBersaing> {
-    const weekStart = weekStartOf(week, this.clock.now())
-    const allRows = await this.repo.sekolahBersaing(weekStart)
-    const schools = await this.schools.getMany([...new Set(allRows.map((r) => r.schoolId))])
-    const byId = new Map(schools.map((s) => [s.id, s]))
-    const rows = allRows.filter((r) => !isPrimarySchoolType(byId.get(r.schoolId)?.type)) // secondary-only (2026-10-29)
-    return {
-      weekStart,
-      count: rows.length,
-      rows: rows.map((r) => ({
-        rank: r.rank,
-        schoolName: r.isAnonymous ? M.sekolahAnonymous : (byId.get(r.schoolId)?.name ?? ''),
-        state: byId.get(r.schoolId)?.state ?? '',
-        aktifPct: r.aktifPct,
-        streakAvg: r.streakAvg,
-        notaPer10: r.notaPer10,
-        anonymous: r.isAnonymous,
-      })),
-    }
+  /** API-AS-14: the live board, computed on request from M05 sessions and the M02 register (FR-AS-45-4, DM-31). */
+  async sekolahBersaing(): Promise<GamesSekolahBersaingBoard> {
+    const facts = await this.practice.sessionAccuracyBySchool()
+    const schools = await this.schools.getMany(facts.map((f) => f.schoolId))
+    const secondary = schools.filter((s) => !isPrimarySchoolType(s.type)) // secondary-only (2026-10-29)
+    return rankSekolahBersaing(facts, secondary, { minPupils: SEKOLAH_BERSAING_MIN_PUPILS, topN: SEKOLAH_BERSAING_TOP_N })
   }
 }
-
-/**
- * Monday (`YYYY-MM-DD`, Malaysia) of the week named by `value`: a valid calendar date gives its week, anything
- * else (missing, repeated, malformed, impossible date, out of range) the week of `now`. Never throws.
- */
-export function weekStartOf(value: unknown, now: Date): string {
-  if (typeof value === 'string') {
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
-    if (m) {
-      const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])]
-      const at = new Date(Date.UTC(y, mo - 1, d))
-      if (y >= 1 && at.getUTCFullYear() === y && at.getUTCMonth() === mo - 1 && at.getUTCDate() === d) {
-        const dow = at.getUTCDay() // 0 = Sunday
-        return dateOnlyUtc(new Date(at.getTime() - ((dow + 6) % 7) * 86_400_000))
-      }
-    }
-  }
-  return mytDateOf(startOfMytWeek(now))
-}
-
-const dateOnlyUtc = (d: Date): string => d.toISOString().slice(0, 10)
-

@@ -14,6 +14,14 @@ const count = z.number().int()
 const pct = z.number()
 const num = z.number()
 
+/** True when `YYYY-MM-DD` is a real calendar day: parsed as a MYT date and re-formatted it equals the input (no rollover). */
+function isRealIsoDay(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const t = new Date(`${value}T00:00:00+08:00`).getTime()
+  if (!Number.isFinite(t)) return false
+  return new Date(t + 8 * 3_600_000).toISOString().slice(0, 10) === value
+}
+
 // --- Exact BM copy (mock handlers) ------------------------------------------------------------
 
 export const PERFORMANCE_HEADCOUNT_MESSAGES = {
@@ -32,6 +40,24 @@ export const PERFORMANCE_HEADCOUNT_MESSAGES = {
   studentsRequired: 'Pilih sekurang-kurangnya seorang murid.',
   studentsInvalid: 'Murid tidak sah.',
   actionInvalid: 'Tindakan tidak sah.',
+  /** S10-T02: any TOV / ETR / RS / AR / default outside 0..100 or not a number. */
+  markRange: 'Markah mesti antara 0 dan 100.',
+  /** S10-T02: Tarikh Rekod RS after today (MYT). */
+  rsDateFuture: 'Tarikh tidak boleh lebih lewat daripada hari ini.',
+  rsDateInvalid: 'Tarikh tidak sah.',
+  /** S10-T02: a Tarikh Rekod RS sent for a pupil whose resulting RS is empty. */
+  rsDateNeedsRs: 'Tarikh Rekod RS memerlukan RS.',
+  checkpointInvalid: 'OTR tidak sah.',
+  /** S10-T02 CF-05 (409 on `PUT /headcounts/:id/settings` without `confirm`): `k` = the new Bilangan OTR + 1. */
+  otrLoweringConfirm: (k: number): string => `OTR${String(k)} ke atas mempunyai markah. Padam markah tersebut?`,
+  /** Toasts of the screens (never sent by the API). */
+  saved: {
+    ar: (n: number): string => `AR OTR${String(n)} disimpan.`,
+    tov: 'TOV/ETR disimpan.',
+    settings: 'Tetapan disimpan.',
+    targets: 'Sasaran disimpan.',
+    targetsFailed: 'Gagal menyimpan sasaran. Cuba lagi.',
+  },
 } as const
 
 export const PERFORMANCE_TIMELINE_MESSAGES = {
@@ -744,6 +770,16 @@ export const PerformanceHeadcountModeSchema = z
   .enum(['auto', 'manual'])
   .meta({ id: 'PerformanceHeadcountMode' })
 const toneCell = z.enum(['above', 'on', 'below', 'na'])
+/** S10-T02 (DOC DEFECT 5): the pupil's entry is Active iff it has an ETR for the config (own or class default), else Draft. */
+export const HeadcountEntryStatusSchema = z.enum(['active', 'draft'])
+/** S10-T02: why the pill is not On Track / Below. */
+export const HeadcountStatusReasonSchema = z.enum(['belum_ada_data', 'belum_ada_tov'])
+const headcountProjection = z.object({
+  value: num,
+  variant: z.enum(['green', 'amber', 'red']),
+  trend: z.enum(['Meningkat', 'Stabil', 'Menurun']),
+  confidence: z.enum(['Tinggi', 'Sederhana', 'Rendah']),
+})
 
 export const PerformanceHeadcountListItemSchema = z
   .object({
@@ -755,6 +791,12 @@ export const PerformanceHeadcountListItemSchema = z
     mode: PerformanceHeadcountModeSchema,
     activeOtrs: z.number().int(),
     students: count,
+    /** S10-T02 ("Guru" column, API-AS-15). */
+    teacherName: z.string(),
+    /** S10-T02. Own list (`/me`): the pupil's own pill (Active iff an ETR, own or default). Staff list: Active iff the class default or any live pupil has an ETR. */
+    entryStatus: HeadcountEntryStatusSchema,
+    /** S10-T02. Own list only (null in the staff list): "Belum Ada Data" (no ETR) / "Belum Ada TOV" (ETR but no TOV). */
+    statusReason: HeadcountStatusReasonSchema.nullable(),
   })
   .meta({ id: 'PerformanceHeadcountListItem' })
 
@@ -768,6 +810,9 @@ export const PerformanceHeadcountDashboardSchema = z
         className: z.string(),
         subjectName: z.string(),
         year: z.number().int(),
+        /** S10-T02. */
+        mode: PerformanceHeadcountModeSchema,
+        teacherName: z.string(),
         onTrack: count,
         offTrack: count,
         noData: count,
@@ -793,7 +838,7 @@ export const PerformanceHeadcountFormOptionsSchema = z
 
 /** Form integer: the mock accepts a number or a digit string (the S14 form posts strings). */
 const intLike = (message: string) =>
-  z.union([z.number().int(), z.string().regex(/^-?\d+$/)], { error: message })
+  z.union([z.number().int(), z.string().regex(/^-?\d+$/, { error: message })], { error: message })
 const inRange = (lo: number, hi: number, message: string) =>
   intLike(message).refine((v) => Number(v) >= lo && Number(v) <= hi, { error: message })
 const idField = (required: string | null, invalid: string) =>
@@ -854,6 +899,64 @@ export const PerformanceHeadcountDropRequestSchema = z
   })
   .meta({ id: 'PerformanceHeadcountDropRequest' })
 
+/** A 0..100 mark (S10-T02): any other number, or a non-number, answers "Markah mesti antara 0 dan 100.". */
+const markValue = z
+  .number({ error: PERFORMANCE_HEADCOUNT_MESSAGES.markRange })
+  .min(0, { error: PERFORMANCE_HEADCOUNT_MESSAGES.markRange })
+  .max(100, { error: PERFORMANCE_HEADCOUNT_MESSAGES.markRange })
+const pupilId = z
+  .string({ error: PERFORMANCE_HEADCOUNT_MESSAGES.studentsInvalid })
+  .min(1, { error: PERFORMANCE_HEADCOUNT_MESSAGES.studentsInvalid })
+
+/** `PUT /headcounts/:id/ar` (Key-in AR, Manual config of the owning teacher). A checkpoint outside 1..activeOtrs is 404, not 422. */
+export const PerformanceHeadcountArRequestSchema = z
+  .object({
+    checkpoint: z.number({ error: PERFORMANCE_HEADCOUNT_MESSAGES.checkpointInvalid }).int({ error: PERFORMANCE_HEADCOUNT_MESSAGES.checkpointInvalid }),
+    marks: z.array(
+      z.object({ userId: pupilId, value: markValue.nullable() }),
+      { error: PERFORMANCE_HEADCOUNT_MESSAGES.studentsInvalid },
+    ),
+  })
+  .meta({ id: 'PerformanceHeadcountArRequest' })
+
+/** `PUT /headcounts/:id/tov` (Edit TOV/ETR + RS). Only the keys present in a row are written; `null` clears. `rs: null` also clears the date. */
+export const PerformanceHeadcountTovRequestSchema = z
+  .object({
+    rows: z.array(
+      z.object({
+        userId: pupilId,
+        tov: markValue.nullable().optional(),
+        etr: markValue.nullable().optional(),
+        rs: markValue.nullable().optional(),
+        /** MYT day; defaults to today on the first RS save; after today = 422 "Tarikh tidak boleh lebih lewat daripada hari ini.". */
+        rsRecordedAt: z
+          .string({ error: PERFORMANCE_HEADCOUNT_MESSAGES.rsDateInvalid })
+          .regex(/^\d{4}-\d{2}-\d{2}$/, { error: PERFORMANCE_HEADCOUNT_MESSAGES.rsDateInvalid })
+          .refine(isRealIsoDay, { error: PERFORMANCE_HEADCOUNT_MESSAGES.rsDateInvalid })
+          .nullable()
+          .optional(),
+      }),
+      { error: PERFORMANCE_HEADCOUNT_MESSAGES.studentsInvalid },
+    ),
+  })
+  .meta({ id: 'PerformanceHeadcountTovRequest' })
+
+/** `PUT /headcounts/:id/settings` (Tetapan). The mode is read-only after creation. Lowering with marks above n and no `confirm` is 409. */
+export const PerformanceHeadcountSettingsRequestSchema = z
+  .object({
+    activeOtrs: inRange(2, 5, PERFORMANCE_HEADCOUNT_MESSAGES.otrInvalid),
+    confirm: z.boolean().optional(),
+  })
+  .meta({ id: 'PerformanceHeadcountSettingsRequest' })
+
+/** `PUT /headcounts/:id/defaults` ("Simpan Sasaran"): the class default TOV and ETR (RS Sasaran); null clears. Both keys are required. */
+export const PerformanceHeadcountDefaultsRequestSchema = z
+  .object({
+    defaultTov: markValue.nullable(),
+    defaultEtr: markValue.nullable(),
+  })
+  .meta({ id: 'PerformanceHeadcountDefaultsRequest' })
+
 export const PerformanceHeadcountSortQuerySchema = z
   .object({
     sort: z
@@ -881,18 +984,23 @@ export const PerformanceHeadcountStudentSchema = z
         levelName: z.string(),
         className: z.string(),
         year: z.number().int(),
+        /** S10-T02: the config's mode (the "Auto" / "Manual" chip). */
+        mode: PerformanceHeadcountModeSchema,
+        /** HC-4: on / below by the latest checkpoint with an AR; none without an AR, an ETR or a TOV. */
         status: PerformancePairStatusSchema,
+        /** S10-T02. */
+        statusReason: HeadcountStatusReasonSchema.nullable(),
+        entryStatus: HeadcountEntryStatusSchema,
+        /** HC-1: ETR - TOV, 1 decimal; null when either is missing. */
+        jurang: num.nullable(),
+        /** HC-6 end value (same number as `projection.value`) and Keyakinan (same as `projection.confidence`); null without AR, TOV and ETR. */
+        unjuran: num.nullable(),
+        keyakinan: z.enum(['Tinggi', 'Sederhana', 'Rendah']).nullable(),
+        /** Resolved values: the entry's own, else the class default. */
         tov: num.nullable(),
         etr: num.nullable(),
         rs: z.object({ value: num, recordedAt: TimestampSchema.nullable() }).nullable(),
-        projection: z
-          .object({
-            value: num,
-            variant: z.enum(['green', 'amber', 'red']),
-            trend: z.enum(['Meningkat', 'Stabil', 'Menurun']),
-            confidence: z.enum(['Tinggi', 'Sederhana', 'Rendah']),
-          })
-          .nullable(),
+        projection: headcountProjection.nullable(),
         rows: z.array(
           cell.extend({
             checkpoint: z.number().int(),
@@ -949,8 +1057,20 @@ export const PerformanceHeadcountDetailSchema = z
       teacherName: z.string(),
       status: z.literal('active'),
       activeOtrs: z.number().int(),
+      /** S10-T02. */
+      mode: PerformanceHeadcountModeSchema,
+      /** Class defaults ("Simpan Sasaran", DM-49); null = none. */
+      defaultTov: num.nullable(),
+      defaultEtr: num.nullable(),
     }),
-    chips: z.object({ onTrack: count, below: count, empty: count, total: count }),
+    chips: z.object({
+      onTrack: count,
+      below: count,
+      empty: count,
+      total: count,
+      /** S10-T02: round(on / (on + below) * 100); 0 when nobody is on or below. */
+      onTrackPct: count,
+    }),
     rows: z.array(
       z.object({
         userId: IdSchema,
@@ -961,6 +1081,13 @@ export const PerformanceHeadcountDetailSchema = z
         etr: num.nullable(),
         etrGrade: PerformanceGradeSchema.nullable(),
         dropped: z.boolean(),
+        /** S10-T02: RS (SPM Sebenar) and its record date (MYT day, YYYY-MM-DD). */
+        rs: num.nullable(),
+        rsRecordedAt: DateOnlySchema.nullable(),
+        status: PerformancePairStatusSchema,
+        statusReason: HeadcountStatusReasonSchema.nullable(),
+        entryStatus: HeadcountEntryStatusSchema,
+        projection: headcountProjection.nullable(),
       }),
     ),
     averages: z.object({
