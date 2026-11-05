@@ -99,9 +99,9 @@ describe('BE-21 teachers: /admin-sekolah/guru', () => {
 
   it('detail: 404 for unknown, malformed, other school, a pupil, a pending teacher and a school-admin teacher; 403 for an inactive one', async () => {
     for (const id of ['999999999', 'abc', '0', '1e3', foreign, pupil, pending, schoolAdminTeacher]) {
-      errorOf(await admin.get(`/admin-sekolah/guru/${id}`), 404, 'NOT_FOUND', 'Not Found.')
+      errorOf(await admin.get(`/admin-sekolah/guru/${id}`), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     }
-    errorOf(await admin.get(`/admin-sekolah/guru/${b}`), 403, 'FORBIDDEN', 'This action is unauthorized.')
+    errorOf(await admin.get(`/admin-sekolah/guru/${b}`), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
     errorOf(await admin.get(`/admin-sekolah/guru/${c}`), 403, 'FORBIDDEN')
   })
 
@@ -173,10 +173,10 @@ describe('BE-21 teachers: /admin-sekolah/guru', () => {
   })
 
   it('update: 404 / 403 / 422 in that order; the e-mail of the same teacher is not "taken"', async () => {
-    errorOf(await admin.put(`/admin-sekolah/guru/${foreign}`, { name: 'X', email: 'x@ujian.test' }), 404, 'NOT_FOUND', 'Not Found.')
+    errorOf(await admin.put(`/admin-sekolah/guru/${foreign}`, { name: 'X', email: 'x@ujian.test' }), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     errorOf(await admin.put(`/admin-sekolah/guru/${pupil}`, { name: 'X', email: 'x@ujian.test' }), 404, 'NOT_FOUND')
     // Inactive wins over an invalid body.
-    errorOf(await admin.put(`/admin-sekolah/guru/${b}`, {}), 403, 'FORBIDDEN', 'This action is unauthorized.')
+    errorOf(await admin.put(`/admin-sekolah/guru/${b}`, {}), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
     errorOf(await admin.put(`/admin-sekolah/guru/${a}`, { name: 'X', email: 'luar@ujian.test' }), 422, 'VALIDATION_ERROR', 'The email has already been taken.')
     errorOf(await admin.put(`/admin-sekolah/guru/${a}`, { name: '', email: 'alpha2@ujian.test' }), 422, 'VALIDATION_ERROR', 'The name field is required.')
     expect((await admin.put(`/admin-sekolah/guru/${a}`, { name: 'Guru Alpha Baru', email: 'ALPHA2@ujian.test' })).status).toBe(200)
@@ -206,7 +206,7 @@ describe('BE-21 teachers: /admin-sekolah/guru', () => {
     expect(SchoolAdminToggleActiveResultSchema.parse((await admin.post(`/admin-sekolah/guru/${b}/toggle-active`)).body).data.isActive).toBe(true)
     await admin.post(`/admin-sekolah/guru/${b}/toggle-active`)
     for (const id of [c, foreign, pupil, pending, schoolAdminTeacher, 'abc', '999999999']) {
-      errorOf(await admin.post(`/admin-sekolah/guru/${id}/toggle-active`), 404, 'NOT_FOUND', 'Not Found.')
+      errorOf(await admin.post(`/admin-sekolah/guru/${id}/toggle-active`), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     }
     expect((await userRow(t.db, c))?.is_active).toBe(true) // the suspended account is untouched
     const audit = await auditRows(t.db, 'school_admin.teacher.toggled')
@@ -239,7 +239,7 @@ describe('BE-21 teachers: /admin-sekolah/guru', () => {
     errorOf(await admin.post(`/admin-sekolah/guru/${a}/reset-password`, { newPassword: 'abcdefgh', newPasswordConfirmation: 'abcdefgi' }), 422, 'VALIDATION_ERROR', 'The new password field confirmation does not match.')
     errorOf(await admin.post(`/admin-sekolah/guru/${foreign}/reset-password`, { newPassword: 'abcdefgh', newPasswordConfirmation: 'abcdefgh' }), 404, 'NOT_FOUND')
     errorOf(await admin.post(`/admin-sekolah/guru/${pupil}/reset-password`, { newPassword: 'abcdefgh', newPasswordConfirmation: 'abcdefgh' }), 404, 'NOT_FOUND')
-    errorOf(await admin.post(`/admin-sekolah/guru/${b}/reset-password`, { newPassword: 'abcdefgh', newPasswordConfirmation: 'abcdefgh' }), 403, 'FORBIDDEN', 'This action is unauthorized.')
+    errorOf(await admin.post(`/admin-sekolah/guru/${b}/reset-password`, { newPassword: 'abcdefgh', newPasswordConfirmation: 'abcdefgh' }), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
   })
 
   it('an admin password write CLEARS an already-set flag; an update without a password leaves it alone (R39)', async () => {

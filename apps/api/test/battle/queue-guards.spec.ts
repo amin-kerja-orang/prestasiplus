@@ -43,7 +43,7 @@ describe('guards of the queue, invitation, forfeit, lobby and arena routes (AC 1
   it.each(ROUTES.map((r) => [`${r.method.toUpperCase()} ${r.path}`, r] as const))('%s without a session is 401 UNAUTHORIZED "Unauthenticated."', async (_n, r) => {
     const res = r.method === 'get' ? await t.http().get(`/api${r.path}`) : await t.http().post(`/api${r.path}`).send({})
     expect(res.status).toBe(401)
-    expect(ErrorBodySchema.parse(res.body).error).toMatchObject({ code: 'UNAUTHORIZED', message: 'Unauthenticated.' })
+    expect(ErrorBodySchema.parse(res.body).error).toMatchObject({ code: 'UNAUTHORIZED', message: 'Sesi anda telah tamat. Sila log masuk semula.' })
   })
 
   it.each(ROUTES.filter((r) => r.method === 'post').map((r) => [r.path, r] as const))('POST %s without the CSRF header is 403 CSRF_INVALID', async (_n, r) => {

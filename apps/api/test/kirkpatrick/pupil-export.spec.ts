@@ -83,13 +83,13 @@ describe('pupil views S8 and S9, and the PDF export (AC 2, 3, 5)', () => {
     it('a teacher opens only pupils of the own active classes; school_admin the pupils of the own school', async () => {
       // Teacher A and teacher B are in the same school: neither opens the other's pupil.
       expect((await teacherA.get(`/kirkpatrick/students/${w.ids.p1}`)).status).toBe(200)
-      errorIs(await teacherA.get(`/kirkpatrick/students/${w.ids.maju}`), 403, 'FORBIDDEN', 'This action is unauthorized.')
-      errorIs(await teacherA.get(`/kirkpatrick/students/${w.ids.susp}`), 403, 'FORBIDDEN', 'This action is unauthorized.')
-      errorIs(await teacherA.get(`/kirkpatrick/students/${w.ids.pb}`), 403, 'FORBIDDEN', 'This action is unauthorized.')
+      errorIs(await teacherA.get(`/kirkpatrick/students/${w.ids.maju}`), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
+      errorIs(await teacherA.get(`/kirkpatrick/students/${w.ids.susp}`), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
+      errorIs(await teacherA.get(`/kirkpatrick/students/${w.ids.pb}`), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
       expect((await teacherB.get(`/kirkpatrick/students/${w.ids.maju}`)).status).toBe(200)
       errorIs(await teacherB.get(`/kirkpatrick/students/${w.ids.p1}`), 403, 'FORBIDDEN')
       // DEMO002 is a primary school (SK): its pupils are hidden (secondary-only, D72) until the school is made secondary
-      errorIs(await teacherC.get(`/kirkpatrick/students/${w.ids.pb}`), 403, 'FORBIDDEN', 'This action is unauthorized.')
+      errorIs(await teacherC.get(`/kirkpatrick/students/${w.ids.pb}`), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
       await t.db.query(`update schools set type = 'SMK' where code = 'DEMO002'`)
       try {
         expect((await teacherC.get(`/kirkpatrick/students/${w.ids.pb}`)).status).toBe(200)
@@ -99,17 +99,17 @@ describe('pupil views S8 and S9, and the PDF export (AC 2, 3, 5)', () => {
       }
 
       expect((await adminA.get(`/kirkpatrick/students/${w.ids.maju}`)).status).toBe(200)
-      errorIs(await adminA.get(`/kirkpatrick/students/${w.ids.pb}`), 403, 'FORBIDDEN', 'This action is unauthorized.')
+      errorIs(await adminA.get(`/kirkpatrick/students/${w.ids.pb}`), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
       expect((await adminB.get(`/kirkpatrick/students/${w.ids.pb}`)).status).toBe(200)
       errorIs(await adminB.get(`/kirkpatrick/students/${w.ids.p1}`), 403, 'FORBIDDEN')
     })
 
     it('one uniform 403 for an unknown id, a non-pupil and an id that can never exist; a non-numeric id is 404', async () => {
       for (const id of ['987654321', w.ids.teacherA, '0', '007', '99999999999999999999']) {
-        errorIs(await admin.get(`/kirkpatrick/students/${id}`), 403, 'FORBIDDEN', 'This action is unauthorized.')
+        errorIs(await admin.get(`/kirkpatrick/students/${id}`), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
       }
-      errorIs(await admin.get('/kirkpatrick/students/abc'), 404, 'NOT_FOUND', 'Not Found.')
-      errorIs(await teacherA.get('/kirkpatrick/students/1x'), 404, 'NOT_FOUND', 'Not Found.')
+      errorIs(await admin.get('/kirkpatrick/students/abc'), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+      errorIs(await teacherA.get('/kirkpatrick/students/1x'), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     })
   })
 

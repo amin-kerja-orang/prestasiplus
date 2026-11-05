@@ -29,9 +29,9 @@ describe('level gate (AC 1, 2)', () => {
   it('404 for an unknown level before any access check, 403 without access', async () => {
     const { student } = buildWorld()
     for (const bad of ['T9', 't1', 'ALL', '']) {
-      expect(await code(student.dashboard(STUDENT, bad))).toMatchObject({ status: 404, message: 'Not Found.' })
+      expect(await code(student.dashboard(STUDENT, bad))).toMatchObject({ status: 404, message: 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?' })
     }
-    expect(await code(student.dashboard(STUDENT, 'T1'))).toMatchObject({ status: 403, message: 'This action is unauthorized.' })
+    expect(await code(student.dashboard(STUDENT, 'T1'))).toMatchObject({ status: 403, message: 'Anda tidak dibenarkan melakukan tindakan ini.' })
   })
 
   it('a T1-only grant opens every T1 route and closes every T4 route', async () => {

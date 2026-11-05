@@ -154,10 +154,7 @@ const COLUMNS: TableColumn<Row>[] = [
       @retry="reload"
     >
       <template #fileName-cell="{ row }">
-        <RouterLink
-          :to="intakeReviewPath(row.original.id)"
-          class="font-medium text-primary hover:underline"
-        >
+        <UButton :to="intakeReviewPath(row.original.id)" variant="link" color="primary">
           <UBadge
             v-if="row.original.sourceKind === 'manual'"
             variant="subtle"
@@ -167,7 +164,7 @@ const COLUMNS: TableColumn<Row>[] = [
             Manual
           </UBadge>
           <template v-else>{{ row.original.fileName }}</template>
-        </RouterLink>
+        </UButton>
       </template>
       <template #subjectName-cell="{ row }">
         {{ row.original.subjectName }}
@@ -188,7 +185,6 @@ const COLUMNS: TableColumn<Row>[] = [
       <template #open-cell="{ row }">
         <UButton
           :to="intakeReviewPath(row.original.id)"
-          size="sm"
           variant="outline"
           color="neutral"
           :aria-label="`Buka ${row.original.title}`"

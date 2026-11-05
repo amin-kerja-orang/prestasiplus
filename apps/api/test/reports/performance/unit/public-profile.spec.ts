@@ -59,7 +59,7 @@ describe('Public profile (S18)', () => {
 
   it('7. unknown, teacher, parent, inactive and suspended users all get the byte-identical 404', async () => {
     const answers = await Promise.all(['999', 't', 'p', 'x', 'sus'].map(refusal))
-    expect(answers[0]).toBe(JSON.stringify({ status: 404, code: 'NOT_FOUND', message: 'Not Found.' }))
+    expect(answers[0]).toBe(JSON.stringify({ status: 404, code: 'NOT_FOUND', message: 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?' }))
     expect(new Set(answers).size).toBe(1)
   })
 
