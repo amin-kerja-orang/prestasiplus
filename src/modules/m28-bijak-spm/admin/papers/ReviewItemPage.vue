@@ -9,7 +9,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables/useApi'
 import { useFlash } from '@/composables/useFlash'
-import { DsDialog, DsEmptyState, DsLoadError, DsPage, DsPanel, DsStatusBadge } from '@/ds'
+import { DsDialog, DsEmptyState, DsLoadError, DsPage, DsPanel, DsStatusBadge, DsText } from '@/ds'
 
 import { RichText } from '../../../../components/question-display'
 import type { DecisionAction } from '../../domain/admin-types'
@@ -221,13 +221,14 @@ async function resubmit(): Promise<void> {
         class="sticky bottom-0 z-10 flex flex-wrap justify-end gap-2 rounded-card bg-default p-3 shadow-card"
         data-testid="review-actions"
       >
-        <p
+        <DsText
           v-if="noQuestion && data.item.status !== 'terbit'"
-          class="w-full text-right text-caption text-muted"
+          variant="caption"
+          align="end"
           data-testid="no-question-hint"
         >
           {{ NO_QUESTION_HINT }}
-        </p>
+        </DsText>
         <template v-if="data.item.status === 'semakan'">
           <UButton
             color="error"
