@@ -110,8 +110,8 @@ async function pupil(schoolId: string, active: boolean): Promise<string> {
     [u!.id, mathId, ANSWERS_PER_PUPIL, CORRECT_PER_PUPIL],
   )
   await db.query(
-    `insert into practice_answers (session_id, user_id, subject_id, selected_label, is_correct, answered_at, is_test)
-     select $1::uuid, $2::bigint, $3::bigint, case when n <= $4 then 'B' else 'C' end, n <= $4, now() - interval '1 hour' + n * interval '1 minute', false
+    `insert into practice_answers (session_id, user_id, subject_id, selected_label, is_correct, answered_at, is_test, mode)
+     select $1::uuid, $2::bigint, $3::bigint, case when n <= $4 then 'B' else 'C' end, n <= $4, now() - interval '1 hour' + n * interval '1 minute', false, 'latih_tubi'
        from generate_series(1, $5::int) n`,
     [s!.id, u!.id, mathId, CORRECT_PER_PUPIL, ANSWERS_PER_PUPIL],
   )

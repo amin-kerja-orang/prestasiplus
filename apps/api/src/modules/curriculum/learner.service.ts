@@ -9,11 +9,11 @@ import { CurriculumPorts, progressOf } from './providers'
 import {
   DEFAULT_MAP_GRADE,
   DEFAULT_MAP_SUBJECT,
-  MAP_SUBJECTS,
   GRADE_CODES,
   islandStates,
   learnerSubjectOf,
   mapSubjectLabel,
+  mapSubjectPills,
   practiceCodeOfLearnerSubject,
   subjectLabelOf,
 } from './rules'
@@ -167,12 +167,14 @@ export class CurriculumLearnerService {
     })
     const done = states.filter((s) => s === 'mastered').length
     const average = progress.length ? Math.round(progress.reduce((sum, p) => sum + p.progress, 0) / progress.length) : 0
+    // The pills are the active subjects (repo order: sort order, then id); a subject outside the legacy 7 is labelled by its name.
+    const pills = mapSubjectPills(await this.repo.subjects({ active: true }))
     return {
       subject,
-      subjectLabel: mapSubjectLabel(subject),
+      subjectLabel: pills.find((p) => p.code === subject)?.label ?? mapSubjectLabel(subject),
       grade,
       gradeOptions,
-      subjects: MAP_SUBJECTS.map((s) => ({ ...s })),
+      subjects: pills,
       stats: { done, total: rows.length, progress: average },
       topics,
     }

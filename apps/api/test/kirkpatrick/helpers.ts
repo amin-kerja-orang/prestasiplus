@@ -166,8 +166,8 @@ export async function addSession(t: KirkpatrickTestApp, s: SessionInput): Promis
   )
   const id = (rows[0] as { id: string }).id
   await t.db.query(
-    `insert into practice_answers (session_id, user_id, subject_id, is_correct, answered_at, is_test)
-     select $1::uuid, $2, $3, g <= $4, $5::timestamptz, $6 from generate_series(1, $7) g`,
+    `insert into practice_answers (session_id, user_id, subject_id, is_correct, answered_at, is_test, mode)
+     select $1::uuid, $2, $3, g <= $4, $5::timestamptz, $6, 'latih_tubi' from generate_series(1, $7) g`,
     [id, s.userId, s.subjectId, s.correct, s.at, s.isTest ?? false, s.answered],
   )
   return id
