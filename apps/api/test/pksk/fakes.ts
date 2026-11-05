@@ -145,6 +145,13 @@ export function buildWorld() {
   }
 
   const questions: PkskQuestionsPort = {
+    countApprovedAllLevels: () => {
+      const seen = new Map<string, string>()
+      for (const q of world.questions) if (q.pksk && q.status === 'approved') seen.set(q.id, q.domainCode)
+      const out: Record<string, number> = {}
+      for (const code of seen.values()) out[code] = (out[code] ?? 0) + 1
+      return Promise.resolve(out)
+    },
     countApproved: (level) => {
       const out: Record<string, number> = {}
       for (const q of world.questions) if (q.pksk && q.status === 'approved' && q.level === level) out[q.domainCode] = (out[q.domainCode] ?? 0) + 1
@@ -165,6 +172,7 @@ export function buildWorld() {
             domainCode: q.domainCode,
             optionCount: q.options.length,
             correctIndexes: q.options.flatMap((o, i) => (o.isCorrect ? [i] : [])),
+            explanation: q.explanation,
           })),
       ),
     list: (f: PkskQuestionListFilter) => {

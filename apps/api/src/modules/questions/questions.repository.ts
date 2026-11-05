@@ -1385,6 +1385,17 @@ export class QuestionsRepository {
     return Object.fromEntries(rows.map((r) => [r.code, r.n]))
   }
 
+  /** Served PKSK questions per domain code over both levels; DISTINCT so a T1 + T4 question counts once (D91). */
+  async pkskServedCountsAllLevels(): Promise<Record<string, number>> {
+    const rows = await this.db.$queryRaw<{ code: string; n: number }[]>`
+      SELECT d.code AS code, count(DISTINCT q.id)::int AS n
+      FROM questions q
+      JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'approved'
+      JOIN question_tags d ON d.question_id = q.id AND d.kind = 'pksk_domain'
+      WHERE q.is_active GROUP BY 1`
+    return Object.fromEntries(rows.map((r) => [r.code, r.n]))
+  }
+
   /** Ids of the served PKSK questions of the given domains at one level, ascending. */
   async pkskServedIds(level: 'T1' | 'T4', domainCodes: readonly string[]): Promise<string[]> {
     if (domainCodes.length === 0) return []
