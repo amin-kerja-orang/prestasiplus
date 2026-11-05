@@ -103965,7 +103965,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -103975,7 +103975,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not school_admin, Admin Pusat included, or no school), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, Admin Pusat included, or no school), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {
