@@ -19,6 +19,7 @@ import {
   DsText,
 } from '@/ds'
 import { useMedia } from '@/ds/useMedia'
+import { deferUnauthorizedRedirect } from '@/stores/session'
 
 import {
   AttemptShell,
@@ -98,6 +99,34 @@ const dialogContent = {
 }
 
 const isExam = computed(() => view.value?.attempt.mode === 'exam')
+/** ERR-NET-01 / ERR-NET-03 (46 section 2.6): device offline, or a save that could not reach the server. */
+const offline = ref(false)
+const reconnected = ref(false)
+let reconnectedTimer: ReturnType<typeof setTimeout> | undefined
+const RECONNECTED_MS = 3000
+watch(saveStatus, (status) => {
+  if (status === 'offline') offline.value = true
+  else if (status === 'saved' && offline.value) showReconnected()
+})
+function showReconnected(): void {
+  offline.value = false
+  reconnected.value = true
+  clearTimeout(reconnectedTimer)
+  reconnectedTimer = setTimeout(() => (reconnected.value = false), RECONNECTED_MS)
+}
+function onOffline(): void {
+  reconnected.value = false
+  offline.value = true
+}
+/** ERR-AUTH-01: a timed sitting keeps the screen until the pupil confirms; the answers stay on the device. */
+const sessionExpired = ref(false)
+let loginAgain: () => void = () => undefined
+const stopDeferring = deferUnauthorizedRedirect((proceed) => {
+  // Only a timed attempt asks first; Mod Latihan and a page that failed to load take the normal redirect.
+  if (!isExam.value) return proceed()
+  loginAgain = proceed
+  sessionExpired.value = true
+})
 const questions = computed(() => view.value?.questions ?? [])
 const current = computed(() => questions.value[index.value])
 const section = computed(() => view.value?.sections.find((s) => s.id === current.value?.sectionId))
@@ -316,6 +345,8 @@ onMounted(() => {
   tick = setInterval(() => (now.value = Date.now()), 1000)
   document.addEventListener('visibilitychange', onVisibility)
   window.addEventListener('online', onOnline)
+  window.addEventListener('offline', onOffline)
+  if (navigator.onLine === false) offline.value = true
 })
 onBeforeUnmount(() => {
   if (tick) clearInterval(tick)
@@ -324,6 +355,9 @@ onBeforeUnmount(() => {
   stopRetry()
   document.removeEventListener('visibilitychange', onVisibility)
   window.removeEventListener('online', onOnline)
+  window.removeEventListener('offline', onOffline)
+  clearTimeout(reconnectedTimer)
+  stopDeferring()
   void autosave?.flush()
   autosave?.dispose()
 })
@@ -532,7 +566,7 @@ const feedback = computed(() => {
   <AttemptShell>
     <template #header>
       <DsQuizHeader
-        close-label="Keluar daripada kertas"
+        close-label="Keluar daripada percubaan"
         :progress="progress"
         progress-label="Kemajuan menjawab"
         :combo="isExam ? 0 : combo"
@@ -570,6 +604,24 @@ const feedback = computed(() => {
     </template>
 
     <template #banner>
+      <p
+        v-if="offline && !timeUp"
+        class="shrink-0 bg-elevated px-3 py-2 text-center text-label text-warning sm:px-6"
+        role="status"
+        data-short-compact
+        data-testid="offline-banner"
+      >
+        Anda luar talian. Jawapan disimpan pada peranti ini dan akan dihantar apabila sambungan pulih.
+      </p>
+      <p
+        v-else-if="reconnected"
+        class="shrink-0 bg-elevated px-3 py-2 text-center text-label text-success sm:px-6"
+        role="status"
+        data-short-compact
+        data-testid="reconnected-banner"
+      >
+        Sambungan pulih. Jawapan telah disimpan.
+      </p>
       <!-- One bar for both notices: the 5-minute warning (timer still running) and, at 0 while
            offline, "Masa tamat" (the two never show together). -->
       <p
@@ -883,16 +935,27 @@ const feedback = computed(() => {
 
   <UModal
     v-model:open="confirmExit"
-    title="Keluar daripada kertas?"
-    description="Jawapan anda telah disimpan. Anda boleh menyambung kemudian."
+    title="Keluar daripada percubaan?"
+    :description="isExam ? 'Jawapan anda disimpan dan masa terus berjalan.' : 'Jawapan anda disimpan.'"
   >
     <template #footer>
       <div class="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
-        <UButton color="neutral" variant="soft" class="min-h-11" @click="confirmExit = false"
-          >Terus menjawab</UButton
+        <UButton color="neutral" variant="soft" class="min-h-11" data-testid="exit-stay" @click="confirmExit = false"
+          >Kekal</UButton
         >
         <UButton class="min-h-11" data-testid="confirm-exit" @click="exitNow">Keluar</UButton>
       </div>
+    </template>
+  </UModal>
+
+  <UModal
+    :open="sessionExpired"
+    title="Sesi anda telah tamat. Jawapan anda disimpan pada peranti ini. Log masuk semula untuk meneruskan."
+    :dismissible="false"
+    :close="false"
+  >
+    <template #footer>
+      <UButton class="min-h-11" data-testid="session-login" @click="loginAgain()">Log Masuk Semula</UButton>
     </template>
   </UModal>
 </template>

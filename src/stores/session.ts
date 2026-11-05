@@ -49,6 +49,8 @@ export const SESSION_LIFETIME_MS = 120 * MINUTE_MS
 export type UnauthorizedRedirect = () => unknown
 
 let unauthorizedRedirect: UnauthorizedRedirect | null = null
+type UnauthorizedDefer = (proceed: () => void) => void
+let unauthorizedDefer: UnauthorizedDefer | null = null
 
 /**
  * Registers the redirect run after a 401 has cleared the session (FR-M01-14). F-13 calls it once
@@ -58,6 +60,17 @@ export function setUnauthorizedRedirect(redirect: UnauthorizedRedirect | null): 
   unauthorizedRedirect = redirect
   return () => {
     if (unauthorizedRedirect === redirect) unauthorizedRedirect = null
+  }
+}
+
+/**
+ * ERR-AUTH-01, timed Bijak sitting: the session is still cleared, but the redirect waits until the pupil confirms a dialog. The page registers
+ * this while it is mounted; `proceed` runs the normal redirect. Returns a function that removes the registration.
+ */
+export function deferUnauthorizedRedirect(defer: UnauthorizedDefer | null): () => void {
+  unauthorizedDefer = defer
+  return () => {
+    if (unauthorizedDefer === defer) unauthorizedDefer = null
   }
 }
 
@@ -347,6 +360,10 @@ export const useSessionStore = defineStore('session', () => {
   /** 401 policy (FR-M01-14): clear the session, then run the registered redirect. */
   async function handleUnauthorized(): Promise<void> {
     clear()
+    if (unauthorizedDefer) {
+      unauthorizedDefer(() => void unauthorizedRedirect?.())
+      return
+    }
     await unauthorizedRedirect?.()
   }
 
