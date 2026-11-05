@@ -19,13 +19,6 @@ export const BIJAK_REWARD_SOURCE = 'quiz_spm'
 /** Static BM ledger text of a practice session credit (BE-12 `ports.ts`; PDPA: no name, no identifier). */
 export const PRACTICE_REWARD_DESCRIPTION = 'Latihan: jawapan betul'
 
-/**
- * Ledger `source` of a mission's once-only target reward (S6-T07, FR-GM-20.2, issue #483) and its static BM description; the key is
- * `(user, mission_target, mission:<missionId>)`, so the wallet itself also refuses a second payment for the same pupil and mission.
- */
-export const MISSION_TARGET_REWARD_SOURCE = 'mission_target'
-export const MISSION_TARGET_REWARD_DESCRIPTION = 'Ganjaran misi'
-
 /** V2 `PracticeRecorder` (`docs/discovery/BIJAK-SPM-cloud.md` 4.5): 2 syiling and 10 XP per mark. */
 export const SYILING_PER_MARK = 2
 export const XP_PER_MARK = 10
@@ -155,7 +148,7 @@ export class WalletPracticeReward implements PracticeRewardPort {
   async onSessionCompleted(input: PracticeSessionCompleted, tx: TxClient): Promise<PracticeRewardResult> {
     const streak = input.isTest ? await this.streaks.get(input.userId, { tx }) : await this.streaks.touch(input.userId, { at: input.completedAt, tx })
     const coins = wholeCount(input.sessionCoins)
-    let totalBalance =
+    const totalBalance =
       coins >= 1
         ? (
             await this.wallet.credit(
@@ -164,17 +157,6 @@ export class WalletPracticeReward implements PracticeRewardPort {
             )
           ).currentSyiling
         : (await this.wallet.summary(input.userId, { tx })).currentSyiling
-    // S6-T07: the mission's once-only target reward (paid by the S6 port in this same transaction) is its own ledger row; the
-    // submit response and `session_credits` keep the session coins only, `totalBalance` is the balance after both.
-    const target = input.missionTargetReward ? wholeCount(input.missionTargetReward.coins) : 0
-    if (input.missionTargetReward && target >= 1) {
-      totalBalance = (
-        await this.wallet.credit(
-          { userId: input.userId, amount: target, isTest: input.isTest, source: MISSION_TARGET_REWARD_SOURCE, sourceId: `mission:${input.missionTargetReward.missionId}`, description: MISSION_TARGET_REWARD_DESCRIPTION },
-          { tx },
-        )
-      ).currentSyiling
-    }
     const { result } = await this.wallet.recordSessionCredit(
       {
         sessionId: input.sessionId,

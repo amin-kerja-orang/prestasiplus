@@ -20,3 +20,11 @@ export const MISSION_AUDIT = {
   MISSION_CREATED: 'classes.mission.created',
   MISSION_DELETED: 'classes.mission.deleted',
 } as const
+
+/**
+ * Wallet ledger `source` of a mission reward (S6-T07, issue #483): the once-only target reward of a teacher mission and a reached Global
+ * goal. The key is `(user, mission_target, mission:<missionId>)`, so the wallet itself also refuses a second payment for one pupil and
+ * mission. The description is static BM text (no name, no identifier).
+ */
+export const MISSION_REWARD_SOURCE = 'mission_target'
+export const MISSION_REWARD_DESCRIPTION = 'Ganjaran misi'

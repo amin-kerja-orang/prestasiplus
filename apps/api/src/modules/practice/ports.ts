@@ -161,8 +161,12 @@ export interface PracticeAssignmentSource {
   resolve(kind: AssignmentKind, input: { userId: string; id: string; at: Date }): Promise<AssignmentResolution>
   /** Runs inside the submit transaction when a remedial session completes (mock `seams().remedialComplete`). */
   remedialCompleted(input: { remedialTestId: string; userId: string; afterAccuracy: number; completedAt: Date; isTest: boolean }, tx: TxClient): Promise<void>
-  /** Runs inside the submit transaction when a session with a `mission_id` completes (S6-T07): the coins of the once-only target reward paid by THIS call (0 = not met or already paid). */
-  settleTargetReward(input: { userId: string; missionId: string; sessionId: string; isTest: boolean; at: Date }, tx: TxClient): Promise<{ paid: number }>
+  /**
+   * Runs inside the submit transaction AFTER the reward port (the streak is already touched) when ANY session completes (S6-T07):
+   * pays the once-only target reward of the session's mission (`missionId`, null for a session without one) and the Global goals the
+   * pupil has now reached for the Malaysia day of `at`, crediting the wallet in the same transaction. Returns the coins credited by THIS call.
+   */
+  settleMissionRewards(input: { userId: string; missionId: string | null; sessionId: string; isTest: boolean; at: Date }, tx: TxClient): Promise<{ paid: number }>
 }
 
 export class NoAssignments implements PracticeAssignmentSource {
@@ -170,7 +174,7 @@ export class NoAssignments implements PracticeAssignmentSource {
     return { status: 'not_ready' }
   }
   async remedialCompleted(): Promise<void> {}
-  async settleTargetReward(): Promise<{ paid: number }> {
+  async settleMissionRewards(): Promise<{ paid: number }> {
     return { paid: 0 }
   }
 }
@@ -234,8 +238,6 @@ export interface PracticeSessionCompleted {
   sessionCoins: number
   /** mission only. */
   coinsPerCorrect?: number
-  /** Set only when this completion paid a mission's once-only target reward (S6-T07): the coins to credit, ledger source `mission_target`. */
-  missionTargetReward?: { missionId: string; coins: number }
   /** True under Mod Pelajar: every ledger row must be stamped `is_test`. */
   isTest: boolean
 }

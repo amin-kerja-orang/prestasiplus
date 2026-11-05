@@ -66,7 +66,7 @@ describe('the real application has the BE-18 assignment source bound (all featur
 
 describe('a port that is already bound (a test fake) is kept, never overwritten', () => {
   it('the app boots and the fakes stay in place', async () => {
-    const fakeAssignments = { resolve: () => Promise.resolve({ status: 'not_found' as const }), remedialCompleted: () => Promise.resolve(), settleTargetReward: () => Promise.resolve({ paid: 0 }) }
+    const fakeAssignments = { resolve: () => Promise.resolve({ status: 'not_found' as const }), remedialCompleted: () => Promise.resolve(), settleMissionRewards: () => Promise.resolve({ paid: 0 }) }
     const fakeMissions = { hasMission: () => Promise.resolve(true) }
     const t = await bootMissionsApp({
       beforeInit: (app) => {

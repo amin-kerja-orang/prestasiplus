@@ -49,9 +49,8 @@ beforeEach(async () => {
   t.assignments.remedialCalls.length = 0
   t.assignments.failRemedial = null
   t.assignments.items.clear()
-  t.assignments.targetRewards.clear()
-  t.assignments.paidTargets.clear()
-  t.assignments.targetCalls.length = 0
+  t.assignments.nextBonus = 0
+  t.assignments.rewardCalls.length = 0
   bank = fillBank(t.bank, w)
 })
 
@@ -356,24 +355,22 @@ describe('BR-14 revision queue and BR-20 mastery counters', () => {
   })
 })
 
-describe('mission target reward at completion (S6-T07, AC-GM-20.2, AC-GUR-2b-7)', () => {
-  it('a mission session that reaches the target hands the paid coins to the reward port once; the next completion hands none', async () => {
+describe('mission rewards at completion (S6-T07, AC-GM-20.2, AC-GUR-2b-7)', () => {
+  it('every completion calls the port after the reward port with the session mission id; coins it pays move only totalBalance', async () => {
     t.assignments.set('mission', '9101', { status: 'ok', subjectId: w.subject.math, questionIds: bank.random.slice(0, 4), coinsPerCorrect: 3 })
-    t.assignments.targetRewards.set(`${ids.pelajar}:9101`, 25)
+    t.assignments.nextBonus = 25
     const first = await play(pelajar, t.bank, { mode: 'mission', missionId: '9101' }, 4)
-    expect(t.assignments.targetCalls).toEqual([{ userId: ids.pelajar, missionId: '9101', sessionId: first.started.sessionId, isTest: false, at: expect.any(Date) }])
-    expect(t.reward.calls[0]?.missionTargetReward).toEqual({ missionId: '9101', coins: 25 })
-    await play(pelajar, t.bank, { mode: 'mission', missionId: '9101' }, 4)
-    expect(t.assignments.targetCalls).toHaveLength(2)
-    expect(t.reward.calls[1]?.missionTargetReward).toBeUndefined()
+    expect(t.assignments.rewardCalls).toEqual([{ userId: ids.pelajar, missionId: '9101', sessionId: first.started.sessionId, isTest: false, at: expect.any(Date) }])
+    expect(SubmitSessionResponseSchema.parse(first.submit.body.data).results.gamification).toMatchObject({ coinsEarned: 7, totalBalance: 145 }) // FakeReward 120 + the 25 paid
+    const second = await play(pelajar, t.bank, { mode: 'mission', missionId: '9101' }, 4)
+    expect(t.assignments.rewardCalls).toHaveLength(2)
+    expect(SubmitSessionResponseSchema.parse(second.submit.body.data).results.gamification).toMatchObject({ totalBalance: 120 }) // the port paid nothing the second time
   })
 
-  it('target not met (port pays 0) leaves the reward input without a mission reward; a non-mission session never calls the port', async () => {
-    t.assignments.set('mission', '9102', { status: 'ok', subjectId: w.subject.math, questionIds: bank.random.slice(0, 4) })
-    await play(pelajar, t.bank, { mode: 'mission', missionId: '9102' }, 2)
-    expect(t.reward.calls[0]?.missionTargetReward).toBeUndefined()
+  it('a session without a mission still calls the port (Global goals) with a null mission id', async () => {
     await play(pelajar, t.bank, { mode: 'random', subjectCode: 'MATH', count: 5 }, 5)
-    expect(t.assignments.targetCalls).toHaveLength(1)
+    expect(t.assignments.rewardCalls).toHaveLength(1)
+    expect(t.assignments.rewardCalls[0]).toMatchObject({ userId: ids.pelajar, missionId: null })
   })
 })
 

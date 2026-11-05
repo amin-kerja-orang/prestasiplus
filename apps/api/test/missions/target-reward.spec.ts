@@ -90,4 +90,14 @@ describe('S6-T07 settleTargetReward (DB)', () => {
     await t.db.query(`delete from missions where id = $1`, [id])
     expect(await count(t, 'mission_rewards where mission_id = $1', [id])).toBe(0)
   })
+
+  it('settleMissionRewards credits the wallet once as mission_target / mission:<id> and the repeat credits nothing more', async () => {
+    const id = await mission(2, 35)
+    const sessionId = await session(id, w.student1, 2)
+    const run = () => prisma.transaction((tx) => adapter.settleMissionRewards({ userId: w.student1, missionId: id, sessionId, isTest: false, at: AT }, tx))
+    expect((await run()).paid).toBeGreaterThanOrEqual(35)
+    expect((await run()).paid).toBe(0)
+    const rows = await t.db.query<{ amount: number; description: string }>(`select amount::int, description from coin_ledger where user_id = $1 and source = 'mission_target' and source_id = $2`, [w.student1, `mission:${id}`])
+    expect(rows).toEqual([{ amount: 35, description: 'Ganjaran misi' }])
+  })
 })

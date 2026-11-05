@@ -5,7 +5,10 @@ import { mytDay } from '../../../db/clock'
 import { prngStream } from '../../../db/prng'
 import { isIdString } from '../../../db/ids'
 import type { AssignmentKind, AssignmentResolution, PracticeAssignmentSource } from '../../practice'
+import { WalletService } from '../../wallet'
 import { QuestionSetAssignments } from '../question-sets'
+import { MISSION_REWARD_DESCRIPTION, MISSION_REWARD_SOURCE } from './missions.constants'
+import { MissionsService } from './missions.service'
 import { MissionsRepository, type MissionRecord } from './missions.repository'
 import { QuestionPool } from './question-pool'
 import { round } from './remedial.rules'
@@ -29,6 +32,8 @@ export class PracticeAssignmentsAdapter implements PracticeAssignmentSource {
     @Inject(MissionsRepository) private readonly repo: MissionsRepository,
     @Inject(QuestionPool) private readonly pool: QuestionPool,
     @Inject(QuestionSetAssignments) private readonly sets: QuestionSetAssignments,
+    @Inject(MissionsService) private readonly missions: MissionsService,
+    @Inject(WalletService) private readonly wallet: WalletService,
   ) {}
 
   async resolve(kind: AssignmentKind, input: { userId: string; id: string; at: Date }): Promise<AssignmentResolution> {
@@ -85,6 +90,34 @@ export class PracticeAssignmentsAdapter implements PracticeAssignmentSource {
       completedAt: input.completedAt,
       isTest: input.isTest,
     })
+  }
+
+  /**
+   * S6-T07, called by practice at every session completion, inside the submit transaction and after the streak was touched (the reward
+   * port ran first): settles the target reward of the session's own mission (`settleTargetReward`) and the Global goals of the Malaysia day
+   * of `at` (`MissionsService.evaluateGlobalGoals`), and credits each newly paid reward to the wallet in the same transaction with ledger
+   * source `mission_target` and key `mission:<missionId>` (an existing S7 `WalletService.credit`; the lock order stays streak, wallet,
+   * then this reward lock last, taken by no other path while it holds a wallet lock). Returns the total coins credited by this call.
+   */
+  async settleMissionRewards(
+    input: { userId: string; missionId: string | null; sessionId: string; isTest: boolean; at: Date },
+    tx: TxClient,
+  ): Promise<{ paid: number }> {
+    const rewards: { missionId: string; coins: number }[] = []
+    if (input.missionId !== null) {
+      const { paid } = await this.settleTargetReward({ ...input, missionId: input.missionId }, tx)
+      if (paid > 0) rewards.push({ missionId: input.missionId, coins: paid })
+    }
+    rewards.push(...(await this.missions.evaluateGlobalGoals({ userId: input.userId, day: mytDay(input.at), isTest: input.isTest, at: input.at, sessionId: input.sessionId }, tx)))
+    let paid = 0
+    for (const r of rewards) {
+      await this.wallet.credit(
+        { userId: input.userId, amount: r.coins, isTest: input.isTest, source: MISSION_REWARD_SOURCE, sourceId: `mission:${r.missionId}`, description: MISSION_REWARD_DESCRIPTION },
+        { tx },
+      )
+      paid += r.coins
+    }
+    return { paid }
   }
 
   /**
