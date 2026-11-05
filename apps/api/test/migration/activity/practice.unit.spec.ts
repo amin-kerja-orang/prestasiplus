@@ -101,6 +101,13 @@ describe('transformAnswer', () => {
     })
   })
 
+  it('sets mode from the session mode, and latih_tubi for an attempt without a session', () => {
+    expect(transformAnswer(attempt(), refs({ sessionMode: 'chapter' }))).toMatchObject({ ok: true, value: { mode: 'chapter' } })
+    expect(transformAnswer(attempt(), refs({ sessionMode: 'past_year' }))).toMatchObject({ ok: true, value: { mode: 'past_year' } })
+    expect(transformAnswer(attempt(), refs({ sessionId: null, sessionMode: null }))).toMatchObject({ ok: true, value: { mode: 'latih_tubi' } })
+    expect(transformAnswer(attempt(), refs())).toMatchObject({ ok: true, value: { mode: 'latih_tubi' } })
+  })
+
   it('rejects labels outside A-H, unreadable correctness and negative time', () => {
     expect(transformAnswer(attempt({ selected_option: 'Z' }), refs())).toMatchObject({ ok: false, reject: { reason: 'INVALID_VALUE', column: 'selected_option' } })
     expect(transformAnswer(attempt({ selected_option: '12' }), refs())).toMatchObject({ ok: false })

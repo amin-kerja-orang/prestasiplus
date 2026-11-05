@@ -32,7 +32,7 @@ async function expectInScope(page: Page): Promise<void> {
 
 async function expectNoLoadError(page: Page): Promise<void> {
   await expect(page.getByTestId('cc-loading')).toHaveCount(0, { timeout: 20_000 })
-  await expect(page.getByTestId('cc-unavailable')).toHaveCount(0)
+  await expect(page.getByTestId('cc-load-error')).toHaveCount(0)
   await expect(page.getByTestId('cc-error')).toHaveCount(0)
 }
 
@@ -144,7 +144,7 @@ test.describe('command center and pending teachers @api', () => {
       await expect(value, `kpi ${id} is a live number`).toHaveText(/\d/, { timeout: 15_000 })
       await expect(value).not.toHaveText('--')
     }
-    await expect(page.getByTestId('cc-unavailable')).toHaveCount(0)
+    await expect(page.getByTestId('cc-load-error')).toHaveCount(0)
     for (const row of ['cc-row-1', 'cc-row-2', 'cc-row-3']) await expect(page.getByTestId(row)).toBeVisible()
     await expectNoHScroll(page)
 

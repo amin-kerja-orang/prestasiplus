@@ -356,11 +356,11 @@ const cardFields: CardField[] = [
           data-testid="admin-article-row"
           :data-article-id="row.original.id"
         >
-          <p class="flex items-start gap-1.5 text-label text-highlighted">
+          <p class="flex items-start gap-2 text-label text-highlighted">
             <UIcon
               v-if="row.original.raw.isFeatured"
               name="i-ph-star-fill"
-              class="mt-0.5 size-4 shrink-0 text-warning"
+              class="mt-1 size-4 shrink-0 text-warning"
               title="Featured"
               data-testid="article-featured"
             />
