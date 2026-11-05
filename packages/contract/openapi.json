@@ -24900,6 +24900,7 @@
               "maximum": 5
             },
             "minItems": 1,
+            "maxItems": 5,
             "description": "Tingkatan 1..5 = T1..T5; at least one."
           },
           "start": {
@@ -24931,7 +24932,8 @@
             "items": {
               "$ref": "#/components/schemas/Id"
             },
-            "minItems": 1
+            "minItems": 1,
+            "maxItems": 500
           }
         },
         "required": [

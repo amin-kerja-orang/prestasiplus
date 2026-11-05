@@ -229,7 +229,7 @@ describe('leagues and Sekolah Bersaing (BE-45, M16-46 to M16-50)', () => {
         expect422(await s.post('/api/leagues', { ...VALID, schoolLimit: bad }), 'schoolLimit', M.leagueMaxSchools)
       }
       for (const ok of [2, 500]) expect((await s.post('/api/leagues', { ...VALID, schoolLimit: ok })).status).toBe(201)
-      for (const bad of [[0], [6], [1.5], ['T4'], [4, 9], 'T4']) {
+      for (const bad of [[0], [6], [1.5], ['T4'], [4, 9], 'T4', [1, 2, 3, 4, 5, 1]]) {
         expect422(await s.post('/api/leagues', { ...VALID, levelIds: bad }), 'levelIds', M.leagueClassLevels)
       }
     })
@@ -376,12 +376,28 @@ describe('leagues and Sekolah Bersaing (BE-45, M16-46 to M16-50)', () => {
       expect(parseData(await admin.get(`/api/leagues/${id}`), GamesLeagueDetailSchema).schools).toEqual([])
     })
 
-    it('order: 404, then the list format, then ended, then per school (an ended league with an empty list says "Sila pilih sekolah.")', async () => {
+    it('order: 404, then body validation (empty, non-numeric, unknown id, over 500), then ended, then per school', async () => {
       const admin = await loginAs(t, ACCOUNTS.admin)
+      const fmt = 'Format sekolah tidak sah.'
+      const d2 = await schoolIdOf('DEMO002')
       const [two] = await t.db.query<{ id: string }>(`select id::text as id from leagues where invite_code = 'TEST2026'`)
+      // An ended league: the body checks come first, "ended" only for a valid body.
       expect422(await enrol(admin, two!.id, { schoolIds: [] }), 'schoolIds', 'Sila pilih sekolah.')
-      expect422(await enrol(admin, two!.id, [await schoolIdOf('DEMO002')]), 'schoolIds', M.leagueEnded)
+      expect422(await enrol(admin, two!.id, [d2, '99999999']), 'schoolIds', fmt) // unknown id, not "tamat"
+      expect422(await enrol(admin, two!.id, [d2]), 'schoolIds', M.leagueEnded)
       expectError(await enrol(admin, '999999', { schoolIds: [] }), 'NOT_FOUND', M.leagueNotFound)
+      // An open league: [already enrolled, unknown] is a format error and nothing is written.
+      const id = await createAs(admin)
+      expect((await enrol(admin, id, [d2])).status).toBe(200)
+      expect422(await enrol(admin, id, [d2, '99999999']), 'schoolIds', fmt)
+      expect(parseData(await admin.get(`/api/leagues/${id}`), GamesLeagueDetailSchema).schools.map((x) => x.id)).toEqual([d2])
+    })
+
+    it('more than 500 school ids is "Format sekolah tidak sah." under schoolIds', async () => {
+      const admin = await loginAs(t, ACCOUNTS.admin)
+      const id = await createAs(admin)
+      const ids = Array.from({ length: 501 }, (_, i) => String(900000 + i))
+      expect422(await enrol(admin, id, ids), 'schoolIds', 'Format sekolah tidak sah.')
     })
 
     it('an unknown or non-numeric league id is 404 "Liga tidak dijumpai."', async () => {

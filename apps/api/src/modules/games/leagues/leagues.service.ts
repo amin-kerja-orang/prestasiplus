@@ -182,12 +182,13 @@ export class LeaguesService {
     await this.repo.transaction(async () => {
       const league = await this.repo.lockLeague(id)
       if (!league) throw leagueNotFound()
+      // Body validation, step 2: an unknown school id is "Format sekolah tidak sah.", before "ended" and the per-school checks.
+      const known = new Set((await this.schools.getMany([...new Set(schoolIds)])).map((s) => s.id))
+      if (schoolIds.some((sid) => !known.has(sid))) throw leagueSchoolInvalid()
       if (now.getTime() > Date.parse(`${dateOnly(league.endDate)}T23:59:59.999+08:00`)) throw leagueEnded()
-      const known = new Set((await this.schools.getMany([...new Set(schoolIds)])).map((s) => s.id)) // after the lock
       let count = await this.repo.membershipCount(league.id)
       const seen = new Set<string>()
       for (const schoolId of schoolIds) {
-        if (!known.has(schoolId)) throw leagueSchoolInvalid()
         if (seen.has(schoolId) || (await this.repo.hasSchool(league.id, schoolId))) throw leagueAlreadyIn()
         seen.add(schoolId)
         if (league.maxSchools !== null && count >= league.maxSchools) throw leagueFull()

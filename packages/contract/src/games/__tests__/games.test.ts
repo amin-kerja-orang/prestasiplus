@@ -759,7 +759,7 @@ describe('leagues (M16-46 to M16-49)', () => {
         path: 'schoolLimit',
       })
     }
-    for (const levelIds of [[0], [6], [1.5], ['T4'], 'T4']) {
+    for (const levelIds of [[0], [6], [1.5], ['T4'], 'T4', [1, 2, 3, 4, 5, 1]]) {
       expect(firstIssue(GamesLeagueCreateRequestSchema, { ...create, levelIds }).message).toBe('Tingkatan tidak sah.')
     }
   })
@@ -776,6 +776,8 @@ describe('leagues (M16-46 to M16-49)', () => {
     rejected(GamesLeagueEnrolRequestSchema, {})
     rejected(GamesLeagueEnrolRequestSchema, { schoolIds: [] })
     rejected(GamesLeagueEnrolRequestSchema, { schoolIds: [5] })
+    ok(GamesLeagueEnrolRequestSchema, { schoolIds: Array.from({ length: 500 }, (_, i) => String(i + 1)) })
+    rejected(GamesLeagueEnrolRequestSchema, { schoolIds: Array.from({ length: 501 }, (_, i) => String(i + 1)) })
     rejected(GamesLeagueEnrolRequestSchema, { schoolIds: ['1'], inviteCode: 'X' })
     for (const m of [GAMES_MESSAGES.leagueEnded, GAMES_MESSAGES.leagueAlreadyIn, GAMES_MESSAGES.leagueFull]) {
       ok(ErrorBodySchema, { error: { code: 'VALIDATION_ERROR', message: m, fields: { schoolIds: m } } })

@@ -99,6 +99,7 @@ export const GamesLeagueCreateRequestSchema = z
     levelIds: z
       .array(z.number({ error: GAMES_MESSAGES.leagueClassLevels }).int({ error: GAMES_MESSAGES.leagueClassLevels }).min(1, { error: GAMES_MESSAGES.leagueClassLevels }).max(5, { error: GAMES_MESSAGES.leagueClassLevels }), orRequired(GAMES_MESSAGES.leagueClassLevels))
       .min(1, required)
+      .max(5, { error: GAMES_MESSAGES.leagueClassLevels })
       .meta({ description: 'Tingkatan 1..5 = T1..T5; at least one.' }),
     start: z.iso.date(required),
     end: z.iso.date(required),
@@ -116,7 +117,7 @@ export type GamesLeagueCreateRequest = z.infer<typeof GamesLeagueCreateRequestSc
  * the first failing school decides the 422, which sits under `fields.schoolIds`.
  */
 export const GamesLeagueEnrolRequestSchema = z
-  .strictObject({ schoolIds: z.array(IdSchema).min(1) })
+  .strictObject({ schoolIds: z.array(IdSchema).min(1).max(500) })
   .meta({ id: 'GamesLeagueEnrolRequest' })
 export type GamesLeagueEnrolRequest = z.infer<typeof GamesLeagueEnrolRequestSchema>
 

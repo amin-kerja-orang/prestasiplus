@@ -122,6 +122,7 @@ export function parseLeagueBody(body: unknown): LeagueInput {
   if (levels === undefined || (Array.isArray(levels) && levels.length === 0)) f.levelIds = required
   else if (
     !Array.isArray(levels) ||
+    levels.length > 5 ||
     levels.some((l) => !(typeof l === 'number' && Number.isInteger(l) && l >= 1 && l <= 5))
   ) {
     f.levelIds = 'Tingkatan tidak sah.'
@@ -275,7 +276,9 @@ export const leaguesRepo = defineRepository({
           }
           if (!Array.isArray(ids) || ids.length === 0) fail('Sila pilih sekolah.')
           const list = ids as unknown[]
-          if (list.some((x) => typeof x !== 'number' || !schools.get(x))) fail('Format sekolah tidak sah.')
+          if (list.length > 500 || list.some((x) => typeof x !== 'number' || !schools.get(x))) {
+            fail('Format sekolah tidak sah.')
+          }
           if (Date.parse(`${league.endDate}T23:59:59.999+08:00`) < Date.parse(nowIso())) {
             fail('Liga ini sudah tamat.')
           }

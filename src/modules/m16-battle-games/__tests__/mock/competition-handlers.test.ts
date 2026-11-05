@@ -613,6 +613,7 @@ describe('#46-#49 leagues', () => {
     expect((await post<ErrorBody>('/api/leagues', ADMIN, { ...form, schoolLimit: 501 })).status).toBe(422)
     expect((await post<ErrorBody>('/api/leagues', ADMIN, { ...form, name: 'x'.repeat(101) })).body.error.fields?.name).toBe('Sila lengkapkan semua medan wajib.')
     expect((await post<ErrorBody>('/api/leagues', ADMIN, { ...form, levelIds: [6] })).body.error.fields?.levelIds).toBe('Tingkatan tidak sah.')
+    expect((await post<ErrorBody>('/api/leagues', ADMIN, { ...form, levelIds: [1, 2, 3, 4, 5, 1] })).body.error.fields?.levelIds).toBe('Tingkatan tidak sah.')
   })
 
   it('#47 creates an upcoming league and answers its detail; NO school joins on create', async () => {
@@ -643,6 +644,7 @@ describe('#46-#49 leagues', () => {
     }
     expect(await msg({ schoolIds: [] })).toBe('Sila pilih sekolah.')
     expect(await msg({ schoolIds: [999999] })).toBe('Format sekolah tidak sah.')
+    expect(await msg({ schoolIds: Array.from({ length: 501 }, (_, i) => 900000 + i) })).toBe('Format sekolah tidak sah.')
     expect(await msg({ schoolIds: [8880, 8880] })).toBe('Sekolah ini sudah menyertai liga ini.')
     expect(await msg({ schoolIds: [8880, 8082, 8090] })).toBe('Liga ini sudah penuh.')
     expect((await data<LeagueDto>(`/api/leagues/${String(id)}`, ADMIN)).schools).toEqual([])
@@ -656,6 +658,7 @@ describe('#46-#49 leagues', () => {
     // Unknown league: 404; an ended league (liga 2) is refused.
     expect((await post('/api/leagues/999/schools', ADMIN, { schoolIds: [8880] })).status).toBe(404)
     expect(await msgAt('/api/leagues/2/schools', { schoolIds: [8880] })).toBe('Liga ini sudah tamat.')
+    expect(await msgAt('/api/leagues/2/schools', { schoolIds: [8880, 999999] })).toBe('Format sekolah tidak sah.')
   })
 
   const msgAt = async (url: string, body: unknown) => (await post<ErrorBody>(url, ADMIN, body)).body.error.message
