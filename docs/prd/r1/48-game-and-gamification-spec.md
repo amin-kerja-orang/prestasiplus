@@ -218,7 +218,7 @@ Rule for all game screens: a load failure shows `dsCopy.loadError` "Tidak dapat 
 - **FR-GM-00.3** The reward formula of 3.4 is the only source of game XP and syiling; the constants of 3.7 "Replaced" are deleted from code and mocks.
 - **FR-GM-00.4** No robot or fake participant carries a real pupil's identity, answers or user id; `bot-pool.ts` is deleted.
 - **FR-GM-00.5** Every answered or timed-out bank question writes one `practice_answers` row as in 3.5 (mode `battle` for Battle Arena, mode `game` with the game key in `part_ref` for every other game).
-- **FR-GM-00.6** Daily caps and the pace guard of 3.4 apply to every game, and a replay never credits twice.
+- **FR-GM-00.6** Daily caps and the pace guard of 3.4 apply to every game, and a replay never credits twice. The caps and the replay check read the table `game_reward_events` (DM-87, unique on `game_session_id` and `user_id`; PO decision 2026-11-05, item 20).
 - **FR-GM-00.7** All clocks are server-side; an unpolled session closes `abandoned` after 30 minutes.
 - **FR-GM-00.8** Boards and rooms show other pupils by display name only (section 3.10).
 - **FR-GM-00.9** Mod Pelajar accounts play without reward, standing or answer rows.
@@ -227,7 +227,7 @@ Rule for all game screens: a load failure shows `dsCopy.loadError` "Tidak dapat 
 
 - **AC-GM-00.1** Given a pupil answers 5 questions in Betul atau Salah (3 correct), when the game ends, then `practice_answers` holds 5 rows with `mode = 'game'` and `part_ref` `betul-salah#1`..`betul-salah#5` (3 with `is_correct`), Prestasi "Soalan Dijawab" rises by 5, and with `games_award_syiling` = Tidak the wallet syiling is unchanged while XP rose by 3 x 10 + `game_play_xp` (Betul atau Salah is a solo game: it has no opponent, so `game_win_xp` never applies, GAME-S; for a multiplayer game the XP is 3 x 10 + `game_play_xp` or `game_win_xp` as the outcome says).
 - **AC-GM-00.2** Given `games_award_syiling` = Ya, `flat_quiz_reward` = 1, `game_win_bonus_syiling` = 5 and a won game with 7 correct answers, then the pupil gets 7 + 5 = 12 syiling and 7 x 10 + 20 = 90 XP.
-- **AC-GM-00.3** Given the reward event is replayed with the same game session id, then the ledger holds one row and the response is the first result.
+- **AC-GM-00.3** Given the reward event is replayed with the same game session id for the same pupil, then `game_reward_events` holds one row (unique on session and user, DM-87), the ledger holds one row and the response is the first result (PO decision 2026-11-05, item 20).
 - **AC-GM-00.4** Given a game with a robot, then the participant has `is_bot = true`, `user_id` null and the name "Robot PrestasiPlus", no `practice_answers` row exists for it, and no row of `users` of the host's school is linked to the game.
 - **AC-GM-00.5** Given a pupil has already received 500 game XP today (MYT) and wins another game, then the result shows "Had ganjaran permainan hari ini telah dicapai. Cuba lagi esok." and 0 XP is added.
 - **AC-GM-00.6** Given a pool of 10 playable questions and a game that draws 15, then the game card is absent from the hub and a direct start answers 422 "Soalan tidak mencukupi.".
