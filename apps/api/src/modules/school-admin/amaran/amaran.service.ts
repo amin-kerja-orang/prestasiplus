@@ -255,7 +255,7 @@ export class AmaranService {
         targetId: school.id,
         details: { fileName, rowCount: pupils.length },
       })
-      return { csv: amaranCsv(pupils), fileName }
+      return { csv: amaranCsv(pupils, school.name), fileName }
     })
   }
 

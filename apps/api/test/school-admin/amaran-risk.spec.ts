@@ -233,16 +233,16 @@ describe('BE-21 Amaran CSV (pure part)', () => {
     .map((p, i) => pupilView(p, i + 1))
 
   it('has a BOM, CRLF line ends with a trailing CRLF and the contract header', () => {
-    const csv = amaranCsv(pupils)
+    const csv = amaranCsv(pupils, 'SMK Contoh')
     expect(csv.charCodeAt(0)).toBe(0xfeff)
     expect(csv.endsWith('\r\n')).toBe(true)
     expect(csv.replace(/\r\n/g, '')).not.toMatch(/[\r\n]/)
-    expect(csv.slice(1).split('\r\n')[0]).toBe('Bil,Pelajar,Tingkatan / Kelas,Skor Risiko,Status,Ketepatan,Penglibatan,Penguasaan')
+    expect(csv.slice(1).split('\r\n')[0]).toBe('Bil,Pelajar,Sekolah,Tingkatan / Kelas,Skor Risiko,Status,Ketepatan,Penglibatan,Penguasaan')
     expect(csv.split('\r\n')).toHaveLength(pupils.length + 2)
   })
 
   it('neutralises formula cells with an apostrophe and quotes commas and quotes', () => {
-    const csv = amaranCsv(pupils)
+    const csv = amaranCsv(pupils, 'SMK Contoh')
     expect(csv).toContain(`"'=HYPERLINK(""http://evil.test"",""klik"")"`)
     expect(csv).toContain(`'@SUM(A1)`)
     expect(csv).toContain(`"Murid, ""Koma"""`)

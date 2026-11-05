@@ -30604,9 +30604,10 @@
         "enum": [
           "on_track",
           "watch",
-          "high"
+          "high",
+          "not_started"
         ],
-        "description": "score < 40 on_track, < 60 watch, otherwise high. Labels: \"On Track\", \"Perlu Perhatian\", \"Berisiko Tinggi\"."
+        "description": "score < 40 on_track, < 60 watch, otherwise high; a pupil with no practice data at all is not_started (no score, outside the three groups). Labels: \"On Track\", \"Perlu Perhatian\", \"Berisiko Tinggi\", \"Belum Bermula\"."
       },
       "AmaranScope": {
         "type": "string",
@@ -30655,9 +30656,15 @@
             "minimum": 0,
             "description": "high."
           },
+          "notStarted": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "not_started: pupils with no practice data, outside green, yellow, red and total. Always sent by the API; optional so existing consumers keep compiling (additive change)."
+          },
           "total": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "description": "green + yellow + red (not_started excluded)."
           },
           "pct": {
             "type": "object",
@@ -30729,7 +30736,7 @@
         "properties": {
           "tingkatan": {
             "type": "string",
-            "description": "T4 | T5 | 4 | 5 (case-insensitive). Anything else = no filter. The filter is class based."
+            "description": "T1 to T5 | 1 to 5 (case-insensitive). Anything else = no filter. The filter is class based."
           }
         }
       },
@@ -30780,10 +30787,13 @@
             "description": "\"Tingkatan n {class}\", \"Darjah n {class}\" or \"-\"."
           },
           "score": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100,
-            "description": "0.4A + 0.3E + 0.3M, 1 decimal."
+            "description": "0.4A + 0.3E + 0.3M, 1 decimal; null for not_started."
           },
           "status": {
             "$ref": "#/components/schemas/AmaranRiskStatus"
@@ -30879,10 +30889,22 @@
               "null"
             ],
             "enum": [
+              "T1",
+              "T2",
+              "T3",
               "T4",
               "T5",
               null
             ]
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            },
+            "description": "The Tingkatan numbers (ascending) that have pupils in the school; the level pills list only these."
           },
           "levelSuffix": {
             "type": "string",
@@ -30902,7 +30924,7 @@
             "items": {
               "$ref": "#/components/schemas/AmaranPupilRisk"
             },
-            "description": "Score descending, 1-based rank. Inactive pupils are included."
+            "description": "Score descending (not_started last), 1-based rank. Inactive pupils are included."
           }
         },
         "required": [
@@ -103983,10 +104005,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "T4 | T5 | 4 | 5 (case-insensitive). Anything else = no filter. The filter is class based."
+              "description": "T1 to T5 | 1 to 5 (case-insensitive). Anything else = no filter. The filter is class based."
             },
             "required": false,
-            "description": "T4 | T5 | 4 | 5 (case-insensitive). Anything else = no filter. The filter is class based.",
+            "description": "T1 to T5 | 1 to 5 (case-insensitive). Anything else = no filter. The filter is class based.",
             "name": "tingkatan",
             "in": "query"
           }
@@ -104205,7 +104227,7 @@
           "amaran"
         ],
         "summary": "School risk list as CSV",
-        "description": "Roles: admin (any school) and school_admin (own school); a teacher or any other role gets 403. Check order: the role check (403) comes BEFORE the 404; then an unknown school and a school outside the caller scope are both 404 (indistinguishable; the mock answered 403 for the latter). File name amaran-sekolah-{id}-{yyyymmdd}.csv (date in Malaysia time). Headers: Content-Type text/csv; charset=utf-8, Cache-Control no-store. Body: UTF-8 BOM, CRLF line ends with a trailing CRLF; header Bil,Pelajar,Tingkatan / Kelas,Skor Risiko,Status,Ketepatan,Penglibatan,Penguasaan; one line per pupil of the school (no tingkatan filter), score with one decimal, status label, then the three BM cell texts of the risk page. Cells starting with = + - @ tab or CR are prefixed with an apostrophe; quoting follows RFC 4180. No IC, e-mail or phone. PDPA: the file lists minors' names, classes and risk scores, the most sensitive derived data; it is never cached and rate limited (429, proposed on top of D57a because it is a bulk dump of minors). Every accepted download writes an audit event (actor, school, file name) and never personal content.",
+        "description": "Roles: admin (any school) and school_admin (own school); a teacher or any other role gets 403. Check order: the role check (403) comes BEFORE the 404; then an unknown school and a school outside the caller scope are both 404 (indistinguishable; the mock answered 403 for the latter). File name amaran-sekolah-{id}-{yyyymmdd}.csv (date in Malaysia time). Headers: Content-Type text/csv; charset=utf-8, Cache-Control no-store. Body: UTF-8 BOM, CRLF line ends with a trailing CRLF; header Bil,Pelajar,Sekolah,Tingkatan / Kelas,Skor Risiko,Status,Ketepatan,Penglibatan,Penguasaan; one line per pupil of the school (no tingkatan filter), score with one decimal, status label, then the three BM cell texts of the risk page. Cells starting with = + - @ tab or CR are prefixed with an apostrophe; quoting follows RFC 4180. No IC, e-mail or phone. PDPA: the file lists minors' names, classes and risk scores, the most sensitive derived data; it is never cached and rate limited (429, proposed on top of D57a because it is a bulk dump of minors). Every accepted download writes an audit event (actor, school, file name) and never personal content.",
         "parameters": [
           {
             "schema": {

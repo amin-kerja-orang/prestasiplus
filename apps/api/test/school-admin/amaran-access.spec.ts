@@ -152,7 +152,7 @@ describe('BE-21 Amaran access: /amaran/*', () => {
     expect(names).toEqual(expect.arrayContaining(pupilIds.map((_, i) => `Murid Amaran ${i + 1}`)))
     expect(data.pupils.map((p) => p.rank)).toEqual(data.pupils.map((_, i) => i + 1))
     const scores = data.pupils.map((p) => p.score)
-    expect(scores).toEqual([...scores].sort((a, b) => b - a))
+    expect(scores).toEqual([...scores].sort((a, b) => (b ?? -1) - (a ?? -1)))
     expect(data.tally.total).toBe(data.pupils.length)
     expect(data.levelFilter).toBeNull()
     const weak = data.pupils.find((p) => p.name === 'Murid Amaran 1')

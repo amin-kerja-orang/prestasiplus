@@ -24,13 +24,13 @@ export const AMARAN_MESSAGES = {
 // Enums and labels
 // ---------------------------------------------------------------------------------------------
 
-export const AMARAN_RISK_STATUSES = ['on_track', 'watch', 'high'] as const
+export const AMARAN_RISK_STATUSES = ['on_track', 'watch', 'high', 'not_started'] as const
 export const AmaranRiskStatusSchema = z
   .enum(AMARAN_RISK_STATUSES)
   .meta({
     id: 'AmaranRiskStatus',
     description:
-      'score < 40 on_track, < 60 watch, otherwise high. Labels: "On Track", "Perlu Perhatian", "Berisiko Tinggi".',
+      'score < 40 on_track, < 60 watch, otherwise high; a pupil with no practice data at all is not_started (no score, outside the three groups). Labels: "On Track", "Perlu Perhatian", "Berisiko Tinggi", "Belum Bermula".',
   })
 export type AmaranRiskStatus = z.infer<typeof AmaranRiskStatusSchema>
 
@@ -38,6 +38,7 @@ export const AMARAN_STATUS_LABELS: Readonly<Record<AmaranRiskStatus, string>> = 
   on_track: 'On Track',
   watch: 'Perlu Perhatian',
   high: 'Berisiko Tinggi',
+  not_started: 'Belum Bermula',
 }
 
 export const AMARAN_SCOPES = ['school', 'district', 'state'] as const
@@ -83,6 +84,7 @@ export const AMARAN_MONTH_ABBREVIATIONS = [
 export const AMARAN_CSV_COLUMNS = [
   'Bil',
   'Pelajar',
+  'Sekolah',
   'Tingkatan / Kelas',
   'Skor Risiko',
   'Status',
@@ -107,7 +109,8 @@ export const AmaranTallySchema = z
     green: count.meta({ description: 'on_track.' }),
     yellow: count.meta({ description: 'watch.' }),
     red: count.meta({ description: 'high.' }),
-    total: count,
+    notStarted: count.optional().meta({ description: 'not_started: pupils with no practice data, outside green, yellow, red and total. Always sent by the API; optional so existing consumers keep compiling (additive change).' }),
+    total: count.meta({ description: 'green + yellow + red (not_started excluded).' }),
     pct: z.object({ green: pctInt, yellow: pctInt, red: pctInt }),
   })
   .meta({ id: 'AmaranTally' })
@@ -129,19 +132,20 @@ export type AmaranSubjectRisk = z.infer<typeof AmaranSubjectRiskSchema>
 // GET /amaran/schools/{id}
 // ---------------------------------------------------------------------------------------------
 
-/** `tingkatan` accepts T4, T5, 4 or 5 case-insensitively; anything else means no filter. */
+/** `tingkatan` accepts T1 to T5, 1 to 5 case-insensitively; anything else means no filter. */
 export const AmaranSchoolRiskQuerySchema = z
   .object({
-    tingkatan: z.string().optional().meta({ description: 'T4 | T5 | 4 | 5 (case-insensitive). Anything else = no filter. The filter is class based.' }),
+    tingkatan: z.string().optional().meta({ description: 'T1 to T5 | 1 to 5 (case-insensitive). Anything else = no filter. The filter is class based.' }),
   })
   .meta({ id: 'AmaranSchoolRiskQuery' })
 export type AmaranSchoolRiskQuery = z.infer<typeof AmaranSchoolRiskQuerySchema>
 
 /**
  * One pupil of the risk list. Cell texts are the exact BM strings: accuracyText "Purata ketepatan:
- * {n}%" / "Tiada data latihan" (never active) / "Tiada data"; engagementText "Terakhir aktif:
- * {yyyy-mm-dd}" / "Tiada aktiviti"; masteryText "Purata tahap: L{n}" / "Tiada data penguasaan"
- * (never active) / "Tiada data". Personal contact data (IC, e-mail, phone) is never present.
+ * {n}%" / "Tiada data"; engagementText "Terakhir aktif: {yyyy-mm-dd}" / "Tiada aktiviti"; masteryText
+ * "Purata tahap: L{n}" / "Tiada data". A `not_started` pupil (no practice data at all) has score null and
+ * "—" in all three texts (FR-X4-3: no data is never a negative result). Personal contact data (IC,
+ * e-mail, phone) is never present.
  *
  * PDPA: this is the most sensitive derived data about minors (name, class and a risk score). It is
  * served only to roles with access to the school (an out-of-scope school is 404), never cached
@@ -158,7 +162,7 @@ export const AmaranPupilRiskSchema = z
     tingkatan: z.number().int().min(1).max(5).nullable(),
     className: z.string().nullable().meta({ description: 'First class name, or null when in no class.' }),
     classLabel: z.string().meta({ description: '"Tingkatan n {class}", "Darjah n {class}" or "-".' }),
-    score: z.number().min(0).max(100).meta({ description: '0.4A + 0.3E + 0.3M, 1 decimal.' }),
+    score: z.number().min(0).max(100).nullable().meta({ description: '0.4A + 0.3E + 0.3M, 1 decimal; null for not_started.' }),
     status: AmaranRiskStatusSchema,
     accuracy: z.number().nullable().meta({ description: 'Mean practice-session accuracy %, 1 decimal.' }),
     engagement: DateOnlySchema.nullable().meta({ description: 'Last active date.' }),
@@ -179,13 +183,14 @@ export const AmaranSchoolRiskSchema = z
       district: z.string().nullable(),
       state: z.string(),
     }),
-    levelFilter: z.enum(['T4', 'T5']).nullable(),
+    levelFilter: z.enum(['T1', 'T2', 'T3', 'T4', 'T5']).nullable(),
+    levels: z.array(z.number().int().min(1).max(5)).optional().meta({ description: 'The Tingkatan numbers (ascending) that have pupils in the school; the level pills list only these.' }),
     levelSuffix: z.string().meta({ description: '"" or " — Tingkatan {n}".' }),
     tally: AmaranTallySchema,
     weakness: z.array(AmaranSubjectRiskSchema),
     pupils: z
       .array(AmaranPupilRiskSchema)
-      .meta({ description: 'Score descending, 1-based rank. Inactive pupils are included.' }),
+      .meta({ description: 'Score descending (not_started last), 1-based rank. Inactive pupils are included.' }),
   })
   .meta({ id: 'AmaranSchoolRisk' })
 export type AmaranSchoolRisk = z.infer<typeof AmaranSchoolRiskSchema>
