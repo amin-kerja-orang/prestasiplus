@@ -36,6 +36,17 @@ describe('R1-T32 stimulus request schemas (D90)', () => {
     for (const body of ok) expect(StimulusCreateRequestSchema.safeParse(body).success, JSON.stringify(body)).toBe(true)
   })
 
+  it('DM-70: style is optional and nullable, trimmed, 1 to 32 characters, on create and update', () => {
+    expect(StimulusCreateRequestSchema.safeParse({ kind: 'passage', body: { ms: 'x' } }).success).toBe(true)
+    for (const style of ['kotak', 'mono', null]) {
+      expect(StimulusCreateRequestSchema.safeParse({ kind: 'passage', body: { ms: 'x' }, style }).success, String(style)).toBe(true)
+      expect(StimulusUpdateRequestSchema.safeParse({ style }).success, String(style)).toBe(true)
+    }
+    expect(StimulusCreateRequestSchema.safeParse({ kind: 'passage', body: { ms: 'x' }, style: 'k'.repeat(33) }).success).toBe(false)
+    expect(StimulusCreateRequestSchema.safeParse({ kind: 'passage', body: { ms: 'x' }, style: '  ' }).success).toBe(false)
+    expect(StimulusUpdateRequestSchema.safeParse({ style: 'k'.repeat(33) }).success).toBe(false)
+  })
+
   it('names the missing content in BM on the right field', () => {
     expect(fieldsOf(StimulusCreateRequestSchema.safeParse({ kind: 'passage' }))).toEqual({ body: STIMULUS_MESSAGES.bodyRequired })
     expect(fieldsOf(StimulusCreateRequestSchema.safeParse({ kind: 'diagram' }))).toEqual({ imageFileId: STIMULUS_MESSAGES.imageRequired })

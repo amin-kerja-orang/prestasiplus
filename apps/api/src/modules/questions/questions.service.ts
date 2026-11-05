@@ -612,6 +612,22 @@ export class QuestionsService {
     return this.viewOf(after)
   }
 
+  /**
+   * S1-T01 (group actions): the failures of the `submit` or `approve` gate on the latest version of a question, WITHOUT changing anything. A
+   * group move collects these for every member first so one refusal changes nothing; `setStatus` then runs the same gate again per member.
+   * Empty = the gate holds. 404 for an unknown id.
+   */
+  async gateFieldsOf(id: string, gate: 'submit' | 'approve'): Promise<Record<string, string>> {
+    const record = await this.repo.get(id, 'latest')
+    if (!record) throw questionNotFound()
+    return this.gateFields(gate, record, record.version)
+  }
+
+  /** The servability overview changes with a status move; a group move calls this once after its transaction commits. */
+  invalidateOverview(): void {
+    this.overview?.invalidate()
+  }
+
   async getStatus(id: string): Promise<QuestionStatusInfo> {
     const r = await this.repo.get(id, 'latest')
     if (!r) throw questionNotFound()
@@ -929,7 +945,7 @@ export class QuestionsService {
         createdById: creator,
         groupId: groupId === null ? null : BigInt(groupId),
         // D90 / R1-T32: the same member rules as the stimulus routes; locks the group so concurrent creates get distinct positions.
-        groupPosition: groupId === null ? null : await this.groupMembers.joinNew(groupId, draft.subjectId === null ? null : idToString(draft.subjectId), kertasOfPaperCode(draft.paperCode ?? null)),
+        groupPosition: groupId === null ? null : await this.groupMembers.joinNew(groupId, draft.subjectId === null ? null : idToString(draft.subjectId), draft.educationLevelId === null ? null : idToString(draft.educationLevelId), kertasOfPaperCode(draft.paperCode ?? null)),
         now: this.clock.now(),
         version: draft,
         ...(provenance
@@ -1246,9 +1262,9 @@ export class QuestionsService {
       // R1-T49: a grouped question that changes subject or kertas must still fit the other members (the only member may change freely).
       // The body may repeat the CURRENT group id (the Studio sends it with every save): that is no move, so the check still runs (REQ-B-025b).
       if (fresh.groupId !== null && (input.stimulusGroupId === undefined || input.stimulusGroupId === fresh.groupId)) {
-        const after = { subject: draft.subjectId === null ? null : idToString(draft.subjectId), kertas: kertasOfPaperCode(draft.paperCode ?? null) }
-        const before = { subject: fresh.version.subjectId, kertas: kertasOfPaperCode(fresh.version.paperCode) }
-        if (after.subject !== before.subject || after.kertas !== before.kertas) await this.groupMembers.assertTraitChange(fresh.groupId, record.id, after.subject, after.kertas)
+        const after = { subject: draft.subjectId === null ? null : idToString(draft.subjectId), level: draft.educationLevelId === null ? null : idToString(draft.educationLevelId), kertas: kertasOfPaperCode(draft.paperCode ?? null) }
+        const before = { subject: fresh.version.subjectId, level: fresh.version.educationLevelId, kertas: kertasOfPaperCode(fresh.version.paperCode) }
+        if (after.subject !== before.subject || after.level !== before.level || after.kertas !== before.kertas) await this.groupMembers.assertTraitChange(fresh.groupId, record.id, after.subject, after.level, after.kertas)
       }
       if (input.stimulusGroupId !== undefined) {
         // D90 / R1-T32: leaving or joining a group goes through the same rules as the stimulus routes (served lock, caps, PKSK, ...).
