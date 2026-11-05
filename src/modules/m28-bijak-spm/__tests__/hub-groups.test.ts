@@ -69,6 +69,12 @@ describe('Kertas Pilihan', () => {
     expect(document.body.querySelector('[data-testid=group-sets]')?.textContent).toBe('2 set · 1449')
   })
 
+  it('a group whose papers have no code is headed "{n} set" alone (lead ruling DD3)', async () => {
+    server.listPapers.mockResolvedValue([paper('x1', 'FIZ', 'Fizik', 1, ''), paper('x2', 'FIZ', 'Fizik', 2, '')])
+    await render()
+    expect(document.body.querySelector('[data-testid=group-sets]')?.textContent).toBe('2 set')
+  })
+
   it('offers only the subjects of listed papers (name asc) and the kertas they hold', async () => {
     server.listPapers.mockResolvedValue(PAPERS)
     const w = await render()

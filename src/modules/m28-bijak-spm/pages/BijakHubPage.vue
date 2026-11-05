@@ -76,10 +76,10 @@ const grouped = computed(() => {
     .map(([code, v]) => ({ code, ...v, setLine: setLine(v.papers) }))
     .sort((a, b) => b.papers.length - a.papers.length || a.name.localeCompare(b.name, 'ms'))
 })
-/** "{n} set · {kod}". [PROPOSED] {kod} is the printed code before the slash (1449/2 -> 1449): the docs do not define it. */
+/** "{n} set · {kod}". [PROPOSED] {kod} is the SPM subject code, the paper code before the slash (1449/2 -> 1449; lead ruling DD3, provisional). No code: "{n} set" alone. */
 function setLine(list: readonly PaperSummary[]): string {
-  const kod = [...new Set(list.map((p) => p.code.split('/')[0]))].join(', ')
-  return `${list.length} set · ${kod}`
+  const kod = [...new Set(list.map((p) => (p.code ?? '').split('/')[0]!.trim()).filter(Boolean))].join(', ')
+  return kod ? `${list.length} set · ${kod}` : `${list.length} set`
 }
 /** Hero: the sitting in progress ("Sambung kertas"), else the next paper to start ("Mula kertas"). */
 const heroPaper = computed(() => {
