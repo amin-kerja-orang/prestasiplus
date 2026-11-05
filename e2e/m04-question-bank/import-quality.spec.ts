@@ -8,6 +8,7 @@
 
 import type { Page } from '@playwright/test'
 
+import { SOURCE_TOTALS } from '../../src/modules/m04-question-bank/mock/data/tables'
 import { expect, test } from '../fixtures/test'
 import { expectNoHorizontalScroll, expectTabTitle, viewportWidth, moduleTag, provisional, TAG } from '../support'
 
@@ -162,7 +163,9 @@ test.describe('M04 S6 question quality', { tag: [TAG.smoke, moduleTag(4)] }, () 
     // `round1(stats.sum / scored)` over the scored secondary questions (`mock/handlers/quality.ts`); no named query
     // reads it. SRS 94.1 is the whole bank; D72 and D96 hide the Darjah questions, which gives 93.5.
     await expect(byId(page, 'kpi-average')).toContainText('93.5')
-    await expect(byId(page, 'bucket-legacy-value')).toHaveText('373')
+    // Legacy Generic = the `ai_generated` rows (`SOURCE_TOTALS.ai_generated`, `m04 mock/data/tables.ts`), seeded by
+    // `questions-spec.ts` as `legacyGeneric: true` and counted by `mock/handlers/quality.ts`; read from the same table.
+    await expect(byId(page, 'bucket-legacy-value')).toHaveText(String(SOURCE_TOTALS.ai_generated))
     await expect(page.getByText('Taburan Kualiti')).toBeVisible()
     const share = Math.round((excellent * 1000) / (excellent + baik + low)) / 10
     await expect(byId(page, 'dist-cemerlang')).toContainText(`${String(share)}%`)
@@ -177,6 +180,7 @@ test.describe('M04 S6 question quality', { tag: [TAG.smoke, moduleTag(4)] }, () 
       )
     await expectNoHorizontalScroll(page)
     const total = await value(page, 'kpi-total')
+    expect(await value(page, 'kpi-action')).toBeLessThanOrEqual(total)
     await gotoApp('/admin/questions')
     const s1 = (await byId(page, 'questions-kpis').innerText()).split('\n')[0] ?? ''
     expect(toCount(s1)).toBe(total)
