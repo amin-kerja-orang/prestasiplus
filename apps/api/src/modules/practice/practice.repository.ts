@@ -11,9 +11,10 @@ import { MAX_SECONDS_PER_QUESTION, type OfferedLevel, offeredLevels, POINTS_PER_
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-/** True when `text` is shaped like a uuid (a non-uuid session id is an unknown session, never a 500). */
 /** `practice_sessions.legacy_paper` of a Simulasi Kuiz session (R1-B16); the Bijak Kuiz close owns those sessions' idle sweep (S3-T04). */
 export const KUIZ_ORIGIN = 'bijak_kuiz'
+
+/** True when `text` is shaped like a uuid (a non-uuid session id is an unknown session, never a 500). */
 export const isUuid = (text: string): boolean => UUID.test(text)
 
 /** Ids cut into lists of at most `size` (1000) for one `IN` / `ANY` each. */
