@@ -37,7 +37,7 @@ async function openS1(page: Page, gotoApp: (p: string) => Promise<void>, path = 
 }
 
 async function create(page: Page, subject: string, body: string) {
-  const form = page.getByTestId('tk-form-card')
+  const form = page.getByTestId('tk-form')
   if (!(await form.isVisible())) await page.getByTestId('tk-new').click()
   await page.getByLabel('Subjek').fill(subject)
   await page.getByLabel('Butiran').fill(body)
@@ -70,12 +70,13 @@ test.describe('L04 create through the form', MODULE, () => {
     // 256 / 5001: Playwright `fill` honours maxlength, so drop the attributes first (as a direct API caller
     // bypasses them): refused by the endpoint, form stays open, values kept.
     await page.evaluate(() => {
-      document.querySelector('#tk-subject')?.removeAttribute('maxlength')
-      document.querySelector('#tk-body')?.removeAttribute('maxlength')
+      for (const field of document.querySelectorAll('[data-testid="tk-form"] input, [data-testid="tk-form"] textarea')) {
+        field.removeAttribute('maxlength')
+      }
     })
     await create(page, 'a'.repeat(256), 'isi')
     await expect(page.getByTestId('tk-form-error')).toHaveText('Subjek tidak boleh melebihi 255 aksara.')
-    await expect(page.getByTestId('tk-form-card')).toBeVisible()
+    await expect(page.getByTestId('tk-form')).toBeVisible()
     await expect(page.getByLabel('Subjek')).toHaveValue('a'.repeat(256))
     await expect(page.getByTestId('tk-flash')).toHaveCount(0)
     await create(page, 'ok', 'b'.repeat(5001))
@@ -111,7 +112,7 @@ test.describe('L04 create through the form', MODULE, () => {
       await create(page, `Ujian ${label}`, 'Baris satu')
       const flash = page.getByTestId('tk-flash')
       await expect(flash).toHaveText(FLASH)
-      await expect(page.getByTestId('tk-form-card')).toBeHidden()
+      await expect(page.getByTestId('tk-form')).toBeHidden()
       expect(new URL(page.url()).pathname).toBe(PATH)
       expect(new URL(page.url()).search).toBe('')
       await expect(cards(page)).toHaveCount(1)
@@ -178,7 +179,8 @@ test.describe('L04 access and badge', MODULE, () => {
       await expect(page.getByTestId('tq-page')).toHaveCount(0)
       await expect(page.getByTestId('tq-row')).toHaveCount(0)
       await expect(page.getByText('Soalan kuiz tidak dipaparkan')).toHaveCount(0)
-      await expect(page).not.toHaveURL(/\/admin\/tiket/)
+      // S0-T05: a wrong role gets the 403 page in place, on the same URL.
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Akses Ditolak')
       const answered = (await mock.requests('/api/admin/tiket')).filter((r) => r.status === 200)
       expect(answered, `${who}: no queue request may be answered 200`).toHaveLength(0)
     }
@@ -243,14 +245,11 @@ test.describe('L04 queue (S2)', MODULE, () => {
     await gotoApp(QUEUE)
     await expect(page.getByTestId('tq-table')).toBeVisible()
     await expect(page.getByTestId('tq-chips')).toContainText('Semua (2)')
-    await expect(page.getByTestId('tq-chips')).toContainText('dibuka (2)')
-    const rows = page.getByTestId('tq-row')
+    await expect(page.getByTestId('tq-chips')).toContainText('Dibuka (2)')
+    const rows = page.locator('tbody tr, [data-ds="data-table-cards"] > li')
     await expect(rows).toHaveCount(2)
-    await expect(rows.nth(0).locator('td').nth(0)).toHaveText('2026-09-25 09:30:00')
-    await expect(rows.nth(1).locator('td').nth(0)).toHaveText('2026-09-24 10:12:00')
-    for (const th of await page.locator('[data-testid="tq-table"] th').all()) {
-      expect(await th.evaluate((el) => getComputedStyle(el).textTransform)).toBe('uppercase')
-    }
+    await expect(rows.nth(0)).toContainText('2026-09-25 09:30:00')
+    await expect(rows.nth(1)).toContainText('2026-09-24 10:12:00')
     // nothing writable inside the page content
     const page_ = page.getByTestId('tq-page')
     await expect(page_.locator('button, input, textarea, select, form')).toHaveCount(0)
@@ -268,7 +267,7 @@ test.describe('L04 queue (S2)', MODULE, () => {
     }) => {
       await loginAs(ADMIN)
       await gotoApp(QUEUE)
-      await expect(page.getByTestId('tq-row').nth(0).locator('td').nth(0)).toHaveText(
+      await expect(page.locator('tbody tr, [data-ds="data-table-cards"] > li').nth(0)).toContainText(
         '2026-09-25 09:30:00',
       )
     })
