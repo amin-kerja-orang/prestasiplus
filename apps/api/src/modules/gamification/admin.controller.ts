@@ -140,9 +140,28 @@ export class RewardControlController {
     return ok(await this.admin.setRewardCost(actor, id, body))
   }
 
+  @Get('draws')
+  async draws() {
+    return ok(await this.admin.draws())
+  }
+
   @Post('draws')
   @RateLimit(GAMIFICATION_LIMITS.adminWrite)
   async createDraw(@Actor() actor: AuditActor, @Body() body: unknown) {
     return ok(await this.admin.createDraw(actor, body))
+  }
+
+  @Post('draws/:id/open')
+  @HttpCode(200)
+  @RateLimit(GAMIFICATION_LIMITS.adminWrite)
+  async openDraw(@Actor() actor: AuditActor, @Param('id') id: string) {
+    return ok(await this.admin.openDraw(actor, id))
+  }
+
+  @Post('draws/:id/close')
+  @HttpCode(200)
+  @RateLimit(GAMIFICATION_LIMITS.adminWrite)
+  async closeDraw(@Actor() actor: AuditActor, @Param('id') id: string) {
+    return ok(await this.admin.closeDraw(actor, id))
   }
 }

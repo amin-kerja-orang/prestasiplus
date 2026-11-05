@@ -589,20 +589,63 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
   })
 
   registry.registerPath({
+    method: 'get',
+    path: '/admin/reward-control/draws',
+    tags: ['gamification-admin'],
+    summary: 'List the lucky draws (Cabutan Bertuah), newest first (API-GAME-09)',
+    description:
+      'Every draw with its prize pool and ticketsSold. An open draw whose closing day (Malaysia time) has passed reads closed: the state is derived on read and nothing is written. Winners are listed by the winners route (not in this part).',
+    responses: { 200: json(envelopeOf(z.array(GamificationDrawSchema)), 'The draws, newest first.'), 401: UNAUTHORIZED, 403: FORBIDDEN_ADMIN },
+  })
+
+  registry.registerPath({
     method: 'post',
     path: '/admin/reward-control/draws',
     tags: ['gamification-admin'],
     summary: 'Create a lucky draw (Cabutan Bertuah)',
     description:
-      'status is open when openNow is true, else draft. The prize pool is stored as ordered prize lines; the draw cannot award more prizes than the sum of qty. Ticket purchase is M15 (POST /cabutan/{drawId}/tickets); there is no route that draws winners (open question).',
+      'status is open when openNow is true, else draft. The prize pool is stored as ordered prize lines and holds at least one; the draw cannot award more prizes than the sum of qty. Ticket purchase is M15 (POST /cabutan/{drawId}/tickets). Limits (30 P10-01..05): title 120, description 500, ticket price 1 to 10000, tickets per pupil 1 to 100, prize label 120, closesAt today or later.',
     request: { headers: [csrf], body: body(GamificationDrawCreateRequestSchema) },
     responses: {
       201: json(envelopeOf(GamificationDrawSchema), 'The created draw (ticketsSold 0).'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_ADMIN_WRITE,
       422: err(
-        `${VALIDATION_FIELDS} Or VALIDATION_ERROR "Format JSON kolam hadiah tidak sah." with fields.prizePool (also the top-level message), or "Tarikh tutup tidak sah." (closesAt), or fields.closesAt "Medan ini tidak sah." (not a real date).`,
+        `${VALIDATION_FIELDS} Field messages: fields.title "Tajuk diperlukan." (missing or blank), fields.ticketCostSyiling "Harga tiket tidak sah.", fields.prizePool "Hadiah diperlukan." (no prize line, or a blank label; also the top-level message when it is the only error), fields.closesAt "Tarikh tutup mesti pada masa hadapan." (a past day) or "Medan ini tidak sah." (not a real date). Or VALIDATION_ERROR "Format JSON kolam hadiah tidak sah." with fields.prizePool (also the top-level message).`,
       ),
+    },
+  })
+
+  registry.registerPath({
+    method: 'post',
+    path: '/admin/reward-control/draws/{id}/open',
+    tags: ['gamification-admin'],
+    summary: 'Open a draft draw: Buka (API-ADM-24)',
+    description: 'No body. draft to open; the draw then sells tickets until its closing day ends or the admin closes it.',
+    request: { params: IdParams, headers: [csrf] },
+    responses: {
+      200: json(envelopeOf(GamificationDrawSchema), 'The draw, status open.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_ADMIN_WRITE,
+      404: err('NOT_FOUND (no such draw; a non-numeric id gets the router default message).'),
+      409: err('CONFLICT "Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi." (the draw is not a draft).'),
+      422: err('VALIDATION_ERROR with fields.closesAt "Tarikh tutup mesti pada masa hadapan." (the closing day of the draft has passed).'),
+    },
+  })
+
+  registry.registerPath({
+    method: 'post',
+    path: '/admin/reward-control/draws/{id}/close',
+    tags: ['gamification-admin'],
+    summary: 'Close an open draw: Tutup (API-GAME-09)',
+    description: 'No body. open to closed; tickets can no longer be bought. Winners are drawn from a closed draw by the winners route (not in this part).',
+    request: { params: IdParams, headers: [csrf] },
+    responses: {
+      200: json(envelopeOf(GamificationDrawSchema), 'The draw, status closed.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_ADMIN_WRITE,
+      404: err('NOT_FOUND (no such draw; a non-numeric id gets the router default message).'),
+      409: err('CONFLICT "Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi." (the stored state of the draw is not open).'),
     },
   })
 
