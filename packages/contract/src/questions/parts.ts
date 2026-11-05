@@ -38,7 +38,15 @@ export const QuestionLeafModeSchema = z.enum(QUESTION_LEAF_MODES).meta({ id: 'Qu
 const OptionLabel = z.string().regex(/^[A-H]$/, 'Label pilihan mesti A hingga H.')
 const Marks = z.number().int().min(0)
 /** 45:481 / DM-55: a leaf has 1..100 marks; 0 only on an example leaf (`modeConfig.example`), enforced in `QuestionLeafPartSchema`. */
-const LeafMarks = z.number().int().min(0).max(100, 'Markah mesti antara 1 hingga 100.')
+/** 45:452 L-04. */
+const MARKS_MIN_MESSAGE = 'Nilai mata mesti sekurang-kurangnya 1.'
+const MARKS_MAX_MESSAGE = 'Markah bahagian tidak boleh melebihi 100.'
+/** 45:463. */
+const MCQ_OPTIONS_MESSAGE = 'Soalan aneka pilihan mesti ada 2 hingga 8 pilihan.'
+const MCQ_MULTI_COUNT_MESSAGE = 'Pilih sekurang-kurangnya satu jawapan betul dan sekurang-kurangnya satu jawapan salah.'
+/** 45:475. */
+const ESSAY_CHOICE_COUNT_MESSAGE = 'Esei pilihan mesti mempunyai 2 hingga 6 topik.'
+const LeafMarks = z.number().int().min(0).max(100, MARKS_MAX_MESSAGE)
 
 export const QuestionOptionSchema = z
   .object({
@@ -105,7 +113,7 @@ const PointsKeyV1 = z.object({
     .array(z.object({ code: z.enum(['spelling', 'unit', 'sf', 'dp', 'copy']), amount: Marks, cap: Marks.optional() }))
     .optional(),
   modelText: z.string().optional(),
-}).refine((k) => k.scheme_v === undefined, { path: ['scheme_v'], message: 'Versi skema tidak sepadan.' })
+}).refine((k) => k.scheme_v === undefined, { path: ['scheme_v'], message: 'SCHEME_VERSION_MISMATCH' })
 
 const RubricKeyV1 = z.object({
   kind: z.literal('rubric'),
@@ -117,7 +125,7 @@ const RubricKeyV1 = z.object({
     .min(1),
   floorBand: z.object({ name: z.string(), range: z.tuple([Marks, Marks]) }).optional(),
   notes: z.array(z.string()).optional(),
-}).refine((k) => k.scheme_v === undefined, { path: ['scheme_v'], message: 'Versi skema tidak sepadan.' })
+}).refine((k) => k.scheme_v === undefined, { path: ['scheme_v'], message: 'SCHEME_VERSION_MISMATCH' })
 
 
 /* -------------------------------------------------------------------------------------------------
@@ -140,7 +148,7 @@ const DeductionV2 = z
     scope: z.enum(QUESTION_DEDUCTION_SCOPES),
     label: z.string().trim().min(1).max(200).optional(),
   })
-  .refine((d) => d.code !== 'other' || !!d.label, { path: ['label'], message: 'Sila masukkan label potongan.' })
+  .refine((d) => d.code !== 'other' || !!d.label, { path: ['label'], message: 'DEDUCTION_LABEL_REQUIRED' })
 /** 45:1001: `{code, label}`. */
 const ZeroIfV2 = z.strictObject({ code: QuestionDeductionCodeSchema, label: z.string().trim().min(1).max(200) })
 export const QuestionSchemeRulesSchema = z
@@ -212,7 +220,7 @@ const pointsV2Shape = {
 }
 const PointsKeyV2 = z.strictObject({ kind: z.literal('points'), scheme_v: z.literal(2), marks: Marks, ...pointsV2Shape })
 
-const BandRangeV2 = z.tuple([Marks, Marks]).refine(([lo, hi]) => lo <= hi, { message: 'Julat band tidak sah.' })
+const BandRangeV2 = z.tuple([Marks, Marks]).refine(([lo, hi]) => lo <= hi, { message: 'BAND_RANGE_INVALID' })
 const RubricKeyV2 = z
   .strictObject({
     kind: z.literal('rubric'),
@@ -241,23 +249,24 @@ const RubricKeyV2 = z
   })
   .refine((k) => k.scoring !== 'perCriterion' || k.criteria.every((c) => c.max !== undefined), {
     path: ['criteria'],
-    message: 'Sila isi markah maksimum setiap kriteria.',
+    message: 'CRITERION_MAX_REQUIRED',
   })
 
 const PointsKey = z.union([PointsKeyV1, PointsKeyV2])
 const RubricOrPointsKey = z.union([RubricKeyV1, RubricKeyV2, PointsKeyV1, PointsKeyV2])
 
-/** 45:1005: `correct` (label), `accepted?` (a second accepted label; D7 the option id is its label), `note?` (Nota kunci). */
+/** 45:1005: `correct` (label), `accepted?` (extra accepted labels (45:463; may include `correct`); D7 the option id is its label), `note?` (Nota kunci). */
 const OptionKey = z.object({
   kind: z.literal('option'),
   correct: OptionLabel,
-  accepted: z.array(OptionLabel).max(1).optional(),
+  accepted: z.array(OptionLabel).min(1).max(8).optional(),
+  /** No length limit in the PRD; 500 is this contract's choice. */
   note: z.string().max(500).optional(),
 })
 /** D7 / DM-69: `mcq_multi` key. Ids are option labels; 1..n-1 correct (checked on the leaf). */
 const McqMultiKey = z.object({
   kind: z.literal('options'),
-  correctOptionIds: z.array(OptionLabel).min(1, 'Pilih sekurang-kurangnya satu jawapan betul.'),
+  correctOptionIds: z.array(OptionLabel).min(1, MCQ_MULTI_COUNT_MESSAGE),
   note: z.string().max(500).optional(),
 })
 /** BE-42: several or no correct label (PKSK, BR-M07-04). Not used by any other mode. */
@@ -336,8 +345,8 @@ export const ModeConfigSchema = z
     /** `essay_choice` 2..6 `Gesaan alternatif` (45:481). */
     alternatives: z
       .array(z.strictObject({ id: z.string().min(1).max(40).optional(), prompt: QuestionRichTextSchema, stimulusId: IdSchema.optional() }))
-      .min(2, 'Sila masukkan 2 hingga 6 tajuk.')
-      .max(6, 'Sila masukkan 2 hingga 6 tajuk.')
+      .min(2, ESSAY_CHOICE_COUNT_MESSAGE)
+      .max(6, ESSAY_CHOICE_COUNT_MESSAGE)
       .optional(),
     drawingKind: z.enum(QUESTION_DRAWING_KINDS).optional(),
     /** Exactly one of an image or a graph grid (DM-55). */
@@ -394,7 +403,7 @@ export const QuestionEssayTopicSchema = z
 const buildBranches = <Mcq extends z.ZodType, Pts extends z.ZodType, Ess extends z.ZodType>(mcqKey: Mcq, pointsKey: Pts, essayKey: Ess) =>
   [
     /** FR-QA-27: 2 to 8 options (default 4 in the form). */
-    keyed('mcq', mcqKey).extend({ options: z.array(QuestionOptionSchema).min(2).max(8) }),
+    keyed('mcq', mcqKey).extend({ options: z.array(QuestionOptionSchema).min(2, MCQ_OPTIONS_MESSAGE).max(8, MCQ_OPTIONS_MESSAGE) }),
     /**
      * BE-42 PKSK choice leaf. Bahagian A and B carry 2 to 6 options, Bahagian C (essay) carries none. Several or no label may be
      * correct (BR-M07-04). Valid only on a question tagged `pksk_domain`: the question service rejects it with 422 otherwise.
@@ -428,7 +437,8 @@ interface LeafLike {
   modeConfig?: { multi?: boolean; example?: { answer: string } }
   key: { kind: string; correct?: string | string[]; accepted?: string[]; correctOptionIds?: string[] }
 }
-const MISMATCH = 'Jenis skema tidak sepadan dengan mod jawapan.'
+/** No PRD text: code only (DOC DEFECT). */
+const MISMATCH = 'SCHEME_MODE_MISMATCH'
 const WRONG_CHOICE = 'Jawapan betul mesti salah satu pilihan.'
 
 /** Cross-field rules of a leaf, shared by both leaf schemas. */
@@ -438,16 +448,16 @@ const refineLeaf = (ctx: { value: unknown; issues: z.core.$ZodRawIssue[] }) => {
   if (p.mode === 'mcq') {
     const labels = (p.options ?? []).map((o) => o.label)
     const has = (l: string) => labels.includes(l)
-    if (new Set(labels).size !== labels.length) bad(['options'], 'Label pilihan mesti berbeza.')
+    if (new Set(labels).size !== labels.length) bad(['options'], 'OPTION_LABEL_DUPLICATE')
     if (p.key.kind === 'option') {
       const correct = p.key.correct as string
       if (p.modeConfig?.multi === true) bad(['key'], MISMATCH)
-      if (!has(correct) || (p.key.accepted ?? []).some((x) => !has(x) || x === correct)) bad(['key', 'correct'], WRONG_CHOICE)
+      if (!has(correct) || (p.key.accepted ?? []).some((x) => !has(x))) bad(['key', 'correct'], WRONG_CHOICE)
     } else {
       // mcq_multi (D7): ids are option labels, 1..n-1 correct.
       const ids = p.key.correctOptionIds ?? []
       if (new Set(ids).size !== ids.length || ids.some((i) => !has(i))) bad(['key', 'correctOptionIds'], WRONG_CHOICE)
-      else if (ids.length > labels.length - 1) bad(['key', 'correctOptionIds'], `Pilih 1 hingga ${labels.length - 1} jawapan betul.`)
+      else if (ids.length > labels.length - 1) bad(['key', 'correctOptionIds'], MCQ_MULTI_COUNT_MESSAGE)
       if (p.modeConfig?.multi !== true) bad(['modeConfig', 'multi'], MISMATCH)
     }
   }
@@ -455,9 +465,9 @@ const refineLeaf = (ctx: { value: unknown; issues: z.core.$ZodRawIssue[] }) => {
   const ex = p.modeConfig?.example
   if (ex) {
     if (ex.answer.trim() === '') bad(['modeConfig', 'example', 'answer'], EXAMPLE_ANSWER_MESSAGE)
-    if (p.marks !== 0) bad(['marks'], 'Contoh tidak dimarkah mesti bernilai 0 markah.')
+    if (p.marks !== 0) bad(['marks'], 'EXAMPLE_MARKS_NOT_ZERO')
   } else if (p.marks < 1) {
-    bad(['marks'], 'Markah mesti antara 1 hingga 100.')
+    bad(['marks'], MARKS_MIN_MESSAGE)
   }
   if (p.mode === 'essay_choice' && new Set((p.topics ?? []).map((t) => t.id)).size !== (p.topics ?? []).length) {
     bad(['topics'], 'Setiap tajuk mesti mempunyai id yang berbeza.')
@@ -492,7 +502,7 @@ export const isTrueFalseOptions = (options: readonly { label: string; body: { ms
 export const QuestionTrueFalseLeafSchema = QuestionLeafPartSchema.check((ctx) => {
   const p = ctx.value
   if (p.mode !== 'mcq' || p.key.kind !== 'option' || !isTrueFalseOptions(p.options)) {
-    ctx.issues.push({ code: 'custom', input: p, path: ['options'], message: 'Soalan betul / salah mesti ada pilihan A Betul dan B Salah.' })
+    ctx.issues.push({ code: 'custom', input: p, path: ['options'], message: 'TRUE_FALSE_OPTIONS_INVALID' })
   }
 })
 

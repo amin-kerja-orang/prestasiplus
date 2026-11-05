@@ -74,13 +74,15 @@ describe('FR-QA-27 / AC-QA-27 mcq options', () => {
   ])('mcq with %i options valid=%s', (n, ok) => {
     const leaf = mcq(n, { kind: 'option', correct: 'A' })
     expect(QuestionLeafPartSchema.safeParse(leaf).success).toBe(ok)
+    if (!ok && n === 1) expect(msgs(QuestionLeafPartSchema.safeParse(leaf))).toContain('Soalan aneka pilihan mesti ada 2 hingga 8 pilihan.')
     expect(QuestionLeafPartV3Schema.safeParse(leaf).success).toBe(ok)
   })
   it('OptionKey takes a second accepted option and a note', () => {
     const ok = mcq(4, { kind: 'option', correct: 'A', accepted: ['B'], note: 'B pun diterima' })
     expect(QuestionLeafPartSchema.safeParse(ok).success).toBe(true)
     expect(QuestionLeafPartSchema.safeParse(mcq(4, { kind: 'option', correct: 'A', accepted: ['E'] })).success).toBe(false)
-    expect(QuestionLeafPartSchema.safeParse(mcq(4, { kind: 'option', correct: 'A', accepted: ['A'] })).success).toBe(false)
+    expect(QuestionLeafPartSchema.safeParse(mcq(4, { kind: 'option', correct: 'A', accepted: ['A', 'D'], note: 'n' })).success).toBe(true)
+    expect(QuestionLeafPartSchema.safeParse(mcq(4, { kind: 'option', correct: 'A', accepted: [] })).success).toBe(false)
   })
 })
 
@@ -123,6 +125,8 @@ describe('AC-ADM-QE3.17/18 example leaf marks', () => {
     label: '(a)', prompt: rt('?'), marks, mode: 'short_text', key: { kind: 'accepted', values: ['x'] }, ...(modeConfig ? { modeConfig } : {}),
   })
   it('marks 0 without example is invalid; 101 is invalid; 1 and 100 are valid', () => {
+    expect(msgs(QuestionLeafPartSchema.safeParse(short(0)))).toContain('Nilai mata mesti sekurang-kurangnya 1.')
+    expect(msgs(QuestionLeafPartSchema.safeParse(short(101)))).toContain('Markah bahagian tidak boleh melebihi 100.')
     expect(QuestionLeafPartSchema.safeParse(short(0)).success).toBe(false)
     expect(QuestionLeafPartSchema.safeParse(short(101)).success).toBe(false)
     expect(QuestionLeafPartSchema.safeParse(short(1)).success).toBe(true)

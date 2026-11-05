@@ -31592,7 +31592,8 @@
                       "type": "string",
                       "pattern": "^[A-H]$"
                     },
-                    "maxItems": 1
+                    "minItems": 1,
+                    "maxItems": 8
                   },
                   "note": {
                     "type": "string",
@@ -33853,7 +33854,8 @@
                       "type": "string",
                       "pattern": "^[A-H]$"
                     },
-                    "maxItems": 1
+                    "minItems": 1,
+                    "maxItems": 8
                   },
                   "note": {
                     "type": "string",
@@ -35860,7 +35862,8 @@
                                 "type": "string",
                                 "pattern": "^[A-H]$"
                               },
-                              "maxItems": 1
+                              "minItems": 1,
+                              "maxItems": 8
                             },
                             "note": {
                               "type": "string",
