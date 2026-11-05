@@ -182,3 +182,68 @@ describe('StudioListPage (S1 to S6)', () => {
     expect(w.find('[data-testid="studio-table"]').exists()).toBe(true)
   })
 })
+
+describe('StudioListPage phone cards (AC-ADM-R9)', () => {
+  const LONG = `Halaju zarah ialah v = 3t^2 - 12t + 9 m/s, dengan t ialah masa dalam saat. ${'Cari halaju apabila zarah berhenti seketika. '.repeat(3)}`
+  const sizes = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollHeight')
+  const heights = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight')
+
+  beforeEach(() => {
+    // Below md: DsDataTable renders the card list. A clamped paragraph is taller inside than outside.
+    window.matchMedia = ((query: string) => ({ matches: false, media: query, addEventListener: vi.fn(), removeEventListener: vi.fn() })) as unknown as typeof window.matchMedia
+    Object.defineProperty(HTMLElement.prototype, 'scrollHeight', { configurable: true, get: () => 120 })
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, get: () => 60 })
+    studio.fetchStudioList.mockResolvedValue(page([row('21', 'approved', { questionText: LONG, kertas: '2', numberLabel: '4(a)' })]))
+    studio.fetchServabilityBatch.mockResolvedValue({ reports: [{ questionId: '21', versionNo: 1, servedCount: 4, total: 6, activities: [] }], notFound: [] })
+  })
+  afterEach(() => {
+    delete (window as { matchMedia?: unknown }).matchMedia
+    if (sizes) Object.defineProperty(HTMLElement.prototype, 'scrollHeight', sizes)
+    if (heights) Object.defineProperty(HTMLElement.prototype, 'clientHeight', heights)
+  })
+
+  it('shows the status badge, the full stem (not the 80 character excerpt), the kertas line and the served caption', async () => {
+    const w = await render()
+    expect(w.find('table').exists()).toBe(false)
+    const card = t(w, 'studio-card')
+    expect(card.get('[data-testid="studio-row-status"]').text()).toBe('Diterbitkan')
+    expect(t(w, 'studio-card-stem').text()).toBe(LONG.trim())
+    expect(t(w, 'studio-card-kertas').text()).toBe('Kertas 2')
+    expect(t(w, 'studio-card-sumber').text()).toBe('Sumber: TRIAL')
+    expect(t(w, 'studio-row-served').text()).toBe('Dilihat murid di 4/6')
+  })
+
+  it('clamps the stem to 3 lines and Lihat penuh expands it and back', async () => {
+    const w = await render()
+    expect(t(w, 'studio-card-stem').classes()).toContain('line-clamp-3')
+    const more = t(w, 'studio-card-more')
+    expect(more.text()).toBe('Lihat penuh')
+    await more.trigger('click')
+    expect(t(w, 'studio-card-stem').classes()).not.toContain('line-clamp-3')
+    expect(t(w, 'studio-card-more').text()).toBe('Tunjuk kurang')
+    expect(t(w, 'studio-card-more').attributes('aria-expanded')).toBe('true')
+    await t(w, 'studio-card-more').trigger('click')
+    expect(t(w, 'studio-card-stem').classes()).toContain('line-clamp-3')
+  })
+
+  it('measures the clamp again when the width changes', async () => {
+    let height = 60
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, get: () => height })
+    const w = await render()
+    expect(w.find('[data-testid="studio-card-more"]').exists()).toBe(true)
+    height = 120 // the stem fits after the rotation: no clamp, no toggle
+    window.dispatchEvent(new Event('resize'))
+    await flushPromises()
+    expect(w.find('[data-testid="studio-card-more"]').exists()).toBe(false)
+    height = 60
+    window.dispatchEvent(new Event('resize'))
+    await flushPromises()
+    expect(w.find('[data-testid="studio-card-more"]').exists()).toBe(true)
+  })
+
+  it('keeps the row actions on the card', async () => {
+    const w = await render()
+    expect(w.find('[data-testid="studio-row-preview"]').exists()).toBe(true)
+    expect(w.find('[data-testid="studio-row-edit-draft"]').exists()).toBe(true)
+  })
+})

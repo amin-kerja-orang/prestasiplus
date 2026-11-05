@@ -139,7 +139,7 @@ describe('visibility (BR-M20-08, AC2)', () => {
     await t.db.query(`update marketplace_sellers set status = $1`, [status])
     expect(await ids()).toEqual([])
     expect((await search('?category=buku-rujukan')).meta.totalItems).toBe(0)
-    expectError(await student.get('/api/marketplace/sellers/1'), 404, 'NOT_FOUND', 'Not Found.')
+    expectError(await student.get('/api/marketplace/sellers/1'), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
   })
 
   it('platform products (no seller) are visible whatever the sellers are', async () => {
@@ -254,7 +254,7 @@ describe('GET /marketplace/sellers/:id (AC7)', () => {
 
   it('answers 404 for an unknown, non-numeric, huge or non-active seller', async () => {
     for (const id of ['99', 'abc', '1.5', '-1', '0x1', '99999999999999999999999']) {
-      expectError(await student.get(`/api/marketplace/sellers/${id}`), 404, 'NOT_FOUND', 'Not Found.')
+      expectError(await student.get(`/api/marketplace/sellers/${id}`), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     }
     await t.db.query(`update marketplace_sellers set status = 'pending'`)
     expectError(await student.get('/api/marketplace/sellers/1'), 404, 'NOT_FOUND')
