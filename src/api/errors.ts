@@ -95,6 +95,12 @@ export function isApiError(err: unknown, ...codes: ApiErrorCode[]): err is ApiEr
   return err instanceof ApiError && (codes.length === 0 || codes.includes(err.code))
 }
 
+/** From several load errors: a `RATE_LIMITED` one if any, else the first non-null (so the countdown shows). */
+export function preferRateLimited(...errors: unknown[]): unknown {
+  const present = errors.filter((e) => e !== null && e !== undefined)
+  return present.find((e) => isApiError(e, API_ERROR_CODES.RATE_LIMITED)) ?? present[0] ?? null
+}
+
 /** Parses a `Retry-After` header given in seconds (the HTTP-date form is not used by the API). */
 export function parseRetryAfterHeader(value: string | undefined): number | undefined {
   if (value === undefined) return undefined
@@ -126,6 +132,7 @@ export function errorFromResponse(res: {
   url?: string
 }): ApiError {
   const headerRetry = parseRetryAfterHeader(res.headers['retry-after'])
+  // body `retryAfter`, then the header; the "else 30 s" display rule lives in DsLoadError, not here.
   const base = { status: res.status, body: res.body, method: res.method, url: res.url }
 
   if (isErrorBody(res.body)) {

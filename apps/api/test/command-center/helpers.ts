@@ -307,11 +307,11 @@ export const CC_ROUTES: CcRoute[] = [
  */
 export async function expectGuards(t: CcTestApp, route: Pick<CcRoute, 'path' | 'allowed'>, sessions: Partial<Record<CcRole, LoggedIn>>): Promise<void> {
   const anon = await t.http().get(`/api${route.path}`)
-  expectError(anon, 'UNAUTHORIZED', 'Unauthenticated.')
+  expectError(anon, 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
   for (const role of ['admin', 'school_admin', 'teacher', 'student'] as CcRole[]) {
     if (route.allowed.includes(role)) continue
     const who = sessions[role]
     if (!who) throw new Error(`no session for ${role}`)
-    expectError(await getAs(who, route.path), 'FORBIDDEN', 'This action is unauthorized.')
+    expectError(await getAs(who, route.path), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
   }
 }

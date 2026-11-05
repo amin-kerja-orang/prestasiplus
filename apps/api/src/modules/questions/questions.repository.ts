@@ -211,7 +211,7 @@ const NO_STATUS_COUNTS = (): Record<QuestionStatus, number> => ({ draft: 0, revi
 /**
  * S1-T06 (D105, FR-MUR-QP-6/7, AC-QP-7, FR-QA-01): the whole-group predicate. A group member is served only when its WHOLE group can be:
  * the group holds a stimulus and no member is a gap. A member (bar those whose latest version is archived) is a gap when it is
- * inactive, has no live approved version, or is not a single MCQ leaf. One definition for the SQL draw (`QuestionFilter.wholeGroups`)
+ * inactive, has no live approved version, or is not a single MCQ leaf (part mode `mcq`) whose key names one of its options (the draw's `groupSurfaceShapeReasons`). One definition for the SQL draw (`QuestionFilter.wholeGroups`)
  * and the indicator (`incompleteGroups`), so the card, the details and the draw agree (D91).
  */
 const groupGapCountSql = (groupId: Prisma.Sql): Prisma.Sql =>
@@ -220,7 +220,11 @@ const groupGapCountSql = (groupId: Prisma.Sql): Prisma.Sql =>
         LEFT JOIN question_versions wv ON wv.question_id = wm.id AND wv.version_no = wm.live_version_no
        WHERE wm.group_id = ${groupId} AND wl.status <> 'archived'
          AND (NOT wm.is_active OR wv.id IS NULL OR wv.status <> 'approved' OR wv.type <> 'mcq'
-              OR (SELECT count(*) FROM question_parts wp WHERE wp.question_version_id = wv.id) <> 1))`
+              OR (SELECT count(*) FROM question_parts wp WHERE wp.question_version_id = wv.id) <> 1
+              OR NOT EXISTS (SELECT 1 FROM question_parts wp
+                              JOIN answer_keys wk ON wk.part_id = wp.id
+                              JOIN part_options wo ON wo.part_id = wp.id AND wo.label = wk.content ->> 'correct'
+                             WHERE wp.question_version_id = wv.id AND wp.mode = 'mcq')))`
 
 /** SQL boolean: the group `groupId` (a bigint expression) has a stimulus and no gap member. */
 export const groupCompleteSql = (groupId: Prisma.Sql): Prisma.Sql =>

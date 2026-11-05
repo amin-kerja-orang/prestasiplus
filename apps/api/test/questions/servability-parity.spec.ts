@@ -604,4 +604,52 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     const bad = await pass([made.inA1!, inactive, ns])
     expect(bad.size).toBe(0)
   })
+
+  it('[CI] S1-T06: the SQL gap count equals the draw (a key naming no option or a non-MCQ leaf makes the group incomplete in SQL and refused by the JS verdict)', async () => {
+    const all = [...ALL_GROUP_SURFACES]
+    // The stored-tree reader fails closed on a key naming no option or a non-MCQ leaf with an option key (it never hands such a record
+    // to the draw), so the JS verdict is exercised on the valid member's facts with the record altered in memory.
+    const jsCodes = async (id: string, alter?: (leaf: Record<string, unknown>) => void): Promise<string[]> => {
+      const f = structuredClone((await servability.factsOf([id])).get(id)!)
+      if (alter) {
+        const leaf = f.live!.version.parts[0] as unknown as Record<string, unknown>
+        alter(leaf)
+      }
+      return evaluateAll(f, all).activities.find((a) => a.activity === 'latih_tubi_spm')!.reasons.map((r) => r.code)
+    }
+    const mkGroup = async (label: string): Promise<string> => {
+      const passage = await svc.createStimulus({ kind: 'passage', label, bodyMs: 'Teks.', bodyEn: null, altText: null, assetFileId: null })
+      return svc.createStimulusGroup({ label, scope: 'section', stimulusIds: [passage], optionBank: [] })
+    }
+    const partOf = `(select p.id from question_parts p join question_versions v on v.id = p.question_version_id where v.question_id = $1 and v.version_no = 1)`
+    // c: a fully valid two-member group stays complete in both.
+    const gOk = await mkGroup('Kumpulan sah')
+    const ok1 = await publish('gapOk1', 'Ahli satu kumpulan sah untuk kiraan jurang SQL.', { stimulusGroupId: gOk })
+    const ok2 = await publish('gapOk2', 'Ahli dua kumpulan sah untuk kiraan jurang SQL.', { stimulusGroupId: gOk })
+    // a: the key names no option.
+    const gKey = await mkGroup('Kumpulan kunci salah')
+    await publish('gapKey1', 'Ahli satu kumpulan kunci salah untuk kiraan jurang SQL.', { stimulusGroupId: gKey })
+    const badKey = await publish('gapKey2', 'Ahli dua kumpulan kunci salah untuk kiraan jurang SQL.', { stimulusGroupId: gKey })
+    await q(`update answer_keys set content = jsonb_set(content, '{correct}', '"E"') where part_id = ${partOf}`, [badKey])
+    // b: the only part is not an MCQ leaf.
+    const gMode = await mkGroup('Kumpulan bukan MCQ')
+    await publish('gapMode1', 'Ahli satu kumpulan bukan MCQ untuk kiraan jurang SQL.', { stimulusGroupId: gMode })
+    const badMode = await publish('gapMode2', 'Ahli dua kumpulan bukan MCQ untuk kiraan jurang SQL.', { stimulusGroupId: gMode })
+    await q(`update question_parts set mode = 'short_text' where id = ${partOf}`, [badMode])
+
+    const gaps = await repo.incompleteGroups([gOk, gKey, gMode])
+    expect(gaps.has(gOk), 'valid group is complete in SQL').toBe(false)
+    expect(gaps.get(gKey), 'key naming no option is a gap in SQL').toBe(1)
+    expect(gaps.get(gMode), 'non-MCQ leaf is a gap in SQL').toBe(1)
+
+    expect(await jsCodes(ok1)).toEqual([])
+    expect(await jsCodes(ok2)).toEqual([])
+    expect(await jsCodes(ok1, (leaf) => { leaf.key = { kind: 'option', correct: 'E' } })).toContain('shape_unsupported')
+    expect(await jsCodes(ok1, (leaf) => { leaf.mode = 'short_text'; leaf.options = undefined; leaf.key = { kind: 'accepted', values: ['x'] } })).toContain('shape_unsupported')
+
+    const pass = async (ids: string[]) => new Set(await repo.eligibleAmong(ids, filterOf('latih_tubi_spm', {}, all)))
+    expect((await pass([ok1, ok2])).size).toBe(2)
+    expect((await pass([made.gapKey1!, badKey])).size).toBe(0)
+    expect((await pass([made.gapMode1!, badMode])).size).toBe(0)
+  })
 })

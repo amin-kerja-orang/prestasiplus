@@ -364,6 +364,20 @@ describe('option images and the stem picture', () => {
     expect(e.code).toBe('stimulus_shared_ungrouped')
   })
 
+  it('a leaf citing a stimulus of its own group maps with the wire stimulusId (FR-QA-09)', () => {
+    const g = group([stim({ id: '70' }), stim({ id: '71', label: 'Petikan B' })])
+    const b = map([shortText({ stimulusId: '71' })], { groupId: '9' }, g)
+    expect(b.question.parts?.[0]?.stimulusId).toBe('qb-s71')
+    expect(b.group?.stimuli?.map((s) => s.id)).toContain('qb-s71')
+  })
+
+  it('a leaf citing a stimulus of another group is still refused; a leaf without stimulusId is unchanged', () => {
+    const g = group([stim({ id: '70' })])
+    expect(refusal(() => map([shortText({ stimulusId: '99' })], { groupId: '9' }, g)).code).toBe('stimulus_outside_group')
+    const plain = map([shortText()], { groupId: '9' }, g)
+    expect(plain.question.parts?.[0]).not.toHaveProperty('stimulusId')
+  })
+
   it('an unknown or audio outside stimulus, and an own stimulus with nothing to show, are refused', () => {
     expect(refusal(() => map([mcq()], { stimulusIds: ['999'] }, null, media())).code).toBe('stimulus_outside_group')
     const empty = media({}, new Map<string, OutsideStimulus>([['330', { kind: 'passage', assetFileId: null }]]))

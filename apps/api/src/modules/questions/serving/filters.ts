@@ -11,7 +11,7 @@
  * - simulasi_kuiz:            the random draw of the kuiz (`type mcq`, one MCQ leaf; groups allowed, D90).
  * - simulasi_paper, jana_kertas: the bank scope only; the bridge, the paper and the pool facts are per-record checks.
  */
-import { PRACTICE_SHAPE, PRACTICE_SHAPE_WITH_STIMULUS } from '../../practice/question-bridge/be09-practice-mapping'
+import { PRACTICE_SHAPE } from '../../practice/question-bridge/be09-practice-mapping'
 import type { ServabilityActivity } from '@pp/contract'
 
 import { GROUP_SURFACES } from './rules'
@@ -31,7 +31,7 @@ export interface ActivityScope {
  */
 const drillShape = (activity: ServabilityActivity, surfaces: readonly ServabilityActivity[]): QuestionFilter =>
   surfaces.includes(activity)
-    ? { type: 'mcq', wholeGroups: true, mcqShape: PRACTICE_SHAPE_WITH_STIMULUS }
+    ? { type: 'mcq', wholeGroups: true, mcqShape: { ...PRACTICE_SHAPE, allowStimulus: true } }
     : { type: 'mcq', ungrouped: true, mcqShape: PRACTICE_SHAPE }
 
 export function filterOf(activity: ServabilityActivity, scope: ActivityScope = {}, surfaces: readonly ServabilityActivity[] = GROUP_SURFACES): QuestionFilter {

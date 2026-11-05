@@ -539,14 +539,17 @@ test.describe('QA G5 guards and nav', { tag: [moduleTag(4), '@qa'] }, () => {
     }
   })
 
-  test('E2E-M04-56 a pelajar opening an admin M04 route is sent away (AC-29.2)', async ({
+  // A wrong-role URL renders the 403 page in place, URL unchanged (FR-X2-4, S0-T05 #542).
+  test('E2E-M04-56 a pelajar opening an admin M04 route sees Akses Ditolak in place (AC-29.2)', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
     await loginAs('pelajar@demo.test')
     await gotoApp('/admin/questions')
-    await expect(page).not.toHaveURL(/\/admin\/questions/)
+    await expect(page).toHaveTitle('Akses Ditolak | PRESTASIPLUS')
+    await expect(page).toHaveURL(/\/admin\/questions\/?([?#]|$)/)
+    await expect(page.getByText('Akses Ditolak').first()).toBeVisible()
     await expect(page.getByTestId('questions-page')).toHaveCount(0)
   })
 

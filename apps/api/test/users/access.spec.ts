@@ -53,7 +53,7 @@ describe('roles, scope and guards (AC 3, 9, 10)', () => {
         ['get', '/api/admin/schools/1/students'],
         ['get', '/api/students/search?q=abc'],
       ] as const) {
-        expectError(await t.http()[m](p), 'UNAUTHORIZED', 'Unauthenticated.')
+        expectError(await t.http()[m](p), 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
       }
     })
 
@@ -145,7 +145,7 @@ describe('roles, scope and guards (AC 3, 9, 10)', () => {
       const adminId = await userIdOf(t.db, ADMIN)
       const saId = await userIdOf(t.db, SCHOOL_ADMIN)
       for (const id of [otherTeacher, adminId, saId]) {
-        expectError(await sa.get(`/admin/users/${id}`), 'NOT_FOUND', 'Not Found.')
+        expectError(await sa.get(`/admin/users/${id}`), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
         expectError(await sa.put(`/admin/users/${id}`, { roles: ['teacher'], name: 'X' }), 'NOT_FOUND')
         expectError(await sa.post(`/admin/users/${id}/toggle-active`), 'NOT_FOUND')
         expectError(await sa.del(`/admin/users/${id}`), 'NOT_FOUND')
