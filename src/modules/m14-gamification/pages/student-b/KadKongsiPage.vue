@@ -113,7 +113,6 @@ function whatsapp(text: string): void {
               :key="m.subjectName"
               download-color="success"
               :share-label="KAD_COPY.kongsi"
-              compact
               :test-key="`penguasaan-${String(i)}`"
               @download="(el) => download(el, `penguasaan-${String(i)}`)"
               @share="whatsapp(masteryText(m.level, m.stage, m.subjectName, m.accuracy))"
