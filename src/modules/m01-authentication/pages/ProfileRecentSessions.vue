@@ -8,6 +8,7 @@ import type { TableColumn } from '@nuxt/ui'
 import type { AccountProfileSession } from '@pp/contract'
 import { computed } from 'vue'
 
+import { DsCluster, DsHeading, DsStack, DsText } from '@/ds'
 import { formatDateShortMs } from '@/lib/time'
 
 const props = defineProps<{
@@ -35,25 +36,27 @@ const toneOf = (accuracy: number | null): 'success' | 'warning' | 'error' => {
 
 <template>
   <UCard data-testid="profile-sessions">
-    <div class="flex flex-col gap-3">
-      <div>
-        <h2 class="flex items-center gap-2 text-subheading text-highlighted">
+    <DsStack gap="sm">
+      <DsStack gap="none">
+        <DsCluster gap="xs">
           <UIcon name="i-ph-clock-counter-clockwise" class="size-5" aria-hidden="true" />
-          Sesi Terkini
-        </h2>
-        <p v-if="sessions.length > 0" class="text-caption text-muted" data-testid="profile-sessions-count">
+          <DsHeading :level="2" variant="subheading">Sesi Terkini</DsHeading>
+        </DsCluster>
+        <DsText v-if="sessions.length > 0" variant="caption" data-testid="profile-sessions-count">
           {{ sessions.length }} latihan terakhir anda
-        </p>
-      </div>
+        </DsText>
+      </DsStack>
 
-      <div
+      <DsStack
         v-if="sessions.length === 0"
-        class="flex flex-col items-center gap-1 text-center"
+        gap="2xs"
+        align="center"
+        class="text-center"
         data-testid="profile-sessions-empty"
       >
-        <p class="text-body text-highlighted">Belum ada sesi latihan lagi</p>
-        <p class="text-caption text-muted">Teruskan berlatih untuk melihat rekod anda di sini!</p>
-      </div>
+        <DsText variant="body" tone="highlighted">Belum ada sesi latihan lagi</DsText>
+        <DsText variant="caption">Teruskan berlatih untuk melihat rekod anda di sini!</DsText>
+      </DsStack>
 
       <!-- The table scrolls inside its card (AC-MUR-A1-6), never the page. -->
       <UTable
@@ -72,14 +75,14 @@ const toneOf = (accuracy: number | null): 'success' | 'warning' | 'error' => {
           >
         </template>
         <template #coins-cell="{ row }">
-          <span class="inline-flex items-center gap-1">
-            <UIcon name="i-ph-coins" class="size-4 text-warning" aria-hidden="true" />{{ row.original.coins }}
-          </span>
+          <DsCluster as="span" gap="2xs" :wrap="false">
+            <UIcon name="i-ph-coins" class="size-4" aria-hidden="true" />{{ row.original.coins }}
+          </DsCluster>
         </template>
         <template #at-cell="{ row }">
-          <span class="whitespace-nowrap">{{ formatDateShortMs(row.original.at) }}</span>
+          <DsText as="span" variant="label" wrap="normal">{{ formatDateShortMs(row.original.at) }}</DsText>
         </template>
       </UTable>
-    </div>
+    </DsStack>
   </UCard>
 </template>

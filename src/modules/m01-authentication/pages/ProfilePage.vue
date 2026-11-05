@@ -15,7 +15,7 @@ import type { AccountProfileActivity } from '@pp/contract'
 import { computed, onMounted, ref } from 'vue'
 
 import { api } from '@/api'
-import { DsLoadError } from '@/ds'
+import { DsCluster, DsHeading, DsLoadError, DsStack, DsText } from '@/ds'
 import { formatDateLong } from '@/lib/time'
 import { useSessionStore } from '@/stores/session'
 
@@ -117,7 +117,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <section v-if="user" class="mx-auto flex w-full max-w-3xl flex-col gap-4 md:gap-6" data-testid="profile-page">
+  <DsStack v-if="user" as="section" gap="section" class="mx-auto w-full max-w-3xl" data-testid="profile-page">
     <UCard data-testid="profile-hero">
       <div class="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-start">
         <div class="relative shrink-0">
@@ -148,13 +148,12 @@ onMounted(() => {
           <p class="max-w-full text-body break-all text-muted" data-testid="profile-email">
             {{ user.email }}
           </p>
-          <p
-            class="flex items-center gap-2 text-caption text-muted"
-            data-testid="profile-member-since"
-          >
-            <UIcon name="i-ph-calendar-blank" class="size-4" aria-hidden="true" />
-            Ahli sejak {{ formatDateLong(user.createdAt) }}
-          </p>
+          <DsText as="div" variant="caption" data-testid="profile-member-since">
+            <DsCluster gap="xs">
+              <UIcon name="i-ph-calendar-blank" class="size-4" aria-hidden="true" />
+              Ahli sejak {{ formatDateLong(user.createdAt) }}
+            </DsCluster>
+          </DsText>
         </div>
 
         <UButton
@@ -186,14 +185,14 @@ onMounted(() => {
         <ProfileStatTiles :tiles="activity.tiles" kind="main" />
 
         <UCard data-testid="profile-form-card">
-          <form class="flex flex-col gap-4" data-testid="profile-bio-form" @submit.prevent="save">
-            <div>
-              <h2 class="flex items-center gap-2 text-subheading text-highlighted">
+          <DsStack as="form" gap="md" data-testid="profile-bio-form" @submit.prevent="save">
+            <DsStack gap="none">
+              <DsCluster gap="xs">
                 <UIcon name="i-ph-pencil-simple" class="size-5" aria-hidden="true" />
-                Kemaskini Profil
-              </h2>
-              <p class="text-caption text-muted">Ceritakan tentang diri dan cita-cita anda</p>
-            </div>
+                <DsHeading :level="2" variant="subheading">Kemaskini Profil</DsHeading>
+              </DsCluster>
+              <DsText variant="caption">Ceritakan tentang diri dan cita-cita anda</DsText>
+            </DsStack>
 
             <UFormField label="Bio Saya">
               <UTextarea
@@ -207,8 +206,12 @@ onMounted(() => {
                 @input="bioTouched = true"
               />
               <template #help>
-                <span :class="bioTooLong ? 'text-error' : ''" data-testid="profile-bio-counter"
-                  >{{ bio.length }}/{{ BIO_MAX }}</span
+                <DsText
+                  as="span"
+                  variant="caption"
+                  :tone="bioTooLong ? 'error' : 'muted'"
+                  data-testid="profile-bio-counter"
+                  >{{ bio.length }}/{{ BIO_MAX }}</DsText
                 >
               </template>
             </UFormField>
@@ -217,20 +220,21 @@ onMounted(() => {
               <ProfileAspirationField v-model="aspiration" />
             </div>
 
-            <p
+            <DsText
               v-for="line in formErrors"
               :key="line"
-              class="text-caption text-error"
+              variant="caption"
+              tone="error"
               role="alert"
               data-testid="profile-form-error"
             >
               {{ line }}
-            </p>
-            <p v-if="saved" class="text-caption text-success" role="status" data-testid="profile-form-saved">
+            </DsText>
+            <DsText v-if="saved" variant="caption" tone="success" role="status" data-testid="profile-form-saved">
               {{ SAVED_TEXT }}
-            </p>
+            </DsText>
 
-            <div class="flex justify-end">
+            <DsCluster justify="end">
               <UButton
                 type="submit"
                 color="primary"
@@ -242,8 +246,8 @@ onMounted(() => {
                 data-testid="profile-save"
                 >{{ saving ? 'Menyimpan...' : 'Simpan' }}</UButton
               >
-            </div>
-          </form>
+            </DsCluster>
+          </DsStack>
         </UCard>
 
         <ProfileStatTiles :tiles="activity.tiles" kind="combo" />
@@ -252,5 +256,5 @@ onMounted(() => {
         <ProfileRecentSessions :sessions="activity.recentSessions" />
       </template>
     </template>
-  </section>
+  </DsStack>
 </template>

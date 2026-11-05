@@ -8,7 +8,7 @@ import { computed } from 'vue'
 
 import type { AccountProfileBadge } from '@pp/contract'
 
-import { DsBadgeTile } from '@/ds'
+import { DsBadgeTile, DsCluster, DsGrid, DsHeading, DsStack, DsText } from '@/ds'
 import { formatDateShortMs } from '@/lib/time'
 
 const props = defineProps<{
@@ -20,24 +20,26 @@ const collected = computed(() => props.badges.filter((b) => b.unlocked).length)
 
 <template>
   <UCard data-testid="profile-badges">
-    <div class="flex flex-col gap-4">
-      <div>
-        <h2 class="flex items-center gap-2 text-subheading text-highlighted">
+    <DsStack gap="md">
+      <DsStack gap="none">
+        <DsCluster gap="xs">
           <UIcon name="i-ph-medal" class="size-5" aria-hidden="true" />
-          Koleksi Lencana
-        </h2>
-        <p class="text-caption text-muted" data-testid="profile-badges-count">
+          <DsHeading :level="2" variant="subheading">Koleksi Lencana</DsHeading>
+        </DsCluster>
+        <DsText variant="caption" data-testid="profile-badges-count">
           {{ collected }} lencana telah dikumpul
-        </p>
-      </div>
+        </DsText>
+      </DsStack>
 
-      <div
+      <DsStack
         v-if="collected === 0"
-        class="flex flex-col items-center gap-2 text-center"
+        gap="xs"
+        align="center"
+        class="text-center"
         data-testid="profile-badges-empty"
       >
-        <p class="text-body text-highlighted">Belum ada lencana lagi</p>
-        <p class="text-caption text-muted">Teruskan berlatih untuk dapatkan lencana pertama anda!</p>
+        <DsText variant="body" tone="highlighted">Belum ada lencana lagi</DsText>
+        <DsText variant="caption">Teruskan berlatih untuk dapatkan lencana pertama anda!</DsText>
         <UButton
           to="/practice"
           color="primary"
@@ -47,9 +49,9 @@ const collected = computed(() => props.badges.filter((b) => b.unlocked).length)
           data-testid="profile-badges-start"
           >Mula Latih Tubi</UButton
         >
-      </div>
+      </DsStack>
 
-      <ul v-if="badges.length > 0" class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+      <DsGrid v-if="badges.length > 0" as="ul" gap="sm" :cols="{ base: 2, sm: 3, md: 4 }">
         <li
           v-for="badge in badges"
           :key="badge.code"
@@ -64,7 +66,7 @@ const collected = computed(() => props.badges.filter((b) => b.unlocked).length)
             :date="badge.earnedAt ? formatDateShortMs(badge.earnedAt) : undefined"
           />
         </li>
-      </ul>
-    </div>
+      </DsGrid>
+    </DsStack>
   </UCard>
 </template>

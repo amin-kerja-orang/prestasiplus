@@ -9,6 +9,8 @@ import { computed } from 'vue'
 
 import type { AccountProfileTiles } from '@pp/contract'
 
+import { DsGrid, DsStack, DsText } from '@/ds'
+
 const props = defineProps<{
   tiles: AccountProfileTiles
   kind: 'main' | 'combo'
@@ -44,18 +46,16 @@ const items = computed<Tile[]>(() => {
 </script>
 
 <template>
-  <div
-    class="grid gap-3"
-    :class="kind === 'main' ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-6' : 'grid-cols-3'"
+  <DsGrid
+    gap="sm"
+    :cols="kind === 'main' ? { base: 2, md: 3, lg: 6 } : { base: 3 }"
     :data-testid="`profile-tiles-${kind}`"
   >
-    <UCard v-for="tile in items" :key="tile.key" :ui="{ body: 'p-3 sm:p-4' }" :data-testid="`profile-tile-${tile.key}`">
-      <p class="text-heading text-center text-highlighted" data-testid="profile-tile-value">
-        {{ tile.value }}
-      </p>
-      <p class="text-center text-caption break-words text-muted" data-testid="profile-tile-label">
-        {{ tile.label }}
-      </p>
+    <UCard v-for="tile in items" :key="tile.key" :data-testid="`profile-tile-${tile.key}`">
+      <DsStack gap="none">
+        <DsText variant="heading" align="center" data-testid="profile-tile-value">{{ tile.value }}</DsText>
+        <DsText variant="caption" align="center" wrap="anywhere" data-testid="profile-tile-label">{{ tile.label }}</DsText>
+      </DsStack>
     </UCard>
-  </div>
+  </DsGrid>
 </template>
