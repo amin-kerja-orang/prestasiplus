@@ -7,6 +7,8 @@ import {
   dayLabel,
   focusHref,
   heatClass,
+  heatBin360,
+  dayLabel360,
   masteryTone,
   ringDash,
   studyTime,
@@ -96,5 +98,15 @@ describe('colour and format rules', () => {
     // 28 June 2026 is a Sunday, 24 September 2026 a Thursday (observed live: "28/06 (Ahad)").
     expect(dayLabel('2026-06-28', 0)).toBe('28/06 (Ahad) — Tiada aktiviti')
     expect(dayLabel('2026-09-24', 1)).toBe('24/09 (Khamis) — 1 sesi')
+  })
+})
+
+describe('Prestasi 360 heat bins (R1-MUR-4)', () => {
+  it('bins 0, 1-4, 5-8, 9-12, 13+', () => {
+    expect([0, 1, 4, 5, 8, 9, 12, 13, 40].map(heatBin360)).toEqual([0, 1, 1, 2, 2, 3, 3, 4, 4])
+  })
+  it('tooltip wording', () => {
+    expect(dayLabel360('2026-09-24', 3)).toBe('24/09 (Khamis) — 3 sesi latihan')
+    expect(dayLabel360('2026-06-28', 0)).toBe('28/06 (Ahad) — Tiada aktiviti')
   })
 })

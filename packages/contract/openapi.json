@@ -45725,7 +45725,10 @@
             ]
           },
           "heroAccuracy": {
-            "type": "number"
+            "type": [
+              "number",
+              "null"
+            ]
           },
           "streak": {
             "type": "integer"
@@ -45737,7 +45740,10 @@
                 "type": "integer"
               },
               "accuracy": {
-                "type": "number"
+                "type": [
+                  "number",
+                  "null"
+                ]
               },
               "answered": {
                 "type": "integer"
@@ -45998,6 +46004,35 @@
                 "text"
               ]
             }
+          },
+          "trend": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "week": {
+                  "$ref": "#/components/schemas/DateOnly"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "accuracy": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "sessions": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "week",
+                "label",
+                "accuracy",
+                "sessions"
+              ]
+            }
           }
         },
         "required": [
@@ -46011,7 +46046,8 @@
           "badges",
           "heatmap",
           "weakTopics",
-          "suggestions"
+          "suggestions",
+          "trend"
         ]
       },
       "PerformanceAnalytics": {
@@ -109842,18 +109878,8 @@
               }
             }
           },
-          "403": {
-            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": student not visible to the viewer",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
           "404": {
-            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown user id",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown user id, or a pupil the viewer may not open (one outcome, no existence leak)",
             "content": {
               "application/json": {
                 "schema": {
@@ -109893,6 +109919,16 @@
           },
           "401": {
             "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin, teacher or school_admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -109941,6 +109977,16 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin, teacher or school_admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -109982,6 +110028,16 @@
           },
           "401": {
             "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin, teacher or school_admin",
             "content": {
               "application/json": {
                 "schema": {
@@ -110041,6 +110097,16 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin, teacher or school_admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -110084,6 +110150,16 @@
           },
           "401": {
             "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin, teacher or school_admin",
             "content": {
               "application/json": {
                 "schema": {

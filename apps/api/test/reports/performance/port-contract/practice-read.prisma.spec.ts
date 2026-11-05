@@ -90,6 +90,7 @@ async function translating(seed: PracticeSeed): Promise<PracticeReadPort> {
     userTotals: async (q: PracticeScopeQuery): Promise<PracticeUserTotals[]> =>
       (await real.userTotals(scope(q))).map((r) => ({ ...r, userId: back.get(r.userId)! })).sort((a, b) => byNumber(a.userId, b.userId)),
     practiceDays: (u: string) => real.practiceDays(toReal(u)),
+    dailyActivity: (u: string) => real.dailyActivity(toReal(u)),
     rankingRows: async (q: RankingQuery): Promise<RankingResult> => {
       const r = await real.rankingRows(scope(q))
       return { ...r, rows: r.rows.map((x) => ({ ...x, userId: back.get(x.userId)!, name: x.name, schoolName: x.schoolName.replace(` ${suffix}`, '') })) }
