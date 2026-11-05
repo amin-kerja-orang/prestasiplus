@@ -28,6 +28,8 @@ describe('REQ-B-058 a taken-down pinned version is not served to new sittings', 
   /** The stem picture of version 1 of `target` (only version 1 carries it), by its public token. */
   let v1Image = ''
   let paper = ''
+  /** The five other questions of `paper` (AC-QA-05 places them on a second paper beside a stimulus group). */
+  let others: string[] = []
   let running = ''
   const V1 = 'Versi satu: berapakah 2 + 3?'
   const V2 = 'Versi dua: berapakah 7 + 8?'
@@ -108,6 +110,7 @@ describe('REQ-B-058 a taken-down pinned version is not served to new sittings', 
       expect(r.status, JSON.stringify(r.body)).toBe(201)
       rest.push(r.body.data.id as string)
     }
+    others = rest
     const ids = [target, ...rest]
     await advance(ids)
     for (const [i, id] of ids.entries()) expect((await admin.put(`/api/admin/section-pools/${id}`, { pools: [i < 3 ? 'MAT2-A' : i === 3 ? 'MAT2-B' : 'MAT2-C'] })).status).toBe(200)
@@ -257,5 +260,48 @@ describe('REQ-B-058 a taken-down pinned version is not served to new sittings', 
     await q(`update source_papers set takedown_at = null where id = ${String(sp!.id)}`)
     expect((await newSitting()).status).toBe(201)
     expect((await readImage()).status).toBe(200)
+  })
+
+  /*
+   * AC-QA-05 (S1-T01, test only): `POST /api/stimulus-groups/:id/retire` archives every member as "withdrawn"; a paper that placed the group is then
+   * refused to a NEW sitting (the same REQ-B-058 rule), through the real routes.
+   */
+  it('AC-QA-05: after POST /api/stimulus-groups/:id/retire a new sitting on a paper placing the group answers 403', async () => {
+    const made = await admin.post('/api/stimuli', { kind: 'passage', label: 'Petikan kumpulan', body: { ms: 'Teks petikan kumpulan.' } })
+    expect(made.status, JSON.stringify(made.body)).toBe(201)
+    const grp = await admin.post('/api/stimulus-groups', { stimulusIds: [made.body.data.id as string], questionIds: [] })
+    expect(grp.status, JSON.stringify(grp.body)).toBe(201)
+    const groupId = grp.body.data.id as string
+    const members: string[] = []
+    for (const i of [0, 1]) {
+      const r = await admin.post(`/api/stimulus-groups/${groupId}/questions`, body(`Soalan kumpulan ${String(i)}: berapakah ${String(i)} + 9?`, await upload(), 1, { status: 'draft' }))
+      expect(r.status, JSON.stringify(r.body)).toBe(201)
+      members.push(r.body.data.id as string)
+    }
+    await advance(members)
+    for (const id of members) expect((await admin.put(`/api/admin/section-pools/${id}`, { pools: ['MAT2-A'] })).status).toBe(200)
+
+    const created = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
+    expect(created.status, JSON.stringify(created.body)).toBe(201)
+    const second = created.body.data.id as string
+    const sections = ((await admin.get(`/api/admin/papers/${second}`)).body.data.paper.sections as { id: string }[]).map((x) => x.id)
+    // placing one member places the whole group (a group is one unit): the second member is not placed again
+    const plan: [string, number][] = [[members[0]!, 0], [others[0]!, 0], [others[2]!, 1], [others[3]!, 2], [others[4]!, 2]]
+    for (const [id, section] of plan) {
+      const placed = await admin.post(`/api/admin/papers/${second}/placements`, { sectionId: sections[section], questionId: id })
+      expect(placed.status, JSON.stringify(placed.body)).toBe(201)
+    }
+    const published = await admin.post(`/api/admin/papers/${second}/publish`)
+    expect(published.body.data, JSON.stringify(published.body)).toMatchObject({ ok: true, errors: [] })
+    const start = (restart: boolean) => pupil.post('/api/bijak/attempts', { paperId: second, mode: 'exam', restart })
+    const before = await start(true)
+    expect(before.status, JSON.stringify(before.body)).toBe(201) // control: the group is served
+
+    const retired = await admin.post(`/api/stimulus-groups/${groupId}/retire`, { confirm: true })
+    expect(retired.status, JSON.stringify(retired.body)).toBe(200)
+    expect(retired.body.data).toMatchObject({ archived: 2, affectedPapers: [{ id: second }] })
+    const after = await start(true)
+    expect(after.status, JSON.stringify(after.body)).toBe(403)
+    expect(after.body.error.message).toBe(REFUSED)
   })
 })
