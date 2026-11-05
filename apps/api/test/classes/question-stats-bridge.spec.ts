@@ -1,6 +1,6 @@
 /**
  * SW12-02: the classes question bridge binds `ClassesPorts.provideQuestions` to the real teacher question
- * counts, so `/guru/contributions` (S21), the S1 dashboard and everything fed by `statsOf` stop reading 0.
+ * counts, so `/guru/contributions` (S21), the S1 dashboard and everything fed by `submissionStatsOf` stop reading 0.
  * Definitions are in `teacher-question-stats.provider.ts`.
  *
  * S6-T06 (D113, L-6): the counts are those of the teacher's OWN question submissions, i.e. the intake items (`payload.guru`) of the teacher's
@@ -136,14 +136,20 @@ describe('teacher question stats bridge (SW12-02)', () => {
 
   it('structured is always 0 (a submission is one MCQ); a further item moves total by one and removing it moves it back', async () => {
     const ports = t.app.get(ClassesPorts)
-    expect(await ports.questions.statsOf(teacherA)).toMatchObject({ total: 7, structured: 0 })
-    expect(await ports.questions.statsOf(teacherB)).toMatchObject({ total: 1, structured: 0 })
-    expect((await ports.questions.statsOf('999999999')).structured).toBe(0)
+    expect(await ports.questions.submissionStatsOf!(teacherA)).toMatchObject({ total: 7, structured: 0 })
+    expect(await ports.questions.submissionStatsOf!(teacherB)).toMatchObject({ total: 1, structured: 0 })
+    expect((await ports.questions.submissionStatsOf!('999999999')).structured).toBe(0)
     await setStatus('SEED-STR-ECF', 'draft')
     const item = await own('SEED-STR-ECF', teacherA)
-    expect(await ports.questions.statsOf(teacherA)).toMatchObject({ total: 8, structured: 0 })
+    expect(await ports.questions.submissionStatsOf!(teacherA)).toMatchObject({ total: 8, structured: 0 })
     await t.db.query(`delete from intake_items where id = $1`, [item])
-    expect(await ports.questions.statsOf(teacherA)).toMatchObject({ total: 7, structured: 0 })
+    expect(await ports.questions.submissionStatsOf!(teacherA)).toMatchObject({ total: 7, structured: 0 })
+  })
+
+  it('statsOf keeps its bank meaning (owned questions by questions.created_by_id, with the MCQ / Struktur split) for the other consumers', async () => {
+    const ports = t.app.get(ClassesPorts)
+    expect(await ports.questions.statsOf(teacherA)).toMatchObject({ total: 7, structured: 1 })
+    expect(await ports.questions.statsOf(teacherB)).toMatchObject({ total: 1, structured: 0 })
   })
 
   it("another teacher's questions are not counted: B sees only the own published question", async () => {
@@ -160,8 +166,8 @@ describe('teacher question stats bridge (SW12-02)', () => {
     const d = envelopeOf(TeacherDashboardSchema).parse((await c.get('/guru/dashboard')).body).data
     expect(d.stats).toMatchObject({ questions: 0, questionsApproved: 0 })
     const ports = t.app.get(ClassesPorts)
-    expect(await ports.questions.statsOf('999999999')).toEqual({ total: 0, structured: 0, approved: 0, pending: 0, used: 0, bySubject: [] })
-    expect(await ports.questions.statsOf('not-an-id')).toEqual({ total: 0, structured: 0, approved: 0, pending: 0, used: 0, bySubject: [] })
+    expect(await ports.questions.submissionStatsOf!('999999999')).toEqual({ total: 0, structured: 0, approved: 0, pending: 0, used: 0, bySubject: [] })
+    expect(await ports.questions.submissionStatsOf!('not-an-id')).toEqual({ total: 0, structured: 0, approved: 0, pending: 0, used: 0, bySubject: [] })
   })
 
   it('the numbers follow the tables on each call', async () => {

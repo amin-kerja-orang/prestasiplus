@@ -8,7 +8,7 @@ import { runSeeds } from '../../prisma/seed'
 import { identitySeed } from '../../prisma/seed/core/identity'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
 import { questionsSeed } from '../../prisma/seed/questions'
-import { usedCountQuery } from '../../src/modules/classes/question-bridge/teacher-question-stats.provider'
+import { submissionUsedCountQuery, usedCountQuery } from '../../src/modules/classes/question-bridge/teacher-question-stats.provider'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
 const INDEX = 'ix_practice_answers_question_id_real'
@@ -18,8 +18,8 @@ describe('practice_answers question index and the used query (migration 0091_pra
   let owner: string
   let ownedQuestion: string
 
-  const plan = async (): Promise<string> => {
-    const q = usedCountQuery(BigInt(owner))
+  const plan = async (build: typeof usedCountQuery = usedCountQuery): Promise<string> => {
+    const q = build(BigInt(owner))
     const rows = await db.query<{ 'QUERY PLAN': string }>(`explain ${q.text}`, q.values as unknown[])
     return rows.map((r) => r['QUERY PLAN']).join('\n')
   }
@@ -69,31 +69,34 @@ describe('practice_answers question index and the used query (migration 0091_pra
     expect(rows[0]!.indexdef).toMatch(/USING btree \(question_id\) WHERE \(\(question_id IS NOT NULL\) AND \(NOT is_test\)\)$/)
   })
 
-  it('the used query probes the index per owned question and never scans practice_answers', async () => {
-    const text = await plan()
-    expect(text).toContain(INDEX)
-    expect(text).not.toMatch(/Seq Scan on practice_answers/)
-    expect(text).not.toMatch(/Seq Scan on structured_attempts/)
-  })
+  // The bank query (statsOf, school-admin report) and the submissions query (submissionStatsOf, /guru/contributions) keep the same index discipline.
+  for (const [name, build] of [['bank', usedCountQuery], ['submissions', submissionUsedCountQuery]] as const) {
+    it(`${name}: the used query probes the index per owned question and never scans practice_answers`, async () => {
+      const text = await plan(build)
+      expect(text).toContain(INDEX)
+      expect(text).not.toMatch(/Seq Scan on practice_answers/)
+      expect(text).not.toMatch(/Seq Scan on structured_attempts/)
+    })
 
-  it('still no hashed SubPlan over the answer tables when structured_attempts has rows but no statistics yet', async () => {
-    const student = (await db.query<{ id: string }>(`select id::text from users where email = 'pelajar@demo.test'`))[0]!.id
-    await db.query(
-      `insert into structured_attempts (user_id, question_id, question_version_no, total_awarded, total_max, submitted_at)
-       select $1::bigint, 3000000 + g, 1, 1, 2, now() from generate_series(1, 3000) g`,
-      [student],
-    )
-    const text = await plan()
-    // The only SubPlan allowed is the D72 level filter over the tiny `education_levels` table; the answer probes never hash.
-    const lines = text.split('\n')
-    const subPlans = lines.flatMap((l, i) => (/^\s*SubPlan \d+/.test(l) ? [lines.slice(i + 1, i + 3).join('\n')] : []))
-    for (const body of subPlans) expect(body).toMatch(/education_levels/)
-    expect(text).not.toMatch(/Seq Scan on (practice_answers|structured_attempts)/)
-  })
+    it(`${name}: still no hashed SubPlan over the answer tables when structured_attempts has rows but no statistics yet`, async () => {
+      const student = (await db.query<{ id: string }>(`select id::text from users where email = 'pelajar@demo.test'`))[0]!.id
+      await db.query(
+        `insert into structured_attempts (user_id, question_id, question_version_no, total_awarded, total_max, submitted_at)
+         select $1::bigint, 3000000 + g, 1, 1, 2, now() from generate_series(1, 3000) g`,
+        [student],
+      )
+      const text = await plan(build)
+      // The only SubPlan allowed is the D72 level filter over the tiny `education_levels` table; the answer probes never hash.
+      const lines = text.split('\n')
+      const subPlans = lines.flatMap((l, i) => (/^\s*SubPlan \d+/.test(l) ? [lines.slice(i + 1, i + 3).join('\n')] : []))
+      for (const body of subPlans) expect(body).toMatch(/education_levels/)
+      expect(text).not.toMatch(/Seq Scan on (practice_answers|structured_attempts)/)
+    })
 
-  it('counts the owned question that has a real answer', async () => {
-    const q = usedCountQuery(BigInt(owner))
-    const rows = await db.query<{ n: number }>(q.text, q.values as unknown[])
-    expect(rows[0]!.n).toBe(1)
-  })
+    it(`${name}: counts the owned question that has a real answer`, async () => {
+      const q = build(BigInt(owner))
+      const rows = await db.query<{ n: number }>(q.text, q.values as unknown[])
+      expect(rows[0]!.n).toBe(1)
+    })
+  }
 })

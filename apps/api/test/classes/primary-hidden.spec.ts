@@ -123,7 +123,7 @@ describe('class report readers leave out the hidden Darjah population (D72)', ()
   })
 
   it('teacher question stats do not count a question of a Darjah level (total, subject breakdown and used)', async () => {
-    const stats = () => t.get(ClassesPorts).questions.statsOf(teacherA)
+    const stats = () => t.get(ClassesPorts).questions.submissionStatsOf!(teacherA)
     const before = await stats()
     expect(before.used).toBe(1)
     const primary = (await t.db.query<{ id: string }>(`select id::text from education_levels where stage = 'primary' order by id limit 1`))[0]?.id as string

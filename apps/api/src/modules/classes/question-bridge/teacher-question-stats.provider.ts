@@ -13,7 +13,7 @@ import type { TeacherQuestionStats, TeacherQuestionsProvider } from '../ports'
  * The `LATERAL ... LIMIT 1` shape keeps both probes correlated per question whatever the table statistics say: a plain `EXISTS ... OR EXISTS` lets the
  * planner hash a whole table into a SubPlan when its statistics are empty or stale.
  */
-export function usedCountQuery(owner: bigint): Prisma.Sql {
+export function submissionUsedCountQuery(owner: bigint): Prisma.Sql {
   return Prisma.sql`
     SELECT count(*)::int AS n
       FROM intake_items i
@@ -35,7 +35,7 @@ const NOT_PKSK = Prisma.sql`NOT EXISTS (SELECT 1 FROM question_tags pt WHERE pt.
  * The BANK `used` count (school-admin activity report): owned questions (`questions.created_by_id`) with at least one real answer, probing
  * `ix_practice_answers_question_id_real` and `ix_structured_attempts_question_id` once per owned question.
  */
-export function bankUsedCountQuery(owner: bigint): Prisma.Sql {
+export function usedCountQuery(owner: bigint): Prisma.Sql {
   return Prisma.sql`
     SELECT count(*)::int AS n
       FROM questions q
@@ -64,17 +64,17 @@ const NO_STATS = (): TeacherQuestionStats => ({ total: 0, structured: 0, approve
  *               answer log (`practice_answers`) or the structured attempts (`structured_attempts`), BR-M10-21;
  *  - `bySubject` own submissions per subject name (the subject the teacher chose).
  *
- * Two readings (two consumers, two meanings): `statsOf` is the teacher's own SUBMISSIONS (above; `/guru/contributions` and the dashboard "Soalan");
- * `bankStatsOf` is the bank questions the teacher owns, objective and structured (the school-admin activity report MCQ / Struktur split, BR-M10-06).
+ * Two readings (two consumers, two meanings): `submissionStatsOf` is the teacher's own SUBMISSIONS (above; `/guru/contributions` and the dashboard "Soalan");
+ * `statsOf` is the bank questions the teacher owns, objective and structured (BR-M10-06; the school-admin activity report MCQ / Struktur split), unchanged.
  *
  * Read-only SQL, like the other cross-module readers of the question tables. One grouped query (status by subject) plus one per-question probe
- * count for `used` (`usedCountQuery`), which is skipped for a teacher without submissions.
+ * count for `used` (`submissionUsedCountQuery`), which is skipped for a teacher without submissions.
  */
 @Injectable()
 export class TeacherQuestionStatsProvider implements TeacherQuestionsProvider {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  async statsOf(teacherId: string): Promise<TeacherQuestionStats> {
+  async submissionStatsOf(teacherId: string): Promise<TeacherQuestionStats> {
     let owner: bigint
     try {
       owner = idFromString(teacherId)
@@ -101,12 +101,12 @@ export class TeacherQuestionStatsProvider implements TeacherQuestionsProvider {
     }
     out.bySubject = [...bySubject].map(([label, count]) => ({ label, count }))
     if (out.total === 0) return out
-    const used = await db.$queryRaw<{ n: number }[]>(usedCountQuery(owner))
+    const used = await db.$queryRaw<{ n: number }[]>(submissionUsedCountQuery(owner))
     out.used = used[0]?.n ?? 0
     return out
   }
   /** Owned bank questions (`questions.created_by_id`), PKSK and Darjah excluded: the numbers the school-admin activity report has always read. */
-  async bankStatsOf(teacherId: string): Promise<TeacherQuestionStats> {
+  async statsOf(teacherId: string): Promise<TeacherQuestionStats> {
     let owner: bigint
     try {
       owner = idFromString(teacherId)
@@ -132,7 +132,7 @@ export class TeacherQuestionStatsProvider implements TeacherQuestionsProvider {
     }
     out.bySubject = [...bySubject].map(([label, count]) => ({ label, count }))
     if (out.total === 0) return out
-    const used = await db.$queryRaw<{ n: number }[]>(bankUsedCountQuery(owner))
+    const used = await db.$queryRaw<{ n: number }[]>(usedCountQuery(owner))
     out.used = used[0]?.n ?? 0
     return out
   }
