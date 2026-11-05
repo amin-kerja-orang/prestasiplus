@@ -9264,14 +9264,14 @@
       "source": "pentadbiran",
       "id": "PG-06",
       "label": "Kedai Hadiah",
-      "route": "/admin/hadiah",
+      "route": "/admin/p/pg-06",
       "roles": [
         "admin"
       ],
       "status": "canonical",
-      "sector": "S7",
+      "sector": "S0",
       "file": "src/shells/pentadbiran/menu.ts",
-      "built": true,
+      "built": false,
       "group": "penglibatan",
       "approved_by_card": null
     },
