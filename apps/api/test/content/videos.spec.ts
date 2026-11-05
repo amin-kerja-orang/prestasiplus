@@ -111,7 +111,7 @@ describe('videos: visibility by school, writes, validation (AC 5, AC 6, AC 8)', 
         expectError(res, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
       }
       // Writes are for admin and teacher only: a pupil of another school gets the role 403 first, a teacher of another school the plain 404.
-      expectError(await api.outsider.put(`/videos/${id.school1}`, body()), 'FORBIDDEN', 'This action is unauthorized.')
+      expectError(await api.outsider.put(`/videos/${id.school1}`, body()), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
       expectError(await api.teacher2.put(`/videos/${id.school1}`, body()), 'NOT_FOUND')
       expectError(await api.teacher2.del(`/videos/${id.school1}`), 'NOT_FOUND')
       const count = await t.db.query(`select 1 from videos where id = $1`, [id.school1])
@@ -283,7 +283,7 @@ describe('videos: visibility by school, writes, validation (AC 5, AC 6, AC 8)', 
         const who = await login(t, OTHER_SCHOOL_TEACHER)
         const asAdmin = await actAs(who, 'school_admin')
         const refused = await apiOf(asAdmin).post('/videos', body())
-        expectError(refused, 'FORBIDDEN', 'This action is unauthorized.')
+        expectError(refused, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
         const allowed = await apiOf(await actAs(asAdmin, 'teacher')).post('/videos', body({ title: 'Guru peranan aktif' }))
         expect(allowed.status, JSON.stringify(allowed.body)).toBe(201)
         createdId = allowed.body.data.id as string
@@ -354,9 +354,9 @@ describe('videos: visibility by school, writes, validation (AC 5, AC 6, AC 8)', 
 
     it('a student gets 403 on POST, PUT and DELETE and nothing is stored or changed', async () => {
       const before = await count()
-      expectError(await api.student.post('/videos', body()), 'FORBIDDEN', 'This action is unauthorized.')
-      expectError(await api.student.put(`/videos/${id.global1}`, body({ title: 'Diubah murid' })), 'FORBIDDEN', 'This action is unauthorized.')
-      expectError(await api.student.del(`/videos/${id.global1}`), 'FORBIDDEN', 'This action is unauthorized.')
+      expectError(await api.student.post('/videos', body()), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
+      expectError(await api.student.put(`/videos/${id.global1}`, body({ title: 'Diubah murid' })), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
+      expectError(await api.student.del(`/videos/${id.global1}`), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
       expect(await count()).toBe(before)
       const [row] = await t.db.query<{ title: string }>(`select title from videos where id = $1`, [id.global1])
       expect(row?.title).toBe('Global satu')
@@ -364,9 +364,9 @@ describe('videos: visibility by school, writes, validation (AC 5, AC 6, AC 8)', 
 
     it('a school admin gets 403 on POST, PUT and DELETE', async () => {
       const before = await count()
-      expectError(await api.schoolAdmin.post('/videos', body()), 'FORBIDDEN', 'This action is unauthorized.')
-      expectError(await api.schoolAdmin.put(`/videos/${id.school1}`, body()), 'FORBIDDEN', 'This action is unauthorized.')
-      expectError(await api.schoolAdmin.del(`/videos/${id.school1}`), 'FORBIDDEN', 'This action is unauthorized.')
+      expectError(await api.schoolAdmin.post('/videos', body()), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
+      expectError(await api.schoolAdmin.put(`/videos/${id.school1}`, body()), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
+      expectError(await api.schoolAdmin.del(`/videos/${id.school1}`), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
       expect(await count()).toBe(before)
     })
 
