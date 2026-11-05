@@ -196,14 +196,14 @@ describe('S1-T02 part 1: difficulty_level, textbook_ref, rejection, SP outside t
       expect(await row(id)).toMatchObject({ status: 'review', difficulty_level: 4, difficulty_tp: null })
     })
 
-    it('[CI] an update that changes Kesukaran without tag.tp does not copy it into TP; an unchanged Kesukaran keeps the stored TP', async () => {
+    it('[CI] an update without tag.tp never copies Kesukaran into TP and keeps the stored TP, whether Kesukaran changes or not (lead ruling on #783)', async () => {
       const id = await create({ difficultyLevel: 2, tag: { unitId: tag.unitId, spIds: [tag.spId], tp: 5 } })
       const kept = await c.admin.put(`/api/questions/${id}`, body({ difficultyLevel: 2, tag: undefined }))
       expect(kept.status, JSON.stringify(kept.body)).toBe(200)
       expect(await row(id)).toMatchObject({ difficulty_level: 2, difficulty_tp: 5 })
       const changed = await c.admin.put(`/api/questions/${id}`, body({ difficultyLevel: 4, tag: undefined, dskpSpId: tag.spId }))
       expect(changed.status, JSON.stringify(changed.body)).toBe(200)
-      expect(await row(id)).toMatchObject({ difficulty_level: 4, difficulty_tp: null })
+      expect(await row(id)).toMatchObject({ difficulty_level: 4, difficulty_tp: 5 })
     })
 
     it('[CI] T1-T3 with unit nodes only (no SP): the gate asks for no SP and no TP, and the question is approved', async () => {
