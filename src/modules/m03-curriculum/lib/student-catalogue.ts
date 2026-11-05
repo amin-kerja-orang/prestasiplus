@@ -11,7 +11,10 @@ export const STUDENT_ROUTES = {
 } as const
 
 export const TOPIC_TAB_TITLE = 'Topik - PRESTASIPLUS'
-export const EMPTY_TOPICS = 'Tiada topik tersedia buat masa ini.'
+export const EMPTY_TOPICS = 'Tiada topik buat masa ini'
+/** AC-MUR-24-3: the V2 data-empty text, shown as data absence only (never "akan datang"). */
+export const EMPTY_TOPICS_BODY =
+  'Bank topik DSKP belum tersedia untuk pilihan ini. Cuba pilih subjek lain atau semak semula nanti.'
 /** Placeholder (SRS §8, no live equivalent). */
 export const LOAD_ERROR = 'Ralat memuatkan data. Sila cuba semula.'
 
