@@ -37,10 +37,13 @@ export const ATTENTION_BELOW = 50
 export const TOP_STUDENT_MIN_SITTINGS = 3
 export const TOP_STUDENT_LIMIT = 10
 export const SCHOOL_QUESTION_CAP = 50
-/** BR-M08-19: fewest members with a finished sitting for a discrimination table. */
-export const DISCRIMINATION_MIN_MEMBERS = 4
+/** R1 decision D113 (FR-GUR-6-9): fewest pupils with an answer to a question for its discrimination index. */
+export const DISCRIMINATION_MIN_MEMBERS = 10
 /** Share of members in the upper and the lower group. */
 export const DISCRIMINATION_GROUP_SHARE = 0.27
+
+/** Tingkatan chips of the item analysis (R1-AS-6, D101): T1 to T5. `LEVEL_CODES` below stays T4/T5 for the level cards. */
+export const ITEM_TINGKATAN_CODES = ['t1', 't2', 't3', 't4', 't5'] as const
 
 export const LEVEL_CODES = ['t4', 't5'] as const
 export type LevelCode = (typeof LEVEL_CODES)[number]
@@ -63,3 +66,39 @@ export const LEGACY_SUBJECT_CODE = 'legacy'
 export function isLegacySubject(s: { subjectId?: string; subjectCode?: string }): boolean {
   return s.subjectCode === LEGACY_SUBJECT_CODE || s.subjectId === LEGACY_SUBJECT_CODE
 }
+
+/**
+ * The 19 stored `practice_answers.mode` values (OPT-MODE-SESI, 40; `past_year`, `ramalan` and `random` are legacy
+ * read-only). Prestasi 360 counts every one of them as answered (FR-X4-5).
+ */
+export const ANSWER_MODES = [
+  'latih_tubi',
+  'random',
+  'chapter',
+  'revision',
+  'remedial',
+  'mission',
+  'question_set',
+  'pksk',
+  'databank',
+  'kuiz',
+  'simulasi',
+  'tracking_a',
+  'subjektif',
+  'structured',
+  'battle',
+  'audio_kbat',
+  'game',
+  'past_year',
+  'ramalan',
+] as const
+/** Game modes: they add answers but never a session ("Sesi Kuiz": games add none, AC-CHAIN-10). */
+export const GAME_MODES = ['battle', 'game'] as const
+/** The modes whose sessions are counted. */
+export const SESSION_MODES: readonly string[] = ANSWER_MODES.filter((m) => !(GAME_MODES as readonly string[]).includes(m))
+
+/** Prestasi 360 `trend`: the last 12 ISO weeks (Monday start, Malaysian time). */
+export const STUDENT_TREND_WEEKS = 12
+/** Weak topics (FR-MUR-4-8): all time, at least this many attempts and an accuracy below `WEAK_TOPIC_BELOW`. */
+export const WEAK_TOPIC_MIN_ATTEMPTS = 2
+export const WEAK_TOPIC_BELOW = 60

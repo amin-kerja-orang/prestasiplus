@@ -90,6 +90,9 @@ export const PkskDomainSchema = PkskDomainRefSchema.extend({
   nameEn: z.string().min(1).max(100),
   order: z.number().int().min(1),
   isActive: z.boolean(),
+  questionCount: z.number().int().min(0).meta({
+    description: 'Approved, active PKSK questions of the domain over both levels; a question tagged T1 and T4 counts once.',
+  }),
   createdAt: TimestampSchema,
   updatedAt: TimestampSchema,
 }).meta({ id: 'PkskDomain' })

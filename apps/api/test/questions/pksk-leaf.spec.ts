@@ -15,9 +15,10 @@ const pksk = (n: number, correct: string[]) => ({ label: '1', prompt: rich('Soal
 const mcq = (n: number, correct: string) => ({ label: '1', prompt: rich('Soalan'), marks: 1, mode: 'mcq', options: opts(n), key: { kind: 'option', correct } })
 
 describe('contract: the PKSK leaf is additive', () => {
-  it('McqLeaf is unchanged: 3 to 8 options, exactly one correct label, kind option only', () => {
+  it('McqLeaf: 2 to 8 options (S1-T09a), exactly one correct label, kind option only', () => {
     expect(QuestionLeafPartSchema.safeParse(mcq(4, 'B')).success).toBe(true)
-    expect(QuestionLeafPartSchema.safeParse(mcq(2, 'A')).success).toBe(false)
+    expect(QuestionLeafPartSchema.safeParse(mcq(2, 'A')).success).toBe(true)
+    expect(QuestionLeafPartSchema.safeParse(mcq(1, 'A')).success).toBe(false)
     expect(QuestionLeafPartSchema.safeParse(mcq(4, 'H')).success).toBe(false)
     expect(QuestionLeafPartSchema.safeParse({ ...mcq(4, 'A'), key: { kind: 'options', correct: ['A'] } }).success).toBe(false)
   })
@@ -200,7 +201,7 @@ describe('PkskQuestionsService (BE-09 adapter over the one bank)', () => {
     const pool = await s2.approvedPool('T1', ['PKSK_MATH'])
     expect(JSON.stringify(pool)).not.toMatch(/isCorrect|correct/)
     expect(pool[0]).toEqual({ id, domainCode: 'PKSK_MATH', questionText: 'Berapa 1+1?', options: [{ text: '1' }, { text: '2' }, { text: '3' }] })
-    expect(await s2.answerKeys('T1', [id])).toEqual([{ id, domainCode: 'PKSK_MATH', optionCount: 3, correctIndexes: [1, 2] }])
+    expect(await s2.answerKeys('T1', [id])).toEqual([{ id, domainCode: 'PKSK_MATH', optionCount: 3, correctIndexes: [1, 2], explanation: null }])
     expect(await s2.answerKeys('T4', [id])).toEqual([])
     store.get(id)!.status = 'review'
     expect(await s2.answerKeys('T1', [id])).toEqual([])
