@@ -89,6 +89,19 @@ describe('AC-PA-37 essay hardLimit', () => {
     expect(saved(w)).toBe(before)
     expect((w.find('textarea').element as HTMLTextAreaElement).value).toBe(before)
   })
+  it('stored text already over the cap can still be shortened by deleting a word', async () => {
+    const w = mount(PartInput, {
+      props: {
+        leaf: leaf({ wordRange: range, hardLimit: true }),
+        modelValue: { text: words(125) },
+        attemptId: 'a1',
+        'onUpdate:modelValue': (v: unknown) => void w.setProps({ modelValue: v as never }),
+      },
+      global,
+    })
+    await type(w, words(124))
+    expect(countWords(saved(w))).toBe(124)
+  })
   it('an IME composition is not altered mid-way; the cut applies on compositionend', async () => {
     const w = essay({ wordRange: range, hardLimit: true })
     await pasteText(w, words(120))

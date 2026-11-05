@@ -96,12 +96,15 @@ async function onFiles(ev: Event): Promise<void> {
 }
 const PAD_PHOTO = 'lukisan.png'
 let padQueue: Promise<void> = Promise.resolve()
+/** Latest pad state: a save still exporting when the pupil pressed Kosongkan is dropped, not stored again. */
+let padEmpty = false
 /**
  * The Papan Lukisan PNG takes the photo path (FR-PA-08), but REPLACES the previous pad drawing:
  * at most one `lukisan.png` per leaf; camera/file photos stay and count toward the cap with it.
  */
 function onDrawingSave(file: File): Promise<void> {
   padQueue = padQueue.then(async () => {
+    if (padEmpty) return
     photoError.value = ''
     const all = answer.value.photos ?? []
     const others = all.filter((p) => p.name !== PAD_PHOTO)
@@ -120,6 +123,7 @@ function onDrawingSave(file: File): Promise<void> {
 }
 /** An emptied pad removes its photo, so an empty pad and no other photo stays `kosong`. */
 function onDrawingChange(ev: { empty: boolean }): Promise<void> {
+  padEmpty = ev.empty
   if (!ev.empty) return Promise.resolve()
   padQueue = padQueue.then(async () => {
     const all = answer.value.photos ?? []

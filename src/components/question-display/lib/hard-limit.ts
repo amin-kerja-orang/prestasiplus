@@ -21,10 +21,18 @@ export function useHardLimit(o: {
   let pasting = false
   let composing = false
 
-  function restore(text: string): void {
+  /** Puts the box back to `text` and keeps the caret where the ignored edit started. */
+  function restore(text: string, typed: string): void {
+    const el0 = o.root.value?.querySelector('textarea')
+    const caret = el0
+      ? Math.max(0, (el0.selectionStart ?? typed.length) - (typed.length - text.length))
+      : text.length
     void nextTick(() => {
       const el = o.root.value?.querySelector('textarea')
-      if (el && el.value !== text) el.value = text
+      if (!el) return
+      if (el.value !== text) el.value = text
+      const at = Math.min(caret, text.length)
+      el.setSelectionRange?.(at, at)
     })
   }
 
@@ -32,10 +40,18 @@ export function useHardLimit(o: {
     const max = o.max()
     const paste = pasting
     pasting = false
-    if (max === undefined || composing || countWords(v) <= max) return o.commit(v)
+    // An edit that does not add words is always kept, so stored text already over the cap can still be shortened.
+    if (
+      max === undefined ||
+      composing ||
+      countWords(v) <= max ||
+      (!paste && countWords(v) <= countWords(o.prev()))
+    ) {
+      return o.commit(v)
+    }
     const kept = paste ? capWords(v, max) : o.prev()
     o.commit(kept)
-    restore(kept)
+    restore(kept, v)
   }
 
   function onCompositionEnd(e: Event): void {
@@ -45,7 +61,7 @@ export function useHardLimit(o: {
     if (max === undefined || countWords(v) <= max) return
     const kept = capWords(v, max)
     o.commit(kept)
-    restore(kept)
+    restore(kept, v)
   }
 
   return {
