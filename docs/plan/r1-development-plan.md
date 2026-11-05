@@ -279,7 +279,7 @@ Owns no product code. Owns: `.evidence/**` (local), `docs/plan/r1-ac-ledger.md` 
 | `0185_s5_report_reporter_role` | DM-82 | S5-T06 |
 | `0202_s6_intervention_review` | DM-30 | S6-T02 |
 | `0203_s6_classroom_unique_name` | DM-73 | S6-T14 |
-| `0204_s6_user_username_unique` (identity table, requested with `needs:schema`) | DM-74 | S6-T10 |
+| ~~`0204_s6_user_username_unique`~~ already present (0002_identity, `uq_users_school_username`; lead ruling 2026-11-05, #486) | DM-74 | S6-T10 |
 | `0205_s6_mission_fields` | DM-75 | S6-T07 |
 | `0206_s6_mission_rewards` | DM-88 | S6-T07 |
 | `0224_s7_game_engine` | DM-60, DM-64 | S7-T01 |
@@ -1184,7 +1184,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - Starts from (existing): `apps/api/src/modules/intake/workflow/figure-links.ts` (figure-name detection "Rajah 1" etc.; one figure, every question that refers to it, D90); `apps/api/src/modules/questions/` flag predicate once S1-T07 lands (the report must call that function, not re-implement it). `apps/api/scripts/uat-ops/` does not exist; flags `stimulus_missing`, `figure_only`, `stem_duplicated` are S1-T07 (DM-05).
 - Exists in V3 (reuse; do not rebuild): `apps/api/src/modules/intake/workflow/figure-links.ts` exists (figure-name detection "Rajah 1" etc.; its header: one figure, every question that refers to it, D90). `apps/api/scripts/uat-ops/` does not exist. Flags (`stimulus_missing`, `figure_only`, `stem_duplicated`) are S1-T07 (DM-05) and do not exist yet. (verified against `feature/v3-bijak-r1` e34e0a52 in the 2026-11-04 sweep; re-check in the gap check, §0B).
 - Build: scripts `regroup-report.ts` (npm `uat:regroup-report`) and `trim-duplicate-stem.ts` (npm `uat:trim-duplicate-stem`), importing `uat-ops/lib.ts` (S4-T03). Report: per subject x Tingkatan counts per flag, file under `.evidence/`; must equal the S2-T04 tab counts. Trim: normalisation = trim + collapse whitespace, compare only; backup table `_bk_r1_trim_duplicate_stem` (PRD50 DM-40); reversible. The detector is S1-T07's flags ("DEV tool, server rule", U-OP-05: no script here); U-OP-06 is the trim script.
-- Files: `apps/api/scripts/uat-ops/regroup-report.ts`, `apps/api/scripts/uat-ops/trim-duplicate-stem.ts`
+- Files: `apps/api/scripts/uat-ops/regroup-report.ts`, `apps/api/scripts/uat-ops/trim-duplicate-stem.ts`, `apps/api/test/uat-ops/`
 - PRD: QE-08, G7.6, FR-X1-4f. Approach: dry-run report script listing flagged questions per subject/level; one-off trim of duplicated leaf prompt equal to stem (dry-run first; the real run only by the designated UAT developer after the user approves the report; reversible via a backup table); no content invented. Figures cannot be recovered by code: ADMIN users supply the missing figure images and regroup stimulus groups in the regroup work-list and diagram audit (D110); scripts only report or assist bulk actions an admin confirms in the UI. Files: `apps/api/scripts/uat-ops/regroup-report.ts`, `trim-duplicate-stem.ts`. Tests: script unit tests (CI). Verify: on UAT, report counts match S2-T04. DoD: DoD-T.
 - Data/API: DM-40
 - Also uses: API-Q-13, API-Q-21, API-Q-24, DM-05, DM-06 (owned by another card; read or verified here, not an ownership claim)
@@ -1247,7 +1247,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
   | 13 | migration 0229 dry-run | S7-T05 |
   | 18, 19, 20 | `paper-group-integrity.sql` / `group-integrity.sql`, `difficulty-level-backfill.ts`, `backfill-bijak-answers.ts` | S1-T01, S1-T02, S5-T15 |
 - Decided (D115): the shared helper `uat-ops/lib.ts` is created by S4-T03 (first card that needs it).
-- Files: `apps/api/scripts/uat-ops/`
+- Files: `apps/api/scripts/uat-ops/`, `apps/api/test/uat-ops/`
 - Data/API: DM-41
 - Also uses: DM-12, DM-17, DM-19, DM-22 (owned by another card; read or verified here, not an ownership claim)
 - New requirements (45, 46, 48; D113): FR-QA-43; AC-QA-43.
@@ -1263,7 +1263,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - PRD: FR-ADM-C04.3, FR-ADM-C04.5, FR-ADM-C04.6, FR-ADM-C04.7, R1-ADM-C-04, FR-ADM-C01.6, D101. The repo has T4-T5 extracts only. Decision D109: T1-T3 use the same DSKP structure as T4-T5 (Tingkatan, Subjek, Bab, SK, SP, TP). Build the T1-T3 content from the T1-T3 chapter and topic data that already exists in V3/UAT (and V2), mapped into that structure, plus any T1-T3 PDF supplied outside the repo. The official T1-T3 PDFs are not a prerequisite. Write it in the JSON format of `docs/reference/dskp/*.json` (`level` T1/T2/T3), run the loader dry-run, then U-OP-01 for T1-T3 (the user approves the UAT write). Bab stays required only where the subject and Tingkatan have chapters (N-3).
 - Data/API: API-DSKP-05
 - Also uses: DM-14 (owned by another card; read or verified here, not an ownership claim)
-- Files: docs/reference/dskp/**, apps/api/src/modules/curriculum/dskp/data/**, apps/api/test/curriculum/{dskp-load,dskp-loader,dskp-package,nodes-per-in-scope-subject,seed}.spec.ts. Tests: update the five spec files above; loader fixture in dskp-load.spec.ts. Verify: V-STD; T2 pupil sees subjects and Bab. DoD: DoD-T + AC-ADM-C04.*.
+- Files: `docs/reference/dskp/**`, `apps/api/src/modules/curriculum/dskp/data/**`, `apps/api/test/curriculum/{dskp-load,dskp-loader,dskp-package,nodes-per-in-scope-subject,seed}.spec.ts`, `apps/api/src/modules/curriculum/dskp/{dskp-load,dskp-loader}.ts` (the loader files are already on Starts-from; listed here because the scope guard expands braces only on Files lines. Paths are in backticks so the guard reads them; lead ruling on #453). Tests: update the five spec files above; loader fixture in dskp-load.spec.ts. Verify: V-STD; T2 pupil sees subjects and Bab. DoD: DoD-T + AC-ADM-C04.*.
 
 ### 4.S5 Murid learning, account, content
 
@@ -1716,7 +1716,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - Build (absent in V3): nothing.
 - PRD: R1-GUR-10, R1-AS-10, R1-ADM-M-03. Gap: scope, Gap tab, wide tables, admin item points to `/guru/monitoring`. Files: `m11-teacher-analytics/**`, route under `/admin/monitoring`. Tests/verify per standard (tables → cards at 375). DoD: DoD-T.
 - Data/API: API-RPT-12
-- Decided (D115): none needed.
+- Decided (D115): none needed. Lead ruling 2026-11-05, #484: the no-school teacher copy "Tiada sekolah dikaitkan dengan akaun anda." is approved (PRD-20 R1-GUR-10); aligning `/admin/monitoring` with R1-ADM-M-03 is a separate gap, not S6-T08.
 - UI: keep V3 layout/components (product-owner rule 2026-11-04). V1/V2 are references for function, data, rules, states and messages only; do not restyle or re-lay-out any V3 screen to look like V2. A missing function is added inside the existing V3 screen style.
 
 **S6-T09 School-admin reports and lists (46–53)** · P1 · L · Type: Complete · deps: S6-T03
@@ -1739,7 +1739,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - Exists in V3 (reuse; do not rebuild): `/guru/pelajar` page; `/guru/pelajar/cipta` is a silent redirect to `/guru/pelajar` (`routes/pelajar.ts:25`) and the page has a "Cipta Pelajar" link to it (`PelajarSayaPage.vue:137`); BE `GET /guru/students`, `PUT /guru/students/:id` (= add an EXISTING pupil to a class), `DELETE` (remove) (`teacher.controller.ts:41-56`); `/guru/laporan` page whose range pills deliberately drop `classroom_id` ("live behaviour", `LaporanPage.vue:6-7,66-70`) fed by `GET /api/teacher/report` (`api/report.ts:29`, API-RPT-07).
 - Change: (1) route `/guru/pelajar/cipta` stops redirecting and renders the Cipta Pelajar form (Decided D-T10-1: route, since it already exists); (2) Pelajar Saya columns Tahap/Tugasan/Skor Purata/Terakhir Aktif (FR-GUR-41-6), as data in the existing V3 list component; (3) Laporan: keep the class filter on the range pills (reverses the live behaviour), card counts equal panel counts, all modes counted (FR-GUR-42-6), label "Pecahan Skor Purata", AC-GUR-42-7 list shows 10 names then "+ 5 lagi" which expands all; formula denominators in PRD-20 R1-GUR-42.
 - Remove: the silent redirect `/guru/pelajar/cipta` -> `/guru/pelajar`.
-- Build (absent in V3): `POST /api/guru/students` (API-GUR-06; does not exist) + migration `0204_s6_user_username_unique` (unique `(school_id, lower(username))`, partial where username is not null; `needs:schema`; reuse the admin username generator in `users/` and its existing duplicate handling). Form fields: Nama, Kelas (own active class), No. IC (optional). IC: exactly 12 digits, no hyphen: "No. IC mesti 12 digit tanpa sempang." (an 11-digit IC fails; the old wording "11-digit IC check" means that negative test); duplicate: "No. IC sudah didaftarkan.". Success: "Pelajar dicipta. Login: {username} / {kata laluan lalai}" (default password from configuration, never a literal, FR-GUR-41-3); teacher without a class: "Anda belum ada kelas aktif. Cipta kelas dahulu.".
+- Build (absent in V3): `POST /api/guru/students` (API-GUR-06; does not exist); the unique `(school_id, lower(username))` index already exists as `uq_users_school_username` in migration 0002_identity, so no `0204` migration is built (lead ruling 2026-11-05, #486); reuse the admin username generator in `users/` and its existing duplicate handling). Form fields: Nama, Kelas (own active class), No. IC (optional). IC: exactly 12 digits, no hyphen: "No. IC mesti 12 digit tanpa sempang." (an 11-digit IC fails; the old wording "11-digit IC check" means that negative test); duplicate: "No. IC sudah didaftarkan.". Success: "Pelajar dicipta. Login: {username} / {kata laluan lalai}" (default password is the single env key `PUPIL_DEFAULT_PASSWORD`: min 8, no default value, never in the repo, docs, seeds or tests, shared with the import; no forced reset; FR-GUR-41-3, lead ruling 2026-11-05, #486); teacher without a class: "Anda belum ada kelas aktif. Cipta kelas dahulu.".
 - PRD: R1-GUR-41, R1-GUR-42; Cipta Pelajar silent failure; Laporan pills drop class filter and count mismatch. Files: `m10-teacher-class/pages/**`, `m11-teacher-analytics/pages/Laporan*`. Tests/verify standard. DoD: DoD-T + AC-GUR-41/42-*.
 - Data/API: DM-74; API-GUR-05, API-GUR-06
 - Also uses: API-RPT-07 (owned by another card; read or verified here, not an ownership claim)

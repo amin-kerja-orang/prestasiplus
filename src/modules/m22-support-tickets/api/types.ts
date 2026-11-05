@@ -54,7 +54,7 @@ export const ADMIN_TICKET_FLASH = {
 /** `GET /api/config/support`; a value may be empty. */
 export interface SupportContact {
   email: string
-  whatsappNumber: string
+  whatsapp: string
 }
 
 /** `Ticket` of §7. */

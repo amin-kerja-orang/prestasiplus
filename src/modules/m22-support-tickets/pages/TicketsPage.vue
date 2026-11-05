@@ -146,7 +146,7 @@ watch(
     />
 
     <DsCallout
-      v-if="showsContact && (contact?.email || contact?.whatsappNumber)"
+      v-if="showsContact && (contact?.email || contact?.whatsapp)"
       tone="info"
       title="Hubungi pasukan sokongan kami untuk sebarang pertanyaan."
       data-testid="tk-contact"
@@ -159,8 +159,8 @@ watch(
           >E-mel Kami</UButton
         >
         <UButton
-          v-if="contact?.whatsappNumber"
-          :to="`https://wa.me/${contact.whatsappNumber}`"
+          v-if="contact?.whatsapp"
+          :to="`https://wa.me/${contact.whatsapp}`"
           target="_blank"
           rel="noopener noreferrer"
           color="neutral"

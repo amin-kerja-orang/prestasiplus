@@ -105,7 +105,7 @@ const GUEST_RULES: readonly PathRule[] = [p('/video'), p('/artikel'), p('/ibu-ba
 // ---------------------------------------------------------------------------------------------
 // Section B per role
 
-/** Murid: 37 module items (rows 2-9 and 12-40). */
+/** Murid: 38 module items (rows 2-9, 12-40 and 54). */
 export const STUDENT_ITEMS: readonly MatrixItem[] = [
   // [S5 begin]
   item(2, 'Dashboard', p('/dashboard', true)),
@@ -189,6 +189,9 @@ export const STUDENT_ITEMS: readonly MatrixItem[] = [
   // [S6 begin]
   item(40, 'Jemput Ibu Bapa', p('/jemput-ibu-bapa'), p('/ibu-bapa/terima')),
   // [S6 end]
+  // [S5 begin]
+  item(54, 'Laporan Soalan', p('/laporan-soalan')),
+  // [S5 end]
 ]
 
 /** Guru: 15 module items (rows 1-11 and 41-44). */

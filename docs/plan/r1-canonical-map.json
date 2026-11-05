@@ -809,6 +809,17 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/studio/questions/:id(\\d+)/preview|",
+      "path": "/admin/studio/questions/:id(\\d+)/preview",
+      "name": null,
+      "status": "redirect-to:/admin/studio/questions/:id/sunting?pratonton=1",
+      "sector": "S2",
+      "component": null,
+      "file": "src/modules/m04-question-bank/routes/studio.ts",
+      "redirects_to": "(dynamic)",
+      "approved_by_card": "S2-T03"
+    },
+    {
       "key": "/admin/studio/groups/:id(\\d+)|m04.studio.group",
       "path": "/admin/studio/groups/:id(\\d+)",
       "name": "m04.studio.group",
@@ -1471,16 +1482,15 @@
       "approved_by_card": null
     },
     {
-      "key": "/prestasi|",
+      "key": "/prestasi|m08.prestasi.own",
       "path": "/prestasi",
-      "name": null,
+      "name": "m08.prestasi.own",
       "status": "canonical",
       "sector": "S10",
-      "component": null,
+      "component": "src/modules/m08-student-performance/pages/Prestasi360Page.vue",
       "file": "src/modules/m08-student-performance/routes/prestasi.ts",
-      "redirects_to": "/prestasi/sekolah",
-      "note": "Today redirects every role to /prestasi/sekolah (defect); target is a role-dependent redirect: a pupil goes to /prestasi/{ownId} (docs/prd/r1/10-murid.md row 3)",
-      "approved_by_card": null
+      "note": "S10-T01: a pupil sees own Prestasi 360 at /prestasi (FR-MUR-4-13, AC-MUR-4-9); beforeEnter sends every other role to /prestasi/sekolah. Same page as /prestasi/:userId (staff view of one pupil), not a copy.",
+      "approved_by_card": "S10-T01"
     },
     {
       "key": "/prestasi/sekolah|m08.prestasi.sekolah",
@@ -1976,6 +1986,26 @@
       "component": "src/modules/m10-teacher-class/pages/SumbangSoalanEditPage.vue",
       "file": "src/modules/m10-teacher-class/routes/soalan.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "/guru/soalan-berstruktur|",
+      "path": "/guru/soalan-berstruktur",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m04-question-bank/pages/StructuredListPage.vue",
+      "file": "src/modules/m10-teacher-class/routes/soalan.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
+      "key": "/guru/soalan-berstruktur/:id([0-9]+)|",
+      "path": "/guru/soalan-berstruktur/:id([0-9]+)",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m04-question-bank/pages/StructuredDetailPage.vue",
+      "file": "src/modules/m10-teacher-class/routes/soalan.ts",
+      "approved_by_card": "S6-T17"
     },
     {
       "key": "/guru/analisis-item|guru-analisis-item",
@@ -2840,6 +2870,18 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/studio/imports|",
+      "path": "/admin/studio/imports",
+      "name": null,
+      "status": "redirect-to:/admin/spm/soalan/ekstrak",
+      "sector": "S3",
+      "component": null,
+      "file": "src/modules/m28-bijak-spm/routes/admin-intake.ts",
+      "redirects_to": "/admin/spm/soalan/ekstrak",
+      "note": "V2 path alias of Import & Semakan; docs/prd/r1/30-admin-pusat.md 3.2",
+      "approved_by_card": "S2-T03"
+    },
+    {
       "key": "/admin/spm/soalan/ekstrak|",
       "path": "/admin/spm/soalan/ekstrak",
       "name": null,
@@ -2945,8 +2987,9 @@
       "name": null,
       "status": "redirect-to:/admin/studio?status=review",
       "sector": "S3",
-      "component": "src/modules/m28-bijak-spm/admin/papers/ReviewQueuePage.vue",
+      "component": null,
       "file": "src/modules/m28-bijak-spm/routes/admin-papers.ts",
+      "redirects_to": "/admin/studio?status=review",
       "note": "KS-15 second review queue; docs/prd/r1/30-admin-pusat.md 3.3 writes ?status=reviewed but the status value is \"review\" (register M-04, section 7 item 2). The item route /admin/spm/semakan/:key stays (D113).",
       "approved_by_card": null
     },
@@ -10142,6 +10185,16 @@
       "approved_by_card": null
     },
     {
+      "name": "SpinSegment",
+      "table": "spin_segments",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/games.prisma",
+      "approved_by_card": "S7-T01",
+      "dm": "DM-64",
+      "note": "The 8 Roda Nasib wheel segments (48 GAME-14) as admin data, replacing SPIN_SEGMENTS in the GAME-14 part."
+    },
+    {
       "name": "League",
       "table": "leagues",
       "status": "canonical",
@@ -12944,6 +12997,26 @@
       "approved_by_card": "S4-T02"
     },
     {
+      "key": "POST /api/admin/curriculum/questions/bulk-chapter",
+      "method": "POST",
+      "path": "/api/admin/curriculum/questions/bulk-chapter",
+      "api_id": "API-DSKP-09",
+      "status": "canonical",
+      "sector": "S4",
+      "file": "apps/api/src/modules/curriculum/admin.controller.ts",
+      "approved_by_card": "S4-T03"
+    },
+    {
+      "key": "GET /api/admin/curriculum/chapter-coverage",
+      "method": "GET",
+      "path": "/api/admin/curriculum/chapter-coverage",
+      "api_id": "API-DSKP-10",
+      "status": "canonical",
+      "sector": "S4",
+      "file": "apps/api/src/modules/curriculum/admin.controller.ts",
+      "approved_by_card": "S4-T03"
+    },
+    {
       "key": "GET /api/admin/curriculum/chapters/:p",
       "method": "GET",
       "path": "/api/admin/curriculum/chapters/:id",
@@ -14825,6 +14898,16 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/practice/remedial-suggestions",
+      "method": "GET",
+      "path": "/api/practice/remedial-suggestions",
+      "api_id": "API-PRAC-08",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/src/modules/practice/reads/analytics/analytics.controller.ts",
+      "approved_by_card": "S5-T07"
+    },
+    {
       "key": "GET /api/practice/progress",
       "method": "GET",
       "path": "/api/practice/progress",
@@ -15165,6 +15248,46 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/admin/servability/lanes/tracking-a",
+      "method": "GET",
+      "path": "/api/admin/servability/lanes/tracking-a",
+      "api_id": "API-BIJAK-12",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/servability.controller.ts",
+      "approved_by_card": "S3-T03"
+    },
+    {
+      "key": "GET /api/admin/servability/lanes/subjektif",
+      "method": "GET",
+      "path": "/api/admin/servability/lanes/subjektif",
+      "api_id": "API-BIJAK-12",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/servability.controller.ts",
+      "approved_by_card": "S3-T03"
+    },
+    {
+      "key": "GET /api/admin/servability/lanes/kertas-subjektif",
+      "method": "GET",
+      "path": "/api/admin/servability/lanes/kertas-subjektif",
+      "api_id": "API-BIJAK-12",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/servability.controller.ts",
+      "approved_by_card": "S3-T03"
+    },
+    {
+      "key": "GET /api/admin/servability/lanes/latih-tubi",
+      "method": "GET",
+      "path": "/api/admin/servability/lanes/latih-tubi",
+      "api_id": "API-BIJAK-12",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/servability.controller.ts",
+      "approved_by_card": "S3-T03"
+    },
+    {
       "key": "GET /api/admin/questions/:p/paper-servability",
       "method": "GET",
       "path": "/api/admin/questions/:id/paper-servability",
@@ -15405,6 +15528,26 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/guru/structured-questions",
+      "method": "GET",
+      "path": "/api/guru/structured-questions",
+      "api_id": "API-GUR-26",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
+      "key": "GET /api/guru/structured-questions/:p",
+      "method": "GET",
+      "path": "/api/guru/structured-questions/:id",
+      "api_id": "API-GUR-26",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
       "key": "GET /api/questions/studio/dskp",
       "method": "GET",
       "path": "/api/questions/studio/dskp",
@@ -15503,6 +15646,17 @@
       "sector": "S1",
       "file": "apps/api/src/modules/questions/workflow/imports/imports.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "GET /api/question-imports/:p/errors",
+      "method": "GET",
+      "path": "/api/question-imports/:id/errors",
+      "api_id": "API-Q-17",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/workflow/imports/imports.controller.ts",
+      "approved_by_card": "S1-T05",
+      "note": "Error report CSV of one import run (FR-ADM-QE6.2): baris, question_key, medan, kod_ralat, mesej. Admin only."
     },
     {
       "key": "POST /api/question-imports",
@@ -15875,6 +16029,26 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/headcounts/me",
+      "method": "GET",
+      "path": "/api/headcounts/me",
+      "api_id": "API-RPT-08",
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/headcount/headcount.controllers.ts",
+      "approved_by_card": "S10-T02"
+    },
+    {
+      "key": "GET /api/headcounts/me/detail",
+      "method": "GET",
+      "path": "/api/headcounts/me/detail",
+      "api_id": "API-RPT-08",
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/headcount/headcount.controllers.ts",
+      "approved_by_card": "S10-T02"
+    },
+    {
       "key": "GET /api/headcounts/students/:p",
       "method": "GET",
       "path": "/api/headcounts/students/:userId",
@@ -15933,6 +16107,46 @@
       "sector": "S10",
       "file": "apps/api/src/modules/reports/performance/headcount/headcount.controllers.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "PUT /api/headcounts/:p/ar",
+      "method": "PUT",
+      "path": "/api/headcounts/:id/ar",
+      "api_id": "API-RPT-10",
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/headcount/headcount.controllers.ts",
+      "approved_by_card": "S10-T02"
+    },
+    {
+      "key": "PUT /api/headcounts/:p/tov",
+      "method": "PUT",
+      "path": "/api/headcounts/:id/tov",
+      "api_id": "API-RPT-10",
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/headcount/headcount.controllers.ts",
+      "approved_by_card": "S10-T02"
+    },
+    {
+      "key": "PUT /api/headcounts/:p/settings",
+      "method": "PUT",
+      "path": "/api/headcounts/:id/settings",
+      "api_id": "API-RPT-10",
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/headcount/headcount.controllers.ts",
+      "approved_by_card": "S10-T02"
+    },
+    {
+      "key": "PUT /api/headcounts/:p/defaults",
+      "method": "PUT",
+      "path": "/api/headcounts/:id/defaults",
+      "api_id": "API-RPT-16",
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/headcount/headcount.controllers.ts",
+      "approved_by_card": "S10-T02"
     },
     {
       "key": "POST /api/headcounts/:p/drop-students",

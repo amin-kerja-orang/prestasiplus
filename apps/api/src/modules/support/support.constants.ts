@@ -21,5 +21,3 @@ export const WRITE_TX = { maxWait: 10_000, timeout: 15_000 } as const
 
 /** The singleton row of `support_config`. */
 export const SUPPORT_CONFIG_ID = 1n
-
-export const SUPPORT_CONFIG_MISSING = 'Konfigurasi sokongan tidak dijumpai.'

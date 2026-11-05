@@ -493,7 +493,7 @@ describe('S1 chips and contact block (S7-T10, rulings on #508)', () => {
   it.each(['teacher', 'school_admin'])('%s sees the block with the links that have a value', async (role) => {
     session.role = role
     api.fetchTickets.mockResolvedValue(list([], 0))
-    api.fetchSupportContact.mockResolvedValue({ email: 'sokongan@demo.test', whatsappNumber: '' })
+    api.fetchSupportContact.mockResolvedValue({ email: 'sokongan@demo.test', whatsapp: '' })
     const { w } = await open('/pusat-tuisyen/tiket', TicketsPage)
     expect(tid(w, 'tk-contact').text()).toContain('Hubungi pasukan sokongan kami')
     expect(tid(w, 'tk-contact-email').attributes('href')).toBe('mailto:sokongan@demo.test')
@@ -503,7 +503,7 @@ describe('S1 chips and contact block (S7-T10, rulings on #508)', () => {
   it('all values empty or a failed call hides the block, with no error', async () => {
     session.role = 'teacher'
     api.fetchTickets.mockResolvedValue(list([], 0))
-    api.fetchSupportContact.mockResolvedValue({ email: '', whatsappNumber: '' })
+    api.fetchSupportContact.mockResolvedValue({ email: '', whatsapp: '' })
     const a = await open('/pusat-tuisyen/tiket', TicketsPage)
     expect(tid(a.w, 'tk-contact').exists()).toBe(false)
     api.fetchSupportContact.mockRejectedValue(new ApiError({ status: 404, code: 'NOT_FOUND', message: 'x' }))
