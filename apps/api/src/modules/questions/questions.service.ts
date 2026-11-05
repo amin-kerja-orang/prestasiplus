@@ -18,10 +18,8 @@ import { UsersRepository } from '../users'
 import { bulkFailureOf, isForeignKeyViolation, notFoundFailure, questionNotFound, transitionConflict, type BulkFailure, alreadyApprovedSkip, AlreadyInStatusError, type BulkSkipped } from './errors'
 import { gradeQuestion } from './grading'
 import {
-  difficultyOf,
   flatFromVersion,
   kertasOfPaperCode,
-  keyIndexOf,
   languageToStore,
   partsFromFlat,
   paperCodeWithKertas,
@@ -43,7 +41,6 @@ import type {
   AdminListResult,
   ContributionCounts,
   NamedRef,
-  Page,
   PartAnswer,
   PublicQuestion,
   QuestionActor,
@@ -51,8 +48,6 @@ import type {
   QuestionCreateInput,
   QuestionDetailView,
   QuestionGrade,
-  QuestionGuruCreateInput,
-  QuestionGuruUpdateInput,
   QuestionProvenance,
   QuestionRecord,
   QuestionVersionRecord,
@@ -400,7 +395,7 @@ export class QuestionsService {
   }
 
   /**
-   * The ONE hard delete of a question (admin route, bulk `delete`, Guru `removeOwn`). R1-delete-served-guard (B3 review of REQ-B-052): a question
+   * The ONE hard delete of a question (admin route, bulk `delete`; the Guru route deletes intake items since S6-T06). R1-delete-served-guard (B3 review of REQ-B-052): a question
    * that a paper which is still held (Terbit, or withdrawn with sittings) places is refused with 409 and kept. `paper_placements.question_id` has no
    * foreign key, so without this a delete leaves a placement on nothing and a running sitting answers 500. Every other state is deletable, as on the
    * live site. The question lock serialises it against an edit or a publish of the same question; Terbit takes FOR SHARE on the placed question
@@ -686,85 +681,6 @@ export class QuestionsService {
 
   // --- Guru (own rows only; another teacher id is 404) ------------------------------------------
 
-  async listOwn(userId: string, page: number, pageSize = 20): Promise<Page<QuestionView>> {
-    const res = await this.repo.listOwn({ ownerId: userId, page, pageSize })
-    return { ...res, rows: await this.named(res.rows) }
-  }
-
-  async getOwn(id: string, userId: string): Promise<QuestionDetailView> {
-    return this.detail(await this.owned(id, userId))
-  }
-
-  async createGuru(raw: QuestionGuruCreateInput, userId: string): Promise<QuestionDetailView> {
-    const input = await this.withImageKeys(raw)
-    const flat: FlatSource = {
-      questionType: input.questionType,
-      questionText: input.questionText,
-      ...(input.options === undefined ? {} : { options: input.options }),
-      ...(input.correctAnswer === undefined ? {} : { correctAnswer: input.correctAnswer }),
-      ...(input.tfAnswer === undefined ? {} : { tfAnswer: input.tfAnswer }),
-      ...(input.correctAnswerText === undefined ? {} : { correctAnswerText: input.correctAnswerText }),
-      ...(input.altAnswers === undefined ? {} : { altAnswers: input.altAnswers }),
-      ...(input.modelAnswer === undefined ? {} : { modelAnswer: input.modelAnswer }),
-      ...(input.optionImageFileIds === undefined ? {} : { optionImageIds: input.optionImageFileIds }),
-    }
-    const parts = this.checkedParts(input.parts ?? partsFromFlat(flat), input.parts !== undefined)
-    const created = await this.createFrom(
-      {
-        subjectId: input.subjectId,
-        educationLevelId: input.educationLevelId,
-        tp: input.tag?.tp ?? difficultyOf(input.difficultyLevel),
-        difficultyLevel: difficultyOf(input.difficultyLevel),
-        stem: input.questionText,
-        parts,
-        language: languageToStore(undefined, input.scriptType),
-        explanation: input.explanation?.trim() || null,
-        tag: input.tag,
-        dskpSpId: input.dskpSpId,
-        chapterId: input.curriculumChapterId,
-        topicId: input.curriculumTopicId,
-        stemImage: input.questionImageFileId,
-        actor: { userId, role: 'teacher' },
-        flatSp: input.tag === undefined,
-      },
-      'review',
-      { userId, role: 'teacher' },
-    )
-    return this.detail(created)
-  }
-
-  async updateOwn(id: string, input: QuestionGuruUpdateInput, userId: string): Promise<QuestionDetailView> {
-    const record = await this.owned(id, userId)
-    const flat = flatFromVersion(record.version)
-    const touchesKey = input.options !== undefined || input.correctOptionId !== undefined
-    if (touchesKey && flat.questionType !== 'mcq') {
-      throw fail({ options: QUESTION_MESSAGES.options })
-    }
-    const body: QuestionUpdateInput = {
-      subjectId: record.version.subjectId ?? '',
-      educationLevelId: record.version.educationLevelId ?? '',
-      difficultyLevel: input.difficultyLevel === undefined ? flat.difficultyLevel : difficultyOf(input.difficultyLevel),
-      questionText: input.questionText,
-      ...(input.explanation === undefined ? {} : { explanation: input.explanation }),
-      ...(input.options === undefined
-        ? {}
-        : { options: [...input.options].sort((a, b) => Number((a as { id: number }).id) - Number((b as { id: number }).id)) }),
-      ...(input.correctOptionId === undefined ? {} : { correctAnswer: keyIndexOf(input.correctOptionId) ?? 0 }),
-      ...(input.questionImageFileId === undefined ? {} : { questionImageFileId: input.questionImageFileId }),
-      ...(input.optionImageFileIds === undefined ? {} : { optionImageFileIds: input.optionImageFileIds }),
-      ...(input.removeQuestionImage === undefined ? {} : { removeQuestionImage: input.removeQuestionImage }),
-      ...(input.removeOptionImage === undefined ? {} : { removeOptionImage: input.removeOptionImage }),
-    }
-    return this.detail(await this.applyUpdate(record, body, { userId, role: 'teacher' }, { keepSubject: true }))
-  }
-
-  async removeOwn(id: string, userId: string): Promise<void> {
-    await this.owned(id, userId)
-    // A teacher's own approved question may be on a Terbit paper with a running sitting: the same guard as the admin delete.
-    if (!(await this.removeGuarded(id))) throw questionNotFound()
-    this.overview?.invalidate()
-  }
-
   async contributionCountsFor(userId: string): Promise<ContributionCounts> {
     const byStatus = await this.repo.ownerStatusCounts(userId)
     return { total: Object.values(byStatus).reduce((s, n) => s + n, 0), byStatus }
@@ -802,14 +718,6 @@ export class QuestionsService {
   }
 
   // --- internals ----------------------------------------------------------------------------------
-
-  private async owned(id: string, userId: string): Promise<QuestionRecord> {
-    const owner = await this.repo.ownerOf(id)
-    if (owner === undefined || owner !== userId) throw questionNotFound()
-    const record = await this.repo.get(id, 'latest')
-    if (!record) throw questionNotFound()
-    return record
-  }
 
   /** Re-validates a built tree with the contract; a failure is a 422 on the first offending path. */
   private checkedParts(parts: QuestionPart[], supplied: boolean): QuestionPart[] {

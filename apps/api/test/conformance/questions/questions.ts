@@ -264,7 +264,7 @@ export const questionsScenarios: Scenario[] = [
     },
   },
   {
-    id: 'questions-api/Guru contribution: saved as review, own rows only, another teacher gets 404',
+    id: 'questions-api/Guru contribution: a pending intake item, own rows only, another teacher gets 404',
     domain: 'questions',
     targets: API_ONLY,
     async run(ctx) {
@@ -274,9 +274,20 @@ export const questionsScenarios: Scenario[] = [
       const base = await seededTag(ctx, admin)
       const tag = nextTag('g')
 
-      const created = await teacher.request('POST', '/guru/questions', {
-        body: mcq(tag, { subjectId: base.subjectId, educationLevelId: base.educationLevelId }),
+      // S6-T06: the teacher form (intake item, API-GUR-18). The DSKP fields come from the seeded tag of the same subject and level, so the body is valid
+      // whether or not the subject and level have chapters or DSKP nodes.
+      const form = (text: string): Json => ({
+        subjectId: base.subjectId,
+        educationLevelId: base.educationLevelId,
+        questionType: 'mcq',
+        difficultyLevel: 3,
+        questionText: text,
+        options: ['Pilihan A', 'Pilihan B', 'Pilihan C', 'Pilihan D'],
+        correctAnswer: 1,
+        ...(base.chapterId === null ? {} : { chapterId: base.chapterId }),
+        ...((base.tag.spIds as string[] | undefined)?.length ? { spIds: base.tag.spIds, tp: 3, cognitiveLevel: 'mengingat' } : {}),
       })
+      const created = await teacher.request('POST', '/guru/questions', { body: form(`Soalan Guru ${tag}: yang manakah benar?`) })
       ctx.expectStatus(created, 201)
       const id = String(dataOf(created).id)
       ctx.check(dataOf(created).status === 'pending', `a Guru submission is ${String(dataOf(created).status)}, expected pending`)
@@ -290,11 +301,11 @@ export const questionsScenarios: Scenario[] = [
       for (const who of [other, admin]) {
         ctx.check(!listOf(await who.request('GET', '/guru/questions')).some((q) => q.id === id), 'another account lists a foreign Guru question')
         expectError(ctx, await who.request('GET', `/guru/questions/${id}`), 404, 'NOT_FOUND')
-        expectError(ctx, await who.request('PUT', `/guru/questions/${id}`, { body: { questionText: 'Teks pengganti yang sah.' } }), 404, 'NOT_FOUND')
+        expectError(ctx, await who.request('PUT', `/guru/questions/${id}`, { body: form('Teks pengganti yang sah.') }), 404, 'NOT_FOUND')
         expectError(ctx, await who.request('DELETE', `/guru/questions/${id}`), 404, 'NOT_FOUND')
       }
 
-      const edited = await teacher.request('PUT', `/guru/questions/${id}`, { body: { questionText: `Soalan Guru ${tag} yang disunting.` } })
+      const edited = await teacher.request('PUT', `/guru/questions/${id}`, { body: form(`Soalan Guru ${tag} yang disunting.`) })
       ctx.expectStatus(edited, 200)
       const removed = await teacher.request('DELETE', `/guru/questions/${id}`)
       ctx.expectStatus(removed, 200)

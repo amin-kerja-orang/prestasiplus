@@ -66,8 +66,8 @@ describe('BE-09 hardening (real database)', () => {
     expect(out.latestVersionNo).toBe(2)
     expect(out.liveVersionNo).toBe(1)
 
-    const g = await svc.createGuru({ ...mcqInput(tag), difficultyLevel: 3, options: ['a', 'b', 'c', 'd'], correctAnswer: 0 } as never, teacher.userId)
-    const back = await svc.updateOwn(g.id, { questionText: 'Teks guru selepas kelulusan diubah.' } as never, teacher.userId)
+    const g = await svc.create({ ...mcqInput(tag), difficultyLevel: 3, options: ['a', 'b', 'c', 'd'], correctAnswer: 0, status: 'review' } as never, { userId: teacher.userId, role: 'teacher' })
+    const back = await svc.update(g.id, { questionText: 'Teks guru selepas kelulusan diubah.' } as never, { userId: teacher.userId, role: 'teacher' })
     expect(back.version.status).toBe('review')
   })
 

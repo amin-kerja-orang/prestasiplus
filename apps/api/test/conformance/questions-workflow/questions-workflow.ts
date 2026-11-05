@@ -10,6 +10,8 @@ import { API_ONLY, dataOf, errorOf, expectError, listOf } from '../helpers'
  */
 
 const CSV_TEMPLATE_NAME = 'template-import-soalan.csv'
+const GURU_CSV_TEMPLATE_NAME = 'templat-soalan.csv'
+const GURU_ROW_CSV = 'subjek,tingkatan,soalan,pilihan_a,pilihan_b,pilihan_c,pilihan_d,jawapan,kesukaran\r\nSubjek Tiada,4,Berapakah 2 + 2?,3,4,5,6,B,2\r\n'
 const ROW_CSV =
   'question_text,option_a,option_b,option_c,option_d,correct_answer,subject_id,education_level_id,difficulty_level\r\n' +
   'Berapakah 2 + 2?,3,4,5,6,B,999999,999999,2\r\n'
@@ -111,7 +113,7 @@ export const questionsWorkflowScenarios: Scenario[] = [
     },
   },
   {
-    id: 'question-workflow-api/guru import and template: same template bytes, 422 without a file, rejected rows listed',
+    id: 'question-workflow-api/guru import and template: the BM template, 422 without a file, rejected rows listed in errors',
     domain: 'question-workflow',
     targets: API_ONLY,
     async run(ctx) {
@@ -119,16 +121,17 @@ export const questionsWorkflowScenarios: Scenario[] = [
       const admin = await ctx.as('admin')
       const tpl = await teacher.request('GET', '/guru/questions/template')
       ctx.expectStatus(tpl, 200)
-      ctx.check(String(tpl.headers['content-disposition']).includes(CSV_TEMPLATE_NAME), 'guru template Content-Disposition lacks the file name')
+      ctx.check(String(tpl.headers['content-disposition']).includes(GURU_CSV_TEMPLATE_NAME), 'guru template Content-Disposition lacks the file name')
       const adminTpl = await admin.request('GET', '/question-imports/template')
-      ctx.check(JSON.stringify(tpl.body) === JSON.stringify(adminTpl.body), 'the guru template differs from the admin template')
+      ctx.check(String(adminTpl.headers['content-disposition']).includes(CSV_TEMPLATE_NAME), 'admin template Content-Disposition lacks the file name')
+      ctx.check(JSON.stringify(tpl.body) !== JSON.stringify(adminTpl.body), 'the guru template must be its own BM template')
 
       expectField(ctx, await teacher.request('POST', '/guru/questions/import'), 'csvFile')
-      const res = await teacher.request('POST', '/guru/questions/import', csvPart('csvFile', ROW_CSV))
+      const res = await teacher.request('POST', '/guru/questions/import', csvPart('csvFile', GURU_ROW_CSV))
       ctx.expectStatus(res, 200)
       const data = dataOf(res)
       ctx.check(data.imported === 0, `expected imported 0, got ${String(data.imported)}`)
-      ctx.check(Array.isArray(data.failed) && data.failed.length === 1, 'expected one failed row')
+      ctx.check(Array.isArray(data.errors) && data.errors.length === 1, 'expected one error row')
     },
   },
   {

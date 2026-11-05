@@ -20,7 +20,6 @@ describe('question images and kertas (real database)', () => {
   let t: QuestionsTestApp
   let svc: QuestionsService
   let admin: Client
-  let guru: Client
   let pupil: Client
   let tag: Tag
 
@@ -30,12 +29,26 @@ describe('question images and kertas (real database)', () => {
     svc = t.app.get(QuestionsService)
     tag = await tagOf(t.db, 'SEED-MCQ-MATH-T4')
     admin = await loginAs(t, 'admin')
-    guru = await loginAs(t, 'teacher')
     pupil = await loginAs(t, 'student')
   })
   afterAll(async () => {
     await t.close()
   })
+
+  /**
+   * S6-T06: the Guru HTTP routes take intake items (no images). The image ownership rules for a non-admin author live in the question
+   * service, so the cases that were driven through `POST|PUT /api/guru/questions` call it with a teacher actor and read the same 422 `fields`.
+   */
+  const asTeacher = async (fn: (actor: { userId: string; role: 'teacher' }) => Promise<unknown>): Promise<{ status: number; fields: Record<string, string> }> => {
+    try {
+      await fn({ userId: await userIdOf(t.db, ACCOUNTS.teacher), role: 'teacher' })
+    } catch (e) {
+      const err = e as { getStatus?: () => number; fields?: Record<string, string> }
+      return { status: err.getStatus?.() ?? 500, fields: err.fields ?? {} }
+    }
+    return { status: 200, fields: {} }
+  }
+  const guruCreate = (over: Record<string, unknown>) => asTeacher((actor) => svc.create({ ...base(), status: 'review', ...over } as never, actor))
 
   const base = () => ({
     subjectId: tag.subjectId,
@@ -105,11 +118,11 @@ describe('question images and kertas (real database)', () => {
 
   it('a bad image id is 422 under questionImage / optionImages.<i>; a Guru cannot attach an admin new file', async () => {
     const adminFile = await uploadAs(admin)
-    const bad = await guru.post('/api/guru/questions').send({ ...base(), questionImageFileId: adminFile.id })
+    const bad = await guruCreate({ questionImageFileId: adminFile.id })
     expect(bad.status).toBe(422)
-    expect(Object.keys(bad.body.error.fields)).toEqual(['questionImage'])
-    const missing = await guru.post('/api/guru/questions').send({ ...base(), questionImageFileId: 'AAAAAAAAAAAAAAAAAAAAAA' })
-    expect(missing.body.error.fields).toEqual(bad.body.error.fields) // no existence oracle
+    expect(Object.keys(bad.fields)).toEqual(['questionImage'])
+    const missing = await guruCreate({ questionImageFileId: 'AAAAAAAAAAAAAAAAAAAAAA' })
+    expect(missing.fields).toEqual(bad.fields) // no existence oracle
     const optBad = await admin.post('/api/questions').send({ ...base(), optionImageFileIds: [null, 'AAAAAAAAAAAAAAAAAAAAAA'] })
     expect(optBad.status).toBe(422)
     expect(Object.keys(optBad.body.error.fields)).toEqual(['optionImages.1'])
@@ -125,14 +138,14 @@ describe('question images and kertas (real database)', () => {
     )
     expect(made.version.stemImageId).not.toBeNull()
     await t.db.query(`update questions set created_by_id = $1 where id = $2`, [guruId, made.id])
-    const edited = await guru.put(`/api/guru/questions/${made.id}`).send({ questionText: 'Teks guru selepas suntingan yang panjang.' })
-    expect(edited.status, JSON.stringify(edited.body)).toBe(200)
+    const edited = await asTeacher((actor) => svc.update(made.id, { questionText: 'Teks guru selepas suntingan yang panjang.' } as never, actor))
+    expect(edited.status, JSON.stringify(edited.fields)).toBe(200)
     const check = await admin.get(`/api/questions/${made.id}`)
     expect(check.body.data.questionImage).toBe(adminFile.id)
     expect(check.body.data.optionImages[0]).toBe(adminOpt.id)
     // A new admin file is still refused for the Guru.
     const fresh = await uploadAs(admin)
-    const refused = await guru.put(`/api/guru/questions/${made.id}`).send({ questionText: 'Teks guru sekali lagi yang panjang.', questionImageFileId: fresh.id })
+    const refused = await asTeacher((actor) => svc.update(made.id, { questionText: 'Teks guru sekali lagi yang panjang.', questionImageFileId: fresh.id } as never, actor))
     expect(refused.status).toBe(422)
   })
 
@@ -230,27 +243,27 @@ describe('question images and kertas (real database)', () => {
 
   it('image id checks: a guessed decimal id, an unowned file, a wrong-purpose file and a file of another question are all the same 422', async () => {
     const adminFile = await uploadAs(admin)
-    const bad = await guru.post('/api/guru/questions').send({ ...base(), questionImageFileId: adminFile.id })
+    const bad = await guruCreate({ questionImageFileId: adminFile.id })
     expect(bad.status).toBe(422)
     // Another user's file named by its guessable decimal id: same status, key and message as the token.
-    const byDecimal = await guru.post('/api/guru/questions').send({ ...base(), questionImageFileId: await internalIdOf(adminFile.id) })
+    const byDecimal = await guruCreate({ questionImageFileId: await internalIdOf(adminFile.id) })
     expect(byDecimal.status).toBe(422)
-    expect(byDecimal.body.error.fields).toEqual(bad.body.error.fields)
+    expect(byDecimal.fields).toEqual(bad.fields)
     // A file with no owner is foreign for a Guru (fail closed) but an admin may use it.
     const orphan = await loose(null)
-    const orphanGuru = await guru.post('/api/guru/questions').send({ ...base(), questionImageFileId: orphan })
-    expect(orphanGuru.body.error?.fields).toEqual(bad.body.error.fields)
+    const orphanGuru = await guruCreate({ questionImageFileId: orphan })
+    expect(orphanGuru.fields).toEqual(bad.fields)
     expect((await admin.post('/api/questions').send({ ...base(), questionImageFileId: orphan })).status).toBe(201)
     // Wrong purpose, even for the admin and even when the Guru owns it.
     const guruId = await userIdOf(t.db, ACCOUNTS.teacher)
     const avatar = await loose(guruId, 'avatar')
-    expect((await guru.post('/api/guru/questions').send({ ...base(), questionImageFileId: avatar })).body.error.fields).toEqual(bad.body.error.fields)
+    expect((await guruCreate({ questionImageFileId: avatar })).fields).toEqual(bad.fields)
     expect((await admin.post('/api/questions').send({ ...base(), questionImageFileId: avatar })).status).toBe(422)
     // The admin's file already sits on the admin's question; the Guru still cannot put it on theirs.
     await admin.post('/api/questions').send({ ...base(), questionImageFileId: adminFile.id })
-    const again = await guru.post('/api/guru/questions').send({ ...base(), optionImageFileIds: [adminFile.id, null, null, null] })
+    const again = await guruCreate({ optionImageFileIds: [adminFile.id, null, null, null] })
     expect(again.status).toBe(422)
-    expect(Object.keys(again.body.error.fields)).toEqual(['optionImages.0'])
+    expect(Object.keys(again.fields)).toEqual(['optionImages.0'])
   })
 
   it('a pupil reads only images of the live version: an old version, a hidden level and a PKSK question are 404; anonymous is 401', async () => {

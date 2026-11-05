@@ -1,6 +1,6 @@
 /**
  * SW12-02: the teacher `used` counter must not scan the answer log. Migration 0091 adds the partial index
- * `ix_practice_answers_question_id_real`; `usedCountQuery` probes it once per owned question.
+ * `ix_practice_answers_question_id_real`; `usedCountQuery` probes it once per submitted (accepted, published) question.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
@@ -33,6 +33,17 @@ describe('practice_answers question index and the used query (migration 0091_pra
     const subject = (await db.query<{ id: string }>(`select id::text from subjects order by id limit 1`))[0]!.id
     await db.query(`update questions set created_by_id = $1 where id in (select id from questions where created_by_id = $2 order by id limit 7)`, [owner, admin])
     ownedQuestion = (await db.query<{ id: string }>(`select id::text from questions where created_by_id = $1 order by id limit 1`, [owner]))[0]!.id
+    // S6-T06: `used` is driven from the teacher's own submissions, i.e. accepted guru intake items that point at a published question.
+    await db.query(`update questions set live_version_no = latest_version_no where id = $1`, [ownedQuestion])
+    const batch = (await db.query<{ id: string }>(`insert into intake_batches (owner_user_id, source, status, paper_type, subject, source_text, rights_status) values ($1::bigint, 'guru', 'ready_for_review', 'umum', 'Subjek', 'Kiriman guru', 'own') returning id::text id`, [owner]))[0]!.id
+    await db.query(
+      `insert into intake_items (batch_id, position, source_type, number_label, item_type, payload, review_state, question_id)
+       select $1::bigint, row_number() over (order by q.id), 'manual', '1', 'mcq',
+              jsonb_build_object('stem', 'x', 'options', '[]'::jsonb, 'guru', jsonb_build_object('v', 1, 'questionType', 'mcq', 'subjectId', '1', 'educationLevelId', '1', 'chapterId', null, 'spIds', '[]'::jsonb, 'tp', null, 'cognitiveLevel', null, 'difficultyLevel', 3, 'correctIndex', 1, 'explanation', null)),
+              'accepted', q.id
+         from questions q where q.created_by_id = $2::bigint`,
+      [batch, owner],
+    )
     // A few thousand answers: real ones on other questions, test traffic, migrated history without a question link, and one on an owned question.
     await db.query(
       `insert into practice_answers (user_id, question_id, is_correct, answered_at, is_test)

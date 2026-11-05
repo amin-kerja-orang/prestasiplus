@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { runSeeds } from '../../prisma/seed'
 import { walletTiersSeed } from '../../prisma/seed/core/wallet-tiers'
 import { QuestionsService } from '../../src/modules/questions'
-import { ADMIN, STUDENT_1, TEACHER_A, bootMissionsApp, client, loadWorld, type Client, type MissionsTestApp, type World } from '../missions/helpers'
+import { ADMIN, STUDENT_1, bootMissionsApp, client, loadWorld, type Client, type MissionsTestApp, type World } from '../missions/helpers'
 
 /**
  * R1 delete-served-guard, "breaks a pupil" check: a question deleted DURING a practice session. Lead decision: no `in_practice` block (V2 parity,
@@ -16,7 +16,6 @@ let t: MissionsTestApp
 let w: World
 let pupil: Client
 let admin: Client
-let guru: Client
 let svc: QuestionsService
 let dLevel: string
 let chapterId: string
@@ -49,18 +48,18 @@ beforeAll(async () => {
   chapterId = (await t.db.query<{ id: string }>(`select id::text id from chapters where subject_id = $1 and education_level_id = $2 and is_active order by id limit 1`, [w.tag.subjectId, dLevel]))[0]!.id
   pupil = await client(t, STUDENT_1)
   admin = await client(t, ADMIN)
-  guru = await client(t, TEACHER_A)
   svc = t.get(QuestionsService)
 }, 180_000)
 afterAll(async () => {
   await t.close()
 })
 
-/** Deletes one served question as Admin Pusat and another as its Guru owner; both succeed (no served paper holds them). */
+/** Deletes one served question with the admin route and another with the admin bulk action; both succeed (no served paper holds them). S6-T06: the Guru route deletes intake items, not bank questions. */
 async function deleteTwo(served: string[]): Promise<void> {
-  await t.db.query(`update questions set created_by_id = $2 where id = $1`, [served[1], w.teacherA])
   expect((await admin.del(`/questions/${served[0]}`)).status).toBe(200)
-  expect((await guru.del(`/guru/questions/${served[1]}`)).status).toBe(200)
+  const bulk = await admin.post('/questions/bulk-action', { action: 'delete', ids: [served[1]] })
+  expect(bulk.status, JSON.stringify(bulk.body)).toBe(200)
+  expect(bulk.body.data.affected).toBe(1)
   for (const id of served.slice(0, 2)) expect(Number((await t.db.query<{ n: string }>(`select count(*)::text n from questions where id = $1`, [id]))[0]!.n)).toBe(0)
 }
 

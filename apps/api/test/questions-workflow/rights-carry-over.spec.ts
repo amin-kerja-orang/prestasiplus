@@ -1,5 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { QuestionsService } from '../../src/modules/questions'
+import { teacherQuestion } from '../questions/helpers'
 import { bootWorkflowApp, loginAll, type Client, type WorkflowTestApp } from './helpers'
 
 /**
@@ -158,15 +160,12 @@ describe('editing keeps the rights declaration and provenance (REQ-B-017)', () =
       expect(await provenance(id, 2)).toEqual(before)
     })
 
-    it('the Guru update path (updateOwn on an approved question) copies it as well', async () => {
+    it('the owner update path (teacher actor on an approved question) copies it as well', async () => {
       const teacher = (await loginAll(t)).teacher
-      const created = await teacher.post('/api/guru/questions', { questionType: 'mcq', questionText: 'Soalan guru untuk ujian asal usul?', options: ['1', '2', '3', '4'], correctAnswer: 1, subjectId: tag.subjectId, educationLevelId: tag.levelId, difficultyLevel: 3 })
-      expect(created.status, JSON.stringify(created.body)).toBe(201)
-      const id = created.body.data.id as string
+      const id = await teacherQuestion(t, teacher.userId, body({ questionText: 'Soalan guru untuk ujian asal usul?', difficultyLevel: 3 }))
       await t.db.query(`update question_versions set status = 'approved', rights_status = 'school', exam_type = 'percubaan', exam_board = 'Selangor', year = 2021 where question_id = $1::bigint`, [id])
       await t.db.query(`update questions set live_version_no = 1 where id = $1::bigint`, [id])
-      const edit = await teacher.put(`/api/guru/questions/${id}`, { questionText: 'Soalan guru yang disunting selepas diluluskan?' })
-      expect(edit.status, JSON.stringify(edit.body)).toBe(200)
+      await t.app.get(QuestionsService, { strict: false }).update(id, body({ questionText: 'Soalan guru yang disunting selepas diluluskan?' }) as never, { userId: teacher.userId, role: 'teacher' })
       expect(await provenance(id, 2)).toEqual(await provenance(id, 1))
       expect((await provenance(id, 2)).exam_board).toBe('Selangor')
     })
