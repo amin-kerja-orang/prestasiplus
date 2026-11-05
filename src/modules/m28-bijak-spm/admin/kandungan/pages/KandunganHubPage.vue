@@ -1,62 +1,87 @@
 <script setup lang="ts">
 /**
- * Kandungan SPM hub (`/admin/spm`, V2 `admin.spm.hub` / Panel `/spm`, AC-R1-21.1): one card per lane in the V2 order with
- * its V2 description, the attention count and "Buka senarai". Lanes without a screen in R1 (Tracking A, Subjektif, Kertas
- * Subjektif, Latih Tubi) are not in `overview.cards`, so they are hidden, as AC-R1-21.1 says (UX-20). The cards (V2 title,
- * description, count and attention label) come from `GET /api/admin/servability/overview` (T45 `cards`).
+ * Hub "SPM" (`/admin/spm`, R1-ADM-Q-01): one card per lane in the PRD order with its description, the item count as a big number,
+ * the attention lines or "Semua elok", `Buka senarai` and `lihat sisi pelajar`. The API returns all six cards (`overview.cards`); a
+ * card whose screen is not registered is hidden (FR-ADM-Q01.4). A card that could not be computed shows its own error; the others
+ * stay (SR-3).
  */
-import type { ServabilityHubCard } from '@pp/contract'
+import type { ServabilityHubCard, ServabilityOverview } from '@pp/contract'
+import { computed, shallowRef, watch } from 'vue'
+import { useRouter } from 'vue-router'
 
 import { useApi } from '@/composables/useApi'
-import { DsLoadError, DsPage } from '@/ds'
+import { DsGrid, DsHeading, DsLink, DsLoadError, DsPage, DsSpacer, DsStack, DsSurface, DsText, formatCount } from '@/ds'
 
-import { KANDUNGAN_ROUTES } from '../api'
+import { laneRouteOf } from '../api'
 import { kandunganServer } from '../client'
-import { hubCopy } from '../lanes'
+import { hubCopy, pupilRouteOf } from '../lanes'
 
+const COLS = { base: 1, md: 2, xl: 3 } as const
+
+const router = useRouter()
 const server = kandunganServer()
 const { data, error, loading, reload } = useApi(() => server.overview())
+/** The last good overview: a failed `Cuba lagi` must not take the other cards down (SR-3); `useApi` nulls `data` on failure. */
+const overview = shallowRef<ServabilityOverview | null>(null)
+watch(data, (d) => {
+  if (d) overview.value = d
+})
 
-/** The cards come from the API (T45 `overview.cards`: V2 title, description, count and attention label); only the two lanes that have a screen here. */
-const cards = (): readonly ServabilityHubCard[] => (data.value?.cards ?? []).filter((c) => c.lane === 'databank' || c.lane === 'bijak-spm')
-/** Test ids keep the V2 lane key: `databank` and `simulasi` (the Bijak SPM lane). */
-const keyOf = (c: ServabilityHubCard): string => (c.lane === 'databank' ? 'databank' : 'simulasi')
-const routeOf = (c: ServabilityHubCard): string => (c.lane === 'databank' ? KANDUNGAN_ROUTES.databank : KANDUNGAN_ROUTES.simulasi)
+const cards = computed<readonly ServabilityHubCard[]>(() => (overview.value?.cards ?? []).filter((c) => router.hasRoute(laneRouteOf(c.lane))))
+/** Test ids keep the V2 lane key: `simulasi` for the Bijak SPM lane. */
+const keyOf = (c: ServabilityHubCard): string => (c.lane === 'bijak-spm' ? 'simulasi' : c.lane)
+const linesOf = (c: ServabilityHubCard): string[] =>
+  c.attentionLines?.map((l) => l.text) ?? (c.attention > 0 ? [`${formatCount(c.attention)} ${c.attentionLabel}`] : [])
 </script>
 
 <template>
   <DsPage :title="hubCopy.title" layout="list" data-testid="kandungan-hub">
     <template #subtitle>
-      <p class="text-body text-muted" data-testid="kandungan-intro">{{ hubCopy.intro }}</p>
+      <DsText as="p" variant="body" tone="muted" data-testid="kandungan-intro">{{ hubCopy.intro }}</DsText>
     </template>
 
-    <DsLoadError v-if="error" message="Tidak dapat memuatkan ringkasan kandungan." @retry="reload()" />
-    <div v-else-if="loading && !data" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3" aria-busy="true">
+    <DsLoadError v-if="error && !overview" message="Tidak dapat memuatkan ringkasan kandungan." @retry="reload()" />
+    <DsGrid v-else-if="loading && !overview" :cols="COLS" aria-busy="true">
       <USkeleton v-for="n in 6" :key="n" class="h-40 w-full" />
-    </div>
-    <ul v-else class="grid gap-4 md:grid-cols-2 xl:grid-cols-3" data-testid="kandungan-cards">
-      <li v-for="c in cards()" :key="c.lane" class="min-w-0">
-        <UCard class="h-full" :data-testid="`kandungan-card-${keyOf(c)}`">
-          <div class="flex h-full flex-col gap-3">
-            <h2 class="text-heading text-highlighted">{{ c.title }}</h2>
-            <p class="text-body text-toned">{{ c.description }}</p>
-            <div class="flex-1">
-              <UBadge v-if="c.attention > 0" color="error" variant="subtle" :data-testid="`kandungan-attention-${keyOf(c)}`"
-                >{{ c.attention }} {{ c.attentionLabel }}</UBadge
-              >
-              <UBadge v-else color="success" variant="subtle" :data-testid="`kandungan-attention-${keyOf(c)}`">{{ hubCopy.allGood }}</UBadge>
-            </div>
+    </DsGrid>
+    <DsGrid v-else as="ul" :cols="COLS" data-testid="kandungan-cards">
+      <DsSurface v-for="c in cards" :key="c.lane" as="li" level="raised" padding="md" :data-testid="`kandungan-card-${keyOf(c)}`">
+        <DsStack gap="sm" fill>
+          <DsHeading :level="2" variant="heading">{{ c.title }}</DsHeading>
+          <DsText as="p" variant="body" tone="toned">{{ c.description }}</DsText>
+          <DsStack v-if="c.failed" gap="xs" align="start" :data-testid="`kandungan-failed-${keyOf(c)}`">
+            <DsText as="p" variant="body" tone="error" role="alert">{{ hubCopy.failed }}</DsText>
             <UButton
-              :to="{ name: routeOf(c) }"
               color="neutral"
-              variant="outline"
-              class="min-h-11 justify-center"
-              :data-testid="`kandungan-open-${keyOf(c)}`"
-              >{{ hubCopy.open }}</UButton
-            >
-          </div>
-        </UCard>
-      </li>
-    </ul>
+              variant="soft"
+              class="min-h-11"
+              :label="hubCopy.retry"
+              :loading="loading"
+              :data-testid="`kandungan-retry-${keyOf(c)}`"
+              @click="reload()"
+            />
+          </DsStack>
+          <template v-else>
+            <DsText as="p" variant="kpi" tone="highlighted" tabular :data-testid="`kandungan-total-${keyOf(c)}`">{{ formatCount(c.total) }}</DsText>
+            <DsStack gap="2xs" :data-testid="`kandungan-attention-${keyOf(c)}`">
+              <template v-if="linesOf(c).length">
+                <DsText v-for="l in linesOf(c)" :key="l" as="p" variant="caption" tone="error">{{ l }}</DsText>
+              </template>
+              <DsText v-else as="p" variant="caption" tone="success">{{ hubCopy.allGood }}</DsText>
+            </DsStack>
+          </template>
+          <DsSpacer />
+          <UButton
+            :to="{ name: laneRouteOf(c.lane) }"
+            color="neutral"
+            variant="outline"
+            class="min-h-11 justify-center"
+            :data-testid="`kandungan-open-${keyOf(c)}`"
+            >{{ hubCopy.open }}</UButton
+          >
+          <DsLink v-if="pupilRouteOf(router, c.lane)" :to="pupilRouteOf(router, c.lane)!" :data-testid="`kandungan-pupil-${keyOf(c)}`">{{ hubCopy.pupil }}</DsLink>
+        </DsStack>
+      </DsSurface>
+    </DsGrid>
   </DsPage>
 </template>

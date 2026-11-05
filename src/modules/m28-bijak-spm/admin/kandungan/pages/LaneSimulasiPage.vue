@@ -3,14 +3,17 @@
  * Lane "Bijak SPM" (`/admin/spm/simulasi`, V2 `lane=simulasi`, AC-R1-21.2): one paper per row. Columns Senarai, Tajuk,
  * Status, Perhatian, Tindakan; row meta "{subjek} · {n} soalan"; Perhatian text per V2 for a published paper with no question
  * ("Disajikan tetapi tiada soalan"), else the servability sentences with their question counts (D94 copy, H2/H4).
- * Row action: Sunting -> Semak Kertas (the Pembina Kertas editor). Pratonton and Salin need screens that are not in this
- * base (UX-23).
+ * Row actions (AC-ADM-Q02.2): Pratonton (the student view, as Pembina Kertas), Salin (a draft copy, flash and on to its builder)
+ * and Sunting -> Semak Kertas (the Pembina Kertas editor).
  */
 import type { TableColumn } from '@nuxt/ui'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
-import { DsDataTable, DsLoadError, DsStatusBadge } from '@/ds'
+import { DsDataTable, DsLoadError, DsPage, DsRowActions, DsStatusBadge, DsText, type RowAction } from '@/ds'
 
+import StudentViewDrawer from '../../builder/components/StudentViewDrawer.vue'
+import { usePaperActions } from '../../builder/lib/use-paper-actions'
+import { builderServer } from '../../builder/server/client'
 import { ADMIN_ROUTES } from '../../papers/ui'
 import { kandunganServer } from '../client'
 import { laneCopy, PAPER_STATUS_OPTIONS, paperStatusBadge, paperStatusLabel } from '../lanes'
@@ -25,7 +28,23 @@ const statusText = paperStatusLabel
 const STATUSES = PAPER_STATUS_OPTIONS
 
 const server = kandunganServer()
-const { filters, page, subjects, list, chips, removeChip } = useLane((q) => server.paperLane(q), statusText)
+const { filters, page, subjects, count, list, chips, removeChip } = useLane((q) => server.paperLane(q), statusText)
+
+const actionId = ref('')
+const paper = usePaperActions({ api: builderServer(), id: actionId, title: () => '', onChanged: () => {} })
+async function openPreview(id: string): Promise<void> {
+  actionId.value = id
+  await paper.openStudentView()
+}
+async function copyRow(id: string): Promise<void> {
+  actionId.value = id
+  await paper.copy()
+}
+const actionsOf = (id: string): RowAction[] => [
+  { label: laneCopy.preview, testid: `lane-preview-${id}`, onSelect: () => void openPreview(id) },
+  { label: laneCopy.copy, testid: `lane-copy-${id}`, loading: paper.busy.value, onSelect: () => void copyRow(id) },
+  { label: laneCopy.edit, testid: `lane-edit-${id}`, to: { name: ADMIN_ROUTES.paperEdit, params: { id } } },
+]
 
 const rows = computed<Row[]>(() =>
   (list.data.value?.rows ?? []).map((r, i) => ({ ...r, no: (page.value - 1) * PAGE_SIZE + i + 1 })),
@@ -48,15 +67,16 @@ const meta = (r: ServabilityPaperRow): string => `${r.subject?.name ?? ''} · ${
 </script>
 
 <template>
-  <LaneShell
-    v-model:filters="filters"
-    heading="Bijak SPM"
-    :subjects="subjects"
-    :statuses="STATUSES"
-    :chips="chips"
-    testid="lane-simulasi"
-    @remove-chip="removeChip"
-  >
+  <DsPage layout="list" data-testid="lane-simulasi">
+    <LaneShell
+      v-model:filters="filters"
+      lane="bijak-spm"
+      :count="count"
+      :subjects="subjects"
+      :statuses="STATUSES"
+      :chips="chips"
+      @remove-chip="removeChip"
+    />
     <DsLoadError v-if="list.error.value" message="Tidak dapat memuatkan senarai." @retry="list.reload()" />
     <DsDataTable
       v-else
@@ -87,6 +107,7 @@ const meta = (r: ServabilityPaperRow): string => `${r.subject?.name ?? ''} · ${
         <ul v-if="lines(row.original).length" class="flex flex-col gap-1" :data-testid="`attention-${row.original.paperId}`">
           <li v-for="l in lines(row.original)" :key="l" class="text-caption text-error">{{ l }}</li>
         </ul>
+        <DsText v-else variant="caption" tone="muted">{{ laneCopy.noAttention }}</DsText>
       </template>
       <template #card="{ row }">
         <div class="flex min-w-0 flex-1 flex-col gap-1">
@@ -96,28 +117,14 @@ const meta = (r: ServabilityPaperRow): string => `${r.subject?.name ?? ''} · ${
           <ul v-if="lines(row as unknown as ServabilityPaperRow).length" class="flex flex-col gap-1">
             <li v-for="l in lines(row as unknown as ServabilityPaperRow)" :key="l" class="text-caption text-error">{{ l }}</li>
           </ul>
+          <DsText v-else variant="caption" tone="muted">{{ laneCopy.noAttention }}</DsText>
+          <DsRowActions :actions="actionsOf(String(row.paperId))" :inline="3" />
         </div>
       </template>
-      <template #card-actions="{ row }">
-        <UButton
-          size="sm"
-          icon="i-ph-pencil-simple"
-          :label="laneCopy.edit"
-          class="min-h-11"
-          :to="{ name: ADMIN_ROUTES.paperEdit, params: { id: row.paperId } }"
-          :data-testid="`lane-edit-${String(row.paperId)}`"
-        />
-      </template>
       <template #actions-cell="{ row }">
-        <UButton
-          size="sm"
-          icon="i-ph-pencil-simple"
-          :label="laneCopy.edit"
-          class="min-h-11"
-          :to="{ name: ADMIN_ROUTES.paperEdit, params: { id: row.original.paperId } }"
-          :data-testid="`lane-edit-${row.original.paperId}`"
-        />
+        <DsRowActions :actions="actionsOf(row.original.paperId)" :inline="3" />
       </template>
     </DsDataTable>
-  </LaneShell>
+    <StudentViewDrawer v-model:open="paper.viewOpen.value" :view="paper.view.value" :error="paper.viewError.value" />
+  </DsPage>
 </template>

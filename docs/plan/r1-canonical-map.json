@@ -2900,6 +2900,16 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/spm/latih-tubi|",
+      "path": "/admin/spm/latih-tubi",
+      "name": null,
+      "status": "canonical",
+      "sector": "S3",
+      "component": "src/modules/m28-bijak-spm/admin/kandungan/pages/LaneLatihTubiPage.vue",
+      "file": "src/modules/m28-bijak-spm/routes/admin-kandungan.ts",
+      "approved_by_card": "S3-T03"
+    },
+    {
       "key": "/admin/spm/simulasi|",
       "path": "/admin/spm/simulasi",
       "name": null,
@@ -2908,6 +2918,16 @@
       "component": "src/modules/m28-bijak-spm/admin/kandungan/pages/LaneSimulasiPage.vue",
       "file": "src/modules/m28-bijak-spm/routes/admin-kandungan.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "/admin/spm/subjektif|",
+      "path": "/admin/spm/subjektif",
+      "name": null,
+      "status": "canonical",
+      "sector": "S3",
+      "component": "src/modules/m28-bijak-spm/admin/kandungan/pages/LaneSubjektifPage.vue",
+      "file": "src/modules/m28-bijak-spm/routes/admin-kandungan.ts",
+      "approved_by_card": "S3-T03"
     },
     {
       "key": "/admin/spm/kontrak|",
