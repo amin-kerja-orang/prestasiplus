@@ -184,6 +184,8 @@ describe('guards', () => {
     expect(missing.status).toBe(422)
     expect(JSON.stringify(missing.body)).toContain(REPORT_SCOPE_MESSAGES.schoolIdRequired)
     expect((await call(ADMIN, `${URL}?schoolId=abc`)).status).toBe(422)
+    // Same id rule as the API (`[1-9]\d{0,18}`): zero, a leading zero and 20 digits are malformed.
+    for (const bad of ['0', '01', '1'.repeat(20)]) expect((await call(ADMIN, `${URL}?schoolId=${bad}`)).status).toBe(422)
     expect((await call(ADMIN, `${URL}?schoolId=999999999`)).status).toBe(404)
   })
 

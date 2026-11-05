@@ -65,7 +65,7 @@ export const requireSchoolAdminOrAdminReport: Middleware = (req) => {
   }
   if (session.role !== 'admin') return forbidden()
   const raw = queryString(req.query, 'schoolId')
-  if (raw === undefined || !/^\d+$/.test(raw)) {
+  if (raw === undefined || !/^[1-9]\d{0,18}$/.test(raw)) {
     return validationError({ schoolId: REPORT_SCOPE_MESSAGES.schoolIdRequired })
   }
   return schools.get(Number(raw)) ? undefined : notFound()
