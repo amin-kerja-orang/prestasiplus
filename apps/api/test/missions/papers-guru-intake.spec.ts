@@ -407,7 +407,8 @@ describe('S1-T08 G3: the file cap through the real adapter', () => {
       expect(await count(t)).toBe(before)
       const five = await upload(teacher, FIELDS, Array.from({ length: 5 }, (_, i) => docx(10 + i)))
       expect(five.status, JSON.stringify(five.body)).toBe(201)
-      expect(five.body.data.files).toHaveLength(5)
+      const stored = await t.db.query<{ n: string }>('select count(*)::text n from intake_files where batch_id = $1::bigint', [five.body.data.batchId])
+      expect(Number(stored[0]?.n)).toBe(5)
     } finally {
       await t.close()
     }
