@@ -14,7 +14,7 @@
 -- DM-48) stay in the check and out of the INSERT, so this file works whether or not they have been moved.
 -- The rows of 48 section 2 named `tier`, mystery prize and `spin_segments` are table rows, not keys.
 -- `boardgame_quiz_tiles` stays in `game_settings` and is not a key here (ruling 5 on #499).
--- `game_enabled_<game_key>`, default 1: one per game on the hub, with its hub name as the label (D-G, ruling 2 on #499).
+-- `game_enabled_<game_key>`, default 1: one per game of 48 section 3.5 except `tournament`, plus `roda-nasib` (D-G, ruling 12 on #497), with its hub name as the label.
 --
 -- Additive (expand only): nothing is removed, existing battles count for ranking, and every existing row is valid.
 -- Reversible, in this order (assumes no robot participant, robot answer, cancelled queue entry or invitation, battle over 10 questions, answer on an option past the fourth, or row with a new key needs keeping):
@@ -129,8 +129,7 @@ ALTER TABLE "gamification_settings" ADD CONSTRAINT "ck_gamification_settings_key
     'sekolah_bersaing_min_pupils', 'sekolah_bersaing_top_n',
     'game_enabled_papan-bijak', 'game_enabled_battle', 'game_enabled_perang-fakta', 'game_enabled_benteng-ilmu',
     'game_enabled_perlumbaan-matematik', 'game_enabled_kuiz-relay', 'game_enabled_teka-silang-kata', 'game_enabled_betul-salah',
-    'game_enabled_cabaran-kilat', 'game_enabled_tembak-jawapan', 'game_enabled_susun-jawapan', 'game_enabled_sambung-kata',
-    'game_enabled_kad-memori', 'game_enabled_jutawan', 'game_enabled_roda-nasib'));
+    'game_enabled_cabaran-kilat', 'game_enabled_tembak-jawapan', 'game_enabled_susun-jawapan', 'game_enabled_kad-memori', 'game_enabled_jutawan', 'game_enabled_roda-nasib'));
 
 INSERT INTO "gamification_settings" ("key", "value", "label") VALUES
     ('xp_per_correct', 10, 'Mata (XP) setiap jawapan betul'),
@@ -178,7 +177,6 @@ INSERT INTO "gamification_settings" ("key", "value", "label") VALUES
     ('game_enabled_cabaran-kilat', 1, 'Cabaran Kilat'),
     ('game_enabled_tembak-jawapan', 1, 'Tembak Jawapan'),
     ('game_enabled_susun-jawapan', 1, 'Susun Jawapan'),
-    ('game_enabled_sambung-kata', 1, 'Sambung Kata'),
     ('game_enabled_kad-memori', 1, 'Kad Memori'),
     ('game_enabled_jutawan', 1, 'Jutawan Ilmu'),
     ('game_enabled_roda-nasib', 1, 'Roda Nasib')
