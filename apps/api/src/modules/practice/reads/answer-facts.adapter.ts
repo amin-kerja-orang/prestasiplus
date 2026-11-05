@@ -3,10 +3,14 @@ import { Inject, Injectable } from '@nestjs/common'
 import { Prisma } from '../../../db/generated/client'
 import { idFromString, idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
+import { QuestionsRepository, toPublic } from '../../questions'
+import { stimulusGroupView } from '../../questions/http/views'
 import type {
   AnswerFactRow,
   AnswerFactsPort,
   AnswerFactsQuery,
+  QuestionContent,
+  QuestionContentPort,
   SessionCountRow,
   SpInfo,
   WeeklyFactRow,
@@ -87,11 +91,12 @@ export class AnswerFactsAdapter implements AnswerFactsPort {
   async answerFacts(q: AnswerFactsQuery): Promise<AnswerFactRow[]> {
     if (q.modes && q.modes.length === 0) return []
     const rows = await this.db.$queryRaw<
-      { userId: bigint; subjectId: bigint; questionId: bigint; chapterId: bigint | null; topicId: bigint | null; mode: string; attempts: bigint; correct: bigint; lastAnsweredAt: Date }[]
+      { userId: bigint; subjectId: bigint; questionId: bigint; chapterId: bigint | null; topicId: bigint | null; mode: string; attempts: bigint; correct: bigint; lastAnsweredAt: Date; firstCorrect: boolean | null; firstAnsweredAt: Date }[]
     >`
       SELECT a.user_id AS "userId", coalesce(a.subject_id, 0)::bigint AS "subjectId", coalesce(a.question_id, 0)::bigint AS "questionId",
              a.chapter_id AS "chapterId", a.topic_id AS "topicId", ${MODE} AS mode,
-             count(*)::bigint AS attempts, (count(*) FILTER (WHERE a.is_correct))::bigint AS correct, max(a.answered_at) AS "lastAnsweredAt"
+             count(*)::bigint AS attempts, (count(*) FILTER (WHERE a.is_correct))::bigint AS correct, max(a.answered_at) AS "lastAnsweredAt",
+             (array_agg(a.is_correct ORDER BY a.answered_at, a.id))[1] AS "firstCorrect", min(a.answered_at) AS "firstAnsweredAt"
         ${this.from}
        WHERE ${this.where(q)}
        GROUP BY a.user_id, coalesce(a.subject_id, 0), coalesce(a.question_id, 0), a.chapter_id, a.topic_id, ${MODE}
@@ -106,6 +111,8 @@ export class AnswerFactsAdapter implements AnswerFactsPort {
       attempts: num(r.attempts),
       correct: num(r.correct),
       lastAnsweredAt: r.lastAnsweredAt,
+      firstCorrect: r.firstCorrect === true,
+      firstAnsweredAt: r.firstAnsweredAt,
     }))
   }
 
@@ -170,5 +177,47 @@ export class AnswerFactsAdapter implements AnswerFactsPort {
       // A chapter fallback has no code (60 section 2.17.6).
       ...chapters.map((r): SpInfo => ({ id: idToString(r.id), kind: 'chapter', label: r.label ?? '', code: null, subjectCode: r.subjectCode, levelId: r.levelId === null ? null : idToString(r.levelId) })),
     ]
+  }
+}
+
+/**
+ * The real `QuestionContentPort` (S10-T03, FR-MUR-6-5/-7/-10): what the pupil's Analisa Item shows of a question. It reads ONLY
+ * through the S1 questions read contract (`QuestionsRepository.getMany(ids, 'live')`, `toPublic`, `groupsByIds`), read-only.
+ * The live version must be approved and the question active (the rule of `QuestionsService.getPublicForLearner`); an archived
+ * question has no live version and an inactive one is skipped, so both are absent from the result. The public projection has no
+ * answer key; the explanation travels beside it and the page shows it only behind its own toggle.
+ * `source` is the question's set label, else its paper code, else ''. Figure ids of a stimulus group are returned as stored (S1
+ * has no read that maps them to public file tokens): post back to S1.
+ */
+@Injectable()
+export class QuestionContentAdapter implements QuestionContentPort {
+  constructor(@Inject(QuestionsRepository) private readonly questions: QuestionsRepository) {}
+
+  async questionContent(ids: readonly string[]): Promise<Map<string, QuestionContent>> {
+    const out = new Map<string, QuestionContent>()
+    if (ids.length === 0) return out
+    const records = (await this.questions.getMany(ids, 'live')).filter((r) => r.isActive && r.version.status === 'approved')
+    const groupIds = [...new Set(records.flatMap((r) => (r.groupId === null ? [] : [r.groupId])))]
+    const groups = new Map((await this.questions.groupsByIds(groupIds)).map((g) => [g.id, g]))
+    for (const r of records) {
+      const v = r.version
+      const group = r.groupId === null ? undefined : groups.get(r.groupId)
+      let stimulusGroup: QuestionContent['stimulusGroup'] = null
+      if (group) {
+        try {
+          stimulusGroup = stimulusGroupView(group)
+        } catch {
+          stimulusGroup = null
+        }
+      }
+      out.set(r.id, {
+        questionId: r.id,
+        question: toPublic(r),
+        explanation: v.explanationMs ?? v.explanationEn ?? null,
+        source: v.setLabel ?? v.paperCode ?? '',
+        stimulusGroup,
+      })
+    }
+    return out
   }
 }
