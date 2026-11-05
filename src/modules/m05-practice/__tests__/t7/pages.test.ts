@@ -209,7 +209,7 @@ describe('S10 StructuredListPage', () => {
     expect(cards[1]?.find('[data-testid=card-best]').exists()).toBe(false)
     expect(cards[1]?.get('[data-testid=card-start]').text()).toBe('Mula')
     expect(t(w, 'structured-pending').text()).toBe(
-      '3 soalan untuk pilihan ini masih menunggu skema pemarkahan…',
+      '3 soalan untuk pilihan ini masih menunggu skema pemarkahan...',
     )
   })
 

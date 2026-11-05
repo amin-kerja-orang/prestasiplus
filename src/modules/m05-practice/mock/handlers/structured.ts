@@ -237,12 +237,9 @@ function subjectOptions(scope: Scope, track: Track): { id: number; name: string 
   })
 }
 
-/** The search (max 100 characters) matches the stimulus or any sub-question text, case-insensitively. */
+/** The search (max 100 characters) matches the stem or stimulus text, case-insensitively (as the BE). */
 function matchesTerm(q: StructuredQuestion, term: string): boolean {
-  return (
-    q.stimulus.toLowerCase().includes(term) ||
-    q.subQuestions.some((s) => s.questionText.toLowerCase().includes(term))
-  )
+  return q.stimulus.toLowerCase().includes(term)
 }
 
 /** A usable scheme: every leaf part (one with no child part) has a model answer (FR-MUR-17-1). */

@@ -68,7 +68,7 @@ const { data, error, reload } = useApi(
       {
         subjectId: subjectParam() || null,
         kbatLevel: qv('kbat_level') || null,
-        q: qv('q').trim() || null,
+        q: qv('q').trim().slice(0, SEARCH_MAX) || null,
         markable: '1',
         page: parsePage(route.query),
         scope: variant.value.scope,
@@ -252,7 +252,7 @@ function goPage(page: number): void {
       <DsCallout
         v-if="(meta?.pendingSchemeCount ?? 0) > 0"
         tone="info"
-        :description="`${String(meta?.pendingSchemeCount)} soalan untuk pilihan ini masih menunggu skema pemarkahan…`"
+        :description="`${String(meta?.pendingSchemeCount)} soalan untuk pilihan ini masih menunggu skema pemarkahan...`"
         data-testid="structured-pending"
       />
 
@@ -347,7 +347,7 @@ function goPage(page: number): void {
         <UPagination
           :page="meta.page"
           :total="meta.totalItems"
-          :items-per-page="PAGE_SIZE"
+          :items-per-page="meta.pageSize || PAGE_SIZE"
           @update:page="goPage"
         />
       </div>
