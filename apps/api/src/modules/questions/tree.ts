@@ -100,7 +100,7 @@ function keyNamesNoOption(candidate: Record<string, unknown>): boolean {
   const first = (candidate.options as { label: string }[] | undefined)?.[0]
   const k = candidate.key as { kind?: unknown } | undefined
   if (first === undefined || k?.kind !== 'option') return false
-  return QuestionLeafPartSchema.safeParse({ ...candidate, key: { kind: 'option', correct: first.label } }).success
+  return QuestionLeafPartReadV3Schema.safeParse({ ...candidate, key: { kind: 'option', correct: first.label } }).success
 }
 
 // --- tree -> row drafts ---------------------------------------------------------------------------
