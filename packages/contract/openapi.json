@@ -64027,6 +64027,11 @@
           "TINGKATAN_5"
         ]
       },
+      "CurriculumLearnerSubjectCode": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Learner subject code: a legacy code (MATEMATIK, ...) or the subject code of any other active subject."
+      },
       "CurriculumLegacySubjectCode": {
         "type": "string",
         "enum": [
@@ -64069,7 +64074,7 @@
             "$ref": "#/components/schemas/CurriculumGradeCode"
           },
           "subject": {
-            "$ref": "#/components/schemas/CurriculumLegacySubjectCode"
+            "$ref": "#/components/schemas/CurriculumLearnerSubjectCode"
           },
           "subjectLabel": {
             "type": "string",
@@ -64117,7 +64122,7 @@
             "$ref": "#/components/schemas/CurriculumGradeCode"
           },
           "subject": {
-            "$ref": "#/components/schemas/CurriculumLegacySubjectCode"
+            "$ref": "#/components/schemas/CurriculumLearnerSubjectCode"
           },
           "subjectLabel": {
             "type": "string"

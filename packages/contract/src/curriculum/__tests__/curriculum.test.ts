@@ -117,6 +117,9 @@ describe('curriculum contract: responses', () => {
     }
     expect(CurriculumTopicCardSchema.safeParse(card).success).toBe(true)
     expect(CurriculumTopicCardSchema.safeParse({ ...card, gradeLevel: 'DARJAH_9' }).success).toBe(false)
+    // S4-T06 (D11): the learner subject is a code string, any active subject (not the 8-code enum); empty is not a code.
+    expect(CurriculumTopicCardSchema.safeParse({ ...card, subject: 'KIMIA' }).success).toBe(true)
+    expect(CurriculumTopicCardSchema.safeParse({ ...card, subject: '' }).success).toBe(false)
     const map = {
       subject: 'MATEMATIK', subjectLabel: 'Matematik', grade: 'DARJAH_4', gradeOptions: ['DARJAH_4'],
       subjects: [{ code: 'MATEMATIK', label: 'Matematik', emoji: 'x', color: '#3B82F6' }],
