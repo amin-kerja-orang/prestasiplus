@@ -26,7 +26,7 @@ const REPORT = {
   total: 2,
   activities: [
     { activity: 'databank', label: 'Databank Soalan', served: true, reasons: [] },
-    { activity: 'bab', label: 'Latihan Bab', served: false, reasons: [{ code: 'no_chapter', message: 'Belum dipautkan kepada bab — pilih Bab di borang soalan.' }] },
+    { activity: 'bab', label: 'Latihan Bab', served: false, reasons: [{ code: 'no_chapter', message: 'Bab belum dipaut - tidak disajikan dalam Soalan by Chapter.' }] },
   ],
 }
 
@@ -93,8 +93,8 @@ describe('StudioStatusBar', () => {
       gate: 'approve',
       ok: false,
       issues: [
-        { path: 'parts.b.cognitiveLevel', code: 'LEAF_COGNITIVE_LEVEL_MISSING', message: 'Bahagian (b) belum ada aras pemikiran.', step: 3 },
-        { path: 'kertas', code: 'KERTAS_MISSING', message: 'Soalan SPM belum ada kertas.', step: 1 },
+        { path: 'parts.b.cognitiveLevel', code: 'LEAF_NO_ARAS', message: 'Bahagian (b) belum ada aras pemikiran.', step: 3 },
+        { path: 'kertas', code: 'NO_KERTAS', message: 'Soalan SPM belum ada kertas.', step: 1 },
       ],
     })
     const w = await mountBar({ status: 'review' })
@@ -141,7 +141,7 @@ describe('StudioStatusBar', () => {
     expect(w.find('[data-testid="studio-served-list"]').exists()).toBe(false)
     await t(w, 'studio-served-toggle').trigger('click')
     expect(t(w, 'studio-served-databank').text()).toContain('Boleh dilihat')
-    expect(t(w, 'studio-served-bab').text()).toContain('Tidak boleh dilihat — Belum dipautkan kepada bab')
+    expect(t(w, 'studio-served-bab').text()).toContain('Tidak boleh dilihat — Bab belum dipaut')
   })
 
   it('keeps working when the servability read fails, with a retry', async () => {

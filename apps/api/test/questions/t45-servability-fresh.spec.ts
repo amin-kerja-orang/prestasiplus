@@ -45,6 +45,9 @@ describe('AC-04.5 servability indicators re-read correctly after each state chan
     await q(`insert into spm_subject_configs (subject_id, grp, display_order, databank_order) values ($1, 'teras', 1, 3) on conflict do nothing`, [subjects[0]!.id])
     const [ch] = await q<{ id: string }>(`select id::text id from chapters where subject_id = $1 and education_level_id = $2 limit 1`, [tag.subjectId, tag.levelId])
     chapterId = ch!.id
+    // S1-T02: Terbitkan asks for the Bab where the Subjek + Tingkatan has chapters; this file needs a chapterless approval (Latihan Bab then waits for a chapter), so the chapters
+    // leave the tree and the Bab is set below by the edit that the test makes.
+    await q('update chapters set in_tree = false where subject_id = $1 and education_level_id = $2', [tag.subjectId, tag.levelId])
     // R1-B05: a NEW approval of an SPM-bound question needs a cognitive level per leaf and the kertas (as servable-counts.spec.ts)
     const created = await svc.create(mcqInput(tag, { questionText: 'Soalan untuk ujian penyegaran penunjuk kebolehhidangan.', tag: tagBody(tag, 3), cognitiveLevel: 'mengaplikasi', kertas: '1', curriculumChapterId: null } as never), admin)
     id = created.id
@@ -74,6 +77,7 @@ describe('AC-04.5 servability indicators re-read correctly after each state chan
 
   it('tag edit: the live version keeps its verdict until the edit is approved, then the next view shows the new tag', async () => {
     // The edit is version 2 as a draft; pupils are still served version 1 (Q-5), so the indicators must not move yet.
+    await q('update chapters set in_tree = true where id = $1::bigint', [chapterId]) // the Bab comes back into the tree with the edit that sets it
     await svc.update(id, { ...mcqInputBody(), curriculumChapterId: chapterId } as never, admin)
     const mid = await view()
     expect(mid.versionNo).toBe(1)

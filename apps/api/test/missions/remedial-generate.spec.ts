@@ -44,8 +44,8 @@ describe('POST /guru/command-center/remedial/generate and /cancel (BR-M10-12)', 
     const adminActor = { userId: w.admin, role: 'admin' } as const
     const spB = (await t.db.query<{ id: string }>(`select id::text from curriculum_nodes where kind = 'sp' and subject_id = $1 and education_level_id = $2 and id <> $3 order by id limit 1`, [w.tag.subjectId, w.tag.levelId, w.tag.spId]))[0]?.id as string
     qa = []
-    for (let i = 0; i < 6; i++) qa.push(await publishedMcq(t, w, { text: `Soalan A${String(i)}` }))
-    qb = [await publishedMcq(t, w, { spId: spB, text: 'Soalan B0' }), await publishedMcq(t, w, { spId: spB, text: 'Soalan B1' })]
+    for (let i = 0; i < 6; i++) qa.push(await publishedMcq(t, w, { text: `Soalan bank A${String(i)}` }))
+    qb = [await publishedMcq(t, w, { spId: spB, text: 'Soalan bank B0' }), await publishedMcq(t, w, { spId: spB, text: 'Soalan bank B1' })]
     const review = await draftMcq(t, w) // ADR-0027: `approved` is servable now, so the not-yet-servable one is in review
     await svc.bulkAction('review', [review], adminActor)
     const deactivated = await publishedMcq(t, w)

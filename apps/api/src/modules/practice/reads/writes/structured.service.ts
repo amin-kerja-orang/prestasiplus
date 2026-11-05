@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import type { PracticeReadStructuredAttemptResult, PracticeReadStructuredDetail, PracticeReadStructuredListResponseSchema } from '@pp/contract'
 import type { z } from 'zod'
 
-import { ApiError } from '../../../../common/errors/api-error'
+import { ApiError, DEFAULT_ERROR_MESSAGES } from '../../../../common/errors/api-error'
 import { listMeta } from '../../../../common/http/respond'
 import { toMytTimestamp } from '../../../../common/time/myt'
 import { CLOCK, type Clock } from '../../../../db/clock'
@@ -79,7 +79,7 @@ const kbatOf = (r: QuestionRecord): number => Math.min(6, Math.max(1, r.version.
 
 const invalid = (fields: Record<string, string>): ApiError => {
   const [message] = Object.values(fields)
-  return ApiError.of('VALIDATION_ERROR', { message: message ?? 'The given data was invalid.', fields })
+  return ApiError.of('VALIDATION_ERROR', { message: message ?? DEFAULT_ERROR_MESSAGES.VALIDATION_ERROR, fields })
 }
 
 /**

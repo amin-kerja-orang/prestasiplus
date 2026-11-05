@@ -11,6 +11,7 @@ import { DsEmptyState, DsPanel } from '@/ds'
 import type { WeakTopic } from '../../api/types'
 import { usePhIcon } from '../../lib/icons'
 import { cut, focusHref } from '../../lib/analitik'
+import { pctWhole } from '../../lib/prestasi/format'
 
 defineProps<{ topics: WeakTopic[] }>()
 
@@ -44,7 +45,7 @@ const href = (t: WeakTopic): string =>
             class="flex items-center gap-3 bg-soft p-3"
             :data-testid="`weak-${t.spId}`"
           >
-            <UBadge color="warning" variant="subtle" size="lg" :label="`${t.accuracy}%`" />
+            <UBadge color="warning" variant="subtle" size="lg" :label="pctWhole(t.accuracy)" />
             <div class="flex min-w-0 grow flex-col gap-1">
               <p class="text-label break-words text-highlighted">
                 {{ t.code === null ? t.label : cut(t.label, 70) }}
@@ -52,6 +53,7 @@ const href = (t: WeakTopic): string =>
               <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-muted">
                 <span>{{ t.subjectCode }} · {{ t.attempts }} percubaan</span>
                 <UBadge
+                  v-if="t.focusCount > 0"
                   color="primary"
                   variant="subtle"
                   size="sm"
@@ -61,7 +63,7 @@ const href = (t: WeakTopic): string =>
               </p>
             </div>
             <UButton
-              v-if="allows('/practice')"
+              v-if="t.focusCount > 0 && allows('/practice')"
               :to="href(t)"
               :title="`Klik untuk ${String(t.focusCount)} soalan fokus`"
               color="neutral"
@@ -74,7 +76,7 @@ const href = (t: WeakTopic): string =>
           </li>
         </ul>
         <p
-          v-if="allows('/practice')"
+          v-if="allows('/practice') && topics.some((t) => t.focusCount > 0)"
           class="flex flex-wrap items-center gap-2 text-caption text-muted"
         >
           <UBadge

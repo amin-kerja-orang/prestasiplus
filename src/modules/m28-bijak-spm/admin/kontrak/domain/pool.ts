@@ -57,10 +57,23 @@ export function reasonQuery(
   return { ...(base ?? {}), status: 'approved', ...(REASON_BANK_QUERY[reason] ?? {}) }
 }
 
+/** Bank filters with no Studio filter in R1. */
+const NO_STUDIO_FILTER = new Set(['missing', 'tagReview', 'tpMin', 'tpMax', 'kbat'])
+
+/**
+ * The link opens the Studio list (one bank, PRD47 M-01): the keys it reads go through, the server's `subjectId` is its
+ * `subject_id` and `dskpFilter=untagged` is its `dskp=belum`.
+ */
 export function bankHref(query: Record<string, string> | undefined, extra: Record<string, string> = {}): string {
-  const p = new URLSearchParams({ ...(query ?? {}), ...extra })
+  const p = new URLSearchParams()
+  for (const [key, value] of Object.entries({ ...(query ?? {}), ...extra })) {
+    if (NO_STUDIO_FILTER.has(key)) continue
+    if (key === 'subjectId') p.set('subject_id', value)
+    else if (key === 'dskpFilter' && value === 'untagged') p.set('dskp', 'belum')
+    else p.set(key, value)
+  }
   const qs = p.toString()
-  return `/admin/spm/soalan${qs ? `?${qs}` : ''}`
+  return `/admin/studio${qs ? `?${qs}` : ''}`
 }
 
 export interface PoolLine {

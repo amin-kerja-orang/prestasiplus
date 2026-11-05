@@ -1,4 +1,4 @@
-import { QUESTION_MESSAGES, QUESTION_WORKFLOW_STATUS_LABELS, type QuestionBulkFailure, type QuestionBulkSkipped, type QuestionStatus } from '@pp/contract'
+import { QUESTION_MESSAGES, type QuestionBulkFailure, type QuestionBulkSkipped, type QuestionStatus } from '@pp/contract'
 
 import { ApiError } from '../../common/errors/api-error'
 
@@ -6,12 +6,10 @@ import { ApiError } from '../../common/errors/api-error'
 export const questionNotFound = (): ApiError => ApiError.of('NOT_FOUND')
 
 /**
- * 409 CONFLICT for a (from, to) pair outside `QUESTION_WORKFLOW_TRANSITIONS`. V2 wording (Studio flash, A03; discovery section 3.1):
- * "Peralihan '{from}' -> '{to}' tidak dibenarkan." with the BM status labels (Draf, Semakan, Diterbitkan, Diarkib). BE-09 owns the copy;
- * BE-10 reuses this function so the message is identical on every path.
+ * 409 CONFLICT for a (from, to) pair outside `QUESTION_WORKFLOW_TRANSITIONS` (ERR-CON-04, 40 X10, S1-T02): one catalogue text for every pair.
+ * The function keeps its two arguments so the callers stay as they were; BE-10 reuses it so the message is identical on every path.
  */
-export const TRANSITION_CONFLICT_MESSAGE = (from: QuestionStatus, to: QuestionStatus): string =>
-  `Peralihan '${QUESTION_WORKFLOW_STATUS_LABELS[from]}' -> '${QUESTION_WORKFLOW_STATUS_LABELS[to]}' tidak dibenarkan.`
+export const TRANSITION_CONFLICT_MESSAGE: (from?: QuestionStatus, to?: QuestionStatus) => string = () => 'Perubahan status ini tidak dibenarkan daripada status semasa.'
 
 /**
  * Signal (not an HTTP error) from `setStatus` under `skipIfAlready`: the question is already in the target status. The bulk action turns it
@@ -33,6 +31,12 @@ export const PUBLISH_TAG_MESSAGES = {
   unitId: 'Sila pilih unit DSKP.',
   spIds: 'Sila pilih sekurang-kurangnya satu SP DSKP.',
   tp: 'Sila pilih tahap penguasaan (TP).',
+  /** 45 section 4.1 row 8 (NO_CHAPTER), replaces "Sila pilih Bab buku teks.". */
+  chapterId: 'Sila pilih Bab.',
+  /** Row 9 (NO_DIFFICULTY). */
+  difficultyLevel: QUESTION_MESSAGES.difficulty,
+  /** Row 10 (STEM_SHORT): the stem of an MCQ. */
+  stem: QUESTION_MESSAGES.text,
 } as const
 
 /** BM copy of a skipped id in `POST /questions/bulk-action` when the question does not exist (contract copy). */

@@ -50,7 +50,7 @@ function labelDay(day: string): string {
 }
 
 /**
- * Weekly report. `report()` (API-RPT-13, S21): 403 "This action is unauthorized." for every role by design
+ * Weekly report. `report()` (API-RPT-13, S21): 403 FORBIDDEN (generic BM default) for every role by design
  * (live parity, OQ-M08-01). `guruReport()` is API-GUR-21 (S6-T01): the teacher's own class, Monday to Sunday MYT.
  */
 @Injectable()

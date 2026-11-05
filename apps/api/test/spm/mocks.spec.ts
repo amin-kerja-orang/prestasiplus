@@ -313,9 +313,9 @@ describe('AC10 ownership', () => {
     const mine = await create(student, 'Sejarah')
     for (const id of [mine, '11111111-1111-4111-8111-111111111111', 'abc', '0']) {
       const as = id === mine ? student2 : student
-      expectError(await as.get(`/api/spm-mocks/${id}`), 'NOT_FOUND', 'Not Found.')
-      expectError(await as.post(`/api/spm-mocks/${id}/submit`, { answers: [] }), 'NOT_FOUND', 'Not Found.')
-      expectError(await as.get(`/api/spm-mocks/${id}/result`), 'NOT_FOUND', 'Not Found.')
+      expectError(await as.get(`/api/spm-mocks/${id}`), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+      expectError(await as.post(`/api/spm-mocks/${id}/submit`, { answers: [] }), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+      expectError(await as.get(`/api/spm-mocks/${id}/result`), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     }
     // The owner's mock is untouched by the foreign attempts.
     expect((await t.db.query<{ status: string }>('select status from spm_mock_exams where id = $1', [mine]))[0]?.status).toBe('in_progress')
@@ -323,7 +323,7 @@ describe('AC10 ownership', () => {
 
   it('the ownership check comes before the validation of the body', async () => {
     const mine = await create(student, 'Sejarah')
-    expectError(await student2.post(`/api/spm-mocks/${mine}/submit`, { answers: 'x' }), 'NOT_FOUND', 'Not Found.')
+    expectError(await student2.post(`/api/spm-mocks/${mine}/submit`, { answers: 'x' }), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
   })
 
   it('no key reaches the client before submit: the paper and the list carry none', async () => {

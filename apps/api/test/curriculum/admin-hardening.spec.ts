@@ -124,8 +124,8 @@ describe('curriculum write hardening', () => {
       )
 
     it('every create, update, active toggle and delete writes one row: actor, role, target, request id, no content', async () => {
-      const level = (await admin.post('/api/admin/education-levels', { name: 'Tahap Audit', nameEn: 'Audit', code: 'au1', stage: 'primary', curriculum: 'KSSR' })).body.data.id as string
-      await admin.put(`/api/admin/education-levels/${level}`, { name: 'Tahap Audit 2', nameEn: 'Audit', code: 'au1', stage: 'primary', curriculum: 'KSSR' })
+      const level = (await admin.post('/api/admin/education-levels', { name: 'Tahap Audit', nameEn: 'Audit', code: 'au1', stage: 'lower_secondary', curriculum: 'KSSM' })).body.data.id as string
+      await admin.put(`/api/admin/education-levels/${level}`, { name: 'Tahap Audit 2', nameEn: 'Audit', code: 'au1', stage: 'lower_secondary', curriculum: 'KSSM' })
       await admin.patch(`/api/admin/education-levels/${level}/active`, { isActive: false })
       const subject = (await admin.post('/api/admin/subjects', { name: 'Subjek Audit', nameEn: 'Audit', code: 'aud1' })).body.data.id as string
       await admin.put(`/api/admin/subjects/${subject}`, { name: 'Subjek Audit 2', nameEn: 'Audit', code: 'aud1' })
@@ -243,7 +243,7 @@ describe('curriculum write hardening', () => {
     })
 
     it('a level and a subject deleted after the check: PUT, PATCH and DELETE answer the 404 copy', async () => {
-      const lv = (await admin.post('/api/admin/education-levels', { name: 'L', nameEn: 'L', code: 'race1', stage: 'primary', curriculum: 'KSSR' })).body.data.id as string
+      const lv = (await admin.post('/api/admin/education-levels', { name: 'L', nameEn: 'L', code: 'race1', stage: 'lower_secondary', curriculum: 'KSSM' })).body.data.id as string
       const sj = (await admin.post('/api/admin/subjects', { name: 'S', nameEn: 'S', code: 'race2' })).body.data.id as string
       const staleLevel = (await repo.level(BigInt(lv)))!
       const staleSubject = (await repo.subject(BigInt(sj)))!
@@ -251,7 +251,7 @@ describe('curriculum write hardening', () => {
       await gone('subjects', sj)
       vi.spyOn(repo, 'level').mockResolvedValue(staleLevel)
       vi.spyOn(repo, 'subject').mockResolvedValue(staleSubject)
-      const level = { name: 'L2', nameEn: 'L', code: 'race1', stage: 'primary', curriculum: 'KSSR' }
+      const level = { name: 'L2', nameEn: 'L', code: 'race1', stage: 'lower_secondary', curriculum: 'KSSM' }
       expectError(await admin.put(`/api/admin/education-levels/${lv}`, level), 'NOT_FOUND', 'Tahap Pendidikan tidak dijumpai.')
       expectError(await admin.patch(`/api/admin/education-levels/${lv}/active`, { isActive: false }), 'NOT_FOUND', 'Tahap Pendidikan tidak dijumpai.')
       expectError(await admin.delete(`/api/admin/education-levels/${lv}`), 'NOT_FOUND', 'Tahap Pendidikan tidak dijumpai.')
@@ -273,7 +273,7 @@ describe('curriculum write hardening', () => {
     })
 
     it('the level or subject vanished before a chapter write: 422 on the right reference', async () => {
-      const lv = (await admin.post('/api/admin/education-levels', { name: 'L', nameEn: 'L', code: 'race3', stage: 'primary', curriculum: 'KSSR' })).body.data.id as string
+      const lv = (await admin.post('/api/admin/education-levels', { name: 'L', nameEn: 'L', code: 'race3', stage: 'lower_secondary', curriculum: 'KSSM' })).body.data.id as string
       const sj = (await admin.post('/api/admin/subjects', { name: 'S', nameEn: 'S', code: 'race4' })).body.data.id as string
       const staleLevel = (await repo.level(BigInt(lv)))!
       const staleSubject = (await repo.subject(BigInt(sj)))!
@@ -291,7 +291,7 @@ describe('curriculum write hardening', () => {
     })
 
     it('a level linked to a subject vanished before the subject write: 422 on educationLevelIds', async () => {
-      const lv = (await admin.post('/api/admin/education-levels', { name: 'L', nameEn: 'L', code: 'race5', stage: 'primary', curriculum: 'KSSR' })).body.data.id as string
+      const lv = (await admin.post('/api/admin/education-levels', { name: 'L', nameEn: 'L', code: 'race5', stage: 'lower_secondary', curriculum: 'KSSM' })).body.data.id as string
       const stale = (await repo.level(BigInt(lv)))!
       await gone('education_levels', lv)
       vi.spyOn(repo, 'levels').mockResolvedValue([stale])

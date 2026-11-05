@@ -18,8 +18,8 @@ import {
  * screen (S8) and the package list. Mock spec: `src/modules/m07-pksk/mock/handlers/{admin-questions,
  * admin-access}.ts`, catalogue M07-10 to M07-21.
  *
- * Who may call: role `admin` only (no session 401 UNAUTHORIZED "Unauthenticated.", any other role
- * 403 FORBIDDEN "This action is unauthorized."). Every write also needs the CSRF header (403
+ * Who may call: role `admin` only (no session 401 UNAUTHORIZED "Sesi anda telah tamat. Sila log masuk semula.", any other role
+ * 403 FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini."). Every write also needs the CSRF header (403
  * CSRF_INVALID) and is rate limited (D57a, 429 RATE_LIMITED).
  *
  * Wire conventions:

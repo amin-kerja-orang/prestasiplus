@@ -5,22 +5,37 @@ import type {
   CurriculumNode,
   CurriculumTpDescriptor,
   EducationLevel,
-  LegacySubtopic,
-  LegacyTopic,
   Subject,
   Subtopic,
   Topic,
 } from '../../db/generated/client'
+import { Prisma } from '../../db/generated/client'
 import { PrismaService } from '../../db/prisma.service'
-import { byOrderThenId, chapterOrder, compareIds, MAP_GRADES, topicOrder } from './rules'
+import { offeredLevels, type OfferedLevel } from '../practice/rules'
+import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_SOURCE_TAKEN_DOWN_SQL } from '../questions/learner-visibility'
+import { byOrderThenId, chapterOrder, compareIds, topicOrder } from './rules'
 
-/** The learner catalogue (topics, learning map) is Tingkatan 4 and 5 only (secondary-only, D72); a topic of any other grade is never read. */
-const LEARNER_TOPIC_GRADES: string[] = [...MAP_GRADES]
+/** A learner Topik: a tree chapter with its subject and level rows. */
+export type LearnerChapter = Chapter & { subject: Subject; educationLevel: EducationLevel }
 
-export type { Chapter, CurriculumNode, CurriculumTpDescriptor, EducationLevel, LegacySubtopic, LegacyTopic, Subject, Subtopic, Topic }
+export type { Chapter, CurriculumNode, CurriculumTpDescriptor, EducationLevel, Subject, Subtopic, Topic }
 
 /** A subject with the ids of its linked levels, in level order (BR-08). */
 export type SubjectWithLevels = Subject & { educationLevelIds: bigint[] }
+
+/** One offered Subjek x Tingkatan with its live DSKP counts (API-DSKP-11, S4-T02). */
+export interface DskpReportRow {
+  subjectId: bigint
+  subjectName: string
+  levelId: bigint
+  levelName: string
+  nodes: number
+  bab: number
+  sk: number
+  sp: number
+  tp: number
+  tpGeneral: number
+}
 
 export interface LevelInput {
   name: string
@@ -385,6 +400,33 @@ export class CurriculumRepository {
     return rows.length > 0
   }
 
+  /**
+   * API-DSKP-04 / FR-ADM-C01.2: per chapter id, `questionCount` = questions that are active with a LIVE version that is
+   * `approved` and linked to the chapter; `servableCount` = the subset a learner may be served (the shared learner level,
+   * source take-down and PKSK predicates of `learner-visibility.ts`; the SPM-only T4/T5 rule is not applied because a Bab
+   * of any Tingkatan is counted). One grouped statement over `ix_qv_pub_chapter`; a chapter without questions is absent.
+   */
+  async chapterQuestionCounts(chapterIds: readonly bigint[]): Promise<Map<bigint, { questionCount: number; servableCount: number }>> {
+    const out = new Map<bigint, { questionCount: number; servableCount: number }>()
+    if (chapterIds.length === 0) return out
+    const rows = await this.db.$queryRaw<{ chapter_id: bigint; question_count: number; servable_count: number }[]>`
+      SELECT v.chapter_id,
+             count(*)::int AS question_count,
+             (count(*) FILTER (WHERE ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_PKSK_SQL}))::int AS servable_count
+        FROM questions q
+        JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
+       WHERE v.chapter_id = ANY(${chapterIds as bigint[]}::bigint[]) AND q.is_active AND v.status = 'approved'
+       GROUP BY v.chapter_id`
+    for (const r of rows) out.set(r.chapter_id, { questionCount: r.question_count, servableCount: r.servable_count })
+    return out
+  }
+
+  /** DM-18 delete guard: every question version (any status, any question) that still points at the chapter. */
+  async chapterQuestionVersionCount(chapterId: bigint): Promise<number> {
+    const rows = await this.db.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n FROM question_versions WHERE chapter_id = ${chapterId}`
+    return rows[0]?.n ?? 0
+  }
+
   async chapterHasTopics(chapterId: bigint): Promise<boolean> {
     return (await this.db.topic.count({ where: { chapterId } })) > 0
   }
@@ -497,44 +539,107 @@ export class CurriculumRepository {
     return chain
   }
 
+  /**
+   * API-DSKP-11 (S4-T02): every offered Subjek x Tingkatan (an active subject linked through `subject_levels`
+   * to an active, non-primary level), optionally narrowed to one subject and/or level, with live counts:
+   * all nodes, `unit` (the Bab, D109), `sk`, `sp`, the TP descriptor rows of those nodes and the subject's
+   * general-level rows (`node_id` null). Nothing is stored (D11/D12). Subject order, then level order.
+   */
+  async dskpReport(filter: { subjectId?: bigint; levelId?: bigint } = {}): Promise<DskpReportRow[]> {
+    const bySubject = filter.subjectId === undefined ? Prisma.empty : Prisma.sql`AND s.id = ${filter.subjectId}`
+    const byLevel = filter.levelId === undefined ? Prisma.empty : Prisma.sql`AND l.id = ${filter.levelId}`
+    const rows = await this.db.$queryRaw<
+      { subject_id: bigint; subject_name: string; level_id: bigint; level_name: string; nodes: number; bab: number; sk: number; sp: number; tp: number; tp_general: number }[]
+    >`
+      SELECT s.id AS subject_id, s.name AS subject_name, l.id AS level_id, l.name AS level_name,
+             COALESCE(n.total, 0)::int AS nodes, COALESCE(n.bab, 0)::int AS bab, COALESCE(n.sk, 0)::int AS sk, COALESCE(n.sp, 0)::int AS sp,
+             (SELECT count(*) FROM curriculum_tp_descriptors d JOIN curriculum_nodes dn ON dn.id = d.node_id
+               WHERE dn.subject_id = s.id AND dn.education_level_id = l.id)::int AS tp,
+             (SELECT count(*) FROM curriculum_tp_descriptors g WHERE g.subject_id = s.id AND g.node_id IS NULL)::int AS tp_general
+        FROM subject_levels sl
+        JOIN subjects s ON s.id = sl.subject_id AND s.is_active
+        JOIN education_levels l ON l.id = sl.education_level_id AND l.is_active AND l.stage <> 'primary'
+        LEFT JOIN LATERAL (
+          SELECT count(*) AS total, count(*) FILTER (WHERE c.kind = 'unit') AS bab,
+                 count(*) FILTER (WHERE c.kind = 'sk') AS sk, count(*) FILTER (WHERE c.kind = 'sp') AS sp
+            FROM curriculum_nodes c WHERE c.subject_id = s.id AND c.education_level_id = l.id
+        ) n ON true
+       WHERE true ${bySubject} ${byLevel}
+       ORDER BY s.sort_order, s.id, l.sort_order, l.id`
+    return rows.map((r) => ({
+      subjectId: r.subject_id,
+      subjectName: r.subject_name,
+      levelId: r.level_id,
+      levelName: r.level_name,
+      nodes: r.nodes,
+      bab: r.bab,
+      sk: r.sk,
+      sp: r.sp,
+      tp: r.tp,
+      tpGeneral: r.tp_general,
+    }))
+  }
+
+  /** TP descriptors of many nodes at once, in TP order (the `DSKP` tab node list, API-DSKP-11). */
+  tpDescriptorsOfNodes(nodeIds: readonly bigint[]): Promise<CurriculumTpDescriptor[]> {
+    if (nodeIds.length === 0) return Promise.resolve([])
+    return this.db.curriculumTpDescriptor.findMany({ where: { nodeId: { in: [...nodeIds] } }, orderBy: [{ nodeId: 'asc' }, { tp: 'asc' }] })
+  }
+
   /** TP descriptors of a node (`nodeId`), or the subject's general levels when `nodeId` is null. */
   tpDescriptors(subjectId: bigint, nodeId: bigint | null): Promise<CurriculumTpDescriptor[]> {
     return this.db.curriculumTpDescriptor.findMany({ where: { subjectId, nodeId }, orderBy: { tp: 'asc' } })
   }
 
-  // --- learner catalogue (S12 to S14) -------------------------------------------------------------
+  /** The one offered-levels rule (DM-20, S4-T06): active levels with `stage <> 'primary'`, read per call. */
+  offeredLevels(): Promise<OfferedLevel[]> {
+    return offeredLevels(this.db)
+  }
+
+  // --- learner catalogue (S12 to S14), read from chapters -> topics -> subtopics (S4-T06, DM-16) -----------
 
   /**
-   * BR-13: filtered case-insensitively (AND), `sequence` then id. An empty or absent filter does
-   * not filter; an unknown code matches nothing.
+   * Learner "Topik" rows: the tree chapters (in tree, active) of the given offered levels, of active subjects, optionally
+   * limited to subjects whose `code` is in `subjectCodes`. The level list is per call (`offeredLevels(db)`), never a constant.
+   * Order: level order, subject order, then BR-08 chapter order.
    */
-  async legacyTopics(filter: { gradeLevel?: string | null; subject?: string | null } = {}): Promise<LegacyTopic[]> {
-    const rows = await this.db.legacyTopic.findMany({
+  async learnerChapters(filter: { levelIds: readonly bigint[]; subjectCodes?: readonly string[] }): Promise<LearnerChapter[]> {
+    if (filter.levelIds.length === 0 || filter.subjectCodes?.length === 0) return []
+    const rows = await this.db.chapter.findMany({
       where: {
-        // An allow-list, not a prefix test: no grade asked still means T4/T5 only; a grade outside it matches nothing.
-        AND: [{ gradeLevel: { in: LEARNER_TOPIC_GRADES } }, ...(filter.gradeLevel ? [{ gradeLevel: filter.gradeLevel.toUpperCase() }] : [])],
-        ...(filter.subject ? { subject: filter.subject.toUpperCase() } : {}),
+        inTree: true,
+        isActive: true,
+        educationLevelId: { in: [...filter.levelIds] },
+        subject: { isActive: true, ...(filter.subjectCodes ? { code: { in: [...filter.subjectCodes] } } : {}) },
       },
+      include: { subject: true, educationLevel: true },
     })
-    return rows.sort((a, b) => a.sequence - b.sequence || compareIds(a.id, b.id))
+    return rows
+      .map((r) => ({ ...r, educationLevel: r.educationLevel as EducationLevel }))
+      .sort(
+        (a, b) =>
+          byOrderThenId(a.educationLevel, b.educationLevel) || byOrderThenId(a.subject, b.subject) || chapterOrder(a, b),
+      )
   }
 
-  legacyTopic(id: bigint): Promise<LegacyTopic | null> {
-    return this.db.legacyTopic.findFirst({ where: { id, gradeLevel: { in: LEARNER_TOPIC_GRADES } } })
+  /** One learner chapter by id, under the same filter as `learnerChapters`; `null` otherwise. */
+  async learnerChapter(id: bigint, levelIds: readonly bigint[]): Promise<LearnerChapter | null> {
+    const row = await this.db.chapter.findFirst({
+      where: { id, inTree: true, isActive: true, educationLevelId: { in: [...levelIds] }, subject: { isActive: true } },
+      include: { subject: true, educationLevel: true },
+    })
+    return row ? { ...row, educationLevel: row.educationLevel as EducationLevel } : null
   }
 
-  /** Subtopics per learner topic id, ordered by `sortOrder` then id. */
-  async legacySubtopicsByTopic(topicIds: readonly bigint[]): Promise<Map<bigint, LegacySubtopic[]>> {
-    const map = new Map<bigint, LegacySubtopic[]>()
-    if (topicIds.length === 0) return map
-    const rows = await this.db.legacySubtopic.findMany({
-      where: { legacyTopicId: { in: [...topicIds] } },
-      orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
-    })
-    for (const r of rows) {
-      const list = map.get(r.legacyTopicId)
+  /** Active topics per chapter id, BR-08 natural order (the learner "subtopics" of a Topik card). */
+  async activeTopicsByChapter(chapterIds: readonly bigint[]): Promise<Map<bigint, Topic[]>> {
+    const map = new Map<bigint, Topic[]>()
+    if (chapterIds.length === 0) return map
+    const rows = await this.db.topic.findMany({ where: { chapterId: { in: [...chapterIds] }, isActive: true } })
+    for (const r of rows.sort(topicOrder)) {
+      const list = map.get(r.chapterId)
       if (list) list.push(r)
-      else map.set(r.legacyTopicId, [r])
+      else map.set(r.chapterId, [r])
     }
     return map
   }

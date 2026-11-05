@@ -194,6 +194,20 @@ describe('LevelListPage (M03 S9)', () => {
     ).toBe('true')
   })
 
+  it('reverts and alerts the API message when the switch is refused (409, Darjah, FR-ADM-C03.3a)', async () => {
+    const refused = 'Darjah tidak boleh diaktifkan. Hanya Tingkatan 1 hingga 5 digunakan.'
+    api.fetchAdminLevels.mockResolvedValue(listResult([level(1, { isActive: false })]))
+    api.setLevelActive.mockRejectedValueOnce(new ApiError({ status: 409, code: 'CONFLICT', message: refused }))
+    const w = await render()
+    await w.findAll('[data-testid=level-switch]')[0]?.trigger('click')
+    await flushPromises()
+    expect(api.setLevelActive).toHaveBeenCalledWith(1, true)
+    expect(dialogs.alertNative).toHaveBeenLastCalledWith(refused)
+    expect(
+      w.findAll('tbody tr')[0]!.get('[data-testid=level-switch]').attributes('aria-checked'),
+    ).toBe('false')
+  })
+
   it('confirms with the level copy, deletes, reloads and flashes success', async () => {
     api.deleteLevel.mockResolvedValue({
       data: { deleted: 1 },

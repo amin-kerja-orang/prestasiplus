@@ -44,11 +44,11 @@ export const PERFORMANCE_TIMELINE_MESSAGES = {
   photoInvalid: 'Gambar tidak sah (JPEG, PNG atau WebP, maks 2MB).',
 } as const
 
-/** Generic mock copy: 401 "Unauthenticated.", 403 "This action is unauthorized.", 404 "Not Found.". */
+/** Generic mock copy: 401 "Sesi anda telah tamat. Sila log masuk semula.", 403 "Anda tidak dibenarkan melakukan tindakan ini.", 404 "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?". */
 export const PERFORMANCE_ERROR_MESSAGES = {
-  unauthorized: 'Unauthenticated.',
-  forbidden: 'This action is unauthorized.',
-  notFound: 'Not Found.',
+  unauthorized: 'Sesi anda telah tamat. Sila log masuk semula.',
+  forbidden: 'Anda tidak dibenarkan melakukan tindakan ini.',
+  notFound: 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?',
 } as const
 
 // --- Enums -----------------------------------------------------------------------------------
@@ -299,9 +299,11 @@ const weakSp = z.object({
 export const PerformanceStudentSchema = z
   .object({
     user: z.object({ id: IdSchema, name: z.string(), initial: z.string() }),
-    heroAccuracy: pct,
+    /** Whole number, rounded half up from `stats.accuracy`; null when nothing is answered. */
+    heroAccuracy: pct.nullable(),
     streak: count,
-    stats: z.object({ sessions: count, accuracy: pct, answered: count, seconds: count }),
+    /** `accuracy` is pooled correct / answered x 100, one decimal on the wire (decision 11); null when answered = 0. */
+    stats: z.object({ sessions: count, accuracy: pct.nullable(), answered: count, seconds: count }),
     headcount: z.array(
       z.object({
         configId: IdSchema,
@@ -347,6 +349,17 @@ export const PerformanceStudentSchema = z
       }),
     ),
     suggestions: z.array(z.object({ kind: z.string(), text: z.string() })),
+    /** The last 12 ISO weeks (Monday start, Asia/Kuala_Lumpur), oldest first: "Mgg 1" ... "Mgg 12" (current). */
+    trend: z
+      .array(
+        z.object({
+          week: DateOnlySchema,
+          label: z.string(),
+          accuracy: pct.nullable(),
+          sessions: count,
+        }),
+      )
+      .length(12),
   })
   .meta({ id: 'PerformanceStudent' })
 

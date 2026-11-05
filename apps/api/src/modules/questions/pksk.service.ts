@@ -276,6 +276,7 @@ export class PkskQuestionsService {
       tagReview: false,
       catalogueVersion: null,
       difficultyTp: input.difficultyLevel,
+      difficultyLevel: input.difficultyLevel,
       sourcePage: null,
       setLabel: null,
       spNodeIds: [],

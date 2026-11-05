@@ -18,8 +18,22 @@ import { PracticeOverviewReadsModule } from '../../src/modules/practice/reads/ov
 import { OVERVIEW_OPTIONS } from '../../src/modules/practice/reads/overview/overview.service'
 import { QuestionsModule } from '../../src/modules/questions'
 import { chapterIdOf, dropDatabase, loginAs, START, type CurriculumTestApp } from '../curriculum/helpers'
-import { createTestDatabase } from '../support/db'
+import { createTestDatabase, type TestDatabase } from '../support/db'
 import { mcqBody, refsOf, tagOf } from './http-helpers'
+
+/**
+ * S1-T02: Terbitkan asks for the Bab wherever the Subjek + Tingkatan has chapters (NO_CHAPTER), so an approved question WITHOUT a Bab can only exist for a
+ * Subjek + Tingkatan that has none. The chapters of MATH T4 leave the tree for the duration of `fn` and are restored after it.
+ */
+async function withoutChapters<T>(db: TestDatabase, subjectId: string, levelId: string, fn: () => Promise<T>): Promise<T> {
+  const ids = (await db.query<{ id: string }>(`select id::text from chapters where subject_id = $1::bigint and education_level_id = $2::bigint and is_active and in_tree`, [subjectId, levelId])).map((r) => r.id)
+  await db.query(`update chapters set in_tree = false where id = any($1::bigint[])`, [ids])
+  try {
+    return await fn()
+  } finally {
+    await db.query(`update chapters set in_tree = true where id = any($1::bigint[])`, [ids])
+  }
+}
 
 /** R1 B-01: a question the admin tags with a Bab shows up in Soalan by Chapter (read only; practice is not touched). */
 describe('Bab set by the admin feeds GET /api/practice/chapter-subjects', () => {
@@ -62,7 +76,7 @@ describe('Bab set by the admin feeds GET /api/practice/chapter-subjects', () => 
     const tag = await tagOf(t.db, refs.mathId, refs.t4Id)
     const list = async () => PracticeReadChapterSubjectListResponseSchema.parse((await student.get('/api/practice/chapter-subjects')).body).data
 
-    const plain = await admin.post('/api/questions', mcqBody(refs, { status: 'approved', tag, curriculumChapterId: undefined }))
+    const plain = await withoutChapters(t.db, refs.mathId, refs.t4Id, () => admin.post('/api/questions', mcqBody(refs, { status: 'approved', tag, curriculumChapterId: undefined })))
     expect(plain.status, JSON.stringify(plain.body)).toBe(201)
     expect(await list()).toEqual([])
 
@@ -100,8 +114,8 @@ describe('Bab set by the admin feeds GET /api/practice/chapter-subjects', () => 
       PracticeReadChapterSubjectListResponseSchema.parse((await student.get('/api/practice/chapter-subjects')).body).data.find((x) => x.code === 'MATH')?.chapterCount ?? 0
 
     const before = await inChapterList()
-    // `mcqBody` gives a question a Bab by default, so the "without a Bab" case says so explicitly (REQ-B-071: a Bab is not required at submit or approve; without one the question is approvable but not served in Latihan Bab).
-    const created = await admin.post('/api/questions', mcqBody(refs, { status: 'approved', tag, curriculumChapterId: null }))
+    // `mcqBody` gives a question a Bab by default, so the "without a Bab" case says so explicitly (S1-T02: a Bab is required to approve only where the Subjek + Tingkatan has chapters; without one the question is not served in Latihan Bab).
+    const created = await withoutChapters(t.db, refs.mathId, refs.t4Id, () => admin.post('/api/questions', mcqBody(refs, { status: 'approved', tag, curriculumChapterId: null })))
     expect(created.status, JSON.stringify(created.body)).toBe(201)
     const withoutBab = await bab(created.body.data.id as string)
     expect(withoutBab).toMatchObject({ label: 'Latihan Bab', served: false })
