@@ -127,6 +127,26 @@ describe('Tingkatan rows and teacher cards count XS-1 pupils only', () => {
     ])
   })
 
+  it('a pending, a deactivated, a suspended and a school-admin account that own classes get no teacher card; cards == Guru (3/17)', async () => {
+    const owner = (id: string, name: string, pupils: string[]): void => {
+      w.classes.add({ id: `c-${id}`, schoolId: 's1', teacherId: id, teacherName: name, levelSlug: 't4' }, pupils)
+    }
+    owner('tp', 'Cikgu Menunggu', ['101'])
+    owner('td', 'Cikgu Nyahaktif', ['102'])
+    owner('tx', 'Cikgu Digantung', ['103'])
+    owner('ts', 'Cikgu Pentadbir', ['104'])
+    owner('t3', 'Cikgu Tiga', ['105'])
+    const r = await w.school.school(schoolAdmin)
+    expect(r.teachers.map((t) => t.userId).sort()).toEqual(['t1', 't2', 't3'])
+    expect(r.teachers).toHaveLength(r.stats.teachers)
+    expect(r.stats.teachers).toBe(3)
+    expect((await w.xs.teachers('s1')).ids.sort()).toEqual(['t1', 't2', 't3'])
+    // the platform view lists XS-3 teachers of every school only
+    const p = await w.school.school(admin)
+    expect(p.teachers.map((t) => t.userId).sort()).toEqual(['t1', 't2', 't3', 't9'])
+    expect(p.teachers).toHaveLength(p.stats.teachers)
+  })
+
   it('the Tingkatan cards (levels) carry the same counts as the school page', async () => {
     const cards = await w.school.levels(schoolAdmin)
     expect(cards.map((c) => [c.code, c.students])).toEqual([

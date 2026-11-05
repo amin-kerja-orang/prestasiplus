@@ -412,7 +412,7 @@ function computeSchoolPerformance(scope: Scope, clockYear: number): SchoolPerfor
   }
 }
 
-/** FR-M08-20: one card per teacher who owns a class, by name A→Z. */
+/** FR-M08-20: one card per XS-3 (active) teacher who owns a class, by name A→Z. */
 function teacherCards(
   scope: Scope,
   entries: readonly HeadcountEntryView[],
@@ -420,6 +420,9 @@ function teacherCards(
   const byTeacher = new Map<number, ClassroomRow[]>()
   for (const c of classesOf(scope)) {
     if (c.teacherId === null || c.kind !== 'classroom') continue
+    // XS-3 as in the API: only active teacher accounts get a card (the count above is the same set).
+    const owner = users.get(c.teacherId)
+    if (owner === undefined || owner.role !== 'teacher' || !owner.isActive) continue
     byTeacher.set(c.teacherId, [...(byTeacher.get(c.teacherId) ?? []), c])
   }
   const byClass = new Map<string, HeadcountEntryView[]>()

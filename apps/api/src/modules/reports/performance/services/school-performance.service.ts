@@ -170,14 +170,19 @@ export class SchoolPerformanceService {
     return hit
   }
 
-  /** XS-3 "Guru" of the view scope: the school's count, or the sum over every school for the platform (admin). */
-  private async xsTeachers(scope: ViewScope): Promise<number> {
-    if (scope.kind === 'none') return 0
-    if (scope.kind === 'school') return this.xs.teacherCount(scope.schoolId)
+  /**
+   * XS-3 "Guru" of the view scope as ids (`XsQueries.teachers`): the school's teachers, or those of every school for the platform (admin).
+   * The "Guru" count and the teacher cards both come from this one set (AC-AS-4-1), so they cannot disagree.
+   */
+  private async xsTeacherIds(scope: ViewScope): Promise<ReadonlySet<string>> {
+    if (scope.kind === 'none') return new Set()
+    if (scope.kind === 'school') return new Set((await this.xs.teachers(scope.schoolId)).ids)
     const ids = (await this.directory.schoolsInScope({})).map((s) => s.id)
-    let total = 0
-    for (let i = 0; i < ids.length; i += XS_TEACHER_BATCH) total += (await Promise.all(ids.slice(i, i + XS_TEACHER_BATCH).map((id) => this.xs.teacherCount(id)))).reduce((a, b) => a + b, 0)
-    return total
+    const all = new Set<string>()
+    for (let i = 0; i < ids.length; i += XS_TEACHER_BATCH) {
+      for (const r of await Promise.all(ids.slice(i, i + XS_TEACHER_BATCH).map((id) => this.xs.teachers(id)))) for (const t of r.ids) all.add(t)
+    }
+    return all
   }
 
   /** The shared answer reader (S10-T01): answers of every mode, sessions of the non-game modes; per pupil and per subject. */
@@ -233,7 +238,8 @@ export class SchoolPerformanceService {
     const classrooms = fr.classes.filter((c) => c.kind === 'classroom')
 
     // XS-1 / XS-3 (S6-T03): the same named queries as the school admin Dashboard, through XS_COUNTS_PORT (FR-AS-4-1, AC-AS-4-1).
-    const [xsPupils, teachers] = await Promise.all([this.xsPupils(ctx, scope), this.xsTeachers(scope)])
+    const [xsPupils, xsTeacherIds] = await Promise.all([this.xsPupils(ctx, scope), this.xsTeacherIds(scope)])
+    const teachers = xsTeacherIds.size
     const students = xsPupils.size
 
     // Sessions, answered and pooled accuracy come from the shared answer reader (all modes; XS-4, XS-5, XS-8).
@@ -285,7 +291,8 @@ export class SchoolPerformanceService {
 
     const byTeacher = new Map<string, { name: string; classes: ClassInfo[] }>()
     for (const c of classrooms) {
-      if (c.teacherId === null) continue
+      // Teacher cards list XS-3 teachers only: a pending, deactivated, suspended or school-admin class owner gets no card (AC-AS-4-1).
+      if (c.teacherId === null || !xsTeacherIds.has(c.teacherId)) continue
       const e = byTeacher.get(c.teacherId) ?? { name: c.teacherName ?? '', classes: [] }
       e.classes.push(c)
       byTeacher.set(c.teacherId, e)

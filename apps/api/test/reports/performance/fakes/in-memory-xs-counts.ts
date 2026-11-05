@@ -31,10 +31,16 @@ export class InMemoryXsCounts implements XsCountsPort {
     return { count: ids.length, ids }
   }
 
+  async teachers(schoolId: string): Promise<XsCountedPupils> {
+    const ids = this.directory.teacherList
+      .filter((t) => t.schoolId === schoolId && t.pending !== true && t.isActive !== false && t.isSuspended !== true && t.isSchoolAdmin !== true)
+      .map((t) => t.id)
+      .sort(compareIds)
+    return { count: ids.length, ids }
+  }
+
   async teacherCount(schoolId: string): Promise<number> {
-    return this.directory.teacherList.filter(
-      (t) => t.schoolId === schoolId && t.pending !== true && t.isActive !== false && t.isSuspended !== true && t.isSchoolAdmin !== true,
-    ).length
+    return (await this.teachers(schoolId)).count
   }
 }
 

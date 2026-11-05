@@ -18,6 +18,8 @@ export interface XsCountsPort {
   pupils(scope: XsCountsScope): Promise<XsCountedPupils>
   /** XS-3: approved, active teachers of the school (pending teachers, school admins and deactivated accounts are out). */
   teacherCount(schoolId: string): Promise<number>
+  /** XS-3 as ids (`XsQueries.teachers`): the same teachers the count counts; the teacher cards of Prestasi sekolah list only these (`ids.length === count`). */
+  teachers(schoolId: string): Promise<XsCountedPupils>
 }
 
 export const XS_COUNTS_PORT = Symbol('XS_COUNTS_PORT')
