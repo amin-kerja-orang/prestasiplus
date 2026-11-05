@@ -1,10 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common'
 import {
   BULK_CHAPTER_CAP,
+  BULK_CHAPTER_SKIP_REASONS,
   BulkChapterRequestSchema,
   QUESTION_MESSAGES,
   type BulkChapterRequest,
   type BulkChapterResult,
+  type BulkChapterSkippedRow,
   type ChapterCoverageRow,
 } from '@pp/contract'
 
@@ -13,6 +15,7 @@ import { ApiError } from '../../common/errors/api-error'
 import { Prisma } from '../../db/generated/client'
 import { idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
+import { NOT_FLAGGED_SQL } from '../questions/learner-visibility'
 import { adminFilterConds, adminFilterOf } from '../questions/admin-filter'
 import { FILTER_MAX, FILTER_MESSAGE, SEARCH_MAX, SEARCH_MESSAGE } from '../questions/http/parse'
 import type { AdminListFilter } from '../questions/types'
@@ -32,7 +35,7 @@ type Selection = { kind: 'ids'; ids: bigint[] } | { kind: 'filter'; filter: Omit
  * The bulk call sets `question_versions.chapter_id` in place on the LIVE approved version of each question: no new version, no status or
  * servability change, no unit/SP/TP derivation (D89, FR-ADM-C05.3). The rows come from the same admin filter as `GET /questions`
  * (`adminFilterConds`, over the latest version) or from an id list. Per matched question: eligible when its live version is approved, the
- * Bab's subject and level equal the version's, and it has no Bab (unless `overwrite`); every other matched question is `refused` (one number).
+ * Bab's subject and level equal the version's, and it has no Bab (unless `overwrite`); every other matched question is `refused` (a count; `skipped` lists them with the reason).
  */
 @Injectable()
 export class CurriculumBulkChapterService {
@@ -59,7 +62,7 @@ export class CurriculumBulkChapterService {
 
     if (dryRun) {
       const counts = await this.counts(selection, chapter, overwrite)
-      return this.result(counts, 0, cap, true, null)
+      return this.result(counts, await this.skipped(selection, chapter, overwrite, cap), 0, cap, true, null)
     }
 
     return this.prisma.transaction(async () => {
@@ -71,6 +74,7 @@ export class CurriculumBulkChapterService {
           details: { expected: body.expectedCount ?? 0, actual: counts.matched },
         })
       }
+      const skipped = await this.skipped(selection, chapter, overwrite, cap)
       const versionIds = await this.targets(selection, chapter, overwrite, cap)
       const applied = await this.apply(versionIds, chapter.id, overwrite)
       const refused = counts.matched - counts.eligible
@@ -86,17 +90,18 @@ export class CurriculumBulkChapterService {
         // Counts only (DM-17): never a question id.
         details: { matched: counts.matched, eligible: counts.eligible, refused, applied, dryRun: false, overwrite },
       })
-      return this.result(counts, applied, cap, false, auditId)
+      return this.result(counts, skipped, applied, cap, false, auditId)
     })
   }
 
-  private result(counts: { matched: number; eligible: number }, applied: number, cap: number, dryRun: boolean, auditId: string | null): BulkChapterResult {
+  private result(counts: { matched: number; eligible: number }, skipped: BulkChapterSkippedRow[], applied: number, cap: number, dryRun: boolean, auditId: string | null): BulkChapterResult {
     // A run tries min(eligible, cap) rows; what is left is what a further run would still try (a dry run reports the same preview).
     const remaining = counts.eligible - Math.min(counts.eligible, cap)
     return {
       matched: counts.matched,
       eligible: counts.eligible,
       refused: counts.matched - counts.eligible,
+      skipped,
       applied,
       cap,
       remaining,
@@ -149,6 +154,24 @@ export class CurriculumBulkChapterService {
     return { matched: rows[0]?.matched ?? 0, eligible: rows[0]?.eligible ?? 0 }
   }
 
+  /**
+   * The refused rows with their reason (PRD30 C-05), question id ascending, at most `cap`. Must be read BEFORE the update (a row the run
+   * just linked would otherwise read as "already has a Bab"). A row that fails the Bab's subject/level or is not approved gets the mismatch
+   * line; any other refused row already has a Bab (with `overwrite`, it is already in this Bab).
+   */
+  private async skipped(selection: Selection, chapter: Chapter, overwrite: boolean, cap: number): Promise<BulkChapterSkippedRow[]> {
+    const { from, where, eligible } = this.scope(selection, chapter, overwrite)
+    const mismatch = chapter.educationLevelId === null
+      ? Prisma.sql`TRUE`
+      : Prisma.sql`(lv.status IS DISTINCT FROM 'approved' OR lv.subject_id IS DISTINCT FROM ${chapter.subjectId} OR lv.education_level_id IS DISTINCT FROM ${chapter.educationLevelId})`
+    const rows = await this.prisma.client.$queryRaw<{ id: bigint; mismatch: boolean }[]>`
+      SELECT q.id, ${mismatch} AS mismatch ${from} WHERE ${where} AND NOT COALESCE(${eligible}, FALSE) ORDER BY q.id ASC LIMIT ${cap}`
+    return rows.map((r) => ({
+      questionId: idToString(r.id),
+      reason: r.mismatch ? BULK_CHAPTER_SKIP_REASONS.chapterMismatch : BULK_CHAPTER_SKIP_REASONS.alreadyHasChapter,
+    }))
+  }
+
   /** Ids of the live versions to update: the first `cap` eligible questions, question id ascending (stable between runs). */
   private async targets(selection: Selection, chapter: Chapter, overwrite: boolean, cap: number): Promise<bigint[]> {
     const { from, where, eligible } = this.scope(selection, chapter, overwrite)
@@ -180,9 +203,10 @@ export class CurriculumBulkChapterService {
   }
 
   /**
-   * Per offered Subjek x Tingkatan (an active subject linked to an active, non-primary level, like the DSKP report), the live, active,
-   * approved question versions: `approved`, `withChapter`, `withoutChapter`. No flag predicate exists yet (S1-T07), so every approved
-   * question counts. An unknown id is 404 with the flash copy.
+   * Per offered Subjek x Tingkatan (an active subject linked to an active, non-primary level, like the DSKP report), the live,
+   * approved question versions that are not flagged (`NOT_FLAGGED_SQL`, S1-T07; the card's "approved, not flagged" and the C-1 predicate):
+   * `approved`, `withChapter`, `withoutChapter`. `questions.is_active` is not a condition (neither the card nor PRD60 API-DSKP-10 names it, and
+   * bulk-chapter's own eligibility ignores it), so coverage and the bulk action agree. An unknown id is 404 with the flash copy.
    */
   async coverage(rawQuery: unknown): Promise<{ rows: ChapterCoverageRow[] }> {
     const query = asRecord(rawQuery)
@@ -208,8 +232,8 @@ export class CurriculumBulkChapterService {
         CROSS JOIN LATERAL (
           SELECT count(*) AS approved, count(v.chapter_id) AS with_chapter
             FROM question_versions v
-            JOIN questions q ON q.id = v.question_id AND q.live_version_no = v.version_no AND q.is_active
-           WHERE v.subject_id = s.id AND v.education_level_id = l.id AND v.status = 'approved'
+            JOIN questions q ON q.id = v.question_id AND q.live_version_no = v.version_no
+           WHERE v.subject_id = s.id AND v.education_level_id = l.id AND v.status = 'approved' AND ${NOT_FLAGGED_SQL}
         ) a
        WHERE true ${bySubject} ${byLevel}
        ORDER BY s.sort_order, s.id, l.sort_order, l.id`

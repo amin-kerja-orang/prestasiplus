@@ -56949,6 +56949,12 @@
             "type": "integer",
             "minimum": 0
           },
+          "skipped": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CurriculumBulkChapterSkippedRow"
+            }
+          },
           "applied": {
             "type": "integer",
             "minimum": 0
@@ -56985,12 +56991,28 @@
           "matched",
           "eligible",
           "refused",
+          "skipped",
           "applied",
           "cap",
           "remaining",
           "capped",
           "dryRun",
           "auditId"
+        ]
+      },
+      "CurriculumBulkChapterSkippedRow": {
+        "type": "object",
+        "properties": {
+          "questionId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "questionId",
+          "reason"
         ]
       },
       "CurriculumChapterCoverageQuery": {

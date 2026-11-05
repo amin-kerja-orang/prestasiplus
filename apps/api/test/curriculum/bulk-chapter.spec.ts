@@ -49,16 +49,16 @@ describe('bulk Bab mapping (API-DSKP-09) and Bab coverage (API-DSKP-10)', () => 
 
   type Status = 'approved' | 'draft' | 'review' | 'archived'
   /** One question with one version: an approved one is live (`live_version_no` 1), any other status is not. */
-  const addQ = async (o: { subject: string; level: string; status?: Status; chapter?: string | null; active?: boolean }): Promise<string> => {
+  const addQ = async (o: { subject: string; level: string; status?: Status; chapter?: string | null; active?: boolean; flag?: 'stimulus_missing' | 'figure_only' | 'stem_duplicated'; dismissed?: boolean }): Promise<string> => {
     const status = o.status ?? 'approved'
     const id = (await t.db.query<{ id: string }>(
       `insert into questions (source_type, live_version_no, is_active) values ('manual', $1, $2) returning id::text`,
       [status === 'approved' ? 1 : null, o.active ?? true],
     ))[0]!.id
     await t.db.query(
-      `insert into question_versions (question_id, version_no, status, type, stem_ms, subject_id, education_level_id, chapter_id, difficulty_tp, published_at)
-       values ($1, 1, $2, 'mcq', 'Soalan ujian', $3, $4, $5, 1, case when $2 = 'approved' then now() else null end)`,
-      [id, status, o.subject, o.level, o.chapter ?? null],
+      `insert into question_versions (question_id, version_no, status, type, stem_ms, subject_id, education_level_id, chapter_id, difficulty_tp, published_at, stimulus_flag, flag_dismissed_at)
+       values ($1, 1, $2, 'mcq', 'Soalan ujian', $3, $4, $5, 1, case when $2 = 'approved' then now() else null end, $6, case when $7 then now() else null end)`,
+      [id, status, o.subject, o.level, o.chapter ?? null, o.flag ?? null, o.dismissed ?? false],
     )
     return id
   }
@@ -66,6 +66,8 @@ describe('bulk Bab mapping (API-DSKP-09) and Bab coverage (API-DSKP-10)', () => 
     (await t.db.query<{ c: string | null }>(`select chapter_id::text c from question_versions where question_id = $1 order by version_no desc limit 1`, [qid]))[0]!.c
   const audits = () => count(t.db, `select count(*) n from audit_events where action = 'curriculum.questions.bulk_chapter'`)
   const post = (body: unknown) => admin.post(URL, body)
+  const ALREADY = 'Sudah mempunyai Bab.'
+  const MISMATCH = 'Bab tidak sepadan dengan subjek dan tahap.'
   const mathT4Filter = () => ({ subjectId: math, educationLevelId: t4 })
   const result = async (body: unknown) => parseData(await post(body), BulkChapterResultSchema)
 
@@ -81,7 +83,11 @@ describe('bulk Bab mapping (API-DSKP-09) and Bab coverage (API-DSKP-10)', () => 
     it('counts matched, eligible and refused without writing a row or an audit entry', async () => {
       const p = await plantMathT4()
       const r = await result({ chapterId: babT4, filter: mathT4Filter(), dryRun: true })
-      expect(r).toEqual({ matched: 5, eligible: 3, refused: 2, applied: 0, cap: BULK_CHAPTER_CAP, remaining: 0, capped: false, dryRun: true, auditId: null })
+      expect(r).toEqual({
+        matched: 5, eligible: 3, refused: 2,
+        skipped: [{ questionId: p.hasBab, reason: ALREADY }, { questionId: p.draft, reason: MISMATCH }].sort((a, b) => Number(a.questionId) - Number(b.questionId)),
+        applied: 0, cap: BULK_CHAPTER_CAP, remaining: 0, capped: false, dryRun: true, auditId: null,
+      })
       expect(BULK_CHAPTER_CAP).toBe(10_000)
       for (const id of p.eligible) expect(await chapterOf(id)).toBeNull()
       expect(await chapterOf(p.hasBab)).toBe(babT4b)
@@ -92,6 +98,7 @@ describe('bulk Bab mapping (API-DSKP-09) and Bab coverage (API-DSKP-10)', () => 
       await plantMathT4()
       const r = await result({ chapterId: babT4, filter: mathT4Filter(), dryRun: true, overwrite: true })
       expect(r).toMatchObject({ matched: 5, eligible: 4, refused: 1, applied: 0, dryRun: true, auditId: null })
+      expect(r.skipped).toHaveLength(1)
     })
 
     it('shares the question-list filter: status narrows the matched rows', async () => {
@@ -151,6 +158,8 @@ describe('bulk Bab mapping (API-DSKP-09) and Bab coverage (API-DSKP-10)', () => 
       const had = await Promise.all(Array.from({ length: 4 }, () => addQ({ subject: math, level: t4, chapter: babT4b })))
       const r = await result({ chapterId: babT4, ids: [...free, ...had], expectedCount: 10 })
       expect(r).toMatchObject({ matched: 10, eligible: 6, refused: 4, applied: 6 })
+      // The list is read before the update: the 6 just linked are not in it.
+      expect(r.skipped).toEqual(had.map((questionId) => ({ questionId, reason: ALREADY })).sort((a, b) => Number(a.questionId) - Number(b.questionId)))
       for (const id of free) expect(await chapterOf(id)).toBe(babT4)
       for (const id of had) expect(await chapterOf(id)).toBe(babT4b)
     })
@@ -159,7 +168,7 @@ describe('bulk Bab mapping (API-DSKP-09) and Bab coverage (API-DSKP-10)', () => 
       const free = await Promise.all(Array.from({ length: 6 }, () => addQ({ subject: math, level: t4 })))
       const had = await Promise.all(Array.from({ length: 4 }, () => addQ({ subject: math, level: t4, chapter: babT4b })))
       const r = await result({ chapterId: babT4, ids: [...free, ...had], expectedCount: 10, overwrite: true })
-      expect(r).toMatchObject({ matched: 10, eligible: 10, refused: 0, applied: 10 })
+      expect(r).toMatchObject({ matched: 10, eligible: 10, refused: 0, applied: 10, skipped: [] })
       for (const id of [...free, ...had]) expect(await chapterOf(id)).toBe(babT4)
       const audit = (await t.db.query<{ detail: Record<string, unknown> }>(`select detail from audit_events where id = $1`, [r.auditId]))[0]!
       expect(audit.detail).toMatchObject({ applied: 10, overwrite: true })
@@ -171,6 +180,7 @@ describe('bulk Bab mapping (API-DSKP-09) and Bab coverage (API-DSKP-10)', () => 
       const otherSubject = await addQ({ subject: bm, level: t4 })
       const r = await result({ chapterId: babT4, ids: [ok, otherLevel, otherSubject], expectedCount: 3 })
       expect(r).toMatchObject({ matched: 3, eligible: 1, refused: 2, applied: 1 })
+      expect(r.skipped).toEqual([otherLevel, otherSubject].map((questionId) => ({ questionId, reason: MISMATCH })).sort((a, b) => Number(a.questionId) - Number(b.questionId)))
       expect([await chapterOf(ok), await chapterOf(otherLevel), await chapterOf(otherSubject)]).toEqual([babT4, null, null])
     })
 
@@ -179,6 +189,8 @@ describe('bulk Bab mapping (API-DSKP-09) and Bab coverage (API-DSKP-10)', () => 
       await addQ({ subject: math, level: t5 })
       const r = await result({ chapterId: babT4, filter: { subjectId: math, educationLevelId: t5 }, expectedCount: 2 })
       expect(r).toMatchObject({ matched: 2, eligible: 0, refused: 2, applied: 0 })
+      expect(r.skipped).toHaveLength(2)
+      for (const x of r.skipped) expect(x.reason).toBe(MISMATCH)
     })
 
     it('counts a question that is not approved (draft, review, archived) as refused', async () => {
@@ -186,6 +198,9 @@ describe('bulk Bab mapping (API-DSKP-09) and Bab coverage (API-DSKP-10)', () => 
       const others = await Promise.all((['draft', 'review', 'archived'] as const).map((status) => addQ({ subject: math, level: t4, status })))
       const r = await result({ chapterId: babT4, ids: [approved, ...others], expectedCount: 4 })
       expect(r).toMatchObject({ matched: 4, eligible: 1, refused: 3, applied: 1 })
+      // DOC DEFECT: no BM line is documented for "not approved"; it gets the mismatch line.
+      expect(r.skipped.map((x) => x.questionId).sort()).toEqual([...others].sort())
+      for (const x of r.skipped) expect(x.reason).toBe(MISMATCH)
       for (const id of others) expect(await chapterOf(id)).toBeNull()
     })
 
@@ -318,16 +333,20 @@ describe('bulk Bab mapping (API-DSKP-09) and Bab coverage (API-DSKP-10)', () => 
   describe('chapter coverage (API-DSKP-10)', () => {
     const coverage = async (query = '') => parseData(await admin.get(`/api/admin/curriculum/chapter-coverage${query}`), ChapterCoverageSchema)
 
-    it('counts live, active, approved versions with and without a Bab per offered Subjek x Tingkatan', async () => {
+    it('counts live, approved, not-flagged versions with and without a Bab per offered Subjek x Tingkatan', async () => {
       await addQ({ subject: math, level: t4 })
       await addQ({ subject: math, level: t4 })
       await addQ({ subject: math, level: t4, chapter: babT4 })
       await addQ({ subject: math, level: t4, status: 'draft' })
-      await addQ({ subject: math, level: t4, active: false })
+      await addQ({ subject: math, level: t4, active: false }) // is_active is not a condition: counted
+      await addQ({ subject: math, level: t4, flag: 'stimulus_missing' }) // flagged: not counted
+      await addQ({ subject: math, level: t4, flag: 'figure_only', chapter: babT4 }) // flagged: not counted
+      await addQ({ subject: math, level: t4, flag: 'stimulus_missing', dismissed: true }) // dismissed flag: counted
+      await addQ({ subject: math, level: t4, flag: 'stem_duplicated' }) // not an exclusion: counted
       await addQ({ subject: bm, level: t4 })
       const { rows } = await coverage()
       const mathT4 = rows.find((r) => r.subjectId === math && r.levelCode === 'T4')
-      expect(mathT4).toEqual({ subjectId: math, subjectName: 'Matematik', levelCode: 'T4', approved: 3, withChapter: 1, withoutChapter: 2 })
+      expect(mathT4).toEqual({ subjectId: math, subjectName: 'Matematik', levelCode: 'T4', approved: 6, withChapter: 1, withoutChapter: 5 })
       expect(rows.find((r) => r.subjectId === bm && r.levelCode === 'T4')).toMatchObject({ approved: 1, withChapter: 0, withoutChapter: 1 })
       expect(rows.find((r) => r.subjectId === math && r.levelCode === 'T5')).toMatchObject({ approved: 0, withChapter: 0, withoutChapter: 0 })
       for (const r of rows) expect(r.withChapter + r.withoutChapter).toBe(r.approved)
