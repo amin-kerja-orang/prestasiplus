@@ -4,12 +4,20 @@ import type { BijakBuilderStudentView } from '@pp/contract'
 
 import DsPanel from '@/ds/DsPanel.vue'
 
-import { RichText, StimulusView } from '../../../../../components/question-display'
+import { PaperView, StimulusView } from '../../../../../components/question-display'
+import { marksLabel, questionLabel } from '../../../../../components/question-display/copy'
+import type { PaperSection } from '../../../../../components/question-display/types'
 import type { StimulusDef } from '../../../domain/types'
 import { editorStimuliOf } from '../../../lib/stimulus-data'
 import { builderCopy as t } from '../domain/copy'
 
 defineProps<{ view: BijakBuilderStudentView | null; error?: boolean }>()
+/** One-question PaperView section: question level only (the student-view wire has no parts). */
+const oneQuestion = (q: { id: string; number: number; marks: number; preview: string }): PaperSection => ({
+  id: q.id,
+  label: '',
+  questions: [{ id: q.id, number: q.number, marks: q.marks, stem: q.preview }],
+})
 const open = defineModel<boolean>('open', { default: false })
 </script>
 
@@ -38,11 +46,14 @@ const open = defineModel<boolean>('open', { default: false })
               <StimulusView :stimulus="st" />
             </DsPanel>
             <DsPanel v-for="q in u.questions" :key="q.id" :data-testid="`student-q-${q.id}`">
-              <div class="flex items-baseline justify-between gap-3">
-                <h5 class="text-label text-highlighted">Soalan {{ q.number }}</h5>
-                <span class="tabular text-caption text-muted">[{{ q.marks }} markah]</span>
-              </div>
-              <p class="mt-1 text-body"><RichText :text="q.preview" /></p>
+              <PaperView :sections="[oneQuestion(q)]" :section-head="false">
+                <template #question-head="{ question }">
+                  <div class="flex items-baseline justify-between gap-3">
+                    <h5 class="text-label text-highlighted">{{ questionLabel(question.number) }}</h5>
+                    <span class="tabular text-caption text-muted">{{ marksLabel(question.marks) }}</span>
+                  </div>
+                </template>
+              </PaperView>
             </DsPanel>
           </template>
         </section>
