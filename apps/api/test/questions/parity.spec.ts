@@ -430,12 +430,27 @@ describe('AC 9: mock parity on the 14 routes', () => {
   })
 
   describe('Guru routes (/api/guru/questions)', () => {
-    const body = () => mcqBody(refs, { questionText: 'Soalan guru untuk ujian pariti.' })
-    it('create lands in review (D-9), owned by the caller; the list shows own rows only', async () => {
+    // S6-T06: the guru body is the intake form (chapterId, spIds, tp, cognitiveLevel where the seed has them), not the admin MCQ body.
+    let dskp: Record<string, unknown> = {}
+    beforeAll(async () => {
+      const tag = await tagOf(t.db, refs.mathId, refs.t4Id)
+      dskp = { chapterId: refs.chapterId, spIds: tag.spIds, tp: tag.tp, cognitiveLevel: 'memahami' }
+    })
+    const body = () => ({
+      subjectId: refs.mathId,
+      educationLevelId: refs.t4Id,
+      questionType: 'mcq',
+      difficultyLevel: 3,
+      questionText: 'Soalan guru untuk ujian pariti.',
+      options: ['1', '2', '3', '4'],
+      correctAnswer: 1,
+      ...dskp,
+    })
+    it('create is a pending intake item (D113), owned by the caller; the list shows own rows only', async () => {
       const res = await teacher.post('/api/guru/questions', body())
       expect(res.status, JSON.stringify(res.body)).toBe(201)
       const id = bodyData(res).id as string
-      expect(bodyData(res).status).toBe(MOCK_STATUS_TO_V2.pending_review)
+      expect(bodyData(res).status).toBe('pending')
       const own = await teacher.get('/api/guru/questions')
       expect(own.body.data.map((r: { id: string }) => r.id)).toContain(id)
       const other = await teacher2.get('/api/guru/questions')
@@ -451,7 +466,7 @@ describe('AC 9: mock parity on the 14 routes', () => {
 
     it('missing fields use the BM copy of the mock', async () => {
       const error = expectErr(await teacher.post('/api/guru/questions', {}), 422, 'VALIDATION_ERROR')
-      expect(error.fields).toMatchObject({ educationLevelId: 'Sila pilih tahap pendidikan.', subjectId: 'Sila pilih subjek.', difficultyLevel: 'Sila pilih tahap kesukaran.', questionText: 'Sila isi soalan.' })
+      expect(error.fields).toMatchObject({ educationLevelId: 'Sila pilih tingkatan.', subjectId: 'Sila pilih subjek.', difficultyLevel: 'Sila pilih kesukaran.', questionText: 'Sila isi soalan.' })
     })
 
     it('delete answers {removed: 1}; the second call is 404', async () => {
