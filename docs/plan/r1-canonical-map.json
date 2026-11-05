@@ -10188,6 +10188,16 @@
       "approved_by_card": null
     },
     {
+      "name": "SpinSegment",
+      "table": "spin_segments",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/games.prisma",
+      "approved_by_card": "S7-T01",
+      "dm": "DM-64",
+      "note": "The 8 Roda Nasib wheel segments (48 GAME-14) as admin data, replacing SPIN_SEGMENTS in the GAME-14 part."
+    },
+    {
       "name": "League",
       "table": "leagues",
       "status": "canonical",
@@ -13008,6 +13018,26 @@
       "sector": "S4",
       "file": "apps/api/src/modules/curriculum/admin.controller.ts",
       "approved_by_card": "S4-T02"
+    },
+    {
+      "key": "POST /api/admin/curriculum/questions/bulk-chapter",
+      "method": "POST",
+      "path": "/api/admin/curriculum/questions/bulk-chapter",
+      "api_id": "API-DSKP-09",
+      "status": "canonical",
+      "sector": "S4",
+      "file": "apps/api/src/modules/curriculum/admin.controller.ts",
+      "approved_by_card": "S4-T03"
+    },
+    {
+      "key": "GET /api/admin/curriculum/chapter-coverage",
+      "method": "GET",
+      "path": "/api/admin/curriculum/chapter-coverage",
+      "api_id": "API-DSKP-10",
+      "status": "canonical",
+      "sector": "S4",
+      "file": "apps/api/src/modules/curriculum/admin.controller.ts",
+      "approved_by_card": "S4-T03"
     },
     {
       "key": "GET /api/admin/curriculum/chapters/:p",
