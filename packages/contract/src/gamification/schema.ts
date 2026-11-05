@@ -146,7 +146,7 @@ export const GamificationChallengeProgressSchema = z
     progress: count.meta({ description: 'Equals target when already completed today.' }),
     pct: count.meta({ description: 'Rounded integer percentage.' }),
     completed: z.boolean(),
-    claimed: z.boolean().optional().meta({ description: 'True when the reward was claimed this Malaysia day (API-GAME-11). Absent until the claim route is served.' }),
+    claimed: z.boolean().optional().meta({ description: 'True when the reward was claimed this Malaysia day (API-GAME-11).' }),
   })
   .meta({ id: 'GamificationChallengeProgress' })
 export type GamificationChallengeProgress = z.infer<typeof GamificationChallengeProgressSchema>
@@ -251,7 +251,7 @@ export const GamificationChallengesMetaSchema = z
   .object({
     completed: count,
     active: count,
-    claimed: count.optional().meta({ description: 'Rewards claimed this Malaysia day (API-GAME-11). Absent until the claim route is served.' }),
+    claimed: count.optional().meta({ description: 'Rewards claimed this Malaysia day (API-GAME-11).' }),
   })
   .meta({ id: 'GamificationChallengesMeta' })
 export type GamificationChallengesMeta = z.infer<typeof GamificationChallengesMetaSchema>
@@ -282,7 +282,15 @@ export const GamificationChallengeClaimRequestSchema = z
 export type GamificationChallengeClaimRequest = z.infer<typeof GamificationChallengeClaimRequestSchema>
 
 export const GamificationChallengeClaimResultSchema = z
-  .object({ claimed: z.literal(true), rewardSyiling: count, rewardXp: count })
+  .object({
+    claimed: z.literal(true),
+    rewardSyiling: count,
+    rewardXp: count,
+    notices: z
+      .array(z.string())
+      .optional()
+      .meta({ description: 'Ready-made BM lines for the pupil, built server-side (ruling 21 on #500), for example "Tahniah! Anda naik ke tier {label}." Absent when there is nothing to tell, and always absent on a replay.' }),
+  })
   .meta({ id: 'GamificationChallengeClaimResult' })
 export type GamificationChallengeClaimResult = z.infer<typeof GamificationChallengeClaimResultSchema>
 
