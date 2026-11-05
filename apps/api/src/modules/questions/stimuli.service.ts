@@ -226,8 +226,7 @@ export class StimuliService {
     await this.groupOrThrow(id)
     return this.prisma.transaction(async () => {
       await this.members.lock(id)
-      await this.members.assertNotDraftCopy(id)
-      const current = await this.repo.memberIds(id)
+      const current = await this.members.current(id)
       if (current.includes(questionId)) throw fail({ questionId: STIMULUS_MESSAGES.memberExists })
       const after = await this.members.set(id, [...current, questionId], 'questionId')
       return { result: await this.getGroup(id), audit: { added: 1, members: after.length } }
@@ -238,8 +237,7 @@ export class StimuliService {
     await this.groupOrThrow(id)
     return this.prisma.transaction(async () => {
       await this.members.lock(id)
-      await this.members.assertNotDraftCopy(id)
-      const current = await this.repo.memberIds(id)
+      const current = await this.members.current(id)
       if (!current.includes(questionId)) throw notFound(STIMULUS_MESSAGES.memberMissing)
       const rest = await this.members.set(id, current.filter((m) => m !== questionId))
       return {
@@ -253,8 +251,7 @@ export class StimuliService {
     await this.groupOrThrow(id)
     return this.prisma.transaction(async () => {
       await this.members.lock(id)
-      await this.members.assertNotDraftCopy(id)
-      const current = await this.repo.memberIds(id)
+      const current = await this.members.current(id)
       const same = questionIds.length === current.length && new Set(questionIds).size === current.length && questionIds.every((q) => current.includes(q))
       if (!same) throw fail({ questionIds: STIMULUS_MESSAGES.orderInvalid })
       await this.members.set(id, questionIds)

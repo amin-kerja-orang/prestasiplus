@@ -39,9 +39,9 @@ export class GroupMembers {
     if (!(await this.repo.lockGroup(groupId))) throw notFound()
   }
 
-  /** A draft copy stages its members in `draft_members`: no in-place member route applies to it (409). */
-  async assertNotDraftCopy(groupId: string): Promise<void> {
-    if ((await this.repo.groupScope(groupId))?.draftOfGroupId != null) throw conflict(M.conflict)
+  /** The members of a group in order; for a draft copy the members staged in it (`draft_members`). */
+  async current(groupId: string): Promise<string[]> {
+    return (await this.repo.groupScope(groupId))?.draftOfGroupId != null ? this.repo.stagedMembers(groupId) : this.repo.memberIds(groupId)
   }
 
   /** The BM warning for a group with no member, else null (one member is valid). */
@@ -60,10 +60,10 @@ export class GroupMembers {
    */
   async set(groupId: string, ordered: readonly string[], field = 'questionIds', subjectMessage: string = M.memberScope, swap = false): Promise<string[]> {
     await this.lock(groupId)
-    // A draft copy stages its members in `draft_members`; the in-place member routes do not apply to it. Its members reach the live group
-    // only through the swap (`swap = true`: the publish of the copy, which is the one path that may change the members of a served group).
+    // A draft copy stages its members in `draft_members` (S1-T01 part 3c); they reach the live group only through the swap (`swap = true`: the
+    // publish of the copy, the one path that may change the members of a served group).
     const scope = await this.repo.groupScope(groupId)
-    if (scope?.draftOfGroupId != null) throw conflict(M.conflict)
+    if (scope?.draftOfGroupId != null) return this.setStaged(groupId, ordered, field, subjectMessage, scope)
     if (new Set(ordered).size !== ordered.length) throw fail({ [field]: M.membersInvalid })
     if (ordered.length > STIMULUS_LIMITS.groupQuestions) throw fail({ [field]: M.membersTooMany })
     const current = await this.repo.memberIds(groupId)
@@ -110,6 +110,39 @@ export class GroupMembers {
     if (added.length > 0) await this.repo.attachQuestions(groupId, added, PARK)
     await this.repo.renumber(groupId, ordered)
     await this.repo.touchGroup(groupId)
+    return [...ordered]
+  }
+
+  /**
+   * Makes `ordered` the members staged in a draft copy. The same member rules as `set`, except that the served lock does not apply (a served member
+   * may be staged, moved within the order or left out: the swap applies it) and a member may sit in the copy's own live group.
+   */
+  private async setStaged(copyId: string, ordered: readonly string[], field: string, subjectMessage: string, scope: GroupScope & { draftOfGroupId: string | null }): Promise<string[]> {
+    if (new Set(ordered).size !== ordered.length) throw fail({ [field]: M.membersInvalid })
+    if (ordered.length > STIMULUS_LIMITS.groupQuestions) throw fail({ [field]: M.membersTooMany })
+    const current = await this.repo.stagedMembers(copyId)
+    const added = ordered.filter((q) => !current.includes(q))
+    if (added.length === 0 && current.length === ordered.length && current.every((q, i) => ordered[i] === q)) return [...current]
+    const facts = await this.repo.lockQuestions(ordered)
+    const elsewhere = await this.repo.stagedElsewhere(copyId, added)
+    for (const q of added) {
+      const f = facts.get(q)
+      if (f === undefined || f.pksk) throw fail({ [field]: M.membersInvalid })
+      if ((f.groupId !== null && f.groupId !== scope.draftOfGroupId) || elsewhere.has(q)) throw fail({ [field]: M.memberTaken })
+      if (!f.active || f.archived) throw fail({ [field]: M.memberInactive })
+      this.assertScope(scope, { subjectId: f.subjectId, levelId: f.levelId, kertas: f.kertas }, field, subjectMessage)
+    }
+    const subjects = new Set<string>()
+    const kertas = new Set<string>()
+    for (const q of ordered) {
+      const f = facts.get(q)
+      if (f === undefined) continue
+      subjects.add(f.subjectId ?? '')
+      if (f.kertas !== null) kertas.add(f.kertas)
+    }
+    if (subjects.size > 1) throw fail({ [field]: M.memberMixed })
+    if (kertas.size > 1) throw fail({ [field]: M.memberKertas })
+    await this.repo.setDraftMembers(copyId, ordered)
     return [...ordered]
   }
 

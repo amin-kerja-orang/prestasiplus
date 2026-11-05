@@ -496,7 +496,7 @@ export function registerStimuliPaths(registry: OpenAPIRegistry): void {
     tags,
     summary: 'Set the complete ordered member list of a group (atomic)',
     description:
-      'Adds, removals and reordering in one call. A question that is already shown to pupils (live version approved, active) cannot be added, removed or have its relative order changed; new draft or review questions can still be appended to a group that has served members (409 `groupServed` / `memberServed` otherwise). A question of another group, a PKSK, archived or inactive question, a question of another subject, and more than 40 members are 422.',
+      'Adds, removals and reordering in one call. A question that is already shown to pupils (live version approved, active) cannot be added, removed or have its relative order changed; new draft or review questions can still be appended to a group that has served members (409 `groupServed` / `memberServed` otherwise). A question of another group, a PKSK, archived or inactive question, a question of another subject, and more than 40 members are 422. On a draft copy (`draftOfGroupId` set) add, remove, order and set edit the members staged in the copy instead (the same member rules, the served lock does not apply); the served group is unchanged until the copy is published.',
     request: { params: idParams, headers: [csrf], body: body(StimulusGroupMembersSetRequestSchema) },
     responses: { 200: json(mutationEnvelopeOf(StimulusGroupDetailSchema), 'The group after the change.'), 401: unauthorized, 403: forbidden, 404: notFound, 409: conflict, 422: invalid },
   })
