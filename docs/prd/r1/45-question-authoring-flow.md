@@ -521,7 +521,7 @@ Screens: R1-ADM-Q-11 (`/admin/questions/import`, `/admin/questions/import-histor
 
 **Form (Q-11).** `Fail CSV *` (`.csv` or `.txt`, UTF-8, BOM allowed, comma separator, `"` quoting; hint "Saiz maksimum: 5MB. Format: CSV atau TXT"); optional ZIP `Fail imej (ZIP, pilihan)` for stimulus images; `Tetapan Lalai (Opsional)` with "Nilai ini digunakan jika kolum berkaitan tiada dalam CSV.": `Subjek Lalai`, `Tahap Pendidikan` (Tingkatan 1 to 5), `Kesukaran` (`Sangat Mudah`..`Sangat Sukar`, filling an empty `difficulty` cell); note "Soalan akan disimpan sebagai draf"; buttons `Muat Turun Templat CSV` and `Mula Import`. Loading: "Mengimport…".
 
-**Limits and whole-file refusals.** Max 5 MB (ERR-REQ-03 with {n}=5); max 2,000 data rows excluding the header ("Fail melebihi 2,000 baris. Pecahkan fail kepada beberapa bahagian.", 422, whole file refused); wrong type "Format fail tidak sah. Gunakan .csv atau .txt."; empty "Fail kosong."; missing required header column "Fail CSV mesti mempunyai kolum {senarai}."; ZIP over 20 MB or an image over 2 MB / not JPG, PNG, WebP: "Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB." Writes are rate-limited (ERR-RATE-01).
+**Limits and whole-file refusals.** Max 5 MB (ERR-REQ-03 with {n}=5); max 2,000 data rows excluding the header ("Fail melebihi 2,000 baris. Pecahkan fail kepada beberapa bahagian.", 422, whole file refused); wrong type "Format fail tidak sah. Gunakan .csv atau .txt."; empty "Fail kosong."; missing required header column "Fail CSV mesti mempunyai kolum {senarai}."; a `zipFile` that is not a ZIP: "Format fail tidak sah. Gunakan .zip." (PO decision); ZIP over 20 MB or an image over 2 MB / not JPG, PNG, WebP: "Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB." Writes are rate-limited (ERR-RATE-01).
 
 **Row model.** One row = one leaf. Rows with the same `question_key` (consecutive) form one question; question-level cells are read from its first row. Rows with the same `group_key` (non-empty) form one stimulus group; their questions must be consecutive and the stimulus columns appear on the first row of the group only.
 
@@ -685,20 +685,20 @@ All 30 rows are assembled into one function by card S1-T02 (owner of API-Q-05 an
 
 **Code added by the scheme validator (S1-T09a):** `SCHEME_PENALTY` "Jumlah penalti melebihi markah bahagian." (when the deductions of a leaf or of the question exceed the part marks; applies to a leaf with `schemeRules`; When S; owner S1-T09a). Like `TP_MISSING` it is not a numbered row. Every new scheme code (`SCHEME_*`, `BAND_RANGE`) is reported at `step` 4 in the issue shape of API-Q-05 and API-Q-30.
 
-**Codes added by S1-T09a part 1 (lead ruling of 2026-11-05; no text is invented).** Eight conditions have no BM text in this file. They ship now as codes in `details.gate[]` / `issues[]`; a server-only code answers the generic ERR-REQ-01 message plus the code, because no user can reach it:
+**Codes added by S1-T09a part 1 (lead ruling of 2026-11-05; the three user-reachable texts are PO decisions).** Eight conditions have no BM text in this file. They ship now as codes in `details.gate[]` / `issues[]`; a server-only code answers the generic ERR-REQ-01 message plus the code, because no user can reach it:
 
 | Code | User-reachable | Text |
 |---|---|---|
 | `EXAMPLE_MARKS_NOT_ZERO` | no (the form sets 0, L-rows above) | server-only: ERR-REQ-01 + code |
 | `SCHEME_MODE_MISMATCH` | no | server-only: ERR-REQ-01 + code |
-| `CRITERION_MAX_REQUIRED` | yes | [PO pending] |
-| `BAND_RANGE_INVALID` | yes | [PO pending] |
+| `CRITERION_MAX_REQUIRED` | yes | "Setiap kriteria mesti mempunyai markah maksimum." (PO decision) |
+| `BAND_RANGE_INVALID` | yes | "Julat band tidak sah." (PO decision) |
 | `OPTION_LABEL_DUPLICATE` | no | reuses "Label pilihan mesti A hingga H." (mode 1 rule above) |
-| `DEDUCTION_LABEL_REQUIRED` | yes (deduction code `other`) | [PO pending] |
+| `DEDUCTION_LABEL_REQUIRED` | yes (deduction code `other`) | "Sila isi label penalti." (PO decision) |
 | `TRUE_FALSE_OPTIONS_INVALID` | no (fixed rows) | server-only: ERR-REQ-01 + code |
 | `SCHEME_VERSION_MISMATCH` | no (integrity) | server-only: ERR-REQ-01 + code |
 
-The three "[PO pending]" texts are filled in when the PO answers; until then the screen shows the generic ERR-REQ-01 message for them.
+The three user-reachable texts were supplied by the PO.
 
 The flag `stem_duplicated` is not a gate item (the question is complete; the text shows once and DM-40 cleans the data). A flag is cleared by attaching a group or stimulus (QE-08) or by `Bukan masalah` (`POST /api/admin/questions/:id/flags/dismiss`).
 

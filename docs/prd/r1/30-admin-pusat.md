@@ -807,7 +807,7 @@ Behaviour: item `pending -> accepted | rejected` (`pending` = `generated`, `need
 | # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
 |---|---|---|---|---|---|
 | 11-01 | `Fail CSV *` | file | required | `.csv` or `.txt`, UTF-8 (BOM allowed), comma, `"` quoting, <= 5 MB, <= 2,000 data rows; hint "Saiz maksimum: 5MB. Format: CSV atau TXT" | SR-7 whole-file refusals; "Fail melebihi 2,000 baris. Pecahkan fail kepada beberapa bahagian." (422) |
-| 11-02 | `Fail imej (ZIP, pilihan)` | file | optional | ZIP <= 20 MB, images JPG, PNG, WebP <= 2 MB | "Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB." |
+| 11-02 | `Fail imej (ZIP, pilihan)` | file | optional | ZIP <= 20 MB, images JPG, PNG, WebP <= 2 MB | "Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB."; a file that is not a ZIP: "Format fail tidak sah. Gunakan .zip." (PO decision) |
 | 11-03 | `Subjek Lalai` | select | `-- Tidak ditetapkan --` | OPT-SUBJEK | fills an empty `subject_code` |
 | 11-04 | `Tahap Pendidikan` | select | `-- Tidak ditetapkan --` | OPT-TINGKATAN | fills an empty `tingkatan` |
 | 11-05 | `Kesukaran` | select | `-- Tidak ditetapkan --` | OPT-KESUKARAN-5 | fills an empty `difficulty` |
