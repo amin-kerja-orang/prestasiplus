@@ -331,7 +331,37 @@ describe('Analitik', () => {
       expect(forbidden).toMatchObject({ status: 403, message: 'Anda tidak dibenarkan melakukan tindakan ini.' })
       await expect(w.analytics.classes(ctxOf('teacher', 't2'), { classroomId: '10' })).rejects.toMatchObject({ status: 403 })
       await expect(w.analytics.classes(ctxOf('student', '1'), {})).rejects.toMatchObject({ status: 403 })
-      await expect(w.analytics.classes(ctxOf('school_admin', 'sa1'), {})).rejects.toMatchObject({ status: 403 })
+      await expect(w.analytics.classes(ctxOf('ppd_officer', 'o1', { level: 'national', label: 'Nasional' }), {})).rejects.toMatchObject({ status: 403 })
+    })
+
+    describe('S10-T04 Change (2): a school admin opens the classes of the own school only (API-AS-16 / API-RPT-04)', () => {
+      beforeEach(() => {
+        w.classes.add({ id: '80', schoolId: 's2', teacherId: 't9' }, ['1'])
+      })
+
+      it('lists and defaults to the own school classrooms; reads the class like a teacher does', async () => {
+        const r = await w.analytics.classes(ctxOf('school_admin', 'sa1'), {})
+        expect(r.options.classes.map((c) => c.id)).not.toContain('80')
+        expect(r.options.classes.map((c) => c.id)).toContain('10')
+        expect(r.options.selected.classroomId).toBe(r.options.classes[0]?.id)
+        const own = await w.analytics.classes(ctxOf('school_admin', 'sa1'), { classroomId: '10' })
+        const teacher = await w.analytics.classes(ctxOf('teacher', 't1'), { classroomId: '10' })
+        expect(own.rows).toEqual(teacher.rows)
+        expect(own.summary).toEqual(teacher.summary)
+        PerformanceClassAnalyticsSchema.parse(own)
+      })
+
+      it('a class of another school is 403, the same answer as an unknown class', async () => {
+        await expect(w.analytics.classes(ctxOf('school_admin', 'sa1'), { classroomId: '80' })).rejects.toMatchObject({ status: 403 })
+        await expect(w.analytics.classes(ctxOf('school_admin', 'sa1'), { classroomId: '999' })).rejects.toMatchObject({ status: 403 })
+      })
+
+      it('a school admin without a school in scope gets no class and no rows', async () => {
+        const r = await w.analytics.classes(ctxOf('school_admin', 'sa1', { level: 'national', label: 'Nasional' }), {})
+        expect(r.options.classes).toEqual([])
+        expect(r.rows).toEqual([])
+        await expect(w.analytics.classes(ctxOf('school_admin', 'sa1', { level: 'national', label: 'Nasional' }), { classroomId: '10' })).rejects.toMatchObject({ status: 403 })
+      })
     })
 
     describe('SW5-05: a sitting stores the Bijak subject code, a class stores the curriculum subject id', () => {

@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common'
 
 import { ApiError } from '../../../../common/errors/api-error'
 import { CLOCK, type Clock } from '../../../../db/clock'
-import { CLASS_ANALYSIS_ROLES, canOpenClassAnalysis } from '../domain/access-policy'
+import { ANALYTICS_CLASS_ROLES, canOpenClassAnalysis, viewerSchoolId } from '../domain/access-policy'
 import { COUNTED_MODES, isLegacySubject } from '../domain/constants'
 import { addFact, emptyFigures, figuresOf } from '../domain/reduce'
 import { accuracyOf, compareIds, parseRiskLevel, projection, riskOfAccuracy, round, trendOf, type Trend } from '../domain/rules'
@@ -73,12 +73,16 @@ export class AnalyticsService {
   }
 
   async classes(ctx: Ctx, query: PerformanceClassAnalyticsQuery): Promise<PerformanceClassAnalytics> {
-    if (!CLASS_ANALYSIS_ROLES.includes(ctx.role)) throw ApiError.of('FORBIDDEN')
+    if (!ANALYTICS_CLASS_ROLES.includes(ctx.role)) throw ApiError.of('FORBIDDEN')
     const riskLevel = parseRiskLevel(query.riskLevel)
+    // A school admin picks among the active classrooms of the own school only (S10-T04 Change (2)).
+    const school = ctx.role === 'school_admin' ? viewerSchoolId(ctx) : null
     const own =
       ctx.role === 'teacher'
         ? (await this.ports.classes.classesForTeacher(ctx.userId)).filter((c) => c.kind === 'classroom' && c.isActive)
-        : []
+        : school !== null
+          ? (await this.ports.classes.classesOfSchool(school)).filter((c) => c.kind === 'classroom' && c.isActive)
+          : []
     const classes = own.map((c) => ({ id: c.id, name: c.name }))
 
     let cls: ClassInfo | null = null
@@ -86,7 +90,7 @@ export class AnalyticsService {
       // Unknown and not-openable give the same 403, so class ids cannot be enumerated.
       cls = await this.ports.classes.classById(query.classroomId)
       if (!cls || !canOpenClassAnalysis(ctx, cls)) throw ApiError.of('FORBIDDEN')
-    } else if (ctx.role === 'teacher') {
+    } else if (ctx.role === 'teacher' || ctx.role === 'school_admin') {
       cls = own[0] ?? null
     }
     if (!cls) {

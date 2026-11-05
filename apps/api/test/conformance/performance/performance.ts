@@ -63,13 +63,14 @@ export const performanceScenarios: Scenario[] = [
         ctx.expectStatus(res, 200)
         noStore(ctx, res, '/analytics/me')
       }
-      for (const role of ['admin', 'teacher'] as ActorRole[]) {
+      // S10-T04 Change (2): the school admin reads the classes of the own school.
+      for (const role of ['admin', 'teacher', 'school_admin'] as ActorRole[]) {
         const who = await ctx.as(role)
         ctx.expectStatus(await who.request('GET', '/analytics/classes'), 200)
         // an unknown risk level is treated as "all"
         ctx.expectStatus(await who.request('GET', '/analytics/classes?riskLevel=bogus'), 200)
       }
-      for (const role of ['student', 'school_admin'] as ActorRole[]) {
+      for (const role of ['student'] as ActorRole[]) {
         expectError(ctx, await (await ctx.as(role)).request('GET', '/analytics/classes'), 403, 'FORBIDDEN')
       }
     },
