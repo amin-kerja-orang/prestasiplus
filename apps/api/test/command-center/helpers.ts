@@ -194,8 +194,8 @@ export interface NewAnswers {
 export async function createAnswers(db: TestDatabase, a: NewAnswers): Promise<void> {
   const count = a.count ?? 1
   await db.query(
-    `insert into practice_answers (user_id, session_id, subject_id, is_correct, answered_at, is_test)
-     select $1::bigint, $2::uuid, (select id from subjects where code = $3), g <= $4, $5::timestamptz + (g || ' seconds')::interval, $6
+    `insert into practice_answers (user_id, session_id, subject_id, is_correct, answered_at, is_test, mode)
+     select $1::bigint, $2::uuid, (select id from subjects where code = $3), g <= $4, $5::timestamptz + (g || ' seconds')::interval, $6, 'latih_tubi'
        from generate_series(1, $7::int) g`,
     [a.userId, a.sessionId ?? null, a.subjectCode ?? 'BM', a.correct ?? count, a.at, a.isTest ?? false, count],
   )

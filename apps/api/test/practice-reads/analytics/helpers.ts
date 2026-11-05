@@ -77,8 +77,8 @@ export interface AnswerSeed {
 
 export async function addAnswer(db: TestDatabase, a: AnswerSeed): Promise<void> {
   await db.query(
-    `insert into practice_answers (user_id, session_id, question_id, subject_id, chapter_id, is_correct, answered_at, is_test, historical)
-     values ($1, $2, $3, $4, $5, $6, $7::timestamptz, $8, $9)`,
+    `insert into practice_answers (user_id, session_id, question_id, subject_id, chapter_id, is_correct, answered_at, is_test, historical, mode)
+     values ($1, $2, $3, $4, $5, $6, $7::timestamptz, $8, $9, 'latih_tubi')`,
     [a.user, a.session ?? null, a.question ?? null, a.subject ?? null, a.chapter ?? null, a.correct, a.at, a.isTest ?? false, a.historical ?? false],
   )
 }
