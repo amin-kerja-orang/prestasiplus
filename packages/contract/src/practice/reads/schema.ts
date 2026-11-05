@@ -279,6 +279,20 @@ export const PracticeReadChapterSubjectSchema = z
     color: z.string(),
     chapterCount: count(),
     questionCount: count(),
+    levels: z
+      .array(
+        z.strictObject({
+          id: IdSchema,
+          code: z.string().min(1),
+          name: z.string(),
+          chapterCount: count(),
+          questionCount: count(),
+        }),
+      )
+      .meta({
+        description:
+          'S5-T02 (FR-MUR-9-5): the offered levels of this subject that have at least one chapter with a servable question, with their own counts. `chapterCount` and `questionCount` above are the sums over these levels.',
+      }),
   })
   .meta({ id: 'PracticeReadChapterSubject' })
 

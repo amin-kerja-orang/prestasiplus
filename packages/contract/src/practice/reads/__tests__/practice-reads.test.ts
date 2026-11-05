@@ -139,7 +139,7 @@ describe('subjects and chapters', () => {
   it('accepts chapter lists and detail, with a null level when none is offered', () => {
     expect(
       PracticeReadChapterSubjectListResponseSchema.safeParse({
-        data: [{ code: 'MATH', name: 'Matematik', icon: null, color: '#2563eb', chapterCount: 5, questionCount: 90 }],
+        data: [{ code: 'MATH', name: 'Matematik', icon: null, color: '#2563eb', chapterCount: 5, questionCount: 90, levels: [{ id: '4', code: 'T4', name: 'Tingkatan 4', chapterCount: 5, questionCount: 90 }] }],
         meta: meta(1),
       }).success,
     ).toBe(true)
