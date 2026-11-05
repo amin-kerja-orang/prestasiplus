@@ -15,6 +15,7 @@ import { isApiError } from '@/api'
 import { usePageMeta } from '@/composables/usePageMeta'
 
 import { fetchSchoolItemAnalysis } from '../api/performance'
+import type { Tingkatan } from '../api/types'
 import SchoolQuestionList from '../components/analisa-item/SchoolQuestionList.vue'
 import { usePhIcon } from '../lib/icons'
 import {
@@ -24,7 +25,7 @@ import {
   LEVEL_ICON,
   dec2,
   grouped,
-  pct1,
+  pctWhole,
   ratioPct,
 } from '../lib/prestasi/format'
 import { sparklineSeries } from '../lib/prestasi/gps-chart'
@@ -45,11 +46,12 @@ const schoolId = computed(() => {
   const n = Number(Array.isArray(raw) ? raw[0] : raw)
   return raw === undefined || raw === '' ? undefined : n
 })
-/** An unknown `tingkatan` value activates no chip and filters nothing (FR-M08-59). */
-const tingkatan = computed<'T4' | 'T5' | null>(() => {
+const TINGKATAN: readonly Tingkatan[] = ['T1', 'T2', 'T3', 'T4', 'T5']
+/** An unknown `tingkatan` value activates no chip and filters nothing (FR-M08-59); T1 to T5 are known (R1-AS-6). */
+const tingkatan = computed<Tingkatan | null>(() => {
   const q = route.query.tingkatan
   const v = Array.isArray(q) ? q[0] : q
-  return v === 'T4' || v === 'T5' ? v : null
+  return TINGKATAN.find((t) => t === v) ?? null
 })
 
 /** An unknown `tingkatan` value activates no chip, not even "Semua" (FR-M08-59). */
@@ -92,10 +94,14 @@ const base = computed(() =>
     ? '/analisa-item/sekolah'
     : `/analisa-item/sekolah/${String(schoolId.value)}`,
 )
+// AC-AS-6-6: "Semua", then "Tingkatan n" for each Tingkatan that has data (`tingkatanOptions`).
 const chips = computed<PillItem<string>[]>(() => [
   { key: 'all', label: 'Semua', to: base.value },
-  { key: 'T4', label: 'Tingkatan 4', to: `${base.value}?tingkatan=T4` },
-  { key: 'T5', label: 'Tingkatan 5', to: `${base.value}?tingkatan=T5` },
+  ...(data.value?.tingkatanOptions ?? []).map((t) => ({
+    key: t,
+    label: `Tingkatan ${t.slice(1)}`,
+    to: `${base.value}?tingkatan=${t}`,
+  })),
 ])
 const activeChip = computed(() => (!hasQuery.value ? 'all' : tingkatan.value))
 
@@ -104,6 +110,30 @@ const emptyCopy = computed(() =>
     ? 'Tiada data pelajar untuk sekolah ini. Pastikan pelajar telah berdaftar dan menjawab soalan.'
     : 'Tiada data pelajar untuk sekolah ini. Pastikan pelajar telah berdaftar dan menjawab soalan latihan.',
 )
+
+/** The school card figures: Pelajar, Jawapan and, when the payload has it, Soalan Diuji (XS-7, FR-AS-6-5). */
+const cardFigures = computed(() => {
+  const d = data.value
+  if (!d) return []
+  const out = [
+    { id: 'students', label: 'Pelajar', testid: 'school-students', value: grouped(d.students) },
+    {
+      id: 'answers',
+      label: 'Jawapan',
+      testid: 'school-answers',
+      value: d.answers === null ? DASH : grouped(d.answers),
+    },
+  ]
+  if (d.questionsTested !== undefined) {
+    out.push({
+      id: 'tested',
+      label: 'Soalan Diuji',
+      testid: 'school-tested',
+      value: d.questionsTested === null ? DASH : grouped(d.questionsTested),
+    })
+  }
+  return out
+})
 
 const stats = computed<StatSpec[]>(() => {
   const d = data.value
@@ -119,7 +149,7 @@ const stats = computed<StatSpec[]>(() => {
     {
       id: 'ketepatan',
       label: 'Ketepatan Keseluruhan',
-      value: d.accuracy === null ? DASH : pct1(d.accuracy),
+      value: d.accuracy === null ? DASH : pctWhole(d.accuracy),
       icon: 'target',
     },
   ]
@@ -155,7 +185,7 @@ const rows = computed<Row[]>(() =>
     name: s.name,
     pupilsText: grouped(s.pupils),
     questionsText: grouped(s.questions),
-    accuracyText: pct1(s.accuracy),
+    accuracyText: pctWhole(s.accuracy),
     wrongText: grouped(s.wrong),
   })),
 )
@@ -203,16 +233,10 @@ const cardFields = [
             </div>
           </div>
           <dl class="flex gap-6 text-center">
-            <div class="flex flex-col-reverse gap-1">
-              <dt class="text-caption text-muted">Pelajar</dt>
-              <dd class="tabular text-title text-highlighted" data-testid="school-students">
-                {{ grouped(data.students) }}
-              </dd>
-            </div>
-            <div class="flex flex-col-reverse gap-1">
-              <dt class="text-caption text-muted">Jawapan</dt>
-              <dd class="tabular text-title text-highlighted" data-testid="school-answers">
-                {{ data.answers === null ? DASH : grouped(data.answers) }}
+            <div v-for="f in cardFigures" :key="f.id" class="flex flex-col-reverse gap-1">
+              <dt class="text-caption text-muted">{{ f.label }}</dt>
+              <dd class="tabular text-title text-highlighted" :data-testid="f.testid">
+                {{ f.value }}
               </dd>
             </div>
           </dl>
