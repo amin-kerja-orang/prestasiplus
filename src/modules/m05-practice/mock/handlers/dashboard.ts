@@ -67,6 +67,11 @@ function dashboard(userId: number, now: number): Dashboard {
   const weekAnswers = practiceRepo.answers(userId, window)
   const weekCorrect = weekAnswers.filter((a) => a.isCorrect).length
 
+  // FR-MUR-2-13: pooled accuracy over every answer (all modes), one decimal; null with 0 answers.
+  const allAnswers = practiceRepo.answers(userId)
+  const allCorrect = allAnswers.filter((a) => a.isCorrect).length
+  const accuracyPct = allAnswers.length === 0 ? null : round(pct(allCorrect, allAnswers.length), 1)
+
   const summary = wallet.summary(userId)
   const streakView = streak.get(userId)
   const today = challenges.today(userId)
@@ -104,6 +109,9 @@ function dashboard(userId: number, now: number): Dashboard {
       sessions: practiceRepo.history(userId, window).length,
       accuracyPct: Math.round(pct(weekCorrect, weekAnswers.length)),
     },
+    accuracyPct,
+    // The mock has no subscriptions: no package (the trial card shows). `dashboardFixtures.withPackage` is a test fixture.
+    package: null,
     banners: banners
       .activeFor({ role: user?.role ?? '' })
       .map((b) => ({ type: b.type, title: b.title, body: b.description })),
@@ -168,6 +176,15 @@ function dashboard(userId: number, now: number): Dashboard {
     })),
     subjectStats,
   }
+}
+
+/** Test fixture: a dashboard of a pupil with an active package. */
+export const dashboardFixtures = {
+  withPackage: (base: Dashboard): Dashboard => ({
+    ...base,
+    trial: { ...base.trial, active: false },
+    package: { name: 'Pakej SPM Premium', validUntil: '2027-11-03' },
+  }),
 }
 
 export const dashboardRoutes: RouteDef[] = [

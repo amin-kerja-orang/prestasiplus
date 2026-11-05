@@ -7,6 +7,7 @@
  */
 
 import { api, type BlobResult } from '@/api'
+import { isHttpMode } from '@/api/mode'
 
 import type {
   AutoSetupInput,
@@ -19,6 +20,10 @@ import type {
   HeadcountSort,
   HeadcountStudent,
   HeadcountSummary,
+  SaveArInput,
+  SaveDefaultsInput,
+  SaveSettingsInput,
+  SaveTovInput,
 } from './headcount-types'
 
 interface Signal {
@@ -85,3 +90,34 @@ export const downloadHeadcountCsv = (
     ...withSignal(options),
     ...(options.sort ? { query: { sort: options.sort } } : {}),
   })
+
+/** The real API takes string user ids (BE-19); mock mode keeps the numbers. */
+const wireId = (id: number | string): number | string => (isHttpMode() ? String(id) : id)
+
+/** API-RPT-10 `PUT /api/headcounts/:id/ar` (Key-in AR, Manual only): 404 on Auto or n out of range, 422 field error. */
+export const saveHeadcountAr = (id: number | string, input: SaveArInput, o: Signal = {}) =>
+  api.put<HeadcountDetail>(`/api/headcounts/${String(id)}/ar`, {
+    body: { ...input, marks: input.marks.map((m) => ({ ...m, userId: wireId(m.userId) })) },
+    ...withSignal(o),
+  })
+
+/** API-RPT-10 `PUT /api/headcounts/:id/tov` (Edit TOV/ETR and RS). */
+export const saveHeadcountTov = (id: number | string, input: SaveTovInput, o: Signal = {}) =>
+  api.put<HeadcountDetail>(`/api/headcounts/${String(id)}/tov`, {
+    body: { rows: input.rows.map((r) => ({ ...r, userId: wireId(r.userId) })) },
+    ...withSignal(o),
+  })
+
+/** API-RPT-10 `PUT /api/headcounts/:id/settings` (Tetapan): 409 CF-05 text when marks lie above n and no `confirm`. */
+export const saveHeadcountSettings = (
+  id: number | string,
+  input: SaveSettingsInput,
+  o: Signal = {},
+) => api.put<HeadcountDetail>(`/api/headcounts/${String(id)}/settings`, { body: input, ...withSignal(o) })
+
+/** API-RPT-16 `PUT /api/headcounts/:id/defaults` (Simpan Sasaran, once per config of the subject and year). */
+export const saveHeadcountDefaults = (
+  id: number | string,
+  input: SaveDefaultsInput,
+  o: Signal = {},
+) => api.put<HeadcountDetail>(`/api/headcounts/${String(id)}/defaults`, { body: input, ...withSignal(o) })
