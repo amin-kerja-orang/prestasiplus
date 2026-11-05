@@ -8,15 +8,16 @@ import {
   createContributedQuestion,
   createGuruClass,
   createTopic,
+  updateGuruClass,
 } from '../../api/guru'
 import type { CreateQuestionRequest } from '../../api/types'
 
 /**
- * DEMO-FIX-1 D-01: `POST /api/guru/classes` sends `subjectId` / `schoolId` as string ids on the wire
- * (`ClassCreateRequestSchema`); a number was 422 "Sila pilih subjek.". Mock mode keeps the value.
+ * DEMO-FIX-1 D-01: `POST /api/guru/classes` sends `subjectId` as a string id on the wire
+ * (`ClassUpsertRequestSchema`); a number was 422 "Sila pilih subjek.". Mock mode keeps the value.
  */
 
-let sent: { url: string; body: unknown }[] = []
+let sent: { url: string; method?: string | undefined; body: unknown }[] = []
 
 beforeEach(() => {
   sent = []
@@ -25,6 +26,7 @@ beforeEach(() => {
       fetch: (input, init) => {
         sent.push({
           url: input as string,
+          method: init?.method,
           body: JSON.parse((init?.body as string | undefined) ?? 'null'),
         })
         return Promise.resolve(
@@ -41,48 +43,56 @@ afterEach(() => {
   vi.unstubAllEnvs()
 })
 
-describe('createGuruClass wire ids', () => {
-  it('http mode: subjectId and schoolId go out as strings', async () => {
+describe('createGuruClass / updateGuruClass wire ids (R1 class form, S6-T14)', () => {
+  it('http mode: a numeric subjectId goes out as a string; year and tingkatan are kept', async () => {
     vi.stubEnv('VITE_API_MODE', 'http')
     await createGuruClass({
-      schoolId: 12,
       name: '5 Bestari',
       subjectId: 3,
       educationLevel: 'tingkatan-5',
-      description: null,
+      year: 2026,
     })
     expect(sent).toHaveLength(1)
     expect(sent[0]?.url).toBe('/api/guru/classes')
     expect(sent[0]?.body).toEqual({
-      schoolId: '12',
       name: '5 Bestari',
       subjectId: '3',
       educationLevel: 'tingkatan-5',
-      description: null,
+      year: 2026,
     })
   })
 
-  it('http mode: a select value string is sent as is; no schoolId key when absent', async () => {
+  it('http mode: a select value string is sent as is; no subject ("— Tiada —") is null', async () => {
     vi.stubEnv('VITE_API_MODE', 'http')
-    await createGuruClass({ name: 'K', subjectId: '3', educationLevel: 'tahun-1' })
-    expect(sent[0]?.body).toEqual({ name: 'K', subjectId: '3', educationLevel: 'tahun-1' })
-    expect(typeof (sent[0]?.body as { subjectId: unknown }).subjectId).toBe('string')
-  })
-
-  it('http mode: a null schoolId stays null', async () => {
-    vi.stubEnv('VITE_API_MODE', 'http')
-    await createGuruClass({ schoolId: null, name: 'K', subjectId: 3, educationLevel: 'tahun-1' })
-    expect(sent[0]?.body).toMatchObject({ schoolId: null, subjectId: '3' })
+    await createGuruClass({ name: 'K', subjectId: '3', educationLevel: 'tingkatan-1' })
+    await createGuruClass({ name: 'K', subjectId: null, educationLevel: 'tingkatan-1' })
+    await createGuruClass({ name: 'K', subjectId: '', educationLevel: 'tingkatan-1' })
+    expect(sent[0]?.body).toEqual({ name: 'K', subjectId: '3', educationLevel: 'tingkatan-1' })
+    expect(sent[1]?.body).toEqual({ name: 'K', subjectId: null, educationLevel: 'tingkatan-1' })
+    expect(sent[2]?.body).toEqual({ name: 'K', subjectId: null, educationLevel: 'tingkatan-1' })
   })
 
   it('mock mode: the values are unchanged', async () => {
     vi.stubEnv('VITE_API_MODE', 'mock')
-    await createGuruClass({ schoolId: 12, name: 'K', subjectId: 3, educationLevel: 'tahun-1' })
+    await createGuruClass({ name: 'K', subjectId: 3, educationLevel: 'tingkatan-1' })
+    expect(sent[0]?.body).toEqual({ name: 'K', subjectId: 3, educationLevel: 'tingkatan-1' })
+  })
+
+  it('updateGuruClass: PUT /api/guru/classes/:id with the same body (API-GUR-03)', async () => {
+    vi.stubEnv('VITE_API_MODE', 'http')
+    await updateGuruClass('15', {
+      name: '5 Cekap',
+      subjectId: null,
+      educationLevel: 'tingkatan-5',
+      year: 2027,
+    })
+    expect(sent[0]?.url).toBe('/api/guru/classes/15')
+    expect(sent[0]?.method).toBe('PUT')
     expect(sent[0]?.body).toEqual({
-      schoolId: 12,
-      name: 'K',
-      subjectId: 3,
-      educationLevel: 'tahun-1',
+      name: '5 Cekap',
+      subjectId: null,
+      educationLevel: 'tingkatan-5',
+      year: 2027,
     })
   })
 })

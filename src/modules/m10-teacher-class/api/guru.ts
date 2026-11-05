@@ -7,6 +7,13 @@
  * to the created record or to `{error}` and never throw for a refusal.
  */
 
+import type {
+  ClassUpsertRequest,
+  GuruSetUpsertRequest,
+  QuestionSet,
+  QuestionSetRow,
+} from '@pp/contract'
+
 import {
   api,
   isHttpMode,
@@ -25,7 +32,6 @@ import type {
   ContributedQuestion,
   ContributedQuestionDetail,
   Contributions,
-  CreateClassRequest,
   CreateQuestionRequest,
   ErrorBodyLive,
   GuruClass,
@@ -70,22 +76,33 @@ export function fetchGuruClasses(options: Signal = {}): Promise<ListResult<GuruC
   return api.list<GuruClass>('/api/guru/classes', withSignal(options))
 }
 
+/** The R1 class form body (`ClassUpsertRequest`; the optional subject and the year, S6-T14). */
+export type GuruClassBody = Pick<ClassUpsertRequest, 'name' | 'educationLevel' | 'year'> & {
+  /** The `<select>` value; `null` = "— Tiada —". Sent as a string id in http mode. */
+  subjectId: number | string | null
+}
+
+/** Ids are opaque strings on the real API (D-01) and numbers in mock mode. */
+function classBody(body: GuruClassBody): Record<string, unknown> {
+  const { subjectId, ...rest } = body
+  return { ...rest, subjectId: subjectId === null || subjectId === '' ? null : wireId(subjectId) }
+}
+
 /**
- * #13 `POST /api/guru/classes` (422 with `fields`). `subjectId` and `schoolId` go out as string ids
- * in http mode (`ClassCreateRequestSchema`; a number is 422 "Sila pilih subjek.", D-01).
+ * #13 `POST /api/guru/classes` (API-GUR-02; 422 with `fields`, 409 `Nama kelas sudah digunakan.`).
  */
-export function createGuruClass(body: CreateClassRequest): Promise<GuruClass> {
-  const { schoolId, subjectId, ...rest } = body
-  return api.post<GuruClass>('/api/guru/classes', {
-    body: {
-      ...rest,
-      ...(schoolId !== undefined ? { schoolId: wireIdOpt(schoolId) } : {}),
-      subjectId: wireId(subjectId),
-    },
+export function createGuruClass(body: GuruClassBody): Promise<GuruClass> {
+  return api.post<GuruClass>('/api/guru/classes', { body: classBody(body) })
+}
+
+/** `PUT /api/guru/classes/:id` (API-GUR-03): the same body as create; 404 for a class not owned, 409 on the name. */
+export function updateGuruClass(id: number | string, body: GuruClassBody): Promise<GuruClass> {
+  return api.put<GuruClass>(`/api/guru/classes/${encodeURIComponent(String(id))}`, {
+    body: classBody(body),
   })
 }
 
-/** #14 `GET /api/guru/classes/:id/qr-data` (404 for a class the viewer does not own). */
+/** #14 `GET /api/guru/classes/:id/qr-data` (404 for every role in R1; removed with the QR modal in the S5 PR). */
 export function fetchClassQrData(classId: number, options: Signal = {}): Promise<ClassQrData> {
   return api.get<ClassQrData>(`/api/guru/classes/${String(classId)}/qr-data`, withSignal(options))
 }
@@ -110,7 +127,7 @@ export function fetchGuruStudents(
  * 422 "Kelas tidak sah.", SW5-01). Mock mode keeps the number.
  */
 export function addStudentToClass(
-  studentId: number,
+  studentId: number | string,
   body: { classroomId: number | string },
 ): Promise<ClassroomStudent> {
   return api.put<ClassroomStudent>(`/api/guru/students/${String(studentId)}`, {
@@ -120,8 +137,8 @@ export function addStudentToClass(
 
 /** #17 `DELETE /api/guru/students/:id?classroomId=`: removes a student from an own class. */
 export function removeStudentFromClass(
-  studentId: number,
-  classroomId: number,
+  studentId: number | string,
+  classroomId: number | string,
 ): Promise<{ removed: number }> {
   return api.delete<{ removed: number }>(`/api/guru/students/${String(studentId)}`, {
     query: { classroomId },
@@ -418,4 +435,126 @@ export function downloadAudioKbatTemplate(format: 'xlsx' | 'word'): Promise<Blob
   return api.blob(
     format === 'xlsx' ? '/api/guru/audio-kbat/template' : '/api/guru/audio-kbat/template-word',
   )
+}
+
+// --- Set Soalan, teacher side (API-GUR-16, S6-T14) ----------------------------------------------
+
+export type { GuruSetUpsertRequest, QuestionSet, QuestionSetRow }
+
+export interface GuruSetList {
+  rows: QuestionSetRow[]
+  counters: { published: number; draft: number; participation: number }
+  summary: { total: number; siap: number }
+}
+
+export interface GuruSetBankStimulus {
+  id: string
+  kind: 'passage' | 'image' | 'diagram' | 'table' | 'map' | 'infographic' | 'graph'
+  label: string
+  caption: string | null
+  body: { ms: string; en?: string } | null
+  alt: string | null
+  sourceCitation: string | null
+  tableData: { head: string[]; rows: string[][] } | null
+  imageId: string | null
+}
+
+export interface GuruSetBankUnit {
+  kind: 'question' | 'group'
+  id: string
+  questionIds: string[]
+  preview: string
+  subject: string
+  level: string
+  difficulty: number
+  stimulus: GuruSetBankStimulus | null
+}
+
+export interface GuruSetBankPage {
+  units: GuruSetBankUnit[]
+  nextCursor: string | null
+}
+
+export interface GuruSetResults {
+  summary: { penyertaan: number; skorPurata: number | null; jumlahPercubaan: number }
+  rows: {
+    pupil: { id: string; name: string }
+    correct: number
+    total: number
+    accuracy: number
+    attemptedAt: string
+  }[]
+}
+
+export interface GuruSetResultsPage extends GuruSetResults {
+  page: number
+  totalPages: number
+  totalItems: number
+}
+
+const setUrl = (id: string, tail = ''): string =>
+  `/api/guru/question-sets/${encodeURIComponent(id)}${tail}`
+
+/** `GET /api/guru/question-sets`: own sets, newest update first, with the counters. */
+export function fetchGuruSets(options: Signal = {}): Promise<GuruSetList> {
+  return api.get<GuruSetList>('/api/guru/question-sets', withSignal(options))
+}
+
+/** `GET /api/guru/question-sets/bank`: approved question units, 50 per call by cursor (422 `q` under 2 characters). */
+export function fetchGuruSetBank(
+  params: { subjectId?: string; levelId?: string; q?: string; cursor?: string },
+  options: Signal = {},
+): Promise<GuruSetBankPage> {
+  return api.get<GuruSetBankPage>('/api/guru/question-sets/bank', {
+    query: params,
+    ...withSignal(options),
+  })
+}
+
+/** `GET /api/guru/question-sets/:id`: the set for the "Urus" form. */
+export function fetchGuruSet(id: string, options: Signal = {}): Promise<QuestionSet> {
+  return api.get<QuestionSet>(setUrl(id), withSignal(options))
+}
+
+/** `POST /api/guru/question-sets` (201; 422 with `fields`). */
+export function createGuruSet(body: GuruSetUpsertRequest): Promise<QuestionSet> {
+  return api.post<QuestionSet>('/api/guru/question-sets', { body })
+}
+
+/** `PUT /api/guru/question-sets/:id` (409 when the question list is locked; 422 with `fields`). */
+export function updateGuruSet(id: string, body: GuruSetUpsertRequest): Promise<QuestionSet> {
+  return api.put<QuestionSet>(setUrl(id), { body })
+}
+
+/** `DELETE /api/guru/question-sets/:id`. */
+export function deleteGuruSet(id: string): Promise<{ deleted: number }> {
+  return api.delete<{ deleted: number }>(setUrl(id))
+}
+
+/** `POST /api/guru/question-sets/:id/status`: Terbitkan / Jadikan Draf. */
+export function setGuruSetStatus(id: string, status: 'draft' | 'published'): Promise<QuestionSet> {
+  return api.post<QuestionSet>(setUrl(id, '/status'), { body: { status } })
+}
+
+/** `POST /api/guru/question-sets/:id/copy`: a draft copy for the chosen class (a one-element array). */
+export function copyGuruSet(id: string, classroomIds: string[]): Promise<QuestionSet> {
+  return api.post<QuestionSet>(setUrl(id, '/copy'), { body: { classroomIds } })
+}
+
+/** `GET /api/guru/question-sets/:id/results?classroomId=&page=`: 25 rows per page, newest first. */
+export async function fetchGuruSetResults(
+  id: string,
+  params: { classroomId?: string; page?: number },
+  options: Signal = {},
+): Promise<GuruSetResultsPage> {
+  const body = await api.get<{
+    data: GuruSetResults
+    meta?: { page?: number; totalPages?: number; totalItems?: number }
+  }>(setUrl(id, '/results'), { query: params, raw: true, ...withSignal(options) })
+  return {
+    ...body.data,
+    page: body.meta?.page ?? 1,
+    totalPages: body.meta?.totalPages ?? 1,
+    totalItems: body.meta?.totalItems ?? body.data.rows.length,
+  }
 }

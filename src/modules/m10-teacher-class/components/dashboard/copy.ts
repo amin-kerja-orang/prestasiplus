@@ -1,6 +1,17 @@
 /** Exact BM copy of S1 Dashboard Guru (SRS M10 FR-M10-08…13; URS FN-M10-2.1.1–2.1.8). */
 export const GUIDE_STORAGE_KEY = 'hideGuruGuide'
 
+/**
+ * One quick-action tile. `link` is the optional second line "Urus set →" (S6-T14, R1-GUR-8b: the
+ * "Set Soalan" tile opens `/guru/set-soalan`); tiles without it show only title and text.
+ */
+export interface QuickTile {
+  title: string
+  text: string
+  to: string
+  link?: string
+}
+
 export const DASH_COPY = {
   showGuide: 'Tunjuk panduan Mula Di Sini',
   guideTitle: 'Mula Di Sini — 3 Langkah Mudah',

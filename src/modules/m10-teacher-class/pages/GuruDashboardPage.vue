@@ -14,6 +14,7 @@ import {
   DsPage,
   DsPanel,
   DsStatRow,
+  DsText,
   type DsAccent,
   type StatItem,
 } from '@/ds'
@@ -21,7 +22,7 @@ import { useSessionStore } from '@/stores/session'
 
 import { fetchGuruDashboard } from '../api/guru'
 import ChecklistCard from '../components/dashboard/ChecklistCard.vue'
-import { DASH_COPY } from '../components/dashboard/copy'
+import { DASH_COPY, type QuickTile } from '../components/dashboard/copy'
 import GuideCard from '../components/dashboard/GuideCard.vue'
 import { welcomeSubtitle } from '../components/dashboard/lib'
 import TodayPanel from '../components/dashboard/TodayPanel.vue'
@@ -76,6 +77,7 @@ const stats = computed<StatItem[]>(() => {
   ]
 })
 
+const quickTiles: readonly QuickTile[] = DASH_COPY.quick
 const QUICK_ICONS = ['plus-circle', 'pen-nib', 'graduation-cap', 'identification-card']
 const QUICK_ACCENTS: DsAccent[] = ['action', 'win', 'heat', 'friend']
 </script>
@@ -141,7 +143,7 @@ const QUICK_ACCENTS: DsAccent[] = ['action', 'win', 'heat', 'friend']
             data-testid="quick-card"
           >
             <div class="flex flex-col gap-2">
-              <template v-for="(q, i) in DASH_COPY.quick" :key="q.to">
+              <template v-for="(q, i) in quickTiles" :key="q.to">
                 <!-- Prototype scope (D43): tiles that lead outside the matrix are not shown. -->
                 <UButton
                   v-if="allows(q.to)"
@@ -156,6 +158,15 @@ const QUICK_ACCENTS: DsAccent[] = ['action', 'win', 'heat', 'friend']
                   <span class="min-w-0">
                     <span class="block text-label text-highlighted">{{ q.title }}</span>
                     <span class="block text-caption text-muted">{{ q.text }}</span>
+                    <DsText
+                      v-if="q.link"
+                      as="span"
+                      variant="caption"
+                      tone="primary"
+                      class="block"
+                      data-testid="quick-tile-link"
+                      >{{ q.link }}</DsText
+                    >
                   </span>
                 </UButton>
               </template>

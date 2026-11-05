@@ -1895,6 +1895,16 @@
       "approved_by_card": null
     },
     {
+      "key": "/guru/kelas/:id/edit|guru-kelas-edit",
+      "path": "/guru/kelas/:id/edit",
+      "name": "guru-kelas-edit",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m10-teacher-class/pages/KelasCreatePage.vue",
+      "file": "src/modules/m10-teacher-class/routes/kelas.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "/guru/pelajar|guru-pelajar",
       "path": "/guru/pelajar",
       "name": "guru-pelajar",

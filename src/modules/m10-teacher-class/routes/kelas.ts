@@ -5,8 +5,8 @@ import { GURU_API_ROLES } from './roles'
 /**
  * M10 route fragment: S4 Kelas Saya (`/guru/kelas`) and S5 Cipta Kelas (`/guru/kelas/cipta`), M10-T5.
  * User shell, teacher and admin in mock mode (SRS §2, §9); teacher only in http mode (DV-M10-37: the real
- * API is teacher-only), see `./roles`. Any other role goes to its landing page. The header and tab titles are the live ones (URS FN-M10-1.1.3). `/guru/kelas/:id` and `/:id/edit` match no
- * route here, so the catch-all renders S35 (404).
+ * API is teacher-only), see `./roles`. Any other role goes to its landing page. The header and tab titles are the live ones (URS FN-M10-1.1.3). `/guru/kelas/:id/edit` (S6-T14, R1-GUR-8) is the
+ * same page as create, in edit mode; `/guru/kelas/:id` matches no route here, so the catch-all renders S35 (404).
  */
 const roles = GURU_API_ROLES
 
@@ -35,6 +35,20 @@ const routes: RouteRecordRaw[] = [
       roles,
       title: 'Cipta Kelas - Portal Guru',
       header: { title: 'Cipta Kelas Baru', subtitle: 'Isi butiran kelas anda' },
+      module: 'M10',
+      v2: true,
+    },
+  },
+  {
+    path: '/guru/kelas/:id/edit',
+    name: 'guru-kelas-edit',
+    component: () => import('../pages/KelasCreatePage.vue'),
+    meta: {
+      layout: 'user',
+      access: 'auth',
+      roles,
+      title: 'Edit Kelas - Portal Guru',
+      header: { title: 'Edit Kelas', subtitle: 'Kemas kini butiran kelas dan pelajar' },
       module: 'M10',
       v2: true,
     },

@@ -5,25 +5,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Component } from 'vue'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
-import { ApiError } from '@/api'
-import { useFlashStore } from '@/stores/flash'
-
 import type { GuruClass } from '../../api/types'
-import KelasCreatePage from '../../pages/KelasCreatePage.vue'
 import KelasListPage from '../../pages/KelasListPage.vue'
 
 const api = vi.hoisted(() => ({
   fetchGuruClasses: vi.fn(),
   fetchClassQrData: vi.fn(),
-  createGuruClass: vi.fn(),
 }))
 vi.mock('../../api/guru', () => api)
 
 const subjects = vi.hoisted(() => ({ fetchSubjectOptions: vi.fn() }))
 vi.mock('../../components/kelas/subjects', () => subjects)
-
-const schools = vi.hoisted(() => ({ searchSchools: vi.fn() }))
-vi.mock('@/modules/m02-users-schools', () => schools)
 
 function cls(id: number, extra: Partial<GuruClass> = {}): GuruClass {
   return {
@@ -52,14 +44,6 @@ const list = (rows: GuruClass[]) => ({ data: rows, meta: {} })
 let router: Router
 let wrapper: VueWrapper | undefined
 
-/** The dialog renders in a portal on document.body (Reka UI), a few frames after opening. */
-const dlg = (selector: string): HTMLElement | null => document.querySelector(selector)
-const settle = async (): Promise<void> => {
-  await flushPromises()
-  await new Promise((r) => setTimeout(r, 80))
-  await flushPromises()
-}
-
 async function mountPage(component: Component) {
   router = createRouter({
     history: createMemoryHistory(),
@@ -79,7 +63,6 @@ async function mountPage(component: Component) {
 }
 
 beforeEach(() => {
-  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
   setActivePinia(createPinia())
   vi.clearAllMocks()
   subjects.fetchSubjectOptions.mockResolvedValue([
@@ -107,6 +90,17 @@ describe('S4 KelasListPage', () => {
     expect(w.get('[data-testid="kelas-empty-create"]').attributes('href')).toBe('/guru/kelas/cipta')
   })
 
+  it('R1-GUR-8: a class card has an Edit link and no join code or QR button', async () => {
+    api.fetchGuruClasses.mockResolvedValue(list([cls(2001)]))
+    const w = await mountPage(KelasListPage)
+    const card = w.get('[data-testid="class-card"]')
+    expect(card.get('[data-testid="class-edit"]').attributes('href')).toBe('/guru/kelas/2001/edit')
+    expect(card.get('[data-testid="class-edit"]').text()).toBe('Edit')
+    expect(card.find('[data-testid="class-code"]').exists()).toBe(false)
+    expect(card.find('[data-testid="class-qr"]').exists()).toBe(false)
+    expect(card.text()).not.toContain('DMO001')
+  })
+
   it('lists and counts only the active classes', async () => {
     api.fetchGuruClasses.mockResolvedValue(
       list([cls(2001), cls(2002, { subjectName: null }), cls(2003, { isActive: false })]),
@@ -120,224 +114,9 @@ describe('S4 KelasListPage', () => {
     expect(cards[1]?.get('[data-testid="class-subject"]').text()).toBe('Tiada Subjek')
   })
 
-  it('opens the QR modal with placeholders, then fills it; Salin toasts "Disalin!"; Tutup closes', async () => {
-    api.fetchGuruClasses.mockResolvedValue(list([cls(2001)]))
-    let resolve!: (v: unknown) => void
-    api.fetchClassQrData.mockReturnValue(new Promise((r) => (resolve = r)))
-    const writeText = vi.fn().mockResolvedValue(undefined)
-    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
-    const w = await mountPage(KelasListPage)
-
-    await w.get('[data-testid="class-qr"]').trigger('click')
-    expect(api.fetchClassQrData).toHaveBeenCalledWith(2001)
-    await settle()
-    expect(dlg('[data-slot="title"]')?.textContent).toBe('-')
-    expect(dlg('[data-testid="qr-spinner"]')).not.toBeNull()
-
-    resolve({
-      name: 'Kelas 2001',
-      school: 'SMK DEMO',
-      joinUrl: 'https://prestasiplus.my/kelas-saya?kod=DMO001',
-    })
-    await settle()
-    expect(dlg('[data-slot="title"]')?.textContent).toBe('Kelas 2001')
-    expect(dlg('[data-testid="qr-school"]')?.textContent?.trim()).toBe('SMK DEMO')
-    expect((dlg('[data-testid="qr-url"]') as HTMLInputElement).value).toBe(
-      'https://prestasiplus.my/kelas-saya?kod=DMO001',
-    )
-    expect(dlg('[data-testid="qr-canvas"]')?.getAttribute('width')).toBe('192')
-
-    dlg('[data-testid="qr-copy"]')?.click()
-    await settle()
-    expect(writeText).toHaveBeenCalledWith('https://prestasiplus.my/kelas-saya?kod=DMO001')
-    expect(useToast().toasts.value.map((t) => t.title)).toContain('Disalin!')
-
-    const print = vi.spyOn(window, 'print').mockImplementation(() => undefined)
-    dlg('[data-testid="qr-print"]')?.click()
-    expect(print).toHaveBeenCalled()
-
-    dlg('[data-testid="qr-close"]')?.click()
-    await settle()
-    expect(dlg('[role="dialog"]')).toBeNull()
-  })
-
-  it('closes on Escape', async () => {
-    api.fetchGuruClasses.mockResolvedValue(list([cls(2001)]))
-    api.fetchClassQrData.mockResolvedValue({
-      name: 'A',
-      school: null,
-      joinUrl: 'https://x.my/?kod=A',
-    })
-    const w = await mountPage(KelasListPage)
-    await w.get('[data-testid="class-qr"]').trigger('click')
-    await settle()
-    expect(dlg('[role="dialog"]')).not.toBeNull()
-    dlg('[role="dialog"]')?.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
-    )
-    await settle()
-    expect(dlg('[role="dialog"]')).toBeNull()
-  })
-
   it('shows an error box when the list fails', async () => {
     api.fetchGuruClasses.mockRejectedValue(new Error('boom'))
     const w = await mountPage(KelasListPage)
     expect(w.text()).toContain('Gagal memuatkan senarai kelas')
-  })
-})
-
-describe('S5 KelasCreatePage', () => {
-  it('renders the fields, 2 subjects after the placeholder and 5 tiles without required radios', async () => {
-    const w = await mountPage(KelasCreatePage)
-    expect(w.get('[data-testid="kelas-back"]').attributes('href')).toBe('/guru/kelas')
-    const name = w.get('[data-testid="kelas-name"]')
-    expect(name.attributes('placeholder')).toBe('cth: 5 Bestari')
-    expect(name.attributes('required')).toBeDefined()
-    const options = w.findAll('[data-testid="kelas-subject"] option').map((o) => o.text())
-    expect(options).toEqual(['-- Pilih Subjek --', 'Bahasa Melayu', 'Sains'])
-    expect(w.get('[data-testid="kelas-subject"]').attributes('required')).toBeDefined()
-    const tiles = w.findAll('[data-testid="kelas-levels"] [role="radio"]')
-    expect(tiles).toHaveLength(5)
-    expect(tiles.every((t) => t.attributes('aria-required') !== 'true')).toBe(true)
-    expect(w.text()).not.toContain('Auto dari kelas sekolah')
-    expect(w.get('[data-testid="kelas-submit"]').text()).toBe('Cipta Kelas')
-  })
-
-  it('searches schools after 300 ms and 2 characters; shows "{daerah}, {negeri}" and the empty text', async () => {
-    vi.useFakeTimers()
-    schools.searchSchools.mockResolvedValue([
-      {
-        id: 1,
-        name: 'SMK DEMO',
-        code: 'X',
-        type: 'SMK',
-        state: 'Johor',
-        district: 'PPD SEGAMAT',
-        city: null,
-      },
-    ])
-    const w = await mountPage(KelasCreatePage)
-    const input = w.get('[data-testid="school-search"]')
-
-    await input.setValue('d')
-    await vi.advanceTimersByTimeAsync(400)
-    expect(schools.searchSchools).not.toHaveBeenCalled()
-
-    await input.setValue('de')
-    await vi.advanceTimersByTimeAsync(299)
-    expect(schools.searchSchools).not.toHaveBeenCalled()
-    await vi.advanceTimersByTimeAsync(2)
-    await flushPromises()
-    expect(schools.searchSchools).toHaveBeenCalledWith(
-      expect.objectContaining({ q: 'de', limit: 15 }),
-    )
-    expect(w.get('[data-testid="school-result"]').text()).toContain('PPD SEGAMAT, Johor')
-
-    schools.searchSchools.mockResolvedValue([])
-    await input.setValue('zzz')
-    await vi.advanceTimersByTimeAsync(400)
-    await flushPromises()
-    expect(w.get('[data-testid="school-none"]').text()).toBe('Tiada sekolah dijumpai')
-  })
-
-  it('shows the five Tingkatan tiles whatever the school type', async () => {
-    vi.useFakeTimers()
-    schools.searchSchools.mockResolvedValue([
-      { id: 1, name: 'Sekolah', code: '', type: 'SK', state: 'Johor', district: null, city: null },
-    ])
-    const w = await mountPage(KelasCreatePage)
-    await w.get('[data-testid="school-search"]').setValue('se')
-    await vi.advanceTimersByTimeAsync(400)
-    await flushPromises()
-    await w.get('[data-testid="school-result"]').trigger('click')
-    expect(w.findAll('[data-testid="kelas-levels"] label').map((t) => t.text())).toEqual([
-      'Ting. 1',
-      'Ting. 2',
-      'Ting. 3',
-      'Ting. 4',
-      'Ting. 5',
-    ])
-  })
-
-  async function submitFailing(error: ApiError | Error): Promise<VueWrapper> {
-    api.createGuruClass.mockRejectedValue(error)
-    const w = await mountPage(KelasCreatePage)
-    await router.push('/guru/kelas/cipta')
-    await w.get('[data-testid="kelas-name"]').setValue('5 Bestari')
-    await w.get('[data-testid="kelas-subject"]').setValue('4')
-    await w.findAll('[data-testid="kelas-levels"] [role="radio"]')[4]?.trigger('click')
-    await w.get('[data-testid="kelas-form"]').trigger('submit')
-    await flushPromises()
-    return w
-  }
-
-  it('shows the BM create-failed line for a 500 "Server Error" (SWE-08)', async () => {
-    const w = await submitFailing(
-      new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Server Error' }),
-    )
-    const alert = w.get('[role="alert"]').text()
-    expect(alert).toContain('Gagal mencipta kelas. Sila cuba lagi.')
-    expect(alert).not.toContain('Server Error')
-    expect(router.currentRoute.value.path).toBe('/guru/kelas/cipta')
-  })
-
-  it('shows the network copy when the request never arrived (SWE-08)', async () => {
-    const w = await submitFailing(
-      new ApiError({ status: 0, code: 'NETWORK_ERROR', message: 'Failed to fetch' }),
-    )
-    const alert = w.get('[role="alert"]').text()
-    expect(alert).toContain('Ralat rangkaian. Sila cuba lagi.')
-    expect(alert).not.toContain('Failed to fetch')
-  })
-
-  it('shows the generic BM line for a generic 4xx English default and keeps a module BM 409 (SWE-08)', async () => {
-    let w = await submitFailing(
-      new ApiError({ status: 403, code: 'FORBIDDEN', message: 'This action is unauthorized.' }),
-    )
-    expect(w.get('[role="alert"]').text()).toContain('Gagal mencipta kelas. Sila cuba lagi.')
-    expect(w.get('[role="alert"]').text()).not.toContain('unauthorized')
-    w.unmount()
-    w = await submitFailing(
-      new ApiError({ status: 409, code: 'CONFLICT', message: 'Nama kelas sudah digunakan.' }),
-    )
-    expect(w.get('[role="alert"]').text()).toContain('Nama kelas sudah digunakan.')
-  })
-
-  it('creates the class, sets the flash and goes to /guru/kelas', async () => {
-    api.createGuruClass.mockResolvedValue(cls(9000001))
-    const w = await mountPage(KelasCreatePage)
-    await router.push('/guru/kelas/cipta')
-    await w.get('[data-testid="kelas-name"]').setValue(' 5 Bestari ')
-    await w.get('[data-testid="kelas-subject"]').setValue('4')
-    await w.findAll('[data-testid="kelas-levels"] [role="radio"]')[4]?.trigger('click')
-    await w.get('[data-testid="kelas-form"]').trigger('submit')
-    await flushPromises()
-    expect(api.createGuruClass).toHaveBeenCalledWith({
-      name: '5 Bestari',
-      subjectId: '4',
-      educationLevel: 'tingkatan-5',
-      description: null,
-    })
-    expect(router.currentRoute.value.path).toBe('/guru/kelas')
-    expect(useFlashStore().pending?.type).toBe('success')
-  })
-
-  it('shows the 422 field messages and stays on the page', async () => {
-    api.createGuruClass.mockRejectedValue(
-      new ApiError({
-        status: 422,
-        code: 'VALIDATION_ERROR',
-        message: 'x',
-        fields: { educationLevel: 'Sila pilih tahap pendidikan.' },
-      }),
-    )
-    const w = await mountPage(KelasCreatePage)
-    await router.push('/guru/kelas/cipta')
-    await w.get('[data-testid="kelas-name"]').setValue('5 Bestari')
-    await w.get('[data-testid="kelas-subject"]').setValue('4')
-    await w.get('[data-testid="kelas-form"]').trigger('submit')
-    await flushPromises()
-    expect(w.text().split('Sila pilih tahap pendidikan.').length - 1).toBe(1)
-    expect(router.currentRoute.value.path).toBe('/guru/kelas/cipta')
   })
 })

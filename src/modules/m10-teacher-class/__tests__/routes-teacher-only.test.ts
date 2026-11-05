@@ -38,6 +38,7 @@ describe('M10 routes with a teacher-only API (SW5-06)', () => {
       '/guru',
       '/guru/kelas',
       '/guru/kelas/cipta',
+      '/guru/kelas/:id/edit',
       '/guru/pelajar',
     ])
   })
