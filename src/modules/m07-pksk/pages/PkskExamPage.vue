@@ -41,6 +41,8 @@ const loadFailed = computed(() => isLoadError(error.value))
 const answers = reactive<Record<number, PkskAnswer>>({})
 const saving = ref(false)
 const submitError = ref<string | null>(null)
+/** The API refused the answers (422): the served set is stale, so a fresh one is offered. */
+const stale = ref(false)
 const result = ref<PkskExamAttempt | null>(null)
 
 const answerOf = (id: number): PkskAnswer => answers[id] ?? { questionId: id }
@@ -67,6 +69,7 @@ function resetState(): void {
   for (const key of Object.keys(answers)) delete answers[Number(key)]
   result.value = null
   submitError.value = null
+  stale.value = false
   confirmOpen.value = false
   leaveOpen.value = false
 }
@@ -127,7 +130,7 @@ async function leave(): Promise<void> {
 }
 
 async function submit(): Promise<void> {
-  if (!data.value || saving.value) return
+  if (!data.value || saving.value || stale.value) return
   saving.value = true
   submitError.value = null
   try {
@@ -139,9 +142,15 @@ async function submit(): Promise<void> {
   } catch (err) {
     confirmOpen.value = false
     submitError.value = isApiError(err) ? err.message : LOAD_ERROR
+    stale.value = isApiError(err) && err.status === 422
   } finally {
     saving.value = false
   }
+}
+
+async function retry(): Promise<void> {
+  resetState()
+  await reload()
 }
 </script>
 
@@ -206,7 +215,7 @@ async function submit(): Promise<void> {
       v-else-if="data && !loading"
       class="flex flex-col gap-6"
       novalidate
-      @submit.prevent="confirmOpen = true"
+      @submit.prevent="stale || (confirmOpen = true)"
     >
       <DsQuizHeader
         close-label="Kembali ke Dashboard"
@@ -228,6 +237,15 @@ async function submit(): Promise<void> {
         :title="submitError"
         data-testid="submit-error"
       />
+      <UButton
+        v-if="stale"
+        size="xl"
+        block
+        class="min-h-12"
+        data-testid="stale-retry"
+        @click="retry"
+        >↻ Cuba Lagi</UButton
+      >
       <section
         v-for="s in data.sections"
         :key="s.bahagian"
@@ -253,6 +271,7 @@ async function submit(): Promise<void> {
         icon="i-ph-paper-plane-tilt-duotone"
         class="min-h-12"
         data-testid="exam-submit"
+        :disabled="stale"
         >Hantar</UButton
       >
     </form>

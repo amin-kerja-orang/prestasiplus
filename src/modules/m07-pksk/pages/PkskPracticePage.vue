@@ -39,6 +39,8 @@ const loadFailed = computed(() => isLoadError(error.value))
 const answers = reactive<Record<number, PkskAnswer>>({})
 const saving = ref(false)
 const submitError = ref<string | null>(null)
+/** The API refused the answers (422): the served set is stale, so a fresh one is offered. */
+const stale = ref(false)
 const result = ref<PkskPracticeResult | null>(null)
 /** The served set and the answers at Hantar: the result view reads these, not the live page state. */
 const submitted = ref<{ questions: PkskServedQuestion[]; answers: Record<number, PkskAnswer> }>({
@@ -63,6 +65,7 @@ function resetState(): void {
   for (const key of Object.keys(answers)) delete answers[Number(key)]
   result.value = null
   submitError.value = null
+  stale.value = false
   confirmOpen.value = false
   leaveOpen.value = false
 }
@@ -125,7 +128,7 @@ async function leave(): Promise<void> {
 }
 
 async function submit(): Promise<void> {
-  if (!data.value || saving.value) return
+  if (!data.value || saving.value || stale.value) return
   saving.value = true
   submitError.value = null
   const served = [...data.value.questions]
@@ -141,6 +144,7 @@ async function submit(): Promise<void> {
   } catch (err) {
     confirmOpen.value = false
     submitError.value = isApiError(err) ? err.message : LOAD_ERROR
+    stale.value = isApiError(err) && err.status === 422
   } finally {
     saving.value = false
   }
@@ -291,7 +295,7 @@ const hasEssay = computed(() => reviewRows.value.some((r) => r.essay))
       v-else-if="data && !loading"
       class="flex flex-col gap-4"
       novalidate
-      @submit.prevent="confirmOpen = true"
+      @submit.prevent="stale || (confirmOpen = true)"
     >
       <DsQuizHeader
         close-label="Kembali ke Domain"
@@ -310,6 +314,15 @@ const hasEssay = computed(() => reviewRows.value.some((r) => r.essay))
         :title="submitError"
         data-testid="submit-error"
       />
+      <UButton
+        v-if="stale"
+        size="xl"
+        block
+        class="min-h-12"
+        data-testid="stale-retry"
+        @click="retry"
+        >↻ Cuba Lagi</UButton
+      >
       <QuestionItem
         v-for="(q, i) in data.questions"
         :key="q.id"
@@ -325,6 +338,7 @@ const hasEssay = computed(() => reviewRows.value.some((r) => r.essay))
         icon="i-ph-paper-plane-tilt-duotone"
         class="min-h-12"
         data-testid="practice-submit"
+        :disabled="stale"
         >Hantar</UButton
       >
     </form>

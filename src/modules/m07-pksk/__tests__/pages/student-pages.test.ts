@@ -931,3 +931,70 @@ describe('review fixes (S5-T13)', () => {
     expect(w.find('[data-testid=essay-note]').exists()).toBe(false)
   })
 })
+
+describe('stale set after "Jawapan tidak sah."', () => {
+  const refused = () =>
+    new ApiError({ status: 422, code: 'VALIDATION_ERROR', message: 'Jawapan tidak sah.' })
+
+  it('practice: shows the message, disables Hantar and offers a fresh set', async () => {
+    const set = (id: number) => ({
+      domain: { id: 2, code: 'PKSK_MATH', name: 'Matematik', bahagian: 'B' as const },
+      questions: [{ id, questionText: `Soalan ${String(id)}`, options: [{ text: 'a' }] }],
+    })
+    api.fetchPkskPractice.mockResolvedValueOnce(set(11)).mockResolvedValueOnce(set(21))
+    api.submitPkskPractice.mockRejectedValueOnce(refused())
+    const w = await render(
+      PkskPracticePage,
+      '/pksk/level/T1/domain/PKSK_MATH',
+      '/pksk/level/:level/domain/:code',
+      { level: 'T1', code: 'PKSK_MATH' },
+    )
+    await w.get('[data-testid=pksk-option]').trigger('click')
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    await press('[data-testid=confirm-submit]')
+    expect(w.get('[data-testid=submit-error]').text()).toContain('Jawapan tidak sah.')
+    expect(w.get('[data-testid=practice-submit]').attributes('disabled')).toBeDefined()
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    expect(body('[data-testid=confirm-submit]')).toBeNull()
+    await w.get('[data-testid=stale-retry]').trigger('click')
+    await flushPromises()
+    expect(api.fetchPkskPractice).toHaveBeenCalledTimes(2)
+    expect(w.find('[data-testid=submit-error]').exists()).toBe(false)
+    expect(w.find('[data-testid=stale-retry]').exists()).toBe(false)
+    expect(w.get('[data-testid=pksk-item]').text()).toContain('Soalan 21')
+    expect(w.get('[data-testid=practice-submit]').attributes('disabled')).toBeUndefined()
+    expect(api.submitPkskPractice).toHaveBeenCalledTimes(1)
+  })
+
+  it('exam: a 422 shows the message and reloads a fresh exam', async () => {
+    const exam = (id: number): PkskExam => ({
+      sections: [
+        {
+          bahagian: 'A',
+          weightPct: 100,
+          questions: [{ id, questionText: `S${String(id)}`, options: [{ text: 'x' }] }],
+        },
+      ],
+    })
+    api.fetchPkskExam.mockResolvedValueOnce(exam(1)).mockResolvedValueOnce(exam(2))
+    api.submitPkskExam.mockRejectedValueOnce(refused())
+    const w = await render(PkskExamPage, '/pksk/level/T1/exam', '/pksk/level/:level/exam', {
+      level: 'T1',
+    })
+    await w.get('[data-testid=pksk-option]').trigger('click')
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    await press('[data-testid=confirm-submit]')
+    expect(w.get('[data-testid=submit-error]').text()).toContain('Jawapan tidak sah.')
+    expect(w.get('[data-testid=exam-submit]').attributes('disabled')).toBeDefined()
+    await w.get('[data-testid=stale-retry]').trigger('click')
+    await flushPromises()
+    expect(api.fetchPkskExam).toHaveBeenCalledTimes(2)
+    expect(w.get('[data-testid=pksk-item]').text()).toContain('S2')
+    expect(w.get('[data-testid=exam-counter]').text()).toBe('0/1')
+    expect(w.find('[data-testid=submit-error]').exists()).toBe(false)
+    expect(w.get('[data-testid=exam-submit]').attributes('disabled')).toBeUndefined()
+  })
+})

@@ -419,6 +419,36 @@ describe('#21 POST /api/pksk/levels/:level/domains/:code/practice-sessions', () 
     expect(practice.history(IBUBAPA)).toHaveLength(before)
   })
 
+  it('follows the served-set rule: no open set, an unserved id and a repeat are 422, a served subset is 201', async () => {
+    const url = '/api/pksk/levels/T1/domains/PKSK_ENG/practice-sessions'
+    const rule = async (body: unknown) => {
+      const r = await post<PkskPracticeResult>(IBUBAPA, url, body)
+      expect(r.status).toBe(422)
+      expect(r.body.error.code).toBe('VALIDATION_ERROR')
+      expect(r.body.error.message).toBe('Jawapan tidak sah.')
+      expect(JSON.stringify(r.body)).not.toContain('review')
+    }
+    const served = await get<PkskPractice>(IBUBAPA, '/api/pksk/levels/T1/domains/PKSK_ENG')
+    const ids = served.body.data.questions.map((q) => q.id)
+    // A valid question of the domain that was not in the served set.
+    const unserved = questions
+      .pkskList({ domainIds: [4], targetLevel: 'T1', status: 'approved', pageSize: 1000 })
+      .rows.map((q) => q.id)
+      .find((id) => !ids.includes(id))
+    expect(unserved).toBeDefined()
+    await rule({ answers: [{ questionId: unserved as number }] })
+    const ok1 = await post<PkskPracticeResult>(IBUBAPA, url, {
+      answers: [{ questionId: ids[0] as number }],
+    })
+    expect(ok1.status).toBe(201)
+    expect(ok1.body.data.review).toHaveLength(1)
+    await rule({ answers: [{ questionId: ids[0] as number }] })
+    // A new GET opens a fresh set, so the next submit is valid again.
+    const again = await get<PkskPractice>(IBUBAPA, '/api/pksk/levels/T1/domains/PKSK_ENG')
+    const next = again.body.data.questions[0]?.id as number
+    expect((await post(IBUBAPA, url, { answers: [{ questionId: next }] })).status).toBe(201)
+  })
+
   it('returns correct, total and a review with the key revealed only after scoring', async () => {
     const served = await get<PkskPractice>(IBUBAPA, '/api/pksk/levels/T1/domains/PKSK_MATH')
     const ids = served.body.data.questions.map((q) => q.id)
