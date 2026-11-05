@@ -48,6 +48,7 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
+| S6-T05 | AC-AS-0-2 | CI | Pass | 2026-11-05 | team-dd/S-1 | dashboard.spec.ts, amaran-access.spec.ts |
 
 ## Sprint 1
 
