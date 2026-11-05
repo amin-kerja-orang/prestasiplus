@@ -103,16 +103,6 @@ export class UsersDirectoryAdapter implements DirectoryPort {
     return rows.map((r) => r.id)
   }
 
-  async countPupils(schoolIds: readonly string[]): Promise<Map<string, number>> {
-    const counts = await this.schools.memberCounts(schoolIds)
-    return new Map([...counts].map(([id, c]) => [id, c.studentCount]))
-  }
-
-  async countTeachers(schoolIds: readonly string[]): Promise<Map<string, number>> {
-    const counts = await this.schools.memberCounts(schoolIds)
-    return new Map([...counts].map(([id, c]) => [id, c.teacherCount]))
-  }
-
   async subjectIdsOfCodes(codes: readonly string[]): Promise<Map<string, string>> {
     if (codes.length === 0) return new Map()
     // One read of the (small) subjects table instead of a lookup per code.
