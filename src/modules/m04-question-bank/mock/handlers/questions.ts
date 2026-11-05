@@ -117,6 +117,7 @@ function list(req: MockRequest): MockResponse {
   const complianceFilter = textFilter(req, 'complianceFilter')
   const sourceFilter = textFilter(req, 'sourceFilter')
   const search = textFilter(req, 'search')
+  const chapter = textFilter(req, 'chapter')
   const filter: AdminListFilter & { page: number; pageSize: number } = {
     ...(subjectId === undefined ? {} : { subjectId }),
     ...(educationLevelId === undefined ? {} : { educationLevelId }),
@@ -126,6 +127,7 @@ function list(req: MockRequest): MockResponse {
     ...(complianceFilter === undefined ? {} : { complianceFilter }),
     ...(sourceFilter === undefined ? {} : { sourceFilter }),
     ...(search === undefined ? {} : { search }),
+    ...(chapter === undefined ? {} : { chapter }),
     page: pageReq.page,
     pageSize: pageReq.pageSize,
   }
@@ -260,6 +262,7 @@ const FILTER_KEYS_ALL = [
   'negeri',
   'kertas',
   'jenis',
+  'chapter',
 ]
 const WIRE_TO_MOCK_STATUS: Readonly<Record<string, string>> = { review: 'pending_review' }
 
@@ -331,6 +334,7 @@ function bulkByFilter(req: MockRequest, ctx: MockContext): MockResponse {
     ...(text('complianceFilter') === undefined ? {} : { complianceFilter: text('complianceFilter') }),
     ...(text('sourceFilter') === undefined ? {} : { sourceFilter: text('sourceFilter') }),
     ...(text('search') === undefined ? {} : { search: text('search') }),
+    ...(text('chapter') === undefined ? {} : { chapter: text('chapter') }),
   }
   const act = action as 'approved' | 'archived'
   // A malformed id matches nothing, as in #1.
@@ -394,6 +398,7 @@ function bulkChapter(req: MockRequest, ctx: MockContext): MockResponse {
         ...(text('complianceFilter') === undefined ? {} : { complianceFilter: text('complianceFilter') }),
         ...(text('sourceFilter') === undefined ? {} : { sourceFilter: text('sourceFilter') }),
         ...(text('search') === undefined ? {} : { search: text('search') }),
+        ...(text('chapter') === undefined ? {} : { chapter: text('chapter') }),
       }
     }
   }

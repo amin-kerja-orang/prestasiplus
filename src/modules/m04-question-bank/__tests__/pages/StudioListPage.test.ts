@@ -3,6 +3,7 @@ import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
+import { defineComponent, h } from 'vue'
 
 import { ApiError } from '@/api'
 import { useFlashStore } from '@/stores/flash'
@@ -24,8 +25,10 @@ const studio = vi.hoisted(() => ({
   },
   fetchStudioQuestion: vi.fn(),
   fetchGroup: vi.fn(),
+  fetchChapterCoverage: vi.fn(),
+  bulkChapter: vi.fn(),
 }))
-const lookups = vi.hoisted(() => ({ fetchSubjects: vi.fn(), fetchEducationLevels: vi.fn() }))
+const lookups = vi.hoisted(() => ({ fetchSubjects: vi.fn(), fetchEducationLevels: vi.fn(), fetchChapters: vi.fn() }))
 vi.mock('../../api/studio', () => studio)
 vi.mock('../../api/lookups', () => lookups)
 const summaryApi = vi.hoisted(() => ({ fetchQuestionSummary: vi.fn(), bulkQuestionsByFilter: vi.fn() }))
@@ -49,6 +52,18 @@ const page = (rows: unknown[], total = rows.length) => ({
 
 let wrapper: VueWrapper | null = null
 let router: Router
+const PanelStub = defineComponent({
+  name: 'BulkChapterPanel',
+  props: { open: Boolean, subjectId: String, educationLevelId: String, ids: Array, filter: Object },
+  emits: ['done', 'close', 'update:open'],
+  setup(props, { emit }) {
+    return () =>
+      h('div', { 'data-testid': 'panel-stub', 'data-ids': JSON.stringify(props.ids ?? null), 'data-filter': JSON.stringify(props.filter ?? null), 'data-scope': `${String(props.subjectId)}/${String(props.educationLevelId)}` }, [
+        h('button', { 'data-testid': 'panel-done', onClick: () => emit('done', { applied: 2 }) }),
+        h('button', { 'data-testid': 'panel-close', onClick: () => { emit('update:open', false); emit('close') } }),
+      ])
+  },
+})
 async function render(url = '/admin/studio'): Promise<VueWrapper> {
   const stub = { template: '<div />' }
   router = createRouter({
@@ -60,7 +75,7 @@ async function render(url = '/admin/studio'): Promise<VueWrapper> {
     ],
   })
   await router.push(url)
-  wrapper = mount(StudioListPage, { attachTo: document.body, global: { plugins: [router] } })
+  wrapper = mount(StudioListPage, { attachTo: document.body, global: { plugins: [router], stubs: { BulkChapterPanel: PanelStub } } })
   await flushPromises()
   return wrapper
 }
@@ -76,7 +91,9 @@ beforeEach(() => {
     notFound: [],
   })
   lookups.fetchSubjects.mockReset().mockResolvedValue({ data: [{ id: 3, name: 'Matematik' }], meta: {} })
-  lookups.fetchEducationLevels.mockReset().mockResolvedValue({ data: [{ id: 7, name: 'Tingkatan 4' }], meta: {} })
+  lookups.fetchEducationLevels.mockReset().mockResolvedValue({ data: [{ id: 7, code: 'T4', name: 'Tingkatan 4' }], meta: {} })
+  lookups.fetchChapters.mockReset().mockResolvedValue([{ id: 21, name: 'Aljabar', chapterNumber: 2 }])
+  studio.fetchChapterCoverage.mockResolvedValue([])
   summaryApi.fetchQuestionSummary.mockReset().mockResolvedValue(null)
   vi.spyOn(window, 'confirm').mockReturnValue(true)
 })
@@ -352,6 +369,135 @@ describe('StudioListPage (S1 to S6)', () => {
     await t(w, 'studio-retry').trigger('click')
     await flushPromises()
     expect(w.find('[data-testid="studio-table"]').exists()).toBe(true)
+  })
+
+  describe('Soalan tanpa Bab and Tetapkan Bab (S2-T08, FR-ADM-Q03.7, AC-ADM-Q03.3)', () => {
+    const NOTE = 'Soalan tanpa Bab tidak akan muncul dalam Soalan by Chapter dan Heatmap Topik Lemah.'
+    const coverageRows = [
+      { subjectId: '3', subjectName: 'Matematik', levelCode: 'T4', approved: 80, withChapter: 30, withoutChapter: 50 },
+      { subjectId: '5', subjectName: 'Fizik', levelCode: 'T4', approved: 10, withChapter: 10, withoutChapter: 0 },
+    ]
+
+    it('the link sets status=approved&chapter=none and no work-list shows before it', async () => {
+      const w = await render()
+      expect(w.find('[data-testid="studio-nochapter"]').exists()).toBe(false)
+      expect(studio.fetchChapterCoverage).not.toHaveBeenCalled()
+      expect(t(w, 'studio-worklist-link').text()).toBe('Soalan tanpa Bab')
+      expect(t(w, 'studio-worklist-link').attributes('href')).toBe('/admin/studio?status=approved&chapter=none')
+      await t(w, 'studio-worklist-link').trigger('click')
+      await flushPromises()
+      expect(router.currentRoute.value.query).toEqual({ status: 'approved', chapter: 'none' })
+    })
+
+    it('chapter=none lists the approved questions with no Bab: header count is meta.totalItems, then the note', async () => {
+      studio.fetchStudioList.mockResolvedValue(page([row('11', 'approved'), row('12', 'approved')], 50))
+      studio.fetchChapterCoverage.mockResolvedValue(coverageRows)
+      const w = await render('/admin/studio?status=approved&chapter=none')
+      expect(studio.fetchStudioList).toHaveBeenLastCalledWith(expect.objectContaining({ status: 'approved', chapter: 'none' }))
+      const panel = t(w, 'studio-nochapter')
+      expect(panel.text()).toContain('Soalan tanpa Bab')
+      expect(panel.text()).toContain(NOTE)
+      expect(t(w, 'studio-nochapter-count').text()).toBe('50 soalan')
+      expect(w.text()).toContain('Bab: Belum dipautkan')
+    })
+
+    it('shows the per-subject counts of API-DSKP-10 for the chosen Tingkatan, each a link to that subject', async () => {
+      studio.fetchChapterCoverage.mockResolvedValue(coverageRows)
+      const w = await render('/admin/studio?status=approved&chapter=none&tingkatan=7')
+      expect(studio.fetchChapterCoverage).toHaveBeenLastCalledWith({ educationLevelId: '7' }, expect.anything())
+      const items = w.findAll('[data-testid="studio-nochapter-subject"]')
+      expect(items.map((i) => i.text().replace(/\s+/g, ' ').trim())).toEqual([expect.stringContaining('Fizik'), expect.stringContaining('Matematik')])
+      expect(items[1]!.text()).toContain('50')
+      expect(items[1]!.get('a').attributes('href')).toBe('/admin/studio?status=approved&chapter=none&subject_id=3&tingkatan=7')
+    })
+
+    it('without a Tingkatan it reads every level and names the level in each row', async () => {
+      studio.fetchChapterCoverage.mockResolvedValue(coverageRows)
+      const w = await render('/admin/studio?status=approved&chapter=none')
+      expect(studio.fetchChapterCoverage).toHaveBeenLastCalledWith({}, expect.anything())
+      expect(t(w, 'studio-nochapter-subjects').text()).toContain('Matematik · T4')
+    })
+
+    it('a failed coverage read hides the rows, the list and the count stay', async () => {
+      studio.fetchChapterCoverage.mockRejectedValue(new Error('x'))
+      const w = await render('/admin/studio?status=approved&chapter=none')
+      expect(w.find('[data-testid="studio-nochapter-subjects"]').exists()).toBe(false)
+      expect(t(w, 'studio-nochapter-count').text()).toBe('30 soalan')
+    })
+
+    it('the Bab filter: Belum dipautkan always, the Bab of the chosen Subjek + Tingkatan, and an id goes to the API', async () => {
+      const w = await render('/admin/studio?subject_id=3&tingkatan=7&chapter=21')
+      expect(lookups.fetchChapters).toHaveBeenCalledWith({ subjectId: '3', educationLevelId: '7' })
+      expect(studio.fetchStudioList).toHaveBeenLastCalledWith(expect.objectContaining({ chapter: '21' }))
+      expect(t(w, 'studio-chapter-filter').findAll('option').map((o) => o.text())).toEqual(['Semua bab', 'Belum dipautkan', 'Bab 2: Aljabar'])
+      expect(w.text()).toContain('Bab: Bab 2: Aljabar')
+      expect(w.find('[data-testid="studio-nochapter"]').exists()).toBe(false)
+    })
+
+    it('the Bab filter needs Subjek and Tingkatan; a hand-typed value the API would refuse is dropped', async () => {
+      const w = await render('/admin/studio?chapter=abc')
+      expect(studio.fetchStudioList).toHaveBeenLastCalledWith(expect.objectContaining({ chapter: null }))
+      expect(t(w, 'studio-chapter-filter').attributes('disabled')).toBeDefined()
+      expect(lookups.fetchChapters).not.toHaveBeenCalled()
+    })
+
+    describe('Tetapkan Bab on the bulk bar', () => {
+      const select = async (w: VueWrapper, ...ids: string[]): Promise<void> => {
+        w.getComponent({ name: 'DsDataTable' }).vm.$emit('update:selection', ids.map((id) => ({ id })))
+        await flushPromises()
+      }
+
+      it('is disabled until the filter has one Subjek and one Tingkatan', async () => {
+        const w = await render('/admin/studio?subject_id=3')
+        await select(w, '11')
+        expect(t(w, 'studio-bulk-chapter').attributes('disabled')).toBeDefined()
+        expect(w.find('[data-testid="studio-bulk-chapter-needed"]').exists()).toBe(true)
+      })
+
+      it('opens the panel with the selected ids, frozen for the run', async () => {
+        const w = await render('/admin/studio?subject_id=3&tingkatan=7')
+        expect(w.find('[data-testid="panel-stub"]').exists()).toBe(false)
+        await select(w, '11', '12')
+        await t(w, 'studio-bulk-chapter').trigger('click')
+        await flushPromises()
+        const panel = t(w, 'panel-stub')
+        expect(panel.attributes('data-scope')).toBe('3/7')
+        expect(JSON.parse(panel.attributes('data-ids')!)).toEqual(['11', '12'])
+        expect(panel.attributes('data-filter')).toBe('null')
+      })
+
+      it('"Semua hasil tapisan" opens it with the filter, chapter included', async () => {
+        const w = await render('/admin/studio?subject_id=3&tingkatan=7&status=approved&chapter=none')
+        await w.get('[data-testid="studio-bulk-all"] [role="checkbox"], [data-testid="studio-bulk-all"]').trigger('click')
+        await flushPromises()
+        await t(w, 'studio-bulk-chapter').trigger('click')
+        await flushPromises()
+        const panel = t(w, 'panel-stub')
+        expect(panel.attributes('data-ids')).toBe('null')
+        expect(JSON.parse(panel.attributes('data-filter')!)).toEqual({ subjectId: '3', educationLevelId: '7', status: 'approved', chapter: 'none' })
+      })
+
+      it('refreshes the list, the summary and the work-list counts after a successful apply and keeps the panel on its result', async () => {
+        studio.fetchChapterCoverage.mockResolvedValue(coverageRows)
+        const w = await render('/admin/studio?subject_id=3&tingkatan=7&status=approved&chapter=none')
+        await select(w, '11')
+        await t(w, 'studio-bulk-chapter').trigger('click')
+        await flushPromises()
+        const lists = studio.fetchStudioList.mock.calls.length
+        const sums = summaryApi.fetchQuestionSummary.mock.calls.length
+        const covs = studio.fetchChapterCoverage.mock.calls.length
+        await t(w, 'panel-done').trigger('click')
+        await flushPromises()
+        expect(studio.fetchStudioList.mock.calls.length).toBe(lists + 1)
+        expect(summaryApi.fetchQuestionSummary.mock.calls.length).toBe(sums + 1)
+        expect(studio.fetchChapterCoverage.mock.calls.length).toBe(covs + 1)
+        expect(w.getComponent({ name: 'StudioBulkBar' }).props('selectedIds')).toEqual([])
+        expect(JSON.parse(t(w, 'panel-stub').attributes('data-ids')!)).toEqual(['11'])
+        await t(w, 'panel-close').trigger('click')
+        await flushPromises()
+        expect(w.find('[data-testid="panel-stub"]').exists()).toBe(false)
+      })
+    })
   })
 })
 

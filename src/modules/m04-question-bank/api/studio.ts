@@ -229,6 +229,8 @@ export interface StudioListQuery {
   negeri?: string | null
   kertas?: string | null
   jenis?: string | null
+  /** API-Q-01 `chapter` (S1-T07): `none` = no Bab ("Soalan tanpa Bab"), else a chapter id. */
+  chapter?: string | null
   page?: number
   pageSize?: number
   signal?: AbortSignal
@@ -236,7 +238,7 @@ export interface StudioListQuery {
 
 export function fetchStudioList(q: StudioListQuery): Promise<ListResult<StudioRow, StudioListExtra>> {
   return api.list<StudioRow, StudioListExtra>('/api/questions', {
-    query: { subjectId: q.subjectId ?? null, educationLevelId: q.educationLevelId ?? null, dskpFilter: q.dskpFilter ?? null, status: q.status ?? null, search: q.search ?? null, tahun: q.tahun ?? null, negeri: q.negeri ?? null, kertas: q.kertas ?? null, jenis: q.jenis ?? null, page: q.page ?? null, pageSize: q.pageSize ?? null },
+    query: { subjectId: q.subjectId ?? null, educationLevelId: q.educationLevelId ?? null, dskpFilter: q.dskpFilter ?? null, status: q.status ?? null, search: q.search ?? null, tahun: q.tahun ?? null, negeri: q.negeri ?? null, kertas: q.kertas ?? null, jenis: q.jenis ?? null, chapter: q.chapter ?? null, page: q.page ?? null, pageSize: q.pageSize ?? null },
     ...(q.signal ? { signal: q.signal } : {}),
   })
 }

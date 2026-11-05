@@ -953,6 +953,7 @@ export const questionsRepo = defineRepository({
           const search = term !== '' ? { term, fields: ['questionText' as const] } : undefined
           matched = store.query({ where, search, page: 1, pageSize: 1 }).total
           const compatible =
+            (select.filter.chapter === undefined || select.filter.chapter === 'none') &&
             (select.filter.status === undefined || select.filter.status === 'approved') &&
             (select.filter.subjectId === undefined || select.filter.subjectId === target.subjectId) &&
             (select.filter.educationLevelId === undefined || select.filter.educationLevelId === target.educationLevelId)

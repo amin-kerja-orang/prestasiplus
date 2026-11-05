@@ -5,10 +5,13 @@
  * the source paper, Tahun, Negeri, Kertas, Jenis: T47), the table No. / Soalan / Kertas / Sumber / Status
  * at 25 per page (cards below `md`), and the row actions Pratonton, Edit or Edit sebagai draf, and Sembunyikan ("Arkibkan soalan
  * ini?"). Under each badge: "Dilihat murid di x/n" from the servability batch read. The URL is the state, as on the legacy list.
+ * S2-T08: the filter `Bab` (03-03: `Belum dipautkan` = `chapter=none`, then the Bab of the chosen Subjek + Tingkatan), the work-list
+ * `Soalan tanpa Bab` (FR-ADM-Q03.7: `status=approved&chapter=none`, header count = `meta.totalItems`, per-subject counts of
+ * API-DSKP-10) and `Tetapkan Bab` of the bulk bar (field 03-14) through `BulkChapterPanel`.
  * Studio talks to the real API only (D84).
  */
 import type { TableColumn } from '@nuxt/ui'
-import type { ServabilityReport } from '@pp/contract'
+import type { QuestionFilter, ServabilityReport } from '@pp/contract'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -23,6 +26,7 @@ import {
   DsFilterBar,
   DsFormField,
   DsGrid,
+  DsListRow,
   DsLoadError,
   DsNativeSelect,
   DsPage,
@@ -40,13 +44,14 @@ import {
 
 import { useMedia } from '@/ds/useMedia'
 
-import { fetchEducationLevels, fetchSubjects } from '../api/lookups'
+import { fetchChapters, fetchEducationLevels, fetchSubjects, type ChapterOption } from '../api/lookups'
 import { fetchQuestionSummary, type QuestionBulkFilter } from '../api/questions'
 import {
   createGroup,
   createStimulus,
   editAsDraft,
   EditAsDraftRefused,
+  fetchChapterCoverage,
   fetchGroup,
   fetchServabilityBatch,
   fetchStudioList,
@@ -56,6 +61,7 @@ import {
   studioAvailable,
   type StudioRow,
 } from '../api/studio'
+import BulkChapterPanel from '../components/BulkChapterPanel.vue'
 import StudioBulkBar from '../components/studio/StudioBulkBar.vue'
 import StudioPreview from '../components/studio/StudioPreview.vue'
 import StudioStimulusEditor from '../components/studio/StudioStimulusEditor.vue'
@@ -101,7 +107,11 @@ const DSKP_TAG_OPTIONS = [
   { value: 'belum', wire: 'untagged', label: 'Belum Ditag' },
 ]
 const dskpWire = (value: string): string | null => DSKP_TAG_OPTIONS.find((o) => o.value === value)?.wire ?? null
-const KEYS = ['subject_id', 'tingkatan', 'status', 'dskp', 'search', 'tahun', 'negeri', 'kertas', 'jenis'] as const
+/** Field 03-03: the value that lists the questions with no Bab ("Belum dipautkan"). */
+const CHAPTER_NONE = 'none'
+/** FR-ADM-Q03.7, verbatim (R1 decision D113). */
+const NO_CHAPTER_NOTE = 'Soalan tanpa Bab tidak akan muncul dalam Soalan by Chapter dan Heatmap Topik Lemah.'
+const KEYS = ['subject_id', 'tingkatan', 'chapter', 'status', 'dskp', 'search', 'tahun', 'negeri', 'kertas', 'jenis'] as const
 type Key = (typeof KEYS)[number]
 
 const route = useRoute()
@@ -121,6 +131,7 @@ const validFilter = (k: Key, v: string): string => {
   if (k === 'jenis') return JENIS_OPTIONS.some((o) => o.value === v) ? v : ''
   if (k === 'dskp') return dskpWire(v) === null ? '' : v
   if (k === 'negeri') return v.slice(0, 64)
+  if (k === 'chapter') return v === CHAPTER_NONE || /^[1-9]\d{0,18}$/.test(v) ? v : ''
   return v
 }
 const applied = computed(() => {
@@ -150,6 +161,7 @@ const list = useApi(
           subjectId: applied.value.subject_id || null,
           educationLevelId: applied.value.tingkatan || null,
           dskpFilter: dskpWire(applied.value.dskp),
+          chapter: applied.value.chapter || null,
           status: applied.value.status || null,
           search: applied.value.search || null,
           tahun: applied.value.tahun || null,
@@ -233,13 +245,75 @@ const selectedIds = computed(() => selected.value.map((r) => r.id))
 const bulkFilter = computed<QuestionBulkFilter>(() => {
   const a = applied.value
   return Object.fromEntries(
-    Object.entries({ subjectId: a.subject_id, educationLevelId: a.tingkatan, dskpFilter: dskpWire(a.dskp) ?? '', status: a.status, search: a.search, tahun: a.tahun, negeri: a.negeri, kertas: a.kertas, jenis: a.jenis }).filter(([, v]) => v !== ''),
+    Object.entries({ subjectId: a.subject_id, educationLevelId: a.tingkatan, dskpFilter: dskpWire(a.dskp) ?? '', chapter: a.chapter, status: a.status, search: a.search, tahun: a.tahun, negeri: a.negeri, kertas: a.kertas, jenis: a.jenis }).filter(([, v]) => v !== ''),
   )
 })
 async function afterBulk(): Promise<void> {
   selected.value = []
-  await Promise.all([list.reload(), summary.reload()])
+  await Promise.all([list.reload(), summary.reload(), coverage.reload()])
 }
+
+/**
+ * `Tetapkan Bab` (03-14). The target is frozen when the panel opens: the refresh after a run clears the selection, and the panel
+ * must keep showing its result. At most 64 ids (the bar refuses more and points to "Semua hasil tapisan").
+ */
+const chapterOpen = ref(false)
+const chapterTarget = ref<{ subjectId: string; educationLevelId: string; ids?: string[]; filter?: QuestionFilter } | null>(null)
+function openChapter(allResults: boolean): void {
+  const base = { subjectId: applied.value.subject_id, educationLevelId: applied.value.tingkatan }
+  chapterTarget.value = allResults ? { ...base, filter: { ...bulkFilter.value } as QuestionFilter } : { ...base, ids: [...selectedIds.value] }
+  chapterOpen.value = true
+}
+
+/** FR-ADM-Q03.7: the work-list `Soalan tanpa Bab` is the approved questions with `chapter=none`; its link sets both. */
+const workList = computed(() => applied.value.chapter === CHAPTER_NONE)
+const workListTo = { path: STUDIO_PATH, query: { status: 'approved', chapter: CHAPTER_NONE } }
+const workListTotal = computed(() => list.data.value?.meta.totalItems ?? null)
+/** API-DSKP-10 per Subjek x Tingkatan; a failed read just hides the rows. Read for the chosen Tingkatan, else for every one. */
+const coverage = useApi(
+  (signal) =>
+    available && workList.value ? fetchChapterCoverage(applied.value.tingkatan === '' ? {} : { educationLevelId: applied.value.tingkatan }, signal) : Promise.resolve(null),
+  [() => applied.value.chapter, () => applied.value.tingkatan],
+)
+const coverageRows = computed(() => {
+  const all = coverage.data.value ?? []
+  const byLevel = applied.value.tingkatan !== ''
+  return [...all]
+    .sort((a, b) => a.subjectName.localeCompare(b.subjectName) || a.levelCode.localeCompare(b.levelCode))
+    .map((r) => {
+      const level = levelOptions.value.find((l) => l.code === r.levelCode)
+      return {
+        key: `${r.subjectId}-${r.levelCode}`,
+        title: byLevel ? r.subjectName : `${r.subjectName} · ${r.levelCode}`,
+        count: r.withoutChapter,
+        to: { path: STUDIO_PATH, query: { status: 'approved', chapter: CHAPTER_NONE, subject_id: r.subjectId, ...(level ? { tingkatan: String(level.id) } : {}) } },
+      }
+    })
+})
+
+/** Field 03-03: the Bab of the chosen Subjek + Tingkatan; the choice is cleared when either changes (`none` is not scoped to them). */
+const chapterOptions = ref<ChapterOption[]>([])
+const chapterScoped = computed(() => draft.value.subject_id !== '' && draft.value.tingkatan !== '')
+let chapterSeq = 0
+watch(
+  () => [draft.value.subject_id, draft.value.tingkatan] as const,
+  async ([subject, level]) => {
+    const token = ++chapterSeq
+    chapterOptions.value = []
+    // Only a change the admin makes here (not yet applied) clears a Bab id; the route sync and the first run keep it.
+    const edited = subject !== applied.value.subject_id || level !== applied.value.tingkatan
+    if (edited && draft.value.chapter !== CHAPTER_NONE) draft.value.chapter = ''
+    if (subject === '' || level === '') return
+    try {
+      const found = await fetchChapters({ subjectId: subject, educationLevelId: level })
+      if (token === chapterSeq) chapterOptions.value = found
+    } catch {
+      if (token === chapterSeq) chapterOptions.value = []
+    }
+  },
+  { immediate: true },
+)
+const chapterName = (c: ChapterOption): string => (c.chapterNumber === null ? c.name : `Bab ${String(c.chapterNumber)}: ${c.name}`)
 
 /** The KPI strip by Subjek (plan S2-T01, copied from `BankPage.vue`; data API-Q-01 `/summary`). A failed read just hides it. */
 const summary = useApi((signal) => (available ? fetchQuestionSummary({ signal }) : Promise.resolve(null)))
@@ -320,6 +394,10 @@ const chips = computed(() => {
   if (applied.value.tingkatan !== '') {
     const l = levelOptions.value.find((o) => String(o.id) === applied.value.tingkatan)
     out.push({ key: 'tingkatan', label: `Tingkatan: ${l?.name ?? applied.value.tingkatan}` })
+  }
+  if (applied.value.chapter !== '') {
+    const c = chapterOptions.value.find((o) => String(o.id) === applied.value.chapter)
+    out.push({ key: 'chapter', label: `Bab: ${applied.value.chapter === CHAPTER_NONE ? 'Belum dipautkan' : c ? chapterName(c) : applied.value.chapter}` })
   }
   if (applied.value.status !== '') out.push({ key: 'status', label: `Status: ${statusBadge(applied.value.status)}` })
   if (applied.value.dskp !== '') {
@@ -596,6 +674,11 @@ const cardFields: CardField[] = [
           <option value="">Semua tingkatan</option>
           <option v-for="o in levelOptions" :key="o.id" :value="String(o.id)">{{ o.name }}</option>
         </DsNativeSelect>
+        <DsNativeSelect id="studio-chapter-filter" v-model="draft.chapter" aria-label="Bab" :disabled="!chapterScoped && draft.chapter !== 'none'" data-testid="studio-chapter-filter">
+          <option value="">Semua bab</option>
+          <option :value="CHAPTER_NONE">Belum dipautkan</option>
+          <option v-for="c in chapterOptions" :key="c.id" :value="String(c.id)">{{ chapterName(c) }}</option>
+        </DsNativeSelect>
         <DsNativeSelect id="studio-dskp-filter" v-model="draft.dskp" aria-label="Penandaan DSKP" data-testid="studio-dskp-filter">
           <option value="">Semua</option>
           <option v-for="o in DSKP_TAG_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
@@ -626,7 +709,28 @@ const cardFields: CardField[] = [
         </div>
       </DsFilterBar>
 
-      <StudioBulkBar :selected-ids="selectedIds" :filter="bulkFilter" :matched="list.data.value?.meta.totalItems ?? 0" @done="afterBulk" />
+      <DsCluster gap="sm" data-testid="studio-worklists">
+        <UButton :to="workListTo" color="neutral" :variant="workList ? 'solid' : 'soft'" :aria-current="workList ? 'page' : undefined" data-testid="studio-worklist-link">Soalan tanpa Bab</UButton>
+      </DsCluster>
+
+      <DsPanel v-if="workList" as="section" title="Soalan tanpa Bab" :description="NO_CHAPTER_NOTE" data-testid="studio-nochapter">
+        <DsStack gap="sm">
+          <DsText variant="label" tabular role="status" data-testid="studio-nochapter-count">{{ workListTotal === null ? '…' : workListTotal }} soalan</DsText>
+          <DsStack v-if="coverageRows.length > 0" as="ul" gap="2xs" aria-label="Soalan tanpa Bab mengikut subjek" data-testid="studio-nochapter-subjects">
+            <DsListRow v-for="r in coverageRows" :key="r.key" :title="r.title" :meta="r.count" :to="r.to" data-testid="studio-nochapter-subject" />
+          </DsStack>
+        </DsStack>
+      </DsPanel>
+
+      <StudioBulkBar
+        :selected-ids="selectedIds"
+        :filter="bulkFilter"
+        :matched="list.data.value?.meta.totalItems ?? 0"
+        :subject-id="applied.subject_id"
+        :education-level-id="applied.tingkatan"
+        @done="afterBulk"
+        @chapter="openChapter"
+      />
 
       <DsLoadError v-if="list.error.value" :message="listLoadMessage(list.error.value)" testid="studio-error" retry-testid="studio-retry" @retry="list.reload()" />
 
@@ -717,6 +821,16 @@ const cardFields: CardField[] = [
       </DsDataTable>
     </template>
 
+    <BulkChapterPanel
+      v-if="chapterTarget"
+      v-model:open="chapterOpen"
+      :subject-id="chapterTarget.subjectId"
+      :education-level-id="chapterTarget.educationLevelId"
+      :ids="chapterTarget.ids"
+      :filter="chapterTarget.filter"
+      @done="afterBulk"
+      @close="chapterTarget = null"
+    />
     <StudioPreview v-model:open="previewOpen" :group="previewGroup" :draft="previewDraft" :question-id="previewId" :unsupported="previewUnsupported" />
     <DsDialog v-model:open="startOpen" title="Cipta baharu" data-testid="studio-start">
       <DsStack gap="md">

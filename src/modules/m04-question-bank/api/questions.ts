@@ -564,6 +564,8 @@ export interface QuestionBulkFilter {
   complianceFilter?: string
   sourceFilter?: string
   search?: string
+  /** API-Q-01 `chapter` (S1-T07): `none` = no Bab, else a chapter id. */
+  chapter?: string
 }
 export type QuestionFilterAction = 'approved' | 'archived'
 

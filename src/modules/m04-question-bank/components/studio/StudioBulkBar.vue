@@ -3,6 +3,9 @@
  * The bulk bar of the Studio list (FR-ADM-Q03.5, field 03-15): selected rows take `Hantar untuk semakan`, `Terbitkan` and `Arkib`
  * (API-Q-04, group-aware, at most 64 ids); "all results of the filter" takes `Terbitkan` and `Arkib` only (the filter route). A
  * selection holding part of a stimulus group is refused whole by the server, and its text is shown here.
+ * `Tetapkan Bab` (field 03-14, C-05, S2-T08) is a separate action: it needs a single Subjek and Tingkatan in the filter (else it is
+ * disabled and the PRD message is shown) and takes the selected rows (at most 64) or "Semua hasil tapisan"; the panel itself is
+ * mounted by the list page, this bar only asks for it (`chapter`).
  */
 import { computed, ref, watch } from 'vue'
 
@@ -10,7 +13,7 @@ import { DsCluster, DsStack, DsText, useConfirm } from '@/ds'
 
 import { bulkQuestionsByFilter, type QuestionBulkFilter, type QuestionFilterAction, type QuestionFilterBulkResult } from '../../api/questions'
 import { bulkStudioAction, type StudioBulkAction, type StudioBulkResult } from '../../api/studio'
-import { bulkFilterCountLine } from '../../lib/bulk-filter'
+import { BULK_FILTER_NEEDED, bulkFilterCountLine } from '../../lib/bulk-filter'
 import { errorLines } from '../../lib/ui-errors'
 import BulkFilterResult from '../BulkFilterResult.vue'
 
@@ -24,8 +27,11 @@ const props = defineProps<{
   filter: QuestionBulkFilter
   /** Rows of the filter, as the list shows. */
   matched: number
+  /** The single Subjek and Tingkatan of the filter (`''` = not chosen): `Tetapkan Bab` needs both. */
+  subjectId?: string
+  educationLevelId?: string
 }>()
-const emit = defineEmits<{ done: [] }>()
+const emit = defineEmits<{ done: []; chapter: [allResults: boolean] }>()
 const confirm = useConfirm()
 
 const allResults = ref(false)
@@ -42,11 +48,22 @@ const count = computed(() => (allResults.value ? props.matched : props.selectedI
 // A result stays on screen after the run has cleared the selection.
 const visible = computed(() => props.selectedIds.length > 0 || hasFilter.value || rowsResult.value !== null || filterResult.value !== null || problems.value.length > 0)
 const tooMany = computed(() => !allResults.value && props.selectedIds.length > BULK_MAX)
+const scoped = computed(() => (props.subjectId ?? '') !== '' && (props.educationLevelId ?? '') !== '')
 const actions = computed<StudioBulkAction[]>(() => (allResults.value ? ['approved', 'archived'] : ['review', 'approved', 'archived']))
 const summary = computed(() => {
   const r = rowsResult.value
   return r === null ? '' : `${String(r.affected)} berjaya, ${String(r.failed.length + (r.skipped?.length ?? 0))} dilangkau`
 })
+
+/** `Tetapkan Bab`: asks the page to open the panel for the selected rows or for the whole filter. */
+function openChapter(): void {
+  problems.value = []
+  if (count.value === 0) {
+    problems.value = ['Sila pilih sekurang-kurangnya satu soalan.']
+    return
+  }
+  emit('chapter', allResults.value)
+}
 
 async function run(action: StudioBulkAction): Promise<void> {
   problems.value = []
@@ -108,7 +125,9 @@ async function runFilter(action: QuestionFilterAction): Promise<void> {
       >
         {{ LABELS[a] }}
       </UButton>
+      <UButton type="button" color="neutral" variant="soft" :disabled="!scoped || tooMany" aria-haspopup="dialog" data-testid="studio-bulk-chapter" @click="openChapter">Tetapkan Bab</UButton>
     </DsCluster>
+    <DsText v-if="!scoped" variant="caption" tone="muted" data-testid="studio-bulk-chapter-needed">{{ BULK_FILTER_NEEDED }}</DsText>
     <DsText v-if="tooMany" variant="caption" tone="warning" data-testid="studio-bulk-cap">Pilih paling banyak {{ BULK_MAX }} soalan, atau gunakan semua hasil tapisan.</DsText>
     <DsStack v-if="problems.length > 0" gap="2xs" role="alert" data-testid="studio-bulk-problems">
       <DsText v-for="p in problems" :key="p" variant="body" tone="error">{{ p }}</DsText>

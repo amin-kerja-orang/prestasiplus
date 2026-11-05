@@ -55,6 +55,8 @@ export interface AdminListFilter {
   complianceFilter?: string
   sourceFilter?: string
   search?: string
+  /** API-Q-01 `chapter` (S1-T07): `none` = no Bab (the work-list "Soalan tanpa Bab"), else a chapter id. */
+  chapter?: string
 }
 
 const STATUSES: readonly QuestionStatus[] = [
@@ -100,6 +102,11 @@ export function adminWhere(filter: AdminListFilter): Where<Question> {
   if (filter.sourceFilter) {
     if (!SOURCES.includes(filter.sourceFilter as SourceType)) return NOTHING
     w.sourceType = filter.sourceFilter
+  }
+  if (filter.chapter) {
+    if (filter.chapter === 'none') w.curriculumChapterId = null
+    else if (/^[1-9]\d{0,18}$/.test(filter.chapter) && Number.isSafeInteger(Number(filter.chapter))) w.curriculumChapterId = Number(filter.chapter)
+    else return NOTHING
   }
   return w
 }

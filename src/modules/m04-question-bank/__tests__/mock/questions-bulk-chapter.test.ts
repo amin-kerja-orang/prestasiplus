@@ -121,4 +121,31 @@ describe('bulk-chapter mock', () => {
     const after = await call<typeof before.body>('GET', '/api/admin/curriculum/chapter-coverage?subjectId=3&educationLevelId=11', ADMIN)
     expect(after.body.data.rows[0]!.withChapter).toBe(row.withChapter + 2)
   })
+
+  it('the Studio list honours chapter=none and chapter=<id> (API-Q-01, S2-T08)', async () => {
+    const chapterId = await chapterOf(3, 11)
+    const word = 'bulkchapterword3x'
+    const ids = (await seed(3, word)).map(String)
+    const list = async (chapter: string) =>
+      (await call<{ data: unknown[]; meta: { totalItems: number } }>('GET', `/api/questions?subjectId=3&educationLevelId=11&status=approved&search=${word}&chapter=${chapter}`, ADMIN)).body
+
+    expect((await list('none')).meta.totalItems).toBe(3)
+    expect((await list(String(chapterId))).meta.totalItems).toBe(0)
+    await run({ chapterId: String(chapterId), ids: ids.slice(0, 2), expectedCount: 2 })
+    expect((await list('none')).meta.totalItems).toBe(1)
+    expect((await list(String(chapterId))).meta.totalItems).toBe(2)
+    expect((await list('abc')).meta.totalItems).toBe(0)
+  })
+
+  it('"all results" with chapter=none links only the questions without a Bab; a Bab id in the filter links none', async () => {
+    const chapterId = await chapterOf(3, 11)
+    const word = 'bulkchapterword4x'
+    const ids = (await seed(3, word)).map(String)
+    await run({ chapterId: String(chapterId), ids: [ids[0]!], expectedCount: 1 })
+    const base = { subjectId: '3', educationLevelId: '11', search: word }
+    const none = await run({ chapterId: String(chapterId), filter: { ...base, chapter: 'none' }, dryRun: true })
+    expect(none.body.data).toMatchObject({ matched: 2, eligible: 2, refused: 0 })
+    const byId = await run({ chapterId: String(chapterId), filter: { ...base, chapter: String(chapterId) }, dryRun: true })
+    expect(byId.body.data).toMatchObject({ matched: 1, eligible: 0, refused: 1 })
+  })
 })
