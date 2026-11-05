@@ -22,16 +22,29 @@ const PAD_CONTROLS = [
   'pad-save',
 ] as const
 
-/** Moves on with "Seterusnya" until the drawing leaf is on screen. */
-async function toDrawingLeaf(page: Page): Promise<void> {
-  for (let i = 0; i < 6; i += 1) {
-    if ((await page.getByTestId('drawing-pad').count()) > 0) return
-    // below 1024px the shared Rajah drawer opens by itself on the first member of its group
-    if (await page.getByTestId('group-stimuli').isVisible()) await page.keyboard.press('Escape')
-    await page.getByTestId('next').click()
-    await page.waitForTimeout(250)
+/** `mat2-garis-v1` is question 4 of `mat-k2-2025-a` (registry.ts: three Bahagian A questions, then Bahagian B). */
+const DRAWING_Q = 4
+const DRAWING_LEAF = 'part-input-mat2-garis-v1-d'
+
+/** Below 1024px the shared Rajah drawer opens by itself on the first member of its group: close it. */
+async function closeStimulusDrawer(page: Page): Promise<void> {
+  if (await page.getByTestId('group-stimuli').isVisible()) {
+    await page.keyboard.press('Escape')
+    await expect(page.getByTestId('group-stimuli')).toBeHidden()
   }
-  await expect(page.getByTestId('drawing-pad')).toBeVisible()
+}
+
+/** Jumps to the drawing leaf through the question map (`nav-<n>`): the rail at 1280, the "Peta" sheet below lg. */
+async function toDrawingLeaf(page: Page): Promise<void> {
+  await expect(page.getByTestId('next')).toBeVisible()
+  await closeStimulusDrawer(page)
+  // the map exists twice below lg (rail kept in the DOM + the sheet): use the visible one
+  const nav = page.locator(`[data-testid="nav-${DRAWING_Q}"]:visible`)
+  if ((await nav.count()) === 0) await page.getByTestId('open-map').click()
+  await nav.click()
+  if (await page.getByTestId('open-map').isVisible()) await page.keyboard.press('Escape')
+  await closeStimulusDrawer(page)
+  await expect(page.getByTestId(DRAWING_LEAF)).toBeVisible()
 }
 
 async function drawStroke(page: Page): Promise<void> {
@@ -73,10 +86,12 @@ test.describe('Papan Lukisan responsive @bijak', () => {
     for (const id of PAD_CONTROLS) {
       const box = (await page.getByTestId(id).boundingBox())!
       expect(box.height, `${id} height`).toBeGreaterThanOrEqual(44)
+      expect(box.width, `${id} width`).toBeGreaterThanOrEqual(44)
     }
-    // the canvas never overflows the viewport width
+    // the canvas stays inside the viewport on both sides
     const vw = page.viewportSize()!.width
     const cbox = (await page.getByTestId('pad-canvas').boundingBox())!
+    expect(cbox.x).toBeGreaterThanOrEqual(0)
     expect(cbox.x + cbox.width).toBeLessThanOrEqual(vw)
 
     await drawStroke(page)
@@ -89,9 +104,13 @@ test.describe('Papan Lukisan responsive @bijak', () => {
     await expect(page.getByTestId('pad-error')).toHaveCount(0)
 
     // a second stroke and an explicit save replace the drawing: still one photo
+    // positive signal: the stored drawing is replaced (its preview gets a new object URL), then exactly one photo is left
+    const preview = photos.first().locator('img')
+    await expect(preview).toHaveAttribute('src', /^blob:/)
+    const firstSrc = await preview.getAttribute('src')
     await drawStroke(page)
     await page.getByTestId('pad-save').click()
-    await page.waitForTimeout(1500)
+    await expect(preview).not.toHaveAttribute('src', firstSrc!, { timeout: 10_000 })
     await expect(photos).toHaveCount(1)
 
     // clearing the pad removes the drawing photo
