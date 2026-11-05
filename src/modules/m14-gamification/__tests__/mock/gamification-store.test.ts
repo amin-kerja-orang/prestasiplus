@@ -382,7 +382,7 @@ describe('owners of the observed ledger rows (review MINOR-7)', () => {
 
 describe('other §6.10 queries and §6.11.5 / §6.11.7 seeds', () => {
   it('challenges, finishers, achievements, referrals', () => {
-    expect(challenges.count('Q-CHALLENGES-ACTIVE')).toBe(10)
+    expect(challenges.count('Q-CHALLENGES-ACTIVE')).toBe(14)
     expect(gamification.dailyFinishers()).toBe(0)
     expect(achievements.count('Q-ACH-UNLOCKED', 1)).toBe(0)
     expect(achievements.forUser(1)).toMatchObject({ unlocked: 0, total: 25 })
@@ -680,8 +680,10 @@ describe('gamification.onSessionCompleted (BR-M14-03/04/05/08/12/13/14/16/24)', 
     expect(rowsOf(3).reverse()).toEqual([
       ['Latih Tubi: 3 betul — 30%', 3],
       ['Cabaran selesai: Penjelajah Topik', 25],
+      ['Cabaran selesai: 3 Topik Berbeza', 60], // S7-T04 row: 3 chapters
       ['Cabaran selesai: Mula Hari Ini', 10],
       ['Pencapaian: Langkah Pertama', 5],
+      ['Pencapaian: Pengumpul Syiling', 10], // lifetime syiling now reaches 100 with the +60
     ])
     gamification.onSessionCompleted(
       session(3, {
@@ -747,7 +749,7 @@ describe('gamification.onSessionCompleted (BR-M14-03/04/05/08/12/13/14/16/24)', 
     const r = gamification.onSessionCompleted(session(5901, { correct: 8 }))
     expect(r.coinsEarned).toBe(0)
     expect(coinLedger.forUser(5901)).toHaveLength(0)
-    expect(wallet.summary(5901)).toMatchObject({ currentSyiling: 0, xp: 80 + 15 + 5 + 8 + 3 }) // Si Tepat, Mula, Jawab 5, Langkah Pertama
+    expect(wallet.summary(5901)).toMatchObject({ currentSyiling: 0, xp: 80 + 15 + 5 + 8 + 3 + 150 }) // Si Tepat, Mula, Jawab 5, Langkah Pertama, Ketepatan 80% (S7-T04 row, 8/10 = 80%)
     expect(streak.get(5901).current).toBe(1)
   })
 

@@ -88,7 +88,7 @@ describe('M14 admin economy (BE-23, AC4, AC8)', () => {
       const d = GamificationAdminOverviewSchema.parse(dataOf(await admin.get('/admin/gamification/overview')))
       const wallets = Number((await t.db.query<{ n: string }>(`select count(*)::text n from wallets`))[0]!.n)
       const sum = Number((await t.db.query<{ n: string }>(`select sum(total_syiling_earned)::text n from wallets`))[0]!.n)
-      expect(d.cards).toMatchObject({ activeStudents: wallets, syilingGenerated: sum, tokensConverted: 0, conversions: 0, activeChallenges: 10, completedToday: 0 })
+      expect(d.cards).toMatchObject({ activeStudents: wallets, syilingGenerated: sum, tokensConverted: 0, conversions: 0, activeChallenges: 14, completedToday: 0 })
       expect(d.tierDistribution.map((x) => x.key)).toEqual(['bronze', 'gold', 'platinum', 'silver'])
       expect(d.tierDistribution.reduce((a, x) => a + x.count, 0)).toBe(wallets)
       expect(d.top10.map((x) => x.rank)).toEqual(d.top10.map((_, i) => i + 1))
@@ -198,7 +198,7 @@ describe('M14 admin economy (BE-23, AC4, AC8)', () => {
   describe('challenges (S3)', () => {
     it('GET lists every challenge (active or not) by (sortOrder, id) without the internal metric', async () => {
       const list = dataOf<Record<string, unknown>[]>(await admin.get('/admin/gamification/challenges'))
-      expect(list).toHaveLength(10)
+      expect(list).toHaveLength(14)
       list.forEach((c) => GamificationAdminChallengeSchema.parse(c))
       expect(list.every((c) => !('metric' in c))).toBe(true)
       expect(list.slice(0, 4).map((c) => c.title)).toEqual(['Rajin Berlatih', 'Si Tepat', 'Penjelajah Topik', 'Kilat Matematik'])
