@@ -314,6 +314,10 @@ export interface StructuredListFilter {
   subjectId?: string
   educationLevelId?: string
   kbatLevel?: string
+  /** Teacher mount (API-GUR-26): only what a pupil is served (approved and live, T4/T5, figures present). */
+  served?: boolean
+  /** Order by `created_at` descending instead of id ascending. */
+  newestFirst?: boolean
   page: number
   pageSize: number
 }
@@ -434,3 +438,6 @@ export interface TextbookRef {
  */
 export const STORE_QUESTION_TYPES_V3 = [...STORE_QUESTION_TYPES, 'mcq_multi', 'true_false', 'fill_blank'] as const
 export type StoreQuestionTypeV3 = (typeof STORE_QUESTION_TYPES_V3)[number]
+
+/** Teacher structured detail source: the question view of the LIVE version plus its stimulus group (no creator, no DSKP chain). */
+export type GuruStructuredRecord = QuestionView & { stimulusGroup: StimulusGroupRecord | null }

@@ -16,6 +16,7 @@ import {
   flatItems,
   groupTabs,
   labelTitle,
+  LOGOUT_ROW_MIN_HEIGHT_CLASS,
   pembelajaranTabs,
   phIconFor,
   sidebarEntries,
@@ -175,5 +176,19 @@ describe('sidebar label tooltip (UAT: the hover tooltip covered the next row)', 
     expect(labelTitle(undefined)).toBeUndefined()
     const long = 'Kedai Hadiah 🎁 (DIGITAL) untuk murid'
     expect(labelTitle(long)).toBe(long)
+  })
+})
+
+describe('Log Keluar touch target (AC-MUR-A5-4)', () => {
+  it('the shared class is min-h-11 (44 px)', () => {
+    expect(LOGOUT_ROW_MIN_HEIGHT_CLASS).toBe('min-h-11')
+  })
+
+  it('the layout applies it to both the account dropdown and the Lagi panel Log Keluar rows', async () => {
+    const { readFileSync } = await import('node:fs')
+    const src = readFileSync(`${process.cwd()}/src/shells/pembelajaran/PembelajaranLayout.vue`, 'utf8')
+    const rows = [...src.matchAll(/label: 'Log Keluar',\n[\s\S]*?\n\s*\},/g)].map((m) => m[0])
+    expect(rows).toHaveLength(2)
+    for (const row of rows) expect(row).toContain('LOGOUT_ROW_MIN_HEIGHT_CLASS')
   })
 })

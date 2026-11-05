@@ -26,6 +26,101 @@ describe('M15 concurrency (BE-23, AC1)', () => {
     await t.close()
   })
 
+  describe('clientUuid (S7-T05, DM-78)', () => {
+    const KEY = '7f3c2a10-5b1e-4c6d-9a2f-1e8b7c6d5a40'
+    const redemptions = async (userId: string) => Number((await t.db.query<{ n: string }>(`select count(*)::text n from reward_redemptions where user_id = $1`, [userId]))[0]!.n)
+    const tickets = async (userId: string) => Number((await t.db.query<{ n: string }>(`select count(*)::text n from draw_tickets where user_id = $1`, [userId]))[0]!.n)
+
+    it('AC-GM-21.9: two redeems with one key at once give one redemption and one debit, and both answer the same id; another pupil with that key gets their own', async () => {
+      const reward = await insertReward(t, { tokenCost: 5, stock: 3 })
+      const [a, b] = [await bareUser(t, 'kunci a'), await bareUser(t, 'kunci b')]
+      await fund(t, a, { tokens: 20 }, 'key')
+      await fund(t, b, { tokens: 20 }, 'key')
+      const { ok, codes } = await settle([1, 2].map(() => t.shop.redeem(actorFor(a), { rewardId: reward, clientUuid: KEY })))
+      expect(codes).toEqual([])
+      expect(ok[0]!.id).toBe(ok[1]!.id)
+      expect(ok.map((r) => r.tokenBalance)).toEqual([15, 15])
+      expect(await redemptions(a)).toBe(1)
+      expect(await tokenSum(t, a)).toBe(15)
+      expect(await stockOf(t, reward)).toBe(2)
+      const other = await t.shop.redeem(actorFor(b), { rewardId: reward, clientUuid: KEY })
+      expect(other.id).not.toBe(ok[0]!.id)
+      expect(await redemptions(b)).toBe(1)
+    })
+
+    it('a repeat answers the first redemption even when the reward has gone, or the body names another reward; a new key buys again; no key is never a repeat', async () => {
+      const reward = await insertReward(t, { tokenCost: 5, stock: 2 })
+      const other = await insertReward(t, { tokenCost: 1, stock: null })
+      const u = await bareUser(t, 'kunci ulang')
+      await fund(t, u, { tokens: 30 }, 'key')
+      const first = await t.shop.redeem(actorFor(u), { rewardId: reward, clientUuid: KEY })
+      await t.db.query(`update rewards set is_active = false where id = $1`, [reward])
+      expect(await t.shop.redeem(actorFor(u), { rewardId: reward, clientUuid: KEY.toUpperCase() })).toEqual(first)
+      expect(await t.shop.redeem(actorFor(u), { rewardId: other, clientUuid: KEY })).toEqual(first)
+      expect(await redemptions(u)).toBe(1)
+      await t.shop.redeem(actorFor(u), { rewardId: other, clientUuid: '7f3c2a10-5b1e-4c6d-9a2f-1e8b7c6d5a41' })
+      await t.shop.redeem(actorFor(u), { rewardId: other })
+      await t.shop.redeem(actorFor(u), { rewardId: other })
+      expect(await redemptions(u)).toBe(4)
+    })
+
+    it('a refused redeem keeps no key, so a retry with that key can still succeed', async () => {
+      const reward = await insertReward(t, { tokenCost: 5, stock: null })
+      const u = await bareUser(t, 'kunci gagal')
+      expect((await settle([t.shop.redeem(actorFor(u), { rewardId: reward, clientUuid: KEY })])).codes).toEqual(['INSUFFICIENT_TOKENS'])
+      await fund(t, u, { tokens: 5 }, 'key')
+      expect((await t.shop.redeem(actorFor(u), { rewardId: reward, clientUuid: KEY })).tokenBalance).toBe(0)
+    })
+
+    it('AC-MUR-22-5: a double press with one key buys one ticket and debits once; a repeat answers after the draw closes; another pupil with that key buys their own', async () => {
+      const draw = await insertDraw(t, { cost: 10, max: 5 })
+      const [a, b] = [await bareUser(t, 'tiket a'), await bareUser(t, 'tiket b')]
+      await fund(t, a, { syiling: 50 }, 'key')
+      await fund(t, b, { syiling: 50 }, 'key')
+      const { ok, codes } = await settle([1, 2].map(() => t.shop.buyTicket(actorFor(a), draw, { clientUuid: KEY })))
+      expect(codes).toEqual([])
+      expect(ok).toEqual([
+        { drawId: draw, ticketsOwned: 1, syilingBalance: 40 },
+        { drawId: draw, ticketsOwned: 1, syilingBalance: 40 },
+      ])
+      expect(await tickets(a)).toBe(1)
+      expect(await t.shop.buyTicket(actorFor(b), draw, { clientUuid: KEY })).toEqual({ drawId: draw, ticketsOwned: 1, syilingBalance: 40 })
+      await t.db.query(`update draws set status = 'closed' where id = $1`, [draw])
+      expect(await t.shop.buyTicket(actorFor(a), draw, { clientUuid: KEY })).toEqual({ drawId: draw, ticketsOwned: 1, syilingBalance: 40 })
+      expect(await tickets(a)).toBe(1)
+    })
+
+    it('the partial unique indexes refuse a second row with one key and allow any number without a key', async () => {
+      const draw = await insertDraw(t)
+      const u = await bareUser(t, 'indeks kunci')
+      const ticket = (key: string | null) => t.db.query(`insert into draw_tickets (draw_id, user_id, client_uuid) values ($1, $2, $3)`, [draw, u, key])
+      await ticket(null)
+      await ticket(null)
+      await ticket(KEY)
+      await expect(ticket(KEY)).rejects.toThrow(/uq_draw_tickets_user_id_client_uuid/)
+      const redemption = (key: string | null) => t.db.query(`insert into reward_redemptions (user_id, reward_title, reward_vendor, denomination_rm, token_cost, status, client_uuid) values ($1, 'Hadiah', 'Vendor', 1, 1, 'pending_admin', $2)`, [u, key])
+      await redemption(null)
+      await redemption(null)
+      await redemption(KEY)
+      await expect(redemption(KEY)).rejects.toThrow(/uq_reward_redemptions_user_id_client_uuid/)
+    })
+
+    it('without a key each press still buys a ticket (no body is fine); a bad key is 422 on both routes and saves nothing', async () => {
+      const draw = await insertDraw(t, { cost: 0, max: 5 })
+      const reward = await insertReward(t, { tokenCost: 1, stock: null })
+      const u = await bareUser(t, 'tanpa kunci')
+      await fund(t, u, { tokens: 5 }, 'key')
+      await t.shop.buyTicket(actorFor(u), draw)
+      expect((await t.shop.buyTicket(actorFor(u), draw, {})).ticketsOwned).toBe(2)
+      for (const clientUuid of ['not-a-uuid', 5]) {
+        expect((await settle([t.shop.redeem(actorFor(u), { rewardId: reward, clientUuid })])).codes).toEqual(['VALIDATION_ERROR'])
+        expect((await settle([t.shop.buyTicket(actorFor(u), draw, { clientUuid })])).codes).toEqual(['VALIDATION_ERROR'])
+      }
+      expect(await tickets(u)).toBe(2)
+      expect(await redemptions(u)).toBe(0)
+    })
+  })
+
   it('(a) 8 buyers for 7 items: exactly 7 succeed, 1 is OUT_OF_STOCK, stock ends at 0 and every ledger agrees', async () => {
     const reward = await insertReward(t, { tokenCost: 5, stock: 7 })
     const buyers: string[] = []
