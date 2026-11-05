@@ -2,7 +2,7 @@
  * Http twin of the intake review flow (AZ-20): Admin Pusat uploads a generated text-layer PDF, asks
  * the server to extract it (AI_PROVIDER=mock, job worker on), edits and confirms the extracted
  * questions, reviews them in the queue, accepts one (creates a Draf question) and finds it in the
- * Bijak bank. Runs against the real API (BE-37 files, BE-38 items, BE-09 questions).
+ * Studio list. Runs against the real API (BE-37 files, BE-38 items, BE-09 questions).
  *
  * WRITES REAL DATA (a batch, items and one Draf question per run). Every run and every viewport
  * project builds its own PDF (the backend refuses a file hash that another batch already imported)
@@ -129,7 +129,7 @@ async function realSpCode(page: Page, subjectName: string, unitKey: string): Pro
 }
 
 test.describe('Intake review over HTTP @bijak @api', () => {
-  test('upload, extract, edit, review, accept and find the Draf question in the bank @bijak @api', async ({
+  test('upload, extract, edit, review, accept and find the Draf question in the Studio list @bijak @api', async ({
     page,
   }, testInfo) => {
     test.setTimeout(240_000)
@@ -224,10 +224,17 @@ test.describe('Intake review over HTTP @bijak @api', () => {
       await page.getByTestId('action-publish').click() // "Terima (Draf)"
       await page.waitForURL(/\/admin\/studio\?status=review$/)
 
-      /* ---- the old bank list now lands on the Databank lane (S2-T03); the Draf row check moved with the list */
+      /* ---- the old bank list now lands on the Databank lane (S2-T03) */
       await page.goto('/admin/spm/soalan')
       await page.waitForURL(/\/admin\/spm\/databank$/)
       await expect(page.getByTestId('lane-databank')).toBeVisible()
+      await expectNoHorizontalScrollHttp(page)
+
+      /* ---- the Draf question is in the canonical list, the Studio (FR-ADM-Q03.6) */
+      await page.goto(`/admin/studio?status=draft&search=${token}`)
+      await expect(page.getByTestId('studio-list-page')).toBeVisible()
+      const row = page.getByTestId('studio-table').getByText(token).first() // a row (a card below 768 px)
+      await expect(row).toBeVisible({ timeout: 30_000 })
       await expectNoHorizontalScrollHttp(page)
 
       // The batch shows only the question that is still to decide.
