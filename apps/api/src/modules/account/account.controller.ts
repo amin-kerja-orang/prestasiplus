@@ -30,6 +30,7 @@ import {
   AccountPasswordResetIcRequestSchema,
   AccountPasswordResetRequestSchema,
   type AccountPlatformStats,
+  type AccountProfileActivity,
   type AccountRegisterPending,
   type AccountSettings,
   type AccountUserMe,
@@ -54,6 +55,7 @@ import { setSessionCookie } from '../auth/cookies'
 import { ACCOUNT_LIMITS } from './account.constants'
 import { invalid } from './account.errors'
 import { PasswordResetService } from './password-reset.service'
+import { ProfileActivityService } from './profile-activity.service'
 import { ProfileService, type PictureUpload } from './profile.service'
 import { RegistrationService } from './registration.service'
 import { SettingsService, StatsService } from './settings.service'
@@ -174,7 +176,7 @@ export class PictureInterceptor implements NestInterceptor {
 }
 
 /**
- * The signed-in user's own account: `/me`, `/me/password`, `/me/picture`, `/me/settings`. Any role;
+ * The signed-in user's own account: `/me`, `/me/password`, `/me/picture`, `/me/settings`, `/me/profile-activity`. Any role;
  * everything acts on the session user only. Personal data: every response is `no-store`. Writes are
  * rate limited per user (D57a).
  */
@@ -185,6 +187,7 @@ export class MeController extends Cookies {
   constructor(
     @Inject(ProfileService) private readonly profile: ProfileService,
     @Inject(SettingsService) private readonly settings: SettingsService,
+    @Inject(ProfileActivityService) private readonly activity: ProfileActivityService,
     @Inject(AuthConfig) config: AuthConfig,
     @Inject(CLOCK) clock: Clock,
   ) {
@@ -225,6 +228,12 @@ export class MeController extends Cookies {
   ): Promise<{ data: { avatarUrl: string }; status: string }> {
     const upload: PictureUpload | undefined = file?.buffer ? { buffer: file.buffer, mimetype: file.mimetype ?? '' } : undefined
     return { data: await this.profile.setPicture(authOf(req), upload, infoOf(req)), status: ACCOUNT_MESSAGES.pictureSaved }
+  }
+
+  /** API-MUR-02: the pupil's own tiles, calendar, badges and newest sessions (a role other than student: 403). */
+  @Get('profile-activity')
+  async profileActivity(@Req() req: AuthedRequest): Promise<{ data: AccountProfileActivity }> {
+    return ok(await this.activity.get(authOf(req)))
   }
 
   @Get('settings')

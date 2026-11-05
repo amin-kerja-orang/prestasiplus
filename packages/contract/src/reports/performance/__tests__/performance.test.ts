@@ -6,10 +6,16 @@ import {
   PERFORMANCE_TIMELINE_MESSAGES,
   PerformanceClassAnalyticsSchema,
   PerformanceClassDashboardSchema,
+  PerformanceHeadcountArRequestSchema,
   PerformanceHeadcountAutoSetupRequestSchema,
   PerformanceHeadcountCreateRequestSchema,
+  PerformanceHeadcountDefaultsRequestSchema,
   PerformanceHeadcountDetailSchema,
   PerformanceHeadcountDropRequestSchema,
+  PerformanceItemAnalysisMeQuerySchema,
+  PerformanceItemAnalysisMeSchema,
+  PerformanceHeadcountSettingsRequestSchema,
+  PerformanceHeadcountTovRequestSchema,
   PerformanceLeaderboardSchema,
   PerformanceLevelDetailSchema,
   PerformancePublicProfileSchema,
@@ -231,8 +237,11 @@ describe('performance contract (BE-19)', () => {
         teacherName: 'Guru Contoh',
         status: 'active',
         activeOtrs: 2,
+        mode: 'manual',
+        defaultTov: 40,
+        defaultEtr: null,
       },
-      chips: { onTrack: 1, below: 0, empty: 0, total: 1 },
+      chips: { onTrack: 1, below: 0, empty: 0, total: 1, onTrackPct: 100 },
       rows: [
         {
           userId: '9',
@@ -242,6 +251,12 @@ describe('performance contract (BE-19)', () => {
           etr: null,
           etrGrade: null,
           dropped: false,
+          rs: null,
+          rsRecordedAt: null,
+          status: 'on',
+          statusReason: 'belum_ada_data',
+          entryStatus: 'draft',
+          projection: null,
           cells: [
             { target: 60, targetGrade: 'B', ar: 62, arGrade: 'B', tone: 'above' },
             { target: 65, targetGrade: 'B+', ar: null, arGrade: null, tone: 'na' },
@@ -257,6 +272,31 @@ describe('performance contract (BE-19)', () => {
         config: { ...detail.config, status: 'closed' },
       }).success,
     ).toBe(false)
+  })
+
+  it('S10-T02 request bodies: marks 0..100 with the exact BM copy, RS date shape, Bilangan OTR 2..5, defaults', () => {
+    const M = PERFORMANCE_HEADCOUNT_MESSAGES
+    const ar = (value: unknown) => PerformanceHeadcountArRequestSchema.safeParse({ checkpoint: 1, marks: [{ userId: '9', value }] })
+    for (const ok of [0, 66.5, 100, null]) expect(ar(ok).success, String(ok)).toBe(true)
+    for (const bad of [-0.1, 101, 'x']) expect(fieldMessages(ar(bad)), String(bad)).toEqual({ marks: M.markRange })
+    expect(PerformanceHeadcountArRequestSchema.safeParse({ marks: [] }).success).toBe(false)
+    const tov = (row: object) => PerformanceHeadcountTovRequestSchema.safeParse({ rows: [{ userId: '9', ...row }] })
+    expect(tov({}).success).toBe(true)
+    expect(tov({ tov: 40, etr: null, rs: 78.5, rsRecordedAt: '2026-10-01' }).success).toBe(true)
+    expect(tov({ rs: null, rsRecordedAt: null }).success).toBe(true)
+    expect(fieldMessages(tov({ tov: 101 }))).toEqual({ rows: M.markRange })
+    expect(fieldMessages(tov({ rsRecordedAt: '01/10/2026' }))).toEqual({ rows: M.rsDateInvalid })
+    for (const impossible of ['2025-13-01', '2026-02-31', '2025-02-29', '2026-04-31', '2026-00-10'])
+      expect(fieldMessages(tov({ rsRecordedAt: impossible })), impossible).toEqual({ rows: M.rsDateInvalid })
+    for (const real of ['2024-02-29', '2026-12-31']) expect(tov({ rsRecordedAt: real }).success, real).toBe(true)
+    expect(M.rsDateNeedsRs).toBe('Tarikh Rekod RS memerlukan RS.')
+    for (const n of [2, 3, '4', 5]) expect(PerformanceHeadcountSettingsRequestSchema.safeParse({ activeOtrs: n }).success, String(n)).toBe(true)
+    for (const n of [1, 6, 'x']) expect(fieldMessages(PerformanceHeadcountSettingsRequestSchema.safeParse({ activeOtrs: n }))).toEqual({ activeOtrs: M.otrInvalid })
+    expect(PerformanceHeadcountSettingsRequestSchema.safeParse({ activeOtrs: 2, confirm: true }).success).toBe(true)
+    expect(PerformanceHeadcountDefaultsRequestSchema.safeParse({ defaultTov: 40, defaultEtr: null }).success).toBe(true)
+    expect(PerformanceHeadcountDefaultsRequestSchema.safeParse({ defaultTov: 40 }).success).toBe(false)
+    expect(M.otrLoweringConfirm(3)).toBe('OTR3 ke atas mempunyai markah. Padam markah tersebut?')
+    expect(M.saved.ar(2)).toBe('AR OTR2 disimpan.')
   })
 
   it('parses ranking, leaderboard and public profile', () => {
@@ -400,8 +440,10 @@ describe('performance contract (BE-19)', () => {
       },
       variant: 'byId',
       tingkatan: null,
+      tingkatanOptions: [],
       students: 0,
       answers: null,
+      questionsTested: null,
       correct: null,
       accuracy: null,
       difficulty: { mudah: 0, sederhana: 0, sukar: 0 },
@@ -413,6 +455,79 @@ describe('performance contract (BE-19)', () => {
     expect(
       PerformanceSchoolItemAnalysisSchema.safeParse({ ...school, variant: 'other' }).success,
     ).toBe(false)
+    // R1-AS-6: Tingkatan T1 to T5, with the chips that have data.
+    for (const t of ['T1', 'T3', 'T5'])
+      expect(PerformanceSchoolItemAnalysisSchema.safeParse({ ...school, tingkatan: t, tingkatanOptions: [t], questionsTested: 3 }).success).toBe(true)
+    expect(PerformanceSchoolItemAnalysisSchema.safeParse({ ...school, tingkatan: 'T6' }).success).toBe(false)
+    // correctOption is nullable (no key/Bijak fact available), never fabricated.
+    const q = {
+      rank: 1, questionId: '1', stem: 's', subjectName: 'BM', chips: [], level: 'Sukar', wrongPct: 50, attempts: 2, pupils: 2, pupilsPct: 50,
+      wrongPupils: [], correctOption: null, popularWrongOption: null, popularWrongCount: 0,
+    }
+    const withQ = (correctOption: unknown) => ({ ...school, questionsTested: 1, questions: [{ ...q, correctOption }] })
+    expect(PerformanceSchoolItemAnalysisSchema.safeParse(withQ(null)).success).toBe(true)
+    expect(PerformanceSchoolItemAnalysisSchema.safeParse(withQ({ letter: 'A', text: 'x' })).success).toBe(true)
+    expect(PerformanceSchoolItemAnalysisSchema.safeParse(withQ(undefined)).success).toBe(false)
+    expect(PerformanceSchoolItemAnalysisSchema.safeParse({ ...school, tingkatanOptions: ['T9'] }).success).toBe(false)
+  })
+
+  describe('API-RPT-05 item analysis of the pupil (me)', () => {
+    const question = {
+      id: '100',
+      questionText: 'Soalan contoh',
+      questionType: 'mcq',
+      options: ['A', 'B', 'C', 'D'],
+      language: 'bm',
+      textDirection: 'ltr',
+      scriptType: 'rumi',
+      pointsValue: 1,
+    }
+    const item = {
+      questionId: '100',
+      category: 'pemulihan',
+      attempts: 2,
+      correct: 0,
+      wrongTimes: 2,
+      lastAnsweredAt: '2026-10-16T09:30:00+08:00',
+      subject: 'Matematik',
+      chapter: null,
+      source: '',
+      question,
+      stimulusGroup: null,
+      explanation: null,
+    }
+    const body = {
+      tiles: { answered: 2, needRemedial: 1, needStrengthen: 0, mastery: 0 },
+      subjects: [{ code: 'MATH', name: 'Matematik', attempts: 2, uniqueQuestions: 1, accuracy: 0, wrongAnswers: 2, weakRepeated: 1, earlySignalWeak: 0 }],
+      counts: { isyaratAwal: 0, pemulihan: 1, pengukuhan: 0 },
+      items: [item],
+    }
+
+    it('parses a populated and an empty payload', () => {
+      expect(PerformanceItemAnalysisMeSchema.safeParse(body).success).toBe(true)
+      const empty = { tiles: { answered: 0, needRemedial: 0, needStrengthen: 0, mastery: null }, subjects: [], counts: { isyaratAwal: 0, pemulihan: 0, pengukuhan: 0 }, items: [] }
+      expect(PerformanceItemAnalysisMeSchema.safeParse(empty).success).toBe(true)
+    })
+
+    it('rejects a bad category and a UTC timestamp, and never carries the answer key', () => {
+      expect(PerformanceItemAnalysisMeSchema.safeParse({ ...body, items: [{ ...item, category: 'lain' }] }).success).toBe(false)
+      expect(PerformanceItemAnalysisMeSchema.safeParse({ ...body, items: [{ ...item, lastAnsweredAt: '2026-10-16T01:30:00Z' }] }).success).toBe(false)
+      const parsed = PerformanceItemAnalysisMeSchema.parse({ ...body, items: [{ ...item, question: { ...question, correctAnswer: 1 } }] })
+      expect(JSON.stringify(parsed)).not.toContain('correctAnswer')
+    })
+
+    it('the query takes subjectCode and the three tapis values only', () => {
+      for (const tapis of ['semua', 'ada_betul', 'selalu_salah'])
+        expect(PerformanceItemAnalysisMeQuerySchema.safeParse({ subjectCode: 'MATH', tapis }).success).toBe(true)
+      expect(PerformanceItemAnalysisMeQuerySchema.safeParse({}).success).toBe(true)
+      expect(PerformanceItemAnalysisMeQuerySchema.safeParse({ tapis: 'semuanya' }).success).toBe(false)
+    })
+
+    it('is registered in the OpenAPI document', () => {
+      const doc = buildOpenApiDocument() as { paths: Record<string, Record<string, unknown>>; components: { schemas: Record<string, unknown> } }
+      expect(doc.paths['/item-analysis/me']?.get).toBeDefined()
+      expect(doc.components.schemas['PerformanceItemAnalysisMe']).toBeDefined()
+    })
   })
 
   it('parses a school performance payload and rejects a bad grade', () => {
@@ -493,8 +608,15 @@ describe('performance contract (BE-19)', () => {
       ['post', '/headcounts/{id}/drop-students'],
       ['post', '/headcounts/{id}/reset'],
       ['delete', '/headcounts/{id}'],
+      // S10-T02
+      ['get', '/headcounts/me'],
+      ['get', '/headcounts/me/detail'],
+      ['put', '/headcounts/{id}/ar'],
+      ['put', '/headcounts/{id}/tov'],
+      ['put', '/headcounts/{id}/settings'],
+      ['put', '/headcounts/{id}/defaults'],
     ]
-    expect(expected).toHaveLength(30)
+    expect(expected).toHaveLength(36)
     for (const [method, path] of expected)
       expect(doc.paths[path]?.[method], `${method} ${path}`).toBeDefined()
     for (const name of Object.keys(PERFORMANCE_COMPONENT_SCHEMAS))

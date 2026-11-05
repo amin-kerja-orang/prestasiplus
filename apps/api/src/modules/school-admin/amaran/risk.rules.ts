@@ -35,7 +35,7 @@ export function masteryLevelOf(correct: number): number {
 }
 
 export interface RiskInputs {
-  /** Mean practice-session accuracy in percent, or null without a completed practice session. */
+  /** Pooled accuracy (XS-5: correct / answered, one decimal), or null without a completed practice session or without answers. */
   accuracy: number | null
   sessions: number
   /** Epoch ms of the last activity, or null. */
@@ -55,7 +55,7 @@ export interface RiskComputed {
 }
 
 /**
- * A = 100 - mean accuracy; 100 without a session but with a last-active date or a mastery record; 50 with none of the three.
+ * A = 100 - pooled accuracy; 100 without a session but with a last-active date or a mastery record; 50 with none of the three.
  * E = min(100, whole days since last active x 100 / 30); 100 when never active.
  * M = (10 - mean mastery level) x 10; 100 without mastery records.
  * score = 0.4A + 0.3E + 0.3M, one decimal.
@@ -163,7 +163,8 @@ export function pupilView(p: ScoredPupil, rank: number): AmaranPupilRisk {
     accuracy,
     engagement,
     mastery,
-    accuracyText: accuracy !== null ? `Purata ketepatan: ${accuracy}%` : p.risk.neverActive ? 'Tiada data latihan' : 'Tiada data',
+    // The screen text shows the whole number, half up (40 FR-X4-5); `accuracy` stays the one-decimal number.
+    accuracyText: accuracy !== null ? `Purata ketepatan: ${Math.floor(accuracy + 0.5)}%` : p.risk.neverActive ? 'Tiada data latihan' : 'Tiada data',
     engagementText: engagement !== null ? `Terakhir aktif: ${engagement}` : 'Tiada aktiviti',
     masteryText: p.risk.masteryMean !== null ? `Purata tahap: L${Math.round(p.risk.masteryMean)}` : p.risk.neverActive ? 'Tiada data penguasaan' : 'Tiada data',
   }
