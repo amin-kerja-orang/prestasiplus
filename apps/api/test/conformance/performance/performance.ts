@@ -303,14 +303,26 @@ const headcountScenarios: Scenario[] = [
         expectError(ctx, await anon.request('POST', path, { body: {} }), 401, 'UNAUTHORIZED')
       }
       expectError(ctx, await anon.request('DELETE', '/headcounts/1'), 401, 'UNAUTHORIZED')
+      // S10-T02: the four PUT writes and the pupil's own routes.
+      for (const tail of ['ar', 'tov', 'settings', 'defaults']) expectError(ctx, await anon.request('PUT', `/headcounts/1/${tail}`, { body: {} }), 401, 'UNAUTHORIZED')
+      for (const path of ['/headcounts/me', '/headcounts/me/detail']) expectError(ctx, await anon.request('GET', path), 401, 'UNAUTHORIZED')
       const student = await ctx.as('student')
       for (const path of [...HEADCOUNT_READS, '/headcounts/students/1']) expectError(ctx, await student.request('GET', path), 403, 'FORBIDDEN')
+      for (const tail of ['ar', 'tov', 'settings', 'defaults']) expectError(ctx, await student.request('PUT', `/headcounts/1/${tail}`, { body: {} }), 403, 'FORBIDDEN')
+      for (const path of ['/headcounts/me', '/headcounts/me/detail']) {
+        const res = await student.request('GET', path)
+        ctx.expectStatus(res, 200)
+        noStore(ctx, res, path)
+      }
+      for (const role of ['teacher', 'school_admin', 'admin'] as ActorRole[]) {
+        expectError(ctx, await (await ctx.as(role)).request('GET', '/headcounts/me'), 403, 'FORBIDDEN')
+      }
       expectError(ctx, await student.request('POST', '/headcounts', { body: {} }), 403, 'FORBIDDEN')
       expectError(ctx, await student.request('DELETE', '/headcounts/1'), 403, 'FORBIDDEN')
     },
   },
   {
-    id: 'performance-api/headcount: list, dashboard and form options answer 200 no-store for admin, teacher and school admin; admin and school admin see no configs',
+    id: 'performance-api/headcount: list, dashboard and form options answer 200 no-store for admin, teacher and school admin',
     domain: 'performance',
     targets: ['api'],
     async run(ctx) {
@@ -321,7 +333,6 @@ const headcountScenarios: Scenario[] = [
           ctx.expectStatus(res, 200)
           noStore(ctx, res, path)
         }
-        if (role !== 'teacher') ctx.check(listOf(await who.request('GET', '/headcounts')).length === 0, `${role} sees no own configs`)
       }
     },
   },
@@ -337,13 +348,19 @@ const headcountScenarios: Scenario[] = [
       expectError(ctx, await teacher.request('POST', `/headcounts/${UNKNOWN_ID}/reset`), 404, 'NOT_FOUND')
       expectError(ctx, await teacher.request('POST', `/headcounts/${UNKNOWN_ID}/drop-students`, { body: { action: 'drop', studentIds: ['1'] } }), 404, 'NOT_FOUND')
       expectError(ctx, await teacher.request('DELETE', `/headcounts/${UNKNOWN_ID}`), 404, 'NOT_FOUND')
+      expectError(ctx, await teacher.request('PUT', `/headcounts/${UNKNOWN_ID}/ar`, { body: { checkpoint: 1, marks: [] } }), 404, 'NOT_FOUND')
+      expectError(ctx, await teacher.request('PUT', `/headcounts/${UNKNOWN_ID}/tov`, { body: { rows: [] } }), 404, 'NOT_FOUND')
+      expectError(ctx, await teacher.request('PUT', `/headcounts/${UNKNOWN_ID}/settings`, { body: { activeOtrs: 3 } }), 404, 'NOT_FOUND')
+      expectError(ctx, await teacher.request('PUT', `/headcounts/${UNKNOWN_ID}/defaults`, { body: { defaultTov: null, defaultEtr: null } }), 404, 'NOT_FOUND')
+      expectError(ctx, await (await ctx.as('student')).request('GET', `/headcounts/me/detail?configId=${UNKNOWN_ID}`), 404, 'NOT_FOUND')
       const noCsrf = await ctx.as('teacher', { csrf: false })
+      expectError(ctx, await noCsrf.request('PUT', `/headcounts/${UNKNOWN_ID}/defaults`, { body: {} }), 403, 'CSRF_INVALID')
       expectError(ctx, await noCsrf.request('POST', '/headcounts', { body: {} }), 403, 'CSRF_INVALID')
       expectError(ctx, await noCsrf.request('DELETE', `/headcounts/${UNKNOWN_ID}`), 403, 'CSRF_INVALID')
     },
   },
   {
-    id: 'performance-api/headcount: create rejects a foreign class with one 422; an admin never owns a class; auto-setup needs a level',
+    id: 'performance-api/headcount: create rejects a foreign class with one 422; an admin never writes; auto-setup needs a level',
     domain: 'performance',
     targets: ['api'],
     async run(ctx) {
@@ -357,7 +374,8 @@ const headcountScenarios: Scenario[] = [
       const admin = await (await ctx.as('admin')).request('POST', '/headcounts', {
         body: { classroomId: '1', subjectId: UNKNOWN_ID, educationLevelId: UNKNOWN_ID, academicYear: 2026, activeOtrs: 3, mode: 'auto' },
       })
-      expectError(ctx, admin, 422, 'VALIDATION_ERROR')
+      // S10-T02: writes are the owning teacher's; an admin is refused before any validation.
+      expectError(ctx, admin, 403, 'FORBIDDEN')
       expectError(ctx, await teacher.request('POST', '/headcounts/auto-setup', { body: { levels: [] } }), 422, 'VALIDATION_ERROR')
     },
   },
