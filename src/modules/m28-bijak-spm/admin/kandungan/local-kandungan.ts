@@ -204,10 +204,9 @@ export function createMockKandungan(): KandunganApi {
             basis: 'evaluated' as const,
           }
         }),
-        cards: SERVABILITY_HUB_LANES.map((lane) => {
-          const card = cardOf(lane, cardRows[lane] ?? [], lane === 'latih-tubi' ? cells.reduce((sum, c) => sum + c.total, 0) : undefined)
-          return lane === 'kertas-subjektif' ? { ...card, attentionOpen: true as const } : card
-        }),
+        cards: SERVABILITY_HUB_LANES.map((lane) =>
+          cardOf(lane, cardRows[lane] ?? [], lane === 'latih-tubi' ? cells.reduce((sum, c) => sum + c.total, 0) : undefined),
+        ),
       }
     },
 

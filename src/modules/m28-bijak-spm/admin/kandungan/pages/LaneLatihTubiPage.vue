@@ -8,7 +8,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { SERVABILITY_LATIH_TUBI_SWITCH_LABELS, type ServabilityLatihTubiCell } from '@pp/contract'
 import { computed } from 'vue'
 
-import { DsDataTable, DsLoadError, DsPage, DsStack, DsStatusBadge, DsText, formatCount } from '@/ds'
+import { DsDataTable, DsLoadError, DsPage, DsStack, DsStatusBadge, DsText } from '@/ds'
 
 import { kandunganServer } from '../client'
 import { laneCopy } from '../lanes'
@@ -29,7 +29,6 @@ const columns: TableColumn<Row>[] = [
   { accessorKey: 'status', header: laneCopy.colStatus },
   { accessorKey: 'attention', header: laneCopy.colAttention },
 ]
-const metaOf = (r: Record<string, unknown>): string => `${String(r.meta)} · ${formatCount(r.servable as number)} ${laneCopy.servable}`
 const badgeOf = (status: unknown): 'active' | 'inactive' => (status === 'open' ? 'active' : 'inactive')
 const labelOf = (status: unknown): string => SERVABILITY_LATIH_TUBI_SWITCH_LABELS[status === 'open' ? 'open' : 'closed']
 </script>
@@ -57,7 +56,7 @@ const labelOf = (status: unknown): string => SERVABILITY_LATIH_TUBI_SWITCH_LABEL
       <template #title-cell="{ row }">
         <DsStack gap="2xs">
           <DsText as="p" variant="body" wrap="anywhere">{{ row.original.title }}</DsText>
-          <DsText as="p" variant="caption" tone="muted">{{ metaOf(row.original) }}</DsText>
+          <DsText as="p" variant="caption" tone="muted">{{ row.original.meta }}</DsText>
         </DsStack>
       </template>
       <template #status-cell="{ row }">
@@ -72,7 +71,7 @@ const labelOf = (status: unknown): string => SERVABILITY_LATIH_TUBI_SWITCH_LABEL
       <template #card="{ row }">
         <DsStack gap="2xs">
           <DsText as="p" variant="body" wrap="anywhere">{{ row.title }}</DsText>
-          <DsText as="p" variant="caption" tone="muted">{{ metaOf(row) }}</DsText>
+          <DsText as="p" variant="caption" tone="muted">{{ row.meta }}</DsText>
           <DsStatusBadge :status="badgeOf(row.status)" :label="labelOf(row.status)" />
           <template v-if="(row.attention as string[]).length">
             <DsText v-for="a in row.attention as string[]" :key="a" as="p" variant="caption" tone="error">{{ a }}</DsText>

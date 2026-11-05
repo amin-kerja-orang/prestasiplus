@@ -53,8 +53,6 @@ export const laneCopy = {
   noAttention: '—',
   empty: 'Tiada item untuk penapis ini.',
   searchTooLong: 'Carian tidak boleh melebihi 100 aksara.',
-  /** [PROPOSED]: the cell's servable count (FR-ADM-Q02.4) has no exact label in the PRD; it mirrors "tidak boleh ditanda". */
-  servable: 'boleh ditanda',
 } as const
 
 /**

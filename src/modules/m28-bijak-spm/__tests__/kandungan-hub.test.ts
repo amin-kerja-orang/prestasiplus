@@ -42,7 +42,7 @@ const OVERVIEW = {
       ],
     },
     card('bijak-spm', 'Bijak SPM', 'Kertas SPM penuh dalam format sebenar.', 0, 'tiada kunci jawapan'),
-    { ...card('kertas-subjektif', 'Kertas Subjektif', 'Kertas 2, 3 & 4 percubaan negeri.', 0, ''), attentionOpen: true },
+    card('kertas-subjektif', 'Kertas Subjektif', 'Kertas 2, 3 & 4 percubaan negeri.', 2, 'tiada kandungan'),
     card('latih-tubi', 'Latih Tubi', 'Latihan ikut topik dan bab.', 0, 'tidak boleh ditanda'),
   ],
   activities: [
@@ -128,12 +128,11 @@ describe('hub SPM (R1-ADM-Q-01)', () => {
     expect(text('[data-testid=kandungan-attention-subjektif]')).toBe('4 tiada skema — tidak disajikan1 tiada kunci jawapan')
   })
 
-  it('shows neither a count nor "Semua elok" on a card whose attention rule is open', async () => {
+  it('Kertas Subjektif reads "{n} tiada kandungan" (FR-ADM-Q18.3)', async () => {
     await mountAt(KandunganHubPage, '/admin/spm', [
       { path: '/admin/spm/kertas-subjektif', name: KANDUNGAN_ROUTES.kertasSubjektif, component: { template: '<i/>' } },
     ])
-    expect(q('[data-testid=kandungan-attention-kertas-subjektif]')).toBeNull()
-    expect(text('[data-testid=kandungan-card-kertas-subjektif]')).not.toContain('Semua elok')
+    expect(text('[data-testid=kandungan-attention-kertas-subjektif]')).toBe('2 tiada kandungan')
   })
 
   it('shows the error and Cuba lagi on a failed card only; the other cards stay (SR-3)', async () => {
@@ -325,7 +324,7 @@ describe('lane Subjektif (FR-ADM-Q23.3)', () => {
 
 describe('lane Latih Tubi (FR-ADM-Q02.4)', () => {
   const cell = (status: 'open' | 'closed', servable: number, total: number, attention: string[]) => ({
-    id: `7:${status}`, title: 'Sains · Tingkatan 4', meta: `#7 · ${String(total)} soalan`, status, attention, actions: [],
+    id: `7:${status}`, title: 'Sains · Tingkatan 4', meta: `#7 · ${String(servable)} soalan`, status, attention, actions: [],
     subject: { id: '7', name: 'Sains' }, level: { id: '4', name: 'Tingkatan 4' }, servable, total,
   })
 
@@ -338,7 +337,8 @@ describe('lane Latih Tubi (FR-ADM-Q02.4)', () => {
     expect(text('[data-testid=lane-count]')).toBe('449,503 item ·')
     const body = document.body.textContent ?? ''
     expect(body).toContain('Sains · Tingkatan 4')
-    expect(body).toContain('#7 · 40 soalan · 30 boleh ditanda')
+    expect(body).toContain('#7 · 30 soalan')
+    expect(body).not.toContain('boleh ditanda')
     expect(body).toContain('Dibuka')
     expect(text('[data-testid="attention-7:open"]')).toBe('10 tidak boleh ditanda')
     expect(q('[data-testid=lane-status]')).toBeNull()

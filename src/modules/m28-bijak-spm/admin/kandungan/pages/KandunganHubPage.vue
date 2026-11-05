@@ -3,7 +3,7 @@
  * Hub "SPM" (`/admin/spm`, R1-ADM-Q-01): one card per lane in the PRD order with its description, the item count as a big number,
  * the attention lines or "Semua elok", `Buka senarai` and `lihat sisi pelajar`. The API returns all six cards (`overview.cards`); a
  * card whose screen is not registered is hidden (FR-ADM-Q01.4). A card that could not be computed shows its own error; the others
- * stay (SR-3). A card whose attention rule is still open (`attentionOpen`) shows neither lines nor "Semua elok".
+ * stay (SR-3).
  */
 import type { ServabilityHubCard, ServabilityOverview } from '@pp/contract'
 import { computed, shallowRef, watch } from 'vue'
@@ -63,7 +63,7 @@ const linesOf = (c: ServabilityHubCard): string[] =>
           </DsStack>
           <template v-else>
             <DsText as="p" variant="kpi" tone="highlighted" tabular :data-testid="`kandungan-total-${keyOf(c)}`">{{ formatCount(c.total) }}</DsText>
-            <DsStack v-if="!c.attentionOpen" gap="2xs" :data-testid="`kandungan-attention-${keyOf(c)}`">
+            <DsStack gap="2xs" :data-testid="`kandungan-attention-${keyOf(c)}`">
               <template v-if="linesOf(c).length">
                 <DsText v-for="l in linesOf(c)" :key="l" as="p" variant="caption" tone="error">{{ l }}</DsText>
               </template>
