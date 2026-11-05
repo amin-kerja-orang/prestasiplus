@@ -2,7 +2,7 @@
  * Q-M27-CLASSES (SRS §18.3; BR-M27-35; FR-M27-111 to 116), screen S8.
  *
  * Rows are the M10 `classroom` classes of the school (`school_class` rows carry no school today, DV-M27-20),
- * active or not; "Kelas Aktif" is the active count of the same call S0 uses (BR-M27-37).
+ * that are active (R1-AS-53); "Kelas Aktif" is the same count. No join code (FR-AS-53-5).
  */
 
 import { curriculum } from '@/modules/m03-curriculum/mock'
@@ -26,6 +26,21 @@ const levelOrder = (c: ClassroomRow) => c.levelId
 const byName = (a: ClassroomRow, b: ClassroomRow): number =>
   a.name.localeCompare(b.name, 'ms-MY', { sensitivity: 'base' }) || a.classId - b.classId
 
+/** FR-AS-53-2: XS-1 pupils (active, Tingkatan 1-5) of the viewer's school with an active enrolment in the class. */
+function xsMembers(c: ClassroomRow): number {
+  return classrooms.memberIds('classroom', c.classId).filter((id) => {
+    const u = users.get(id)
+    return (
+      u !== undefined &&
+      u.schoolId === c.schoolId &&
+      u.isActive &&
+      u.grade !== null &&
+      u.grade >= 7 &&
+      u.grade <= 11
+    )
+  }).length
+}
+
 function rowOf(c: ClassroomRow): SchoolClassRow {
   const subject = c.subjectId === null ? undefined : curriculum.subject(c.subjectId)
   return {
@@ -36,8 +51,7 @@ function rowOf(c: ClassroomRow): SchoolClassRow {
     subject: subject ? { id: subject.id, name: subject.name } : null,
     levelLabel: levelLabelOf(c.educationLevel),
     teacherName: c.teacherId === null ? null : (users.get(c.teacherId)?.name ?? null),
-    members: classrooms.memberCount('classroom', c.classId),
-    joinCode: c.joinCode === '' ? null : c.joinCode,
+    members: xsMembers(c),
     isActive: c.isActive,
     link: `/prestasi/kelas/${String(c.classId)}`,
   }
@@ -47,7 +61,8 @@ export function listSchoolClasses(
   viewer: SchoolViewer,
   query: { level?: string | undefined; search?: string | undefined; page?: string | undefined },
 ): SchoolClassList {
-  const all = classrooms.list({ schoolId: viewer.schoolId, kind: 'classroom' })
+  // FR-AS-53-1: the active classes only ("Kelas Aktif" = the rows listed).
+  const all = classrooms.list({ schoolId: viewer.schoolId, kind: 'classroom', isActive: true })
 
   // Level options = the levels present, in level order (BR-M27-35).
   const seen = new Map<string, number>()
@@ -69,11 +84,7 @@ export function listSchoolClasses(
     data: slice.rows.map(rowOf),
     meta: { ...slice.meta, displayed: matching.length },
     tiles: {
-      activeClasses: classrooms.list({
-        isActive: true,
-        schoolId: viewer.schoolId,
-        kind: 'classroom',
-      }).length,
+      activeClasses: all.length,
     },
     levels,
   }

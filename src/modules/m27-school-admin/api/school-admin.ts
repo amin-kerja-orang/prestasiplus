@@ -291,13 +291,25 @@ export interface SchoolTeacherRow {
 
 /** `meta` of #6 and #10: cards ignore the filters. */
 export interface SchoolUserListMeta {
-  counts: { total: number; active: number; inactive: number }
+  counts: {
+    total: number
+    active: number
+    inactive: number
+    /** XS-1 (pupils) / XS-3 (teachers): the figure shown as "{n} pelajar" / "{n} guru". */
+    xs?: number
+    /** Pupils only: listed pupils XS-1 leaves out (pending, suspended or deactivated). */
+    notCounted?: number
+  }
 }
 
 export interface SchoolUserListQuery {
   /** `1` or `0`; anything else = all. */
   isActive?: boolean | string | null
   search?: string | null
+  /** Pupils only: Tingkatan `T1`..`T5`. */
+  level?: string | null
+  /** Pupils only: a class id; the pupils actively enrolled in it. */
+  classroomId?: string | null
   page?: number | null
   signal?: AbortSignal
 }
@@ -305,6 +317,8 @@ export interface SchoolUserListQuery {
 const userListQuery = (o: SchoolUserListQuery) => ({
   is_active: o.isActive === true ? '1' : o.isActive === false ? '0' : o.isActive,
   search: o.search,
+  level: o.level || undefined,
+  classroomId: o.classroomId || undefined,
   page: o.page,
 })
 
@@ -324,10 +338,15 @@ export const fetchSchoolTeachers = (o: SchoolUserListQuery = {}) =>
 
 /** #17 `GET /api/admin-sekolah/pelajar/export.csv` ("Eksport CSV", S6): `users-pelajar-{yyyy-mm-dd}.csv`. */
 export const downloadPupilsCsv = (
-  o: Pick<SchoolUserListQuery, 'isActive' | 'search' | 'signal'> = {},
+  o: Pick<SchoolUserListQuery, 'isActive' | 'search' | 'level' | 'classroomId' | 'signal'> = {},
 ) =>
   api.blob(`${BASE}/pelajar/export.csv`, {
-    query: { is_active: userListQuery(o).is_active, search: o.search },
+    query: {
+      is_active: userListQuery(o).is_active,
+      search: o.search,
+      level: userListQuery(o).level,
+      classroomId: userListQuery(o).classroomId,
+    },
     ...(o.signal ? { signal: o.signal } : {}),
   })
 
@@ -485,9 +504,8 @@ export interface SchoolClassRow {
   /** "Tingkatan n" / "Darjah n". */
   levelLabel: string
   teacherName: string | null
-  /** Active enrolments (may include pupils of another school). */
+  /** XS-1 pupils of the school with an active enrolment in the class. */
   members: number
-  joinCode: string | null
   isActive: boolean
   /** `/prestasi/kelas/{id}`. */
   link: string

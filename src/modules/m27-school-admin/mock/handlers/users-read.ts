@@ -38,6 +38,8 @@ const listQuery = (query: MockQuery) => ({
   isActive: queryString(query, 'is_active'),
   search: queryString(query, 'search'),
   page: queryString(query, 'page'),
+  level: queryString(query, 'level'),
+  classroomId: queryString(query, 'classroomId'),
 })
 
 const detailRoute = (path: string, role: SchoolRole): RouteDef =>
@@ -54,6 +56,8 @@ const csvRoute = (path: string, role: SchoolRole): RouteDef =>
     const body = usersCsv(schoolOf(req), role, {
       isActive: queryString(req.query, 'is_active'),
       search: queryString(req.query, 'search'),
+      level: queryString(req.query, 'level'),
+      classroomId: queryString(req.query, 'classroomId'),
     })
     return blob(
       new Blob([body], { type: 'text/csv; charset=utf-8' }),

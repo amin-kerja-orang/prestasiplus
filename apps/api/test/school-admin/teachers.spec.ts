@@ -9,6 +9,7 @@ import {
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { insertPendingTeacher, login, SCHOOL_ADMIN, schoolIdOf, STUDENT, TEACHER, userIdOf, type SchoolAdminTestApp } from './helpers'
+import { xsTeacherCount } from './reports-fixtures'
 import { auditRows, errorOf, expectNoCache, insertClass, insertUser, loginWith, peopleApiOf, userRow, bootPeopleApp, type PeopleApi } from './people-helpers'
 
 /** BE-21 Part A: the seven teacher routes under /admin-sekolah/guru. DB spec (Testcontainers). */
@@ -60,7 +61,7 @@ describe('BE-21 teachers: /admin-sekolah/guru', () => {
 
     const desc = (xs: string[]) => [...xs].sort((x, y) => (BigInt(y) > BigInt(x) ? 1 : -1))
     expect(ids).toEqual([...desc([a, seeded]), ...desc([b, c])])
-    expect(body.meta).toMatchObject({ page: 1, pageSize: 25, totalItems: 4, totalPages: 1, from: 1, to: 4, counts: { total: 4, active: 2, inactive: 2 } })
+    expect(body.meta).toMatchObject({ page: 1, pageSize: 25, totalItems: 4, totalPages: 1, from: 1, to: 4, counts: { total: 4, active: 2, inactive: 2, xs: 4 } })
 
     const rowA = body.data.find((r) => r.id === a)
     expect(rowA).toMatchObject({ name: 'Guru Alpha', initials: 'GA', email: 'alpha@ujian.test', phone: '0112223334', classCount: 2, lastLoginAt: '2026-10-18T09:00:00.000+08:00', isActive: true, canEdit: true })
@@ -69,10 +70,18 @@ describe('BE-21 teachers: /admin-sekolah/guru', () => {
     expect(body.data.find((r) => r.id === b)).toMatchObject({ isActive: false, canEdit: false, classCount: 0, lastLoginAt: null })
   })
 
+  it('"{n} guru" is XS-3: meta.counts.xs excludes the pending teacher and the school admin; no notCounted; the pupil filters are ignored (FR-AS-52-1)', async () => {
+    const res = SchoolAdminTeacherListResponseSchema.parse((await admin.get(`/admin-sekolah/guru?level=T4&classroomId=${foreign}`)).body)
+    expect(res.data).toHaveLength(4)
+    expect(res.meta.counts.xs).toBe(await xsTeacherCount(t.db, s1))
+    expect(res.meta.counts.xs).toBe(4)
+    expect(res.meta.counts).not.toHaveProperty('notCounted')
+  })
+
   it('filters by is_active and search; counts stay the school totals; a schoolId in the query changes nothing', async () => {
     const inactive = SchoolAdminTeacherListResponseSchema.parse((await admin.get('/admin-sekolah/guru?is_active=0')).body)
     expect(inactive.data.map((r) => r.id)).toEqual([c, b])
-    expect(inactive.meta.counts).toEqual({ total: 4, active: 2, inactive: 2 })
+    expect(inactive.meta.counts).toEqual({ total: 4, active: 2, inactive: 2, xs: await xsTeacherCount(t.db, s1) })
     const active = SchoolAdminTeacherListResponseSchema.parse((await admin.get('/admin-sekolah/guru?is_active=1')).body)
     expect(active.data.map((r) => r.id)).toEqual([a, seeded])
     expect(SchoolAdminTeacherListResponseSchema.parse((await admin.get('/admin-sekolah/guru?is_active=zzz')).body).data).toHaveLength(4)

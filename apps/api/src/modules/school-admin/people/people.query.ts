@@ -3,6 +3,7 @@
  * `is_active` means all, an invalid `page` is 1, a page past the last is clamped by the repository. The school is NEVER read
  * from the query: a `schoolId` (or any other key) sent by the client is not looked at.
  */
+import { isIdString } from '../../../db/ids'
 
 /** Largest page number accepted, so `skip` stays inside a 32-bit integer. */
 export const PEOPLE_PAGE_MAX = 10_000_000
@@ -13,6 +14,10 @@ export interface PeopleExportQuery {
   /** `true` = active only, `false` = inactive only, absent = all. */
   isActive?: boolean
   search?: string
+  /** Pupils only (R1-AS-51 FR-AS-51-1): Tingkatan 1 to 5 as the `users.grade` 7 to 11. Anything but `T1`..`T5` is ignored. */
+  grade?: number
+  /** Pupils only: decimal id of a class; the pupils actively enrolled in it. A malformed id is ignored (nothing is rejected). */
+  classroomId?: string
 }
 
 export interface PeopleListQuery extends PeopleExportQuery {
@@ -26,7 +31,11 @@ const text = (v: unknown): string | undefined => (typeof v === 'string' ? v : un
 export function parseExportQuery(raw: Raw): PeopleExportQuery {
   const active = text(raw.is_active)?.trim()
   const search = [...(text(raw.search)?.trim() ?? '')].slice(0, PEOPLE_SEARCH_MAX).join('')
+  const level = /^T([1-5])$/.exec(text(raw.level)?.trim() ?? '')
+  const classroomId = text(raw.classroomId)?.trim() ?? ''
   return {
+    ...(level ? { grade: Number(level[1]) + 6 } : {}),
+    ...(isIdString(classroomId) ? { classroomId } : {}),
     ...(active === '1' ? { isActive: true } : active === '0' ? { isActive: false } : {}),
     ...(search === '' ? {} : { search }),
   }

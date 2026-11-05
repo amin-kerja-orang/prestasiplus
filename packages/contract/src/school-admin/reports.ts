@@ -374,8 +374,7 @@ export const SchoolAdminClassRowSchema = z
     subject: z.object({ id: IdSchema, name: z.string() }).nullable(),
     levelLabel: z.string().meta({ description: '"Tingkatan n" or "Darjah n".' }),
     teacherName: z.string().nullable(),
-    members: count.meta({ description: 'Active enrolments; may include pupils of another school.' }),
-    joinCode: z.string().nullable(),
+    members: count.meta({ description: 'XS-1 pupils with an active enrolment in the class (R1-AS-53 FR-AS-53-2). The join code is not part of the row (FR-AS-53-5).' }),
     isActive: z.boolean(),
     link: z.string().min(1).meta({ description: 'Page link "/prestasi/kelas/{id}", built by the server from the id.' }),
   })
