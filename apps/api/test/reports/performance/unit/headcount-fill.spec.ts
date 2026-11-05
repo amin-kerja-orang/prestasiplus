@@ -260,9 +260,9 @@ describe('SW13-08: school GPS by subject keys the practice rows by the curriculu
 })
 
 describe('Level detail: on track, below, at risk', () => {
-  it('counts every pair, per class and for the level; at risk is the lowest gaps first with names for the own pupils', async () => {
+  it('counts the on and below pairs (no data ignored), per class and for the level; at risk is the lowest gaps first with names for the own pupils', async () => {
     const r = await w.school.level(teacher, 't4')
-    expect(r).toMatchObject({ onTrack: 2, below: 4, onTrackPct: 33 })
+    expect(r).toMatchObject({ onTrack: 2, below: 3, onTrackPct: 40 })
     expect(r.classRows[0]).toMatchObject({ onTrack: 2, below: 3 })
     expect(r.atRisk).toEqual([
       { userId: '2', name: 'Murid Ujian 2', className: 'Kelas 4A', checkpoint: 2, ar: 70, target: 80, gap: -10 },
@@ -299,7 +299,7 @@ describe('Level detail: on track, below, at risk', () => {
       ['11', 0, 0],
     ])
     const staff = await w.school.level(schoolAdmin, 't4')
-    expect(staff).toMatchObject({ onTrack: 2, below: 7 })
+    expect(staff).toMatchObject({ onTrack: 2, below: 6 })
     expect(staff.classRows.map((c) => [c.classId, c.onTrack, c.below])).toEqual([
       ['10', 2, 3],
       ['11', 0, 3],

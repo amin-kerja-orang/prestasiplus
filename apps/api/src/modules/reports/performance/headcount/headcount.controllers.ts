@@ -1,4 +1,4 @@
-import { Controller, Delete, Get, HttpCode, Inject, Param, Post, Query, Req, Res, UseGuards, UseInterceptors, Body } from '@nestjs/common'
+import { Controller, Delete, Get, HttpCode, Inject, Param, Post, Put, Query, Req, Res, UseGuards, UseInterceptors, Body } from '@nestjs/common'
 import type { Request, Response } from 'express'
 
 import { Roles } from '../../../../common/guards/decorators'
@@ -21,7 +21,7 @@ const READ = {
   per: 'user',
 } as const satisfies RateLimitSpec
 
-/** Own, tighter per-user bucket for the five write routes (they also sit behind the CSRF guard). */
+/** Own, tighter per-user bucket for the write routes (they also sit behind the CSRF guard). */
 const WRITE = {
   bucket: 'performance.write',
   env: 'THROTTLE_PERFORMANCE_WRITE_PER_MINUTE',
@@ -44,8 +44,9 @@ function writeCtxOf(req: Req): HeadcountWriteCtx {
 const sortQuery = new BoundedQueryPipe()
 
 /**
- * Headcount (TOV / RS) of M08 (BE-19): 12 routes under `/headcounts`. Roles admin, teacher and school_admin; every other
- * role gets 403 from `@Roles`. Every answer is `no-store` (pupil marks) and rate limited per user. The static routes are
+ * Headcount (TOV / RS) of M08 (BE-19, S10-T02): routes under `/headcounts`. Roles admin, teacher and school_admin (reads);
+ * writes are the owning teacher's only (the service answers 403 to the others). The two `me` routes are the pupil's own
+ * (`@Roles('student')` on the method); every other role gets 403 from `@Roles`. Every answer is `no-store` (pupil marks) and rate limited per user. The static routes are
  * declared before `:id`. A config outside the caller's scope is a 404, the same as an unknown one (OQ-3).
  */
 @Controller('headcounts')
@@ -72,6 +73,20 @@ export class HeadcountController {
   @Get('form-options')
   async formOptions(@Req() req: Req) {
     return ok(await overloadTo429(async () => this.headcounts.formOptions(await this.ctx.of(req))))
+  }
+
+  // The pupil's own view (API-RPT-08). Declared before `:id` and `students/:userId`.
+  @Get('me')
+  @Roles('student')
+  async listOwn(@Req() req: Req) {
+    return ok(await overloadTo429(async () => this.headcounts.listOwn(await this.ctx.of(req))))
+  }
+
+  @Get('me/detail')
+  @Roles('student')
+  async detailOwn(@Query(sortQuery) query: Record<string, unknown>, @Req() req: Req) {
+    const configId = typeof query.configId === 'string' ? query.configId : undefined
+    return ok(await overloadTo429(async () => this.headcounts.detailOwn(await this.ctx.of(req), configId)))
   }
 
   @Get('students/:userId')
@@ -119,6 +134,30 @@ export class HeadcountController {
   async detail(@Param('id', SafeIdPipe) id: string, @Query(sortQuery) query: Record<string, unknown>, @Req() req: Req) {
     const sort = typeof query.sort === 'string' ? query.sort : undefined
     return ok(await overloadTo429(async () => this.headcounts.detail(await this.ctx.of(req), id, sort)))
+  }
+
+  @Put(':id/ar')
+  @RateLimit(WRITE)
+  async saveAr(@Param('id', SafeIdPipe) id: string, @Body() body: unknown, @Req() req: Req) {
+    return ok(await overloadTo429(async () => this.headcounts.saveAr(writeCtxOf(req), id, body)))
+  }
+
+  @Put(':id/tov')
+  @RateLimit(WRITE)
+  async saveTov(@Param('id', SafeIdPipe) id: string, @Body() body: unknown, @Req() req: Req) {
+    return ok(await overloadTo429(async () => this.headcounts.saveTov(writeCtxOf(req), id, body)))
+  }
+
+  @Put(':id/settings')
+  @RateLimit(WRITE)
+  async saveSettings(@Param('id', SafeIdPipe) id: string, @Body() body: unknown, @Req() req: Req) {
+    return ok(await overloadTo429(async () => this.headcounts.saveSettings(writeCtxOf(req), id, body)))
+  }
+
+  @Put(':id/defaults')
+  @RateLimit(WRITE)
+  async saveDefaults(@Param('id', SafeIdPipe) id: string, @Body() body: unknown, @Req() req: Req) {
+    return ok(await overloadTo429(async () => this.headcounts.saveDefaults(writeCtxOf(req), id, body)))
   }
 
   @Post(':id/drop-students')
