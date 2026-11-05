@@ -8,8 +8,10 @@ import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 
-import { PartInput, StimulusChip, StimulusStack, StimulusView } from '../../../components/question-display'
-import QuestionBlock from '../components/QuestionBlock.vue'
+import { PartInput, QuestionBlock, StimulusGroup, StimulusView } from '../../../components/question-display'
+import { resetStimulusOpen } from '../../../components/question-display/lib/useStimulusOpen'
+import PartResultCard from '../components/PartResultCard.vue'
+import ReportQuestionButton from '../components/ReportQuestionButton.vue'
 import ResultGroup from '../components/ResultGroup.vue'
 import type { QuestionView, StimulusDef } from '../domain/types'
 import { groupLabel, stimuliOf, toStimulusData } from '../lib/stimulus-data'
@@ -44,7 +46,10 @@ function media(wide: boolean): void {
   }))
 }
 
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => {
+  vi.restoreAllMocks()
+  resetStimulusOpen()
+})
 
 describe('StimulusView: the seven kinds', () => {
   it.each(['image', 'diagram', 'map', 'infographic', 'graph'] as const)(
@@ -117,8 +122,8 @@ describe('D90: one stimulus panel per group, members below it', () => {
     })
     await nextTick()
     expect(w.findAll('[data-testid=result-group]')).toHaveLength(1)
-    expect(w.find('[data-testid=result-group]').attributes('data-layout')).toBe('split')
-    expect(w.findAll('[data-testid=result-group-pane] img')).toHaveLength(1)
+    expect(w.find('[data-testid=stimulus-group]').attributes('data-layout')).toBe('split')
+    expect(w.findAll('[data-testid=stimulus-pane] img')).toHaveLength(1)
     expect(w.findAll('[data-testid=member]')).toHaveLength(2)
     expect(w.findAll('img')).toHaveLength(1)
   })
@@ -131,7 +136,7 @@ describe('D90: one stimulus panel per group, members below it', () => {
       global: { stubs },
     })
     await nextTick()
-    expect(w.find('[data-testid=result-group]').attributes('data-layout')).toBe('stacked')
+    expect(w.find('[data-testid=stimulus-group]').attributes('data-layout')).toBe('stacked')
     expect(w.find('[data-testid=stimulus-chip]').text()).toContain('Lihat Rajah 1')
     expect(w.findAll('[data-testid=member]')).toHaveLength(2)
     expect(w.find('[data-testid=drawer]').attributes('data-open')).toBe('false')
@@ -140,14 +145,31 @@ describe('D90: one stimulus panel per group, members below it', () => {
     expect(w.find('[data-testid=drawer] img').exists()).toBe(true)
   })
 
-  it('a group of several stimuli stacks them in one panel, one chip', () => {
+  it('a group of several stimuli stacks them in one panel, one chip', async () => {
     media(true)
-    const two = [picture('image', 'a'), { id: 'b', kind: 'passage' as const, label: 'Petikan A', alt: '', text: 'Isi' }]
-    const w = mount(StimulusStack, { props: { stimuli: two }, global: { stubs } })
-    expect(w.find('[data-testid=group-stimuli]').attributes('data-count')).toBe('2')
+    const two = [picture('image', 'a'), { id: 'b', kind: 'passage' as const, label: 'Petikan A', alt: '', text: 'Isi' }].map(toStimulusData)
+    const w = mount(StimulusGroup, { props: { stimuli: two }, slots: { default: '<p>Soalan</p>' }, global: { stubs } })
+    await nextTick()
     expect(w.findAll('figure')).toHaveLength(2)
-    const chip = mount(StimulusChip, { props: { stimuli: two }, global: { stubs } })
+    media(false)
+    const chip = mount(StimulusGroup, { props: { stimuli: two }, slots: { default: '<p>Soalan</p>' }, global: { stubs } })
+    await nextTick()
     expect(chip.text()).toContain('Lihat Rajah 1 dan Petikan A')
+  })
+
+  it('ResultGroup shows the group once: one stimulus group, one image, one chip below 1024px', async () => {
+    media(false)
+    const w = mount(ResultGroup, {
+      props: { groupId: 'qb-once', stimuli: [picture('image')] },
+      slots: { default: members },
+      global: { stubs },
+    })
+    await nextTick()
+    expect(w.findAll('[data-testid=stimulus-group]')).toHaveLength(1)
+    expect(w.findAll('[data-testid=stimulus-chip]')).toHaveLength(1)
+    expect(w.findAll('[data-testid=stimulus-thumb-img]')).toHaveLength(1)
+    await w.find('[data-testid=stimulus-chip]').trigger('click')
+    expect(w.findAll('[data-testid=drawer] figure')).toHaveLength(1)
   })
 })
 
@@ -173,6 +195,10 @@ describe('QuestionBlock: stem picture, option pictures, blocked hint', () => {
     mount(QuestionBlock, {
       props: { question, answers: {}, attemptId: 'a1', flagged: false, ...extra },
       global: { stubs },
+      slots: {
+        report: (p: Record<string, unknown>) => h(ReportQuestionButton, p as never),
+        result: (p: Record<string, unknown>) => h(PartResultCard, p as never),
+      },
     })
 
   it('option images switch to the radio list with the picture and its alt', () => {
@@ -195,19 +221,34 @@ describe('QuestionBlock: stem picture, option pictures, blocked hint', () => {
   })
 
   it('shows the stem picture above the stem and the "Muatkan rajah" hint when the group figure failed', () => {
+    media(true)
     const w = mountQ(q({ stemImage: picture('image', 'stem') }), { stimulusBlocked: true })
     expect(w.find('[data-testid=own-stimuli] img').attributes('src')).toBe('/api/files/tok-stem')
     expect(w.find('[data-testid=need-stimulus]').text()).toBe('Muatkan rajah untuk meneruskan.')
   })
 
-  it('own stimuli: shows them above the stem, in order', () => {
+  it('own stimuli: shows them above the stem, in order', async () => {
+    media(false)
     const w = mountQ(q({ stem: 'Soalan', stimuli: [picture('image', 'a'), picture('passage', 'b')] }))
+    await nextTick()
     const html = w.html()
     expect(html.indexOf('own-stimuli')).toBeLessThan(html.indexOf('question-stem'))
     expect(w.find('[data-testid=own-stimuli]').attributes('data-count')).toBe('2')
+    expect(w.find('[data-testid=stimulus-group]').attributes('data-layout')).toBe('inline')
+  })
+
+  it('own stimuli at 1280 are stacked and full width: inline, no pane, no empty right column', async () => {
+    media(true)
+    const w = mountQ(q({ stem: 'Soalan', stimuli: [picture('image', 'a'), picture('image', 'b')] }))
+    await nextTick()
+    expect(w.find('[data-testid=stimulus-group]').attributes('data-layout')).toBe('inline')
+    expect(w.find('[data-testid=stimulus-pane]').exists()).toBe(false)
+    expect(w.find('[data-testid=stimulus-group]').classes()).not.toContain('grid')
+    expect(w.findAll('[data-testid=own-stimuli] figure')).toHaveLength(2)
   })
 
   it('does not show the back-compat stemImage again when stimuli is present', () => {
+    media(true)
     const one = picture('image', 'same')
     const w = mountQ(q({ stimuli: [one], stemImage: one }))
     expect(w.findAll('[data-testid=own-stimuli] img')).toHaveLength(1)

@@ -73,9 +73,9 @@ describe('POST /guru/command-center/remedial/generate and /cancel (BR-M10-12)', 
       const schoolAdmin = await client(t, 'adminsekolah@demo.test')
       for (const path of [GEN, CANCEL]) {
         const body = path === GEN ? { studentId: w.student1, subject: w.subjectName } : { quizId: '1' }
-        errorIs(await t.http().post(`/api${path}`).send(body), 401, 'UNAUTHORIZED', 'Unauthenticated.')
-        errorIs(await pupil.post(path, body), 403, 'FORBIDDEN', 'This action is unauthorized.')
-        errorIs(await schoolAdmin.post(path, body), 403, 'FORBIDDEN', 'This action is unauthorized.')
+        errorIs(await t.http().post(`/api${path}`).send(body), 401, 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
+        errorIs(await pupil.post(path, body), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
+        errorIs(await schoolAdmin.post(path, body), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
         const noCsrf = await teacherA.who.agent.post(`/api${path}`).send(body)
         expect(noCsrf.status).toBe(403)
         expect(noCsrf.body.error.code).toBe('CSRF_INVALID')

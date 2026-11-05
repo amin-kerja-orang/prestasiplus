@@ -18,7 +18,7 @@ describe('GET /api/health with the database down', () => {
     const res = await request(app.getHttpServer()).get('/api/health').expect(503)
     const body = ErrorBodySchema.parse(res.body)
     expect(body.error.code).toBe('SERVER_ERROR')
-    expect(body.error.message).toBe('Server Error')
+    expect(body.error.message).toBe('Sesuatu tidak kena di pihak kami. Pasukan teknikal telah dimaklumkan. Sila cuba sebentar lagi.')
     expect(body.error.requestId).toBe(res.headers['x-request-id'])
     expect(JSON.stringify(res.body)).not.toMatch(/127\.0\.0\.1|ECONNREFUSED/)
   })

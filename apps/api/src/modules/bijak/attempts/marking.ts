@@ -233,6 +233,7 @@ function partView(p: PartDef): BijakAttemptPartView {
     label: p.label,
     prompt: p.prompt,
     marks: p.marks,
+    ...(p.stimulusId !== undefined ? { stimulusId: p.stimulusId } : {}),
     ...(p.answer
       ? {
           answer: {
