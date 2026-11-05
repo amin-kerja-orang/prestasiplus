@@ -472,6 +472,15 @@ describe('401 policy (FR-M01-14)', () => {
     await router.push('/dashboard?y=2')
     expect(router.currentRoute.value.query).toEqual({ redirect: '/dashboard?y=2' })
   })
+
+  it('a 401 with no session (storage already cleared) does not mark kembali: the guard keeps redirect', async () => {
+    installTransport(fakeTransport(() => ({})))
+    const router = testRouter()
+    await useSessionStore().handleUnauthorized()
+    await router.push('/tetapan')
+    expect(router.currentRoute.value.path).toBe('/login')
+    expect(router.currentRoute.value.query).toEqual({ redirect: '/tetapan' })
+  })
 })
 
 describe('in-place outcome is committed only on success (F13-1)', () => {
