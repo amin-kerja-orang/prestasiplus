@@ -164,4 +164,18 @@ export class RewardControlController {
   async closeDraw(@Actor() actor: AuditActor, @Param('id') id: string) {
     return ok(await this.admin.closeDraw(actor, id))
   }
+
+  @Post('draws/:id/winners')
+  @HttpCode(200)
+  @RateLimit(GAMIFICATION_LIMITS.adminWrite)
+  async drawWinners(@Actor() actor: AuditActor, @Param('id') id: string) {
+    return ok(await this.admin.drawWinners(actor, id))
+  }
+
+  @Post('draws/:id/winners/:winnerId/deliver')
+  @HttpCode(200)
+  @RateLimit(GAMIFICATION_LIMITS.adminWrite)
+  async deliverWinner(@Actor() actor: AuditActor, @Param('id') id: string, @Param('winnerId') winnerId: string) {
+    return ok(await this.admin.deliverWinner(actor, id, winnerId))
+  }
 }

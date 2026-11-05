@@ -7,6 +7,7 @@ import type {
   GamificationAdminTransactionRow,
   GamificationAdminStudentRow,
   GamificationDraw,
+  GamificationDrawWinner,
   GamificationEconomySettings,
   GamificationRewardControl,
   GamificationSetting,
@@ -20,9 +21,8 @@ import { toMytTimestamp } from '../../common/time/myt'
 import type { TxClient } from '../../db/client'
 import { CLOCK, type Clock, mytDay } from '../../db/clock'
 import { Prisma } from '../../db/generated/client'
-import { idFromString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
-import { isRewardSettingKey, rewardSettingError, rewardSettingsByKey, RewardSettingsService } from '../shop'
+import { DrawWinnersService, isRewardSettingKey, rewardSettingError, rewardSettingsByKey, RewardSettingsService, type DrawWinnerRecord } from '../shop'
 import { drawStillOpen } from '../shop/shop.time'
 import { MAX_AMOUNT_PER_CALL, WalletService } from '../wallet'
 import type { AuditActor } from './actor'
@@ -36,7 +36,6 @@ import {
   TOGGLE_SETTING_KEYS,
   TRANSACTIONS_PAGE_SIZE,
 } from './gamification.constants'
-import { GamificationPorts } from './ports'
 import { GamificationRepository, type ChallengeRecord, type DrawRecord, type Db, isStudentSort, type PrizeLine, type StudentSort, type SyilingRewardRecord, type TierInput, type TierRecord } from './gamification.repository'
 import { bodyOf, boolOf, collectFields, idParam, intOf, isRealDate, notFoundError, pageOf, queryText, readFields, validationFailure, type FieldSpec } from './validation'
 
@@ -140,7 +139,19 @@ const rewardView = (r: SyilingRewardRecord): GamificationSyilingReward => ({
 const drawStatusOf = (d: DrawRecord, now: Date): GamificationDraw['status'] =>
   d.status === 'open' && !drawStillOpen(d.closesAt, now) ? 'closed' : (d.status as GamificationDraw['status'])
 
-const drawView = (d: DrawRecord, now: Date): GamificationDraw => ({
+const winnerView = (w: DrawWinnerRecord): GamificationDrawWinner => ({
+  id: w.id,
+  prizePosition: w.prizePosition,
+  prizeLabel: w.prizeLabel,
+  slot: w.slot,
+  userId: w.userId,
+  name: w.name,
+  ticketId: w.ticketId,
+  drawnAt: toMytTimestamp(w.drawnAt),
+  deliveredAt: w.deliveredAt === null ? null : toMytTimestamp(w.deliveredAt),
+})
+
+const drawView = (d: DrawRecord, now: Date, winners: readonly DrawWinnerRecord[] = []): GamificationDraw => ({
   id: d.id,
   title: d.title,
   description: d.description,
@@ -151,6 +162,7 @@ const drawView = (d: DrawRecord, now: Date): GamificationDraw => ({
   status: drawStatusOf(d, now),
   createdAt: toMytTimestamp(d.createdAt),
   ticketsSold: d.ticketsSold,
+  winners: winners.map(winnerView),
 })
 
 const isUniqueViolation = (e: unknown): boolean => e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002'
@@ -195,7 +207,7 @@ export class GamificationAdminService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(CLOCK) private readonly clock: Clock,
-    @Inject(GamificationPorts) private readonly ports: GamificationPorts,
+    @Inject(DrawWinnersService) private readonly winners: DrawWinnersService,
     @Inject(RewardSettingsService) private readonly rewardSettings: RewardSettingsService,
   ) {}
 
@@ -513,11 +525,12 @@ export class GamificationAdminService {
     const tiles = valid ? await this.repo.claimTiles(db, new Date(`${String(year).padStart(4, '0')}-01-01T00:00:00+08:00`), new Date(`${String(year + 1).padStart(4, '0')}-01-01T00:00:00+08:00`)) : { claims: 0, students: 0, costSen: 0 }
     const [rewards, draws] = await Promise.all([this.repo.syilingRewards(db), this.repo.draws(db)])
     const now = this.clock.now()
+    const winners = await this.winners.winnersOf(draws.map((d) => d.id))
     return {
       tiles: { sessionYear: year, liabilityRm: tiles.costSen / 100, students: tiles.students, claims: tiles.claims },
       settings,
       rewards: rewards.map(rewardView),
-      draws: draws.map((d) => drawView(d, now)),
+      draws: draws.map((d) => drawView(d, now, winners.get(d.id))),
     }
   }
 
@@ -560,10 +573,34 @@ export class GamificationAdminService {
     })
   }
 
-  /** `GET /admin/reward-control/draws` (API-GAME-09): every draw, newest first. */
+  /** `GET /admin/reward-control/draws` (API-GAME-09): every draw, newest first, with its winners. */
   async draws(): Promise<GamificationDraw[]> {
     const now = this.clock.now()
-    return (await this.repo.draws(this.repo.handle())).map((d) => drawView(d, now))
+    const draws = await this.repo.draws(this.repo.handle())
+    const winners = await this.winners.winnersOf(draws.map((d) => d.id))
+    return draws.map((d) => drawView(d, now, winners.get(d.id)))
+  }
+
+  /** One draw as the list shows it, read after a write has committed. */
+  private async drawNow(id: bigint): Promise<GamificationDraw> {
+    const draw = await this.repo.draw(this.repo.handle(), id)
+    if (!draw) throw notFoundError()
+    return drawView(draw, this.clock.now(), (await this.winners.winnersOf([draw.id])).get(draw.id))
+  }
+
+  /** `POST /admin/reward-control/draws/:id/winners` (API-GAME-09): "Cabut pemenang", see `DrawWinnersService.draw`. */
+  async drawWinners(actor: AuditActor, rawId: string): Promise<GamificationDraw> {
+    const id = idParam(rawId)
+    await this.winners.draw(actor, id)
+    return this.drawNow(id)
+  }
+
+  /** `POST /admin/reward-control/draws/:id/winners/:winnerId/deliver` (API-ADM-24): "Tandakan Dihantar". */
+  async deliverWinner(actor: AuditActor, rawId: string, rawWinnerId: string): Promise<GamificationDraw> {
+    const id = idParam(rawId)
+    const winnerId = idParam(rawWinnerId)
+    await this.winners.deliver(actor, id, winnerId)
+    return this.drawNow(id)
   }
 
   /**
@@ -652,61 +689,5 @@ export class GamificationAdminService {
 
   closeDraw(actor: AuditActor, rawId: string): Promise<GamificationDraw> {
     return this.moveDraw(actor, rawId, 'open', 'closed', AUDIT_ACTIONS.GAMIFICATION_DRAW_CLOSED)
-  }
-
-  /**
-   * Draws the winners of an OPEN draw (AC5, AC9). There is no HTTP route for it (the contract has none); the
-   * method is the doorway for the draw run. Prize slots are the pool lines in order, each repeated `qty` times, so
-   * the number of awards can never pass the sum of `qty` (nor the number of tickets). Tickets are shuffled
-   * (Fisher-Yates) with the random source of `GamificationPorts` (the OS CSPRNG in production, so winners are
-   * neither predictable nor choosable; tests override it with a seeded stream for the AC5 determinism). Each
-   * ticket wins at most once, and the draw is closed (`status = closed`, first winner stored). The draw row is
-   * locked `FOR UPDATE` before the tickets are read. The audit event (same transaction) holds what is needed to
-   * audit the result: the ticket ids in ascending order, the shuffled order and the winning tickets in prize order.
-   */
-  async runDraw(drawId: string, actor: AuditActor | null): Promise<{ drawId: string; awards: { position: number; label: string; ticketId: string; userId: string }[] }> {
-    const id = idFromString(drawId)
-    return this.prisma.transaction(async (tx) => {
-      await this.repo.lockDraw(tx, id)
-      const draw = await this.repo.draw(tx, id)
-      if (!draw) throw notFoundError()
-      if (draw.status !== 'open') throw new ApiError({ code: 'DRAW_CLOSED', status: 409, message: 'Cabutan ditutup.' })
-      const slots: { position: number; label: string }[] = []
-      draw.prizes.forEach((p, position) => {
-        for (let i = 0; i < p.qty; i++) slots.push({ position, label: p.label })
-      })
-      const tickets = await this.repo.ticketsOf(tx, id)
-      const pick = this.ports.drawRandom(drawId)
-      const pool = [...tickets]
-      for (let i = pool.length - 1; i > 0; i--) {
-        const j = pick(i)
-        const t = pool[i] as (typeof pool)[number]
-        pool[i] = pool[j] as (typeof pool)[number]
-        pool[j] = t
-      }
-      const count = Math.min(slots.length, pool.length)
-      const awards = slots.slice(0, count).map((s, i) => ({ position: s.position, label: s.label, ticketId: (pool[i] as (typeof pool)[number]).id, userId: (pool[i] as (typeof pool)[number]).userId }))
-      const at = this.clock.now()
-      if (!(await this.repo.closeDraw(tx, id, awards[0]?.userId ?? null, at))) throw new ApiError({ code: 'DRAW_CLOSED', status: 409, message: 'Cabutan ditutup.' })
-      await this.audit.record({
-        action: AUDIT_ACTIONS.GAMIFICATION_DRAW_DRAWN,
-        actorUserId: actor?.userId ?? null,
-        actorRole: actor?.role ?? null,
-        requestId: actor?.requestId ?? null,
-        ip: actor?.ip ?? null,
-        isTest: actor?.isTest ?? false,
-        targetType: 'draw',
-        targetId: drawId,
-        details: {
-          ticketCount: tickets.length,
-          ticketIds: tickets.map((x) => x.id),
-          shuffledTicketIds: pool.map((x) => x.id),
-          winningTicketIds: awards.map((a) => a.ticketId),
-          awards: awards.map((a) => ({ position: a.position, ticketId: a.ticketId, userId: a.userId })),
-        },
-        tx,
-      })
-      return { drawId, awards }
-    })
   }
 }
