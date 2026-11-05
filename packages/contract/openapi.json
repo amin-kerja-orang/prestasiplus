@@ -20109,6 +20109,393 @@
         ],
         "description": "201; `message` is \"Berjaya menyertai kelas {name}.\""
       },
+      "DatabankSubjectTile": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "nameMs": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "subjectId",
+          "nameMs",
+          "nameEn",
+          "count"
+        ]
+      },
+      "DatabankOverview": {
+        "type": "object",
+        "properties": {
+          "totalQuestions": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Sum of every tile count (questions, not units)."
+          },
+          "activeSubjects": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Subjects with count > 0."
+          },
+          "teras": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DatabankSubjectTile"
+            },
+            "description": "Core subjects, by sort order then name; includes zero-count tiles."
+          },
+          "elektif": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DatabankSubjectTile"
+            },
+            "description": "The other active subjects, same order; includes zero-count tiles."
+          }
+        },
+        "required": [
+          "totalQuestions",
+          "activeSubjects",
+          "teras",
+          "elektif"
+        ]
+      },
+      "DatabankQuestionsQuery": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,18}$"
+          },
+          "q": {
+            "type": "string"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "DatabankStimulus": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "kind": {
+            "type": "string",
+            "description": "passage, image, diagram, table, graph, map, infographic or audio."
+          },
+          "label": {
+            "type": "string"
+          },
+          "bodyMs": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bodyEn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "imageId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "File id of the figure (read through GET /files/:id; teachers may read it while the question is served).",
+            "example": "1042"
+          },
+          "alt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "caption": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sourceCitation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tableData": {
+            "description": "Table grid as stored (`{ head, rows }` for a table stimulus)."
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "label",
+          "bodyMs",
+          "bodyEn",
+          "imageId",
+          "alt",
+          "caption",
+          "sourceCitation"
+        ]
+      },
+      "DatabankOption": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "bodyMs": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bodyEn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "imageId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "label",
+          "bodyMs",
+          "bodyEn",
+          "imageId"
+        ]
+      },
+      "DatabankQuestion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "stemMs": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "stemEn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "description": "Stored question type, for example mcq."
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DatabankOption"
+            },
+            "description": "Options of a single-MCQ question in label order; empty otherwise."
+          },
+          "stimuli": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DatabankStimulus"
+            },
+            "description": "Figures linked directly to this question (group figures are on the unit `group`)."
+          },
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "levelLabel": {
+            "type": "string",
+            "description": "For example \"Tingkatan 4\"."
+          },
+          "difficulty": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 5,
+            "description": "Kesukaran 1 to 5 stars, null when not set."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "approved"
+            ],
+            "description": "Always approved: the list shows \"Diluluskan\"."
+          },
+          "groupPosition": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "stemMs",
+          "stemEn",
+          "type",
+          "options",
+          "stimuli",
+          "subjectId",
+          "subject",
+          "levelLabel",
+          "difficulty",
+          "status",
+          "groupPosition"
+        ]
+      },
+      "DatabankRow": {
+        "type": "object",
+        "properties": {
+          "unitId": {
+            "type": "string",
+            "description": "`g<groupId>` for a group, `q<questionId>` for a standalone question."
+          },
+          "group": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "stimuli": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/DatabankStimulus"
+                }
+              }
+            },
+            "required": [
+              "id",
+              "stimuli"
+            ]
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DatabankQuestion"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "unitId",
+          "group",
+          "questions"
+        ]
+      },
+      "DatabankListMeta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "totalItems": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "from": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "to": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "totalUnits": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Units matching the filter (equals totalItems)."
+          },
+          "totalQuestions": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Questions inside those units; with a subject and no search it equals the tile count."
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages",
+          "totalUnits",
+          "totalQuestions"
+        ],
+        "additionalProperties": {}
+      },
+      "DatabankQuestionsResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DatabankRow"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/DatabankListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
       "BattleQuestionType": {
         "type": "string",
         "enum": [
@@ -93121,6 +93508,134 @@
           },
           "403": {
             "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/databank/overview": {
+      "get": {
+        "tags": [
+          "classes"
+        ],
+        "summary": "Databank Soalan (guru): totals and subject tiles, Teras then Elektif (API-GUR-27)",
+        "description": "Read-only. Counts are questions pupils can be served (approved live version, active, learner-visible, whole groups only), Tingkatan 1-5 only (D11, D91, D101).",
+        "responses": {
+          "200": {
+            "description": "`{ data: DatabankOverview }`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/DatabankOverview"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/databank/questions": {
+      "get": {
+        "tags": [
+          "classes"
+        ],
+        "summary": "Databank Soalan (guru): the question list, 20 units per page, newest first (API-GUR-27)",
+        "description": "A whole stimulus group is ONE unit (members in group order, stimuli once on the unit); a standalone question is one unit. `q` searches the question text (a group is listed when any member matches). The answer key is never returned.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,18}$"
+            },
+            "required": false,
+            "name": "subjectId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`{ data: DatabankRow[], meta }`; meta carries totalUnits and totalQuestions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatabankQuestionsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: fields.q \"Taip sekurang-kurangnya 2 aksara.\"; subjectId \"Subjek tidak sah.\"; page \"Halaman tidak sah.\"",
             "content": {
               "application/json": {
                 "schema": {

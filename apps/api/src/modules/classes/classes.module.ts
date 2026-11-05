@@ -6,6 +6,7 @@ import { COMP_CLASSROOM_PORT } from '../subscriptions/comp-students/classroom.po
 import { CurriculumModule } from '../curriculum'
 import { PerformanceModule } from '../reports/performance/performance.module'
 import { PerformancePorts } from '../reports/performance/ports'
+import { QuestionsModule } from '../questions'
 import { UsersModule, UsersPorts } from '../users'
 import { ClassesRepository } from './classes.repository'
 import { ClassesService } from './classes.service'
@@ -15,6 +16,8 @@ import { PerformanceClassesReadAdapter } from './performance-classes-read.adapte
 import { ClassesPorts } from './ports'
 import { TeacherClassroomsAdapter } from './teacher-classrooms.adapter'
 import { TeacherClassesController } from './teacher.controller'
+import { DatabankController } from './teacher-tools/databank.controller'
+import { DatabankService } from './teacher-tools/databank.service'
 
 /**
  * Classes and teacher basics (M10 part A, BE-17): classrooms, enrolments, teacher profiles, the teacher routes
@@ -26,9 +29,9 @@ import { TeacherClassesController } from './teacher.controller'
  * (the admin teacher classrooms lookup).
  */
 @Module({
-  imports: [AuditModule, ThrottleModule, CurriculumModule, UsersModule, PerformanceModule],
-  controllers: [TeacherClassesController, KelasSayaController],
-  providers: [ClassesRepository, ClassesService, ClassesPorts, CompClassroomAdapter, TeacherClassroomsAdapter, PerformanceClassesReadAdapter, { provide: COMP_CLASSROOM_PORT, useExisting: CompClassroomAdapter }],
+  imports: [AuditModule, ThrottleModule, CurriculumModule, UsersModule, PerformanceModule, QuestionsModule],
+  controllers: [TeacherClassesController, KelasSayaController, DatabankController],
+  providers: [ClassesRepository, ClassesService, DatabankService, ClassesPorts, CompClassroomAdapter, TeacherClassroomsAdapter, PerformanceClassesReadAdapter, { provide: COMP_CLASSROOM_PORT, useExisting: CompClassroomAdapter }],
   exports: [ClassesRepository, ClassesPorts, COMP_CLASSROOM_PORT],
 })
 export class ClassesModule implements OnModuleInit {

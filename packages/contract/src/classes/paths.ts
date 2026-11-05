@@ -19,6 +19,15 @@ import {
   ClassStudentRemoveQuerySchema,
   ClassStudentRemovedSchema,
   ClassroomKindSchema,
+  DatabankListMetaSchema,
+  DatabankOptionSchema,
+  DatabankOverviewSchema,
+  DatabankQuestionSchema,
+  DatabankQuestionsQuerySchema,
+  DatabankQuestionsResponseSchema,
+  DatabankRowSchema,
+  DatabankStimulusSchema,
+  DatabankSubjectTileSchema,
   TeacherChapterCreateRequestSchema,
   TeacherChapterOptionSchema,
   TeacherChaptersQuerySchema,
@@ -65,6 +74,15 @@ export const CLASSES_COMPONENT_SCHEMAS = {
   ClassJoinRequest: ClassJoinRequestSchema,
   ClassJoinResult: ClassJoinResultSchema,
   ClassJoinResponse: ClassJoinResponseSchema,
+  DatabankSubjectTile: DatabankSubjectTileSchema,
+  DatabankOverview: DatabankOverviewSchema,
+  DatabankQuestionsQuery: DatabankQuestionsQuerySchema,
+  DatabankStimulus: DatabankStimulusSchema,
+  DatabankOption: DatabankOptionSchema,
+  DatabankQuestion: DatabankQuestionSchema,
+  DatabankRow: DatabankRowSchema,
+  DatabankListMeta: DatabankListMetaSchema,
+  DatabankQuestionsResponse: DatabankQuestionsResponseSchema,
 } as const
 
 const json = (schema: z.ZodType, description: string) => ({
@@ -261,6 +279,32 @@ export function registerClassesPaths(registry: OpenAPIRegistry): void {
     summary: 'Galeri Rajah (empty in the prototype, D22; bare body)',
     request: { query: TeacherGalleryQuerySchema },
     responses: { 200: json(TeacherGallerySchema, '`{ folders: [] }`, or `{ images: [] }` with `folder`.'), 401: unauthorized, 403: teacherOnly },
+  })
+
+  registry.registerPath({
+    method: 'get',
+    path: '/guru/databank/overview',
+    ...teacher,
+    summary: 'Databank Soalan (guru): totals and subject tiles, Teras then Elektif (API-GUR-27)',
+    description:
+      'Read-only. Counts are questions pupils can be served (approved live version, active, learner-visible, whole groups only), Tingkatan 1-5 only (D11, D91, D101).',
+    responses: { 200: json(envelopeOf(DatabankOverviewSchema), '`{ data: DatabankOverview }`.'), 401: unauthorized, 403: teacherOnly },
+  })
+
+  registry.registerPath({
+    method: 'get',
+    path: '/guru/databank/questions',
+    ...teacher,
+    summary: 'Databank Soalan (guru): the question list, 20 units per page, newest first (API-GUR-27)',
+    description:
+      'A whole stimulus group is ONE unit (members in group order, stimuli once on the unit); a standalone question is one unit. `q` searches the question text (a group is listed when any member matches). The answer key is never returned.',
+    request: { query: DatabankQuestionsQuerySchema },
+    responses: {
+      200: json(DatabankQuestionsResponseSchema, '`{ data: DatabankRow[], meta }`; meta carries totalUnits and totalQuestions.'),
+      401: unauthorized,
+      403: teacherOnly,
+      422: err('VALIDATION_ERROR: fields.q "Taip sekurang-kurangnya 2 aksara."; subjectId "Subjek tidak sah."; page "Halaman tidak sah."'),
+    },
   })
 
   registry.registerPath({
