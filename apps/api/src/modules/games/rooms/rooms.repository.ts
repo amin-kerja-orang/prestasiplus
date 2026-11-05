@@ -253,9 +253,15 @@ export class RoomsRepository {
 
   // --- reads ----------------------------------------------------------------------------------------------
 
-  /** Up to `limit` newest waiting rooms with a seat free for a pupil (a robot gives its seat up) whose host is not a test actor. */
+  /**
+   * FR-GM-R.7, ruling 52: up to `limit` newest waiting rooms with a seat free for a pupil (a robot gives its seat up), created
+   * after `notBefore` (older ones are due to close), whose host is not a test actor and whose match mode fits `grade`
+   * (the SQL form of `gradeFits`; a viewer without a grade sees all). Any school: a room code joins from every school.
+   */
   async openRooms(
     limit: number,
+    grade: number | null,
+    notBefore: Date,
   ): Promise<{ code: string; game: string; hostId: string; players: number; max: number }[]> {
     const rows = await this.db.$queryRaw<
       { code: string; game: string; host_id: bigint; n: number; max_players: number }[]
@@ -263,8 +269,13 @@ export class RoomsRepository {
       SELECT r.code, r.game, r.host_id, r.max_players,
              (SELECT count(*)::int FROM game_room_players p WHERE p.room_code = r.code AND NOT p.is_bot) AS n
         FROM game_rooms r
-       WHERE r.status = 'waiting' AND NOT r.is_test
+       WHERE r.status = 'waiting' AND NOT r.is_test AND r.created_at > ${notBefore}
          AND (SELECT count(*) FROM game_room_players p WHERE p.room_code = r.code AND NOT p.is_bot) < r.max_players
+         AND (${grade}::int IS NULL OR CASE r.match_mode
+               WHEN 'same_grade' THEN array_position(ARRAY['DARJAH_1','DARJAH_2','DARJAH_3','DARJAH_4','DARJAH_5','DARJAH_6','TINGKATAN_1','TINGKATAN_2','TINGKATAN_3','TINGKATAN_4','TINGKATAN_5']::text[], r.grade_level) = ${grade}::int
+               WHEN 'same_level' THEN (${grade}::int <= 6) = (array_position(ARRAY['DARJAH_1','DARJAH_2','DARJAH_3','DARJAH_4','DARJAH_5','DARJAH_6','TINGKATAN_1','TINGKATAN_2','TINGKATAN_3','TINGKATAN_4','TINGKATAN_5']::text[], r.grade_level) <= 6)
+               ELSE ${grade}::int BETWEEN COALESCE(r.grade_min, 1) AND COALESCE(r.grade_max, 11)
+             END)
        ORDER BY r.created_at DESC, r.code ASC
        LIMIT ${limit}`
     return rows.map((r) => ({
@@ -274,6 +285,17 @@ export class RoomsRepository {
       players: r.n,
       max: r.max_players,
     }))
+  }
+
+  /** FR-GM-R.5: waiting rooms created at or before `before`, oldest first (they are due to close). */
+  async waitingCreatedBefore(before: Date, limit: number): Promise<string[]> {
+    const rows = await this.db.gameRoom.findMany({
+      where: { status: 'waiting', createdAt: { lte: before } },
+      orderBy: { createdAt: 'asc' },
+      take: limit,
+      select: { code: true },
+    })
+    return rows.map((r) => r.code)
   }
 
   async hasPlayed(game: string, userId: string): Promise<boolean> {
@@ -354,6 +376,32 @@ export class RoomsRepository {
     return s ? toSearch(s) : null
   }
 
+  /** FR-GM-R, ruling 16: the oldest other searches of the same subject and match mode that are still searching and not expired. */
+  async pairCandidates(s: SearchRow, notBefore: Date, limit: number): Promise<SearchRow[]> {
+    const rows = await this.db.pbSearch.findMany({
+      where: {
+        id: { not: s.id },
+        userId: { not: idFromString(s.userId) },
+        status: 'searching',
+        subject: s.subject,
+        matchMode: s.matchMode,
+        isTest: s.isTest,
+        createdAt: { gt: notBefore },
+      },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: limit,
+    })
+    return rows.map(toSearch)
+  }
+
+  /** Locks another pupil's search without waiting; null when that row is locked by its own poll (it simply tries again next poll). */
+  async lockSearchSkipLocked(id: bigint): Promise<SearchRow | null> {
+    const locked = await this.db.$queryRaw<{ id: bigint }[]>`SELECT id FROM pb_searches WHERE id = ${id} FOR UPDATE SKIP LOCKED`
+    if (locked.length === 0) return null
+    const s = await this.db.pbSearch.findUnique({ where: { id } })
+    return s ? toSearch(s) : null
+  }
+
   async insertSearch(
     userId: string,
     subject: string,
@@ -390,6 +438,7 @@ export interface SearchRow {
   status: string
   polls: number
   roomCode: string | null
+  isTest: boolean
   createdAt: Date
 }
 
@@ -401,6 +450,7 @@ const toSearch = (s: {
   status: string
   polls: number
   roomCode: string | null
+  isTest: boolean
   createdAt: Date
 }): SearchRow => ({
   id: s.id,
@@ -410,5 +460,6 @@ const toSearch = (s: {
   status: s.status,
   polls: s.polls,
   roomCode: s.roomCode,
+  isTest: s.isTest,
   createdAt: s.createdAt,
 })

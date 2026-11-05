@@ -129,6 +129,8 @@ describe('Papan Bijak quick match (M16-29..31): raw bodies', () => {
     // a new search starts afresh
     await student2.post(QM, FORM)
     expect(await poll(student2)).toEqual({ status: 'searching' })
+    // Ruling 16: a pupil still searching is paired with the next compatible pupil, so end this search here.
+    await student2.post(`${QM}/cancel`)
   })
 
   it('cancel always answers cancelled, turns searching into cancelled and leaves matched / absent searches alone', async () => {

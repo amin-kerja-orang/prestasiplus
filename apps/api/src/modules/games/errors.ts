@@ -25,9 +25,15 @@ export const soloItemNotFound = (): ApiError => ApiError.of('NOT_FOUND', { messa
 
 // 403
 export const startHostOnly = (): ApiError => ApiError.of('FORBIDDEN', { message: M.startHostOnly })
+/** AC-GM-R.6, ruling on DOC DEFECT 48: the Tingkatan does not fit the room's match mode. */
+export const roomGradeRefused = (): ApiError => ApiError.of('FORBIDDEN', { message: M.actionType })
 export const actionNotYourTurn = (): ApiError => ApiError.of('FORBIDDEN', { message: M.actionNotYourTurn })
 
 // 409
+/** ERR-GAME-08: a join with no free seat. */
+export const roomFull = (): ApiError => ApiError.of('CONFLICT', { message: M.roomFull })
+/** ERR-GAME-09: a join of a room that already started (same text as the start refusal). */
+export const roomStarted = (): ApiError => ApiError.of('CONFLICT', { message: M.startAlreadyStarted })
 export const startAlreadyStarted = (): ApiError => ApiError.of('CONFLICT', { message: M.startAlreadyStarted })
 export const startNotEnoughPlayers = (): ApiError => ApiError.of('CONFLICT', { message: M.startNotEnoughPlayers })
 export const actionNotStarted = (): ApiError => ApiError.of('CONFLICT', { message: M.actionNotStarted })

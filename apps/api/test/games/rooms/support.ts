@@ -149,9 +149,9 @@ export function parseRoom(res: Response) {
   return roomEnvelope.parse(res.body).data
 }
 
-/** The room has waited `battle_bot_fallback_seconds`: the next host poll or start seats the robots (48 GAME-R). */
+/** The room has waited `battle_bot_fallback_seconds` (30 s) but not `room_waiting_minutes` (15 min, FR-GM-R.5): the next host poll or start seats the robots (48 GAME-R). */
 export const ageRoom = (t: GamesTestApp, code: string): Promise<unknown> =>
-  t.db.query(`update game_rooms set created_at = created_at - interval '1 hour' where code = $1`, [code])
+  t.db.query(`update game_rooms set created_at = created_at - interval '5 minutes' where code = $1`, [code])
 
 /** Starts the room with robots in the missing seats. */
 export async function fillAndStart(t: GamesTestApp, c: Client, game: string, code: string) {

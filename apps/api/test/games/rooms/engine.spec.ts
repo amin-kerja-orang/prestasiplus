@@ -26,7 +26,7 @@ import {
   type EnginePlayer,
   type EngineRoom,
   type PoolQuestion,
-  type RoomAction,
+  type RoomPlayAction,
   type RoomState,
   type StreamFactory,
 } from '../../../src/modules/games/rooms/engine'
@@ -86,8 +86,8 @@ function start(
 
 const answerRight = (
   s: RoomState,
-  extra: Partial<Extract<RoomAction, { type: 'answer' }>> = {},
-): RoomAction => ({
+  extra: Partial<Extract<RoomPlayAction, { type: 'answer' }>> = {},
+): RoomPlayAction => ({
   type: 'answer',
   questionId: s.pendingQ as string,
   optionId: (s.qs[s.pendingQ as string] as { keyIndex: number }).keyIndex,
@@ -95,7 +95,7 @@ const answerRight = (
   seconds: 15,
   ...extra,
 })
-const answerWrong = (s: RoomState): RoomAction => ({
+const answerWrong = (s: RoomState): RoomPlayAction => ({
   type: 'answer',
   questionId: s.pendingQ as string,
   optionId: ((s.qs[s.pendingQ as string] as { keyIndex: number }).keyIndex + 1) % 4,
@@ -106,7 +106,7 @@ const answerWrong = (s: RoomState): RoomAction => ({
 function step(
   room_: EngineRoom,
   o: EngineOut,
-  action: RoomAction,
+  action: RoomPlayAction,
   p: number,
   nowMs = T0,
 ): EngineOut {
@@ -363,7 +363,7 @@ describe('Perang Fakta secret truth bits', () => {
 
 describe('Perang Fakta (15 rounds, 10 s)', () => {
   const r = room('perang-fakta')
-  const vote = (o: EngineOut, value: unknown): RoomAction => ({
+  const vote = (o: EngineOut, value: unknown): RoomPlayAction => ({
     type: 'answer',
     questionId: o.state.pendingQ as string,
     optionId: null,

@@ -25,7 +25,7 @@ import {
   type EnginePlayer,
   type EngineRoom,
   type PoolQuestion,
-  type RoomAction,
+  type RoomPlayAction,
   type RoomState,
   type StreamFactory,
 } from './types'
@@ -224,7 +224,7 @@ export interface ActionInput {
   room: EngineRoom
   players: EnginePlayer[]
   state: RoomState
-  action: RoomAction
+  action: RoomPlayAction
   p: number
   nowMs: number
   streams?: StreamFactory
@@ -329,7 +329,7 @@ function stamp(prev: RoomState | null, out: EngineOut, startMs: number): EngineO
   return out
 }
 
-type Answer = Extract<RoomAction, { type: 'answer' }>
+type Answer = Extract<RoomPlayAction, { type: 'answer' }>
 
 /** Whether an MCQ answer is right (a `null` option is a timeout). */
 function mcqRight(c: Ctx, qId: string, optionId: number | null): boolean {

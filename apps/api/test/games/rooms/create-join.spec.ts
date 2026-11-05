@@ -310,13 +310,15 @@ describe('create, join and view a room (M16-24, M16-25, M16-26)', () => {
         ['unknown', 'perang-fakta', 'ZZZZZZ'],
         ['other game', 'benteng-ilmu', code],
         ['other game 2', 'perang-fakta', waitingBenteng],
-        ['not waiting', 'perang-fakta', started],
       ]
       for (const [name, game, value] of attempts) {
         const res = await student2.post(P(game, undefined, '/join'), joinBody(value))
         expectError(res, 'NOT_FOUND', M.roomNotFound)
         expect(res.status, name).toBe(404)
       }
+      // A started room is no longer "not found": ERR-GAME-09 (409), FR-GM-R.2 (tests in lifecycle.spec.ts)
+      const startedRes = await student2.post(P('perang-fakta', undefined, '/join'), joinBody(started))
+      expectError(startedRes, 'CONFLICT', M.startAlreadyStarted)
       expectError(
         await student2.post(P('perang-fakta', undefined, '/join'), undefined),
         'NOT_FOUND',
@@ -337,8 +339,8 @@ describe('create, join and view a room (M16-24, M16-25, M16-26)', () => {
       })
       expectError(
         await maju.post(P('perang-fakta', undefined, '/join'), { room_code: sameGrade }),
-        'NOT_FOUND',
-        M.roomNotFound,
+        'FORBIDDEN',
+        M.actionType, // AC-GM-R.6 (ruling on DOC DEFECT 48): 403 "Tindakan tidak sah."
       )
       expect(
         (await student2.post(P('perang-fakta', undefined, '/join'), { room_code: sameGrade }))
@@ -362,8 +364,8 @@ describe('create, join and view a room (M16-24, M16-25, M16-26)', () => {
       })
       expectError(
         await maju.post(P('papan-bijak', undefined, '/join'), { room_code: custom }),
-        'NOT_FOUND',
-        M.roomNotFound,
+        'FORBIDDEN',
+        M.actionType, // AC-GM-R.6 (ruling on DOC DEFECT 48): 403 "Tindakan tidak sah."
       )
       expect(
         (await student2.post(P('papan-bijak', undefined, '/join'), { room_code: custom })).status,
@@ -380,15 +382,15 @@ describe('create, join and view a room (M16-24, M16-25, M16-26)', () => {
       ).toBe(200)
     })
 
-    it('a full room refuses (404)', async () => {
+    it('a full room refuses (409 ERR-GAME-08)', async () => {
       const code = await createRoom(student, 'benteng-ilmu', { ...FORM, match_mode: 'same_level' })
       expect(
         (await student2.post(P('benteng-ilmu', undefined, '/join'), { room_code: code })).status,
       ).toBe(200)
       expectError(
         await maju.post(P('benteng-ilmu', undefined, '/join'), { room_code: code }),
-        'NOT_FOUND',
-        M.roomNotFound,
+        'CONFLICT',
+        M.roomFull,
       )
     })
 
@@ -416,10 +418,10 @@ describe('create, join and view a room (M16-24, M16-25, M16-26)', () => {
           clients.map((c) => c.post(P(game, undefined, '/join'), { room_code: code })),
         )
         const ok = results.filter((r) => r.status === 200).length
-        const refused = results.filter((r) => r.status === 404)
+        const refused = results.filter((r) => r.status === 409)
         expect(ok).toBe(max - 1)
         expect(refused).toHaveLength(clients.length - ok)
-        for (const r of refused) expectError(r, 'NOT_FOUND', M.roomNotFound)
+        for (const r of refused) expectError(r, 'CONFLICT', M.roomFull)
         const rows = await t.db.query<{ n: string }>(
           'select count(*)::text as n from game_room_players where room_code = $1',
           [code],
@@ -552,7 +554,7 @@ describe('create, join and view a room (M16-24, M16-25, M16-26)', () => {
         [student.userId, false],
         [student2.userId, false],
       ])
-      expect((await maju.post(P('benteng-ilmu', undefined, '/join'), { room_code: code })).status).toBe(404)
+      expect((await maju.post(P('benteng-ilmu', undefined, '/join'), { room_code: code })).status).toBe(409) // ERR-GAME-08: full
     })
 
     it('a robot seat does not hide a room from the open-rooms strip: only pupils count', async () => {

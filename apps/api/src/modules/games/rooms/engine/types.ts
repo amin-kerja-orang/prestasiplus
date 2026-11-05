@@ -84,9 +84,13 @@ export interface EngineOut {
   answered?: AnsweredQuestion[]
 }
 
-export type RoomAction =
+/** What the engine plays: a roll or an answer. */
+export type RoomPlayAction =
   | { type: 'roll' }
   | { type: 'answer'; questionId: string; optionId: number | null; value: unknown; seconds: number }
+
+/** An action of the room route: a play, or `Keluar` (the room service handles `leave`; the engine never sees it). */
+export type RoomAction = RoomPlayAction | { type: 'leave' }
 
 /** A refusal of the engine; the service maps it to the standard error body. */
 export class EngineRefusal extends Error {

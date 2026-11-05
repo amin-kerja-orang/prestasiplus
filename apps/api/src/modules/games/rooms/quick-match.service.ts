@@ -8,9 +8,9 @@ import {
 import { CLOCK, type Clock } from '../../../db/clock'
 import { PrismaService } from '../../../db/prisma.service'
 import { GameUsers } from '../core/game-users'
-import { enumOfGrade } from '../core/grades'
+import { enumOfGrade, gradeFits } from '../core/grades'
 import { type Caller, RoomsService } from './rooms.service'
-import { RoomsRepository } from './rooms.repository'
+import { RoomsRepository, type SearchRow } from './rooms.repository'
 
 /** BR-M16-24: the third poll matches; a search older than 120 s expires (clock injected). */
 export const QUICK_MATCH_ON_POLL = 3
@@ -62,6 +62,12 @@ export class QuickMatchService {
         await this.repo.updateSearch(s.id, { status: 'expired', polls })
         return { status: 'expired' } as const
       }
+      // Ruling 16: a pupil is matched before the robot; the third poll only brings the robot when no pupil fits.
+      const paired = await this.pairWithPupil(caller, s)
+      if (paired !== null) {
+        await this.repo.updateSearch(s.id, { status: 'matched', polls, roomCode: paired })
+        return { status: 'matched', room_code: paired } as const
+      }
       if (polls < QUICK_MATCH_ON_POLL) {
         await this.repo.updateSearch(s.id, { polls })
         return { status: 'searching' } as const
@@ -80,6 +86,44 @@ export class QuickMatchService {
       await this.repo.updateSearch(s.id, { status: 'matched', polls, roomCode: code })
       return { status: 'matched', room_code: code } as const
     })
+  }
+
+  /**
+   * Cari Lawan Auto, 48 GAME-R: the oldest other pupil searching with the same subject and match mode (same Tingkatan for
+   * `same_grade`, the same level for `same_level`; Mod Pelajar only meets Mod Pelajar). The poller's search row is already
+   * locked; the other row is locked with SKIP LOCKED, so two pupils polling at once never wait for each other and never make
+   * two rooms: the one that cannot lock tries again on its next poll. The poller is the host and both are seated as players;
+   * the other pupil is marked matched and reads the same room code on their next poll. Until R2 the engine still simulates
+   * every non-host seat, so play is host-driven. Returns the room code, or null when nobody fits.
+   */
+  private async pairWithPupil(caller: Caller, s: SearchRow): Promise<string | null> {
+    const now = this.clock.now()
+    const viewer = await this.users.get(caller.userId)
+    const room = {
+      gradeLevel: enumOfGrade(viewer?.grade ?? null) ?? 'TINGKATAN_4', // no Darjah in any game level (FR-MUR-21-3)
+      matchMode: s.matchMode,
+      gradeMin: null,
+      gradeMax: null,
+    }
+    const candidates = await this.repo.pairCandidates(s, new Date(now.getTime() - QUICK_MATCH_EXPIRES_MS), 25)
+    for (const c of candidates) {
+      const other = await this.users.get(c.userId)
+      if (!other || !gradeFits(room, other.grade ?? null)) continue
+      const locked = await this.repo.lockSearchSkipLocked(c.id)
+      if (locked?.status !== 'searching' || now.getTime() - locked.createdAt.getTime() >= QUICK_MATCH_EXPIRES_MS) continue
+      const code = await this.rooms.createRoom(caller, 'papan-bijak', {
+        subject: s.subject as GamesRoomSubject,
+        gradeLevel: room.gradeLevel,
+        matchMode: s.matchMode,
+        gradeMin: null,
+        gradeMax: null,
+        maxPlayers: 4,
+      })
+      await this.repo.addPlayer(code, locked.userId, locked.isTest, now)
+      await this.repo.updateSearch(locked.id, { status: 'matched', roomCode: code })
+      return code
+    }
+    return null
   }
 
   async cancel(caller: Caller): Promise<{ status: 'cancelled' }> {

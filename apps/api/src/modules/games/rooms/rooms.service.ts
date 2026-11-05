@@ -28,7 +28,10 @@ import {
   fieldError,
   gameNotFound,
   roomGradeLevelInvalid,
+  roomFull,
+  roomGradeRefused,
   roomNotFound,
+  roomStarted,
   startAlreadyStarted,
   startHostOnly,
   startNotEnoughPlayers,
@@ -147,11 +150,15 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit(): void {
-    this.stopSweep = startGameSweep(RoomsService.name, this.config.get<string>('NODE_ENV'), () => this.sweepClocks())
+    this.stopSweep = startGameSweep(RoomsService.name, this.config.get<string>('NODE_ENV'), () => this.sweepAll())
   }
 
   onModuleDestroy(): void {
     this.stopSweep()
+  }
+
+  private async sweepAll(): Promise<number> {
+    return (await this.sweepClocks()) + (await this.closeStaleWaiting())
   }
 
   /** FR-GM-00.7: one pass over the rooms with no poller; every room takes its lock and re-checks. Returns how many moved. */
@@ -174,10 +181,38 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
     return moved
   }
 
+  /** Rooms created at or before this instant have waited `room_waiting_minutes` and are closed (FR-GM-R.5, ruling 51). */
+  private async waitingNotBefore(): Promise<Date> {
+    const minutes = await this.settings.get('room_waiting_minutes')
+    return new Date(this.clock.now().getTime() - minutes * 60_000)
+  }
+
+  /** FR-GM-R.5: closes the waiting rooms past `room_waiting_minutes` since creation; every room takes its lock and re-checks. Returns how many closed. */
+  async closeStaleWaiting(): Promise<number> {
+    const before = await this.waitingNotBefore()
+    let closed = 0
+    for (const code of await this.repo.waitingCreatedBefore(before, SWEEP_ROOMS)) {
+      try {
+        const done = await this.prisma.transaction(async () => {
+          await this.repo.lock(code)
+          const room = await this.repo.room(code)
+          if (room?.status !== 'waiting' || room.createdAt.getTime() > before.getTime()) return false
+          await this.repo.updateRoom(code, { status: 'closed' }, this.clock.now())
+          return true
+        })
+        if (done) closed += 1
+      } catch (err) {
+        this.logger.warn(`Waiting room close failed for ${code}: ${err instanceof Error ? err.message : String(err)}`)
+      }
+    }
+    return closed
+  }
+
   // --- hub and lobby ---------------------------------------------------------------------------------------
 
   async hub(caller: Caller): Promise<GamesHub> {
-    const open = await this.repo.openRooms(6)
+    const viewer = await this.users.get(caller.userId)
+    const open = await this.repo.openRooms(6, viewer?.grade ?? null, await this.waitingNotBefore())
     const names = await this.users.getMany(open.map((r) => r.hostId))
     const seen = await this.privacy.resolver(caller)
     const hostName = (id: string): string => {
@@ -341,16 +376,15 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
       if (!room || room.game !== game) throw roomNotFound()
       const ps = await this.repo.players(code)
       if (ps.some((p) => p.userId === caller.userId)) return { code }
-      const viewer = await this.users.get(caller.userId)
+      // FR-GM-R.2, 48 GAME-R: exists (above), not started, a free seat, then the Tingkatan; a closed room no longer joins.
+      // A waiting room past `room_waiting_minutes` is as good as closed before the sweep writes it (ruling 51).
+      const stale = room.status === 'waiting' && room.createdAt.getTime() <= (await this.waitingNotBefore()).getTime()
+      if (room.status === 'closed' || stale || room.isTest !== caller.isTest) throw roomNotFound() // no mixed rooms: test actors and normal users never share one
+      if (room.status !== 'waiting') throw roomStarted()
       const robots = ps.filter((p) => p.robot !== null)
-      if (
-        room.status !== 'waiting' ||
-        ps.length - robots.length >= room.maxPlayers ||
-        !gradeFits(room, viewer?.grade ?? null) ||
-        room.isTest !== caller.isTest // no mixed rooms: test actors and normal users never share one
-      ) {
-        throw roomNotFound()
-      }
+      if (ps.length - robots.length >= room.maxPlayers) throw roomFull()
+      const viewer = await this.users.get(caller.userId)
+      if (!gradeFits(room, viewer?.grade ?? null)) throw roomGradeRefused() // AC-GM-R.6, ruling on DOC DEFECT 48: 403 "Tindakan tidak sah."
       // 48 section 3.6, humans first: a pupil takes the seat of a robot, so a robot never blocks a join.
       const seatToFree = robots.at(-1)
       if (seatToFree) await this.repo.removeSeat(seatToFree.id)
@@ -446,6 +480,7 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
     }
     const v = r.data
     if (v.type === 'roll') return { type: 'roll' }
+    if (v.type === 'leave') return { type: 'leave' }
     return {
       type: 'answer',
       questionId: v.questionId,
@@ -464,6 +499,7 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
     const game = parseGame(gameParam)
     const action = this.parseAction(body)
     await this.mustPlayer(caller, game, rawCode)
+    if (action.type === 'leave') return this.leave(caller, game, rawCode)
     return this.prisma.transaction(async (tx) => {
       const probe = await this.mustPlayer(caller, game, rawCode)
       await this.repo.lock(probe.room.code)
@@ -497,6 +533,82 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
         throw mapRefusal(e)
       }
     })
+  }
+
+  // --- leave (Keluar) ---------------------------------------------------------------------------------------------
+
+  /**
+   * 48 GAME-R "Absent, leave": `Keluar` in `waiting` frees the seat and the host leaving closes the room; in `playing` it
+   * forfeits the seat (0 XP, no reward, no standing). A finished or closed room answers unchanged. The leaver is no longer a
+   * player afterwards, so the answer is the room as the others now see it.
+   */
+  private async leave(caller: Caller, game: GamesRoomGame, rawCode: string): Promise<GamesRoomView> {
+    return this.prisma.transaction(async (tx) => {
+      const probe = await this.mustPlayer(caller, game, rawCode)
+      await this.repo.lock(probe.room.code)
+      let { room, players } = await this.mustPlayer(caller, game, rawCode)
+      if (room.status === 'playing') {
+        const after = await this.runClocks(tx, room, players)
+        room = after.room
+        players = after.players
+      }
+      if (room.status === 'waiting') return this.leaveWaiting(caller, room, players)
+      if (room.status === 'playing' && room.state) return this.leavePlaying(tx, caller, room, room.state, players)
+      return this.viewOf(caller, room, players)
+    })
+  }
+
+  private async leaveWaiting(caller: Caller, room: RoomRow, players: PlayerRow[]): Promise<GamesRoomView> {
+    if (room.hostId === caller.userId) {
+      await this.repo.updateRoom(room.code, { status: 'closed' }, this.clock.now())
+      return this.viewOf(caller, { ...room, status: 'closed' }, players)
+    }
+    const seat = players.find((p) => p.userId === caller.userId)
+    if (seat) await this.repo.removeSeat(seat.id)
+    return this.viewOf(caller, room, players.filter((p) => p !== seat))
+  }
+
+  /** Ruling 50: a leaver of a Papan Bijak game that has another human gets jumlah + 1, menang 0, no XP. Robot games move no standing. */
+  private async forfeitStanding(room: RoomRow, caller: Caller, players: PlayerRow[]): Promise<void> {
+    if (room.game !== 'papan-bijak' || room.isTest) return
+    if (!players.some((p) => p.userId !== null && p.userId !== caller.userId)) return
+    await this.repo.bumpStanding('papan-bijak', caller.userId, { wins: 0, jumlah: 1, betul: 0, skor: 0 }, this.clock.now())
+  }
+
+  /**
+   * The host leaving ends the game with no winner, no standing and no reward (the settle path is never entered; `settledAt`
+   * is set so nothing settles later). Under the single-human engine the host is the only acting seat. Another player's seat
+   * is simply given up; when fewer than the minimum players remain, the game ends with the host as default winner (48 section
+   * 3.6) through the normal settle path.
+   */
+  private async leavePlaying(
+    tx: TxClient,
+    caller: Caller,
+    room: RoomRow,
+    st: RoomState,
+    players: PlayerRow[],
+  ): Promise<GamesRoomView> {
+    const now = this.clock.now()
+    await this.forfeitStanding(room, caller, players)
+    if (st.humanId === caller.userId) {
+      const state: RoomState = { ...st, awaiting: null, pendingQ: null, winnerId: null, mvpId: null }
+      const result = {
+        winnerId: null,
+        mvpId: null,
+        scores: players.map((p) => ({ userId: p.seat, points: p.points, correct: p.correct })),
+        forfeitedBy: caller.userId,
+      }
+      await this.repo.updateRoom(room.code, { state, status: 'finished', finishedAt: now, result, settledAt: now }, now)
+      return this.viewOf(caller, { ...room, state, status: 'finished', finishedAt: now, result, settledAt: now }, players)
+    }
+    const seat = players.find((p) => p.userId === caller.userId)
+    if (!seat) return this.viewOf(caller, room, players)
+    await this.repo.removeSeat(seat.id)
+    const rest = players.filter((p) => p !== seat)
+    if (rest.length >= GAMES_ROOM_LIMITS[room.game as GamesRoomGame].minPlayers) return this.viewOf(caller, room, rest)
+    const state: RoomState = { ...st, awaiting: null, pendingQ: null, winnerId: st.humanId, mvpId: st.humanId }
+    const done = await this.applyOut(tx, room, rest, { state, players: enginePlayers(rest), finished: true })
+    return this.viewOf(caller, done.room, done.players)
   }
 
   // --- engine plumbing -------------------------------------------------------------------------------------------
@@ -643,7 +755,8 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
 
   /** The reward block of the finished room for the acting human; nothing for a seat that did not play or for Mod Pelajar. */
   private async rewardOf(caller: Caller, room: RoomRow, st: RoomState): Promise<GamesReward | undefined> {
-    if (room.isTest || st.humanId !== caller.userId) return undefined
+    const forfeited = isRecord(room.result) && room.result.forfeitedBy === caller.userId // Keluar in playing: no reward, not even the pace guard note
+    if (room.isTest || st.humanId !== caller.userId || forfeited) return undefined
     const first = await this.ports.rewards.firstGameResult(room.sessionId, caller.userId)
     if (first) return rewardBlock(first)
     return (await this.paceTripped(room, st)) ? PACE_GUARD_REWARD : undefined
@@ -654,6 +767,15 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
     const waited = this.clock.now().getTime() - room.createdAt.getTime()
     const seconds = await this.settings.get('battle_bot_fallback_seconds')
     return waited >= seconds * 1000 ? this.addRobots(room, players) : players
+  }
+
+  /** Ruling 53: seconds until robots may join a waiting room (counted from creation); null when none will (robots off, never, or the minimum is met). */
+  private async robotInSeconds(room: RoomRow, seated: number): Promise<number | null> {
+    if (seated >= GAMES_ROOM_LIMITS[room.game as GamesRoomGame].minPlayers) return null
+    const s = await this.settings.getMany(['games_room_bots_enabled', 'battle_bot_fallback_seconds'])
+    if (s.games_room_bots_enabled !== 1 || s.battle_bot_fallback_seconds === 0) return null
+    const waited = this.clock.now().getTime() - room.createdAt.getTime()
+    return Math.max(0, Math.ceil((s.battle_bot_fallback_seconds * 1000 - waited) / 1000))
   }
 
   /** One robot per seat missing to the minimum, when robots are on (`games_room_bots_enabled`; a fallback of 0 is "never a robot", 48 section 2). */
@@ -706,7 +828,7 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
   private async viewOf(caller: Caller, room: RoomRow, players: PlayerRow[]): Promise<GamesRoomView> {
     const game = room.game as GamesRoomGame
     const ids = [room.hostId, ...players.flatMap((p) => (p.userId === null ? [] : [p.userId]))]
-    const st = room.status === 'waiting' ? null : room.state // a waiting room only stores its secret seed
+    const st = room.status === 'waiting' || room.status === 'closed' ? null : room.state // a waiting (or closed) room only stores its secret seed
     const names = await this.users.getMany(ids)
     // Children's names rule: players, host, winner and scores show a name the caller may see, else first given name.
     // Ids stay: they key `state.positions` / `meter` and `humanId`, which the room client needs to draw the game.
@@ -746,6 +868,10 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
         : null,
     }
     if (st) view.round = st.round
+    if (room.status === 'waiting') {
+      const robotIn = await this.robotInSeconds(room, players.length)
+      if (robotIn !== null) view.robotInSeconds = robotIn
+    }
     const endsAt = st ? roundEndsAtMs(game, room.status, st, room.startedAt ? room.startedAt.getTime() : null) : null
     if (endsAt !== null) view.roundEndsAt = toMytTimestamp(new Date(endsAt))
     const q = questionView(game, room.status, st)
