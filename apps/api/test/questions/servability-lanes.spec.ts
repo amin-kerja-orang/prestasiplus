@@ -129,6 +129,14 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
     made.subjektifNoKey = await essay('Soalan subjektif objektif tiada kunci.')
     await dropKey(made.subjektifNoKey)
     await q(`update question_parts set mode = 'mcq' where question_version_id in (select id from question_versions where question_id = $1)`, [made.subjektifNoKey])
+    // Live: the two sentences are for what pupils could be served. A draft or an inactive question with no key carries neither.
+    await q(`update question_versions set status = 'approved', published_at = now() where question_id = any($1::bigint[])`, [[made.subjektifOk, made.subjektifNoScheme, made.subjektifNoKey]])
+    made.subjektifDraftNoScheme = await essay('Soalan subjektif draf tiada skema.')
+    await dropKey(made.subjektifDraftNoScheme)
+    made.subjektifInactiveNoScheme = await essay('Soalan subjektif tidak aktif tiada skema.')
+    await dropKey(made.subjektifInactiveNoScheme)
+    await q(`update question_versions set status = 'approved', published_at = now() where question_id = $1`, [made.subjektifInactiveNoScheme])
+    await q(`update questions set is_active = false where id = $1`, [made.subjektifInactiveNoScheme])
 
     // Tracking A lane: size 2 for the subject, one full set and one short of a question.
     await q(`update spm_subject_configs set target_type = 'latihan', target_size = 2 where subject_id = $1`, [tag.subjectId])
@@ -406,6 +414,8 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
     expect(row(made.subjektifOk).attention).toEqual([])
     expect(row(made.subjektifNoScheme).attention).toEqual([SERVABILITY_REASON_MS.no_scheme])
     expect(row(made.subjektifNoKey).attention).toEqual([SERVABILITY_REASON_MS.no_key])
+    expect(row(made.subjektifDraftNoScheme).attention).toEqual([])
+    expect(row(made.subjektifInactiveNoScheme).attention).toEqual([])
     expect(row(made.subjektifOk).actions).toEqual(['preview', 'edit'])
     const has = (m: string) => lane.rows.filter((r) => r.attention.includes(m)).length
     const noScheme = has(SERVABILITY_REASON_MS.no_scheme)
@@ -473,7 +483,7 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
     }
   })
 
-  it('SR-3: one card that fails is flagged, the others stay, and the next reads recover it', async () => {
+  it('SR-3: one card that fails is flagged, the others stay, and the first read after it recovers', async () => {
     const reads = t.app.get(ServabilityReadsService)
     ;(t.app.get(OverviewCache) as unknown as { slots: Map<string, unknown> }).slots.clear()
     vi.spyOn(reads as unknown as { trackingCard: () => Promise<unknown> }, 'trackingCard').mockRejectedValueOnce(new Error('ujian'))
@@ -481,10 +491,16 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
     expect(first.cards.find((c) => c.lane === 'tracking-a')).toMatchObject({ failed: true, total: 0 })
     expect(first.cards.filter((c) => c.failed)).toHaveLength(1)
     expect((await admin.get('/api/admin/servability/lanes/tracking-a')).body.attention).toBeUndefined()
-    await vi.waitFor(async () => {
-      const next = parseData(await admin.get('/api/admin/servability/overview'), ServabilityOverviewSchema)
-      expect(next.cards.some((c) => c.failed)).toBe(false)
-    })
+    const next = parseData(await admin.get('/api/admin/servability/overview'), ServabilityOverviewSchema)
+    expect(next.cards.some((c) => c.failed)).toBe(false)
+  })
+
+  it('SwrSlot.evict drops the value, so the next read computes and does not serve it again', async () => {
+    const slot = new SwrSlot<number>({ ttlMs: 1000, settleMs: 0, now: () => 0 })
+    await slot.get(() => Promise.resolve(7))
+    slot.evict()
+    expect(slot.peek()).toBeNull()
+    expect((await slot.get(() => Promise.resolve(8))).value).toBe(8)
   })
 
   it('SwrSlot.peek reads what is held and never computes', async () => {
