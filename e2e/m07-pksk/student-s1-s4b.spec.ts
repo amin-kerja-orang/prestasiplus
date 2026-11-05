@@ -1,6 +1,6 @@
 /**
  * M07-T2 E2E (SRS M07 §12): the student screens S1 hub, S2 dashboard, S3 domains, S4 history (DV-M07-01),
- * S4a domain practice and S4b full exam (provisional, L-2 / L-3) at 375 / 768 / 1280.
+ * S4a domain practice and S4b full exam (confirm and leave dialogs, in-page result views) at 375 / 768 / 1280.
  *
  * Covered: E2E-M07-01..10, 40, 41 (user shell), 42 (guest part), 44 (S1-S4b) and 45 (reduced, see its
  * title). Not covered here (they need the admin screens S5-S8, M07-T3 / T4, deferred): E2E-M07-11..39,
@@ -78,7 +78,7 @@ test.describe('M07 student screens', { tag: [moduleTag(7)] }, () => {
     test.setTimeout(600_000)
   })
 
-  test('E2E-M07-01 Hub as admin: copy, colours, level cards, no price', async ({
+  test('E2E-M07-01 Hub as admin: copy, colours, level cards, no billing link', async ({
     page,
     gotoApp,
     loginAs,
@@ -126,7 +126,6 @@ test.describe('M07 student screens', { tag: [moduleTag(7)] }, () => {
       )
     }
     const main = page.locator('main')
-    expect(await main.innerText()).not.toMatch(/RM\s?\d/)
     expect((await main.innerText()).toLowerCase()).not.toContain('harga')
     await expect(main.locator('a[href*="pricing"]')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
@@ -147,21 +146,30 @@ test.describe('M07 student screens', { tag: [moduleTag(7)] }, () => {
     },
   )
 
-  test(
-    'E2E-M07-02b Hub without a grant: no badge, no green border, "Mula Latihan" present',
-    provisional('the locked state is INFERRED only, L-1'),
-    async ({ page, gotoApp, loginAs }) => {
-      await loginAs('pelajar2@demo.test')
-      await gotoApp('/pksk')
-      await expect(page.getByRole('heading', { name: 'Persediaan Kemasukan' })).toBeVisible()
-      await expect(page.getByTestId('level-card-T1')).toBeVisible()
-      await expect(page.getByTestId('badge-aktif')).toHaveCount(0)
-      for (const lvl of ['T1', 'T4']) {
-        await expect(page.getByTestId(`level-card-${lvl}`)).not.toHaveClass(/border-green-400/)
-        await expect(page.getByTestId(`start-${lvl}`)).toHaveText('Mula Latihan')
-      }
-    },
-  )
+  test('E2E-M07-02b Hub without a grant: banner, no badge, no "Mula Latihan"', async ({
+    page,
+    gotoApp,
+    loginAs,
+  }) => {
+    await loginAs('pelajar2@demo.test')
+    await gotoApp('/pksk')
+    await expect(page.getByRole('heading', { name: 'Persediaan Kemasukan' })).toBeVisible()
+    await expect(page.getByTestId('no-access-banner')).toContainText(
+      'Anda belum mempunyai akses PKSK PRO',
+    )
+    await expect(page.getByTestId('no-access-banner')).toContainText(
+      'Akses PKSK diberikan oleh pentadbir sekolah anda.',
+    )
+    await expect(page.getByTestId('level-card-T1')).toBeVisible()
+    await expect(page.getByTestId('badge-aktif')).toHaveCount(0)
+    for (const lvl of ['T1', 'T4']) await expect(page.getByTestId(`start-${lvl}`)).toHaveCount(0)
+    // Counts, Bahagian rows, Domain teratas and Pakej show for everyone.
+    await expect(page.getByTestId('tile-bahagian')).toContainText('3')
+    await expect(page.getByTestId('bahagian-row-A')).toBeVisible()
+    await expect(page.getByTestId('top-domain')).toHaveCount(12)
+    await expect(page.getByTestId('pakej-row')).toHaveCount(5)
+    await expectNoHorizontalScroll(page)
+  })
 
   for (const lvl of ['T1', 'T4'] as const) {
     test(`E2E-M07-03 Admin dashboard ${lvl}: header, back link, zero state, shortcuts`, async ({
@@ -347,62 +355,90 @@ test.describe('M07 student screens', { tag: [moduleTag(7)] }, () => {
     await expectNoHorizontalScroll(page)
 
     await gotoApp('/pksk/level/T4/history')
-    await expect(page.getByTestId('history-empty')).toHaveText('Tiada sejarah peperiksaan.')
+    await expect(page.getByTestId('history-empty')).toHaveText('Belum ada sejarah peperiksaan.')
     await expect(page.locator('table')).toHaveCount(0)
   })
 
   test('E2E-M07-07b History: empty for the admin', async ({ page, gotoApp, loginAs }) => {
     await loginAs('admin@demo.test')
     await gotoApp('/pksk/level/T1/history')
-    await expect(page.getByTestId('history-empty')).toHaveText('Tiada sejarah peperiksaan.')
+    await expect(page.getByTestId('history-empty')).toHaveText('Belum ada sejarah peperiksaan.')
     await expect(page.locator('table')).toHaveCount(0)
   })
 
-  test(
-    'E2E-M07-08 Provisional practice and exam flow (L-2 / L-3)',
-    provisional('the practice and exam pages are UNVERIFIED neutral pages pending L-2 / L-3'),
-    async ({ page, gotoApp, loginAs }) => {
-      await loginAs('admin@demo.test')
-      await gotoApp('/pksk/level/T1')
-      const matLink = page.locator('[data-code=PKSK_MATH]').getByTestId('practice-link')
-      await matLink.click()
-      await expect(page).toHaveURL(/\/pksk\/level\/T1\/domain\/PKSK_MATH$/)
-      await expect(page.getByTestId('pksk-practice')).toHaveAttribute('data-provisional', 'L-2')
-      await expect(page.getByTestId('practice-title')).toHaveText('Matematik')
-      const items = page.getByTestId('pksk-item')
-      expect(await items.count()).toBeGreaterThan(0)
-      for (const item of await items.all()) {
-        await expect(item.locator('input, textarea').first()).toBeVisible()
-      }
-      await page.getByTestId('practice-submit').click()
-      await expect(page).toHaveURL(/\/pksk\/level\/T1\/domains$/)
+  test('E2E-M07-08 Practice and exam flow: dialogs and in-page results', async ({
+    page,
+    gotoApp,
+    loginAs,
+  }) => {
+    await loginAs('admin@demo.test')
+    await gotoApp('/pksk/level/T1')
+    await page.locator('[data-code=PKSK_MATH]').getByTestId('practice-link').click()
+    await expect(page).toHaveURL(/\/pksk\/level\/T1\/domain\/PKSK_MATH$/)
+    await expect(page.getByTestId('practice-title')).toHaveText('Matematik')
+    const items = page.getByTestId('pksk-item')
+    const n = await items.count()
+    expect(n).toBeGreaterThan(0)
+    await expect(items.first().getByTestId('pksk-option').first()).toBeVisible()
 
-      // The Matematik card of S3 opens the same page.
-      await page.locator('[data-code=PKSK_MATH]').click()
-      await expect(page).toHaveURL(/\/pksk\/level\/T1\/domain\/PKSK_MATH$/)
-      await expect(page.getByTestId('practice-title')).toHaveText('Matematik')
+    // One answer: the close button asks first; Teruskan Kuiz stays.
+    await items.first().getByTestId('pksk-option').first().click()
+    await page.locator('[data-ds=quiz-close]').click()
+    await expect(page.getByText('Keluar daripada kuiz?')).toBeVisible()
+    await expect(page.getByText('Jawapan anda belum dihantar dan akan hilang.')).toBeVisible()
+    await page.getByTestId('leave-stay').click()
+    await expect(page).toHaveURL(/\/pksk\/level\/T1\/domain\/PKSK_MATH$/)
 
-      await gotoApp('/pksk/level/T1')
-      await expect(page.getByTestId('exam-count')).toHaveText('0')
-      await page.getByTestId('shortcut-exam').click()
-      await expect(page).toHaveURL(/\/pksk\/level\/T1\/exam$/)
-      await expect(page.getByTestId('pksk-exam')).toHaveAttribute('data-provisional', 'L-3')
-      await expect(page.getByTestId('exam-title')).toHaveText('Peperiksaan Penuh')
-      await expect(page.getByTestId('exam-section-A').getByTestId('pksk-item')).toHaveCount(30)
-      await expect(page.getByTestId('exam-section-B').getByTestId('pksk-item')).toHaveCount(70)
-      await expect(page.getByTestId('exam-section-C').getByTestId('pksk-item')).toHaveCount(1)
-      await expect(page.getByTestId('exam-section-C').locator('textarea')).toHaveCount(1)
-      await expect(
-        page.getByTestId('exam-section-A').getByTestId('pksk-item').first().locator('input').first(),
-      ).toBeVisible()
-      await page.getByTestId('exam-submit').click()
-      await expect(page).toHaveURL(/\/pksk\/level\/T1$/)
-      await expect(page.getByTestId('exam-count')).toHaveText('1')
+    // Hantar: the blank count, then the result in the same page.
+    await page.getByTestId('practice-submit').click()
+    await expect(page.getByText(`Anda belum menjawab ${String(n - 1)} soalan.`)).toBeVisible()
+    await expect(page.getByText('Hantar jawapan anda sekarang?')).toBeVisible()
+    await page.getByTestId('confirm-submit').click()
+    await expect(page.getByTestId('result-title')).toHaveText('Kuiz Selesai!')
+    await expect(page).toHaveURL(/\/pksk\/level\/T1\/domain\/PKSK_MATH$/)
+    await expect(page.getByTestId('result-sub')).toHaveText(
+      'Tahniah, anda telah lengkapkan Matematik.',
+    )
+    for (const t of ['tile-markah', 'tile-ketepatan', 'tile-syiling', 'tile-mata']) {
+      await expect(page.getByTestId(t)).toBeVisible()
+    }
+    await expect(page.getByTestId('review-item')).toHaveCount(n)
+    await expectNoHorizontalScroll(page)
 
-      await gotoApp('/pksk/level/T1/history')
-      await expect(page.getByTestId('history-row')).toHaveCount(1)
-    },
-  )
+    // Cuba Lagi starts a fresh set; Senarai Domain opens the list.
+    await page.getByTestId('result-retry').click()
+    await expect(page.getByTestId('practice-title')).toHaveText('Matematik')
+    await expect(page.getByTestId('practice-result')).toHaveCount(0)
+    await page.locator('[data-ds=quiz-close]').click()
+    await expect(page).toHaveURL(/\/pksk\/level\/T1\/domains$/)
+
+    await gotoApp('/pksk/level/T1')
+    await expect(page.getByTestId('exam-count')).toContainText('0')
+    await page.getByTestId('shortcut-exam').click()
+    await expect(page).toHaveURL(/\/pksk\/level\/T1\/exam$/)
+    await expect(page.getByTestId('exam-title')).toHaveText('Peperiksaan Penuh')
+    await expect(page.getByTestId('exam-counter')).toHaveText('0/101')
+    await expect(page.getByTestId('exam-section-A').getByTestId('pksk-item')).toHaveCount(30)
+    await expect(page.getByTestId('exam-section-B').getByTestId('pksk-item')).toHaveCount(70)
+    await expect(page.getByTestId('exam-section-C').getByTestId('pksk-item')).toHaveCount(1)
+    await expect(page.getByTestId('exam-section-C').locator('textarea')).toHaveCount(1)
+    await expect(page.getByTestId('exam-section-A').getByTestId('exam-section-title')).toHaveText(
+      'Bahagian A (30 soalan)',
+    )
+    await page.getByTestId('exam-submit').click()
+    await expect(page.getByText('Anda belum menjawab 101 soalan.')).toBeVisible()
+    await page.getByTestId('confirm-submit').click()
+    await expect(page.getByTestId('result-title')).toHaveText('Keputusan Peperiksaan')
+    await expect(page.getByTestId('tile-markah')).toBeVisible()
+    await expect(page.getByTestId('tile-gred')).toBeVisible()
+    await expect(page.getByTestId('essay-note')).toContainText(
+      'Markah esei ialah penilaian indikatif.',
+    )
+    await expectNoHorizontalScroll(page)
+    await page.getByTestId('result-history').click()
+    await expect(page).toHaveURL(/\/pksk\/level\/T1\/history$/)
+    await expect(page.getByTestId('history-table')).toBeVisible()
+  })
 
   test(
     'E2E-M07-09 404 pages for an unknown level and an unknown domain code',
@@ -576,8 +612,11 @@ test.describe('M07 student screens', { tag: [moduleTag(7)] }, () => {
       const items = page.getByTestId('pksk-item')
       const n = await items.count()
       expect(n).toBeGreaterThan(0)
-      for (const item of await items.all()) await item.locator('input').first().check()
+      for (const item of await items.all()) await item.getByTestId('pksk-option').first().click()
       await page.getByTestId('practice-submit').click()
+      await page.getByTestId('confirm-submit').click()
+      await expect(page.getByTestId('practice-result')).toBeVisible()
+      await page.getByTestId('result-domains').click()
       await expect(page).toHaveURL(/\/pksk\/level\/T1\/domains$/)
       const post = await mock.lastRequest('/api/pksk/levels/T1/domains/PKSK_MATH/practice-sessions')
       expect(post?.method).toBe('POST')

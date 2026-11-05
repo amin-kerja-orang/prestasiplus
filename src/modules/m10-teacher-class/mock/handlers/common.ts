@@ -36,6 +36,7 @@ export const MSG = {
   school: 'Sekolah tidak sah.',
   classroom: 'Kelas tidak sah.',
   classCode: 'Sila masukkan kod kelas.',
+  // joinNotFound / joinAlready stay: `joinByCode` (the `enrol` test hook) still refuses with them.
   joinNotFound: 'Kod kelas tidak sah.',
   joinAlready: 'Anda sudah menyertai kelas ini.',
   joined: (name: string): string => `Berjaya menyertai kelas ${name}.`,

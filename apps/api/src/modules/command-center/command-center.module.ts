@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common'
 
 import { ThrottleModule } from '../../common/throttle'
+import { AccountModule, MoodReadAdapter } from '../account'
 import { SchoolsModule } from '../schools'
 import { UsersModule } from '../users'
 import { BoardReads } from './board/reads'
@@ -13,7 +14,7 @@ import { DrillService } from './drill/drill.service'
 import { GuruController } from './guru/guru.controller'
 import { GuruService } from './guru/guru.service'
 import { CommandCenterRepository } from './shared/command-center.repository'
-import { BADGE_READ_PORT, FEEDBACK_PORT, HEADCOUNT_PORT, MOOD_PORT, NoBadges, NoFeedback, NoHeadcount, NoMood, NoQuizSets, QUIZ_SET_PORT } from './shared/ports'
+import { BADGE_READ_PORT, FEEDBACK_PORT, HEADCOUNT_PORT, MOOD_PORT, NoBadges, NoFeedback, NoHeadcount, NoQuizSets, QUIZ_SET_PORT } from './shared/ports'
 import { ScopeService } from './shared/scope.service'
 
 /**
@@ -24,7 +25,7 @@ import { ScopeService } from './shared/scope.service'
  * empty/zero/null, so every route keeps a valid shape; the owner binds a real adapter with `{ provide: X_PORT, useClass: ... }`.
  */
 @Module({
-  imports: [ThrottleModule, UsersModule, SchoolsModule],
+  imports: [ThrottleModule, UsersModule, SchoolsModule, AccountModule],
   controllers: [BoardController, DrillController, GuruController],
   providers: [
     CommandCenterRepository,
@@ -36,7 +37,7 @@ import { ScopeService } from './shared/scope.service'
     BoardService,
     DrillService,
     GuruService,
-    { provide: MOOD_PORT, useClass: NoMood },
+    { provide: MOOD_PORT, useExisting: MoodReadAdapter },
     { provide: FEEDBACK_PORT, useClass: NoFeedback },
     { provide: HEADCOUNT_PORT, useClass: NoHeadcount },
     { provide: BADGE_READ_PORT, useClass: NoBadges },

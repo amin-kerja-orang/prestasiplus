@@ -193,11 +193,11 @@ const toInt = (value: string): number | null => (/^\d{1,9}$/.test(value) ? Numbe
 /** A positive decimal id without leading zeros trouble: "007" is the same id as "7". */
 const toId = (value: string): string | null => (/^\d{1,18}$/.test(value) ? String(BigInt(value)) : null)
 
-/** BE-09 stores MCQs with 3 to 8 options (contract `QuestionLeafPart`), so a row with fewer is a failed row, not a rolled-back import. */
-/** 3..8 options: the contract and the S1-T05 card win over Q-11's "2 hingga 8" (deviation recorded in the PR). */
-const MIN_OPTIONS = 3
-/** BE-09 has no text for this rule (its contract uses the generic schema message); this copy is the lead's fallback. */
-export const MIN_OPTIONS_MESSAGE = 'Pilihan jawapan mesti sekurang-kurangnya 3.'
+/** BE-09 stores MCQs with 2 to 8 options (contract `QuestionLeafPart`, S1-T09a), so a row with fewer is a failed row, not a rolled-back import. */
+/** 2..8 options: the contract (S1-T09a) and Q-11's "2 hingga 8" now agree; the earlier 3..8 deviation of S1-T05 is withdrawn. */
+const MIN_OPTIONS = 2
+/** The contract text of the same rule (`INTAKE_GATE_MESSAGES.mcqOptionsMin`). */
+export const MIN_OPTIONS_MESSAGE = 'Soalan objektif perlu sekurang-kurangnya 2 pilihan.'
 
 /**
  * The legacy (positional) header starts with `question_text`; anything else is the new header (D115 rule a). A legacy file with its columns

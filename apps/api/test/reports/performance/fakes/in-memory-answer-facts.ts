@@ -2,6 +2,8 @@ import type {
   AnswerFactRow,
   AnswerFactsPort,
   AnswerFactsQuery,
+  QuestionContent,
+  QuestionContentPort,
   SessionCountRow,
   SpInfo,
   WeeklyFactRow,
@@ -101,10 +103,15 @@ export class InMemoryAnswerFacts implements AnswerFactsPort {
         mode: a.mode,
       }
       const key = JSON.stringify(row)
-      const t = by.get(key) ?? { ...row, attempts: 0, correct: 0, lastAnsweredAt: a.answeredAt }
+      const t = by.get(key) ?? { ...row, attempts: 0, correct: 0, lastAnsweredAt: a.answeredAt, firstCorrect: a.isCorrect, firstAnsweredAt: a.answeredAt }
       t.attempts += 1
       if (a.isCorrect) t.correct += 1
       if (a.answeredAt > t.lastAnsweredAt) t.lastAnsweredAt = a.answeredAt
+      // The first answer by time; a tie keeps the earlier stored one (the SQL orders by answered_at, then id).
+      if (a.answeredAt < t.firstAnsweredAt) {
+        t.firstAnsweredAt = a.answeredAt
+        t.firstCorrect = a.isCorrect
+      }
       by.set(key, t)
     }
     return [...by.values()].sort((x, y) => cmp(x.userId, y.userId) || cmp(x.subjectId, y.subjectId) || cmp(x.questionId, y.questionId))
@@ -156,5 +163,34 @@ export class InMemoryAnswerFacts implements AnswerFactsPort {
       if (c) out.push({ id, kind: 'chapter', label: c.name ?? '', code: null, subjectCode: c.subjectCode, levelId: c.levelId })
     }
     return out
+  }
+}
+
+/** In-memory `QuestionContentPort`: the questions a spec registers; an unregistered id is absent (unknown, inactive or archived). */
+export class InMemoryQuestionContent implements QuestionContentPort {
+  private readonly rows = new Map<string, QuestionContent>()
+
+  add(c: Partial<QuestionContent> & Pick<QuestionContent, 'questionId'>): this {
+    this.rows.set(c.questionId, {
+      question: {
+        id: c.questionId,
+        questionText: `Soalan ${c.questionId}`,
+        questionType: 'mcq',
+        options: ['Pilihan A', 'Pilihan B', 'Pilihan C', 'Pilihan D'],
+        language: 'bm',
+        textDirection: 'ltr',
+        scriptType: 'rumi',
+        pointsValue: 1,
+      },
+      explanation: null,
+      source: '',
+      stimulusGroup: null,
+      ...c,
+    })
+    return this
+  }
+
+  async questionContent(ids: readonly string[]): Promise<Map<string, QuestionContent>> {
+    return new Map(ids.flatMap((id) => (this.rows.has(id) ? [[id, this.rows.get(id)!] as const] : [])))
   }
 }

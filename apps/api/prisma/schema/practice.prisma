@@ -15,7 +15,7 @@ model PracticeSession {
   userId           BigInt    @map("user_id")
   /// Client idempotency key (contract `ClientUuid`); unique per user where not null (partial index).
   clientUuid       String?   @map("client_uuid") @db.Uuid
-  /// random, chapter, revision, past_year, latih_tubi, ramalan, mission, remedial, question_set, pksk (check).
+  /// random, chapter, revision, past_year, latih_tubi, ramalan, mission, remedial, question_set, pksk, databank, tracking_a (check, 0181).
   mode             String
   subjectId        BigInt?   @map("subject_id")
   educationLevelId BigInt?   @map("education_level_id")
@@ -32,7 +32,7 @@ model PracticeSession {
   /// T1, T4 (check).
   pkskTargetLevel  String?   @map("pksk_target_level")
   questionCount    Int       @map("question_count") @db.SmallInt
-  /// in_progress, completed (check).
+  /// in_progress, completed, abandoned (check, 0182; abandoned = idle 2 h, swept by PracticeSessionSweeper, no completed_at).
   status           String    @default("in_progress")
   correctCount     Int       @default(0) @map("correct_count") @db.SmallInt
   timeSpentSec     Int       @default(0) @map("time_spent_sec")
@@ -114,6 +114,14 @@ model PracticeAnswer {
   legacySource       String?   @map("legacy_source")
   legacyId           String?   @map("legacy_id")
   legacyHash         String?   @map("legacy_hash")
+  /// DM-44 (0181): one of the 19 registry values (check ck_practice_answers_mode, NOT VALID, NULL passes until 0188 sets NOT NULL).
+  mode               String?
+  /// DM-44: id of the activity instance (exam attempt, practice session, battle/game uuid); no FK.
+  attemptId          String?   @map("attempt_id") @db.Uuid
+  /// DM-44: leaf path of a structured/subjective part, or `<game_key>#<position>`.
+  partRef            String?   @map("part_ref")
+  marksAwarded       Decimal?  @map("marks_awarded") @db.Decimal(6, 2)
+  marksMax           Decimal?  @map("marks_max") @db.Decimal(6, 2)
 
   session PracticeSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade, map: "fk_practice_answers_session_id")
 
@@ -122,6 +130,8 @@ model PracticeAnswer {
   @@index([sessionId], map: "ix_practice_answers_session_id")
   @@index([userId, questionId], map: "ix_practice_answers_user_id_question_id")
   @@index([subjectId, chapterId], map: "ix_practice_answers_subject_id_chapter_id")
+  // The partial unique index "uq_practice_answers_attempt_key" (attempt_id, user_id, question_id, coalesce(part_ref, ''))
+  // WHERE attempt_id IS NOT NULL and the mode check "ck_practice_answers_mode" are hand-written in 0181 (Prisma cannot express them).
   // Partial index (answered_at DESC, id DESC) WHERE NOT is_test, "ix_practice_answers_answered_at_id", is hand-written
   // in 0040 (Command Center platform reads, AZ-13); Prisma cannot express the WHERE clause.
   @@map("practice_answers")

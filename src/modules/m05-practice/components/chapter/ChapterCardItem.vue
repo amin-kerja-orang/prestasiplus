@@ -7,12 +7,20 @@
 import { computed } from 'vue'
 
 import type { ChapterCard } from '../../api/types'
-import { CHAPTER_COUNTS, chapterQuizHref, chapterStats, progressWidth } from './chapter-lib'
+import {
+  CHAPTER_COUNTS,
+  chapterQuizHref,
+  chapterStats,
+  onlyAvailableTitle,
+  progressWidth,
+} from './chapter-lib'
 
 const props = defineProps<{ code: string; chapter: ChapterCard }>()
 
-// V2 (REQ-A-005, S-65): a chapter with no question is a locked chip "Tiada soalan", never a start link.
+// A chapter with no question is the neutral chip "Tiada soalan", never a start link (no lock, D98).
 const empty = computed(() => props.chapter.total <= 0)
+// FR-MUR-9-12: below the smallest count (5) one button starts with all that exist.
+const fewOnly = computed(() => props.chapter.total > 0 && props.chapter.total < CHAPTER_COUNTS[0])
 const title = computed(() =>
   props.chapter.number === null
     ? props.chapter.name
@@ -62,16 +70,24 @@ const progress = computed(() => progressWidth(props.chapter))
           color="neutral"
           variant="soft"
           size="lg"
-          icon="i-ph-lock-bold"
-          :title="`Belum ada soalan untuk ${chapter.name}`"
           :data-testid="`chapter-empty-${String(chapter.id)}`"
           >Tiada soalan</UBadge
         >
+        <UButton
+          v-else-if="fewOnly"
+          :to="chapterQuizHref(code, chapter.id, chapter.total)"
+          class="min-h-11"
+          :data-testid="`chapter-count-${String(chapter.id)}-${String(chapter.total)}`"
+        >
+          Mula ({{ chapter.total }} soalan)
+        </UButton>
         <template v-else>
           <UButton
             v-for="n in CHAPTER_COUNTS"
             :key="n"
             :to="chapterQuizHref(code, chapter.id, n)"
+            :disabled="n > chapter.total"
+            :title="n > chapter.total ? onlyAvailableTitle(chapter.total) : undefined"
             class="min-h-11"
             :data-testid="`chapter-count-${String(chapter.id)}-${String(n)}`"
           >

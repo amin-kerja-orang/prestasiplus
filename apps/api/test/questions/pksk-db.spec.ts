@@ -104,8 +104,15 @@ describe('PKSK questions in the question bank', () => {
     const pool = await pksk.approvedPool('T4', ['PKSK_SCI'])
     expect(pool.map((p) => p.id)).toEqual([b.id])
     expect(JSON.stringify(pool)).not.toMatch(/correct/i)
-    expect(await pksk.answerKeys('T4', [a.id, b.id])).toEqual([{ id: b.id, domainCode: 'PKSK_SCI', optionCount: 3, correctIndexes: [0, 1] }])
+    expect(await pksk.answerKeys('T4', [a.id, b.id])).toEqual([{ id: b.id, domainCode: 'PKSK_SCI', optionCount: 3, correctIndexes: [0, 1], explanation: null }])
     expect(await pksk.answerKeys('T1', [b.id])).toEqual([])
+    // D91: a question tagged T1 and T4 counts once over both levels.
+    expect((await pksk.countApprovedAllLevels())['PKSK_SCI']).toBe(1)
+    await t.db.query(`insert into question_tags (question_id, kind, code) values ($1, 'pksk_level', 'T1')`, [b.id])
+    expect((await pksk.countApproved('T1'))['PKSK_SCI']).toBe(1)
+    expect((await pksk.countApproved('T4'))['PKSK_SCI']).toBe(1)
+    expect((await pksk.countApprovedAllLevels())['PKSK_SCI']).toBe(1)
+    await t.db.query(`delete from question_tags where question_id = $1 and kind = 'pksk_level' and code = 'T1'`, [b.id])
 
     const ordinary = (await t.db.query<{ id: string }>(`select q.id::text from questions q where not exists (select 1 from question_tags g where g.question_id = q.id and g.kind = 'pksk_domain') limit 1`))[0]?.id as string
     expect(await pksk.remove([ordinary])).toBe(0)

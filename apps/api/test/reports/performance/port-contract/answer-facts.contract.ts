@@ -55,6 +55,20 @@ const SEED: AnswerFactsSeed = {
   ],
 }
 
+// Rows stored out of time order: the first answer is the earliest by answered_at, not the first stored.
+const FIRST: AnswerFactsSeed = {
+  pupils: [{ id: '1', schoolId: 's1', classroomIds: [] }],
+  chapters: [],
+  topics: [],
+  answers: [
+    { userId: '1', subjectId: '1', questionId: '30', mode: 'latih_tubi', isCorrect: true, answeredAt: at('2026-09-22T09:00:00+08:00'), sessionId: 'sF' },
+    { userId: '1', subjectId: '1', questionId: '30', mode: 'latih_tubi', isCorrect: false, answeredAt: at('2026-09-22T08:00:00+08:00'), sessionId: 'sF' },
+    { userId: '1', subjectId: '1', questionId: '30', mode: 'latih_tubi', isCorrect: true, answeredAt: at('2026-09-22T10:00:00+08:00'), sessionId: 'sF' },
+    { userId: '1', subjectId: '1', questionId: '31', mode: 'latih_tubi', isCorrect: false, answeredAt: at('2026-09-22T11:00:00+08:00'), sessionId: 'sF' },
+    { userId: '1', subjectId: '1', questionId: '31', mode: 'latih_tubi', isCorrect: true, answeredAt: at('2026-09-22T07:00:00+08:00'), sessionId: 'sF' },
+  ],
+}
+
 const SESSIONLESS: AnswerFactsSeed = {
   pupils: [{ id: '1', schoolId: 's1', classroomIds: [] }],
   chapters: [],
@@ -87,9 +101,25 @@ export function describeAnswerFactsPort(
       const q10 = rows.find((r) => r.questionId === '10')
       expect(q10).toMatchObject({ attempts: 2, correct: 1, mode: 'latih_tubi', topicId: '100', chapterId: '50' })
       expect(q10?.lastAnsweredAt.getTime()).toBe(at('2026-09-22T10:01:00+08:00').getTime())
+      // S10-T03: the first answer of the row (right at 10:00; the later wrong one and the test row do not change it).
+      expect(q10).toMatchObject({ firstCorrect: true })
+      expect(q10?.firstAnsweredAt.getTime()).toBe(at('2026-09-22T10:00:00+08:00').getTime())
+      expect(rows.find((r) => r.questionId === '12')).toMatchObject({ firstCorrect: false })
+      expect(rows.find((r) => r.questionId === '20')).toMatchObject({ firstCorrect: true })
       expect(rows.find((r) => r.questionId === '12')).toMatchObject({ attempts: 1, correct: 0, topicId: null, chapterId: '50', mode: 'simulasi' })
       expect(rows.find((r) => r.questionId === '20')).toMatchObject({ attempts: 1, correct: 1, topicId: null, chapterId: null })
       expect(totals(rows)).toEqual([6, 3])
+    })
+
+    it('answerFacts: firstCorrect is the first answer by answered_at whatever the insertion order', async () => {
+      const port = await make(FIRST)
+      const rows = await port.answerFacts({ userIds: ['1'] })
+      expect(rows).toHaveLength(2)
+      const wrongFirst = rows.find((r) => r.questionId === '30')
+      const rightFirst = rows.find((r) => r.questionId === '31')
+      expect(wrongFirst).toMatchObject({ attempts: 3, correct: 2, firstCorrect: false })
+      expect(wrongFirst?.firstAnsweredAt.getTime()).toBe(at('2026-09-22T08:00:00+08:00').getTime())
+      expect(rightFirst).toMatchObject({ attempts: 2, correct: 1, firstCorrect: true })
     })
 
     it('answerFacts: filters by pupil, mode, window, subject, school, class and level; empty lists match nothing', async () => {
