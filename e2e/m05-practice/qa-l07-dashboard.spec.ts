@@ -1299,7 +1299,8 @@ test.describe('M05 S1 dashboard G5 QA', MODULE, () => {
   }) => {
     await loginAs(PELAJAR2)
     await gotoApp('/practice')
-    await mock.networkErrorNext('GET /api/dashboard')
+    // The client retries a failed GET twice (S0-T12, X10.3.4): fail all three attempts so the error box shows.
+    for (let i = 0; i < 3; i += 1) await mock.networkErrorNext('GET /api/dashboard')
     await navigateInApp(page, '/dashboard')
     await expect(tid(page, 'dashboard-error')).toContainText(
       'Maaf, berlaku ralat. Sila cuba semula.',
