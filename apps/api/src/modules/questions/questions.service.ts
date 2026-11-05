@@ -275,7 +275,7 @@ export class QuestionsService {
     return { ...(await this.detail(record)), ...(await this.repo.placementsOf(record.id)) }
   }
 
-  async create(raw: QuestionCreateInput, actor: QuestionActor, provenance?: QuestionProvenance): Promise<QuestionView> {
+  async create(raw: QuestionCreateInput & { curriculumTopicId?: string | null }, actor: QuestionActor, provenance?: QuestionProvenance): Promise<QuestionView> {
     const input = await this.withImageKeys(raw)
     const flat: FlatSource = {
       questionType: input.questionType,
@@ -306,6 +306,8 @@ export class QuestionsService {
         tag: input.tag,
         dskpSpId: input.dskpSpId,
         chapterId: input.curriculumChapterId,
+        // S1-T05: the CSV import (through the bank adapter) sets the topic of the Bab; the wire body of `POST /questions` has no such field.
+        topicId: input.curriculumTopicId,
         stimulusGroupId: input.stimulusGroupId,
         numberLabel: input.numberLabel,
         stemImage: input.questionImageFileId,

@@ -1,8 +1,8 @@
-import { IntakeBatchSummarySchema, QuestionSetPaperSchema } from '@pp/contract'
+import { INTAKE_FILE_MESSAGES, IntakeBatchSummarySchema, QUESTION_SET_PAPER_MESSAGES, QuestionSetPaperSchema } from '@pp/contract'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { QuestionSetsPorts } from '../../src/modules/classes/question-sets'
-import { GuruPaperIntakeAdapter } from '../../src/modules/classes/question-sets/guru-paper-intake.adapter'
+import { GURU_PAPER_TYPE_SLUGS, GuruPaperIntakeAdapter } from '../../src/modules/classes/question-sets/guru-paper-intake.adapter'
 import { scanPdf, textPdf } from '../intake-files/pdf-fixtures'
 import { ADMIN, STUDENT_1, TEACHER_A, TEACHER_C, bootQsApp, client, idOfEmail, type Client, type QsTestApp } from './qs-helpers'
 
@@ -320,6 +320,81 @@ describe('S1-T08: the file size limit is checked before the content', () => {
       expect(res.status).toBe(422)
       expect(res.body.error.fields.files).toBe('Fail melebihi had 1 MB.')
       expect(await count(t)).toBe(0)
+    } finally {
+      await t.close()
+    }
+  })
+})
+
+describe('S1-T08 G3: the 7-label paper type slug map', () => {
+  it('maps exactly the seven OPT-JENIS-HANTARAN labels, each stored on the batch; an unknown label is refused by the contract', async () => {
+    expect(GURU_PAPER_TYPE_SLUGS).toEqual({
+      'Soalan Umum': 'umum',
+      'Trial Paper': 'trial',
+      'Soalan DSKP': 'dskp',
+      'Buku Teks': 'buku_teks',
+      'Buku Latihan': 'buku_latihan',
+      'Soalan Peperiksaan': 'peperiksaan',
+      'Lain-lain': 'lain',
+    })
+    const t = await bootQsApp({ realIntake: true })
+    try {
+      const teacher = await client(t, TEACHER_A)
+      let n = 0
+      for (const [label, slug] of Object.entries(GURU_PAPER_TYPE_SLUGS)) {
+        n += 1
+        await t.db.query(`update intake_batches set status = 'cancelled' where status in ('submitted', 'processing', 'ready_for_review')`)
+        const res = await upload(teacher, { ...FIELDS, jenisSoalan: label }, [{ name: `s${String(n)}.docx`, bytes: zip(['[Content_Types].xml', 'word/document.xml'], `slug-${String(n)}`) }])
+        expect(res.status, `${label}: ${JSON.stringify(res.body)}`).toBe(201)
+        const row = (await t.db.query<{ paper_type: string }>(`select paper_type from intake_batches where id = $1::bigint`, [res.body.data.id]))[0]
+        expect(row?.paper_type, label).toBe(slug)
+      }
+      const bad = await upload(teacher, { ...FIELDS, jenisSoalan: 'Jenis Lain' }, [{ name: 'x.docx', bytes: zip(['[Content_Types].xml', 'word/document.xml'], 'slug-bad') }])
+      expect(bad.status).toBe(422)
+    } finally {
+      await t.close()
+    }
+  })
+})
+
+describe('S1-T08 G3: the daily page quota on the guru path', () => {
+  it('INTAKE_DAILY_PAGE_QUOTA pages per teacher per day; the refused upload stores nothing and leaves no batch', async () => {
+    const t = await bootQsApp({ realIntake: true, env: { INTAKE_DAILY_PAGE_QUOTA: '5' } })
+    try {
+      const teacher = await client(t, TEACHER_A)
+      const first = await upload(teacher, FIELDS, [{ name: 'a.pdf', bytes: textPdf(3, 2) }])
+      expect(first.status, JSON.stringify(first.body)).toBe(201)
+      const batches = await count(t)
+      const files = Number((await t.db.query<{ n: string }>('select count(*)::text n from files'))[0]?.n)
+      const over = await upload(teacher, FIELDS, [{ name: 'b.pdf', bytes: textPdf(3, 3) }])
+      expect(over.status, JSON.stringify(over.body)).toBe(429)
+      expect(over.body.error.code).toBe('RATE_LIMITED')
+      expect(over.body.error.message).toBe(INTAKE_FILE_MESSAGES.quota)
+      expect(await count(t)).toBe(batches)
+      expect(Number((await t.db.query<{ n: string }>('select count(*)::text n from files'))[0]?.n)).toBe(files)
+      // Exactly the quota is still allowed.
+      const exact = await upload(teacher, FIELDS, [{ name: 'c.pdf', bytes: textPdf(2, 4) }])
+      expect(exact.status, JSON.stringify(exact.body)).toBe(201)
+    } finally {
+      await t.close()
+    }
+  })
+})
+
+describe('S1-T08 G3: the file cap through the real adapter', () => {
+  it('6 files are refused with "Maksimum 5 fail." and nothing stored; 5 files are accepted', async () => {
+    const t = await bootQsApp({ realIntake: true })
+    try {
+      const teacher = await client(t, TEACHER_A)
+      const docx = (i: number) => ({ name: `f${String(i)}.docx`, bytes: zip(['[Content_Types].xml', 'word/document.xml'], `cap-${String(i)}`) })
+      const before = await count(t)
+      const six = await upload(teacher, FIELDS, Array.from({ length: 6 }, (_, i) => docx(i)))
+      expect(six.status, JSON.stringify(six.body)).toBe(422)
+      expect(six.body.error.fields.files).toBe(QUESTION_SET_PAPER_MESSAGES.tooMany)
+      expect(await count(t)).toBe(before)
+      const five = await upload(teacher, FIELDS, Array.from({ length: 5 }, (_, i) => docx(10 + i)))
+      expect(five.status, JSON.stringify(five.body)).toBe(201)
+      expect(five.body.data.files).toHaveLength(5)
     } finally {
       await t.close()
     }

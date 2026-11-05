@@ -62,7 +62,7 @@ export function registerSponsorshipPaths(registry: OpenAPIRegistry): void {
     },
     responses: {
       201: json(envelopeOf(FosterApplicationCreatedSchema), 'Application stored as pending. Only the new id is returned.'),
-      401: err('UNAUTHORIZED "Unauthenticated." (no valid session).'),
+      401: err('UNAUTHORIZED "Sesi anda telah tamat. Sila log masuk semula." (no valid session).'),
       403: err('CSRF_INVALID (missing or wrong X-CSRF-Token).'),
       422: err(
         'VALIDATION_ERROR with `fields`, collected for all fields and returned together, inserted in the order studentEmail, studentCategory, familyIncomeRange, reason. ' +
