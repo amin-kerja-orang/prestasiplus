@@ -1156,14 +1156,6 @@ export class BijakServer implements BijakApi {
    * decided where it is edited. The mock runs the same unit through the review queue (a one-question
    * batch, so a stimulus group is not decided as a whole here) and removes it from the batch.
    */
-  /** The mock has no duplicate check, so the page never offers this; it only reads the batch back. */
-  async resolveIntakeDuplicate(
-    ...[id]: [id: string, questionId: string, entry: IntakeDuplicate, action: 'pautkan' | 'ketepikan']
-  ): Promise<IntakeBatch> {
-    await this.tick()
-    return this.intakeBatch(id)
-  }
-
   async decideIntakeItem(
     id: string,
     questionId: string,
@@ -1199,6 +1191,14 @@ export class BijakServer implements BijakApi {
     return { ok: true, errors: [], batch: jsonClone(b) }
   }
 
+  /** The mock has no duplicate check, so the page never offers this; it only reads the batch back. */
+  async resolveIntakeDuplicate(
+    ...[id]: [id: string, questionId: string, entry: IntakeDuplicate, action: 'pautkan' | 'ketepikan']
+  ): Promise<IntakeBatch> {
+    await this.tick()
+    return this.intakeBatch(id)
+  }
+
   /**
    * V2 "Terima semua yang belum disemak" (parity I7). Like the server bulk accept, only a question
    * with no unconfirmed low-confidence field and a passing quality gate is accepted; the rest are
@@ -1206,11 +1206,13 @@ export class BijakServer implements BijakApi {
    */
   async acceptUnreviewed(
     id: string,
+    only?: readonly string[],
   ): Promise<{ done: number; skipped: { id: string; reason: 'BELOW_THRESHOLD' | 'GATE_FAILED' }[]; batch: IntakeBatch }> {
     const b0 = this.intakeBatch(id)
     let done = 0
     const skipped: { id: string; reason: 'BELOW_THRESHOLD' | 'GATE_FAILED' }[] = []
     for (const q of jsonClone(b0.questions)) {
+      if (only && !only.includes(q.id)) continue
       if (q.lowFields.some((f) => !q.confirmed.includes(f))) {
         skipped.push({ id: q.id, reason: 'BELOW_THRESHOLD' })
         continue

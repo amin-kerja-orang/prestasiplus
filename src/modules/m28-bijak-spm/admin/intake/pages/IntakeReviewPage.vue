@@ -445,7 +445,8 @@ async function resolveDuplicate(id: string, entry: IntakeDuplicate, action: 'pau
 
 async function accept(id: string): Promise<void> {
   const b = batch.value
-  if (!b || deciding.value) return
+  // The button is disabled for a blocked item; the key A reaches here too, so the guard lives here (FR-QA-36).
+  if (!b || deciding.value || blockedByDuplicate(id)) return
   deciding.value = true
   decisionErrors.value = []
   decisionNote.value = ''
@@ -497,8 +498,11 @@ async function confirmReject(): Promise<void> {
 async function acceptAll(): Promise<void> {
   const b = batch.value
   if (!b || deciding.value) return
+  // Unreviewed = still open (the batch holds no accepted or rejected item), minus an item an open duplicate blocks.
+  const pending = b.questions.filter((q) => !blockedByDuplicate(q.id)).map((q) => q.id)
+  if (pending.length === 0) return
   const ok = await confirm({
-    message: `Terima ${b.questions.length} item yang belum disemak?`,
+    message: `Terima ${pending.length} item yang belum disemak?`,
     confirmLabel: 'Ya, Terima Semua',
     cancelLabel: 'Batal',
   })
@@ -508,7 +512,7 @@ async function acceptAll(): Promise<void> {
   decisionNote.value = ''
   try {
     if (!(await settle())) return
-    const r = await server.acceptUnreviewed(b.id)
+    const r = await server.acceptUnreviewed(b.id, pending.map(resolveId))
     decisionNote.value = `${r.done} diterima, ${r.skipped.length} gagal`
     // Failed items open first (09-06).
     afterDecision(r.batch, r.skipped[0]?.id)
@@ -1131,8 +1135,8 @@ async function submit(): Promise<void> {
                         <p class="text-caption text-muted" data-testid="item-counter">
                           Item {{ batch.questions.findIndex((x) => x.id === q.id) + 1 }} / {{ batch.questions.length }}
                         </p>
-                        <DsText variant="caption" tone="muted" data-testid="item-provenance">
-                          Cadangan Provenans: {{ [batch.year ? `Tahun ${batch.year}` : '', batch.source].filter(Boolean).join(' · ') }}
+                        <DsText v-if="batch.year" variant="caption" tone="muted" data-testid="item-provenance">
+                          Cadangan Provenans: Tahun {{ batch.year }}
                         </DsText>
                         <DsStack v-if="duplicatesOf(q.id).length > 0" as="ul" gap="xs" data-testid="item-duplicates">
                           <DsSurface v-for="d in duplicatesOf(q.id)" :key="d.id" as="li" level="soft" padding="sm" shadow="none" :data-testid="`item-duplicate-${d.id}`">
@@ -1144,7 +1148,7 @@ async function submit(): Promise<void> {
                             </DsText>
                             <template v-if="d.status === 'open'">
                               <UButton
-                                v-if="d.matchedQuestionId || d.matchedItemId"
+                                v-if="d.kind !== 'variant' && (d.matchedQuestionId || d.matchedItemId)"
                                 type="button"
                                 color="neutral"
                                 variant="soft"

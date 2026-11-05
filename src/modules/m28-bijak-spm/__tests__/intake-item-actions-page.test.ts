@@ -159,9 +159,38 @@ describe('IntakeReviewPage V2 item actions (I6, I7)', () => {
       expect(w.find('[data-testid=item-duplicate-dismiss]').exists()).toBe(true)
     })
 
-    it('shows the provenance of the batch read-only', async () => {
+    it('shows the provenance of the batch read-only, as the year only, and hides it without a year', async () => {
       const w = await mountPage()
-      expect(w.get('[data-testid=item-provenance]').text()).toContain('Cadangan Provenans')
+      expect(w.get('[data-testid=item-provenance]').text()).toBe('Cadangan Provenans: Tahun 2025')
+      server.getIntakeBatch.mockResolvedValue({ ...batchOf(1), year: 0 })
+      const none = await mountPage()
+      expect(none.find('[data-testid=item-provenance]').exists()).toBe(false)
+    })
+
+    it('the key A does not send a blocked item', async () => {
+      server.getIntakeBatch.mockResolvedValue(withDuplicates([{ ...open, kind: 'exact' }]))
+      await mountPage()
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }))
+      await flushPromises()
+      expect(server.decideIntakeItem).not.toHaveBeenCalled()
+    })
+
+    it('Pautkan is not offered on a variant', async () => {
+      server.getIntakeBatch.mockResolvedValue(withDuplicates([{ ...open, kind: 'variant' }]))
+      const w = await mountPage()
+      expect(w.find('[data-testid=item-duplicate-link]').exists()).toBe(false)
+      expect(w.find('[data-testid=item-duplicate-dismiss]').exists()).toBe(true)
+    })
+
+    it('Terima semua counts and sends only the items no open duplicate blocks', async () => {
+      const b = batchOf(3)
+      server.getIntakeBatch.mockResolvedValue({ ...b, duplicates: { [b.questions[0]!.id]: [open] } })
+      server.acceptUnreviewed.mockResolvedValue({ done: 2, skipped: [], batch: batchOf(1) })
+      const w = await mountPage()
+      await w.get('[data-testid=accept-all]').trigger('click')
+      await flushPromises()
+      expect(confirm.mock.calls[0]?.[0].message).toBe('Terima 2 item yang belum disemak?')
+      expect(server.acceptUnreviewed).toHaveBeenCalledWith('ek-1', [b.questions[1]!.id, b.questions[2]!.id])
     })
   })
 

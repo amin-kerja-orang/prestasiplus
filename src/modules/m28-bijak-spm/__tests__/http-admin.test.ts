@@ -200,6 +200,8 @@ describe('HttpBijakAdminServer', () => {
     expect(all).toMatchObject({ done: 1, skipped: [{ id: 'i2', reason: 'BELOW_THRESHOLD' }] })
     const bulk = requests.find((r) => r.url === '/api/intake/items/bulk')
     expect(bulk?.body).toEqual({ action: 'accept', ids: ['i1', 'i2'] })
+    await server.acceptUnreviewed('b1', ['i2'])
+    expect(requests.filter((r) => r.url === '/api/intake/items/bulk').at(-1)?.body).toEqual({ action: 'accept', ids: ['i2'] })
   })
 
   it('rejects (never throws) methods without a backend route', async () => {

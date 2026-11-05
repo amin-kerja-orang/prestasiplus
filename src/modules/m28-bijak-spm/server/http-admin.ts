@@ -783,9 +783,11 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
    */
   async acceptUnreviewed(
     id: string,
+    only?: readonly string[],
   ): Promise<{ done: number; skipped: { id: string; reason: 'BELOW_THRESHOLD' | 'GATE_FAILED' }[]; batch: IntakeBatch }> {
     const batch = await this.getIntakeBatch(id)
-    const ids = batch.questions.map((q) => q.id)
+    // `only` = the items the page counted as unreviewed (an item blocked by an open duplicate is left out).
+    const ids = batch.questions.map((q) => q.id).filter((qid) => !only || only.includes(qid))
     if (ids.length === 0) return { done: 0, skipped: [], batch }
     // The bulk endpoint takes at most BULK_MAX_IDS ids per call: send the whole batch in chunks.
     let done = 0
