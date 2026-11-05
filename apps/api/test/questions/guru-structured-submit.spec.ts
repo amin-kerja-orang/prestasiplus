@@ -207,8 +207,8 @@ describe('Guru structured submission: POST/PUT/DELETE /guru/intake/structured an
     await t.db.query(`update intake_items set review_state = 'accepted' where id = $1`, [locked.id.slice(1)])
     expectError(await teacher.put(`/api/guru/intake/structured/${locked.id}`, body()), 'CONFLICT')
     expectError(await teacher.delete(`/api/guru/intake/structured/${locked.id}`), 'CONFLICT')
-    // An accepted item is a question the admin handles: it is no longer a review row.
-    expect((await list(teacher, '?status=review')).data.map((r) => r.id)).not.toContain(locked.id)
+    // An accepted item stays the teacher's own row (Menunggu Semakan until Terbitkan), but is no longer editable.
+    expect((await list(teacher, '?status=review')).data.find((r) => r.id === locked.id)).toMatchObject({ status: 'review', editable: false, source: 'submission' })
 
     const removable = await created(teacher)
     const del = await teacher.delete(`/api/guru/intake/structured/${removable.id}`)
@@ -290,6 +290,59 @@ describe('Guru structured submission: POST/PUT/DELETE /guru/intake/structured an
     expect(Detail.parse((await teacher.get(`/api/guru/structured-questions/${b.id}`)).body).data).toMatchObject({ status: 'approved', editable: false })
     const c = await created(teacher)
     expect(Detail.parse((await teacher.get(`/api/guru/structured-questions/${c.id}`)).body).data).toMatchObject({ status: 'review', editable: true })
+  })
+
+  it('own items never vanish: accepted and unpublished stays as review (not editable); published appears once, as approved; another teacher sees neither', async () => {
+    const draft = (await t.db.query<{ id: string }>(`select id::text from questions where live_version_no is null order by id limit 1`))[0]?.id ?? null
+    const pending = await created(teacher, { stimulus: 'Diterima tetapi belum diterbitkan.' })
+    await t.db.query(`update intake_items set review_state = 'accepted', question_id = $2 where id = $1`, [pending.id.slice(1), draft])
+    for (const q of ['', '?status=review']) {
+      const row = (await list(teacher, q)).data.find((r) => r.id === pending.id)
+      expect(row, q).toMatchObject({ status: 'review', editable: false, source: 'submission' })
+    }
+    expect((await list(teacher, '?status=approved')).data.map((r) => r.id)).not.toContain(pending.id)
+    expect(Detail.parse((await teacher.get(`/api/guru/structured-questions/${pending.id}`)).body).data).toMatchObject({ status: 'review', editable: false })
+
+    const publishedQuestion = (await list(teacher, '?status=approved')).data.find((r) => r.source === 'question')
+    expect(publishedQuestion).toBeDefined()
+    const done = await created(teacher, { stimulus: 'Diterbitkan.' })
+    await t.db.query(`update intake_items set review_state = 'accepted', question_id = $2 where id = $1`, [done.id.slice(1), publishedQuestion?.id])
+    const everything = await list(teacher)
+    const own = (await list(teacher, '?status=review')).meta.totalItems
+    const approvedTotal = (await list(teacher, '?status=approved')).meta.totalItems
+    // No duplicate between the two sides: the union count is exactly own review rows plus approved questions.
+    expect(everything.meta.totalItems).toBe(own + approvedTotal)
+    expect(everything.data.map((r) => r.id)).not.toContain(done.id)
+    expect((await list(teacher, '?status=review')).data.map((r) => r.id)).not.toContain(done.id)
+    expect((await list(teacher, '?status=approved')).data.filter((r) => r.id === publishedQuestion?.id)).toHaveLength(1)
+
+    // Published but NOT served (inactive): the approved side no longer lists it, so the own item stays, once, as an `approved` submission row
+    // (not editable): under status=approved and the default list, never under status=review.
+    const hidden = await created(teacher, { stimulus: 'Diterbitkan tetapi tidak aktif.' })
+    await t.db.query(`update intake_items set review_state = 'accepted', question_id = $2 where id = $1`, [hidden.id.slice(1), publishedQuestion?.id])
+    await t.db.query(`update questions set is_active = false where id = $1`, [publishedQuestion?.id])
+    try {
+      const reach = async (query: string) => {
+        const first = await list(teacher, query)
+        const pages = Math.max(1, Math.ceil(first.meta.totalItems / 20))
+        const rows = [...first.data]
+        for (let p = 2; p <= pages; p += 1) rows.push(...(await list(teacher, `${query === '' ? '?' : `${query}&`}page=${String(p)}`)).data)
+        expect(rows).toHaveLength(first.meta.totalItems)
+        return rows
+      }
+      expect((await reach('?status=approved')).filter((r) => r.id === hidden.id)).toEqual([expect.objectContaining({ status: 'approved', source: 'submission', editable: false })])
+      expect((await reach('')).filter((r) => r.id === hidden.id)).toHaveLength(1)
+      expect((await reach('?status=review')).map((r) => r.id)).not.toContain(hidden.id)
+      expect((await reach('?status=approved')).map((r) => r.id)).not.toContain(publishedQuestion?.id)
+      expectError(await teacher2.get(`/api/guru/structured-questions/${hidden.id}`), 'NOT_FOUND')
+    } finally {
+      await t.db.query(`update questions set is_active = true where id = $1`, [publishedQuestion?.id])
+    }
+
+    for (const id of [pending.id, done.id]) {
+      expect((await list(teacher2, '?status=review')).data.map((r) => r.id)).not.toContain(id)
+      expectError(await teacher2.get(`/api/guru/structured-questions/${id}`), 'NOT_FOUND')
+    }
   })
 
   it('a structured item is not in the single-MCQ list, and the roles are enforced', async () => {

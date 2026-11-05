@@ -104,6 +104,19 @@ const invalid = (fields: Record<string, string>): ApiError => ApiError.of('VALID
  * `intake_batches` row with `source = 'guru'` (D113, L-6). No question row exists before the admin's "Terima" (S2-T02). The list, the detail,
  * the edit and the delete work on the teacher's OWN items only (another teacher's id is 404, never 403).
  */
+/** Which own rows a list wants: `status` filter, the own question ids the approved side lists, and those with a live version. */
+export interface OwnStructuredScope {
+  status: 'all' | 'review' | 'approved'
+  served: readonly string[]
+  published: readonly string[]
+}
+
+/** The subject and level filter of the own structured list. */
+export interface OwnStructuredFilter {
+  subjectId?: string | undefined
+  educationLevelId?: string | undefined
+}
+
 @Injectable()
 export class GuruSubmissionsService {
   constructor(
@@ -527,26 +540,48 @@ export class GuruSubmissionsService {
     return view.detail
   }
 
-  private structuredWhere(owner: bigint, filter: { subjectId?: string | undefined; educationLevelId?: string | undefined }): Prisma.IntakeItemWhereInput {
+  private structuredWhere(owner: bigint, filter: OwnStructuredFilter, scope: OwnStructuredScope): Prisma.IntakeItemWhereInput {
     const and: Prisma.IntakeItemWhereInput[] = [this.ownWhere(owner, 'structured')]
     if (filter.subjectId !== undefined) and.push({ payload: { path: ['guru', 'subjectId'], equals: filter.subjectId } })
     if (filter.educationLevelId !== undefined) and.push({ payload: { path: ['guru', 'educationLevelId'], equals: filter.educationLevelId } })
-    // The aggregate state of the teacher view: an accepted item is no longer "review" (it becomes a question the admin publishes).
-    and.push({ reviewState: { not: 'accepted' } })
+    // An own item never vanishes, and each row sits under its real status. `served` = own questions the approved side lists (they show
+    // there, once, so they leave this side); `published` = own questions with a live version. Published but not served (inactive, needs a
+    // diagram) is `approved` here; every other own row (pending, returned, accepted but unpublished) is `review`.
+    const ids = (list: readonly string[]) =>
+      list.flatMap((id) => {
+        const key = parse(id)
+        return key === null ? [] : [key]
+      })
+    const served = ids(scope.served)
+    const published = ids(scope.published)
+    const hidden = published.filter((id) => !served.includes(id))
+    if (scope.status === 'review') and.push({ NOT: { questionId: { in: published } } })
+    else if (scope.status === 'approved') and.push({ questionId: { in: hidden } })
+    else and.push({ NOT: { questionId: { in: served } } })
     return { AND: and }
   }
 
-  /** How many own review submissions match (the union total adds this to the approved count). */
-  async countOwnStructured(userId: string, filter: { subjectId?: string | undefined; educationLevelId?: string | undefined }): Promise<number> {
+  /** The question ids of the caller's own accepted structured items, and which of them have a live version (the caller asks which are served). */
+  async ownAcceptedQuestions(userId: string): Promise<{ all: string[]; published: string[] }> {
     const owner = parse(userId)
-    return owner === null ? 0 : this.prisma.client.intakeItem.count({ where: this.structuredWhere(owner, filter) })
+    if (owner === null) return { all: [], published: [] }
+    const rows = await this.prisma.client.intakeItem.findMany({ where: { AND: [this.ownWhere(owner, 'structured'), { reviewState: 'accepted', questionId: { not: null } }] }, select: { questionId: true } })
+    const all = rows.flatMap((r) => (r.questionId === null ? [] : [r.questionId]))
+    const live = all.length === 0 ? [] : await this.prisma.client.question.findMany({ where: { id: { in: all }, liveVersionNo: { not: null } }, select: { id: true } })
+    return { all: all.map(idToString), published: live.map((q) => idToString(q.id)) }
+  }
+
+  /** How many own submissions match the scope (the union total adds this to the approved count). */
+  async countOwnStructured(userId: string, filter: OwnStructuredFilter, scope: OwnStructuredScope): Promise<number> {
+    const owner = parse(userId)
+    return owner === null ? 0 : this.prisma.client.intakeItem.count({ where: this.structuredWhere(owner, filter, scope) })
   }
 
   /** A slice of the caller's own review submissions, newest first (rows without `number`; the caller numbers the union). */
-  async listOwnStructured(userId: string, filter: { subjectId?: string | undefined; educationLevelId?: string | undefined }, offset: number, limit: number): Promise<StructuredOwnView['row'][]> {
+  async listOwnStructured(userId: string, filter: OwnStructuredFilter, offset: number, limit: number, scope: OwnStructuredScope): Promise<StructuredOwnView['row'][]> {
     const owner = parse(userId)
     if (owner === null || limit <= 0) return []
-    const items = await this.prisma.client.intakeItem.findMany({ where: this.structuredWhere(owner, filter), orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], skip: offset, take: limit })
+    const items = await this.prisma.client.intakeItem.findMany({ where: this.structuredWhere(owner, filter, scope), orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], skip: offset, take: limit })
     return (await this.structuredViews(items)).map((v) => v.row)
   }
 

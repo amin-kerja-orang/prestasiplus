@@ -694,6 +694,11 @@ export class QuestionsService {
     return { rows: await this.named(records), page: filter.page, pageSize: filter.pageSize, total: page.total }
   }
 
+  /** Of these question ids, those the teacher list serves (so an own item whose question is NOT served stays on the own side). */
+  servedStructuredAmong(ids: readonly string[]): Promise<Set<string>> {
+    return this.repo.structuredServedAmong(ids)
+  }
+
   /**
    * Detail for the teacher mount: 404 unless the list would show the question. Reads the LIVE version and the stimulus group, and never
    * loads the creator (no personal data).
