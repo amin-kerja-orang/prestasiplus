@@ -398,11 +398,12 @@ describe('articles (M09 §6.9, §6.11)', () => {
     const p1 = articles.readerList({})
     expect(p1.total).toBe(72)
     expect(ids(p1.rows).slice(0, 10)).toEqual([9, 1, 2, 3, 4, 5, 6, 7, 8, 72])
-    expect(ids(articles.readerList({ page: 4 }).rows)).toEqual(range(10, 27).reverse())
+    expect(ids(articles.readerList({ page: 6 }).rows)).toEqual(range(10, 21).reverse())
     expect(ids(articles.readerList({ category: 'BERITA' }).rows)).toEqual(range(59, 65).reverse())
-    expect(ids(articles.readerList({ category: 'TIPS_BELAJAR', page: 2 }).rows)).toEqual([
-      12, 11, 10,
-    ])
+    // 21 articles at 12 per page: page 2 holds the last 9
+    const tipsPage2 = ids(articles.readerList({ category: 'TIPS_BELAJAR', page: 2 }).rows)
+    expect(tipsPage2).toHaveLength(9)
+    expect(tipsPage2.slice(-3)).toEqual([12, 11, 10])
     expect(ids(articles.readerList({ search: 'sifir' }).rows).sort((a, b) => a - b)).toEqual([
       6, 17,
     ])
@@ -654,10 +655,12 @@ describe('notes, perutusan, support', () => {
   it('holds the support config and an empty audio / screenshot state', () => {
     expect(support.config()).toEqual({
       email: 'support@prestasiplus.my',
-      whatsappNumber: '60123456789',
+      phone: '',
+      whatsapp: '60123456789',
+      hours: '',
     })
     support.setWhatsappNumber('60111111111')
-    expect(support.config().whatsappNumber).toBe('60111111111')
+    expect(support.config().whatsapp).toBe('60111111111')
     expect(support.screenshotCount()).toBe(0)
   })
 
@@ -701,7 +704,7 @@ describe('cross-module references and reset', () => {
     expect(videos.count('Q-VID-ALL')).toBe(2_260)
     expect(videos.count('Q-VID-CAT', 'lain-lain')).toBe(0)
     expect(articles.count('Q-ART-ALL')).toBe(72)
-    expect(support.config().whatsappNumber).toBe('60123456789')
+    expect(support.config().whatsapp).toBe('60123456789')
     expect(perutusan.list(ADMIN).map((p) => p.reads)).toEqual([3, 4, 55])
   })
 })
