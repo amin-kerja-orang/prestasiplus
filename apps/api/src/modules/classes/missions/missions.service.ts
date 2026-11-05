@@ -103,9 +103,12 @@ export class MissionsService {
     const today = mytDay(now)
     const fields: Record<string, string> = { ...parsed.fields }
     const body = parsed.data
-    if (body) {
-      if (body.date < today) fields.date ??= MISSION_MESSAGES.datePast
-      if (!(isIdString(body.subjectId) && (await this.classes.activeSubjectExists(body.subjectId)))) fields.subjectId ??= MISSION_MESSAGES.subjectRequired
+    // The rule checks run on the raw values too, so a bad title or reward never hides the date and subject failures. A field
+    // that already failed the contract schema keeps its own message, and one that passed has the right type here.
+    const src: { date?: unknown; subjectId?: unknown } = body ?? (typeof raw === 'object' && raw !== null ? raw : {})
+    if (fields.date === undefined && typeof src.date === 'string' && src.date < today) fields.date = MISSION_MESSAGES.datePast
+    if (fields.subjectId === undefined && !(typeof src.subjectId === 'string' && isIdString(src.subjectId) && (await this.classes.activeSubjectExists(src.subjectId)))) {
+      fields.subjectId = MISSION_MESSAGES.subjectRequired
     }
     if (over) {
       throw new ApiError({
