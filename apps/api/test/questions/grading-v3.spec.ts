@@ -103,6 +103,46 @@ describe('short_text (M-SHORT)', () => {
     expect(status(gradeShortText(cs, ' NaCl ', 1))).toBe('betul')
     expect(status(gradeShortText(cs, 'nacl', 1))).toBe('salah')
   })
+  describe('non-Latin text (review F1): Arabic, Jawi and Chinese are compared as written', () => {
+    const arab = key(['الجواب الصحيح'])
+    it('[CI] the same Arabic text is betul, also with other spacing, case and punctuation', () => {
+      expect(status(gradeShortText(arab, 'الجواب الصحيح', 1))).toBe('betul')
+      expect(status(gradeShortText(arab, '  الجواب   الصحيح. ', 1))).toBe('betul')
+      expect(status(gradeShortText(key(['ڤولاو']), 'ڤولاو', 1))).toBe('betul')
+      expect(status(gradeShortText(key(['马来西亚']), '马来西亚', 1))).toBe('betul')
+    })
+    it('[CI] a different Arabic answer is salah (fewer than 3 words) or belum_dimarkah (3 or more)', () => {
+      expect(status(gradeShortText(arab, 'جواب خاطئ', 1))).toBe('salah')
+      expect(status(gradeShortText(arab, 'هذا جواب خاطئ تماما', 1))).toBe('belum_dimarkah')
+      expect(status(gradeShortText(key(['马来西亚']), '新加坡', 1))).toBe('salah')
+    })
+    it('[CI] a Latin answer (or a pupil Arabic answer for a Latin key) is never betul against the other script', () => {
+      expect(status(gradeShortText(arab, 'jawapan betul', 1))).not.toBe('betul')
+      expect(status(gradeShortText(arab, '123', 1))).toBe('salah')
+      expect(status(gradeShortText(key(['Kuala Lumpur']), 'كوالا لمبور', 1))).not.toBe('betul')
+    })
+    it('[CI] an answer with no comparable text never equals an accepted value with none, either side', () => {
+      expect(status(gradeShortText(arab, '!!!', 1))).toBe('salah')
+      expect(status(gradeShortText(key(['???']), '!!!', 1))).not.toBe('betul')
+      expect(status(gradeShortText(key(['الجواب'], { anyOrder: true }), 'الجواب', 1))).toBe('betul')
+    })
+    it('[CI] table_fill cells and scheme points (keywords, all_of, step, notAccepted) read non-Latin text as written', () => {
+      const grid = leaf({ mode: 'table_fill', marks: 2, key: { kind: 'mapping', cells: { r1c1: ['كتاب'], r1c2: ['马来西亚'] } }, modeConfig: { grid: { rows: 1, cols: 2, cells: [[{ type: 'kosong' }, { type: 'kosong' }]] } } })
+      expect(gradeLeaf(grid, { kind: 'cells', cells: { r1c1: 'كتاب', r1c2: 'كتب' } })).toMatchObject({ kind: 'needs_review', suggestion: { message: 'Cadangan automatik: 1 daripada 2 sel sepadan' } })
+      const pk = (marks: number, rest: object) => ({ kind: 'points', scheme_v: 2, marks, ...rest })
+      const work = (k: object, marks: number) => leaf({ mode: 'working', marks, key: k })
+      const answer = (over: object) => ({ kind: 'working' as const, ...over })
+      const kw = pk(1, { points: [pt('k1', { seen: true, accept: ['كتاب'] })] })
+      expect(status(gradeLeaf(work(kw, 1), answer({ text: 'هذا كتاب جيد' })))).toBe('betul')
+      expect(status(gradeLeaf(work(kw, 1), answer({ text: 'هذا قلم جيد' })))).not.toBe('betul')
+      expect(status(gradeLeaf(work(kw, 1), answer({ text: 'a book' })))).not.toBe('betul')
+      const all = pk(1, { points: [pt('a1', { allOf: ['كتاب', 'قلم'] })] })
+      expect(status(gradeLeaf(work(all, 1), answer({ text: 'كتاب و قلم' })))).toBe('betul')
+      expect(status(gradeLeaf(work(all, 1), answer({ text: 'كتاب فقط' })))).not.toBe('betul')
+      const refuse = pk(1, { points: [pt('s1', { accept: ['2x'], notAccepted: ['كتاب'] })] })
+      expect(status(gradeLeaf(work(refuse, 1), answer({ steps: ['2x', 'قلم'] })))).toBe('betul')
+    })
+  })
   it('[CI] 45 7.1 (a): two blanks, any order', () => {
     const k = key(['[jawapan i]', '[jawapan ii]'], { anyOrder: true })
     expect(status(gradeShortText(k, '[jawapan ii]; [jawapan i]', 2))).toBe('betul')
@@ -263,6 +303,14 @@ describe('working with a scheme v2 points key (M-WORK)', () => {
     expect(gradeLeaf(work(spelling, 2), answer({ steps: ['2x'], final: '12 cm' }))).toMatchObject({ kind: 'needs_review', suggestion: { marks: 2 } })
     const zero = key(2, { ...base, zeroIf: [{ code: 'copy', label: '[menyalin]' }] })
     expect(status(gradeLeaf(work(zero, 2), answer({ steps: ['2x'], final: '12 cm' })))).toBe('belum_dimarkah')
+  })
+  it('[CI] F4 pinned (today behaviour): a perfect answer with a spelling deduction is belum_dimarkah with the suggestion = marks', () => {
+    const spelling = key(2, { points: [pt('m1', { accept: ['2x'] }), pt('n1', { code: 'N', tol: 0 })], finalAnswer: { display: '12 cm', accepted: ['12'], unit: 'cm' }, deductions: [{ code: 'spelling', amount: 1, scope: 'part' }] })
+    const r = gradeLeaf(work(spelling, 2), answer({ steps: ['2x'], final: '12 cm' }))
+    expect(status(r)).toBe('belum_dimarkah')
+    expect(r).toMatchObject({ kind: 'needs_review', maxMarks: 2, suggestion: { marks: 2 } })
+    // A part-marks answer keeps the same rule: still a person, with the matched points as the suggestion.
+    expect(gradeLeaf(work(spelling, 2), answer({ steps: ['2x'], final: '99' }))).toMatchObject({ kind: 'needs_review', suggestion: { marks: 1 } })
   })
   it('[CI] question-level schemeRules (part-scope deductions, zeroIf) reach the leaf through gradeQuestion', () => {
     const parts = [work(key(1, { points: [pt('m1', { accept: ['2x'] })] }), 1)]

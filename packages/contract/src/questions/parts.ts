@@ -127,6 +127,7 @@ const RubricKeyV1Base = z.object({
   notes: z.array(z.string()).optional(),
 })
 /** Write-path variants: a v1 key must not carry `scheme_v` (SCHEME_VERSION_MISMATCH, no PRD text). The read path (Base) never tightens. */
+// Path `[]` (not `['scheme_v']`): with `['scheme_v']` the deepest-issue picker names the v1 branch's `key.scheme_v` for a v2 key with an unknown field, instead of `key` (v2-write-path.spec.ts).
 const noSchemeV = { path: [] as string[], message: 'SCHEME_VERSION_MISMATCH' }
 const PointsKeyV1 = PointsKeyV1Base.refine((k) => k.scheme_v === undefined, noSchemeV)
 const RubricKeyV1 = RubricKeyV1Base.refine((k) => k.scheme_v === undefined, noSchemeV)
@@ -572,6 +573,8 @@ export const QuestionPartReadV3Schema = z.union([QuestionLeafPartReadV3Schema, b
  * JSON for them); the OpenAPI schema is the runtime one.
  */
 export const QuestionPartWireSchema = QuestionPartReadV3Schema as unknown as typeof QuestionPartSchema
+/** The real shape of a response part (v1 and scheme v2 / `mcq_multi` keys); the cast above only keeps the existing v1-typed consumers compiling. */
+export type QuestionPartWire = z.infer<typeof QuestionPartReadV3Schema>
 
 /** Part tree that reads v1 and scheme v2 / `mcq_multi` leaves (D2). Not yet used by the services (S1-T09a parts 3 to 5). */
 const LevelV3_3 = QuestionLeafPartV3Schema

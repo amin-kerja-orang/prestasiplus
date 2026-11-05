@@ -1,6 +1,6 @@
 /**
  * Pure grading of the leaf modes (BE-09 AC 6; S1-T09a part 5, 46 section 3). No database, no clock, no randomness. The one grader (46 section 3);
- * `@pp/exam-core` keeps only helpers this file imports (`math-expr`, `normaliseText`).
+ * `@pp/exam-core` keeps only helpers this file imports (`math-expr`; text comparison is `text-match.ts`).
  *
  * Part statuses (OPT-STATUS-BAHAGIAN, `partStatusOf`): `betul` (awarded = marks), `separa` (0 < awarded < marks), `salah` (0, an answer given),
  * `kosong` (nothing entered: result `blank`, no mark row), `belum_dimarkah` (result `needs_review`: the pupil decides, never a silent 0).
@@ -23,10 +23,10 @@
  * - table_fill (M-TABLE): never auto-awarded; the keyed cells give the suggestion "Cadangan automatik: {k} daripada {n} sel sepadan".
  * - match_letter: every pair must be right (all or nothing); a gap is its own leaf.
  */
-import { normaliseText } from '@pp/exam-core/grading'
 import { latexToPlain, normaliseUnit, numericValue, splitAnyUnit, splitUnit } from '@pp/exam-core/math-expr'
 import type { QuestionPart, QuestionPartV3, QuestionSchemeRules } from '@pp/contract'
 
+import { matchKey, sameText, wordsOf } from './text-match'
 import { gradeWorking, type WorkingAnswer, type WorkingKey } from './scheme-grading'
 import type { GradeResult, PartAnswerValue, PartStatus, QuestionGrade } from './types'
 
@@ -86,18 +86,18 @@ export function gradePkskChoice(key: KeyOf<'pksk_choice'>, label: string, marks:
   return verdict(key.correct.includes(label.trim().toUpperCase()), marks)
 }
 
-/** M-SHORT normalisation: lower-case, NFD without diacritics, every character outside a-z0-9 a space, collapsed, trimmed (`caseSensitive`: trimmed only). */
-const shortFold = (text: string, caseSensitive: boolean): string => (caseSensitive ? text.trim() : normaliseText(text))
-const wordsIn = (text: string): number => {
-  const t = normaliseText(text)
-  return t === '' ? 0 : t.split(' ').length
-}
+/**
+ * M-SHORT normalisation: lower-case, NFD without diacritics, every character outside a-z0-9 a space, collapsed, trimmed (`caseSensitive`: trimmed only).
+ * A text with Arabic, Jawi, Chinese or other non-Latin letters is compared as written (NFC; review F1), and an empty form never matches.
+ */
+const shortFold = (text: string, caseSensitive: boolean): string => matchKey(text, caseSensitive)
+const wordsIn = wordsOf
 /** A wrong short answer of this many words or more is `belum_dimarkah` (K20). */
 export const SHORT_REVIEW_WORDS = 3
 
 export function gradeShortText(key: KeyOf<'short_text'>, text: string, marks: number): GradeResult {
   const cs = key.caseSensitive === true
-  const accepted = key.values.map((v) => shortFold(v, cs))
+  const accepted = key.values.map((v) => shortFold(v, cs)).filter((v) => v !== '')
   let right: boolean
   if (key.anyOrder === true) {
     const tokens = text
@@ -106,9 +106,10 @@ export function gradeShortText(key: KeyOf<'short_text'>, text: string, marks: nu
       .filter((t) => t !== '')
     const a = [...accepted].sort()
     const t = [...tokens].sort()
-    right = a.length === t.length && a.every((v, i) => v === t[i])
+    right = a.length > 0 && a.length === t.length && a.every((v, i) => v === t[i])
   } else {
-    right = accepted.includes(shortFold(text, cs))
+    const given = shortFold(text, cs)
+    right = given !== '' && accepted.includes(given)
   }
   if (right) return verdict(true, marks)
   if (wordsIn(text) >= SHORT_REVIEW_WORDS) return { kind: 'needs_review', maxMarks: marks, acceptedShown: [...key.values] }
@@ -154,8 +155,7 @@ export function gradeMapping(key: KeyOf<'match_letter'>, map: Readonly<Record<st
 
 /** M-TABLE: a keyed cell matches by M-SHORT, or numerically (M-NUM) when both sides are numbers. */
 const cellMatches = (given: string, accepted: string): boolean => {
-  const a = normaliseText(accepted)
-  if (a !== '' && normaliseText(given) === a) return true
+  if (sameText(given, accepted)) return true
   const x = numericValue(given)
   const y = numericValue(accepted)
   return x !== null && y !== null && Math.abs(x - y) <= 1e-12

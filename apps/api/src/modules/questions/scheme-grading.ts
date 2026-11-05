@@ -19,7 +19,7 @@
  * to judge (spelling, punctuation, grammar, copy, other, sf, dp) makes the part `belum_dimarkah` instead of being applied.
  */
 import { answersEquivalent, latexToPlain, matchFinal, normaliseUnit, numericValue, splitUnit } from '@pp/exam-core/math-expr'
-import { containsPhrase, normaliseText } from '@pp/exam-core/grading'
+import { foldText, phraseIn, sameText, wordsOf } from './text-match'
 
 import { reachableIds, schemeTotal, type SchemeKeyLike, type SchemePoint } from './scheme-total'
 import type { GradeResult, PointOutcome } from './types'
@@ -74,10 +74,7 @@ export interface WorkingKey extends SchemeKeyLike {
 }
 
 const nonBlank = (s: string | undefined): boolean => (s ?? '').trim() !== ''
-const wordCount = (s: string): number => {
-  const t = normaliseText(s)
-  return t === '' ? 0 : t.split(' ').length
-}
+const wordCount = wordsOf
 
 /** Working lines that can be compared: each line, and each side of a chain `a = b = c`. */
 function candidateLines(a: WorkingAnswer): string[] {
@@ -94,8 +91,7 @@ function candidateLines(a: WorkingAnswer): string[] {
 }
 
 const same = (line: string, key: string): boolean => {
-  const n = normaliseText(key)
-  return answersEquivalent(line, key) || (n !== '' && normaliseText(line) === n)
+  return answersEquivalent(line, key) || sameText(line, key)
 }
 
 const termsOf = (p: WorkPoint): string[] =>
@@ -162,14 +158,14 @@ function matchPoint(
 ): { hit: boolean; code: PointOutcome['code']; message?: string } {
   const kinds = matcherKinds(p)
   // `notAccepted` is the exact written form (normalised text), not an equivalent value: "2.0" can be refused while "2" is accepted.
-  const rejected = (l: string): boolean => (p.notAccepted ?? []).some((n) => normaliseText(l) === normaliseText(n))
+  const rejected = (l: string): boolean => (p.notAccepted ?? []).some((n) => sameText(l, n))
   const usable = lines.filter((l) => !rejected(l))
   let code: PointOutcome['code'] = 'HIT'
   let message: string | undefined
   let ok = true
   if (kinds.step && !usable.some((l) => (p.accept ?? []).some((k) => same(l, k)))) ok = false
-  if (kinds.allOf && !(p.allOf ?? []).every((it) => usable.some((l) => same(l, it)) || containsPhrase(text, normaliseText(it)))) ok = false
-  if (kinds.keywords && !termsOf(p).some((t) => containsPhrase(text, normaliseText(t)))) ok = false
+  if (kinds.allOf && !(p.allOf ?? []).every((it) => usable.some((l) => same(l, it)) || phraseIn(text, it))) ok = false
+  if (kinds.keywords && !termsOf(p).some((t) => phraseIn(text, t))) ok = false
   if (kinds.final) {
     const own = checkFinal(key, a, p.tol, p.tolKind)
     let hit = own.value === 'match'
@@ -216,7 +212,7 @@ export function gradeWorking(key: WorkingKey, answer: WorkingAnswer, marks: numb
 
   const points = key.points ?? []
   const lines = candidateLines(answer)
-  const text = normaliseText([answer.text ?? '', answer.final ?? '', ...(answer.steps ?? [])].join(' '))
+  const text = foldText([answer.text ?? '', answer.final ?? '', ...(answer.steps ?? [])].join(' '))
   const raw = new Map<string, boolean>()
   const outcomes = new Map<string, PointOutcome>()
   for (const p of points) {
