@@ -21,7 +21,7 @@
  * repository (`questions`) and `question-input.ts`.
  */
 
-import { QUESTION_MESSAGES } from '@pp/contract'
+import { BULK_CHAPTER_CAP, BULK_CHAPTER_MAX_IDS, QUESTION_MESSAGES } from '@pp/contract'
 import { curriculum } from '@/modules/m03-curriculum/mock'
 import {
   conflict,
@@ -346,6 +346,111 @@ function bulkByFilter(req: MockRequest, ctx: MockContext): MockResponse {
   return ok(result, { status: bulkFilterFlash(act, result.affected) })
 }
 
+/** S2-T08 copy of API-DSKP-09: the Bab is unknown / belongs to another Subjek x Tingkatan. */
+const CHAPTER_NOT_FOUND = 'Bab tidak dijumpai.'
+const CHAPTER_MISMATCH = 'Bab tidak sepadan dengan subjek dan tahap.'
+
+/** API-DSKP-09 (mounted under `/api/admin/curriculum`, served by this module because it owns the question rows). */
+function bulkChapter(req: MockRequest, ctx: MockContext): MockResponse {
+  const body =
+    typeof req.body === 'object' && req.body !== null && !Array.isArray(req.body)
+      ? (req.body as Record<string, unknown>)
+      : {}
+  const fields: Record<string, string> = {}
+  for (const key of Object.keys(body)) {
+    if (!['chapterId', 'ids', 'filter', 'dryRun', 'expectedCount', 'overwrite'].includes(key)) fields[key] = FILTER_INVALID
+  }
+  const chapterId = Number(body.chapterId)
+  if (!Number.isSafeInteger(chapterId) || chapterId < 1) fields.chapterId = FILTER_INVALID
+  const ids = body.ids
+  const rawFilter = body.filter
+  if ((ids === undefined) === (rawFilter === undefined)) {
+    fields[ids === undefined ? 'filter' : 'ids'] = 'Send exactly one of ids or filter.'
+  }
+  if (ids !== undefined && (!Array.isArray(ids) || ids.length < 1 || ids.length > BULK_CHAPTER_MAX_IDS || ids.some((i) => !/^\d+$/.test(String(i))))) {
+    fields.ids = BULK_BAD_IDS
+  }
+  const dryRun = body.dryRun === true
+  const expected = body.expectedCount
+  if (expected === undefined ? !dryRun : typeof expected !== 'number' || !Number.isSafeInteger(expected) || expected < 0) {
+    fields.expectedCount = FILTER_COUNT_NEEDED
+  }
+  let filter: AdminListFilter = {}
+  if (rawFilter !== undefined) {
+    const f = typeof rawFilter === 'object' && rawFilter !== null && !Array.isArray(rawFilter) ? (rawFilter as Record<string, unknown>) : null
+    const sid = f?.subjectId
+    const lid = f?.educationLevelId
+    if (f === null || sid === undefined || lid === undefined) {
+      fields.filter = 'The filter must contain subjectId and educationLevelId.'
+    } else {
+      const status = typeof f.status === 'string' ? (WIRE_TO_MOCK_STATUS[f.status] ?? f.status) : undefined
+      const text = (k: string): string | undefined => (typeof f[k] === 'string' && (f[k]).trim() !== '' ? (f[k]).trim() : undefined)
+      filter = {
+        subjectId: Number(sid),
+        educationLevelId: Number(lid),
+        ...(status === undefined ? {} : { status }),
+        ...(text('difficultyLevel') === undefined ? {} : { difficultyLevel: Number(text('difficultyLevel')) }),
+        ...(text('dskpFilter') === undefined ? {} : { dskpFilter: text('dskpFilter') }),
+        ...(text('complianceFilter') === undefined ? {} : { complianceFilter: text('complianceFilter') }),
+        ...(text('sourceFilter') === undefined ? {} : { sourceFilter: text('sourceFilter') }),
+        ...(text('search') === undefined ? {} : { search: text('search') }),
+      }
+    }
+  }
+  if (Object.keys(fields).length > 0) return validationError(fields)
+
+  const chapter = curriculum.chapter(chapterId)
+  if (!chapter) return notFound(CHAPTER_NOT_FOUND)
+  const select: { ids: number[] } | { filter: AdminListFilter } = Array.isArray(ids)
+    ? { ids: (ids as unknown[]).map(Number) }
+    : { filter }
+  const target = { chapterId, subjectId: chapter.subjectId, educationLevelId: chapter.educationLevelId }
+  if (!Array.isArray(ids) && (filter.subjectId !== chapter.subjectId || filter.educationLevelId !== chapter.educationLevelId)) {
+    return validationError({ chapterId: CHAPTER_MISMATCH })
+  }
+  const probe = questions.bulkChapter(target, select, { dryRun: true, now: ctx.clock.now(), cap: BULK_CHAPTER_CAP })
+  const shape = (r: typeof probe, applied: number, dry: boolean) => ({
+    matched: r.matched,
+    eligible: r.eligible,
+    refused: r.matched - r.eligible,
+    applied,
+    cap: BULK_CHAPTER_CAP,
+    remaining: r.remaining,
+    capped: r.remaining > 0,
+    dryRun: dry,
+    auditId: dry ? null : `mock-audit-${String(ctx.clock.now())}`,
+  })
+  if (dryRun) return ok(shape(probe, 0, true))
+  if (probe.matched !== expected) return conflict(FILTER_COUNT_CHANGED(expected as number, probe.matched))
+  const done = questions.bulkChapter(target, select, { dryRun: false, now: ctx.clock.now(), cap: BULK_CHAPTER_CAP })
+  return ok(shape(done, done.applied, false))
+}
+
+/** API-DSKP-10: approved questions with and without a Bab per Subjek x Tingkatan (pairs that have approved questions). */
+function chapterCoverage(req: MockRequest): MockResponse {
+  const subjectId = idFilter(req, 'subjectId')
+  const levelId = idFilter(req, 'educationLevelId')
+  if (subjectId === 'invalid' || levelId === 'invalid') return validationError({ [subjectId === 'invalid' ? 'subjectId' : 'educationLevelId']: FILTER_INVALID })
+  const rows = []
+  for (const s of curriculum.subjects({ active: true }).sort((a, b) => a.id - b.id)) {
+    if (subjectId !== undefined && s.id !== subjectId) continue
+    for (const l of curriculum.visibleLevels({ active: true })) {
+      if (levelId !== undefined && l.id !== levelId) continue
+      const c = questions.chapterCoverage(s.id, l.id)
+      if (c.approved === 0) continue
+      rows.push({
+        subjectId: String(s.id),
+        subjectName: s.name,
+        levelCode: l.code,
+        approved: c.approved,
+        withChapter: c.withChapter,
+        withoutChapter: c.approved - c.withChapter,
+      })
+    }
+  }
+  return ok({ rows })
+}
+
 function bulkFilterFlash(action: 'approved' | 'archived', n: number): string {
   return action === 'approved'
     ? `Berjaya luluskan ${String(n)} soalan (hasil tapisan) — kini kelihatan kepada pelajar.`
@@ -398,6 +503,8 @@ export const questionRoutes: RouteDef[] = [
   route('GET', '/api/questions/summary', [adminOnly], summary),
   route('POST', '/api/questions/bulk-action', [adminOnly], bulk),
   route('POST', '/api/questions/bulk-action/filter', [adminOnly], bulkByFilter),
+  route('POST', '/api/admin/curriculum/questions/bulk-chapter', [adminOnly], bulkChapter),
+  route('GET', '/api/admin/curriculum/chapter-coverage', [adminOnly], chapterCoverage),
   route('POST', '/api/questions', [adminOnly], create),
   route('GET', '/api/questions/:id', [adminOnly], detail, { params: { id: int() } }),
   route('PUT', '/api/questions/:id', [adminOnly], update, { params: { id: int() } }),

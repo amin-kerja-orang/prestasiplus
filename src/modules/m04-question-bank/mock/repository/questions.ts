@@ -919,6 +919,80 @@ export const questionsRepo = defineRepository({
           dryRun: opts.dryRun,
         }
       },
+      /**
+       * `POST /admin/curriculum/questions/bulk-chapter` (S2-T08, API-DSKP-09): `eligible` = matched rows that are approved, have no Bab and
+       * whose subject and level equal the Bab's; `refused` = matched - eligible. Sets `curriculumChapterId` in place (no status change);
+       * one run applies at most `cap` rows. `overwrite` is not modelled (never exposed in R1).
+       */
+      bulkChapter: (
+        target: { chapterId: number; subjectId: number; educationLevelId: number | null },
+        select: { ids: readonly number[] } | { filter: AdminListFilter },
+        opts: { dryRun: boolean; now: number; cap: number },
+      ): { matched: number; eligible: number; applied: number; remaining: number } => {
+        const fits = (q: Question): boolean =>
+          q.status === 'approved' &&
+          q.curriculumChapterId === null &&
+          q.subjectId === target.subjectId &&
+          q.educationLevelId === target.educationLevelId
+        let matched = 0
+        const picked: number[] = []
+        let eligible = 0
+        if ('ids' in select) {
+          for (const id of new Set(select.ids)) {
+            const row = get(id)
+            if (!row || row.pkskDomainId !== null) continue
+            matched++
+            if (fits(row)) {
+              eligible++
+              picked.push(id)
+            }
+          }
+        } else {
+          const where = { ...adminWhere(select.filter), educationLevelId: levelScope(select.filter.educationLevelId) }
+          const term = select.filter.search?.trim() ?? ''
+          const search = term !== '' ? { term, fields: ['questionText' as const] } : undefined
+          matched = store.query({ where, search, page: 1, pageSize: 1 }).total
+          const compatible =
+            (select.filter.status === undefined || select.filter.status === 'approved') &&
+            (select.filter.subjectId === undefined || select.filter.subjectId === target.subjectId) &&
+            (select.filter.educationLevelId === undefined || select.filter.educationLevelId === target.educationLevelId)
+          if (compatible) {
+            const eligibleWhere = {
+              ...where,
+              status: 'approved',
+              curriculumChapterId: null,
+              subjectId: target.subjectId,
+              educationLevelId: target.educationLevelId,
+            } as Where<Question>
+            eligible = store.query({ where: eligibleWhere, search, page: 1, pageSize: 1 }).total
+            const want = opts.dryRun ? 0 : Math.min(eligible, opts.cap)
+            for (let page = 1; picked.length < want; page++) {
+              const rows = store.query({ where: eligibleWhere, search, page, pageSize: 500 }).rows
+              if (rows.length === 0) break
+              for (const r of rows) if (picked.length < want) picked.push(r.id)
+            }
+          }
+        }
+        const toApply = opts.dryRun ? [] : picked.slice(0, opts.cap)
+        if (toApply.length > 0) {
+          transaction(() => {
+            for (const id of toApply) setFields(id, { curriculumChapterId: target.chapterId }, opts.now)
+          })
+        }
+        return {
+          matched,
+          eligible,
+          applied: toApply.length,
+          remaining: eligible - Math.min(eligible, opts.cap),
+        }
+      },
+      /** API-DSKP-10 (S2-T08): approved questions of one Subjek x Tingkatan, with and without a Bab. */
+      chapterCoverage: (subjectId: number, educationLevelId: number): { approved: number; withChapter: number } => {
+        const base = { pkskDomainId: null, subjectId, educationLevelId, status: 'approved' } as Where<Question>
+        const approved = store.query({ where: base, page: 1, pageSize: 1 }).total
+        const without = store.query({ where: { ...base, curriculumChapterId: null }, page: 1, pageSize: 1 }).total
+        return { approved, withChapter: approved - without }
+      },
       /** BR-M04-12: a report (or an admin) takes the question out of practice. */
       deactivate: (id: number, now?: number): Question =>
         transaction(() => {
