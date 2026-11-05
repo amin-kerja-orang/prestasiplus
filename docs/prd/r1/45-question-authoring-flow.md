@@ -683,6 +683,8 @@ All 30 rows are assembled into one function by card S1-T02 (owner of API-Q-05 an
 
 **Code kept from V3 (D115):** `TP_MISSING` (the question-level TP at path `tp`, message as in V3 `errors.ts`) is not a numbered row: it belongs to rule R-DSKP beside rows 3 to 6 (A) and keeps its V3 name; it is skipped when the Subjek + Tingkatan has no DSKP nodes. S1-T02 neither renames nor removes it.
 
+**Code added by the scheme validator (S1-T09a):** `SCHEME_PENALTY` "Jumlah penalti melebihi markah bahagian." (when the deductions of a leaf or of the question exceed the part marks; applies to a leaf with `schemeRules`; When S; owner S1-T09a). Like `TP_MISSING` it is not a numbered row. Every new scheme code (`SCHEME_*`, `BAND_RANGE`) is reported at `step` 4 in the issue shape of API-Q-05 and API-Q-30.
+
 The flag `stem_duplicated` is not a gate item (the question is complete; the text shows once and DM-40 cleans the data). A flag is cleared by attaching a group or stimulus (QE-08) or by `Bukan masalah` (`POST /api/admin/questions/:id/flags/dismiss`).
 
 ### 4.2 The review queue and decisions
@@ -1084,7 +1086,7 @@ Structure: every prompt and mark label in BM and English; a data table with bili
   "parts": [
     { "label": "(a)", "mode": "numeric", "marks": 2, "prompt": { "ms": "[...]", "en": "[...]" }, "difficultyTp": 3, "cognitiveLevel": "mengaplikasi",
       "key": { "kind": "accepted", "values": [ { "v": 4.2, "tol": 0.1, "tolKind": "abs", "unit": "m s^-1", "unitAlt": ["m/s"] } ] } },
-    { "label": "(b)", "mode": "working", "marks": 3, "prompt": { "ms": "[...]", "en": "[...]" }, "dependsOnPart": "(a)",
+    { "label": "(b)", "mode": "working", "marks": 3, "prompt": { "ms": "[...]", "en": "[...]" }, "modeConfig": { "dependsOnPart": "(a)" },
       "key": { "kind": "points", "marks": 3,
                "points": [ { "id": "m1", "code": "M", "label": "Formula betul", "marks": 1 },
                            { "id": "m2", "code": "M", "label": "Gantian betul", "marks": 1, "requires": ["m1"] },
@@ -1092,14 +1094,18 @@ Structure: every prompt and mark label in BM and English; a data table with bili
                              "ecf": { "fromPart": "(a)", "rule": { "op": "same" } }, "unit": { "value": "J", "mandatory": true } } ] } },
     { "label": "(c)", "mode": "essay", "marks": 10, "prompt": { "ms": "[...]", "en": "[...]" },
       "key": { "kind": "points", "marks": 10,
-               "points": [ { "id": "c1", "code": "M", "label": "Ciri 1", "marks": 1 }, { "id": "r1", "code": "M", "label": "Sebab 1", "marks": 1 } ],
-               "groups": [ { "id": "p1", "type": "pair", "pointIds": ["c1", "r1"], "cap": 8 } ],
+               "points": [ { "id": "c1", "code": "M", "label": "Ciri 1", "marks": 1 }, { "id": "r1", "code": "M", "label": "Sebab 1", "marks": 1 },
+                           { "id": "c2", "code": "M", "label": "Ciri 2", "marks": 1 }, { "id": "r2", "code": "M", "label": "Sebab 2", "marks": 1 },
+                           { "id": "c3", "code": "M", "label": "Ciri 3", "marks": 1 }, { "id": "r3", "code": "M", "label": "Sebab 3", "marks": 1 },
+                           { "id": "c4", "code": "M", "label": "Ciri 4", "marks": 1 }, { "id": "r4", "code": "M", "label": "Sebab 4", "marks": 1 } ],
+               "groups": [ { "id": "p1", "type": "pair", "pointIds": ["c1", "r1"], "cap": 2 }, { "id": "p2", "type": "pair", "pointIds": ["c2", "r2"], "cap": 2 },
+                           { "id": "p3", "type": "pair", "pointIds": ["c3", "r3"], "cap": 2 }, { "id": "p4", "type": "pair", "pointIds": ["c4", "r4"], "cap": 2 } ],
                "bonus": { "ifAllCorrect": true, "marks": 2, "label": "[Semua ciri dinyatakan betul]" } } }
   ]
 }
 ```
 
-Fields `type: "pair"`, `cap`, `bonus` and `dependsOnPart` are scheme v2 (DM-54, DM-55). A real (c) has four pair groups; one is shown. Gate: sum of reachable marks with the cap and bonus = 10.
+Fields `type: "pair"`, `cap`, `bonus` and `dependsOnPart` are scheme v2 (DM-54, DM-55). (c) has four `pair` groups (4 pairs x 2 marks = 8 marks, group caps summing to the cap of 8) plus a bonus of 2 when all are correct: 8 + 2 = 10. `dependsOnPart` is a `modeConfig` field (DM-55), never a top-level part field. Gate: sum of reachable marks with the cap and bonus = 10.
 
 ### 7.4 Bahasa Melayu Kertas 2: an essay with a word range and a rubric
 

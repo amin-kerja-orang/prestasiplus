@@ -628,6 +628,9 @@ Display tokens. **Show:** I = inline field, R = inline region or banner, T = toa
 | ERR-QST-02 | VALIDATION_ERROR (`stimulus_group_split`) | 422 | a set, paper, placement or bulk action (API-Q-04 `ids`) would split a stimulus group; never 409 | Soalan dalam kumpulan rangsangan mesti dipilih bersama. (existing) | I at `questionIds` or `ids` | add the sibling |
 | ERR-QST-03 | VALIDATION_ERROR | 422 | publish a paper with an empty question | “{title}” tiada kandungan - tidak boleh diterbitkan. (R1 copy, D113) | R | fix content |
 | ERR-QST-04 | VALIDATION_ERROR | 422 | missing declarations | Pengisytiharan sumber diperlukan. / Status hak cipta diperlukan. | I | - |
+| ERR-QST-05 | CONFLICT | 409 | `POST /api/question-reports` (API-Q-19): the same reporter reports the same question version again | Anda sudah melaporkan soalan ini. | R inside the report dialog | none (dialog stays) |
+| ERR-QST-06 | FORBIDDEN | 403 | `POST /api/question-reports` (API-Q-19): the pupil never answered or was never served that question (FR-MUR-54-7) | Anda hanya boleh melapor soalan yang dipaparkan kepada anda. | R inside the report dialog | none (dialog stays) |
+| ERR-QST-07 | (any failure other than ERR-QST-05, ERR-QST-06 and ERR-QUOTA-02) | 5xx / 0 | `POST /api/question-reports` fails (server error or no network) | Gagal menghantar laporan. Sila cuba lagi. | R inside the report dialog; the comment text is kept (K13) | `Hantar Laporan` again |
 | ERR-INT-01 | ENCRYPTED | job | password-protected file | Fail dilindungi kata laluan. Buang perlindungan dan muat naik semula. | R in batch row | `Muat Naik Semula` |
 | ERR-INT-02 | CORRUPT | job | unreadable file | Fail rosak atau tidak dapat dibaca. | R | `Muat Naik Semula` |
 | ERR-INT-03 | TOO_MANY_PAGES | job | over page limit | Fail mempunyai terlalu banyak halaman (maksimum {n}). Bahagikan fail dan muat naik semula. | R | `Muat Naik Semula` |
