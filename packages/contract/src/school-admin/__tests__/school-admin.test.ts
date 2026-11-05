@@ -303,7 +303,9 @@ describe('school-admin contract: reports', () => {
     expect(ok(SchoolAdminClassListResponseSchema, classList)).toBe(true)
     expect(ok(SchoolAdminClassListResponseSchema, { ...classList, tiles: undefined })).toBe(false)
     expect(ok(SchoolAdminClassListResponseSchema, { ...classList, meta: meta })).toBe(false) // displayed missing
-    expect(ok(SchoolAdminClassListResponseSchema, { ...classList, data: [{ ...classRow, kind: 'school_class' }] })).toBe(false)
+    // S6-T13: the list holds active classes of both kinds (equal to the Kelas Aktif tile).
+    expect(ok(SchoolAdminClassListResponseSchema, { ...classList, data: [{ ...classRow, key: 'school_class:7', kind: 'school_class' }] })).toBe(true)
+    expect(ok(SchoolAdminClassListResponseSchema, { ...classList, data: [{ ...classRow, key: 'kelas:7', kind: 'kelas' }] })).toBe(false)
   })
 })
 
