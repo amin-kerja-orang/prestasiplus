@@ -31,7 +31,7 @@ describe('loadErrorMessage', () => {
 
   it('shows the BM rate-limit line for a 429, whatever the text', () => {
     expect(loadErrorMessage(apiError(429, 'Too Many Attempts.'))).toBe(RATE_LIMITED_MESSAGE_BM)
-    expect(RATE_LIMITED_MESSAGE_BM).toBe('Terlalu banyak percubaan. Cuba sebentar lagi.')
+    expect(RATE_LIMITED_MESSAGE_BM).toBe('Terlalu banyak percubaan. Sila cuba sebentar lagi.')
   })
 
   it('keeps the server message of another status unless it is empty or the bare client fallback', () => {

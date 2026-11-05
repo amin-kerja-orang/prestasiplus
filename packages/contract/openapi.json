@@ -15185,7 +15185,8 @@
           "tag_review",
           "paper_empty",
           "stimulus_shared_ungrouped",
-          "question_missing"
+          "question_missing",
+          "group_incomplete"
         ]
       },
       "ServabilityReason": {
@@ -41926,6 +41927,15 @@
             ],
             "maxLength": 300
           },
+          "style": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "Presentation hint (DM-70): `kotak` on a passage, `mono` for the code block. Free text, no closed list."
+          },
           "tableData": {
             "type": [
               "object",
@@ -42027,6 +42037,15 @@
             ],
             "maxLength": 300
           },
+          "style": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "Presentation hint (DM-70): `kotak` on a passage, `mono` for the code block. Free text, no closed list."
+          },
           "tableData": {
             "type": [
               "object",
@@ -42115,6 +42134,13 @@
               "string",
               "null"
             ]
+          },
+          "style": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 32
           },
           "tableData": {
             "$ref": "#/components/schemas/QuestionStimulusTable"
@@ -69511,7 +69537,11 @@
         "enum": [
           "diagram",
           "passage",
-          "table"
+          "table",
+          "graph",
+          "map",
+          "infographic",
+          "image"
         ],
         "description": "Prototype StimulusDef.kind."
       },
