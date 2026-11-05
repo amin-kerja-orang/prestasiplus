@@ -15,6 +15,7 @@ import type {
   Dashboard,
   Mastery,
   Progress,
+  RemedialSuggestions,
   RevisionOverview,
   SubjectConfig,
 } from '../../api/types'
@@ -30,6 +31,9 @@ import {
   getAs,
 } from './boot-all'
 import { request } from './helpers'
+
+/** A fixture-school pupil (M02 3001–3008) no other test in this file writes for. */
+const FIXTURE_PUPIL = 3001
 
 let runtime: MockRuntime
 let hooks: Record<string, unknown>
@@ -328,5 +332,42 @@ describe('G4 follow-ups', () => {
     await expect(call('answerChapter', ghost, 1, { correctPct: 50 })).rejects.toBeInstanceOf(
       RangeError,
     )
+  })
+})
+
+describe('remedial suggestions after addAnswer (S5-T07, AC-MUR-12-1)', () => {
+  // The helper's questions are Tingkatan-less D1 ones: offer the Darjah levels so the drill is servable.
+  beforeEach(() => {
+    useOfferedLevels([1, 2, 3, 4])
+  })
+  afterEach(() => {
+    useOfferedLevels()
+  })
+
+  it('a pupil whose only answers in a subject are wrong gets a "Ketepatan: 0%" card; a correct one lifts it out', async () => {
+    const url = '/api/practice/remedial-suggestions'
+    expect(await data<RemedialSuggestions>(FIXTURE_PUPIL, url)).toEqual({ completed: [], needed: [] })
+    const [q1, q2] = mathQuestions() as [number, number]
+    for (const q of [q1, q2]) {
+      await call('addAnswer', {
+        userId: FIXTURE_PUPIL,
+        questionId: q,
+        isCorrect: false,
+        answeredAt: '2026-09-25T10:00:00+08:00',
+      })
+    }
+    expect((await data<RemedialSuggestions>(FIXTURE_PUPIL, url)).needed).toEqual([
+      { subjectCode: 'MATH', subjectName: 'Matematik', answered: 2, accuracy: 0, target: 60 },
+    ])
+    for (const q of [q1, q2, q1, q2, q1, q2]) {
+      await call('addAnswer', {
+        userId: FIXTURE_PUPIL,
+        questionId: q,
+        isCorrect: true,
+        answeredAt: '2026-09-25T10:10:00+08:00',
+      })
+    }
+    // 6 of 8 correct = 75: above the target, the card goes.
+    expect((await data<RemedialSuggestions>(FIXTURE_PUPIL, url)).needed).toEqual([])
   })
 })

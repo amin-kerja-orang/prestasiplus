@@ -60,11 +60,6 @@ export async function offeredLevels(db: Pick<TxClient | PrismaClient, '$queryRaw
   return rows.map((r) => ({ id: r.id, code: r.code, order: Number(r.order), gradeKey: `TINGKATAN_${/\d/.exec(r.code)?.[0] ?? ''}` }))
 }
 
-/** TODO(S4-T06 PR3): remove after S1-T07. Temporary alias: `questions/learner-visibility.ts` and `questions/serving/rules.ts` (S1 files) still import them. */
-export const SPM_LEVEL_CODES: readonly string[] = ['T4', 'T5']
-/** TODO(S4-T06 PR3): remove after S1-T07. Practice no longer reads this; see `offeredLevels`. */
-export const OFFERED_LEVEL_CODES: readonly string[] = SPM_LEVEL_CODES
-
 /** BR-30: `timeSpent` cap per question. */
 export const MAX_SECONDS_PER_QUESTION = 180
 /** BR-09. */
@@ -93,3 +88,12 @@ export const PRACTICE_LIMITS = {
   write: { bucket: 'practice.write', env: 'THROTTLE_PRACTICE_WRITE_PER_MINUTE', default: 120, per: 'user' },
   read: { bucket: 'practice.read', env: 'THROTTLE_PRACTICE_READ_PER_MINUTE', default: 120, per: 'user' },
 } as const satisfies Record<string, RateLimitSpec>
+
+/**
+ * DM-44: the value of `practice_checks.selected_label` for a selection. One label stays as it is; an `mcq_multi`
+ * answer is the sorted, unique labels joined by commas ("A,C"). No label gives null.
+ */
+export function selectedLabelOf(labels: readonly string[]): string | null {
+  const unique = [...new Set(labels)].sort()
+  return unique.length === 0 ? null : unique.join(',')
+}

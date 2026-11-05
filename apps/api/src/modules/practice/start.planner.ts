@@ -24,7 +24,6 @@ import {
   LATIH_TUBI_TARGETS,
   PAST_YEAR_COUNTS,
   REVISION_LENGTH,
-  SPM_LEVEL_CODES,
 } from './rules'
 
 /** What a start resolves to, before the session row exists. */
@@ -199,16 +198,6 @@ export class PracticeStartPlanner {
     return new Set((await this.repo.offeredLevels()).map((l) => l.id))
   }
 
-  /**
-   * Latih Tubi draws through `SPM_SERVABLE_SQL` (S1 file `questions/learner-visibility.ts`), which still serves T4 and T5 only
-   * (`OFFERED_LEVEL_CODES`) until S4-T06 PR 3 (after S1-T07). Until then the Latih Tubi levels are the offered levels that the SPM rule can serve,
-   * so a T1..T3 start is refused as an invalid level instead of being accepted and drawing nothing.
-   * TODO(S4-T06 PR3): return `offeredLevelIds()` here and drop `SPM_LEVEL_CODES` once the SQL twin follows `offeredLevels`.
-   */
-  private async latihTubiLevelIds(): Promise<Set<string>> {
-    return new Set((await this.repo.offeredLevels()).filter((l) => SPM_LEVEL_CODES.includes(l.code)).map((l) => l.id))
-  }
-
   /** The questions among `ids` that are eligible now, at their live version, in the order of `ids`. */
   private async serve(ids: readonly string[], activity?: PracticeDrillActivity): Promise<PracticeQuestion[]> {
     const unique = [...new Set(ids)]
@@ -306,7 +295,7 @@ export class PracticeStartPlanner {
 
   private async latihTubi(plan: StartPlan, userId: string, req: StartSessionRequest, now: Date): Promise<StartPlan> {
     const subject = await this.subjectOf(req.subjectCode)
-    const offeredIds = await this.latihTubiLevelIds()
+    const offeredIds = await this.offeredLevelIds()
     const levelId = req.levelId ?? null
     if (levelId !== null && !offeredIds.has(levelId)) throw invalidField('levelId')
     const difficulty = req.difficulty ?? null
@@ -398,7 +387,7 @@ export class PracticeStartPlanner {
     const open = sessions.find((s) => s.status === 'in_progress')
     if (open) return { ...plan, questionSetId: req.questionSetId as string, resume: open }
     if (res.questionIds.length === 0) throw notEnoughQuestions()
-    const served = await this.serve(res.questionIds)
+    const served = await this.serve(res.questionIds, 'bab')
     if (served.length === 0) throw notEnoughQuestions()
     return Object.assign(plan, {
       subjectId: res.subjectId ?? served[0]?.subjectId ?? null,
