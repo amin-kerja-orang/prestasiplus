@@ -12,7 +12,7 @@ import { mulberry32 } from './blueprint'
 import { excludedReport, type ExcludedReport, type QuestionFacts } from './eligibility'
 import { arrangeSection } from './arrange'
 import { buildSectionPool, makePoolContext, type PoolContext, type Relax } from './pool'
-import { precheckPool, precheckSection, type SectionPrecheck } from './precheck'
+import { precheckPool, precheckSection, reachGrid, type SectionPrecheck } from './precheck'
 import type { StandardShortage } from './shortage'
 import {
   buildProblem,
@@ -23,7 +23,7 @@ import {
   solveSection,
   type Budget,
 } from './solver'
-import type { StandardBlueprint, StandardSection } from './standard-model'
+import { perQuestionMarks, type StandardBlueprint, type StandardSection } from './standard-model'
 import { validateBlueprint, type BlueprintWarning } from './validate'
 import { buildStandardReport, verifyComposition, type ComposedSection, type StandardReport, type Violation } from './verify'
 
@@ -239,6 +239,82 @@ export function composeStandardPaper(
   if (last && !last.ok && last.kind === 'shortage')
     return { ok: false, reason: 'shortage', shortages: [last.shortage], prechecks, nodes }
   return { ok: false, reason: 'limit', limitSections: [{}], nodes }
+}
+
+/* -------------------------------------------------------------------- scaling (S3-T02, PO decision 5) */
+
+/**
+ * FR-ADM-Q13.2: shares `count` over `counts` in proportion, by largest remainder: the floors first, the remaining questions to the largest
+ * fractions, ties to the earlier section. The shares add up to `count` (which is at most the sum of `counts`).
+ */
+export function scaleSectionCounts(counts: readonly number[], count: number): number[] {
+  const total = counts.reduce((n, c) => n + c, 0)
+  if (total === 0) return counts.map(() => 0)
+  const exact = counts.map((c) => (count * c) / total)
+  const out = exact.map((x) => Math.floor(x))
+  let left = count - out.reduce((n, c) => n + c, 0)
+  const order = exact.map((x, i) => ({ i, frac: x - Math.floor(x) })).sort((a, b) => b.frac - a.frac || a.i - b.i)
+  for (const { i } of order) {
+    if (left <= 0) break
+    out[i]! += 1
+    left -= 1
+  }
+  return out
+}
+
+/** The marks closest to `target` (the lower one on a tie) that exactly `size` questions of the pool can add up to; `target` when none can. */
+function reachableBudget(ctx: PoolContext, section: StandardSection, size: number, target: number): number {
+  const items = buildSectionPool(ctx, section).items
+  if (items.length === 0) return target
+  const limit = target + Math.max(...items.map((i) => i.marks)) * size
+  const rows = new Map<string, { size: number; val: number; mult: number }>()
+  for (const i of items) {
+    const key = `${String(i.size)}|${String(i.marks)}`
+    const row = rows.get(key)
+    if (row) row.mult += 1
+    else rows.set(key, { size: i.size, val: i.marks, mult: 1 })
+  }
+  const grid = reachGrid([...rows.values()], size, limit)
+  const width = limit + 1
+  for (let delta = 0; delta <= limit; delta++) {
+    if (target - delta >= 0 && grid[size * width + target - delta]) return target - delta
+    if (target + delta <= limit && grid[size * width + target + delta]) return target + delta
+  }
+  return target
+}
+
+/**
+ * The blueprint of a set of `count` questions (PO decision 2026-11-05 item 5): `count` = the contract total is the blueprint itself; a smaller one
+ * scales each section by `scaleSectionCounts`, a section with no share is left out and the rest keep their position. A stimulus group is still one unit
+ * counted by its questions, so the solver never splits it. Only the structure scales: the quota, TP profile, KBAT and `Markah setiap soalan` lines describe the full
+ * contract and are dropped, the N of `Pilih N` follows the share and the budget is the reachable sum nearest the proportional one. Null when `count` is out of range.
+ */
+export function scaleStandardBlueprint(bp: StandardBlueprint, candidates: readonly QuestionFacts[], count: number): StandardBlueprint | null {
+  const sections = [...bp.sections].sort((a, b) => a.position - b.position)
+  const total = sections.reduce((n, s) => n + s.questionCount, 0)
+  if (!Number.isInteger(count) || count < 1 || count > total) return null
+  if (count === total) return bp
+  const ctx = makePoolContext(candidates)
+  const shares = scaleSectionCounts(sections.map((s) => s.questionCount), count)
+  const scaled = sections.flatMap((s, i): StandardSection[] => {
+    const size = shares[i]!
+    if (size === 0) return []
+    const bare: StandardSection = { ...s, questionCount: size, profile: null, quota: null, kbatMarks: null, marksPerQuestion: null }
+    if (s.rule.type === 'choose') {
+      const n = Math.max(1, Math.min(size, Math.round((s.rule.n * size) / s.questionCount)))
+      const each = perQuestionMarks(s)
+      return [{ ...bare, rule: { type: 'choose', n }, markBudget: each === null ? Math.round((s.markBudget * n) / s.rule.n) : each * n }]
+    }
+    return [{ ...bare, markBudget: reachableBudget(ctx, bare, size, Math.round((s.markBudget * size) / s.questionCount)) }]
+  })
+  return {
+    ...bp,
+    sections: scaled,
+    totalMarks: scaled.reduce((n, s) => n + s.markBudget, 0),
+    kbatMarks: null,
+    levelShare: null,
+    questionCount: null,
+  }
 }
 
 /* --------------------------------------------------------------------------------- preview */

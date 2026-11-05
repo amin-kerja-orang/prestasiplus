@@ -39,7 +39,7 @@ export interface SectionPrecheck {
 }
 
 /** Bounded subset sum: reach[c][v] for choosing exactly c of the items (each at most once). */
-function reachGrid(items: { size: number; val: number; mult: number }[], maxCount: number, maxVal: number): Uint8Array {
+export function reachGrid(items: { size: number; val: number; mult: number }[], maxCount: number, maxVal: number): Uint8Array {
   const w = maxVal + 1
   const grid = new Uint8Array((maxCount + 1) * w)
   grid[0] = 1

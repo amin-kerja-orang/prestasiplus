@@ -406,7 +406,7 @@ describe('R1 T43b publish ACs (PIPE AC-07.4 to AC-07.9)', () => {
       expect((await student.post(`/api/bijak/attempts/${first.attempt}/abandon`)).status).toBe(204)
 
       // an addition after Terbit is refused: the paper is read-only, so no "added after publish" question can exist
-      const extra = await approved({ questionText: 'Soalan tambahan selepas tarik balik: berapakah 9 + 9?' })
+      const extra = await approved({ questionText: 'Soalan tambahan selepas tarik balik: berapakah 9 + 9?', pointsValue: 2 }) // S3-T02 FR-QA-41: Bahagian C is Pilih N, its units carry equal marks
       const added = await place(paper, sections[0]!, extra)
       expect(added.status).toBe(422)
       expect(added.body.error.message).toBe(MSG_ALL.paperLocked)

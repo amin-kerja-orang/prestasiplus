@@ -372,9 +372,9 @@ describe('R1-T34 structured blockers: review and publish agree', () => {
     })
   })
 
-  it('every code of the contract has an overridable flag; only the four blueprint-conformance codes are overridable (PIPE AC-07.5)', () => {
+  it('every code of the contract has an overridable flag; only the five blueprint-conformance codes are overridable (PIPE AC-07.5, S3-T02 marks against the Kontrak)', () => {
     const overridable = Object.entries(BIJAK_BUILDER_BLOCKER_OVERRIDABLE).filter(([, v]) => v).map(([k]) => k).sort()
-    expect(overridable).toEqual(['BLUEPRINT_NOT_VERIFIED', 'INELIGIBLE', 'RULE_NOT_IN_CONTRACT', 'SECTION_NOT_IN_CONTRACT'])
+    expect(overridable).toEqual(['BLUEPRINT_NOT_VERIFIED', 'INELIGIBLE', 'MARKS_NOT_IN_CONTRACT', 'RULE_NOT_IN_CONTRACT', 'SECTION_NOT_IN_CONTRACT'])
     for (const hard of ['NO_KEY', 'NO_MARKS', 'MODE_NOT_ALLOWED', 'GROUP_BROKEN', 'RULE_N_EXCEEDS_QUESTIONS', 'SECTION_EMPTY'] as const) expect(BIJAK_BUILDER_BLOCKER_OVERRIDABLE[hard], hard).toBe(false)
     const sample: BijakBuilderBlocker = { code: 'NOT_SERVABLE', message: 'x', overridable: false }
     expect(sample.overridable).toBe(false)

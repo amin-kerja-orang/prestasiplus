@@ -2,6 +2,9 @@ import { Inject, Injectable } from '@nestjs/common'
 import {
   BIJAK_BUILDER_CHECK_LINES as LINES,
   BIJAK_BUILDER_EDIT_LINES as EDIT,
+  BIJAK_SET_BUILDER_PROPOSED,
+  bijakDefaultLevelScope,
+  bijakNegeriOptions,
   bijakRuleLabel,
   BijakBuilderQuestionCreateSchema,
   BijakBuilderSectionAddSchema,
@@ -35,6 +38,8 @@ import {
   type BijakBuilderPreview,
   type BijakBuilderPublishResult,
   type BijakBuilderQuestion,
+  type BijakBuilderSourceFilters,
+  type BijakLevelScope,
   type BijakAttemptStimulus,
   type ServabilityReport,
   type ListMeta,
@@ -58,7 +63,7 @@ import { bijakCodeOf, curriculumCodeOf } from '../../bijak/papers/subject-codes'
 import { mytYear, referencePanels, ruleOf, sectionInstruction } from '../../bijak/papers/rules'
 import { QuestionsService, ServabilityService, StimuliService } from '../../questions'
 import { blueprintView } from '../blueprints/blueprint-view'
-import { toStandard } from '../blueprints/blueprint-standard'
+import { marksPerQuestionOfDoc, toStandard } from '../blueprints/blueprint-standard'
 import type { AuditActor } from './actor'
 import {
   attemptRefusalLine,
@@ -83,14 +88,16 @@ import {
   effectiveMarks,
   eligibilityOf,
   previewStandard,
+  scaleStandardBlueprint,
   SOLVER_VERSION,
   verifyComposition,
   type QuestionFacts,
+  type StandardBlueprint,
 } from './exam-core.adapter'
-import { checkPaperDetailed, normalizeUnits, reorderUnits, unitsOf, addUnit, removeUnit, type CheckIssue, type PaperCheck } from './paper-check'
+import { checkPaperDetailed, normalizeUnits, reorderUnits, unitMarksOf, unitsOf, addUnit, removeUnit, type CheckIssue, type PaperCheck } from './paper-check'
 import { blockerView, toBlockers, type BlockerDraft } from './blockers'
 import { shortageToWire, standardForPaper, violationLines } from './standard'
-import { BijakBuilderPorts, type BuilderGroupInfo, type BuilderQuestionInfo, type BuilderQuestionRef } from './ports'
+import { BijakBuilderPorts, type BuilderGroupInfo, type BuilderQuestionInfo, type BuilderQuestionOrigin, type BuilderQuestionRef } from './ports'
 
 type Info = ReadonlyMap<string, BuilderQuestionInfo>
 
@@ -160,11 +167,34 @@ type SectionRow = PaperTree['sections'][number]
  * The question count and mark budget of a section. A Kontrak Bahagian keeps the stored (blueprint) values; a Bahagian the admin added
  * (R1-T48) has no Kontrak value, so its figures follow its placements: the count placed and the marks that count under its rule.
  */
-function sectionFigures(s: SectionRow, marksOf: (questionId: string) => number): { questionCount: number; markBudget: number } {
+function sectionFigures(s: SectionRow, marksOf: (questionId: string) => number, groupOf: (questionId: string) => string | undefined = () => undefined): { questionCount: number; markBudget: number } {
   if (!s.adminCreated) return { questionCount: s.questionCount, markBudget: s.markBudget }
   const ids = s.placements.map((pl) => idToString(pl.questionId))
-  return { questionCount: ids.length, markBudget: effectiveMarks(ruleOf(s.ruleType, s.ruleN), ids.map(marksOf)) }
+  const rule = ruleOf(s.ruleType, s.ruleN)
+  return { questionCount: ids.length, markBudget: effectiveMarks(rule, unitMarksOf(rule, ids, marksOf, groupOf)) }
 }
+
+type Origins = ReadonlyMap<string, BuilderQuestionOrigin>
+
+const sameNegeri = (a: string, b: string): boolean => a.trim().toLowerCase() === b.trim().toLowerCase()
+
+/** The Tahun and Negeri filter of one question: empty lists match everything, a question with no source paper matches only then. */
+function originMatches(origin: BuilderQuestionOrigin | undefined, years: readonly number[], negeri: readonly string[]): boolean {
+  if (years.length > 0 && (origin?.year === null || origin?.year === undefined || !years.includes(origin.year))) return false
+  if (negeri.length > 0 && !(origin?.negeri && negeri.some((n) => sameNegeri(n, origin.negeri!)))) return false
+  return true
+}
+
+/** The values present in the data (OPT-TAHUN descending, OPT-NEGERI-KERTAS in list order). A filter with no value is hidden by the screen. */
+function filtersOf(origins: Origins): BijakBuilderSourceFilters {
+  const all = [...origins.values()]
+  return {
+    years: [...new Set(all.flatMap((o) => (o.year === null ? [] : [o.year])))].sort((a, b) => b - a),
+    negeri: bijakNegeriOptions(all.flatMap((o) => (o.negeri ? [o.negeri] : []))),
+  }
+}
+
+const levelScopeOf = (stored: string | null): BijakLevelScope | null => stored as BijakLevelScope | null
 
 interface Evaluation {
   info: Info
@@ -260,7 +290,7 @@ export class BuilderService {
       const { check, issues } = checkPaperDetailed({
         specs: paper.sections.map((s) => ({
           label: s.label,
-          ...sectionFigures(s, (id) => marks.get(id) ?? 0),
+          ...sectionFigures(s, (id) => marks.get(id) ?? 0, (id) => info.get(id)?.groupId ?? undefined),
           rule: ruleOf(s.ruleType, s.ruleN),
         })),
         sections: paper.sections.map((s) => ({ questionIds: s.placements.map((pl) => idToString(pl.questionId)) })),
@@ -316,10 +346,11 @@ export class BuilderService {
       createdAt: toMytTimestamp(paper.createdAt),
       updatedAt: toMytTimestamp(paper.updatedAt),
       ...(paper.publishedAt ? { publishedAt: toMytTimestamp(paper.publishedAt) } : {}),
+      levelScope: levelScopeOf(paper.levelScope),
     }
   }
 
-  private questionWire(info: BuilderQuestionInfo, pinned?: boolean): BijakBuilderQuestion {
+  private questionWire(info: BuilderQuestionInfo, pinned?: boolean, notServed?: string | null): BijakBuilderQuestion {
     return {
       id: info.id,
       ...(info.groupId ? { groupId: info.groupId } : {}),
@@ -332,7 +363,25 @@ export class BuilderService {
       kertas: info.kertas,
       subject: info.subject,
       ...(pinned === undefined ? {} : { pinned }),
+      ...(notServed === undefined ? {} : { servable: notServed === null, ...(notServed === null ? {} : { notServedReason: notServed }) }),
     }
+  }
+
+  /**
+   * Why pupils cannot be served one placed question: ONE reading for the review rows and the `Tidak disajikan` chip of the editor (FR-ADM-Q14.7). The per-row verdict
+   * comes from ServabilityService; the paper is the authority for "not on a published paper", so that one reason is left out. A question the service does not know keeps the status-only reason.
+   */
+  private notServedOf(q: BuilderQuestionInfo | undefined, report: ServabilityReport | undefined) {
+    const sim = report?.activities.find((a) => a.activity === 'simulasi_paper')
+    const fromReport = (sim?.reasons ?? []).filter((r) => r.code !== 'not_on_published_paper')
+    const legacy = !q ? PLACE.notFound : isServableStatus(q.status) ? null : this.statusText(q.status)
+    // The builder places approved questions only (D54a): a status that is not servable is reported with the same cause and fix copy
+    // as "Dilihat murid di", even where a published paper would keep serving an archived version.
+    const reasons: { code: string; message: string; detail?: string }[] =
+      legacy !== null && fromReport.length === 0 && q
+        ? [{ code: q.status === 'archived' ? 'archived' : 'not_approved', message: servabilityReasonMs(q.status === 'archived' ? 'archived' : 'not_approved', 'simulasi_paper') }]
+        : fromReport
+    return { legacy, reasons, reason: legacy ?? (reasons[0] ? reasons[0].message : null) }
   }
 
   private async editorOf(paper: PaperTree): Promise<BijakBuilderEditor> {
@@ -344,6 +393,13 @@ export class BuilderService {
     // R1-T48 (V2 "Disematkan"): a placed question is pinned when the paper is Terbit (version and marks frozen).
     const placed = new Set(used.map((r) => r.id))
     const pinned = paper.status === 'published'
+    // API-BIJAK-10 (g): the `Tidak disajikan` chip of a placed question. A Terbit paper serves its pinned version (AC-ADM-Q14.3), so only a draf asks.
+    const { reports } = pinned ? { reports: new Map<string, ServabilityReport>() } : await this.safeReports([...placed])
+    const notServed = (id: string): string | null => {
+      if (pinned) return null
+      const v = this.notServedOf(usedInfo.get(id), reports.get(id))
+      return v.reasons[0]?.message ?? v.reason
+    }
     // The picker shows at most MAX_EDITOR_CANDIDATES candidates, so a large bank cannot make one editor read unbounded.
     const candidateIds = (await this.questions.candidates({ subject: wire.subject, kertas: paper.kertas }))
       .filter((id) => !usedInfo.has(id))
@@ -365,7 +421,7 @@ export class BuilderService {
     return {
       paper: wire,
       blueprint,
-      questions: ordered.map((q) => this.questionWire(q, placed.has(q.id) ? pinned : undefined)),
+      questions: ordered.map((q) => (placed.has(q.id) ? this.questionWire(q, pinned, notServed(q.id)) : this.questionWire(q))),
       groups: groupIds.flatMap((id) => {
         const g = groupMap.get(id)
         return g ? [{ id: g.id, ...(g.stimulus ? { stimulus: g.stimulus } : {}), stimuli: stimuliOfGroup(g), questionIds: g.questionIds }] : []
@@ -424,6 +480,8 @@ export class BuilderService {
         : await Promise.all([this.repo.countPilihan(statuses, filter), this.repo.listPilihan(statuses, (page - 1) * pageSize, pageSize, filter)])
     const subjects = await this.repo.subjectsByIds(rows.map((r) => r.subjectId))
     const evaluations = await this.evaluateMany(rows)
+    // S3-T02 (Q-13 list): where the placed questions come from, read once for the page.
+    const origins = await this.originsOf(rows.flatMap((r) => this.placedIdsOf(r)))
     const data = await Promise.all(
       rows.map(async (paper, i): Promise<BijakBuilderPaperSummary> => {
         const { check } = evaluations[i]!
@@ -442,6 +500,8 @@ export class BuilderService {
           budget: check.totalBudget,
           ok: check.ok,
           updatedAt: toMytTimestamp(paper.updatedAt),
+          levelScope: levelScopeOf(paper.levelScope),
+          origins: this.originCounts(this.placedIdsOf(paper), origins),
         }
       }),
     )
@@ -475,6 +535,7 @@ export class BuilderService {
         blueprintId: blueprint.id,
         createdById: BigInt(actor.userId),
         isTest: actor.isTest,
+        levelScope: body.levelScope ?? this.contractLevelScope(blueprint),
         sections: blueprint.sections.map((s) => ({
           label: s.label,
           instruction: s.instruction,
@@ -511,6 +572,12 @@ export class BuilderService {
       const sections = body.sections ?? []
       const wanted = new Set<string>()
       for (const patch of sections) for (const qid of patch.questionIds ?? []) if (parseId(qid) !== null) wanted.add(qid)
+      // FR-QA-41: `Pilih N` counts units, so a rule patch reads the groups of the questions already in the Bahagian.
+      for (const patch of sections) {
+        if (patch.rule === undefined) continue
+        const sid = parseId(patch.id)
+        for (const pl of paper.sections.find((s) => s.id === sid)?.placements ?? []) wanted.add(idToString(pl.questionId))
+      }
       const st = await this.structure([...wanted])
       const plans: { sectionId: bigint; placements: { questionId: bigint; pinnedVersionNo: number }[] }[] = []
       const edits: { sectionId: bigint; data: Prisma.PaperSectionUncheckedUpdateInput }[] = []
@@ -534,7 +601,14 @@ export class BuilderService {
           const others = paper.sections.filter((x) => x.id !== section.id).map((x) => finalLabel.get(x.id) ?? x.label)
           if (others.some((l) => sameLabel(l, patch.label!))) throw labelUsed()
         }
-        // R1-T34 "Sunting bahagian": the printed name, the authored instruction and "mesti dijawab"; the rule and the budget stay the Kontrak's.
+        // FR-QA-41: `Wajib dijawab` and `Pilih N` exclude each other on one section, whichever of the two this patch sets.
+        if (patch.rule !== undefined || patch.compulsory !== undefined) {
+          const rule = patch.rule ?? ruleOf(section.ruleType, section.ruleN)
+          if ((patch.compulsory ?? section.compulsory) && rule.type === 'choose') {
+            throw ApiError.of('VALIDATION_ERROR', { message: MESSAGES.compulsoryChoose, fields: { rule: MESSAGES.compulsoryChoose } })
+          }
+        }
+        // R1-T34 "Sunting bahagian": the printed name, the authored instruction and "mesti dijawab". S3-T02 FR-ADM-Q14.2: the rule control writes the rule only; the budget stays the Kontrak's.
         const data: Prisma.PaperSectionUncheckedUpdateInput = {
           ...(patch.rule === undefined ? {} : { ruleType: patch.rule.type, ruleN: patch.rule.type === 'choose' ? patch.rule.n : null }),
           ...(patch.label !== undefined ? { label: patch.label } : {}),
@@ -565,9 +639,10 @@ export class BuilderService {
       // Bahagian, the questions placed in an admin-added one (AC-26.1(i)). The Kontrak itself is checked at Terbit.
       for (const { section, rule } of rulePatches) {
         if (rule.type !== 'choose') continue
-        const max = section.adminCreated ? new Set(resulting.get(section.id) ?? []).size : section.questionCount
+        // FR-QA-41: in an admin-added Bahagian the cap is the choice units placed; a group is one unit.
+        const max = section.adminCreated ? unitsOf([...new Set(resulting.get(section.id) ?? [])], st.groupOf).length : section.questionCount
         if (rule.n > max) {
-          const message = max === 0 ? EDIT.ruleNoQuestions : EDIT.ruleCount(max)
+          const message = MESSAGES.chooseNRange
           throw ApiError.of('VALIDATION_ERROR', { message, fields: { rule: message } })
         }
       }
@@ -721,7 +796,7 @@ export class BuilderService {
       // R1-T48: the figures of an admin-added Bahagian follow its placements; Terbit freezes them (the student side reads the stored values).
       for (const s of paper.sections) {
         if (!s.adminCreated) continue
-        const f = sectionFigures(s, (id) => ev.info.get(id)?.marks ?? 0)
+        const f = sectionFigures(s, (id) => ev.info.get(id)?.marks ?? 0, (id) => ev.info.get(id)?.groupId ?? undefined)
         await this.repo.setSectionFigures(s.id, f.questionCount, f.markBudget)
       }
       const now = this.clock.now()
@@ -807,10 +882,10 @@ export class BuilderService {
     const contractDisahkan = blueprint.source === 'verified'
     const contract: BlockerDraft[] = [
       ...(contractDisahkan ? [] : [{ code: 'BLUEPRINT_NOT_VERIFIED' as const, message: contractNotVerifiedLine(blueprint.code, blueprint.version, sourceToWire(blueprint.source)) }]),
-      ...this.contractConformance(paper, blueprint),
+      ...this.contractConformance(paper, blueprint, ev),
     ]
     // An admin-added Bahagian has no Kontrak figures: its count and budget follow its placements (R1-T48).
-    const view: PaperTree = { ...paper, sections: paper.sections.map((s) => (s.adminCreated ? { ...s, ...sectionFigures(s, (id) => ev.info.get(id)?.marks ?? 0) } : s)) }
+    const view: PaperTree = { ...paper, sections: paper.sections.map((s) => (s.adminCreated ? { ...s, ...sectionFigures(s, (id) => ev.info.get(id)?.marks ?? 0, (id) => ev.info.get(id)?.groupId ?? undefined) } : s)) }
     const std = standardForPaper(view, blueprint, bijakCodeOf(subject.code))
     if (!std) return { ...none, contract, contractDisahkan }
     const composed = paper.sections.map((s, i) => ({ position: i + 1, questionIds: s.placements.map((pl) => idToString(pl.questionId)) }))
@@ -835,8 +910,17 @@ export class BuilderService {
       if (s.adminCreated && s.placements.length === 0) out.push({ code: 'SECTION_EMPTY', message: LINES.sectionLine(s.label, LINES.sectionEmpty), section: s.label })
       const rule = ruleOf(s.ruleType, s.ruleN)
       if (rule.type !== 'choose') continue
-      const count = sectionFigures(s, (id) => ev.info.get(id)?.marks ?? 0).questionCount
+      const groupOf = (id: string) => ev.info.get(id)?.groupId ?? undefined
+      const marksOf = (id: string) => s.placements.find((pl) => idToString(pl.questionId) === id)?.marksOverride ?? ev.info.get(id)?.marks ?? 0
+      const figures = sectionFigures(s, marksOf, groupOf)
+      const ids = s.placements.map((pl) => idToString(pl.questionId))
+      // FR-QA-41: once the Bahagian is full, N counts its choice units (a group is one unit).
+      const count = ids.length > 0 && ids.length >= figures.questionCount ? unitsOf(ids, groupOf).length : figures.questionCount
       if (rule.n > count) out.push({ code: 'RULE_N_EXCEEDS_QUESTIONS', message: LINES.sectionLine(s.label, LINES.ruleExceeds(rule.n, count)), section: s.label })
+      // A paper that is already Terbit keeps serving as it was pinned; the two rules below stop the next Terbit, like the Kontrak line.
+      if (paper.status === 'published') continue
+      if (s.compulsory) out.push({ code: 'COMPULSORY_CHOOSE', message: MESSAGES.compulsoryChoose, section: s.label })
+      if (new Set(unitMarksOf(rule, ids, marksOf, groupOf)).size > 1) out.push({ code: 'CHOICE_UNITS_UNEQUAL', message: LINES.sectionLine(s.label, MESSAGES.choiceUnitsUnequal), section: s.label })
     }
     return out
   }
@@ -846,20 +930,34 @@ export class BuilderService {
    * a Bahagian whose answering rule the admin changed differs from the Kontrak's. Both are blueprint conformance (overridable under a Kontrak that is
    * not Disahkan, like the V2 "Terbitkan walaupun tidak memenuhi kontrak blueprint"; hard under a Disahkan one, S3-T01); the printed counts and marks are checked by `checkPaper` (hard).
    */
-  private contractConformance(paper: PaperTree, blueprint: NonNullable<Awaited<ReturnType<BuilderRepository['blueprintById']>>>): BlockerDraft[] {
+  private contractConformance(paper: PaperTree, blueprint: NonNullable<Awaited<ReturnType<BuilderRepository['blueprintById']>>>, ev: Evaluation): BlockerDraft[] {
     const out: BlockerDraft[] = []
+    // Question numbers continue across Bahagian (45 section 5.4 item 6); a printed number label is kept.
+    let number = 0
     for (const s of paper.sections) {
+      const first = number
+      number += s.placements.length
       if (s.adminCreated) {
         out.push({ code: 'SECTION_NOT_IN_CONTRACT', message: LINES.sectionLine(s.label, LINES.sectionNotInContract), section: s.label })
         continue
       }
       const b = blueprint.sections.find((x) => x.position === s.position)
       if (!b) continue
+      // S3-T02, PO decision item 5: a scaled set holds fewer questions than its Kontrak section, so its `Pilih N` follows the share and the list of marks describes another size.
+      const scaled = s.questionCount !== b.questionCount
       const mine = ruleOf(s.ruleType, s.ruleN)
       const theirs = ruleOf(b.ruleType === 'choose' ? 'choose' : 'all', b.ruleN)
-      if (mine.type !== theirs.type || (mine.type === 'choose' && theirs.type === 'choose' && mine.n !== theirs.n)) {
+      if (mine.type !== theirs.type || (!scaled && mine.type === 'choose' && theirs.type === 'choose' && mine.n !== theirs.n)) {
         out.push({ code: 'RULE_NOT_IN_CONTRACT', message: LINES.sectionLine(s.label, LINES.ruleNotInContract(bijakRuleLabel(mine), bijakRuleLabel(theirs))), section: s.label })
       }
+      // S3-T01 decision 15 (FR-QA-25, 45 section 5.4 item 7): the placed order must match `Markah setiap soalan`. A short Bahagian is already COUNT_TOO_FEW; a Kontrak with no list is not checked.
+      const list = scaled ? null : marksPerQuestionOfDoc(b.marksPerQuestion)
+      if (!list) continue
+      s.placements.forEach((pl, i) => {
+        const id = idToString(pl.questionId)
+        if (i >= list.length || (pl.marksOverride ?? ev.info.get(id)?.marks) === list[i]) return
+        out.push({ code: 'MARKS_NOT_IN_CONTRACT', message: LINES.marksNotInContract(pl.numberLabel ?? String(first + i + 1)), section: s.label, questionId: id })
+      })
     }
     return out
   }
@@ -1036,16 +1134,7 @@ export class BuilderService {
         const id = idToString(pl.questionId)
         const q = ev.info.get(id)
         const report = reports.get(id)
-        const sim = report?.activities.find((a) => a.activity === 'simulasi_paper')
-        const fromReport = (sim?.reasons ?? []).filter((r) => r.code !== 'not_on_published_paper')
-        const legacy = !q ? PLACE.notFound : isServableStatus(q.status) ? null : this.statusText(q.status)
-        // The builder places approved questions only (D54a): a status that is not servable is reported with the same cause and fix copy
-        // as "Dilihat murid di", even where a published paper would keep serving an archived version.
-        const reasons: { code: string; message: string; detail?: string }[] =
-          legacy !== null && fromReport.length === 0 && q
-            ? [{ code: q.status === 'archived' ? 'archived' : 'not_approved', message: servabilityReasonMs(q.status === 'archived' ? 'archived' : 'not_approved', 'simulasi_paper') }]
-            : fromReport
-        const reason = legacy ?? (reasons[0] ? reasons[0].message : null)
+        const { legacy, reasons, reason } = this.notServedOf(q, report)
         const ok = reason === null
         return {
           questionId: id,
@@ -1116,14 +1205,13 @@ export class BuilderService {
   }
 
   private sectionMarksOf(section: PaperTree['sections'][number], info: ReadonlyMap<string, BuilderQuestionInfo>): number {
-    return effectiveMarks(
-      ruleOf(section.ruleType, section.ruleN),
-      section.placements.map((pl) => pl.marksOverride ?? info.get(idToString(pl.questionId))?.marks ?? 0),
-    )
+    const rule = ruleOf(section.ruleType, section.ruleN)
+    const marksOf = (id: string) => section.placements.find((pl) => idToString(pl.questionId) === id)?.marksOverride ?? info.get(id)?.marks ?? 0
+    return effectiveMarks(rule, unitMarksOf(rule, section.placements.map((pl) => idToString(pl.questionId)), marksOf, (id) => info.get(id)?.groupId ?? undefined))
   }
 
   /** Candidate pool of one section: single questions and whole groups as units (D90). */
-  async sectionPool(rawId: string, rawSection: string, rawQuery: unknown): Promise<{ data: BijakBuilderPoolUnit[]; meta: ListMeta }> {
+  async sectionPool(rawId: string, rawSection: string, rawQuery: unknown): Promise<{ data: BijakBuilderPoolUnit[]; meta: ListMeta; filters: BijakBuilderSourceFilters }> {
     const query = parseWith(BijakBuilderSectionPoolQuerySchema, rawQuery)
     const pid = parseId(rawId)
     const paper = pid === null ? null : await this.repo.findPilihan(pid)
@@ -1158,16 +1246,21 @@ export class BuilderService {
       units.push({ ids: sorted.map((m) => m.id), ...(f.groupId ? { groupId: f.groupId } : {}), facts: sorted })
     }
     const levelOf = (f: QuestionFacts) => (f.unit ? f.unit.level.toLowerCase() : f.formOrigin)
-    const filtered = units.filter((u) => {
-      if (query.level && !u.facts.some((f) => levelOf(f) === query.level)) return false
-      if (query.unit && !u.facts.some((f) => f.unit?.nodeId === query.unit)) return false
-      return true
-    })
     const eligibilityOfUnit = (u: (typeof units)[number]): string[] => {
       const reasons = new Set<string>()
       for (const f of u.facts) for (const r of eligibilityOf(f, section, describeQuestion(f)).reasons) reasons.add((INELIGIBLE_TEXT as Record<string, string>)[r] ?? r)
       return [...reasons]
     }
+    // S3-T02: Tahun and Negeri read the source paper; a group matches as one unit. FR-ADM-Q14.4: a question without complete DSKP, marks or a key is not offered at all, before paging, so `total` stays true; a reason of this section alone (mode, pool tag) stays listed with its reason.
+    const origins = await this.originsOf(units.flatMap((u) => u.ids))
+    const years = query.tahun === undefined ? [] : [query.tahun]
+    const negeri = query.negeri ?? []
+    const filtered = units.filter((u) => {
+      if (query.level && !u.facts.some((f) => levelOf(f) === query.level)) return false
+      if (query.unit && !u.facts.some((f) => f.unit?.nodeId === query.unit)) return false
+      if (!u.ids.some((id) => originMatches(origins.get(id), years, negeri))) return false
+      return u.facts.every((f) => describeQuestion(f).reasons.length === 0)
+    })
 
     const page = query.page ?? 1
     const pageSize = query.pageSize ?? POOL_PAGE_SIZE
@@ -1218,7 +1311,34 @@ export class BuilderService {
         placed: u.ids.some((id) => onPaper.has(id)),
       }
     })
-    return { data, meta: listMeta(page, pageSize, candidates.length) }
+    return { data, meta: listMeta(page, pageSize, candidates.length), filters: filtersOf(origins) }
+  }
+
+  private async originsOf(ids: readonly string[]): Promise<Origins> {
+    return ids.length > 0 && this.questions.originsOf ? this.questions.originsOf(ids) : new Map()
+  }
+
+  /** The Negeri breakdown of a list row, largest first (the V2 chips "Perlis 10", "Perak 8"). */
+  private originCounts(ids: readonly string[], origins: Origins): { negeri: string; count: number }[] {
+    const counts = new Map<string, number>()
+    for (const id of ids) {
+      const n = origins.get(id)?.negeri
+      if (n) counts.set(n, (counts.get(n) ?? 0) + 1)
+    }
+    return [...counts.entries()].map(([negeri, count]) => ({ negeri, count })).sort((a, b) => b.count - a.count || a.negeri.localeCompare(b.negeri, 'ms'))
+  }
+
+  /** PO decision item 6: the default of `Dilihat murid`. */
+  private contractLevelScope(blueprint: { levelShare: unknown }): BijakLevelScope {
+    return bijakDefaultLevelScope(blueprint.levelShare as { t4: number; t5: number } | null)
+  }
+
+  /** The candidates of a Jana set under Tahun and Negeri: a group matches as one unit (if any member matches, all stay), so it is never cut. */
+  private matchingFacts(all: readonly QuestionFacts[], origins: Origins, years: readonly number[], negeri: readonly string[]): QuestionFacts[] {
+    if (years.length === 0 && negeri.length === 0) return [...all]
+    const matches = (f: QuestionFacts) => originMatches(origins.get(f.id), years, negeri)
+    const groups = new Set(all.flatMap((f) => (f.groupId && matches(f) ? [f.groupId] : [])))
+    return all.filter((f) => (f.groupId ? groups.has(f.groupId) : matches(f)))
   }
 
   /** Head blueprint (Spec or Disahkan) of a subject and kertas for admin generation, or null. */
@@ -1234,7 +1354,7 @@ export class BuilderService {
     const query = parseWith(BijakBuilderPoolPreviewQuerySchema, rawQuery)
     const { subject, blueprint } = await this.generationBlueprint(query.subject, query.kertas)
     if (!subject || !blueprint) throw ApiError.of('NOT_FOUND', { message: MESSAGES.blueprintNotFound })
-    return this.previewOf(subject, blueprint, query.kertas)
+    return this.previewOf(subject, blueprint, query.kertas, { years: query.years ?? [], negeri: query.negeri ?? [], ...(query.count === undefined ? {} : { count: query.count }) })
   }
 
   /**
@@ -1253,17 +1373,22 @@ export class BuilderService {
     const blueprint =
       query.version === undefined ? await this.repo.activeBlueprint(subject.id, kertas) : await this.repo.blueprintVersion(subject.id, kertas, query.version)
     if (!blueprint) throw notFound()
-    return this.previewOf(subject, blueprint, kertas)
+    return this.previewOf(subject, blueprint, kertas, { years: [], negeri: [] })
   }
 
   private async previewOf(
     subject: NonNullable<Awaited<ReturnType<BuilderRepository['subjectByCode']>>>,
     blueprint: NonNullable<Awaited<ReturnType<BuilderRepository['activeBlueprint']>>>,
     kertas: number,
+    jana: { years: readonly number[]; negeri: readonly string[]; count?: number },
   ): Promise<BijakPoolPreview> {
     const std = toStandard(blueprint, bijakCodeOf(subject.code))
-    const candidates = [...(await this.factsFor(subject, kertas)).values()]
-    const preview = previewStandard(std, candidates)
+    const all = [...(await this.factsFor(subject, kertas)).values()]
+    const origins = await this.originsOf(all.map((f) => f.id))
+    const candidates = this.matchingFacts(all, origins, jana.years, jana.negeri)
+    // A count outside the range is refused by Jana set; the preview then answers for the whole contract, and the screen shows the error.
+    const target = jana.count === undefined ? std : (scaleStandardBlueprint(std, candidates, jana.count) ?? std)
+    const preview = previewStandard(target, candidates)
     const published = candidates.length
     return {
       blueprint: { version: blueprint.version, source: sourceToWire(blueprint.source) },
@@ -1281,15 +1406,21 @@ export class BuilderService {
         void _f
         return { ...s, marks: { needed: marks.needed, reachable: marks.reachable }, bankQuery: { subjectId: subject.id.toString(), status: 'approved' } }
       }),
+      // FR-ADM-Q13.3: the pool counts questions and groups.
+      groupTotal: new Set(candidates.flatMap((f) => (f.groupId && describeQuestion(f).reasons.length === 0 ? [f.groupId] : []))).size,
+      contractTotal: std.sections.reduce((n, s) => n + s.questionCount, 0),
+      filters: filtersOf(origins),
+      levelScope: this.contractLevelScope(blueprint),
     }
   }
 
   /**
    * Jana set: a DRAFT curated paper filled by `composeStandardPaper` (exact or refuse). The blueprint row is locked FIRST, the head is
    * re-read under the lock, and only then are the candidates read and the paper composed, all in one transaction, so a concurrent
-   * retire / new version / edit of the Kontrak cannot slip in between composing and writing.
+   * retire / new version / edit of the Kontrak cannot slip in between composing and writing. API-BIJAK-11: `title`, Tahun and Negeri filter the candidates,
+   * and a `count` below the contract total scales the sections (PO decision item 5); the solver treats a group as one unit, so it is never split.
    */
-  async generateDraft(actor: AuditActor, rawBody: unknown): Promise<{ paperId: string }> {
+  async generateDraft(actor: AuditActor, rawBody: unknown): Promise<{ id: string }> {
     const body = parseWith(BijakDraftGenerateRequestSchema, rawBody)
     const first = await this.generationBlueprint(body.subject, body.kertas)
     if (!first.subject || !first.blueprint) throw noBlueprint()
@@ -1298,8 +1429,16 @@ export class BuilderService {
       await this.repo.lockBlueprint(first.blueprint!.id)
       const { blueprint } = await this.generationBlueprint(body.subject, body.kertas)
       if (!blueprint) throw noBlueprint()
-      const std = toStandard(blueprint, bijakCodeOf(subject.code))
-      const candidates = [...(await this.factsFor(subject, body.kertas)).values()]
+      const contract = toStandard(blueprint, bijakCodeOf(subject.code))
+      const all = [...(await this.factsFor(subject, body.kertas)).values()]
+      const origins = await this.originsOf(all.map((f) => f.id))
+      const candidates = this.matchingFacts(all, origins, body.years ?? [], body.negeri ?? [])
+      const total = contract.sections.reduce((n, s) => n + s.questionCount, 0)
+      const std = scaleStandardBlueprint(contract, candidates, body.count ?? total)
+      if (!std) {
+        const message = BIJAK_SET_BUILDER_PROPOSED.countAboveContract(total)
+        throw ApiError.of('VALIDATION_ERROR', { message, fields: { count: message } })
+      }
       const now = this.clock.now()
       const [seen, previous] = await Promise.all([this.papersPorts.poolSource.seen(actor.userId), this.repo.countPilihan(undefined)])
       const seed = fnv1a32(`${now.toISOString()}|${actor.userId}|${blueprint.code}|${String(previous)}`)
@@ -1310,20 +1449,31 @@ export class BuilderService {
         throw new Error('bijak draft generate: the independent re-check found a violation')
       }
       const factsById = new Map(candidates.map((f) => [f.id, f]))
-      const paperId = await this.repo.createPaper(this.newPaperFrom(blueprint, subject, body.kertas, actor, now, DEFAULT_TITLE(subject.name, body.kertas)))
+      const paperId = await this.repo.createPaper(
+        this.newPaperFrom(blueprint, subject, body.kertas, actor, now, body.title?.trim() || DEFAULT_TITLE(subject.name, body.kertas), std, body.levelScope ?? this.contractLevelScope(blueprint)),
+      )
       const fresh = await this.repo.findPilihan(paperId)
-      for (const [i, section] of (fresh?.sections ?? []).entries()) {
-        const ids = outcome.sections.find((c) => c.position === i + 1)?.questionIds ?? []
+      for (const section of fresh?.sections ?? []) {
+        const ids = outcome.sections.find((c) => c.position === section.position)?.questionIds ?? []
         await this.repo.replacePlacements(section.id, ids.map((qid) => ({ questionId: BigInt(qid), pinnedVersionNo: factsById.get(qid)?.versionNo ?? 1 })))
       }
       await this.repo.updatePaper(paperId, { standardReport: outcome.report as never })
-      await this.record(actor, AUDIT_ACTIONS.BIJAK_PAPER_CREATED, paperId, { from: null, to: 'draf', mode: 'generate', sections: blueprint.sections.length })
+      await this.record(actor, AUDIT_ACTIONS.BIJAK_PAPER_CREATED, paperId, { from: null, to: 'draf', mode: 'generate', sections: std.sections.length, ...(std === contract ? {} : { scaled: body.count }) })
       return paperId
     })
-    return { paperId: idToString(id) }
+    return { id: idToString(id) }
   }
 
-  private newPaperFrom(blueprint: NonNullable<Awaited<ReturnType<BuilderRepository['activeBlueprint']>>>, subject: SubjectRef, kertas: number, actor: AuditActor, now: Date, title: string) {
+  private newPaperFrom(
+    blueprint: NonNullable<Awaited<ReturnType<BuilderRepository['activeBlueprint']>>>,
+    subject: SubjectRef,
+    kertas: number,
+    actor: AuditActor,
+    now: Date,
+    title: string,
+    std: StandardBlueprint,
+    levelScope: BijakLevelScope,
+  ) {
     return {
       title,
       subjectId: subject.id,
@@ -1336,15 +1486,24 @@ export class BuilderService {
       blueprintId: blueprint.id,
       createdById: BigInt(actor.userId),
       isTest: actor.isTest,
-      sections: blueprint.sections.map((s) => ({
-        label: s.label,
-        instruction: s.instruction,
-        ruleType: s.ruleType === 'choose' ? ('choose' as const) : ('all' as const),
-        ruleN: s.ruleType === 'choose' ? s.ruleN : null,
-        questionCount: s.questionCount,
-        markBudget: s.markBudget ?? s.questionCount,
-        compulsory: s.compulsory,
-      })),
+      levelScope,
+      // The figures of the set being drawn: the Kontrak's, or its scaled share (a section with no share is left out and the others keep their position).
+      sections: blueprint.sections.flatMap((s) => {
+        const drawn = std.sections.find((x) => x.position === s.position)
+        if (!drawn) return []
+        return [
+          {
+            position: s.position,
+            label: s.label,
+            instruction: s.instruction,
+            ruleType: drawn.rule.type,
+            ruleN: drawn.rule.type === 'choose' ? drawn.rule.n : null,
+            questionCount: drawn.questionCount,
+            markBudget: drawn.markBudget,
+            compulsory: s.compulsory,
+          },
+        ]
+      }),
     }
   }
 
@@ -1368,7 +1527,9 @@ export class BuilderService {
         blueprintId: source.blueprintId,
         createdById: BigInt(actor.userId),
         isTest: actor.isTest,
+        levelScope: source.levelScope,
         sections: source.sections.map((s) => ({
+          position: s.position,
           label: s.label,
           instruction: s.instruction,
           ruleType: s.ruleType === 'choose' ? ('choose' as const) : ('all' as const),

@@ -81,7 +81,8 @@ describe('R1 delete-served-guard', () => {
 
   /** A full MAT kertas 2 paper (A 3 questions, B 1, C 2), published with the audited Kontrak override. `first` replaces the first question. */
   async function publishedPaper(first?: string[]): Promise<{ paper: string; ids: string[] }> {
-    const ids = [...(first ?? []), ...[await approved(), await approved(), await approved(), await approved(), await approved({ pointsValue: 2 }), await approved({ pointsValue: 2 })]].slice(0, 6)
+    const rest = [await approved(), await approved(), await approved(), await approved(), await approved({ pointsValue: 2 }), await approved({ pointsValue: 2 })]
+    const ids = [...(first ?? []), ...rest.slice((first ?? []).length)] // S3-T02 FR-QA-41: Bahagian C is Pilih N, its units carry equal marks
     for (const [i, id] of ids.entries()) expect((await setPool(id, [i < 3 ? 'MAT2-A' : i === 3 ? 'MAT2-B' : 'MAT2-C'])).status).toBe(200)
     const created = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
     expect(created.status, JSON.stringify(created.body)).toBe(201)
@@ -243,13 +244,18 @@ describe('R1 delete-served-guard', () => {
       expect((await admin.del('/api/questions/987654321')).status).toBe(404)
     })
 
-    it('a question that only a DRAFT paper places is not held (the paper re-pins at Terbit): it is deleted, even approved and live', async () => {
+    it('a question that only a DRAFT paper places is not held, but DM-11 keeps it while it is placed: 409 in_use, until it leaves the paper', async () => {
       const spare = await approved()
       expect((await setPool(spare, ['MAT2-A'])).status).toBe(200)
       const created = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
       const paper = created.body.data.id as string
       const sections = ((await admin.get(`/api/admin/papers/${paper}`)).body.data.paper.sections as { id: string }[]).map((s) => s.id)
       expect((await admin.post(`/api/admin/papers/${paper}/placements`, { sectionId: sections[0], questionId: spare })).status).toBe(201)
+      const refused = await admin.del(`/api/questions/${spare}`)
+      expect(refused.status, JSON.stringify(refused.body)).toBe(409)
+      expect(refused.body.error.details.reason).toBe('in_use')
+      expect(await count(spare)).toBe(1)
+      expect((await admin.del(`/api/admin/papers/${paper}/placements/${spare}`)).status).toBe(200)
       expect((await admin.del(`/api/questions/${spare}`)).status).toBe(200)
       expect(await count(spare)).toBe(0)
     })

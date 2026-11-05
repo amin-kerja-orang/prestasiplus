@@ -62,7 +62,8 @@ describe('REQ-B-052: an archived question pinned on a published paper cannot be 
 
   /** A full MAT kertas 2 paper (A 3 questions, B 1, C 2), published with the audited Kontrak override; the 6th question may be given. */
   async function publishedPaper(last?: string): Promise<{ paper: string; ids: string[] }> {
-    const ids = [await approved(), await approved(), await approved(), await approved(), await approved({ pointsValue: 2 }), last ?? (await approved({ pointsValue: 2 }))]
+    // S3-T02 FR-QA-41: Bahagian C is Pilih N, its units carry equal marks, so the 1-mark `last` goes to Bahagian A.
+    const ids = [last ?? (await approved()), await approved(), await approved(), await approved(), await approved({ pointsValue: 2 }), await approved({ pointsValue: 2 })]
     for (const [i, id] of ids.entries()) expect((await setPool(id, [i < 3 ? 'MAT2-A' : i === 3 ? 'MAT2-B' : 'MAT2-C'])).status).toBe(200)
     const created = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
     expect(created.status, JSON.stringify(created.body)).toBe(201)

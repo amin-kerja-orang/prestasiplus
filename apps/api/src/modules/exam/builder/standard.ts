@@ -22,7 +22,7 @@ import type { BlockerDraft } from './blockers'
  * blueprint version the paper conforms to, matched by position. Null when the paper has no blueprint.
  */
 export interface PaperSections {
-  sections: { label: string; ruleType: string; ruleN: number | null; questionCount: number; markBudget: number; compulsory: boolean }[]
+  sections: { position?: number; label: string; ruleType: string; ruleN: number | null; questionCount: number; markBudget: number; compulsory: boolean }[]
 }
 
 export function standardForPaper(paper: PaperSections, blueprint: BlueprintWithSections | null, subjectCode: string): StandardBlueprint | null {
@@ -31,7 +31,9 @@ export function standardForPaper(paper: PaperSections, blueprint: BlueprintWithS
   return {
     ...base,
     sections: paper.sections.map((ps, i) => {
-      const b = base.sections.find((s) => s.position === i + 1)
+      const b = base.sections.find((s) => s.position === (ps.position ?? i + 1))
+      // S3-T02: a scaled set (fewer questions than its Kontrak section, PO decision item 5) is held to the structure only, as it was drawn.
+      const scaled = !!b && b.questionCount !== ps.questionCount
       return {
         position: i + 1,
         label: ps.label,
@@ -41,9 +43,9 @@ export function standardForPaper(paper: PaperSections, blueprint: BlueprintWithS
         compulsory: ps.compulsory,
         pool: b?.pool ?? null,
         allowedModes: b?.allowedModes ?? [],
-        profile: b?.profile ?? null,
-        quota: b?.quota ?? null,
-        kbatMarks: b?.kbatMarks ?? null,
+        profile: scaled ? null : (b?.profile ?? null),
+        quota: scaled ? null : (b?.quota ?? null),
+        kbatMarks: scaled ? null : (b?.kbatMarks ?? null),
       }
     }),
   }

@@ -2,7 +2,6 @@ import { QUESTION_MESSAGES } from '@pp/contract'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { BuilderRepository } from '../../src/modules/exam/builder'
-import { MISSING_FROM_POOL_TEXT } from '../../src/modules/exam/builder/builder.constants'
 import { ACCOUNTS } from '../exam-builder/helpers'
 import { serveSeededBlueprints } from '../support/serve-blueprints'
 import { bootFullApp, loginFull, type FullApp, type FullClient } from './full-app'
@@ -177,34 +176,33 @@ describe('R1 publish-lock-share', () => {
     expect(await placed(paper)).toBe(6)
   })
 
-  it('reverse order: a delete that commits first (the paper is still a draft) leaves Terbit refused, not a Terbit paper placing nothing', async () => {
+  it('reverse order: DM-11 refuses a delete of a question placed on a draft (409 in_use), so Terbit can never meet a paper placing nothing', async () => {
     const { paper, ids } = await draftPaper()
     const victim = ids[0]!
     const del = await admin.del(`/api/questions/${victim}`)
-    expect(del.status, JSON.stringify(del.body)).toBe(200)
-    expect(await count(victim)).toBe(0)
+    expect(del.status, JSON.stringify(del.body)).toBe(409)
+    expect(del.body.error.details.reason).toBe('in_use')
+    expect(await count(victim)).toBe(1)
     const res = await publish(paper)
     expect(res.status, JSON.stringify(res.body)).toBe(200)
-    expect(res.body.data.ok, JSON.stringify(res.body)).toBe(false)
-    expect(res.body.data.errors.length).toBeGreaterThan(0)
-    expect(await statusOf(paper)).not.toBe('published')
+    expect(res.body.data.ok, JSON.stringify(res.body)).toBe(true)
+    expect(await statusOf(paper)).toBe('published')
   })
 
-  it('reverse order, tight: the delete commits after Terbit began but before it locks the rows: Terbit names the missing question and refuses', async () => {
+  it('reverse order, tight: a delete fired after Terbit began but before it locks the rows is refused by DM-11 (409 in_use), and Terbit goes on', async () => {
     const { paper, ids } = await draftPaper()
     const victim = ids[3]!
     const g = gate('lockQuestionsShared')
     const pub = Promise.resolve(publish(paper))
     await g.parked() // Terbit is inside its transaction, the paper is locked, no question lock is taken yet
     const del = await admin.del(`/api/questions/${victim}`)
-    expect(del.status, JSON.stringify(del.body)).toBe(200)
+    expect(del.status, JSON.stringify(del.body)).toBe(409)
+    expect(del.body.error.details.reason).toBe('in_use')
     g.open()
     const res = await pub
-    expect(res.body.data.ok, JSON.stringify(res.body)).toBe(false)
-    // The exact blocker: the deleted question is missing from the pool (UNKNOWN_QUESTION), named with its id.
-    expect((res.body.data.errors as string[]).some((e) => e.includes(victim) && e.includes(MISSING_FROM_POOL_TEXT)), JSON.stringify(res.body.data.errors)).toBe(true)
-    expect(await statusOf(paper)).not.toBe('published')
-    expect(await count(victim)).toBe(0)
+    expect(res.body.data.ok, JSON.stringify(res.body)).toBe(true)
+    expect(await statusOf(paper)).toBe('published')
+    expect(await count(victim)).toBe(1)
   })
 
   it('a servability-only change committed while Terbit waits for its lock is seen: the reads are taken after the lock, so the paper is refused NOT_SERVABLE', async () => {

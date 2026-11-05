@@ -488,7 +488,7 @@ describe('paper builder R1-B09a: placements, D90 groups, review, publish, copy, 
       setPools({ a: ['700001', '700021', '700022'], b: ['700004'], c: ['700005', '700006'] })
       const res = await generate()
       expect(res.status, JSON.stringify(res.body)).toBe(201)
-      const paperId = (res.body.data as { paperId: string }).paperId
+      const paperId = (res.body.data as { id: string }).id
       const e = await editor(paperId)
       expect(e.paper.status).toBe('draf')
       expect([...ids(e, 0)].sort()).toEqual(['700001', '700021', '700022'])
@@ -512,7 +512,7 @@ describe('paper builder R1-B09a: placements, D90 groups, review, publish, copy, 
         setPools({ a: ['700001', '700021', '700022'], b: ['700004'], c: ['700005', '700006'] })
         const res = await generate()
         expect(res.status, JSON.stringify(res.body)).toBe(201)
-        const a = ids(await editor((res.body.data as { paperId: string }).paperId), 0)
+        const a = ids(await editor((res.body.data as { id: string }).id), 0)
         expect(a).toHaveLength(3)
         expect(a.includes('700021') && a.includes('700022')).toBe(true)
         expect(a.indexOf('700022')).toBe(a.indexOf('700021') + 1)
@@ -522,7 +522,7 @@ describe('paper builder R1-B09a: placements, D90 groups, review, publish, copy, 
         setPools({ a: ['700001', '700002', '700003', '700021', '700022'], b: ['700004'], c: ['700005', '700006'] })
         const res = await generate()
         expect(res.status, JSON.stringify(res.body)).toBe(201)
-        const a = ids(await editor((res.body.data as { paperId: string }).paperId), 0)
+        const a = ids(await editor((res.body.data as { id: string }).id), 0)
         expect(a.includes('700021')).toBe(a.includes('700022'))
         if (a.includes('700021')) expect(a.indexOf('700022')).toBe(a.indexOf('700021') + 1)
       }
@@ -532,7 +532,7 @@ describe('paper builder R1-B09a: placements, D90 groups, review, publish, copy, 
       setPools({ a: ['700001', '700002', '700003', '700021'], b: ['700004'], c: ['700005', '700006'] })
       const res = await generate()
       expect(res.status, JSON.stringify(res.body)).toBe(201)
-      expect([...ids(await editor((res.body.data as { paperId: string }).paperId), 0)].sort()).toEqual(['700001', '700002', '700003'])
+      expect([...ids(await editor((res.body.data as { id: string }).id), 0)].sort()).toEqual(['700001', '700002', '700003'])
     })
 
     it('a pool that is one question short refuses with the shortage report and creates nothing', async () => {
@@ -561,7 +561,8 @@ describe('paper builder R1-B09a: placements, D90 groups, review, publish, copy, 
       expectError(await admin.get('/api/admin/papers/pool-preview?subject=MAT&kertas=9'), 'NOT_FOUND', 404)
       expectError(await admin.get('/api/admin/papers/pool-preview?subject=MAT'), 'VALIDATION_ERROR', 422)
       expect((await student.get('/api/admin/papers/pool-preview?subject=MAT&kertas=2')).status).toBe(403)
-      expectError(await admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 9 }), 'NO_BLUEPRINT', 422)
+      expectError(await admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 4 }), 'NO_BLUEPRINT', 422)
+      expect(expectError(await admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 9 }), 'VALIDATION_ERROR', 422).fields).toEqual({ kertas: 'Kertas tidak sah.' }) // S3-T02 13-06: OPT-KERTAS is 1 to 4
       expectError(await admin.post('/api/admin/papers/generate', { subject: 'MAT' }), 'VALIDATION_ERROR', 422)
     })
   })

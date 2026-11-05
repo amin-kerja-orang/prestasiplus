@@ -188,7 +188,7 @@ describe('R1-T48 builder parity: cover code, rule, sections, added questions, pi
       // B2 probe: Bahagian D with 1 question and {choose, 5} is refused on the patch
       const over = await admin.put(`/api/admin/papers/${paper}`, { sections: [{ id: d, rule: { type: 'choose', n: 5 } }] })
       expect(over.status, JSON.stringify(over.body)).toBe(422)
-      expect(over.body.error.fields.rule).toBe('Bilangan soalan dipilih mesti antara 1 dan 1')
+      expect(over.body.error.fields.rule).toBe('Nombor N tidak sah.') // S3-T02 PRD30 14-05
       expect(paperOf(await editorOf(paper)).sections.find((x: Record<string, unknown>) => x.id === d)).toMatchObject({ rule: { type: 'all' } })
       // the same call that adds the questions may set the rule
       const ok = await admin.put(`/api/admin/papers/${paper}`, { sections: [{ id: d, questionIds: [bank], rule: { type: 'choose', n: 1 } }] })
@@ -234,14 +234,14 @@ describe('R1-T48 builder parity: cover code, rule, sections, added questions, pi
       const { paper, d } = await withBahagianD()
       const res = await admin.put(`/api/admin/papers/${paper}`, { sections: [{ id: d, rule: { type: 'choose', n: 1 } }] })
       expect(res.status).toBe(422)
-      expect(res.body.error.fields.rule).toBe('Letakkan soalan dalam bahagian ini dahulu sebelum memilih bilangan soalan')
+      expect(res.body.error.fields.rule).toBe('Nombor N tidak sah.') // S3-T02 PRD30 14-05
     })
 
     it('Pilih N must be between 1 and the printed question count (fields.rule); a bad rule shape is 422', async () => {
       const { paper, sections } = await fullPaper()
       const over = await admin.put(`/api/admin/papers/${paper}`, { sections: [{ id: sections[0], rule: { type: 'choose', n: 4 } }] })
       expect(over.status).toBe(422)
-      expect(over.body.error.fields.rule).toBe('Bilangan soalan dipilih mesti antara 1 dan 3')
+      expect(over.body.error.fields.rule).toBe('Nombor N tidak sah.') // S3-T02 PRD30 14-05
       expect((await admin.put(`/api/admin/papers/${paper}`, { sections: [{ id: sections[0], rule: { type: 'choose', n: 0 } }] })).status).toBe(422)
       expect((await admin.put(`/api/admin/papers/${paper}`, { sections: [{ id: sections[0], rule: { type: 'none' } }] })).status).toBe(422)
       expect(paperOf(await editorOf(paper)).sections[0]).toMatchObject({ rule: { type: 'all' } })

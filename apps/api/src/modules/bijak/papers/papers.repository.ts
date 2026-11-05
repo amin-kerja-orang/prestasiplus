@@ -70,6 +70,12 @@ export class PapersRepository {
     })
   }
 
+  /** S3-T02, PO decision item 6: `users.grade` of the pupil (T4 = 10, T5 = 11); null when none is known. */
+  async userGrade(userId: string): Promise<number | null> {
+    const row = await this.prisma.client.user.findUnique({ where: { id: BigInt(userId) }, select: { grade: true } })
+    return row?.grade ?? null
+  }
+
   findPaper(id: bigint): Promise<PaperWithTree | null> {
     return this.prisma.client.paper.findUnique({ where: { id }, include: TREE })
   }
