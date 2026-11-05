@@ -147,6 +147,19 @@ describe('self-registration applies the referral code (XR-M14-02, BR-M14-19)', (
     expect(await count(db, 'referrals')).toBe(referralsBefore)
   })
 
+  it('FR-GM-24.2: a parent registration with a valid pupil code stores nothing and pays nothing (hook role check)', async () => {
+    const referrerBefore = await syiling(db, referrerId)
+    const referralsBefore = await count(db, 'referrals')
+    const ledgerBefore = await count(db, 'coin_ledger')
+    const res = await register({ name: 'Penjaga Rujuk', email: 'penjaga.rujuk@ujian.test', phone: '0191234567', role: 'parent', password: 'rahsia1', passwordConfirmation: 'rahsia1', referralCode: code })
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    const id = (await userRow(db, 'penjaga.rujuk@ujian.test'))!.id
+    expect(await ledger(db, id)).toEqual([])
+    expect(await syiling(db, referrerId)).toBe(referrerBefore)
+    expect(await count(db, 'referrals')).toBe(referralsBefore)
+    expect(await count(db, 'coin_ledger')).toBe(ledgerBefore)
+  })
+
   it('FR-GM-24.2, AC-GM-24.3: the 21st friend registers without a reward (rewarded = false, nothing paid)', async () => {
     const { id: cappedId, code: cappedCode } = await (async () => {
       const email = body().email

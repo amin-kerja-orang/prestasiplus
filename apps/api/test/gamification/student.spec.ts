@@ -314,15 +314,17 @@ describe('M14 student reads (BE-23, AC4, AC6, AC7)', () => {
 
     it('FR-GM-24.2: the cap holds when sign-ups arrive at the same time (the referrer row is locked before the count)', async () => {
       const { id: referrer, code } = await pupilWithCode('Rujuk Serentak')
-      await setSetting('referral_max_rewarded', 1)
+      await setSetting('referral_max_rewarded', 3)
       try {
-        const friends = await Promise.all([1, 2, 3, 4].map((n) => bareStudent(t, `Kawan Serentak ${String(n)}`)))
-        await Promise.all(friends.map((f) => t.gamification.applyReferral(f, code, { isTest: false })))
+        const friends = await Promise.all(Array.from({ length: 8 }, (_, n) => bareStudent(t, `Kawan Serentak ${String(n)}`)))
+        const out = await Promise.all(friends.map((f) => t.gamification.applyReferral(f, code, { isTest: false })))
+        expect(out.every((o) => o.applied)).toBe(true)
         const rows = await Promise.all(friends.map((f) => referralRow(f)))
-        expect(rows.filter((r) => r?.rewarded)).toHaveLength(1)
-        expect(rows.filter((r) => r && !r.rewarded)).toHaveLength(3)
-        expect((await walletOf2(referrer))!.current_syiling).toBe(100)
-        expect(await ledgerOf(referrer)).toHaveLength(1)
+        expect(rows.every((r) => r !== undefined)).toBe(true) // every unrewarded referral is still stored
+        expect(rows.filter((r) => r?.rewarded)).toHaveLength(3)
+        expect(rows.filter((r) => r && !r.rewarded)).toHaveLength(5)
+        expect((await walletOf2(referrer))!.current_syiling).toBe(3 * 100)
+        expect(await ledgerOf(referrer)).toHaveLength(3)
       } finally {
         await unsetSetting('referral_max_rewarded')
       }
