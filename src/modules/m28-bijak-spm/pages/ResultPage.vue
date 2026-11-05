@@ -8,7 +8,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 
-import { DsEmptyState, DsFriendAvatar, DsSpeechBubble, DsWinScreen } from '@/ds'
+import { DsCluster, DsEmptyState, DsFriendAvatar, DsSpeechBubble, DsText, DsWinScreen } from '@/ds'
 import { useApi } from '@/composables/useApi'
 import { useFriend } from '@/composables/useFriend'
 import { useSession } from '@/composables/useSession'
@@ -311,17 +311,17 @@ const home = computed(() => landingPath.value || '/dashboard')
       </DsWinScreen>
 
       <!-- FR-PA-26: status chip, "{score} / {max}" and the whole-number percent (rounded half up, 46 section 3.7). -->
-      <div class="flex flex-wrap items-center justify-center gap-2" data-testid="result-summary">
+      <DsCluster justify="center" gap="xs" data-testid="result-summary">
         <UBadge color="neutral" variant="subtle" data-testid="result-status">{{
           STATUS_LABEL[data.attempt.status]
         }}</UBadge>
-        <span class="tabular text-label text-highlighted" data-testid="result-score"
-          >{{ result.score }} / {{ result.max }}</span
+        <DsText variant="label" tone="highlighted" tabular data-testid="result-score"
+          >{{ result.score }} / {{ result.max }}</DsText
         >
-        <span class="tabular text-label text-highlighted" data-testid="result-percent"
-          >{{ Math.round(percent) }}%</span
+        <DsText variant="label" tone="highlighted" tabular data-testid="result-percent"
+          >{{ Math.round(percent) }}%</DsText
         >
-      </div>
+      </DsCluster>
 
       <div class="flex flex-col gap-2 sm:flex-row sm:justify-center">
         <UButton

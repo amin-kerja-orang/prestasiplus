@@ -7,7 +7,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { DsEmptyState, DsHeroCard, DsLoadError, DsPage } from '@/ds'
+import { DsCluster, DsEmptyState, DsHeroCard, DsLoadError, DsPage, DsText } from '@/ds'
 import { useApi } from '@/composables/useApi'
 
 import type { BijakGenerateShortage } from '@pp/contract'
@@ -244,10 +244,10 @@ async function generate(): Promise<void> {
           class="flex flex-col gap-3"
           :aria-label="g.name"
         >
-          <div class="flex flex-wrap items-baseline gap-x-2">
+          <DsCluster align="baseline" gap="xs">
             <h3 class="text-subheading text-highlighted">{{ g.name }}</h3>
-            <p class="tabular text-caption text-muted" data-testid="group-sets">{{ g.setLine }}</p>
-          </div>
+            <DsText variant="caption" tabular data-testid="group-sets">{{ g.setLine }}</DsText>
+          </DsCluster>
           <UCard v-for="p in g.papers" :key="p.id" :data-testid="`paper-${p.id}`">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div class="flex min-w-0 flex-col gap-2">
