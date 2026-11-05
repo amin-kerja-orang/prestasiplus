@@ -53,6 +53,30 @@ export const GAMES_ADMIN_QUIZ_TILES = {
   max: 38,
 } as const
 
+/**
+ * The rows of `Senarai Permainan`: the games of 48 section 3.5 except `tournament`, plus `roda-nasib` (rulings on #497,
+ * #499). `sambung-kata` is left out on purpose (its card and route go), whatever settings keys exist, so this list is
+ * written out and never derived from them. `name` is the hub name; `description` only where 30 N-05 gives one.
+ */
+export const GAMES_ADMIN_GAMES = [
+  { key: 'papan-bijak', name: 'Papan Bijak', description: 'Ular & tangga dengan soalan kuiz. Multiplayer 2-4 pemain.' },
+  { key: 'battle', name: 'Battle Arena', description: '1v1 kuiz battle masa nyata. Pilih lawan & subjek.' },
+  { key: 'perang-fakta', name: 'Perang Fakta' },
+  { key: 'benteng-ilmu', name: 'Benteng Ilmu' },
+  { key: 'perlumbaan-matematik', name: 'Perlumbaan Matematik' },
+  { key: 'kuiz-relay', name: 'Kuiz Relay' },
+  { key: 'teka-silang-kata', name: 'Teka Silang Kata' },
+  { key: 'betul-salah', name: 'Betul atau Salah' },
+  { key: 'cabaran-kilat', name: 'Cabaran Kilat' },
+  { key: 'tembak-jawapan', name: 'Tembak Jawapan' },
+  { key: 'susun-jawapan', name: 'Susun Jawapan' },
+  { key: 'kad-memori', name: 'Kad Memori', description: 'Padankan soalan dengan jawapan. 6 pasangan (12 kad).' },
+  { key: 'jutawan', name: 'Jutawan Ilmu' },
+  { key: 'roda-nasib', name: 'Roda Nasib' },
+] as const
+
+export type GamesAdminGameKey = (typeof GAMES_ADMIN_GAMES)[number]['key']
+
 /** The rest of the N-05 copy (30 N05-02, N05-03; 48 GAME-14). */
 export const GAMES_ADMIN_COPY = {
   tiles: { rooms: 'Jumlah Bilik', playing: 'Sedang Aktif', finished: 'Selesai', players: 'Pemain Unik' },
@@ -69,6 +93,11 @@ export const GAMES_ADMIN_COPY = {
   rewardsTitle: 'Ganjaran & Had Permainan',
   save: 'Simpan Tetapan',
   saved: 'Tetapan permainan disimpan.',
+  gamesTitle: 'Senarai Permainan',
+  gamesDescription: 'Permainan yang tersedia dalam sistem',
+  gamesEmpty: 'Tiada permainan didaftarkan lagi.',
+  gameActive: 'Aktif',
+  gameFlash: (name: string, active: boolean): string => `Permainan "${name}" telah ${active ? 'DIAKTIFKAN' : 'DINYAHAKTIFKAN'}.`,
   segmentsTitle: 'Segmen Roda Nasib',
   segmentColumns: { position: '#', label: 'Label', syiling: 'Syiling', weight: 'Berat', active: 'Aktif' },
 } as const
@@ -125,6 +154,25 @@ export const GamesAdminSettingsResultSchema = z
   .meta({ id: 'GamesAdminSettingsResult' })
 export type GamesAdminSettingsResult = z.infer<typeof GamesAdminSettingsResultSchema>
 
+const gameKeys = GAMES_ADMIN_GAMES.map((game) => game.key) as [GamesAdminGameKey, ...GamesAdminGameKey[]]
+
+/** One row of `Senarai Permainan` (API-ADM-08, N05-04). */
+export const GamesAdminGameSchema = z
+  .strictObject({
+    key: z.enum(gameKeys),
+    name: z.string().min(1),
+    active: z.boolean(),
+    description: z.string().min(1).optional().meta({ description: 'Only where 30 N-05 gives one.' }),
+  })
+  .meta({ id: 'GamesAdminGame' })
+export type GamesAdminGame = z.infer<typeof GamesAdminGameSchema>
+
+/** `PUT /admin/games/:gameKey/active`. Strict: an unknown key is a 422 on that key. */
+export const GamesAdminGameActiveRequestSchema = z
+  .strictObject({ active: z.boolean({ error: 'Nilai tidak sah.' }) })
+  .meta({ id: 'GamesAdminGameActiveRequest' })
+export type GamesAdminGameActiveRequest = z.infer<typeof GamesAdminGameActiveRequestSchema>
+
 export const GamesAdminOverviewSchema = z
   .strictObject({
     stats: z.strictObject({
@@ -134,6 +182,7 @@ export const GamesAdminOverviewSchema = z
       players: gamesCount.meta({ description: 'Distinct users in rooms.' }),
     }),
     settings: GamesAdminSettingsResultSchema,
+    games: z.array(GamesAdminGameSchema),
   })
   .meta({ id: 'GamesAdminOverview' })
 export type GamesAdminOverview = z.infer<typeof GamesAdminOverviewSchema>

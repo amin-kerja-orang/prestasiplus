@@ -24879,6 +24879,60 @@
         ],
         "additionalProperties": false
       },
+      "GamesAdminGame": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "enum": [
+              "papan-bijak",
+              "battle",
+              "perang-fakta",
+              "benteng-ilmu",
+              "perlumbaan-matematik",
+              "kuiz-relay",
+              "teka-silang-kata",
+              "betul-salah",
+              "cabaran-kilat",
+              "tembak-jawapan",
+              "susun-jawapan",
+              "kad-memori",
+              "jutawan",
+              "roda-nasib"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Only where 30 N-05 gives one."
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "active"
+        ],
+        "additionalProperties": false
+      },
+      "GamesAdminGameActiveRequest": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "active"
+        ],
+        "additionalProperties": false
+      },
       "GamesAdminOverview": {
         "type": "object",
         "properties": {
@@ -24913,11 +24967,18 @@
           },
           "settings": {
             "$ref": "#/components/schemas/GamesAdminSettingsResult"
+          },
+          "games": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamesAdminGame"
+            }
           }
         },
         "required": [
           "stats",
-          "settings"
+          "settings",
+          "games"
         ],
         "additionalProperties": false
       },
@@ -98079,6 +98140,128 @@
           },
           "422": {
             "description": "VALIDATION_ERROR on fields.<key>: \"Nilai mesti antara {min} dan {max}.\", for boardgame_quiz_tiles \"Maksimum 38 petak soalan.\" above 38 and \"Bilangan petak tidak sah.\" for a non-integer or below 0, \"The <key> field is not allowed.\" for an unknown key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/games/{gameKey}/active": {
+      "put": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Switch a game on or off in Senarai Permainan (API-ADM-08, N05-04)",
+        "description": "Role admin only. Strict body. Stored as `game_enabled_<game_key>`. Audited with before and after; the same value writes no audit row. The hub does not read this yet (S7-T01). The mock writes no audit event.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Game key of Senarai Permainan."
+            },
+            "required": true,
+            "description": "Game key of Senarai Permainan.",
+            "name": "gameKey",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamesAdminGameActiveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The game row.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesAdminGame"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Rekod tidak dijumpai. Ia mungkin telah dipadam.\" (not a game of the list).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR on fields.active \"Nilai tidak sah.\", or \"The <key> field is not allowed.\" for an unknown key.",
             "content": {
               "application/json": {
                 "schema": {

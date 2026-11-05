@@ -18,6 +18,8 @@ import {
   GamesSoloGameSchema,
 } from './common'
 import {
+  GamesAdminGameActiveRequestSchema,
+  GamesAdminGameSchema,
   GamesAdminOverviewSchema,
   GamesAdminSettingsResultSchema,
   GamesAdminSettingsUpdateRequestSchema,
@@ -214,6 +216,8 @@ export const GAMES_COMPONENT_SCHEMAS = {
   GamesSekolahBersaingRow: GamesSekolahBersaingRowSchema,
   GamesSekolahBersaing: GamesSekolahBersaingSchema,
   // admin
+  GamesAdminGame: GamesAdminGameSchema,
+  GamesAdminGameActiveRequest: GamesAdminGameActiveRequestSchema,
   GamesAdminOverview: GamesAdminOverviewSchema,
   GamesAdminSettingsUpdateRequest: GamesAdminSettingsUpdateRequestSchema,
   GamesAdminSettingsResult: GamesAdminSettingsResultSchema,
@@ -242,6 +246,7 @@ const RoomParams = z.object({
 const SoloGameParam = z.object({
   game: GamesSoloGameSchema.meta({ description: 'Solo game key. Unknown: 404 "Permainan tidak dijumpai.".' }),
 })
+const GameKeyParam = z.object({ gameKey: z.string().min(1).meta({ description: 'Game key of Senarai Permainan.' }) })
 const SessionParams = z.object({ sessionId: z.string().min(1).meta({ description: 'Jutawan session id (uuid string).' }) })
 const LeagueParams = z.object({
   id: z.string().min(1).meta({ description: 'League id. Digits only; a non-numeric segment does not match the route.' }),
@@ -754,6 +759,24 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
       422: err(
         'VALIDATION_ERROR on fields.<key>: "Nilai mesti antara {min} dan {max}.", for boardgame_quiz_tiles "Maksimum 38 petak soalan." above 38 and "Bilangan petak tidak sah." for a non-integer or below 0, "The <key> field is not allowed." for an unknown key.',
       ),
+    },
+  })
+
+  registry.registerPath({
+    method: 'put',
+    path: '/admin/games/{gameKey}/active',
+    tags: TAGS,
+    summary: 'Switch a game on or off in Senarai Permainan (API-ADM-08, N05-04)',
+    description:
+      'Role admin only. Strict body. Stored as `game_enabled_<game_key>`. Audited with before and after; the same value writes no audit row. The hub does not read this yet (S7-T01). The mock writes no audit event.',
+    request: { headers: [csrf], params: GameKeyParam, body: body(GamesAdminGameActiveRequestSchema) },
+    responses: {
+      429: RATE_LIMITED,
+      200: json(envelopeOf(GamesAdminGameSchema), 'The game row.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_ADMIN_WRITE,
+      404: err('NOT_FOUND "Rekod tidak dijumpai. Ia mungkin telah dipadam." (not a game of the list).'),
+      422: err('VALIDATION_ERROR on fields.active "Nilai tidak sah.", or "The <key> field is not allowed." for an unknown key.'),
     },
   })
 

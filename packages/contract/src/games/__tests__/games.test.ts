@@ -6,7 +6,11 @@ import {
   GAMES_COMPONENT_SCHEMAS,
 } from '../paths'
 import {
+  GAMES_ADMIN_COPY,
+  GAMES_ADMIN_GAMES,
   GAMES_ADMIN_PROPOSED_COPY,
+  GamesAdminGameActiveRequestSchema,
+  GamesAdminGameSchema,
   GAMES_ADMIN_QUIZ_TILES,
   GAMES_ADMIN_SETTING_KEYS,
   GAMES_ADMIN_SETTINGS,
@@ -844,6 +848,7 @@ describe('admin game settings (M16-51, M16-52, API-ADM-08)', () => {
     ...Object.fromEntries(GAMES_ADMIN_SETTING_KEYS.map((key) => [key, GAMES_ADMIN_SETTINGS[key].default])),
   }
   const stats = { rooms: 160, playing: 0, finished: 0, players: 189 }
+  const games = GAMES_ADMIN_GAMES.map(({ key, name }) => ({ key, name, active: true }))
 
   it('has exactly the 22 keys of 48 section 2 that Tetapan Permainan changes, with the exact labels of a sample', () => {
     expect(GAMES_ADMIN_SETTING_KEYS).toHaveLength(22)
@@ -854,11 +859,12 @@ describe('admin game settings (M16-51, M16-52, API-ADM-08)', () => {
   })
 
   it('parses the overview and the settings result: every key is required, an unknown key is rejected', () => {
-    ok(GamesAdminOverviewSchema, { stats, settings })
+    ok(GamesAdminOverviewSchema, { stats, settings, games })
     ok(GamesAdminSettingsResultSchema, settings)
     ok(GamesAdminSettingsResultSchema, { ...settings, boardgameQuizTiles: 0 })
-    rejected(GamesAdminOverviewSchema, { stats, settings: { ...settings, boardgameQuizTiles: 39 } })
-    rejected(GamesAdminOverviewSchema, { stats, settings: { boardgameQuizTiles: 35 } })
+    rejected(GamesAdminOverviewSchema, { stats, settings: { ...settings, boardgameQuizTiles: 39 }, games })
+    rejected(GamesAdminOverviewSchema, { stats, settings: { boardgameQuizTiles: 35 }, games })
+    rejected(GamesAdminOverviewSchema, { stats, settings })
     rejected(GamesAdminSettingsResultSchema, { ...settings, xp_per_correct: 10 })
   })
 
@@ -909,6 +915,35 @@ describe('admin game settings (M16-51, M16-52, API-ADM-08)', () => {
     expect(gamesBoardBreakdown(0).plain).toBe(38)
     expect(gamesBoardBreakdown(38).plain).toBe(0)
     expect(gamesBoardBreakdown(40).plain).toBe(0)
+  })
+})
+
+describe('Senarai Permainan (API-ADM-08, N05-04)', () => {
+  it('lists the 14 games of the rulings: no tournament, no sambung-kata; descriptions only where 30 gives one', () => {
+    const keys = GAMES_ADMIN_GAMES.map((g) => g.key as string)
+    expect(keys).toHaveLength(14)
+    expect(keys).toContain('roda-nasib')
+    expect(keys).not.toContain('tournament')
+    expect(keys).not.toContain('sambung-kata')
+    expect(GAMES_ADMIN_GAMES.filter((g) => 'description' in g).map((g) => g.name)).toEqual(['Papan Bijak', 'Battle Arena', 'Kad Memori'])
+  })
+
+  it('a row refuses a key outside the list', () => {
+    ok(GamesAdminGameSchema, { key: 'battle', name: 'Battle Arena', active: false })
+    for (const key of ['tournament', 'sambung-kata']) rejected(GamesAdminGameSchema, { key, name: 'x', active: true })
+  })
+
+  it('the body is strict, active is a boolean', () => {
+    ok(GamesAdminGameActiveRequestSchema, { active: false })
+    for (const body of [{}, { active: 1 }, { active: 'ya' }]) {
+      expect(firstIssue(GamesAdminGameActiveRequestSchema, body)).toEqual({ message: 'Nilai tidak sah.', path: 'active' })
+    }
+    rejected(GamesAdminGameActiveRequestSchema, { active: true, extra: 1 })
+  })
+
+  it('the flash of N05-04', () => {
+    expect(GAMES_ADMIN_COPY.gameFlash('Kad Memori', true)).toBe('Permainan "Kad Memori" telah DIAKTIFKAN.')
+    expect(GAMES_ADMIN_COPY.gameFlash('Kad Memori', false)).toBe('Permainan "Kad Memori" telah DINYAHAKTIFKAN.')
   })
 })
 
@@ -1007,12 +1042,13 @@ describe('openapi registration', () => {
     'GET /sekolah-bersaing',
     'GET /admin/games',
     'PUT /admin/games/settings',
+    'PUT /admin/games/{gameKey}/active',
     'GET /admin/games/spin-segments',
     'PUT /admin/games/spin-segments',
   ]
 
-  it('registers exactly the 31 routes of the card under the games tag', () => {
-    expect(gamesOps).toHaveLength(31)
+  it('registers exactly the 32 routes of the card under the games tag', () => {
+    expect(gamesOps).toHaveLength(32)
     expect(gamesOps.map((o) => o.key).sort()).toEqual([...EXPECTED].sort())
   })
 
@@ -1032,7 +1068,7 @@ describe('openapi registration', () => {
 
   it('every mutation takes the X-CSRF-Token header and declares 403', () => {
     const mutations = gamesOps.filter((o) => o.method !== 'get')
-    expect(mutations).toHaveLength(17)
+    expect(mutations).toHaveLength(18)
     for (const { key, op } of mutations) {
       expect(op.parameters?.some((p) => p.in === 'header' && p.name === 'X-CSRF-Token'), key).toBe(true)
       expect(op.responses['403'], key).toBeDefined()
@@ -1046,7 +1082,7 @@ describe('openapi registration', () => {
 
   it('D57(a): every write route (and the solo GET that creates a session) documents 429 RATE_LIMITED with retryAfter and Retry-After', () => {
     const writes = gamesOps.filter((o) => o.method !== 'get' || o.key === 'GET /games/solo/{game}')
-    expect(writes).toHaveLength(18)
+    expect(writes).toHaveLength(19)
     for (const { key, op } of writes) {
       const r = op.responses['429']
       expect(r, key).toBeDefined()
@@ -1092,7 +1128,7 @@ describe('openapi registration', () => {
   })
 
   it('M16-51 and M16-52 are admin only: 403 "This action is unauthorized."', () => {
-    for (const key of ['GET /admin/games', 'PUT /admin/games/settings', 'GET /admin/games/spin-segments', 'PUT /admin/games/spin-segments']) {
+    for (const key of ['GET /admin/games', 'PUT /admin/games/settings', 'PUT /admin/games/{gameKey}/active', 'GET /admin/games/spin-segments', 'PUT /admin/games/spin-segments']) {
       const op = gamesOps.find((o) => o.key === key)?.op
       expect(JSON.stringify(op?.responses['403']), key).toMatch(/This action is unauthorized\./)
     }
