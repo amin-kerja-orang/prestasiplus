@@ -2768,7 +2768,7 @@
       "sector": "S6",
       "component": "src/modules/m17-admin-dashboard/pages/CentralReportPage.vue",
       "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
-      "approved_by_card": null
+      "approved_by_card": "S6-T13"
     },
     {
       "key": "/admin/laporan-sekolah/analisa-item|m17.laporan-sekolah.analisa-item",

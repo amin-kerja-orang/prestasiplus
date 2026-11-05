@@ -342,11 +342,11 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
       query: z.object({
         schoolId: z.string().optional().meta({
           description:
-            'Admin Pusat only: the school whose configs are listed (required for admin: 422 fields.schoolId when absent, repeated or malformed, 404 when unknown). Ignored for school_admin and teacher.',
+            'Admin Pusat only: the school whose configs are listed (optional: absent keeps the admin list of all configs; 422 fields.schoolId when empty, repeated or malformed, 404 when unknown). Ignored for school_admin and teacher.',
         }),
       }),
     },
-    'teacher: own configs; school_admin: the own school (a schoolId sent by the client is ignored); admin: the configs of the school named by schoolId (read-only central view, PM-24); for admin schoolId is required (VALIDATION_ERROR fields.schoolId "Sila pilih sekolah." when absent or malformed, NOT_FOUND when no such school). No 422 is listed here so the conformance smoke still picks the teacher list.',
+    'teacher: own configs; school_admin: the own school (a schoolId sent by the client is ignored); admin: the configs of the school named by schoolId (read-only central view, PM-24); admin without schoolId: all configs, as before; admin with schoolId: VALIDATION_ERROR fields.schoolId "Sila pilih sekolah." when empty, repeated or malformed, NOT_FOUND when no such school. No 422 is listed here so the conformance smoke still picks the teacher list.',
     'headcount',
   )
   hc('/headcounts/dashboard', 'Headcount dashboard (S13)', PerformanceHeadcountDashboardSchema)

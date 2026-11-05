@@ -24,12 +24,8 @@ import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
 const props = defineProps<{ schoolId?: number | string }>()
 const central = computed(() => props.schoolId !== undefined)
 const session = useSessionStore()
-// the API lists one school for the admin: without a picked school the admin owns none (the empty state, OD-R3)
 const { data, error, reload } = useRouteData(
-  async (signal) =>
-    session.role === 'admin' && !central.value
-      ? []
-      : fetchHeadcounts({ schoolId: props.schoolId, signal }),
+  (signal) => fetchHeadcounts({ schoolId: props.schoolId, signal }),
   [() => props.schoolId],
   { skipNotFound: props.schoolId !== undefined },
 )

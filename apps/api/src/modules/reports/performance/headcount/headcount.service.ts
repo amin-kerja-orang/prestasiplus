@@ -148,8 +148,9 @@ export class HeadcountService {
   }
 
   /**
-   * S6-T13 PM-24: Admin Pusat lists the configs of ONE school, named by `schoolId` (required: 422 `fields.schoolId` when absent
-   * or malformed, 404 when unknown), the same list as that school's admin. Other roles ignore `schoolId`.
+   * S6-T13 PM-24: Admin Pusat who sends `schoolId` lists the configs of that ONE school (422 `fields.schoolId` when malformed,
+   * 404 when unknown), the same list as that school's admin. Without `schoolId` the admin list is unchanged (all configs).
+   * Other roles ignore `schoolId`.
    */
   private async centralConfigs(rawSchoolId: unknown): Promise<HeadcountConfigRecord[]> {
     const raw = typeof rawSchoolId === 'string' ? rawSchoolId.trim() : ''
@@ -162,7 +163,7 @@ export class HeadcountService {
   }
 
   async list(ctx: Ctx, rawSchoolId?: unknown): Promise<HeadcountListItem[]> {
-    const configs = ctx.role === 'admin' ? await this.centralConfigs(rawSchoolId) : await this.configsInScope(ctx)
+    const configs = ctx.role === 'admin' && rawSchoolId !== undefined ? await this.centralConfigs(rawSchoolId) : await this.configsInScope(ctx)
     const { infos, rosters } = await this.assemble(configs)
     return configs.map((c) => listItem(infos.get(c.id) as ConfigInfo, rosters.get(c.id) ?? []))
   }

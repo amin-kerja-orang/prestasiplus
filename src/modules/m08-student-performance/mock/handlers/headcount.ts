@@ -176,8 +176,8 @@ export const headcountRoutes: RouteDef[] = [
 
   route('GET', '/api/headcounts', [guard], (req) => {
     const viewer = viewerOf(req)
-    if (viewer.role === 'admin') {
-      // S6-T13 PM-24 (as the API): Admin Pusat lists ONE school, `?schoolId=` required (422), unknown school 404
+    if (viewer.role === 'admin' && req.query.schoolId !== undefined) {
+      // S6-T13 PM-24 (as the API): an admin who sends `?schoolId=` lists that ONE school (422 malformed, 404 unknown)
       const raw = queryString(req.query, 'schoolId')
       if (raw === undefined || !/^[1-9]\d{0,18}$/.test(raw)) {
         return validationError({ schoolId: REPORT_SCOPE_MESSAGES.schoolIdRequired })

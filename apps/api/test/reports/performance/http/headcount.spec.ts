@@ -316,7 +316,7 @@ describe('privacy 9 and 10: one 404 for unknown and not visible', () => {
     expect(noReq(fromOther.body)).toEqual(noReq(unknown.body))
   })
 
-  it('list and dashboard: a teacher sees own configs, a school admin the own school, an admin one school (schoolId); the "Guru" name is listed', async () => {
+  it('list and dashboard: a teacher sees own configs, a school admin the own school, an admin all; the "Guru" name is listed', async () => {
     const list = async (k: string, q = '') => parseData(await (as[k] as Client).get(`/api/headcounts${q}`), z.array(PerformanceHeadcountListItemSchema))
     const mine = await list('guru')
     expect(mine.some((c) => c.id === cfg)).toBe(true)
@@ -324,6 +324,7 @@ describe('privacy 9 and 10: one 404 for unknown and not visible', () => {
     expect(await list('guru2')).toEqual([])
     expect((await list('adminsekolah')).some((c) => c.id === cfg)).toBe(true)
     expect((await list('admin2')).some((c) => c.id === cfg)).toBe(false)
+    expect((await list('admin')).some((c) => c.id === cfg)).toBe(true)
     expect((await list('admin', `?schoolId=${s1}`)).some((c) => c.id === cfg)).toBe(true)
     expect((await list('admin', `?schoolId=${s2}`)).some((c) => c.id === cfg)).toBe(false)
     const dash = async (k: string) => parseData(await (as[k] as Client).get('/api/headcounts/dashboard'), PerformanceHeadcountDashboardSchema).configs
@@ -345,8 +346,17 @@ describe('privacy 9 and 10: one 404 for unknown and not visible', () => {
       expect((await list('admin', `?schoolId=${s2}`)).body).toEqual((await list('admin2')).body)
     })
 
-    it('admin without schoolId, or with an empty, malformed or repeated one: 422 fields.schoolId "Sila pilih sekolah."', async () => {
-      for (const q of ['', '?schoolId=', '?schoolId=abc', '?schoolId=0', '?schoolId=01', '?schoolId=-3', `?schoolId=${s1}&schoolId=${s2}`, '?schoolId=99999999999999999999']) {
+    it('admin without schoolId: unchanged, every config of every school', async () => {
+      const all = parseData(await list('admin'), z.array(PerformanceHeadcountListItemSchema))
+      const a = parseData(await list('adminsekolah'), z.array(PerformanceHeadcountListItemSchema))
+      const b = parseData(await list('admin2'), z.array(PerformanceHeadcountListItemSchema))
+      const ids = new Set(all.map((c) => c.id))
+      for (const c of [...a, ...b]) expect(ids.has(c.id)).toBe(true)
+      expect(a.length).toBeGreaterThan(0)
+    })
+
+    it('admin with an empty, malformed or repeated schoolId: 422 fields.schoolId "Sila pilih sekolah."', async () => {
+      for (const q of ['?schoolId=', '?schoolId=abc', '?schoolId=0', '?schoolId=01', '?schoolId=-3', `?schoolId=${s1}&schoolId=${s2}`, '?schoolId=99999999999999999999']) {
         const e = expectError(await list('admin', q), 'VALIDATION_ERROR')
         expect(Object.keys(e.fields ?? {}), q).toEqual(['schoolId'])
         expect(e.fields?.schoolId, q).toBe('Sila pilih sekolah.')
