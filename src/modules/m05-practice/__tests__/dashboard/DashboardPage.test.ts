@@ -10,7 +10,7 @@ import { resetFriendForTests, useFriend } from '@/composables/useFriend'
 
 import DashboardPage from '../../pages/DashboardPage.vue'
 
-const api = vi.hoisted(() => ({ fetchDashboard: vi.fn() }))
+const api = vi.hoisted(() => ({ fetchDashboard: vi.fn(), fetchBestStreak: vi.fn() }))
 vi.mock('../../api/practice', () => api)
 
 const subject = (over: Partial<PracticeSubject>): PracticeSubject => ({
@@ -174,6 +174,8 @@ const has = (w: VueWrapper, id: string) => w.find(`[data-testid=${id}]`).exists(
 
 beforeEach(() => {
   api.fetchDashboard.mockReset()
+  api.fetchBestStreak.mockReset()
+  api.fetchBestStreak.mockResolvedValue(5)
   stubMatchMedia()
   localStorage.clear()
   resetFriendForTests()
@@ -209,15 +211,42 @@ describe('S1 DashboardPage (v2 Murid Home)', () => {
     expect(has(w, 'dash-trial')).toBe(false)
   })
 
-  it('shows the Kombo card only for a streak without practice today (FR-M05-09)', async () => {
+  it('shows the Kombo warning for a streak without practice today (AC-MUR-2-1) with the record', async () => {
     const w = await render()
     expect(t(w, 'dash-kombo').text()).toContain('Kombo 1 hari akan putus!')
     expect(t(w, 'dash-kombo').text()).toContain(
       'Jangan lepaskan! Buat sekurang-kurangnya 1 latihan hari ini.',
     )
+    expect(t(w, 'dash-kombo').text()).toContain('Mula Latihan')
+    expect(t(w, 'dash-kombo-best').text()).toBe('Rekod terbaik: 5 hari')
+  })
+
+  it('shows the Kombo banner "Selesai" once practised today, with the record (FR-MUR-2-3)', async () => {
+    const w = await render(dash({ streak: { count: 3, practisedToday: true } }))
+    expect(t(w, 'dash-kombo').text()).toContain('Kombo 3 hari!')
+    expect(t(w, 'dash-kombo-pill').text()).toBe('Selesai')
+    expect(t(w, 'dash-kombo-best').text()).toBe('Rekod terbaik: 5 hari')
+  })
+
+  it('shows "Kombo 0 hari!" / "Belum" / record 0 for a pupil with no streak (FR-MUR-2-3)', async () => {
+    api.fetchBestStreak.mockResolvedValue(0)
+    const w = await render(dash({ streak: { count: 0, practisedToday: false } }))
+    expect(t(w, 'dash-kombo').text()).toContain('Kombo 0 hari!')
+    expect(t(w, 'dash-kombo').text()).toContain('Jom mula latihan untuk teruskan streak!')
+    expect(t(w, 'dash-kombo-pill').text()).toBe('Belum')
+    expect(t(w, 'dash-kombo-best').text()).toBe('Rekod terbaik: 0 hari')
+  })
+
+  it('hides only the record line when the best streak is missing or fails to load (FR-MUR-2-3)', async () => {
+    api.fetchBestStreak.mockResolvedValue(null)
+    const w = await render()
+    expect(t(w, 'dash-kombo').text()).toContain('Kombo 1 hari akan putus!')
+    expect(has(w, 'dash-kombo-best')).toBe(false)
     w.unmount()
-    const w2 = await render(dash({ streak: { count: 3, practisedToday: true } }))
-    expect(has(w2, 'dash-kombo')).toBe(false)
+    api.fetchBestStreak.mockRejectedValue(new Error('boom'))
+    const w2 = await render()
+    expect(has(w2, 'dash-kombo')).toBe(true)
+    expect(has(w2, 'dash-kombo-best')).toBe(false)
   })
 
   it('counts the stat cards up from 0 (FR-M05-10, 11)', async () => {

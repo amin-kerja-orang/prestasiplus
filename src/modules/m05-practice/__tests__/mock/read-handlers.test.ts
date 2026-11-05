@@ -146,6 +146,14 @@ describe('#1 GET /api/dashboard (S1)', () => {
     expect(d.week).toEqual({ sessions: 0, accuracyPct: 0 })
   })
 
+  it('mock parity: the gamification dashboard serves the record the Kombo card reads (FR-MUR-2-3)', async () => {
+    const d = await dash(PELAJAR)
+    const g = await data<{ wallet: { streak: { current: number; best: number } } }>(PELAJAR, '/api/gamification/dashboard')
+    const best = g.wallet.streak
+    expect(best.current).toBe(d.streak.count)
+    expect(best.best).toBeGreaterThanOrEqual(best.current)
+  })
+
   it.each([
     ['pelajar2', PELAJAR2],
     ['teacher', GURU],

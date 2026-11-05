@@ -10,12 +10,12 @@
  * Terkini", "Tahap Kesukaran" and "Statistik Subjek". The unobserved conditional sections are not
  * rendered (FR-M05-20). A strict design-system page: layout utilities and `@/ds` composites only.
  */
-import { computed, nextTick, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import { useApi } from '@/composables'
 import { useFriend } from '@/composables/useFriend'
 
-import { fetchDashboard } from '../api/practice'
+import { fetchBestStreak, fetchDashboard } from '../api/practice'
 import { showKombo } from '../components/dashboard/dashboard-lib'
 import HomeArticles from '../components/dashboard-v2/HomeArticles.vue'
 import HomeBadges from '../components/dashboard-v2/HomeBadges.vue'
@@ -39,6 +39,16 @@ const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
 
 const { data, error, reload } = useApi((signal) => fetchDashboard({ signal }))
 const { offerFirstRun } = useFriend()
+
+// FR-MUR-2-3: the record is a side read; a failed or missing figure only hides the "Rekod terbaik" line.
+const bestStreak = ref<number | null>(null)
+onMounted(async () => {
+  try {
+    bestStreak.value = await fetchBestStreak()
+  } catch {
+    bestStreak.value = null
+  }
+})
 
 const kombo = computed(() => (data.value ? showKombo(data.value.streak) : false))
 
@@ -65,7 +75,12 @@ watch(
       <div class="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
         <HomeTrial v-if="data.trial.active" :trial="data.trial" />
         <HomeCarousel v-if="data.banners.length > 0" :banners="data.banners" />
-        <HomeKombo v-if="kombo" :count="data.streak.count" />
+        <HomeKombo
+          :count="data.streak.count"
+          :at-risk="kombo"
+          :practised-today="data.streak.practisedToday"
+          :best="bestStreak"
+        />
       </div>
       <HomeStats :wallet="data.wallet" :streak="data.streak" :week="data.week" />
       <div class="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
