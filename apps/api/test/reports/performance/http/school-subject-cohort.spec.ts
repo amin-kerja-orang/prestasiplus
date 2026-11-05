@@ -1,7 +1,7 @@
 import { PerformanceSchoolSchema } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { type Client, loginAs, parseData } from '../../../curriculum/helpers'
+import { type Client, expectError, loginAs, parseData } from '../../../curriculum/helpers'
 import { bootHeadcountWorld, insertConfig, insertEntry, PUPILS, type HeadcountWorld } from './headcount-boot'
 
 /** Cohort suppression consistency of the S1 subject breakdown (GET /api/performance/school). */
@@ -40,25 +40,19 @@ describe('Prestasi sekolah: subject breakdown and cohort suppression', () => {
     }
   })
 
-  it('a pupil gets the same overall figure but no subject breakdown while one subject is below 5 pupils', async () => {
-    for (const k of ['pelajar']) {
-      const s = await school(as[k] as Client)
-      expect(s.gps).toEqual({ value: 3.33, band: 'Baik', entries: 6 })
-      expect(s.subjects).toEqual([])
-    }
+  it('a pupil has no school view at all (403), whatever the subject cohorts hold', async () => {
+    expectError(await (as.pelajar as Client).get('/api/performance/school'), 'FORBIDDEN')
   })
 
-  it('once every subject has at least 5 pupils the full breakdown is shown to non-staff and equals the staff one', async () => {
+  it('once every subject has at least 5 pupils the staff breakdown is complete', async () => {
     for (const email of ['pelajar2@demo.test', ...PUPILS]) await insertEntry(w, cfg2, email, { marks: [[60, 45]] })
-    const staff = await school(as.adminsekolah as Client)
-    for (const k of ['pelajar']) {
+    for (const k of ['adminsekolah', 'guru']) {
       const s = await school(as[k] as Client)
       expect(s.gps).toEqual({ value: 4.8, band: 'Sederhana', entries: 10 })
       expect(s.subjects.map((x) => [x.subjectId, x.gps, x.entries])).toEqual([
         [w.subjectId, 2.6, 5],
         [w.subjectId2, 7, 5],
       ])
-      expect(s.subjects).toEqual(staff.subjects)
     }
   })
 })
