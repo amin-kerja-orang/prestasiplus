@@ -128,6 +128,8 @@ export const BIJAK_BUILDER_MESSAGES = {
   subjektifCreated: '“{title}” telah dicipta sebagai draf.',
   subjektifUpdated: '“{title}” telah dikemas kini.',
   subjektifDeleted: '“{title}” telah dipadam.',
+  /** S3-T06 [DOC DEFECT: no BM text in the PRD]: Negeri, Tahun, Tempoh or Jumlah Markah sent for a Simulasi paper. */
+  subjektifOnly: 'Hanya untuk Kertas Subjektif.',
   subjektifPublished: '“{title}” kini diterbitkan.',
   subjektifHidden: '“{title}” disembunyikan daripada pelajar.',
   /** [PROPOSED] R1-T34 */
@@ -799,7 +801,7 @@ export const BijakBuilderPaperCreateSchema = z
   .superRefine((b, ctx) => {
     if (b.surface !== 'subjektif') {
       for (const k of ['examBoard', 'year', 'durationMinutes', 'totalMarks'] as const) {
-        if (b[k] !== undefined) ctx.addIssue({ code: 'custom', path: [k], message: 'Only for a Kertas Subjektif paper (surface subjektif).' })
+        if (b[k] !== undefined) ctx.addIssue({ code: 'custom', path: [k], message: BIJAK_BUILDER_MESSAGES.subjektifOnly })
       }
       return
     }

@@ -130,6 +130,21 @@ export class BuilderRepository {
     }
   }
 
+  /** Ids of the papers a list filter matches (every status unless `statuses` is given): the base of the Kertas Subjektif `meta.counts`. */
+  async idsPilihan(statuses: readonly string[] | undefined, filter?: PaperListFilter): Promise<bigint[]> {
+    return (await this.prisma.client.paper.findMany({ where: this.listWhere(statuses, filter), select: { id: true } })).map((r) => r.id)
+  }
+
+  /** The placements of many papers in one query: the question, the pinned version and whether the paper is Terbit (so the pinned version is the one shown). */
+  async placementRefs(paperIds: readonly bigint[]): Promise<{ paperId: string; questionId: string; versionNo: number | undefined }[]> {
+    if (paperIds.length === 0) return []
+    const rows = await this.prisma.client.paperPlacement.findMany({
+      where: { section: { paperId: { in: [...paperIds] } } },
+      select: { questionId: true, pinnedVersionNo: true, section: { select: { paperId: true, paper: { select: { status: true } } } } },
+    })
+    return rows.map((r) => ({ paperId: r.section.paperId.toString(), questionId: r.questionId.toString(), versionNo: r.section.paper.status === 'published' ? r.pinnedVersionNo : undefined }))
+  }
+
   async subjectsByIds(ids: readonly bigint[]): Promise<Map<string, SubjectRef>> {
     if (ids.length === 0) return new Map()
     const rows = await this.prisma.client.subject.findMany({

@@ -1265,4 +1265,32 @@ describe('S3-T02 One Set Builder', () => {
     expect(JSON.stringify(pool)).toContain('BijakBuilderSourceFilters')
     expect(BIJAK_LEVEL_SCOPE_LABELS).toEqual({ t4: 'Tingkatan 4', t5: 'Tingkatan 5', t4_t5: 'Tingkatan 4 dan 5' })
   })
+
+  describe('S3-T06 Kertas Subjektif create (superRefine)', () => {
+    const ok = { subject: 'MAT', kertas: 3, surface: 'subjektif', title: 'Percubaan Negeri', examBoard: 'Selangor', year: 2024, totalMarks: 80, durationMinutes: 90 }
+    const messages = (body: Record<string, unknown>) => {
+      const r = BijakBuilderPaperCreateSchema.safeParse(body)
+      return r.success ? [] : r.error.issues.map((x) => x.message)
+    }
+    it('accepts a full body and an untimed one (Tempoh omitted, 0 or null)', () => {
+      expect(BijakBuilderPaperCreateSchema.safeParse(ok).success).toBe(true)
+      for (const durationMinutes of [undefined, 0, null]) expect(BijakBuilderPaperCreateSchema.safeParse({ ...ok, durationMinutes }).success).toBe(true)
+    })
+    it.each([
+      ['kertas 1', { kertas: 1 }, BIJAK_BUILDER_MESSAGES.kertasInvalid],
+      ['kertas 5', { kertas: 5 }, BIJAK_BUILDER_MESSAGES.kertasInvalid],
+      ['no Negeri', { examBoard: undefined }, BIJAK_BUILDER_MESSAGES.examBoardRequired],
+      ['no Tahun', { year: undefined }, BIJAK_BUILDER_MESSAGES.yearRequired],
+      ['no Jumlah Markah', { totalMarks: undefined }, BIJAK_BUILDER_MESSAGES.totalMarksRange],
+      ['Tempoh 301', { durationMinutes: 301 }, BIJAK_BUILDER_MESSAGES.durationRange],
+      ['Tempoh -1', { durationMinutes: -1 }, BIJAK_BUILDER_MESSAGES.durationRange],
+      ['no title', { title: undefined }, BIJAK_BUILDER_MESSAGES.subjektifTitleRequired],
+      ['title over 150', { title: 'T'.repeat(151) }, BIJAK_BUILDER_MESSAGES.subjektifTitleTooLong],
+    ])('refuses %s', (_name, over, message) => {
+      expect(messages({ ...ok, ...over })).toContain(message)
+    })
+    it('refuses the subjektif-only fields on a Simulasi body with the shared BM message', () => {
+      expect(messages({ subject: 'MAT', kertas: 2, totalMarks: 10 })).toContain(BIJAK_BUILDER_MESSAGES.subjektifOnly)
+    })
+  })
 })

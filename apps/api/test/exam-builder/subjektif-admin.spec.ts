@@ -89,6 +89,7 @@ describe('S3-T06 Kertas Subjektif admin lane on /api/admin/papers', () => {
       ['title missing', { title: undefined }, M.subjektifTitleRequired],
       ['title blank', { title: '   ' }, M.subjektifTitleRequired],
       ['title over 150', { title: 'x'.repeat(151) }, M.subjektifTitleTooLong],
+      ['title over 200 still gets the 150 message', { title: 'x'.repeat(201) }, M.subjektifTitleTooLong],
       ['examBoard missing', { examBoard: undefined }, M.examBoardRequired],
       ['year missing', { year: undefined }, M.yearRequired],
       ['totalMarks missing', { totalMarks: undefined }, M.totalMarksRange],
@@ -109,6 +110,7 @@ describe('S3-T06 Kertas Subjektif admin lane on /api/admin/papers', () => {
     it('Negeri, Tahun, Tempoh and Jumlah Markah are refused on a Simulasi create', async () => {
       const res = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2, totalMarks: 10 })
       expect(res.status, JSON.stringify(res.body)).toBe(422)
+      expect(JSON.stringify(res.body)).toContain(M.subjektifOnly)
     })
 
     it('201 with no Kontrak for that subject and kertas: no blueprint, no paper code, not restricted, one empty Bahagian A, K3 on reads', async () => {
@@ -147,13 +149,11 @@ describe('S3-T06 Kertas Subjektif admin lane on /api/admin/papers', () => {
   describe('list', () => {
     let a: string
     let b: string
-    let withScheme: string
     let simulasi: string
 
     beforeAll(async () => {
       a = await made({ title: 'Senarai A', kertas: 2, examBoard: 'Johor', year: 2023, totalMarks: 1 })
       b = await made({ title: 'Senarai B', kertas: 4, examBoard: 'Perak', year: 2022, totalMarks: 2 })
-      withScheme = a
       expect((await place(a, await sectionOf(a), await question('mcq'))).status).toBe(201)
       const noScheme = await question('written')
       await dropKey(noScheme)
@@ -195,16 +195,45 @@ describe('S3-T06 Kertas Subjektif admin lane on /api/admin/papers', () => {
       expect(await ids('&negeri=perak&year=2023')).toEqual([])
     })
 
-    it('meta.counts = {total, published, withScheme} over the filtered set', async () => {
-      const all = (await list('&surface=subjektif')).meta.counts!
-      const rows = (await list('&surface=subjektif')).data.length
-      expect(all.total).toBe(rows)
-      expect(all.published).toBe(0)
-      const start = all.withScheme
-      expect(start).toBeGreaterThanOrEqual(1)
+    it('meta.counts = {total, published, withScheme} over the filtered set, total and published from the DB', async () => {
+      const res = await list('&surface=subjektif')
+      const dbTotal = (await q(`select count(*)::int n from papers where surface = 'subjektif'`))[0]!.n
+      expect(res.meta.counts!.total).toBe(dbTotal)
+      expect(res.meta.totalItems).toBe(dbTotal)
+      expect(res.meta.counts!.published).toBe(0)
       expect((await list('&surface=subjektif&negeri=johor')).meta.counts).toEqual({ total: 1, published: 0, withScheme: 1 })
       expect((await list('&surface=subjektif&negeri=perak')).meta.counts).toEqual({ total: 1, published: 0, withScheme: 0 })
-      expect(withScheme).toBe(a)
+      // the status tab does not change the counts
+      expect((await list('&surface=subjektif&negeri=johor&status=terbit')).meta.counts).toEqual({ total: 1, published: 0, withScheme: 1 })
+    })
+
+    it('a draft question and an MCQ with no key are not bersekema (count, row and Terbit gate agree)', async () => {
+      const draft = await admin.post('/api/questions', { subjectId: subject, educationLevelId: level, difficultyLevel: 3, questionType: 'essay', questionText: 'Soalan draf tanpa skema', kertas: '2', tag, parts: [{ label: 'a', mode: 'working', cognitiveLevel: 'mengaplikasi', prompt: { ms: 'Kira.' }, marks: 1, key: { kind: 'points', marks: 1, points: [{ id: 'p1', code: 'M', label: 'Kira', marks: 1, text: { ms: 'jawapan' } }] } }] })
+      expect(draft.status, JSON.stringify(draft.body)).toBe(201)
+      const draftId = draft.body.data.id as string
+      await dropKey(draftId)
+      const keyless = await question('mcq')
+      await dropKey(keyless)
+      const keyed = await question('mcq')
+      const pd = await made({ title: 'Draf tanpa skema', kertas: 2, examBoard: 'Sabah', year: 2020, totalMarks: 1 })
+      const pk = await made({ title: 'MCQ tanpa kunci', kertas: 2, examBoard: 'Sabah', year: 2020, totalMarks: 1 })
+      const pg = await made({ title: 'Bersekema penuh', kertas: 2, examBoard: 'Sabah', year: 2020, totalMarks: 1 })
+      const sid = await sectionOf(pd)
+      await q(`insert into paper_placements (paper_section_id, question_id, pinned_version_no, position) values ($1, $2, 1, 1)`, [sid, draftId])
+      expect((await place(pk, await sectionOf(pk), keyless)).status).toBe(201)
+      expect((await place(pg, await sectionOf(pg), keyed)).status).toBe(201)
+      const res = await list('&surface=subjektif&negeri=sabah')
+      expect(res.meta.counts).toEqual({ total: 3, published: 0, withScheme: 1 })
+      const schemeOf = (id: string) => (res.data.find((r) => r.id === id) as unknown as { schemeCount: number }).schemeCount
+      expect([schemeOf(pd), schemeOf(pk), schemeOf(pg)]).toEqual([0, 0, 1])
+      for (const [paper, qid] of [[pd, draftId], [pk, keyless]] as const) {
+        const refused = await publish(paper)
+        expect(refused.ok).toBe(false)
+        expect(refused.blockerDetails?.some((b) => b.code === 'NO_SCHEME' && b.questionId === qid && !b.overridable)).toBe(true)
+        expect(refused.errors).toContain(`Soalan ${qid} ${M.subjektifNoScheme}`)
+      }
+      expect((await publish(pg)).ok).toBe(true)
+      expect((await list('&surface=subjektif&negeri=sabah')).meta.counts).toEqual({ total: 3, published: 1, withScheme: 1 })
     })
   })
 
@@ -225,6 +254,8 @@ describe('S3-T06 Kertas Subjektif admin lane on /api/admin/papers', () => {
     it.each([
       ['empty title', { title: '  ' }, M.subjektifTitleRequired],
       ['title over 150', { title: 'y'.repeat(151) }, M.subjektifTitleTooLong],
+      ['title over 200 still gets the 150 message', { title: 'y'.repeat(201) }, M.subjektifTitleTooLong],
+      ['durationMin (the Simulasi key)', { durationMin: 30 }, M.durationRange],
       ['empty examBoard', { examBoard: '' }, M.examBoardRequired],
       ['Tempoh over 300', { durationMinutes: 301 }, M.durationRange],
       ['Jumlah Markah 0', { totalMarks: 0 }, M.totalMarksRange],
@@ -234,6 +265,16 @@ describe('S3-T06 Kertas Subjektif admin lane on /api/admin/papers', () => {
       const res = await admin.put(`/api/admin/papers/${id}`, body)
       expect(res.status, JSON.stringify(res.body)).toBe(422)
       expect(JSON.stringify(res.body)).toContain(message)
+    })
+
+    it('code is ignored on a Kertas Subjektif (K{kertas} stays) and a copy is refused with 422', async () => {
+      const id = await made({ title: 'Kod', kertas: 3 })
+      const res = await admin.put(`/api/admin/papers/${id}`, { code: '9999/1' })
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(BijakBuilderEditorSchema.parse(res.body.data).paper.code).toBe('K3')
+      expect((await q(`select paper_code from papers where id = $1`, [id]))[0]!.paper_code).toBeNull()
+      const copy = await admin.post(`/api/admin/papers/${id}/copy`)
+      expect(copy.status, JSON.stringify(copy.body)).toBe(422)
     })
 
     it('a Simulasi paper refuses Negeri, Tempoh and Jumlah Markah with 422', async () => {

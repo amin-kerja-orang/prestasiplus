@@ -103,6 +103,12 @@ export interface BuilderQuestionSource {
    * so those two filters stay hidden and match nothing.
    */
   originsOf?(ids: readonly string[]): Promise<ReadonlyMap<string, BuilderQuestionOrigin>>
+  /**
+   * Optional (S3-T06). Of `refs`, the keys `${id}:${versionNo ?? 0}` of those questions that are `bersekema` at the version shown (the pinned one, else the live
+   * one, else the latest): the version exists and every leaf has an answer key / scheme. The ONE scheme rule of a Kertas Subjektif (list count and Terbit gate).
+   * A source without it has no scheme data, so no question counts as bersekema.
+   */
+  schemeOf?(refs: readonly BuilderQuestionRef[]): Promise<ReadonlySet<string>>
   /** Admin review content (`previewQuestions`): carries the answer key and mark scheme. Unknown ids are left out. */
   review(ids: readonly string[]): Promise<BuilderPreview>
 }

@@ -113,13 +113,8 @@ const DEFAULT_TITLE = (subjectName: string, kertas: number) => `${PUBLISHED_TITL
 
 /** R1-T48: a paper holds at most this many Bahagian (the PaperPatch limit). */
 const MAX_SECTIONS = 20
-/** S3-T06: the Kertas Subjektif list reads the whole filtered set for `meta.counts`; a library holds far fewer papers than this. */
-const SUBJEKTIF_COUNT_CAP = 2000
 const SUBJEKTIF_SECTION_LABEL = 'Bahagian A'
-/** S3-T06 [DOC DEFECT: no BM text in the PRD]: Negeri, Tempoh or Jumlah Markah sent for a Simulasi paper. */
-const SUBJEKTIF_ONLY = 'Hanya untuk Kertas Subjektif.'
-/** S3-T06: the one scheme rule is the ServabilityService one: a leaf with no key that is not an MCQ reads `no_scheme` (serving/rules.ts `keyReasons`). */
-const hasNoScheme = (report: ServabilityReport | undefined): boolean => (report?.activities ?? []).some((x) => x.reasons.some((r) => r.code === 'no_scheme'))
+const schemeKey = (id: string, versionNo?: number): string => `${id}:${String(versionNo ?? 0)}`
 
 /** The legacy question type behind each "Jenis jawapan" of "Tambah soalan" (only used for the flat fields; the parts carry the mode). */
 const QUESTION_TYPE_OF = { mcq: 'mcq', short_text: 'short_answer', numeric: 'short_answer', working: 'essay', essay: 'essay' } as const
@@ -502,18 +497,25 @@ export class BuilderService {
     const evaluations = await this.evaluateMany(rows)
     // S3-T02 (Q-13 list): where the placed questions come from, read once for the page.
     const origins = await this.originsOf(rows.flatMap((r) => this.placedIdsOf(r)))
-    // S3-T06: the Kertas Subjektif list counts `Kandungan` (questions with a scheme) per row and `withScheme` over the whole filtered set (the status tab is ignored).
-    let schemes: Map<string, Set<string>> | undefined
+    // S3-T06: `Kandungan` per row and `meta.counts` over the whole filtered set (the status tab is ignored): total and published are DB counts, `withScheme`
+    // is one placement query plus one question-source query (`schemeOf`, the one scheme rule), never servability per question.
+    let schemes: Map<string, { placed: number; withScheme: number }> | undefined
     let counts: Record<string, number> | undefined
     if (subjektif) {
-      const everyone = noSubject ? [] : await this.repo.listPilihan(undefined, 0, SUBJEKTIF_COUNT_CAP, filter)
-      const { reports } = await this.safeReports([...new Set(everyone.flatMap((p) => this.placedIdsOf(p)))])
-      const withSchemeIds = (p: PaperTree) => new Set(this.placedIdsOf(p).filter((id) => reports.has(id) && !hasNoScheme(reports.get(id))))
-      schemes = new Map(everyone.map((p) => [idToString(p.id), withSchemeIds(p)]))
+      const ids = noSubject ? [] : await this.repo.idsPilihan(undefined, filter)
+      const refs = await this.repo.placementRefs(ids)
+      const ok = await this.schemeKeys(refs.map((r) => ({ id: r.questionId, ...(r.versionNo === undefined ? {} : { versionNo: r.versionNo }) })))
+      schemes = new Map()
+      for (const r of refs) {
+        const e = schemes.get(r.paperId) ?? { placed: 0, withScheme: 0 }
+        e.placed += 1
+        if (ok.has(schemeKey(r.questionId, r.versionNo))) e.withScheme += 1
+        schemes.set(r.paperId, e)
+      }
       counts = {
-        total: everyone.length,
-        published: everyone.filter((p) => p.status === 'published').length,
-        withScheme: everyone.filter((p) => this.placedIdsOf(p).length > 0 && schemes!.get(idToString(p.id))!.size === this.placedIdsOf(p).length).length,
+        total: ids.length,
+        published: noSubject ? 0 : await this.repo.countPilihan(['published'], filter),
+        withScheme: [...schemes.values()].filter((e) => e.placed > 0 && e.withScheme === e.placed).length,
       }
     }
     const data = await Promise.all(
@@ -541,7 +543,7 @@ export class BuilderService {
             ? {
                 examBoard: paper.examBoard,
                 ...(paper.year === null ? {} : { year: paper.year }),
-                schemeCount: schemes!.get(idToString(paper.id))?.size ?? 0,
+                schemeCount: schemes!.get(idToString(paper.id))?.withScheme ?? 0,
                 totalMarks: paper.totalMarks,
                 durationMinutes: paper.durationMinutes,
               }
@@ -553,6 +555,8 @@ export class BuilderService {
   }
 
   async create(actor: AuditActor, rawBody: unknown): Promise<{ id: string }> {
+    // S3-T06: the Kertas Subjektif title rule (150) wins over the generic 200 one, so it is read before the body is parsed.
+    if (rawBody !== null && typeof rawBody === 'object' && (rawBody as { surface?: unknown }).surface === 'subjektif') this.subjektifTitleCheck(rawBody)
     const body = parseWith(BijakBuilderPaperCreateSchema, rawBody)
     if (body.surface === 'subjektif') return this.createSubjektif(actor, body)
     // kertas is a smallint column: a larger number can have no blueprint (and must not reach the query).
@@ -650,7 +654,7 @@ export class BuilderService {
       // S3-T06: Negeri, Tempoh and Jumlah Markah belong to a Kertas Subjektif only; on a Simulasi paper they are refused, and a subjektif Tempoh is `durationMinutes`.
       if (!subjektif) {
         for (const key of ['examBoard', 'durationMinutes', 'totalMarks'] as const)
-          if (body[key] !== undefined) throw ApiError.of('VALIDATION_ERROR', { message: SUBJEKTIF_ONLY, fields: { [key]: SUBJEKTIF_ONLY } })
+          if (body[key] !== undefined) throw ApiError.of('VALIDATION_ERROR', { message: MESSAGES.subjektifOnly, fields: { [key]: MESSAGES.subjektifOnly } })
       } else if (body.durationMin !== undefined) {
         throw ApiError.of('VALIDATION_ERROR', { message: MESSAGES.durationRange, fields: { durationMin: MESSAGES.durationRange } })
       }
@@ -749,7 +753,8 @@ export class BuilderService {
         // `ck_papers_subjektif_duration`: printed_duration_min = duration_minutes, or 0 when untimed.
         ...(body.durationMinutes !== undefined ? { durationMinutes: body.durationMinutes, printedDurationMin: body.durationMinutes ?? 0 } : {}),
         ...(body.totalMarks !== undefined ? { totalMarks: body.totalMarks } : {}),
-        ...(body.code !== undefined ? { paperCode: body.code === '' ? bijakSubject : body.code } : {}),
+        // A Kertas Subjektif has no printed code: `code` is ignored there so the `K{kertas}` read stays intact.
+        ...(body.code !== undefined && !subjektif ? { paperCode: body.code === '' ? bijakSubject : body.code } : {}),
         ...(body.instructions !== undefined ? { instructions: body.instructions } : {}),
         ...(reference !== undefined ? { referenceSheets: reference as unknown as Prisma.InputJsonValue } : {}),
         updatedAt: this.clock.now(),
@@ -770,6 +775,20 @@ export class BuilderService {
     const fresh = await this.repo.findPilihan(paperId)
     if (!fresh) throw notFound()
     return this.editorOf(fresh)
+  }
+
+  /** S3-T06: the refs of `schemeOf` that are `bersekema` (keys `schemeKey`); a source without the read has no scheme data, so none is. */
+  private async schemeKeys(refs: readonly BuilderQuestionRef[]): Promise<ReadonlySet<string>> {
+    const unique = [...new Map(refs.map((r) => [schemeKey(r.id, r.versionNo), r])).values()]
+    return unique.length > 0 && this.questions.schemeOf ? this.questions.schemeOf(unique) : new Set()
+  }
+
+  /** S3-T06: the placed questions of a Kertas Subjektif that are not `bersekema` (same rule as the list count), in paper order. */
+  private async unschemedOf(paper: PaperTree): Promise<string[]> {
+    if (paper.surface !== 'subjektif') return []
+    const refs = this.refsOf(paper)
+    const ok = await this.schemeKeys(refs)
+    return refs.filter((r) => !ok.has(schemeKey(r.id, r.versionNo))).map((r) => r.id)
   }
 
   /** S3-T06 field 18-02: a Kertas Subjektif title is required and at most 150 characters (the Simulasi rule is 200). */
@@ -878,7 +897,7 @@ export class BuilderService {
       const { reports, unreadable } = await this.safeReports(placedNow)
       // ONE rule for the review and for publish: `collectBlockers` (hard = the paper's own checks incl. D93 groups, a question missing from the
       // pool, a question pupils cannot be served; overridable = the Kontrak line, which a paper that is already Terbit keeps (overridden), plus the structural blueprint lines).
-      const blockers = this.collectBlockers(paper, ev, structural, reports, unreadable, await this.referenceImageBlockers(paper))
+      const blockers = this.collectBlockers(paper, ev, structural, reports, unreadable, await this.referenceImageBlockers(paper), await this.unschemedOf(paper))
       const errors = blockers.map((b) => b.message)
       const overridable = blockers.filter((b) => b.overridable).map((b) => b.message)
       const view = blockerView(blockers)
@@ -1078,8 +1097,9 @@ export class BuilderService {
     reports: ReadonlyMap<string, ServabilityReport>,
     unreadable: readonly string[],
     referenceImages: readonly BlockerDraft[],
+    unschemed: readonly string[],
   ) {
-    if (paper.surface === 'subjektif') return toBlockers(this.subjektifBlockers(paper, ev, reports, unreadable, referenceImages), false)
+    if (paper.surface === 'subjektif') return toBlockers(this.subjektifBlockers(paper, ev, reports, unreadable, referenceImages, unschemed), false)
     return toBlockers([
       ...ev.issues,
       ...this.ruleBlockers(paper, ev),
@@ -1107,6 +1127,7 @@ export class BuilderService {
     reports: ReadonlyMap<string, ServabilityReport>,
     unreadable: readonly string[],
     referenceImages: readonly BlockerDraft[],
+    unschemed: readonly string[],
   ): BlockerDraft[] {
     const placed = this.placedIdsOf(paper)
     if (placed.length === 0) return [{ code: 'NO_QUESTIONS', message: MESSAGES.subjektifNoContent.replace('{title}', paper.title) }]
@@ -1114,7 +1135,7 @@ export class BuilderService {
       paper.totalMarks !== null && paper.totalMarks !== ev.check.totalMarks
         ? [{ code: 'TOTAL_MARKS_MISMATCH', message: MESSAGES.totalMarksMismatch.replace('{a}', String(paper.totalMarks)).replace('{b}', String(ev.check.totalMarks)) }]
         : []
-    const noScheme = placed.filter((id) => hasNoScheme(reports.get(id))).map((id): BlockerDraft => ({ code: 'NO_SCHEME', message: `Soalan ${id} ${MESSAGES.subjektifNoScheme}`, questionId: id }))
+    const noScheme = unschemed.map((id): BlockerDraft => ({ code: 'NO_SCHEME', message: `Soalan ${id} ${MESSAGES.subjektifNoScheme}`, questionId: id }))
     return [
       ...ev.issues,
       ...this.ruleBlockers(paper, ev),
@@ -1261,7 +1282,7 @@ export class BuilderService {
     // "not on a published paper", so that one reason is left out. A question the service does not know keeps the status-only reason.
     const placed = paper.sections.flatMap((s) => s.placements.map((pl) => idToString(pl.questionId)))
     const { reports, unreadable } = await this.safeReports(placed)
-    const blockerList = this.collectBlockers(paper, ev, structural, reports, unreadable, await this.referenceImageBlockers(paper))
+    const blockerList = this.collectBlockers(paper, ev, structural, reports, unreadable, await this.referenceImageBlockers(paper), await this.unschemedOf(paper))
     const blockers = blockerList.map((b) => b.message)
     const rows = paper.sections.flatMap((s) =>
       s.placements.map((pl) => {
