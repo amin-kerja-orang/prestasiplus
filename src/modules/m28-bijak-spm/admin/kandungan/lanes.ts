@@ -87,8 +87,8 @@ export const paperStatusBadge = (code: string): 'draft' | 'awaiting-review' | 'p
 export type TrackingUnit = SpmAdminTrackingACandidate
 
 export const trackingUnitKey = (u: Pick<TrackingUnit, 'kind' | 'id'>): string => `${u.kind}:${u.id}`
-/** A group counts as its number of questions (FR-ADM-Q17.6). */
-export const trackingCount = (units: readonly TrackingUnit[]): number => units.reduce((sum, u) => sum + u.questions, 0)
+/** What the draft serves, as the lane's `filled` counts it: a group as its number of questions (FR-ADM-Q17.6), a row that is not served as nothing. */
+export const trackingCount = (units: readonly TrackingUnit[]): number => units.reduce((sum, u) => sum + u.members.filter((m) => m.servable).length, 0)
 
 /** What the draft does not hold yet. */
 export const trackingFree = (draft: readonly TrackingUnit[], candidates: readonly TrackingUnit[]): TrackingUnit[] => {
@@ -122,7 +122,7 @@ export function fillTrackingSet(draft: readonly TrackingUnit[], candidates: read
 export function swapTrackingUnit(draft: readonly TrackingUnit[], index: number, candidates: readonly TrackingUnit[], target: number): TrackingUnit[] | null {
   const old = draft[index]
   if (old === undefined) return null
-  const room = target - trackingCount(draft) + old.questions
+  const room = target - trackingCount(draft) + trackingCount([old])
   const next = trackingFree(draft, candidates).find((c) => c.questions <= room)
   if (next === undefined) return null
   return [...draft.slice(0, index), next, ...draft.slice(index + 1)]

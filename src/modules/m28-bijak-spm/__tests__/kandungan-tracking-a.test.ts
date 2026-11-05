@@ -70,6 +70,14 @@ describe('the draft rules', () => {
     expect(swapTrackingUnit(draft, 0, [q('a'), q('b')], 2)).toBeNull()
   })
 
+  it('a row that is not served counts for nothing, so its slot stays free to fill and to swap into', () => {
+    const gone = { ...q('z'), members: [{ id: 'z', stem: 'Soalan arkib', servable: false, statusWord: 'diarkib' }] }
+    expect(trackingCount([gone, q('a'), group('g', 'R', 2)])).toBe(3)
+    expect(fillTrackingSet([gone, q('a')], [q('a'), q('b'), q('c')], 2).units.map((u) => u.id)).toEqual(['z', 'a', 'b'])
+    expect(swapTrackingUnit([gone, q('a')], 0, [q('a'), q('b')], 2)?.map((u) => u.id)).toEqual(['b', 'a'])
+    expect(swapTrackingUnit([gone, q('a'), q('b')], 0, [q('c')], 2)).toBeNull()
+  })
+
   it('Naik and Turun move a group as one row and stop at the ends', () => {
     const draft = [q('a'), group('g', 'R', 2), q('b')]
     expect(moveTrackingUnit(draft, 1, -1).map((u) => u.id)).toEqual(['g', 'a', 'b'])
@@ -163,6 +171,7 @@ describe('pages', () => {
     server.trackingSet.mockResolvedValue(setOf())
     await mountAt(TrackingASetEditorPage, '/admin/spm/tracking-a/7/sunting')
     expect(text('tracking-counter')).toBe('1 / 5')
+    expect(text('tracking-attention')).toBe('Hanya 1 daripada 5 soalan')
     expect(text('tracking-needed')).toBe('4 soalan lagi diperlukan.')
     expect(text('tracking-available')).toBe('Soalan tersedia untuk Sains: 28,471')
     expect(text('tracking-kind')).toBe('ramalan')
@@ -177,6 +186,7 @@ describe('pages', () => {
     await click('tracking-fill')
     expect(text('tracking-counter')).toBe('3 / 3')
     expect(tid('tracking-fill')).toBeNull()
+    expect(tid('tracking-attention')).toBeNull()
     expect(text('tracking-full')).toBe('Set ini lengkap.')
     expect(server.saveTrackingSet).not.toHaveBeenCalled()
     await click('tracking-save')
@@ -233,14 +243,57 @@ describe('pages', () => {
     server.trackingSet.mockResolvedValue(setOf({ items: [{ ...archived, position: 1 }, { ...group('g', 'Rajah 3', 2), position: 2 }], filled: 2, candidateItems: [] }))
     await mountAt(TrackingASetEditorPage, '/admin/spm/tracking-a/7/sunting')
     expect(text('tracking-unserved-9')).toBe('diarkib · Tidak disajikan kepada pelajar')
-    expect(text('tracking-counter')).toBe('3 / 5')
+    expect(text('tracking-counter')).toBe('2 / 5')
     const row = tid('tracking-select-9')
     ;(row?.matches('button') ? row : row?.querySelector('button'))?.click()
     await flushPromises()
     expect(tid('tracking-open-9')?.getAttribute('href')).toBe('/admin/spm/soalan/9/sunting')
     expect(tid('tracking-open-9')?.textContent).toBe('Buka di laman berasingan')
     await click('set-remove-g')
-    expect(text('tracking-counter')).toBe('1 / 5')
+    expect(text('tracking-counter')).toBe('0 / 5')
+  })
+
+  it('agrees with the list: a full row count with a row not served is short, never complete, and its attention is the lane text', async () => {
+    const archived = { ...q('9', 'Soalan arkib'), members: [{ id: '9', stem: 'Soalan arkib', servable: false, statusWord: 'diarkib' }] }
+    server.trackingSet.mockResolvedValue(setOf({ targetCount: 3, items: [{ ...q('1'), position: 1 }, { ...q('2'), position: 2 }, { ...archived, position: 3 }], filled: 2, attention: ['Hanya 2 daripada 3 soalan'] }))
+    await mountAt(TrackingASetEditorPage, '/admin/spm/tracking-a/7/sunting')
+    expect(text('tracking-counter')).toBe('2 / 3')
+    expect(text('tracking-attention')).toBe('Hanya 2 daripada 3 soalan')
+    expect(tid('tracking-full')).toBeNull()
+    expect(text('tracking-needed')).toBe('1 soalan lagi diperlukan.')
+  })
+
+  it('an over-target set is not complete: it says how many to remove and offers no fill', async () => {
+    server.trackingSet.mockResolvedValue(setOf({ targetCount: 2, items: ['1', '2', '3'].map((id, i) => ({ ...q(id), position: i + 1 })), filled: 3, attention: [] }))
+    await mountAt(TrackingASetEditorPage, '/admin/spm/tracking-a/7/sunting')
+    expect(text('tracking-counter')).toBe('3 / 2')
+    expect(tid('tracking-full')).toBeNull()
+    expect(tid('tracking-attention')).toBeNull()
+    expect(tid('tracking-fill')).toBeNull()
+    expect(text('tracking-over')).toBe('Set ini melebihi sasaran 2 soalan. Buang 1 soalan sebelum menyimpan.')
+  })
+
+  it('Tambah Set warns before a dirty draft is lost; a clean draft is not asked about', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    server.trackingLane.mockResolvedValue({ rows: [], page: 1, pageSize: 1, total: 0, count: 0, subjects: [], setSubjects: [{ id: '3', name: 'Sains' }] })
+    server.trackingSet.mockResolvedValue(setOf())
+    server.createTrackingSet.mockResolvedValue(setOf({ id: '12' }))
+    await mountAt(TrackingASetEditorPage, '/admin/spm/tracking-a/7/sunting')
+    await click('tracking-fill')
+    await click('tracking-add-open')
+    await click('tracking-add-submit')
+    expect(confirm).toHaveBeenCalledWith('Perubahan pada set ini belum disimpan dan akan hilang. Teruskan?')
+    expect(server.createTrackingSet).not.toHaveBeenCalled()
+    expect(text('tracking-counter')).toBe('3 / 5')
+    confirm.mockReturnValue(true)
+    await click('tracking-add-submit')
+    expect(server.createTrackingSet).toHaveBeenCalledTimes(1)
+    expect(router.currentRoute.value.params.set).toBe('12')
+    confirm.mockClear()
+    await click('tracking-add-open')
+    await click('tracking-add-submit')
+    expect(confirm).not.toHaveBeenCalled()
+    confirm.mockRestore()
   })
 
   it('Tambah Set: the new-set route opens the form; the clash shows on its field; success opens the new set', async () => {

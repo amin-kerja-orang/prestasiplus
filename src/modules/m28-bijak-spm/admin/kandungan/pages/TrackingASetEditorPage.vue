@@ -12,13 +12,14 @@ import {
   TRACKING_A_SET_NO_MAX,
   TRACKING_A_YEAR_DEFAULT,
   TRACKING_A_YEAR_MIN,
+  trackingSetAttentionMs,
   type SpmAdminTrackingASet,
 } from '@pp/contract'
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useFlash, usePageMeta } from '@/composables'
-import { DsBadge, DsCallout, DsCluster, DsDefinitionList, DsFormField, DsHeading, DsLink, DsListRow, DsLoadError, DsNativeSelect, DsPage, DsPanel, DsRowActions, DsSplit, DsStack, DsText, type RowAction } from '@/ds'
+import { DsBadge, DsCallout, DsCluster, DsDefinitionList, DsFormField, DsHeading, DsLink, DsListRow, DsLoadError, DsNativeSelect, DsPage, DsPanel, DsRowActions, DsSplit, DsStack, DsText, useConfirm, type RowAction } from '@/ds'
 
 import { ADMIN_ROUTES } from '../../papers/ui'
 import { KANDUNGAN_ROUTES, TRACKING_NEW_SET, TrackingRefusal, type LaneSubject } from '../api'
@@ -30,6 +31,7 @@ const router = useRouter()
 const flash = useFlash()
 const pageMeta = usePageMeta()
 const server = kandunganServer()
+const confirm = useConfirm()
 
 const setParam = computed(() => String(route.params.set ?? ''))
 const isNew = computed(() => setParam.value === TRACKING_NEW_SET)
@@ -47,7 +49,9 @@ const pick = ref('')
 const target = computed(() => set.value?.targetCount ?? 0)
 const current = computed(() => trackingCount(draft.value))
 const needed = computed(() => Math.max(0, target.value - current.value))
-const isFull = computed(() => set.value !== null && needed.value === 0)
+/** The same reading as the lane: below the target "Hanya {a} daripada {b} soalan"; only exactly at the target is the set complete. */
+const isShort = computed(() => set.value !== null && current.value < target.value)
+const isComplete = computed(() => set.value !== null && current.value === target.value)
 const options = computed(() => trackingFree(draft.value, set.value?.candidateItems ?? []))
 const selected = computed(() => draft.value.find((u) => trackingUnitKey(u) === selectedKey.value) ?? null)
 const fieldItems = computed(() =>
@@ -227,6 +231,8 @@ async function createSet(): Promise<void> {
     addErrors.setNo = PROPOSED.setNoRange
     return
   }
+  // Success opens the new set, which drops this draft.
+  if (dirty.value && !(await confirm({ message: PROPOSED.discardDraft, tone: 'error' }))) return
   creating.value = true
   try {
     const created = await server.createTrackingSet({ subjectId: addForm.subjectId, year: Number(addForm.year), setNo })
@@ -281,6 +287,7 @@ watch(setParam, () => void load(), { immediate: true })
               <DsText variant="body" data-testid="tracking-counter">{{ current }} / {{ target }}</DsText>
             </DsCluster>
             <DsDefinitionList :items="fieldItems" data-testid="tracking-fields" />
+            <DsText v-if="isShort" as="p" variant="caption" tone="error" data-testid="tracking-attention">{{ trackingSetAttentionMs(current, target) }}</DsText>
             <DsText v-if="dirty" as="p" variant="caption" tone="muted" data-testid="tracking-unsaved">{{ PROPOSED.unsaved }}</DsText>
             <DsCallout v-if="notice" tone="error" :description="notice" data-testid="tracking-notice" />
 
@@ -310,7 +317,7 @@ watch(setParam, () => void load(), { immediate: true })
 
         <DsPanel data-testid="tracking-fill-block">
           <DsStack gap="sm">
-            <template v-if="!isFull">
+            <template v-if="isShort">
               <DsCluster gap="sm">
                 <UButton label="Isi set" color="neutral" variant="outline" data-testid="tracking-fill" @click="fill()" />
                 <DsText variant="body" data-testid="tracking-needed">{{ COPY.needed(needed) }}</DsText>
@@ -326,7 +333,8 @@ watch(setParam, () => void load(), { immediate: true })
                 <UButton :label="PROPOSED.pickAdd" color="neutral" variant="outline" :disabled="pick === ''" data-testid="tracking-pick-add" @click="addPicked()" />
               </DsCluster>
             </template>
-            <DsText v-else as="p" variant="body" data-testid="tracking-full">{{ COPY.complete }}</DsText>
+            <DsText v-else-if="isComplete" as="p" variant="body" data-testid="tracking-full">{{ COPY.complete }}</DsText>
+            <DsText v-else as="p" variant="body" tone="error" data-testid="tracking-over">{{ PROPOSED.overTarget(target, current - target) }}</DsText>
           </DsStack>
         </DsPanel>
 
