@@ -25,7 +25,7 @@ import { CurriculumRepository } from '../../curriculum'
 import { FilesService } from '../../files'
 import { AnswerLogPort } from '../../practice/answer-log.port'
 import { PracticePorts, type PracticeRewardResult, practiceRewardSource } from '../../practice/ports'
-import { type CompletedSession, type GradedAnswer, PracticeRepository, type ServedRef, type SessionRecord, type StoredCheck } from '../../practice/practice.repository'
+import { type CompletedSession, type GradedAnswer, KUIZ_ORIGIN, PracticeRepository, type ServedRef, type SessionRecord, type StoredCheck } from '../../practice/practice.repository'
 import { pinServableForNewSitting, QuestionsRepository } from '../../questions'
 import { type DrawCandidate, drawUnits } from '../../questions/serving'
 import type { QuestionRecord, StimulusGroupRecord } from '../../questions/types'
@@ -69,8 +69,6 @@ export interface KuizCaller {
 
 /** Stored mode of a random quiz: decision U8 "disimpan sebagai sesi latih tubi". */
 const KUIZ_MODE = 'latih_tubi' as const
-/** Written to `practice_sessions.legacy_paper`: only a session started here is a kuiz session (a Latih Tubi session shares the mode). */
-const KUIZ_ORIGIN = 'bijak_kuiz'
 /** S3-T04 (R2): a kuiz session with no check and no start for this long is closed as `abandoned` (API-BIJAK-06). */
 export const KUIZ_IDLE_MS = 2 * 60 * 60 * 1000
 /** Sessions looked at per pass of the sweep. */
@@ -207,17 +205,14 @@ export class KuizService {
     let finished: { done: CompletedSession; result: PracticeRewardResult }
     try {
       finished = await this.practice.completeSession(
-        { sessionId, userId: caller.userId, now, timeSpent: timeSpent ?? 0, isTest: caller.isTest },
+        { sessionId, userId: caller.userId, now, timeSpent: timeSpent ?? 0, isTest: caller.isTest, answerMode: 'kuiz' },
         {
           guard: (session) => {
             if (session.mode !== KUIZ_MODE || session.legacyPaper !== KUIZ_ORIGIN) throw quizNotFound()
             return Promise.resolve()
           },
           regrade: (_session, served, checks) => this.regrade(served, checks),
-          completed: async (completed, tx) => {
-            // API-BIJAK-06 / FR-PA-17: the rows are Kuiz rows. `completeSession` (S5) writes them with the session mode
-            // (`latih_tubi`) in this same transaction; the port upserts on the DM-44 key, so this pass only sets `mode = 'kuiz'`.
-            await this.writeRows(completed.session, completed.answers, caller.isTest || completed.session.isTest)
+          completed: (completed, tx) => {
             return this.ports.reward.onSessionCompleted(
               {
                 userId: completed.session.userId,
@@ -264,7 +259,7 @@ export class KuizService {
     let correct = rows.filter((r) => r.isCorrect).length
     let answered = rows.length
     if (answered === 0 && session.status === 'abandoned') {
-      // Abandoned by the practice sweeper before the kuiz sweep wrote its rows: the kept checks are the answers.
+      // Abandoned by the practice sweeper before this change (it now skips kuiz sessions), so no rows were written: the kept checks are the answers.
       const checks = await this.practice.checks(session.id)
       answered = checks.length
       correct = checks.filter((c) => c.isCorrect).length
@@ -305,31 +300,12 @@ export class KuizService {
 
   // --- idle sweep (S3-T04 R2) ----------------------------------------------------------------------
 
-  /**
-   * Ids of kuiz sessions the sweep should close: `in_progress` and idle for 2 h (latest check, else start), plus a session the
-   * practice sweeper already abandoned whose kept checks have no answer rows yet. Read only.
-   */
-  async idleSessionIds(now: Date = this.clock.now(), limit = KUIZ_SWEEP_BATCH): Promise<string[]> {
-    const cutoff = new Date(now.getTime() - KUIZ_IDLE_MS)
-    const rows = await this.prisma.client.$queryRaw<{ id: string }[]>`
-      SELECT s.id::text AS id FROM practice_sessions s
-       WHERE s.legacy_paper = ${KUIZ_ORIGIN} AND s.mode = ${KUIZ_MODE}
-         AND ((s.status = 'in_progress'
-               AND greatest(s.started_at, coalesce((SELECT max(c.checked_at) FROM practice_checks c WHERE c.session_id = s.id), s.started_at)) < ${cutoff}::timestamptz)
-           OR (s.status = 'abandoned'
-               AND EXISTS (SELECT 1 FROM practice_checks c WHERE c.session_id = s.id)
-               AND NOT EXISTS (SELECT 1 FROM practice_answers a WHERE a.attempt_id = s.id)))
-       ORDER BY s.started_at
-       LIMIT ${limit}::int`
-    return rows.map((r) => r.id)
-  }
-
-  /** The scheduled sweep for kuiz sessions: closes every idle one (a failing session is skipped). Returns how many were closed. */
+  /** The scheduled sweep for kuiz sessions: closes every one idle for 2 h (a failing session is skipped). Returns how many were closed. */
   async sweepIdle(now: Date = this.clock.now()): Promise<number> {
     let closed = 0
-    for (const id of await this.idleSessionIds(now)) {
+    for (const s of await this.practice.idleKuizSessions(new Date(now.getTime() - KUIZ_IDLE_MS), KUIZ_SWEEP_BATCH)) {
       try {
-        if (await this.closeIdle(id, now)) closed += 1
+        if (await this.closeIdle(s.id, s.userId, now)) closed += 1
       } catch {
         // The next pass retries it.
       }
@@ -342,32 +318,19 @@ export class KuizService {
    * `abandoned` ("ditinggalkan") and NOTHING is paid (no reward call, no coins or points, no revision queue or mastery change).
    * Safe from several instances: the session row is locked and re-checked. Returns true when this call closed it.
    */
-  async closeIdle(sessionId: string, now: Date = this.clock.now()): Promise<boolean> {
-    const owner = await this.prisma.client.$queryRaw<{ user_id: string }[]>`
-      SELECT user_id::text AS user_id FROM practice_sessions WHERE id = ${sessionId}::uuid AND legacy_paper = ${KUIZ_ORIGIN} AND mode = ${KUIZ_MODE}`
-    const userId = owner[0]?.user_id
-    if (!userId) return false
+  async closeIdle(sessionId: string, userId: string, now: Date = this.clock.now()): Promise<boolean> {
     const cutoff = new Date(now.getTime() - KUIZ_IDLE_MS)
     return this.prisma.transaction(async () => {
       const session = await this.practice.lockSession(sessionId, userId, 'update')
-      if (!session || session.legacyPaper !== KUIZ_ORIGIN || session.mode !== KUIZ_MODE) return false
+      if (!session || session.legacyPaper !== KUIZ_ORIGIN || session.mode !== KUIZ_MODE || session.status !== 'in_progress') return false
       const checks = await this.practice.checks(session.id)
-      if (session.status === 'in_progress') {
-        const last = checks.reduce((m, c) => (c.checkedAt > m ? c.checkedAt : m), session.startedAt)
-        if (last >= cutoff) return false
-      } else if (session.status === 'abandoned') {
-        if (checks.length === 0 || (await this.practice.answers(userId, { sessionId: session.id, includeTest: true })).length > 0) return false
-      } else {
-        return false
-      }
+      const last = checks.reduce((m, c) => (c.checkedAt > m ? c.checkedAt : m), session.startedAt)
+      if (last >= cutoff) return false
       if (checks.length > 0) {
         const graded = await this.regrade(await this.practice.sessionQuestions(session.id), checks)
         await this.writeRows(session, graded, session.isTest)
       }
-      if (session.status === 'in_progress') {
-        await this.prisma.client.$executeRaw`UPDATE practice_sessions SET status = 'abandoned', updated_at = ${now}::timestamptz WHERE id = ${session.id}::uuid AND status = 'in_progress'`
-      }
-      return true
+      return this.practice.abandonSession(session.id, now)
     })
   }
 

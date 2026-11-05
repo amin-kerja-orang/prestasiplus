@@ -134,14 +134,18 @@ describe('Kuiz idle sweep (API-BIJAK-06, P-5)', () => {
     expect((await session(idle.sessionId)).status).toBe('abandoned')
   })
 
-  it('heals a kuiz session the practice sweeper already abandoned (checks kept, no rows)', async () => {
+  it('the practice sweeper leaves a kuiz session to the kuiz close; a session abandoned before that change keeps its checks and finish reads them', async () => {
     const s = await startQuiz(student)
-    await check(student, s, 2, 0)
-    await t.db.query(`update practice_sessions set status = 'abandoned' where id = $1::uuid`, [s.sessionId])
-    expect(await answerRows(s.sessionId)).toHaveLength(0)
-    expect(await t.app.get(AttemptSweeper).sweep()).toBe(1)
-    expect((await answerRows(s.sessionId)).map((r) => r.mode)).toEqual(['kuiz', 'kuiz'])
-    expect(await t.app.get(AttemptSweeper).sweep()).toBe(0)
+    await check(student, s, 1, 1)
+    const { PracticeSessionSweeper } = await import('../../src/modules/practice/session-sweeper.service')
+    t.clock.advance(3 * 3600_000)
+    expect(await t.app.get(PracticeSessionSweeper).sweep(t.clock.now())).toBe(0) // S5 skips bijak_kuiz
+    expect((await session(s.sessionId)).status).toBe('in_progress')
+    await t.db.query(`update practice_sessions set status = 'abandoned' where id = $1::uuid`, [s.sessionId]) // as an older deploy left it
+    const me = await loginAs(t, STUDENT)
+    const res = await me.post(`/api/bijak/kuiz/sessions/${s.sessionId}/finish`, {})
+    expect(res.status, JSON.stringify(res.body)).toBe(200)
+    expect(BijakKuizResultSchema.parse(res.body.data)).toMatchObject({ score: 1, answered: 2 })
   })
 })
 
@@ -162,14 +166,15 @@ describe('per-paper Kuiz check writes a kuiz row [PROPOSED]', () => {
       },
     })
     const paperId = paper.id.toString()
+    const pupil = await loginAs(t, STUDENT) // earlier cases moved the clock past the first session
     const q = id('SEED-MCQ-MATH-T4')
     const key = await keyOf(q)
     const attemptId = paperKuizAttemptId(student.userId, paperId)
     const wrong = ['A', 'B', 'C', 'D'].find((l) => l !== key)!
 
-    expect((await student.post(`/api/bijak/kuiz/papers/${paperId}/check`, { itemId: q, optionId: wrong })).status).toBe(200)
+    expect((await pupil.post(`/api/bijak/kuiz/papers/${paperId}/check`, { itemId: q, optionId: wrong })).status).toBe(200)
     expect((await answerRows(attemptId)).map((r) => [r.question_id, r.mode, r.is_correct, r.session_id, r.selected_label])).toEqual([[q, 'kuiz', false, null, wrong]])
-    expect((await student.post(`/api/bijak/kuiz/papers/${paperId}/check`, { itemId: q, optionId: key })).status).toBe(200)
+    expect((await pupil.post(`/api/bijak/kuiz/papers/${paperId}/check`, { itemId: q, optionId: key })).status).toBe(200)
     expect((await answerRows(attemptId)).map((r) => [r.is_correct, r.selected_label])).toEqual([[true, key]])
     // no session, check or revision row is created by a paper kuiz
     expect((await t.db.query(`select 1 from practice_sessions where id = $1::uuid`, [attemptId])).length).toBe(0)
