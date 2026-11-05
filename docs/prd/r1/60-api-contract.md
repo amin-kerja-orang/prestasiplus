@@ -709,8 +709,10 @@ type StimulusFlag = 'stimulus_missing' | 'figure_only' | 'stem_duplicated'      
 POST /api/admin/questions/:id/flags/dismiss  body: { flag: StimulusFlag } -> { data: { id, flags: StimulusFlag[] } }   // "Bukan masalah", audited
 GET  /api/admin/questions/regroup-worklist   ?subjectId&educationLevelId&flag&page
   -> { data: { questionId: Id; numberLabel: string|null; stemExcerpt: string; subject: string; level: string; flag: StimulusFlag;
-               paper: { title: string; year: number|null } | null }[],
-       meta: ListMeta & { counts: { bySubject: Record<string, number>; byLevel: Record<string, number>; byFlag: Record<StimulusFlag, number> } } }
+               reference: 'numbered' | 'unnumbered' | null;  // the `Rujukan` column
+               paper: { id: Id; paperCode: string|null; year: number|null; examType: string|null; title: string|null /* null when the paper has no code, type or year */ } | null }[],
+       meta: ListMeta & { counts: { bySubject: Record<string, number>; byLevel: Record<string, number>; byFlag: Record<StimulusFlag, number>;
+                  open: number /* open stimulus_missing + figure_only: "perlu tindakan" */; done: number /* dismissed: "selesai" */ } } }
 ```
 
 Both are Admin Pusat only. The same count feeds the `Perhatian` text of the Latih Tubi lane (FR-ADM-G7.5).
