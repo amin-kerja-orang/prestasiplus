@@ -62,6 +62,19 @@ async function expectInsideViewport(page: Page, l: Locator): Promise<void> {
   expect(b!.x + b!.width, 'right edge').toBeLessThanOrEqual(viewportWidth(page) + 1)
 }
 
+/** Waits until the element's box stops moving (an accordion or transition has settled). */
+async function expectStable(l: Locator): Promise<void> {
+  let prev = ''
+  await expect
+    .poll(async () => {
+      const cur = JSON.stringify(await l.boundingBox())
+      const same = cur === prev
+      prev = cur
+      return same
+    })
+    .toBe(true)
+}
+
 /** The correct-answer choices (A to D): each item holds the radio button and its letter label. */
 function radios(page: Page): Locator {
   return page.locator('[data-testid="q-correct"] fieldset > div')
@@ -77,6 +90,7 @@ test.describe('S6-T06 Sumbang Soalan responsive (AC-GUR-44-7)', MODULE, () => {
     page,
     gotoApp,
   }) => {
+    test.slow()
     await gotoApp('/guru/soalan')
     await expect(page.getByTestId('soalan-page')).toBeVisible()
     await expect(page.getByTestId('stat-total')).toContainText('25')
@@ -102,6 +116,9 @@ test.describe('S6-T06 Sumbang Soalan responsive (AC-GUR-44-7)', MODULE, () => {
 
     // Alat Soalan: each tile that is registered for this role is a 44 px row inside the viewport.
     const tiles = page.getByTestId('alat-tile')
+    // The block renders only when a tool route is registered; the page is already loaded here
+    // (stat-total asserted above), so a present block must hold tiles before they are measured.
+    if ((await page.getByTestId('alat-soalan').count()) > 0) await expect(tiles).not.toHaveCount(0)
     for (const t of await tiles.all()) {
       await expectTouchTarget(t)
       await expectInsideViewport(page, t)
@@ -127,7 +144,9 @@ test.describe('S6-T06 Sumbang Soalan responsive (AC-GUR-44-7)', MODULE, () => {
     await expectTouchTarget(first.getByTestId('question-toggle'))
     await first.getByTestId('question-toggle').click()
     await expect(first.getByTestId('question-body')).toBeVisible()
+    await expectStable(first.getByTestId('question-body'))
     const opts = first.getByTestId('question-option')
+    await expect(opts).not.toHaveCount(0)
     const n = await opts.count()
     expect(n).toBeGreaterThanOrEqual(4)
     for (let i = 1; i < n; i++) {
@@ -172,6 +191,7 @@ test.describe('S6-T06 Sumbang Soalan responsive (AC-GUR-44-7)', MODULE, () => {
     page,
     gotoApp,
   }) => {
+    test.slow()
     await gotoApp('/guru/soalan/cipta')
     await expect(page.getByTestId('question-form')).toBeVisible()
     await expect(page.getByTestId('back-link')).toBeVisible()
@@ -180,6 +200,7 @@ test.describe('S6-T06 Sumbang Soalan responsive (AC-GUR-44-7)', MODULE, () => {
     // DsNativeSelect keeps a 1 px hidden native <select> (it carries the testid); the visible
     // control is the combobox button next to it.
     const selects = page.getByTestId('info-card').getByRole('combobox')
+    await expect(selects).not.toHaveCount(0)
     expect(await selects.count()).toBeGreaterThanOrEqual(3)
     for (const sel of await selects.all()) {
       await expectTouchTarget(sel)
@@ -234,6 +255,7 @@ test.describe('S6-T06 Sumbang Soalan responsive (AC-GUR-44-7)', MODULE, () => {
     await expectTouchTarget(page.getByTestId('detail-edit'))
     await expectInsideViewport(page, page.getByTestId('detail-edit'))
     const opts = page.getByTestId('detail-option')
+    await expect(opts).not.toHaveCount(0)
     expect(await opts.count()).toBeGreaterThanOrEqual(4)
     for (let i = 1; i < (await opts.count()); i++) {
       expect(await top(opts.nth(i))).toBeGreaterThan(await top(opts.nth(i - 1)))
@@ -267,16 +289,26 @@ test.describe('S6-T06 Sumbang Soalan responsive (AC-GUR-44-7)', MODULE, () => {
     ['add form', '/guru/soalan/cipta'],
     ['edit form', `/guru/soalan/${String(FIRST_FIXTURE)}/edit`],
   ] as const) {
-    test(`AC-GUR-44-7 ${name}: each correct-answer radio is >= 44 px`, async ({
+    test(`AC-GUR-44-7 ${name}: each correct-answer choice is >= 44 px and selects from its edge`, async ({
       page,
       gotoApp,
     }) => {
       await gotoApp(path)
       await expect(page.getByTestId('question-form')).toBeVisible()
       await expect(radios(page)).toHaveCount(4)
-      for (const r of await radios(page).all()) {
+      const items = await radios(page).all()
+      for (const [i, r] of items.entries()) {
         await r.scrollIntoViewIfNeeded()
         await expectTouchTarget(r)
+        // The hit area is the whole item: a click 3 px inside its bottom-right corner (far from
+        // the 16 px dot and the letter) selects this choice.
+        const b = await r.boundingBox()
+        expect(b, 'item has a box').not.toBeNull()
+        await r.click({ position: { x: b!.width - 3, y: b!.height - 3 } })
+        await expect(r.getByRole('radio')).toBeChecked()
+        for (const [j, other] of items.entries()) {
+          if (j !== i) await expect(other.getByRole('radio')).not.toBeChecked()
+        }
       }
     })
   }
