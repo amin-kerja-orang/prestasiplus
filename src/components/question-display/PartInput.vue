@@ -7,6 +7,7 @@
  *  - essay / essay_choice: a text area (essay_choice: pick one topic first, via the shared `EssayAnswer`).
  * `table_fill`, and any kind outside the contract's `BijakAttemptLeafKind` (e.g. the BE-42 PKSK leaf
  * `pksk_choice`, which the server never serves to Bijak, #78 78-09), renders nothing (as AnswerWidget).
+ * Known gap: `table_fill` has no input here until `TableFillGrid` is wired in (S2-T10 / S3-T04).
  * Every change emits a whole new answer; the page autosaves it.
  */
 import { computed, ref } from 'vue'
