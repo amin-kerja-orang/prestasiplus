@@ -491,6 +491,10 @@ describe('item and queue', () => {
     expect(ok(IntakeItemListQuerySchema, { pageSize: '101' })).toBe(false)
     expect(ok(IntakeItemListQuerySchema, { state: 'draf' })).toBe(false)
     expect(ok(IntakeItemListQuerySchema, { duplicate: 'maybe' })).toBe(false)
+    expect(IntakeItemListQuerySchema.parse({ source: 'guru', kirimanStatus: 'Selesai' })).toMatchObject({ source: 'guru', kirimanStatus: 'Selesai' })
+    for (const k of ['Pending', 'Processing', 'Selesai', 'Ditolak', 'Jumlah']) expect(ok(IntakeItemListQuerySchema, { kirimanStatus: k })).toBe(true)
+    expect(ok(IntakeItemListQuerySchema, { source: 'admin' })).toBe(false)
+    expect(ok(IntakeItemListQuerySchema, { kirimanStatus: 'pending' })).toBe(false)
   })
 
   it('list response carries per-state counts', () => {
