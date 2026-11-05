@@ -1,5 +1,4 @@
 import {
-  QUESTION_SET_PAPER_FILE_PATTERN,
   QUESTION_SET_PAPER_MESSAGES,
   QuestionSetPaperFieldsSchema,
   QuestionSetPaperFilesSchema,
@@ -55,8 +54,8 @@ const isEmpty = (v: unknown): boolean => v === undefined || v === null || v === 
 /** Text fields that may not carry a NUL (Postgres text rejects it) get the message of their own length rule. */
 const NUL_MESSAGE: Record<string, string> = {
   subject: QUESTION_SET_PAPER_MESSAGES.subject,
-  disediakanOleh: QUESTION_SET_PAPER_MESSAGES.author,
-  catatan: QUESTION_SET_PAPER_MESSAGES.note,
+  preparedBy: QUESTION_SET_PAPER_MESSAGES.author,
+  note: QUESTION_SET_PAPER_MESSAGES.note,
 }
 
 export interface ValidatedPaper {
@@ -90,13 +89,10 @@ export function validatePaper(body: unknown, parts: readonly RawPart[] | undefin
   const described = files.map((f) => ({ name: f.name, size: f.size, type: f.mimetype }))
   const checked = QuestionSetPaperFilesSchema.safeParse(described)
   if (!checked.success) fields.files = checked.error.issues[0]?.message ?? QUESTION_SET_PAPER_MESSAGES.files
-  else if (!described.every((f) => QUESTION_SET_PAPER_FILE_PATTERN.test(f.name))) {
-    fields.files = QUESTION_SET_PAPER_MESSAGES.files
-  }
 
   if (!parsed.success || Object.keys(fields).length > 0) {
     // Same key order as the form, files last.
-    const order = ['jenisSoalan', 'subject', 'tingkatan', 'tahun', 'disediakanOleh', 'catatan', 'files']
+    const order = ['paperType', 'subject', 'levelId', 'year', 'preparedBy', 'note', 'answerSchemeConfirmed', 'files']
     const sorted: Record<string, string> = {}
     for (const k of order) if (fields[k] !== undefined) sorted[k] = fields[k]
     for (const [k, v] of Object.entries(fields)) sorted[k] ??= v
@@ -104,16 +100,16 @@ export function validatePaper(body: unknown, parts: readonly RawPart[] | undefin
   }
   const data = parsed.data
 
-  const level = isEmpty(data.tingkatan) ? null : wholeNumber(typeof data.tingkatan === 'string' ? data.tingkatan.replace(/^T/i, '') : data.tingkatan)
-  const year = isEmpty(data.tahun) ? currentYear : (wholeNumber(data.tahun) ?? currentYear)
-  const note = data.catatan ?? ''
+  const level = isEmpty(data.levelId) ? null : wholeNumber(typeof data.levelId === 'string' ? data.levelId.replace(/^T/i, '') : data.levelId)
+  const year = isEmpty(data.year) ? currentYear : (wholeNumber(data.year) ?? currentYear)
+  const note = data.note ?? ''
   return {
     declaration: {
-      paperType: data.jenisSoalan,
+      paperType: data.paperType,
       subjectText: data.subject,
       levelCode: level === null || level === undefined ? null : `T${String(level)}`,
       year,
-      authorCredit: data.disediakanOleh ?? '',
+      authorCredit: data.preparedBy ?? '',
       note: note === '' ? null : note,
     },
     files,
