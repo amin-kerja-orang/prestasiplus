@@ -65,11 +65,18 @@ export interface UpdateClass {
   now: Date
 }
 
-/** True when a thrown database error is a violation of the unique class name index (`uq_classrooms_teacher_year_name`, DM-73). */
+/**
+ * True when a thrown database error may be a unique violation of the class name index (`uq_classrooms_teacher_year_name`, DM-73):
+ * the index name in the message or meta, or ANY unique violation (Prisma P2002, P2010 with pg 23505, or pg 23505) of `classrooms` /
+ * `classrooms_*`. The caller confirms with the pre-check query (`nameTaken`) before answering 409.
+ */
 export function isClassNameViolation(e: unknown): boolean {
   if (typeof e !== 'object' || e === null) return false
-  const text = `${e instanceof Error ? e.message : ''} ${JSON.stringify((e as { meta?: unknown }).meta ?? {}, (_k, v: unknown) => (typeof v === 'bigint' ? v.toString() : v))}`
-  return text.includes('uq_classrooms_teacher_year_name')
+  const err = e as { code?: unknown; meta?: unknown; message?: unknown }
+  const text = `${typeof err.message === 'string' ? err.message : ''} ${JSON.stringify(err.meta ?? {}, (_k, v: unknown) => (typeof v === 'bigint' ? v.toString() : v))}`
+  if (text.includes('uq_classrooms_teacher_year_name')) return true
+  const unique = err.code === 'P2002' || err.code === '23505' || (err.code === 'P2010' && text.includes('23505'))
+  return unique && /\bclassrooms\b/.test(text) && !text.includes('uq_classrooms_join_code_upper') && !text.includes('uq_classrooms_legacy')
 }
 
 export interface EnrolInput {
@@ -309,19 +316,15 @@ export class ClassesRepository {
 
   /** Updates the editable fields of a class (S6-T14); the join code, owner and active flag are not touched. */
   async updateClass(id: string, input: UpdateClass): Promise<ClassRecord> {
-    const row = await this.db.classroom.update({
-      where: { id: idFromString(id) },
-      data: {
-        name: input.name,
-        subjectId: input.subjectId === null ? null : idFromString(input.subjectId),
-        educationLevelId: idFromString(input.educationLevelId),
-        academicYear: input.academicYear,
-        schoolId: input.schoolId === null ? null : idFromString(input.schoolId),
-        description: input.description,
-        updatedAt: input.now,
-      },
-    })
-    return toClass(row)
+    // Raw statement: a unique violation then reaches the caller as a database error that names the index (`isClassNameViolation`).
+    const key = idFromString(id)
+    await this.db.$executeRaw`
+      UPDATE classrooms
+         SET name = ${input.name}, subject_id = ${input.subjectId === null ? null : idFromString(input.subjectId)},
+             education_level_id = ${idFromString(input.educationLevelId)}, academic_year = ${input.academicYear},
+             school_id = ${input.schoolId === null ? null : idFromString(input.schoolId)}, description = ${input.description}, updated_at = ${input.now}
+       WHERE id = ${key}`
+    return toClass(await this.db.classroom.findUniqueOrThrow({ where: { id: key } }))
   }
 
   /**

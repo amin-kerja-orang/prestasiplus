@@ -160,7 +160,8 @@ export class ClassesService {
         return row
       })
     } catch (err) {
-      if (isClassNameViolation(err)) throw this.nameTaken()
+      // Confirm with the pre-check: only a real name clash is a 409, any other database error stays an error.
+      if (isClassNameViolation(err) && (await this.repo.nameTaken(actor.userId, form.academicYear, form.name))) throw this.nameTaken()
       throw err
     }
     const names = await this.namesOf([created])
@@ -197,7 +198,8 @@ export class ClassesService {
         return row
       })
     } catch (err) {
-      if (isClassNameViolation(err)) throw this.nameTaken()
+      // Confirm with the pre-check: only a real name clash is a 409, any other database error stays an error.
+      if (isClassNameViolation(err) && (await this.repo.nameTaken(actor.userId, form.academicYear, form.name, own.id))) throw this.nameTaken()
       throw err
     }
     const [names, counts] = await Promise.all([this.namesOf([updated]), this.repo.memberCounts([updated.id])])

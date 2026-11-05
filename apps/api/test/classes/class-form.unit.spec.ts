@@ -133,19 +133,43 @@ describe('class form (S6-T14)', () => {
     await expect(taken.service.updateClass(taken.actor, '5', { name: 'A', educationLevel: 'tingkatan-1' })).rejects.toMatchObject({ status: 409 })
   })
 
-  it('edit: a unique violation of the race is mapped to the same 409', async () => {
+  it('edit: a unique violation of the race is mapped to the same 409 once the pre-check confirms the clash', async () => {
     const { service, actor, calls } = build()
-    ;(service as unknown as { repo: { updateClass: () => never } }).repo.updateClass = () => {
+    let after = false
+    const repo = (service as unknown as { repo: { updateClass: () => never; nameTaken: () => Promise<boolean> } }).repo
+    repo.updateClass = () => {
+      after = true
       throw Object.assign(new Error('duplicate key value violates unique constraint "uq_classrooms_teacher_year_name"'), { code: '23505' })
     }
+    repo.nameTaken = () => Promise.resolve(after)
     await expect(service.updateClass(actor, '5', { name: 'A', educationLevel: 'tingkatan-1' })).rejects.toMatchObject({ status: 409 })
     expect(calls.audits).toHaveLength(0)
+  })
+
+  it('edit: a P2002 or 23505 on classrooms WITHOUT the index name is still mapped when the pre-check confirms; without a clash it stays an error', async () => {
+    const mk = (taken: boolean) => {
+      const b = build()
+      let after = false
+      const repo = (b.service as unknown as { repo: { updateClass: () => never; nameTaken: () => Promise<boolean> } }).repo
+      repo.updateClass = () => {
+        after = true
+        throw Object.assign(new Error('Unique constraint failed on the fields: (`teacher_id`,`academic_year`) in table classrooms'), { code: 'P2002' })
+      }
+      repo.nameTaken = () => Promise.resolve(after && taken)
+      return b
+    }
+    const yes = mk(true)
+    await expect(yes.service.updateClass(yes.actor, '5', { name: 'A', educationLevel: 'tingkatan-1' })).rejects.toMatchObject({ status: 409 })
+    const no = mk(false)
+    await expect(no.service.updateClass(no.actor, '5', { name: 'A', educationLevel: 'tingkatan-1' })).rejects.toMatchObject({ code: 'P2002' })
   })
 
   it('isClassNameViolation recognises the index name in the message or in the Prisma meta only', () => {
     expect(isClassNameViolation(new Error('violates unique constraint "uq_classrooms_teacher_year_name"'))).toBe(true)
     expect(isClassNameViolation(Object.assign(new Error('x'), { meta: { message: 'uq_classrooms_teacher_year_name' } }))).toBe(true)
     expect(isClassNameViolation(new Error('uq_classrooms_join_code_upper'))).toBe(false)
+    expect(isClassNameViolation(Object.assign(new Error('x'), { code: 'P2002', meta: { modelName: 'Classroom', target: 'classrooms' } }))).toBe(true)
+    expect(isClassNameViolation(Object.assign(new Error('x'), { code: 'P2002', meta: { target: 'users' } }))).toBe(false)
     expect(isClassNameViolation(null)).toBe(false)
   })
 

@@ -7,6 +7,7 @@
 --  4. question_sets.education_level_id (nullable, "Tingkatan (pilihan)").
 --  5. Index practice_sessions (question_set_id, status): the edit lock, "siap" counts and results read sessions by set.
 --     (practice_sessions belongs to S5: additive index only, no column change.)
+-- Seeds and fixtures hold no `scheduled` question set (migrated headers are all drafts), so no status conversion is needed here.
 -- rollback (only while no set has two classes or a NULL classroom_id):
 --   DROP INDEX "ix_practice_sessions_question_set_id_status";
 --   ALTER TABLE "question_sets" DROP COLUMN "education_level_id";
@@ -42,7 +43,13 @@ ON CONFLICT ("question_set_id", "classroom_id") DO NOTHING;
 ALTER TABLE "question_sets" DROP CONSTRAINT IF EXISTS "ck_question_sets_classroom_or_migrated";
 
 ALTER TABLE "question_sets" ADD COLUMN IF NOT EXISTS "education_level_id" BIGINT;
-ALTER TABLE "question_sets" ADD CONSTRAINT "fk_question_sets_education_level_id" FOREIGN KEY ("education_level_id") REFERENCES "education_levels"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-CREATE INDEX "ix_question_sets_education_level_id" ON "question_sets"("education_level_id");
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_question_sets_education_level_id') THEN
+    ALTER TABLE "question_sets" ADD CONSTRAINT "fk_question_sets_education_level_id" FOREIGN KEY ("education_level_id") REFERENCES "education_levels"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END
+$$;
+CREATE INDEX IF NOT EXISTS "ix_question_sets_education_level_id" ON "question_sets"("education_level_id");
 
-CREATE INDEX "ix_practice_sessions_question_set_id_status" ON "practice_sessions"("question_set_id", "status");
+CREATE INDEX IF NOT EXISTS "ix_practice_sessions_question_set_id_status" ON "practice_sessions"("question_set_id", "status");

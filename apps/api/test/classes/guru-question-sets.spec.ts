@@ -115,6 +115,11 @@ describe('teacher Set Soalan (S6-T14)', () => {
       for (const id of ['99999999', 'abc', '0']) errorIs(await a.get(`/guru/question-sets/${id}`), 404, 'NOT_FOUND', NOT_FOUND)
     })
 
+    it('a migrated header (needs a rebuild, no subject) is a 404 like in the list', async () => {
+      const [h] = await t.db.query<{ id: string }>(`insert into question_sets (teacher_id, title, legacy_source, legacy_id, needs_rebuild) values ($1, 'Header Migrasi', 'cloud', 'gs-1', true) returning id::text id`, [teacherIdOfA])
+      errorIs(await a.get(`/guru/question-sets/${h?.id}`), 404, 'NOT_FOUND', NOT_FOUND)
+    })
+
     it('a teacher paper (kind kertas) is not a set here: 404', async () => {
       const own = await make()
       await t.db.query(`update question_sets set kind = 'kertas' where id = $1`, [own.id])
