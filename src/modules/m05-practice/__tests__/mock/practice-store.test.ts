@@ -21,6 +21,7 @@ import { BEFORE_M1, M11_AKTIF, M11_WEEKLY } from '../../mock/datasets/m11-cells'
 import { practicePrimeOrNull } from '../../mock/datasets/prime'
 import { useOfferedLevels } from '../../mock/repository/rules'
 import { setPracticeSeamsForTests, type GamificationInput } from '../../mock/repository/seams'
+import { MOCK_MISSION_REFERENCE_URL } from '../../mock/handlers/sessions'
 import { bootPractice, request } from './helpers'
 
 let runtime: MockRuntime
@@ -815,6 +816,11 @@ describe('write path (BR-31)', () => {
       mode: 'mission',
       missionId: 9001,
     })
+    // FR-GUR-44a-9: the seeded "Rujukan" link rides on the first question of a mission only.
+    const served = (open1.body as { data: { questions: { referenceUrl?: string }[] } }).data
+      .questions
+    expect(served[0]?.referenceUrl).toBe(MOCK_MISSION_REFERENCE_URL)
+    expect(served.slice(1).every((q) => q.referenceUrl === undefined)).toBe(true)
     const id1 = (open1.body as { data: { sessionId: string } }).data.sessionId
     expect((open2.body as { data: { sessionId: string } }).data.sessionId).toBe(id1)
     for (const qid of ids) {

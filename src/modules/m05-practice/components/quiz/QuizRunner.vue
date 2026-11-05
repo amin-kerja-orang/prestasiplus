@@ -36,6 +36,7 @@ import {
   dsOptionState,
   formatTime,
   optionState,
+  isHttpUrl,
   planStartError,
   safeHref,
 } from './quiz-lib'
@@ -210,6 +211,10 @@ const timeText = computed(() => formatTime(clock.value))
 const takenText = computed(() => formatTime(elapsed.value))
 const progressPct = computed(() => (total.value > 0 ? ((index.value + 1) / total.value) * 100 : 0))
 const revisionMeta = computed(() => active.value?.revisionMeta ?? null)
+const referenceHref = computed(() => {
+  const url = current.value?.referenceUrl
+  return isHttpUrl(url) ? url : null
+})
 const contributorHref = computed(() => safeHref(current.value?.contributor?.profileUrl))
 const tints = computed(() => props.report.tints ?? DEFAULT_TINTS)
 
@@ -415,6 +420,19 @@ const feedbackExplanation = computed(() =>
               >
                 {{ current.questionText }}
               </h2>
+
+              <p v-if="referenceHref" class="text-caption" data-testid="question-reference">
+                <a
+                  :href="referenceHref"
+                  class="inline-flex min-h-11 items-center gap-2 text-highlighted underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="question-reference-link"
+                >
+                  <UIcon name="i-ph-arrow-square-out-bold" class="size-5" aria-hidden="true" />
+                  Rujukan
+                </a>
+              </p>
 
               <p
                 v-if="current.contributor"

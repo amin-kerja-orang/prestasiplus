@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { difficultyOfTp, servableMcq, toPracticeQuestion, tpsOfDifficulty } from '../../src/modules/practice/question-bridge'
+import {
+  difficultyOfTp,
+  servableMcq,
+  toPracticeQuestion,
+  tpsOfDifficulty,
+} from '../../src/modules/practice/question-bridge'
 import type { QuestionPart, QuestionRecord } from '../../src/modules/questions'
 
 const mcqLeaf = (over: Record<string, unknown> = {}): QuestionPart =>
@@ -14,7 +19,20 @@ const mcqLeaf = (over: Record<string, unknown> = {}): QuestionPart =>
     ...over,
   }) as unknown as QuestionPart
 
-function record(over: { parts?: QuestionPart[]; type?: string; groupId?: string | null; stimulusIds?: string[]; stem?: string | null; language?: string; tp?: number | null; chapterId?: string | null } = {}): QuestionRecord {
+function record(
+  over: {
+    visibility?: 'bank' | 'teacher_private'
+    referenceUrl?: string | null
+    parts?: QuestionPart[]
+    type?: string
+    groupId?: string | null
+    stimulusIds?: string[]
+    stem?: string | null
+    language?: string
+    tp?: number | null
+    chapterId?: string | null
+  } = {},
+): QuestionRecord {
   const now = new Date('2026-10-21T00:00:00Z')
   return {
     id: '42',
@@ -59,6 +77,8 @@ function record(over: { parts?: QuestionPart[]; type?: string; groupId?: string 
       setLabel: null,
       sourceFile: null,
       spIds: [],
+      ...(over.visibility ? { visibility: over.visibility } : {}),
+      ...(over.referenceUrl === undefined ? {} : { referenceUrl: over.referenceUrl }),
       stimulusIds: over.stimulusIds ?? [],
       parts: over.parts ?? [mcqLeaf()],
       createdAt: now,
@@ -92,10 +112,17 @@ describe('BE-09 -> practice mapping', () => {
   })
 
   it('stem equal to the prompt is not repeated; no stem uses the prompt; jawi is rtl', () => {
-    expect(toPracticeQuestion(record({ stem: 'Pilih jawapan.' }), null)?.questionText).toBe('Pilih jawapan.')
+    expect(toPracticeQuestion(record({ stem: 'Pilih jawapan.' }), null)?.questionText).toBe(
+      'Pilih jawapan.',
+    )
     expect(toPracticeQuestion(record({ stem: null }), null)?.questionText).toBe('Pilih jawapan.')
     const jawi = toPracticeQuestion(record({ language: 'jawi', chapterId: null, tp: null }), null)
-    expect(jawi).toMatchObject({ textDirection: 'rtl', scriptType: 'jawi', hasDskp: false, difficulty: null })
+    expect(jawi).toMatchObject({
+      textDirection: 'rtl',
+      scriptType: 'jawi',
+      hasDskp: false,
+      difficulty: null,
+    })
   })
 
   it.each([
@@ -104,12 +131,58 @@ describe('BE-09 -> practice mapping', () => {
     ['a stimulus group', record({ groupId: '9' })],
     ['a version stimulus', record({ stimulusIds: ['5'] })],
     ['a leaf stimulus', record({ parts: [mcqLeaf({ stimulusId: '5' })] })],
-    ['an option image', record({ parts: [mcqLeaf({ options: [{ label: 'A', body: { ms: 'x' }, imageId: '8' }, { label: 'B', body: { ms: 'y' } }, { label: 'C', body: { ms: 'z' } }] })] })],
-    ['a key naming no option', record({ parts: [mcqLeaf({ key: { kind: 'option', correct: 'H' } })] })],
-    ['a non-MCQ leaf', record({ parts: [{ label: '1', mode: 'short_text', marks: 1, prompt: { ms: 'x' }, key: { kind: 'accepted', values: ['y'] } } as unknown as QuestionPart] })],
+    [
+      'an option image',
+      record({
+        parts: [
+          mcqLeaf({
+            options: [
+              { label: 'A', body: { ms: 'x' }, imageId: '8' },
+              { label: 'B', body: { ms: 'y' } },
+              { label: 'C', body: { ms: 'z' } },
+            ],
+          }),
+        ],
+      }),
+    ],
+    [
+      'a key naming no option',
+      record({ parts: [mcqLeaf({ key: { kind: 'option', correct: 'H' } })] }),
+    ],
+    [
+      'a non-MCQ leaf',
+      record({
+        parts: [
+          {
+            label: '1',
+            mode: 'short_text',
+            marks: 1,
+            prompt: { ms: 'x' },
+            key: { kind: 'accepted', values: ['y'] },
+          } as unknown as QuestionPart,
+        ],
+      }),
+    ],
   ])('refuses %s (never served half-mapped)', (_name, r) => {
     expect(servableMcq(r).ok).toBe(false)
     expect(toPracticeQuestion(r, null)).toBeNull()
+  })
+
+  it('referenceUrl: a private question carries its link, a bank question never does (FR-GUR-44a-9)', () => {
+    const url = 'https://rujukan.example.org/bab-1'
+    expect(
+      toPracticeQuestion(record({ visibility: 'teacher_private', referenceUrl: url }), null)
+        ?.referenceUrl,
+    ).toBe(url)
+    expect(
+      toPracticeQuestion(record({ visibility: 'teacher_private', referenceUrl: null }), null),
+    ).not.toHaveProperty('referenceUrl')
+    expect(
+      toPracticeQuestion(record({ visibility: 'bank', referenceUrl: url }), null),
+    ).not.toHaveProperty('referenceUrl')
+    expect(toPracticeQuestion(record({ referenceUrl: url }), null)).not.toHaveProperty(
+      'referenceUrl',
+    )
   })
 
   it('difficulty <-> TP', () => {

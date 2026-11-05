@@ -49,10 +49,39 @@ const keysOf = (v: unknown): string[] =>
 
 describe('start request', () => {
   it('accepts mock-shaped bodies for each mode', () => {
-    expect(StartSessionRequestSchema.safeParse({ mode: 'random', subjectCode: 'MATH', levelId: '2', difficulty: null, count: 10 }).success).toBe(true)
-    expect(StartSessionRequestSchema.safeParse({ mode: 'chapter', chapterId: '88', count: 5, clientUuid: SESSION_ID }).success).toBe(true)
-    expect(StartSessionRequestSchema.safeParse({ mode: 'ramalan', subjectCode: 'BM', year: 2025, setNo: 1 }).success).toBe(true)
-    expect(StartSessionRequestSchema.safeParse({ mode: 'latih_tubi', subjectCode: 'SEJ', targetQuestionId: '9', count: 1 }).success).toBe(true)
+    expect(
+      StartSessionRequestSchema.safeParse({
+        mode: 'random',
+        subjectCode: 'MATH',
+        levelId: '2',
+        difficulty: null,
+        count: 10,
+      }).success,
+    ).toBe(true)
+    expect(
+      StartSessionRequestSchema.safeParse({
+        mode: 'chapter',
+        chapterId: '88',
+        count: 5,
+        clientUuid: SESSION_ID,
+      }).success,
+    ).toBe(true)
+    expect(
+      StartSessionRequestSchema.safeParse({
+        mode: 'ramalan',
+        subjectCode: 'BM',
+        year: 2025,
+        setNo: 1,
+      }).success,
+    ).toBe(true)
+    expect(
+      StartSessionRequestSchema.safeParse({
+        mode: 'latih_tubi',
+        subjectCode: 'SEJ',
+        targetQuestionId: '9',
+        count: 1,
+      }).success,
+    ).toBe(true)
   })
 
   it('rejects pksk, unknown modes, bad ids and bad uuids', () => {
@@ -63,7 +92,9 @@ describe('start request', () => {
     expect(PRACTICE_MODES).toHaveLength(12)
     expect(PRACTICE_MODES).toContain('databank')
     expect(PRACTICE_MODES).toContain('tracking_a')
-    expect(StartSessionRequestSchema.safeParse({ mode: 'databank', subjectCode: 'SEJ' }).success).toBe(false)
+    expect(
+      StartSessionRequestSchema.safeParse({ mode: 'databank', subjectCode: 'SEJ' }).success,
+    ).toBe(false)
     for (const bad of [
       { mode: 'pksk' },
       { mode: 'battle' },
@@ -89,7 +120,9 @@ describe('start response', () => {
       timeLimitSec: 900,
     }
     expect(StartSessionResponseSchema.safeParse(full).success).toBe(true)
-    expect(StartSessionResponseSchema.safeParse({ ...start, subject: null, timeLimitSec: null }).success).toBe(true)
+    expect(
+      StartSessionResponseSchema.safeParse({ ...start, subject: null, timeLimitSec: null }).success,
+    ).toBe(true)
   })
 
   it('never carries the key or the explanation: a leaked field is rejected', () => {
@@ -100,25 +133,64 @@ describe('start response', () => {
     expect(keysOf(start)).not.toEqual(expect.arrayContaining(['correctAnswer']))
   })
 
+  it('referenceUrl is optional and nullable, http(s) only (FR-GUR-44a-9)', () => {
+    const withUrl = (referenceUrl: unknown) =>
+      StartSessionResponseSchema.safeParse({ ...start, questions: [{ ...question, referenceUrl }] })
+        .success
+    expect(withUrl('https://rujukan.example.org/bab-1')).toBe(true)
+    expect(withUrl('http://rujukan.example.org')).toBe(true)
+    expect(withUrl(null)).toBe(true)
+    expect(withUrl(undefined)).toBe(true)
+    for (const bad of [
+      'javascript:alert(1)',
+      'ftp://x.org',
+      '/relatif',
+      'https://u:p@x.org',
+      'https://x.org/a b',
+      `https://x.org/${'a'.repeat(2048)}`,
+    ])
+      expect(withUrl(bad), bad).toBe(false)
+  })
+
   it('rejects a non-uuid session id and a bad direction', () => {
     expect(StartSessionResponseSchema.safeParse({ ...start, sessionId: '12' }).success).toBe(false)
-    expect(StartSessionResponseSchema.safeParse({ ...start, questions: [{ ...question, textDirection: 'up' }] }).success).toBe(false)
+    expect(
+      StartSessionResponseSchema.safeParse({
+        ...start,
+        questions: [{ ...question, textDirection: 'up' }],
+      }).success,
+    ).toBe(false)
   })
 })
 
 describe('check-answer', () => {
   it('parses request and response', () => {
-    expect(CheckAnswerRequestSchema.safeParse({ questionId: '501', selectedOptionId: 1 }).success).toBe(true)
+    expect(
+      CheckAnswerRequestSchema.safeParse({ questionId: '501', selectedOptionId: 1 }).success,
+    ).toBe(true)
     const res = { isCorrect: false, correctOptionId: 1, feedback: 'Salah', explanation: null }
     expect(CheckAnswerResponseSchema.safeParse(res).success).toBe(true)
-    expect(CheckAnswerResponseSchema.safeParse({ ...res, explanation: 'Kerana 2 + 3 = 5.' }).success).toBe(true)
+    expect(
+      CheckAnswerResponseSchema.safeParse({ ...res, explanation: 'Kerana 2 + 3 = 5.' }).success,
+    ).toBe(true)
   })
 
   it('rejects missing or non-integer fields', () => {
-    for (const bad of [{ questionId: '501' }, { questionId: '501', selectedOptionId: -1 }, { questionId: '501', selectedOptionId: 'B' }, { selectedOptionId: 0 }]) {
+    for (const bad of [
+      { questionId: '501' },
+      { questionId: '501', selectedOptionId: -1 },
+      { questionId: '501', selectedOptionId: 'B' },
+      { selectedOptionId: 0 },
+    ]) {
       expect(CheckAnswerRequestSchema.safeParse(bad).success).toBe(false)
     }
-    expect(CheckAnswerResponseSchema.safeParse({ isCorrect: true, correctOptionId: 0, feedback: 'Betul!' }).success).toBe(false)
+    expect(
+      CheckAnswerResponseSchema.safeParse({
+        isCorrect: true,
+        correctOptionId: 0,
+        feedback: 'Betul!',
+      }).success,
+    ).toBe(false)
   })
 })
 
@@ -126,7 +198,13 @@ describe('submit', () => {
   it('parses request and response', () => {
     expect(SubmitSessionRequestSchema.safeParse({}).success).toBe(true)
     expect(SubmitSessionRequestSchema.safeParse({ timeSpent: 42.5 }).success).toBe(true)
-    const res = { results: { score: 8, total: 10, gamification: { coinsEarned: 8, streakCount: 3, pointsEarned: 80, totalBalance: 120 } } }
+    const res = {
+      results: {
+        score: 8,
+        total: 10,
+        gamification: { coinsEarned: 8, streakCount: 3, pointsEarned: 80, totalBalance: 120 },
+      },
+    }
     expect(SubmitSessionResponseSchema.safeParse(res).success).toBe(true)
   })
 
@@ -137,7 +215,9 @@ describe('submit', () => {
   })
 
   it('rejects an incomplete result', () => {
-    expect(SubmitSessionResponseSchema.safeParse({ results: { score: 1, total: 2 } }).success).toBe(false)
+    expect(SubmitSessionResponseSchema.safeParse({ results: { score: 1, total: 2 } }).success).toBe(
+      false,
+    )
   })
 })
 
@@ -167,12 +247,24 @@ describe('history list', () => {
 
   it('parses items with meta.activeType and meta.stats', () => {
     expect(SessionListResponseSchema.safeParse({ data: [item], meta }).success).toBe(true)
-    expect(SessionListResponseSchema.safeParse({ data: [{ ...item, subjectId: null, completedAt: null }], meta: { ...meta, activeType: 'random' } }).success).toBe(true)
+    expect(
+      SessionListResponseSchema.safeParse({
+        data: [{ ...item, subjectId: null, completedAt: null }],
+        meta: { ...meta, activeType: 'random' },
+      }).success,
+    ).toBe(true)
   })
 
   it('rejects a UTC timestamp, a bad mode and missing stats', () => {
-    expect(SessionListResponseSchema.safeParse({ data: [{ ...item, completedAt: '2026-10-16T01:30:00Z' }], meta }).success).toBe(false)
-    expect(SessionListResponseSchema.safeParse({ data: [{ ...item, mode: 'battle' }], meta }).success).toBe(false)
+    expect(
+      SessionListResponseSchema.safeParse({
+        data: [{ ...item, completedAt: '2026-10-16T01:30:00Z' }],
+        meta,
+      }).success,
+    ).toBe(false)
+    expect(
+      SessionListResponseSchema.safeParse({ data: [{ ...item, mode: 'battle' }], meta }).success,
+    ).toBe(false)
     const noStats: Partial<typeof meta> = { ...meta }
     delete noStats.stats
     expect(SessionListResponseSchema.safeParse({ data: [item], meta: noStats }).success).toBe(false)
@@ -188,7 +280,10 @@ describe('errors', () => {
 
   it('has a status and exact BM message for every module code', () => {
     expect(Object.keys(PRACTICE_ERRORS).sort()).toEqual([...PRACTICE_ERROR_CODES].sort())
-    expect(PRACTICE_ERRORS.TRIAL_EXHAUSTED).toEqual({ status: 402, messages: ['Baki percubaan percuma anda telah habis.'] })
+    expect(PRACTICE_ERRORS.TRIAL_EXHAUSTED).toEqual({
+      status: 402,
+      messages: ['Baki percubaan percuma anda telah habis.'],
+    })
     expect(PRACTICE_ERRORS.ALREADY_SUBMITTED.status).toBe(409)
     for (const code of PRACTICE_ERROR_CODES) {
       const { status, messages } = PRACTICE_ERRORS[code]
@@ -200,7 +295,13 @@ describe('errors', () => {
   })
 
   it('carries VALIDATION_ERROR fields', () => {
-    const body = { error: { code: 'VALIDATION_ERROR', message: 'Nilai tidak sah.', fields: { count: 'Nilai tidak sah.' } } }
+    const body = {
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'Nilai tidak sah.',
+        fields: { count: 'Nilai tidak sah.' },
+      },
+    }
     expect(ErrorBodySchema.safeParse(body).success).toBe(true)
   })
 })
@@ -218,7 +319,8 @@ describe('openapi registration', () => {
   })
 
   it('contains every practice component', () => {
-    for (const name of Object.keys(PRACTICE_COMPONENT_SCHEMAS)) expect(doc.components.schemas).toHaveProperty(name)
+    for (const name of Object.keys(PRACTICE_COMPONENT_SCHEMAS))
+      expect(doc.components.schemas).toHaveProperty(name)
     expect(PRACTICE_MODES).toContain('pksk')
   })
 })

@@ -56922,6 +56922,14 @@
             "additionalProperties": false,
             "description": "Teacher who wrote the question (\"Soalan oleh:\"), else null."
           },
+          "referenceUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2048,
+            "description": "The teacher's \"Rujukan\" link (http or https); only on a personal question served in a mission (FR-GUR-44a-9)."
+          },
           "options": {
             "type": "array",
             "items": {

@@ -47,8 +47,14 @@ export interface PracticeQuestion {
   hasDskp: boolean
   /** Teacher who wrote the question ("Soalan oleh:"), else null. */
   contributor: { name: string; profileUrl: string | null } | null
+  /** The teacher's "Rujukan" link (FR-GUR-44a-9): set only for a private (personal) question served in a mission; a bank question has none. */
+  referenceUrl?: string | null
   /** Options in served order; the zero-based index is the wire `selectedOptionId`. Labels `A`..`H`. */
-  options: { label: string; text: string; /** Only on a surface that allows figures (S1-T06). */ imageId?: string }[]
+  options: {
+    label: string
+    text: string
+    /** Only on a surface that allows figures (S1-T06). */ imageId?: string
+  }[]
   /** Flat stem figure file id; set only on a surface that allows figures (S1-T06). */
   stemImageId?: string
   /**
@@ -89,7 +95,10 @@ export interface PracticeQuestionSource {
    * published plain MCQs (BR-15 list). `exact: true` also checks the servable shape per row (one part, no stimulus, no option
    * image, the key names an option): use it for a few chapters only (the chapter being started; there is no chapter lock any more, REQ-C-021 / D98).
    */
-  chapterCounts(chapterIds: readonly string[], exact?: boolean): Promise<ReadonlyMap<string, number>>
+  chapterCounts(
+    chapterIds: readonly string[],
+    exact?: boolean,
+  ): Promise<ReadonlyMap<string, number>>
   /** Up to `limit` servable questions of a chapter in ascending id order, never one of `excludeIds` (BR-17 unanswered first). */
   chapterPage(chapterId: string, excludeIds: readonly string[], limit: number): Promise<string[]>
   /**
@@ -97,7 +106,11 @@ export interface PracticeQuestionSource {
    * An ineligible or unknown id is omitted, so it is never served (AC 4). A teacher's personal question (DM-42) is omitted too, unless the
    * caller is a mission session (`allowPrivate`): Ulang Kaji, Buka Soalan Sama and every other mode never serve one.
    */
-  live(ids: readonly string[], activity?: PracticeDrillActivity, opts?: { allowPrivate?: boolean }): Promise<ReadonlyMap<string, PracticeQuestion>>
+  live(
+    ids: readonly string[],
+    activity?: PracticeDrillActivity,
+    opts?: { allowPrivate?: boolean },
+  ): Promise<ReadonlyMap<string, PracticeQuestion>>
   /**
    * The ids among `ids` that the SPM activities (Databank, Latih Tubi SPM, Mock K1) may serve NOW: the same rule as a draw with
    * `spmPool: true` (`SPM_SERVABLE_SQL`: offered level, active subject and subject-level, not PKSK, approved and active). A single
@@ -108,7 +121,9 @@ export interface PracticeQuestionSource {
    * The exact versions a session served (OD-28): key `${questionId}@${versionNo}`. Used for check and submit,
    * so a later edit (version n+1) never changes the grading (AC 11). Eligibility is NOT re-checked here.
    */
-  versions(refs: readonly { questionId: string; versionNo: number }[]): Promise<ReadonlyMap<string, PracticeQuestion>>
+  versions(
+    refs: readonly { questionId: string; versionNo: number }[],
+  ): Promise<ReadonlyMap<string, PracticeQuestion>>
 }
 
 /** Until BE-09 merges: the bank is empty (every draw is `NOT_ENOUGH_QUESTIONS`). */
@@ -133,7 +148,8 @@ export class NoPracticeQuestions implements PracticeQuestionSource {
   }
 }
 
-export const versionKey = (questionId: string, versionNo: number): string => `${questionId}@${versionNo}`
+export const versionKey = (questionId: string, versionNo: number): string =>
+  `${questionId}@${versionNo}`
 
 /* ------------------------------------------------------------------------- BE-18: assigned work */
 
@@ -159,9 +175,21 @@ export type AssignmentResolution =
     }
 
 export interface PracticeAssignmentSource {
-  resolve(kind: AssignmentKind, input: { userId: string; id: string; at: Date }): Promise<AssignmentResolution>
+  resolve(
+    kind: AssignmentKind,
+    input: { userId: string; id: string; at: Date },
+  ): Promise<AssignmentResolution>
   /** Runs inside the submit transaction when a remedial session completes (mock `seams().remedialComplete`). */
-  remedialCompleted(input: { remedialTestId: string; userId: string; afterAccuracy: number; completedAt: Date; isTest: boolean }, tx: TxClient): Promise<void>
+  remedialCompleted(
+    input: {
+      remedialTestId: string
+      userId: string
+      afterAccuracy: number
+      completedAt: Date
+      isTest: boolean
+    },
+    tx: TxClient,
+  ): Promise<void>
 }
 
 export class NoAssignments implements PracticeAssignmentSource {
