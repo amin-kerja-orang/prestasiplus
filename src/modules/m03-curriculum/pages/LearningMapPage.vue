@@ -147,8 +147,8 @@ const shownGrade = computed(() =>
           <div class="text-center text-display" aria-hidden="true">🗺️</div>
           <DsEmptyState
             icon="map-trifold"
-            title="Tiada Topik Dijumpai"
-            description="Pilih subjek dan tingkatan yang lain untuk melihat peta belajar"
+            title="Peta Belum Tersedia"
+            description="Bab DSKP untuk subjek ini belum dimuatkan."
           />
         </div>
 
