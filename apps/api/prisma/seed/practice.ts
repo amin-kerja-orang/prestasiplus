@@ -22,7 +22,7 @@ import type { SeedModule } from './index'
 const MINUTE = 60_000
 const DAY = 24 * 60 * MINUTE
 
-type Mode = 'random' | 'chapter' | 'past_year'
+type Mode = 'random' | 'chapter' | 'past_year' | 'latih_tubi'
 
 interface SessionPlan {
   /** Fixed client key: the natural key of the session together with the user. */
@@ -45,6 +45,21 @@ export const PRACTICE_SESSIONS: readonly SessionPlan[] = [
   { clientUuid: '6c0f5a1e-0002-4a10-9b00-0000000000a2', email: 'pelajar@demo.test', mode: 'chapter', subject: 'MATH', level: 'T4', chapterNumber: 1, questions: 5, correct: 4, daysAgo: 1, timeSpentSec: 180 },
   { clientUuid: '6c0f5a1e-0003-4a10-9b00-0000000000b1', email: 'pelajarmaju@demo.test', mode: 'random', subject: 'BM', level: 'T5', questions: 10, correct: 9, daysAgo: 2, timeSpentSec: 240 },
   { clientUuid: '6c0f5a1e-0004-4a10-9b00-0000000000b2', email: 'pelajarmaju@demo.test', mode: 'past_year', subject: 'SEJ', level: 'T4', questions: 5, correct: 2, daysAgo: 1, timeSpentSec: 200 },
+]
+
+/**
+ * Latih Tubi sessions of the five Form 4 pupils of the PoC Bijak sittings seed (`murid4` to `murid8@demo.test`, school DEMO001, Matematik),
+ * so the shared answer reader (S10-T01) has activity for the Matematik demo class and the school-admin practice block (k = 5: with
+ * `pelajar` there are 6 contributing pupils). Reports read `practice_answers` only (XS-8, D113), and a Bijak sitting reaches that store
+ * through its own writer (S3-T04), so a seed that stops at `exam_attempts` leaves the reports empty. `pelajar2` stays without history.
+ * A separate list from `PRACTICE_SESSIONS`: a pupil that does not exist (the run has no Bijak sittings seed) is skipped quietly.
+ */
+export const PRACTICE_SESSIONS_DEMO_CLASS: readonly SessionPlan[] = [
+  { clientUuid: '6c0f5a1e-0005-4a10-9b00-0000000000c4', email: 'murid4@demo.test', mode: 'latih_tubi', subject: 'MATH', level: 'T4', questions: 10, correct: 8, daysAgo: 2, timeSpentSec: 300 },
+  { clientUuid: '6c0f5a1e-0005-4a10-9b00-0000000000c5', email: 'murid5@demo.test', mode: 'latih_tubi', subject: 'MATH', level: 'T4', questions: 10, correct: 7, daysAgo: 3, timeSpentSec: 320 },
+  { clientUuid: '6c0f5a1e-0005-4a10-9b00-0000000000c6', email: 'murid6@demo.test', mode: 'latih_tubi', subject: 'MATH', level: 'T4', questions: 10, correct: 6, daysAgo: 4, timeSpentSec: 280 },
+  { clientUuid: '6c0f5a1e-0005-4a10-9b00-0000000000c7', email: 'murid7@demo.test', mode: 'latih_tubi', subject: 'MATH', level: 'T4', questions: 10, correct: 5, daysAgo: 5, timeSpentSec: 340 },
+  { clientUuid: '6c0f5a1e-0005-4a10-9b00-0000000000c8', email: 'murid8@demo.test', mode: 'latih_tubi', subject: 'MATH', level: 'T4', questions: 10, correct: 4, daysAgo: 6, timeSpentSec: 360 },
 ]
 
 /** Letters of the option picked: a right answer is B, a wrong one is C (the key of an unlinked answer is unknown, so this is only a stable demo value). */
@@ -138,6 +153,6 @@ export const practiceSeed: SeedModule = {
   name: 'practice',
   async run(ctx) {
     const now = ctx.clock.now()
-    for (const plan of PRACTICE_SESSIONS) await seedSession(ctx.prisma, plan, now)
+    for (const plan of [...PRACTICE_SESSIONS, ...PRACTICE_SESSIONS_DEMO_CLASS]) await seedSession(ctx.prisma, plan, now)
   },
 }
