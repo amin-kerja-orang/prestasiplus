@@ -166,7 +166,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
     key: 'kawalan-ciri',
     label: 'Sistem',
     icon: 'gear',
-    items: items([['SY-02', 'Kawalan Ciri']]),
+    items: items([['SY-02', 'Kawalan Ciri', '/admin/feature-toggles']]),
   },
   {
     // Cabutan (PG-09) and Kotak Misteri are sections of Kawalan Reward, not menu rows.

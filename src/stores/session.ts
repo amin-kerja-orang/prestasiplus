@@ -230,6 +230,8 @@ export const useSessionStore = defineStore('session', () => {
   const impersonator = computed(() => auth.value?.impersonator ?? null)
 
   /** Mod Pelajar (admin viewing as the demo student); `null` otherwise. The shell banner reads it. */
+  /** Server feature flags (S0-T10); empty until the session carries them (every key then counts as ON). */
+  const features = computed<Record<string, boolean>>(() => auth.value?.features ?? {})
   const mode = computed<ModPelajarMode | null>(() => auth.value?.mode ?? null)
 
   function commit(next: ClientSession | null): void {
@@ -389,6 +391,7 @@ export const useSessionStore = defineStore('session', () => {
     remember,
     expiresAt,
     impersonator,
+    features,
     mode,
     enterModPelajar,
     leaveModPelajar,

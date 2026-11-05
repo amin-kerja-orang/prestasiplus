@@ -28,6 +28,8 @@ export interface ClientSession {
   csrf?: string
   /** Real API only (AM2-A1): the account must change its password first; the mock never writes it. */
   mustChangePassword?: boolean
+  /** Real API only (S0-T10): server feature flags; a key that is absent counts as ON. The mock never writes it. */
+  features?: Record<string, boolean>
   /**
    * Present only on an impersonated session (XR-M27-21): the actor (school admin) and the path
    * "Kembali ke Admin" returns to. Not derived from `UserMe`; the shell renders the banner from it.

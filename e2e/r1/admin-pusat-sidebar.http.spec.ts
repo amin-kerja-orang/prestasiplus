@@ -70,6 +70,7 @@ const EXPECTED: Expected[] = [
   { group: 'SPM', label: 'Databank Soalan', href: '/admin/spm/databank' },
   { group: 'Premium', label: 'PKSK Soalan', href: '/admin/pksk/questions' },
   { group: 'Premium', label: 'PKSK Akses', href: '/admin/pksk/access' },
+  { group: 'Sistem', label: 'Kawalan Ciri', href: '/admin/feature-toggles' },
   { group: 'Kandungan', label: 'Artikel', href: '/admin/articles' },
   { group: 'Kandungan', label: 'Banner', href: '/admin/banners' },
   { group: 'Kandungan', label: 'Nota', href: '/admin/notes' },
@@ -77,7 +78,10 @@ const EXPECTED: Expected[] = [
   { group: 'Sistem', label: 'Tiket Bantuan', href: '/admin/tiket' },
 ]
 
-/** Group headings in order, with the sub heading row inside Soalan. The top shortcuts have none. */
+/**
+ * Group headings in order, with the sub heading row inside Soalan. The top shortcuts have none.
+ * `Sistem` appears twice (PRD 30 §3.1 rows 8 and 13): Kawalan Ciri, then the section with Tiket Bantuan.
+ */
 const HEADINGS = [
   'Analitik',
   'Kurikulum',
@@ -86,6 +90,7 @@ const HEADINGS = [
   'Pengguna',
   'SPM',
   'Premium',
+  'Sistem',
   'Kandungan',
   'Sistem',
 ]
@@ -155,12 +160,17 @@ async function collect(page: Page): Promise<Link[]> {
 /** Heading rows of the open sidebar, in DOM order: the text of `NAV` minus the link labels. */
 async function headingsOf(page: Page): Promise<string[]> {
   return page.locator(NAV).evaluate((nav, wanted) => {
+    // Walk the text once, in order, so a heading that occurs twice (`Sistem`) is found twice.
     const text = (nav as HTMLElement).innerText
-    return (wanted as string[])
-      .map((h) => ({ h, at: text.indexOf(h) }))
-      .filter((x) => x.at >= 0)
-      .sort((a, b) => a.at - b.at)
-      .map((x) => x.h)
+    const found: string[] = []
+    let from = 0
+    for (const h of wanted as string[]) {
+      const at = text.indexOf(h, from)
+      if (at < 0) continue
+      found.push(h)
+      from = at + h.length
+    }
+    return found
   }, HEADINGS)
 }
 

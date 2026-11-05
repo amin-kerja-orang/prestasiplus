@@ -32,7 +32,7 @@
  * resolve to the 404 page (overview §5.5, build-plan §S.5).
  */
 
-import { isAlesaAiOn, isKeluargaAngkatOn } from '@/app/features'
+import { isAlesaAiOn, isKeluargaAngkatOn, isServerFeatureOn, NAV_FEATURE_KEYS } from '@/app/features'
 import { isPathAllowed, isPrototypeScopeOn } from '@/app/prototype-scope'
 import type { Role } from '@/stores/session-types'
 
@@ -670,6 +670,24 @@ export function withoutKeluargaAngkat<T extends { id: string; kind: string }>(
   return entries.filter((e) => !KELUARGA_ANGKAT_NAV_IDS.has(e.id))
 }
 
+/** Drops the entries (also inside groups) whose server flag (Kawalan Ciri, S0-T10) is OFF. */
+export function withoutServerOff<T extends { id: string; kind: string }>(entries: readonly T[]): readonly T[] {
+  const off = (e: { id: string }) => {
+    const key = NAV_FEATURE_KEYS[e.id]
+    return key !== undefined && !isServerFeatureOn(key)
+  }
+  return entries
+    .filter((e) => !off(e))
+    .map((e) => {
+      const children = (e as { children?: readonly { id: string }[] }).children
+      return children?.some(off) ? ({ ...e, children: children.filter((c) => !off(c)) }) : e
+    })
+    .filter((e) => {
+      const children = (e as { children?: readonly unknown[] }).children
+      return e.kind !== 'group' || children === undefined || children.length > 0
+    })
+}
+
 /**
  * Pusat AI shortcuts that only repeat a matrix item under another label ("Cikgu Alesa Chat" is the
  * same screen as the matrix item "Cikgu Alesa"): not shown in scope mode.
@@ -746,7 +764,7 @@ export function navFor(
     entry.kind !== 'item' ||
     (!isOutOfScope(entry.to) && !(role === 'student' && STUDENT_HIDDEN_IDS.has(entry.id)))
   const visible = scopeEntries(
-    withoutKeluargaAngkat(withoutAlesa(entries))
+    withoutServerOff(withoutKeluargaAngkat(withoutAlesa(entries)))
       .filter((entry) => visibleTo(entry, role, surface) && inScope(entry))
       .map((entry) =>
         entry.kind === 'group' ? { ...entry, children: entry.children.filter(inScope) } : entry,
@@ -800,7 +818,11 @@ export function userDrawerAccountFor(role: Role | null): readonly NavItem[] {
 
 /** Bottom nav of a role: link tabs whose route is in the prototype scope; buttons always stay. */
 export function userBottomNavFor(role: Role | null): readonly BottomNavEntry[] {
-  return USER_BOTTOM_NAV.filter((entry) => entry.kind === 'button' || isPathAllowed(role, entry.to))
+  return USER_BOTTOM_NAV.filter(
+    (entry) =>
+      entry.kind === 'button' ||
+      (isPathAllowed(role, entry.to) && (entry.id !== 'game' || isServerFeatureOn('permainan'))),
+  )
 }
 
 /** Drawer badge classes: 10px pills become 9px (design-system §4). */

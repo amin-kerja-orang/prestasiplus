@@ -10,6 +10,8 @@
  * are hidden (route unregistered -> 404). The backend endpoint and the access-matrix row are kept.
  */
 
+import { useSessionStore } from '@/stores/session'
+
 /** Whether the ALESA AI surfaces are shown. OFF unless `VITE_ALESA_AI=on`. */
 export function isAlesaAiOn(): boolean {
   return import.meta.env.VITE_ALESA_AI === 'on'
@@ -28,4 +30,34 @@ export function isKeluargaAngkatOn(): boolean {
 /** The routes of Mohon Keluarga Angkat: kept when the flag is on, none otherwise (unbuilt route -> 404). */
 export function whenKeluargaAngkat<T>(routes: readonly T[]): T[] {
   return isKeluargaAngkatOn() ? [...routes] : []
+}
+
+/**
+ * Server feature flags (S0-T10, D115): `GET /api/session` carries `features: Record<string, boolean>`
+ * (Kawalan Ciri). A key that is absent counts as ON (fail-open, FR-ADM-N06.4), as does a session
+ * that has no map (mock mode, logged out, no active Pinia).
+ */
+export function isServerFeatureOn(key: string): boolean {
+  try {
+    return useSessionStore().features[key] !== false
+  } catch {
+    return true
+  }
+}
+
+/** The build-time flag AND the server flag: a feature is shown only when both are on. */
+export function isFeatureOn(key: string, buildFlag = true): boolean {
+  return buildFlag && isServerFeatureOn(key)
+}
+
+/**
+ * Menu item id -> Kawalan Ciri key, for the items an OFF flag removes (FR-ADM-N06.3, AC-ADM-N06.1).
+ * `latih-tubi` hides only the Latih Tubi item; the Cikgu Alesa chat shortcut shares `/cikgu`.
+ */
+export const NAV_FEATURE_KEYS: Readonly<Record<string, string>> = {
+  permainan: 'permainan',
+  'latih-tubi': 'latih-tubi',
+  'cikgu-alesa': 'cikgu-alesa',
+  'cikgu-alesa-chat': 'cikgu-alesa',
+  'mohon-keluarga-angkat': 'keluarga-angkat',
 }

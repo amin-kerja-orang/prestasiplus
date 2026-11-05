@@ -66,8 +66,9 @@ describe('Pentadbiran menu data', () => {
       'Pengguna',
       'SPM',
       'Premium',
+      'Sistem', // Kawalan Ciri (PRD 30 §3.1 row 8)
       'Kandungan',
-      'Sistem',
+      'Sistem', // Tiket Bantuan (row 13): two groups carry the label, as the PRD lists them
     ])
     expect(PENTADBIRAN_MENU.map((g) => g.items.map((i) => i.label))).toEqual([
       ['Command Center', 'Aktiviti Harian', 'Audio KBAT'],
@@ -101,6 +102,7 @@ describe('Pentadbiran menu data', () => {
       ],
       ['Databank Soalan'],
       ['PKSK Soalan', 'PKSK Akses'],
+      ['Kawalan Ciri'],
       ['Artikel', 'Banner', 'Nota', 'Upload Screenshot'],
       ['Tiket Bantuan'],
     ])
@@ -155,8 +157,10 @@ describe('Pentadbiran menu data', () => {
     expect(byId.get('BS-08')).toMatchObject({ label: 'Bank Soalan (Studio)', to: '/admin/studio' })
     expect(byId.get('BS-01')).toMatchObject({ label: 'Senarai Soalan', to: '/admin/questions' })
     expect(byId.get('BS-09')).toMatchObject({ label: 'Audit Rajah', to: '/admin/soalan-gambar' })
+    // S0-T10: Kawalan Ciri is built
+    expect(byId.get('SY-02')).toMatchObject({ label: 'Kawalan Ciri', to: '/admin/feature-toggles', built: true })
     // unbuilt target routes stay out of the rendered menu (FR-ADM-H0.2)
-    for (const id of ['PP-01', 'PP-02', 'PM-04', 'PM-29', 'PS-03', 'SY-01', 'SY-02', 'KK-08', 'BS-03', 'KS-07']) {
+    for (const id of ['PP-01', 'PP-02', 'PM-04', 'PM-29', 'PS-03', 'SY-01', 'KK-08', 'BS-03', 'KS-07']) {
       expect(byId.has(id), id).toBe(false)
       expect(FULL_ITEMS.find((i) => i.id === id)?.built, id).toBe(false)
     }
