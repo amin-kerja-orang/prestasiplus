@@ -762,6 +762,13 @@ describe('M14 admin operations: settings, reward control, lucky draws (BE-23, AC
         fail(await admin.put('/admin/reward-control/draws/abc', edit), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
       })
 
+      it('check order is 404, then 422, then 409: an invalid body on an unknown id is 404, on an open draw 422, a valid body on an open draw 409', async () => {
+        fail(await admin.put('/admin/reward-control/draws/999999', {}), 404, 'NOT_FOUND')
+        const d = await mk({ openNow: true })
+        fail(await admin.put(`/admin/reward-control/draws/${d.id}`, {}), 422, 'VALIDATION_ERROR', SUMMARY)
+        fail(await admin.put(`/admin/reward-control/draws/${d.id}`, edit), 409, 'CONFLICT')
+      })
+
       it('a draft that Buka opened first cannot be edited afterwards; concurrent edits all succeed in turn (last write wins) with one coherent pool', async () => {
         const d = await mk()
         const results = await Promise.all([1, 2, 3].map((n) => admin.put(`/admin/reward-control/draws/${d.id}`, { ...edit, title: `Edit ${String(n)}`, prizePool: [{ label: `P${String(n)}`, valueSen: n, qty: n }] })))
@@ -830,6 +837,57 @@ describe('M14 admin operations: settings, reward control, lucky draws (BE-23, AC
         expect((await refunds(users[0]!)).length + (await refunds(users[1]!)).length).toBe(3)
         for (const u of users) expect((await walletOf(t, u))!.current_syiling).toBe(100)
         expect(await t.db.query(`select 1 from audit_events where action = 'gamification.draw.cancelled' and target_id = $1`, [d.id])).toHaveLength(1)
+      })
+
+      it('two draws whose tickets reverse the same two pupils, cancelled concurrently, both succeed with exactly one refund per ticket (wallets lock in user id order)', async () => {
+        const a = await mk({ openNow: true })
+        const b = await mk({ openNow: true })
+        const [u1, u2] = [await bareUser(t, `Kunci A ${a.id}`), await bareUser(t, `Kunci B ${b.id}`)]
+        const wallet = t.app.get(WalletService)
+        for (const u of [u1, u2]) await wallet.credit({ userId: u, amount: 100, source: 'ujian', sourceId: `seed:${a.id}:${b.id}:${u}`, description: 'Baki', type: 'earn', isTest: false })
+        const buy = async (drawId: string, u: string) => {
+          const ticket = (await t.db.query<{ id: string }>(`insert into draw_tickets (draw_id, user_id) values ($1, $2) returning id::text`, [drawId, u]))[0]!.id
+          await wallet.debit({ userId: u, amount: PRICE, source: 'cabutan_ticket', sourceId: `draw:${drawId}:ticket:${ticket}`, description: 'Tiket', type: 'spend', isTest: false })
+        }
+        await buy(a.id, u1)
+        await buy(a.id, u2)
+        await buy(b.id, u2)
+        await buy(b.id, u1)
+        const results = await Promise.all([cancel(a.id), cancel(b.id)])
+        expect(results.map((r) => r.status)).toEqual([200, 200])
+        for (const u of [u1, u2]) {
+          expect(await refunds(u)).toHaveLength(2)
+          expect(await walletOf(t, u)).toMatchObject({ current_syiling: 100, total_syiling_earned: 100 })
+        }
+      })
+
+      it('a refund key that already exists is harmless: the cancel succeeds, that key stays one row and the balance is right', async () => {
+        const d = await mk({ openNow: true })
+        const users = await sell(d.id, [1, 1])
+        const ticket = (await t.db.query<{ id: string }>(`select id::text from draw_tickets where draw_id = $1 and user_id = $2`, [d.id, users[0]]))[0]!.id
+        await t.app.get(WalletService).credit({ userId: users[0]!, amount: PRICE, source: 'cabutan_refund', sourceId: `draw:${d.id}:ticket:${ticket}`, description: 'Pulangan tiket cabutan: Cabutan Batal', type: 'refund', isTest: false })
+        expect(GamificationDrawSchema.parse(dataOf(await cancel(d.id))).status).toBe('cancelled')
+        expect(await t.db.query(`select 1 from coin_ledger where source = 'cabutan_refund' and source_id = $1`, [`draw:${d.id}:ticket:${ticket}`])).toHaveLength(1)
+        for (const u of users) {
+          expect(await refunds(u)).toHaveLength(1)
+          expect((await walletOf(t, u))!.current_syiling).toBe(100)
+        }
+      })
+
+      it('a ticket purchase racing a cancel: the ticket is refunded, or the purchase is refused DRAW_CANCELLED/DRAW_CLOSED; the wallet nets to its start and nothing deadlocks', async () => {
+        const student = await signIn(t, STUDENT_MAJU)
+        const uid = await userIdOf(t.db, STUDENT_MAJU)
+        await t.app.get(WalletService).credit({ userId: uid, amount: 50, source: 'ujian', sourceId: `race:${uid}:${String(Date.now())}`, description: 'Baki', type: 'earn', isTest: false })
+        for (let i = 0; i < 4; i++) {
+          const d = await mk({ openNow: true })
+          const start = (await walletOf(t, uid))!.current_syiling
+          const [buy, cut] = await Promise.all([student.post(`/cabutan/${d.id}/tickets`), cancel(d.id)])
+          expect(cut.status).toBe(200)
+          if (buy.status === 201) expect(await refunds(uid)).toEqual(expect.arrayContaining([expect.objectContaining({ source_id: expect.stringContaining(`draw:${d.id}:ticket:`) })]))
+          else expect(['DRAW_CANCELLED', 'DRAW_CLOSED']).toContain(fail(buy, 409, (buy.body as { error: { code: string } }).error.code).code)
+          expect((await walletOf(t, uid))!.current_syiling).toBe(start)
+          expect(await t.db.query(`select 1 from coin_ledger where source = 'cabutan_refund' and source_id like $1`, [`draw:${d.id}:%`])).toHaveLength(buy.status === 201 ? 1 : 0)
+        }
       })
 
       it('a closed draw cancels and refunds its tickets', async () => {

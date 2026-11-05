@@ -151,7 +151,8 @@ export class DrawWinnersService {
       if (moved.count !== 1) throw ApiError.of('CONFLICT')
       let refunded = 0
       if (draw.status !== 'draft' && draw.ticketCostSyiling > 0) {
-        const tickets = await tx.drawTicket.findMany({ where: { drawId }, orderBy: { id: 'asc' }, select: { id: true, userId: true } })
+        // Wallet rows are locked in ascending user id (walletLockOrder), so two cancels with overlapping pupils cannot deadlock.
+        const tickets = await tx.drawTicket.findMany({ where: { drawId }, orderBy: [{ userId: 'asc' }, { id: 'asc' }], select: { id: true, userId: true } })
         for (const t of tickets) {
           await this.wallet.credit(
             {

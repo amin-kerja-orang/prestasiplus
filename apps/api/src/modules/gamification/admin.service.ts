@@ -21,6 +21,7 @@ import { toMytTimestamp } from '../../common/time/myt'
 import type { TxClient } from '../../db/client'
 import { CLOCK, type Clock, mytDay } from '../../db/clock'
 import { Prisma } from '../../db/generated/client'
+import { idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { DrawWinnersService, isRewardSettingKey, rewardSettingError, rewardSettingsByKey, RewardSettingsService, type DrawWinnerRecord } from '../shop'
 import { drawStillOpen } from '../shop/shop.time'
@@ -669,8 +670,10 @@ export class GamificationAdminService {
   async updateDraw(actor: AuditActor, rawId: string, body: unknown): Promise<GamificationDraw> {
     const id = idParam(rawId)
     const now = this.clock.now()
+    // Order of checks: 404 (cheap read), then 422 (body), then 409 (state, re-read under the row lock).
+    if (!(await this.repo.draw(this.repo.handle(), id))) throw notFoundError()
     const v = this.readDrawBody(body, now)
-    return this.write(actor, AUDIT_ACTIONS.GAMIFICATION_DRAW_UPDATED, { type: 'draw', id: rawId }, { title: v.title, prizeLines: v.prizes.length }, async (tx) => {
+    return this.write(actor, AUDIT_ACTIONS.GAMIFICATION_DRAW_UPDATED, { type: 'draw', id: idToString(id) }, { title: v.title, prizeLines: v.prizes.length }, async (tx) => {
       await this.repo.lockDraw(tx, id)
       const draw = await this.repo.draw(tx, id)
       if (!draw) throw notFoundError()
