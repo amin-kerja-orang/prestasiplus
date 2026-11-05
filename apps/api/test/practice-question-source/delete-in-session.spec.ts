@@ -25,7 +25,7 @@ let counter = 0
 async function mcq(): Promise<string> {
   const tag = w.tag
   const q = await svc.create(
-    { subjectId: tag.subjectId, educationLevelId: tag.levelId, difficultyLevel: 3, questionText: `Soalan sesi amalan ${String(counter++)}: yang manakah betul?`, questionType: 'mcq', options: ['Satu', 'Dua', 'Tiga', 'Empat'], correctAnswer: 1, explanation: 'Penjelasan.', tag: { unitId: tag.unitId, spIds: [tag.spId], tp: 3 } } as never,
+    { subjectId: tag.subjectId, educationLevelId: tag.levelId, difficultyLevel: 3, questionText: `Soalan sesi amalan ${String(counter++)}: yang manakah betul?`, questionType: 'mcq', options: ['Satu', 'Dua', 'Tiga', 'Empat'], correctAnswer: 1, explanation: 'Penjelasan.', cognitiveLevel: 'mengaplikasi', ...(tag.chapterId === undefined ? {} : { curriculumChapterId: tag.chapterId }), tag: { unitId: tag.unitId, spIds: [tag.spId], tp: 3 } } as never,
     { userId: w.admin, role: 'admin' },
   )
   for (const status of ['review', 'approved'] as const) await svc.bulkAction(status, [q.id], { userId: w.admin, role: 'admin' })

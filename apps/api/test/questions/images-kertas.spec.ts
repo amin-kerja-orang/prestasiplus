@@ -45,6 +45,7 @@ describe('question images and kertas (real database)', () => {
     questionText: 'Berapakah hasil tambah 2 dan 3?',
     options: ['4', '5', '6', '7'],
     correctAnswer: 1,
+    cognitiveLevel: 'mengaplikasi', // S1-T02 R-DSKP: aras per leaf wherever DSKP nodes exist
     ...(tag.chapterId === undefined ? {} : { curriculumChapterId: tag.chapterId }),
   })
 
