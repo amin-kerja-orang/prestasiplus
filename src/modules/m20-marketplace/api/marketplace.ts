@@ -19,7 +19,7 @@ import type {
   MarketplaceSellerAction,
 } from '@pp/contract'
 
-import { api, API_ERROR_CODES, ApiError, isApiError } from '@/api'
+import { api, API_ERROR_CODES, ApiError, isApiError, isHttpMode } from '@/api'
 import type { ListResult } from '@/api/envelope'
 
 import type {
@@ -158,6 +158,17 @@ export function runAdminSellerAction(
   return api.post<MarketplaceAdminSellerDetail>(`${ADMIN}/sellers/${encodeURIComponent(id)}/${action}`)
 }
 
+let mockUploads = 0
+/**
+ * Mock mode: the in-browser mock has no shared `/api/files` route (the router cannot decline a request, so a module
+ * route would capture other modules' uploads). The upload is answered locally with a deterministic 22-character token
+ * in the `FileRef.url` form the mock create / update accept; it is not loaded as a picture.
+ */
+function mockImageUrl(): string {
+  mockUploads += 1
+  return `/api/files/${`mockmpimg${String(mockUploads).padStart(13, '0')}`}`
+}
+
 /** Fallback text when an image upload is refused without a message of its own (P12-09). */
 const IMAGE_REFUSED = 'Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB.'
 
@@ -167,6 +178,7 @@ const IMAGE_REFUSED = 'Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 
  * `ApiError` keyed `images` so the form shows it under the image field; a network failure is rethrown as is.
  */
 export async function uploadMarketplaceImage(file: Blob): Promise<string> {
+  if (!isHttpMode()) return mockImageUrl()
   const form = new FormData()
   form.append('file', file)
   try {

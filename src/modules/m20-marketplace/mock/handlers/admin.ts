@@ -12,7 +12,8 @@
  * | `GET …/seller-options` | "PRESTASIPLUS Official (Admin)" (`id: null`) first, then the active sellers |
  * | `GET …/sellers`, `GET …/sellers/:id` | `?status&page`; `meta.stats` is global; owner masked |
  * | `POST …/sellers/:id/{approve,verify,suspend,ban}` | 409 when the status does not allow it |
- * | `POST /api/files?purpose=marketplace_image` | the upload of the image field (admin only, JPG/PNG/WebP, 2 MB) |
+ * No `/api/files` route is registered here (the router cannot decline a request, so it would capture other modules' uploads);
+ * in mock mode `uploadMarketplaceImage` answers locally (`api/marketplace.ts`).
  */
 
 import {
@@ -101,30 +102,6 @@ function parse<T>(schema: Schema<T>, value: unknown): { value: T } | { error: Mo
 
 const bodyOf = (req: MockRequest): unknown =>
   typeof req.body === 'object' && req.body !== null ? req.body : {}
-
-// --- upload (POST /api/files?purpose=marketplace_image) ------------------------------------------
-
-const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
-const MAX_IMAGE_BYTES = 2 * 1024 * 1024
-let uploadCount = 0
-
-/** Public token form of a `FileRef` (22 URL-safe characters); the mock numbers them. */
-const tokenOf = (n: number): string => `mockmpimg${String(n).padStart(13, '0')}`
-
-function upload(req: MockRequest): MockResponse {
-  const purpose = req.query.purpose
-  if (purpose !== 'marketplace_image') {
-    return validationError({ purpose: 'Tujuan fail tidak sah.' })
-  }
-  const file = req.formData?.get('file')
-  if (!(file instanceof Blob)) return validationError({ file: MARKETPLACE_ADMIN_MESSAGES.imageInvalid })
-  if (!IMAGE_TYPES.includes(file.type) || file.size > MAX_IMAGE_BYTES) {
-    return validationError({ file: MARKETPLACE_ADMIN_MESSAGES.imageInvalid })
-  }
-  uploadCount += 1
-  const id = tokenOf(uploadCount)
-  return created({ id, url: `/api/files/${id}` })
-}
 
 // --- products ------------------------------------------------------------------------------------
 
@@ -350,5 +327,4 @@ export const adminRoutes: RouteDef[] = [
   ...MARKETPLACE_SELLER_ACTIONS.map((action) =>
     route('POST', `${A}/sellers/:id/${action}`, [adminOnly], transition(action), { params: { id: str() } }),
   ),
-  route('POST', '/api/files', [adminOnly], upload),
 ]

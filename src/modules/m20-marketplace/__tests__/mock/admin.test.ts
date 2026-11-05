@@ -202,27 +202,21 @@ describe('product create / update / delete (P12-02..11)', () => {
   })
 })
 
-describe('image upload (POST /api/files?purpose=marketplace_image)', () => {
-  const upload = (file: File, purpose = 'marketplace_image', as: number | null = ADMIN) => {
+describe('image upload', () => {
+  it('registers no /api/files route, so other modules\' uploads are not captured (404 as on base)', async () => {
     const form = new FormData()
-    form.append('file', file)
-    return call('POST', '/api/files', as, form, { purpose })
-  }
-
-  it('stores a JPG/PNG/WebP up to 2 MB and answers a FileRef', async () => {
-    const a = await upload(new File(['x'], 'a.png', { type: 'image/png' }))
-    expect(a.status).toBe(201)
-    expect(a.body.data.url).toBe(`/api/files/${a.body.data.id}`)
-    expect(a.body.data.id).toHaveLength(22)
+    form.append('file', new File(['x'], 'a.png', { type: 'image/png' }))
+    for (const purpose of ['question_image', 'marketplace_image']) {
+      expect((await call('POST', '/api/files', ADMIN, form, { purpose })).status).toBe(404)
+    }
   })
 
-  it('refuses another type, a file over 2 MB, another purpose and a pupil', async () => {
-    const gif = await upload(new File(['x'], 'a.gif', { type: 'image/gif' }))
-    expect(gif.body.error.fields.file).toBe('Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB.')
-    const big = await upload(new File([new Uint8Array(2 * 1024 * 1024 + 1)], 'a.jpg', { type: 'image/jpeg' }))
-    expect(big.status).toBe(422)
-    expect((await upload(new File(['x'], 'a.png', { type: 'image/png' }), 'question_image')).status).toBe(422)
-    expect((await upload(new File(['x'], 'a.png', { type: 'image/png' }), 'marketplace_image', PELAJAR)).status).toBe(403)
+  it('in mock mode uploadMarketplaceImage answers locally with a FileRef url the create accepts', async () => {
+    const { uploadMarketplaceImage } = await import('../../api/marketplace')
+    const url = await uploadMarketplaceImage(new File(['x'], 'a.png', { type: 'image/png' }))
+    expect(url).toMatch(/^\/api\/files\/[A-Za-z0-9_-]{22}$/)
+    const a = await admin('POST', `${A}/products`, { ...VALID, images: [url] })
+    expect(a.status).toBe(201)
   })
 })
 
