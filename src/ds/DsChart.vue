@@ -78,6 +78,10 @@ const props = withDefaults(
     errorMessage?: string
     /** Text of the empty state (no data for the period). */
     emptyLabel?: string
+    /** Category axis: print the first label and every n-th one (1-based), e.g. 5 for days 1, 5, 10, ... The data table keeps every label. */
+    tickEvery?: number
+    /** Bar charts with one series: the index of the bar drawn in the series colour; the other bars use the dimmed text colour. */
+    highlightIndex?: number
   }>(),
   {
     type: 'bar',
@@ -91,6 +95,8 @@ const props = withDefaults(
     error: false,
     errorMessage: undefined,
     emptyLabel: dsCopy.chartEmpty,
+    tickEvery: undefined,
+    highlightIndex: undefined,
   },
 )
 
@@ -220,7 +226,11 @@ function build(): ChartConfiguration {
   const datasets = props.series.map((s, i) => ({
     label: s.label,
     data: s.data,
-    backgroundColor: doughnut ? colours.value.slice(0, s.data.length) : seriesColour(i),
+    backgroundColor: doughnut
+      ? colours.value.slice(0, s.data.length)
+      : bars && props.highlightIndex !== undefined
+        ? s.data.map((_, n) => (n === props.highlightIndex ? seriesColour(i) : dimmed.value || seriesColour(i)))
+        : seriesColour(i),
     borderColor: doughnut ? 'transparent' : seriesColour(i),
     borderWidth: props.type === 'line' ? 2 : 0,
     borderRadius: props.type === 'bar' ? 4 : 0,
@@ -246,7 +256,15 @@ function build(): ChartConfiguration {
               grid: { display: false },
               border: { display: false },
               // Thin crowded labels (24 hours, long names) instead of stacking or tilting them.
-              ticks: { ...tick, autoSkip: true, autoSkipPadding: 12, maxRotation: 0 },
+              ticks: props.tickEvery
+                ? {
+                    ...tick,
+                    autoSkip: false,
+                    maxRotation: 0,
+                    callback: (_value: string | number, index: number) =>
+                      index === 0 || (index + 1) % (props.tickEvery as number) === 0 ? props.labels[index] : '',
+                  }
+                : { ...tick, autoSkip: true, autoSkipPadding: 12, maxRotation: 0 },
             },
             y: {
               grid: { display: false },
@@ -286,7 +304,7 @@ onBeforeUnmount(() => {
   chart?.destroy()
   chart = null
 })
-watch(() => [props.type, props.labels, props.series, props.unit, props.horizontal, personality.value], render, {
+watch(() => [props.type, props.labels, props.series, props.unit, props.horizontal, props.tickEvery, props.highlightIndex, personality.value], render, {
   deep: true,
 })
 
