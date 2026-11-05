@@ -128,10 +128,12 @@ describe('stored documents', () => {
     expect(() => profileOfDoc({ kind: 'nope', groups: [] })).toThrow()
   })
 
-  it('reads the DM-57 list, and anything that is not an array as no list', () => {
+  it('reads the DM-57 list, null as no list, and refuses a malformed row', () => {
     expect(marksPerQuestionOfDoc([3, 3, 5])).toEqual([3, 3, 5])
     expect(marksPerQuestionOfDoc(null)).toBeNull()
     expect(marksPerQuestionOfDoc(undefined)).toBeNull()
+    expect(() => marksPerQuestionOfDoc(['20', 20])).toThrow()
+    expect(() => marksPerQuestionOfDoc({})).toThrow()
   })
 
   it('maps unit rows to the unitLevels record of the validator', () => {

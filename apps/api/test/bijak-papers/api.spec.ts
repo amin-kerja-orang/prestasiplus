@@ -172,7 +172,7 @@ describe('Bijak papers API (BE-15)', () => {
       await t.db.query(`update blueprints set ${NOT_SERVING} where status = 'active'`)
     })
 
-    it('S3-T01: a Draf or Spec head, or a contract retired for good, is not listed', async () => {
+    it('S3-T01: a contract that no longer serves is not listed', async () => {
       await serveSeededBlueprints(t.db)
       expect((await contracts()).map((c) => c.code)).toContain('4541/1')
       await t.db.query(`update blueprints set ${NOT_SERVING} where code = '4541/1'`)
