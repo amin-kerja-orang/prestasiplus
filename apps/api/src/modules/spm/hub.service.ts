@@ -121,10 +121,11 @@ export class SpmHubService {
     const subjectCount = new Set(levelSubjects.flat().map((s) => s.id)).size
     const trackingA = sum([...allSets.values()].map(sumReady))
     const subjektifSets = sum(await Promise.all(SUBJEKTIF_CODES.map((c) => (byCode.get(c) ? this.visibleSets((byCode.get(c) as SubjectMeta).subjectId) : Promise.resolve(0)))))
+    const kertasSubjektif = await this.ports.papers.countPublishedSubjektif()
     const stats = await this.practice.historyStats(caller.userId, { modes: [...SPM_MODES], includeTest: caller.isTest })
     return {
-      stats: { totalQuestions: total, subjectCount, yearsAvailable: 0, trackingAQuestions: trackingA },
-      modules: { databank, latihTubi: total, trackingA, subjektifSets },
+      stats: { totalQuestions: total, subjectCount, trackingAQuestions: trackingA },
+      modules: { databank, latihTubi: total, trackingA, subjektifSets, kertasSubjektif },
       me: { sessions: stats.sessions, avgAccuracy: stats.avgAccuracyPct, coins: stats.coins, answered: stats.answered },
     }
   }
