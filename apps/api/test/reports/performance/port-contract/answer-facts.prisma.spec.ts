@@ -102,8 +102,8 @@ async function translating(seed: AnswerFactsSeed): Promise<AnswerFactsPort> {
   }
   for (const a of seed.answers) {
     await t.db.query(
-      `insert into practice_answers (session_id, user_id, question_id, subject_id, education_level_id, chapter_id, topic_id, is_correct, answered_at, is_test)
-       values ($1::uuid, $2::bigint, $3::bigint, $4::bigint, $5::bigint, $6::bigint, $7::bigint, $8, $9::timestamptz, $10)`,
+      `insert into practice_answers (session_id, user_id, question_id, subject_id, education_level_id, chapter_id, topic_id, is_correct, answered_at, is_test, mode)
+       values ($1::uuid, $2::bigint, $3::bigint, $4::bigint, $5::bigint, $6::bigint, $7::bigint, $8, $9::timestamptz, $10, 'latih_tubi')`,
       [
         a.sessionId === undefined ? null : sessionOf.get(a.sessionId)!,
         userOf.get(a.userId)!,
