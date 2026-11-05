@@ -262,8 +262,8 @@ describe('POST /api/auth/register (#2)', () => {
     grade: 3,
     icNumber: '100101140077',
     schoolId: 900_001,
-    password: 'rahsia1',
-    passwordConfirmation: 'rahsia1',
+    password: 'rahsia111',
+    passwordConfirmation: 'rahsia111',
   }
 
   it('creates a student, logs in at once and lands on /dashboard (BR-05, BR-24)', async () => {
@@ -283,7 +283,7 @@ describe('POST /api/auth/register (#2)', () => {
     expect(JSON.stringify(r.body)).not.toContain('100101140077')
     expect(Date.parse(r.body.data!.expiresAt!)).toBe(NOW + 120 * MINUTE_MS)
     // The password works, the IC is stored hashed and masked.
-    expect((await login('murid.baharu@demo.test', 'rahsia1')).status).toBe(200)
+    expect((await login('murid.baharu@demo.test', 'rahsia111')).status).toBe(200)
     expect(users.verifyIc(user.id, '100101140077')).toBe(true)
     expect(users.icMasked(user.id)).toBe('xxxxxx-xx-xx77')
     // Ids are never reused.
@@ -386,7 +386,7 @@ describe('POST /api/auth/register (#2)', () => {
     expect(r.body.error?.fields).toEqual({
       name: 'The name field is required.',
       email: 'The email has already been taken.',
-      password: 'The password field must be at least 6 characters.',
+      password: 'The password field must be at least 8 characters.',
     })
     const c = await call('POST', '/api/auth/register', {
       ...student,
@@ -472,8 +472,8 @@ describe('password reset (#3, #4, #5)', () => {
     const oldUse = await call('POST', '/api/auth/password/reset', {
       token: first,
       email: 'guru@demo.test',
-      password: 'baharu1',
-      passwordConfirmation: 'baharu1',
+      password: 'baharu111',
+      passwordConfirmation: 'baharu111',
     })
     expect(oldUse.body.error?.fields?.email).toBe('This password reset token is invalid.')
   })
@@ -487,15 +487,15 @@ describe('password reset (#3, #4, #5)', () => {
     const body = {
       token,
       email: 'penaja@demo.test',
-      password: 'baharu1',
-      passwordConfirmation: 'baharu1',
+      password: 'baharu111',
+      passwordConfirmation: 'baharu111',
     }
     const r = await call('POST', '/api/auth/password/reset', body)
     expect(r.status).toBe(200)
     expect(r.body.data).toMatchObject({ status: 'Your password has been reset.' })
     expect(r.body.data?.user).toMatchObject({ id: 7, landingPath: '/dashboard' })
     expect(Date.parse(r.body.data!.user!.lastLoginAt!)).toBe(NOW + 59 * MINUTE_MS)
-    expect((await login('penaja@demo.test', 'baharu1')).status).toBe(200)
+    expect((await login('penaja@demo.test', 'baharu111')).status).toBe(200)
     expect((await login('penaja@demo.test', DEMO_PASSWORD)).status).toBe(422)
     const reuse = await call('POST', '/api/auth/password/reset', body)
     expect(reuse.status).toBe(422)
@@ -511,8 +511,8 @@ describe('password reset (#3, #4, #5)', () => {
     const r = await call('POST', '/api/auth/password/reset', {
       token,
       email: 'ppd@demo.test',
-      password: 'baharu1',
-      passwordConfirmation: 'baharu1',
+      password: 'baharu111',
+      passwordConfirmation: 'baharu111',
     })
     expect(r.body.error?.fields?.email).toBe('This password reset token is invalid.')
   })
@@ -521,15 +521,15 @@ describe('password reset (#3, #4, #5)', () => {
     const wrongOwner = await call('POST', '/api/auth/password/reset', {
       token: DEMO_RESET_TOKEN,
       email: 'guru@demo.test',
-      password: 'baharu1',
-      passwordConfirmation: 'baharu1',
+      password: 'baharu111',
+      passwordConfirmation: 'baharu111',
     })
     expect(wrongOwner.body.error?.fields?.email).toBe('This password reset token is invalid.')
     const unknown = await call('POST', '/api/auth/password/reset', {
       token: DEMO_RESET_TOKEN,
       email: 'tiada@demo.test',
-      password: 'baharu1',
-      passwordConfirmation: 'baharu1',
+      password: 'baharu111',
+      passwordConfirmation: 'baharu111',
     })
     expect(unknown.body.error?.fields?.email).toBe("We can't find a user with that email address.")
     const short = await call('POST', '/api/auth/password/reset', {
@@ -539,7 +539,7 @@ describe('password reset (#3, #4, #5)', () => {
       passwordConfirmation: '124',
     })
     expect(short.body.error?.fields).toEqual({
-      password: 'The password field must be at least 6 characters.',
+      password: 'The password field must be at least 8 characters.',
     })
   })
 
@@ -547,15 +547,15 @@ describe('password reset (#3, #4, #5)', () => {
     const good = await call('POST', '/api/auth/password/reset', {
       token: DEMO_RESET_TOKEN,
       email: 'pelajar@demo.test',
-      password: 'baharu1',
-      passwordConfirmation: 'baharu1',
+      password: 'baharu111',
+      passwordConfirmation: 'baharu111',
     })
     expect(good.status).toBe(200)
     const expired = await call('POST', '/api/auth/password/reset', {
       token: DEMO_EXPIRED_TOKEN,
       email: 'pelajar@demo.test',
-      password: 'baharu1',
-      passwordConfirmation: 'baharu1',
+      password: 'baharu111',
+      passwordConfirmation: 'baharu111',
     })
     expect(expired.status).toBe(422)
     expect(expired.body.error?.message).toBe('This password reset token is invalid.')
@@ -566,13 +566,13 @@ describe('password reset (#3, #4, #5)', () => {
     const r = await call('POST', '/api/auth/password/reset', {
       token: row.id,
       email: 'tidakaktif@demo.test',
-      password: 'baharu1',
-      passwordConfirmation: 'baharu1',
+      password: 'baharu111',
+      passwordConfirmation: 'baharu111',
     })
     expect(r.status).toBe(403)
     expect(r.body.error?.code).toBe('ACCOUNT_INACTIVE')
     expect(users.verifyPassword(11, DEMO_PASSWORD)).toBe(true)
-    expect(users.verifyPassword(11, 'baharu1')).toBe(false)
+    expect(users.verifyPassword(11, 'baharu111')).toBe(false)
     expect(passwordResets.find(row.id)).toBeDefined()
     expect(users.get(11)!.lastLoginAt).toBeNull()
     expect(sessions.listFor(11)).toHaveLength(0)
@@ -592,8 +592,8 @@ describe('password reset (#3, #4, #5)', () => {
     const reset = await call('POST', '/api/auth/password/reset', {
       token: r.body.data!.token,
       email: 'pelajar@demo.test',
-      password: 'baharu1',
-      passwordConfirmation: 'baharu1',
+      password: 'baharu111',
+      passwordConfirmation: 'baharu111',
     })
     expect(reset.status).toBe(200)
   })
@@ -748,7 +748,7 @@ describe('profile, picture and password (#8, #9, #10)', () => {
     const wrong = await call(
       'PUT',
       '/api/me/password',
-      { currentPassword: 'salah', password: 'baharu1', passwordConfirmation: 'baharu1' },
+      { currentPassword: 'salah', password: 'baharu111', passwordConfirmation: 'baharu111' },
       token,
     )
     expect(wrong.body.error?.fields).toEqual({ currentPassword: 'The password is incorrect.' })
@@ -759,7 +759,7 @@ describe('profile, picture and password (#8, #9, #10)', () => {
       token,
     )
     expect(short.body.error?.fields).toEqual({
-      password: 'The password field must be at least 6 characters.',
+      password: 'The password field must be at least 8 characters.',
     })
     const none = await call('PUT', '/api/me/password', {}, token)
     expect(none.body.error?.fields).toMatchObject({
@@ -768,13 +768,13 @@ describe('profile, picture and password (#8, #9, #10)', () => {
     const ok = await call(
       'PUT',
       '/api/me/password',
-      { currentPassword: DEMO_PASSWORD, password: 'baharu1', passwordConfirmation: 'baharu1' },
+      { currentPassword: DEMO_PASSWORD, password: 'baharu111', passwordConfirmation: 'baharu111' },
       token,
     )
     expect(ok.status).toBe(200)
     expect(ok.body.data).toEqual({ status: 'Kata laluan berjaya dikemaskini.' })
     expect((await call('GET', '/api/me', undefined, token)).status).toBe(200)
-    expect((await login('pelajar@demo.test', 'baharu1')).status).toBe(200)
+    expect((await login('pelajar@demo.test', 'baharu111')).status).toBe(200)
     expect((await login('pelajar@demo.test', DEMO_PASSWORD)).status).toBe(422)
   })
 })

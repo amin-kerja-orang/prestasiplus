@@ -36,10 +36,10 @@ const STUDENT = 'pelajar@demo.test'
  * demo password is put back so later tests keep logging in with it. The session rotates, so the CSRF is re-read.
  */
 async function changeAndRestore(who: Who): Promise<void> {
-  const first = await put(who, '/me/password', { currentPassword: DEMO_PASSWORD, password: 'baharu9', passwordConfirmation: 'baharu9' })
+  const first = await put(who, '/me/password', { currentPassword: DEMO_PASSWORD, password: 'baharu999', passwordConfirmation: 'baharu999' })
   expect(first.status, JSON.stringify(first.body)).toBe(200)
   const csrf = SessionSchema.parse((await get(who, '/session')).body.data).csrf
-  const back = await put({ ...who, csrf }, '/me/password', { currentPassword: 'baharu9', password: DEMO_PASSWORD, passwordConfirmation: DEMO_PASSWORD })
+  const back = await put({ ...who, csrf }, '/me/password', { currentPassword: 'baharu999', password: DEMO_PASSWORD, passwordConfirmation: DEMO_PASSWORD })
   expect(back.status, JSON.stringify(back.body)).toBe(200)
 }
 
@@ -124,6 +124,8 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
 
   describe('PUT /me (BR-13, BR-14)', () => {
     it('saves the profile, ignores the e-mail and unknown keys, trims, and bumps updatedAt', async () => {
+      // FR-ADM-U03.4: grade and school can be FIRST-SET here only, so start from an account that has neither.
+      await t.db.query("update users set grade = null, school_id = null where email = 'pelajar2@demo.test'")
       const who = await login(t, 'pelajar2@demo.test')
       t.clock.advance(60_000)
       const res = await put(who, '/me', {
@@ -150,15 +152,26 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
       expect(active[0]?.is_active).toBe(true)
     })
 
-    it('an absent key keeps the value; null or blank clears phone, bio, grade and school', async () => {
+    it('an absent key keeps the value; null or blank clears phone and bio but never grade or school (FR-ADM-U03.4)', async () => {
       const who = await login(t, 'pelajar2@demo.test')
       const kept = AccountUserMeSchema.parse((await put(who, '/me', { name: 'Nama Baharu' })).body.data)
       expect(kept).toMatchObject({ phone: '012-3456789', bio: 'Motto', grade: 9, schoolId: school2 })
       const cleared = AccountUserMeSchema.parse((await put(who, '/me', { name: 'Nama Baharu', phone: '', bio: null, grade: null, schoolId: null })).body.data)
-      expect(cleared).toMatchObject({ phone: null, bio: null, grade: null, schoolId: null, school: null })
+      expect(cleared).toMatchObject({ phone: null, bio: null, grade: 9, schoolId: school2 })
+    })
+
+    it('FR-ADM-U03.4: once set, grade, school and role are not changed by PUT /me (silently ignored)', async () => {
+      const who = await login(t, 'pelajar2@demo.test')
+      const other = await schoolIdOf(t.db, 'DEMO001')
+      const res = await put(who, '/me', { name: 'Nama Baharu', grade: 10, schoolId: other, role: 'admin', roles: ['admin'] })
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(AccountUserMeSchema.parse(res.body.data)).toMatchObject({ grade: 9, schoolId: school2, role: 'student', roles: ['student'] })
+      const row = await t.db.query<{ grade: number; school_id: string }>("select grade, school_id::text from users where email = 'pelajar2@demo.test'")
+      expect(row[0]).toMatchObject({ grade: 9, school_id: school2 })
     })
 
     it('validates with the mock copy, one message per field', async () => {
+      await t.db.query("update users set grade = null, school_id = null where email = 'pelajar2@demo.test'")
       const who = await login(t, 'pelajar2@demo.test')
       const res = await put(who, '/me', { name: '', bio: 'a'.repeat(501), grade: 12, schoolId: '123456789' })
       expect(fieldsOf(res)).toEqual({
@@ -200,6 +213,7 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
     })
 
     it('a student whose username already exists in the target school gets 422, not 500', async () => {
+      await t.db.query("update users set grade = null, school_id = null where email = 'pelajar@demo.test'")
       const who = await login(t, 'pelajar@demo.test') // username murid01; DEMO002 already has a murid01
       const res = await put(who, '/me', { name: 'Murid Demo', schoolId: school2 })
       expect(fieldsOf(res)).toEqual({ schoolId: ACCOUNT_SCHOOL_USERNAME_TAKEN_MESSAGE })
@@ -222,14 +236,14 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
       const who = await login(t, 'pelajarmaju@demo.test')
       const otherDevice = await login(t, 'pelajarmaju@demo.test')
 
-      const wrong = await put(who, '/me/password', { currentPassword: 'salah', password: 'baharu1', passwordConfirmation: 'baharu1' })
+      const wrong = await put(who, '/me/password', { currentPassword: 'salah', password: 'baharu111', passwordConfirmation: 'baharu111' })
       expect(fieldsOf(wrong)).toEqual({ currentPassword: 'The password is incorrect.' })
       const short = await put(who, '/me/password', { currentPassword: DEMO_PASSWORD, password: '123', passwordConfirmation: '456' })
-      expect(fieldsOf(short)).toEqual({ password: 'The password field must be at least 6 characters.' })
+      expect(fieldsOf(short)).toEqual({ password: 'The password field must be at least 8 characters.' })
       const none = await put(who, '/me/password', {})
       expect(fieldsOf(none)).toMatchObject({ currentPassword: 'The current password field is required.' })
 
-      const ok = await put(who, '/me/password', { currentPassword: DEMO_PASSWORD, password: 'baharu1', passwordConfirmation: 'baharu1' })
+      const ok = await put(who, '/me/password', { currentPassword: DEMO_PASSWORD, password: 'baharu111', passwordConfirmation: 'baharu111' })
       expect(ok.status, JSON.stringify(ok.body)).toBe(200)
       expect(ok.body).toEqual({ data: { status: ACCOUNT_MESSAGES.passwordChanged } })
       expect(ok.headers['cache-control']).toBe('no-store')
@@ -242,16 +256,16 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
       expect(fresh.status).toBe(200)
       expect(SessionSchema.parse(fresh.body.data).csrf).not.toBe(who.csrf)
       await otherDevice.agent.get('/api/session').expect(401)
-      expect((await t.http().post('/api/auth/login').send({ identifier: 'pelajarmaju@demo.test', password: 'baharu1' })).status).toBe(200)
+      expect((await t.http().post('/api/auth/login').send({ identifier: 'pelajarmaju@demo.test', password: 'baharu111' })).status).toBe(200)
       expect((await t.http().post('/api/auth/login').send({ identifier: 'pelajarmaju@demo.test', password: DEMO_PASSWORD })).status).toBe(401)
     })
 
     it('a wrong current password is counted: 5 per minute per user, then 429 even with the right one', async () => {
       const who = await login(t, 'pelajar@demo.test')
       for (let i = 0; i < 5; i++) {
-        expect((await put(who, '/me/password', { currentPassword: 'salah', password: 'baharu1', passwordConfirmation: 'baharu1' })).status).toBe(422)
+        expect((await put(who, '/me/password', { currentPassword: 'salah', password: 'baharu111', passwordConfirmation: 'baharu111' })).status).toBe(422)
       }
-      const blocked = await put(who, '/me/password', { currentPassword: DEMO_PASSWORD, password: 'baharu1', passwordConfirmation: 'baharu1' })
+      const blocked = await put(who, '/me/password', { currentPassword: DEMO_PASSWORD, password: 'baharu111', passwordConfirmation: 'baharu111' })
       const err = errorOf(blocked, 429, 'RATE_LIMITED')
       expect(err.retryAfter).toBeGreaterThan(0)
       t.clock.advance(61_000)
@@ -261,7 +275,7 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
     it('reserves the unit before the check: parallel wrong guesses cannot exceed 5 per minute', async () => {
       const who = await login(t, 'pelajar2@demo.test')
       const guesses = await Promise.all(
-        Array.from({ length: 12 }, () => put(who, '/me/password', { currentPassword: 'salah', password: 'baharu1', passwordConfirmation: 'baharu1' })),
+        Array.from({ length: 12 }, () => put(who, '/me/password', { currentPassword: 'salah', password: 'baharu111', passwordConfirmation: 'baharu111' })),
       )
       const statuses = guesses.map((g) => g.status)
       expect(statuses.filter((s) => s === 422)).toHaveLength(5)
@@ -270,13 +284,13 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
 
     it('a per-user ceiling of 20 failed changes per 15 minutes holds across minutes, and the lock is audited with counts only', async () => {
       const who = await login(t, 'adminsekolah@demo.test')
-      const wrong = () => put(who, '/me/password', { currentPassword: 'salah-sungguh', password: 'baharu2', passwordConfirmation: 'baharu2' })
+      const wrong = () => put(who, '/me/password', { currentPassword: 'salah-sungguh', password: 'baharu222', passwordConfirmation: 'baharu222' })
       for (let round = 0; round < 4; round++) {
         t.clock.advance(61_000) // the per-minute budget (5) is fresh each round; 4 x 5 = 20 failures in 4 minutes
         for (let i = 0; i < 5; i++) { const r = await wrong(); expect(r.status, `round ${round} try ${i} ${JSON.stringify(r.body)}`).toBe(422) }
       }
       t.clock.advance(61_000)
-      const blocked = await put(who, '/me/password', { currentPassword: DEMO_PASSWORD, password: 'baharu2', passwordConfirmation: 'baharu2' })
+      const blocked = await put(who, '/me/password', { currentPassword: DEMO_PASSWORD, password: 'baharu222', passwordConfirmation: 'baharu222' })
       const err = errorOf(blocked, 429, 'RATE_LIMITED')
       expect(err.retryAfter).toBeGreaterThan(0)
       expect(err.retryAfter).toBeLessThanOrEqual(900)
@@ -291,7 +305,7 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
     it('clears must_reset_password (and rotates the session, as every change does)', async () => {
       await t.db.query(`update users set must_reset_password = true where email = 'guru@demo.test'`)
       const who = await login(t, 'guru@demo.test')
-      const res = await put(who, '/me/password', { currentPassword: DEMO_PASSWORD, password: 'baharu1', passwordConfirmation: 'baharu1' })
+      const res = await put(who, '/me/password', { currentPassword: DEMO_PASSWORD, password: 'baharu111', passwordConfirmation: 'baharu111' })
       expect(res.status, JSON.stringify(res.body)).toBe(200)
       const fresh = cookieValue(res)
       expect(fresh).toBeTruthy()
@@ -381,7 +395,7 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
       const stored = await t.db.query<{ subuh: string; sahur: string }>(`select subuh_push_time::text as subuh, sahur_push_time::text as sahur from user_settings`)
       expect(stored[0]).toEqual({ subuh: '05:45:00', sahur: '03:50:00' })
       // Other users keep the defaults.
-      const other = await login(t, 'guru@demo.test', 'baharu1')
+      const other = await login(t, 'guru@demo.test', 'baharu111')
       expect((await get(other, '/me/settings')).body.data).toEqual(ACCOUNT_SETTINGS_DEFAULTS)
       // An unticked box is false, a blank time is the default, a cleared faith is null.
       const off = await put(who, '/me/settings', { ...next, spiritualMode: false, subuhPushTime: '', sahurPushTime: null, faith: '' })

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * S8 "Tukar Kata Laluan" card (FR-M01-45, BR-16): its own form, three password fields with no
- * `required` attribute (server-side validation only, as live). Hint "Sekurang-kurangnya 6 aksara"
+ * `required` attribute (server-side validation only, as live). Hint "Sekurang-kurangnya 8 aksara"
  * (DV-03; live says 8). On
  * success the fields are cleared, the session is kept and re-read (the API rotates it, so the CSRF
  * token changes, DV-27); the page shows the flash.
@@ -65,7 +65,7 @@ async function submit(): Promise<void> {
         />
       </UFormField>
 
-      <UFormField label="Kata Laluan Baharu" help="Sekurang-kurangnya 6 aksara">
+      <UFormField label="Kata Laluan Baharu" help="Sekurang-kurangnya 8 aksara">
         <UInput
           v-model="password"
           type="password"

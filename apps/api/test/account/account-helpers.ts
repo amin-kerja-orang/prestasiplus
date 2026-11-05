@@ -231,6 +231,6 @@ export const REGISTER_STUDENT = {
   role: 'student',
   grade: 9,
   icNumber: '100101140077',
-  password: 'rahsia1',
-  passwordConfirmation: 'rahsia1',
+  password: 'rahsia111',
+  passwordConfirmation: 'rahsia111',
 }

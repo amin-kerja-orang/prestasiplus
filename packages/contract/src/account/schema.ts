@@ -144,7 +144,7 @@ const msg = {
   confirmed: (attr: string) => `The ${attr} field confirmation does not match.`,
 }
 
-export const ACCOUNT_PASSWORD_MIN = 6
+export const ACCOUNT_PASSWORD_MIN = 8
 export const ACCOUNT_NAME_MAX = 255
 export const ACCOUNT_EMAIL_MAX = 255
 export const ACCOUNT_PHONE_MAX = 14
@@ -184,7 +184,7 @@ const emailField = z
   .check(z.email({ error: msg.email('email') }))
   .max(ACCOUNT_EMAIL_MAX, { error: msg.maxChars('email', ACCOUNT_EMAIL_MAX) })
 
-/** Password: never trimmed, minimum 6 characters (mock `min(6)`). */
+/** Password: never trimmed, minimum 8 characters (FR-ADM-U02.4; the mock still uses `min(6)`). */
 const passwordField = (attr: string) =>
   z
     .string({ error: msg.required(attr) })
@@ -429,9 +429,11 @@ export type AccountPasswordResetResponse = z.infer<typeof AccountPasswordResetRe
 
 /**
  * Body of `PUT /me`. `email` (and any other key) in the body is ignored (BR-13). An ABSENT key keeps
- * the stored value; `null` or a blank text clears `phone`, `bio`, `grade`, `schoolId`. For school
- * admin, PPD/JPN officer and admin accounts `schoolId` is ignored (a staff school is an
- * admin-assigned scope).
+ * the stored value; `null` or a blank text clears `phone` and `bio`. FR-ADM-U03.4: `grade` and
+ * `schoolId` can only be FIRST-SET here (while the stored value is null); once set, a body value is
+ * silently ignored (no error) and they change only through the admin edit. `role` is never
+ * writable. For school admin, PPD/JPN officer and admin accounts `schoolId` is always ignored (a
+ * staff school is an admin-assigned scope).
  */
 export const AccountProfileUpdateRequestSchema = z
   .object({

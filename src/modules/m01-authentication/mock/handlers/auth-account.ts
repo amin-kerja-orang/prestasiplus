@@ -162,7 +162,7 @@ function changePassword(req: MockRequest): MockResponse {
   const body = bodyOf(req)
   const invalid = validate(body, {
     currentPassword: [required()],
-    password: [required(), min(6), confirmed()],
+    password: [required(), min(8), confirmed()],
   })
   if (invalid) return invalid
   if (!users.verifyPassword(user.id, String(body.currentPassword))) {

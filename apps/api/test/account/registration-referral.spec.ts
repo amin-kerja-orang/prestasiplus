@@ -139,7 +139,7 @@ describe('self-registration applies the referral code (XR-M14-02, BR-M14-19)', (
 
   it('a pending teacher with a known code is created inactive and the referral is applied (docs silent: applied on account creation)', async () => {
     const referrerBefore = (await syiling(db, referrerId)) ?? 0
-    const res = await register({ name: 'Guru Rujuk', email: 'guru.rujuk@ujian.test', role: 'teacher', schoolId, password: 'rahsia1', passwordConfirmation: 'rahsia1', referralCode: code })
+    const res = await register({ name: 'Guru Rujuk', email: 'guru.rujuk@ujian.test', role: 'teacher', schoolId, password: 'rahsia111', passwordConfirmation: 'rahsia111', referralCode: code })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const row = (await userRow(db, 'guru.rujuk@ujian.test'))!
     expect(row.school_id).toBeNull()

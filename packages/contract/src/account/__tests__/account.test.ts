@@ -87,8 +87,8 @@ const register = {
   role: 'student',
   grade: 5,
   schoolId: '3',
-  password: 'rahsia1',
-  passwordConfirmation: 'rahsia1',
+  password: 'rahsia111',
+  passwordConfirmation: 'rahsia111',
 }
 
 describe('AccountUserMe', () => {
@@ -169,9 +169,9 @@ describe('register', () => {
 
   it('password: min 6 first, then confirmation; passwords are not trimmed', () => {
     expect(fields(AccountRegisterRequestSchema, { ...register, password: 'abc', passwordConfirmation: 'abd' })).toEqual({
-      password: 'The password field must be at least 6 characters.',
+      password: 'The password field must be at least 8 characters.',
     })
-    expect(fields(AccountRegisterRequestSchema, { ...register, passwordConfirmation: 'rahsia2' })).toEqual({
+    expect(fields(AccountRegisterRequestSchema, { ...register, passwordConfirmation: 'rahsia222' })).toEqual({
       password: 'The password field confirmation does not match.',
     })
     expect(fields(AccountRegisterRequestSchema, { ...register, passwordConfirmation: undefined })).toEqual({
@@ -195,7 +195,7 @@ describe('password reset', () => {
   })
 
   it('reset request needs token, e-mail and a confirmed password', () => {
-    const ok = { token: 'rt_abc', email: 'a@b.test', password: 'rahsia1', passwordConfirmation: 'rahsia1' }
+    const ok = { token: 'rt_abc', email: 'a@b.test', password: 'rahsia111', passwordConfirmation: 'rahsia111' }
     expect(AccountPasswordResetRequestSchema.safeParse(ok).success).toBe(true)
     expect(fields(AccountPasswordResetRequestSchema, {})).toEqual({
       token: 'The token field is required.',
@@ -420,7 +420,7 @@ describe('profile', () => {
 })
 
 describe('change password', () => {
-  const ok = { currentPassword: 'lama123', password: 'baharu1', passwordConfirmation: 'baharu1' }
+  const ok = { currentPassword: 'lama123', password: 'baharu111', passwordConfirmation: 'baharu111' }
   it('needs the current password and a confirmed new one', () => {
     expect(AccountPasswordChangeRequestSchema.safeParse(ok).success).toBe(true)
     expect(fields(AccountPasswordChangeRequestSchema, {})).toEqual({
@@ -428,7 +428,7 @@ describe('change password', () => {
       password: 'The password field is required.',
     })
     expect(fields(AccountPasswordChangeRequestSchema, { ...ok, password: 'abc', passwordConfirmation: 'abc' })).toEqual({
-      password: 'The password field must be at least 6 characters.',
+      password: 'The password field must be at least 8 characters.',
     })
     expect(fields(AccountPasswordChangeRequestSchema, { ...ok, passwordConfirmation: 'lain123' })).toEqual({
       password: 'The password field confirmation does not match.',

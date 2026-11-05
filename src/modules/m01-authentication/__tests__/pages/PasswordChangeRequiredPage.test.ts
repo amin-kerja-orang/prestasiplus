@@ -71,7 +71,7 @@ async function render(): Promise<VueWrapper> {
 async function fillAndSubmit(
   w: VueWrapper,
   current = 'lama123',
-  next = 'baru123',
+  next = 'baru1234',
   again = next,
 ): Promise<void> {
   await w.get('[data-testid=change-current]').setValue(current)
@@ -117,8 +117,8 @@ describe('PasswordChangeRequiredPage (AM2-A1)', () => {
 
     expect(apiMocks.changePassword).toHaveBeenCalledWith({
       currentPassword: 'lama123',
-      password: 'baru123',
-      passwordConfirmation: 'baru123',
+      password: 'baru1234',
+      passwordConfirmation: 'baru1234',
     })
     expect(apiMocks.getSession).toHaveBeenCalledWith(false)
     const session = useSessionStore()
@@ -145,7 +145,7 @@ describe('PasswordChangeRequiredPage (AM2-A1)', () => {
         message: 'Kata laluan semasa tidak betul.',
         fields: {
           currentPassword: 'Kata laluan semasa tidak betul.',
-          password: 'Kata laluan mesti sekurang-kurangnya 6 aksara.',
+          password: 'Kata laluan mesti sekurang-kurangnya 8 aksara.',
         },
       }),
     )
@@ -154,7 +154,7 @@ describe('PasswordChangeRequiredPage (AM2-A1)', () => {
 
     const alert = w.get('[data-testid=change-alert]')
     expect(alert.text()).toContain('Kata laluan semasa tidak betul.')
-    expect(alert.text()).toContain('Kata laluan mesti sekurang-kurangnya 6 aksara.')
+    expect(alert.text()).toContain('Kata laluan mesti sekurang-kurangnya 8 aksara.')
     expect(apiMocks.getSession).not.toHaveBeenCalled()
     expect(router.currentRoute.value.path).toBe('/password/change')
     expect(useSessionStore().token).toBe('csrf-old')
@@ -208,8 +208,8 @@ describe('PasswordChangeRequiredPage (AM2-A1)', () => {
     apiMocks.getSession.mockResolvedValue(FRESH)
     const w = await render()
     await w.get('[data-testid=change-current]').setValue('lama123')
-    await w.get('[data-testid=change-new]').setValue('baru123')
-    await w.get('[data-testid=change-confirm]').setValue('baru123')
+    await w.get('[data-testid=change-new]').setValue('baru1234')
+    await w.get('[data-testid=change-confirm]').setValue('baru1234')
     await w.get('form').trigger('submit')
     await w.get('form').trigger('submit')
     expect(apiMocks.changePassword).toHaveBeenCalledTimes(1)
