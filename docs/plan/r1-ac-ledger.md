@@ -66,6 +66,7 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S1-T07 | AC-QA-13 | CI | Pass | 2026-11-05 | team-aa/S-4 | regroup.spec.ts: [CI] AC-QA-13 / AC-ADM-QE8.3: figure + 2 served members -> 1 group, 2 members, own image removed, still Diluluskan |
 | S1-T07 | AC-QA-32 | CI | Pass | 2026-11-05 | team-aa/S-4 | regroup.spec.ts: [CI] AC-QA-32 rejected=true or false reads rejection_reason (DM-58) |
 | S1-T07 | AC-QA-47 | CI | Pass | 2026-11-05 | team-aa/S-4 | regroup.spec.ts: [CI] AC-QA-47 q: a question id finds the row, text finds the stem |
+| S1-T07 | AC-QA-45 | CI | Pass | 2026-11-05 | team-aa/S-4 | servability-parity.spec.ts: [CI] AC-QA-45: the indicator reads n of 6 (jana_kertas listed but not counted) and permainan is counted and equals the games draw |
 
 ## Sprint 3
 

@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { describeQuestion } from '@pp/exam-core'
 import { SERVABILITY_ACTIVITIES, type ServabilityActivity, type ServabilityReport } from '@pp/contract'
 
+import { GameQuestions } from '../../src/modules/games/core/game-questions.service'
 import { mulberry32 } from '../../src/db/prng'
 import { Be09BijakQuestionSource } from '../../src/modules/bijak/question-bridge/be09-question-source'
 import { markableLeaf, leavesOf, resolveStimuli } from '../../src/modules/bijak/kuiz/kuiz.mapper'
@@ -250,11 +251,11 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     q(`update question_versions set education_level_id = $3, subject_id = $4 where question_id = $1 and version_no = $2`, [id, versionNo, levelId, subjectId])
   const sorted = (s: Iterable<string>) => [...s].sort((a, b) => Number(BigInt(a) - BigInt(b)))
 
-  it('reports every known question once, with all six activities in contract order', () => {
+  it('reports every known question once, with every activity in contract order (the count is of six: jana_kertas is not counted)', () => {
     expect(reports.size).toBeGreaterThan(20)
     for (const r of reports.values()) {
       expect(r.activities.map((a) => a.activity)).toEqual([...SERVABILITY_ACTIVITIES])
-      expect(r.servedCount).toBe(r.activities.filter((a) => a.served).length)
+      expect(r.servedCount).toBe(r.activities.filter((a) => a.served && a.activity !== 'jana_kertas').length)
       for (const a of r.activities) expect(a.served).toBe(a.reasons.length === 0)
     }
   })
@@ -458,6 +459,24 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
       if (bridged.has(id)) expect(bridgeCodes, `bridged ${id}`).toEqual([])
       else if (refusals.has(id)) expect(bridgeCodes.map((r) => r.detail), `refused ${id}`).toEqual([refusals.get(id)!.reasonCode])
     }
+  })
+
+  it('[CI] AC-QA-45: the indicator reads n of 6 (jana_kertas listed but not counted) and permainan is counted and equals the games draw', async () => {
+    for (const r of reports.values()) {
+      expect(r.total).toBe(6)
+      const counted = r.activities.filter((a) => a.activity !== 'jana_kertas')
+      expect(counted.map((a) => a.activity)).toEqual(['databank', 'latih_tubi_spm', 'bab', 'simulasi_paper', 'simulasi_kuiz', 'permainan'])
+      expect(r.servedCount).toBe(counted.filter((a) => a.served).length)
+      expect(r.servedCount).toBeLessThanOrEqual(6)
+    }
+    // The games draw: the SQL scope of `GameQuestions` (filterOf('permainan') = GAME_SHAPE, learner visible, live, active) and its `toServed` mapper.
+    const games = new GameQuestions(repo)
+    const inScope = new Set(await repo.eligibleAmong(allIds, filterOf('permainan')))
+    const mapped = new Set((await games.byIds(allIds)).map((x) => x.question.id))
+    const drawn = new Set([...inScope].filter((id) => mapped.has(id)))
+    expect(drawn.size).toBeGreaterThan(0)
+    expect(sorted(servedBy('permainan'))).toEqual(sorted(drawn))
+    expect(servedBy('permainan').has(made.plain!)).toBe(true)
   })
 
   it('jana_kertas: pool facts eligible by exam-core and served by the bridge', async () => {
