@@ -288,6 +288,8 @@ export interface BootOptions {
   db?: TestDatabase
   /** Extra seeds run after identity + curriculum. */
   seeds?: SeedModule[]
+  /** Extra Nest modules next to Auth and Practice (for example the analytics reads). */
+  modules?: unknown[]
 }
 
 /** Nest app with auth + practice (and the curriculum and subscriptions it needs) on a private seeded database. */
@@ -305,7 +307,7 @@ export async function bootPracticeApp(opts: BootOptions = {}): Promise<PracticeT
     ...opts.env,
   })
   const clock = new FixedClock(START)
-  const moduleRef = await Test.createTestingModule({ imports: [defineAppModule([AuthModule, PracticeModule])] })
+  const moduleRef = await Test.createTestingModule({ imports: [defineAppModule([AuthModule, PracticeModule, ...((opts.modules ?? []) as never[])])] })
     .overrideProvider(CLOCK)
     .useValue(clock)
     .compile()
@@ -344,7 +346,7 @@ export interface World {
   /** Subject ids by code. */
   subject: { math: string; sej: string; bm: string; addmath: string }
   /** Level ids by code. */
-  level: { d1: string; d2: string; t4: string; t3: string }
+  level: { d1: string; d2: string; t4: string; t3: string; primary: string }
   /** MATH T4 chapters 1, 2, 3 (ids; T4 is the first offered level `d1` of the pre-secondary-only fixtures). */
   chapter: { c1: string; c2: string; c3: string }
 }
@@ -357,8 +359,8 @@ export async function loadWorld(db: TestDatabase): Promise<World> {
       bm: await idOf(db, 'subjects', 'BM'),
       addmath: await idOf(db, 'subjects', 'ADDMATH'),
     },
-    // Secondary-only (2026-10-29): d1 and d2 name the OFFERED levels T4 and T5 (BR-11); t3 is a level that is not offered.
-    level: { d1: await idOf(db, 'education_levels', 'T4'), d2: await idOf(db, 'education_levels', 'T5'), t4: await idOf(db, 'education_levels', 'T4'), t3: await idOf(db, 'education_levels', 'T3') },
+    // Secondary-only (2026-10-29): d1 and d2 name the OFFERED levels T4 and T5 (BR-11); t3 is offered since S4-T06 (T1..T5); `primary` (D1, inactive) is the level that is not offered.
+    level: { d1: await idOf(db, 'education_levels', 'T4'), d2: await idOf(db, 'education_levels', 'T5'), t4: await idOf(db, 'education_levels', 'T4'), t3: await idOf(db, 'education_levels', 'T3'), primary: await idOf(db, 'education_levels', 'D1') },
     chapter: {
       c1: await chapterIdOf(db, 'MATH', 'T4', 1),
       c2: await chapterIdOf(db, 'MATH', 'T4', 2),
