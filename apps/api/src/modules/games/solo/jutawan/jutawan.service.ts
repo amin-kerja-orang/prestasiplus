@@ -197,11 +197,12 @@ export class JutawanService {
     const fast = hasFastGap(s.createdAt, await this.repo.answerTimes(s.id), JUTAWAN_MIN_MS_PER_QUESTION)
     const coins = jutawanCoins(level)
     let credited = 0
-    if (!fast && !caller.isTest && (await this.ports.rewards.canEarnSyiling(caller.userId, { tx }))) {
+    // Reported also while syiling is off, for the reward event (DM-87); the port decides what is paid.
+    if (!fast && !caller.isTest) {
       const subject = subjectId === null ? null : await this.curriculum.subject(idFromString(subjectId))
       const out = await this.ports.rewards.onGameResult(
         caller.userId,
-        { game: 'jutawan', event: 'finish', coins, xp: 0, correct: level, total: JUTAWAN_QUESTIONS, detail: { level, subject: subject?.name ?? 'Bahasa Melayu' }, key: sessionId },
+        { game: 'jutawan', event: 'finish', coins, xp: 0, correct: level, total: JUTAWAN_QUESTIONS, detail: { level, subject: subject?.name ?? 'Bahasa Melayu' }, key: sessionId, session: { id: sessionId, gameKey: 'jutawan' } },
         { tx, isTest: false },
       )
       credited = out.coinsCredited

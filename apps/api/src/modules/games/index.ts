@@ -8,6 +8,8 @@ export type {
   BotPoolPort,
   GameResultInput,
   GameResultOutcome,
+  GameResultSession,
+  GameRewardCapReason,
   GameRewardsPort,
   PlatformAccuracySource,
   WeeklyPracticeRow,

@@ -18,11 +18,12 @@ import type { Env } from '../../common/config/env.schema'
 import { publicBaseUrl } from '../../common/config/public-base-url'
 import { ApiError } from '../../common/errors/api-error'
 import type { TxClient } from '../../db/client'
-import { CLOCK, type Clock, mytDay } from '../../db/clock'
+import { CLOCK, type Clock, mytDay, startOfMytDay } from '../../db/clock'
 import { idFromString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { toMytTimestamp } from '../../common/time/myt'
 import { ClassesRepository } from '../classes/classes.repository'
+import { GameSettingsService, type GameResultOutcome, type GameResultSession } from '../games'
 import { MAX_AMOUNT_PER_CALL, StreakService, WalletService, walletLockOrder } from '../wallet'
 import { titleOf } from '../wallet/rules'
 import {
@@ -37,10 +38,10 @@ import {
   REFERRAL_REWARD_REFEREE,
   REFERRAL_REWARD_REFERRER,
 } from './gamification.constants'
-import { GamificationRepository, type AchievementRecord, type ChallengeRecord, type Db } from './gamification.repository'
+import { GamificationRepository, type AchievementRecord, type ChallengeRecord, type Db, type GameRewardEventRecord } from './gamification.repository'
 import { RANKING_REDACTED_ID, canSeeRankedName, shortName, type NameScope, type RankingViewer } from './name-privacy'
 import { GamificationPorts, type PracticeMasteryFact } from './ports'
-import { activeTiers, defaultTier, initialOf, initialsOf, masteryLevel, masteryMultiplier, masteryNextTarget, masteryStage, previousDay, round, shareEncode, tierView } from './helpers'
+import { activeTiers, capGameReward, defaultTier, initialOf, initialsOf, masteryLevel, masteryMultiplier, masteryNextTarget, masteryStage, previousDay, round, shareEncode, tierView } from './helpers'
 import { validationFailure } from './validation'
 
 /** Who is calling: the signed-in user and whether an admin is in Mod Pelajar (`isTestActor`). */
@@ -73,7 +74,14 @@ export interface GameResultInput {
    * `(user, source, key)`; without it the credit has no key and a retry would pay twice.
    */
   key?: string
+  /** The game session (DM-87): the result becomes the one reward event of the session and pupil, under the daily caps. */
+  session?: GameResultSession
 }
+
+const MYT_DAY_MS = 24 * 60 * 60 * 1000
+
+/** A whole, non-negative XP amount. */
+const wholeXp = (xp: number): number => (Number.isFinite(xp) ? Math.max(0, Math.floor(xp)) : 0)
 
 /** BR-M14-21 wording by game and event (observed rows; mock `gameRow`). */
 function gameRow(game: string, event: string, p: { correct?: number; detail?: Record<string, unknown> }): { source: string; description: string } {
@@ -153,6 +161,7 @@ export class GamificationService {
     @Inject(ClassesRepository) private readonly classes: ClassesRepository,
     @Inject(ConfigService) private readonly config: ConfigService<Env, true>,
     @Inject(StreakService) private readonly streaks: StreakService,
+    @Inject(GameSettingsService) private readonly gameSettings: GameSettingsService,
   ) {}
 
   private run<T>(tx: TxClient | undefined, fn: (db: Db) => Promise<T>): Promise<T> {
@@ -669,23 +678,19 @@ export class GamificationService {
   }
 
   /**
-   * BR-M14-21 (BE-44/BE-45): XP always; syiling only while `canEarnSyiling`. The syiling credit is idempotent per
-   * `(user, <game source>, game:<key>)` when `input.key` is given. XP has no ledger row, so it cannot be keyed:
-   * with a key it is added only when the syiling credit is new, or when no credit is made at all (XP-only
-   * results are the caller's to de-duplicate).
+   * BR-M14-21 (BE-44/BE-45): XP always; syiling only while `canEarnSyiling`.
+   *
+   * With `input.session` the result is the one reward event of that session and pupil (`recordGameReward`). Without it
+   * (Roda Nasib, which 48 section 3.4 rule 4 keeps out of the caps) the syiling credit is idempotent per
+   * `(user, <game source>, game:<key>)` when `input.key` is given. XP has no ledger row, so it cannot be keyed: with a
+   * key it is added only when the syiling credit is new, or when no credit is made at all (XP-only results are the
+   * caller's to de-duplicate).
    */
-  async onGameResult(userId: string, input: GameResultInput, opts: EntryOptions): Promise<{ coinsCredited: number; xpAdded: number }> {
+  async onGameResult(userId: string, input: GameResultInput, opts: EntryOptions): Promise<GameResultOutcome> {
     return this.run(opts.tx, async (db) => {
       const tx = db as TxClient
-      let coins = 0
-      if (await this.canEarnSyiling(userId, { tx })) {
-        if (input.coins !== undefined) coins = input.coins
-        else if (input.game === 'papan_bijak') {
-          const rates = await this.boardGameRates(userId, { tx })
-          coins = input.event === 'win' ? rates.win : rates.correct
-        }
-      }
-      coins = Number.isSafeInteger(coins) && coins > 0 ? coins : 0
+      if (input.session !== undefined) return this.recordGameReward(tx, userId, input, input.session, opts)
+      const coins = await this.gameCoins(tx, userId, input)
       let replayed = false
       if (coins > 0) {
         const row = gameRow(input.game, input.event, input)
@@ -693,10 +698,59 @@ export class GamificationService {
         const out = await this.wallet.credit({ userId, amount: coins, source: row.source, description: row.description, isTest: opts.isTest, ...key }, { tx })
         replayed = out.replayed
       }
-      const xp = Number.isFinite(input.xp) ? Math.max(0, Math.floor(input.xp)) : 0
+      const xp = wholeXp(input.xp)
       if (xp > 0 && !replayed) await this.wallet.addXp({ userId, amount: xp, isTest: opts.isTest }, { tx })
       return { coinsCredited: replayed ? 0 : coins, xpAdded: replayed ? 0 : xp }
     })
+  }
+
+  /** The syiling a result asks for: 0 unless `canEarnSyiling`; absent = the tier rate for `papan_bijak`, 0 for other games. */
+  private async gameCoins(tx: TxClient, userId: string, input: GameResultInput): Promise<number> {
+    let coins = 0
+    if (await this.canEarnSyiling(userId, { tx })) {
+      if (input.coins !== undefined) coins = input.coins
+      else if (input.game === 'papan_bijak') {
+        const rates = await this.boardGameRates(userId, { tx })
+        coins = input.event === 'win' ? rates.win : rates.correct
+      }
+    }
+    return Number.isSafeInteger(coins) && coins > 0 ? coins : 0
+  }
+
+  /**
+   * DM-87, FR-GM-00.6, 48 section 3.4 rules 4 and 6: the one place that records a reward event and reads it. The event row
+   * and the credit are one transaction. A repeat for the same session and pupil credits nothing and returns the first
+   * result. The caps sum the pupil's events of the Malaysia day, under a per-pupil lock. Mod Pelajar writes no row at all
+   * (AC-GM-00.12).
+   */
+  private async recordGameReward(tx: TxClient, userId: string, input: GameResultInput, session: GameResultSession, opts: EntryOptions): Promise<GameResultOutcome> {
+    if (opts.isTest) return { coinsCredited: 0, xpAdded: 0, cappedReason: null }
+    await this.repo.lockGameRewards(tx, userId)
+    const firstResult = (e: GameRewardEventRecord): GameResultOutcome => ({ coinsCredited: e.syiling, xpAdded: e.xp, cappedReason: e.cappedReason })
+    const first = await this.repo.gameRewardEvent(tx, session.id, userId)
+    if (first) return firstResult(first)
+
+    const at = opts.at ?? this.clock.now() // after the lock: the day follows the lock order
+    const dayStart = startOfMytDay(at)
+    const earned = await this.repo.gameRewardsBetween(tx, userId, dayStart, new Date(dayStart.getTime() + MYT_DAY_MS))
+    const caps = await this.gameSettings.getMany(['games_daily_xp_cap', 'games_daily_syiling_cap'], tx)
+    const event = capGameReward(
+      { xp: wholeXp(input.xp), syiling: await this.gameCoins(tx, userId, input) },
+      earned,
+      { xp: caps.games_daily_xp_cap, syiling: caps.games_daily_syiling_cap },
+    )
+
+    if (!(await this.repo.insertGameRewardEvent(tx, { ...event, gameSessionId: session.id, userId, at }))) {
+      const stored = await this.repo.gameRewardEvent(tx, session.id, userId)
+      if (!stored) throw new Error('GamificationService: the reward event is neither new nor stored')
+      return firstResult(stored)
+    }
+    if (event.syiling > 0) {
+      const { description } = gameRow(input.game, input.event, input)
+      await this.wallet.credit({ userId, amount: event.syiling, source: `game:${session.gameKey}`, sourceId: `game:${session.id}`, description, isTest: false }, { tx })
+    }
+    if (event.xp > 0) await this.wallet.addXp({ userId, amount: event.xp, isTest: false }, { tx })
+    return firstResult(event)
   }
 
   /**

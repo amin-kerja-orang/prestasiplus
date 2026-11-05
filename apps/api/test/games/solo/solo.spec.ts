@@ -447,12 +447,13 @@ describe('solo games (D58a: keyless payload, server-checked answers, server-comp
       expect(rewards.calls).toHaveLength(1)
     })
 
-    it('rewards are reported only when syiling can be earned; the score is still computed', async () => {
+    it('a result is reported also when syiling cannot be earned (DM-87 event); nothing is paid and the score is still computed', async () => {
       rewards.canEarn = false
       const { sessionId } = await play(student, 'cabaran-kilat', 'TT')
       const res = GamesSoloSubmitResponseSchema.parse((await student.post('/api/games/solo/cabaran-kilat/submit', { session_id: sessionId })).body)
       expect(res).toMatchObject({ score: 30, syiling_awarded: 0 })
-      expect(rewards.calls).toHaveLength(0)
+      expect(rewards.calls).toHaveLength(1)
+      expect(rewards.calls[0]?.input.session).toEqual({ id: sessionId, gameKey: 'cabaran-kilat' })
       expect(await sessionRow(sessionId)).toMatchObject({ coins_computed: 3, coins_credited: 0 })
       const page = await student.get('/api/games/solo/betul-salah')
       expect(parseData(page, GamesBetulSalahPayloadSchema).canEarnSyiling).toBe(false)
