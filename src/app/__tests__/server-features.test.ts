@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
+import { FEATURE_ROUTE_PREFIXES } from '@pp/contract'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { clock, toIsoMyt } from '@/lib/time'
-import { navFor, userBottomNavFor, USER_NAV, type NavEntry } from '@/shells/nav/user-nav'
+import { navFor, userBottomNavFor, USER_DRAWER_ACCOUNT, USER_NAV, type NavEntry } from '@/shells/nav/user-nav'
 import { toClientSessionFromApi, type ApiSession } from '@/stores/http-session'
 import { useSessionStore } from '@/stores/session'
 import type { ClientSession, Role } from '@/stores/session-types'
@@ -154,5 +155,78 @@ describe('menus hide an OFF item', () => {
     signIn({ 'keluarga-angkat': true, 'cikgu-alesa': true })
     expect(ids('student')).not.toContain('mohon-keluarga-angkat')
     expect(ids('student')).not.toContain('cikgu-alesa')
+  })
+})
+
+describe('S0-T11: every key hides its menu items', () => {
+  const FULL = { includeOutOfScope: true } as const
+  /** All ids of the menu data (items and group children). */
+  const allIds = (): Set<string> =>
+    new Set([
+      ...USER_NAV.flatMap((e) => (e.kind === 'group' ? [e.id, ...e.children.map((c) => c.id)] : [e.id])),
+      ...USER_DRAWER_ACCOUNT.map((i) => i.id),
+    ])
+  const sidebarIds = (role: Role): string[] => {
+    const out: string[] = []
+    const walk = (list: readonly NavEntry[]) =>
+      list.forEach((e) => {
+        out.push(e.id)
+        if (e.kind === 'group') walk(e.children)
+      })
+    walk(navFor(role, 'sidebar', USER_NAV, FULL))
+    return out
+  }
+  const idsOfKey = (key: string): string[] =>
+    Object.entries(NAV_FEATURE_KEYS)
+      .filter(([, k]) => k === key)
+      .map(([id]) => id)
+
+  it('maps only keys that exist and menu ids that exist', () => {
+    const known = allIds()
+    for (const [id, key] of Object.entries(NAV_FEATURE_KEYS)) {
+      expect(known.has(id), `menu id ${id}`).toBe(true)
+      expect(FEATURE_ROUTE_PREFIXES[key], `key ${key}`).toBeDefined()
+    }
+  })
+
+  it('every menu item whose path lies under a key fe prefix is mapped to that key (Cikgu Alesa extras: build flag)', () => {
+    const items = USER_NAV.flatMap((e) => (e.kind === 'group' ? e.children : e.kind === 'item' ? [e] : []))
+    const has = (p: string, x: string) => p === x || p.startsWith(`${x}/`)
+    for (const item of items) {
+      for (const [key, p] of Object.entries(FEATURE_ROUTE_PREFIXES)) {
+        if (key === 'cikgu-alesa') continue
+        const covered = p.fe.some((f) => has(item.to, f)) && !(p.feExcept ?? []).some((e) => has(item.to, e))
+        if (covered) expect(NAV_FEATURE_KEYS[item.id], `${item.id} (${item.to}) under ${key}`).toBe(key)
+      }
+    }
+  })
+
+  it('the only keys without a menu item are Kemajuan Saya and Sejarah Latihan (home shortcuts)', () => {
+    const withItems = new Set(Object.values(NAV_FEATURE_KEYS))
+    const without = Object.keys(FEATURE_ROUTE_PREFIXES).filter((k) => !withItems.has(k)).sort()
+    expect(without).toEqual(['kemajuan-saya', 'sejarah-latihan'])
+  })
+
+  const keys = [...new Set(Object.values(NAV_FEATURE_KEYS))].filter((k) => k !== 'cikgu-alesa' && k !== 'keluarga-angkat')
+  it.each(keys)('%s OFF removes its menu items and nothing else (bar a section left empty)', (key) => {
+    const mine = idsOfKey(key)
+    for (const role of ['student', 'teacher', 'school_admin'] as const) {
+      signIn({}, role)
+      const before = sidebarIds(role)
+      signIn({ [key]: false }, role)
+      const after = sidebarIds(role)
+      for (const id of mine) expect(after, `${role}: ${id} stays with ${key} OFF`).not.toContain(id)
+      const removed = before.filter((id) => !after.includes(id))
+      expect(removed.every((id) => mine.includes(id) || id.startsWith('sec-')), `${role} ${key} removed ${removed.join(',')}`).toBe(true)
+    }
+  })
+
+  it('AC-ADM-P2-19.1: Leaderboard OFF removes Papan Pendahulu from the pupil menu, ON restores it', () => {
+    signIn({}, 'student')
+    expect(sidebarIds('student')).toContain('papan-pendahulu')
+    signIn({ leaderboard: false }, 'student')
+    expect(sidebarIds('student')).not.toContain('papan-pendahulu')
+    signIn({ leaderboard: true }, 'student')
+    expect(sidebarIds('student')).toContain('papan-pendahulu')
   })
 })

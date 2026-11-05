@@ -69,6 +69,7 @@ export function isFeatureOn(key: string, buildFlag = true): boolean {
 /**
  * Menu item id -> Kawalan Ciri key, for the items an OFF flag removes (FR-ADM-N06.3, AC-ADM-N06.1).
  * `latih-tubi` hides only the Latih Tubi item; the Cikgu Alesa chat shortcut shares `/cikgu`.
+ * `kemajuan-saya` and `sejarah-latihan` have no menu item (pupil home shortcuts only).
  */
 export const NAV_FEATURE_KEYS: Readonly<Record<string, string>> = {
   permainan: 'permainan',
@@ -76,4 +77,49 @@ export const NAV_FEATURE_KEYS: Readonly<Record<string, string>> = {
   'cikgu-alesa': 'cikgu-alesa',
   'cikgu-alesa-chat': 'cikgu-alesa',
   'mohon-keluarga-angkat': 'keluarga-angkat',
+  // S0-T11: the other 28 keys. A shared page is governed by the key whose label it carries, for every role (D-3):
+  // the pupil, teacher (`t-`) and school-admin (`sa-`) items of one route all go.
+  'misi-harian': 'misi-harian',
+  kombo: 'kombo',
+  'sa-kombo-harian': 'kombo',
+  't-kombo': 'kombo',
+  'papan-pendahulu': 'leaderboard',
+  remedial: 'remedial',
+  'cita-cita-saya': 'cita-cita',
+  'cita-cita-hijrah': 'cita-cita',
+  universiti: 'universiti',
+  biasiswa: 'biasiswa',
+  'target-spm': 'target-spm',
+  'analisa-item': 'analisa-item',
+  'sa-analisa-item': 'analisa-item',
+  't-analisa-item': 'analisa-item',
+  prestasi: 'prestasi',
+  'sa-prestasi': 'prestasi',
+  psikometrik: 'psikometrik',
+  'profil-cerah': 'profil-cerah',
+  'profil-cerah-ai': 'profil-cerah',
+  video: 'video-pembelajaran',
+  'sa-video': 'video-pembelajaran',
+  't-video': 'video-pembelajaran',
+  perutusan: 'perutusan',
+  'sa-perutusan': 'perutusan',
+  't-perutusan': 'perutusan',
+  panduan: 'panduan-pengguna',
+  'sa-panduan': 'panduan-pengguna',
+  't-panduan': 'panduan-pengguna',
+  'tiket-bantuan': 'tiket-bantuan',
+  headcount: 'guru.headcount',
+  'sa-headcount': 'guru.headcount',
+  't-headcount': 'guru.headcount',
+  't-misi-harian': 'guru.misi-harian',
+  't-kelas-saya': 'guru.kelas',
+  'kelas-guru': 'guru.kelas',
+  't-prestasi': 'guru.prestasi',
+  't-monitoring': 'guru.monitoring',
+  't-analisis-item': 'guru.analisis-item',
+  't-syiling-ganjaran': 'guru.gamifikasi',
+  't-broadcast': 'guru.broadcast',
+  't-databank': 'guru.databank',
+  't-sumbang-soalan': 'guru.sumbang-soalan',
+  'sumbang-soalan': 'guru.sumbang-soalan',
 }
