@@ -48,8 +48,18 @@ test.describe('Simulasi Kuiz responsive', () => {
     // H-C8: a paper whose stimulus is a wide table (Sejarah K2) still fits the viewport
     await gotoApp('/simulasi/sej-k2-2025-a/kuiz')
     await expect(page.getByTestId('paper-quiz-header')).toBeVisible({ timeout: 20_000 })
-    // Below 1024px the shared stimulus opens from its chip (bottom sheet); from lg it is the pinned pane. Open the chip
-    // that holds the table, assert the table is on screen, and measure the width WHILE it is open.
+    // FR-X6-6: below 1024px the first group's sheet is open when the page appears, and only that one (it is modal, so a
+    // second would stack on it). A tap outside closes it and gives the chips back. From lg it is the pinned pane, no sheet.
+    const width = page.viewportSize()!.width
+    const sheets = page.locator('[role="dialog"][data-state="open"]')
+    await expect(sheets).toHaveCount(width < 1024 ? 1 : 0)
+    if (width < 1024) {
+      // The sheet ignores a tap while it is still sliding in; a pupil taps after it has settled.
+      await sheets.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)))
+      await page.mouse.click(width / 2, 4)
+      await expect(sheets).toHaveCount(0)
+    }
+    // Open the chip that holds the table, assert the table is on screen, and measure the width WHILE it is open.
     const chips = page.getByTestId('stimulus-chip')
     for (let i = 0; i < (await chips.count()); i += 1) {
       await chips.nth(i).click()
