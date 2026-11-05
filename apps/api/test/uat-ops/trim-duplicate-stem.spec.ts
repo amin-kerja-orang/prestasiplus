@@ -241,7 +241,8 @@ describe('trim-duplicate-stem (S4-T04, U-OP-06)', () => {
 
       const before = await read()
       expect(before.record.version.parts[0]!.prompt.ms.trim()).toBe(TEXT) // the duplicate really is there
-      expect(before.practice).toBe(TEXT) // the practice mapping shows it once even before the trim
+      // Before the trim the practice mapping shows the text TWICE (stem, then the same leaf prompt): the defect U-OP-06 removes.
+      expect(before.practice!.split(TEXT).length - 1).toBe(2)
 
       await apply(client)
       const after = await read()
