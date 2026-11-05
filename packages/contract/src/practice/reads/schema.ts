@@ -347,6 +347,40 @@ export const PracticeReadRevisionSubjectSchema = z
   .meta({ id: 'PracticeReadRevisionSubject' })
 
 // ---------------------------------------------------------------------------------------------
+// GET /practice/remedial-suggestions (S5-T07, API-PRAC-08, R1-MUR-12)
+// ---------------------------------------------------------------------------------------------
+
+export const PracticeReadRemedialCompletedSchema = z
+  .strictObject({
+    subjectCode: z.string().min(1),
+    subjectName: z.string(),
+    setNo: z.number().int().min(1).meta({ description: '"Set {n}": per-subject ordinal of the completed revision drills by completed_at ascending.' }),
+    questionCount: count(),
+    before: percent().meta({ description: 'Whole number: pooled subject accuracy over the answers given before the drill started ("Sebelum").' }),
+    after: percent().meta({ description: 'Whole number: the drill accuracy ("Selepas").' }),
+    delta: z.number().int().min(-100).max(100).meta({ description: 'after - before; the sign and colour are the client concern (FR-MUR-12-4).' }),
+    at: TimestampSchema,
+  })
+  .meta({ id: 'PracticeReadRemedialCompleted' })
+
+export const PracticeReadRemedialNeededSchema = z
+  .strictObject({
+    subjectCode: z.string().min(1),
+    subjectName: z.string(),
+    answered: count().meta({ description: '"{n} soalan": the pupil answer rows of the subject (sum of attempts, not distinct questions).' }),
+    accuracy: percent().meta({ description: 'Whole number, half up, pooled correct / answered over all non-test modes; always below `target`.' }),
+    target: z.literal(60),
+  })
+  .meta({ id: 'PracticeReadRemedialNeeded' })
+
+export const PracticeReadRemedialSuggestionsSchema = z
+  .strictObject({
+    completed: z.array(PracticeReadRemedialCompletedSchema).meta({ description: 'Completed non-test revision sessions, newest 20 first.' }),
+    needed: z.array(PracticeReadRemedialNeededSchema).meta({ description: 'Subjects below 60 whose drill has at least one servable question; BR-01 order. Empty for staff roles and for a pupil with no answers.' }),
+  })
+  .meta({ id: 'PracticeReadRemedialSuggestions' })
+
+// ---------------------------------------------------------------------------------------------
 // GET /practice/progress
 // ---------------------------------------------------------------------------------------------
 

@@ -14,6 +14,7 @@ import {
   PracticeReadHistoryResponseSchema,
   PracticeReadMasterySchema,
   PracticeReadProgressSchema,
+  PracticeReadRemedialSuggestionsSchema,
   PracticeReadRevisionOverviewSchema,
   PracticeReadRevisionSubjectSchema,
   PracticeReadSpmTargetsSaveRequestSchema,
@@ -148,6 +149,18 @@ describe('subjects and chapters', () => {
     expect(PracticeReadChapterSubjectDetailSchema.safeParse({ ...detail, levels: [], levelId: null, chapters: [] }).success).toBe(true)
     expect(PracticeReadChapterSubjectDetailSchema.safeParse({ ...detail, chapters: [{ ...chapter, state: 'done' }] }).success).toBe(false)
     expect(PracticeReadChapterSubjectDetailSchema.safeParse({ ...detail, chapters: [{ ...chapter, state: 'locked' }] }).success).toBe(false) // REQ-C-021: a chapter card is always open
+  })
+})
+
+describe('remedial suggestions', () => {
+  it('accepts the S5-T07 shape and rejects a target other than 60', () => {
+    const ok = {
+      completed: [{ subjectCode: 'SN', subjectName: 'Sains', setNo: 1, questionCount: 20, before: 40, after: 80, delta: 40, at: '2026-11-01T10:00:00+08:00' }],
+      needed: [{ subjectCode: 'SN', subjectName: 'Sains', answered: 120, accuracy: 0, target: 60 }],
+    }
+    expect(PracticeReadRemedialSuggestionsSchema.safeParse(ok).success).toBe(true)
+    expect(PracticeReadRemedialSuggestionsSchema.safeParse({ ...ok, needed: [{ ...ok.needed[0], target: 50 }] }).success).toBe(false)
+    expect(PracticeReadRemedialSuggestionsSchema.safeParse({ completed: [], needed: [] }).success).toBe(true)
   })
 })
 
@@ -321,6 +334,7 @@ describe('OpenAPI document', () => {
     ['get', '/practice/chapter-subjects/{code}'],
     ['get', '/practice/revision'],
     ['get', '/practice/revision/{code}'],
+    ['get', '/practice/remedial-suggestions'],
     ['get', '/practice/progress'],
     ['get', '/practice/history'],
     ['get', '/practice/corrections'],

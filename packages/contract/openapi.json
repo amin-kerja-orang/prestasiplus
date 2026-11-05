@@ -59813,6 +59813,120 @@
         ],
         "additionalProperties": false
       },
+      "PracticeReadRemedialCompleted": {
+        "type": "object",
+        "properties": {
+          "subjectCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "subjectName": {
+            "type": "string"
+          },
+          "setNo": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "\"Set {n}\": per-subject ordinal of the completed revision drills by completed_at ascending."
+          },
+          "questionCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "before": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Whole number: pooled subject accuracy over the answers given before the drill started (\"Sebelum\")."
+          },
+          "after": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Whole number: the drill accuracy (\"Selepas\")."
+          },
+          "delta": {
+            "type": "integer",
+            "minimum": -100,
+            "maximum": 100,
+            "description": "after - before; the sign and colour are the client concern (FR-MUR-12-4)."
+          },
+          "at": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "subjectCode",
+          "subjectName",
+          "setNo",
+          "questionCount",
+          "before",
+          "after",
+          "delta",
+          "at"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadRemedialNeeded": {
+        "type": "object",
+        "properties": {
+          "subjectCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "subjectName": {
+            "type": "string"
+          },
+          "answered": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "\"{n} soalan\": the pupil answer rows of the subject (sum of attempts, not distinct questions)."
+          },
+          "accuracy": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Whole number, half up, pooled correct / answered over all non-test modes; always below `target`."
+          },
+          "target": {
+            "type": "number",
+            "enum": [
+              60
+            ]
+          }
+        },
+        "required": [
+          "subjectCode",
+          "subjectName",
+          "answered",
+          "accuracy",
+          "target"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadRemedialSuggestions": {
+        "type": "object",
+        "properties": {
+          "completed": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeReadRemedialCompleted"
+            },
+            "description": "Completed non-test revision sessions, newest 20 first."
+          },
+          "needed": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeReadRemedialNeeded"
+            },
+            "description": "Subjects below 60 whose drill has at least one servable question; BR-01 order. Empty for staff roles and for a pupil with no answers."
+          }
+        },
+        "required": [
+          "completed",
+          "needed"
+        ],
+        "additionalProperties": false
+      },
       "PracticeReadProgressSubject": {
         "type": "object",
         "properties": {
@@ -93261,6 +93375,45 @@
           },
           "404": {
             "description": "NOT_FOUND \"Rekod tidak dijumpai.\" (unknown or inactive subject code).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/practice/remedial-suggestions": {
+      "get": {
+        "tags": [
+          "practice-reads"
+        ],
+        "summary": "Own remedial suggestions: completed drills and subjects needing recovery (S5-T07)",
+        "description": "GET /api/practice/remedial-suggestions (API-PRAC-08). completed: the newest 20 completed non-test revision sessions with Sebelum / Selepas. needed: subjects whose pooled accuracy (correct / answered over the non-test answer rows, whole number half up) is below 60 and whose revision drill has at least one servable question (FD-MUR-36). Pupils only; staff roles get empty arrays. Assigned tests stay on GET /remedial-tests/mine. Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
+        "responses": {
+          "200": {
+            "description": "The completed sets and the needed subjects.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PracticeReadRemedialSuggestions"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
             "content": {
               "application/json": {
                 "schema": {
