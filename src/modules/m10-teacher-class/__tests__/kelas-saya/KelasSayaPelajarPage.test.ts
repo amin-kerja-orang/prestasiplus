@@ -3,12 +3,9 @@ import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
-import { ApiError } from '@/api'
-
 import KelasSayaPelajarPage from '../../pages/KelasSayaPelajarPage.vue'
-import { joinErrorMessage } from '../../components/kelas-saya/join-message'
 
-const api = vi.hoisted(() => ({ fetchJoinedClasses: vi.fn(), joinClass: vi.fn() }))
+const api = vi.hoisted(() => ({ fetchJoinedClasses: vi.fn() }))
 vi.mock('../../api/guru', () => api)
 
 const stub = { template: '<div />' }
@@ -38,14 +35,6 @@ async function mountPage(path = '/kelas-saya') {
   return wrapper
 }
 
-function refusal(status: number, message: string) {
-  return new ApiError({
-    status,
-    code: status === 404 ? 'NOT_FOUND' : 'CONFLICT',
-    message,
-  })
-}
-
 afterEach(() => {
   wrapper?.unmount()
   wrapper = null
@@ -53,18 +42,22 @@ afterEach(() => {
 })
 
 describe('S33 Kelas Saya (student)', () => {
-  it('renders the join card and the observed empty state', async () => {
+  it('has no join box and shows the empty state', async () => {
     api.fetchJoinedClasses.mockResolvedValue(list([]))
     const w = await mountPage()
-    const input = t(w, 'class-code')
-    expect(input.attributes('maxlength')).toBe('6')
-    expect(input.attributes('required')).toBeDefined()
-    expect(input.attributes('placeholder')).toBe('cth: MAT5B2')
-    expect(w.get('label[for="class_code"]').text()).toBe('Masukkan Kod Kelas')
-    expect(t(w, 'join-submit').text()).toBe('Sertai')
-    const empty = t(w, 'classes-empty')
-    expect(empty.text()).toContain('Belum Sertai Mana-Mana Kelas')
-    expect(empty.text()).toContain('Minta kod kelas daripada guru anda dan masukkan di atas')
+    expect(w.text()).not.toContain('Masukkan Kod Kelas')
+    expect(w.find('[data-testid="class-code"]').exists()).toBe(false)
+    expect(w.find('[data-testid="join-form"]').exists()).toBe(false)
+    expect(w.findAll('button').some((b) => b.text() === 'Sertai')).toBe(false)
+    expect(w.find('[data-testid="classes-empty"]').exists()).toBe(true)
+  })
+
+  it('ignores ?kod= (nothing is pre-filled or joined)', async () => {
+    api.fetchJoinedClasses.mockResolvedValue(list([]))
+    const w = await mountPage('/kelas-saya?kod=DEMO-4S')
+    expect(w.find('input').exists()).toBe(false)
+    expect(w.html()).not.toContain('DEMO-4S')
+    expect(w.findAll('button').some((b) => b.text() === 'Sertai')).toBe(false)
   })
 
   it('shows the loading state before the list arrives', () => {
@@ -93,114 +86,5 @@ describe('S33 Kelas Saya (student)', () => {
     await w.get('[data-testid="classes-error"] button').trigger('click')
     await flushPromises()
     expect(w.find('[data-testid="classes-empty"]').exists()).toBe(true)
-  })
-
-  it('pre-fills the code from ?kod= without joining (@provisional PROPOSED OQ-M10-04)', async () => {
-    api.fetchJoinedClasses.mockResolvedValue(list([]))
-    const w = await mountPage('/kelas-saya?kod=DEMO-4S')
-    expect((t(w, 'class-code').element as HTMLInputElement).value).toBe('DEMO-4S')
-    expect(api.joinClass).not.toHaveBeenCalled()
-  })
-
-  it('joins, shows the message, clears the field and reloads the list', async () => {
-    api.fetchJoinedClasses.mockResolvedValueOnce(list([])).mockResolvedValueOnce(list([CLASS]))
-    api.joinClass.mockResolvedValue({
-      data: { classroomId: 2002 },
-      message: 'Berjaya menyertai kelas 5 MARIKH - Sejarah.',
-    })
-    const w = await mountPage()
-    await t(w, 'class-code').setValue(' DMO102 ')
-    await t(w, 'join-form').trigger('submit')
-    await flushPromises()
-    expect(api.joinClass).toHaveBeenCalledWith('DMO102')
-    expect(t(w, 'join-success').text()).toContain('Berjaya menyertai kelas')
-    expect((t(w, 'class-code').element as HTMLInputElement).value).toBe('')
-    expect(w.findAll('[data-testid="joined-class"]')).toHaveLength(1)
-  })
-
-  it('shows the response message of an unknown code and of an already-joined class (@provisional UNVERIFIED COPY)', async () => {
-    api.fetchJoinedClasses.mockResolvedValue(list([]))
-    api.joinClass.mockRejectedValueOnce(refusal(404, 'Kod kelas tidak sah.'))
-    const w = await mountPage()
-    await t(w, 'class-code').setValue('ZZZ999')
-    await t(w, 'join-form').trigger('submit')
-    await flushPromises()
-    expect(t(w, 'join-error').text()).toContain('Kod kelas tidak sah.')
-    expect(w.find('[data-testid="classes-empty"]').exists()).toBe(true)
-
-    api.joinClass.mockRejectedValueOnce(refusal(409, 'Anda sudah menyertai kelas ini.'))
-    await t(w, 'join-form').trigger('submit')
-    await flushPromises()
-    expect(t(w, 'join-error').text()).toContain('Anda sudah menyertai kelas ini.')
-    expect(w.find('[data-testid="join-success"]').exists()).toBe(false)
-  })
-
-  it('clears a stale refusal as soon as the code is edited or emptied (SWP-9)', async () => {
-    api.fetchJoinedClasses.mockResolvedValue(list([CLASS]))
-    api.joinClass.mockRejectedValueOnce(refusal(409, 'Anda sudah menyertai kelas ini.'))
-    const w = await mountPage()
-    await t(w, 'class-code').setValue('DMO102')
-    await t(w, 'join-form').trigger('submit')
-    await flushPromises()
-    expect(t(w, 'join-error').text()).toContain('Anda sudah menyertai kelas ini.')
-
-    await t(w, 'class-code').setValue('')
-    expect(w.find('[data-testid="join-error"]').exists()).toBe(false)
-    expect(w.find('[data-testid="join-success"]').exists()).toBe(false)
-    expect(api.joinClass).toHaveBeenCalledTimes(1)
-  })
-
-  it('drops the outcome of a request still pending when the code is edited (SWP-9)', async () => {
-    api.fetchJoinedClasses.mockResolvedValue(list([CLASS]))
-    let reject!: (e: unknown) => void
-    api.joinClass.mockReturnValueOnce(new Promise((_, rej) => (reject = rej)))
-    const w = await mountPage()
-    await t(w, 'class-code').setValue('DMO102')
-    await t(w, 'join-form').trigger('submit')
-    await t(w, 'class-code').setValue('DMO103')
-    reject(refusal(409, 'Anda sudah menyertai kelas ini.'))
-    await flushPromises()
-    expect(w.find('[data-testid="join-error"]').exists()).toBe(false)
-    expect((t(w, 'class-code').element as HTMLInputElement).value).toBe('DMO103')
-    expect(t(w, 'join-submit').attributes('disabled')).toBeUndefined()
-  })
-})
-
-describe('joinErrorMessage', () => {
-  it('maps validation, network and unknown errors', () => {
-    expect(
-      joinErrorMessage(
-        new ApiError({
-          status: 422,
-          code: 'VALIDATION_ERROR',
-          message: 'x',
-          fields: { classCode: 'Sila masukkan kod kelas.' },
-        }),
-      ),
-    ).toBe('Sila masukkan kod kelas.')
-    expect(joinErrorMessage(new ApiError({ status: 0, code: 'NETWORK_ERROR', message: 'n' }))).toBe(
-      'Ralat rangkaian. Sila cuba lagi.',
-    )
-    expect(joinErrorMessage(new Error('boom'))).toBe('Gagal menyertai kelas. Sila cuba lagi.')
-  })
-
-  it('returns the join-failed copy for a 5xx and the API generic English defaults (SWE-11)', () => {
-    const fail = (status: number, message: string) => new ApiError({ status, code: 'X', message })
-    expect(joinErrorMessage(fail(500, 'Server Error'))).toBe(
-      'Gagal menyertai kelas. Sila cuba lagi.',
-    )
-    expect(joinErrorMessage(fail(404, 'Not Found.'))).toBe('Gagal menyertai kelas. Sila cuba lagi.')
-    expect(joinErrorMessage(fail(403, 'This action is unauthorized.'))).toBe(
-      'Gagal menyertai kelas. Sila cuba lagi.',
-    )
-    expect(joinErrorMessage(fail(502, 'HTTP 502'))).toBe('Gagal menyertai kelas. Sila cuba lagi.')
-  })
-
-  it('keeps the class module BM 404 and 409 messages (SWE-11)', () => {
-    const fail = (status: number, message: string) => new ApiError({ status, code: 'X', message })
-    expect(joinErrorMessage(fail(404, 'Kod kelas tidak sah.'))).toBe('Kod kelas tidak sah.')
-    expect(joinErrorMessage(fail(409, 'Anda sudah menyertai kelas ini.'))).toBe(
-      'Anda sudah menyertai kelas ini.',
-    )
   })
 })

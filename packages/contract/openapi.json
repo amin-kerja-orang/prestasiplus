@@ -2457,6 +2457,25 @@
           },
           "uploader": {
             "$ref": "#/components/schemas/VideoUploader"
+          },
+          "category": {
+            "$ref": "#/components/schemas/VideoCategory"
+          },
+          "categoryLabel": {
+            "type": "string"
+          },
+          "subject": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ContentSubjectRef"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
           }
         },
         "required": [
@@ -2466,7 +2485,10 @@
           "thumbnailUrl",
           "views",
           "createdAt",
-          "uploader"
+          "uploader",
+          "category",
+          "categoryLabel",
+          "subject"
         ],
         "additionalProperties": false
       },
@@ -2499,24 +2521,6 @@
           "uploader": {
             "$ref": "#/components/schemas/VideoUploader"
           },
-          "videoUrl": {
-            "type": "string"
-          },
-          "embedUrl": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "platform": {
-            "$ref": "#/components/schemas/VideoPlatform"
-          },
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "category": {
             "$ref": "#/components/schemas/VideoCategory"
           },
@@ -2534,6 +2538,24 @@
                   "null"
                 ]
               }
+            ]
+          },
+          "videoUrl": {
+            "type": "string"
+          },
+          "embedUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "platform": {
+            "$ref": "#/components/schemas/VideoPlatform"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
             ]
           },
           "visibility": {
@@ -2559,13 +2581,13 @@
           "views",
           "createdAt",
           "uploader",
+          "category",
+          "categoryLabel",
+          "subject",
           "videoUrl",
           "embedUrl",
           "platform",
           "description",
-          "category",
-          "categoryLabel",
-          "subject",
           "visibility",
           "canManage",
           "related"
@@ -2713,7 +2735,7 @@
         "properties": {
           "search": {
             "type": "string",
-            "description": "Title contains."
+            "description": "Title or description contains (case-insensitive)."
           },
           "category": {
             "type": "string",
@@ -2729,6 +2751,12 @@
           "page": {
             "type": "integer",
             "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Rows per page, 1..50; default 24 (the admin list asks for 25)."
           }
         }
       },
@@ -2756,7 +2784,8 @@
           "title": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 255
+            "maxLength": 255,
+            "description": "Max 255 on the wire; the server answers 422 \"Tajuk video tidak boleh melebihi 150 aksara.\" above 150."
           },
           "description": {
             "type": [
@@ -2784,14 +2813,13 @@
               "global",
               "school"
             ],
-            "description": "`school` needs the uploader to have a video-form school, else 422 \"Anda tiada sekolah untuk dikongsi.\" under fields.visibility."
+            "description": "Ignored: the server sets it by role (teacher = `school` with the teacher's school, else 422 \"Anda tiada sekolah untuk dikongsi.\" under fields.visibility; admin = `global`)."
           }
         },
         "required": [
           "videoUrl",
           "title",
-          "category",
-          "visibility"
+          "category"
         ]
       },
       "VideoUpdateRequest": {
@@ -2806,7 +2834,8 @@
           "title": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 255
+            "maxLength": 255,
+            "description": "Max 255 on the wire; the server answers 422 \"Tajuk video tidak boleh melebihi 150 aksara.\" above 150."
           },
           "description": {
             "type": [
@@ -2834,14 +2863,13 @@
               "global",
               "school"
             ],
-            "description": "`school` needs the uploader to have a video-form school, else 422 \"Anda tiada sekolah untuk dikongsi.\" under fields.visibility."
+            "description": "Ignored: the server sets it by role (teacher = `school` with the teacher's school, else 422 \"Anda tiada sekolah untuk dikongsi.\" under fields.visibility; admin = `global`)."
           }
         },
         "required": [
           "videoUrl",
           "title",
-          "category",
-          "visibility"
+          "category"
         ]
       },
       "VideoFormContext": {
@@ -83302,15 +83330,15 @@
           "content"
         ],
         "summary": "Video library",
-        "description": "Public. A guest sees `global` videos only; a signed-in non-admin also sees `school` videos of the same school; admin sees all. 24 per page, newest first. `meta.facets` carries the category and subject counts.",
+        "description": "Public. A guest sees `global` videos only; a signed-in non-admin also sees `school` videos of the same school; admin sees all. 24 per page by default, newest first; `pageSize` (1..50) sets the page size (the admin list asks for 25). `meta.facets` carries the category and subject counts.",
         "parameters": [
           {
             "schema": {
               "type": "string",
-              "description": "Title contains."
+              "description": "Title or description contains (case-insensitive)."
             },
             "required": false,
-            "description": "Title contains.",
+            "description": "Title or description contains (case-insensitive).",
             "name": "search",
             "in": "query"
           },
@@ -83345,6 +83373,18 @@
             "required": false,
             "name": "page",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "description": "Rows per page, 1..50; default 24 (the admin list asks for 25)."
+            },
+            "required": false,
+            "description": "Rows per page, 1..50; default 24 (the admin list asks for 25).",
+            "name": "pageSize",
+            "in": "query"
           }
         ],
         "responses": {
@@ -83365,7 +83405,7 @@
           "content"
         ],
         "summary": "Publish a video link",
-        "description": "Any signed-in user publishes immediately (the mock has no approval state, OQ-API-B4-16). Platform, external id and thumbnail are parsed from the URL.",
+        "description": "admin and teacher only; other roles get 403. Publishes immediately (no approval state, OQ-API-B4-16). Visibility is set by the server (teacher: own school, admin: global), not by the body. Platform, external id and thumbnail are parsed from the URL.",
         "parameters": [
           {
             "schema": {
@@ -83391,7 +83431,7 @@
         },
         "responses": {
           "201": {
-            "description": "Created; status \"Video berjaya diterbitkan.\".",
+            "description": "Created; status \"Video ditambah.\".",
             "content": {
               "application/json": {
                 "schema": {
@@ -83425,7 +83465,7 @@
             }
           },
           "403": {
-            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin or teacher), or CSRF_INVALID.",
             "content": {
               "application/json": {
                 "schema": {
@@ -83435,7 +83475,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields. videoUrl, title, category, visibility required; description at most 1000 chars; subjectId must exist. Also \"Anda tiada sekolah untuk dikongsi.\" under fields.visibility when `school` is chosen and the uploader has no video-form school. Missing: \"Medan ini diperlukan.\"; invalid: \"Medan ini tidak sah.\". Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
+            "description": "VALIDATION_ERROR with fields. videoUrl, title (at most 150 chars) and category required (exact BM copy); a teacher link must be a YouTube video link; description at most 1000 chars; subjectId must exist. \"Anda tiada sekolah untuk dikongsi.\" when a teacher has no school. Missing: \"Medan ini diperlukan.\"; invalid: \"Medan ini tidak sah.\". Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
             "content": {
               "application/json": {
                 "schema": {
@@ -83553,7 +83593,7 @@
           "content"
         ],
         "summary": "Edit a video",
-        "description": "Uploader or admin. An invisible video is 404 before the role check; another user gets 403 \"Anda tidak dibenarkan melakukan tindakan ini.\".",
+        "description": "admin and teacher only (a teacher edits own videos); other roles get 403. An invisible video is 404 before the uploader check; another user gets 403 \"Anda tidak dibenarkan melakukan tindakan ini.\". Visibility is not changed by the body.",
         "parameters": [
           {
             "schema": {
@@ -83642,7 +83682,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields. Same rules as create, including \"Anda tiada sekolah untuk dikongsi.\". Missing: \"Medan ini diperlukan.\"; invalid: \"Medan ini tidak sah.\". Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
+            "description": "VALIDATION_ERROR with fields. Same rules as create. Missing: \"Medan ini diperlukan.\"; invalid: \"Medan ini tidak sah.\". Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
             "content": {
               "application/json": {
                 "schema": {
@@ -83658,7 +83698,7 @@
           "content"
         ],
         "summary": "Delete a video",
-        "description": "Uploader or admin. Hard delete; answers 200 with `{ deleted: 1 }` and the flash.",
+        "description": "admin and teacher only (a teacher deletes own videos); other roles get 403. Hard delete; answers 200 with `{ deleted: 1 }` and the flash.",
         "parameters": [
           {
             "schema": {
@@ -102320,100 +102360,6 @@
           },
           "401": {
             "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/kelas-saya/join": {
-      "post": {
-        "tags": [
-          "classes"
-        ],
-        "summary": "Join a class by code",
-        "description": "classCode is trimmed and compared case-insensitively. Only student (and admin) may join. The enrolment source is \"code\".",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Value of Session.csrf; required on mutating requests."
-            },
-            "required": true,
-            "description": "Value of Session.csrf; required on mutating requests.",
-            "name": "X-CSRF-Token",
-            "in": "header"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ClassJoinRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "`{ data: { classroomId }, message }`.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ClassJoinResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "FORBIDDEN: role may not join; or CSRF_INVALID.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "NOT_FOUND \"Kod kelas tidak sah.\"",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "CONFLICT \"Anda sudah menyertai kelas ini.\"",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "VALIDATION_ERROR fields.classCode \"Sila masukkan kod kelas.\"",
             "content": {
               "application/json": {
                 "schema": {

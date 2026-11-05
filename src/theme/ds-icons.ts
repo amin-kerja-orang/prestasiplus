@@ -124,6 +124,8 @@ export const dsIconBaseNames = [
   'cell-signal-full',
   'arrow-square-out',
   'percent',
+  // m09 VideoAdminListPage (DsEmptyState), S5-T08.
+  'film-slate',
 ] as const
 
 export const dsIconWeights = ['regular', 'duotone', 'bold'] as const
