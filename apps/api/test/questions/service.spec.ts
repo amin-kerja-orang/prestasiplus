@@ -197,7 +197,7 @@ describe('QuestionsService (real database)', () => {
       expect(g.version.status).toBe('review')
       expect(g.createdById).toBe(teacherId)
       expect(g.version.difficultyTp).toBe(3)
-      const upd = await svc.update(g.id, { questionText: 'Teks guru yang telah disunting.' } as never, { userId: teacherId, role: 'teacher' })
+      const upd = await svc.update(g.id, { subjectId: tag.subjectId, educationLevelId: tag.levelId, difficultyLevel: 3, questionText: 'Teks guru yang telah disunting.' } as never, { userId: teacherId, role: 'teacher' })
       expect(upd.version.stemMs).toBe('Teks guru yang telah disunting.')
       await svc.remove(g.id, { userId: teacherId, role: 'admin' })
       expect(await repo.get(g.id, 'latest')).toBeNull()

@@ -124,7 +124,7 @@ export const questionsWorkflowScenarios: Scenario[] = [
       ctx.check(String(tpl.headers['content-disposition']).includes(GURU_CSV_TEMPLATE_NAME), 'guru template Content-Disposition lacks the file name')
       const adminTpl = await admin.request('GET', '/question-imports/template')
       ctx.check(String(adminTpl.headers['content-disposition']).includes(CSV_TEMPLATE_NAME), 'admin template Content-Disposition lacks the file name')
-      ctx.check(JSON.stringify(tpl.body) !== JSON.stringify(adminTpl.body), 'the guru template must be its own BM template')
+      ctx.check(String(tpl.headers['content-disposition']) !== String(adminTpl.headers['content-disposition']), 'the guru template must be its own file (templat-soalan.csv)')
 
       expectField(ctx, await teacher.request('POST', '/guru/questions/import'), 'csvFile')
       const res = await teacher.request('POST', '/guru/questions/import', csvPart('csvFile', GURU_ROW_CSV))

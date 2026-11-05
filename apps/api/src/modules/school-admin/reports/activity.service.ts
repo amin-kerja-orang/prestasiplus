@@ -202,7 +202,7 @@ export class ActivityService {
     headcount: Set<string>,
   ): Promise<SchoolAdminActivityReport['teachers']> {
     const sorted = [...teachers].sort(byName)
-    const stats = await mapPool(sorted, STATS_POOL, (t) => this.ports.questions.statsOf(t.id))
+    const stats = await mapPool(sorted, STATS_POOL, (t) => (this.ports.questions.bankStatsOf ? this.ports.questions.bankStatsOf(t.id) : this.ports.questions.statsOf(t.id)))
     return sorted.map((t, i) => ({
       userId: t.id,
       name: t.name,

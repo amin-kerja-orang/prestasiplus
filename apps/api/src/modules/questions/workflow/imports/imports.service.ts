@@ -147,8 +147,8 @@ export class QuestionImportsService {
   async importGuru(actor: WorkflowActor, file: UploadedCsv | undefined, body: unknown): Promise<{ data: QuestionImportGuruResult }> {
     const read = readGuruCsv(readGuruText(file, body))
     if (read.missingColumns.length > 0) throw guruRefusal(GURU_MSG.missingColumns(read.missingColumns))
-    if (read.rows.length === 0) throw guruRefusal(GURU_MSG.noData)
     if (read.tooMany) throw guruRefusal(GURU_MSG.tooManyRows)
+    if (read.rows.length === 0) throw guruRefusal(GURU_MSG.noData)
 
     const plan = planGuruRows(read.rows, await this.guruLookups(read.rows))
     if (plan.valid.length > 0) {

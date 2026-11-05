@@ -138,14 +138,14 @@ describe('question images and kertas (real database)', () => {
     )
     expect(made.version.stemImageId).not.toBeNull()
     await t.db.query(`update questions set created_by_id = $1 where id = $2`, [guruId, made.id])
-    const edited = await asTeacher((actor) => svc.update(made.id, { questionText: 'Teks guru selepas suntingan yang panjang.' } as never, actor))
+    const edited = await asTeacher((actor) => svc.update(made.id, { subjectId: tag.subjectId, educationLevelId: tag.levelId, difficultyLevel: 3, questionText: 'Teks guru selepas suntingan yang panjang.' } as never, actor))
     expect(edited.status, JSON.stringify(edited.fields)).toBe(200)
     const check = await admin.get(`/api/questions/${made.id}`)
     expect(check.body.data.questionImage).toBe(adminFile.id)
     expect(check.body.data.optionImages[0]).toBe(adminOpt.id)
     // A new admin file is still refused for the Guru.
     const fresh = await uploadAs(admin)
-    const refused = await asTeacher((actor) => svc.update(made.id, { questionText: 'Teks guru sekali lagi yang panjang.', questionImageFileId: fresh.id } as never, actor))
+    const refused = await asTeacher((actor) => svc.update(made.id, { subjectId: tag.subjectId, educationLevelId: tag.levelId, difficultyLevel: 3, questionText: 'Teks guru sekali lagi yang panjang.', questionImageFileId: fresh.id } as never, actor))
     expect(refused.status).toBe(422)
   })
 

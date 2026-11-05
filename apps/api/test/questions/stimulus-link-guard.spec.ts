@@ -79,7 +79,7 @@ describe('a Guru cannot link an arbitrary stimulus to their question (R008-L1)',
   it('editing an own question: a body with another stimulus is refused or ignored, and never stored as a link', async () => {
     const id = (await svc.create(guruBody(), teacherActor())).id
     const other = await stimulus()
-    const res = await fieldsOf(() => svc.update(id, { questionText: 'Soalan guru yang disunting?', parts: [leaf(other)] } as never, teacherActor()))
+    const res = await fieldsOf(() => svc.update(id, { subjectId: refs.mathId, educationLevelId: refs.t4Id, difficultyLevel: 3, questionText: 'Soalan guru yang disunting?', parts: [leaf(other)] } as never, teacherActor()))
     expect([200, 422]).toContain(res.status)
     const linked = await t.db.query(
       `select 1 from question_version_stimuli l join question_versions v on v.id = l.question_version_id where v.question_id = $1 and l.stimulus_id = $2
@@ -91,7 +91,7 @@ describe('a Guru cannot link an arbitrary stimulus to their question (R008-L1)',
     const own = await stimulus()
     const version = (await t.db.query<{ id: string }>(`select id::text id from question_versions where question_id = $1 order by version_no desc limit 1`, [id]))[0]!.id
     await t.db.query(`insert into question_version_stimuli (question_version_id, stimulus_id, position) values ($1, $2, 1)`, [version, own])
-    expect((await fieldsOf(() => svc.update(id, { questionText: 'Soalan guru dengan petikan sendiri yang disunting?' } as never, teacherActor()))).status).toBe(200)
+    expect((await fieldsOf(() => svc.update(id, { subjectId: refs.mathId, educationLevelId: refs.t4Id, difficultyLevel: 3, questionText: 'Soalan guru dengan petikan sendiri yang disunting?' } as never, teacherActor()))).status).toBe(200)
   })
 
   it('the admin may link any stimulus of the library to a question', async () => {

@@ -41,6 +41,18 @@ describe('class report readers leave out the hidden Darjah population (D72)', ()
       await t.db.query(`update questions set created_by_id = $2 where id = (select question_id from question_versions where number_label = $1 order by version_no desc limit 1)`, [ref, teacherA])
     }
     await t.db.query(`insert into practice_answers (user_id, question_id, is_correct, answered_at, is_test) values ($1, $2, true, now(), false)`, [s1, await idOfRef('SEED-MCQ-MATH-T4')])
+    // S6-T06: the teacher question stats read the teacher's own submissions: one accepted guru item per question (what "Terima" links).
+    const batch = (await t.db.query<{ id: string }>(`insert into intake_batches (owner_user_id, source, status, paper_type, subject, source_text, rights_status) values ($1::bigint, 'guru', 'ready_for_review', 'umum', 'Matematik', 'Kiriman guru', 'own') returning id::text id`, [teacherA]))[0]!.id
+    let position = 0
+    for (const ref of ['SEED-MCQ-MATH-T4', 'SEED-MCQ-MATH-T5']) {
+      const v = (await t.db.query<{ qid: string; subject: string; level: string }>(`select question_id::text qid, subject_id::text subject, education_level_id::text level from question_versions where number_label = $1 order by version_no desc limit 1`, [ref]))[0]!
+      const guru = { v: 1, questionType: 'mcq', subjectId: v.subject, educationLevelId: v.level, chapterId: null, spIds: [], tp: null, cognitiveLevel: null, difficultyLevel: 3, correctIndex: 1, explanation: null }
+      position += 1
+      await t.db.query(
+        `insert into intake_items (batch_id, position, source_type, number_label, item_type, payload, review_state, question_id) values ($1::bigint, $2, 'manual', $3, 'mcq', $4::jsonb, 'accepted', $5::bigint)`,
+        [batch, position, String(position), JSON.stringify({ stem: ref, options: [], guru }), v.qid],
+      )
+    }
   }, 180_000)
   afterAll(async () => {
     await t.close()

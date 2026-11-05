@@ -221,6 +221,7 @@ describe('question imports (BE-10 AC 5, 9)', () => {
 
     it('valid rows become items of ONE guru batch ("Menunggu Semakan"); a bad row is reported and does not block the rest', async () => {
       const before = (await itemsOf(teacher.userId)).length
+      const bankBefore = created().length
       const file = [HEAD, row(), row().replace(',A,', ',E,'), row()].join('\r\n')
       const res = await teacher.upload('/api/guru/questions/import', { name: 'guru.csv', body: file })
       expect(res.status, JSON.stringify(res.body)).toBe(200)
@@ -230,7 +231,7 @@ describe('question imports (BE-10 AC 5, 9)', () => {
       expect(items).toHaveLength(2)
       expect(new Set(items.map((i) => i.batch)).size).toBe(1)
       expect(items.every((i) => i.state === 'needs_review')).toBe(true)
-      expect(created()).toHaveLength(0)
+      expect(created().length).toBe(bankBefore) // no bank.create: the rows are intake items
     })
 
     it('only the teacher caps apply: more than 500 rows is "Fail melebihi 500 baris." and nothing is created', async () => {

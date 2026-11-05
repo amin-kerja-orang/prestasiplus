@@ -19,7 +19,10 @@ export interface TeacherQuestionStats {
 }
 
 export interface TeacherQuestionsProvider {
+  /** The teacher's own question SUBMISSIONS (guru intake items): `/guru/contributions` and the dashboard "Soalan" (S6-T06). */
   statsOf(teacherId: string): Promise<TeacherQuestionStats>
+  /** The bank questions the teacher owns, objective and structured: the school-admin activity report. Absent: `statsOf` is read. */
+  bankStatsOf?(teacherId: string): Promise<TeacherQuestionStats>
 }
 
 export class NoTeacherQuestions implements TeacherQuestionsProvider {
