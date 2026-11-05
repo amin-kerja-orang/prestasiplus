@@ -5,7 +5,7 @@ import { Prisma } from '../../db/generated/client'
 import type { Prisma as PrismaTypes } from '../../db/generated/client'
 import { idFromString, idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
-import { BANK_VISIBLE_SQL, LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, SPM_SERVABLE_SQL } from './learner-visibility'
+import { BANK_VISIBLE_SQL, isBankVersion, LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, SPM_SERVABLE_SQL } from './learner-visibility'
 import type { Prng } from '../../db/prng'
 import { kbatOf, missingLeafSql } from './effective-leaf'
 import { paperHeld, QUESTION_SERVED_BY_PAPER } from './served-rule'
@@ -325,7 +325,7 @@ export class QuestionsRepository {
     const wanted = [...new Set(ids)].map(bi).filter((v): v is bigint => v !== null)
     if (wanted.length === 0) return []
     // DM-42: a by-id read keeps a private question (the mission path needs it) unless the caller is a bank path (`bankOnly`): then it is not found.
-    const records = (await this.hydrate(wanted, view, scope)).filter((r) => opts.bankOnly !== true || r.version.visibility !== 'teacher_private')
+    const records = (await this.hydrate(wanted, view, scope)).filter((r) => opts.bankOnly !== true || isBankVersion(r.version))
     const byId = new Map(records.map((r) => [r.id, r]))
     return [...new Set(ids)].flatMap((id) => {
       const r = byId.get(id)

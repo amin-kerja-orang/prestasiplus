@@ -99,7 +99,7 @@ export class OverviewRepository {
         FROM revision_queue r
         JOIN questions q ON q.id = r.question_id
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE r.user_id = ${idFromString(userId)}::bigint AND q.is_active AND v.status = 'approved'`
+       WHERE r.user_id = ${idFromString(userId)}::bigint AND q.is_active AND v.status = 'approved' AND ${BANK_VISIBLE_SQL}`
     return Number(rows[0]?.n ?? 0)
   }
 
