@@ -247,9 +247,11 @@ export const AnalyticsItemAnalysisSchema = z
         textPlain: z.string(),
         subjectName: z.string(),
         attempts: count,
+        correct: count.meta({ description: '"Betul": answers of all modes that were right (FR-GUR-6-5).' }),
+        wrong: count.meta({ description: '"Salah": attempts minus correct.' }),
         pct,
         band: z.enum(['mudah', 'sederhana', 'sukar']),
-        discrimination: z.number().nullable().meta({ description: 'Upper-group p minus lower-group p (3 decimals); null when it cannot be computed.' }),
+        discrimination: z.number().nullable().meta({ description: 'Upper-group p minus lower-group p (2 decimals); null when it cannot be computed (fewer than 10 pupils).' }),
       }),
     ),
   })

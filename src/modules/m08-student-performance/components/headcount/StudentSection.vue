@@ -7,7 +7,7 @@
 import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 
-import { type CardField, type ChartSeries, DsChart, DsDataTable, DsPanel } from '@/ds'
+import { type CardField, type ChartSeries, DsChart, DsDataTable, DsPanel, DsText } from '@/ds'
 import { formatMyt } from '@/lib/time'
 
 import type {
@@ -20,7 +20,13 @@ import type {
 } from '../../api/headcount-types'
 import { DASH, fixed1, gradeOfPercent, num1, selisihText } from '../../lib/headcount/format'
 
-const props = defineProps<{ section: HeadcountSection }>()
+/**
+ * `pupil` (S10-T09): the pupil's own read view. Adds the Active / Draft pill and Jurang; a Draft (no ETR)
+ * shows the one line "Belum Ada Data" and hides the chips, chart and table, with no error (FR-MUR-3-10).
+ */
+const props = withDefaults(defineProps<{ section: HeadcountSection; pupil?: boolean }>(), {
+  pupil: false,
+})
 
 type BadgeColor = 'success' | 'error' | 'warning' | 'neutral' | 'info'
 
@@ -28,6 +34,11 @@ const STATUS: Record<HeadcountSection['status'], { text: string; color: BadgeCol
   on: { text: 'On Track', color: 'success' },
   below: { text: 'Below Target', color: 'error' },
   none: { text: 'Belum Ada Data', color: 'neutral' },
+}
+/** The text of the "none" status: why there is no On Track / Below (HC-4), else "Belum Ada Data". */
+const NONE_TEXT: Record<'belum_ada_data' | 'belum_ada_tov', string> = {
+  belum_ada_data: 'Belum Ada Data',
+  belum_ada_tov: 'Belum Ada TOV',
 }
 const PROJECTION: Record<ProjectionVariant, BadgeColor> = {
   green: 'success',
@@ -73,6 +84,19 @@ const VERDICT: Record<
     note: 'Selisih melebihi 10 markah. Semak semula kaedah penetapan ETR.',
   },
 }
+
+const status = computed(() => {
+  const s = props.section
+  const base = STATUS[s.status]
+  return s.status === 'none' && s.statusReason ? { ...base, text: NONE_TEXT[s.statusReason] } : base
+})
+/** A pupil without an ETR in the config: Draft, nothing to chart (FR-MUR-3-10). */
+const draft = computed(() => props.pupil && props.section.entryStatus === 'draft')
+/** "Jurang: +40": ETR - TOV, "—" when either is missing (HC-1). */
+const jurangText = computed(() => {
+  const j = props.section.jurang
+  return j === null ? DASH : selisihText(j)
+})
 
 const recorded = computed(() => {
   const at = props.section.rs?.recordedAt
@@ -177,9 +201,17 @@ const rowTestId =(r: Row, i: number): string =>
         <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
           <h2 class="min-w-0 text-heading break-words text-highlighted">{{ section.subject }}</h2>
           <UBadge
-            :color="STATUS[section.status].color"
+            v-if="pupil"
+            :color="section.entryStatus === 'active' ? 'success' : 'neutral'"
             variant="subtle"
-            :label="STATUS[section.status].text"
+            :label="section.entryStatus === 'active' ? 'Active' : 'Draft'"
+            data-testid="entry-pill"
+          />
+          <UBadge
+            v-if="!draft"
+            :color="status.color"
+            variant="subtle"
+            :label="status.text"
             data-testid="status-pill"
           />
           <UBadge
@@ -205,7 +237,9 @@ const rowTestId =(r: Row, i: number): string =>
           <UBadge color="neutral" variant="soft" :label="String(section.year)" />
         </div>
 
-        <div class="flex flex-wrap items-center gap-2" data-testid="summary-chips">
+        <DsText v-if="draft" variant="body" tone="muted" data-testid="draft-note">Belum Ada Data</DsText>
+
+        <div v-if="!draft" class="flex flex-wrap items-center gap-2" data-testid="summary-chips">
           <UBadge
             color="neutral"
             variant="soft"
@@ -217,6 +251,13 @@ const rowTestId =(r: Row, i: number): string =>
             variant="soft"
             data-testid="chip-etr"
             :label="`ETR: ${section.etr === null ? DASH : `${fixed1(section.etr)}% (${gradeOfPercent(section.etr)})`}`"
+          />
+          <UBadge
+            v-if="pupil"
+            color="neutral"
+            variant="soft"
+            data-testid="chip-jurang"
+            :label="`Jurang: ${jurangText}`"
           />
           <UBadge
             v-if="section.rs"
@@ -251,6 +292,7 @@ const rowTestId =(r: Row, i: number): string =>
         </div>
 
         <DsChart
+          v-if="!draft"
           type="line"
           :title="`Prestasi ${section.subject}`"
           :labels="section.chart.labels"
@@ -263,6 +305,7 @@ const rowTestId =(r: Row, i: number): string =>
     </DsPanel>
 
     <DsDataTable
+      v-if="!draft"
       :data="rows"
       :columns="columns"
       caption="Checkpoint"
@@ -300,7 +343,7 @@ const rowTestId =(r: Row, i: number): string =>
       </template>
     </DsDataTable>
 
-    <DsPanel v-if="section.prediction && verdict" data-testid="prediction-box">
+    <DsPanel v-if="!draft && section.prediction && verdict" data-testid="prediction-box">
       <div class="flex flex-col gap-2">
         <div class="flex items-center gap-2">
           <span :class="[verdict.iconTone, 'flex shrink-0']"
