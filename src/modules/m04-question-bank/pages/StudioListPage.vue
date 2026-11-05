@@ -95,7 +95,12 @@ const JENIS_OPTIONS = [
 ]
 const PAGE_SIZES = [25, 50, 100]
 const DEFAULT_PAGE_SIZE = 25
-const KEYS = ['subject_id', 'status', 'search', 'tahun', 'negeri', 'kertas', 'jenis'] as const
+/** Field 03-10, OPT-DSKP-TAG. */
+const DSKP_TAG_OPTIONS = [
+  { value: 'tagged', label: 'Ada DSKP Tag' },
+  { value: 'untagged', label: 'Belum Ditag' },
+]
+const KEYS = ['subject_id', 'education_level_id', 'status', 'dskp_filter', 'search', 'tahun', 'negeri', 'kertas', 'jenis'] as const
 type Key = (typeof KEYS)[number]
 
 const route = useRoute()
@@ -113,6 +118,7 @@ const validFilter = (k: Key, v: string): string => {
   if (k === 'tahun') return /^\d{4}$/.test(v) ? v : ''
   if (k === 'kertas') return KERTAS_OPTIONS.includes(v) ? v : ''
   if (k === 'jenis') return JENIS_OPTIONS.some((o) => o.value === v) ? v : ''
+  if (k === 'dskp_filter') return DSKP_TAG_OPTIONS.some((o) => o.value === v) ? v : ''
   if (k === 'negeri') return v.slice(0, 64)
   return v
 }
@@ -141,6 +147,8 @@ const list = useApi(
     available
       ? fetchStudioList({
           subjectId: applied.value.subject_id || null,
+          educationLevelId: applied.value.education_level_id || null,
+          dskpFilter: applied.value.dskp_filter || null,
           status: applied.value.status || null,
           search: applied.value.search || null,
           tahun: applied.value.tahun || null,
@@ -218,7 +226,7 @@ const selectedIds = computed(() => selected.value.map((r) => r.id))
 const bulkFilter = computed<QuestionBulkFilter>(() => {
   const a = applied.value
   return Object.fromEntries(
-    Object.entries({ subjectId: a.subject_id, status: a.status, search: a.search, tahun: a.tahun, negeri: a.negeri, kertas: a.kertas, jenis: a.jenis }).filter(([, v]) => v !== ''),
+    Object.entries({ subjectId: a.subject_id, educationLevelId: a.education_level_id, dskpFilter: a.dskp_filter, status: a.status, search: a.search, tahun: a.tahun, negeri: a.negeri, kertas: a.kertas, jenis: a.jenis }).filter(([, v]) => v !== ''),
   )
 })
 async function afterBulk(): Promise<void> {
@@ -302,7 +310,17 @@ const chips = computed(() => {
     const s = subjectOptions.value.find((o) => String(o.id) === applied.value.subject_id)
     out.push({ key: 'subject_id', label: `Subjek: ${s?.name ?? applied.value.subject_id}` })
   }
+  if (applied.value.education_level_id !== '') {
+    const l = levelOptions.value.find((o) => String(o.id) === applied.value.education_level_id)
+    out.push({ key: 'education_level_id', label: `Tingkatan: ${l?.name ?? applied.value.education_level_id}` })
+  }
   if (applied.value.status !== '') out.push({ key: 'status', label: `Status: ${statusBadge(applied.value.status)}` })
+  if (applied.value.dskp_filter !== '') {
+    out.push({
+      key: 'dskp_filter',
+      label: `Penandaan DSKP: ${DSKP_TAG_OPTIONS.find((o) => o.value === applied.value.dskp_filter)?.label ?? ''}`,
+    })
+  }
   if (applied.value.search !== '') out.push({ key: 'search', label: `Cari: ${applied.value.search}` })
   if (applied.value.tahun !== '') out.push({ key: 'tahun', label: `Tahun: ${applied.value.tahun}` })
   if (applied.value.negeri !== '') out.push({ key: 'negeri', label: `Negeri: ${applied.value.negeri}` })
@@ -566,6 +584,14 @@ const cardFields: CardField[] = [
             <option v-for="s in subjectOptions" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
           </DsNativeSelect>
         </div>
+        <DsNativeSelect id="studio-level-filter" v-model="draft.education_level_id" aria-label="Tingkatan" data-testid="studio-level-filter">
+          <option value="">Semua tingkatan</option>
+          <option v-for="o in levelOptions" :key="o.id" :value="String(o.id)">{{ o.name }}</option>
+        </DsNativeSelect>
+        <DsNativeSelect id="studio-dskp-filter" v-model="draft.dskp_filter" aria-label="Penandaan DSKP" data-testid="studio-dskp-filter">
+          <option value="">Semua</option>
+          <option v-for="o in DSKP_TAG_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
+        </DsNativeSelect>
         <div class="w-full min-w-0 md:w-48">
           <DsNativeSelect id="studio-status-filter" v-model="draft.status" name="status" aria-label="Status" data-testid="studio-status-filter">
             <option value="">Semua status</option>

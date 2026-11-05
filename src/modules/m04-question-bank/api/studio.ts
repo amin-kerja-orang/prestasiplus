@@ -217,6 +217,8 @@ export interface StudioListExtra {
 
 export interface StudioListQuery {
   subjectId?: string | null
+  educationLevelId?: string | null
+  dskpFilter?: string | null
   status?: string | null
   search?: string | null
   /** Filters on the source paper (T47): year, state or examining body, paper 1 to 3, exam type. */
@@ -231,7 +233,7 @@ export interface StudioListQuery {
 
 export function fetchStudioList(q: StudioListQuery): Promise<ListResult<StudioRow, StudioListExtra>> {
   return api.list<StudioRow, StudioListExtra>('/api/questions', {
-    query: { subjectId: q.subjectId ?? null, status: q.status ?? null, search: q.search ?? null, tahun: q.tahun ?? null, negeri: q.negeri ?? null, kertas: q.kertas ?? null, jenis: q.jenis ?? null, page: q.page ?? null, pageSize: q.pageSize ?? null },
+    query: { subjectId: q.subjectId ?? null, educationLevelId: q.educationLevelId ?? null, dskpFilter: q.dskpFilter ?? null, status: q.status ?? null, search: q.search ?? null, tahun: q.tahun ?? null, negeri: q.negeri ?? null, kertas: q.kertas ?? null, jenis: q.jenis ?? null, page: q.page ?? null, pageSize: q.pageSize ?? null },
     ...(q.signal ? { signal: q.signal } : {}),
   })
 }

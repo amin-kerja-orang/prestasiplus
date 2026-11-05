@@ -241,6 +241,26 @@ describe('StudioListPage (S1 to S6)', () => {
     expect(t(w, 'studio-kertas-filter').text()).toContain('Kertas 3')
   })
 
+  it('filters by Tingkatan and Penandaan DSKP (FR-ADM-Q03.4), through the URL and the chips', async () => {
+    const w = await render('/admin/studio?education_level_id=7&dskp_filter=untagged')
+    expect(studio.fetchStudioList).toHaveBeenLastCalledWith(
+      expect.objectContaining({ educationLevelId: '7', dskpFilter: 'untagged' }),
+    )
+    expect(w.text()).toContain('Tingkatan: Tingkatan 4')
+    expect(w.text()).toContain('Penandaan DSKP: Belum Ditag')
+    expect(t(w, 'studio-level-filter').text()).toContain('Semua tingkatan')
+    expect(t(w, 'studio-dskp-filter').findAll('option').map((o) => o.text())).toEqual([
+      'Semua',
+      'Ada DSKP Tag',
+      'Belum Ditag',
+    ])
+  })
+
+  it('drops a Penandaan DSKP value the API has no meaning for', async () => {
+    await render('/admin/studio?dskp_filter=lain')
+    expect(studio.fetchStudioList).toHaveBeenLastCalledWith(expect.objectContaining({ dskpFilter: null }))
+  })
+
   it('drops a filter value the API would refuse instead of sending it', async () => {
     await render('/admin/studio?tahun=24&kertas=9&jenis=ujian')
     expect(studio.fetchStudioList).toHaveBeenLastCalledWith(expect.objectContaining({ tahun: null, kertas: null, jenis: null }))
