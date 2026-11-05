@@ -41,14 +41,14 @@ describe('#5 class dashboard: class 2001 anchors (§6.10)', () => {
     expect(d.class.school).not.toBe('')
   })
 
-  it('stats: 8 · 42.6% · 11 · 68 · 6 (no Purata Masa/Sesi: avgMinutes is null)', async () => {
+  it('stats: 8 · 42.6% · 11 · 68 · 6, Purata Masa/Sesi 6.1 minutes', async () => {
     const d = await s5(2001)
     expect(d.stats).toEqual({
       students: 8,
       accuracy: 42.6,
       sessions: 11,
       answered: 68,
-      avgMinutes: null,
+      avgMinutes: 6.1,
       active7d: 6,
     })
   })
@@ -89,12 +89,16 @@ describe('#5 class dashboard: class 2001 anchors (§6.10)', () => {
     expect(d.headcount?.pct.none).toBeCloseTo(87.5, 5)
   })
 
-  it('trend: one point per active week (the Monday, DOC DEFECT 4) of the last 12 weeks, oldest first', async () => {
+  it('trend: 30 zero-filled days, oldest first, today last; the active days carry the sessions', async () => {
     const d = await s5(2001)
-    expect(d.trend.map((t) => [t.date, t.sessions, t.activeStudents, t.avgAccuracy])).toEqual([
-      ['2026-09-14', 4, 4, 56.3],
-      ['2026-09-21', 7, 6, 30.6],
+    expect(d.trend).toHaveLength(30)
+    expect(d.trend.map((t) => t.date)).toEqual([...d.trend.map((t) => t.date)].sort())
+    expect(d.trend.filter((t) => t.activeStudents > 0).map((t) => [t.date, t.sessions, t.activeStudents, t.avgAccuracy])).toEqual([
+      ['2026-09-15', 4, 4, 56.3],
+      ['2026-09-22', 4, 4, 28.1],
+      ['2026-09-24', 3, 3, 50],
     ])
+    expect(d.trend.filter((t) => t.activeStudents === 0).every((t) => t.sessions === 0 && t.avgAccuracy === 0)).toBe(true)
   })
 })
 
@@ -119,7 +123,8 @@ describe('#5 class dashboard: other classes', () => {
     })
     expect(d.attention).toHaveLength(58)
     expect(d.attention.every((a) => a.accuracy === null && a.sessions === 0)).toBe(true)
-    expect(d.trend).toEqual([])
+    expect(d.trend).toHaveLength(30)
+    expect(d.trend.every((t) => t.sessions === 0 && t.activeStudents === 0)).toBe(true)
     expect(d.headcount).toBeNull()
     expect(d.ranking.every((r) => r.accuracy === null && r.lastActiveAt === null)).toBe(true)
   })
@@ -289,7 +294,7 @@ describe('class 228 anchors (SRS §6.3)', () => {
       accuracy: 77.6,
       sessions: 1618,
       answered: 34882,
-      avgMinutes: null,
+      avgMinutes: 10.4,
       active7d: 2,
     })
   })

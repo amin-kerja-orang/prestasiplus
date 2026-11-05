@@ -7,7 +7,7 @@ import { canOpenClassDashboard, viewerSchoolId } from '../domain/access-policy'
 import {
   ACTIVE_DAYS,
   ATTENTION_BELOW,
-  CLASS_TREND_WEEKS,
+  CLASS_TREND_DAYS,
   REDACTED_ID,
   SESSION_MODES,
   TOP_STUDENT_LIMIT,
@@ -15,7 +15,7 @@ import {
 } from '../domain/constants'
 import { canSeeName, nameFor } from '../domain/privacy'
 import { accuracyOf, compareIds, round } from '../domain/rules'
-import { lastWeeks, mytMidnight, startOfDaysAgo } from '../domain/windows'
+import { lastDays, mytMidnight, startOfDaysAgo } from '../domain/windows'
 import { HeadcountFactsService } from '../headcount/headcount-facts.service'
 import { meanOrNull } from '../headcount/headcount.rules'
 import { DIRECTORY_PORT, PerformancePorts, type AnswerFactRow, type DirectoryPort } from '../ports'
@@ -160,16 +160,19 @@ export class ClassPerformanceService {
     const now = this.clock.now()
     // Every figure comes from the shared answer reader (S10-T01): all modes answer, game modes add no session (XS-4, XS-5, XS-8).
     const query = { userIds: members, ...(cls.subjectId !== null ? { subjectId: cls.subjectId } : {}) }
-    const weeks = lastWeeks(now, CLASS_TREND_WEEKS)
+    const days = lastDays(now, CLASS_TREND_DAYS)
+    const trendWindow = { from: mytMidnight(days[0] as string), to: now }
     const reader = this.ports.answerFacts
-    const [factRows, sessionRows, weekRows, weekSessionRows] =
+    const [factRows, sessionRows, dayRows, daySessionRows, durationRows] =
       members.length === 0
-        ? [[], [], [], []]
+        ? [[], [], [], [], []]
         : await Promise.all([
             reader.answerFacts(query),
             reader.sessionCounts({ ...query, modes: SESSION_MODES }),
-            reader.weeklyFacts({ ...query, from: mytMidnight(weeks[0] as string), to: now }),
-            reader.weeklyFacts({ ...query, from: mytMidnight(weeks[0] as string), to: now, modes: SESSION_MODES }),
+            reader.dailyFacts({ ...query, ...trendWindow }),
+            reader.dailyFacts({ ...query, ...trendWindow, modes: SESSION_MODES }),
+            // Purata Masa/Sesi: finished sessions of the session modes, all time (the same scope as Jumlah Sesi).
+            reader.sessionDurations({ ...query, modes: SESSION_MODES }),
           ])
 
     const byUser = groupBy(factRows, (r) => r.userId)
@@ -194,21 +197,22 @@ export class ClassPerformanceService {
     const activeFrom = startOfDaysAgo(now, ACTIVE_DAYS - 1)
     const active7d = rows.filter((r) => r.last !== null && r.last >= activeFrom).length
 
-    // Weekly trend (12 ISO weeks, Monday start, MYT): the reader has no day grain (DOC DEFECT 4). Weeks without an answer are left out.
-    const sessionsByWeek = new Map<string, number>()
-    for (const r of weekSessionRows) sessionsByWeek.set(r.weekStart, (sessionsByWeek.get(r.weekStart) ?? 0) + r.sessions)
-    const trend = weeks.flatMap((week) => {
-      const list = weekRows.filter((r) => r.weekStart === week && r.attempts > 0)
-      if (list.length === 0) return []
-      return [
-        {
-          date: week,
-          sessions: sessionsByWeek.get(week) ?? 0,
-          avgAccuracy: accuracyOf(sumOf(list, (r) => r.correct), sumOf(list, (r) => r.attempts)),
-          activeStudents: new Set(list.map((r) => r.userId)).size,
-        },
-      ]
+    // Daily trend (R1-GUR-4): the last 30 MYT days including today, zero-filled (a day without an answer is 0 / 0 / 0).
+    // Sessions leave the game modes out; accuracy and active pupils count every answer.
+    const sessionsByDay = new Map<string, number>()
+    for (const r of daySessionRows) sessionsByDay.set(r.day, (sessionsByDay.get(r.day) ?? 0) + r.sessions)
+    const trend = days.map((date) => {
+      const list = dayRows.filter((r) => r.day === date && r.attempts > 0)
+      return {
+        date,
+        sessions: sessionsByDay.get(date) ?? 0,
+        avgAccuracy: list.length === 0 ? 0 : accuracyOf(sumOf(list, (r) => r.correct), sumOf(list, (r) => r.attempts)),
+        activeStudents: new Set(list.map((r) => r.userId)).size,
+      }
     })
+    // Purata Masa/Sesi (BR-M08-10): sum of seconds / finished sessions / 60, one decimal; null when no session finished.
+    const finished = sumOf(durationRows, (r) => r.sessions)
+    const avgMinutes = finished === 0 ? null : round(sumOf(durationRows, (r) => r.seconds) / finished / 60, 1)
 
     const hc = await this.headcountBlock(ctx, cls.id, members)
     const names = await nameMap(this.directory, members)
@@ -249,8 +253,7 @@ export class ClassPerformanceService {
         accuracy: accuracyOf(total.correct, total.answered),
         sessions: total.sessions,
         answered: total.answered,
-        // Dropped (DOC DEFECT 4): the single answer store has no duration. Deprecated on the wire, always null.
-        avgMinutes: null,
+        avgMinutes,
         active7d,
       },
       headcount: hc.block,

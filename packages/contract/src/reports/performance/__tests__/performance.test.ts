@@ -524,7 +524,7 @@ describe('S10-T07 contract changes', () => {
     expect(PerformanceClassesAggregateSchema.safeParse({ classes: [], topStudents: [] }).success).toBe(false)
   })
 
-  it('class stats.avgMinutes is deprecated and null; Murid Berisiko rows carry answered, accuracy and lastAnsweredAt', () => {
+  it('class stats.avgMinutes is a nullable number (Purata Masa/Sesi); Murid Berisiko rows carry answered, accuracy and lastAnsweredAt', () => {
     const atRisk = { userId: '3', name: 'Murid Contoh', className: '4 A', answered: 0, accuracy: null, lastAnsweredAt: null }
     const level = {
       code: 't1', name: 'Tingkatan 1', classes: 1, students: 1, subjects: 0, accuracy: 0, sessions: 0, onTrack: 0, below: 0, onTrackPct: 0,
@@ -537,5 +537,10 @@ describe('S10-T07 contract changes', () => {
       headcount: null, attention: [], trend: [], ranking: [],
     }
     expect(PerformanceClassDashboardSchema.safeParse(dashboard).success).toBe(true)
+    expect(PerformanceClassDashboardSchema.safeParse({ ...dashboard, stats: { ...dashboard.stats, avgMinutes: 10.4 } }).success).toBe(true)
+    expect(PerformanceClassDashboardSchema.safeParse({ ...dashboard, stats: { ...dashboard.stats, avgMinutes: '10.4' } }).success).toBe(false)
+    // Daily trend point: the MYT day, sessions, accuracy and active pupils (a zero-filled day is all zeros).
+    const day = { date: '2026-09-24', sessions: 0, avgAccuracy: 0, activeStudents: 0 }
+    expect(PerformanceClassDashboardSchema.safeParse({ ...dashboard, trend: [day] }).success).toBe(true)
   })
 })

@@ -297,7 +297,7 @@ describe('Class dashboard', () => {
 
   it('class figures are the sum of the members and only count the class subject', async () => {
     const r = await w.klass.classDashboard(teacher, '10')
-    // avgMinutes is dropped (DOC DEFECT 4): always null
+    // no finished session row in this world: Purata Masa/Sesi is null
     expect(r.stats).toEqual({ students: 3, accuracy: 63.3, sessions: 3, answered: 30, avgMinutes: null, active7d: 2 })
     expect(r.class).toMatchObject({ id: '10', school: 'Sekolah Contoh Satu', subject: 'Bahasa Melayu' })
     expect(r.headcount).toBeNull()
@@ -331,20 +331,101 @@ describe('Class dashboard', () => {
     ])
   })
 
-  it('trend is weekly (Monday of the week), the last 12 weeks, only weeks with answers (DOC DEFECT 4)', async () => {
-    answers(w, '1', 10, 5, { answeredAt: d('2026-06-01T08:00:00+08:00') }) // older than 12 weeks
-    const r = await w.klass.classDashboard(teacher, '10')
-    expect(r.trend).toEqual([
-      { date: '2026-09-07', sessions: 1, avgAccuracy: 70, activeStudents: 1 },
-      { date: '2026-09-21', sessions: 2, avgAccuracy: 60, activeStudents: 2 },
-    ])
+  describe('trend: 30 Malaysian days, zero-filled (R1-GUR-4)', () => {
+    it('is 30 points, oldest first, ending today; days without an answer are zeros and a day of answers carries sessions, accuracy and active pupils', async () => {
+      answers(w, '1', 10, 5, { answeredAt: d('2026-06-01T08:00:00+08:00') }) // older than 30 days: not in the trend
+      const r = await w.klass.classDashboard(teacher, '10')
+      expect(r.trend).toHaveLength(30)
+      expect(r.trend[0]?.date).toBe('2026-08-27')
+      expect(r.trend[29]?.date).toBe('2026-09-25')
+      expect(r.trend.map((t) => t.date)).toEqual([...r.trend.map((t) => t.date)].sort())
+      expect(r.trend.find((t) => t.date === '2026-09-10')).toEqual({ date: '2026-09-10', sessions: 1, avgAccuracy: 70, activeStudents: 1 })
+      // 9/10 + 3/10 on the 25th: 12/20
+      expect(r.trend[29]).toEqual({ date: '2026-09-25', sessions: 2, avgAccuracy: 60, activeStudents: 2 })
+      expect(r.trend.filter((t) => t.activeStudents === 0).every((t) => t.sessions === 0 && t.avgAccuracy === 0)).toBe(true)
+      expect(r.trend.filter((t) => t.activeStudents > 0)).toHaveLength(2)
+      PerformanceClassDashboardSchema.parse(r)
+    })
+
+    it('the day is the Malaysian day: 23:30 +08:00 and 00:30 +08:00 are two different days', async () => {
+      answers(w, '1', 4, 4, { answeredAt: d('2026-09-20T23:30:00+08:00') })
+      answers(w, '1', 4, 0, { answeredAt: d('2026-09-21T00:30:00+08:00') })
+      const r = await w.klass.classDashboard(teacher, '10')
+      expect(r.trend.find((t) => t.date === '2026-09-20')).toMatchObject({ avgAccuracy: 100, activeStudents: 1 })
+      expect(r.trend.find((t) => t.date === '2026-09-21')).toMatchObject({ avgAccuracy: 0, activeStudents: 1 })
+    })
+
+    it('the 30th day back is in and the 31st is out (the window starts at 00:00 +08:00)', async () => {
+      answers(w, '1', 2, 2, { answeredAt: d('2026-08-27T00:00:01+08:00') })
+      answers(w, '1', 2, 2, { answeredAt: d('2026-08-26T23:59:59+08:00') })
+      const r = await w.klass.classDashboard(teacher, '10')
+      expect(r.trend[0]).toMatchObject({ date: '2026-08-27', activeStudents: 1 })
+      expect(r.trend.some((t) => t.date === '2026-08-26')).toBe(false)
+    })
+
+    it('game modes add answers (accuracy, active pupils) but no session', async () => {
+      answers(w, '2', 4, 4, { mode: 'battle', answeredAt: d('2026-09-12T10:00:00+08:00') })
+      const r = await w.klass.classDashboard(teacher, '10')
+      expect(r.trend.find((t) => t.date === '2026-09-12')).toEqual({ date: '2026-09-12', sessions: 0, avgAccuracy: 100, activeStudents: 1 })
+    })
+
+    it('a class with no answers still has 30 zero days', async () => {
+      w.classes.add({ id: '14', schoolId: 's1', teacherId: 't2' }, ['8'])
+      const r = await w.klass.classDashboard(ctxOf('teacher', 't2'), '14')
+      expect(r.trend).toHaveLength(30)
+      expect(r.trend.every((t) => t.sessions === 0 && t.avgAccuracy === 0 && t.activeStudents === 0)).toBe(true)
+    })
+  })
+
+  describe('Purata Masa/Sesi (stats.avgMinutes)', () => {
+    const finished = (userId: string, timeSpentSec: number, over: Partial<Parameters<World['answers']['addSession']>[0]> = {}): void => {
+      w.answers.addSession({ userId, subjectId: '1', mode: 'latih_tubi', status: 'completed', timeSpentSec, completedAt: d('2026-09-25T09:00:00+08:00'), ...over })
+    }
+
+    it('is seconds over finished sessions over 60, one decimal', async () => {
+      finished('1', 600)
+      finished('2', 625) // (600 + 625) / 2 / 60 = 10.208...
+      expect((await w.klass.classDashboard(teacher, '10')).stats.avgMinutes).toBe(10.2)
+    })
+
+    it('rounds half up at one decimal: 3 sessions of 90 s, 91 s and 92 s are 1.5 minutes', async () => {
+      finished('1', 90)
+      finished('1', 91)
+      finished('2', 92)
+      expect((await w.klass.classDashboard(teacher, '10')).stats.avgMinutes).toBe(1.5)
+      finished('3', 600)
+      // (90 + 91 + 92 + 600) / 4 / 60 = 3.6375
+      expect((await w.klass.classDashboard(teacher, '10')).stats.avgMinutes).toBe(3.6)
+    })
+
+    it('is null when no session has finished (in-progress, test and other-class rows do not count)', async () => {
+      finished('1', 600, { status: 'in_progress' })
+      finished('1', 600, { isTest: true })
+      finished('9', 600) // not a member
+      const r = await w.klass.classDashboard(teacher, '10')
+      expect(r.stats.avgMinutes).toBeNull()
+      PerformanceClassDashboardSchema.parse(r)
+    })
+
+    it('leaves game modes and other subjects out, and a class without subject takes every subject', async () => {
+      finished('1', 600)
+      finished('1', 6000, { mode: 'battle' })
+      finished('2', 6000, { subjectId: '2' })
+      expect((await w.klass.classDashboard(teacher, '10')).stats.avgMinutes).toBe(10)
+      finished('3', 120, { subjectId: '3' })
+      expect((await w.klass.classDashboard(ctxOf('teacher', 't2'), '11')).stats.avgMinutes).toBe(2)
+    })
+
+    it('a finished session of 0 seconds counts as a session (0 minutes, not null)', async () => {
+      finished('1', 0)
+      expect((await w.klass.classDashboard(teacher, '10')).stats.avgMinutes).toBe(0)
+    })
   })
 
   it('zero answers give zeros, never NaN', async () => {
     w.classes.add({ id: '14', schoolId: 's1', teacherId: 't2' }, ['8'])
     const r = await w.klass.classDashboard(ctxOf('teacher', 't2'), '14')
     expect(r.stats).toEqual({ students: 1, accuracy: 0, sessions: 0, answered: 0, avgMinutes: null, active7d: 0 })
-    expect(r.trend).toEqual([])
   })
 
   it('a class without subject counts every subject', async () => {

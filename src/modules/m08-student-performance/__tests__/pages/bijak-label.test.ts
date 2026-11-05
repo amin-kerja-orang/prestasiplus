@@ -52,7 +52,7 @@ const CLASS: ClassDashboard = {
     year: 2026,
     joinCode: 'DMO101',
   },
-  stats: { students: 8, accuracy: 42.6, sessions: 11, answered: 68, avgMinutes: null, active7d: 0 },
+  stats: { students: 8, accuracy: 42.6, sessions: 11, answered: 68, avgMinutes: 10.4, active7d: 0 },
   headcount: null,
   attention: [],
   trend: [],
@@ -130,14 +130,13 @@ describe('Prestasi360Page in http mode (S10-T01 change 4: no Bijak-only layout)'
 })
 
 describe('PrestasiKelasDetailPage: one V3 layout in every mode (S10-T07)', () => {
-  it.each(['http', 'mock'] as const)('%s mode: five stat cards, no Bijak heading, no "Tiada data" box, no join code', async (mode) => {
+  it.each(['http', 'mock'] as const)('%s mode: six stat cards, no Bijak heading, no "Tiada data" box, no join code', async (mode) => {
     if (mode === 'http') vi.stubEnv('VITE_API_MODE', 'http')
     api.fetchClassDashboard.mockResolvedValue(CLASS)
     const w = await render(PrestasiKelasDetailPage, '/prestasi/kelas/2001', '/prestasi/kelas/:id')
     expect(has(w, 'bijak-summary')).toBe(false)
     expect(w.text()).not.toContain('Keputusan Bijak SPM')
-    expect(['murid', 'ketepatan', 'sesi', 'soalan', 'aktif'].every((id) => has(w, `stat-${id}`))).toBe(true)
-    expect(has(w, 'stat-masa')).toBe(false)
+    expect(['murid', 'ketepatan', 'sesi', 'soalan', 'masa', 'aktif'].every((id) => has(w, `stat-${id}`))).toBe(true)
     expect(w.text()).not.toContain('DMO101')
   })
 

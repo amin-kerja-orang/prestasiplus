@@ -88,6 +88,13 @@ async function translating(seed: AnswerFactsSeed): Promise<AnswerFactsPort> {
     )
     sessionOf.set(a.sessionId, row!.id)
   }
+  for (const x of seed.sessions ?? []) {
+    await t.db.query(
+      `insert into practice_sessions (user_id, mode, subject_id, question_count, status, time_spent_sec, started_at, completed_at, is_test)
+       values ($1::bigint, $2, $3::bigint, 1, $4::text, $5, $6::timestamptz, case when $4::text = 'completed' then $6::timestamptz end, $7)`,
+      [userOf.get(x.userId)!, MODE_IN[x.mode] ?? x.mode, subjectOf(x.subjectId), x.status, x.timeSpentSec, x.completedAt.toISOString(), x.isTest === true],
+    )
+  }
   for (const a of seed.answers) {
     await t.db.query(
       `insert into practice_answers (session_id, user_id, question_id, subject_id, education_level_id, chapter_id, topic_id, is_correct, answered_at, is_test)
@@ -130,6 +137,8 @@ async function translating(seed: AnswerFactsSeed): Promise<AnswerFactsPort> {
         mode: MODE_OUT[r.mode] ?? r.mode,
       })),
     weeklyFacts: async (q) => (await real.weeklyFacts(scope(q))).map((r) => ({ ...r, userId: userBack.get(r.userId)! })),
+    dailyFacts: async (q) => (await real.dailyFacts(scope(q))).map((r) => ({ ...r, userId: userBack.get(r.userId)! })),
+    sessionDurations: async (q) => (await real.sessionDurations(scope(q))).map((r) => ({ ...r, userId: userBack.get(r.userId)! })),
     sessionCounts: async (q) =>
       (await real.sessionCounts(scope(q))).map((r) => ({ ...r, userId: userBack.get(r.userId)!, subjectId: r.subjectId === null ? null : (subjectBack.get(r.subjectId) ?? r.subjectId) })),
     spInfo: async (q) =>

@@ -20,6 +20,16 @@ export interface AnswerFactsSeed {
     isTest?: boolean
     levelCode?: string
   }[]
+  /** Practice session rows for `sessionDurations` (the answers above carry their own session ids). */
+  sessions?: {
+    userId: string
+    subjectId: string
+    mode: string
+    status: 'in_progress' | 'completed'
+    timeSpentSec: number
+    completedAt: Date
+    isTest?: boolean
+  }[]
 }
 
 export interface AnswerFactsContractOptions {
@@ -52,6 +62,16 @@ const SEED: AnswerFactsSeed = {
     // Mod Pelajar: never returned.
     { userId: '1', subjectId: '1', questionId: '10', chapterId: '50', topicId: '100', mode: 'latih_tubi', isCorrect: true, answeredAt: at('2026-09-22T10:02:00+08:00'), sessionId: 'sA', isTest: true },
     { userId: '2', subjectId: '1', questionId: '10', chapterId: '50', topicId: '100', mode: 'latih_tubi', isCorrect: true, answeredAt: at('2026-09-22T11:00:00+08:00'), sessionId: 'sE', levelCode: 't5' },
+  ],
+  sessions: [
+    { userId: '1', subjectId: '1', mode: 'latih_tubi', status: 'completed', timeSpentSec: 600, completedAt: at('2026-09-22T10:10:00+08:00') },
+    { userId: '1', subjectId: '2', mode: 'simulasi', status: 'completed', timeSpentSec: 90, completedAt: at('2026-09-28T00:10:00+08:00') },
+    { userId: '1', subjectId: '1', mode: 'battle', status: 'completed', timeSpentSec: 1000, completedAt: at('2026-09-23T12:10:00+08:00') },
+    // Not finished: never counted.
+    { userId: '1', subjectId: '1', mode: 'latih_tubi', status: 'in_progress', timeSpentSec: 500, completedAt: at('2026-09-24T10:00:00+08:00') },
+    // Mod Pelajar: never returned.
+    { userId: '1', subjectId: '1', mode: 'latih_tubi', status: 'completed', timeSpentSec: 700, completedAt: at('2026-09-22T10:20:00+08:00'), isTest: true },
+    { userId: '2', subjectId: '1', mode: 'latih_tubi', status: 'completed', timeSpentSec: 300, completedAt: at('2026-09-22T11:10:00+08:00') },
   ],
 }
 
@@ -135,6 +155,50 @@ export function describeAnswerFactsPort(
     it.skipIf(!opts.sessionlessMode)('weeklyFacts: answers with no session count one session per mode per Malaysian day', async () => {
       const port = await make(SESSIONLESS)
       expect(weeks(await port.weeklyFacts({ userIds: ['1'] }))).toEqual([['1', '2026-09-21', 4, 3, 3]])
+    })
+
+    it('dailyFacts: one row per pupil and Malaysian day, the day boundary is MYT midnight, test rows left out', async () => {
+      const port = await make(SEED)
+      const days = (rows: { userId: string; day: string; attempts: number; correct: number; sessions: number }[]): [string, string, number, number, number][] =>
+        rows.map((r) => [r.userId, r.day, r.attempts, r.correct, r.sessions])
+      expect(days(await port.dailyFacts({ userIds: ['1'] }))).toEqual([
+        ['1', '2026-09-22', 2, 1, 1],
+        ['1', '2026-09-23', 2, 1, 2],
+        ['1', '2026-09-27', 1, 0, 1],
+        ['1', '2026-09-28', 1, 1, 1],
+      ])
+      expect(days(await port.dailyFacts({ userIds: ['1'], modes: ['latih_tubi', 'simulasi'] }))).toEqual([
+        ['1', '2026-09-22', 2, 1, 1],
+        ['1', '2026-09-23', 1, 1, 1],
+        ['1', '2026-09-27', 1, 0, 1],
+        ['1', '2026-09-28', 1, 1, 1],
+      ])
+      expect(days(await port.dailyFacts({ userIds: ['1'], from: at('2026-09-28T00:00:00+08:00') }))).toEqual([['1', '2026-09-28', 1, 1, 1]])
+      expect(await port.dailyFacts({ userIds: [] })).toEqual([])
+      expect(await port.dailyFacts({ modes: [] })).toEqual([])
+    })
+
+    it.skipIf(!opts.sessionlessMode)('dailyFacts: answers with no session count one session per mode', async () => {
+      const port = await make(SESSIONLESS)
+      const rows = await port.dailyFacts({ userIds: ['1'] })
+      expect(rows.map((r) => [r.day, r.attempts, r.correct, r.sessions])).toEqual([
+        ['2026-09-22', 3, 2, 2],
+        ['2026-09-23', 1, 1, 1],
+      ])
+    })
+
+    it('sessionDurations: finished, non-test sessions only; seconds and count per pupil; filters by mode, subject and window', async () => {
+      const port = await make(SEED)
+      const of = async (q: Parameters<AnswerFactsPort['sessionDurations']>[0]): Promise<[string, number, number][]> =>
+        (await port.sessionDurations(q)).map((r) => [r.userId, r.sessions, r.seconds])
+      expect(await of({ userIds: ['1'] })).toEqual([['1', 3, 1690]])
+      expect(await of({})).toEqual([['1', 3, 1690], ['2', 1, 300]])
+      expect(await of({ userIds: ['1'], modes: ['latih_tubi', 'simulasi'] })).toEqual([['1', 2, 690]])
+      expect(await of({ userIds: ['1'], subjectId: '2' })).toEqual([['1', 1, 90]])
+      expect(await of({ userIds: ['1'], from: at('2026-09-23T00:00:00+08:00') })).toEqual([['1', 2, 1090]])
+      expect(await of({ userIds: ['1'], to: at('2026-09-23T00:00:00+08:00') })).toEqual([['1', 1, 600]])
+      expect(await of({ userIds: [] })).toEqual([])
+      expect(await of({ modes: [] })).toEqual([])
     })
 
     it('sessionCounts: distinct sessions over the whole window (a session across Monday is one), per subject and in total', async () => {

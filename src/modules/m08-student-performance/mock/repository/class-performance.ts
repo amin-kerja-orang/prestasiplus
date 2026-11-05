@@ -197,47 +197,45 @@ function computeClassDashboard(
   members: readonly number[],
   now: number,
 ): ClassDashboard {
-  const windowStart = startOfDay(now - 12 * 7 * DAY)
+  const windowStart = startOfDay(now - 29 * DAY)
   const { figures, recent } = collect(members, cls.subjectId, now, windowStart)
 
   let sessions = 0
   let answered = 0
   let correct = 0
+  let seconds = 0
   for (const f of figures) {
     sessions += f.sessions
     answered += f.answered
     correct += f.correct
+    seconds += f.seconds
   }
   const sevenDaysAgo = now - 7 * DAY
   const active7d = new Set(
     recent.filter((s) => s.completedAtMs >= sevenDaysAgo).map((s) => s.userId),
   ).size
 
-  // Trend (DOC DEFECT 4): one point per ISO week (Monday start, MYT) with sessions in the last 12 weeks; the week accuracy =
-  // Σ correct ÷ Σ answered of that week. The reader has no day grain.
-  const weekKey = (ms: number): string => {
-    const day = formatDateKey(ms)
-    const dow = new Date(`${day}T00:00:00Z`).getUTCDay()
-    return formatDateKey(Date.parse(`${day}T00:00:00Z`) - ((dow + 6) % 7) * DAY)
-  }
-  const byWeek = new Map<string, { sessions: number; q: number; c: number; users: Set<number> }>()
+  // Trend (R1-GUR-4): 30 local days, today last, zero-filled like the server; the day accuracy = Σ correct ÷ Σ answered of that day.
+  const byDay = new Map<string, { sessions: number; q: number; c: number; users: Set<number> }>()
   for (const s of recent) {
-    const key = weekKey(s.completedAtMs)
-    const d = byWeek.get(key) ?? { sessions: 0, q: 0, c: 0, users: new Set<number>() }
+    const key = formatDateKey(s.completedAtMs)
+    const d = byDay.get(key) ?? { sessions: 0, q: 0, c: 0, users: new Set<number>() }
     d.sessions++
     d.q += s.questions
     d.c += s.correct
     d.users.add(s.userId)
-    byWeek.set(key, d)
+    byDay.set(key, d)
   }
-  const trend = [...byWeek.entries()]
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([date, d]) => ({
+  const trend = Array.from({ length: 30 }, (_, i) => {
+    const date = formatDateKey(now - (29 - i) * DAY)
+    const d = byDay.get(date)
+    return {
       date,
-      sessions: d.sessions,
-      avgAccuracy: round(capPercent(pct(d.c, d.q)), 1),
-      activeStudents: d.users.size,
-    }))
+      sessions: d?.sessions ?? 0,
+      avgAccuracy: d === undefined ? 0 : round(capPercent(pct(d.c, d.q)), 1),
+      activeStudents: d?.users.size ?? 0,
+    }
+  })
 
   const { block, badges } = headcountBlock(cls)
 
@@ -302,8 +300,8 @@ function computeClassDashboard(
       accuracy: round(capPercent(pct(correct, answered)), 1),
       sessions,
       answered,
-      // Dropped (DOC DEFECT 4): no duration in the single answer store.
-      avgMinutes: null,
+      // Purata Masa/Sesi: Σ seconds ÷ finished sessions ÷ 60 (BR-M08-10); null when no session finished.
+      avgMinutes: sessions === 0 ? null : round(seconds / sessions / 60, 1),
       active7d,
     },
     headcount: block,

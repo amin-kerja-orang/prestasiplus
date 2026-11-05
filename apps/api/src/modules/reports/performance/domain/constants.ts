@@ -57,8 +57,8 @@ export const LEVEL_NAMES: Readonly<Record<LevelCode, string>> = {
 /** Murid Berisiko (R1-AS-4): whole-number accuracy below this, or no answer in the last ACTIVE_DAYS days. */
 export const AT_RISK_BELOW = 50
 export const AT_RISK_LIMIT = 10
-/** Weekly class trend (DOC DEFECT 4): the last 12 ISO weeks. */
-export const CLASS_TREND_WEEKS = 12
+/** Class trend (R1-GUR-4, "Trend Aktiviti Kelas (30 Hari)"): the last 30 Malaysian days including today, zero-filled. */
+export const CLASS_TREND_DAYS = 30
 
 /** A pupil is ranked once this many non-test practice answers exist (LEAD, BE-19). */
 export const RANKING_MIN_ANSWERS = 3

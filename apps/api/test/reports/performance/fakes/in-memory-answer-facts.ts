@@ -2,7 +2,9 @@ import type {
   AnswerFactRow,
   AnswerFactsPort,
   AnswerFactsQuery,
+  DailyFactRow,
   SessionCountRow,
+  SessionDurationRow,
   SpInfo,
   WeeklyFactRow,
 } from '../../../../src/modules/reports/performance/ports'
@@ -19,6 +21,17 @@ export interface AnswerRow {
   isCorrect: boolean
   answeredAt: Date
   sessionId?: string | null
+  isTest?: boolean
+}
+
+/** One stored practice session (`practice_sessions`): used by `sessionDurations` only. */
+export interface SessionRow {
+  userId: string
+  subjectId?: string
+  mode: string
+  status: 'in_progress' | 'completed'
+  timeSpentSec: number
+  completedAt?: Date | null
   isTest?: boolean
 }
 
@@ -50,6 +63,7 @@ export class InMemoryAnswerFacts implements AnswerFactsPort {
   /** Optional: where a pupil that was not added with `addPupil` takes its school and classes from (the performance world links the directory and the classes). */
   constructor(private readonly resolve?: (userId: string) => AnswerPupil | undefined) {}
   private readonly answers: AnswerRow[] = []
+  private readonly sessionRows: SessionRow[] = []
   private readonly topics = new Map<string, { name: string; chapterId: string }>()
   private readonly chapters = new Map<string, { name: string | null; dskpCode: string | null; subjectCode: string; levelId: string | null }>()
 
@@ -67,6 +81,10 @@ export class InMemoryAnswerFacts implements AnswerFactsPort {
   }
   add(a: AnswerRow): this {
     this.answers.push(a)
+    return this
+  }
+  addSession(s: SessionRow): this {
+    this.sessionRows.push(s)
     return this
   }
   /** `n` answers of one pupil, `correct` of them right (distinct questions q1.. unless `questionId` is given). */
@@ -128,6 +146,40 @@ export class InMemoryAnswerFacts implements AnswerFactsPort {
     return [...by.values()]
       .map((t) => ({ userId: t.userId, weekStart: t.weekStart, attempts: t.attempts, correct: t.correct, sessions: t.sessions.size }))
       .sort((x, y) => cmp(x.userId, y.userId) || (x.weekStart < y.weekStart ? -1 : 1))
+  }
+
+  async dailyFacts(q: AnswerFactsQuery): Promise<DailyFactRow[]> {
+    const by = new Map<string, { userId: string; day: string; attempts: number; correct: number; sessions: Set<string> }>()
+    for (const a of this.pick(q)) {
+      const day = mytDayOf(a.answeredAt)
+      const key = `${a.userId}|${day}`
+      const t = by.get(key) ?? { userId: a.userId, day, attempts: 0, correct: 0, sessions: new Set<string>() }
+      t.attempts += 1
+      if (a.isCorrect) t.correct += 1
+      t.sessions.add(a.sessionId ? `s:${a.sessionId}` : `n:${a.mode}`)
+      by.set(key, t)
+    }
+    return [...by.values()]
+      .map((t) => ({ userId: t.userId, day: t.day, attempts: t.attempts, correct: t.correct, sessions: t.sessions.size }))
+      .sort((x, y) => cmp(x.userId, y.userId) || (x.day < y.day ? -1 : 1))
+  }
+
+  async sessionDurations(q: AnswerFactsQuery): Promise<SessionDurationRow[]> {
+    if (q.modes && q.modes.length === 0) return []
+    const by = new Map<string, SessionDurationRow>()
+    for (const s of this.sessionRows) {
+      if (s.isTest === true || s.status !== 'completed' || !s.completedAt) continue
+      if (q.userIds && !q.userIds.includes(s.userId)) continue
+      if (q.subjectId !== undefined && (s.subjectId ?? '0') !== q.subjectId) continue
+      if (q.modes && !q.modes.includes(s.mode)) continue
+      if (q.from && s.completedAt < q.from) continue
+      if (q.to && s.completedAt >= q.to) continue
+      const t = by.get(s.userId) ?? { userId: s.userId, sessions: 0, seconds: 0 }
+      t.sessions += 1
+      t.seconds += s.timeSpentSec
+      by.set(s.userId, t)
+    }
+    return [...by.values()].sort((x, y) => cmp(x.userId, y.userId))
   }
 
   async sessionCounts(q: AnswerFactsQuery): Promise<SessionCountRow[]> {

@@ -10,6 +10,7 @@ import type { TableColumn } from '@nuxt/ui'
 
 import { DsBackLink, DsChart, DsDataTable, DsEmptyState, DsLoadError, DsPage, DsPageHeader, DsPanel, DsStatRow } from '@/ds'
 import { usePageMeta } from '@/composables/usePageMeta'
+import { formatNumber } from '@/lib/number'
 
 import { fetchClassDashboard } from '../api/class'
 import { fetchOwnClasses } from '../api/performance'
@@ -54,8 +55,12 @@ function switchClass(value: string | undefined): void {
 
 const accuracyChart = computed(() => classAccuracySeries(data.value?.trend ?? []))
 const sessionChart = computed(() => classSessionSeries(data.value?.trend ?? []))
+/** The trend is zero-filled to 30 days: it has activity once any day has an answering pupil or a session. */
+const hasActivity = computed(() => (data.value?.trend ?? []).some((p) => p.activeStudents > 0 || p.sessions > 0))
 
-// One V3 layout (R1-GUR-4): the figures come from the single answer store in every mode; "Purata Masa/Sesi" is dropped (no duration there).
+// One V3 layout (R1-GUR-4): the figures come from the single answer store in every mode; "Purata Masa/Sesi" is the finished sessions' own seconds.
+const minutes = (n: number | null): string => `${formatNumber(n ?? 0, { decimals: 1, dropZeroFraction: true })}m`
+
 const stats = computed<StatSpec[]>(() => {
   const s = data.value?.stats
   if (!s) return []
@@ -64,6 +69,7 @@ const stats = computed<StatSpec[]>(() => {
     { id: 'ketepatan', label: 'Purata Ketepatan', value: pctWhole(capPct(s.accuracy)), icon: 'target' },
     { id: 'sesi', label: 'Jumlah Sesi', value: plain(s.sessions), icon: 'lightning' },
     { id: 'soalan', label: 'Soalan Dijawab', value: plain(s.answered), icon: 'question' },
+    { id: 'masa', label: 'Purata Masa/Sesi', value: minutes(s.avgMinutes), icon: 'clock' },
     { id: 'aktif', label: 'Aktif 7 Hari', value: plain(s.active7d), icon: 'fire', accent: 'heat' },
   ]
 })
@@ -192,8 +198,8 @@ const cardFields = [
 
         <DsPanel class="min-w-0 lg:col-span-2" data-testid="trend">
           <div class="flex flex-col gap-4">
-            <h2 class="text-subheading text-highlighted">📈 Trend Aktiviti Kelas (12 Minggu)</h2>
-            <div v-if="data.trend.length > 0" class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            <h2 class="text-subheading text-highlighted">📈 Trend Aktiviti Kelas (30 Hari)</h2>
+            <div v-if="hasActivity" class="grid grid-cols-1 gap-4 xl:grid-cols-2">
               <DsChart
                 title="Purata Ketepatan (%)"
                 type="line"
@@ -210,7 +216,7 @@ const cardFields = [
               />
             </div>
             <div v-else data-testid="trend-empty">
-              <DsEmptyState title="Belum ada aktiviti dalam 12 minggu terakhir." icon="tray" />
+              <DsEmptyState title="Belum ada aktiviti dalam 30 hari terakhir." icon="tray" />
             </div>
           </div>
         </DsPanel>

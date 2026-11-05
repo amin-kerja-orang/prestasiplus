@@ -487,7 +487,7 @@ export interface ClassDashboard {
     accuracy: number
     sessions: number
     answered: number
-    /** Deprecated: dropped, always null (no duration in the single answer store). */
+    /** Purata Masa/Sesi in minutes (one decimal); null when no session has finished. */
     avgMinutes: number | null
     active7d: number
   }
@@ -501,6 +501,7 @@ export interface ClassDashboard {
     avgEtr: number | null
   } | null
   attention: { userId: number; name: string; sessions: number; accuracy: number | null }[]
+  /** 30 MYT days, oldest first, zero-filled (R1-GUR-4). */
   trend: { date: string; sessions: number; avgAccuracy: number; activeStudents: number }[]
   ranking: {
     rank: number

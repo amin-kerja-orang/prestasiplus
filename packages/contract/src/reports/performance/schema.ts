@@ -275,8 +275,8 @@ export const PerformanceClassDashboardSchema = z
       accuracy: pct,
       sessions: count,
       answered: count,
-      /** @deprecated Dropped (no duration in the single answer store); always null. */
-      avgMinutes: num.nullable().meta({ deprecated: true }),
+      /** "Purata Masa/Sesi": minutes per finished session, one decimal; null when no session has finished. */
+      avgMinutes: num.nullable(),
       active7d: count,
     }),
     headcount: z
@@ -295,7 +295,7 @@ export const PerformanceClassDashboardSchema = z
     ),
     trend: z
       .array(z.object({ date: DateOnlySchema, sessions: count, avgAccuracy: pct, activeStudents: count }))
-      .meta({ description: 'Weekly, last 12 ISO weeks with an answer; `date` is the Monday of the week (MYT).' }),
+      .meta({ description: 'Daily, the last 30 Malaysian days including today, oldest first, zero-filled (a day without an answer is sessions 0, avgAccuracy 0, activeStudents 0); `date` is the MYT day.' }),
     ranking: z.array(
       z.object({
         rank: z.number().int(),
