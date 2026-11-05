@@ -10,6 +10,7 @@ import type { MockRuntime } from '@/mock/index'
 import { classrooms } from '@/modules/m10-teacher-class/mock'
 
 import type {
+  ItemAnalysisMe,
   LevelDetail,
   Ranking,
   SchoolItemAnalysis,
@@ -113,7 +114,7 @@ describe('S6 access (§9)', () => {
 })
 
 describe('S9 / S10 / S11 access', () => {
-  it('S9: parents 403; own school for pelajar and school admin; another school by id is 403', async () => {
+  it('S9: parents and pelajar 403 (FR-MUR-6-2); own school for the school admin; another school by id is 403', async () => {
     expect((await getAs(runtime, PARENT, '/api/item-analysis/school')).status).toBe(403)
     expect((await getAs(runtime, PELAJAR, '/api/item-analysis/school/8880')).status).toBe(403)
     const own = await dataAs<SchoolItemAnalysis>(
@@ -127,7 +128,8 @@ describe('S9 / S10 / S11 access', () => {
     expect(own.students).toBe(10)
     expect(own.answers).toBeGreaterThan(80)
     expect(own.subjects.length).toBeGreaterThan(0)
-    expect((await getAs(runtime, PELAJAR, '/api/item-analysis/school/900001')).status).toBe(200)
+    expect((await getAs(runtime, PELAJAR, '/api/item-analysis/school')).status).toBe(403)
+    expect((await getAs(runtime, PELAJAR, '/api/item-analysis/school/900001')).status).toBe(403)
     const officer = (await getAs(runtime, PPD, '/api/item-analysis/school/8880')).status
     expect([200, 403]).toContain(officer)
   })
@@ -325,4 +327,45 @@ describe('S1 / S3 follow writes of other modules (no stale memo)', () => {
     expect(after.stats.students).toBe(before.stats.students + 1)
     expect(after.header.studentCount).toBe(before.header.studentCount + 1)
   }, 120_000)
+})
+
+describe('GET /api/item-analysis/me (API-RPT-05, R1-MUR-6)', () => {
+  it('answers the pupil own shape; every other role is 403', async () => {
+    const me = await dataAs<ItemAnalysisMe>(runtime, PELAJAR, '/api/item-analysis/me')
+    expect(Object.keys(me).sort()).toEqual(['counts', 'items', 'subjects', 'tiles'])
+    expect(me.tiles.answered).toBeGreaterThan(0)
+    expect(me.tiles.needRemedial).toBe(me.counts.pemulihan)
+    expect(me.tiles.needStrengthen).toBe(me.counts.pengukuhan)
+    const accuracies = me.subjects.map((s) => s.accuracy ?? 101)
+    expect(accuracies).toEqual([...accuracies].sort((a, b) => a - b))
+    for (const i of me.items) {
+      expect(['isyarat_awal', 'pemulihan', 'pengukuhan']).toContain(i.category)
+      if (i.category === 'isyarat_awal') expect([i.attempts, i.correct]).toEqual([1, 0])
+      if (i.category === 'pemulihan') expect(i.correct === 0 && i.attempts >= 2).toBe(true)
+      if (i.category === 'pengukuhan') expect(i.correct > 0 && i.correct < i.attempts).toBe(true)
+      expect(i.wrongTimes).toBe(i.attempts - i.correct)
+    }
+    for (const who of [GURU, ADMIN_SEKOLAH, ADMIN, PARENT]) {
+      expect((await getAs(runtime, who, '/api/item-analysis/me')).status).toBe(403)
+    }
+  })
+
+  it('tapis filters the items only; tiles and counts do not change', async () => {
+    const all = await dataAs<ItemAnalysisMe>(runtime, PELAJAR, '/api/item-analysis/me')
+    const wrong = await dataAs<ItemAnalysisMe>(
+      runtime,
+      PELAJAR,
+      '/api/item-analysis/me?tapis=selalu_salah',
+    )
+    const some = await dataAs<ItemAnalysisMe>(
+      runtime,
+      PELAJAR,
+      '/api/item-analysis/me?tapis=ada_betul',
+    )
+    expect(wrong.tiles).toEqual(all.tiles)
+    expect(wrong.counts).toEqual(all.counts)
+    expect(wrong.items.every((i) => i.attempts >= 2 && i.correct === 0)).toBe(true)
+    expect(some.items.every((i) => i.correct >= 1)).toBe(true)
+    expect(wrong.items.length).toBe(all.counts.pemulihan)
+  })
 })

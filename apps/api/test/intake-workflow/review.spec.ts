@@ -114,7 +114,10 @@ describe('quality gate on accept', () => {
     expect(rows[0]?.n).toBe('0')
     // The gate list is on the item too.
     const item = IntakeItemEnvelopeSchema.parse((await teacher.agent.get(`/api/intake/items/${ids[0]!}`)).body).data
-    expect(item.issues.length).toBe(res.body.error.details.issues.length)
+    // The item list is the full gate (unit, SP, TP, low fields too); the Terima refusal is the Draf subset, each message prefixed with the number.
+    const refused = res.body.error.details.issues as Array<{ message: string }>
+    expect(item.issues.length).toBeGreaterThanOrEqual(refused.length)
+    for (const r of refused) expect(item.issues.map((i) => `Soalan 1: ${i.message}`)).toContain(r.message)
   })
 })
 
