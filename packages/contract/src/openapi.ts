@@ -52,6 +52,7 @@ import { MISSIONS_COMPONENT_SCHEMAS, registerMissionsPaths } from './classes/mis
 import { QUESTION_SETS_COMPONENT_SCHEMAS, registerQuestionSetsPaths } from './classes/question-sets/paths'
 import { PKSK_COMPONENT_SCHEMAS, registerPkskPaths } from './pksk/paths'
 import { ANALYTICS_COMPONENT_SCHEMAS, registerAnalyticsPaths } from './reports/analytics/paths'
+import { GURU_WEEKLY_REPORT_COMPONENT_SCHEMAS, registerGuruWeeklyReportPaths } from './reports/guru-weekly-report'
 import { KIRKPATRICK_COMPONENT_SCHEMAS, registerKirkpatrickPaths } from './reports/kirkpatrick/paths'
 import { BIJAK_BUILDER_COMPONENT_SCHEMAS, registerBijakBuilderPaths } from './bijak/builder/paths'
 import { BIJAK_STANDARDS_COMPONENT_SCHEMAS, registerBijakStandardsPaths } from './bijak/standards/paths'
@@ -134,6 +135,7 @@ export const COMPONENT_SCHEMAS = {
   ...PKSK_COMPONENT_SCHEMAS, // BE-42
   ...PRACTICE_READS_COMPONENT_SCHEMAS, // BE-13
   ...ANALYTICS_COMPONENT_SCHEMAS, // BE-20 (M11)
+  ...GURU_WEEKLY_REPORT_COMPONENT_SCHEMAS, // S6-T01
   ...KIRKPATRICK_COMPONENT_SCHEMAS, // BE-20 (M12)
   ...BIJAK_BUILDER_COMPONENT_SCHEMAS, // BE-39
   ...BIJAK_STANDARDS_COMPONENT_SCHEMAS, // BJS-01
@@ -186,6 +188,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerPerformancePaths(registry) // BE-19
   registerPkskPaths(registry) // BE-42
   registerAnalyticsPaths(registry) // BE-20 (M11)
+  registerGuruWeeklyReportPaths(registry) // S6-T01
   registerKirkpatrickPaths(registry) // BE-20 (M12)
   registerBijakBuilderPaths(registry) // BE-39
   registerBijakStandardsPaths(registry) // BJS-01
