@@ -59,10 +59,13 @@ export class PracticeAssignmentsAdapter implements PracticeAssignmentSource {
     if (mission.missionType !== 'latih_tubi') return []
     const rng = prngStream(`m10:mission:${mission.id}:${userId}`)
     const levels = await this.repo.pupilLevelIds(mission, userId)
-    const pool = levels.length === 0 ? {} : { educationLevelIds: levels, ownerPrivateUserId: mission.teacherId }
+    // Tingkatan of the pupil's class on EVERY pass (FR-GUR-44a-10, lead ruling): a T1-T3 class is never topped up with T4/T5 bank questions.
+    const level = levels.length === 0 ? {} : { educationLevelIds: levels }
+    const pool = levels.length === 0 ? {} : { ...level, ownerPrivateUserId: mission.teacherId }
     if (mission.chapterId !== null) {
-      const inChapter = await this.pool.draw({ subjectId: mission.subjectId, chapterId: mission.chapterId, ...pool }, mission.questionCount, rng)
-      if (inChapter.length > 0) return inChapter
+      // The fallback to the SPM pool depends on the BANK part of the Bab being empty (the existing rule), never on the union with the personal questions.
+      const bankInChapter = await this.pool.draw({ subjectId: mission.subjectId, chapterId: mission.chapterId, ...level }, 1, prngStream(`m10:mission-bank:${mission.id}:${userId}`))
+      if (bankInChapter.length > 0) return this.pool.draw({ subjectId: mission.subjectId, chapterId: mission.chapterId, ...pool }, mission.questionCount, rng)
     }
     return this.pool.draw({ subjectId: mission.subjectId, spmPool: true, ...pool }, mission.questionCount, rng)
   }

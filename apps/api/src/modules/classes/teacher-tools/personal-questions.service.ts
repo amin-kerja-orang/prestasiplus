@@ -11,6 +11,7 @@ import { AuditService } from '../../../common/audit'
 import { ApiError } from '../../../common/errors/api-error'
 import { toMytTimestamp } from '../../../common/time/myt'
 import { CLOCK, type Clock, mytDay } from '../../../db/clock'
+import type { TxClient } from '../../../db/client'
 import { idToString, isIdString } from '../../../db/ids'
 import { type PersonalQuestionWrite, type QuestionRecord, QuestionsService } from '../../questions'
 import type { ClassActor } from '../actor'
@@ -85,8 +86,7 @@ export class PersonalQuestionsService {
 
   async create(actor: ClassActor, body: unknown): Promise<PersonalQuestion> {
     const write = await this.prepare(body)
-    const id = await this.questions.createPersonal(write, actor.userId)
-    await this.record(actor, PERSONAL_QUESTION_AUDIT.CREATED, id)
+    const id = await this.questions.createPersonal(write, actor.userId, { after: (tx, qid) => this.record(tx, actor, PERSONAL_QUESTION_AUDIT.CREATED, qid, write) })
     return this.one(id)
   }
 
@@ -94,21 +94,37 @@ export class PersonalQuestionsService {
     const versionNo = await this.repo.ownVersionNo(actor.userId, id)
     if (versionNo === null) throw notFound()
     const write = await this.prepare(body)
-    await this.questions.rewritePersonal(id, versionNo, write, actor.userId)
-    await this.record(actor, PERSONAL_QUESTION_AUDIT.UPDATED, id)
+    await this.questions.rewritePersonal(id, versionNo, write, actor.userId, {
+      guard: () => this.assertNotInUse(id),
+      after: (tx, qid) => this.record(tx, actor, PERSONAL_QUESTION_AUDIT.UPDATED, qid, write),
+    })
     return this.one(id)
   }
 
   /** 409 "Soalan sedang digunakan dalam misi." while an active Misi draws the question (ADD-21). */
   async remove(actor: ClassActor, id: string): Promise<{ deleted: 1 }> {
     if ((await this.repo.ownVersionNo(actor.userId, id)) === null) throw notFound()
-    if (await this.repo.usedByActiveMission(id, mytDay(this.clock.now()))) throw ApiError.of('CONFLICT', { message: MSG.inUse })
-    if (!(await this.questions.removePersonal(id))) throw notFound()
-    await this.record(actor, PERSONAL_QUESTION_AUDIT.DELETED, id)
+    // The guard, the Ulang Kaji clean-up and the audit run INSIDE the delete transaction, after the question row lock (no gap between check and delete).
+    const removed = await this.questions.removePersonal(id, {
+      guard: () => this.assertNotInUse(id),
+      cleanup: () => this.repo.dropRevisionRows(id),
+      after: (tx, qid) => this.record(tx, actor, PERSONAL_QUESTION_AUDIT.DELETED, qid, null),
+    })
+    if (!removed) throw notFound()
     return { deleted: 1 }
   }
 
   // --- internals --------------------------------------------------------------------------------------
+
+  /**
+   * ADD-21 + edit lock: 409 "Soalan sedang digunakan dalam misi." when an active Misi draws the question (mission date today or later AND a session
+   * of it holds the question) OR any open practice session holds it. Used by DELETE and PUT.
+   */
+  private async assertNotInUse(id: string): Promise<void> {
+    if ((await this.repo.usedByActiveMission(id, mytDay(this.clock.now()))) || (await this.repo.heldByOpenSession(id))) {
+      throw ApiError.of('CONFLICT', { message: MSG.inUse })
+    }
+  }
 
   private async one(id: string): Promise<PersonalQuestion> {
     const rows = await this.present([id])
@@ -166,8 +182,10 @@ export class PersonalQuestionsService {
     }
   }
 
-  private record(actor: ClassActor, action: string, questionId: string): Promise<unknown> {
+  /** The audit row, written in the write transaction (`tx`); details follow the class audits: the Subjek and Tingkatan ids, never the text. */
+  private record(tx: TxClient, actor: ClassActor, action: string, questionId: string, write: PersonalQuestionWrite | null): Promise<unknown> {
     return this.audit.record({
+      tx,
       action,
       actorUserId: actor.userId,
       actorRole: actor.role,
@@ -178,7 +196,7 @@ export class PersonalQuestionsService {
       scopeLevel: actor.auth.active.scope.level,
       requestId: actor.requestId,
       ip: actor.ip,
-      details: {},
+      details: write === null ? {} : { subjectId: write.subjectId, educationLevelId: write.educationLevelId },
     })
   }
 }

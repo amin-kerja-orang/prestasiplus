@@ -82,12 +82,16 @@ export function personalDskpFields(input: PersonalDskpInput, facts: PersonalDskp
   return fields
 }
 
-/** True for an absolute http or https address (no other scheme, `javascript:` included, no whitespace). */
+/**
+ * True for an absolute http or https address: no other scheme (`javascript:` included), no whitespace or control character, and no userinfo
+ * (`user:pass@host` is refused: a credential in a link is shown to every pupil).
+ */
 export function isHttpUrl(value: string): boolean {
-  if (!/^https?:\/\/\S+$/i.test(value)) return false
+  // eslint-disable-next-line no-control-regex -- the point is to refuse control characters
+  if (!/^https?:\/\/\S+$/i.test(value) || /[\x00-\x1f\x7f]/.test(value)) return false
   try {
     const url = new URL(value)
-    return (url.protocol === 'http:' || url.protocol === 'https:') && url.hostname !== ''
+    return (url.protocol === 'http:' || url.protocol === 'https:') && url.hostname !== '' && url.username === '' && url.password === ''
   } catch {
     return false
   }

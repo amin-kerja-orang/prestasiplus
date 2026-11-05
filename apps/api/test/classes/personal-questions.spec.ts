@@ -9,6 +9,8 @@ import { QuestionsRepository } from '../../src/modules/questions/questions.repos
  * S6-T16 (API-GUR-24, FR-GUR-44a-*): service rules with fakes (no database) and the SQL of the mission draw. The database twin of the draw is
  * `personal-questions-draw.spec.ts` (Docker).
  */
+type Hooks = { guard?: (tx: unknown) => Promise<void>; cleanup?: (tx: unknown) => Promise<void>; after?: (tx: unknown, id: string) => Promise<void> }
+const TX = { tx: true }
 const actor = (userId: string) => ({ userId, role: 'teacher', schoolId: null, auth: { sessionRowId: 's', active: { scope: { level: 'school' } } }, requestId: null, ip: null }) as never
 
 const body = (over: Record<string, unknown> = {}) => ({
@@ -21,8 +23,8 @@ const body = (over: Record<string, unknown> = {}) => ({
   ...over,
 })
 
-function harness(opts: { facts?: { hasChapters: boolean; hasDskpNodes: boolean }; used?: boolean; owned?: Record<string, string> } = {}) {
-  const calls: { created: unknown[]; rewritten: unknown[]; removed: string[]; audit: string[] } = { created: [], rewritten: [], removed: [], audit: [] }
+function harness(opts: { facts?: { hasChapters: boolean; hasDskpNodes: boolean }; used?: boolean; open?: boolean; owned?: Record<string, string> } = {}) {
+  const calls: { created: unknown[]; rewritten: unknown[]; removed: string[]; audit: string[]; auditIn: { tx: boolean; details: unknown }[]; revisionDropped: string[] } = { created: [], rewritten: [], removed: [], audit: [], auditIn: [], revisionDropped: [] }
   const stored = new Map<string, unknown>()
   const owned = opts.owned ?? { '10': '7' } // question id -> owner
   const repo = {
@@ -33,6 +35,8 @@ function harness(opts: { facts?: { hasChapters: boolean; hasDskpNodes: boolean }
     chapter: (id: string) => Promise.resolve(id === '50' ? { id: 50n, subjectId: 1n, educationLevelId: 4n } : id === '51' ? { id: 51n, subjectId: 2n, educationLevelId: 4n } : null),
     countSpNodes: (ids: bigint[]) => Promise.resolve(ids.filter((i) => i < 100n).length),
     usedByActiveMission: () => Promise.resolve(opts.used === true),
+    heldByOpenSession: () => Promise.resolve(opts.open === true),
+    dropRevisionRows: (id: string) => (calls.revisionDropped.push(id), Promise.resolve()),
     subjectNames: () => Promise.resolve(new Map([['1', 'Matematik']])),
     records: (ids: string[]) => Promise.resolve(ids.flatMap((id) => (stored.has(id) ? [stored.get(id)] : [])) as never),
     page: () => Promise.resolve({ ids: ['10'], total: 1 }),
@@ -48,11 +52,22 @@ function harness(opts: { facts?: { hasChapters: boolean; hasDskpNodes: boolean }
   })
   stored.set('10', record('10', body()))
   const questions = {
-    createPersonal: (w: Record<string, unknown>) => (calls.created.push(w), stored.set('11', record('11', w)), Promise.resolve('11')),
-    rewritePersonal: (id: string, _v: number, w: Record<string, unknown>) => (calls.rewritten.push(w), stored.set(id, record(id, w)), Promise.resolve()),
-    removePersonal: (id: string) => (calls.removed.push(id), Promise.resolve(true)),
+    createPersonal: async (w: Record<string, unknown>, _o: string, hooks: Hooks) => (calls.created.push(w), stored.set('11', record('11', w)), await hooks.after?.(TX, '11'), '11'),
+    rewritePersonal: async (id: string, _v: number, w: Record<string, unknown>, _o: string, hooks: Hooks) => {
+      await hooks.guard?.(TX) // the real one runs it after the row lock, inside the transaction
+      calls.rewritten.push(w)
+      stored.set(id, record(id, w))
+      await hooks.after?.(TX, id)
+    },
+    removePersonal: async (id: string, hooks: Hooks) => {
+      await hooks.guard?.(TX)
+      await hooks.cleanup?.(TX)
+      calls.removed.push(id)
+      await hooks.after?.(TX, id)
+      return true
+    },
   }
-  const audit = { record: (a: { action: string }) => (calls.audit.push(a.action), Promise.resolve()) }
+  const audit = { record: (a: { action: string; tx?: unknown; details?: unknown }) => (calls.audit.push(a.action), calls.auditIn.push({ tx: a.tx === TX, details: a.details }), Promise.resolve()) }
   const clock = { now: () => new Date('2026-11-05T02:00:00Z') }
   return { svc: new PersonalQuestionsService(repo as never, questions as never, audit as never, clock as never), calls }
 }
@@ -159,19 +174,46 @@ describe('API-GUR-24: delete guard (ADD-21, AC-GUR-44a-9)', () => {
     expect(h.calls.removed).toHaveLength(0)
   })
 
-  it('deletes an own question that no active Misi holds', async () => {
+  it('deletes an own question that no active Misi holds, cleaning its Ulang Kaji rows and auditing in the same transaction', async () => {
     const h = harness()
     expect(await h.svc.remove(actor('7'), '10')).toEqual({ deleted: 1 })
     expect(h.calls.removed).toEqual(['10'])
+    expect(h.calls.revisionDropped).toEqual(['10'])
+    expect(h.calls.auditIn).toEqual([{ tx: true, details: {} }])
+  })
+
+  it('an OPEN practice session holding the question blocks DELETE and PUT with the same 409 (the guard runs inside the write)', async () => {
+    const h = harness({ open: true })
+    await expect(h.svc.remove(actor('7'), '10')).rejects.toMatchObject({ status: 409, message: 'Soalan sedang digunakan dalam misi.' })
+    await expect(h.svc.update(actor('7'), '10', body())).rejects.toMatchObject({ status: 409, message: 'Soalan sedang digunakan dalam misi.' })
+    expect(h.calls.removed).toHaveLength(0)
+    expect(h.calls.rewritten).toHaveLength(0)
+    expect(h.calls.revisionDropped).toHaveLength(0)
+  })
+
+  it('an active Misi blocks PUT as well', async () => {
+    const h = harness({ used: true })
+    await expect(h.svc.update(actor('7'), '10', body())).rejects.toMatchObject({ status: 409 })
+  })
+
+  it('the audit of a create/update carries the Subjek and Tingkatan ids (never the text), written with the transaction client', async () => {
+    const h = harness()
+    await h.svc.create(actor('7'), body())
+    await h.svc.update(actor('7'), '10', body())
+    expect(h.calls.auditIn).toEqual([
+      { tx: true, details: { subjectId: '1', educationLevelId: '4' } },
+      { tx: true, details: { subjectId: '1', educationLevelId: '4' } },
+    ])
   })
 })
 
 describe('FR-GUR-44a-10: the mission draw', () => {
   const mission = (over: Record<string, unknown> = {}) => ({ id: '3', teacherId: '7', classroomId: null, missionType: 'latih_tubi', subjectId: '1', chapterId: null, questionCount: 10, coinsPerCorrect: 3, ...over })
-  function adapter(levels: string[]) {
+  function adapter(levels: string[], emptyBab = false) {
     const draws: Record<string, unknown>[] = []
     const repo = { pupilLevelIds: () => Promise.resolve(levels) }
-    const pool = { draw: (f: Record<string, unknown>) => (draws.push(f), Promise.resolve(['1'])) }
+    // `emptyBab`: the bank has no question in the Bab (the existence draw, which has no owner, answers nothing).
+    const pool = { draw: (f: Record<string, unknown>) => (draws.push(f), Promise.resolve(emptyBab && f.chapterId !== undefined && f.ownerPrivateUserId === undefined ? [] : ['1'])) }
     const a = new PracticeAssignmentsAdapter(repo as never, pool as never, {} as never)
     const run = (m: Record<string, unknown>) => (a as unknown as { missionQuestionIds(m: unknown, u: string): Promise<string[]> }).missionQuestionIds(m, '20')
     return { draws, run }
@@ -183,10 +225,19 @@ describe('FR-GUR-44a-10: the mission draw', () => {
     expect(draws).toEqual([{ subjectId: '1', spmPool: true, educationLevelIds: ['4'], ownerPrivateUserId: '7' }])
   })
 
-  it('a Bab narrows the bank part; the personal questions ride on the same draw', async () => {
+  it('a Bab with bank questions: the Bab bank part plus the personal questions, with the same Tingkatan filter', async () => {
     const { draws, run } = adapter(['4'])
     await run(mission({ chapterId: '9' }))
-    expect(draws[0]).toEqual({ subjectId: '1', chapterId: '9', educationLevelIds: ['4'], ownerPrivateUserId: '7' })
+    expect(draws).toEqual([
+      { subjectId: '1', chapterId: '9', educationLevelIds: ['4'] }, // does the Bab have a bank question? (bank only)
+      { subjectId: '1', chapterId: '9', educationLevelIds: ['4'], ownerPrivateUserId: '7' },
+    ])
+  })
+
+  it('a Bab with no bank question falls back to the SPM pool of the SAME Tingkatan (never another), personal questions riding along', async () => {
+    const { draws, run } = adapter(['2'], true)
+    await run(mission({ chapterId: '9' }))
+    expect(draws[1]).toEqual({ subjectId: '1', spmPool: true, educationLevelIds: ['2'], ownerPrivateUserId: '7' })
   })
 
   it('a pupil with no class of the mission teacher gets no personal question and no level filter', async () => {

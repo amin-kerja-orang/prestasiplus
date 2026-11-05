@@ -33,7 +33,7 @@ describe('PersonalQuestionWrite (API-GUR-24)', () => {
   })
 
   it('refuses javascript:, ftp:, a bare host and spaces with the BM link message (AC-GUR-44a-3, AC-GUR-44a-8)', () => {
-    for (const bad of ['javascript:alert(1)', 'ftp://contoh', 'example.org', 'https://', 'https://a b', 'data:text/html,x', '//example.org']) {
+    for (const bad of ['javascript:alert(1)', 'ftp://contoh', 'example.org', 'https://', 'https://a b', 'data:text/html,x', '//example.org', 'https://user:pass@example.org/', 'https://user@example.org/', 'https://example.org/a\u0001b', 'https://example.org/\u007f']) {
       expect(fieldsOf({ referenceUrl: bad }).referenceUrl, bad).toBe(M.referenceUrl)
       expect(isHttpUrl(bad), bad).toBe(false)
     }

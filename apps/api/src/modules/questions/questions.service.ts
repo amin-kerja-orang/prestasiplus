@@ -8,6 +8,7 @@ import {
 } from '@pp/contract'
 
 import { ApiError } from '../../common/errors/api-error'
+import type { TxClient } from '../../db/client'
 import { CLOCK, type Clock } from '../../db/clock'
 import { idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
@@ -214,6 +215,16 @@ interface Normalized {
  * Errors: 404 `NOT_FOUND` for an unknown id and for a row the caller may not see; 422
  * `VALIDATION_ERROR` with `fields`; 409 `CONFLICT` for a status pair outside the contract table.
  */
+/** S6-T16: what the caller of a personal-question write runs INSIDE the write transaction. */
+export interface PersonalTxHooks {
+  /** After the question row lock, before the write: throw to refuse (the in-use 409). */
+  guard?: (tx: TxClient) => Promise<unknown>
+  /** Delete only: removes rows that point at the question (its Ulang Kaji queue rows). */
+  cleanup?: (tx: TxClient) => Promise<unknown>
+  /** The audit of the write. */
+  after?: (tx: TxClient, questionId: string) => Promise<unknown>
+}
+
 /** [PROPOSED] (no V2 phrase): a flat edit of an `essay_choice` question may not change what lives on its part (REQ-B-021c). */
 const ESSAY_CHOICE_FLAT_MESSAGES = {
   modelAnswer: 'Jawapan model esei pilihan tidak boleh disunting di sini. Ubah kunci rubrik pada bahagian soalan.',
@@ -805,36 +816,45 @@ export class QuestionsService {
     }
   }
 
-  /** Creates the personal question and returns its question id (decimal). */
-  async createPersonal(input: PersonalQuestionWrite, ownerUserId: string): Promise<string> {
+  /** Creates the personal question and returns its question id (decimal). `after` runs inside the same transaction (the caller's audit). */
+  async createPersonal(input: PersonalQuestionWrite, ownerUserId: string, hooks: PersonalTxHooks = {}): Promise<string> {
     const owner = parse(ownerUserId)
     if (owner === null) throw questionNotFound()
     const { draft } = await this.draftOf(this.personalNormalized(input, ownerUserId), 'approved', null)
     draft.visibility = 'teacher_private'
     draft.ownerUserId = owner
     draft.referenceUrl = input.referenceUrl ?? null
-    return this.prisma.transaction(
-      () =>
-        this.repo.create({ sourceType: 'manual', createdById: null, groupId: null, groupPosition: null, now: this.clock.now(), version: draft }),
-      TX,
-    )
-  }
-
-  /** Rewrites the content of a personal question in place (one version, no history). Owner and visibility never change. */
-  async rewritePersonal(questionId: string, versionNo: number, input: PersonalQuestionWrite, ownerUserId: string): Promise<void> {
-    const { draft } = await this.draftOf(this.personalNormalized(input, ownerUserId), 'approved', null)
-    draft.referenceUrl = input.referenceUrl ?? null
-    await this.prisma.transaction(async () => {
-      if (!(await this.repo.lock(questionId))) throw questionNotFound()
-      await this.repo.rewriteVersion(questionId, versionNo, draft, this.clock.now())
+    return this.prisma.transaction(async (tx) => {
+      const id = await this.repo.create({ sourceType: 'manual', createdById: null, groupId: null, groupPosition: null, now: this.clock.now(), version: draft })
+      await hooks.after?.(tx, id)
+      return id
     }, TX)
   }
 
-  /** Hard-deletes a personal question (cascades to its version, parts, options and key). False when it is already gone. */
-  async removePersonal(questionId: string): Promise<boolean> {
-    return this.prisma.transaction(async () => {
+  /**
+   * Rewrites the content of a personal question in place (one version, no history). Owner and visibility never change. `guard` runs inside
+   * the transaction AFTER the question row lock (so a check and the write cannot be separated), `after` at the end of it.
+   */
+  async rewritePersonal(questionId: string, versionNo: number, input: PersonalQuestionWrite, ownerUserId: string, hooks: PersonalTxHooks = {}): Promise<void> {
+    const { draft } = await this.draftOf(this.personalNormalized(input, ownerUserId), 'approved', null)
+    draft.referenceUrl = input.referenceUrl ?? null
+    await this.prisma.transaction(async (tx) => {
+      if (!(await this.repo.lock(questionId))) throw questionNotFound()
+      await hooks.guard?.(tx)
+      await this.repo.rewriteVersion(questionId, versionNo, draft, this.clock.now())
+      await hooks.after?.(tx, questionId)
+    }, TX)
+  }
+
+  /** Hard-deletes a personal question (cascades to its version, parts, options and key). False when it is already gone. Hooks run in the same transaction after the lock. */
+  async removePersonal(questionId: string, hooks: PersonalTxHooks = {}): Promise<boolean> {
+    return this.prisma.transaction(async (tx) => {
       if (!(await this.repo.lock(questionId))) return false
-      return this.repo.remove(questionId)
+      await hooks.guard?.(tx)
+      await hooks.cleanup?.(tx)
+      const removed = await this.repo.remove(questionId)
+      if (removed) await hooks.after?.(tx, questionId)
+      return removed
     }, TX)
   }
 

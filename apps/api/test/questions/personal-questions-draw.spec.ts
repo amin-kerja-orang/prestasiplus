@@ -1,5 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { PrismaService } from '../../src/db/prisma.service'
+import { MissionsRepository } from '../../src/modules/classes/missions/missions.repository'
+import { PracticeAssignmentsAdapter } from '../../src/modules/classes/missions/practice-assignments.adapter'
+import { QuestionPool } from '../../src/modules/classes/missions/question-pool'
 import { QuestionsRepository, QuestionsService } from '../../src/modules/questions'
 import { adminActor, tagOf, userIdOf, type Tag } from './fixtures'
 import { bootQuestionsApp, type QuestionsTestApp } from './helpers'
@@ -56,9 +60,12 @@ describe('personal questions in the mission pool (DM-42)', () => {
     expect(withOwner).not.toContain(theirs)
     const bankOnly = await repo.sampleIds(base, 500, 1)
     expect(bankOnly).not.toContain(mine)
-    // Equal weight: the draw is one seeded hash order over the union, so the pool is exactly bank + the owner's personal ones.
-    const union = await repo.eligibleIds({ ...base, status: 'approved', active: true, ownerPrivateUserId: ownerA })
-    expect(withOwner.length).toBe(union.length)
+    // Equal weight: the draw is one seeded hash order over the union, so asking for the whole pool returns exactly bank + the owner's personal
+    // ones. The size comes from `count` (the same scope), not from `eligibleIds`, so it does not depend on ELIGIBLE_IDS_MAX.
+    const size = await repo.count({ ...base, status: 'approved', active: true, ownerPrivateUserId: ownerA })
+    const bankSize = await repo.count({ ...base, status: 'approved', active: true })
+    expect(size).toBeGreaterThan(bankSize)
+    expect((await repo.sampleIds({ ...base, ownerPrivateUserId: ownerA }, size, 7)).length).toBe(Math.min(size, 500))
   })
 
   it('another Tingkatan of the same owner is not in the pool', async () => {
@@ -85,5 +92,52 @@ describe('personal questions in the mission pool (DM-42)', () => {
     await personal(ownerA, 'Soalan peribadi untuk kiraan')
     expect(await repo.count({})).toBe(before)
     expect((await adminActor(t.db)).role).toBe('admin')
+  })
+
+  describe('the mission draw by Tingkatan (lead ruling: no T4/T5 top-up for a T1-T3 class)', () => {
+    const makeMission = async (teacher: string, level: string, pupil: string, chapterId: string | null = null) => {
+      const [cls] = await q(`insert into classrooms (kind, name, teacher_id, education_level_id, academic_year) values ('classroom', 'Kelas T16', $1, $2, 2026) returning id::text id`, [teacher, level])
+      await q(`insert into enrolments (classroom_id, student_id) values ($1, $2)`, [cls!.id, pupil])
+      return { id: '1', teacherId: teacher, classroomId: cls!.id, missionType: 'latih_tubi', subjectId: tag.subjectId, chapterId, questionCount: 10, coinsPerCorrect: 3 } as never
+    }
+    const draw = async (mission: never, pupil: string): Promise<string[]> => {
+      const prisma = t.app.get(PrismaService)
+      const adapter = new PracticeAssignmentsAdapter(new MissionsRepository(prisma), new QuestionPool(repo), {} as never)
+      return (adapter as unknown as { missionQuestionIds(m: unknown, u: string): Promise<string[]> }).missionQuestionIds(mission, pupil)
+    }
+    let pupil: string
+    let t2: string
+
+    beforeAll(async () => {
+      pupil = (await q(`select id::text id from users where id not in ($1, $2) order by id limit 1`, [ownerA, ownerB]))[0]!.id
+      t2 = (await q(`select id::text id from education_levels where code in ('T1', 'T2', 'T3') and is_active order by code limit 1`))[0]!.id
+    })
+
+    it('a T1-T3 class mission gets ONLY the owner\'s personal questions of that Tingkatan (the bank serves T4/T5 only)', async () => {
+      const mine = await personal(ownerA, 'Soalan peribadi T-rendah', t2)
+      const ids = await draw(await makeMission(ownerA, t2, pupil), pupil)
+      expect(ids).toEqual([mine])
+    })
+
+    it('a T1-T3 class mission with no personal question draws nothing (the existing empty-mission state)', async () => {
+      const ids = await draw(await makeMission(ownerB, t2, pupil), pupil)
+      expect(ids).toEqual([])
+    })
+
+    it('a T4 class mission draws bank + the owner\'s T4 personal questions, never another teacher\'s', async () => {
+      const mine = await personal(ownerA, 'Soalan peribadi T4 untuk misi')
+      const theirs = await personal(ownerB, 'Soalan peribadi T4 guru lain')
+      const ids = await draw(await makeMission(ownerA, tag.levelId, pupil), pupil)
+      expect(ids).toContain(mine)
+      expect(ids).not.toContain(theirs)
+    })
+
+    it('a Bab with no bank question falls back to the SPM pool of the SAME Tingkatan only', async () => {
+      const emptyBab = (await q(`select c.id::text id from chapters c where c.subject_id = $1 and c.education_level_id <> $2 limit 1`, [tag.subjectId, tag.levelId]))[0]?.id ?? null
+      const ids = await draw(await makeMission(ownerA, t2, pupil, emptyBab), pupil)
+      // The class is T1-T3: the SPM pool (T4/T5) must not top it up, whatever the Bab holds.
+      const levels = ids.length === 0 ? [] : (await q(`select distinct v.education_level_id::text id from question_versions v join questions qq on qq.id = v.question_id and qq.live_version_no = v.version_no where qq.id = any($1::bigint[])`, [ids]))
+      for (const l of levels) expect(l.id).toBe(t2)
+    })
   })
 })

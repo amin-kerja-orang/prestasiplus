@@ -132,4 +132,22 @@ export class PersonalQuestionsRepository {
          WHERE psq.question_id = ${key} AND m.mission_date >= ${today}::date) AS used`
     return rows[0]?.used === true
   }
+
+  /** An OPEN (in progress, not submitted) practice session of any pupil holds the question: its served list is stored, so the content must not change under it. */
+  async heldByOpenSession(questionId: string): Promise<boolean> {
+    const key = idOf(questionId)
+    if (key === null) return false
+    const rows = await this.db.$queryRaw<{ held: boolean }[]>`
+      SELECT EXISTS (
+        SELECT 1 FROM practice_session_questions psq JOIN practice_sessions ps ON ps.id = psq.session_id
+         WHERE psq.question_id = ${key} AND ps.status = 'in_progress') AS held`
+    return rows[0]?.held === true
+  }
+
+  /** The Ulang Kaji rows that point at the question (a delete leaves none behind; the table has no FK to questions). */
+  async dropRevisionRows(questionId: string): Promise<void> {
+    const key = idOf(questionId)
+    if (key === null) return
+    await this.db.revisionQueue.deleteMany({ where: { questionId: key } })
+  }
 }
