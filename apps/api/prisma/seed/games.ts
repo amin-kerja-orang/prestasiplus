@@ -1,8 +1,8 @@
 /**
  * Games demo seed (BE-45, M16 part 2): game standings, personal bests, Jutawan and spin stats for a few demo
- * students, a few closed rooms and submitted sessions, and the two observed leagues with their stored standings. The
- * Sekolah Bersaing weekly snapshots are no longer seeded: the board is live (S7-T02, D115). Demo kind: refused in production unless ALLOW_DEMO_SEED. Fictitious data
- * only; users are found by e-mail and schools by code (never by id), `legacy_*` is never set. The `game_settings`
+ * students, a few closed rooms and submitted sessions, and the two observed leagues with their stored standings.
+ * The Sekolah Bersaing weekly snapshots are no longer seeded: the board is live (S7-T02, D115). Demo kind: refused
+ * in production unless ALLOW_DEMO_SEED. Fictitious data only; users are found by e-mail and schools by code (never by id), `legacy_*` is never set. The `game_settings`
  * row is inserted by the migration and is not touched here.
  *
  * Source of the values: the frontend mock (`src/modules/m16-battle-games/mock/data/leagues.ts`)
