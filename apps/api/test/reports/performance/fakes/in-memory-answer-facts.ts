@@ -46,6 +46,9 @@ const cmp = (a: string, b: string): number => a.length - b.length || (a < b ? -1
  */
 export class InMemoryAnswerFacts implements AnswerFactsPort {
   private readonly pupils = new Map<string, AnswerPupil>()
+
+  /** Optional: where a pupil that was not added with `addPupil` takes its school and classes from (the performance world links the directory and the classes). */
+  constructor(private readonly resolve?: (userId: string) => AnswerPupil | undefined) {}
   private readonly answers: AnswerRow[] = []
   private readonly topics = new Map<string, { name: string; chapterId: string }>()
   private readonly chapters = new Map<string, { name: string | null; dskpCode: string | null; subjectCode: string; levelId: string | null }>()
@@ -77,7 +80,7 @@ export class InMemoryAnswerFacts implements AnswerFactsPort {
     return this.answers.filter((a) => {
       if (a.isTest === true) return false
       if (q.userIds && !q.userIds.includes(a.userId)) return false
-      const p = this.pupils.get(a.userId)
+      const p = this.pupils.get(a.userId) ?? this.resolve?.(a.userId)
       if (q.schoolIds && (!p?.schoolId || !q.schoolIds.includes(p.schoolId))) return false
       if (q.classroomId !== undefined && !(p?.classroomIds ?? []).includes(q.classroomId)) return false
       if (q.subjectId !== undefined && (a.subjectId ?? '0') !== q.subjectId) return false
@@ -91,14 +94,15 @@ export class InMemoryAnswerFacts implements AnswerFactsPort {
 
   async answerFacts(q: AnswerFactsQuery): Promise<AnswerFactRow[]> {
     const by = new Map<string, AnswerFactRow>()
+    const coarse = q.grain === 'user-subject'
     for (const a of this.pick(q)) {
       const row = {
         userId: a.userId,
         subjectId: a.subjectId ?? '0',
-        questionId: a.questionId ?? '0',
-        chapterId: a.chapterId ?? null,
-        topicId: a.topicId ?? null,
-        mode: a.mode,
+        questionId: coarse ? '0' : (a.questionId ?? '0'),
+        chapterId: coarse ? null : (a.chapterId ?? null),
+        topicId: coarse ? null : (a.topicId ?? null),
+        mode: coarse ? '*' : a.mode,
       }
       const key = JSON.stringify(row)
       const t = by.get(key) ?? { ...row, attempts: 0, correct: 0, lastAnsweredAt: a.answeredAt }

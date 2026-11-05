@@ -92,6 +92,16 @@ export function describeAnswerFactsPort(
       expect(totals(rows)).toEqual([6, 3])
     })
 
+    it("answerFacts: grain 'user-subject' keeps the totals and last answer, one row per user and subject", async () => {
+      const port = await make(SEED)
+      const rows = await port.answerFacts({ userIds: ['1'], grain: 'user-subject' })
+      expect(rows.map((r) => [r.subjectId, r.attempts, r.correct]).sort()).toEqual([['1', 5, 2], ['2', 1, 1]])
+      expect(rows.every((r) => r.questionId === '0' && r.chapterId === null && r.topicId === null)).toBe(true)
+      expect(totals(rows)).toEqual(totals(await port.answerFacts({ userIds: ['1'] })))
+      const s1 = rows.find((r) => r.subjectId === '1')
+      expect(s1?.lastAnsweredAt.getTime()).toBe(at('2026-09-27T23:30:00+08:00').getTime())
+    })
+
     it('answerFacts: filters by pupil, mode, window, subject, school, class and level; empty lists match nothing', async () => {
       const port = await make(SEED)
       expect(totals(await port.answerFacts({}))).toEqual([7, 4])

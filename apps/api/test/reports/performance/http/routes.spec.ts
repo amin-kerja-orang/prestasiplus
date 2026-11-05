@@ -39,6 +39,7 @@ describe('authentication', () => {
     '/api/performance/levels',
     '/api/performance/levels/t4',
     '/api/performance/classes',
+    '/api/performance/classes/aggregate',
     `/api/performance/classes/${w.classId}`,
     '/api/item-analysis/school',
     `/api/item-analysis/school/${w.schools.demo1}`,
@@ -46,7 +47,7 @@ describe('authentication', () => {
     `/api/item-analysis/classes/${w.classId}`,
   ]
 
-  it('answers 401 on all 12 routes without a session', async () => {
+  it('answers 401 on all 13 routes without a session', async () => {
     for (const url of routes()) {
       const res = await w.http().get(url)
       expectError(res, 'UNAUTHORIZED')

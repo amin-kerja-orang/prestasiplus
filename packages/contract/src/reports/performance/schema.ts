@@ -59,7 +59,10 @@ export const PERFORMANCE_GPS_BANDS = ['Cemerlang', 'Baik', 'Sederhana', 'Perlu P
 export const PerformanceGpsBandSchema = z
   .enum(PERFORMANCE_GPS_BANDS)
   .meta({ id: 'PerformanceGpsBand' })
-export const PerformanceLevelCodeSchema = z.enum(['t4', 't5']).meta({ id: 'PerformanceLevelCode' })
+/** Tingkatan 1 to 5, lower case (the route `/prestasi/tingkatan/t1..t5`). Widened from t4/t5 (additive). */
+export const PerformanceLevelCodeSchema = z
+  .enum(['t1', 't2', 't3', 't4', 't5'])
+  .meta({ id: 'PerformanceLevelCode' })
 export const PerformanceLetterSchema = z
   .enum(['A', 'B', 'C', 'D'])
   .meta({ id: 'PerformanceLetter' })
@@ -95,6 +98,22 @@ export const PerformanceClassCardSchema = z
     isActive: z.boolean(),
   })
   .meta({ id: 'PerformanceClassCard' })
+
+/**
+ * `GET /performance/classes/aggregate` (R1-GUR-4, FR-GUR-4-7): the cards plus "Pelajar Terbaik" and
+ * "Prestasi Mengikut Subjek" over the pupils of those classes. A sibling of `GET /performance/classes`, which still answers the array.
+ */
+export const PerformanceClassesAggregateSchema = z
+  .object({
+    classes: z.array(PerformanceClassCardSchema),
+    topStudents: z
+      .array(z.object({ userId: IdSchema, name: z.string(), answered: count, accuracy: pct }))
+      .meta({ description: 'Top 10 pupils with at least 5 answers, accuracy descending, ties by answers descending.' }),
+    subjects: z
+      .array(z.object({ subjectId: IdSchema, name: z.string(), answered: count, accuracy: pct }))
+      .meta({ description: 'Subjects with answers, accuracy descending.' }),
+  })
+  .meta({ id: 'PerformanceClassesAggregate' })
 
 // --- S1 school performance, S2/S3 levels ------------------------------------------------------
 
@@ -218,17 +237,24 @@ export const PerformanceLevelDetailSchema = z
         accuracy: pct,
       }),
     ),
-    atRisk: z.array(
-      z.object({
-        userId: IdSchema,
-        name: z.string(),
-        className: z.string(),
-        checkpoint: z.number().int(),
-        ar: num,
-        target: num,
-        gap: num,
-      }),
-    ),
+    atRisk: z
+      .array(
+        z.object({
+          userId: IdSchema,
+          name: z.string(),
+          className: z.string(),
+          answered: count,
+          /** Pooled accuracy, one decimal; null when the pupil has no answer. */
+          accuracy: pct.nullable(),
+          lastAnsweredAt: TimestampSchema.nullable(),
+          /** @deprecated Headcount pair fields of the V3 list; the list is now accuracy below 50 or inactive 7 days (R1-AS-4). Not sent. */
+          checkpoint: z.number().int().optional().meta({ deprecated: true }),
+          ar: num.optional().meta({ deprecated: true }),
+          target: num.optional().meta({ deprecated: true }),
+          gap: num.optional().meta({ deprecated: true }),
+        }),
+      )
+      .meta({ description: 'Murid Berisiko: whole-number accuracy below 50 or no answer in the last 7 days; 10 rows, accuracy ascending (no answer last).' }),
   })
   .meta({ id: 'PerformanceLevelDetail' })
 
@@ -249,7 +275,8 @@ export const PerformanceClassDashboardSchema = z
       accuracy: pct,
       sessions: count,
       answered: count,
-      avgMinutes: num,
+      /** @deprecated Dropped (no duration in the single answer store); always null. */
+      avgMinutes: num.nullable().meta({ deprecated: true }),
       active7d: count,
     }),
     headcount: z
@@ -266,9 +293,9 @@ export const PerformanceClassDashboardSchema = z
     attention: z.array(
       z.object({ userId: IdSchema, name: z.string(), sessions: count, accuracy: pct.nullable() }),
     ),
-    trend: z.array(
-      z.object({ date: DateOnlySchema, sessions: count, avgAccuracy: pct, activeStudents: count }),
-    ),
+    trend: z
+      .array(z.object({ date: DateOnlySchema, sessions: count, avgAccuracy: pct, activeStudents: count }))
+      .meta({ description: 'Weekly, last 12 ISO weeks with an answer; `date` is the Monday of the week (MYT).' }),
     ranking: z.array(
       z.object({
         rank: z.number().int(),

@@ -8,17 +8,14 @@ import { computed, watchEffect } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import type { TableColumn } from '@nuxt/ui'
 
-import { DsBackLink, DsChart, DsDataTable, DsEmptyState, DsLoadError, DsPage, DsPageHeader, DsPanel, DsSection, DsStatRow } from '@/ds'
-import { isHttpMode } from '@/api/mode'
+import { DsBackLink, DsChart, DsDataTable, DsEmptyState, DsLoadError, DsPage, DsPageHeader, DsPanel, DsStatRow } from '@/ds'
 import { usePageMeta } from '@/composables/usePageMeta'
-import { formatNumber } from '@/lib/number'
-import { diffForHumans } from '@/lib/time'
 
 import { fetchClassDashboard } from '../api/class'
 import { fetchOwnClasses } from '../api/performance'
 import ClassHeadcountBlock from '../components/prestasi/ClassHeadcountBlock.vue'
 import { classAccuracySeries, classSessionSeries } from '../lib/prestasi/class-chart'
-import { capPct, pctTrim, plain } from '../lib/prestasi/format'
+import { capPct, ddmmyyyy, pctWhole, plain } from '../lib/prestasi/format'
 import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
 import { useStatItems, type StatSpec } from '../lib/stat-items'
 
@@ -58,39 +55,15 @@ function switchClass(value: string | undefined): void {
 const accuracyChart = computed(() => classAccuracySeries(data.value?.trend ?? []))
 const sessionChart = computed(() => classSessionSeries(data.value?.trend ?? []))
 
-const minutes = (n: number): string =>
-  `${formatNumber(n, { decimals: 1, dropZeroFraction: true })}m`
-
-/**
- * US-33: in http mode the class figures come from Bijak SPM sittings (BE-19), so the summary says so and the
- * time / 7-day activity tiles (neutral there) are left out. Mock mode (practice figures) is unchanged.
- */
-const bijak = isHttpMode()
-/** Empty = no Bijak SPM sitting recorded for this class. */
-const bijakEmpty = computed(() => bijak && (data.value?.stats.sessions ?? 0) === 0)
-
+// One V3 layout (R1-GUR-4): the figures come from the single answer store in every mode; "Purata Masa/Sesi" is dropped (no duration there).
 const stats = computed<StatSpec[]>(() => {
   const s = data.value?.stats
   if (!s) return []
-  if (bijak) {
-    return [
-      { id: 'murid', label: 'Jumlah Murid', value: plain(s.students), icon: 'users' },
-      { id: 'ketepatan', label: 'Purata Ketepatan', value: pctTrim(capPct(s.accuracy)), icon: 'target' },
-      { id: 'sesi', label: 'Jumlah Sesi', value: plain(s.sessions), icon: 'lightning' },
-      { id: 'soalan', label: 'Soalan Dijawab', value: plain(s.answered), icon: 'question' },
-    ]
-  }
   return [
     { id: 'murid', label: 'Jumlah Murid', value: plain(s.students), icon: 'users' },
-    {
-      id: 'ketepatan',
-      label: 'Purata Ketepatan',
-      value: pctTrim(capPct(s.accuracy)),
-      icon: 'target',
-    },
+    { id: 'ketepatan', label: 'Purata Ketepatan', value: pctWhole(capPct(s.accuracy)), icon: 'target' },
     { id: 'sesi', label: 'Jumlah Sesi', value: plain(s.sessions), icon: 'lightning' },
     { id: 'soalan', label: 'Soalan Dijawab', value: plain(s.answered), icon: 'question' },
-    { id: 'masa', label: 'Purata Masa/Sesi', value: minutes(s.avgMinutes), icon: 'clock' },
     { id: 'aktif', label: 'Aktif 7 Hari', value: plain(s.active7d), icon: 'fire', accent: 'heat' },
   ]
 })
@@ -122,10 +95,10 @@ const rows = computed<Row[]>(() =>
     name: r.name,
     sessions: r.sessions,
     answered: r.answered,
-    accuracyText: r.accuracy === null ? '—' : pctTrim(r.accuracy),
+    accuracyText: r.accuracy === null ? '—' : pctWhole(capPct(r.accuracy)),
     headcount: r.headcount,
     headcountText: HEADCOUNT[r.headcount].text,
-    lastActive: r.lastActiveAt === null ? '—' : diffForHumans(r.lastActiveAt),
+    lastActive: ddmmyyyy(r.lastActiveAt),
   })),
 )
 const columns: TableColumn<Row>[] = [
@@ -163,9 +136,6 @@ const cardFields = [
         <template #breadcrumb>
           <DsBackLink to="/prestasi/kelas" label="Kembali ke senarai kelas" title="Kembali ke senarai kelas" data-testid="back-link" />
         </template>
-        <template #subtitle>
-          {{ subtitle }} · Kod: <b class="tabular text-primary-t">{{ data.class.joinCode }}</b>
-        </template>
         <template #actions>
           <USelect
             :items="classItems"
@@ -179,13 +149,7 @@ const cardFields = [
         </template>
       </DsPageHeader>
 
-      <DsSection v-if="bijak" title="Keputusan Bijak SPM" variant="subheading" data-testid="bijak-summary">
-        <div v-if="bijakEmpty" data-testid="bijak-empty">
-          <DsEmptyState title="Tiada data" icon="tray" />
-        </div>
-        <DsStatRow v-else :items="statItems(stats)" data-testid="stat-cards" :cols="4" prefix="stat" />
-      </DsSection>
-      <DsStatRow v-else :items="statItems(stats)" data-testid="stat-cards" :cols="5" prefix="stat" />
+      <DsStatRow :items="statItems(stats)" data-testid="stat-cards" :cols="5" prefix="stat" />
 
       <ClassHeadcountBlock v-if="data.headcount" :block="data.headcount" />
 
@@ -211,7 +175,7 @@ const cardFields = [
                   <span class="text-caption text-muted">{{
                     a.accuracy === null
                       ? 'Belum mula berlatih'
-                      : `${a.sessions} sesi · ${pctTrim(a.accuracy)} ketepatan`
+                      : `${a.sessions} sesi · ${pctWhole(a.accuracy)} ketepatan`
                   }}</span>
                 </span>
                 <UBadge
@@ -220,7 +184,7 @@ const cardFields = [
                   variant="subtle"
                   label="Tak Aktif"
                 />
-                <UBadge v-else color="error" variant="subtle" :label="pctTrim(a.accuracy)" />
+                <UBadge v-else color="error" variant="subtle" :label="pctWhole(a.accuracy)" />
               </RouterLink>
             </div>
           </div>
@@ -228,7 +192,7 @@ const cardFields = [
 
         <DsPanel class="min-w-0 lg:col-span-2" data-testid="trend">
           <div class="flex flex-col gap-4">
-            <h2 class="text-subheading text-highlighted">📈 Trend Aktiviti Kelas (30 Hari)</h2>
+            <h2 class="text-subheading text-highlighted">📈 Trend Aktiviti Kelas (12 Minggu)</h2>
             <div v-if="data.trend.length > 0" class="grid grid-cols-1 gap-4 xl:grid-cols-2">
               <DsChart
                 title="Purata Ketepatan (%)"
@@ -246,7 +210,7 @@ const cardFields = [
               />
             </div>
             <div v-else data-testid="trend-empty">
-              <DsEmptyState title="Belum ada aktiviti dalam 30 hari terakhir." icon="tray" />
+              <DsEmptyState title="Belum ada aktiviti dalam 12 minggu terakhir." icon="tray" />
             </div>
           </div>
         </DsPanel>
@@ -260,7 +224,7 @@ const cardFields = [
           caption="Kedudukan murid"
           card-title="name"
           :card-fields="cardFields"
-          :page-size="100"
+          :page-size="25"
           data-testid="ranking-table"
         >
           <template #name-cell="{ row }">

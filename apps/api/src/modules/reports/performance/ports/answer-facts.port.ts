@@ -17,6 +17,11 @@ export interface AnswerFactsQuery {
   /** [from, to) on the answer's own time. */
   from?: Date
   to?: Date
+  /**
+   * `answerFacts` only. 'user-subject' groups by (user, subject) alone: rows carry questionId '0', chapterId and topicId null and
+   * mode '*'. Same attempts, correct and lastAnsweredAt totals as the default grain, far fewer rows. Default: the full grain below.
+   */
+  grain?: 'user-subject'
 }
 
 /** Grain: user, subject, question, chapter, topic, mode. An id the row does not carry reads '0' (subject, question). */

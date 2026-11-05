@@ -197,37 +197,40 @@ function computeClassDashboard(
   members: readonly number[],
   now: number,
 ): ClassDashboard {
-  const windowStart = startOfDay(now - 29 * DAY)
+  const windowStart = startOfDay(now - 12 * 7 * DAY)
   const { figures, recent } = collect(members, cls.subjectId, now, windowStart)
 
   let sessions = 0
   let answered = 0
   let correct = 0
-  let seconds = 0
   for (const f of figures) {
     sessions += f.sessions
     answered += f.answered
     correct += f.correct
-    seconds += f.seconds
   }
   const sevenDaysAgo = now - 7 * DAY
   const active7d = new Set(
     recent.filter((s) => s.completedAtMs >= sevenDaysAgo).map((s) => s.userId),
   ).size
 
-  // Trend: one point per local date with sessions in the last 30 days (INFERRED window: today and the
-  // 29 days before; the day accuracy = Σ correct ÷ Σ answered of that day).
-  const byDay = new Map<string, { sessions: number; q: number; c: number; users: Set<number> }>()
+  // Trend (DOC DEFECT 4): one point per ISO week (Monday start, MYT) with sessions in the last 12 weeks; the week accuracy =
+  // Σ correct ÷ Σ answered of that week. The reader has no day grain.
+  const weekKey = (ms: number): string => {
+    const day = formatDateKey(ms)
+    const dow = new Date(`${day}T00:00:00Z`).getUTCDay()
+    return formatDateKey(Date.parse(`${day}T00:00:00Z`) - ((dow + 6) % 7) * DAY)
+  }
+  const byWeek = new Map<string, { sessions: number; q: number; c: number; users: Set<number> }>()
   for (const s of recent) {
-    const key = formatDateKey(s.completedAtMs)
-    const d = byDay.get(key) ?? { sessions: 0, q: 0, c: 0, users: new Set<number>() }
+    const key = weekKey(s.completedAtMs)
+    const d = byWeek.get(key) ?? { sessions: 0, q: 0, c: 0, users: new Set<number>() }
     d.sessions++
     d.q += s.questions
     d.c += s.correct
     d.users.add(s.userId)
-    byDay.set(key, d)
+    byWeek.set(key, d)
   }
-  const trend = [...byDay.entries()]
+  const trend = [...byWeek.entries()]
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([date, d]) => ({
       date,
@@ -249,7 +252,8 @@ function computeClassDashboard(
     if (ra === null && rb === null) return a.userId - b.userId
     if (ra === null) return 1
     if (rb === null) return -1
-    return rb - ra || a.userId - b.userId
+    // Ties: answers descending, then name (R1-GUR-4 Kedudukan Murid).
+    return rb - ra || b.answered - a.answered || nameOf(a.userId).localeCompare(nameOf(b.userId)) || a.userId - b.userId
   })
   const ranking = order.map((f, i) => {
     const r = raw(f)
@@ -298,7 +302,8 @@ function computeClassDashboard(
       accuracy: round(capPercent(pct(correct, answered)), 1),
       sessions,
       answered,
-      avgMinutes: sessions === 0 ? 0 : round(seconds / sessions / 60, 1),
+      // Dropped (DOC DEFECT 4): no duration in the single answer store.
+      avgMinutes: null,
       active7d,
     },
     headcount: block,
