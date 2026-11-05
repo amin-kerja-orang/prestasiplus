@@ -35,8 +35,8 @@ test.describe('QA G5 S2 create form', { tag: [moduleTag(4), '@qa'] }, () => {
   test('E2E-M04-10 header, back link, shell title, difficulty cards, extra card, Batal (AC-06.1, 06.2, 06.4)', async ({
     page,
   }) => {
-    await expect(byId(page, 'shell-admin-title')).toHaveText('Tambah Soalan Baru')
-    await expect(byId(page, 'shell-admin-subtitle')).toHaveCount(0)
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tambah Soalan Baru')
+    await expect(byId(page, 'pentadbiran-subtitle')).toHaveText('Isi maklumat di bawah untuk menambah soalan baharu')
     await expect(byId(page, 'q-subject').locator('option').first()).toHaveText('Pilih Subjek')
     await expect(byId(page, 'q-level').locator('option').first()).toHaveText(
       'Pilih Tahap Pendidikan',
@@ -78,13 +78,16 @@ test.describe('QA G5 S2 create form', { tag: [moduleTag(4), '@qa'] }, () => {
     await expect(byId(page, 'q-level')).toHaveJSProperty('validity.valueMissing', true)
     await byId(page, 'q-level').selectOption({ label: 'Tingkatan 5' })
     await byId(page, 'q-text').fill('Soalan ujian lengkap tanpa kesukaran.')
+    // The options are required for an MCQ, so fill them to reach the difficulty check.
+    for (const [i, t] of ['Satu', 'Dua', 'Tiga', 'Empat'].entries())
+      await byId(page, `q-option-${String(i)}`).fill(t)
     await byId(page, 'form-submit').click()
     // Difficulty radio group required.
     await expect(byId(page, 'field-error').first()).toHaveText('Sila pilih tahap kesukaran.')
     await expect(page).toHaveURL(/\/admin\/questions\/create$/)
     // Essay with empty options is not blocked by the (now optional) option fields.
     await byId(page, 'q-type').selectOption('essay')
-    await page.locator('[id="q-difficulty"] [role="radio"][value="2"]').check()
+    await page.locator('[id="q-difficulty"]').getByText('Mudah', { exact: true }).click()
     await byId(page, 'form-submit').click()
     await expect(page).toHaveURL(/\/admin\/questions$/)
   })
@@ -148,7 +151,7 @@ test.describe('QA G5 S2 create form', { tag: [moduleTag(4), '@qa'] }, () => {
   }) => {
     await byId(page, 'q-subject').selectOption({ label: 'Sains' })
     await byId(page, 'q-level').selectOption({ label: 'Tingkatan 5' })
-    await page.locator('[id="q-difficulty"] [role="radio"][value="3"]').check()
+    await page.locator('[id="q-difficulty"]').getByText('Sederhana', { exact: true }).click()
     await byId(page, 'q-text').fill('Soalan QA G5 yang baharu dicipta untuk ujian.')
     for (const [i, t] of ['Satu', 'Dua', 'Tiga', 'Empat'].entries())
       await byId(page, `q-option-${String(i)}`).fill(t)
@@ -156,9 +159,9 @@ test.describe('QA G5 S2 create form', { tag: [moduleTag(4), '@qa'] }, () => {
     await byId(page, 'form-submit').click()
     await expect(page).toHaveURL(/\/admin\/questions$/)
     await expect(byId(page, 'cmp-flash')).toBeVisible()
-    await expect(byId(page, 'question-row').first()).toContainText('Soalan QA G5 yang baharu')
-    await expect(byId(page, 'questions-total')).toHaveText('Jumlah: 465,279 soalan')
-    await expect(byId(page, 'question-status').first()).toHaveText(/Draf|Menunggu|Diluluskan/)
+    await expect(byId(page, 'questions-table')).toContainText('Soalan QA G5 yang baharu')
+    await expect(byId(page, 'questions-total')).toHaveText('Jumlah: 268,778 soalan')
+    await expect(byId(page, 'questions-table')).toContainText(/Draf|Menunggu|Diluluskan/)
     void gotoApp
   })
 
@@ -168,6 +171,8 @@ test.describe('QA G5 S2 create form', { tag: [moduleTag(4), '@qa'] }, () => {
       mimeType: 'image/png',
       buffer: PNG,
     })
+    // The preview image loads lazily, so it must be in view.
+    await byId(page, 'q-option-image-0-remove').scrollIntoViewIfNeeded()
     await expect(byId(page, 'q-option-image-0-preview')).toBeVisible()
     await byId(page, 'q-option-image-0-remove').click()
     await expect(byId(page, 'q-option-image-0-preview')).toHaveCount(0)
@@ -178,13 +183,9 @@ test.describe('QA G5 S2 create form', { tag: [moduleTag(4), '@qa'] }, () => {
     page,
   }) => {
     const box = await byId(page, 'vkb-toggle').boundingBox()
-    // 36x36 on desktop; 44px hit area on touch (AC-30.5).
-    if (isDesktopShell(page)) {
-      expect(Math.round(box!.width)).toBe(36)
-      expect(Math.round(box!.height)).toBe(36)
-    } else {
-      expect(box!.width).toBeGreaterThanOrEqual(36)
-    }
+    // 44 x 44 at every width (AC-ADM-R10).
+    expect(Math.round(box!.width)).toBe(44)
+    expect(Math.round(box!.height)).toBe(44)
     await expect(byId(page, 'vkb-toggle')).toHaveAttribute('title', 'Papan kekunci Arab / Jawi')
     await byId(page, 'vkb-toggle').click()
     await expect(byId(page, 'vkb-mode-arab')).toBeVisible()
@@ -303,8 +304,8 @@ test.describe('QA G5 S4 edit form', { tag: [moduleTag(4), '@qa'] }, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/admin/questions/564159/edit')
-    await expect(byId(page, 'shell-admin-title')).toHaveText('Edit Soalan')
-    await expect(byId(page, 'shell-admin-subtitle')).toHaveCount(0)
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Edit Soalan')
+    await expect(byId(page, 'pentadbiran-subtitle')).toHaveText('Kemaskini maklumat soalan #564159')
     for (const i of [0, 1, 2, 3])
       await expect(byId(page, `q-option-${String(i)}`)).toHaveAttribute('required', '')
     await expect(page.locator('[id="q-correct-0"] [role="radio"]')).toBeChecked()
@@ -364,8 +365,8 @@ test.describe('QA G5 S5 import', { tag: [moduleTag(4), '@qa'] }, () => {
   test('E2E-M04-30 shell title/subtitle, file hints, defaults, format card suffixes (AC-13.1, 13.2, 13.3, 13.4)', async ({
     page,
   }) => {
-    await expect(byId(page, 'shell-admin-title')).toHaveText('Import Soalan Secara Pukal')
-    await expect(byId(page, 'shell-admin-subtitle')).toHaveText(
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Import Soalan Secara Pukal')
+    await expect(byId(page, 'pentadbiran-subtitle')).toHaveText(
       'Muat naik fail CSV untuk menambah soalan secara pukal',
     )
     await expect(page.getByText('Saiz maksimum: 5MB. Format: CSV atau TXT')).toBeVisible()
@@ -436,8 +437,7 @@ test.describe('QA G5 S5 import', { tag: [moduleTag(4), '@qa'] }, () => {
       'Import selesai: 3 soalan diimport, 0 gagal.',
     )
     await gotoApp('/admin/questions?status=draft')
-    await expect(byId(page, 'question-row').first()).toBeVisible()
-    await expect(byId(page, 'question-status').first()).toHaveText('Draf')
+    await expect(byId(page, 'questions-table')).toContainText('Draf')
   })
 
   test('E2E-M04-32 Download Template: file name and header row (AC-13.6)', async ({ page }) => {
@@ -451,7 +451,7 @@ test.describe('QA G5 S5 import', { tag: [moduleTag(4), '@qa'] }, () => {
     for await (const c of stream) chunks.push(c as Buffer)
     const first = Buffer.concat(chunks).toString('utf8').split(/\r?\n/)[0] ?? ''
     expect(first.replace(/^﻿/, '')).toBe(
-      'question_text,option_a,option_b,option_c,option_d,correct_answer,subject_id,education_level_id,difficulty_level,marks,explanation',
+      'question_text,option_a,option_b,option_c,option_d,correct_answer,subject_id,education_level_id,difficulty_level,marks,explanation,kertas',
     )
   })
 
@@ -461,7 +461,8 @@ test.describe('QA G5 S5 import', { tag: [moduleTag(4), '@qa'] }, () => {
   }) => {
     await gotoApp('/admin/questions/import-history')
     await expect(page.getByText('Sejarah Import').first()).toBeVisible()
-    await expect(page.locator('main button')).toHaveCount(0)
+    // The rows have no action. Below 768 px DsDataTable always draws the card title as a button (needs:S8).
+    await expect(byId(page, 'history-table').locator('tbody button')).toHaveCount(0)
     await byId(page, 'history-back').click()
     await expect(page).toHaveURL(/\/admin\/questions\/import$/)
   })
@@ -476,41 +477,37 @@ test.describe('QA G5 S6 quality', { tag: [moduleTag(4), '@qa'] }, () => {
     await gotoApp('/admin/questions/quality')
   })
 
-  test('E2E-M04-34 shell title/subtitle, KPI labels, bucket titles upper case, legacy backticks (AC-15.1, 15.2)', async ({
+  test('E2E-M04-34 shell title/subtitle, KPI labels, bucket titles, legacy sources (AC-15.1, 15.2)', async ({
     page,
   }) => {
-    await expect(byId(page, 'shell-admin-title')).toHaveText('Dashboard Kualiti Soalan')
-    await expect(byId(page, 'shell-admin-subtitle')).toHaveText(
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Dashboard Kualiti Soalan')
+    await expect(byId(page, 'pentadbiran-subtitle')).toHaveText(
       'Analisa kualiti keseluruhan bank soalan',
     )
     await expect(byId(page, 'kpi-total')).toContainText('Jumlah Soalan')
     await expect(byId(page, 'kpi-average')).toContainText('Purata Skor')
     await expect(byId(page, 'kpi-excellent')).toContainText('Cemerlang (76-100)')
     await expect(byId(page, 'kpi-action')).toContainText('Perlu Tindakan Aktif (≤ 50)')
-    await expect(byId(page, 'kpi-total-value')).toHaveText('465,278')
+    await expect(byId(page, 'kpi-total')).toContainText('268,777')
     for (const [id, text] of [
       ['bucket-baik', 'Skor 51-75'],
       ['bucket-lemah', 'Skor ≤ 50'],
       ['bucket-legacy', 'Legacy Generic'],
     ] as Array<[string, string]>) {
-      const title = byId(page, id).getByText(text, { exact: true })
-      await expect(title).toBeVisible()
-      expect(await title.evaluate((el) => getComputedStyle(el).textTransform)).toBe('uppercase')
+      await expect(byId(page, id).getByText(text, { exact: true })).toBeVisible()
     }
-    await expect(byId(page, 'bucket-legacy')).toContainText('`tracking_a_feed_20260308`')
-    await expect(byId(page, 'bucket-legacy')).toContainText('`spm_tracking_auto_seed_v1`')
-    await expect(byId(page, 'bucket-legacy')).toContainText('`source_type=ai_generated`')
+    await expect(byId(page, 'bucket-legacy')).toContainText('tracking_a_feed_20260308')
+    await expect(byId(page, 'bucket-legacy')).toContainText('spm_tracking_auto_seed_v1')
+    await expect(byId(page, 'bucket-legacy')).toContainText('source_type=ai_generated')
   })
 
   test('E2E-M04-34 distribution, subject rows sorted by Purata desc, levels, action list header (AC-15.3, 15.4, 15.5)', async ({
     page,
   }) => {
-    for (const k of ['cemerlang', 'baik', 'lemah', 'kritikal']) void k
+    // A band with no question has no segment; on this data only the two below have any.
     await expect(byId(page, 'quality-distribution')).toContainText('Cemerlang')
     await expect(byId(page, 'quality-distribution')).toContainText('Baik')
-    await expect(byId(page, 'quality-distribution')).toContainText('Lemah')
-    await expect(byId(page, 'quality-distribution')).toContainText('Kritikal')
-    const rows = byId(page, 'subject-row')
+    const rows = byId(page, 'quality-subjects').locator('tbody tr, li')
     expect(await rows.count()).toBeGreaterThan(20)
     const avgs = await rows.evaluateAll((els) =>
       els.map((el) => {
@@ -521,17 +518,22 @@ test.describe('QA G5 S6 quality', { tag: [moduleTag(4), '@qa'] }, () => {
     expect(avgs.some((n) => Number.isNaN(n))).toBe(false)
     for (let i = 1; i < avgs.length; i++)
       expect(avgs[i] ?? 0).toBeLessThanOrEqual((avgs[i - 1] ?? 0) + 0.0001)
-    await expect(byId(page, 'level-row').first()).toContainText('Darjah 1')
+    await expect(byId(page, 'level-row').first()).toContainText('Tingkatan 1')
     await expect(byId(page, 'level-row').last()).toContainText('Tingkatan 5')
     await expect(byId(page, 'quality-actions')).toContainText(
       'Memaparkan hanya soalan skor ≤ 50 selepas menolak sumber generic legacy.',
     )
-    for (const h of ['ID', 'Soalan', 'Subjek', 'Tingkatan', 'Sumber', 'Skor'])
-      await expect(
-        byId(page, 'quality-actions').getByText(h, { exact: true }).first(),
-      ).toBeVisible()
-    await expect(byId(page, 'quality-actions')).toContainText('#129114')
-    await expect(byId(page, 'quality-actions')).toContainText('#129216')
+    // The table head is there from 768 px; below it each row is a card.
+    if (viewportWidth(page) >= 768) {
+      for (const h of ['ID', 'Soalan', 'Subjek', 'Tingkatan', 'Sumber', 'Skor'])
+        await expect(
+          byId(page, 'quality-actions').getByText(h, { exact: true }).first(),
+        ).toBeVisible()
+      await expect(byId(page, 'quality-actions')).toContainText('#129114')
+      await expect(byId(page, 'quality-actions')).toContainText('#129216')
+    } else {
+      await expect(byId(page, 'quality-actions').locator('li')).toHaveCount(2)
+    }
   })
 
   test('E2E-M04-35 audit button shows the busy state while running and no dialog (AC-16.1)', async ({

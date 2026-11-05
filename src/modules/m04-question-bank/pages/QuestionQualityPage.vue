@@ -175,7 +175,7 @@ const actionCardFields: CardField[] = [
 </script>
 
 <template>
-  <DsPage data-testid="quality-page">
+  <DsPage subtitle="Analisa kualiti keseluruhan bank soalan" data-testid="quality-page">
     <template #actions>
       <UButton
         type="button"

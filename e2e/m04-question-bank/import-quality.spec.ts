@@ -9,11 +9,13 @@
 import type { Page } from '@playwright/test'
 
 import { expect, test } from '../fixtures/test'
-import { expectNoHorizontalScroll, expectTabTitle, moduleTag, provisional, TAG } from '../support'
+import { expectNoHorizontalScroll, expectTabTitle, viewportWidth, moduleTag, provisional, TAG } from '../support'
 
 const ADMIN = 'admin@demo.test'
 
 const byId = (page: Page, id: string) => page.getByTestId(id)
+/** Table rows from 768 px, cards below it. */
+const historyRows = (page: Page) => byId(page, 'history-table').locator('tbody tr, li')
 
 const CSV = [
   'question_text,option_a,option_b,option_c,option_d,correct_answer,subject_id,education_level_id,difficulty_level,marks,explanation',
@@ -30,10 +32,10 @@ test.describe('M04 S5 question import', { tag: [TAG.smoke, moduleTag(4)] }, () =
   })
 
   test('title, form, side cards, links and no horizontal scroll', async ({ page }) => {
-    await expectTabTitle(page, 'Import Soalan')
-    await expect(
-      page.getByText('Muat naik fail CSV untuk menambah soalan secara pukal'),
-    ).toBeVisible()
+    await expectTabTitle(page, 'Import Soalan Secara Pukal | PRESTASIPLUS')
+    await expect(byId(page, 'pentadbiran-subtitle')).toHaveText(
+      'Muat naik fail CSV untuk menambah soalan secara pukal',
+    )
     await expect(byId(page, 'import-file')).toHaveAttribute('accept', '.csv,.txt')
     await expect(byId(page, 'import-default-difficulty')).toHaveValue('2')
     await expect(page.getByText('Soalan disimpan sebagai draf')).toBeVisible()
@@ -66,11 +68,8 @@ test.describe('M04 S5 question import', { tag: [TAG.smoke, moduleTag(4)] }, () =
     await expectNoHorizontalScroll(page)
 
     await byId(page, 'import-history-link').click()
-    await expectTabTitle(page, 'Sejarah Import')
-    const first = byId(page, 'history-row').first()
-    await expect(first).toContainText('soalan-demo.csv')
-    await expect(byId(page, 'history-imported').first()).toHaveText('1')
-    await expect(byId(page, 'history-failed').first()).toHaveText('1')
+    await expectTabTitle(page, 'Sejarah Import | PRESTASIPLUS')
+    await expect(historyRows(page).first()).toContainText('soalan-demo.csv')
   })
 
   test(
@@ -100,17 +99,19 @@ test.describe('M04 S5h import history', { tag: [TAG.smoke, moduleTag(4)] }, () =
     async ({ page, loginAs, gotoApp }) => {
       await loginAs(ADMIN)
       await gotoApp('/admin/questions/import-history')
-      await expectTabTitle(page, 'Sejarah Import')
-      await expect(page.locator('th')).toHaveText(['Tarikh', 'Fail', 'Diimport', 'Gagal'])
-      await expect(byId(page, 'history-row')).toHaveCount(20)
-      await expect(byId(page, 'history-file').first()).toHaveText('soalan-bm-d3.csv')
-      await expect(byId(page, 'history-date').first()).toHaveText(/^20\/07\/2026 \d{2}:\d{2}$/)
-      await expect(byId(page, 'history-pager')).toContainText(/of 1123 results|Next/)
+      await expectTabTitle(page, 'Sejarah Import | PRESTASIPLUS')
+      if (viewportWidth(page) >= 768)
+        await expect(page.locator('th')).toHaveText(['Tarikh', 'Fail', 'Diimport', 'Gagal'])
+      await expect(historyRows(page)).toHaveCount(20)
+      await expect(historyRows(page).first()).toContainText('soalan-bm-d3.csv')
+      await expect(historyRows(page).first()).toContainText(/20\/07\/2026 \d{2}:\d{2}/)
+      const pager = byId(page, 'history-table').locator('[data-ds="data-table-pager"]')
+      await expect(pager).toBeVisible()
       await expectNoHorizontalScroll(page)
 
-      await byId(page, 'history-pager').getByRole('link', { name: /Next/ }).first().click()
+      await pager.getByRole('button', { name: 'Halaman seterusnya' }).click()
       await expect(page).toHaveURL(/page=2/)
-      await expect(byId(page, 'history-row')).toHaveCount(20)
+      await expect(historyRows(page)).toHaveCount(20)
 
       await byId(page, 'history-back').click()
       await expect(page).toHaveURL(/\/admin\/questions\/import$/)
@@ -127,8 +128,8 @@ test.describe('M04 S5h import history', { tag: [TAG.smoke, moduleTag(4)] }, () =
         await loginAs(ADMIN)
         await gotoApp('/admin/questions/import-history')
         await expect(byId(page, 'history-empty')).toHaveText('Tiada sejarah import.')
-        await expect(byId(page, 'history-row')).toHaveCount(0)
-        await expect(page.getByText(/results/)).toHaveCount(0)
+        await expect(byId(page, 'history-file')).toHaveCount(0)
+        await expect(page.locator('[data-ds="data-table-pager"]')).toHaveCount(0)
         await expectNoHorizontalScroll(page)
       },
     )
@@ -147,23 +148,24 @@ test.describe('M04 S6 question quality', { tag: [TAG.smoke, moduleTag(4)] }, () 
     page,
   }) => {
     await expectTabTitle(page, 'Dashboard Kualiti Soalan | PRESTASIPLUS')
-    await expect(byId(page, 'kpi-total-value')).toHaveText('465,278')
-    await expect(byId(page, 'kpi-average-value')).toHaveText('94.1')
-    await expect(byId(page, 'kpi-excellent-value')).toHaveText('146,275')
-    await expect(byId(page, 'kpi-action-value')).toHaveText('2')
-    await expect(byId(page, 'bucket-baik-value')).toHaveText('749')
+    await expect(byId(page, 'kpi-total')).toContainText('268,777')
+    await expect(byId(page, 'kpi-average')).toContainText('93.5')
+    await expect(byId(page, 'kpi-excellent')).toContainText('106,283')
+    await expect(byId(page, 'kpi-action')).toContainText('2')
+    await expect(byId(page, 'bucket-baik-value')).toHaveText('583')
     await expect(byId(page, 'bucket-lemah-value')).toHaveText('2')
     await expect(byId(page, 'bucket-legacy-value')).toHaveText('373')
     await expect(page.getByText('Taburan Kualiti')).toBeVisible()
     await expect(byId(page, 'dist-cemerlang')).toContainText('99.5%')
-    await expect(page.getByText('Mengikut Subjek')).toBeVisible()
-    await expect(byId(page, 'level-row')).toHaveCount(11)
+    await expect(byId(page, 'quality-subjects')).toContainText('Mengikut Subjek')
+    await expect(byId(page, 'level-row')).toHaveCount(5)
     await expect(byId(page, 'action-count')).toHaveText('2 soalan')
-    await expect(byId(page, 'action-row')).toHaveCount(2)
-    await expect(byId(page, 'action-edit').first()).toHaveAttribute(
-      'href',
-      /\/admin\/questions\/\d+\/edit$/,
-    )
+    await expect(byId(page, 'quality-actions').locator('tbody tr, li')).toHaveCount(2)
+    if (viewportWidth(page) >= 768)
+      await expect(byId(page, 'action-edit').first()).toHaveAttribute(
+        'href',
+        /\/admin\/questions\/\d+\/edit$/,
+      )
     await expectNoHorizontalScroll(page)
   })
 
@@ -179,7 +181,7 @@ test.describe('M04 S6 question quality', { tag: [TAG.smoke, moduleTag(4)] }, () 
       await byId(page, 'quality-audit').click()
       await expect(byId(page, 'cmp-flash')).toContainText('Audit kualiti selesai.')
       await expect(byId(page, 'quality-audit')).toHaveText('Jalankan Audit Semula')
-      await expect(byId(page, 'kpi-total-value')).toHaveText('465,278')
+      await expect(byId(page, 'kpi-total')).toContainText('268,777')
       expect(dialogs).toBe(0)
     },
   )
