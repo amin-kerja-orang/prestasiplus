@@ -1,2 +1,4 @@
 # Fake image token in a unit test fixture (not a secret): 'abcDEF0123456789abcdef', a sequential placeholder.
 db83978c99f31ce0a037a3145f9d0f7e24113615:src/modules/m28-bijak-spm/__tests__/kuiz-pages.test.ts:generic-api-key:229
+# Fake idempotency clientUuid in a mock test fixture (S7-T04, FR-ERR-9): a UUID used as a request key, not a secret.
+50cb92400be8090d6389094b80b5323892facba4:src/modules/m14-gamification/__tests__/mock/endpoints.test.ts:generic-api-key:959
