@@ -25,9 +25,11 @@ import { DEMO_PUPILS } from '../data/spec'
 import { classQueries, classroomsRepo } from '../repository/classrooms'
 import { dskpRepo } from '../repository/dskp'
 import { missionsRepo } from '../repository/missions'
+import { personalQuestionsRepo } from '../repository/personal-questions'
 import { questionSetsRepo } from '../repository/question-sets'
 import { remedialTestsRepo } from '../repository/remedial'
 import { seedTeacherProfiles } from './m10-t1'
+import { DESIGNED_PERSONAL_QUESTIONS } from './personal-questions'
 
 export function seedM10(ctx: SeedContext): void {
   classroomsRepo.resetCompiled()
@@ -65,6 +67,7 @@ export function finaliseM10(): void {
     }),
   )
   questionSetsRepo.seed(DESIGNED_QUESTION_SETS)
+  personalQuestionsRepo.seed(DESIGNED_PERSONAL_QUESTIONS)
 
   if (issues.length > 0) {
     throw new Error(`M10 store build check failed:\n${issues.map((m) => `- ${m}`).join('\n')}`)

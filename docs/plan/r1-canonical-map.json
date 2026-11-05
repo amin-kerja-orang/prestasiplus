@@ -1978,6 +1978,36 @@
       "approved_by_card": null
     },
     {
+      "key": "/guru/soalan-guru|",
+      "path": "/guru/soalan-guru",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m10-teacher-class/pages/SoalanRujukanListPage.vue",
+      "file": "src/modules/m10-teacher-class/routes/soalan-rujukan.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
+      "key": "/guru/soalan-guru/cipta|",
+      "path": "/guru/soalan-guru/cipta",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m10-teacher-class/pages/SoalanRujukanCreatePage.vue",
+      "file": "src/modules/m10-teacher-class/routes/soalan-rujukan.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
+      "key": "/guru/soalan-guru/:id(\\d+)/sunting|",
+      "path": "/guru/soalan-guru/:id(\\d+)/sunting",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m10-teacher-class/pages/SoalanRujukanEditPage.vue",
+      "file": "src/modules/m10-teacher-class/routes/soalan-rujukan.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
       "key": "/guru/analisis-item|guru-analisis-item",
       "path": "/guru/analisis-item",
       "name": "guru-analisis-item",

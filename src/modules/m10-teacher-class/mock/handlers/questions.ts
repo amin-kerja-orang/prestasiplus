@@ -207,7 +207,7 @@ type Parsed =
   | { ok: true; input: QuestionInput; extra?: Place['extra'] }
   | { ok: false; fields: Record<string, string> }
 
-type Place = Pick<QuestionInput, 'curriculumChapterId' | 'dskpSpId' | 'scriptType'> & {
+export type Place = Pick<QuestionInput, 'curriculumChapterId' | 'dskpSpId' | 'scriptType'> & {
   extra: { spIds: number[]; tp: number | null; cognitiveLevel: string | null }
 }
 
@@ -221,7 +221,7 @@ function spsOf(subjectId: number, levelId: number): number[] {
 }
 
 /** The Bab, SP, TP, Aras and script fields of create (#53) under the conditional rule of D112. */
-function placement(
+export function placement(
   b: Body,
   subjectId: number | undefined,
   levelId: number | undefined,

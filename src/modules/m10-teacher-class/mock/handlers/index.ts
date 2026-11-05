@@ -11,6 +11,7 @@ import { commandCenterRoutes } from './command-center'
 import { dashboardRoutes } from './dashboard'
 import { extraRoutes } from './extras'
 import { lookupRoutes } from './lookups'
+import { personalQuestionRoutes } from './personal-questions'
 import { questionRoutes } from './questions'
 import { studentRoutes } from './students'
 import { studentSideRoutes } from './student-side'
@@ -22,6 +23,7 @@ export const m10Routes: RouteDef[] = [
   ...studentRoutes,
   ...lookupRoutes,
   ...questionRoutes,
+  ...personalQuestionRoutes,
   ...extraRoutes,
   ...studentSideRoutes,
 ]

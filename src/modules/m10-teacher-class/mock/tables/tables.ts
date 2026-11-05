@@ -6,6 +6,7 @@
  * - `m10.classrooms`: key `"{kind}:{classId}"`, so classroom 419 and school class 419 stay apart.
  * - `m10.enrolments`: key `"{kind}:{classroomId}:{studentId}"`.
  * - DSKP Bidang / SK / SP with their live ids (runtime ids ≥ 9,000,001).
+ * - Personal questions (Soalan & Rujukan, S6-T16): seeds 7801…, runtime ids from 9,000,001.
  * - Missions, remedial tests and question sets: numeric ids in the M10 blocks 7101…, 7601…, 7401…;
  *   runtime ids from 9,000,001 (`floor`).
  */
@@ -19,6 +20,7 @@ import type {
   DskpSpRow,
   EnrolmentRow,
   MissionRow,
+  PersonalQuestionRow,
   QuestionSetRow,
   RemedialTestRow,
 } from '../repository/types'
@@ -76,6 +78,12 @@ export const questionSetsTable = defineTable<QuestionSetRow>({
   indexes: ['teacherId', 'classroomId'],
 })
 
+export const personalQuestionsTable = defineTable<PersonalQuestionRow>({
+  name: 'm10.personalQuestions',
+  ids: floor({ start: RUNTIME }),
+  indexes: ['ownerId', 'educationLevelId'],
+})
+
 export const M10_TABLES = {
   classrooms: classroomsTable,
   enrolments: enrolmentsTable,
@@ -85,4 +93,5 @@ export const M10_TABLES = {
   missions: missionsTable,
   remedialTests: remedialTestsTable,
   questionSets: questionSetsTable,
+  personalQuestions: personalQuestionsTable,
 }
