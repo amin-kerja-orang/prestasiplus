@@ -15,6 +15,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../pages/ProductDetailPage.vue'),
     props: (route) => ({ slug: String(route.params.slug) }),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Marketplace - PRESTASIPLUS',
