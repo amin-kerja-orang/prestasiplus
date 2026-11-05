@@ -82,7 +82,7 @@ function whatsapp(): void {
       <div class="mt-4 grid grid-cols-2 gap-3">
         <UButton
           type="button"
-          size="xl"
+          size="lg"
           icon="i-ph-download-simple-duotone"
           block
           data-testid="share-download"
@@ -92,7 +92,7 @@ function whatsapp(): void {
         </UButton>
         <UButton
           type="button"
-          size="xl"
+          size="lg"
           color="success"
           block
           data-testid="share-whatsapp"
@@ -104,7 +104,7 @@ function whatsapp(): void {
       </div>
       <UButton
         type="button"
-        size="xl"
+        size="lg"
         color="neutral"
         variant="soft"
         block

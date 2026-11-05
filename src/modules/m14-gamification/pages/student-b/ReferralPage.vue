@@ -89,7 +89,7 @@ async function copyLink(): Promise<void> {
           <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <UButton
               type="button"
-              size="xl"
+              size="lg"
               color="neutral"
               variant="soft"
               icon="i-ph-copy-duotone"
@@ -101,7 +101,7 @@ async function copyLink(): Promise<void> {
             </UButton>
             <UButton
               type="button"
-              size="xl"
+              size="lg"
               color="neutral"
               variant="soft"
               icon="i-ph-link-duotone"
@@ -115,7 +115,7 @@ async function copyLink(): Promise<void> {
               :href="data.whatsappUrl"
               target="_blank"
               rel="noopener noreferrer"
-              size="xl"
+              size="lg"
               color="success"
               block
               data-testid="referral-whatsapp"
@@ -127,7 +127,7 @@ async function copyLink(): Promise<void> {
               :href="data.telegramUrl"
               target="_blank"
               rel="noopener noreferrer"
-              size="xl"
+              size="lg"
               color="info"
               block
               data-testid="referral-telegram"
