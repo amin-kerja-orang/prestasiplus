@@ -64,6 +64,12 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
+| S5-T07 | AC-MUR-12-1 | CI | Pass | 2026-11-05 | team-dd/S-2 | remedial.spec.ts, pages.test.ts |
+| S5-T07 | AC-MUR-12-2 | CI | Pass | 2026-11-05 | team-dd/S-2 | remedial.spec.ts, pages.test.ts |
+| S5-T07 | AC-MUR-12-3 | CI | Pass | 2026-11-05 | team-dd/S-2 | remedial.spec.ts, pages.test.ts |
+| S5-T07 | AC-MUR-12-4 | CI | Pass | 2026-11-05 | team-dd/S-2 | qa-g5-guards-responsive.spec.ts |
+| S5-T07 | AC-MUR-12-5 | CI | Pass | 2026-11-05 | team-dd/S-2 | remedial.spec.ts |
+| S5-T07 | AC-MUR-12-6 | CI | Pass | 2026-11-05 | team-dd/S-2 | remedial.spec.ts |
 
 ## Sprint 4
 
