@@ -11,6 +11,7 @@ import { computed, reactive, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
 import { isApiError } from '@/api'
+import { useSession } from '@/composables/useSession'
 import { DsDataTable, DsEmptyState, DsPanel, DsStack, DsText } from '@/ds'
 import { formatPercent } from '@/lib/number'
 import { clock, formatMyt } from '@/lib/time'
@@ -23,6 +24,10 @@ import { alertLabel, moodLabel, STATUS_COLOR } from './intervention-format'
 
 const props = defineProps<{ rows: InterventionRow[] }>()
 const emit = defineEmits<{ changed: [] }>()
+
+/** The review API answers 403 for the admin: the button is not drawn for that viewer (the result text stays). */
+const { role } = useSession()
+const canReview = computed(() => role.value !== 'admin')
 
 /** Days from `YYYY-MM-DD` to today, both Asia/Kuala_Lumpur calendar days. */
 const REVIEW_AFTER_DAYS = 7
@@ -175,7 +180,7 @@ const pageSize = ref(20)
             row.original.result
           }}</DsText>
           <UButton
-            v-else
+            v-else-if="canReview"
             type="button"
             color="neutral"
             label="Semak keputusan"

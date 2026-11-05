@@ -40,12 +40,14 @@ const row = (over: Partial<InterventionRow>): InterventionRow => ({
 
 let wrapper: VueWrapper | undefined
 
-async function open(prefix = '/admin/kirkpatrick') {
+async function open(prefix = '/admin/kirkpatrick', role?: string) {
   const m = await mountPage(
     KirkpatrickInterventionsPage,
     { basePath: prefix },
     `${prefix}/interventions`,
     `${prefix}/interventions`,
+    null,
+    role,
   )
   wrapper = m.wrapper
   return m.wrapper
@@ -350,5 +352,17 @@ describe('S7 "Semak keputusan" (AC-GUR-11-9)', () => {
     ])
     expect(all(w, 'int-row-review-btn')).toHaveLength(1)
     expect(all(w, 'int-row-status').map((e) => e.text())).toEqual(['Meningkat', 'Menunggu Semakan'])
+  })
+
+  it('draws no button for the admin viewer but still shows the reviewed result', async () => {
+    clock.setNow('2026-10-05T10:00:00+08:00')
+    api.fetchKirkpatrickInterventions.mockResolvedValue(
+      list([pending({ id: 2, afterAccuracy: 55.5, status: 'Meningkat' }), pending({ id: 1 })]),
+    )
+    const w = await open('/admin/kirkpatrick', 'admin')
+    expect(has(w, 'int-row-review-btn')).toBe(false)
+    expect(all(w, 'int-row-result').map((e) => e.text())).toEqual([
+      'Ketepatan Sebelum 40% → Selepas 56%',
+    ])
   })
 })

@@ -172,13 +172,16 @@ export const SESSION_SCHOOL = {
 }
 
 /** A fresh Pinia with a session whose user has `school` (or none). */
-export function setSessionSchool(school: Partial<typeof SESSION_SCHOOL> | null = SESSION_SCHOOL): void {
+export function setSessionSchool(
+  school: Partial<typeof SESSION_SCHOOL> | null = SESSION_SCHOOL,
+  role?: string,
+): void {
   setActivePinia(createPinia())
   useSessionStore().auth = {
     token: 't',
     remember: false,
     expiresAt: '2030-01-01T00:00:00+08:00',
-    user: { school },
+    user: { school, role },
   } as never
 }
 
@@ -189,6 +192,7 @@ export async function mountPage(
   url: string,
   path: string,
   school: Partial<typeof SESSION_SCHOOL> | null = null,
+  role?: string,
 ): Promise<{ wrapper: VueWrapper; router: Router }> {
   const router = createRouter({
     history: createMemoryHistory(),
@@ -199,7 +203,7 @@ export async function mountPage(
   })
   await router.push(url)
   await router.isReady()
-  setSessionSchool(school)
+  setSessionSchool(school, role)
   const wrapper = mount(component, { props, global: { plugins: [router] } })
   await flushPromises()
   return { wrapper, router }
