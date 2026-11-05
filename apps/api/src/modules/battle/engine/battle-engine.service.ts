@@ -3,7 +3,7 @@
  * questions drawn once) and the report of a finished battle to M14.
  */
 import { Inject, Injectable } from '@nestjs/common'
-import { BATTLE_MESSAGES, BATTLE_RULES, type BattleQuestionCount, type GamesReward } from '@pp/contract'
+import { BATTLE_MESSAGES, type BattleQuestionCount, type GamesReward } from '@pp/contract'
 
 import type { TxClient } from '../../../db/client'
 import { CLOCK, type Clock } from '../../../db/clock'

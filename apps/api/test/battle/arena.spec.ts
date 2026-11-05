@@ -5,7 +5,7 @@ import { ArenaService } from '../../src/modules/battle/arena/arena.service'
 import { BattleEngine } from '../../src/modules/battle/engine'
 import { StandingsService } from '../../src/modules/battle/standings/standings.service'
 import { botAnswer, botAnswers } from '../../src/modules/battle/engine'
-import { addMcqs, bootBattleApp, botBattle, client, humanBattle, nextRound, parseData, roundOf, setSetting, startQueue, matchBot, STUDENT_G10, STUDENT_G10_B, STUDENT_G11, subjectsOf, type BattleTestApp, type Client, type Subjects } from './arena-helpers'
+import { addMcqs, bootBattleApp, botBattle, client, humanBattle, nextRound, parseData, roundOf, setSetting, STUDENT_G10, STUDENT_G10_B, STUDENT_G11, subjectsOf, type BattleTestApp, type Client, type Subjects } from './arena-helpers'
 
 const FORBIDDEN_KEYS = new Set(['correct', 'correctOptionId', 'isCorrect', 'answer', 'correctAnswer', 'key', 'explanation'])
 
