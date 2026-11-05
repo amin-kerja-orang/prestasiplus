@@ -4,11 +4,11 @@
  * ini." The snapshot is the form state only (text, ids, tokens of pictures already uploaded), read back with a strict shape
  * check so a damaged or foreign value is ignored. Pure over a storage-like object.
  */
-import { LEAF_MODES, SCRIPT_TYPES, newUid, type LeafDraft, type StudioDraft } from './draft'
+import { ANSWER_SPACES, LEAF_MODES, POINT_CODES, SCRIPT_TYPES, blankLeaf, type LeafDraft, type PointCode, type StudioDraft } from './draft'
 import { isCognitive } from './dskp-tags'
 
 export const RECOVERY_MESSAGE = 'Terdapat kerja yang belum disimpan daripada sesi sebelum ini.'
-/** 2: the draft holds Penjelasan and Jenis tulisan; an older snapshot would clear them on save. */
+/** 2: the draft holds Penjelasan and Jenis tulisan; an older snapshot would clear them on save. The part-B leaf fields are optional in a snapshot (absent = blank), so no bump. */
 const VERSION = 2
 /** `pp:draft:` is the prefix the session store clears at sign-out; the user id keeps one person's draft from another's. */
 const PREFIX = 'pp:draft:studio:'
@@ -42,15 +42,59 @@ function leafOf(v: unknown): LeafDraft | null {
   if (!mode || !isStr(v.label) || !isStr(v.prompt) || typeof v.marks !== 'number' || !Array.isArray(v.options) || !isStr(v.correct) || !isStr(v.accepted) || !num) return null
   if (!(v.tp === null || (typeof v.tp === 'number' && Number.isInteger(v.tp) && v.tp >= 1 && v.tp <= 6)) || !(v.cognitive === null || isCognitive(v.cognitive))) return null
   if (!isStr(num.value) || !isStr(num.tolerance) || !isStr(num.unit)) return null
-  const options = []
+  const options: LeafDraft['options'] = []
   for (const o of v.options) {
-    if (!isObj(o) || !isStr(o.label) || !isStr(o.text) || !isNullStr(o.imageToken)) return null
-    options.push({ label: o.label, text: o.text, imageToken: o.imageToken })
+    if (!isObj(o) || !isStr(o.label) || !isStr(o.text) || !isNullStr(o.imageToken) || !(o.textEn === undefined || isNullStr(o.textEn))) return null
+    options.push({ label: o.label, text: o.text, ...(o.textEn == null ? {} : { textEn: o.textEn }), imageToken: o.imageToken })
   }
-  return {
-    uid: newUid(), label: v.label, mode, prompt: v.prompt, marks: v.marks, tp: v.tp, cognitive: v.cognitive,
+  const leaf: LeafDraft = {
+    ...blankLeaf(v.label, mode), label: v.label, prompt: v.prompt, marks: v.marks, tp: v.tp, cognitive: v.cognitive,
     options, correct: v.correct, accepted: v.accepted, numeric: { value: num.value, tolerance: num.tolerance, unit: num.unit },
   }
+  return overlay(leaf, v)
+}
+
+const strList = (v: unknown): v is string[] => Array.isArray(v) && v.every(isStr)
+const absent = (v: unknown): boolean => v === undefined
+
+/** The part-B fields of a snapshot leaf: each is checked when present, a missing one keeps its blank value. */
+function overlay(leaf: LeafDraft, v: Record<string, unknown>): LeafDraft | null {
+  const out = { ...leaf }
+  if (!absent(v.promptEn)) { if (!isNullStr(v.promptEn)) return null; out.promptEn = v.promptEn }
+  if (!absent(v.stimulusId)) { if (!isNullStr(v.stimulusId)) return null; out.stimulusId = v.stimulusId }
+  if (!absent(v.exampleAnswer)) { if (!isNullStr(v.exampleAnswer)) return null; out.exampleAnswer = v.exampleAnswer }
+  if (!absent(v.extra)) { if (!isObj(v.extra)) return null; out.extra = v.extra }
+  if (!absent(v.modeConfigRest)) { if (!isObj(v.modeConfigRest)) return null; out.modeConfigRest = v.modeConfigRest }
+  if (!absent(v.keyBase)) { if (v.keyBase !== null && !isObj(v.keyBase)) return null; out.keyBase = v.keyBase }
+  for (const k of ['multi', 'bankUnique', 'hardLimit'] as const) if (!absent(v[k])) { if (typeof v[k] !== 'boolean') return null; out[k] = v[k] }
+  for (const k of ['correctMulti', 'acceptedOptions'] as const) if (!absent(v[k])) { if (!strList(v[k])) return null; out[k] = v[k] }
+  for (const k of ['keyNote', 'bankLetter'] as const) if (!absent(v[k])) { if (!isStr(v[k])) return null; out[k] = v[k] }
+  if (!absent(v.answerSpace)) { if (v.answerSpace !== '' && !ANSWER_SPACES.some((a) => a.value === v.answerSpace)) return null; out.answerSpace = v.answerSpace as LeafDraft['answerSpace'] }
+  if (!absent(v.words)) { if (!isObj(v.words) || !isStr(v.words.min) || !isStr(v.words.max)) return null; out.words = { min: v.words.min, max: v.words.max } }
+  if (!absent(v.final)) {
+    const f = v.final
+    if (!isObj(f) || !isStr(f.display) || !isStr(f.accepted) || !isStr(f.tolerance) || !isStr(f.unit)) return null
+    out.final = { display: f.display, accepted: f.accepted, tolerance: f.tolerance, unit: f.unit }
+  }
+  if (!absent(v.alternatives)) {
+    if (!Array.isArray(v.alternatives)) return null
+    const alts: LeafDraft['alternatives'] = []
+    for (const a of v.alternatives) {
+      if (!isObj(a) || !isStr(a.id) || !isStr(a.title) || !isStr(a.prompt) || !isNullStr(a.promptEn) || !isNullStr(a.stimulusId)) return null
+      alts.push({ id: a.id, title: a.title, prompt: a.prompt, promptEn: a.promptEn, stimulusId: a.stimulusId })
+    }
+    out.alternatives = alts
+  }
+  if (!absent(v.points)) {
+    if (!Array.isArray(v.points)) return null
+    const pts: LeafDraft['points'] = []
+    for (const p of v.points) {
+      if (!isObj(p) || !isStr(p.id) || !POINT_CODES.includes(p.code as PointCode) || !isStr(p.label) || typeof p.marks !== 'number' || !isObj(p.rest)) return null
+      pts.push({ id: p.id, code: p.code as PointCode, label: p.label, marks: p.marks, rest: p.rest })
+    }
+    out.points = pts
+  }
+  return out
 }
 
 /** The draft in a stored value, or null when it is missing, from another version or not of the expected shape. */

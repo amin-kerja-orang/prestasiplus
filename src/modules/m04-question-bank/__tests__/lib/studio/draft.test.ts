@@ -147,7 +147,7 @@ describe('Studio draft', () => {
       questionImage: null,
       curriculumChapterId: null,
       parts: [
-        { label: 'a', prompt: { ms: 'Esei' }, mode: 'essay', marks: 10, key: { kind: 'rubric' } },
+        { label: 'a', prompt: { ms: 'Lukis' }, mode: 'drawing', marks: 10, key: { kind: 'points' } },
         { label: 'b', prompt: { ms: 'Bersarang' }, children: [{ label: 'i', prompt: { ms: 'x' }, mode: 'mcq' }] },
       ],
     })
@@ -156,7 +156,7 @@ describe('Studio draft', () => {
     expect(res.unsupported[1]).toContain('(b)')
   })
 
-  it('keeps 3 to 8 options, closes the letters up and keeps the right answer', () => {
+  it('keeps 2 to 8 options, closes the letters up and keeps the right answer', () => {
     let leaf = blankLeaf('a')
     leaf.correct = 'C'
     expect(leaf.options.map((o) => o.label)).toEqual(['A', 'B', 'C', 'D'])
@@ -164,7 +164,8 @@ describe('Studio draft', () => {
     expect(leaf.options.map((o) => o.label)).toEqual(['A', 'B', 'C'])
     expect(leaf.correct).toBe('B')
     expect(removeOption(leaf, 0).options).toHaveLength(MIN_OPTIONS)
-    expect(removeOption(leaf, 1)).toBe(leaf)
+    const two = removeOption(leaf, 0)
+    expect(removeOption(two, 0)).toBe(two)
     leaf = addOption(leaf)
     leaf = removeOption(leaf, 1)
     expect(leaf.options.map((o) => o.label)).toEqual(['A', 'B', 'C'])
@@ -189,17 +190,26 @@ describe('Studio draft', () => {
     const numeric = { mode: 'numeric', key: { kind: 'accepted', values: [{ v: 2 }] } }
 
     it.each([
-      ['reveal', { ...shortText, reveal: 'never' }],
-      ['leaf stimulusId', { ...shortText, stimulusId: '5' }],
-      ['caseSensitive', { mode: 'short_text', key: { kind: 'accepted', values: ['ya'], caseSensitive: true } }],
-      ['anyOrder', { mode: 'short_text', key: { kind: 'accepted', values: ['ya'], anyOrder: true } }],
-      ['numeric tolKind rel', { mode: 'numeric', key: { kind: 'accepted', values: [{ v: 2, tol: 1, tolKind: 'rel' }] } }],
-      ['numeric sigFigs', { mode: 'numeric', key: { kind: 'accepted', values: [{ v: 2, sigFigs: 3 }] } }],
-      ['second numeric value', { mode: 'numeric', key: { kind: 'accepted', values: [{ v: 2 }, { v: 3 }] } }],
+      ['untrimmed accepted text', { mode: 'short_text', key: { kind: 'accepted', values: [' ya '] } }],
+      ['a numeric key whose first value is not a number object', { mode: 'numeric', key: { kind: 'accepted', values: ['2'] } }],
+      ['a key of another kind than the mode', { mode: 'short_text', key: { kind: 'option', correct: 'A' } }],
       ['kbat contradicting the level', { ...shortText, cognitiveLevel: 'mengingat', kbat: 'menilai' }],
-      ['prompt.en', { ...shortText, prompt: { ms: 'P', en: 'Q' } }],
     ])('marks %s as unsupported instead of dropping it', (_n, part) => {
       expect(hydrate(wire(part)).unsupported).toHaveLength(1)
+    })
+
+    it('carries what used to be refused: reveal, stimulusId, prompt.en, caseSensitive, anyOrder, tolKind, sigFigs, a second numeric value', () => {
+      for (const part of [
+        { ...shortText, reveal: 'never' },
+        { ...shortText, stimulusId: '5' },
+        { ...shortText, prompt: { ms: 'P', en: 'Q' } },
+        { mode: 'short_text', key: { kind: 'accepted', values: ['ya'], caseSensitive: true, anyOrder: true } },
+        { mode: 'numeric', key: { kind: 'accepted', values: [{ v: 2, tol: 1, tolKind: 'rel', sigFigs: 3 }, { v: 3 }] } },
+      ]) {
+        const h = hydrate(wire(part))
+        expect(h.unsupported).toEqual([])
+        expect((toRequestBody(h.draft).parts as unknown[])[0]).toEqual({ label: 'a', prompt: { ms: 'P' }, marks: 1, ...part })
+      }
     })
 
     it('marks a stored question TP that differs from the part TPs as unsupported', () => {

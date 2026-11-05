@@ -41,6 +41,7 @@ import StudioPreview from '../components/studio/StudioPreview.vue'
 import StudioStatusBar from '../components/studio/StudioStatusBar.vue'
 import { backspaceAtCaret, insertAtCaret, type KeyboardMode } from '../lib/arabic-keyboard'
 import { studioFieldErrors } from '../lib/studio/field-errors'
+import type { LeafGroup } from '../lib/studio/draft'
 import type { GroupView } from '../lib/studio/group-members'
 import { toStimulusData } from '../lib/studio/preview'
 import { stimulusIssue, toCreateBody, type PendingGroup } from '../lib/studio/stimulus'
@@ -95,6 +96,12 @@ const previewOpen = ref(false)
 /** AC-ADM-R3: below 1024 px a `Rangsangan` button in the save bar opens the group's stimulus in a sheet; the form stays mounted, so typed text is kept. */
 const wide = useMedia('(width >= 64rem)')
 const stimulusOpen = ref(false)
+/** The group the leaf forms read (bank, stimuli); null while the question has no saved group. */
+const leafGroup = computed<LeafGroup | null>(() =>
+  draft.value.groupId === null || groupView.value === null
+    ? null
+    : { bank: groupView.value.optionBank ?? [], stimuli: groupView.value.stimuli.map((s) => ({ id: s.id, label: s.label === '' ? s.id : s.label })) },
+)
 const stimuli = computed(() => (groupView.value?.stimuli ?? []).map(toStimulusData))
 watch(wide, (w) => {
   if (w) stimulusOpen.value = false
@@ -461,6 +468,7 @@ async function save(): Promise<void> {
             :can-remove="draft.leaves.length > 1"
             :disabled="readOnly"
             :errors="fieldProblems"
+            :group="leafGroup"
             @update:model-value="draft.leaves[i] = $event"
             @remove="removeLeaf(leaf.uid)"
           />

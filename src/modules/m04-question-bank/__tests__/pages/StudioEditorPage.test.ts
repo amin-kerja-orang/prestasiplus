@@ -382,11 +382,11 @@ describe('StudioEditorPage (R1-F03b)', () => {
     expect(router.currentRoute.value.fullPath).toBe('/admin/studio/questions/create')
   })
 
-  it('does not let an essay question be saved from here (nothing is dropped silently)', async () => {
+  it('does not let a drawing question be saved from here until part D (nothing is dropped silently)', async () => {
     studio.fetchStudioQuestion.mockResolvedValue({
       id: '600', status: 'draft', subjectId: '3', educationLevelId: '7', difficultyLevel: 3, questionText: 'Terangkan proses fotosintesis dengan lengkap.',
       questionImage: null, curriculumChapterId: null, stimulusGroup: null, tag: { unitId: null, spIds: [], tp: null },
-      parts: [{ label: 'a', prompt: { ms: 'Terangkan.' }, mode: 'essay', marks: 10, key: { kind: 'rubric' } }],
+      parts: [{ label: 'a', prompt: { ms: 'Terangkan.' }, mode: 'drawing', marks: 10, key: { kind: 'points' } }],
     })
     const w = await render('/admin/studio/questions/600/sunting', '600')
     expect(t(w, 'studio-unsupported').text()).toContain('(a)')
