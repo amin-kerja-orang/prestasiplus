@@ -342,14 +342,18 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
       const ps = await this.repo.players(code)
       if (ps.some((p) => p.userId === caller.userId)) return { code }
       const viewer = await this.users.get(caller.userId)
+      const robots = ps.filter((p) => p.robot !== null)
       if (
         room.status !== 'waiting' ||
-        ps.length >= room.maxPlayers ||
+        ps.length - robots.length >= room.maxPlayers ||
         !gradeFits(room, viewer?.grade ?? null) ||
         room.isTest !== caller.isTest // no mixed rooms: test actors and normal users never share one
       ) {
         throw roomNotFound()
       }
+      // 48 section 3.6, humans first: a pupil takes the seat of a robot, so a robot never blocks a join.
+      const seatToFree = robots.at(-1)
+      if (seatToFree) await this.repo.removeSeat(seatToFree.id)
       await this.repo.addPlayer(code, caller.userId, caller.isTest, this.clock.now())
       return { code }
     })
@@ -472,6 +476,7 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
       if (before.room.status === 'playing' && clocked.room.status === 'finished')
         return this.viewOf(caller, clocked.room, clocked.players)
       const { room, players } = clocked
+      const movedByClock = room !== before.room
       if (room.status !== 'playing' || !room.state) throw actionNotStarted()
       if (room.state.humanId !== caller.userId) throw actionNotYourTurn()
       try {
@@ -486,6 +491,9 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
         const done = await this.applyOut(tx, room, players, out)
         return this.viewOf(caller, done.room, done.players)
       } catch (e) {
+        // The clock moved the room during this request, so the action was for a turn that has passed: a refusal would roll
+        // the timeouts back. They commit and the pupil gets the room as it now stands.
+        if (movedByClock && e instanceof EngineRefusal) return this.viewOf(caller, room, players)
         throw mapRefusal(e)
       }
     })

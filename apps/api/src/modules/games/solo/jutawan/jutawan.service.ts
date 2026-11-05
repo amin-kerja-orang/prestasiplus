@@ -202,7 +202,8 @@ export class JutawanService implements OnModuleInit, OnModuleDestroy {
     return this.prisma.transaction(async (tx) => {
       const s = await this.repo.lockOwn(sessionId, caller.userId)
       if (!s || s.game !== 'jutawan') throw jutawanSessionNotFound()
-      if (s.over) throw jutawanOver()
+      if (s.over && s.closedAt !== null) throw jutawanOver() // superseded by a newer run: it has no result
+      if (s.over) return this.storedResult(caller, s) // the sweep or an earlier answer ended it: the pupil keeps the result screen
       const current = await this.repo.itemAt(s.id, s.level + 1)
       if (!current) throw jutawanQuestionNotFound()
       if (b['questionId'] !== current.questionId) throw jutawanQuestionMismatch()
@@ -224,6 +225,14 @@ export class JutawanService implements OnModuleInit, OnModuleDestroy {
       const end = await this.settle(caller, s, current, late ? null : optionId, correct, tx)
       return { correct, level, result: { level, credited: end?.credited ?? 0, ...(end?.reward ? { reward: end.reward } : {}) } }
     })
+  }
+
+  /** The result of a run already ended, as its last answer returned it; writes nothing (48 section 3.4 rule 6). */
+  private async storedResult(caller: Pick<GamesCaller, 'userId' | 'isTest'>, s: JutawanSession): Promise<Record<string, unknown>> {
+    const first = caller.isTest ? null : await this.ports.rewards.firstGameResult(s.id, caller.userId)
+    const fast = !caller.isTest && first === null && hasFastGap(s.createdAt, await this.repo.answerTimes(s.id), await this.settings.get('jutawan_min_ms_per_answer'))
+    const reward = first ? rewardBlock(first) : fast ? PACE_GUARD_REWARD : undefined
+    return { correct: s.level >= JUTAWAN_QUESTIONS, level: s.level, result: { level: s.level, credited: s.coinsCredited, ...(reward ? { reward } : {}) } }
   }
 
   /** Stores one answer or timeout (`optionId` null) with its answer row; moves up the ladder or, returned, ends the run. */

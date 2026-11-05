@@ -541,6 +541,30 @@ describe('create, join and view a room (M16-24, M16-25, M16-26)', () => {
       ])
     })
 
+    it('48 section 3.6, humans first: a pupil joining takes a robot seat, even the only free seat; a room full of pupils still refuses', async () => {
+      const code = await createRoom(student, 'benteng-ilmu', { ...FORM, match_mode: 'same_level' }) // 2 seats
+      await ageRoom(t, code)
+      expect(parseRoom(await student.get(P('benteng-ilmu', code))).players.map((p) => p.isBot)).toEqual([false, true])
+      const joined = await student2.post(P('benteng-ilmu', undefined, '/join'), { room_code: code })
+      expect(joined.status, JSON.stringify(joined.body)).toBe(200)
+      const view = parseRoom(await student.get(P('benteng-ilmu', code)))
+      expect(view.players.map((p) => [p.id, p.isBot])).toEqual([
+        [student.userId, false],
+        [student2.userId, false],
+      ])
+      expect((await maju.post(P('benteng-ilmu', undefined, '/join'), { room_code: code })).status).toBe(404)
+    })
+
+    it('a robot seat does not hide a room from the open-rooms strip: only pupils count', async () => {
+      t.clock.advance(1_000) // the newest room of the strip
+      const code = await createRoom(student, 'benteng-ilmu', { ...FORM, match_mode: 'same_level' })
+      t.clock.advance(30_000)
+      expect(parseRoom(await student.get(P('benteng-ilmu', code))).players).toHaveLength(2)
+      const hub = await student2.get('/api/games/hub')
+      const open = (hub.body as { data: { openRooms: { code: string; players: number; max: number }[] } }).data.openRooms
+      expect(open.find((r) => r.code === code)).toMatchObject({ players: 1, max: 2 })
+    })
+
     it('a non-host player poll never adds a robot', async () => {
       const code = await createRoom(student, 'perang-fakta')
       await student2.post(P('perang-fakta', undefined, '/join'), { room_code: code })

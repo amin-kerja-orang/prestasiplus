@@ -201,6 +201,10 @@ export class RoomsRepository {
     })
   }
 
+  async removeSeat(id: bigint): Promise<void> {
+    await this.db.gameRoomPlayer.delete({ where: { id } })
+  }
+
   async updateRoom(code: string, patch: RoomPatch, at: Date): Promise<void> {
     await this.db.gameRoom.update({
       where: { code },
@@ -249,7 +253,7 @@ export class RoomsRepository {
 
   // --- reads ----------------------------------------------------------------------------------------------
 
-  /** Up to `limit` newest waiting rooms with a free seat whose host is not a test actor. */
+  /** Up to `limit` newest waiting rooms with a seat free for a pupil (a robot gives its seat up) whose host is not a test actor. */
   async openRooms(
     limit: number,
   ): Promise<{ code: string; game: string; hostId: string; players: number; max: number }[]> {
@@ -257,10 +261,10 @@ export class RoomsRepository {
       { code: string; game: string; host_id: bigint; n: number; max_players: number }[]
     >`
       SELECT r.code, r.game, r.host_id, r.max_players,
-             (SELECT count(*)::int FROM game_room_players p WHERE p.room_code = r.code) AS n
+             (SELECT count(*)::int FROM game_room_players p WHERE p.room_code = r.code AND NOT p.is_bot) AS n
         FROM game_rooms r
        WHERE r.status = 'waiting' AND NOT r.is_test
-         AND (SELECT count(*) FROM game_room_players p WHERE p.room_code = r.code) < r.max_players
+         AND (SELECT count(*) FROM game_room_players p WHERE p.room_code = r.code AND NOT p.is_bot) < r.max_players
        ORDER BY r.created_at DESC, r.code ASC
        LIMIT ${limit}`
     return rows.map((r) => ({

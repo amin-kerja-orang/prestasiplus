@@ -15,6 +15,9 @@ export interface JutawanSession {
   over: boolean
   checks: number
   correctCount: number
+  coinsCredited: number
+  /** Set when a newer run superseded this one. */
+  closedAt: Date | null
   isTest: boolean
   createdAt: Date
 }
@@ -83,6 +86,8 @@ export class JutawanRepository {
       over: r.jutawanOver,
       checks: r.checks,
       correctCount: r.correctCount,
+      coinsCredited: r.coinsCredited,
+      closedAt: r.closedAt,
       isTest: r.isTest,
       createdAt: r.createdAt,
     }

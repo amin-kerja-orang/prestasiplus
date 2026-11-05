@@ -265,6 +265,36 @@ describe('GAME-00 common rules', () => {
       expect((await student.post('/api/games/solo/kad-memori/check', { session_id: kad.sessionId, card_id: card('question').card_id, other_card_id: card('answer').card_id })).status).toBe(200)
     })
 
+    it('a Jutawan answer after the sweep ended the run gets the stored result; a superseded run keeps the 409', async () => {
+      const jutawan = t.app.get(JutawanService, { strict: false })
+      const run = await startRun(student)
+      await answerRun(student, run.sessionId, run.items[0] as DbItem, true)
+      t.clock.advance(60_000)
+      await jutawan.sweepClocks()
+      const late = await student.post(`/api/games/jutawan/${run.sessionId}/answer`, { questionId: (run.items[1] as DbItem).question_id, optionId: 0 })
+      expect(late.status, JSON.stringify(late.body)).toBe(200)
+      expect((late.body as { data: unknown }).data).toEqual({ correct: false, level: 1, result: { level: 1, credited: 0, reward: { xp: 15, syiling: 0, capped: false, reason: null } } })
+      expect(await rowsOf(run.sessionId)).toHaveLength(2)
+      const old = await startRun(student)
+      await startRun(student) // supersedes `old`
+      const refused = await answerRun(student, old.sessionId, old.items[0] as DbItem, true)
+      expect(refused.status).toBe(409)
+    })
+
+    it('a stale answer on a room the clock just moved: the timeouts commit and the room comes back, not a 422', async () => {
+      const code = await createRoom(student, 'perang-fakta')
+      parseRoom(await fillAndStart(t, student, 'perang-fakta', code))
+      const st = await stateOf(t.db, code)
+      t.clock.advance(10_000)
+      const res = await student.post(P('perang-fakta', code, '/action'), { type: 'answer', questionId: st.pendingQ, value: true })
+      expect(parseRoom(res).round).toBe(2)
+      expect((await stateOf(t.db, code)).round).toBe(2)
+      expect((await rowsOf(await sessionOf(code))).map((r) => [r.part_ref, r.is_correct])).toEqual([['perang-fakta#1', false]])
+      // with no clock move a stale id is still refused
+      const again = await student.post(P('perang-fakta', code, '/action'), { type: 'answer', questionId: st.pendingQ, value: true })
+      expect(again.status).toBe(422)
+    })
+
     it('GAME-13: a Jutawan answer at 60 s is a timeout; the sweep ends a run nobody answers, once', async () => {
       const late = await startRun(student)
       const res = await answerRun(student, late.sessionId, late.items[0] as DbItem, true, 60_000)

@@ -149,7 +149,7 @@ describe('Jutawan Ilmu (M16-36 to M16-39)', () => {
       expectError(await answer(student, sessionId, items[0] as DbItem, true), 'VALIDATION_ERROR', M.jutawanQuestionMismatch)
     })
 
-    it('a wrong answer ends the run: result, stats, one reward report, then 409 "Permainan sudah tamat."', async () => {
+    it('a wrong answer ends the run: result, stats, one reward report; a later answer gets the same result, the lifeline 409 "Permainan sudah tamat."', async () => {
       const before = (await statsOf(student.userId)) ?? { best_level: 0, games: 0 }
       const { sessionId, items } = await startRun(student)
       const out = parseData(await answer(student, sessionId, items[0] as DbItem, false), GamesJutawanAnswerResponseSchema)
@@ -159,7 +159,9 @@ describe('Jutawan Ilmu (M16-36 to M16-39)', () => {
       expect(await statsOf(student.userId)).toMatchObject({ best_level: before.best_level, games: before.games + 1 })
       expect(rewards.calls).toHaveLength(1)
       expect(rewards.calls[0]?.input).toEqual({ game: 'jutawan', event: 'finish', coins: 0, xp: 5, correct: 0, total: 15, detail: { level: 0, subject: mathName }, key: sessionId, session: { id: sessionId, gameKey: 'jutawan' } })
-      expectError(await answer(student, sessionId, items[0] as DbItem, true), 'CONFLICT', M.jutawanOver)
+      // A late answer to a run that has ended gets the stored result, no second row or report; the lifeline stays refused.
+      expect(parseData(await answer(student, sessionId, items[0] as DbItem, true), GamesJutawanAnswerResponseSchema)).toEqual(out)
+      expect(rewards.calls).toHaveLength(1)
       expectError(await student.post(`/api/games/jutawan/${sessionId}/lifeline`, { type: '50:50' }), 'CONFLICT', M.jutawanOver)
     })
 
