@@ -364,7 +364,7 @@ describe('loading, error and 403', () => {
 
   it('shows the BM rate-limit line on a 429', async () => {
     const w = await mountPage(apiError(429, 'Too Many Attempts.'))
-    expect(text(w, 'kb-error')).toContain('Terlalu banyak percubaan. Cuba sebentar lagi.')
+    expect(text(w, 'kb-error')).toContain('Terlalu banyak percubaan. Sila cuba sebentar lagi.')
   })
 
   it.each([['an empty message', ''], ['the bare client fallback', 'HTTP 500']])(

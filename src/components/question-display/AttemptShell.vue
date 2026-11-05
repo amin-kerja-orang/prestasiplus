@@ -4,6 +4,7 @@
  * (it renders its own pinned pane and chip); from `lg` the question map is on the right. The frame owns the
  * fixed positioning so pages stay free of layering utilities.
  */
+import '@/ds/states.css'
 </script>
 
 <template>
@@ -11,10 +12,10 @@
        drawers / modals opened later (same layer, later in the DOM). -->
   <Teleport to="body">
     <div
-      class="fixed inset-0 z-50 flex flex-col bg-default text-default"
+      class="fixed inset-0 z-50 flex h-dvh flex-col bg-default text-default"
       data-testid="attempt-shell"
     >
-      <div class="shrink-0 px-3 pt-3 pb-2 sm:px-6">
+      <div class="shrink-0 px-3 pt-3 pb-2 sm:px-6" data-part="header">
         <slot name="header" />
       </div>
       <slot name="banner" />
@@ -30,7 +31,7 @@
           </aside>
         </div>
       </div>
-      <footer class="shrink-0 bg-elevated px-3 py-2 shadow-bar-up sm:px-6">
+      <footer class="shrink-0 bg-elevated px-3 py-2 shadow-bar-up sm:px-6" data-part="footer">
         <slot name="footer" />
       </footer>
     </div>

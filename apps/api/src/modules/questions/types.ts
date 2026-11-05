@@ -273,7 +273,13 @@ export interface QuestionFilter {
    * `maxOptions: 4` is the battle / games shape (key index always 0..3). In `sampleIds` it is checked only on a window of
    * hash-ordered candidates (never on the whole subject).
    */
-  mcqShape?: { minOptions: number; maxOptions: number }
+  mcqShape?: { minOptions: number; maxOptions: number; allowStimulus?: boolean }
+  /**
+   * S1-T06 (D105): the whole-group predicate for the surfaces that serve figure questions and whole stimulus groups. A question
+   * outside a group passes; a group member passes only when its whole group is complete (`groupCompleteSql` in `questions.repository.ts`). Use INSTEAD of `ungrouped`.
+   * With `mcqShape.allowStimulus: true` (own or group stimulus and option images allowed; one MCQ leaf, option count and key still checked).
+   */
+  wholeGroups?: boolean
   /** Only versions with exactly one part and that part an `mcq` leaf (what the SPM pool's `mcqItemOf` accepts; no stimulus or image rule). */
   singleMcqLeaf?: boolean
   /** Any of these chapters (ANDed with `chapterId` when both are set); `[]` matches nothing. */

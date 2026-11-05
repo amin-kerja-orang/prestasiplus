@@ -26,6 +26,70 @@
   cursor: progress;
 }
 
+/* Navigator state cues (FR-MUR-QP-16): the icon sits in the button corner; the legend lines up icon and text. */
+[data-testid='navigator'] button {
+  position: relative;
+}
+
+[data-testid='navigator'] button > [data-icon] {
+  position: absolute;
+  inset-block-start: 0.25rem;
+  inset-inline-end: 0.25rem;
+}
+
+[data-testid='nav-legend'] > li {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/*
+ * Attempt shell (question-display/AttemptShell.vue, S8-T04; FR-X6-5, FR-X6-8, AC-X6-1). The class
+ * allowlist has no media-height or `env()` utilities (G-1, G-3), so these rules live here:
+ *  - footer: the bottom safe-area inset (notch / home bar) is added to its padding;
+ *  - short landscape screens (height <= 420 px, e.g. 667x375): the header title row folds into one
+ *    line with the progress bar (children marked `data-short-hide` disappear; the timer and save
+ *    state stay), the banner becomes one compact line and the footer padding shrinks, so the
+ *    scrolling question keeps most of the height.
+ */
+[data-testid='attempt-shell'] > [data-part='footer'] {
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (max-height: 420px) {
+  [data-testid='attempt-shell'] > [data-part='header'] {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+  }
+
+  [data-testid='attempt-shell'] > [data-part='header'] > :first-child {
+    flex: 1 1 0%;
+    min-width: 0;
+  }
+
+  [data-testid='attempt-shell'] > [data-part='header'] > :not(:first-child) {
+    margin-top: 0;
+    flex-shrink: 0;
+  }
+
+  [data-testid='attempt-shell'] [data-short-hide] {
+    display: none;
+  }
+
+  [data-testid='attempt-shell'] > [data-short-compact] {
+    padding-top: 0.125rem;
+    padding-bottom: 0.125rem;
+  }
+
+  [data-testid='attempt-shell'] > [data-part='footer'] {
+    padding-top: 0.25rem;
+    padding-bottom: calc(0.25rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 /* Select, plain variant (print views): no browser chrome, caret drawn by the wrapper. */
 [data-ds='native-select'][data-variant='native'] select {
   appearance: none;
