@@ -241,15 +241,17 @@ describe('ApiClient: errors', () => {
 
   it('derives the code from the status when the body has no error object', async () => {
     const cases: [number, string][] = [
-      [400, 'VALIDATION_ERROR'],
+      [400, 'BAD_REQUEST'],
+      [422, 'VALIDATION_ERROR'],
       [404, 'NOT_FOUND'],
       [409, 'CONFLICT'],
       [429, 'RATE_LIMITED'],
-      [503, 'SERVER_ERROR'],
+      [503, 'SERVICE_UNAVAILABLE'],
+      [418, 'SERVER_ERROR'],
     ]
     for (const [status, code] of cases) {
       const { c } = client(json(status, null))
-      const err = await catchError(c.get('/api/x'))
+      const err = await catchError(c.post('/api/x'))
       expect(err.code).toBe(code)
       expect(err.status).toBe(status)
     }
@@ -274,7 +276,7 @@ describe('ApiClient: errors', () => {
         }),
       )
       const err = await catchError(c.post('/api/auth/login'))
-      expect(err.message).toBe('Terlalu banyak percubaan. Cuba sebentar lagi.')
+      expect(err.message).toBe('Terlalu banyak percubaan. Sila cuba sebentar lagi.')
       expect(err.retryAfter).toBe(30)
     } finally {
       vi.unstubAllEnvs()
@@ -310,8 +312,12 @@ describe('ApiClient: errors', () => {
     const { c } = client(() => {
       throw new TransportNetworkError('Failed to fetch')
     })
-    const err = await catchError(c.get('/api/x'))
-    expect(err).toMatchObject({ status: 0, code: 'NETWORK_ERROR', message: 'Failed to fetch' })
+    const err = await catchError(c.post('/api/x'))
+    expect(err).toMatchObject({
+      status: 0,
+      code: 'NETWORK_ERROR',
+      message: 'Anda sedang luar talian. Semak sambungan internet anda.',
+    })
     expect(err.cause).toBeInstanceOf(TransportNetworkError)
   })
 
@@ -483,5 +489,263 @@ describe('serializeQuery', () => {
       c: '',
       e: ['1', '2'],
     })
+  })
+})
+
+describe('ApiError: requestId, details and generic codes (S0-T12 part B)', () => {
+  it('takes requestId and details from the error body', async () => {
+    const { c } = client(
+      json(
+        500,
+        { error: { code: 'SERVER_ERROR', message: 'x', requestId: 'req-body', details: { a: 1 } } },
+        { 'x-request-id': 'req-header' },
+      ),
+    )
+    const err = await catchError(c.post('/api/x'))
+    expect(err.requestId).toBe('req-body')
+    expect(err.details).toEqual({ a: 1 })
+  })
+
+  it('falls back to the x-request-id header, with and without an envelope', async () => {
+    const withBody = client(
+      json(409, { error: { code: 'CONFLICT', message: 'x' } }, { 'X-Request-Id': 'req-h' }),
+    )
+    expect((await catchError(withBody.c.post('/api/x'))).requestId).toBe('req-h')
+    const bare = client(json(502, null, { 'x-request-id': 'req-b' }))
+    expect((await catchError(bare.c.post('/api/x'))).requestId).toBe('req-b')
+  })
+
+  it.each([
+    [400, 'BAD_REQUEST'],
+    [413, 'PAYLOAD_TOO_LARGE'],
+    [415, 'UNSUPPORTED_MEDIA_TYPE'],
+    [422, 'VALIDATION_ERROR'],
+    [500, 'SERVER_ERROR'],
+    [502, 'BAD_GATEWAY'],
+    [503, 'SERVICE_UNAVAILABLE'],
+    [504, 'TIMEOUT'],
+  ])(
+    'maps a bodiless %i to %s and keeps the `HTTP <status>` marker for module copy',
+    async (status, code) => {
+      const { c } = client(json(status, null))
+      const err = await catchError(c.post('/api/x'))
+      expect(err).toMatchObject({ status, code, message: `HTTP ${status}` })
+    },
+  )
+})
+
+describe('ApiClient: timeout, abort and GET retry (S0-T12 part B)', () => {
+  const NET = 'Anda sedang luar talian. Semak sambungan internet anda.'
+
+  /** A transport that never answers until it is aborted. */
+  function hangingAbortable() {
+    const request = vi.fn(
+      (_req: TransportRequest, signal?: AbortSignal) =>
+        new Promise<TransportResponse>((_resolve, reject) => {
+          signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
+        }),
+    )
+    return { transport: { request } as Transport, request }
+  }
+
+  it('maps a transport failure to NETWORK_ERROR with the ERR-NET-01 text', async () => {
+    const { c } = client(() => {
+      throw new TransportNetworkError()
+    })
+    expect(await catchError(c.post('/api/x'))).toMatchObject({
+      status: 0,
+      code: 'NETWORK_ERROR',
+      message: NET,
+    })
+  })
+
+  it('times out a JSON call at 30 s as NETWORK_ERROR subtype TIMEOUT', async () => {
+    vi.useFakeTimers()
+    try {
+      const fake = hangingAbortable()
+      const c = new ApiClient({ transport: fake.transport })
+      const p = catchError(c.post('/api/x', { body: { a: 1 } }))
+      await vi.advanceTimersByTimeAsync(29_999)
+      expect(fake.request).toHaveBeenCalledTimes(1)
+      await vi.advanceTimersByTimeAsync(1)
+      expect(await p).toMatchObject({
+        status: 0,
+        code: 'NETWORK_ERROR',
+        subtype: 'TIMEOUT',
+        message: 'Permintaan mengambil masa terlalu lama. Cuba lagi.',
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('uses 60 s for multipart, 125 s for blob and an explicit timeoutMs', async () => {
+    vi.useFakeTimers()
+    try {
+      const fake = hangingAbortable()
+      const c = new ApiClient({ transport: fake.transport })
+      let settled = false
+      const up = catchError(c.multipart('/api/x', new FormData()))
+      void up.then(() => (settled = true))
+      await vi.advanceTimersByTimeAsync(59_999)
+      expect(settled).toBe(false)
+      await vi.advanceTimersByTimeAsync(1)
+      expect((await up).subtype).toBe('TIMEOUT')
+
+      settled = false
+      const dl = catchError(c.blob('/api/x', { method: 'POST' }))
+      void dl.then(() => (settled = true))
+      await vi.advanceTimersByTimeAsync(124_999)
+      expect(settled).toBe(false)
+      await vi.advanceTimersByTimeAsync(1)
+      expect((await dl).subtype).toBe('TIMEOUT')
+
+      const imp = catchError(c.post('/api/x', { timeoutMs: 125_000 }))
+      await vi.advanceTimersByTimeAsync(125_000)
+      expect((await imp).subtype).toBe('TIMEOUT')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('keeps a caller abort an abort: not a timeout, not retried', async () => {
+    const fake = hangingAbortable()
+    const c = new ApiClient({ transport: fake.transport })
+    const ctrl = new AbortController()
+    const p = c.get('/api/x', { signal: ctrl.signal })
+    ctrl.abort()
+    const err: unknown = await p.catch((e: unknown) => e)
+    expect(err).not.toBeInstanceOf(ApiError)
+    expect(err).toMatchObject({ name: 'AbortError' })
+    expect(fake.request).toHaveBeenCalledTimes(1)
+  })
+
+  it('retries a GET 503 twice (about 1 s, then 3 s) and then fails', async () => {
+    vi.useFakeTimers()
+    try {
+      const { c, request } = client(json(503, null))
+      const p = catchError(c.get('/api/x'))
+      await vi.advanceTimersByTimeAsync(0)
+      expect(request).toHaveBeenCalledTimes(1)
+      await vi.advanceTimersByTimeAsync(1200)
+      expect(request).toHaveBeenCalledTimes(2)
+      await vi.advanceTimersByTimeAsync(3600)
+      expect(request).toHaveBeenCalledTimes(3)
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(request).toHaveBeenCalledTimes(3)
+      expect(await p).toMatchObject({ status: 503, code: 'SERVICE_UNAVAILABLE' })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('retries a GET network failure and then succeeds', async () => {
+    vi.useFakeTimers()
+    try {
+      let n = 0
+      const { c, request } = client(() => {
+        if (++n === 1) throw new TransportNetworkError()
+        return { status: 200, headers: {}, body: { data: 5 } }
+      })
+      const p = c.get('/api/x')
+      await vi.advanceTimersByTimeAsync(1200)
+      await expect(p).resolves.toBe(5)
+      expect(request).toHaveBeenCalledTimes(2)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('never retries POST, PUT, PATCH or DELETE', async () => {
+    for (const verb of ['post', 'put', 'patch', 'delete'] as const) {
+      const { c, request } = client(json(503, null))
+      await catchError(c[verb]('/api/x'))
+      expect(request).toHaveBeenCalledTimes(1)
+    }
+  })
+
+  it('does not retry a 500 or a 4xx GET', async () => {
+    for (const status of [500, 404, 409]) {
+      const { c, request } = client(json(status, null))
+      await catchError(c.get('/api/x'))
+      expect(request).toHaveBeenCalledTimes(1)
+    }
+  })
+
+  it('retries a GET 429 with retryAfter 5 once, after 5 s', async () => {
+    vi.useFakeTimers()
+    try {
+      let n = 0
+      const { c, request } = client(() =>
+        ++n === 1
+          ? {
+              status: 429,
+              headers: {},
+              body: { error: { code: 'RATE_LIMITED', message: 'x', retryAfter: 5 } },
+            }
+          : { status: 200, headers: {}, body: { data: 'ok' } },
+      )
+      const p = c.get('/api/x')
+      await vi.advanceTimersByTimeAsync(4999)
+      expect(request).toHaveBeenCalledTimes(1)
+      await vi.advanceTimersByTimeAsync(1)
+      await expect(p).resolves.toBe('ok')
+      expect(request).toHaveBeenCalledTimes(2)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('does not retry a GET 429 with retryAfter 30 (body or header)', async () => {
+    const body = client(
+      json(429, { error: { code: 'RATE_LIMITED', message: 'x', retryAfter: 30 } }),
+    )
+    expect((await catchError(body.c.get('/api/x'))).retryAfter).toBe(30)
+    expect(body.request).toHaveBeenCalledTimes(1)
+    const header = client(json(429, null, { 'retry-after': '30' }))
+    await catchError(header.c.get('/api/x'))
+    expect(header.request).toHaveBeenCalledTimes(1)
+  })
+
+  it('applies 20 % jitter to the first retry delay (800 to 1200 ms)', async () => {
+    vi.useFakeTimers()
+    const rnd = vi.spyOn(Math, 'random')
+    try {
+      for (const [r, delay] of [
+        [0, 800],
+        [0.5, 1000],
+        [1, 1200],
+      ] as const) {
+        rnd.mockReturnValue(r)
+        const { c, request } = client(json(503, null))
+        const p = catchError(c.get('/api/x'))
+        await vi.advanceTimersByTimeAsync(delay - 1)
+        expect(request).toHaveBeenCalledTimes(1)
+        await vi.advanceTimersByTimeAsync(1)
+        expect(request).toHaveBeenCalledTimes(2)
+        await vi.advanceTimersByTimeAsync(10_000)
+        await p
+      }
+    } finally {
+      rnd.mockRestore()
+      vi.useRealTimers()
+    }
+  })
+
+  it('stops retrying when the caller aborts during the wait', async () => {
+    vi.useFakeTimers()
+    try {
+      const { c, request } = client(json(503, null))
+      const ctrl = new AbortController()
+      const p = c.get('/api/x', { signal: ctrl.signal })
+      const assertion = expect(p).rejects.toMatchObject({ name: 'AbortError' })
+      await vi.advanceTimersByTimeAsync(0)
+      ctrl.abort()
+      await assertion
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(request).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

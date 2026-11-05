@@ -23,6 +23,8 @@ model User {
   grade              Int?      @db.SmallInt
   classLabel         String?   @map("class_label")
   bio                String?
+  /// Student aspiration (S5-T05, DM-80, FR-MUR-A1-10). Free text, max 255.
+  aspiration         String?   @db.VarChar(255)
   idDelima           String?   @map("id_delima")
   isActive           Boolean   @default(true) @map("is_active")
   isSuspended        Boolean   @default(false) @map("is_suspended")

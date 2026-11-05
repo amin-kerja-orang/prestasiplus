@@ -20,6 +20,8 @@ export interface StimulusData {
   bodyEn: string | null
   altText: string | null
   sourceCitation: string | null
+  /** Presentation hint (DM-70): `kotak`, `mono` or null. */
+  style: string | null
   tableData: { head: string[]; rows: string[][] } | null
   assetFileId: bigint | null
 }
@@ -40,7 +42,23 @@ export interface GroupRow {
   stimuli: StimulusRow[]
   optionBank: { label: string; bodyMs: string | null; bodyEn: string | null }[]
   questionIds: bigint[]
+  /** S1-T01 (DM-51): the scope of the group itself; null = no restriction. */
+  subjectId: bigint | null
+  educationLevelId: bigint | null
+  kertas: number | null
+  /** The served group this draft copy replaces (null for an ordinary group) and the member ids staged in the copy. */
+  draftOfGroupId: bigint | null
+  draftMembers: string[] | null
 }
+
+/** The scope of a group (DM-51): ids as text, kertas 1..4 or null. */
+export interface GroupScope {
+  subjectId: string | null
+  educationLevelId: string | null
+  kertas: number | null
+}
+
+const draftMembersOf = (v: unknown): string[] | null => (Array.isArray(v) ? v.map((x) => String(x)) : null)
 
 const PKSK_TAG = 'pksk_domain'
 
@@ -86,6 +104,12 @@ export interface QuestionFacts {
   subjectId: string | null
   levelId: string | null
   /** '1' | '2' | '3' from the paper code of the latest version, or null (compatible with any kertas). */
+  kertas: '1' | '2' | '3' | null
+}
+/** Subject, Tingkatan and kertas of one member (latest version). */
+export interface MemberTrait {
+  subjectId: string | null
+  levelId: string | null
   kertas: '1' | '2' | '3' | null
 }
 /** The short form of a group member (R1-T49). */
@@ -233,6 +257,11 @@ export class StimuliRepository {
       stimuli: g.stimuli.map((s) => this.rowOf(s.stimulus, s.stimulus._count.groupLinks)),
       optionBank: g.options.map((o) => ({ label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn })),
       questionIds: g.questions.map((q) => q.id),
+      subjectId: g.subjectId,
+      educationLevelId: g.educationLevelId,
+      kertas: g.kertas,
+      draftOfGroupId: g.draftOfGroupId,
+      draftMembers: draftMembersOf(g.draftMembers),
     }
   }
 
@@ -246,6 +275,7 @@ export class StimuliRepository {
     const pattern = f.q === undefined || f.q === '' ? null : likePattern(f.q)
     const where = Prisma.sql`
       ${GROUP_SECONDARY_ONLY}
+      AND g.draft_of_group_id IS NULL
       AND ${groupFits('subject_id', subject)}
       AND ${groupFits('education_level_id', level)}
       AND (${f.status ?? null}::text IS NULL OR (EXISTS (SELECT 1 FROM questions q WHERE q.group_id = g.id AND ${QUESTION_SERVED})) = (${f.status ?? null}::text = 'served'))
@@ -289,6 +319,11 @@ export class StimuliRepository {
               stimuli: g.stimuli.map((x) => this.rowOf(x.stimulus, x.stimulus._count.groupLinks)),
               optionBank: g.options.map((o) => ({ label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn })),
               questionIds: g.questions.map((q) => q.id),
+              subjectId: g.subjectId,
+              educationLevelId: g.educationLevelId,
+              kertas: g.kertas,
+              draftOfGroupId: g.draftOfGroupId,
+              draftMembers: draftMembersOf(g.draftMembers),
             },
           ]
     })
@@ -384,11 +419,13 @@ export class StimuliRepository {
     scope: 'section' | 'paper'
     stimulusIds: bigint[]
     optionBank: { label: string; bodyMs: string | null; bodyEn: string | null }[]
+    traits?: GroupScope
   }): Promise<string> {
     const group = await this.db.stimulusGroup.create({
       data: {
         label: input.label,
         scope: input.scope,
+        ...(input.traits === undefined ? {} : { subjectId: bi(input.traits.subjectId ?? ''), educationLevelId: bi(input.traits.educationLevelId ?? ''), kertas: input.traits.kertas }),
         stimuli: { create: input.stimulusIds.map((stimulusId, i) => ({ stimulusId, position: i + 1 })) },
         options: { create: input.optionBank.map((o, i) => ({ label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn, position: i + 1 })) },
       },
@@ -511,15 +548,15 @@ export class StimuliRepository {
   }
 
   /** Subject and kertas of the latest versions of the members (one entry per distinct pair), leaving out `except`. */
-  async memberTraits(groupId: string, except: string | null = null): Promise<{ subjectId: string | null; kertas: '1' | '2' | '3' | null }[]> {
+  async memberTraits(groupId: string, except: string | null = null): Promise<MemberTrait[]> {
     const key = bi(groupId)
     if (key === null) return []
     const skip = except === null ? null : bi(except)
-    const rows = await this.db.$queryRaw<{ subject_id: bigint | null; paper_code: string | null }[]>`
-      SELECT DISTINCT lv.subject_id, lv.paper_code
+    const rows = await this.db.$queryRaw<{ subject_id: bigint | null; level_id: bigint | null; paper_code: string | null }[]>`
+      SELECT DISTINCT lv.subject_id, lv.education_level_id AS level_id, lv.paper_code
         FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
        WHERE q.group_id = ${key} AND (${skip}::bigint IS NULL OR q.id <> ${skip}::bigint)`
-    return rows.map((r) => ({ subjectId: r.subject_id === null ? null : idToString(r.subject_id), kertas: kertasOfPaperCode(r.paper_code) }))
+    return rows.map((r) => ({ subjectId: r.subject_id === null ? null : idToString(r.subject_id), levelId: r.level_id === null ? null : idToString(r.level_id), kertas: kertasOfPaperCode(r.paper_code) }))
   }
 
   /** Puts the questions in the group at positions `from`, `from + 1`, ... in the order given. */
@@ -551,6 +588,157 @@ export class StimuliRepository {
     await this.db.stimulusGroup.update({ where: { id: BigInt(id) }, data: { updatedAt: new Date() } })
   }
 
+  // --- scope, draft copy and group actions (S1-T01, DM-51) ------------------------------------------
+
+  async subjectExists(id: string): Promise<boolean> {
+    const key = bi(id)
+    return key !== null && (await this.db.$queryRaw<{ one: number }[]>`SELECT 1 AS one FROM subjects WHERE id = ${key}`).length > 0
+  }
+
+  async levelExists(id: string): Promise<boolean> {
+    const key = bi(id)
+    return key !== null && (await this.db.$queryRaw<{ one: number }[]>`SELECT 1 AS one FROM education_levels WHERE id = ${key}`).length > 0
+  }
+
+  async setGroupScope(id: string, scope: GroupScope): Promise<void> {
+    await this.db.stimulusGroup.update({
+      where: { id: BigInt(id) },
+      data: { subjectId: bi(scope.subjectId ?? ''), educationLevelId: bi(scope.educationLevelId ?? ''), kertas: scope.kertas, updatedAt: new Date() },
+    })
+  }
+
+  /** The stored scope of the group (DM-51) and whether it is a draft copy. */
+  async groupScope(id: string): Promise<(GroupScope & { draftOfGroupId: string | null }) | null> {
+    const key = bi(id)
+    if (key === null) return null
+    const g = await this.db.stimulusGroup.findUnique({ where: { id: key }, select: { subjectId: true, educationLevelId: true, kertas: true, draftOfGroupId: true } })
+    if (g === null) return null
+    return {
+      subjectId: g.subjectId === null ? null : idToString(g.subjectId),
+      educationLevelId: g.educationLevelId === null ? null : idToString(g.educationLevelId),
+      kertas: g.kertas,
+      draftOfGroupId: g.draftOfGroupId === null ? null : idToString(g.draftOfGroupId),
+    }
+  }
+
+  /** Latest-version status of every member in order (position = 1-based place in the group). */
+  async memberStatuses(groupId: string): Promise<{ id: string; position: number; status: 'draft' | 'review' | 'approved' | 'archived' }[]> {
+    const key = bi(groupId)
+    if (key === null) return []
+    const rows = await this.db.$queryRaw<{ id: bigint; status: string }[]>`
+      SELECT q.id, lv.status FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
+       WHERE q.group_id = ${key} ORDER BY q.group_position, q.id`
+    return rows.map((r, i) => ({ id: idToString(r.id), position: i + 1, status: r.status as 'draft' | 'review' | 'approved' | 'archived' }))
+  }
+
+  /** The id of the open draft copy of a group, or null. */
+  async draftCopyOf(groupId: string): Promise<string | null> {
+    const key = bi(groupId)
+    if (key === null) return null
+    const g = await this.db.stimulusGroup.findFirst({ where: { draftOfGroupId: key }, select: { id: true } })
+    return g === null ? null : idToString(g.id)
+  }
+
+  /**
+   * Makes the draft copy of a group (DM-51): a new group row pointing at the live one (`draft_of_group_id`) with the same label, scope and
+   * option bank, NEW stimulus rows copied from the live stimuli (a served stimulus is never edited in place, D113) in the same order, and the
+   * ordered member ids staged in `draft_members`. The members themselves stay in the live group.
+   */
+  async createDraftCopy(source: GroupRow, memberIds: readonly string[], createdBy: string | null): Promise<string> {
+    const options = await this.db.stimulusGroupOption.findMany({ where: { groupId: source.id }, orderBy: { position: 'asc' } })
+    // The group row first: the stimulus copies are then never older than their copy group (`deleteDraftCopy` tells them apart by that).
+    const group = await this.db.stimulusGroup.create({
+      data: {
+        label: source.label,
+        scope: source.scope,
+        subjectId: source.subjectId,
+        educationLevelId: source.educationLevelId,
+        kertas: source.kertas,
+        draftOfGroupId: source.id,
+        draftMembers: [...memberIds],
+        draftCreatedBy: createdBy === null ? null : bi(createdBy),
+        draftCreatedAt: new Date(),
+        options: {
+          create: options.map((o) => ({ label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn, body: o.body, imageFileId: o.imageFileId, isDistractor: o.isDistractor, position: o.position })),
+        },
+      },
+    })
+    for (const [i, st] of source.stimuli.entries()) {
+      const { id: _id, groupCount: _gc, shownTable: _st, bodyIsTable: _bt, ...data } = st
+      void _id
+      void _gc
+      void _st
+      void _bt
+      const copyId = BigInt(await this.createStimulus(data))
+      await this.db.stimulusGroupStimulus.create({ data: { groupId: group.id, stimulusId: copyId, position: i + 1 } })
+    }
+    return idToString(group.id)
+  }
+
+  /**
+   * Discards a draft copy: the group row (its stimulus links and option rows cascade) and the stimulus copies nobody else uses (rows created
+   * with or after the copy that no other group, version or part links). The live group, its members and their versions are never touched.
+   */
+  async deleteDraftCopy(draftId: string): Promise<void> {
+    const key = BigInt(draftId)
+    const g = await this.db.stimulusGroup.findUnique({ where: { id: key }, select: { createdAt: true, stimuli: { select: { stimulusId: true } } } })
+    if (g === null) return
+    await this.db.stimulusGroup.delete({ where: { id: key } })
+    for (const { stimulusId } of g.stimuli) {
+      const use = await this.usageOf(idToString(stimulusId))
+      if (use.groups + use.versions + use.parts > 0) continue
+      const row = await this.db.stimulus.findUnique({ where: { id: stimulusId }, select: { createdAt: true } })
+      if (row !== null && row.createdAt.getTime() >= g.createdAt.getTime()) await this.db.stimulus.delete({ where: { id: stimulusId } })
+    }
+  }
+
+  /** Short forms of the given questions in the order asked (the staged members of a draft copy). */
+  async memberBriefsOf(questionIds: readonly string[], groupId: string): Promise<MemberBrief[]> {
+    const keys = questionIds.map(bi).filter((k): k is bigint => k !== null)
+    if (keys.length === 0) return []
+    const rows = await this.db.$queryRaw<{ id: bigint; number_label: string | null; stem_ms: string | null; status: string; served: boolean }[]>`
+      SELECT q.id, lv.number_label, lv.stem_ms, lv.status, ${QUESTION_SERVED} AS served
+        FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
+       WHERE q.id IN (${Prisma.join(keys)})`
+    const byId = new Map(rows.map((r) => [idToString(r.id), r]))
+    return questionIds.flatMap((id) => {
+      const r = byId.get(id)
+      return r === undefined ? [] : [{ groupId, id, numberLabel: r.number_label, stem: plainExcerpt(r.stem_ms, STIMULUS_MEMBER_STEM_MAX), status: r.status as MemberBrief['status'], servable: r.served }]
+    })
+  }
+
+  /** Of the given question ids that sit in a group: each group with ALL its member ids (a bulk list must hold a group whole or not at all). */
+  async groupsHolding(questionIds: readonly string[]): Promise<Map<string, { members: string[]; listed: string[] }>> {
+    const keys = [...new Set(questionIds.map(bi).filter((k): k is bigint => k !== null))]
+    const out = new Map<string, { members: string[]; listed: string[] }>()
+    if (keys.length === 0) return out
+    const listed = await this.db.$queryRaw<{ id: bigint; group_id: bigint }[]>`SELECT id, group_id FROM questions WHERE id IN (${Prisma.join(keys)}) AND group_id IS NOT NULL`
+    const groups = [...new Set(listed.map((r) => r.group_id))]
+    if (groups.length === 0) return out
+    const all = await this.db.$queryRaw<{ id: bigint; group_id: bigint }[]>`SELECT id, group_id FROM questions WHERE group_id IN (${Prisma.join(groups)}) ORDER BY group_id, group_position, id`
+    for (const g of groups) {
+      out.set(idToString(g), {
+        members: all.filter((r) => r.group_id === g).map((r) => idToString(r.id)),
+        listed: listed.filter((r) => r.group_id === g).map((r) => idToString(r.id)),
+      })
+    }
+    return out
+  }
+
+  /** Terbit papers that place any of the questions (id and title, once each, by id). Read only: the placement tables belong to the exam module. */
+  async publishedPapersPlacing(questionIds: readonly string[]): Promise<{ id: string; title: string }[]> {
+    const keys = [...new Set(questionIds.map(bi).filter((k): k is bigint => k !== null))]
+    if (keys.length === 0) return []
+    const rows = await this.db.$queryRaw<{ id: bigint; title: string }[]>`
+      SELECT DISTINCT p.id, p.title
+        FROM paper_placements pl
+        JOIN paper_sections s ON s.id = pl.paper_section_id
+        JOIN papers p ON p.id = s.paper_id
+       WHERE pl.question_id IN (${Prisma.join(keys)}) AND p.status = 'published'
+       ORDER BY p.id`
+    return rows.map((r) => ({ id: idToString(r.id), title: r.title }))
+  }
+
   // --- helpers ------------------------------------------------------------------------------------
 
   private columns(d: StimulusData) {
@@ -562,13 +750,14 @@ export class StimuliRepository {
       bodyEn: d.bodyEn,
       altText: d.altText,
       sourceCitation: d.sourceCitation,
+      style: d.style,
       tableData: d.tableData === null ? Prisma.JsonNull : (d.tableData as unknown as Prisma.InputJsonValue),
       assetFileId: d.assetFileId,
     }
   }
 
   private rowOf(
-    r: { id: bigint; kind: string; label: string | null; caption: string | null; bodyMs: string | null; bodyEn: string | null; altText: string | null; sourceCitation: string | null; tableData: unknown; assetFileId: bigint | null },
+    r: { id: bigint; kind: string; label: string | null; caption: string | null; bodyMs: string | null; bodyEn: string | null; altText: string | null; sourceCitation: string | null; style: string | null; tableData: unknown; assetFileId: bigint | null },
     groupCount: number,
   ): StimulusRow {
     const parts = stimulusTableParts(r.kind, r.tableData, r.bodyMs)
@@ -581,6 +770,7 @@ export class StimuliRepository {
       bodyEn: r.bodyEn,
       altText: r.altText,
       sourceCitation: r.sourceCitation,
+      style: r.style,
       tableData: stimulusTableOf(r.tableData) ?? null,
       shownTable: parts.table ?? null,
       bodyIsTable: parts.bodyIsTable,
