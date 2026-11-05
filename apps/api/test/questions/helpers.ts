@@ -94,3 +94,38 @@ export async function questionIdOf(db: TestDatabase, ref: string): Promise<strin
   if (!row) throw new Error(`seeded question ${ref} not found`)
   return row.id
 }
+
+/**
+ * A valid body of the teacher form `POST /api/guru/questions` (S6-T06, API-GUR-18) for the seeded MATH Tingkatan 4: the Bab, SP, TP and Aras
+ * are added where the seed has chapters or DSKP nodes (the conditional rule of D112), so the body passes whatever the seed holds.
+ */
+export async function guruFormBody(t: Pick<QuestionsTestApp, 'db'>, over: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
+  const q = async (sql: string) => (await t.db.query<{ id: string }>(sql))[0]?.id
+  const subject = (typeof over.subjectId === 'string' ? over.subjectId : await q(`select id::text id from subjects where code = 'MATH'`)) as string
+  const level = (typeof over.educationLevelId === 'string' ? over.educationLevelId : await q(`select id::text id from education_levels where code = 'T4'`)) as string
+  const chapter = await q(`select id::text id from chapters where subject_id = ${subject} and education_level_id = ${level} and is_active and in_tree order by id limit 1`)
+  const sp = await q(`select id::text id from curriculum_nodes where kind = 'sp' and subject_id = ${subject} and education_level_id = ${level} order by id limit 1`)
+  return {
+    subjectId: subject,
+    educationLevelId: level,
+    questionType: 'mcq',
+    difficultyLevel: 3,
+    questionText: 'Soalan guru untuk ujian?',
+    options: ['1', '2', '3', '4'],
+    correctAnswer: 1,
+    ...(chapter === undefined ? {} : { chapterId: chapter }),
+    ...(sp === undefined ? {} : { spIds: [sp], tp: 3, cognitiveLevel: 'memahami' }),
+    ...over,
+  }
+}
+
+/**
+ * A question row OWNED by a teacher and saved as `review`, through the question service (what `POST /api/guru/questions` made before S6-T06,
+ * when a submission was a question row; it is an intake item now). `body` is the admin create body (`mcqBody` shape); `status` defaults to `review`.
+ */
+export async function teacherQuestion(t: Pick<QuestionsTestApp, 'app'>, ownerUserId: string, body: Record<string, unknown>, status: 'draft' | 'review' = 'review'): Promise<string> {
+  const { QuestionsService } = await import('../../src/modules/questions')
+  const svc = t.app.get(QuestionsService, { strict: false })
+  const created = await svc.create({ ...body, status } as never, { userId: ownerUserId, role: 'teacher' })
+  return created.id
+}

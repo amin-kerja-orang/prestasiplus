@@ -87,7 +87,8 @@ export const SERVABILITY_REASON_MS: Readonly<Record<ServabilityReasonCode, strin
   withdrawn: 'Soalan ditarik balik (tidak aktif) — aktifkan semula di senarai soalan.',
   pksk: 'Soalan PKSK dipaparkan di modul PKSK sahaja.',
   level_primary: 'Tahap sekolah rendah tidak dipaparkan kepada murid.',
-  level_not_offered: 'Hanya soalan Tingkatan 4 dan 5 dipaparkan di {aktiviti}.',
+  // PO copy decision on #503 (comment 6655663558): replaces "Hanya soalan Tingkatan 4 dan 5 dipaparkan di {aktiviti}."; S1-T07.
+  level_not_offered: 'Tetapkan Tingkatan soalan ini untuk memaparkannya di {aktiviti}.',
   subject_unavailable: 'Subjek tidak aktif atau tidak dipautkan kepada tahap soalan ini.',
   subject_not_listed: 'Subjek ini tiada dalam senarai {aktiviti}.',
   no_chapter: 'Bab belum dipaut - tidak disajikan dalam Soalan by Chapter.',
