@@ -50,6 +50,10 @@ describe('S33 Kelas Saya (student)', () => {
     expect(w.find('[data-testid="join-form"]').exists()).toBe(false)
     expect(w.findAll('button').some((b) => b.text() === 'Sertai')).toBe(false)
     expect(w.find('[data-testid="classes-empty"]').exists()).toBe(true)
+    expect(w.text()).toContain('Anda belum dimasukkan ke dalam kelas')
+    expect(w.text()).toContain(
+      'Guru anda yang menambah pelajar ke dalam kelas. Minta guru anda menambah nama anda supaya anda boleh melihat set soalan kelas dan kedudukan kelas.',
+    )
   })
 
   it('ignores ?kod= (nothing is pre-filled or joined)', async () => {

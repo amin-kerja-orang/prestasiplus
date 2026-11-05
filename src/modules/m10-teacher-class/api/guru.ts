@@ -33,7 +33,6 @@ import type {
   GuruStudent,
   GuruStudentsMeta,
   ImportResult,
-  JoinClassResponse,
   JoinedClass,
   QuestionPaper,
   QuestionPaperRequest,
@@ -373,11 +372,6 @@ export function importQuestions(csvFile: Blob): Promise<ImportResult> {
 /** #73 `GET /api/kelas-saya`: the classes the signed-in user has joined. */
 export function fetchJoinedClasses(options: Signal = {}): Promise<ListResult<JoinedClass>> {
   return api.list<JoinedClass>('/api/kelas-saya', withSignal(options))
-}
-
-/** #74 `POST /api/kelas-saya/join` (404 unknown code, 409 already joined; the `message` is shown). */
-export function joinClass(classCode: string): Promise<JoinClassResponse> {
-  return api.post<JoinClassResponse>('/api/kelas-saya/join', { body: { classCode }, raw: true })
 }
 
 // --- student "Set Soalan Guru" (S34) --------------------------------------------------------

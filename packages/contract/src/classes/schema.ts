@@ -278,12 +278,3 @@ export const ClassJoinedClassSchema = z
     levelLabel: z.string().min(1),
   })
   .meta({ id: 'ClassJoinedClass' })
-
-/** Trimmed, compared case-insensitively with the stored code. */
-export const ClassJoinRequestSchema = z
-  .object({ classCode: text(CLASS_MESSAGES.classCode) })
-  .meta({ id: 'ClassJoinRequest' })
-export const ClassJoinResultSchema = z.object({ classroomId: IdSchema }).meta({ id: 'ClassJoinResult' })
-export const ClassJoinResponseSchema = z
-  .object({ data: ClassJoinResultSchema, message: z.string().min(1) })
-  .meta({ id: 'ClassJoinResponse', description: '201; `message` is "Berjaya menyertai kelas {name}."' })

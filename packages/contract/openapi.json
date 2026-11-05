@@ -20095,46 +20095,6 @@
           "levelLabel"
         ]
       },
-      "ClassJoinRequest": {
-        "type": "object",
-        "properties": {
-          "classCode": {
-            "type": "string",
-            "minLength": 1
-          }
-        },
-        "required": [
-          "classCode"
-        ]
-      },
-      "ClassJoinResult": {
-        "type": "object",
-        "properties": {
-          "classroomId": {
-            "$ref": "#/components/schemas/Id"
-          }
-        },
-        "required": [
-          "classroomId"
-        ]
-      },
-      "ClassJoinResponse": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/ClassJoinResult"
-          },
-          "message": {
-            "type": "string",
-            "minLength": 1
-          }
-        },
-        "required": [
-          "data",
-          "message"
-        ],
-        "description": "201; `message` is \"Berjaya menyertai kelas {name}.\""
-      },
       "BattleQuestionType": {
         "type": "string",
         "enum": [

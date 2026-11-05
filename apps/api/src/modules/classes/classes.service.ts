@@ -2,13 +2,11 @@ import { Inject, Injectable } from '@nestjs/common'
 import {
   CLASS_MESSAGES,
   ClassCreateRequestSchema,
-  ClassJoinRequestSchema,
   ClassStudentAddRequestSchema,
   ClassStudentRemoveQuerySchema,
   TEACHER_SCHOOL_TAB_LIMIT,
   TeacherChapterCreateRequestSchema,
   TeacherTopicCreateRequestSchema,
-  classJoinedText,
   type ClassQrData,
   type TeacherClass,
   type TeacherContributions,
@@ -31,13 +29,12 @@ import {
   CONTRIBUTION_BREAKDOWN_REST_LABEL,
   CONTRIBUTION_BREAKDOWN_TOP,
   CONTRIBUTION_TIERS,
-  JOIN_ROLES,
 } from './classes.constants'
 import { gradeOfLevel, toTeacherClass, type ClassNames } from './classes.mapper'
 import { ClassesRepository, type ClassRecord } from './classes.repository'
 import { gradeOfSlug, levelLabelOfGrade } from './level-slug'
 import { ClassesPorts } from './ports'
-import { invalid, parseStrict, tryParseStrict } from './strict-body'
+import { invalid, tryParseStrict } from './strict-body'
 import type { ClassEnrolment, ClassJoinedClass, TeacherChapterOption, TeacherStudent, TeacherTopicOption } from './types'
 
 const notFound = (message?: string): ApiError => ApiError.of('NOT_FOUND', message ? { message } : {})
@@ -463,39 +460,5 @@ export class ClassesService {
         },
       ]
     })
-  }
-
-  /** `POST /kelas-saya/join` (BR-M10-02, FR-M10-39). Only a student (or the admin, who has the screen) may join. */
-  async join(actor: ClassActor, raw: unknown): Promise<{ data: { classroomId: string }; message: string }> {
-    if (!(JOIN_ROLES as readonly string[]).includes(actor.role)) throw ApiError.of('FORBIDDEN')
-    const body = parseStrict(ClassJoinRequestSchema, raw)
-    const cls = await this.repo.findByJoinCode(body.classCode)
-    if (!cls) throw notFound(CLASS_MESSAGES.joinNotFound)
-    if (await this.repo.isMember(cls.id, actor.userId, actor.isTest)) throw ApiError.of('CONFLICT', { message: CLASS_MESSAGES.joinAlready })
-
-    const now = this.clock.now()
-    const { outcome } = await this.prisma.transaction(async (tx) => {
-      const res = await this.repo.enrol({ classroomId: cls.id, studentId: actor.userId, source: 'code', isTest: actor.isTest, now })
-      if (res.outcome !== 'already') {
-        await this.audit.record({
-          tx,
-          action: CLASS_AUDIT.JOINED,
-          actorUserId: actor.userId,
-          actorRole: actor.role,
-          sessionRowId: actor.auth.sessionRowId,
-          targetType: 'classroom',
-          targetId: cls.id,
-          schoolId: cls.schoolId,
-          scopeLevel: actor.auth.active.scope.level,
-          requestId: actor.requestId,
-          ip: actor.ip,
-          details: { source: 'code' },
-          isTest: actor.isTest,
-        })
-      }
-      return res
-    })
-    if (outcome === 'already') throw ApiError.of('CONFLICT', { message: CLASS_MESSAGES.joinAlready })
-    return { data: { classroomId: cls.id }, message: classJoinedText(cls.name) }
   }
 }
