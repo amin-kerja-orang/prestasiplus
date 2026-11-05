@@ -80,12 +80,17 @@ function leafFromRow(row: PartRow, options: PartOption[], key: AnswerKey | undef
   if (row.mode === 'short_text' && row.blankCount !== null) candidate.blankCount = row.blankCount
   if ((row.mode === 'essay' || row.mode === 'essay_choice') && row.wordMin !== null && row.wordMax !== null) candidate.wordRange = { min: row.wordMin, max: row.wordMax }
   if (row.mode === 'essay_choice') candidate.topics = row.topics
-  const parsed = QuestionLeafPartSchema.safeParse(candidate)
+  // S4-T04: the duplicate-stem trim stores an EMPTY leaf prompt (the stem carries the text), but the write contract demands `prompt.ms` min 1.
+  // Validate the key, options and mode with a placeholder prompt, then return the leaf with its real (empty) prompt, so the trimmed row stays
+  // readable and every other column is still checked strictly.
+  const emptyPrompt = row.promptMs === null || row.promptMs === ''
+  const parsed = QuestionLeafPartSchema.safeParse(emptyPrompt ? { ...candidate, prompt: { ...rich(row.promptMs, row.promptEn), ms: '-' } } : candidate)
   if (!parsed.success) {
     if (lenient && key === undefined) return candidate as unknown as QuestionLeaf
     throw new StoredKeyError(idToString(row.id))
   }
-  return parsed.data as QuestionLeaf
+  const leaf = parsed.data as QuestionLeaf
+  return emptyPrompt ? ({ ...leaf, prompt: rich(row.promptMs, row.promptEn) } as QuestionLeaf) : leaf
 }
 
 // --- tree -> row drafts ---------------------------------------------------------------------------
