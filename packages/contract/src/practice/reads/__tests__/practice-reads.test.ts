@@ -161,6 +161,9 @@ describe('remedial suggestions', () => {
     expect(PracticeReadRemedialSuggestionsSchema.safeParse(ok).success).toBe(true)
     expect(PracticeReadRemedialSuggestionsSchema.safeParse({ ...ok, needed: [{ ...ok.needed[0], target: 50 }] }).success).toBe(false)
     expect(PracticeReadRemedialSuggestionsSchema.safeParse({ completed: [], needed: [] }).success).toBe(true)
+    const noSide = { ...ok.completed[0], before: null, delta: null }
+    expect(PracticeReadRemedialSuggestionsSchema.safeParse({ ...ok, completed: [noSide] }).success).toBe(true)
+    expect(PracticeReadRemedialSuggestionsSchema.safeParse({ ...ok, completed: [{ ...noSide, after: null }] }).success).toBe(true)
   })
 })
 

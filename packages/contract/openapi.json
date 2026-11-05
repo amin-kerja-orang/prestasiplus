@@ -59833,22 +59833,31 @@
             "minimum": 0
           },
           "before": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100,
-            "description": "Whole number: pooled subject accuracy over the answers given before the drill started (\"Sebelum\")."
+            "description": "Whole number: pooled subject accuracy over the answers given before the drill started (\"Sebelum\"); null when the pupil had no answers in the subject before it."
           },
           "after": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100,
-            "description": "Whole number: the drill accuracy (\"Selepas\")."
+            "description": "Whole number: the drill accuracy (\"Selepas\"); null when the session had no questions."
           },
           "delta": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "minimum": -100,
             "maximum": 100,
-            "description": "after - before; the sign and colour are the client concern (FR-MUR-12-4)."
+            "description": "after - before; null unless both sides exist. The sign and colour are the client concern (FR-MUR-12-4)."
           },
           "at": {
             "$ref": "#/components/schemas/Timestamp"

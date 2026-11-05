@@ -119,8 +119,9 @@ export class PracticeAnalyticsService {
     const completed: RemedialSuggestions['completed'] = sets.flatMap((r) => {
       const subject = byId.get(r.subjectId)
       if (!subject) return []
-      const before = wholePct(r.beforeCorrect, r.beforeAnswered)
-      const after = wholePct(r.correctCount, r.questionCount)
+      // A side with no data is null, never 0: it would invent a delta.
+      const before = r.beforeAnswered > 0 ? wholePct(r.beforeCorrect, r.beforeAnswered) : null
+      const after = r.questionCount > 0 ? wholePct(r.correctCount, r.questionCount) : null
       return [
         {
           subjectCode: subject.code,
@@ -129,7 +130,7 @@ export class PracticeAnalyticsService {
           questionCount: r.questionCount,
           before,
           after,
-          delta: after - before,
+          delta: before !== null && after !== null ? after - before : null,
           at: toMytTimestamp(r.completedAt),
         },
       ]
