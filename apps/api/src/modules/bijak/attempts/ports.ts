@@ -40,6 +40,7 @@ export type PaperResolution =
   | { ok: false; reason: 'not_found' }
   /** The caller may not sit this paper (for example a subscription gate): 403. */
   | { ok: false; reason: 'not_eligible' }
+  | { ok: false; reason: 'out_of_scope' }
 
 export interface BijakPaperSource {
   /**

@@ -366,7 +366,11 @@ export class KuizService {
     if (!paper || paper.status !== 'published') throw kuizPaperNotFound()
     if (paper.kind === 'jana' && paper.generatedForUserId?.toString() !== userId) throw kuizPaperNotFound()
     // S3-T07: a curated paper outside the pupil's form (`level_scope`) is hidden from the list and answers the same 404 here.
-    if (paper.kind === 'pilihan' && !levelScopeAllows(paper.levelScope, await this.papers.gradeOf(userId))) throw kuizPaperNotFound()
+    // A pupil with their own open sitting on it (re-scoped or promoted mid-sitting) keeps it, like the resume in `attempts.service.ts`.
+    if (paper.kind === 'pilihan' && !levelScopeAllows(paper.levelScope, await this.papers.gradeOf(userId))) {
+      const open = await this.prisma.client.examAttempt.count({ where: { userId: idFromString(userId), paperId: paper.id, status: 'in_progress' } })
+      if (open === 0) throw kuizPaperNotFound()
+    }
     // H-A13 / AC-R1-18.4: a paper that places a question the bank no longer serves (archived after Terbit) is refused. This is the
     // first half of the new-sitting rule (`attempt-source.ts`: a live approved version; `is_active` is NOT checked, the placement is
     // what the paper froze). It is NOT the whole rule: a new sitting also refuses a question the Bijak bridge cannot map (bridge

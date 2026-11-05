@@ -50,6 +50,7 @@ export type PaperResolution =
   | { ok: true; paper: AttemptPaper }
   | { ok: false; reason: 'not_found' }
   | { ok: false; reason: 'not_eligible' }
+  | { ok: false; reason: 'out_of_scope' }
 
 export interface BijakPaperSource {
   resolveForAttempt(input: { userId: string; paperId: string; isTest: boolean }): Promise<PaperResolution>
@@ -91,8 +92,9 @@ export class BijakPapersAttemptSource implements BijakPaperSource {
     const paper = await this.repo.findPaper(id)
     if (!paper || paper.status !== 'published') return { ok: false, reason: 'not_found' }
     if (paper.kind === 'jana' && paper.generatedForUserId?.toString() !== input.userId) return { ok: false, reason: 'not_found' }
-    // S3-T07: a curated paper outside the pupil's form (`level_scope`) cannot be started through its id (same 404 as an unknown paper).
-    if (paper.kind === 'pilihan' && !levelScopeAllows(paper.levelScope, await this.repo.gradeOf(input.userId))) return { ok: false, reason: 'not_found' }
+    // S3-T07: a curated paper outside the pupil's form (`level_scope`) cannot start a NEW sitting. `out_of_scope` is a 404 for BE-16 unless
+    // the pupil has their own open sitting on it, which `start` still resumes (a re-scoped or promoted pupil keeps the card).
+    if (paper.kind === 'pilihan' && !levelScopeAllows(paper.levelScope, await this.repo.gradeOf(input.userId))) return { ok: false, reason: 'out_of_scope' }
 
     const questionIds = paper.sections.flatMap((s) => s.placements.map((p) => idToString(p.questionId)))
     if (questionIds.length === 0) return { ok: false, reason: 'not_eligible' }
