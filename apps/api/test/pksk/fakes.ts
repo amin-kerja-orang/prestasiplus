@@ -2,6 +2,7 @@ import type { PkskLevel, PkskQuestionStatus } from '@pp/contract'
 
 import { FixedClock } from '../../src/db/clock'
 import type { PkskActor } from '../../src/modules/pksk/actor'
+import type { AnswerLogEntry } from '../../src/modules/practice/answer-log.port'
 import { PkskAccessService } from '../../src/modules/pksk/pksk-access.service'
 import type { AccessRecord } from '../../src/modules/pksk/pksk-access.repository'
 import type { DomainRecord, PackageRecord } from '../../src/modules/pksk/pksk-domains.repository'
@@ -85,6 +86,8 @@ export interface World {
   mastery: { userId: string; level: PkskLevel; domainId: string; pct: number; isTest: boolean }[]
   loads: { userId: string; level: PkskLevel; domainId: string; at: Date; servedIds: string[] }[]
   sessions: PkskPracticeCompletion[]
+  examLoads: { userId: string; level: PkskLevel; servedIds: string[] }[]
+  answerRows: AnswerLogEntry[]
   audits: Record<string, unknown>[]
   subscribed: Set<string>
   /** Throw in the practice port after recording (rollback test). */
@@ -138,6 +141,8 @@ export function buildWorld() {
     mastery: [],
     loads: [],
     sessions: [],
+    examLoads: [],
+    answerRows: [],
     audits: [],
     subscribed: new Set(),
     failPractice: false,
@@ -336,6 +341,18 @@ export function buildWorld() {
       else world.loads.push({ userId, level, domainId, at, servedIds: [...servedIds] })
       return Promise.resolve()
     },
+    markExamLoaded: (userId: string, level: PkskLevel, _at: Date, servedIds: readonly string[]) => {
+      const row = world.examLoads.find((m) => m.userId === userId && m.level === level)
+      if (row) row.servedIds = [...servedIds]
+      else world.examLoads.push({ userId, level, servedIds: [...servedIds] })
+      return Promise.resolve()
+    },
+    takeExamLoaded: (userId: string, level: PkskLevel) => {
+      const i = world.examLoads.findIndex((m) => m.userId === userId && m.level === level)
+      if (i < 0) return Promise.resolve(null)
+      const [row] = world.examLoads.splice(i, 1)
+      return Promise.resolve(row ? { servedIds: row.servedIds } : null)
+    },
     takeLoaded: (userId: string, level: PkskLevel, domainId: string) => {
       const i = world.loads.findIndex((m) => m.userId === userId && m.level === level && m.domainId === domainId)
       if (i < 0) return Promise.resolve(null)
@@ -365,6 +382,8 @@ export function buildWorld() {
         attempts: structuredClone(world.attempts),
         mastery: structuredClone(world.mastery),
         loads: structuredClone(world.loads),
+        examLoads: structuredClone(world.examLoads),
+        answerRows: structuredClone(world.answerRows),
         grants: structuredClone(world.grants),
         questions: structuredClone(world.questions),
         audits: structuredClone(world.audits),
@@ -378,9 +397,16 @@ export function buildWorld() {
     },
   }
 
+  const answerLog = {
+    record: (e: AnswerLogEntry) => {
+      world.answerRows.push(e)
+      return Promise.resolve({ id: String(world.answerRows.length), created: true })
+    },
+  }
+
   const shuffle = <T>(items: readonly T[]): T[] => [...items]
   const gate = new PkskAccessService(accessRepo as never, subscription)
-  const student = new PkskStudentService(gate, domainsRepo as never, progressRepo as never, questions, practice, shuffle, prisma as never, world.clock)
+  const student = new PkskStudentService(gate, domainsRepo as never, progressRepo as never, questions, practice, shuffle, prisma as never, world.clock, answerLog as never)
   const adminAccess = new PkskAdminAccessService(accessRepo as never, domainsRepo as never, usersRepo as never, audit as never, prisma as never, world.clock)
   const adminQuestions = new PkskAdminQuestionsService(questions, domainsRepo as never, audit as never, prisma as never)
   return { world, gate, student, adminAccess, adminQuestions, questions, practice }

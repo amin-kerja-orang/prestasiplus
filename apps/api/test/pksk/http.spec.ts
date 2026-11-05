@@ -16,6 +16,7 @@ import { defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AuthModule } from '../../src/modules/auth'
+import { attemptUuidOf } from '../../src/modules/practice/answer-log.port'
 import { PKSK_PRACTICE_PORT, PKSK_QUESTIONS_PORT, PkskModule } from '../../src/modules/pksk'
 import { loginAs, START, type LoggedIn } from '../auth/helpers'
 import { createTestDatabase, type TestDatabase } from '../support/db'
@@ -107,6 +108,7 @@ describe('PKSK HTTP (BE-42)', () => {
     const s = await as('pelajar@demo.test')
     const q = seedQuestions(world.world, 'PKSK_ESSAY', 'T1', 1)[0]
     const before = (await db.query<{ n: string }>(`select count(*)::text n from pksk_exam_attempts`))[0]?.n
+    expect((await get(s, '/pksk/levels/T1/exam')).status).toBe(200)
     const res = await post(s, '/pksk/levels/T1/exam-attempts', { answers: [{ questionId: q?.id, text: 'x'.repeat(60) }] })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     expect(res.body.data.completedAt).toMatch(/\+08:00$/)
@@ -159,51 +161,54 @@ describe('PKSK HTTP (BE-42)', () => {
     expect(again.body.data).toBeUndefined()
   })
 
+  it('AC-MUR-19-5: an exam submit writes one pksk answer row per answer (N rows) through the single answer store', async () => {
+    const s = await as('pelajar@demo.test')
+    const userId = await idOf('pelajar@demo.test')
+    seedQuestions(world.world, 'PKSK_INSANIAH', 'T1', 4)
+    const exam = (await get(s, '/pksk/levels/T1/exam')).body.data.sections as { questions: { id: string }[] }[]
+    const ids = exam.flatMap((sec) => sec.questions.map((q) => q.id)).slice(0, 5)
+    expect(ids.length).toBe(5)
+    const res = await post(s, '/pksk/levels/T1/exam-attempts', { answers: ids.map((id, i) => ({ questionId: id, optionIndex: i % 3, text: undefined })) })
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    const attemptId = String(res.body.data.id)
+    const rows = await db.query<{ mode: string; user_id: string; question_id: string; marks_max: string; selected_label: string | null; attempt_id: string }>(
+      `select mode, user_id::text, question_id::text, marks_max::text, selected_label, attempt_id::text from practice_answers where attempt_id = $1::uuid order by question_id`,
+      [attemptUuidOf(attemptId)],
+    )
+    expect(rows).toHaveLength(5)
+    expect(new Set(rows.map((r) => r.mode))).toEqual(new Set(['pksk']))
+    expect(new Set(rows.map((r) => r.user_id))).toEqual(new Set([userId]))
+    expect(rows.map((r) => r.question_id).sort()).toEqual([...ids].sort())
+    for (const r of rows) expect(r.marks_max).toBe('1')
+  })
+
+  it('anti-cheat: an exam submit takes only the served set, once, and a refusal writes no attempt and no answer rows', async () => {
+    const s = await as('pelajar@demo.test')
+    const extra = seedQuestions(world.world, 'PKSK_MATH', 'T1', 80)
+    const exam = (await get(s, '/pksk/levels/T1/exam')).body.data.sections as { questions: { id: string }[] }[]
+    const served = new Set(exam.flatMap((sec) => sec.questions.map((q) => q.id)))
+    const guessed = extra.find((q) => !served.has(q.id))
+    expect(guessed).toBeDefined()
+    const count = async (t: string) => Number((await db.query<{ n: string }>(`select count(*)::text n from ${t}`))[0]?.n)
+    const [attempts, answers] = [await count('pksk_exam_attempts'), await count('practice_answers')]
+    const url = '/pksk/levels/T1/exam-attempts'
+    const bad = await post(s, url, { answers: [{ questionId: guessed?.id, optionIndex: 0 }] })
+    expect(bad.status).toBe(422)
+    expect(bad.body.error.message).toBe('Jawapan tidak sah.')
+    expect(JSON.stringify(bad.body)).not.toMatch(/review|correctIndex|Penjelasan/)
+    expect([await count('pksk_exam_attempts'), await count('practice_answers')]).toEqual([attempts, answers])
+    const mine = [...served].slice(0, 3)
+    const body = { answers: mine.map((id) => ({ questionId: id, optionIndex: 0 })) }
+    expect((await post(s, url, body)).status).toBe(201)
+    const again = await post(s, url, body)
+    expect(again.status).toBe(422)
+    expect(again.body.data).toBeUndefined()
+    expect([await count('pksk_exam_attempts'), await count('practice_answers')]).toEqual([attempts + 1, answers + 3])
+  })
+
   it('admin routes: 403 for a student, packages list for admin', async () => {
     const s = await as('pelajar@demo.test')
     for (const path of ['/admin/pksk-questions', '/admin/pksk-access', '/admin/pksk-access/stats', '/pksk-packages']) expect((await get(s, path)).status, path).toBe(403)
     const admin = await as('admin@demo.test')
     const pk = (await get(admin, '/pksk-packages')).body.data as unknown[]
-    expect(pk.map((p) => PkskPackageSchema.parse(p).level)).toEqual(['T1', 'T4', 'ALL'])
-    expect((await get(admin, '/pksk-packages')).headers['cache-control']).toBe('no-store')
-  })
-
-  it('admin grant and revoke: the learner sees the change at once, audit rows carry ids only', async () => {
-    const admin = await as('admin@demo.test')
-    const target = await as('pelajar2@demo.test')
-    const userId = await idOf('pelajar2@demo.test')
-    const bad = await post(admin, '/admin/pksk-access', { userId: '999999', packageId: '99', expiresAt: 'nope' })
-    expect(bad.status).toBe(422)
-    expect(bad.body.error.fields).toEqual({ userId: 'Pengguna tidak dijumpai.', packageId: 'Sila pilih pakej.', expiresAt: 'Tarikh tamat tidak sah.' })
-    const granted = await post(admin, '/admin/pksk-access', { userId, packageId: '1' })
-    expect(granted.status, JSON.stringify(granted.body)).toBe(201)
-    expect(granted.body.status).toBe('Akses PKSK berjaya diberi.')
-    const item = PkskAdminAccessItemSchema.parse(granted.body.data)
-    expect((await get(target, '/pksk/me/access')).body.data).toEqual({ T1: true, T4: false })
-    expect((await get(admin, '/admin/pksk-access?search=pelajar2')).body.meta.totalItems).toBeGreaterThanOrEqual(1)
-    const revoked = await post(admin, `/admin/pksk-access/${item.id}/revoke`)
-    expect(revoked.status).toBe(200)
-    expect((await get(target, '/pksk/me/access')).body.data).toEqual({ T1: false, T4: false })
-    expect((await post(admin, `/admin/pksk-access/${item.id}/revoke`)).status).toBe(409)
-    expect((await post(admin, '/admin/pksk-access/987654/revoke')).status).toBe(404)
-    const audits = await db.query<{ action: string; detail: unknown }>(`select action, detail from audit_events where action like 'pksk.%' order by id`)
-    expect(audits.map((a) => a.action)).toEqual(['pksk.access.granted', 'pksk.access.revoked'])
-    expect(JSON.stringify(audits)).not.toMatch(/@demo\.test|Pelajar/)
-    const stats = (await get(admin, '/admin/pksk-access/stats')).body.data
-    expect(stats.activeTotal).toBe(2)
-  })
-
-  it('admin questions through the port: create 201, PKSK-only guard on bulk', async () => {
-    const admin = await as('admin@demo.test')
-    const res = await post(admin, '/admin/pksk-questions', { bahagian: 'B', pkskDomainId: '2', pkskTargetLevel: 'T1', questionText: 'Soalan ujian', difficultyLevel: 3, options: [{ text: 'a', isCorrect: true }, { text: 'b' }] })
-    expect(res.status, JSON.stringify(res.body)).toBe(201)
-    const bulk = await post(admin, '/admin/pksk-questions/bulk', { action: 'delete', ids: ['424242'] })
-    expect(bulk.status).toBe(422)
-    expect(bulk.body.error.fields.ids).toBe('Sila pilih sekurang-kurangnya satu soalan PKSK.')
-  })
-
-  it('the default question port fails closed (no question data) when nothing is plugged in', async () => {
-    // Covered by the unit spec of ports; here we only assert the seeded demo data carries no questions.
-    expect(await db.query(`select 1 from question_tags where kind like 'pksk%'`)).toHaveLength(0)
-  })
-})
+    expect(pk

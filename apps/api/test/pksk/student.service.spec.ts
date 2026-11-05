@@ -262,6 +262,7 @@ describe('exam (AC 8, 9)', () => {
       ...a.slice(0, 30).map((q, i) => ({ questionId: q.id, optionIndex: i % 2 === 0 ? 0 : 1 })), // all correct
       ...b.slice(0, 35).map((q, i) => ({ questionId: q.id, optionIndex: i % 2 === 0 ? 0 : 1 })), // 35 of 70 correct
     ]
+    await student.exam(STUDENT, 'T1')
     const res = await student.submitExam(STUDENT, 'T1', { answers })
     // A 100, B 50, C 0 -> 0.2*100 + 0.7*50 + 0 = 55
     expect(res).toMatchObject({ scorePct: 55, grade: 'C' })
@@ -270,6 +271,47 @@ describe('exam (AC 8, 9)', () => {
     expect(world.attempts[0]).toMatchObject({ bahagianA: 100, bahagianB: 50, bahagianC: 0 })
     expect(world.sessions).toHaveLength(0)
     expect(world.mastery).toHaveLength(0)
+  })
+
+  it('AC-MUR-19-5: one pksk answer row per answer through the port, keyed by the decimal attempt id', async () => {
+    const { student, world } = buildWorld()
+    grant(world, '10', 'T1')
+    const a = seedQuestions(world, 'PKSK_INSANIAH', 'T1', 2)
+    const e = seedQuestions(world, 'PKSK_ESSAY', 'T1', 1)
+    await student.exam(STUDENT, 'T1')
+    const res = await student.submitExam(STUDENT, 'T1', {
+      answers: [
+        { questionId: a[0]?.id, optionIndex: 0 },
+        { questionId: a[1]?.id, optionIndex: 2 },
+        { questionId: e[0]?.id, text: 'x'.repeat(60) },
+      ],
+    })
+    expect(world.answerRows).toHaveLength(3)
+    for (const r of world.answerRows) expect(r).toMatchObject({ mode: 'pksk', userId: '10', attemptId: res.id, marksMax: 1, isTest: false, partRef: null })
+    expect(world.answerRows.map((r) => r.selectedLabel)).toEqual(['A', 'C', null])
+    expect(world.answerRows.map((r) => r.marksAwarded)).toEqual([1, 0, 0])
+  })
+
+  it('anti-cheat: only the served ids, once; a refusal stores no attempt and no rows', async () => {
+    const { student, world } = buildWorld()
+    grant(world, '10', 'T1')
+    const a = seedQuestions(world, 'PKSK_INSANIAH', 'T1', 35)
+    const answers = (qs: { id: string }[]) => ({ answers: qs.map((q) => ({ questionId: q.id, optionIndex: 0 })) })
+    // No open set: refused.
+    expect(await code(student.submitExam(STUDENT, 'T1', answers(a.slice(0, 1))))).toMatchObject({ status: 422, fields: { answers: 'Jawapan tidak sah.' } })
+    const exam = await student.exam(STUDENT, 'T1')
+    const served = new Set(exam.sections.flatMap((s) => s.questions.map((q) => q.id)))
+    const guessed = a.find((q) => !served.has(q.id)) as { id: string }
+    expect(await code(student.submitExam(STUDENT, 'T1', answers([guessed])))).toMatchObject({ status: 422, fields: { answers: 'Jawapan tidak sah.' } })
+    expect(world.attempts).toHaveLength(0)
+    expect(world.answerRows).toHaveLength(0)
+    // The refusal rolled the take back: the set is still open and is accepted once.
+    const mine = a.filter((q) => served.has(q.id)).slice(0, 2)
+    await student.submitExam(STUDENT, 'T1', answers(mine))
+    expect(world.attempts).toHaveLength(1)
+    expect(world.answerRows).toHaveLength(2)
+    expect(await code(student.submitExam(STUDENT, 'T1', answers(mine)))).toMatchObject({ status: 422 })
+    expect(world.attempts).toHaveLength(1)
   })
 
   it('422 for too many answers in a part, an unapproved or other-level question; nothing is written', async () => {
@@ -293,6 +335,7 @@ describe('exam (AC 8, 9)', () => {
     const { student, world } = buildWorld()
     grant(world, '10', 'T1')
     const q = seedQuestions(world, 'PKSK_ESSAY', 'T1', 1)[0]
+    await student.exam(STUDENT, 'T1')
     await student.submitExam(STUDENT, 'T1', { answers: [{ questionId: q?.id, text: 'x'.repeat(60) }] })
     world.attempts.push({ id: '9', userId: '11', level: 'T1', completedAt: new Date(), scorePct: 90, bahagianA: 0, bahagianB: 0, bahagianC: 0, grade: 'A', isTest: false })
     const list = await student.attempts(STUDENT, 'T1')
@@ -419,32 +462,4 @@ describe('grant gate on the four answering routes (AC-MUR-19-1, -3)', () => {
   const QUESTION_TEXT = /Soalan \d+/
   const routes = (student: ReturnType<typeof buildWorld>['student'], qid: string): [string, () => Promise<unknown>][] => [
     ['practiceSet', () => student.practiceSet(STUDENT, 'T1', 'PKSK_MATH')],
-    ['submitPractice', () => student.submitPractice(STUDENT, 'T1', 'PKSK_MATH', { answers: [{ questionId: qid, optionIndex: 0 }] })],
-    ['exam', () => student.exam(STUDENT, 'T1')],
-    ['submitExam', () => student.submitExam(STUDENT, 'T1', { answers: [{ questionId: qid, optionIndex: 0 }] })],
-  ]
-
-  it.each([
-    ['none', undefined],
-    ['expired', '2026-10-20'],
-  ])('%s grant: 403 FORBIDDEN, no question text, nothing written', async (_name, expiresAt) => {
-    const { student, world } = buildWorld()
-    if (expiresAt) grant(world, '10', 'T1', { expiresAt })
-    const [q] = seedQuestions(world, 'PKSK_MATH', 'T1', 3)
-    for (const [, run] of routes(student, q?.id as string)) {
-      const e = await code(run())
-      expect(e).toMatchObject({ status: 403, code: 'FORBIDDEN', message: 'Anda tidak dibenarkan melakukan tindakan ini.' })
-      expect(JSON.stringify(e)).not.toMatch(QUESTION_TEXT)
-    }
-    expect(world.sessions).toHaveLength(0)
-    expect(world.attempts).toHaveLength(0)
-    expect(world.loads).toHaveLength(0)
-  })
-
-  it('valid grant (today is the last day): all four routes are allowed', async () => {
-    const { student, world } = buildWorld()
-    grant(world, '10', 'T1', { expiresAt: '2026-10-21' })
-    const [q] = seedQuestions(world, 'PKSK_MATH', 'T1', 3)
-    for (const [, run] of routes(student, q?.id as string)) await run()
-  })
-})
+    ['submitPractice', () => student.submitPractice(STUDENT, 'T1', 'PKSK_MATH', { answers: [{ questionId:
