@@ -58,6 +58,9 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
+| S1-T05 | AC-ADM-QE6.1 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions-workflow/imports.spec.ts::[CI] a CSV of one group of 3 yields one group with 3 members in group_order and one stimulus, all drafts, in the same import; questions-workflow/imports-csv.spec.ts::[CI] one group of 3 rows is one group with 3 members in group_order and one stimulus |
+| S1-T05 | AC-ADM-QE6.2 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions-workflow/imports.spec.ts::[CI] a row with every DSKP column imports with its unit, SP, TP, aras, chapter and topic and passes the publish gate through the existing approve route |
+| S1-T05 | AC-ADM-Q11.1 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions-workflow/imports.spec.ts::[CI] a row with every DSKP column imports with its unit, SP, TP, aras, chapter and topic and passes the publish gate through the existing approve route |
 
 ## Sprint 3
 
