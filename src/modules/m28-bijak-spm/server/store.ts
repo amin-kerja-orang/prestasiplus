@@ -40,7 +40,6 @@ import type { PastSittings, ReviewPart, SelfMarkOutcome } from '../domain/semaka
 import type { BankFilter, DecisionAction, PaperPatch, QueueFilter, SectionPoolQuery } from '../domain/admin-types'
 import type {
   Attempt,
-  AttemptKind,
   AttemptMode,
   AttemptPaperView,
   AttemptResult,
@@ -51,6 +50,7 @@ import type {
   PaperCover,
   PaperDef,
   PaperSummary,
+  PaperKind,
   PartResult,
   PartStatus,
   QuestionDef,
@@ -184,7 +184,7 @@ export class BijakServer implements BijakApi {
 
   /* --------------------------------------------------------------------------- papers */
 
-  private resolvePaper(id: string, userId: number): PaperDef & { kind: AttemptKind } {
+  private resolvePaper(id: string, userId: number): PaperDef & { kind: PaperKind | 'subjektif' } {
     const fixed = PAPERS.find((p) => p.id === id)
     if (fixed) return { ...fixed, kind: 'pilihan' }
     // S3-T06: a published Kertas Subjektif paper; a draft is not found (AC-MUR-13-20).
@@ -220,7 +220,7 @@ export class BijakServer implements BijakApi {
       .sort((a, b) => b.startedAt - a.startedAt)[0]
   }
 
-  private summary(def: PaperDef & { kind: AttemptKind }, userId: number): PaperSummary {
+  private summary(def: PaperDef & { kind: PaperKind | 'subjektif' }, userId: number): PaperSummary {
     const last = this.latestAttempt(userId, def.id)
     const submitted = Object.values(this.state.attempts)
       .filter((a) => a.userId === userId && a.paperId === def.id && a.result)
@@ -430,7 +430,7 @@ export class BijakServer implements BijakApi {
       id,
       userId,
       paperId,
-      paperKind: def.kind,
+      paperKind: def.kind as PaperKind,
       title: def.title,
       subject: def.subject,
       kertas: def.kertas,
@@ -919,7 +919,7 @@ export class BijakServer implements BijakApi {
   ): Promise<QuestionResult> {
     await this.tick()
     const a = this.attemptOf(userId, attemptId)
-    if (a.mode !== 'latihan' || a.paperKind === 'subjektif')
+    if (a.mode !== 'latihan' || (a.paperKind as string) === 'subjektif')
       throw new BijakError('forbidden', 'Skema hanya didedahkan selepas Hantar')
     if (a.status !== 'in_progress') throw new BijakError('bad_request', 'Percubaan sudah tamat')
     if (!a.sections.some((s) => s.questionIds.includes(questionId)))
@@ -945,7 +945,7 @@ export class BijakServer implements BijakApi {
    * (API `?scheme=1`). Marks, status and `selfMarkable` stay. Other kinds always carry their scheme after submit.
    */
   private presented(a: Attempt, result: AttemptResult, withScheme: boolean): AttemptResult {
-    if (withScheme || a.paperKind !== 'subjektif') return result
+    if (withScheme || (a.paperKind as string) !== 'subjektif') return result
     return {
       ...result,
       questions: result.questions.map((q) => ({

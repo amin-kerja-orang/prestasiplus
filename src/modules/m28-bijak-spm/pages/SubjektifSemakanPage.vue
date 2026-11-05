@@ -8,7 +8,17 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute } from 'vue-router'
 
-import { DsEmptyState, DsLoadError, DsPage, DsPanel } from '@/ds'
+import {
+  DsCluster,
+  DsEmptyState,
+  DsHeading,
+  DsLoadError,
+  DsPage,
+  DsPanel,
+  DsStack,
+  DsStateView,
+  DsText,
+} from '@/ds'
 import { useApi } from '@/composables/useApi'
 
 import KeywordSuggestion from '../components/KeywordSuggestion.vue'
@@ -34,7 +44,7 @@ const missing = computed(() => {
   const code = (error.value as { code?: string } | null)?.code
   if (code === 'not_found' || code === 'forbidden') return true
   const a = data.value?.attempt
-  return !!a && (a.paperId !== String(route.params.paperId) || a.paperKind !== 'subjektif')
+  return !!a && (a.paperId !== String(route.params.paperId) || (a.paperKind as string) !== 'subjektif')
 })
 const notSubmitted = computed(() => (error.value as { code?: string } | null)?.code === 'not_submitted')
 
@@ -172,7 +182,7 @@ const answerText = (p: PartResult): string[] =>
       data-testid="paper-not-found"
     >
       <template #actions>
-        <UButton to="/kertas-subjektif" class="min-h-11">Kembali ke Kertas Subjektif</UButton>
+        <UButton to="/kertas-subjektif" size="lg">Kembali ke Kertas Subjektif</UButton>
       </template>
     </DsEmptyState>
     <DsEmptyState
@@ -185,7 +195,7 @@ const answerText = (p: PartResult): string[] =>
       <template #actions>
         <UButton
           color="neutral"
-          class="min-h-11"
+          size="lg"
           disabled
           title="Hantar & Semak dahulu untuk melihat skema."
           data-testid="scheme-toggle"
@@ -193,35 +203,34 @@ const answerText = (p: PartResult): string[] =>
         >
       </template>
     </DsEmptyState>
-    <DsLoadError
-      v-else-if="error"
-      message="Semakan tidak dapat dimuatkan."
-      @retry="reload"
+    <DsLoadError v-else-if="error" message="Semakan tidak dapat dimuatkan." @retry="reload" />
+    <DsStateView
+      v-else-if="!data || !result"
+      status="loading"
+      skeleton="list"
+      :rows="2"
+      data-testid="semakan-loading"
     />
-    <div v-else-if="!data || !result" class="flex flex-col gap-3" aria-busy="true" data-testid="semakan-loading">
-      <USkeleton class="h-24 w-full" />
-      <USkeleton class="h-40 w-full" />
-    </div>
 
     <template v-else>
       <UCard data-testid="semakan-total">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div class="flex flex-col gap-1">
-            <p class="text-caption text-muted">Jumlah markah</p>
-            <p class="tabular text-title text-highlighted" data-testid="total">
+        <DsCluster justify="between" stack-below="sm" align="start">
+          <DsStack gap="2xs">
+            <DsText variant="caption" tone="muted">Jumlah markah</DsText>
+            <DsText variant="title" tone="highlighted" tabular data-testid="total">
               {{ result.score }} / {{ result.max }}
-            </p>
-          </div>
+            </DsText>
+          </DsStack>
           <UButton
             color="primary"
-            class="min-h-11 justify-center"
+            size="lg"
             :loading="schemeLoading"
             :aria-expanded="shown"
             data-testid="scheme-toggle"
             @click="toggleScheme"
             >{{ shown ? 'Sembunyi' : 'Tunjuk Skema Pemarkahan' }}</UButton
           >
-        </div>
+        </DsCluster>
       </UCard>
 
       <UAlert
@@ -242,70 +251,64 @@ const answerText = (p: PartResult): string[] =>
         data-testid="provisional"
       />
 
-      <section class="flex flex-col gap-3" aria-label="Semakan soalan">
+      <DsStack as="section" aria-label="Semakan soalan">
         <component
-          :is="b.group ? ResultGroup : 'div'"
+          :is="b.group ? ResultGroup : DsStack"
           v-for="b in blocks"
           :key="b.key"
-          v-bind="
-            b.group
-              ? { groupId: b.group.id, stimuli: stimuliOf(b.group) }
-              : { class: 'flex flex-col gap-3' }
-          "
+          v-bind="b.group ? { groupId: b.group.id, stimuli: stimuliOf(b.group) } : {}"
         >
           <UCard v-for="q in b.items" :key="q.questionId" :data-testid="`result-q-${q.number}`">
-            <div class="flex flex-col gap-3">
-              <div class="flex flex-wrap items-baseline justify-between gap-2">
-                <h2 class="text-body text-highlighted">Soalan {{ q.number }}</h2>
-                <span class="tabular text-label text-highlighted" data-testid="q-score"
-                  >{{ q.awarded }} / {{ q.marks }}</span
+            <DsStack>
+              <DsCluster justify="between" align="baseline">
+                <DsHeading :level="2" variant="label">Soalan {{ q.number }}</DsHeading>
+                <DsText variant="label" tone="highlighted" tabular data-testid="q-score"
+                  >{{ q.awarded }} / {{ q.marks }}</DsText
                 >
-              </div>
+              </DsCluster>
               <div v-if="ownStimuli(q.questionId).length" data-testid="own-stimuli">
                 <StimulusGroup :stimuli="ownStimuli(q.questionId).map(toStimulusData)" :hint="false" />
               </div>
-              <p v-if="questionMap.get(q.questionId)?.stem" class="text-body text-default">
+              <DsText v-if="questionMap.get(q.questionId)?.stem" variant="body" tone="default">
                 <RichText :text="questionMap.get(q.questionId)!.stem" />
-              </p>
+              </DsText>
 
-              <div v-for="p in q.parts" :key="p.partId" class="flex flex-col gap-3">
-                <PartResultCard
-                  v-if="shown"
-                  :result="p"
-                  :options="optionsOf(q.questionId)"
-                />
+              <DsStack v-for="p in q.parts" :key="p.partId">
+                <PartResultCard v-if="shown" :result="p" :options="optionsOf(q.questionId)" />
                 <DsPanel
                   v-else
                   as="section"
                   tone="inset"
                   padding="sm"
-                  class="flex flex-col gap-2"
                   :data-testid="`part-plain-${p.partId}`"
                 >
-                  <header class="flex flex-wrap items-center justify-between gap-2">
-                    <h3 class="text-label text-highlighted">
-                      {{ p.label ? `Bahagian ${p.label}` : 'Jawapan anda' }}
-                    </h3>
-                    <span class="tabular text-label text-highlighted" data-testid="part-marks"
-                      >{{ p.awarded }} / {{ p.marks }}</span
+                  <DsStack gap="sm">
+                    <DsCluster justify="between">
+                      <DsHeading :level="3" variant="label">
+                        {{ p.label ? `Bahagian ${p.label}` : 'Jawapan anda' }}
+                      </DsHeading>
+                      <DsText variant="label" tone="highlighted" tabular data-testid="part-marks"
+                        >{{ p.awarded }} / {{ p.marks }}</DsText
+                      >
+                    </DsCluster>
+                    <DsText v-if="p.answer.choice" variant="body" tone="default">
+                      Pilihan anda: <strong>{{ p.answer.choice }}</strong>
+                    </DsText>
+                    <DsText v-for="(line, i) in answerText(p)" :key="i" variant="body" tone="default">
+                      {{ line }}
+                    </DsText>
+                    <DsText
+                      v-if="p.status === 'kosong'"
+                      variant="body"
+                      tone="muted"
+                      data-testid="part-empty"
                     >
-                  </header>
-                  <p v-if="p.answer.choice" class="text-body text-default">
-                    Pilihan anda: <strong>{{ p.answer.choice }}</strong>
-                  </p>
-                  <p v-for="(line, i) in answerText(p)" :key="i" class="text-body text-default">
-                    {{ line }}
-                  </p>
-                  <p
-                    v-if="p.status === 'kosong'"
-                    class="text-body text-muted"
-                    data-testid="part-empty"
-                  >
-                    Tiada jawapan.
-                  </p>
+                      Tiada jawapan.
+                    </DsText>
+                  </DsStack>
                 </DsPanel>
 
-                <div v-if="review(p).selfMarkable" class="flex flex-col gap-2">
+                <DsStack v-if="review(p).selfMarkable" gap="sm">
                   <KeywordSuggestion
                     v-if="shown && review(p).suggestion"
                     :suggestion="review(p).suggestion!"
@@ -317,12 +320,12 @@ const answerText = (p: PartResult): string[] =>
                     :save="saveSelfMark"
                     @dirty="onDirty"
                   />
-                </div>
-              </div>
-            </div>
+                </DsStack>
+              </DsStack>
+            </DsStack>
           </UCard>
         </component>
-      </section>
+      </DsStack>
     </template>
   </DsPage>
 </template>
