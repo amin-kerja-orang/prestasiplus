@@ -40,7 +40,7 @@ export interface GroupRow {
   label: string | null
   scope: 'section' | 'paper'
   stimuli: StimulusRow[]
-  optionBank: { label: string; bodyMs: string | null; bodyEn: string | null }[]
+  optionBank: { label: string; bodyMs: string | null; bodyEn: string | null; imageFileId: bigint | null; isDistractor: boolean }[]
   questionIds: bigint[]
   /** S1-T01 (DM-51): the scope of the group itself; null = no restriction. */
   subjectId: bigint | null
@@ -255,7 +255,7 @@ export class StimuliRepository {
       label: g.label,
       scope: g.scope === 'paper' ? 'paper' : 'section',
       stimuli: g.stimuli.map((s) => this.rowOf(s.stimulus, s.stimulus._count.groupLinks)),
-      optionBank: g.options.map((o) => ({ label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn })),
+      optionBank: g.options.map((o) => ({ label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn, imageFileId: o.imageFileId, isDistractor: o.isDistractor })),
       questionIds: g.questions.map((q) => q.id),
       subjectId: g.subjectId,
       educationLevelId: g.educationLevelId,
@@ -317,7 +317,7 @@ export class StimuliRepository {
               label: g.label,
               scope: g.scope === 'paper' ? ('paper' as const) : ('section' as const),
               stimuli: g.stimuli.map((x) => this.rowOf(x.stimulus, x.stimulus._count.groupLinks)),
-              optionBank: g.options.map((o) => ({ label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn })),
+              optionBank: g.options.map((o) => ({ label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn, imageFileId: o.imageFileId, isDistractor: o.isDistractor })),
               questionIds: g.questions.map((q) => q.id),
               subjectId: g.subjectId,
               educationLevelId: g.educationLevelId,
@@ -418,7 +418,7 @@ export class StimuliRepository {
     label: string | null
     scope: 'section' | 'paper'
     stimulusIds: bigint[]
-    optionBank: { label: string; bodyMs: string | null; bodyEn: string | null }[]
+    optionBank: { label: string; bodyMs: string | null; bodyEn: string | null; imageFileId: bigint | null; isDistractor: boolean }[]
     traits?: GroupScope
   }): Promise<string> {
     const group = await this.db.stimulusGroup.create({
@@ -427,10 +427,38 @@ export class StimuliRepository {
         scope: input.scope,
         ...(input.traits === undefined ? {} : { subjectId: bi(input.traits.subjectId ?? ''), educationLevelId: bi(input.traits.educationLevelId ?? ''), kertas: input.traits.kertas }),
         stimuli: { create: input.stimulusIds.map((stimulusId, i) => ({ stimulusId, position: i + 1 })) },
-        options: { create: input.optionBank.map((o, i) => ({ label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn, position: i + 1 })) },
+        options: { create: input.optionBank.map((o, i) => ({ label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn, imageFileId: o.imageFileId, isDistractor: o.isDistractor, position: i + 1 })) },
       },
     })
     return idToString(group.id)
+  }
+
+  /** Replaces the whole option bank of a group (delete, then insert: the (group, position) and (group, label) keys are unique).
+   * Option row ids change on every save: the rows are replaced, not updated in place. */
+  async replaceOptionBank(groupId: string, bank: { label: string; bodyMs: string | null; bodyEn: string | null; imageFileId: bigint | null; isDistractor: boolean }[]): Promise<void> {
+    const key = BigInt(groupId)
+    await this.db.stimulusGroupOption.deleteMany({ where: { groupId: key } })
+    if (bank.length > 0) {
+      await this.db.stimulusGroupOption.createMany({ data: bank.map((o, i) => ({ groupId: key, label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn, imageFileId: o.imageFileId, isDistractor: o.isDistractor, position: i + 1 })) })
+    }
+  }
+
+  /**
+   * The bank letters that the answer keys of the members use (AC-QA-10): `mapping` keys (`match_letter` leaves) of the latest and of the live
+   * version of each question. Read only; `questionIds` are the members (for a draft copy, the staged ones).
+   */
+  async keyLettersOf(questionIds: readonly string[]): Promise<Set<string>> {
+    const keys = questionIds.map(bi).filter((k): k is bigint => k !== null)
+    if (keys.length === 0) return new Set()
+    const rows = await this.db.$queryRaw<{ letter: string }[]>`
+      SELECT DISTINCT m.value AS letter
+        FROM questions q
+        JOIN question_versions v ON v.question_id = q.id AND (v.version_no = q.latest_version_no OR v.version_no = q.live_version_no)
+        JOIN question_parts p ON p.question_version_id = v.id
+        JOIN answer_keys k ON k.part_id = p.id AND k.kind = 'mapping'
+        CROSS JOIN LATERAL jsonb_each_text(CASE WHEN jsonb_typeof(k.content -> 'map') = 'object' THEN k.content -> 'map' ELSE '{}'::jsonb END) m
+       WHERE q.id IN (${Prisma.join(keys)})`
+    return new Set(rows.map((r) => r.letter))
   }
 
   async setGroupLabel(id: string, label: string | null): Promise<void> {
