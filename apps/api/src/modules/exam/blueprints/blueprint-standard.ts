@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto'
 
+import { z } from 'zod'
+
 import {
   BijakDifficultyProfileViewSchema,
   BijakTopicQuotaViewSchema,
@@ -37,6 +39,8 @@ export function profileOfDoc(doc: unknown): BijakDifficultyProfileView | null {
  * Quota document as stored: a line carries `reviewed` only when it is false (absent = true, 3.3a). The
  * result always has `reviewed` set, which is what the view and exam-core read.
  */
+const MARKS_PER_QUESTION_DOC = z.array(z.number().int())
+
 export function quotaOfDoc(doc: unknown): BijakTopicQuotaView | null {
   if (doc === null || doc === undefined) return null
   const raw = doc as { lines?: unknown }
@@ -46,9 +50,9 @@ export function quotaOfDoc(doc: unknown): BijakTopicQuotaView | null {
   return BijakTopicQuotaViewSchema.parse({ ...raw, lines })
 }
 
-/** DM-57 list as stored: a jsonb array of integers; null = no list. */
+/** DM-57 list as stored: a jsonb array of integers; null = no list. Parsed like `quotaOfDoc`: a malformed row fails loudly, it never reads as no list. */
 export function marksPerQuestionOfDoc(doc: unknown): number[] | null {
-  return Array.isArray(doc) ? (doc as number[]) : null
+  return doc === null || doc === undefined ? null : MARKS_PER_QUESTION_DOC.parse(doc)
 }
 
 /** Profile as written by the admin: a plain jsonb document (the strict input schema already vetted it). */
