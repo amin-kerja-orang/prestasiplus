@@ -63,6 +63,7 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
+| S10-T07 | AC-AS-4-1 | CI | Pass | 2026-11-05 | team-bb/S-2 | xs-counts.spec.ts (on Prestasi Sekolah) |
 
 ## Sprint 4
 
