@@ -28,9 +28,12 @@ export interface SelfMarkEntry {
 /** Part id to the pupil's mark. */
 export type SelfMarks = Record<string, SelfMarkEntry>
 
-/** Scheme kinds a person marks: mark-scheme points (V2 mark_scheme_points) and rubric (band_rubric). */
-export function isSelfMarkable(scheme: SchemeDef | undefined): boolean {
-  return scheme?.kind === 'points' || scheme?.kind === 'rubric'
+/**
+ * What a person marks: mark-scheme points (V2 mark_scheme_points) and rubric (band_rubric), plus (FR-PA-21, K20, API-BIJAK-05) an `accepted` part the
+ * grader left `belum_dimarkah`: short text of 3 or more words that matched nothing, or an unreadable number. `status` is the automatic one.
+ */
+export function isSelfMarkable(scheme: SchemeDef | undefined, status: BijakAttemptPartResult['status']): boolean {
+  return scheme?.kind === 'points' || scheme?.kind === 'rubric' || (scheme?.kind === 'accepted' && status === 'belum_dimarkah')
 }
 
 export function clamp(n: number, lo: number, hi: number): number {
@@ -56,7 +59,7 @@ export function decorateResult(base: BijakAttemptResult, bundles: Bundles, answe
       ...q,
       parts: q.parts.map((p): BijakAttemptPartResult => {
         const scheme = bundle?.schemes[p.partId]
-        if (!isSelfMarkable(scheme)) return p
+        if (!isSelfMarkable(scheme, p.status)) return p
         const out: BijakAttemptPartResult = { ...p, selfMarkable: true }
         if (scheme?.kind === 'points' && p.status === 'belum_dimarkah') {
           const text = answerTextOf(answers.get(p.partId))

@@ -343,7 +343,7 @@ export class BijakAttemptsService {
       const found = stored.result.questions.flatMap((q) => q.parts.map((p) => ({ q, p }))).find((x) => x.p.partId === body.partId)
       if (!found) throw ApiError.of('VALIDATION_ERROR', { fields: { partId: MSG.selfMarkPartUnknown } })
       const scheme = bundles.get(found.q.questionId)?.schemes[body.partId]
-      if (!isSelfMarkable(scheme)) throw ApiError.of('VALIDATION_ERROR', { fields: { partId: MSG.selfMarkNotSubjective } })
+      if (!isSelfMarkable(scheme, found.p.status)) throw ApiError.of('VALIDATION_ERROR', { fields: { partId: MSG.selfMarkNotSubjective } })
       const marks = found.p.marks
       let mark = clamp(body.mark, 0, marks)
       if (body.band !== undefined) {
