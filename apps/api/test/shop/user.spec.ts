@@ -340,6 +340,37 @@ describe('M15 student routes (BE-23)', () => {
     })
   })
 
+  describe('a cancelled draw (S7-T07, ERR-GAME-23)', () => {
+    it('a ticket on a cancelled draw is 409 DRAW_CANCELLED "Cabutan dibatalkan." and writes nothing; every other non-open draw stays DRAW_CLOSED', async () => {
+      const api = await as(STUDENT_MAJU)
+      const uid = await userIdOf(t.db, STUDENT_MAJU)
+      await fund(t, uid, { syiling: 20 }, 'cancelled-draw')
+      const draw = await insertDraw(t, { status: 'cancelled' })
+      const before = await walletRow(t, uid)
+      expectError(await api.post(`/cabutan/${draw}/tickets`), 409, 'DRAW_CANCELLED', 'Cabutan dibatalkan.')
+      expectError(await api.post(`/cabutan/${draw}/tickets`, { clientUuid: '2d1f8e3a-5b4c-4a9d-8e7f-4c3b2a1f0e9d' }), 409, 'DRAW_CANCELLED', 'Cabutan dibatalkan.')
+      expect(await walletRow(t, uid)).toEqual(before)
+      expect(await t.db.query(`select 1 from draw_tickets where draw_id = $1`, [draw])).toHaveLength(0)
+      expectError(await api.post(`/cabutan/${await insertDraw(t, { status: 'drawn' })}/tickets`), 409, 'DRAW_CLOSED', 'Cabutan ditutup.')
+      expectError(await api.post(`/cabutan/${await insertDraw(t, { status: 'closed' })}/tickets`), 409, 'DRAW_CLOSED', 'Cabutan ditutup.')
+    })
+
+    it('a repeat of an earlier clientUuid still replays its first ticket after the draw was cancelled', async () => {
+      const api = await as(STUDENT_MAJU)
+      const uid = await userIdOf(t.db, STUDENT_MAJU)
+      await fund(t, uid, { syiling: 20 }, 'cancelled-replay')
+      const draw = await insertDraw(t, { cost: 1, max: 5 })
+      const body = { clientUuid: '3e2a9f4b-6c5d-4b0e-9f8a-5d4c3b2a1f0e' }
+      const first = await api.post(`/cabutan/${draw}/tickets`, body)
+      expect(first.status, JSON.stringify(first.body)).toBe(201)
+      await t.db.query(`update draws set status = 'cancelled' where id = $1`, [draw])
+      const again = await api.post(`/cabutan/${draw}/tickets`, body)
+      expect(again.status).toBe(201)
+      expect(RewardTicketBoughtSchema.parse(again.body.data).ticketsOwned).toBe(RewardTicketBoughtSchema.parse(first.body.data).ticketsOwned)
+      expectError(await api.post(`/cabutan/${draw}/tickets`, { clientUuid: '4f3b0a5c-7d6e-4c1f-8a9b-6e5d4c3b2a1f' }), 409, 'DRAW_CANCELLED', 'Cabutan dibatalkan.')
+    })
+  })
+
   describe('Mod Pelajar (admin acting as a student)', () => {
     it('refuses every spending write with 403 and writes nothing; reads still work', async () => {
       const me = await login(t, ADMIN)

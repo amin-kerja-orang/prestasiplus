@@ -7037,6 +7037,7 @@
           "MONTHLY_CAP",
           "INSUFFICIENT_TOKENS",
           "DRAW_CLOSED",
+          "DRAW_CANCELLED",
           "TICKET_LIMIT",
           "INSUFFICIENT_BALANCE",
           "CONFLICT"
@@ -81628,6 +81629,121 @@
         }
       }
     },
+    "/admin/reward-control/draws/{id}": {
+      "put": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Edit a draft lucky draw (API-ADM-24)",
+        "description": "Same body and limits as the create route (30 P10-01..05); the prize lines are replaced in order. Draft only. openNow is accepted and ignored: Buka (POST /admin/reward-control/draws/{id}/open) opens the draw. Nothing is written when validation fails. Audited.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamificationDrawCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The draw with the new fields and prize lines.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationDraw"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND (no such draw; a non-numeric id gets the router default message).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi.\" (the draw is not a draft).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Sila lengkapkan semua medan wajib.\" with fields (name -> \"Medan ini diperlukan.\" when missing or blank, \"Medan ini tidak sah.\" when the type, range, enum or pattern is wrong; the first problem of every failing field). The field messages of the create route.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/reward-control/draws/{id}/open": {
       "post": {
         "tags": [
@@ -81817,6 +81933,101 @@
           },
           "409": {
             "description": "CONFLICT \"Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi.\" (the stored state of the draw is not open).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reward-control/draws/{id}/cancel": {
+      "post": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Cancel a draw and refund its tickets (API-ADM-24)",
+        "description": "No body. Allowed from draft, open and closed (ruling 5 on #505). In one transaction the draw becomes cancelled and every ticket is refunded once at the ticket price (ledger refund, source cabutan_refund, ref draw:{id}:ticket:{ticketId}, description \"Pulangan tiket cabutan: {title}\" [PROPOSED]); a draft has no tickets and refunds nothing. The lifetime total is unchanged. Audited. A drawn or already cancelled draw answers 409 and refunds nothing.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The draw, status cancelled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationDraw"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND (no such draw; a non-numeric id gets the router default message).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi.\" (the draw is drawn or already cancelled).",
             "content": {
               "application/json": {
                 "schema": {
@@ -82462,7 +82673,7 @@
             }
           },
           "409": {
-            "description": "DRAW_CLOSED \"Cabutan ditutup.\" (missing, not open, or closed by date); TICKET_LIMIT \"Had tiket dicapai.\"; INSUFFICIENT_BALANCE \"Baki syiling tidak mencukupi.\".",
+            "description": "DRAW_CLOSED \"Cabutan ditutup.\" (missing, not open, or closed by date); DRAW_CANCELLED \"Cabutan dibatalkan.\" (the admin cancelled the draw; a repeat of an earlier clientUuid still answers for its first ticket); TICKET_LIMIT \"Had tiket dicapai.\"; INSUFFICIENT_BALANCE \"Baki syiling tidak mencukupi.\".",
             "content": {
               "application/json": {
                 "schema": {

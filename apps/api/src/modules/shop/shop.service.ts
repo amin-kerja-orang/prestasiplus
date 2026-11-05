@@ -216,6 +216,7 @@ export class ShopService {
       // Share-lock the draw row first, then read it: a draw run cannot start between the check and the ticket.
       if (drawId !== null) await this.repo.lockDrawShared(drawId)
       const draw = drawId === null ? null : await this.repo.draw(drawId)
+      if (draw?.status === 'cancelled') throw rewardError('DRAW_CANCELLED')
       if (!draw || draw.status !== 'open' || !drawStillOpen(draw.closesAt, now)) throw rewardError('DRAW_CLOSED')
       const owned = await this.repo.countTickets(draw.id, userId)
       if (owned >= draw.maxTicketsPerStudent) throw rewardError('TICKET_LIMIT')

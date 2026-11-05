@@ -80,6 +80,8 @@ export const AUDIT_ACTIONS = {
   GAMIFICATION_REWARD_COST_UPDATED: 'gamification.reward_cost.updated',
   GAMIFICATION_DRAW_CREATED: 'gamification.draw.created',
   GAMIFICATION_DRAW_DRAWN: 'gamification.draw.drawn',
+  GAMIFICATION_DRAW_UPDATED: 'gamification.draw.updated',
+  GAMIFICATION_DRAW_CANCELLED: 'gamification.draw.cancelled',
   GAMIFICATION_DRAW_OPENED: 'gamification.draw.opened',
   GAMIFICATION_DRAW_CLOSED: 'gamification.draw.closed',
   GAMIFICATION_DRAW_WINNER_DELIVERED: 'gamification.draw.winner_delivered',

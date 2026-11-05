@@ -50,4 +50,5 @@ export const SOURCES = {
   refund: 'hadiah_refund',
   box: 'mystery_box',
   ticket: 'cabutan_ticket',
+  cabutanRefund: 'cabutan_refund',
 } as const

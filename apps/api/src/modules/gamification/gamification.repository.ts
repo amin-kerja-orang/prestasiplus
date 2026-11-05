@@ -762,6 +762,23 @@ export class GamificationRepository {
     return created
   }
 
+  /** Replaces the fields and the ordered prize rows of a DRAFT draw (`PUT .../draws/:id`); zero rows = it is no longer a draft. */
+  async updateDraftDraw(
+    db: Db,
+    id: bigint,
+    input: { title: string; description: string; ticketCostSyiling: number; maxTicketsPerStudent: number; closesAt: Date | null; prizes: readonly PrizeLine[] },
+    at: Date,
+  ): Promise<boolean> {
+    const r = await db.draw.updateMany({
+      where: { id, status: 'draft' },
+      data: { title: input.title, description: input.description, ticketCostSyiling: input.ticketCostSyiling, maxTicketsPerStudent: input.maxTicketsPerStudent, closesAt: input.closesAt, updatedAt: at },
+    })
+    if (r.count !== 1) return false
+    await db.drawPrize.deleteMany({ where: { drawId: id } })
+    await db.drawPrize.createMany({ data: input.prizes.map((p, position) => ({ drawId: id, label: p.label, valueSen: p.valueSen, qty: p.qty, position, createdAt: at, updatedAt: at })) })
+    return true
+  }
+
   /** Moves a draw from `from` to `to` (`Buka`, `Tutup`): zero rows = somebody else moved it first. */
   async setDrawStatus(db: Db, id: bigint, from: string, to: string, at: Date): Promise<boolean> {
     const r = await db.draw.updateMany({ where: { id, status: from }, data: { status: to, updatedAt: at } })

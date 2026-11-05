@@ -8,8 +8,10 @@ import { CLOCK, type Clock } from '../../db/clock'
 import { idFromString, idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { NotificationsService } from '../notifications'
+import { WalletService } from '../wallet'
 import type { ShopActor } from './actor'
 import { BOX_RANDOM, type BoxRandom, type BoxStream } from './box-random'
+import { SOURCES } from './shop.constants'
 import { drawStillOpen } from './shop.time'
 
 /** One winner as the admin reads it (DM-36): `prizePosition` is the 0-based line of the draw's prize pool, `slot` counts that line's winners from 0. */
@@ -58,6 +60,9 @@ export function pickWinners<T extends { userId: bigint }, P extends { qty: numbe
   return picks
 }
 
+/** [PROPOSED] refund description (N4 on #505 is open): "Pulangan tiket cabutan: {title}". */
+export const drawRefundDescription = (title: string): string => `Pulangan tiket cabutan: ${title}`
+
 const lockDraw = async (tx: TxClient, id: bigint): Promise<void> => {
   await tx.$queryRaw`SELECT id FROM draws WHERE id = ${id} FOR UPDATE`
 }
@@ -79,6 +84,7 @@ export class DrawWinnersService {
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(BOX_RANDOM) private readonly random: BoxRandom,
     @Inject(NotificationsService) private readonly notifications: NotificationsService,
+    @Inject(WalletService) private readonly wallet: WalletService,
   ) {}
 
   /**
@@ -123,6 +129,55 @@ export class DrawWinnersService {
           ticketCount: tickets.length,
           winners: picks.map((p) => ({ prizePosition: p.prize.position, slot: p.slot, ticketId: idToString(p.ticket.id), userId: idToString(p.ticket.userId) })),
         },
+        tx,
+      })
+    }, DRAW_TX)
+  }
+
+  /**
+   * Cancels a draw (48 GAME-22 FR-GM-22.3, API-ADM-24; ruling 5 on #505): allowed from `draft`, `open` and `closed` (stored state, under the
+   * row lock); `drawn` and `cancelled` are 409, so a second press refunds nothing. Every ticket is refunded once at the draw's price
+   * (source `cabutan_refund`, key `draw:<id>:ticket:<ticketId>`, unique per user, so a replay cannot pay twice); a draw priced 0 refunds
+   * nothing. A `refund` does not change the lifetime total. The status change, the refunds and the audit row commit together.
+   */
+  async cancel(actor: ShopActor, drawId: bigint): Promise<void> {
+    await this.prisma.transaction(async (tx) => {
+      await lockDraw(tx, drawId)
+      const draw = await tx.draw.findUnique({ where: { id: drawId } })
+      if (!draw) throw ApiError.of('NOT_FOUND')
+      if (draw.status !== 'draft' && draw.status !== 'open' && draw.status !== 'closed') throw ApiError.of('CONFLICT')
+      const at = this.clock.now()
+      const moved = await tx.draw.updateMany({ where: { id: drawId, status: draw.status }, data: { status: 'cancelled', cancelledAt: at, updatedAt: at } })
+      if (moved.count !== 1) throw ApiError.of('CONFLICT')
+      let refunded = 0
+      if (draw.status !== 'draft' && draw.ticketCostSyiling > 0) {
+        const tickets = await tx.drawTicket.findMany({ where: { drawId }, orderBy: { id: 'asc' }, select: { id: true, userId: true } })
+        for (const t of tickets) {
+          await this.wallet.credit(
+            {
+              userId: idToString(t.userId),
+              amount: draw.ticketCostSyiling,
+              source: SOURCES.cabutanRefund,
+              sourceId: `draw:${idToString(drawId)}:ticket:${idToString(t.id)}`,
+              description: drawRefundDescription(draw.title),
+              type: 'refund',
+              isTest: false,
+            },
+            { tx },
+          )
+          refunded += 1
+        }
+      }
+      await this.audit.record({
+        action: AUDIT_ACTIONS.GAMIFICATION_DRAW_CANCELLED,
+        actorUserId: actor.userId,
+        actorRole: actor.role,
+        requestId: actor.requestId,
+        ip: actor.ip,
+        isTest: actor.isTest,
+        targetType: 'draw',
+        targetId: idToString(drawId),
+        details: { from: draw.status, refundedTickets: refunded, refundedSyiling: refunded * draw.ticketCostSyiling },
         tx,
       })
     }, DRAW_TX)

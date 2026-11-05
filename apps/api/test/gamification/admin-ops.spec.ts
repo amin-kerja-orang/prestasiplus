@@ -6,7 +6,8 @@ import { NotificationsService } from '../../src/modules/notifications'
 import { RewardSettingsService } from '../../src/modules/shop'
 import { BOX_RANDOM, CsprngBoxRandom, SeededBoxRandom } from '../../src/modules/shop/box-random'
 import { pickWinners } from '../../src/modules/shop/draw-winners.service'
-import { ADMIN, STUDENT_MAJU, bareUser, bootGamificationApp, dataOf, fail, signIn, userIdOf, type Client, type GamificationTestApp } from './helpers'
+import { WalletService } from '../../src/modules/wallet'
+import { ADMIN, STUDENT_MAJU, bareUser, bootGamificationApp, dataOf, fail, signIn, userIdOf, walletOf, type Client, type GamificationTestApp } from './helpers'
 
 const KEYS = ['coins_per_question', 'cash_rate_coins', 'cash_rate_sen', 'min_cash_withdrawal', 'cash_withdrawal_enabled', 'reward_budget_sen_session', 'reward_budget_sen_month', 'current_session_year', 'flat_quiz_reward', 'games_award_syiling']
 const SUMMARY = 'Sila lengkapkan semua medan wajib.'
@@ -692,6 +693,238 @@ describe('M14 admin operations: settings, reward control, lucky draws (BE-23, AC
         fail(await deliver(a.id, 'abc'), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
         fail(await deliver('abc', wa.id), 404, 'NOT_FOUND')
         expect((await winnerRows(a.id))[0]!.delivered_at).toBeNull()
+      })
+    })
+  })
+
+  describe('edit a draft draw and cancel with refund (API-ADM-24, DM-65, FR-GM-22.3, AC-GM-22.6, ERR-GAME-23)', () => {
+    const PRICE = 5
+    const mk = async (extra: Record<string, unknown> = {}) =>
+      GamificationDrawSchema.parse(dataOf(await admin.post('/admin/reward-control/draws', { title: 'Cabutan Batal', ticketCostSyiling: PRICE, maxTicketsPerStudent: 10, closesAt: '2026-12-31', prizePool: [{ label: 'Asal', valueSen: 100, qty: 1 }], ...extra })))
+    const stored = async (id: string) => (await t.db.query<{ status: string; cancelled_at: string | null }>(`select status, cancelled_at::text from draws where id = $1`, [id]))[0]!
+    const cancel = (id: string) => admin.post(`/admin/reward-control/draws/${id}/cancel`)
+    const refunds = (userId: string) => t.db.query<{ type: string; source: string; source_id: string | null; amount: number; description: string }>(`select type, source, source_id, amount, description from coin_ledger where user_id = $1 and source = 'cabutan_refund' order by id`, [userId])
+    const edit = { title: 'Disunting', description: 'Baharu', ticketCostSyiling: 9, maxTicketsPerStudent: 4, closesAt: '2026-12-30', prizePool: [{ label: 'Satu', valueSen: 500, qty: 1 }, { label: 'Dua', valueSen: 50, qty: 3 }] }
+
+    /** Pupils with 100 syiling who each bought `n` tickets the way the shop does (ticket row, then a spend keyed by the ticket). */
+    const sell = async (drawId: string, counts: number[]) => {
+      const wallet = t.app.get(WalletService)
+      const users: string[] = []
+      for (const [i, n] of counts.entries()) {
+        const u = await bareUser(t, `Murid Batal ${drawId}-${String(i)}`)
+        users.push(u)
+        await wallet.credit({ userId: u, amount: 100, source: 'ujian', sourceId: `seed:${drawId}:${u}`, description: 'Baki', type: 'earn', isTest: false })
+        for (let k = 0; k < n; k++) {
+          const ticket = (await t.db.query<{ id: string }>(`insert into draw_tickets (draw_id, user_id) values ($1, $2) returning id::text`, [drawId, u]))[0]!.id
+          await wallet.debit({ userId: u, amount: PRICE, source: 'cabutan_ticket', sourceId: `draw:${drawId}:ticket:${ticket}`, description: 'Tiket Cabutan: Cabutan Batal', type: 'spend', isTest: false })
+        }
+      }
+      return users
+    }
+
+    describe('PUT /admin/reward-control/draws/:id', () => {
+      it('edits a draft: the fields change and the prize lines are replaced in the new order; one audit event', async () => {
+        const d = await mk({ prizePool: [{ label: 'A', valueSen: 1, qty: 1 }, { label: 'B', valueSen: 2, qty: 2 }, { label: 'C', valueSen: 3, qty: 3 }] })
+        const before = await auditCount('gamification.draw.updated')
+        const res = await admin.put(`/admin/reward-control/draws/${d.id}`, edit)
+        expect(res.status).toBe(200)
+        const e = GamificationDrawSchema.parse(dataOf(res))
+        expect(e).toEqual({ ...d, title: 'Disunting', description: 'Baharu', ticketCostSyiling: 9, maxTicketsPerStudent: 4, closesAt: '2026-12-30', prizePool: [{ label: 'Satu', valueSen: 500, qty: 1 }, { label: 'Dua', valueSen: 50, qty: 3 }] })
+        expect(await prizeRows(d.id)).toEqual([{ label: 'Satu', value_sen: 500, qty: 1, position: 0 }, { label: 'Dua', value_sen: 50, qty: 3, position: 1 }])
+        expect((await stored(d.id)).status).toBe('draft')
+        expect(await auditCount('gamification.draw.updated')).toBe(before + 1)
+        expect(dataOf<{ id: string }[]>(await admin.get('/admin/reward-control/draws')).find((x) => x.id === d.id)).toEqual(e)
+      })
+
+      it('the create validation is reused with its messages, and a refused body writes nothing (title, pool and audit unchanged)', async () => {
+        const d = await mk()
+        const before = await auditCount('gamification.draw.updated')
+        expect(fail(await admin.put(`/admin/reward-control/draws/${d.id}`, { description: 'x'.repeat(501), ticketCostSyiling: 0, closesAt: '31/12/2026' }), 422, 'VALIDATION_ERROR', SUMMARY).fields).toEqual({ title: 'Tajuk diperlukan.', description: 'Medan ini tidak sah.', ticketCostSyiling: 'Harga tiket tidak sah.', maxTicketsPerStudent: 'Medan ini diperlukan.', closesAt: 'Medan ini tidak sah.', prizePool: 'Hadiah diperlukan.' })
+        expect(fail(await admin.put(`/admin/reward-control/draws/${d.id}`, { ...edit, prizePool: 'not json' }), 422, 'VALIDATION_ERROR', POOL_MSG).fields).toEqual({ prizePool: POOL_MSG })
+        expect(fail(await admin.put(`/admin/reward-control/draws/${d.id}`, { ...edit, prizePool: [] }), 422, 'VALIDATION_ERROR', 'Hadiah diperlukan.').fields).toEqual({ prizePool: 'Hadiah diperlukan.' })
+        expect(fail(await admin.put(`/admin/reward-control/draws/${d.id}`, { ...edit, closesAt: '2020-01-01' }), 422, 'VALIDATION_ERROR', SUMMARY).fields).toEqual({ closesAt: 'Tarikh tutup mesti pada masa hadapan.' })
+        expect(fail(await admin.put(`/admin/reward-control/draws/${d.id}`, { ...edit, title: 'T'.repeat(121) }), 422, 'VALIDATION_ERROR', SUMMARY).fields).toEqual({ title: 'Medan ini tidak sah.' })
+        expect(fail(await admin.put(`/admin/reward-control/draws/${d.id}`, { ...edit, ticketCostSyiling: 10_001 }), 422, 'VALIDATION_ERROR', SUMMARY).fields).toEqual({ ticketCostSyiling: 'Harga tiket tidak sah.' })
+        expect(fail(await admin.put(`/admin/reward-control/draws/${d.id}`, { ...edit, maxTicketsPerStudent: 101 }), 422, 'VALIDATION_ERROR', SUMMARY).fields).toEqual({ maxTicketsPerStudent: 'Medan ini tidak sah.' })
+        expect(await prizeRows(d.id)).toEqual([{ label: 'Asal', value_sen: 100, qty: 1, position: 0 }])
+        expect((await t.db.query<{ title: string }>(`select title from draws where id = $1`, [d.id]))[0]!.title).toBe('Cabutan Batal')
+        expect(await auditCount('gamification.draw.updated')).toBe(before)
+      })
+
+      it('draft only: an open, closed, drawn or cancelled draw is 409 CONFLICT and nothing changes; an unknown or non-numeric id is 404', async () => {
+        for (const status of ['open', 'closed', 'drawn', 'cancelled']) {
+          const d = await mk()
+          await t.db.query(`update draws set status = $2 where id = $1`, [d.id, status])
+          fail(await admin.put(`/admin/reward-control/draws/${d.id}`, edit), 409, 'CONFLICT')
+          expect(await prizeRows(d.id)).toEqual([{ label: 'Asal', value_sen: 100, qty: 1, position: 0 }])
+        }
+        fail(await admin.put('/admin/reward-control/draws/999999', edit), 404, 'NOT_FOUND')
+        fail(await admin.put('/admin/reward-control/draws/abc', edit), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+      })
+
+      it('a draft that Buka opened first cannot be edited afterwards; concurrent edits all succeed in turn (last write wins) with one coherent pool', async () => {
+        const d = await mk()
+        const results = await Promise.all([1, 2, 3].map((n) => admin.put(`/admin/reward-control/draws/${d.id}`, { ...edit, title: `Edit ${String(n)}`, prizePool: [{ label: `P${String(n)}`, valueSen: n, qty: n }] })))
+        expect(results.map((r) => r.status)).toEqual([200, 200, 200])
+        const rows = await prizeRows(d.id)
+        expect(rows).toHaveLength(1)
+        expect(rows[0]!.position).toBe(0)
+        await admin.post(`/admin/reward-control/draws/${d.id}/open`)
+        fail(await admin.put(`/admin/reward-control/draws/${d.id}`, edit), 409, 'CONFLICT')
+      })
+
+      it('admin only: a pupil gets 403, and a request without the CSRF token is refused; the draw is unchanged', async () => {
+        const d = await mk()
+        const student = await signIn(t, STUDENT_MAJU)
+        fail(await student.put(`/admin/reward-control/draws/${d.id}`, edit), 403, 'FORBIDDEN')
+        fail(await admin.noCsrfPut(`/admin/reward-control/draws/${d.id}`, edit), 403, 'CSRF_INVALID')
+        expect((await prizeRows(d.id))[0]!.label).toBe('Asal')
+      })
+    })
+
+    describe('POST /admin/reward-control/draws/:id/cancel', () => {
+      it('AC-GM-22.6: an open draw with 6 tickets sold is cancelled; 6 cabutan_refund rows, each pupil restored, the lifetime total unchanged', async () => {
+        const d = await mk({ openNow: true })
+        const users = await sell(d.id, [1, 1, 1, 1, 1, 1])
+        for (const u of users) expect(await walletOf(t, u)).toMatchObject({ current_syiling: 100 - PRICE, total_syiling_earned: 100 })
+        const before = await auditCount('gamification.draw.cancelled')
+        const res = await cancel(d.id)
+        expect(res.status).toBe(200)
+        const out = GamificationDrawSchema.parse(dataOf(res))
+        expect(out).toEqual({ ...d, status: 'cancelled', ticketsSold: 6 })
+        const row = await stored(d.id)
+        expect(row.status).toBe('cancelled')
+        expect(row.cancelled_at).not.toBeNull()
+        const tickets = await t.db.query<{ id: string; user_id: string }>(`select id::text, user_id::text from draw_tickets where draw_id = $1`, [d.id])
+        let rows = 0
+        for (const u of users) {
+          const mine = await refunds(u)
+          rows += mine.length
+          const ticket = tickets.find((x) => x.user_id === u)!
+          expect(mine).toEqual([{ type: 'refund', source: 'cabutan_refund', source_id: `draw:${d.id}:ticket:${ticket.id}`, amount: PRICE, description: 'Pulangan tiket cabutan: Cabutan Batal' }])
+          expect(await walletOf(t, u)).toMatchObject({ current_syiling: 100, total_syiling_earned: 100 })
+        }
+        expect(rows).toBe(6)
+        const events = await t.db.query<{ detail: Record<string, unknown>; actor_user_id: string }>(`select detail, actor_user_id::text from audit_events where action = 'gamification.draw.cancelled' and target_id = $1`, [d.id])
+        expect(events).toHaveLength(1)
+        expect(events[0]).toMatchObject({ actor_user_id: await userIdOf(t.db, ADMIN), detail: { from: 'open', refundedTickets: 6, refundedSyiling: 6 * PRICE } })
+        expect(await auditCount('gamification.draw.cancelled')).toBe(before + 1)
+      })
+
+      it('a pupil with several tickets is refunded once per ticket', async () => {
+        const d = await mk({ openNow: true })
+        const [u] = await sell(d.id, [3])
+        expect(await walletOf(t, u!)).toMatchObject({ current_syiling: 100 - 3 * PRICE })
+        await cancel(d.id)
+        expect(await refunds(u!)).toHaveLength(3)
+        expect(await walletOf(t, u!)).toMatchObject({ current_syiling: 100, total_syiling_earned: 100 })
+      })
+
+      it('a second cancel is 409 CONFLICT: no extra refund, no second audit event; concurrent presses refund once', async () => {
+        const d = await mk({ openNow: true })
+        const users = await sell(d.id, [1, 2])
+        const results = await Promise.all([cancel(d.id), cancel(d.id), cancel(d.id)])
+        expect(results.map((r) => r.status).sort()).toEqual([200, 409, 409])
+        for (const r of results.filter((x) => x.status === 409)) fail(r, 409, 'CONFLICT')
+        fail(await cancel(d.id), 409, 'CONFLICT')
+        expect((await refunds(users[0]!)).length + (await refunds(users[1]!)).length).toBe(3)
+        for (const u of users) expect((await walletOf(t, u))!.current_syiling).toBe(100)
+        expect(await t.db.query(`select 1 from audit_events where action = 'gamification.draw.cancelled' and target_id = $1`, [d.id])).toHaveLength(1)
+      })
+
+      it('a closed draw cancels and refunds its tickets', async () => {
+        const d = await mk({ openNow: true })
+        const users = await sell(d.id, [1, 1])
+        await admin.post(`/admin/reward-control/draws/${d.id}/close`)
+        expect(GamificationDrawSchema.parse(dataOf(await cancel(d.id))).status).toBe('cancelled')
+        for (const u of users) {
+          expect(await refunds(u)).toHaveLength(1)
+          expect((await walletOf(t, u))!.current_syiling).toBe(100)
+        }
+        const [ev] = await t.db.query<{ detail: { from: string } }>(`select detail from audit_events where action = 'gamification.draw.cancelled' and target_id = $1`, [d.id])
+        expect(ev!.detail.from).toBe('closed')
+      })
+
+      it('an open draw past its closing day (reads closed) cancels too', async () => {
+        const d = await mk({ openNow: true })
+        const [u] = await sell(d.id, [1])
+        const yesterday = mytDay(new Date(t.clock.now().getTime() - 86_400_000))
+        await t.db.query(`update draws set closes_at = $2::timestamptz where id = $1`, [d.id, `${yesterday}T23:59:59.999+08:00`])
+        expect(GamificationDrawSchema.parse(dataOf(await cancel(d.id))).status).toBe('cancelled')
+        expect(await refunds(u!)).toHaveLength(1)
+      })
+
+      it('a draft cancels with no refund and one audit row', async () => {
+        const d = await mk()
+        const res = await cancel(d.id)
+        expect(res.status).toBe(200)
+        expect(GamificationDrawSchema.parse(dataOf(res))).toEqual({ ...d, status: 'cancelled' })
+        expect((await stored(d.id)).cancelled_at).not.toBeNull()
+        expect(await t.db.query(`select 1 from coin_ledger where source = 'cabutan_refund' and source_id like $1`, [`draw:${d.id}:%`])).toEqual([])
+        const [ev] = await t.db.query<{ detail: Record<string, unknown> }>(`select detail from audit_events where action = 'gamification.draw.cancelled' and target_id = $1`, [d.id])
+        expect(ev!.detail).toMatchObject({ from: 'draft', refundedTickets: 0, refundedSyiling: 0 })
+      })
+
+      it('a drawn draw cannot be cancelled: 409, no refund, status unchanged', async () => {
+        const d = await mk({ openNow: true })
+        const [u] = await sell(d.id, [1])
+        await admin.post(`/admin/reward-control/draws/${d.id}/close`)
+        dataOf(await admin.post(`/admin/reward-control/draws/${d.id}/winners`))
+        fail(await cancel(d.id), 409, 'CONFLICT')
+        expect((await stored(d.id)).status).toBe('drawn')
+        expect(await refunds(u!)).toEqual([])
+        expect((await walletOf(t, u!))!.current_syiling).toBe(100 - PRICE)
+      })
+
+      it('a draw priced 0 cancels without refund rows (the wallet credit refuses 0)', async () => {
+        const d = await mk({ openNow: true })
+        const [u] = await sell(d.id, [1])
+        await t.db.query(`update draws set ticket_cost_syiling = 0 where id = $1`, [d.id])
+        expect(GamificationDrawSchema.parse(dataOf(await cancel(d.id))).status).toBe('cancelled')
+        expect(await refunds(u!)).toEqual([])
+      })
+
+      it('a failing refund rolls everything back: the draw keeps its state, no refund row, no audit event (one transaction)', async () => {
+        const d = await mk({ openNow: true })
+        const users = await sell(d.id, [1, 1])
+        const wallet = t.app.get(WalletService)
+        const real = wallet.credit.bind(wallet)
+        let calls = 0
+        const spy = vi.spyOn(wallet, 'credit').mockImplementation((...args) => {
+          calls += 1
+          if (calls === 2) throw new Error('ledger down')
+          return real(...args)
+        })
+        try {
+          expect((await cancel(d.id)).status).toBe(500)
+        } finally {
+          spy.mockRestore()
+        }
+        expect((await stored(d.id)).status).toBe('open')
+        for (const u of users) expect(await refunds(u)).toEqual([])
+        expect(await t.db.query(`select 1 from audit_events where action = 'gamification.draw.cancelled' and target_id = $1`, [d.id])).toEqual([])
+        expect(GamificationDrawSchema.parse(dataOf(await cancel(d.id))).status).toBe('cancelled')
+      })
+
+      it('404 for an unknown or non-numeric id; the route takes no body; only an admin (a pupil gets 403) and CSRF is required', async () => {
+        fail(await cancel('999999'), 404, 'NOT_FOUND')
+        fail(await cancel('abc'), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+        const d = await mk()
+        const student = await signIn(t, STUDENT_MAJU)
+        fail(await student.post(`/admin/reward-control/draws/${d.id}/cancel`), 403, 'FORBIDDEN')
+        fail(await admin.noCsrfPost(`/admin/reward-control/draws/${d.id}/cancel`), 403, 'CSRF_INVALID')
+        expect((await stored(d.id)).status).toBe('draft')
+        expect(GamificationDrawSchema.parse(dataOf(await admin.post(`/admin/reward-control/draws/${d.id}/cancel`, { status: 'drawn' }))).status).toBe('cancelled')
+      })
+
+      it('a cancelled draw cannot be opened, closed, drawn or edited, and is listed as cancelled', async () => {
+        const d = await mk()
+        await cancel(d.id)
+        fail(await admin.post(`/admin/reward-control/draws/${d.id}/open`), 409, 'CONFLICT')
+        fail(await admin.post(`/admin/reward-control/draws/${d.id}/close`), 409, 'CONFLICT')
+        fail(await admin.post(`/admin/reward-control/draws/${d.id}/winners`), 409, 'CONFLICT')
+        fail(await admin.put(`/admin/reward-control/draws/${d.id}`, edit), 409, 'CONFLICT')
+        expect(dataOf<{ id: string; status: string }[]>(await admin.get('/admin/reward-control/draws')).find((x) => x.id === d.id)!.status).toBe('cancelled')
       })
     })
   })

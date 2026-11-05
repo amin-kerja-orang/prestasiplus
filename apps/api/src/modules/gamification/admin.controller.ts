@@ -151,6 +151,12 @@ export class RewardControlController {
     return ok(await this.admin.createDraw(actor, body))
   }
 
+  @Put('draws/:id')
+  @RateLimit(GAMIFICATION_LIMITS.adminWrite)
+  async updateDraw(@Actor() actor: AuditActor, @Param('id') id: string, @Body() body: unknown) {
+    return ok(await this.admin.updateDraw(actor, id, body))
+  }
+
   @Post('draws/:id/open')
   @HttpCode(200)
   @RateLimit(GAMIFICATION_LIMITS.adminWrite)
@@ -163,6 +169,13 @@ export class RewardControlController {
   @RateLimit(GAMIFICATION_LIMITS.adminWrite)
   async closeDraw(@Actor() actor: AuditActor, @Param('id') id: string) {
     return ok(await this.admin.closeDraw(actor, id))
+  }
+
+  @Post('draws/:id/cancel')
+  @HttpCode(200)
+  @RateLimit(GAMIFICATION_LIMITS.adminWrite)
+  async cancelDraw(@Actor() actor: AuditActor, @Param('id') id: string) {
+    return ok(await this.admin.cancelDraw(actor, id))
   }
 
   @Post('draws/:id/winners')

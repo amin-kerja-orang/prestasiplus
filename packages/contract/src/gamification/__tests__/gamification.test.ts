@@ -525,7 +525,9 @@ describe('openapi registration', () => {
     has('/admin/reward-control/rewards/{id}/cost', 'put')
     has('/admin/reward-control/draws', 'get')
     has('/admin/reward-control/draws', 'post')
+    has('/admin/reward-control/draws/{id}', 'put')
     has('/admin/reward-control/draws/{id}/open', 'post')
+    has('/admin/reward-control/draws/{id}/cancel', 'post')
     has('/admin/reward-control/draws/{id}/close', 'post')
   })
 

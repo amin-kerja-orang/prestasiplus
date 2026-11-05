@@ -619,6 +619,24 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
   })
 
   registry.registerPath({
+    method: 'put',
+    path: '/admin/reward-control/draws/{id}',
+    tags: ['gamification-admin'],
+    summary: 'Edit a draft lucky draw (API-ADM-24)',
+    description:
+      'Same body and limits as the create route (30 P10-01..05); the prize lines are replaced in order. Draft only. openNow is accepted and ignored: Buka (POST /admin/reward-control/draws/{id}/open) opens the draw. Nothing is written when validation fails. Audited.',
+    request: { params: IdParams, headers: [csrf], body: body(GamificationDrawCreateRequestSchema) },
+    responses: {
+      200: json(envelopeOf(GamificationDrawSchema), 'The draw with the new fields and prize lines.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_ADMIN_WRITE,
+      404: err('NOT_FOUND (no such draw; a non-numeric id gets the router default message).'),
+      409: err('CONFLICT "Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi." (the draw is not a draft).'),
+      422: err(`${VALIDATION_FIELDS} The field messages of the create route.`),
+    },
+  })
+
+  registry.registerPath({
     method: 'post',
     path: '/admin/reward-control/draws/{id}/open',
     tags: ['gamification-admin'],
@@ -648,6 +666,23 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
       403: FORBIDDEN_ADMIN_WRITE,
       404: err('NOT_FOUND (no such draw; a non-numeric id gets the router default message).'),
       409: err('CONFLICT "Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi." (the stored state of the draw is not open).'),
+    },
+  })
+
+  registry.registerPath({
+    method: 'post',
+    path: '/admin/reward-control/draws/{id}/cancel',
+    tags: ['gamification-admin'],
+    summary: 'Cancel a draw and refund its tickets (API-ADM-24)',
+    description:
+      'No body. Allowed from draft, open and closed (ruling 5 on #505). In one transaction the draw becomes cancelled and every ticket is refunded once at the ticket price (ledger refund, source cabutan_refund, ref draw:{id}:ticket:{ticketId}, description "Pulangan tiket cabutan: {title}" [PROPOSED]); a draft has no tickets and refunds nothing. The lifetime total is unchanged. Audited. A drawn or already cancelled draw answers 409 and refunds nothing.',
+    request: { params: IdParams, headers: [csrf] },
+    responses: {
+      200: json(envelopeOf(GamificationDrawSchema), 'The draw, status cancelled.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_ADMIN_WRITE,
+      404: err('NOT_FOUND (no such draw; a non-numeric id gets the router default message).'),
+      409: err('CONFLICT "Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi." (the draw is drawn or already cancelled).'),
     },
   })
 
@@ -779,7 +814,7 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
       401: UNAUTHORIZED,
       403: FORBIDDEN_CSRF,
       409: err(
-        'DRAW_CLOSED "Cabutan ditutup." (missing, not open, or closed by date); TICKET_LIMIT "Had tiket dicapai."; INSUFFICIENT_BALANCE "Baki syiling tidak mencukupi.".',
+        'DRAW_CLOSED "Cabutan ditutup." (missing, not open, or closed by date); DRAW_CANCELLED "Cabutan dibatalkan." (the admin cancelled the draw; a repeat of an earlier clientUuid still answers for its first ticket); TICKET_LIMIT "Had tiket dicapai."; INSUFFICIENT_BALANCE "Baki syiling tidak mencukupi.".',
       ),
       422: err('VALIDATION_ERROR fields.clientUuid "The client uuid field must be a valid UUID.".'),
     },

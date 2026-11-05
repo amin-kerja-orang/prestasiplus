@@ -662,6 +662,35 @@ export class GamificationAdminService {
   }
 
   /**
+   * `PUT /admin/reward-control/draws/:id` (API-ADM-24; ruling 5 on #505): edits a DRAFT draw with the create body (same validation and
+   * messages, nothing is written when it is refused) and replaces its prize lines in order. `openNow` is not used here: `Buka` opens.
+   * Any other stored state is 409 `CONFLICT`.
+   */
+  async updateDraw(actor: AuditActor, rawId: string, body: unknown): Promise<GamificationDraw> {
+    const id = idParam(rawId)
+    const now = this.clock.now()
+    const v = this.readDrawBody(body, now)
+    return this.write(actor, AUDIT_ACTIONS.GAMIFICATION_DRAW_UPDATED, { type: 'draw', id: rawId }, { title: v.title, prizeLines: v.prizes.length }, async (tx) => {
+      await this.repo.lockDraw(tx, id)
+      const draw = await this.repo.draw(tx, id)
+      if (!draw) throw notFoundError()
+      if (draw.status !== 'draft') throw ApiError.of('CONFLICT')
+      const input = { title: v.title, description: v.description, ticketCostSyiling: v.ticketCostSyiling, maxTicketsPerStudent: v.maxTicketsPerStudent, closesAt: v.closesAt, prizes: v.prizes }
+      if (!(await this.repo.updateDraftDraw(tx, id, input, now))) throw ApiError.of('CONFLICT')
+      const updated = await this.repo.draw(tx, id)
+      if (!updated) throw notFoundError()
+      return drawView(updated, now)
+    })
+  }
+
+  /** `POST /admin/reward-control/draws/:id/cancel` (API-ADM-24): see `DrawWinnersService.cancel`. */
+  async cancelDraw(actor: AuditActor, rawId: string): Promise<GamificationDraw> {
+    const id = idParam(rawId)
+    await this.winners.cancel(actor, id)
+    return this.drawNow(id)
+  }
+
+  /**
    * `Buka` (API-ADM-24) and `Tutup` (API-GAME-09): moves a draw one step of the 48 GAME-22 diagram, `draft` to `open` or
    * `open` to `closed`, on the STORED state under the row lock (a second press, or a ticket purchase racing the close,
    * sees the new state). Any other stored state is 409 `CONFLICT`. A draft whose closing day has passed cannot be
