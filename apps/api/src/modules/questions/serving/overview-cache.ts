@@ -131,8 +131,16 @@ export class OverviewCache {
     return this.slot<T>(scope).get(compute, () => this.papersFingerprint())
   }
 
+  /** Counts the invalidations: a reader that caches its own derived figures (the SPM pool counts) compares it to know a question event happened. */
+  get generation(): number {
+    return this.generationCount
+  }
+
+  private generationCount = 0
+
   /** Every scope becomes stale (the next read refreshes in the background). Cheap: no query. */
   invalidate(): void {
+    this.generationCount += 1
     for (const s of this.slots.values()) s.invalidate()
   }
 

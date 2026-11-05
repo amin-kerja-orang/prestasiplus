@@ -390,6 +390,18 @@ export class QuestionsRepository {
     return out
   }
 
+  /**
+   * S3-T07 (D91, AC-MUR-13-13): the number of UNITS the filter serves. A stimulus group counts once however many members it has, a
+   * question outside any group counts once (a multi-leaf question is one row, so it counts once). The group rule itself is in the
+   * filter (`wholeGroups` = `groupCompleteSql`: an incomplete group matches no row, so it counts 0, the same as the draw).
+   */
+  async unitCount(filter: QuestionFilter = {}): Promise<number> {
+    const { from, where } = this.scope(filter)
+    const rows = await this.db.$queryRaw<{ n: number }[]>`
+      SELECT count(DISTINCT CASE WHEN q.group_id IS NULL THEN 'q' || q.id::text ELSE 'g' || q.group_id::text END)::int AS n ${from} WHERE ${where}`
+    return rows[0]?.n ?? 0
+  }
+
   /** Eligible-style counts grouped by (level, TP) in ONE statement: the SPM pool splits. `filter` is used as given. */
   async groupCountsByLevelTp(filter: QuestionFilter = {}): Promise<{ levelId: string | null; tp: number | null; n: number }[]> {
     const { from, where } = this.scope(filter)
