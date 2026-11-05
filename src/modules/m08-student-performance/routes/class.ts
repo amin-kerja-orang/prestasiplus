@@ -30,7 +30,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       layout: 'user',
       access: 'auth',
-      roles: ['admin', 'teacher'],
+      roles: ['admin', 'teacher', 'school_admin'],
       onForbidden: '403',
       title: 'Analitik Kelas',
       header: {
