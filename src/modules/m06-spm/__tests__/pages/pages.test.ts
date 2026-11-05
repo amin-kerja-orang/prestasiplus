@@ -140,6 +140,7 @@ describe('S1 SpmHubPage', () => {
     expect(text).toContain(
       'Kertas 2, 3 & 4 percubaan negeri — baca, jawab, buka skema untuk semak sendiri.',
     )
+    expect(text).not.toContain('Tiada soalan')
   })
 
   it('Kertas Subjektif is a link only when /kertas-subjektif is a built route', async () => {
@@ -165,35 +166,79 @@ describe('S1 SpmHubPage', () => {
     expect(card.text()).not.toContain('Mula')
   })
 
+  it('Kertas Subjektif with 0 papers shows the exact PRD empty text, no "0 kertas" and is not a link', async () => {
+    api.fetchSpmOverview.mockResolvedValueOnce({
+      stats: { totalQuestions: 10, subjectCount: 25, trackingAQuestions: 5 },
+      modules: { databank: 10, latihTubi: 10, trackingA: 5, subjektifSets: 4, kertasSubjektif: 0 },
+      me: { sessions: 0, avgAccuracy: 0, coins: 0, answered: 0 },
+    })
+    const w = await render(SpmHubPage, '/spm')
+    const card = t(w, 'spm-module-kertas-subjektif')
+    expect(card.get('[data-testid=module-empty]').text()).toBe(
+      'Kertas subjektif sedang dalam penyediaan. Semak semula tidak lama lagi.',
+    )
+    expect(card.text()).not.toContain('0 kertas')
+    expect(card.text()).not.toContain('Kertas 2, 3 & 4 percubaan negeri')
+    expect(card.text()).not.toContain('Mula')
+    expect(card.element.tagName).toBe('DIV')
+    expect(card.attributes('href')).toBeUndefined()
+    expect(card.find('a').exists()).toBe(false)
+  })
+
+  it('Kertas Subjektif with n > 0 papers shows "{n} kertas" and links to /kertas-subjektif', async () => {
+    api.fetchSpmOverview.mockResolvedValueOnce({
+      stats: { totalQuestions: 10, subjectCount: 25, trackingAQuestions: 5 },
+      modules: { databank: 10, latihTubi: 10, trackingA: 5, subjektifSets: 4, kertasSubjektif: 7 },
+      me: { sessions: 0, avgAccuracy: 0, coins: 0, answered: 0 },
+    })
+    const w = await render(SpmHubPage, '/spm')
+    const card = t(w, 'spm-module-kertas-subjektif')
+    expect(card.attributes('href')).toBe('/kertas-subjektif')
+    expect(card.get('[data-testid=module-chip]').text()).toBe('7 kertas')
+    expect(card.find('[data-testid=module-empty]').exists()).toBe(false)
+  })
+
+  it('Tracking A with 0 sets stays a link with its count (PRD 46 s4.1 gives no card empty text for it)', async () => {
+    api.fetchSpmOverview.mockResolvedValueOnce({
+      stats: { totalQuestions: 10, subjectCount: 25, trackingAQuestions: 0 },
+      modules: { databank: 10, latihTubi: 10, trackingA: 0, subjektifSets: 4, kertasSubjektif: 1 },
+      me: { sessions: 0, avgAccuracy: 0, coins: 0, answered: 0 },
+    })
+    const w = await render(SpmHubPage, '/spm')
+    const card = t(w, 'spm-module-tracking-a')
+    expect(card.attributes('href')).toBe('/spm/ramalan')
+    expect(card.get('[data-testid=module-chip]').text()).toBe('0 soalan')
+  })
+
   it('the third stat tile spans both columns at phone width while Tahun Tersedia is hidden', async () => {
     const w = await render(SpmHubPage, '/spm')
     expect(t(w, 'spm-stat-tracking').classes()).toContain('col-span-2')
     expect(t(w, 'spm-stat-total').classes()).not.toContain('col-span-2')
   })
 
-  it('a card with a zero count stays a link, shows its copy line and "0 ..."', async () => {
+  it('a card with zero content shows its data-empty text and is not a link', async () => {
     api.fetchSpmOverview.mockResolvedValueOnce({
-      stats: { totalQuestions: 0, subjectCount: 25, trackingAQuestions: 0 },
-      modules: { databank: 0, latihTubi: 0, trackingA: 0, subjektifSets: 0, kertasSubjektif: 0 },
+      stats: { totalQuestions: 0, subjectCount: 25, trackingAQuestions: 1769 },
+      modules: { databank: 0, latihTubi: 0, trackingA: 1769, subjektifSets: 0, kertasSubjektif: 0 },
       me: { sessions: 0, avgAccuracy: 0, coins: 0, answered: 0 },
     })
     const w = await render(SpmHubPage, '/spm')
-    expect(w.findAll('[data-testid^=spm-module-]')).toHaveLength(5)
-    const hrefs = w.findAll('[data-testid^=spm-module-]').map((c) => c.attributes('href'))
-    expect(hrefs).toEqual([
-      '/spm/tahun-lepas',
-      '/spm/latih-tubi',
-      '/spm/ramalan',
-      '/spm/subjektif',
-      '/kertas-subjektif',
-    ])
-    const chips = w.findAll('[data-testid=module-chip]').map((c) => c.text())
-    expect(chips).toEqual(['0 soalan', '0 soalan', '0 soalan', '0 set subjektif', '0 kertas'])
-    const text = w.get('[data-testid=spm-modules]').text()
-    expect(text).toContain('Latihan soalan berstruktur & esei, semak sendiri dengan skema.')
-    expect(text).not.toContain('Tiada')
-    expect(w.findAll('[data-testid=module-empty]')).toHaveLength(0)
-    expect(t(w, 'spm-module-databank').text()).toContain('Mula')
+    const cards = w.findAll('[data-testid^=spm-module-]')
+    expect(cards).toHaveLength(5)
+    const byId = (id: string) => t(w, `spm-module-${id}`)
+    expect(byId('databank').text()).toContain('Tiada soalan tersedia lagi.')
+    expect(byId('subjektif').text()).toContain('Tiada soalan berstruktur ditemui')
+    expect(byId('kertas-subjektif').text()).toContain(
+      'Kertas subjektif sedang dalam penyediaan. Semak semula tidak lama lagi.',
+    )
+    for (const id of ['databank', 'subjektif', 'kertas-subjektif']) {
+      expect(byId(id).attributes('href')).toBeUndefined()
+      expect(byId(id).text()).not.toContain('Mula')
+    }
+    expect(byId('latih-tubi').attributes('href')).toBe('/spm/latih-tubi')
+    expect(byId('tracking-a').attributes('href')).toBe('/spm/ramalan')
+    expect(byId('kertas-subjektif').find('[data-testid=module-chip]').exists()).toBe(false)
+    expect(byId('kertas-subjektif').text()).not.toContain('0 kertas')
   })
 
   it('shows "Prestasi SPM Anda" with one decimal and the history link', async () => {

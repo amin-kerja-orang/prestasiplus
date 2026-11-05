@@ -6,7 +6,7 @@
  * cards as whole-card links (1 / `md` 2 / `lg` 3 / `xl` 5 columns) with accent chips (the live Font Awesome Pro
  * names render blank, DV-M06-03); "Prestasi SPM Anda" (the caller's SPM stats) and the "Sejarah Kuiz
  * SPM" link. S3-T07: five cards (Kertas Subjektif last); "Tahun Tersedia" is hidden while the overview
- * carries no `yearsAvailable` a zero count stays a link with its count (the target page shows its own empty state); a link is rendered only when its route exists.
+ * carries no `yearsAvailable`; a card with zero content shows its data-empty text and is not a link.
  */
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
@@ -74,6 +74,8 @@ interface ModuleCard {
   to: string
   title: string
   text: string
+  /** Shown instead of `text` when the card has no content; the card is then not a link. */
+  emptyText: string | null
   chip: string
   accent: DsAccent
   icon: string
@@ -89,6 +91,7 @@ const modules = computed<ModuleCard[]>(() => {
       to: '/spm/tahun-lepas',
       title: 'Databank Soalan',
       text: 'Bank soalan SPM mengikut subjek, dipaparkan secara rawak.',
+      emptyText: o.modules.databank === 0 ? 'Tiada soalan tersedia lagi.' : null,
       chip: `${formatCount(o.modules.databank)} soalan`,
       accent: 'action',
       icon: 'i-ph-database-duotone',
@@ -99,6 +102,7 @@ const modules = computed<ModuleCard[]>(() => {
       to: '/spm/latih-tubi',
       title: 'Latih Tubi SPM',
       text: 'Latihan ikut topik dan bab untuk Tingkatan 4 & 5.',
+      emptyText: null,
       chip: `${formatCount(o.modules.latihTubi)} soalan`,
       accent: 'win',
       icon: 'i-ph-barbell-duotone',
@@ -109,6 +113,7 @@ const modules = computed<ModuleCard[]>(() => {
       to: '/spm/ramalan',
       title: 'Tracking A',
       text: 'Set objektif penuh dan lane bahasa khas untuk latihan intensif menjelang SPM.',
+      emptyText: null,
       chip: `${formatCount(o.modules.trackingA)} soalan`,
       accent: 'friend',
       icon: 'i-ph-magic-wand-duotone',
@@ -119,6 +124,7 @@ const modules = computed<ModuleCard[]>(() => {
       to: '/spm/subjektif',
       title: 'Subjektif',
       text: 'Latihan soalan berstruktur & esei, semak sendiri dengan skema.',
+      emptyText: o.modules.subjektifSets === 0 ? 'Tiada soalan berstruktur ditemui' : null,
       chip: `${formatCount(o.modules.subjektifSets)} set subjektif`,
       accent: 'heat',
       icon: 'i-ph-pen-nib-duotone',
@@ -129,6 +135,10 @@ const modules = computed<ModuleCard[]>(() => {
       to: '/kertas-subjektif',
       title: 'Kertas Subjektif',
       text: 'Kertas 2, 3 & 4 percubaan negeri — baca, jawab, buka skema untuk semak sendiri.',
+      emptyText:
+        o.modules.kertasSubjektif === 0
+          ? 'Kertas subjektif sedang dalam penyediaan. Semak semula tidak lama lagi.'
+          : null,
       chip: `${formatCount(o.modules.kertasSubjektif)} kertas`,
       accent: 'win',
       icon: 'i-ph-scroll-duotone',
@@ -137,8 +147,8 @@ const modules = computed<ModuleCard[]>(() => {
   ]
 })
 
-/** A card is a link only when its target screen is built (never a dead link). */
-const isLink = (m: ModuleCard): boolean => routeExists(m.to)
+/** A card is a link only when it has content and its target screen is built (never a dead link). */
+const isLink = (m: ModuleCard): boolean => m.emptyText === null && routeExists(m.to)
 
 const mine = computed<Tile[]>(() => {
   const m = data.value?.me
@@ -247,15 +257,20 @@ const mine = computed<Tile[]>(() => {
             v-bind="isLink(m) ? { to: m.to } : {}"
             class="block h-full"
             :data-testid="`spm-module-${m.id}`"
+            :data-empty="m.emptyText === null ? undefined : 'true'"
           >
             <UCard class="h-full" :ui="{ body: 'flex h-full flex-col gap-3 p-4' }">
               <DsIconChip :icon="m.icon" :accent="m.accent" size="lg" data-testid="module-icon" />
               <div class="flex min-w-0 flex-1 flex-col gap-1">
                 <h2 class="text-subheading text-highlighted">{{ m.title }}</h2>
-                <p class="text-body text-muted">{{ m.text }}</p>
+                <p v-if="m.emptyText === null" class="text-body text-muted">{{ m.text }}</p>
+                <p v-else class="text-body text-muted" data-testid="module-empty">
+                  {{ m.emptyText }}
+                </p>
               </div>
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <UBadge
+                  v-if="m.emptyText === null"
                   color="neutral"
                   variant="soft"
                   :icon="m.chipIcon"
