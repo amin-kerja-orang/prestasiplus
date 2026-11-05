@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildPlan, PAIRS_SQL, planLines, SPEC, type ChapterRow, type PairRow } from '../../scripts/uat-ops/bulk-chapter-dry-run'
+import { buildPlan, NOT_FLAGGED_TEXT, PAIRS_SQL, planLines, SPEC, type ChapterRow, type PairRow } from '../../scripts/uat-ops/bulk-chapter-dry-run'
 import { parseUatArgs } from '../../scripts/uat-ops/lib'
 
 /** S4-T03 U-OP-07 dry-run report: the pure parts (rows -> plan -> lines). */
@@ -82,14 +82,21 @@ describe('planLines', () => {
   })
 })
 
-describe('PAIRS_SQL eligibility (same as the bulk-chapter API)', () => {
-  it('does not require an active question: an inactive approved question counts, as the API maps it', () => {
+describe('PAIRS_SQL predicate (the same as chapter-coverage, API-DSKP-10)', () => {
+  it('does not require an active question: an inactive approved question counts, as in coverage', () => {
     expect(PAIRS_SQL).not.toMatch(/q\.is_active/)
     expect(PAIRS_SQL).toContain('JOIN questions q ON q.id = v.question_id AND q.live_version_no = v.version_no')
   })
 
-  it('counts the live approved version and leaves PKSK questions out, as the admin filter does', () => {
+  it('counts the live approved version and does not exclude PKSK questions, as coverage does not', () => {
     expect(PAIRS_SQL).toContain("v.status = 'approved'")
-    expect(PAIRS_SQL).toContain("pt.kind = 'pksk_domain'")
+    expect(PAIRS_SQL).not.toMatch(/pksk/i)
+  })
+
+  it('applies the not-flagged condition: flagged is out, dismissed and stem_duplicated are in', () => {
+    expect(PAIRS_SQL).toContain(`AND ${NOT_FLAGGED_TEXT}`)
+    expect(NOT_FLAGGED_TEXT).toContain('v.stimulus_flag IS NULL')
+    expect(NOT_FLAGGED_TEXT).toContain("v.stimulus_flag = 'stem_duplicated'")
+    expect(NOT_FLAGGED_TEXT).toContain('v.flag_dismissed_at IS NOT NULL')
   })
 })

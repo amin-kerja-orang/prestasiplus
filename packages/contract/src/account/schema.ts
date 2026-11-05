@@ -457,6 +457,92 @@ export const AccountProfileUpdateRequestSchema = z
   .meta({ id: 'AccountProfileUpdateRequest' })
 export type AccountProfileUpdateRequest = z.infer<typeof AccountProfileUpdateRequestSchema>
 
+// --- Teacher profile (API-GUR-22) -------------------------------------------------------------------
+
+/** Limits of the teacher profile fields (20 R1-GUR-A1 field table). */
+export const ACCOUNT_TEACHER_SUBJECT_MAX = 100
+export const ACCOUNT_TEACHER_QUALIFICATION_MAX = 150
+export const ACCOUNT_TEACHER_EXPERIENCE_MIN = 0
+export const ACCOUNT_TEACHER_EXPERIENCE_MAX = 60
+/** An IC is exactly 12 digits, no hyphen. */
+export const ACCOUNT_TEACHER_IC_PATTERN = /^\d{12}$/
+
+/** BM copy of the teacher profile (20 R1-GUR-A1): validation errors and the success text sent as `status`. */
+export const ACCOUNT_TEACHER_PROFILE_MESSAGES = {
+  nameRequired: 'Sila isi nama penuh.',
+  nameMax: `Nama penuh tidak boleh melebihi ${String(ACCOUNT_NAME_MAX)} aksara.`,
+  bioMax: `Bio tidak boleh melebihi ${String(ACCOUNT_BIO_MAX)} aksara.`,
+  icFormat: 'No. IC mesti 12 digit tanpa sempang.',
+  icTaken: 'No. IC sudah didaftarkan.',
+  subjectMax: `Subjek utama tidak boleh melebihi ${String(ACCOUNT_TEACHER_SUBJECT_MAX)} aksara.`,
+  qualificationMax: `Kelayakan tidak boleh melebihi ${String(ACCOUNT_TEACHER_QUALIFICATION_MAX)} aksara.`,
+  experienceRange: `Pengalaman mesti antara ${String(ACCOUNT_TEACHER_EXPERIENCE_MIN)} dan ${String(ACCOUNT_TEACHER_EXPERIENCE_MAX)} tahun.`,
+  saved: 'Profil dikemaskini.',
+} as const
+
+const teacherText = (max: number, message: string) => z.string().trim().max(max, { error: message }).nullish()
+
+/**
+ * Body of `PUT /account/teacher-profile`. Upserts the `teacher_profiles` row of the caller. An ABSENT key keeps the
+ * stored value; `null` or a blank text clears `bio`, `subject` and `qualification`. `ic` is write-only (stored as keyed hash and masked
+ * value, never returned). `schoolId`, `phone`, `email` and any other key are ignored (FR-GUR-A1-6, decision 6 of issue 458).
+ */
+export const AccountTeacherProfileUpdateRequestSchema = z
+  .object({
+    name: z
+      .string({ error: ACCOUNT_TEACHER_PROFILE_MESSAGES.nameRequired })
+      .trim()
+      .min(1, { error: ACCOUNT_TEACHER_PROFILE_MESSAGES.nameRequired })
+      .max(ACCOUNT_NAME_MAX, { error: ACCOUNT_TEACHER_PROFILE_MESSAGES.nameMax }),
+    bio: teacherText(ACCOUNT_BIO_MAX, ACCOUNT_TEACHER_PROFILE_MESSAGES.bioMax),
+    ic: z
+      .string()
+      .trim()
+      .regex(ACCOUNT_TEACHER_IC_PATTERN, { error: ACCOUNT_TEACHER_PROFILE_MESSAGES.icFormat })
+      .or(z.literal(''))
+      .nullish()
+      .meta({ description: '12 digits, no hyphen. Blank or absent keeps the stored IC. Never returned.' }),
+    subject: teacherText(ACCOUNT_TEACHER_SUBJECT_MAX, ACCOUNT_TEACHER_PROFILE_MESSAGES.subjectMax),
+    qualification: teacherText(ACCOUNT_TEACHER_QUALIFICATION_MAX, ACCOUNT_TEACHER_PROFILE_MESSAGES.qualificationMax),
+    experienceYears: z
+      .number({ error: ACCOUNT_TEACHER_PROFILE_MESSAGES.experienceRange })
+      .int({ error: ACCOUNT_TEACHER_PROFILE_MESSAGES.experienceRange })
+      .min(ACCOUNT_TEACHER_EXPERIENCE_MIN, { error: ACCOUNT_TEACHER_PROFILE_MESSAGES.experienceRange })
+      .max(ACCOUNT_TEACHER_EXPERIENCE_MAX, { error: ACCOUNT_TEACHER_PROFILE_MESSAGES.experienceRange })
+      .optional(),
+  })
+  .meta({ id: 'AccountTeacherProfileUpdateRequest' })
+export type AccountTeacherProfileUpdateRequest = z.infer<typeof AccountTeacherProfileUpdateRequestSchema>
+
+/**
+ * `data` of `GET` and `PUT /account/teacher-profile`: the caller's own teaching profile. The IC appears only masked
+ * (`xxxxxx-xx-xx` + last two digits); the full IC, the e-mail and the phone are never part of it. The school is read-only (name only).
+ */
+export const AccountTeacherProfileSchema = z
+  .strictObject({
+    name: z.string().min(1),
+    bio: z.string().nullable(),
+    icMasked: z.string().nullable(),
+    subject: z.string().nullable(),
+    qualification: z.string().nullable(),
+    experienceYears: z.number().int().min(ACCOUNT_TEACHER_EXPERIENCE_MIN).max(ACCOUNT_TEACHER_EXPERIENCE_MAX),
+    school: z.strictObject({ name: z.string().min(1) }).nullable(),
+  })
+  .meta({ id: 'AccountTeacherProfile' })
+export type AccountTeacherProfile = z.infer<typeof AccountTeacherProfileSchema>
+
+/** `data` of `GET /public/teachers/:id`: the read-only card shown to other signed-in teachers. No IC, e-mail, phone or school. */
+export const AccountTeacherPublicSchema = z
+  .strictObject({
+    name: z.string().min(1),
+    subject: z.string().nullable(),
+    bio: z.string().nullable(),
+    qualification: z.string().nullable(),
+    experienceYears: z.number().int().min(ACCOUNT_TEACHER_EXPERIENCE_MIN).max(ACCOUNT_TEACHER_EXPERIENCE_MAX),
+  })
+  .meta({ id: 'AccountTeacherPublic' })
+export type AccountTeacherPublic = z.infer<typeof AccountTeacherPublicSchema>
+
 // --- Profile activity (API-MUR-02) -----------------------------------------------------------------
 
 /** The calendar of the pupil profile covers this many Malaysia days, today last. */
@@ -682,3 +768,35 @@ export const AccountPlatformStatsSchema = z
   })
   .meta({ id: 'AccountPlatformStats' })
 export type AccountPlatformStats = z.infer<typeof AccountPlatformStatsSchema>
+
+// --- Mood check-in (S5-T04, API-MUR-11, DM-84, FR-MUR-2-12) ------------------------------------
+
+/**
+ * The four stored values of a pupil's daily mood (DM-84; PO delegate answer on issue 457, DOC DEFECT 1).
+ * The Command Center speaks `happy|okay|sad|stressed` (`CommandCenterMood`); its adapter maps these.
+ */
+export const ACCOUNT_MOODS = ['gembira', 'okay', 'sedih', 'tertekan'] as const
+export const AccountMoodSchema = z.enum(ACCOUNT_MOODS, { error: 'The selected mood is invalid.' }).meta({ id: 'AccountMood' })
+export type AccountMood = z.infer<typeof AccountMoodSchema>
+
+/** BM copy of the mood check-in (the toast is shown by the client; the 409 text is the server's). */
+export const ACCOUNT_MOOD_MESSAGES = {
+  alreadyCheckedIn: 'Anda sudah merekodkan perasaan hari ini.',
+  saveFailed: 'Gagal menyimpan. Sila cuba lagi.',
+} as const
+/** The error code of the second submit on the same day (409). */
+export const ACCOUNT_MOOD_ALREADY_CHECKED_IN = 'ALREADY_CHECKED_IN' as const
+
+/** Body of `POST /me/mood`. Unknown keys are ignored. */
+export const AccountMoodRequestSchema = z.object({ mood: AccountMoodSchema }).meta({ id: 'AccountMoodRequest' })
+export type AccountMoodRequest = z.infer<typeof AccountMoodRequestSchema>
+
+/** `data` of `POST /me/mood`: the stored choice and the Malaysia day (`YYYY-MM-DD`) it was recorded for. */
+export const AccountMoodCheckinSchema = z
+  .strictObject({ mood: AccountMoodSchema, checkedOn: z.iso.date() })
+  .meta({ id: 'AccountMoodCheckin' })
+export type AccountMoodCheckin = z.infer<typeof AccountMoodCheckinSchema>
+
+/** `data` of `GET /me/mood/today`: today's stored choice, or null when the pupil has not checked in today. */
+export const AccountMoodTodaySchema = z.strictObject({ mood: AccountMoodSchema.nullable() }).meta({ id: 'AccountMoodToday' })
+export type AccountMoodToday = z.infer<typeof AccountMoodTodaySchema>

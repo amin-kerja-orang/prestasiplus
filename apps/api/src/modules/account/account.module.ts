@@ -4,6 +4,7 @@ import { AuditModule } from '../../common/audit/audit.module'
 import { ThrottleModule } from '../../common/throttle'
 import { AccountRepository as AuthAccountRepository } from '../auth/account.repository'
 import { AuthModule, AuthPortsModule } from '../auth'
+import { ClassesModule } from '../classes'
 import { FilesModule } from '../files'
 import { NotificationsModule } from '../notifications'
 import { PracticeModule } from '../practice'
@@ -17,12 +18,17 @@ import { AccountDataRepository } from './account-data.repository'
 import { AccountThrottle } from './account-throttle.service'
 import { AccountPortsModule } from './registration-ports'
 import { PasswordResetService } from './password-reset.service'
+import { MoodController } from './mood.controller'
+import { MoodReadAdapter } from './mood-read.adapter'
+import { MoodService } from './mood.service'
 import { LoggingMailPort, MAIL_PORT, NOTIFICATION_PORT } from './ports'
 import { ProfileActivityService } from './profile-activity.service'
 import { ProfileService } from './profile.service'
 import { RegistrationService } from './registration.service'
 import { SessionIssuer } from './session-issuer.service'
 import { SettingsService, StatsService } from './settings.service'
+import { TeacherCardController, TeacherProfileController } from './teacher-profile.controller'
+import { TeacherProfileService } from './teacher-profile.service'
 
 /**
  * M01 account basics, part A of BE-06: self-registration, password reset (e-mail link and IC),
@@ -37,12 +43,15 @@ import { SettingsService, StatsService } from './settings.service'
  * `GamificationModule` is NOT imported here: it pulls `QuestionsModule` in through `GamesCoreModule`, and this module is listed early in
  * `modules/index.ts`, so `GET /guru/questions/:id` would register before `/guru/questions/template` (see the ORDER NOTE there).
  *
+ * API-GUR-22 (`/account/teacher-profile`, `/public/teachers/:id`) lives in `teacher-profile.{controller,service}.ts`; the teaching
+ * details are read and written through `ClassesRepository` (M10 owns `teacher_profiles`).
+ *
  * The auth `AccountRepository` is stateless and not exported by `AuthModule`,
  * so it is provided here again.
  */
 @Module({
-  imports: [AuditModule, ThrottleModule, AccountPortsModule, AuthModule, AuthPortsModule, UsersModule, SchoolsModule, FilesModule, NotificationsModule, WalletModule, PracticeModule],
-  controllers: [AccountPublicController, MeController, PublicStatsController],
+  imports: [AuditModule, ThrottleModule, AccountPortsModule, AuthModule, AuthPortsModule, UsersModule, SchoolsModule, FilesModule, NotificationsModule, WalletModule, PracticeModule, ClassesModule],
+  controllers: [AccountPublicController, MeController, MoodController, PublicStatsController, TeacherProfileController, TeacherCardController],
   providers: [
     AccountDataRepository,
     AccountThrottle,
@@ -51,14 +60,17 @@ import { SettingsService, StatsService } from './settings.service'
     PasswordResetService,
     ProfileService,
     ProfileActivityService,
+    TeacherProfileService,
     SettingsService,
     StatsService,
+    MoodService,
+    MoodReadAdapter,
     PictureInterceptor,
     IcService,
     AuthAccountRepository,
     { provide: MAIL_PORT, useClass: LoggingMailPort },
     { provide: NOTIFICATION_PORT, useClass: NotificationsAdapter },
   ],
-  exports: [MAIL_PORT, NOTIFICATION_PORT],
+  exports: [MAIL_PORT, NOTIFICATION_PORT, MoodReadAdapter],
 })
 export class AccountModule {}

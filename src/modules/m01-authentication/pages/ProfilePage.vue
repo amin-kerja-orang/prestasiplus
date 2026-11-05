@@ -3,12 +3,14 @@
  * S7 `/profile` "Profil Saya - PRESTASIPLUS" (M01-T6; FR-M01-38, DV-14, BR-15), v2 restyle (B09 / A1).
  * Hero card in the shell main: avatar (uploaded picture or the initials avatar) with the crown badge, the
  * name, the email, "Ahli sejak {d MMMM yyyy}"; every role but the pupil also has the tonal button
- * "Kemaskini Profil" -> `/profile/edit`.
+ * "Kemaskini Profil" -> `/profile/edit` (the teacher: `/guru/profil/edit`).
  *
  * Pupil (R1-MUR-A1, S5-T05 part B; FR-MUR-A1-1, in this order): hero, "Profil Awam Saya", six tiles, the in-page
  * form "Kemaskini Profil" (Bio Saya, Cita-Cita Saya, "Simpan"; replaces the button, FR-MUR-A1-7), three combo tiles, "Koleksi
  * Lencana", "Kalendar Kombo (30 Hari Terakhir)" and "Sesi Terkini". Figures come from `GET /api/me/profile-activity`
  * (API-MUR-02). The call lives here: the m01 api client belongs to S0.
+ * School admin (R1-AS-A1, AC-AS-A1-3): the hero is followed by the read-only school block (nama sekolah, kod, PPD, negeri)
+ * from the `school` of `GET /api/me`.
  * The user comes from the cached session; a background `GET /api/me` keeps it fresh.
  */
 import type { AccountProfileActivity } from '@pp/contract'
@@ -26,6 +28,7 @@ import ProfileBadgeCollection from './ProfileBadgeCollection.vue'
 import ProfileKomboCalendar from './ProfileKomboCalendar.vue'
 import ProfilePublicCard from './ProfilePublicCard.vue'
 import ProfileRecentSessions from './ProfileRecentSessions.vue'
+import ProfileSchoolBlock from './ProfileSchoolBlock.vue'
 import ProfileStatTiles from './ProfileStatTiles.vue'
 
 const BIO_MAX = 1000
@@ -38,6 +41,10 @@ const SAVED_MS = 4000
 const session = useSessionStore()
 const user = computed(() => session.user)
 const isPupil = computed(() => user.value?.role === 'student')
+/** R1-AS-A1: the school admin also sees a read-only school block (FR-AS-A1-1). */
+const isSchoolAdmin = computed(() => user.value?.role === 'school_admin')
+/** The teacher edits the teaching details on `/guru/profil/edit` (FR-GUR-A1-2, issue 458 decision 7); every other role keeps `/profile/edit`. */
+const editPath = computed(() => (user.value?.role === 'teacher' ? '/guru/profil/edit' : '/profile/edit'))
 
 const activity = ref<AccountProfileActivity | null>(null)
 const loadState = ref<'loading' | 'ready' | 'error'>('loading')
@@ -158,7 +165,7 @@ onMounted(() => {
 
         <UButton
           v-if="!isPupil"
-          to="/profile/edit"
+          :to="editPath"
           color="primary"
           variant="soft"
           size="lg"
@@ -169,6 +176,8 @@ onMounted(() => {
         >
       </div>
     </UCard>
+
+    <ProfileSchoolBlock v-if="isSchoolAdmin" :school="user.school" />
 
     <template v-if="isPupil">
       <USkeleton v-if="loadState === 'loading'" class="h-16 w-full" data-testid="profile-activity-loading" />

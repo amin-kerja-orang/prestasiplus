@@ -72,6 +72,8 @@ const AFTER_CAPTURE: Record<string, Record<string, unknown>> = {
   },
 }
 
+/** S10-T03 added `tingkatanOptions` and `questionsTested` to the school item analysis. */
+AFTER_CAPTURE['item-analysis-school'] = { tingkatanOptions: ['T4', 'T5'], questionsTested: 2 }
 /** Fields added by S10-T02 inside nested objects (the capture is never hand-edited): the same shapes the API now answers. */
 const S10_T02: Record<string, (v: unknown) => unknown> = {
   headcounts: (row) => ({ ...(row as object), teacherName: 'Guru Contoh', entryStatus: 'active', statusReason: null }),
