@@ -66,8 +66,8 @@ describe('BE-09 hardening (real database)', () => {
     expect(out.latestVersionNo).toBe(2)
     expect(out.liveVersionNo).toBe(1)
 
-    const g = await svc.createGuru({ ...mcqInput(tag), difficultyLevel: 3, options: ['a', 'b', 'c', 'd'], correctAnswer: 0 } as never, teacher.userId)
-    const back = await svc.updateOwn(g.id, { questionText: 'Teks guru selepas kelulusan diubah.' } as never, teacher.userId)
+    const g = await svc.create({ ...mcqInput(tag), difficultyLevel: 3, options: ['a', 'b', 'c', 'd'], correctAnswer: 0, status: 'review' } as never, { userId: teacher.userId, role: 'teacher' })
+    const back = await svc.update(g.id, edit('Teks guru selepas kelulusan diubah.') as never, { userId: teacher.userId, role: 'teacher' })
     expect(back.version.status).toBe('review')
   })
 
@@ -161,11 +161,11 @@ describe('BE-09 hardening (real database)', () => {
 
   it('create with status published also runs the keys gate; a valid key passes', async () => {
     const bad = [{
-      label: '1', prompt: rich('Kira'), mode: 'working', marks: 3,
+      label: '1', prompt: rich('Kira'), mode: 'working', marks: 3, cognitiveLevel: 'mengaplikasi',
       key: { kind: 'points', marks: 2, points: [{ id: 'p', code: 'K', label: 'k', marks: 2 }] },
     }] as unknown as QuestionPart[]
     const good = [{
-      label: '1', prompt: rich('Kira'), mode: 'working', marks: 3,
+      label: '1', prompt: rich('Kira'), mode: 'working', marks: 3, cognitiveLevel: 'mengaplikasi',
       key: { kind: 'points', marks: 3, points: [{ id: 'p', code: 'K', label: 'k', marks: 3 }] },
     }] as unknown as QuestionPart[]
     const before = (await t.db.query<{ n: string }>(`select count(*) n from questions`))[0]?.n
@@ -182,11 +182,11 @@ describe('BE-09 hardening (real database)', () => {
   })
 
   const badTree = [{
-    label: '1', prompt: rich('Kira'), mode: 'working', marks: 3,
+    label: '1', prompt: rich('Kira'), mode: 'working', marks: 3, cognitiveLevel: 'mengaplikasi',
     key: { kind: 'points', marks: 2, points: [{ id: 'p', code: 'K', label: 'k', marks: 2 }] },
   }] as unknown as QuestionPart[]
   const goodTree = [{
-    label: '1', prompt: rich('Kira'), mode: 'working', marks: 3,
+    label: '1', prompt: rich('Kira'), mode: 'working', marks: 3, cognitiveLevel: 'mengaplikasi',
     key: { kind: 'points', marks: 3, points: [{ id: 'p', code: 'K', label: 'k', marks: 3 }] },
   }] as unknown as QuestionPart[]
   async function reviewWith(parts: QuestionPart[]): Promise<string> {

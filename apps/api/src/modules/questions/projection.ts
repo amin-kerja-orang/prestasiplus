@@ -11,7 +11,7 @@
  * - Reading back: `short_text` with accepted exactly one of Benar / Salah and no blank is
  *   `true_false`; `blankCount >= 1` is `fill_blank`; other `short_text` is `short_answer`; any other
  *   mode or a tree reads as `essay` with null options.
- * - `difficultyLevel` is stored in `difficulty_tp`; TP 6 reads back as 5.
+ * - `difficultyLevel` is stored in `difficulty_level` (DM-47) and TP in `difficulty_tp`. Reading a version without the typed value (legacy rows): `least(5, TP)`, else 3.
  * - Constants of the 7 "not carried" fields live in `constantFields` (data model Appendix B).
  */
 import {
@@ -54,6 +54,12 @@ export function keyIndexOf(v: unknown): number | undefined {
   const t = v.trim().toUpperCase()
   if (/^\d+$/.test(t)) return Number(t) <= 3 ? Number(t) : undefined
   return /^[A-D]$/.test(t) ? t.charCodeAt(0) - 65 : undefined
+}
+
+/** DM-47 read rule: the typed `difficulty_level`, else `least(5, TP)` (TP 6 reads as 5), else 3. */
+export function difficultyLevelOf(v: { difficultyLevel: number | null; difficultyTp: number | null }): number {
+  if (v.difficultyLevel !== null) return v.difficultyLevel
+  return v.difficultyTp === null ? 3 : Math.min(5, Math.max(1, v.difficultyTp))
 }
 
 /** Guru difficulty: easy / medium / hard are TP 2 / 3 / 4; a number is used as is. */
@@ -237,7 +243,7 @@ export function flatFromVersion(v: QuestionVersionRecord): FlatFields {
     scriptType: scriptOf(v.language),
     textDirection: directionOf(v.language),
     pointsValue: Math.max(1, totalMarks(parts)),
-    difficultyLevel: Math.min(5, Math.max(1, v.difficultyTp ?? 1)),
+    difficultyLevel: difficultyLevelOf(v),
   }
   if (!leaf) return out
   if (leaf.mode === 'mcq') {

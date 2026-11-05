@@ -65,8 +65,8 @@ const csrf = z.object({
 })
 const idParam = z.object({ id: IdSchema })
 
-const unauthorized = err('UNAUTHORIZED ("Unauthenticated."): no valid session.')
-const teacherOnly = err('FORBIDDEN ("This action is unauthorized."): role is not teacher or admin; or CSRF_INVALID on a mutation.')
+const unauthorized = err('UNAUTHORIZED ("Sesi anda telah tamat. Sila log masuk semula."): no valid session.')
+const teacherOnly = err('FORBIDDEN ("Anda tidak dibenarkan melakukan tindakan ini."): role is not teacher or admin; or CSRF_INVALID on a mutation.')
 const rateLimited = {
   description: 'RATE_LIMITED (D57): too many writes. Body error.code RATE_LIMITED with retryAfter (seconds); Retry-After header carries the same value.',
   headers: { 'Retry-After': { description: 'Seconds until a retry is allowed.', schema: { type: 'integer' as const } } },
@@ -106,7 +106,7 @@ export function registerMissionsPaths(registry: OpenAPIRegistry): void {
     responses: {
       200: json(envelopeOf(RemedialPreviewSchema), 'The test with its questions in stored order.'),
       401: unauthorized,
-      404: err('NOT_FOUND ("Not Found."): unknown id, or the caller is not the owner teacher or an admin.'),
+      404: err('NOT_FOUND ("Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?"): unknown id, or the caller is not the owner teacher or an admin.'),
     },
   })
 

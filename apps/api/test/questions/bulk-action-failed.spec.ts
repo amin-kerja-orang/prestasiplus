@@ -48,7 +48,7 @@ describe('AZ-14: bulk-action failed entries', () => {
     const id = await make()
     expect(await bulk('approved', [id])).toEqual({
       affected: 0,
-      failed: [{ id, code: 'CONFLICT', message: "Peralihan 'Draf' -> 'Diterbitkan' tidak dibenarkan.", fields: {} }],
+      failed: [{ id, code: 'CONFLICT', message: 'Perubahan status ini tidak dibenarkan daripada status semasa.', fields: {} }],
     })
   })
 
@@ -68,7 +68,7 @@ describe('AZ-14: bulk-action failed entries', () => {
 
   it('publishing a tagged question whose point marks do not match the scheme fails the keys gate', async () => {
     const part = {
-      label: '1', prompt: { ms: 'Kira' }, mode: 'working', marks: 3,
+      label: '1', prompt: { ms: 'Kira' }, mode: 'working', marks: 3, cognitiveLevel: 'mengaplikasi',
       key: { kind: 'points', marks: 2, points: [{ id: 'p', code: 'K', label: 'k', marks: 2 }] },
     }
     const id = await make({ questionType: 'essay', status: 'review', tag, parts: [part], options: undefined, correctAnswer: undefined })

@@ -21,6 +21,7 @@ const leaf = (over: Record<string, unknown> = {}) => ({
   prompt: { ms: 'Pilih satu tajuk dan tulis karangan.' },
   mode: 'essay_choice',
   marks: 30,
+  cognitiveLevel: 'mengaplikasi', // S1-T02 R-DSKP
   key: rubric,
   topics,
   wordRange: { min: 150, max: 200 },

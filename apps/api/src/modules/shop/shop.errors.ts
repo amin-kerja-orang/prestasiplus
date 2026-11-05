@@ -15,7 +15,7 @@ export const notPending = (): ApiError => new ApiError({ code: 'CONFLICT', statu
 export const rewardNotFound = (): ApiError => ApiError.of('NOT_FOUND', { message: REWARD_MESSAGES.rewardNotFound })
 export const redemptionNotFound = (): ApiError => ApiError.of('NOT_FOUND', { message: REWARD_MESSAGES.redemptionNotFound })
 export const boxNotFound = (): ApiError => ApiError.of('NOT_FOUND', { message: REWARD_MESSAGES.boxNotFound })
-/** The default "Not Found." of an unmatched id (admin GET/PUT/deliver, a non-numeric path id). */
+/** The generic NOT_FOUND default of an unmatched id (admin GET/PUT/deliver, a non-numeric path id). */
 export const plainNotFound = (): ApiError => ApiError.of('NOT_FOUND')
 
 export const modPelajarRefused = (): ApiError => ApiError.of('FORBIDDEN', { message: MOD_PELAJAR_REFUSAL })

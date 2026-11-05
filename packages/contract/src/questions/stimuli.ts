@@ -64,6 +64,8 @@ export const STIMULUS_MESSAGES = {
   /** S1-T01 group actions (API-Q-31..35). */
   publishNotReady: 'Semua soalan dalam kumpulan mesti dihantar untuk semakan dahulu.',
   memberScope: 'Subjek dan Tingkatan ahli mesti sama dengan kumpulan.',
+  /** PRD 45 gate item 17 `BANK_LETTER` (the same rule: a key letter outside the bank), AC-QA-10. */
+  bankLetterKey: 'Huruf jawapan tiada dalam bank pilihan.',
   /** ERR-REQ-01 no-field text (40-cross-cutting X10): a body that is invalid with no field to point at. */
   requestInvalid: 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.',
   /** ERR-CON-01 (40-cross-cutting X10). */
@@ -161,8 +163,19 @@ export const StimulusDeleteResultSchema = z.object({ deleted: z.literal(1) }).me
 
 const GroupLabel = z.string().trim().max(STIMULUS_LIMITS.label)
 const OptionBank = z
-  .array(z.object({ label: z.string().regex(/^[A-H]$/), body: QuestionRichTextSchema }))
+  .array(
+    z.object({
+      label: z.string().regex(/^[A-H]$/),
+      body: QuestionRichTextSchema,
+      imageId: z.string().nullable().optional().meta({ description: 'S1-T01 (API-Q-08, DM-52): public token of a `question_image` file (as `Stimulus.imageId`); null or absent = no picture.' }),
+      isDistractor: z.boolean().optional().meta({ description: 'S1-T01 (API-Q-08, DM-52): the option is a distractor ("Pengganggu"); absent = false.' }),
+    }),
+  )
   .max(STIMULUS_LIMITS.optionBank)
+/** The bank as the group detail returns it: `imageId` is the public token or null, `isDistractor` is always present. Same keys as the request. */
+const OptionBankView = z
+  .array(z.object({ label: z.string().regex(/^[A-H]$/), body: QuestionRichTextSchema, imageId: z.string().nullable().optional(), isDistractor: z.boolean().optional() }))
+  .optional()
 
 /** `POST /stimulus-groups`: 1 to 3 existing stimuli and 0 to 40 existing questions (D90, D93: the Studio makes the group first, then adds the questions). No marks anywhere. */
 export const StimulusGroupCreateRequestSchema = z
@@ -189,6 +202,9 @@ export const StimulusGroupUpdateRequestSchema = z
     subjectId: IdSchema.optional().meta({ description: 'S1-T01 (DM-51): subject of the group; defaulted from the members when absent (60 makes it required, kept optional for additivity).' }),
     educationLevelId: IdSchema.optional().meta({ description: 'S1-T01: Tingkatan of the group; defaulted from the members when absent.' }),
     kertas: QuestionKertasSchema.nullish().meta({ description: 'S1-T01: kertas of the group (reuses `QuestionKertas`); defaulted from the members when absent.' }),
+    optionBank: OptionBank.optional().meta({
+      description: 'S1-T01 (API-Q-08): replaces the whole bank (send every row to keep it; `[]` clears). A letter that a leaf key of a member uses cannot be dropped (422 `optionBank`, AC-QA-10). A served group answers 409 like the stimuli change: edit it as a draft copy.',
+    }),
   })
   .refine((v) => Object.keys(v).length > 0, { message: STIMULUS_MESSAGES.noChange, path: ['_'] })
   .meta({ id: 'StimulusGroupUpdateRequest' })
@@ -223,7 +239,7 @@ export const StimulusGroupDetailSchema = z
     label: z.string().nullable(),
     scope: z.enum(['section', 'paper']),
     stimuli: QuestionStimulusGroupSchema.shape.stimuli,
-    optionBank: QuestionStimulusGroupSchema.shape.optionBank,
+    optionBank: OptionBankView,
     questionIds: z.array(IdSchema),
     members: z.array(StimulusGroupMemberSchema).meta({ description: 'The members in published order (same order as `questionIds`), one short form each.' }),
     subjectId: IdSchema.nullable().optional(),
@@ -231,6 +247,9 @@ export const StimulusGroupDetailSchema = z
     kertas: QuestionKertasSchema.nullable().optional(),
     draftOfGroupId: IdSchema.nullable().optional().meta({ description: 'S1-T01 (DM-51): the served group this draft copy replaces on publish; null for an ordinary group.' }),
     warning: z.string().nullable().optional().meta({ description: 'BM warning while the group has 0 questions (a draft group); null otherwise. The write went through.' }),
+    usedInPapers: z.array(z.object({ id: IdSchema, title: z.string() })).optional().meta({
+      description: 'S1-T01 (API-Q-08, ruling #685): the Terbit papers that place the group or any of its members, by paper id. Read only; the retire confirm dialog (API-Q-33) names them. Empty when none.',
+    }),
   })
   .meta({ id: 'StimulusGroupDetail' })
 export type StimulusGroupDetail = z.infer<typeof StimulusGroupDetailSchema>
@@ -481,7 +500,7 @@ export function registerStimuliPaths(registry: OpenAPIRegistry): void {
     path: '/stimulus-groups/{id}/members',
     tags,
     summary: 'Add a question to a group (appended at the end)',
-    description: 'A question already in another group is refused with 422 `questionId` ("Soalan ini sudah berada dalam kumpulan rangsangan lain."). Moving a question between groups is remove, then add.',
+    description: 'A question already in another group is refused with 422 `questionId` ("Soalan ini sudah berada dalam kumpulan rangsangan lain."). Moving a question between groups is remove, then add. On a draft copy (`draftOfGroupId` set) the question is staged in the copy instead: see `PUT /stimulus-groups/{id}/members`.',
     request: { params: idParams, headers: [csrf], body: body(StimulusGroupMemberRequestSchema) },
     responses: { 200: json(mutationEnvelopeOf(StimulusGroupDetailSchema), 'The group after the change.'), 401: unauthorized, 403: forbidden, 404: notFound, 409: conflict, 422: invalid },
   })
@@ -490,7 +509,7 @@ export function registerStimuliPaths(registry: OpenAPIRegistry): void {
     path: '/stimulus-groups/{id}/members/{questionId}',
     tags,
     summary: 'Remove a question from a group',
-    description: 'Positions of the others close up. When the last member is removed the removal still succeeds and `warning` carries the BM empty-group message ("Kumpulan ini kini kosong. ...").',
+    description: 'Positions of the others close up. When the last member is removed the removal still succeeds and `warning` carries the BM empty-group message ("Kumpulan ini kini kosong. ..."). On a draft copy the member is removed from the staged members only: see `PUT /stimulus-groups/{id}/members`.',
     request: { params: memberParams, headers: [csrf] },
     responses: { 200: json(mutationEnvelopeOf(StimulusGroupRemovedResultSchema), 'The group after the change, with an optional warning.'), 401: unauthorized, 403: forbidden, 404: notFound, 409: conflict },
   })
@@ -500,7 +519,7 @@ export function registerStimuliPaths(registry: OpenAPIRegistry): void {
     tags,
     summary: 'Set the complete ordered member list of a group (atomic)',
     description:
-      'Adds, removals and reordering in one call. A question that is already shown to pupils (live version approved, active) cannot be added, removed or have its relative order changed; new draft or review questions can still be appended to a group that has served members (409 `groupServed` / `memberServed` otherwise). A question of another group, a PKSK, archived or inactive question, a question of another subject, and more than 40 members are 422.',
+      'Adds, removals and reordering in one call. A question that is already shown to pupils (live version approved, active) cannot be added, removed or have its relative order changed; new draft or review questions can still be appended to a group that has served members (409 `groupServed` / `memberServed` otherwise). A question of another group, a PKSK, archived or inactive question, a question of another subject, and more than 40 members are 422. On a draft copy (`draftOfGroupId` set) add, remove, order and set edit the members staged in the copy instead (the same member rules, except the served lock). Creating a question inside a copy and `PUT /questions/{id}` with the `stimulusGroupId` of a copy stay 409; the served group is unchanged until the copy is published.',
     request: { params: idParams, headers: [csrf], body: body(StimulusGroupMembersSetRequestSchema) },
     responses: { 200: json(mutationEnvelopeOf(StimulusGroupDetailSchema), 'The group after the change.'), 401: unauthorized, 403: forbidden, 404: notFound, 409: conflict, 422: invalid },
   })
@@ -509,7 +528,7 @@ export function registerStimuliPaths(registry: OpenAPIRegistry): void {
     path: '/stimulus-groups/{id}/members/order',
     tags,
     summary: 'Reorder the members of a group',
-    description: '`questionIds` must list every current member exactly once (422 `questionIds` otherwise).',
+    description: '`questionIds` must list every current member exactly once (422 `questionIds` otherwise). On a draft copy it reorders the staged members only: see `PUT /stimulus-groups/{id}/members`.',
     request: { params: idParams, headers: [csrf], body: body(StimulusGroupReorderRequestSchema) },
     responses: { 200: json(mutationEnvelopeOf(StimulusGroupDetailSchema), 'The group after the change.'), 401: unauthorized, 403: forbidden, 404: notFound, 409: conflict, 422: invalid },
   })
@@ -519,7 +538,7 @@ export function registerStimuliPaths(registry: OpenAPIRegistry): void {
     tags,
     summary: 'Publish a group: every member becomes approved in one audited transaction (S1-T01, API-Q-31)',
     description:
-      'No body. Every member must be Menunggu Semakan (`review`) or already Diluluskan (`approved`); any other member (Draf, Diarkibkan or another status) answers 409 "Semua soalan dalam kumpulan mesti dihantar untuk semakan dahulu." and nothing changes. An empty group is 409 "Kumpulan perlu sekurang-kurangnya 1 soalan.". One member failing its approve gate is 422 `details.gate[{questionId, message}]` and nothing changes. Publishing a draft copy (`draftOfGroupId` set) answers 409 until part 3b, which swaps it in for the served group in one transaction.',
+      'No body. Every member must be Menunggu Semakan (`review`) or already Diluluskan (`approved`); any other member (Draf, Diarkibkan or another status) answers 409 "Semua soalan dalam kumpulan mesti dihantar untuk semakan dahulu." and nothing changes. An empty group is 409 "Kumpulan perlu sekurang-kurangnya 1 soalan.". One member failing its approve gate is 422 `details.gate[{questionId, message}]` and nothing changes. Publishing a draft copy (`draftOfGroupId` set) swaps it in for the served group in one transaction, same gate on the members staged in the copy: the copy\'s members, stimuli, option bank and scope replace those of the served group, Menunggu Semakan members are approved (the old version is archived `superseded`), the copy is deleted, and the served group id is unchanged (the answer is the served group). Audit `details.fromDraftId`.',
     request: { params: idParams, headers: [csrf] },
     responses: {
       200: json(mutationEnvelopeOf(StimulusGroupDetailSchema), 'Published.'),
@@ -562,7 +581,7 @@ export function registerStimuliPaths(registry: OpenAPIRegistry): void {
     path: '/stimulus-groups/{id}/members/{questionId}/move',
     tags,
     summary: 'Move a member question to another group (S1-T01, API-Q-34)',
-    description: 'Same Subjek, Tingkatan and Kertas only (422 "Subjek dan Tingkatan ahli mesti sama dengan kumpulan." / "Soalan dalam satu kumpulan mesti sama subjek." / "...sama kertas."). A member that is shown to pupils answers 409 `memberServed` ("Soalan ini sedang dipaparkan kepada murid. Sunting sebagai draf atau arkibkannya dahulu sebelum memasukkannya ke dalam kumpulan.") and nothing changes; moving a served member through draft copies comes with part 3b.',
+    description: 'Same Subjek, Tingkatan and Kertas only (422 "Subjek dan Tingkatan ahli mesti sama dengan kumpulan." / "Soalan dalam satu kumpulan mesti sama subjek." / "...sama kertas."). A member that is shown to pupils answers 409 `memberServed` ("Soalan ini sedang dipaparkan kepada murid. Sunting sebagai draf atau arkibkannya dahulu sebelum memasukkannya ke dalam kumpulan.") and nothing changes; a served member moves only between two draft copies (the move is staged and takes effect when both copies are published); a move with a draft copy on one side only is 409.',
     request: { params: memberParams, headers: [csrf], body: body(StimulusGroupMoveRequestSchema) },
     responses: { 200: json(mutationEnvelopeOf(StimulusGroupMoveResultSchema), 'Both groups after the move.'), 401: unauthorized, 403: forbidden, 404: notFound, 409: conflict, 422: invalid },
   })

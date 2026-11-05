@@ -79,9 +79,9 @@ const csrf = z.object({
 const NO_STORE_HEADERS = {
   'Cache-Control': { description: 'no-store (the body holds names and e-mails).', schema: { type: 'string' as const } },
 }
-const UNAUTHORIZED = err('UNAUTHORIZED "Unauthenticated." (no valid session).')
+const UNAUTHORIZED = err('UNAUTHORIZED "Sesi anda telah tamat. Sila log masuk semula." (no valid session).')
 const FORBIDDEN = err(
-  'FORBIDDEN "This action is unauthorized." (role is not school_admin, Admin Pusat included, or the school admin has no school), or CSRF_INVALID on the POST.',
+  'FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not school_admin, Admin Pusat included, or the school admin has no school), or CSRF_INVALID on the POST.',
 )
 const RATE_LIMITED = err('RATE_LIMITED "Terlalu banyak percubaan. Sila cuba sebentar lagi." with error.retryAfter in seconds.')
 
@@ -107,13 +107,13 @@ export function registerSchoolAdminPendingTeacherPaths(registry: OpenAPIRegistry
     tags: ['school-admin-pending'],
     summary: 'Verify a pending teacher',
     description:
-      'No body. In ONE transaction: the account becomes active, school_id is set to the school of the caller, pending_school_id is cleared (the teacher role is ensured) and an audit event with ids only is written; after the commit the teacher gets an inbox notice. ANTI-ENUMERATION: an unknown id, a teacher pending for another school, a teacher who is not pending (including one already verified: a repeat call is 404, never 409), a non-teacher and a suspended account are indistinguishable: 404 "Not Found.". Two concurrent calls: exactly one succeeds. Rate limited (429).',
+      'No body. In ONE transaction: the account becomes active, school_id is set to the school of the caller, pending_school_id is cleared (the teacher role is ensured) and an audit event with ids only is written; after the commit the teacher gets an inbox notice. ANTI-ENUMERATION: an unknown id, a teacher pending for another school, a teacher who is not pending (including one already verified: a repeat call is 404, never 409), a non-teacher and a suspended account are indistinguishable: 404 "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?". Two concurrent calls: exactly one succeeds. Rate limited (429).',
     request: { params: IdParams, headers: [csrf] },
     responses: {
       200: json(SchoolAdminVerifyTeacherResultSchema, 'Verified; status "Guru berjaya disahkan.".'),
       401: UNAUTHORIZED,
       403: FORBIDDEN,
-      404: err('NOT_FOUND "Not Found." (see the description).'),
+      404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (see the description).'),
       429: RATE_LIMITED,
     },
   })

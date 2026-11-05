@@ -1,11 +1,22 @@
 import { describe, expect, it } from 'vitest'
 
 import { buildOpenApiDocument } from '../../openapi'
+import {
+  BULK_CHAPTER_CAP,
+  BULK_CHAPTER_MAX_IDS,
+  BulkChapterRequestSchema,
+  BulkChapterResultSchema,
+  CURRICULUM_BULK_CHAPTER_MESSAGES,
+  ChapterCoverageQuerySchema,
+  ChapterCoverageSchema,
+} from '../bulk-chapter'
 import { CURRICULUM_COMPONENT_SCHEMAS } from '../paths'
 import {
   CURRICULUM_FLASH_MESSAGES,
   CURRICULUM_CONFLICT_MESSAGES,
+  CURRICULUM_LEVEL_RULE_MESSAGES,
   CURRICULUM_NOT_FOUND_MESSAGES,
+  CurriculumDskpReportSchema,
   CurriculumChapterCreateSchema,
   CurriculumChapterDeletedSchema,
   CurriculumChapterSchema,
@@ -76,6 +87,19 @@ describe('curriculum contract: responses', () => {
     }
     expect(CurriculumTreeSchema.safeParse(tree).success).toBe(true)
     expect(CurriculumTreeSchema.safeParse({ ...tree, stats: { chapters: 1 } }).success).toBe(false)
+  })
+
+  it('tree chapter nodes carry optional non-negative questionCount and servableCount (API-DSKP-04)', () => {
+    const tree = (extra: object) => ({
+      subject: { id: '5', name: 'Subjek Ujian' },
+      level: { id: '11', name: 'Tingkatan 4' },
+      stats: { chapters: 1, topics: 0, subtopics: 0 },
+      chapters: [{ ...chapter, ...extra, topics: [] }],
+    })
+    expect(CurriculumTreeSchema.safeParse(tree({})).success).toBe(true)
+    expect(CurriculumTreeSchema.safeParse(tree({ questionCount: 3, servableCount: 2 })).success).toBe(true)
+    expect(CurriculumTreeSchema.safeParse(tree({ questionCount: -1 })).success).toBe(false)
+    expect(CurriculumTreeSchema.safeParse(tree({ servableCount: 1.5 })).success).toBe(false)
   })
 
   it('parses the status envelope and cascade counts', () => {
@@ -157,6 +181,83 @@ describe('curriculum contract: requests', () => {
   })
 })
 
+describe('curriculum contract: DSKP report (API-DSKP-11, S4-T02)', () => {
+  const row = {
+    subject: { id: '3', name: 'Matematik' },
+    level: { id: '10', name: 'Tingkatan 4' },
+    state: 'dimuatkan',
+    bab: 10, sk: 31, sp: 98, tp: 60, tpDescriptors: 6,
+  }
+  it('parses rows without nodes and with nodes, and only the two states', () => {
+    expect(CurriculumDskpReportSchema.parse({ rows: [row], nodes: null }).rows[0]?.state).toBe('dimuatkan')
+    const node = { id: '1', subjectId: '3', educationLevelId: '10', kind: 'unit', code: '1.0', title: 'Fungsi', titlePrinted: null, parentId: null, order: 0, edition: '2018', isElective: false, tpDescriptors: [{ tp: 1, descriptor: 'Mempamerkan pengetahuan asas.' }] }
+    expect(CurriculumDskpReportSchema.parse({ rows: [], nodes: [node] }).nodes).toHaveLength(1)
+    expect(() => CurriculumDskpReportSchema.parse({ rows: [{ ...row, state: 'loaded' }], nodes: null })).toThrow()
+    expect(() => CurriculumDskpReportSchema.parse({ rows: [{ ...row, bab: -1 }], nodes: null })).toThrow()
+  })
+})
+
+describe('curriculum contract: bulk Bab (API-DSKP-09) and coverage (API-DSKP-10), S4-T03', () => {
+  const filter = { subjectId: '3', educationLevelId: '10' }
+  const parse = (body: unknown) => BulkChapterRequestSchema.safeParse(body)
+  const messageAt = (body: unknown, path: string): string | undefined =>
+    parse(body).error?.issues.find((i) => i.path.join('.') === path)?.message
+
+  it('accepts ids or a filter, defaults overwrite to false and exports the cap', () => {
+    const byIds = parse({ chapterId: '7', ids: ['1', '2'], expectedCount: 2 })
+    expect(byIds.success).toBe(true)
+    expect(byIds.data?.overwrite).toBe(false)
+    expect(parse({ chapterId: '7', filter, dryRun: true, overwrite: true }).data?.overwrite).toBe(true)
+    expect(BULK_CHAPTER_CAP).toBe(10_000)
+    expect(BULK_CHAPTER_MAX_IDS).toBe(64)
+  })
+
+  it('needs exactly one of ids or filter', () => {
+    expect(messageAt({ chapterId: '7', dryRun: true }, 'filter')).toBe(CURRICULUM_BULK_CHAPTER_MESSAGES.oneOfIdsOrFilter)
+    expect(messageAt({ chapterId: '7', ids: ['1'], filter, expectedCount: 1 }, 'ids')).toBe(CURRICULUM_BULK_CHAPTER_MESSAGES.oneOfIdsOrFilter)
+  })
+
+  it('needs subjectId and educationLevelId in the filter', () => {
+    expect(messageAt({ chapterId: '7', filter: { subjectId: '3' }, dryRun: true }, 'filter')).toBe(CURRICULUM_BULK_CHAPTER_MESSAGES.filterNeedsSubjectAndLevel)
+    expect(parse({ chapterId: '7', filter: {}, dryRun: true }).success).toBe(false)
+  })
+
+  it('bounds ids to 1..64', () => {
+    expect(parse({ chapterId: '7', ids: [], dryRun: true }).success).toBe(false)
+    expect(parse({ chapterId: '7', ids: Array.from({ length: 64 }, (_, i) => String(i + 1)), dryRun: true }).success).toBe(true)
+    expect(parse({ chapterId: '7', ids: Array.from({ length: 65 }, (_, i) => String(i + 1)), dryRun: true }).success).toBe(false)
+  })
+
+  it('requires expectedCount unless dryRun, and a non-negative integer', () => {
+    expect(messageAt({ chapterId: '7', ids: ['1'] }, 'expectedCount')).toBe(CURRICULUM_BULK_CHAPTER_MESSAGES.expectedCountNeeded)
+    expect(parse({ chapterId: '7', ids: ['1'], dryRun: true }).success).toBe(true)
+    expect(parse({ chapterId: '7', ids: ['1'], expectedCount: 0 }).success).toBe(true)
+    expect(parse({ chapterId: '7', ids: ['1'], expectedCount: -1 }).success).toBe(false)
+    expect(parse({ chapterId: '7', ids: ['1'], expectedCount: 1.5 }).success).toBe(false)
+  })
+
+  it('is strict in the body and in the filter, and needs chapterId', () => {
+    expect(parse({ chapterId: '7', ids: ['1'], dryRun: true, action: 'approved' }).success).toBe(false)
+    expect(parse({ chapterId: '7', filter: { ...filter, nope: 1 }, dryRun: true }).success).toBe(false)
+    expect(parse({ ids: ['1'], dryRun: true }).success).toBe(false)
+  })
+
+  it('parses a result and refuses negative counts', () => {
+    const result = { matched: 5, eligible: 3, refused: 2, applied: 3, cap: 10_000, remaining: 0, capped: false, dryRun: false, auditId: '41' }
+    expect(BulkChapterResultSchema.parse(result).auditId).toBe('41')
+    expect(BulkChapterResultSchema.parse({ ...result, dryRun: true, applied: 0, auditId: null }).auditId).toBeNull()
+    expect(() => BulkChapterResultSchema.parse({ ...result, refused: -1 })).toThrow()
+  })
+
+  it('parses the coverage query and rows', () => {
+    expect(ChapterCoverageQuerySchema.parse({}).subjectId).toBeUndefined()
+    expect(ChapterCoverageQuerySchema.parse({ subjectId: '3', educationLevelId: '10' }).educationLevelId).toBe('10')
+    const row = { subjectId: '3', subjectName: 'Matematik', levelCode: 'T4', approved: 10, withChapter: 4, withoutChapter: 6 }
+    expect(ChapterCoverageSchema.parse({ rows: [row] }).rows[0]?.withoutChapter).toBe(6)
+    expect(() => ChapterCoverageSchema.parse({ rows: [{ ...row, approved: -1 }] })).toThrow()
+  })
+})
+
 describe('curriculum contract: OpenAPI', () => {
   const doc = buildOpenApiDocument() as {
     paths: Record<string, Record<string, unknown>>
@@ -168,15 +269,15 @@ describe('curriculum contract: OpenAPI', () => {
     ['put', '/admin/education-levels/{id}'], ['patch', '/admin/education-levels/{id}/active'], ['delete', '/admin/education-levels/{id}'],
     ['get', '/admin/subjects'], ['get', '/admin/subjects/{id}'], ['post', '/admin/subjects'],
     ['put', '/admin/subjects/{id}'], ['patch', '/admin/subjects/{id}/active'], ['delete', '/admin/subjects/{id}'],
-    ['get', '/admin/curriculum'], ['get', '/admin/curriculum/chapters/{id}'], ['post', '/admin/curriculum/chapters'],
+    ['get', '/admin/curriculum'], ['get', '/admin/curriculum/dskp'], ['get', '/admin/curriculum/chapter-coverage'], ['post', '/admin/curriculum/questions/bulk-chapter'], ['get', '/admin/curriculum/chapters/{id}'], ['post', '/admin/curriculum/chapters'],
     ['put', '/admin/curriculum/chapters/{id}'], ['delete', '/admin/curriculum/chapters/{id}'],
     ['get', '/admin/curriculum/topics/{id}'], ['post', '/admin/curriculum/topics'], ['put', '/admin/curriculum/topics/{id}'],
     ['delete', '/admin/curriculum/topics/{id}'], ['post', '/admin/curriculum/subtopics'],
     ['put', '/admin/curriculum/subtopics/{id}'], ['delete', '/admin/curriculum/subtopics/{id}'],
   ]
 
-  it('contains all 29 M03 operations', () => {
-    expect(expected).toHaveLength(29)
+  it('contains all 32 M03 operations', () => {
+    expect(expected).toHaveLength(32)
     for (const [method, path] of expected) expect(doc.paths[path]?.[method], `${method} ${path}`).toBeDefined()
   })
 
@@ -196,6 +297,8 @@ describe('curriculum contract: OpenAPI', () => {
       }
     }
     expect(CURRICULUM_CONFLICT_MESSAGES.chapter).toBe('Bab ini masih mempunyai topik.')
+    // FR-ADM-C03.3a (S4-T05): the 409 copy of a write that would leave a Darjah level active.
+    expect(CURRICULUM_LEVEL_RULE_MESSAGES.primaryActive).toBe('Darjah tidak boleh diaktifkan. Hanya Tingkatan 1 hingga 5 digunakan.')
   })
 
   it('contains every curriculum component', () => {

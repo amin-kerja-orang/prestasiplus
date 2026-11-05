@@ -272,7 +272,7 @@ describe('audio KBAT admin tools (AC 8)', () => {
         'questions.9.dskpSpId': 'Medan ini tidak sah.',
         'sections.2.title': 'Medan ini tidak sah.',
       })
-      expect(errorOf(res).message).toBe('Medan ini diperlukan. (and 9 more errors)')
+      expect(errorOf(res).message).toBe('Medan ini diperlukan. (dan 9 ralat lain)')
     })
 
     it('a missing question (fewer than 30) is reported per question', async () => {

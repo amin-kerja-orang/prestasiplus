@@ -12,7 +12,7 @@ import { DrillService } from './drill.service'
 
 /**
  * Drill-down routes 4 to 11 under `/command-center`. Admin, teacher and school admin (a school admin without a school is 403).
- * Every scope miss is a 404 "Not Found." from the service. Bodies are `{ data }`; every answer is `no-store` with a weak ETag.
+ * Every scope miss is a 404 NOT_FOUND (generic BM default) from the service. Bodies are `{ data }`; every answer is `no-store` with a weak ETag.
  * OWNER: drill implementer (this file and `drill.service.ts`).
  */
 @Controller('command-center')

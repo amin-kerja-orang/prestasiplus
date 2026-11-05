@@ -93,7 +93,7 @@ const CODE = /^[DT][1-6]$/
 /**
  * Headcount (TOV / RS) routes of M08 (BE-19): 7 reads and 5 writes. Roles admin, teacher and school_admin only (the controller
  * guards that). Scope: a teacher sees the own configs; a school admin the configs of the own school; an admin all. An
- * unknown config and a config outside the scope are ONE outcome, 404 `Not Found.` (OQ-3): no existence leak. The list and the
+ * unknown config and a config outside the scope are ONE outcome, 404 NOT_FOUND (generic BM default) (OQ-3): no existence leak. The list and the
  * dashboard are the teacher's own configs (admin and school admin get empty ones, as in the mock).
  */
 @Injectable()

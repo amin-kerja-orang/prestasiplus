@@ -48,9 +48,9 @@ export const MARKETPLACE_QUERY_MAX = 100
 
 /** Codes these routes answer, with status and the exact message the mock sends. */
 export const MARKETPLACE_ERRORS = {
-  UNAUTHORIZED: { status: 401, message: 'Unauthenticated.' },
+  UNAUTHORIZED: { status: 401, message: 'Sesi anda telah tamat. Sila log masuk semula.' },
   /** Unknown or hidden slug, unknown or non-active shop, non-numeric shop id. Nothing changes. */
-  NOT_FOUND: { status: 404, message: 'Not Found.' },
+  NOT_FOUND: { status: 404, message: 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?' },
   /** POST only: missing or wrong `X-CSRF-Token`. The message is the session contract's. */
   CSRF_INVALID: { status: 403, message: 'Sesi tidak sah. Sila muat semula halaman dan cuba lagi.' },
 } as const

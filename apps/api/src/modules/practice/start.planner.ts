@@ -16,14 +16,13 @@ import {
   setNotReady,
   trialExhausted,
 } from './errors'
-import { type AssignmentKind, type AssignmentResolution, type PracticeQuestion, PracticePorts } from './ports'
+import { type AssignmentKind, type AssignmentResolution, type PracticeDrillActivity, type PracticeQuestion, PracticePorts } from './ports'
 import { PracticeRepository, type SessionRecord } from './practice.repository'
 import {
   COUNT_OPTIONS,
   LATIH_TUBI_COUNTS,
   LATIH_TUBI_TARGETS,
   MISSION_COINS_PER_CORRECT,
-  OFFERED_LEVEL_CODES,
   PAST_YEAR_COUNTS,
   REVISION_LENGTH,
   SPM_LEVEL_CODES,
@@ -143,20 +142,47 @@ export class PracticeStartPlanner {
     return s
   }
 
-  private async levelCodes(): Promise<Map<string, string>> {
-    return new Map((await this.curriculum.levels()).map((l) => [idToString(l.id), l.code]))
+  /** S4-T06: the ids of the offered levels (active, non-primary), read once per request from `offeredLevels`. */
+  private async offeredLevelIds(): Promise<Set<string>> {
+    return new Set((await this.repo.offeredLevels()).map((l) => l.id))
+  }
+
+  /**
+   * Latih Tubi draws through `SPM_SERVABLE_SQL` (S1 file `questions/learner-visibility.ts`), which still serves T4 and T5 only
+   * (`OFFERED_LEVEL_CODES`) until S4-T06 PR 3 (after S1-T07). Until then the Latih Tubi levels are the offered levels that the SPM rule can serve,
+   * so a T1..T3 start is refused as an invalid level instead of being accepted and drawing nothing.
+   * TODO(S4-T06 PR3): return `offeredLevelIds()` here and drop `SPM_LEVEL_CODES` once the SQL twin follows `offeredLevels`.
+   */
+  private async latihTubiLevelIds(): Promise<Set<string>> {
+    return new Set((await this.repo.offeredLevels()).filter((l) => SPM_LEVEL_CODES.includes(l.code)).map((l) => l.id))
   }
 
   /** The questions among `ids` that are eligible now, at their live version, in the order of `ids`. */
-  private async serve(ids: readonly string[]): Promise<PracticeQuestion[]> {
+  private async serve(ids: readonly string[], activity?: PracticeDrillActivity): Promise<PracticeQuestion[]> {
     const unique = [...new Set(ids)]
-    const live = await this.ports.questions.live(unique)
+    // `activity` is the drill surface (S1-T06): only a drill whose surface allows it serves figures and whole groups; the rest stay text-only.
+    const live = await this.ports.questions.live(unique, activity)
     const out: PracticeQuestion[] = []
     for (const id of unique) {
       const q = live.get(id)
       if (q) out.push(q)
     }
     return out
+  }
+
+  /**
+   * BR-17 history fill, unit-wise (S1-T06, DM-27): a single question counts as 1; a group member brings its WHOLE group (the servable members the
+   * source reports, in group order, contiguous) and counts as its number of members, and a group that would pass `count` is skipped.
+   * Without `stimulusGroup` (today: no drill is a group surface) this is the old per-question rule.
+   */
+  private addUnit(ids: string[], taken: Set<string>, q: PracticeQuestion, count: number, chapterKey: string): void {
+    if (q.chapterId !== chapterKey || taken.has(q.id)) return
+    const members = q.stimulusGroup === undefined ? [q.id] : q.stimulusGroup.questionIds
+    if (ids.length + members.length > count) return
+    for (const m of members) {
+      taken.add(m)
+      ids.push(m)
+    }
   }
 
   private async assigned(kind: AssignmentKind, userId: string, id: string | undefined, now: Date) {
@@ -171,8 +197,8 @@ export class PracticeStartPlanner {
 
   private async random(plan: StartPlan, userId: string, req: StartSessionRequest, now: Date): Promise<StartPlan> {
     const subject = await this.subjectOf(req.subjectCode)
-    const codes = await this.levelCodes()
-    const offered = subject.educationLevelIds.map(idToString).filter((id) => OFFERED_LEVEL_CODES.includes(codes.get(id) ?? ''))
+    const offeredIds = await this.offeredLevelIds()
+    const offered = subject.educationLevelIds.map(idToString).filter((id) => offeredIds.has(id))
     const levelId = req.levelId ?? null
     if (levelId !== null && !offered.includes(levelId)) throw invalidField('levelId')
     const difficulty = req.difficulty ?? null
@@ -181,11 +207,11 @@ export class PracticeStartPlanner {
     if (levels.length === 0) throw notEnoughQuestions()
     const subjectId = idToString(subject.id)
     const ids = await this.ports.questions.sample(
-      { subjectId, educationLevelIds: levels, ...(difficulty !== null ? { difficulty } : {}) },
+      { subjectId, educationLevelIds: levels, activity: 'databank', ...(difficulty !== null ? { difficulty } : {}) },
       count,
       await this.rng(userId, now),
     )
-    const served = await this.serve(ids)
+    const served = await this.serve(ids, 'databank')
     if (served.length < count) throw notEnoughQuestions()
     return Object.assign(plan, { subjectId, levelId, difficulty, served })
   }
@@ -209,14 +235,15 @@ export class PracticeStartPlanner {
     if (ids.length < count && last.size > 0) {
       const seen = [...last.keys()].sort((a, b) => (last.get(a)?.lastAt.getTime() ?? 0) - (last.get(b)?.lastAt.getTime() ?? 0) || cmpId(a, b))
       // Only answered questions that still belong to this chapter (a question moved to another chapter is not repeated here).
-      const live = await this.serve(seen.slice(0, Math.max(count * 4, 50)))
-      for (const q of live) if (ids.length < count && q.chapterId === chapterKey) ids.push(q.id)
+      const live = await this.serve(seen.slice(0, Math.max(count * 4, 50)), 'bab')
+      const taken = new Set(ids)
+      for (const q of live) this.addUnit(ids, taken, q, count, chapterKey)
       // Rare: the oldest answered ones are mostly ineligible now, so read further in the history.
       for (let at = Math.max(count * 4, 50); ids.length < count && at < seen.length; at += 200) {
-        for (const q of await this.serve(seen.slice(at, at + 200))) if (ids.length < count && q.chapterId === chapterKey) ids.push(q.id)
+        for (const q of await this.serve(seen.slice(at, at + 200), 'bab')) this.addUnit(ids, taken, q, count, chapterKey)
       }
     }
-    const served = await this.serve(ids)
+    const served = await this.serve(ids, 'bab')
     if (served.length === 0) throw notEnoughQuestions()
     return Object.assign(plan, {
       subjectId: idToString(ch.subjectId),
@@ -244,17 +271,17 @@ export class PracticeStartPlanner {
     const subject = await this.subjectOf(req.subjectCode)
     const count = countIn(req.count, PAST_YEAR_COUNTS)
     const subjectId = idToString(subject.id)
-    const ids = await this.ports.questions.sample({ subjectId, spmPool: true }, count, await this.rng(userId, now))
-    const served = await this.serve(ids)
+    const ids = await this.ports.questions.sample({ subjectId, spmPool: true, activity: 'databank' }, count, await this.rng(userId, now))
+    const served = await this.serve(ids, 'databank')
     if (served.length === 0) throw notEnoughQuestions()
     return Object.assign(plan, { subjectId, served })
   }
 
   private async latihTubi(plan: StartPlan, userId: string, req: StartSessionRequest, now: Date): Promise<StartPlan> {
     const subject = await this.subjectOf(req.subjectCode)
-    const codes = await this.levelCodes()
+    const offeredIds = await this.latihTubiLevelIds()
     const levelId = req.levelId ?? null
-    if (levelId !== null && !SPM_LEVEL_CODES.includes(codes.get(levelId) ?? '')) throw invalidField('levelId')
+    if (levelId !== null && !offeredIds.has(levelId)) throw invalidField('levelId')
     const difficulty = req.difficulty ?? null
     if (difficulty !== null && (difficulty < 2 || difficulty > 5)) throw invalidField('difficulty')
     const subjectId = idToString(subject.id)
@@ -264,7 +291,7 @@ export class PracticeStartPlanner {
       if (req.count !== 1) throw invalidField('count')
       if (!isIdString(req.targetQuestionId)) throw invalidField('targetQuestionId')
       const q = (await this.ports.questions.live([req.targetQuestionId])).get(req.targetQuestionId)
-      if (!q || !OFFERED_LEVEL_CODES.includes(codes.get(q.educationLevelId ?? '') ?? '') || q.subjectId !== subjectId) throw invalidField('targetQuestionId')
+      if (!q || !offeredIds.has(q.educationLevelId ?? '') || q.subjectId !== subjectId) throw invalidField('targetQuestionId')
       // REQ-B-010: the same SPM rule as a draw (SPM_SERVABLE_SQL), not the level code alone.
       if (!(await this.ports.questions.spmServable([q.id])).has(q.id)) throw invalidField('targetQuestionId')
       return Object.assign(plan, { subjectId, targetQuestionId: q.id, served: [q] })
@@ -276,13 +303,14 @@ export class PracticeStartPlanner {
       {
         subjectId,
         spmPool: true,
+        activity: 'latih_tubi_spm',
         ...(levelId !== null ? { educationLevelIds: [levelId] } : {}),
         ...(difficulty !== null ? { difficulty } : {}),
       },
       count,
       await this.rng(userId, now),
     )
-    const served = await this.serve(ids)
+    const served = await this.serve(ids, 'latih_tubi_spm')
     if (served.length === 0) throw notEnoughQuestions()
     return Object.assign(plan, { subjectId, levelId, difficulty, served })
   }

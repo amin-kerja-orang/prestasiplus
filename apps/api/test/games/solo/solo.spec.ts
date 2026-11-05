@@ -28,7 +28,7 @@ import {
   type GamesTestApp,
   type InsertedMcq,
 } from '../helpers'
-import { expectKeyless, itemRows, keyTextOf, shortenAnswers, type DbItem } from './support'
+import { expectKeyless, itemRows, keyTextOf, servedTextOf, shortenAnswers, type DbItem } from './support'
 
 const M = GAMES_MESSAGES
 const rewards = new FakeRewards()
@@ -477,7 +477,7 @@ describe('solo games (D58a: keyless payload, server-checked answers, server-comp
       expect(rev.headers['cache-control']).toBe('no-store')
       const face = parseData(rev, GamesKadMemoriFaceSchema)
       expect(face).toMatchObject({ id: pairs[0]?.q.card_id, type: 'question' })
-      expect(face.content).toContain('Soalan permainan contoh')
+      expect(face.content).toBe(await servedTextOf(t.db, pairs[0]?.q.question_id as string))
       expect((await sessionRow(sessionId))?.open_card_id).toBe(pairs[0]?.q.card_id)
 
       // one open card at a time; the open card is closed only by a check that names it

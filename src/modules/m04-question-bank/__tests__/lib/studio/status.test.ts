@@ -20,7 +20,7 @@ const report = {
   total: 2,
   activities: [
     { activity: 'databank', label: 'Databank Soalan', served: true, reasons: [] },
-    { activity: 'bab', label: 'Latihan Bab', served: false, reasons: [{ code: 'no_chapter', message: 'Belum dipautkan kepada bab — pilih Bab di borang soalan.' }] },
+    { activity: 'bab', label: 'Latihan Bab', served: false, reasons: [{ code: 'no_chapter', message: 'Bab belum dipaut - tidak disajikan dalam Soalan by Chapter.' }] },
   ],
 } as never
 
@@ -70,7 +70,7 @@ describe('Studio status copy and rules', () => {
     expect(servedCaption(report)).toBe('Dilihat murid di 1/2')
     expect(servedRows(report)).toEqual([
       { activity: 'databank', label: 'Databank Soalan', served: true, reason: '' },
-      { activity: 'bab', label: 'Latihan Bab', served: false, reason: 'Belum dipautkan kepada bab — pilih Bab di borang soalan.' },
+      { activity: 'bab', label: 'Latihan Bab', served: false, reason: 'Bab belum dipaut - tidak disajikan dalam Soalan by Chapter.' },
     ])
   })
 })

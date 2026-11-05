@@ -77,13 +77,13 @@ const csrf = z.object({
   'X-CSRF-Token': z.string().min(1).meta({ description: 'Value of Session.csrf; required on mutating requests.' }),
 })
 const IdParams = z.object({
-  id: IdSchema.meta({ description: 'Digits only; a non-numeric segment does not match the route (404 "Not Found.").' }),
+  id: IdSchema.meta({ description: 'Digits only; a non-numeric segment does not match the route (404 "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?").' }),
 })
 
-const UNAUTHORIZED = err('UNAUTHORIZED "Unauthenticated." (no valid session).')
-const FORBIDDEN = err('FORBIDDEN "This action is unauthorized." (the active role is not admin).')
+const UNAUTHORIZED = err('UNAUTHORIZED "Sesi anda telah tamat. Sila log masuk semula." (no valid session).')
+const FORBIDDEN = err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (the active role is not admin).')
 const FORBIDDEN_WRITE = err(
-  'FORBIDDEN "This action is unauthorized." (the active role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).',
+  'FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (the active role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).',
 )
 const RATE_LIMITED = {
   description:
