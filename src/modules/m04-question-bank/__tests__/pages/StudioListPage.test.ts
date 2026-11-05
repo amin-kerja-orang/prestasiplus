@@ -441,6 +441,19 @@ describe('StudioListPage (S1 to S6)', () => {
       expect(lookups.fetchChapters).not.toHaveBeenCalled()
     })
 
+    describe.each([['none'], ['21']])('the Bab filter (chapter=%s) clears when Subjek or Tingkatan changes (PRD 03-03)', (value) => {
+      it.each([['studio-subject-filter'], ['studio-level-filter']])('on a change of %s', async (testid) => {
+        const w = await render(`/admin/studio?subject_id=3&tingkatan=7&chapter=${value}`)
+        expect((t(w, 'studio-chapter-filter').element as HTMLSelectElement).value).toBe(value)
+        await t(w, testid).setValue('')
+        await flushPromises()
+        expect((t(w, 'studio-chapter-filter').element as HTMLSelectElement).value).toBe('')
+        await w.find('form').trigger('submit')
+        await flushPromises()
+        expect(router.currentRoute.value.query).not.toHaveProperty('chapter')
+      })
+    })
+
     describe('Tetapkan Bab on the bulk bar', () => {
       const select = async (w: VueWrapper, ...ids: string[]): Promise<void> => {
         w.getComponent({ name: 'DsDataTable' }).vm.$emit('update:selection', ids.map((id) => ({ id })))

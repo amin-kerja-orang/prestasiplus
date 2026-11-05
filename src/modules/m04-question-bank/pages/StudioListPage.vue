@@ -291,7 +291,7 @@ const coverageRows = computed(() => {
     })
 })
 
-/** Field 03-03: the Bab of the chosen Subjek + Tingkatan; the choice is cleared when either changes (`none` is not scoped to them). */
+/** Field 03-03: the Bab of the chosen Subjek + Tingkatan; the choice (any value, `none` included) is cleared when either changes. */
 const chapterOptions = ref<ChapterOption[]>([])
 const chapterScoped = computed(() => draft.value.subject_id !== '' && draft.value.tingkatan !== '')
 let chapterSeq = 0
@@ -300,9 +300,9 @@ watch(
   async ([subject, level]) => {
     const token = ++chapterSeq
     chapterOptions.value = []
-    // Only a change the admin makes here (not yet applied) clears a Bab id; the route sync and the first run keep it.
+    // Only a change the admin makes here (not yet applied) clears the Bab; the route sync and the first run keep it.
     const edited = subject !== applied.value.subject_id || level !== applied.value.tingkatan
-    if (edited && draft.value.chapter !== CHAPTER_NONE) draft.value.chapter = ''
+    if (edited) draft.value.chapter = ''
     if (subject === '' || level === '') return
     try {
       const found = await fetchChapters({ subjectId: subject, educationLevelId: level })
