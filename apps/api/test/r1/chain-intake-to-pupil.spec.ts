@@ -229,8 +229,8 @@ let xpBefore = 0 // the seeded pupil already has XP: the reward is checked as a 
 
   it('3. S1-T02: Terbitkan needs the Bab (MATH T4 has chapters): without one the five are refused NO_CHAPTER; with a Bab chosen by hand they are approved and carry it', async () => {
     const five = questionIds.slice(0, 5) // the sixth is approved in 3c
-    // the two figure-group members are approved as ONE unit (S1-T01): the gate refuses the whole group with 422 details.gate, one line per member
-    const groupRefused = await admin.post('/api/questions/bulk-action', { action: 'approved', ids: [five[0]!] })
+    // the two figure-group members are approved as ONE unit (S1-T01; listing only one of them would be a 422 stimulus_group_split): the gate refuses the whole group with 422 details.gate, one line per member
+    const groupRefused = await admin.post('/api/questions/bulk-action', { action: 'approved', ids: [five[0]!, five[1]!] })
     expect(groupRefused.status, JSON.stringify(groupRefused.body)).toBe(422)
     const gate = groupRefused.body.error.details.gate as { questionId: string; message: string }[]
     expect(gate.map((g) => g.questionId)).toEqual([questionIds[0], questionIds[1]])
