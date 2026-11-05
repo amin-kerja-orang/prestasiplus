@@ -2588,7 +2588,6 @@
     "src/modules/m16-battle-games/pages/SoloKadMemoriPage.vue": 4,
     "src/modules/m16-battle-games/pages/SoloSusunJawapanPage.vue": 3,
     "src/modules/m16-battle-games/pages/SoloTembakJawapanPage.vue": 8,
-    "src/modules/m17-admin-dashboard/components/command-center-board/DailySchoolsPanel.vue": 3,
     "src/modules/m17-admin-dashboard/components/command-center/cc-format.ts": 3,
     "src/modules/m18-ppd-jpn/mock/handlers/amaran.ts": 2,
     "src/modules/m21-sponsorship/pages/MohonKeluargaAngkatPage.vue": 1,

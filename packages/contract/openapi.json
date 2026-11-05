@@ -16368,7 +16368,10 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100
           }
@@ -16458,7 +16461,10 @@
             ]
           },
           "t2Accuracy": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100
           },
@@ -16626,7 +16632,10 @@
             "description": "Whole percent, half away from zero; 0 when last week is 0."
           },
           "accuracy": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100
           },
@@ -16913,7 +16922,10 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100
           }
@@ -17071,7 +17083,10 @@
                 "minimum": 0
               },
               "accuracy": {
-                "type": "number",
+                "type": [
+                  "number",
+                  "null"
+                ],
                 "minimum": 0,
                 "maximum": 100
               },
@@ -17271,7 +17286,10 @@
                   "minimum": 0
                 },
                 "accuracy": {
-                  "type": "number",
+                  "type": [
+                    "number",
+                    "null"
+                  ],
                   "minimum": 0,
                   "maximum": 100
                 },
@@ -17305,7 +17323,10 @@
                   "minimum": 0
                 },
                 "accuracy": {
-                  "type": "number",
+                  "type": [
+                    "number",
+                    "null"
+                  ],
                   "minimum": 0,
                   "maximum": 100
                 },
@@ -17393,7 +17414,10 @@
                 "minimum": 0
               },
               "accuracy": {
-                "type": "number",
+                "type": [
+                  "number",
+                  "null"
+                ],
                 "minimum": 0,
                 "maximum": 100
               }
@@ -17505,7 +17529,10 @@
                   "minimum": 0
                 },
                 "accuracy": {
-                  "type": "number",
+                  "type": [
+                    "number",
+                    "null"
+                  ],
                   "minimum": 0,
                   "maximum": 100
                 }
@@ -17584,7 +17611,10 @@
                   "minimum": 0
                 },
                 "accuracy": {
-                  "type": "number",
+                  "type": [
+                    "number",
+                    "null"
+                  ],
                   "minimum": 0,
                   "maximum": 100
                 },
@@ -17666,9 +17696,13 @@
             "minimum": 0
           },
           "pct": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
-            "maximum": 100
+            "maximum": 100,
+            "description": "XS-5 pooled, 1 decimal; null = no answers (\"—\")."
           }
         },
         "required": [
@@ -17843,7 +17877,10 @@
                 "minimum": 0
               },
               "accuracy": {
-                "type": "number",
+                "type": [
+                  "number",
+                  "null"
+                ],
                 "minimum": 0,
                 "maximum": 100
               },
@@ -17972,10 +18009,13 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100,
-            "description": "2 decimals."
+            "description": "XS-5, 1 decimal (60 section 4.6, no exception); null with no questions (\"—\")."
           },
           "minutes": {
             "type": "integer",
@@ -18006,10 +18046,13 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100,
-            "description": "1 decimal."
+            "description": "1 decimal; null with no sessions (\"—\")."
           },
           "timeSpentMinutes": {
             "type": "integer",
@@ -18109,7 +18152,10 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100
           },
@@ -18463,10 +18509,13 @@
             "description": "Members with at least one answer in the last 7 days."
           },
           "accuracy": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100,
-            "description": "Pooled accuracy, one decimal (XS-5); 0 when none."
+            "description": "XS-5, 1 decimal, over all answers of the members; null when none."
           }
         },
         "required": [
@@ -18492,7 +18541,10 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100
           }
@@ -18669,10 +18721,13 @@
             "description": "round((week - previous 7 days) / previous * 100); 0 when the previous week has no answer."
           },
           "accuracy": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100,
-            "description": "Pooled accuracy, one decimal (XS-5); 0 when none."
+            "description": "XS-5 pooled correct / answered x 100, 1 decimal; null when none."
           },
           "gpsOverall": {
             "type": [
@@ -18728,20 +18783,26 @@
             "minimum": 0
           },
           "kirkT2Accuracy": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100,
-            "description": "Pooled accuracy of the last 30 days, one decimal (XS-5); 0 when none."
+            "description": "Accuracy of the last 30 days."
           },
           "kirkT2Delta": {
             "type": [
               "number",
               "null"
             ],
-            "description": "Difference to the 30 days before, one decimal; null when either side has no answers."
+            "description": "Difference to the 30 days before, one decimal; null (no delta, shown \"—\") when either side is null."
           },
           "kirkT2Prev": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100
           },
@@ -18858,7 +18919,10 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100
           },
@@ -18920,7 +18984,10 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100
           }
@@ -18950,7 +19017,10 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100
           },
@@ -19115,7 +19185,10 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100
           },
@@ -19147,12 +19220,18 @@
         "type": "object",
         "properties": {
           "accuracyNow": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100
           },
           "accuracyPrev": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100
           },
@@ -19161,7 +19240,7 @@
               "number",
               "null"
             ],
-            "description": "Difference to the 30 days before, one decimal; null when either side has no answers."
+            "description": "One decimal; null when accuracyNow or accuracyPrev is null (no delta, never 0)."
           },
           "answersNow": {
             "type": "integer",
@@ -19240,12 +19319,18 @@
             "type": "object",
             "properties": {
               "accuracyNow": {
-                "type": "number",
+                "type": [
+                  "number",
+                  "null"
+                ],
                 "minimum": 0,
                 "maximum": 100
               },
               "accuracyPrev": {
-                "type": "number",
+                "type": [
+                  "number",
+                  "null"
+                ],
                 "minimum": 0,
                 "maximum": 100
               },
@@ -19254,7 +19339,7 @@
                   "number",
                   "null"
                 ],
-                "description": "Difference to the 30 days before, one decimal; null when either side has no answers."
+                "description": "One decimal; null when accuracyNow or accuracyPrev is null (no delta, never 0)."
               },
               "answersNow": {
                 "type": "integer",
@@ -19342,21 +19427,30 @@
             "type": "string"
           },
           "overallAccuracy": {
-            "type": "integer",
-            "minimum": 0
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "XS-5, 1 decimal; students here have >= 10 answers so never null."
           },
           "trend": {
-            "type": "integer",
-            "description": "Accuracy of the last 14 days minus the 14 before; 0 when either window has no answer."
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Accuracy of the last 14 days minus the 14 before; null (no delta, never 0) when either window has no answer."
           },
           "trendLabel": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "enum": [
               "Naik",
               "Turun",
-              "Stabil"
+              "Stabil",
+              null
             ],
-            "description": "> 5 Naik, < -5 Turun, else Stabil."
+            "description": "> 5 Naik, < -5 Turun, else Stabil; null when trend is null."
           },
           "consistency": {
             "type": "integer",
@@ -19694,7 +19788,10 @@
                   "type": "string"
                 },
                 "accuracy": {
-                  "type": "number",
+                  "type": [
+                    "number",
+                    "null"
+                  ],
                   "minimum": 0,
                   "maximum": 100
                 },
@@ -29541,7 +29638,10 @@
                       "type": "string"
                     },
                     "accuracy": {
-                      "type": "number"
+                      "type": [
+                        "number",
+                        "null"
+                      ]
                     }
                   },
                   "required": [
@@ -29754,10 +29854,13 @@
             "minimum": 0
           },
           "accuracy": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100,
-            "description": "correct / answered x 100, 1 decimal, never above 100."
+            "description": "correct / answered x 100, 1 decimal, never above 100; null (\"—\", never 0%) with 0 answers."
           },
           "seconds": {
             "type": "integer",
@@ -30099,7 +30202,10 @@
                     "minimum": 0
                   },
                   "accuracy": {
-                    "type": "number"
+                    "type": [
+                      "number",
+                      "null"
+                    ]
                   }
                 },
                 "required": [
