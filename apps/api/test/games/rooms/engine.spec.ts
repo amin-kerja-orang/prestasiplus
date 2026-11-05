@@ -43,7 +43,7 @@ import {
 const HOST = '10'
 const ids = (n: number): string[] => Array.from({ length: n }, (_, i) => String(10 + i))
 const players = (n: number, bots = true): EnginePlayer[] =>
-  ids(n).map((userId, i) => ({ userId, team: null, points: 0, correct: 0, isBot: bots && i > 0 }))
+  ids(n).map((userId, i) => ({ userId, team: null, points: 0, correct: 0, isBot: bots && i > 0, lastPolledMs: null, consecutiveTimeouts: 0 }))
 
 function pool(n: number, shortKeys = true): PoolQuestion[] {
   return Array.from({ length: n }, (_, i) => {
@@ -787,6 +787,8 @@ describe('settlement (AC10, FR-GM-R.6)', () => {
       points: 0,
       correct: 0,
       isBot: i > 0,
+      lastPolledMs: null,
+      consecutiveTimeouts: 0,
       ...o,
     }))
   const human = (userId: string, over: Partial<EnginePlayer> = {}): Partial<EnginePlayer> => ({ userId, isBot: false, ...over })
@@ -819,7 +821,7 @@ describe('settlement (AC10, FR-GM-R.6)', () => {
       expect(one.reports).toHaveLength(1)
       expect(one.reports[0]).toMatchObject({ robotsOnly: true })
     }
-    const none = computeSettlement({ code: 'X', game: 'papan-bijak', state: finishedState({ winnerId: 'robot-1', startHumans: 0 }), players: ps([{ isBot: true }, { userId: 'robot-1' }]) })
+    const none = computeSettlement({ code: 'X', game: 'papan-bijak', state: finishedState({ winnerId: 'robot-1', startHumans: 0 }), players: ps([{ isBot: true, lastPolledMs: null, consecutiveTimeouts: 0 }, { userId: 'robot-1' }]) })
     expect(none).toEqual({ standings: [], reports: [] })
   })
 
@@ -873,8 +875,8 @@ describe('settlement (AC10, FR-GM-R.6)', () => {
 describe('FR-GM-00.7: the clock of each room game', () => {
   const room = (game: EngineRoom['game']): EngineRoom => ({ code: 'CLOCK1', game, subject: 'MATEMATIK', gradeLevel: 'TINGKATAN_4' })
   const seats: EnginePlayer[] = [
-    { userId: '10', team: null, points: 0, correct: 0, isBot: false },
-    { userId: 'robot-1', team: null, points: 0, correct: 0, isBot: true },
+    { userId: '10', team: null, points: 0, correct: 0, isBot: false, lastPolledMs: null, consecutiveTimeouts: 0 },
+    { userId: 'robot-1', team: null, points: 0, correct: 0, isBot: true, lastPolledMs: null, consecutiveTimeouts: 0 },
   ]
   const pool: PoolQuestion[] = Array.from({ length: 40 }, (_, i) => ({
     id: String(i + 1),
@@ -942,15 +944,15 @@ describe('multi-human seats: Papan Bijak (GAME-02) and Kuiz Relay (GAME-06)', ()
   const seatsOf = (game: EngineRoom['game']): EnginePlayer[] =>
     game === 'kuiz-relay'
       ? [
-          { userId: A, team: null, points: 0, correct: 0, isBot: false },
-          { userId: B, team: null, points: 0, correct: 0, isBot: false },
-          { userId: 'robot-1', team: null, points: 0, correct: 0, isBot: true },
-          { userId: 'robot-2', team: null, points: 0, correct: 0, isBot: true },
+          { userId: A, team: null, points: 0, correct: 0, isBot: false, lastPolledMs: null, consecutiveTimeouts: 0 },
+          { userId: B, team: null, points: 0, correct: 0, isBot: false, lastPolledMs: null, consecutiveTimeouts: 0 },
+          { userId: 'robot-1', team: null, points: 0, correct: 0, isBot: true, lastPolledMs: null, consecutiveTimeouts: 0 },
+          { userId: 'robot-2', team: null, points: 0, correct: 0, isBot: true, lastPolledMs: null, consecutiveTimeouts: 0 },
         ]
       : [
-          { userId: A, team: null, points: 0, correct: 0, isBot: false },
-          { userId: B, team: null, points: 0, correct: 0, isBot: false },
-          { userId: 'robot-1', team: null, points: 0, correct: 0, isBot: true },
+          { userId: A, team: null, points: 0, correct: 0, isBot: false, lastPolledMs: null, consecutiveTimeouts: 0 },
+          { userId: B, team: null, points: 0, correct: 0, isBot: false, lastPolledMs: null, consecutiveTimeouts: 0 },
+          { userId: 'robot-1', team: null, points: 0, correct: 0, isBot: true, lastPolledMs: null, consecutiveTimeouts: 0 },
         ]
   const begin = (game: EngineRoom['game'], p = 0.5) =>
     startGame({ room: room(game), players: seatsOf(game), humanId: A, seed: 'seed-m', pool: pool(POOL_SIZE[game]), quizTiles: 35, p, nowMs: T0 })
@@ -1026,7 +1028,7 @@ describe('multi-human seats: Papan Bijak (GAME-02) and Kuiz Relay (GAME-06)', ()
 })
 
 describe('robots off: a leaver\'s seat is skipped (ruling 50.1)', () => {
-  const seats3 = (): EnginePlayer[] => ['10', '11', '12'].map((userId) => ({ userId, team: null, points: 0, correct: 0, isBot: false }))
+  const seats3 = (): EnginePlayer[] => ['10', '11', '12'].map((userId) => ({ userId, team: null, points: 0, correct: 0, isBot: false, lastPolledMs: null, consecutiveTimeouts: 0 }))
   it('Papan Bijak: the next seat in line stays next, whoever left', () => {
     const o = startGame({ room: room('papan-bijak'), players: seats3(), humanId: '10', seed: 's', pool: pool(40), quizTiles: 35, p: 0, nowMs: T0 })
     // turn 1 is seat 11's; seat 10 (before it) leaves: 11 is still on turn; seat 12 (after it) leaves: still 11
@@ -1047,7 +1049,7 @@ describe('robots off: a leaver\'s seat is skipped (ruling 50.1)', () => {
     expect(h.state.positions['10']).toBeUndefined()
   })
   it('Kuiz Relay: the formula runs over the seats left; the answerer of the round on the table is re-read', () => {
-    const four = ['10', '11', '12', '13'].map((userId, i) => ({ userId, team: (i % 2) + 1, points: 0, correct: 0, isBot: false }))
+    const four = ['10', '11', '12', '13'].map((userId, i) => ({ userId, team: (i % 2) + 1, points: 0, correct: 0, isBot: false, lastPolledMs: null, consecutiveTimeouts: 0 }))
     const o = startGame({ room: room('kuiz-relay'), players: four, humanId: '10', seed: 's', pool: pool(10), quizTiles: 0, p: 0, nowMs: T0 })
     expect(o.state).toMatchObject({ humanId: '10', round: 1 })
     const h = skipSeat({ room: room('kuiz-relay'), players: four.slice(1), state: o.state, leaver: '10', leaverIndex: 0, oldCount: 4, p: 0, nowMs: T0 + 4_000 })
@@ -1068,9 +1070,9 @@ describe('presence window (ruling 50)', () => {
 describe('a human leaves a game in play: a robot takes the seat (ruling 50)', () => {
   const room_ = room('papan-bijak')
   const seats3 = (): EnginePlayer[] => [
-    { userId: '10', team: null, points: 0, correct: 0, isBot: false },
-    { userId: '11', team: null, points: 0, correct: 0, isBot: false },
-    { userId: '12', team: null, points: 0, correct: 0, isBot: false },
+    { userId: '10', team: null, points: 0, correct: 0, isBot: false, lastPolledMs: null, consecutiveTimeouts: 0 },
+    { userId: '11', team: null, points: 0, correct: 0, isBot: false, lastPolledMs: null, consecutiveTimeouts: 0 },
+    { userId: '12', team: null, points: 0, correct: 0, isBot: false, lastPolledMs: null, consecutiveTimeouts: 0 },
   ]
   const begin = () => startGame({ room: room_, players: seats3(), humanId: '10', seed: 'seed-l', pool: pool(40), quizTiles: 35, p: 0.5, nowMs: T0 })
 
@@ -1100,10 +1102,10 @@ describe('a human leaves a game in play: a robot takes the seat (ruling 50)', ()
     const o = begin()
     const st = { ...o.state, positions: { '10': 4, '11': 5, '12': 6, 'robot-1': 7 } }
     const after: EnginePlayer[] = [
-      { userId: 'robot-1', team: null, points: 0, correct: 0, isBot: true },
-      { userId: '11', team: null, points: 0, correct: 0, isBot: false },
-      { userId: '12', team: null, points: 0, correct: 0, isBot: false },
-      { userId: 'robot-2', team: null, points: 0, correct: 0, isBot: true },
+      { userId: 'robot-1', team: null, points: 0, correct: 0, isBot: true, lastPolledMs: null, consecutiveTimeouts: 0 },
+      { userId: '11', team: null, points: 0, correct: 0, isBot: false, lastPolledMs: null, consecutiveTimeouts: 0 },
+      { userId: '12', team: null, points: 0, correct: 0, isBot: false, lastPolledMs: null, consecutiveTimeouts: 0 },
+      { userId: 'robot-2', team: null, points: 0, correct: 0, isBot: true, lastPolledMs: null, consecutiveTimeouts: 0 },
     ]
     const h = handOverSeat({ room: room_, players: after, state: { ...st, humanId: '11' }, remap: { '10': 'robot-1', 'robot-1': 'robot-2' }, leaver: '10', p: 0.5, nowMs: T0 })
     expect(h.state.positions).toEqual({ 'robot-1': 4, '11': 5, '12': 6, 'robot-2': 7 })
@@ -1111,10 +1113,10 @@ describe('a human leaves a game in play: a robot takes the seat (ruling 50)', ()
 
   it('Kuiz Relay: the human on turn leaves; the robot plays that pending turn and the clock restarts', () => {
     const seats4 = (): EnginePlayer[] => [
-      { userId: '10', team: null, points: 0, correct: 0, isBot: false },
-      { userId: '11', team: null, points: 0, correct: 0, isBot: false },
-      { userId: 'robot-1', team: null, points: 0, correct: 0, isBot: true },
-      { userId: 'robot-2', team: null, points: 0, correct: 0, isBot: true },
+      { userId: '10', team: null, points: 0, correct: 0, isBot: false, lastPolledMs: null, consecutiveTimeouts: 0 },
+      { userId: '11', team: null, points: 0, correct: 0, isBot: false, lastPolledMs: null, consecutiveTimeouts: 0 },
+      { userId: 'robot-1', team: null, points: 0, correct: 0, isBot: true, lastPolledMs: null, consecutiveTimeouts: 0 },
+      { userId: 'robot-2', team: null, points: 0, correct: 0, isBot: true, lastPolledMs: null, consecutiveTimeouts: 0 },
     ]
     const rr = room('kuiz-relay')
     const o = startGame({ room: rr, players: seats4(), humanId: '10', seed: 's', pool: pool(10), quizTiles: 0, p: 1, nowMs: T0 })
@@ -1129,7 +1131,7 @@ describe('a human leaves a game in play: a robot takes the seat (ruling 50)', ()
 
   it('OWN PART: the acting seat passes to the next human', () => {
     const own = startGame({ room: room('benteng-ilmu'), players: [seats3()[0] as EnginePlayer, seats3()[1] as EnginePlayer], humanId: '10', seed: 's', pool: pool(30), quizTiles: 0, p: 0, nowMs: T0 })
-    const after = [{ userId: 'robot-1', team: null, points: 0, correct: 0, isBot: true }, seats3()[1] as EnginePlayer]
+    const after = [{ userId: 'robot-1', team: null, points: 0, correct: 0, isBot: true, lastPolledMs: null, consecutiveTimeouts: 0 }, seats3()[1] as EnginePlayer]
     const h = handOverSeat({ room: room('benteng-ilmu'), players: after, state: own.state, remap: { '10': 'robot-1' }, leaver: '10', p: 0, nowMs: T0 })
     expect(h.state.humanId).toBe('11')
   })
@@ -1178,17 +1180,22 @@ describe('seat presence and the consecutive timeouts (DM-90, rulings 49 and 54)'
     expect(count(o, B)).toBe(0) // B acted on every turn it was awaited
   })
 
-  it('a poll is not an engine event: the count only moves on a timeout or an action (the explicit "time ran out" answer is a timeout)', () => {
-    let o = begin('papan-bijak', two(T0, T0))
-    o = act(o, T0) // A rolls
-    expect(count(o, A)).toBe(0)
-    o = toTurn(o, A, T0)
-    // a roll that stopped on a quiz tile leaves A on turn with a question; find one
-    for (let i = 0; i < 40 && o.state.awaiting !== 'answer'; i++) o = toTurn(act(toTurn(o, A, T0), T0), A, T0)
-    if (o.state.awaiting === 'answer') {
-      const noPick = step(room('papan-bijak'), o, { type: 'answer', questionId: o.state.pendingQ as string, optionId: null, value: undefined, seconds: 0 }, 0, T0 + 20_000)
-      expect(count(noPick, A)).toBe(1)
-    }
+  it('a real answer and a roll reset the count; the explicit "time ran out" answer is a timeout in Papan Bijak and Kuiz Relay and neither in an own-part game', () => {
+    const noPickOf = (o: EngineOut): RoomPlayAction => ({ type: 'answer', questionId: o.state.pendingQ as string, optionId: null, value: undefined, seconds: 0 })
+    const seated = (o: EngineOut): EngineOut => ({ ...o, players: o.players.map((x) => (x.userId === A ? { ...x, consecutiveTimeouts: 1 } : x)) })
+    // Papan Bijak: A on a question with 1 timeout already, then each kind of action
+    const pb = begin('papan-bijak', two(T0, T0))
+    const onQuestion: EngineOut = seated({ ...pb, state: { ...pb.state, awaiting: 'answer', pendingQ: pb.state.qIds[0] as string } })
+    expect(count(step(room('papan-bijak'), onQuestion, noPickOf(onQuestion), 0, T0 + 20_000), A)).toBe(2) // explicit "time ran out": +1
+    expect(count(step(room('papan-bijak'), onQuestion, answerRight(onQuestion.state), 0, T0 + 1_000), A)).toBe(0) // a real answer: reset
+    expect(count(step(room('papan-bijak'), seated(pb), { type: 'roll' }, 0, T0 + 1_000), A)).toBe(0) // a roll: reset
+    // Kuiz Relay (A answers round 1)
+    const kr = seated(begin('kuiz-relay', two(T0, T0)))
+    expect(count(step(room('kuiz-relay'), kr, noPickOf(kr), 0, T0 + 15_000), A)).toBe(2)
+    // Benteng Ilmu (own part): the no-pick answer neither increments nor resets; a real answer resets
+    const bn = seated(begin('benteng-ilmu', two(T0, T0)))
+    expect(count(step(room('benteng-ilmu'), bn, noPickOf(bn), 0, T0 + 15_000), A)).toBe(1)
+    expect(count(step(room('benteng-ilmu'), bn, answerRight(bn.state), 0, T0 + 1_000), A)).toBe(0)
   })
 
   const tick = (game: EngineRoom['game'], o: EngineOut, nowMs: number, absentMs: number | undefined) =>
@@ -1219,6 +1226,25 @@ describe('seat presence and the consecutive timeouts (DM-90, rulings 49 and 54)'
     expect(r.players.find((x) => x.userId === A)?.consecutiveTimeouts).toBe(3)
     expect(r.finished).toBe(false)
     expect(r.state.humanId).toBe(A) // stopped on A's turn with 3 timeouts
+  })
+
+  it('the calling seat is present on its own request: the open turn is not early-closed for it, but a turn whose full clock ran out still times out', () => {
+    const o = begin('papan-bijak', two(T0, T0 + 14_000)) // A last polled at the start; 10 s limit = 15 s window
+    const asA = (nowMs: number) => resolveClocks({ room: room('papan-bijak'), players: o.players, state: o.state, startedAtMs: T0, nowMs, p: 0, absentMs: 10_000, callerSeat: A })
+    expect(asA(T0 + 20_000).changed).toBe(false) // A's own request at 20 s: its open 30 s roll turn stays open
+    expect(asA(T0 + 29_999).changed).toBe(false)
+    expect(asA(T0 + 30_000).changed).toBe(true) // the full clock ran out before this request: still a timeout
+    const asB = resolveClocks({ room: room('papan-bijak'), players: o.players, state: o.state, startedAtMs: T0, nowMs: T0 + 20_000, p: 0, absentMs: 10_000, callerSeat: B })
+    expect(asB.changed).toBe(true) // B's request does not make A present
+  })
+
+  it('a seat with no last_polled_at (a room from before DM-90) counts as present: no early close, no crash on old seat state', () => {
+    const o = begin('papan-bijak', two(null, null))
+    const legacy = structuredClone(o.state)
+    Object.assign(legacy.seats?.[A] as object, { seenMs: T0, missed: 2 }) // the R2 fields are ignored
+    const run = (nowMs: number) => resolveClocks({ room: room('papan-bijak'), players: o.players, state: legacy, startedAtMs: T0, nowMs, p: 0, absentMs: 10_000 })
+    expect(run(T0 + 29_000).changed).toBe(false)
+    expect(run(T0 + 30_000).changed).toBe(true)
   })
 
   it('Kuiz Relay closes an absent seat\'s turn early too; an own-part game (Benteng Ilmu) does not (via its GAME-0x part)', () => {

@@ -9,9 +9,9 @@ export interface EnginePlayer {
   correct: number
   isBot: boolean
   /** DM-90 `last_polled_at` (ms) of a human seat; null before the first poll. Absent for a robot and in older callers. */
-  lastPolledMs?: number | null
+  lastPolledMs: number | null
   /** DM-90 `consecutive_timeouts`: timeouts of the seat's own turns since its last action. The engine updates it; the service stores it. */
-  consecutiveTimeouts?: number
+  consecutiveTimeouts: number
 }
 
 export interface EngineRoom {

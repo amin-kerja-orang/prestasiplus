@@ -32,6 +32,11 @@ export interface ClockInput {
    * games (Papan Bijak, Kuiz Relay): see `absentCloseMs`. Absent: only the full clock closes a turn.
    */
   absentMs?: number
+  /**
+   * The seat whose own request this is (poll or action). It is here now, so the turn open NOW is never early-closed for it,
+   * whatever its stored `last_polled_at` says; turns whose full clock ran out before this request still time out.
+   */
+  callerSeat?: string
   streams?: StreamFactory
 }
 
@@ -71,17 +76,18 @@ export function turnMs(game: GamesRoomGame, awaiting: RoomState['awaiting']): nu
 /**
  * Ruling 49: when the seat on turn has not polled or acted for `games_absent_seconds`, its turn times out at that point
  * instead of at the full clock. The point is the later of the turn's start (a seat already absent when its turn begins is
- * timed out at once) and `last_polled_at` + the absence window (the limit plus the write gap, as presence reads it). Null when the
- * rule does not apply: a robot on turn, or a game whose rounds are the "own part" of GAME-03/04/05/07 (their clocks are shorter
+ * timed out at once) and `last_polled_at` + the absence window (the limit plus the write gap, as presence reads it). A seat
+ * that never polled (`last_polled_at` null: a room from before DM-90) counts as present. Null when the rule does not apply:
+ * the calling seat itself (it is present on its own request), a robot on turn, or a game whose rounds are the "own part" of GAME-03/04/05/07 (their clocks are shorter
  * than the limit and the other seats are simulated there, so that part owns absence of the simultaneous rounds).
  */
 export function absentCloseMs(input: ClockInput, state: RoomState, players: EnginePlayer[], began: number): number | null {
   if (input.absentMs === undefined) return null
   if (input.room.game !== 'papan-bijak' && input.room.game !== 'kuiz-relay') return null
   const actor = players.find((x) => x.userId === state.humanId)
-  if (!actor || actor.isBot) return null
-  const seen = actor.lastPolledMs ?? input.startedAtMs
-  return Math.max(began, seen + input.absentMs + SEEN_GAP_MS)
+  if (!actor || actor.isBot || actor.userId === input.callerSeat) return null
+  if (actor.lastPolledMs === null || actor.lastPolledMs === undefined) return null
+  return Math.max(began, actor.lastPolledMs + input.absentMs + SEEN_GAP_MS)
 }
 
 export function resolveClocks(input: ClockInput): ClockOut {

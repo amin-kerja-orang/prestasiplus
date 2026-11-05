@@ -2,6 +2,8 @@ import type { GamesRoomView } from '@pp/contract'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { ACCOUNTS, bootGamesApp, loginAs, START, type Client, type GamesTestApp } from '../helpers'
+import { RoomsRepository } from '../../../src/modules/games/rooms/rooms.repository'
+import { RoomsService } from '../../../src/modules/games/rooms/rooms.service'
 import { P, PB_FORM, createRoom, parseRoom, stateOf } from './support'
 
 /**
@@ -13,6 +15,7 @@ describe('room seat presence (R3)', () => {
   let t: GamesTestApp
   let a: Client
   let b: Client
+  let solo: Client
 
   beforeAll(async () => {
     t = await bootGamesApp({ withGamification: true })
@@ -20,6 +23,7 @@ describe('room seat presence (R3)', () => {
     await insertShortMcqs(t.db, { subject: 'MATH', level: 'T4', count: 60, prefix: 'PR' })
     a = await loginAs(t, ACCOUNTS.student)
     b = await loginAs(t, ACCOUNTS.student2)
+    solo = await loginAs(t, ACCOUNTS.teacher)
     await t.db.query(`update gamification_settings set value = 0 where key = 'games_min_ms_per_answer'`)
   })
   afterAll(async () => {
@@ -133,5 +137,115 @@ describe('room seat presence (R3)', () => {
     } finally {
       await setAbsent(30)
     }
+  }, 120_000)
+
+  /** The seat on turn acts until the turn is `id`'s (or the game ends). */
+  async function playUntil(code: string, id: string, who: Record<string, Client>): Promise<GamesRoomView> {
+    let v: GamesRoomView = parseRoom(await a.get(P('papan-bijak', code)))
+    for (let i = 0; i < 20 && v.status === 'playing' && v.state?.humanId !== id; i++) {
+      const c = who[v.state?.humanId as string] as Client
+      const st = await stateOf(t.db, code)
+      v = parseRoom(await c.post(P('papan-bijak', code, '/action'), v.state?.awaiting === 'roll' ? { type: 'roll' } : { type: 'answer', questionId: st.pendingQ, optionId: (st.qs[st.pendingQ as string] as { keyIndex: number }).keyIndex }))
+    }
+    return v
+  }
+
+  it('Major 2: a seat with 2 timeouts that returns after 40 s of silence, while its own turn is open, stays seated and can act', async () => {
+    const { code } = await startRoom()
+    const first = a // the host is on turn first
+    t.clock.advance(25_000)
+    const v = await playUntil(code, b.userId, { [a.userId]: first, [b.userId]: b })
+    expect(v.state?.humanId).toBe(b.userId) // b's turn begins now, at 25 s; b last polled at the start
+    await t.db.query('update game_room_players set consecutive_timeouts = 2 where room_code = $1 and user_id = $2::bigint', [code, b.userId])
+    t.clock.advance(20_000) // 45 s since b last polled (over the 35 s limit), its roll turn is 20 s old: open
+    const back = parseRoom(await b.get(P('papan-bijak', code)))
+    expect(back.status).toBe('playing')
+    expect(back.players.some((p) => p.id === b.userId && !p.isBot)).toBe(true)
+    expect(back.state?.humanId).toBe(b.userId)
+    expect((await seatOf(code, b))?.consecutive_timeouts).toBe(2) // no third timeout on the request that shows it is back
+    const acted = parseRoom(await b.post(P('papan-bijak', code, '/action'), { type: 'roll' }))
+    expect(acted.status).toBe('playing')
+    expect((await seatOf(code, b))?.consecutive_timeouts).toBe(0)
+  }, 120_000)
+
+  it('Major 2: a returning seat that already missed 3 turns whose clock ran out is removed on return (default win for the present one)', async () => {
+    const { code, view } = await startRoom()
+    const on = view.state?.humanId === a.userId ? a : b
+    const other = on === a ? b : a
+    await t.db.query('update game_room_players set consecutive_timeouts = 2 where room_code = $1 and user_id = $2::bigint', [code, on.userId])
+    t.clock.advance(31_000) // the roll clock of the seat on turn ran out before this request
+    await other.get(P('papan-bijak', code))
+    const v = parseRoom(await other.get(P('papan-bijak', code)))
+    expect(v.status).toBe('finished')
+    expect(v.result?.winnerId).toBe(other.userId)
+  }, 120_000)
+
+  it('legacy room: columns null and the state JSON still holds seenMs/missed: no instant timeout, no crash', async () => {
+    await setAbsent(10) // a null last_polled_at must not fall back to the start (15 s window) and time the first turn out
+    try {
+      const { code, view } = await startRoom()
+      const st = await stateOf(t.db, code)
+      for (const id of Object.keys(st.seats ?? {})) Object.assign(st.seats?.[id] as object, { seenMs: 1, missed: 2 })
+      await t.db.query('update game_rooms set state = $2::jsonb where code = $1', [code, JSON.stringify(st)])
+      await t.db.query('update game_room_players set last_polled_at = null, consecutive_timeouts = 0 where room_code = $1', [code])
+      t.clock.advance(16_000)
+      const r = await b.get(P('papan-bijak', code))
+      expect(r.status).toBe(200)
+      const now = await stateOf(t.db, code)
+      expect(now.log.filter((l) => l.startsWith('roll:'))).toHaveLength(0)
+      expect(now.humanId).toBe(view.state?.humanId)
+      for (const c of [a, b]) expect((await seatOf(code, c))?.consecutive_timeouts).toBe(0)
+    } finally {
+      await setAbsent(30)
+    }
+  }, 120_000)
+
+  it.each([1, 0])('3 timeouts remove a seat with 2 humans left (bots %i): a robot takes the seat, or it is skipped when robots are off', async (bots) => {
+    await t.db.query(`update gamification_settings set value = ${String(bots)} where key = 'games_room_bots_enabled'`)
+    try {
+      const code = await createRoom(a, 'papan-bijak', { ...PB_FORM, match_mode: 'same_level' })
+      await b.post(P('papan-bijak', undefined, '/join'), { room_code: code })
+      await solo.post(P('papan-bijak', undefined, '/join'), { room_code: code })
+      parseRoom(await a.post(P('papan-bijak', code, '/start')))
+      const who = { [a.userId]: a, [b.userId]: b }
+      let v: GamesRoomView = parseRoom(await a.get(P('papan-bijak', code)))
+      for (let i = 0; i < 400 && v.status === 'playing' && v.players.length === 3 && !v.players.some((p) => p.isBot); i++) {
+        t.clock.advance(15_000)
+        await b.get(P('papan-bijak', code))
+        v = parseRoom(await a.get(P('papan-bijak', code))) // solo never polls or acts; a and b play their turns
+        if (v.status === 'playing' && v.state?.humanId !== solo.userId && v.state && who[v.state.humanId]) v = await playUntil(code, solo.userId, who)
+      }
+      const rows = await t.db.query<{ user_id: string | null; is_bot: boolean; consecutive_timeouts: number }>(
+        'select user_id::text, is_bot, consecutive_timeouts from game_room_players where room_code = $1 order by id',
+        [code],
+      )
+      expect(v.status).toBe('playing')
+      expect(rows.filter((r) => !r.is_bot).map((r) => r.user_id).sort()).toEqual([a.userId, b.userId].sort())
+      expect(rows.some((r) => r.user_id === solo.userId)).toBe(false)
+      if (bots === 1) {
+        expect(rows).toHaveLength(3)
+        expect(rows.filter((r) => r.is_bot)).toEqual([{ user_id: null, is_bot: true, consecutive_timeouts: 0 }]) // the seat became a robot
+      } else {
+        expect(rows).toHaveLength(2) // skipped: no robot, no seat
+      }
+    } finally {
+      await t.db.query(`update gamification_settings set value = 1 where key = 'games_room_bots_enabled'`)
+    }
+  }, 120_000)
+
+  it('the sweep still fires for a room with no poller; a poll bumps updated_at so a room with a poller is left to its pollers', async () => {
+    const { code } = await startRoom()
+    const rooms = t.app.get(RoomsService, { strict: false })
+    const repo = t.app.get(RoomsRepository, { strict: false })
+    const idle = async (): Promise<string[]> => repo.playingIdleSince(new Date(t.clock.now().getTime() - 10_000), 200)
+    t.clock.advance(6_000)
+    await b.get(P('papan-bijak', code)) // a poll: last_polled_at and updated_at move
+    t.clock.advance(8_000) // 8 s since the poll, 14 s since start
+    expect(await idle()).not.toContain(code)
+    t.clock.advance(2_000) // 10 s since the poll: no poller any more
+    expect(await idle()).toContain(code)
+    t.clock.advance(25_000) // the roll clock of the seat on turn has run out
+    expect(await rooms.sweepClocks()).toBeGreaterThanOrEqual(1)
+    expect((await stateOf(t.db, code)).log.filter((l) => l.startsWith('roll:')).length).toBeGreaterThanOrEqual(1)
   }, 120_000)
 })

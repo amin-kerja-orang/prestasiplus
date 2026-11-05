@@ -326,14 +326,19 @@ export function applyAction(input: ActionInput): EngineOut {
 }
 
 /**
- * The acting seat acted (ruling 49, lead Q3): any action sets its consecutive timeouts to 0. The client's explicit "time ran
- * out" (an answer with no pick and no value) is the clock speaking, not the pupil: it counts as one timeout like the server's own.
+ * The acting seat acted (ruling 49, lead Q3): any action sets its consecutive timeouts to 0. In Papan Bijak and Kuiz Relay the
+ * client's explicit "time ran out" (an answer with no pick and no value) is the clock speaking, not the pupil: it counts as one
+ * timeout like the server's own. In the own-part games (GAME-03/04/05/07) such an answer neither counts nor resets, as before
+ * (via its GAME-0x part).
  */
 function noteAction(input: ActionInput, out: EngineOut): EngineOut {
   const actor = out.players.find((x) => x.userId === input.state.humanId && !x.isBot)
   if (!actor) return out
-  const timedOut = input.action.type === 'answer' && noPick(input.action)
-  actor.consecutiveTimeouts = timedOut ? (actor.consecutiveTimeouts ?? 0) + 1 : 0
+  if (input.action.type === 'answer' && noPick(input.action)) {
+    if (input.room.game === 'papan-bijak' || input.room.game === 'kuiz-relay') actor.consecutiveTimeouts = (actor.consecutiveTimeouts ?? 0) + 1
+    return out
+  }
+  actor.consecutiveTimeouts = 0
   return out
 }
 

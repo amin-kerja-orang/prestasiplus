@@ -681,7 +681,8 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
    * lock): resolves the server clocks (idempotent: same time, same result; an absent seat's turn closes early, ruling 49.2),
    * marks the caller present (`last_polled_at`; a poll never resets the timeout count) and removes the seats with 3 consecutive
    * timeouts, polled or not (ruling 49.1). The clocks run first, on the presence the seat had before this call, so a seat
-   * that comes back after a long absence is timed out for the turns it missed. Calling it again moves nothing.
+   * that comes back after a long absence is timed out for the turns whose clock ran out. The turn open now is never early-closed
+   * for the calling seat: its own request is presence. Calling it again moves nothing.
    */
   private async advance(
     tx: TxClient,
@@ -693,7 +694,7 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
     const absentMs = (await this.settings.get('games_absent_seconds')) * 1000
     let cur = { room, players }
     for (let i = 0; i < 8; i++) {
-      cur = await this.runClocks(tx, cur.room, cur.players, absentMs)
+      cur = await this.runClocks(tx, cur.room, cur.players, absentMs, seen)
       if (i === 0 && seen !== undefined && cur.room.status === 'playing') cur = await this.notePoll(cur, seen)
       if (cur.room.status !== 'playing' || !cur.room.state) break
       // Ruling 49, every room game: 3 timeouts in a row remove the seat. With other humans the game goes on (or the last
@@ -727,6 +728,7 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
     room: RoomRow,
     players: PlayerRow[],
     absentMs: number,
+    callerSeat?: string,
   ): Promise<{ room: RoomRow; players: PlayerRow[] }> {
     if (room.status !== 'playing' || !room.state) return { room, players }
     const res = resolveClocks({
@@ -737,6 +739,7 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
       nowMs: this.clock.now().getTime(),
       p: await this.botAccuracy(),
       absentMs,
+      ...(callerSeat === undefined ? {} : { callerSeat }),
     })
     if (!res.changed) return { room, players }
     return this.applyOut(tx, room, players, {
