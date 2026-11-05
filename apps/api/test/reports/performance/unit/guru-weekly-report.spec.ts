@@ -179,6 +179,18 @@ describe('Guru weekly report (API-GUR-21)', () => {
     for (const x of all) expect(Math.round(x * 10) / 10).toBe(x)
   })
 
+  it('exact half-up one-decimal: 201/400 is 50.3, 1/8 is 12.5, 2/3 is 66.7', async () => {
+    const r = await service([...many('1', 400, 201), ...many('2', 8, 1), ...many('3', 3, 2)]).guruReport('t1', q)
+    const acc = Object.fromEntries(r.topPerformers.map((t) => [t.name, t.accuracy]))
+    expect(acc['Aina Ujian']).toBe(50.3)
+    expect(acc['Bakar Ujian']).toBe(12.5)
+    expect(r.summary.answered).toBe(411)
+    const third = await service(many('3', 5, 0).concat(many('3', 0, 0))).guruReport('t1', q)
+    expect(third.topPerformers[0]?.accuracy).toBe(0)
+    const two = await service([...many('1', 6, 4)]).guruReport('t1', q)
+    expect(two.topPerformers[0]?.accuracy).toBe(66.7)
+  })
+
   it('sorting: whole accuracy desc, then answered desc, then name; capped at 5 with ranks 1..5', async () => {
     const r = await service([
       ...many('1', 10, 8), // 80

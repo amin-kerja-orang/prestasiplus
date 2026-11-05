@@ -25,7 +25,7 @@ interface WeeklyData {
   subjectNames(subjectIds: readonly string[]): Promise<Map<string, string>>
 }
 
-const one = (correct: number, answered: number): number => (answered === 0 ? 0 : Math.round((correct / answered) * 1000) / 10)
+const one = (correct: number, answered: number): number => (answered === 0 ? 0 : Math.round((correct * 1000) / answered) / 10)
 const whole = (v: number): number => Math.round(v)
 const byName = (a: string, b: string): number => a.localeCompare(b, 'ms')
 
