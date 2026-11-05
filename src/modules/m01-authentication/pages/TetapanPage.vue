@@ -4,7 +4,7 @@
  * Murid / Guru / Admin Sekolah (INFERRED, OQ-6). The controls are independent (no show/hide or
  * enable logic, as live). Save sends every field to `PUT /api/me/settings` and re-renders with the
  * saved values and the green status box (UNVERIFIED COPY).
- * S5-T05 part C: the read-only "Tetapan Akaun" block (`ProfileAccountPanel`, rows e-mel, telefon, sekolah, peranan from
+ * S5-T05 part C: the read-only "Tetapan Akaun" block (`ProfileAccountPanel`, rows e-mel, telefon, sekolah, peranan, status from
  * `GET /api/me`) sits above "Mod Rohani" for every role.
  */
 import { computed, onMounted, reactive, ref } from 'vue'
@@ -87,6 +87,14 @@ async function load(): Promise<void> {
   }
 }
 
+/** Save toast by role (#458 ruling): pupil 10:337, guru and Admin Sekolah 20:313; other roles keep the V3 text. */
+function savedToast(fallback: string): string {
+  const role = user.value?.role
+  if (role === 'student') return 'Tetapan berjaya disimpan.'
+  if (role === 'teacher' || role === 'school_admin') return 'Tetapan disimpan.'
+  return fallback
+}
+
 async function submit(): Promise<void> {
   if (!canSave.value) return
   saving.value = true
@@ -95,7 +103,7 @@ async function submit(): Promise<void> {
   try {
     const result = await saveSettings({ ...form, faith: form.faith === '' ? null : form.faith })
     fill(result.data)
-    status.value = result.status
+    status.value = savedToast(result.status)
   } catch (err) {
     errors.value = errorLines(err)
   } finally {

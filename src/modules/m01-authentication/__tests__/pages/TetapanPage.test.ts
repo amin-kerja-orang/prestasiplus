@@ -215,20 +215,33 @@ describe('TetapanPage "Tetapan Akaun" block', () => {
     expect(row(w, 'school')).toBe('SMK DEMO')
     expect(row(w, 'role')).toBe(label)
     const labels = w.findAll('[data-testid="account-rows"] dt').map((d) => d.text())
-    expect(labels).toEqual(['📧 E-mel', '📱 Telefon', '🏫 Sekolah', '👤 Peranan'])
+    expect(labels).toEqual(['📧 E-mel', '📱 Telefon', '🏫 Sekolah', '👤 Peranan', '✅ Status'])
+    expect(row(w, 'status')).toBe('● Aktif')
     const html = w.html()
     expect(html.indexOf('data-testid="account-panel"')).toBeLessThan(html.indexOf('data-testid="tetapan-form"'))
   })
 
-  it('shows "—" for an empty telefon and no school, and invents no status row', async () => {
+  it('shows "—" for an empty telefon and no school, and still shows the fixed Status "● Aktif"', async () => {
     signIn({ ...ME, phone: null, school: null, schoolId: null })
     const w = await render()
     expect(row(w, 'phone')).toBe('—')
     expect(row(w, 'school')).toBe('—')
-    expect(w.find('[data-testid="account-status"]').exists()).toBe(false)
-    const panel = w.get('[data-testid="account-panel"]').text()
-    expect(panel).not.toContain('Status')
-    expect(panel).not.toContain('Aktif')
+    expect(row(w, 'status')).toBe('● Aktif')
+    expect(w.get('[data-testid="account-panel"]').text()).not.toContain('Tidak aktif')
+  })
+
+  it.each<[Role, string]>([
+    ['student', 'Tetapan berjaya disimpan.'],
+    ['teacher', 'Tetapan disimpan.'],
+    ['school_admin', 'Tetapan disimpan.'],
+    ['admin', 'V3 text'],
+  ])('shows the role-specific save toast for %s', async (role, text) => {
+    useSessionStore().setSession({ token: 't', remember: false, expiresAt: '2099-01-01T00:00:00+08:00', user: { ...ME, role } })
+    apiMocks.saveSettings.mockResolvedValue({ data: DEFAULTS, status: 'V3 text' })
+    const w = await render()
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    expect(w.get('[data-testid="tetapan-status"]').text()).toContain(text)
   })
 
   it('refreshes the user from GET /api/me when the page opens', async () => {

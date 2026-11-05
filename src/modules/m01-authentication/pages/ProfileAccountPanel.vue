@@ -3,8 +3,9 @@
  * "Tetapan Akaun" block of `/tetapan` for every role (S5-T05 part C; R1-MUR-A2, R1-GUR-A2, R1-AS-A2): the read-only rows
  * "📧 E-mel", "📱 Telefon" ("—" when empty), "🏫 Sekolah" ("—" when none) and "👤 Peranan", read from `GET /api/me`.
  * The role value is the BM label of OPT-PERANAN ("Admin Sekolah" for a school admin).
- * The row "✅ Status" is NOT shown: `GET /api/me` carries no status flag (a signed-in account is active, but the
- * API does not say so) and nothing is invented here.
+ * The row "✅ Status" shows a fixed "● Aktif" for every role (#458 ruling). No API field: the status is derived from
+ * the active session (`session-resolver.service.ts` rejects sessions of inactive users), so "● Tidak aktif" cannot
+ * be reached and is not built.
  */
 import { computed } from 'vue'
 
@@ -32,6 +33,9 @@ const rows = computed(() => [
   { key: 'phone', label: '📱 Telefon', value: props.user.phone?.trim() || EMPTY },
   { key: 'school', label: '🏫 Sekolah', value: props.user.school?.name || EMPTY },
   { key: 'role', label: '👤 Peranan', value: roleLabel.value },
+  // Derived from the active session: `session-resolver.service.ts` rejects inactive users, so this page is only
+  // reachable by an active account. Fixed text, no API field.
+  { key: 'status', label: '✅ Status', value: '● Aktif' },
 ])
 
 const isPupil = computed(() => props.user.role === 'student')
