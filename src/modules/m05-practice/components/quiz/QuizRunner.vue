@@ -421,18 +421,18 @@ const feedbackExplanation = computed(() =>
                 {{ current.questionText }}
               </h2>
 
-              <p v-if="referenceHref" class="text-caption" data-testid="question-reference">
-                <a
-                  :href="referenceHref"
-                  class="inline-flex min-h-11 items-center gap-2 text-highlighted underline"
+              <div v-if="referenceHref" data-testid="question-reference">
+                <UButton
+                  :to="referenceHref"
                   target="_blank"
                   rel="noopener noreferrer"
+                  color="neutral"
+                  variant="link"
+                  icon="i-ph-arrow-square-out-bold"
                   data-testid="question-reference-link"
+                  >Rujukan</UButton
                 >
-                  <UIcon name="i-ph-arrow-square-out-bold" class="size-5" aria-hidden="true" />
-                  Rujukan
-                </a>
-              </p>
+              </div>
 
               <p
                 v-if="current.contributor"

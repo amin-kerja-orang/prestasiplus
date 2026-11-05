@@ -449,7 +449,7 @@ describe('assigned work: mission, remedial, question_set (BE-18 port)', () => {
     const first = await startSession(pelajar, { mode: 'mission', missionId: '9003' })
     const replay = await startSession(pelajar, { mode: 'mission', missionId: '9003' })
     for (const res of [first, replay]) {
-      expect(StartSessionResponseSchema.safeParse(res).success).toBe(true)
+      expect(StartSessionResponseSchema.safeParse(res.body).success).toBe(true)
       expect(res.questions.find((q) => q.id === withLink)?.referenceUrl).toBe(url)
       expect(res.questions.find((q) => q.id === plain)).not.toHaveProperty('referenceUrl')
     }
