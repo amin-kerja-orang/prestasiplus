@@ -129,21 +129,21 @@ describe('#5 class dashboard: other classes', () => {
     expect(d.ranking.every((r) => r.accuracy === null && r.lastActiveAt === null)).toBe(true)
   })
 
-  it('admin: class 516 has no subject; its block uses the newest config 213 (7 / 8 / 0, TOV 62.1, ETR 71.9)', async () => {
+  it('admin: class 516 has no subject; its block uses the newest config 213 (15 / 0 / 0 with computed targets, TOV 62.1, ETR 71.9)', async () => {
     const d = await s5(516, ADMIN)
     expect(d.class.subject).toBeNull()
     expect(d.class.joinCode).toBe('DEMO-4S')
     expect(d.stats.students).toBe(15)
     expect(d.headcount).toMatchObject({
       configId: 213,
-      onTrack: 7,
-      below: 8,
+      onTrack: 15,
+      below: 0,
       noData: 0,
       avgTov: 62.1,
       avgEtr: 71.9,
     })
-    expect(d.headcount?.pct.on).toBeCloseTo(46.67, 1)
-    expect(d.headcount?.pct.below).toBeCloseTo(53.33, 1)
+    expect(d.headcount?.pct.on).toBeCloseTo(100, 1)
+    expect(d.headcount?.pct.below).toBeCloseTo(0, 1)
   })
 })
 
