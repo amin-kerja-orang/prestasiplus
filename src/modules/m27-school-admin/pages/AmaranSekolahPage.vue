@@ -16,7 +16,7 @@ import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi, useFlash, useSession } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsLoadError, DsPage } from '@/ds'
+import { DsLoadError, DsPage, DsText } from '@/ds'
 import { saveBlob } from '@/lib/save-blob'
 
 import { downloadSchoolRiskCsv, fetchSchoolRisk } from '../api/amaran'
@@ -85,9 +85,9 @@ async function download(): Promise<void> {
     <template v-if="data && schoolId !== null">
       <AmaranLevelPills :active="level" :levels="data.levels ?? []" />
       <AmaranTiles :tally="data.tally" />
-      <p class="text-body text-muted" data-testid="am-not-started">
+      <DsText variant="body" tone="muted" data-testid="am-not-started">
         {{ notStartedLine(data.tally.notStarted ?? 0) }}
-      </p>
+      </DsText>
       <AmaranDistribution :tally="data.tally" />
       <AmaranActions :school-id="schoolId" :downloading="downloading" @download="download" />
       <AmaranSubjectCard v-if="data.weakness.length > 0" :rows="data.weakness" />
