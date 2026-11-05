@@ -27,6 +27,7 @@ import { CLOCK, type Clock } from '../../../db/clock'
 import { isIdString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { FilesService } from '../../files'
+import { AnswerLogPort } from '../../practice/answer-log.port'
 import {
   AUTO_SUBMIT_TOLERANCE_SECONDS,
   BIJAK_ATTEMPTS_MESSAGES as MSG,
@@ -114,6 +115,7 @@ export class BijakAttemptsService {
     @Inject(BijakAttemptPorts) private readonly ports: BijakAttemptPorts,
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(FilesService) private readonly files: FilesService,
+    @Inject(AnswerLogPort) private readonly answerLog: AnswerLogPort,
   ) {}
 
   /* ------------------------------------------------------------------------------ helpers */
@@ -359,6 +361,7 @@ export class BijakAttemptsService {
       const result = this.present(row, { result: stored.result, selfMarks }, this.answerMap(answers), bundles)
       if (!unchanged) {
         await this.repo.saveSelfMarks(id, selfMarks, result)
+        await this.writeAnswerRows(row, result, answers)
         events.push({ attempt: row, status: row.status as FinishedStatus, result, swept: false, regraded: true, selfMark: { base: automaticScore(stored.result, row.composition) } })
       }
       const part = result.questions.flatMap((q) => q.parts).find((p) => p.partId === body.partId)!
@@ -535,6 +538,7 @@ export class BijakAttemptsService {
     const selfMarks = (await this.repo.gradedWithMarks(row.id))?.selfMarks ?? {}
     const result = applySelfMarks(base, row.composition, selfMarks, bundles)
     await this.repo.saveResult(row.id, base, selfMarks, result)
+    await this.writeAnswerRows(row, result, answers)
     events.push({ attempt: row, status: 'auto_submitted', result, swept: false, regraded: true })
     return true
   }
@@ -561,6 +565,7 @@ export class BijakAttemptsService {
     const closed = await this.repo.close(row.id, { status, submittedAt: at, lateBySeconds: late, idempotencyKey: opts.key })
     if (!closed) throw new Error('Attempt was closed by another request while locked')
     await this.repo.saveResult(row.id, result)
+    await this.writeAnswerRows(row, result, answers)
     const next: AttemptRow = { ...row, status, submittedAt: at, lateBySeconds: late, idempotencyKey: opts.key ?? row.idempotencyKey }
     events.push({ attempt: next, status, result, swept: opts.swept, regraded: false })
     return next
@@ -741,6 +746,44 @@ export class BijakAttemptsService {
     await this.emit(events)
     if (!out) throw attemptClosed()
     return out
+  }
+
+
+  /* ------------------------------------------------------------------ answer rows (D-A1, DM-44) */
+
+  /**
+   * S3-T04 (FR-MUR-13-21, API-BIJAK-04 c): one `practice_answers` row per ANSWERED leaf part, written through the one
+   * `AnswerLogPort` in the transaction that closes (or re-grades) the attempt, so a failure rolls the close back and the rows
+   * never lag the result. Mode `simulasi`, `attempt_id` = the attempt. Idempotent on `(attempt_id, user_id, question_id, part_ref)`:
+   * a second call (lateSync, self-mark) updates the rows. A blank part has no row; a part awaiting a human mark has
+   * `marks_awarded = null` and is not correct. `part_ref` is the leaf id of a structured part, null for an MCQ (leaf id = question id).
+   */
+  private async writeAnswerRows(row: AttemptRow, result: BijakAttemptResult, answers: ReadonlyMap<string, AnswerRow>): Promise<void> {
+    const versions = new Map<string, number>()
+    for (const s of row.composition) for (const [qid, v] of Object.entries(s.versions ?? {})) versions.set(qid, v)
+    for (const q of result.questions) {
+      for (const part of q.parts) {
+        if (part.status === 'kosong' || part.marks <= 0) continue
+        const stored = answers.get(part.partId)
+        const pending = part.status === 'belum_dimarkah'
+        const choice = stored?.answer.choice
+        const version = versions.get(q.questionId)
+        await this.answerLog.record({
+          userId: row.userId,
+          attemptId: row.id,
+          questionId: q.questionId,
+          partRef: part.partId === q.questionId ? null : part.partId,
+          mode: 'simulasi',
+          isCorrect: !pending && part.awarded === part.marks,
+          marksAwarded: pending ? null : part.awarded,
+          marksMax: part.marks,
+          answeredAt: stored?.savedAt ?? row.submittedAt ?? this.now(),
+          isTest: row.isTest,
+          selectedLabel: choice !== undefined && /^[A-H]$/.test(choice) ? choice : null,
+          ...(version !== undefined && Number.isInteger(version) && version >= 1 ? { questionVersionNo: version } : {}),
+        })
+      }
+    }
   }
 
   /* -------------------------------------------------------------------- after-commit effects */
