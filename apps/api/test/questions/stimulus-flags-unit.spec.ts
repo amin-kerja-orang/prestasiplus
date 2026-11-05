@@ -113,6 +113,12 @@ describe('stem_duplicated', () => {
  * not flagged now: a bare word alone is no reference.
  */
 describe('45 6.6.1 keyword rule', () => {
+  it('[CI] pins the CURRENT verdict, pending a PO ruling: `berikut` with a source word flags ordinary stems (unnumbered stimulus_missing)', () => {
+    for (const stem of ['Antara bahan berikut, yang manakah ialah logam?', 'Yang manakah pernyataan berikut benar?', 'Pilih situasi berikut yang menunjukkan sikap jujur.']) {
+      expect(detectStimulusFlag(input({ stemMs: stem })), stem).toEqual({ flag: 'stimulus_missing', ref: 'unnumbered' })
+    }
+  })
+
   it('[CI] "berkongsi petikan" and "Rajah kuasa tiga" are NOT flagged (a bare word alone)', () => {
     for (const stem of ['Murid berkongsi petikan akhbar tentang alam sekitar. Apakah tujuannya?', 'Rajah kuasa tiga bagi 2 ialah 8. Nyatakan nilai 3 kuasa tiga.']) {
       expect(detectStimulusFlag(input({ stemMs: stem })), stem).toBeNull()
@@ -137,9 +143,9 @@ describe('45 6.6.1 keyword rule', () => {
     expect(stimulusReferenceOf('Read the passage below and answer.')?.kind).toBe('unnumbered')
     expect(stimulusReferenceOf('Lihat sumber berikut.')?.kind).toBe('unnumbered')
     expect(stimulusReferenceOf('Using the following text, find the theme.')?.kind).toBe('unnumbered')
-    // Four words away is too far; a sentence end is a barrier.
+    // Four words away is too far (45 6.6.1: within 3 words; there is no sentence barrier in the rule).
     expect(stimulusReferenceOf('Graf itu sangat besar dan jelas di atas meja.')).toBeNull()
-    expect(stimulusReferenceOf('Lihat graf. Di bawah ialah jawapan.')).toBeNull()
+    expect(stimulusReferenceOf('Lihat graf. Di bawah ialah jawapan.')?.kind).toBe('unnumbered')
   })
 
   it('[CI] subject of menunjukkan / shows', () => {

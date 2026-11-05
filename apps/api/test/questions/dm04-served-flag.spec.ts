@@ -39,51 +39,82 @@ describe('DM-04 served lock and the open flag', () => {
     }
     return id
   }
-  async function group(questionIds: string[]): Promise<string> {
-    const s = await admin.post('/api/stimuli', { kind: 'passage', label: 'DM04', body: { ms: 'Teks rangsangan.' } })
-    const stimulusId = mutationEnvelopeOf(StimulusSchema).parse(s.body).data.id
-    const res = await admin.post('/api/stimulus-groups', { stimulusIds: [stimulusId], questionIds })
-    expect(res.status, JSON.stringify(res.body)).toBe(201)
-    return res.body.data.id as string
-  }
   const setFlag = (id: string, flag: 'stimulus_missing' | 'figure_only' | null) =>
     q(`update question_versions set stimulus_flag = $2, stimulus_flag_at = now(), flag_dismissed_at = null where question_id = $1 and version_no = 1`, [id, flag])
 
-  it('[CI] DM-04: a served, unflagged member stays locked (the group lock and the member lock answer 409)', async () => {
-    const member = await question('Hitung 12 campur 15 dengan teliti.', false)
-    const g = await group([member])
+  /** A group whose only member is published (live approved) and, when given, flagged in place. Returns ids. */
+  async function servedGroup(label: string, flag: 'stimulus_missing' | 'figure_only' | null): Promise<{ g: string; member: string; stimulusId: string }> {
+    const member = await question(`Hitung ${label} campur 15 dengan teliti.`, false)
+    const s = await admin.post('/api/stimuli', { kind: 'passage', label: `DM04 ${label}`, body: { ms: 'Teks rangsangan.' } })
+    const stimulusId = mutationEnvelopeOf(StimulusSchema).parse(s.body).data.id
+    const res = await admin.post('/api/stimulus-groups', { stimulusIds: [stimulusId], questionIds: [member] })
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
     await q(`update question_versions set status = 'approved', published_at = now(), paper_code = '1449/2' where question_id = $1`, [member])
     await q(`update questions set live_version_no = 1 where id = $1`, [member])
+    if (flag !== null) await setFlag(member, flag)
+    return { g: res.body.data.id as string, member, stimulusId }
+  }
+  const dismiss = (id: string, flag: string) => admin.post(`/api/admin/questions/${id}/flags/dismiss`, { flag })
+  /** The group-lock path (`GroupMembers.assertNotServed`, group-members.ts:54): changing the stimuli of a group. */
+  async function changeStimuli(g: string) {
+    const s = await admin.post('/api/stimuli', { kind: 'passage', label: 'DM04 baru', body: { ms: 'Teks baru.' } })
+    return admin.put(`/api/stimulus-groups/${g}`, { stimulusIds: [mutationEnvelopeOf(StimulusSchema).parse(s.body).data.id] })
+  }
+  const listIds = async (query: string): Promise<string[]> => ((await admin.get(`/api/stimulus-groups?${query}&pageSize=100`)).body.data as { id: string }[]).map((r) => r.id)
+
+  it('[CI] DM-04: a served, unflagged member stays locked (group lock 409, stimulus lock 409, member lock 409)', async () => {
+    const { g, member, stimulusId } = await servedGroup('1', null)
     expect(await repo.servingMemberIds(g)).toEqual([member])
-    const other = await question('Hitung 13 campur 15 dengan teliti.', false)
-    const res = await admin.post(`/api/stimulus-groups/${g}/members`, { questionId: other })
-    expect(res.status).toBe(200) // a new draft may still be appended
+    expect((await changeStimuli(g)).body.error?.message ?? '').toBe(STIMULUS_MESSAGES.groupServed)
+    expect(await repo.stimulusServed(stimulusId)).toBe(true)
+    expect((await admin.put(`/api/stimuli/${stimulusId}`, { label: 'Lain' })).status).toBe(409)
     const served = await question('Hitung 14 campur 15 dengan teliti.', true)
     const bad = await admin.post(`/api/stimulus-groups/${g}/members`, { questionId: served })
     expect(bad.status).toBe(409)
-    expect(bad.body.error?.message ?? bad.body.message).toBe(STIMULUS_MESSAGES.memberServed)
   })
 
   for (const flag of ['stimulus_missing', 'figure_only'] as const) {
-    it(`[CI] DM-04: a ${flag} member (open flag) is not locked on the normal group routes; a dismissed flag locks it again`, async () => {
-      // Attaching to a group re-runs the detectors (a group clears the flag), so the lock is read on a member that is flagged in place.
-      const flagged = await question(`Soalan bertanda ${flag} untuk ujian.`, true)
-      await setFlag(flagged, flag)
-      const target = await group([])
-      const add = await admin.post(`/api/stimulus-groups/${target}/members`, { questionId: flagged })
-      expect(add.status, JSON.stringify(add.body)).toBe(200) // not served: no regroup flag needed on the normal route
-      const member = await question(`Ahli kumpulan ${flag} untuk ujian.`, false)
-      const g = await group([member])
-      await q(`update question_versions set status = 'approved', published_at = now(), paper_code = '1449/2' where question_id = $1`, [member])
-      await q(`update questions set live_version_no = 1 where id = $1`, [member])
-      await setFlag(member, flag)
+    it(`[CI] DM-04: a ${flag} member (open flag) does not lock the group, the stimulus or the list filters; dismissing through the route locks them again`, async () => {
+      const { g, member, stimulusId } = await servedGroup(`2${flag}`, flag)
       expect(await repo.servingMemberIds(g)).toEqual([])
-      // Dismissed ("Bukan masalah"): shown to pupils again, so the group is locked again.
-      await q(`update question_versions set flag_dismissed_at = now() where question_id = $1 and version_no = 1`, [member])
+      expect(await repo.stimulusServed(stimulusId)).toBe(false)
+      expect(await listIds('status=served')).not.toContain(g)
+      expect(await listIds('joinable=true')).toContain(g)
+      expect((await admin.put(`/api/stimuli/${stimulusId}`, { label: 'Lain' })).status).toBe(200)
+      // The group-lock path (group-members.ts:54) lets the stimuli of a group with only a flagged member change.
+      const spare = await servedGroup(`3${flag}`, flag)
+      const changed = await changeStimuli(spare.g)
+      expect(changed.status, JSON.stringify(changed.body)).toBe(200)
+      // A flagged served question can be added to another group on the normal route (no regroup flag).
+      const other = await question(`Soalan bertanda ${flag} untuk ujian.`, true)
+      await setFlag(other, flag)
+      const empty = await admin.post('/api/stimulus-groups', { stimulusIds: [(await admin.post('/api/stimuli', { kind: 'passage', label: 'DM04 kosong', body: { ms: 'Teks.' } })).body.data.id], questionIds: [] })
+      const add = await admin.post(`/api/stimulus-groups/${empty.body.data.id as string}/members`, { questionId: other })
+      expect(add.status, JSON.stringify(add.body)).toBe(200)
+      // "Bukan masalah" through the real route: served again, locks again.
+      expect((await dismiss(member, flag)).status).toBe(200)
       expect(await repo.servingMemberIds(g)).toEqual([member])
-      // A stem_duplicated flag never excluded a question, so it counts as served.
-      await q(`update question_versions set stimulus_flag = 'stem_duplicated', flag_dismissed_at = null where question_id = $1 and version_no = 1`, [member])
-      expect(await repo.servingMemberIds(g)).toEqual([member])
+      expect(await repo.stimulusServed(stimulusId)).toBe(true)
+      expect(await listIds('status=served')).toContain(g)
+      expect(await listIds('joinable=true')).not.toContain(g)
+      expect((await changeStimuli(g)).status).toBe(409)
     })
   }
+
+  it('[CI] DM-04: a flagged question pinned by a published paper stays locked (branch B)', async () => {
+    const { g, member } = await servedGroup('4', 'stimulus_missing')
+    expect(await repo.servingMemberIds(g)).toEqual([])
+    const subject = (await q(`select subject_id::text id from question_versions where question_id = $1 and version_no = 1`, [member]))[0] as { id: string }
+    const p = (await q(`insert into papers (kind, title, subject_id, kertas, printed_duration_min, status, published_at) values ('pilihan', 'DM04 kertas', $1, 1, 60, 'published', now()) returning id::text id`, [subject.id]))[0] as { id: string }
+    const sec = (await q(`insert into paper_sections (paper_id, position, label, question_count, mark_budget) values ($1, 1, 'A', 1, 0) returning id::text id`, [p.id]))[0] as { id: string }
+    await q(`insert into paper_placements (paper_section_id, question_id, pinned_version_no, position) values ($1, $2, 1, 1)`, [sec.id, member])
+    expect(await repo.servingMemberIds(g)).toEqual([member])
+    expect((await changeStimuli(g)).status).toBe(409)
+  })
+
+  it('[CI] DM-04: a stem_duplicated flag never excluded a question, so it still counts as served', async () => {
+    const { g, member } = await servedGroup('5', null)
+    await q(`update question_versions set stimulus_flag = 'stem_duplicated' where question_id = $1 and version_no = 1`, [member])
+    expect(await repo.servingMemberIds(g)).toEqual([member])
+  })
 })

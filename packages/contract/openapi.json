@@ -43792,8 +43792,11 @@
                 "$ref": "#/components/schemas/Id"
               },
               "title": {
-                "type": "string",
-                "description": "60 section 2.17.4 `paper.title`: the source paper code, exam type and year, joined by spaces (the source paper has no title column)."
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The source paper code, exam type and year, joined by spaces (the source paper has no title column); null when all three are empty."
               },
               "paperCode": {
                 "type": [

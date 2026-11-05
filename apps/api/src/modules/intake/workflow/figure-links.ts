@@ -41,7 +41,7 @@ export function figureKeys(text: string): string[] {
 /**
  * THE one canonical stimulus-reference keyword set (45 section 6.6.1, D113-continued; PO decision 2026-11-05 supersedes the D115 default).
  * A change in 45 6.6.1 is a change here only. `figure` words take a number (the numbered form); `source` words only flag in the unnumbered
- * form. The frontend twin (`src/modules/m28-bijak-spm/admin/intake/domain/figure-links.ts`) cites this table and does not restate it.
+ * form. The frontend twin (`src/modules/m28-bijak-spm/admin/intake/domain/figure-links.ts`) is outside S1 and does not cite this set yet: it should (45 6.6.1); owners S2/S3, follow-up on #503.
  */
 export const STIMULUS_REFERENCE_WORDS = {
   figure: ['rajah', 'figure', 'diagram', 'gambar rajah', 'gambar', 'jadual', 'table', 'graf', 'graph', 'carta', 'chart', 'peta', 'map', 'petikan', 'passage'],
@@ -73,7 +73,7 @@ export interface StimulusReference {
   text: string
 }
 
-/** The first unnumbered reference in one sentence, or null: a keyword with a positional phrase within the window, or as subject of the verb. */
+/** The first unnumbered reference in the text (words only, no sentence barrier: 45 6.6.1 states just the window), or null: a keyword with a positional phrase within the window, or as subject of the verb. */
 function unnumberedIn(sentence: string): string | null {
   const tokens = sentence.match(/[\p{L}\p{N}]+/gu) ?? []
   const lower = tokens.map((t) => t.toLowerCase())
@@ -98,10 +98,8 @@ export function stimulusReferenceOf(text: string): StimulusReference | null {
   const norm = normaliseReferenceText(text)
   const numbered = NUMBERED_REF.exec(norm)
   if (numbered !== null) return { kind: 'numbered', text: numbered[0] }
-  for (const sentence of norm.split(/[.!?;:](?=\s|$)|\n/u)) {
-    const found = unnumberedIn(sentence)
-    if (found !== null) return { kind: 'unnumbered', text: found }
-  }
+  const found = unnumberedIn(norm)
+  if (found !== null) return { kind: 'unnumbered', text: found }
   return null
 }
 
