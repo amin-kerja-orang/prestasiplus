@@ -27,6 +27,11 @@ const routes: RouteRecordRaw[] = [
     props: (route) => ({ id: String(route.params.id) }),
     meta: { ...adminMeta, title: 'Studio — Sunting soalan', header: { title: 'Studio — Sunting soalan', subtitle: 'Sunting soalan kanonikal' } },
   },
+  // V2 path of the preview (PRD47 R-04): the editor opens its own preview dialog.
+  {
+    path: '/admin/studio/questions/:id(\\d+)/preview',
+    redirect: (to) => ({ path: `/admin/studio/questions/${String(to.params.id)}/sunting`, query: { pratonton: '1' } }),
+  },
   {
     path: '/admin/studio/questions/:id(\\d+)/edit',
     redirect: (to) => ({ path: `/admin/studio/questions/${String(to.params.id)}/sunting` }),
