@@ -241,12 +241,12 @@ const LeagueParams = z.object({
   id: z.string().min(1).meta({ description: 'League id. Digits only; a non-numeric segment does not match the route.' }),
 })
 
-const UNAUTHORIZED = err('UNAUTHORIZED "Unauthenticated." (no valid session).')
+const UNAUTHORIZED = err('UNAUTHORIZED "Sesi anda telah tamat. Sila log masuk semula." (no valid session).')
 const CSRF_INVALID = err('CSRF_INVALID (missing or wrong X-CSRF-Token).')
 const FORBIDDEN_CSRF_OR = (what: string) => err(`FORBIDDEN ${what}, or CSRF_INVALID (missing or wrong X-CSRF-Token).`)
-const FORBIDDEN_ADMIN = err('FORBIDDEN "This action is unauthorized." (role is not admin).')
+const FORBIDDEN_ADMIN = err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not admin).')
 const FORBIDDEN_ADMIN_WRITE = err(
-  'FORBIDDEN "This action is unauthorized." (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).',
+  'FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).',
 )
 /**
  * D57(a): every write route (and the solo GET that creates a session row) can answer 429. Always the standard
