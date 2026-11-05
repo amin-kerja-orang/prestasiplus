@@ -70,7 +70,7 @@ function paperSection(q: ReviewQuestion, qi: number): PaperSection {
     </DsPanel>
 
     <DsPanel v-for="(q, qi) in questions" :key="q.id" :data-testid="`preview-q-${q.id}`">
-      <PaperView :sections="[paperSection(q, qi)]" :section-head="false" :reveal="!hideScheme">
+      <PaperView :sections="[paperSection(q, qi)]" :section-head="false" indent-step="md" :reveal="!hideScheme">
         <template #question-head="{ question }">
           <div class="flex items-baseline justify-between gap-3">
             <h3 class="text-subheading text-highlighted">{{ questionLabel(question.number) }}</h3>

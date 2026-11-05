@@ -3,6 +3,8 @@ import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import { PaperView } from '../../../components/question-display'
+import { sectionMeta } from '../../../components/question-display/copy'
 import StudentViewDrawer from '../admin/builder/components/StudentViewDrawer.vue'
 import QuestionPreview from '../admin/papers/QuestionPreview.vue'
 import PaperCoverPage from '../pages/PaperCoverPage.vue'
@@ -47,11 +49,17 @@ describe('S8-T05 surfaces adopt PaperView', () => {
     wrapper = mount({ template: '<RouterView/>' }, { global: { plugins: [router] }, attachTo: document.body })
     await flushPromises()
     const root = document.body.querySelector('[data-testid=cover-sections]')!
-    const lines = [...root.querySelectorAll('p')].map((p) => norm(p.textContent))
+    const lines = [...root.querySelectorAll('li')].map((p) => norm(p.textContent))
     expect(lines).toEqual([
       norm('Bahagian A · [6 markah] · 4 soalan · Jawab semua soalan. (wajib)'),
       norm('Bahagian B · [4 markah] · 6 soalan · Pilih dua.'),
     ])
+    // DOM shape as V3: ul.flex.flex-col.gap-1 > li > strong first, then the text (no wrapper).
+    expect(root.tagName).toBe('UL')
+    expect(root.classList.contains('flex-col') && root.classList.contains('gap-1')).toBe(true)
+    expect([...root.children].map((c) => c.tagName)).toEqual(['LI', 'LI'])
+    expect(root.querySelector('li')!.firstElementChild!.tagName).toBe('STRONG')
+    expect(root.querySelector('li p, li div')).toBeNull()
     expect(noFixedWidth(root.outerHTML)).toBe(true)
   })
 
@@ -96,5 +104,45 @@ describe('S8-T05 surfaces adopt PaperView', () => {
     const q = document.body.querySelector('[data-testid="student-q-x1"]')!
     expect(norm(q.textContent)).toBe(norm('Soalan 1 [2 markah] Hitung 2+2'))
     expect(noFixedWidth(q.outerHTML)).toBe(true)
+  })
+})
+
+describe('S8-T05 PaperView options', () => {
+  const part = (id: string, children?: unknown[]) => ({ id, label: id, prompt: 'p', marks: 1, children })
+  const sec = (id: string) => ({
+    id,
+    label: 'Bahagian',
+    questions: [{ id: `${id}-q`, number: 1, marks: 3, stem: 'Stem', parts: [part('a', [part('a1', [part('a2')])])] }],
+  })
+
+  it('indent per depth: sm = w-3 (12px), md = w-6 (24px)', () => {
+    for (const [step, cls] of [['sm', 'w-3'], ['md', 'w-6'], [undefined, 'w-3']] as const) {
+      const w = mount(PaperView, { props: { sections: [sec('s')] as never, indentStep: step } })
+      const count = (id: string) => w.find(`[data-testid="paper-part-${id}"]`).findAll('[data-testid="paper-indent"]')
+      expect(count('a')).toHaveLength(0)
+      expect(count('a1')).toHaveLength(1)
+      expect(count('a2')).toHaveLength(2)
+      expect(count('a2').every((e) => e.classes().includes(cls))).toBe(true)
+    }
+  })
+
+  it('sectionHead=false renders no section line; true renders it', () => {
+    const off = mount(PaperView, { props: { sections: [sec('s')] as never, sectionHead: false } })
+    expect(off.find('[data-testid="paper-section-line"]').exists()).toBe(false)
+    expect(off.text()).not.toContain('Bahagian')
+    const on = mount(PaperView, { props: { sections: [sec('s')] as never } })
+    expect(on.find('[data-testid="paper-section-line"]').exists()).toBe(true)
+  })
+
+  it('sections with a repeated or missing id still all render (keyed by index)', () => {
+    const w = mount(PaperView, { props: { sections: [sec('x'), sec('x'), sec(undefined as never)] as never } })
+    expect(w.findAll('[data-testid="paper-section-line"]')).toHaveLength(3)
+  })
+
+  it('sectionMeta with an empty instruction', () => {
+    expect(sectionMeta(5, 2, '', false)).toBe(' · [5 markah] · 2 soalan')
+    expect(sectionMeta(5, 2, '', true)).toBe(' · [5 markah] · 2 soalan · (wajib)')
+    expect(sectionMeta(undefined, 1, undefined, false)).toBe(' · 1 soalan')
+    expect(sectionMeta(5, 2, 'Pilih.', true)).toBe(' · [5 markah] · 2 soalan · Pilih. (wajib)')
   })
 })

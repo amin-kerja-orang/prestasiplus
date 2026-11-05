@@ -34,11 +34,11 @@ const { data: open, reload: reloadOpen } = useApi(
 
 /** Cover sections as question-less PaperView sections; the head slot keeps the stored question count. */
 const coverSections = computed(() =>
-  (cover.value?.sections ?? []).map((s) => ({ ...s, id: s.label, questions: [] })),
+  (cover.value?.sections ?? []).map((s, i) => ({ ...s, id: String(i), questions: [] })),
 )
 
 function coverMeta(id: string): string {
-  const s = cover.value?.sections.find((x) => x.label === id)
+  const s = cover.value?.sections[Number(id)]
   return s ? sectionMeta(s.marks, s.questionCount, s.instruction, s.compulsory) : ''
 }
 
@@ -161,13 +161,11 @@ async function begin(restart: boolean): Promise<void> {
         <ol class="flex flex-col gap-1 text-body text-default" data-testid="instructions">
           <li v-for="(line, i) in cover.instructions" :key="i">{{ i + 1 }}. {{ line }}</li>
         </ol>
-        <PaperView :sections="coverSections" class="text-body text-default" data-testid="cover-sections">
-          <template #section-head="{ section }">
-            <p>
-              <strong>{{ section.label }}</strong
-              >{{ coverMeta(section.id) }}
-            </p>
-          </template>
+        <PaperView :sections="coverSections" compact class="text-body text-default" data-testid="cover-sections">
+          <template #section-head="{ section }"
+            ><strong>{{ section.label }}</strong
+            >{{ coverMeta(section.id) }}</template
+          >
         </PaperView>
       </section>
 
