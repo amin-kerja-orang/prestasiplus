@@ -62,8 +62,7 @@ type WalkRole = 'student' | 'guru' | 'adminSekolah'
 /**
  * Rows that are known red. They run as `test.fixme` (listed) and the walk fails if one now passes.
  * The first CI run decides further rows (D115): add one per failing item, `ownerCard` = the card of the
- * item's PRD module in docs/plan/r1-traceability.md. AWAITS THE FIRST CI RUN (no stack was available
- * when this was written).
+ * item's PRD module in docs/plan/r1-traceability.md. Calibrated by the CI runs of e08d5575 and 0daa328a.
  *
  * The Alat Soalan tool items of Guru (`GURU_TOOLS` in src/shells/nav/out-of-scope.ts: /guru/soalan-guru,
  * /guru/databank, /guru/kertas-peperiksaan, /guru/soalan-berstruktur ...; S6-T16..S6-T20) are hidden by
@@ -80,7 +79,12 @@ const EXPECTED_RED: Record<WalkRole, Row[]> = {
   ],
   // Guru: the Laporan Mingguan row (S6-T01) was removed after its first CI run showed it passing.
   guru: [],
-  adminSekolah: [],
+  adminSekolah: [
+    // The route allows school_admin (S0-T06), but GET /api/analytics/classes is @Roles('admin','teacher')
+    // (apps/api/src/modules/reports/performance/http/performance.controllers.ts:53), so the page shows 403.
+    // S10-T04 change (2) adds school_admin to @Roles and canOpenClassAnalysis.
+    { id: 'sa-analitik-adaptif', route: '/analitik/kelas', ownerCard: 'S10-T04' },
+  ],
 }
 
 /**
