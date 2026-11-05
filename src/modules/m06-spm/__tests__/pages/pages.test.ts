@@ -166,7 +166,7 @@ describe('S1 SpmHubPage', () => {
     expect(card.text()).not.toContain('Mula')
   })
 
-  it('Kertas Subjektif with 0 papers shows the exact PRD empty text, no "0 kertas" and is not a link', async () => {
+  it('Kertas Subjektif with 0 papers shows "0 kertas" and the exact PRD empty text, with no link', async () => {
     api.fetchSpmOverview.mockResolvedValueOnce({
       stats: { totalQuestions: 10, subjectCount: 25, trackingAQuestions: 5 },
       modules: { databank: 10, latihTubi: 10, trackingA: 5, subjektifSets: 4, kertasSubjektif: 0 },
@@ -177,7 +177,7 @@ describe('S1 SpmHubPage', () => {
     expect(card.get('[data-testid=module-empty]').text()).toBe(
       'Kertas subjektif sedang dalam penyediaan. Semak semula tidak lama lagi.',
     )
-    expect(card.text()).not.toContain('0 kertas')
+    expect(card.get('[data-testid=module-chip]').text()).toBe('0 kertas')
     expect(card.text()).not.toContain('Kertas 2, 3 & 4 percubaan negeri')
     expect(card.text()).not.toContain('Mula')
     expect(card.element.tagName).toBe('DIV')
@@ -237,8 +237,9 @@ describe('S1 SpmHubPage', () => {
     }
     expect(byId('latih-tubi').attributes('href')).toBe('/spm/latih-tubi')
     expect(byId('tracking-a').attributes('href')).toBe('/spm/ramalan')
-    expect(byId('kertas-subjektif').find('[data-testid=module-chip]').exists()).toBe(false)
-    expect(byId('kertas-subjektif').text()).not.toContain('0 kertas')
+    expect(byId('databank').get('[data-testid=module-chip]').text()).toBe('0 soalan')
+    expect(byId('subjektif').get('[data-testid=module-chip]').text()).toBe('0 set subjektif')
+    expect(byId('kertas-subjektif').get('[data-testid=module-chip]').text()).toBe('0 kertas')
   })
 
   it('shows "Prestasi SPM Anda" with one decimal and the history link', async () => {

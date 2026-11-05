@@ -270,7 +270,6 @@ const mine = computed<Tile[]>(() => {
               </div>
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <UBadge
-                  v-if="m.emptyText === null"
                   color="neutral"
                   variant="soft"
                   :icon="m.chipIcon"
