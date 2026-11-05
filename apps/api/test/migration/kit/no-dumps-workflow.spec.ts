@@ -63,12 +63,8 @@ function guard(files: Record<string, string | Buffer>) {
 }
 
 describe.skipIf(!hasBash || !hasGit)('no-dumps workflow guard', () => {
-  it('has no paths filter, runs on every pull_request, and pushes only on the long-lived branches', () => {
-    // pull_request has no branch restriction (so it runs on every PR).
-    expect(yml).toMatch(/^on:\s*\n\s+(?:#[^\n]*\n\s+)*push:\s*\n\s+branches:\s*\[[^\]]*\bfeature\/v3-bijak-r1\b[^\]]*\]\s*\n\s+pull_request:[ \t]*\n\s*\n/m)
-    // push is limited to long-lived branches (PR branches are covered by pull_request).
-    expect(yml).toMatch(/^\s+push:\s*\n\s+branches:\s*\[feature\/v3-bijak-r1, feature\/v2-backend, be\/integration-frontend\]/m)
-    expect(yml).not.toMatch(/^\s+pull_request:\s*\n\s+branches/m)
+  it('has no paths filter and runs on push and pull_request', () => {
+    expect(yml).toMatch(/^on:\s*\n\s+push:\s*\n\s+pull_request:/m)
     expect(yml).not.toMatch(/^\s*paths(-ignore)?:/m)
     expect(yml).toMatch(/actions\/checkout@v4\.2\.2/)
   })

@@ -14,8 +14,9 @@
  * `is_test = true` on `practice_answers`, `practice_sessions` and `enrolments`. EVERY read below excludes them.
  *
  * Ids go in and out as decimal strings. Counts are plain numbers. Instants are `Date`; MYT calendar days are `YYYY-MM-DD`.
- * "Student" means a user with the `student` role. The default population of an answer read is ACTIVE students (`u.is_active`);
- * pass `includeInactive: true` for "every pupil of the school".
+ * "Student" means an XS-1 pupil (`XS_PUPIL_SQL` of `school-admin/xs-queries.ts`: role student, active and not suspended, Tingkatan
+ * 1-5), on top of the secondary-only rule (`VISIBLE_USER_SQL`, D72: no pupil of a primary school). Teachers are XS-3 (`isXs3Teacher`: active approved teachers).
+ * Only one read ignores the account state: `includeInactive: true`, used by the single-pupil page.
  */
 import { Inject, Injectable } from '@nestjs/common'
 
@@ -23,6 +24,7 @@ import { Prisma } from '../../../db/generated/client'
 import { idFromString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { SchoolsRepository } from '../../schools'
+import { XS_PUPIL_SQL, isXs3Teacher } from '../../school-admin/xs-queries'
 import { UsersRepository } from '../../users'
 
 import { SCHOOL_DRILL_ROW_LIMIT } from '../command-center.constants'
@@ -41,6 +43,7 @@ export interface AnswerFilter {
   /** A school's pupils (`users.school_id`); omit for the whole platform. */
   schoolId?: string
   studentIds?: string[]
+  /** Single-pupil page only: that pupil's own history whatever the account state. Never set for a count (XS-1 is active accounts only). */
   includeInactive?: boolean
 }
 
@@ -201,10 +204,9 @@ export class CommandCenterRepository {
       Prisma.sql`a.is_test = false`,
       VISIBLE_USER_SQL,
       f.exclusiveTo ? Prisma.sql`a.answered_at < ${f.to}` : Prisma.sql`a.answered_at <= ${f.to}`,
-      Prisma.sql`EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student')`,
+      f.includeInactive ? Prisma.sql`EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student')` : XS_PUPIL_SQL('u'),
     ]
     if (f.from) c.push(Prisma.sql`a.answered_at >= ${f.from}`)
-    if (!f.includeInactive) c.push(Prisma.sql`u.is_active`)
     if (f.schoolId !== undefined) {
       const sid = bigintOrNull(f.schoolId)
       c.push(sid === null ? Prisma.sql`false` : Prisma.sql`u.school_id = ${sid}`)
@@ -405,9 +407,8 @@ export class CommandCenterRepository {
       Prisma.sql`ps.is_test = false`,
       Prisma.sql`ps.completed_at >= ${f.from}`,
       Prisma.sql`ps.completed_at <= ${f.to}`,
-      Prisma.sql`u.is_active`,
+      XS_PUPIL_SQL('u'),
       VISIBLE_USER_SQL,
-      Prisma.sql`EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student')`,
     ]
     if (f.schoolId !== undefined) {
       const sid = bigintOrNull(f.schoolId)
@@ -440,10 +441,9 @@ export class CommandCenterRepository {
     return (await this.schoolRefs([schoolId])).get(schoolId) ?? null
   }
 
-  /** Active student users; of one school, or the platform when `schoolId` is omitted. */
-  async studentCount(opts: { schoolId?: string; includeInactive?: boolean } = {}): Promise<number> {
-    const c: Prisma.Sql[] = [Prisma.sql`EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student')`, VISIBLE_USER_SQL]
-    if (!opts.includeInactive) c.push(Prisma.sql`u.is_active`)
+  /** XS-1 pupils (active accounts, Tingkatan 1-5, secondary schools only); of one school, or the platform when `schoolId` is omitted. */
+  async studentCount(opts: { schoolId?: string } = {}): Promise<number> {
+    const c: Prisma.Sql[] = [XS_PUPIL_SQL('u'), VISIBLE_USER_SQL]
     if (opts.schoolId !== undefined) {
       const sid = bigintOrNull(opts.schoolId)
       c.push(sid === null ? Prisma.sql`false` : Prisma.sql`u.school_id = ${sid}`)
@@ -452,14 +452,13 @@ export class CommandCenterRepository {
     return n(r?.c)
   }
 
-  /** Students of a school (users.school_id), by name then id. */
-  async studentsOfSchool(schoolId: string, opts: { includeInactive?: boolean } = {}): Promise<{ id: string; name: string; isActive: boolean }[]> {
+  /** XS-1 pupils of a school (users.school_id), by name then id. */
+  async studentsOfSchool(schoolId: string): Promise<{ id: string; name: string; isActive: boolean }[]> {
     const sid = bigintOrNull(schoolId)
     if (sid === null) return []
-    const active = opts.includeInactive ? Prisma.empty : Prisma.sql`AND u.is_active`
     const rows = await this.q(Prisma.sql`
       SELECT u.id::text AS id, u.name, u.is_active FROM users u
-       WHERE u.school_id = ${sid} AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student') AND ${VISIBLE_USER_SQL} ${active}
+       WHERE u.school_id = ${sid} AND ${XS_PUPIL_SQL('u')} AND ${VISIBLE_USER_SQL}
        ORDER BY u.name ASC, u.id ASC`)
     return rows.map((r) => ({ id: String(r.id), name: String(r.name), isActive: Boolean(r.is_active) }))
   }
@@ -470,13 +469,13 @@ export class CommandCenterRepository {
     return new Map(rows.map((r) => [r.id, r.name]))
   }
 
-  /** Teachers of a school (role teacher, users.school_id), by name then id, with the profile subject. */
+  /** XS-3 teachers of a school (active, approved, no school-admin account; PO decision 2026-11-05, #503 batch 3), by name then id, with the profile subject. */
   async teachersOfSchool(schoolId: string): Promise<TeacherRow[]> {
     const sid = bigintOrNull(schoolId)
     if (sid === null) return []
     const rows = await this.q(Prisma.sql`
       SELECT u.id::text AS id, u.name, u.is_active, tp.subject FROM users u LEFT JOIN teacher_profiles tp ON tp.user_id = u.id
-       WHERE u.school_id = ${sid} AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'teacher')
+       WHERE u.school_id = ${sid} AND ${isXs3Teacher('u')}
        ORDER BY u.name ASC, u.id ASC`)
     return rows.map((r) => ({ id: String(r.id), name: String(r.name), isActive: Boolean(r.is_active), subject: s(r.subject)?.trim() || null }))
   }
@@ -492,11 +491,11 @@ export class CommandCenterRepository {
     return n(r?.c)
   }
 
-  /** Schools that have at least one student (platform "total schools" of the daily board). */
+  /** Schools that have at least one XS-1 pupil (platform "total schools" of the daily board). */
   async schoolsWithStudents(): Promise<number> {
     const [r] = await this.q(Prisma.sql`
       SELECT count(DISTINCT u.school_id)::int AS c FROM users u
-       WHERE u.school_id IS NOT NULL AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student') AND ${VISIBLE_USER_SQL}`)
+       WHERE u.school_id IS NOT NULL AND ${XS_PUPIL_SQL('u')} AND ${VISIBLE_USER_SQL}`)
     return n(r?.c)
   }
 
@@ -612,11 +611,11 @@ export class CommandCenterRepository {
     return [...new Set(classes.map((c) => c.effectiveSchoolId).filter((v): v is string => v !== null))].sort((a, b) => (BigInt(a) < BigInt(b) ? -1 : 1))
   }
 
-  /** Active, non-test enrolments of the classes: (class, student) pairs of student users, with `joinedAt`. */
+  /** Active, non-test enrolments of the classes of XS-1 pupils (active, non-suspended accounts): (class, student) pairs with `joinedAt`. */
   async classMembers(classIds: string[]): Promise<{ classId: string; studentId: string; joinedAt: Date }[]> {
     const rows = await this.q(Prisma.sql`
-      SELECT e.classroom_id::text AS class_id, e.student_id::text AS student_id, e.joined_at FROM enrolments e
-       WHERE e.classroom_id = ANY(${ids(classIds)}::bigint[]) AND e.status = 'active' AND e.is_test = false
+      SELECT e.classroom_id::text AS class_id, e.student_id::text AS student_id, e.joined_at FROM enrolments e JOIN users u ON u.id = e.student_id
+       WHERE e.classroom_id = ANY(${ids(classIds)}::bigint[]) AND e.status = 'active' AND e.is_test = false AND ${XS_PUPIL_SQL('u')}
        ORDER BY e.classroom_id, e.student_id`)
     return rows.map((r) => ({ classId: String(r.class_id), studentId: String(r.student_id), joinedAt: r.joined_at as Date }))
   }
@@ -635,13 +634,14 @@ export class CommandCenterRepository {
     return rows.map((r) => ({ ...this.toClass(r), joinedAt: r.joined_at as Date }))
   }
 
-  /** Student ids a teacher may open: active non-test members of the teacher's active classrooms. */
+  /** XS-1 pupils of the teacher ("kelas anda"): active non-test members of the teacher's active classrooms AND an active, non-suspended account. */
   async teacherStudentIds(teacherId: string): Promise<string[]> {
     const key = bigintOrNull(teacherId)
     if (key === null) return []
     const rows = await this.q(Prisma.sql`
       SELECT DISTINCT e.student_id::text AS id, e.student_id AS sort_id FROM enrolments e JOIN classrooms c ON c.id = e.classroom_id
-       WHERE c.teacher_id = ${key} AND c.is_active AND c.kind = 'classroom' AND e.status = 'active' AND e.is_test = false
+        JOIN users u ON u.id = e.student_id
+       WHERE c.teacher_id = ${key} AND c.is_active AND c.kind = 'classroom' AND e.status = 'active' AND e.is_test = false AND ${XS_PUPIL_SQL('u')}
        ORDER BY e.student_id`)
     return rows.map((r) => String(r.id))
   }
