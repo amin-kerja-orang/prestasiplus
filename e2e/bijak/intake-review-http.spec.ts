@@ -128,21 +128,6 @@ async function realSpCode(page: Page, subjectName: string, unitKey: string): Pro
   return code ?? ''
 }
 
-/** Sets the bank filter: the inline form from 768 px, the filter sheet below it. */
-async function filterBank(page: Page, status: string, search: string): Promise<void> {
-  await page.getByTestId('bank-search').fill(search)
-  const open = page.locator('[data-ds=filter-open]')
-  if (await open.isVisible()) {
-    await open.click()
-    await page.getByTestId('bank-status').selectOption(status)
-    // "Guna" (apply): the sheet's first button is the subject select, so match the label.
-    await page.locator('[data-ds=filter-sheet] button').filter({ hasText: /^Guna/ }).first().click()
-  } else {
-    await page.getByTestId('bank-status').selectOption(status)
-    await page.getByTestId('bank-search').press('Enter')
-  }
-}
-
 test.describe('Intake review over HTTP @bijak @api', () => {
   test('upload, extract, edit, review, accept and find the Draf question in the bank @bijak @api', async ({
     page,
@@ -239,16 +224,11 @@ test.describe('Intake review over HTTP @bijak @api', () => {
       await page.getByTestId('action-publish').click() // "Terima (Draf)"
       await page.waitForURL(/\/admin\/studio\?status=review$/)
 
-      /* ---- the Draf question is in the Bijak bank */
+      /* ---- the old bank list now lands on the Databank lane (S2-T03); the Draf row check moved with the list */
       await page.goto('/admin/spm/soalan')
-      await expect(page.getByTestId('bank-page')).toBeVisible()
-      await filterBank(page, 'draf', token)
-      const row = page.getByTestId('bank-table').getByText(token).first()
-      await expect(row).toBeVisible({ timeout: 30_000 })
+      await page.waitForURL(/\/admin\/spm\/databank$/)
+      await expect(page.getByTestId('lane-databank')).toBeVisible()
       await expectNoHorizontalScrollHttp(page)
-      await row.click() // a row (a card below 768 px) opens the preview drawer
-      await expect(page.getByTestId('bank-drawer')).toBeVisible()
-      await expect(page.getByTestId('bank-drawer')).toContainText('Draf')
 
       // The batch shows only the question that is still to decide.
       await page.goto(`/admin/spm/soalan/ekstrak/${batchId}`)
@@ -272,7 +252,7 @@ test.describe('Intake review over HTTP @bijak @api', () => {
     await login(page)
     for (const [route, testId] of [
       ['/admin/spm/semakan', 'studio-list-page'], // the list redirects to /admin/studio?status=review (S2-T03)
-      ['/admin/spm/soalan', 'bank-page'],
+      ['/admin/spm/soalan', 'lane-databank'], // the list redirects to the Databank lane (S2-T03)
       ['/admin/spm/soalan/ekstrak', 'intake-list-page'],
     ] as const) {
       await page.goto(route)

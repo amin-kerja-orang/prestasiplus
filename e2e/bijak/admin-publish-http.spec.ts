@@ -183,7 +183,7 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
     page.on('pageerror', (e) => errors.push(e.message))
     await login(page, ADMIN_USER ?? '', ADMIN_PASS ?? '')
     const loaded = [
-      ['/admin/spm/soalan', 'bank-page'],
+      ['/admin/spm/soalan', 'lane-databank'], // the list redirects to the Databank lane (S2-T03)
       ['/admin/spm/semakan', 'studio-list-page'], // the list redirects to /admin/studio?status=review (S2-T03)
       ['/admin/spm/soalan/ekstrak', 'intake-list-page'],
     ] as const
