@@ -20,7 +20,8 @@ export const LIST_COPY = {
   title: 'Audio KBAT',
   intro:
     'Dengar audio mengikut bahagian dan jawab soalan yang dipaparkan serentak. Set ini tidak dirawak supaya audio kekal selari dengan nombor soalan.',
-  empty: 'Belum ada set Audio KBAT yang approved.',
+  empty: 'Belum ada audio diterbitkan',
+  emptyBody: 'Audio KBAT akan muncul di sini selepas dimuat naik dan diterbitkan.',
 } as const
 
 /** Provisional player copy (L-3). "Hantar" is PROPOSED COPY (OQ-M09-11); the rest is UNVERIFIED COPY. */
@@ -30,7 +31,9 @@ export const PLAYER_COPY = {
   sectionPrefix: 'Bahagian',
   questionPrefix: 'Soalan',
   noAudio: 'Audio tidak tersedia.',
-  resultTitle: 'Skor anda',
+  audioFailed: 'Fail audio tidak dapat dimuatkan.',
+  audioRetry: 'Cuba Semula',
+  resultTitle: 'Keputusan Ujian Mendengar',
 } as const
 
 /** Positive integer from a query value, else `undefined` (an unknown value filters nothing). */

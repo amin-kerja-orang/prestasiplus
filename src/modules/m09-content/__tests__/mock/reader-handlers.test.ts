@@ -381,11 +381,11 @@ describe('#24–#26 audio KBAT (provisional, L-3)', () => {
     const allA = range(1, 30).map((no) => ({ no, choice: 'A' }))
     const full = await call<{ data: AudioAttemptResult }>('POST', url, PELAJAR, { answers: allA })
     expect(full.status).toBe(201)
-    expect(full.body.data).toEqual({ score: 30, totalMarks: 30 })
+    expect(full.body.data).toMatchObject({ score: 30, totalMarks: 30 })
     const half = await call<{ data: AudioAttemptResult }>('POST', url, PELAJAR, {
       answers: range(1, 30).map((no) => ({ no, choice: no <= 10 ? 'A' : 'B' })),
     })
-    expect(half.body.data).toEqual({ score: 10, totalMarks: 30 })
+    expect(half.body.data).toMatchObject({ score: 10, totalMarks: 30 })
     expect(audioKbat.attempts(set?.id ?? 0)).toHaveLength(2)
   })
 

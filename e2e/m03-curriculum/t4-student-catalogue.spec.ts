@@ -141,7 +141,7 @@ test.describe('M03 S12 Topik', MODULE, () => {
     expect(await actives(grades)).toEqual([false, false, false, false, false, false, false])
 
     await openTopics(page, gotoApp, '?grade_level=TINGKATAN_2')
-    await expect(page.getByTestId('topics-empty')).toContainText('Tiada topik tersedia buat masa ini.')
+    await expect(page.getByTestId('topics-empty')).toContainText('Tiada topik buat masa ini')
     await expect(page.getByTestId('topic-card')).toHaveCount(0)
 
     await openTopics(page, gotoApp, '?subject=ZZZ')
@@ -479,7 +479,7 @@ test.describe('M03 S14 Peta Belajar', MODULE, () => {
   test('E2E-M03-45 empty map: Geografi and unknown subject', async ({ page, loginAs, gotoApp }) => {
     await loginAs(PELAJAR)
     await openMap(page, gotoApp, '?subject=GEOGRAFI&grade=DARJAH_1')
-    await expect(page.getByTestId('map-empty')).toContainText('Tiada Topik Dijumpai')
+    await expect(page.getByTestId('map-empty')).toContainText('Peta Belum Tersedia')
     await expect(page.getByTestId('map-empty')).toContainText(
       'Pilih subjek dan darjah yang lain untuk melihat peta belajar',
     )
