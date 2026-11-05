@@ -7,6 +7,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { BATTLE_MESSAGES, BATTLE_RULES } from '@pp/contract'
 
+import { ApiError } from '../../../common/errors/api-error'
 import { CLOCK, type Clock } from '../../../db/clock'
 import { idFromString, idToString, isIdString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
@@ -256,6 +257,28 @@ export class QueueService {
         })
       }
       return { success: true as const }
+    })
+  }
+
+  /**
+   * API-GAME-14, the "Batal" of the queue overlay. Another pupil's entry, an unknown id and an entry that already has its
+   * battle are the same 404; an entry that already ended answers the same success.
+   * Stored as `abandoned`, which is never matched and polls as `expired`: `ck_battle_queues_status` has no `cancelled` yet.
+   */
+  async cancel(userId: string, isTest: boolean, queueId: string): Promise<{ cancelled: true }> {
+    const notFound = () => ApiError.of('NOT_FOUND', { message: BATTLE_MESSAGES.queueNotFound })
+    const key = this.queueKey(queueId)
+    if (key === null) throw notFound()
+    return this.prisma.transaction(async () => {
+      const q = await this.lock(key)
+      if (!q || idToString(q.ownerId) !== userId || q.isTest !== isTest || q.status === 'matched') throw notFound()
+      if (q.status === 'waiting' || q.status === 'incoming_challenge') {
+        await this.prisma.client.battleQueue.update({
+          where: { id: q.id },
+          data: { status: 'abandoned', challengerUserId: null, ...(q.joinerOutcome === 'pending' ? { joinerOutcome: 'expired' } : {}) },
+        })
+      }
+      return { cancelled: true as const }
     })
   }
 

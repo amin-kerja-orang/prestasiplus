@@ -29,6 +29,7 @@ import {
   BattlePodiumEntrySchema,
   BattlePollChallengerResponseSchema,
   BattlePollMatchResponseSchema,
+  BattleQueueCancelledSchema,
   BattleQuestionTypeSchema,
   BattleRawErrorSchema,
   BattleSchoolDetailSchema,
@@ -70,6 +71,7 @@ export const BATTLE_COMPONENT_SCHEMAS = {
   BattleStartResponse: BattleStartResponseSchema,
   BattleChallenger: BattleChallengerSchema,
   BattlePollMatchResponse: BattlePollMatchResponseSchema,
+  BattleQueueCancelled: BattleQueueCancelledSchema,
   BattleAcceptChallengerResponse: BattleAcceptChallengerResponseSchema,
   BattlePollChallengerResponse: BattlePollChallengerResponseSchema,
   BattleSearchQuery: BattleSearchQuerySchema,
@@ -209,6 +211,22 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
       401: UNAUTHORIZED,
       404: raw('{error:"Tiada lawan dijumpai."}: nobody can be picked as the opponent.'),
       422: raw('{error:"Soalan tidak mencukupi."}.'),
+    },
+  })
+
+  registerRoute(registry, {
+    method: 'post',
+    path: '/battle/queue/{queueId}/cancel',
+    tags: [BATTLE_TAGS.battle],
+    summary: 'Cancel a queue entry (API-GAME-14)',
+    description:
+      'The "Batal" of the queue overlay. Owner only, and the entry is never matched afterwards. Cancelling again answers the same. Another pupil\'s entry, an unknown id and an entry that already has its battle answer 404.',
+    request: { params: queueParams, headers: [csrf] },
+    responses: {
+      200: json(envelopeOf(BattleQueueCancelledSchema), 'Cancelled.'),
+      401: UNAUTHORIZED,
+      403: CSRF_INVALID,
+      404: err('NOT_FOUND "Giliran tidak dijumpai.".'),
     },
   })
 

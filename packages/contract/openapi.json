@@ -20391,6 +20391,21 @@
           }
         ]
       },
+      "BattleQueueCancelled": {
+        "type": "object",
+        "properties": {
+          "cancelled": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "cancelled"
+        ],
+        "additionalProperties": false
+      },
       "BattleAcceptChallengerResponse": {
         "type": "object",
         "properties": {
@@ -93529,6 +93544,110 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BattleRawError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/battle/queue/{queueId}/cancel": {
+      "post": {
+        "tags": [
+          "battle"
+        ],
+        "summary": "Cancel a queue entry (API-GAME-14)",
+        "description": "The \"Batal\" of the queue overlay. Owner only, and the entry is never matched afterwards. Cancelling again answers the same. Another pupil's entry, an unknown id and an entry that already has its battle answer 404.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Queue id (decimal string).",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Queue id (decimal string).",
+            "name": "queueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on every mutating request."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on every mutating request.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cancelled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BattleQueueCancelled"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Giliran tidak dijumpai.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }

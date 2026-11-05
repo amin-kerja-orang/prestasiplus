@@ -542,6 +542,7 @@ describe('openapi registration', () => {
     ['post', '/battle/quick-match'],
     ['post', '/battle/school-battle'],
     ['get', '/battle/poll-match/{queueId}'],
+    ['post', '/battle/queue/{queueId}/cancel'],
     ['post', '/battle/accept-challenger/{queueId}'],
     ['post', '/battle/reject-challenger/{queueId}'],
     ['post', '/battle/join-queue/{queueId}'],
@@ -566,9 +567,9 @@ describe('openapi registration', () => {
     ['get', '/tournaments/{uuid}'],
   ]
 
-  it('registers exactly the 25 BE-44 operations under the three battle tags', () => {
-    expect(own).toHaveLength(25)
-    expect(ops.filter(({ op }) => op.tags?.includes(BATTLE_TAGS.battle))).toHaveLength(16)
+  it('registers exactly the 25 BE-44 operations and API-GAME-14 under the three battle tags', () => {
+    expect(own).toHaveLength(26)
+    expect(ops.filter(({ op }) => op.tags?.includes(BATTLE_TAGS.battle))).toHaveLength(17)
     expect(ops.filter(({ op }) => op.tags?.includes(BATTLE_TAGS.standings))).toHaveLength(4)
     expect(ops.filter(({ op }) => op.tags?.includes(BATTLE_TAGS.tournaments))).toHaveLength(5)
     for (const [method, path] of ROUTES) expect(get(method, path), `${method} ${path}`).toBeDefined()
@@ -582,7 +583,7 @@ describe('openapi registration', () => {
 
   it('every mutating operation declares the X-CSRF-Token header and a 403 CSRF response', () => {
     const mutating = own.filter(({ method }) => method !== 'get')
-    expect(mutating).toHaveLength(11)
+    expect(mutating).toHaveLength(12)
     for (const { path, method, op } of mutating) {
       const headers = (op.parameters ?? []).filter((p) => p.in === 'header').map((p) => p.name)
       expect(headers, `${method} ${path}`).toContain('X-CSRF-Token')
@@ -603,7 +604,7 @@ describe('openapi registration', () => {
     const limited = own.filter(
       ({ method, path }) => method !== 'get' || path === '/battle/search-opponent',
     )
-    expect(limited).toHaveLength(12)
+    expect(limited).toHaveLength(13)
     for (const { path, method, op } of limited) {
       const r = op.responses['429'] as R429 | undefined
       expect(r, `${method} ${path}`).toBeDefined()

@@ -179,6 +179,9 @@ export const BattleChallengerSchema = z
  * the queue is `expired` after 120 s or after more than 10 s without a poll; another user's queue is
  * `not_found` (never an HTTP error).
  */
+/** `data` of API-GAME-14, the "Batal" of the queue overlay. */
+export const BattleQueueCancelledSchema = z.strictObject({ cancelled: z.literal(true) }).meta({ id: 'BattleQueueCancelled' })
+
 export const BattlePollMatchResponseSchema = z
   .discriminatedUnion('status', [
     z.strictObject({ status: z.literal('waiting') }),
