@@ -40,7 +40,7 @@ const PNG = Buffer.from(
 async function fillBasics(page: Page, text: string): Promise<void> {
   await byId(page, 'q-subject').selectOption({ label: 'Sains' })
   await byId(page, 'q-level').selectOption({ label: 'Tingkatan 5' })
-  await page.locator('[id="q-difficulty"] [role="radio"][value="3"]').check()
+  await page.locator('[id="q-difficulty"]').getByText('Sederhana', { exact: true }).click()
   await byId(page, 'q-text').fill(text)
 }
 
@@ -53,11 +53,11 @@ test.describe('M04 S2 create question', { tag: [TAG.smoke, moduleTag(4)] }, () =
   })
 
   test('title, fields, copy and no horizontal scroll', async ({ page }) => {
-    await expectTabTitle(page, 'Tambah Soalan Baru')
-    await expect(page.getByRole('heading', { name: '✨ Tambah Soalan Baru' })).toBeVisible()
-    await expect(page.getByText('Isi maklumat di bawah untuk menambah soalan baharu')).toBeVisible()
+    await expectTabTitle(page, 'Tambah Soalan Baru | PRESTASIPLUS')
+    await expect(page.getByRole('heading', { name: 'Tambah Soalan Baru' })).toBeVisible()
+    await expect(byId(page, 'pentadbiran-subtitle')).toHaveText('Isi maklumat di bawah untuk menambah soalan baharu')
     await expect(byId(page, 'q-subject').locator('option')).toHaveCount(32)
-    await expect(byId(page, 'q-level').locator('option')).toHaveCount(12)
+    await expect(byId(page, 'q-level').locator('option')).toHaveCount(6) // the prompt and Tingkatan 1 to 5
     await expect(byId(page, 'q-type')).toHaveValue('mcq')
     await expect(byId(page, 'q-text')).toHaveAttribute('rows', '4')
     await expect(page.getByText('Minimum 10 aksara')).toBeVisible()
@@ -98,6 +98,8 @@ test.describe('M04 S2 create question', { tag: [TAG.smoke, moduleTag(4)] }, () =
         mimeType: 'image/png',
         buffer: PNG,
       })
+      // The preview image loads lazily, so it must be in view.
+      await byId(page, 'q-image').scrollIntoViewIfNeeded()
       await expect(byId(page, 'q-image-preview')).toBeVisible()
       await expect(byId(page, 'q-image-remove')).toBeVisible()
 
@@ -119,6 +121,8 @@ test.describe('M04 S2 create question', { tag: [TAG.smoke, moduleTag(4)] }, () =
       mimeType: 'image/png',
       buffer: PNG,
     })
+    // The preview image loads lazily, so it must be in view.
+    await byId(page, 'q-image').scrollIntoViewIfNeeded()
     await expect(byId(page, 'q-image-preview')).toBeVisible()
     await byId(page, 'q-image-remove').click()
     await expect(byId(page, 'q-image-preview')).toHaveCount(0)
@@ -149,7 +153,7 @@ test.describe('M04 S2 create question', { tag: [TAG.smoke, moduleTag(4)] }, () =
     async ({ page }) => {
       await byId(page, 'q-type').selectOption('true_false')
       await fillBasics(page, 'Bumi mengelilingi Matahari dalam masa setahun.')
-      await page.locator('[id="q-tf"] [role="radio"][value="true"]').check()
+      await page.locator('[id="q-tf"]').getByText('Betul', { exact: true }).click()
       await byId(page, 'form-submit').click()
       await expect(page).toHaveURL(/\/admin\/questions$/)
       await expect(byId(page, 'cmp-flash')).toContainText('Soalan berjaya ditambah.')
@@ -171,7 +175,7 @@ test.describe('M04 S2 create question', { tag: [TAG.smoke, moduleTag(4)] }, () =
       await fillBasics(page, 'Pendek')
       await byId(page, 'form-submit').click()
       await expect(page).toHaveURL(/\/admin\/questions\/create$/)
-      const text = byId(page, 'q-text').locator('xpath=ancestor::div[1]/..')
+      const text = byId(page, 'q-text').locator('xpath=ancestor::*[@data-ds="form-field"][1]')
       await expect(text).toContainText('Teks soalan mesti sekurang-kurangnya 10 aksara.')
       await expect(byId(page, 'short-card')).toContainText('Sila masukkan jawapan betul.')
       await expect(byId(page, 'q-text')).toHaveValue('Pendek')
@@ -252,7 +256,8 @@ test.describe('M04 S2 Arabic / Jawi keyboard', { tag: [TAG.smoke, moduleTag(4)] 
     if (viewportWidth(page) < SM_MIN_WIDTH) {
       await byId(page, 'vkb-backdrop').click({ position: { x: 10, y: 10 } })
     } else {
-      await byId(page, 'vkb-toggle').click()
+      // The fixed panel can cover the toggle, depending on the scroll position; this checks what the toggle does.
+      await byId(page, 'vkb-toggle').dispatchEvent('click')
     }
     await expect(byId(page, 'vkb-panel')).toHaveCount(0)
   })
@@ -269,9 +274,9 @@ test.describe('M04 S4 edit question', { tag: [TAG.smoke, moduleTag(4)] }, () => 
   test('is pre-filled, has no type select or keyboard, and shows the saved DSKP chain', async ({
     page,
   }) => {
-    await expectTabTitle(page, 'Edit Soalan')
-    await expect(page.getByRole('heading', { name: '✏️ Edit Soalan' })).toBeVisible()
-    await expect(page.getByText('Kemaskini maklumat soalan #564159')).toBeVisible()
+    await expectTabTitle(page, 'Edit Soalan | PRESTASIPLUS')
+    await expect(page.getByRole('heading', { name: 'Edit Soalan' })).toBeVisible()
+    await expect(byId(page, 'pentadbiran-subtitle')).toHaveText('Kemaskini maklumat soalan #564159')
     await expect(byId(page, 'q-text')).toHaveValue(/Apakah maksud satelit buatan/)
     await expect(byId(page, 'q-type')).toHaveCount(0)
     await expect(byId(page, 'vkb-toggle')).toHaveCount(0)

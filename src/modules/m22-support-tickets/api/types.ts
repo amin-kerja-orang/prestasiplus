@@ -37,6 +37,20 @@ export const TICKET_MESSAGES = {
 export const TICKET_CREATED_FLASH =
   'Tiket dihantar. Pasukan sokongan akan membalas secepat mungkin.'
 
+/** Rows per page of the admin queue (API-SUP-03). */
+export const QUEUE_PER_PAGE = 25
+
+/** Admin ticket messages with a source: ERR-REQ-01, ERR-ACC-04 (40 X10; rulings on #507). */
+export const ADMIN_TICKET_MESSAGES = {
+  statusInvalid: 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.',
+  ticketNotFound: 'Rekod tidak dijumpai. Ia mungkin telah dipadam.',
+} as const
+
+/** Flash after a status save, approved by the product owner (PO batch 2 on #503). */
+export const ADMIN_TICKET_FLASH = {
+  statusSaved: 'Status dikemas kini.',
+} as const
+
 /** `Ticket` of §7. */
 export interface Ticket {
   id: number
@@ -59,11 +73,30 @@ export interface QueueRow {
   createdAt: string
   userName: string | null
   subject: string
-  status: string
+  status: TicketStatus
   replied: boolean
 }
 
 export interface QueueList {
   data: QueueRow[]
-  meta: { total: number; counts: { status: string; count: number }[] }
+  meta: {
+    total: number
+    counts: { status: TicketStatus; count: number }[]
+    page: number
+    perPage: number
+    matched: number
+  }
+}
+
+/** API-SUP-05 detail: one admin reply, no thread, no e-mail. */
+export interface TicketDetail {
+  id: number
+  subject: string
+  body: string
+  status: TicketStatus
+  roleLabel: string | null
+  school: string | null
+  createdAt: string
+  adminReply: string | null
+  repliedAt: string | null
 }

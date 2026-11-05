@@ -58,7 +58,6 @@ import {
   GamesRoomJoinRequestSchema,
   GamesRoomViewSchema,
   GamesSekolahBersaingBoardSchema,
-  GamesSekolahBersaingSchema,
   GamesSoloPayloadSchema,
   GamesSoloCheckRequestSchema,
   GamesSoloCheckResponseSchema,
@@ -824,21 +823,11 @@ describe('Sekolah Bersaing live board (API-AS-14, S7-T02)', () => {
     for (const accuracy of [0, 50, 100, 69.6]) ok(GamesSekolahBersaingBoardSchema, [{ ...row, accuracy }])
     for (const accuracy of [-1, 100.1, 69.65]) rejected(GamesSekolahBersaingBoardSchema, [{ ...row, accuracy }])
   })
-})
 
-describe('Sekolah Bersaing (M16-50)', () => {
-  const row = { rank: 1, schoolName: 'SK Rekaan', state: 'Negeri Rekaan', aktifPct: 61.5, streakAvg: 3.2, notaPer10: 4.1, anonymous: false }
-
-  it('parses a week and an empty week', () => {
-    ok(GamesSekolahBersaingSchema, { weekStart: '2026-09-21', count: 1, rows: [row] })
-    ok(GamesSekolahBersaingSchema, { weekStart: '2026-09-21', count: 0, rows: [] })
-    rejected(GamesSekolahBersaingSchema, { weekStart: '2026-09-21', count: 2, rows: [row] })
-  })
-
-  it('D54(d): an anonymous row shows "Sekolah anonim", never the school name', () => {
-    ok(GamesSekolahBersaingSchema, { weekStart: '2026-09-21', count: 1, rows: [{ ...row, schoolName: 'Sekolah anonim', anonymous: true }] })
-    rejected(GamesSekolahBersaingSchema, { weekStart: '2026-09-21', count: 1, rows: [{ ...row, anonymous: true }] })
-    expect(GAMES_MESSAGES.sekolahAnonymous).toBe('Sekolah anonim')
+  it('the route has no week parameter and documents 403', () => {
+    const op = doc.paths['/sekolah-bersaing']!.get!
+    expect(op.parameters ?? []).toEqual([])
+    expect(Object.keys(op.responses).sort()).toEqual(['200', '401', '403'])
   })
 })
 
@@ -1185,7 +1174,7 @@ describe('openapi registration', () => {
     expect(names('GET /games/jutawan')).toEqual(['query:darjah'])
     expect(names('POST /games/jutawan/{sessionId}/answer')).toEqual(['header:X-CSRF-Token', 'path:sessionId'])
     expect(names('GET /leagues/{id}')).toEqual(['path:id'])
-    expect(names('GET /sekolah-bersaing')).toEqual(['query:week'])
+    expect(names('GET /sekolah-bersaing')).toEqual([])
     expect(op('POST /games/{game}/rooms').requestBody).toBeDefined()
     expect(op('POST /games/{game}/rooms/{code}/start').requestBody).toBeUndefined()
     expect(op('POST /papan-bijak/quick-match/cancel').requestBody).toBeUndefined()
