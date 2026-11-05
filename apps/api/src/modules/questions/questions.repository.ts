@@ -6,7 +6,7 @@ import { Prisma } from '../../db/generated/client'
 import type { Prisma as PrismaTypes } from '../../db/generated/client'
 import { idFromString, idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
-import { ALL_LEAVES_KEYED_SQL, LEARNER_LEVEL_SQL, NOT_FLAGGED_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, SPM_SERVABLE_SQL } from './learner-visibility'
+import { ALL_LEAVES_KEYED_SQL, LEARNER_LEVEL_SQL, NOT_FLAGGED_SQL, NOT_MCQ_MULTI_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, SPM_SERVABLE_SQL } from './learner-visibility'
 import type { Prng } from '../../db/prng'
 import { kbatOf, missingLeafSql, refreshStimulusFlag, refreshStimulusFlagsOf, type StimulusFlag } from './effective-leaf'
 import { paperHeld, QUESTION_SERVED_BY_PAPER } from './served-rule'
@@ -1642,7 +1642,7 @@ export class QuestionsRepository {
     if (filter.spmPool !== undefined) {
       // R1-B06: the shared SPM-servable definition (offered level, linked active subject), no longer the `pool` tag.
       // The complement keeps the flag out too: a flagged question is not "non-SPM", it is not served at all (S1-T07).
-      conds.push(filter.spmPool ? SPM_SERVABLE_SQL : Prisma.sql`(NOT ${SPM_SERVABLE_SQL} AND ${NOT_FLAGGED_SQL} AND ${ALL_LEAVES_KEYED_SQL})`)
+      conds.push(filter.spmPool ? SPM_SERVABLE_SQL : Prisma.sql`(NOT ${SPM_SERVABLE_SQL} AND ${NOT_FLAGGED_SQL} AND ${ALL_LEAVES_KEYED_SQL} AND ${NOT_MCQ_MULTI_SQL})`)
     }
     if (filter.spId !== undefined) {
       const key = bi(filter.spId)
