@@ -191,4 +191,29 @@ describe('Papan Bijak quick match (M16-29..31): raw bodies', () => {
     const hub = await student.get('/api/games/hub')
     expect(JSON.stringify(hub.body)).not.toContain(m.room_code)
   })
+
+  it('R1 Q3 (lead answers on #983): a search lives for battle_queue_seconds from created_at; an expired search is never paired', async () => {
+    await t.db.query('delete from pb_searches')
+    await t.db.query(`update gamification_settings set value = 30 where key = 'battle_queue_seconds'`)
+    try {
+      const rooms = async () => (await t.db.query<{ n: number }>(`select count(*)::int as n from game_rooms where game = 'papan-bijak'`))[0]?.n
+      const before = await rooms()
+      await student.post(QM, FORM)
+      t.clock.advance(31_000) // past the 30 s of the setting, well under the old 120 s constant
+      await student2.post(QM, FORM)
+      expect(await poll(student2)).toEqual({ status: 'searching' }) // the expired search of `student` is not a partner
+      expect(await rooms()).toBe(before)
+      expect(await poll(student)).toEqual({ status: 'expired' })
+      expect((await searches()).find((x) => x.user_id === student.userId)).toMatchObject({ status: 'expired', room_code: null })
+      // 29 s is still alive: a fresh pair meets
+      await t.db.query('delete from pb_searches')
+      await student.post(QM, FORM)
+      t.clock.advance(29_000)
+      await student2.post(QM, FORM)
+      expect((await poll(student2)).status).toBe('matched')
+    } finally {
+      await t.db.query(`update gamification_settings set value = 120 where key = 'battle_queue_seconds'`)
+      await t.db.query('delete from pb_searches')
+    }
+  })
 })
