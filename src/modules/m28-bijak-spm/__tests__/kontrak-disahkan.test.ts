@@ -45,6 +45,7 @@ const messages = (f: ContractForm): string[] => errorsOf(validateForm(f)).map((i
 describe('Markah setiap soalan and Bilangan soalan dalam kertas: the form', () => {
   it('reads a comma list, and one number as that mark for each of the M questions (16-18)', () => {
     expect(parseMarksList('', 5)).toBeNull()
+    expect(parseMarksList('3,3,3,', 3)).toEqual([3, 3, 3])
     expect(parseMarksList(' 3, 3,3 ,5,4 ', 5)).toEqual([3, 3, 3, 5, 4])
     expect(parseMarksList('20', 3)).toEqual([20, 20, 20])
     expect(parseMarksList('20', null)).toEqual([20])

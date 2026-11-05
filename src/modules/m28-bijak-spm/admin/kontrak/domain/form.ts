@@ -203,7 +203,7 @@ const MARKS_LIST_MAX = 500
 export function parseMarksList(text: string, m: number | null): number[] | null | 'invalid' {
   const trimmed = text.trim()
   if (!trimmed) return null
-  const parts = trimmed.split(',').map((p) => p.trim())
+  const parts = trimmed.replace(/,\s*$/, '').split(',').map((p) => p.trim())
   if (parts.length > MARKS_LIST_MAX || parts.some((p) => !/^\d+$/.test(p))) return 'invalid'
   const list = parts.map(Number)
   if (list.some((n) => n < 1 || n > MARK_MAX)) return 'invalid'
