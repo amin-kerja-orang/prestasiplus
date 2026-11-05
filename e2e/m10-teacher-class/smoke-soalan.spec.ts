@@ -383,7 +383,7 @@ test.describe('S21 as the teacher', MODULE, () => {
     // Arab script: right to left, keyboard, "ب", Jawi layout.
     await page.getByTestId('q-script').selectOption('arab')
     await expect(page.getByTestId('q-text')).toHaveAttribute('dir', 'rtl')
-    await expect(page.getByTestId('q-preview')).toContainText('Pratonton paparan soalan:')
+    await expect(page.getByTestId('q-preview')).toContainText('Paparan soalan:')
     await expect(page.getByTestId('q-preview-text')).toHaveText('(Tiada teks lagi)')
     await page.getByTestId('q-text').click()
     await page.getByTestId('vkb-toggle').click()

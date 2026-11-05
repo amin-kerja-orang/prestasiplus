@@ -521,7 +521,7 @@ async function submit(): Promise<void> {
       <DsPanel v-if="v.scriptType !== 'rumi'" tone="inset" class="mt-3" data-testid="q-preview">
         <p class="mb-1 flex items-center gap-2 text-label text-muted">
           <UIcon name="i-ph-eye-duotone" class="size-4" />
-          Pratonton paparan soalan:
+          Paparan soalan:
         </p>
         <DsRtlScope :rtl="rtl">
           <p
