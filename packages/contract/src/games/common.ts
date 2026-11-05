@@ -167,11 +167,11 @@ export const GAMES_MESSAGES = {
   leagueAlreadyIn: 'Sekolah anda sudah menyertai liga ini.',
   leagueFull: 'Liga ini sudah penuh.',
   leagueNotFound: 'Liga tidak dijumpai.',
-  sekolahAnonymous: 'Sekolah anonim',
   gameRecordNotFound: 'Rekod tidak dijumpai. Ia mungkin telah dipadam.',
   quizTilesMax: 'Maksimum 38 petak soalan.',
   quizTilesInvalid: 'Bilangan petak tidak sah.',
   spinWeightsTotal: 'Jumlah berat mesti 100.',
+  quizTiles: 'Nilai mesti antara 0 dan 38.',
 } as const
 
 /**

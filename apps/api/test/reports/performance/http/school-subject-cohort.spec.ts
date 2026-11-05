@@ -14,12 +14,12 @@ beforeAll(async () => {
   for (const k of ['guru', 'adminsekolah', 'pelajar']) as[k] = await loginAs(w, `${k}@demo.test`)
 
   // Subject 1: five pupils with one latest AR each = A+ (0), A (1), A- (2), B (4), C (6).
-  const cfg1 = await insertConfig(w, { teacher: 'guru@demo.test', classroomId: w.classId })
+  const cfg1 = await insertConfig(w, { teacher: 'guru@demo.test', classroomId: w.classId, mode: 'manual' })
   const pupils = ['pelajar@demo.test', 'pelajar2@demo.test', ...PUPILS]
   const ars = [95, 85, 75, 62, 52]
   for (const [i, email] of pupils.entries()) await insertEntry(w, cfg1, email, { marks: [[80, ars[i] as number]] })
   // Subject 2: one pupil, D (7).
-  cfg2 = await insertConfig(w, { teacher: 'guru@demo.test', classroomId: w.classId2, subjectId: w.subjectId2 })
+  cfg2 = await insertConfig(w, { teacher: 'guru@demo.test', classroomId: w.classId2, subjectId: w.subjectId2, mode: 'manual' })
   await insertEntry(w, cfg2, 'pelajar@demo.test', { marks: [[60, 45]] })
 }, 180_000)
 afterAll(async () => {

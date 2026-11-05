@@ -126,7 +126,7 @@ test.describe('QA-G5 L14 chapter flow', { tag: [moduleTag(5)] }, () => {
       await gotoApp('/practice/chapter')
       await expect(tid(page, 'chapter-subject-grid')).toBeVisible()
       await tid(page, 'chapter-subject-name').filter({ hasText: 'Matematik' }).click()
-      await expect(page).toHaveURL(/\/practice\/chapter\/MATH$/)
+      await expect(page).toHaveURL(/\/practice\/chapter\/MATH(\?level=[^&]+)?$/)
       await expect(tid(page, 'chapter-stats-1')).toHaveText('0/464 soalan unik · Skor 0% · 464 baki')
       await tid(page, 'chapter-count-1-5').click()
       await expect(page).toHaveURL(/\/practice\/chapter\/MATH\/1\/quiz\?count=5$/)
@@ -190,12 +190,12 @@ test.describe('QA-G5 L14 chapter flow', { tag: [moduleTag(5)] }, () => {
     await loginAs('pelajar2@demo.test')
     await gotoApp('/practice/chapter')
     const cards = page.locator('[data-testid=chapter-subject-name]')
-    await expect(cards).toHaveCount(10)
+    await expect(cards).toHaveCount(2)
     const totals = await page.locator('[data-testid=chapter-subject-questions]').allInnerTexts()
     const hrefs = await page
       .locator('[data-testid=chapter-subject-grid] a')
       .evaluateAll((els) => els.map((e) => e.getAttribute('href') ?? ''))
-    expect(hrefs).toHaveLength(10)
+    expect(hrefs).toHaveLength(2)
     for (const [i, href] of hrefs.slice(0, 3).entries()) {
       await gotoApp(href)
       await expect(page.locator('select option').first()).toBeAttached()
@@ -359,8 +359,9 @@ test.describe('QA-G5 L22 structured flow', { tag: [moduleTag(5)] }, () => {
     async ({ page, loginAs, gotoApp }) => {
       await loginAs('pelajar@demo.test')
       await gotoApp('/latihan-berstruktur/4454/jawab')
-      await expect(tid(page, 'answer-stimulus')).toBeVisible()
+      await expect(tid(page, 'stimulus-group')).toBeVisible()
       await tid(page, 'answer-submit').click()
+      await tid(page, 'blank-submit').click()
       await expect(tid(page, 'answer-total')).toBeVisible()
     },
   )

@@ -43,9 +43,6 @@ import {
   GamesLeagueTypeSchema,
   GamesSekolahBersaingBoardRowSchema,
   GamesSekolahBersaingBoardSchema,
-  GamesSekolahBersaingQuerySchema,
-  GamesSekolahBersaingRowSchema,
-  GamesSekolahBersaingSchema,
 } from './leagues'
 import {
   GamesBoardTileSchema,
@@ -212,9 +209,6 @@ export const GAMES_COMPONENT_SCHEMAS = {
   GamesLeagueDetail: GamesLeagueDetailSchema,
   GamesSekolahBersaingBoardRow: GamesSekolahBersaingBoardRowSchema,
   GamesSekolahBersaingBoard: GamesSekolahBersaingBoardSchema,
-  GamesSekolahBersaingQuery: GamesSekolahBersaingQuerySchema,
-  GamesSekolahBersaingRow: GamesSekolahBersaingRowSchema,
-  GamesSekolahBersaing: GamesSekolahBersaingSchema,
   // admin
   GamesAdminGame: GamesAdminGameSchema,
   GamesAdminGameActiveRequest: GamesAdminGameActiveRequestSchema,
@@ -725,11 +719,14 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     method: 'get',
     path: '/sekolah-bersaing',
     tags: TAGS,
-    summary: 'Sekolah Bersaing weekly board (M16-50)',
+    summary: 'Sekolah Bersaing live board (API-AS-14)',
     description:
-      'National board, no school scope. `week`: a valid YYYY-MM-DD selects the Monday of that week; anything else the current week; never an error. An anonymous row shows "Sekolah anonim".',
-    request: { query: GamesSekolahBersaingQuerySchema },
-    responses: { 200: json(envelopeOf(GamesSekolahBersaingSchema), 'Weekly snapshot.'), 401: UNAUTHORIZED },
+      'National board, no school scope, computed on request. School admin and admin only. Top 30 schools by mean session accuracy; ties by pupils, sessions, school name. An unknown query parameter is ignored.',
+    responses: {
+      200: json(envelopeOf(GamesSekolahBersaingBoardSchema), 'Rank order; [] when no school has a session.'),
+      401: UNAUTHORIZED,
+      403: err('FORBIDDEN "This action is unauthorized." (role is not school_admin or admin).'),
+    },
   })
 
   // ---- admin game settings -----------------------------------------------------------------------------------

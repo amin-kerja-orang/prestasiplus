@@ -20,6 +20,6 @@ import { RoomsService } from './rooms.service'
   imports: [AuditModule, GamesCoreModule],
   controllers: [RoomsController, QuickMatchController, AdminGamesController],
   providers: [RoomSecrets, RoomsRepository, RoomsService, QuickMatchService, AdminGamesService],
-  exports: [],
+  exports: [RoomsRepository],
 })
 export class RoomsModule {}
