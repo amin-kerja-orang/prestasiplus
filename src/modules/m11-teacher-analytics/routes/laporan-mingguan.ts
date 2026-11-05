@@ -1,31 +1,22 @@
 import type { RouteRecordRaw } from 'vue-router'
 
-import { NOT_FOUND_TITLE } from '@/app/router/outcome'
-
-/**
- * M11 route fragment "laporan-mingguan" (S8; build-plan §S.3 rule 2). Created empty by M11-T1; the UI task of the
- * screen fills it (M11-T2 S1 / S6, M11-T3 S2–S5 and the `/admin-sekolah/monitoring` alias, M11-T4 S8,
- * M11-T5 S7).
- *
- * Prototype scope (D43): the Guru "Laporan Mingguan" menu item (matrix row 43) points here, but the
- * screen is not built (the only existing page, M08 `/laporan-mingguan`, is a 403 for every role,
- * OQ-M08-01). The route renders the standard 404 page until the screen exists.
- */
+/** M11 route fragment "laporan-mingguan": S6-T01 Laporan Mingguan Guru (R1-GUR-43). */
 const routes: RouteRecordRaw[] = [
   {
     path: '/guru/laporan-mingguan-kelas',
     name: 'm11.laporan-mingguan-kelas',
-    component: () => import('@/pages/NotFoundPage.vue'),
+    component: () => import('../pages/LaporanMingguanGuruPage.vue'),
     meta: {
       layout: 'user',
       access: 'auth',
-      roles: ['teacher', 'admin'],
-      title: NOT_FOUND_TITLE,
+      roles: ['teacher'],
+      title: 'Laporan Mingguan — PRESTASIPLUS',
       header: { title: 'Laporan Mingguan' },
       module: 'M11',
       v2: true,
     },
   },
+  { path: '/guru/laporan-mingguan', redirect: '/guru/laporan-mingguan-kelas' },
 ]
 
 export default routes
