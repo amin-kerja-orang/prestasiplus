@@ -133,7 +133,14 @@ describe('admin list, detail and mutation shapes', () => {
     expect(QuestionRowSchema.safeParse({ ...row, id: 101 }).success).toBe(false)
     expect(QuestionRowSchema.safeParse({ ...row, status: 'pending_review' }).success).toBe(false)
     expect(QuestionSchema.safeParse(question).success).toBe(true)
+    // Responses stay on the lenient read schema: stored v1 data (marks 101, duplicate option labels) must still serialise.
+    const stored = {
+      label: '', prompt: { ms: 'S?' }, marks: 101, mode: 'mcq', key: { kind: 'option', correct: 'A' },
+      options: ['A', 'B', 'C', 'A'].map((label) => ({ label, body: { ms: 'p' } })),
+    }
+    expect(QuestionSchema.safeParse({ ...question, parts: [stored] }).success).toBe(true)
     const { createdBy: _c, ...rest } = question
+    expect(QuestionDetailSchema.safeParse({ ...rest, parts: [stored] }).error?.issues.filter((i) => i.path[0] === 'parts') ?? []).toEqual([])
     void _c
     const detail = { ...rest, subject: null, level: null, dskp: null, createdBy: { id: '7', name: null } }
     expect(QuestionDetailSchema.safeParse(detail).success).toBe(true)

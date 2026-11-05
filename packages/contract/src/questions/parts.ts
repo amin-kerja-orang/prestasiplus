@@ -37,7 +37,6 @@ export const QuestionLeafModeSchema = z.enum(QUESTION_LEAF_MODES).meta({ id: 'Qu
 
 const OptionLabel = z.string().regex(/^[A-H]$/, 'Label pilihan mesti A hingga H.')
 const Marks = z.number().int().min(0)
-/** 45:481 / DM-55: a leaf has 1..100 marks; 0 only on an example leaf (`modeConfig.example`), enforced by `refineLeaf(true)` on the write path only (no schema bound: oasdiff). */
 /** 45:452 L-04. */
 const MARKS_MIN_MESSAGE = 'Nilai mata mesti sekurang-kurangnya 1.'
 const MARKS_MAX_MESSAGE = 'Markah bahagian tidak boleh melebihi 100.'
@@ -46,6 +45,7 @@ const MCQ_OPTIONS_MESSAGE = 'Soalan aneka pilihan mesti ada 2 hingga 8 pilihan.'
 const MCQ_MULTI_COUNT_MESSAGE = 'Pilih sekurang-kurangnya satu jawapan betul dan sekurang-kurangnya satu jawapan salah.'
 /** 45:475. */
 const ESSAY_CHOICE_COUNT_MESSAGE = 'Esei pilihan mesti mempunyai 2 hingga 6 topik.'
+/** 45:481 / DM-55: 1..100, or 0 on an example leaf; enforced by `refineLeaf(true)` on the write path only (no schema bound: oasdiff). */
 const LeafMarks = z.number().int().min(0)
 
 export const QuestionOptionSchema = z
@@ -114,7 +114,6 @@ const PointsKeyV1Base = z.object({
     .optional(),
   modelText: z.string().optional(),
 })
-
 
 const RubricKeyV1Base = z.object({
   kind: z.literal('rubric'),

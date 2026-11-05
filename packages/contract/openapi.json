@@ -39903,7 +39903,7 @@
           "parts": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/QuestionWritePart"
+              "$ref": "#/components/schemas/QuestionPart"
             },
             "minItems": 1,
             "maxItems": 20
@@ -40014,6 +40014,820 @@
           "2",
           "3",
           null
+        ]
+      },
+      "QuestionTextbookRef": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "bab": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "tingkatan": {
+            "type": "string",
+            "enum": [
+              "T1",
+              "T2",
+              "T3",
+              "T4",
+              "T5"
+            ]
+          },
+          "mukaSurat": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 999
+          },
+          "hingga": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 999
+          }
+        },
+        "required": [
+          "bab",
+          "tingkatan",
+          "mukaSurat"
+        ],
+        "description": "Rujukan buku teks: {bab, tingkatan, mukaSurat, hingga?} (DM-56)."
+      },
+      "QuestionDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subjectId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "educationLevelId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "difficultyLevel": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "questionType": {
+            "$ref": "#/components/schemas/QuestionType"
+          },
+          "questionText": {
+            "type": "string"
+          },
+          "questionImage": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "options": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "optionImages": {
+            "type": "array",
+            "items": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "correctAnswer": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 3
+          },
+          "tfAnswer": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "correctAnswerText": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "altAnswers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "modelAnswer": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "explanation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "kertas": {
+            "$ref": "#/components/schemas/QuestionKertas"
+          },
+          "aiExplanation": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "markdown": {
+                "type": "string"
+              },
+              "generatedAt": {
+                "$ref": "#/components/schemas/Timestamp"
+              }
+            },
+            "required": [
+              "markdown",
+              "generatedAt"
+            ]
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "bm",
+              "en"
+            ]
+          },
+          "pointsValue": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "status": {
+            "$ref": "#/components/schemas/QuestionStatus"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "complianceStatus": {
+            "$ref": "#/components/schemas/QuestionComplianceStatus"
+          },
+          "aiVerified": {
+            "type": "boolean"
+          },
+          "sourceType": {
+            "$ref": "#/components/schemas/QuestionSourceType"
+          },
+          "sourceFile": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sourcePage": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "sourceSet": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "essayTopics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionEssayTopic"
+            }
+          },
+          "qualityScore": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100
+          },
+          "needsDiagram": {
+            "type": "boolean"
+          },
+          "spmPool": {
+            "type": "boolean"
+          },
+          "dskpSpId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "curriculumChapterId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "curriculumTopicId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "chapterLabel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "scriptType": {
+            "type": "string",
+            "enum": [
+              "rumi",
+              "arab",
+              "jawi",
+              "mixed"
+            ]
+          },
+          "textDirection": {
+            "type": "string",
+            "enum": [
+              "ltr",
+              "rtl"
+            ]
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "usage": {
+            "type": "object",
+            "properties": {
+              "attempts": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "correct": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "attempts",
+              "correct"
+            ]
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionPart"
+            },
+            "minItems": 1,
+            "maxItems": 20
+          },
+          "tag": {
+            "$ref": "#/components/schemas/QuestionCurriculumTag"
+          },
+          "kbat": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QuestionKbatLevel"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "tagReview": {
+            "type": "boolean"
+          },
+          "catalogueVersion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "stimulusGroup": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QuestionStimulusGroup"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "numberLabel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "textbookRef": {
+            "$ref": "#/components/schemas/QuestionTextbookRef"
+          },
+          "rejectionReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "subject": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QuestionNamedRef"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "level": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QuestionNamedRef"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "dskp": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "bidang": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  "code": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "code",
+                  "name"
+                ]
+              },
+              "sk": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  "code": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "code",
+                  "description"
+                ]
+              },
+              "sp": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  "code": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "code",
+                  "description"
+                ]
+              }
+            },
+            "required": [
+              "bidang",
+              "sk",
+              "sp"
+            ]
+          },
+          "placements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionPlacement"
+            }
+          },
+          "generatedPaperCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "dskpStatus": {
+            "$ref": "#/components/schemas/QuestionDskpStatus"
+          },
+          "createdBy": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "subjectId",
+          "educationLevelId",
+          "difficultyLevel",
+          "questionType",
+          "questionText",
+          "questionImage",
+          "options",
+          "optionImages",
+          "correctAnswer",
+          "tfAnswer",
+          "correctAnswerText",
+          "altAnswers",
+          "modelAnswer",
+          "explanation",
+          "aiExplanation",
+          "language",
+          "pointsValue",
+          "status",
+          "isActive",
+          "complianceStatus",
+          "aiVerified",
+          "sourceType",
+          "sourceFile",
+          "sourcePage",
+          "sourceSet",
+          "qualityScore",
+          "needsDiagram",
+          "spmPool",
+          "dskpSpId",
+          "curriculumChapterId",
+          "curriculumTopicId",
+          "chapterLabel",
+          "scriptType",
+          "textDirection",
+          "createdAt",
+          "updatedAt",
+          "usage",
+          "subject",
+          "level",
+          "dskp",
+          "createdBy"
+        ]
+      },
+      "QuestionPlacement": {
+        "type": "object",
+        "properties": {
+          "paperId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "ready",
+              "published",
+              "withdrawn"
+            ]
+          },
+          "section": {
+            "type": "string",
+            "description": "Label of the section (Bahagian) that places the question."
+          },
+          "versionNo": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "The question version printed on the paper (pinned); a published paper keeps it when the question is archived or edited."
+          }
+        },
+        "required": [
+          "paperId",
+          "title",
+          "status",
+          "section",
+          "versionNo"
+        ]
+      },
+      "QuestionDskpStatus": {
+        "type": "object",
+        "properties": {
+          "complete": {
+            "type": "boolean"
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "step": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 4
+                }
+              },
+              "required": [
+                "path",
+                "code",
+                "message",
+                "step"
+              ]
+            }
+          }
+        },
+        "required": [
+          "complete",
+          "issues"
+        ]
+      },
+      "QuestionCreateRequest": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "educationLevelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "difficultyLevel": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "questionText": {
+            "type": "string",
+            "minLength": 10
+          },
+          "dskpSpId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64
+          },
+          "curriculumChapterId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64
+          },
+          "options": {
+            "type": "array",
+            "minItems": 4,
+            "maxItems": 4,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "correctAnswer": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 3
+          },
+          "tfAnswer": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "correctAnswerText": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "altAnswers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "modelAnswer": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "explanation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "bm",
+              "en"
+            ]
+          },
+          "pointsValue": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "removeQuestionImage": {
+            "type": "boolean"
+          },
+          "removeOptionImage": {
+            "type": "array",
+            "items": {
+              "type": "boolean"
+            },
+            "maxItems": 4
+          },
+          "questionImageFileId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "optionImageFileIds": {
+            "type": "array",
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Id"
+                },
+                {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              ]
+            },
+            "maxItems": 4
+          },
+          "kertas": {
+            "$ref": "#/components/schemas/QuestionKertas"
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionWritePart"
+            },
+            "minItems": 1
+          },
+          "tag": {
+            "$ref": "#/components/schemas/QuestionCurriculumTag"
+          },
+          "numberLabel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 32
+          },
+          "cognitiveLevel": {
+            "$ref": "#/components/schemas/QuestionCognitiveLevel"
+          },
+          "stimulusGroupId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "textbookRef": {
+            "$ref": "#/components/schemas/QuestionTextbookRef"
+          },
+          "questionType": {
+            "$ref": "#/components/schemas/QuestionType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/QuestionStatus"
+          }
+        },
+        "required": [
+          "subjectId",
+          "educationLevelId",
+          "difficultyLevel",
+          "questionText",
+          "questionType"
         ]
       },
       "QuestionWritePart": {
@@ -46025,820 +46839,6 @@
               "topics"
             ]
           }
-        ]
-      },
-      "QuestionTextbookRef": {
-        "type": [
-          "object",
-          "null"
-        ],
-        "properties": {
-          "bab": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 20
-          },
-          "tingkatan": {
-            "type": "string",
-            "enum": [
-              "T1",
-              "T2",
-              "T3",
-              "T4",
-              "T5"
-            ]
-          },
-          "mukaSurat": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 999
-          },
-          "hingga": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 999
-          }
-        },
-        "required": [
-          "bab",
-          "tingkatan",
-          "mukaSurat"
-        ],
-        "description": "Rujukan buku teks: {bab, tingkatan, mukaSurat, hingga?} (DM-56)."
-      },
-      "QuestionDetail": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "$ref": "#/components/schemas/Id"
-          },
-          "subjectId": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Id"
-              },
-              {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            ]
-          },
-          "educationLevelId": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Id"
-              },
-              {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            ]
-          },
-          "difficultyLevel": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 5
-          },
-          "questionType": {
-            "$ref": "#/components/schemas/QuestionType"
-          },
-          "questionText": {
-            "type": "string"
-          },
-          "questionImage": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "options": {
-            "type": [
-              "array",
-              "null"
-            ],
-            "items": {
-              "type": "string"
-            }
-          },
-          "optionImages": {
-            "type": "array",
-            "items": {
-              "type": [
-                "string",
-                "null"
-              ]
-            }
-          },
-          "correctAnswer": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "minimum": 0,
-            "maximum": 3
-          },
-          "tfAnswer": {
-            "type": [
-              "boolean",
-              "null"
-            ]
-          },
-          "correctAnswerText": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "altAnswers": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "modelAnswer": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "explanation": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "kertas": {
-            "$ref": "#/components/schemas/QuestionKertas"
-          },
-          "aiExplanation": {
-            "type": [
-              "object",
-              "null"
-            ],
-            "properties": {
-              "markdown": {
-                "type": "string"
-              },
-              "generatedAt": {
-                "$ref": "#/components/schemas/Timestamp"
-              }
-            },
-            "required": [
-              "markdown",
-              "generatedAt"
-            ]
-          },
-          "language": {
-            "type": "string",
-            "enum": [
-              "bm",
-              "en"
-            ]
-          },
-          "pointsValue": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "status": {
-            "$ref": "#/components/schemas/QuestionStatus"
-          },
-          "isActive": {
-            "type": "boolean"
-          },
-          "complianceStatus": {
-            "$ref": "#/components/schemas/QuestionComplianceStatus"
-          },
-          "aiVerified": {
-            "type": "boolean"
-          },
-          "sourceType": {
-            "$ref": "#/components/schemas/QuestionSourceType"
-          },
-          "sourceFile": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "sourcePage": {
-            "type": [
-              "integer",
-              "null"
-            ]
-          },
-          "sourceSet": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "essayTopics": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/QuestionEssayTopic"
-            }
-          },
-          "qualityScore": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "minimum": 0,
-            "maximum": 100
-          },
-          "needsDiagram": {
-            "type": "boolean"
-          },
-          "spmPool": {
-            "type": "boolean"
-          },
-          "dskpSpId": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Id"
-              },
-              {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            ]
-          },
-          "curriculumChapterId": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Id"
-              },
-              {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            ]
-          },
-          "curriculumTopicId": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Id"
-              },
-              {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            ]
-          },
-          "chapterLabel": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "scriptType": {
-            "type": "string",
-            "enum": [
-              "rumi",
-              "arab",
-              "jawi",
-              "mixed"
-            ]
-          },
-          "textDirection": {
-            "type": "string",
-            "enum": [
-              "ltr",
-              "rtl"
-            ]
-          },
-          "createdAt": {
-            "$ref": "#/components/schemas/Timestamp"
-          },
-          "updatedAt": {
-            "$ref": "#/components/schemas/Timestamp"
-          },
-          "usage": {
-            "type": "object",
-            "properties": {
-              "attempts": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "correct": {
-                "type": "integer",
-                "minimum": 0
-              }
-            },
-            "required": [
-              "attempts",
-              "correct"
-            ]
-          },
-          "parts": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/QuestionWritePart"
-            },
-            "minItems": 1,
-            "maxItems": 20
-          },
-          "tag": {
-            "$ref": "#/components/schemas/QuestionCurriculumTag"
-          },
-          "kbat": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/QuestionKbatLevel"
-              },
-              {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            ]
-          },
-          "tagReview": {
-            "type": "boolean"
-          },
-          "catalogueVersion": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "stimulusGroup": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/QuestionStimulusGroup"
-              },
-              {
-                "type": [
-                  "object",
-                  "null"
-                ]
-              }
-            ]
-          },
-          "numberLabel": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "textbookRef": {
-            "$ref": "#/components/schemas/QuestionTextbookRef"
-          },
-          "rejectionReason": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "subject": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/QuestionNamedRef"
-              },
-              {
-                "type": [
-                  "object",
-                  "null"
-                ]
-              }
-            ]
-          },
-          "level": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/QuestionNamedRef"
-              },
-              {
-                "type": [
-                  "object",
-                  "null"
-                ]
-              }
-            ]
-          },
-          "dskp": {
-            "type": [
-              "object",
-              "null"
-            ],
-            "properties": {
-              "bidang": {
-                "type": "object",
-                "properties": {
-                  "id": {
-                    "$ref": "#/components/schemas/Id"
-                  },
-                  "code": {
-                    "type": [
-                      "string",
-                      "null"
-                    ]
-                  },
-                  "name": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "id",
-                  "code",
-                  "name"
-                ]
-              },
-              "sk": {
-                "type": "object",
-                "properties": {
-                  "id": {
-                    "$ref": "#/components/schemas/Id"
-                  },
-                  "code": {
-                    "type": "string"
-                  },
-                  "description": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "id",
-                  "code",
-                  "description"
-                ]
-              },
-              "sp": {
-                "type": "object",
-                "properties": {
-                  "id": {
-                    "$ref": "#/components/schemas/Id"
-                  },
-                  "code": {
-                    "type": "string"
-                  },
-                  "description": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "id",
-                  "code",
-                  "description"
-                ]
-              }
-            },
-            "required": [
-              "bidang",
-              "sk",
-              "sp"
-            ]
-          },
-          "placements": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/QuestionPlacement"
-            }
-          },
-          "generatedPaperCount": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "dskpStatus": {
-            "$ref": "#/components/schemas/QuestionDskpStatus"
-          },
-          "createdBy": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "$ref": "#/components/schemas/Id"
-              },
-              "name": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            },
-            "required": [
-              "id",
-              "name"
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "subjectId",
-          "educationLevelId",
-          "difficultyLevel",
-          "questionType",
-          "questionText",
-          "questionImage",
-          "options",
-          "optionImages",
-          "correctAnswer",
-          "tfAnswer",
-          "correctAnswerText",
-          "altAnswers",
-          "modelAnswer",
-          "explanation",
-          "aiExplanation",
-          "language",
-          "pointsValue",
-          "status",
-          "isActive",
-          "complianceStatus",
-          "aiVerified",
-          "sourceType",
-          "sourceFile",
-          "sourcePage",
-          "sourceSet",
-          "qualityScore",
-          "needsDiagram",
-          "spmPool",
-          "dskpSpId",
-          "curriculumChapterId",
-          "curriculumTopicId",
-          "chapterLabel",
-          "scriptType",
-          "textDirection",
-          "createdAt",
-          "updatedAt",
-          "usage",
-          "subject",
-          "level",
-          "dskp",
-          "createdBy"
-        ]
-      },
-      "QuestionPlacement": {
-        "type": "object",
-        "properties": {
-          "paperId": {
-            "$ref": "#/components/schemas/Id"
-          },
-          "title": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "draft",
-              "ready",
-              "published",
-              "withdrawn"
-            ]
-          },
-          "section": {
-            "type": "string",
-            "description": "Label of the section (Bahagian) that places the question."
-          },
-          "versionNo": {
-            "type": "integer",
-            "minimum": 1,
-            "description": "The question version printed on the paper (pinned); a published paper keeps it when the question is archived or edited."
-          }
-        },
-        "required": [
-          "paperId",
-          "title",
-          "status",
-          "section",
-          "versionNo"
-        ]
-      },
-      "QuestionDskpStatus": {
-        "type": "object",
-        "properties": {
-          "complete": {
-            "type": "boolean"
-          },
-          "issues": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "path": {
-                  "type": "string"
-                },
-                "code": {
-                  "type": "string"
-                },
-                "message": {
-                  "type": "string"
-                },
-                "step": {
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 4
-                }
-              },
-              "required": [
-                "path",
-                "code",
-                "message",
-                "step"
-              ]
-            }
-          }
-        },
-        "required": [
-          "complete",
-          "issues"
-        ]
-      },
-      "QuestionCreateRequest": {
-        "type": "object",
-        "properties": {
-          "subjectId": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 64
-          },
-          "educationLevelId": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 64
-          },
-          "difficultyLevel": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 5
-          },
-          "questionText": {
-            "type": "string",
-            "minLength": 10
-          },
-          "dskpSpId": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "maxLength": 64
-          },
-          "curriculumChapterId": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "maxLength": 64
-          },
-          "options": {
-            "type": "array",
-            "minItems": 4,
-            "maxItems": 4,
-            "items": {
-              "type": "string",
-              "minLength": 1
-            }
-          },
-          "correctAnswer": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "minimum": 0,
-            "maximum": 3
-          },
-          "tfAnswer": {
-            "type": [
-              "boolean",
-              "null"
-            ]
-          },
-          "correctAnswerText": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "altAnswers": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "modelAnswer": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "explanation": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "language": {
-            "type": "string",
-            "enum": [
-              "bm",
-              "en"
-            ]
-          },
-          "pointsValue": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "removeQuestionImage": {
-            "type": "boolean"
-          },
-          "removeOptionImage": {
-            "type": "array",
-            "items": {
-              "type": "boolean"
-            },
-            "maxItems": 4
-          },
-          "questionImageFileId": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Id"
-              },
-              {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            ]
-          },
-          "optionImageFileIds": {
-            "type": "array",
-            "items": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Id"
-                },
-                {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                }
-              ]
-            },
-            "maxItems": 4
-          },
-          "kertas": {
-            "$ref": "#/components/schemas/QuestionKertas"
-          },
-          "parts": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/QuestionWritePart"
-            },
-            "minItems": 1
-          },
-          "tag": {
-            "$ref": "#/components/schemas/QuestionCurriculumTag"
-          },
-          "numberLabel": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "maxLength": 32
-          },
-          "cognitiveLevel": {
-            "$ref": "#/components/schemas/QuestionCognitiveLevel"
-          },
-          "stimulusGroupId": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Id"
-              },
-              {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            ]
-          },
-          "textbookRef": {
-            "$ref": "#/components/schemas/QuestionTextbookRef"
-          },
-          "questionType": {
-            "$ref": "#/components/schemas/QuestionType"
-          },
-          "status": {
-            "$ref": "#/components/schemas/QuestionStatus"
-          }
-        },
-        "required": [
-          "subjectId",
-          "educationLevelId",
-          "difficultyLevel",
-          "questionText",
-          "questionType"
         ]
       },
       "QuestionUpdateRequest": {

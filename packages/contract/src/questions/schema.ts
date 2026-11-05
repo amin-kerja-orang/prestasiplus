@@ -8,6 +8,7 @@ import {
   QuestionCurriculumTagSchema,
   QuestionEssayTopicSchema,
   QuestionKbatLevelSchema,
+  QuestionPartSchema,
   QuestionWritePartSchema,
   QuestionPublicPartSchema,
   QuestionStatusSchema,
@@ -287,7 +288,7 @@ export const QuestionSchema = z
     updatedAt: TimestampSchema,
     usage: z.object({ attempts: z.number().int().min(0), correct: z.number().int().min(0) }),
     /** v2 additions (BE-09 AC 1 to 3, 12): absent on rows that only have the flat shape. */
-    parts: z.array(QuestionWritePartSchema).min(1).max(20).optional(),
+    parts: z.array(QuestionPartSchema).min(1).max(20).optional(),
     tag: QuestionCurriculumTagSchema.optional(),
     /** BJS-06: question-level KBAT (null = Bukan KBAT), "Perlu semakan tag" flag and the catalogue the tag was made against. */
     kbat: QuestionKbatLevelSchema.nullable().optional(),
