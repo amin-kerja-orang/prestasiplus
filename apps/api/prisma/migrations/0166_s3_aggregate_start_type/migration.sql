@@ -1,4 +1,4 @@
--- R1 S3-T06 (DM-83, cross-sector S5, requested on #468 and accepted by team-bb): the performance aggregate keeps the attempt
+-- R1 S3-T06 (DM-83, cross-sector S5, requested on #468 and accepted by team-bb; S3 range because the S5 range 0180-0189 is full):
 -- kind as `start_type` (= `exam_attempts.paper_kind`, AC-33.4). Migration 0165 widened the attempt kind to `subjektif` (Kertas
 -- Subjektif, S3-T06) and `structured` (Soalan Berstruktur, S5-T11), so this check follows. Existing rows satisfy it; no data change.
 --
