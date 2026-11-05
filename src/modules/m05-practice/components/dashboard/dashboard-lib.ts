@@ -148,6 +148,15 @@ export function showKombo(streak: { count: number; practisedToday: boolean }): b
   return streak.count >= 1 && !streak.practisedToday
 }
 
+/**
+ * FR-MUR-2-3: the footer "Rekod terbaik: {n} hari". `null` (no figure loaded) gives no line; a record below the
+ * live streak (two stores read at different moments) never shows under it.
+ */
+export function bestStreakText(best: number | null, current: number): string | null {
+  if (best === null) return null
+  return `Rekod terbaik: ${Math.max(best, current)} hari`
+}
+
 /** FR-M05-02: the h1 text (the wave emoji is a separate animated span). */
 export function greetingText(period: string, name: string): string {
   return `Selamat ${period}, ${name}`

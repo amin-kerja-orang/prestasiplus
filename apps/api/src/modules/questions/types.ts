@@ -8,8 +8,6 @@ import type {
   QuestionBulkRequestSchema,
   QuestionCreateRequestSchema,
   QuestionCurriculumTagSchema,
-  QuestionGuruCreateRequestSchema,
-  QuestionGuruUpdateRequestSchema,
   QuestionPart,
   QuestionPublicSchema,
   QuestionStatus,
@@ -22,8 +20,6 @@ export type { QuestionPart, QuestionStatus }
 /** The parsed bodies the controllers hand to the service (contract schemas, already validated). */
 export type QuestionCreateInput = z.output<typeof QuestionCreateRequestSchema>
 export type QuestionUpdateInput = z.output<typeof QuestionUpdateRequestSchema>
-export type QuestionGuruCreateInput = z.output<typeof QuestionGuruCreateRequestSchema>
-export type QuestionGuruUpdateInput = z.output<typeof QuestionGuruUpdateRequestSchema>
 export type QuestionBulkAction = z.output<typeof QuestionBulkRequestSchema>['action']
 export type QuestionTag = z.output<typeof QuestionCurriculumTagSchema>
 /** What a learner may see (`QuestionPublicSchema`): never a key, explanation, model answer or source. */
@@ -307,12 +303,6 @@ export interface QuestionFilter {
 export type SampleFilter = QuestionFilter
 export type GroupCountBy = 'subject' | 'level' | 'status' | 'difficultyTp' | 'unit' | 'chapter'
 
-export interface GuruListFilter {
-  ownerId: string
-  page: number
-  pageSize: number
-}
-
 export interface StructuredListFilter {
   subjectId?: string
   educationLevelId?: string
@@ -392,11 +382,6 @@ export interface QuestionGrade {
   marks: number
   maxMarks: number
   needsReview: boolean
-}
-
-export interface ContributionCounts {
-  total: number
-  byStatus: Record<QuestionStatus, number>
 }
 
 /**
