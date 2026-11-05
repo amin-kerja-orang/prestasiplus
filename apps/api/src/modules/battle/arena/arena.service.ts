@@ -150,7 +150,14 @@ export class ArenaService implements OnModuleInit, OnModuleDestroy {
   async view(uuid: string, userId: string) {
     const opened = await this.load(uuid, userId)
     // 48 section 3.3: a poll moves the clock too. A question past its time is a timeout, then the battle is read as it now stands.
-    if (opened.battle.status === 'active') await this.timeOutSeat(uuid, opened.mine)
+    // A read never fails on it: the sweep retries the seat, so an error here is logged and the view is still answered.
+    if (opened.battle.status === 'active') {
+      try {
+        await this.timeOutSeat(uuid, opened.mine)
+      } catch (err) {
+        this.logger.warn(`Battle clock failed on view for ${uuid}: ${err instanceof Error ? err.message : String(err)}`)
+      }
+    }
     const { battle, mine } = await this.load(uuid, userId)
     const a = battle.participants.find((p) => p.side === 'A')
     const b = battle.participants.find((p) => p.side === 'B')

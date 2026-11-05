@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { BATTLE_RULES, BattleAnswerResultSchema, BattleArenaViewSchema, ErrorBodySchema, battleArenaPoints } from '@pp/contract'
 
+import { ArenaService } from '../../src/modules/battle/arena/arena.service'
 import { BattleEngine } from '../../src/modules/battle/engine'
 import { botAnswers } from '../../src/modules/battle/engine'
 import { addMcqs, bootBattleApp, botBattle, client, parseData, STUDENT_G10, STUDENT_G10_B, STUDENT_G11, subjectsOf, type BattleTestApp, type Client, type Subjects } from './arena-helpers'
@@ -82,6 +83,27 @@ describe('arena (M16-16, M16-17)', () => {
         expect(ErrorBodySchema.parse(post.body).error.message).toBe('Battle tidak dijumpai.')
       }
     })
+  })
+
+  describe('view when the seat clock fails', () => {
+    it('a timeOutSeat error is logged and the view is still answered (a GET never 500s on it)', async () => {
+      setAccuracy(0)
+      const uuid = await botBattle(a, s.math)
+      const arena = t.get(ArenaService) as unknown as { timeOutSeat: (...args: unknown[]) => Promise<boolean> }
+      const spy = vi.spyOn(arena, 'timeOutSeat').mockRejectedValue(new Error('clock down'))
+      try {
+        const res = await view(a, uuid)
+        expect(res.status, JSON.stringify(res.body)).toBe(200)
+        expect(parseData(BattleArenaViewSchema, res).status).toBe('active')
+        expect(spy).toHaveBeenCalledTimes(1)
+      } finally {
+        spy.mockRestore()
+      }
+    })
+  })
+
+  describe('human-vs-human (GAME-R)', () => {
+    it.todo('human-vs-human completion: both humans answer every round and both get reward and answer-port rows (GAME-R)')
   })
 
   describe('answer (AC 11)', () => {
