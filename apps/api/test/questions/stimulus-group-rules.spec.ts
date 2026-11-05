@@ -93,7 +93,8 @@ describe('stimulus group rules (admin, real database)', () => {
       for (const [method, path] of [['put', `/api/questions/${sci}`], ['post', '/api/questions']] as const) {
         const mixed = await admin[method](path, mcqBody(refs, { subjectId: refs.sciId, stimulusGroupId: g.id }))
         expect(mixed.status, `${method} mixed`).toBe(422)
-        expect(mixed.body.error.fields.stimulusGroupId).toBe(STIMULUS_MESSAGES.memberMixed)
+        // S1-T01 (DM-51): the group has its own Subjek (taken from its member), so the refusal is the scope text
+        expect(mixed.body.error.fields.stimulusGroupId).toBe(STIMULUS_MESSAGES.memberScope)
         const unknown = await admin[method](path, mcqBody(refs, { stimulusGroupId: '987654321' }))
         expect(unknown.status, `${method} unknown`).toBe(422)
         expect(Object.keys(unknown.body.error.fields)).toEqual(['stimulusGroupId'])
@@ -222,7 +223,8 @@ describe('stimulus group rules (admin, real database)', () => {
     it('minor 1: an ARCHIVED member that a published paper still pins keeps the stimulus locked (the probe of REQ-B-012)', async () => {
       const s = await servedGroup()
       await pin(s.served)
-      const archived = await admin.post('/api/questions/bulk-action', { action: 'archived', ids: [s.served] })
+      // S1-T01 (API-Q-04): a list holds a whole group or none of it, so both members are listed
+      const archived = await admin.post('/api/questions/bulk-action', { action: 'archived', ids: [s.served, s.draft] })
       expect(archived.status, JSON.stringify(archived.body)).toBe(200)
       expect((await t.db.query<{ status: string }>(`select status from question_versions where question_id = $1 and version_no = 1`, [s.served]))[0]!.status).toBe('archived')
       const edit = await admin.put(`/api/stimuli/${s.stimulusId}`, { caption: 'Tukar' })
@@ -253,18 +255,21 @@ describe('stimulus group rules (admin, real database)', () => {
       expect((await admin.put(`/api/stimuli/${sid}`, { caption: 'Tukar' })).status).toBe(409)
     })
 
-    it('minor 2: a grouped question cannot change subject while the group has other members; the only member can', async () => {
+    it('minor 2: a grouped question cannot change subject (the group has its own Subjek, DM-51); it can once it has left the group', async () => {
       const [a, b] = [await question(), await question()] as [string, string]
       const g = await group([a, b])
       const res = await admin.put(`/api/questions/${a}`, mcqBody(refs, { subjectId: refs.sciId }))
       expect(res.status, JSON.stringify(res.body)).toBe(422)
-      expect(res.body.error.fields.subjectId).toBe(STIMULUS_MESSAGES.memberMixed)
+      expect(res.body.error.fields.subjectId).toBe(STIMULUS_MESSAGES.memberScope)
       expect((await t.db.query<{ s: string }>(`select v.subject_id::text s from question_versions v join questions q on q.id = v.question_id and q.latest_version_no = v.version_no where q.id = $1`, [a]))[0]!.s).toBe(refs.mathId)
       expect(await members(g.id)).toEqual([a, b])
-      // leave, then the lone member may change subject
+      // the only member is bound by the group's Subjek too (S1-T01): it changes subject after it leaves the group
       expect((await admin.delete(`/api/stimulus-groups/${g.id}/members/${b}`)).status).toBe(200)
       const lone = await admin.put(`/api/questions/${a}`, mcqBody(refs, { subjectId: refs.sciId }))
-      expect(lone.status, JSON.stringify(lone.body)).toBe(200)
+      expect(lone.status, JSON.stringify(lone.body)).toBe(422)
+      expect((await admin.delete(`/api/stimulus-groups/${g.id}/members/${a}`)).status).toBe(200)
+      const left = await admin.put(`/api/questions/${a}`, mcqBody(refs, { subjectId: refs.sciId }))
+      expect(left.status, JSON.stringify(left.body)).toBe(200)
     })
 
     it('REQ-B-025b: the body repeating the CURRENT group id does not skip the subject / kertas check', async () => {
@@ -272,7 +277,7 @@ describe('stimulus group rules (admin, real database)', () => {
       const g = await group([a, b])
       const subject = await admin.put(`/api/questions/${a}`, mcqBody(refs, { subjectId: refs.sciId, stimulusGroupId: g.id }))
       expect(subject.status, JSON.stringify(subject.body)).toBe(422)
-      expect(subject.body.error.fields.subjectId).toBe(STIMULUS_MESSAGES.memberMixed)
+      expect(subject.body.error.fields.subjectId).toBe(STIMULUS_MESSAGES.memberScope)
       const kertas = await admin.put(`/api/questions/${a}`, mcqBody(refs, { kertas: '2', stimulusGroupId: g.id }))
       expect(kertas.status, JSON.stringify(kertas.body)).toBe(422)
       expect(kertas.body.error.fields.kertas).toBe(STIMULUS_MESSAGES.memberKertas)
@@ -352,7 +357,7 @@ describe('stimulus group rules (admin, real database)', () => {
       const sci = await question({ subjectId: refs.sciId })
       const mixed = await admin.post(`/api/stimulus-groups/${g.id}/members`, { questionId: sci })
       expect(mixed.status).toBe(422)
-      expect(mixed.body.error.fields.questionId).toBe(STIMULUS_MESSAGES.memberMixed)
+      expect(mixed.body.error.fields.questionId).toBe(STIMULUS_MESSAGES.memberScope)
 
       const archived = await question()
       expect((await admin.post('/api/questions/bulk-action', { action: 'archived', ids: [archived] })).status).toBe(200)
