@@ -135,3 +135,11 @@ Disk is **unencrypted** and accepted by the owner (Q23 item 1, REQ-B-108, REQ-B-
 - [ ] "Root-only" access means root plus root-equivalent accounts; they are listed by ROLE (no names): root, `ppdeploy` via the docker group, the SSH keys on root. Unneeded ones are removed.
 - [ ] The dump PC's own encryption is confirmed.
 - [ ] The restore-drill scratch database is dropped.
+
+## U-OP rows (R1 UAT operations)
+
+Rows from [30-admin-pusat.md](../prd/r1/30-admin-pusat.md) section "U-OP". These are dry-run and precondition steps: the **designated UAT developer** runs each row through the admin UI on UAT, **only after the product owner approves it**. AI sessions and card teams never run them, never touch a server or the database, and never write a credential, account password, host or real name here, in an issue, a PR or a log. Evidence (for example a login screenshot) stays outside the repository; only the date, the deployed commit and pass/fail are written below.
+
+| # | Step | Preconditions | Expected result | Evidence (filled in by the UAT developer) |
+|---|---|---|---|---|
+| U-OP-12 | Create the school-admin acceptance account "Admin Sekolah UAT" (fictitious name) with the existing Admin Pusat form button "Janakan Akaun Admin Sekolah" (`SchoolAdminGenerator.vue`), on the dedicated test school; in the same pass create the other acceptance accounts of U-OP-12 (a T5, a T4, a T2 and a T1 pupil, a teacher). Card S6-T05; PRD R1-AS-0 (FR-AS-0-1), 30 U-OP-12. Credentials go privately to the team leads (R1-START-HERE decision 5) | Product owner approval recorded in #503. The school has at least **50 pupils, 3 teachers, 4 classes** and **answers in the last 30 days** (FR-AS-0-1). Recent answers, if needed, are test records with the prefix `UJI <team> <date>` written by the UAT developer and removed afterwards (U-OP-14). The account has a non-empty school (an empty `schoolId` gets 403, FR-AS-0-2) | The account logs in and lands on `/admin-sekolah/command-center`, and the user card shows the school name (AC-AS-0-1); every other U-OP-12 account logs in and reaches its portal. The AS "(U)" ACs can then run on UAT | Not run yet. Done: date ____ · deployed commit ____ · login check pass/fail ____ · counts (pupils / teachers / classes / answers in 30 days) ____ · screenshot stored outside the repo (reference only) ____ |

@@ -1,16 +1,17 @@
 import type { RouteRecordRaw } from 'vue-router'
 
+import { useSessionStore } from '@/stores/session'
 import type { Role } from '@/stores/session-types'
 
 /**
- * M08 route fragment "prestasi" (M08-T5; build-plan §S.3 rule 2): S1 `/prestasi/sekolah` (`/prestasi`
- * replaces to it), S2, S3, S4 and S21. All user-shell routes; S1–S3 show the own-school
+ * M08 route fragment "prestasi" (M08-T5; build-plan §S.3 rule 2): `/prestasi` (S10-T01: the pupil's own
+ * Prestasi 360 at the same URL, every other role goes to `/prestasi/sekolah`), S1 `/prestasi/sekolah`, S2, S3, S4 and S21. All user-shell routes; S1–S3 show the own-school
  * view to non-admins (FR-M08-13), see the roles below. Tab titles are exact (SRS §2); S1 keeps the DV-M08-01 header.
  * `/prestasi/{userId}` (S6) belongs to M08-T2.
  *
  * Roles (SW4-04, DV-M08-46): a typed URL of a role with no place on these screens shows the 403 page
- * in place instead of a teacher screen. S1–S3 follow SRS §9 (admin, guru, admin sekolah, pelajar, and
- * ibu bapa "as pelajar without data"); PPD / JPN officers and sponsors have M18 screens, not these. S4 lists
+ * in place instead of a teacher screen. S1–S3 follow SRS §9 (admin, guru, admin sekolah, and ibu bapa
+ * "as pelajar without data"); the pelajar has no school-wide view (FR-MUR-4-2, S10-T01); PPD / JPN officers and sponsors have M18 screens, not these. S4 lists
  * the viewer's own classes, so only the roles that reach a class dashboard (S5, `class.ts`) open it:
  * the API answers an empty list for everyone else.
  */
@@ -19,14 +20,27 @@ export const PRESTASI_SCHOOL_ROLES: readonly Role[] = [
   'admin',
   'teacher',
   'school_admin',
-  'student',
   'parent',
 ]
-/** S4 (`/prestasi/kelas`): the roles that can open a class dashboard (S5), plus pelajar (SRS §9: S4 empty state). */
-export const PRESTASI_CLASS_ROLES: readonly Role[] = ['admin', 'teacher', 'school_admin', 'student']
+/** S4 (`/prestasi/kelas`): the roles that can open a class dashboard (S5); the pelajar gets the 403 page (FR-MUR-4-2). */
+export const PRESTASI_CLASS_ROLES: readonly Role[] = ['admin', 'teacher', 'school_admin']
 
 const routes: RouteRecordRaw[] = [
-  { path: '/prestasi', redirect: '/prestasi/sekolah' },
+  {
+    // FR-MUR-4-13: a pupil's URL stays `/prestasi` (own Prestasi 360); no other role has an own view.
+    path: '/prestasi',
+    name: 'm08.prestasi.own',
+    component: () => import('../pages/Prestasi360Page.vue'),
+    beforeEnter: () => (useSessionStore().role === 'student' ? true : '/prestasi/sekolah'),
+    meta: {
+      layout: 'user',
+      access: 'auth',
+      title: 'Prestasi Saya',
+      header: { title: 'Prestasi Saya', subtitle: 'Analisis pencapaian latihan anda' },
+      module: 'M08',
+      v2: true,
+    },
+  },
   {
     path: '/prestasi/sekolah',
     name: 'm08.prestasi.sekolah',
