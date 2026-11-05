@@ -820,3 +820,114 @@ describe('PkskExamPage (S4b)', () => {
     expect(router.currentRoute.value.path).toBe('/pksk')
   })
 })
+
+describe('review fixes (S5-T13)', () => {
+  const focusOn = (sel: string): boolean => document.activeElement === body(sel)
+  const waitFocus = async (): Promise<void> => {
+    await new Promise((r) => setTimeout(r, 50))
+    await flushPromises()
+  }
+  const practice: PkskPractice = {
+    domain: { id: 2, code: 'PKSK_MATH', name: 'Matematik', bahagian: 'B' },
+    questions: [{ id: 11, questionText: 'Soalan satu', options: [{ text: 'a' }, { text: 'b' }] }],
+  }
+  const pPath = '/pksk/level/T1/domain/PKSK_MATH'
+  const pRoute = '/pksk/level/:level/domain/:code'
+  const esc = async (): Promise<void> => {
+    document.activeElement?.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+    )
+    await new Promise((r) => setTimeout(r, 50))
+    await flushPromises()
+  }
+
+  it('shows no refusal on a normal hub visit, and the 403 message only once', async () => {
+    api.fetchPkskAccess.mockResolvedValue({ T1: true, T4: false })
+    let w = await render(PkskHubPage, '/pksk', '/pksk')
+    expect(w.find('[data-testid=pksk-refusal]').exists()).toBe(false)
+    pkskRefusal.value = 'Akses ditolak.'
+    w = await render(PkskHubPage, '/pksk', '/pksk')
+    expect(w.get('[data-testid=pksk-refusal]').text()).toContain('Akses ditolak.')
+    expect(pkskRefusal.value).toBeNull()
+    w = await render(PkskHubPage, '/pksk', '/pksk')
+    expect(w.find('[data-testid=pksk-refusal]').exists()).toBe(false)
+  })
+
+  it('hides Mula Latihan while the access is still loading', async () => {
+    api.fetchPkskAccess.mockReturnValue(new Promise(() => undefined))
+    const w = await render(PkskHubPage, '/pksk', '/pksk')
+    expect(w.find('[data-testid=start-T1]').exists()).toBe(false)
+  })
+
+  it('focuses Batal when the Hantar dialog opens, and Esc keeps the page without sending', async () => {
+    api.fetchPkskPractice.mockResolvedValue(practice)
+    const w = await render(PkskPracticePage, pPath, pRoute, { level: 'T1', code: 'PKSK_MATH' })
+    await w.get('form').trigger('submit')
+    await waitFocus()
+    expect(focusOn('[data-testid=confirm-cancel]')).toBe(true)
+    await esc()
+    expect(api.submitPkskPractice).not.toHaveBeenCalled()
+    expect(body('[data-testid=confirm-cancel]')).toBeNull()
+    expect(w.find('[data-testid=pksk-item]').exists()).toBe(true)
+  })
+
+  it('focuses Teruskan Kuiz when the leave dialog opens, and Esc stays', async () => {
+    api.fetchPkskPractice.mockResolvedValue(practice)
+    const w = await render(PkskPracticePage, pPath, pRoute, { level: 'T1', code: 'PKSK_MATH' })
+    await w.get('[data-testid=pksk-option]').trigger('click')
+    await w.get('[data-ds=quiz-close]').trigger('click')
+    await waitFocus()
+    expect(focusOn('[data-testid=leave-stay]')).toBe(true)
+    await esc()
+    expect(body('[data-testid=leave-stay]')).toBeNull()
+    expect(router.currentRoute.value.path).toBe(pPath)
+  })
+
+  it('does the same on the exam page', async () => {
+    api.fetchPkskExam.mockResolvedValue({
+      sections: [
+        {
+          bahagian: 'A',
+          weightPct: 100,
+          questions: [{ id: 1, questionText: 'S1', options: [{ text: 'x' }] }],
+        },
+      ],
+    })
+    const w = await render(PkskExamPage, '/pksk/level/T1/exam', '/pksk/level/:level/exam', {
+      level: 'T1',
+    })
+    await w.get('form').trigger('submit')
+    await waitFocus()
+    expect(focusOn('[data-testid=confirm-cancel]')).toBe(true)
+    await esc()
+    expect(api.submitPkskExam).not.toHaveBeenCalled()
+    await w.get('[data-testid=pksk-option]').trigger('click')
+    await w.get('[data-ds=quiz-close]').trigger('click')
+    await waitFocus()
+    expect(focusOn('[data-testid=leave-stay]')).toBe(true)
+    await esc()
+    expect(router.currentRoute.value.path).toBe('/pksk/level/T1/exam')
+  })
+
+  it('shows no essay note for an empty Bahagian C section', async () => {
+    api.fetchPkskExam.mockResolvedValue({
+      sections: [
+        {
+          bahagian: 'A',
+          weightPct: 90,
+          questions: [{ id: 1, questionText: 'S1', options: [{ text: 'x' }] }],
+        },
+        { bahagian: 'C', weightPct: 10, questions: [] },
+      ],
+    })
+    api.submitPkskExam.mockResolvedValue({ id: 1, completedAt: '', scorePct: 10, grade: 'E' })
+    const w = await render(PkskExamPage, '/pksk/level/T1/exam', '/pksk/level/:level/exam', {
+      level: 'T1',
+    })
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    await press('[data-testid=confirm-submit]')
+    expect(w.find('[data-testid=exam-result]').exists()).toBe(true)
+    expect(w.find('[data-testid=essay-note]').exists()).toBe(false)
+  })
+})

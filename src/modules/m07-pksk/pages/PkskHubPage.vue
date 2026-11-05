@@ -6,7 +6,7 @@
  * cards. The "AKTIF" badge and highlight follow `GET /api/pksk/me/access`; a pupil with no grant on
  * either level sees the banner and no "Mula Latihan" button. Counts always show (`questionCount`).
  */
-import { computed, onBeforeUnmount } from 'vue'
+import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { useApi } from '@/composables'
@@ -41,10 +41,9 @@ const {
 } = useApi((signal) => fetchPkskDomains({ signal }))
 
 // The API's refusal text of a level page that sent the pupil here (403, e.g. an expired grant).
-const refusal = pkskRefusal
-onBeforeUnmount(() => {
-  pkskRefusal.value = null
-})
+// Consumed once here, so a stale message never shows on a later visit.
+const refusal = ref<string | null>(pkskRefusal.value)
+pkskRefusal.value = null
 
 const noAccess = computed(() => access.value !== null && !access.value.T1 && !access.value.T4)
 const firstLevel = computed(() => LEVEL_ORDER.find((l) => access.value?.[l]) ?? null)
@@ -237,7 +236,7 @@ const top = computed(() =>
             <h3 class="text-heading text-highlighted">{{ c.name }}</h3>
             <p class="text-body text-muted">{{ c.text }}</p>
             <UButton
-              v-if="!noAccess"
+              v-if="access !== null && !noAccess"
               :to="`/pksk/level/${c.level}`"
               size="xl"
               block

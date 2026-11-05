@@ -59,7 +59,9 @@ const UNIT = Object.fromEntries(FORMAT_TILES.map((t) => [t.bahagian, t.unit])) a
   string
 >
 
-const hasEssay = computed(() => data.value?.sections.some((s) => s.bahagian === 'C') ?? false)
+const hasEssay = computed(
+  () => data.value?.sections.some((s) => s.bahagian === 'C' && s.questions.length > 0) ?? false,
+)
 
 function resetState(): void {
   for (const key of Object.keys(answers)) delete answers[Number(key)]

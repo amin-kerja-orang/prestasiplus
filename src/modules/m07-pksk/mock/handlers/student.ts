@@ -180,7 +180,7 @@ export const studentRoutes: RouteDef[] = [
       const scored = answers.map((a) => ({
         questionId: a.questionId,
         isCorrect: isCorrect(served.get(a.questionId) as Question, a),
-        selected: a.optionIndex,
+        selected: a.optionIndex ?? null,
       }))
       // The key is revealed only now that the answers are scored (never in the served set).
       const review = answers.map((a, i) => {
@@ -189,7 +189,7 @@ export const studentRoutes: RouteDef[] = [
         const key = options.findIndex((o) => o.isCorrect === true)
         return {
           questionId: a.questionId,
-          selectedIndex: a.optionIndex,
+          selectedIndex: a.optionIndex ?? null,
           correctIndex: key >= 0 ? key : null,
           isCorrect: (scored[i] as { isCorrect: boolean }).isCorrect,
           explanation: q.explanation ?? null,

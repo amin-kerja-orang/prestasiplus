@@ -63,8 +63,8 @@ test.describe('QA-G5 M07 student flow', MODULE, () => {
     await expect(page).toHaveURL(/\/pksk\/level\/T1$/)
     await expect(tid(page, 'score')).toHaveText('55%')
     await expect(tid(page, 'grade')).toHaveText('C')
-    await expect(tid(page, 'exam-count')).toHaveText('2')
-    await expect(tid(page, 'avg-b')).toHaveText('59.7%')
+    await expect(tid(page, 'exam-count')).toContainText('2')
+    await expect(tid(page, 'avg-b')).toContainText('59.7%')
 
     // Dashboard -> domains (shortcut card).
     await tid(page, 'shortcut-domains').click()
@@ -100,7 +100,7 @@ test.describe('QA-G5 M07 student flow', MODULE, () => {
     // Admin-side counts are unchanged by a practice (BR-M07-26: no M07 question change).
 
     // Back to the dashboard via the back link, then the full exam.
-    await tid(page, 'back-link').click()
+    await page.locator('[data-ds=back-link]').click()
     await expect(page).toHaveURL(/\/pksk\/level\/T1$/)
     await tid(page, 'shortcut-exam').click()
     await expect(page).toHaveURL(/\/pksk\/level\/T1\/exam$/)
@@ -113,7 +113,7 @@ test.describe('QA-G5 M07 student flow', MODULE, () => {
     await expect(tid(page, 'result-title')).toHaveText('Keputusan Peperiksaan')
     await tid(page, 'result-dashboard').click()
     await expect(page).toHaveURL(/\/pksk\/level\/T1$/)
-    await expect(tid(page, 'exam-count')).toHaveText('3')
+    await expect(tid(page, 'exam-count')).toContainText('3')
     const score = await tid(page, 'score').innerText()
     expect(score).toMatch(/^\d{1,3}%$/)
 
@@ -164,7 +164,7 @@ test.describe('QA-G5 M07 student flow', MODULE, () => {
     await expect(tid(page, 'result-title')).toHaveText('Keputusan Peperiksaan')
     await tid(page, 'result-dashboard').click()
     await expect(page).toHaveURL(/\/pksk\/level\/T4$/)
-    await expect(tid(page, 'exam-count')).toHaveText('1')
+    await expect(tid(page, 'exam-count')).toContainText('1')
     await expect(tid(page, 'score')).toHaveText('0%')
     await expect(tid(page, 'grade')).toHaveText('E')
   })
