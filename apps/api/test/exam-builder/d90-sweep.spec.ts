@@ -245,7 +245,8 @@ describe('D90 builder sweep: a stimulus group is one unit on every builder path'
       const edit = (text: string) =>
         admin.put(`/api/questions/${g.members[1]}`, { subjectId: subject, educationLevelId: level, difficultyLevel: 3, questionType: 'mcq', questionText: text, options: ['4', '5', '6', '7'], correctAnswer: 1, kertas: '2', cognitiveLevel: 'mengaplikasi', tag })
       expect((await edit('Soalan disunting: versi dua')).status).toBe(200)
-      await approve([g.members[1]!])
+      // S1-T01: a bulk list holds a whole group or none of it, so the whole group is approved (the other members are already approved: no-ops)
+      await approve(g.members)
       expect((await q(`select live_version_no::int n from questions where id = $1`, [g.members[1]]))[0]!.n).toBe(2)
       expect((await edit('Soalan disunting: versi tiga (draf)')).status).toBe(200)
       expect(await q(`select live_version_no::int live, latest_version_no::int latest from questions where id = $1`, [g.members[1]])).toEqual([{ live: 2, latest: 3 }])

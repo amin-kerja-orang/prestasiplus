@@ -1,10 +1,14 @@
 import {
+  IMAGE_STIMULUS_KINDS,
   INTAKE_GATE_MESSAGES as G,
   type IntakeIssue,
   type IntakeQuestion,
   type IntakeScheme,
   type IntakeStimulus,
 } from '@pp/contract'
+
+/** Kinds whose content is a picture (diagram, graph, map, infographic, image): they need a resolved figure crop. */
+const isImageKind = (kind: string): boolean => (IMAGE_STIMULUS_KINDS as readonly string[]).includes(kind)
 
 /**
  * Quality gate of one intake item (prototype `admin/intake/domain/validation.ts` + `marks.ts`, v2-question-bank 4.8).
@@ -89,7 +93,7 @@ export function itemIssues(q: IntakeQuestion, stimulus: IntakeStimulus | undefin
   if (q.stimulusId !== undefined && !stimulus) add(where, G.stimulusMissing)
   if (stimulus) {
     if (!stimulus.alt.trim()) add(stimulus.label || where, G.stimulusAltMissing)
-    if (stimulus.kind === 'diagram' && !stimulus.figureId && !stimulus.svg) add(stimulus.label || where, G.figureNotResolved)
+    if (isImageKind(stimulus.kind) && !stimulus.figureId && !stimulus.svg) add(stimulus.label || where, G.figureNotResolved)
   }
   return issues
 }
@@ -122,7 +126,7 @@ export function stimulusIssues(stimuli: ReadonlyArray<IntakeStimulus>): IntakeIs
   const issues: IntakeIssue[] = []
   for (const s of stimuli) {
     if (!s.alt.trim()) issues.push({ where: s.label || 'Rajah', message: G.stimulusAltMissing })
-    if (s.kind === 'diagram' && !s.figureId && !s.svg) issues.push({ where: s.label || 'Rajah', message: G.figureNotResolved })
+    if (isImageKind(s.kind) && !s.figureId && !s.svg) issues.push({ where: s.label || 'Rajah', message: G.figureNotResolved })
   }
   return issues
 }
