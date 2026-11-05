@@ -142,8 +142,11 @@ describe('hub SPM (R1-ADM-Q-01)', () => {
     expect(text('[data-testid=kandungan-failed-subjektif]')).toContain('Tidak dapat dimuatkan.')
     expect(q('[data-testid=kandungan-total-subjektif]')).toBeNull()
     expect(text('[data-testid=kandungan-total-databank]')).toBe('1,234')
+    expect(server.overview).toHaveBeenCalledTimes(1)
     q('[data-testid=kandungan-retry-subjektif]')!.click()
     await flushPromises()
+    // The API answers the first retry with a fresh compute (#555), so one click is enough.
+    expect(server.overview).toHaveBeenCalledTimes(2)
     expect(q('[data-testid=kandungan-failed-subjektif]')).toBeNull()
     expect(text('[data-testid=kandungan-total-subjektif]')).toBe('10')
   })
