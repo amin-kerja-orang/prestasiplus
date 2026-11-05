@@ -91,6 +91,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | marketplace_products | 10 |
 | marketplace_sellers | 1 |
 | mastery | 3 |
+| mood_checkins | 0 |
 | paper_placements | 31 |
 | paper_sections | 9 |
 | papers | 5 |
