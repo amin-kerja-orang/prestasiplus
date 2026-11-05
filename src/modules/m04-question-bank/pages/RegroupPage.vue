@@ -58,6 +58,10 @@ const undoable = ref<{ auditId: string; groupId: string } | null>(null)
 
 const selectedRows = computed(() => rows.value.filter((r) => selected.value.includes(r.questionId)))
 const figureRows = computed(() => selectedRows.value.filter((r) => r.flag === 'figure_only'))
+/** The select always shows the row that is sent: when the chosen figure row is no longer selected, the first figure row takes over. */
+watch(figureRows, (list) => {
+  if (!list.some((r) => r.questionId === figureId.value)) figureId.value = list[0]?.questionId ?? ''
+})
 const figure = computed(() => figureRows.value.find((r) => r.questionId === figureId.value) ?? figureRows.value[0])
 const runNotConsecutive = computed(() => selectedRows.value.length > 1 && !isConsecutiveRun(selectedRows.value))
 const canGroup = computed(() => figure.value !== undefined && selectedRows.value.length >= 2 && !runNotConsecutive.value)
