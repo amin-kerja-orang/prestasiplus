@@ -481,6 +481,29 @@ describe('navFor (role filter: hidden, not disabled)', () => {
     }
   })
 
+  it('S6-T14: /guru/set-soalan is not out of scope, yet no menu shows a Set Soalan item', () => {
+    expect(isOutOfScope('/guru/set-soalan')).toBe(false)
+    expect(OUT_OF_SCOPE_ROUTES.some((r) => r.to === '/guru/set-soalan')).toBe(false)
+    // The entries stay as data (the route exists) but are hidden for every role, on every surface.
+    const HIDDEN = ['t-set-soalan', 'guru-set-soalan']
+    const dataIds = new Set(ALL_ITEMS.map((i) => i.id))
+    for (const id of HIDDEN) expect(dataIds.has(id), id).toBe(true)
+    for (const role of ROLES.concat('admin')) {
+      for (const surface of ['sidebar', 'drawer'] as const) {
+        const rendered = items(navFor(role, surface)).map((i) => i.id)
+        for (const id of HIDDEN) expect(rendered, `${role} ${surface} ${id}`).not.toContain(id)
+        expect(
+          items(navFor(role, surface)).filter((i) => i.to === '/guru/set-soalan'),
+          `${role} ${surface}`,
+        ).toEqual([])
+      }
+    }
+    // The opt-out still lists the teacher entry.
+    expect(items(navFor('teacher', 'sidebar', USER_NAV, FULL)).map((i) => i.id)).toContain(
+      't-set-soalan',
+    )
+  })
+
   it('shows nothing to a guest', () => {
     expect(navFor(null, 'sidebar')).toEqual([])
   })
