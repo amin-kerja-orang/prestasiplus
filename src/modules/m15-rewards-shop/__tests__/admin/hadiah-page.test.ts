@@ -11,8 +11,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@/api'
 import { useFlashStore } from '@/stores/flash'
 
-import AdminHadiahPage from '../../pages/AdminHadiahPage.vue'
-import AdminRedemptionsPage from '../../pages/AdminRedemptionsPage.vue'
+import HadiahAdminPage from '../../pages/HadiahAdminPage.vue'
+import RedemptionsAdminPage from '../../pages/RedemptionsAdminPage.vue'
 import routes from '../../routes/admin'
 import { DsDialogStub, hadiahRow, listBody, queueBody, redemptionRow, routerAt } from './support'
 
@@ -38,7 +38,7 @@ async function open(at = '/admin/hadiah', props: Record<string, unknown> = {}): 
   const router = routerAt()
   await router.push(at)
   await router.isReady()
-  const w = mount(AdminHadiahPage, {
+  const w = mount(HadiahAdminPage, {
     props,
     global: { plugins: [router], stubs: { DsDialog: DsDialogStub } },
     attachTo: document.body,
@@ -396,7 +396,7 @@ describe('the Tebusan Queue card (decision 4)', () => {
   it('a deliver or cancel in the card reads the tiles and the catalogue again', async () => {
     const { w } = await open()
     api.fetchHadiahList.mockClear()
-    w.findComponent(AdminRedemptionsPage).vm.$emit('changed')
+    w.findComponent(RedemptionsAdminPage).vm.$emit('changed')
     await flushPromises()
     expect(api.fetchHadiahList).toHaveBeenCalledOnce()
   })
@@ -414,7 +414,7 @@ describe('the form modes', () => {
   it('goes back to the list with the flash after a save', async () => {
     api.createHadiah.mockResolvedValue({ id: '60' })
     const { w, router } = await open('/admin/hadiah/baharu', { mode: 'create' })
-    await w.getComponent({ name: 'AdminHadiahForm' }).vm.$emit('saved', { id: '60' })
+    await w.getComponent({ name: 'HadiahAdminForm' }).vm.$emit('saved', { id: '60' })
     await flushPromises()
     expect(router.currentRoute.value.path).toBe('/admin/hadiah')
     expect(useFlashStore().current ?? useFlashStore().pending).toEqual({ type: 'success', message: 'Hadiah ditambah.' })

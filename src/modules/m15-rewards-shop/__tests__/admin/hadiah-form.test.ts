@@ -11,7 +11,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@/api'
 
 import type { HadiahReward } from '../../api/types'
-import AdminHadiahForm from '../../components/AdminHadiahForm.vue'
+import HadiahAdminForm from '../../components/HadiahAdminForm.vue'
 import { routerAt } from './support'
 
 const api = vi.hoisted(() => ({
@@ -48,7 +48,7 @@ async function open(props: { mode: 'create' | 'edit'; id?: string }): Promise<Vu
   const router = routerAt()
   await router.push('/admin/hadiah/baharu')
   await router.isReady()
-  const w = mount(AdminHadiahForm, { props, global: { plugins: [router] }, attachTo: document.body })
+  const w = mount(HadiahAdminForm, { props, global: { plugins: [router] }, attachTo: document.body })
   await flushPromises()
   return w
 }

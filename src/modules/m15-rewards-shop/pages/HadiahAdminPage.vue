@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
  * R1-ADM-P2-07 `/admin/hadiah` "Kedai Hadiah Digital" (30 P2-07, P07-01..15; S7-T11), and the same page in
- * `mode` create / edit for `/admin/hadiah/baharu` and `/admin/hadiah/:id/edit` (one form, `AdminHadiahForm`).
+ * `mode` create / edit for `/admin/hadiah/baharu` and `/admin/hadiah/:id/edit` (one form, `HadiahAdminForm`).
  * List: four tiles from `meta.cards`, the category pills (a link each, so the filter and the page live in the
  * URL), the table (cards below `md`) at 50 a page, the bulk toolbar "{n} hadiah dipilih" with its seven
- * actions, and the "Tebusan Queue" card (`AdminRedemptionsPage`, decision 4 on #562). A page past the last
+ * actions, and the "Tebusan Queue" card (`RedemptionsAdminPage`, decision 4 on #562). A page past the last
  * goes back to the last one; the empty copy is for a category filter only (FR-ADM-P2-07.2). `Padam` keeps a
  * reward that has a redemption and says so (FR-ADM-P2-07.4). The queue sits below the catalogue at every width
  * (V2 clipped the last column of a two-column layout).
@@ -41,13 +41,13 @@ import {
   type BulkAction,
   type HadiahListItem,
 } from '../api/types'
-import AdminHadiahForm from '../components/AdminHadiahForm.vue'
+import HadiahAdminForm from '../components/HadiahAdminForm.vue'
 import {
   COMMON_COPY,
   HADIAH_ADMIN_COPY as COPY,
   HADIAH_ADMIN_PROPOSED as PROPOSED,
 } from '../components/copy'
-import AdminRedemptionsPage from './AdminRedemptionsPage.vue'
+import RedemptionsAdminPage from './RedemptionsAdminPage.vue'
 
 const props = withDefaults(
   defineProps<{ mode?: 'list' | 'create' | 'edit'; id?: string }>(),
@@ -299,7 +299,7 @@ const listStatus = computed(() =>
       />
     </template>
 
-    <AdminHadiahForm v-if="mode !== 'list'" :id="id" :mode="mode" @saved="onSaved" />
+    <HadiahAdminForm v-if="mode !== 'list'" :id="id" :mode="mode" @saved="onSaved" />
 
     <DsStack v-else gap="section">
       <DsStatRow :items="tiles" prefix="hadiah-tile" density="compact" :loading="listStatus === 'loading'" />
@@ -398,7 +398,7 @@ const listStatus = computed(() =>
         </DsDataTable>
       </DsStack>
 
-      <AdminRedemptionsPage embedded @changed="list.reload()" />
+      <RedemptionsAdminPage embedded @changed="list.reload()" />
 
       <DsFormBar v-if="selection.length > 0" :show-cancel="false" data-testid="hadiah-bulk">
         <template #status>

@@ -2407,7 +2407,7 @@
       "name": "m15.admin-hadiah",
       "status": "canonical",
       "sector": "S7",
-      "component": "src/modules/m15-rewards-shop/pages/AdminHadiahPage.vue",
+      "component": "src/modules/m15-rewards-shop/pages/HadiahAdminPage.vue",
       "file": "src/modules/m15-rewards-shop/routes/admin.ts",
       "approved_by_card": null
     },
@@ -2417,7 +2417,7 @@
       "name": "m15.admin-hadiah-new",
       "status": "canonical",
       "sector": "S7",
-      "component": "src/modules/m15-rewards-shop/pages/AdminHadiahPage.vue",
+      "component": "src/modules/m15-rewards-shop/pages/HadiahAdminPage.vue",
       "file": "src/modules/m15-rewards-shop/routes/admin.ts",
       "approved_by_card": null
     },
@@ -2427,7 +2427,7 @@
       "name": "m15.admin-redemptions",
       "status": "canonical",
       "sector": "S7",
-      "component": "src/modules/m15-rewards-shop/pages/AdminRedemptionsPage.vue",
+      "component": "src/modules/m15-rewards-shop/pages/RedemptionsAdminPage.vue",
       "file": "src/modules/m15-rewards-shop/routes/admin.ts",
       "approved_by_card": null
     },
@@ -2437,7 +2437,7 @@
       "name": "m15.admin-hadiah-edit",
       "status": "canonical",
       "sector": "S7",
-      "component": "src/modules/m15-rewards-shop/pages/AdminHadiahPage.vue",
+      "component": "src/modules/m15-rewards-shop/pages/HadiahAdminPage.vue",
       "file": "src/modules/m15-rewards-shop/routes/admin.ts",
       "approved_by_card": null
     },

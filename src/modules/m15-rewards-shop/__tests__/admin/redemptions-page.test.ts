@@ -11,7 +11,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@/api'
 import { useFlashStore } from '@/stores/flash'
 
-import AdminRedemptionsPage from '../../pages/AdminRedemptionsPage.vue'
+import RedemptionsAdminPage from '../../pages/RedemptionsAdminPage.vue'
 import routes from '../../routes/admin'
 import { DsDialogStub, queueBody, redemptionRow, routerAt } from './support'
 
@@ -36,7 +36,7 @@ async function open(props: Record<string, unknown> = {}, at = '/admin/hadiah/teb
   const router = routerAt()
   await router.push(at)
   await router.isReady()
-  const w = mount(AdminRedemptionsPage, {
+  const w = mount(RedemptionsAdminPage, {
     props,
     global: { plugins: [router], stubs: { DsDialog: DsDialogStub } },
     attachTo: document.body,
