@@ -15,7 +15,7 @@ export const BAND_KEYS = [
 export type BandKey = (typeof BAND_KEYS)[number]
 
 /** Alert types of an intervention (DATA-M12-02). */
-export const ALERT_TYPES = ['mood', 'inactive', 'declining'] as const
+export const ALERT_TYPES = ['mood', 'inactive', 'declining', 'other'] as const
 export const MOODS = ['happy', 'okay', 'sad', 'stressed'] as const
 
 /** The Malay month names are `monthName(m)` of `@/lib/time`; the English short forms are live's date style. */

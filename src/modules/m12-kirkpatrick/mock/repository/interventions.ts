@@ -80,8 +80,8 @@ export const interventionsRepo = defineRepository({
         return store.get(id)
       },
 
-      /** The S7 read model: KPIs over the whole store, rows newest first (BR-M12-26). */
-      list(): InterventionList {
+      /** The S7 read model: KPIs over the whole store (or the rows `keep` accepts), rows newest first (BR-M12-26). */
+      list(keep?: (row: InterventionRowStored) => boolean): InterventionList {
         const rows = store
           .query({
             sort: [
@@ -89,7 +89,8 @@ export const interventionsRepo = defineRepository({
               { field: 'id', dir: 'desc' },
             ],
           })
-          .rows.map(shape)
+          .rows.filter((r) => keep === undefined || keep(r))
+          .map(shape)
         return {
           kpi: {
             total: rows.length,
@@ -99,6 +100,20 @@ export const interventionsRepo = defineRepository({
           },
           rows,
         }
+      },
+
+      /** "Semak keputusan": writes `afterAccuracy` (0-100, one decimal, or `null` when there is no answer to compare). */
+      setAfterAccuracy(id: number, afterAccuracy: number | null): InterventionRow {
+        const row = store.get(id)
+        if (!row) throw new M12Error('NOT_FOUND', 'Rekod intervensi tidak dijumpai.')
+        return shape(
+          transaction(() =>
+            store.update(id, {
+              afterAccuracy: afterAccuracy === null ? null : round1(afterAccuracy),
+              updatedAt: nowIso(),
+            }),
+          ),
+        )
       },
 
       /**

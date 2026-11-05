@@ -2,7 +2,9 @@
 /**
  * S1 "Perbandingan Sebelum & Selepas" (FN-M12-2.4.1..2.4.4; FR-M12-26..28): subtitle, the SEBELUM / SELEPAS
  * panels (side by side from `md`), four delta tiles (2 x 2 below `md`) and the "Ringkasan:" box. A panel
- * without data shows "-" ranges and 0 values; no data at all gives the "Tiada Data vs Tiada Data" state.
+ * without data shows "-" ranges and 0 values; no data at all gives the "Tiada Data vs Tiada Data" state. When one side has
+ * no answers `delta` is `null`: the delta tiles print 0 (never a decline) and the box carries only the sentence
+ * "Data tidak mencukupi untuk perbandingan.".
  */
 import { computed } from 'vue'
 

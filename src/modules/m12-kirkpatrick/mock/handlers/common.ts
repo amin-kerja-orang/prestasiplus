@@ -3,11 +3,11 @@
  * request and the M12 error to response mapping.
  *
  * Access (independent of the URL prefix, SEC-M12-01):
- * - `staffRoles` = admin and teacher (provisional, SRS §9): every S1-S8 endpoint and the intervention form;
- * - `scopedRoles` = admin, teacher and **school_admin**: #1 overview and #14 filter-options only (G4 decision F6). The school
- *   administrator is INFERRED (lead decision, build-plan v1.12 R.1.3: `/admin-sekolah/kirkpatrick` answers 200 on
- *   live as an alias of S1, school scope INFERRED): the account is always forced to its own school, whatever
- *   `schoolId` / `state` the request carries, and the SRS §9 amendment is made separately;
+ * - `scopedRoles` = admin, teacher and **school_admin** (S6-T02, FR-AS-11-1): every S1-S8 endpoint, the PDF, the
+ *   intervention list and form and filter-options. The school administrator is always forced to its own school,
+ *   whatever `schoolId` / `state` the request carries; a teacher and a school administrator get 404 for a pupil
+ *   (or record) outside their school (D-T02-2, ERR-ACC-02);
+ * - `reviewRoles` = teacher and school_admin: "Semak keputusan" (the admin answers 403);
  * - any logged-in user: `/api/kirkpatrick/me` and the feedback endpoints.
  */
 
@@ -26,7 +26,7 @@ import { users } from '@/modules/m01-authentication/mock'
 import { M12Error } from '../repository/common'
 import { emptyScope, resolveScope, type Scope } from '../repository/scope'
 
-export const staffRoles = requireRole('admin', 'teacher')
+export const reviewRoles = requireRole('teacher', 'school_admin')
 export const scopedRoles = requireRole('admin', 'teacher', 'school_admin')
 
 export interface Viewer {
@@ -73,6 +73,20 @@ export function scopeOf(req: MockRequest, options: { allowState?: boolean } = {}
       : resolveScope({ schoolId: viewer.schoolId, includeFixture: true })
   }
   return resolveScope({ schoolId, state })
+}
+
+/**
+ * The scope of the endpoints that ignore the page query (reaction, chain, PDF): the school administrator's own
+ * school, the whole population for the other roles.
+ */
+export function viewerScope(req: MockRequest): Scope {
+  return viewerOf(req).role === 'school_admin' ? scopeOf(req) : resolveScope()
+}
+
+/** True when `pupilSchoolId` is outside the school of a teacher or school administrator (admin sees all). */
+export function outsideSchool(viewer: Viewer, pupilSchoolId: number | null): boolean {
+  if (viewer.role !== 'teacher' && viewer.role !== 'school_admin') return false
+  return viewer.schoolId === null || pupilSchoolId !== viewer.schoolId
 }
 
 /** Answers a refused M12 write: 404, 403, 409 or 422 with the message under its field. */

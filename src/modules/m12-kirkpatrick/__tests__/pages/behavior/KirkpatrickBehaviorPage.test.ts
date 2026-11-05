@@ -16,6 +16,7 @@ import {
   nativePick,
   options,
   resetLink,
+  SESSION_SCHOOL,
   rowOf,
   squash,
   t,
@@ -31,12 +32,18 @@ vi.mock('../../../api', () => api)
 
 let wrapper: VueWrapper | undefined
 
-async function open(prefix = '/admin/kirkpatrick', query = '') {
+async function open(
+  prefix = '/admin/kirkpatrick',
+  query = '',
+  props: Record<string, unknown> = {},
+  school: Partial<typeof SESSION_SCHOOL> | null = null,
+) {
   const m = await mountPage(
     KirkpatrickBehaviorPage,
-    { basePath: prefix },
+    { basePath: prefix, ...props },
     `${prefix}/behavior${query}`,
     `${prefix}/behavior`,
+    school,
   )
   wrapper = m.wrapper
   return m
@@ -51,6 +58,29 @@ beforeEach(() => {
 afterEach(() => {
   wrapper?.unmount()
   wrapper = undefined
+})
+
+describe('S4 on the school-admin mount (FR-AS-11-2)', () => {
+  it('shows the locked school label instead of the school select and ignores school_id', async () => {
+    const { wrapper: w } = await open(
+      '/admin-sekolah/kirkpatrick',
+      '?school_id=8080',
+      { scopeForced: true },
+      SESSION_SCHOOL,
+    )
+    expect(t(w, 'kirk-school-label').findAll('p').map((p) => p.text())).toEqual([
+      'SMK Contoh Ujian',
+      'ABC1234 · PPD Contoh · Johor',
+    ])
+    expect(w.find('select').exists()).toBe(false)
+    const text = squash(w.text())
+    for (const gone of ['Semua Sekolah', 'Tapis', 'Reset']) expect(text).not.toContain(gone)
+    expect(api.fetchKirkpatrickFilterOptions).not.toHaveBeenCalled()
+    expect(api.fetchKirkpatrickBehavior).toHaveBeenCalledWith(
+      { schoolId: null },
+      expect.anything(),
+    )
+  })
 })
 
 describe('S4 filter (AC-M12-14.1 ... 14.3)', () => {

@@ -3,12 +3,11 @@
  * this file (build-plan §S.3 rule 5). The page query `school_id` / `state` is passed as `schoolId` / `state`.
  *
  * Failures reject with `ApiError`: 401 without a session (the client's 401 policy sends the user to `/login`),
- * 403 `FORBIDDEN` for a role without access (and for S8 with an id that is not an accessible student), 404
- * `NOT_FOUND`, 409 `CONFLICT` (a second feedback in the month), 422 `VALIDATION_ERROR` with `fields`.
+ * 403 `FORBIDDEN` for a role without access, 404 `NOT_FOUND`, 409 `CONFLICT` (a second feedback in the month), 422 `VALIDATION_ERROR` with `fields`.
  *
- * Access: admin and teacher (provisional, SRS M12 §9) reach all of #1-#11 and #14; the school administrator
- * (INFERRED, build-plan v1.12 R.1.3, `/admin-sekolah/kirkpatrick`) reaches #1 and #14 only (G4 decision
- * F6), always forced to the account's own school; #11-#13 are open to any logged-in user.
+ * Access: admin and teacher (provisional, SRS M12 §9) reach all of #1-#10 and #14; the school administrator
+ * reaches the same endpoints (S6-T02, FR-AS-11-1) always forced to the account's own school; #11-#13 are open to any
+ * logged-in user. 403 `FORBIDDEN` is a role without access; an S8 id outside the viewer's scope answers 404.
  */
 
 import { api, type BlobResult } from '@/api'
@@ -22,6 +21,7 @@ import type {
   FilterOptions,
   InterventionInput,
   InterventionList,
+  InterventionReview,
   KirkpatrickIntervention,
   Learning,
   MyKirkpatrick,
@@ -54,7 +54,7 @@ export function fetchKirkpatrickOverview(
   })
 }
 
-/** #2 `GET /api/kirkpatrick/reaction` (S2; ignores the scope). */
+/** #2 `GET /api/kirkpatrick/reaction` (S2; the school administrator's own school, the rest platform-wide). */
 export function fetchKirkpatrickReaction(options: Signal = {}): Promise<Reaction> {
   return api.get<Reaction>('/api/kirkpatrick/reaction', withSignal(options))
 }
@@ -114,7 +114,15 @@ export function createKirkpatrickIntervention(
   return api.post<KirkpatrickIntervention>('/api/kirkpatrick/interventions', { body: input })
 }
 
-/** #10 `GET /api/kirkpatrick/students/:id` (S8; 403 when the id is not an accessible student). */
+/**
+ * `POST /api/kirkpatrick/interventions/:id/review` (API-RPT-17): 409 `CONFLICT` before 7 days after the action date
+ * ("Semakan hanya boleh dibuat selepas 7 hari daripada tarikh tindakan."), 404 for a record outside the viewer's scope.
+ */
+export function reviewKirkpatrickIntervention(id: number | string): Promise<InterventionReview> {
+  return api.post<InterventionReview>(`/api/kirkpatrick/interventions/${String(id)}/review`)
+}
+
+/** #10 `GET /api/kirkpatrick/students/:id` (S8; 404 when the id is not a pupil in the viewer's scope). */
 export function fetchKirkpatrickStudent(
   id: number,
   options: Signal = {},

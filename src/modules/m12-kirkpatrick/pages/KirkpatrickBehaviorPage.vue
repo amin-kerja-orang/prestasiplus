@@ -1,13 +1,25 @@
 <script setup lang="ts">
 /**
  * S4 T3 Tingkah Laku (FR-M12-40 ... FR-M12-47; URS EP-M12-5). Mounted on `/admin/kirkpatrick/behavior` and
- * the `/guru` twin; `basePath` is the mount prefix. `school_id` is the only filter (FN-M12-5.1.1).
+ * the `/guru` twin; `basePath` is the mount prefix. `school_id` is the only filter (FN-M12-5.1.1). On the
+ * school-admin mount (`scopeForced`) the school is forced by the API: the filter card is a read-only school label
+ * (FR-AS-11-2) and `school_id` is ignored.
  */
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsFilterBar, DsFormField, DsLoadError, DsNativeSelect, DsPage } from '@/ds'
+import { useSession } from '@/composables/useSession'
+import {
+  DsFilterBar,
+  DsFormField,
+  DsLoadError,
+  DsNativeSelect,
+  DsPage,
+  DsPanel,
+  DsStack,
+  DsText,
+} from '@/ds'
 
 import { fetchKirkpatrickBehavior, fetchKirkpatrickFilterOptions } from '../api'
 import BehaviorAlerts from '../components/kirkpatrick/behavior/BehaviorAlerts.vue'
@@ -25,15 +37,19 @@ import {
   useKirkpatrickPage,
 } from '../components/kirkpatrick/common'
 
-const props = withDefaults(defineProps<{ basePath?: string }>(), {
+const props = withDefaults(defineProps<{ basePath?: string; scopeForced?: boolean }>(), {
   basePath: KIRKPATRICK_ADMIN_BASE,
+  scopeForced: false,
 })
 
 const route = useRoute()
 const router = useRouter()
 const paths = computed(() => kirkpatrickPaths(props.basePath))
 
-const schoolQuery = computed(() => queryString(route.query.school_id).trim())
+const { user } = useSession()
+const schoolQuery = computed(() =>
+  props.scopeForced ? '' : queryString(route.query.school_id).trim(),
+)
 const schoolId = computed(() =>
   /^\d+$/.test(schoolQuery.value) ? Number(schoolQuery.value) : null,
 )
@@ -42,7 +58,17 @@ const { data, error, loading, reload } = useKirkpatrickPage(
   (signal) => fetchKirkpatrickBehavior({ schoolId: schoolId.value }, { signal }),
   () => route.fullPath,
 )
-const { data: options } = useApi((signal) => fetchKirkpatrickFilterOptions({ signal }))
+const { data: options } = useApi((signal) =>
+  props.scopeForced ? Promise.resolve(null) : fetchKirkpatrickFilterOptions({ signal }),
+)
+
+/** The locked school label: line 1 the name, line 2 "{kod} · {PPD} · {negeri}" (empty parts skipped). */
+const school = computed(() => {
+  const s = user.value?.school
+  if (!s) return null
+  const detail = [s.code, s.district, s.state].filter((p): p is string => !!p && p.trim() !== '')
+  return { name: s.name, detail: detail.join(' · ') }
+})
 
 const filters = useKirkpatrickFilters(options, { schoolId: schoolQuery }, (value) => apply(value))
 
@@ -60,8 +86,15 @@ function apply(value: { schoolId: string }) {
     subtitle="Konsistensi penggunaan, engagement score, dan corak tingkah laku pelajar"
   >
     <KirkpatrickTabs :base-path="basePath" current="behavior" />
+    <DsPanel v-if="scopeForced" data-testid="kirk-filter">
+      <DsStack gap="2xs" data-testid="kirk-school-label">
+        <DsText variant="body-strong">{{ school?.name }}</DsText>
+        <DsText v-if="school?.detail" variant="caption">{{ school.detail }}</DsText>
+      </DsStack>
+    </DsPanel>
     <!-- Live copy: "Tapis" and "Reset" (FR-M12-19, 41). -->
     <DsFilterBar
+      v-else
       :chips="filters.chips.value"
       :show-reset="false"
       apply-label="Tapis"

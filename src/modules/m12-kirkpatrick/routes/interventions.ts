@@ -1,13 +1,13 @@
 import type { RouteRecordRaw } from 'vue-router'
 
 import { rolesOf } from './access'
-import { STAFF_MOUNTS } from './mount'
+import { ALL_MOUNTS } from './mount'
 
 /**
  * M12 route fragment: S7 Intervensi on `/admin/kirkpatrick/interventions` and the `/guru` twin (M12-T4). GET on
  * `/interventions/{id}` and `/interventions/create` is not a route: the global 404 page renders (DV-M12-11).
  */
-const routes: RouteRecordRaw[] = STAFF_MOUNTS.map((mount): RouteRecordRaw => ({
+const routes: RouteRecordRaw[] = ALL_MOUNTS.map((mount): RouteRecordRaw => ({
   path: `${mount.prefix}/interventions`,
   name: `${mount.name}-interventions`,
   component: () => import('../pages/KirkpatrickInterventionsPage.vue'),

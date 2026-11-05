@@ -2,18 +2,53 @@
 /**
  * "Senarai Intervensi" (FN-M12-8.3.1 / 8.3.2; FR-M12-75 / 76): the empty state (icon and one line, DV-M12-01), or the
  * PROPOSED table, newest first (the API order). Staff table (`DsDataTable`: card list below md, inner scroll
- * when wide); the status is a badge with its word.
+ * when wide); the status is a badge with its word. Column "Semakan" (R1-GUR-11, AC-GUR-11-9): a pending row has the button
+ * "Semak keputusan", disabled until 7 calendar days (Asia/Kuala_Lumpur) after the action date; a click posts the
+ * review (a refusal, e.g. 409, shows its server text under the button) and `changed` makes the page reload; a
+ * reviewed row reads "Ketepatan Sebelum {a}% → Selepas {b}%" (whole %, half up).
  */
-import { computed, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
-import { DsDataTable, DsEmptyState, DsPanel, DsStack } from '@/ds'
+import { isApiError } from '@/api'
+import { DsDataTable, DsEmptyState, DsPanel, DsStack, DsText } from '@/ds'
+import { formatPercent } from '@/lib/number'
+import { clock, formatMyt } from '@/lib/time'
+
+import { reviewKirkpatrickIntervention } from '../../../api'
 
 import type { InterventionRow, WireId } from '../../../api/types'
 import { dateEn, pct } from '../common/kirkpatrick-format'
 import { alertLabel, moodLabel, STATUS_COLOR } from './intervention-format'
 
 const props = defineProps<{ rows: InterventionRow[] }>()
+const emit = defineEmits<{ changed: [] }>()
+
+/** Days from `YYYY-MM-DD` to today, both Asia/Kuala_Lumpur calendar days. */
+const REVIEW_AFTER_DAYS = 7
+function ageInDays(actionDate: string): number {
+  const today = formatMyt(clock.now(), 'yyyy-MM-dd')
+  return Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${actionDate}T00:00:00Z`)) / 86_400_000)
+}
+/** Whole %, half up ("62%"); "—" without a value. */
+const wholePercent = (v: number | null) => (v === null ? '—' : formatPercent(v, { decimals: 0 }))
+
+const busy = reactive<Record<string, boolean>>({})
+const failure = reactive<Record<string, string>>({})
+async function review(id: WireId) {
+  const key = String(id)
+  if (busy[key]) return
+  busy[key] = true
+  failure[key] = ''
+  try {
+    await reviewKirkpatrickIntervention(id)
+    emit('changed')
+  } catch (e) {
+    failure[key] = isApiError(e) ? e.message : 'Semakan tidak berjaya. Sila cuba lagi.'
+  } finally {
+    busy[key] = false
+  }
+}
 
 /** Slot rows are untyped; this narrows the status for the badge colour. */
 const statusColor = (status: unknown) =>
@@ -38,6 +73,10 @@ interface Row extends Record<string, unknown> {
   before: string
   after: string
   status: InterventionRow['status']
+  reviewed: boolean
+  result: string
+  canReview: boolean
+  review: string
 }
 
 const data = computed<Row[]>(() =>
@@ -52,6 +91,10 @@ const data = computed<Row[]>(() =>
     before: accuracyCell(r.beforeAccuracy, r.beforeMood),
     after: accuracyCell(r.afterAccuracy, r.afterMood),
     status: r.status,
+    reviewed: r.afterAccuracy !== null,
+    result: `Ketepatan Sebelum ${wholePercent(r.beforeAccuracy)} → Selepas ${wholePercent(r.afterAccuracy)}`,
+    canReview: ageInDays(r.actionDate) >= REVIEW_AFTER_DAYS,
+    review: '',
   })),
 )
 
@@ -64,6 +107,7 @@ const columns: TableColumn<Row>[] = [
   { accessorKey: 'before', header: 'Ketepatan Sebelum (%)' },
   { accessorKey: 'after', header: 'Ketepatan Selepas (%)' },
   { accessorKey: 'status', header: 'Status' },
+  { accessorKey: 'review', header: 'Semakan' },
 ]
 const cardFields = [
   { key: 'alert', label: 'Jenis Amaran' },
@@ -72,6 +116,7 @@ const cardFields = [
   { key: 'before', label: 'Ketepatan Sebelum (%)' },
   { key: 'after', label: 'Ketepatan Selepas (%)' },
   { key: 'status', label: 'Status' },
+  { key: 'review', label: 'Semakan' },
 ]
 
 /** Paged at 20 rows. */
@@ -123,6 +168,31 @@ const pageSize = ref(20)
           :label="row.original.status"
           data-testid="int-row-status"
         />
+      </template>
+      <template #review-cell="{ row }">
+        <DsStack gap="xs" align="start" data-testid="int-row-review">
+          <DsText v-if="row.original.reviewed" variant="body" data-testid="int-row-result">{{
+            row.original.result
+          }}</DsText>
+          <UButton
+            v-else
+            type="button"
+            color="neutral"
+            label="Semak keputusan"
+            :disabled="!row.original.canReview"
+            :loading="busy[String(row.original.id)] === true"
+            data-testid="int-row-review-btn"
+            @click="review(row.original.id)"
+          />
+          <DsText
+            v-if="failure[String(row.original.id)]"
+            variant="body"
+            tone="error"
+            role="alert"
+            data-testid="int-row-review-error"
+            >{{ failure[String(row.original.id)] }}</DsText
+          >
+        </DsStack>
       </template>
     </DsDataTable>
   </DsPanel>

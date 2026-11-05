@@ -1,7 +1,10 @@
 import { DOMWrapper, flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import USelect from '@nuxt/ui/components/Select.vue'
 import type { Component } from 'vue'
+import { createPinia, setActivePinia } from 'pinia'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
+
+import { useSessionStore } from '@/stores/session'
 
 import type { FilterOptions, Learning, Overview, Reaction } from '../../api/types'
 
@@ -63,6 +66,52 @@ export const reaction: Reaction = {
   npsTeacher: 6.5,
   npsAdmin: 9.6,
   satisfaction: 4.6,
+  responses: 336,
+  usability: 4.8,
+  relevance: 4.5,
+  promoters: 200,
+  detractors: 30,
+  writtenComments: 2,
+  latestComments: [
+    { comment: 'Mudah digunakan', nps: 9, satisfaction: 5, date: '2026-09-24' },
+    { comment: 'Boleh ditambah baik', nps: null, satisfaction: 4, date: '2026-09-02' },
+  ],
+  mood: {
+    positivePct: 77,
+    checkIns: 13,
+    engaged: 5,
+    pupils: 20,
+    last7Days: 3,
+    rows: [
+      { mood: 'Gembira', count: 6, pct: 46.2 },
+      { mood: 'Okay', count: 4, pct: 30.8 },
+      { mood: 'Sedih', count: 2, pct: 15.4 },
+      { mood: 'Tertekan', count: 1, pct: 7.7 },
+    ],
+  },
+}
+
+/** A school with no feedback and no mood check-in. */
+export const reactionEmpty: Reaction = {
+  npsStudent: 0,
+  npsTeacher: 0,
+  npsAdmin: 0,
+  satisfaction: 0,
+  responses: 0,
+  usability: null,
+  relevance: null,
+  promoters: 0,
+  detractors: 0,
+  writtenComments: 0,
+  latestComments: [],
+  mood: {
+    positivePct: null,
+    checkIns: 0,
+    engaged: 0,
+    pupils: 20,
+    last7Days: 0,
+    rows: [],
+  },
 }
 
 export const learning = (over: Partial<Learning> = {}): Learning => ({
@@ -111,12 +160,35 @@ export const learning = (over: Partial<Learning> = {}): Learning => ({
   ...over,
 })
 
+/** The school of the logged-in user (the locked school label of the school-admin mount). */
+export const SESSION_SCHOOL = {
+  id: 8080,
+  name: 'SMK Contoh Ujian',
+  code: 'ABC1234',
+  type: 'SMK',
+  state: 'Johor',
+  district: 'PPD Contoh',
+  city: null,
+}
+
+/** A fresh Pinia with a session whose user has `school` (or none). */
+export function setSessionSchool(school: Partial<typeof SESSION_SCHOOL> | null = SESSION_SCHOOL): void {
+  setActivePinia(createPinia())
+  useSessionStore().auth = {
+    token: 't',
+    remember: false,
+    expiresAt: '2030-01-01T00:00:00+08:00',
+    user: { school },
+  } as never
+}
+
 /** Mounts a page on a memory router (a catch-all route lets every RouterLink resolve). */
 export async function mountPage(
   component: Component,
   props: Record<string, unknown>,
   url: string,
   path: string,
+  school: Partial<typeof SESSION_SCHOOL> | null = null,
 ): Promise<{ wrapper: VueWrapper; router: Router }> {
   const router = createRouter({
     history: createMemoryHistory(),
@@ -127,6 +199,7 @@ export async function mountPage(
   })
   await router.push(url)
   await router.isReady()
+  setSessionSchool(school)
   const wrapper = mount(component, { props, global: { plugins: [router] } })
   await flushPromises()
   return { wrapper, router }

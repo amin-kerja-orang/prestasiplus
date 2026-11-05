@@ -6,6 +6,7 @@ import { ApiError } from '@/api'
 
 import KirkpatrickOverviewPage from '../../../pages/KirkpatrickOverviewPage.vue'
 import {
+  SESSION_SCHOOL,
   all,
   flat,
   has,
@@ -31,9 +32,19 @@ vi.mock('@/app/router/outcome', () => outcome)
 
 let wrapper: VueWrapper | undefined
 
-async function open(url = '/admin/kirkpatrick', props: Record<string, unknown> = {}) {
+async function open(
+  url = '/admin/kirkpatrick',
+  props: Record<string, unknown> = {},
+  school: Partial<typeof SESSION_SCHOOL> | null = null,
+) {
   const prefix = url.split('?')[0]!
-  const m = await mountPage(KirkpatrickOverviewPage, { basePath: prefix, ...props }, url, prefix)
+  const m = await mountPage(
+    KirkpatrickOverviewPage,
+    { basePath: prefix, ...props },
+    url,
+    prefix,
+    school,
+  )
   wrapper = m.wrapper
   return m
 }
@@ -277,7 +288,7 @@ describe('mounts', () => {
     expect(t(w, 'kirk-kpi-registered').get('a').attributes('href')).toBe('/guru/monitoring')
   })
 
-  it('alias (detailLinks off): no level links, no "Lihat detail", monitoring links stay', async () => {
+  it('plain boxes when detailLinks is off: no level links, no "Lihat detail", monitoring links stay', async () => {
     const { wrapper: w } = await open('/admin-sekolah/kirkpatrick', { detailLinks: false })
     const hrefs = w.findAll('a').map((a) => a.attributes('href') ?? '')
     expect(hrefs).toEqual(['/admin-sekolah/monitoring', '/admin-sekolah/monitoring'])
@@ -291,17 +302,63 @@ describe('S1 alias with a forced scope (BUG-11)', () => {
   const url = '/admin-sekolah/kirkpatrick?school_id=8080&state=Johor'
 
   it('shows no filter chips and sends no scope when the API forces the own school', async () => {
-    const { wrapper: w } = await open(url, { detailLinks: false, scopeForced: true })
+    const { wrapper: w } = await open(url, { detailLinks: true, scopeForced: true }, SESSION_SCHOOL)
     expect(has(w, 'active-filters-reset')).toBe(false)
     expect(w.text()).not.toContain('Penapis aktif')
     expect(w.text()).not.toContain('Sekolah: SMK Demo Satu')
     expect(w.text()).not.toContain('Negeri: Johor')
     expect(resetLink(w).exists()).toBe(false)
-    expect((w.get('select[name="school_id"]').element as HTMLSelectElement).value).toBe('')
     expect(api.fetchKirkpatrickOverview).toHaveBeenCalledWith(
       { schoolId: null, state: '' },
       expect.anything(),
     )
+  })
+
+  it('FR-AS-11-2: a locked school label instead of the selects, "Semua" options and Tapis / Reset', async () => {
+    const { wrapper: w } = await open(
+      '/admin-sekolah/kirkpatrick',
+      { detailLinks: true, scopeForced: true },
+      SESSION_SCHOOL,
+    )
+    const label = t(w, 'kirk-school-label')
+    expect(label.findAll('p').map((p) => p.text())).toEqual([
+      'SMK Contoh Ujian',
+      'ABC1234 · PPD Contoh · Johor',
+    ])
+    expect(w.find('select').exists()).toBe(false)
+    expect(w.find('[data-testid="kirk-filter-school"]').exists()).toBe(false)
+    expect(w.find('[data-testid="kirk-filter-state"]').exists()).toBe(false)
+    const text = squash(w.text())
+    for (const gone of ['Semua Sekolah', 'Semua Negeri', 'Tapis', 'Reset', 'Negeri']) {
+      expect(text).not.toContain(gone)
+    }
+    expect(w.findAll('button').map((b) => squash(b.text()))).not.toContain('Tapis')
+    expect(api.fetchKirkpatrickFilterOptions).not.toHaveBeenCalled()
+  })
+
+  it('skips an empty district in the second line', async () => {
+    const { wrapper: w } = await open(
+      '/admin-sekolah/kirkpatrick',
+      { scopeForced: true },
+      { ...SESSION_SCHOOL, district: null as never },
+    )
+    expect(t(w, 'kirk-school-label').findAll('p')[1]?.text()).toBe('ABC1234 · Johor')
+  })
+
+  it('AC-AS-11-1: the level cards, the flow and the bands link to the school-admin screens (detailLinks on)', async () => {
+    const { wrapper: w } = await open(
+      '/admin-sekolah/kirkpatrick',
+      { detailLinks: true, scopeForced: true },
+      SESSION_SCHOOL,
+    )
+    expect(t(w, 'kirk-levels').findAll('a').map((c) => c.attributes('href'))).toEqual([
+      '/admin-sekolah/kirkpatrick/reaction',
+      '/admin-sekolah/kirkpatrick/learning',
+      '/admin-sekolah/kirkpatrick/behavior',
+      '/admin-sekolah/kirkpatrick/results',
+    ])
+    expect(w.text()).toContain('Lihat detail')
+    expect(has(w, 'kirk-comparison')).toBe(true)
   })
 
   it('still shows the chips of a normal mount with the same query', async () => {
@@ -312,6 +369,31 @@ describe('S1 alias with a forced scope (BUG-11)', () => {
       { schoolId: 8080, state: 'Johor' },
       expect.anything(),
     )
+  })
+})
+
+describe('AC-GUR-11-2 Guru Ringkasan', () => {
+  it('shows no "Perbandingan Sebelum & Selepas" panel and no "Penurunan" with showComparison off', async () => {
+    api.fetchKirkpatrickOverview.mockResolvedValue(
+      overview({
+        comparison: {
+          subtitle: 'Januari 2026 vs November 2026',
+          before: null,
+          after: null,
+          delta: { active: -2, accuracy: -73.3, answers: -3, champions: 0 },
+          sentences: ['Penurunan 73.3% dalam ketepatan jawapan.'],
+        },
+      }),
+    )
+    const { wrapper: w } = await open('/guru/kirkpatrick', { showComparison: false })
+    expect(has(w, 'kirk-comparison')).toBe(false)
+    expect(w.text()).not.toContain('Perbandingan Sebelum & Selepas')
+    expect(w.text()).not.toContain('Penurunan')
+  })
+
+  it('the school-admin and admin overviews keep the panel (default)', async () => {
+    const { wrapper: w } = await open('/admin/kirkpatrick')
+    expect(has(w, 'kirk-comparison')).toBe(true)
   })
 })
 

@@ -18,14 +18,37 @@ import { populationOf, schoolName, type Scope } from '../scope'
 import { historyRow } from './history'
 import { bandsOf, statsOf } from './shared'
 
-/** #2: the four T1 figures (global: ignores the scope, BR-M12-32). */
-export function reactionOf(): Reaction {
-  const a = feedbackRepo.aggregates()
+const MOOD_LABELS = ['Gembira', 'Okay', 'Sedih', 'Tertekan'] as const
+
+/**
+ * #2: the T1 figures. Platform-wide (BR-M12-32) unless the scope is one school (the school administrator): then the
+ * responses of that school's respondents. The mock feedback rows carry only NPS and satisfaction, so the means of
+ * "mudah diguna" / "relevan" are `null` and there are no written comments; there is no mood store yet, so the mood
+ * section is zeros (the page prints its empty state).
+ */
+export function reactionOf(scope?: Scope): Reaction {
+  const emptyScope = scope !== undefined && scope.schoolId === null && scope.schoolIds?.length === 0
+  const a = feedbackRepo.aggregates(emptyScope ? -1 : (scope?.schoolId ?? undefined))
   return {
     npsStudent: a.npsStudent,
     npsTeacher: a.npsTeacher,
     npsAdmin: a.npsAdmin,
     satisfaction: a.satisfaction,
+    responses: a.responses,
+    usability: null,
+    relevance: null,
+    promoters: a.promoters,
+    detractors: a.detractors,
+    writtenComments: 0,
+    latestComments: [],
+    mood: {
+      positivePct: null,
+      checkIns: 0,
+      engaged: 0,
+      pupils: scope === undefined ? 0 : populationOf(scope).t4t5,
+      last7Days: 0,
+      rows: MOOD_LABELS.map((mood) => ({ mood, count: 0, pct: null })),
+    },
   }
 }
 

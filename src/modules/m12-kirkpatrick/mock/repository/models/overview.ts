@@ -62,6 +62,16 @@ export function comparisonOf(scope: Scope, nowMs: number): Comparison {
   const current = monthKeyOf(nowMs)
   const before = panelOf(first, scope, lastDayOf(first))
   const after = panelOf(current, scope, dayKey(nowMs))
+  // No data on one side (a month without answers) is not a decline: no delta, only the insufficient-data sentence.
+  if (before.answers === 0 || after.answers === 0) {
+    return {
+      subtitle: `${monthLabel(first)} vs ${monthLabel(current)}`,
+      before,
+      after,
+      delta: null,
+      sentences: ['Data tidak mencukupi untuk perbandingan.'],
+    }
+  }
   const delta = {
     active: after.active - before.active,
     accuracy: round1(after.accuracy - before.accuracy),

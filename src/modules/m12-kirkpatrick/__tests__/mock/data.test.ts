@@ -86,12 +86,20 @@ describe('FeedbackResponse (DATA-M12-01, Q-M12-T1)', () => {
       npsTeacher: 6.5,
       npsAdmin: 9.6,
       nps: 8.3,
+      promoters: a.promoters,
+      detractors: a.detractors,
     })
-    expect(reactionOf()).toEqual({
+    // Promoters are NPS 9-10, detractors 0-6 (7-8 are passives).
+    expect(a.promoters).toBeGreaterThan(0)
+    expect(a.promoters + a.detractors).toBeLessThan(336)
+    expect(reactionOf()).toMatchObject({
       npsStudent: 8.4,
       npsTeacher: 6.5,
       npsAdmin: 9.6,
       satisfaction: 4.6,
+      responses: 336,
+      promoters: a.promoters,
+      detractors: a.detractors,
     })
   })
 
@@ -148,6 +156,8 @@ describe('FeedbackResponse (DATA-M12-01, Q-M12-T1)', () => {
       npsTeacher: 0,
       npsAdmin: 0,
       nps: 0,
+      promoters: 0,
+      detractors: 0,
     })
   })
 })
@@ -467,6 +477,15 @@ describe('Q-M12 populations and practice figures', () => {
       delta: null,
       sentences: ['Data tidak mencukupi untuk perbandingan.'],
     })
+  })
+
+  it('the current month has no answer: no delta and no "Penurunan"/"Peningkatan", only the not-enough-data sentence', () => {
+    const later = Date.parse('2027-03-10T10:00:00+08:00')
+    const c = comparisonOf(platform(), later)
+    expect(c.after).toMatchObject({ active: 0, answers: 0 })
+    expect(c.delta).toBeNull()
+    expect(c.sentences).toEqual(['Data tidak mencukupi untuk perbandingan.'])
+    expect(c.sentences.join(' ')).not.toMatch(/Penurunan|Peningkatan/)
   })
 
   it('Q-M12-HEAT: platform max 6,253 at Selasa 14:00, Isnin 06:00 944, sum 218,000; 8080 max 736 sum 12,008 43 zeros; 9167 4 cells', () => {

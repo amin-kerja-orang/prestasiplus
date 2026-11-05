@@ -1,10 +1,10 @@
 import type { RouteRecordRaw } from 'vue-router'
 
 import { rolesOf } from './access'
-import { STAFF_MOUNTS } from './mount'
+import { ALL_MOUNTS } from './mount'
 
 /** M12 route fragment: S5 T4 Hasil on `/admin/kirkpatrick/results` and the `/guru` twin (M12-T3). */
-const routes: RouteRecordRaw[] = STAFF_MOUNTS.map((mount): RouteRecordRaw => ({
+const routes: RouteRecordRaw[] = ALL_MOUNTS.map((mount): RouteRecordRaw => ({
   path: `${mount.prefix}/results`,
   name: `${mount.name}-results`,
   component: () => import('../pages/KirkpatrickResultsPage.vue'),

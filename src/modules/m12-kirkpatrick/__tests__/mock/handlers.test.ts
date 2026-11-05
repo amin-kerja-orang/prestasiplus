@@ -59,8 +59,8 @@ const SCOPED_GETS = [
   '/api/kirkpatrick/students/4664',
   '/api/kirkpatrick/filter-options',
 ] as const
-/** The only endpoints of the school administrator (INFERRED S1 alias, G4 F6). */
-const SA_GETS = ['/api/kirkpatrick/overview', '/api/kirkpatrick/filter-options'] as const
+/** The school administrator reaches every endpoint, forced to its own school (S6-T02, FR-AS-11-1). */
+const PUPIL_URL = `/api/kirkpatrick/students/${String(PELAJAR)}`
 const STAFF_GETS = [
   '/api/kirkpatrick/reaction',
   '/api/kirkpatrick/chain',
@@ -105,6 +105,11 @@ describe('access', () => {
     for (const url of [...SCOPED_GETS, ...STAFF_GETS]) {
       const a = await h.get(url, ADMIN)
       const t = await h.get(url, GURU)
+      // Student A is a pupil of school 8080: outside the teacher's school (SMK DEMO), so 404 (D-T02-2).
+      if (url.includes('/students/')) {
+        expect([url, a.status, t.status]).toEqual([url, 200, 404])
+        continue
+      }
       expect([url, a.status, t.status]).toEqual([url, 200, 200])
       if (!url.endsWith('export-pdf')) expect(t.body).toEqual(a.body)
     }
@@ -116,19 +121,15 @@ describe('access', () => {
     }
   })
 
-  it('the school administrator (INFERRED alias of S1) reaches #1 and #14 only (G4 F6); every other endpoint is 403', async () => {
-    for (const url of SA_GETS)
-      expect([url, (await h.get(url, ADMIN_SEKOLAH)).status]).toEqual([url, 200])
+  it('the school administrator gets 200 on every Kirkpatrick endpoint (own school forced, FR-AS-11-1)', async () => {
     for (const url of [
-      ...SCOPED_GETS.filter((u) => !SA_GETS.includes(u as never)),
+      ...SCOPED_GETS.filter((u) => !u.includes('/students/')),
+      PUPIL_URL,
       ...STAFF_GETS,
     ]) {
       const r = await h.get(url, ADMIN_SEKOLAH)
-      expect([url, r.status, errorOf(r).code]).toEqual([url, 403, 'FORBIDDEN'])
+      expect([url, r.status]).toEqual([url, 200])
     }
-    expect(
-      (await h.post('/api/kirkpatrick/interventions', ADMIN_SEKOLAH, INTERVENTION)).status,
-    ).toBe(403)
   })
 
   it('the unrouted paths are 404 (DV-M12-11: GET on /interventions/{id} and /create, not 405)', async () => {
@@ -242,12 +243,20 @@ describe('#1 overview, #3 learning, #4 behavior, #5 results, #14 filter options'
   })
 
   it('#2 reaction and #6 chain return the T1 figures and the platform chain; the scope is ignored', async () => {
-    expect(data(await h.get('/api/kirkpatrick/reaction?schoolId=8080', ADMIN))).toEqual({
+    const reaction = data(await h.get('/api/kirkpatrick/reaction?schoolId=8080', ADMIN))
+    expect(reaction).toMatchObject({
       npsStudent: 8.4,
       npsTeacher: 6.5,
       npsAdmin: 9.6,
       satisfaction: 4.6,
+      responses: 336,
+      usability: null,
+      relevance: null,
+      writtenComments: 0,
+      latestComments: [],
     })
+    expect(reaction.promoters + reaction.detractors).toBeLessThanOrEqual(336)
+    expect(reaction.mood).toMatchObject({ positivePct: null, checkIns: 0, engaged: 0, last7Days: 0 })
     const c = data(await h.get('/api/kirkpatrick/chain?schoolId=8080', ADMIN))
     expect(c.t1).toEqual({ nps: 8.3, satisfaction: 4.6, responses: 336 })
     expect(c.t3.active).toBe(946)
@@ -299,16 +308,33 @@ describe('school administrator scope (INFERRED, build-plan v1.12 R.1.3)', () => 
     })
   })
 
-  it('#3, #4, #5 and S8 are 403 for the school administrator even for its own school', async () => {
+  it('#2-#6 and S8 answer 200 for the school administrator, forced to the own school', async () => {
     await asSchoolAdmin(8080, async () => {
       for (const url of [
-        '/api/kirkpatrick/learning',
-        '/api/kirkpatrick/behavior?schoolId=8080',
+        '/api/kirkpatrick/reaction',
+        '/api/kirkpatrick/learning?schoolId=8082',
+        '/api/kirkpatrick/behavior?schoolId=8082',
         '/api/kirkpatrick/results',
+        '/api/kirkpatrick/chain',
+        '/api/kirkpatrick/export-pdf',
         '/api/kirkpatrick/students/4664',
       ]) {
-        expect([url, (await h.get(url, ADMIN_SEKOLAH)).status]).toEqual([url, 403])
+        expect([url, (await h.get(url, ADMIN_SEKOLAH)).status]).toEqual([url, 200])
       }
+      const l = data(await h.get('/api/kirkpatrick/learning?schoolId=8082', ADMIN_SEKOLAH))
+      expect(l.schools.map((s: { schoolId: number }) => s.schoolId)).toEqual([8080])
+      // A pupil of another school is 404 (not 403), identical to an unknown id.
+      const foreign = await h.get('/api/kirkpatrick/students/2013', ADMIN_SEKOLAH)
+      const unknown = await h.get('/api/kirkpatrick/students/987654321', ADMIN_SEKOLAH)
+      expect([foreign.status, errorOf(foreign).code]).toEqual([404, 'NOT_FOUND'])
+      expect(foreign.body).toEqual(unknown.body)
+    })
+  })
+
+  it('the reaction of the school administrator counts the responses of the own school only', async () => {
+    await asSchoolAdmin(987_654, async () => {
+      const r = data(await h.get('/api/kirkpatrick/reaction', ADMIN_SEKOLAH))
+      expect(r).toMatchObject({ responses: 0, satisfaction: 0, promoters: 0, detractors: 0 })
     })
   })
 
@@ -328,21 +354,32 @@ describe('school administrator scope (INFERRED, build-plan v1.12 R.1.3)', () => 
 // ---------------------------------------------------------------------------------------------
 
 describe('#10 student detail', () => {
-  it('Student A (4664) for the admin and the teacher', async () => {
-    for (const as of [ADMIN, GURU]) {
-      const s = data(await h.get('/api/kirkpatrick/students/4664', as))
-      expect(s).toMatchObject({
-        answers: 219,
-        accuracy: 73.1,
-        activeDays: 4,
-        streak: 1,
-        konsistensi: 22.5,
-      })
-      expect(s.student.name).toBe('Pelajar Demo 004664')
+  it('Student A (4664) for the admin; a teacher of another school gets 404', async () => {
+    const s = data(await h.get('/api/kirkpatrick/students/4664', ADMIN))
+    expect(s).toMatchObject({
+      answers: 219,
+      accuracy: 73.1,
+      activeDays: 4,
+      streak: 1,
+      konsistensi: 22.5,
+    })
+    expect(s.student.name).toBe('Pelajar Demo 004664')
+    const t = await h.get('/api/kirkpatrick/students/4664', GURU)
+    expect([t.status, errorOf(t).code]).toEqual([404, 'NOT_FOUND'])
+    expect((await h.get(PUPIL_URL, GURU)).status).toBe(200)
+  })
+
+  it('404 NOT_FOUND (one uniform answer) for a missing id and for a user that is not a student, for a teacher and a school administrator', async () => {
+    for (const as of [GURU, ADMIN_SEKOLAH]) {
+      const missing = await h.get('/api/kirkpatrick/students/987654321', as)
+      const notStudent = await h.get('/api/kirkpatrick/students/1', as)
+      expect([missing.status, notStudent.status]).toEqual([404, 404])
+      expect(errorOf(missing).code).toBe('NOT_FOUND')
+      expect(missing.body).toEqual(notStudent.body)
     }
   })
 
-  it('403 FORBIDDEN (one uniform answer) for a missing id and for a user that is not a student', async () => {
+  it('the admin keeps 403 FORBIDDEN (one uniform answer) for a missing id and for a user that is not a student', async () => {
     const missing = await h.get('/api/kirkpatrick/students/987654321', ADMIN)
     const notStudent = await h.get('/api/kirkpatrick/students/1', ADMIN)
     expect([missing.status, notStudent.status]).toEqual([403, 403])
@@ -425,7 +462,7 @@ describe('#8 / #9 interventions', () => {
 
     await h.post('/api/kirkpatrick/interventions', GURU, {
       ...INTERVENTION,
-      studentId: 4644,
+      studentId: PELAJAR,
       alertType: 'declining',
       beforeAccuracy: 40,
       afterAccuracy: 55.56,
@@ -544,6 +581,81 @@ describe('#8 / #9 interventions', () => {
     // A body that is not an object is a 422, never a crash.
     expect((await h.post('/api/kirkpatrick/interventions', ADMIN, [1, 2])).status).toBe(422)
     expect(data(await h.get('/api/kirkpatrick/interventions', ADMIN)).kpi.total).toBe(before)
+  })
+})
+
+describe('API-RPT-17 review ("Semak keputusan")', () => {
+  const TOO_EARLY = 'Semakan hanya boleh dibuat selepas 7 hari daripada tarikh tindakan.'
+  // The harness clock is 2026-09-25: 2026-09-19 is 6 days ago, 2026-09-18 is 7 days ago.
+  const record = async (as: number, actionDate: string, studentId = PELAJAR) =>
+    data<{ id: number }>(
+      await h.post('/api/kirkpatrick/interventions', as, { ...INTERVENTION, studentId, actionDate }),
+    ).id
+
+  it('the school administrator may record an intervention for a pupil of the own school; a foreign pupil is 404 and nothing is created (AC-AS-11-8)', async () => {
+    const total = async (as: number) =>
+      data(await h.get('/api/kirkpatrick/interventions', as)).kpi.total as number
+    const adminBefore = await total(ADMIN)
+    const saBefore = await total(ADMIN_SEKOLAH)
+    const foreign = await h.post('/api/kirkpatrick/interventions', ADMIN_SEKOLAH, INTERVENTION)
+    expect([foreign.status, errorOf(foreign).code]).toEqual([404, 'NOT_FOUND'])
+    expect(await total(ADMIN)).toBe(adminBefore)
+    const own = await h.post('/api/kirkpatrick/interventions', ADMIN_SEKOLAH, {
+      ...INTERVENTION,
+      studentId: PELAJAR,
+      alertType: 'other',
+    })
+    expect(own.status).toBe(201)
+    expect(data(own)).toMatchObject({ studentId: PELAJAR, alertType: 'other' })
+    // The teacher gets the same 404 for a pupil outside the school.
+    expect((await h.post('/api/kirkpatrick/interventions', GURU, INTERVENTION)).status).toBe(404)
+    // The school administrator reads only the interventions of the own school (4664 is at 8080); the admin reads all.
+    await h.post('/api/kirkpatrick/interventions', ADMIN, INTERVENTION)
+    expect(await total(ADMIN_SEKOLAH)).toBe(saBefore + 1)
+    expect(await total(ADMIN)).toBe(adminBefore + 2)
+  })
+
+  it('409 with the exact text 6 days after the action date; 200 and afterAccuracy written at 7 days', async () => {
+    const early = await record(GURU, '2026-09-19')
+    const r = await h.post(`/api/kirkpatrick/interventions/${String(early)}/review`, GURU)
+    expect([r.status, errorOf(r).code, errorOf(r).message]).toEqual([409, 'CONFLICT', TOO_EARLY])
+
+    const due = await record(GURU, '2026-09-18')
+    const ok = await h.post(`/api/kirkpatrick/interventions/${String(due)}/review`, GURU)
+    expect(ok.status).toBe(200)
+    expect(data(ok)).toMatchObject({ id: due, actionDate: '2026-09-18' })
+    expect(data(ok)).toHaveProperty('afterAccuracy')
+    const row = data(await h.get('/api/kirkpatrick/interventions', GURU)).rows.find(
+      (x: { id: number }) => x.id === due,
+    )
+    expect(row.afterAccuracy).toBe(data(ok).afterAccuracy)
+  })
+
+  it('writes the pooled accuracy of the 14 days from the action date (Student A has answers)', async () => {
+    const id = await record(ADMIN_SEKOLAH, '2026-09-01', PELAJAR)
+    const r = await h.post(`/api/kirkpatrick/interventions/${String(id)}/review`, ADMIN_SEKOLAH)
+    expect(r.status).toBe(200)
+    const after = data(r).afterAccuracy
+    expect(after === null || (after >= 0 && after <= 100)).toBe(true)
+  })
+
+  it('a teacher reviews only own records (404), the school administrator only pupils of the own school, the admin is 403', async () => {
+    const own = await record(ADMIN_SEKOLAH, '2026-09-01')
+    const url = `/api/kirkpatrick/interventions/${String(own)}/review`
+    expect((await h.post(url, GURU)).status).toBe(404)
+    expect((await h.post(url, ADMIN)).status).toBe(403)
+    const foreign = data<{ id: number }>(
+      await h.post('/api/kirkpatrick/interventions', ADMIN, { ...INTERVENTION, actionDate: '2026-09-01' }),
+    ).id
+    expect(
+      (await h.post(`/api/kirkpatrick/interventions/${String(foreign)}/review`, ADMIN_SEKOLAH)).status,
+    ).toBe(404)
+    expect((await h.post('/api/kirkpatrick/interventions/987654/review', GURU)).status).toBe(404)
+  })
+
+  it('401 without a session, 403 for the other roles', async () => {
+    expect((await h.post('/api/kirkpatrick/interventions/1/review', null)).status).toBe(401)
+    expect((await h.post('/api/kirkpatrick/interventions/1/review', PELAJAR)).status).toBe(403)
   })
 })
 

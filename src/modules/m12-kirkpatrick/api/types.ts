@@ -76,12 +76,42 @@ export interface Overview {
   bands: BandCount[]
 }
 
-/** #2 `GET /api/kirkpatrick/reaction` (S2; ignores the scope). */
+export type MoodLabel = 'Gembira' | 'Okay' | 'Sedih' | 'Tertekan'
+
+/** #2 `GET /api/kirkpatrick/reaction` (S2; follows the viewer's scope: the school administrator's own school). */
 export interface Reaction {
   npsStudent: number
   npsTeacher: number
   npsAdmin: number
+  /** Mean satisfaction (1-5) of the responses; meaningful only when `responses > 0`. */
   satisfaction: number
+  responses: number
+  /** Mean "mudah diguna" (1-5), `null` when no response carries it. */
+  usability: number | null
+  /** Mean "relevan" (1-5), `null` when no response carries it. */
+  relevance: number | null
+  /** NPS 9-10. */
+  promoters: number
+  /** NPS 0-6. */
+  detractors: number
+  writtenComments: number
+  /** Newest first, at most 10. */
+  latestComments: {
+    comment: string
+    nps: number | null
+    satisfaction: number | null
+    /** `YYYY-MM-DD`. */
+    date: string
+  }[]
+  mood: {
+    /** (Gembira + Okay) / check-ins, whole %; `null` without check-ins. */
+    positivePct: number | null
+    checkIns: number
+    engaged: number
+    pupils: number
+    last7Days: number
+    rows: { mood: MoodLabel; count: number; pct: number | null }[]
+  }
 }
 
 export type SubjectStatus = 'Mastered' | 'Developing' | 'Beginning'
@@ -255,7 +285,7 @@ export interface Chain {
   correlation: { bands: { label: string; n: number; acc: number }[]; r: number }
 }
 
-export type AlertType = 'mood' | 'inactive' | 'declining'
+export type AlertType = 'mood' | 'inactive' | 'declining' | 'other'
 export type Mood = 'happy' | 'okay' | 'sad' | 'stressed'
 export type InterventionStatus = 'Menunggu Semakan' | 'Meningkat' | 'Menurun' | null
 
@@ -287,6 +317,13 @@ export interface InterventionRow extends KirkpatrickIntervention {
 export interface InterventionList {
   kpi: { total: number; pending: number; up: number; down: number }
   rows: InterventionRow[]
+}
+
+/** `POST /api/kirkpatrick/interventions/:id/review` (API-RPT-17): the 14-day-after accuracy was written. */
+export interface InterventionReview {
+  id: WireId
+  actionDate: string
+  afterAccuracy: number | null
 }
 
 /** #9 `POST /api/kirkpatrick/interventions` body. */

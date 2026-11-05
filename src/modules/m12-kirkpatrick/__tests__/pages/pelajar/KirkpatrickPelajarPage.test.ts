@@ -303,6 +303,15 @@ describe('S8 access (AC-M12-03.4, 30.5)', () => {
     expect(has(w, 'pel-name')).toBe(false)
   })
 
+  it.each([4664, 99999999])('renders the 404 page in place for a pupil outside the scope, id %i (D-T02-2)', async (id) => {
+    api.fetchKirkpatrickStudent.mockRejectedValue(
+      new ApiError({ status: 404, code: 'NOT_FOUND', message: 'no' }),
+    )
+    const w = await open(id)
+    expect(useRouteOutcome().value).toBe(404)
+    expect(has(w, 'pel-name')).toBe(false)
+  })
+
   it('shows the error line on another failure', async () => {
     api.fetchKirkpatrickStudent.mockRejectedValue(new Error('boom'))
     const w = await open()

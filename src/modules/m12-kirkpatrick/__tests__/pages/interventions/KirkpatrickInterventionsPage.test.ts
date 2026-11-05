@@ -3,6 +3,7 @@ import { type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ApiError } from '@/api'
+import { clock } from '@/lib/time'
 import { setRouteOutcome } from '@/app/router/outcome'
 
 import type { InterventionList, InterventionRow } from '../../../api/types'
@@ -12,6 +13,7 @@ import { all, has, itemLabels, mountPage, pick, rowOf, select, squash, t, tiles 
 const api = vi.hoisted(() => ({
   fetchKirkpatrickInterventions: vi.fn(),
   createKirkpatrickIntervention: vi.fn(),
+  reviewKirkpatrickIntervention: vi.fn(),
 }))
 vi.mock('../../../api', () => api)
 
@@ -54,8 +56,10 @@ beforeEach(() => {
   setRouteOutcome(null)
   api.fetchKirkpatrickInterventions.mockResolvedValue(empty())
   api.createKirkpatrickIntervention.mockResolvedValue({})
+  api.reviewKirkpatrickIntervention.mockResolvedValue({})
 })
 afterEach(() => {
+  clock.setOffset(0)
   wrapper?.unmount()
   wrapper = undefined
 })
@@ -125,6 +129,7 @@ describe('S7 form panel (AC-M12-29.1, 29.2, 29.6)', () => {
       { value: 'mood', label: 'Mood / Kesejahteraan' },
       { value: 'inactive', label: 'Tidak Aktif' },
       { value: 'declining', label: 'Prestasi Menurun' },
+      { value: 'other', label: 'Lain-lain' },
     ])
     expect(select(w, 'alert_type').props('modelValue')).toBe('mood')
     expect(t(w, 'int-date').attributes('required')).toBeDefined()
@@ -261,6 +266,7 @@ describe('S7 list (AC-M12-28.2)', () => {
       'Ketepatan Sebelum (%)',
       'Ketepatan Selepas (%)',
       'Status',
+      'Semakan',
     ])
     const rows = all(w, 'int-row-student').map(rowOf)
     expect(rows).toHaveLength(2)
@@ -273,5 +279,76 @@ describe('S7 list (AC-M12-28.2)', () => {
     expect(rows[0]?.text()).toContain('Tidak Aktif')
     expect(has(w, 'int-empty')).toBe(false)
     expect(t(w, 'int-list').find('[data-ds="data-table"]').exists()).toBe(true)
+  })
+})
+
+describe('S7 "Semak keputusan" (AC-GUR-11-9)', () => {
+  const pending = (over: Partial<InterventionRow> = {}) =>
+    row({ id: 7, actionDate: '2026-09-25', beforeAccuracy: 40, afterAccuracy: null, ...over })
+  const list = (rows: InterventionRow[]): InterventionList => ({
+    kpi: { total: rows.length, pending: rows.length, up: 0, down: 0 },
+    rows,
+  })
+  const button = (w: VueWrapper) => t(w, 'int-row-review-btn')
+  const isDisabled = (w: VueWrapper) => button(w).attributes('disabled') !== undefined
+
+  it('is disabled 6 days after the action date and enabled at 7 days (Asia/Kuala_Lumpur calendar days)', async () => {
+    api.fetchKirkpatrickInterventions.mockResolvedValue(list([pending()]))
+    clock.setNow('2026-10-01T23:30:00+08:00')
+    const six = await open()
+    expect(button(six).text()).toBe('Semak keputusan')
+    expect(isDisabled(six)).toBe(true)
+    six.unmount()
+
+    clock.setNow('2026-10-02T00:05:00+08:00')
+    const seven = await open()
+    expect(isDisabled(seven)).toBe(false)
+  })
+
+  it('posts the review of the row and reloads the list; the row then reads "Ketepatan Sebelum 40% → Selepas 62%"', async () => {
+    clock.setNow('2026-10-05T10:00:00+08:00')
+    api.fetchKirkpatrickInterventions.mockResolvedValueOnce(list([pending()]))
+    const w = await open()
+    api.fetchKirkpatrickInterventions.mockResolvedValue(
+      list([pending({ afterAccuracy: 61.5, status: 'Meningkat' })]),
+    )
+    await button(w).trigger('click')
+    await vi.waitFor(() => expect(api.reviewKirkpatrickIntervention).toHaveBeenCalledWith(7))
+    await vi.waitFor(() => expect(has(w, 'int-row-result')).toBe(true))
+    expect(t(w, 'int-row-result').text()).toBe('Ketepatan Sebelum 40% → Selepas 62%')
+    expect(has(w, 'int-row-review-btn')).toBe(false)
+    expect(api.fetchKirkpatrickInterventions).toHaveBeenCalledTimes(2)
+  })
+
+  it('shows the server message inline on 409 and keeps the button', async () => {
+    clock.setNow('2026-10-05T10:00:00+08:00')
+    api.fetchKirkpatrickInterventions.mockResolvedValue(list([pending()]))
+    const text = 'Semakan hanya boleh dibuat selepas 7 hari daripada tarikh tindakan.'
+    api.reviewKirkpatrickIntervention.mockRejectedValue(
+      new ApiError({ status: 409, code: 'CONFLICT', message: text }),
+    )
+    const w = await open()
+    await button(w).trigger('click')
+    await vi.waitFor(() => expect(has(w, 'int-row-review-error')).toBe(true))
+    expect(t(w, 'int-row-review-error').text()).toBe(text)
+    expect(t(w, 'int-row-review-error').attributes('role')).toBe('alert')
+    expect(has(w, 'int-row-review-btn')).toBe(true)
+    expect(api.fetchKirkpatrickInterventions).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows the result without a button for a row that already has afterAccuracy and "Menunggu Semakan" while it has none', async () => {
+    clock.setNow('2026-10-05T10:00:00+08:00')
+    api.fetchKirkpatrickInterventions.mockResolvedValue(
+      list([
+        pending({ id: 2, afterAccuracy: 55.5, status: 'Meningkat' }),
+        pending({ id: 1 }),
+      ]),
+    )
+    const w = await open()
+    expect(all(w, 'int-row-result').map((e) => e.text())).toEqual([
+      'Ketepatan Sebelum 40% → Selepas 56%',
+    ])
+    expect(all(w, 'int-row-review-btn')).toHaveLength(1)
+    expect(all(w, 'int-row-status').map((e) => e.text())).toEqual(['Meningkat', 'Menunggu Semakan'])
   })
 })
