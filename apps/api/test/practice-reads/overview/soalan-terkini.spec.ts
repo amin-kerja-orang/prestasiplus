@@ -112,7 +112,7 @@ describe('figure thumbnail (FR-MUR-2-8)', () => {
     const rows = await recent()
     const target = rows[0]?.id as string
     expect(rows.every((r) => r.figureThumbUrl === null)).toBe(true)
-    const token = 'FigThumbTokenAbCdEf01'
+    const token = 'FigThumbTokenAbCdEf012'
     const file = (await t.db.query<{ id: string }>(`insert into files (public_id, purpose, mime, size_bytes, sha256, storage_key) values ($1, 'question_image', 'image/png', 10, repeat('b', 64), 'question-image/fig.png') returning id::text id`, [token]))[0]?.id as string
     const stimulus = (await t.db.query<{ id: string }>(`insert into stimuli (kind, label, alt_text, asset_file_id) values ('image', 'Rajah 1', 'Rajah', $1::bigint) returning id::text id`, [file]))[0]?.id as string
     const version = (await t.db.query<{ id: string }>(`select v.id::text id from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no where q.id = $1::bigint`, [target]))[0]?.id as string
