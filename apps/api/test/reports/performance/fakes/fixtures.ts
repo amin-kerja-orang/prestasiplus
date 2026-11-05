@@ -14,6 +14,7 @@ import {
 import { InMemoryAnswerFacts } from './in-memory-answer-facts'
 import { InMemoryBijakAggregate } from './in-memory-bijak-aggregate'
 import { InMemoryClasses } from './in-memory-classes'
+import { InMemoryPupilRoster } from './in-memory-pupil-roster'
 import { InMemoryDirectory } from './in-memory-directory'
 import { InMemoryGamification } from './in-memory-gamification'
 import { InMemoryHeadcountFacts } from './in-memory-headcount-facts'
@@ -116,7 +117,7 @@ export function world(): World {
     facts,
     ports,
     clock,
-    analytics: new AnalyticsService(ports, directory, clock),
+    analytics: new AnalyticsService(ports, directory, clock, new InMemoryPupilRoster(directory)),
     student: new StudentPerformanceService(ports, directory, clock, facts),
     school: new SchoolPerformanceService(ports, directory, clock, facts),
     klass: new ClassPerformanceService(ports, directory, clock, facts),

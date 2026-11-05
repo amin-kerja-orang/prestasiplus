@@ -34,6 +34,10 @@ export class InMemoryDirectory implements DirectoryPort {
     return [...this.schoolRows.values()]
   }
 
+  allPupilIds(): string[] {
+    return [...this.pupils.keys()]
+  }
+
   async users(ids: readonly string[]): Promise<Map<string, PupilRef>> {
     const out = new Map<string, PupilRef>()
     for (const id of ids) {

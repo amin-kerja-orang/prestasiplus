@@ -588,6 +588,36 @@ describe('Analitik', () => {
       })
     })
 
+    it('R-2: the band is applied to the whole-number accuracy rounded half up from the UNROUNDED percentage (39.46 is 39 Kritikal; 39.5 is 40 Tinggi)', async () => {
+      w.directory.addPupil({ id: '61', name: 'B61 Contoh', schoolId: 's1' }).addPupil({ id: '62', name: 'B62 Contoh', schoolId: 's1' })
+      w.classes.add({ id: '62c', schoolId: 's1', teacherId: 't9' }, ['61', '62'])
+      put('61', 5000, 1973) // 39.46%: shown 39.5 at one decimal, but the band uses 39.46 -> 39
+      put('62', 200, 79) // 39.5% -> 40
+      const r = await w.analytics.classes(ctxOf('teacher', 't9'), {})
+      expect(r.rows.map((x) => [x.userId, x.accuracy, x.riskLevel])).toEqual([
+        ['61', 39.5, 'critical'],
+        ['62', 39.5, 'high'],
+      ])
+    })
+
+    it('R-2: the roster is the XS-1 pupils; a suspended pupil and a non-Tingkatan 1-5 member are out of the cards and the table', async () => {
+      w.directory
+        .addPupil({ id: '71', name: 'X71 Contoh', schoolId: 's1' })
+        .addPupil({ id: '72', name: 'X72 Contoh', schoolId: 's1', isSuspended: true })
+        .addPupil({ id: '73', name: 'X73 Contoh', schoolId: 's1', grade: 12, levelSlug: 't6' })
+        .addPupil({ id: '74', name: 'X74 Contoh', schoolId: 's1', grade: 6, levelSlug: null })
+      w.classes.add({ id: '71c', schoolId: 's1', teacherId: 't10' }, ['71', '72', '73', '74'])
+      put('71', 10, 9)
+      put('72', 10, 1) // would be Pelajar Berisiko if counted
+      put('73', 10, 1)
+      put('74', 10, 1)
+      for (const [role, id] of [['teacher', 't10'], ['school_admin', 'sa1']] as const) {
+        const r = await w.analytics.classes(ctxOf(role, id), role === 'school_admin' ? { classroomId: '71c' } : {})
+        expect(r.rows.map((x) => x.userId)).toEqual(['71'])
+        expect(r.summary).toEqual({ students: 1, accuracy: 90, atRisk: 0, good: 1 })
+      }
+    })
+
     describe('trend: last 7 days against the 7 before (strict +/-3 points), BARU for first-week activity', () => {
       const trendOf = async (userId: string) => (await w.analytics.classes(ctxOf('teacher', 't7'), {})).rows.find((x) => x.userId === userId)?.trend
       beforeEach(() => {

@@ -5,10 +5,10 @@ import { CLOCK, type Clock } from '../../../../db/clock'
 import { ANALYTICS_CLASS_ROLES, canOpenClassAnalysis, viewerSchoolId } from '../domain/access-policy'
 import { ANALYTICS_TREND_DAYS, COUNTED_MODES, isLegacySubject } from '../domain/constants'
 import { figuresOf } from '../domain/reduce'
-import { accuracyOf, analyticsTrendOf, compareIds, parseRiskLevel, projection, riskOfWholePercent, trendOf, type ClassRiskLevel, type Trend } from '../domain/rules'
+import { accuracyOf, analyticsTrendOf, compareIds, parseRiskLevel, pct, projection, riskOfWholePercent, trendOf, type ClassRiskLevel, type Trend } from '../domain/rules'
 import { inWindow, startOfDaysAgo, trendWindows } from '../domain/windows'
 import { startOfMytDay } from '../../../../db/clock'
-import { DIRECTORY_PORT, PerformancePorts, type AnswerFactRow, type BijakSittingFact, type ClassInfo, type DirectoryPort } from '../ports'
+import { DIRECTORY_PORT, PUPIL_ROSTER_PORT, PerformancePorts, type AnswerFactRow, type BijakSittingFact, type ClassInfo, type DirectoryPort, type PupilRosterPort } from '../ports'
 import { groupBy } from './support'
 import type { Ctx, PerformanceAnalytics, PerformanceClassAnalytics, PerformanceClassAnalyticsQuery } from './types'
 
@@ -46,6 +46,7 @@ export class AnalyticsService {
     protected readonly ports: PerformancePorts,
     @Inject(DIRECTORY_PORT) protected readonly directory: DirectoryPort,
     @Inject(CLOCK) protected readonly clock: Clock,
+    @Inject(PUPIL_ROSTER_PORT) protected readonly roster: PupilRosterPort,
   ) {}
 
   async me(ctx: Ctx): Promise<PerformanceAnalytics> {
@@ -108,17 +109,20 @@ export class AnalyticsService {
     }
     const selected = { classroomId: query.classroomId ?? null, subjectId: query.subjectId ?? null, riskLevel }
 
-    // Roster: active pupils enrolled in the scope classes, each once; pupils with no answers are part of it.
+    // Roster: the XS-1 pupils (active, not suspended, Tingkatan 1-5; S6-T03 `XsQueries.pupils`) of the viewer's scope, intersected with
+    // the members of the scope classes, each once; pupils with no answers are part of it.
     const membersByClass = scope.length === 0 ? new Map<string, string[]>() : await this.ports.classes.membersOf(scope.map((c) => c.id))
     const classNamesOf = new Map<string, string[]>()
     for (const c of scope) {
       for (const id of membersByClass.get(c.id) ?? []) classNamesOf.set(id, [...(classNamesOf.get(id) ?? []), c.name])
     }
+    const xsPupils = new Set<string>()
+    if (classNamesOf.size > 0) {
+      const scopes = ctx.role === 'teacher' ? [{ kind: 'teacher' as const, teacherId: ctx.userId }] : [...new Set(scope.map((c) => c.schoolId))].map((schoolId) => ({ kind: 'school' as const, schoolId }))
+      for (const s of scopes) for (const id of await this.roster.xsPupilIds(s)) xsPupils.add(id)
+    }
     const users = classNamesOf.size === 0 ? new Map() : await this.directory.users([...classNamesOf.keys()])
-    const roster = [...classNamesOf.keys()].filter((id) => {
-      const u = users.get(id)
-      return u !== undefined && u.isActive && u.isStudent
-    })
+    const roster = [...classNamesOf.keys()].filter((id) => xsPupils.has(id) && users.has(id))
     if (roster.length === 0) return { options: { classes, subjects, selected }, summary: null, rows: [] }
 
     // Three set-based reads of the one answer store: all time, this week, the week before (all modes, test rows never count).
@@ -150,6 +154,8 @@ export class AnalyticsService {
       const t = all.get(userId) ?? none
       const hasAnswers = t.attempts > 0
       const accuracy = hasAnswers ? accuracyOf(t.correct, t.attempts) : null
+      // The band is applied to the whole-number accuracy rounded half up from the UNROUNDED percentage (never from the 1-decimal one).
+      const rawPercent = hasAnswers ? Math.min(pct(t.correct, t.attempts), 100) : null
       return {
         userId,
         name: users.get(userId)?.name ?? '',
@@ -158,7 +164,7 @@ export class AnalyticsService {
         answered: t.attempts,
         trend: hasAnswers ? analyticsTrendOf(recentBy.get(userId) ?? none, beforeBy.get(userId) ?? none) : ('stable' as const),
         projection: accuracy === null ? null : projection(accuracy),
-        riskLevel: (accuracy === null ? 'none' : riskOfWholePercent(accuracy)) as ClassRiskLevel,
+        riskLevel: (rawPercent === null ? 'none' : riskOfWholePercent(rawPercent)) as ClassRiskLevel,
         classes: isSchoolAdmin ? (classNamesOf.get(userId) ?? []) : [],
       }
     })

@@ -75,6 +75,9 @@ export function classAnalytics(input: ClassAnalyticsInput): ClassAnalytics {
     profilesOf.set(c.classId, profiles)
     for (const p of profiles) addTo(p.userId, c.name)
   }
+  // The API takes the roster from XS-1 (active, not suspended, Tingkatan 1-5). The mock cannot mirror the grade rule: the observed class 4
+  // roster (51 pupils, anchors) is made of placeholder accounts whose seeded grades are arbitrary (Darjah 1-5 among them), and seeds
+  // mirror observation. The mock has no suspension flag either. Only the inactive accounts are out.
   const roster = [...classNames.keys()].filter((id) => users.get(id)?.isActive !== false)
   if (roster.length === 0) return empty()
 
@@ -101,6 +104,8 @@ export function classAnalytics(input: ClassAnalyticsInput): ClassAnalytics {
     const t = pooled.get(userId)
     const hasAnswers = t !== undefined && t.answered > 0
     const accuracy = hasAnswers ? round((t.correct / t.answered) * 100, 1) : null
+    // The band uses the whole-number accuracy rounded half up from the UNROUNDED percentage, never from the 1-decimal one.
+    const rawPercent = hasAnswers ? Math.min((t.correct / t.answered) * 100, 100) : null
     return {
       userId,
       name: users.get(userId)?.name ?? `Murid ${String(userId)}`,
@@ -109,7 +114,7 @@ export function classAnalytics(input: ClassAnalyticsInput): ClassAnalytics {
       answered: hasAnswers ? t.answered : 0,
       trend: hasAnswers ? t.trend : 'stable',
       projection: accuracy === null ? null : projection(accuracy),
-      riskLevel: accuracy === null ? 'none' : riskOfWholePercent(accuracy),
+      riskLevel: rawPercent === null ? 'none' : riskOfWholePercent(rawPercent),
       classes: input.withClassNames ? (classNames.get(userId) ?? []) : [],
     }
   })
