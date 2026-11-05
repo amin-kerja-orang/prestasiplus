@@ -5103,9 +5103,7 @@
       "label": "Sekolah Bersaing",
       "route": "/sekolah-bersaing",
       "roles": [
-        "student",
         "admin",
-        "teacher",
         "school_admin"
       ],
       "status": "canonical",
@@ -6090,7 +6088,6 @@
       "label": "Sekolah Bersaing",
       "route": "/sekolah-bersaing",
       "roles": [
-        "student",
         "admin"
       ],
       "status": "canonical",
@@ -10322,6 +10319,16 @@
       "sector": "S7",
       "file": "apps/api/prisma/schema/gamification.prisma",
       "approved_by_card": null
+    },
+    {
+      "name": "RewardSetting",
+      "table": "reward_settings",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/gamification.prisma",
+      "approved_by_card": "S7-T05",
+      "dm": "DM-48",
+      "note": "Singleton Kawalan Reward settings (DM-48): the one source of the coin rate; read by the S5-T15 helper coinsPerCorrect()."
     },
     {
       "name": "MysteryBoxOpening",
