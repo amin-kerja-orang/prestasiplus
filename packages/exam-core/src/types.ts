@@ -570,6 +570,8 @@ export interface PaperCover extends PaperSummary {
     compulsory: boolean
     chooseN?: number
   }[]
+  /** PO decision 12 (API-BIJAK-02): a new sitting would be refused. */
+  unavailable?: boolean
 }
 
 export interface Shortage {
