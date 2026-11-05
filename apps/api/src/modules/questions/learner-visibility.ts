@@ -45,6 +45,32 @@ export const NOT_SOURCE_TAKEN_DOWN_SQL = Prisma.sql`NOT EXISTS (SELECT 1 FROM so
 export const NOT_FLAGGED_SQL = Prisma.sql`(v.stimulus_flag IS NULL OR v.stimulus_flag = 'stem_duplicated' OR v.flag_dismissed_at IS NOT NULL)`
 
 /**
+ * `true` when every stimulus the question shows can be shown: a picture kind has its file, a table has a grid, a file or a pipe table in the
+ * body, a passage has text, and the version carries no `legacy_image_unresolved` import hold. `stimuli` is a statement selecting `sid`.
+ */
+export const mediaResolvedSql = (stimuli: Prisma.Sql, importIssues: Prisma.Sql): Prisma.Sql => Prisma.sql`(
+  NOT EXISTS (
+    SELECT 1 FROM (${stimuli}) l JOIN stimuli s ON s.id = l.sid
+     WHERE (s.kind IN ('image', 'diagram', 'map', 'infographic', 'graph') AND s.asset_file_id IS NULL)
+        OR (s.kind = 'table' AND s.table_data IS NULL AND s.asset_file_id IS NULL AND (s.body_ms IS NULL OR s.body_ms NOT LIKE '%|%'))
+        OR (s.kind = 'passage' AND btrim(coalesce(s.body_ms, '')) = '' AND btrim(coalesce(s.body_en, '')) = '')
+  )
+  AND NOT (coalesce(${importIssues}, '[]'::jsonb) @> '[{"code": "legacy_image_unresolved"}]'::jsonb)
+)`
+
+/** Every stimulus a version shows (own links, part links, its group's); aliases `v`, `q`. Selects `sid`. */
+export const VERSION_STIMULI_SQL = Prisma.sql`SELECT vs.stimulus_id AS sid FROM question_version_stimuli vs WHERE vs.question_version_id = v.id
+               UNION SELECT p.stimulus_id FROM question_parts p WHERE p.question_version_id = v.id AND p.stimulus_id IS NOT NULL
+               UNION SELECT gs.stimulus_id FROM stimulus_group_stimuli gs WHERE gs.group_id = q.group_id`
+
+/**
+ * FR-X1-4f (S1-T06): the pupil-serving form of `mediaResolvedSql` over the LIVE version `v` of question `q`. A question whose own stimulus has no file is
+ * not served; a question of a stimulus group is not served when ANY stimulus of the group lacks its file (the group's stimuli are in
+ * `VERSION_STIMULI_SQL`, so every member of the group drops together: the complete-group rule). Written once, ANDed wherever `NOT_FLAGGED_SQL` is.
+ */
+export const MEDIA_RESOLVED_SQL = mediaResolvedSql(VERSION_STIMULI_SQL, Prisma.sql`v.import_issues`)
+
+/**
  * S1-T07 (lead decision on #424): a question is served only when every LEAF of its live version has an `answer_keys` row (a key for an MCQ, a scheme for any
  * other mode). Without it the leaf cannot be marked and the stored part tree does not parse (`StoredKeyError`). Alias `v`. JS twin: `keyReasons` in
  * serving/rules.ts (`no_key` for an MCQ leaf, `no_scheme` for any other), so the indicator and the draw agree (D91).
@@ -65,4 +91,4 @@ const OFFERED_LIST = OFFERED_LEVEL_CODES.map((c) => `'${c.replaceAll("'", '')}'`
 /** R1-T08 follow-up (REQ-B-013): the question's subject is active (a deactivated subject offers no question to pupils or to the paper builder). */
 export const ACTIVE_SUBJECT_SQL = Prisma.sql`EXISTS (SELECT 1 FROM subjects sj WHERE sj.id = v.subject_id AND sj.is_active)`
 
-export const SPM_SERVABLE_SQL = Prisma.sql`(${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_FLAGGED_SQL} AND ${ALL_LEAVES_KEYED_SQL} AND ${NOT_PKSK_SQL} AND EXISTS (SELECT 1 FROM education_levels ol WHERE ol.id = v.education_level_id AND ol.code IN (${Prisma.raw(OFFERED_LIST)})) AND EXISTS (SELECT 1 FROM subjects sj WHERE sj.id = v.subject_id AND sj.is_active) AND EXISTS (SELECT 1 FROM subject_levels sl WHERE sl.subject_id = v.subject_id AND sl.education_level_id = v.education_level_id))`
+export const SPM_SERVABLE_SQL = Prisma.sql`(${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_FLAGGED_SQL} AND ${ALL_LEAVES_KEYED_SQL} AND ${MEDIA_RESOLVED_SQL} AND ${NOT_PKSK_SQL} AND EXISTS (SELECT 1 FROM education_levels ol WHERE ol.id = v.education_level_id AND ol.code IN (${Prisma.raw(OFFERED_LIST)})) AND EXISTS (SELECT 1 FROM subjects sj WHERE sj.id = v.subject_id AND sj.is_active) AND EXISTS (SELECT 1 FROM subject_levels sl WHERE sl.subject_id = v.subject_id AND sl.education_level_id = v.education_level_id))`
