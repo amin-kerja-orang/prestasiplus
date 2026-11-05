@@ -222,7 +222,6 @@ export const PROD_ENV = {
   SESSION_SECRET: 'prod-secret-0123456789abcdef0123456789',
   IC_HASH_KEY: 'prod-ic-key-0123456789abcdef0123456789ab',
   FILE_STORAGE_DIR: join(tmpdir(), 'pp-account-test-files'),
-  PUPIL_DEFAULT_PASSWORD: 'z'.repeat(8),
 } as const
 
 export const REGISTER_STUDENT = {

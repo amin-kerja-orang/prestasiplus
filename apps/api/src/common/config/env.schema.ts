@@ -81,7 +81,7 @@ export const EnvSchema = z.object({
   THROTTLE_SCHOOL_ADMIN_EXPORT_PER_MINUTE: z.coerce.number().int().min(1).default(5),
   // BE-05 (users): HMAC key of the IC number hash. Unset: SESSION_SECRET is used (required in production). Rotating it breaks IC lookups until every ic_hash is recomputed.
   IC_HASH_KEY: z.preprocess((v) => (v === '' ? undefined : v), z.string().min(16).optional()),
-  // S6-T10 (FR-GUR-41-3, FR-GUR-8-7): default password of a pupil a teacher creates. No default value; required in production; never logged or documented.
+  // S6-T10 (FR-GUR-41-3, FR-GUR-8-7): default password of a pupil a teacher creates. No default value; NOT required at boot (Cipta Pelajar answers 500 while it is unset); never logged or documented.
   PUPIL_DEFAULT_PASSWORD: z.preprocess((v) => (v === '' ? undefined : v), z.string().min(8).optional()),
   /** BE-24: extra origins (comma separated, e.g. https://app.example) whose /api/files/<token> URLs an article or banner image may use, besides the API's own origin. */
   PUBLIC_ORIGINS: z.string().optional(),
@@ -308,9 +308,6 @@ function withSessionSecret(env: Env): Env {
   const dir = env.FILE_STORAGE_DIR
   if (!dir || !isAbsolute(dir)) {
     throw new Error('Invalid environment configuration. FILE_STORAGE_DIR: required in production and must be an absolute path')
-  }
-  if (!env.PUPIL_DEFAULT_PASSWORD) {
-    throw new Error('Invalid environment configuration. PUPIL_DEFAULT_PASSWORD: required in production (at least 8 characters)')
   }
   return env
 }

@@ -11,7 +11,7 @@ const VALID = { NODE_ENV: 'test', PORT: '3000', LOG_LEVEL: 'info', DATABASE_URL:
 describe('env validation', () => {
   it('accepts a valid environment and applies defaults', () => {
     expect(
-      loadEnv({ NODE_ENV: 'production', DATABASE_URL: DB_URL, SESSION_SECRET: 'x'.repeat(32), IC_HASH_KEY: 'i'.repeat(32), FILE_STORAGE_DIR: '/var/lib/pretasiplus/files', PUPIL_DEFAULT_PASSWORD: 'z'.repeat(8) }),
+      loadEnv({ NODE_ENV: 'production', DATABASE_URL: DB_URL, SESSION_SECRET: 'x'.repeat(32), IC_HASH_KEY: 'i'.repeat(32), FILE_STORAGE_DIR: '/var/lib/pretasiplus/files' }),
     ).toEqual({
       NODE_ENV: 'production',
       PORT: 3000,
@@ -19,7 +19,6 @@ describe('env validation', () => {
       DATABASE_URL: DB_URL,
       SESSION_SECRET: 'x'.repeat(32),
       IC_HASH_KEY: 'i'.repeat(32),
-      PUPIL_DEFAULT_PASSWORD: 'z'.repeat(8),
       FILE_STORAGE_DIR: '/var/lib/pretasiplus/files',
       TRUST_PROXY_HOPS: 0,
       SESSION_REMEMBER_DAYS: 30,
@@ -126,18 +125,17 @@ describe('env validation', () => {
     expect(() => loadEnv(prod)).toThrow(/IC_HASH_KEY/)
     expect(() => loadEnv({ ...prod, IC_HASH_KEY: 'k'.repeat(31) })).toThrow(/IC_HASH_KEY/)
     expect(() => loadEnv({ ...prod, IC_HASH_KEY: prod.SESSION_SECRET })).toThrow(/IC_HASH_KEY/)
-    expect(loadEnv({ ...prod, FILE_STORAGE_DIR: '/data/files', IC_HASH_KEY: 'k'.repeat(32), PUPIL_DEFAULT_PASSWORD: 'z'.repeat(8) }).IC_HASH_KEY).toBe('k'.repeat(32))
+    expect(loadEnv({ ...prod, FILE_STORAGE_DIR: '/data/files', IC_HASH_KEY: 'k'.repeat(32) }).IC_HASH_KEY).toBe('k'.repeat(32))
     expect(loadEnv({ ...VALID }).IC_HASH_KEY).toBeUndefined()
     expect(loadEnv({ ...VALID, IC_HASH_KEY: '' }).IC_HASH_KEY).toBeUndefined()
     expect(() => loadEnv({ ...VALID, IC_HASH_KEY: 'short' })).toThrow(/IC_HASH_KEY/)
   })
 
-  it('requires PUPIL_DEFAULT_PASSWORD in production (min 8 characters); optional elsewhere', () => {
+  it('PUPIL_DEFAULT_PASSWORD is optional everywhere (also in production), min 8 when set, empty is unset', () => {
     const prod = { NODE_ENV: 'production', DATABASE_URL: DB_URL, SESSION_SECRET: 'p'.repeat(40), IC_HASH_KEY: 'k'.repeat(32), FILE_STORAGE_DIR: '/data/files' }
-    expect(() => loadEnv(prod)).toThrow(/PUPIL_DEFAULT_PASSWORD/)
+    expect(loadEnv(prod).PUPIL_DEFAULT_PASSWORD).toBeUndefined()
     expect(() => loadEnv({ ...prod, PUPIL_DEFAULT_PASSWORD: 'short' })).toThrow(/PUPIL_DEFAULT_PASSWORD/)
     expect(loadEnv({ ...prod, PUPIL_DEFAULT_PASSWORD: 'z'.repeat(8) }).PUPIL_DEFAULT_PASSWORD).toBe('z'.repeat(8))
-    expect(loadEnv({ ...VALID }).PUPIL_DEFAULT_PASSWORD).toBeUndefined()
     expect(loadEnv({ ...VALID, PUPIL_DEFAULT_PASSWORD: '' }).PUPIL_DEFAULT_PASSWORD).toBeUndefined()
   })
 
