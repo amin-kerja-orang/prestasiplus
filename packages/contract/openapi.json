@@ -67658,7 +67658,8 @@
           "count": {
             "type": "integer",
             "minimum": 1,
-            "description": "S3-T02 `Bilangan soalan`: the verdict is the one of a set of this size, scaled as Jana set does. Omitted = the contract total."
+            "maximum": 100,
+            "description": "S3-T02 `Bilangan soalan` (1 to 100): the verdict is the one of a set of this size, scaled as Jana set does. Omitted = the contract total."
           }
         },
         "required": [
@@ -69037,7 +69038,8 @@
           "count": {
             "type": "integer",
             "minimum": 1,
-            "description": "`Bilangan soalan`, from 1 to the contract total, default the contract total. A smaller count scales the contract sections by largest remainder (ties to the earlier section) and never splits a stimulus group (FR-ADM-Q13.2, PO decision item 5). Above the total: 422 `fields.count`."
+            "maximum": 100,
+            "description": "`Bilangan soalan`, from 1 to 100 and at most the contract total, default the contract total (omitted when the contract total is above 100). A smaller count scales the contract sections by largest remainder (ties to the earlier section) and never splits a stimulus group (FR-ADM-Q13.2, PO decision item 5). Above the total: 422 `fields.count`."
           },
           "levelScope": {
             "type": "string",
@@ -116763,10 +116765,11 @@
             "schema": {
               "type": "integer",
               "minimum": 1,
-              "description": "S3-T02 `Bilangan soalan`: the verdict is the one of a set of this size, scaled as Jana set does. Omitted = the contract total."
+              "maximum": 100,
+              "description": "S3-T02 `Bilangan soalan` (1 to 100): the verdict is the one of a set of this size, scaled as Jana set does. Omitted = the contract total."
             },
             "required": false,
-            "description": "S3-T02 `Bilangan soalan`: the verdict is the one of a set of this size, scaled as Jana set does. Omitted = the contract total.",
+            "description": "S3-T02 `Bilangan soalan` (1 to 100): the verdict is the one of a set of this size, scaled as Jana set does. Omitted = the contract total.",
             "name": "count",
             "in": "query"
           }

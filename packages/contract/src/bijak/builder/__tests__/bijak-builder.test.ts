@@ -54,6 +54,7 @@ import {
   bijakDefaultLevelScope,
   bijakLevelScopeAllows,
   bijakNegeriOptions,
+  bijakNegeriSlug,
 } from '../schema'
 
 /* Fixtures are shaped like the data of the prototype paper builder (m28-bijak-spm at 9af43134;
@@ -1210,6 +1211,7 @@ describe('S3-T02 One Set Builder', () => {
   it('the Jana set preview takes arrays and a count', () => {
     expect(BijakBuilderPoolPreviewQuerySchema.parse({ subject: 'MAT', kertas: '2', years: '2025', negeri: ['Johor'], count: '10' })).toEqual({ subject: 'MAT', kertas: 2, years: [2025], negeri: ['Johor'], count: 10 })
     expect(BijakBuilderPoolPreviewQuerySchema.parse({ subject: 'MAT', kertas: '2', years: ['2025', '2024'] }).years).toEqual([2025, 2024])
+    expect(BijakBuilderPoolPreviewQuerySchema.safeParse({ subject: 'MAT', kertas: '2', count: '101' }).success).toBe(false)
   })
 
   it('the rule N carries "Nombor N tidak sah."', () => {
@@ -1233,6 +1235,11 @@ describe('S3-T02 One Set Builder', () => {
 
   it('Negeri options: values present, one per value ignoring case, list order, unknown values last', () => {
     expect(bijakNegeriOptions(['SBP', 'kedah', ' Johor ', 'Kedah', 'Zon Timur', 'WP Labuan', '  '])).toEqual(['Johor', 'Kedah', 'WP Labuan', 'SBP', 'Zon Timur'])
+  })
+
+  it('a stored slug and its label are one Negeri value', () => {
+    expect(bijakNegeriSlug('negeri-sembilan')).toBe(bijakNegeriSlug(' Negeri  Sembilan '))
+    expect(bijakNegeriOptions(['negeri-sembilan', 'Negeri Sembilan', 'wp-kuala-lumpur'])).toEqual(['Negeri Sembilan', 'WP Kuala Lumpur'])
   })
 
   it('a placed question carries servable; the paper and the summary carry levelScope', () => {

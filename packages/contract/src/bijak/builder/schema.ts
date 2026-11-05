@@ -358,9 +358,12 @@ export const BIJAK_NEGERI_ORDER = [
   'Selangor', 'Terengganu', 'WP Kuala Lumpur', 'WP Labuan', 'WP Putrajaya', 'MRSM', 'SBP', 'SABK', 'SMKA', 'SPM(U)', 'PPD',
 ] as const
 
-/** `values` as filter options: trimmed, one per value ignoring case, ordered by `BIJAK_NEGERI_ORDER`. */
+/** The one comparison of a Negeri value (OPT-NEGERI-KERTAS stores the lower-case slug): `WP Kuala Lumpur`, `wp kuala lumpur` and `wp-kuala-lumpur` are the same value. */
+export const bijakNegeriSlug = (value: string): string => value.trim().toLowerCase().replace(/[\s_-]+/g, '-')
+
+/** `values` as filter options: trimmed, one per slug, ordered by `BIJAK_NEGERI_ORDER`. */
 export function bijakNegeriOptions(values: readonly string[]): string[] {
-  const slug = (v: string): string => v.trim().toLowerCase().replace(/\s+/g, '-')
+  const slug = bijakNegeriSlug
   const rank = new Map<string, number>(BIJAK_NEGERI_ORDER.map((v, i) => [slug(v), i]))
   const seen = new Map<string, string>()
   for (const v of values) if (v.trim() && !seen.has(slug(v))) seen.set(slug(v), rank.has(slug(v)) ? BIJAK_NEGERI_ORDER[rank.get(slug(v))!]! : v.trim())
@@ -1266,7 +1269,7 @@ export const BijakBuilderPoolPreviewQuerySchema = z
     kertas: z.coerce.number().int().min(1),
     years: queryList(z.coerce.number().int().min(1900).max(2100), 30).meta({ description: 'S3-T02 `Tahun` (13-08, repeated parameter); empty = all.' }),
     negeri: queryList(z.string().trim().min(1).max(64), 30).meta({ description: 'S3-T02 `Negeri` (13-09, repeated parameter); empty = all.' }),
-    count: z.coerce.number().int().min(1).optional().meta({ description: 'S3-T02 `Bilangan soalan`: the verdict is the one of a set of this size, scaled as Jana set does. Omitted = the contract total.' }),
+    count: z.coerce.number().int().min(1).max(100).optional().meta({ description: 'S3-T02 `Bilangan soalan` (1 to 100): the verdict is the one of a set of this size, scaled as Jana set does. Omitted = the contract total.' }),
   })
   .meta({ id: 'BijakBuilderPoolPreviewQuery' })
 
