@@ -4,7 +4,6 @@
  */
 
 import { isApiError } from '@/api'
-import { isHttpMode } from '@/api/mode'
 import { diffForHumans } from '@/lib/time'
 
 import type { SchoolInfo } from '../../api/school-admin'
@@ -43,9 +42,8 @@ export const ROLE_CONFIG: Record<SchoolUserRole, RoleConfig> = {
 }
 
 /** Shown only when the request produced no usable message (as M01/M02; INFERRED copy). */
-/** Placeholder of an admin-chosen new password: the mock accepts 6, the real API 8 (contract PASSWORD_MIN_LENGTH). */
-export const newPasswordPlaceholder = (): string =>
-  isHttpMode() ? 'Minimum 8 aksara' : 'Minimum 6 aksara'
+/** Placeholder of an admin-chosen new password: minimum 8 in the mock and the real API (contract PASSWORD_MIN_LENGTH; S6-T12). */
+export const newPasswordPlaceholder = (): string => 'Minimum 8 aksara'
 
 export const GENERIC_ERROR = 'Ralat berlaku. Sila cuba lagi.'
 
