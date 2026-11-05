@@ -212,6 +212,62 @@ describe('S8 /profile/edit personal card (FR-M01-39, 40, 44)', () => {
   })
 })
 
+describe('S5-T14 school admin "Kemaskini Profil" (20 R1-AS-A1: FR-AS-A1-2, FR-AS-A1-4, AC-AS-A1-1, AC-AS-A1-4)', () => {
+  const ADMIN: UserMe = { ...USER, name: 'Admin Contoh', email: 'admin.sekolah@demo.test', role: 'school_admin', grade: null }
+
+  it('Telefon "12345": "Format telefon tidak sah." shows and nothing is saved', async () => {
+    const w = await render(ProfileEditPage, ADMIN)
+    await w.get('[data-testid=profile-phone-input]').setValue('12345')
+    await w.get('[data-testid=profile-form]').trigger('submit')
+    await flushPromises()
+    expect(apiMocks.updateProfile).not.toHaveBeenCalled()
+    expect(useFlashStore().current).toEqual({ type: 'error', message: ['Format telefon tidak sah.'] })
+  })
+
+  it.each(['+60123456789', '012-3456789', ''])('Telefon "%s" saves and "Profil dikemaskini." shows', async (phone) => {
+    apiMocks.updateProfile.mockResolvedValue({ data: { ...ADMIN, phone: phone || null }, status: 'Profil berjaya dikemaskini.' })
+    const w = await render(ProfileEditPage, ADMIN)
+    await w.get('[data-testid=profile-phone-input]').setValue(phone)
+    await w.get('[data-testid=profile-form]').trigger('submit')
+    await flushPromises()
+    expect(apiMocks.updateProfile).toHaveBeenCalledWith({ name: 'Admin Contoh', phone: phone === '' ? null : phone, bio: 'Suka belajar' })
+    expect(useFlashStore().current).toEqual({ type: 'success', message: 'Profil dikemaskini.' })
+  })
+
+  it('a blank or over-long Nama is refused with its BM line and nothing is saved', async () => {
+    const w = await render(ProfileEditPage, ADMIN)
+    await w.get('[data-testid=profile-name-input]').setValue('   ')
+    await w.get('[data-testid=profile-form]').trigger('submit')
+    await flushPromises()
+    expect(useFlashStore().current).toEqual({ type: 'error', message: ['Sila isi nama.'] })
+    await w.get('[data-testid=profile-name-input]').setValue('A'.repeat(256))
+    await w.get('[data-testid=profile-form]').trigger('submit')
+    await flushPromises()
+    expect(useFlashStore().current).toEqual({ type: 'error', message: ['Nama tidak boleh melebihi 255 aksara.'] })
+    expect(apiMocks.updateProfile).not.toHaveBeenCalled()
+  })
+
+  it('a new name updates the session user (avatar initials and shell card); the e-mel stays read-only', async () => {
+    apiMocks.updateProfile.mockResolvedValue({ data: { ...ADMIN, name: 'Admin Contoh B' }, status: 'x' })
+    const w = await render(ProfileEditPage, ADMIN)
+    expect(w.get('[data-testid=profile-email-input]').attributes('disabled')).toBeDefined()
+    await w.get('[data-testid=profile-name-input]').setValue('Admin Contoh B')
+    await w.get('[data-testid=profile-form]').trigger('submit')
+    await flushPromises()
+    expect(useSessionStore().user?.name).toBe('Admin Contoh B')
+  })
+
+  it('another role keeps the V3 behaviour: no client phone rule, the server status text', async () => {
+    apiMocks.updateProfile.mockResolvedValue({ data: USER, status: 'Profil berjaya dikemaskini.' })
+    const w = await render(ProfileEditPage, { ...USER, role: 'teacher' })
+    await w.get('[data-testid=profile-phone-input]').setValue('12345')
+    await w.get('[data-testid=profile-form]').trigger('submit')
+    await flushPromises()
+    expect(apiMocks.updateProfile).toHaveBeenCalled()
+    expect(useFlashStore().current).toEqual({ type: 'success', message: 'Profil berjaya dikemaskini.' })
+  })
+})
+
 describe('S8 late refresh does not undo edits', () => {
   const FRESH: UserMe = { ...USER, name: 'Dari Server' }
 

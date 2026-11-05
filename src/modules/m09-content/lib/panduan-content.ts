@@ -410,13 +410,15 @@ export const GUIDE_ROLES: readonly GuideRole[] = [
     ],
     faqTitle: 'Soalan Lazim Admin',
     faqs: [
+      // S5-T14 (card change AS-A3): the answers follow the final Senarai Pelajar import and row actions of 20 R1-AS-51/52
+      // (header `nama,email,kelas`, .csv or .txt up to 2 MB and 1000 rows, pending Admin Pusat approval; Tingkatan 1-5 only, D72).
       {
         q: 'Format CSV untuk import pelajar?',
-        a: 'CSV perlu ada lajur: name, email, grade (T4, T5, D1-D6). Baris pertama adalah header. E-mel mesti unik.',
+        a: 'Fail .csv atau .txt (maksimum 2 MB, 1000 baris). Baris pertama ialah header nama,email,kelas; lajur email dan kelas boleh kosong. E-mel mesti unik. Pelajar yang diimport menunggu kelulusan Admin Pusat.',
       },
       {
         q: 'Boleh reset kata laluan guru/pelajar?',
-        a: 'Ya! Dari senarai guru/pelajar, klik nama pengguna, kemudian "Reset Kata Laluan".',
+        a: 'Ya! Dari Senarai Pelajar atau Senarai Guru, klik "Reset Kata Laluan" pada baris pengguna itu.',
       },
       {
         q: 'Macam mana nak cetak Ringkasan Eksekutif?',
