@@ -99,6 +99,35 @@ describe('question workflow schema (migration 0017_question_workflow)', () => {
     await db.query(ins, [11, 1, reporter])
   })
 
+  it('DM-82 (migration 0185): reporter_role defaults to murid, accepts only murid or guru, and the backfill marks teacher-only reporters guru', async () => {
+    const def = await db.query<{ reporter_role: string }>(`select reporter_role from question_reports where question_id = 10 and question_version_no = 1`)
+    expect(def[0]?.reporter_role).toBe('murid')
+    const ins = `insert into question_reports (question_id, question_version_no, reasons, source, reporter_role) values (30, 1, array['typo'], 'spm', $1)`
+    await db.query(ins, ['guru'])
+    await rejects(ins, ['admin'])
+    // The backfill statement of the migration, run against users that hold a teacher role only, a student role only, both, and none.
+    const mk = async (email: string, roles: string[]) => {
+      const id = (await db.query<{ id: string }>(`insert into users (name, email) values ($1, $2) returning id::text`, ['Pelapor Peranan', email]))[0]!.id
+      for (const r of roles) await db.query(`insert into user_roles (user_id, role) values ($1::bigint, $2)`, [id, r])
+      await db.query(`insert into question_reports (question_id, question_version_no, reporter_id, reasons, source) values (31, 1, $1::bigint, array['typo'], 'spm')`, [id])
+      return id
+    }
+    const teacher = await mk('peranan-guru@demo.test', ['teacher'])
+    const pupil = await mk('peranan-murid@demo.test', ['student'])
+    const both = await mk('peranan-kedua@demo.test', ['teacher', 'student'])
+    const none = await mk('peranan-tiada@demo.test', [])
+    const sql = readFileSync(fileURLToPath(new URL('../../prisma/migrations/0185_s5_report_reporter_role/migration.sql', import.meta.url)), 'utf8')
+    const backfill = /UPDATE "question_reports"[\s\S]*?;/.exec(sql)?.[0]
+    expect(backfill).toBeTruthy()
+    await db.query(`update question_reports set reporter_role = 'murid'`)
+    await db.query(backfill!)
+    const roleOf = async (id: string) => (await db.query<{ reporter_role: string }>(`select reporter_role from question_reports where reporter_id = $1::bigint`, [id]))[0]?.reporter_role
+    expect(await roleOf(teacher)).toBe('guru')
+    expect(await roleOf(pupil)).toBe('murid')
+    expect(await roleOf(both)).toBe('murid')
+    expect(await roleOf(none)).toBe('murid')
+  })
+
   it('legacy_source is cloud or my, and (legacy_source, legacy_id) is unique on question_reports', async () => {
     const ins = `insert into question_reports (question_id, question_version_no, reasons, source, legacy_source, legacy_id) values ($1, 1, array['typo'], 'spm', $2, $3)`
     await rejects(ins, [20, 'other', '1'])
