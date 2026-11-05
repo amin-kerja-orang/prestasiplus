@@ -664,7 +664,7 @@ Decisions:
 Resolved points (how the docs settle them):
 
 - Resolved: gate codes are renamed per S1-T02 (SUBJECT_MISSING->NO_SUBJECT etc.); TP_MISSING (question-level TP, path tp) is kept under its V3 name beside rows 3 to 6 of the gate table (docs/prd/r1/45-question-authoring-flow.md:4.1 note; docs/plan/r1-development-plan.md:S1-T02)
-- Servability reason code is chapter_missing but gate code is NO_CHAPTER (deliberately different).
+- Servability reason code is no_chapter but gate code is NO_CHAPTER (deliberately different).
 - NO_KERTAS applies when 'SPM-bound' (subject in SPM catalogue and Tingkatan 4 or 5); 45 2.5 and 4.1 both state this, while rule R-DSKP itself is independent of SPM-bound.
 
 ### A7 Question lifecycle states and servability flags per surface
