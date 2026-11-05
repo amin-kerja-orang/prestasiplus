@@ -22,7 +22,6 @@ import {
   type AnalyticsTestApp,
   type Client,
   type World,
-  addClass,
   addFlag,
   addQuestion,
   addQuestionSession,
@@ -145,7 +144,7 @@ describe('M11 monitoring S2 to S5 and export (AC 1 to 3, 5)', () => {
       expect(d30.filters.period).toBe('30d')
       expect(d30.kpi).toMatchObject({ engaged: 2, answers: 60 })
       const d7 = AnalyticsMonitoringOverviewSchema.parse((await admin.get('/monitoring/overview?period=7d')).body.data)
-      expect(rowOf(d7.studentRows, w.schoolA)).toMatchObject({ engaged: 0, pct: 0, tahap: 'Tiada Langsung' })
+      expect(rowOf(d7.studentRows, w.schoolA)).toMatchObject({ engaged: 0, pct: 0, tahap: 'Tiada' })
       expect(rowOf(d7.studentRows, w.schoolB)).toMatchObject({ engaged: 1 })
       const m3 = AnalyticsMonitoringOverviewSchema.parse((await adminA.get('/monitoring/overview?period=3m')).body.data)
       expect(m3.kpi.answers).toBe(68)
@@ -212,7 +211,7 @@ describe('M11 monitoring S2 to S5 and export (AC 1 to 3, 5)', () => {
       const a = body.signals.attention.find((s) => s.schoolId === w.schoolA)
       expect(a).toMatchObject({ kind: 'tiada', engaged: 0 })
       const s = body.signals.suggestions.find((x) => x.schoolId === w.schoolA)
-      // Tiada Langsung with a teacher who logged in: hands-on; without: contact.
+      // Tiada with a teacher who logged in: hands-on; without: contact.
       expect(s?.kind).toBe(a && a.teachersLoggedIn > 0 ? 'handsOn' : 'hubungi')
     })
 
@@ -230,29 +229,25 @@ describe('M11 monitoring S2 to S5 and export (AC 1 to 3, 5)', () => {
       expect(row.cells).toHaveLength(36)
     })
 
-    it('a teacher S2 counts and export use the S3/S5 filter: only pupils of the own classes (G5-M11 bug 5)', async () => {
+    it('a teacher sees the whole own school exactly like the school admin (R1-GUR-10, S6-T08)', async () => {
       const body = AnalyticsMonitoringOverviewSchema.parse((await teacherA.get('/monitoring/overview')).body.data)
+      const asBody = AnalyticsMonitoringOverviewSchema.parse((await adminA.get('/monitoring/overview')).body.data)
       const detail = AnalyticsSchoolDetailSchema.parse((await teacherA.get(`/monitoring/schools/${w.schoolA}`)).body.data)
-      const teacher = AnalyticsTeacherDetailSchema.parse((await teacherA.get(`/monitoring/schools/${w.schoolA}/teachers/${ids.teacherA}`)).body.data)
-      // The own class holds p1 and p2 only; maju and susp are in the school but outside the teacher's classes.
-      expect(detail.students.map((r) => r.id).sort()).toEqual([ids.p1, ids.p2].sort())
-      expect(teacher.cards.students).toBe(detail.cards.students)
-      expect(rowOf(body.studentRows, w.schoolA)).toMatchObject({ registered: detail.cards.students, engaged: 1 })
-      expect(body.kpi.students).toBe(detail.cards.students)
-      expect(body.kpi.engaged).toBe(detail.cards.engaged)
-      expect(body.kpi.answers).toBe(detail.cards.answers)
-      const weekly = rowOf(body.weekly, w.schoolA) as unknown as (typeof body.weekly)[number]
-      expect(weekly.cells.reduce((n, c) => n + c.count, 0)).toBe(detail.cards.answers)
-      // Teachers: the S2 teacher table and KPIs follow the S3 teacher list (the caller only).
-      expect(detail.teachers.map((x) => x.id)).toEqual([ids.teacherA])
-      expect(rowOf(body.teacherRows, w.schoolA)).toMatchObject({ registered: detail.cards.teachers, loggedIn: detail.cards.teachersLoggedIn })
+      const asDetail = AnalyticsSchoolDetailSchema.parse((await adminA.get(`/monitoring/schools/${w.schoolA}`)).body.data)
+      expect(detail.students.map((r) => r.id).sort()).toEqual([ids.p1, ids.p2, ids.maju, ids.susp].sort())
+      expect(detail.students).toEqual(asDetail.students)
+      expect(detail.teachers).toEqual(asDetail.teachers)
+      expect(detail.cards).toEqual(asDetail.cards)
+      expect(body.kpi).toEqual(asBody.kpi)
+      expect(body.teacherRows).toEqual(asBody.teacherRows)
+      expect(rowOf(body.studentRows, w.schoolA)).toMatchObject({ registered: 4 })
       expect(body.kpi.teachers).toBe(detail.cards.teachers)
       expect(body.kpi.teachersLoggedIn).toBe(detail.cards.teachersLoggedIn)
       const exported = AnalyticsMonitoringExportSchema.parse((await teacherA.get('/monitoring/export?format=csv')).body.data)
-      expect(rowOf(exported.rows, w.schoolA)).toMatchObject({ registered: detail.cards.students, engaged: 1 })
+      expect(rowOf(exported.rows, w.schoolA)).toMatchObject({ registered: 4 })
     })
 
-    it('the S3/S5 filter narrows a teacher only: school admin and admin keep the whole school', async () => {
+    it('admin and school admin keep the whole school', async () => {
       for (const who of [adminA, admin]) {
         const body = AnalyticsMonitoringOverviewSchema.parse((await who.get('/monitoring/overview')).body.data)
         expect(rowOf(body.studentRows, w.schoolA)).toMatchObject({ registered: 4 })
@@ -489,8 +484,8 @@ describe('M11 monitoring S2 to S5 and export (AC 1 to 3, 5)', () => {
 
     it('teacher and school_admin: own school and own pupil only; other school, other school pupil, unknown ids are 404', async () => {
       for (const who of [teacherA, adminA]) {
-        // A teacher opens own-class pupils only (p1); the school admin the whole school.
-        expect((await who.get(`/monitoring/schools/${w.schoolA}/students/${who === teacherA ? ids.p1 : ids.susp}`)).status).toBe(200)
+        // R1-GUR-10: a teacher opens every pupil of the own school, like the school admin.
+        expect((await who.get(`/monitoring/schools/${w.schoolA}/students/${ids.susp}`)).status).toBe(200)
         errorIs(await who.get(`/monitoring/schools/${w.schoolB}/students/${ids.pb}`), 404, 'NOT_FOUND')
         errorIs(await who.get(`/monitoring/schools/${w.schoolB}/students/${ids.susp}`), 404, 'NOT_FOUND')
         errorIs(await who.get(`/monitoring/schools/${w.schoolA}/students/${ids.pb}`), 404, 'NOT_FOUND')
@@ -512,39 +507,33 @@ describe('M11 monitoring S2 to S5 and export (AC 1 to 3, 5)', () => {
     })
   })
 
-  describe('teacher scope narrowed to own classes (data minimisation)', () => {
-    it('school detail lists only the own-class pupils and only the teacher themself; school_admin and admin see the whole school', async () => {
+  describe('teacher scope is the whole own school (R1-GUR-10, S6-T08)', () => {
+    it('school detail lists every pupil and teacher of the own school; another school stays 404', async () => {
       const own = AnalyticsSchoolDetailSchema.parse((await teacherA.get(`/monitoring/schools/${w.schoolA}`)).body.data)
-      expect(own.students.map((x) => x.id).sort()).toEqual([ids.p1, ids.p2].sort())
-      expect(own.teachers.map((x) => x.id)).toEqual([ids.teacherA])
-      expect(own.cards.students).toBe(2)
-      for (const who of [adminA, admin]) {
-        const all = AnalyticsSchoolDetailSchema.parse((await who.get(`/monitoring/schools/${w.schoolA}`)).body.data)
-        expect(all.students).toHaveLength(4)
-      }
+      const all = AnalyticsSchoolDetailSchema.parse((await adminA.get(`/monitoring/schools/${w.schoolA}`)).body.data)
+      expect(own.students).toHaveLength(4)
+      expect(own.cards.students).toBe(all.cards.students)
+      expect(own.teachers.map((x) => x.id)).toEqual(all.teachers.map((x) => x.id))
+      errorIs(await teacherA.get(`/monitoring/schools/${w.schoolB}`), 404, 'NOT_FOUND')
     })
 
-    it('a pupil of the same school outside the own classes, and a colleague teacher, are 404; own-class pupil and self are 200', async () => {
-      errorIs(await teacherA.get(`/monitoring/schools/${w.schoolA}/students/${ids.maju}`), 404, 'NOT_FOUND')
-      errorIs(await teacherA.get(`/monitoring/schools/${w.schoolA}/students/${ids.susp}`), 404, 'NOT_FOUND')
-      expect((await teacherA.get(`/monitoring/schools/${w.schoolA}/students/${ids.p1}`)).status).toBe(200)
-      // A colleague teacher of the same school with a class of their own that holds a pupil outside teacher A's classes.
+    it('a colleague teacher and a pupil outside the own classes are 200 in the own school; another school pupil and teacher are 404', async () => {
+      expect((await teacherA.get(`/monitoring/schools/${w.schoolA}/students/${ids.maju}`)).status).toBe(200)
       const colleague = (await t.db.query<{ id: string }>(
         `insert into users (name, email, school_id, is_active) values ('Guru Rakan Demo', 'rakan.guru@example.test', $1, true) returning id::text`,
         [w.schoolA],
       ))[0] as { id: string }
       await t.db.query(`insert into user_roles (user_id, role) values ($1, 'teacher')`, [colleague.id])
-      await addClass(t.db, { name: 'Kelas Rakan', teacherId: colleague.id, schoolId: w.schoolA, members: [ids.maju] })
-      errorIs(await teacherA.get(`/monitoring/schools/${w.schoolA}/teachers/${colleague.id}`), 404, 'NOT_FOUND')
-      errorIs(await teacherA.get(`/monitoring/schools/${w.schoolA}/students/${ids.maju}`), 404, 'NOT_FOUND')
-      expect((await adminA.get(`/monitoring/schools/${w.schoolA}/teachers/${colleague.id}`)).status).toBe(200)
-      expect(AnalyticsSchoolDetailSchema.parse((await teacherA.get(`/monitoring/schools/${w.schoolA}`)).body.data).teachers.map((x) => x.id)).toEqual([ids.teacherA])
-      const self = AnalyticsTeacherDetailSchema.parse((await teacherA.get(`/monitoring/schools/${w.schoolA}/teachers/${ids.teacherA}`)).body.data)
-      expect(self.students.map((x) => x.id).sort()).toEqual([ids.p1, ids.p2].sort())
-      expect(self.cards.students).toBe(2)
+      expect((await teacherA.get(`/monitoring/schools/${w.schoolA}/teachers/${colleague.id}`)).status).toBe(200)
+      const detail = AnalyticsSchoolDetailSchema.parse((await teacherA.get(`/monitoring/schools/${w.schoolA}`)).body.data)
+      expect(detail.teachers.map((x) => x.id)).toContain(colleague.id)
+      errorIs(await teacherA.get(`/monitoring/schools/${w.schoolB}/teachers/${ids.teacherB}`), 404, 'NOT_FOUND')
+      errorIs(await teacherA.get(`/monitoring/schools/${w.schoolA}/teachers/${ids.teacherB}`), 404, 'NOT_FOUND')
+      errorIs(await teacherA.get(`/monitoring/schools/${w.schoolB}/students/${ids.pb}`), 404, 'NOT_FOUND')
+      errorIs(await teacherA.get(`/monitoring/schools/${w.schoolA}/students/${ids.pb}`), 404, 'NOT_FOUND')
     })
 
-    it('a teacher with no class gets no pupil counts and only the own teacher row, not an error and not the school', async () => {
+    it('a teacher with no class still sees the whole school, equal to the school admin', async () => {
       const email = 'guru.tanpa.kelas@example.test'
       const row = (await t.db.query<{ id: string }>(
         `insert into users (name, email, school_id, is_active, password_hash)
@@ -554,18 +543,11 @@ describe('M11 monitoring S2 to S5 and export (AC 1 to 3, 5)', () => {
       await t.db.query(`insert into user_roles (user_id, role) values ($1, 'teacher')`, [row.id])
       const empty = await client(t, email)
       const o = AnalyticsMonitoringOverviewSchema.parse((await empty.get('/monitoring/overview')).body.data)
-      expect(o.kpi).toMatchObject({ students: 0, engaged: 0, answers: 0, teachers: 1, teachersLoggedIn: 1 })
-      expect(o.studentRows).toEqual([])
-      expect(o.weekly).toEqual([])
+      const asO = AnalyticsMonitoringOverviewSchema.parse((await adminA.get('/monitoring/overview')).body.data)
+      expect(o.kpi).toEqual(asO.kpi)
+      expect(o.kpi.students).toBe(4)
       expect(o.teacherRows.map((r) => r.schoolId)).toEqual([w.schoolA])
       const e = AnalyticsMonitoringExportSchema.parse((await empty.get('/monitoring/export?format=csv')).body.data)
-      expect(e.rows).toEqual([])
-    })
-
-    it('the overview and the export count the own-class pupils only (G5-M11 bug 5), with no pupil identities', async () => {
-      const o = AnalyticsMonitoringOverviewSchema.parse((await teacherA.get('/monitoring/overview')).body.data)
-      expect(rowOf(o.studentRows, w.schoolA)).toMatchObject({ registered: 2 })
-      const e = AnalyticsMonitoringExportSchema.parse((await teacherA.get('/monitoring/export?format=csv')).body.data)
       expect(JSON.stringify(e)).not.toContain('@')
     })
   })

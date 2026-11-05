@@ -3,7 +3,6 @@ import { Inject, Injectable } from '@nestjs/common'
 import { toMytTimestamp } from '../../../../common/time/myt'
 import { CLOCK, type Clock } from '../../../../db/clock'
 import { ApiError } from '../../../../common/errors/api-error'
-import { ClassesRepository } from '../../../classes'
 import { AnalyticsRepository, type SchoolFact } from '../analytics.repository'
 import {
   type Period,
@@ -48,7 +47,7 @@ interface Universe {
   loggedBySchool: Map<string, number>
   answersBySchool: Map<string, number>
   scope: string[] | null
-  /** A teacher's own-class pupils (the S3/S5 minimisation filter); null = no pupil filter. */
+  /** Pupil filter; always null since R1-GUR-10 (a teacher sees the whole own school). */
   pupilIds: string[] | null
 }
 
@@ -61,7 +60,6 @@ const NOT_FOUND = (): never => {
 export class MonitoringService {
   constructor(
     @Inject(AnalyticsRepository) private readonly repo: AnalyticsRepository,
-    @Inject(ClassesRepository) private readonly classes: ClassesRepository,
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
@@ -75,12 +73,12 @@ export class MonitoringService {
     const state = isSchoolForced(ctx.role) ? '' : (filters.state ?? '')
     const tahap = filters.tahap ?? ''
     const from = periodFromMs(period, now.getTime())
-    const pupilIds = await this.ownPupilIds(ctx)
+    const pupilIds: string[] | null = null
     const [facts, registered, teachers, engagement, withUsers] = await Promise.all([
       this.repo.schools(scope),
       this.repo.registeredBySchool(scope, pupilIds),
-      // A teacher's S2 teacher counts follow the S3 teacher list: the caller only.
-      this.repo.teachersBySchool(scope, ctx.role === 'teacher' ? [ctx.userId] : null),
+      // R1-GUR-10: a teacher sees the whole own school, like the school admin.
+      this.repo.teachersBySchool(scope),
       this.repo.engagement(scope, from === null ? null : new Date(from), pupilIds),
       this.repo.schoolsWithUsers(scope),
     ])
@@ -161,11 +159,10 @@ export class MonitoringService {
         continue
       }
       if (r.tahap === 'Sederhana') continue
-      const kind = r.tahap === 'Rendah' ? 'rendah' : r.tahap === 'Kritikal' ? 'kritikal' : 'tiada'
+      const kind = r.tahap === 'Rendah' ? 'rendah' : 'tiada'
       const s = this.signal(r, kind, u.loggedBySchool)
       attention.push(s)
-      if (r.tahap === 'Kritikal') suggestions.push({ ...s, kind: 'motivasi' })
-      else if (r.tahap === 'Tiada Langsung') suggestions.push({ ...s, kind: s.teachersLoggedIn > 0 ? 'handsOn' : 'hubungi' })
+      if (r.tahap === 'Tiada') suggestions.push({ ...s, kind: s.teachersLoggedIn > 0 ? 'handsOn' : 'hubungi' })
     }
     return { best, attention, suggestions }
   }
@@ -245,18 +242,6 @@ export class MonitoringService {
     return { filename: `monitoring-penglibatan.${format}`, rows: this.studentTable(u) }
   }
 
-  /** Data minimisation: a teacher sees the pupils of the own active classes only; other roles see the whole school (null). S2 counts, S3 and S5 lists all use it. */
-  private async ownPupilIds(ctx: Ctx): Promise<string[] | null> {
-    return ctx.role === 'teacher' ? this.classes.teacherStudentIds(ctx.userId) : null
-  }
-
-  private async visiblePupils<T extends { id: string }>(ctx: Ctx, pupils: T[]): Promise<T[]> {
-    const ids = await this.ownPupilIds(ctx)
-    if (ids === null) return pupils
-    const own = new Set(ids)
-    return pupils.filter((p) => own.has(p.id))
-  }
-
   // --- S3 --------------------------------------------------------------------------------------------------------
 
   /** A school the caller may open: a forced role only its own; unknown ids are 404 for everyone. */
@@ -273,8 +258,8 @@ export class MonitoringService {
       this.repo.teachersOfSchool(fact.id),
       this.repo.latestSubscription(fact.id),
     ])
-    const pupils = await this.visiblePupils(ctx, allPupils)
-    const teachers = ctx.role === 'teacher' ? allTeachers.filter((t) => t.id === ctx.userId) : allTeachers
+    const pupils = allPupils
+    const teachers = allTeachers
     const [stats, flags] = await Promise.all([this.repo.pupilStats(pupils.map((p) => p.id)), this.repo.flagsOf(pupils.map((p) => p.id))])
 
     const students = pupils
@@ -343,8 +328,7 @@ export class MonitoringService {
     const teacher = await this.repo.user(userId)
     if (!teacher || !teacher.isTeacher) return NOT_FOUND()
     if (isSchoolForced(ctx.role) && teacher.schoolId !== ctx.schoolId) return NOT_FOUND()
-    if (ctx.role === 'teacher' && teacher.id !== ctx.userId) return NOT_FOUND()
-    const pupils = await this.visiblePupils(ctx, await this.repo.pupilsOfSchool(fact.id))
+    const pupils = await this.repo.pupilsOfSchool(fact.id)
     const stats = await this.repo.pupilStats(pupils.map((p) => p.id))
     const rows = pupils
       .map((p) => {

@@ -25,17 +25,19 @@ import { scopeOf } from '../../src/modules/reports/analytics/services/scope'
 // Replay of the pure cases of the mock test src/modules/m11-teacher-analytics/__tests__/mock/rules.test.ts.
 const NOW = Date.parse('2026-09-25T15:40:00+08:00')
 
-describe('tahap (BR-M11-12)', () => {
+describe('tahap (R1-AS-10 four bands)', () => {
   it.each([
     [100, 'Cemerlang'],
     [60.1, 'Cemerlang'],
     [60, 'Sederhana'],
     [20, 'Sederhana'],
+    [20.1, 'Sederhana'],
     [19.99, 'Rendah'],
+    [19.9, 'Rendah'],
     [5, 'Rendah'],
-    [4.99, 'Kritikal'],
-    [0.1, 'Kritikal'],
-    [0, 'Tiada Langsung'],
+    [4.99, 'Rendah'],
+    [0.1, 'Rendah'],
+    [0, 'Tiada'],
   ] as const)('%s%% is %s', (p, tahap) => {
     expect(tahapOf(p)).toBe(tahap)
   })
