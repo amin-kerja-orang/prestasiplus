@@ -75,7 +75,7 @@ model Achievement {
   rewardSyiling      Int      @default(0) @map("reward_syiling")
   rewardXp           Int      @default(0) @map("reward_xp")
   /// practice_sessions, streak, lifetime_syiling, accurate_sessions, subjects, mystery_openings, completions,
-  /// math_correct, science_correct, fast_answers, referrals, unlocked, answers_accuracy, perfect_days (check).
+  /// math_correct, science_correct, fast_answers, referrals, unlocked, answers_accuracy, perfect_days, battle_wins (check).
   /// The mock camelCase identifiers are stored snake_case. Null together with `criterion_min` (check).
   criterionKind      String?  @map("criterion_kind")
   criterionMin       Int?     @map("criterion_min")
