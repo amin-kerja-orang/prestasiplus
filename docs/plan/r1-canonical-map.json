@@ -2635,7 +2635,7 @@
       "name": "m17.laporan-sekolah.laporan-aktiviti",
       "status": "canonical",
       "sector": "S6",
-      "component": "src/modules/m17-admin-dashboard/pages/AdminCentralReportPage.vue",
+      "component": "src/modules/m17-admin-dashboard/pages/CentralReportPage.vue",
       "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
       "approved_by_card": null
     },
@@ -2645,7 +2645,7 @@
       "name": "m17.laporan-sekolah.amaran-wellbeing",
       "status": "canonical",
       "sector": "S6",
-      "component": "src/modules/m17-admin-dashboard/pages/AdminCentralReportPage.vue",
+      "component": "src/modules/m17-admin-dashboard/pages/CentralReportPage.vue",
       "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
       "approved_by_card": null
     },
@@ -2655,7 +2655,7 @@
       "name": "m17.laporan-sekolah.statistik-penggunaan",
       "status": "canonical",
       "sector": "S6",
-      "component": "src/modules/m17-admin-dashboard/pages/AdminCentralReportPage.vue",
+      "component": "src/modules/m17-admin-dashboard/pages/CentralReportPage.vue",
       "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
       "approved_by_card": null
     },
@@ -2665,7 +2665,7 @@
       "name": "m17.laporan-sekolah.dskp-heatmap",
       "status": "canonical",
       "sector": "S6",
-      "component": "src/modules/m17-admin-dashboard/pages/AdminCentralReportPage.vue",
+      "component": "src/modules/m17-admin-dashboard/pages/CentralReportPage.vue",
       "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
       "approved_by_card": null
     },
@@ -2675,7 +2675,7 @@
       "name": "m17.laporan-sekolah.amaran-awal",
       "status": "canonical",
       "sector": "S6",
-      "component": "src/modules/m17-admin-dashboard/pages/AdminCentralReportPage.vue",
+      "component": "src/modules/m17-admin-dashboard/pages/CentralReportPage.vue",
       "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
       "approved_by_card": null
     },
@@ -2685,7 +2685,7 @@
       "name": "m17.laporan-sekolah.laporan-bulanan",
       "status": "canonical",
       "sector": "S6",
-      "component": "src/modules/m17-admin-dashboard/pages/AdminCentralReportPage.vue",
+      "component": "src/modules/m17-admin-dashboard/pages/CentralReportPage.vue",
       "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
       "approved_by_card": null
     },
@@ -2695,7 +2695,7 @@
       "name": "m17.laporan-sekolah.analisa-item",
       "status": "canonical",
       "sector": "S6",
-      "component": "src/modules/m17-admin-dashboard/pages/AdminCentralReportPage.vue",
+      "component": "src/modules/m17-admin-dashboard/pages/CentralReportPage.vue",
       "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
       "approved_by_card": null
     },

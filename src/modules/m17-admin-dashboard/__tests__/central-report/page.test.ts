@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * R1-ADM-M-07 (S6-T13): the Admin Pusat central view `AdminCentralReportPage` (PRD-30 M-07; AC-ADM-M07.1).
+ * R1-ADM-M-07 (S6-T13): the Admin Pusat central view `CentralReportPage` (PRD-30 M-07; AC-ADM-M07.1).
  * The picker "Sekolah" (placeholder "Pilih sekolah", required "Sila pilih sekolah."), the EXISTING school page
  * mounted for the picked school, `?schoolId=` on the client call, and the empty copy "Tiada data untuk sekolah ini.".
  */
@@ -14,7 +14,7 @@ import { setRouteOutcome, useRouteOutcome } from '@/app/router/outcome'
 import { usePageMeta } from '@/composables/usePageMeta'
 import type { SchoolSummary } from '@/modules/m02-users-schools'
 
-import AdminCentralReportPage from '../../pages/AdminCentralReportPage.vue'
+import CentralReportPage from '../../pages/CentralReportPage.vue'
 import type { CentralReportView } from '../../routes/laporan'
 
 const api = vi.hoisted(() => ({
@@ -68,7 +68,7 @@ async function mountView(view: Exclude<CentralReportView, 'sekolah-bersaing'>): 
   })
   await router.push(`/admin/laporan-sekolah/${view}`)
   await router.isReady()
-  wrapper = mount(AdminCentralReportPage, {
+  wrapper = mount(CentralReportPage, {
     props: { view },
     global: { plugins: [router] },
     attachTo: document.body,
