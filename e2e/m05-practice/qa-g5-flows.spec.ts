@@ -359,8 +359,9 @@ test.describe('QA-G5 L22 structured flow', { tag: [moduleTag(5)] }, () => {
     async ({ page, loginAs, gotoApp }) => {
       await loginAs('pelajar@demo.test')
       await gotoApp('/latihan-berstruktur/4454/jawab')
-      await expect(tid(page, 'answer-stimulus')).toBeVisible()
+      await expect(tid(page, 'stimulus-group')).toBeVisible()
       await tid(page, 'answer-submit').click()
+      await tid(page, 'blank-submit').click()
       await expect(tid(page, 'answer-total')).toBeVisible()
     },
   )

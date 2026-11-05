@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common'
 
+import { PracticeModule } from '../../practice.module'
+import { AnswerFactsAdapter } from '../answer-facts.adapter'
 import { PracticeAnalyticsController } from './analytics.controller'
 import { PracticeAnalyticsRepository } from './analytics.repository'
 import { PracticeAnalyticsService } from './analytics.service'
@@ -9,8 +11,9 @@ import { PracticeAnalyticsService } from './analytics.service'
  * repository for BE-48 (`chapterAnswerCounts`).
  */
 @Module({
+  imports: [PracticeModule],
   controllers: [PracticeAnalyticsController],
-  providers: [PracticeAnalyticsRepository, PracticeAnalyticsService],
+  providers: [AnswerFactsAdapter, PracticeAnalyticsRepository, PracticeAnalyticsService],
   exports: [PracticeAnalyticsRepository],
 })
 export class PracticeAnalyticsReadsModule {}
