@@ -12,7 +12,7 @@ import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { useApi, useRouteExists } from '@/composables'
-import { DsHeroCard, DsIconChip, DsPage, DsPanel, DsStatTile, type DsAccent, DsLoadError } from '@/ds'
+import { DsGrid, DsGridItem, DsHeroCard, DsIconChip, DsPage, DsPanel, DsStatTile, type DsAccent, DsLoadError } from '@/ds'
 import { formatCount, formatNumber } from '@/lib/number'
 
 import { fetchSpmOverview } from '../api'
@@ -230,21 +230,20 @@ const mine = computed<Tile[]>(() => {
 
     <template v-if="data">
       <!-- Stats -->
-      <div
-        class="grid grid-cols-2 gap-3 md:gap-4"
-        :class="stats.length === 4 ? 'md:grid-cols-4' : 'md:grid-cols-3'"
+      <DsGrid
+        gap="sm"
+        :cols="{ base: 2, md: stats.length === 4 ? 4 : 3 }"
         data-testid="spm-stats"
       >
-        <div
+        <DsGridItem
           v-for="(s, i) in stats"
           :key="s.id"
-          class="min-w-0"
-          :class="stats.length === 3 && i === 2 ? 'col-span-2 md:col-span-1' : ''"
+          :span="stats.length === 3 && i === 2 ? { base: 2, md: 1 } : undefined"
           :data-testid="`spm-stat-${s.id}`"
         >
           <DsStatTile :value="s.value" :unit="s.label" :icon="s.icon" :accent="s.accent" />
-        </div>
-      </div>
+        </DsGridItem>
+      </DsGrid>
 
       <!-- Feature cards -->
       <ul
@@ -263,9 +262,11 @@ const mine = computed<Tile[]>(() => {
               <DsIconChip :icon="m.icon" :accent="m.accent" size="lg" data-testid="module-icon" />
               <div class="flex min-w-0 flex-1 flex-col gap-1">
                 <h2 class="text-subheading text-highlighted">{{ m.title }}</h2>
-                <p v-if="m.emptyText === null" class="text-body text-muted">{{ m.text }}</p>
-                <p v-else class="text-body text-muted" data-testid="module-empty">
-                  {{ m.emptyText }}
+                <p
+                  class="text-body text-muted"
+                  :data-testid="m.emptyText === null ? undefined : 'module-empty'"
+                >
+                  {{ m.emptyText ?? m.text }}
                 </p>
               </div>
               <div class="flex flex-wrap items-center justify-between gap-2">
