@@ -31,7 +31,7 @@ const tiles = computed(() =>
   <DsPanel
     v-if="tiles.length"
     title="Alat Soalan"
-    icon="wrench"
+    icon="squares-four"
     accent="action"
     data-testid="alat-soalan"
   >
