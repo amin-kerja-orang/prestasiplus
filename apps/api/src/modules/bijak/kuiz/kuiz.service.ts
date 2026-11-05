@@ -25,6 +25,7 @@ import { FilesService } from '../../files'
 import { PracticePorts, practiceRewardSource } from '../../practice/ports'
 import { type GradedAnswer, PracticeRepository, type ServedRef, type StoredCheck } from '../../practice/practice.repository'
 import { pinServableForNewSitting, QuestionsRepository } from '../../questions'
+import { type DrawCandidate, drawUnits } from '../../questions/serving'
 import type { QuestionRecord, StimulusGroupRecord } from '../../questions/types'
 import { PapersRepository } from '../papers/papers.repository'
 import {
@@ -93,20 +94,26 @@ export class KuizService {
       subjectId = idToString(subject.id)
     }
     // Published + active + learner-visible (secondary, not PKSK) are forced by the bank's `sample`; the shape is one objective leaf.
+    // S1-T06 (FR-MUR-QP-6, D90): `wholeGroups` keeps a member only of a complete group; the draw below then takes whole units.
     const ids = await this.questions.sample(
-      { type: 'mcq', singleMcqLeaf: true, ...(subjectId ? { subjectId } : {}) },
+      { type: 'mcq', singleMcqLeaf: true, wholeGroups: true, ...(subjectId ? { subjectId } : {}) },
       count * KUIZ_OVER_FETCH,
       mulberry32(randomInt(0, 0x1_0000_0000)),
     )
-    const records = await this.questions.getMany(ids, 'live')
-    const prepared = await this.prepare(records.filter((r) => r.isActive && r.version.status === 'approved'))
-    // `getMany` keeps the order of `ids` (the seeded hash order); keep the first `count` that can be answered.
-    const chosen = prepared
-      .flatMap((p) => {
-        const leaf = leavesOf(p.record.id, p.record.version.parts)[0]
-        return p.complete && leaf && markableLeaf(leaf) !== null ? [{ ...p, leaf }] : []
-      })
-      .slice(0, count)
+    const { records, sizes } = await this.withGroupMembers((await this.questions.getMany(ids, 'live')).filter((r) => r.isActive && r.version.status === 'approved'))
+    const prepared = await this.prepare(records)
+    const answerable = prepared.flatMap((p) => {
+      const leaf = leavesOf(p.record.id, p.record.version.parts)[0]
+      return p.complete && leaf && markableLeaf(leaf) !== null ? [{ ...p, leaf }] : []
+    })
+    // A group is drawn whole or not at all (`drawUnits`): one member that cannot be answered, or is missing, drops the whole group.
+    const byId = new Map(answerable.map((p) => [p.record.id, p]))
+    const candidates: DrawCandidate[] = answerable.map((p) =>
+      p.record.groupId === null
+        ? { id: p.record.id, groupId: null, groupPosition: null }
+        : { id: p.record.id, groupId: p.record.groupId, groupPosition: p.record.groupPosition, groupSize: sizes.get(p.record.groupId) ?? 0 },
+    )
+    const chosen = drawUnits(candidates, count, mulberry32(randomInt(0, 0x1_0000_0000))).flatMap((id) => byId.get(id) ?? [])
     if (chosen.length === 0) throw noQuestions()
 
     const startedAt = this.clock.now()
@@ -373,6 +380,26 @@ export class KuizService {
 
   // --- shared -------------------------------------------------------------------------------------
 
+  /**
+   * The records plus the not-yet-loaded live members of their groups, so a group cut by the sample window is judged whole, not dropped
+   * for the cut. Also each group's size: its members whose latest version is not archived (the count `groupCompleteSql` uses; an
+   * archived member stays in the group but is no longer a member to serve).
+   */
+  private async withGroupMembers(records: readonly QuestionRecord[]): Promise<{ records: QuestionRecord[]; sizes: Map<string, number> }> {
+    const groupIds = [...new Set(records.flatMap((r) => (r.groupId === null ? [] : [r.groupId])))]
+    const sizes = new Map<string, number>()
+    if (groupIds.length === 0) return { records: [...records], sizes }
+    const groups = await this.questions.groupsByIds(groupIds)
+    const latest = new Map((await this.questions.getMany(groups.flatMap((g) => g.questionIds), 'latest')).map((r) => [r.id, r]))
+    for (const g of groups) sizes.set(g.id, g.questionIds.filter((id) => latest.get(id)?.version.status !== 'archived').length)
+    const have = new Set(records.map((r) => r.id))
+    const missing = [...new Set(groups.flatMap((g) => g.questionIds))].filter((id) => !have.has(id))
+    const extra = missing.length === 0 ? [] : (await this.questions.getMany(missing, 'live')).filter(
+      (r) => r.isActive && r.version.status === 'approved' && r.version.type === 'mcq' && leavesOf(r.id, r.version.parts).length === 1,
+    )
+    return { records: [...records, ...extra], sizes }
+  }
+
   /** Groups, linked pictures and whether every stimulus can be shown, for each record (one query per kind, not per record). */
   private async prepare(records: readonly QuestionRecord[]) {
     const groupIds = [...new Set(records.flatMap((r) => (r.groupId === null ? [] : [r.groupId])))]
@@ -383,7 +410,7 @@ export class KuizService {
       const group = record.groupId ? (groups.get(record.groupId) ?? null) : null
       const resolved = resolveStimuli(record, group, assets)
       const fileIds = [...resolved.entries.flatMap((e) => (e.file ? [e.file] : [])), ...optionImageIds(record)]
-      out.push({ record, resolved, complete: resolved.complete, fileIds })
+      out.push({ record, resolved, complete: resolved.complete, fileIds, group })
     }
     return out
   }

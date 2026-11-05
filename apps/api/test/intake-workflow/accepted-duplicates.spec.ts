@@ -167,6 +167,8 @@ describe('REQ-B-057 (B2 minor): the review gate stops counting an entry once it 
         where v.question_id = $1::bigint and v.chapter_id is null`,
       [second.questionId],
     )
+    // S1-T02 R-DSKP: the leaf also needs its aras before Terbit.
+    await t.db.query(`update question_parts set cognitive_level = 'mengaplikasi' where question_version_id in (select id from question_versions where question_id = $1::bigint) and cognitive_level is null`, [second.questionId])
 
     const refused = await adminPost(`/questions/${second.questionId}/status`, { to: 'review' })
     expect(refused.status, JSON.stringify(refused.body)).toBe(422)
