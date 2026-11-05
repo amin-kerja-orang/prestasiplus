@@ -76,6 +76,38 @@ const sejarah = () =>
     change(SEJ_ESSAY_2, { text: 'Kerjasama antara kaum membina perpaduan.' }),
   ])
 
+describe('a self-mark shows the scheme, so it closes the late sync (AC-05.4)', () => {
+  it('on an auto_submitted attempt: an old savedAt after a self-mark is refused and the score stays', async () => {
+    const id = await startAttempt(me, PAPER.sainsK2, 'exam', true)
+    const first = await me.put(`/api/bijak/attempts/${id}/answers`, { changes: [change(SEL_B, { text: 'bahan terlarut dalam sel itu' }, 1)] })
+    expect(first.status).toBe(200)
+    const view = (await me.get(`/api/bijak/attempts/${id}`)).body.data as { attempt: { deadline: string } }
+    const deadline = new Date(view.attempt.deadline).getTime()
+    t.clock.set(new Date(deadline + 10 * MIN).toISOString())
+
+    const marked = await selfMark(me, id, { partId: SEL_B, mark: 1 })
+    expect(marked.status, JSON.stringify(marked.body)).toBe(200)
+    expect((await t.db.query<{ viewed: boolean }>(`select result_viewed_at is not null as viewed from exam_attempts where id = $1`, [id]))[0]?.viewed).toBe(true)
+    const score = (await t.db.query<{ score: number }>(`select score from attempt_results where attempt_id = $1`, [id]))[0]?.score
+
+    const late = await me.put(`/api/bijak/attempts/${id}/answers`, { changes: [change(SEL_B, { text: 'jawapan disalin daripada skema' }, 9, new Date(deadline - 5000).toISOString())] })
+    expect(late.status, JSON.stringify(late.body)).toBe(200)
+    expect(late.body.data).toMatchObject({ closed: true })
+    expect(late.body.data.regraded).toBeUndefined()
+    expect((await t.db.query<{ score: number }>(`select score from attempt_results where attempt_id = $1`, [id]))[0]?.score).toBe(score)
+    const stored = (await t.db.query<{ answer: { text: string } }>(`select answer from attempt_answers where attempt_id = $1 and part_id = $2`, [id, SEL_B]))[0]?.answer
+    expect(stored?.text).toBe('bahan terlarut dalam sel itu')
+  })
+
+  it('a refused self-mark shows nothing, so the late sync stays open', async () => {
+    const id = await startAttempt(me, PAPER.sainsK2, 'exam', true)
+    const view = (await me.get(`/api/bijak/attempts/${id}`)).body.data as { attempt: { deadline: string } }
+    t.clock.set(new Date(new Date(view.attempt.deadline).getTime() + 10 * MIN).toISOString())
+    expect((await selfMark(me, id, { partId: MCQ_PART, mark: 1 })).status).toBe(422)
+    expect((await t.db.query<{ viewed: boolean }>(`select result_viewed_at is not null as viewed from exam_attempts where id = $1`, [id]))[0]?.viewed).toBe(false)
+  })
+})
+
 describe('D94 choose-N self-mark reward inputs (best-N, attempt level)', () => {
   const OSMOSIS = 'sn2-osmosis-a' // Sains K2 Bahagian B "Pilih 1 daripada 2": 4 marks each
   const FOTOSINTESIS = 'sn2-fotosintesis-a'

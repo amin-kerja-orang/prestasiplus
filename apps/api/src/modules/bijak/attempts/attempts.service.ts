@@ -344,6 +344,8 @@ export class BijakAttemptsService {
       if (!found) throw ApiError.of('VALIDATION_ERROR', { fields: { partId: MSG.selfMarkPartUnknown } })
       const scheme = bundles.get(found.q.questionId)?.schemes[body.partId]
       if (!isSelfMarkable(scheme, found.p.status)) throw ApiError.of('VALIDATION_ERROR', { fields: { partId: MSG.selfMarkNotSubjective } })
+      // This response carries the result with its schemes, so a later late sync must not rewrite the answers (`lateSync`).
+      if (!row.resultViewedAt) await this.repo.markResultViewed(row.id, this.now())
       const marks = found.p.marks
       let mark = clamp(body.mark, 0, marks)
       if (body.band !== undefined) {

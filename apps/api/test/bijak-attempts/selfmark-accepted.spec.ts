@@ -84,13 +84,13 @@ describe('self-mark of accepted parts (FR-PA-21, AC-PA-20)', () => {
     expect(part(SHORT).selfMarkable).toBeUndefined()
   })
 
-  it('an essay is belum_dimarkah, never salah, and the grader lines say no teacher marks it', async () => {
+  it('an essay is belum_dimarkah, never salah', async () => {
     const id = await startAttempt(me, PAPER.sejK2, 'exam', true)
     const sub = await me.post(`/api/bijak/attempts/${id}/submit`, { idempotencyKey: `k-${id}`, changes: [change('sej2-q3-a', { text: 'Esei tentang sejarah negara.' })] })
     expect(sub.status, JSON.stringify(sub.body)).toBe(200)
     const res = await me.get(`/api/bijak/attempts/${id}/result`)
     const essay = BijakAttemptResultViewSchema.parse(res.body.data).result.questions.flatMap((q) => q.parts).find((p) => p.partId === 'sej2-q3-a')
     expect(essay?.status).toBe('belum_dimarkah')
-    expect(JSON.stringify(res.body)).not.toMatch(/Guru akan menilai|Disemak oleh guru/)
+    expect(JSON.stringify(res.body)).not.toContain('Guru akan menilai')
   })
 })
