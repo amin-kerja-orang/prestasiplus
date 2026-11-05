@@ -68,6 +68,7 @@ describe('bulk Bab mapping (API-DSKP-09) and Bab coverage (API-DSKP-10)', () => 
   const post = (body: unknown) => admin.post(URL, body)
   const ALREADY = 'Sudah mempunyai Bab.'
   const MISMATCH = 'Bab tidak sepadan dengan subjek dan tahap.'
+  const NOT_APPROVED = 'Soalan belum diluluskan.'
   const mathT4Filter = () => ({ subjectId: math, educationLevelId: t4 })
   const result = async (body: unknown) => parseData(await post(body), BulkChapterResultSchema)
 
@@ -85,7 +86,7 @@ describe('bulk Bab mapping (API-DSKP-09) and Bab coverage (API-DSKP-10)', () => 
       const r = await result({ chapterId: babT4, filter: mathT4Filter(), dryRun: true })
       expect(r).toEqual({
         matched: 5, eligible: 3, refused: 2,
-        skipped: [{ questionId: p.hasBab, reason: ALREADY }, { questionId: p.draft, reason: MISMATCH }].sort((a, b) => Number(a.questionId) - Number(b.questionId)),
+        skipped: [{ questionId: p.hasBab, reason: ALREADY }, { questionId: p.draft, reason: NOT_APPROVED }].sort((a, b) => Number(a.questionId) - Number(b.questionId)),
         applied: 0, cap: BULK_CHAPTER_CAP, remaining: 0, capped: false, dryRun: true, auditId: null,
       })
       expect(BULK_CHAPTER_CAP).toBe(10_000)
@@ -198,10 +199,19 @@ describe('bulk Bab mapping (API-DSKP-09) and Bab coverage (API-DSKP-10)', () => 
       const others = await Promise.all((['draft', 'review', 'archived'] as const).map((status) => addQ({ subject: math, level: t4, status })))
       const r = await result({ chapterId: babT4, ids: [approved, ...others], expectedCount: 4 })
       expect(r).toMatchObject({ matched: 4, eligible: 1, refused: 3, applied: 1 })
-      // DOC DEFECT: no BM line is documented for "not approved"; it gets the mismatch line.
+      // Ruling R1-FAQ Q11: a matching question that is not approved has its own reason.
       expect(r.skipped.map((x) => x.questionId).sort()).toEqual([...others].sort())
-      for (const x of r.skipped) expect(x.reason).toBe(MISMATCH)
+      for (const x of r.skipped) expect(x.reason).toBe(NOT_APPROVED)
       for (const id of others) expect(await chapterOf(id)).toBeNull()
+    })
+
+    it('a not-approved question of another subject or level is a mismatch, not "belum diluluskan"', async () => {
+      const draftOtherLevel = await addQ({ subject: math, level: t5, status: 'draft' })
+      const reviewOtherSubject = await addQ({ subject: bm, level: t4, status: 'review' })
+      const draftMatching = await addQ({ subject: math, level: t4, status: 'draft' })
+      const r = await result({ chapterId: babT4, ids: [draftOtherLevel, reviewOtherSubject, draftMatching], dryRun: true })
+      const reasons = Object.fromEntries(r.skipped.map((x) => [x.questionId, x.reason]))
+      expect(reasons).toEqual({ [draftOtherLevel]: MISMATCH, [reviewOtherSubject]: MISMATCH, [draftMatching]: NOT_APPROVED })
     })
 
     it('ignores an id that is not a question (it is not matched)', async () => {

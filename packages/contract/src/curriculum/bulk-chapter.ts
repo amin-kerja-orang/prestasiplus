@@ -22,13 +22,14 @@ export const CURRICULUM_BULK_CHAPTER_MESSAGES = {
 } as const
 
 /**
- * Reason of a skipped row (PRD30 FR-ADM-C05.2, AC-ADM-C05.4, "Field & behaviour spec"). Both lines are the documented BM copy.
- * DOC DEFECT: no BM line is documented for a matched question that is not approved (or has no live version); it gets the mismatch line,
- * the closest documented one, until the SRS words it.
+ * Reason of a skipped row (PRD30 FR-ADM-C05.2, AC-ADM-C05.4, "Field & behaviour spec"). The first two lines are the documented BM copy;
+ * `notApproved` is the lead ruling (R1-FAQ Q11) for a question that matches the Bab's subject and level but has no approved live
+ * version (draft, review, archived, or no live version).
  */
 export const BULK_CHAPTER_SKIP_REASONS = {
   alreadyHasChapter: 'Sudah mempunyai Bab.',
   chapterMismatch: 'Bab tidak sepadan dengan subjek dan tahap.',
+  notApproved: 'Soalan belum diluluskan.',
 } as const
 
 /**

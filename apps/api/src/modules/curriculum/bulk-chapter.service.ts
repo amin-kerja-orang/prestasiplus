@@ -156,19 +156,27 @@ export class CurriculumBulkChapterService {
 
   /**
    * The refused rows with their reason (PRD30 C-05), question id ascending, at most `cap`. Must be read BEFORE the update (a row the run
-   * just linked would otherwise read as "already has a Bab"). A row that fails the Bab's subject/level or is not approved gets the mismatch
-   * line; any other refused row already has a Bab (with `overwrite`, it is already in this Bab).
+   * just linked would otherwise read as "already has a Bab"). A row whose subject/level differ from the Bab's gets the mismatch line; a row
+   * that matches but has no approved live version (draft, review, archived) gets "Soalan belum diluluskan."; any other refused row already
+   * has a Bab (with `overwrite`, it is already in this Bab).
    */
   private async skipped(selection: Selection, chapter: Chapter, overwrite: boolean, cap: number): Promise<BulkChapterSkippedRow[]> {
     const { from, where, eligible } = this.scope(selection, chapter, overwrite)
+    // Subject and level are read from the live version, or from the latest version when there is no live one (a draft has none), so a
+    // question that matches the Bab but is not approved is told apart from one that does not match.
     const mismatch = chapter.educationLevelId === null
       ? Prisma.sql`TRUE`
-      : Prisma.sql`(lv.status IS DISTINCT FROM 'approved' OR lv.subject_id IS DISTINCT FROM ${chapter.subjectId} OR lv.education_level_id IS DISTINCT FROM ${chapter.educationLevelId})`
-    const rows = await this.prisma.client.$queryRaw<{ id: bigint; mismatch: boolean }[]>`
-      SELECT q.id, ${mismatch} AS mismatch ${from} WHERE ${where} AND NOT COALESCE(${eligible}, FALSE) ORDER BY q.id ASC LIMIT ${cap}`
+      : Prisma.sql`(COALESCE(lv.subject_id, v.subject_id) IS DISTINCT FROM ${chapter.subjectId} OR COALESCE(lv.education_level_id, v.education_level_id) IS DISTINCT FROM ${chapter.educationLevelId})`
+    const rows = await this.prisma.client.$queryRaw<{ id: bigint; mismatch: boolean; not_approved: boolean }[]>`
+      SELECT q.id, ${mismatch} AS mismatch, (lv.status IS DISTINCT FROM 'approved') AS not_approved
+        ${from} WHERE ${where} AND NOT COALESCE(${eligible}, FALSE) ORDER BY q.id ASC LIMIT ${cap}`
     return rows.map((r) => ({
       questionId: idToString(r.id),
-      reason: r.mismatch ? BULK_CHAPTER_SKIP_REASONS.chapterMismatch : BULK_CHAPTER_SKIP_REASONS.alreadyHasChapter,
+      reason: r.mismatch
+        ? BULK_CHAPTER_SKIP_REASONS.chapterMismatch
+        : r.not_approved
+          ? BULK_CHAPTER_SKIP_REASONS.notApproved
+          : BULK_CHAPTER_SKIP_REASONS.alreadyHasChapter,
     }))
   }
 
