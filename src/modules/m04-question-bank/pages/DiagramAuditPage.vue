@@ -11,6 +11,8 @@
  *   `str_page`; links keep the filters and drop the other list's page, DV-M04-16); a section is
  *   omitted when its count is 0. Both empty: "Semua soalan sudah lengkap dengan gambar rajah!".
  * - Upload and dismiss call the API and reload with the API `status` as the flash.
+ * - S6-T18: a teacher / school_admin has no school filter and no Dismiss; their upload is sent for
+ *   review (the card stays, chip "Menunggu Semakan").
  */
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -27,6 +29,7 @@ import {
   type StatItem,
 } from '@/ds'
 import { formatNumber } from '@/lib/number'
+import { useSessionStore } from '@/stores/session'
 
 import { fetchDiagramAudit } from '../api/diagram-audit'
 import DiagramCard from '../components/DiagramCard.vue'
@@ -38,10 +41,17 @@ import { LOAD_ERROR, errorLines } from '../lib/ui-errors'
 const route = useRoute()
 const router = useRouter()
 const flash = useFlash()
+const session = useSessionStore()
+/** Only the admin sees the school filter and Dismiss (S6-T18). */
+const isAdmin = computed(() => session.role === 'admin')
+/** Ids (`kind:id`) whose teacher upload waits for review. */
+const pendingKeys = ref<string[]>([])
+const isPending = (kind: 'mcq' | 'structured', id: number): boolean =>
+  pendingKeys.value.includes(`${kind}:${String(id)}`)
 
 const applied = computed(() => ({
   subject_id: queryText(route.query.subject_id),
-  school_id: queryText(route.query.school_id),
+  school_id: isAdmin.value ? queryText(route.query.school_id) : '',
   mcq_page: pageOf(route.query.mcq_page),
   str_page: pageOf(route.query.str_page),
 }))
@@ -54,7 +64,9 @@ watch(applied, (a) => {
 })
 
 const { data: subjects } = useApi((signal) => fetchSubjectOptions(signal))
-const { data: schools } = useApi((signal) => fetchSchoolNameOptions(signal))
+const { data: schools } = useApi((signal) =>
+  isAdmin.value ? fetchSchoolNameOptions(signal) : Promise.resolve([]),
+)
 
 const { data, error, reload } = useApi(
   (signal) =>
@@ -143,6 +155,13 @@ async function onDone(message: string): Promise<void> {
   flash.show({ type: 'success', message })
 }
 
+/** Teacher upload: the flag stays, the card shows the pending chip (S6-T18). */
+async function onSent(kind: 'mcq' | 'structured', id: number, message: string): Promise<void> {
+  pendingKeys.value = [...pendingKeys.value, `${kind}:${String(id)}`]
+  await reload()
+  flash.show({ type: 'success', message })
+}
+
 function onFailed(err: unknown): void {
   flash.show({ type: 'error', message: errorLines(err) })
 }
@@ -161,7 +180,13 @@ const filterCount = computed(
 <template>
   <DsPage data-testid="diagrams-page">
     <!-- Stat cards: 2 across below md, 3 across from md. -->
-    <DsStatRow :items="statItems" :cols="3" :loading="!stats" density="roomy" prefix="diagrams-stat" />
+    <DsStatRow
+      :items="statItems"
+      :cols="3"
+      :loading="!stats"
+      density="roomy"
+      prefix="diagrams-stat"
+    />
 
     <!-- Top-10 subjects by flagged MCQ count (global). -->
     <DsPanel title="MCQ Perlu Gambar Mengikut Mata Pelajaran" data-testid="diagrams-by-subject">
@@ -194,11 +219,13 @@ const filterCount = computed(
             data-testid="diagrams-subject"
           >
             <option value="">Semua Mata Pelajaran</option>
-            <option v-for="s in subjects ?? []" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
+            <option v-for="s in subjects ?? []" :key="s.id" :value="String(s.id)">
+              {{ s.name }}
+            </option>
           </DsNativeSelect>
         </DsFormField>
       </div>
-      <div class="w-full min-w-0 sm:w-64">
+      <div v-if="isAdmin" class="w-full min-w-0 sm:w-64">
         <DsFormField v-slot="{ id }" native for="diagrams-school" label="Sekolah">
           <DsNativeSelect
             :id="id"
@@ -207,7 +234,9 @@ const filterCount = computed(
             data-testid="diagrams-school"
           >
             <option value="">Semua Sekolah</option>
-            <option v-for="s in schools ?? []" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
+            <option v-for="s in schools ?? []" :key="s.id" :value="String(s.id)">
+              {{ s.name }}
+            </option>
           </DsNativeSelect>
         </DsFormField>
       </div>
@@ -232,7 +261,11 @@ const filterCount = computed(
         </p>
       </DsPanel>
 
-      <section v-if="mcq && mcq.meta.totalItems > 0" class="flex flex-col gap-3" data-testid="diagrams-mcq">
+      <section
+        v-if="mcq && mcq.meta.totalItems > 0"
+        class="flex flex-col gap-3"
+        data-testid="diagrams-mcq"
+      >
         <h2 class="flex items-center gap-2 text-subheading text-highlighted">
           <UIcon name="i-ph-list-numbers" class="size-5 text-primary-t" />
           MCQ ({{ mcq.meta.totalItems }})
@@ -242,7 +275,9 @@ const filterCount = computed(
           :key="item.id"
           kind="mcq"
           :item="item"
-          @done="onDone"
+          :can-dismiss="isAdmin"
+          :pending="isPending('mcq', item.id)"
+          @done="(m: string) => (isAdmin ? onDone(m) : onSent('mcq', item.id, m))"
           @failed="onFailed"
         />
         <div v-if="mcq.meta.totalItems > mcq.meta.pageSize" data-testid="diagrams-mcq-pager">
@@ -271,7 +306,9 @@ const filterCount = computed(
           :key="item.id"
           kind="structured"
           :item="item"
-          @done="onDone"
+          :can-dismiss="isAdmin"
+          :pending="isPending('structured', item.id)"
+          @done="(m: string) => (isAdmin ? onDone(m) : onSent('structured', item.id, m))"
           @failed="onFailed"
         />
         <div

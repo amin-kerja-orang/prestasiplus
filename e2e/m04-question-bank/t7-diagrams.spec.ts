@@ -19,6 +19,7 @@ import {
 } from '../support'
 
 const ADMIN = 'admin@demo.test'
+const GURU = 'guru@demo.test'
 const PATH = '/admin/soalan-gambar'
 /** 1x1 transparent PNG. */
 const PNG = Buffer.from(
@@ -95,6 +96,26 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
         'Showing 1 to 20 of 522 results',
       )
     }
+    await expectNoHorizontalScroll(page)
+  })
+
+  test('a teacher sees the audit without Dismiss or the school filter, with 44 px touch targets', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }) => {
+    await loginAs(GURU)
+    await openAudit(page, gotoApp)
+    await expect(page.getByTestId('diagrams-stat-mcq')).toBeVisible()
+    await expect(page.getByTestId('diagrams-stat-structured')).toBeVisible()
+    await expect(page.getByTestId('diagrams-stat-total')).toBeVisible()
+    await expect(page.getByTestId('diagram-dismiss')).toHaveCount(0)
+    await expect(page.getByTestId('diagrams-school')).toHaveCount(0)
+    await expectTouchTarget(mcqCards(page).first().getByTestId('diagram-upload'))
+    await expectTouchTarget(page.getByTestId('diagrams-filter-submit'), 44)
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true)
     await expectNoHorizontalScroll(page)
   })
 
