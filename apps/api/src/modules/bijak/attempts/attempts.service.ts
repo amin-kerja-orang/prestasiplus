@@ -259,7 +259,8 @@ export class BijakAttemptsService {
         code: paper.code,
         mode: body.mode,
         startedAt,
-        deadlineAt: body.mode === 'exam' ? new Date(startedAt.getTime() + paper.durationMin * 60_000) : null,
+        // A paper with no Tempoh (durationMin 0, an untimed Kertas Subjektif paper; PO decision 2026-11-05, item 17) never gets a deadline.
+        deadlineAt: body.mode === 'exam' && paper.durationMin > 0 ? new Date(startedAt.getTime() + paper.durationMin * 60_000) : null,
         durationMin: paper.durationMin,
         composition,
         isTest,

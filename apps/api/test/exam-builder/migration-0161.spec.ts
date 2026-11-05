@@ -52,12 +52,19 @@ describe('migration 0161 paper surface (DM-23)', () => {
   it('keeps duration_minutes within 0..300 and total_marks at least 1', async () => {
     await expect(insert({ surface: 'subjektif', duration_minutes: 0, printed_duration_min: 0 })).resolves.toHaveLength(1)
     await expect(insert({ surface: 'subjektif', duration_minutes: 301, printed_duration_min: 301 })).rejects.toThrow(/ck_papers_duration_minutes/)
-    await expect(insert({ surface: 'subjektif', total_marks: 0 })).rejects.toThrow(/ck_papers_total_marks/)
+    await expect(insert({ surface: 'subjektif', duration_minutes: 60, total_marks: 0 })).rejects.toThrow(/ck_papers_total_marks/)
   })
 
-  it('re-running the file is a no-op that keeps every row', async () => {
-    const before = await db.query(`select id, surface from papers order by id`)
+  it('a subjektif paper keeps printed_duration_min equal to duration_minutes, or 0 when it is null', async () => {
+    await expect(insert({ surface: 'subjektif', duration_minutes: 150, printed_duration_min: 0 })).rejects.toThrow(/ck_papers_subjektif_duration/)
+    await expect(insert({ surface: 'subjektif', duration_minutes: null, printed_duration_min: 60 })).rejects.toThrow(/ck_papers_subjektif_duration/)
+  })
+
+  it('re-running the file is a no-op that keeps every row and its data', async () => {
+    const all = `select id, surface, exam_board, duration_minutes, total_marks, printed_duration_min from papers order by id`
+    const before = await db.query(all)
+    expect(before.some((r) => (r as { surface: string }).surface === 'subjektif')).toBe(true)
     await db.query(readFileSync(MIGRATION, 'utf8'))
-    expect(await db.query(`select id, surface from papers order by id`)).toEqual(before)
+    expect(await db.query(all)).toEqual(before)
   })
 })

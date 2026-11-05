@@ -9,6 +9,7 @@
 -- `duration_minutes`, or 0 when that is null, so `ck_papers_duration` allows 0 for `surface = 'subjektif'` only.
 --
 -- Reversible:
+--   ALTER TABLE "papers" DROP CONSTRAINT "ck_papers_subjektif_duration";
 --   ALTER TABLE "papers" DROP CONSTRAINT "ck_papers_duration";
 --   ALTER TABLE "papers" ADD CONSTRAINT "ck_papers_duration" CHECK ("printed_duration_min" > 0);
 --   ALTER TABLE "papers" DROP COLUMN "exam_board", DROP COLUMN "surface", DROP COLUMN "duration_minutes", DROP COLUMN "total_marks";
@@ -30,6 +31,11 @@ ALTER TABLE "papers" ADD CONSTRAINT "ck_papers_total_marks" CHECK ("total_marks"
 ALTER TABLE "papers" DROP CONSTRAINT IF EXISTS "ck_papers_duration";
 ALTER TABLE "papers" ADD CONSTRAINT "ck_papers_duration"
   CHECK ("printed_duration_min" > 0 OR ("surface" = 'subjektif' AND "printed_duration_min" = 0));
+
+-- A subjektif paper writes Tempoh twice: `printed_duration_min` = `duration_minutes`, or 0 when it is null.
+ALTER TABLE "papers" DROP CONSTRAINT IF EXISTS "ck_papers_subjektif_duration";
+ALTER TABLE "papers" ADD CONSTRAINT "ck_papers_subjektif_duration"
+  CHECK ("surface" <> 'subjektif' OR "printed_duration_min" = COALESCE("duration_minutes", 0));
 
 -- The pupil list and the admin Kertas Subjektif list read by surface and status.
 CREATE INDEX IF NOT EXISTS "ix_papers_surface_status" ON "papers" ("surface", "status");
