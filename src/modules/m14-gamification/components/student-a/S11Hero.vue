@@ -5,7 +5,7 @@
  */
 import { computed } from 'vue'
 
-import { DsRewardChip } from '@/ds'
+import { DsCluster, DsRewardChip, DsText } from '@/ds'
 import { formatCount, formatPercent } from '@/lib/number'
 
 import type { GamificationWallet } from '../../api'
@@ -86,12 +86,14 @@ const titleChip = computed(() =>
           :data-value="pct"
           data-testid="s11-next-bar"
         />
-        <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-caption text-muted">
-          <p data-testid="s11-next-need">Perlu {{ formatCount(need) }} syiling lagi</p>
-          <span class="tabular" data-testid="s11-next-figures"
-            >{{ formatCount(wallet.totalSyilingEarned) }} / {{ formatCount(next.minSyiling) }}</span
-          >
-        </div>
+        <DsCluster justify="between">
+          <DsText variant="caption" tone="muted" data-testid="s11-next-need">
+            Perlu {{ formatCount(need) }} syiling lagi
+          </DsText>
+          <DsText variant="caption" tone="muted" tabular data-testid="s11-next-figures">
+            {{ formatCount(wallet.totalSyilingEarned) }} / {{ formatCount(next.minSyiling) }}
+          </DsText>
+        </DsCluster>
       </div>
 
       <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
