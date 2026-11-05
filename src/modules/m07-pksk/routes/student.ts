@@ -4,7 +4,7 @@ import { TAB_TITLE } from '../lib/levels'
 
 /**
  * M07 route fragment "student" (M07-T2; SRS M07 §2): S1 hub, S2 dashboard, S3 domains, S4 history,
- * S4a domain practice and S4b full exam (provisional). `:level` is limited to `T1` / `T4` (case
+ * S4a domain practice and S4b full exam. `:level` is limited to `T1` / `T4` (case
  * sensitive) so any other value falls to the catch-all 404 page (BR-M07-19, FR-M07-18). The level
  * gate (no access -> `/pksk`) is applied by the page from the API's 403 (FR-M07-19). A domain code
  * outside the 15 is a 404 from the API. All tab titles are the generic live title (DV-M07-06).
