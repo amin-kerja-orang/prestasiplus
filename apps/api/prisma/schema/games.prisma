@@ -242,6 +242,21 @@ model GameSettings {
   @@map("game_settings")
 }
 
+/// DM-64: the 8 segments of the Roda Nasib wheel (48 GAME-14), admin data; seeded by migration 0224. Weights total 100.
+model SpinSegment {
+  /// 1..8 (check).
+  position Int     @id @db.SmallInt
+  /// 1..20 characters (check).
+  label    String
+  /// 0..100 (check).
+  syiling  Int
+  /// 0..100 (check).
+  weight   Int
+  active   Boolean @default(true)
+
+  @@map("spin_segments")
+}
+
 model League {
   id            BigInt   @id @default(autoincrement())
   name          String
