@@ -30,12 +30,10 @@ const trendSeries = computed(() => [
   { label: 'Aktiviti', data: props.report.trend.map((p) => p.value) },
 ])
 
-const breakdown = computed(() => [
-  { key: 'quiz', label: 'Kuiz Objektif', value: props.report.breakdown.quiz },
-  { key: 'structured', label: 'Soalan Berstruktur', value: props.report.breakdown.structured },
-  { key: 'battle', label: 'Battle Arena', value: props.report.breakdown.battle },
-  { key: 'game', label: 'Permainan', value: props.report.breakdown.game },
-])
+// Ruling 1 (#485): the OPT-MODE-SESI labels, only the modes with a count above 0 (the server sends them that way).
+const breakdown = computed(() =>
+  props.report.breakdown.modes.map((m) => ({ key: m.label, label: m.label, value: m.count })),
+)
 const breakdownLabels = computed(() => breakdown.value.map((b) => b.label))
 const breakdownSeries = computed(() => [
   { label: 'Aktiviti', data: breakdown.value.map((b) => b.value) },

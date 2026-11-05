@@ -63,6 +63,37 @@ export function modeLabelOf(mode: string): string {
   return Object.hasOwn(MODE_LABELS, mode) ? (MODE_LABELS[mode] as string) : 'Latihan'
 }
 
+/**
+ * "Pecahan Aktiviti" label of a stored mode: the OPT-MODE-SESI register (40 section X11), team lead ruling 1 on #485. Legacy
+ * `ramalan` reads as Tracking A. An unknown mode is "Latih Tubi". This is a different, finer list than the Statistik
+ * `modeLabelOf` (R1-AS-46 only says "mode labels as R1-AS-48"; the card S6-T09 (g) fixes the coarser Statistik set), so both stay.
+ */
+const REGISTER_LABELS: Readonly<Record<string, string>> = {
+  latih_tubi: 'Latih Tubi',
+  random: 'Latih Tubi Rawak',
+  chapter: 'Soalan by Chapter',
+  revision: 'Ulang Kaji',
+  remedial: 'Remedial',
+  mission: 'Misi Harian',
+  question_set: 'Set Soalan Guru',
+  pksk: 'PKSK',
+  databank: 'Databank Soalan',
+  kuiz: 'Simulasi - Kuiz',
+  simulasi: 'Bijak SPM',
+  tracking_a: 'Tracking A',
+  ramalan: 'Tracking A',
+  subjektif: 'Subjektif',
+  structured: 'Soalan Berstruktur',
+  battle: 'Battle',
+  audio_kbat: 'Audio KBAT',
+  game: 'Permainan',
+  past_year: 'Tahun Lepas',
+}
+
+export function registerModeLabelOf(mode: string): string {
+  return Object.hasOwn(REGISTER_LABELS, mode) ? (REGISTER_LABELS[mode] as string) : 'Latih Tubi'
+}
+
 // --- activity --------------------------------------------------------------------------------------------------------------
 
 /** The activity window starts at 00:00 MYT of (today - range + 1) and ends now. Epoch ms. */

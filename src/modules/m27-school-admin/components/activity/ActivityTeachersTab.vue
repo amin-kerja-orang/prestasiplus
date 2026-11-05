@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
- * S3 Guru tab (FR-M27-71; restyle spec AS-48): heading "Senarai Guru ({n})", pills "Semua", "Pernah Login
- * ({n})", "Belum Login ({n})", the search "Cari guru...", the tiles "Jumlah Guru", "Pernah Login", "Jumlah
- * Soalan", "Jumlah Syiling" and a `DsDataTable` "#", "Nama" (with the e-mail line), "Login", "MCQ",
- * "Struktur", "Syiling", "Headcount", "Login Terakhir" (cards below `md`). No "Sekolah" column and no
- * school select; a search with no match shows no rows.
+ * S3 Guru tab (R1-AS-48 field table; FR-M27-71): heading "Senarai Guru ({n})", pills "Semua", "Pernah Akses
+ * ({n})", "Belum Akses ({n})", the search "Cari guru...", the tiles "Jumlah Guru", "Pernah Akses", "Jumlah
+ * Soalan", "Jumlah Syiling" and a `DsDataTable` "#", "Nama", "Emel", "Status" ("Pernah Akses" or "Belum
+ * Akses"), "Login Terakhir" (`dd/mm/yyyy HH:mm` or "Belum login"; the server sorts by login descending,
+ * never-logged last; cards below `md`). No "Sekolah" column; an empty result shows "Tiada rekod sepadan.".
  */
 import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
@@ -24,8 +24,8 @@ const t = computed(() => props.report.tiles.teachers)
 
 const pills = computed<PillItem<Filter>[]>(() => [
   { key: 'semua', label: 'Semua' },
-  { key: 'pernah', label: `Pernah Login (${count(t.value.logged)})` },
-  { key: 'belum', label: `Belum Login (${count(t.value.total - t.value.logged)})` },
+  { key: 'pernah', label: `Pernah Akses (${count(t.value.logged)})` },
+  { key: 'belum', label: `Belum Akses (${count(t.value.total - t.value.logged)})` },
 ])
 
 interface Row extends Record<string, unknown> {
@@ -34,12 +34,7 @@ interface Row extends Record<string, unknown> {
   name: string
   email: string
   loggedIn: boolean
-  login: string
-  mcq: string
-  structured: string
-  coins: string
-  hasHeadcount: boolean
-  headcount: string
+  status: string
   last: string
 }
 
@@ -56,12 +51,7 @@ const rows = computed<Row[]>(() =>
       name: r.name,
       email: r.email,
       loggedIn: r.loggedIn,
-      login: r.loggedIn ? 'Ya' : 'Belum',
-      mcq: count(r.mcq),
-      structured: count(r.structured),
-      coins: count(r.coins),
-      hasHeadcount: r.hasHeadcount,
-      headcount: r.hasHeadcount ? 'Ya' : '-',
+      status: r.loggedIn ? 'Pernah Akses' : 'Belum Akses',
       last: lastLogin(r.lastLoginAt),
     })),
 )
@@ -69,19 +59,13 @@ const rows = computed<Row[]>(() =>
 const columns: TableColumn<Row>[] = [
   { id: 'index', accessorKey: 'index', header: '#' },
   { id: 'name', accessorKey: 'name', header: 'Nama' },
-  { id: 'login', accessorKey: 'login', header: 'Login' },
-  { id: 'mcq', accessorKey: 'mcq', header: 'MCQ' },
-  { id: 'structured', accessorKey: 'structured', header: 'Struktur' },
-  { id: 'coins', accessorKey: 'coins', header: 'Syiling' },
-  { id: 'headcount', accessorKey: 'headcount', header: 'Headcount' },
+  { id: 'email', accessorKey: 'email', header: 'Emel' },
+  { id: 'status', accessorKey: 'status', header: 'Status' },
   { id: 'last', accessorKey: 'last', header: 'Login Terakhir' },
 ]
 const cardFields: CardField[] = [
-  { key: 'login', label: 'Login' },
-  { key: 'mcq', label: 'MCQ' },
-  { key: 'structured', label: 'Struktur' },
-  { key: 'coins', label: 'Syiling' },
-  { key: 'headcount', label: 'Headcount' },
+  { key: 'email', label: 'Emel' },
+  { key: 'status', label: 'Status' },
   { key: 'last', label: 'Login Terakhir' },
 ]
 
@@ -92,7 +76,7 @@ const tiles = computed<StatItem[]>(() => [
     value: count(t.value.total),
     icon: 'chalkboard-teacher', accent: 'action',
   },
-  { key: 'logged', label: 'Pernah Login', value: count(t.value.logged), icon: 'sign-in', accent: 'win' },
+  { key: 'logged', label: 'Pernah Akses', value: count(t.value.logged), icon: 'sign-in', accent: 'win' },
   {
     key: 'questions',
     label: 'Jumlah Soalan',
@@ -142,35 +126,17 @@ const tiles = computed<StatItem[]>(() => [
       data-testid="la-guru-table"
     >
       <template #name-cell="{ row }">
-        <p class="text-label text-highlighted" data-testid="la-guru-name">{{ row.original.name }}</p>
-        <p class="text-caption text-muted" data-testid="la-guru-email">{{ row.original.email }}</p>
+        <span class="text-label text-highlighted" data-testid="la-guru-name">{{ row.original.name }}</span>
       </template>
-      <template #login-cell="{ row }">
+      <template #email-cell="{ row }">
+        <span class="break-all text-muted" data-testid="la-guru-email">{{ row.original.email }}</span>
+      </template>
+      <template #status-cell="{ row }">
         <DsStatusBadge
           :status="row.original.loggedIn ? 'active' : 'inactive'"
-          :label="row.original.login"
+          :label="row.original.status"
           data-testid="la-guru-login"
         />
-      </template>
-      <template #mcq-cell="{ row }">
-        <span data-testid="la-guru-mcq">{{ row.original.mcq }}</span>
-      </template>
-      <template #structured-cell="{ row }">
-        <span data-testid="la-guru-struktur">{{ row.original.structured }}</span>
-      </template>
-      <template #coins-cell="{ row }">
-        <span data-testid="la-guru-syiling">{{ row.original.coins }}</span>
-      </template>
-      <template #headcount-cell="{ row }">
-        <span data-testid="la-guru-headcount">
-          <UIcon
-            v-if="row.original.hasHeadcount"
-            name="i-ph-check"
-            class="size-5 text-success"
-            aria-label="Ya"
-          />
-          <span v-else class="text-dimmed">-</span>
-        </span>
       </template>
       <template #last-cell="{ row }">
         <span class="whitespace-nowrap" data-testid="la-guru-last">{{ row.original.last }}</span>

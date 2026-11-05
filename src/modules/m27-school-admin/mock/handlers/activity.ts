@@ -23,13 +23,14 @@ import type {
 } from '../../api/school-admin'
 import { peopleOf } from '../read-models/school-people'
 import { requireSchoolAdminWithSchool, schoolOf } from '../read-models/school-scope'
-import { round1 } from '../read-models/usage'
+import { registerModeLabel, round1 } from '../read-models/usage'
 
-const pupilRow = (r: StatsPupilRow): ActivityPupilRow => ({
+const pupilRow = (r: StatsPupilRow, answers: Map<number, number>): ActivityPupilRow => ({
   userId: r.userId,
   name: r.name,
   className: r.className,
   sessions: r.sessions,
+  answers: answers.get(r.userId) ?? 0,
   accuracy: r.accuracy,
   seconds: r.seconds,
   coins: r.coins,
@@ -62,6 +63,24 @@ function skorPurata(schoolId: number, days: number, now: number): number | null 
   return values.length === 0 ? null : round1(values.reduce((a, b) => a + b, 0) / values.length)
 }
 
+/** "Soalan" per pupil and "Pecahan Aktiviti" rows of the range window (today included). */
+function windowFacts(schoolId: number, days: number, now: number) {
+  const from = startOfDay(now) - (days - 1) * DAY_MS
+  const answers = new Map<number, number>()
+  const perMode = new Map<string, number>()
+  for (const pupil of peopleOf(schoolId, 'student', { isActive: true })) {
+    answers.set(pupil.id, practice.answers(pupil.id, { from, to: now + 1 }).length)
+    for (const s of practice.history(pupil.id, { from, to: now + 1 })) {
+      const label = registerModeLabel(s.mode)
+      perMode.set(label, (perMode.get(label) ?? 0) + 1)
+    }
+  }
+  const modes = [...perMode.entries()]
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'ms-MY'))
+  return { answers, modes }
+}
+
 /** Q-M27-S3 for `schoolId` at `now` (epoch ms). */
 export function buildSchoolActivityReport(
   schoolId: number,
@@ -69,6 +88,13 @@ export function buildSchoolActivityReport(
   now?: number,
 ): SchoolActivityReport {
   const r = buildStatsReport(normaliseRange(range), { schoolId, now, includeInactive: true })
+  const facts = windowFacts(schoolId, r.range, now ?? Date.now())
+  // Murid tab: by Soalan descending, ties by name; Guru tab: last login descending, never-logged last.
+  const bySoalan = (list: StatsPupilRow[]) =>
+    [...list].sort((a, b) => (facts.answers.get(b.userId) ?? 0) - (facts.answers.get(a.userId) ?? 0) || a.name.localeCompare(b.name, 'ms-MY'))
+  const loginMs = (t: StatsTeacherRow): number => (t.lastLoginAt === null ? -Infinity : Date.parse(t.lastLoginAt))
+  const byLogin = (list: StatsTeacherRow[]) =>
+    [...list].sort((a, b) => (loginMs(b) === loginMs(a) ? 0 : loginMs(b) > loginMs(a) ? 1 : -1) || a.name.localeCompare(b.name, 'ms-MY'))
   return {
     range: r.range,
     schoolId,
@@ -83,15 +109,15 @@ export function buildSchoolActivityReport(
       skorPurata: skorPurata(schoolId, r.range, now ?? Date.now()),
     },
     trend: r.trend,
-    breakdown: r.breakdown,
+    breakdown: { ...r.breakdown, modes: facts.modes },
     topPupils: r.topPupils,
     teachersNeverLogged: r.teachersNeverLogged,
-    teachers: r.teachers.map(teacherRow),
+    teachers: byLogin(r.teachers).map(teacherRow),
     pupils: {
-      semua: r.pupils.semua.map(pupilRow),
-      aktif: r.pupils.aktif.map(pupilRow),
-      loginSahaja: r.pupils.loginSahaja.map(pupilRow),
-      belumLogin: r.pupils.belumLogin.map(pupilRow),
+      semua: bySoalan(r.pupils.semua).map((p) => pupilRow(p, facts.answers)),
+      aktif: bySoalan(r.pupils.aktif).map((p) => pupilRow(p, facts.answers)),
+      loginSahaja: bySoalan(r.pupils.loginSahaja).map((p) => pupilRow(p, facts.answers)),
+      belumLogin: bySoalan(r.pupils.belumLogin).map((p) => pupilRow(p, facts.answers)),
     },
     tiles: { teachers: r.tiles.teachers, pupils: r.tiles.pupils },
   }

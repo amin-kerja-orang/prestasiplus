@@ -50,6 +50,31 @@ const MODE_LABELS: Readonly<Record<string, string>> = {
 export const modeLabel = (mode: string): string =>
   Object.hasOwn(MODE_LABELS, mode) ? (MODE_LABELS[mode] as string) : 'Latihan'
 
+/** "Pecahan Aktiviti" label: the OPT-MODE-SESI register (`ramalan` reads as Tracking A; an unknown mode is Latih Tubi). */
+const REGISTER: Readonly<Record<string, string>> = {
+  latih_tubi: 'Latih Tubi',
+  random: 'Latih Tubi Rawak',
+  chapter: 'Soalan by Chapter',
+  revision: 'Ulang Kaji',
+  remedial: 'Remedial',
+  mission: 'Misi Harian',
+  question_set: 'Set Soalan Guru',
+  pksk: 'PKSK',
+  databank: 'Databank Soalan',
+  kuiz: 'Simulasi - Kuiz',
+  simulasi: 'Bijak SPM',
+  tracking_a: 'Tracking A',
+  ramalan: 'Tracking A',
+  subjektif: 'Subjektif',
+  structured: 'Soalan Berstruktur',
+  battle: 'Battle',
+  audio_kbat: 'Audio KBAT',
+  game: 'Permainan',
+  past_year: 'Tahun Lepas',
+}
+export const registerModeLabel = (mode: string): string =>
+  Object.hasOwn(REGISTER, mode) ? (REGISTER[mode] as string) : 'Latih Tubi'
+
 /** One decimal, half up (M05 Q-SESS-MEAN-ACC). */
 export const round1 = (n: number): number => Math.round(n * 10) / 10
 

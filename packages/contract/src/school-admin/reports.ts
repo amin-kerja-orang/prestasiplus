@@ -154,6 +154,7 @@ export const SchoolAdminActivityPupilRowSchema = z
     name: z.string(),
     className: z.string().nullable(),
     sessions: count,
+    answers: count.meta({ description: '"Soalan": XS-4 answer rows of the pupil in the window. The Murid tab sorts by it, descending.' }),
     accuracy: z.number().min(0).max(100).meta({ description: 'correct / answered x 100, 1 decimal, never above 100.' }),
     seconds: count,
     coins: count,
@@ -206,10 +207,21 @@ export const SchoolAdminActivityReportSchema = z
         }),
     }),
     trend: z.array(z.object({ label: z.string(), value: count })),
-    breakdown: z.object({ quiz: count, structured: count, battle: count, game: count }),
+    breakdown: z.object({
+      quiz: count,
+      structured: count,
+      battle: count,
+      game: count,
+      modes: z
+        .array(z.object({ label: z.string(), count: count }))
+        .meta({
+          description:
+            '"Pecahan Aktiviti": completed sessions of the window per OPT-MODE-SESI label (legacy ramalan reads as Tracking A, an unknown mode as Latih Tubi); only labels with a count above 0, biggest first.',
+        }),
+    }),
     topPupils: z.array(z.object({ userId: IdSchema, name: z.string(), activities: count })),
     teachersNeverLogged: z.array(z.object({ userId: IdSchema, name: z.string(), email: z.string() })),
-    teachers: z.array(SchoolAdminActivityTeacherRowSchema),
+    teachers: z.array(SchoolAdminActivityTeacherRowSchema).meta({ description: 'Sorted by last login descending; a teacher who never logged in is last.' }),
     pupils: z
       .object({
         semua: z.array(SchoolAdminActivityPupilRowSchema).max(200),

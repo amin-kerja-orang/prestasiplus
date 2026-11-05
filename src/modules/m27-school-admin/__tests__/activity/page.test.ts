@@ -40,6 +40,7 @@ const pupil = (id: number, over: Partial<ActivityPupilRow> = {}): ActivityPupilR
   name: `Murid ${String(id)}`,
   className: '4 Contoh',
   sessions: 3,
+  answers: 45,
   accuracy: 66.66,
   seconds: 3725,
   coins: 1200,
@@ -68,7 +69,17 @@ function report(over: Partial<SchoolActivityReport> = {}): SchoolActivityReport 
       { label: '24/08', value: 3 },
       { label: '25/08', value: 5 },
     ],
-    breakdown: { quiz: 1000, structured: 400, battle: 4, game: 24 },
+    breakdown: {
+      quiz: 1000,
+      structured: 400,
+      battle: 4,
+      game: 24,
+      modes: [
+        { label: 'Soalan by Chapter', count: 700 },
+        { label: 'Ulang Kaji', count: 250 },
+        { label: 'Tracking A', count: 50 },
+      ],
+    },
     topPupils: [
       { userId: 1, name: 'Murid 1', activities: 877 },
       { userId: 2, name: 'Aini Contoh', activities: 38 },
@@ -110,7 +121,7 @@ function report(over: Partial<SchoolActivityReport> = {}): SchoolActivityReport 
 const EMPTY: SchoolActivityReport = report({
   overview: { pupils: 0, pupilsLogged: 0, teachers: 0, teachersLogged: 0, practised: 0, activity: 0, skorPurata: null },
   trend: [{ label: '25/09', value: 0 }],
-  breakdown: { quiz: 0, structured: 0, battle: 0, game: 0 },
+  breakdown: { quiz: 0, structured: 0, battle: 0, game: 0, modes: [] },
   topPupils: [],
   teachersNeverLogged: [],
   teachers: [],
@@ -318,13 +329,9 @@ describe('Overview (FR-M27-68…70; AC 19.2…19.4)', () => {
 
   it('lists the breakdown, the top pupils with rank and the never-logged teachers', async () => {
     const w = await mountPage(report())
-    expect(texts(w, 'la-breakdown-label')).toEqual([
-      'Kuiz Objektif',
-      'Soalan Berstruktur',
-      'Battle Arena',
-      'Permainan',
-    ])
-    expect(texts(w, 'la-breakdown-value')).toEqual(['1,000', '400', '4', '24'])
+    // Ruling 1: the OPT-MODE-SESI labels, only the modes with a count.
+    expect(texts(w, 'la-breakdown-label')).toEqual(['Soalan by Chapter', 'Ulang Kaji', 'Tracking A'])
+    expect(texts(w, 'la-breakdown-value')).toEqual(['700', '250', '50'])
     expect(text(w, 'la-top')).toContain('Pelajar Paling Aktif (Top 10)')
     expect(texts(w, 'la-top-rank')).toEqual(['1', '2'])
     expect(texts(w, 'la-top-name')).toEqual(['Murid 1', 'Aini Contoh'])
@@ -356,7 +363,7 @@ describe('Overview (FR-M27-68…70; AC 19.2…19.4)', () => {
     expect(has(w, 'la-never')).toBe(true)
     expect(w.findAll('[data-testid="la-top-row"]')).toHaveLength(0)
     expect(w.findAll('[data-testid="la-never-row"]')).toHaveLength(0)
-    expect(texts(w, 'la-breakdown-value')).toEqual(['0', '0', '0', '0'])
+    expect(w.findAll('[data-testid="la-breakdown-row"]')).toHaveLength(0)
   })
 })
 
@@ -372,13 +379,13 @@ describe('Guru tab (FR-M27-71; AC 20.1)', () => {
     expect(text(w, 'la-guru-title')).toBe('Senarai Guru (9)')
     expect(w.findAll('[data-testid^="la-guru-pill-"]').map((p) => p.text())).toEqual([
       'Semua',
-      'Pernah Login (6)',
-      'Belum Login (3)',
+      'Pernah Akses (6)',
+      'Belum Akses (3)',
     ])
     expect(w.get('[data-testid="la-guru-search"]').attributes('placeholder')).toBe('Cari guru...')
     expect(texts(w, 'la-tile-label')).toEqual([
       'Jumlah Guru',
-      'Pernah Login',
+      'Pernah Akses',
       'Jumlah Soalan',
       'Jumlah Syiling',
     ])
@@ -386,29 +393,20 @@ describe('Guru tab (FR-M27-71; AC 20.1)', () => {
     expect(w.findAll('[data-testid="la-guru-table"] th').map((e) => e.text())).toEqual([
       '#',
       'Nama',
-      'Login',
-      'MCQ',
-      'Struktur',
-      'Syiling',
-      'Headcount',
+      'Emel',
+      'Status',
       'Login Terakhir',
     ])
     expect(w.find('select').exists()).toBe(false)
   })
 
-  it('shows name with e-mail, Ya/Belum, MCQ, Struktur, Syiling, headcount mark and login text', async () => {
+  it('shows name, e-mail, "Pernah Akses" / "Belum Akses" and the login as dd/mm/yyyy HH:mm or "Belum login"', async () => {
     const w = await guru()
     expect(texts(w, 'la-guru-name')).toEqual(['Guru Satu', 'Cikgu Dua'])
     expect(texts(w, 'la-guru-email')).toEqual(['guru1@demo.test', 'dua@demo.test'])
-    expect(texts(w, 'la-guru-login')).toEqual(['Belum', 'Ya'])
-    expect(texts(w, 'la-guru-mcq')).toEqual(['0', '12'])
-    expect(texts(w, 'la-guru-struktur')).toEqual(['0', '3'])
-    expect(texts(w, 'la-guru-syiling')).toEqual(['0', '1,500'])
-    const heads = w.findAll('[data-testid="la-guru-headcount"]')
-    expect(heads[0]?.find('svg').exists()).toBe(false)
-    expect(heads[1]?.find('svg').exists()).toBe(true)
+    expect(texts(w, 'la-guru-login')).toEqual(['Belum Akses', 'Pernah Akses'])
     expect(texts(w, 'la-guru-last')[0]).toBe('Belum login')
-    expect(texts(w, 'la-guru-last')[1]).toMatch(/yang lepas$/)
+    expect(texts(w, 'la-guru-last')[1]).toBe('25/09/2026 10:40')
   })
 
   it('filters by the pills and by the search, and shows no rows for no match', async () => {
@@ -455,24 +453,29 @@ describe('Murid tab (FR-M27-72; AC 20.2, 20.3)', () => {
       'Nama',
       'Kelas',
       'Sesi',
-      'Ketepatan',
-      'Masa',
-      'Syiling',
+      'Soalan',
+      'Status',
       'Login Terakhir',
     ])
     expect(w.find('select').exists()).toBe(false)
   })
 
-  it('formats the row cells: dash class, one-decimal accuracy, "{h}j {m}m", coins, login text', async () => {
+  it('formats the row cells: dash class, sessions, Soalan, status and login text', async () => {
     const w = await murid()
     expect(texts(w, 'la-murid-name')[0]).toBe('Murid 1')
     expect(texts(w, 'la-murid-kelas')[0]).toBe('4 Contoh')
     expect(texts(w, 'la-murid-sesi')[0]).toBe('3')
-    expect(texts(w, 'la-murid-ketepatan')[0]).toBe('66.7%')
-    expect(texts(w, 'la-murid-masa')[0]).toBe('1j 2m')
-    expect(texts(w, 'la-murid-syiling')[0]).toBe('1,200')
+    expect(texts(w, 'la-murid-soalan')[0]).toBe('45')
+    expect(texts(w, 'la-murid-status')[0]).toBe('Belum Akses')
     expect(texts(w, 'la-murid-last')[0]).toBe('Belum login')
     expect(texts(w, 'la-murid-kelas')[1]).toBe('-')
+  })
+
+  it('"Pernah Akses" when a login is recorded', async () => {
+    const one = pupil(7, { lastLoginAt: '2026-09-25T10:40:00+08:00' })
+    const w = await murid(report({ pupils: { semua: [one], aktif: [one], loginSahaja: [], belumLogin: [] } }))
+    expect(texts(w, 'la-murid-status')).toEqual(['Pernah Akses'])
+    expect(texts(w, 'la-murid-last')).toEqual(['25/09/2026 10:40'])
   })
 
   it('lists each pill\'s own pupils and filters by name', async () => {

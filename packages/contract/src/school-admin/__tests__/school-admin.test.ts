@@ -86,7 +86,7 @@ const usage = {
   modes: [{ label: 'Latihan', sessions: 20, accuracy: 63.1 }, { label: 'Bab', sessions: 2, accuracy: null }],
 }
 
-const pupilRow = { userId: '31', name: 'Aisyah Demo', className: '4 Amanah', sessions: 3, accuracy: 71.4, seconds: 900, coins: 12, lastLoginAt: AT }
+const pupilRow = { userId: '31', name: 'Aisyah Demo', className: '4 Amanah', sessions: 3, answers: 45, accuracy: 71.4, seconds: 900, coins: 12, lastLoginAt: AT }
 const teacherRow = { userId: '12', name: 'Cikgu Demo', email: 'cikgu.demo@example.test', loggedIn: true, mcq: 4, structured: 1, coins: 9, hasHeadcount: false, lastLoginAt: null }
 const activity = {
   range: 30,
@@ -94,7 +94,7 @@ const activity = {
   generatedAt: AT,
   overview: { pupils: 59, pupilsLogged: 20, teachers: 6, teachersLogged: 4, practised: 12, activity: 140, skorPurata: 77.5 },
   trend: [{ label: '1 Okt', value: 4 }],
-  breakdown: { quiz: 100, structured: 20, battle: 0, game: 0 },
+  breakdown: { quiz: 100, structured: 20, battle: 0, game: 0, modes: [{ label: 'Ulang Kaji', count: 60 }] },
   topPupils: [{ userId: '31', name: 'Aisyah Demo', activities: 14 }],
   teachersNeverLogged: [{ userId: '13', name: 'Cikgu Dua Demo', email: 'dua.demo@example.test' }],
   teachers: [teacherRow],

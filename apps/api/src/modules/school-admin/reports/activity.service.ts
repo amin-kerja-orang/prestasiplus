@@ -7,7 +7,7 @@ import { ClassesPorts, ClassesRepository } from '../../classes'
 import { DAY_MS, byName, ddmm, dayKey, rangeOf, statusOf } from '../../reports/analytics/domain/rules'
 import { WalletService } from '../../wallet'
 import { SchoolPopulation, type PupilFact } from './population'
-import { accuracyOf, activityWindow, round1 } from './windows'
+import { accuracyOf, activityWindow, registerModeLabelOf, round1 } from './windows'
 
 /** At most this many teacher question-stat reads run at the same time. */
 const STATS_POOL = 8
@@ -67,11 +67,13 @@ export class ActivityService {
       this.population.tallyByPupil(schoolId, w.from, w.to),
       this.population.sessionScore(ids, w.from, w.to),
     ])
+    const perMode = new Map<string, number>()
     const perDay = new Map<string, number>()
     const per = new Map<string, { sessions: number }>()
     let quiz = 0
     for (const r of rows) {
       quiz += r.sessions
+      perMode.set(registerModeLabelOf(r.mode), (perMode.get(registerModeLabelOf(r.mode)) ?? 0) + r.sessions)
       perDay.set(r.day, (perDay.get(r.day) ?? 0) + r.sessions)
       const p = per.get(r.userId) ?? { sessions: 0 }
       p.sessions += r.sessions
@@ -92,13 +94,14 @@ export class ActivityService {
     ])
 
     // Pills use the all-time answer rows (XS-4, all modes; statusOf: answers > 0 is "aktif", else a login, else never).
-    const base = pupils.map((p) => ({ p, status: statusOf(allTime.get(p.id)?.answered ?? 0, p.lastLoginAt) }))
+    // Every pill is sorted by "Soalan" (XS-4 answers of the window) descending, ties by name, then cut to the Top 200 (R1-AS-48).
+    const soalan = (id: string): number => answered.get(id)?.answered ?? 0
+    const base = pupils
+      .map((p) => ({ p, status: statusOf(allTime.get(p.id)?.answered ?? 0, p.lastLoginAt) }))
+      .sort((a, b) => soalan(b.p.id) - soalan(a.p.id) || byName(a.p, b.p))
     const buckets = {
       semua: base.slice(0, PILL_MAX),
-      aktif: base
-        .filter((b) => b.status === 'aktif')
-        .sort((a, b) => (per.get(b.p.id)?.sessions ?? 0) - (per.get(a.p.id)?.sessions ?? 0) || byName(a.p, b.p))
-        .slice(0, PILL_MAX),
+      aktif: base.filter((b) => b.status === 'aktif').slice(0, PILL_MAX),
       loginSahaja: base.filter((b) => b.status === 'login').slice(0, PILL_MAX),
       belumLogin: base.filter((b) => b.status === 'never').slice(0, PILL_MAX),
     }
@@ -113,6 +116,7 @@ export class ActivityService {
         name: p.name,
         className: classNames.get(p.id) ?? null,
         sessions: per.get(p.id)?.sessions ?? 0,
+        answers: u?.answered ?? 0,
         accuracy: u ? (accuracyOf(u.correct, u.answered) ?? 0) : 0,
         seconds: seconds.get(p.id) ?? 0,
         coins: coins.get(p.id) ?? 0,
@@ -148,7 +152,17 @@ export class ActivityService {
         skorPurata: score.sessions > 0 ? round1((score.ratioSum / score.sessions) * 100) : null,
       },
       trend,
-      breakdown: { quiz, structured: 0, battle: 0, game: 0 },
+      breakdown: {
+        quiz,
+        structured: 0,
+        battle: 0,
+        game: 0,
+        // Ruling 1: one row per OPT-MODE-SESI label with a count above 0, biggest first.
+        modes: [...perMode.entries()]
+          .filter(([, count]) => count > 0)
+          .map(([label, count]) => ({ label, count }))
+          .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'ms', { sensitivity: 'base' })),
+      },
       topPupils: pupils
         .map((p) => ({ userId: p.id, name: p.name, activities: per.get(p.id)?.sessions ?? 0 }))
         .filter((p) => p.activities > 0)
@@ -201,7 +215,8 @@ export class ActivityService {
     coins: Map<string, number>,
     headcount: Set<string>,
   ): Promise<SchoolAdminActivityReport['teachers']> {
-    const sorted = [...teachers].sort(byName)
+    // Sorted by last login descending, a teacher who never logged in last, ties by name (R1-AS-48 Guru tab).
+    const sorted = [...teachers].sort((a, b) => (b.lastLoginAt?.getTime() ?? -Infinity) - (a.lastLoginAt?.getTime() ?? -Infinity) || byName(a, b))
     const stats = await mapPool(sorted, STATS_POOL, (t) => this.ports.questions.statsOf(t.id))
     return sorted.map((t, i) => ({
       userId: t.id,

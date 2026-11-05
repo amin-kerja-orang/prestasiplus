@@ -8,6 +8,7 @@ import {
   dskpStatusOf,
   lastTwelve,
   modeLabelOf,
+  registerModeLabelOf,
   monthEnd,
   monthKey,
   monthLabel,
@@ -61,6 +62,19 @@ describe('usage window', () => {
     for (const m of ['random', 'past_year', 'latih_tubi', 'remedial', 'databank', 'kuiz', 'structured', 'battle', 'audio_kbat', 'zzz', 'constructor', '']) {
       expect(modeLabelOf(m), m).toBe('Latihan')
     }
+  })
+})
+
+describe('Pecahan Aktiviti labels (OPT-MODE-SESI)', () => {
+  it('maps the register; ramalan is Tracking A, past_year is Tahun Lepas, an unknown mode is Latih Tubi', () => {
+    const cases: [string, string][] = [
+      ['latih_tubi', 'Latih Tubi'], ['random', 'Latih Tubi Rawak'], ['chapter', 'Soalan by Chapter'], ['revision', 'Ulang Kaji'],
+      ['remedial', 'Remedial'], ['mission', 'Misi Harian'], ['question_set', 'Set Soalan Guru'], ['pksk', 'PKSK'],
+      ['databank', 'Databank Soalan'], ['kuiz', 'Simulasi - Kuiz'], ['simulasi', 'Bijak SPM'], ['tracking_a', 'Tracking A'],
+      ['ramalan', 'Tracking A'], ['subjektif', 'Subjektif'], ['structured', 'Soalan Berstruktur'], ['battle', 'Battle'],
+      ['audio_kbat', 'Audio KBAT'], ['game', 'Permainan'], ['past_year', 'Tahun Lepas'], ['zzz', 'Latih Tubi'], ['constructor', 'Latih Tubi'],
+    ]
+    expect(cases.map(([m]) => registerModeLabelOf(m))).toEqual(cases.map(([, l]) => l))
   })
 })
 

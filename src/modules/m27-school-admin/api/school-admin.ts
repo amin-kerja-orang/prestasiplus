@@ -126,6 +126,8 @@ export interface ActivityPupilRow {
   name: string
   className: string | null
   sessions: number
+  /** "Soalan": XS-4 answers of the window; the Murid tab sorts by it, descending. */
+  answers: number
   /** correct / answered x 100, one decimal, never above 100. */
   accuracy: number
   seconds: number
@@ -167,7 +169,14 @@ export interface SchoolActivityReport {
     skorPurata: number | null
   }
   trend: { label: string; value: number }[]
-  breakdown: { quiz: number; structured: number; battle: number; game: number }
+  breakdown: {
+    quiz: number
+    structured: number
+    battle: number
+    game: number
+    /** "Pecahan Aktiviti": sessions per OPT-MODE-SESI label, only counts above 0, biggest first. */
+    modes: { label: string; count: number }[]
+  }
   topPupils: { userId: number; name: string; activities: number }[]
   teachersNeverLogged: { userId: number; name: string; email: string }[]
   teachers: ActivityTeacherRow[]

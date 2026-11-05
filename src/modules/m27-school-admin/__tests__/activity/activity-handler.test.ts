@@ -81,17 +81,20 @@ describe('P2 school 900001 (populated)', () => {
         activity: oracle.overview.activity,
       })
       expect(got.trend).toEqual(oracle.trend)
-      expect(got.breakdown).toEqual(oracle.breakdown)
+      expect(got.breakdown).toEqual({ ...oracle.breakdown, modes: got.breakdown.modes })
+      expect(got.breakdown.modes.every((m) => m.count > 0)).toBe(true)
       expect(got.topPupils).toEqual(oracle.topPupils)
       expect(got.teachersNeverLogged).toEqual(oracle.teachersNeverLogged)
       expect(got.tiles).toEqual({ teachers: oracle.tiles.teachers, pupils: oracle.tiles.pupils })
-      expect(got.pupils.semua.map((p) => p.userId)).toEqual(
-        oracle.pupils.semua.map((p) => p.userId),
-      )
-      expect(got.pupils.aktif.map((p) => p.userId)).toEqual(
-        oracle.pupils.aktif.map((p) => p.userId),
-      )
-      expect(got.teachers.map((t) => t.userId)).toEqual(oracle.teachers.map((t) => t.userId))
+      // Same pupils and teachers as the builder; the order is the R1-AS-48 one (Murid by Soalan descending, Guru by login descending).
+      const ids = (rows: { userId: number }[]) => rows.map((r) => r.userId).sort((x, y) => x - y)
+      expect(ids(got.pupils.semua)).toEqual(ids(oracle.pupils.semua))
+      expect(ids(got.pupils.aktif)).toEqual(ids(oracle.pupils.aktif))
+      const soalan = got.pupils.semua.map((p) => p.answers)
+      expect(soalan).toEqual([...soalan].sort((x, y) => y - x))
+      expect(ids(got.teachers)).toEqual(ids(oracle.teachers))
+      const logins = got.teachers.map((t) => (t.lastLoginAt === null ? -Infinity : Date.parse(t.lastLoginAt)))
+      expect(logins).toEqual([...logins].sort((x, y) => y - x))
     }
   })
 
@@ -140,7 +143,7 @@ describe('P1 school 900003 (empty)', () => {
       activity: 0,
       skorPurata: null,
     })
-    expect(got.breakdown).toEqual({ quiz: 0, structured: 0, battle: 0, game: 0 })
+    expect(got.breakdown).toEqual({ quiz: 0, structured: 0, battle: 0, game: 0, modes: [] })
     expect(got.trend.every((p) => p.value === 0)).toBe(true)
     expect(got.topPupils).toEqual([])
     expect(got.teachersNeverLogged).toEqual([])

@@ -4,7 +4,7 @@
  */
 
 import { formatCount, formatNumber } from '@/lib/number'
-import { diffForHumans } from '@/lib/time'
+import { formatMyt } from '@/lib/time'
 
 export const ACTIVITY_PATH = '/admin-sekolah/laporan-aktiviti'
 export const DASHBOARD_PATH = '/admin-sekolah'
@@ -43,9 +43,9 @@ export function duration(seconds: number): string {
   return `${String(Math.floor(total / 60))}j ${String(total % 60)}m`
 }
 
-/** M17 BR-M17-20 relative time, or "Belum login" for a null `lastLoginAt`. */
+/** R1-AS-48: `dd/mm/yyyy HH:mm` (MYT), or "Belum login" for a null `lastLoginAt`. */
 export const lastLogin = (iso: string | null): string =>
-  iso === null ? 'Belum login' : diffForHumans(iso)
+  iso === null ? 'Belum login' : formatMyt(iso, 'dd/MM/yyyy HH:mm')
 
 /** Case-insensitive substring test used by the tab searches. */
 export const matches = (query: string, ...fields: (string | null)[]): boolean => {

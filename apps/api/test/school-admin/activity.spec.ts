@@ -46,7 +46,7 @@ describe('GET /admin-sekolah/laporan-aktiviti', () => {
     expect(r.trend).toHaveLength(30)
     expect(r.trend.at(-1)).toMatchObject({ label: '19/10', value: 5 })
     expect(r.overview).toMatchObject({ pupils: await xsPupilCount(t.db, s1), practised: 5, activity: 5 })
-    expect(r.breakdown).toEqual({ quiz: 5, structured: 0, battle: 0, game: 0 })
+    expect(r.breakdown).toEqual({ quiz: 5, structured: 0, battle: 0, game: 0, modes: [{ label: 'Soalan by Chapter', count: 5 }] })
     expect(r.tiles.pupils).toMatchObject({ practised: 5, sessions: 5, accuracy: 70 })
     const text = JSON.stringify(res.body)
     for (const key of ['"score"', '"structuredScore"', '"schoolName"', '"schools"']) expect(text).not.toContain(key)
@@ -128,6 +128,32 @@ describe('GET /admin-sekolah/laporan-aktiviti', () => {
     const c = apiOf(await login(t, 'admin.c@report.test'))
     const empty = SchoolAdminActivityReportSchema.parse((await c.get('/admin-sekolah/laporan-aktiviti')).body.data)
     expect(empty.overview.skorPurata).toBeNull()
+  })
+
+  it('Pecahan Aktiviti uses the OPT-MODE-SESI labels, only counts above 0, legacy ramalan as Tracking A; Murid is sorted by Soalan, Guru by login', async () => {
+    const school = (await t.db.query<{ id: string }>(`insert into schools (name, type) values ('Sekolah Mod Pecahan', 'SMK') returning id::text`))[0]?.id as string
+    await addSchoolAdmin(t.db, school, 'admin.d@report.test')
+    const d = apiOf(await login(t, 'admin.d@report.test'))
+    const subject = await addSubject(t.db, 'PEC', 'Subjek Pecahan')
+    const few = await addPupil(t.db, school, 'Murid Sedikit')
+    const many = await addPupil(t.db, school, 'Murid Banyak')
+    await addSession(t.db, few, { subjectId: subject, mode: 'revision', questions: 2, correct: 1, completedAt: '2026-10-19T08:00:00+08:00' })
+    await addSession(t.db, many, { subjectId: subject, mode: 'ramalan', questions: 6, correct: 3, completedAt: '2026-10-19T08:00:00+08:00' })
+    await addSession(t.db, many, { subjectId: subject, mode: 'past_year', questions: 4, correct: 3, completedAt: '2026-10-19T08:05:00+08:00' })
+    await addSession(t.db, many, { subjectId: subject, mode: 'ramalan', questions: 2, correct: 1, completedAt: '2026-10-19T08:10:00+08:00' })
+    const old = await addTeacher(t.db, school, 'Guru Lama')
+    await t.db.query(`update users set last_login_at = '2026-10-01T10:00:00+08:00' where id = $1::bigint`, [old])
+    await addTeacher(t.db, school, 'Guru Baru')
+    await addTeacher(t.db, school, 'Guru Tiada', false)
+    const r = SchoolAdminActivityReportSchema.parse((await d.get('/admin-sekolah/laporan-aktiviti')).body.data)
+    expect(r.breakdown.modes).toEqual([
+      { label: 'Tracking A', count: 2 },
+      { label: 'Tahun Lepas', count: 1 },
+      { label: 'Ulang Kaji', count: 1 },
+    ])
+    expect(r.breakdown.quiz).toBe(4)
+    expect(r.pupils.semua.map((p) => [p.name, p.answers])).toEqual([['Murid Banyak', 12], ['Murid Sedikit', 2]])
+    expect(r.teachers.map((x) => x.name)).toEqual(['Guru Baru', 'Guru Lama', 'Guru Tiada'])
   })
 
   it('401 without a session; 403 for admin, teacher and student', async () => {
