@@ -43,10 +43,10 @@ describe('migration 0229 reward catalogue columns', () => {
     expect(await db.query(`select cost_value_sen from syiling_rewards`)).toEqual([{ cost_value_sen: 1000 }])
   })
 
-  it('a new redemption must name both snapshots; a new reward defaults to cost 0', async () => {
+  it('an insert by the old app during the deploy window still works, with snapshots 0; a new reward defaults to cost 0', async () => {
     const u = (await db.query<{ id: string }>(`select id::text from users limit 1`))[0]!.id
-    const insert = `insert into reward_redemptions (user_id, reward_title, reward_vendor, denomination_rm, token_cost, status) values ($1, 'T', 'V', 1, 1, 'pending_admin')`
-    await expect(db.query(insert, [u])).rejects.toThrow(/token_cost_snapshot/)
+    const insert = `insert into reward_redemptions (user_id, reward_title, reward_vendor, denomination_rm, token_cost, status) values ($1, 'T', 'V', 1, 1, 'pending_admin') returning token_cost_snapshot, cost_value_sen_snapshot`
+    expect((await db.query(insert, [u]))[0]).toEqual({ token_cost_snapshot: 0, cost_value_sen_snapshot: 0 })
     expect((await db.query(`insert into rewards (category, vendor, title, denomination_rm, token_cost) values ('telco', 'V', 'Baru', 1, 1) returning cost_value_sen`))[0]).toEqual({ cost_value_sen: 0 })
   })
 })
