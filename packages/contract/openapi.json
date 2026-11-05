@@ -45438,16 +45438,20 @@
           "critical",
           "high",
           "medium",
-          "low"
-        ]
+          "low",
+          "none"
+        ],
+        "description": "'none' = Belum Bermula (no answers); only the class analytics rows carry it."
       },
       "PerformanceTrend": {
         "type": "string",
         "enum": [
           "up",
           "down",
-          "stable"
-        ]
+          "stable",
+          "new"
+        ],
+        "description": "'new' = answers only in the last 7 days; only the class analytics rows carry it."
       },
       "PerformanceUserRef": {
         "type": "object",
@@ -47046,7 +47050,10 @@
                 "type": "integer"
               },
               "accuracy": {
-                "type": "number"
+                "type": [
+                  "number",
+                  "null"
+                ]
               },
               "atRisk": {
                 "type": "integer"
@@ -47074,7 +47081,10 @@
                   "type": "string"
                 },
                 "accuracy": {
-                  "type": "number"
+                  "type": [
+                    "number",
+                    "null"
+                  ]
                 },
                 "answered": {
                   "type": "integer"
@@ -47083,7 +47093,10 @@
                   "$ref": "#/components/schemas/PerformanceTrend"
                 },
                 "projection": {
-                  "type": "object",
+                  "type": [
+                    "object",
+                    "null"
+                  ],
                   "properties": {
                     "low": {
                       "$ref": "#/components/schemas/PerformanceGrade"
@@ -47099,6 +47112,12 @@
                 },
                 "riskLevel": {
                   "$ref": "#/components/schemas/PerformanceRiskLevel"
+                },
+                "classes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
                 }
               },
               "required": [
@@ -47108,7 +47127,8 @@
                 "answered",
                 "trend",
                 "projection",
-                "riskLevel"
+                "riskLevel",
+                "classes"
               ]
             }
           }

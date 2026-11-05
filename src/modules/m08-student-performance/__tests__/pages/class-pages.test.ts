@@ -9,6 +9,7 @@ import USelect from '@nuxt/ui/components/Select.vue'
 import { ApiError } from '@/api'
 import { useRouteOutcome } from '@/app/router'
 import { setRouteOutcome } from '@/app/router/outcome'
+import { useSessionStore } from '@/stores/session'
 
 import type { ClassAnalytics, ClassDashboard } from '../../api/types'
 import AnalitikKelasPage from '../../pages/AnalitikKelasPage.vue'
@@ -89,6 +90,7 @@ const S8: ClassAnalytics = {
       trend: 'stable',
       projection: { low: 'A-', high: 'A+' },
       riskLevel: 'low',
+      classes: [],
     },
     {
       userId: 3007,
@@ -98,6 +100,7 @@ const S8: ClassAnalytics = {
       trend: 'down',
       projection: { low: 'G', high: 'D' },
       riskLevel: 'critical',
+      classes: [],
     },
   ],
 }
@@ -240,8 +243,46 @@ describe('S5 PrestasiKelasDetailPage', () => {
   })
 })
 
-describe('S8 AnalitikKelasPage', () => {
-  it('shows the 4 cards and the student table', async () => {
+describe('S8 AnalitikKelasPage (R1-GUR-5, R1-AS-5)', () => {
+  const signIn = (role: 'teacher' | 'school_admin' | 'admin'): void => {
+    useSessionStore().setSession({
+      token: 't',
+      remember: false,
+      expiresAt: '2099-01-01T00:00:00+08:00',
+      user: { id: 5, role, landingPath: '/dashboard' } as never,
+    })
+  }
+  const row = (userId: number, over: Partial<ClassAnalytics['rows'][number]> = {}): ClassAnalytics['rows'][number] => ({
+    userId,
+    name: `Murid ${String(userId)}`,
+    accuracy: 60,
+    answered: 20,
+    trend: 'stable',
+    projection: { low: 'B', high: 'A-' },
+    riskLevel: 'medium',
+    classes: [],
+    ...over,
+  })
+  const many = (n: number): ClassAnalytics => ({
+    ...S8,
+    summary: { students: n, accuracy: 60, atRisk: 0, good: 0 },
+    rows: Array.from({ length: n }, (_, i) => row(4000 + i)),
+  })
+  const mixed: ClassAnalytics = {
+    ...S8,
+    summary: { students: 5, accuracy: 55, atRisk: 2, good: 1 },
+    rows: [
+      row(1, { accuracy: 35, riskLevel: 'critical', trend: 'down', projection: { low: 'G', high: 'D' }, classes: ['4 Amanah'] }),
+      row(2, { accuracy: 40, riskLevel: 'high', trend: 'up' }),
+      row(3, { accuracy: 74, answered: 50, riskLevel: 'low', trend: 'new', classes: ['4 Amanah', '4 Bijak'] }),
+      row(4, { accuracy: 60, riskLevel: 'medium' }),
+      row(5, { accuracy: null, answered: 0, riskLevel: 'none', projection: null }),
+    ],
+  }
+
+  beforeEach(() => signIn('teacher'))
+
+  it('shows the 4 cards and the student table with whole percentages', async () => {
     api.fetchClassAnalytics.mockResolvedValue(S8)
     const w = await render(
       AnalitikKelasPage,
@@ -250,15 +291,92 @@ describe('S8 AnalitikKelasPage', () => {
     )
     expect(api.fetchClassAnalytics.mock.calls[0]?.[0]).toEqual({ classroomId: 2001, riskLevel: '' })
     expect(t(w, 'sum-pelajar').text()).toContain('2')
-    expect(t(w, 'sum-ketepatan').text()).toContain('41.8%')
+    expect(t(w, 'sum-ketepatan').text()).toContain('42%')
     expect(num(w, 'sum-berisiko')).toBe('1')
     expect(t(w, 'sum-baik').text()).toContain('1')
-    expect(tr(w, 'student-row-3001').text()).toContain('88.9%')
+    expect(tr(w, 'student-row-3001').text()).toContain('89%')
+    expect(tr(w, 'student-row-3001').text()).not.toContain('88.9')
     expect(tr(w, 'student-row-3001').text()).toContain('A- – A+')
     expect(tr(w, 'student-row-3001').get('[data-testid=risk-badge]').text()).toBe('Rendah')
     expect(tr(w, 'student-row-3007').get('[data-testid=risk-badge]').text()).toBe('Kritikal')
     expect(tr(w, 'student-row-3007').text()).toContain('Lihat Analitik')
     expect(tr(w, 'student-row-3007').get('a').attributes('href')).toBe('/prestasi/3007')
+  })
+
+  it('the filters start at Semua Kelas, Semua Subjek and Semua Risiko', async () => {
+    api.fetchClassAnalytics.mockResolvedValue({
+      ...S8,
+      options: { ...S8.options, selected: { classroomId: null, subjectId: null, riskLevel: '' } },
+    })
+    const w = await render(AnalitikKelasPage, '/analitik/kelas', '/analitik/kelas')
+    const items = (id: string) => (select(w, id).props() as unknown as { items: { label: string; value: string }[] }).items
+    expect(items('filter-kelas').map((o) => o.label)).toEqual(['Semua Kelas', '5 MARIKH - Kimia'])
+    expect(items('filter-subjek').map((o) => o.label)).toEqual(['Semua Subjek', 'Kimia'])
+    expect(items('filter-risiko').map((o) => o.label)).toEqual(['Semua Risiko', 'Kritikal', 'Tinggi', 'Sederhana', 'Rendah'])
+    expect((select(w, 'filter-kelas').props() as unknown as { modelValue: string }).modelValue).toBe('all')
+    expect((select(w, 'filter-subjek').props() as unknown as { modelValue: string }).modelValue).toBe('all')
+    expect(api.fetchClassAnalytics.mock.calls[0]?.[0]).toEqual({ riskLevel: '' })
+  })
+
+  it('Belum Bermula: dash in Ketepatan, Soalan, Trend and Unjuran, its own badge, and no Rekod Intervensi', async () => {
+    api.fetchClassAnalytics.mockResolvedValue(mixed)
+    const w = await render(AnalitikKelasPage, '/analitik/kelas', '/analitik/kelas')
+    const none = tr(w, 'student-row-5')
+    expect(none.get('[data-testid=risk-badge]').text()).toBe('Belum Bermula')
+    const cells = none.findAll('td').map((c) => c.text())
+    expect(cells.filter((c) => c === '—')).toHaveLength(4)
+    expect(none.find('[data-testid=rekod-intervensi]').exists()).toBe(false)
+  })
+
+  it('Trend reads the PRD sentence with an icon and BARU as a badge', async () => {
+    api.fetchClassAnalytics.mockResolvedValue(mixed)
+    const w = await render(AnalitikKelasPage, '/analitik/kelas', '/analitik/kelas')
+    expect(tr(w, 'student-row-1').text()).toContain('Menurun berbanding minggu lepas')
+    expect(tr(w, 'student-row-2').text()).toContain('Meningkat berbanding minggu lepas')
+    expect(tr(w, 'student-row-4').text()).toContain('Stabil')
+    expect(tr(w, 'student-row-3').get('[data-testid=trend-new]').text()).toBe('BARU')
+  })
+
+  it('a teacher has "Rekod Intervensi" on Kritikal and Tinggi rows only, linking to the m12 form with the pupil, and no "Kelas" column', async () => {
+    api.fetchClassAnalytics.mockResolvedValue(mixed)
+    const w = await render(AnalitikKelasPage, '/analitik/kelas', '/analitik/kelas')
+    const link = (id: number) => tr(w, `student-row-${String(id)}`).find('[data-testid=rekod-intervensi]')
+    expect(link(1).attributes('href')).toBe('/guru/kirkpatrick/interventions?pelajar=1')
+    expect(link(2).attributes('href')).toBe('/guru/kirkpatrick/interventions?pelajar=2')
+    expect(link(3).exists()).toBe(false)
+    expect(link(4).exists()).toBe(false)
+    expect(link(5).exists()).toBe(false)
+    expect(w.findAll('th').map((h) => h.text())).toEqual(['#', 'Pelajar', 'Ketepatan', 'Soalan', 'Trend', 'Unjuran', 'Risiko', 'Tindakan'])
+  })
+
+  it('a school admin has the "Kelas" column after Pelajar and never "Rekod Intervensi"', async () => {
+    signIn('school_admin')
+    api.fetchClassAnalytics.mockResolvedValue(mixed)
+    const w = await render(AnalitikKelasPage, '/analitik/kelas', '/analitik/kelas')
+    expect(w.findAll('th').map((h) => h.text())).toEqual(['#', 'Pelajar', 'Kelas', 'Ketepatan', 'Soalan', 'Trend', 'Unjuran', 'Risiko', 'Tindakan'])
+    expect(tr(w, 'student-row-3').text()).toContain('4 Amanah, 4 Bijak')
+    expect(w.find('[data-testid=rekod-intervensi]').exists()).toBe(false)
+    // the same rows keep "Lihat Analitik"
+    expect(tr(w, 'student-row-1').find('[data-testid=lihat-analitik]').attributes('href')).toBe('/prestasi/1')
+  })
+
+  it('25 rows a page; the row number continues across pages', async () => {
+    api.fetchClassAnalytics.mockResolvedValue(many(30))
+    const w = await render(AnalitikKelasPage, '/analitik/kelas', '/analitik/kelas')
+    expect(w.findAll('[data-testid^=student-row-]')).toHaveLength(25)
+    expect(w.text()).toContain('Murid 4000')
+    expect(w.text()).not.toContain('Murid 4025')
+  })
+
+  it('Purata Ketepatan shows a dash when nobody has answered', async () => {
+    api.fetchClassAnalytics.mockResolvedValue({
+      ...S8,
+      summary: { students: 1, accuracy: null, atRisk: 0, good: 0 },
+      rows: [row(5, { accuracy: null, answered: 0, riskLevel: 'none', projection: null })],
+    })
+    const w = await render(AnalitikKelasPage, '/analitik/kelas', '/analitik/kelas')
+    expect(t(w, 'sum-ketepatan').text()).toContain('—')
+    expect(num(w, 'sum-pelajar')).toBe('1')
   })
 
   it('Pelajar Berisiko is green when 0; no card is hidden', async () => {
@@ -268,15 +386,13 @@ describe('S8 AnalitikKelasPage', () => {
     })
     const w = await render(AnalitikKelasPage, '/analitik/kelas?classroom_id=4', '/analitik/kelas')
     expect(num(w, 'sum-berisiko')).toBe('0')
-    expect(t(w, 'sum-ketepatan').text()).toContain('0.0%')
+    expect(t(w, 'sum-ketepatan').text()).toContain('0%')
   })
 
-  it('shows the empty state without data and keeps the filters', async () => {
+  it('shows the PRD empty copy without a match and keeps the filters', async () => {
     api.fetchClassAnalytics.mockResolvedValue({ ...S8, summary: null, rows: [] })
     const w = await render(AnalitikKelasPage, '/analitik/kelas', '/analitik/kelas')
-    expect(t(w, 'analitik-empty').text()).toContain(
-      'Tiada data analitik untuk kelas dan subjek ini.',
-    )
+    expect(t(w, 'analitik-empty').text()).toContain('Tiada pelajar sepadan dengan tapisan ini.')
     expect(w.find('[data-testid=student-table]').exists()).toBe(false)
     expect(
       (select(w, 'filter-risiko').props() as unknown as { items: { label: string }[] }).items.map(
@@ -285,7 +401,7 @@ describe('S8 AnalitikKelasPage', () => {
     ).toEqual(['Semua Risiko', 'Kritikal', 'Tinggi', 'Sederhana', 'Rendah'])
   })
 
-  it('a select change submits the GET form into the URL (the subject is dropped on a class change)', async () => {
+  it('a select change submits the GET form into the URL (Semua ... leave the query; the subject stays on a class change)', async () => {
     api.fetchClassAnalytics.mockResolvedValue(S8)
     const w = await render(
       AnalitikKelasPage,
@@ -299,12 +415,12 @@ describe('S8 AnalitikKelasPage', () => {
       subject_id: '10',
       risk_level: 'critical',
     })
-    select(w, 'filter-kelas').vm.$emit('update:modelValue', '2001')
+    select(w, 'filter-kelas').vm.$emit('update:modelValue', 'all')
     await flushPromises()
-    expect(router.currentRoute.value.query).toEqual({
-      classroom_id: '2001',
-      risk_level: 'critical',
-    })
+    expect(router.currentRoute.value.query).toEqual({ subject_id: '10', risk_level: 'critical' })
+    select(w, 'filter-subjek').vm.$emit('update:modelValue', 'all')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({ risk_level: 'critical' })
   })
 
   it('a forbidden class is the 403 page', async () => {

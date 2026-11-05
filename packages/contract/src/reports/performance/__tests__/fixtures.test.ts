@@ -72,6 +72,12 @@ const AFTER_CAPTURE: Record<string, Record<string, unknown>> = {
   },
 }
 
+/** S10-T04 part 2 added `classes` (names of the pupil's classes, school admin only) to every class analytics row. */
+const withRowClasses = (payload: object): object => {
+  const rows = (payload as { rows?: object[] }).rows
+  return rows ? { ...payload, rows: rows.map((r) => ({ classes: [], ...r })) } : payload
+}
+
 const CASES: [string, z.ZodType][] = [
   ['analytics-me', PerformanceAnalyticsSchema],
   ['analytics-classes', PerformanceClassAnalyticsSchema],
@@ -102,7 +108,8 @@ const LISTS: [string, z.ZodType][] = [
 
 describe('BE-19 contract parses payloads captured from the m08 mock', () => {
   it.each(CASES)('%s', (name, schema) => {
-    const r = schema.safeParse({ ...(load(name) as object), ...AFTER_CAPTURE[name] })
+    const captured = name === 'analytics-classes' ? withRowClasses(load(name) as object) : (load(name) as object)
+    const r = schema.safeParse({ ...captured, ...AFTER_CAPTURE[name] })
     expect(r.success ? 'ok' : JSON.stringify(r.error.issues.slice(0, 5))).toBe('ok')
   })
 

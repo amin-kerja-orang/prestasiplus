@@ -67,11 +67,11 @@ export const PerformanceDifficultySchema = z
   .enum(['Mudah', 'Sederhana', 'Sukar'])
   .meta({ id: 'PerformanceDifficulty' })
 export const PerformanceRiskLevelSchema = z
-  .enum(['critical', 'high', 'medium', 'low'])
-  .meta({ id: 'PerformanceRiskLevel' })
+  .enum(['critical', 'high', 'medium', 'low', 'none'])
+  .meta({ id: 'PerformanceRiskLevel', description: "'none' = Belum Bermula (no answers); only the class analytics rows carry it." })
 export const PerformanceTrendSchema = z
-  .enum(['up', 'down', 'stable'])
-  .meta({ id: 'PerformanceTrend' })
+  .enum(['up', 'down', 'stable', 'new'])
+  .meta({ id: 'PerformanceTrend', description: "'new' = answers only in the last 7 days; only the class analytics rows carry it." })
 export const PerformanceSpStatusSchema = z.enum(['mahir', 'sederhana', 'lemah', 'belum'])
 export const PerformancePairStatusSchema = z.enum(['on', 'below', 'none'])
 
@@ -418,16 +418,19 @@ export const PerformanceClassAnalyticsSchema = z
         riskLevel: z.union([PerformanceRiskLevelSchema, z.literal('')]),
       }),
     }),
-    summary: z.object({ students: count, accuracy: pct, atRisk: count, good: count }).nullable(),
+    summary: z.object({ students: count, accuracy: pct.nullable(), atRisk: count, good: count }).nullable(),
     rows: z.array(
       z.object({
         userId: IdSchema,
         name: z.string(),
-        accuracy: pct,
+        /** Pooled correct over answered, one decimal; null for Belum Bermula (no answers). */
+        accuracy: pct.nullable(),
         answered: count,
         trend: PerformanceTrendSchema,
-        projection: z.object({ low: PerformanceGradeSchema, high: PerformanceGradeSchema }),
+        projection: z.object({ low: PerformanceGradeSchema, high: PerformanceGradeSchema }).nullable(),
         riskLevel: PerformanceRiskLevelSchema,
+        /** School admin only: names of the classes of the selected scope the pupil is in; [] for a teacher. */
+        classes: z.array(z.string()),
       }),
     ),
   })
