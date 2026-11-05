@@ -6,7 +6,7 @@ on:
   push:
   pull_request:
 
-# Superseded pull-request runs cancel themselves; push runs always finish.
+# Superseded pull-request runs cancel themselves; push runs are never cancelled mid-run.
 concurrency:
   group: no-dumps-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
