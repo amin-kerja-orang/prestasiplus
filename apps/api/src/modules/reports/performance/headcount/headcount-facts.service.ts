@@ -1,16 +1,24 @@
 import { Inject, Injectable } from '@nestjs/common'
 
+import { PerformancePorts } from '../ports'
 import type { HeadcountEntryView, HeadcountFacts, HeadcountScope } from '../services/headcount-facts.types'
+import { autoArOf, withAutoAr } from './headcount.auto-ar'
 import { HeadcountRepository, type HeadcountConfigRecord, type HeadcountEntryRecord } from './headcount.repository'
+import { resolveMarks } from './headcount.rules'
 
 /**
  * Reader of the headcount entries for the other performance reports (Part D: GPS, on track / below, at risk).
  * Dropped entries ARE returned (flag `dropped`); the readers leave them out of every count. Set-based: a fixed number of
  * statements whatever the number of configs. No privacy rule lives here: the caller applies cohort and name rules.
+ * Marks come from the same assembler as the headcount screens (`resolveMarks`: class defaults, computed OTR targets) and an
+ * Auto config reads its AR from the answer store, so every report agrees with the teacher's table (HC-SPEC, FR-GUR-3-8).
  */
 @Injectable()
 export class HeadcountFactsService implements HeadcountFacts {
-  constructor(@Inject(HeadcountRepository) private readonly repo: HeadcountRepository) {}
+  constructor(
+    @Inject(HeadcountRepository) private readonly repo: HeadcountRepository,
+    @Inject(PerformancePorts) private readonly ports: PerformancePorts,
+  ) {}
 
   async entriesInScope(scope: HeadcountScope): Promise<HeadcountEntryView[]> {
     const configs = await this.configsOf(scope)
@@ -40,36 +48,55 @@ export class HeadcountFactsService implements HeadcountFacts {
     return this.repo.configsOfTeacher(scope.teacherId)
   }
 
-  private async views(configs: readonly HeadcountConfigRecord[], entries: readonly HeadcountEntryRecord[]): Promise<HeadcountEntryView[]> {
-    if (entries.length === 0) return []
+  /**
+   * Entry views. An Auto config also lists its class members that hold no entry row (their AR comes from the answer store
+   * and they count like the pupils of the teacher's table); a Manual config lists entry rows only.
+   */
+  private async views(configs: readonly HeadcountConfigRecord[], found: readonly HeadcountEntryRecord[]): Promise<HeadcountEntryView[]> {
     const byId = new Map(configs.map((c) => [c.id, c]))
+    const autoConfigs = configs.filter((c) => c.mode === 'auto')
+    const members = autoConfigs.length === 0 ? new Map<string, string[]>() : await this.ports.classes.membersOf([...new Set(autoConfigs.map((c) => c.classroomId))])
+    const entries: HeadcountEntryRecord[] = [...found]
+    const have = new Set(found.map((e) => `${e.configId}:${e.studentId}`))
+    for (const c of autoConfigs) {
+      for (const studentId of members.get(c.classroomId) ?? []) {
+        if (!have.has(`${c.id}:${studentId}`)) {
+          entries.push({ configId: c.id, studentId, marks: resolveMarks(null, c), rsRecordedAt: null, dropped: false, own: { tov: null, etr: null } })
+        }
+      }
+    }
+    if (entries.length === 0) return []
+    const rosterOf = new Map<string, string[]>()
+    for (const e of entries) rosterOf.set(e.configId, [...(rosterOf.get(e.configId) ?? []), e.studentId])
+    const auto = await autoArOf(this.ports, autoConfigs, (id) => rosterOf.get(id) ?? [])
     const schools = await this.repo.schoolOfConfigs(configs)
     const subjects = await this.repo.subjectNames(configs.map((c) => c.subjectId))
     return entries.flatMap((e): HeadcountEntryView[] => {
-      const c = byId.get(e.configId)
-      if (!c) return []
-      return [
-        {
-          configId: c.id,
-          studentId: e.studentId,
-          classroomId: c.classroomId,
-          subjectId: c.subjectId,
-          ...(subjects.has(c.subjectId) ? { subjectName: subjects.get(c.subjectId) as string } : {}),
-          levelId: c.educationLevelId,
-          schoolId: schools.get(c.id) ?? null,
-          teacherId: c.teacherId,
-          configUpdatedAt: c.updatedAt,
-          academicYear: c.academicYear,
-          activeOtrs: c.activeOtrs,
-          tov: e.marks.tov,
-          targets: e.marks.targets,
-          actuals: e.marks.actuals,
-          etr: e.marks.etr,
-          rs: e.marks.rs,
-          rsRecordedAt: e.rsRecordedAt,
-          dropped: e.dropped,
-        },
-      ]
-    })
+        const c = byId.get(e.configId)
+        if (!c) return []
+        const marks = c.mode === 'auto' ? withAutoAr(e.marks, auto.get(c.id)?.get(e.studentId) ?? null) : e.marks
+        return [
+          {
+            configId: c.id,
+            studentId: e.studentId,
+            classroomId: c.classroomId,
+            subjectId: c.subjectId,
+            ...(subjects.has(c.subjectId) ? { subjectName: subjects.get(c.subjectId) as string } : {}),
+            levelId: c.educationLevelId,
+            schoolId: schools.get(c.id) ?? null,
+            teacherId: c.teacherId,
+            configUpdatedAt: c.updatedAt,
+            academicYear: c.academicYear,
+            activeOtrs: c.activeOtrs,
+            tov: marks.tov,
+            targets: marks.targets,
+            actuals: marks.actuals,
+            etr: marks.etr,
+            rs: marks.rs,
+            rsRecordedAt: e.rsRecordedAt,
+            dropped: e.dropped,
+          },
+        ]
+      })
   }
 }
