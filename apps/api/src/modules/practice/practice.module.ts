@@ -4,10 +4,12 @@ import { ThrottleModule } from '../../common/throttle'
 import { CurriculumModule } from '../curriculum'
 import { SubscriptionsModule } from '../subscriptions'
 import { PracticeAggregateService } from './aggregate'
+import { AnswerLogPort } from './answer-log.port'
 import { PracticePorts } from './ports'
 import { PracticeController } from './practice.controller'
 import { PracticeRepository } from './practice.repository'
 import { PracticeService } from './practice.service'
+import { PracticeSessionSweeper } from './session-sweeper.service'
 import { PracticeStartPlanner } from './start.planner'
 
 /**
@@ -19,7 +21,7 @@ import { PracticeStartPlanner } from './start.planner'
 @Module({
   imports: [ThrottleModule, CurriculumModule, SubscriptionsModule],
   controllers: [PracticeController],
-  providers: [PracticeRepository, PracticeStartPlanner, PracticeService, PracticePorts, PracticeAggregateService],
-  exports: [PracticeRepository, PracticePorts, PracticeAggregateService, PracticeService],
+  providers: [PracticeRepository, PracticeStartPlanner, PracticeService, PracticePorts, PracticeAggregateService, AnswerLogPort, PracticeSessionSweeper],
+  exports: [PracticeRepository, PracticePorts, PracticeAggregateService, PracticeService, AnswerLogPort],
 })
 export class PracticeModule {}
