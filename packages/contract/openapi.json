@@ -8723,6 +8723,30 @@
           },
           "question": {
             "$ref": "#/components/schemas/QuestionReportQuestionRef"
+          },
+          "subject": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "questionText": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
