@@ -35,7 +35,7 @@ export class HeatmapService {
     const subjectIds = [...new Set(attempted.map((c) => c.subjectId))]
     const [chapters, subjects] = await Promise.all([
       this.curriculum.chaptersOfSubjectsInForms(subjectIds),
-      this.curriculum.subjects(),
+      this.curriculum.subjects({ active: true }),
     ])
     return {
       subjects: buildHeatmap(
@@ -48,7 +48,7 @@ export class HeatmapService {
           number: c.chapterNumber,
           levelOrder: c.levelOrder,
         })),
-        subjects.map((s) => ({ id: idToString(s.id), name: s.name, isCore: s.isCore })),
+        subjects.map((s) => ({ id: idToString(s.id), code: s.code, name: s.name, isCore: s.isCore })),
       ),
     }
   }

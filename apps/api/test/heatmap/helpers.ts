@@ -110,6 +110,12 @@ export interface ChapterExtra {
   levelCode?: string
 }
 
+/** The code of a subject (the `:code` of `/practice/chapter/:code`). */
+export async function subjectCode(db: TestDatabase, subjectId: string): Promise<string> {
+  const rows = await db.query<{ code: string }>('select code from subjects where id = $1::bigint', [subjectId])
+  return rows[0]?.code as string
+}
+
 /** A fixture in-tree chapter of `subjectId` (Tingkatan 4 unless `extra.levelCode`); `id` forces the id (numeric-order tests). */
 export async function addChapter(
   db: TestDatabase,

@@ -43,6 +43,8 @@ export interface AttemptedChapterRef {
 /** A curriculum subject as the heatmap needs it. */
 export interface HeatmapSubjectRef {
   id: string
+  /** Subject code (the `:code` of `/practice/chapter/:code`). */
+  code: string
   name: string
   /** Subjek Teras. */
   isCore: boolean
@@ -127,6 +129,7 @@ export function buildHeatmap(
     .sort(compareSubjectRefs)
   return ordered.map((ref) => ({
     id: ref.id,
+    code: ref.code,
     name: ref.name,
     chapters: (bySubject.get(ref.id) as HeatmapChapterRef[])
       .sort(compareChapterRefs)

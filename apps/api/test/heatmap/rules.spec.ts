@@ -126,11 +126,11 @@ describe('ordering', () => {
 
   it('subjects: Subjek Teras first, then name ascending, then numeric id', () => {
     const subjects: HeatmapSubjectRef[] = [
-      { id: '3', name: 'Biologi', isCore: false },
-      { id: '2', name: 'Sejarah', isCore: true },
-      { id: '1', name: 'Bahasa Melayu', isCore: true },
-      { id: '11', name: 'Kimia', isCore: false },
-      { id: '10', name: 'Kimia', isCore: false },
+      { id: '3', code: 'S3', name: 'Biologi', isCore: false },
+      { id: '2', code: 'S2', name: 'Sejarah', isCore: true },
+      { id: '1', code: 'S1', name: 'Bahasa Melayu', isCore: true },
+      { id: '11', code: 'S11', name: 'Kimia', isCore: false },
+      { id: '10', code: 'S10', name: 'Kimia', isCore: false },
     ]
     expect(subjects.sort(compareSubjectRefs).map((s) => s.id)).toEqual(['1', '2', '3', '10', '11'])
   })
@@ -138,9 +138,9 @@ describe('ordering', () => {
 
 describe('buildHeatmap', () => {
   const subjects: HeatmapSubjectRef[] = [
-    { id: '1', name: 'Matematik', isCore: true },
-    { id: '2', name: 'Biologi', isCore: false },
-    { id: '3', name: 'Sains', isCore: false },
+    { id: '1', code: 'S1', name: 'Matematik', isCore: true },
+    { id: '2', code: 'S2', name: 'Biologi', isCore: false },
+    { id: '3', code: 'S3', name: 'Sains', isCore: false },
   ]
   const chapters = [
     chapter('12', '1', 2),
@@ -158,6 +158,7 @@ describe('buildHeatmap', () => {
       subjects,
     )
     expect(out).toHaveLength(1)
+    expect(out[0]).toMatchObject({ id: '1', code: 'S1', name: 'Matematik' })
     expect(out[0]?.chapters.map((c) => [c.id, c.attempts, c.accuracy, c.state])).toEqual([
       ['11', 0, null, 'belum-cuba'],
       ['12', 10, 40, 'red'],
@@ -191,6 +192,23 @@ describe('buildHeatmap', () => {
       subjects,
     )
     expect(out.map((s) => s.name)).toEqual(['Matematik', 'Biologi', 'Sains'])
+  })
+
+  it('an inactive subject (not among the active subject refs the service passes) is not listed, even with attempts', () => {
+    const active = subjects.filter((x) => x.id !== '3')
+    const out = buildHeatmap(
+      [
+        { chapterId: '31', attempts: 5, correct: 5 },
+        { chapterId: '11', attempts: 2, correct: 1 },
+      ],
+      [
+        { id: '31', subjectId: '3' },
+        { id: '11', subjectId: '1' },
+      ],
+      chapters,
+      active,
+    )
+    expect(out.map((x) => x.id)).toEqual(['1'])
   })
 
   it('no minimum: a single answer lists its subject', () => {

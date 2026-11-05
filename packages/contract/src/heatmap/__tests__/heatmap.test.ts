@@ -46,10 +46,10 @@ const grey = {
   accuracy: null,
   state: 'belum-cuba',
 }
-const mat = { id: '1', name: 'Matematik', chapters: [red, amber, grey] }
+const mat = { id: '1', code: 'MAT', name: 'Matematik', chapters: [red, amber, grey] }
 const body = {
   data: {
-    subjects: [mat, { id: '2', name: 'Sains', chapters: [{ ...grey, id: '201', name: 'Cahaya' }] }],
+    subjects: [mat, { id: '2', code: 'SNS', name: 'Sains', chapters: [{ ...grey, id: '201', name: 'Cahaya' }] }],
   },
 }
 
@@ -97,6 +97,10 @@ describe('HeatmapResponse (GET /buku-nota/heatmap, API-DSKP-08)', () => {
     expect(HeatmapChapterSchema.safeParse({ ...red, id: 101 }).success).toBe(false)
     expect(HeatmapChapterSchema.safeParse({ ...red, id: '' }).success).toBe(false)
     expect(HeatmapSubjectSchema.safeParse({ ...mat, id: 1 }).success).toBe(false)
+    expect(HeatmapSubjectSchema.safeParse({ ...mat, code: '' }).success).toBe(false)
+    const noCode: Record<string, unknown> = { ...mat }
+    delete noCode.code
+    expect(HeatmapSubjectSchema.safeParse(noCode).success).toBe(false)
   })
 
   it('rejects correct above attempts, fractional counts, missing keys, extra keys and a bare body', () => {

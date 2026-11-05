@@ -22,6 +22,7 @@ import {
   loginAs,
   loginModPelajar,
   setCore,
+  subjectCode,
   userIdByEmail,
   type Client,
 } from './helpers'
@@ -80,6 +81,7 @@ describe('AC-MUR-14-1 and AC-MUR-14-5: tiles, accuracy and states', () => {
     expect(data.subjects).toEqual([
       {
         id: s,
+        code: await subjectCode(t.db, s),
         name: 'Tiles Matematik',
         chapters: [
           {
@@ -164,6 +166,16 @@ describe('AC-MUR-14-2: a chapter without an attempt is a grey belum-cuba tile; F
       [t5, 0, 0, null, 'belum-cuba'],
     ])
     expect([darjah, off, out].some((id) => cells(data).some((c) => c[0] === id))).toBe(false)
+    await clearAnswers(t.db, pelajarId)
+  })
+
+  it('an inactive subject (subjects.is_active = false) is not listed, even with attempts', async () => {
+    const off = await addSubject(t.db, 'Grey Tidak Aktif', 22)
+    const c = await addChapter(t.db, off, 'Bab subjek mati', undefined, { number: 1 })
+    await addAnswers(t.db, pelajarId, { subjectId: off, chapterId: c, attempts: 4, correct: 2 })
+    expect((await heatmapOf(pelajar.get)).subjects.map((x) => x.id)).toEqual([off])
+    await t.db.query('update subjects set is_active = false where id = $1::bigint', [off])
+    expect((await heatmapOf(pelajar.get)).subjects).toEqual([])
     await clearAnswers(t.db, pelajarId)
   })
 

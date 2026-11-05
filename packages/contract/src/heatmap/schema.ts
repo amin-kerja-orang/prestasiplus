@@ -6,7 +6,8 @@ import { IdSchema } from '../common/ids'
  *
  * S10-T05 (D115 D-D): there is no minimum number of attempts; a chapter of a practised subject with no attempt
  * is a grey `belum-cuba` tile; the body is `subjects[{ id, name, chapters[{ id, number, name, attempts, correct,
- * accuracy, state }] }]`.
+ * accuracy, state }] }]`
+ * plus the subject `code`.
  *
  * Ids are decimal-string `Id`s (D53 UD-1). No table: the body is computed on every request from the caller's
  * answer log and the curriculum (D12, G-15).
@@ -116,6 +117,10 @@ export type HeatmapChapter = z.infer<typeof HeatmapChapterSchema>
 export const HeatmapSubjectSchema = z
   .strictObject({
     id: IdSchema,
+    code: z
+      .string()
+      .min(1)
+      .meta({ description: 'Subject code from the curriculum, the `:code` of `/practice/chapter/:code` (the tile link, FR-MUR-14-2).' }),
     name: z.string().min(1).meta({ description: 'Subject name from the curriculum.' }),
     chapters: z.array(HeatmapChapterSchema).min(1).meta({
       description:

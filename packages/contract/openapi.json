@@ -15445,6 +15445,11 @@
           "id": {
             "$ref": "#/components/schemas/Id"
           },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Subject code from the curriculum, the `:code` of `/practice/chapter/:code` (the tile link, FR-MUR-14-2)."
+          },
           "name": {
             "type": "string",
             "minLength": 1,
@@ -15461,6 +15466,7 @@
         },
         "required": [
           "id",
+          "code",
           "name",
           "chapters"
         ],
