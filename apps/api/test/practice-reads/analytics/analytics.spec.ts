@@ -372,8 +372,8 @@ describe('S11 corrections', () => {
 describe('S12 mastery', () => {
   const bulk = (subject: string, answered: number, correct: number) =>
     t.db.query(
-      `insert into practice_answers (user_id, question_id, subject_id, is_correct, answered_at)
-       select $1, g, $2, g <= $4, '2026-10-01T10:00:00+08:00'::timestamptz from generate_series(1, $3::int) g`,
+      `insert into practice_answers (user_id, question_id, subject_id, is_correct, answered_at, mode)
+       select $1, g, $2, g <= $4, '2026-10-01T10:00:00+08:00'::timestamptz, 'latih_tubi' from generate_series(1, $3::int) g`,
       [me, subject, answered, correct],
     )
   const get = async () => PracticeReadMasterySchema.parse((await pelajar.get('/api/practice/mastery')).body.data)
