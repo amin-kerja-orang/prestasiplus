@@ -60,6 +60,7 @@ watch(
 <template>
   <div v-if="notFound" />
   <DsPage v-else data-testid="product-page">
+    <h1 v-if="failed || !product.data.value" class="sr-only">{{ DETAIL_COPY.headerTitle }}</h1>
     <DsBackLink to="/marketplace" :label="MARKETPLACE_COPY.back" data-testid="marketplace-back" />
     <DsLoadError v-if="failed" :message="MARKETPLACE_COPY.loadFailed" testid="m20-load-error" retry-testid="m20-retry" @retry="product.reload" />
     <div v-else-if="!product.data.value" class="flex flex-col gap-3" aria-busy="true" data-testid="product-loading">

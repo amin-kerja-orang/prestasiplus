@@ -55,6 +55,20 @@ export async function fetchDashboard(options: Signal = {}): Promise<Dashboard> {
 }
 
 /**
+ * FR-MUR-2-3 "Rekod terbaik": the pupil's longest streak, read from the existing gamification dashboard
+ * (`GET /api/gamification/dashboard`, `wallet.streak.best`; any signed-in user, own data). The type is local
+ * (modules do not import each other). `null` when the body carries no usable number.
+ */
+export async function fetchBestStreak(options: Signal = {}): Promise<number | null> {
+  const body = await api.get<{ wallet?: { streak?: { best?: unknown } } }>(
+    '/api/gamification/dashboard',
+    withSignal(options),
+  )
+  const best = body?.wallet?.streak?.best
+  return typeof best === 'number' && Number.isFinite(best) && best >= 0 ? Math.floor(best) : null
+}
+
+/**
  * http mode only: the `PracticeReadDashboard` wire body (`GET /api/dashboard`, packages/contract
  * practice/reads) already has the page's `Dashboard` shape. Ids stay as sent (opaque strings, the
  * `EntityId` of the dashboard types; the page uses them only as list keys and never posts them back).
