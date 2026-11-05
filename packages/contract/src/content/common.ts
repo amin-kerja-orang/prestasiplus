@@ -41,8 +41,8 @@ export const ContentUserRefSchema = z
 export const CONTENT_MESSAGES = {
   fieldRequired: 'Medan ini diperlukan.',
   fieldInvalid: 'Medan ini tidak sah.',
-  notFound: 'Not Found.',
-  forbidden: 'This action is unauthorized.',
+  notFound: 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?',
+  forbidden: 'Anda tidak dibenarkan melakukan tindakan ini.',
   articleNotFound: 'Artikel tidak dijumpai.',
   noteNotFound: 'Nota tidak dijumpai.',
   bannerNotFound: 'Banner tidak dijumpai.',

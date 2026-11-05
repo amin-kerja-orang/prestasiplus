@@ -107,7 +107,7 @@ describe('R1E2E-10: bulk Terbitkan of an already Diterbitkan row is a no-op', ()
     const id = await published()
     const res = await admin.post(`/api/questions/${id}/status`, { to: 'approved' })
     expect(res.status, JSON.stringify(res.body)).toBe(409)
-    expect(res.body.error).toMatchObject({ code: 'CONFLICT', message: OLD_CONFLICT })
+    expect(res.body.error).toMatchObject({ code: 'CONFLICT', message: 'Perubahan status ini tidak dibenarkan daripada status semasa.' }) // ERR-CON-04
     expect((await status(id)).status).toBe('approved') // untouched
   })
 
@@ -116,7 +116,7 @@ describe('R1E2E-10: bulk Terbitkan of an already Diterbitkan row is a no-op', ()
     const p = await published()
     const out = await bulk([draft, p])
     expect(out.data.affected).toBe(0)
-    expect(out.data.failed.map((f) => [f.id, f.code, f.message])).toEqual([[draft, 'CONFLICT', "Peralihan 'Draf' -> 'Diterbitkan' tidak dibenarkan."]])
+    expect(out.data.failed.map((f) => [f.id, f.code, f.message])).toEqual([[draft, 'CONFLICT', 'Perubahan status ini tidak dibenarkan daripada status semasa.']])
     expect(out.data.skipped).toEqual([{ id: p, reason: ALREADY }])
     expect(out.status).toBe(ZERO_FLASH) // a refused row is in the batch (failed 1): the count is kept, "0 soalan berjaya dikemaskini." (lead decision)
     expect(out.status).not.toBe(ALREADY)
