@@ -206,9 +206,7 @@ describe('HttpBijakAdminServer', () => {
     const { server } = setup()
     const calls = [
       () => server.resubmit('k'),
-      () => server.getBankEditable('q'),
       () => server.reviseQuestion('q', 's', 'n'),
-      () => server.reviseQuestionFull('q', {} as never, undefined, 'n'),
       () => server.reviewDecision('k', { action: 'betulkan', reason: 'x' }),
     ]
     for (const c of calls) {

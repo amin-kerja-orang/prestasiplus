@@ -245,3 +245,23 @@ export function bankDetailFrom(
     pendingRevision: false,
   }
 }
+
+/** Quick Edit reads a little more of `QuestionDetailSchema` than the bank does. */
+export interface WireQuickEdit extends WireBankDetail {
+  subjectId: string | null
+  educationLevelId: string | null
+  difficultyLevel: number
+  explanation: string | null
+  numberLabel?: string | null
+  stimulusGroup?: unknown
+}
+
+export const QUICK_EDIT_OUT_OF_SCOPE = 'Soalan ini di luar skop suntingan Panel — sunting di Studio penuh.'
+
+/** FR-ADM-Q24.1: the one MCQ leaf Quick Edit can hold, or null for a grouped member, several parts or another mode. */
+export function quickEditLeaf(d: WireQuickEdit): Extract<Leaf, { mode: 'mcq' }> | null {
+  if (d.stimulusGroup) return null
+  const leaves = d.parts ? leavesOfParts(d.parts) : []
+  const only = leaves.length === 1 ? leaves[0] : undefined
+  return only?.mode === 'mcq' ? only : null
+}

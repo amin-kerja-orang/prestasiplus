@@ -140,6 +140,8 @@ export type DecisionAction = 'terbit' | 'tolak' | 'betulkan'
 export interface DecisionResult {
   ok: boolean
   errors: string[]
+  /** The API's flash text of a save, when it has one. */
+  message?: string
 }
 
 export interface BankFilter {
@@ -186,6 +188,12 @@ export interface BankEditable {
   stimulus?: IntakeStimulus
   /** The live version is read-only while a newer one waits for review. */
   pendingRevision: boolean
+  /** Http only (FR-ADM-Q24): Quick Edit keeps to the flat fields of a single-leaf MCQ outside a group. */
+  quickEdit?: {
+    outOfScope: boolean
+    /** The approval gate of the stored question, by message (FR-QA-44). */
+    gate: string[]
+  }
   /** Whether the live question carries no SP (legacy seed): the SP check is waived on save. */
   legacyTag: boolean
 }

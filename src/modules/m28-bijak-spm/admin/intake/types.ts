@@ -76,6 +76,8 @@ export interface IntakeQuestion {
   parts: IntakePart[]
   /** Answer key of a question without parts (MCQ key, short answer, essay points). */
   scheme?: SchemeDef
+  /** Quick Edit only (http): the explanation of the question. */
+  explanation?: string
   tag: CurriculumTag
   /** Stimulus group (the figure is stored once on the batch). */
   stimulusId?: string

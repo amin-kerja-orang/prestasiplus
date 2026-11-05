@@ -240,10 +240,98 @@ describe('intake client', () => {
     expect(requests.some((r) => r.url === '/api/intake/batches/b1/cancel')).toBe(true)
   })
 
+  describe('Quick Edit (FR-ADM-Q24.3)', () => {
+    const leaf = {
+      label: '1',
+      mode: 'mcq',
+      marks: 1,
+      prompt: { ms: 'Teks lama yang panjang.' },
+      options: ['A', 'B', 'C'].map((label) => ({ label, body: { ms: `Pilihan ${label}`, en: 'kept' } })),
+      key: { kind: 'option', correct: 'A' },
+    }
+    const detail = (over: object = {}) => ({
+      id: 'q',
+      questionText: 'Teks lama yang panjang.',
+      subject: { id: '3', name: 'Sains' },
+      level: { id: '7', name: 'Tingkatan 4' },
+      subjectId: '3',
+      educationLevelId: '7',
+      difficultyLevel: 2,
+      explanation: null,
+      status: 'approved',
+      questionType: 'mcq',
+      pointsValue: 1,
+      parts: [leaf],
+      ...over,
+    })
+    const routes = (over: object = {}) => ({
+      'GET /api/admin/blueprints': ok([]),
+      'GET /api/questions/q': ok(detail(over)),
+      'GET /api/questions/q/gate-check': ok({ issues: [{ message: 'Sila pilih Bab.' }] }),
+      'POST /api/questions/q/edit-as-draft': ok({ id: 'q', versionNo: 2 }),
+      'PUT /api/questions/q': ok(detail()),
+    })
+    const edited = (correct = 'B') => ({
+      stem: 'Teks baharu yang panjang.',
+      options: leaf.options.map((o) => ({ id: o.label, text: `${o.label} baharu` })),
+      scheme: { kind: 'option', marks: 1, correct },
+      explanation: ' Sebab. ',
+    }) as never
+
+    it('reads a single-leaf MCQ into the flat shape with the gate messages', async () => {
+      const { server } = setup(routes())
+      const e = await server.getBankEditable('q')
+      expect(e.quickEdit).toEqual({ outOfScope: false, gate: ['Sila pilih Bab.'] })
+      expect(e.pendingRevision).toBe(false)
+      expect(e.question.options.map((o) => o.id)).toEqual(['A', 'B', 'C'])
+    })
+
+    it.each([
+      ['two leaves', { parts: [leaf, { ...leaf, label: '2' }] }],
+      ['a grouped member', { stimulusGroup: { id: '9' } }],
+      ['another mode', { parts: [{ ...leaf, mode: 'essay' }] }],
+    ])('%s is out of scope, and a save is refused without a write', async (_name, over) => {
+      const { server, requests } = setup(routes(over))
+      expect((await server.getBankEditable('q')).quickEdit?.outOfScope).toBe(true)
+      const res = await server.reviseQuestionFull('q', edited())
+      expect(res.ok).toBe(false)
+      expect(requests.some((r) => r.method !== 'GET')).toBe(false)
+    })
+
+    it('locks Menunggu Semakan', async () => {
+      const { server } = setup(routes({ status: 'review' }))
+      expect((await server.getBankEditable('q')).pendingRevision).toBe(true)
+    })
+
+    it('a live question goes through edit-as-draft, then PUT keeps the rest of the leaf', async () => {
+      const { server, requests } = setup(routes())
+      const res = await server.reviseQuestionFull('q', edited())
+      expect(res).toMatchObject({ ok: true, message: expect.stringContaining('Draf baharu #q dicipta.') })
+      const writes = requests.filter((r) => r.method !== 'GET').map((r) => `${r.method} ${r.url}`)
+      expect(writes).toEqual(['POST /api/questions/q/edit-as-draft', 'PUT /api/questions/q'])
+      const body = requests.find((r) => r.method === 'PUT')?.body as {
+        explanation: string
+        questionText: string
+        difficultyLevel: number
+        parts: { key: unknown; prompt: { ms: string }; options: { body: { ms: string; en: string } }[] }[]
+      }
+      expect(body).toMatchObject({ questionText: 'Teks baharu yang panjang.', difficultyLevel: 2, explanation: 'Sebab.' })
+      expect(body.parts[0]?.key).toEqual({ kind: 'option', correct: 'B' })
+      expect(body.parts[0]?.prompt.ms).toBe('Teks baharu yang panjang.')
+      expect(body.parts[0]?.options[1]?.body).toEqual({ ms: 'B baharu', en: 'kept' })
+    })
+
+    it('an open draft is reused: no second edit-as-draft', async () => {
+      const { server, requests } = setup(routes({ status: 'draft' }))
+      const res = await server.reviseQuestionFull('q', edited())
+      expect(res).toMatchObject({ ok: true, message: 'Soalan dikemas kini.' })
+      expect(requests.some((r) => r.url.endsWith('/edit-as-draft'))).toBe(false)
+    })
+  })
+
   it('keeps the routes without a controller unavailable', async () => {
     const { server } = setup({})
     await expect(server.resubmit('k')).rejects.toMatchObject({ code: 'unavailable' })
-    await expect(server.getBankEditable('q')).rejects.toMatchObject({ code: 'unavailable' })
   })
 
   it('submitForReview drops the wire status/label so the badge shows Semakan (R1E2E-C1)', async () => {

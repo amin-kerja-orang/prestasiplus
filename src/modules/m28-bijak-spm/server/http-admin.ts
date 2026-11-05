@@ -43,6 +43,7 @@ import type {
   BankRow,
   BankStats,
   DecisionAction,
+  BankEditable,
   DecisionResult,
   QueueFilter,
   QueueItem,
@@ -64,6 +65,9 @@ import type {
 } from '../admin/intake/types'
 import {
   bankDetailFrom,
+  quickEditLeaf,
+  QUICK_EDIT_OUT_OF_SCOPE,
+  type WireQuickEdit,
   bankRowFrom,
   wireStatusesOf,
   type WireBankDetail,
@@ -1047,12 +1051,72 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
 
   /* ------------------------------------------------ no backend route: not available */
 
-  // The bank "Sunting" makes version n+1 of a published question; BE-09 edits a question in place
-  // (PUT /questions/{id}) and has no version or revision queue, and the flat BE-09 shape cannot be
-  // round-tripped into the intake editor without losing the mark scheme.
-  getBankEditable: BijakAdminMethods['getBankEditable'] = () => unavailable()
+  /**
+   * Quick Edit (FR-ADM-Q24.3): the flat fields of a single-leaf MCQ outside a group. Any other question is out of scope, so
+   * nothing the form cannot hold is dropped. `Menunggu Semakan` is locked; an open draft is reused.
+   */
+  async getBankEditable(qid: string): Promise<BankEditable> {
+    const d = await this.send<WireQuickEdit>('GET', `/api/questions/${enc(qid)}`)
+    const subjects = await this.ensureSubjects()
+    const name = d.subject?.name ?? ''
+    const subject = subjects.find((s) => s.name.trim().toLowerCase() === name.trim().toLowerCase()) ?? { code: name, name }
+    const leaf = quickEditLeaf(d)
+    const gate = await this.send<{ issues: { message: string }[] }>('GET', `/api/questions/${enc(qid)}/gate-check?gate=approve`)
+    return {
+      row: bankRowFrom(d, d, subject),
+      question: {
+        id: d.id,
+        label: d.numberLabel ?? '',
+        type: 'mcq',
+        stem: d.questionText,
+        options: (leaf?.options ?? []).map((o) => ({ id: o.label, text: o.body.ms })),
+        marks: leaf?.marks ?? d.pointsValue,
+        mode: 'short_text',
+        parts: [],
+        ...(leaf ? { scheme: { kind: 'option', marks: leaf.marks, correct: leaf.key.correct } as IntakeQuestion['scheme'] } : {}),
+        tag: { subject: subject.code, level: '', unit: '', sp: [], tp: 1 } as unknown as IntakeQuestion['tag'],
+        explanation: d.explanation ?? '',
+        page: 1,
+        lowFields: [],
+        confirmed: [],
+      },
+      pendingRevision: d.status === 'review',
+      legacyTag: false,
+      quickEdit: { outOfScope: leaf === null, gate: gate.issues.map((i) => i.message) },
+    }
+  }
+
   reviseQuestion: BijakAdminMethods['reviseQuestion'] = () => unavailable()
-  reviseQuestionFull: BijakAdminMethods['reviseQuestionFull'] = () => unavailable()
+
+  /** `POST edit-as-draft` for a question still live on its latest version (API-Q-03), then `PUT` with its one leaf rewritten. */
+  async reviseQuestionFull(qid: string, edited: IntakeQuestion): Promise<DecisionResult> {
+    const d = await this.send<WireQuickEdit>('GET', `/api/questions/${enc(qid)}`)
+    const leaf = quickEditLeaf(d)
+    if (!leaf) return { ok: false, errors: [QUICK_EDIT_OUT_OF_SCOPE] }
+    let message: string | undefined
+    if (d.status === 'approved') {
+      const res = await this.send<{ id: string }>('POST', `/api/questions/${enc(qid)}/edit-as-draft`, {})
+      message = `Draf baharu #${res.id} dicipta. Soalan asal kekal diterbitkan sehingga draf ini diterbitkan.`
+    }
+    const correct = edited.scheme?.kind === 'option' ? edited.scheme.correct : leaf.key.correct
+    await this.send('PUT', `/api/questions/${enc(qid)}`, {
+      subjectId: d.subjectId,
+      educationLevelId: d.educationLevelId,
+      difficultyLevel: d.difficultyLevel,
+      questionText: edited.stem,
+      explanation: edited.explanation?.trim() || null,
+      parts: [
+        {
+          ...leaf,
+          prompt: { ...leaf.prompt, ms: edited.stem },
+          options: leaf.options.map((o, i) => ({ ...o, body: { ...o.body, ms: edited.options[i]?.text ?? o.body.ms } })),
+          key: { kind: 'option', correct },
+        },
+      ],
+    })
+    return { ok: true, errors: [], message: message ?? 'Soalan dikemas kini.' }
+  }
+
   // An accepted or rejected item is final (409); the queue has no correction or resubmit step.
   resubmit: BijakAdminMethods['resubmit'] = () => unavailable()
 }
