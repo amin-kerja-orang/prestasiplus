@@ -11,7 +11,8 @@ import { DsEmptyState, DsHeroCard } from '@/ds'
 import { useApi } from '@/composables/useApi'
 
 import PastSittingsLink from '../components/PastSittingsLink.vue'
-import { RichText } from '../../../components/question-display'
+import { PaperView, RichText } from '../../../components/question-display'
+import { sectionMeta } from '../../../components/question-display/copy'
 import { formatClock } from '../domain/paper-model'
 import type { AttemptMode } from '../domain/types'
 import { useBijakUser, useLearnerTheme } from '../lib/use-bijak'
@@ -30,6 +31,16 @@ const { data: open, reload: reloadOpen } = useApi(
   () => server.findInProgress(user.value, paperId.value),
   paperId,
 )
+
+/** Cover sections as question-less PaperView sections; the head slot keeps the stored question count. */
+const coverSections = computed(() =>
+  (cover.value?.sections ?? []).map((s) => ({ ...s, id: s.label, questions: [] })),
+)
+
+function coverMeta(id: string): string {
+  const s = cover.value?.sections.find((x) => x.label === id)
+  return s ? sectionMeta(s.marks, s.questionCount, s.instruction, s.compulsory) : ''
+}
 
 const mode = ref<AttemptMode>('exam')
 const starting = ref(false)
@@ -150,12 +161,14 @@ async function begin(restart: boolean): Promise<void> {
         <ol class="flex flex-col gap-1 text-body text-default" data-testid="instructions">
           <li v-for="(line, i) in cover.instructions" :key="i">{{ i + 1 }}. {{ line }}</li>
         </ol>
-        <ul class="flex flex-col gap-1 text-body text-default" data-testid="cover-sections">
-          <li v-for="s in cover.sections" :key="s.label">
-            <strong>{{ s.label }}</strong> · [{{ s.marks }} markah] · {{ s.questionCount }} soalan ·
-            {{ s.instruction }}<template v-if="s.compulsory"> (wajib)</template>
-          </li>
-        </ul>
+        <PaperView :sections="coverSections" class="text-body text-default" data-testid="cover-sections">
+          <template #section-head="{ section }">
+            <p>
+              <strong>{{ section.label }}</strong
+              >{{ coverMeta(section.id) }}
+            </p>
+          </template>
+        </PaperView>
       </section>
 
       <section

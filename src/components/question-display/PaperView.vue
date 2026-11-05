@@ -18,10 +18,12 @@ const props = withDefaults(
   defineProps<{
     sections: PaperSection[]
     reveal?: boolean
+    /** False when the surface renders no section heading line (single-question previews). */
+    sectionHead?: boolean
     /** Scroll container used for rotation anchoring; the window when absent. */
     scrollContainer?: HTMLElement | null
   }>(),
-  { reveal: false, scrollContainer: null },
+  { reveal: false, scrollContainer: null, sectionHead: true },
 )
 
 interface Block {
@@ -136,7 +138,7 @@ defineExpose({ record, restore })
         gap="md"
         :data-testid="`paper-section-${s.id}`"
       >
-        <slot name="section-head" :section="s">
+        <slot v-if="sectionHead" name="section-head" :section="s">
           <DsStack as="header" gap="2xs">
             <DsText variant="body" class="min-w-0 overflow-x-auto" data-testid="paper-section-line"
               ><strong>{{ s.label }}</strong
