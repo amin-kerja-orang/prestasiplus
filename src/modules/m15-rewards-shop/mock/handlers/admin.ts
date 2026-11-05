@@ -41,12 +41,13 @@ import {
   type HadiahCategory,
   type HadiahListItem,
   type HadiahListMeta,
+  type HadiahReward as WireHadiah,
   type RedemptionListItem,
   type RedemptionListMeta,
   type RedemptionStatus,
 } from '../../api/types'
 import { hadiahRepo } from '../repository/hadiah'
-import { M15Error } from '../repository/types'
+import { M15Error, type HadiahReward } from '../repository/types'
 import { parseBulk, parseHadiahInput, parseVoucherCode } from './input'
 
 const adminOnly = requireRole('admin')
@@ -60,6 +61,12 @@ export function refusal(e: M15Error): MockResponse {
 
 const idOf = (req: MockRequest): number => Number(req.params.id)
 
+/** The wire form of a row id: opaque text (API-ADM-15). */
+const text = (id: number): string => String(id)
+
+/** DATA-M15-01 on the wire: the stored row with its id as text. */
+const body = (row: HadiahReward): WireHadiah => ({ ...row, id: text(row.id) })
+
 // --- #1 --------------------------------------------------------------------------------------------
 
 function listRewards(req: MockRequest): MockResponse {
@@ -67,7 +74,7 @@ function listRewards(req: MockRequest): MockResponse {
   const rows = hadiahRepo.list(cat)
   const counts = hadiahRepo.redemptionCounts()
   const items: HadiahListItem[] = rows.map((r) => ({
-    id: r.id,
+    id: text(r.id),
     category: r.category,
     categoryLabel: HADIAH_CATEGORY_LABELS[r.category].table,
     vendor: r.vendor,
@@ -94,13 +101,13 @@ function listRewards(req: MockRequest): MockResponse {
 
 function getReward(req: MockRequest): MockResponse {
   const row = hadiahRepo.get(idOf(req))
-  return row ? ok(row) : notFound()
+  return row ? ok(body(row)) : notFound()
 }
 
 function createReward(req: MockRequest): MockResponse {
   const parsed = parseHadiahInput(req.body)
   if (!parsed.ok) return validationError(parsed.fields)
-  return created(hadiahRepo.create(parsed.value))
+  return created(body(hadiahRepo.create(parsed.value)))
 }
 
 function updateReward(req: MockRequest): MockResponse {
@@ -109,7 +116,7 @@ function updateReward(req: MockRequest): MockResponse {
   const parsed = parseHadiahInput(req.body)
   if (!parsed.ok) return validationError(parsed.fields)
   const row = hadiahRepo.update(id, parsed.value)
-  return row ? ok(row) : notFound()
+  return row ? ok(body(row)) : notFound()
 }
 
 // --- #5 --------------------------------------------------------------------------------------------
@@ -119,7 +126,7 @@ function bulk(req: MockRequest): MockResponse {
   if (!parsed.ok) return validationError(parsed.fields)
   const { affected, keptIds } = hadiahRepo.bulk(parsed.change, parsed.ids)
   const data: HadiahBulkResult =
-    parsed.change.action === 'delete' ? { affected, keptIds } : { affected }
+    parsed.change.action === 'delete' ? { affected, keptIds: keptIds.map(text) } : { affected }
   return ok(data)
 }
 
@@ -133,9 +140,9 @@ function listRedemptions(req: MockRequest): MockResponse {
   const items: RedemptionListItem[] = rows.map((r) => {
     const u = users.get(r.userId)
     return {
-      id: r.id,
-      user: { id: r.userId, name: u?.name ?? '', email: u?.email ?? '' },
-      rewardId: r.rewardId,
+      id: text(r.id),
+      user: { id: text(r.userId), name: u?.name ?? '', email: u?.email ?? '' },
+      rewardId: text(r.rewardId),
       rewardTitle: r.rewardTitle,
       rewardVendor: r.rewardVendor,
       denominationRm: r.denominationRm,
@@ -147,7 +154,7 @@ function listRedemptions(req: MockRequest): MockResponse {
   const activeStatus: RedemptionListMeta['activeStatus'] =
     status === 'all'
       ? 'all'
-      : REDEMPTION_STATUSES.includes(status as RedemptionStatus)
+      : status !== 'pending_parent_consent' && REDEMPTION_STATUSES.includes(status as RedemptionStatus)
         ? (status as RedemptionStatus)
         : null
   const extra: RedemptionListMeta = { activeStatus }
@@ -164,7 +171,7 @@ function deliver(req: MockRequest): MockResponse {
   try {
     const row = hadiahRepo.deliver(id, parsed.code)
     const data: DeliverResult = {
-      id: row.id,
+      id: text(row.id),
       status: 'delivered',
       deliveredAt: row.deliveredAt as string,
       expiresAt: row.expiresAt as string,
@@ -179,7 +186,7 @@ function deliver(req: MockRequest): MockResponse {
 function cancel(req: MockRequest): MockResponse {
   try {
     const { row, refundedTokens } = hadiahRepo.cancelByAdmin(idOf(req))
-    const data: CancelResult = { id: row.id, status: 'cancelled', refundedTokens }
+    const data: CancelResult = { id: text(row.id), status: 'cancelled', refundedTokens }
     return ok(data)
   } catch (e) {
     if (e instanceof M15Error) return refusal(e)
