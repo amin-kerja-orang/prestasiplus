@@ -1902,7 +1902,7 @@
       "sector": "S6",
       "component": "src/modules/m10-teacher-class/pages/KelasCreatePage.vue",
       "file": "src/modules/m10-teacher-class/routes/kelas.ts",
-      "approved_by_card": null
+      "approved_by_card": "S6-T14"
     },
     {
       "key": "/guru/pelajar|guru-pelajar",
