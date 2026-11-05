@@ -16,7 +16,7 @@ mkdir -p "$w/conf.d" "$w/tmp" "$w/le/live/t.example.my" "$w/snip" "$w/web"
 # nginx workers drop to an unprivileged user when this runs as root: let them write the temp dir
 chmod 755 "$w"
 chmod 777 "$w/tmp"
-export PP_DOMAIN=t.example.my PP_UPLOAD_FILES_MB=22 PP_UPLOAD_BIG_MB=256 PP_CSP_IMG_HOSTS="https://img.youtube.com" PP_CSP_MODE=report-only PP_EDGE_AUTH_RATE=30r/m PP_EDGE_AUTH_BURST=5 PP_HSTS="max-age=300"
+export PP_DOMAIN=t.example.my PP_UPLOAD_FILES_MB=32 PP_UPLOAD_BIG_MB=336 PP_CSP_IMG_HOSTS="https://img.youtube.com" PP_CSP_MODE=report-only PP_EDGE_AUTH_RATE=30r/m PP_EDGE_AUTH_BURST=5 PP_HSTS="max-age=300"
 openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj "/CN=$PP_DOMAIN" -keyout "$w/le/live/$PP_DOMAIN/privkey.pem" -out "$w/le/live/$PP_DOMAIN/fullchain.pem" 2>/dev/null
 cp "$here"/snippets/*.conf "$w/snip/"
 for t in "$here"/templates/snippets/*.template; do
