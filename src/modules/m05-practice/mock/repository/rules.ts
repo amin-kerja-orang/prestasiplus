@@ -35,7 +35,7 @@ export const INVALID_MODE_MESSAGE = 'Mod tidak sah.'
 export const COUNT_OPTIONS = [5, 10, 15, 20] as const
 /** BR-14 / §6.10: revision length. */
 export const REVISION_LENGTH = 20
-/** BR-M06-13: `past_year` counts. */
+/** BR-M06-13: `past_year` / `databank` counts. */
 export const PAST_YEAR_COUNTS = [5, 10, 20] as const
 /** BR-M06-04: Latih Tubi counts of a subject without a target. */
 export const LATIH_TUBI_COUNTS = [5, 10, 20, 30, 40, 50, 60] as const

@@ -207,7 +207,7 @@ export class PracticeAnalyticsRepository {
           LEFT JOIN practice_sessions s ON s.id = pa.session_id
          WHERE pa.user_id = ${idFromString(userId)}::bigint AND NOT pa.is_test
            AND pa.question_id IS NOT NULL AND pa.subject_id IS NOT NULL
-           AND (pa.session_id IS NULL OR s.mode NOT IN ('past_year', 'databank'))
+           AND (pa.session_id IS NULL OR s.mode IS NULL OR s.mode NOT IN ('past_year', 'databank')))
       SELECT f.subject_id, f.answered_at, f.is_correct,
              EXISTS (SELECT 1 FROM a b WHERE b.question_id = f.question_id AND b.rn > 1 AND b.is_correct) AS later
         FROM a f

@@ -114,7 +114,7 @@ export const StartSessionRequestSchema = z
     levelId: IdSchema.nullable().optional(),
     difficulty: z.number().int().min(1).max(5).nullable().optional(),
     count: z.number().int().min(1).optional().meta({
-      description: 'random/chapter 5|10|15|20; revision absent or 20; past_year 5|10|20; latih_tubi per subject target.',
+      description: 'random/chapter 5|10|15|20; revision absent or 20; past_year / databank 5|10|20; latih_tubi per subject target.',
     }),
     chapterId: intId('chapter mode').optional(),
     year: z.number().int().optional().meta({ description: 'ramalan mode.' }),

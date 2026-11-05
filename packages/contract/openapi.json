@@ -65382,7 +65382,7 @@
           "count": {
             "type": "integer",
             "minimum": 1,
-            "description": "random/chapter 5|10|15|20; revision absent or 20; past_year 5|10|20; latih_tubi per subject target."
+            "description": "random/chapter 5|10|15|20; revision absent or 20; past_year / databank 5|10|20; latih_tubi per subject target."
           },
           "chapterId": {
             "type": "string",
@@ -102282,7 +102282,7 @@
           "practice-reads"
         ],
         "summary": "Own corrections: first attempt versus later attempt per question (S11)",
-        "description": "Mock GET /api/practice/corrections?month=. Questions whose first attempt fell in the month; \"before\" is the first attempt, \"after\" counts a later correct attempt. SPM past_year sessions are not counted (BR-18). Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
+        "description": "Mock GET /api/practice/corrections?month=. Questions whose first attempt fell in the month; \"before\" is the first attempt, \"after\" counts a later correct attempt. SPM past_year / databank sessions are not counted (BR-18). Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
         "parameters": [
           {
             "schema": {
