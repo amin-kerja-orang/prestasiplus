@@ -1,4 +1,5 @@
 import {
+  AmaranSchoolRiskSchema,
   ErrorBodySchema,
   SchoolAdminClassListResponseSchema,
   SchoolAdminDashboardSchema,
@@ -21,7 +22,7 @@ import {
   type Api,
   type SchoolAdminTestApp,
 } from './helpers'
-import { addClassroom, addLevel } from './reports-fixtures'
+import { addClassroom, addLevel, addPupil, addSession, addSubject } from './reports-fixtures'
 
 describe('GET /admin-sekolah/dashboard with no BE-19 / BE-17 provider (fail-closed defaults)', () => {
   let t: SchoolAdminTestApp
@@ -49,7 +50,10 @@ describe('GET /admin-sekolah/dashboard with no BE-19 / BE-17 provider (fail-clos
     expect(d.cards.activeClasses).toBe(0)
     expect(d.cards.subscription).toEqual({ status: 'none', label: 'Belum Ada' })
     expect(d.performance.practice).toEqual({ accuracy: null, sessions: 0, questions: 0 })
-    expect(d.performance.risk).toBeNull()
+    // S6-T13 A: the Amaran Awal tally of the school (the seeded pupils have no practice, so they all score into "high").
+    const amaran = AmaranSchoolRiskSchema.parse((await admin.get(`/amaran/schools/${s1}`)).body.data)
+    expect(d.performance.risk).toEqual({ safe: 0, watch: 0, high: amaran.tally.red, total: amaran.tally.total })
+    expect(d.performance.risk?.total).toBeGreaterThan(0)
     expect(d.performance.total).toBe(0)
     expect(d.perutusan.length).toBeLessThanOrEqual(3)
   })
@@ -249,5 +253,59 @@ describe('GET /admin-sekolah/dashboard agrees with the pages it links to (S6-T13
     const tile = SchoolAdminClassListResponseSchema.parse((await admin.get('/admin-sekolah/kelas')).body).tiles.activeClasses
     expect(tile).toBe(3)
     expect((await dashboard()).cards.activeClasses).toBe(tile)
+  })
+})
+
+describe('GET /admin-sekolah/dashboard: Amaran Awal panel and Kelas Aktif tile (S6-T13 A)', () => {
+  let t: SchoolAdminTestApp
+  let admin: Api
+  let s1: string
+
+  beforeAll(async () => {
+    t = await bootSchoolAdminApp()
+    admin = apiOf(await login(t, SCHOOL_ADMIN))
+    s1 = await schoolIdOf(t.db, 'DEMO001')
+    const subject = await addSubject(t.db, 'DSHR1', 'Matematik Ujian')
+    // Mixed pupils (fictitious): strong, middling and weak practice, plus pupils who never started.
+    const recent = '2026-10-17T10:00:00+08:00'
+    const profiles: Array<[string, number, number, number]> = [
+      ['Murid Cemerlang', 10, 10, 90],
+      ['Murid Baik', 10, 9, 70],
+      ['Murid Sederhana', 10, 5, 30],
+      ['Murid Lemah', 10, 1, 5],
+    ]
+    for (const [name, questions, correct, correctMastery] of profiles) {
+      const id = await addPupil(t.db, s1, name, { grade: 10 })
+      await addSession(t.db, id, { mode: 'chapter', questions, correct, completedAt: recent, subjectId: subject })
+      await t.db.query(`insert into mastery (user_id, subject_id, correct, answered, last_answered_at) values ($1::bigint, $2::bigint, $3, 100, $4::timestamptz)`, [id, subject, correctMastery, recent])
+    }
+    await addPupil(t.db, s1, 'Murid Belum Mula Satu', { grade: 10 })
+    await addPupil(t.db, s1, 'Murid Belum Mula Dua', { grade: 10 })
+    const t4 = await addLevel(t.db, 'DT4', 'Tingkatan 4', 10)
+    await addClassroom(t.db, { schoolId: s1, name: 'Kelas Bilik Aktif', levelId: t4 })
+    await addClassroom(t.db, { schoolId: s1, name: 'Kelas Sekolah Aktif', levelId: t4, kind: 'school_class' })
+    await addClassroom(t.db, { schoolId: s1, name: 'Kelas Bilik Tidak Aktif', levelId: t4, active: false })
+  }, 180_000)
+  afterAll(async () => {
+    await t.close()
+  })
+
+  it('performance.risk equals the tally of GET /amaran/schools/:id (safe = green, watch = yellow, high = red, total = their sum)', async () => {
+    const d = SchoolAdminDashboardSchema.parse((await admin.get('/admin-sekolah/dashboard')).body.data)
+    const amaran = AmaranSchoolRiskSchema.parse((await admin.get(`/amaran/schools/${s1}`)).body.data)
+    expect(d.performance.risk).toEqual({ safe: amaran.tally.green, watch: amaran.tally.yellow, high: amaran.tally.red, total: amaran.tally.total })
+    const risk = d.performance.risk!
+    expect(risk.total).toBe(risk.safe + risk.watch + risk.high)
+    expect(risk.total).toBe(amaran.pupils.length)
+    // The mixed pupils really spread over the groups, so the equality is not trivially 0 = 0.
+    expect(risk.safe).toBeGreaterThan(0)
+    expect(risk.high).toBeGreaterThan(0)
+  })
+
+  it('cards.activeClasses equals the /admin-sekolah/kelas tile and counts both kinds, active only', async () => {
+    const d = SchoolAdminDashboardSchema.parse((await admin.get('/admin-sekolah/dashboard')).body.data)
+    const list = SchoolAdminClassListResponseSchema.parse((await admin.get('/admin-sekolah/kelas')).body)
+    expect(d.cards.activeClasses).toBe(2)
+    expect(list.tiles.activeClasses).toBe(d.cards.activeClasses)
   })
 })

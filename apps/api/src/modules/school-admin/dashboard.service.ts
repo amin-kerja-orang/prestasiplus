@@ -5,6 +5,8 @@ import { ApiError } from '../../common/errors/api-error'
 import { toMytTimestamp } from '../../common/time/myt'
 import { CLOCK, type Clock } from '../../db/clock'
 import { isOverloadError } from '../auth/auth.errors'
+import { AmaranService } from './amaran/amaran.service'
+import type { AmaranCaller } from './amaran/amaran.access'
 import { PerutusanRepository } from '../content/perutusan'
 import { AUTHOR_ROLE_LABELS } from '../content/perutusan/perutusan.constants'
 import { initialsOf } from '../content/perutusan/perutusan.service'
@@ -61,29 +63,30 @@ export class DashboardService {
     @Inject(SCHOOL_PERFORMANCE_PORT) private readonly performance: SchoolPerformancePort,
     @Inject(SCHOOL_CLASS_COUNT_PORT) private readonly classes: SchoolClassCountPort,
     @Inject(XsQueries) private readonly xs: XsQueries,
+    @Inject(AmaranService) private readonly amaran: AmaranService,
   ) {}
 
   /**
    * `caller` is a school admin with a school (the controller checks). Nothing in the request chooses the school. No pupil name
    * is read or returned; the Bijak figures are BE-19's, k-cohort suppressed by the mapper.
    */
-  async dashboard(caller: Caller, schoolId: string, perf: SchoolPerformanceCtx): Promise<SchoolAdminDashboard> {
+  async dashboard(caller: Caller, schoolId: string, perf: SchoolPerformanceCtx, amaranCaller: AmaranCaller): Promise<SchoolAdminDashboard> {
     try {
-      return await this.build(caller, schoolId, perf)
+      return await this.build(caller, schoolId, perf, amaranCaller)
     } catch (err) {
       if (isOverloadError(err)) throw ApiError.of('RATE_LIMITED', { retryAfter: 5 })
       throw err
     }
   }
 
-  private async build(caller: Caller, schoolId: string, perf: SchoolPerformanceCtx): Promise<SchoolAdminDashboard> {
+  private async build(caller: Caller, schoolId: string, perf: SchoolPerformanceCtx, amaranCaller: AmaranCaller): Promise<SchoolAdminDashboard> {
     const now = this.clock.now()
     const school = await this.schools.get(schoolId)
     if (!school) throw ApiError.of('FORBIDDEN') // a school admin whose school vanished: fail closed
     // XS-1 / XS-3 (S6-T03): the cards are the same named queries every other screen uses; the practice questions and accuracy
     // are XS-4 / XS-5 of the school, all time ("sepanjang masa").
     const scope = { kind: 'school', schoolId } as const
-    const [pupils, teachers, totals, posts, subs, view, activeClasses, pending] = await Promise.all([
+    const [pupils, teachers, totals, posts, subs, view, activeClasses, pending, tally] = await Promise.all([
       this.xs.pupilCount(scope),
       this.xs.teacherCount(schoolId),
       this.xs.answerTotals(scope),
@@ -92,6 +95,7 @@ export class DashboardService {
       this.performance.school(perf),
       this.classes.activeClasses(schoolId),
       this.users.pendingTeachersOfSchool(schoolId), // the query behind GET /admin-sekolah/guru/pending
+      this.amaran.schoolTally(amaranCaller, schoolId), // the tally of GET /amaran/schools/:id (whole school)
     ])
     const shown = posts.slice(0, DASHBOARD_PERUTUSAN_LIMIT)
     const authors = new Map<string, Awaited<ReturnType<UsersRepository['get']>>>()
@@ -124,7 +128,7 @@ export class DashboardService {
         activeClasses,
         subscription: { status, label: SUBSCRIPTION_LABEL[status] },
       },
-      performance: performanceBlock(view, { answered: totals.answered, accuracy: totals.accuracy }),
+      performance: performanceBlock(view, { answered: totals.answered, accuracy: totals.accuracy }, tally),
     }
   }
 }

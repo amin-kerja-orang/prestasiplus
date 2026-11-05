@@ -45,7 +45,8 @@ describe('GET /admin-sekolah/kelas', () => {
     const names = r.data.map((c) => c.name)
     expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, 'ms', { sensitivity: 'base' })))
     expect(r.meta).toMatchObject({ page: 1, pageSize: 25, totalItems: 34, totalPages: 2, displayed: 34 })
-    expect(r.tiles.activeClasses).toBe(33)
+    // Active classes of BOTH kinds (33 classrooms + the school_class), as the dashboard card; the list shows classrooms only.
+    expect(r.tiles.activeClasses).toBe(34)
     expect(r.levels).toEqual([
       { code: 'tahun-1', label: 'Darjah 1' },
       { code: 'tingkatan-4', label: 'Tingkatan 4' },

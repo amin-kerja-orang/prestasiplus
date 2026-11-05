@@ -24,7 +24,8 @@ export class ClassesService {
 
   async list(schoolId: string, query: { level?: string | undefined; search?: string | undefined; page?: string | undefined }): Promise<SchoolAdminClassListResponse> {
     // The explicit school filter is repeated here on purpose: the repository call is by school, and this guards a wrong implementation.
-    const all = (await this.classes.schoolClasses(schoolId)).filter((c) => c.kind === 'classroom' && c.schoolId === schoolId)
+    const everyKind = (await this.classes.schoolClasses(schoolId)).filter((c) => c.schoolId === schoolId)
+    const all = everyKind.filter((c) => c.kind === 'classroom')
     const levelsById = await this.classes.levelGrades([...new Set(all.map((c) => c.educationLevelId))])
     const gradeOf = (c: ClassRecord): number | null => gradeOfLevel(levelsById.get(c.educationLevelId))
 
@@ -73,7 +74,8 @@ export class ClassesService {
     return {
       data,
       meta: { ...listMeta(page, SCHOOL_ADMIN_PAGE_SIZE, matched.length), displayed: matched.length },
-      tiles: { activeClasses: all.filter((c) => c.isActive).length },
+      // Same count as the dashboard "Kelas Aktif" card (AC-AS-2-1): active classes of BOTH kinds (classroom and school_class).
+      tiles: { activeClasses: everyKind.filter((c) => c.isActive).length },
       levels,
     }
   }

@@ -6,6 +6,7 @@ import {
   type AmaranEffectivenessResult,
   type AmaranScope,
   type AmaranSchoolRisk,
+  type AmaranTally,
   type AmaranSubjectRisk,
   type AmaranSummary,
   type AmaranSummarySchoolRow,
@@ -123,6 +124,19 @@ export class AmaranService {
         weakness: await this.weakness(data.counters),
         pupils: ranked.map((p, i) => pupilView(p, i + 1)),
       }
+    })
+  }
+
+  /**
+   * The Amaran Awal tally of the whole school (all levels) for the school dashboard panel: the SAME load and `tallyOf` as
+   * `schoolRisk` (so the numbers equal `tally` of GET /amaran/schools/:id), without the weakness rows or the pupil list.
+   * The backend tally has no separate "Belum Bermula" group (a pupil with no activity scores into `high`), so none is excluded here.
+   */
+  async schoolTally(caller: AmaranCaller, rawId: string): Promise<AmaranTally> {
+    return this.guard(async () => {
+      const school = await this.readableSchool(caller, rawId)
+      const data = await this.load(school, this.clock.now().getTime(), caller)
+      return tallyOf(data.scored)
     })
   }
 
