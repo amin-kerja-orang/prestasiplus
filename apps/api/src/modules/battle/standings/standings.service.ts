@@ -155,11 +155,12 @@ export class StandingsService {
   }
 
   private async listRows(rows: BattleRowData[], homeSchoolId: string | null, viewer: BattleViewer): Promise<BattleListRow[]> {
-    const players = await this.deps.players([...new Set(rows.flatMap((r) => [r.playerA, r.playerB]))])
+    const players = await this.deps.players([...new Set(rows.flatMap((r) => [r.playerA, r.playerB]).filter((id) => id !== null))])
     const mask = await this.masker(viewer)
     return rows.map((r) => {
       const own = r.playerA === viewer.userId || r.playerB === viewer.userId
-      const one = (id: string): { id: string | null; name: string } => {
+      const one = (id: string | null): { id: string | null; name: string } => {
+        if (id === null) return { id: null, name: FALLBACK_NAME }
         const p = players.get(id)
         return own ? { id, name: p?.name ?? FALLBACK_NAME } : mask(id, p?.schoolId ?? null, p?.name ?? FALLBACK_NAME)
       }
@@ -167,7 +168,7 @@ export class StandingsService {
       const b = one(r.playerB)
       return {
         uuid: r.id,
-        playerA: { id: a.id, name: a.name, homeHere: homeSchoolId !== null && players.get(r.playerA)?.schoolId === homeSchoolId },
+        playerA: { id: a.id, name: a.name, homeHere: homeSchoolId !== null && r.playerA !== null && players.get(r.playerA)?.schoolId === homeSchoolId },
         scoreA: r.scoreA,
         scoreB: r.scoreB,
         playerB: { id: b.id, name: b.name },
