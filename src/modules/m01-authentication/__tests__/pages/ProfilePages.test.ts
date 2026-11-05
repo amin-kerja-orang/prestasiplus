@@ -140,6 +140,35 @@ describe('S7 /profile (FR-M01-38)', () => {
     }
   })
 
+  it('shows the read-only school block to the school admin: nama, kod, PPD and negeri from /me, no inputs (AC-AS-A1-3)', async () => {
+    const w = await render(ProfilePage, { ...USER, role: 'school_admin' })
+    const block = w.get('[data-testid=profile-school-block]')
+    expect(w.get('[data-testid=profile-school-name]').text()).toBe('SMK DEMO')
+    expect(w.get('[data-testid=profile-school-code]').text()).toBe('ABA0001')
+    expect(w.get('[data-testid=profile-school-ppd]').text()).toBe('PPD PETALING UTAMA')
+    expect(w.get('[data-testid=profile-school-state]').text()).toBe('Selangor')
+    for (const label of ['Nama Sekolah', '# Kod', 'PPD', 'Negeri']) expect(block.text()).toContain(label)
+    expect(block.find('input, textarea, select, button').exists()).toBe(false)
+  })
+
+  it('shows a dash for a school admin whose school has no PPD or code', async () => {
+    const w = await render(ProfilePage, {
+      ...USER,
+      role: 'school_admin',
+      school: { ...SCHOOL, code: '', district: null },
+    })
+    expect(w.get('[data-testid=profile-school-code]').text()).toBe('—')
+    expect(w.get('[data-testid=profile-school-ppd]').text()).toBe('—')
+  })
+
+  it('does not show the school block to the pupil, the teacher or the admin', async () => {
+    for (const role of ['student', 'teacher', 'admin'] as const) {
+      const w = await render(ProfilePage, { ...USER, role })
+      expect(w.find('[data-testid=profile-school-block]').exists()).toBe(false)
+      w.unmount()
+    }
+  })
+
   it('uses the initials image without a picture and the uploaded picture otherwise', async () => {
     let w = await render(ProfilePage)
     // No picture: the avatar falls back to the user's initials.
