@@ -88,8 +88,25 @@ export const QUESTION_MESSAGES = {
   guruScript: 'Jenis tulisan tidak sah.',
 } as const
 
-export const QUESTION_TYPES = ['mcq', 'true_false', 'short_answer', 'fill_blank', 'essay'] as const
-export const QuestionTypeSchema = z.enum(QUESTION_TYPES, QUESTION_MESSAGES.type).meta({ id: 'QuestionType' })
+/** FR-ADM-QE3.2 / DM-69 / OPT-JENIS-SOALAN: the 11 question types, in this order (40:732). */
+export const QUESTION_TYPES = [
+  'mcq',
+  'mcq_multi',
+  'true_false',
+  'match',
+  'short_answer',
+  'fill_blank',
+  'structured',
+  'working',
+  'essay',
+  'drawing',
+  'table_fill',
+] as const
+/** The flat create/edit routes still take only these 5 (the flat projection cannot build the others); widened with the routes in S1-T09a parts 3 to 5. */
+export const FLAT_QUESTION_TYPES = ['mcq', 'true_false', 'short_answer', 'fill_blank', 'essay'] as const
+export const QuestionTypeSchema = z.enum(FLAT_QUESTION_TYPES, QUESTION_MESSAGES.type).meta({ id: 'QuestionType' })
+/** All 11 question types (FR-ADM-QE3.2). */
+export const QuestionTypeFullSchema = z.enum(QUESTION_TYPES, QUESTION_MESSAGES.type).meta({ id: 'QuestionTypeFull' })
 export const QuestionComplianceStatusSchema = z
   .enum(['verified', 'pending_mapping', 'quarantined', 'rejected', 'draft'])
   .meta({ id: 'QuestionComplianceStatus' })
@@ -777,3 +794,39 @@ export const QuestionPublicSchema = z
     parts: z.array(QuestionPublicPartSchema).optional(),
   })
   .meta({ id: 'QuestionPublic' })
+
+/**
+ * S1-T09a (D4): `question_versions.type` stores `short` and `table` where the API says `short_answer` and `table_fill`; the others
+ * are identical. DB-side widening (mcq_multi, true_false, fill_blank) is migration 0134, not this change.
+ */
+export type QuestionTypeCode = (typeof QUESTION_TYPES)[number]
+export const QUESTION_TYPE_DB_VALUES: Record<QuestionTypeCode, string> = {
+  mcq: 'mcq',
+  mcq_multi: 'mcq_multi',
+  true_false: 'true_false',
+  match: 'match',
+  short_answer: 'short',
+  fill_blank: 'fill_blank',
+  structured: 'structured',
+  working: 'working',
+  essay: 'essay',
+  drawing: 'drawing',
+  table_fill: 'table',
+}
+export const questionTypeToDb = (t: QuestionTypeCode): string => QUESTION_TYPE_DB_VALUES[t]
+export const questionTypeFromDb = (v: string): QuestionTypeCode | null =>
+  QUESTION_TYPES.find((t) => QUESTION_TYPE_DB_VALUES[t] === v) ?? null
+/** 40:757 OPT-JENIS-SOALAN default leaf modes (`structured`: any mode per part). `mcq_multi` / `true_false` use leaf mode `mcq`. */
+export const QUESTION_TYPE_LEAF_MODES: Record<QuestionTypeCode, readonly string[]> = {
+  mcq: ['mcq'],
+  mcq_multi: ['mcq'],
+  true_false: ['mcq'],
+  match: ['match_letter'],
+  short_answer: ['short_text', 'numeric'],
+  fill_blank: ['short_text'],
+  structured: ['mcq', 'match_letter', 'short_text', 'numeric', 'working', 'essay', 'drawing', 'table_fill', 'essay_choice'],
+  working: ['working'],
+  essay: ['essay', 'essay_choice'],
+  drawing: ['drawing'],
+  table_fill: ['table_fill'],
+}

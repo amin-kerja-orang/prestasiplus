@@ -426,3 +426,11 @@ export interface TextbookRef {
   /** Last page, when the reference spans pages. */
   hingga?: number
 }
+
+/**
+ * S1-T09a (D4, DM-69): the stored `question_versions.type` values once migration 0134 widens the check: the 8 above plus
+ * `mcq_multi`, `true_false` and `fill_blank`. The API names and the mapping are `QUESTION_TYPES` / `questionTypeToDb` /
+ * `questionTypeFromDb` in `@pp/contract`. The DB is not changed by this part.
+ */
+export const STORE_QUESTION_TYPES_V3 = [...STORE_QUESTION_TYPES, 'mcq_multi', 'true_false', 'fill_blank'] as const
+export type StoreQuestionTypeV3 = (typeof STORE_QUESTION_TYPES_V3)[number]

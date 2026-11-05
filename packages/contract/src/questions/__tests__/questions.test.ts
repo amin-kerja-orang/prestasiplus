@@ -196,7 +196,7 @@ describe('part tree (D1 to D4)', () => {
   it('rejects a key of the wrong kind for the mode and a correct option that does not exist', () => {
     expect(QuestionPartSchema.safeParse({ ...mcqLeaf, key: { kind: 'rubric', marks: 1, criteria: [{ id: 'c', name: 'n' }], bands: [{ name: 'b', range: [0, 1] }] } }).success).toBe(false)
     expect(QuestionPartSchema.safeParse({ ...mcqLeaf, key: { kind: 'option', correct: 'H' } }).success).toBe(false)
-    expect(QuestionPartSchema.safeParse({ ...mcqLeaf, options: optionsOf('AB') }).success).toBe(false)
+    expect(QuestionPartSchema.safeParse({ ...mcqLeaf, options: optionsOf('A') }).success).toBe(false)
   })
   it('validates the five key kinds and mark-point features', () => {
     const leaf = (mode: string, key: unknown, extra = {}) => ({ label: '', prompt: rt('x'), marks: 3, mode, key, ...extra })
