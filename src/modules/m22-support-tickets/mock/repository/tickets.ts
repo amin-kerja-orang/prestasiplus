@@ -5,12 +5,9 @@
 
 import { defineRepository } from '@/mock/repository'
 
-import { TICKET_STATUSES, isTicketStatus } from '../../api/types'
+import { QUEUE_PER_PAGE, TICKET_STATUSES, isTicketStatus, type TicketStatus } from '../../api/types'
 import { ticketsTable, type TicketRow } from '../tables/tables'
 import { nowIso } from './clock'
-
-/** BR-M22-10: the queue returns at most 200 rows. */
-export const QUEUE_LIMIT = 200
 
 export const supportTicketsRepo = defineRepository({
   owner: 'M22',
@@ -34,32 +31,41 @@ export const supportTicketsRepo = defineRepository({
       return { rows, total }
     },
 
-    /** Q-M22-QUEUE: rows filtered by exact status, `createdAt` desc then id desc, first 200; counts over all. */
-    queue(status?: string | null): {
+    /**
+     * Q-M22-QUEUE: one page of the rows with the exact status and owner filter, `createdAt` desc then id desc.
+     * `counts` (all five statuses, a chip at 0 exists) and `total` follow the owner filter and ignore the status;
+     * `matched` counts the rows of both filters.
+     */
+    queue(
+      status?: string | null,
+      page = 1,
+      ownerMatches: (userId: number) => boolean = () => true,
+    ): {
       rows: TicketRow[]
       total: number
-      counts: { status: string; count: number }[]
+      matched: number
+      counts: { status: TicketStatus; count: number }[]
     } {
-      const grouped = store.groupCount('status')
-      const known = TICKET_STATUSES.filter((s) => (grouped.get(s) ?? 0) > 0).map((s) => ({
-        status: s,
-        count: grouped.get(s) ?? 0,
-      }))
-      const counts = known
-      const total = counts.reduce((n, c) => n + c.count, 0)
-      const q = status === undefined || status === null || status === '' ? {} : { status }
-      const rows = store
+      const owned = store
         .query({
-          where: q as { status?: TicketRow['status'] },
           sort: [
             { field: 'createdAt', dir: 'desc' },
             { field: 'id', dir: 'desc' },
           ],
-          page: 1,
-          pageSize: QUEUE_LIMIT,
         })
-        .rows.map((r) => ({ ...r }))
-      return { rows, total, counts }
+        .rows.filter((r) => ownerMatches(r.userId))
+      const counts = TICKET_STATUSES.map((s) => ({
+        status: s,
+        count: owned.filter((r) => r.status === s).length,
+      }))
+      const matching = status ? owned.filter((r) => r.status === status) : owned
+      const start = (page - 1) * QUEUE_PER_PAGE
+      return {
+        rows: matching.slice(start, start + QUEUE_PER_PAGE).map((r) => ({ ...r })),
+        total: owned.length,
+        matched: matching.length,
+        counts,
+      }
     },
 
     /** Q-M22-OPEN. */
@@ -88,7 +94,21 @@ export const supportTicketsRepo = defineRepository({
       return r ? { ...r } : undefined
     },
 
-    /** Test hooks only (BR-M22-16: the baseline has no write path). */
+    /** API-SUP-05: the single reply; a later save replaces it and the status does not change. */
+    setReply(id: number, text: string): TicketRow | undefined {
+      return transaction(() =>
+        store.get(id) ? { ...store.update(id, { adminReply: text, updatedAt: nowIso() }) } : undefined,
+      )
+    },
+
+    /** API-SUP-05: the admin sets the status; the reply does not change. */
+    setStatus(id: number, status: TicketStatus): TicketRow | undefined {
+      return transaction(() =>
+        store.get(id) ? { ...store.update(id, { status, updatedAt: nowIso() }) } : undefined,
+      )
+    },
+
+    /** Test hooks only. */
     patch(id: number, patch: Partial<TicketRow>): TicketRow | undefined {
       return transaction(() => (store.get(id) ? { ...store.update(id, patch) } : undefined))
     },

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 /**
- * S8 Student Kirkpatrick detail (FR-M12-77 ... 84; URS EP-M12-9). Mounted on `/admin/kirkpatrick/pelajar/:userId` and the
- * `/guru` twin. An id that is not an accessible student answers 403 and renders the standalone 403 page in
- * place (FR-M12-17; the live second ids 5571 / 5551 are not user ids here). The shell header and the tab title
+ * S8 Student Kirkpatrick detail (FR-M12-77 ... 84; URS EP-M12-9). Mounted on `/admin/kirkpatrick/pelajar/:userId`, the
+ * `/guru` twin and `/admin-sekolah/kirkpatrick/pelajar/:userId`. An id that is not a pupil of the viewer's scope
+ * answers 404 (the admin 403) and `useKirkpatrickPage` renders the standalone 404 / 403 page in place (FR-M12-17,
+ * D-T02-2; the live second ids 5571 / 5551 are not user ids here). The shell header and the tab title
  * are "Kirkpatrick — {nama}" (DV-M12-03).
  */
 import { computed, watch } from 'vue'

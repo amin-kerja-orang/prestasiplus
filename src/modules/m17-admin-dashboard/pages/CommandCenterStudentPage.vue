@@ -19,7 +19,7 @@ import {
   count,
   dmyOfKey,
   MOOD,
-  pct1,
+  accuracyText,
   score2,
 } from '../components/command-center/cc-format'
 import { ccPaths } from '../components/command-center/cc-paths'
@@ -100,7 +100,7 @@ const cards = computed<StatItem[]>(() => {
         sessionsSource.value = { kind: 'all' }
       },
     },
-    { key: 'accuracy', label: 'Ketepatan', value: pct1(c.accuracy), icon: 'i-ph-target', accent: 'win' },
+    { key: 'accuracy', label: 'Ketepatan', value: accuracyText(c.accuracy), icon: 'i-ph-target', accent: 'win' },
     {
       key: 'activeDays',
       label: 'Hari Aktif',
@@ -169,11 +169,11 @@ const HEADCOUNT_COLUMNS: TableColumn<Row>[] = [
                 >
                 <UProgress
                   class="min-w-6 flex-1"
-                  :model-value="Math.min(100, s.pct)"
+                  :model-value="Math.min(100, s.pct ?? 0)"
                   :max="100"
                   aria-hidden="true"
                 />
-                <span class="tabular shrink-0 text-caption text-muted">{{ pct1(s.pct) }}</span>
+                <span class="tabular shrink-0 text-caption text-muted">{{ accuracyText(s.pct) }}</span>
                 <span
                   class="tabular shrink-0 text-caption text-muted"
                   data-testid="cc-subject-ratio"

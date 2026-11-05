@@ -4,7 +4,6 @@ import { runSeeds, seedModules } from '../../../prisma/seed'
 import { QUESTION_COUNT_SQL } from '../../../src/modules/account/account-data.repository'
 import { BankFacts } from '../../../src/modules/practice/reads/overview/bank-facts'
 import { OverviewRepository } from '../../../src/modules/practice/reads/overview/overview.repository'
-import { OFFERED_LEVEL_CODES } from '../../../src/modules/practice/rules'
 import { createTestDatabase, type TestDatabase } from '../../support/db'
 
 /**
@@ -22,7 +21,7 @@ beforeAll(async () => {
   db = await createTestDatabase()
   await runSeeds(seedModules, { prisma: db.prisma })
   bank = new BankFacts(await new OverviewRepository({ client: db.prisma } as never).bankMatrix())
-  offeredIds = (await db.query<{ id: string }>(`select id::text id from education_levels where code = any($1)`, [[...OFFERED_LEVEL_CODES]])).map((r) => r.id)
+  offeredIds = (await db.query<{ id: string }>(`select id::text id from education_levels where stage <> 'primary' and is_active`)).map((r) => r.id)
 }, 600_000)
 
 afterAll(async () => {
