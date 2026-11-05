@@ -47,7 +47,7 @@ const challenges = useApi((signal) => fetchGamificationChallenges({ signal }))
               art="fire"
               :value="`${challenges.data.value.meta.completed}/${challenges.data.value.meta.active}`"
               unit="Selesai"
-              data-testid="s13-counter-value"
+              value-testid="s13-counter-value"
             />
           </div>
         </div>

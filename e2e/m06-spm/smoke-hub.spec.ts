@@ -11,7 +11,18 @@ import {
   moduleTag,
   viewportWidth,
 } from '../support'
-import { ADMIN, columnsOf, NOT_FOUND, PELAJAR, PELAJAR2, smallTexts, tid } from './support'
+import {
+  ADMIN,
+  columnsOf,
+  NOT_FOUND,
+  PELAJAR,
+  PELAJAR2,
+  shellTitle,
+  smallTexts,
+  statLabels,
+  statValues,
+  tid,
+} from './support'
 
 test.describe('M06 S1 hub', { tag: [moduleTag(6)] }, () => {
   test.use({ mockInit: { latency: 0 } })
@@ -24,9 +35,10 @@ test.describe('M06 S1 hub', { tag: [moduleTag(6)] }, () => {
     await loginAs(PELAJAR)
     await gotoApp('/spm')
     await expectTabTitle(page, 'Mod SPM | PRESTASIPLUS')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Mod SPM')
+    await expect(shellTitle(page)).toHaveText('Mod SPM')
     if (isDesktopShell(page)) {
-      await expect(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')
+      // Fact gone in v2, left failing (S3-T03 report): neither v2 shell prints this subtitle.
+      await expect.soft(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')
     }
     await expect(tid(page, 'spm-pill')).toHaveText('MOD SPM')
     await expect(tid(page, 'spm-title')).toHaveText('Persediaan SPM')
@@ -35,8 +47,8 @@ test.describe('M06 S1 hub', { tag: [moduleTag(6)] }, () => {
     )
 
     const stats = page.locator('[data-testid^=spm-stat-]')
-    await expect(stats.getByTestId('stat-value')).toHaveText(['20,529', '25', '0', '1,769'])
-    await expect(stats.getByTestId('stat-label')).toHaveText([
+    await expect(statValues(stats)).toHaveText(['20,529', '25', '0', '1,769'])
+    await expect(statLabels(stats)).toHaveText([
       'Jumlah Soalan',
       'Subjek SPM',
       'Tahun Tersedia',
@@ -90,8 +102,8 @@ test.describe('M06 S1 hub', { tag: [moduleTag(6)] }, () => {
     await gotoApp('/spm')
     await expect(page.getByRole('heading', { name: 'Prestasi SPM Anda' })).toBeVisible()
     const values = page.locator('[data-testid^=spm-mine-]')
-    await expect(values.getByTestId('mine-value')).toHaveText(['4', '21.8%', '26', '84'])
-    await expect(values.getByTestId('mine-label')).toHaveText([
+    await expect(statValues(values)).toHaveText(['4', '21.8%', '26', '84'])
+    await expect(statLabels(values)).toHaveText([
       'Sesi Kuiz',
       'Purata Ketepatan',
       'Syiling Diperoleh',
@@ -107,7 +119,7 @@ test.describe('M06 S1 hub', { tag: [moduleTag(6)] }, () => {
   }) => {
     await loginAs(PELAJAR2)
     await gotoApp('/spm')
-    await expect(page.locator('[data-testid^=spm-mine-]').getByTestId('mine-value')).toHaveText([
+    await expect(statValues(page.locator('[data-testid^=spm-mine-]'))).toHaveText([
       '0',
       '0.0%',
       '0',
@@ -131,7 +143,7 @@ test.describe('M06 S1 hub', { tag: [moduleTag(6)] }, () => {
     // No premium gate on S1 (FR-M06-14).
     await gotoApp('/spm')
     await expect(tid(page, 'spm-title')).toBeVisible()
-    await expect(tid(page, 'shell-user-main').getByText(/\bPRO\b/)).toHaveCount(0)
+    await expect(tid(page, 'pembelajaran-main').getByText(/\bPRO\b/)).toHaveCount(0)
   })
 
   test('E2E-M06-39 S1 has no horizontal scroll and no text below 12px', async ({

@@ -4,6 +4,7 @@ import { Prisma } from '../../../db/generated/client'
 import { idFromString, idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import type {
+  PracticeDayActivity,
   LeaderboardQuery,
   LeaderboardResult,
   PracticeReadPort,
@@ -80,6 +81,17 @@ export class PerformancePracticeReadAdapter implements PracticeReadPort {
        WHERE s.user_id = ${this.user(userId)} AND s.status = 'completed' AND s.is_test = false AND s.completed_at IS NOT NULL
        ORDER BY day`
     return rows.map((r) => r.day)
+  }
+
+  async dailyActivity(userId: string): Promise<PracticeDayActivity[]> {
+    const rows = await this.db.$queryRaw<{ day: string; sessions: bigint; seconds: bigint }[]>`
+      SELECT to_char(s.completed_at AT TIME ZONE 'Asia/Kuala_Lumpur', 'YYYY-MM-DD') AS day,
+             count(*)::bigint AS sessions, coalesce(sum(s.time_spent_sec), 0)::bigint AS seconds
+        FROM practice_sessions s
+       WHERE s.user_id = ${this.user(userId)} AND s.status = 'completed' AND s.is_test = false AND s.completed_at IS NOT NULL
+       GROUP BY 1
+       ORDER BY 1`
+    return rows.map((r) => ({ day: r.day, sessions: num(r.sessions), seconds: num(r.seconds) }))
   }
 
   async rankingRows(q: RankingQuery): Promise<RankingResult> {
