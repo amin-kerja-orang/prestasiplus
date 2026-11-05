@@ -48,6 +48,7 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
+| S8-T02 | AC-PA-03 | CI | Pass | 2026-11-05 | team-aa/S-1 | stimulus-panel-responsive.spec.ts (375/768/1280): 10 questions counted, the group shows on 4 members and not on question 9, panel at 375, figure full width at 768, pinned left at 1280 |
 | S8-T03 | AC-PA-04 | CI | Pass | 2026-11-05 | team-aa/S-1 | bilingual-wiring.test.ts, language-toggle.test.ts |
 | S8-T03 | AC-PA-16 | CI | Pass | 2026-11-05 | team-aa/S-1 | drawing-pad.test.ts, drawing-photo.test.ts, drawing-pad-responsive.spec.ts (375/768/1280) |
 | S8-T03 | AC-PA-37 | CI | Pass | 2026-11-05 | team-aa/S-1 | word-limit.test.ts |
