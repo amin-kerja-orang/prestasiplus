@@ -42,13 +42,15 @@ export interface TahapStyle {
   bar: 'inside' | 'outside' | 'empty'
 }
 
+const MUTED = 'text-muted'
+
 export const TAHAP: Record<TahapKey, TahapStyle> = {
   Cemerlang: { color: 'success', text: 'text-success', bar: 'inside' },
   Sederhana: { color: 'warning', text: 'text-warning', bar: 'inside' },
   Rendah: { color: 'error', text: 'text-error', bar: 'outside' },
   Kritikal: { color: 'error', text: 'text-error', bar: 'outside' },
-  Tiada: { color: 'neutral', text: 'text-muted', bar: 'empty' },
-  'Tiada Langsung': { color: 'neutral', text: 'text-muted', bar: 'empty' },
+  Tiada: { color: 'neutral', text: MUTED, bar: 'empty' },
+  'Tiada Langsung': { color: 'neutral', text: MUTED, bar: 'empty' },
 }
 
 /**
