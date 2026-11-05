@@ -33,6 +33,23 @@ export function legacySubjectOfPracticeCode(practiceCode: string): LegacySubject
   return LEGACY_OF_PRACTICE_CODE.get(practiceCode)
 }
 
+/**
+ * The learner subject of a subject row (S4-T06, D11): the legacy code for the 8 legacy practice codes, otherwise the subject's own
+ * `code`. The practice code of a subject is its `code` either way (`PRACTICE_CODE` only maps legacy names to it).
+ */
+export function learnerSubjectOf(subjectCode: string): string {
+  return legacySubjectOfPracticeCode(subjectCode) ?? subjectCode
+}
+
+/**
+ * The `subjects.code` a learner subject query selects, or `null` when it selects nothing. Own keys of `PRACTICE_CODE` map to their
+ * practice code; a legacy practice code typed as such (`MATH`) is not a learner code, so it matches nothing; any other code is exact.
+ */
+export function practiceCodeOfLearnerSubject(subject: string): string | null {
+  if (Object.hasOwn(PRACTICE_CODE, subject)) return PRACTICE_CODE[subject as LegacySubjectCode]
+  return legacySubjectOfPracticeCode(subject) === undefined ? subject : null
+}
+
 export const GRADE_CODES: readonly GradeCode[] = Object.freeze([
   'DARJAH_1',
   'DARJAH_2',

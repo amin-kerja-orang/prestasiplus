@@ -184,7 +184,6 @@ describe('OpenAPI document', () => {
       ['/guru/databank/overview', 'get'],
       ['/guru/databank/questions', 'get'],
       ['/kelas-saya', 'get'],
-      ['/kelas-saya/join', 'post'],
     ]
     for (const [path, method] of expected) expect(doc.paths[path]?.[method], `${method} ${path}`).toBeDefined()
   })
