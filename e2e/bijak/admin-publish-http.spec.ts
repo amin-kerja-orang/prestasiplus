@@ -42,11 +42,9 @@ async function login(page: Page, user: string, pass: string): Promise<void> {
   await page.waitForURL((u) => !u.pathname.startsWith('/login'))
 }
 
-/** Pentadbiran menu (drawer below 1024 px) -> Pembina Kertas. */
+/** Pembina Kertas by URL (S0-T07: it has no sidebar entry; Set Builder replaces it in the menu). */
 async function openPaperBuilder(page: Page): Promise<void> {
-  if (!isDesktopShell(page)) await page.getByTestId('pentadbiran-menu-button').click()
-  const nav = page.locator('[data-testid=pentadbiran-nav]:visible')
-  await nav.getByRole('link', { name: 'Pembina Kertas' }).click()
+  await page.goto('/admin/spm/kertas')
   await expect(page).toHaveURL(/\/admin\/spm\/kertas$/)
 }
 
@@ -130,7 +128,7 @@ async function studentSees(browser: Browser, info: TestInfo, title: string): Pro
 
 test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () => {
   // Works today: the real login, the Pentadbiran shell and the menu entry (no Bijak admin API call).
-  test('admin logs in and the Pentadbiran menu offers Pembina Kertas at /admin/spm/kertas @bijak', async ({
+  test('admin logs in and the Pentadbiran menu offers Set Builder at /admin/studio/sets @bijak', async ({
     page,
   }) => {
     await login(page, ADMIN_USER ?? '', ADMIN_PASS ?? '')
@@ -140,8 +138,8 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
     if (!isDesktopShell(page)) await page.getByTestId('pentadbiran-menu-button').click()
     const link = page
       .locator('[data-testid=pentadbiran-nav]:visible')
-      .getByRole('link', { name: 'Pembina Kertas' })
-    await expect(link).toHaveAttribute('href', '/admin/spm/kertas')
+      .getByRole('link', { name: 'Set Builder' })
+    await expect(link).toHaveAttribute('href', '/admin/studio/sets')
   })
 
   // Real (B3): GET /api/admin/papers behind the list (PaperListPage.vue: papers-page, papers-table, paper-new).

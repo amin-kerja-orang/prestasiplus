@@ -10,6 +10,8 @@ export interface DsShellNavLink {
   active: boolean
   /** Indented under a sub-group label. */
   nested?: boolean
+  /** Small pill after the label (for example `LIVE`). */
+  badge?: string
 }
 
 export interface DsShellNavSub {

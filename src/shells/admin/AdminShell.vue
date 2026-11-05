@@ -28,8 +28,8 @@ import {
   bottomNavActive,
   bottomNavFor,
   chromeFor,
-  footerLinksFor,
   lagiFor,
+  type AdminNavItem,
   type LagiRow,
 } from '@/shells/nav/admin-nav'
 import { useSessionStore } from '@/stores/session'
@@ -52,7 +52,8 @@ const role = computed(() => session.role)
 const user = computed(() => session.user)
 const chrome = computed(() => chromeFor(role.value))
 const entries = computed(() => adminMenuFor(role.value))
-const footerLinks = computed(() => footerLinksFor(role.value))
+// Admin Pusat has its own portal; no role has footer links on this shell any more.
+const footerLinks = computed<readonly AdminNavItem[]>(() => [])
 const bottomEntries = computed(() => bottomNavFor(role.value))
 const lagiMenu = computed(() => lagiFor(role.value))
 

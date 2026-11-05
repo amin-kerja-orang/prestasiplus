@@ -23,62 +23,166 @@ import {
 
 import { ALL_ITEMS, FULL_ITEMS, PENTADBIRAN_FULL_MENU, PENTADBIRAN_MENU, activeItem } from '../menu'
 
-const itemsOf = (label: string): string[] =>
-  PENTADBIRAN_MENU.find((g) => g.label === label)?.items.map((i) => i.id) ?? []
+const labelsOf = (key: string): string[] =>
+  PENTADBIRAN_FULL_MENU.find((g) => g.key === key)?.items.map((i) => i.label) ?? []
 
 describe('Pentadbiran menu data', () => {
-  it('keeps the full 9-group, 106-item definition as data', () => {
-    expect(PENTADBIRAN_FULL_MENU.map((g) => g.items.length)).toEqual([
-      2, 28, 8, 17, 12, 6, 22, 6, 5,
+  it('keeps the whole definition as data with unique ids', () => {
+    expect(PENTADBIRAN_FULL_MENU.map((g) => g.key)).toEqual([
+      'pintasan',
+      'harian',
+      'analitik',
+      'kurikulum',
+      'soalan',
+      'pengguna',
+      'spm',
+      'premium',
+      'kawalan-ciri',
+      'gamifikasi',
+      'battle-permainan',
+      'marketplace',
+      'kandungan',
+      'sistem',
+      'ditangguh',
     ])
-    expect(FULL_ITEMS).toHaveLength(106)
-    expect(new Set(FULL_ITEMS.map((i) => i.id)).size).toBe(106)
+    expect(new Set(FULL_ITEMS.map((i) => i.id)).size).toBe(FULL_ITEMS.length)
+    // removed (KK-03, KS-10..12) or hidden/merged (KS-02, 06, 08, 09, 13..16, BS-04, BS-05) ids are gone
+    const gone = ['KK-03', 'KS-10', 'KS-11', 'KS-12', 'KS-02', 'KS-06', 'KS-08', 'KS-09']
+    for (const id of [...gone, 'KS-13', 'KS-14', 'KS-15', 'KS-16', 'BS-04', 'BS-05']) {
+      expect(FULL_ITEMS.some((i) => i.id === id), id).toBe(false)
+    }
   })
 
-  it('renders built screens only and drops empty groups', () => {
+  it('renders built screens only, in the V2 group order, and drops empty groups', () => {
     expect(ALL_ITEMS.every((i) => i.built)).toBe(true)
     expect(ALL_ITEMS.length).toBe(FULL_ITEMS.filter((i) => i.built).length)
     expect(PENTADBIRAN_MENU.every((g) => g.items.length > 0)).toBe(true)
-    expect(PENTADBIRAN_MENU.map((g) => g.label)).toContain('Kertas & SPM')
-    expect(itemsOf('Kertas & SPM')).toEqual([
-      'KS-01',
-      'KS-13',
-      'KS-16',
-      'KS-14',
-      'KS-15',
-      'KS-02',
-      'KS-08',
-      'KS-09',
-      'KS-17',
+    expect(PENTADBIRAN_MENU.map((g) => g.label)).toEqual([
+      'Pintasan',
+      'Analitik',
+      'Kurikulum',
+      'Soalan',
+      'Pengguna',
+      'SPM',
+      'Premium',
+      'Kandungan',
+      'Sistem',
+    ])
+    expect(PENTADBIRAN_MENU.map((g) => g.items.map((i) => i.label))).toEqual([
+      ['Command Center', 'Aktiviti Harian', 'Audio KBAT'],
+      [
+        'Monitoring',
+        'Overview',
+        'T1: Reaksi',
+        'T2: Pembelajaran',
+        'T3: Tingkah Laku',
+        'T4: Hasil',
+        'Rantaian Impak',
+        'Intervensi',
+      ],
+      ['Kurikulum', 'Subjek', 'Tahap Pendidikan'],
+      [
+        'SPM',
+        'Bank Soalan (Studio)',
+        'Import & Semakan',
+        'Set Builder',
+        'Audit Rajah',
+        'Senarai Soalan',
+        'Soalan Berstruktur',
+      ],
+      [
+        'Senarai Pengguna',
+        'Sekolah',
+        'Langganan Sekolah',
+        'Import Pelajar',
+        'Pelajar Komplimen',
+        'Import Pengguna',
+      ],
+      ['Databank Soalan'],
+      ['PKSK Soalan', 'PKSK Akses'],
+      ['Artikel', 'Banner', 'Nota', 'Upload Screenshot'],
+      ['Tiket Bantuan'],
     ])
   })
 
-  it('V2 labels (D79): SPM hub, Kontrak Simulasi, Studio list', () => {
+  it('Soalan: 9 definitions in PRD order (30 §3.2), 7 rendered', () => {
+    expect(labelsOf('soalan')).toEqual([
+      'SPM',
+      'Bank Soalan (Studio)',
+      'Import & Semakan',
+      'Set Builder',
+      'Sumber Kertas',
+      'Kertas Subjektif',
+      'Audit Rajah',
+      'Senarai Soalan',
+      'Soalan Berstruktur',
+    ])
+    const soalan = PENTADBIRAN_MENU.find((g) => g.key === 'soalan')
+    expect(soalan?.items).toHaveLength(7)
+    // Sumber Kertas and Kertas Subjektif wait for their S3 cards
+    expect(soalan?.items.map((i) => i.label)).not.toContain('Sumber Kertas')
+    expect(soalan?.items.map((i) => i.label)).not.toContain('Kertas Subjektif')
+    // the sub-group Bank Lama (Legasi) holds the last two
+    const legacy = PENTADBIRAN_FULL_MENU.find((g) => g.key === 'soalan')?.items.filter((i) => i.nested)
+    expect(legacy?.map((i) => [i.label, i.sub])).toEqual([
+      ['Senarai Soalan', 'Bank Lama (Legasi)'],
+      ['Soalan Berstruktur', 'Bank Lama (Legasi)'],
+    ])
+  })
+
+  it('has no duplicate "Bank Soalan" label or group', () => {
+    const labels = [...FULL_ITEMS.map((i) => i.label), ...PENTADBIRAN_FULL_MENU.map((g) => g.label)]
+    expect(labels.filter((l) => l === 'Bank Soalan')).toEqual([])
+    expect(labels.filter((l) => l.startsWith('Bank Soalan'))).toEqual(['Bank Soalan (Studio)'])
+    // no two rendered items share a label inside the Soalan group, nor a route anywhere
+    expect(new Set(ALL_ITEMS.map((i) => i.to)).size).toBe(ALL_ITEMS.length)
+  })
+
+  it('PRD 30 §3.4: labels, badge and routes', () => {
     const byId = new Map(ALL_ITEMS.map((i) => [i.id, i]))
+    expect(byId.get('PM-01')).toMatchObject({
+      label: 'Command Center',
+      badge: 'LIVE',
+      to: '/admin/command-center',
+    })
+    expect(ALL_ITEMS.filter((i) => i.badge).map((i) => i.id)).toEqual(['PM-01'])
+    expect(byId.get('PM-03')).toMatchObject({ label: 'Monitoring', to: '/admin/monitoring' })
+    expect(byId.get('PS-01')?.label).toBe('Senarai Pengguna')
+    expect(byId.get('PS-05')).toMatchObject({ label: 'Import Pengguna', to: '/admin/users/bulk-import' })
+    expect(byId.get('KW-06')?.label).toBe('PKSK Akses')
     expect(byId.get('KS-01')).toMatchObject({ label: 'SPM', to: '/admin/spm' })
-    expect(byId.get('KS-08')?.label).toBe('Kontrak Simulasi')
     expect(byId.get('BS-08')).toMatchObject({ label: 'Bank Soalan (Studio)', to: '/admin/studio' })
+    expect(byId.get('BS-01')).toMatchObject({ label: 'Senarai Soalan', to: '/admin/questions' })
+    expect(byId.get('BS-09')).toMatchObject({ label: 'Audit Rajah', to: '/admin/soalan-gambar' })
+    // unbuilt target routes stay out of the rendered menu (FR-ADM-H0.2)
+    for (const id of ['PP-01', 'PP-02', 'PM-04', 'PM-29', 'PS-03', 'SY-01', 'SY-02', 'KK-08', 'BS-03', 'KS-07']) {
+      expect(byId.has(id), id).toBe(false)
+      expect(FULL_ITEMS.find((i) => i.id === id)?.built, id).toBe(false)
+    }
   })
 
   it('REQ-B-039: Bank Soalan (Studio) opens the Studio list', () => {
     const bs08 = ALL_ITEMS.find((i) => i.id === 'BS-08')
     expect(bs08).toMatchObject({ label: 'Bank Soalan (Studio)', to: '/admin/studio' })
-    // it resolves to the real route (T13b), like every other item
     const router = createAppRouter({ history: createMemoryHistory() })
     expect(router.resolve('/admin/studio').matched.length).toBeGreaterThan(0)
   })
 
-  it('never points a visible item at a placeholder route', () => {
+  it('never renders a placeholder route', () => {
     for (const item of ALL_ITEMS) expect(item.to, item.id).not.toContain('/admin/p/')
+    for (const g of PENTADBIRAN_MENU) for (const item of g.items) expect(item.built, item.id).toBe(true)
   })
 
-  it('activates the longest matching item (drill pages stay on Langsung)', () => {
+  it('activates the longest matching item (drill pages stay on Command Center)', () => {
     expect(activeItem('/admin/command-center/school/3')?.id).toBe('PM-01')
     expect(activeItem('/admin/command-center/daily-activity')?.id).toBe('PM-02')
-    // BS-02 now opens the batch list (V2 I1); the CSV import page falls back to the Bank Soalan entry.
+    // the CSV import page falls back to Senarai Soalan; Set Builder wins over Studio
     expect(activeItem('/admin/questions/import')?.id).toBe('BS-01')
-    expect(activeItem('/admin/spm/soalan/manual')?.id).toBe('KS-16')
-    expect(activeItem('/admin/spm/soalan/mat1-pub-1/sunting')?.id).toBe('KS-02')
+    expect(activeItem('/admin/studio/sets')?.id).toBe('KS-17')
+    expect(activeItem('/admin/studio')?.id).toBe('BS-08')
+    expect(activeItem('/admin/spm/databank')?.id).toBe('KS-18')
+    // hidden screens (routes stay) fall back to the SPM hub
+    expect(activeItem('/admin/spm/soalan/mat1-pub-1/sunting')?.id).toBe('KS-01')
   })
 })
 

@@ -26,6 +26,7 @@ import {
 } from '@/theme/admin-shell-ui'
 import { uiLocale } from '@/theme/locale-ms'
 
+import DsBadge from './DsBadge.vue'
 import DsBrandLogo from './DsBrandLogo.vue'
 import DsCallout from './DsCallout.vue'
 import DsConfirmHost from './DsConfirmHost.vue'
@@ -94,6 +95,7 @@ const navItemsFor = (collapsed: boolean): NavigationMenuItem[][] =>
             active: r.active,
             value: `${g.key}:${r.id}`,
             ...(r.nested && !collapsed ? { class: adminNavNestedLink } : {}),
+            ...(r.badge ? { dsBadge: r.badge } : {}),
           },
     ),
   ])
@@ -195,8 +197,16 @@ const accountMenu = computed(() =>
                 /></span>
               </template>
               <template #item-label="{ item }"
-                ><span class="truncate" :title="item.label">{{ item.label }}</span></template
-              >
+                ><span class="truncate" :title="item.label">{{ item.label }}</span
+                ><DsBadge
+                  v-if="item.dsBadge"
+                  :label="String(item.dsBadge)"
+                  tone="error"
+                  emphasis="strong"
+                  size="sm"
+                  class="ml-2"
+                  data-testid="pentadbiran-nav-badge"
+              /></template>
             </UNavigationMenu>
           </template>
 

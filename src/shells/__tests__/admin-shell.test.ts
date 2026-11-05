@@ -13,8 +13,7 @@ import { ADMIN, fakeTransport, logIn, NOW, STUDENT } from '@/app/__tests__/route
 import { usePageMeta } from '@/composables/usePageMeta'
 import { clock } from '@/lib/time'
 import { statusTone } from '../admin/server-status'
-import { useSessionStore } from '@/stores'
-import { ADMIN_SIDEBAR_STORAGE_KEY, setUnauthorizedRedirect, type UserMe } from '@/stores'
+import { setUnauthorizedRedirect, type UserMe } from '@/stores'
 
 // These specs cover the legacy shell component itself (still the frame of parent, sponsor and PPD).
 // The real layouts.ts frames the student / teacher / admin fixtures in the v2 layouts, so force the
@@ -207,52 +206,9 @@ describe('AdminShell: structure and breakpoints (< lg / ≥ lg)', () => {
     expect(column.className).toContain('lg:pb-0')
   })
 
-  it('bottom nav: 5 whole-width cells, 45px high, safe-area padding', async () => {
-    const w = await open('/admin')
-    const cells = bottom(w).findAll('a, button')
-    expect(cells.map((c) => c.text())).toEqual([
-      'Dashboard',
-      'Soalan',
-      'Penaja',
-      'Pengguna',
-      'Lagi',
-    ])
-    for (const cell of cells) expect(cell.classes()).toContain('flex-1')
-    expect(bottom(w).classes()).toContain('pb-[env(safe-area-inset-bottom)]')
-    expect(bottom(w).get('div').classes()).toContain('h-[45px]')
-    expect(bottom(w).get('[data-nav-id="bottom-soalan"]').attributes('href')).toBe(
-      '/admin/questions',
-    )
-  })
 })
 
 describe('AdminShell: menu per role', () => {
-  it('admin: the admin menu, "Panel Pentadbir", footer links, role "Admin"', async () => {
-    const w = await open('/admin')
-    const side = sidebar(w)
-    expect(w.get('[data-testid="shell-admin-caption"]').text()).toBe('Panel Pentadbir')
-    expect(w.get('[data-testid="shell-admin-sidebar-logo"]').attributes('href')).toBe('/admin')
-    const labels = labelsOf(side)
-    expect(labels.slice(0, 5)).toEqual([
-      'Command CenterLIVE',
-      'Aktiviti Harian',
-      'Audio KBAT',
-      'Dashboard',
-      'Analitik',
-    ])
-    expect(labels).toContain('Ke Dashboard')
-    expect(labels).toContain('Tetapan Peribadi')
-    expect(side.get('[data-nav-id="command-center"]').attributes('target')).toBe('_blank')
-    expect(side.get('[data-nav-id="ke-dashboard"]').attributes('href')).toBe('/dashboard')
-    const block = w.get('[data-testid="shell-admin-user-block"]')
-    expect(block.text()).toContain('Admin Demo')
-    expect(block.text()).toContain('Admin')
-    expect(block.get('img').attributes('alt')).toBe('Avatar')
-    expect(w.get('[data-testid="shell-admin-sidebar-logout"]').attributes('href')).toBe('/logout')
-    expect(w.get('[data-testid="shell-admin-sidebar-logout"]').attributes('title')).toBe(
-      'Log Keluar',
-    )
-  })
 
   it('teacher on /guru/monitoring: teacher menu in the admin chrome, no admin item in the DOM', async () => {
     const w = await open('/guru/monitoring', TEACHER)
@@ -311,14 +267,6 @@ describe('AdminShell: menu per role', () => {
     expect(bottom(w).findAll('.active')).toHaveLength(1)
   })
 
-  it('admin on the /guru twins: admin menu, Monitoring / Kirkpatrick active (FR-M11-05, FR-M12-04)', async () => {
-    const w = await open('/guru/monitoring')
-    expect(w.get('[data-testid="shell-admin-caption"]').text()).toBe('Panel Pentadbir')
-    expect(activeIds(sidebar(w))).toEqual(['monitoring'])
-    await router.push('/guru/kirkpatrick')
-    await flushPromises()
-    expect(activeIds(sidebar(w))).toEqual(['kirk-overview'])
-  })
 
   it('/tetapan for the admin renders the admin shell; for a student the user shell is used', async () => {
     const w = await open('/tetapan')
@@ -327,84 +275,13 @@ describe('AdminShell: menu per role', () => {
   })
 })
 
-describe('AdminShell: exactly one active item', () => {
-  it('sidebar, bottom nav and popover each mark one item (deepest route wins)', async () => {
-    const w = await open('/admin/questions/import')
-    expect(activeIds(sidebar(w))).toEqual(['import-csv'])
-    expect(
-      bottom(w)
-        .findAll('a.active')
-        .map((a) => a.attributes('data-nav-id')),
-    ).toEqual(['bottom-soalan'])
-    expect(
-      lagi(w)
-        .findAll('a.active')
-        .map((a) => a.attributes('data-lagi-id')),
-    ).toEqual(['import-csv'])
-    // "Lagi" is not lit: a link cell is active.
-    expect(bottom(w).get('[data-nav-id="bottom-lagi"]').classes()).not.toContain('active')
-  })
-
-  it('a page only the popover reaches lights "Lagi"; /admin lights the Dashboard cell only', async () => {
-    const w = await open('/admin/laporan')
-    expect(bottom(w).findAll('a.active')).toHaveLength(0)
-    expect(bottom(w).get('[data-nav-id="bottom-lagi"]').classes()).toContain('text-indigo-600')
-    expect(activeIds(sidebar(w))).toEqual(['laporan'])
-    await router.push('/admin')
-    await flushPromises()
-    expect(
-      bottom(w)
-        .findAll('a.active')
-        .map((a) => a.attributes('data-nav-id')),
-    ).toEqual(['bottom-dashboard'])
-    expect(bottom(w).get('[data-nav-id="bottom-lagi"]').classes()).not.toContain('active')
-  })
-})
-
 describe('AdminShell: collapsible groups', () => {
   const group = (w: VueWrapper, key: string) => sidebar(w).get(`[data-group-key="${key}"]`)
   const shown = (w: VueWrapper, key: string) => visible(group(w, key).get(':scope > div'))
 
-  it('all groups start closed; the group of the active page opens and is saved', async () => {
-    const w = await open('/admin/questions/import')
-    expect(shown(w, 'soalan')).toBe(true)
-    expect(shown(w, 'kirkpatrick')).toBe(false)
-    expect(shown(w, 'sistem')).toBe(false)
-    expect(JSON.parse(localStorage.getItem(ADMIN_SIDEBAR_STORAGE_KEY) ?? '{}')).toEqual({
-      soalan: true,
-    })
-  })
 
-  it('the button toggles a group and saves the state in admin_sidebar', async () => {
-    const w = await open('/admin')
-    expect(shown(w, 'spm')).toBe(false)
-    await group(w, 'spm').get('button').trigger('click')
-    expect(shown(w, 'spm')).toBe(true)
-    expect(JSON.parse(localStorage.getItem(ADMIN_SIDEBAR_STORAGE_KEY) ?? '{}')).toEqual({
-      spm: true,
-    })
-    await group(w, 'spm').get('button').trigger('click')
-    expect(shown(w, 'spm')).toBe(false)
-    expect(JSON.parse(localStorage.getItem(ADMIN_SIDEBAR_STORAGE_KEY) ?? '{}')).toEqual({
-      spm: false,
-    })
-  })
 
-  it('the user can collapse the active group, and the next route change opens its own group', async () => {
-    const w = await open('/admin/questions/import')
-    await group(w, 'soalan').get('button').trigger('click')
-    expect(shown(w, 'soalan')).toBe(false)
-    await router.push('/admin/users')
-    await flushPromises()
-    expect(shown(w, 'pengguna')).toBe(true)
-    expect(shown(w, 'soalan')).toBe(false)
-  })
 
-  it('reads the saved state on load', async () => {
-    localStorage.setItem(ADMIN_SIDEBAR_STORAGE_KEY, JSON.stringify({ premium: true }))
-    const w = await open('/admin')
-    expect(shown(w, 'premium')).toBe(true)
-  })
 
   it('a pupil page of Kirkpatrick opens the group although no item is active (teacher)', async () => {
     const w = await open('/guru/kirkpatrick/pelajar/8', TEACHER)
@@ -444,35 +321,6 @@ describe('AdminShell: "Lagi" popover', () => {
     expect(isOpen(w)).toBe(false)
   })
 
-  it('lists the observed headings, rows and links; ends with "Student View" and "Log Keluar"', async () => {
-    const w = await open('/admin')
-    const headings = lagi(w)
-      .findAll('p')
-      .map((p) => p.text())
-    expect(headings).toEqual([
-      'SPM',
-      'Soalan',
-      'Kurikulum',
-      'Premium',
-      'Gamifikasi',
-      'Battle & Permainan',
-      'Kandungan',
-      'Marketplace',
-      'Sistem',
-    ])
-    const rows = lagi(w).findAll('a')
-    expect(rows.slice(0, 4).map((a) => a.text())).toEqual([
-      'Analitik',
-      'Laporan Aktiviti',
-      'Monitoring',
-      'Kirkpatrick',
-    ])
-    expect(rows.slice(-2).map((a) => [a.text(), a.attributes('href')])).toEqual([
-      ['Student View', '/dashboard'],
-      ['Log Keluar', '/logout'],
-    ])
-    expect(lagi(w).get('[data-testid="shell-admin-lagi-tail"]').classes()).toContain('border-t')
-  })
 
   it('every row is at least 44px high (DV-SH-11) and the list scrolls inside the panel', async () => {
     const w = await open('/admin')
@@ -495,21 +343,6 @@ describe('AdminShell: "Lagi" popover', () => {
     expect(lagi(w).classes()).toContain('bottom-[calc(45px+env(safe-area-inset-bottom)+8px)]')
   })
 
-  it('marks the row of the current page and shows the Kirkpatrick row inside its group', async () => {
-    const w = await open('/admin/laporan')
-    expect(
-      lagi(w)
-        .findAll('a.active')
-        .map((a) => a.text()),
-    ).toEqual(['Laporan Aktiviti'])
-    await router.push('/guru/kirkpatrick/pelajar/4')
-    await flushPromises()
-    expect(
-      lagi(w)
-        .findAll('a.active')
-        .map((a) => a.text()),
-    ).toEqual(['Kirkpatrick'])
-  })
 
   it('teacher: the teacher list without Command Center or bottom-nav entries, ends "Log Keluar"', async () => {
     const w = await open('/guru/monitoring', TEACHER)
@@ -580,131 +413,5 @@ describe('server-status thresholds (design-system §5)', () => {
       'warn',
       'bad',
     ])
-  })
-})
-
-describe('AdminShell: server-status pill (admin only)', () => {
-  const cell = (w: VueWrapper, id: string) => w.get(`[data-status="${id}"]`)
-  const values = (w: VueWrapper) => w.findAll('[data-status]').map((c) => c.text())
-
-  it('shows CPU, RAM, Disk and Uptime with tooltips and threshold colours', async () => {
-    const w = await open('/admin')
-    await flushPromises()
-    expect(transport.requests.filter((r) => r.url === '/api/admin/server-status')).toHaveLength(1)
-    expect(values(w)).toEqual(['6%', '52%', '50%', '204d 2h'])
-    expect(cell(w, 'cpu').attributes('title')).toBe('Load: 0.15 / 8 cores')
-    expect(cell(w, 'ram').attributes('title')).toBe('16.2GB / 31.1GB')
-    expect(cell(w, 'disk').attributes('title')).toBe('199.3GB / 398.7GB')
-    expect(cell(w, 'uptime').attributes('title')).toBe('Uptime')
-    expect(cell(w, 'cpu').get('span:last-child').classes()).toContain('text-emerald-600')
-    expect(cell(w, 'ram').get('span:last-child').classes()).toContain('text-emerald-600')
-    expect(cell(w, 'disk').get('span:last-child').classes()).toContain('text-emerald-600')
-    expect(cell(w, 'uptime').get('span:last-child').classes()).toContain('text-slate-500')
-    expect(w.get('[data-testid="admin-server-status"]').classes()).toEqual(
-      expect.arrayContaining(['hidden', 'lg:flex']),
-    )
-  })
-
-  it('polls every 30 s and keeps the last values when a poll fails', async () => {
-    const w = await open('/admin')
-    await flushPromises()
-    status = { ...STATUS, cpuPct: 91 }
-    await vi.advanceTimersByTimeAsync(30_000)
-    await flushPromises()
-    expect(cell(w, 'cpu').text()).toBe('91%')
-    expect(cell(w, 'cpu').get('span:last-child').classes()).toContain('text-red-600')
-    status = null
-    await vi.advanceTimersByTimeAsync(30_000)
-    await flushPromises()
-    expect(cell(w, 'cpu').text()).toBe('91%')
-    expect(transport.requests.filter((r) => r.url === '/api/admin/server-status')).toHaveLength(3)
-  })
-
-  it('shows "--" before the first answer and when there never was one', async () => {
-    status = null
-    const w = await open('/admin')
-    await flushPromises()
-    expect(values(w)).toEqual(['--', '--', '--', '--'])
-    expect(cell(w, 'cpu').get('span:last-child').classes()).toContain('text-slate-400')
-  })
-})
-
-describe('AdminShell: server-status polling lifecycle', () => {
-  const polls = () => transport.requests.filter((r) => r.url === '/api/admin/server-status').length
-
-  it('stops after the shell unmounts', async () => {
-    const w = await open('/admin')
-    await flushPromises()
-    expect(polls()).toBe(1)
-    w.unmount()
-    wrapper = null
-    await vi.advanceTimersByTimeAsync(90_000)
-    expect(polls()).toBe(1)
-  })
-
-  it('stops when the role switches to a non-admin', async () => {
-    const w = await open('/admin')
-    await flushPromises()
-    await vi.advanceTimersByTimeAsync(30_000)
-    expect(polls()).toBe(2)
-    useSessionStore().setUser(TEACHER)
-    await flushPromises()
-    expect(w.find('[data-testid="admin-server-status"]').exists()).toBe(false)
-    await vi.advanceTimersByTimeAsync(90_000)
-    expect(polls()).toBe(2)
-  })
-
-  it('pauses while the document is hidden and resumes when visible', async () => {
-    await open('/admin')
-    await flushPromises()
-    const setVisibility = (state: 'hidden' | 'visible') => {
-      Object.defineProperty(document, 'visibilityState', { value: state, configurable: true })
-      document.dispatchEvent(new Event('visibilitychange'))
-    }
-    try {
-      setVisibility('hidden')
-      await vi.advanceTimersByTimeAsync(90_000)
-      expect(polls()).toBe(1)
-      setVisibility('visible')
-      await vi.advanceTimersByTimeAsync(30_000)
-      await flushPromises()
-      expect(polls()).toBe(2)
-    } finally {
-      setVisibility('visible')
-    }
-  })
-
-  it('does not mount the pill, and does not poll, below lg (matchMedia)', async () => {
-    const listeners: ((e: { matches: boolean }) => void)[] = []
-    const list = {
-      matches: false,
-      addEventListener: (_: string, l: (e: { matches: boolean }) => void) => listeners.push(l),
-      removeEventListener: () => undefined,
-    }
-    vi.stubGlobal('matchMedia', () => list)
-    try {
-      const w = await open('/admin')
-      await vi.advanceTimersByTimeAsync(60_000)
-      expect(w.find('[data-testid="admin-server-status"]').exists()).toBe(false)
-      expect(polls()).toBe(0)
-      // Growing to lg mounts it and starts the poll.
-      for (const l of listeners) l({ matches: true })
-      await flushPromises()
-      expect(w.find('[data-testid="admin-server-status"]').exists()).toBe(true)
-      expect(polls()).toBe(1)
-    } finally {
-      vi.unstubAllGlobals()
-    }
-  })
-})
-
-describe('AdminShell: "Lagi" row click', () => {
-  it('following a row closes the popover and navigates', async () => {
-    const w = await open('/admin')
-    await w.get('[data-nav-id="bottom-lagi"]').trigger('click')
-    expect(isOpen(w)).toBe(true)
-    await lagi(w).get('[data-lagi-id="laporan"]').trigger('click')
-    await flushPromises()
-    expect(isOpen(w)).toBe(false)
   })
 })

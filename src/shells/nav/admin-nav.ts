@@ -2,13 +2,11 @@
  * Admin-panel menu (F-18; design shells.md v1.2 §2.2, §2.6–§2.8): ONE ordered definition rendered
  * by the desktop sidebar (≥ lg), the "Lagi" popover and the bottom nav (< lg).
  *
- * Sources: `docs/discovery/inventory/M01/SHA-admin-shell.json` (labels, hrefs, FA icons, order,
- * desktop and "Lagi" states; OBSERVED) and shells.md §2.7 (icon colours, popover placement).
- * Icon colours marked (i) in shells.md are INFERRED from the same item in `user-nav.ts`; the rest
- * are OBSERVED from screenshots or SRS. Group sub-items carry no colour (all `slate-400`).
+ * Admin Pusat is framed by the Portal Pentadbiran (`src/shells/pentadbiran/menu.ts`, S0-T07); its old
+ * `ADMIN_NAV` definition (footer links, bottom nav, "Lagi" rows) was removed with it. This shell now
+ * serves only the roles outside the staff and student frames.
  *
  * Roles (shells.md §1.4, §2.6): `adminMenuFor(role)`
- * - `admin`   -> `ADMIN_NAV` (this file);
  * - `teacher` -> the teacher menu of `user-nav.ts` (`navFor('teacher', 'sidebar')`): one data
  *   definition, two renderings (DV-SH-04 extended). It is imported, never restated here;
  * - any other role -> that role's own `navFor(role, 'sidebar')` (FR-G-04: hidden, not disabled).
@@ -24,7 +22,6 @@ import type { Role } from '@/stores/session-types'
 
 import {
   navFor,
-  withoutAlesa,
   type NavEntry,
   type NavGroup,
   type NavItem,
@@ -117,444 +114,7 @@ export interface LagiMenu {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Badge classes (design-system §4)
-
-const B_LIVE =
-  'ml-auto text-[8px] bg-red-500 text-white px-1.5 py-0.5 rounded-full font-bold animate-pulse'
-/** DEV pill on the heading row of "Bilik Duta" (after the rule, not `ml-auto`). */
-const B_DEV_HEADING =
-  'text-[8px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-1.5 py-0.5 rounded-full font-bold'
-
-// ---------------------------------------------------------------------------------------------
-// Builders (one entry per line below, in live order, for review against the inventory)
-
-const lagi = (
-  heading: string | null,
-  order: number,
-  colour: string,
-  label?: string,
-): LagiPlacement => ({ heading, order, colour, ...(label ? { label } : {}) })
-
-function item(
-  id: string,
-  label: string,
-  to: string,
-  fa: string,
-  color: string,
-  extra: Partial<AdminNavItem> = {},
-): AdminNavItem {
-  return { kind: 'item', id, label, to, fa, color, ...extra }
-}
-
-function group(
-  key: string,
-  label: string,
-  fa: string,
-  color: string,
-  children: readonly AdminNavItem[],
-  extra: Partial<AdminNavGroup> = {},
-): AdminNavGroup {
-  return { kind: 'group', id: `g-${key}`, key, label, fa, color, children, ...extra }
-}
-
-/** A Kirkpatrick sub-item: its `/admin/...` route and the `/guru/...` twin (FR-M12-04). */
-const kirk = (id: string, label: string, path: string, fa: string, exact = false): AdminNavItem =>
-  item(id, label, `/admin/kirkpatrick${path}`, fa, '', {
-    exact,
-    alias: [`/guru/kirkpatrick${path}`],
-  })
-
-// ---------------------------------------------------------------------------------------------
-// The menu
-
-export const ADMIN_NAV: readonly AdminNavEntry[] = [
-  // Pinned (not inside a section). Command Center and Aktiviti Harian open in a new tab.
-  item(
-    'command-center',
-    'Command Center',
-    '/admin/command-center',
-    'fa-satellite-dish',
-    'text-indigo-200',
-    { variant: 'command', target: '_blank', badge: { text: 'LIVE', cls: B_LIVE } },
-  ),
-  item(
-    'aktiviti-harian',
-    'Aktiviti Harian',
-    '/admin/command-center/daily-activity',
-    'fa-chart-line',
-    'text-emerald-600',
-    { target: '_blank', textClass: 'text-emerald-700' },
-  ),
-  item('audio-kbat', 'Audio KBAT', '/admin/audio-kbat', 'fa-headphones', 'text-amber-500', {
-    textClass: 'text-amber-700',
-  }),
-
-  {
-    kind: 'section',
-    id: 'sec-harian',
-    label: 'HARIAN',
-    text: 'text-teal-700',
-    rule: 'from-teal-300',
-  },
-  item('dashboard', 'Dashboard', '/admin', 'fa-tachometer-alt', 'text-indigo-500', {
-    exact: true,
-    bottomNav: true,
-  }),
-
-  {
-    kind: 'section',
-    id: 'sec-analitik',
-    label: 'ANALITIK',
-    text: 'text-indigo-700',
-    rule: 'from-indigo-300',
-  },
-  item('analitik', 'Analitik', '/admin/analytics', 'fa-chart-pie', 'text-fuchsia-500', {
-    lagi: lagi(null, 101, 'text-fuchsia-500'),
-  }),
-  item('monitoring', 'Monitoring', '/admin/monitoring', 'fa-binoculars', 'text-teal-500', {
-    alias: ['/guru/monitoring'],
-    lagi: lagi(null, 103, 'text-teal-500'),
-  }),
-  group(
-    'kirkpatrick',
-    'Kirkpatrick',
-    'fa-microscope',
-    'text-cyan-500',
-    [
-      kirk('kirk-overview', 'Overview', '', 'fa-th-large', true),
-      kirk('kirk-reaction', 'Tahap 1: Reaksi', '/reaction', 'fa-smile'),
-      kirk('kirk-learning', 'Tahap 2: Pembelajaran', '/learning', 'fa-brain'),
-      kirk('kirk-behavior', 'Tahap 3: Tingkah Laku', '/behavior', 'fa-running'),
-      kirk('kirk-results', 'Tahap 4: Hasil', '/results', 'fa-trophy'),
-      kirk('kirk-chain', 'Rantaian Impak', '/chain', 'fa-link'),
-      kirk('kirk-interventions', 'Intervensi', '/interventions', 'fa-hand-holding-medical'),
-    ],
-    { lagi: { ...lagi(null, 104, 'text-cyan-500'), to: '/admin/kirkpatrick' } },
-  ),
-  item('laporan', 'Laporan', '/admin/laporan', 'fa-chart-bar', 'text-orange-500', {
-    lagi: lagi(null, 102, 'text-orange-500', 'Laporan Aktiviti'),
-  }),
-
-  {
-    kind: 'section',
-    id: 'sec-pengurusan',
-    label: 'PENGURUSAN',
-    text: 'text-blue-700',
-    rule: 'from-blue-300',
-  },
-  group('kurikulum', 'Kurikulum', 'fa-sitemap', 'text-teal-500', [
-    item('kurikulum', 'Kurikulum', '/admin/curriculum', 'fa-sitemap', '', {
-      lagi: lagi('Kurikulum', 401, 'text-teal-500'),
-    }),
-    item('subjek', 'Subjek', '/admin/subjects', 'fa-book', '', {
-      lagi: lagi('Kurikulum', 402, 'text-indigo-500'),
-    }),
-    item(
-      'tahap-pendidikan',
-      'Tahap Pendidikan',
-      '/admin/education-levels',
-      'fa-graduation-cap',
-      '',
-      { lagi: lagi('Kurikulum', 403, 'text-purple-500') },
-    ),
-  ]),
-  group('soalan', 'Soalan', 'fa-question-circle', 'text-amber-500', [
-    item('senarai-soalan', 'Senarai Soalan', '/admin/questions', 'fa-list', '', {
-      bottomNav: true,
-    }),
-    item('import-csv', 'Import CSV', '/admin/questions/import', 'fa-file-csv', '', {
-      lagi: lagi('Soalan', 301, 'text-indigo-500'),
-    }),
-    item('kualiti-soalan', 'Kualiti Soalan', '/admin/questions/quality', 'fa-clipboard-check', '', {
-      lagi: lagi('Soalan', 302, 'text-teal-500'),
-    }),
-    item('laporan-soalan', 'Laporan Soalan', '/admin/question-reports', 'fa-flag', '', {
-      lagi: lagi('Soalan', 303, 'text-red-500'),
-    }),
-    item(
-      'soalan-berstruktur',
-      'Soalan Berstruktur',
-      '/admin/structured-questions',
-      'fa-list-ol',
-      '',
-      { lagi: lagi('Soalan', 304, 'text-cyan-500') },
-    ),
-    item(
-      'kertas-soalan-guru',
-      'Kertas Soalan Guru',
-      '/admin/question-submissions',
-      'fa-file-upload',
-      '',
-      { lagi: lagi('Soalan', 305, 'text-blue-500') },
-    ),
-  ]),
-  group('pengguna', 'Pengguna', 'fa-users', 'text-violet-500', [
-    item('senarai-pengguna', 'Senarai Pengguna', '/admin/users', 'fa-users', '', {
-      bottomNav: true,
-    }),
-    item('sekolah', 'Sekolah', '/admin/schools', 'fa-school', '', {
-      lagi: lagi('Sistem', 1001, 'text-indigo-500'),
-    }),
-    item(
-      'langganan-sekolah',
-      'Langganan Sekolah',
-      '/admin/school-subscriptions',
-      'fa-file-contract',
-      '',
-      { lagi: lagi('Sistem', 1002, 'text-emerald-500') },
-    ),
-    item('import-pelajar', 'Import Pelajar', '/admin/import-students', 'fa-user-plus', '', {
-      lagi: lagi('Sistem', 1009, 'text-blue-500'),
-    }),
-    item('pelajar-komplimen', 'Pelajar Komplimen', '/admin/comp-students', 'fa-gift', ''),
-    item('import-pengguna', 'Import Pengguna', '/admin/users/bulk-import', 'fa-users-cog', '', {
-      lagi: lagi('Sistem', 1010, 'text-violet-500'),
-    }),
-    item('penajaan', 'Penajaan', '/admin/sponsors', 'fa-handshake', '', { bottomNav: true }),
-    item('anak-angkat', 'Anak Angkat', '/admin/anak-angkat', 'fa-child', ''),
-    item('permohonan', 'Permohonan', '/admin/anak-angkat/permohonan', 'fa-file-alt', ''),
-  ]),
-  group('spm', 'SPM', 'fa-graduation-cap', 'text-orange-500', [
-    item('spm-databank', 'Databank Soalan', '/spm/tahun-lepas', 'fa-database', '', {
-      lagi: lagi('SPM', 201, 'text-rose-500'),
-    }),
-    item('spm-latih-tubi', 'Latih Tubi', '/spm/latih-tubi', 'fa-bolt', '', {
-      lagi: lagi('SPM', 202, 'text-amber-500'),
-    }),
-    item('spm-tracking', 'Tracking A', '/spm/ramalan', 'fa-crosshairs', '', {
-      lagi: lagi('SPM', 203, 'text-emerald-500'),
-    }),
-    item('spm-subjektif', 'Subjektif', '/spm/subjektif', 'fa-pen-fancy', '', {
-      lagi: lagi('SPM', 204, 'text-violet-500'),
-    }),
-  ]),
-  group('premium', 'Premium', 'fa-shield-halved', 'text-indigo-500', [
-    item('pksk-soalan', 'PKSK Soalan', '/admin/pksk/questions', 'fa-shield-halved', '', {
-      lagi: lagi('Premium', 501, 'text-indigo-500'),
-    }),
-    item('pksk-akses', 'PKSK Akses', '/admin/pksk/access', 'fa-key', '', {
-      lagi: lagi('Premium', 502, 'text-amber-500'),
-    }),
-  ]),
-
-  {
-    kind: 'section',
-    id: 'sec-sistem',
-    label: 'SISTEM',
-    text: 'text-slate-700',
-    rule: 'from-slate-300',
-  },
-  group('gamifikasi', 'Gamifikasi', 'fa-gamepad', 'text-purple-500', [
-    item('gami-overview', 'Overview', '/admin/gamification', 'fa-gamepad', '', {
-      exact: true,
-      lagi: lagi('Gamifikasi', 601, 'text-purple-500'),
-    }),
-    item('gami-tiers', 'Tier Config', '/admin/gamification/tiers', 'fa-crown', '', {
-      lagi: lagi('Gamifikasi', 602, 'text-amber-500'),
-    }),
-    item('gami-challenges', 'Cabaran', '/admin/gamification/challenges', 'fa-bullseye', '', {
-      lagi: lagi('Gamifikasi', 603, 'text-emerald-500'),
-    }),
-    item('gami-students', 'Pelajar', '/admin/gamification/students', 'fa-users', ''),
-    item('gami-transactions', 'Transaksi', '/admin/gamification/transactions', 'fa-receipt', ''),
-    item('kedai-hadiah', 'Kedai Hadiah', '/admin/hadiah', 'fa-gift', '', {
-      lagi: lagi('Gamifikasi', 604, 'text-pink-500'),
-    }),
-    item(
-      'gamifikasi-guru',
-      'Gamifikasi Guru',
-      '/admin/gamifikasi/guru',
-      'fa-chalkboard-teacher',
-      '',
-      { lagi: lagi('Gamifikasi', 605, 'text-amber-500') },
-    ),
-    item('kawalan-reward', 'Kawalan Reward', '/admin/reward-control', 'fa-shield-halved', ''),
-  ]),
-  group('battle', 'Battle & Permainan', 'fa-bolt', 'text-red-500', [
-    item('battle-live', 'Battle Live', '/battle', 'fa-bolt', '', {
-      lagi: lagi('Battle & Permainan', 701, 'text-red-500'),
-    }),
-    item('battle-ranking', 'Ranking Sekolah', '/battle/ranking-sekolah', 'fa-school', ''),
-    item('battle-leaderboard', 'Leaderboard', '/battle/leaderboard', 'fa-trophy', ''),
-    item('tetapan-permainan', 'Tetapan Permainan', '/admin/permainan', 'fa-dice', '', {
-      lagi: lagi('Battle & Permainan', 702, 'text-emerald-500'),
-    }),
-  ]),
-  group('marketplace', 'Marketplace', 'fa-shopping-bag', 'text-emerald-500', [
-    item('mp-produk', 'Produk', '/admin/marketplace/products', 'fa-shopping-bag', '', {
-      lagi: lagi('Marketplace', 901, 'text-emerald-500'),
-    }),
-    item('mp-penjual', 'Penjual', '/admin/marketplace/sellers', 'fa-store', '', {
-      lagi: lagi('Marketplace', 902, 'text-orange-500'),
-    }),
-  ]),
-  group('kandungan', 'Kandungan', 'fa-newspaper', 'text-pink-500', [
-    item('banner', 'Banner', '/admin/banners', 'fa-image', '', {
-      lagi: lagi('Kandungan', 801, 'text-pink-500'),
-    }),
-    item('artikel', 'Artikel', '/admin/articles', 'fa-newspaper', '', {
-      lagi: lagi('Kandungan', 802, 'text-orange-500'),
-    }),
-    item('nota', 'Nota', '/admin/notes', 'fa-sticky-note', '', {
-      lagi: lagi('Kandungan', 803, 'text-yellow-500'),
-    }),
-    item('push-notifikasi', 'Push Notifikasi', '/admin/notifications', 'fa-bell', '', {
-      lagi: lagi('Kandungan', 804, 'text-amber-500'),
-    }),
-    item(
-      'upload-screenshot',
-      'Upload Screenshot',
-      '/admin/tools/screenshots',
-      'fa-cloud-upload-alt',
-      '',
-      { lagi: lagi('Kandungan', 806, 'text-blue-500') },
-    ),
-  ]),
-  group('kewangan', 'Kewangan', 'fa-credit-card', 'text-blue-500', [
-    item('pembayaran', 'Pembayaran', '/admin/payments', 'fa-credit-card', '', {
-      lagi: lagi('Sistem', 1004, 'text-teal-500'),
-    }),
-    item('billing', 'Billing Dashboard', '/admin/billing', 'fa-chart-line', '', {
-      lagi: lagi('Sistem', 1005, 'text-emerald-500'),
-    }),
-    item('dunning', 'Dunning Log', '/admin/dunning', 'fa-bell-slash', '', {
-      lagi: lagi('Sistem', 1006, 'text-red-500'),
-    }),
-  ]),
-  group('sistem', 'Sistem', 'fa-cog', 'text-slate-500', [
-    item('performance', 'Performance', '/admin/performance', 'fa-gauge-high', '', {
-      lagi: lagi('Sistem', 1008, 'text-orange-500'),
-    }),
-    item('tetapan', 'Tetapan', '/admin/settings', 'fa-cog', '', {
-      lagi: lagi('Sistem', 1003, 'text-slate-500'),
-    }),
-    item('log-audit', 'Log Audit', '/admin/audit-logs', 'fa-clipboard-list', '', {
-      lagi: lagi('Sistem', 1007, 'text-slate-500'),
-    }),
-    // Sidebar: under Sistem. Popover: under Kandungan (observed, replicated).
-    item('chatbot', 'Chatbot', '/admin/chatbot', 'fa-robot', '', {
-      lagi: lagi('Kandungan', 805, 'text-purple-500'),
-    }),
-  ]),
-
-  {
-    kind: 'section',
-    id: 'sec-bilik-duta',
-    label: '🏆 Bilik Duta',
-    text: 'text-amber-700',
-    rule: 'from-amber-300',
-    badge: { text: 'DEV', cls: B_DEV_HEADING },
-  },
-  item('bilik-duta', 'Bilik Duta', '/bilik-duta', 'fa-crown', 'text-amber-500'),
-  item('akademi-duta', 'Akademi Duta', '/akademi-duta', 'fa-graduation-cap', 'text-purple-500'),
-  item(
-    'permohonan-duta',
-    'Permohonan Duta',
-    '/admin/duta-applications',
-    'fa-clipboard-check',
-    'text-teal-500',
-  ),
-  item('duta-dashboard', 'Duta Dashboard', '/duta-dashboard', 'fa-user-tie', 'text-indigo-500'),
-  item('jemput-duta', 'Jemput Duta', '/jemput-duta', 'fa-school', 'text-pink-500'),
-  item('kem-bootcamp', 'Kem & Bootcamp', '/bilik-duta/kem', 'fa-campground', 'text-rose-500'),
-
-  {
-    kind: 'section',
-    id: 'sec-pusat-ai',
-    label: '🤖 Pusat AI',
-    text: 'text-purple-700',
-    rule: 'from-purple-300',
-  },
-  item('kamus-ai', 'Kamus AI', '/pusat-ai/kamus', 'fa-book-open', 'text-cyan-600'),
-  item(
-    'aktiviti-advisor',
-    'Aktiviti Advisor',
-    '/pusat-ai/aktiviti',
-    'fa-lightbulb',
-    'text-green-600',
-  ),
-  item(
-    'pendamping-motivasi',
-    'Pendamping Motivasi',
-    '/pusat-ai/pendamping',
-    'fa-heart',
-    'text-purple-600',
-  ),
-  item('spm-walkthrough', 'SPM Walkthrough', '/pusat-ai/spm', 'fa-pen-to-square', 'text-rose-600'),
-  item(
-    'whiteboard-quiz',
-    'Whiteboard → Quiz',
-    '/pusat-ai/whiteboard',
-    'fa-clipboard-question',
-    'text-blue-600',
-  ),
-  item(
-    'parent-whisperer',
-    'Parent Whisperer',
-    '/pusat-ai/parent-whisperer',
-    'fa-comments',
-    'text-teal-600',
-  ),
-  item('doa-motivasi', 'Doa & Motivasi', '/pusat-ai/doa', 'fa-mosque', 'text-emerald-600'),
-
-  {
-    kind: 'section',
-    id: 'sec-visi',
-    label: '✨ Visi & Pertandingan',
-    text: 'text-indigo-700',
-    rule: 'from-indigo-300',
-  },
-  item('profil-cerah', 'Profil Cerah', '/profil-cerah', 'fa-magic', 'text-indigo-500'),
-  item('sekolah-bersaing', 'Sekolah Bersaing', '/sekolah-bersaing', 'fa-trophy', 'text-amber-500'),
-  item('cita-cita', 'Cita-Cita Hijrah', '/cita-cita', 'fa-star', 'text-pink-500'),
-  item('kombo', 'Streak / Kombo', '/kombo', 'fa-fire', 'text-orange-500'),
-
-  {
-    kind: 'section',
-    id: 'sec-killer',
-    label: '💎 Killer Features',
-    text: 'text-fuchsia-700',
-    rule: 'from-fuchsia-300',
-  },
-  item('cikgu-suara', 'Cikgu Suara', '/cikgu-suara', 'fa-microphone', 'text-fuchsia-500'),
-  item('spm-mock', 'SPM Mock Exam', '/spm-mock', 'fa-file-pen', 'text-orange-700'),
-  item(
-    'wellbeing-alerts',
-    'Wellbeing Alerts',
-    '/wellbeing/alerts',
-    'fa-triangle-exclamation',
-    'text-red-500',
-  ),
-]
-
-/** Footer links above the user block (admin only; the teacher has none, shells.md §2.6). */
-export const ADMIN_FOOTER_LINKS: readonly AdminNavItem[] = [
-  item('tetapan-peribadi', 'Tetapan Peribadi', '/tetapan', 'fa-cog', 'text-slate-500'),
-  item('ke-dashboard', 'Ke Dashboard', '/dashboard', 'fa-arrow-left', 'text-emerald-600', {
-    textClass: 'text-emerald-600',
-  }),
-]
-
-/** The footer link that is a cross-shell switch, never an active item. */
-const NEVER_ACTIVE_IDS: ReadonlySet<string> = new Set(['ke-dashboard'])
-
-// ---------------------------------------------------------------------------------------------
 // Bottom nav (shells.md §2.4, §2.6)
-
-export const ADMIN_BOTTOM_NAV: readonly AdminBottomNavEntry[] = [
-  {
-    kind: 'link',
-    id: 'dashboard',
-    label: 'Dashboard',
-    to: '/admin',
-    fa: 'fa-tachometer-alt',
-    exact: true,
-  },
-  { kind: 'link', id: 'soalan', label: 'Soalan', to: '/admin/questions', fa: 'fa-question-circle' },
-  { kind: 'link', id: 'penaja', label: 'Penaja', to: '/admin/sponsors', fa: 'fa-handshake' },
-  { kind: 'link', id: 'pengguna', label: 'Pengguna', to: '/admin/users', fa: 'fa-users' },
-  { kind: 'button', id: 'lagi', label: 'Lagi', fa: 'fa-ellipsis-h' },
-]
 
 /** PROPOSED (P-4): the four teacher routes that use this chrome, plus the teacher's home. */
 export const TEACHER_BOTTOM_NAV: readonly AdminBottomNavEntry[] = [
@@ -615,18 +175,11 @@ function adoptUserEntry(entry: NavEntry): AdminNavEntry {
 
 /** The sidebar entries of a role, in order (§2.8 `adminMenuFor`). */
 export function adminMenuFor(role: Role | null): readonly AdminNavEntry[] {
-  if (role === 'admin') return withoutAlesa(ADMIN_NAV)
   if (role === null) return []
   return navFor(role, 'sidebar').map(adoptUserEntry)
 }
 
-/** Footer links above the user block: admin only. */
-export function footerLinksFor(role: Role | null): readonly AdminNavItem[] {
-  return role === 'admin' ? ADMIN_FOOTER_LINKS : []
-}
-
 export function bottomNavFor(role: Role | null): readonly AdminBottomNavEntry[] {
-  if (role === 'admin') return ADMIN_BOTTOM_NAV
   if (role === 'teacher') return TEACHER_BOTTOM_NAV
   return LAGI_ONLY_BOTTOM_NAV
 }
@@ -644,9 +197,6 @@ export interface AdminChrome {
 
 /** Chrome text per role (§2.2, §2.6). Teacher values are PROPOSED (P-3). */
 export function chromeFor(role: Role | null): AdminChrome {
-  if (role === 'admin') {
-    return { caption: 'Panel Pentadbir', home: '/admin', roleLabel: 'Admin', serverStatus: true }
-  }
   if (role === 'teacher') {
     return { caption: 'Portal Guru', home: '/guru', roleLabel: 'Guru', serverStatus: false }
   }
@@ -678,7 +228,7 @@ function matchLength(path: string, base: string, exact: boolean): number {
 
 /** How well `current` matches an item: 0 = not at all, else the length of the matched prefix. */
 export function itemMatch(entry: AdminNavItem, current: string): number {
-  if (entry.target === '_blank' || NEVER_ACTIVE_IDS.has(entry.id)) return 0
+  if (entry.target === '_blank') return 0
   const path = normalise(current)
   let best = 0
   for (const base of [entry.to, ...(entry.alias ?? [])]) {
@@ -755,14 +305,6 @@ export function bottomNavActive(entry: AdminBottomNavLink, current: string): boo
 // ---------------------------------------------------------------------------------------------
 // "Lagi" popover (§2.4, §2.6)
 
-const STUDENT_VIEW: LagiRow = {
-  kind: 'row',
-  id: 'student-view',
-  label: 'Student View',
-  to: '/dashboard',
-  fa: 'fa-arrow-left',
-  colour: 'text-emerald-600',
-}
 const LOG_KELUAR: LagiRow = {
   kind: 'row',
   id: 'log-keluar',
@@ -770,53 +312,6 @@ const LOG_KELUAR: LagiRow = {
   to: '/logout',
   fa: 'fa-sign-out-alt',
   colour: 'text-red-600',
-}
-
-interface PlacedRow {
-  order: number
-  heading: string | null
-  row: LagiRow
-}
-
-function placeRow(source: AdminNavItem | AdminNavGroup, at: LagiPlacement): PlacedRow {
-  return {
-    order: at.order,
-    heading: at.heading,
-    row: {
-      kind: 'row',
-      id: source.id,
-      label: at.label ?? source.label,
-      to: at.to ?? (source.kind === 'item' ? source.to : ''),
-      fa: source.fa,
-      colour: at.colour ?? source.color,
-      ...(source.kind === 'group' ? { groupKey: source.key } : {}),
-    },
-  }
-}
-
-function adminLagi(): LagiMenu {
-  const placed: PlacedRow[] = []
-  for (const entry of withoutAlesa(ADMIN_NAV)) {
-    if (isItem(entry) && entry.lagi) placed.push(placeRow(entry, entry.lagi))
-    if (isGroup(entry)) {
-      if (entry.lagi) placed.push(placeRow(entry, entry.lagi))
-      for (const child of entry.children) {
-        if (child.lagi) placed.push(placeRow(child, child.lagi))
-      }
-    }
-  }
-  placed.sort((a, b) => a.order - b.order)
-
-  const entries: LagiEntry[] = []
-  let heading: string | null = null
-  for (const { heading: next, row } of placed) {
-    if (next !== heading && next !== null) {
-      entries.push({ kind: 'heading', id: `lagi-h-${next}`, label: next })
-    }
-    heading = next
-    entries.push(row)
-  }
-  return { entries, tail: [STUDENT_VIEW, LOG_KELUAR] }
 }
 
 /**
@@ -852,7 +347,6 @@ function derivedLagi(role: Role): LagiMenu {
 
 /** The "Lagi" popover of a role, generated from the same nav data as the sidebar (§2.8). */
 export function lagiFor(role: Role | null): LagiMenu {
-  if (role === 'admin') return adminLagi()
   if (role === null) return { entries: [], tail: [] }
   return derivedLagi(role)
 }
