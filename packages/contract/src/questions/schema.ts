@@ -9,7 +9,8 @@ import {
   QuestionCurriculumTagSchema,
   QuestionEssayTopicSchema,
   QuestionKbatLevelSchema,
-  QuestionPartSchema,
+  QuestionPartReadV3Schema,
+  QuestionPartWireSchema,
   QuestionWritePartSchema,
   QuestionPublicPartSchema,
   QuestionSchemeRulesSchema,
@@ -320,7 +321,7 @@ export const QuestionSchema = z
     updatedAt: TimestampSchema,
     usage: z.object({ attempts: z.number().int().min(0), correct: z.number().int().min(0) }),
     /** v2 additions (BE-09 AC 1 to 3, 12): absent on rows that only have the flat shape. */
-    parts: z.array(QuestionPartSchema).min(1).max(20).optional(),
+    parts: z.array(QuestionPartWireSchema).min(1).max(20).optional(),
     tag: QuestionCurriculumTagSchema.optional(),
     /** BJS-06: question-level KBAT (null = Bukan KBAT), "Perlu semakan tag" flag and the catalogue the tag was made against. */
     kbat: QuestionKbatLevelSchema.nullable().optional(),
@@ -487,7 +488,8 @@ export const QuestionCreateRequestSchema = baseInput
 export const QuestionUpdateRequestSchema = baseInput
   // `parts` parse leniently here: the service holds new and changed parts to the strict write rules and lets a part echoed
   // unchanged from the stored version keep the read rules (#692), which a strict DTO would make unreachable over HTTP.
-  .extend({ parts: z.array(QuestionPartSchema).min(1).optional() })
+  // Typed as the write tree the service takes; the runtime schema is the lenient V3 reader (v1 and v2 stored content).
+  .extend({ parts: z.array(QuestionPartReadV3Schema as unknown as typeof QuestionWritePartSchema).min(1).optional() })
   .meta({ id: 'QuestionUpdateRequest' })
 
 /** D54a: an action is the target lifecycle code, or `delete`. The mock verbs approve/reject/pending_review are gone. */

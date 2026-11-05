@@ -27,7 +27,8 @@ describe('pure grading (no database)', () => {
     const key = { kind: 'accepted' as const, values: ['merah', 'biru'], anyOrder: true }
     expect(gradeShortText(key, 'Biru; Merah', 2)).toMatchObject({ correct: true, marks: 2 })
     expect(gradeShortText(key, 'merah', 2)).toMatchObject({ correct: false })
-    expect(gradeShortText(key, 'merah, biru, hijau', 2)).toMatchObject({ correct: false })
+    // Wrong and 3 or more words: belum_dimarkah (M-SHORT, K20), never a silent 0.
+    expect(gradeShortText(key, 'merah, biru, hijau', 2)).toMatchObject({ kind: 'needs_review', maxMarks: 2 })
   })
 
   it('numeric: absolute and relative tolerance, unit check with alternatives', () => {
@@ -45,14 +46,14 @@ describe('pure grading (no database)', () => {
     expect(gradeNumeric(abs, Number.NaN, undefined, 1)).toMatchObject({ correct: false })
   })
 
-  it('match_letter and table_fill are all or nothing', () => {
+  it('match_letter is all or nothing; table_fill is never auto-awarded (suggestion only, M-TABLE)', () => {
     const map = { kind: 'mapping' as const, map: { '1': 'A', '2': 'C' } }
     expect(gradeMapping(map, { '1': 'a', '2': 'C' }, 2)).toMatchObject({ correct: true, marks: 2 })
     expect(gradeMapping(map, { '1': 'A', '2': 'B' }, 2)).toMatchObject({ correct: false, marks: 0 })
     expect(gradeMapping(map, { '1': 'A' }, 2)).toMatchObject({ correct: false })
     const cells = { kind: 'mapping' as const, cells: { r1c1: ['10', 'sepuluh'], r1c2: ['20'] } }
-    expect(gradeCells(cells, { r1c1: 'Sepuluh', r1c2: '20' }, 2)).toMatchObject({ correct: true })
-    expect(gradeCells(cells, { r1c1: '10' }, 2)).toMatchObject({ correct: false })
+    expect(gradeCells(cells, { r1c1: 'Sepuluh', r1c2: '20' }, 2)).toMatchObject({ kind: 'needs_review', suggestion: { marks: 2, message: 'Cadangan automatik: 2 daripada 2 sel sepadan' } })
+    expect(gradeCells(cells, { r1c1: '10' }, 2)).toMatchObject({ kind: 'needs_review', suggestion: { marks: 1, message: 'Cadangan automatik: 1 daripada 2 sel sepadan' } })
   })
 
   it('subjective modes return needs_review, never a score', () => {
@@ -83,6 +84,7 @@ describe('pure grading (no database)', () => {
     const res = gradeQuestion('1', parts, [
       { path: 'a.i', value: { kind: 'text', text: 'X' } },
       { path: 'a.ii', value: { kind: 'text', text: 'z' } },
+      { path: 'b', value: { kind: 'text', text: 'Karangan murid.' } },
     ])
     expect(res.parts.map((p) => p.path)).toEqual(['a.i', 'a.ii', 'b'])
     expect(res.marks).toBe(2)

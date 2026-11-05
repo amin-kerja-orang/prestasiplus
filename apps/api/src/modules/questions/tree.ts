@@ -4,7 +4,7 @@
  * this file only converts. A key that does not parse as the contract leaf for its mode fails
  * closed (`StoredKeyError`, mapped to a 500 by the service with the part id logged).
  */
-import { QuestionLeafPartSchema, type ModeConfigSchema, type QuestionCognitiveLevel, type QuestionPart } from '@pp/contract'
+import { QuestionLeafPartReadV3Schema, type ModeConfigSchema, type QuestionCognitiveLevel, type QuestionPart } from '@pp/contract'
 import type { z } from 'zod'
 
 import type { AnswerKey, PartOption, QuestionPart as PartRow } from '../../db/generated/client'
@@ -85,7 +85,7 @@ function leafFromRow(row: PartRow, options: PartOption[], key: AnswerKey | undef
   if (row.mode === 'essay_choice') candidate.topics = row.topics
   // DM-55: mode_config round-trips as `modeConfig`; NULL stays absent.
   if (row.modeConfig !== null) candidate.modeConfig = row.modeConfig
-  const parsed = QuestionLeafPartSchema.safeParse(candidate)
+  const parsed = QuestionLeafPartReadV3Schema.safeParse(candidate)
   if (!parsed.success) {
     if (lenient && key === undefined) return candidate as unknown as QuestionLeaf
     // #805: an MCQ whose key names no option is tolerated (and only that: the leaf must parse once the key is pointed at a real option);
@@ -100,7 +100,7 @@ function keyNamesNoOption(candidate: Record<string, unknown>): boolean {
   const first = (candidate.options as { label: string }[] | undefined)?.[0]
   const k = candidate.key as { kind?: unknown } | undefined
   if (first === undefined || k?.kind !== 'option') return false
-  return QuestionLeafPartSchema.safeParse({ ...candidate, key: { kind: 'option', correct: first.label } }).success
+  return QuestionLeafPartReadV3Schema.safeParse({ ...candidate, key: { kind: 'option', correct: first.label } }).success
 }
 
 // --- tree -> row drafts ---------------------------------------------------------------------------
