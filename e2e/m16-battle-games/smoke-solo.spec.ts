@@ -80,6 +80,15 @@ async function verdictOf(option: Locator): Promise<'correct' | 'wrong'> {
   return (await option.getAttribute('data-state')) as 'correct' | 'wrong'
 }
 
+/**
+ * Spins, then waits until the page has the answer: it sets the rotation and starts the 4.2 s timer in
+ * one step, so a clock advance from here on cannot run before the timer exists.
+ */
+async function spin(page: Page): Promise<void> {
+  await page.getByTestId('spin-button').click()
+  await expect(page.getByTestId('wheel-disc')).not.toHaveAttribute('data-rotation', '0')
+}
+
 /** Steps the paused countdown 3 → 2 → 1 → play (800 ms each). */
 async function throughCountdown(page: Page, mock: MockHandle): Promise<void> {
   const number = page.getByTestId('solo-countdown-number')
@@ -283,9 +292,15 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
         } else combo = 0
         await mock.advanceTime(400)
       }
-      await mock.advanceTime(60_000)
+      // Exactly to the end of the 60 s (the 4 answers used 1.6 s): the coin-fly removes itself after
+      // 1.4 s on the same clock, so any extra time could remove it before the check.
+      await mock.advanceTime(60_000 - 4 * 400)
       await expect(page.getByTestId('solo-result')).toContainText(`${String(coins)} 🪙`)
-      if (coins > 0) await expect(page.getByTestId('coin-fly')).toHaveCount(1)
+      if (coins > 0) {
+        await expect(page.getByTestId('coin-fly')).toHaveCount(1)
+        await mock.advanceTime(1400)
+        await expect(page.getByTestId('coin-fly')).toHaveCount(0)
+      }
     },
   )
 
@@ -498,7 +513,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     await expectNoHorizontalScroll(page)
 
     await pause(page, mock)
-    await button.click()
+    await spin(page)
     await expect(button).toHaveText('⏳ Sedang Pusing...')
     await expect(button).toBeDisabled()
     await mock.advanceTime(4199)
@@ -530,7 +545,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
     await gotoApp('/permainan/roda-nasib')
     await mock.hook('m16Fixture', 'spinNothing')
     await pause(page, mock)
-    await page.getByTestId('spin-button').click()
+    await spin(page)
     await mock.advanceTime(4200)
     await expect(page.getByTestId('prize-icon')).toHaveText('😅')
     await expect(page.getByTestId('prize-label')).toHaveText('Cuba Lagi')
@@ -548,7 +563,7 @@ test.describe('M16 S13–S19 solo games', MODULE, () => {
       await mock.hook('m16Fixture', 'spinSyiling5')
       await mock.hook('m16Fixture', 'settingCoins')
       await pause(page, mock)
-      await page.getByTestId('spin-button').click()
+      await spin(page)
       await mock.advanceTime(4200)
       await expect(page.getByTestId('prize-label')).toHaveText('5 Syiling')
       await expect(page.getByTestId('prize-amount')).toHaveText('+5 Syiling')

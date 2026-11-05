@@ -48,12 +48,17 @@ async function pollOnce(mock: MockHandle, n: number, pattern?: string): Promise<
   await expect.poll(() => polls(mock, pattern)).toBe(n)
 }
 
-/** Runs the paused clock in 2 s steps until the search stops with `message`. */
+/**
+ * Runs the paused clock in 2 s steps until the search stops, then checks the message. 50 steps stay
+ * below the 120 s stop, so a run of polls that does not fail ends on the wrong text, never on this one.
+ */
 async function runClockUntilError(page: Page, mock: MockHandle, message: string): Promise<void> {
-  await expect(async () => {
+  for (let step = 0; step < 50; step++) {
     await mock.advanceTime(2000)
-    await expect(err(page)).toHaveText(message, { timeout: 250 })
-  }).toPass({ timeout: 20_000 })
+    if (await err(page).isVisible()) break
+    await page.waitForTimeout(50) // the answer of the poll lands before the next step
+  }
+  await expect(err(page)).toHaveText(message)
 }
 
 async function pickSubject(page: Page, name: string): Promise<void> {
