@@ -383,12 +383,14 @@ export class StimuliService {
     const draftId = idToString(copy.id)
     const liveId = idToString(copy.draftOfGroupId as bigint)
     const sortIds = (ids: string[]): string[] => ids.sort((a, b) => (BigInt(a) < BigInt(b) ? -1 : 1))
-    // Every group that holds a staged member is locked with the two groups, in ascending order, before any write (no deadlock between two swaps).
-    const holders = [...(await this.repo.groupsOfQuestions(copy.draftMembers ?? [])).values()]
     const out = await this.prisma.transaction(async () => {
-      for (const key of sortIds([...new Set([draftId, liveId, ...holders])])) await this.members.lock(key)
+      // Lock order: the copy first, then (its staged members read under that lock) the live group and every group that holds a staged member, in
+      // ascending id order, all before any write. Two swaps lock their own copy first and the rest in the same order, so they cannot deadlock.
+      await this.members.lock(draftId)
       const draft = await this.groupOrThrow(draftId)
       if (draft.draftOfGroupId === null || idToString(draft.draftOfGroupId) !== liveId) throw ApiError.of('CONFLICT', { message: STIMULUS_MESSAGES.conflict })
+      const holders = [...(await this.repo.groupsOfQuestions(draft.draftMembers ?? [])).values()]
+      for (const key of sortIds([...new Set([liveId, ...holders])])) await this.members.lock(key)
       const staged = draft.draftMembers ?? []
       // The gate of group publish, before any write.
       if (staged.length === 0) throw ApiError.of('CONFLICT', { message: STIMULUS_MESSAGES.builderBlocker })
@@ -543,13 +545,14 @@ export class StimuliService {
       if (toGroupId === fromId) throw fail({ toGroupId: STIMULUS_MESSAGES.requestInvalid })
       if ((await this.repo.groupScope(toGroupId)) === null) throw fail({ toGroupId: STIMULUS_MESSAGES.groupInvalid })
       for (const key of [fromId, toGroupId].sort((a, b) => (BigInt(a) < BigInt(b) ? -1 : 1))) await this.members.lock(key)
+      const facts = (await this.repo.lockQuestions([questionId])).get(questionId)
+      if (facts === undefined) throw notFound(STIMULUS_MESSAGES.memberMissing) // 404 before any 409
       // Decision 26: between two draft copies the move changes the staged members and takes effect when both copies are published (the swap).
       // A served member moves in no other way (memberServed below); a copy on one side only is not allowed (409).
       const [fromCopy, toCopy] = [(await this.repo.groupScope(fromId))?.draftOfGroupId != null, (await this.repo.groupScope(toGroupId))?.draftOfGroupId != null]
       if (fromCopy && toCopy) return this.moveStaged(fromId, questionId, toGroupId)
       if (fromCopy || toCopy) throw conflictOf(STIMULUS_MESSAGES.conflict)
-      const facts = (await this.repo.lockQuestions([questionId])).get(questionId)
-      if (facts === undefined || facts.groupId === null) throw notFound(STIMULUS_MESSAGES.memberMissing)
+      if (facts.groupId === null) throw notFound(STIMULUS_MESSAGES.memberMissing)
       if (facts.groupId !== fromId) throw conflictOf(STIMULUS_MESSAGES.memberTaken)
       if (facts.served) throw conflictOf(STIMULUS_MESSAGES.memberServed)
       const rest = (await this.repo.memberIds(fromId)).filter((m) => m !== questionId)

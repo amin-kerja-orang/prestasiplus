@@ -134,6 +134,34 @@ describe('[CI] the swap: publishing a group draft copy (API-Q-31, API-Q-32, API-
     expect((await admin.post(`/api/stimulus-groups/${s.id}/edit-as-draft`)).status).toBe(201)
   })
 
+  it('decisions 25.3 and 54: the live group takes the copy\'s scope, Subjek, Tingkatan and Kertas, label, stimuli and option bank', async () => {
+    const s = await servedGroup(2, { label: 'Asal' })
+    expect(await q(`select subject_id, education_level_id, kertas, scope from stimulus_groups where id = $1`, [s.id])).toEqual([{ subject_id: null, education_level_id: null, kertas: null, scope: 'section' }])
+    const copy = await copyOf(s.id)
+    expect((await admin.put(`/api/stimulus-groups/${copy.id}`, { subjectId: refs.mathId, educationLevelId: refs.t4Id, kertas: '2', label: 'Baharu' })).status).toBe(200)
+    await q(`update stimulus_groups set scope = 'paper' where id = $1`, [copy.id])
+    const res = await publish(copy.id)
+    expect(res.status, JSON.stringify(res.body)).toBe(200)
+    expect(await q(`select label, scope, subject_id::text subject_id, education_level_id::text education_level_id, kertas from stimulus_groups where id = $1`, [s.id])).toEqual([
+      { label: 'Baharu', scope: 'paper', subject_id: refs.mathId, education_level_id: refs.t4Id, kertas: 2 },
+    ])
+    expect(res.body.data).toMatchObject({ id: s.id, subjectId: refs.mathId, educationLevelId: refs.t4Id, kertas: '2', scope: 'paper' })
+  })
+
+  it('part 3b guard: set, remove and order on a draft copy are still 409 (add is checked in group-actions); the copy is unchanged', async () => {
+    const s = await servedGroup(2)
+    const copy = await copyOf(s.id)
+    const extra = await review()
+    const calls = [
+      await admin.put(`/api/stimulus-groups/${copy.id}/members`, { questionIds: [extra] }),
+      await admin.delete(`/api/stimulus-groups/${copy.id}/members/${s.ids[0]}`),
+      await admin.put(`/api/stimulus-groups/${copy.id}/members/order`, { questionIds: [...s.ids].reverse() }),
+    ]
+    for (const res of calls) expect(res.status, JSON.stringify(res.body)).toBe(409)
+    expect(await staged(copy.id)).toEqual(s.ids)
+    expect(await members(s.id)).toEqual(s.ids)
+  })
+
   it('the gate refuses while a copy member is still Draf: 409, nothing changes, the copy stays', async () => {
     const s = await servedGroup(2)
     const copy = await copyOf(s.id)
@@ -180,20 +208,68 @@ describe('[CI] the swap: publishing a group draft copy (API-Q-31, API-Q-32, API-
       expect((await audits()).length).toBe(before)
     })
 
-    it('a member that another group took meanwhile (a concurrent change) is 409 and the original is intact', async () => {
+    it('a staged member that sits in another group nobody is moving it out of is 409 memberTaken (the holder cannot release it) and the original is intact', async () => {
       const s = await servedGroup(2)
       const added = await review()
       const copy = await copyOf(s.id)
       await stage(copy.id, [...s.ids, added])
-      // concurrently another group takes the staged question
       const other = await servedGroup(0)
       await q(`update questions set group_id = $2, group_position = 1 where id = $1`, [added, other.id])
       const res = await publish(copy.id)
       expect(res.status, JSON.stringify(res.body)).toBe(409)
+      expect(res.body.error.message).toBe(STIMULUS_MESSAGES.memberTaken)
       expect(await members(s.id)).toEqual(s.ids)
       expect(await members(other.id)).toEqual([added])
       expect(await stimuliOf(s.id)).toEqual([s.stimulusId])
       expect(await exists(copy.id)).toBe(true)
+    })
+
+    it('an empty staged list is 409 builderBlocker and changes nothing', async () => {
+      const s = await servedGroup(1)
+      const copy = await copyOf(s.id)
+      await stage(copy.id, [])
+      const res = await publish(copy.id)
+      expect(res.status, JSON.stringify(res.body)).toBe(409)
+      expect(res.body.error.message).toBe(STIMULUS_MESSAGES.builderBlocker)
+      expect(await members(s.id)).toEqual(s.ids)
+      expect(await exists(copy.id)).toBe(true)
+    })
+
+    it('the scope check AFTER the live group was rewritten (assertScope) rolls back label, scope, stimuli, options and members', async () => {
+      const s = await servedGroup(2, { label: 'Asal' })
+      const [a0, a1] = s.ids as [string, string]
+      const copy = await copyOf(s.id)
+      expect((await admin.put(`/api/stimulus-groups/${copy.id}`, { label: 'Dari salinan', subjectId: refs.sciId })).status).toBe(200) // members are Matematik
+      await q(`insert into stimulus_group_options (group_id, label, body_ms, position) values ($1, 'A', 'Pilihan A', 1)`, [copy.id])
+      await stage(copy.id, [a1, a0]) // reordered, so the live members were already rewritten when the scope check fails
+      const liveRow = () => q(`select label, scope, subject_id::text subject_id, education_level_id::text education_level_id, kertas from stimulus_groups where id = $1`, [s.id])
+      const before = await liveRow()
+      const res = await publish(copy.id)
+      expect(res.status, JSON.stringify(res.body)).toBe(422)
+      expect(res.body.error.fields.questionIds).toBe(STIMULUS_MESSAGES.memberScope)
+      expect(await liveRow()).toEqual(before)
+      expect(before[0]!.label).toBe('Asal')
+      expect(await stimuliOf(s.id)).toEqual([s.stimulusId])
+      expect(await optionsOf(s.id)).toEqual([])
+      expect(await members(s.id)).toEqual([a0, a1])
+      expect(await exists(copy.id)).toBe(true)
+      expect(await optionsOf(copy.id)).toEqual(['A'])
+    })
+
+    it('two swaps that need each other\'s groups, run at the same time, both finish (the copy is locked first, the rest in id order)', async () => {
+      const a = await servedGroup(2)
+      const b = await servedGroup(1)
+      const [a0, a1] = a.ids as [string, string]
+      const b0 = b.ids[0]!
+      const copyA = await copyOf(a.id)
+      const copyB = await copyOf(b.id)
+      expect((await admin.post(`/api/stimulus-groups/${copyA.id}/members/${a0}/move`, { toGroupId: copyB.id })).status).toBe(200)
+      await stage(copyA.id, [a1, b0]) // b0 comes from group B, which swaps in the same moment and takes a0 from group A
+      await stage(copyB.id, [a0]) // and b0 is no longer staged in B
+      const [r1, r2] = await Promise.all([publish(copyA.id), publish(copyB.id)])
+      expect([r1.status, r2.status], JSON.stringify([r1.body, r2.body])).toEqual([200, 200])
+      expect(await members(a.id)).toEqual([a1, b0])
+      expect(await members(b.id)).toEqual([a0])
     })
   })
 
