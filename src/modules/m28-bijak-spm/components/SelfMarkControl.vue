@@ -9,6 +9,8 @@
  */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
+import { DsText } from '@/ds'
+
 import {
   bandMidpoint,
   bandOfMark,
@@ -231,7 +233,6 @@ const labelId = computed(() => `selfmark-label-${props.part.partId}`)
         :max="hi"
         step="1"
         class="w-20"
-        :ui="{ base: 'tabular text-center' }"
         aria-label="Markah (nombor)"
         data-testid="selfmark-input"
         @input="typing"
@@ -264,12 +265,6 @@ const labelId = computed(() => `selfmark-label-${props.part.partId}`)
       data-testid="selfmark-error"
     />
 
-    <p
-      v-if="saveState"
-      class="text-caption text-muted"
-      data-testid="selfmark-save-state"
-    >
-      {{ saveState }}
-    </p>
+    <DsText v-if="saveState" variant="caption" data-testid="selfmark-save-state">{{ saveState }}</DsText>
   </div>
 </template>
