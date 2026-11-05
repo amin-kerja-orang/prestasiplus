@@ -14,7 +14,6 @@ import m01, { notifications, users } from '@/modules/m01-authentication/mock'
 import { TICKET_MESSAGES as MSG } from '../../api/types'
 import m22 from '../../mock'
 import { m22Hooks } from '../../mock/hooks'
-import { NEW_TICKET_NOTIFICATION } from '../../mock/handlers/tickets'
 
 const ADMIN = 1
 const PELAJAR = 2
@@ -94,7 +93,7 @@ describe('seed (DL-M22-11)', () => {
     expect(a.body.data?.map((t) => [t.id, t.subject, t.status, t.statusLabel])).toEqual([
       [1, 'Tidak dapat log masuk ke akaun', 'dibuka', 'Dibuka'],
     ])
-    expect(a.body.meta).toEqual({ total: 1 })
+    expect(a.body.meta).toMatchObject({ total: 1 })
     const b = await call<TicketDto[]>('GET', '/api/tiket', PELAJAR3)
     expect(b.body.data?.map((t) => t.id)).toEqual([2])
     expect(
@@ -112,7 +111,7 @@ describe('#1 GET /api/tiket (AC-M22-02, 03, 06)', () => {
     expect(r.body.data?.map((t) => t.id)).toEqual([1])
     const none = await call<TicketDto[]>('GET', '/api/tiket', PELAJAR)
     expect(none.body.data).toEqual([])
-    expect(none.body.meta).toEqual({ total: 0 })
+    expect(none.body.meta).toMatchObject({ total: 0 })
   })
 
   it('a known status filters (count stays), an unknown one means no filter', async () => {
@@ -121,7 +120,7 @@ describe('#1 GET /api/tiket (AC-M22-02, 03, 06)', () => {
     expect(all.body.data?.map((t) => t.id)).toEqual([8, 7, 6, 5, 4, 3])
     const done = await call<TicketDto[]>('GET', '/api/tiket?status=selesai', PELAJAR)
     expect(done.body.data?.map((t) => t.id)).toEqual([6])
-    expect(done.body.meta).toEqual({ total: 6 })
+    expect(done.body.meta).toMatchObject({ total: 6 })
     expect(done.body.data?.[0]?.adminReply).toBe(
       'Terima kasih. Isu anda telah dibetulkan.\nSila cuba semula.',
     )
@@ -268,26 +267,23 @@ describe('#3 and #4 admin queue (AC-M22-07, 08, 09)', () => {
 })
 
 describe('new_ticket notification (AC-M22-10)', () => {
-  it('one unread item per active admin; nobody else; a refused create notifies nobody', async () => {
-    const before = (id: number) => notifications.unreadCount(id)
-    const admin0 = before(ADMIN)
-    const inactive = m22Hooks.addAdminUser({ isActive: false }) as { id: number }
-    const second = m22Hooks.addAdminUser({ isActive: true }) as { id: number }
-    const base = { guru: before(GURU), sa: before(SCHOOL_ADMIN), me: before(PELAJAR) }
-    await call('POST', '/api/tiket', PELAJAR, { subject: '', body: '' })
-    expect(before(ADMIN)).toBe(admin0)
+  it('a create writes no notice for anybody (FR-X2-5, ruling on #508)', async () => {
+    const before = notifications.unreadCount(ADMIN)
     await call('POST', '/api/tiket', PELAJAR, { subject: 'Ujian', body: 'Isi' })
-    expect(before(ADMIN)).toBe(admin0 + 1)
-    expect(before(second.id)).toBe(1)
-    expect(before(inactive.id)).toBe(0)
-    expect(before(GURU)).toBe(base.guru)
-    expect(before(SCHOOL_ADMIN)).toBe(base.sa)
-    expect(before(PELAJAR)).toBe(base.me)
-    expect(NEW_TICKET_NOTIFICATION).toMatchObject({
-      type: 'new_ticket',
-      title: 'Tiket baru',
-      category: null,
-    })
+    expect(notifications.unreadCount(ADMIN)).toBe(before)
+  })
+
+  it('meta.counts has all five statuses over all own tickets, whatever the filter', async () => {
+    await call('POST', '/api/tiket', PELAJAR, { subject: 'Ujian', body: 'Isi' })
+    const all = await call<TicketDto[]>('GET', '/api/tiket', PELAJAR)
+    expect(all.body.meta?.counts).toEqual([
+      { status: 'dibuka', count: 1 },
+      { status: 'dalam_proses', count: 0 },
+      { status: 'menunggu_balas', count: 0 },
+      { status: 'selesai', count: 0 },
+      { status: 'ditutup', count: 0 },
+    ])
+    expect((await call('GET', '/api/tiket?status=ditutup', PELAJAR)).body.meta?.counts).toEqual(all.body.meta?.counts)
   })
 })
 

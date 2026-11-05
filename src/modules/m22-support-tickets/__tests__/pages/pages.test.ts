@@ -18,10 +18,16 @@ const api = vi.hoisted(() => ({
   fetchTickets: vi.fn(),
   createTicket: vi.fn(),
   fetchQueue: vi.fn(),
+  fetchSupportContact: vi.fn(),
   fetchTicketDetail: vi.fn(),
   setTicketStatus: vi.fn(),
 }))
 vi.mock('../../api/tickets', () => api)
+const session = vi.hoisted(() => ({ role: 'student' }))
+vi.mock('@/composables/useSession', async () => {
+  const { computed } = await import('vue')
+  return { useSession: () => ({ role: computed(() => session.role), isLoggedIn: computed(() => true) }) }
+})
 
 const ticket = (over: Partial<Ticket> = {}): Ticket => ({
   id: 1,
@@ -33,7 +39,19 @@ const ticket = (over: Partial<Ticket> = {}): Ticket => ({
   createdAt: '2026-09-24T10:12:00+08:00',
   ...over,
 })
-const list = (data: Ticket[], total = data.length): TicketList => ({ data, meta: { total } })
+const list = (data: Ticket[], total = data.length): TicketList => ({
+  data,
+  meta: {
+    total,
+    counts: [
+      { status: 'dibuka', count: total },
+      { status: 'dalam_proses', count: 0 },
+      { status: 'menunggu_balas', count: 0 },
+      { status: 'selesai', count: 0 },
+      { status: 'ditutup', count: 0 },
+    ],
+  },
+})
 
 async function open(path: string, comp: object): Promise<{ w: VueWrapper; router: Router }> {
   const router = createRouter({
@@ -60,6 +78,7 @@ beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(new Date('2026-09-25T15:40:00+08:00'))
   for (const f of Object.values(api)) f.mockReset()
+  session.role = 'student'
 })
 
 describe('routes (FR-M22-01, 28, 36, 27)', () => {
@@ -99,12 +118,12 @@ describe('S1 list (AC-M22-01, 02, 03, 05)', () => {
     expect(tid(w, 'tk-total').text()).toBe('Jumlah tiket: 2')
     const tabs = w.findAll('[data-testid="tk-tabs"] a')
     expect(tabs.map((a) => a.text())).toEqual([
-      'Semua',
-      'Dibuka',
-      'Dalam Proses',
-      'Menunggu Balas',
-      'Selesai',
-      'Ditutup',
+      'Semua (2)',
+      'Dibuka (2)',
+      'Dalam Proses (0)',
+      'Menunggu Balas (0)',
+      'Selesai (0)',
+      'Ditutup (0)',
     ])
     expect(tabs.map((a) => a.attributes('href'))).toEqual([
       '/pusat-tuisyen/tiket',
@@ -447,4 +466,50 @@ describe('S2 admin queue (AC-M22-07, 08, 09)', () => {
     expect(tid(w, 'tq-error').text()).toContain('Ralat pelayan.')
     expect(w.findAll('button').some((b) => b.text() === 'Cuba Semula')).toBe(true)
   })
+})
+
+describe('S1 chips and contact block (S7-T10, rulings on #508)', () => {
+  it('chips show "{label} ({n})" from meta.counts for every status', async () => {
+    api.fetchTickets.mockResolvedValue(list([ticket()], 1))
+    const { w } = await open('/pusat-tuisyen/tiket', TicketsPage)
+    expect(w.findAll('[data-testid="tk-tabs"] a').map((a) => a.text())).toEqual([
+      'Semua (1)',
+      'Dibuka (1)',
+      'Dalam Proses (0)',
+      'Menunggu Balas (0)',
+      'Selesai (0)',
+      'Ditutup (0)',
+    ])
+  })
+
+  it('a pupil gets no contact block and makes no contact request', async () => {
+    session.role = 'student'
+    api.fetchTickets.mockResolvedValue(list([], 0))
+    const { w } = await open('/pusat-tuisyen/tiket', TicketsPage)
+    expect(tid(w, 'tk-contact').exists()).toBe(false)
+    expect(api.fetchSupportContact).not.toHaveBeenCalled()
+  })
+
+  it.each(['teacher', 'school_admin'])('%s sees the block with the links that have a value', async (role) => {
+    session.role = role
+    api.fetchTickets.mockResolvedValue(list([], 0))
+    api.fetchSupportContact.mockResolvedValue({ email: 'sokongan@demo.test', whatsappNumber: '' })
+    const { w } = await open('/pusat-tuisyen/tiket', TicketsPage)
+    expect(tid(w, 'tk-contact').text()).toContain('Hubungi pasukan sokongan kami')
+    expect(tid(w, 'tk-contact-email').attributes('href')).toBe('mailto:sokongan@demo.test')
+    expect(tid(w, 'tk-contact-whatsapp').exists()).toBe(false)
+  })
+
+  it('all values empty or a failed call hides the block, with no error', async () => {
+    session.role = 'teacher'
+    api.fetchTickets.mockResolvedValue(list([], 0))
+    api.fetchSupportContact.mockResolvedValue({ email: '', whatsappNumber: '' })
+    const a = await open('/pusat-tuisyen/tiket', TicketsPage)
+    expect(tid(a.w, 'tk-contact').exists()).toBe(false)
+    api.fetchSupportContact.mockRejectedValue(new ApiError({ status: 404, code: 'NOT_FOUND', message: 'x' }))
+    const b = await open('/pusat-tuisyen/tiket', TicketsPage)
+    expect(tid(b.w, 'tk-contact').exists()).toBe(false)
+    expect(tid(b.w, 'tk-error').exists()).toBe(false)
+  })
+
 })

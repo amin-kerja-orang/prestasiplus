@@ -63,7 +63,7 @@ export function registerSupportPaths(registry: OpenAPIRegistry): void {
     tags: ['support'],
     summary: 'Own support tickets',
     description:
-      'Any signed-in user. Only the caller tickets are returned (a userId query value is ignored), newest id first, not paginated. `meta.total` counts all of the caller tickets whatever the status filter.',
+      'Any signed-in user. Only the caller tickets are returned (a userId query value is ignored), newest id first, not paginated. `meta.total` and `meta.counts` count all of the caller tickets whatever the status filter.',
     request: { query: SupportTicketListQuerySchema },
     responses: { 200: json(SupportTicketListResponseSchema, 'Tickets with meta.total.'), 401: unauthorized },
   })
@@ -74,7 +74,7 @@ export function registerSupportPaths(registry: OpenAPIRegistry): void {
     tags: ['support'],
     summary: 'Create a support ticket',
     description:
-      'Any signed-in user; the owner is the session user. The ticket starts `dibuka` with adminReply null. Every active admin is notified (type new_ticket, title "Tiket baru", body "Tiket sokongan baharu telah diterima.") through NotificationsService; a notification failure never undoes the ticket. The page flash "Tiket dihantar. Pasukan sokongan akan membalas secepat mungkin." is client-side text.',
+      'Any signed-in user; the owner is the session user. The ticket starts `dibuka` with adminReply null. The page flash "Tiket dihantar. Pasukan sokongan akan membalas secepat mungkin." is client-side text.',
     request: {
       headers: [csrf],
       body: { required: true, content: { 'application/json': { schema: SupportTicketCreateRequestSchema } } },

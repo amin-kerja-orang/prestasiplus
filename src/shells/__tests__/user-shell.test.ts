@@ -155,7 +155,7 @@ describe('UserShell: menu per role (hidden, not disabled)', () => {
     const side = sidebar(w)
     expect(side.get('[data-nav-id="ke-admin-panel"]').attributes('href')).toBe('/admin')
     expect(side.get('[data-nav-id="gambar-rajah"]').text()).toContain('6,144')
-    expect(side.get('[data-nav-id="urus-tiket"]').text()).toContain('2')
+    expect(side.find('[data-nav-id="urus-tiket"]').exists()).toBe(false)
   })
 
   it('teacher: teacher block and Command Center card, no student menu', async () => {

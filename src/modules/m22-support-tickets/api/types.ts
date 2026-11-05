@@ -51,6 +51,12 @@ export const ADMIN_TICKET_FLASH = {
   statusSaved: 'Status dikemas kini.',
 } as const
 
+/** `GET /api/config/support`; a value may be empty. */
+export interface SupportContact {
+  email: string
+  whatsappNumber: string
+}
+
 /** `Ticket` of §7. */
 export interface Ticket {
   id: number
@@ -64,7 +70,7 @@ export interface Ticket {
 
 export interface TicketList {
   data: Ticket[]
-  meta: { total: number }
+  meta: { total: number; counts: { status: TicketStatus; count: number }[] }
 }
 
 /** `QueueRow` of §7 (no body, no e-mail, no user id). */

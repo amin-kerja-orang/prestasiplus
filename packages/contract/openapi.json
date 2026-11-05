@@ -4282,10 +4282,31 @@
           "total": {
             "type": "integer",
             "minimum": 0
+          },
+          "counts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "$ref": "#/components/schemas/SupportTicketStatus"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "status",
+                "count"
+              ],
+              "additionalProperties": false
+            }
           }
         },
         "required": [
-          "total"
+          "total",
+          "counts"
         ],
         "additionalProperties": false
       },
@@ -78209,7 +78230,7 @@
           "support"
         ],
         "summary": "Own support tickets",
-        "description": "Any signed-in user. Only the caller tickets are returned (a userId query value is ignored), newest id first, not paginated. `meta.total` counts all of the caller tickets whatever the status filter.",
+        "description": "Any signed-in user. Only the caller tickets are returned (a userId query value is ignored), newest id first, not paginated. `meta.total` and `meta.counts` count all of the caller tickets whatever the status filter.",
         "parameters": [
           {
             "schema": {
@@ -78250,7 +78271,7 @@
           "support"
         ],
         "summary": "Create a support ticket",
-        "description": "Any signed-in user; the owner is the session user. The ticket starts `dibuka` with adminReply null. Every active admin is notified (type new_ticket, title \"Tiket baru\", body \"Tiket sokongan baharu telah diterima.\") through NotificationsService; a notification failure never undoes the ticket. The page flash \"Tiket dihantar. Pasukan sokongan akan membalas secepat mungkin.\" is client-side text.",
+        "description": "Any signed-in user; the owner is the session user. The ticket starts `dibuka` with adminReply null. The page flash \"Tiket dihantar. Pasukan sokongan akan membalas secepat mungkin.\" is client-side text.",
         "parameters": [
           {
             "schema": {

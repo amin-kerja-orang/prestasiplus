@@ -8,15 +8,16 @@
  *
  * States: loading skeleton; load failure shows the server message with a retry button (FR-M22-46). No aria-* attribute (CHK-M22-02, D10): the controls carry their own semantics.
  */
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { useApi } from '@/composables'
-import { DsDialog, DsEmptyState } from '@/ds'
+import { useSession } from '@/composables/useSession'
+import { DsCallout, DsDialog, DsEmptyState } from '@/ds'
 import { diffForHumans } from '@/lib/time'
 
-import { createTicket, fetchTickets } from '../api/tickets'
+import { createTicket, fetchSupportContact, fetchTickets } from '../api/tickets'
 import {
   BODY_MAX,
   SUBJECT_MAX,
@@ -24,6 +25,7 @@ import {
   TICKET_STATUSES,
   TICKET_STATUS_LABELS,
   isTicketStatus,
+  type SupportContact,
   type TicketStatus,
 } from '../api/types'
 
@@ -57,14 +59,32 @@ const BADGE: Record<TicketStatus, { color: BadgeColor; icon: string }> = {
   ditutup: { color: 'neutral', icon: 'i-ph-lock-simple' },
 }
 
-const tabs = [
-  { key: null, label: 'Semua', to: PATH },
-  ...TICKET_STATUSES.map((s) => ({
-    key: s,
-    label: TICKET_STATUS_LABELS[s],
-    to: `${PATH}?status=${s}`,
-  })),
-]
+/** Chips "{label} ({n})" for every role (ruling on #508); the counts cover all own tickets. */
+const tabs = computed(() => {
+  const countOf = (s: TicketStatus) =>
+    data.value?.meta.counts.find((c) => c.status === s)?.count ?? 0
+  return [
+    { key: null, label: `Semua (${String(total.value)})`, to: PATH },
+    ...TICKET_STATUSES.map((s) => ({
+      key: s,
+      label: `${TICKET_STATUS_LABELS[s]} (${String(countOf(s))})`,
+      to: `${PATH}?status=${s}`,
+    })),
+  ]
+})
+
+// --- contact block: Guru and Admin Sekolah only (FR-GUR-A4-3, FR-AS-A4-2, ruling on #508) -----
+const { role } = useSession()
+const showsContact = computed(() => role.value === 'teacher' || role.value === 'school_admin')
+const contact = ref<SupportContact | null>(null)
+watchEffect(() => {
+  if (!showsContact.value) return
+  // Any failure hides the block: it is help text, never an error on this page.
+  fetchSupportContact().then(
+    (found) => (contact.value = found),
+    () => (contact.value = null),
+  )
+})
 
 // --- create form -----------------------------------------------------------------------------
 const formOpen = ref(false)
@@ -124,6 +144,32 @@ watch(
       :title="TICKET_CREATED_FLASH"
       data-testid="tk-flash"
     />
+
+    <DsCallout
+      v-if="showsContact && (contact?.email || contact?.whatsappNumber)"
+      tone="info"
+      title="Hubungi pasukan sokongan kami untuk sebarang pertanyaan."
+      data-testid="tk-contact"
+    >
+      <template #actions>
+        <UButton
+          v-if="contact?.email"
+          :to="`mailto:${contact.email}`"
+          data-testid="tk-contact-email"
+          >E-mel Kami</UButton
+        >
+        <UButton
+          v-if="contact?.whatsappNumber"
+          :to="`https://wa.me/${contact.whatsappNumber}`"
+          target="_blank"
+          rel="noopener noreferrer"
+          color="neutral"
+          variant="soft"
+          data-testid="tk-contact-whatsapp"
+          >WhatsApp</UButton
+        >
+      </template>
+    </DsCallout>
 
     <div class="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
       <p class="text-body text-muted" data-testid="tk-total">

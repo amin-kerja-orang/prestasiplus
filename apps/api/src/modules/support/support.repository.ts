@@ -3,7 +3,6 @@ import { SUPPORT_QUEUE_PER_PAGE, SUPPORT_TICKET_STATUSES, type SupportTicketStat
 
 import { idFromString, idToString, isIdString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
-import { UsersRepository } from '../users'
 import { SUPPORT_CONFIG_ID } from './support.constants'
 
 export interface TicketRow {
@@ -55,15 +54,7 @@ export const isTicketStatus = (value: unknown): value is SupportTicketStatus =>
  */
 @Injectable()
 export class SupportRepository {
-  constructor(
-    @Inject(PrismaService) private readonly prisma: PrismaService,
-    @Inject(UsersRepository) private readonly users: UsersRepository,
-  ) {}
-
-  /** Ids of the active admins (the new-ticket notice recipients), through the users doorway. */
-  activeAdminIds(): Promise<string[]> {
-    return this.users.activeAdminIds()
-  }
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async create(input: { userId: string; subject: string; body: string; isTest: boolean; now: Date }): Promise<TicketRow> {
     const row = await this.prisma.client.supportTicket.create({
@@ -80,18 +71,20 @@ export class SupportRepository {
     return toTicket(row)
   }
 
-  /** The caller's tickets, newest id first; `total` counts all of them whatever the status filter. */
-  async listOfUser(userId: string, status: SupportTicketStatus | null): Promise<{ rows: TicketRow[]; total: number }> {
-    if (!isIdString(userId)) return { rows: [], total: 0 }
+  /** The caller's tickets, newest id first; `total` and `counts` (all five statuses) cover all of them whatever the status filter. */
+  async listOfUser(userId: string, status: SupportTicketStatus | null): Promise<{ rows: TicketRow[]; total: number; counts: { status: SupportTicketStatus; count: number }[] }> {
+    if (!isIdString(userId)) return { rows: [], total: 0, counts: SUPPORT_TICKET_STATUSES.map((s) => ({ status: s, count: 0 })) }
     const owner = idFromString(userId)
-    const [rows, total] = await Promise.all([
+    const [rows, grouped] = await Promise.all([
       this.prisma.client.supportTicket.findMany({
         where: { userId: owner, ...(status ? { status } : {}) },
         orderBy: { id: 'desc' },
       }),
-      this.prisma.client.supportTicket.count({ where: { userId: owner } }),
+      this.prisma.client.supportTicket.groupBy({ by: ['status'], where: { userId: owner }, _count: { _all: true } }),
     ])
-    return { rows: rows.map(toTicket), total }
+    const byStatus = new Map(grouped.map((g) => [g.status, g._count._all]))
+    const counts = SUPPORT_TICKET_STATUSES.map((s) => ({ status: s, count: byStatus.get(s) ?? 0 }))
+    return { rows: rows.map(toTicket), total: counts.reduce((n, c) => n + c.count, 0), counts }
   }
 
   /**

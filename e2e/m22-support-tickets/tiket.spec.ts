@@ -5,9 +5,8 @@
  *
  * Not run here as E2E: E2E-M22-15, 16, 36 are "request only" (the mock transport lives in the app, so the raw
  * API is not reachable from the test): covered by `src/modules/m22-support-tickets/__tests__/mock/tickets.test.ts`.
- * E2E-M22-38, 39, 40 (`@provisional`): the notification counts are not readable from the UI as a delta (the
- * seeded admin inbox is large and the bell caps at 99+); covered by the same handler test. Declared below as
- * skipped tests with that reason.
+ * E2E-M22-38, 39, 40 (`@provisional`): no notice is written (FR-X2-5, ruling on #508); the same handler test
+ * proves it. Declared below as skipped tests with that reason.
  */
 
 import type { Locator, Page } from '@playwright/test'
@@ -563,15 +562,13 @@ test.describe('S2 queue', MODULE, () => {
     })
 
     test(
-      'E2E-M22-41 (provisional part) badge "5" under tickets-extra',
-      provisional('the value follows the INFERRED badge definition (SRS E2E-M22-41)', MODULE.tag),
+      'E2E-M22-41 (provisional part) no count under tickets-extra',
+      provisional('no ticket count anywhere (ruling on #508)', MODULE.tag),
       async ({ page, loginAs, gotoApp }) => {
         test.skip(viewportWidth(page) < 1280, 'sidebar at 1280 only')
         await loginAs(ADMIN)
-        await gotoApp('/dashboard')
-        await expect(
-          page.getByTestId('shell-user-sidebar').locator('[data-nav-id="urus-tiket"]'),
-        ).toContainText('5')
+        await gotoApp(QUEUE)
+        await expect(page.locator('a[href="/admin/tiket"]', { hasText: 'Tiket Bantuan' }).filter({ visible: true })).toHaveText('Tiket Bantuan')
       },
     )
   })
@@ -671,35 +668,26 @@ test.describe('access and badge', MODULE, () => {
     },
   )
 
-  test('E2E-M22-37 "Urus Tiket" shows for the admin only', async ({ page, gotoApp, mock }) => {
+  test('E2E-M22-37 "Tiket Bantuan" to the queue shows for the admin only', async ({ page, gotoApp, mock }) => {
     test.skip(viewportWidth(page) < 1280, 'E2E-M22-37 runs at 1280 only')
     await signIn(gotoApp, mock, ADMIN)
-    await gotoApp('/dashboard')
-    const item = page.getByTestId('shell-user-sidebar').locator('[data-nav-id="urus-tiket"]')
-    await expect(item).toBeVisible()
+    await gotoApp(QUEUE)
+    await expect(page.locator('a[href="/admin/tiket"]', { hasText: 'Tiket Bantuan' }).filter({ visible: true })).toHaveText('Tiket Bantuan')
     await mock.setUser(SCHOOL_ADMIN)
     await gotoApp(PATH)
-    await expect(
-      page.getByTestId('shell-user-sidebar').locator('[data-nav-id="urus-tiket"]'),
-    ).toHaveCount(0)
+    await expect(page.locator('a[href="/admin/tiket"]')).toHaveCount(0)
   })
 
-  test('E2E-M22-41 the admin badge shows the open count "2"', async ({
-    page,
-    loginAs,
-    gotoApp,
-  }) => {
+  test('E2E-M22-41 the admin menu links to the queue, with no count', async ({ page, loginAs, gotoApp }) => {
+    test.skip(viewportWidth(page) < 1280, 'the sidebar shows at 1280')
     await loginAs(ADMIN)
-    await gotoApp('/dashboard')
-    const surface = viewportWidth(page) >= 1024 ? 'shell-user-sidebar' : 'shell-user-drawer'
-    if (surface === 'shell-user-drawer') await page.getByTestId('shell-user-hamburger').click()
-    const item = page.getByTestId(surface).locator('[data-nav-id="urus-tiket"]')
-    await expect(item).toContainText('2')
+    await gotoApp(QUEUE)
+    await expect(page.locator('a[href="/admin/tiket"]', { hasText: 'Tiket Bantuan' }).filter({ visible: true })).toHaveText('Tiket Bantuan')
   })
 
   test(
-    'E2E-M22-41 (provisional part) badge "3" after a pupil creates a ticket',
-    provisional('the badge definition is INFERRED (SRS E2E-M22-41)', MODULE.tag),
+    'E2E-M22-41 (provisional part) a new ticket reaches the queue, with no count in the menu',
+    provisional('no ticket count anywhere (ruling on #508)', MODULE.tag),
     async ({ page, gotoApp, mock }) => {
       test.skip(viewportWidth(page) < 1280, 'sidebar at 1280 only')
       await signIn(gotoApp, mock, PELAJAR)
@@ -710,32 +698,30 @@ test.describe('access and badge', MODULE, () => {
       await page.getByTestId('tk-submit').click()
       await expect(page.getByTestId('tk-flash')).toBeVisible()
       await mock.setUser(ADMIN)
-      await gotoApp('/dashboard')
-      await expect(
-        page.getByTestId('shell-user-sidebar').locator('[data-nav-id="urus-tiket"]'),
-      ).toContainText('3')
+      await gotoApp(QUEUE)
+      await expect(page.getByTestId('tq-table')).toContainText('Satu lagi')
+      await expect(page.locator('a[href="/admin/tiket"]', { hasText: 'Tiket Bantuan' }).filter({ visible: true })).toHaveText('Tiket Bantuan')
     },
   )
 
   test(
-    'E2E-M22-42 the badge is not rendered at 0',
-    provisional('hiding at 0 is PROPOSED (SRS E2E-M22-42)', MODULE.tag),
+    'E2E-M22-42 the menu item stays with no count when the queue is empty',
+    provisional('no ticket count anywhere (ruling on #508)', MODULE.tag),
     async ({ page, loginAs, gotoApp, mock }) => {
       test.skip(viewportWidth(page) < 1280, 'E2E-M22-42 runs at 1280 only')
       await loginAs(ADMIN)
       await gotoApp(QUEUE)
       await mock.hook('clearTickets')
-      await gotoApp('/dashboard')
-      const item = page.getByTestId('shell-user-sidebar').locator('[data-nav-id="urus-tiket"]')
-      await expect(item).toBeVisible()
-      await expect(item).not.toContainText(/\d/)
+      await gotoApp(QUEUE)
+      await expect(page.getByTestId('tq-empty')).toBeVisible()
+      await expect(page.locator('a[href="/admin/tiket"]', { hasText: 'Tiket Bantuan' }).filter({ visible: true })).toHaveText('Tiket Bantuan')
     },
   )
 
   for (const id of [38, 39, 40]) {
     test(
       `E2E-M22-${String(id)} notification to the admins`,
-      provisional('covered by the handler test (SRS E2E-M22-38…40 are provisional)', MODULE.tag),
+      provisional('no notice is written (FR-X2-5, ruling on #508); the handler test proves it', MODULE.tag),
       () => {
         test.skip(true, 'covered by src/modules/m22-support-tickets/__tests__/mock/tickets.test.ts')
       },

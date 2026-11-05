@@ -2,8 +2,7 @@
  * SRS M22 v1.1 §7 #1-#4, API-SUP-05. Guard AU = any signed-in user (the user is forced from the session,
  * `userId` in query or body is ignored, FR-M22-25); guard AD = role `admin` (DV-M22-07).
  *
- * A create also notifies every active `admin` through M01 `pushNotification` (BR-M22-12, XR-M22-01): the
- * hook is reached through the M01 plugin (`hooks`), the only public path; a failure never undoes the ticket.
+ * A create writes no notice (FR-X2-5, ruling on #508).
  */
 
 import {
@@ -20,7 +19,7 @@ import {
   type MockResponse,
   type RouteDef,
 } from '@/mock/define'
-import m01, { users } from '@/modules/m01-authentication/mock'
+import { users } from '@/modules/m01-authentication/mock'
 
 import {
   ADMIN_TICKET_MESSAGES,
@@ -39,43 +38,6 @@ import type { TicketRow } from '../tables/tables'
 const signedIn = requireAuth()
 const adminOnly = requireRole('admin')
 
-/** BR-M22-12 notification content. */
-export const NEW_TICKET_NOTIFICATION = {
-  type: 'new_ticket',
-  category: null,
-  title: 'Tiket baru',
-  body: 'Tiket sokongan baharu telah diterima.',
-} as const
-
-type PushFn = (
-  userId: number,
-  n: { type: string; category: null; title: string; body: string },
-  o?: { push?: boolean },
-) => unknown
-
-/** Every active platform admin (XR-M22-01 fallback: `adminList`). */
-function activeAdminIds(): number[] {
-  const ids: number[] = []
-  const pageSize = 500
-  for (let page = 1; ; page += 1) {
-    const { rows, total } = users.adminList({ role: 'admin', isActive: true, page, pageSize })
-    ids.push(...rows.map((r) => r.id))
-    if (page * pageSize >= total || rows.length === 0) break
-  }
-  return ids
-}
-
-function notifyAdmins(): void {
-  const push = m01.hooks.pushNotification as unknown as PushFn
-  for (const id of activeAdminIds()) {
-    try {
-      push(id, { ...NEW_TICKET_NOTIFICATION }, { push: true })
-    } catch {
-      // BR-M22-12: failure to notify does not undo the ticket.
-    }
-  }
-}
-
 export const toTicket = (r: TicketRow): Ticket => ({
   id: r.id,
   subject: r.subject,
@@ -89,11 +51,11 @@ export const toTicket = (r: TicketRow): Ticket => ({
 // #1
 function listOwn(req: MockRequest): MockResponse {
   const status = queryString(req.query, 'status')
-  const { rows, total } = supportTicketsRepo.forUser(
+  const { rows, total, counts } = supportTicketsRepo.forUser(
     req.session?.userId ?? -1,
     isTicketStatus(status) ? status : null,
   )
-  return ok(rows.map(toTicket), { meta: { total } })
+  return ok(rows.map(toTicket), { meta: { total, counts } })
 }
 
 // #2
@@ -111,7 +73,6 @@ function create(req: MockRequest): MockResponse {
   if (Object.keys(fields).length > 0) return validationError(fields)
 
   const row = supportTicketsRepo.create(req.session?.userId ?? -1, subject, text)
-  notifyAdmins()
   return created(toTicket(row))
 }
 

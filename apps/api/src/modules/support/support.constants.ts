@@ -19,9 +19,6 @@ export const SUPPORT_LIMITS = {
 
 export const WRITE_TX = { maxWait: 10_000, timeout: 15_000 } as const
 
-/** Notices go out in batches of this size, so a long admin list never opens many connections at once. */
-export const NOTIFY_BATCH = 10
-
 /** The singleton row of `support_config`. */
 export const SUPPORT_CONFIG_ID = 1n
 

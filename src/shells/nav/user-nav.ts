@@ -187,8 +187,6 @@ const B_GOLD =
   'ml-auto px-1.5 py-0.5 bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-700 text-[10px] font-bold rounded-full'
 const B_COUNT_AMBER =
   'ml-auto px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-full'
-const B_COUNT_RED =
-  'ml-auto px-1.5 py-0.5 bg-red-100 text-red-700 text-[10px] font-bold rounded-full'
 
 /*
  * Student-only badges seen in the murid screenshots. The text is OBSERVED; the class strings are
@@ -582,7 +580,6 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'item', id: 'tiket-bantuan', label: 'Tiket Bantuan', to: '/pusat-tuisyen/tiket', fa: 'fa-life-ring', color: 'text-emerald-500' },
   // Observed "6,144" is the default text; the shell replaces it with the live M04 count (nav-badges.ts).
   { kind: 'item', id: 'gambar-rajah', label: 'Gambar Rajah', to: '/admin/soalan-gambar', fa: 'fa-images', color: 'text-amber-500', badge: { text: '6,144', cls: B_COUNT_AMBER }, surfaces: ['sidebar'], roles: ['admin', 'teacher', 'school_admin'] },
-  { kind: 'item', id: 'urus-tiket', label: 'Urus Tiket', to: '/admin/tiket', fa: 'fa-headset', color: 'text-red-400', badge: { text: '2', cls: B_COUNT_RED }, roles: A },
 ]
 
 /**

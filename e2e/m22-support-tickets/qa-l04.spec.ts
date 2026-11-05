@@ -207,7 +207,7 @@ test.describe('L04 access and badge', MODULE, () => {
     })
   }
 
-  test('AC-11.1/11.2/11.3 admin: one open-count request answered 200, live badge, hidden at 0 for Urus Tiket only', async ({
+  test('AC-11.1 admin: the menu links to the queue, no count and no open-count request', async ({
     page,
     loginAs,
     gotoApp,
@@ -216,20 +216,9 @@ test.describe('L04 access and badge', MODULE, () => {
     test.skip(viewportWidth(page) < 1280, 'sidebar at 1280 only')
     const errors = watchErrors(page)
     await loginAs(ADMIN)
-    await gotoApp('/dashboard')
-    const item = page.getByTestId('shell-user-sidebar').locator('[data-nav-id="urus-tiket"]')
-    await expect(item).toContainText('2')
-    const reqs = await mock.requests('/api/admin/tiket/open-count')
-    expect(reqs.length).toBeGreaterThanOrEqual(1)
-    expect(reqs.every((r) => r.status === 200)).toBe(true)
-    // live: an in-memory change shows after the next page load
-    await mock.hook('m22LoadProfile', 'tickets-extra')
-    await gotoApp('/dashboard')
-    await expect(item).toContainText('5')
-    await mock.hook('clearTickets')
-    await gotoApp('/dashboard')
-    await expect(item).toBeVisible()
-    await expect(item).not.toContainText(/\d/)
+    await gotoApp(QUEUE)
+    await expect(page.locator('a[href="/admin/tiket"]', { hasText: 'Tiket Bantuan' }).filter({ visible: true })).toHaveText('Tiket Bantuan')
+    expect(await mock.requests('/api/admin/tiket/open-count')).toHaveLength(0)
     expect(errors).toEqual([])
   })
 })
@@ -314,6 +303,26 @@ test.describe('R1-ADM-P2-20 detail and status', MODULE, () => {
     await gotoApp(QUEUE)
     await page.getByTestId('tq-chips').getByText('Ditutup (0)').click()
     await expect(page.getByTestId('tq-empty')).toHaveText('Tiada tiket berstatus “Ditutup”.')
+  })
+})
+
+test.describe('S7-T10 chips and contact block', MODULE, () => {
+  for (const who of [GURU, SCHOOL_ADMIN]) {
+    test(`FR-GUR-A4-3, FR-AS-A4-2 ${who} sees the contact block`, async ({ page, loginAs, gotoApp }) => {
+      await loginAs(who)
+      await openS1(page, gotoApp)
+      await expect(page.getByTestId('tk-contact')).toContainText('Hubungi pasukan sokongan kami')
+      await expect(page.getByTestId('tk-contact-email')).toBeVisible()
+      await expectNoHorizontalScroll(page)
+    })
+  }
+
+  test('a pupil gets chips with counts and no contact block', async ({ page, loginAs, gotoApp }) => {
+    await loginAs(PELAJAR)
+    await openS1(page, gotoApp)
+    await expect(page.getByTestId('tk-tabs').getByRole('link').first()).toHaveText('Semua (0)')
+    await expect(page.getByTestId('tk-tabs').getByRole('link', { name: 'Ditutup (0)' })).toBeVisible()
+    await expect(page.getByTestId('tk-contact')).toHaveCount(0)
   })
 })
 

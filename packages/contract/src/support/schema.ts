@@ -53,17 +53,6 @@ export const SUPPORT_ADMIN_FLASH = {
 /** Page flash after a create (FR-M22-06). Client-side text: the create response carries no `status` key. */
 export const SUPPORT_TICKET_CREATED_FLASH = 'Tiket dihantar. Pasukan sokongan akan membalas secepat mungkin.'
 
-/**
- * Notification every active admin receives when a ticket is created (BR-M22-12), sent through
- * `NotificationsService` (BE-06) with the push flag set. A notification failure never undoes the ticket.
- */
-export const SUPPORT_NEW_TICKET_NOTIFICATION = {
-  type: 'new_ticket',
-  category: null,
-  title: 'Tiket baru',
-  body: 'Tiket sokongan baharu telah diterima.',
-} as const
-
 /** A ticket as its owner sees it (`GET /tiket` rows and the `data` of the create). */
 export const SupportTicketSchema = z
   .strictObject({
@@ -84,9 +73,12 @@ export const SupportTicketListQuerySchema = z
   })
   .meta({ id: 'SupportTicketListQuery' })
 
-/** `meta` of `GET /tiket`: NOT the standard ListMeta; `total` counts all of the caller's tickets, whatever the filter. */
+/** `meta` of `GET /tiket`: NOT the standard ListMeta; `total` and `counts` (all five statuses) cover all of the caller's tickets, whatever the filter. */
 export const SupportTicketListMetaSchema = z
-  .strictObject({ total: z.number().int().min(0) })
+  .strictObject({
+    total: z.number().int().min(0),
+    counts: z.array(z.strictObject({ status: SupportTicketStatusSchema, count: z.number().int().min(0) })),
+  })
   .meta({ id: 'SupportTicketListMeta' })
 
 export const SupportTicketListResponseSchema = z

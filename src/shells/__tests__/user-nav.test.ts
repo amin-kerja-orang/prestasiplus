@@ -80,6 +80,8 @@ const REPLACED_LIVE_HREFS: Record<string, string> = {
   '/settings': '/tetapan', // M01 DV-01 (drawer "Tetapan")
   '/guru/laporan-mingguan-kelas': '/laporan-mingguan', // L48: the built screen is M08 S21 (M11-T5 S8 not built)
 }
+/** Live links the rebuild removes from this menu: "Urus Tiket" (ruling on #508; Admin Pusat uses the Pentadbiran menu). */
+const REMOVED_LIVE_HREFS = new Set(['/admin/tiket'])
 /** Rebuild hrefs that differ from live on purpose. */
 const CHANGED_HREFS = new Set([
   '/admin/hadiah/tebusan', // M15 DV-M15-04 ("Admin Tebusan", live /admin/hadiah)
@@ -126,6 +128,7 @@ describe('USER_NAV data', () => {
   it('every live sidebar/drawer link is in the menu (by href), except approved DV changes', () => {
     const menuHrefs = new Set(ALL_ITEMS.map((i) => i.to))
     const missing = liveMenuLinks
+      .filter((l) => !REMOVED_LIVE_HREFS.has(l.href))
       .map((l) => REPLACED_LIVE_HREFS[l.href] ?? l.href)
       .filter((href) => !menuHrefs.has(href))
     // The capture has ~130 menu links (sidebar + drawer); guard against an empty read.
@@ -145,6 +148,7 @@ describe('USER_NAV data', () => {
       '/admin/hadiah': 'Admin Tebusan',
     }
     const mismatched = liveMenuLinks.filter((l) => {
+      if (REMOVED_LIVE_HREFS.has(l.href)) return false
       // User decision 2026-10-31 (DV-M12-39): "Tahap N" replaces the live "TN" level labels.
       const liveText = l.text.replace(/^T([1-4]): /, 'Tahap $1: ')
       const href = REPLACED_LIVE_HREFS[l.href] ?? l.href
@@ -219,7 +223,6 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       'Amaran Awal',
       'Kelulusan Hadiah',
       'Pakej',
-      'Urus Tiket',
       'Gambar Rajah',
       'Kehadiran Digital',
       '🛡️ Kawalan Kualiti',
@@ -241,7 +244,7 @@ describe('navFor (role filter: hidden, not disabled)', () => {
 
   it('admin sees every captured entry, including the admin-only ones', () => {
     const menu = labels(navFor('admin', 'sidebar', USER_NAV, FULL))
-    for (const label of ['Ke Admin Panel', 'Portal Guru', 'Amaran Awal', 'Pakej', 'Urus Tiket']) {
+    for (const label of ['Ke Admin Panel', 'Portal Guru', 'Amaran Awal', 'Pakej']) {
       expect(menu).toContain(label)
     }
     expect(menu).not.toContain('Heatmap Topik Lemah')

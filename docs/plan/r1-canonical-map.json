@@ -7712,21 +7712,6 @@
       "approved_by_card": null
     },
     {
-      "key": "user-nav|urus-tiket",
-      "source": "user-nav",
-      "id": "urus-tiket",
-      "label": "Urus Tiket",
-      "route": "/admin/tiket",
-      "roles": [
-        "admin"
-      ],
-      "status": "retire",
-      "sector": "S7",
-      "file": "src/shells/nav/user-nav.ts",
-      "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
-      "approved_by_card": null
-    },
-    {
       "key": "user-nav|drawer-profil-saya",
       "source": "user-nav",
       "id": "drawer-profil-saya",
