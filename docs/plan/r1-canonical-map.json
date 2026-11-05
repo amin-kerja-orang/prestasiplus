@@ -1988,6 +1988,26 @@
       "approved_by_card": null
     },
     {
+      "key": "/guru/soalan-berstruktur|",
+      "path": "/guru/soalan-berstruktur",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m04-question-bank/pages/StructuredListPage.vue",
+      "file": "src/modules/m10-teacher-class/routes/soalan.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
+      "key": "/guru/soalan-berstruktur/:id([0-9]+)|",
+      "path": "/guru/soalan-berstruktur/:id([0-9]+)",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m04-question-bank/pages/StructuredDetailPage.vue",
+      "file": "src/modules/m10-teacher-class/routes/soalan.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
       "key": "/guru/analisis-item|guru-analisis-item",
       "path": "/guru/analisis-item",
       "name": "guru-analisis-item",
@@ -15994,6 +16014,26 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/headcounts/me",
+      "method": "GET",
+      "path": "/api/headcounts/me",
+      "api_id": "API-RPT-08",
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/headcount/headcount.controllers.ts",
+      "approved_by_card": "S10-T02"
+    },
+    {
+      "key": "GET /api/headcounts/me/detail",
+      "method": "GET",
+      "path": "/api/headcounts/me/detail",
+      "api_id": "API-RPT-08",
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/headcount/headcount.controllers.ts",
+      "approved_by_card": "S10-T02"
+    },
+    {
       "key": "GET /api/headcounts/students/:p",
       "method": "GET",
       "path": "/api/headcounts/students/:userId",
@@ -16052,6 +16092,46 @@
       "sector": "S10",
       "file": "apps/api/src/modules/reports/performance/headcount/headcount.controllers.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "PUT /api/headcounts/:p/ar",
+      "method": "PUT",
+      "path": "/api/headcounts/:id/ar",
+      "api_id": "API-RPT-10",
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/headcount/headcount.controllers.ts",
+      "approved_by_card": "S10-T02"
+    },
+    {
+      "key": "PUT /api/headcounts/:p/tov",
+      "method": "PUT",
+      "path": "/api/headcounts/:id/tov",
+      "api_id": "API-RPT-10",
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/headcount/headcount.controllers.ts",
+      "approved_by_card": "S10-T02"
+    },
+    {
+      "key": "PUT /api/headcounts/:p/settings",
+      "method": "PUT",
+      "path": "/api/headcounts/:id/settings",
+      "api_id": "API-RPT-10",
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/headcount/headcount.controllers.ts",
+      "approved_by_card": "S10-T02"
+    },
+    {
+      "key": "PUT /api/headcounts/:p/defaults",
+      "method": "PUT",
+      "path": "/api/headcounts/:id/defaults",
+      "api_id": "API-RPT-16",
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/headcount/headcount.controllers.ts",
+      "approved_by_card": "S10-T02"
     },
     {
       "key": "POST /api/headcounts/:p/drop-students",
@@ -17171,6 +17251,26 @@
       "sector": "S7",
       "file": "apps/api/src/modules/support/support.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/tiket/:p",
+      "method": "GET",
+      "path": "/api/admin/tiket/:id",
+      "api_id": "API-SUP-05",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/support/support.controller.ts",
+      "approved_by_card": "S7-T09"
+    },
+    {
+      "key": "PATCH /api/admin/tiket/:p/status",
+      "method": "PATCH",
+      "path": "/api/admin/tiket/:id/status",
+      "api_id": "API-SUP-05",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/support/support.controller.ts",
+      "approved_by_card": "S7-T09"
     },
     {
       "key": "GET /api/config/support",

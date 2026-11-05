@@ -101,14 +101,14 @@ export class DrillService {
     const classesOf = new Map<string, ClassRow[]>()
     for (const c of classes) classesOf.set(c.ownerId as string, [...(classesOf.get(c.ownerId as string) ?? []), c])
 
-    // Cards: "Jumlah Pelajar" is every student of the school; a teacher sees only the active members of the own classes there.
+    // Cards: "Jumlah Pelajar" is XS-1 (the active pupils of the school, Tingkatan 1-5); a teacher sees only the XS-1 members of the own classes there.
     let students: { id: string; isActive: boolean }[]
     if (scope.role === 'teacher') {
       const own = classes.filter((c) => scope.ownedClassIds.includes(c.id)).map((c) => c.id)
       const members = await this.repo.classMembers(own)
       students = await this.reads.studentsByIds(uniq(members.map((m) => m.studentId)))
     } else {
-      students = await this.repo.studentsOfSchool(schoolId, { includeInactive: true })
+      students = await this.repo.studentsOfSchool(schoolId)
     }
     const pupils = students.filter((u) => u.isActive).map((u) => u.id)
     const tally = await this.repo.answerTallyByUser({ to: now, studentIds: pupils })
@@ -132,7 +132,7 @@ export class DrillService {
     }
     const allMembers = uniq(shown.flatMap((r) => membersOf(r.id)))
     const recent = new Set(
-      (await this.repo.answerTallyByUser({ from: addDays(now, -30), to: now, studentIds: allMembers, includeInactive: true })).map((t) => t.userId),
+      (await this.repo.answerTallyByUser({ from: addDays(now, -30), to: now, studentIds: allMembers })).map((t) => t.userId),
     )
     const subjects = await this.reads.teacherSubjects(shown.map((r) => r.id))
     const teacherRows = shown.map((r) => {
@@ -163,8 +163,8 @@ export class DrillService {
     const classes = (await this.repo.classesOfOwner(teacherId, { activeClassroomsOnly: true })).filter((c) => c.effectiveSchoolId === schoolId)
     const members = await this.repo.classMembers(classes.map((c) => c.id))
     const all = uniq(members.map((m) => m.studentId))
-    const tally = new Map((await this.repo.answerTallyByUser({ to: now, studentIds: all, includeInactive: true })).map((t) => [t.userId, t]))
-    const recent = new Set((await this.repo.answerTallyByUser({ from: addDays(now, -30), to: now, studentIds: all, includeInactive: true })).map((t) => t.userId))
+    const tally = new Map((await this.repo.answerTallyByUser({ to: now, studentIds: all })).map((t) => [t.userId, t]))
+    const recent = new Set((await this.repo.answerTallyByUser({ from: addDays(now, -30), to: now, studentIds: all })).map((t) => t.userId))
     return {
       school,
       teacher: { id: teacher.id, name: teacher.name },
@@ -191,7 +191,7 @@ export class DrillService {
     const ids = uniq((await this.repo.classMembers([cls.id])).map((m) => m.studentId))
     const [names, tallies, moods, school] = await Promise.all([
       this.repo.userNames(ids),
-      this.repo.answerTallyByUser({ to: now, studentIds: ids, includeInactive: true }),
+      this.repo.answerTallyByUser({ to: now, studentIds: ids }),
       this.mood.latest(ids),
       cls.effectiveSchoolId ? this.repo.schoolRef(cls.effectiveSchoolId) : Promise.resolve(null),
     ])
