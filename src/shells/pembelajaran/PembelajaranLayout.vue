@@ -50,6 +50,7 @@ import {
   LOGOUT_ROW_MIN_HEIGHT_CLASS,
   pembelajaranTabs,
   phClass,
+  REWARD_LINK_CLASS,
   routeRoleCheck,
   sectionOf,
   sidebarEntries,
@@ -428,8 +429,19 @@ const chipClass = (chip: unknown, active: boolean): string =>
                 />
                 <template v-if="learner">
                   <div class="hidden items-center gap-2 sm:flex">
-                    <DsRewardChip quiet art="fire" :value="summary.streakDays" label="hari" />
-                    <DsRewardChip quiet art="coin" :value="summary.coins" label="Koin" />
+                    <!-- FR-MUR-SH-11 (S5-T10): pupil pills link to Profil (streak) and Syiling & Token (coin). -->
+                    <RouterLink
+                      to="/profile"
+                      :class="REWARD_LINK_CLASS"
+                      data-testid="pembelajaran-chip-streak"
+                      ><DsRewardChip quiet art="fire" :value="summary.streakDays" label="hari 🔥"
+                    /></RouterLink>
+                    <RouterLink
+                      to="/gamification"
+                      :class="REWARD_LINK_CLASS"
+                      data-testid="pembelajaran-chip-coin"
+                      ><DsRewardChip quiet art="coin" :value="summary.coins" label="koin"
+                    /></RouterLink>
                   </div>
                 </template>
                 <UButton
