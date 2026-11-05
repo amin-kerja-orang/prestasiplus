@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { ADMIN, login, SCHOOL_ADMIN, schoolIdOf, STUDENT, TEACHER, userIdOf, type SchoolAdminTestApp } from './helpers'
 import { bootPeopleApp, enrolIn, errorOf, expectNoCache, insertClass, insertSchoolAdmin, insertUser, peopleApiOf, type PeopleApi } from './people-helpers'
-import { addSession, addSubject } from './reports-fixtures'
+import { addSession, addSubject, suspend } from './reports-fixtures'
 
 /**
  * BE-21 Part C: who may read the Amaran routes and which school. DB spec (Testcontainers). All data is fictitious.
@@ -272,5 +272,17 @@ describe('BE-21 Amaran access: /amaran/*', () => {
     const row = data.pupils.find((p) => p.name === 'Murid Amaran Terkumpul')
     expect(row?.accuracy).toBe(20)
     expect(row?.accuracyText).toBe('Purata ketepatan: 20%')
+  })
+
+  it('a listed suspended pupil keeps its pooled accuracy (not "Tiada data")', async () => {
+    const id = await insertUser(t.db, { name: 'Murid Amaran Digantung', email: 'digantung@ujian.test', roles: ['student'], schoolId: s1, grade: 10 })
+    await addSession(t.db, id, { mode: 'chapter', questions: 4, correct: 3, completedAt: '2026-10-17T10:00:00+08:00', subjectId: subject })
+    await suspend(t.db, id)
+    const data = AmaranSchoolRiskSchema.parse((await schoolAdmin.get(`/amaran/schools/${s1}`)).body.data)
+    const row = data.pupils.find((p) => p.name === 'Murid Amaran Digantung')
+    expect(row).toBeDefined()
+    expect(row?.accuracy).toBe(75)
+    expect(row?.accuracyText).toBe('Purata ketepatan: 75%')
+    expect(row?.status).not.toBe('not_started')
   })
 })

@@ -323,7 +323,8 @@ export class AmaranService {
       this.practice.lastActivityOf(ids, { modes: PRACTICE_SESSION_MODES }),
       this.practice.masteryOf(ids),
       // XS-5: the accuracy is pooled (correct / answered over all answer rows, all time), never a mean of session percentages.
-      this.xs.tallyByPupil({ kind: 'school', schoolId: school.id }),
+      // Pooled over the listed ids, so an inactive or suspended pupil who is listed keeps its own accuracy.
+      this.xs.tallyOfPupils(ids),
     ])
     const facts = students.map((s) => {
       const st = stats.get(s.id)
