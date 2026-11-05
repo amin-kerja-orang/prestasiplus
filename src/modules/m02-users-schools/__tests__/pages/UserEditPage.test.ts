@@ -12,7 +12,6 @@ import type { SchoolSummary } from '../../api/schools'
 import type { AdminUserDetail, StudentSearchItem } from '../../api/users'
 import UserEditPage from '../../pages/UserEditPage.vue'
 import { expectListInFlow } from './in-flow'
-import { expectFinderWidthContract } from './parent-finder-width'
 
 const users = vi.hoisted(() => ({
   fetchAdminUser: vi.fn(),
@@ -20,6 +19,8 @@ const users = vi.hoisted(() => ({
   searchStudents: vi.fn(),
 }))
 const schools = vi.hoisted(() => ({ searchSchools: vi.fn() }))
+const links = vi.hoisted(() => ({ listAdminParentLinks: vi.fn(), deleteAdminParentLink: vi.fn() }))
+vi.mock('../../api/parent-invite', () => links)
 vi.mock('../../api/users', () => users)
 vi.mock('../../api/schools', () => schools)
 
@@ -107,7 +108,9 @@ async function search(w: VueWrapper, id: string, value: string): Promise<void> {
 beforeEach(() => {
   setActivePinia(createPinia())
   vi.useFakeTimers()
-  for (const fn of [...Object.values(users), ...Object.values(schools)]) fn.mockReset()
+  for (const fn of [...Object.values(users), ...Object.values(schools), ...Object.values(links)])
+    fn.mockReset()
+  links.listAdminParentLinks.mockResolvedValue({ data: [], meta: {} })
   users.fetchAdminUser.mockResolvedValue(detail())
   users.searchStudents.mockResolvedValue([CHILD, OTHER_CHILD])
   schools.searchSchools.mockResolvedValue([OTHER_SCHOOL])
@@ -391,8 +394,9 @@ describe('UserEditPage (M02 S3) role sections follow the select (DV-M02-04)', ()
     expect(t(w, 'user-pksk').attributes('aria-checked')).toBe('false')
     expect(w.find('[data-testid=admin-school-chip]').exists()).toBe(false)
     await t(w, 'user-role').setValue('parent')
-    expect(w.findAll('[data-testid=linker-chip]')).toHaveLength(0)
-    expect(t(w, 'linker-none').text()).toBe('Tiada pelajar dipautkan lagi')
+    // the children of a parent live in the tab "Ibu Bapa" of a saved parent, not in this form
+    expect(w.find('[data-testid=parent-linker-edit]').exists()).toBe(false)
+    expect(w.find('[data-testid=user-tabs]').exists()).toBe(false)
   })
 
   it('a non-student role is saved without the student and school fields', async () => {
@@ -428,60 +432,28 @@ describe('UserEditPage (M02 S3) parent record', () => {
     )
   })
 
-  it('shows the linked children card with chips, hint and no student fields', async () => {
+  it('shows the tab "Ibu Bapa" holding "Anak yang Dipautkan" and no student fields', async () => {
     const w = await render(6)
-    const card = t(w, 'parent-linker-edit')
-    expect(card.text()).toContain('Anak yang Dipautkan')
-    expect(card.findAll('[data-testid=linker-chip]')).toHaveLength(1)
-    expect(card.text()).toContain('Pelajar Demo')
-    expect(card.text()).toContain('T5')
-    expect(card.text()).toContain('SMK CONTOH')
-    expect(t(w, 'linker-remove').attributes('title')).toBe('Buang pautan')
-    expect(t(w, 'linker-search').attributes('placeholder')).toBe(
-      'Cari nama atau emel pelajar untuk dipautkan...',
+    expect(t(w, 'user-tabs').text()).toContain('Ibu Bapa')
+    const tab = t(w, 'parents-tab')
+    expect(tab.text()).toContain('Anak yang Dipautkan')
+    expect(links.listAdminParentLinks).toHaveBeenCalledWith(
+      expect.objectContaining({ parentId: 6 }),
     )
-    expect(card.text()).toContain(
-      'Tambah atau buang pautan anak. Perubahan disimpan apabila klik "Kemaskini".',
-    )
+    expect(w.find('[data-testid=parent-linker-edit]').exists()).toBe(false)
     expect(w.find('[data-testid=grade-cards]').exists()).toBe(false)
     expect(w.find('[data-testid=admin-school]').exists()).toBe(false)
   })
 
-  it('adds and removes chips and saves the whole set', async () => {
+  it('the main save never sends linkedStudentIds (the tab is the only writer)', async () => {
     users.updateAdminUser.mockResolvedValue({ data: detail(), status: 'ok' })
     const w = await render(6)
-    await search(w, 'linker-search', 'maj')
-    const rows = w.findAll('[data-testid=linker-result]')
-    expect(rows[0]?.attributes('disabled')).toBeDefined()
-    await rows[0]?.trigger('click')
-    expect(w.findAll('[data-testid=linker-chip]')).toHaveLength(1)
-    await rows[1]?.trigger('click')
-    expect(w.findAll('[data-testid=linker-chip]')).toHaveLength(2)
-    await w.findAll('[data-testid=linker-remove]')[0]?.trigger('click')
-
     await w.get('form').trigger('submit')
     await flushPromises()
-    expect(users.updateAdminUser).toHaveBeenCalledWith(6, {
-      name: 'Ibu Bapa Demo',
-      email: 'pelajar@demo.test',
-      phone: '0191234567',
-      role: 'parent',
-      isActive: true,
-      linkedStudentIds: [4],
-    })
-  })
-
-  it('keeps the linker within the card while the results show (BUG-05, DV-M02-29)', async () => {
-    const w = await render(6)
-    await search(w, 'linker-search', 'maj')
-    expectFinderWidthContract(w, 'parent-linker-edit')
-  })
-
-  it('the empty student search shows "Tiada pelajar dijumpai"', async () => {
-    users.searchStudents.mockResolvedValue([])
-    const w = await render(6)
-    await search(w, 'linker-search', 'zzzz')
-    expect(t(w, 'linker-empty').text()).toBe('Tiada pelajar dijumpai')
+    expect(users.updateAdminUser).toHaveBeenCalledTimes(1)
+    const body = users.updateAdminUser.mock.calls[0]?.[1] as Record<string, unknown>
+    expect(body).not.toHaveProperty('linkedStudentIds')
+    expect(body.role).toBe('parent')
   })
 })
 

@@ -11,7 +11,12 @@ import { computed, onMounted, ref } from 'vue'
 
 import { DsIconChip, DsPage } from '@/ds'
 
-import { fetchParentInvite, generateParentInvite, type LinkedParent } from '../api/parent-invite'
+import {
+  deleteMyParentLink,
+  fetchParentInvite,
+  generateParentInvite,
+  type LinkedParent,
+} from '../api/parent-invite'
 import ConnectedParentsCard from '../components/jemput/ConnectedParentsCard.vue'
 import InviteLinkCard from '../components/jemput/InviteLinkCard.vue'
 import { JEMPUT_GENERIC_ERROR, sortParents } from '../lib/jemput'
@@ -55,6 +60,23 @@ async function regenerate(): Promise<void> {
     errors.value = [JEMPUT_GENERIC_ERROR]
   } finally {
     regenerating.value = false
+  }
+}
+
+const removing = ref(false)
+
+/** R1-MUR-40: the pupil removes a linked parent (confirmed in the card), then the list is read again. */
+async function removeParent(parent: LinkedParent): Promise<void> {
+  if (removing.value || parent.linkId === undefined) return
+  removing.value = true
+  errors.value = []
+  try {
+    await deleteMyParentLink(parent.linkId)
+    parents.value = parents.value.filter((p) => p.id !== parent.id)
+  } catch {
+    errors.value = [JEMPUT_GENERIC_ERROR]
+  } finally {
+    removing.value = false
   }
 }
 
@@ -117,7 +139,7 @@ onMounted(load)
       </header>
 
       <InviteLinkCard :token="token" :regenerating="regenerating" @regenerate="regenerate" />
-      <ConnectedParentsCard :parents="sorted" />
+      <ConnectedParentsCard :parents="sorted" :removing="removing" @remove="removeParent" />
     </template>
   </DsPage>
 </template>

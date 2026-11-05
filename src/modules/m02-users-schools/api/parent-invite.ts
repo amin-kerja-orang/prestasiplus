@@ -13,6 +13,8 @@ export interface LinkedParent {
   email: string
   /** ISO 8601 (+08:00): the link's `createdAt`. */
   linkedAt: string
+  /** The link id, used by the pupil's "Buang ibu bapa" (`DELETE /api/me/parent-links/:linkId`). */
+  linkId?: number
 }
 
 /** §6.3 `ParentInviteView` (mock wire): the student's current token (created on the first call) and the linked parents. */
@@ -163,4 +165,44 @@ export async function fetchInvitePreview(
 /** #4 `POST /api/parent-invites/:token/accept` (parent only; idempotent; 401 / 403 / 404). */
 export function acceptParentInvite(token: string): Promise<AcceptResult> {
   return api.post<AcceptResult>(`${inviteAt(token)}/accept`)
+}
+
+/** Contract `ParentLink`: one parent-child link as the admin list returns it. */
+export interface AdminParentLink {
+  linkId: number
+  parent: { id: number; name: string; emailMasked: string }
+  student: { id: number; name: string; schoolName: string | null }
+  relationship: string | null
+  /** ISO 8601 (+08:00). */
+  linkedAt: string
+}
+
+/** Contract `ParentLinkListQuery`; the page size is fixed at 50. */
+export interface AdminParentLinkQuery {
+  parentId?: number
+  studentId?: number
+  page?: number
+  signal?: AbortSignal
+}
+
+/** `GET /api/admin/parent-links` (admin: all; school_admin: students of the own school). */
+export function listAdminParentLinks(query: AdminParentLinkQuery = {}) {
+  return api.list<AdminParentLink>('/api/admin/parent-links', {
+    query: {
+      parentId: query.parentId ?? null,
+      studentId: query.studentId ?? null,
+      page: query.page ?? null,
+    },
+    ...(query.signal ? { signal: query.signal } : {}),
+  })
+}
+
+/** `DELETE /api/admin/parent-links/:linkId` (204; a school_admin outside the own school gets 404). */
+export function deleteAdminParentLink(linkId: number): Promise<void> {
+  return api.delete<void>(`/api/admin/parent-links/${String(linkId)}`)
+}
+
+/** `DELETE /api/me/parent-links/:linkId` (204): the pupil removes a linked parent. */
+export function deleteMyParentLink(linkId: number): Promise<void> {
+  return api.delete<void>(`/api/me/parent-links/${String(linkId)}`)
 }

@@ -14,6 +14,7 @@ import { users } from '@/modules/m01-authentication/mock'
 
 import type {
   AcceptResult,
+  AdminParentLink,
   GeneratedParentInvite,
   InvitePreview,
   ParentInviteView,
@@ -37,7 +38,7 @@ beforeAll(async () => {
 }, 120_000)
 
 async function call<T = unknown>(
-  method: 'GET' | 'POST',
+  method: 'GET' | 'POST' | 'DELETE',
   url: string,
   token?: string,
 ): Promise<Reply<T>> {
@@ -139,7 +140,7 @@ describe('GET /api/me/parent-invite (#1): token lifecycle (BR-L45-01, FR-L45-13)
     expect(two).toHaveLength(1)
     expect(two[0]).toMatchObject({ id: 6, name: 'Ibu Bapa Demo', email: 'ibubapa@demo.test' })
     expect(two[0]?.linkedAt).toMatch(/\+08:00$/)
-    expect(Object.keys(two[0] ?? {}).sort()).toEqual(['email', 'id', 'linkedAt', 'name'])
+    expect(Object.keys(two[0] ?? {}).sort()).toEqual(['email', 'id', 'linkId', 'linkedAt', 'name'])
   })
 })
 
@@ -538,4 +539,80 @@ describe('mock.setParentInviteToken', () => {
 
 afterAll(() => {
   vi.unstubAllEnvs()
+})
+
+describe('admin/parent-links (R1-ADM-P2-16): list and delete', () => {
+  const list = (query: string, token?: string) =>
+    call<AdminParentLink[]>('GET', `/api/admin/parent-links${query}`, token)
+
+  it('guest 401; student, teacher, parent and sponsor 403 on list and delete', async () => {
+    expect((await list('')).status).toBe(401)
+    expect((await call('DELETE', '/api/admin/parent-links/1')).status).toBe(401)
+    for (const t of [s2, teacher, parent, sponsor]) {
+      expect((await list('', t)).status).toBe(403)
+      expect((await call('DELETE', '/api/admin/parent-links/1', t)).status).toBe(403)
+    }
+  })
+
+  it('admin: filters by parentId and by studentId; the row has the contract shape', async () => {
+    const byParent = await list('?parentId=6', admin)
+    expect(byParent.status).toBe(200)
+    expect(byParent.data.length).toBeGreaterThanOrEqual(1)
+    const first = byParent.data[0]!
+    expect(Object.keys(first).sort()).toEqual([
+      'linkId',
+      'linkedAt',
+      'parent',
+      'relationship',
+      'student',
+    ])
+    expect(first.parent.id).toBe(6)
+    expect(first.parent.emailMasked).toMatch(/^.\*{3}@.+$/)
+    const byStudent = await list('?studentId=4', admin)
+    expect(byStudent.data.every((l) => l.student.id === 4)).toBe(true)
+    expect(byStudent.data.length).toBeGreaterThanOrEqual(1)
+    expect((await list('?parentId=999999', admin)).data).toEqual([])
+  })
+
+  it('school_admin sees only pupils of the own school; others are 404 to delete', async () => {
+    const outside = parentLinks.createIfAbsent(6, 3, clock.now()).row // student 3 has no school
+    const own = await list('?parentId=6', schoolAdmin)
+    expect(own.status).toBe(200)
+    expect(own.data.some((l) => l.student.id === 3)).toBe(false)
+    expect(own.data.length).toBeGreaterThanOrEqual(1)
+    expect((await list('?parentId=6', admin)).data.some((l) => l.student.id === 3)).toBe(true)
+
+    const refused = await call('DELETE', `/api/admin/parent-links/${String(outside.id)}`, schoolAdmin)
+    expect(refused.status).toBe(404)
+    expect(parentLinks.studentIdsOf(6)).toContain(3)
+  })
+
+  it('admin deletes any link (204); the link is gone and a second delete is 404', async () => {
+    const row = parentLinks.createIfAbsent(6, 3, clock.now()).row
+    const res = await call('DELETE', `/api/admin/parent-links/${String(row.id)}`, admin)
+    expect(res.status).toBe(204)
+    expect(parentLinks.studentIdsOf(6)).not.toContain(3)
+    expect((await call('DELETE', `/api/admin/parent-links/${String(row.id)}`, admin)).status).toBe(
+      404,
+    )
+  })
+
+  it('school_admin deletes a link of an own-school pupil (204)', async () => {
+    const row = parentLinks.createIfAbsent(6, 4, clock.now()).row
+    const res = await call('DELETE', `/api/admin/parent-links/${String(row.id)}`, schoolAdmin)
+    expect(res.status).toBe(204)
+    expect(parentLinks.studentIdsOf(6)).not.toContain(4)
+  })
+})
+
+describe('me/parent-links DELETE (R1-MUR-40): the pupil removes a parent', () => {
+  it('the view carries the linkId; the pupil deletes only an own link', async () => {
+    const link = parentLinks.createIfAbsent(6, 2, clock.now()).row
+    const mine = await view(s2)
+    expect(mine.data.parents.find((p) => p.id === 6)?.linkId).toBe(link.id)
+    const foreign = parentLinks.createIfAbsent(6, 3, clock.now()).row
+    expect((await call('DELETE', `/api/me/parent-links/${String(foreign.id)}`, s2)).status).toBe(404)
+    expect((await call('DELETE', `/api/me/parent-links/${String(link.id)}`, s2)).status).toBe(204)
+    expect(parentLinks.studentIdsOf(6)).not.toContain(2)
+  })
 })

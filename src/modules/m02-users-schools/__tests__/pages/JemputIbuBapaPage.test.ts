@@ -7,7 +7,11 @@ import { ApiError } from '@/api'
 import type { ParentInviteState } from '../../api/parent-invite'
 import JemputIbuBapaPage from '../../pages/JemputIbuBapaPage.vue'
 
-const calls = vi.hoisted(() => ({ fetchParentInvite: vi.fn(), generateParentInvite: vi.fn() }))
+const calls = vi.hoisted(() => ({
+  fetchParentInvite: vi.fn(),
+  generateParentInvite: vi.fn(),
+  deleteMyParentLink: vi.fn(),
+}))
 vi.mock('../../api/parent-invite', () => calls)
 
 const TOKEN_A = 'a'.repeat(64)
@@ -20,6 +24,16 @@ function view(parents: ParentInviteState['parents'] = []): ParentInviteState {
 const writeText = vi.fn()
 let wrapper: VueWrapper | null = null
 const t = (id: string) => wrapper!.get(`[data-testid=${id}]`)
+/** The dialogs are teleported out of the wrapper. */
+const press = async (id: string): Promise<void> => {
+  ;(document.querySelector(`[data-testid="${id}"]`) as HTMLElement).click()
+  await flushPromises()
+}
+const regenerate = async (): Promise<void> => {
+  await t('jemput-regenerate').trigger('click')
+  await flushPromises()
+  await press('jemput-regen-confirm')
+}
 
 async function render(): Promise<void> {
   wrapper = mount(JemputIbuBapaPage, { attachTo: document.body })
@@ -30,6 +44,7 @@ beforeEach(() => {
   writeText.mockReset().mockResolvedValue(undefined)
   calls.fetchParentInvite.mockReset().mockResolvedValue(view())
   calls.generateParentInvite.mockReset()
+  calls.deleteMyParentLink.mockReset()
   Object.defineProperty(navigator, 'clipboard', {
     configurable: true,
     value: { writeText },
@@ -40,6 +55,7 @@ afterEach(() => {
   vi.useRealTimers()
   wrapper?.unmount()
   wrapper = null
+  document.body.innerHTML = ''
 })
 
 describe('S1 content (FR-L45-04..07)', () => {
@@ -129,12 +145,13 @@ describe('copy (FR-L45-08)', () => {
     expect(t('jemput-copy').attributes('data-copied')).toBe('false')
   })
 
-  it('keeps "Salin" and shows no error when the clipboard rejects (DV-L45-04)', async () => {
+  it('keeps "Salin" and tells the pupil to copy by hand when the clipboard rejects (R1-MUR-40)', async () => {
     writeText.mockRejectedValue(new Error('no'))
     await render()
     await t('jemput-copy').trigger('click')
     await flushPromises()
     expect(t('jemput-copy').text()).toBe('Salin')
+    expect(t('jemput-copy-failed').text()).toBe('Salin pautan secara manual.')
     expect(wrapper!.find('[data-testid=jemput-alert]').exists()).toBe(false)
   })
 })
@@ -144,7 +161,7 @@ describe('regenerate (FR-L45-10..12)', () => {
     let resolve!: (v: unknown) => void
     calls.generateParentInvite.mockReturnValue(new Promise((r) => (resolve = r)))
     await render()
-    await t('jemput-regenerate').trigger('click')
+    await regenerate()
     expect(t('jemput-regenerate').attributes('disabled')).toBeDefined()
     resolve({
       token: TOKEN_B,
@@ -165,8 +182,7 @@ describe('regenerate (FR-L45-10..12)', () => {
       new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'HTTP 500' }),
     )
     await render()
-    await t('jemput-regenerate').trigger('click')
-    await flushPromises()
+    await regenerate()
     expect(t('jemput-alert').text()).toContain('Ralat berlaku. Sila cuba lagi.')
     expect((t('jemput-url').element as HTMLInputElement).value).toContain(TOKEN_A)
     expect(wrapper!.find('[data-testid=jemput-flash]').exists()).toBe(false)
@@ -217,12 +233,54 @@ describe('no clear token (http mode, later visit; D58)', () => {
       status: 'Link jemputan baru telah dijana!',
     })
     await render()
-    await t('jemput-regenerate').trigger('click')
-    await flushPromises()
+    await regenerate()
     expect((t('jemput-url').element as HTMLInputElement).value).toBe(
       `${window.location.origin}/ibu-bapa/terima/${TOKEN_B}`,
     )
     expect(t('jemput-copy').attributes('disabled')).toBeUndefined()
     expect(t('jemput-whatsapp').attributes('href')).toContain(TOKEN_B)
+  })
+})
+
+describe('confirm dialogs (R1-MUR-40)', () => {
+  it('"Jana Link Baru" asks "Jana pautan baharu?" first; "Batal" generates nothing', async () => {
+    await render()
+    await t('jemput-regenerate').trigger('click')
+    await flushPromises()
+    expect(document.body.textContent).toContain('Jana pautan baharu?')
+    expect(document.body.textContent).toContain(
+      'Pautan lama tidak akan berfungsi lagi. Ibu bapa yang sudah dihubungkan kekal.',
+    )
+    expect(document.querySelector('[data-testid="jemput-regen-confirm"]')?.textContent).toContain(
+      'Jana Baharu',
+    )
+    await press('jemput-regen-cancel')
+    expect(calls.generateParentInvite).not.toHaveBeenCalled()
+  })
+
+  it('"Buang" asks "Buang ibu bapa ini?", then removes the parent through the link id', async () => {
+    calls.fetchParentInvite.mockResolvedValue(
+      view([
+        {
+          id: 6,
+          name: 'Ibu Bapa Demo',
+          email: 'ibubapa@demo.test',
+          linkedAt: '2026-10-02T09:00:00+08:00',
+          linkId: 41,
+        },
+      ]),
+    )
+    calls.deleteMyParentLink.mockResolvedValue(undefined)
+    await render()
+    await t('jemput-parent-remove').trigger('click')
+    await flushPromises()
+    expect(document.body.textContent).toContain('Buang ibu bapa ini?')
+    expect(document.body.textContent).toContain(
+      'Ibu Bapa Demo tidak lagi dapat memantau kemajuan anda.',
+    )
+    await press('jemput-remove-confirm')
+    expect(calls.deleteMyParentLink).toHaveBeenCalledWith(41)
+    expect(wrapper!.find('[data-testid=jemput-parent]').exists()).toBe(false)
+    expect(t('jemput-empty').text()).toContain('Belum ada ibu bapa dihubungkan')
   })
 })

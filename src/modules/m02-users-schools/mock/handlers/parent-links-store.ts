@@ -106,6 +106,15 @@ export const parentLinksRepo = defineRepository({
       return store.query({ where: { studentId } }).rows.sort(byId)
     },
 
+    /** Removes one link by its id (admin or own unlink). Returns whether it existed. */
+    removeById(id: number): boolean {
+      return transaction(() => {
+        if (!store.get(id)) return false
+        store.remove(id)
+        return true
+      })
+    },
+
     /** BR-06: a deleted user's links go with it, whether it was the parent or the student. Returns how many. */
     removeForUser(userId: number): number {
       return transaction(() => {

@@ -1,9 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const api = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }))
+const api = vi.hoisted(() => ({
+  get: vi.fn(),
+  post: vi.fn(),
+  list: vi.fn(),
+  delete: vi.fn(),
+}))
 vi.mock('@/api', () => ({ api }))
 
-import { fetchInvitePreview, fetchParentInvite } from '../../api/parent-invite'
+import {
+  deleteAdminParentLink,
+  deleteMyParentLink,
+  fetchInvitePreview,
+  fetchParentInvite,
+  listAdminParentLinks,
+} from '../../api/parent-invite'
 
 const TOKEN = 'c'.repeat(64)
 const AT = '2026-10-22T09:00:00+08:00'
@@ -117,5 +128,24 @@ describe('fetchInvitePreview (D57f wire: firstName only)', () => {
     api.get.mockResolvedValue({ valid: true, student: { firstName: 'Ali', schoolName: null }, viewer: 'guest' })
     await fetchInvitePreview(TOKEN, { signal: ctl.signal })
     expect(api.get).toHaveBeenCalledWith(`/api/parent-invites/${TOKEN}`, { signal: ctl.signal })
+  })
+})
+
+describe('admin / own parent links (R1-ADM-P2-16)', () => {
+  it('listAdminParentLinks sends parentId and returns the list envelope', async () => {
+    api.list.mockResolvedValue({ data: [], meta: {} })
+    const result = await listAdminParentLinks({ parentId: 6 })
+    expect(api.list).toHaveBeenCalledWith('/api/admin/parent-links', {
+      query: { parentId: 6, studentId: null, page: null },
+    })
+    expect(result).toEqual({ data: [], meta: {} })
+  })
+
+  it('deleteAdminParentLink and deleteMyParentLink call DELETE on their own path', async () => {
+    api.delete.mockResolvedValue(undefined)
+    await deleteAdminParentLink(41)
+    await deleteMyParentLink(42)
+    expect(api.delete).toHaveBeenNthCalledWith(1, '/api/admin/parent-links/41')
+    expect(api.delete).toHaveBeenNthCalledWith(2, '/api/me/parent-links/42')
   })
 })
