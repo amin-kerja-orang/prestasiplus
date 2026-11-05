@@ -19,7 +19,7 @@ import { shellHomePath } from '@/app/prototype-scope'
 import { setRouteOutcome, useRouteOutcome } from '@/app/router/outcome'
 import { useApi, usePageMeta, useSession } from '@/composables'
 import { DsLoadError, DsMediaCard, DsPage, DsProse } from '@/ds'
-import { diffForHumans, formatDateEn } from '@/lib/time'
+import { diffForHumans, formatDateLong } from '@/lib/time'
 
 import { fetchArticle, fetchLatestArticles, type ArticleCard } from '../api'
 import ArtikelShareCard from '../components/artikel/ArtikelShareCard.vue'
@@ -71,7 +71,7 @@ watch(
 
 const body = computed(() => (article.value ? sanitizeHtml(article.value.content) : ''))
 const published = computed(() =>
-  article.value?.publishedAt ? formatDateEn(article.value.publishedAt) : '',
+  article.value?.publishedAt ? formatDateLong(article.value.publishedAt) : '',
 )
 const age = computed(() =>
   article.value?.publishedAt ? diffForHumans(article.value.publishedAt) : '',

@@ -10,6 +10,7 @@ import { WalletModule } from '../../wallet'
 import { SchoolBotPool } from './bot-pool'
 import { GameQuestions } from './game-questions.service'
 import { GameReadService } from './game-read.service'
+import { GameSettingsService } from './game-settings.service'
 import { GameUsers } from './game-users'
 import { NamePrivacy } from './name-privacy.service'
 import { GamesPorts } from './ports'
@@ -23,7 +24,7 @@ import { WalletGameRewards } from './wallet-rewards'
  */
 @Module({
   imports: [ThrottleModule, WalletModule, QuestionsModule, CurriculumModule, UsersModule, SchoolsModule, ClassesModule],
-  providers: [WalletGameRewards, SchoolBotPool, GamesPorts, GameSubjects, GameUsers, NamePrivacy, GameQuestions, GameReadService],
+  providers: [WalletGameRewards, SchoolBotPool, GamesPorts, GameSubjects, GameUsers, NamePrivacy, GameQuestions, GameReadService, GameSettingsService],
   exports: [
     ThrottleModule,
     WalletModule,
@@ -37,6 +38,7 @@ import { WalletGameRewards } from './wallet-rewards'
     NamePrivacy,
     GameQuestions,
     GameReadService,
+    GameSettingsService,
   ],
 })
 export class GamesCoreModule {}
