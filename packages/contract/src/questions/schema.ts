@@ -9,6 +9,7 @@ import {
   QuestionEssayTopicSchema,
   QuestionKbatLevelSchema,
   QuestionPartSchema,
+  QuestionWritePartSchema,
   QuestionPublicPartSchema,
   QuestionStatusSchema,
   QuestionStimulusGroupSchema,
@@ -88,8 +89,25 @@ export const QUESTION_MESSAGES = {
   guruScript: 'Jenis tulisan tidak sah.',
 } as const
 
-export const QUESTION_TYPES = ['mcq', 'true_false', 'short_answer', 'fill_blank', 'essay'] as const
-export const QuestionTypeSchema = z.enum(QUESTION_TYPES, QUESTION_MESSAGES.type).meta({ id: 'QuestionType' })
+/** FR-ADM-QE3.2 / DM-69 / OPT-JENIS-SOALAN: the 11 question types, in this order (40:732). */
+export const QUESTION_TYPES = [
+  'mcq',
+  'mcq_multi',
+  'true_false',
+  'match',
+  'short_answer',
+  'fill_blank',
+  'structured',
+  'working',
+  'essay',
+  'drawing',
+  'table_fill',
+] as const
+/** The flat create/edit routes still take only these 5 (the flat projection cannot build the others); widened with the routes in S1-T09a parts 3 to 5. */
+export const FLAT_QUESTION_TYPES = ['mcq', 'true_false', 'short_answer', 'fill_blank', 'essay'] as const
+export const QuestionTypeSchema = z.enum(FLAT_QUESTION_TYPES, QUESTION_MESSAGES.type).meta({ id: 'QuestionType' })
+/** All 11 question types (FR-ADM-QE3.2). */
+export const QuestionTypeFullSchema = z.enum(QUESTION_TYPES, QUESTION_MESSAGES.type).meta({ id: 'QuestionTypeFull' })
 export const QuestionComplianceStatusSchema = z
   .enum(['verified', 'pending_mapping', 'quarantined', 'rejected', 'draft'])
   .meta({ id: 'QuestionComplianceStatus' })
@@ -403,7 +421,7 @@ const baseInput = z.object({
   optionImageFileIds: z.array(ImageFileId).max(4).optional(),
   /** Kertas for the paper builder; null clears it; omitted keeps it. Error key `kertas`. */
   kertas: QuestionKertasSchema.nullable().optional(),
-  parts: z.array(QuestionPartSchema).min(1).optional(),
+  parts: z.array(QuestionWritePartSchema).min(1).optional(),
   tag: QuestionCurriculumTagSchema.optional(),
   /** V2 `Nombor soalan` (Studio Langkah 1); null clears it, omitted keeps it. */
   numberLabel: z.string().trim().max(32).nullable().optional(),
@@ -433,7 +451,11 @@ export const QuestionCreateRequestSchema = baseInput
   .meta({ id: 'QuestionCreateRequest' })
 
 /** PUT body: the four required fields must be sent; other fields are a patch (`''`/null clears). `questionType` is ignored. */
-export const QuestionUpdateRequestSchema = baseInput.meta({ id: 'QuestionUpdateRequest' })
+export const QuestionUpdateRequestSchema = baseInput
+  // `parts` parse leniently here: the service holds new and changed parts to the strict write rules and lets a part echoed
+  // unchanged from the stored version keep the read rules (#692), which a strict DTO would make unreachable over HTTP.
+  .extend({ parts: z.array(QuestionPartSchema).min(1).optional() })
+  .meta({ id: 'QuestionUpdateRequest' })
 
 /** D54a: an action is the target lifecycle code, or `delete`. The mock verbs approve/reject/pending_review are gone. */
 export const QUESTION_BULK_ACTIONS = ['draft', 'review', 'approved', 'archived', 'delete'] as const
@@ -627,6 +649,62 @@ export const QuestionStructuredDetailSchema = z
   })
   .meta({ id: 'QuestionStructuredDetail' })
 
+/* ------------------------------------------------------------------ structured (teacher mount, API-GUR-26) */
+
+export const GURU_STRUCTURED_PAGE_SIZE = 20
+
+const GuruStructuredStatus = z.enum(['approved', 'review'])
+
+export const GuruStructuredRowSchema = z
+  .object({
+    id: IdSchema,
+    number: z.number().int().min(1).meta({ description: 'Position in the full ordered list (1-based): page offset + index.' }),
+    textExcerpt: z.string(),
+    level: Ref,
+    subject: Ref,
+    kbat: z.string().meta({ description: 'KBAT chip text from the question cognitive level: "LOTS 1", "LOTS 2", "MOTS 3", "HOTS 4" to "HOTS 6"; empty when the question has no level.' }),
+    subCount: z.number().int().min(0),
+    marks: z.number().int().min(0).meta({ description: 'Sum of the part marks.' }),
+    status: GuruStructuredStatus,
+  })
+  .meta({ id: 'GuruStructuredRow' })
+
+export const GuruStructuredListQuerySchema = z
+  .object({
+    subjectId: IdSchema.optional(),
+    educationLevelId: IdSchema.optional(),
+    status: GuruStructuredStatus.optional().meta({ description: 'Omitted: approved. `review` (the teacher\'s own submissions) is an empty page until the submission part exists.' }),
+    page: z.coerce.number().int().min(1).default(1),
+  })
+  .meta({ id: 'GuruStructuredListQuery' })
+
+export const GuruStructuredSubSchema = z
+  .object({
+    partLabel: z.string(),
+    questionText: z.string(),
+    marks: z.number().int().min(0).meta({ description: '0 for a branch (a part that only groups its children).' }),
+    cognitiveLevel: QuestionCognitiveLevelSchema.nullable().meta({ description: 'Bloom level of the part (Taksonomi Bloom), if set.' }),
+    modelAnswer: z.string().meta({ description: '"Skema Jawapan".' }),
+    depth: z.number().int().min(0),
+  })
+  .meta({ id: 'GuruStructuredSub' })
+
+export const GuruStructuredDetailSchema = z
+  .object({
+    id: IdSchema,
+    subject: Ref,
+    level: Ref,
+    kbat: z.string(),
+    status: GuruStructuredStatus,
+    stimulus: z.string().meta({ description: 'The stimulus text, once, above all the sub-questions.' }),
+    stimulusImage: z.string().nullable().meta({ description: 'Always null this round: the file read rule has no teacher branch for a question picture.' }),
+    totalMarks: z.number().int().min(0),
+    subCount: z.number().int().min(0),
+    subQuestions: z.array(GuruStructuredSubSchema),
+    createdAt: TimestampSchema,
+  })
+  .meta({ id: 'GuruStructuredDetail' })
+
 /* ---------------------------------------------------------------------------------- Guru routes */
 
 /** Owner-only contribution views; the owning teacher sees their own key by design. */
@@ -713,7 +791,7 @@ export const QuestionGuruCreateRequestSchema = z
     curriculumTopicId: idOrBlank(QUESTION_MESSAGES.guruTopic),
     dskpSpId: idOrBlank(QUESTION_MESSAGES.sp),
     scriptType: z.enum(['rumi', 'arab', 'jawi', 'mixed'], QUESTION_MESSAGES.guruScript).optional(),
-    parts: z.array(QuestionPartSchema).min(1).optional(),
+    parts: z.array(QuestionWritePartSchema).min(1).optional(),
     tag: QuestionCurriculumTagSchema.optional(),
   })
   .superRefine((v, ctx) => {
@@ -782,3 +860,39 @@ export const QuestionPublicSchema = z
     parts: z.array(QuestionPublicPartSchema).optional(),
   })
   .meta({ id: 'QuestionPublic' })
+
+/**
+ * S1-T09a (D4): `question_versions.type` stores `short` and `table` where the API says `short_answer` and `table_fill`; the others
+ * are identical. DB-side widening (mcq_multi, true_false, fill_blank) is migration 0134, not this change.
+ */
+export type QuestionTypeCode = (typeof QUESTION_TYPES)[number]
+export const QUESTION_TYPE_DB_VALUES: Record<QuestionTypeCode, string> = {
+  mcq: 'mcq',
+  mcq_multi: 'mcq_multi',
+  true_false: 'true_false',
+  match: 'match',
+  short_answer: 'short',
+  fill_blank: 'fill_blank',
+  structured: 'structured',
+  working: 'working',
+  essay: 'essay',
+  drawing: 'drawing',
+  table_fill: 'table',
+}
+export const questionTypeToDb = (t: QuestionTypeCode): string => QUESTION_TYPE_DB_VALUES[t]
+export const questionTypeFromDb = (v: string): QuestionTypeCode | null =>
+  QUESTION_TYPES.find((t) => QUESTION_TYPE_DB_VALUES[t] === v) ?? null
+/** 40:757 OPT-JENIS-SOALAN default leaf modes (`structured`: any mode per part). `mcq_multi` / `true_false` use leaf mode `mcq`. */
+export const QUESTION_TYPE_LEAF_MODES: Record<QuestionTypeCode, readonly string[]> = {
+  mcq: ['mcq'],
+  mcq_multi: ['mcq'],
+  true_false: ['mcq'],
+  match: ['match_letter'],
+  short_answer: ['short_text', 'numeric'],
+  fill_blank: ['short_text'],
+  structured: ['mcq', 'match_letter', 'short_text', 'numeric', 'working', 'essay', 'drawing', 'table_fill', 'essay_choice'],
+  working: ['working'],
+  essay: ['essay', 'essay_choice'],
+  drawing: ['drawing'],
+  table_fill: ['table_fill'],
+}

@@ -156,7 +156,7 @@ model QuestionVersion {
   archiveReason String?   @map("archive_reason")
   publishedAt   DateTime? @map("published_at") @db.Timestamptz(6)
 
-  /// mcq, match, short, structured, working, essay, drawing, table (check constraint).
+  /// mcq, match, short, structured, working, essay, drawing, table, mcq_multi, true_false, fill_blank (check constraint, migration 0134, DM-69).
   type          String
   stemMs        String? @map("stem_ms")
   stemEn        String? @map("stem_en")
@@ -192,6 +192,8 @@ model QuestionVersion {
   textbookRef       Json?   @map("textbook_ref")
   /// DM-58: why the version was sent back from Semakan to Draf (5..500 characters); cleared on the next send for review.
   rejectionReason   String? @map("rejection_reason")
+  /// DM-54: scheme v2 question-level rules (deductions, zeroIf); NULL = none. Migration 0133.
+  schemeRules       Json?   @map("scheme_rules")
 
   // Provenance (all optional).
   year          Int?    @db.SmallInt
@@ -301,6 +303,8 @@ model QuestionPart {
   /// graph, diagram, sketch (check constraint).
   drawingKind       String?  @map("drawing_kind")
   tableGrid         Json?    @map("table_grid") @db.JsonB
+  /// DM-55: per-part answer-mode settings (maxWords, wordRange, answerTemplate, multi, example, ...); NULL = defaults. Migration 0133.
+  modeConfig        Json?    @map("mode_config")
   stimulusId        BigInt?  @map("stimulus_id")
   choiceGroup       String?  @map("choice_group")
   /// after_submit, never (check constraint).

@@ -34,7 +34,6 @@ const ADMIN_READS = [
   '/question-imports',
   '/question-imports/template',
   '/question-quality',
-  '/diagram-audit',
   '/master-notes',
 ] as const
 const ADMIN_WRITES = [
@@ -45,6 +44,8 @@ const ADMIN_WRITES = [
   '/master-notes/1/approve',
   '/questions/1/ai-explanation',
 ] as const
+/** Readable by admin, teacher and school admin (S6-T18); the writes under it stay in ADMIN_WRITES. */
+const STAFF_READS = ['/diagram-audit'] as const
 const GURU_READS = ['/guru/questions/template', '/guru/dskp/bidang', '/guru/dskp/sk', '/guru/dskp/sp'] as const
 
 export const questionsWorkflowScenarios: Scenario[] = [
@@ -222,7 +223,7 @@ export const questionsWorkflowScenarios: Scenario[] = [
     targets: API_ONLY,
     async run(ctx) {
       const anon = ctx.anonymous()
-      for (const path of [...ADMIN_READS, ...GURU_READS, '/question-reports/mine']) {
+      for (const path of [...ADMIN_READS, ...STAFF_READS, ...GURU_READS, '/question-reports/mine']) {
         expectError(ctx, await anon.request('GET', path), 401, 'UNAUTHORIZED')
       }
       for (const path of [...ADMIN_WRITES, '/guru/questions/import', '/question-reports']) {
@@ -245,12 +246,13 @@ export const questionsWorkflowScenarios: Scenario[] = [
     },
   },
   {
-    id: 'question-workflow-api/school admin is 403 on every route except the student report routes',
+    id: 'question-workflow-api/school admin is 403 on every route except the student report routes and the diagram audit list',
     domain: 'question-workflow',
     targets: API_ONLY,
     async run(ctx) {
       const schoolAdmin = await ctx.as('school_admin')
       for (const path of [...ADMIN_READS, ...GURU_READS]) expectError(ctx, await schoolAdmin.request('GET', path), 403, 'FORBIDDEN')
+      for (const path of STAFF_READS) ctx.expectStatus(await schoolAdmin.request('GET', path), 200)
       for (const path of [...ADMIN_WRITES, '/guru/questions/import']) expectError(ctx, await schoolAdmin.request('POST', path), 403, 'FORBIDDEN')
       expectError(ctx, await schoolAdmin.request('PATCH', '/question-reports/1', { body: { status: 'fixed' } }), 403, 'FORBIDDEN')
       ctx.expectStatus(await schoolAdmin.request('GET', '/question-reports/mine'), 200)
@@ -262,9 +264,10 @@ export const questionsWorkflowScenarios: Scenario[] = [
     targets: API_ONLY,
     async run(ctx) {
       const student = await ctx.as('student')
-      for (const path of [...ADMIN_READS, ...GURU_READS]) expectError(ctx, await student.request('GET', path), 403, 'FORBIDDEN')
+      for (const path of [...ADMIN_READS, ...STAFF_READS, ...GURU_READS]) expectError(ctx, await student.request('GET', path), 403, 'FORBIDDEN')
       const teacher = await ctx.as('teacher')
       for (const path of ADMIN_READS) expectError(ctx, await teacher.request('GET', path), 403, 'FORBIDDEN')
+      for (const path of STAFF_READS) ctx.expectStatus(await teacher.request('GET', path), 200)
       for (const path of ADMIN_WRITES) expectError(ctx, await teacher.request('POST', path), 403, 'FORBIDDEN')
     },
   },

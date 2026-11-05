@@ -133,7 +133,14 @@ describe('admin list, detail and mutation shapes', () => {
     expect(QuestionRowSchema.safeParse({ ...row, id: 101 }).success).toBe(false)
     expect(QuestionRowSchema.safeParse({ ...row, status: 'pending_review' }).success).toBe(false)
     expect(QuestionSchema.safeParse(question).success).toBe(true)
+    // Responses stay on the lenient read schema: stored v1 data (marks 101, duplicate option labels) must still serialise.
+    const stored = {
+      label: '', prompt: { ms: 'S?' }, marks: 101, mode: 'mcq', key: { kind: 'option', correct: 'A' },
+      options: ['A', 'B', 'C', 'A'].map((label) => ({ label, body: { ms: 'p' } })),
+    }
+    expect(QuestionSchema.safeParse({ ...question, parts: [stored] }).success).toBe(true)
     const { createdBy: _c, ...rest } = question
+    expect(QuestionDetailSchema.safeParse({ ...rest, parts: [stored] }).error?.issues.filter((i) => i.path[0] === 'parts') ?? []).toEqual([])
     void _c
     const detail = { ...rest, subject: null, level: null, dskp: null, createdBy: { id: '7', name: null } }
     expect(QuestionDetailSchema.safeParse(detail).success).toBe(true)
@@ -196,7 +203,7 @@ describe('part tree (D1 to D4)', () => {
   it('rejects a key of the wrong kind for the mode and a correct option that does not exist', () => {
     expect(QuestionPartSchema.safeParse({ ...mcqLeaf, key: { kind: 'rubric', marks: 1, criteria: [{ id: 'c', name: 'n' }], bands: [{ name: 'b', range: [0, 1] }] } }).success).toBe(false)
     expect(QuestionPartSchema.safeParse({ ...mcqLeaf, key: { kind: 'option', correct: 'H' } }).success).toBe(false)
-    expect(QuestionPartSchema.safeParse({ ...mcqLeaf, options: optionsOf('AB') }).success).toBe(false)
+    expect(QuestionPartSchema.safeParse({ ...mcqLeaf, options: optionsOf('A') }).success).toBe(false)
   })
   it('validates the five key kinds and mark-point features', () => {
     const leaf = (mode: string, key: unknown, extra = {}) => ({ label: '', prompt: rt('x'), marks: 3, mode, key, ...extra })

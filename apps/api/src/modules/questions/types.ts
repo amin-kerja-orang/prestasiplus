@@ -33,8 +33,11 @@ export type PublicQuestion = z.output<typeof QuestionPublicSchema>
 export const STORE_SOURCE_TYPES = ['pdf', 'excel', 'manual', 'ai_variant'] as const
 export type StoreSourceType = (typeof STORE_SOURCE_TYPES)[number]
 
-/** `question_versions.type`. */
-export const STORE_QUESTION_TYPES = ['mcq', 'match', 'short', 'structured', 'working', 'essay', 'drawing', 'table'] as const
+/**
+ * `question_versions.type`: the 8 original values plus `mcq_multi`, `true_false` and `fill_blank` (S1-T09a D4, DM-69, migration
+ * 0134 widens the check). The API names and the mapping are `QUESTION_TYPES` / `questionTypeToDb` / `questionTypeFromDb` in `@pp/contract`.
+ */
+export const STORE_QUESTION_TYPES = ['mcq', 'match', 'short', 'structured', 'working', 'essay', 'drawing', 'table', 'mcq_multi', 'true_false', 'fill_blank'] as const
 export type StoreQuestionType = (typeof STORE_QUESTION_TYPES)[number]
 
 export type ViewMode = 'live' | 'latest'
@@ -314,6 +317,10 @@ export interface StructuredListFilter {
   subjectId?: string
   educationLevelId?: string
   kbatLevel?: string
+  /** Teacher mount (API-GUR-26): only what a pupil is served (approved and live, T4/T5, figures present). */
+  served?: boolean
+  /** Order by `created_at` descending instead of id ascending. */
+  newestFirst?: boolean
   page: number
   pageSize: number
 }
@@ -426,3 +433,6 @@ export interface TextbookRef {
   /** Last page, when the reference spans pages. */
   hingga?: number
 }
+
+/** Teacher structured detail source: the question view of the LIVE version plus its stimulus group (no creator, no DSKP chain). */
+export type GuruStructuredRecord = QuestionView & { stimulusGroup: StimulusGroupRecord | null }

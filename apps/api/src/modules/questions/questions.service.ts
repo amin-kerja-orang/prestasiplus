@@ -1,9 +1,12 @@
+import { isDeepStrictEqual } from 'node:util'
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common'
+import { z } from 'zod'
 import {
   QUESTION_WORKFLOW_STATUSES,
   isQuestionWorkflowTransitionAllowed,
   QUESTION_MESSAGES,
   QuestionPartSchema,
+  QuestionWritePartSchema,
   type QuestionPart,
 } from '@pp/contract'
 
@@ -64,6 +67,7 @@ import type {
   QuestionView,
   SetStatusOptions,
   StructuredListFilter,
+  GuruStructuredRecord,
   TextbookRef,
   StructuredListResult,
 } from './types'
@@ -276,7 +280,7 @@ export class QuestionsService {
     return { ...(await this.detail(record)), ...(await this.repo.placementsOf(record.id)) }
   }
 
-  async create(raw: QuestionCreateInput, actor: QuestionActor, provenance?: QuestionProvenance): Promise<QuestionView> {
+  async create(raw: QuestionCreateInput & { curriculumTopicId?: string | null }, actor: QuestionActor, provenance?: QuestionProvenance): Promise<QuestionView> {
     const input = await this.withImageKeys(raw)
     const flat: FlatSource = {
       questionType: input.questionType,
@@ -308,6 +312,8 @@ export class QuestionsService {
         tag: input.tag,
         dskpSpId: input.dskpSpId,
         chapterId: input.curriculumChapterId,
+        // S1-T05: the CSV import (through the bank adapter) sets the topic of the Bab; the wire body of `POST /questions` has no such field.
+        topicId: input.curriculumTopicId,
         stimulusGroupId: input.stimulusGroupId,
         numberLabel: input.numberLabel,
         stemImage: input.questionImageFileId,
@@ -687,6 +693,31 @@ export class QuestionsService {
     return this.detail(record)
   }
 
+  // --- structured (teacher mount, API-GUR-26) ----------------------------------------------------
+
+  /**
+   * One page of what a pupil is served (approved, live, figures present), newest first. `status=review` is the teacher's own submissions,
+   * which have no source yet: an empty page. The caller fixes the page size.
+   */
+  async listGuruStructured(filter: StructuredListFilter, status: 'approved' | 'review'): Promise<Page<QuestionView>> {
+    if (status === 'review') return { rows: [], page: filter.page, pageSize: filter.pageSize, total: 0 }
+    const page = await this.repo.structuredIds({ ...filter, served: true, newestFirst: true })
+    const records = await this.repo.getMany(page.ids, 'live')
+    return { rows: await this.named(records), page: filter.page, pageSize: filter.pageSize, total: page.total }
+  }
+
+  /**
+   * Detail for the teacher mount: 404 unless the list would show the question. Reads the LIVE version and the stimulus group, and never
+   * loads the creator (no personal data).
+   */
+  async getGuruStructured(id: string): Promise<GuruStructuredRecord> {
+    if (!(await this.repo.isStructuredServed(id))) throw questionNotFound()
+    const record = await this.repo.get(id, 'live')
+    if (!record) throw questionNotFound()
+    const stimulusGroup = record.groupId ? await this.repo.groupOf(record.id) : null
+    return { ...(await this.viewOf(record)), stimulusGroup }
+  }
+
   // --- Guru (own rows only; another teacher id is 404) ------------------------------------------
 
   async listOwn(userId: string, page: number, pageSize = 20): Promise<Page<QuestionView>> {
@@ -814,20 +845,39 @@ export class QuestionsService {
     return record
   }
 
+  /** Parses each top-level part with the strict write schema, or the lenient read schema when `unchanged(part, index)`. */
+  private parseParts(parts: QuestionPart[], unchanged: (p: QuestionPart, i: number) => boolean):
+    | { success: true; data: QuestionPart[] }
+    | { success: false; error: { issues: { path: PropertyKey[]; message: string }[] } } {
+    // The count rule is the one the schema always had (`array().min(1).max(20)`), so its message stays unchanged.
+    const sized = z.array(z.unknown()).min(1).max(20).safeParse(parts)
+    if (!sized.success) return { success: false, error: { issues: sized.error.issues.map((x) => ({ path: x.path, message: x.message })) } }
+    const data: QuestionPart[] = []
+    for (const [i, p] of parts.entries()) {
+      const r = (unchanged(p, i) ? QuestionPartSchema : QuestionWritePartSchema).safeParse(p)
+      if (!r.success) return { success: false, error: { issues: r.error.issues.map((x) => ({ ...x, path: [i, ...x.path] })) as never } }
+      data.push(r.data as QuestionPart)
+    }
+    return { success: true, data }
+  }
+
   /** Re-validates a built tree with the contract; a failure is a 422 on the first offending path. */
-  private checkedParts(parts: QuestionPart[], supplied: boolean): QuestionPart[] {
+  private checkedParts(parts: QuestionPart[], supplied: boolean, stored?: readonly QuestionPart[]): QuestionPart[] {
     // Size caps run on the raw input, before the schema walks it (DoS): top level, total and depth.
     if (parts.length > MAX_TOP_PARTS || treeSize(parts, 1) > MAX_TOTAL_PARTS || treeDepth(parts) > MAX_PART_DEPTH) {
       throw fail({ parts: PARTS_TOO_LARGE })
     }
-    const res = QuestionPartSchema.array().min(1).max(20).safeParse(parts)
+    // Strict (write) rules for new and changed top-level parts; a part carried over unchanged from the stored version keeps the
+    // lenient read rules, so a legacy row (marks 0, duplicate labels) can still have its stem or tag fixed (#692).
+    const unchanged = (p: QuestionPart, i: number): boolean => stored?.[i] !== undefined && isDeepStrictEqual(stored[i], p)
+    const res = this.parseParts(parts, unchanged)
     if (res.success) {
       // BE-42: the PKSK leaf is valid only on a question tagged `pksk_domain`, which only PkskQuestionsService writes.
       if (leavesOf(res.data).some(({ leaf }) => leaf.mode === 'pksk_choice')) throw fail({ [supplied ? 'parts' : 'questionType']: PKSK_LEAF_REFUSED })
       return res.data
     }
     const issue = res.error.issues[0]
-    const deepest = issue ? deepestIssue(issue as UnionLike, []) : { path: [] as PropertyKey[], message: 'Data tidak sah.' }
+    const deepest = issue ? deepestIssue(issue as unknown as UnionLike, []) : { path: [] as PropertyKey[], message: 'Data tidak sah.' }
     const key = supplied ? ['parts', ...deepest.path.map(String)].join('.') : this.flatKeyOf(deepest.path)
     throw fail({ [key]: deepest.message })
   }
@@ -1178,7 +1228,7 @@ export class QuestionsService {
 
     let parts: QuestionPart[]
     if (input.parts) {
-      parts = this.checkedParts(input.parts, true)
+      parts = this.checkedParts(input.parts, true, v.parts)
     } else if (flatShaped) {
       // Remove wins; else a sent id (or null = no image) replaces the stored one; an omitted position keeps it.
       const optionImageIds = flat.optionImageIds.map((id, i) =>
@@ -1199,7 +1249,7 @@ export class QuestionsService {
         cognitiveLevel: input.cognitiveLevel === undefined ? ((single as { cognitiveLevel?: string | null } | undefined)?.cognitiveLevel ?? null) : input.cognitiveLevel,
       }
       if (flat.questionType === 'mcq' && src.options !== undefined && src.options.length !== 4) throw fail({ options: QUESTION_MESSAGES.options })
-      parts = this.checkedParts(partsFromFlat(src), false)
+      parts = this.checkedParts(partsFromFlat(src), false, v.parts)
     } else {
       // REQ-B-021c: an essay_choice question has no flat model answer or points field (its key and marks live on the part). A
       // flat edit that CHANGES either is refused; echoing the stored value (what the edit form reads back) is not a change.
