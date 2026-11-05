@@ -3,7 +3,7 @@
  * One section of the provisional player (L-3): "Bahagian n · Soalan a-b", its audio player
  * (`DsAudioPlayer`) and its questions shown together, each a radio group A–D (FR-M09-75).
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import { DsAudioPlayer } from '@/ds'
 
@@ -28,6 +28,14 @@ const questions = computed(() =>
     })),
   })),
 )
+
+/** FR-MUR-27-2: a file that cannot load shows an error with a retry, never a silent player. */
+const audioFailed = ref(false)
+const audioKey = ref(0)
+function retryAudio(): void {
+  audioFailed.value = false
+  audioKey.value += 1
+}
 
 function choose(no: number, value: unknown): void {
   if (typeof value === 'string') emit('choose', no, value as Choice)
@@ -54,12 +62,25 @@ function choose(no: number, value: unknown): void {
         }}</span>
       </h2>
 
-      <DsAudioPlayer
-        v-if="section.audioUrl"
-        :src="section.audioUrl"
-        :title="section.title"
-        data-testid="section-audio"
-      />
+      <!-- `error` does not bubble: the capture listener sees the player's own <audio>. -->
+      <div v-if="section.audioUrl" @error.capture="audioFailed = true">
+        <DsAudioPlayer
+          v-if="!audioFailed"
+          :key="audioKey"
+          :src="section.audioUrl"
+          :title="section.title"
+          data-testid="section-audio"
+        />
+        <UAlert
+          v-else
+          color="error"
+          variant="subtle"
+          icon="i-ph-warning-circle"
+          :title="PLAYER_COPY.audioFailed"
+          :actions="[{ label: PLAYER_COPY.audioRetry, color: 'error', onClick: retryAudio }]"
+          data-testid="section-audio-error"
+        />
+      </div>
       <p v-else class="text-label text-muted" data-testid="section-no-audio">
         {{ PLAYER_COPY.noAudio }}
       </p>

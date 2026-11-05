@@ -1,7 +1,7 @@
 import { QuestionDetailSchema, QuestionSchema, mutationEnvelopeOf } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { bootQuestionsApp, expectError, loginAs, parseData, type Client, type QuestionsTestApp } from './helpers'
+import { bootQuestionsApp, expectError, guruFormBody, loginAs, parseData, type Client, type QuestionsTestApp } from './helpers'
 import { countOf, mcqBody, refsOf, tagOf, type Refs } from './http-helpers'
 
 /**
@@ -76,19 +76,12 @@ describe('AC-03.4: a free-text tag instead of a curriculum node is not accepted'
     expect(Number(rows[0]?.n)).toBe(0)
   })
 
-  it('Guru create: a free-text topic or chapter is 422 on its own key', async () => {
-    const body = (over: Record<string, unknown>) => ({
-      educationLevelId: refs.t4Id,
-      subjectId: refs.mathId,
-      questionType: 'mcq',
-      difficultyLevel: 'medium',
-      questionText: 'Berapakah punca kuasa dua bagi 81?',
-      options: ['7', '8', '9', '10'],
-      correctAnswer: 2,
-      ...over,
-    })
-    expect(Object.keys(expectError(await teacher.post('/api/guru/questions', body({ curriculumTopicId: FREE })), 'VALIDATION_ERROR').fields ?? {})).toContain('curriculumTopicId')
-    expect(Object.keys(expectError(await teacher.post('/api/guru/questions', body({ curriculumChapterId: FREE })), 'VALIDATION_ERROR').fields ?? {})).toContain('curriculumChapterId')
-    expect(Object.keys(expectError(await teacher.post('/api/guru/questions', body({ dskpSpId: FREE })), 'VALIDATION_ERROR').fields ?? {})).toContain('dskpSpId')
+  it('Guru create (S6-T06 form): a free-text chapter or SP is 422 on its own key; the topic field no longer exists and is ignored', async () => {
+    const body = (over: Record<string, unknown>) => guruFormBody(t, over)
+    expect(Object.keys(expectError(await teacher.post('/api/guru/questions', await body({ chapterId: FREE })), 'VALIDATION_ERROR').fields ?? {})).toContain('chapterId')
+    expect(Object.keys(expectError(await teacher.post('/api/guru/questions', await body({ spIds: [FREE] })), 'VALIDATION_ERROR').fields ?? {})).toContain('spIds')
+    const res = await teacher.post('/api/guru/questions', await body({ curriculumTopicId: FREE }))
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    expect(JSON.stringify(res.body)).not.toContain(FREE)
   })
 })

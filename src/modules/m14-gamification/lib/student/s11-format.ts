@@ -20,10 +20,10 @@ export function gamTrimNumber(value: number, decimals = 2): string {
   return String(roundHalfUp(value, decimals))
 }
 
-/** BR-M14-06: pct = current ÷ next.minSyiling × 100, 1 decimal, capped at 100. */
-export function gamNextTierPct(currentSyiling: number, nextMin: number): number {
+/** BR-M14-06 on lifetime syiling (AC-MUR-28-1): pct = lifetime ÷ next.minSyiling × 100, 1 decimal, capped at 100. */
+export function gamNextTierPct(lifetimeSyiling: number, nextMin: number): number {
   if (nextMin <= 0) return 100
-  return Math.min(100, roundHalfUp((currentSyiling / nextMin) * 100, 1))
+  return Math.min(100, roundHalfUp((lifetimeSyiling / nextMin) * 100, 1))
 }
 
 /** Bar width 0..100 from any number. */
