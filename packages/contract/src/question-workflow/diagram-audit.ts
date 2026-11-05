@@ -6,7 +6,9 @@ import { QUESTION_WORKFLOW_IMAGE_MAX_BYTES, questionWorkflowFile, questionWorkfl
  * Diagram audit, S11 "Soalan Perlu Gambar Rajah" (mock `handlers/diagram-audit.ts`, SRS BR-M04-19,
  * FR-M04-95 to 101). Routes: `GET /diagram-audit`, `POST /diagram-audit/{kind}/{id}/image`,
  * `POST /diagram-audit/{kind}/{id}/dismiss`. List: admin, teacher and school admin (whole bank). Image and
- * dismiss: admin only (teacher upload: S6-T18 part 2). Image storage is BE-04.
+ * dismiss: admin only. A teacher / school admin image is NOT applied to the question: it becomes an intake item of
+ * a `source = guru` batch (kind diagram, `payload.target`) and the card shows `pendingReview` until an admin accepts or
+ * rejects it (S6-T18 part 2). Image storage is BE-04.
  *
  * Difference from the mock: ids are strings (UD-1).
  */
@@ -17,6 +19,8 @@ export const DIAGRAM_AUDIT_MESSAGES = {
   fileSize: 'Saiz imej tidak boleh melebihi 2 MB.',
   submittedForReview: 'Gambar dihantar untuk semakan.',
   uploaded: 'Gambar rajah berjaya dimuat naik.',
+  alreadyPending: 'Gambar untuk soalan ini sedang menunggu semakan.',
+  noStimulusGroup: 'Soalan ini tiada kumpulan rangsangan untuk dilekatkan gambar.',
   dismissed: 'Soalan telah dikeluarkan daripada senarai audit.',
 } as const
 
@@ -58,6 +62,7 @@ export const DiagramAuditMcqItemSchema = z
     createdBy: CreatedBy,
     sourceFile: z.string().nullable(),
     sourcePage: z.number().int().nullable(),
+    pendingReview: z.boolean().meta({ description: 'True while an open teacher image (intake item, source guru) waits for an admin: the chip "Menunggu Semakan". Also true for the other questions of the same stimulus group.' }),
   })
   .meta({ id: 'DiagramAuditMcqItem' })
 
@@ -69,6 +74,7 @@ export const DiagramAuditStructuredItemSchema = z
     createdBy: CreatedBy,
     sourceFile: z.string().nullable(),
     sourcePage: z.number().int().nullable(),
+    pendingReview: z.boolean().meta({ description: 'True while an open teacher image (intake item, source guru) waits for an admin: the chip "Menunggu Semakan". Also true for the other questions of the same stimulus group.' }),
   })
   .meta({ id: 'DiagramAuditStructuredItem' })
 
@@ -125,10 +131,10 @@ const image = questionWorkflowFile({
 export const DiagramAuditImageRequestSchema = z.object({ image }).meta({ id: 'DiagramAuditImageRequest' })
 
 export const DiagramAuditResultSchema = z
-  .strictObject({ id: IdSchema, needsDiagram: z.literal(false) })
+  .strictObject({ id: IdSchema, needsDiagram: z.boolean().meta({ description: 'false after the admin upload / dismiss; true after a teacher or school admin upload (the question is unchanged until an admin accepts the image).' }) })
   .meta({ id: 'DiagramAuditResult' })
 
-/** 200 body of image and dismiss `{ data: { id, needsDiagram: false }, status }`. */
+/** 200 body of image and dismiss `{ data: { id, needsDiagram }, status }`. Teacher / school admin image: `needsDiagram: true`, status "Gambar dihantar untuk semakan."; 409 when the stimulus group already has an open image (`alreadyPending`) or the question has no group (`noStimulusGroup`). */
 export const DiagramAuditMutationSchema = questionWorkflowMutationOf(DiagramAuditResultSchema).meta({
   id: 'DiagramAuditMutation',
 })

@@ -32,7 +32,7 @@ import { NoStoreInterceptor } from '../../../../common/http'
 import { AUTH_CONTEXT_KEY, type RequestWithAuth } from '../../../../common/scope/auth-context'
 import { RateLimit, RateLimitGuard } from '../../../../common/throttle'
 import { isIdString } from '../../../../db/ids'
-import { Actor, AdminOnly, actorOf, type WorkflowActor } from '../actor'
+import { Actor, AdminOnly, actorOf, isAdminPusat, type WorkflowActor } from '../actor'
 import { QUESTION_WORKFLOW_IMAGE_MAX_BYTES, WORKFLOW_ADMIN_WRITE_LIMIT } from '../quality/limits'
 import { type DiagramAuditFilters, DiagramAuditService, type DiagramKind } from './diagram-audit.service'
 
@@ -109,8 +109,8 @@ function checkedBytes(file: UploadedImage | undefined): Buffer {
 }
 
 /**
- * Diagram audit, S11. The list is open to admin, teacher and school admin (whole bank); image and dismiss are
- * Admin Pusat only (the teacher upload is S6-T18 part 2).
+ * Diagram audit, S11. The list and the image upload are open to admin, teacher and school admin (whole bank); dismiss is Admin Pusat only.
+ * Admin Pusat's image is applied to the question at once; a teacher's or school admin's is an intake item for the admin to accept (S6-T18 part 2).
  */
 @Roles('admin', 'teacher', 'school_admin')
 @UseGuards(RateLimitGuard)
@@ -134,9 +134,7 @@ export class DiagramAuditController {
     return this.audit.list(filters)
   }
 
-  // Admin only in S6-T18 part 1; the teacher upload (a reviewed replacement, not `uploadImage`) is S6-T18 part 2.
   @Post(':kind/:id/image')
-  @AdminOnly()
   @HttpCode(200)
   @RateLimit(WORKFLOW_ADMIN_WRITE_LIMIT)
   @UseInterceptors(DiagramImageInterceptor)
@@ -153,7 +151,15 @@ export class DiagramAuditController {
     // 404 (unknown question) is decided before the body is judged, like the mock.
     await this.audit.assertExists(k, qid)
     const bytes = checkedBytes(file)
-    return this.audit.uploadImage(auth, k, qid, bytes, (({ ip, requestId }) => ({ ip, requestId }))(actorOf(req)))
+    const actor = actorOf(req)
+    // The active role decides: only Admin Pusat changes the question directly; the others submit the image for review.
+    if (isAdminPusat(actor)) return this.audit.uploadImage(auth, k, qid, bytes, { ip: actor.ip, requestId: actor.requestId })
+    return this.audit.submitForReview(
+      { userId: actor.userId, roleCode: actor.role, requestId: actor.requestId, ip: actor.ip, isTest: actor.isTest },
+      k,
+      qid,
+      bytes,
+    )
   }
 
   @Post(':kind/:id/dismiss')

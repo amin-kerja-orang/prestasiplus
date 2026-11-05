@@ -41,6 +41,7 @@ import { runToWire, type CallerInfo } from './extraction.service'
 import { batchLevelIssues, itemIssues, questionMarks, stimulusIssues } from './gate'
 import { attachToStimulus, groupsOf } from './grouping'
 import { stimulusTableOf } from '../../questions/stimulus-table'
+import { diagramTargetOf, type DiagramTarget } from '../files/guru-diagram'
 import { guruStimulusImageOf } from '../files/guru-submissions'
 import { ITEM_INCLUDE, PayloadSchema, bandOf, payloadOf, questionOf, stateDuplicates, stimulusOf, type ItemRow, type StoredPayload } from './item-model'
 import { ItemViews } from './item-views'
@@ -376,7 +377,7 @@ export class IntakeReviewService {
           numberLabel: next.label,
           itemType: next.type,
           pageNo: next.page,
-          payload: { ...parsed, ...(stored.origin ? { origin: stored.origin } : {}), ...(stored.guru ? { guru: stored.guru } : {}) } as unknown as Prisma.InputJsonValue,
+          payload: { ...parsed, ...(stored.origin ? { origin: stored.origin } : {}), ...(stored.guru ? { guru: stored.guru } : {}), ...(stored.target ? { target: stored.target } : {}) } as unknown as Prisma.InputJsonValue,
           confirmedFields: confirmed,
           needsManual,
           humanEdited: edited,
@@ -548,6 +549,10 @@ export class IntakeReviewService {
     if (row.reviewState === 'rejected') throw conflict(INTAKE_MESSAGES.itemLocked)
     if (row.reviewState === 'duplicate') throw conflict(INTAKE_MESSAGES.itemIsDuplicate)
 
+    // S6-T18 part 2: a teacher's diagram image sets the asset of an EXISTING group stimulus; no question is made.
+    const diagram = diagramTargetOf(row.payload)
+    if (diagram !== null) return this.acceptDiagram(tx, auth, row, diagram, who)
+
     // Items of one stimulus group are accepted one at a time: the first creates the bank stimulus and group, the rest join it.
     if (row.stimulusId !== null) await tx.$queryRaw`SELECT id FROM intake_batches WHERE id = ${row.batchId} FOR UPDATE`
 
@@ -618,6 +623,58 @@ export class IntakeReviewService {
       },
     })
     await this.record(INTAKE_AUDIT.itemAccepted, auth, row, who, { from: row.reviewState, to: 'accepted', questionId: created.id }, tx)
+  }
+
+  /**
+   * Accept of a diagram item (S6-T18 part 2, ruling on #494): the teacher's image is copied to an admin-owned `question_image` and becomes
+   * `asset_file_id` of the EXISTING stimulus of the group (no new stimulus, no new group, no question version). The question is then
+   * resolved in the diagram audit (`image`), so it no longer shows as needing a diagram. Inside the caller's transaction; a failure removes the copy.
+   */
+  private async acceptDiagram(tx: TxClient, auth: AuthContext, row: ItemRow, target: DiagramTarget, who: CallerInfo): Promise<void> {
+    const ownerId = row.batch.ownerUserId === null ? auth.userId : idToString(row.batch.ownerUserId)
+    // The group and its stimulus still exist, and the question still belongs to the group.
+    const link = await tx.stimulusGroupStimulus.findFirst({ where: { groupId: idFromString(target.groupId), stimulusId: idFromString(target.stimulusId) }, select: { id: true } })
+    const question = await tx.question.findFirst({ where: { id: idFromString(target.questionId), groupId: idFromString(target.groupId) }, select: { id: true } })
+    if (!link || !question) throw conflict(WORKFLOW_MESSAGES.diagramTargetGone)
+    // Only the batch owner's own `question_image` (a guru batch always has an owner; a null owner would match an unowned file).
+    const source = row.batch.ownerUserId === null
+      ? null
+      : await tx.file.findFirst({ where: { id: idFromString(target.imageFileId), purpose: 'question_image', ownerUserId: row.batch.ownerUserId }, select: { id: true } })
+    const bytes = source ? await this.files.readStored(idToString(source.id)) : null
+    if (!bytes) throw invalid('stimulus', INTAKE_GATE_MESSAGES.figureNotResolved)
+
+    let token: string | undefined
+    try {
+      const copy = await this.files.storeManaged({ ownerUserId: ownerId, purpose: 'question_image', bytes: bytes.bytes, isTest: auth.mode !== null })
+      token = copy.publicId
+      const copyId = idFromString(copy.id)
+      await tx.stimulus.update({ where: { id: idFromString(target.stimulusId) }, data: { assetFileId: copyId } })
+      const resolved = { resolution: 'image', fileId: copyId, resolvedById: idFromString(auth.userId) }
+      await tx.diagramAuditResolution.upsert({
+        where: { kind_questionId: { kind: target.kind, questionId: idFromString(target.questionId) } },
+        create: { kind: target.kind, questionId: idFromString(target.questionId), ...resolved },
+        update: resolved,
+      })
+      await tx.intakeItem.update({
+        where: { id: row.id },
+        data: { reviewState: 'accepted', decidedById: idFromString(auth.userId), decidedAt: new Date() },
+      })
+      await tx.intakeItemEvent.create({
+        data: {
+          itemId: row.id,
+          event: 'accepted',
+          fromState: row.reviewState,
+          toState: 'accepted',
+          afterValue: { questionId: target.questionId, groupId: target.groupId, stimulusId: target.stimulusId, assetFileId: copy.id },
+          actorUserId: idFromString(auth.userId),
+          actorRole: auth.active.role,
+        },
+      })
+      await this.record(INTAKE_AUDIT.itemAccepted, auth, row, who, { from: row.reviewState, to: 'accepted', diagram: true, questionId: target.questionId, stimulusId: target.stimulusId }, tx)
+    } catch (err) {
+      if (token !== undefined) await this.files.discard(token, 'question_image')
+      throw err
+    }
   }
 
   /**
