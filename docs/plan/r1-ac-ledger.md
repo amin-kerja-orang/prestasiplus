@@ -107,6 +107,9 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
+| S5-T14 | AC-AS-A1-4 | CI | Pass | 2026-11-05 | team-dd/S-5 | ProfilePages.test.ts::Telefon "12345": "Format telefon tidak sah." shows and nothing is saved; a blank or over-long Nama is refused with its BM line and nothing is saved |
+| S5-T14 | AC-AS-A1-1 | CI | Pass | 2026-11-05 | team-dd/S-5 | ProfilePages.test.ts::a new name updates the session user (avatar initials and shell card); the e-mel stays read-only |
+| S5-T14 | AC-AS-A3-6 | CI | Pass | 2026-11-05 | team-dd/S-5 | PanduanPage.test.ts::?peranan=admin-sekolah shows "Cara Mula Sebagai Admin Sekolah", "Fungsi Admin Sekolah" and "Soalan Lazim Admin"; /panduan alone shows the pupil guide |
 
 ## Sprint 9
 
