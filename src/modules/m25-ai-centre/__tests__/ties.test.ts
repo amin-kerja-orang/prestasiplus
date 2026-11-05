@@ -25,13 +25,17 @@ beforeAll(async () => {
 }, 600_000)
 
 describe('m25-ties', () => {
-  it('orders equal accuracy by topic name', () => {
+  it('orders equal accuracy by Bab number, not by accuracy or name', () => {
     expect(m25Hooks.loadFixture('m25-ties')).toBe(30)
-    const topics = heatmap.forUser(3).flatMap((s) => s.topics)
-    expect(topics.map((t) => [t.chapterId, t.name, t.attempts, t.percent])).toEqual([
-      [14, 'Aspek Tatabahasa D3', 10, 50],
-      [12, 'Kemahiran Membaca D3', 10, 50],
-      [13, 'Kemahiran Menulis D3', 10, 50],
+    const [subject] = heatmap.forUser(3)
+    expect(subject?.name).toBe('Matematik')
+    const tried = subject?.chapters.filter((c) => c.state !== 'belum-cuba') ?? []
+    expect(tried.map((t) => [t.id, t.number, t.attempts, t.accuracy, t.state])).toEqual([
+      ['91', 1, 10, 50, 'amber'],
+      ['92', 2, 10, 50, 'amber'],
+      ['220', 3, 10, 50, 'amber'],
     ])
+    const numbers = subject?.chapters.map((c) => c.number) ?? []
+    expect(numbers).toEqual([...numbers].sort((a, b) => (a ?? Infinity) - (b ?? Infinity)))
   })
 })

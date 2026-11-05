@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
  * M25-T2 S1 page and components (SRS M25 v1.2 FR-M25-09..25) against a mocked client: exact copy, order,
- * links, band classes, the empty state, loading, error, and the hidden Cikgu Pakar block.
+ * links, band classes, the grey tile, the empty state, loading, error, and the hidden Cikgu Pakar block.
  */
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -9,61 +9,62 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { ApiError } from '@/api'
 
-import type { DutaCard, HeatmapResponse } from '../api'
-import { figuresLine, groupDigits, ratingText } from '../components/heatmap/heatmap-copy'
+import type { HeatmapChapter, HeatmapResponse } from '../api'
+import {
+  bandCellClass,
+  cellHref,
+  figuresLine,
+  groupDigits,
+  ratingText,
+  tileLine,
+} from '../components/heatmap/heatmap-copy'
 import HeatmapTopikLemahPage from '../pages/HeatmapTopikLemahPage.vue'
 
 const api = vi.hoisted(() => ({ getHeatmap: vi.fn(), getDutaRecommendation: vi.fn() }))
 vi.mock('../api/heatmap', () => api)
 
-const CARD: DutaCard = {
-  slug: 'cikgu-demo-matematik',
-  name: 'Cikgu Demo Matematik',
-  initials: 'CM',
-  tier: 'bintang',
-  tagline: 'Maestro Matematik · 22 tahun ajar pelajar B40 capai cita-cita.',
-  subject: 'Matematik',
-  state: 'Johor',
-  rating: 4.9,
-  active: true,
-}
+const tile = (
+  id: string,
+  number: number | null,
+  name: string,
+  attempts: number,
+  correct: number,
+  accuracy: number | null,
+  state: HeatmapChapter['state'],
+): HeatmapChapter => ({ id, number, name, attempts, correct, accuracy, state })
 
 const DATA: HeatmapResponse = {
   subjects: [
     {
-      subjectId: 1,
+      id: '1',
+      code: 'BM',
       name: 'Bahasa Melayu',
-      topics: [
-        { chapterId: 87, name: 'Kemahiran Bahasa Tingkatan 4', attempts: 5, correct: 0, percent: 0, band: 'red' },
-        { chapterId: 36, name: 'Kemahiran Membaca', attempts: 5, correct: 3, percent: 60, band: 'amber' },
-        { chapterId: 2, name: 'Kemahiran Menulis', attempts: 1200, correct: 960, percent: 80, band: 'green' },
+      chapters: [
+        tile('87', 1, 'Kemahiran Bahasa Tingkatan 4', 10, 4, 40, 'red'),
+        tile('36', 2, 'Kemahiran Membaca', 7, 4, 57.1, 'amber'),
+        tile('2', 3, 'Kemahiran Menulis', 1200, 960, 80, 'green'),
+        tile('3', 4, 'Aspek Tatabahasa', 0, 0, null, 'belum-cuba'),
+        tile('4', null, 'Tanpa Bab', 3, 1, 33.3, 'red'),
       ],
     },
     {
-      subjectId: 5,
+      id: '5',
+      code: 'SEJ',
       name: 'Sejarah',
-      topics: [
-        { chapterId: 382, name: 'Sejarah Tingkatan 5 KSSM', attempts: 40, correct: 14, percent: 35, band: 'red' },
-      ],
+      chapters: [tile('382', 1, 'Sejarah Tingkatan 5 KSSM', 40, 14, 35, 'red')],
     },
   ],
 }
 
 let wrapper: VueWrapper | undefined
 
-async function mountPage(
-  heat: HeatmapResponse | ApiError | 'pending',
-  duta: DutaCard | null | Error = CARD,
-  extraRoutes: { path: string; component: object }[] = [],
-) {
+async function mountPage(heat: HeatmapResponse | ApiError | 'pending') {
   if (heat === 'pending') api.getHeatmap.mockReturnValue(new Promise(() => undefined))
   else if (heat instanceof ApiError) api.getHeatmap.mockRejectedValue(heat)
   else api.getHeatmap.mockResolvedValue(heat)
-  if (duta instanceof Error) api.getDutaRecommendation.mockRejectedValue(duta)
-  else api.getDutaRecommendation.mockResolvedValue(duta)
   const router = createRouter({
     history: createMemoryHistory(),
-    routes: [{ path: '/', component: { template: '<div />' } }, ...extraRoutes],
+    routes: [{ path: '/', component: { template: '<div />' } }],
   })
   await router.push('/')
   await router.isReady()
@@ -86,7 +87,27 @@ describe('copy helpers', () => {
     expect(groupDigits(999)).toBe('999')
     expect(groupDigits(1000)).toBe('1,000')
     expect(figuresLine(1200, 80)).toBe('1,200 cuba · 80% betul')
+    expect(figuresLine(7, 57.1)).toBe('7 cuba · 57% betul')
+    expect(figuresLine(2, 62.5)).toBe('2 cuba · 63% betul')
+    expect(figuresLine(1, 0.5)).toBe('1 cuba · 1% betul')
     expect(ratingText(4.9)).toBe('4.90')
+  })
+})
+
+describe('tile helpers', () => {
+  it('a grey tile reads "Belum cuba", the others the figures line', () => {
+    expect(tileLine(tile('1', 1, 'x', 0, 0, null, 'belum-cuba'))).toBe('Belum cuba')
+    expect(tileLine(tile('1', 1, 'x', 10, 4, 40, 'red'))).toBe('10 cuba · 40% betul')
+    expect(tileLine(tile('1', 1, 'x', 1, 1, 100, 'green'))).toBe('1 cuba · 100% betul')
+  })
+  it('has a grey class and the V3 classes for the bands', () => {
+    expect(bandCellClass('belum-cuba')).toContain('text-muted')
+    expect(bandCellClass('red')).toContain('bg-heat')
+    expect(bandCellClass('amber')).toContain('bg-heat/35')
+    expect(bandCellClass('green')).toContain('bg-elevated')
+  })
+  it('builds the tile link from the subject code only (Q-1), no query', () => {
+    expect(cellHref({ code: 'MATH' })).toBe('/practice/chapter/MATH')
   })
 })
 
@@ -113,19 +134,36 @@ describe('HeatmapTopikLemahPage', () => {
     expect(w.findAll('h2').map((h) => h.text())).toEqual(['Bahasa Melayu', 'Sejarah'])
     const cells = w.findAll('[data-testid="heatmap-cell"]')
     expect(cells.map((c) => c.text())).toEqual([
-      'Kemahiran Bahasa Tingkatan 45 cuba · 0% betul',
-      'Kemahiran Membaca5 cuba · 60% betul',
+      'Kemahiran Bahasa Tingkatan 410 cuba · 40% betul',
+      'Kemahiran Membaca7 cuba · 57% betul',
       'Kemahiran Menulis1,200 cuba · 80% betul',
+      'Aspek TatabahasaBelum cuba',
+      'Tanpa Bab3 cuba · 33% betul',
       'Sejarah Tingkatan 5 KSSM40 cuba · 35% betul',
     ])
-    for (const c of cells) {
-      expect(c.attributes('href')).toBe('/practice/chapter')
-      expect(c.attributes('title')).toBeUndefined()
-    }
-    expect(cells.map((c) => c.attributes('data-band'))).toEqual(['red', 'amber', 'green', 'red'])
+    expect(cells.map((c) => c.attributes('href'))).toEqual([
+      ...Array(5).fill('/practice/chapter/BM'),
+      '/practice/chapter/SEJ',
+    ])
+    for (const c of cells) expect(c.attributes('title')).toBeUndefined()
+    expect(cells.map((c) => c.attributes('data-band'))).toEqual([
+      'red',
+      'amber',
+      'green',
+      'belum-cuba',
+      'red',
+      'red',
+    ])
     expect(cells[0]!.classes()).toContain('bg-heat')
     expect(cells[1]!.classes()).toContain('bg-heat/35')
     expect(cells[2]!.classes()).toContain('bg-elevated')
+    expect(cells[3]!.classes()).toContain('text-muted')
+    // A 10-attempt tile and a grey tile need no minimum of 5 (a 3-attempt tile is shown).
+    expect(cells[4]!.text()).toContain('3 cuba')
+    // The grid is auto-fill (AC-MUR-14-4).
+    expect(w.get('[data-testid="heatmap-grid"]').classes().join(' ')).toContain(
+      'repeat(auto-fill,minmax(12rem,1fr))',
+    )
     expect(w.find('[data-testid="heatmap-empty"]').exists()).toBe(false)
   })
 
@@ -136,7 +174,7 @@ describe('HeatmapTopikLemahPage', () => {
     expect(w.find('[data-testid="heatmap-hero"]').exists()).toBe(true)
     expect(w.findAll('[data-testid="heatmap-legend"] li')).toHaveLength(4)
     const empty = w.get('[data-testid="heatmap-empty"]')
-    expect(empty.text()).toContain('Belum ada data heatmap.')
+    expect(empty.text()).toContain('Belum ada data heatmap lagi.')
     expect(empty.text()).toContain(
       'Jawab soalan latih tubi dahulu — topik kuat dan lemah anda akan dipaparkan di sini.',
     )
@@ -146,66 +184,24 @@ describe('HeatmapTopikLemahPage', () => {
   })
 
   it('shows the error box and no partial cell when #1 fails', async () => {
-    const w = await mountPage(new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Ralat pelayan ujian' }))
+    const w = await mountPage(
+      new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Ralat pelayan ujian' }),
+    )
     expect(w.get('[data-testid="heatmap-error"]').text()).toContain('Ralat pelayan ujian')
     expect(w.findAll('[data-testid="heatmap-cell"]')).toHaveLength(0)
     expect(w.find('[data-testid="heatmap-hero"]').exists()).toBe(false)
   })
 
-  it('renders the Cikgu Pakar card above the hero with initials, name h4, tagline and four pills', async () => {
-    const w = await mountPage(DATA, CARD, [
-      { path: '/bilik-duta/:slug', component: { template: '<div />' } },
-    ])
-    const block = w.get('[data-testid="cikgu-pakar"]')
-    expect(block.text()).toContain('🌟 Cikgu Pakar Untuk Topik Lemah')
-    const order = w.findAll('[data-testid="cikgu-pakar"], [data-testid="heatmap-hero"], h2')
-    expect(order.map((e) => e.attributes('data-testid') ?? e.text())).toEqual([
-      'cikgu-pakar',
-      'heatmap-hero',
-      'Bahasa Melayu',
-      'Sejarah',
-    ])
-    const card = w.get('[data-testid="cikgu-card"]')
-    expect(card.attributes('href')).toBe('/bilik-duta/cikgu-demo-matematik')
-    expect(card.attributes('title')).toBeUndefined()
-    expect(w.get('[data-testid="cikgu-avatar"]').text()).toBe('CM')
-    expect(w.get('[data-testid="cikgu-avatar"]').classes()).toEqual(
-      expect.arrayContaining(['rounded-full', 'size-14', 'bg-heat']),
-    )
-    expect(w.get('h4').text()).toBe('Cikgu Demo Matematik')
-    expect(w.get('[data-testid="cikgu-tagline"]').text()).toBe(CARD.tagline)
-    const pills = w.get('[data-testid="cikgu-pills"]').findAll('span')
-    expect(pills.map((p) => p.text())).toEqual([
-      '🥇 Duta Bintang',
-      '📚 Matematik',
-      '📍 Johor',
-      '⭐ 4.90',
-    ])
-    for (const p of pills) expect(p.classes()).toContain('text-caption')
-  })
-
-  it('shows the Cikgu Pakar card as non-navigating markup while /bilik-duta/{slug} is not routed (D9)', async () => {
+  it('hides the Cikgu Pakar block in R1 (FR-MUR-14-2) and does not call #2', async () => {
     const w = await mountPage(DATA)
-    const card = w.get('[data-testid="cikgu-card"]')
-    expect(card.element.tagName).toBe('DIV')
-    expect(card.attributes('href')).toBeUndefined()
-    expect(w.get('h4').text()).toBe('Cikgu Demo Matematik')
-  })
-
-  it.each([
-    ['null', null],
-    ['a failed #2', new Error('boom')],
-  ])('hides the Cikgu Pakar block when #2 is %s and keeps the rest', async (_name, duta) => {
-    const w = await mountPage(DATA, duta)
     expect(w.find('[data-testid="cikgu-pakar"]').exists()).toBe(false)
-    expect(w.find('[data-testid="heatmap-hero"]').exists()).toBe(true)
-    expect(w.findAll('[data-testid="heatmap-cell"]')).toHaveLength(4)
+    expect(w.text()).not.toContain('Cikgu Pakar')
+    expect(api.getDutaRecommendation).not.toHaveBeenCalled()
   })
 
-  it('calls only #1 and #2, once each, with no user parameter', async () => {
+  it('calls only #1, once, with no user parameter', async () => {
     await mountPage(DATA)
     expect(api.getHeatmap).toHaveBeenCalledTimes(1)
-    expect(api.getDutaRecommendation).toHaveBeenCalledTimes(1)
     expect(Object.keys(api.getHeatmap.mock.calls[0]![0] as object)).toEqual(['signal'])
   })
 })
