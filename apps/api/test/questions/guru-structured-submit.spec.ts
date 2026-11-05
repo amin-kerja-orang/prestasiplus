@@ -1,8 +1,10 @@
-import { GuruStructuredDetailSchema, GuruStructuredRowSchema, ListMetaSchema, SessionSchema, envelopeOf } from '@pp/contract'
+import { GuruStructuredDetailSchema, GuruStructuredRowSchema, ListMetaSchema, SessionSchema, envelopeOf, type QuestionPart } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { z } from 'zod'
 
+import { QuestionsService } from '../../src/modules/questions'
 import { ACCOUNTS, DEMO_PASSWORD, bootQuestionsApp, expectError, loginAs, type Client, type QuestionsTestApp } from './helpers'
+import { adminActor, mcqInput, rich, tagBody, tagOf } from './fixtures'
 import { refsOf, type Refs } from './http-helpers'
 
 const ListSchema = z.object({ data: z.array(GuruStructuredRowSchema), meta: ListMetaSchema })
@@ -350,40 +352,50 @@ describe('Guru structured submission: POST/PUT/DELETE /guru/intake/structured an
   })
 
   it('a 1-part submission (an essay in the bank) is listed once as approved by its guru origin marker; a plain essay is not; a 2-part one still is', async () => {
-    const served = (await list(teacher, '?status=approved')).data.filter((r) => r.source === 'question')
-    expect(served.length).toBeGreaterThan(1)
-    const [onePart, plainEssay, twoPart] = [served[0]?.id as string, served[1]?.id as string, served[2]?.id ?? (served[0]?.id as string)]
-    const typeOf = async (id: string) => (await t.db.query<{ type: string }>(`select v.type from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no where q.id = $1`, [id]))[0]?.type as string
-    const before = new Map<string, string>([
-      [onePart, await typeOf(onePart)],
-      [plainEssay, await typeOf(plainEssay)],
-    ])
-    const retype = (id: string, type: string) =>
-      t.db.query(`update question_versions v set type = $2 from questions q where q.id = v.question_id and v.version_no = q.live_version_no and q.id = $1`, [id, type])
-    const total = (await list(teacher, '?status=approved')).meta.totalItems
-    const one = await created(teacher, { stimulus: 'Satu bahagian sahaja.', parts: [part()] })
-    expect(one).toMatchObject({ subCount: 1 })
-    await t.db.query(`update intake_items set review_state = 'accepted', question_id = $2 where id = $1`, [one.id.slice(1), onePart])
-    const two = await created(teacher, { stimulus: 'Dua bahagian.' })
-    await t.db.query(`update intake_items set review_state = 'accepted', question_id = $2 where id = $1`, [two.id.slice(1), twoPart])
-    await retype(onePart, 'essay')
-    await retype(plainEssay, 'essay')
+    // The bank questions are built here through the real service (the questions app has no intake Terima): a 1-part one is typed `essay`
+    // by `versionTypeOf`, a 2-part one `structured`. None of them is linked to a guru item until the test links it, like Terima does.
+    const svc = t.app.get(QuestionsService)
+    const tag = await tagOf(t.db, 'SEED-STR-ECF')
+    const admin = await adminActor(t.db)
+    const make = async (stem: string, parts: QuestionPart[]): Promise<string> =>
+      (await svc.create(mcqInput(tag, { questionType: 'essay', questionText: stem, status: 'approved', tag: tagBody(tag, 3), parts }), admin)).id
+    const leaf = (label: string, marks: number): QuestionPart =>
+      ({ label, prompt: rich(`Soalan ${label}`), mode: 'short_text', marks, cognitiveLevel: 'mengaplikasi', key: { kind: 'accepted', values: [`jawapan ${label}`] } }) as QuestionPart
+    const ids = {
+      one: await make('Satu bahagian dari guru.', [leaf('(a)', 4)]),
+      two: await make('Dua bahagian dari guru.', [leaf('(a)', 2), leaf('(b)', 3)]),
+      plainEssay: await make('Esei biasa tanpa penanda guru.', [leaf('(a)', 4)]),
+    }
+    const unlinked = async (id: string) => (await t.db.query<{ n: string }>(`select count(*)::text n from questions q where q.id = $1 and not exists (select 1 from intake_items i where i.question_id = q.id)`, [id]))[0]?.n === '1'
+    for (const id of Object.values(ids)) expect(await unlinked(id), id).toBe(true)
+    expect(await count(`select count(*)::text n from question_versions v join questions q on q.id = v.question_id and v.version_no = q.live_version_no where q.id = ${ids.one}::bigint and v.type = 'essay'`)).toBe(1)
+    const oneItem = await created(teacher, { stimulus: 'Satu bahagian sahaja.', parts: [part()] })
+    const twoItem = await created(teacher, { stimulus: 'Dua bahagian.' })
+    expect(oneItem).toMatchObject({ subCount: 1 })
+    const link = (item: string, question: string) => t.db.query(`update intake_items set review_state = 'accepted', question_id = $2 where id = $1`, [item.slice(1), question])
     try {
+      expect((await list(teacher, '?status=approved')).data.map((r) => r.id)).not.toContain(ids.one)
+      await link(oneItem.id, ids.one)
+      await link(twoItem.id, ids.two)
       const approved = await list(teacher, '?status=approved')
       const all = await list(teacher)
-      // The 1-part one stays listed (marker); the plain essay (no guru item) drops out; nothing is duplicated.
-      expect(approved.data.filter((r) => r.id === onePart)).toHaveLength(1)
-      expect(approved.data.map((r) => r.id)).not.toContain(plainEssay)
-      expect(approved.meta.totalItems).toBe(total - 1)
-      expect(all.data.filter((r) => r.id === onePart)).toHaveLength(1)
-      expect(approved.data.filter((r) => r.id === twoPart)).toHaveLength(1)
-      for (const id of [one.id, two.id]) expect([...all.data, ...(await list(teacher, '?status=review')).data].map((r) => r.id)).not.toContain(id)
-      const detail = Detail.parse((await teacher.get(`/api/guru/structured-questions/${onePart}`)).body).data
-      expect(detail).toMatchObject({ id: onePart, status: 'approved', subCount: 1 })
+      const review = await list(teacher, '?status=review')
+      expect(approved.data.filter((r) => r.id === ids.one)).toEqual([expect.objectContaining({ source: 'question', status: 'approved', subCount: 1 })])
+      expect(all.data.filter((r) => r.id === ids.one)).toHaveLength(1)
+      expect(approved.data.filter((r) => r.id === ids.two)).toHaveLength(1)
+      // A plain essay is not listed: the marker must come from the guru item.
+      expect(approved.data.map((r) => r.id)).not.toContain(ids.plainEssay)
+      expect(all.data.map((r) => r.id)).not.toContain(ids.plainEssay)
+      // The accepted submissions are no own review rows, and the union has no duplicate.
+      for (const id of [oneItem.id, twoItem.id]) expect([...all.data, ...review.data].map((r) => r.id)).not.toContain(id)
+      expect(all.meta.totalItems).toBe(review.meta.totalItems + approved.meta.totalItems)
+      const detail = Detail.parse((await teacher.get(`/api/guru/structured-questions/${ids.one}`)).body).data
+      expect(detail).toMatchObject({ id: ids.one, status: 'approved', subCount: 1, totalMarks: 4 })
       expect(detail.subQuestions).toHaveLength(1)
-      expectError(await teacher.get(`/api/guru/structured-questions/${plainEssay}`), 'NOT_FOUND')
+      expectError(await teacher.get(`/api/guru/structured-questions/${ids.plainEssay}`), 'NOT_FOUND')
     } finally {
-      for (const [id, type] of before) await retype(id, type)
+      await t.db.query(`update intake_items set question_id = null, review_state = 'needs_review' where id = any($1::bigint[])`, [[oneItem.id.slice(1), twoItem.id.slice(1)]])
+      await t.db.query(`update questions set is_active = false where id = any($1::bigint[])`, [Object.values(ids)])
     }
   })
 
