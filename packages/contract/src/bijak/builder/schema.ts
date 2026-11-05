@@ -6,6 +6,7 @@ import {
   BIJAK_PAPERS_MESSAGES,
   BijakBlueprintSourceSchema,
   BijakPaperReferencePanelSchema,
+  BijakPaperSurfaceSchema,
 } from '../papers/schema'
 import {
   BijakBlueprintClientSourceSchema,
@@ -95,6 +96,40 @@ export const BIJAK_BUILDER_MESSAGES = {
   choiceUnitsUnequal: 'Markah antara unit mesti sama.',
   /** S3-T02, PRD30 Q-13 row action `Padam`. */
   deleteTerbitSet: 'Tarik balik set ini ke draf dahulu.',
+  /** S3-T06, PRD30 field 18-02. */
+  subjektifTitleRequired: 'Tajuk diperlukan.',
+  /** S3-T06, PRD30 field 18-02: Tajuk at most 150 characters. [DOC DEFECT: no BM text in the PRD; default] */
+  subjektifTitleTooLong: 'Tajuk tidak boleh melebihi 150 aksara.',
+  /** S3-T06, PRD30 field 18-05. */
+  examBoardRequired: 'Negeri atau badan diperlukan.',
+  /** S3-T06, PRD30 field 18-06. */
+  yearRequired: 'Tahun diperlukan.',
+  /** S3-T06, PRD30 field 18-07 (PO decision 2026-11-05, item 17: 0 or empty = untimed). */
+  durationRange: 'Tempoh mesti antara 0 dan 300 minit.',
+  /** S3-T06, PRD30 field 18-08: Jumlah Markah 1 to 200 on create/edit. [DOC DEFECT: no BM text in the PRD for the range; default] */
+  totalMarksRange: 'Jumlah markah mesti antara 1 dan 200.',
+  /** S3-T06, PRD30 field 18-08 at Terbit: {a} = Jumlah Markah, {b} = the sum of the placed questions' marks. */
+  totalMarksMismatch: 'Jumlah markah ({a}) mesti sama dengan jumlah markah bahagian ({b}).',
+  /** S3-T06, FR-ADM-Q18.3: Terbit with no placed question. */
+  subjektifNoContent: '“{title}” tiada kandungan — tidak boleh diterbitkan.',
+  /** S3-T06, FR-ADM-Q18.8 / field 18-10: Terbit with a question that has no scheme. */
+  subjektifNoScheme: 'tiada skema — tidak disajikan',
+  /** S3-T06, field 18-09 (API-BIJAK-14 source upload). */
+  sourcePdfInvalid: 'Format fail tidak sah. Gunakan .pdf.',
+  /** S3-T06, field 18-09. */
+  sourcePdfTooLarge: 'Fail melebihi had 30 MB.',
+  /** S3-T06, API-BIJAK-14 apply (same rule as API-Q-25). */
+  paperPublishedWithdrawFirst: 'Kertas ini sudah diterbitkan. Tarik balik ke draf dahulu.',
+  /** S3-T06, API-BIJAK-14 apply: `{n}` = items of the batch still open (same as API-Q-25, ERR-CON-05). */
+  itemsUndecided: '{n} item belum diputuskan.',
+  /** S3-T06, API-BIJAK-14: the paper has no source batch yet. [DOC DEFECT: no BM text in the PRD; default] */
+  sourceBatchMissing: 'Muat naik PDF sumber dahulu.',
+  /** S3-T06, flashes of PRD30 field 18-11. */
+  subjektifCreated: '“{title}” telah dicipta sebagai draf.',
+  subjektifUpdated: '“{title}” telah dikemas kini.',
+  subjektifDeleted: '“{title}” telah dipadam.',
+  subjektifPublished: '“{title}” kini diterbitkan.',
+  subjektifHidden: '“{title}” disembunyikan daripada pelajar.',
   /** [PROPOSED] R1-T34 */
   groupNotOnPaper: 'Kumpulan rangsangan ini tiada dalam kertas ini',
   /** [PROPOSED] R1-T34 */
@@ -479,7 +514,7 @@ export const BijakBuilderPaperSchema = z
     kertas: Kertas,
     year: z.number().int(),
     code: z.string().min(1).meta({ description: 'Printed paper code.', example: '1449/2' }),
-    durationMin: z.number().int().min(1),
+    durationMin: z.number().int().min(0).meta({ description: 'Printed duration; 0 only on an untimed Kertas Subjektif paper (S3-T06).' }),
     instructions: z.array(z.string()).meta({ description: 'Cover instruction lines, verbatim.' }),
     reference: ReferencePanels.optional().meta({
       description: 'Reference-sheet panels; absent when the paper has none.',
@@ -497,6 +532,10 @@ export const BijakBuilderPaperSchema = z
     sourceBatchId: IdSchema.optional().meta({
       description: 'S3-T02, FR-ADM-Q07.7: present on a draft imported from an intake batch (DM-45, filled by S1-T10): `Terbitkan` is then offered only from the preview. Absent on every other paper.',
     }),
+    surface: BijakPaperSurfaceSchema.optional().meta({ description: 'S3-T06 (DM-23): always sent by the server; `subjektif` = a Kertas Subjektif paper.' }),
+    examBoard: z.string().min(1).nullable().optional().meta({ description: 'S3-T06 `Negeri` (OPT-NEGERI-KERTAS slug); null when unset.' }),
+    durationMinutes: z.number().int().min(0).max(300).nullable().optional().meta({ description: 'S3-T06 `Tempoh (minit)`; null or 0 = untimed, shown as "—".' }),
+    totalMarks: z.number().int().min(1).nullable().optional().meta({ description: 'S3-T06 `Jumlah Markah` typed by the admin; null on a Simulasi paper.' }),
   })
   .meta({ id: 'BijakBuilderPaper' })
 export type BijakBuilderPaper = z.infer<typeof BijakBuilderPaperSchema>
@@ -534,6 +573,14 @@ export const BijakBuilderPaperSummarySchema = z
       .array(z.strictObject({ negeri: z.string(), count: z.number().int().min(1) }))
       .optional()
       .meta({ description: 'S3-T02 origin of the placed questions per Negeri (`source_papers.exam_board`), largest first; empty when none is known.' }),
+    surface: BijakPaperSurfaceSchema.optional().meta({ description: 'S3-T06 (DM-23); always sent by the server.' }),
+    examBoard: z.string().min(1).nullable().optional().meta({ description: 'S3-T06 column `Negeri` (OPT-NEGERI-KERTAS slug).' }),
+    year: z.number().int().optional().meta({ description: 'S3-T06 column `Tahun`.' }),
+    schemeCount: z.number().int().min(0).optional().meta({
+      description: 'S3-T06 column `Kandungan` "{q} soalan, {s} bersekema": placed questions whose every self-marked/auto-marked leaf has a scheme (s). Sent on `surface=subjektif` rows.',
+    }),
+    totalMarks: z.number().int().min(1).nullable().optional().meta({ description: 'S3-T06 `Jumlah Markah` of a Kertas Subjektif paper.' }),
+    durationMinutes: z.number().int().min(0).max(300).nullable().optional().meta({ description: 'S3-T06 `Tempoh (minit)`; null or 0 = untimed.' }),
   })
   .meta({ id: 'BijakBuilderPaperSummary' })
 export type BijakBuilderPaperSummary = z.infer<typeof BijakBuilderPaperSummarySchema>
@@ -720,16 +767,44 @@ export const BijakBuilderEditorSchema = z
   .meta({ id: 'BijakBuilderEditor' })
 export type BijakBuilderEditor = z.infer<typeof BijakBuilderEditorSchema>
 
-/** `POST /admin/papers` body (`createPaper`): the blueprint is found by subject and kertas. */
+/** S3-T06: `Tempoh (minit)` 0..300 or null (untimed), PO decision 2026-11-05 item 17. */
+const SubjektifDuration = z.number({ error: BIJAK_BUILDER_MESSAGES.durationRange }).int(BIJAK_BUILDER_MESSAGES.durationRange).min(0, BIJAK_BUILDER_MESSAGES.durationRange).max(300, BIJAK_BUILDER_MESSAGES.durationRange)
+/** S3-T06: `Jumlah Markah` 1..200. */
+const SubjektifTotalMarks = z.number({ error: BIJAK_BUILDER_MESSAGES.totalMarksRange }).int(BIJAK_BUILDER_MESSAGES.totalMarksRange).min(1, BIJAK_BUILDER_MESSAGES.totalMarksRange).max(200, BIJAK_BUILDER_MESSAGES.totalMarksRange)
+
+/**
+ * `POST /admin/papers` body (`createPaper`). Simulasi (default): the blueprint is found by subject and kertas. Kertas Subjektif
+ * (`surface: 'subjektif'`, S3-T06, form 18-02..18-08 of PRD30 Q-18): no Kontrak; `title` (<= 150), `examBoard`, `year` and
+ * `totalMarks` are required, `kertas` is 2, 3 or 4, `durationMinutes` is optional (0..300, null/0 = untimed).
+ */
 export const BijakBuilderPaperCreateSchema = z
   .strictObject({
-    subject: z.string().trim().min(1).max(32).meta({ example: 'MAT' }),
+    subject: z.string().trim().min(1, BIJAK_BUILDER_MESSAGES.subjectRequired).max(32).meta({ example: 'MAT' }),
     kertas: Kertas,
     title: z.string().trim().max(200, BIJAK_BUILDER_MESSAGES.titleTooLong).optional().meta({
       description:
-        'Trimmed, at most 200 characters (422 `fields.title` "Tajuk kertas tidak boleh melebihi 200 aksara."); omitted or blank = the default "Percubaan SPM {subjectName} Kertas {kertas} (draf)" (the mock ignores a blank title on create).',
+        'Trimmed, at most 200 characters (422 `fields.title` "Tajuk kertas tidak boleh melebihi 200 aksara."); omitted or blank = the default "Percubaan SPM {subjectName} Kertas {kertas} (draf)" (the mock ignores a blank title on create). Kertas Subjektif: required, at most 150.',
     }),
     levelScope: BijakLevelScopeSchema.optional().meta({ description: 'S3-T02 `Dilihat murid`; omitted = the default from the contract.' }),
+    surface: BijakPaperSurfaceSchema.optional().meta({ description: 'S3-T06: omitted = `simulasi`.' }),
+    examBoard: z.string().trim().max(60).optional().meta({ description: 'S3-T06 `Negeri` (OPT-NEGERI-KERTAS); stored as its slug. Required for subjektif.', example: 'selangor' }),
+    year: z.number().int().min(1900).max(2100).optional().meta({ description: 'S3-T06 `Tahun` (OPT-TAHUN). Required for subjektif.' }),
+    durationMinutes: SubjektifDuration.nullable().optional().meta({ description: 'S3-T06 `Tempoh (minit)`.' }),
+    totalMarks: SubjektifTotalMarks.optional().meta({ description: 'S3-T06 `Jumlah Markah`. Required for subjektif.' }),
+  })
+  .superRefine((b, ctx) => {
+    if (b.surface !== 'subjektif') {
+      for (const k of ['examBoard', 'year', 'durationMinutes', 'totalMarks'] as const) {
+        if (b[k] !== undefined) ctx.addIssue({ code: 'custom', path: [k], message: 'Only for a Kertas Subjektif paper (surface subjektif).' })
+      }
+      return
+    }
+    if (!b.title) ctx.addIssue({ code: 'custom', path: ['title'], message: BIJAK_BUILDER_MESSAGES.subjektifTitleRequired })
+    else if (b.title.length > 150) ctx.addIssue({ code: 'custom', path: ['title'], message: BIJAK_BUILDER_MESSAGES.subjektifTitleTooLong })
+    if (b.kertas < 2 || b.kertas > 4) ctx.addIssue({ code: 'custom', path: ['kertas'], message: BIJAK_BUILDER_MESSAGES.kertasInvalid })
+    if (!b.examBoard) ctx.addIssue({ code: 'custom', path: ['examBoard'], message: BIJAK_BUILDER_MESSAGES.examBoardRequired })
+    if (b.year === undefined) ctx.addIssue({ code: 'custom', path: ['year'], message: BIJAK_BUILDER_MESSAGES.yearRequired })
+    if (b.totalMarks === undefined) ctx.addIssue({ code: 'custom', path: ['totalMarks'], message: BIJAK_BUILDER_MESSAGES.totalMarksRange })
   })
   .meta({ id: 'BijakBuilderPaperCreate' })
 export type BijakBuilderPaperCreate = z.infer<typeof BijakBuilderPaperCreateSchema>
@@ -787,6 +862,9 @@ export const BijakBuilderPaperPatchSchema = z
       .optional()
       .meta({ description: 'R1-T34 "Bahan rujukan (kulit kertas)": replaces the whole reference-sheet list (a panel may carry an uploaded image, `imageFileId`).' }),
     sections: z.array(BijakBuilderSectionPatchSchema).max(20).optional(),
+    examBoard: z.string().trim().min(1, BIJAK_BUILDER_MESSAGES.examBoardRequired).max(60).optional().meta({ description: 'S3-T06 `Negeri` of a Kertas Subjektif paper (Sunting).' }),
+    durationMinutes: SubjektifDuration.nullable().optional().meta({ description: 'S3-T06 `Tempoh (minit)` of a Kertas Subjektif paper; null/0 = untimed.' }),
+    totalMarks: SubjektifTotalMarks.optional().meta({ description: 'S3-T06 `Jumlah Markah` of a Kertas Subjektif paper.' }),
   })
   .meta({ id: 'BijakBuilderPaperPatch' })
 export type BijakBuilderPaperPatch = z.infer<typeof BijakBuilderPaperPatchSchema>
@@ -1022,8 +1100,26 @@ export const BijakBuilderPaperListQuerySchema = z
     search: z.string().trim().max(100).optional().meta({
       description: 'R12 "Cari": case-insensitive substring of the paper title or code (kod kertas). Blank = no filter.',
     }),
+    surface: BijakPaperSurfaceSchema.default('simulasi').meta({
+      description: 'S3-T06 (DM-23): `simulasi` (default, Set Builder list unchanged) or `subjektif` (Kertas Subjektif list; `meta.counts` = {total, published, withScheme}).',
+    }),
+    kertas: z.coerce.number().int().min(1).max(9).optional().meta({ description: 'S3-T06 filter `Semua Kertas`.' }),
+    year: z.coerce.number().int().min(1900).max(2100).optional().meta({ description: 'S3-T06 filter `Tahun`.' }),
+    negeri: z.string().trim().max(60).optional().meta({ description: 'S3-T06 filter `Negeri` (compared by slug with `exam_board`).' }),
   })
   .meta({ id: 'BijakBuilderPaperListQuery' })
+
+/** S3-T06 API-BIJAK-14: `POST /admin/papers/{id}/source` with a JSON body `{ apply: true }` appends the accepted items of the paper's source batch. */
+export const BijakBuilderPaperSourceApplySchema = z.strictObject({ apply: z.literal(true) }).meta({ id: 'BijakBuilderPaperSourceApply' })
+export type BijakBuilderPaperSourceApply = z.infer<typeof BijakBuilderPaperSourceApplySchema>
+
+/** S3-T06 API-BIJAK-14: answer of the source upload (multipart `paper`, optional `scheme`): the intake batch created for THIS paper. */
+export const BijakBuilderPaperSourceUploadResultSchema = z.strictObject({ batchId: IdSchema }).meta({ id: 'BijakBuilderPaperSourceUploadResult' })
+export type BijakBuilderPaperSourceUploadResult = z.infer<typeof BijakBuilderPaperSourceUploadResultSchema>
+
+/** S3-T06 API-BIJAK-14: answer of `{ apply: true }`: the number of placements appended by this call (0 on a repeat with nothing new). */
+export const BijakBuilderPaperSourceApplyResultSchema = z.strictObject({ placements: z.number().int().min(0) }).meta({ id: 'BijakBuilderPaperSourceApplyResult' })
+export type BijakBuilderPaperSourceApplyResult = z.infer<typeof BijakBuilderPaperSourceApplyResultSchema>
 export type BijakBuilderPaperListQuery = z.infer<typeof BijakBuilderPaperListQuerySchema>
 
 /* ----------------------------------------------------------------------------- error bodies */
