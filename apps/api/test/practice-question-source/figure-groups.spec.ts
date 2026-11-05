@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { prngStream } from '../../src/db/prng'
+import { refreshStimulusFlag } from '../../src/modules/questions/effective-leaf'
 import { groupOf, wireStimulus } from '../../src/modules/practice/practice.service'
 import { Be09PracticeQuestionSource } from '../../src/modules/practice/question-bridge/be09-practice-question-source'
 import { QuestionsRepository, QuestionsService } from '../../src/modules/questions'
@@ -43,6 +44,15 @@ async function publish(key: string, over: Record<string, unknown> = {}, approve 
   return created.id
 }
 
+/**
+ * The stimulus flag is stored (S1-T07): a stem that names a figure ("rajah") is `stimulus_missing`, and not served, until a figure is linked. The product
+ * recomputes it on every write path; this fixture links by raw insert, so it runs the same refresh the product runs after a link.
+ */
+const linkStimulus = async (questionId: string, stimulusId: string): Promise<void> => {
+  await q(`insert into question_version_stimuli (question_version_id, stimulus_id, position) select id, $2, 1 from question_versions where question_id = $1`, [questionId, stimulusId])
+  await t.db.prisma.$transaction(async (tx) => refreshStimulusFlag(tx, BigInt(questionId), 1, new Date()))
+}
+
 const imageStimulus = async (label: string): Promise<string> =>
   (await q(`insert into stimuli (kind, label, alt_text, asset_file_id) values ('image', $2, 'Rajah', $1) returning id::text id`, [await fileRow(), label]))[0]?.id as string
 
@@ -60,10 +70,11 @@ beforeAll(async () => {
   // The shipped surface list: no override.
   source = new Be09PracticeQuestionSource(t.app.get(QuestionsRepository), { getMany: () => Promise.resolve([]) } as unknown as UsersRepository, undefined, files)
 
-  for (let i = 1; i <= 5; i++) await publish(`single${String(i)}`)
+  // Plain questions name no figure (a stem that says "rajah" with none linked is flagged and never served).
+  for (let i = 1; i <= 5; i++) await publish(`single${String(i)}`, { questionText: `Soalan single${String(i)} biasa` })
   // A figure question: its figure is linked to its version.
   await publish('figure')
-  await q(`insert into question_version_stimuli (question_version_id, stimulus_id, position) select id, $2, 1 from question_versions where question_id = $1`, [made.figure, await imageStimulus('Rajah 1')])
+  await linkStimulus(made.figure as string, await imageStimulus('Rajah 1'))
   // A whole group of 3 sharing a figure, and an incomplete group (one member a draft).
   const svc = t.app.get(QuestionsService)
   const good = await svc.createStimulusGroup({ label: 'Rajah 2', scope: 'section', stimulusIds: [await imageStimulus('Rajah 2')], optionBank: [] })
@@ -74,7 +85,7 @@ beforeAll(async () => {
   // A figure with no picture: it cannot be drawn, so the question is never served.
   await publish('lost')
   const noFile = (await q(`insert into stimuli (kind, label, alt_text) values ('image', 'Tanpa fail', 'x') returning id::text id`))[0]?.id
-  await q(`insert into question_version_stimuli (question_version_id, stimulus_id, position) select id, $2, 1 from question_versions where question_id = $1`, [made.lost, noFile])
+  await linkStimulus(made.lost as string, noFile as string)
 }, 180_000)
 
 afterAll(async () => {
