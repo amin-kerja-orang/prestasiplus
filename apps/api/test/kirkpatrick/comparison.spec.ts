@@ -25,9 +25,10 @@ describe('Overview comparison: no data is not a decline (FR-X4-3)', () => {
     t = await bootKirkpatrickApp()
     await treatDemoAsSecondary(t.db, false)
     await buildWorld(t)
-    // Move every answer of October back by 60 days: the first month with an answer is July, the current month (October) is empty.
-    await t.db.query(`update practice_sessions set started_at = started_at - interval '60 days', completed_at = completed_at - interval '60 days' where completed_at >= '2026-10-01'`)
-    await t.db.query(`update practice_answers set answered_at = answered_at - interval '60 days' where answered_at >= '2026-10-01'`)
+    // Move every answer from 1 September on back by 90 days (Sep 1 to Oct 19 lands on Jun 3 to Jul 21): the first month with an
+    // answer is then in the summer and both September and the current month (October) are empty, whatever the seed holds.
+    await t.db.query(`update practice_sessions set started_at = started_at - interval '90 days', completed_at = completed_at - interval '90 days' where completed_at >= '2026-09-01'`)
+    await t.db.query(`update practice_answers set answered_at = answered_at - interval '90 days' where answered_at >= '2026-09-01'`)
     admin = await client(t, ADMIN)
     teacherA = await client(t, TEACHER_A)
     adminA = await client(t, SCHOOL_ADMIN_A)

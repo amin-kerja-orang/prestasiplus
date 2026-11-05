@@ -139,6 +139,20 @@ describe('POST /api/kirkpatrick/interventions/:id/review (API-RPT-17, FR-GUR-11-
     expect(await stored(byTeacher)).toBeNull()
   })
 
+  it('a teacher who created the record but no longer teaches the pupil gets 404', async () => {
+    const id = await create(teacherA, w.ids.p2, '2026-10-01')
+    const enrol = await t.db.query<{ classroom_id: string }>(`select classroom_id::text from enrolments where student_id = $1`, [w.ids.p2])
+    const classroomId = (enrol[0] as { classroom_id: string }).classroom_id
+    await t.db.query(`delete from enrolments where student_id = $1`, [w.ids.p2])
+    try {
+      errorIs(await review(teacherA, id), 404, 'NOT_FOUND')
+      expect(await stored(id)).toBeNull()
+    } finally {
+      await t.db.query(`insert into enrolments (classroom_id, student_id) values ($1, $2)`, [classroomId, w.ids.p2])
+    }
+    expect((await review(teacherA, id)).status).toBe(200)
+  })
+
   it('another school, an unknown id and a non-numeric id are all 404', async () => {
     const id = await create(teacherA, w.ids.p1, '2026-10-01')
     errorIs(await review(adminB, id), 404, 'NOT_FOUND')

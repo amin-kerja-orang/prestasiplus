@@ -123,7 +123,13 @@ describe('GET /api/kirkpatrick/reaction (S2, API-RPT-11, FR-GUR-11-3) and the sc
   })
 
   describe('with responses', () => {
+    let baseA: Awaited<ReturnType<typeof reaction>>
+    let baseAdmin: Awaited<ReturnType<typeof reaction>>
+    let baseB: Awaited<ReturnType<typeof reaction>>
     beforeAll(async () => {
+      baseA = await reaction(adminA)
+      baseAdmin = await reaction(admin)
+      baseB = await reaction(adminB)
       const { p1, p2, maju, pb, teacherA: tA, teacherB: tB } = w.ids
       await addFeedback(p1, w.schoolA, 'student', '2026-10-01', { nps: 10, sat: 5, usability: 4, relevance: 5, comment: `Bagus ${MARKER}`, at: '2026-10-10T10:00:00+08:00' })
       await addFeedback(p2, w.schoolA, 'student', '2026-10-01', { nps: 6, sat: 3, usability: 3, comment: '   ', at: '2026-10-11T10:00:00+08:00' })
@@ -143,12 +149,12 @@ describe('GET /api/kirkpatrick/reaction (S2, API-RPT-11, FR-GUR-11-3) and the sc
     it('school scope: counts, means to one decimal, NPS bands, comment count, test rows left out', async () => {
       for (const who of [adminA, teacherA]) {
         const data = await reaction(who)
-        expect(data.responses).toBe(16)
+        expect(data.responses - baseA.responses).toBe(16)
         expect(data.usability).toBe(4) // (4 + 3 + 5) / 3
         expect(data.relevance).toBe(4.5) // (5 + 4) / 2
-        expect(data.promoters).toBe(2) // nps 10 and 9
-        expect(data.detractors).toBe(1) // nps 6; the migrated rows without NPS are not detractors; 7 is a passive
-        expect(data.writtenComments).toBe(14) // a blank comment does not count
+        expect(data.promoters - baseA.promoters).toBe(2) // nps 10 and 9
+        expect(data.detractors - baseA.detractors).toBe(1) // nps 6; the migrated rows without NPS are not detractors; 7 is a passive
+        expect(data.writtenComments - baseA.writtenComments).toBe(14) // a blank comment does not count
         expect(data.npsStudent).toBe(8.3) // (10 + 6 + 9) / 3
         expect(data.npsTeacher).toBe(7) // the 12 migrated rows have no NPS
       }
@@ -170,12 +176,14 @@ describe('GET /api/kirkpatrick/reaction (S2, API-RPT-11, FR-GUR-11-3) and the sc
 
     it('admin sees the platform, school_admin B only the own school', async () => {
       const platform = await reaction(admin)
-      expect(platform.responses).toBe(17)
+      expect(platform.responses - baseAdmin.responses).toBe(17)
       expect(platform.latestComments[0]?.comment).toBe('LainSekolah')
       const own = await reaction(adminB)
-      expect(own).toMatchObject({ responses: 1, usability: 2, relevance: null, promoters: 0, detractors: 1, writtenComments: 1 })
-      expect(own.latestComments).toEqual([{ comment: 'LainSekolah', nps: 2, satisfaction: 2, date: '2026-10-13' }])
-      expect((await reaction(teacherC)).responses).toBe(1)
+      expect(own.responses - baseB.responses).toBe(1)
+      expect(own.detractors - baseB.detractors).toBe(1)
+      expect(own.writtenComments - baseB.writtenComments).toBe(1)
+      expect(own.latestComments[0]).toEqual({ comment: 'LainSekolah', nps: 2, satisfaction: 2, date: '2026-10-13' })
+      expect((await reaction(teacherC)).responses).toBe(own.responses)
     })
 
     it('comment text is never written to the log', async () => {
@@ -209,7 +217,9 @@ describe('GET /api/kirkpatrick/reaction (S2, API-RPT-11, FR-GUR-11-3) and the sc
       expect(mood.calls).toHaveLength(2)
       expect(mood.calls.every((c) => Array.isArray(c.ids) && c.ids.length === 4)).toBe(true)
       const windowed = mood.calls.find((c) => c.window !== undefined)
-      expect(windowed?.window && windowed.window.to.getTime() - windowed.window.from.getTime()).toBe(7 * 86_400_000)
+      // Clock is 2026-10-19 09:00 MYT: the window starts at 00:00 MYT of 2026-10-13 (today minus 6) and ends now.
+      expect(windowed?.window?.from.toISOString()).toBe('2026-10-12T16:00:00.000Z')
+      expect(windowed?.window?.to.toISOString()).toBe('2026-10-19T01:00:00.000Z')
     })
 
     it('a teacher passes the pupils of the own classes only', async () => {

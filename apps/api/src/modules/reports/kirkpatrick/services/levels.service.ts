@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { CLOCK, type Clock, mytDay } from '../../../../db/clock'
+import { CLOCK, type Clock, mytDay, startOfMytDay } from '../../../../db/clock'
 import { ClassesRepository } from '../../../classes'
 import { MOOD_PORT, type MoodReadPort } from '../../../command-center'
 import {
@@ -179,10 +179,11 @@ export class LevelsService {
     let studentIds: string[]
     if (ctx.role === 'teacher') studentIds = await this.classes.teacherStudentIds(ctx.userId)
     else studentIds = await this.repo.activePupilIds(platformScope(ctx).schoolIds)
+    // Last 7 MYT calendar days: from 00:00 MYT of today minus 6 days up to now (the port treats `to` as inclusive of now).
     const now = this.clock.now()
     const [all, week, latest] = await Promise.all([
       this.mood.counts(studentIds),
-      this.mood.counts(studentIds, { from: new Date(now.getTime() - 7 * 86_400_000), to: now }),
+      this.mood.counts(studentIds, { from: new Date(startOfMytDay(now).getTime() - 6 * 86_400_000), to: now }),
       this.mood.latest(studentIds),
     ])
     const total = all.happy + all.okay + all.sad + all.stressed
