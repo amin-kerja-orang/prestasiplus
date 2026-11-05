@@ -62,40 +62,63 @@ async function seedStudent(): Promise<void> {
 
 const map = async (c: Client, query = 'subject=MATEMATIK&grade=TINGKATAN_4') => LearningMap.parse((await c.get(`/api/learning-map?${query}`)).body).data
 
+/** The island count is whatever the chapters table holds for the grade (S4-T06: a topic is a chapter), never a seed constant. */
+const chapterCount = async (subject: string, level: string): Promise<number> =>
+  Number(
+    (await t.db.query<{ n: string }>(
+      `select count(*)::text n from chapters c join subjects s on s.id = c.subject_id join education_levels l on l.id = c.education_level_id
+        where s.code = $1 and l.code = $2 and c.in_tree and c.is_active and s.is_active and l.is_active`,
+      [subject, level],
+    ))[0]?.n,
+  )
+
+/** Per-island values in the served order: `own` by chapter id, `fallback` for every other island. */
+const perIsland = <T>(m: { topics: { id: string }[] }, own: Record<string, T>, fallback: T): T[] => m.topics.map((x) => own[x.id] ?? fallback)
+
 describe('AC8: BE-08 TopicProgressProvider from the answer rows (BR-14, BR-19)', () => {
   it('a student with no answer reads the no-history state: every island open (REQ-C-021, D98), nothing started', async () => {
     const m = await map(pelajar)
-    expect(m.topics.map((x) => x.state)).toEqual(['unlocked', 'unlocked', 'unlocked'])
-    expect(m.stats).toEqual({ done: 0, total: 3, progress: 0 })
+    const total = await chapterCount('MATH', 'T4')
+    expect(total).toBeGreaterThanOrEqual(5) // the five seeded chapters below exist
+    expect(m.topics).toHaveLength(total)
+    expect(m.topics.map((x) => x.state)).toEqual(Array(total).fill('unlocked'))
+    expect(m.stats).toEqual({ done: 0, total, progress: 0 })
     expect(m.topics.every((x) => x.sessions === 0 && x.questionsAnswered === 0 && x.progress === 0)).toBe(true)
   })
 
   it('island states, "Topik Selesai" and "Kemajuan" equal the mock formulas for the seeded answers', async () => {
     await seedStudent()
     const m = await map(pelajar)
-    const expected = [
-      { sessions: 2, questionsAnswered: 22, progress: mockProgress(20) },
-      { sessions: 1, questionsAnswered: 4, progress: mockProgress(3) },
-      { sessions: 0, questionsAnswered: 0, progress: 0 },
-    ]
+    const total = await chapterCount('MATH', 'T4')
+    expect(m.topics).toHaveLength(total)
+    const none = { sessions: 0, questionsAnswered: 0, progress: 0 }
+    const expected = perIsland(
+      m,
+      {
+        [w.chapters[0]!]: { sessions: 2, questionsAnswered: 22, progress: mockProgress(20) },
+        [w.chapters[1]!]: { sessions: 1, questionsAnswered: 4, progress: mockProgress(3) },
+      },
+      none,
+    )
     expect(m.topics.map((x) => ({ sessions: x.sessions, questionsAnswered: x.questionsAnswered, progress: x.progress }))).toEqual(expected)
     const states = mockStates(expected)
-    expect(states).toEqual(['mastered', 'started', 'unlocked'])
+    expect(states.filter((x) => x === 'mastered')).toHaveLength(1)
+    expect(states.filter((x) => x === 'started')).toHaveLength(1)
+    expect(states.filter((x) => x === 'unlocked')).toHaveLength(total - 2)
     expect(m.topics.map((x) => x.state)).toEqual(states)
     expect(m.stats).toEqual({
       done: states.filter((s) => s === 'mastered').length,
-      total: 3,
-      progress: Math.round(expected.reduce((n, p) => n + p.progress, 0) / expected.length),
+      total,
+      progress: Math.round((mockProgress(20) + mockProgress(3)) / total),
     })
-    expect(m.stats).toEqual({ done: 1, total: 3, progress: 38 })
-    expect(m.topics.map((x) => x.practiceUrl === null)).toEqual([false, false, false])
+    expect(m.topics.every((x) => x.practiceUrl !== null)).toBe(true)
   })
 
   it('GET /api/topics/:id shows the same progress and every subtopic bar carries it (BR-19)', async () => {
     await seedStudent()
     const m = await map(pelajar)
-    const second = m.topics[1]
-    const d = TopicDetail.parse((await pelajar.get(`/api/topics/${second?.id}`)).body).data
+    expect(m.topics.find((x) => x.id === w.chapters[1])?.questionsAnswered).toBe(4)
+    const d = TopicDetail.parse((await pelajar.get(`/api/topics/${w.chapters[1]}`)).body).data
     expect(d.progress).toEqual({ questionsAnswered: 4, progress: mockProgress(3) })
     for (const s of d.subtopics) expect(s.progress).toBe(mockProgress(3))
   })
@@ -103,10 +126,10 @@ describe('AC8: BE-08 TopicProgressProvider from the answer rows (BR-14, BR-19)',
   it('progress is the caller own: another student, and Mod Pelajar rows, change nothing', async () => {
     await seedStudent()
     const other = await map(pelajar2)
-    // pelajar2 answered chapter 3 only (20 right): its own topic 3 is mastered, nothing of pelajar shows
-    expect(other.topics.map((x) => x.questionsAnswered)).toEqual([0, 0, 20])
+    // pelajar2 answered chapter 3 only (20 right): its own chapter 3 island is mastered, nothing of pelajar shows
+    expect(other.topics.map((x) => x.questionsAnswered)).toEqual(perIsland(other, { [w.chapters[2]!]: 20 }, 0))
     expect(other.stats.done).toBe(1)
-    expect((await map(pelajar)).topics[2]?.questionsAnswered).toBe(0)
+    expect((await map(pelajar)).topics.find((x) => x.id === w.chapters[2])?.questionsAnswered).toBe(0)
   })
 
   it('other subjects and grades keep the default (a chapter of MATH T4 does not leak into BM or Sains T4)', async () => {
@@ -128,7 +151,7 @@ describe('AC8: BE-08 TopicProgressProvider from the answer rows (BR-14, BR-19)',
     await t.db.query('delete from questions')
     const after = await map(pelajar)
     expect(after).toEqual(before)
-    expect(after.stats).toEqual({ done: 1, total: 3, progress: 38 })
+    expect(after.stats).toEqual({ done: 1, total: await chapterCount('MATH', 'T4'), progress: Math.round((mockProgress(20) + mockProgress(3)) / after.topics.length) })
   })
 
   it('progress is capped at 100 and a topic with 80 or more is mastered; 79 is not (BR-14)', async () => {
@@ -137,8 +160,10 @@ describe('AC8: BE-08 TopicProgressProvider from the answer rows (BR-14, BR-19)',
     for (let i = 0; i < 15; i++) await addAnswer(t.db, { user: u.pelajar, subject: w.math, chapter: w.chapters[1], correct: true, at: AT })
     for (let i = 0; i < 30; i++) await addAnswer(t.db, { user: u.pelajar, subject: w.math, chapter: w.chapters[2], correct: true, at: AT })
     const m = await map(pelajar)
-    expect(m.topics.map((x) => x.progress)).toEqual([80, 75, 100])
-    expect(m.topics.map((x) => x.state)).toEqual(['mastered', 'started', 'mastered'])
-    expect(m.stats).toEqual({ done: 2, total: 3, progress: Math.round((80 + 75 + 100) / 3) })
+    expect(m.topics.map((x) => x.progress)).toEqual(perIsland(m, { [w.chapters[0]!]: 80, [w.chapters[1]!]: 75, [w.chapters[2]!]: 100 }, 0))
+    expect(m.topics.map((x) => x.state)).toEqual(
+      perIsland<State>(m, { [w.chapters[0]!]: 'mastered', [w.chapters[1]!]: 'started', [w.chapters[2]!]: 'mastered' }, 'unlocked'),
+    )
+    expect(m.stats).toEqual({ done: 2, total: m.topics.length, progress: Math.round((80 + 75 + 100) / m.topics.length) })
   })
 })
