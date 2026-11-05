@@ -82,7 +82,10 @@ export class GroupMembers {
 
     const touched = [...new Set([...added, ...removed, ...ordered])]
     const facts = await this.repo.lockQuestions(touched)
+    // A question staged in the draft copy of ANOTHER group is taken (the clash would only show when that copy is published).
+    const stagedAway = swap || added.length === 0 ? new Set<string>() : await this.repo.stagedElsewhere(await this.repo.draftCopyOf(groupId), added)
     for (const q of added) {
+      if (stagedAway.has(q)) throw fail({ [field]: M.memberTaken })
       const f = facts.get(q)
       if (f === undefined || f.pksk) throw fail({ [field]: M.membersInvalid })
       if (f.groupId !== null) throw fail({ [field]: f.groupId === groupId ? M.memberExists : M.memberTaken })
@@ -196,6 +199,8 @@ export class GroupMembers {
    */
   async move(questionId: string, from: string | null, to: string | null): Promise<void> {
     if (to === from) return
+    // A draft copy stages its members in `draft_members`: neither side of this route may be a copy (409), or the copy's staged members would be lost.
+    for (const g of [from, to]) if (g !== null && (await this.repo.groupScope(g))?.draftOfGroupId != null) throw conflict(M.conflict)
     // A question shown to pupils cannot leave its group, whether it goes nowhere or to another group (409, not 422).
     if (from !== null && (await this.repo.servingMemberIds(from)).includes(questionId)) throw conflict(M.groupServed)
     if (from !== null && to !== null) throw fail({ stimulusGroupId: M.memberTaken })
