@@ -10334,6 +10334,16 @@
       "approved_by_card": null
     },
     {
+      "name": "GameRewardEvent",
+      "table": "game_reward_events",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/gamification.prisma",
+      "approved_by_card": "S7-T01",
+      "dm": "DM-87",
+      "note": "One reward event per game session and pupil (PO decision 2026-11-05, item 20): the one source of the daily game caps and the replay check; written only by GamificationService.onGameResult."
+    },
+    {
       "name": "RewardSetting",
       "table": "reward_settings",
       "status": "canonical",

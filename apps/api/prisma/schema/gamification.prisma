@@ -403,3 +403,23 @@ model RewardSetting {
 
   @@map("reward_settings")
 }
+
+/// One reward event of a finished game, per pupil (DM-87, PO decision 2026-11-05, item 20): the unique index decides a
+/// replay, and the row holds the first result. `game_session_id` is `game_rooms.session_id` or the solo session uuid, so it has no
+/// foreign key. The daily caps of 48 section 3.4 rule 4 sum these rows for the pupil's Malaysia day.
+model GameRewardEvent {
+  id            BigInt   @id @default(autoincrement())
+  gameSessionId String   @map("game_session_id") @db.Uuid
+  userId        BigInt   @map("user_id")
+  /// The XP granted, after the daily cap.
+  xp            Int
+  /// The syiling granted, after `canEarnSyiling` and the daily cap.
+  syiling       Int
+  /// xp_cap, syiling_cap, xp_and_syiling_cap (check); null when no cap reduced the reward.
+  cappedReason  String?  @map("capped_reason")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([gameSessionId, userId], map: "uq_game_reward_events_game_session_id_user_id")
+  @@index([userId, createdAt], map: "ix_game_reward_events_user_id_created_at")
+  @@map("game_reward_events")
+}
