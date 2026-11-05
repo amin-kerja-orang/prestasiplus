@@ -174,12 +174,12 @@ describe('mcq_multi in the Simulasi Kuiz', () => {
     expect(rows).toEqual([{ is_correct: true, question_type: 'mcq_multi' }])
   })
 
-  it('[CI] the finished answer row of a multi check keeps the first tick in practice_answers.selected_label', async () => {
+  it('[CI] the finished answer row of a multi check keeps the comma-joined ticks in practice_answers.selected_label (46:270, S5 0262)', async () => {
     const s = await startBm()
     expect((await student.post(`/api/bijak/kuiz/sessions/${s.sessionId}/check`, { itemId: multiId, optionId: 'A', optionIds: ['A', 'B'] })).status).toBe(200)
     expect((await student.post(`/api/bijak/kuiz/sessions/${s.sessionId}/finish`, { timeSpent: 5 })).status).toBe(200)
     const rows = await t.db.query<{ selected_label: string | null }>(`select selected_label from practice_answers where session_id = $1::uuid and question_id = $2::bigint`, [s.sessionId, multiId])
-    expect(rows).toEqual([{ selected_label: 'A' }])
+    expect(rows).toEqual([{ selected_label: 'A,B' }])
   })
 
   it('[CI] two concurrent random-quiz checks on the same mcq_multi item get the same verdict and leave one practice_checks row', async () => {

@@ -264,10 +264,9 @@ export class KuizService {
       // A multi row stores the comma-joined ticks ("A,C"): split back and graded by the one S1 grader (`selectionVerdict`).
       const multi = leaf !== undefined && leaf !== null && multiKeyOf(leaf) !== null
       const isCorrect = !leaf ? check.isCorrect : multi ? selectionVerdict(leaf, check.selectedLabel.split(',')).correct : leaf.key.correct === check.selectedLabel
-      // `practice_answers.selected_label` still allows ONE letter (`^[A-H]$`; migration 0261 relaxed only `practice_checks`), so the answer
-      // row of a multi check keeps the first tick. The verdict above is graded from all the ticks.
+      // The answer row keeps the comma-joined ticks too (`practice_answers.selected_label`, S5 migration 0262; 46:270).
       return {
-        check: multi ? { ...check, selectedLabel: check.selectedLabel.split(',')[0] ?? check.selectedLabel } : check,
+        check,
         isCorrect,
         subjectId: v?.subjectId ?? null,
         educationLevelId: v?.educationLevelId ?? null,
