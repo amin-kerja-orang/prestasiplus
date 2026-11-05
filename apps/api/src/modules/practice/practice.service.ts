@@ -18,15 +18,7 @@ import { listMeta } from '../../common/http/respond'
 import { toMytTimestamp } from '../../common/time/myt'
 import { CurriculumRepository } from '../curriculum'
 import { SubscriptionService, TRIAL_LIMIT } from '../subscriptions'
-import {
-  alreadySubmitted,
-  invalidAnswer,
-  isUniqueViolation,
-  noAttemptsLeft,
-  notFound,
-  remedialDone,
-  trialExhausted,
-} from './errors'
+import { alreadySubmitted, invalidAnswer, isUniqueViolation, noAttemptsLeft, notFound, remedialDone, trialExhausted } from './errors'
 import { type PracticeQuestion, PracticePorts, practiceRewardSource, versionKey } from './ports'
 import {
   HISTORY_MAX_ROWS,
@@ -91,10 +83,7 @@ export class PracticeService {
     }
   }
 
-  private async createOrResume(
-    caller: Caller,
-    req: StartSessionRequest,
-  ): Promise<StartSessionResponse> {
+  private async createOrResume(caller: Caller, req: StartSessionRequest): Promise<StartSessionResponse> {
     const run = async (): Promise<StartSessionResponse> => {
       const now = this.clock.now()
       const plan = await this.planner.plan(caller.userId, req, now, caller.isTest)
@@ -143,9 +132,7 @@ export class PracticeService {
   /** The response of a session that already exists (replay, mission resume): its served versions, not the live ones. */
   private async replay(userId: string, session: SessionRecord): Promise<StartSessionResponse> {
     const served = await this.repo.sessionQuestions(session.id)
-    const versions = await this.ports.questions.versions(
-      served.map((s) => ({ questionId: s.questionId, versionNo: s.versionNo })),
-    )
+    const versions = await this.ports.questions.versions(served.map((s) => ({ questionId: s.questionId, versionNo: s.versionNo })))
     const questions = served
       .map((s) => versions.get(versionKey(s.questionId, s.versionNo)))
       .filter((q): q is PracticeQuestion => q !== undefined)
@@ -170,15 +157,7 @@ export class PracticeService {
       sessionId: s.id,
       mode: s.mode,
       subject: subject ? { code: subject.code, name: subject.name, color: subject.color } : null,
-      ...(chapter
-        ? {
-            chapter: {
-              id: idToString(chapter.id),
-              number: chapter.chapterNumber,
-              name: chapter.name,
-            },
-          }
-        : {}),
+      ...(chapter ? { chapter: { id: idToString(chapter.id), number: chapter.chapterNumber, name: chapter.name } } : {}),
       // The key and the explanation are never part of a served question (AC 4).
       questions: questions.map((q) => ({
         id: q.id,
@@ -187,9 +166,7 @@ export class PracticeService {
         scriptType: q.scriptType,
         wrongTimes: wrong.get(q.id) ?? 0,
         hasDskp: q.hasDskp,
-        contributor: q.contributor
-          ? { name: q.contributor.name, profileUrl: q.contributor.profileUrl }
-          : null,
+        contributor: q.contributor ? { name: q.contributor.name, profileUrl: q.contributor.profileUrl } : null,
         ...(q.referenceUrl ? { referenceUrl: q.referenceUrl } : {}),
         options: q.options.map((o, i) => ({ id: i, label: o.label, text: o.text })),
       })),
@@ -202,11 +179,7 @@ export class PracticeService {
 
   // --- check ------------------------------------------------------------------------------------
 
-  async check(
-    caller: Caller,
-    sessionId: string,
-    req: CheckAnswerRequest,
-  ): Promise<CheckAnswerResponse> {
+  async check(caller: Caller, sessionId: string, req: CheckAnswerRequest): Promise<CheckAnswerResponse> {
     const now = this.clock.now()
     return this.prisma.transaction(async () => {
       const session = await this.repo.lockSession(sessionId, caller.userId, 'update')
@@ -217,9 +190,7 @@ export class PracticeService {
       const ref = served.find((s) => s.questionId === req.questionId)
       if (!ref) throw invalidAnswer('questionId')
       // Graded against the version this session served, never the live one (AC 11).
-      const versions = await this.ports.questions.versions([
-        { questionId: ref.questionId, versionNo: ref.versionNo },
-      ])
+      const versions = await this.ports.questions.versions([{ questionId: ref.questionId, versionNo: ref.versionNo }])
       const question = versions.get(versionKey(ref.questionId, ref.versionNo))
       const count = question?.options.length ?? 0
       const chosen = question?.options[req.selectedOptionId]
@@ -266,11 +237,7 @@ export class PracticeService {
 
   // --- submit -----------------------------------------------------------------------------------
 
-  async submit(
-    caller: Caller,
-    sessionId: string,
-    timeSpent: unknown,
-  ): Promise<SubmitSessionResponse> {
+  async submit(caller: Caller, sessionId: string, timeSpent: unknown): Promise<SubmitSessionResponse> {
     const now = this.clock.now()
     const { done, result: reward } = await this.repo.completeSession(
       { sessionId, userId: caller.userId, now, timeSpent, isTest: caller.isTest },
@@ -292,9 +259,7 @@ export class PracticeService {
               completedAt: completed.completedAt,
               pointsEarned: completed.pointsEarned,
               sessionCoins: completed.coinsEarned,
-              ...(s.mode === 'mission' && s.coinsPerCorrect !== null
-                ? { coinsPerCorrect: s.coinsPerCorrect }
-                : {}),
+              ...(s.mode === 'mission' && s.coinsPerCorrect !== null ? { coinsPerCorrect: s.coinsPerCorrect } : {}),
               isTest: test,
             },
             tx,
@@ -327,33 +292,22 @@ export class PracticeService {
   private async guardSubmit(session: SessionRecord): Promise<void> {
     if (session.mode === 'remedial' && session.remedialTestId) {
       await this.repo.lockAssigned(session.userId, 'remedial', session.remedialTestId)
-      const others = await this.repo.linkedSessions(
-        session.userId,
-        'remedialTestId',
-        session.remedialTestId,
-      )
+      const others = await this.repo.linkedSessions(session.userId, 'remedialTestId', session.remedialTestId)
       if (others.some((s) => s.id !== session.id && s.status === 'completed')) throw remedialDone()
     }
     if (session.mode === 'question_set' && session.questionSetId) {
       await this.repo.lockAssigned(session.userId, 'question_set', session.questionSetId)
-      const res = await this.ports.assignments.resolve('question_set', {
-        userId: session.userId,
-        id: session.questionSetId,
-        at: this.clock.now(),
-      })
+      const res = await this.ports.assignments.resolve('question_set', { userId: session.userId, id: session.questionSetId, at: this.clock.now() })
       if (res.status === 'ok' && (res.maxAttempts ?? 0) > 0) {
-        const done = (
-          await this.repo.linkedSessions(session.userId, 'questionSetId', session.questionSetId)
-        ).filter((s) => s.id !== session.id && s.status === 'completed').length
+        const done = (await this.repo.linkedSessions(session.userId, 'questionSetId', session.questionSetId)).filter(
+          (s) => s.id !== session.id && s.status === 'completed',
+        ).length
         if (done >= (res.maxAttempts ?? 0)) throw noAttemptsLeft()
       }
     }
   }
 
-  private submitResponse(
-    done: CompletedSession,
-    reward: { coinsEarned: number; streakCount: number; totalBalance: number },
-  ): SubmitSessionResponse {
+  private submitResponse(done: CompletedSession, reward: { coinsEarned: number; streakCount: number; totalBalance: number }): SubmitSessionResponse {
     return {
       results: {
         score: done.correct,
@@ -369,26 +323,16 @@ export class PracticeService {
   }
 
   /** Step 1: grades the stored checks against the versions the session served (OD-28), copying the dimensions. */
-  private async regrade(
-    served: readonly ServedRef[],
-    checks: readonly StoredCheck[],
-  ): Promise<GradedAnswer[]> {
+  private async regrade(served: readonly ServedRef[], checks: readonly StoredCheck[]): Promise<GradedAnswer[]> {
     const versionOf = new Map(served.map((s) => [s.questionId, s.versionNo]))
-    const refs = checks.map((c) => ({
-      questionId: c.questionId,
-      versionNo: versionOf.get(c.questionId) ?? c.questionVersionNo,
-    }))
-    const versions =
-      refs.length > 0
-        ? await this.ports.questions.versions(refs)
-        : new Map<string, PracticeQuestion>()
+    const refs = checks.map((c) => ({ questionId: c.questionId, versionNo: versionOf.get(c.questionId) ?? c.questionVersionNo }))
+    const versions = refs.length > 0 ? await this.ports.questions.versions(refs) : new Map<string, PracticeQuestion>()
     return checks.map((check, i) => {
       const ref = refs[i]
       const q = ref ? versions.get(versionKey(ref.questionId, ref.versionNo)) : undefined
       return {
         check,
-        isCorrect:
-          q?.correctLabel != null ? q.correctLabel === check.selectedLabel : check.isCorrect,
+        isCorrect: q?.correctLabel != null ? q.correctLabel === check.selectedLabel : check.isCorrect,
         subjectId: q?.subjectId ?? null,
         educationLevelId: q?.educationLevelId ?? null,
         chapterId: q?.chapterId ?? null,
@@ -443,30 +387,21 @@ export class PracticeService {
   /** The caller's own completed sessions (the mock `historyPage`); their own Mod Pelajar rows included. */
   async history(caller: Caller, query: HistoryQuery): Promise<SessionListResponse> {
     const modes = query.modes
-    const activeType =
-      query.type && (modes as readonly string[]).includes(query.type)
-        ? (query.type as PracticeMode)
-        : null
+    const activeType = query.type && (modes as readonly string[]).includes(query.type) ? (query.type as PracticeMode) : null
     const narrowed = activeType ? [activeType] : modes
     const paged = query.page !== undefined || query.pageSize !== undefined
     const stats = await this.repo.historyStats(caller.userId, { modes, includeTest: true })
-    const total = activeType
-      ? await this.repo.historyCount(caller.userId, { modes: narrowed, includeTest: true })
-      : stats.sessions
+    const total = activeType ? await this.repo.historyCount(caller.userId, { modes: narrowed, includeTest: true }) : stats.sessions
     const page = paged ? (query.page ?? 1) : 1
     // The unpaged read is capped at HISTORY_MAX_ROWS rows (an account with a very long history is paged by the meta).
-    const pageSize = paged
-      ? (query.pageSize ?? HISTORY_PAGE_SIZE)
-      : Math.max(1, Math.min(total, HISTORY_MAX_ROWS))
+    const pageSize = paged ? (query.pageSize ?? HISTORY_PAGE_SIZE) : Math.max(1, Math.min(total, HISTORY_MAX_ROWS))
     const rows = await this.repo.history(caller.userId, {
       modes: narrowed,
       includeTest: true,
       skip: (page - 1) * pageSize,
       take: pageSize,
     })
-    const subjects = new Map(
-      (await this.curriculum.subjects()).map((s) => [idToString(s.id), s.code]),
-    )
+    const subjects = new Map((await this.curriculum.subjects()).map((s) => [idToString(s.id), s.code]))
     const data: SessionListItem[] = rows.map((s) => ({
       id: s.id,
       mode: s.mode,

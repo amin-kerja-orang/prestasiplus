@@ -37,15 +37,11 @@ export type PracticeMode = z.infer<typeof PracticeModeSchema>
  * are stored modes already but the start planner has no case for them yet (S5-T03 adds them), so they are not startable.
  */
 type NotStartable = 'pksk' | 'databank' | 'tracking_a'
-export const PRACTICE_START_MODES = PRACTICE_MODES.filter(
-  (m) => m !== 'pksk' && m !== 'databank' && m !== 'tracking_a',
-) as unknown as readonly [
+export const PRACTICE_START_MODES = PRACTICE_MODES.filter((m) => m !== 'pksk' && m !== 'databank' && m !== 'tracking_a') as unknown as readonly [
   Exclude<PracticeMode, NotStartable>,
   ...Exclude<PracticeMode, NotStartable>[],
 ]
-export const PracticeStartModeSchema = z
-  .enum(PRACTICE_START_MODES)
-  .meta({ id: 'PracticeStartMode' })
+export const PracticeStartModeSchema = z.enum(PRACTICE_START_MODES).meta({ id: 'PracticeStartMode' })
 
 export const PracticeSessionIdSchema = z.uuid().meta({
   id: 'PracticeSessionId',
@@ -69,9 +65,7 @@ export const PRACTICE_ERROR_CODES = [
   'NO_ATTEMPTS_LEFT',
   'ALREADY_SUBMITTED',
 ] as const
-export const PracticeErrorCodeSchema = z
-  .enum(PRACTICE_ERROR_CODES)
-  .meta({ id: 'PracticeErrorCode' })
+export const PracticeErrorCodeSchema = z.enum(PRACTICE_ERROR_CODES).meta({ id: 'PracticeErrorCode' })
 export type PracticeErrorCode = z.infer<typeof PracticeErrorCodeSchema>
 
 /** Exact status and BM message the mock produces for each module code (`ALREADY_COMPLETED` has two). */
@@ -79,10 +73,7 @@ export const PRACTICE_ERRORS = {
   TRIAL_EXHAUSTED: { status: 402, messages: ['Baki percubaan percuma anda telah habis.'] },
   NOT_ENOUGH_QUESTIONS: { status: 422, messages: ['Soalan tidak mencukupi.'] },
   SET_NOT_READY: { status: 422, messages: ['Soalan tidak mencukupi.'] },
-  NO_WRONG_QUESTIONS: {
-    status: 422,
-    messages: ['Maaf, terdapat masalah memuatkan kuiz ulang kaji.'],
-  },
+  NO_WRONG_QUESTIONS: { status: 422, messages: ['Maaf, terdapat masalah memuatkan kuiz ulang kaji.'] },
   ALREADY_COMPLETED: {
     status: 409,
     messages: ['Misi ini sudah diselesaikan.', 'Ujian ini sudah selesai.'],
@@ -117,41 +108,29 @@ export const StartSessionRequestSchema = z
     levelId: IdSchema.nullable().optional(),
     difficulty: z.number().int().min(1).max(5).nullable().optional(),
     count: z.number().int().min(1).optional().meta({
-      description:
-        'random/chapter 5|10|15|20; revision absent or 20; past_year 5|10|20; latih_tubi per subject target.',
+      description: 'random/chapter 5|10|15|20; revision absent or 20; past_year 5|10|20; latih_tubi per subject target.',
     }),
     chapterId: intId('chapter mode').optional(),
     year: z.number().int().optional().meta({ description: 'ramalan mode.' }),
     setNo: z.number().int().optional().meta({ description: 'ramalan mode.' }),
-    targetQuestionId: IdSchema.nullable()
-      .optional()
-      .meta({ description: 'latih_tubi "Buka Soalan Sama"; needs count 1.' }),
+    targetQuestionId: IdSchema.nullable().optional().meta({ description: 'latih_tubi "Buka Soalan Sama"; needs count 1.' }),
     missionId: intId('mission mode').optional(),
     remedialTestId: intId('remedial mode').optional(),
     questionSetId: intId('question_set mode').optional(),
     clientUuid: ClientUuidSchema.optional().meta({
-      description:
-        'Idempotency key: replaying a start with the same clientUuid returns the same session.',
+      description: 'Idempotency key: replaying a start with the same clientUuid returns the same session.',
     }),
   })
   .meta({ id: 'StartSessionRequest' })
 export type StartSessionRequest = z.infer<typeof StartSessionRequestSchema>
 
-export const PracticeTextDirectionSchema = z
-  .enum(['ltr', 'rtl'])
-  .meta({ id: 'PracticeTextDirection' })
-export const PracticeScriptTypeSchema = z
-  .enum(['rumi', 'arab', 'jawi', 'mixed'])
-  .meta({ id: 'PracticeScriptType' })
+export const PracticeTextDirectionSchema = z.enum(['ltr', 'rtl']).meta({ id: 'PracticeTextDirection' })
+export const PracticeScriptTypeSchema = z.enum(['rumi', 'arab', 'jawi', 'mixed']).meta({ id: 'PracticeScriptType' })
 
 /** One answer option as served: the key is never part of it. */
 export const PracticeQuizOptionSchema = z
   .strictObject({
-    id: z
-      .number()
-      .int()
-      .min(0)
-      .meta({ description: 'Zero-based option index; sent back as selectedOptionId.' }),
+    id: z.number().int().min(0).meta({ description: 'Zero-based option index; sent back as selectedOptionId.' }),
     label: z.string().min(1).max(4),
     text: z.string(),
   })
@@ -176,10 +155,7 @@ export const PracticeQuizQuestionSchema = z
       .refine(isHttpUrl, { error: 'Pautan mesti bermula dengan http:// atau https://.' })
       .nullable()
       .optional()
-      .meta({
-        description:
-          'The teacher\'s "Rujukan" link (http or https); only on a personal question served in a mission (FR-GUR-44a-9).',
-      }),
+      .meta({ description: 'The teacher\'s "Rujukan" link (http or https); only on a personal question served in a mission (FR-GUR-44a-9).' }),
     options: z.array(PracticeQuizOptionSchema),
   })
   .meta({ id: 'PracticeQuizQuestion' })
@@ -191,24 +167,14 @@ export const StartSessionResponseSchema = z
     mode: PracticeModeSchema,
     subject: z.strictObject({ code: z.string(), name: z.string(), color: z.string() }).nullable(),
     chapter: z
-      .strictObject({
-        id: IdSchema,
-        number: z.number().int().nullable(),
-        name: z.string().nullable(),
-      })
+      .strictObject({ id: IdSchema, number: z.number().int().nullable(), name: z.string().nullable() })
       .optional(),
     questions: z.array(PracticeQuizQuestionSchema),
     revisionMeta: z
       .strictObject({ selected: z.number().int().min(0), totalWrong: z.number().int().min(0) })
       .optional()
       .meta({ description: 'revision mode only.' }),
-    timeLimitSec: z
-      .number()
-      .int()
-      .min(0)
-      .nullable()
-      .optional()
-      .meta({ description: 'question_set mode only.' }),
+    timeLimitSec: z.number().int().min(0).nullable().optional().meta({ description: 'question_set mode only.' }),
   })
   .meta({ id: 'StartSessionResponse' })
 export type StartSessionResponse = z.infer<typeof StartSessionResponseSchema>
@@ -222,11 +188,7 @@ export const PracticeSessionParamsSchema = z.object({ id: PracticeSessionIdSchem
 export const CheckAnswerRequestSchema = z
   .object({
     questionId: IdSchema,
-    selectedOptionId: z
-      .number()
-      .int()
-      .min(0)
-      .meta({ description: 'Zero-based option index; must exist on the question.' }),
+    selectedOptionId: z.number().int().min(0).meta({ description: 'Zero-based option index; must exist on the question.' }),
   })
   .meta({ id: 'CheckAnswerRequest' })
 export type CheckAnswerRequest = z.infer<typeof CheckAnswerRequestSchema>
@@ -236,8 +198,7 @@ export const CheckAnswerResponseSchema = z
     isCorrect: z.boolean(),
     correctOptionId: z.number().int().min(0),
     feedback: z.string().min(1).meta({
-      description:
-        'revision: "Betul! Kali ini berjaya!" / "Masih belum tepat"; other modes: "Betul!" / "Salah".',
+      description: 'revision: "Betul! Kali ini berjaya!" / "Masih belum tepat"; other modes: "Betul!" / "Salah".',
     }),
     explanation: z.string().nullable(),
   })
@@ -284,18 +245,11 @@ export type SubmitSessionResponse = z.infer<typeof SubmitSessionResponseSchema>
 
 export const ListSessionsQuerySchema = z
   .object({
-    modes: z
-      .string()
-      .min(1)
-      .meta({ description: 'Comma list of PracticeMode; empty or any unknown value is 422.' }),
-    type: z
-      .string()
-      .optional()
-      .meta({ description: 'One mode inside modes to narrow the rows; otherwise ignored.' }),
+    modes: z.string().min(1).meta({ description: 'Comma list of PracticeMode; empty or any unknown value is 422.' }),
+    type: z.string().optional().meta({ description: 'One mode inside modes to narrow the rows; otherwise ignored.' }),
     page: z.coerce.number().int().min(1).optional(),
     pageSize: z.coerce.number().int().min(1).max(100).optional().meta({
-      description:
-        'Default 15 when page is given. With neither page nor pageSize the list is not paged.',
+      description: 'Default 15 when page is given. With neither page nor pageSize the list is not paged.',
     }),
   })
   .meta({ id: 'ListSessionsQuery' })
@@ -305,10 +259,7 @@ export const SessionListItemSchema = z
     id: PracticeSessionIdSchema,
     mode: PracticeModeSchema,
     subjectId: IdSchema.nullable(),
-    subjectCode: z
-      .string()
-      .nullable()
-      .meta({ description: '"UMUM" for mixed free practice (no subject).' }),
+    subjectCode: z.string().nullable().meta({ description: '"UMUM" for mixed free practice (no subject).' }),
     questionCount: z.number().int().min(0),
     correctCount: z.number().int().min(0),
     percent: z.number().int().min(0).max(100),

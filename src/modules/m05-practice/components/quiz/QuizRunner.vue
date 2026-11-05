@@ -35,8 +35,8 @@ import {
   comboOf,
   dsOptionState,
   formatTime,
-  optionState,
   isHttpUrl,
+  optionState,
   planStartError,
   safeHref,
 } from './quiz-lib'

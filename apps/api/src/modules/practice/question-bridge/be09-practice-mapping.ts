@@ -22,12 +22,10 @@ type McqLeaf = Extract<Leaf, { mode: 'mcq' }>
 const isLeaf = (p: QuestionPart): p is Leaf => 'mode' in p
 
 /** Mock difficulty scale (1 to 5): TP 6 reads back as 5 (same rule as the flat projection). */
-export const difficultyOfTp = (tp: number | null): number | null =>
-  tp === null ? null : Math.min(5, Math.max(1, tp))
+export const difficultyOfTp = (tp: number | null): number | null => (tp === null ? null : Math.min(5, Math.max(1, tp)))
 
 /** The TPs a mock difficulty (1 to 5) selects: 5 also takes TP 6, the inverse of `difficultyOfTp`. */
-export const tpsOfDifficulty = (difficulty: number): number[] =>
-  difficulty >= 5 ? [5, 6] : [difficulty]
+export const tpsOfDifficulty = (difficulty: number): number[] => (difficulty >= 5 ? [5, 6] : [difficulty])
 
 /** The SQL shape of what `servableMcq` accepts (one text MCQ leaf, no stimulus, key names an option): counts and draws agree with serving. */
 export const PRACTICE_SHAPE = { minOptions: 1, maxOptions: 8 } as const
@@ -40,24 +38,18 @@ export interface ServableOptions {
 export type Refusal = { ok: false; reason: string }
 
 /** The single MCQ leaf of a servable version, or why it is refused. */
-export function servableMcq(
-  record: QuestionRecord,
-  { allowStimulus = false }: ServableOptions = {},
-): { ok: true; leaf: McqLeaf } | Refusal {
+export function servableMcq(record: QuestionRecord, { allowStimulus = false }: ServableOptions = {}): { ok: true; leaf: McqLeaf } | Refusal {
   const v = record.version
   if (v.type !== 'mcq') return { ok: false, reason: `type ${v.type} is not served by practice` }
   if (v.parts.length !== 1) return { ok: false, reason: 'an MCQ must have exactly one part' }
   const only = v.parts[0] as QuestionPart
-  if (!isLeaf(only) || only.mode !== 'mcq')
-    return { ok: false, reason: 'the only part is not an MCQ leaf' }
+  if (!isLeaf(only) || only.mode !== 'mcq') return { ok: false, reason: 'the only part is not an MCQ leaf' }
   if (!allowStimulus) {
     if (record.groupId !== null || v.stimulusIds.length > 0 || only.stimulusId != null)
       return { ok: false, reason: 'a stimulus cannot be shown on the practice screen' }
-    if (only.options.some((o) => o.imageId != null))
-      return { ok: false, reason: 'an option image cannot be shown' }
+    if (only.options.some((o) => o.imageId != null)) return { ok: false, reason: 'an option image cannot be shown' }
   }
-  if (!only.options.some((o) => o.label === only.key.correct))
-    return { ok: false, reason: 'the key names no option' }
+  if (!only.options.some((o) => o.label === only.key.correct)) return { ok: false, reason: 'the key names no option' }
   return { ok: true, leaf: only }
 }
 
@@ -68,10 +60,7 @@ export function servableMcq(
 export function toPracticeQuestion(
   record: QuestionRecord,
   contributor: PracticeQuestion['contributor'],
-  {
-    allowStimulus = false,
-    group = null,
-  }: ServableOptions & { group?: PracticeQuestion['stimulusGroup'] | null } = {},
+  { allowStimulus = false, group = null }: ServableOptions & { group?: PracticeQuestion['stimulusGroup'] | null } = {},
 ): PracticeQuestion | null {
   const m = servableMcq(record, { allowStimulus })
   if (!m.ok) return null
@@ -95,21 +84,13 @@ export function toPracticeQuestion(
     // Contract: `hasDskp` = the question is linked to a curriculum chapter.
     hasDskp: v.chapterId !== null,
     contributor,
-    options: m.leaf.options.map((o) =>
-      allowStimulus && o.imageId != null
-        ? { label: o.label, text: o.body.ms, imageId: o.imageId }
-        : { label: o.label, text: o.body.ms },
-    ),
+    options: m.leaf.options.map((o) => (allowStimulus && o.imageId != null ? { label: o.label, text: o.body.ms, imageId: o.imageId } : { label: o.label, text: o.body.ms })),
     correctLabel: m.leaf.key.correct,
     explanation: v.explanationMs,
     // FR-GUR-44a-9: only a teacher's personal question carries a link; a bank question never does.
-    ...(v.visibility === 'teacher_private' && v.referenceUrl
-      ? { referenceUrl: v.referenceUrl }
-      : {}),
+    ...(v.visibility === 'teacher_private' && v.referenceUrl ? { referenceUrl: v.referenceUrl } : {}),
     // Only on a surface that allows it (S1-T06): today's output keeps exactly its fields.
     ...(allowStimulus && v.stemImageId != null ? { stemImageId: v.stemImageId } : {}),
-    ...(allowStimulus && record.groupId !== null && group != null
-      ? { groupId: record.groupId, groupPosition: record.groupPosition, stimulusGroup: group }
-      : {}),
+    ...(allowStimulus && record.groupId !== null && group != null ? { groupId: record.groupId, groupPosition: record.groupPosition, stimulusGroup: group } : {}),
   }
 }
