@@ -42,13 +42,13 @@ export function fetchGamificationDashboard(options: Options = {}): Promise<Gamif
  * without a pager. An unknown `type` answers no rows (the empty state).
  */
 export function fetchGamificationTransactions(
-  query: { type?: string | null } = {},
+  query: { type?: string | null; limit?: number } = {},
   options: Options = {},
 ): Promise<{ data: LedgerEntry[]; meta: TransactionsMeta }> {
   return api.get<{ data: LedgerEntry[]; meta: TransactionsMeta }>(
     '/api/gamification/transactions',
     {
-      query: { type: query.type || null },
+      query: { type: query.type || null, limit: query.limit ?? null },
       ...withSignal(options),
     },
   )
