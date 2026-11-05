@@ -265,6 +265,12 @@ describe('question imports (BE-10 AC 5, 9)', () => {
       expect(await f(teacher.upload('/api/guru/questions/import', { name: 'a.csv', body: HEAD }))).toBe('Fail CSV tiada baris data.')
     })
 
+    it('422 ERR-REQ-01 for a part the route does not take (a zipFile), never the missing-file text (lead ruling on #726)', async () => {
+      const res = await teacher.upload('/api/guru/questions/import', { name: 'a.csv', body: [HEAD, row()].join('\n') }).attach('zipFile', Buffer.from('PK'), { filename: 'imej.zip', contentType: 'application/zip' })
+      expect(res.status, JSON.stringify(res.body)).toBe(422)
+      expect(res.body.error.fields.csvFile).toBe('Data yang dihantar tidak sah. Sila semak dan cuba lagi.')
+    })
+
     it('roles: 401, CSRF 403, Admin Sekolah and student 403', async () => {
       const file = { name: 'x.csv', body: [HEAD, row()].join('\n') }
       const before = (await itemsOf(teacher.userId)).length

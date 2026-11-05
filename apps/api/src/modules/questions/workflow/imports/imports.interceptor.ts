@@ -69,8 +69,10 @@ export class GuruCsvUploadInterceptor implements NestInterceptor {
       if (err instanceof PayloadTooLargeException) {
         throw ApiError.of('VALIDATION_ERROR', { fields: { csvFile: QUESTION_IMPORT_GURU_MESSAGES.fileSize } })
       }
+      // A multer refusal (an unexpected part such as `zipFile`, a malformed body) is ERR-REQ-01, not a missing file;
+      // the service answers ERR-REQ-07 "Sila pilih fail." when the `csvFile` part is absent or empty.
       if (err instanceof BadRequestException) {
-        throw ApiError.of('VALIDATION_ERROR', { fields: { csvFile: QUESTION_IMPORT_GURU_MESSAGES.fileRequired } })
+        throw ApiError.of('VALIDATION_ERROR', { fields: { csvFile: QUESTION_IMPORT_GURU_MESSAGES.requestInvalid } })
       }
       throw err
     }

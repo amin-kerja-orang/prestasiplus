@@ -306,8 +306,10 @@ export const QUESTION_IMPORT_GURU_MESSAGES = {
   fileType: 'Jenis fail tidak disokong. Format dibenarkan: CSV.',
   /** ERR-REQ-05 with 2. */
   fileSize: 'Fail melebihi saiz maksimum 2 MB.',
-  /** ERR-REQ-07. */
+  /** ERR-REQ-07: no `csvFile` part, or an empty one. */
   fileRequired: 'Sila pilih fail.',
+  /** ERR-REQ-01: a body multer refuses (an unexpected part such as `zipFile`, a malformed body); not a missing file. */
+  requestInvalid: 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.',
   tooManyRows: 'Fail melebihi 500 baris.',
   noData: 'Fail CSV tiada baris data.',
   /** ERR-IMP-02. */
