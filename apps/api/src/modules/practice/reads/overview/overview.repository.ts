@@ -142,11 +142,12 @@ export class OverviewRepository {
   /**
    * FR-MUR-2-8: the ids of the newest questions of a servable scope, newest first (`q.id DESC`, the primary key read backwards, stopped at `limit`).
    * `scope` is `QuestionsRepository.scopeSql(filter, true)`: the ONE servable definition of the reads (live version approved, active, not PKSK, learner level,
-   * source not taken down, not flagged, every leaf keyed, the form filter). The caller then checks the MCQ shape on this window only (`eligibleAmong`),
+   * source not taken down, not flagged, every leaf keyed, the form filter). `below` pages backwards (ids under it). The caller checks the MCQ shape on each page only (`eligibleAmong`),
    * so the shape check never scans the bank. `QuestionsRepository.listIds` also computes totals and per-status counts, which the dashboard does not need.
    */
-  async newestIdsOf(scope: { from: Prisma.Sql; where: Prisma.Sql }, limit: number): Promise<string[]> {
-    const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${scope.from} WHERE ${scope.where} ORDER BY q.id DESC LIMIT ${limit}`
+  async newestIdsOf(scope: { from: Prisma.Sql; where: Prisma.Sql }, limit: number, below?: string): Promise<string[]> {
+    const page = below === undefined ? Prisma.empty : Prisma.sql`AND q.id < ${idFromString(below)}::bigint`
+    const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${scope.from} WHERE ${scope.where} ${page} ORDER BY q.id DESC LIMIT ${limit}`
     return rows.map((r) => idToString(r.id))
   }
 

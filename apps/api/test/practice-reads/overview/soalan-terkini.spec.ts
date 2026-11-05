@@ -124,9 +124,25 @@ describe('figure thumbnail (FR-MUR-2-8)', () => {
     })
     const after = await recent()
     const row = after.find((r) => r.id === target)
-    // The figure question stays listed (its figure is present) and carries the served URL; every other row stays null.
-    if (row) expect(row.figureThumbUrl).toBe(`/api/files/${token}`)
+    // The figure question stays listed (D105: figure questions are servable) and carries the served URL; every other row stays null.
+    expect(row, 'the figure question is listed').toBeDefined()
+    expect(row?.figureThumbUrl).toBe(`/api/files/${token}`)
     expect(after.filter((r) => r.id !== target).every((r) => r.figureThumbUrl === null)).toBe(true)
+  })
+})
+
+describe('paging (FR-MUR-2-8)', () => {
+  it('[CI] when the newest 60 candidates are all ineligible, older eligible questions still fill the list to five', async () => {
+    const before = (await recent()).map((r) => r.id)
+    // 65 newer T4 rows that pass the scope but not the MCQ shape (no parts), so the first page of 60 holds none eligible.
+    const ids = (await t.db.query<{ id: string }>(`insert into questions (source_type, live_version_no, is_active) select 'manual', 1, true from generate_series(1, 65) returning id::text id`)).map((r) => r.id)
+    const level = (await t.db.query<{ id: string }>(`select id::text id from education_levels where code = 'T4'`))[0]?.id as string
+    const subject = (await t.db.query<{ id: string }>(`select v.subject_id::text id from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no where q.id = $1::bigint`, [before[0]]))[0]?.id as string
+    await t.db.query(`insert into question_versions (question_id, version_no, status, type, stem_ms, subject_id, education_level_id, difficulty_tp, published_at) select x, 1, 'approved', 'mcq', 'Tanpa bahagian', $2::bigint, $3::bigint, 1, now() from unnest($1::bigint[]) x`, [ids, subject, level])
+    undo.push(async () => {
+      await t.db.query('delete from questions where id = any($1::bigint[])', [ids])
+    })
+    expect((await recent()).map((r) => r.id)).toEqual(before)
   })
 })
 

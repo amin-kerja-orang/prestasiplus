@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger, Optional } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 import { ModuleRef } from '@nestjs/core'
 import type { z } from 'zod'
 import {
@@ -8,7 +8,6 @@ import {
   type PracticeReadSubject,
   type PracticeReadSubjectConfig,
   type RoleCode,
-  type ServabilityActivity,
 } from '@pp/contract'
 
 import { toMytTimestamp } from '../../../../common/time/myt'
@@ -20,12 +19,11 @@ import { ArticlesService } from '../../../content/articles/articles.service'
 import { CurriculumRepository, type SubjectWithLevels } from '../../../curriculum'
 import { FilesService } from '../../../files'
 import { QuestionsRepository } from '../../../questions'
-import { GROUP_SURFACES, filterOf } from '../../../questions/serving'
+import { ALL_GROUP_SURFACES, filterOf } from '../../../questions/serving'
 import { SubscriptionService } from '../../../subscriptions'
 import { UsersRepository } from '../../../users'
 import { classLevelOfGrade } from '../../../users/class-level'
 import { StreakService, WalletService } from '../../../wallet'
-import { PRACTICE_GROUP_SURFACES } from '../../ports'
 import { BankFacts } from './bank-facts'
 import { OverviewRepository } from './overview.repository'
 import { bannerAudiences, cutQuestionText, difficultyLevelOfTp, greetingPeriod, pct, round, weekEndMyt, weekStartMyt } from './rules'
@@ -50,6 +48,8 @@ export const DEFAULT_OVERVIEW_OPTIONS: OverviewOptions = { bankTtlMs: 60_000 }
 /** FR-MUR-2-8: five rows, read from a window of the newest candidates (the MCQ shape is checked on the window only). */
 const RECENT_LIMIT = 5
 const RECENT_WINDOW = 60
+/** At most 20 pages of 60 candidates (1200 rows) are read before the list is returned short. */
+const RECENT_MAX_PAGES = 20
 
 const notFound = (): ApiError => ApiError.of('NOT_FOUND', { message: PRACTICE_READS_MESSAGES.notFound })
 
@@ -92,7 +92,6 @@ export class OverviewService {
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(OVERVIEW_OPTIONS) private readonly options: OverviewOptions,
     @Inject(FilesService) private readonly files: FilesService,
-    @Optional() @Inject(PRACTICE_GROUP_SURFACES) private readonly surfaces: readonly ServabilityActivity[] = GROUP_SURFACES,
   ) {}
 
   /**
@@ -240,18 +239,30 @@ export class OverviewService {
 
   /**
    * FR-MUR-2-8: the five newest SERVABLE questions of the caller's own form, text cut at 140 characters, with the first figure as a thumbnail and no
-   * answer key (the wire has no option or key field). "Servable" is the Latih Tubi definition (`filterOf('latih_tubi_spm')`, D91), so a card, a list and a draw agree:
+   * answer key (the wire has no option or key field). "Servable" is the Latih Tubi definition (`filterOf('latih_tubi_spm')` with the figure-capable shape, D91, D105), so a card, a list and a draw agree:
    * the window of the newest candidates is read through the shared scope (`scopeSql`), and the MCQ shape is checked on that window only (`eligibleAmong`).
    */
   private async recentQuestions(who: Reader): Promise<PracticeReadDashboard['recentQuestions']> {
     const form = await this.formLevelId(who.userId)
     if (form === 'none') return []
-    const servableFilter = filterOf('latih_tubi_spm', {}, this.surfaces)
+    // D105: the dashboard lists figure questions and whole stimulus groups, so it reads the figure-capable shape of `filterOf` (every INCLUDE
+    // surface, `ALL_GROUP_SURFACES`), not the card's `this.surfaces` (text-only until the Latih Tubi screen lists figures).
+    const servableFilter = filterOf('latih_tubi_spm', {}, ALL_GROUP_SURFACES)
     const windowFilter = { ...servableFilter, mcqShape: undefined }
     const formFilter = form === null ? {} : { educationLevelId: form }
-    const candidates = await this.repo.newestIdsOf(this.questions.scopeSql({ ...windowFilter, ...formFilter, status: 'approved', active: true }, true), RECENT_WINDOW)
-    const servable = new Set(await this.questions.eligibleAmong(candidates, { ...servableFilter, ...formFilter }))
-    const ids = candidates.filter((id) => servable.has(id)).slice(0, RECENT_LIMIT)
+    const scope = this.questions.scopeSql({ ...windowFilter, ...formFilter, status: 'approved', active: true }, true)
+    // Page backwards through the newest candidates until five pass the shape check or the scope is exhausted (bounded).
+    const ids: string[] = []
+    let below: string | undefined
+    for (let page = 0; page < RECENT_MAX_PAGES && ids.length < RECENT_LIMIT; page++) {
+      const candidates = await this.repo.newestIdsOf(scope, RECENT_WINDOW, below)
+      if (candidates.length === 0) break
+      const servable = new Set(await this.questions.eligibleAmong(candidates, { ...servableFilter, ...formFilter }))
+      ids.push(...candidates.filter((id) => servable.has(id)))
+      if (candidates.length < RECENT_WINDOW) break
+      below = candidates[candidates.length - 1]
+    }
+    ids.splice(RECENT_LIMIT)
     // A stored question that fails to load (a bad stored key fails closed in the bank) must not take the dashboard down.
     const records = await this.questions.getMany(ids, 'live').catch((err: unknown) => {
       this.logger.warn(`dashboard: latest questions unavailable (${err instanceof Error ? err.message : String(err)})`)
