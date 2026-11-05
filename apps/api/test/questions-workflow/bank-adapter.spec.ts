@@ -238,16 +238,16 @@ describe('question bank adapter (real BE-09 bank)', () => {
     expect((await svc.transition(rows[0]!.id, 'draft', actorOf(c.admin), { reason: 'Semak semula' })).to).toBe('draft')
   })
 
-  it('a row with fewer than 3 options is a failed row and the other rows still import', async () => {
+  it('[CI] a two-option MCQ imports (S1-T09a, 2 to 8); a one-option row is a failed row and the other rows still import', async () => {
     const ids = await curriculumIds(t)
     const teacher = await uploadClient(t, 'teacher')
     const head = 'question_text,option_a,option_b,option_c,option_d,correct_answer,subject_id,education_level_id,difficulty_level,marks,explanation'
     const tail = `${ids.subject},${ids.level},2,1,`
-    const file = [head, `"Dua pilihan sahaja",A,B,,,B,${tail}`, `"Apakah warna rumput segar?",Merah,Hijau,Biru,,B,${tail}`].join('\n')
+    const file = [head, `"Satu pilihan sahaja",A,,,,A,${tail}`, `"Apakah warna rumput segar?",Merah,Hijau,Biru,,B,${tail}`, `"Dua pilihan sahaja",Ya,Tidak,,,A,${tail}`].join('\n')
     const before = await count(t.db, 'select count(*) n from questions')
     const res = await teacher.upload('/api/guru/questions/import', { name: 'dua.csv', body: file })
     expect(res.status, JSON.stringify(res.body)).toBe(200)
-    expect(res.body.data).toEqual({ imported: 1, failed: [{ row: 2, message: 'Pilihan jawapan mesti sekurang-kurangnya 3.' }] })
-    expect(await count(t.db, 'select count(*) n from questions')).toBe(before + 1)
+    expect(res.body.data).toEqual({ imported: 2, failed: [{ row: 2, message: 'Baris tidak lengkap.' }] })
+    expect(await count(t.db, 'select count(*) n from questions')).toBe(before + 2)
   })
 })

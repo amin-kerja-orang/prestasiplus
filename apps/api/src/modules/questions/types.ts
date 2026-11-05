@@ -428,7 +428,7 @@ export interface TextbookRef {
 }
 
 /**
- * S1-T09a (D4, DM-69): the stored `question_versions.type` values once migration 0134 widens the check: the 8 above plus
+ * S1-T09a (D4, DM-69): the stored `question_versions.type` values once the DB check is widened (a later S1-T09a part): the 8 above plus
  * `mcq_multi`, `true_false` and `fill_blank`. The API names and the mapping are `QUESTION_TYPES` / `questionTypeToDb` /
  * `questionTypeFromDb` in `@pp/contract`. The DB is not changed by this part.
  */
