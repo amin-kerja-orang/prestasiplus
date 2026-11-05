@@ -807,6 +807,27 @@ stateDiagram-v2
 **Claim.** `POST /api/gamification/challenges/:id/claim` (NEW API-GAME-11): checks completed and not yet claimed that MYT day, then credits `reward_syiling` and `reward_xp` once in one transaction; unique `(user_id, challenge_id, myt_date)` in DM-63 `challenge_claims`. A challenge deactivated after completion can still be claimed that day. The auto-credit on session completion in the code [SRS BR-M14-13] is **removed**; the claim is the only credit. Claim credits are ledger source `challenge`, not counted in game caps. Counter "{claimed} / {total} ganjaran dituntut".
 **Copy.** Card status "Belum selesai"; button `Tuntut`; claimed label "Dituntut" †; success "Ganjaran dituntut: +{n} syiling, +{m} mata."; errors "Cabaran belum selesai." (ERR-GAME-18), "Ganjaran sudah dituntut." (ERR-GAME-19); empty "Tiada cabaran aktif" / "Cabaran harian belum dibuka. Semak semula kemudian."; date line printed in BM (the V2 English date is a defect).
 **Reuse.** `gamification/gamification.controller.ts:58-100` (list), challenge progress service; one shared progress definition for the Dashboard and this page. **Do not build** weekly challenges, challenge chains or streak-saver rewards.
+**Reference data: V2's 15 Cabaran Harian (observed 2026-11-05, read-only check of V2 admin `/admin/gamification/challenges`, "Senarai Cabaran (15)", "15 Aktif"; owner S7-T04; no personal data).** V2's list is read-only (no add or edit form); each card shows icon, name, difficulty, Aktif, description, type code, target, syiling, XP and the counts "N sertai" / "N siap". Two sets of type codes (English and BM) coexist in V2's data; the metric mapping of each type code is owned by S7-T04. The seed `CHALLENGE_ROWS` holds 10 of these 15 (rows 5 to 9 below are missing).
+
+| # | Name | Type code | Target | Syiling | XP |
+|---|---|---|---|---|---|
+| 1 | Rajin Berlatih | `quiz_count` | 3 | 15 | 10 |
+| 2 | Si Tepat | `accuracy` | 80 | 20 | 15 |
+| 3 | Penjelajah Topik | `topic_variety` | 3 | 25 | 20 |
+| 4 | Kilat Matematik | `quiz_count` | 10 | 30 | 25 |
+| 5 | Selesai 5 Kuiz | `bilangan_kuiz` | 5 | 50 | 100 |
+| 6 | Ketepatan 80% | `ketepatan` | 80 | 80 | 150 |
+| 7 | 3 Topik Berbeza | `topik_berbeza` | 3 | 60 | 120 |
+| 8 | Kombo 10 ("Capai kombo 10 jawapan betul": a combo of 10 correct answers, not 10 days) | `kombo` | 10 | 120 | 200 |
+| 9 | Belajar 15 Minit ("Habiskan 15 minit latihan") | `masa` | 15 | 40 | 80 |
+| 10 | Mula Hari Ini | `quiz_count` | 1 | 10 | 5 |
+| 11 | Jawab 5 Betul | `quiz_count` | 5 | 12 | 8 |
+| 12 | Latihan 10 Minit | `time_spent` | 10 | 20 | 15 |
+| 13 | Kombo 2 Hari | `streak` | 2 | 25 | 20 |
+| 14 | Ketepatan 90% | `accuracy` | 90 | 35 | 30 |
+| 15 | Cabaran Kilat | `quiz_count` | 20 | 40 | 35 |
+
+Pupil side in V2 (dashboard): the "Cabaran Kilat" block shows 3 cards (difficulty, description, progress such as "0/3", "+15") with a "Lihat Semua" link to `/gamification/challenges`; a separate "Misi Harian" card ("Selesaikan semua misi → buka Peti Harian!") shows "PROGRES 1 / 3". The Kombo 10 reward of 120 is above the teacher cap of 100: the cap applies only to missions that teachers create (S6-T07 deviation 1), not to these rows.
 - FR-GM-19.1 Progress uses the metric definitions above; Dashboard and this page agree.
 - FR-GM-19.2 `Tuntut` credits once; the claimed state persists until 00:00 MYT.
 - FR-GM-19.3 Accuracy metrics need a session of at least 5 questions.
@@ -824,17 +845,17 @@ stateDiagram-v2
 
 **Purpose.** Teacher-set daily missions for a class. **Rows** teacher R1-GUR-2b, pupil missions in Latih Tubi (R1-MUR-16 mode `mission`). **PRD** FR-GUR-2b-1..4, AC-GUR-2b-1..5, 4.4. **Cards** S6-T07 (teacher screen, cap, and the pupil path: the mission session writer and the AC-GM-20.2 and AC-GM-20.5 proofs), S5-T03 (removes the `MISSION_COINS_PER_CORRECT` constant only, FR-GM-20.3), S6-T16 (question draw).
 **Rules.**
-- A mission is valid on its `date` only (MYT 00:00-23:59:59); assigned to one class or all of the teacher's classes; a pupil sees missions of own classes plus "Global" (platform) missions. Expired missions are not listed and their progress is frozen.
+- A mission is valid on its `date` only (MYT 00:00-23:59:59); assigned to one class or all of the teacher's classes; a pupil sees missions of own classes (PO decision 2026-11-05: there are no S6 "Global" missions; the platform-wide daily challenges are GAME-19 Cabaran Harian, owned by S7-T04, and the teacher list only reads them). Expired missions are not listed and their progress is frozen.
 - Progress = the number of correct answers by the pupil on that date in mission-mode sessions, up to `targetQuestions` (1-1000 [CODE]).
 - Per-answer syiling follows `flat_quiz_reward` like every mode (the constant 3 is deleted, 3.7).
-- **Question pool.** The bank questions of the mission's Subjek and the Tingkatan of the pupil's class, plus the setting teacher's personal questions of the same Subjek and Tahap (FR-GUR-44a-10, AC-GUR-44a-10): equal weight, drawn without replacement, no quota and no cap; a Global mission has bank questions only. The mission's Subjek is the required "Subjek" select of the teacher form (R1-GUR-2b). **Draw location (plan S6-T16):** `classes/missions/practice-assignments.adapter.ts` with `question-pool.ts`; S5-T03 only consumes the drawn pool.
-- The teacher-set `rewardCoins` is paid **once**, when progress reaches the target, idempotent per (pupil, mission), ledger text "Misi Harian: {title}", source `mission`. Example: rate 1, `rewardCoins` 10, target 5: 5 correct answers give 5 + 10 = 15 syiling (AC-GUR-2b-5).
+- **Question pool.** The bank questions of the mission's Subjek and the Tingkatan of the pupil's class, plus the setting teacher's personal questions of the same Subjek and Tahap (FR-GUR-44a-10, AC-GUR-44a-10): equal weight, drawn without replacement, no quota and no cap. The mission's Subjek is the required "Subjek" select of the teacher form (R1-GUR-2b). **Draw location (plan S6-T16):** `classes/missions/practice-assignments.adapter.ts` with `question-pool.ts`; S5-T03 only consumes the drawn pool.
+- The teacher-set `rewardCoins` is paid **once**, when progress reaches the target, idempotent per (pupil, mission) through the table `mission_rewards` (DM-88, unique `mission_id` + `student_id`, migration `0206_s6_mission_rewards`, owned by S6-T07; TEACHER missions only), ledger text "Misi Harian: {title}", source `mission`; a second completion pays nothing. Example: rate 1, `rewardCoins` 10, target 5: 5 correct answers give 5 + 10 = 15 syiling (AC-GUR-2b-5).
 - `rewardCoins` range 0 to `mission_reward_max` (100). Above it, creation or edit is refused with ERR-GAME-17 "Ganjaran misi melebihi had." A stored value above the current cap (for example after the cap is lowered) is paid as min(stored, cap) at payment time.
 - At most 5 missions per teacher per MYT day † (error "Had 5 misi sehari telah dicapai.").
 - Delete asks for confirmation: title "Padam misi ini?" body "Ganjaran yang sudah dibayar kekal." buttons `Padam` (danger) / `Batal` (default focus); paid rewards stay (FR-GUR-2b-3).
 **Copy.** Create success "Misi dicipta."; reached "Misi selesai! +{n} syiling."; already done "Misi ini sudah diselesaikan." (ERR-PRAC-04).
 **Answer store.** Mission sessions write `practice_answers` mode `mission` (existing session mode).
-**Data/API.** API-GUR-11 (teacher create/list/delete, the validation above), `GET /api/missions/today` (pupil). **Do not build** pupil-set missions, team missions or a second reward per mission.
+**Data/API.** API-GUR-11 (teacher create/list/delete, the validation above; the list also READS the active GAME-19 challenges as "Global" rows with no delete, "{n} pelajar selesai" = that teacher's pupils who completed the challenge today, via S7's contract), API-GUR-10 `GET /api/missions/today` (pupil), DM-88 (`mission_rewards`). **Do not build** pupil-set missions, team missions or a second reward per mission.
 - FR-GM-20.1 `rewardCoins` is limited to `mission_reward_max`; larger values are refused.
 - FR-GM-20.2 The mission reward is paid once at the target, idempotent per pupil and mission.
 - FR-GM-20.3 `MISSION_COINS_PER_CORRECT` no longer exists (removed by S5-T03, 3.7); the per-answer syiling is `flat_quiz_reward` (default 1 until the setting table exists).

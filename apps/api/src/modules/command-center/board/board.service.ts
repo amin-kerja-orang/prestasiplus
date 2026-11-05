@@ -101,7 +101,8 @@ export class BoardService {
       schoolId === undefined ? Promise.resolve(null) : this.repo.schoolRef(schoolId),
       this.reads.liveTallies({ now, schoolId, todayFrom: w.today.from, weekFrom: w.week.from, lastWeekFrom: w.lastWeek.from, d30From: w.last30d.from }),
       this.repo.studentCount({ schoolId }),
-      this.repo.subscribedSchoolCount(monthDay, schoolId),
+      // API-AS-02 (S6-T07): the school admin's scope is one school, so its tile counts that school, subscribed or not.
+      school ? Promise.resolve(1) : this.repo.subscribedSchoolCount(monthDay),
       school ? Promise.resolve([]) : this.reads.topSchools(now, TOP_LIMIT),
       this.reads.topUsers({ from: w.week.from, to: now, schoolId }, TOP_LIMIT),
       this.repo.latestAnswers({ to: now, schoolId }, FEED_LIMIT),

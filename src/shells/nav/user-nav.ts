@@ -312,7 +312,7 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'subheading', id: 'sub-visi-ai', label: '✨ Visi & Pertandingan', cls: sub('text-indigo-600/80'), roles: AI_ALL },
   // Student only (murid screenshot); INFERRED href (same page as the "Profil Cerah" item below).
   { kind: 'item', id: 'profil-cerah-ai', label: 'Profil Cerah', to: '/profil-cerah', fa: 'fa-magic', color: C_INDIGO, variant: 'ai', badge: { text: 'NEW', cls: B_NEW_PURPLE_INFERRED }, roles: S },
-  { kind: 'item', id: 'sekolah-bersaing-ai', label: 'Sekolah Bersaing', to: '/sekolah-bersaing', fa: 'fa-trophy', color: 'text-amber-500', variant: 'ai', tip: 'Leaderboard mingguan sekolah-sekolah Malaysia', badge: { text: 'NEW', cls: B_NEW_ITEM }, roles: AI_ALL },
+  { kind: 'item', id: 'sekolah-bersaing-ai', label: 'Sekolah Bersaing', to: '/sekolah-bersaing', fa: 'fa-trophy', color: 'text-amber-500', variant: 'ai', tip: 'Kedudukan sekolah teratas berdasarkan purata ketepatan latihan pelajar.', badge: { text: 'NEW', cls: B_NEW_ITEM }, roles: ['admin', 'school_admin'] },
   { kind: 'item', id: 'tetapan-peribadi', label: 'Tetapan Peribadi', to: '/tetapan', fa: 'fa-cog', color: 'text-slate-600', variant: 'ai', tip: 'Tetapan rohani, masa Subuh, mod Ramadan', roles: AI_ALL },
 
   { kind: 'subheading', id: 'sub-bilik-duta-preview', label: '🏆 Bilik Duta · 🔒 PREVIEW', cls: sub('text-amber-600/80'), roles: A },
@@ -422,7 +422,7 @@ export const USER_NAV: readonly NavEntry[] = [
   // ── ✨ Visi & Pertandingan ──
   { kind: 'section', id: 'sec-visi', label: '✨ Visi & Pertandingan', text: 'text-indigo-700', rule: 'from-indigo-300', roles: SA_ },
   { kind: 'item', id: 'profil-cerah', label: 'Profil Cerah', to: '/profil-cerah', fa: 'fa-magic', color: C_INDIGO, roles: SA_ },
-  { kind: 'item', id: 'sekolah-bersaing', label: 'Sekolah Bersaing', to: '/sekolah-bersaing', fa: 'fa-trophy', color: 'text-amber-500', roles: SA_ },
+  { kind: 'item', id: 'sekolah-bersaing', label: 'Sekolah Bersaing', to: '/sekolah-bersaing', fa: 'fa-trophy', color: 'text-amber-500', roles: ['admin'] },
   { kind: 'item', id: 'cita-cita-hijrah', label: 'Cita-Cita Hijrah', to: '/cita-cita', fa: 'fa-star', color: 'text-pink-500', roles: SA_ },
 
   // ── 💎 Killer Features ──

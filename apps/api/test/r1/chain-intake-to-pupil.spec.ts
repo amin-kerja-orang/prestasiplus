@@ -229,10 +229,17 @@ let xpBefore = 0 // the seeded pupil already has XP: the reward is checked as a 
 
   it('3. S1-T02: Terbitkan needs the Bab (MATH T4 has chapters): without one the five are refused NO_CHAPTER; with a Bab chosen by hand they are approved and carry it', async () => {
     const five = questionIds.slice(0, 5) // the sixth is approved in 3c
-    const refused = await admin.post('/api/questions/bulk-action', { action: 'approved', ids: five })
+    // the two figure-group members are approved as ONE unit (S1-T01; listing only one of them would be a 422 stimulus_group_split): the gate refuses the whole group with 422 details.gate, one line per member
+    const groupRefused = await admin.post('/api/questions/bulk-action', { action: 'approved', ids: [five[0]!, five[1]!] })
+    expect(groupRefused.status, JSON.stringify(groupRefused.body)).toBe(422)
+    const gate = groupRefused.body.error.details.gate as { questionId: string; message: string }[]
+    expect(gate.map((g) => g.questionId)).toEqual([questionIds[0], questionIds[1]])
+    for (const g of gate) expect(g.message).toMatch(/Sila pilih Bab\.$/)
+    // the three solo questions are refused one by one in failed[]
+    const refused = await admin.post('/api/questions/bulk-action', { action: 'approved', ids: five.slice(2) })
     expect(refused.status, JSON.stringify(refused.body)).toBe(200)
     expect(refused.body.data.affected).toBe(0)
-    expect((refused.body.data.failed as { fields: Record<string, string> }[]).map((f) => f.fields)).toEqual(Array(5).fill({ chapterId: 'Sila pilih Bab.' }))
+    expect((refused.body.data.failed as { fields: Record<string, string> }[]).map((f) => f.fields)).toEqual(Array(3).fill({ chapterId: 'Sila pilih Bab.' }))
     const [bab] = await q(`select c.id::text id from chapters c join question_versions v on v.subject_id = c.subject_id and v.education_level_id = c.education_level_id where v.question_id = $1::bigint and c.is_active and c.in_tree order by c.id limit 1`, [five[0]!])
     expect(bab, 'a MATH T4 chapter').toBeDefined()
     await q(`update question_versions set chapter_id = $2::bigint where question_id = any($1::bigint[])`, [five, bab!.id])

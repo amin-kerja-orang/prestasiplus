@@ -63,7 +63,13 @@ describe('[CI] the swap: publishing a group draft copy (API-Q-31, API-Q-32, API-
   /** Version 2 of a served question, edited and sent for review (the Studio path: Edit sebagai draf, edit, Hantar). */
   const editedMember = async (id: string, stem: string, status: 'draft' | 'review' = 'review') => {
     expect((await admin.post(`/api/questions/${id}/edit-as-draft`)).status).toBe(201)
-    await q(`update question_versions set stem_ms = $2, status = $3 where question_id = $1 and version_no = 2`, [id, stem, status])
+    // S1-T02: the Bab is an approve gate item, so the edited copy carries a valid one (a chapter of the question's own subject and level)
+    await q(
+      `update question_versions v set stem_ms = $2, status = $3,
+              chapter_id = (select c.id from chapters c where c.subject_id = v.subject_id and c.education_level_id = v.education_level_id and c.is_active and c.in_tree order by c.id limit 1)
+        where v.question_id = $1 and v.version_no = 2`,
+      [id, stem, status],
+    )
   }
   const stage = (copyId: string, ids: string[]) => q(`update stimulus_groups set draft_members = $2::jsonb where id = $1`, [copyId, JSON.stringify(ids)])
   const members = async (groupId: string): Promise<string[]> => (await q(`select id::text id from questions where group_id = $1 order by group_position`, [groupId])).map((r) => r.id as string)
@@ -189,7 +195,7 @@ describe('[CI] the swap: publishing a group draft copy (API-Q-31, API-Q-32, API-
       await q(`insert into stimulus_group_options (group_id, label, body_ms, position) values ($1, 'A', 'Pilihan A', 1)`, [copy.id])
       await editedMember(a, 'Soalan ini boleh diluluskan')
       await editedMember(b, 'Soalan ini gagal pada gate')
-      await q(`update question_versions set difficulty_tp = null where question_id = $1 and version_no = 2`, [b])
+      await q(`update question_versions set difficulty_tp = null, difficulty_level = null where question_id = $1 and version_no = 2`, [b])
       await stage(copy.id, [b, added, a])
       const before = (await audits()).length
       const res = await publish(copy.id)
