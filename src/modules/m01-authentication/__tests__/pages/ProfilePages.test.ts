@@ -20,9 +20,6 @@ const apiMocks = vi.hoisted(() => ({
 }))
 vi.mock('../../api', () => apiMocks)
 
-const searchSchools = vi.hoisted(() => vi.fn())
-vi.mock('@/modules/m02-users-schools', () => ({ searchSchools }))
-
 const SCHOOL: SchoolSummary = {
   id: 8101,
   name: 'SMK DEMO',
@@ -80,14 +77,6 @@ async function render(
   return wrapper
 }
 
-/** Reka controls have no native input: values are driven through the component. */
-const groupOf = (w: VueWrapper) => w.findComponent({ name: 'RadioGroup' })
-const selectOf = (w: VueWrapper) => w.findComponent({ name: 'Select' })
-const checkedGrade = (w: VueWrapper) =>
-  w
-    .findAll('[data-testid=grade-grid] [role=radio]')
-    .filter((r) => r.attributes('aria-checked') === 'true')
-
 function apiError(fields: Record<string, string>): ApiError {
   return new ApiError({
     status: 422,
@@ -101,7 +90,6 @@ beforeEach(() => {
   localStorage.clear()
   setActivePinia(createPinia())
   for (const fn of Object.values(apiMocks)) fn.mockReset()
-  searchSchools.mockReset()
   window.scrollTo = vi.fn()
 })
 
@@ -154,41 +142,32 @@ describe('S8 /profile/edit personal card (FR-M01-39, 40, 44)', () => {
     expect(w.get('[data-testid=profile-bio-counter]').text()).toBe('Baki: 500 aksara')
   })
 
-  it('shows Ting. 1-5 with Ting. 4 checked for grade 10', async () => {
+  it('has no Tingkatan picker and no "Maklumat Sekolah" card (S5-T05: grade and school are admin-managed)', async () => {
     const w = await render(ProfileEditPage)
-    const picker = w.get('[data-testid=grade-picker]')
-    expect(picker.text()).toContain('Sekolah Menengah')
-    expect(picker.findAll('[role=radio]')).toHaveLength(5)
-    expect(checkedGrade(w)).toHaveLength(1)
-    expect(checkedGrade(w)[0]?.attributes('value')).toBe('10')
+    expect(w.find('[data-testid=grade-picker]').exists()).toBe(false)
+    expect(w.find('[data-testid=profile-school-card]').exists()).toBe(false)
+    expect(w.find('[data-testid=profile-school]').exists()).toBe(false)
+    expect(w.text()).not.toContain('Maklumat Sekolah')
+    expect(w.text()).not.toContain('Tingkatan')
   })
 
-  it('shows Ting. 1-5 only (no Darjah) for a null grade', async () => {
-    const w = await render(ProfileEditPage, { ...USER, role: 'admin', grade: null })
-    expect(w.get('[data-testid=grade-picker]').text()).not.toContain('Darjah')
-    expect(w.get('[data-testid=grade-picker]').text()).not.toContain('Sekolah Rendah')
-    expect(w.findAll('[data-testid=grade-picker] [role=radio]')).toHaveLength(5)
-    expect(checkedGrade(w)).toHaveLength(0)
-  })
-
-  it('saves name, phone, bio, grade and school, then shows the success flash', async () => {
+  it('saves name, phone and bio only (no grade, no schoolId), then shows the success flash', async () => {
     apiMocks.updateProfile.mockResolvedValue({
       data: { ...USER, name: 'Nama Baru', grade: 9 },
       status: 'Profil berjaya dikemaskini.',
     })
     const w = await render(ProfileEditPage)
     await w.get('[data-testid=profile-name-input]').setValue('Nama Baru')
-    groupOf(w).vm.$emit('update:modelValue', 9)
-    await flushPromises()
     await w.get('[data-testid=profile-form]').trigger('submit')
     await flushPromises()
     expect(apiMocks.updateProfile).toHaveBeenCalledWith({
       name: 'Nama Baru',
       phone: '0123456789',
       bio: 'Suka belajar',
-      grade: 9,
-      schoolId: SCHOOL.id,
     })
+    const sent = apiMocks.updateProfile.mock.calls[0]?.[0] as Record<string, unknown>
+    expect(sent).not.toHaveProperty('grade')
+    expect(sent).not.toHaveProperty('schoolId')
     expect(useFlashStore().current).toEqual({
       type: 'success',
       message: 'Profil berjaya dikemaskini.',
@@ -199,16 +178,15 @@ describe('S8 /profile/edit personal card (FR-M01-39, 40, 44)', () => {
     )
   })
 
-  it('sends null for an empty phone, bio and a cleared school', async () => {
+  it('sends null for an empty phone and bio', async () => {
     apiMocks.updateProfile.mockResolvedValue({ data: USER, status: 'ok' })
     const w = await render(ProfileEditPage)
     await w.get('[data-testid=profile-phone-input]').setValue('')
     await w.get('[data-testid=profile-bio-input]').setValue('')
-    await w.get('[data-testid=school-clear]').trigger('click')
     await w.get('[data-testid=profile-form]').trigger('submit')
     await flushPromises()
     expect(apiMocks.updateProfile).toHaveBeenCalledWith(
-      expect.objectContaining({ phone: null, bio: null, schoolId: null }),
+      { name: 'Pelajar Demo', phone: null, bio: null },
     )
   })
 
@@ -235,30 +213,16 @@ describe('S8 /profile/edit personal card (FR-M01-39, 40, 44)', () => {
 })
 
 describe('S8 late refresh does not undo edits', () => {
-  const FRESH: UserMe = { ...USER, grade: 3, school: null, schoolId: null, name: 'Dari Server' }
+  const FRESH: UserMe = { ...USER, name: 'Dari Server' }
 
-  it('keeps a cleared school when GET /api/me resolves afterwards', async () => {
+  it('keeps a typed name when GET /api/me resolves afterwards', async () => {
     let resolve!: (me: UserMe) => void
     const w = await render(ProfileEditPage, USER, new Promise<UserMe | null>((r) => (resolve = r)))
-    await w.get('[data-testid=school-clear]').trigger('click')
-    resolve({ ...FRESH, school: SCHOOL, schoolId: SCHOOL.id })
-    await flushPromises()
-    expect(w.find('[data-testid=school-chip]').exists()).toBe(false)
-    expect((w.get('[data-testid=profile-name-input]').element as HTMLInputElement).value).toBe(
-      'Pelajar Demo',
-    )
-  })
-
-  it('keeps a clicked grade when GET /api/me resolves afterwards', async () => {
-    let resolve!: (me: UserMe) => void
-    const w = await render(ProfileEditPage, USER, new Promise<UserMe | null>((r) => (resolve = r)))
-    groupOf(w).vm.$emit('update:modelValue', 9)
-    await flushPromises()
+    await w.get('[data-testid=profile-name-input]').setValue('Nama Ditaip')
     resolve(FRESH)
     await flushPromises()
-    expect(checkedGrade(w)[0]?.attributes('value')).toBe('9')
     expect((w.get('[data-testid=profile-name-input]').element as HTMLInputElement).value).toBe(
-      'Pelajar Demo',
+      'Nama Ditaip',
     )
   })
 
@@ -267,92 +231,6 @@ describe('S8 late refresh does not undo edits', () => {
     expect((w.get('[data-testid=profile-name-input]').element as HTMLInputElement).value).toBe(
       'Dari Server',
     )
-    expect(w.find('[data-testid=school-chip]').exists()).toBe(false)
-  })
-})
-
-describe('S8 school picker (FR-M01-42, 43)', () => {
-  it('shows the chip with type, state and district, and the clear button restores the search', async () => {
-    const w = await render(ProfileEditPage)
-    expect(w.get('[data-testid=school-chip-name]').text()).toBe('SMK DEMO')
-    expect(w.get('[data-testid=school-chip-detail]').text()).toBe(
-      'SMK · Selangor · PPD PETALING UTAMA',
-    )
-    await w.get('[data-testid=school-clear]').trigger('click')
-    expect(w.find('[data-testid=school-chip]').exists()).toBe(false)
-    const items = selectOf(w).props('items') as { label: string }[]
-    expect(items).toHaveLength(17)
-    expect(items[0]?.label).toBe('Semua Negeri')
-    expect(items[5]?.label).toBe('Labuan')
-    expect(w.get('[data-testid=profile-school-search]').attributes('placeholder')).toBe(
-      'Taip nama sekolah (min. 2 huruf)...',
-    )
-  })
-
-  it('omits the chip parts that are missing', async () => {
-    const w = await render(ProfileEditPage, {
-      ...USER,
-      school: { ...SCHOOL, district: null },
-    })
-    expect(w.get('[data-testid=school-chip-detail]').text()).toBe('SMK · Selangor')
-  })
-
-  it('searches after 300 ms from 2 characters with limit 20 and picks a row', async () => {
-    vi.useFakeTimers()
-    searchSchools.mockResolvedValue([SCHOOL])
-    const w = await render(ProfileEditPage, { ...USER, school: null, schoolId: null })
-    const input = w.get('[data-testid=profile-school-search]')
-    await input.trigger('focus')
-    await input.setValue('d')
-    await vi.advanceTimersByTimeAsync(400)
-    expect(searchSchools).not.toHaveBeenCalled()
-    await input.setValue('de')
-    await vi.advanceTimersByTimeAsync(299)
-    expect(searchSchools).not.toHaveBeenCalled()
-    await vi.advanceTimersByTimeAsync(1)
-    await flushPromises()
-    expect(searchSchools).toHaveBeenCalledWith(
-      expect.objectContaining({ q: 'de', limit: 20, state: null }),
-    )
-    const rows = w.findAll('[data-testid=school-option]')
-    expect(rows).toHaveLength(1)
-    expect(rows[0]?.text()).toContain('SMK · Selangor · PPD PETALING UTAMA')
-    await rows[0]?.trigger('click')
-    expect(w.get('[data-testid=school-chip-name]').text()).toBe('SMK DEMO')
-  })
-
-  it('loads a state with an empty query and shows the two-line empty state', async () => {
-    vi.useFakeTimers()
-    searchSchools.mockResolvedValue([])
-    const w = await render(ProfileEditPage, { ...USER, school: null, schoolId: null })
-    selectOf(w).vm.$emit('update:modelValue', 'Perlis')
-    await flushPromises()
-    await vi.advanceTimersByTimeAsync(300)
-    await flushPromises()
-    expect(searchSchools).toHaveBeenCalledWith(
-      expect.objectContaining({ state: 'Perlis', limit: 20 }),
-    )
-    const input = w.get('[data-testid=profile-school-search]')
-    await input.trigger('focus')
-    await input.setValue('zzz')
-    await vi.advanceTimersByTimeAsync(300)
-    await flushPromises()
-    const empty = w.get('[data-testid=school-empty]')
-    expect(empty.text()).toContain('Tiada sekolah dijumpai')
-    expect(empty.text()).toContain('Cuba tukar negeri atau kata kunci lain')
-  })
-
-  it('shows nothing when the search fails', async () => {
-    vi.useFakeTimers()
-    searchSchools.mockRejectedValue(new Error('boom'))
-    const w = await render(ProfileEditPage, { ...USER, school: null, schoolId: null })
-    const input = w.get('[data-testid=profile-school-search]')
-    await input.trigger('focus')
-    await input.setValue('de')
-    await vi.advanceTimersByTimeAsync(300)
-    await flushPromises()
-    expect(w.find('[data-testid=school-option]').exists()).toBe(false)
-    expect(w.find('[data-testid=school-empty]').exists()).toBe(false)
   })
 })
 
