@@ -38,8 +38,8 @@ describe('stimulus flags, regroup and undo (S1-T07 part 2, real database)', () =
     await t.close()
   })
 
-  const q = <R = Record<string, unknown>>(sql: string, params: unknown[] = []) => t.db.query<R>(sql, params)
-  const one = async <R>(sql: string, params: unknown[] = []): Promise<R> => (await q<R>(sql, params))[0] as R
+  const q = <R extends Record<string, unknown> = Record<string, unknown>>(sql: string, params: unknown[] = []) => t.db.query<R>(sql, params)
+  const one = async <R extends Record<string, unknown>>(sql: string, params: unknown[] = []): Promise<R> => (await q<R>(sql, params))[0] as R
 
   /** A draft question, then published by SQL (live version 1): the flag detectors ran at create, so a "Rajah n" text is `stimulus_missing`. */
   async function served(text: string, over: Record<string, unknown> = {}): Promise<string> {
