@@ -157,7 +157,7 @@ export const questionsScenarios: Scenario[] = [
       ctx.check(fields !== undefined && Object.keys(fields).length > 0, 'the publish gate 422 has no fields')
 
       const published = await admin.request('POST', '/questions', {
-        body: mcq(`${tag}b`, { subjectId: base.subjectId, educationLevelId: base.educationLevelId, tag: base.tag, status: 'approved', ...DSKP }),
+        body: mcq(`${tag}b`, { subjectId: base.subjectId, educationLevelId: base.educationLevelId, tag: base.tag, curriculumChapterId: base.chapterId, status: 'approved', ...DSKP }),
       })
       ctx.expectStatus(published, 201)
       const id = String(dataOf(published).id)

@@ -11,7 +11,7 @@ import { Be09PracticeQuestionSource } from '../../src/modules/practice/question-
 import type { UsersRepository } from '../../src/modules/users'
 import { QuestionsBijakPoolSource } from '../../src/modules/questions/bijak-pool'
 import { QuestionsRepository, QuestionsService } from '../../src/modules/questions'
-import { ServabilityService, filterOf } from '../../src/modules/questions/serving'
+import { ALL_GROUP_SURFACES, GROUP_SURFACES, ServabilityService, evaluateAll, filterOf } from '../../src/modules/questions/serving'
 import { adminActor, mcqInput, tagBody, tagOf, type Tag } from './fixtures'
 import { bootQuestionsApp, type QuestionsTestApp } from './helpers'
 
@@ -277,7 +277,7 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     expect(databank.has(made.plain!)).toBe(true)
   })
 
-  it('latih_tubi_spm gives the practice reason for each refused shape and the SQL scope filter agrees', async () => {
+  it('latih_tubi_spm (GROUP_SURFACES without the drills, until S5-T03 renders groups) gives the text-only practice reason and the SQL scope filter agrees', async () => {
     expect(reasonsOf('stemImage', 'latih_tubi_spm')).toEqual(['has_stimulus'])
     expect(reasonsOf('optionImage', 'latih_tubi_spm')).toEqual(['has_option_image'])
     expect(reasonsOf('groupA', 'latih_tubi_spm')).toEqual(['has_stimulus'])
@@ -292,6 +292,11 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     // mapper is served (the filter is the reader's own `QuestionFilter`).
     const inScope = new Set(await repo.eligibleAmong(allIds, filterOf('latih_tubi_spm')))
     for (const id of servedBy('latih_tubi_spm')) expect(inScope.has(id), id).toBe(true)
+  })
+
+  it('S1-T06: GROUP_SURFACES starts as Bijak papers and the Jana set; the drills and games are not in it', () => {
+    expect([...GROUP_SURFACES].sort()).toEqual(['jana_kertas', 'simulasi_paper'])
+    expect(ALL_GROUP_SURFACES).toEqual(expect.arrayContaining(['latih_tubi_spm', 'databank', 'bab']))
   })
 
   it('level and subject facts follow the LIVE version: a draft v2 that moves level or subject changes nothing (T29 B2)', async () => {
@@ -505,5 +510,146 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     }
     expect(await drawnWith()).toBe(true)
     expect(await reasonCodes()).toEqual([])
+  })
+
+  it('S1-T06 (D105, AC-QP-7): with every INCLUDE surface, drills serve figures and whole groups, and an incomplete group is excluded as a whole', async () => {
+    const all = [...ALL_GROUP_SURFACES]
+    const reasons = async (id: string, activity: ServabilityActivity): Promise<string[]> => {
+      const f = (await servability.factsOf([id])).get(id)!
+      return evaluateAll(f, all).activities.find((a) => a.activity === activity)!.reasons.map((r) => r.code)
+    }
+    for (const activity of ['latih_tubi_spm', 'databank', 'bab'] as const) {
+      for (const key of ['groupA', 'groupB', 'stemImage', 'optionImage']) {
+        const codes = await reasons(made[key]!, activity)
+        expect(codes, `${key} on ${activity}`).not.toContain('has_stimulus')
+        expect(codes, `${key} on ${activity}`).not.toContain('has_option_image')
+        expect(codes, `${key} on ${activity}`).not.toContain('group_incomplete')
+      }
+      expect(await reasons(made.structured!, activity)).toContain('shape_unsupported')
+    }
+    expect(await reasons(made.groupA!, 'latih_tubi_spm')).toEqual([])
+    expect(await reasons(made.stemImage!, 'latih_tubi_spm')).toEqual([])
+    expect(await reasons(made.optionImage!, 'latih_tubi_spm')).toEqual([])
+
+    // The SQL half under the same surfaces: figure questions and the complete group pass; the text-only ungrouped shape is gone.
+    const ids = ['groupA', 'groupB', 'stemImage', 'optionImage', 'plain', 'structured'].map((k) => made[k]!)
+    for (const activity of ['latih_tubi_spm', 'databank', 'bab'] as const) {
+      const inScope = new Set(await repo.eligibleAmong(ids, filterOf(activity, {}, all)))
+      for (const k of ['groupA', 'groupB', 'stemImage', 'optionImage', 'plain']) expect(inScope.has(made[k]!), `${k} in ${activity} scope`).toBe(true)
+      expect(inScope.has(made.structured!), `structured in ${activity} scope`).toBe(false)
+    }
+    // Games stay out: the default (shipped) filter keeps the text-only ungrouped shape.
+    expect(filterOf('latih_tubi_spm').ungrouped).toBe(true)
+    expect(filterOf('latih_tubi_spm', {}, all).ungrouped).toBeUndefined()
+
+    // AC-QP-7: a group whose second member is only a draft is excluded whole, in the indicator and in the draw.
+    const passage = await svc.createStimulus({ kind: 'passage', label: 'Petikan B', bodyMs: 'Teks petikan B.', bodyEn: null, altText: null, assetFileId: null })
+    const gid = await svc.createStimulusGroup({ label: 'Kumpulan tidak lengkap', scope: 'section', stimulusIds: [passage], optionBank: [] })
+    const served = await publish('halfA', 'Ahli diterbitkan kumpulan tidak lengkap untuk kesamaan kebolehhidangan.', { stimulusGroupId: gid })
+    const draft = (await svc.create(mcqInput(tag, { questionText: 'Ahli draf kumpulan tidak lengkap untuk kesamaan kebolehhidangan.', stimulusGroupId: gid }), admin)).id
+    for (const activity of ['latih_tubi_spm', 'databank', 'bab'] as const) {
+      expect(await reasons(served, activity), `half group on ${activity}`).toContain('group_incomplete')
+      expect((await repo.eligibleAmong([served, draft], filterOf(activity, {}, all))).length, `half group in ${activity} scope`).toBe(0)
+    }
+    const msg = evaluateAll((await servability.factsOf([served])).get(served)!, all).activities.find((a) => a.activity === 'latih_tubi_spm')!.reasons[0]!.message
+    expect(msg).toBe('Kumpulan belum lengkap - 1 soalan belum diluluskan.')
+    // Once the second member is published the whole group is served.
+    await q(`update question_versions set status = 'approved', published_at = now(), paper_code = '1449/2' where question_id = $1`, [draft])
+    await q(`update questions set live_version_no = 1 where id = $1`, [draft])
+    expect(await reasons(served, 'latih_tubi_spm')).toEqual([])
+    expect(new Set(await repo.eligibleAmong([served, draft], filterOf('latih_tubi_spm', {}, all)))).toEqual(new Set([served, draft]))
+  })
+
+  it('S1-T06: incompleteGroups / groupCompleteSql edge cases (archived and inactive member, no stimulus, no member)', async () => {
+    const mkGroup = async (label: string): Promise<string> => {
+      const passage = await svc.createStimulus({ kind: 'passage', label, bodyMs: 'Teks.', bodyEn: null, altText: null, assetFileId: null })
+      return svc.createStimulusGroup({ label, scope: 'section', stimulusIds: [passage], optionBank: [] })
+    }
+    // Two approved members plus an archived one (latest archived, no live version): the archived member is NOT a gap (documented rule).
+    const gArch = await mkGroup('Kumpulan arkib')
+    const a1 = await publish('archA1', 'Ahli satu kumpulan arkib untuk kesamaan kebolehhidangan.', { stimulusGroupId: gArch })
+    await publish('archA2', 'Ahli dua kumpulan arkib untuk kesamaan kebolehhidangan.', { stimulusGroupId: gArch })
+    const archived = await publish('archA3', 'Ahli diarkibkan kumpulan arkib untuk kesamaan kebolehhidangan.', { stimulusGroupId: gArch })
+    await q(`update question_versions set status = 'archived' where question_id = $1`, [archived])
+    await q(`update questions set live_version_no = null where id = $1`, [archived])
+    // Two approved members, one inactive: that member is a gap (count 1).
+    const gInact = await mkGroup('Kumpulan tidak aktif')
+    await publish('inA1', 'Ahli satu kumpulan tidak aktif untuk kesamaan kebolehhidangan.', { stimulusGroupId: gInact })
+    const inactive = await publish('inA2', 'Ahli dua kumpulan tidak aktif untuk kesamaan kebolehhidangan.', { stimulusGroupId: gInact })
+    await q(`update questions set is_active = false where id = $1`, [inactive])
+    // A group that lost its stimulus: incomplete, with 0 gap members.
+    const gNoStim = await mkGroup('Kumpulan tanpa rangsangan')
+    const ns = await publish('nsA1', 'Ahli kumpulan tanpa rangsangan untuk kesamaan kebolehhidangan.', { stimulusGroupId: gNoStim })
+    await q(`delete from stimulus_group_stimuli where group_id = $1`, [gNoStim])
+    // A group with a stimulus and no member at all: nothing to serve and nothing missing, so it is not reported incomplete.
+    const gEmpty = await mkGroup('Kumpulan kosong')
+    // A group with no stimulus and no member: incomplete (0 gaps).
+    const gEmptyNoStim = await mkGroup('Kumpulan kosong tanpa rangsangan')
+    await q(`delete from stimulus_group_stimuli where group_id = $1`, [gEmptyNoStim])
+
+    const gaps = await repo.incompleteGroups([gArch, gInact, gNoStim, gEmpty, gEmptyNoStim, '999999999'])
+    expect(gaps.has(gArch), 'archived member is not a gap').toBe(false)
+    expect(gaps.get(gInact), 'inactive member is a gap').toBe(1)
+    expect(gaps.get(gNoStim), 'no stimulus: incomplete, 0 gaps').toBe(0)
+    expect(gaps.has(gEmpty), 'no member, has stimulus').toBe(false)
+    expect(gaps.get(gEmptyNoStim), 'no member, no stimulus').toBe(0)
+    expect(gaps.has('999999999')).toBe(false)
+    expect((await repo.incompleteGroups([])).size).toBe(0)
+
+    // The SQL draw agrees: the complete group's live members pass, the others fail as a whole.
+    const all = [...ALL_GROUP_SURFACES]
+    const pass = async (ids: string[]) => new Set(await repo.eligibleAmong(ids, filterOf('latih_tubi_spm', {}, all)))
+    const ok = await pass([a1, made.archA2!])
+    expect(ok.has(a1) && ok.has(made.archA2!)).toBe(true)
+    const bad = await pass([made.inA1!, inactive, ns])
+    expect(bad.size).toBe(0)
+  })
+
+  it('[CI] S1-T06: the SQL gap count equals the draw (a key naming no option or a non-MCQ leaf makes the group incomplete in SQL and refused by the JS verdict)', async () => {
+    const all = [...ALL_GROUP_SURFACES]
+    // The stored-tree reader fails closed on a key naming no option or a non-MCQ leaf with an option key (it never hands such a record
+    // to the draw), so the JS verdict is exercised on the valid member's facts with the record altered in memory.
+    const jsCodes = async (id: string, alter?: (leaf: Record<string, unknown>) => void): Promise<string[]> => {
+      const f = structuredClone((await servability.factsOf([id])).get(id)!)
+      if (alter) {
+        const leaf = f.live!.version.parts[0] as unknown as Record<string, unknown>
+        alter(leaf)
+      }
+      return evaluateAll(f, all).activities.find((a) => a.activity === 'latih_tubi_spm')!.reasons.map((r) => r.code)
+    }
+    const mkGroup = async (label: string): Promise<string> => {
+      const passage = await svc.createStimulus({ kind: 'passage', label, bodyMs: 'Teks.', bodyEn: null, altText: null, assetFileId: null })
+      return svc.createStimulusGroup({ label, scope: 'section', stimulusIds: [passage], optionBank: [] })
+    }
+    const partOf = `(select p.id from question_parts p join question_versions v on v.id = p.question_version_id where v.question_id = $1 and v.version_no = 1)`
+    // c: a fully valid two-member group stays complete in both.
+    const gOk = await mkGroup('Kumpulan sah')
+    const ok1 = await publish('gapOk1', 'Ahli satu kumpulan sah untuk kiraan jurang SQL.', { stimulusGroupId: gOk })
+    const ok2 = await publish('gapOk2', 'Ahli dua kumpulan sah untuk kiraan jurang SQL.', { stimulusGroupId: gOk })
+    // a: the key names no option.
+    const gKey = await mkGroup('Kumpulan kunci salah')
+    await publish('gapKey1', 'Ahli satu kumpulan kunci salah untuk kiraan jurang SQL.', { stimulusGroupId: gKey })
+    const badKey = await publish('gapKey2', 'Ahli dua kumpulan kunci salah untuk kiraan jurang SQL.', { stimulusGroupId: gKey })
+    await q(`update answer_keys set content = jsonb_set(content, '{correct}', '"E"') where part_id = ${partOf}`, [badKey])
+    // b: the only part is not an MCQ leaf.
+    const gMode = await mkGroup('Kumpulan bukan MCQ')
+    await publish('gapMode1', 'Ahli satu kumpulan bukan MCQ untuk kiraan jurang SQL.', { stimulusGroupId: gMode })
+    const badMode = await publish('gapMode2', 'Ahli dua kumpulan bukan MCQ untuk kiraan jurang SQL.', { stimulusGroupId: gMode })
+    await q(`update question_parts set mode = 'short_text' where id = ${partOf}`, [badMode])
+
+    const gaps = await repo.incompleteGroups([gOk, gKey, gMode])
+    expect(gaps.has(gOk), 'valid group is complete in SQL').toBe(false)
+    expect(gaps.get(gKey), 'key naming no option is a gap in SQL').toBe(1)
+    expect(gaps.get(gMode), 'non-MCQ leaf is a gap in SQL').toBe(1)
+
+    expect(await jsCodes(ok1)).toEqual([])
+    expect(await jsCodes(ok2)).toEqual([])
+    expect(await jsCodes(ok1, (leaf) => { leaf.key = { kind: 'option', correct: 'E' } })).toContain('shape_unsupported')
+    expect(await jsCodes(ok1, (leaf) => { leaf.mode = 'short_text'; leaf.options = undefined; leaf.key = { kind: 'accepted', values: ['x'] } })).toContain('shape_unsupported')
+
+    const pass = async (ids: string[]) => new Set(await repo.eligibleAmong(ids, filterOf('latih_tubi_spm', {}, all)))
+    expect((await pass([ok1, ok2])).size).toBe(2)
+    expect((await pass([made.gapKey1!, badKey])).size).toBe(0)
+    expect((await pass([made.gapMode1!, badMode])).size).toBe(0)
   })
 })

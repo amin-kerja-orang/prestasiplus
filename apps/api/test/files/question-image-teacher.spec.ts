@@ -60,6 +60,8 @@ describe('question image read rule for teachers (REQ-B-008, real database)', () 
       subjectId: tag.subjectId,
       educationLevelId: tag.levelId,
       difficultyLevel: 3,
+      cognitiveLevel: 'mengaplikasi', // S1-T02 R-DSKP + NO_CHAPTER
+      ...(tag.chapterId === undefined ? {} : { curriculumChapterId: tag.chapterId }),
       questionType: 'mcq',
       questionText: 'Berapakah hasil tambah 2 dan 3?',
       options: ['4', '5', '6', '7'],
