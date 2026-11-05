@@ -191,10 +191,10 @@ export const BijakBlueprintContractSchema = z
     sections: z.array(BijakBlueprintSectionSchema).min(1),
     canGenerate: z.boolean().meta({
       description:
-        'BJS-01: whether the caller can generate from this row now. Student and Admin Sekolah in Mod Pelajar: true only when a serving (Disahkan) version exists; the row shown is the serving version, or the head when none serves. Admin Pusat in Mod Pelajar: true when the head is Spec or Disahkan. When false the UI shows the AC-03.6 reason.',
+        'BJS-01: whether the caller can generate from this row now. S3-T01: the route lists only the serving (Disahkan) version of a subject and kertas, so the API always answers true. When false the UI shows the AC-03.6 reason.',
     }),
     unavailableReason: z.enum(['NO_BLUEPRINT']).optional().meta({
-      description: 'Present only when canGenerate is false.',
+      description: 'Present only when canGenerate is false (never from the API since S3-T01).',
     }),
   })
   .meta({ id: 'BijakBlueprintContract' })

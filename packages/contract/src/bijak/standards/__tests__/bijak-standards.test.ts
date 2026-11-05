@@ -28,7 +28,9 @@ import {
 import { BIJAK_STANDARDS_COMPONENT_SCHEMAS, BIJAK_STANDARDS_TAG } from '../paths'
 import {
   ALLOWED_MODES_UNIQUE_MESSAGE,
+  BIJAK_BLUEPRINT_PROBLEM_CODES,
   BIJAK_STANDARDS_MESSAGES,
+  BijakBlueprintProblemSchema,
   BijakDifficultyProfileSchema,
   BijakQuotaLineSchema,
   BijakQuotaLineViewSchema,
@@ -201,6 +203,41 @@ describe('blueprint admin bodies (extended)', () => {
     expect(
       BijakBlueprintAdminCreateSchema.safeParse({ subject: 'MAT', kertas: 2, ...versionInput() }).success,
     ).toBe(true)
+  })
+
+  it('S3-T01 DM-57: marksPerQuestion on the section and questionCount on the blueprint are optional and nullable', () => {
+    const section = (over: Record<string, unknown>) => versionInput({ sections: [{ label: 'Part 3', markBudget: 20, questionCount: 3, rule: { type: 'choose', n: 1 }, ...over }] })
+    const accepts = (input: unknown) => BijakBlueprintAdminVersionInputSchema.safeParse(input).success
+    expect(accepts(section({}))).toBe(true)
+    expect(accepts(section({ marksPerQuestion: null }))).toBe(true)
+    expect(accepts(section({ marksPerQuestion: [20, 20, 20] }))).toBe(true)
+    expect(accepts(section({ marksPerQuestion: [] }))).toBe(false)
+    expect(accepts(section({ marksPerQuestion: [0, 20] }))).toBe(false)
+    expect(accepts(section({ marksPerQuestion: [1.5] }))).toBe(false)
+    expect(accepts(section({ marksPerQuestion: 20 }))).toBe(false)
+    expect(accepts(versionInput({ questionCount: null }))).toBe(true)
+    expect(accepts(versionInput({ questionCount: 40 }))).toBe(true)
+    expect(accepts(versionInput({ questionCount: 200 }))).toBe(true)
+    expect(accepts(versionInput({ questionCount: 0 }))).toBe(false)
+    expect(accepts(versionInput({ questionCount: 201 }))).toBe(false)
+    expect(BijakBlueprintAdminCreateSchema.safeParse({ subject: 'MAT', kertas: 2, ...versionInput({ questionCount: 40 }) }).success).toBe(true)
+
+    const view = viewFixture()
+    expect(BijakBlueprintViewSchema.safeParse({ ...view, questionCount: 40 }).success).toBe(true)
+    expect(BijakBlueprintViewSchema.safeParse({ ...view, questionCount: null }).success).toBe(true)
+    expect(BijakBlueprintViewSchema.safeParse(view).success).toBe(true)
+    const row = view.sections[0]!
+    expect(BijakBlueprintViewSectionSchema.safeParse({ ...row, marksPerQuestion: [20, 20, 20] }).success).toBe(true)
+    expect(BijakBlueprintViewSectionSchema.safeParse({ ...row, marksPerQuestion: null }).success).toBe(true)
+    expect(BijakBlueprintViewSectionSchema.safeParse(row).success).toBe(true)
+    expect(BijakBlueprintViewSectionSchema.safeParse({ ...row, marksPerQuestion: 'x' }).success).toBe(false)
+  })
+
+  it('S3-T01: the problem list carries COMPULSORY_CHOOSE and MARKS_PER_QUESTION', () => {
+    for (const code of ['COMPULSORY_CHOOSE', 'MARKS_PER_QUESTION']) {
+      expect(BIJAK_BLUEPRINT_PROBLEM_CODES).toContain(code)
+      expect(BijakBlueprintProblemSchema.safeParse({ code, sectionPosition: 1 }).success).toBe(true)
+    }
   })
 
   it('narrows the client source to Draf or Spec: Disahkan is refused', () => {

@@ -10696,14 +10696,14 @@
           },
           "canGenerate": {
             "type": "boolean",
-            "description": "BJS-01: whether the caller can generate from this row now. Student and Admin Sekolah in Mod Pelajar: true only when a serving (Disahkan) version exists; the row shown is the serving version, or the head when none serves. Admin Pusat in Mod Pelajar: true when the head is Spec or Disahkan. When false the UI shows the AC-03.6 reason."
+            "description": "BJS-01: whether the caller can generate from this row now. S3-T01: the route lists only the serving (Disahkan) version of a subject and kertas, so the API always answers true. When false the UI shows the AC-03.6 reason."
           },
           "unavailableReason": {
             "type": "string",
             "enum": [
               "NO_BLUEPRINT"
             ],
-            "description": "Present only when canGenerate is false."
+            "description": "Present only when canGenerate is false (never from the API since S3-T01)."
           }
         },
         "required": [
@@ -64981,6 +64981,14 @@
                 "minimum": 0,
                 "description": "Paper-level KBAT marks."
               },
+              "questionCount": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "description": "DM-57 \"Bilangan soalan dalam kertas\": null = not stated. Always sent by the server; optional on the wire so older clients still parse."
+              },
               "levelShare": {
                 "type": [
                   "object",
@@ -65147,6 +65155,17 @@
           },
           "allowedModes": {
             "$ref": "#/components/schemas/BijakAllowedModes"
+          },
+          "marksPerQuestion": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "description": "DM-57 \"Markah setiap soalan\": one mark per offered question, in order; null = no list. Always sent by the server; optional on the wire so older clients still parse."
           }
         },
         "required": [
@@ -65711,7 +65730,7 @@
               "SECTION_NOT_IN_CONTRACT",
               "SECTION_EMPTY"
             ],
-            "description": "Stable code. Hard (overridable false): NO_QUESTIONS, ZERO_MARK_SECTION, TOTAL_MARKS_BELOW_ONE (PIPE AC-07.4: no question, a Bahagian with questions but 0 marks, a total under 1), DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Hard also: REFERENCE_IMAGE_INVALID (a reference-sheet picture that is not a stored question image, re-checked at Terbit), NO_KEY, NO_MARKS, MODE_NOT_ALLOWED (structural failures of a question) and GROUP_BROKEN. Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan) and INELIGIBLE (a question without DSKP unit or TP, or with tags awaiting review). Overridable also (R1-T48): RULE_NOT_IN_CONTRACT (the rule of a Bahagian differs from the Kontrak) and SECTION_NOT_IN_CONTRACT (admin-added Bahagian). Hard also (R1-T48): RULE_N_EXCEEDS_QUESTIONS (Pilih N with fewer than N questions in the Bahagian) and SECTION_EMPTY (an admin-added Bahagian without a question)."
+            "description": "Stable code. Hard (overridable false): NO_QUESTIONS, ZERO_MARK_SECTION, TOTAL_MARKS_BELOW_ONE (PIPE AC-07.4: no question, a Bahagian with questions but 0 marks, a total under 1), DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Hard also: REFERENCE_IMAGE_INVALID (a reference-sheet picture that is not a stored question image, re-checked at Terbit), NO_KEY, NO_MARKS, MODE_NOT_ALLOWED (structural failures of a question) and GROUP_BROKEN. Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan) and INELIGIBLE (a question without DSKP unit or TP, or with tags awaiting review). Overridable also (R1-T48): RULE_NOT_IN_CONTRACT (the rule of a Bahagian differs from the Kontrak) and SECTION_NOT_IN_CONTRACT (admin-added Bahagian). Hard also (R1-T48): RULE_N_EXCEEDS_QUESTIONS (Pilih N with fewer than N questions in the Bahagian) and SECTION_EMPTY (an admin-added Bahagian without a question). S3-T01: under a Disahkan Kontrak nothing is overridable; INELIGIBLE, RULE_NOT_IN_CONTRACT and SECTION_NOT_IN_CONTRACT come with overridable false there."
           },
           "message": {
             "type": "string",
@@ -65719,7 +65738,7 @@
           },
           "overridable": {
             "type": "boolean",
-            "description": "true when the audited override can lift this blocker."
+            "description": "true when the audited override can lift this blocker. Always false under a Disahkan Kontrak (S3-T01)."
           },
           "section": {
             "type": "string",
@@ -65795,7 +65814,7 @@
           },
           "canOverride": {
             "type": "boolean",
-            "description": "On a refusal: no hard blocker and at least one overridable one, so the UI may offer \"Terbitkan walaupun tidak memenuhi kontrak blueprint\". Absent when ok is true."
+            "description": "On a refusal: no hard blocker and at least one overridable one, so the UI may offer \"Terbitkan walaupun tidak memenuhi kontrak blueprint\". Always false under a Disahkan Kontrak (S3-T01). Absent when ok is true."
           }
         },
         "required": [
@@ -66150,6 +66169,14 @@
             "minimum": 0,
             "description": "Paper-level KBAT marks."
           },
+          "questionCount": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "description": "DM-57 \"Bilangan soalan dalam kertas\": null = not stated. Always sent by the server; optional on the wire so older clients still parse."
+          },
           "levelShare": {
             "type": [
               "object",
@@ -66337,6 +66364,20 @@
           },
           "allowedModes": {
             "$ref": "#/components/schemas/BijakAllowedModes"
+          },
+          "marksPerQuestion": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            },
+            "minItems": 1,
+            "maxItems": 500,
+            "description": "DM-57 \"Markah setiap soalan\": one mark per OFFERED question, in order. The length must equal questionCount and the sum the marks offered (for choose n=1 of 3 at markBudget 20: [20, 20, 20]), else MARKS_PER_QUESTION. Absent or null = no list. Structural (part of the hash). Not to be confused with the Int `paper_sections.marks_per_question`."
           }
         },
         "required": [
@@ -66557,6 +66598,15 @@
             "additionalProperties": false,
             "description": "Optional stated paper-level T4:T5 share in the quota basis (AC-36.3)."
           },
+          "questionCount": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 200,
+            "description": "DM-57 \"Bilangan soalan dalam kertas\" (the blueprint header). Absent or null = not stated. Structural (part of the hash). It need not equal the sum of the section counts."
+          },
           "code": {
             "type": "string",
             "minLength": 1,
@@ -66682,6 +66732,15 @@
             ],
             "additionalProperties": false,
             "description": "Optional stated paper-level T4:T5 share in the quota basis (AC-36.3)."
+          },
+          "questionCount": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 200,
+            "description": "DM-57 \"Bilangan soalan dalam kertas\" (the blueprint header). Absent or null = not stated. Structural (part of the hash). It need not equal the sum of the section counts."
           },
           "code": {
             "type": "string",
@@ -66921,7 +66980,7 @@
           },
           "canOverride": {
             "type": "boolean",
-            "description": "No hard blocker and at least one overridable one (the Kontrak is the only thing in the way): the UI may show the \"Terbitkan walaupun tidak memenuhi kontrak blueprint\" tick."
+            "description": "No hard blocker and at least one overridable one (the Kontrak is the only thing in the way): the UI may show the \"Terbitkan walaupun tidak memenuhi kontrak blueprint\" tick. Always false under a Disahkan Kontrak (S3-T01): the tick is hidden there."
           },
           "notes": {
             "type": "array",
@@ -67626,7 +67685,9 @@
           "LEVEL_SHARE",
           "KBAT_RANGE",
           "KBAT_TOTAL",
-          "MODES"
+          "MODES",
+          "COMPULSORY_CHOOSE",
+          "MARKS_PER_QUESTION"
         ]
       },
       "BijakBlueprintProblem": {
@@ -83444,7 +83505,7 @@
           "bijak-papers"
         ],
         "summary": "Kontrak Blueprint list for Jana Kertas",
-        "description": "Mock method listContracts(). Every blueprint including those with source Draf (those cannot generate). Sections carry label and take only; the internal pool tag is not exposed. BJS-01: each row carries canGenerate (and unavailableReason NO_BLUEPRINT when false). A student, and Admin Sekolah in Mod Pelajar, sees the serving (Disahkan) version, or the head when none serves, and canGenerate is true only with a serving version. Admin Pusat in Mod Pelajar sees the head and canGenerate is true when its source is Spec or Disahkan. When false the UI shows \"Belum ada kontrak untuk subjek dan kertas ini\" (AC-03.6). Student role (admin and school_admin only inside Mod Pelajar, where the session acts as a student). No answer key, mark scheme, accepted equivalent, explanation or question id is ever returned (US-15).",
+        "description": "Mock method listContracts(), S3-T01 (D76, PRD45 section 5.2): only the serving (Disahkan) version of each subject and kertas; a Spec or Draf contract is never listed, and a Spec head being edited over a Disahkan version shows that Disahkan version. Sections carry label and take only; the internal pool tag is not exposed. BJS-01: each row carries canGenerate, true for every listed row. A subject and kertas with no row: the UI shows \"Belum ada kontrak untuk subjek dan kertas ini\" (AC-03.6). Student role (admin and school_admin only inside Mod Pelajar, where the session acts as a student). No answer key, mark scheme, accepted equivalent, explanation or question id is ever returned (US-15).",
         "responses": {
           "200": {
             "description": "Blueprint contracts.",
@@ -115220,7 +115281,7 @@
           "bijak-builder"
         ],
         "summary": "Paper builder: publish (draf to terbit)",
-        "description": "Optional body { override?: boolean, reason?: string } (R1-T34, V2 Panel tick \"Terbitkan walaupun tidak memenuhi kontrak blueprint\"): with override true and a reason of at least 5 characters the blueprint-conformance blockers are overridden and the paper is published. Exactly four codes are overridable: BLUEPRINT_NOT_VERIFIED (\"Kontrak Simulasi {code} (versi {n}) belum Disahkan (status: {status}); Terbit memerlukan kontrak Disahkan.\"), INELIGIBLE (\"Soalan {id} tidak layak: ...\" for a missing DSKP unit or TP, or tags awaiting review), RULE_NOT_IN_CONTRACT (the answering rule of a Bahagian differs from the Kontrak) and SECTION_NOT_IN_CONTRACT (an admin-added Bahagian); the reason and the overridden lines go to the audit row bijak.paper.published_override and the answer lists them in `overridden`. Override without a reason: 422 \"Sebab diperlukan untuk menerbitkan walaupun tidak memenuhi kontrak blueprint\" on fields.reason. Every other blocker is hard and is never overridable, alone or mixed with an overridable one: the answer stays ok false and `canOverride` false. They are the printed structure and the questions (not Terbit, duplicates, split, incomplete or small groups, counts, marks), a question missing from the pool or that pupils cannot be served, NO_KEY, NO_MARKS, MODE_NOT_ALLOWED, GROUP_BROKEN, a Pilih N with fewer questions than N (RULE_N_EXCEEDS_QUESTIONS) and an admin-added Bahagian without a question (SECTION_EMPTY). A normal 200 result (not an error): { ok: true, errors: [] }, or { ok: false, errors: string[] } with the BM lines of checkPaper. Paper-wide lines come first: \"Soalan berulang dalam kertas: {ids}\" and \"Kumpulan rangsangan {group} dipecahkan antara dua bahagian\". Each section line follows, prefixed with the section label (\"{label}: \"): \"Kurang N soalan (perlu X, ada Y)\" or \"Lebih N soalan (perlu X, ada Y)\", \"Markah M tidak sama dengan bajet B\", \"Kumpulan rangsangan G tidak berturutan\", \"Kumpulan rangsangan G tidak lengkap (N soalan tiada)\" and \"{N} soalan belum Terbit\". Nothing changes on ok: false. A refusal (ok false) also carries `blockerDetails` (the same blockers as `errors`, structured: { code, message, overridable, section?, questionId? }) and `canOverride`, computed by the same rule as GET /admin/papers/{id}/review (one source of truth; codes in BIJAK_BUILDER_BLOCKER_OVERRIDABLE). On ok: true the status becomes terbit, publishedAt is set and the paper appears in GET /bijak/papers; implementations pin the question versions in force (a later edit, version n+1, does not change the paper). A paper that is already terbit is checked again and stays terbit. Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "Optional body { override?: boolean, reason?: string } (R1-T34, V2 Panel tick \"Terbitkan walaupun tidak memenuhi kontrak blueprint\"): with override true and a reason of at least 5 characters the blueprint-conformance blockers are overridden and the paper is published. Under a Kontrak that is not Disahkan, exactly four codes are overridable: BLUEPRINT_NOT_VERIFIED (\"Kontrak Simulasi {code} (versi {n}) belum Disahkan (status: {status}); Terbit memerlukan kontrak Disahkan.\"), INELIGIBLE (\"Soalan {id} tidak layak: ...\" for a missing DSKP unit or TP, or tags awaiting review), RULE_NOT_IN_CONTRACT (the answering rule of a Bahagian differs from the Kontrak) and SECTION_NOT_IN_CONTRACT (an admin-added Bahagian); the reason and the overridden lines go to the audit row bijak.paper.published_override and the answer lists them in `overridden`. Override without a reason: 422 \"Sebab pengecualian diperlukan (sekurang-kurangnya 5 aksara).\" on fields.reason. Under a Disahkan Kontrak (S3-T01) nothing is overridable: INELIGIBLE, RULE_NOT_IN_CONTRACT and SECTION_NOT_IN_CONTRACT are hard there and `canOverride` is false. Every other blocker is hard and is never overridable, alone or mixed with an overridable one: the answer stays ok false and `canOverride` false. They are the printed structure and the questions (not Terbit, duplicates, split, incomplete or small groups, counts, marks), a question missing from the pool or that pupils cannot be served, NO_KEY, NO_MARKS, MODE_NOT_ALLOWED, GROUP_BROKEN, a Pilih N with fewer questions than N (RULE_N_EXCEEDS_QUESTIONS) and an admin-added Bahagian without a question (SECTION_EMPTY). A normal 200 result (not an error): { ok: true, errors: [] }, or { ok: false, errors: string[] } with the BM lines of checkPaper. Paper-wide lines come first: \"Soalan berulang dalam kertas: {ids}\" and \"Kumpulan rangsangan {group} dipecahkan antara dua bahagian\". Each section line follows, prefixed with the section label (\"{label}: \"): \"Kurang N soalan (perlu X, ada Y)\" or \"Lebih N soalan (perlu X, ada Y)\", \"Markah M tidak sama dengan bajet B\", \"Kumpulan rangsangan G tidak berturutan\", \"Kumpulan rangsangan G tidak lengkap (N soalan tiada)\" and \"{N} soalan belum Terbit\". Nothing changes on ok: false. A refusal (ok false) also carries `blockerDetails` (the same blockers as `errors`, structured: { code, message, overridable, section?, questionId? }) and `canOverride`, computed by the same rule as GET /admin/papers/{id}/review (one source of truth; codes in BIJAK_BUILDER_BLOCKER_OVERRIDABLE). On ok: true the status becomes terbit, publishedAt is set and the paper appears in GET /bijak/papers; implementations pin the question versions in force (a later edit, version n+1, does not change the paper). A paper that is already terbit is checked again and stays terbit. Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -115314,7 +115375,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR \"Sebab diperlukan untuk menerbitkan walaupun tidak memenuhi kontrak blueprint\" (override without a reason).",
+            "description": "VALIDATION_ERROR \"Sebab pengecualian diperlukan (sekurang-kurangnya 5 aksara).\" (override without a reason).",
             "content": {
               "application/json": {
                 "schema": {
@@ -117201,7 +117262,7 @@
           "bijak-blueprint-admin"
         ],
         "summary": "Blueprint admin: create a blueprint, version 1 (NO MOCK)",
-        "description": "No mock exists for blueprint writes; kept because the card requires them. A second blueprint for the same subject and kertas answers 409 CONFLICT \"Kontrak untuk subjek dan kertas ini sudah wujud. Cipta versi baharu.\" [PROPOSED]: add a version instead. Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "No mock exists for blueprint writes; kept because the card requires them. A second blueprint for the same subject and kertas answers 409 CONFLICT \"Kontrak untuk subjek dan kertas ini sudah wujud. Cipta versi baharu.\" [PROPOSED]: add a version instead. FR-ADM-Q16.7: a subject with no DSKP unit at T4 or T5 answers 422 VALIDATION_ERROR \"DSKP belum dimuatkan untuk subjek ini. Kontrak tidak boleh dicipta.\" on fields.subject. FR-QA-41: a section that is both compulsory and Pilih N answers 422 VALIDATION_ERROR \"Bahagian wajib dijawab tidak boleh digabungkan dengan Pilih N.\" on fields.sections.N.compulsory (the same on POST .../versions). Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -117890,8 +117951,8 @@
         "tags": [
           "bijak-standards"
         ],
-        "summary": "Bijak subject list for \"Tambah Kontrak\" (all active subjects, Bijak codes)",
-        "description": "Unpaged. Returns Bijak codes (for example MAT), not the curriculum codes of GET /admin/subjects, and covers all active subjects, not only those on the student hub. Architecture: docs/architecture/v2-bijak-spm-standards.md (slug bijak-spm). Admin Pusat only (AC-32.1, AC-39.3); Admin Sekolah, PPD/JPN, Guru, Ibu bapa and Murid get 403 and nothing changes.",
+        "summary": "Bijak subject list for \"Tambah Kontrak\" (active subjects whose DSKP is loaded, Bijak codes)",
+        "description": "Unpaged. Returns Bijak codes (for example MAT), not the curriculum codes of GET /admin/subjects, and covers the active subjects with at least one DSKP unit at T4 or T5 (the units GET /admin/bijak/dskp/units serves), not only those on the student hub. FR-ADM-Q16.7: any other subject is left out, so it cannot be chosen. Architecture: docs/architecture/v2-bijak-spm-standards.md (slug bijak-spm). Admin Pusat only (AC-32.1, AC-39.3); Admin Sekolah, PPD/JPN, Guru, Ibu bapa and Murid get 403 and nothing changes.",
         "responses": {
           "200": {
             "description": "Subjects.",

@@ -285,6 +285,10 @@ export const bijakSectionStandardInputShape = {
       'Exact KBAT marks of the OFFERED questions of the section (US-37, parts whose KBAT level is mengaplikasi, menganalisis, menilai or mencipta). Absent or null = unconstrained; 0 is a value.',
   }),
   allowedModes: BijakAllowedModesSchema.optional(),
+  marksPerQuestion: z.array(z.number().int().min(1).max(1000)).min(1).max(500).nullish().meta({
+    description:
+      'DM-57 "Markah setiap soalan": one mark per OFFERED question, in order. The length must equal questionCount and the sum the marks offered (for choose n=1 of 3 at markBudget 20: [20, 20, 20]), else MARKS_PER_QUESTION. Absent or null = no list. Structural (part of the hash). Not to be confused with the Int `paper_sections.marks_per_question`.',
+  }),
 }
 
 /** Fields added to a section on READ (merged into `BijakBlueprintViewSection`). */
@@ -300,6 +304,9 @@ export const bijakSectionStandardViewShape = {
       'AC-39.9: false = the section KBAT value is "Belum disemak". Read-only (server-set: true on an admin save, false from seeds).',
   }),
   allowedModes: BijakAllowedModesSchema,
+  marksPerQuestion: z.array(z.number().int().min(0)).nullable().optional().meta({
+    description: 'DM-57 "Markah setiap soalan": one mark per offered question, in order; null = no list. Always sent by the server; optional on the wire so older clients still parse.',
+  }),
 }
 
 /* ----------------------------------------------------------------------- paper-level fields */
@@ -324,6 +331,10 @@ export const bijakBlueprintStandardInputShape = {
   }),
   levelShare: BijakLevelShareSchema.nullish().meta({
     description: 'Optional stated paper-level T4:T5 share in the quota basis (AC-36.3).',
+  }),
+  questionCount: z.number().int().min(1).max(200).nullish().meta({
+    description:
+      'DM-57 "Bilangan soalan dalam kertas" (the blueprint header). Absent or null = not stated. Structural (part of the hash). It need not equal the sum of the section counts.',
   }),
 }
 
@@ -370,6 +381,8 @@ export const BIJAK_BLUEPRINT_PROBLEM_CODES = [
   'KBAT_RANGE',
   'KBAT_TOTAL',
   'MODES',
+  'COMPULSORY_CHOOSE',
+  'MARKS_PER_QUESTION',
 ] as const
 export const BijakBlueprintProblemCodeSchema = z.enum(BIJAK_BLUEPRINT_PROBLEM_CODES).meta({
   id: 'BijakBlueprintProblemCode',
