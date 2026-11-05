@@ -3,7 +3,6 @@ import { randomInt } from 'node:crypto'
 import { Inject, Injectable } from '@nestjs/common'
 import {
   GAMES_LEAGUE_CLASS_LEVELS,
-  GAMES_MESSAGES,
   type GamesLeagueCard,
   type GamesLeagueDetail,
   type GamesLeagueList,
@@ -18,14 +17,13 @@ import { CurriculumRepository } from '../../curriculum'
 import { PracticeRepository } from '../../practice'
 import { isPrimarySchoolType, SchoolsRepository } from '../../schools'
 import { SEKOLAH_BERSAING_MIN_PUPILS, SEKOLAH_BERSAING_TOP_N } from '../games.constants'
-import { fieldError, leagueAlreadyIn, leagueEnded, leagueFull, leagueNotFound, leagueSchoolInvalid } from '../errors'
+import { leagueAlreadyIn, leagueEnded, leagueFull, leagueNotFound, leagueSchoolInvalid } from '../errors'
 import { GameUsers } from '../core/game-users'
 import { NamePrivacy } from '../core/name-privacy.service'
 import type { GamesCaller } from '../caller'
 import { type LeagueRecord, LeaguesRepository } from './leagues.repository'
-import { dateOnly, INVITE_ALPHABET, LABELS, type LeagueInput, parseEnrolInput, rankSekolahBersaing } from './leagues.rules'
+import { dateOnly, INVITE_ALPHABET, LABELS, parseEnrolInput, parseLeagueInput, rankSekolahBersaing } from './leagues.rules'
 
-const M = GAMES_MESSAGES
 type GamesLeagueClassLevel = (typeof GAMES_LEAGUE_CLASS_LEVELS)[number]
 
 /** Tries per create before giving up (a collision of 36^8 codes is vanishingly rare). */
@@ -137,13 +135,9 @@ export class LeaguesService {
    * M16-47 (API-ADM-25, Admin Pusat): league `upcoming`, an 8-character invite code (retried on collision; the column
    * is NOT NULL). No school joins on create: Admin Pusat enrols schools afterwards (FR-GM-15.1).
    */
-  async create(caller: GamesCaller, input: LeagueInput): Promise<GamesLeagueDetail> {
-    let subjectId: string | null = null
-    if (input.subjectId !== null) {
-      const subject = isIdString(input.subjectId) ? await this.curriculum.subject(idFromString(input.subjectId)) : null
-      if (!subject) throw fieldError('subjectId', M.leagueSubject)
-      subjectId = input.subjectId
-    }
+  async create(caller: GamesCaller, body: unknown): Promise<GamesLeagueDetail> {
+    const input = await parseLeagueInput(body, async (sid) => (await this.curriculum.subject(idFromString(sid))) !== null)
+    const subjectId = input.subjectId
     const now = this.clock.now()
     const id = await this.repo.transaction(async () => {
       for (let n = 0; n < CODE_TRIES; n++) {
@@ -184,12 +178,12 @@ export class LeaguesService {
   async enrolSchools(caller: GamesCaller, id: string, body: unknown): Promise<GamesLeagueDetail> {
     if (!isIdString(id) || !(await this.repo.league(id, caller.isTest))) throw leagueNotFound()
     const schoolIds = parseEnrolInput(body) // after the 404, before the ended check
-    const known = new Set((await this.schools.getMany([...new Set(schoolIds)])).map((s) => s.id))
     const now = this.clock.now()
     await this.repo.transaction(async () => {
       const league = await this.repo.lockLeague(id)
       if (!league) throw leagueNotFound()
       if (now.getTime() > Date.parse(`${dateOnly(league.endDate)}T23:59:59.999+08:00`)) throw leagueEnded()
+      const known = new Set((await this.schools.getMany([...new Set(schoolIds)])).map((s) => s.id)) // after the lock
       let count = await this.repo.membershipCount(league.id)
       const seen = new Set<string>()
       for (const schoolId of schoolIds) {

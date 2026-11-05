@@ -44,16 +44,23 @@ export function leagueValidation(fields: Record<string, string>): ApiError {
  * Create-body validation in form order (name, type, scope, mode, scoring, schoolLimit, subjectId, levelIds, start,
  * end), with the contract schema's own messages. An `end` before `start` is reported only when both dates are valid.
  */
-export function parseLeagueInput(body: unknown): LeagueInput {
+export async function parseLeagueInput(body: unknown, subjectExists: (id: string) => Promise<boolean>): Promise<LeagueInput> {
   const raw = typeof body === 'object' && body !== null && !Array.isArray(body) ? body : {}
   const parsed = GamesLeagueCreateRequestSchema.safeParse(raw)
+  const fields: Record<string, string> = {}
   if (!parsed.success) {
-    const fields: Record<string, string> = {}
     for (const issue of parsed.error.issues) {
       const field = fieldOf(issue.path)
       if (fields[field] !== undefined) continue
       fields[field] = field === 'subjectId' ? M.leagueSubject : issue.message
     }
+  }
+  // An unknown subject joins the same field-error set, so the form order decides the top-level message.
+  const rawSubject = (raw as Record<string, unknown>).subjectId
+  if (fields.subjectId === undefined && rawSubject !== undefined && rawSubject !== null && (typeof rawSubject !== 'string' || !isIdString(rawSubject) || !(await subjectExists(rawSubject)))) {
+    fields.subjectId = M.leagueSubject
+  }
+  if (!parsed.success || Object.keys(fields).length > 0) {
     // The cross-field rule is skipped by the schema while another field fails: apply it when both dates are valid.
     const b = raw as Record<string, unknown>
     if (!fields.start && !fields.end && typeof b.start === 'string' && typeof b.end === 'string' && b.end < b.start) {
@@ -61,7 +68,7 @@ export function parseLeagueInput(body: unknown): LeagueInput {
     }
     throw leagueValidation(fields)
   }
-  const v = parsed.data
+  const v = (parsed as { data: GamesLeagueCreateRequest }).data
   return {
     name: v.name,
     type: v.type,

@@ -13675,7 +13675,7 @@
       "key": "POST /api/leagues",
       "method": "POST",
       "path": "/api/leagues",
-      "api_id": "API-GAME-05",
+      "api_id": "API-ADM-25",
       "status": "canonical",
       "sector": "S7",
       "file": "apps/api/src/modules/games/leagues/leagues.controller.ts",

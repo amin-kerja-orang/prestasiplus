@@ -94,7 +94,7 @@ export function parseLeagueBody(body: unknown): LeagueInput {
   const format = 'Format tidak sah.'
   const f: Record<string, string> = {}
   const name = typeof b.name === 'string' ? b.name.trim() : ''
-  if (name === '' || name.length > 255) f.name = required
+  if (name === '' || name.length > 100) f.name = required
   const pick = (field: string, allowed: string[]): void => {
     const v = b[field]
     if (v === undefined || v === null || v === '') f[field] = required

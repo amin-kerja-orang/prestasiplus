@@ -10,7 +10,6 @@ import { RateLimit, RateLimitGuard } from '../../../common/throttle'
 import { callerOf } from '../caller'
 import { GAMES_LIMITS } from '../games.constants'
 import { LeaguesService } from './leagues.service'
-import { parseLeagueInput } from './leagues.rules'
 
 type Req = Request & RequestWithAuth
 
@@ -34,7 +33,7 @@ export class LeaguesController {
   @Roles('admin')
   @RateLimit(GAMES_LIMITS.write)
   async create(@Body() body: unknown, @Req() req: Req) {
-    return ok(await this.leagues.create(callerOf(req), parseLeagueInput(body)))
+    return ok(await this.leagues.create(callerOf(req), body))
   }
 
   /** Unused in R1 (API-GAME-05): no role joins by invite code; Admin Pusat enrols schools (`:id/schools`). */

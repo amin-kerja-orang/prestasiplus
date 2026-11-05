@@ -7,7 +7,7 @@ import { GAMES_MESSAGES, gamesCount } from './common'
  * Leagues (M16-46 to M16-49) and the Sekolah Bersaing board (API-AS-14). All bodies are `{ data }`.
  *
  * League standings are stored job output in the mock and are never recomputed (BE-45 Open question 7); league `status`
- * is stored and not moved by dates. Sekolah Bersaing is computed on request (DM-31).
+ * is stored; "ended" is judged by date on enrolment (statuses move to date-derived in S7-T06 part 3). Sekolah Bersaing is computed on request (DM-31).
  * D54(d): only the creator's display name and school names are shown (the creator's name follows the children's
  * names rule, issue #76: first name + initial unless the viewer may see it).
  */
@@ -85,7 +85,7 @@ const orRequired = (wrong: string) => ({ error: (iss: { input?: unknown }) => (i
  */
 export const GamesLeagueCreateRequestSchema = z
   .object({
-    name: z.string(required).trim().min(1, required).max(255, required),
+    name: z.string(required).trim().min(1, required).max(100, required),
     type: z.enum(GAMES_LEAGUE_CREATE_TYPES, orRequired(GAMES_MESSAGES.leagueFormat)),
     scope: z.enum(GAMES_LEAGUE_SCOPES, orRequired(GAMES_MESSAGES.leagueFormat)),
     mode: z.enum(GAMES_LEAGUE_GAME_MODES, orRequired(GAMES_MESSAGES.leagueFormat)),

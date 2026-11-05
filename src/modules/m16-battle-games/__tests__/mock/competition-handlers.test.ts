@@ -611,6 +611,7 @@ describe('#46-#49 leagues', () => {
     })
     expect(bad.body.error.message).toBe('Format tidak sah.')
     expect((await post<ErrorBody>('/api/leagues', ADMIN, { ...form, schoolLimit: 501 })).status).toBe(422)
+    expect((await post<ErrorBody>('/api/leagues', ADMIN, { ...form, name: 'x'.repeat(101) })).body.error.fields?.name).toBe('Sila lengkapkan semua medan wajib.')
     expect((await post<ErrorBody>('/api/leagues', ADMIN, { ...form, levelIds: [6] })).body.error.fields?.levelIds).toBe('Tingkatan tidak sah.')
   })
 

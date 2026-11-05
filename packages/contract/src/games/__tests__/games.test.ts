@@ -740,8 +740,9 @@ describe('leagues (M16-46 to M16-49)', () => {
     const { mode: _m, ...noMode } = create
     void _m
     expect(firstIssue(GamesLeagueCreateRequestSchema, { ...noMode, game_mode: 'mixed' }).path).toBe('mode')
+    ok(GamesLeagueCreateRequestSchema, { ...create, name: 'x'.repeat(100) })
     expect(firstIssue(GamesLeagueCreateRequestSchema, { ...create, name: '   ' }).message).toBe('Sila lengkapkan semua medan wajib.')
-    expect(firstIssue(GamesLeagueCreateRequestSchema, { ...create, name: 'x'.repeat(256) }).message).toBe('Sila lengkapkan semua medan wajib.')
+    expect(firstIssue(GamesLeagueCreateRequestSchema, { ...create, name: 'x'.repeat(101) }).message).toBe('Sila lengkapkan semua medan wajib.')
     expect(firstIssue(GamesLeagueCreateRequestSchema, { ...create, start: '31/03/2026' }).message).toBe('Sila lengkapkan semua medan wajib.')
     expect(firstIssue(GamesLeagueCreateRequestSchema, { ...create, levelIds: [] }).message).toBe('Sila lengkapkan semua medan wajib.')
     for (const field of ['type', 'scope', 'mode', 'scoring'] as const) {

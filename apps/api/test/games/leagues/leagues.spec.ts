@@ -150,7 +150,7 @@ describe('leagues and Sekolah Bersaing (BE-45, M16-46 to M16-50)', () => {
       expect(after!.n).toBe(before!.n)
     })
 
-    it('201 {id}: upcoming, 8-character code kept internally, NO school joins, optional fields stored', async () => {
+    it('201 answers the league detail: upcoming, 8-character code kept internally, NO school joins, optional fields stored', async () => {
       const s = await loginAs(t, ACCOUNTS.admin)
       const res = await s.post('/api/leagues', { ...VALID, levelIds: [5, 1, 5], schoolLimit: 5 })
       expect(res.status, JSON.stringify(res.body)).toBe(201)
@@ -210,7 +210,8 @@ describe('leagues and Sekolah Bersaing (BE-45, M16-46 to M16-50)', () => {
         expect422(await s.post('/api/leagues', rest), field, M.leagueRequired)
       }
       expect422(await s.post('/api/leagues', { ...VALID, name: '   ' }), 'name', M.leagueRequired)
-      expect422(await s.post('/api/leagues', { ...VALID, name: 'x'.repeat(256) }), 'name', M.leagueRequired)
+      expect422(await s.post('/api/leagues', { ...VALID, name: 'x'.repeat(101) }), 'name', M.leagueRequired)
+      expect((await s.post('/api/leagues', { ...VALID, name: 'x'.repeat(100) })).status).toBe(201)
       expect422(await s.post('/api/leagues', { ...VALID, levelIds: [] }), 'levelIds', M.leagueRequired)
       expect422(await s.post('/api/leagues', { ...VALID, start: '2026-02-30' }), 'start', M.leagueRequired)
       // Present but out of range: "Format tidak sah."
@@ -246,6 +247,10 @@ describe('leagues and Sekolah Bersaing (BE-45, M16-46 to M16-50)', () => {
       expect422(r3, 'levelIds', M.leagueClassLevels)
       const r4 = await s.post('/api/leagues', { ...VALID, start: '2026-12-01', end: '2026-11-01' })
       expect422(r4, 'end', M.leagueEndBeforeStart)
+      // An unknown subject sits in the same set: subjectId comes before levelIds in the form order.
+      const r5 = await s.post('/api/leagues', { ...VALID, subjectId: '999999', levelIds: [9] })
+      expect422(r5, 'subjectId', M.leagueSubject)
+      expect(ErrorBodySchema.parse(r5.body).error.fields).toMatchObject({ subjectId: M.leagueSubject, levelIds: M.leagueClassLevels })
     })
   })
 
@@ -369,6 +374,14 @@ describe('leagues and Sekolah Bersaing (BE-45, M16-46 to M16-50)', () => {
         expect422(await enrol(admin, id, body), 'schoolIds', 'Format sekolah tidak sah.')
       }
       expect(parseData(await admin.get(`/api/leagues/${id}`), GamesLeagueDetailSchema).schools).toEqual([])
+    })
+
+    it('order: 404, then the list format, then ended, then per school (an ended league with an empty list says "Sila pilih sekolah.")', async () => {
+      const admin = await loginAs(t, ACCOUNTS.admin)
+      const [two] = await t.db.query<{ id: string }>(`select id::text as id from leagues where invite_code = 'TEST2026'`)
+      expect422(await enrol(admin, two!.id, { schoolIds: [] }), 'schoolIds', 'Sila pilih sekolah.')
+      expect422(await enrol(admin, two!.id, [await schoolIdOf('DEMO002')]), 'schoolIds', M.leagueEnded)
+      expectError(await enrol(admin, '999999', { schoolIds: [] }), 'NOT_FOUND', M.leagueNotFound)
     })
 
     it('an unknown or non-numeric league id is 404 "Liga tidak dijumpai."', async () => {
