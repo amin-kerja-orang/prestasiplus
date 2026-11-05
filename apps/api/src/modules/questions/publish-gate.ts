@@ -187,17 +187,36 @@ export function validateScheme(key: SchemeKeyLike | null | undefined, leafMarks:
   }
   const deductions = [...(key.deductions ?? []), ...(opts.schemeRules?.deductions ?? []).filter((d) => d.scope === 'part')]
   if (deductions.reduce((s, d) => s + (d.cap ?? d.amount), 0) > leafMarks) add(SCHEME_PENALTY_CODE, SCHEME_MESSAGES.penalty, '.deductions')
-  else if (opts.questionMarks !== undefined) {
-    const asked = (opts.schemeRules?.deductions ?? []).filter((d) => d.scope === 'question')
-    if (asked.reduce((s, d) => s + (d.cap ?? d.amount), 0) > opts.questionMarks) add(SCHEME_PENALTY_CODE, SCHEME_MESSAGES.penalty, '.deductions')
-  }
+  else if (opts.questionMarks !== undefined && questionPenaltyExceeds(opts.schemeRules, opts.questionMarks)) add(SCHEME_PENALTY_CODE, SCHEME_MESSAGES.penalty, '.deductions')
   return issues
 }
 
+/** The ONE question-level cap rule (45 4.1): the `scope: question` deductions of `scheme_rules` (each at its cap, else its amount) exceed the question marks. */
+export function questionPenaltyExceeds(schemeRules: { deductions?: readonly SchemeDeduction[] } | null | undefined, questionMarks: number): boolean {
+  const asked = (schemeRules?.deductions ?? []).filter((d) => d.scope === 'question')
+  return asked.reduce((s, d) => s + (d.cap ?? d.amount), 0) > questionMarks
+}
+
+/** Optional question-level context of the gate (additive: absent = the leaf checks only, as before). */
+export interface KeysGateOptions {
+  schemeRules?: { deductions?: readonly SchemeDeduction[] } | null
+}
+
+/** Field of the question-level penalty refusal when no leaf field already carries it. */
+export const SCHEME_RULES_PENALTY_FIELD = 'schemeRules.deductions'
+
+/** S1-T09a: the question-level penalty cap alone (what the submit gate reads; the approve gate gets it through `checkKeysGate`). */
+export function checkSchemeRulesGate(parts: readonly QuestionPart[], schemeRules: KeysGateOptions['schemeRules']): Record<string, string> {
+  if (!schemeRules) return {}
+  const total = leavesOf(parts).reduce((s, { leaf }) => s + (isLeaf(leaf) ? leaf.marks : 0), 0)
+  return questionPenaltyExceeds(schemeRules, total) ? { [SCHEME_RULES_PENALTY_FIELD]: SCHEME_MESSAGES.penalty } : {}
+}
+
 /** Problems keyed by the part path: key marks must equal the leaf marks and the sum of the points. */
-export function checkKeysGate(parts: readonly QuestionPart[]): Record<string, string> {
+export function checkKeysGate(parts: readonly QuestionPart[], opts: KeysGateOptions = {}): Record<string, string> {
   const fields: Record<string, string> = {}
   const leaves = leavesOf(parts)
+  const questionMarks = leaves.reduce((s, { leaf }) => s + (isLeaf(leaf) ? leaf.marks : 0), 0)
   for (const { path, leaf } of leaves) {
     if (!isLeaf(leaf)) continue
     if (leaf.mode === 'essay_choice') {
@@ -219,6 +238,7 @@ export function checkKeysGate(parts: readonly QuestionPart[]): Record<string, st
           ownLabel: path,
           partLabels: leaves.map((l) => l.path),
           ...(mc?.dependsOnPart !== undefined ? { dependsOnPart: mc.dependsOnPart } : {}),
+          ...(opts.schemeRules ? { schemeRules: opts.schemeRules, questionMarks } : {}),
         })
         if (first) fields[`parts.${path}.key`] = first.message
         continue
@@ -233,5 +253,7 @@ export function checkKeysGate(parts: readonly QuestionPart[]): Record<string, st
       }
     }
   }
+  // A question whose question-scope deductions exceed its marks is refused even when no leaf carries a v2 key to report it on.
+  if (!Object.values(fields).includes(SCHEME_MESSAGES.penalty)) Object.assign(fields, checkSchemeRulesGate(parts, opts.schemeRules))
   return fields
 }
