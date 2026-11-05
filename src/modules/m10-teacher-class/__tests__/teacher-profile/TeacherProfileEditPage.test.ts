@@ -237,6 +237,7 @@ describe('TeacherProfileEditPage', () => {
     const url = `${window.location.origin}/guru/profil/42`
     expect(value(w, 'teacher-public-url')).toBe(url)
     expect(w.get('[data-testid="teacher-view"]').attributes('href')).toBe('/guru/profil/42')
+    expect(w.get('[data-testid="teacher-view"]').attributes('rel')).toContain('noopener')
     expect(w.get('[data-testid="teacher-copy"]').text()).toBe('Salin Link')
     await w.get('[data-testid="teacher-copy"]').trigger('click')
     await flushPromises()

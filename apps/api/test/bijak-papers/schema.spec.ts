@@ -147,9 +147,10 @@ describe('exam schema (migration 0012_bijak_papers)', () => {
     await rejects(`delete from blueprints where code = '1449/1'`)
   })
 
-  it('total marks are not stored on the paper (derived from the placements, Q-S6)', async () => {
+  it('total marks are not stored on a pilihan/jana paper (derived from the placements, Q-S6); only a subjektif paper may carry them (DM-23, INV-17)', async () => {
     const cols = await db.query<{ column_name: string }>(`select column_name from information_schema.columns where table_name = 'papers'`)
-    expect(cols.map((c) => c.column_name)).not.toContain('total_marks')
+    expect(cols.map((c) => c.column_name)).toContain('total_marks')
+    expect(await db.query(`select count(*)::int n from papers where total_marks is not null and surface <> 'subjektif'`)).toEqual([{ n: 0 }])
     expect(cols.map((c) => c.column_name)).toEqual(expect.arrayContaining(['status', 'version', 'printed_duration_min', 'generated_for_user_id']))
     const bp = await db.query<{ column_name: string }>(`select column_name from information_schema.columns where table_name = 'blueprints'`)
     expect(bp.map((c) => c.column_name)).toEqual(expect.arrayContaining(['version', 'status', 'source', 'provenance', 'confidence']))

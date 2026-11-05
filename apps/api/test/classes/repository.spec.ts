@@ -46,6 +46,11 @@ describe('ClassesRepository, the COMP_CLASSROOM_PORT adapter and the seed (AC 5)
   afterAll(async () => {
     await t.close()
   })
+  /** The seeded demo class, found by its join code straight from the table. */
+  const demoClass = async () => {
+    const rows = await t.db.query<{ id: string }>(`select id::text from classrooms where upper(join_code) = $1`, [DEMO_CLASS_CODE.toUpperCase()])
+    return (await repo.get(rows[0]?.id as string)) as NonNullable<Awaited<ReturnType<ClassesRepository['get']>>>
+  }
 
   it('the seed made the demo class and generated classes; a second run changes nothing', async () => {
     const counts = async () => ({
@@ -56,7 +61,7 @@ describe('ClassesRepository, the COMP_CLASSROOM_PORT adapter and the seed (AC 5)
     const first = await counts()
     expect(first.classes).toBeGreaterThan(3)
     expect(first.legacy).toBe(0)
-    const demo = await repo.findByJoinCode(`  ${DEMO_CLASS_CODE.toLowerCase()} `)
+    const demo = await demoClass()
     expect(demo).toMatchObject({ name: 'Kelas Demo Tingkatan 4', teacherId, kind: 'classroom' })
     expect(await repo.memberIds((demo as { id: string }).id)).toEqual([s1, s2].sort((x, y) => Number(x) - Number(y)))
     await runSeeds([classesSeed], { prisma: t.db.prisma })
@@ -64,7 +69,7 @@ describe('ClassesRepository, the COMP_CLASSROOM_PORT adapter and the seed (AC 5)
   })
 
   it('all, byId and labels give levelSlug, teacherName and studentCount (BE-19)', async () => {
-    const demo = (await repo.findByJoinCode(DEMO_CLASS_CODE)) as { id: string }
+    const demo = await demoClass()
     expect((await repo.all()).map((x) => x.id)).toContain(demo.id)
     expect((await repo.byId(demo.id))?.id).toBe(demo.id)
     expect(await repo.byId('zz')).toBeNull()
@@ -74,7 +79,7 @@ describe('ClassesRepository, the COMP_CLASSROOM_PORT adapter and the seed (AC 5)
     expect(typeof label.get(demo.id)?.teacherName).toBe('string')
   })
 
-  it('createClass, get, forTeacher, schoolClasses, findByJoinCode', async () => {
+  it('createClass, get, forTeacher, schoolClasses', async () => {
     const c = await repo.createClass({ name: 'Repo Satu', teacherId, schoolId: school1, subjectId: null, educationLevelId: levelId, academicYear: 2026, description: null, now })
     expect(c).toMatchObject({ kind: 'classroom', teacherId, schoolId: school1, subjectId: null, isActive: true })
     expect(c.joinCode).toMatch(/^[A-HJKMNP-Z2-9]{6}$/)
@@ -83,9 +88,6 @@ describe('ClassesRepository, the COMP_CLASSROOM_PORT adapter and the seed (AC 5)
     expect((await repo.forTeacher(teacherId)).map((x) => x.id)).toContain(c.id)
     expect(await repo.forTeacher('x')).toEqual([])
     expect((await repo.schoolClasses(school1)).map((x) => x.id)).toContain(c.id)
-    expect((await repo.findByJoinCode(c.joinCode as string))?.id).toBe(c.id)
-    expect(await repo.findByJoinCode('   ')).toBeNull()
-    expect(await repo.findByJoinCode('NOSUCH')).toBeNull()
   })
 
   it('enrol reports created, already and reactivated; unenrol and memberIds follow', async () => {
@@ -142,7 +144,7 @@ describe('ClassesRepository, the COMP_CLASSROOM_PORT adapter and the seed (AC 5)
   describe('COMP_CLASSROOM_PORT adapter (BE-25)', () => {
     it('find: only an active teacher class, with school name and grade', async () => {
       const port = t.get(CompClassroomAdapter)
-      const demo = await repo.findByJoinCode(DEMO_CLASS_CODE)
+      const demo = await demoClass()
       expect(await port.find((demo as { id: string }).id)).toEqual({ id: demo?.id, schoolId: school1, schoolName: 'SMK Demo Satu', grade: 10 })
       expect(await port.find('999999')).toBeNull()
       expect(await port.find('abc')).toBeNull()

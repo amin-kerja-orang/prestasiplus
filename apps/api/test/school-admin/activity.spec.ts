@@ -1,7 +1,7 @@
 import { ErrorBodySchema, SchoolAdminActivityReportSchema } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { ADMIN, apiOf, bootSchoolAdminApp, login, SCHOOL_ADMIN, schoolIdOf, STUDENT, TEACHER, type Api, type SchoolAdminTestApp } from './helpers'
+import { apiOf, bootSchoolAdminApp, login, SCHOOL_ADMIN, schoolIdOf, STUDENT, TEACHER, type Api, type SchoolAdminTestApp } from './helpers'
 import { addPupil, addSubject, xsPupilCount, addPupilsWithSessions, addSchoolAdmin, addSession, addTeacher } from './reports-fixtures'
 
 /** The helpers' clock is 2026-10-19 09:00 MYT. DB spec: needs Docker/Testcontainers. */
@@ -93,15 +93,15 @@ describe('GET /admin-sekolah/laporan-aktiviti', () => {
     expect(r.breakdown.quiz).toBe(1)
   })
 
-  it('a school with fewer than 5 pupils: no minimum cohort; the seeded session has no answers, so the accuracy tile is 0 and the session count stays', async () => {
+  it('a school with fewer than 5 pupils: no minimum cohort; the seeded session has no answers, so the accuracy tile is null ("—", never 0%) and the session count stays', async () => {
     const r = SchoolAdminActivityReportSchema.parse((await adminB.get('/admin-sekolah/laporan-aktiviti')).body.data)
     expect(r.tiles.pupils.sessions).toBe(1)
-    expect(r.tiles.pupils.accuracy).toBe(0)
+    expect(r.tiles.pupils.accuracy).toBeNull()
   })
 
-  it('401 without a session; 403 for admin, teacher and student', async () => {
+  it('401 without a session; 403 for teacher and student (admin: see admin-central-read.spec.ts)', async () => {
     expect((await t.http().get('/api/admin-sekolah/laporan-aktiviti')).status).toBe(401)
-    for (const who of [ADMIN, TEACHER, STUDENT]) {
+    for (const who of [TEACHER, STUDENT]) {
       const res = await apiOf(await login(t, who)).get('/admin-sekolah/laporan-aktiviti')
       expect(res.status, who).toBe(403)
       expect(ErrorBodySchema.parse(res.body).error.code).toBe('FORBIDDEN')

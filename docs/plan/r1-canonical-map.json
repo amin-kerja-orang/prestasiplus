@@ -2671,6 +2671,87 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/laporan-sekolah/laporan-aktiviti|m17.laporan-sekolah.laporan-aktiviti",
+      "path": "/admin/laporan-sekolah/laporan-aktiviti",
+      "name": "m17.laporan-sekolah.laporan-aktiviti",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m17-admin-dashboard/pages/CentralReportPage.vue",
+      "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/laporan-sekolah/amaran-wellbeing|m17.laporan-sekolah.amaran-wellbeing",
+      "path": "/admin/laporan-sekolah/amaran-wellbeing",
+      "name": "m17.laporan-sekolah.amaran-wellbeing",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m17-admin-dashboard/pages/CentralReportPage.vue",
+      "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/laporan-sekolah/statistik-penggunaan|m17.laporan-sekolah.statistik-penggunaan",
+      "path": "/admin/laporan-sekolah/statistik-penggunaan",
+      "name": "m17.laporan-sekolah.statistik-penggunaan",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m17-admin-dashboard/pages/CentralReportPage.vue",
+      "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/laporan-sekolah/dskp-heatmap|m17.laporan-sekolah.dskp-heatmap",
+      "path": "/admin/laporan-sekolah/dskp-heatmap",
+      "name": "m17.laporan-sekolah.dskp-heatmap",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m17-admin-dashboard/pages/CentralReportPage.vue",
+      "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/laporan-sekolah/amaran-awal|m17.laporan-sekolah.amaran-awal",
+      "path": "/admin/laporan-sekolah/amaran-awal",
+      "name": "m17.laporan-sekolah.amaran-awal",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m17-admin-dashboard/pages/CentralReportPage.vue",
+      "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/laporan-sekolah/laporan-bulanan|m17.laporan-sekolah.laporan-bulanan",
+      "path": "/admin/laporan-sekolah/laporan-bulanan",
+      "name": "m17.laporan-sekolah.laporan-bulanan",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m17-admin-dashboard/pages/CentralReportPage.vue",
+      "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/laporan-sekolah/analisa-item|m17.laporan-sekolah.analisa-item",
+      "path": "/admin/laporan-sekolah/analisa-item",
+      "name": "m17.laporan-sekolah.analisa-item",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m17-admin-dashboard/pages/CentralReportPage.vue",
+      "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/laporan-sekolah/sekolah-bersaing|m17.laporan-sekolah.sekolah-bersaing",
+      "path": "/admin/laporan-sekolah/sekolah-bersaing",
+      "name": "m17.laporan-sekolah.sekolah-bersaing",
+      "status": "redirect-to:/sekolah-bersaing",
+      "sector": "S6",
+      "component": null,
+      "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
+      "redirects_to": "/sekolah-bersaing",
+      "approved_by_card": null
+    },
+    {
       "key": "/marketplace|m20.marketplace",
       "path": "/marketplace",
       "name": "m20.marketplace",
@@ -9962,6 +10043,14 @@
       "approved_by_card": null
     },
     {
+      "name": "MoodCheckin",
+      "table": "mood_checkins",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/prisma/schema/content.prisma",
+      "approved_by_card": "S5-T04"
+    },
+    {
       "name": "EducationLevel",
       "table": "education_levels",
       "status": "canonical",
@@ -11331,6 +11420,26 @@
       "sector": "S5",
       "file": "apps/api/src/modules/account/account.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "POST /api/me/mood",
+      "method": "POST",
+      "path": "/api/me/mood",
+      "api_id": "API-MUR-11",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/src/modules/account/mood.controller.ts",
+      "approved_by_card": "S5-T04"
+    },
+    {
+      "key": "GET /api/me/mood/today",
+      "method": "GET",
+      "path": "/api/me/mood/today",
+      "api_id": "API-MUR-11",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/src/modules/account/mood.controller.ts",
+      "approved_by_card": "S5-T04"
     },
     {
       "key": "GET /api/public/stats",

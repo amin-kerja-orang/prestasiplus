@@ -22,8 +22,6 @@ export const CLASS_MESSAGES = {
   classroom: 'Kelas tidak sah.',
   classCode: 'Sila masukkan kod kelas.',
   invalid: 'Medan ini tidak sah.',
-  joinNotFound: 'Kod kelas tidak sah.',
-  joinAlready: 'Anda sudah menyertai kelas ini.',
   studentNotFound: 'Pelajar tidak dijumpai.',
   studentOtherSchool: 'Pelajar bukan daripada sekolah anda.',
   classNotOwn: 'Kelas ini bukan milik anda.',
@@ -35,7 +33,6 @@ export const CLASS_MESSAGES = {
   topicName: 'Nama topik diperlukan.',
   topicParent: 'Bab tidak sah.',
 } as const
-export const classJoinedText = (name: string): string => `Berjaya menyertai kelas ${name}.`
 
 /** Generic texts of the mock guards (401, 403, 404 on a malformed or unknown route). */
 export const CLASS_GUARD_MESSAGES = {
@@ -279,15 +276,6 @@ export const ClassJoinedClassSchema = z
     levelLabel: z.string().min(1),
   })
   .meta({ id: 'ClassJoinedClass' })
-
-/** Trimmed, compared case-insensitively with the stored code. */
-export const ClassJoinRequestSchema = z
-  .object({ classCode: text(CLASS_MESSAGES.classCode) })
-  .meta({ id: 'ClassJoinRequest' })
-export const ClassJoinResultSchema = z.object({ classroomId: IdSchema }).meta({ id: 'ClassJoinResult' })
-export const ClassJoinResponseSchema = z
-  .object({ data: ClassJoinResultSchema, message: z.string().min(1) })
-  .meta({ id: 'ClassJoinResponse', description: '201; `message` is "Berjaya menyertai kelas {name}."' })
 
 // --- Databank Soalan (guru) (S6-T19, API-GUR-27, R1-GUR-44d) -------------------------------------
 
