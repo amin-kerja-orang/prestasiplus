@@ -322,6 +322,8 @@ export const QUESTION_IMPORT_GURU_ROW_MESSAGES = {
   level: 'Tingkatan mesti antara 1 dan 5.',
   tp: 'Tahap Penguasaan (TP) mesti antara 1 dan 6.',
   cognitive: 'Aras pemikiran tidak sah.',
+  /** A row of the code header whose `type` is not `mcq`: the teacher route takes objective questions only. */
+  mcqOnly: 'Hanya soalan objektif (mcq) diterima.',
   difficulty: 'Kesukaran mesti antara 1 dan 5.',
   answer: 'Jawapan mesti A, B, C atau D.',
   chapterNotFound: (value: string): string => `Bab tidak dijumpai: ${value}`,
@@ -337,7 +339,7 @@ const guruCsvFile = questionWorkflowFile({
   maxBytes: QUESTION_IMPORT_GURU_MAX_BYTES,
   mimes: QUESTION_IMPORT_MIME_TYPES,
   extensions: ['csv'],
-  description: 'CSV file, UTF-8, at most 2 MB and 500 data rows (or the JSON field `csv` with the file text, limited to the default 100 kb JSON body).',
+  description: 'CSV file, UTF-8, at most 2 MB and 500 data rows (BM, code or legacy header; or the JSON field `csv` with the file text, limited to the default 100 kb JSON body).',
 })
 
 /**
@@ -352,8 +354,6 @@ export const QuestionImportGuruResultSchema = z
   .strictObject({
     imported: z.number().int().min(0),
     errors: z.array(QuestionImportFailureSchema),
-    /** Unknown header cells of an S1-T05 (code header) file; absent for the teacher's own BM format. */
-    warnings: z.array(z.string()).optional(),
   })
   .meta({ id: 'QuestionImportGuruResult' })
 export type QuestionImportGuruResult = z.infer<typeof QuestionImportGuruResultSchema>

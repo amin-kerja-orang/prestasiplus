@@ -67,6 +67,26 @@ describe('planGuruRows: one reason per bad row, valid rows kept (AC-GUR-44-13)',
   })
 })
 
+describe('the three header formats map onto one row model', () => {
+  it('code header: columns by code name, T-prefixed Tingkatan, non-mcq refused, missing columns named', () => {
+    const head = 'question_key,type,prompt_ms,option_a,option_b,option_c,option_d,correct,marks,subject_code,tingkatan,bab_kod,sp_kod,tp,aras,difficulty'
+    const read = readGuruCsv([head, 'K1,mcq,Soalan?,a,b,c,d,b,1,MAT,T4,1,1.1.1,3,memahami,', 'K2,essay,Soalan?,a,b,c,d,b,1,MAT,4,,,,,2'].join('\r\n'))
+    expect(read.missingColumns).toEqual([])
+    const p = planGuruRows(read.rows, { ...lookups, subjects: [{ id: '3', code: 'MAT', name: 'Matematik' }] }, read.idMode)
+    expect(p.valid[0]?.input).toMatchObject({ chapterId: '70', spIds: ['90'], tp: 3, cognitiveLevel: 'memahami', difficultyLevel: 3, correctIndex: 1 })
+    expect(p.errors).toEqual([{ row: 3, message: 'Hanya soalan objektif (mcq) diterima.' }])
+    expect(readGuruCsv('question_key,type\r\nK1,mcq').missingColumns).toEqual(['prompt_ms', 'option_a', 'option_b', 'correct', 'marks'])
+  })
+  it('legacy header: subject and level by id, the PRD reasons, a missing option is "Pilihan C diperlukan."', () => {
+    const head = 'question_text,option_a,option_b,option_c,option_d,correct_answer,subject_id,education_level_id,difficulty_level'
+    const read = readGuruCsv([head, 'Soalan?,a,b,c,d,A,3,14,2', 'Soalan?,a,b,,d,A,3,14,2', 'Soalan?,a,b,c,d,A,99,14,2'].join('\r\n'))
+    expect(read.idMode).toBe(true)
+    const p = planGuruRows(read.rows, lookups, read.idMode)
+    expect(p.valid).toHaveLength(1)
+    expect(p.errors).toEqual([{ row: 3, message: 'Pilihan C diperlukan.' }, { row: 4, message: 'Subjek tidak dikenali.' }])
+  })
+})
+
 describe('guruStatusOf (FR-GUR-44-10)', () => {
   const none = { liveVersionNo: null, latestStatus: null, latestRejectionReason: null }
   it('pending until the question is published; approved once live; rejected with the reason', () => {

@@ -47,11 +47,9 @@ import {
   type CsvRecord,
   type CurriculumFacts,
   factsKey,
-  GURU_IMPORT_CAPS,
   type ImportDefaults,
   type ImportLookups,
   isLegacyHeader,
-  NO_IMPORT_DEFAULTS,
   numberKey,
   parseCsv,
   planImport,
@@ -180,20 +178,17 @@ export class QuestionImportsService {
   // --- Guru import -----------------------------------------------------------------------------
 
   /**
-   * API-GUR-19 (S6-T06): the teacher's CSV (columns by NAME, 2 MB, 500 data rows). Each valid row becomes an item of ONE `source = 'guru'` intake
-   * batch ("Menunggu Semakan", L-6); a bad row is listed in `errors` with its reason and never blocks the valid ones.
+   * API-GUR-19 (S6-T06): the teacher's CSV (2 MB, 500 data rows) in any of the three header formats (BM, D115 code, legacy: `guru-csv.ts` maps them
+   * onto one row model). Each valid row becomes an item of ONE `source = 'guru'` intake batch ("Menunggu Semakan", L-6); the bank is never
+   * written from this route. A bad row is listed in `errors` with its PRD reason and never blocks the valid ones.
    */
   async importGuru(actor: WorkflowActor, file: UploadedCsv | undefined, body: unknown): Promise<{ data: QuestionImportGuruResult }> {
-    const text = readGuruText(file, body)
-    // The S1-T05 files (the code header, or the old positional one) keep the way the base made them: review questions in the bank, Guru caps,
-    // warnings. A file with the BM `subjek` column is the teacher's own format (S6-T06): items of one guru intake batch.
-    if (!isSubmissionHeader(text)) return this.importGuruQuestions(actor, file, text)
-    const read = readGuruCsv(text)
+    const read = readGuruCsv(readGuruText(file, body))
     if (read.missingColumns.length > 0) throw guruRefusal(GURU_MSG.missingColumns(read.missingColumns))
     if (read.tooMany) throw guruRefusal(GURU_MSG.tooManyRows)
     if (read.rows.length === 0) throw guruRefusal(GURU_MSG.noData)
 
-    const plan = planGuruRows(read.rows, await this.guruLookups(read.rows))
+    const plan = planGuruRows(read.rows, await this.guruLookups(read.rows, read.idMode), read.idMode)
     if (plan.valid.length > 0) {
       await this.guruSubmissions.createBatch(
         { userId: actor.userId, roleCode: actor.role, requestId: actor.requestId, ip: actor.ip, isTest: actor.isTest },
@@ -203,19 +198,8 @@ export class QuestionImportsService {
     return { data: { imported: plan.valid.length, errors: plan.errors } }
   }
 
-  /** S1-T05 on the Guru route: the base behaviour (code or legacy header), answered with the Guru result shape `{ imported, errors, warnings? }`. */
-  private async importGuruQuestions(actor: WorkflowActor, file: UploadedCsv | undefined, text: string): Promise<{ data: QuestionImportGuruResult }> {
-    const records = parseCsv(text)
-    const lookups = await this.withCodes(await this.lookups(), records, NO_IMPORT_DEFAULTS)
-    const plan = planImport(records, lookups, NO_IMPORT_DEFAULTS, GURU_IMPORT_CAPS)
-    refuseUnusable(plan)
-    const stored = file ?? { originalname: 'guru.csv', mimetype: 'text/csv', size: Buffer.byteLength(text, 'utf8'), buffer: Buffer.from(text, 'utf8') }
-    const run = await this.execute(actor, stored, plan, NO_IMPORT_DEFAULTS, 'review', null)
-    return { data: { imported: run.importedCount, errors: asFailures(run.failures), ...(plan.warnings.length === 0 ? {} : { warnings: plan.warnings }) } }
-  }
-
   /** Subjects and Tingkatan 1 to 5, plus the Bab and SP lists of the Subjek + Tingkatan pairs the file uses (only where a row names a Bab or SP). */
-  private async guruLookups(rows: readonly GuruCsvRow[]): Promise<GuruCsvLookups> {
+  private async guruLookups(rows: readonly GuruCsvRow[], idMode: boolean): Promise<GuruCsvLookups> {
     const [subjectRows, levelRows] = await Promise.all([this.curriculum.subjects({ active: true }), this.curriculum.levels({ active: true })])
     const subjects = subjectRows.map((s) => ({ id: s.id.toString(), code: s.code, name: s.name }))
     const levels = new Map<number, { id: string; code: string }>()
@@ -225,8 +209,8 @@ export class QuestionImportsService {
     }
     const wanted = new Map<string, { subjectId: string; levelId: string; bab: boolean; sps: Set<string> }>()
     for (const r of rows) {
-      const subject = guruSubjectOf(subjects, r.get('subjek'))
-      const level = guruLevelOf(levels, r.get('tingkatan'))
+      const subject = guruSubjectOf(subjects, r.get('subjek'), idMode)
+      const level = guruLevelOf(levels, r.get('tingkatan'), idMode)
       if (!subject || !level) continue
       const key = guruPairKey(subject.id, level.id)
       const w = wanted.get(key) ?? { subjectId: subject.id, levelId: level.id, bab: false, sps: new Set<string>() }
@@ -324,7 +308,7 @@ export class QuestionImportsService {
     file: UploadedCsv,
     plan: ReturnType<typeof planImport>,
     defaults: ImportDefaults,
-    status: 'draft' | 'review',
+    status: 'draft',
     templateVersion: string | null,
   ): Promise<QuestionImport> {
     const bank = this.ports.questionBank
@@ -352,12 +336,6 @@ export class QuestionImportsService {
       })
     }, IMPORT_TX)
   }
-}
-
-/** The teacher's own CSV (44-F3) has the BM `subjek` column; anything else is an S1-T05 file. */
-function isSubmissionHeader(text: string): boolean {
-  const [header] = parseCsv(text, 1)
-  return header !== undefined && header.cells.some((c) => c.trim().toLowerCase() === 'subjek')
 }
 
 const guruRefusal = (message: string): ApiError => ApiError.of('VALIDATION_ERROR', { fields: { csvFile: message } })

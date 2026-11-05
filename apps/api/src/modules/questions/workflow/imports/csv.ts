@@ -132,13 +132,6 @@ export interface ImportLookups {
   codes?: CodeLookups
 }
 
-/** The Guru caps (SRS M10 S22): question text up to 2000, each option up to 500 characters. */
-export interface ImportCaps {
-  textMax: number
-  optionMax: number
-}
-export const GURU_IMPORT_CAPS: ImportCaps = { textMax: 2000, optionMax: 500 }
-
 export interface PlannedRow {
   line: number
   /** New header only. */
@@ -187,7 +180,6 @@ export function planImport(
   text: string | CsvRecord[],
   lookups: ImportLookups,
   defaults: ImportDefaults = NO_IMPORT_DEFAULTS,
-  caps: ImportCaps | null = null,
 ): ImportPlan {
   const [header, ...data] = typeof text === 'string' ? parseCsv(text) : text
   const plan: ImportPlan = { missingColumns: [], rows: [], failures: [], dataRows: 0, failedQuestions: 0, rowLimitExceeded: false, warnings: [], format: 'legacy' }
@@ -211,7 +203,7 @@ export function planImport(
   plan.missingColumns = (legacy ? QUESTION_IMPORT_REQUIRED_COLUMNS : QUESTION_IMPORT_CODE_REQUIRED_COLUMNS).filter((c) => !index.has(c))
   if (plan.missingColumns.length > 0) return plan
   if (!legacy) {
-    planCodeRows(header, data, index, lookups, defaults, caps, plan)
+    planCodeRows(header, data, index, lookups, defaults, plan)
     return plan
   }
 
@@ -272,14 +264,6 @@ export function planImport(
     }
     if (texts.filter((t) => t !== '').length < MIN_OPTIONS) {
       fail(MIN_OPTIONS_MESSAGE)
-      continue
-    }
-    if (caps && [...stemMs].length > caps.textMax) {
-      fail(MSG.textTooLong)
-      continue
-    }
-    if (caps && texts.some((o) => [...o].length > caps.optionMax)) {
-      fail(MSG.optionTooLong)
       continue
     }
     const kertasCell = get('kertas').trim()
@@ -344,7 +328,6 @@ function planCodeRows(
   index: ReadonlyMap<string, number>,
   lookups: ImportLookups,
   defaults: ImportDefaults,
-  caps: ImportCaps | null,
   plan: ImportPlan,
 ): void {
   const codes: CodeLookups = lookups.codes ?? { subjectsByCode: new Map(), levelsByCode: new Map(), facts: new Map() }
@@ -357,8 +340,8 @@ function planCodeRows(
       plan.warnings.push(QUESTION_IMPORT_MESSAGES.unknownColumn(n))
     }
   }
-  const textMax = caps?.textMax ?? 2000
-  const optionMax = caps?.optionMax ?? 500
+  const textMax = 2000
+  const optionMax = 500
   const seenKeys = new Set<string>()
   let lastKey: string | null = null
 

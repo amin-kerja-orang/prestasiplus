@@ -398,33 +398,69 @@ describe('S1-T05 part 1: CSV with DSKP codes (real bank)', () => {
     expect(legacy.body.data.failures).toEqual([])
   })
 
-  it('[CI] the new header works on the Guru route: review questions, Guru caps, warnings', async () => {
-    const res = await teacher.upload('/api/guru/questions/import', {
-      name: 'guru-kod.csv',
-      body: csvOf(line({ question_key: 'G1' }), line({ question_key: 'G2', prompt_ms: 'x'.repeat(2001) }), line({ question_key: 'G3', option_a: 'y'.repeat(501) })),
+  describe('the Guru route takes all three header formats into the intake, never the bank (S6-T06 ruling)', () => {
+    const questionsN = () => count(t.db, 'select count(*) as n from questions')
+    const itemsOf = (owner: string) =>
+      count(t.db, `select count(*) as n from intake_items i join intake_batches b on b.id = i.batch_id where b.source = 'guru' and b.owner_user_id = $1::bigint and i.review_state = 'needs_review'`, [owner])
+    const guruImport = (body: string) => teacher.upload('/api/guru/questions/import', { name: 'guru.csv', body })
+
+    it('code header: valid rows become intake items, Guru caps give the PRD row reasons, no bank question, no warnings key', async () => {
+      const [q0, i0] = [await questionsN(), await itemsOf(teacher.userId)]
+      const res = await guruImport(csvOf(line({ question_key: 'G1' }), line({ question_key: 'G2', prompt_ms: 'x'.repeat(2001) }), line({ question_key: 'G3', option_a: 'y'.repeat(501) })))
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(QuestionImportGuruResultSchema.parse(res.body.data)).toEqual({
+        imported: 1,
+        errors: [
+          { row: 3, message: 'Soalan tidak boleh melebihi 2000 aksara.' },
+          { row: 4, message: 'Pilihan A tidak boleh melebihi 500 aksara.' },
+        ],
+      })
+      expect(await itemsOf(teacher.userId)).toBe(i0 + 1)
+      expect(await questionsN()).toBe(q0)
     })
-    expect(res.status, JSON.stringify(res.body)).toBe(200)
-    const data = QuestionImportGuruResultSchema.parse(res.body.data)
-    expect(data.imported).toBe(1)
-    expect(data.errors.map((f) => [f.row, f.message])).toEqual([
-      [3, 'Baris 3: Soalan tidak boleh melebihi 2000 aksara.'],
-      [4, 'Baris 4: Pilihan jawapan tidak boleh melebihi 500 aksara.'],
-    ])
-    const [v] = await t.db.query<{ status: string; created_by_id: string }>(
-      `select v.status, q.created_by_id::text from question_versions v join questions q on q.id = v.question_id order by v.id desc limit 1`,
-    )
-    expect(v).toEqual({ status: 'review', created_by_id: teacher.userId })
+
+    it('code header: a row that is not an objective question is refused with its reason', async () => {
+      const q0 = await questionsN()
+      const res = await guruImport(csvOf(line({ question_key: 'T1', type: 'structured' })))
+      expect(res.body.data).toEqual({ imported: 0, errors: [{ row: 2, message: 'Hanya soalan objektif (mcq) diterima.' }] })
+      expect(await questionsN()).toBe(q0)
+    })
+
+    it('legacy header (subject and level by id): valid rows become intake items, no bank question', async () => {
+      const [q0, i0] = [await questionsN(), await itemsOf(teacher.userId)]
+      const head = 'question_text,option_a,option_b,option_c,option_d,correct_answer,subject_id,education_level_id,difficulty_level'
+      const ok = `"Soalan sepuluh aksara",A,B,C,D,B,${tag.subjectId},${tag.levelId},2`
+      const bad = `"Soalan sepuluh aksara",A,B,C,D,Z,${tag.subjectId},${tag.levelId},2`
+      const res = await guruImport([head, ok, bad].join('\n'))
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(res.body.data).toEqual({ imported: 1, errors: [{ row: 3, message: 'Jawapan mesti A, B, C atau D.' }] })
+      expect(await itemsOf(teacher.userId)).toBe(i0 + 1)
+      expect(await questionsN()).toBe(q0)
+    })
+
+    it('BM header: valid rows become intake items, no bank question', async () => {
+      const [q0, i0] = [await questionsN(), await itemsOf(teacher.userId)]
+      const head = QUESTION_IMPORT_GURU_HEADER.join(',')
+      const res = await guruImport([head, `${tag.subject},${tag.tingkatan},,,,,2,Soalan?,a,b,c,d,A,`].join('\n'))
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(res.body.data).toEqual({ imported: 1, errors: [] })
+      expect(await itemsOf(teacher.userId)).toBe(i0 + 1)
+      expect(await questionsN()).toBe(q0)
+    })
   })
 
-  it('[CI] more than 2,000 data rows is refused whole with 422 on the admin and the Guru route, for both headers, and nothing is stored', async () => {
-    const message = 'Fail melebihi 2,000 baris. Pecahkan fail kepada beberapa bahagian.'
+  it('[CI] the 2,000-row cap is admin-only: the Guru route refuses more than 500 rows with "Fail melebihi 500 baris." for every header, the admin route 2,001 rows with the 2,000 message', async () => {
+    const adminMessage = 'Fail melebihi 2,000 baris. Pecahkan fail kepada beberapa bahagian.'
     const questions = await count(t.db, 'select count(*) as n from questions')
     const before = await runs()
-    const codeRows = Array.from({ length: 2001 }, (_, i) => line({ question_key: `R${String(i)}` }))
+    const codeRows = (n: number) => Array.from({ length: n }, (_, i) => line({ question_key: `R${String(i)}` }))
     const legacyHead = 'question_text,option_a,option_b,option_c,option_d,correct_answer,subject_id,education_level_id,difficulty_level,marks'
-    const legacyRows = Array.from({ length: 2001 }, () => `"Soalan sepuluh aksara",A,B,C,D,A,${tag.subjectId},${tag.levelId},1,1`)
-    for (const body of [csvOf(...codeRows), [legacyHead, ...legacyRows].join('\n')]) {
-      for (const [client, url] of [[admin, '/api/question-imports'], [teacher, '/api/guru/questions/import']] as const) {
+    const legacyRows = (n: number) => Array.from({ length: n }, () => `"Soalan sepuluh aksara",A,B,C,D,A,${tag.subjectId},${tag.levelId},1,1`)
+    for (const [client, url, n, message] of [
+      [admin, '/api/question-imports', 2001, adminMessage],
+      [teacher, '/api/guru/questions/import', 501, 'Fail melebihi 500 baris.'],
+    ] as const) {
+      for (const body of [csvOf(...codeRows(n)), [legacyHead, ...legacyRows(n)].join('\n')]) {
         const res = await client.upload(url, { name: 'besar.csv', body })
         expect(res.status).toBe(422)
         expect(res.body.error.fields.csvFile).toBe(message)

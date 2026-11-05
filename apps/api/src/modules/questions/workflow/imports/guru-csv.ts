@@ -1,8 +1,10 @@
 import {
   QUESTION_COGNITIVE_LEVELS,
+  QUESTION_IMPORT_CODE_REQUIRED_COLUMNS,
   QUESTION_IMPORT_GURU_MAX_ROWS,
   QUESTION_IMPORT_GURU_REQUIRED_COLUMNS,
   QUESTION_IMPORT_GURU_ROW_MESSAGES as MSG,
+  QUESTION_IMPORT_REQUIRED_COLUMNS,
   type QuestionCognitiveLevel,
   type QuestionImportFailure,
 } from '@pp/contract'
@@ -28,27 +30,81 @@ export interface GuruCsvRead {
   rows: GuruCsvRow[]
   /** The file has more data rows than the teacher cap. */
   tooMany: boolean
+  /** The legacy header names the subject and the level by DATABASE id; the BM and code headers by name, code or number. */
+  idMode: boolean
 }
+
+/**
+ * The three header formats the Guru route accepts (S6-T06 ruling). Every one is mapped onto the columns of the BM format, so one row model, one
+ * set of PRD row reasons and one intake item shape serve all of them:
+ *  - `bm`: `subjek,tingkatan,bab,sp,tp,aras,kesukaran,soalan,pilihan_a..d,jawapan,penerangan` (44-F3);
+ *  - `code`: the D115 header (#704): `subject_code`, `tingkatan`, `bab_kod`, `sp_kod`, `tp`, `aras`, `difficulty`, `prompt_ms`, `option_a..d`, `correct`, `explanation`;
+ *  - `legacy`: the positional header: `question_text`, `option_a..d`, `correct_answer`, `subject_id`, `education_level_id`, `difficulty_level`, `explanation`.
+ */
+type GuruFormat = 'bm' | 'code' | 'legacy'
+
+/** BM column -> the column(s) of the other formats it is read from (first non-empty wins). */
+const MAPPED: Record<Exclude<GuruFormat, 'bm'>, Readonly<Record<string, readonly string[]>>> = {
+  code: {
+    subjek: ['subject_code'],
+    tingkatan: ['tingkatan'],
+    bab: ['bab_kod'],
+    sp: ['sp_kod'],
+    tp: ['tp'],
+    aras: ['aras'],
+    kesukaran: ['difficulty', 'difficulty_level'],
+    soalan: ['prompt_ms'],
+    pilihan_a: ['option_a'],
+    pilihan_b: ['option_b'],
+    pilihan_c: ['option_c'],
+    pilihan_d: ['option_d'],
+    jawapan: ['correct'],
+    penerangan: ['explanation'],
+    jenis: ['type'],
+  },
+  legacy: {
+    subjek: ['subject_id'],
+    tingkatan: ['education_level_id'],
+    kesukaran: ['difficulty_level'],
+    soalan: ['question_text'],
+    pilihan_a: ['option_a'],
+    pilihan_b: ['option_b'],
+    pilihan_c: ['option_c'],
+    pilihan_d: ['option_d'],
+    jawapan: ['correct_answer'],
+    penerangan: ['explanation'],
+  },
+}
+
+const formatOf = (names: ReadonlySet<string>): GuruFormat => (names.has('subjek') ? 'bm' : names.has('question_key') ? 'code' : names.has('question_text') ? 'legacy' : 'bm')
 
 export function readGuruCsv(text: string): GuruCsvRead {
   // Header + cap + 1 records at most: a file over the cap is detected without building every record.
   const [header, ...data] = parseCsv(text, QUESTION_IMPORT_GURU_MAX_ROWS + 2)
-  if (!header) return { missingColumns: [...QUESTION_IMPORT_GURU_REQUIRED_COLUMNS], rows: [], tooMany: false }
+  if (!header) return { missingColumns: [...QUESTION_IMPORT_GURU_REQUIRED_COLUMNS], rows: [], tooMany: false, idMode: false }
   const index = new Map<string, number>()
   header.cells.forEach((name, i) => {
     const key = name.trim().toLowerCase()
     if (!index.has(key)) index.set(key, i)
   })
-  const missingColumns = QUESTION_IMPORT_GURU_REQUIRED_COLUMNS.filter((c) => !index.has(c))
-  if (data.length > QUESTION_IMPORT_GURU_MAX_ROWS) return { missingColumns, rows: [], tooMany: true }
+  const format = formatOf(new Set(index.keys()))
+  const required: readonly string[] = format === 'bm' ? QUESTION_IMPORT_GURU_REQUIRED_COLUMNS : format === 'code' ? QUESTION_IMPORT_CODE_REQUIRED_COLUMNS : QUESTION_IMPORT_REQUIRED_COLUMNS
+  const missingColumns = required.filter((c) => !index.has(c))
+  const idMode = format === 'legacy'
+  if (data.length > QUESTION_IMPORT_GURU_MAX_ROWS) return { missingColumns, rows: [], tooMany: true, idMode }
   const rows = data.map<GuruCsvRow>((rec) => ({
     line: rec.line,
     get: (column) => {
-      const i = index.get(column)
-      return i === undefined ? '' : (rec.cells[i] ?? '')
+      const sources = format === 'bm' ? [column] : (MAPPED[format][column] ?? [])
+      for (const s of sources) {
+        const i = index.get(s)
+        const v = i === undefined ? '' : (rec.cells[i] ?? '')
+        if (v !== '') return v
+      }
+      return ''
     },
   }))
-  return { missingColumns, rows, tooMany: false }
+  return { missingColumns, rows, tooMany: false, idMode }
 }
 
 export interface GuruSubjectRef {
@@ -81,16 +137,19 @@ export interface GuruCsvLookups {
 export const guruPairKey = (subjectId: string, levelId: string): string => `${subjectId}:${levelId}`
 
 /** The Subjek of a row (BM name, or its code, trimmed and case-insensitive), or null. */
-export function guruSubjectOf(subjects: readonly GuruSubjectRef[], cell: string): GuruSubjectRef | null {
+export function guruSubjectOf(subjects: readonly GuruSubjectRef[], cell: string, idMode = false): GuruSubjectRef | null {
   const key = cell.trim().toLowerCase()
   if (key === '') return null
+  if (idMode) return subjects.find((s) => s.id === key) ?? null
   return subjects.find((s) => s.name.trim().toLowerCase() === key) ?? subjects.find((s) => s.code.toLowerCase() === key) ?? null
 }
 
 /** The Tingkatan 1 to 5 of a row, or null. */
-export function guruLevelOf(levels: ReadonlyMap<number, GuruLevelRef>, cell: string): GuruLevelRef | null {
+export function guruLevelOf(levels: ReadonlyMap<number, GuruLevelRef>, cell: string, idMode = false): GuruLevelRef | null {
   const t = cell.trim()
-  return /^[1-5]$/.test(t) ? (levels.get(Number(t)) ?? null) : null
+  if (idMode) return [...levels.values()].find((l) => l.id === t) ?? null
+  const m = /^T?([1-5])$/i.exec(t)
+  return m ? (levels.get(Number(m[1])) ?? null) : null
 }
 
 const COGNITIVE = new Set<string>(QUESTION_COGNITIVE_LEVELS)
@@ -120,15 +179,18 @@ const intIn = (cell: string, min: number, max: number): number | null => {
 }
 
 /** One reason per bad row, in the order of the 44-F3 list; the valid rows come back as intake submissions. */
-export function planGuruRows(rows: readonly GuruCsvRow[], lookups: GuruCsvLookups): { valid: GuruRowInput[]; errors: QuestionImportFailure[] } {
+export function planGuruRows(rows: readonly GuruCsvRow[], lookups: GuruCsvLookups, idMode = false): { valid: GuruRowInput[]; errors: QuestionImportFailure[] } {
   const valid: GuruRowInput[] = []
   const errors: QuestionImportFailure[] = []
   for (const r of rows) {
     const reason = ((): GuruRowInput | string => {
-      const subject = guruSubjectOf(lookups.subjects, r.get('subjek'))
+      const subject = guruSubjectOf(lookups.subjects, r.get('subjek'), idMode)
       if (!subject) return MSG.subject
-      const level = guruLevelOf(lookups.levels, r.get('tingkatan'))
+      const level = guruLevelOf(lookups.levels, r.get('tingkatan'), idMode)
       if (!level) return MSG.level
+      // The code header carries a `type`; the teacher route takes objective questions only (other types are authored in the Studio).
+      const kind = r.get('jenis').trim().toLowerCase()
+      if (kind !== '' && kind !== 'mcq') return MSG.mcqOnly
 
       const tpCell = r.get('tp')
       const tp = tpCell.trim() === '' ? null : intIn(tpCell, 1, 6)
