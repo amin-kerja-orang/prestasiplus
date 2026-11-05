@@ -1,13 +1,13 @@
 <script setup lang="ts">
 /**
  * Lane "Databank Soalan" (`/admin/spm/databank`, V2 A2/P2, AC-R1-21.2): one bank question per row. Columns Senarai, Tajuk,
- * Perhatian, Tindakan. `Perhatian` shows the servability reasons (D94 copy, H2), not the V2 phrases. Row action: Sunting.
- * Pratonton is not a separate screen in R1 (the Bank page previews in a dialog), so it is not offered here (UX-23).
+ * Perhatian, Tindakan. `Perhatian` shows the servability reasons (D94 copy, H2), not the V2 phrases. Row actions: Pratonton
+ * (the V2 preview path, which redirects to the Studio Pratonton; PRD47 M-01) and Sunting.
  */
 import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 
-import { DsDataTable, DsLoadError, DsPage, DsText } from '@/ds'
+import { DsCluster, DsDataTable, DsLoadError, DsPage, DsStack, DsText } from '@/ds'
 
 import { ADMIN_ROUTES } from '../../papers/ui'
 import { kandunganServer } from '../client'
@@ -20,6 +20,7 @@ import type { ServabilityDatabankRow } from '@pp/contract'
 type Row = ServabilityDatabankRow & { no: number } & Record<string, unknown>
 
 const statusText = questionStatusLabel
+const previewPath = (questionId: string): string => `/admin/studio/questions/${questionId}/preview`
 
 const server = kandunganServer()
 const { filters, page, subjects, count, list, chips, removeChip } = useLane((q) => server.databankLane(q), statusText)
@@ -94,24 +95,40 @@ const columns: TableColumn<Row>[] = [
         </div>
       </template>
       <template #card-actions="{ row }">
-        <UButton
-          size="sm"
-          icon="i-ph-pencil-simple"
-          :label="laneCopy.edit"
-          class="min-h-11"
-          :to="{ name: ADMIN_ROUTES.bankEdit, params: { qid: row.questionId } }"
-          :data-testid="`lane-edit-${String(row.questionId)}`"
-        />
+        <DsStack gap="sm">
+          <UButton
+            color="neutral"
+            :label="laneCopy.preview"
+            :to="previewPath(String(row.questionId))"
+            :data-testid="`lane-preview-${String(row.questionId)}`"
+          />
+          <UButton
+            size="sm"
+            icon="i-ph-pencil-simple"
+            :label="laneCopy.edit"
+            class="min-h-11"
+            :to="{ name: ADMIN_ROUTES.bankEdit, params: { qid: row.questionId } }"
+            :data-testid="`lane-edit-${String(row.questionId)}`"
+          />
+        </DsStack>
       </template>
       <template #actions-cell="{ row }">
-        <UButton
-          size="sm"
-          icon="i-ph-pencil-simple"
-          :label="laneCopy.edit"
-          class="min-h-11"
-          :to="{ name: ADMIN_ROUTES.bankEdit, params: { qid: row.original.questionId } }"
-          :data-testid="`lane-edit-${row.original.questionId}`"
-        />
+        <DsCluster gap="sm">
+          <UButton
+            color="neutral"
+            :label="laneCopy.preview"
+            :to="previewPath(row.original.questionId)"
+            :data-testid="`lane-preview-${row.original.questionId}`"
+          />
+          <UButton
+            size="sm"
+            icon="i-ph-pencil-simple"
+            :label="laneCopy.edit"
+            class="min-h-11"
+            :to="{ name: ADMIN_ROUTES.bankEdit, params: { qid: row.original.questionId } }"
+            :data-testid="`lane-edit-${row.original.questionId}`"
+          />
+        </DsCluster>
       </template>
     </DsDataTable>
   </DsPage>

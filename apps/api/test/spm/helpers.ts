@@ -144,7 +144,7 @@ export async function loginModPelajar(t: SpmTestApp, role: keyof typeof ACCOUNTS
 export interface QInit {
   /** Subject code. */
   subject: string
-  /** Level code (T4, T5). Default T4, or a non-offered secondary level when `pool` is false (R1-B06). */
+  /** Level code (T4, T5). Default T4, or T1 with no subject-level link when `pool` is false (R1-B06, S4-T06). */
   level?: string
   type?: 'mcq' | 'structured'
   /** Difficulty TP 1..6; null leaves it unset. */
@@ -167,15 +167,15 @@ export async function addQuestion(db: TestDatabase, q: QInit): Promise<string> {
   const type = q.type ?? 'mcq'
   const status = q.status ?? 'approved'
   const subject = (await db.query<{ id: string }>('select id::text from subjects where code = $1', [q.subject]))[0]?.id
-  // R1-B06: the SPM pool is defined by level (T4/T5), not by the `pool` tag. A multiple-choice question that must stay OUT of the
-  // pool (`pool: false`) therefore sits at an active secondary level that is not offered (T1 to T3), unless a level is asked for.
+  // R1-B06, S4-T06: the SPM pool is defined by level, not by the `pool` tag, and every active secondary level (T1 to T5) is offered, as
+  // long as the subject is linked to it (SPM_SERVABLE_SQL). A multiple-choice question that must stay OUT of the pool (`pool: false`) but
+  // stay eligible for a Tracking A set (a learner-visible level) therefore sits at T1 with the subject-level link of that pair removed
+  // (the subject is not offered at T1 in this fixture). A primary-stage level would make it ineligible for the sets too.
   const outOfPool = type === 'mcq' && q.pool === false
-  const nonOffered = outOfPool
-    ? ((await db.query<{ code: string }>(`select code from education_levels where stage <> 'primary' and is_active and code not in ('T4','T5') order by sort_order, id limit 1`))[0]?.code ?? 'T4')
-    : 'T4'
-  const levelCode = q.level ?? nonOffered
+  const levelCode = q.level ?? (outOfPool ? 'T1' : 'T4')
   const level = (await db.query<{ id: string }>('select id::text from education_levels where code = $1', [levelCode]))[0]?.id
   if (!subject || !level) throw new Error('unknown subject or level')
+  if (outOfPool && q.level === undefined) await db.query('delete from subject_levels where subject_id = $1 and education_level_id = $2', [subject, level])
   const chapter =
     q.chapterNumber === undefined
       ? null

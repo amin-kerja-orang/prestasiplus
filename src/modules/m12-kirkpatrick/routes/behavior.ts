@@ -1,14 +1,14 @@
 import type { RouteRecordRaw } from 'vue-router'
 
 import { rolesOf } from './access'
-import { STAFF_MOUNTS } from './mount'
+import { ALL_MOUNTS, SCHOOL_ADMIN_MOUNT } from './mount'
 
-/** M12 route fragment: S4 T3 Tingkah Laku on `/admin/kirkpatrick/behavior` and the `/guru` twin (M12-T3). */
-const routes: RouteRecordRaw[] = STAFF_MOUNTS.map((mount): RouteRecordRaw => ({
+/** M12 route fragment: S4 T3 Tingkah Laku on `/admin/kirkpatrick/behavior` and the `/guru` and `/admin-sekolah` twins (M12-T3; the school administrator's school is forced and shown as a locked label). */
+const routes: RouteRecordRaw[] = ALL_MOUNTS.map((mount): RouteRecordRaw => ({
   path: `${mount.prefix}/behavior`,
   name: `${mount.name}-behavior`,
   component: () => import('../pages/KirkpatrickBehaviorPage.vue'),
-  props: () => ({ basePath: mount.prefix }),
+  props: () => ({ basePath: mount.prefix, scopeForced: mount === SCHOOL_ADMIN_MOUNT }),
   meta: {
     layout: mount.layout,
     access: 'auth',

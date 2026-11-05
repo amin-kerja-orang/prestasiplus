@@ -7,14 +7,14 @@
 import {
   QUESTION_WORKFLOW_STATUS_LABELS,
   QuestionDetailSchema,
-  QuestionGuruDetailSchema,
-  QuestionGuruSummarySchema,
   QuestionRowSchema,
   QuestionSchema,
   QuestionStimulusGroupSchema,
   QuestionStimulusTableSchema,
   QuestionStructuredDetailSchema,
   QuestionStructuredRowSchema,
+  GuruStructuredDetailSchema,
+  GuruStructuredRowSchema,
   type QuestionPart,
   type QuestionStatus,
 } from '@pp/contract'
@@ -22,10 +22,10 @@ import type { z } from 'zod'
 
 import { toMytTimestamp } from '../../../common/time/myt'
 import { isLeaf, type QuestionLeaf } from '../grading'
-import { constantFields, difficultyLabelOf, flatFromVersion, kertasOfPaperCode, wireSourceType } from '../projection'
+import { constantFields, flatFromVersion, kertasOfPaperCode, wireSourceType } from '../projection'
 import { dskpCompleteness } from '../dskp-gate'
 import { stimulusTableParts } from '../stimulus-table'
-import type { QuestionDetailView, QuestionView, StimulusGroupRecord } from '../types'
+import type { GuruStructuredRecord, QuestionDetailView, QuestionView, StimulusGroupRecord } from '../types'
 
 export type QuestionRow = z.output<typeof QuestionRowSchema>
 export type QuestionWire = z.output<typeof QuestionSchema>
@@ -102,6 +102,8 @@ function flatBase(q: QuestionView) {
     textDirection: f.textDirection,
     createdAt: toMytTimestamp(q.createdAt),
     updatedAt: toMytTimestamp(q.updatedAt),
+    // S1-T07 (API-Q-12): the stored flag unless dismissed ("Bukan masalah").
+    flags: q.openFlags ?? [],
     usage: c.usage,
     parts: partsOf(q),
     numberLabel: v.numberLabel,
@@ -168,6 +170,7 @@ export function rowView(q: QuestionView): QuestionRow {
     kertas: kertasOfPaperCode(q.version.paperCode),
     numberLabel: q.version.numberLabel,
     ...(f.essayTopics === null ? {} : { essayTopics: f.essayTopics }),
+    flags: q.openFlags ?? [],
   })
 }
 
@@ -188,55 +191,6 @@ export function detailView(d: QuestionDetailView): QuestionDetailWire {
     ...(d.placements === undefined ? {} : { placements: d.placements, generatedPaperCount: d.generatedPaperCount ?? 0 }),
     dskpStatus: dskpOf(d),
     createdBy: { id: d.createdById ?? NO_CREATOR, name: d.createdByName },
-  })
-}
-
-// --- Guru (owner) --------------------------------------------------------------------------------
-
-export function guruSummaryView(q: QuestionView): z.output<typeof QuestionGuruSummarySchema> {
-  const f = flatOf(q)
-  const v = q.version
-  return QuestionGuruSummarySchema.parse({
-    id: q.id,
-    questionType: f.questionType,
-    questionText: f.questionText,
-    subjectId: v.subjectId,
-    subjectName: q.subject?.name ?? '',
-    educationLevelId: v.educationLevelId,
-    levelName: q.level?.name ?? '',
-    difficultyLevel: f.difficultyLevel,
-    difficultyLabel: difficultyLabelOf(f.difficultyLevel),
-    dskpTagged: v.spIds.length > 0,
-    status: v.status,
-    statusLabel: statusLabel(v.status),
-    isActive: q.isActive,
-    options: f.options,
-    correctAnswer: f.correctAnswer,
-    explanation: f.explanation,
-    source: v.sourceFile,
-    createdAt: toMytTimestamp(q.createdAt),
-  })
-}
-
-export function guruDetailView(q: QuestionView): z.output<typeof QuestionGuruDetailSchema> {
-  const f = flatOf(q)
-  const v = q.version
-  const c = constantFields(q)
-  return QuestionGuruDetailSchema.parse({
-    ...guruSummaryView(q),
-    questionImage: imageOf(q, q.version.stemImageId),
-    optionImages: imagesOf(q, f),
-    tfAnswer: f.tfAnswer,
-    correctAnswerText: f.correctAnswerText,
-    altAnswers: f.altAnswers,
-    modelAnswer: f.modelAnswer,
-    language: f.language,
-    scriptType: f.scriptType,
-    textDirection: f.textDirection,
-    curriculumChapterId: v.chapterId,
-    curriculumTopicId: v.topicId,
-    dskpSpId: v.spIds[0] ?? null,
-    usage: { attempts: c.usage.attempts, correct: c.usage.correct, accuracy: 0 },
   })
 }
 
@@ -294,6 +248,10 @@ interface Sub {
   modelAnswer: string
   parentSubId: string | null
   order: number
+  /** Bloom level of a leaf (teacher mount only; the admin schema strips it). */
+  cognitiveLevel: string | null
+  /** Nesting depth: 0 for a top part. */
+  depth: number
 }
 
 /** The part tree flattened depth first: one entry per part, branches included (marks 0). */
@@ -315,10 +273,13 @@ function flatten(questionId: string, parts: readonly QuestionPart[]): Sub[] {
         modelAnswer: '',
         parentSubId: parent?.id ?? null,
         order: out.length + 1,
+        cognitiveLevel: null,
+        depth: path.length,
       }
       out.push(sub)
       if (isLeaf(part)) {
         sub.marks = part.marks
+        sub.cognitiveLevel = part.cognitiveLevel ?? null
         sub.modelAnswer = modelAnswerOf(part)
         if (part.mode === 'numeric') {
           const first = part.key.values[0]
@@ -374,5 +335,63 @@ export function structuredDetailView(d: QuestionDetailView): z.output<typeof Que
     createdBy: { id: d.createdById ?? NO_CREATOR, name: d.createdByName },
     createdAt: toMytTimestamp(d.createdAt),
     updatedAt: toMytTimestamp(d.updatedAt),
+  })
+}
+
+// --- structured, teacher mount (API-GUR-26) ------------------------------------------------------
+
+/** The KBAT chip text of a cognitive level (LOTS 1-2, MOTS 3, HOTS 4-6); empty when the question has none. */
+const kbatLabelOf = (level: number | null): string => (level === null ? '' : level <= 2 ? `LOTS ${String(level)}` : level === 3 ? 'MOTS 3' : `HOTS ${String(level)}`)
+
+const guruExcerpt = (text: string): string => (text.length <= EXCERPT ? text : `${text.slice(0, EXCERPT).trimEnd()}...`)
+
+/** `number` is the 1-based position in the full ordered list (page offset + index + 1). */
+export function guruStructuredRowView(q: QuestionView, number: number): z.output<typeof GuruStructuredRowSchema> {
+  const parts = q.version.parts
+  return GuruStructuredRowSchema.parse({
+    id: q.id,
+    number,
+    textExcerpt: guruExcerpt(q.version.stemMs ?? parts[0]?.prompt.ms ?? ''),
+    level: q.level,
+    subject: q.subject,
+    kbat: kbatLabelOf(q.version.cognitiveLevel),
+    subCount: countLeaves(parts),
+    marks: marksOf(parts),
+    status: 'approved',
+  })
+}
+
+/** The stimulus text once: the stem, then the text of the group's passages and tables that the stem does not already carry. */
+function guruStimulusText(d: GuruStructuredRecord): string {
+  const texts = [d.version.stemMs ?? '']
+  for (const st of d.stimulusGroup?.stimuli ?? []) {
+    const body = (st.bodyMs ?? st.bodyEn ?? '').trim()
+    if (body !== '' && !texts.some((t) => t.includes(body))) texts.push(body)
+  }
+  return texts.filter((t) => t.trim() !== '').join('\n\n')
+}
+
+/** Teacher detail: the stimulus once, the parts with their marks and scheme; none of the admin-only fields. */
+export function guruStructuredDetailView(d: GuruStructuredRecord): z.output<typeof GuruStructuredDetailSchema> {
+  const parts = d.version.parts
+  return GuruStructuredDetailSchema.parse({
+    id: d.id,
+    subject: d.subject,
+    level: d.level,
+    kbat: kbatLabelOf(d.version.cognitiveLevel),
+    status: 'approved',
+    stimulus: guruStimulusText(d),
+    stimulusImage: null,
+    totalMarks: marksOf(parts),
+    subCount: countLeaves(parts),
+    subQuestions: flatten(d.id, parts).map((x) => ({
+      partLabel: x.partLabel,
+      questionText: x.questionText,
+      marks: x.marks,
+      cognitiveLevel: x.cognitiveLevel,
+      modelAnswer: x.modelAnswer,
+      depth: x.depth,
+    })),
+    createdAt: toMytTimestamp(d.createdAt),
   })
 }

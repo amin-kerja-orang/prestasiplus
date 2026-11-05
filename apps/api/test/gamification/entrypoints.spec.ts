@@ -104,7 +104,7 @@ describe('entry points other modules call (AC2, card open question 3)', () => {
   })
 
   describe('canEarnSyiling and onGameResult (BE-44/BE-45 doorway)', () => {
-    const setGames = (v: number) => t.db.query(`update gamification_settings set value = $1 where key = 'games_award_syiling'`, [v])
+    const setGames = (v: number) => t.db.query(`update reward_settings set mini_games_give_coins = $1`, [v === 1])
 
     it('XP always, syiling only while games_award_syiling = 1 and coins are enabled', async () => {
       const u = await bareUser(t, 'Permainan')
@@ -138,6 +138,31 @@ describe('entry points other modules call (AC2, card open question 3)', () => {
       await setGames(1)
       expect((await t.gamification.onGameResult(u, { game: 'papan_bijak', event: 'correct', xp: 0 }, { isTest: false })).coinsCredited).toBe(5)
       expect((await t.gamification.onGameResult(u, { game: 'papan_bijak', event: 'win', xp: 0 }, { isTest: false })).coinsCredited).toBe(25)
+    })
+
+    it('boardGameRates pays the tier of the lifetime total: a lagging stored tier moves up, never down, and no wallet is the lowest tier (S7-T04)', async () => {
+      const [lowest, higher] = await t.db.query<{ id: string; min_syiling: number }>(`select id::text, min_syiling from tiers where is_active order by min_syiling limit 2`)
+      const setRates = (correct: number, win: number) => t.db.query(`update tiers set board_game_reward_correct = $2, board_game_reward_win = $3 where id = $1`, [higher!.id, correct, win])
+      const lowestRates = { correct: 5, win: 25 }
+      const higherRates = { correct: 7, win: 30 }
+      await setRates(higherRates.correct, higherRates.win)
+      try {
+        const noWallet = await bareUser(t, 'Papan Tanpa Dompet')
+        await t.db.query(`delete from wallets where user_id = $1`, [noWallet])
+        expect(await t.gamification.boardGameRates(noWallet)).toEqual(lowestRates)
+
+        const u = await bareUser(t, 'Papan Baki Rendah')
+        await t.gamification.onGameResult(u, { game: 'benteng_ilmu', event: 'win', coins: 1, xp: 0 }, { isTest: false })
+        const store = (tierId: string, lifetime: number) => t.db.query(`update wallets set tier_id = $2, total_syiling_earned = $3, current_syiling = 0 where user_id = $1`, [u, tierId, lifetime])
+        await store(lowest!.id, higher!.min_syiling)
+        expect(await t.gamification.boardGameRates(u)).toEqual(higherRates)
+        await store(lowest!.id, higher!.min_syiling - 1)
+        expect(await t.gamification.boardGameRates(u)).toEqual(lowestRates)
+        await store(higher!.id, 0)
+        expect(await t.gamification.boardGameRates(u)).toEqual(higherRates)
+      } finally {
+        await setRates(lowestRates.correct, lowestRates.win)
+      }
     })
 
     it('Mod Pelajar game rows are stamped is_test', async () => {

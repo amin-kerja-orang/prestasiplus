@@ -1,4 +1,9 @@
 import {
+  QUESTION_IMPORT_ERROR_CSV_FILENAME,
+  QUESTION_IMPORT_ERROR_CSV_HEADER,
+  QUESTION_IMPORT_GURU_HEADER,
+  QUESTION_IMPORT_GURU_TEMPLATE_CSV,
+  QUESTION_IMPORT_GURU_TEMPLATE_FILENAME,
   QUESTION_IMPORT_HEADER,
   QUESTION_IMPORT_TEMPLATE_CONTENT_TYPE,
   QUESTION_IMPORT_TEMPLATE_CSV,
@@ -9,6 +14,8 @@ import {
   listEnvelopeOf,
 } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+
+import { StimuliService } from '../../src/modules/questions'
 
 import { expectCsrfInvalid, expectError, bootWorkflowApp, loginAll, parseData, count, type Client, type WorkflowTestApp } from './helpers'
 import { curriculumIds, fixture, uploadClient, type UploadClient } from './imports-support'
@@ -52,15 +59,14 @@ describe('question imports (BE-10 AC 5, 9)', () => {
       expect(text.endsWith('\r\n')).toBe(true)
     })
 
-    it('Guru template has the same bytes; an admin may download it too', async () => {
-      const a = await c.admin.get('/api/question-imports/template')
+    it('Guru template is templat-soalan.csv with the BM header and the PRD example row; an admin may download it too', async () => {
       const g = await c.teacher.get('/api/guru/questions/template')
       const ag = await c.admin.get('/api/guru/questions/template')
       expect(g.status).toBe(200)
-      expect(g.headers['content-disposition']).toBe(`attachment; filename="${QUESTION_IMPORT_TEMPLATE_FILENAME}"`)
-      expect(g.text).toBe(a.text)
-      expect(ag.text).toBe(a.text)
-      expect(a.text).toBe(QUESTION_IMPORT_TEMPLATE_CSV)
+      expect(g.headers['content-disposition']).toBe(`attachment; filename="${QUESTION_IMPORT_GURU_TEMPLATE_FILENAME}"`)
+      expect(g.text).toBe(QUESTION_IMPORT_GURU_TEMPLATE_CSV)
+      expect(g.text.split('\r\n')[0]).toBe(QUESTION_IMPORT_GURU_HEADER.join(','))
+      expect(ag.text).toBe(g.text)
     })
 
     it('template roles: 401, Admin Sekolah, student and (admin route) Guru are 403', async () => {
@@ -211,72 +217,410 @@ describe('question imports (BE-10 AC 5, 9)', () => {
     })
   })
 
-  describe('POST /api/guru/questions/import', () => {
-    it('creates review questions owned by the caller, answers 200 { imported, failed } with no flash, and stores the run', async () => {
-      const before = created().length
-      const runsBefore = await runs()
-      const res = await teacher.upload('/api/guru/questions/import', { name: 'guru.csv', body: fixture('import-mixed.csv', ids) })
+  describe('POST /api/guru/questions/import (S6-T06, API-GUR-19)', () => {
+    const HEAD = QUESTION_IMPORT_GURU_HEADER.join(',')
+    const row = (over: string[] = []): string => ['Matematik', '4', '', '', '', '', '2', 'Soalan?', 'a', 'b', 'c', 'd', 'A', '', ...over].slice(0, 14).join(',')
+    const itemsOf = async (owner: string) =>
+      t.db.query<{ batch: string; state: string }>(`select i.batch_id::text batch, i.review_state state from intake_items i join intake_batches b on b.id = i.batch_id where b.source = 'guru' and b.owner_user_id = $1`, [owner])
+
+    it('valid rows become items of ONE guru batch ("Menunggu Semakan"); a bad row is reported and does not block the rest', async () => {
+      const before = (await itemsOf(teacher.userId)).length
+      const bankBefore = created().length
+      const file = [HEAD, row(), row().replace(',A,', ',E,'), row()].join('\r\n')
+      const res = await teacher.upload('/api/guru/questions/import', { name: 'guru.csv', body: file })
       expect(res.status, JSON.stringify(res.body)).toBe(200)
       expect(res.body.status).toBeUndefined()
-      const data = parseData(res, QuestionImportGuruResultSchema)
-      expect(data.imported).toBe(2)
-      expect(data.failed.map((f) => f.row)).toEqual([3, 4, 5, 6, 7])
-      const made = created().slice(before).map((x) => x.args[0] as Record<string, unknown>)
-      expect(made).toHaveLength(2)
-      expect(made.every((m) => m.status === 'review' && m.createdById === teacher.userId)).toBe(true)
-      expect(await runs()).toBe(runsBefore + 1)
+      expect(parseData(res, QuestionImportGuruResultSchema)).toEqual({ imported: 2, errors: [{ row: 3, message: 'Jawapan mesti A, B, C atau D.' }] })
+      const items = (await itemsOf(teacher.userId)).slice(before)
+      expect(items).toHaveLength(2)
+      expect(new Set(items.map((i) => i.batch)).size).toBe(1)
+      expect(items.every((i) => i.state === 'needs_review')).toBe(true)
+      expect(created().length).toBe(bankBefore) // no bank.create: the rows are intake items
     })
 
-    it('has no form defaults: a file without subject columns fails every row', async () => {
-      const res = await teacher.upload('/api/guru/questions/import', { name: 'guru.csv', body: fixture('import-defaults.csv', ids) }, { defaultSubjectId: ids.subject })
+    it('only the teacher caps apply: more than 500 rows is "Fail melebihi 500 baris." and nothing is created', async () => {
+      const before = (await itemsOf(teacher.userId)).length
+      const file = [HEAD, ...Array.from({ length: 501 }, () => row())].join('\n')
+      const res = await teacher.upload('/api/guru/questions/import', { name: 'besar.csv', body: file })
+      expect(expectError(res, 'VALIDATION_ERROR').fields?.csvFile).toBe('Fail melebihi 500 baris.')
+      expect((await itemsOf(teacher.userId)).length).toBe(before)
+    })
+
+    it('accepts the JSON field csv; 500 rows exactly is accepted', async () => {
+      const res = await c.teacher.post('/api/guru/questions/import', { csv: [HEAD, ...Array.from({ length: 500 }, () => row())].join('\n') })
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(res.body.data).toEqual({ imported: 500, errors: [] })
+    })
+
+    it('an admin may use it too', async () => {
+      const res = await admin.upload('/api/guru/questions/import', { name: 'a.csv', body: [HEAD, row()].join('\n') })
       expect(res.status).toBe(200)
-      expect(res.body.data).toEqual({
-        imported: 0,
-        failed: [{ row: 2, message: 'Subjek tidak sah.' }, { row: 3, message: 'Subjek tidak sah.' }],
-      })
-    })
-
-    it('applies the length caps and orders failures by file row', async () => {
-      const head = 'question_text,option_a,option_b,option_c,correct_answer,subject_id,education_level_id,difficulty_level'
-      const tail = `${ids.subject},${ids.level},1`
-      const file = [
-        head,
-        `"${'x'.repeat(2001)}",A,B,C,A,${tail}`,
-        `"ok",A,B,C,Z,${tail}`,
-        `"ok",${'y'.repeat(501)},B,C,A,${tail}`,
-        `"${'x'.repeat(2000)}",${'y'.repeat(500)},B,C,A,${tail}`,
-      ].join('\n')
-      const res = await teacher.upload('/api/guru/questions/import', { name: 'had.csv', body: file })
       expect(res.body.data.imported).toBe(1)
-      expect(res.body.data.failed).toEqual([
-        { row: 2, message: 'Soalan tidak boleh melebihi 2000 aksara.' },
-        { row: 3, message: 'Jawapan betul mesti A, B, C atau D.' },
-        { row: 4, message: 'Pilihan jawapan tidak boleh melebihi 500 aksara.' },
-      ])
     })
 
-    it('an admin may use it; the questions are owned by the admin and saved as review', async () => {
-      const before = created().length
-      const res = await admin.upload('/api/guru/questions/import', { name: 'a.csv', body: fixture('import-mixed.csv', ids) })
-      expect(res.status).toBe(200)
-      expect(created().slice(before).every((x) => (x.args[0] as { createdById: string }).createdById === admin.userId)).toBe(true)
-    })
-
-    it('422 csvFile for a missing file, a wrong type, missing columns and no data rows', async () => {
-      expect((await teacher.upload('/api/guru/questions/import', null)).body.error.fields.csvFile).toBe('Sila pilih fail CSV.')
-      expect((await teacher.upload('/api/guru/questions/import', { name: 'a.pdf', body: 'x' })).body.error.fields.csvFile).toBe(FILE_TYPE)
-      expect((await teacher.upload('/api/guru/questions/import', { name: 'a.csv', body: fixture('import-no-columns.csv', ids) })).status).toBe(422)
-      expect((await teacher.upload('/api/guru/questions/import', { name: 'a.csv', body: fixture('import-header-only.csv', ids) })).body.error.fields.csvFile).toBe('Fail CSV tiada baris data.')
+    it('422 csvFile for none chosen, a non-CSV file, over 2 MB, a missing column and no data rows', async () => {
+      const f = async (r: Promise<{ body: { error: { fields: { csvFile: string } } } }>) => (await r).body.error.fields.csvFile
+      expect(await f(teacher.upload('/api/guru/questions/import', null))).toBe('Sila pilih fail.')
+      expect(await f(teacher.upload('/api/guru/questions/import', { name: 'a.xlsx', body: 'x' }))).toBe('Jenis fail tidak disokong. Format dibenarkan: CSV.')
+      expect(await f(teacher.upload('/api/guru/questions/import', { name: 'a.csv', body: 'x'.repeat(2 * 1024 * 1024 + 1) }))).toBe('Fail melebihi saiz maksimum 2 MB.')
+      expect(await f(teacher.upload('/api/guru/questions/import', { name: 'a.csv', body: 'subjek,tingkatan\nMatematik,4' }))).toMatch(/^Lajur wajib tiada: .*soalan.*\. Gunakan templat yang disediakan\.$/)
+      expect(await f(teacher.upload('/api/guru/questions/import', { name: 'a.csv', body: HEAD }))).toBe('Fail CSV tiada baris data.')
     })
 
     it('roles: 401, CSRF 403, Admin Sekolah and student 403', async () => {
-      const file = { name: 'x.csv', body: fixture('import-mixed.csv', ids) }
-      const before = created().length
+      const file = { name: 'x.csv', body: [HEAD, row()].join('\n') }
+      const before = (await itemsOf(teacher.userId)).length
       expectError(await t.agent().post('/api/guru/questions/import').attach('csvFile', Buffer.from('a'), 'x.csv'), 'UNAUTHORIZED')
       expectCsrfInvalid(await teacher.upload('/api/guru/questions/import', file, {}, false))
       expectError(await schoolAdmin.upload('/api/guru/questions/import', file), 'FORBIDDEN')
       expectError(await student.upload('/api/guru/questions/import', file), 'FORBIDDEN')
-      expect(created().length).toBe(before)
+      expect((await itemsOf(teacher.userId)).length).toBe(before)
+    })
+  })
+})
+
+
+/**
+ * S1-T05 part 1 over HTTP on the REAL bank: the new header with codes, the DSKP fields that make a row publishable (QE6.3, AC-ADM-QE6.2,
+ * AC-ADM-Q11.1), the 2,000-row cap on both routes, partial success per question and the error CSV (FR-ADM-QE6.2).
+ */
+describe('S1-T05 part 1: CSV with DSKP codes (real bank)', () => {
+  let t: WorkflowTestApp
+  let c: Record<'admin' | 'teacher' | 'otherTeacher' | 'schoolAdmin' | 'student', Client>
+  let admin: UploadClient
+  let teacher: UploadClient
+  let tag: { subjectId: string; levelId: string; subject: string; tingkatan: string; unit: string; sp: string; bab: string; topik: string; chapterId: string; topicId: string }
+
+  const HEAD = 'question_key,type,prompt_ms,option_a,option_b,option_c,option_d,correct,marks,subject_code,tingkatan,kertas,number_label,unit_code,sp_kod,tp,aras,kbat,bab_kod,topik_kod,difficulty'
+  const line = (over: Record<string, string> = {}): string => {
+    const base: Record<string, string> = {
+      question_key: 'S1', type: 'mcq', prompt_ms: 'Berapakah hasil tambah dua dan tiga?', option_a: '4', option_b: '5', option_c: '6', option_d: '7', correct: 'B', marks: '2',
+      subject_code: tag.subject, tingkatan: tag.tingkatan, kertas: '1', number_label: '12A', unit_code: tag.unit, sp_kod: tag.sp, tp: '3', aras: 'mengaplikasi', kbat: '',
+      bab_kod: tag.bab, topik_kod: tag.topik, difficulty: '3',
+    }
+    return HEAD.split(',').map((col) => (over[col] ?? base[col] ?? '').replace(/^(.*[",\n].*)$/s, (v) => `"${v.replaceAll('"', '""')}"`)).join(',')
+  }
+  const csvOf = (...rows: string[]) => [HEAD, ...rows].join('\n')
+  const importAdmin = (body: string, name = 'kod.csv') => admin.upload('/api/question-imports', { name, body })
+  const runs = () => count(t.db, 'select count(*) as n from question_imports')
+
+  beforeAll(async () => {
+    t = await bootWorkflowApp({ bank: 'real', env: { THROTTLE_QUESTIONS_WRITE_PER_MINUTE: '100000' } })
+    c = await loginAll(t)
+    admin = await uploadClient(t, 'admin')
+    teacher = await uploadClient(t, 'teacher')
+    const [row] = await t.db.query<{ subject_id: string; education_level_id: string; unit_node_id: string; sp: string }>(
+      `select v.subject_id::text, v.education_level_id::text, v.unit_node_id::text,
+              (select node_id::text from question_version_sp_nodes where question_version_id = v.id limit 1) as sp
+         from question_versions v where v.number_label = 'SEED-MCQ-MATH-T4'`,
+    )
+    const [names] = await t.db.query<{ subject: string; level: string; unit: string; sp: string }>(
+      `select (select code from subjects where id = $1::bigint) as subject, (select code from education_levels where id = $2::bigint) as level,
+              (select code from curriculum_nodes where id = $3::bigint) as unit, (select code from curriculum_nodes where id = $4::bigint) as sp`,
+      [row!.subject_id, row!.education_level_id, row!.unit_node_id, row!.sp],
+    )
+    const [chapter] = await t.db.query<{ id: string }>(
+      `insert into chapters (subject_id, education_level_id, name, chapter_number, is_active) values ($1::bigint, $2::bigint, 'Bab S1-T05', 955, true) returning id::text`,
+      [row!.subject_id, row!.education_level_id],
+    )
+    const [topic] = await t.db.query<{ id: string }>(`insert into topics (chapter_id, name, topic_number, is_active) values ($1::bigint, 'Topik S1-T05', '2', true) returning id::text`, [chapter!.id])
+    tag = {
+      subjectId: row!.subject_id,
+      levelId: row!.education_level_id,
+      subject: names!.subject,
+      tingkatan: names!.level.replace(/^T/, ''),
+      unit: names!.unit,
+      sp: names!.sp,
+      bab: '955',
+      topik: '2',
+      chapterId: chapter!.id,
+      topicId: topic!.id,
+    }
+  })
+  afterAll(async () => {
+    await t.close()
+  })
+
+  it('[CI] a row with every DSKP column imports with its unit, SP, TP, aras, chapter and topic and passes the publish gate through the existing approve route', async () => {
+    const res = await importAdmin(csvOf(line({ question_key: 'PUB1' })))
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    expect(res.body.status).toBe('Import selesai: 1 soalan diimport, 0 gagal.')
+    expect(res.body.warnings).toBeUndefined()
+    const [v] = await t.db.query<{ question_id: string; status: string; unit_node_id: string; difficulty_tp: number; difficulty_level: number; chapter_id: string; topic_id: string; paper_code: string | null; number_label: string; cognitive: string | null; part_kbat: string | null }>(
+      `select question_id::text, status, unit_node_id::text, difficulty_tp, difficulty_level, chapter_id::text, topic_id::text, paper_code, number_label,
+              (select cognitive_level from question_parts where question_version_id = v.id limit 1) as cognitive,
+              (select kbat from question_parts where question_version_id = v.id limit 1) as part_kbat
+         from question_versions v order by id desc limit 1`,
+    )
+    expect(v).toMatchObject({ status: 'draft', difficulty_tp: 3, difficulty_level: 3, chapter_id: tag.chapterId, topic_id: tag.topicId, number_label: '12A' })
+    expect(v!.unit_node_id).not.toBeNull()
+    expect(v!.cognitive).toBe('mengaplikasi')
+    expect(v!.paper_code).toMatch(/1$/)
+    const sps = await t.db.query<{ code: string }>(`select n.code from question_version_sp_nodes q join curriculum_nodes n on n.id = q.node_id where q.question_version_id = (select id from question_versions order by id desc limit 1)`)
+    expect(sps.map((r) => r.code)).toEqual([tag.sp])
+    // Terbitkan: no wizard step, no 422.
+    const submit = await c.admin.post(`/api/questions/${v!.question_id}/status`, { to: 'review' })
+    expect(submit.status, JSON.stringify(submit.body)).toBe(200)
+    const approve = await c.admin.post(`/api/questions/${v!.question_id}/status`, { to: 'approved' })
+    expect(approve.status, JSON.stringify(approve.body)).toBe(200)
+    const [after] = await t.db.query<{ status: string }>('select status from question_versions where question_id = $1::bigint order by version_no desc limit 1', [v!.question_id])
+    expect(after!.status).toBe('approved')
+  })
+
+  it('[CI] an explicit kbat is kept on the leaf', async () => {
+    const res = await importAdmin(csvOf(line({ question_key: 'KB1', kbat: 'bukan' })))
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    const [v] = await t.db.query<{ kbat: string | null }>('select kbat from question_parts where question_version_id = (select id from question_versions order by id desc limit 1)')
+    expect(v!.kbat).toBe('bukan')
+  })
+
+  it('[CI] partial success per question: valid questions are imported, an invalid one is skipped whole, and the failures carry key, field, code and the exact text', async () => {
+    const before = await count(t.db, 'select count(*) as n from questions')
+    const res = await importAdmin(
+      csvOf(line({ question_key: 'OK1' }), line({ question_key: 'BAD1', tp: '9', aras: 'pandai' }), line({ question_key: 'OK2', number_label: '13' }), line({ question_key: 'BAD2', sp_kod: '1;2;3;4' })),
+    )
+    expect(res.status).toBe(201)
+    const body = QuestionImportCreatedSchema.parse(res.body)
+    expect(body.status).toBe('Import selesai: 2 soalan diimport, 2 gagal.')
+    expect(body.data.failures).toEqual([
+      { row: 3, message: 'Baris 3: TP mesti antara 1 dan 6.', questionKey: 'BAD1', field: 'tp', code: 'TP_RANGE' },
+      { row: 3, message: 'Baris 3: Aras pemikiran tidak sah.', questionKey: 'BAD1', field: 'aras', code: 'ARAS_INVALID' },
+      { row: 5, message: 'Baris 5: Pilih paling banyak 3 SP.', questionKey: 'BAD2', field: 'sp_kod', code: 'SP_TOO_MANY' },
+    ])
+    expect(await count(t.db, 'select count(*) as n from questions')).toBe(before + 2)
+  })
+
+  it('[CI] unknown header cells give a warning in the answer, and the legacy header gives none', async () => {
+    const res = await importAdmin(`${HEAD},Warna\n${line({ question_key: 'W1' })},merah`)
+    expect(res.status).toBe(201)
+    expect(res.body.warnings).toEqual(['Kolum Warna tidak dikenali dan diabaikan.'])
+    const legacy = await admin.upload('/api/question-imports', { name: 'lama.csv', body: fixture('import-defaults.csv', { subject: tag.subjectId, level: tag.levelId }) }, { defaultSubjectId: tag.subjectId, defaultEducationLevelId: tag.levelId, defaultDifficultyLevel: '2' })
+    expect(legacy.status).toBe(201)
+    expect(legacy.body.warnings).toBeUndefined()
+    expect(legacy.body.data.failures).toEqual([])
+  })
+
+  describe('the Guru route takes all three header formats into the intake, never the bank (S6-T06 ruling)', () => {
+    const questionsN = () => count(t.db, 'select count(*) as n from questions')
+    const itemsOf = (owner: string) =>
+      count(t.db, `select count(*) as n from intake_items i join intake_batches b on b.id = i.batch_id where b.source = 'guru' and b.owner_user_id = $1::bigint and i.review_state = 'needs_review'`, [owner])
+    const guruImport = (body: string) => teacher.upload('/api/guru/questions/import', { name: 'guru.csv', body })
+
+    it('code header: valid rows become intake items, Guru caps give the PRD row reasons, no bank question, no warnings key', async () => {
+      const [q0, i0] = [await questionsN(), await itemsOf(teacher.userId)]
+      const res = await guruImport(csvOf(line({ question_key: 'G1' }), line({ question_key: 'G2', prompt_ms: 'x'.repeat(2001) }), line({ question_key: 'G3', option_a: 'y'.repeat(501) })))
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(QuestionImportGuruResultSchema.parse(res.body.data)).toEqual({
+        imported: 1,
+        errors: [
+          { row: 3, message: 'Soalan tidak boleh melebihi 2000 aksara.' },
+          { row: 4, message: 'Pilihan A tidak boleh melebihi 500 aksara.' },
+        ],
+      })
+      expect(await itemsOf(teacher.userId)).toBe(i0 + 1)
+      expect(await questionsN()).toBe(q0)
+    })
+
+    it('code header: a row that is not an objective question is refused with its reason', async () => {
+      const q0 = await questionsN()
+      const res = await guruImport(csvOf(line({ question_key: 'T1', type: 'structured' })))
+      expect(res.body.data).toEqual({ imported: 0, errors: [{ row: 2, message: 'Hanya soalan objektif (mcq) diterima.' }] })
+      expect(await questionsN()).toBe(q0)
+    })
+
+    it('legacy header (subject and level by id): valid rows become intake items, no bank question', async () => {
+      const [q0, i0] = [await questionsN(), await itemsOf(teacher.userId)]
+      const head = 'question_text,option_a,option_b,option_c,option_d,correct_answer,subject_id,education_level_id,difficulty_level'
+      const ok = `"Soalan sepuluh aksara",A,B,C,D,B,${tag.subjectId},${tag.levelId},2`
+      const bad = `"Soalan sepuluh aksara",A,B,C,D,Z,${tag.subjectId},${tag.levelId},2`
+      const res = await guruImport([head, ok, bad].join('\n'))
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(res.body.data).toEqual({ imported: 1, errors: [{ row: 3, message: 'Jawapan mesti A, B, C atau D.' }] })
+      expect(await itemsOf(teacher.userId)).toBe(i0 + 1)
+      expect(await questionsN()).toBe(q0)
+    })
+
+    it('BM header: valid rows become intake items, no bank question', async () => {
+      const [q0, i0] = [await questionsN(), await itemsOf(teacher.userId)]
+      const head = QUESTION_IMPORT_GURU_HEADER.join(',')
+      const res = await guruImport([head, `${tag.subject},${tag.tingkatan},,,,,2,Soalan?,a,b,c,d,A,`].join('\n'))
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(res.body.data).toEqual({ imported: 1, errors: [] })
+      expect(await itemsOf(teacher.userId)).toBe(i0 + 1)
+      expect(await questionsN()).toBe(q0)
+    })
+  })
+
+  it('[CI] the 2,000-row cap is admin-only: the Guru route refuses more than 500 rows with "Fail melebihi 500 baris." for every header, the admin route 2,001 rows with the 2,000 message', async () => {
+    const adminMessage = 'Fail melebihi 2,000 baris. Pecahkan fail kepada beberapa bahagian.'
+    const questions = await count(t.db, 'select count(*) as n from questions')
+    const before = await runs()
+    const codeRows = (n: number) => Array.from({ length: n }, (_, i) => line({ question_key: `R${String(i)}` }))
+    const legacyHead = 'question_text,option_a,option_b,option_c,option_d,correct_answer,subject_id,education_level_id,difficulty_level,marks'
+    const legacyRows = (n: number) => Array.from({ length: n }, () => `"Soalan sepuluh aksara",A,B,C,D,A,${tag.subjectId},${tag.levelId},1,1`)
+    for (const [client, url, n, message] of [
+      [admin, '/api/question-imports', 2001, adminMessage],
+      [teacher, '/api/guru/questions/import', 501, 'Fail melebihi 500 baris.'],
+    ] as const) {
+      for (const body of [csvOf(...codeRows(n)), [legacyHead, ...legacyRows(n)].join('\n')]) {
+        const res = await client.upload(url, { name: 'besar.csv', body })
+        expect(res.status).toBe(422)
+        expect(res.body.error.fields.csvFile).toBe(message)
+      }
+    }
+    expect(await runs()).toBe(before)
+    expect(await count(t.db, 'select count(*) as n from questions')).toBe(questions)
+  })
+
+  describe('groups and stimuli (S1-T05 part 2)', () => {
+    const GHEAD = `${HEAD},group_key,group_order,group_id,stimulus_label,stimulus_kind,stimulus_text,part_stimulus`
+    const gline = (over: Record<string, string> = {}): string => {
+      const extra = GHEAD.split(',').slice(HEAD.split(',').length)
+      return `${line(over)},${extra.map((c) => (over[c] ?? '').replace(/^(.*[",\n].*)$/s, (v) => `"${v.replaceAll('"', '""')}"`)).join(',')}`
+    }
+    const FIRST = { group_key: 'G1', stimulus_label: 'Rajah 1', stimulus_kind: 'passage', stimulus_text: 'Petikan ringkas tentang pasar raya.' }
+    const gcsv = (...rows: string[]) => [GHEAD, ...rows].join('\n')
+    const groupCount = () => count(t.db, 'select count(*) as n from stimulus_groups')
+
+    it('[CI] a CSV of one group of 3 yields one group with 3 members in group_order and one stimulus, all drafts, in the same import', async () => {
+      const groups = await groupCount()
+      const stimuli = await count(t.db, 'select count(*) as n from stimuli')
+      const res = await importAdmin(
+        gcsv(
+          gline({ question_key: 'GA', group_order: '3', ...FIRST, prompt_ms: 'Soalan ketiga dalam kumpulan ini?' }),
+          gline({ question_key: 'GB', group_order: '1', group_key: 'G1', prompt_ms: 'Soalan pertama dalam kumpulan ini?' }),
+          gline({ question_key: 'GC', group_order: '2', group_key: 'G1', prompt_ms: 'Soalan kedua dalam kumpulan ini?' }),
+        ),
+        'kumpulan.csv',
+      )
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      expect(res.body.status).toBe('Import selesai: 3 soalan diimport, 0 gagal.')
+      expect(await groupCount()).toBe(groups + 1)
+      expect(await count(t.db, 'select count(*) as n from stimuli')).toBe(stimuli + 1)
+      const members = await t.db.query<{ stem: string; status: string }>(
+        `select v.stem_ms as stem, v.status from question_versions v join questions q on q.id = v.question_id
+          where q.group_id = (select max(id) from stimulus_groups) order by q.group_position`,
+      )
+      expect(members.map((m) => m.stem)).toEqual(['Soalan pertama dalam kumpulan ini?', 'Soalan kedua dalam kumpulan ini?', 'Soalan ketiga dalam kumpulan ini?'])
+      expect(members.every((m) => m.status === 'draft')).toBe(true)
+      const [g] = await t.db.query<{ subject_id: string | null; education_level_id: string | null }>('select subject_id::text, education_level_id::text from stimulus_groups order by id desc limit 1')
+      expect(g).toEqual({ subject_id: tag.subjectId, education_level_id: tag.levelId })
+    })
+
+    it('[CI] a group whose creation fails is skipped whole (nothing of it is kept) while the other questions still import', async () => {
+      // An existing group of ANOTHER subject: the planner accepts group_id, the S1-T01 member rule refuses at execute time.
+      const [other] = await t.db.query<{ id: string }>('select id::text from subjects where id <> $1::bigint order by id limit 1', [tag.subjectId])
+      const stimuliSvc = t.app.get(StimuliService)
+      const made = await stimuliSvc.createStimulus({ kind: 'passage', label: 'Lain', body: { ms: 'Petikan subjek lain.' } })
+      const other_g = await stimuliSvc.createGroup({ stimulusIds: [made.result.id], questionIds: [], subjectId: other!.id })
+      const before = await count(t.db, 'select count(*) as n from questions')
+      const res = await importAdmin(
+        gcsv(
+          gline({ question_key: 'OKA', prompt_ms: 'Soalan biasa pertama sebelum kumpulan?' }),
+          gline({ question_key: 'GJ1', group_id: other_g.result.id, prompt_ms: 'Ahli kumpulan yang akan ditolak?' }),
+          gline({ question_key: 'GJ2', group_id: '', group_key: '', prompt_ms: 'Soalan biasa kedua selepas kumpulan?' }),
+        ),
+      )
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      expect(res.body.status).toBe('Import selesai: 2 soalan diimport, 1 gagal.')
+      expect(res.body.data.failures).toEqual([
+        { row: 3, message: 'Baris 3: Subjek dan Tingkatan ahli mesti sama dengan kumpulan.', questionKey: 'GJ1', field: 'group_key', code: 'GROUP_REJECTED' },
+      ])
+      expect(await count(t.db, 'select count(*) as n from questions')).toBe(before + 2)
+    })
+
+    it('[CI] group_id of a group with a member shown to pupils gives "Kumpulan tidak dijumpai atau sedang dipaparkan kepada murid."', async () => {
+      const made = await importAdmin(gcsv(gline({ question_key: 'SV1', ...FIRST, group_key: 'GS', prompt_ms: 'Soalan untuk kumpulan yang diterbitkan?' })))
+      expect(made.status, JSON.stringify(made.body)).toBe(201)
+      const [g] = await t.db.query<{ id: string }>('select max(id)::text as id from stimulus_groups')
+      const [member] = await t.db.query<{ id: string }>('select id::text from questions where group_id = $1::bigint', [g!.id])
+      expect((await c.admin.post(`/api/questions/${member!.id}/status`, { to: 'review' })).status).toBe(200)
+      const published = await c.admin.post(`/api/stimulus-groups/${g!.id}/publish`, {})
+      expect(published.status, JSON.stringify(published.body)).toBeLessThan(300)
+      const res = await importAdmin(gcsv(gline({ question_key: 'SV2', group_key: '', group_id: g!.id, prompt_ms: 'Soalan yang mahu menyertai kumpulan itu?' })))
+      expect(res.status).toBe(201)
+      expect(res.body.data.failures).toEqual([
+        { row: 2, message: 'Baris 2: Kumpulan tidak dijumpai atau sedang dipaparkan kepada murid.', questionKey: 'SV2', field: 'group_id', code: 'GROUP_UNAVAILABLE' },
+      ])
+    })
+
+    it('[CI] a URL stimulus_image is a row error and nothing of the group is created', async () => {
+      const groups = await groupCount()
+      const res = await importAdmin(
+        [`${GHEAD},stimulus_image,stimulus_alt`, `${gline({ question_key: 'IM1', ...FIRST, stimulus_kind: 'image' })},https://contoh.test/a.png,Gambar`].join('\n'),
+      )
+      expect(res.status).toBe(201)
+      expect(res.body.data.failures.map((f: { message: string }) => f.message)).toEqual(['Baris 2: Imej rangsangan tidak dapat dimuat turun.'])
+      expect(await groupCount()).toBe(groups)
+    })
+
+    it('[CI] the error CSV keeps the group texts and caps a 500-character group key', async () => {
+      const key = 'M'.repeat(500)
+      const res = await importAdmin(gcsv(gline({ question_key: 'MX1', ...FIRST, group_key: key }), gline({ question_key: 'MX2', group_key: key, kertas: '2' })), 'campur.csv')
+      expect(res.status).toBe(201)
+      const csv = await c.admin.get(`/api/question-imports/${res.body.data.id as string}/errors`)
+      expect(csv.text.split('\r\n')[1]).toBe(`3,MX2,group_key,GROUP_MIXED,Baris 3: kumpulan ${'M'.repeat(40)} bercampur subjek atau kertas.`)
+      expect(csv.text).not.toContain('M'.repeat(41))
+      expect(csv.text).not.toContain('Petikan ringkas')
+    })
+  })
+
+  describe('GET /api/question-imports/:id/errors', () => {
+    let runId: string
+    beforeAll(async () => {
+      const res = await importAdmin(
+        csvOf(
+          line({ question_key: 'E-OK' }),
+          line({ question_key: '=SUM(1)', subject_code: 'XYZ', prompt_ms: 'RAHSIA-ISI-SOALAN-123', option_a: 'RAHSIA-PILIHAN-A' }),
+          line({ question_key: 'E3', unit_code: '9.9' }),
+        ),
+        'ralat.csv',
+      )
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      runId = res.body.data.id as string
+    })
+
+    it('[CI] returns a CSV with the five columns, one line per row error, the Q-11 messages, formula-safe cells and no cell values of the file', async () => {
+      const res = await c.admin.get(`/api/question-imports/${runId}/errors`)
+      expect(res.status).toBe(200)
+      expect(res.headers['content-type']).toContain('text/csv')
+      expect(res.headers['content-disposition']).toBe(`attachment; filename="${QUESTION_IMPORT_ERROR_CSV_FILENAME}"`)
+      expect(res.headers['cache-control']).toBe('no-store')
+      const lines = res.text.split('\r\n')
+      expect(lines[0]).toBe(QUESTION_IMPORT_ERROR_CSV_HEADER.join(','))
+      expect(lines[0]).toBe('baris,question_key,medan,kod_ralat,mesej')
+      expect(lines.slice(1)).toEqual([
+        "3,'=SUM(1),subject_code,SUBJECT_UNKNOWN,Baris 3: Kod subjek tidak dikenali.",
+        '4,E3,unit_code,UNIT_UNKNOWN,Baris 4: Kod unit tiada dalam senarai kurikulum.',
+        '',
+      ])
+      for (const secret of ['RAHSIA', 'Berapakah', tag.subject, tag.sp]) expect(res.text).not.toContain(secret)
+    })
+
+    it('[CI] a 500-character key or SP code is capped at 40 characters in the stored failure and in the error CSV', async () => {
+      const res = await importAdmin(csvOf(line({ question_key: 'L1', sp_kod: 'z'.repeat(500) }), line({ question_key: 'L'.repeat(500) }), line({ question_key: 'L'.repeat(500) })), 'panjang.csv')
+      expect(res.status).toBe(201)
+      const csv = await c.admin.get(`/api/question-imports/${res.body.data.id as string}/errors`)
+      expect(csv.text).toContain(`SP ""${'z'.repeat(40)}"" tiada dalam senarai kurikulum.`)
+      expect(csv.text).toContain(`Kunci soalan ${'L'.repeat(40)} berulang dalam fail.`)
+      expect(csv.text).not.toContain('z'.repeat(41))
+      expect(csv.text).not.toContain('L'.repeat(41))
+      expect(JSON.stringify(res.body)).not.toContain('z'.repeat(41))
+    })
+
+    it('404 for an unknown or malformed run id; 401, Guru, Admin Sekolah and student 403', async () => {
+      expectError(await c.admin.get('/api/question-imports/99999999/errors'), 'NOT_FOUND')
+      expectError(await c.admin.get('/api/question-imports/abc/errors'), 'NOT_FOUND')
+      expectError(await t.http().get(`/api/question-imports/${runId}/errors`), 'UNAUTHORIZED')
+      expectError(await c.teacher.get(`/api/question-imports/${runId}/errors`), 'FORBIDDEN')
+      expectError(await c.schoolAdmin.get(`/api/question-imports/${runId}/errors`), 'FORBIDDEN')
+      expectError(await c.student.get(`/api/question-imports/${runId}/errors`), 'FORBIDDEN')
+    })
+
+    it('a run of the legacy header gives the header and its lines with empty key, field and code', async () => {
+      const res = await admin.upload('/api/question-imports', { name: 'lama.csv', body: fixture('import-mixed.csv', { subject: tag.subjectId, level: tag.levelId }) })
+      const csv = await c.admin.get(`/api/question-imports/${res.body.data.id as string}/errors`)
+      expect(csv.text.split('\r\n').slice(0, 3)).toEqual(['baris,question_key,medan,kod_ralat,mesej', '3,,,,Baris tidak lengkap.', '4,,,,Jawapan betul mesti A, B, C atau D.'.replace(/^(.*,)(Jawapan.*)$/, '$1"$2"')])
     })
   })
 })

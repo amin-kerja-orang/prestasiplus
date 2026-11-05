@@ -55,6 +55,11 @@ export class SwrSlot<T> {
     this.dirty = true
   }
 
+  /** Drops the value: the next read is a cold single-flight compute, not this value again. A refresh already running is joined by that read. */
+  evict(): void {
+    this.entry = null
+  }
+
   /** The value held now, however old; null while nothing is computed. Never computes, so a cheap read can use it without waiting. */
   peek(): Cached<T> | null {
     return this.entry === null ? null : view(this.entry)
@@ -146,11 +151,17 @@ export class OverviewCache {
     for (const s of this.slots.values()) s.invalidate()
   }
 
-  /** Published and total papers and the newest edit (a publish or withdraw changes it), then the same for the Tracking A sets. Small tables, one cheap statement. */
+  /** The scope's value is dropped, so the next read computes it afresh (`Cuba lagi` on a failed card). Cheap: no query. */
+  evict(scope: string = OVERVIEW_SCOPE_ALL): void {
+    this.slot(scope).evict()
+  }
+
+  /** Published and total papers and the newest edit (a publish or withdraw changes it), then the same for the Tracking A sets and their question lists. Small tables, one cheap statement. */
   private async papersFingerprint(): Promise<string> {
     const rows = await this.prisma.client.$queryRaw<{ fp: string }[]>`
       SELECT (count(*) FILTER (WHERE status = 'published'))::text || ':' || count(*)::text || ':' || coalesce(max(updated_at)::text, '') || ':' ||
-             (SELECT count(*)::text || ':' || coalesce(max(updated_at)::text, '') FROM spm_tracking_sets) AS fp
+             (SELECT count(*)::text || ':' || coalesce(max(updated_at)::text, '') FROM spm_tracking_sets) || ':' ||
+             (SELECT count(*)::text || ':' || coalesce(sum(question_id * position)::text, '') FROM spm_tracking_set_questions) AS fp
         FROM papers WHERE kind <> 'jana'`
     return rows[0]?.fp ?? ''
   }

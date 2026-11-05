@@ -17,7 +17,7 @@ import type { ServabilityActivity } from '@pp/contract'
 import { GROUP_SURFACES } from './rules'
 
 import { Prisma } from '../../../db/generated/client'
-import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, SERVABLE_STATUS } from '../learner-visibility'
+import { LEARNER_LEVEL_SQL, NOT_FLAGGED_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, SERVABLE_STATUS } from '../learner-visibility'
 import type { QuestionFilter } from '../types'
 
 export interface ActivityScope {
@@ -52,10 +52,13 @@ export function filterOf(activity: ServabilityActivity, scope: ActivityScope = {
 
 /**
  * D-10: what a Tracking A set can hold, the ONE definition of its candidates, its `filled` and "tersedia", on the admin lane and editor and on the
- * pupil's counts. It is the pupil start rule for a set: a live, active question the practice bridge accepts (`servableMcq`, whose SQL shape is
- * `PRACTICE_SHAPE`), figures and whole groups included (FR-ADM-Q17.3, D105).
+ * pupil's counts. It is the pupil start rule for a set: a live, active, text-only, ungrouped MCQ the practice bridge accepts (`servableMcq`, whose
+ * SQL shape is `PRACTICE_SHAPE`).
+ * Figure and stimulus questions (own stimulus, standalone figure, group member) are excluded: today's pupil start (`be09-practice-question-source.ts`,
+ * `start.planner.ts`) serves text-only questions, so a set counted complete with them would serve fewer than its size.
  */
-export const trackingAFilter = (subjectId: string): QuestionFilter => ({ subjectId, type: 'mcq', wholeGroups: true, mcqShape: { ...PRACTICE_SHAPE, allowStimulus: true } })
+// TODO(S5-T03, S5-T15): lift when the pupil start serves stimulus questions (back to `wholeGroups: true` and `allowStimulus: true`).
+export const trackingAFilter = (subjectId: string): QuestionFilter => ({ subjectId, type: 'mcq', ungrouped: true, mcqShape: PRACTICE_SHAPE })
 
 /**
  * The ONE scope of the Databank lane (R1-B11): the questions the lane lists AND the questions the hub card counts, so the card's
@@ -100,7 +103,7 @@ export const janaEligibleScope = (): { from: Prisma.Sql; where: Prisma.Sql } => 
     from: Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no`,
     where: Prisma.sql`q.is_active AND v.status = ${Prisma.raw(`'${SERVABLE_STATUS}'`)} AND v.subject_id IS NOT NULL
        AND v.tag_review IS NOT TRUE
-       AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL}
+       AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_FLAGGED_SQL}
        AND (${dskpUnit(Prisma.sql`v.unit_node_id`)} OR v.form_origin = 't1_t3')
        AND EXISTS (SELECT 1 FROM question_parts p WHERE p.question_version_id = v.id AND p.mode IS NOT NULL)
        AND NOT EXISTS (
