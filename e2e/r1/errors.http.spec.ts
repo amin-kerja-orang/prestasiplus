@@ -56,7 +56,7 @@ test.describe('401 return URL (AC-ERR-2, ERR-AUTH-01)', () => {
       window.history.pushState({}, '', '/profile')
       window.dispatchEvent(new PopStateEvent('popstate'))
     })
-    await expect(page).toHaveURL(/\/login\?kembali=%2F/, { timeout: 20_000 })
+    await expect(page).toHaveURL(/\/login\?kembali=(%2F|\/)/, { timeout: 20_000 })
     // `kembali` is the page that was current when the 401 arrived; login must return exactly there.
     const kembali = new URL(page.url()).searchParams.get('kembali') ?? ''
     expect(kembali.startsWith('/') && !kembali.startsWith('//')).toBe(true)
