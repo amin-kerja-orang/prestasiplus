@@ -367,3 +367,21 @@ model SupportTicket {
   @@index([status, createdAt(sort: Desc), id(sort: Desc)], map: "ix_support_tickets_status_created")
   @@map("support_tickets")
 }
+
+/// Pupil mood check-in (S5-T04, DM-84, FR-MUR-2-12): one row per pupil per Malaysia day (`checked_on`), never updated.
+/// `mood`: `gembira`, `okay`, `sedih`, `tertekan` (check). `reason` is never written in R1. `isTest` is true while an admin is in Mod Pelajar.
+model MoodCheckin {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @map("user_id")
+  mood      String
+  checkedOn DateTime @map("checked_on") @db.Date
+  reason    String?  @db.VarChar(255)
+  isTest    Boolean  @default(false) @map("is_test")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation("MoodCheckinUser", fields: [userId], references: [id], onDelete: Cascade, map: "fk_mood_checkins_user_id")
+
+  @@unique([userId, checkedOn], map: "uq_mood_checkins_user_day")
+  @@index([checkedOn], map: "ix_mood_checkins_checked_on")
+  @@map("mood_checkins")
+}

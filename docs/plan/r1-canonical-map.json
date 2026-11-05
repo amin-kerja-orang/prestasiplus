@@ -9878,6 +9878,14 @@
       "approved_by_card": null
     },
     {
+      "name": "MoodCheckin",
+      "table": "mood_checkins",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/prisma/schema/content.prisma",
+      "approved_by_card": "S5-T04"
+    },
+    {
       "name": "EducationLevel",
       "table": "education_levels",
       "status": "canonical",
