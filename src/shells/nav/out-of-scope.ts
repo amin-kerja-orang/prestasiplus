@@ -52,7 +52,6 @@ export const OUT_OF_SCOPE_ROUTES: readonly OutOfScopeRoute[] = [
   { to: '/streak', ...M26 },
   { to: '/kombo', ...M26 },
   { to: '/liga', ...M26 },
-  { to: '/perutusan', ...M26 },
   { to: '/wellbeing/alerts', module: 'M26 Wellbeing', reason: 'belum dibina' },
 
   // ── Pusat AI (M25) selain Heatmap Topik Lemah

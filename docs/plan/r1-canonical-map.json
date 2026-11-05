@@ -1293,15 +1293,15 @@
       "approved_by_card": null
     },
     {
-      "key": "/analisa-item|",
+      "key": "/analisa-item|m08.analisa-item.murid",
       "path": "/analisa-item",
-      "name": null,
+      "name": "m08.analisa-item.murid",
       "status": "canonical",
       "sector": "S10",
-      "component": null,
+      "component": "src/modules/m08-student-performance/pages/AnalisaItemMuridPage.vue",
       "file": "src/modules/m08-student-performance/routes/analisa-item.ts",
-      "redirects_to": "(dynamic)",
-      "approved_by_card": null
+      "note": "S10-T03: the pupil own Analisa Item (API-RPT-05); beforeEnter sends staff to /analisa-item/kelas or /analisa-item/sekolah.",
+      "approved_by_card": "S10-T03"
     },
     {
       "key": "/analisa-item/sekolah|m08.analisa-item.sekolah",
@@ -1389,9 +1389,10 @@
       "name": "m08.headcount",
       "status": "canonical",
       "sector": "S10",
-      "component": "src/modules/m08-student-performance/pages/HeadcountListPage.vue",
+      "component": "src/modules/m08-student-performance/pages/HeadcountIndexPage.vue",
       "file": "src/modules/m08-student-performance/routes/headcount.ts",
-      "approved_by_card": null
+      "note": "S10-T09: one route; HeadcountIndexPage switches by role (pupil HeadcountMuridPage, staff HeadcountListPage).",
+      "approved_by_card": "S10-T09"
     },
     {
       "key": "/headcount/dashboard|m08.headcount.dashboard",
@@ -1717,6 +1718,16 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/videos|",
+      "path": "/admin/videos",
+      "name": null,
+      "status": "canonical",
+      "sector": "S5",
+      "component": "src/modules/m09-content/pages/VideoAdminListPage.vue",
+      "file": "src/modules/m09-content/routes/admin-media.ts",
+      "approved_by_card": "S5-T08"
+    },
+    {
       "key": "/admin/audio-kbat|",
       "path": "/admin/audio-kbat",
       "name": null,
@@ -1826,6 +1837,46 @@
       "file": "src/modules/m09-content/routes/panduan.ts",
       "note": "V2 path of the same PanduanPage as /panduan (10-murid.md row A3; register R-05: two URLs on purpose)",
       "approved_by_card": null
+    },
+    {
+      "key": "/perutusan|perutusan-list",
+      "path": "/perutusan",
+      "name": "perutusan-list",
+      "status": "canonical",
+      "sector": "S5",
+      "component": "src/modules/m09-content/pages/PerutusanListPage.vue",
+      "file": "src/modules/m09-content/routes/perutusan.ts",
+      "approved_by_card": "S5-T09"
+    },
+    {
+      "key": "/perutusan/tulis|perutusan-compose",
+      "path": "/perutusan/tulis",
+      "name": "perutusan-compose",
+      "status": "canonical",
+      "sector": "S5",
+      "component": "src/modules/m09-content/pages/PerutusanComposePage.vue",
+      "file": "src/modules/m09-content/routes/perutusan.ts",
+      "approved_by_card": "S5-T09"
+    },
+    {
+      "key": "/perutusan/saya|perutusan-mine",
+      "path": "/perutusan/saya",
+      "name": "perutusan-mine",
+      "status": "canonical",
+      "sector": "S5",
+      "component": "src/modules/m09-content/pages/PerutusanMinePage.vue",
+      "file": "src/modules/m09-content/routes/perutusan.ts",
+      "approved_by_card": "S5-T09"
+    },
+    {
+      "key": "/perutusan/:id(\\d+)|perutusan-detail",
+      "path": "/perutusan/:id(\\d+)",
+      "name": "perutusan-detail",
+      "status": "canonical",
+      "sector": "S5",
+      "component": "src/modules/m09-content/pages/PerutusanDetailPage.vue",
+      "file": "src/modules/m09-content/routes/perutusan.ts",
+      "approved_by_card": "S5-T09"
     },
     {
       "key": "/video|",
@@ -1950,6 +2001,26 @@
       "approved_by_card": null
     },
     {
+      "key": "/guru/profil/edit|guru-profil-edit",
+      "path": "/guru/profil/edit",
+      "name": "guru-profil-edit",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m10-teacher-class/pages/TeacherProfileEditPage.vue",
+      "file": "src/modules/m10-teacher-class/routes/teacher-profile.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/guru/profil/:id|guru-profil",
+      "path": "/guru/profil/:id",
+      "name": "guru-profil",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m10-teacher-class/pages/TeacherProfilePage.vue",
+      "file": "src/modules/m10-teacher-class/routes/teacher-profile.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "/set-soalan-saya|",
       "path": "/set-soalan-saya",
       "name": null,
@@ -2035,7 +2106,7 @@
       "name": "m11.laporan-mingguan-kelas",
       "status": "canonical",
       "sector": "S6",
-      "component": "src/pages/PrototypeUnavailablePage.vue",
+      "component": "src/pages/NotFoundPage.vue",
       "file": "src/modules/m11-teacher-analytics/routes/laporan-mingguan.ts",
       "approved_by_card": null
     },
@@ -2639,6 +2710,87 @@
       "component": "src/modules/m17-admin-dashboard/pages/CommandCenterDailyPage.vue",
       "file": "src/modules/m17-admin-dashboard/routes/command-center.ts",
       "template": true,
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/laporan-sekolah/laporan-aktiviti|m17.laporan-sekolah.laporan-aktiviti",
+      "path": "/admin/laporan-sekolah/laporan-aktiviti",
+      "name": "m17.laporan-sekolah.laporan-aktiviti",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m17-admin-dashboard/pages/CentralReportPage.vue",
+      "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/laporan-sekolah/amaran-wellbeing|m17.laporan-sekolah.amaran-wellbeing",
+      "path": "/admin/laporan-sekolah/amaran-wellbeing",
+      "name": "m17.laporan-sekolah.amaran-wellbeing",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m17-admin-dashboard/pages/CentralReportPage.vue",
+      "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/laporan-sekolah/statistik-penggunaan|m17.laporan-sekolah.statistik-penggunaan",
+      "path": "/admin/laporan-sekolah/statistik-penggunaan",
+      "name": "m17.laporan-sekolah.statistik-penggunaan",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m17-admin-dashboard/pages/CentralReportPage.vue",
+      "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/laporan-sekolah/dskp-heatmap|m17.laporan-sekolah.dskp-heatmap",
+      "path": "/admin/laporan-sekolah/dskp-heatmap",
+      "name": "m17.laporan-sekolah.dskp-heatmap",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m17-admin-dashboard/pages/CentralReportPage.vue",
+      "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/laporan-sekolah/amaran-awal|m17.laporan-sekolah.amaran-awal",
+      "path": "/admin/laporan-sekolah/amaran-awal",
+      "name": "m17.laporan-sekolah.amaran-awal",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m17-admin-dashboard/pages/CentralReportPage.vue",
+      "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/laporan-sekolah/laporan-bulanan|m17.laporan-sekolah.laporan-bulanan",
+      "path": "/admin/laporan-sekolah/laporan-bulanan",
+      "name": "m17.laporan-sekolah.laporan-bulanan",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m17-admin-dashboard/pages/CentralReportPage.vue",
+      "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/laporan-sekolah/analisa-item|m17.laporan-sekolah.analisa-item",
+      "path": "/admin/laporan-sekolah/analisa-item",
+      "name": "m17.laporan-sekolah.analisa-item",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m17-admin-dashboard/pages/CentralReportPage.vue",
+      "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/laporan-sekolah/sekolah-bersaing|m17.laporan-sekolah.sekolah-bersaing",
+      "path": "/admin/laporan-sekolah/sekolah-bersaing",
+      "name": "m17.laporan-sekolah.sekolah-bersaing",
+      "status": "redirect-to:/sekolah-bersaing",
+      "sector": "S6",
+      "component": null,
+      "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
+      "redirects_to": "/sekolah-bersaing",
       "approved_by_card": null
     },
     {
@@ -6293,13 +6445,12 @@
       "label": "Perutusan",
       "route": "/perutusan",
       "roles": [
-        "student",
         "admin"
       ],
       "status": "canonical",
-      "sector": "S0",
+      "sector": "S5",
       "file": "src/shells/nav/user-nav.ts",
-      "approved_by_card": null
+      "approved_by_card": "S5-T09"
     },
     {
       "key": "user-nav|latih-tubi",
@@ -9933,6 +10084,14 @@
       "approved_by_card": null
     },
     {
+      "name": "MoodCheckin",
+      "table": "mood_checkins",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/prisma/schema/content.prisma",
+      "approved_by_card": "S5-T04"
+    },
+    {
       "name": "EducationLevel",
       "table": "education_levels",
       "status": "canonical",
@@ -11274,6 +11433,16 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/me/profile-activity",
+      "method": "GET",
+      "path": "/api/me/profile-activity",
+      "api_id": "API-MUR-02",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/src/modules/account/account.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "GET /api/me/settings",
       "method": "GET",
       "path": "/api/me/settings",
@@ -11294,6 +11463,26 @@
       "approved_by_card": null
     },
     {
+      "key": "POST /api/me/mood",
+      "method": "POST",
+      "path": "/api/me/mood",
+      "api_id": "API-MUR-11",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/src/modules/account/mood.controller.ts",
+      "approved_by_card": "S5-T04"
+    },
+    {
+      "key": "GET /api/me/mood/today",
+      "method": "GET",
+      "path": "/api/me/mood/today",
+      "api_id": "API-MUR-11",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/src/modules/account/mood.controller.ts",
+      "approved_by_card": "S5-T04"
+    },
+    {
       "key": "GET /api/public/stats",
       "method": "GET",
       "path": "/api/public/stats",
@@ -11301,6 +11490,36 @@
       "status": "canonical",
       "sector": "S5",
       "file": "apps/api/src/modules/account/account.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/account/teacher-profile",
+      "method": "GET",
+      "path": "/api/account/teacher-profile",
+      "api_id": "API-GUR-22",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/src/modules/account/teacher-profile.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "PUT /api/account/teacher-profile",
+      "method": "PUT",
+      "path": "/api/account/teacher-profile",
+      "api_id": "API-GUR-22",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/src/modules/account/teacher-profile.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/public/teachers/:p",
+      "method": "GET",
+      "path": "/api/public/teachers/:id",
+      "api_id": "API-GUR-22",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/src/modules/account/teacher-profile.controller.ts",
       "approved_by_card": null
     },
     {
@@ -11987,16 +12206,6 @@
       "key": "GET /api/kelas-saya",
       "method": "GET",
       "path": "/api/kelas-saya",
-      "api_id": "API-MUR-04",
-      "status": "canonical",
-      "sector": "S5",
-      "file": "apps/api/src/modules/classes/kelas-saya.controller.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "POST /api/kelas-saya/join",
-      "method": "POST",
-      "path": "/api/kelas-saya/join",
       "api_id": "API-MUR-04",
       "status": "canonical",
       "sector": "S5",
@@ -15225,6 +15434,46 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/admin/questions/regroup-worklist",
+      "method": "GET",
+      "path": "/api/admin/questions/regroup-worklist",
+      "api_id": "API-Q-13",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/regroup.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin/questions/regroup",
+      "method": "POST",
+      "path": "/api/admin/questions/regroup",
+      "api_id": "API-Q-24",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/regroup.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin/questions/regroup/:p/undo",
+      "method": "POST",
+      "path": "/api/admin/questions/regroup/:auditId/undo",
+      "api_id": "API-Q-36",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/regroup.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin/questions/:p/flags/dismiss",
+      "method": "POST",
+      "path": "/api/admin/questions/:id/flags/dismiss",
+      "api_id": null,
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/regroup.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "POST /api/admin/servability/questions/batch",
       "method": "POST",
       "path": "/api/admin/servability/questions/batch",
@@ -16286,6 +16535,16 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/item-analysis/me",
+      "method": "GET",
+      "path": "/api/item-analysis/me",
+      "api_id": "API-RPT-05",
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/http/performance.controllers.ts",
+      "approved_by_card": "S10-T03"
+    },
+    {
       "key": "GET /api/item-analysis/school",
       "method": "GET",
       "path": "/api/item-analysis/school",
@@ -17298,6 +17557,16 @@
       "key": "GET /api/admin/tiket/:p",
       "method": "GET",
       "path": "/api/admin/tiket/:id",
+      "api_id": "API-SUP-05",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/support/support.controller.ts",
+      "approved_by_card": "S7-T09"
+    },
+    {
+      "key": "PUT /api/admin/tiket/:p/reply",
+      "method": "PUT",
+      "path": "/api/admin/tiket/:id/reply",
       "api_id": "API-SUP-05",
       "status": "canonical",
       "sector": "S7",

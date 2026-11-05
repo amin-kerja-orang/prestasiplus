@@ -1,7 +1,7 @@
 import { ErrorBodySchema, SchoolAdminUsageSchema } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { ADMIN, apiOf, bootSchoolAdminApp, login, SCHOOL_ADMIN, schoolIdOf, STUDENT, TEACHER, type Api, type SchoolAdminTestApp } from './helpers'
+import { apiOf, bootSchoolAdminApp, login, SCHOOL_ADMIN, schoolIdOf, STUDENT, TEACHER, type Api, type SchoolAdminTestApp } from './helpers'
 import { xsPupilCount, xsTeacherCount, addPupil, addPupilsWithSessions, addSchoolAdmin, addSession } from './reports-fixtures'
 
 /**
@@ -103,9 +103,9 @@ describe('GET /admin-sekolah/usage', () => {
     expect(a.tiles.sessions).toBe(8)
   })
 
-  it('401 without a session; 403 for admin, teacher and student', async () => {
+  it('401 without a session; 403 for teacher and student (admin: see admin-central-read.spec.ts)', async () => {
     expect((await t.http().get('/api/admin-sekolah/usage')).status).toBe(401)
-    for (const who of [ADMIN, TEACHER, STUDENT]) {
+    for (const who of [TEACHER, STUDENT]) {
       const res = await apiOf(await login(t, who)).get('/admin-sekolah/usage')
       expect(res.status, who).toBe(403)
       expect(ErrorBodySchema.parse(res.body).error.code).toBe('FORBIDDEN')
