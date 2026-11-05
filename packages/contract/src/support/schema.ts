@@ -41,7 +41,7 @@ export const SUPPORT_ADMIN_MESSAGES = {
   replyRequired: 'Sila tulis balasan.',
   replyTooLong: 'Balasan tidak boleh melebihi 5000 aksara.',
   statusInvalid: 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.',
-  ticketNotFound: 'Rekod tidak dijumpai. Ia mungkin telah dipadam.',
+  ticketNotFound: 'Rekod tidak dijumpai.',
 } as const
 
 /** Flashes after an admin save, approved by the product owner (PO batch 2 on #503). */
@@ -49,6 +49,14 @@ export const SUPPORT_ADMIN_FLASH = {
   replySaved: 'Balasan disimpan.',
   statusSaved: 'Status dikemas kini.',
 } as const
+
+/** Role words of the admin queue row (AC-CHAIN-7, AC-MUR-A4-5); another role has no label and shows as a dash. */
+export const SUPPORT_ROLE_LABELS: Readonly<Record<string, string>> = {
+  student: 'Murid',
+  teacher: 'Guru',
+  school_admin: 'Admin Sekolah',
+  admin: 'Admin Pusat',
+}
 
 /** Page flash after a create (FR-M22-06). Client-side text: the create response carries no `status` key. */
 export const SUPPORT_TICKET_CREATED_FLASH = 'Tiket dihantar. Pasukan sokongan akan membalas secepat mungkin.'
@@ -123,15 +131,15 @@ export const SupportQueueRowSchema = z
     subject: z.string(),
     status: SupportTicketStatusSchema,
     replied: z.boolean().meta({ description: 'adminReply is non-empty.' }),
-    roleLabel: z.string().nullable().optional().meta({ description: 'Role label from `created_role`; null on an old row of a user with several roles. Sent once DM-32 lands.' }),
-    school: z.string().nullable().optional().meta({ description: 'School from `school_id`. Sent once DM-32 lands.' }),
+    roleLabel: z.string().nullable().meta({ description: 'Role label from `created_role`; null on an old row of a user with several roles.' }),
+    school: z.string().nullable().meta({ description: 'School from `school_id`.' }),
   })
   .meta({ id: 'SupportQueueRow' })
 
 export const SupportQueueQuerySchema = z
   .object({
     status: z.string().optional().meta({ description: 'Exact SupportTicketStatus value; blank = all; an unknown value returns no rows.' }),
-    role: z.string().optional().meta({ description: 'Exact role of `created_role`; an unknown value is ignored. Applies once DM-32 lands.' }),
+    role: z.string().optional().meta({ description: 'Exact role of `created_role`; an unknown value is ignored.' }),
     page: z.string().optional().meta({ description: 'Page number from 1, 25 rows per page; an odd value is page 1; a page past the end returns no rows.' }),
   })
   .meta({ id: 'SupportQueueQuery' })
