@@ -22,6 +22,8 @@ import {
   viewportWidth,
 } from '../support'
 
+import { expectAdminHeader, leaderRow, tabTitle } from './helpers'
+
 const ADMIN = 'admin@demo.test'
 const PELAJARMAJU = 'pelajarmaju@demo.test'
 const MODULE = { tag: [moduleTag(14)] }
@@ -54,11 +56,6 @@ const opened = (page: Page) =>
 const clipboard = (page: Page) =>
   page.evaluate(() => (window as unknown as { __clip: string[] }).__clip)
 
-async function expectHeader(page: Page, title: string, subtitle: string): Promise<void> {
-  await expect(page.getByTestId('shell-user-title')).toHaveText(title)
-  await expect(page.getByTestId('shell-user-subtitle')).toHaveText(subtitle)
-}
-
 /** FR-M14-132: no text node inside `main` smaller than 12px. */
 async function expectMinFont(page: Page): Promise<void> {
   const smallest = await page.evaluate(() => {
@@ -88,8 +85,8 @@ test.describe('M14 S14 /gamification/leaderboard', MODULE, () => {
   }) => {
     await gotoApp('/gamification/leaderboard')
     await expect(page.getByTestId('lb-podium-card')).toHaveCount(3)
-    await expectTabTitle(page, 'Papan Pendahulu')
-    await expectHeader(page, 'Papan Pendahulu', 'Selamat datang kembali')
+    await expectTabTitle(page, tabTitle('Papan Pendahulu'))
+    await expectAdminHeader(page, 'Papan Pendahulu')
     await expect(page.getByTestId('leaderboard-hero')).toContainText('🏆 Papan Pendahulu')
     await expect(page.getByTestId('leaderboard-hero')).toContainText('Siapa paling rajin belajar?')
 
@@ -107,17 +104,22 @@ test.describe('M14 S14 /gamification/leaderboard', MODULE, () => {
       expect(tier).toContain('Platinum')
     }
 
-    await expect(page.getByTestId('lb-row')).toHaveCount(47)
-    await expect(page.getByTestId('lb-row-rank').first()).toHaveText('#4')
-    await expect(page.getByTestId('lb-row-rank').last()).toHaveText('#50')
-    await expect(page.getByTestId('lb-row-title').first()).toHaveText('Mitos · Level 39')
-    await expect(page.getByTestId('lb-row-score').first()).toHaveText('65,129')
-    await expect(page.getByTestId('lb-row-tier').first()).toHaveText('💎')
+    const rows = page.getByTestId('lb-row')
+    await expect(rows).toHaveCount(47)
+    // `DsLeaderRow` (B05, 147793363) prints the bare rank; the tier emoji sits after the unit.
+    await expect(leaderRow.rank(rows.first())).toHaveText('4')
+    await expect(leaderRow.rank(rows.last())).toHaveText('50')
+    await expect(leaderRow.title(rows.first())).toHaveText('Mitos · Level 39')
+    await expect(leaderRow.score(rows.first())).toHaveText('65,129 syiling 💎')
 
     // rows are ordered by lifetime syiling, descending
-    const scores = (await page.getByTestId('lb-row-score').allTextContents()).map((t) =>
-      Number(t.replaceAll(',', '')),
-    )
+    const scores: number[] = []
+    for (const row of await rows.all()) {
+      const score = (await leaderRow.score(row).textContent()) ?? ''
+      scores.push(Number(score.trim().split(/\s/)[0]?.replaceAll(',', '')))
+    }
+    expect(scores).toHaveLength(47)
+    expect(scores.every((n) => n > 0)).toBe(true)
     expect(scores).toEqual([...scores].sort((a, b) => b - a))
   })
 
@@ -127,10 +129,19 @@ test.describe('M14 S14 /gamification/leaderboard', MODULE, () => {
   }) => {
     await gotoApp('/gamification/leaderboard')
     await expect(page.getByTestId('lb-row')).toHaveCount(47)
-    const plain = await page.getByTestId('lb-row-name').allTextContents()
+    const names = async (): Promise<string[]> => {
+      const out: string[] = []
+      for (const row of await page.getByTestId('lb-row').all()) {
+        out.push(((await leaderRow.name(row).textContent()) ?? '').trim())
+      }
+      return out
+    }
+    const plain = await names()
+    expect(plain).toHaveLength(47)
+    expect(plain.every((name) => name !== '')).toBe(true)
     await gotoApp('/gamification/leaderboard?period=week')
     await expect(page.getByTestId('lb-row')).toHaveCount(47)
-    expect(await page.getByTestId('lb-row-name').allTextContents()).toEqual(plain)
+    expect(await names()).toEqual(plain)
     await expect(page.getByRole('link', { name: /minggu ini|bulan ini|semua masa/i })).toHaveCount(
       0,
     )
@@ -139,10 +150,28 @@ test.describe('M14 S14 /gamification/leaderboard', MODULE, () => {
 
   test('SRS §12 #97 privacy: seed names, avatars are initials', async ({ page, gotoApp }) => {
     await gotoApp('/gamification/leaderboard')
-    await expect(page.getByTestId('lb-row')).toHaveCount(47)
-    await expect(page.locator('main img')).toHaveCount(0)
-    expect(await page.getByTestId('lb-row-name').allTextContents()).not.toContain('<masked>')
-    for (const initials of await page.getByTestId('lb-row-avatar').allTextContents()) {
+    const rows = page.getByTestId('lb-row')
+    await expect(rows).toHaveCount(47)
+    // No photo of a person. The only image is the decorative 3D trophy on the gold card (B05,
+    // 147793363; v2-screen-restyle-spec M-33), hidden from assistive tech and carrying no person.
+    await expect(page.locator('main img:not([data-art])')).toHaveCount(0)
+    const art = page.locator('main img[data-art]')
+    await expect(art).toHaveCount(1)
+    await expect(art).toHaveAttribute('data-art', 'trophy')
+    await expect(art).toHaveAttribute('alt', '')
+    await expect(art).toHaveAttribute('aria-hidden', 'true')
+    await expect(
+      page.locator('[data-rank="1"][data-testid="lb-podium-card"] img[data-art="trophy"]'),
+    ).toHaveCount(1)
+    for (const row of await rows.all()) {
+      const name = ((await leaderRow.name(row).textContent()) ?? '').trim()
+      expect(name.length).toBeGreaterThan(0)
+      expect(name).not.toContain('<masked>')
+      const initials = ((await leaderRow.avatar(row).textContent()) ?? '').trim()
+      expect(initials.length).toBeGreaterThan(0)
+      expect(initials.length).toBeLessThanOrEqual(3)
+    }
+    for (const initials of await page.getByTestId('lb-podium-avatar').allTextContents()) {
       expect(initials.trim().length).toBeGreaterThan(0)
       expect(initials.trim().length).toBeLessThanOrEqual(3)
     }
@@ -177,8 +206,8 @@ test.describe('M14 S15 /gamification/achievements', MODULE, () => {
   }) => {
     await gotoApp('/gamification/achievements')
     await expect(page.getByTestId('badge-card')).toHaveCount(25)
-    await expectTabTitle(page, 'Pencapaian | PRESTASIPLUS')
-    await expectHeader(page, 'Pencapaian Anda', 'Selamat datang kembali')
+    await expectTabTitle(page, tabTitle('Pencapaian Anda'))
+    await expectAdminHeader(page, 'Pencapaian Anda')
     await expect(page.getByTestId('achievements-hero')).toContainText('🏅 Pencapaian Anda')
     await expect(page.getByTestId('achievements-subtitle')).toHaveText(
       'Kumpul lencana dan capai pencapaian — 0/25 dicapai',
@@ -200,7 +229,7 @@ test.describe('M14 S15 /gamification/achievements', MODULE, () => {
     await expect(page.getByTestId('badge-progress-text').first()).toHaveText('0/1')
   })
 
-  test('SRS §12 #34 rarity pills filter the cards; purple when active; unknown shows nothing', async ({
+  test('SRS §12 #34 rarity pills filter the cards; solid primary when active; unknown shows nothing', async ({
     page,
     gotoApp,
   }) => {
@@ -213,7 +242,16 @@ test.describe('M14 S15 /gamification/achievements', MODULE, () => {
       'Epik',
       'Legenda',
     ])
-    await expect(page.getByTestId('achievements-pill').first()).toHaveClass(/bg-purple-600/)
+    // The active pill is solid primary and the others stay neutral (B05, 147793363).
+    const expectActive = async (label: string): Promise<void> => {
+      const pills = page.getByTestId('achievements-pill')
+      await expect(pills.filter({ hasText: label })).toHaveAttribute('data-active', 'true')
+      await expect(pills.filter({ hasText: label })).toHaveClass(/\bbg-gradient-primary\b/)
+      await expect(
+        page.locator('[data-testid="achievements-pill"][data-active="true"]'),
+      ).toHaveCount(1)
+    }
+    await expectActive('Semua')
     const counts: Array<[string, number]> = [
       ['Biasa', 6],
       ['Jarang', 8],
@@ -223,9 +261,7 @@ test.describe('M14 S15 /gamification/achievements', MODULE, () => {
     for (const [label, count] of counts) {
       await page.getByTestId('achievements-pill').filter({ hasText: label }).click()
       await expect(page.getByTestId('badge-card')).toHaveCount(count)
-      await expect(page.getByTestId('achievements-pill').filter({ hasText: label })).toHaveClass(
-        /bg-purple-600/,
-      )
+      await expectActive(label)
     }
     await gotoApp('/gamification/achievements?rarity=zzz')
     await expect(page.getByTestId('achievements-pill')).toHaveCount(5)
@@ -300,8 +336,8 @@ test.describe('M14 S16 /gamification/referral', MODULE, () => {
   test('SRS §12 #40 render, copy code, copy link, share links', async ({ page, gotoApp }) => {
     await gotoApp('/gamification/referral')
     await expect(page.getByTestId('referral-code')).toHaveText('4JURJTT')
-    await expectTabTitle(page, 'Rujuk Kawan | PRESTASIPLUS')
-    await expectHeader(page, 'Rujuk Kawan, Dapat Syiling!', 'Selamat datang kembali')
+    await expectTabTitle(page, tabTitle('Rujuk Kawan, Dapat Syiling!'))
+    await expectAdminHeader(page, 'Rujuk Kawan, Dapat Syiling!')
     await expect(page.getByTestId('referral-hero')).toContainText('🤝 Rujuk Kawan, Dapat Syiling!')
     await expect(page.getByTestId('referral-hero')).toContainText(
       'Jemput kawan anda ke PRESTASIPLUS — dua-dua dapat ganjaran!',
@@ -358,8 +394,8 @@ test.describe('M14 S18 /gamification/kad-kongsi', MODULE, () => {
   test('SRS §12 #37 tabs and card values', async ({ page, gotoApp }) => {
     await gotoApp('/gamification/kad-kongsi')
     await expect(page.getByTestId('kad-profil-card')).toBeVisible()
-    await expectTabTitle(page, 'Kad Kongsi | PRESTASIPLUS')
-    await expectHeader(page, 'Kad Kongsi', 'Kongsi pencapaian anda')
+    await expectTabTitle(page, tabTitle('Kad Kongsi'))
+    await expectAdminHeader(page, 'Kad Kongsi')
     await expect(page.getByTestId('kad-tabs').getByRole('button')).toHaveText([
       'Profil',
       'Kombo',

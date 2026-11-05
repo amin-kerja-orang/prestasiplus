@@ -69,7 +69,7 @@ describe('missions today (student read)', () => {
     expect(MissionTodayResponseSchema.safeParse({ data: [{ ...row, status: 'done' }], meta: meta(1) }).success).toBe(false)
   })
 
-  it('has the three observed type labels', () => {
+  it('has the four type labels (harian added by S6-T07)', () => {
     expect(MISSION_TYPE_LABELS).toEqual({ latih_tubi: 'Latih Tubi SPM', tracking_a: 'Tracking A', youtube: 'Soalan & Rujukan', harian: 'Misi Harian' })
   })
 })

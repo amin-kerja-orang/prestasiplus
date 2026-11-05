@@ -18,9 +18,10 @@ import {
   viewportWidth,
 } from '../support'
 
+import { expectAdminHeader } from './helpers'
+
 const ADMIN = 'admin@demo.test'
 const MODULE = { tag: [moduleTag(15)] }
-const SUBTITLE = 'Selamat datang kembali'
 const EMPTY = 'Tiada hadiah dalam kategori ini.'
 const CHIPS = [
   ['all', '🌟 Semua'],
@@ -35,12 +36,11 @@ const CHIPS = [
   ['entertainment', '🎭 Hiburan'],
 ] as const
 
-test.use({ mockInit: { latency: 0 } })
+// These tests boot the app up to seven times and one boot may take the 15 s budget of `gotoApp`, so
+// the default 30 s only fits an idle machine. A longer limit, not a retry.
+test.describe.configure({ timeout: 90_000 })
 
-async function expectHeader(page: Page, title: string): Promise<void> {
-  await expect(page.getByTestId('shell-user-title')).toHaveText(title)
-  await expect(page.getByTestId('shell-user-subtitle')).toHaveText(SUBTITLE)
-}
+test.use({ mockInit: { latency: 0 } })
 
 async function minTextSize(page: Page): Promise<number> {
   return page.evaluate(() => {
@@ -73,25 +73,26 @@ test.describe('M15 S10 Kedai Hadiah Digital', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/cikgu/hadiah')
-    await expectTabTitle(page, 'Kedai Hadiah Digital')
-    await expectHeader(page, 'Kedai Hadiah Digital')
+    await expectTabTitle(page, 'Kedai Hadiah Digital | PRESTASIPLUS')
+    await expectAdminHeader(page, 'Kedai Hadiah Digital')
     await expect(page.getByTestId('digital-title')).toHaveText('🎁 Kedai Hadiah Digital')
     await expect(
       page.getByText('Tukar token kepada hadiah digital — terus dihantar, tanpa pos.'),
     ).toBeVisible()
-    // DOM text is mixed case; the rendered text is upper case.
+    // Rendered as written: no ALL CAPS (v2-design-language 3.3 rule 4; B06, 79b5fa2dc).
     await expect(page.getByTestId('digital-token-label')).toHaveText('Token Anda')
-    expect(await visibleText(page, 'digital-token-label')).toBe('TOKEN ANDA')
+    expect(await visibleText(page, 'digital-token-label')).toBe('Token Anda')
     await expect(page.getByTestId('digital-token')).toHaveText('0')
     await expect(page.getByTestId('digital-syiling-label')).toHaveText('Syiling')
-    expect(await visibleText(page, 'digital-syiling-label')).toBe('SYILING')
+    expect(await visibleText(page, 'digital-syiling-label')).toBe('Syiling')
     await expect(page.getByTestId('digital-syiling')).toHaveText('256')
     await expect(page.getByTestId('digital-caption')).toHaveText('50 syiling = 1 token')
     await expect(page.getByText('100 syiling')).toHaveCount(0)
+    // The balance card is a plain `UCard`, no gradient (B06, 79b5fa2dc).
     const bg = await page
       .getByTestId('digital-card')
       .evaluate((el) => getComputedStyle(el).backgroundImage)
-    expect(bg).toContain('gradient')
+    expect(bg).toBe('none')
     expect(await mock.lastRequest('/api/gamification/wallet')).not.toBeNull()
     const btn = page.getByTestId('digital-my-redemptions')
     await expect(btn).toHaveAttribute('href', '/cikgu/hadiah/saya')
@@ -130,7 +131,7 @@ test.describe('M15 S10 Kedai Hadiah Digital', MODULE, () => {
     for (const [key] of CHIPS) {
       await page.getByTestId(`digital-chip-${key}`).click()
       await expect(page).toHaveURL(new RegExp(`/cikgu/hadiah\\?cat=${key}$`))
-      await expectTabTitle(page, 'Kedai Hadiah Digital')
+      await expectTabTitle(page, 'Kedai Hadiah Digital | PRESTASIPLUS')
       await expect(page.getByTestId('digital-empty')).toHaveText(EMPTY)
       await expect(page.locator('[data-testid="digital-chips"] a[data-active="true"]')).toHaveCount(
         1,
@@ -206,8 +207,8 @@ test.describe('M15 S11 Tebusan Saya', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/cikgu/hadiah/saya')
-    await expectTabTitle(page, 'Tebusan Saya')
-    await expectHeader(page, 'Tebusan Saya')
+    await expectTabTitle(page, 'Tebusan Saya | PRESTASIPLUS')
+    await expectAdminHeader(page, 'Tebusan Saya')
     await expect(page.getByTestId('redemptions-title')).toHaveText('📋 Tebusan Saya')
     await expect(page.getByTestId('redemptions-to-shop')).toHaveText('🎁 Kedai Hadiah')
     await expect(page.getByTestId('redemptions-to-shop')).toHaveAttribute('href', '/cikgu/hadiah')
@@ -215,7 +216,8 @@ test.describe('M15 S11 Tebusan Saya', MODULE, () => {
     const size = await page
       .getByTestId('redemptions-icon')
       .evaluate((el) => getComputedStyle(el).fontSize)
-    expect(size).toBe('48px')
+    // `text-display` is 36px at every width for staff (B06, 79b5fa2dc).
+    expect(size).toBe('36px')
     await expect(page.getByTestId('redemptions-empty')).toContainText(
       'Belum ada tebusan. Kumpul syiling dulu, lepas tukar token dan tebus hadiah.',
     )

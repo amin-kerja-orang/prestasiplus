@@ -9,6 +9,7 @@ export type {
   HistoryStats,
   MasteryRecord,
   QueueRecord,
+  SchoolSessionAccuracy,
   SessionRecord,
 } from './practice.repository'
 export { PracticePorts, PRACTICE_REWARD_SOURCE, practiceRewardSource, versionKey } from './ports'

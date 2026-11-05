@@ -28,6 +28,8 @@ export const SUPPORT_SUBJECT_MAX = 255
 export const SUPPORT_BODY_MAX = 5000
 /** The admin queue returns the newest 200 tickets only (BR-M22-10). */
 export const SUPPORT_QUEUE_LIMIT = 200
+/** Rows per page of the admin queue (API-SUP-03). */
+export const SUPPORT_QUEUE_PER_PAGE = 25
 
 /** Exact BM copy (SRS M22 8.2, PROPOSED copy). */
 export const SUPPORT_MESSAGES = {
@@ -35,6 +37,26 @@ export const SUPPORT_MESSAGES = {
   bodyRequired: 'Butiran diperlukan.',
   subjectTooLong: 'Subjek tidak boleh melebihi 255 aksara.',
   bodyTooLong: 'Butiran tidak boleh melebihi 5000 aksara.',
+} as const
+
+/** Admin ticket messages with a source: ERR-REQ-10, ERR-REQ-12, ERR-REQ-11, ERR-ACC-04 (40 X10). */
+export const SUPPORT_ADMIN_MESSAGES = {
+  replyRequired: 'Sila isi balasan.',
+  replyTooLong: 'Balasan tidak boleh melebihi 5000 aksara.',
+  statusRequired: 'Sila pilih status.',
+  ticketNotFound: 'Rekod tidak dijumpai. Ia mungkin telah dipadam.',
+} as const
+
+/** Notice to the ticket owner when the admin saves a reply: the body is from 30 FR-ADM-P2-20.2 (D113). */
+export const SUPPORT_REPLY_NOTICE_BODY = 'Tiket anda telah dibalas.'
+
+/** [PROPOSED] Copy with no source in the SRS or the ERR catalogue, waiting for product-owner approval (D94, #507). */
+export const SUPPORT_ADMIN_PROPOSED_COPY = {
+  replySavedFlash: 'Balasan disimpan.',
+  statusSavedFlash: 'Status dikemas kini.',
+  allRolesOption: 'Semua peranan',
+  replyNoticeType: 'ticket_replied',
+  replyNoticeTitle: 'Tiket dibalas',
 } as const
 
 /** Page flash after a create (FR-M22-06). Client-side text: the create response carries no `status` key. */
@@ -110,20 +132,27 @@ export const SupportQueueRowSchema = z
     subject: z.string(),
     status: SupportTicketStatusSchema,
     replied: z.boolean().meta({ description: 'adminReply is non-empty.' }),
+    roleLabel: z.string().nullable().optional().meta({ description: 'Role label from `created_role`; null on an old row of a user with several roles. Sent once DM-32 lands.' }),
+    school: z.string().nullable().optional().meta({ description: 'School from `school_id`. Sent once DM-32 lands.' }),
   })
   .meta({ id: 'SupportQueueRow' })
 
 export const SupportQueueQuerySchema = z
   .object({
     status: z.string().optional().meta({ description: 'Exact SupportTicketStatus value; blank = all; an unknown value returns no rows.' }),
+    role: z.string().optional().meta({ description: 'Exact role of `created_role`; an unknown value is ignored. Applies once DM-32 lands.' }),
+    page: z.string().optional().meta({ description: 'Page number from 1, 25 rows per page; an odd value is page 1; a page past the end returns no rows.' }),
   })
   .meta({ id: 'SupportQueueQuery' })
 
-/** `meta` of `GET /admin/tiket`: `total` = all tickets; `counts` = statuses with a count above 0, in vocabulary order, over all tickets. */
+/** `meta` of `GET /admin/tiket`: `total` = all tickets; `counts` = statuses with a count above 0, in vocabulary order, over all tickets; `matched` = rows matching the filters, for the pager. */
 export const SupportQueueMetaSchema = z
   .strictObject({
     total: z.number().int().min(0),
     counts: z.array(z.strictObject({ status: SupportTicketStatusSchema, count: z.number().int().min(1) })),
+    page: z.number().int().min(1).optional(),
+    perPage: z.number().int().min(1).optional(),
+    matched: z.number().int().min(0).optional(),
   })
   .meta({ id: 'SupportQueueMeta' })
 
@@ -131,6 +160,40 @@ export const SupportQueueResponseSchema = z
   .object({ data: z.array(SupportQueueRowSchema).max(SUPPORT_QUEUE_LIMIT), meta: SupportQueueMetaSchema })
   .meta({ id: 'SupportQueueResponse' })
 export type SupportQueueResponse = z.infer<typeof SupportQueueResponseSchema>
+
+/** `data` of `GET /admin/tiket/{id}` and of its reply and status writes (API-SUP-05). One admin reply, no thread (OD-4); no e-mail. */
+export const SupportTicketDetailSchema = z
+  .strictObject({
+    id: IdSchema,
+    subject: z.string(),
+    body: z.string(),
+    status: SupportTicketStatusSchema,
+    roleLabel: z.string().nullable().meta({ description: 'Role label from `created_role`; null on an old row of a user with several roles.' }),
+    school: z.string().nullable(),
+    createdAt: TimestampSchema,
+    adminReply: z.string().nullable(),
+    repliedAt: TimestampSchema.nullable(),
+  })
+  .meta({ id: 'SupportTicketDetail' })
+export type SupportTicketDetail = z.infer<typeof SupportTicketDetailSchema>
+
+/** Body of `PUT /admin/tiket/{id}/reply`. The text is trimmed. */
+export const SupportTicketReplyRequestSchema = z
+  .object({
+    text: z
+      .string({ error: SUPPORT_ADMIN_MESSAGES.replyRequired })
+      .trim()
+      .min(1, { error: SUPPORT_ADMIN_MESSAGES.replyRequired })
+      .max(SUPPORT_BODY_MAX, { error: SUPPORT_ADMIN_MESSAGES.replyTooLong }),
+  })
+  .meta({ id: 'SupportTicketReplyRequest' })
+export type SupportTicketReplyRequest = z.infer<typeof SupportTicketReplyRequestSchema>
+
+/** Body of `PATCH /admin/tiket/{id}/status`. */
+export const SupportTicketStatusRequestSchema = z
+  .object({ status: z.enum(SUPPORT_TICKET_STATUSES, { error: SUPPORT_ADMIN_MESSAGES.statusRequired }) })
+  .meta({ id: 'SupportTicketStatusRequest' })
+export type SupportTicketStatusRequest = z.infer<typeof SupportTicketStatusRequestSchema>
 
 /** `data` of `GET /admin/tiket/open-count`: tickets with status `dibuka`. */
 export const SupportOpenCountSchema = z

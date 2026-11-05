@@ -108,13 +108,13 @@ export function registerMissionsPaths(registry: OpenAPIRegistry): void {
     tags: ['missions'],
     summary: 'Create a mission (API-GUR-11)',
     description:
-      'Teacher only. Recipients are a snapshot at creation (classroomId null = all pupils of all own active classes). 422 VALIDATION_ERROR with fields for the body check and for a date before today (MYT); 422 VALIDATION_ERROR without fields and message "Had 5 misi sehari telah dicapai." when the teacher already has 5 missions on that MYT day. UI toast "Misi dicipta.".',
+      'Teacher only. Recipients are a snapshot at creation (classroomId null = all pupils of all own active classes). 422 VALIDATION_ERROR with fields for the body check and for a date before today (MYT); 422 VALIDATION_ERROR without fields and message "Had 5 misi sehari telah dicapai." when the teacher already has 5 missions on that MYT day; 422 MISSION_REWARD_TOO_HIGH "Ganjaran misi melebihi had." (ERR-GAME-17) when rewardCoins is over the limit. UI toast "Misi dicipta.".',
     request: { headers: [csrf], body: body(TeacherMissionCreateSchema) },
     responses: {
       201: json(TeacherMissionResponseSchema, 'The created mission.'),
       401: unauthorized,
       403: teacherOnly,
-      422: err('VALIDATION_ERROR: fields per invalid input, or the daily cap refusal (no fields).'),
+      422: err('VALIDATION_ERROR: fields per invalid input, or the daily cap refusal (no fields); or MISSION_REWARD_TOO_HIGH "Ganjaran misi melebihi had." (ERR-GAME-17) when the reward is over the limit (emitted by the API part, #643).'),
       429: rateLimited,
     },
   })
