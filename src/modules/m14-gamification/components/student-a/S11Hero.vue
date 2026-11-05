@@ -91,7 +91,7 @@ const titleChip = computed(() =>
       <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
         <UButton
           to="/gamification/convert"
-          size="xl"
+          size="lg"
           color="primary"
           icon="i-ph-arrows-left-right-duotone"
           block
@@ -100,7 +100,7 @@ const titleChip = computed(() =>
         >
         <UButton
           to="/gamification/challenges"
-          size="xl"
+          size="lg"
           color="neutral"
           variant="soft"
           icon="i-ph-target-duotone"
@@ -110,7 +110,7 @@ const titleChip = computed(() =>
         >
         <UButton
           to="/gamification/rewards"
-          size="xl"
+          size="lg"
           color="neutral"
           variant="soft"
           icon="i-ph-gift-duotone"
