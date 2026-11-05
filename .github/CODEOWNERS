@@ -230,9 +230,7 @@
 # /src/modules/m28-bijak-spm/components/RichText.vue        @OWNER-S8
 # /src/modules/m28-bijak-spm/components/MathField.vue       @OWNER-S8
 # /src/modules/m28-bijak-spm/components/MathKeyboard.vue    @OWNER-S8
-# /src/modules/m28-bijak-spm/components/StimulusStack.vue   @OWNER-S8
 # /src/modules/m28-bijak-spm/components/StimulusView.vue    @OWNER-S8
-# /src/modules/m28-bijak-spm/components/StimulusChip.vue    @OWNER-S8
 # /src/modules/m28-bijak-spm/components/NavigatorPanel.vue  @OWNER-S8
 # /src/modules/m28-bijak-spm/components/AttemptShell.vue    @OWNER-S8
 # 
