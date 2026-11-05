@@ -16273,6 +16273,16 @@
       "approved_by_card": null
     },
     {
+      "key": "POST /api/kirkpatrick/interventions/:p/review",
+      "method": "POST",
+      "path": "/api/kirkpatrick/interventions/:id/review",
+      "api_id": "API-RPT-17",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/reports/kirkpatrick/http/kirkpatrick.controllers.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "GET /api/feedback/status",
       "method": "GET",
       "path": "/api/feedback/status",
@@ -16537,6 +16547,16 @@
       "method": "GET",
       "path": "/api/performance/classes",
       "api_id": "API-RPT-02",
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/http/performance.controllers.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/performance/classes/aggregate",
+      "method": "GET",
+      "path": "/api/performance/classes/aggregate",
+      "api_id": null,
       "status": "canonical",
       "sector": "S10",
       "file": "apps/api/src/modules/reports/performance/http/performance.controllers.ts",
@@ -17575,6 +17595,16 @@
       "key": "GET /api/admin/tiket/:p",
       "method": "GET",
       "path": "/api/admin/tiket/:id",
+      "api_id": "API-SUP-05",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/support/support.controller.ts",
+      "approved_by_card": "S7-T09"
+    },
+    {
+      "key": "PUT /api/admin/tiket/:p/reply",
+      "method": "PUT",
+      "path": "/api/admin/tiket/:id/reply",
       "api_id": "API-SUP-05",
       "status": "canonical",
       "sector": "S7",

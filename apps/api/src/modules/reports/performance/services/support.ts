@@ -68,6 +68,17 @@ export function groupBy<T>(items: readonly T[], key: (t: T) => string): Map<stri
   return out
 }
 
+/**
+ * Per-pupil session totals from `sessionCounts` grouping-set rows. A row with a null subject is the pupil's total over all subjects,
+ * but an answer stored with no subject also yields a null-subject row, so a pupil can have two of them: the total is the larger
+ * (it contains the other), never the sum.
+ */
+export function sessionTotalsOf(rows: readonly { userId: string; subjectId: string | null; sessions: number }[]): Map<string, number> {
+  const out = new Map<string, number>()
+  for (const r of rows) if (r.subjectId === null) out.set(r.userId, Math.max(out.get(r.userId) ?? 0, r.sessions))
+  return out
+}
+
 /** One pupil's answers to one question, all modes and chapters summed, with the FIRST attempt in scope (by time). */
 export interface PupilItemStat {
   attempts: number

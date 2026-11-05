@@ -54,6 +54,7 @@ export function resetReadCache(): void {
   allTotals = null
   classAnalysisMemo.clear()
   performanceMemo.clear()
+  activityMemo.clear()
   stamp = ''
 }
 
@@ -64,6 +65,7 @@ export function checkStamp(): void {
     allTotals = null
     classAnalysisMemo.clear()
     performanceMemo.clear()
+    activityMemo.clear()
     stamp = s
   }
 }
@@ -96,6 +98,29 @@ export function answerTotalsOf(userId: number): { answered: number; correct: num
   }
 }
 
+const activityMemo = new Map<number, { stamp: string; lastMs: number; sessions: number }>()
+
+/**
+ * Latest answer time and distinct sessions of one user, from the answer log itself (all answers, with or without a
+ * completed session row). The session log can miss answers the answer log has, so the answer figures are never shown next
+ * to a "no session" / "never active" value: callers take the larger of the two.
+ */
+export function answerActivityOf(userId: number): { lastMs: number; sessions: number } {
+  checkStamp()
+  const hit = activityMemo.get(userId)
+  if (hit && hit.stamp === stamp) return hit
+  let lastMs = 0
+  const ids = new Set<string>()
+  for (const a of practice.answers(userId)) {
+    if (a.answeredAtMs > lastMs) lastMs = a.answeredAtMs
+    // The answer log (as the shared reader) counts an answer without a session as one session per MYT day.
+    ids.add(a.sessionId ?? `n:${String(Math.floor((a.answeredAtMs + 8 * 3_600_000) / 86_400_000))}`)
+  }
+  const out = { stamp, lastMs, sessions: ids.size }
+  activityMemo.set(userId, out)
+  return out
+}
+
 /** Sums the totals of a set of users. */
 export function sumTotals(userIds: Iterable<number>, which: keyof UserTotals = 'all'): Totals {
   const out = zero()
@@ -119,13 +144,19 @@ export const meanAccuracy = (t: Totals): number => (t.accN === 0 ? 0 : (t.accSum
 // Classes and levels (M10)
 // ---------------------------------------------------------------------------------------------
 
-export const LEVEL_SLUG: Readonly<Record<'t4' | 't5', 'tingkatan-4' | 'tingkatan-5'>> = {
+export type LevelCode = 't1' | 't2' | 't3' | 't4' | 't5'
+export const LEVEL_CODES: readonly LevelCode[] = ['t1', 't2', 't3', 't4', 't5']
+export type LevelSlug = 'tingkatan-1' | 'tingkatan-2' | 'tingkatan-3' | 'tingkatan-4' | 'tingkatan-5'
+export const LEVEL_SLUG: Readonly<Record<LevelCode, LevelSlug>> = {
+  t1: 'tingkatan-1',
+  t2: 'tingkatan-2',
+  t3: 'tingkatan-3',
   t4: 'tingkatan-4',
   t5: 'tingkatan-5',
 }
 
 /** Distinct active members of every class of a level slug. */
-export function levelStudentIds(slug: 'tingkatan-4' | 'tingkatan-5'): number[] {
+export function levelStudentIds(slug: LevelSlug): number[] {
   const set = new Set<number>()
   for (const c of classrooms.list({ educationLevel: slug })) {
     for (const id of classrooms.memberIds(c.kind, c.classId)) set.add(id)
