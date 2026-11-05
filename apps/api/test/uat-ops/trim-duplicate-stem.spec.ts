@@ -1,7 +1,7 @@
 import pg from 'pg'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { apply, BACKUP_TABLE, dryRun, findMatches, formatReport, parseArgs, restore } from '../../scripts/uat-ops/trim-duplicate-stem'
+import { apply, APPLY_BATCH_SQL, BACKUP_TABLE, dryRun, findMatches, formatReport, parseArgs, restore } from '../../scripts/uat-ops/trim-duplicate-stem'
 import { toPracticeQuestion } from '../../src/modules/practice/question-bridge/be09-practice-mapping'
 import { QuestionsRepository, QuestionsService } from '../../src/modules/questions'
 import { flatFromVersion } from '../../src/modules/questions/projection'
@@ -180,6 +180,37 @@ describe('trim-duplicate-stem (S4-T04, U-OP-06)', () => {
     expect(await restore(client)).toMatchObject({ restored: expected, skipped: 0 })
     expect(await snapshot()).toBe(before)
     expect((await apply(client)).matched).toBe(expected)
+  })
+
+  it('a prompt edited between the candidate read and the row lock is skipped: no update, no backup row, counted', async () => {
+    const racy = await question({ stem: 'Soalan berlumba', prompts: ['Soalan berlumba'] })
+    const other = await question({ stem: 'Soalan biasa', prompts: ['Soalan biasa'] })
+    const editor = new pg.Client({ connectionString: t.db.url })
+    await editor.connect()
+    try {
+      // The editor holds the row lock with a new prompt; the batch reads its candidates (old text), then waits for the lock.
+      await editor.query('BEGIN')
+      await editor.query(`update question_parts set prompt_ms = 'Teks baharu oleh admin' where id = $1::bigint`, [racy.parts[0]])
+      await client.query('BEGIN')
+      const batch = client.query<{ trimmed: number; skipped: number }>(APPLY_BATCH_SQL, [5000])
+      // Wait until the batch is blocked on the editor's row lock (pg_locks: a lock request not granted), so the order is certain.
+      let blocked = false
+      for (let i = 0; i < 100 && !blocked; i++) {
+        blocked = Number((await t.db.query<{ n: string }>(`select count(*) n from pg_locks where not granted and locktype = 'transactionid'`))[0]!.n) > 0
+        if (!blocked) await new Promise((r) => setTimeout(r, 50))
+      }
+      expect(blocked).toBe(true)
+      await editor.query('COMMIT')
+      const row = (await batch).rows[0]!
+      await client.query('COMMIT')
+      expect(row).toMatchObject({ trimmed: 1, skipped: 1 })
+    } finally {
+      await editor.end()
+    }
+    expect((await prompts(racy.parts))[0]!.ms).toBe('Teks baharu oleh admin')
+    expect((await prompts(other.parts))[0]!.ms).toBe('')
+    const bk = await t.db.query<{ part_id: string }>(`select part_id::text from ${BACKUP_TABLE} where part_id = any($1::bigint[])`, [[...racy.parts, ...other.parts].map(Number)])
+    expect(bk.map((r) => r.part_id)).toEqual(other.parts)
   })
 
   it('refuses a write without the explicit flag, and flags that exclude each other', () => {

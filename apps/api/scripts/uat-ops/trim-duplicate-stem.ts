@@ -17,6 +17,10 @@
  * skipped and reported, never overwritten).
  *
  * DRY RUN IS THE DEFAULT (read-only transaction; creates nothing). Writing needs the explicit `--apply` (or `--restore`).
+ * Concurrency: the candidate list is read before the row lock, so the update and the backup re-check the old prompt on the
+ * locked row; a part edited meanwhile is skipped (no backup row, no update) and counted in the report.
+ * When the run is signed off: drop `_bk_r1_trim_duplicate_stem` after the PO signs off the run.
+ *
  * Idempotent: a trimmed part no longer matches, so a second --apply writes nothing. Batches of 5,000 parts, one short
  * transaction per batch.
  *
@@ -88,7 +92,12 @@ const CREATE_BACKUP_SQL = `
   );
   CREATE INDEX IF NOT EXISTS ix_bk_r1_trim_duplicate_stem_part_id ON ${BACKUP_TABLE} (part_id)`
 
-/** One batch: copy the old values to the backup and write the trimmed ones, in one statement (rows locked meanwhile). */
+/**
+ * One batch: write the trimmed values and copy the old ones to the backup, from the SAME set (`upd` feeds the backup insert).
+ * `cand` is read before the lock is taken, so the equality on the old values is re-checked on the row as it is once our lock
+ * is held (READ COMMITTED re-evaluates the WHERE on the newest version): a prompt edited while we waited is skipped (no
+ * update, no backup row) and counted in `skipped`.
+ */
 export const APPLY_BATCH_SQL = `
   WITH cand AS (
     SELECT m.* FROM (${MATCH_SQL}) m
@@ -98,17 +107,23 @@ export const APPLY_BATCH_SQL = `
   locked AS (
     SELECT p.id FROM question_parts p JOIN cand c ON c.part_id = p.id ORDER BY p.id FOR UPDATE OF p
   ),
+  upd AS (
+    UPDATE question_parts p
+       SET prompt_ms = '',
+           prompt_en = CASE WHEN c.en_matched THEN NULL ELSE p.prompt_en END
+      FROM cand c JOIN locked l ON l.id = c.part_id
+     WHERE p.id = c.part_id
+       AND p.prompt_ms = c.old_prompt_ms
+       AND p.prompt_en IS NOT DISTINCT FROM c.old_prompt_en
+    RETURNING p.id AS part_id, c.version_id, c.old_prompt_ms, c.old_prompt_en, p.prompt_ms AS new_prompt_ms, p.prompt_en AS new_prompt_en
+  ),
   bk AS (
     INSERT INTO ${BACKUP_TABLE} (part_id, version_id, old_prompt_ms, old_prompt_en, new_prompt_ms, new_prompt_en)
-    SELECT c.part_id, c.version_id, c.old_prompt_ms, c.old_prompt_en, '', CASE WHEN c.en_matched THEN NULL ELSE c.old_prompt_en END
-      FROM cand c JOIN locked l ON l.id = c.part_id
+    SELECT u.part_id, u.version_id, u.old_prompt_ms, u.old_prompt_en, u.new_prompt_ms, u.new_prompt_en FROM upd u
     RETURNING part_id
   )
-  UPDATE question_parts p
-     SET prompt_ms = '',
-         prompt_en = CASE WHEN c.en_matched THEN NULL ELSE p.prompt_en END
-    FROM cand c JOIN bk ON bk.part_id = c.part_id
-   WHERE p.id = c.part_id`
+  SELECT (SELECT count(*) FROM bk)::int AS trimmed,
+         ((SELECT count(*) FROM cand) - (SELECT count(*) FROM bk))::int AS skipped`
 
 /** One restore batch: the OLDEST unrestored backup row of a part, only while the part still holds the trimmed value. */
 export const RESTORE_BATCH_SQL = `
@@ -155,6 +170,8 @@ export interface Report {
   /** Sample ids (no text). */
   sample: { questionId: string; versionId: string; partId: string }[]
   batches: number
+  /** Candidates left alone because the prompt was edited between the candidate read and the row lock. */
+  skipped: number
 }
 
 export interface RestoreReport {
@@ -184,7 +201,7 @@ interface MatchRow {
 }
 
 /** The dry-run read (also the report of an apply, taken before it writes). Read-only. */
-export async function findMatches(client: Queryable, sample = DEFAULT_SAMPLE): Promise<Omit<Report, 'mode' | 'batches'>> {
+export async function findMatches(client: Queryable, sample = DEFAULT_SAMPLE): Promise<Omit<Report, 'mode' | 'batches' | 'skipped'>> {
   const scanned = Number(((await client.query<{ n: number }>(SCANNED_SQL)).rows[0] as { n: number }).n)
   const { rows } = await client.query<MatchRow>(
     `SELECT m.part_id::text, m.version_id::text, m.question_id::text, m.status, s.code AS subject, l.code AS level, m.en_matched
@@ -196,7 +213,7 @@ export async function findMatches(client: Queryable, sample = DEFAULT_SAMPLE): P
   return summarise(scanned, rows, sample)
 }
 
-function summarise(scanned: number, rows: readonly MatchRow[], sample: number): Omit<Report, 'mode' | 'batches'> {
+function summarise(scanned: number, rows: readonly MatchRow[], sample: number): Omit<Report, 'mode' | 'batches' | 'skipped'> {
   const byStatus: Record<string, number> = {}
   const cells = new Map<string, { subject: string; level: string; count: number }>()
   for (const r of rows) {
@@ -222,7 +239,7 @@ function summarise(scanned: number, rows: readonly MatchRow[], sample: number): 
 export async function dryRun(client: Queryable, options: Pick<Options, 'sample'> = { sample: DEFAULT_SAMPLE }): Promise<Report> {
   await client.query('BEGIN READ ONLY')
   try {
-    return { mode: 'dry-run', ...(await findMatches(client, options.sample)), batches: 0 }
+    return { mode: 'dry-run', ...(await findMatches(client, options.sample)), batches: 0, skipped: 0 }
   } finally {
     await client.query('ROLLBACK')
   }
@@ -241,12 +258,15 @@ export async function apply(client: Queryable, options: Pick<Options, 'batchSize
   }
   const before = await findMatches(client, options.sample)
   let trimmed = 0
+  let skipped = 0
   let batches = 0
   for (;;) {
     await client.query('BEGIN')
     let n: number
     try {
-      n = (await client.query(APPLY_BATCH_SQL, [options.batchSize])).rowCount ?? 0
+      const row = (await client.query<{ trimmed: number; skipped: number }>(APPLY_BATCH_SQL, [options.batchSize])).rows[0] as { trimmed: number; skipped: number }
+      n = Number(row.trimmed)
+      skipped += Number(row.skipped)
       await client.query('COMMIT')
     } catch (e) {
       await client.query('ROLLBACK')
@@ -257,7 +277,7 @@ export async function apply(client: Queryable, options: Pick<Options, 'batchSize
     trimmed += n
     log(`batch ${String(batches)}: ${String(n)} parts trimmed`)
   }
-  return { mode: 'apply', ...before, matched: trimmed, batches }
+  return { mode: 'apply', ...before, matched: trimmed, batches, skipped }
 }
 
 /** Restore: write the old values back from the backup table (only where the trimmed value is still there). */
@@ -324,7 +344,7 @@ export function formatReport(r: Report | RestoreReport, target = ''): string[] {
     `sample (question_id version_id part_id), max ${String(r.sample.length)}:`,
     ...r.sample.map((s) => `  ${s.questionId} ${s.versionId} ${s.partId}`),
   ]
-  if (r.mode === 'apply') lines.push(`batches: ${String(r.batches)}; backup table: ${BACKUP_TABLE}`)
+  if (r.mode === 'apply') lines.push(`batches: ${String(r.batches)}; skipped (prompt edited while waiting for the row lock): ${String(r.skipped)}; backup table: ${BACKUP_TABLE}`)
   else lines.push('dry run: nothing was changed. Run with --apply after the report is approved.')
   return lines
 }
