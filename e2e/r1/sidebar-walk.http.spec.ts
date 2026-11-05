@@ -23,9 +23,10 @@
  * Keep in step with `src/shells/__tests__/user-nav.test.ts` ("pins the sidebar item ids") and
  * `src/shells/pembelajaran/pembelajaran-nav.ts`: a nav change must update both, and EXPECTED_RED below.
  */
-import { readFileSync } from 'node:fs'
+import { mkdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
-import type { Page, TestInfo } from '@playwright/test'
+import type { BrowserContext, Page, TestInfo } from '@playwright/test'
 
 import { account, FORBIDDEN_TITLE, type ApiRole } from '../api/helpers'
 import { expect, gotoApi, loginViaUi, test } from '../fixtures/api'
@@ -77,10 +78,8 @@ const EXPECTED_RED: Record<WalkRole, Row[]> = {
     { id: 'headcount', route: '/headcount', ownerCard: 'S10-T09' },
     { id: 'analisa-item', route: '/analisa-item', ownerCard: 'S10-T03' },
   ],
-  guru: [
-    // Laporan Mingguan screen of the teacher (M11-T5 S8) is not built yet.
-    { id: 't-laporan-mingguan', route: '/guru/laporan-mingguan-kelas', ownerCard: 'S6-T01' },
-  ],
+  // Guru: the Laporan Mingguan row (S6-T01) was removed after its first CI run showed it passing.
+  guru: [],
   adminSekolah: [],
 }
 
@@ -182,9 +181,33 @@ async function problemsOf(page: Page, role: WalkRole, link: Link): Promise<strin
   return problems
 }
 
-async function login(page: Page, role: ApiRole): Promise<void> {
+/**
+ * Signs in once per role and project, then reuses the saved cookies (also across retries, which run in a
+ * new worker process). The login endpoint is throttled per identifier + address (THROTTLE_LOGIN_PER_MINUTE,
+ * default 200 here), per address for failures (20 a minute) and per identifier for failures (100 per
+ * 15 minutes; apps/api/src/modules/auth/login-throttle.service.ts), and the whole e2e suite shares one
+ * address, so a login per test ended in 429 RATE_LIMITED. A saved session that the API no longer accepts
+ * falls back to a fresh login.
+ */
+async function login(page: Page, role: ApiRole, info: TestInfo): Promise<void> {
+  const dir = join(info.project.outputDir, 'r1-auth')
+  mkdirSync(dir, { recursive: true })
+  const file = join(dir, `${info.project.name}-${role}.json`)
+  try {
+    const state = JSON.parse(readFileSync(file, 'utf8')) as { cookies: Parameters<BrowserContext['addCookies']>[0] }
+    await page.context().addCookies(state.cookies)
+    const res = await page.request.get('/api/session')
+    if (res.status() === 200) {
+      await gotoApi(page, '/')
+      return
+    }
+    await page.context().clearCookies()
+  } catch {
+    // no saved session yet, or unreadable: sign in below
+  }
   const { user, pass } = account(role)
   await loginViaUi(page, user, pass)
+  await page.context().storageState({ path: file })
 }
 
 // Project names of playwright.http.config.ts: mobile (375), tablet (768), desktop (1280).
@@ -210,7 +233,7 @@ for (const role of ROLES) {
     test(`@api every sidebar link opens a real screen (${role}, 1280)`, async ({ page }, info) => {
       test.skip(!onDesktop(info), 'viewport-independent: runs on the desktop project only')
       page.setDefaultTimeout(WAIT_MS)
-      await login(page, role)
+      await login(page, role, info)
       const links = await collect(page, SIDEBAR)
       const budget = links.length * PER_LINK_MS + BASE_MS
       test.setTimeout(budget + 30_000)
@@ -251,7 +274,7 @@ for (const role of ROLES) {
       test.skip(!onPhone(info), 'phone test runs on the mobile project only')
       test.setTimeout(240_000)
       page.setDefaultTimeout(WAIT_MS)
-      await login(page, role)
+      await login(page, role, info)
       // The desktop sidebar is not in the DOM at 375: read its link set at 1280, then go back to 375.
       await page.setViewportSize({ width: 1280, height: 800 })
       const desktop = await collect(page, SIDEBAR)
@@ -280,20 +303,35 @@ for (const role of ROLES) {
       const targets = lagi.filter(
         (l) => !l.blank && l.href !== '/logout' && !red.some((r) => r.route === l.href),
       )
+      // Each tap starts from a closed panel and opens it afresh, so a panel that is still closing (or a
+      // click swallowed by its overlay) cannot make a tap hit the previous page. The link is found by its
+      // href inside the open panel, never by position.
+      const closeLagi = async () => {
+        if (await lagiNav.isVisible()) {
+          await page.keyboard.press('Escape')
+          await expect(lagiNav).toBeHidden({ timeout: 5_000 })
+        }
+      }
       for (const link of targets) {
         if (Date.now() > deadline) {
           failures.push(`${link.id} ${link.href}: not tapped, the phone budget ran out`)
           continue
         }
-        try {
-          if (!(await lagiNav.isVisible())) await openLagi()
-          await page.locator(`${LAGI}[href="${link.href}"]`).first().click({ timeout: WAIT_MS })
-          await expect
-            .poll(() => pathOk(role, link.href, new URL(page.url()).pathname), { timeout: 8_000 })
-            .toBe(true)
-        } catch {
-          failures.push(`${link.id} ${link.href}: landed on ${new URL(page.url()).pathname}`)
+        let landed = false
+        for (let attempt = 0; attempt < 2 && !landed; attempt++) {
+          try {
+            await closeLagi()
+            await openLagi()
+            const a = lagiNav.locator(`a[href="${link.href}"]`).first()
+            await a.scrollIntoViewIfNeeded({ timeout: 5_000 })
+            await a.click({ timeout: 5_000 })
+            await page.waitForURL((u) => pathOk(role, link.href, u.pathname), { timeout: 6_000 })
+            landed = true
+          } catch {
+            // retried once from a closed panel
+          }
         }
+        if (!landed) failures.push(`${link.id} ${link.href}: landed on ${new URL(page.url()).pathname}`)
       }
       expect(failures, 'Lagi links that do not reach their own path').toEqual([])
     })
@@ -320,7 +358,7 @@ test.describe('role denial (AC-MUR-SH-7, AC-SH-6)', () => {
     for (const path of paths) {
       test(`@api ${role} on ${path} answers 403 (1280)`, async ({ page }, info) => {
         test.skip(!onDesktop(info), 'viewport-independent: runs on the desktop project only')
-        await login(page, role)
+        await login(page, role, info)
         await expectForbidden(page, path)
       })
     }
@@ -328,14 +366,14 @@ test.describe('role denial (AC-MUR-SH-7, AC-SH-6)', () => {
 
   // Expected-red: PRESTASI_SCHOOL_ROLES in m08 routes/prestasi.ts includes `student`, so the pupil
   // still opens the school dashboard. Owner: S10-T03.
-  test.fixme('@api student on /prestasi/sekolah answers 403 (expected-red, owner S10-T03)', async ({ page }) => {
-    await login(page, 'student')
+  test.fixme('@api student on /prestasi/sekolah answers 403 (expected-red, owner S10-T03)', async ({ page }, info) => {
+    await login(page, 'student', info)
     await expectForbidden(page, '/prestasi/sekolah')
   })
 
   test('@api GET /api/admin/pksk-access as the pupil answers 403 FORBIDDEN (1280)', async ({ page }, info) => {
     test.skip(!onDesktop(info), 'viewport-independent: runs on the desktop project only')
-    await login(page, 'student')
+    await login(page, 'student', info)
     const res = await page.request.get('/api/admin/pksk-access')
     expect(res.status()).toBe(403)
     // Error body shape: `{ error: { code, message, requestId } }` (all-exceptions.filter.ts).
