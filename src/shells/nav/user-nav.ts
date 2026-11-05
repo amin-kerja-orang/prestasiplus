@@ -760,7 +760,8 @@ const ROLE_HIDDEN_IDS: Readonly<Record<string, ReadonlySet<string>>> = {
   teacher: new Set(['t-misi-harian', 't-set-soalan']),
   admin: new Set(['guru-misi-harian', 'guru-set-soalan']),
 }
-const isRoleHidden = (role: string, id: string): boolean => ROLE_HIDDEN_IDS[role]?.has(id) === true
+const isRoleHidden = (role: string | null, id: string): boolean =>
+  role !== null && ROLE_HIDDEN_IDS[role]?.has(id) === true
 /** Profile entries of each role: scope mode puts "Tetapan Peribadi" right after them. */
 const PROFILE_IDS: readonly string[] = ['profil-saya', 't-profil-saya', 'sa-profil-saya']
 
