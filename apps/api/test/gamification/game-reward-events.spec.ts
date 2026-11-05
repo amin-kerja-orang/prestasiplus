@@ -16,6 +16,8 @@ describe('game reward events', () => {
       `select game_session_id::text, xp, syiling, capped_reason from game_reward_events where user_id = $1::bigint order by id`,
       [userId],
     )
+  /** `games_award_syiling` lives in `reward_settings` (48 section 2, DM-48). */
+  const coinsOn = (on: boolean) => t.db.query('update reward_settings set mini_games_give_coins = $1', [on])
   /** MYT noon of the test day, so that a case stays inside one Malaysia day. */
   const NOON = new Date('2026-10-20T04:00:00Z')
 
@@ -26,7 +28,7 @@ describe('game reward events', () => {
     await t.close()
   })
   beforeEach(async () => {
-    await setting('games_award_syiling', 1)
+    await coinsOn(true)
     await t.db.query(`update gamification_settings set value = 500 where key = 'games_daily_xp_cap'`)
     await t.db.query(`update gamification_settings set value = 100 where key = 'games_daily_syiling_cap'`)
     t.clock.set(NOON)
@@ -153,7 +155,7 @@ describe('game reward events', () => {
   describe('syiling off', () => {
     it('with games_award_syiling off the event records the XP and 0 syiling, and no ledger row', async () => {
       const u = await bareUser(t, 'Tanpa Syiling')
-      await setting('games_award_syiling', 0)
+      await coinsOn(false)
       const s = session()
       expect(await t.gamification.onGameResult(u, finish(40, 9, s), { isTest: false })).toEqual({ coinsCredited: 0, xpAdded: 40, cappedReason: null })
       expect(await eventsOf(u)).toEqual([{ game_session_id: s.id, xp: 40, syiling: 0, capped_reason: null }])
