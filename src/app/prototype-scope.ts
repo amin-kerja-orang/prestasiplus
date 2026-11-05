@@ -218,7 +218,7 @@ export const TEACHER_ITEMS: readonly MatrixItem[] = [
   item(41, 'Pelajar Saya', p('/guru/pelajar')),
   item(42, 'Laporan', p('/guru/laporan')),
   item(43, 'Laporan Mingguan', p('/guru/laporan-mingguan-kelas'), p('/laporan-mingguan')),
-  item(44, 'Sumbang Soalan', p('/guru/soalan')),
+  item(44, 'Sumbang Soalan', p('/guru/soalan'), p('/admin/soalan-gambar')),
   // [S6 end]
 ]
 
@@ -247,7 +247,7 @@ export const SCHOOL_ADMIN_ITEMS: readonly MatrixItem[] = [
   // [S6 begin]
   item(46, 'Statistik Penggunaan', p('/admin-sekolah/statistik-penggunaan')),
   item(47, 'DSKP Heatmap', p('/admin-sekolah/dskp-heatmap')),
-  item(48, 'Laporan Aktiviti', p('/admin-sekolah/laporan-aktiviti')),
+  item(48, 'Laporan Aktiviti', p('/admin-sekolah/laporan-aktiviti'), p('/admin/soalan-gambar')),
   item(
     49,
     'Amaran Awal',
