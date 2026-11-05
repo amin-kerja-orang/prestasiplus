@@ -29,7 +29,8 @@ export interface CsvRecord {
 }
 
 /** Splits CSV text into records; quoted fields may contain commas, `""` and line breaks. */
-export function parseCsv(text: string): CsvRecord[] {
+/** `limit`: stop once this many records were read (a caller that only needs to know the file is over its row cap does not build the rest). */
+export function parseCsv(text: string, limit = Number.POSITIVE_INFINITY): CsvRecord[] {
   const src = text.replace(/^﻿/, '')
   const records: CsvRecord[] = []
   let cells: string[] = []
@@ -51,7 +52,7 @@ export function parseCsv(text: string): CsvRecord[] {
     touched = false
   }
 
-  for (let i = 0; i < src.length; i++) {
+  for (let i = 0; i < src.length && records.length < limit; i++) {
     const ch = src[i] as string
     if (quoted) {
       if (ch === '"' && src[i + 1] === '"') {
@@ -88,7 +89,7 @@ export function parseCsv(text: string): CsvRecord[] {
       cell += ch
     }
   }
-  if (touched || cell !== '' || cells.length > 0) endRecord()
+  if (records.length < limit && (touched || cell !== '' || cells.length > 0)) endRecord()
   return records
 }
 
@@ -131,13 +132,6 @@ export interface ImportLookups {
   codes?: CodeLookups
 }
 
-/** The Guru caps (SRS M10 S22): question text up to 2000, each option up to 500 characters. */
-export interface ImportCaps {
-  textMax: number
-  optionMax: number
-}
-export const GURU_IMPORT_CAPS: ImportCaps = { textMax: 2000, optionMax: 500 }
-
 export interface PlannedRow {
   line: number
   /** New header only. */
@@ -166,11 +160,11 @@ const toInt = (value: string): number | null => (/^\d{1,9}$/.test(value) ? Numbe
 /** A positive decimal id without leading zeros trouble: "007" is the same id as "7". */
 const toId = (value: string): string | null => (/^\d{1,18}$/.test(value) ? String(BigInt(value)) : null)
 
-/** BE-09 stores MCQs with 3 to 8 options (contract `QuestionLeafPart`), so a row with fewer is a failed row, not a rolled-back import. */
-/** 3..8 options: the contract and the S1-T05 card win over Q-11's "2 hingga 8" (deviation recorded in the PR). */
-const MIN_OPTIONS = 3
-/** BE-09 has no text for this rule (its contract uses the generic schema message); this copy is the lead's fallback. */
-export const MIN_OPTIONS_MESSAGE = 'Pilihan jawapan mesti sekurang-kurangnya 3.'
+/** BE-09 stores MCQs with 2 to 8 options (contract `QuestionLeafPart`, S1-T09a), so a row with fewer is a failed row, not a rolled-back import. */
+/** 2..8 options: the contract (S1-T09a) and Q-11's "2 hingga 8" now agree; the earlier 3..8 deviation of S1-T05 is withdrawn. */
+const MIN_OPTIONS = 2
+/** The contract text of the same rule (`INTAKE_GATE_MESSAGES.mcqOptionsMin`). */
+export const MIN_OPTIONS_MESSAGE = 'Soalan objektif perlu sekurang-kurangnya 2 pilihan.'
 
 /**
  * The legacy (positional) header starts with `question_text`; anything else is the new header (D115 rule a). A legacy file with its columns
@@ -186,7 +180,6 @@ export function planImport(
   text: string | CsvRecord[],
   lookups: ImportLookups,
   defaults: ImportDefaults = NO_IMPORT_DEFAULTS,
-  caps: ImportCaps | null = null,
 ): ImportPlan {
   const [header, ...data] = typeof text === 'string' ? parseCsv(text) : text
   const plan: ImportPlan = { missingColumns: [], rows: [], failures: [], dataRows: 0, failedQuestions: 0, rowLimitExceeded: false, warnings: [], format: 'legacy' }
@@ -210,7 +203,7 @@ export function planImport(
   plan.missingColumns = (legacy ? QUESTION_IMPORT_REQUIRED_COLUMNS : QUESTION_IMPORT_CODE_REQUIRED_COLUMNS).filter((c) => !index.has(c))
   if (plan.missingColumns.length > 0) return plan
   if (!legacy) {
-    planCodeRows(header, data, index, lookups, defaults, caps, plan)
+    planCodeRows(header, data, index, lookups, defaults, plan)
     return plan
   }
 
@@ -271,14 +264,6 @@ export function planImport(
     }
     if (texts.filter((t) => t !== '').length < MIN_OPTIONS) {
       fail(MIN_OPTIONS_MESSAGE)
-      continue
-    }
-    if (caps && [...stemMs].length > caps.textMax) {
-      fail(MSG.textTooLong)
-      continue
-    }
-    if (caps && texts.some((o) => [...o].length > caps.optionMax)) {
-      fail(MSG.optionTooLong)
       continue
     }
     const kertasCell = get('kertas').trim()
@@ -343,7 +328,6 @@ function planCodeRows(
   index: ReadonlyMap<string, number>,
   lookups: ImportLookups,
   defaults: ImportDefaults,
-  caps: ImportCaps | null,
   plan: ImportPlan,
 ): void {
   const codes: CodeLookups = lookups.codes ?? { subjectsByCode: new Map(), levelsByCode: new Map(), facts: new Map() }
@@ -356,8 +340,8 @@ function planCodeRows(
       plan.warnings.push(QUESTION_IMPORT_MESSAGES.unknownColumn(n))
     }
   }
-  const textMax = caps?.textMax ?? 2000
-  const optionMax = caps?.optionMax ?? 500
+  const textMax = 2000
+  const optionMax = 500
   const seenKeys = new Set<string>()
   let lastKey: string | null = null
 

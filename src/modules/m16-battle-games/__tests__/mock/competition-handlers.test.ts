@@ -9,7 +9,10 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/api'
 
+import { roundHalfUp } from '@/lib/number'
 import { users } from '@/modules/m01-authentication/mock'
+import { schools } from '@/modules/m02-users-schools/mock'
+import { kirkpatrick } from '@/modules/m05-practice/mock'
 import {
   fetchActiveTournaments,
   fetchLeague,
@@ -29,6 +32,7 @@ const D5_STUDENT = 3 // no school
 // A pupil of school 8880, which is in no seeded league (account 4 shares SMK DEMO with account 2 since D72).
 const D1_STUDENT = 3201
 const ANCHOR_8106 = 4301 // logged-in anchor of school 8106
+const SCHOOL_ADMIN = 8
 
 let booted: Booted
 
@@ -745,7 +749,10 @@ describe('API client (api/)', () => {
       fields: { invite_code: 'Kod jemputan tidak sah.' },
     })
     expect((await fetchSchoolStandings({ period: 'all_time' })).rows).toHaveLength(7)
-    expect((await fetchSekolahBersaing('2026-09-14')).count).toBe(48)
+    token = setUser(SCHOOL_ADMIN).token
+    expect((await fetchSekolahBersaing()).length).toBeGreaterThan(0)
+    token = setUser(D5_STUDENT).token
+    await expect(fetchSekolahBersaing()).rejects.toMatchObject({ status: 403 })
     expect((await fetchSchoolDetail(8106)).allTime.battles).toBe(19)
   })
 
@@ -757,105 +764,61 @@ describe('API client (api/)', () => {
   })
 })
 
-describe('#50 Sekolah Bersaing (S28)', () => {
-  type SB = {
-    weekStart: string
-    count: number
-    rows: {
-      rank: number
-      schoolName: string
-      state: string
-      aktifPct: number
-      streakAvg: number
-      notaPer10: number
-      anonymous: boolean
-    }[]
-  }
+describe('API-AS-14 Sekolah Bersaing (R1-AS-45)', () => {
+  type Board = { rank: number; school: string; state: string; accuracy: number; pupils: number }[]
+  const URL = '/api/sekolah-bersaing'
 
-  it('defaults to the current week: Monday 21 Sep 2026, 49 observed rows', async () => {
-    const sb = await data<SB>('/api/sekolah-bersaing', D5_STUDENT)
-    expect(sb.weekStart).toBe('2026-09-21')
-    expect(sb.count).toBe(49)
-    expect(sb.rows).toHaveLength(49)
-    expect(sb.rows.map((r) => r.rank)).toEqual(Array.from({ length: 49 }, (_, i) => i + 1))
-    expect(sb.rows.slice(0, 5).map((r) => [r.state, r.aktifPct, r.streakAvg, r.notaPer10])).toEqual(
-      [
-        ['Kelantan', 0, 15, 0],
-        ['Johor', 0, 9.3, 0],
-        ['Sabah', 0, 8.6, 0],
-        ['Sabah', 0, 8.4, 0],
-        ['Selangor', 0, 8.2, 0],
-      ],
-    )
-    expect(sb.rows[16]).toMatchObject({
-      rank: 17,
-      state: 'Selangor',
-      aktifPct: 0.5,
-      streakAvg: 1.6,
-    })
-    expect(sb.rows[18]).toMatchObject({ rank: 19, aktifPct: 0.4, streakAvg: 1.1 })
-    expect(sb.rows[45]).toMatchObject({ rank: 46, state: 'Kuala Lumpur' })
-    expect(sb.rows[48]).toMatchObject({ rank: 49, state: 'Selangor', streakAvg: 0 })
-    // Per state: Selangor 22, Johor 5, Sabah 4, Kuala Lumpur 4, Kedah 3, Pahang 3, others 2.
-    const perState = new Map<string, number>()
-    for (const r of sb.rows) perState.set(r.state, (perState.get(r.state) ?? 0) + 1)
-    expect(Object.fromEntries(perState)).toEqual({
-      Selangor: 22,
-      Johor: 5,
-      Sabah: 4,
-      'Kuala Lumpur': 4,
-      Kedah: 3,
-      Pahang: 3,
-      Kelantan: 2,
-      Perak: 2,
-      Melaka: 2,
-      Terengganu: 2,
-    })
-    // 49 different register schools, none of the battle anchors or fixture schools.
-    expect(new Set(sb.rows.map((r) => r.schoolName)).size).toBeGreaterThan(40)
-    expect(sb.rows.every((r) => r.schoolName !== '' && !r.anonymous)).toBe(true)
-  })
-
-  it('?week= takes any date of the week; the earlier weeks hold 48 rows (the 21 Sep list without row 46)', async () => {
-    const w14 = await data<SB>('/api/sekolah-bersaing?week=2026-09-17', D5_STUDENT)
-    expect([w14.weekStart, w14.count]).toEqual(['2026-09-14', 48])
-    expect(w14.rows[17]).toMatchObject({ rank: 18, state: 'Kelantan', streakAvg: 2.4 })
-    expect(w14.rows[19]).toMatchObject({ rank: 20, state: 'Kuala Lumpur', streakAvg: 1.5 })
-    const w07 = await data<SB>('/api/sekolah-bersaing?week=2026-09-07', D5_STUDENT)
-    expect([w07.weekStart, w07.count]).toEqual(['2026-09-07', 48])
-    expect(w07.rows[17]).toMatchObject({ aktifPct: 0.4, streakAvg: 1.8 })
-    const w31 = await data<SB>('/api/sekolah-bersaing?week=2026-08-31', D5_STUDENT)
-    expect([w31.weekStart, w31.count]).toEqual(['2026-08-31', 48])
-    expect(w31.rows[19]).toMatchObject({ aktifPct: 0, streakAvg: 1.6 })
-  })
-
-  it('a week without a snapshot is the empty state; an invalid week shows the current week (DV-M16-30)', async () => {
-    expect(await data('/api/sekolah-bersaing?week=2025-01-06', D5_STUDENT)).toEqual({
-      weekStart: '2025-01-06',
-      count: 0,
-      rows: [],
-    })
-    for (const week of ['abc', '2026-02-30', '', '2026-13-01', '21-09-2026']) {
-      const sb = await data<SB>(`/api/sekolah-bersaing?week=${week}`, D5_STUDENT)
-      expect([week, sb.weekStart, sb.count]).toEqual([week, '2026-09-21', 49])
+  it.each([
+    ['the school admin', SCHOOL_ADMIN],
+    ['the admin', ADMIN],
+  ])('%s gets the rows, ranked from 1, at most 30', async (_who, as) => {
+    const board = await data<Board>(URL, as)
+    expect(board.length).toBeGreaterThan(0)
+    expect(board.length).toBeLessThanOrEqual(30)
+    expect(board.map((r) => r.rank)).toEqual(board.map((_, i) => i + 1))
+    for (const r of board) {
+      expect(Object.keys(r).sort()).toEqual(['accuracy', 'pupils', 'rank', 'school', 'state'])
+      expect(r.school).not.toBe('')
+      expect(Math.round(r.accuracy * 10) / 10).toBe(r.accuracy)
     }
   })
 
-  it('a school opted out of the board shows as "Sekolah anonim" (fixture)', async () => {
-    m16Hooks.m16Fixture('anonymousSchool', { rank: 3 })
-    const sb = await data<SB>('/api/sekolah-bersaing', D5_STUDENT)
-    expect(sb.rows[2]).toMatchObject({ rank: 3, schoolName: 'Sekolah anonim', anonymous: true })
-    expect(sb.rows[1]?.anonymous).toBe(false)
+  it('orders the rows by accuracy, highest first', async () => {
+    const accuracy = (await data<Board>(URL, SCHOOL_ADMIN)).map((r) => r.accuracy)
+    expect(accuracy).toEqual([...accuracy].sort((a, b) => b - a))
   })
 
-  it('the repository windows follow the clock: next week is empty', async () => {
+  it('the accuracy is the mean of the per-session percent of the M05 owner', async () => {
+    const [first] = await data<Board>(URL, SCHOOL_ADMIN)
+    const owner = kirkpatrick
+      .schools()
+      .find((s) => schools.get(s.schoolId)?.name === first?.school)
+    expect(owner).toBeDefined()
+    expect(first?.pupils).toBe(owner?.sessionStudents)
+    expect(first?.accuracy).toBe(
+      roundHalfUp((owner?.scoreSum ?? 0) / (owner?.scoredSessions ?? 1), 1),
+    )
+  })
+
+  it.each([
+    ['a student', T4_STUDENT],
+    ['a student with no school', D5_STUDENT],
+  ])('%s gets 403 with the shared error shape', async (_who, as) => {
+    const res = await call<ErrorBody>('GET', URL, as)
+    expect(res.status).toBe(403)
+    expect(res.body.error.code).toBe('FORBIDDEN')
+    expect(res.body.error.message).toEqual(expect.any(String))
+  })
+
+  it('an unknown query parameter is ignored (FR-AS-45-3)', async () => {
+    const plain = await data<Board>(URL, SCHOOL_ADMIN)
+    expect(await data<Board>(`${URL}?week=2026-09-14&zzz=1`, SCHOOL_ADMIN)).toEqual(plain)
+  })
+})
+
+describe('the repository windows follow the clock', () => {
+  it('a week later the monthly school standings are October (empty)', async () => {
     booted.clock.advance(7 * 24 * 3_600_000)
-    expect(await data('/api/sekolah-bersaing', D5_STUDENT)).toEqual({
-      weekStart: '2026-09-28',
-      count: 0,
-      rows: [],
-    })
-    // The school standings follow too: the monthly period is now October (empty).
     const s3 = await data<{ rows: unknown[] }>(
       '/api/battle/standings/schools?period=monthly',
       ADMIN,

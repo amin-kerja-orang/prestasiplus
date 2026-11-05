@@ -8,8 +8,6 @@ import type {
   QuestionBulkRequestSchema,
   QuestionCreateRequestSchema,
   QuestionCurriculumTagSchema,
-  QuestionGuruCreateRequestSchema,
-  QuestionGuruUpdateRequestSchema,
   QuestionPart,
   QuestionPublicSchema,
   QuestionStatus,
@@ -22,8 +20,6 @@ export type { QuestionPart, QuestionStatus }
 /** The parsed bodies the controllers hand to the service (contract schemas, already validated). */
 export type QuestionCreateInput = z.output<typeof QuestionCreateRequestSchema>
 export type QuestionUpdateInput = z.output<typeof QuestionUpdateRequestSchema>
-export type QuestionGuruCreateInput = z.output<typeof QuestionGuruCreateRequestSchema>
-export type QuestionGuruUpdateInput = z.output<typeof QuestionGuruUpdateRequestSchema>
 export type QuestionBulkAction = z.output<typeof QuestionBulkRequestSchema>['action']
 export type QuestionTag = z.output<typeof QuestionCurriculumTagSchema>
 /** What a learner may see (`QuestionPublicSchema`): never a key, explanation, model answer or source. */
@@ -304,12 +300,6 @@ export interface QuestionFilter {
 export type SampleFilter = QuestionFilter
 export type GroupCountBy = 'subject' | 'level' | 'status' | 'difficultyTp' | 'unit' | 'chapter'
 
-export interface GuruListFilter {
-  ownerId: string
-  page: number
-  pageSize: number
-}
-
 export interface StructuredListFilter {
   subjectId?: string
   educationLevelId?: string
@@ -391,11 +381,6 @@ export interface QuestionGrade {
   needsReview: boolean
 }
 
-export interface ContributionCounts {
-  total: number
-  byStatus: Record<QuestionStatus, number>
-}
-
 /**
  * The gate facts that live outside the version row (R1-H-A18), read by `QuestionsRepository.gateFacts` and handed to `gateDataOf`.
  * D99 (2026-11-01): no per-question source or rights fact. V2 asks for them once, at the intake batch.
@@ -430,6 +415,14 @@ export interface TextbookRef {
   /** Last page, when the reference spans pages. */
   hingga?: number
 }
+
+/**
+ * S1-T09a (D4, DM-69): the stored `question_versions.type` values once the DB check is widened (a later S1-T09a part): the 8 above plus
+ * `mcq_multi`, `true_false` and `fill_blank`. The API names and the mapping are `QUESTION_TYPES` / `questionTypeToDb` /
+ * `questionTypeFromDb` in `@pp/contract`. The DB is not changed by this part.
+ */
+export const STORE_QUESTION_TYPES_V3 = [...STORE_QUESTION_TYPES, 'mcq_multi', 'true_false', 'fill_blank'] as const
+export type StoreQuestionTypeV3 = (typeof STORE_QUESTION_TYPES_V3)[number]
 
 /** Teacher structured detail source: the question view of the LIVE version plus its stimulus group (no creator, no DSKP chain). */
 export type GuruStructuredRecord = QuestionView & { stimulusGroup: StimulusGroupRecord | null }

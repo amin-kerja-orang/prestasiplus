@@ -6,7 +6,7 @@ import type {
   GamificationReadPort,
   GamificationTier,
 } from '../reports/performance/ports'
-import { defaultTier, nextTierOf, nextTierProgress } from '../wallet/rules'
+import { lifetimeTierOf, nextTierOf, nextTierProgress } from '../wallet/rules'
 import { GamificationRepository, type TierRecord } from './gamification.repository'
 
 const FALLBACK_TIER: GamificationTier = { key: '', name: '', emoji: '', ordinal: 1, progressPct: 0, toNext: null, nextName: null, nextKey: null }
@@ -19,7 +19,7 @@ const FALLBACK_TIER: GamificationTier = { key: '', name: '', emoji: '', ordinal:
  *
  * Tier ordinal (S18 "Tahap", INFERRED by the mock): the 1-based position of the tier among the active tiers by
  * `minSyiling`. `progressPct` / `toNext` / `nextName` / `nextKey` are those of the wallet's next tier
- * (100 / null / null / null at the top tier).
+ * (100 / null / null / null at the top tier), on the lifetime total like the pupil's own hub (FR-GM-17.2).
  */
 @Injectable()
 export class PerformanceGamificationAdapter implements GamificationReadPort {
@@ -55,9 +55,9 @@ export class PerformanceGamificationAdapter implements GamificationReadPort {
     }
     const active = tiers.filter((t) => t.isActive).sort((a, b) => a.minSyiling - b.minSyiling || a.sortOrder - b.sortOrder)
     for (const id of unique) {
-      const w = wallets.get(id) ?? { level: 1, syiling: 0, tierId: null }
+      const w = wallets.get(id) ?? { level: 1, syiling: 0, lifetime: 0, tierId: null }
       const s = streaks.get(id) ?? { current: 0, best: 0 }
-      out.set(id, { userId: id, syiling: w.syiling, level: w.level, tier: this.tierOf(tiers, active, w.tierId, w.syiling), streak: s })
+      out.set(id, { userId: id, syiling: w.syiling, level: w.level, tier: this.tierOf(tiers, active, w.tierId, w.lifetime), streak: s })
     }
     return out
   }
@@ -71,12 +71,12 @@ export class PerformanceGamificationAdapter implements GamificationReadPort {
     }
   }
 
-  private tierOf(all: TierRecord[], active: TierRecord[], tierId: string | null, syiling: number): GamificationTier {
-    const current = (tierId === null ? undefined : all.find((t) => t.id === tierId)) ?? defaultTier(all)
+  private tierOf(all: TierRecord[], active: TierRecord[], tierId: string | null, lifetime: number): GamificationTier {
+    const current = lifetimeTierOf(all, { tierId, totalSyilingEarned: lifetime })
     if (!current) return FALLBACK_TIER
     const next = nextTierOf(all, current.id)
     const ordinal = Math.max(1, active.findIndex((t) => t.id === current.id) + 1)
-    const progress = next ? nextTierProgress(syiling, next) : null
+    const progress = next ? nextTierProgress(lifetime, next) : null
     return {
       key: current.tierName,
       name: current.labelMs,
