@@ -113,7 +113,7 @@ export const APPLY_BATCH_SQL = `
 /** One restore batch: the OLDEST unrestored backup row of a part, only while the part still holds the trimmed value. */
 export const RESTORE_BATCH_SQL = `
   WITH todo AS (
-    SELECT DISTINCT ON (b.part_id) b.id, b.part_id, b.old_prompt_ms, b.old_prompt_en
+    SELECT DISTINCT ON (b.part_id) b.id, b.part_id, b.old_prompt_ms, b.old_prompt_en, b.new_prompt_ms, b.new_prompt_en
       FROM ${BACKUP_TABLE} b
       JOIN question_parts p ON p.id = b.part_id
      WHERE b.restored_at IS NULL
@@ -129,6 +129,10 @@ export const RESTORE_BATCH_SQL = `
     UPDATE question_parts p SET prompt_ms = t.old_prompt_ms, prompt_en = t.old_prompt_en
       FROM todo t JOIN locked l ON l.id = t.part_id
      WHERE p.id = t.part_id
+       -- Re-checked on the row as it is once our lock is held (READ COMMITTED re-evaluates this on the
+       -- newest version): a prompt edited while we waited is left alone and its backup row stays unrestored.
+       AND p.prompt_ms = t.new_prompt_ms
+       AND p.prompt_en IS NOT DISTINCT FROM t.new_prompt_en
     RETURNING p.id
   ),
   mark AS (
