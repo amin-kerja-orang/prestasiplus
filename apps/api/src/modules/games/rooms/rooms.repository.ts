@@ -16,6 +16,8 @@ export interface RoomRow {
   maxPlayers: number
   hostId: string
   status: string
+  /** DM-67: the `attempt_id` of this play of the room. */
+  sessionId: string
   startedAt: Date | null
   finishedAt: Date | null
   state: RoomState | null
@@ -50,6 +52,7 @@ export interface NewRoom {
 
 export interface RoomPatch {
   status?: string
+  sessionId?: string
   startedAt?: Date
   finishedAt?: Date
   state?: RoomState
@@ -76,6 +79,7 @@ const toRoom = (r: {
   maxPlayers: number
   hostId: bigint
   status: string
+  sessionId: string
   startedAt: Date | null
   finishedAt: Date | null
   state: Prisma.JsonValue | null
@@ -94,6 +98,7 @@ const toRoom = (r: {
   maxPlayers: r.maxPlayers,
   hostId: idToString(r.hostId),
   status: r.status,
+  sessionId: r.sessionId,
   startedAt: r.startedAt,
   finishedAt: r.finishedAt,
   state: (r.state as unknown as RoomState | null) ?? null,
@@ -143,12 +148,13 @@ export class RoomsRepository {
     return rows.length > 0
   }
 
+  /** The human seats, in seat order. Robot seats (null `user_id`) are written and read by part GAME-R, which keys the engine by seat. */
   async players(code: string): Promise<PlayerRow[]> {
     const rows = await this.db.gameRoomPlayer.findMany({
       where: { roomCode: code },
       orderBy: { id: 'asc' },
     })
-    return rows.map(toPlayer)
+    return rows.flatMap((r) => (r.userId === null ? [] : [toPlayer({ ...r, userId: r.userId })]))
   }
 
   /** Inserts a waiting room with `code`; false when the code is taken (the caller draws the next code). */
@@ -177,6 +183,7 @@ export class RoomsRepository {
       where: { code },
       data: {
         ...(patch.status === undefined ? {} : { status: patch.status }),
+        ...(patch.sessionId === undefined ? {} : { sessionId: patch.sessionId }),
         ...(patch.startedAt === undefined ? {} : { startedAt: patch.startedAt }),
         ...(patch.finishedAt === undefined ? {} : { finishedAt: patch.finishedAt }),
         ...(patch.state === undefined
