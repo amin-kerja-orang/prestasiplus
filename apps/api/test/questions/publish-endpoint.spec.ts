@@ -49,10 +49,22 @@ describe('AC 5 (endpoint half): publishing needs subject, level, unit, SP and TP
     expect(rows[0]?.live_version_no).toBe(1)
   })
 
-  it('a flat dskpSpId alone gives the SP, but the TP is the difficulty and the unit is its ancestor', async () => {
+  it('AC-ADM-QE4.5: with DSKP nodes a flat dskpSpId gives the SP and its unit, but TP stays empty and the TP message fires', async () => {
     const tag = await tagOf(t.db, refs.mathId, refs.t4Id)
-    const res = await admin.post('/api/questions', mcqBody(refs, { status: 'approved', dskpSpId: tag.spIds[0] }))
-    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    const res = await admin.post('/api/questions', mcqBody(refs, { status: 'approved', difficultyLevel: 3, dskpSpId: tag.spIds[0] }))
+    expect(res.status, JSON.stringify(res.body)).toBe(422)
+    expect(res.body.error.fields.tp).toBe('Sila pilih tahap penguasaan (TP).')
+    expect(res.body.error.fields).not.toHaveProperty('unitId')
+    expect(res.body.error.fields).not.toHaveProperty('spIds')
+  })
+
+  it('AC-ADM-QE4.5: with DSKP nodes a draft with no tag is refused with the SP and the TP messages', async () => {
+    const res = await admin.post('/api/questions', mcqBody(refs, { status: 'approved', difficultyLevel: 3 }))
+    expect(res.status, JSON.stringify(res.body)).toBe(422)
+    expect(res.body.error.fields).toMatchObject({
+      spIds: 'Sila pilih sekurang-kurangnya satu SP DSKP.',
+      tp: 'Sila pilih tahap penguasaan (TP).',
+    })
   })
 
   it('bulk Terbitkan: a review question without a tag stays in review; a tagged one is approved', async () => {

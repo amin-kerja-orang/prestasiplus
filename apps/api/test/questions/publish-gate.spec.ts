@@ -79,7 +79,7 @@ describe('setStatus publish gate (service, real database)', () => {
     const err = await apiError(() => svc.setStatus(id, 'approved', admin.userId))
     expect(err.getStatus()).toBe(422)
     expect(err.code).toBe('VALIDATION_ERROR')
-    expect(Object.keys(err.fields ?? {}).sort()).toEqual(['spIds', 'unitId'])
+    expect(Object.keys(err.fields ?? {}).sort()).toEqual(['parts.1.difficultyTp', 'spIds', 'tp', 'unitId'])
     expect(await svc.getStatus(id)).toMatchObject({ status: 'review', liveVersionNo: null })
   })
 
@@ -96,7 +96,7 @@ describe('setStatus publish gate (service, real database)', () => {
     const before = (await t.db.query<{ n: string }>(`select count(*) n from questions`))[0]?.n
     const err = await apiError(() => svc.create(mcqInput(tag, { status: 'approved' }), admin))
     expect(err.getStatus()).toBe(422)
-    expect(Object.keys(err.fields ?? {}).sort()).toEqual(['spIds', 'unitId'])
+    expect(Object.keys(err.fields ?? {}).sort()).toEqual(['parts.1.difficultyTp', 'spIds', 'tp', 'unitId'])
     expect((await t.db.query<{ n: string }>(`select count(*) n from questions`))[0]?.n).toBe(before)
     const ok = await svc.create(mcqInput(tag, { status: 'approved', tag: tagBody(tag, 2) }), admin)
     expect(ok.version.status).toBe('approved')

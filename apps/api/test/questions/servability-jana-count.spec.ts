@@ -71,7 +71,7 @@ describe('Jana eligibility: the SQL scope equals the pool facts through describe
     await approve('control')
     await approve('noUnit', { tag: undefined })
     await approve('t1t3NoUnit', { tag: undefined })
-    await setVersion('t1t3NoUnit', `form_origin = 't1_t3'`)
+    await setVersion('t1t3NoUnit', `form_origin = 't1_t3', difficulty_tp = 4`)
     await approve('tagReview')
     await setVersion('tagReview', 'tag_review = true')
     await approve('marksZero')
