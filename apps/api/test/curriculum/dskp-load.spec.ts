@@ -219,14 +219,19 @@ describe('DSKP loader script (R1-B04)', () => {
     it('a subject whose level is missing from education_levels writes nothing', async () => {
       const t = join(dir, 'half')
       mkdirSync(t, { recursive: true })
-      // T3 is removed so the extract needs a level the table does not have (this database is private to the file).
-      await db.query(`delete from education_levels where code = 'T3'`)
-      writeFileSync(join(t, 'matematik-t3.json'), JSON.stringify(fixture({ units: [{ ...fixture().units[0], level: 'T3' }] })))
-      const before = await nodesNow()
-      const r = await runDskpLoad(db.prisma, readDskpSources(t), { dryRun: false, now: NOW })
-      expect(exitCodeOf(r)).toBe(1)
-      expect(r.subjects[0]?.error).toContain('education level "T3" is not in education_levels')
-      expect(await nodesNow()).toBe(before)
+      // T3 is renamed (not deleted: that would cascade to chapters/subject_levels) and put back afterwards,
+      // because the shipped MATH extract has T1-T3 units and the later tests need the level.
+      await db.query(`update education_levels set code = 'T3-hidden' where code = 'T3'`)
+      try {
+        writeFileSync(join(t, 'matematik-t3.json'), JSON.stringify(fixture({ units: [{ ...fixture().units[0], level: 'T3' }] })))
+        const before = await nodesNow()
+        const r = await runDskpLoad(db.prisma, readDskpSources(t), { dryRun: false, now: NOW })
+        expect(exitCodeOf(r)).toBe(1)
+        expect(r.subjects[0]?.error).toContain('education level "T3" is not in education_levels')
+        expect(await nodesNow()).toBe(before)
+      } finally {
+        await db.query(`update education_levels set code = 'T3' where code = 'T3-hidden'`)
+      }
     })
 
     it('a file naming an unknown subject is reported as unassigned, exit code 1', async () => {
