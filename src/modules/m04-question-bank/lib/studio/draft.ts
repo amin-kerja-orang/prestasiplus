@@ -3,6 +3,7 @@
  * request body of `POST/PUT /api/questions`. The part tree is the v2 wire model: leaves carry marks, a mode, a key, and here
  * the DSKP tags `difficultyTp` (TP) and `kbat` (Aras pemikiran). Pure, no I/O.
  */
+import { DIFFICULTY_LABELS } from '../question-list'
 import { dskpGaps, isCognitive, isKbat, questionTp, type CognitiveValue } from './dskp-tags'
 
 export type LeafMode = 'mcq' | 'short_text' | 'numeric'
@@ -41,12 +42,8 @@ export interface LeafDraft {
 }
 
 export type Kertas = '' | '1' | '2' | '3'
-/** V2 Langkah 4 "Kesukaran": Mudah, Sederhana, Sukar. The wire holds 1 to 5. */
-export const KESUKARAN = [
-  { value: 1, label: 'Mudah' },
-  { value: 3, label: 'Sederhana' },
-  { value: 5, label: 'Sukar' },
-] as const
+/** FR-ADM-QE3.7: `Tahap kesukaran` 1 to 5 (DM-47), the labels of the question list. */
+export const KESUKARAN = [1, 2, 3, 4, 5].map((value) => ({ value, label: DIFFICULTY_LABELS[value] ?? String(value) }))
 
 export interface StudioDraft {
   /** Stored question TP of a question whose parts carry no TP (intake-born): the parts inherit it, a save keeps it. */
@@ -154,33 +151,68 @@ export function draftTpNote(draft: StudioDraft): string {
 /* -------------------------------------------------------------------------------------------- completeness */
 
 export interface Gap {
-  /** The wizard step the author fixes it in: 1 Kertas, 2 Rangsangan, 3 Sub-bahagian, 4 Tag. */
+  /** The wizard step the author fixes it in: 1 Tag, 2 Kertas, 3 Rangsangan, 4 Sub-bahagian (FR-QA-16). */
   step: 1 | 2 | 3 | 4
   message: string
+  /** `data-testid` of the field the jump link focuses. */
+  field: string
+}
+
+/** The field of a leaf, by its label; the leaf row when the label is unknown. */
+function leafField(leaves: readonly Pick<LeafDraft, 'label'>[], label: string, part: string): string {
+  const i = leaves.findIndex((l) => l.label === label)
+  return i < 0 ? 'studio-add-leaf' : `studio-leaf-${String(i)}${part}`
 }
 
 /** What stops a draft being ready to approve. A draft may be saved with gaps; the gate is at Terbitkan (V2 S1.2). */
 export function draftGaps(d: StudioDraft, levelName = ''): Gap[] {
   const gaps: Gap[] = []
-  if (d.subjectId === '') gaps.push({ step: 1, message: 'Sila pilih subjek.' })
-  if (d.educationLevelId === '') gaps.push({ step: 1, message: 'Sila pilih tahap pendidikan.' })
-  if (d.numberLabel.trim() === '') gaps.push({ step: 1, message: 'Sila isi nombor soalan.' })
-  if (d.kertas === '' && /\b[45]\b/.test(levelName)) gaps.push({ step: 1, message: 'Soalan SPM belum ada kertas.' })
-  if ([...d.stem.trim()].length < STEM_MIN) gaps.push({ step: 1, message: 'Teks soalan mesti sekurang-kurangnya 10 aksara.' })
-  if (d.leaves.length === 0) gaps.push({ step: 3, message: 'Soalan tiada sub-bahagian — tiada apa untuk dijawab.' })
-  for (const l of d.leaves) {
-    if (l.prompt.trim() === '') gaps.push({ step: 3, message: `Bahagian (${l.label}) belum ada arahan.` })
+  if (d.subjectId === '') gaps.push({ step: 1, field: 'studio-subject', message: 'Sila pilih subjek.' })
+  if (d.educationLevelId === '') gaps.push({ step: 1, field: 'studio-level', message: 'Sila pilih tahap pendidikan.' })
+  if (d.numberLabel.trim() === '') gaps.push({ step: 2, field: 'studio-number', message: 'Sila isi nombor soalan.' })
+  if (d.kertas === '' && /\b[45]\b/.test(levelName)) gaps.push({ step: 2, field: 'studio-kertas', message: 'Soalan SPM belum ada kertas.' })
+  if ([...d.stem.trim()].length < STEM_MIN) gaps.push({ step: 2, field: 'studio-stem', message: 'Teks soalan mesti sekurang-kurangnya 10 aksara.' })
+  if (d.leaves.length === 0) gaps.push({ step: 4, field: 'studio-add-leaf', message: 'Soalan tiada sub-bahagian — tiada apa untuk dijawab.' })
+  d.leaves.forEach((l, i) => {
+    const row = `studio-leaf-${String(i)}`
+    if (l.prompt.trim() === '') gaps.push({ step: 4, field: row, message: `Bahagian (${l.label}) belum ada arahan.` })
     if (l.mode === 'mcq') {
-      if (l.options.some((o) => o.text.trim() === '' && o.imageToken === null)) gaps.push({ step: 3, message: `Bahagian (${l.label}) ada pilihan kosong.` })
-      if (!l.options.some((o) => o.label === l.correct)) gaps.push({ step: 3, message: `Bahagian (${l.label}) mempunyai 0 pilihan betul — mesti tepat 1.` })
+      if (l.options.some((o) => o.text.trim() === '' && o.imageToken === null)) gaps.push({ step: 4, field: row, message: `Bahagian (${l.label}) ada pilihan kosong.` })
+      if (!l.options.some((o) => o.label === l.correct)) gaps.push({ step: 4, field: row, message: `Bahagian (${l.label}) mempunyai 0 pilihan betul — mesti tepat 1.` })
     } else if (l.mode === 'short_text') {
-      if (acceptedValues(l).length === 0) gaps.push({ step: 3, message: `Bahagian (${l.label}) tiada skema jawapan.` })
+      if (acceptedValues(l).length === 0) gaps.push({ step: 4, field: row, message: `Bahagian (${l.label}) tiada skema jawapan.` })
     } else if (!Number.isFinite(Number(l.numeric.value)) || l.numeric.value.trim() === '') {
-      gaps.push({ step: 3, message: `Bahagian (${l.label}) tiada skema jawapan.` })
+      gaps.push({ step: 4, field: row, message: `Bahagian (${l.label}) tiada skema jawapan.` })
     }
+  })
+  for (const m of dskpGaps({ unitId: d.unitId, spIds: d.spIds, leaves: d.leaves.map((l) => ({ ...l, tp: l.tp ?? d.inheritedTp ?? null })) })) {
+    const leaf = /Bahagian \((.+?)\)/.exec(m)?.[1]
+    if (leaf !== undefined) gaps.push({ step: 4, field: leafField(d.leaves, leaf, ''), message: m })
+    else gaps.push({ step: 1, field: m.includes(' SP') ? 'studio-dskp' : 'studio-unit', message: m })
   }
-  for (const m of dskpGaps({ unitId: d.unitId, spIds: d.spIds, leaves: d.leaves.map((l) => ({ ...l, tp: l.tp ?? d.inheritedTp ?? null })) })) gaps.push({ step: m.includes('Bahagian') ? 3 : 4, message: m })
   return gaps
+}
+
+/** The field a gate issue `path` names (API-Q-05), for the jump link of the completeness panel. */
+export function issueField(path: string, leaves: readonly Pick<LeafDraft, 'label'>[]): string {
+  const known: Readonly<Record<string, string>> = {
+    subjectId: 'studio-subject',
+    educationLevelId: 'studio-level',
+    kertas: 'studio-kertas',
+    numberLabel: 'studio-number',
+    questionText: 'studio-stem',
+    stem: 'studio-stem',
+    media: 'studio-stem-image',
+    unitId: 'studio-unit',
+    spIds: 'studio-dskp',
+    tp: 'studio-dskp',
+    chapterId: 'q-chapter',
+    difficultyLevel: 'studio-difficulty',
+  }
+  const hit = known[path]
+  if (hit !== undefined) return hit
+  const leaf = /^parts\.([^.]+)/.exec(path)?.[1]
+  return leaf === undefined ? 'studio-add-leaf' : leafField(leaves, leaf, '')
 }
 
 export const acceptedValues = (l: Pick<LeafDraft, 'accepted'>): string[] =>

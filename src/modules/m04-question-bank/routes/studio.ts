@@ -28,6 +28,10 @@ const routes: RouteRecordRaw[] = [
     meta: { ...adminMeta, title: 'Studio — Sunting soalan', header: { title: 'Studio — Sunting soalan', subtitle: 'Sunting soalan kanonikal' } },
   },
   {
+    path: '/admin/studio/questions/:id(\\d+)/edit',
+    redirect: (to) => ({ path: `/admin/studio/questions/${String(to.params.id)}/sunting` }),
+  },
+  {
     path: '/admin/studio/groups/:id(\\d+)',
     name: 'm04.studio.group',
     component: () => import('../pages/StudioGroupPage.vue'),

@@ -1,8 +1,7 @@
 <script setup lang="ts">
 /**
- * Studio "Cipta soalan" / "Sunting soalan" (R1-F03b, T13). One long page with a tab bar `Kertas`, `Rangsangan`,
- * `Sub-bahagian`, `Tag` (V2 cloud-student-mechanism section 3.1 step 2), a save bar `{n} markah` `· {n} belum lengkap`
- * `Simpan draf`, and these additions of V3: the shared stimulus is a GROUP of questions (D90), every leaf carries TP and
+ * Studio "Cipta soalan" / "Sunting soalan" (R1-F03b, T13). One long page with a tab bar `1 Tag`, `2 Kertas`, `3 Rangsangan`,
+ * `4 Sub-bahagian` (FR-QA-16), a save bar `{n} markah` `· {n} belum lengkap` `Simpan draf` with the completeness panel above it, and these additions of V3: the shared stimulus is a GROUP of questions (D90), every leaf carries TP and
  * Aras pemikiran, the unit and SP come from the DSKP tree, the Bab is a select (D89), and pictures go through the files
  * module. A draft saves with gaps; the gate is at approval. The status bar (Hantar untuk semakan, Terbitkan, Arkib, Edit sebagai
  * draf, Dilihat murid di) is `StudioStatusBar` (R1-F03a).
@@ -22,6 +21,7 @@ import {
   createQuestionInGroup,
   createStimulus,
   createStudioQuestion,
+  fetchGateCheck,
   fetchStudioQuestion,
   STUDIO_UNAVAILABLE,
   studioAvailable,
@@ -29,6 +29,7 @@ import {
   type StudioQuestionDetail,
 } from '../api/studio'
 import ChapterSelect from '../components/ChapterSelect.vue'
+import StudioCompletenessPanel, { type CompletenessRow } from '../components/studio/StudioCompletenessPanel.vue'
 import StudioDskpFields from '../components/studio/StudioDskpFields.vue'
 import StudioGroupEditor from '../components/studio/StudioGroupEditor.vue'
 import StudioImageField from '../components/studio/StudioImageField.vue'
@@ -46,6 +47,7 @@ import {
   draftTp,
   draftTpNote,
   hydrate,
+  issueField,
   KESUKARAN,
   nextLeafLabel,
   toRequestBody,
@@ -135,18 +137,54 @@ const readOnly = computed(() => !unlocked.value || unsupported.value.length > 0)
 const dirty = computed(() => saved.value !== null && !sameDraft(draft.value, saved.value))
 const levelName = computed(() => levels.value.find((l) => l.id === draft.value.educationLevelId)?.name ?? '')
 const gaps = computed(() => draftGaps(draft.value, levelName.value))
+/** What API-Q-05 says about the stored question; the panel adds it to the client gaps of the form. */
+const gateIssues = ref<CompletenessRow[]>([])
+const completeness = computed<CompletenessRow[]>(() => {
+  const rows: CompletenessRow[] = gaps.value.map((g) => ({ message: g.message, field: g.field }))
+  for (const i of gateIssues.value) if (!rows.some((r) => r.message === i.message)) rows.push(i)
+  return rows
+})
 const tabs = [
-  { key: 'kertas', label: 'Kertas' },
-  { key: 'rangsangan', label: 'Rangsangan' },
-  { key: 'sub', label: 'Sub-bahagian' },
-  { key: 'tag', label: 'Tag' },
+  { key: 'tag', label: '1 Tag' },
+  { key: 'kertas', label: '2 Kertas' },
+  { key: 'rangsangan', label: '3 Rangsangan' },
+  { key: 'sub', label: '4 Sub-bahagian' },
 ] as const
 type TabKey = (typeof tabs)[number]['key']
-const active = ref<TabKey>('kertas')
+const active = ref<TabKey>('tag')
 
 function go(key: TabKey): void {
   active.value = key
   document.getElementById(`studio-section-${key}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+/** The jump link of the panel: scroll to the field and focus it, or the first control inside it. */
+function jump(field: string): void {
+  const el = document.querySelector<HTMLElement>(`[data-testid="${field}"]`)
+  if (!el) return
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  // A themed select hides its native control, so the focus goes to the first control of the field.
+  const holder = el.closest<HTMLElement>('[data-ds="form-field"]') ?? el
+  const target = holder.querySelector<HTMLElement>('input:not([type="hidden"]), textarea, button') ?? el
+  target.focus({ preventScroll: true })
+}
+
+async function readGate(id: string): Promise<void> {
+  try {
+    const check = await fetchGateCheck(id)
+    gateIssues.value = check.issues.map((i) => ({ message: i.message, field: issueField(i.path, draft.value.leaves) }))
+  } catch {
+    gateIssues.value = []
+  }
+}
+
+/** FR-ADM-Q04.7: arriving from the old flat form, once; the query is then removed. */
+function noteOldForm(): void {
+  if (route.query.dari !== 'borang-lama') return
+  flash.success('Borang soalan lama telah dipindahkan ke Studio. Sila cipta soalan baharu di sini.')
+  const { dari: _dari, ...query } = route.query
+  void _dari
+  void router.replace({ path: route.path, query })
 }
 
 async function load(): Promise<void> {
@@ -165,6 +203,7 @@ async function load(): Promise<void> {
       draft.value = h.draft
       unsupported.value = h.unsupported
       status.value = q.status
+      await readGate(props.id)
     }
   } catch {
     loadFailed.value = true
@@ -174,6 +213,7 @@ async function load(): Promise<void> {
   if (!loadFailed.value) startRecovery()
 }
 onMounted(() => {
+  noteOldForm()
   if (studioAvailable()) void load()
   else loading.value = false
 })
@@ -270,28 +310,41 @@ async function save(): Promise<void> {
       <DsPillNav :items="tabs" :active="active" label="Bahagian borang" testid-prefix="studio-tab" @select="go" />
 
       <!-- Langkah 1 -->
-      <DsStack id="studio-section-kertas" as="section">
-        <DsFormSection title="Langkah 1 Kertas & bahagian" description="Letak soalan dalam kertas peperiksaan, atau simpan sebagai soalan bank." icon="book-open">
+      <DsStack id="studio-section-tag" as="section">
+        <DsFormSection title="Langkah 1 Tag & pengelasan" description="Subjek, Tingkatan, Tajuk DSKP dan Bab untuk penapisan dan pelaporan." icon="stack">
           <DsGrid :cols="{ base: 1, sm: 2 }" gap="md">
             <DsFormField v-slot="{ id: fid }" native label="Subjek" for="studio-subject" required :error="fieldProblems.subjectId">
               <DsNativeSelect :id="fid" v-model="draft.subjectId" placeholder="Pilih subjek" :disabled="readOnly" data-testid="studio-subject">
                 <option v-for="s in subjects" :key="s.id" :value="s.id">{{ s.name }}</option>
               </DsNativeSelect>
             </DsFormField>
-            <DsFormField v-slot="{ id: fid }" native label="Tahap" for="studio-level" required :error="fieldProblems.educationLevelId">
-              <DsNativeSelect :id="fid" v-model="draft.educationLevelId" placeholder="Pilih tahap" :disabled="readOnly" data-testid="studio-level">
+            <DsFormField v-slot="{ id: fid }" native label="Tingkatan" for="studio-level" required :error="fieldProblems.educationLevelId">
+              <DsNativeSelect :id="fid" v-model="draft.educationLevelId" placeholder="Pilih Tingkatan" :disabled="readOnly" data-testid="studio-level">
                 <option v-for="l in levels" :key="l.id" :value="l.id">{{ l.name }}</option>
               </DsNativeSelect>
             </DsFormField>
-            <DsFormField v-slot="{ id: fid }" native label="Kertas (pilihan)" for="studio-kertas" :error="fieldProblems.kertas">
-              <DsNativeSelect :id="fid" v-model="draft.kertas" :disabled="readOnly" data-testid="studio-kertas">
-                <option value="">— Soalan bank (tiada kertas) —</option>
-                <option value="1">Kertas 1</option>
-                <option value="2">Kertas 2</option>
-                <option value="3">Kertas 3</option>
-              </DsNativeSelect>
-            </DsFormField>
           </DsGrid>
+          <StudioDskpFields v-model:unit-id="draft.unitId" v-model:sp-ids="draft.spIds" :subject-id="draft.subjectId" :level-id="draft.educationLevelId" :disabled="readOnly" :error="fieldProblems['tag.unitId']" />
+          <ChapterSelect v-model="draft.chapterId" :subject-id="draft.subjectId" :level-id="draft.educationLevelId" :error="fieldProblems.curriculumChapterId" />
+          <DsFormField v-slot="{ id: fid }" native label="Tahap kesukaran" for="studio-difficulty" hint="Kesukaran ialah anggaran guru; TP ialah tahap DSKP." :error="fieldProblems.difficultyLevel">
+            <DsNativeSelect :id="fid" v-model.number="draft.difficulty" :disabled="readOnly" data-testid="studio-difficulty">
+              <option v-for="k in KESUKARAN" :key="k.value" :value="k.value">{{ k.label }}</option>
+            </DsNativeSelect>
+          </DsFormField>
+        </DsFormSection>
+      </DsStack>
+
+      <!-- Langkah 2 -->
+      <DsStack id="studio-section-kertas" as="section">
+        <DsFormSection title="Langkah 2 Kertas & bahagian" description="Letak soalan dalam kertas peperiksaan, atau simpan sebagai soalan bank." icon="book-open">
+          <DsFormField v-slot="{ id: fid }" native label="Kertas (pilihan)" for="studio-kertas" :error="fieldProblems.kertas">
+            <DsNativeSelect :id="fid" v-model="draft.kertas" :disabled="readOnly" data-testid="studio-kertas">
+              <option value="">— Soalan bank (tiada kertas) —</option>
+              <option value="1">Kertas 1</option>
+              <option value="2">Kertas 2</option>
+              <option value="3">Kertas 3</option>
+            </DsNativeSelect>
+          </DsFormField>
           <DsFormField v-slot="{ id: fid }" native label="Nombor soalan" for="studio-number" required :error="fieldProblems.numberLabel">
             <UInput :id="fid" v-model="draft.numberLabel" placeholder="1" maxlength="32" :disabled="readOnly" data-testid="studio-number" />
           </DsFormField>
@@ -304,16 +357,16 @@ async function save(): Promise<void> {
         </DsFormSection>
       </DsStack>
 
-      <!-- Langkah 2 -->
+      <!-- Langkah 3 -->
       <DsStack id="studio-section-rangsangan" as="section">
-        <DsFormSection title="Langkah 2 Rangsangan (stimulus)" description="Satu rangsangan dikongsi oleh semua soalan yang merujuknya. Ia dipaparkan sekali." icon="book-open-text">
+        <DsFormSection title="Langkah 3 Rangsangan (stimulus)" description="Satu rangsangan dikongsi oleh semua soalan yang merujuknya. Ia dipaparkan sekali." icon="book-open-text">
           <StudioGroupEditor v-model:group-id="draft.groupId" v-model:pending="pendingGroup" :current-question-id="props.id ?? null" :subject-id="draft.subjectId || null" :disabled="readOnly" @changed="groupView = $event" />
         </DsFormSection>
       </DsStack>
 
-      <!-- Langkah 3 -->
+      <!-- Langkah 4 -->
       <DsStack id="studio-section-sub" as="section">
-        <DsFormSection title="Langkah 3 Sub-bahagian" description="Setiap bahagian membawa jenis jawapan, markah dan skema tersendiri." icon="list">
+        <DsFormSection title="Langkah 4 Sub-bahagian" description="Setiap bahagian membawa jenis jawapan, markah dan skema tersendiri." icon="list">
           <DsText variant="label" data-testid="studio-total-marks">Jumlah markah: {{ totalMarks(draft) }}</DsText>
           <DsText v-if="draftTp(draft) !== null" variant="body" tone="muted" data-testid="studio-question-tp">TP soalan: {{ draftTp(draft) }} {{ draftTpNote(draft) }}</DsText>
           <StudioLeafEditor
@@ -333,18 +386,7 @@ async function save(): Promise<void> {
         </DsFormSection>
       </DsStack>
 
-      <!-- Langkah 4 -->
-      <DsStack id="studio-section-tag" as="section">
-        <DsFormSection title="Langkah 4 Tag & pengelasan" description="Bab, topik dan aras kesukaran untuk penapisan dan pelaporan." icon="stack">
-          <ChapterSelect v-model="draft.chapterId" :subject-id="draft.subjectId" :level-id="draft.educationLevelId" :error="fieldProblems.curriculumChapterId" />
-          <StudioDskpFields v-model:unit-id="draft.unitId" v-model:sp-ids="draft.spIds" :subject-id="draft.subjectId" :level-id="draft.educationLevelId" :disabled="readOnly" :error="fieldProblems['tag.unitId']" />
-          <DsFormField v-slot="{ id: fid }" native label="Kesukaran" for="studio-difficulty" hint="Kesukaran ialah anggaran guru; TP ialah tahap DSKP.">
-            <DsNativeSelect :id="fid" v-model.number="draft.difficulty" :disabled="readOnly" data-testid="studio-difficulty">
-              <option v-for="k in KESUKARAN" :key="k.value" :value="k.value">{{ k.label }}</option>
-            </DsNativeSelect>
-          </DsFormField>
-        </DsFormSection>
-      </DsStack>
+      <StudioCompletenessPanel :rows="completeness" @jump="jump" />
 
       <DsFormBar submit-label="Simpan draf" :saving="saving" :disabled="readOnly" cancel-to="/admin/studio" data-testid="studio-save-bar">
         <template v-if="stimuli.length > 0 && !wide" #extra>
@@ -352,7 +394,7 @@ async function save(): Promise<void> {
         </template>
         <template #status>
           <DsText as="span" variant="caption" data-testid="studio-save-marks">{{ totalMarks(draft) }} markah</DsText>
-          <DsText v-if="gaps.length > 0" as="span" variant="caption" data-testid="studio-save-gaps"> · {{ gaps.length }} belum lengkap</DsText>
+          <DsText v-if="completeness.length > 0" as="span" variant="caption" data-testid="studio-save-gaps"> · {{ completeness.length }} belum lengkap</DsText>
         </template>
       </DsFormBar>
     </DsStack>

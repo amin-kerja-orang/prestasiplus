@@ -97,6 +97,77 @@ afterEach(() => {
   wrapper = null
 })
 
+describe('wizard order and completeness (FR-QA-16, FR-ADM-QE4.1)', () => {
+  it('the tabs read 1 Tag, 2 Kertas, 3 Rangsangan, 4 Sub-bahagian and Tag comes first (AC-ADM-QE2.4)', async () => {
+    const w = await render('/admin/studio/questions/create')
+    const sections = w.findAll('section').map((x) => x.attributes('id'))
+    expect(sections).toEqual(['studio-section-tag', 'studio-section-kertas', 'studio-section-rangsangan', 'studio-section-sub'])
+    for (const label of ['1 Tag', '2 Kertas', '3 Rangsangan', '4 Sub-bahagian']) expect(w.text()).toContain(label)
+    const tag = t(w, 'studio-subject').element.closest('section')
+    expect(tag?.getAttribute('id')).toBe('studio-section-tag')
+    expect(t(w, 'studio-unit').element.closest('section')?.getAttribute('id')).toBe('studio-section-tag')
+  })
+
+  it('names each gap and the link focuses its field; the count follows the panel (AC-ADM-QE4.1)', async () => {
+    const w = await render('/admin/studio/questions/create')
+    const rows = w.findAll('[data-testid="studio-completeness-row"]')
+    expect(rows.map((r) => r.text())).toContain('Sila pilih subjek.')
+    expect(t(w, 'studio-save-gaps').text()).toContain(`${String(rows.length)} belum lengkap`)
+    const subject = t(w, 'studio-subject').element as HTMLElement
+    subject.scrollIntoView = vi.fn()
+    await rows.find((r) => r.text() === 'Sila pilih subjek.')!.trigger('click')
+    expect(subject.closest('[data-ds="form-field"]')?.contains(document.activeElement)).toBe(true)
+  })
+
+  it('adds the API-Q-05 issues once, with their exact text and a link to the field', async () => {
+    serve({
+      id: '501',
+      status: 'draft',
+      numberLabel: '1',
+      subjectId: '3',
+      educationLevelId: '7',
+      difficultyLevel: 3,
+      questionText: 'S1 berdasarkan Rajah 1, apakah ini?',
+      questionImage: null,
+      kertas: '1',
+      curriculumChapterId: null,
+      stimulusGroup: null,
+      tag: { unitId: '40', spIds: ['41'], tp: 2 },
+      parts: [{ label: 'a', prompt: { ms: 'Pilih.' }, mode: 'mcq', marks: 1, difficultyTp: 2, cognitiveLevel: 'memahami', options: [{ label: 'A', body: { ms: 'x' } }, { label: 'B', body: { ms: 'y' } }, { label: 'C', body: { ms: 'z' } }], key: { kind: 'option', correct: 'A' } }],
+    })
+    studio.fetchGateCheck.mockResolvedValue({ issues: [{ path: 'chapterId', code: 'NO_CHAPTER', message: 'Sila pilih Bab.', step: 4 }] })
+    const w = await render('/admin/studio/questions/501/sunting', '501')
+    expect(studio.fetchGateCheck).toHaveBeenCalledWith('501')
+    const rows = w.findAll('[data-testid="studio-completeness-row"]').map((r) => r.text())
+    expect(rows).toEqual(['Sila pilih Bab.'])
+    expect(t(w, 'studio-save-gaps').text()).toContain('1 belum lengkap')
+  })
+
+  it('shows the all-complete text when nothing is missing', async () => {
+    const rowsOf = await import('../../components/studio/StudioCompletenessPanel.vue')
+    const w = mount(rowsOf.default, { props: { rows: [] }, global: { stubs: { UButton: true } } })
+    expect(w.get('[data-testid="studio-completeness-empty"]').text()).toBe('Semua medan wajib telah lengkap.')
+    w.unmount()
+  })
+
+  it('arriving from the old form shows the notice once and removes the query (FR-ADM-Q04.7)', async () => {
+    await render('/admin/studio/questions/create?dari=borang-lama')
+    await flushPromises()
+    expect(router.currentRoute.value.fullPath).toBe('/admin/studio/questions/create')
+    expect(useFlashStore().pending).toEqual({ type: 'success', message: 'Borang soalan lama telah dipindahkan ke Studio. Sila cipta soalan baharu di sini.' })
+  })
+
+  it('/admin/questions/create redirects to the wizard; the Studio /edit alias goes to /sunting', async () => {
+    const form = (await import('../../routes/questions-form')).default
+    const studioRoutes = (await import('../../routes/studio')).default
+    const r = createRouter({ history: createMemoryHistory(), routes: [...form, ...studioRoutes].map((x) => ({ ...x, ...('redirect' in x ? {} : { component: { template: '<div />' } }) }) as never) })
+    await r.push('/admin/questions/create')
+    expect(r.currentRoute.value.fullPath).toBe('/admin/studio/questions/create?dari=borang-lama')
+    await r.push('/admin/studio/questions/7/edit')
+    expect(r.currentRoute.value.fullPath).toBe('/admin/studio/questions/7/sunting')
+  })
+})
+
 describe('StudioEditorPage (R1-F03b)', () => {
   it('says so when the app is not connected to the real API', async () => {
     studio.studioAvailable.mockReturnValue(false)

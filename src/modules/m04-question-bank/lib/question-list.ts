@@ -17,7 +17,7 @@ import {
 } from '../api/questions'
 
 export const QUESTIONS_LIST_PATH = '/admin/questions'
-export const QUESTIONS_CREATE_PATH = '/admin/questions/create'
+export const QUESTIONS_CREATE_PATH = '/admin/studio/questions/create'
 
 export const QUESTION_ROUTES = {
   list: 'm04.questions.list',
