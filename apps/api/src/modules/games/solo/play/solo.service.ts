@@ -39,7 +39,9 @@ import {
   normaliseAnswer,
   scoreRun,
   hasFastGap,
+  SOLO_CHECK_GRACE_SECONDS,
   SOLO_INFO,
+  SOLO_SECONDS,
 } from './solo.rules'
 
 const M = GAMES_MESSAGES
@@ -180,6 +182,8 @@ export class SoloService {
       const s = await this.repo.lockOwn(sessionId, caller.userId)
       if (!s || s.game !== game || s.closedAt !== null) throw soloSessionNotFound()
       if (s.submittedAt !== null) throw alreadySubmitted()
+      const seconds = SOLO_SECONDS[game]
+      if (seconds !== undefined && this.clock.now().getTime() - s.createdAt.getTime() > (seconds + SOLO_CHECK_GRACE_SECONDS) * 1000) throw ApiError.of('CONFLICT', { message: M.soloTimeUp })
       const item = await this.repo.itemByQuestion(s.id, itemId)
       if (!item) throw soloItemNotFound()
       if (item.checkedSeq !== null) throw soloAlreadyChecked()

@@ -1,5 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
+import { RoomsService } from '../../../src/modules/games/rooms/rooms.service'
+import { JutawanService } from '../../../src/modules/games/solo/jutawan/jutawan.service'
 import { ACCOUNTS, bootGamesApp, idOf, insertMcqQuestions, loginAs, START, type Client, type GamesTestApp } from '../helpers'
 import { FORM, P, createRoom, fillAndStart, insertShortMcqs, parseRoom, stateOf } from '../rooms/support'
 import { itemRows, type DbItem } from '../solo/support'
@@ -194,6 +196,81 @@ describe('GAME-00 common rules', () => {
       expect(res.status).toBe(200)
       expect((res.body as Record<string, unknown>).reward).toBeUndefined()
       expect(await events(id)).toEqual([])
+    })
+  })
+
+  describe('FR-GM-00.7: clocks of every game, moved by a poll and by the 5 s sweep', () => {
+    const roomStatus = async (code: string) => (await t.db.query<{ status: string }>('select status from game_rooms where code = $1', [code]))[0]?.status
+    const openBetulSalahAt = async (ms: number) => {
+      const { sessionId, items } = await openSolo(student, 'betul-salah')
+      t.clock.advance(ms)
+      return checkBetulSalah(student, sessionId, items[0] as DbItem, true)
+    }
+
+    it('a Benteng Ilmu question times out at 15 s on a poll: a wrong answer row, the next round, roundEndsAt from the server clock', async () => {
+      const code = await createRoom(student, 'benteng-ilmu')
+      const started = parseRoom(await fillAndStart(t, student, 'benteng-ilmu', code))
+      expect(started.state?.roundSecondsLeft).toBe(15)
+      expect(new Date(started.roundEndsAt as string).getTime()).toBe(t.clock.now().getTime() + 15_000)
+      t.clock.advance(14_999)
+      expect(parseRoom(await student.get(P('benteng-ilmu', code))).round).toBe(1)
+      t.clock.advance(1)
+      const after = parseRoom(await student.get(P('benteng-ilmu', code)))
+      expect(after.round).toBe(2)
+      expect(after.state?.roundSecondsLeft).toBe(15)
+      expect((await rowsOf(await sessionOf(code))).map((r) => [r.part_ref, r.is_correct])).toEqual([['benteng-ilmu#1', false]])
+    })
+
+    it('the sweep finishes a room with no poller, once, with its rows and its reward', async () => {
+      const code = await createRoom(student, 'perang-fakta')
+      parseRoom(await fillAndStart(t, student, 'perang-fakta', code))
+      const rooms = t.app.get(RoomsService, { strict: false })
+      t.clock.advance(9_000)
+      await rooms.sweepClocks()
+      expect((await stateOf(t.db, code)).round).toBe(1)
+      t.clock.advance(15 * 10_000)
+      await rooms.sweepClocks()
+      expect(await roomStatus(code)).toBe('finished')
+      const session = await sessionOf(code)
+      expect(await rowsOf(session)).toHaveLength(15)
+      await rooms.sweepClocks()
+      expect(await rowsOf(session)).toHaveLength(15)
+      expect(await t.db.query('select 1 from game_reward_events where game_session_id = $1::uuid', [session])).toHaveLength(1)
+    })
+
+    it('AC-GM-08.4: a Betul atau Salah check at 55 s is taken, at 56 s it is refused with "Masa sudah tamat."; the submit still scores', async () => {
+      expect((await openBetulSalahAt(55_000)).status).toBe(200)
+      const late = await openBetulSalahAt(56_000)
+      expect(late.status).toBe(409)
+      expect((late.body as { error: { message: string } }).error.message).toBe('Masa sudah tamat.')
+    })
+
+    it('ruling on #497: Tembak Jawapan and Kad Memori are never refused for time', async () => {
+      const tembak = await openSolo(student, 'tembak-jawapan')
+      t.clock.advance(3_600_000)
+      const item = tembak.items[0] as DbItem
+      expect((await student.post('/api/games/solo/tembak-jawapan/check', { session_id: tembak.sessionId, item_id: item.question_id, option_index: item.key_index })).status).toBe(200)
+      const kad = await openSolo(student, 'kad-memori')
+      t.clock.advance(3_600_000)
+      const card = (face: string) => kad.items.find((r) => r.pair_key === 0 && r.face === face) as DbItem
+      expect((await student.post('/api/games/solo/kad-memori/check', { session_id: kad.sessionId, card_id: card('question').card_id, other_card_id: card('answer').card_id })).status).toBe(200)
+    })
+
+    it('GAME-13: a Jutawan answer at 60 s is a timeout; the sweep ends a run nobody answers, once', async () => {
+      const late = await startRun(student)
+      const res = await answerRun(student, late.sessionId, late.items[0] as DbItem, true, 60_000)
+      expect((res.body as { data: { correct: boolean; level: number } }).data).toMatchObject({ correct: false, level: 0 })
+      const jutawan = t.app.get(JutawanService, { strict: false })
+      const open = await startRun(student)
+      t.clock.advance(59_999)
+      await jutawan.sweepClocks()
+      expect(await rowsOf(open.sessionId)).toEqual([])
+      t.clock.advance(1)
+      await jutawan.sweepClocks()
+      expect((await rowsOf(open.sessionId)).map((r) => [r.part_ref, r.is_correct])).toEqual([['jutawan#1', false]])
+      await jutawan.sweepClocks()
+      expect(await rowsOf(open.sessionId)).toHaveLength(1)
+      expect((await t.db.query<{ jutawan_over: boolean }>('select jutawan_over from game_sessions where id = $1::uuid', [open.sessionId]))[0]?.jutawan_over).toBe(true)
     })
   })
 

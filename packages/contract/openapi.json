@@ -21408,6 +21408,13 @@
             "minimum": 0,
             "maximum": 15
           },
+          "roundEndsAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "While active: when the caller's question times out, grace included (48 section 3.3).",
+            "example": "2026-10-16T09:30:00+08:00"
+          },
           "result": {
             "$ref": "#/components/schemas/BattleArenaResult"
           }
@@ -23120,7 +23127,7 @@
           "roundSecondsLeft": {
             "type": "integer",
             "minimum": 0,
-            "description": "Perang Fakta: seconds left in the 10 s round (server clock)."
+            "description": "Seconds left of the current turn or round by the server clock (48 GAME-02 to GAME-06; Perang Fakta 10 s). Absent for Teka Silang Kata."
           },
           "secondsLeft": {
             "type": "integer",
@@ -23301,6 +23308,13 @@
             "type": "integer",
             "minimum": 0,
             "description": "Present with `state`."
+          },
+          "roundEndsAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "While playing: when the server clock ends the current turn or round (Teka Silang Kata: the game).",
+            "example": "2026-10-16T09:30:00+08:00"
           },
           "question": {
             "$ref": "#/components/schemas/GamesKeylessQuestion"

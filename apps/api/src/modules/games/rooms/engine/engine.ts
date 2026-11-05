@@ -15,6 +15,7 @@ import {
   BOARD_STEP,
   KR_ROUNDS,
   MATHRACE_STEPS,
+  PB_MAX_ROUNDS,
 } from './constants'
 import { chance, cmpId, shuffle } from './rng'
 import {
@@ -287,8 +288,8 @@ export interface TimeoutInput {
 }
 
 /**
- * Time ran out for the room's clock (BR-M16-20): a Perang Fakta round advances as a no-vote of the acting player;
- * a Teka Silang Kata game ends with the words found so far.
+ * Time ran out for the room's clock (FR-GM-00.7): a Perang Fakta round advances as a no-vote of the acting player; a Teka
+ * Silang Kata game ends with the words found so far; a Papan Bijak roll rolls itself; any other question is a wrong answer.
  */
 export function applyTimeout(input: TimeoutInput): EngineOut {
   const { room } = input
@@ -304,6 +305,14 @@ export function applyTimeout(input: TimeoutInput): EngineOut {
   if (room.game === 'perang-fakta' && c.s.awaiting === 'answer') {
     return stamp(input.state, pfAdvance(c, false, true), input.roundStartMs)
   }
+  if (room.game === 'papan-bijak' && c.s.awaiting === 'roll') {
+    return stamp(input.state, pbRoll(c), input.roundStartMs)
+  }
+  if (c.s.awaiting === 'answer' && c.s.pendingQ !== null && room.game !== 'teka-silang-kata') {
+    const noAnswer: Answer = { type: 'answer', questionId: c.s.pendingQ, optionId: null, value: undefined, seconds: 15 }
+    const timedOut = room.game === 'papan-bijak' ? pbAnswer(c, noAnswer) : room.game === 'benteng-ilmu' ? bentengAnswer(c, noAnswer) : room.game === 'perlumbaan-matematik' ? mathraceAnswer(c, noAnswer) : relayAnswer(c, noAnswer)
+    return stamp(input.state, timedOut, input.roundStartMs)
+  }
   if (room.game === 'teka-silang-kata') {
     // AC-GM-07.3: the words not attempted at 300 s are wrong and written as timeouts.
     for (const word of c.s.words.slice(c.s.round - 1)) logAnswer(c, word.qId, false, true)
@@ -313,12 +322,10 @@ export function applyTimeout(input: TimeoutInput): EngineOut {
   throw new EngineRefusal('conflict', 'Tiada jam untuk permainan ini.')
 }
 
-/** The round clock restarts when the round number changes (and at the start). */
+/** The round clock restarts when the round, the Papan Bijak turn or what the room awaits changes (and at the start). */
 function stamp(prev: RoomState | null, out: EngineOut, startMs: number): EngineOut {
-  out.state.roundStartedMs =
-    prev && prev.roundStartedMs !== null && prev.round === out.state.round
-      ? prev.roundStartedMs
-      : startMs
+  const same = prev && prev.round === out.state.round && prev.turn === out.state.turn && prev.awaiting === out.state.awaiting
+  out.state.roundStartedMs = same && prev.roundStartedMs !== null ? prev.roundStartedMs : startMs
   return out
 }
 
@@ -401,9 +408,16 @@ function pbSettle(c: Ctx): EngineOut {
   return finish(c)
 }
 
+/** 48 GAME-02: the safety rule: the highest tile wins, equal highest tiles are a draw. */
+function pbSafety(c: Ctx): EngineOut {
+  c.s.winnerId = topWinner(c, (x) => c.s.positions[x.userId] ?? 1)
+  return pbSettle(c)
+}
+
 function pbRun(c: Ctx): EngineOut {
   for (let i = 0; i < 600; i++) {
     if (c.s.winnerId !== null) return pbSettle(c)
+    if (c.s.turn >= PB_MAX_ROUNDS * c.players.length) return pbSafety(c)
     const pl = c.players[c.s.turn % c.players.length] as EnginePlayer
     if (pl.userId === c.s.humanId) {
       c.s.awaiting = 'roll'

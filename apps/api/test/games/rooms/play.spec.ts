@@ -863,10 +863,12 @@ describe('start, actions, clocks and settlement (M16-26..28)', () => {
       expect(late.result).toBeDefined()
     })
 
-    it('games without a clock never change on read', async () => {
+    it('FR-GM-00.7: every game has a clock: Benteng Ilmu with nobody answering plays itself out on a poll, a read before the time changes nothing', async () => {
       const { code, view: s } = await started('benteng-ilmu', { ...FORM, match_mode: 'same_level' })
+      advance(14)
+      expect((await view(student, 'benteng-ilmu', code)).round).toBe(s.round)
       advance(3600)
-      expect(await view(student, 'benteng-ilmu', code)).toEqual(s)
+      expect((await view(student, 'benteng-ilmu', code)).status).toBe('finished')
     })
   })
 

@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { BattleAnswerResultSchema, BattleArenaViewSchema } from '@pp/contract'
 
+import { ArenaService } from '../../src/modules/battle/arena/arena.service'
 import { BattleEngine } from '../../src/modules/battle/engine'
 import { addMcqs, bootBattleApp, botBattle, client, parseData, STUDENT_G10, STUDENT_G10_B, subjectsOf, type BattleTestApp, type Client, type Subjects } from './arena-helpers'
 
@@ -16,7 +17,7 @@ describe('GAME-00 common rules in Battle', () => {
   /** One answer after `gapMs`; the seeded right option is 1. */
   const answer = async (who: Client, uuid: string, right: boolean, gapMs = 2000) => {
     t.clock.advance(gapMs)
-    const res = await who.post(`/battle/arena/${uuid}/answer`, { questionId: await questionOf(who, uuid), optionId: right ? 1 : 0, seconds: gapMs / 1000 })
+    const res = await who.post(`/battle/arena/${uuid}/answer`, { questionId: await questionOf(who, uuid), optionId: right ? 1 : 0, seconds: Math.min(15, gapMs / 1000) })
     return parseData(BattleAnswerResultSchema, res)
   }
 
@@ -94,6 +95,46 @@ describe('GAME-00 common rules in Battle', () => {
       } finally {
         await rows(`update gamification_settings set value = 0 where key = 'games_min_ms_per_answer'`)
       }
+    })
+  })
+
+  describe('FR-GM-00.7: the clock of a question', () => {
+    const lastAnswer = async (uuid: string) => (await rows<{ option_id: number | null; points: number }>(`select option_id, points from battle_answers where battle_id = $1 and user_id = $2 order by position desc limit 1`, [uuid, a.id]))[0]
+
+    it('AC-GM-01.2: a right answer at 17 s scores 500; at 18.5 s it is a timeout with 0 points', async () => {
+      const uuid = await botBattle(a, s.math)
+      const view = parseData(BattleArenaViewSchema, await a.get(`/battle/arena/${uuid}`))
+      expect(new Date(view.roundEndsAt as string).getTime()).toBe(t.clock.now().getTime() + 18_000)
+      expect((await answer(a, uuid, true, 17_000)).points).toBe(500)
+      const question = await questionOf(a, uuid)
+      t.clock.advance(18_500)
+      const res = await a.post(`/battle/arena/${uuid}/answer`, { questionId: question, optionId: 1, seconds: 2 })
+      // the poll for the question was before the deadline: the late answer itself is the timeout
+      expect(parseData(BattleAnswerResultSchema, res).points).toBe(0)
+      expect(await lastAnswer(uuid)).toEqual({ option_id: null, points: 0 })
+    })
+
+    it('a poll after the time writes the timeout and shows the next question', async () => {
+      const uuid = await botBattle(a, s.math)
+      t.clock.advance(18_001)
+      const view = parseData(BattleArenaViewSchema, await a.get(`/battle/arena/${uuid}`))
+      expect(view.index).toBe(2)
+      expect((await answerRows(uuid)).map((r) => [r.part_ref, r.is_correct])).toEqual([['battle#1', false]])
+    })
+
+    it('the sweep moves a battle with no poller to its end, with its rows and one reward', async () => {
+      const uuid = await botBattle(a, s.math)
+      const arena = t.get(ArenaService)
+      t.clock.advance(18_000)
+      await arena.sweepClocks()
+      expect(await answerRows(uuid)).toEqual([]) // exactly at the limit is still in time
+      for (let i = 0; i < 10; i++) {
+        t.clock.advance(18_001)
+        await arena.sweepClocks()
+      }
+      expect((await rows<{ status: string }>(`select status from battles where id = $1`, [uuid]))[0]?.status).toBe('finished')
+      expect(await answerRows(uuid)).toHaveLength(10)
+      expect(t.reports.filter((r) => r.session === uuid)).toHaveLength(1)
     })
   })
 

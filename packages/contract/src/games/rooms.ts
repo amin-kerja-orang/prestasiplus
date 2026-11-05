@@ -1,5 +1,6 @@
 import { z } from '../zod'
 import { IdSchema } from '../common/ids'
+import { TimestampSchema } from '../common/time'
 import {
   GAMES_GRADE_LEVELS,
   GAMES_MATCH_MODES,
@@ -236,7 +237,7 @@ export const GamesRoomStateSchema = z
       .meta({ description: 'Benteng Ilmu HP, Perlumbaan Matematik steps or Teka Silang Kata words, by user id.' }),
     teamScores: z.record(z.string(), z.number().int()).optional().meta({ description: 'Kuiz Relay: score by team number.' }),
     log: z.array(z.string()),
-    roundSecondsLeft: z.number().int().min(0).optional().meta({ description: 'Perang Fakta: seconds left in the 10 s round (server clock).' }),
+    roundSecondsLeft: z.number().int().min(0).optional().meta({ description: 'Seconds left of the current turn or round by the server clock (48 GAME-02 to GAME-06; Perang Fakta 10 s). Absent for Teka Silang Kata.' }),
     secondsLeft: z.number().int().min(0).optional().meta({ description: 'Teka Silang Kata: seconds left of the 5 minutes (server clock).' }),
   })
   .meta({ id: 'GamesRoomState' })
@@ -271,6 +272,7 @@ export const GamesRoomViewSchema = z
     settings: GamesRoomSettingsSchema,
     state: GamesRoomStateSchema.nullable(),
     round: z.number().int().min(0).optional().meta({ description: 'Present with `state`.' }),
+    roundEndsAt: TimestampSchema.optional().meta({ description: 'While playing: when the server clock ends the current turn or round (Teka Silang Kata: the game).' }),
     question: GamesKeylessQuestionSchema.optional(),
     result: GamesRoomResultSchema.optional(),
   })

@@ -23,6 +23,11 @@ export const SOLO_INFO: Readonly<Record<GamesSoloGame, SoloInfo>> = {
   'kad-memori': { game: 'kad-memori', token: 'kad_memori', items: 6, oversample: 1 },
 }
 
+/** The clock of a game (GAME-S table); a game not here has none and is never refused for time (ruling on #497). */
+export const SOLO_SECONDS: Readonly<Partial<Record<GamesSoloGame, number>>> = { 'betul-salah': 45, 'cabaran-kilat': 60, 'susun-jawapan': 300 }
+/** FR-GM-S.1: checks are accepted until the clock plus this. */
+export const SOLO_CHECK_GRACE_SECONDS = 10
+
 export const isSoloGame = (game: string): game is GamesSoloGame => (GAMES_SOLO_GAMES as readonly string[]).includes(game)
 
 /** Kad Memori: 6 pairs, 12 cards, default board 4 x 3. */

@@ -344,6 +344,7 @@ export const BattleArenaViewSchema = z
     total: z.literal(BATTLE_RULES.arenaQuestions),
     question: BattleArenaQuestionSchema.nullable(),
     secondsLeft: z.number().int().min(0).max(BATTLE_RULES.questionSeconds),
+    roundEndsAt: TimestampSchema.optional().meta({ description: 'While active: when the caller\'s question times out, grace included (48 section 3.3).' }),
     result: BattleArenaResultSchema.optional(),
   })
   .superRefine((v, ctx) => {

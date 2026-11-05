@@ -43,6 +43,11 @@ export class BattleEngine {
     return this.ports.answers.record(gameAnswerEntry({ userId: a.userId, attemptId: a.battleId, questionId: a.questionId, gameKey: 'battle', position: a.position, isCorrect: a.isCorrect, answeredAt: a.answeredAt }))
   }
 
+  /** How long a question lasts, grace included (48 section 3.3): `battle_grace_seconds` is read per answer. */
+  async questionLimitMs(): Promise<number> {
+    return (BATTLE_RULES.questionSeconds + (await this.settings.get('battle_grace_seconds'))) * 1000
+  }
+
   /** How long a queue entry waits for a human before the robot (`battle_bot_fallback_seconds`); null: never a robot. */
   async robotFallbackMs(): Promise<number | null> {
     const seconds = await this.settings.get('battle_bot_fallback_seconds')

@@ -158,6 +158,7 @@ export const GAMES_MESSAGES = {
   level: 'Tahap tidak sah.',
   soloInvalidResult: 'Keputusan tidak sah.',
   soloAlreadySubmitted: 'Keputusan sudah dihantar.',
+  soloTimeUp: 'Masa sudah tamat.',
   soloSessionNotFound: 'Sesi tidak dijumpai.', // [PROPOSED] on the check/reveal routes (copy reused from Jutawan)
   soloItemNotFound: 'Soalan tidak dijumpai.', // [PROPOSED] on the check/reveal routes (copy reused from Jutawan)
   soloAlreadyChecked: 'Soalan sudah dijawab.', // [PROPOSED]

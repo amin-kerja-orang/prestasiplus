@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import {
   GamesRoomActionRequestSchema,
   GamesRoomGameSchema,
@@ -18,6 +19,7 @@ import {
 } from '@pp/contract'
 
 import { ApiError } from '../../../common/errors/api-error'
+import { toMytTimestamp } from '../../../common/time/myt'
 import type { TxClient } from '../../../db/client'
 import { CLOCK, type Clock } from '../../../db/clock'
 import { PrismaService } from '../../../db/prisma.service'
@@ -43,6 +45,7 @@ import { GameSubjects } from '../core/subjects'
 import { PACE_GUARD_REWARD, rewardBlock, rewardNow } from '../core/wallet-rewards'
 import { GameUsers, type GameUser } from '../core/game-users'
 import { enumOfGrade, gradeFits, gradeLabel, gradeName } from '../core/grades'
+import { startGameSweep } from '../core/time'
 import { initialsOf, kadarOf, truncateName } from '../core/names'
 import {
   applyAction,
@@ -51,6 +54,7 @@ import {
   POOL_SIZE,
   questionView,
   resolveClocks,
+  roundEndsAtMs,
   startGame,
   stateView,
   type EngineOut,
@@ -119,8 +123,15 @@ export interface NewRoomInput {
 
 const CREATE_RANK = ['subject', 'grade_level', 'match_mode', 'grade_min', 'max_players']
 
+/** The shortest clock of a room (Perang Fakta): a room moved more recently has nothing due. */
+const SHORTEST_CLOCK_MS = 10_000
+const SWEEP_ROOMS = 200
+
 @Injectable()
-export class RoomsService {
+export class RoomsService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(RoomsService.name)
+  private stopSweep: () => void = () => undefined
+
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(RoomsRepository) private readonly repo: RoomsRepository,
@@ -132,7 +143,36 @@ export class RoomsService {
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(RoomSecrets) private readonly secrets: RoomSecrets,
     @Inject(GameSettingsService) private readonly settings: GameSettingsService,
+    @Inject(ConfigService) private readonly config: ConfigService,
   ) {}
+
+  onModuleInit(): void {
+    this.stopSweep = startGameSweep(RoomsService.name, this.config.get<string>('NODE_ENV'), () => this.sweepClocks())
+  }
+
+  onModuleDestroy(): void {
+    this.stopSweep()
+  }
+
+  /** FR-GM-00.7: one pass over the rooms with no poller; every room takes its lock and re-checks. Returns how many moved. */
+  async sweepClocks(): Promise<number> {
+    const codes = await this.repo.playingIdleSince(new Date(this.clock.now().getTime() - SHORTEST_CLOCK_MS), SWEEP_ROOMS)
+    let moved = 0
+    for (const code of codes) {
+      try {
+        const changed = await this.prisma.transaction(async (tx) => {
+          await this.repo.lock(code)
+          const room = await this.repo.room(code)
+          if (room?.status !== 'playing') return false
+          return (await this.runClocks(tx, room, await this.repo.players(code))).room !== room
+        })
+        if (changed) moved += 1
+      } catch (err) {
+        this.logger.warn(`Room clock failed for ${code}: ${err instanceof Error ? err.message : String(err)}`)
+      }
+    }
+    return moved
+  }
 
   // --- hub and lobby ---------------------------------------------------------------------------------------
 
@@ -698,6 +738,8 @@ export class RoomsService {
         : null,
     }
     if (st) view.round = st.round
+    const endsAt = st ? roundEndsAtMs(game, room.status, st, room.startedAt ? room.startedAt.getTime() : null) : null
+    if (endsAt !== null) view.roundEndsAt = toMytTimestamp(new Date(endsAt))
     const q = questionView(game, room.status, st)
     if (q) view.question = q
     if (room.status === 'finished' && st) {

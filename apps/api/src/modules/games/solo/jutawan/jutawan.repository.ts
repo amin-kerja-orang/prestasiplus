@@ -99,8 +99,21 @@ export class JutawanRepository {
     return rows.map((r) => r.checkedAt as Date)
   }
 
-  async storeAnswer(itemId: bigint, f: { seq: number; correct: boolean; optionId: number; at: Date }): Promise<void> {
-    await this.db.gameSessionItem.update({ where: { id: itemId }, data: { checkedSeq: f.seq, correct: f.correct, answer: String(f.optionId), checkedAt: f.at } })
+  /** `optionId` null is a timeout. */
+  async storeAnswer(itemId: bigint, f: { seq: number; correct: boolean; optionId: number | null; at: Date }): Promise<void> {
+    await this.db.gameSessionItem.update({ where: { id: itemId }, data: { checkedSeq: f.seq, correct: f.correct, answer: f.optionId === null ? null : String(f.optionId), checkedAt: f.at } })
+  }
+
+  /** FR-GM-00.7: runs still open whose current question was shown at `before` or earlier (the shown time is the last answer, or the start). */
+  async dueRuns(before: Date, limit: number): Promise<{ id: string; userId: string; isTest: boolean }[]> {
+    const rows = await this.db.$queryRaw<{ id: string; user_id: bigint; is_test: boolean }[]>`
+      SELECT s.id::text AS id, s.user_id, s.is_test
+        FROM game_sessions s
+       WHERE s.game = 'jutawan' AND NOT s.jutawan_over AND s.submitted_at IS NULL AND s.closed_at IS NULL AND s.created_at <= ${before}
+         AND NOT EXISTS (SELECT 1 FROM game_session_items i WHERE i.session_id = s.id AND i.checked_at > ${before})
+       ORDER BY s.created_at
+       LIMIT ${limit}`
+    return rows.map((r) => ({ id: r.id, userId: idToString(r.user_id), isTest: r.is_test }))
   }
 
   async update(

@@ -16,6 +16,7 @@ import {
   applyTimeout,
   buildBoard,
   clocksOf,
+  cmpId,
   computeSettlement,
   questionView,
   resolveClocks,
@@ -547,14 +548,14 @@ describe('Perang Fakta server clock (replay of room-clocks.test.ts)', () => {
     })
   })
 
-  it('applyTimeout refuses games without a clock', () => {
+  it('applyTimeout refuses a game that awaits nothing', () => {
     const o = start('benteng-ilmu', 2, 0)
     expect(
       refusal(() =>
         applyTimeout({
           room: room('benteng-ilmu'),
           players: o.players,
-          state: o.state,
+          state: { ...o.state, awaiting: null, pendingQ: null },
           p: 0,
           roundStartMs: T0,
         }),
@@ -881,5 +882,71 @@ describe('settlement (AC10)', () => {
     })
     expect(miss.standings).toEqual([]) // the MVP is a bot
     expect(miss.report).toMatchObject({ won: false })
+  })
+})
+
+describe('FR-GM-00.7: the clock of each room game', () => {
+  const room = (game: EngineRoom['game']): EngineRoom => ({ code: 'CLOCK1', game, subject: 'MATEMATIK', gradeLevel: 'TINGKATAN_4' })
+  const seats: EnginePlayer[] = [
+    { userId: '10', team: null, points: 0, correct: 0, isBot: false },
+    { userId: 'robot-1', team: null, points: 0, correct: 0, isBot: true },
+  ]
+  const pool: PoolQuestion[] = Array.from({ length: 40 }, (_, i) => ({
+    id: String(i + 1),
+    text: `Soalan ${String(i + 1)}`,
+    options: (['A', 'B', 'C', 'D'] as const).map((label, id) => ({ id, label, text: `Pilihan ${label}` })),
+    keyIndex: 0,
+    keyText: 'Pilihan A',
+  }))
+  const begin = (game: EngineRoom['game']) => startGame({ room: room(game), players: seats, humanId: '10', seed: 'clock-seed', pool, quizTiles: 35, p: 0, nowMs: 0 })
+  const tick = (game: EngineRoom['game'], o: EngineOut, nowMs: number) => resolveClocks({ room: room(game), players: o.players, state: o.state, startedAtMs: 0, nowMs, p: 0 })
+
+  it.each([
+    ['benteng-ilmu', 15_000],
+    ['perlumbaan-matematik', 20_000],
+    ['perang-fakta', 10_000],
+  ] as const)('%s: a question lasts %i ms, then it is a wrong answer and the next round', (game, ms) => {
+    const o = begin(game)
+    expect(tick(game, o, ms - 1).changed).toBe(false)
+    const due = tick(game, o, ms)
+    expect(due.changed).toBe(true)
+    expect(due.state.round).toBe(2)
+    expect(due.answered).toEqual([expect.objectContaining({ position: 1, correct: false, atMs: ms })])
+    expect(due.state.answerMs ?? []).toEqual([]) // a timeout is no answer for the pace guard
+    expect(due.state.roundStartedMs).toBe(ms)
+  })
+
+  it('Kuiz Relay: the human seat has 15 s', () => {
+    const relaySeats = [...seats, { ...seats[1], userId: 'robot-2' } as EnginePlayer, { ...seats[1], userId: 'robot-3' } as EnginePlayer]
+    const o = startGame({ room: room('kuiz-relay'), players: relaySeats, humanId: '10', seed: 'clock-seed', pool, quizTiles: 0, p: 0, nowMs: 0 })
+    expect(tick('kuiz-relay', o, 14_999).changed).toBe(false)
+    expect(tick('kuiz-relay', o, 15_000).answered).toEqual([expect.objectContaining({ position: 1, correct: false })])
+  })
+
+  it('Papan Bijak: a roll not made in 30 s rolls itself; a quiz tile gives 20 s and returns the token', () => {
+    const o = begin('papan-bijak')
+    expect(o.state.awaiting).toBe('roll')
+    expect(tick('papan-bijak', o, 29_999).changed).toBe(false)
+    const rolled = applyTimeout({ room: room('papan-bijak'), players: o.players, state: o.state, p: 0, roundStartMs: 30_000 })
+    expect(rolled.state.log[0]).toMatch(/^roll:[1-6]$/)
+    const quiz = { ...o.state, awaiting: 'answer' as const, pendingQ: '1', positions: { '10': 13, 'robot-1': 1 }, meter: { '10': 10 } }
+    const out = applyTimeout({ room: room('papan-bijak'), players: o.players, state: quiz, p: 0, roundStartMs: 20_000 })
+    expect(out.state.positions['10']).toBe(10)
+    expect(out.answered).toEqual([expect.objectContaining({ questionId: '1', correct: false })])
+  })
+
+  it('Papan Bijak: 200 rounds with nobody on tile 50 end the game: the highest tile wins, equal tiles draw (48 GAME-02)', () => {
+    const o = begin('papan-bijak')
+    const late = (a: number, b: number) => ({ ...o.state, turn: 400, positions: { '10': a, 'robot-1': b } })
+    const settle = (a: number, b: number) => applyTimeout({ room: room('papan-bijak'), players: o.players, state: { ...late(a, b), awaiting: 'answer', pendingQ: '1', meter: { '10': a } }, p: 0, roundStartMs: 1 })
+    expect(settle(30, 20)).toMatchObject({ finished: true, state: { winnerId: '10' } })
+    expect(settle(20, 30)).toMatchObject({ finished: true, state: { winnerId: 'robot-1' } })
+    expect(settle(20, 20)).toMatchObject({ finished: true, state: { winnerId: null } })
+  })
+
+  it('a robot seat sorts after the pupils and never breaks a tie-break', () => {
+    expect(cmpId('10', 'robot-1')).toBeLessThan(0)
+    expect(cmpId('robot-2', 'robot-1')).toBeGreaterThan(0)
+    expect(cmpId('9', '10')).toBeLessThan(0)
   })
 })

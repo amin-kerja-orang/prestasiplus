@@ -142,9 +142,10 @@ describe('arena (M16-16, M16-17)', () => {
       t.clock.advance(18_000)
       const r3 = await answer(a, uuid, { questionId: await questionOf(a, uuid), optionId: 1, seconds: 0 })
       expect(parseData(BattleAnswerResultSchema, r3).points).toBe(battleArenaPoints(15))
-      // 19 s: a timeout, still stored, the battle moves on
+      // 19 s: a timeout, still stored, the battle moves on (the question was read in time: a later poll moves the clock too)
+      const fourth = await questionOf(a, uuid)
       t.clock.advance(19_000)
-      const r4 = await answer(a, uuid, { questionId: await questionOf(a, uuid), optionId: 1, seconds: 0 })
+      const r4 = await answer(a, uuid, { questionId: fourth, optionId: 1, seconds: 0 })
       expect(parseData(BattleAnswerResultSchema, r4)).toMatchObject({ correct: false, points: 0, correctOptionId: 1 })
       const stored = await rows<{ seconds: number; points: number; option_id: number | null; created_at: Date }>(`select seconds, points, option_id, created_at from battle_answers where battle_id = $1 and user_id = $2 order by position`, [uuid, a.id])
       expect(stored.map((r) => r.seconds)).toEqual([8, 6, 15, 15])

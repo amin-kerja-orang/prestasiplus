@@ -575,6 +575,7 @@ describe('re-G4 minors', () => {
       {} as never,
       clock,
       {} as never,
+      {} as never,
     )
     const caller = { userId: '1' } as never
     const pages = await Promise.all([svc.page(caller, '10'), svc.page(caller, '10'), svc.page(caller, '10')])

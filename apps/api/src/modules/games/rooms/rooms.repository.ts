@@ -158,6 +158,17 @@ export class RoomsRepository {
     return rows.length > 0
   }
 
+  /** FR-GM-00.7: playing rooms that have not moved since `before`, oldest first (a shorter idle cannot be on a clock's end). */
+  async playingIdleSince(before: Date, limit: number): Promise<string[]> {
+    const rows = await this.db.gameRoom.findMany({
+      where: { status: 'playing', updatedAt: { lte: before } },
+      orderBy: { updatedAt: 'asc' },
+      take: limit,
+      select: { code: true },
+    })
+    return rows.map((r) => r.code)
+  }
+
   /** Every seat, in seat order; a robot seat has no user (48 section 3.6). */
   async players(code: string): Promise<PlayerRow[]> {
     const rows = await this.db.gameRoomPlayer.findMany({

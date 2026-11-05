@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto'
 
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { GamesJutawanQuerySchema, type GamesReward } from '@pp/contract'
 
 import type { TxClient } from '../../../../db/client'
@@ -14,6 +15,7 @@ import { GameQuestions, type ServedQuestion } from '../../core/game-questions.se
 import { GameSettingsService } from '../../core/game-settings.service'
 import { GamesPorts, gameAnswerEntry } from '../../core/ports'
 import { GameSubjects } from '../../core/subjects'
+import { startGameSweep } from '../../core/time'
 import { PACE_GUARD_REWARD, rewardBlock, rewardNow } from '../../core/wallet-rewards'
 import {
   jutawanLifelineInvalid,
@@ -61,10 +63,14 @@ function parseDarjah(raw: unknown): number | undefined {
 
 /** How long the lobby tile counts of `page()` are reused (the `start` gate always counts fresh). */
 const TILE_COUNT_TTL_MS = 60_000
+const SWEEP_RUNS = 200
 
 /** Jutawan Ilmu (M16-36 to M16-39): 15 keyless questions on a difficulty ladder, one wrong answer ends the run. */
 @Injectable()
-export class JutawanService {
+export class JutawanService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(JutawanService.name)
+  private stopSweep: () => void = () => undefined
+
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(JutawanRepository) private readonly repo: JutawanRepository,
@@ -75,7 +81,44 @@ export class JutawanService {
     @Inject(GamesPorts) private readonly ports: GamesPorts,
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(GameSettingsService) private readonly settings: GameSettingsService,
+    @Inject(ConfigService) private readonly config: ConfigService,
   ) {}
+
+  onModuleInit(): void {
+    this.stopSweep = startGameSweep(JutawanService.name, this.config.get<string>('NODE_ENV'), () => this.sweepClocks())
+  }
+
+  onModuleDestroy(): void {
+    this.stopSweep()
+  }
+
+  /** FR-GM-00.7, GAME-13: a run whose question outlived `jutawan_question_seconds` ends as a timeout. Returns how many ended. */
+  async sweepClocks(): Promise<number> {
+    const limitMs = (await this.settings.get('jutawan_question_seconds')) * 1000
+    const due = await this.repo.dueRuns(new Date(this.clock.now().getTime() - limitMs), SWEEP_RUNS)
+    let ended = 0
+    for (const run of due) {
+      try {
+        const done = await this.prisma.transaction(async (tx) => {
+          const s = await this.repo.lockOwn(run.id, run.userId)
+          if (!s || s.over || this.clock.now().getTime() - (await this.shownAt(s)).getTime() < limitMs) return false
+          const current = await this.repo.itemAt(s.id, s.level + 1)
+          if (!current) return false
+          await this.settle({ userId: run.userId, isTest: run.isTest }, s, current, null, false, tx)
+          return true
+        })
+        if (done) ended += 1
+      } catch (err) {
+        this.logger.warn(`Jutawan clock failed for a run: ${err instanceof Error ? err.message : String(err)}`)
+      }
+    }
+    return ended
+  }
+
+  /** When the current question was shown: the last answer, or the start. */
+  private async shownAt(s: JutawanSession): Promise<Date> {
+    return (await this.repo.answerTimes(s.id)).at(-1) ?? s.createdAt
+  }
 
   private readonly tileCounts = new Map<string, { at: number; value: Promise<number> }>()
 
@@ -166,31 +209,49 @@ export class JutawanService {
       const optionId = b['optionId']
       if (!isInt(optionId) || optionId < 0 || optionId > 3) throw jutawanOptionInvalid()
       if (!(await this.questions.byIds([current.questionId]))[0]) throw jutawanQuestionNotFound()
-
-      const correct = optionId === current.keyIndex
-      const seq = s.checks + 1
-      const at = this.clock.now()
-      await this.repo.storeAnswer(current.id, { seq, correct, optionId, at })
-      // FR-GM-00.5, 48 section 3.5: in the same transaction as the answer; Mod Pelajar writes no row.
-      if (!caller.isTest) await this.ports.answers.record(gameAnswerEntry({ userId: caller.userId, attemptId: s.id, questionId: current.questionId, gameKey: 'jutawan', position: current.position, isCorrect: correct, answeredAt: at }))
-      const common = { checks: seq, correctCount: s.correctCount + (correct ? 1 : 0) }
+      // GAME-13: the clock is the server's; an answer after `jutawan_question_seconds` is a timeout.
+      const late = this.clock.now().getTime() - (await this.shownAt(s)).getTime() >= (await this.settings.get('jutawan_question_seconds')) * 1000
+      const correct = !late && optionId === current.keyIndex
       if (correct && s.level + 1 < JUTAWAN_QUESTIONS) {
         const level = s.level + 1
         const nextItem = await this.repo.itemAt(s.id, level + 1)
         const next = nextItem ? (await this.questions.byIds([nextItem.questionId]))[0] : undefined
         if (!next) throw jutawanQuestionNotFound()
-        await this.repo.update(s.id, { ...common, jutawanLevel: level, jutawanRemovedOptions: [] })
+        await this.settle(caller, s, current, optionId, true, tx)
         return { correct: true, level, next: next.question }
       }
       const level = correct ? s.level + 1 : s.level
-      const end = await this.finish(caller, s, level, common, tx)
-      return { correct, level, result: { level, credited: end.credited, ...(end.reward ? { reward: end.reward } : {}) } }
+      const end = await this.settle(caller, s, current, late ? null : optionId, correct, tx)
+      return { correct, level, result: { level, credited: end?.credited ?? 0, ...(end?.reward ? { reward: end.reward } : {}) } }
     })
+  }
+
+  /** Stores one answer or timeout (`optionId` null) with its answer row; moves up the ladder or, returned, ends the run. */
+  private async settle(
+    caller: Pick<GamesCaller, 'userId' | 'isTest'>,
+    s: JutawanSession,
+    current: { id: bigint; position: number; questionId: string },
+    optionId: number | null,
+    correct: boolean,
+    tx: TxClient,
+  ): Promise<{ credited: number; reward?: GamesReward } | null> {
+    const seq = s.checks + 1
+    const at = this.clock.now()
+    await this.repo.storeAnswer(current.id, { seq, correct, optionId, at })
+    // FR-GM-00.5, 48 section 3.5: in the same transaction as the answer; Mod Pelajar writes no row.
+    if (!caller.isTest) await this.ports.answers.record(gameAnswerEntry({ userId: caller.userId, attemptId: s.id, questionId: current.questionId, gameKey: 'jutawan', position: current.position, isCorrect: correct, answeredAt: at }))
+    const common = { checks: seq, correctCount: s.correctCount + (correct ? 1 : 0) }
+    const level = correct ? s.level + 1 : s.level
+    if (correct && level < JUTAWAN_QUESTIONS) {
+      await this.repo.update(s.id, { ...common, jutawanLevel: level, jutawanRemovedOptions: [] })
+      return null
+    }
+    return this.finish(caller, s, level, common, tx)
   }
 
   /** End of a run: best level and games count, the one reward report (only when allowed, never for Mod Pelajar). */
   private async finish(
-    caller: GamesCaller,
+    caller: Pick<GamesCaller, 'userId' | 'isTest'>,
     s: JutawanSession,
     level: number,
     common: { checks: number; correctCount: number },
