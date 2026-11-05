@@ -57,6 +57,10 @@ model GameRoomPlayer {
   isBot        Boolean  @default(false) @map("is_bot")
   isTest       Boolean  @default(false) @map("is_test")
   joinedAt     DateTime @default(now()) @map("joined_at") @db.Timestamptz(6)
+  /// DM-90: when the seat last polled or acted in a playing room (null before the first); presence reads it.
+  lastPolledAt DateTime? @map("last_polled_at") @db.Timestamptz(6)
+  /// DM-90: timeouts of the seat's own turns since its last action; 3 remove the seat (a poll does not reset it).
+  consecutiveTimeouts Int @default(0) @map("consecutive_timeouts")
   legacySource String?  @map("legacy_source")
   legacyId     String?  @map("legacy_id")
 
