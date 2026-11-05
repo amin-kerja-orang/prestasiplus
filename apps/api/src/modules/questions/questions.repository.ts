@@ -395,16 +395,17 @@ export class QuestionsRepository {
 
   /**
    * S3-T07: `unitCount` split by (level, TP) in ONE statement, every unit in exactly ONE bucket, so the buckets sum to `unitCount`.
-   * A question outside any group is its own unit and sits at its own level and TP. A group has no difficulty of its own and its row
-   * level is optional, so a group sits at the level and TP of its FIRST member in scope (lowest `group_position`, then lowest id):
-   * deterministic, and for a complete group (every member in scope) the first member of the group.
+   * A question outside any group is its own unit and sits at its own level and TP. A group sits at ONE bucket:
+   *  - level: the group's own level (`stimulus_groups.education_level_id`) when it is set, else the level of its FIRST member in scope;
+   *  - TP: always the TP of its FIRST member in scope (a group has no difficulty of its own).
+   * "First" = lowest `group_position`, then lowest id: deterministic, and for a complete group (every member in scope) the group's first member.
    */
   async unitCountsByLevelTp(filter: QuestionFilter = {}): Promise<{ levelId: string | null; tp: number | null; n: number }[]> {
     const { from, where } = this.scope(filter)
     const rows = await this.db.$queryRaw<{ level_id: bigint | null; tp: number | null; n: number }[]>`
       SELECT u.level_id, u.tp, count(*)::int AS n FROM (
         SELECT DISTINCT ON (CASE WHEN q.group_id IS NULL THEN 'q' || q.id::text ELSE 'g' || q.group_id::text END)
-               v.education_level_id AS level_id, v.difficulty_tp AS tp
+               coalesce((SELECT sg.education_level_id FROM stimulus_groups sg WHERE sg.id = q.group_id), v.education_level_id) AS level_id, v.difficulty_tp AS tp
           ${from} WHERE ${where}
          ORDER BY CASE WHEN q.group_id IS NULL THEN 'q' || q.id::text ELSE 'g' || q.group_id::text END, q.group_position ASC NULLS LAST, q.id ASC
       ) u GROUP BY 1, 2`

@@ -165,6 +165,17 @@ describe('Latih Tubi breakdowns count units like the total', () => {
     expect(on.filter((r) => r.tp === 2)).toHaveLength(1) // the group is at its first member (TP 2), not at TP 5 or 3
     expect(on.some((r) => r.tp === 5 || r.tp === 3)).toBe(false)
 
+    // The group row's own level wins over the first member's (T4): set it to T5 and the group moves there, TP still the first member's.
+    const group = (await t.db.query<{ group_id: string }>('select group_id::text from questions where id = $1::bigint', [members[0]]))[0]!.group_id
+    const t5 = (await t.db.query<{ id: string }>(`select id::text from education_levels where code = 'T5'`))[0]!.id
+    const t4 = (await t.db.query<{ id: string }>(`select id::text from education_levels where code = 'T4'`))[0]!.id
+    await t.db.query('update stimulus_groups set education_level_id = $1::bigint where id = $2::bigint', [t5, group])
+    const own = await repo.unitCountsByLevelTp(withLtGroups(bio))
+    expect(sum(own)).toBe(3)
+    expect(own).toContainEqual({ levelId: t5, tp: 2, n: 1 })
+    expect(own).not.toContainEqual({ levelId: t4, tp: 2, n: 1 })
+    await t.db.query('update stimulus_groups set education_level_id = null where id = $1::bigint', [group])
+
     // The service: breakdown cells equal the hub total under the live surfaces.
     const cells = await pool.latihTubiCells(bio)
     expect(cells.reduce((a, c) => a + c.n, 0)).toBe(await pool.latihTubiCount(bio, { fresh: true }))
