@@ -55855,6 +55855,183 @@
           "isElective"
         ]
       },
+      "CurriculumDskpState": {
+        "type": "string",
+        "enum": [
+          "dimuatkan",
+          "belum dimuatkan"
+        ]
+      },
+      "CurriculumDskpQuery": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "levelId": {
+            "$ref": "#/components/schemas/Id"
+          }
+        }
+      },
+      "CurriculumDskpReportRow": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "$ref": "#/components/schemas/CurriculumRef"
+          },
+          "level": {
+            "$ref": "#/components/schemas/CurriculumRef"
+          },
+          "state": {
+            "$ref": "#/components/schemas/CurriculumDskpState"
+          },
+          "bab": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sk": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sp": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tp": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tpDescriptors": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "subject",
+          "level",
+          "state",
+          "bab",
+          "sk",
+          "sp",
+          "tp",
+          "tpDescriptors"
+        ]
+      },
+      "CurriculumDskpTpDescriptor": {
+        "type": "object",
+        "properties": {
+          "tp": {
+            "$ref": "#/components/schemas/CurriculumTp"
+          },
+          "descriptor": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tp",
+          "descriptor"
+        ]
+      },
+      "CurriculumDskpNode": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "educationLevelId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/CurriculumNodeKind"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Stable printed code (1.0, 1.1, 1.1.3); questions tag by id, lookups by code."
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "titlePrinted": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "parentId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "edition": {
+            "type": "string",
+            "minLength": 1
+          },
+          "isElective": {
+            "type": "boolean"
+          },
+          "tpDescriptors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CurriculumDskpTpDescriptor"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "subjectId",
+          "educationLevelId",
+          "kind",
+          "code",
+          "title",
+          "titlePrinted",
+          "parentId",
+          "order",
+          "edition",
+          "isElective",
+          "tpDescriptors"
+        ]
+      },
+      "CurriculumDskpReport": {
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CurriculumDskpReportRow"
+            }
+          },
+          "nodes": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/CurriculumDskpNode"
+            }
+          }
+        },
+        "required": [
+          "rows",
+          "nodes"
+        ]
+      },
       "PracticeMode": {
         "type": "string",
         "enum": [
@@ -88758,6 +88935,95 @@
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/CurriculumTree"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: not an admin, or CSRF_INVALID on a mutating call.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND with message \"Subjek tidak dijumpai. or Tahap Pendidikan tidak dijumpai.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (Laravel-style copy, e.g. \"The selected :attribute is invalid.\")",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/curriculum/dskp": {
+      "get": {
+        "tags": [
+          "curriculum-admin"
+        ],
+        "summary": "DSKP load report per Subjek x Tingkatan (API-DSKP-11)",
+        "description": "422 fields.subjectId / fields.levelId when an id is not a positive integer. Nothing is stored (D11/D12); the rejected rows of a load stay in the CLI report (D115).",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "subjectId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "levelId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Live counts and state per offered Subjek x Tingkatan; with subjectId and levelId also the node list with TP descriptors.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CurriculumDskpReport"
                     }
                   },
                   "required": [

@@ -6,6 +6,7 @@ import {
   CURRICULUM_FLASH_MESSAGES,
   CURRICULUM_CONFLICT_MESSAGES,
   CURRICULUM_NOT_FOUND_MESSAGES,
+  CurriculumDskpReportSchema,
   CurriculumChapterCreateSchema,
   CurriculumChapterDeletedSchema,
   CurriculumChapterSchema,
@@ -157,6 +158,22 @@ describe('curriculum contract: requests', () => {
   })
 })
 
+describe('curriculum contract: DSKP report (API-DSKP-11, S4-T02)', () => {
+  const row = {
+    subject: { id: '3', name: 'Matematik' },
+    level: { id: '10', name: 'Tingkatan 4' },
+    state: 'dimuatkan',
+    bab: 10, sk: 31, sp: 98, tp: 60, tpDescriptors: 6,
+  }
+  it('parses rows without nodes and with nodes, and only the two states', () => {
+    expect(CurriculumDskpReportSchema.parse({ rows: [row], nodes: null }).rows[0]?.state).toBe('dimuatkan')
+    const node = { id: '1', subjectId: '3', educationLevelId: '10', kind: 'unit', code: '1.0', title: 'Fungsi', titlePrinted: null, parentId: null, order: 0, edition: '2018', isElective: false, tpDescriptors: [{ tp: 1, descriptor: 'Mempamerkan pengetahuan asas.' }] }
+    expect(CurriculumDskpReportSchema.parse({ rows: [], nodes: [node] }).nodes).toHaveLength(1)
+    expect(() => CurriculumDskpReportSchema.parse({ rows: [{ ...row, state: 'loaded' }], nodes: null })).toThrow()
+    expect(() => CurriculumDskpReportSchema.parse({ rows: [{ ...row, bab: -1 }], nodes: null })).toThrow()
+  })
+})
+
 describe('curriculum contract: OpenAPI', () => {
   const doc = buildOpenApiDocument() as {
     paths: Record<string, Record<string, unknown>>
@@ -168,15 +185,15 @@ describe('curriculum contract: OpenAPI', () => {
     ['put', '/admin/education-levels/{id}'], ['patch', '/admin/education-levels/{id}/active'], ['delete', '/admin/education-levels/{id}'],
     ['get', '/admin/subjects'], ['get', '/admin/subjects/{id}'], ['post', '/admin/subjects'],
     ['put', '/admin/subjects/{id}'], ['patch', '/admin/subjects/{id}/active'], ['delete', '/admin/subjects/{id}'],
-    ['get', '/admin/curriculum'], ['get', '/admin/curriculum/chapters/{id}'], ['post', '/admin/curriculum/chapters'],
+    ['get', '/admin/curriculum'], ['get', '/admin/curriculum/dskp'], ['get', '/admin/curriculum/chapters/{id}'], ['post', '/admin/curriculum/chapters'],
     ['put', '/admin/curriculum/chapters/{id}'], ['delete', '/admin/curriculum/chapters/{id}'],
     ['get', '/admin/curriculum/topics/{id}'], ['post', '/admin/curriculum/topics'], ['put', '/admin/curriculum/topics/{id}'],
     ['delete', '/admin/curriculum/topics/{id}'], ['post', '/admin/curriculum/subtopics'],
     ['put', '/admin/curriculum/subtopics/{id}'], ['delete', '/admin/curriculum/subtopics/{id}'],
   ]
 
-  it('contains all 29 M03 operations', () => {
-    expect(expected).toHaveLength(29)
+  it('contains all 30 M03 operations', () => {
+    expect(expected).toHaveLength(30)
     for (const [method, path] of expected) expect(doc.paths[path]?.[method], `${method} ${path}`).toBeDefined()
   })
 
