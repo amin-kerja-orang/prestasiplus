@@ -265,3 +265,71 @@ test.describe('M04 S9 structured detail', { tag: [TAG.smoke, moduleTag(4)] }, ()
     await expectNoHorizontalScroll(page)
   })
 })
+
+// S6-T17 (R1-GUR-44b): the teacher mount of the same pages at /guru/soalan-berstruktur (the m10 route
+// records pass portal 'guru'). Runs at 375 / 768 / 1280 with the other tests of this file.
+test.describe('R1-GUR-44b teacher structured list and detail', { tag: [TAG.smoke, moduleTag(4)] }, () => {
+  test.use({ mockInit: { latency: 0 } })
+  const GURU_ACCOUNT = 'guru@demo.test'
+  const GURU_LIST = '/guru/soalan-berstruktur'
+
+  test('the list shows 20 rows, the PRD copy and the BM pager without horizontal scroll', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }) => {
+    await loginAs(GURU_ACCOUNT)
+    await openList(page, gotoApp, GURU_LIST)
+    await expect(page.getByTestId('structured-page').getByRole('heading', { level: 1 })).toHaveText(
+      'Soalan Berstruktur',
+    )
+    await expect(page.getByTestId('structured-page')).toContainText(
+      'Cipta & urus soalan berstruktur mengikut piawaian SPM KPM',
+    )
+    await expect(page.getByTestId('structured-page')).toContainText('soalan dalam bank')
+    await expect(rows(page)).toHaveCount(20)
+    await expect(page.getByTestId('structured-add')).toHaveCount(0)
+    await expect(page.getByTestId('structured-stat-total')).toHaveCount(0)
+    await expect(page.getByTestId('structured-counter')).toHaveText(
+      /^Menunjukkan 1 hingga 20 daripada [\d,]+ keputusan$/,
+    )
+    await expect(page.getByTestId('structured-pager')).toContainText('Seterusnya')
+    await expect(page.getByTestId('structured-status').locator('option')).toHaveText([
+      'Semua',
+      'Diluluskan',
+      'Menunggu Semakan',
+    ])
+    const submit = page.getByTestId('structured-filter').locator('button[type=submit]')
+    await expect(submit).toHaveText('Tapis')
+    await expect.poll(async () => (await submit.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44)
+    await expectTouchTarget(submit)
+    await expectTouchTarget(rows(page).first().getByTestId('structured-view'))
+    await expectTouchTarget(page.getByTestId('structured-pager').getByRole('button', { name: 'Seterusnya' }))
+    await expectNoHorizontalScroll(page)
+  })
+
+  test('the Menunggu Semakan filter is empty and the eye opens the detail with the stimulus once', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }) => {
+    await loginAs(GURU_ACCOUNT)
+    await gotoApp(`${GURU_LIST}?status=review`)
+    await expect(page.getByTestId('structured-empty')).toHaveText('Tiada soalan berstruktur dijumpai.')
+    await expectNoHorizontalScroll(page)
+
+    await openList(page, gotoApp, GURU_LIST)
+    await rows(page).first().getByTestId('structured-view').click()
+    await expect(page).toHaveURL(/\/guru\/soalan-berstruktur\/\d+$/)
+    await expect(page.getByTestId('structured-detail')).toBeVisible()
+    await expect(page.getByTestId('structured-stimulus')).toHaveCount(1)
+    await expect(page.getByTestId('structured-status')).toHaveText('Diluluskan')
+    await expect(page.getByTestId('structured-subs-heading')).toContainText('Sub-Soalan (')
+    await expect(page.getByTestId('structured-sub').first()).toContainText('Skema Jawapan')
+    await expect(page.getByTestId('structured-id')).toHaveCount(0)
+    await expectTouchTarget(page.getByTestId('structured-back'))
+    await expectNoHorizontalScroll(page)
+    await page.getByTestId('structured-back').click()
+    await expect(page).toHaveURL(/\/guru\/soalan-berstruktur$/)
+  })
+})
