@@ -591,8 +591,19 @@ export class PracticeRepository {
 
   /** BR-14: a wrong answer adds one to `wrong_times` (or queues the question), a right answer removes it. */
   private async writeQueue(userId: bigint, graded: readonly GradedAnswer[], at: Date): Promise<void> {
+    // DM-42: a teacher's personal question is never queued for Ulang Kaji (it is served by its owner's mission only). The queue read
+    // (`eligibleQueueBySubject`) and the revision planner drop it as well, so a row written before this guard stays unserved.
+    const ids = graded.map((g) => idFromString(g.check.questionId))
+    const hidden = new Set(
+      (
+        await this.db.$queryRaw<{ id: bigint }[]>`
+          SELECT q.id FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
+           WHERE q.id = ANY(${ids}::bigint[]) AND v.visibility <> 'bank'`
+      ).map((r) => r.id.toString()),
+    )
     for (const g of graded) {
       if (g.subjectId === null) continue
+      if (hidden.has(g.check.questionId)) continue
       const questionId = idFromString(g.check.questionId)
       if (g.isCorrect) {
         await this.db.revisionQueue.deleteMany({ where: { userId, questionId } })

@@ -8,10 +8,12 @@ import { QUESTION_COUNT_SQL } from '../../src/modules/account/account-data.repos
 import { TeacherQuestionStatsProvider } from '../../src/modules/classes/question-bridge/teacher-question-stats.provider'
 import { PracticeAnalyticsRepository } from '../../src/modules/practice/reads/analytics/analytics.repository'
 import { OverviewRepository } from '../../src/modules/practice/reads/overview/overview.repository'
+import { PracticeRepository } from '../../src/modules/practice/practice.repository'
+import { Be09PracticeQuestionSource } from '../../src/modules/practice/question-bridge/be09-practice-question-source'
 import { StructuredListingRepository } from '../../src/modules/practice/reads/writes/listing.repository'
 import { QuestionsBijakPoolSource } from '../../src/modules/questions/bijak-pool'
 import { BANK_VISIBLE_SQL } from '../../src/modules/questions/learner-visibility'
-import { QuestionsRepository } from '../../src/modules/questions/questions.repository'
+import { BANK_ONLY, QuestionsRepository } from '../../src/modules/questions/questions.repository'
 import { QuestionsService } from '../../src/modules/questions/questions.service'
 import { databankLaneConds, janaEligibleScope } from '../../src/modules/questions/serving/filters'
 import { AnalyticsRepository } from '../../src/modules/reports/analytics/analytics.repository'
@@ -147,30 +149,69 @@ describe('DM-42: the files whose reads need a database or a builder port carry t
   })
 })
 
-describe('DM-42: getPublicForLearner and gradeAnswer serve a private question only inside the owner mission', () => {
+describe('DM-42: getPublicForLearner and gradeAnswer never serve a private question', () => {
   const record = (visibility: 'bank' | 'teacher_private', ownerUserId: string | null) =>
     ({ id: '5', isActive: true, version: { status: 'approved', visibility, ownerUserId, parts: [] } }) as never
-  const svcOf = (rec: never) => {
+  // The fake repo applies `bankOnly` like the real `getMany` does.
+  const svcOf = (rec: { version: { visibility: string } }) => {
     const svc = Object.create(QuestionsService.prototype) as QuestionsService
-    ;(svc as unknown as { repo: unknown }).repo = { get: () => Promise.resolve(rec) }
+    ;(svc as unknown as { repo: unknown }).repo = { get: (_id: string, _v: string, opts?: { bankOnly?: boolean }) => Promise.resolve(opts?.bankOnly === true && rec.version.visibility === 'teacher_private' ? null : rec) }
     return svc
   }
 
   it('a bank question is served as before', async () => {
-    await expect(svcOf(record('bank', null)).getPublicForLearner('5')).resolves.toBeDefined()
+    await expect(svcOf(record('bank', null) as never).getPublicForLearner('5')).resolves.toBeDefined()
   })
 
-  it('a private question is a 404 without a mission context and for another teacher mission', async () => {
-    const svc = svcOf(record('teacher_private', '7'))
+  it('a private question is a 404 for both', async () => {
+    const svc = svcOf(record('teacher_private', '7') as never)
     await expect(svc.getPublicForLearner('5')).rejects.toMatchObject({ status: 404 })
-    await expect(svc.getPublicForLearner('5', { missionOwnerId: '8' })).rejects.toMatchObject({ status: 404 })
     await expect(svc.gradeAnswer('5', [])).rejects.toMatchObject({ status: 404 })
-    await expect(svc.gradeAnswer('5', [], { missionOwnerId: '8' })).rejects.toMatchObject({ status: 404 })
+  })
+})
+
+describe('DM-42 (security M1): a by-id read with bankOnly does not find a private question; without it the mission path does', () => {
+  const rowOf = (visibility: string) => ({ id: 5n, tags: [], liveVersionNo: 1, latestVersionNo: 1, visibility })
+  it('QuestionsRepository.getMany filters teacher_private only when bankOnly is set', async () => {
+    const repo = new QuestionsRepository({ client: {} } as never)
+    const rec = { id: '5', version: { visibility: 'teacher_private' } }
+    ;(repo as unknown as { hydrate: unknown }).hydrate = () => Promise.resolve([rec])
+    expect(await repo.getMany(['5'], 'live')).toHaveLength(1)
+    expect(await repo.getMany(['5'], 'live', 'exclude', BANK_ONLY)).toHaveLength(0)
+    expect(await repo.get('5', 'live', BANK_ONLY)).toBeNull()
+    expect(rowOf('bank').visibility).toBe('bank')
+  })
+})
+
+describe('DM-42 (security H1): a private question answered wrongly in a mission is not served in Ulang Kaji', () => {
+  it('Be09PracticeQuestionSource.live drops a private question unless the caller is a mission session', async () => {
+    const rec = { id: '5', isActive: true, groupId: null, version: { status: 'approved', visibility: 'teacher_private' } }
+    const questions = { getMany: () => Promise.resolve([rec]) }
+    const source = new Be09PracticeQuestionSource(questions as never, {} as never, [])
+    expect((await source.live(['5'])).size).toBe(0)
+    expect((await source.live(['5'], 'bab')).size).toBe(0)
+    expect((await source.live(['5'], undefined, { allowPrivate: false })).size).toBe(0)
   })
 
-  it('a private question is served inside the owner mission', async () => {
-    const svc = svcOf(record('teacher_private', '7'))
-    await expect(svc.getPublicForLearner('5', { missionOwnerId: '7' })).resolves.toBeDefined()
-    await expect(svc.gradeAnswer('5', [], { missionOwnerId: '7' })).resolves.toBeDefined()
+  it('the revision queue write skips a private question (wrong or right) and still queues a bank one', async () => {
+    const upserts: unknown[] = []
+    const client = {
+      $queryRaw: () => Promise.resolve([{ id: 5n }]),
+      revisionQueue: { upsert: (a: unknown) => (upserts.push(a), Promise.resolve()), deleteMany: () => Promise.resolve() },
+    }
+    const repo = new PracticeRepository({ client } as never)
+    const graded = (questionId: string) => ({ check: { questionId, checkedAt: new Date() }, isCorrect: false, subjectId: '1' })
+    await (repo as unknown as { writeQueue(u: bigint, g: unknown[], at: Date): Promise<void> }).writeQueue(1n, [graded('5'), graded('6')], new Date())
+    expect(upserts).toHaveLength(1)
+    expect(JSON.stringify(upserts[0], (_k, v: unknown) => (typeof v === 'bigint' ? v.toString() : v))).toContain('"questionId":"6"')
+  })
+
+  it('the revision queue read and eligibleForPractice carry the bank predicate', async () => {
+    const a = capture()
+    await run(() => new PracticeAnalyticsRepository(a.prisma).eligibleQueueBySubject('3'))
+    expect(a.sqls[0]).toContain(BANK)
+    const e = capture()
+    await run(() => new QuestionsRepository(e.prisma).eligibleForPractice('5'))
+    expect(e.sqls[0]).toContain(BANK)
   })
 })

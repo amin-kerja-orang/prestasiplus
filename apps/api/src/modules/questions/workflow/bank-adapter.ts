@@ -18,6 +18,7 @@ import { PrismaService } from '../../../db/prisma.service'
 import { CurriculumRepository } from '../../curriculum'
 import {
   isStructuredVisible,
+  BANK_ONLY,
   QuestionsRepository,
   QuestionsService,
   STRUCTURED_LEVEL_CODES,
@@ -77,13 +78,13 @@ export class QuestionBankAdapter implements QuestionBankPort {
   }
 
   async getStatus(id: string): Promise<QuestionStatusInfo | null> {
-    const r = await this.repo.get(id, 'latest')
+    const r = await this.repo.get(id, 'latest', BANK_ONLY)
     return r ? this.infoOf(r) : null
   }
 
   /** The same facts and the same builder as `QuestionsService.setStatus` (R1-H-A18): no path has its own defaults. */
   async getForGates(id: string): Promise<QuestionGateData | null> {
-    const r = await this.repo.get(id, 'latest')
+    const r = await this.repo.get(id, 'latest', BANK_ONLY)
     if (!r) return null
     const facts = await this.repo.gateFacts(r.id, r.version.versionNo)
     return gateDataOf(r, facts, await this.repo.isSpmBound(r.version.subjectId, r.version.educationLevelId))
@@ -99,14 +100,14 @@ export class QuestionBankAdapter implements QuestionBankPort {
   async setStatus(id: string, to: QuestionWorkflowStatus, actorId: string, options: SetStatusOptions = {}): Promise<QuestionStatusInfo | null> {
     return this.prisma.transaction(async () => {
       if (!(await this.repo.lock(id))) return null
-      const record = await this.repo.get(id, 'latest')
+      const record = await this.repo.get(id, 'latest', BANK_ONLY)
       if (!record) return null
       const target = options.target ?? 'latest'
       const liveNo = record.liveVersionNo
 
       if (target === 'live') {
         if (liveNo === null) return this.infoOf(record) // nothing live: no-op
-        const live = liveNo === record.latestVersionNo ? record : await this.repo.get(id, 'live')
+        const live = liveNo === record.latestVersionNo ? record : await this.repo.get(id, 'live', BANK_ONLY)
         const current = live?.version.status ?? 'approved'
         if (options.expectedFrom !== undefined && current !== options.expectedFrom) throw transitionConflict(current, to)
         await this.repo.setVersionStatus(id, liveNo, to, { archiveReason: options.archiveReason ?? 'withdrawn' })
@@ -200,19 +201,19 @@ export class QuestionBankAdapter implements QuestionBankPort {
   }
 
   async liveType(id: string): Promise<'mcq' | 'structured' | null> {
-    const record = await this.repo.get(id, 'live')
+    const record = await this.repo.get(id, 'live', BANK_ONLY)
     return record ? (record.version.type === 'mcq' ? 'mcq' : 'structured') : null
   }
 
   async structuredVisible(id: string): Promise<boolean> {
-    const record = await this.repo.get(id, 'live')
+    const record = await this.repo.get(id, 'live', BANK_ONLY)
     if (!record) return false
     const levels = new Set((await this.curriculum.levels()).filter((l) => STRUCTURED_LEVEL_CODES.includes(l.code)).map((l) => l.id.toString()))
     return isStructuredVisible(record, levels)
   }
 
   async describe(ids: readonly string[]): Promise<ReadonlyMap<string, QuestionBrief>> {
-    const records = await this.repo.getMany(ids, 'latest')
+    const records = await this.repo.getMany(ids, 'latest', 'exclude', BANK_ONLY)
     const out = new Map<string, QuestionBrief>()
     if (records.length === 0) return out
     const { subjects, levels } = await this.names()
@@ -281,7 +282,7 @@ export class QuestionBankAdapter implements QuestionBankPort {
   }
 
   async getExplanationSource(id: string): Promise<ExplanationSource | null> {
-    const r = await this.repo.get(id, 'latest')
+    const r = await this.repo.get(id, 'latest', BANK_ONLY)
     if (!r) return null
     const v = r.version
     const all = leaves(v.parts)

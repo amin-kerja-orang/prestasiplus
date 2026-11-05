@@ -19,7 +19,7 @@ export class QuestionPool {
     const out = new Map<string, QuestionRecord>()
     for (let i = 0; i < ids.length; i += CHUNK) {
       for (const r of await this.questions.getMany(ids.slice(i, i + CHUNK), 'live')) {
-        if (r.isActive && r.version.status === 'approved' && r.version.type === 'mcq') out.set(r.id, r)
+        if (r.isActive && r.version.status === 'approved' && r.version.type === 'mcq' && r.version.visibility !== 'teacher_private') out.set(r.id, r) // DM-42: a personal question never enters a remedial test
       }
     }
     return out

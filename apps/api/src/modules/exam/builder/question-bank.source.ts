@@ -20,7 +20,7 @@ import type { BijakAttemptOption, BijakAttemptStimulus, BijakBuilderReviewQuesti
 import { idFromString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { bijakCodeOf, curriculumCodeOf } from '../../bijak/papers/subject-codes'
-import { QuestionsRepository } from '../../questions'
+import { BANK_ONLY, QuestionsRepository } from '../../questions'
 import { ACTIVE_SUBJECT_SQL, BANK_VISIBLE_SQL, LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL } from '../../questions/learner-visibility'
 import { CANDIDATE_SLACK, MAX_EDITOR_CANDIDATES } from './builder.constants'
 import { BuilderRepository } from './builder.repository'
@@ -262,10 +262,10 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
 
   async review(ids: readonly string[]): Promise<BuilderPreview> {
     const unique = [...new Set(ids)]
-    const live = await this.questions.getMany(unique, 'live')
+    const live = await this.questions.getMany(unique, 'live', 'exclude', BANK_ONLY)
     const have = new Set(live.map((r) => r.id))
     const rest = unique.filter((id) => !have.has(id))
-    const latest = rest.length ? await this.questions.getMany(rest, 'latest') : []
+    const latest = rest.length ? await this.questions.getMany(rest, 'latest', 'exclude', BANK_ONLY) : []
     const byId = new Map([...live, ...latest].map((r) => [r.id, r]))
     const records = unique.flatMap((id) => {
       const r = byId.get(id)

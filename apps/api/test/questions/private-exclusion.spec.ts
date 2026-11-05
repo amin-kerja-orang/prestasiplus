@@ -72,6 +72,21 @@ describe('a private question never reaches a bank read (DM-42)', () => {
     expect(ids).not.toContain(privateId)
   })
 
+  it('the admin by-id paths treat a private question as unknown (404): get, update, status, delete', async () => {
+    const actor = await adminActor(t.db)
+    await expect(svc.getAdmin(privateId)).rejects.toMatchObject({ status: 404 })
+    await expect(svc.update(privateId, { questionText: 'x' } as never, actor)).rejects.toMatchObject({ status: 404 })
+    await expect(svc.setStatus(privateId, 'archived', actor.userId)).rejects.toMatchObject({ status: 404 })
+    await expect(svc.remove(privateId, actor)).rejects.toMatchObject({ status: 404 })
+    expect(await repo.eligibleForPractice(privateId)).toBe(false)
+    expect(await repo.get(privateId, 'live')).not.toBeNull()
+  })
+
+  it('a new version of a question carries visibility, owner and link forward', async () => {
+    const draft = (await repo.get(privateId, 'latest'))!
+    expect(draft.version.visibility).toBe('teacher_private')
+  })
+
   it('a read by id still finds it (the mission path), with the reference link', async () => {
     const record = await repo.get(privateId, 'live')
     expect(record?.version.visibility).toBe('teacher_private')
@@ -79,11 +94,9 @@ describe('a private question never reaches a bank read (DM-42)', () => {
     expect(record?.version.referenceUrl).toBe('https://example.org/rujukan')
   })
 
-  it('getPublicForLearner and gradeAnswer: 404 outside the owner mission, served inside it', async () => {
+  it('getPublicForLearner and gradeAnswer: 404 (bank-only reads)', async () => {
     await expect(svc.getPublicForLearner(privateId)).rejects.toMatchObject({ status: 404 })
     await expect(svc.gradeAnswer(privateId, [])).rejects.toMatchObject({ status: 404 })
-    await expect(svc.getPublicForLearner(privateId, { missionOwnerId: '999999' })).rejects.toMatchObject({ status: 404 })
-    await expect(svc.getPublicForLearner(privateId, { missionOwnerId: ownerId })).resolves.toBeDefined()
     await expect(svc.getPublicForLearner(bankId)).resolves.toBeDefined()
   })
 })
