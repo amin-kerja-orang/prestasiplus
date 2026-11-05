@@ -201,6 +201,8 @@ model QuestionSet {
   scheduledAt      DateTime? @map("scheduled_at") @db.Timestamptz(6)
   needsRebuild     Boolean   @default(false) @map("needs_rebuild")
   isTest           Boolean   @default(false) @map("is_test")
+  /// set or kertas (check constraint, DM-43); a kertas row is a teacher paper (R1-GUR-44e).
+  kind             String    @default("set")
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   legacySource     String?   @map("legacy_source")
