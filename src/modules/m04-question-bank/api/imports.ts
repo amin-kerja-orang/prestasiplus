@@ -17,8 +17,8 @@ export interface QuestionImportRun {
   fileName: string
   importedCount: number
   failedCount: number
-  /** `row` is the 1-based line of the file (the header is line 1). */
-  failures: { row: number; message: string }[]
+  /** `row` is the 1-based line of the file (the header is line 1). The new header adds key, field and code (S1-T05). */
+  failures: { row: number; message: string; questionKey?: string; field?: string; code?: string }[]
   defaults: {
     subjectId: number | null
     educationLevelId: number | null
@@ -32,7 +32,7 @@ export interface QuestionImportRun {
 
 /** #9 result: the run plus the flash text "Import selesai: {x} soalan diimport, {y} gagal." */
 export interface QuestionImportResponse {
-  data: QuestionImportRun
+  data: QuestionImportRun & { warnings?: string[] }
   status: string
 }
 
@@ -74,6 +74,11 @@ export function fetchQuestionImports(
     query: { page: query.page ?? null },
     ...(query.signal ? { signal: query.signal } : {}),
   })
+}
+
+/** `GET /api/question-imports/:id/errors` (S1-T05, FR-QA-34): the error CSV of a run, its cells neutralised by the server. */
+export function downloadImportErrors(id: number): Promise<BlobResult> {
+  return api.blob(`/api/question-imports/${String(id)}/errors`)
 }
 
 /** #11 `GET /api/question-imports/template`: the CSV file `template-import-soalan.csv`. */

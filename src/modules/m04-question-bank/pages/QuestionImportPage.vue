@@ -3,20 +3,38 @@
  * S5 `/admin/questions/import` "Import Soalan Secara Pukal" (M04-T5; FR-M04-53…57, DV-M04-01/07).
  *
  * Top links "Sejarah Import" and "Kembali", the card "Muat Naik Fail CSV" (native `required` file input
- * `.csv,.txt`, "Tetapan Lalai (Opsional)" with the difficulty preselected 2, the draft footer and "Mula
- * Import"), and the side cards "Muat Turun Template", "Format CSV" and "Tips".
+ * `.csv,.txt`, "Tetapan Lalai (Opsional)", the draft footer and "Mula Import"), and the side cards
+ * "Muat Turun Template", "Format CSV" and "Tips".
  *
  * Validation is native (the empty file) and server-side (file type and size, invalid defaults); server
- * messages show only in the red alert above the form. Success keeps the page, resets the form and shows the
- * API `status` (UNVERIFIED COPY "Import selesai: {x} soalan diimport, {y} gagal.") as the green flash.
+ * messages show only in the red alert above the form, and a new try clears the last banner (FR-ADM-Q11.1).
+ * Success keeps the page, resets the form and shows the API `status` as the flash. A run with failed rows
+ * lists them under the form, with the error CSV of FR-QA-34.
  */
 import { computed, nextTick, ref } from 'vue'
 
 import { useApi, useFlash } from '@/composables'
-import { DsBackLink, DsFileField, DsFormBar, DsFormField, DsFormSection, DsNativeSelect, DsPage, DsPanel } from '@/ds'
+import {
+  DsBackLink,
+  DsCluster,
+  DsFileField,
+  DsFormBar,
+  DsFormField,
+  DsFormSection,
+  DsNativeSelect,
+  DsPage,
+  DsPanel,
+  DsStack,
+  DsText,
+} from '@/ds'
 import { saveBlob } from '@/lib/save-blob'
 
-import { downloadImportTemplate, importQuestions } from '../api/imports'
+import {
+  downloadImportErrors,
+  downloadImportTemplate,
+  importQuestions,
+  type QuestionImportResponse,
+} from '../api/imports'
 import { fetchEducationLevels, fetchSubjects } from '../api/lookups'
 import { DIFFICULTY_OPTIONS, IMPORT_HISTORY_PATH } from '../lib/import-quality'
 import { QUESTIONS_LIST_PATH } from '../lib/question-list'
@@ -34,10 +52,11 @@ const alertBox = ref<HTMLElement | null>(null)
 const file = ref<File | File[] | null>(null)
 const subjectId = ref('')
 const levelId = ref('')
-const difficulty = ref('2')
+const difficulty = ref('')
 
 const submitting = ref(false)
 const errors = ref<string[]>([])
+const report = ref<QuestionImportResponse['data'] | null>(null)
 
 function toId(value: string): number | null {
   return value === '' ? null : Number(value)
@@ -47,6 +66,8 @@ async function submit(): Promise<void> {
   if (submitting.value) return
   submitting.value = true
   errors.value = []
+  report.value = null
+  flash.clear()
   try {
     const result = await importQuestions({
       csvFile: Array.isArray(file.value) ? (file.value[0] ?? null) : file.value,
@@ -58,7 +79,8 @@ async function submit(): Promise<void> {
     file.value = null
     subjectId.value = ''
     levelId.value = ''
-    difficulty.value = '2'
+    difficulty.value = ''
+    report.value = result.data
     flash.show({ type: 'success', message: result.status })
     window.scrollTo?.({ top: 0 })
   } catch (err) {
@@ -67,6 +89,60 @@ async function submit(): Promise<void> {
     alertBox.value?.scrollIntoView?.({ block: 'start' })
   } finally {
     submitting.value = false
+  }
+}
+
+/** The `Format CSV` card: the Q-11 columns S1-T05 reads today (MCQ). The group and stimulus columns join with S1-T05 part 2. */
+const FORMAT_GROUPS: { title: string; rows: { columns: string[]; note?: string }[] }[] = [
+  {
+    title: 'Kolum diperlukan:',
+    rows: [
+      { columns: ['question_key'], note: 'Kunci soalan' },
+      { columns: ['type'], note: 'Jenis soalan' },
+      { columns: ['prompt_ms'], note: 'Teks soalan' },
+      { columns: ['option_a', 'option_b', 'option_c'], note: 'Pilihan (sekurang-kurangnya 3)' },
+      { columns: ['correct'], note: 'Jawapan betul' },
+      { columns: ['marks'], note: 'Markah' },
+      { columns: ['subject_code', 'tingkatan'], note: 'Kod subjek dan Tingkatan (atau guna Tetapan Lalai)' },
+    ],
+  },
+  {
+    title: 'Kolum DSKP (untuk diterbitkan):',
+    rows: [
+      { columns: ['unit_code', 'sp_kod'], note: 'Unit dan 1 hingga 3 SP (dipisah dengan ;)' },
+      { columns: ['tp', 'aras'], note: 'TP dan aras pemikiran' },
+      { columns: ['bab_kod'], note: 'Bab' },
+    ],
+  },
+  {
+    title: 'Kolum opsional:',
+    rows: [
+      { columns: ['option_d'] },
+      { columns: ['difficulty'], note: 'Kesukaran (1-5)' },
+      { columns: ['kbat', 'topik_kod', 'kertas', 'number_label', 'bahasa', 'jenis_tulisan'] },
+    ],
+  },
+]
+
+/** The new header's messages already start with `Baris {n}: ` (Q-11); a legacy message may not. */
+function failureLine(f: QuestionImportResponse['data']['failures'][number]): string {
+  const prefix = `Baris ${String(f.row)}: `
+  const line = f.message.startsWith(prefix) ? f.message : `${prefix}${f.message}`
+  return f.field ? `${line} (${f.field})` : line
+}
+
+const downloadingErrors = ref(false)
+
+async function downloadErrors(id: number): Promise<void> {
+  if (downloadingErrors.value) return
+  downloadingErrors.value = true
+  try {
+    const result = await downloadImportErrors(id)
+    saveBlob(result.blob, result.filename ?? 'laporan-ralat-import.csv')
+  } catch (err) {
+    flash.show({ type: 'error', message: errorLines(err) })
+  } finally {
+    downloadingErrors.value = false
   }
 }
 
@@ -218,7 +294,7 @@ async function downloadTemplate(): Promise<void> {
           <template #status>
             <span class="flex items-center gap-2 text-body text-muted">
               <UIcon name="i-ph-shield-check" class="size-4 text-primary-t" />
-              Soalan disimpan sebagai draf
+              Soalan akan disimpan sebagai draf
             </span>
           </template>
           <template #submit>
@@ -230,10 +306,39 @@ async function downloadTemplate(): Promise<void> {
               class="min-h-11"
               data-testid="import-submit"
             >
-              Mula Import
+              {{ submitting ? 'Mengimport…' : 'Mula Import' }}
             </UButton>
           </template>
         </DsFormBar>
+
+        <DsPanel
+          v-if="report && (report.failures.length > 0 || (report.warnings?.length ?? 0) > 0)"
+          title="Laporan import"
+          data-testid="import-report"
+        >
+          <DsStack gap="sm">
+            <DsStack v-if="report.warnings?.length" as="ul" gap="2xs" data-testid="import-warnings">
+              <DsText v-for="w in report.warnings" :key="w" as="li" variant="body" tone="warning">{{ w }}</DsText>
+            </DsStack>
+            <DsStack v-if="report.failures.length > 0" as="ul" gap="2xs" data-testid="import-failures">
+              <DsText v-for="f in report.failures" :key="`${f.row}-${f.field ?? ''}-${f.message}`" as="li" variant="body" wrap="anywhere">
+                {{ failureLine(f) }}
+              </DsText>
+            </DsStack>
+            <DsCluster v-if="report.failures.length > 0">
+              <UButton
+                type="button"
+                color="neutral"
+                variant="soft"
+                :disabled="downloadingErrors"
+                data-testid="import-errors-download"
+                @click="downloadErrors(report.id)"
+              >
+                Muat turun laporan ralat (CSV)
+              </UButton>
+            </DsCluster>
+          </DsStack>
+        </DsPanel>
       </form>
 
       <div class="flex min-w-0 flex-col gap-4 md:gap-6">
@@ -252,48 +357,20 @@ async function downloadTemplate(): Promise<void> {
               data-testid="import-template-download"
               @click="downloadTemplate"
             >
-              Download Template
+              Muat Turun Templat CSV
             </UButton>
           </div>
         </DsPanel>
 
         <DsPanel title="Format CSV" icon="i-ph-info" data-testid="import-format-card">
-          <p class="mb-1 text-label text-highlighted">Kolum diperlukan:</p>
-          <ul class="mb-3 flex flex-col gap-2 text-body text-default">
-            <li><code class="bg-elevated px-1 text-caption">question_text</code> — Teks soalan</li>
-            <li>
-              <code class="bg-elevated px-1 text-caption">option_a</code>,
-              <code class="bg-elevated px-1 text-caption">option_b</code> — Pilihan
-            </li>
-            <li>
-              <code class="bg-elevated px-1 text-caption">correct_answer</code> — Jawapan (A/B/C/D)
-            </li>
-            <li>
-              <code class="bg-elevated px-1 text-caption">subject_id</code> — ID subjek (atau guna
-              Tetapan Lalai)
-            </li>
-            <li>
-              <code class="bg-elevated px-1 text-caption">education_level_id</code> — ID tahap (atau
-              guna Tetapan Lalai)
-            </li>
-          </ul>
-          <p class="mb-1 text-label text-highlighted">Kolum opsional:</p>
-          <ul class="flex flex-col gap-2 text-body text-default">
-            <li>
-              <code class="bg-elevated px-1 text-caption">option_c</code>,
-              <code class="bg-elevated px-1 text-caption">option_d</code>
-            </li>
-            <li>
-              <code class="bg-elevated px-1 text-caption">difficulty_level</code> — Kesukaran (1-5)
-            </li>
-            <li>
-              <code class="bg-elevated px-1 text-caption">marks</code>,
-              <code class="bg-elevated px-1 text-caption">explanation</code>
-            </li>
-            <li>
-              <code class="bg-elevated px-1 text-caption">kertas</code> — Kertas (1, 2 atau 3)
-            </li>
-          </ul>
+          <template v-for="group in FORMAT_GROUPS" :key="group.title">
+            <p class="mb-1 text-label text-highlighted">{{ group.title }}</p>
+            <ul class="mb-3 flex flex-col gap-2 text-body text-default">
+              <li v-for="row in group.rows" :key="row.columns.join()">
+                <template v-for="(c, i) in row.columns" :key="c"><template v-if="i > 0">, </template><code class="bg-elevated px-1 text-caption">{{ c }}</code></template><template v-if="row.note"> — {{ row.note }}</template>
+              </li>
+            </ul>
+          </template>
         </DsPanel>
 
         <DsPanel title="Tips" icon="i-ph-lightbulb" data-testid="import-tips-card">
