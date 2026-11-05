@@ -22,6 +22,7 @@ import { mulberry32 } from '../../../db/prng'
 import { PrismaService } from '../../../db/prisma.service'
 import { CurriculumRepository } from '../../curriculum'
 import { FilesService } from '../../files'
+import { selectedLabelOf } from '../../practice'
 import { PracticePorts, practiceRewardSource } from '../../practice/ports'
 import { type GradedAnswer, PracticeRepository, type ServedRef, type StoredCheck } from '../../practice/practice.repository'
 import { pinServableForNewSitting, QuestionsRepository } from '../../questions'
@@ -98,7 +99,7 @@ export class KuizService {
     // Published + active + learner-visible (secondary, not PKSK) are forced by the bank's `sample`; the shape is one objective leaf.
     // S1-T06 (FR-MUR-QP-6, D90): `wholeGroups` keeps a member only of a complete group; the draw below then takes whole units.
     const ids = await this.questions.sample(
-      { type: 'mcq', singleMcqLeaf: true, wholeGroups: true, ...(subjectId ? { subjectId } : {}) },
+      { servesMcqMulti: true, singleMcqLeaf: true, wholeGroups: true, ...(subjectId ? { subjectId } : {}) },
       count * KUIZ_OVER_FETCH,
       mulberry32(randomInt(0, 0x1_0000_0000)),
     )
@@ -171,9 +172,6 @@ export class KuizService {
       const ref = record ? leafOf(record, req.itemId) : null
       const leaf = ref ? markableLeaf(ref) : null
       if (!record || !leaf) throw invalidAnswer('itemId')
-      // The random quiz stores ONE letter per check (`practice_checks.selected_label` is NOT NULL and `^[A-H]$`), so an mcq_multi question is
-      // not drawn here and a check on one is refused (waiting for the S5 migration; the per-paper quiz stores nothing and does serve it).
-      if (multiKeyOf(leaf) !== null) throw invalidAnswer('itemId')
       const selected = this.selectionOf(req, leaf)
       const marked = selectionVerdict(leaf, selected)
 
@@ -186,21 +184,23 @@ export class KuizService {
         })
       // One check per question: a repeat returns the stored verdict and counts nothing.
       const stored = await this.practice.check(session.id, questionId)
-      if (stored) return verdict(stored.selectedLabel === marked.correctOptionId)
+      // A multi check keeps its verdict in `is_correct` (the stored label is the comma-joined ticks, not one letter to compare).
+      const storedVerdict = (c: StoredCheck): boolean => (multiKeyOf(leaf) !== null ? c.isCorrect : c.selectedLabel === marked.correctOptionId)
+      if (stored) return verdict(storedVerdict(stored))
       const correct = marked.correct
       const inserted = await this.practice.insertCheck({
         sessionId: session.id,
         userId: caller.userId,
         questionId,
         questionVersionNo: served.versionNo,
-        selectedLabel: selected[0] as string,
+        selectedLabel: selectedLabelOf(selected) as string,
         isCorrect: correct,
         checkedAt: now,
         isTest: caller.isTest || session.isTest,
       })
       if (!inserted) {
         const winner = await this.practice.check(session.id, questionId)
-        return verdict(winner ? winner.selectedLabel === marked.correctOptionId : correct)
+        return verdict(winner ? storedVerdict(winner) : correct)
       }
       return verdict(correct)
     })
@@ -259,15 +259,20 @@ export class KuizService {
       const record = byKey.get(`${ref.questionId}@${String(ref.versionNo)}`)
       const leaf = record ? leavesOf(record.id, record.version.parts).map(markableLeaf).find((l) => l !== null) : undefined
       const v = record?.version
+      // A multi row stores the comma-joined ticks ("A,C"): split back and graded by the one S1 grader (`selectionVerdict`).
+      const multi = leaf !== undefined && leaf !== null && multiKeyOf(leaf) !== null
+      const isCorrect = !leaf ? check.isCorrect : multi ? selectionVerdict(leaf, check.selectedLabel.split(',')).correct : leaf.key.correct === check.selectedLabel
+      // `practice_answers.selected_label` still allows ONE letter (`^[A-H]$`; migration 0261 relaxed only `practice_checks`), so the answer
+      // row of a multi check keeps the first tick. The verdict above is graded from all the ticks.
       return {
-        check,
-        isCorrect: leaf ? leaf.key.correct === check.selectedLabel : check.isCorrect,
+        check: multi ? { ...check, selectedLabel: check.selectedLabel.split(',')[0] as string } : check,
+        isCorrect,
         subjectId: v?.subjectId ?? null,
         educationLevelId: v?.educationLevelId ?? null,
         chapterId: v?.chapterId ?? null,
         topicId: v?.topicId ?? null,
         difficulty: v?.difficultyTp == null ? null : Math.min(5, Math.max(1, v.difficultyTp)),
-        questionType: 'mcq',
+        questionType: multi ? 'mcq_multi' : 'mcq',
       }
     })
   }

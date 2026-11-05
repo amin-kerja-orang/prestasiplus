@@ -1611,6 +1611,7 @@ export class QuestionsRepository {
     const tp = filter.tp ?? filter.difficultyTp
     if (tp !== undefined) conds.push(Prisma.sql`v.difficulty_tp = ${tp}`)
     if (filter.type) conds.push(Prisma.sql`v.type = ${filter.type}`)
+    if (filter.servesMcqMulti) conds.push(Prisma.sql`(v.type = 'mcq' OR (v.type = 'mcq_multi' AND q.group_id IS NULL))`)
     if (filter.excludeIds && filter.excludeIds.length > 0) {
       const keys = filter.excludeIds.map(bi).filter((k): k is bigint => k !== null)
       if (keys.length > 0) conds.push(Prisma.sql`q.id <> ALL(${keys}::bigint[])`)
