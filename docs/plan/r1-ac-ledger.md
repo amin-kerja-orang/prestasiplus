@@ -74,6 +74,10 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S5-T06 | AC-MUR-54-3 | CI | Pass | 2026-11-06 | team-bb/S-1 | reports.spec.ts::AC-MUR-54-3: a pupil report without an owned context is 403 in BM and stores nothing |
 | S5-T06 | AC-MUR-54-5 | CI | Pass | 2026-11-06 | team-bb/S-1 | reports.spec.ts::AC-MUR-54-5: a second report by the same user for the same question version is 409 in BM and the first row is untouched |
 | S5-T06 | AC-MUR-54-7 | CI | Pass | 2026-11-06 | team-bb/S-1 | reports.spec.ts::AC-MUR-54-7: five reports (pending, reviewed, fixed, dismissed, fixed on an archived question) count 1/1/2/1 with all 5; exactly one reads removed; ReportScreens.test.ts::AC-MUR-54-7: five reports show the counters, five cards, one "Dikeluarkan" and no "Selesai" |
+| S6-T03 | AC-XS-1 | CI | Pass | 2026-11-05 | team-dd/S-4 | xs-queries.spec.ts |
+| S6-T03 | AC-XS-2 | CI | Pass | 2026-11-05 | team-dd/S-4 | xs-queries.spec.ts |
+| S6-T03 | AC-XS-3 | CI | Pass | 2026-11-05 | team-dd/S-4 | xs-queries.unit.spec.ts |
+| S6-T03 | AC-X4-2 | CI | Pass | 2026-11-05 | team-dd/S-4 | xs-queries.spec.ts |
 
 ## Sprint 2
 
