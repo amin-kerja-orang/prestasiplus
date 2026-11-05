@@ -118,6 +118,18 @@ export function lockedParts(mode: string, checkCounts: ReadonlyMap<string, numbe
 
 /* ------------------------------------------------------------------------------ grading */
 
+/** Reward rates per mark (V2 `PracticeRecorder`); the coin rate moves to `coinsPerCorrect()` with S5-T15. */
+export const COINS_PER_MARK = 2
+export const POINTS_PER_MARK = 10
+
+/**
+ * 46 D-PA-13: the marks a Mod Latihan sitting may be paid for = the awarded marks of the COUNTED questions' parts that "Semak" never
+ * revealed (DM-68 `revealed`). Part marks are whole or half marks; a choose-N section pays only its counted questions.
+ */
+export function unrevealedScore(result: BijakAttemptResult, revealed: ReadonlySet<string>): number {
+  return result.questions.filter((q) => q.counted).flatMap((q) => q.parts).filter((p) => !revealed.has(p.partId)).reduce((n, p) => n + p.awarded, 0)
+}
+
 export function gradeQuestion(
   composition: readonly SectionSnapshot[],
   bundles: Bundles,
@@ -209,8 +221,8 @@ export function assembleResult(composition: readonly SectionSnapshot[], question
     pendingReview: pending,
     sections,
     questions,
-    coins: score * 2,
-    points: score * 10,
+    coins: score * COINS_PER_MARK,
+    points: score * POINTS_PER_MARK,
   }
 }
 

@@ -186,10 +186,12 @@ describe('F2, F3, F4: closing rules', () => {
     expect((await result(id)).result.score).toBe(1)
   })
 
-  it('F3: a latihan submit does not call the reward port; an exam submit calls it once', async () => {
+  it('F3: a blank latihan submit pays 0 (FR-PA-16); an exam submit calls the reward port once', async () => {
     const lat = await startAttempt(me, PAPER.matK2, 'latihan')
     expect((await submit(lat, { idempotencyKey: 'l', changes: [] })).status).toBe(200)
-    expect(t.reward.calls).toHaveLength(0)
+    expect(t.reward.calls).toHaveLength(1)
+    expect(t.reward.calls[0]).toMatchObject({ attemptId: lat, coins: 0, points: 0 })
+    t.reward.calls.length = 0
     const ex = await startAttempt(me, PAPER.matK1)
     expect((await submit(ex, { idempotencyKey: 'e', changes: [] })).status).toBe(200)
     expect(t.reward.calls).toHaveLength(1)

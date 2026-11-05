@@ -53,10 +53,13 @@ import {
   buildLeafIndex,
   buildServedPaper,
   checkResult,
+  COINS_PER_MARK,
   gradeAttempt,
   type LeafIndex,
   lockedParts,
+  POINTS_PER_MARK,
   questionIdsOf,
+  unrevealedScore,
 } from './marking'
 import { assertAttemptPayload } from './payload-limits'
 import { BIJAK_REWARD_DESCRIPTION, BijakAttemptPorts } from './ports'
@@ -83,7 +86,9 @@ interface ClosedEvent {
   /** A late sync re-graded an attempt that was already closed. */
   regraded: boolean
   /** D94: set when the regrade is a pupil's self-mark of one part (the reward of the best-N gain, no other regrade pays); `base` is the best-N score of the automatic grading. */
-  selfMark?: { base: number }
+  selfMark?: { base: number; partId: string }
+  /** DM-68: ids of the parts whose scheme "Semak" has shown (the answers at the time of the event). Absent = none. */
+  revealed?: ReadonlySet<string>
 }
 
 export interface CallerInfo {
@@ -176,6 +181,10 @@ export class BijakAttemptsService {
 
   private answerMap(answers: ReadonlyMap<string, AnswerRow>): Map<string, PartAnswer> {
     return new Map([...answers].map(([k, v]) => [k, v.answer]))
+  }
+
+  private revealedParts(answers: ReadonlyMap<string, AnswerRow>): Set<string> {
+    return new Set([...answers].filter(([, v]) => v.answer.revealed === true).map(([k]) => k))
   }
 
   private toMeta(row: AttemptRow, answers: ReadonlyMap<string, AnswerRow>, checks: { order: string[]; counts: Map<string, number> }): BijakAttemptMeta {
@@ -359,7 +368,7 @@ export class BijakAttemptsService {
       const result = this.present(row, { result: stored.result, selfMarks }, this.answerMap(answers), bundles)
       if (!unchanged) {
         await this.repo.saveSelfMarks(id, selfMarks, result)
-        events.push({ attempt: row, status: row.status as FinishedStatus, result, swept: false, regraded: true, selfMark: { base: automaticScore(stored.result, row.composition) } })
+        events.push({ attempt: row, status: row.status as FinishedStatus, result, swept: false, regraded: true, selfMark: { base: automaticScore(stored.result, row.composition), partId: body.partId }, revealed: this.revealedParts(answers) })
       }
       const part = result.questions.flatMap((q) => q.parts).find((p) => p.partId === body.partId)!
       return {
@@ -568,12 +577,19 @@ export class BijakAttemptsService {
       // A sweep closes long after the deadline; the lateness it records stops at the grace period.
       late = opts.swept ? Math.min(seconds, GRACE_SECONDS) : seconds
     }
-    const result = gradeAttempt(row.composition, await load(), this.answerMap(answers))
+    const bundles = await load()
+    const result = gradeAttempt(row.composition, bundles, this.answerMap(answers))
+    const revealed = this.revealedParts(answers)
+    // FR-PA-16: "Semak" shows the scheme of the whole question, so every part of a checked question counts as revealed (also a part answered after the check).
+    if (row.mode === 'latihan') {
+      const byQuestion = buildLeafIndex(row.composition, bundles).byQuestion
+      for (const qid of (await this.repo.checkCounts(row.id)).order) for (const id of byQuestion.get(qid) ?? []) revealed.add(id)
+    }
     const closed = await this.repo.close(row.id, { status, submittedAt: at, lateBySeconds: late, idempotencyKey: opts.key })
     if (!closed) throw new Error('Attempt was closed by another request while locked')
     await this.repo.saveResult(row.id, result)
     const next: AttemptRow = { ...row, status, submittedAt: at, lateBySeconds: late, idempotencyKey: opts.key ?? row.idempotencyKey }
-    events.push({ attempt: next, status, result, swept: opts.swept, regraded: false })
+    events.push({ attempt: next, status, result, swept: opts.swept, regraded: false, revealed })
     return next
   }
 
@@ -787,15 +803,17 @@ export class BijakAttemptsService {
           swept: e.swept,
           isTestAttempt: a.isTest,
         })
-        // Fail closed: a latihan shows the scheme through "Semak", so only a timed exam may earn the reward.
-        if (a.mode === 'exam') {
+        // Fail closed: only a timed exam, or a Mod Latihan on the parts "Semak" never revealed (46 D-PA-13, FR-PA-16), may earn the reward.
+        const revealed = e.revealed ?? new Set<string>()
+        const payable = a.mode === 'exam' ? null : a.mode === 'latihan' ? unrevealedScore(e.result, revealed) : undefined
+        if (payable !== undefined) {
           try {
             await this.ports.reward.award({
               attemptId: a.id,
               userId: a.userId,
               isTest: a.isTest,
-              coins: e.result.coins,
-              points: e.result.points,
+              coins: payable === null ? e.result.coins : payable * COINS_PER_MARK,
+              points: payable === null ? e.result.points : payable * POINTS_PER_MARK,
               submittedAt: a.submittedAt,
               score: e.result.score,
               max: e.result.max,
@@ -808,7 +826,7 @@ export class BijakAttemptsService {
         }
       }
       // D94: a self-mark that raises a part pays the gain (exam attempts only, none in Mod Pelajar); no other regrade pays.
-      if (e.regraded && e.selfMark && a.mode === 'exam') {
+      if (e.regraded && e.selfMark && a.mode === 'exam' && !e.revealed?.has(e.selfMark.partId)) {
         try {
           await this.ports.reward.awardSelfMark({
             attemptId: a.id,
