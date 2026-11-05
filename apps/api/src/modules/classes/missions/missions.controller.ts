@@ -29,7 +29,7 @@ export class MissionsController {
     return okList(items, listMeta(1, Math.max(1, items.length), items.length))
   }
 
-  /** API-GUR-11 (S6-T07): the teacher's own and Global missions. Teacher only. */
+  /** API-GUR-11 (S6-T07): the teacher's own missions. Teacher only. */
   @Get('guru/missions')
   @Roles('teacher')
   @RateLimit(MISSION_LIMITS.read)

@@ -28,7 +28,6 @@ import { questionsSeed } from './questions'
 import { questionPoolSeed } from './questions/pool'
 import { bijakSittingsSeed } from './poc/bijak-sittings'
 import { classesSeed } from './poc/classes'
-import { missionsSeed } from './missions'
 import { marketplaceSeed } from './marketplace'
 import { assertSeedAllowed, countsAsProduction } from './guard'
 import { walletSeed } from './wallet'
@@ -78,7 +77,7 @@ export interface SeedModule {
  * The set is minimal and explicit: today it contains the school_packages catalogue (`core-school-packages`), the 4 wallet tiers
  * (`core-wallet-tiers`, P11-B1: without them every student dashboard and wallet read answers 500 in production;
  * LEAD approval: pending (P11-B1, #113)), the marketplace categories
- * (`core-marketplace-categories`, BE-46), the 15 Global Misi Harian rows (`missions-global`, S6-T07, issue #483: teacher list only, never served to pupils) and the
+ * (`core-marketplace-categories`, BE-46) and the
  * 19 SPM subject configuration rows (`spm-subject-configs`, BE-41; LEAD to confirm, it extends the BE-25 set),
  * pinned by test/subscriptions/seed-production.spec.ts.
  * Adding a reference module needs LEAD approval first, because demo data must never reach production.
@@ -87,7 +86,7 @@ export interface SeedModule {
  * ALLOW_DEMO_SEED.
  * ORDER NOTE: `exam-retire-poc` (R1-B07) withdraws the seeded PoC papers once every seed that reads them has run (it sits before `gamification`); `core-wallet-tiers` sits right after `core-school-packages`, BEFORE `wallet` and `gamification` (the modules that read tiers); `questions-pool` sits BEFORE `spm-subject-configs` and `spm` (the SPM seed reads the SPM pool; test/seed/question-pool.spec.ts); the marketplace seeds sit BEFORE `gamification`; `gamification` then `poc-profile` stay at the END (test/gamification/seed.spec.ts, test/seed/poc.spec.ts).
  */
-export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, walletTiersSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, examLaunchBlueprintsSeed, e2eSeed, classesSeed, missionsSeed, bijakSittingsSeed, battleSeed, gamesSeed, cikguSeed, pkskSeed, performanceSeed, questionPoolSeed, spmSubjectConfigsSeed, spmSeed, practiceSeed, marketplaceCategoriesSeed, marketplaceSeed, examRetirePocSeed, gamificationSeed, pocProfileSeed]
+export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, walletTiersSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, examLaunchBlueprintsSeed, e2eSeed, classesSeed, bijakSittingsSeed, battleSeed, gamesSeed, cikguSeed, pkskSeed, performanceSeed, questionPoolSeed, spmSubjectConfigsSeed, spmSeed, practiceSeed, marketplaceCategoriesSeed, marketplaceSeed, examRetirePocSeed, gamificationSeed, pocProfileSeed]
 
 export interface RunSeedsOptions {
   /** Environment read by the demo guard (default `process.env`). */

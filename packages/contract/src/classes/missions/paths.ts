@@ -6,7 +6,6 @@ import { ErrorBodySchema } from '../../common/error'
 import { IdSchema } from '../../common/ids'
 import {
   MissionStatusSchema,
-  MissionGoalKindSchema,
   MissionTodayResponseSchema,
   MissionTodaySchema,
   MissionTypeSchema,
@@ -37,7 +36,6 @@ import {
 export const MISSIONS_COMPONENT_SCHEMAS = {
   MissionType: MissionTypeSchema,
   MissionStatus: MissionStatusSchema,
-  MissionGoalKind: MissionGoalKindSchema,
   MissionToday: MissionTodaySchema,
   MissionTodayResponse: MissionTodayResponseSchema,
   TeacherMission: TeacherMissionSchema,

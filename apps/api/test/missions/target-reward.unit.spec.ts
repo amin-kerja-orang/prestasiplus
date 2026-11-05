@@ -9,10 +9,10 @@ const PUPIL = '21'
 const MISSION = '7'
 const SESSION = '0b6f3c6e-6a63-4f2b-8f3a-6f2f6f0c1a11'
 
-interface Row { id: string; scope: 'teacher' | 'global'; target: number; reward: number | null; recipients: string[] }
+interface Row { id: string; target: number; reward: number | null; recipients: string[] }
 
 function build(row: Partial<Row> = {}) {
-  const mission: Row = { id: MISSION, scope: 'teacher', target: 10, reward: 25, recipients: [PUPIL], ...row }
+  const mission: Row = { id: MISSION, target: 10, reward: 25, recipients: [PUPIL], ...row }
   const world = { answered: 0, paid: new Map<string, { coins: number; isTest: boolean }>(), locks: [] as string[], lastIsTest: undefined as boolean | undefined }
   const repo = {
     lockTargetReward: (_tx: unknown, missionId: string, studentId: string) => {
@@ -22,7 +22,7 @@ function build(row: Partial<Row> = {}) {
     targetRewardFacts: (_tx: unknown, i: { missionId: string; studentId: string; isTest: boolean }): Promise<TargetRewardFacts | null> => {
       world.lastIsTest = i.isTest
       if (i.missionId !== mission.id) return Promise.resolve(null)
-      return Promise.resolve({ scope: mission.scope, questionCount: mission.target, rewardCoins: mission.reward, recipient: mission.recipients.includes(i.studentId), answered: world.answered })
+      return Promise.resolve({ questionCount: mission.target, rewardCoins: mission.reward, recipient: mission.recipients.includes(i.studentId), answered: world.answered })
     },
     insertReward: (_tx: unknown, i: { missionId: string; studentId: string; coins: number; isTest: boolean }) => {
       const key = `${i.missionId}:${i.studentId}`
@@ -72,12 +72,6 @@ describe('S6-T07 settleTargetReward', () => {
     world.answered = 50
     expect(await settle()).toEqual({ paid: 0 })
     expect(world.paid.size).toBe(0)
-  })
-
-  it('a Global mission pays nothing', async () => {
-    const { world, settle } = build({ scope: 'global' })
-    world.answered = 500
-    expect(await settle()).toEqual({ paid: 0 })
   })
 
   it('a reward of 0 or null pays nothing and writes no row', async () => {
