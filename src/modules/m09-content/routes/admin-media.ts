@@ -52,7 +52,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: ADMIN_VIDEOS_PATH,
     name: MEDIA_ROUTES.videoList,
-    component: () => import('../pages/AdminVideoListPage.vue'),
+    component: () => import('../pages/VideoAdminListPage.vue'),
     meta: meta('Pengurusan Video - Admin PRESTASIPLUS', {
       title: 'Video',
       subtitle: 'Urus video pembelajaran',

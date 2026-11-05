@@ -247,9 +247,9 @@ export function registerContentPaths(registry: OpenAPIRegistry): void {
   const multipart = (schema: z.ZodType) => ({ required: true, content: { 'multipart/form-data': { schema } } })
 
   const unauthorized = err('UNAUTHORIZED: no valid session.')
-  const adminOnly = err('FORBIDDEN "This action is unauthorized." (not an admin).')
+  const adminOnly = err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (not an admin).')
   const csrfInvalid = err('CSRF_INVALID (missing or wrong X-CSRF-Token).')
-  const notFound = err('NOT_FOUND "Not Found." (unknown id, or not visible to the caller).')
+  const notFound = err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (unknown id, or not visible to the caller).')
   const validation = (detail: string) => err(`VALIDATION_ERROR with fields. ${detail} Missing: "Medan ini diperlukan."; invalid: "Medan ini tidak sah.". Top-level message is the first field message (+ " (and N more error(s))" when several).`)
   const adminNotFound = (copy: string) => err(`NOT_FOUND "${copy}" (the BM text is the flash the screen shows).`)
 
@@ -293,7 +293,7 @@ export function registerContentPaths(registry: OpenAPIRegistry): void {
     summary: 'Article page',
     description: 'Public. Unpublished or unknown slug is 404. Increments `views` by 1 on every read (no de-duplication, guests included); the returned `views` includes this open. Up to 3 related articles of the same category.',
     request: { params: ArticleSlugParamsSchema },
-    responses: { 200: json(envelopeOf(ArticleDetailSchema), 'The article.'), 404: err('NOT_FOUND "Not Found." (unknown or unpublished).') },
+    responses: { 200: json(envelopeOf(ArticleDetailSchema), 'The article.'), 404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (unknown or unpublished).') },
   })
 
   registry.registerPath({
@@ -310,10 +310,9 @@ export function registerContentPaths(registry: OpenAPIRegistry): void {
     path: '/config/support',
     tags: ['content'],
     summary: 'Support contact (help box)',
-    description: 'Public. If the config row is missing the server answers 404 "Konfigurasi sokongan tidak dijumpai." (the mock would fail with a generic error).',
+    description: 'Public. If the config row is missing the server answers 200 with empty strings {email: "", phone: "", whatsapp: "", hours: ""} (S5-T05, DM-33); phone and hours are always empty until S7-T09; the client hides a contact whose value is empty.',
     responses: {
-      200: json(envelopeOf(ContentSupportConfigSchema), 'E-mail and WhatsApp number.'),
-      404: err('NOT_FOUND "Konfigurasi sokongan tidak dijumpai."'),
+      200: json(envelopeOf(ContentSupportConfigSchema), 'E-mail, phone, WhatsApp number and hours (empty strings when not set).'),
     },
   })
 
@@ -360,7 +359,7 @@ export function registerContentPaths(registry: OpenAPIRegistry): void {
     responses: {
       201: json(contentMutationOf(VideoDetailSchema), 'Created; status "Video ditambah.".'),
       401: unauthorized,
-      403: err('FORBIDDEN "This action is unauthorized." (role is not admin or teacher), or CSRF_INVALID.'),
+      403: err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not admin or teacher), or CSRF_INVALID.'),
       422: validation('videoUrl, title (at most 150 chars) and category required (exact BM copy); a teacher link must be a YouTube video link; description at most 1000 chars; subjectId must exist. "Anda tiada sekolah untuk dikongsi." when a teacher has no school.'),
     },
   })
@@ -370,12 +369,12 @@ export function registerContentPaths(registry: OpenAPIRegistry): void {
     path: '/videos/{id}',
     tags: ['content'],
     summary: 'Edit a video',
-    description: 'admin and teacher only (a teacher edits own videos); other roles get 403. An invisible video is 404 before the uploader check; another user gets 403 "This action is unauthorized.". Visibility is not changed by the body.',
+    description: 'admin and teacher only (a teacher edits own videos); other roles get 403. An invisible video is 404 before the uploader check; another user gets 403 "Anda tidak dibenarkan melakukan tindakan ini.". Visibility is not changed by the body.',
     request: { params: idParams, headers: [csrf], body: body(VideoUpdateRequestSchema) },
     responses: {
       200: json(contentMutationOf(VideoDetailSchema), 'Updated; status "Video berjaya dikemaskini.".'),
       401: unauthorized,
-      403: err('FORBIDDEN "This action is unauthorized." (not the uploader nor an admin); FORBIDDEN "Anda tidak dibenarkan mengubah video ini." (repository race); or CSRF_INVALID.'),
+      403: err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (not the uploader nor an admin); FORBIDDEN "Anda tidak dibenarkan mengubah video ini." (repository race); or CSRF_INVALID.'),
       404: notFound,
       422: validation('Same rules as create.'),
     },
@@ -391,7 +390,7 @@ export function registerContentPaths(registry: OpenAPIRegistry): void {
     responses: {
       200: json(contentMutationOf(ContentDeletedSchema), 'Deleted; status "Video berjaya dipadam.".'),
       401: unauthorized,
-      403: err('FORBIDDEN "This action is unauthorized."; FORBIDDEN "Anda tidak dibenarkan memadam video ini." (repository race); or CSRF_INVALID.'),
+      403: err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini."; FORBIDDEN "Anda tidak dibenarkan memadam video ini." (repository race); or CSRF_INVALID.'),
       404: notFound,
     },
   })
@@ -447,7 +446,7 @@ export function registerContentPaths(registry: OpenAPIRegistry): void {
     responses: {
       201: json(contentMutationOf(PerutusanDetailSchema), 'Created; status is the flash for the chosen status.'),
       401: unauthorized,
-      403: err('FORBIDDEN "This action is unauthorized." (role is not admin or school_admin), or CSRF_INVALID.'),
+      403: err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not admin or school_admin), or CSRF_INVALID.'),
       422: validation('title and status required; scheduledAt invalid or not in the future; youtubeUrl not a YouTube URL; images / documents "{file}: format atau saiz tidak dibenarkan."; fields.isPinned "Maksimum 2 perutusan boleh disematkan."; fields.form "Pentadbir sekolah mesti mempunyai sekolah." (school_admin with no school).'),
     },
   })
@@ -491,7 +490,7 @@ export function registerContentPaths(registry: OpenAPIRegistry): void {
     summary: 'Public share page of a perutusan',
     description: 'Public (guests allowed). Only a public AND published post, else 404. Counts no read.',
     request: { params: idParams },
-    responses: { 200: json(envelopeOf(PerutusanPublicSchema), 'The public post.'), 404: err('NOT_FOUND "Not Found.".') },
+    responses: { 200: json(envelopeOf(PerutusanPublicSchema), 'The public post.'), 404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?".') },
   })
 
   // -------------------------------------------------------------------------------------------
@@ -540,7 +539,7 @@ export function registerContentPaths(registry: OpenAPIRegistry): void {
     tags: ['content'],
     summary: 'Stream the audio of one section of an approved set',
     description:
-      'Any signed-in user (the only way a student reads Audio KBAT audio; the generic /files route refuses audio_kbat files to everyone but admin). Approved sets only: a draft, pending, archived or unknown set, a section number outside 1..4, or a section without audio is 404 "Not Found.". This is the `audioUrl` of the player data. Headers: `Content-Type` of the stored audio (audio/mpeg, audio/mp4, audio/wav, audio/ogg), `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src \'none\'; sandbox`, `Cache-Control: private, no-store`, `Accept-Ranges: bytes`. One `Range: bytes=a-b` is honoured with 206 and `Content-Range`; a range whose start is past the end is 416 with `Content-Range: bytes */size`; a malformed range (for example end before start) is ignored and the whole body is served with 200 (RFC 7233).',
+      'Any signed-in user (the only way a student reads Audio KBAT audio; the generic /files route refuses audio_kbat files to everyone but admin). Approved sets only: a draft, pending, archived or unknown set, a section number outside 1..4, or a section without audio is 404 "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?". This is the `audioUrl` of the player data. Headers: `Content-Type` of the stored audio (audio/mpeg, audio/mp4, audio/wav, audio/ogg), `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src \'none\'; sandbox`, `Cache-Control: private, no-store`, `Accept-Ranges: bytes`. One `Range: bytes=a-b` is honoured with 206 and `Content-Range`; a range whose start is past the end is 416 with `Content-Range: bytes */size`; a malformed range (for example end before start) is ignored and the whole body is served with 200 (RFC 7233).',
     request: { params: z.object({ id: IdSchema, no: z.string().regex(/^[1-4]$/) }) },
     responses: {
       200: {

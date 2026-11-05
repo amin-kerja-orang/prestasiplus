@@ -9,7 +9,7 @@ import { useFlashStore } from '@/stores/flash'
 
 import type { VideoCard } from '../../api/types'
 import routes from '../../routes/admin-media'
-import AdminVideoListPage from '../../pages/AdminVideoListPage.vue'
+import VideoAdminListPage from '../../pages/VideoAdminListPage.vue'
 import { chooseRowAction, menuItem, openRowMenu } from '../menu'
 import { mountAt, t } from './harness'
 
@@ -85,9 +85,9 @@ describe('route /admin/videos', () => {
   })
 })
 
-describe('AdminVideoListPage', () => {
+describe('VideoAdminListPage', () => {
   it('lists the columns, rows, "Tambah Video" and asks for 25 per page', async () => {
-    wrapper = (await mountAt(AdminVideoListPage, '/page')).wrapper
+    wrapper = (await mountAt(VideoAdminListPage, '/page')).wrapper
     const w = wrapper
     expect(w.findAll('thead th').map((th) => th.text())).toEqual([
       'Tajuk',
@@ -107,7 +107,7 @@ describe('AdminVideoListPage', () => {
   })
 
   it('filters by Subjek (default Semua) and goes back to page 1', async () => {
-    wrapper = (await mountAt(AdminVideoListPage, '/page')).wrapper
+    wrapper = (await mountAt(VideoAdminListPage, '/page')).wrapper
     const w = wrapper
     const select = w.findComponent(USelect) as unknown as {
       props: (k: string) => unknown
@@ -122,7 +122,7 @@ describe('AdminVideoListPage', () => {
   })
 
   it('Edit links to /video/:id/edit', async () => {
-    wrapper = (await mountAt(AdminVideoListPage, '/page')).wrapper
+    wrapper = (await mountAt(VideoAdminListPage, '/page')).wrapper
     const items = await openRowMenu(wrapper, 0)
     expect(wrapper.find('a[href="/video/1/edit"]').exists()).toBe(true)
     expect(menuItem(items, 'Padam')).toBeDefined()
@@ -130,7 +130,7 @@ describe('AdminVideoListPage', () => {
 
   it('Padam asks "Padam video ini?" with Batal / Ya, Padam, deletes, reloads and flashes', async () => {
     api.deleteVideo.mockResolvedValue({ data: { deleted: 1 }, status: 'Video berjaya dipadam.' })
-    wrapper = (await mountAt(AdminVideoListPage, '/page')).wrapper
+    wrapper = (await mountAt(VideoAdminListPage, '/page')).wrapper
     await chooseRowAction(wrapper, 0, 'Padam')
     expect(confirmCalls[0]).toMatchObject({
       message: 'Padam video ini?',
@@ -144,13 +144,13 @@ describe('AdminVideoListPage', () => {
 
   it('shows "Tiada video dijumpai." when there are no videos', async () => {
     api.fetchVideos.mockResolvedValue(listResult([]))
-    wrapper = (await mountAt(AdminVideoListPage, '/page')).wrapper
+    wrapper = (await mountAt(VideoAdminListPage, '/page')).wrapper
     expect(t(wrapper, 'videos-empty').text()).toContain('Tiada video dijumpai.')
   })
 
   it('pages 25 at a time', async () => {
     api.fetchVideos.mockResolvedValue(listResult(Array.from({ length: 25 }, (_, i) => card(i + 1)), 60))
-    wrapper = (await mountAt(AdminVideoListPage, '/page')).wrapper
+    wrapper = (await mountAt(VideoAdminListPage, '/page')).wrapper
     expect(t(wrapper, 'videos-count').text()).toBe('Jumlah: 60 video')
     expect(wrapper.text()).toMatch(/Seterusnya|2/)
   })
