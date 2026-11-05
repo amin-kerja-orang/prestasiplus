@@ -77,7 +77,7 @@ describe('Databank counts follow the serving rule', () => {
   it('[CI] AC-MUR-13-13 a multi-leaf question is one unit where it is served and 0 under the Databank shape (count = servable)', async () => {
     const sej = await subjectId('SEJ')
     const plain = { subjectId: sej, type: 'mcq' as const, spmPool: true, status: 'approved' as const, active: true }
-    const multi = await addQuestion(t.db, { subject: 'SEJ', level: 'T5' })
+    const multi = await addQuestion(t.db, { subject: 'SEJ', level: 'T4' })
     await addSecondLeaf(multi)
     // No shape filter: one row = one unit, however many leaves.
     expect(await repo.unitCount({ ...plain, idIn: [multi] })).toBe(1)
