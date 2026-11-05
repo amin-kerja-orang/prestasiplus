@@ -4,6 +4,8 @@ import { ErrorBodySchema } from '../../common/error'
 import { buildOpenApiDocument } from '../../openapi'
 import { SUPPORT_COMPONENT_SCHEMAS } from '../paths'
 import {
+  SUPPORT_ADMIN_MESSAGES,
+  SUPPORT_ADMIN_PROPOSED_COPY,
   SUPPORT_BODY_MAX,
   SUPPORT_MESSAGES,
   SUPPORT_NEW_TICKET_NOTIFICATION,
@@ -14,8 +16,11 @@ import {
   SupportOpenCountSchema,
   SupportQueueResponseSchema,
   SupportTicketCreateRequestSchema,
+  SupportTicketDetailSchema,
   SupportTicketListResponseSchema,
+  SupportTicketReplyRequestSchema,
   SupportTicketSchema,
+  SupportTicketStatusRequestSchema,
 } from '../schema'
 
 const AT = '2026-10-16T09:30:00+08:00'
@@ -105,9 +110,42 @@ describe('admin queue', () => {
     expect(SupportQueueResponseSchema.safeParse({ data: [row], meta: { total: 1, counts: [{ status: 'dibuka', count: 0 }] } }).success).toBe(false)
   })
 
+  it('takes the pager meta and the role and school of a row (defects on #507)', () => {
+    const paged = { total: 1, counts: [{ status: 'dibuka', count: 1 }], page: 1, perPage: 25, matched: 1 }
+    expect(SupportQueueResponseSchema.safeParse({ data: [{ ...row, roleLabel: 'Murid', school: null }], meta: paged }).success).toBe(true)
+    expect(SupportQueueResponseSchema.safeParse({ data: [row], meta: { ...paged, page: 0 } }).success).toBe(false)
+  })
+
   it('open count', () => {
     expect(SupportOpenCountSchema.safeParse({ count: 0 }).success).toBe(true)
     expect(SupportOpenCountSchema.safeParse({ count: -1 }).success).toBe(false)
+  })
+})
+
+describe('admin ticket detail, reply and status (API-SUP-05)', () => {
+  const detail = { id: '31', subject: 'S', body: 'B', status: 'dibuka', roleLabel: null, school: null, createdAt: AT, adminReply: null, repliedAt: null }
+
+  it('parses the detail and refuses an e-mail or a user id', () => {
+    expect(SupportTicketDetailSchema.parse({ ...detail, roleLabel: 'Murid', school: 'Sekolah Contoh', adminReply: 'Baik.', repliedAt: AT }).adminReply).toBe('Baik.')
+    expect(SupportTicketDetailSchema.safeParse({ ...detail, email: 'a@b.test' }).success).toBe(false)
+    expect(SupportTicketDetailSchema.safeParse({ ...detail, userId: '1' }).success).toBe(false)
+  })
+
+  it('the reply is trimmed, 1..5000, with the ERR catalogue messages', () => {
+    const issue = (value: unknown) => SupportTicketReplyRequestSchema.safeParse(value).error?.issues[0]?.message
+    expect(SupportTicketReplyRequestSchema.parse({ text: '  Baik.  ' }).text).toBe('Baik.')
+    expect(issue({ text: '   ' })).toBe(SUPPORT_ADMIN_MESSAGES.replyRequired)
+    expect(issue({})).toBe(SUPPORT_ADMIN_MESSAGES.replyRequired)
+    expect(issue({ text: 'x'.repeat(SUPPORT_BODY_MAX + 1) })).toBe(SUPPORT_ADMIN_MESSAGES.replyTooLong)
+  })
+
+  it('the status is one of the five codes', () => {
+    for (const status of SUPPORT_TICKET_STATUSES) expect(SupportTicketStatusRequestSchema.safeParse({ status }).success).toBe(true)
+    expect(SupportTicketStatusRequestSchema.safeParse({ status: 'baru' }).error?.issues[0]?.message).toBe(SUPPORT_ADMIN_MESSAGES.statusRequired)
+  })
+
+  it('keeps the unapproved copy in one [PROPOSED] constant', () => {
+    expect(Object.keys(SUPPORT_ADMIN_PROPOSED_COPY).sort()).toEqual(['allRolesOption', 'replyNoticeTitle', 'replyNoticeType', 'replySavedFlash', 'statusSavedFlash'])
   })
 })
 
@@ -117,10 +155,13 @@ describe('openapi registration', () => {
     components: { schemas: Record<string, unknown> }
   }
 
-  it('contains the four paths', () => {
+  it('contains the support paths', () => {
     expect(Object.keys(doc.paths['/tiket'] ?? {}).sort()).toEqual(['get', 'post'])
     expect(doc.paths['/admin/tiket']).toHaveProperty('get')
     expect(doc.paths['/admin/tiket/open-count']).toHaveProperty('get')
+    expect(doc.paths['/admin/tiket/{id}']).toHaveProperty('get')
+    expect(doc.paths['/admin/tiket/{id}/reply']).toHaveProperty('put')
+    expect(doc.paths['/admin/tiket/{id}/status']).toHaveProperty('patch')
   })
 
   it('contains every support component', () => {

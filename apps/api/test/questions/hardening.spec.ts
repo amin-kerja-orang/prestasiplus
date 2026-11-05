@@ -161,11 +161,11 @@ describe('BE-09 hardening (real database)', () => {
 
   it('create with status published also runs the keys gate; a valid key passes', async () => {
     const bad = [{
-      label: '1', prompt: rich('Kira'), mode: 'working', marks: 3,
+      label: '1', prompt: rich('Kira'), mode: 'working', marks: 3, cognitiveLevel: 'mengaplikasi',
       key: { kind: 'points', marks: 2, points: [{ id: 'p', code: 'K', label: 'k', marks: 2 }] },
     }] as unknown as QuestionPart[]
     const good = [{
-      label: '1', prompt: rich('Kira'), mode: 'working', marks: 3,
+      label: '1', prompt: rich('Kira'), mode: 'working', marks: 3, cognitiveLevel: 'mengaplikasi',
       key: { kind: 'points', marks: 3, points: [{ id: 'p', code: 'K', label: 'k', marks: 3 }] },
     }] as unknown as QuestionPart[]
     const before = (await t.db.query<{ n: string }>(`select count(*) n from questions`))[0]?.n
@@ -182,11 +182,11 @@ describe('BE-09 hardening (real database)', () => {
   })
 
   const badTree = [{
-    label: '1', prompt: rich('Kira'), mode: 'working', marks: 3,
+    label: '1', prompt: rich('Kira'), mode: 'working', marks: 3, cognitiveLevel: 'mengaplikasi',
     key: { kind: 'points', marks: 2, points: [{ id: 'p', code: 'K', label: 'k', marks: 2 }] },
   }] as unknown as QuestionPart[]
   const goodTree = [{
-    label: '1', prompt: rich('Kira'), mode: 'working', marks: 3,
+    label: '1', prompt: rich('Kira'), mode: 'working', marks: 3, cognitiveLevel: 'mengaplikasi',
     key: { kind: 'points', marks: 3, points: [{ id: 'p', code: 'K', label: 'k', marks: 3 }] },
   }] as unknown as QuestionPart[]
   async function reviewWith(parts: QuestionPart[]): Promise<string> {

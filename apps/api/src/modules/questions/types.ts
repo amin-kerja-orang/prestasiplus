@@ -132,6 +132,12 @@ export interface QuestionVersionRecord {
   catalogueVersion: string | null
   /** 1..6 (the flat wire clamps 6 to 5). */
   difficultyTp: number | null
+  /** DM-47: the typed Kesukaran 1..5; null on legacy rows until the U-OP-19 backfill (readers use `least(5, tp)`, else 3). */
+  difficultyLevel: number | null
+  /** DM-56: Rujukan buku teks; null when none. */
+  textbookRef: TextbookRef | null
+  /** DM-58: why the version went back from Semakan to Draf ("Ditolak"); null otherwise. */
+  rejectionReason: string | null
   sourcePage: number | null
   setLabel: string | null
   sourceFile: string | null
@@ -345,6 +351,8 @@ export interface SetStatusOptions {
    * of the 409 transition conflict. Only the bulk route sets this, for Terbitkan (R1E2E-10); the single route keeps its 409.
    */
   skipIfAlready?: boolean
+  /** DM-58: the review to draft move is a rejection ("Tolak"): the reason (already validated, 5 to 500 characters) is stored in `rejection_reason`. */
+  rejectionReason?: string
 }
 
 /** One answer of a learner, addressed by the part path (labels joined with `.`, e.g. `a.i`). */
@@ -393,4 +401,22 @@ export interface GateFacts {
   lastEditedByAi: boolean
   /** Question total declared at intake accept, or null. */
   declaredMarks: number | null
+  /** R-DSKP (D112(3)): `curriculum_nodes` exist for the version's Subjek + Tingkatan; unit, SP, TP and aras are required only then. */
+  hasDskpNodes: boolean
+  /** The Subjek + Tingkatan has at least one active `chapters` row in the tree; the Bab is required only then. */
+  hasChapters: boolean
+  /** Codes of the version's SP nodes that are not under its unit (FR-ADM-QE4.3, repeated for a saved question). Empty without a unit. */
+  spOutsideUnit: string[]
+}
+
+/** DM-56 `textbook_ref`: the textbook page(s) a question comes from. */
+export interface TextbookRef {
+  /** Free text of at most 20 characters (45 T-11), for example `3`. */
+  bab: string
+  /** `T1` to `T5`. */
+  tingkatan: string
+  /** 1..999. */
+  mukaSurat: number
+  /** Last page, when the reference spans pages. */
+  hingga?: number
 }

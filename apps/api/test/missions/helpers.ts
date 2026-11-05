@@ -153,6 +153,14 @@ export async function makeClass(t: ClassesTestApp, w: World, teacherId: string, 
 export async function publishedMcq(t: ClassesTestApp, w: World, over: { spId?: string; text?: string } = {}): Promise<string> {
   const svc = t.get(QuestionsService)
   const tag = { ...w.tag, ...(over.spId ? { spId: over.spId } : {}) }
+  // S1-T02: an SP must sit under the question's unit (gate-check SP_NOT_IN_TAXONOMY), so a different SP brings its own unit.
+  if (over.spId) {
+    const [own] = await t.db.query<{ id: string }>(
+      `with recursive up(id, parent_id, kind) as (select id, parent_id, kind from curriculum_nodes where id = $1::bigint union all select n.id, n.parent_id, n.kind from curriculum_nodes n join up on n.id = up.parent_id) select id::text from up where kind = 'unit' limit 1`,
+      [over.spId],
+    )
+    if (own) tag.unitId = own.id
+  }
   const q = await svc.create(
     {
       subjectId: tag.subjectId,
@@ -162,6 +170,8 @@ export async function publishedMcq(t: ClassesTestApp, w: World, over: { spId?: s
       questionType: 'mcq',
       options: ['Satu', 'Dua', 'Tiga', 'Empat'],
       correctAnswer: 1,
+      cognitiveLevel: 'mengaplikasi', // S1-T02 R-DSKP + NO_CHAPTER
+      ...(tag.chapterId === undefined ? {} : { curriculumChapterId: tag.chapterId }),
       tag: { unitId: tag.unitId, spIds: [tag.spId], tp: 3 },
     } as never,
     { userId: w.admin, role: 'admin' },
