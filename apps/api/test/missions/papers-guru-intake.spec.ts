@@ -1,8 +1,8 @@
-import { INTAKE_FILE_MESSAGES, IntakeBatchSummarySchema, QUESTION_SET_PAPER_MESSAGES, QuestionSetPaperSchema } from '@pp/contract'
+import { INTAKE_FILE_MESSAGES, IntakeBatchSummarySchema, QUESTION_SET_PAPER_MESSAGES, QUESTION_SET_PAPER_TYPES, QuestionSetPaperSchema } from '@pp/contract'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { QuestionSetsPorts } from '../../src/modules/classes/question-sets'
-import { GURU_PAPER_TYPE_SLUGS, GuruPaperIntakeAdapter } from '../../src/modules/classes/question-sets/guru-paper-intake.adapter'
+import { GuruPaperIntakeAdapter } from '../../src/modules/classes/question-sets/guru-paper-intake.adapter'
 import { scanPdf, textPdf } from '../intake-files/pdf-fixtures'
 import { ADMIN, STUDENT_1, TEACHER_A, TEACHER_C, bootQsApp, client, idOfEmail, type Client, type QsTestApp } from './qs-helpers'
 
@@ -346,31 +346,24 @@ describe('S1-T08: the file size limit is checked before the content', () => {
   })
 })
 
-describe('S1-T08 G3: the 7-label paper type slug map', () => {
-  it('maps exactly the seven OPT-JENIS-HANTARAN labels, each stored on the batch; an unknown label is refused by the contract', async () => {
-    expect(GURU_PAPER_TYPE_SLUGS).toEqual({
-      'Soalan Umum': 'umum',
-      'Trial Paper': 'trial',
-      'Soalan DSKP': 'dskp',
-      'Buku Teks': 'buku_teks',
-      'Buku Latihan': 'buku_latihan',
-      'Soalan Peperiksaan': 'peperiksaan',
-      'Lain-lain': 'lain',
-    })
+describe('S1-T08 G3: the OPT-JENIS-HANTARAN paper type slugs (S6-T06: the form sends the slug)', () => {
+  it('stores each contract slug on the batch as sent; an unknown slug is refused by the contract', async () => {
+    expect([...QUESTION_SET_PAPER_TYPES].sort()).toEqual(['buku_latihan', 'buku_teks', 'dskp', 'lain', 'peperiksaan', 'trial', 'umum'])
     const t = await bootQsApp({ realIntake: true })
     try {
       const teacher = await client(t, TEACHER_A)
       let n = 0
-      for (const [label, slug] of Object.entries(GURU_PAPER_TYPE_SLUGS)) {
+      for (const slug of QUESTION_SET_PAPER_TYPES) {
         n += 1
         await t.db.query(`update intake_batches set status = 'cancelled' where status in ('submitted', 'processing', 'ready_for_review')`)
-        const res = await upload(teacher, { ...FIELDS, jenisSoalan: label }, [{ name: `s${String(n)}.docx`, bytes: zip(['[Content_Types].xml', 'word/document.xml'], `slug-${String(n)}`) }])
-        expect(res.status, `${label}: ${JSON.stringify(res.body)}`).toBe(201)
-        const row = (await t.db.query<{ paper_type: string }>(`select paper_type from intake_batches where id = $1::bigint`, [res.body.data.id]))[0]
-        expect(row?.paper_type, label).toBe(slug)
+        const res = await upload(teacher, { ...FIELDS, paperType: slug }, [{ name: `s${String(n)}.docx`, bytes: zip(['[Content_Types].xml', 'word/document.xml'], `slug-${String(n)}`) }])
+        expect(res.status, `${slug}: ${JSON.stringify(res.body)}`).toBe(201)
+        const row = (await t.db.query<{ paper_type: string }>(`select paper_type from intake_batches where id = $1::bigint`, [res.body.data.batchId]))[0]
+        expect(row?.paper_type, slug).toBe(slug)
       }
-      const bad = await upload(teacher, { ...FIELDS, jenisSoalan: 'Jenis Lain' }, [{ name: 'x.docx', bytes: zip(['[Content_Types].xml', 'word/document.xml'], 'slug-bad') }])
+      const bad = await upload(teacher, { ...FIELDS, paperType: 'jenis_lain' }, [{ name: 'x.docx', bytes: zip(['[Content_Types].xml', 'word/document.xml'], 'slug-bad') }])
       expect(bad.status).toBe(422)
+      expect(bad.body.error.fields.paperType).toBe(QUESTION_SET_PAPER_MESSAGES.type)
     } finally {
       await t.close()
     }
