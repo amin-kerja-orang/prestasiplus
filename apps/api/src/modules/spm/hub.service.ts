@@ -120,9 +120,8 @@ export class SpmHubService {
       this.catalog.spmLevelIds(),
       this.tracking.allSets(),
     ])
-    const sizes = await this.poolSizes(subjects)
+    const [sizes, databankSizes] = await Promise.all([this.poolSizes(subjects), this.databankSizes(subjects.filter((s) => s.databankOrder !== null))])
     const total = sum([...sizes.values()])
-    const databankSizes = await this.databankSizes(subjects.filter((s) => s.databankOrder !== null))
     const databank = sum([...databankSizes.values()])
     const levelSubjects = await Promise.all(levelIds.map((id) => this.curriculum.subjects({ active: true, educationLevelId: idFromString(id) })))
     const subjectCount = new Set(levelSubjects.flat().map((s) => s.id)).size

@@ -522,6 +522,8 @@ export class QuestionsService {
         failed.push(failure)
       }
     }
+    // A bulk hard delete removes served questions: tell the pool and Databank caches (the status moves above invalidate in `setStatus`).
+    if (action === 'delete' && affected > 0) this.overview?.invalidate()
     // `skipped` is present only when a row was skipped (additive on the wire).
     return { affected, ids: done, failed, ...(skipped.length > 0 ? { skipped } : {}) }
   }

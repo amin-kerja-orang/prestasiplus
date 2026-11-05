@@ -1,4 +1,4 @@
-import { Inject, Injectable, Optional } from '@nestjs/common'
+import { Inject, Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 
 import { CLOCK, type Clock } from '../../db/clock'
@@ -55,11 +55,11 @@ export class SpmPoolService {
      * N4 / ruling 8: the question events (approve, Terbit, Tarik balik, create, remove, activate) already call `OverviewCache.invalidate()`
      * in `QuestionsService`; its `generation` moves with each, so a cached count is dropped on the next load ("+1 on next load").
      */
-    @Optional() @Inject(OverviewCache) private readonly events?: OverviewCache,
+    @Inject(OverviewCache) private readonly events: OverviewCache,
   ) {}
 
   private generation(): number {
-    return this.events?.generation ?? 0
+    return this.events.generation
   }
 
   private ttlMs(): number {
