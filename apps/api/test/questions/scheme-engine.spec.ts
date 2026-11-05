@@ -108,6 +108,17 @@ describe('validateScheme issues', () => {
       bands: [{ name: 'a', range: [1, 2] }, { name: 'b', range: [4, 5] }] } as unknown as SchemeKeyLike
     expect(validateScheme(k, 5, O)).toEqual([{ code: 'BAND_RANGE', message: 'Julat band tidak meliputi 0 hingga 5.', path: 'parts.a.key' }])
   })
+  it('BAND_RANGE: mark 0 is implicit; bands covering 1..marks without a floor band pass', () => {
+    const k = { kind: 'rubric', scheme_v: 2, marks: 5, scoring: 'overall', criteria: [{ id: 'k', name: 'k' }],
+      bands: [{ name: 'a', range: [1, 2] }, { name: 'b', range: [3, 5] }] } as unknown as SchemeKeyLike
+    expect(validateScheme(k, 5, O).map((i) => i.code)).not.toContain('BAND_RANGE')
+    expect(validateScheme(k, 5, O)).toEqual([])
+  })
+  it('BAND_RANGE: a gap in the middle (1-2, 4-5 for marks 5) gives the PRD text', () => {
+    const k = { kind: 'rubric', scheme_v: 2, marks: 5, scoring: 'overall', criteria: [{ id: 'k', name: 'k' }],
+      bands: [{ name: 'a', range: [1, 2] }, { name: 'b', range: [4, 5] }] } as unknown as SchemeKeyLike
+    expect(validateScheme(k, 5, O).find((i) => i.code === 'BAND_RANGE')?.message).toBe('Julat band tidak meliputi 0 hingga 5.')
+  })
   it('SCHEME_PENALTY (deductions above the leaf marks)', () => {
     const k = v2(2, { points: pts(2), deductions: [{ code: 'spelling', amount: 1, cap: 2, scope: 'part' }, { code: 'unit', amount: 1, scope: 'part' }] })
     expect(validateScheme(k, 2, O)).toEqual([{ code: SCHEME_PENALTY_CODE, message: 'Jumlah penalti melebihi markah bahagian.', path: 'parts.a.key.deductions' }])
