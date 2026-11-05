@@ -338,7 +338,7 @@ describe('lane Latih Tubi (FR-ADM-Q02.4)', () => {
     const body = document.body.textContent ?? ''
     expect(body).toContain('Sains · Tingkatan 4')
     expect(body).toContain('#7 · 30 soalan')
-    expect(body).not.toContain('boleh ditanda')
+    expect(body).not.toContain('30 boleh ditanda')
     expect(body).toContain('Dibuka')
     expect(text('[data-testid="attention-7:open"]')).toBe('10 tidak boleh ditanda')
     expect(q('[data-testid=lane-status]')).toBeNull()
