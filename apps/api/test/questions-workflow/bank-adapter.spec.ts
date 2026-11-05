@@ -24,6 +24,8 @@ describe('question bank adapter (real BE-09 bank)', () => {
       subjectId: tag.subjectId,
       educationLevelId: tag.educationLevelId,
       difficultyLevel: 2,
+      cognitiveLevel: 'mengaplikasi',
+      curriculumChapterId: tag.chapterId,
       options: ['4', '5', '6', '7'],
       correctAnswer: 1,
       tag: { unitId: tag.unitId, spIds: [tag.spId], tp: 3 },
