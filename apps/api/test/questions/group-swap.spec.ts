@@ -148,17 +148,20 @@ describe('[CI] the swap: publishing a group draft copy (API-Q-31, API-Q-32, API-
     expect(res.body.data).toMatchObject({ id: s.id, subjectId: refs.mathId, educationLevelId: refs.t4Id, kertas: '2', scope: 'paper' })
   })
 
-  it('part 3b guard: set, remove and order on a draft copy are still 409 (add is checked in group-actions); the copy is unchanged', async () => {
+  it('part 3c (was the 3b guard): set, remove and order on a draft copy edit its staged members, never the live group', async () => {
     const s = await servedGroup(2)
     const copy = await copyOf(s.id)
     const extra = await review()
-    const calls = [
-      await admin.put(`/api/stimulus-groups/${copy.id}/members`, { questionIds: [extra] }),
-      await admin.delete(`/api/stimulus-groups/${copy.id}/members/${s.ids[0]}`),
-      await admin.put(`/api/stimulus-groups/${copy.id}/members/order`, { questionIds: [...s.ids].reverse() }),
-    ]
-    for (const res of calls) expect(res.status, JSON.stringify(res.body)).toBe(409)
-    expect(await staged(copy.id)).toEqual(s.ids)
+    const set = await admin.put(`/api/stimulus-groups/${copy.id}/members`, { questionIds: [extra] })
+    expect(set.status, JSON.stringify(set.body)).toBe(200)
+    expect(await staged(copy.id)).toEqual([extra])
+    const rm = await admin.delete(`/api/stimulus-groups/${copy.id}/members/${extra}`)
+    expect(rm.status, JSON.stringify(rm.body)).toBe(200)
+    expect(await staged(copy.id)).toEqual([])
+    expect((await admin.put(`/api/stimulus-groups/${copy.id}/members`, { questionIds: s.ids })).status).toBe(200)
+    const order = await admin.put(`/api/stimulus-groups/${copy.id}/members/order`, { questionIds: [...s.ids].reverse() })
+    expect(order.status, JSON.stringify(order.body)).toBe(200)
+    expect(await staged(copy.id)).toEqual([...s.ids].reverse())
     expect(await members(s.id)).toEqual(s.ids)
   })
 
