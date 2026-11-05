@@ -51,6 +51,13 @@ export function filterOf(activity: ServabilityActivity, scope: ActivityScope = {
 }
 
 /**
+ * D-10: what a Tracking A set can hold, the ONE definition of its candidates, its `filled` and "tersedia", on the admin lane and editor and on the
+ * pupil's counts. It is the pupil start rule for a set: a live, active question the practice bridge accepts (`servableMcq`, whose SQL shape is
+ * `PRACTICE_SHAPE`), figures and whole groups included (FR-ADM-Q17.3, D105).
+ */
+export const trackingAFilter = (subjectId: string): QuestionFilter => ({ subjectId, type: 'mcq', wholeGroups: true, mcqShape: { ...PRACTICE_SHAPE, allowStimulus: true } })
+
+/**
  * The ONE scope of the Databank lane (R1-B11): the questions the lane lists AND the questions the hub card counts, so the card's
  * `attention` can never differ from the lane's rows. A row is a question whose LATEST version is an MCQ of a subject on the
  * Databank list (a Tahun Lepas position), not PKSK, not Darjah; any status (a draft is a row, with the reason `not_approved`).

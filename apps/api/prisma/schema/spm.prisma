@@ -49,14 +49,19 @@ model SpmTrackingSet {
 
 /// The questions of a set in set order (`position` from 1).
 model SpmTrackingSetQuestion {
-  setId      BigInt @map("set_id")
-  questionId BigInt @map("question_id")
+  setId      BigInt  @map("set_id")
+  questionId BigInt  @map("question_id")
   position   Int
+  /// DM-24: copied from the set (its subject and year never change). Nullable (D-6b): every writer sets them.
+  subjectId  BigInt? @map("subject_id")
+  year       Int?
 
   set SpmTrackingSet @relation(fields: [setId], references: [id], onDelete: Cascade, map: "fk_spm_tracking_set_questions_set_id")
 
   @@id([setId, position])
   @@unique([setId, questionId], map: "uq_spm_tracking_set_questions_set_id_question_id")
+  // INV-26: a question sits in one set per subject and year.
+  @@unique([subjectId, year, questionId], map: "uq_spm_tracking_set_questions_subject_id_year_question_id")
   @@index([questionId], map: "ix_spm_tracking_set_questions_question_id")
   @@map("spm_tracking_set_questions")
 }

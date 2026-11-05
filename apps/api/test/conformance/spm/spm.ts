@@ -27,6 +27,40 @@ export const spmScenarios: Scenario[] = [
     },
   },
   {
+    id: 'spm-api/Tracking A admin (API-BIJAK-13): Admin Pusat only, CSRF on writes, a clash answers the exact text',
+    domain: 'spm',
+    targets: API_ONLY,
+    async run(ctx) {
+      const anon = ctx.anonymous()
+      expectError(ctx, await anon.request('GET', '/admin/spm/tracking-a/1'), 401, 'UNAUTHORIZED')
+      expectError(ctx, await anon.request('POST', '/admin/spm/tracking-a', { body: {} }), 401, 'UNAUTHORIZED')
+      expectError(ctx, await anon.request('PUT', '/admin/spm/tracking-a/1', { body: {} }), 401, 'UNAUTHORIZED')
+      const student = await ctx.as('student')
+      expectError(ctx, await student.request('GET', '/admin/spm/tracking-a/1'), 403, 'FORBIDDEN')
+      expectError(ctx, await student.request('POST', '/admin/spm/tracking-a', { body: {} }), 403, 'FORBIDDEN')
+      const noCsrf = await ctx.as('admin', { csrf: false })
+      expectError(ctx, await noCsrf.request('POST', '/admin/spm/tracking-a', { body: {} }), 403, 'CSRF_INVALID')
+      const admin = await ctx.as('admin')
+      expectError(ctx, await admin.request('GET', '/admin/spm/tracking-a/99999999'), 404, 'NOT_FOUND')
+      const lane = await admin.request('GET', '/admin/servability/lanes/tracking-a?pageSize=1')
+      ctx.expectStatus(lane, 200)
+      const { setSubjects } = lane.body as { setSubjects: { id: string; name: string }[] }
+      ctx.check(!setSubjects.some((s) => s.name === 'Bahasa Melayu' || s.name === 'Bahasa Inggeris'), 'BM and BI are no options of the form')
+      const subjectId = setSubjects[0]?.id as string
+      const body = { subjectId, year: 2027, setNo: 99 }
+      const created = await admin.request('POST', '/admin/spm/tracking-a', { body })
+      ctx.expectStatus(created, 201)
+      const set = dataOf(created)
+      ctx.check(set.kind === 'ramalan' && set.filled === 0 && Array.isArray(set.items), 'a new set is empty')
+      const again = await admin.request('POST', '/admin/spm/tracking-a', { body })
+      expectError(ctx, again, 422, 'VALIDATION_ERROR')
+      ctx.check(fieldsOf(again).setNo === 'Set 99 sudah wujud untuk subjek dan tahun ini.', 'the clash reads the exact text')
+      const empty = await admin.request('PUT', `/admin/spm/tracking-a/${String(set.id)}`, { body: { items: [] } })
+      expectError(ctx, empty, 422, 'VALIDATION_ERROR')
+      ctx.check(fieldsOf(empty).items === 'Pilih sekurang-kurangnya satu soalan sebelum menyimpan.', 'an empty save reads the exact text')
+    },
+  },
+  {
     id: 'spm-api/a POST without the CSRF token is 403 CSRF_INVALID',
     domain: 'spm',
     targets: API_ONLY,

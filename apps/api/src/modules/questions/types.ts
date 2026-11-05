@@ -96,6 +96,8 @@ export interface StimulusRecord {
 
 export interface StimulusGroupRecord {
   id: string
+  /** `stimulus_groups.label` (for example "Rajah 3"). */
+  label?: string | null
   /** At most 3, ordered by `position`. */
   stimuli: StimulusRecord[]
   optionBank: { label: string; bodyMs: string | null; bodyEn: string | null }[]

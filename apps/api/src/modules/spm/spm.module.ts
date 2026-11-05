@@ -12,7 +12,7 @@ import { SpmMockService } from './mock.service'
 import { SpmMocksController } from './mocks.controller'
 import { SpmPoolService } from './pool.service'
 import { SpmPorts } from './ports'
-import { SpmController } from './spm.controller'
+import { SpmAdminTrackingController, SpmController } from './spm.controller'
 import { SpmRepository } from './spm.repository'
 import { SpmTrackingService } from './tracking.service'
 import { WalkthroughController, WalkthroughUploadInterceptor } from './walkthrough.controller'
@@ -26,7 +26,7 @@ import { WalkthroughService } from './walkthrough.service'
  */
 @Module({
   imports: [ThrottleModule, CurriculumModule, QuestionsModule, PracticeModule],
-  controllers: [SpmController, SpmMocksController, WalkthroughController, DutaController],
+  controllers: [SpmController, SpmAdminTrackingController, SpmMocksController, WalkthroughController, DutaController],
   providers: [
     SpmRepository,
     SpmCatalogService,

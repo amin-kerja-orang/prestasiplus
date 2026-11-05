@@ -216,7 +216,7 @@ export function registerSpmPaths(registry: OpenAPIRegistry): void {
     tags: ['spm'],
     summary: 'Tracking A sets of one subject (M06-06)',
     description:
-      'BM and BI answer `{ redirect }` to the bahasa structured track (subject_id = the id of that subject). Other subjects list the sets of the Tracking year, startable first, then locked, each by set number.',
+      'BM and BI answer `{ redirect }` to the bahasa structured track (subject_id = the id of that subject). Other subjects list their complete sets of every year, year descending then set number; a set that is not complete is not listed.',
     request: { params: CodeParams },
     responses: {
       200: json(envelopeOf(SpmTrackingASubjectResultSchema), 'Sets, or the redirect for BM and BI.'),

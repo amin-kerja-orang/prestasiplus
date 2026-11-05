@@ -5,6 +5,7 @@ import {
   SERVABILITY_HUB_CARDS,
   SERVABILITY_PAPER_STATUSES,
   SERVABILITY_REASON_MS,
+  TRACKING_A_KIND,
   latihTubiCellAttentionMs,
   trackingSetAttentionMs,
   type ServabilityHubCard,
@@ -22,12 +23,12 @@ import {
 
 import { idFromString, idToString, isIdString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
-import { DEFAULT_SET_SIZE } from '../../spm/config'
+import { BAHASA_CODES, DEFAULT_SET_SIZE } from '../../spm/config'
 import { isStartable, setFigures } from '../../spm/rules'
 import { NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, SERVABLE_STATUS } from '../learner-visibility'
 import { QuestionsRepository } from '../questions.repository'
 import { Prisma } from '../../../db/generated/client'
-import { DATABANK_LANE_FROM, databankLaneConds, databankServedPredicate, filterOf, janaEligibleScope } from './filters'
+import { DATABANK_LANE_FROM, databankLaneConds, databankServedPredicate, filterOf, janaEligibleScope, trackingAFilter } from './filters'
 import { evaluate } from './rules'
 import { ServabilityService } from './servability.service'
 
@@ -54,8 +55,6 @@ const leafWithoutKey = (mode: Prisma.Sql): Prisma.Sql =>
      AND NOT EXISTS (SELECT 1 FROM answer_keys k WHERE k.part_id = qp.id))`
 const NO_SCHEME_SQL = leafWithoutKey(Prisma.sql`qp.mode <> 'mcq'`)
 const NO_KEY_SQL = leafWithoutKey(Prisma.sql`qp.mode = 'mcq'`)
-/** The label V2 gives a Tracking A set in its row meta (30 Q-02). */
-const TRACKING_KIND = 'ramalan'
 interface PaperRow {
   id: bigint
   title: string
@@ -461,6 +460,14 @@ export class ServabilityReadsService {
     return row?.enabled ?? true
   }
 
+  /** The options of `Subjek` in field 17-01 of the Tracking A editor: the configured SPM subjects, without BM and BI, which have no objective sets (D-11). */
+  async trackingSubjects(): Promise<{ id: string; name: string }[]> {
+    const rows = await this.db.$queryRaw<{ id: bigint; name: string }[]>`
+      SELECT s.id, s.name FROM subjects s JOIN spm_subject_configs c ON c.subject_id = s.id
+       WHERE s.is_active AND s.code <> ALL(${[...BAHASA_CODES]}::text[]) ORDER BY s.sort_order, s.name, s.id`
+    return rows.map((r) => ({ id: idToString(r.id), name: r.name }))
+  }
+
   /** Lane "Tracking A": one row per set, by title (02-06). A set is incomplete when the pupil's eligibility leaves fewer questions than its size. */
   async trackingLane(q: ServabilityLaneQuery): Promise<Paged<ServabilityLaneRow>> {
     const term = q.search?.toLowerCase()
@@ -469,14 +476,13 @@ export class ServabilityReadsService {
       .filter((v) => term === undefined || term === '' || v.title.toLowerCase().includes(term))
       .sort((x, y) => x.title.localeCompare(y.title, 'ms', { numeric: true }))
     const page = pageOf(sets, q)
-    const available = await this.trackingAvailable(page.filter((v) => !v.complete).map((v) => v.subjectId))
     return {
       rows: page.map((v) => ({
         id: v.id,
         title: v.title,
-        meta: metaLine(`#${v.id}`, TRACKING_KIND, `${String(v.eligible)} soalan`),
+        meta: metaLine(`#${v.id}`, TRACKING_A_KIND, `${String(v.eligible)} soalan`),
         status: v.status,
-        attention: v.complete ? [] : [trackingSetAttentionMs(v.eligible, v.size, available.get(v.subjectId) ?? 0)],
+        attention: v.complete ? [] : [trackingSetAttentionMs(v.eligible, v.size)],
         actions: ['edit'],
       })),
       page: q.page,
@@ -490,7 +496,7 @@ export class ServabilityReadsService {
     return { total: sets.length, attention: sets.filter((v) => !v.complete).length }
   }
 
-  /** Every set with its figures, computed as `SpmTrackingService.views` does for the pupil: `eligibleAmong` per subject, `setFigures`, target size or the default. */
+  /** Every set with its figures, computed as `SpmTrackingService.views` does for the pupil: `eligibleAmong` per subject under `trackingAFilter` (D-10), `setFigures`, target size or the default. */
   private async trackingSets(): Promise<TrackingSetView[]> {
     const rows = await this.db.$queryRaw<{ id: bigint; subject_id: bigint; subject_name: string; year: number; set_no: number; target_size: number | null; question_ids: bigint[] }[]>`
       SELECT t.id, t.subject_id, s.name AS subject_name, t.year, t.set_no, c.target_size,
@@ -506,7 +512,7 @@ export class ServabilityReadsService {
       bySubject.set(idToString(r.subject_id), ids)
     }
     const eligible = new Map<string, Set<string>>()
-    for (const [subjectId, ids] of bySubject) eligible.set(subjectId, new Set(await this.questions.eligibleAmong([...ids], { subjectId })))
+    for (const [subjectId, ids] of bySubject) eligible.set(subjectId, new Set(await this.questions.eligibleAmong([...ids], trackingAFilter(subjectId))))
     return rows.map((r) => {
       const subjectId = idToString(r.subject_id)
       const size = r.target_size ?? DEFAULT_SET_SIZE
@@ -524,18 +530,6 @@ export class ServabilityReadsService {
         complete: isStartable(status),
       }
     })
-  }
-
-  /** What could fill a set of these subjects: servable questions and groups, a group counting once (D90). */
-  private async trackingAvailable(subjectIds: readonly string[]): Promise<Map<string, number>> {
-    const unique = [...new Set(subjectIds)]
-    const out = new Map<string, number>()
-    for (const subjectId of unique) {
-      const { from, where } = this.questions.scopeSql({ subjectId, status: SERVABLE_STATUS, active: true }, true)
-      const [row] = await this.db.$queryRaw<{ n: number }[]>`SELECT ((count(*) FILTER (WHERE q.group_id IS NULL)) + count(DISTINCT q.group_id))::int AS n ${from} WHERE ${where}`
-      out.set(subjectId, row?.n ?? 0)
-    }
-    return out
   }
 
   /** Lane "Subjektif" (FR-ADM-Q23.3): structured and essay questions, newest first, each with its `no_scheme` and `no_key` sentences. */

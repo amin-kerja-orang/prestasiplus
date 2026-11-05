@@ -227,6 +227,7 @@ export type SpmTrackingAHub = z.infer<typeof SpmTrackingAHubSchema>
 /** One set of a Tracking A subject. */
 export const SpmTrackingASetSchema = z
   .strictObject({
+    year: z.number().int().meta({ description: 'Year of the set: a subject lists its complete sets of every year (D-14).' }),
     setNo: z.number().int().min(1),
     status: SpmSetStatusSchema,
     readyCount: count,
@@ -238,9 +239,9 @@ export const SpmTrackingASetSchema = z
 export type SpmTrackingASet = z.infer<typeof SpmTrackingASetSchema>
 
 /**
- * `GET /spm/tracking-a/{code}` data for a subject other than BM and BI: the sets of the Tracking
- * year (2026 in the mock), startable sets first, then locked, each by set number.
- * `summary.readyQuestions` sums ALL sets (unlike `SpmOpenSubjectCard.readyQuestions`).
+ * `GET /spm/tracking-a/{code}` data for a subject other than BM and BI: the complete sets of every
+ * year, year descending then set number (D-14). A set that is not complete is not listed
+ * (FR-MUR-13-18, AC-MUR-13-11). `summary` counts ALL the subject's sets (unlike `SpmOpenSubjectCard.readyQuestions`).
  */
 export const SpmTrackingASubjectSchema = z
   .strictObject({

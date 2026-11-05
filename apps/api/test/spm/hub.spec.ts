@@ -35,6 +35,8 @@ let admin: Client
 
 /** Ids of the ADDMATH set fixtures (target 20). */
 const am: string[] = []
+/** The questions of ADDMATH sets 4 and 5: a question sits in one set per subject and year (DM-24). */
+const am4: string[] = []
 
 const uid = async (email: string) => (await t.db.query<{ id: string }>('select id::text from users where email = $1', [email]))[0]?.id as string
 
@@ -64,18 +66,18 @@ beforeAll(async () => {
 
   // Tracking A: ADDMATH (size 20): bersih, bank_besar (23), belum_cukup (5 and 2).
   for (let i = 0; i < 48; i++) am.push(await addQuestion(db, { subject: 'ADDMATH', pool: false }))
+  for (let i = 0; i < 22; i++) am4.push(await addQuestion(db, { subject: 'ADDMATH', pool: false }))
   await addSet(db, 'ADDMATH', 1, am.slice(0, 20), { dskpTagged: 7 })
   await addSet(db, 'ADDMATH', 2, am.slice(20, 43), { dskpTagged: 99 })
   await addSet(db, 'ADDMATH', 3, am.slice(43, 48))
-  await addSet(db, 'ADDMATH', 4, am.slice(0, 20).reverse())
-  await addSet(db, 'ADDMATH', 5, am.slice(43, 45))
+  await addSet(db, 'ADDMATH', 4, am4.slice(0, 20).reverse())
+  await addSet(db, 'ADDMATH', 5, am4.slice(20, 22))
   // SEJ: one clean set of 40 (a teras subject sorts before the elektif ADDMATH).
   const sejSet: string[] = []
   for (let i = 0; i < 40; i++) sejSet.push(await addQuestion(db, { subject: 'SEJ', pool: false }))
   await addSet(db, 'SEJ', 1, sejSet)
   // GEO (size 40): eight sets of 3 questions, all locked.
-  const geo = await Promise.all([1, 2, 3].map(() => addQuestion(db, { subject: 'GEO', pool: false })))
-  for (let n = 1; n <= 8; n++) await addSet(db, 'GEO', n, geo)
+  for (let n = 1; n <= 8; n++) await addSet(db, 'GEO', n, await Promise.all([1, 2, 3].map(() => addQuestion(db, { subject: 'GEO', pool: false }))))
 
   // Practice history for the overview: pelajar 2 SPM sessions (+ ones that do not count), admin 1 + 1 test row.
   const p = await uid('pelajar@demo.test')
@@ -229,14 +231,14 @@ describe('AC4 / AC5 Tracking A (M06-05, M06-06)', () => {
     expect(r?.summary).toEqual({ bersih: 3, bankBesar: 1, locked: 2 + 8 })
   })
 
-  it('S6 ADDMATH: startable sets first, then locked, each by set number; ready sum covers all sets', async () => {
+  it('S6 ADDMATH: only the complete sets are listed, by set number; the summary still covers all sets (FR-MUR-13-18)', async () => {
     const s = parseData(await student.get('/api/spm/tracking-a/ADDMATH'), SpmTrackingASubjectResultSchema) as SpmTrackingASubject
     expect(s.summary).toEqual({ bersih: 2, bankBesar: 1, readyQuestions: 67, belumCukup: 2 })
-    expect(s.sets.map((x) => x.setNo)).toEqual([1, 2, 4, 3, 5])
-    expect(s.sets[0]).toEqual({ setNo: 1, status: 'bersih', readyCount: 20, bankSource: null, dskpTagged: 7, dskpTotal: 20 })
+    expect(s.sets.map((x) => x.setNo)).toEqual([1, 2, 4])
+    expect(s.sets[0]).toEqual({ year: 2026, setNo: 1, status: 'bersih', readyCount: 20, bankSource: null, dskpTagged: 7, dskpTotal: 20 })
     // dskpTagged never exceeds the total shown.
-    expect(s.sets[1]).toEqual({ setNo: 2, status: 'bank_besar', readyCount: 20, bankSource: 23, dskpTagged: 23, dskpTotal: 23 })
-    expect(s.sets[3]).toMatchObject({ setNo: 3, status: 'belum_cukup', readyCount: 5, bankSource: null })
+    expect(s.sets[1]).toEqual({ year: 2026, setNo: 2, status: 'bank_besar', readyCount: 20, bankSource: 23, dskpTagged: 23, dskpTotal: 23 })
+    expect(s.sets.find((x) => x.status === 'belum_cukup')).toBeUndefined()
     expect(s).toMatchObject({ code: 'ADDMATH', targetType: 'latihan', targetSize: 20 })
     expect(parseData(await student.get('/api/spm/tracking-a/addmath'), SpmTrackingASubjectResultSchema)).toEqual(s)
   })
@@ -256,18 +258,17 @@ describe('AC4 / AC5 Tracking A (M06-05, M06-06)', () => {
   it('a question that stops being eligible leaves the set count with no write to the set tables', async () => {
     const before = await t.db.query<{ n: string; u: string }>(`select count(*)::text n, max(updated_at)::text u from spm_tracking_sets`)
     const links = Number((await t.db.query<{ n: string }>('select count(*)::text n from spm_tracking_set_questions'))[0]?.n)
-    const first = am[0] as string
-    await t.db.query('update questions set is_active = false where id = $1', [first])
+    const firsts = [am[0] as string, am4[0] as string]
+    await t.db.query('update questions set is_active = false where id = any($1::bigint[])', [firsts])
     try {
       const s = parseData(await student.get('/api/spm/tracking-a/ADDMATH'), SpmTrackingASubjectResultSchema) as SpmTrackingASubject
-      // Sets 1 and 4 lose it: 19 of 20 is belum_cukup.
-      expect(s.sets.find((x) => x.setNo === 1)).toMatchObject({ status: 'belum_cukup', readyCount: 19 })
-      expect(s.sets.find((x) => x.setNo === 4)).toMatchObject({ status: 'belum_cukup', readyCount: 19 })
+      // Sets 1 and 4 each lose one: 19 of 20 is belum_cukup, and a set that is not complete is not listed.
+      expect(s.sets.map((x) => x.setNo)).toEqual([2])
       expect(s.summary).toMatchObject({ bersih: 0, bankBesar: 1, belumCukup: 4 })
       const h = parseData(await student.get('/api/spm/tracking-a'), SpmTrackingAHubSchema)
       expect(h.openSubjects.find((c) => c.code === 'ADDMATH')?.startableSets).toBe(1)
     } finally {
-      await t.db.query('update questions set is_active = true where id = $1', [first])
+      await t.db.query('update questions set is_active = true where id = any($1::bigint[])', [firsts])
     }
     // Unpublished (a draft live version is not eligible) leaves the bank_besar set: 23 becomes 22, still 20 ready.
     const inBank = am[25] as string
@@ -302,13 +303,13 @@ describe('AC6 ramalanQuestionIds binds to the practice ramalan port', () => {
     expect(await svc.ramalanQuestionIds(subject, 2026, 3)).toEqual([])
   })
 
-  it('bersih: the eligible ids in position order; bank_besar: cut to the size', async () => {
+  it('bersih: the eligible ids in position order; bank_besar: the whole set, with no cut that could split a group (D-16)', async () => {
     const svc = t.app.get(SpmTrackingService)
     const subject = await sid()
     expect(await svc.ramalanQuestionIds(subject, 2026, 1)).toEqual(am.slice(0, 20))
-    // Set 4 holds the same questions in reverse: the order is the position, not the id.
-    expect(await svc.ramalanQuestionIds(subject, 2026, 4)).toEqual(am.slice(0, 20).reverse())
-    expect(await svc.ramalanQuestionIds(subject, 2026, 2)).toEqual(am.slice(20, 40))
+    // Set 4 holds its questions in reverse: the order is the position, not the id.
+    expect(await svc.ramalanQuestionIds(subject, 2026, 4)).toEqual(am4.slice(0, 20).reverse())
+    expect(await svc.ramalanQuestionIds(subject, 2026, 2)).toEqual(am.slice(20, 43))
   })
 
   it('an ineligible question is skipped; a set that falls below the size answers []', async () => {
@@ -318,9 +319,9 @@ describe('AC6 ramalanQuestionIds binds to the practice ramalan port', () => {
     await t.db.query('update questions set is_active = false where id = $1', [gone])
     try {
       const ids = (await svc.ramalanQuestionIds(subject, 2026, 2)) as string[]
-      expect(ids).toHaveLength(20)
+      expect(ids).toHaveLength(22)
       expect(ids).not.toContain(gone)
-      expect(ids).toEqual([...am.slice(20, 22), ...am.slice(23, 41)])
+      expect(ids).toEqual([...am.slice(20, 22), ...am.slice(23, 43)])
       await t.db.query('update questions set is_active = false where id = $1', [am[23] as string])
       await t.db.query('update questions set is_active = false where id = $1', [am[24] as string])
       await t.db.query('update questions set is_active = false where id = $1', [am[25] as string])

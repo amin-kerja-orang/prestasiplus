@@ -16822,6 +16822,36 @@
       "approved_by_card": null
     },
     {
+      "key": "POST /api/admin/spm/tracking-a",
+      "method": "POST",
+      "path": "/api/admin/spm/tracking-a",
+      "api_id": "API-BIJAK-13",
+      "status": "canonical",
+      "sector": "S3",
+      "file": "apps/api/src/modules/spm/spm.controller.ts",
+      "approved_by_card": "S3-T05"
+    },
+    {
+      "key": "GET /api/admin/spm/tracking-a/:p",
+      "method": "GET",
+      "path": "/api/admin/spm/tracking-a/:p",
+      "api_id": "API-BIJAK-13",
+      "status": "canonical",
+      "sector": "S3",
+      "file": "apps/api/src/modules/spm/spm.controller.ts",
+      "approved_by_card": "S3-T05"
+    },
+    {
+      "key": "PUT /api/admin/spm/tracking-a/:p",
+      "method": "PUT",
+      "path": "/api/admin/spm/tracking-a/:p",
+      "api_id": "API-BIJAK-13",
+      "status": "canonical",
+      "sector": "S3",
+      "file": "apps/api/src/modules/spm/spm.controller.ts",
+      "approved_by_card": "S3-T05"
+    },
+    {
       "key": "GET /api/spm/tracking-a",
       "method": "GET",
       "path": "/api/spm/tracking-a",

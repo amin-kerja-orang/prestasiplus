@@ -81,7 +81,7 @@ async function seedSets(db: PrismaClient, now: Date): Promise<void> {
         dskpTagged: rows.length,
         createdAt: now,
         updatedAt: now,
-        questions: { create: rows.map((r, i) => ({ questionId: r.id, position: i + 1 })) },
+        questions: { create: rows.map((r, i) => ({ questionId: r.id, position: i + 1, subjectId: c.subjectId, year: TRACKING_YEAR })) },
       },
     })
   }

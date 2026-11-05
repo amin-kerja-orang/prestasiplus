@@ -14429,6 +14429,10 @@
       "SpmTrackingASet": {
         "type": "object",
         "properties": {
+          "year": {
+            "type": "integer",
+            "description": "Year of the set: a subject lists its complete sets of every year (D-14)."
+          },
           "setNo": {
             "type": "integer",
             "minimum": 1
@@ -14457,6 +14461,7 @@
           }
         },
         "required": [
+          "year",
           "setNo",
           "status",
           "readyCount",
@@ -86137,7 +86142,7 @@
           "spm"
         ],
         "summary": "Tracking A sets of one subject (M06-06)",
-        "description": "BM and BI answer `{ redirect }` to the bahasa structured track (subject_id = the id of that subject). Other subjects list the sets of the Tracking year, startable first, then locked, each by set number.",
+        "description": "BM and BI answer `{ redirect }` to the bahasa structured track (subject_id = the id of that subject). Other subjects list their complete sets of every year, year descending then set number; a set that is not complete is not listed.",
         "parameters": [
           {
             "schema": {
@@ -87844,7 +87849,7 @@
         ],
         "responses": {
           "200": {
-            "description": "A page of sets, sorted by title. `status` is ignored.",
+            "description": "A page of sets, sorted by title. `status` is ignored. `setSubjects` are the options of `Subjek` in the editor (field 17-01).",
             "content": {
               "application/json": {
                 "schema": {
@@ -87877,12 +87882,19 @@
                         "$ref": "#/components/schemas/ServabilityLaneAttention"
                       },
                       "description": "The attention lines of the hub card of this lane."
+                    },
+                    "setSubjects": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ServabilityLaneSubject"
+                      }
                     }
                   },
                   "required": [
                     "data",
                     "meta",
-                    "subjects"
+                    "subjects",
+                    "setSubjects"
                   ]
                 }
               }

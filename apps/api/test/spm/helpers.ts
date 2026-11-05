@@ -84,6 +84,8 @@ export async function bootSpmApp(opts: BootOptions = {}): Promise<SpmTestApp> {
     // The clock is frozen, so a window never ends: lift the limits unless a test asks for a low one.
     THROTTLE_SPM_MOCK_CREATE_PER_MINUTE: '100000',
     THROTTLE_SPM_WALKTHROUGH_PER_MINUTE: '100000',
+    THROTTLE_SPM_TRACKING_READ_PER_MINUTE: '100000',
+    THROTTLE_SPM_TRACKING_WRITE_PER_MINUTE: '100000',
     ...opts.env,
   })
   const clock = new FixedClock(START)
@@ -237,7 +239,7 @@ export async function addSet(db: TestDatabase, subject: string, setNo: number, q
     )
   )[0]?.id as string
   for (const [i, qid] of questionIds.entries()) {
-    await db.query('insert into spm_tracking_set_questions (set_id, question_id, position) values ($1, $2, $3)', [set, qid, i + 1])
+    await db.query('insert into spm_tracking_set_questions (set_id, question_id, position, subject_id, year) values ($1, $2, $3, $4, $5)', [set, qid, i + 1, sid, opts.year ?? 2026])
   }
 }
 

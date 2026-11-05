@@ -470,6 +470,13 @@ export class QuestionsRepository {
     return rows.map((r) => idToString(r.id))
   }
 
+  /** How many units are eligible: a question outside a group counts once, and so does a whole group (D90). */
+  async eligibleUnitCount(filter: QuestionFilter): Promise<number> {
+    const { from, where } = this.scope({ ...filter, status: 'approved', active: true }, true)
+    const rows = await this.db.$queryRaw<{ n: number }[]>`SELECT ((count(*) FILTER (WHERE q.group_id IS NULL)) + count(DISTINCT q.group_id))::int AS n ${from} WHERE ${where}`
+    return rows[0]?.n ?? 0
+  }
+
   /** One keyset page of eligible ids, ascending; pass the last id of the previous page as `after`. */
   async eligibleIdsPage(filter: QuestionFilter, after: string | undefined, limit: number): Promise<string[]> {
     const size = Math.max(1, Math.min(Math.floor(limit), ELIGIBLE_IDS_MAX))
@@ -613,6 +620,7 @@ export class QuestionsRepository {
       })
       return {
         id: idToString(group.id),
+        label: group.label,
         stimuli,
         optionBank: group.options.map((o) => ({ label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn })),
         questionIds: group.questions.map((m) => idToString(m.id)),

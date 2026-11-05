@@ -136,9 +136,9 @@ const subjectSets = {
   targetSize: 40,
   summary: { bersih: 1, bankBesar: 1, readyQuestions: 119, belumCukup: 1 },
   sets: [
-    { setNo: 1, status: 'bersih', readyCount: 40, bankSource: null, dskpTagged: 12, dskpTotal: 40 },
-    { setNo: 2, status: 'bank_besar', readyCount: 40, bankSource: 67, dskpTagged: 0, dskpTotal: 40 },
-    { setNo: 3, status: 'belum_cukup', readyCount: 12, bankSource: null, dskpTagged: 0, dskpTotal: 12 },
+    { year: 2026, setNo: 1, status: 'bersih', readyCount: 40, bankSource: null, dskpTagged: 12, dskpTotal: 40 },
+    { year: 2026, setNo: 2, status: 'bank_besar', readyCount: 40, bankSource: 67, dskpTagged: 0, dskpTotal: 40 },
+    { year: 2025, setNo: 3, status: 'belum_cukup', readyCount: 12, bankSource: null, dskpTagged: 0, dskpTotal: 12 },
   ],
 }
 

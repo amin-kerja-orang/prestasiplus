@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import type { SpmMockGrade, SpmMockStatus, SpmTargetType } from '@pp/contract'
 
 import { Prisma } from '../../db/generated/client'
-import { idFromString, idToString } from '../../db/ids'
+import { idFromString, idToString, isIdString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 
 /** One row of `spm_subject_configs`; ids are decimal strings. */
@@ -130,6 +130,41 @@ export class SpmRepository {
   async set(subjectId: string, year: number, setNo: number): Promise<TrackingSetRow | null> {
     const [row] = (await this.sets({ subjectId, year })).filter((s) => s.setNo === setNo)
     return row ?? null
+  }
+
+  /** One set by id; `null` for an unknown id, or one that is not a decimal id. */
+  async setById(id: string): Promise<TrackingSetRow | null> {
+    if (!isIdString(id)) return null
+    const r = await this.db.spmTrackingSet.findUnique({ where: { id: idFromString(id) }, include: { questions: { orderBy: { position: 'asc' } } } })
+    if (!r) return null
+    return { id: idToString(r.id), subjectId: idToString(r.subjectId), year: r.year, setNo: r.setNo, dskpTagged: r.dskpTagged, questionIds: r.questions.map((q) => idToString(q.questionId)) }
+  }
+
+  /** An empty set; a repeat of (subject, year, set number) throws the unique violation for the caller to word. */
+  async createSet(subjectId: string, year: number, setNo: number): Promise<string> {
+    const row = await this.db.spmTrackingSet.create({ data: { subjectId: idFromString(subjectId), year, setNo }, select: { id: true } })
+    return idToString(row.id)
+  }
+
+  /** Question id to set number, for the questions other sets of this subject and year hold (DM-24). */
+  async siblingHolders(subjectId: string, year: number, exceptSetId: string): Promise<Map<string, number>> {
+    const rows = await this.db.spmTrackingSetQuestion.findMany({
+      where: { subjectId: idFromString(subjectId), year, setId: { not: idFromString(exceptSetId) } },
+      select: { questionId: true, set: { select: { setNo: true } } },
+    })
+    return new Map(rows.map((r) => [idToString(r.questionId), r.set.setNo]))
+  }
+
+  /** One transaction: delete and reinsert the members, because the key `(set_id, position)` blocks a swap in place (FR-ADM-Q17.5, DM-24). */
+  saveSet(setId: string, subjectId: string, year: number, questionIds: readonly string[], dskpTagged: number): Promise<void> {
+    const id = idFromString(setId)
+    return this.prisma.transaction(async () => {
+      await this.db.spmTrackingSetQuestion.deleteMany({ where: { setId: id } })
+      await this.db.spmTrackingSetQuestion.createMany({
+        data: questionIds.map((q, i) => ({ setId: id, questionId: idFromString(q), position: i + 1, subjectId: idFromString(subjectId), year })),
+      })
+      await this.db.spmTrackingSet.update({ where: { id }, data: { dskpTagged } })
+    })
   }
 
   // --- mock exams -------------------------------------------------------------------------------

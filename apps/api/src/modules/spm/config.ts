@@ -77,4 +77,6 @@ export const POOL_CACHE_SECONDS = 60
 export const SPM_LIMITS = {
   mockCreate: { bucket: 'spm.mock-create', env: 'THROTTLE_SPM_MOCK_CREATE_PER_MINUTE', default: 10, per: 'user' },
   walkthrough: { bucket: 'spm.walkthrough', env: 'THROTTLE_SPM_WALKTHROUGH_PER_MINUTE', default: 6, per: 'user' },
+  trackingRead: { bucket: 'spm.tracking-read', env: 'THROTTLE_SPM_TRACKING_READ_PER_MINUTE', default: 120, per: 'user' },
+  trackingWrite: { bucket: 'spm.tracking-write', env: 'THROTTLE_SPM_TRACKING_WRITE_PER_MINUTE', default: 60, per: 'user' },
 } as const satisfies Record<string, RateLimitSpec>

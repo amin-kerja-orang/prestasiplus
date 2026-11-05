@@ -1,6 +1,6 @@
 export { QuestionsModule } from './questions.module'
 export { QuestionsBijakPoolSource } from './bijak-pool'
-export { ServabilityService, evaluate as evaluateServability, filterOf as servabilityFilterOf } from './serving'
+export { ServabilityService, evaluate as evaluateServability, filterOf as servabilityFilterOf, trackingAFilter } from './serving'
 export { ELIGIBLE_IDS_MAX, QuestionsRepository, groupCompleteSql } from './questions.repository'
 export { QuestionsService } from './questions.service'
 export { StimuliService } from './stimuli.service'

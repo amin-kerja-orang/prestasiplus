@@ -17,7 +17,7 @@ import {
 } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
-import { QuestionsService } from '../../src/modules/questions'
+import { QuestionsRepository, QuestionsService, trackingAFilter } from '../../src/modules/questions'
 import { ServabilityReadsService } from '../../src/modules/questions/serving'
 import { OverviewCache, SwrSlot } from '../../src/modules/questions/serving/overview-cache'
 import { adminActor, mcqInput, tagBody, tagOf, type Tag } from './fixtures'
@@ -386,7 +386,7 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
     expect(full.title).toMatch(/ · 2026 Set 1$/)
     expect(full.meta).toBe(`#${made.fullSet} · ramalan · 2 soalan`)
     expect(short.attention).toHaveLength(1)
-    expect(short.attention[0]).toMatch(/^Hanya 1 daripada 2 soalan — \d+ tersedia untuk diisi$/)
+    expect(short.attention).toEqual(['Hanya 1 daripada 2 soalan'])
     const drafted = lane.rows.find((r) => r.id === made.draftSet)!
     expect(drafted.meta).toBe(`#${made.draftSet} · ramalan · 1 soalan`)
     expect(drafted.attention[0]).toMatch(/^Hanya 1 daripada 2 soalan/)
@@ -493,15 +493,15 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
   })
 
   it('D90: what could fill a set counts a stimulus group once', async () => {
-    const available = async (): Promise<number> => {
-      const lane = await wholeLane<ServabilityLaneRow>('tracking-a', ServabilityLaneRowSchema)
-      return Number(/— (\d+) tersedia/.exec(lane.rows.find((r) => r.id === made.shortSet)!.attention[0]!)![1])
-    }
+    const available = (): Promise<number> => t.app.get(QuestionsRepository).eligibleUnitCount(trackingAFilter(tag.subjectId))
     const before = await available()
     const first = await approve('groupOne', 'Soalan pertama kumpulan untuk unit D90.')
     const second = await approve('groupTwo', 'Soalan kedua kumpulan untuk unit D90.')
     expect(await available()).toBe(before + 2)
     const [group] = await q(`insert into stimulus_groups (label) values ('Kumpulan D90') returning id::text id`)
+    // A group with no stimulus is incomplete, and an incomplete group is no candidate (D-10).
+    const [stimulus] = await q(`insert into stimuli (kind, label, body_ms) values ('passage', 'Kumpulan D90', 'Petikan') returning id::text id`)
+    await q(`insert into stimulus_group_stimuli (group_id, stimulus_id, position) values ($1, $2, 1)`, [group!.id, stimulus!.id])
     for (const [i, id] of [first, second].entries()) await q(`update questions set group_id = $1, group_position = $2 where id = $3`, [group!.id, i + 1, id])
     expect(await available()).toBe(before + 1)
   })

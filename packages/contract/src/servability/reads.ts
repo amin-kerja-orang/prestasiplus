@@ -215,9 +215,16 @@ export type ServabilityLaneRow = z.infer<typeof ServabilityLaneRowSchema>
 /** The switch state of a Latih Tubi cell, shown as a badge (`Dibuka`, `Ditutup`); it is edited in Kawalan Ciri only. */
 export const SERVABILITY_LATIH_TUBI_SWITCH_LABELS = { open: 'Dibuka', closed: 'Ditutup' } as const
 
-/** The Perhatian sentence of an incomplete Tracking A set. `available` counts servable questions and groups (D90). */
-export const trackingSetAttentionMs = (filled: number, size: number, available: number): string =>
-  `Hanya ${String(filled)} daripada ${String(size)} soalan — ${String(available)} tersedia untuk diisi`
+/**
+ * The Tracking A lane page. `subjects` filter the rows (field 02-01, every active subject); `setSubjects` are the options of `Subjek` in the editor (field
+ * 17-01): the configured SPM subjects without BM and BI, which have no objective sets (D-11).
+ */
+export const ServabilityTrackingLaneSchema = servabilityLaneListOf(ServabilityLaneRowSchema).extend({
+  setSubjects: z.array(ServabilityLaneSubjectSchema),
+})
+
+/** The Perhatian sentence of an incomplete Tracking A set (30 Q-17, D-9). */
+export const trackingSetAttentionMs = (filled: number, size: number): string => `Hanya ${String(filled)} daripada ${String(size)} soalan`
 
 /** The Perhatian text of a Latih Tubi cell. */
 export const latihTubiCellAttentionMs = (n: number): string => `${String(n)} tidak boleh ditanda`
