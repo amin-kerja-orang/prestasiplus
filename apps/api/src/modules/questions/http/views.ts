@@ -15,6 +15,9 @@ import {
   QuestionStimulusTableSchema,
   QuestionStructuredDetailSchema,
   QuestionStructuredRowSchema,
+  GuruStructuredDetailSchema,
+  GuruStructuredRowSchema,
+  type GuruStructuredSubSchema,
   type QuestionPart,
   type QuestionStatus,
 } from '@pp/contract'
@@ -374,5 +377,63 @@ export function structuredDetailView(d: QuestionDetailView): z.output<typeof Que
     createdBy: { id: d.createdById ?? NO_CREATOR, name: d.createdByName },
     createdAt: toMytTimestamp(d.createdAt),
     updatedAt: toMytTimestamp(d.updatedAt),
+  })
+}
+
+// --- structured, teacher mount (API-GUR-26) ------------------------------------------------------
+
+/** The KBAT chip text of a cognitive level (LOTS 1-2, MOTS 3, HOTS 4-6); empty when the question has none. */
+const kbatLabelOf = (level: number | null): string => (level === null ? '' : level <= 2 ? `LOTS ${String(level)}` : level === 3 ? 'MOTS 3' : `HOTS ${String(level)}`)
+
+const guruExcerpt = (text: string): string => (text.length <= EXCERPT ? text : `${text.slice(0, EXCERPT).trimEnd()}...`)
+
+/** `number` is the 1-based position in the full ordered list (page offset + index + 1). */
+export function guruStructuredRowView(q: QuestionView, number: number): z.output<typeof GuruStructuredRowSchema> {
+  const parts = q.version.parts
+  return GuruStructuredRowSchema.parse({
+    id: q.id,
+    number,
+    textExcerpt: guruExcerpt(q.version.stemMs ?? parts[0]?.prompt.ms ?? ''),
+    level: q.level,
+    subject: q.subject,
+    kbat: kbatLabelOf(q.version.cognitiveLevel),
+    subCount: countLeaves(parts),
+    marks: marksOf(parts),
+    status: 'approved',
+  })
+}
+
+function guruSubs(parts: readonly QuestionPart[], path: readonly string[], depth: number): z.output<typeof GuruStructuredSubSchema>[] {
+  return parts.flatMap((part) => {
+    const labels = [...path, part.label]
+    const own: z.output<typeof GuruStructuredSubSchema> = isLeaf(part)
+      ? {
+          partLabel: labels.join('.'),
+          questionText: part.prompt.ms,
+          marks: part.marks,
+          cognitiveLevel: part.cognitiveLevel ?? null,
+          modelAnswer: modelAnswerOf(part),
+          depth,
+        }
+      : { partLabel: labels.join('.'), questionText: part.prompt.ms, marks: 0, cognitiveLevel: null, modelAnswer: '', depth }
+    return isLeaf(part) ? [own] : [own, ...guruSubs(part.children as QuestionPart[], labels, depth + 1)]
+  })
+}
+
+/** Teacher detail: the stimulus once, the parts with their marks and scheme; none of the admin-only fields. */
+export function guruStructuredDetailView(d: QuestionDetailView): z.output<typeof GuruStructuredDetailSchema> {
+  const parts = d.version.parts
+  return GuruStructuredDetailSchema.parse({
+    id: d.id,
+    subject: d.subject,
+    level: d.level,
+    kbat: kbatLabelOf(d.version.cognitiveLevel),
+    status: 'approved',
+    stimulus: d.version.stemMs ?? '',
+    stimulusImage: null,
+    totalMarks: marksOf(parts),
+    subCount: countLeaves(parts),
+    subQuestions: guruSubs(parts, [], 0),
+    createdAt: toMytTimestamp(d.createdAt),
   })
 }
