@@ -240,6 +240,39 @@ export interface RevisionSubject {
 }
 
 // ---------------------------------------------------------------------------------------------
+// API-PRAC-08 Remedial suggestions (S5-T07; contract `PracticeReadRemedialSuggestions`)
+// ---------------------------------------------------------------------------------------------
+
+/** A completed revision drill ("Remedial Set {setNo}"); all percentages are whole numbers. */
+export interface RemedialCompletedSet {
+  subjectCode: string
+  subjectName: string
+  setNo: number
+  questionCount: number
+  /** Pooled subject accuracy before the drill ("Sebelum"); `null` when there was no earlier answer. */
+  before: number | null
+  /** The drill accuracy ("Selepas"); `null` when the drill had no questions. */
+  after: number | null
+  /** `after - before`; `null` unless both sides exist. */
+  delta: number | null
+  at: string
+}
+
+/** A subject below the target ("Perlu Pemulihan"). */
+export interface RemedialNeededSubject {
+  subjectCode: string
+  subjectName: string
+  answered: number
+  accuracy: number
+  target: 60
+}
+
+export interface RemedialSuggestions {
+  completed: RemedialCompletedSet[]
+  needed: RemedialNeededSubject[]
+}
+
+// ---------------------------------------------------------------------------------------------
 // #11 Progress
 // ---------------------------------------------------------------------------------------------
 
