@@ -5,6 +5,15 @@
  * (D4); the rules of the games are PROVISIONAL (`./room-engine.ts`).
  */
 
+import {
+  GAMES_ADMIN_SETTINGS,
+  GAMES_ADMIN_SETTING_KEYS,
+  type GamesAdminSettingKey,
+  type GamesAdminSettingsResult,
+  type GamesAdminSettingsUpdateRequest,
+  type GamesAdminSpinSegment,
+} from '@pp/contract'
+
 import type { Prng, PrngRegistry } from '@/mock/determinism'
 import { defineNamedQueries } from '@/mock/dataset'
 import { defineRepository } from '@/mock/repository'
@@ -15,13 +24,13 @@ import {
   CROSSWORD_MS,
   PF_ROUNDS,
   PF_ROUND_MS,
-  MAX_QUIZ_TILES,
   PAPAN_BIJAK_SUBJECTS,
   ROOM_COINS,
   ROOM_GAMES,
   ROOM_SUBJECTS,
   roomGameInfo,
   SEED_QUIZ_TILES,
+  SPIN_SEGMENTS,
   SEED_ROOMS,
   SEED_ROOM_PLAYERS,
   LOBBY_STANDINGS,
@@ -35,6 +44,7 @@ import {
   gameStandingsTable,
   pbSearchesTable,
   roomPlayersTable,
+  spinSegmentsTable,
 } from '../tables/tables'
 import type {
   GameRoomRow,
@@ -233,6 +243,12 @@ export interface RoomView {
   }
 }
 
+const ADMIN_SETTING_DEFAULTS = (): Record<GamesAdminSettingKey, number> =>
+  Object.fromEntries(GAMES_ADMIN_SETTING_KEYS.map((key) => [key, GAMES_ADMIN_SETTINGS[key].default])) as Record<
+    GamesAdminSettingKey,
+    number
+  >
+
 export const roomsRepo = defineRepository({
   owner: 'M16',
   name: 'rooms',
@@ -242,10 +258,11 @@ export const roomsRepo = defineRepository({
     standings: gameStandingsTable,
     searches: pbSearchesTable,
     settings: gameSettingsTable,
+    spinSegments: spinSegmentsTable,
   },
   queries: roomQueries,
   methods: ({ store, stores, transaction }) => {
-    const { players, standings, searches, settings } = stores
+    const { players, standings, searches, settings, spinSegments } = stores
 
     const playersOf = (code: string): RoomPlayerRow[] =>
       players.query({ where: { roomCode: code }, sort: 'id' }).rows
@@ -257,6 +274,20 @@ export const roomsRepo = defineRepository({
     }
 
     const quizTiles = (): number => settings.get(1)?.boardgameQuizTiles ?? SEED_QUIZ_TILES
+
+    const adminSettings = (): GamesAdminSettingsResult => ({
+      boardgameQuizTiles: quizTiles(),
+      ...(settings.get(1)?.values ?? ADMIN_SETTING_DEFAULTS()),
+    })
+
+    const segmentRows = (): GamesAdminSpinSegment[] =>
+      spinSegments.query({ sort: 'id' }).rows.map((r) => ({
+        position: r.id,
+        label: r.label,
+        syiling: r.syiling,
+        weight: r.weight,
+        active: r.active,
+      }))
 
     const newCode = (prng: PrngRegistry): string =>
       drawFreeId(prng, 'm16:room-code', store.size, roomCodeFrom, (id) => store.has(id))
@@ -608,7 +639,10 @@ export const roomsRepo = defineRepository({
               reachedAtMs: 0,
             })
           }
-          settings.insert({ boardgameQuizTiles: SEED_QUIZ_TILES })
+          settings.insert({ boardgameQuizTiles: SEED_QUIZ_TILES, values: ADMIN_SETTING_DEFAULTS() })
+          for (const s of SPIN_SEGMENTS) {
+            spinSegments.insert({ label: s.label, syiling: s.value, weight: s.weight, active: true })
+          }
         })
       },
 
@@ -1048,29 +1082,38 @@ export const roomsRepo = defineRepository({
             finished: all.filter((r) => r.status === 'finished').length,
             players: new Set(players.query({}).rows.map((p) => p.userId)).size,
           },
-          settings: { boardgameQuizTiles: quizTiles() },
+          settings: adminSettings(),
         }
       },
 
-      setQuizTiles(value: unknown): { boardgameQuizTiles: number } {
-        if (
-          typeof value !== 'number' ||
-          !Number.isInteger(value) ||
-          value < 0 ||
-          value > MAX_QUIZ_TILES
-        ) {
-          throw new M16Error(
-            'VALIDATION_ERROR',
-            'Nilai mesti antara 0 dan 38.',
-            'boardgame_quiz_tiles',
-          )
-        }
+      /** API-ADM-08: a validated partial body; the handler refuses a bad one before this runs. */
+      saveAdminSettings(input: GamesAdminSettingsUpdateRequest): GamesAdminSettingsResult {
+        const { boardgame_quiz_tiles: tiles, ...rest } = input
         transaction(() => {
           const row = settings.get(1)
-          if (row) settings.update(1, { boardgameQuizTiles: value })
-          else settings.insert({ boardgameQuizTiles: value })
+          const next = {
+            boardgameQuizTiles: tiles ?? quizTiles(),
+            values: { ...(row?.values ?? ADMIN_SETTING_DEFAULTS()), ...rest } as Record<GamesAdminSettingKey, number>,
+          }
+          if (row) settings.update(1, next)
+          else settings.insert(next)
         })
-        return { boardgameQuizTiles: value }
+        return adminSettings()
+      },
+
+      /** API-ADM-23: the 8 segments by position. */
+      spinSegments(): GamesAdminSpinSegment[] {
+        return segmentRows()
+      },
+
+      /** API-ADM-23: a validated set of 8 rows. */
+      saveSpinSegments(rows: readonly GamesAdminSpinSegment[]): GamesAdminSpinSegment[] {
+        transaction(() => {
+          for (const { position, label, syiling, weight, active } of rows) {
+            spinSegments.update(position, { label, syiling, weight, active })
+          }
+        })
+        return segmentRows()
       },
 
       /** The plain-tile count the settings page shows (BR-M16-36). */

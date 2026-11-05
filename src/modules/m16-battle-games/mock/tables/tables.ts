@@ -15,6 +15,7 @@ import type {
   GameRoomRow,
   GameSessionRow,
   GameSettingsRow,
+  SpinSegmentRow,
   GameStandingRow,
   JutawanStatsRow,
   LeagueRow,
@@ -130,6 +131,10 @@ export const gameSettingsTable = defineTable<GameSettingsRow>({
   name: 'm16.gameSettings',
   ids: maxPlusOne(),
 })
+export const spinSegmentsTable = defineTable<SpinSegmentRow>({
+  name: 'm16.spinSegments',
+  ids: maxPlusOne(),
+})
 
 /** Every M16 table, for the plugin's `tables`. */
 export const M16_TABLES = {
@@ -153,4 +158,5 @@ export const M16_TABLES = {
   spinStats: spinStatsTable,
   pbSearches: pbSearchesTable,
   gameSettings: gameSettingsTable,
+  spinSegments: spinSegmentsTable,
 } as const

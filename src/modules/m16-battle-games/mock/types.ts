@@ -4,6 +4,8 @@
  * 47 seeded results and the repository reads of §7.2 exist (the game handlers are M16-T2).
  */
 
+import type { GamesAdminSettingKey } from '@pp/contract'
+
 export type BattleMode = 'quick_match' | 'school_battle' | 'challenge' | 'queue_join'
 export type QuestionType = 'biasa' | 'pksk' | 'spm'
 export type PkskLevel = 'T1' | 'T4'
@@ -391,4 +393,15 @@ export interface PbSearchRow {
 export interface GameSettingsRow {
   id: number
   boardgameQuizTiles: number
+  /** The other keys of 48 section 2 on Tetapan Permainan (the API keeps them in `gamification_settings`). */
+  values: Record<GamesAdminSettingKey, number>
+}
+
+/** DM-64 `spin_segments`; the row id is the position. */
+export interface SpinSegmentRow {
+  id: number
+  label: string
+  syiling: number
+  weight: number
+  active: boolean
 }

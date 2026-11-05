@@ -1,5 +1,6 @@
 import type { RouteRecordRaw } from 'vue-router'
 
+import admin from './routes/admin'
 import battle from './routes/battle'
 import hub from './routes/hub'
 import lobbies from './routes/lobbies'
@@ -20,6 +21,7 @@ const routes: RouteRecordRaw[] = [
   ...permainanExtra,
   ...tournament,
   ...sekolahBersaing,
+  ...admin,
 ]
 
 export default routes
