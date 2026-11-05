@@ -137,6 +137,20 @@ export interface ImportedQuestionInput {
   marks?: number
   /** Optional `kertas` column (1 to 3); stored so the paper builder can find the question. */
   kertas?: '1' | '2' | '3'
+  /** S1-T05 (codes mapped to ids by the importer): the DSKP unit node, 1 to 3 SP nodes and the TP 1 to 6 of the question; they make the row publishable (QE6.3). */
+  unitId?: string
+  spIds?: string[]
+  tp?: number
+  /** Aras pemikiran of the single leaf; `kbat` is the explicit KBAT value (`bukan` = not KBAT), absent = derived from the aras. */
+  cognitiveLevel?: 'mengingat' | 'memahami' | 'mengaplikasi' | 'menganalisis' | 'menilai' | 'mencipta'
+  kbat?: 'mengaplikasi' | 'menganalisis' | 'menilai' | 'mencipta' | 'bukan'
+  /** Bab and topic of the curriculum (ids). */
+  chapterId?: string
+  topicId?: string
+  /** Printed question number (`Nombor soalan`). */
+  numberLabel?: string
+  /** `en` when the row says `bahasa = en`; absent = Bahasa Melayu. */
+  language?: 'en'
 }
 
 /** Display facts about a question for lists (reports, master notes). */

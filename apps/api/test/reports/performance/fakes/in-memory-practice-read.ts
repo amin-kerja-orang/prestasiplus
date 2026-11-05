@@ -2,6 +2,7 @@ import type {
   LeaderboardFact,
   LeaderboardQuery,
   LeaderboardResult,
+  PracticeDayActivity,
   PracticeReadPort,
   PracticeScopeQuery,
   PracticeUserTotals,
@@ -26,6 +27,8 @@ export interface PracticeSessionRow {
   questionCount: number
   correctCount: number
   coins: number
+  /** time_spent_sec */
+  seconds?: number
   mode?: string
   subjectId?: string
   levelCode?: string
@@ -105,6 +108,19 @@ export class InMemoryPracticeRead implements PracticeReadPort {
       if (s.userId === userId && s.isTest !== true && this.active(userId)) days.add(new Date(s.completedAt.getTime() + MYT_MS).toISOString().slice(0, 10))
     }
     return [...days].sort()
+  }
+
+  async dailyActivity(userId: string): Promise<PracticeDayActivity[]> {
+    const by = new Map<string, PracticeDayActivity>()
+    for (const s of this.sessions) {
+      if (s.userId !== userId || s.isTest === true || !this.active(userId)) continue
+      const day = new Date(s.completedAt.getTime() + MYT_MS).toISOString().slice(0, 10)
+      const t = by.get(day) ?? { day, sessions: 0, seconds: 0 }
+      t.sessions += 1
+      t.seconds += s.seconds ?? 0
+      by.set(day, t)
+    }
+    return [...by.values()].sort((a, b) => (a.day < b.day ? -1 : 1))
   }
 
   private ranked(q: RankingQuery, geo: boolean, dims: boolean): RankingFact[] {

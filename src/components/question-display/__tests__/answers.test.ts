@@ -146,7 +146,7 @@ describe('extended_essay', () => {
     })
     const c = w.find('[data-testid=word-count]')
     expect(c.attributes('data-over')).toBe('true')
-    expect(c.text()).toContain('melebihi had')
+    expect(w.find('[data-testid=word-hint]').text()).toBe('Jawapan melebihi 2 patah perkataan.')
     expect(c.find('svg').exists()).toBe(true)
   })
   it('emits typed text; readonly in Semakan', async () => {
@@ -168,7 +168,7 @@ describe('essay_choice', () => {
     expect(w.find('[data-testid=topic-hint]').text()).toBe('Pilih satu tajuk dahulu.')
     expect(w.find('textarea').attributes('placeholder')).toBe('Tulis karangan anda di sini…')
     expect(w.find('textarea').attributes('aria-label')).toBe('Karangan')
-    expect(w.find('[data-testid=word-count]').text()).toBe('0 patah perkataan · sasaran 120–150')
+    expect(w.find('[data-testid=word-count]').text()).toBe('0 / 120-150 patah perkataan')
   })
   it('picking a topic emits the choice and enables writing', async () => {
     const w = mount(EssayAnswer, { props: { mode: 'essay_choice', topics }, global })
