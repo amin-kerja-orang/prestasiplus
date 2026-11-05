@@ -168,10 +168,19 @@ describe('room join and lifecycle (S7-T01 part GAME-R): FR-GM-R.1..R.7, ruling 1
       expect(view.status).toBe('playing')
       expect(view.players.map((p) => p.isBot)).toEqual([false, true, false]) // the seat keeps its place
       expect((await seats(t, code)).map((s) => s.user_id)).toEqual([student.userId, null, teacher.userId])
-      expect(await t.db.query(`select wins, jumlah, skor, betul from game_standings where game = 'papan-bijak' and user_id = $1`, [student2.userId])).toEqual([
-        { wins: 0, jumlah: 1, skor: 0, betul: 0 },
-      ])
-      expect(rewards.calls.length).toBe(before)
+      // ruling 50.4: the leaver's jumlah is written only when the game finishes settled, not at the takeover
+      expect(await t.db.query(`select 1 from game_standings where game = 'papan-bijak' and user_id = $1`, [student2.userId])).toHaveLength(0)
+      // the second leaver leaves one present human, who wins by default: the game is settled and BOTH leavers get jumlah + 1, menang 0
+      const done = parseRoom(await leave(teacher, 'papan-bijak', code))
+      expect(done.status).toBe('finished')
+      expect(done.result?.winnerId).toBe(student.userId)
+      for (const leaver of [student2, teacher]) {
+        expect(await t.db.query(`select wins, jumlah, skor, betul from game_standings where game = 'papan-bijak' and user_id = $1`, [leaver.userId])).toEqual([
+          { wins: 0, jumlah: 1, skor: 0, betul: 0 },
+        ])
+      }
+      expect(await t.db.query(`select wins, jumlah from game_standings where game = 'papan-bijak' and user_id = $1`, [student.userId])).toEqual([{ wins: 1, jumlah: 1 }])
+      expect(rewards.calls.length).toBe(before + 1) // only the stayer is rewarded
       expect(await t.db.query("select 1 from game_room_players where room_code = $1 and is_bot and user_id is not null", [code])).toHaveLength(0)
     })
 
