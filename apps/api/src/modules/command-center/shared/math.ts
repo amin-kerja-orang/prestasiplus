@@ -1,3 +1,5 @@
+import { xsAccuracy } from '../../school-admin/xs-queries'
+
 /** Rounds half away from zero (PHP/Laravel `round()`), unlike `Math.round` on negatives. */
 export function round(value: number): number {
   return Math.sign(value) * Math.round(Math.abs(value))
@@ -7,11 +9,14 @@ export const round1 = (value: number): number => round(value * 10) / 10
 export const round2 = (value: number): number => round(value * 100) / 100
 export const round3 = (value: number): number => round(value * 1000) / 1000
 
-/** Share as a percentage with `digits` decimals (0, 1 or 2); 0 when `whole` is 0. */
-export function percent(part: number, whole: number, digits: 0 | 1 | 2 = 0): number {
+/** XS-5 pooled accuracy: one decimal half up, never above 100, `null` (shown "—", never 0%) with 0 answers. */
+export const accuracyPct = (correct: number, answered: number): number | null => xsAccuracy(correct, answered)
+
+/** Share as a whole (digits 0) or 2-decimal percentage; 0 when `whole` is 0. Accuracy is `accuracyPct`, not this. */
+export function percent(part: number, whole: number, digits: 0 | 2 = 0): number {
   if (whole <= 0) return 0
   const raw = (part / whole) * 100
-  return digits === 0 ? round(raw) : digits === 1 ? round1(raw) : round2(raw)
+  return digits === 0 ? round(raw) : round2(raw)
 }
 
 /** `round((now - last) / last * 100)`; 0 when `last` is 0. */

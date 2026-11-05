@@ -57,7 +57,7 @@ test.describe('M03 student G5 QA', MODULE, () => {
     await expect(page.getByTestId('subtopic-progress').first()).toHaveText('60%')
     // SEJ T5 (382) has no legacy topic; Sejarah Tingkatan 4 (125) stays at zero.
     await gotoApp('/topics?grade_level=TINGKATAN_5&subject=SEJARAH')
-    await expect(page.getByTestId('topics-page')).toContainText('Tiada topik tersedia buat masa ini.')
+    await expect(page.getByTestId('topics-page')).toContainText('Tiada topik buat masa ini')
     await gotoApp('/topics/125')
     await expect(page.getByTestId('stat-dijawab')).toHaveText('0')
   })

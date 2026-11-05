@@ -16,11 +16,15 @@ import type {
   HistoryTotals,
   MissionItem,
   Mastery,
+  MoodCheckin,
+  MoodToday,
+  MoodValue,
   PracticeMode,
   PracticeSubject,
   Progress,
   ProgressPeriod,
   RemedialPreview,
+  RemedialSuggestions,
   RemedialTestItem,
   RevisionOverview,
   RevisionSubject,
@@ -54,6 +58,16 @@ export async function fetchDashboard(options: Signal = {}): Promise<Dashboard> {
   return isHttpMode() ? normaliseDashboard(body) : body
 }
 
+/** S5-T04 API-MUR-11 `GET /api/me/mood/today`: today's mood check-in of the pupil (`mood` is null before the first tap of the day). */
+export async function fetchMoodToday(options: Signal = {}): Promise<MoodToday> {
+  return api.get<MoodToday>('/api/me/mood/today', withSignal(options))
+}
+
+/** S5-T04 API-MUR-11 `POST /api/me/mood`: record today's mood. A second call the same day is `409 ALREADY_CHECKED_IN`. */
+export async function postMood(mood: MoodValue): Promise<MoodCheckin> {
+  return api.post<MoodCheckin>('/api/me/mood', { body: { mood } })
+}
+
 /**
  * FR-MUR-2-3 "Rekod terbaik": the pupil's longest streak, read from the existing gamification dashboard
  * (`GET /api/gamification/dashboard`, `wallet.streak.best`; any signed-in user, own data). The type is local
@@ -79,6 +93,8 @@ export function normaliseDashboard(wire: Dashboard): Dashboard {
   const list = <T>(rows: readonly T[] | null | undefined): T[] => (Array.isArray(rows) ? [...rows] : [])
   return {
     ...wire,
+    accuracyPct: wire.accuracyPct ?? null,
+    package: wire.package ?? null,
     banners: list(wire.banners),
     quests: list(wire.quests),
     badges: list(wire.badges),
@@ -89,6 +105,28 @@ export function normaliseDashboard(wire: Dashboard): Dashboard {
     difficultyChart: list(wire.difficultyChart),
     subjectStats: list(wire.subjectStats),
   }
+}
+
+/** One row of `GET /api/gamification/challenges` as the dashboard "Cabaran Kilat" card reads it. */
+export interface ChallengeToday {
+  id: number | string
+  icon: string
+  title: string
+  description: string
+  difficulty: 'easy' | 'medium' | 'hard'
+  rewardSyiling: number
+  target: number
+  progress: number
+  completed: boolean
+}
+
+/** Today's challenges (API-GAME-07, the existing endpoint; the response is `{ data: rows[] }`). */
+export async function fetchChallengesToday(options: Signal = {}): Promise<ChallengeToday[]> {
+  const body = await api.get<{ data?: ChallengeToday[] }>(
+    '/api/gamification/challenges',
+    withSignal(options),
+  )
+  return Array.isArray(body?.data) ? body.data : []
 }
 
 /** #2 `GET /api/practice/subjects`. */
@@ -315,6 +353,11 @@ export function saveSpmTargets(
   targets: Record<number | string, SpmGrade | ''>,
 ): Promise<SaveSpmTargetsResult> {
   return api.put<SaveSpmTargetsResult>('/api/spm-targets', { body: { targets }, raw: true })
+}
+
+/** API-PRAC-08 `GET /api/practice/remedial-suggestions` (completed drills and subjects below 60; empty for staff). */
+export function fetchRemedialSuggestions(options: Signal = {}): Promise<RemedialSuggestions> {
+  return api.get<RemedialSuggestions>('/api/practice/remedial-suggestions', withSignal(options))
 }
 
 /** #20 `GET /api/remedial-tests/mine` (the viewer's tests, newest first). */

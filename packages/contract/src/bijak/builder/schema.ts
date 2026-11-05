@@ -73,8 +73,16 @@ export const BIJAK_BUILDER_MESSAGES = {
   blueprintExists: 'Kontrak untuk subjek dan kertas ini sudah wujud. Cipta versi baharu.',
   /** [PROPOSED] (blueprint admin has no prototype counterpart) */
   blueprintAlreadyRetired: 'Kontrak ini sudah dipersara.',
-  /** [PROPOSED] R1-T34: V2 Panel has the override tick "Terbitkan walaupun tidak memenuhi kontrak blueprint" (audited). */
-  overrideReasonRequired: 'Sebab diperlukan untuk menerbitkan walaupun tidak memenuhi kontrak blueprint',
+  /** S3-T01, PRD30 field 14-07: the audited override tick "Terbitkan walaupun tidak memenuhi kontrak" needs a reason of 5 to 500 characters. */
+  overrideReasonRequired: 'Sebab pengecualian diperlukan (sekurang-kurangnya 5 aksara).',
+  /** S3-T01, FR-ADM-Q16.7: create refused for a Subjek with no DSKP unit at T4 or T5. */
+  dskpNotLoaded: 'DSKP belum dimuatkan untuk subjek ini. Kontrak tidak boleh dicipta.',
+  /** S3-T01, FR-QA-41: a section cannot be both `Wajib dijawab` and `Pilih N` (problem code COMPULSORY_CHOOSE). */
+  compulsoryChoose: 'Bahagian wajib dijawab tidak boleh digabungkan dengan Pilih N.',
+  /** S3-T01, PRD45 section 5.5: `Pilih N` out of range (problem code CHOOSE_N_RANGE). */
+  chooseNRange: 'Nombor N tidak sah.',
+  /** S3-T01, PRD30 field 16-18: `Markah setiap soalan` against the section (problem code MARKS_PER_QUESTION). */
+  marksPerQuestionMismatch: 'Markah setiap soalan mesti sama dengan markah bahagian.',
   /** [PROPOSED] R1-T34 */
   groupNotOnPaper: 'Kumpulan rangsangan ini tiada dalam kertas ini',
   /** [PROPOSED] R1-T34 */
@@ -209,7 +217,8 @@ export const BIJAK_BUILDER_INELIGIBLE_TEXT = {
  * Hard (false) = the paper's own checks (duplicates, split / incomplete / out-of-order / too-small groups, counts, marks, not Terbit), a placed
  * question missing from the candidate pool, a question pupils cannot be served, and the structural failures of a question (no answer key, no marks,
  * answer mode not allowed in the section, a broken group). Overridable (true) = only the blueprint-conformance blockers (PIPE AC-07.5, AC-26.3):
- * the Kontrak is not Disahkan, and a question without DSKP unit, TP or with tags awaiting review.
+ * the Kontrak is not Disahkan, and a question without DSKP unit, TP or with tags awaiting review. These values hold under a Kontrak that is not
+ * Disahkan; `bijakBuilderBlockerOverridable` applies the S3-T01 rule on top (under a Disahkan Kontrak nothing is overridable).
  */
 export const BIJAK_BUILDER_BLOCKER_OVERRIDABLE = {
   NO_QUESTIONS: false,
@@ -245,6 +254,14 @@ export const BIJAK_BUILDER_BLOCKER_OVERRIDABLE = {
 } as const
 export type BijakBuilderBlockerCode = keyof typeof BIJAK_BUILDER_BLOCKER_OVERRIDABLE
 export const BIJAK_BUILDER_BLOCKER_CODES = Object.keys(BIJAK_BUILDER_BLOCKER_OVERRIDABLE) as [BijakBuilderBlockerCode, ...BijakBuilderBlockerCode[]]
+
+/**
+ * S3-T01 (PRD30 field 14-07, PRD45 section 5.5): the exception tick is hidden when the paper's Kontrak is Disahkan, so INELIGIBLE,
+ * RULE_NOT_IN_CONTRACT and SECTION_NOT_IN_CONTRACT are hard there (BLUEPRINT_NOT_VERIFIED cannot occur there). Under any other Kontrak the map decides.
+ */
+export function bijakBuilderBlockerOverridable(code: BijakBuilderBlockerCode, contractDisahkan: boolean): boolean {
+  return !contractDisahkan && BIJAK_BUILDER_BLOCKER_OVERRIDABLE[code]
+}
 
 /** CSRF failure of every mutation (copy of `AUTH_ERROR_MESSAGES.CSRF_INVALID`). */
 export const BIJAK_BUILDER_CSRF_MESSAGE = AUTH_ERROR_MESSAGES.CSRF_INVALID
@@ -534,6 +551,9 @@ export const BijakBlueprintViewSchema = z
       description: '"Boleh tanda auto" (R1-21.4, PIPE AC-06.2): null = not stated. Always sent by the server; optional on the wire so older clients still parse.',
     }),
     kbatMarks: z.number().int().min(0).nullable().meta({ description: 'Paper-level KBAT marks.' }),
+    questionCount: z.number().int().min(1).nullable().optional().meta({
+      description: 'DM-57 "Bilangan soalan dalam kertas": null = not stated. Always sent by the server; optional on the wire so older clients still parse.',
+    }),
     levelShare: z
       .strictObject({ t4: z.number().int().min(0), t5: z.number().int().min(0) })
       .nullable()
@@ -670,10 +690,10 @@ export const BijakBuilderBlockerSchema = z
   .strictObject({
     code: z.enum(BIJAK_BUILDER_BLOCKER_CODES).meta({
       description:
-        'Stable code. Hard (overridable false): NO_QUESTIONS, ZERO_MARK_SECTION, TOTAL_MARKS_BELOW_ONE (PIPE AC-07.4: no question, a Bahagian with questions but 0 marks, a total under 1), DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Hard also: REFERENCE_IMAGE_INVALID (a reference-sheet picture that is not a stored question image, re-checked at Terbit), NO_KEY, NO_MARKS, MODE_NOT_ALLOWED (structural failures of a question) and GROUP_BROKEN. Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan) and INELIGIBLE (a question without DSKP unit or TP, or with tags awaiting review). Overridable also (R1-T48): RULE_NOT_IN_CONTRACT (the rule of a Bahagian differs from the Kontrak) and SECTION_NOT_IN_CONTRACT (admin-added Bahagian). Hard also (R1-T48): RULE_N_EXCEEDS_QUESTIONS (Pilih N with fewer than N questions in the Bahagian) and SECTION_EMPTY (an admin-added Bahagian without a question).',
+        'Stable code. Hard (overridable false): NO_QUESTIONS, ZERO_MARK_SECTION, TOTAL_MARKS_BELOW_ONE (PIPE AC-07.4: no question, a Bahagian with questions but 0 marks, a total under 1), DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Hard also: REFERENCE_IMAGE_INVALID (a reference-sheet picture that is not a stored question image, re-checked at Terbit), NO_KEY, NO_MARKS, MODE_NOT_ALLOWED (structural failures of a question) and GROUP_BROKEN. Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan) and INELIGIBLE (a question without DSKP unit or TP, or with tags awaiting review). Overridable also (R1-T48): RULE_NOT_IN_CONTRACT (the rule of a Bahagian differs from the Kontrak) and SECTION_NOT_IN_CONTRACT (admin-added Bahagian). Hard also (R1-T48): RULE_N_EXCEEDS_QUESTIONS (Pilih N with fewer than N questions in the Bahagian) and SECTION_EMPTY (an admin-added Bahagian without a question). S3-T01: under a Disahkan Kontrak nothing is overridable; INELIGIBLE, RULE_NOT_IN_CONTRACT and SECTION_NOT_IN_CONTRACT come with overridable false there.',
     }),
     message: z.string().meta({ description: 'The BM line, identical to the string in `blockers` / `errors`.' }),
-    overridable: z.boolean().meta({ description: 'true when the audited override can lift this blocker.' }),
+    overridable: z.boolean().meta({ description: 'true when the audited override can lift this blocker. Always false under a Disahkan Kontrak (S3-T01).' }),
     section: z.string().optional().meta({ description: 'Label of the Bahagian the line belongs to (the line is prefixed "{label}: "); absent for paper-wide blockers.' }),
     questionId: IdSchema.optional().meta({ description: 'The question the blocker names (INELIGIBLE, UNKNOWN_QUESTION, NOT_SERVABLE).' }),
   })
@@ -703,7 +723,7 @@ export const BijakBuilderPublishResultSchema = z
       description: 'R1-T34 follow-up: on a refusal (ok false) the same blockers as `errors`, structured (same order, same lines, same rule as the review). Absent when ok is true.',
     }),
     canOverride: z.boolean().optional().meta({
-      description: 'On a refusal: no hard blocker and at least one overridable one, so the UI may offer "Terbitkan walaupun tidak memenuhi kontrak blueprint". Absent when ok is true.',
+      description: 'On a refusal: no hard blocker and at least one overridable one, so the UI may offer "Terbitkan walaupun tidak memenuhi kontrak blueprint". Always false under a Disahkan Kontrak (S3-T01). Absent when ok is true.',
     }),
   })
   .meta({ id: 'BijakBuilderPublishResult' })
@@ -1043,7 +1063,7 @@ export const BijakBuilderReviewSchema = z
       description: 'R1-T34 follow-up: the same blockers as `blockers`, structured (same order and lines) with a stable code and `overridable`. The publish refusal carries the same list.',
     }),
     canOverride: z.boolean().meta({
-      description: 'No hard blocker and at least one overridable one (the Kontrak is the only thing in the way): the UI may show the "Terbitkan walaupun tidak memenuhi kontrak blueprint" tick.',
+      description: 'No hard blocker and at least one overridable one (the Kontrak is the only thing in the way): the UI may show the "Terbitkan walaupun tidak memenuhi kontrak blueprint" tick. Always false under a Disahkan Kontrak (S3-T01): the tick is hidden there.',
     }),
     notes: z.array(z.string()).meta({ description: 'Standard-tier notes; never block a curated paper (D78 O-2).' }),
     blueprintNeedsReview: z.boolean().meta({ description: '"Blueprint perlu semakan".' }),
