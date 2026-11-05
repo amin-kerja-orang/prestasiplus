@@ -65,6 +65,13 @@ export class RateLimiter {
     return Number.isInteger(n) && n >= 1 ? n : spec.default
   }
 
+  /** Requests still allowed in the current window; does not count. */
+  remaining(spec: RateLimitSpec, subject: string): number {
+    const w = this.windows.get(`${spec.bucket}:${subject}`)
+    if (!w || w.resetAt <= this.clock.now().getTime()) return this.ceiling(spec)
+    return Math.max(0, this.ceiling(spec) - w.count)
+  }
+
   /** Counts one request; throws 429 `RATE_LIMITED` (with `retryAfter` seconds) when the window is full. */
   consume(spec: RateLimitSpec, subject: string): void {
     const now = this.clock.now().getTime()

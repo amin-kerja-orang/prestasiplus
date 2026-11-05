@@ -15,11 +15,11 @@ import { leavesOf } from '@pp/exam-core/paper-model'
 import type { PartAnswer, QuestionResult, QuestionView } from '@/modules/m28-bijak-spm/domain/types'
 
 import { qdCopy } from './copy'
-import { toOptionData } from './lib/stimulus-data'
+import { toOptionData, toStimulusData } from './lib/stimulus-data'
 import McqOptions from './McqOptions.vue'
 import PartNode from './PartNode.vue'
 import RichText from './RichText.vue'
-import StimulusStack from './StimulusStack.vue'
+import StimulusGroup from './StimulusGroup.vue'
 
 const props = defineProps<{
   question: QuestionView
@@ -130,7 +130,9 @@ function pick(id: string): void {
     </DsStack>
 
     <!-- The question's OWN stimuli (R1E2E-05b), above the stem as in V2 section 1.5. -->
-    <StimulusStack v-if="ownStimuli.length" :stimuli="ownStimuli" data-testid="own-stimuli" />
+    <div v-if="ownStimuli.length" :data-count="ownStimuli.length" data-testid="own-stimuli">
+      <StimulusGroup :stimuli="ownStimuli.map(toStimulusData)" :hint="false" />
+    </div>
 
     <p v-if="question.stem" class="text-body text-default" data-testid="question-stem">
       <RichText :text="question.stem" />

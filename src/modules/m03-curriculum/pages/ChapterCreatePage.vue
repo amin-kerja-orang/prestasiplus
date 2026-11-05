@@ -5,6 +5,7 @@
  * exactly the parameters received. Success goes to the S1 tree of the saved pair with the flash;
  * a server `VALIDATION_ERROR` stays here in the red box and keeps the input.
  */
+import { preferRateLimited } from '@/api/errors'
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -93,6 +94,7 @@ async function submit(payload: ChapterFormPayload): Promise<void> {
     <DsLoadError
       v-if="loadFailed"
       :message="LOAD_ERROR"
+      :error="preferRateLimited(subjectsError, levelsError)"
       testid="curriculum-load-error"
       @retry="retry"
     />

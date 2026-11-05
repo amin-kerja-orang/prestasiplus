@@ -337,7 +337,7 @@ export const IntakeRegionSchema = z
   .meta({ id: 'IntakeRegion', description: '[PROPOSED] Source region as page fractions.' })
 export type IntakeRegion = z.infer<typeof IntakeRegionSchema>
 
-export const INTAKE_STIMULUS_KINDS = ['diagram', 'passage', 'table'] as const
+export const INTAKE_STIMULUS_KINDS = ['diagram', 'passage', 'table', 'graph', 'map', 'infographic', 'image'] as const
 export const IntakeStimulusKindSchema = z.enum(INTAKE_STIMULUS_KINDS).meta({ id: 'IntakeStimulusKind', description: 'Prototype StimulusDef.kind.' })
 export type IntakeStimulusKind = z.infer<typeof IntakeStimulusKindSchema>
 

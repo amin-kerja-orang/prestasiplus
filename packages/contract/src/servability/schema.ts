@@ -59,6 +59,7 @@ export const SERVABILITY_REASON_CODES = [
   'paper_empty',
   'stimulus_shared_ungrouped',
   'question_missing',
+  'group_incomplete',
 ] as const
 export const ServabilityReasonCodeSchema = z.enum(SERVABILITY_REASON_CODES).meta({ id: 'ServabilityReasonCode' })
 export type ServabilityReasonCode = z.infer<typeof ServabilityReasonCodeSchema>
@@ -72,7 +73,7 @@ export const SERVABILITY_REASON_MS: Readonly<Record<ServabilityReasonCode, strin
   archived: 'Diarkibkan — pulihkan ke draf dahulu.',
   dskp_incomplete: 'DSKP belum lengkap — lengkapkan Tag dan TP di borang soalan.',
   untagged_legacy: 'Belum ditanda DSKP — tidak dimasukkan dalam kertas blueprint dan Jana set.',
-  image_games: 'Ada imej dan permainan ini tidak memaparkan imej.',
+  image_games: 'Soalan bergambar tidak digunakan dalam permainan.',
   image_missing: 'Imej belum dimuat naik — muat naik di borang sunting.',
   level_inactive: 'Tahap tidak aktif untuk murid.',
   no_key: 'Tiada kunci jawapan.',
@@ -87,7 +88,7 @@ export const SERVABILITY_REASON_MS: Readonly<Record<ServabilityReasonCode, strin
   level_not_offered: 'Hanya soalan Tingkatan 4 dan 5 dipaparkan di {aktiviti}.',
   subject_unavailable: 'Subjek tidak aktif atau tidak dipautkan kepada tahap soalan ini.',
   subject_not_listed: 'Subjek ini tiada dalam senarai {aktiviti}.',
-  no_chapter: 'Belum dipautkan kepada bab — pilih Bab di borang soalan.',
+  no_chapter: 'Bab belum dipaut - tidak disajikan dalam Soalan by Chapter.',
   has_stimulus: 'Ada rangsangan atau imej — {aktiviti} hanya memaparkan soalan teks.',
   has_option_image: 'Ada imej pada pilihan jawapan — {aktiviti} hanya memaparkan soalan teks.',
   bridge_refused: 'Tidak dapat dihidangkan di {aktiviti}.',
@@ -98,6 +99,8 @@ export const SERVABILITY_REASON_MS: Readonly<Record<ServabilityReasonCode, strin
   stimulus_shared_ungrouped: 'Rangsangan ini dikongsi oleh beberapa soalan tetapi bukan kumpulan rangsangan — jadikan soalan-soalan itu satu kumpulan rangsangan (D90).',
   // [PROPOSED] (V2 has no phrase): the paper places a question id the bank does not return (no such question, PKSK or Darjah).
   question_missing: 'Soalan pada kertas ini tiada dalam bank soalan — kertas tidak boleh dimulakan; gantikan atau buang soalan itu.',
+  // PRD 45 FR-QA-01 (S1-T06): `{n}` is the number of members not yet approved or active.
+  group_incomplete: 'Kumpulan belum lengkap - {n} soalan belum diluluskan.',
 }
 
 /**
@@ -110,7 +113,7 @@ export const SERVABILITY_REASON_MS: Readonly<Record<ServabilityReasonCode, strin
  *    CLOUD-HANDOFF 7j and the servability reasons "as written").
  * `bridge_refused` is V2's .cloud line "Tidak dihidangkan kerana {sebab}." (see `notServedLine`) when a bridge reason is present.
  */
-export const SERVABILITY_REASON_SOURCE: Readonly<Record<ServabilityReasonCode, 'V2' | 'PROPOSED'>> = {
+export const SERVABILITY_REASON_SOURCE: Readonly<Record<ServabilityReasonCode, 'V2' | 'PROPOSED' | 'PRD'>> = {
   not_approved: 'PROPOSED',
   archived: 'PROPOSED',
   dskp_incomplete: 'PROPOSED',
@@ -139,15 +142,16 @@ export const SERVABILITY_REASON_SOURCE: Readonly<Record<ServabilityReasonCode, '
   paper_empty: 'V2',
   stimulus_shared_ungrouped: 'PROPOSED',
   question_missing: 'PROPOSED', // REQ-B-033 / Q6: BM sentence above is mine (V2 has no phrase); listed for sign-off
+  group_incomplete: 'PRD',
 }
 
 /** "Tidak dihidangkan kerana {sebab}." (design 9.3, the .cloud exclusion line). `phrase` continues "kerana ...". */
 export const notServedLine = (phrase: string): string => `Tidak dihidangkan kerana ${phrase}.`
 
 /** The sentence of a reason for an activity; `detail` (a BM phrase, for `bridge_refused`) is appended as "kerana ...". */
-export function servabilityReasonMs(code: ServabilityReasonCode, activity: ServabilityActivity, detailMs?: string): string {
+export function servabilityReasonMs(code: ServabilityReasonCode, activity: ServabilityActivity, detailMs?: string, count?: number): string {
   if (code === 'bridge_refused' && detailMs) return notServedLine(detailMs)
-  return SERVABILITY_REASON_MS[code].replaceAll('{aktiviti}', SERVABILITY_ACTIVITY_LABELS[activity])
+  return SERVABILITY_REASON_MS[code].replaceAll('{aktiviti}', SERVABILITY_ACTIVITY_LABELS[activity]).replaceAll('{n}', String(count ?? 0))
 }
 
 export const ServabilityReasonSchema = z

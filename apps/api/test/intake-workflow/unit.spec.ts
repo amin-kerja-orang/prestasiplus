@@ -2,7 +2,7 @@ import { INTAKE_GATE_MESSAGES as G, type IntakeQuestion } from '@pp/contract'
 import { describe, expect, it } from 'vitest'
 
 import { compare, normalise, signatureOf } from '../../src/modules/intake/workflow/duplicates'
-import { batchLevelIssues, itemIssues, schemeTotal } from '../../src/modules/intake/workflow/gate'
+import { batchLevelIssues, itemIssues, schemeTotal, stimulusIssues } from '../../src/modules/intake/workflow/gate'
 import { attachToStimulus, detachFromStimulus, gatherByRef, groupsOf } from '../../src/modules/intake/workflow/grouping'
 import { ConvertError, toQuestionInput } from '../../src/modules/intake/workflow/to-question'
 import { bandReaches } from '../../src/modules/intake/workflow/workflow.config'
@@ -76,7 +76,20 @@ describe('gate (prototype validateBatch rules)', () => {
     expect(msgs).toContain(G.stimulusAltMissing)
     expect(msgs).toContain(G.figureNotResolved)
     expect(itemIssues(q, { ...base, kind: 'passage', alt: 'Petikan' }, FACTS)).toEqual([])
+    expect(itemIssues(q, { ...base, kind: 'table', alt: 'Jadual' }, FACTS)).toEqual([])
     expect(itemIssues(q, undefined, FACTS).map((i) => i.message)).toContain(G.stimulusMissing)
+  })
+
+  it('every image kind (graph, map, infographic, image) without a stored figure is refused like a diagram; with one it passes', () => {
+    const q = question({ stimulusId: 's' })
+    for (const kind of ['graph', 'map', 'infographic', 'image'] as const) {
+      const unresolved = { id: 's', kind, label: 'Graf 1', alt: 'Penerangan', figureId: null, region: null }
+      expect(itemIssues(q, unresolved, FACTS).map((i) => i.message), kind).toContain(G.figureNotResolved)
+      expect(stimulusIssues([unresolved]).map((i) => i.message), kind).toContain(G.figureNotResolved)
+      expect(itemIssues(q, { ...unresolved, figureId: '77' }, FACTS), kind).toEqual([])
+    }
+    const passage = { id: 's', kind: 'passage' as const, label: 'Petikan 1', alt: 'x', figureId: null, region: null }
+    expect(stimulusIssues([passage, { ...passage, kind: 'table' as const }])).toEqual([])
   })
 
   it('scheme total: points with "any N of M" groups count N points', () => {

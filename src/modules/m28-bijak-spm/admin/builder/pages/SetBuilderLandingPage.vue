@@ -246,7 +246,7 @@ async function copySet(id: string): Promise<void> {
 
     <section aria-labelledby="sets-title" class="flex flex-col gap-3">
       <h2 id="sets-title" class="text-heading text-highlighted">{{ t.listTitle }}</h2>
-      <DsLoadError v-if="sets.error.value" :message="t.loadError" @retry="sets.reload()" />
+      <DsLoadError v-if="sets.error.value" :message="t.loadError" :error="sets.error.value" @retry="sets.reload()" />
       <DsEmptyState v-else-if="sets.data.value && !sets.data.value.length" :title="t.listEmpty" icon="scroll" />
       <ul v-else class="flex flex-col gap-2" data-testid="sets-list">
         <li
