@@ -415,7 +415,7 @@ export function registerAdminCentralPaths(registry: OpenAPIRegistry): void {
     tags: ['admin-central'],
     summary: 'Admin Pusat Laporan: tiles, 14-day trend, breakdown, top pupils, schools (API-ADM-13)',
     description:
-      'Role admin only. Same read model as the Guru Laporan (`GET /teacher/report`): completed non-test practice sessions by completion day (Asia/Kuala_Lumpur), so the two reports agree. `range` (7, 30, 90) is tolerant: anything else is 30. Pupil names are returned to the admin only and never logged. Responses are no-store.',
+      'Role admin only. Activity is the answer rows of all practice modes (non-test) by answer day (Asia/Kuala_Lumpur): 3 answers add 3 (AC-ADM-M06.2). The Guru Laporan (`GET /teacher/report`) still counts sessions. `range` (7, 30, 90) is tolerant: anything else is 30. Pupil names are returned to the admin only and never logged. Responses are no-store.',
     request: { query: AdminLaporanQuerySchema },
     responses: {
       200: json(AdminLaporanResponseSchema, 'The report.'),

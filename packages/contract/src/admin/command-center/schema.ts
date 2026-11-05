@@ -129,8 +129,8 @@ export const AdminLaporanSchema = z
       pupilsAccessed: central.count.meta({ description: 'Pupils with a recorded login (Murid Pernah Akses, of `pupils`).' }),
       teachersAccessed: central.count.meta({ description: 'Teachers with a recorded login (Cikgu Pernah Akses, of `teachers`).' }),
       pupilsPractised: central.count.meta({ description: 'Pupils with at least one completed practice session (Murid Buat Latihan).' }),
-      activities: central.count.meta({ description: 'Completed non-test practice sessions in the range (Jumlah Aktiviti), as the Guru Laporan counts them.' }),
-      averageScore: central.pct.nullable().meta({ description: 'Pooled correct / questions x 100 over those sessions, one decimal (Skor Purata).' }),
+      activities: central.count.meta({ description: 'Answer rows (all modes, non-test) in the range (Jumlah Aktiviti).' }),
+      averageScore: central.pct.nullable().meta({ description: 'Pooled correct / answered x 100 over those answer rows, one decimal (Skor Purata).' }),
     }),
     trend: z
       .array(z.object({ date: z.string(), count: central.count }))

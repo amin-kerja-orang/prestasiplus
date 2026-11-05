@@ -119,7 +119,7 @@ export class ReportService {
   }
 
   /**
-   * Admin Pusat Laporan (S6-T11, API-ADM-13): the same read model as `report` over every pupil of the platform. Tiles and breakdown
+   * Admin Pusat Laporan (S6-T11, API-ADM-13): the same pupil population as `report`, but activity is answer ROWS (AC-ADM-M06.2, all modes, no test rows), not sessions. Tiles and breakdown
    * cover the range (default 30 days), the trend always the last 14 days; accuracy has one decimal. Pupil names are for the admin
    * only (the caller is `@Roles('admin')`) and are never logged.
    */
@@ -133,11 +133,11 @@ export class ReportService {
 
     const [people, teachers, schools, rows, top, bySchool] = await Promise.all([
       this.repo.pupilTotals(),
-      this.repo.teachersBySchool(null),
+      this.repo.teacherTotals(),
       this.repo.schoolsWithUsers(null),
-      this.repo.platformSessionsByDay(new Date(Math.min(rangeFrom, trendFrom)), to),
-      this.repo.topPupilsBySessions(new Date(rangeFrom), to, 10),
-      this.repo.sessionsBySchool(new Date(rangeFrom), to, 20),
+      this.repo.platformAnswersByModeDay(new Date(Math.min(rangeFrom, trendFrom)), to),
+      this.repo.topPupilsByAnswers(new Date(rangeFrom), to, 10),
+      this.repo.answersBySchool(new Date(rangeFrom), to, 20),
     ])
     const rangeKey = dayKey(rangeFrom)
     const inRange = tally(rows.filter((r) => r.day >= rangeKey))
@@ -150,28 +150,22 @@ export class ReportService {
     }
     const scoreC = inRange.sums.kuiz.c + inRange.sums.latihTubi.c + inRange.sums.trackingA.c
     const scoreN = inRange.sums.kuiz.n + inRange.sums.latihTubi.n + inRange.sums.trackingA.n
-    let teacherTotal = 0
-    let teacherAccessed = 0
-    for (const t of teachers.values()) {
-      teacherTotal += t.n
-      teacherAccessed += t.logged
-    }
     return {
       range,
       tiles: {
         schools: schools.length,
-        teachers: teacherTotal,
+        teachers: teachers.teachers,
         pupils: people.pupils,
         pupilsAccessed: people.accessed,
-        teachersAccessed: teacherAccessed,
+        teachersAccessed: teachers.accessed,
         pupilsPractised: people.practised,
         activities: Object.values(inRange.byType).reduce((a, b) => a + b, 0),
         averageScore: scoreN > 0 ? round1(percent(scoreC, scoreN)) : null,
       },
       trend,
       breakdown: (['kuiz', 'struktur', 'latihTubi', 'trackingA', 'battle', 'permainan'] as const).map((type) => ({ type, label: TYPE_LABELS[type], count: inRange.byType[type] })),
-      mostActive: top.map((p) => ({ id: p.id, name: p.name, school: p.schoolId === null ? null : { id: p.schoolId, name: p.schoolName ?? '' }, activities: p.sessions })),
-      schoolActivity: bySchool.map((s) => ({ schoolId: s.schoolId, name: s.name, activities: s.sessions, activePupils: s.pupils })),
+      mostActive: top.map((p) => ({ id: p.id, name: p.name, school: p.schoolId === null ? null : { id: p.schoolId, name: p.schoolName ?? '' }, activities: p.answers })),
+      schoolActivity: bySchool.map((s) => ({ schoolId: s.schoolId, name: s.name, activities: s.answers, activePupils: s.pupils })),
     }
   }
 }

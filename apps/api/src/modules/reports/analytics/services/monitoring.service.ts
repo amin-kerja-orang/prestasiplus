@@ -434,11 +434,13 @@ export class AdminCentralService {
     const today = mytDayStart(now)
     const sinceMonday = (new Date(today + 8 * 3_600_000).getUTCDay() + 6) % 7
     const weekStart = new Date(today - sinceMonday * DAY_MS)
-    const [summary, subjects, levels, users, stats] = await Promise.all([
+    const [summary, subjects, levels, users, pupils, teachers, stats] = await Promise.all([
       this.questionsService.statusSummary(weekStart),
       this.curriculum.subjects(),
       this.curriculum.levels(),
       this.users.centralCounts(caller),
+      this.repo.pupilTotals(),
+      this.repo.teacherTotals(),
       this.rooms.stats(),
     ])
     return {
@@ -446,7 +448,8 @@ export class AdminCentralService {
       subjects: { total: subjects.length, active: subjects.filter((s) => s.isActive).length },
       // Tingkatan 1 to 5: `levels()` never returns a primary (Darjah) level.
       levels: levels.length,
-      users,
+      // One pupil/teacher definition with Analitik and Laporan; XS-1 / XS-3 (S6-T03) replace it.
+      users: { total: users.total, students: pupils.pupils, teachers: teachers.teachers },
       battles: { total: stats.rooms, active: stats.playing, finished: stats.finished },
     }
   }
