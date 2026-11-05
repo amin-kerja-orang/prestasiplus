@@ -16,6 +16,7 @@ export const qdCopy = {
   retry: 'Cuba lagi',
   report: 'Lapor',
   needStimulus: 'Muatkan rajah untuk meneruskan.',
+  pinnedAria: 'Rajah kekal dipapar',
   pinnedHint: '📌 Petikan kekal dipapar semasa menjawab',
   sheetDescription: 'Rajah kekal boleh dibuka semasa menjawab.',
   close: 'Tutup',
@@ -26,8 +27,7 @@ export const qdCopy = {
   show: 'Lihat',
   hide: 'Sembunyi',
   passageFallback: 'Petikan',
-  /** Reason of a picture kind without a picture; "imej belum dimuat naik" is verbatim from v2-admin-student-pipeline AC-04.2 (the R1 PRD has no reason text). */
-  reasonNoPicture: 'imej belum dimuat naik',
+  figureFallback: 'Rajah',
 } as const
 
 export const kindFallbackCaption: Record<string, string> = {
