@@ -230,10 +230,12 @@ export interface AnalyticsSubject {
   subjectId: number
   name: string
   code: string
-  accuracy: number
+  /** null = no answers in the subject ("—"). */
+  accuracy: number | null
   answered: number
   trend: Trend
-  projection: { low: Grade; high: Grade }
+  /** null = no answers in the subject. */
+  projection: { low: Grade; high: Grade } | null
   counts: { mahir: number; sederhana: number; lemah: number; belum: number }
   ringTotal: number
   weak: WeakSp[]
@@ -244,6 +246,8 @@ export interface AnalyticsSubject {
       code: string
       title: string
       status: 'mahir' | 'sederhana' | 'lemah' | 'belum'
+      /** Strand heading (Tajuk DSKP / SK) the tile is grouped under; null = none. */
+      strand: string | null
     }[]
   }
 }

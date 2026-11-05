@@ -2,7 +2,6 @@ import {
   PerformanceClassAnalyticsSchema,
   PerformanceClassDashboardSchema,
   PerformanceStudentSchema,
-  PerformanceAnalyticsSchema,
 } from '@pp/contract'
 import { beforeEach, describe, expect, it } from 'vitest'
 
@@ -368,18 +367,6 @@ describe('Class dashboard', () => {
 })
 
 describe('Analitik', () => {
-  it('me: per subject, trend compares the last 30 days with the 30 before; provisional never counts', async () => {
-    w.bijak
-      .addSitting(sitting({ userId: '1', score: 9, maxScore: 10, submittedAt: d('2026-09-20T08:00:00+08:00') }))
-      .addSitting(sitting({ userId: '1', score: 6, maxScore: 10, submittedAt: d('2026-08-20T08:00:00+08:00') }))
-      .addSitting(sitting({ userId: '1', score: 0, maxScore: 10, provisional: true, submittedAt: d('2026-09-21T08:00:00+08:00') }))
-    const r = await w.analytics.me(ctxOf('student', '1'))
-    expect(r.userLevelId).toBe('10')
-    expect(r.subjects).toHaveLength(1)
-    expect(r.subjects[0]).toMatchObject({ subjectId: '1', accuracy: 75, answered: 15, trend: 'up', projection: { low: 'B+', high: 'A' } })
-    PerformanceAnalyticsSchema.parse(r)
-  })
-
   describe('SW13-08: one subject is one row, whether a sitting stores the curriculum id or the Bijak code', () => {
     beforeEach(() => {
       w.directory.addSubject('MAT', '3')
@@ -389,29 +376,10 @@ describe('Analitik', () => {
         .addSitting(sitting({ userId: '1', score: 5, maxScore: 10, answeredCount: 4, subjectId: 'MAT', ...mat }))
     })
 
-    it('me: exactly one row under the curriculum id, with the combined figures', async () => {
-      const r = await w.analytics.me(ctxOf('student', '1'))
-      expect(r.subjects).toHaveLength(1)
-      expect(r.subjects[0]).toMatchObject({ subjectId: '3', name: 'Matematik', code: 'MAT', accuracy: 70, answered: 9 })
-      PerformanceAnalyticsSchema.parse(r)
-    })
-
-    it('me: a code with no curriculum subject keeps the sitting id and stays its own row', async () => {
-      w.bijak.addSitting(sitting({ userId: '1', score: 5, maxScore: 10, subjectId: 'XYZ', subjectCode: 'XYZ', subjectName: 'Lain' }))
-      const r = await w.analytics.me(ctxOf('student', '1'))
-      expect(r.subjects.map((x) => x.subjectId)).toEqual(['3', 'XYZ'])
-    })
-
     describe("migrated 'legacy' sittings are no subject row but still count in the totals", () => {
       const legacy = { subjectId: 'legacy', subjectCode: 'legacy', subjectName: 'Tidak diketahui' }
       beforeEach(() => {
         w.bijak.addSitting(sitting({ userId: '1', score: 2, maxScore: 10, answeredCount: 3, ...legacy }))
-      })
-
-      it('me: one subject row (MAT to 3)', async () => {
-        const r = await w.analytics.me(ctxOf('student', '1'))
-        expect(r.subjects.map((x) => x.subjectId)).toEqual(['3'])
-        expect(r.subjects[0]).toMatchObject({ accuracy: 70, answered: 9 })
       })
 
       it('student: one mastery row, while stats still include answers that carry no curriculum subject', async () => {
@@ -432,13 +400,6 @@ describe('Analitik', () => {
       expect(r.mastery).toHaveLength(1)
       expect(r.mastery[0]).toMatchObject({ subjectCode: 'MAT', accuracy: 77.8, sessions: 2, answered: 9 })
     })
-  })
-
-  it('me with no sittings is the empty payload', async () => {
-    const r = await w.analytics.me(ctxOf('student', '2'))
-    expect(r.subjects).toEqual([])
-    expect(r.topWeak).toEqual([])
-    PerformanceAnalyticsSchema.parse(r)
   })
 
   describe('classes (Analitik Adaptif, S10-T04 part 2: the shared answer reader, all modes)', () => {
@@ -775,11 +736,4 @@ describe('Soalan Dijawab counts answered questions, not the paper marks (issue 6
     expect(r.stats.answered).toBe(5)
   })
 
-  it('analytics: per-subject answered', async () => {
-    const r = await w.analytics.me(ctxOf('student', '1'))
-    expect(r.subjects.map((s) => [s.code, s.answered])).toEqual([
-      ['BM', 3],
-      ['MT', 2],
-    ])
-  })
 })

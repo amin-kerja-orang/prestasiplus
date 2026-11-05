@@ -19,6 +19,7 @@ import { InMemoryDirectory } from './in-memory-directory'
 import { InMemoryGamification } from './in-memory-gamification'
 import { InMemoryHeadcountFacts } from './in-memory-headcount-facts'
 import { InMemoryPracticeRead } from './in-memory-practice-read'
+import { InMemorySpMap } from './in-memory-sp-map'
 
 /** The clock of every unit test: Friday 2026-09-25 15:40 MYT. */
 export const NOW = '2026-09-25T15:40:00+08:00'
@@ -81,6 +82,7 @@ export const ctxOf = (role: RoleCode, userId: string, scope: Ctx['scope'] = { le
 
 export interface World {
   practice: InMemoryPracticeRead
+  spMap: InMemorySpMap
   answers: InMemoryAnswerFacts
   bijak: InMemoryBijakAggregate
   classes: InMemoryClasses
@@ -105,10 +107,12 @@ export function world(): World {
   const facts = new InMemoryHeadcountFacts()
   const answers = new InMemoryAnswerFacts()
   const practice = new InMemoryPracticeRead()
-  const ports = new PerformancePorts(bijak, classes, practice, gamification, undefined, answers)
+  const spMap = new InMemorySpMap()
+  const ports = new PerformancePorts(bijak, classes, practice, gamification, undefined, answers, spMap)
   const clock = new FixedClock(NOW)
   return {
     practice,
+    spMap,
     answers,
     bijak,
     classes,
