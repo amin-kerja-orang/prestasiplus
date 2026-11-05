@@ -517,9 +517,9 @@ export class GamificationRepository {
     return r ? { userId: idToString(r.userId), tierId: r.tierId === null ? null : idToString(r.tierId), currentSyiling: r.currentSyiling, totalSyilingEarned: r.totalSyilingEarned, tokenBalance: r.tokenBalance } : null
   }
 
-  async walletTierId(db: Db, userId: string): Promise<string | null> {
-    const w = await db.wallet.findUnique({ where: { userId: idFromString(userId) }, select: { tierId: true } })
-    return w?.tierId === null || w?.tierId === undefined ? null : idToString(w.tierId)
+  async walletTier(db: Db, userId: string): Promise<{ tierId: string | null; totalSyilingEarned: number } | null> {
+    const w = await db.wallet.findUnique({ where: { userId: idFromString(userId) }, select: { tierId: true, totalSyilingEarned: true } })
+    return w ? { tierId: w.tierId === null ? null : idToString(w.tierId), totalSyilingEarned: w.totalSyilingEarned } : null
   }
 
   async ledgerRecent(db: Db, userId: string, take: number): Promise<LedgerRecord[]> {

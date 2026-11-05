@@ -40,7 +40,7 @@ import {
 import { GamificationRepository, type AchievementRecord, type ChallengeRecord, type Db } from './gamification.repository'
 import { RANKING_REDACTED_ID, canSeeRankedName, shortName, type NameScope, type RankingViewer } from './name-privacy'
 import { GamificationPorts, type PracticeMasteryFact } from './ports'
-import { activeTiers, defaultTier, initialOf, initialsOf, masteryLevel, masteryMultiplier, masteryNextTarget, masteryStage, previousDay, round, shareEncode, tierView } from './helpers'
+import { activeTiers, initialOf, initialsOf, masteryLevel, masteryMultiplier, masteryNextTarget, masteryStage, previousDay, round, shareEncode, tierView } from './helpers'
 import { validationFailure } from './validation'
 
 /** Who is calling: the signed-in user and whether an admin is in Mod Pelajar (`isTestActor`). */
@@ -663,8 +663,7 @@ export class GamificationService {
   async boardGameRates(userId: string, options: { tx?: TxClient } = {}): Promise<{ correct: number; win: number }> {
     const db = this.repo.handle(options.tx)
     const tiers = await this.repo.tiers(db)
-    const walletTier = (await this.repo.walletTierId(db, userId)) ?? null
-    const tier = (walletTier ? tiers.find((t) => t.id === walletTier) : undefined) ?? defaultTier(tiers)
+    const tier = lifetimeTierOf(tiers, await this.repo.walletTier(db, userId)) // FR-GM-17.2: never the lagging stored tier
     return { correct: tier?.boardGameRewardCorrect ?? 0, win: tier?.boardGameRewardWin ?? 0 }
   }
 
