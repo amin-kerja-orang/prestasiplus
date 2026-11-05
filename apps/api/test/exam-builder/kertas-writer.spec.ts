@@ -29,6 +29,8 @@ describe('paper builder candidates of API-created questions carry the kertas', (
       subjectId: mat,
       educationLevelId: level,
       difficultyLevel: 3,
+      cognitiveLevel: 'mengaplikasi', // S1-T02 R-DSKP + NO_CHAPTER
+      curriculumChapterId: await one(`select id::text id from chapters where subject_id = ${mat} and education_level_id = ${level} order by id limit 1`),
       questionType: 'mcq',
       questionText: 'Berapakah hasil tambah 2 dan 3?',
       options: ['4', '5', '6', '7'],

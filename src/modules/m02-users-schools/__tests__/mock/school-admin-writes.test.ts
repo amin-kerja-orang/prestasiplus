@@ -18,6 +18,7 @@ import {
   SchoolAdminWriteError,
   schoolAdminUsers as svc,
 } from '../../mock'
+import { refuse } from '../../mock/school-admin-writes'
 import { M02_CONFIG_DEFAULTS } from '../../mock/m02-config'
 
 const NOW = Date.parse(CLOCK_ANCHOR_ISO)
@@ -501,5 +502,11 @@ describe('resetPassword', () => {
     expect(
       refused(() => svc.resetPassword(school, 'student', foreignPupil.id, ok, NOW)).status,
     ).toBe(404)
+  })
+})
+
+describe('refuse fallback (FR-ERR-4)', () => {
+  it('uses the BM validation text when there is no field message', () => {
+    expect(() => refuse({})).toThrow('Data yang dihantar tidak sah. Sila semak dan cuba lagi.')
   })
 })
