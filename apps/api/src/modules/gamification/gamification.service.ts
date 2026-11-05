@@ -11,6 +11,7 @@ import type {
   GamificationMasteryRow,
   GamificationReferral,
   GamificationShareCards,
+  GuruGlobalChallenge,
 } from '@pp/contract'
 import { GAMIFICATION_MESSAGES as MSG } from '@pp/contract'
 
@@ -25,7 +26,7 @@ import { toMytTimestamp } from '../../common/time/myt'
 import { ClassesRepository } from '../classes/classes.repository'
 import { RewardSettingsService } from '../shop'
 import { MAX_AMOUNT_PER_CALL, StreakService, WalletService, walletLockOrder } from '../wallet'
-import { titleOf } from '../wallet/rules'
+import { lifetimeTierOf, titleOf } from '../wallet/rules'
 import {
   ACCURATE_SESSION_PCT,
   LEADERBOARD_SIZE,
@@ -250,6 +251,27 @@ export class GamificationService {
   }
 
   /**
+   * S6 reader (card S6-T07, read-only): the active challenges in the display order with how many of the given
+   * pupils completed each one today (Malaysia day; test completions left out). Writes nothing.
+   */
+  async challengesForTeacher(pupilIds: readonly string[]): Promise<GuruGlobalChallenge[]> {
+    const db = this.repo.handle()
+    const day = mytDay(this.clock.now())
+    const [active, counts] = await Promise.all([this.repo.challenges(db, true), this.repo.completionCountsOn(db, day, pupilIds.map((p) => idFromString(p)))])
+    return active.map((c) => ({
+      id: c.id,
+      title: c.title,
+      description: c.description,
+      target: c.targetValue,
+      rewardSyiling: c.rewardSyiling,
+      rewardXp: c.rewardXp,
+      difficulty: c.difficulty as GuruGlobalChallenge['difficulty'],
+      icon: c.icon,
+      completedToday: counts.get(c.id) ?? 0,
+    }))
+  }
+
+  /**
    * `GET /gamification/leaderboard` (S14): top 50 by lifetime syiling, global; rows other people may see only.
    * Names (#76, LEAD): the full name and the user id only within the viewer's scope (see `canSeeRankedName`); every
    * other row shows first name + initial and the redacted id. Ranks and figures are the same for everyone.
@@ -421,7 +443,7 @@ export class GamificationService {
     return this.prisma.transaction(async (tx) => {
       const locked = await this.repo.lockWallet(tx, viewer.userId)
       const tiers = await this.repo.tiers(tx)
-      const tier = (locked?.tierId ? tiers.find((t) => t.id === locked.tierId) : undefined) ?? defaultTier(tiers)
+      const tier = lifetimeTierOf(tiers, locked) // FR-MUR-29-5: the rate shown by `convertView`, never the lagging stored tier
       if (!tier) throw new Error('M14: no tier is defined')
       const rate = tier.conversionRate
 

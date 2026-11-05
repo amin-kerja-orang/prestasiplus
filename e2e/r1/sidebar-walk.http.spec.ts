@@ -77,12 +77,8 @@ const EXPECTED_RED: Record<WalkRole, Row[]> = {
   ],
   // Guru: the Laporan Mingguan row (S6-T01) was removed after its first CI run showed it passing.
   guru: [],
-  adminSekolah: [
-    // The route allows school_admin (S0-T06), but GET /api/analytics/classes is @Roles('admin','teacher')
-    // (apps/api/src/modules/reports/performance/http/performance.controllers.ts:53), so the page shows 403.
-    // S10-T04 change (2) adds school_admin to @Roles and canOpenClassAnalysis.
-    { id: 'sa-analitik-adaptif', route: '/analitik/kelas', ownerCard: 'S10-T04' },
-  ],
+  // Admin Sekolah: the Analitik Adaptif row (S10-T04 Change (2)) was removed when the API gained school_admin.
+  adminSekolah: [],
 }
 
 /**
@@ -128,8 +124,8 @@ const ALLOWED_REDIRECTS: { role: WalkRole; from: string; to: string; reason: str
     role: 'adminSekolah',
     from: '/prestasi',
     to: '/prestasi/sekolah',
-    // src/modules/m08-student-performance/routes/prestasi.ts:29 redirects /prestasi for every role;
-    // /prestasi/sekolah is the school admin's own dashboard (the pupil's row is EXPECTED_RED, S10-T01).
+    // src/modules/m08-student-performance/routes/prestasi.ts:34 sends every role except the pupil to
+    // /prestasi/sekolah, the school admin's own dashboard (the pupil gets Prestasi 360, S10-T01).
     reason: 'school admin Prestasi is the school dashboard',
   },
 ]
