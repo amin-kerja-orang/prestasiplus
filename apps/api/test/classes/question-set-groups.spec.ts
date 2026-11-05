@@ -101,4 +101,27 @@ describe('question sets: stimulus groups are whole or not at all', () => {
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     expect((res.body.data.questions as { id: string }[]).map((q) => q.id)).toEqual(g)
   })
+
+  it('a group stored out of order and non-contiguous is served in group order, contiguous, at its first member', async () => {
+    const [g1, g2, g3] = [await group(2), await group(2), await group(2)] as [string[], string[], string[]]
+    const [t1, t2] = [await text(), await text()]
+    const id = await set([g2[1] as string, t1, g1[0] as string, g2[0] as string, t2, g1[1] as string, ...g3])
+    const expected = [...g2, t1, ...g1, t2, ...g3]
+    expect(await countOf(id)).toBe(8)
+    const res = await start(id)
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    expect((res.body.data.questions as { id: string }[]).map((q) => q.id)).toEqual(expected)
+  })
+
+  it('a group with a non-servable member (its group has no stimulus) counts the same on the list and in play', async () => {
+    const g = await group(3)
+    const a = await text()
+    // The group loses its stimulus: play refuses it (`servableRecords` needs a stimulus) and the list must not count it either.
+    await t.db.query(`delete from stimulus_group_stimuli where group_id = (select group_id from questions where id = $1)`, [g[0]])
+    const id = await set([a, ...g])
+    const res = await start(id)
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    expect(await countOf(id)).toBe((res.body.data.questions as unknown[]).length)
+    expect(await countOf(id)).toBe(1)
+  })
 })
