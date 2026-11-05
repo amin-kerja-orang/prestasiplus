@@ -446,7 +446,7 @@ const err = (k: string): string | undefined => errors.value[k]
               >
                 <UInput
                   :id="id"
-                  v-model="p.marks"
+                  :model-value="p.marks"
                   :name="`parts[${i}][marks]`"
                   type="number"
                   inputmode="numeric"
@@ -454,6 +454,7 @@ const err = (k: string): string | undefined => errors.value[k]
                   :max="MAX_MARKS"
                   size="xl"
                   data-testid="s-part-marks"
+                  @update:model-value="p.marks = String($event ?? '')"
                 />
               </DsFormField>
               <DsFormField

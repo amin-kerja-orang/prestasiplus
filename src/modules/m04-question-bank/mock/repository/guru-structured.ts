@@ -94,6 +94,10 @@ export const guruSubmissions = {
     Object.assign(row, input, { rejectionReason: null })
     return row
   },
+  /** Test hook: the admin accepted the item (no longer editable, a 409). */
+  accept(row: GuruSubmission): void {
+    row.editable = false
+  },
   remove(row: GuruSubmission): void {
     rows = rows.filter((r) => r !== row)
   },

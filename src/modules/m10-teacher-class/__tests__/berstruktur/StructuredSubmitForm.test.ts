@@ -132,7 +132,7 @@ describe('StructuredSubmitForm layout and copy', () => {
     expect(t('info-card').html()).toContain('grid-cols-1')
     expect(t('info-card').html()).toContain('md:grid-cols-2')
     for (const id of ['form-submit', 'form-cancel', 's-part-add', 's-part-remove'])
-      expect(t(id).exists(), id).toBe(true)
+      expect(wrapper!.find(`[data-testid="${id}"]`).exists(), id).toBe(true)
   })
 })
 
@@ -209,7 +209,7 @@ describe('submit and validation', () => {
     await t('structured-form').trigger('submit')
     const sent = wrapper!.emitted('submit')![0]!
     expect((sent[0] as StructuredFormValues).parts[0]).toMatchObject({
-      marks: 3,
+      marks: '3',
       text: 'Terangkan satu faktor.',
     })
     expect(sent[1]).toBeNull()

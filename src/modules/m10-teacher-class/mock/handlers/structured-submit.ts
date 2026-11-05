@@ -31,7 +31,7 @@ import {
   guruSubmissions,
   type GuruSubmission,
   type GuruSubmissionInput,
-} from '../repository/guru-structured-submit'
+} from '@/modules/m04-question-bank/mock'
 
 /** `GURU_QUESTION_MESSAGES.locked`: the 409 of an edit or delete of an item that is no longer open. */
 export const LOCKED_MESSAGE = 'Soalan ini sudah diterima atau diluluskan dan tidak boleh diubah.'
@@ -146,7 +146,7 @@ export function parseStructuredBody(body: Body): Parsed {
         text,
         marks: typeof marks === 'number' ? marks : 0,
         scheme,
-        cognitiveLevel: level,
+        cognitiveLevel: level as GuruSubmissionInput['cognitiveLevel'],
       })
     })
 
@@ -159,7 +159,7 @@ export function parseStructuredBody(body: Body): Parsed {
       chapterId,
       spIds,
       tp,
-      cognitiveLevel,
+      cognitiveLevel: cognitiveLevel as GuruSubmissionInput['cognitiveLevel'],
       difficultyLevel: difficulty as number,
       stimulus,
       stimulusImageId,

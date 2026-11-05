@@ -7,6 +7,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { setUser } from '@/mock/core-data/set-user'
 import type { MockRuntime } from '@/mock/index'
 import { curriculum } from '@/modules/m03-curriculum/mock'
+import { GURU_SUBMISSION_PREFIX, guruSubmissions } from '@/modules/m04-question-bank/mock'
 
 import {
   buildBody,
@@ -14,10 +15,6 @@ import {
   emptyValues,
   type StructuredSubmitBody,
 } from '../../lib/structured-form'
-import {
-  guruSubmissions,
-  GURU_SUBMISSION_PREFIX,
-} from '../../mock/repository/guru-structured-submit'
 import { LOCKED_MESSAGE } from '../../mock/handlers/structured-submit'
 import { bootM10 } from '../mock/helpers'
 
@@ -48,7 +45,7 @@ beforeAll(async () => {
 }, 240_000)
 
 async function call<T = unknown>(
-  method: 'POST' | 'PUT' | 'DELETE',
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
   url: string,
   as: number | null,
   payload?: unknown,
@@ -143,6 +140,26 @@ describe('POST /api/guru/intake/structured', () => {
       parts: Array.from({ length: 11 }, () => body.parts[0]),
     })
     expect(eleven.body.error.fields?.parts).toBe('Bilangan sub-soalan mesti antara 1 dan 10.')
+  })
+})
+
+describe('one store with the API-GUR-26 reads (M04 mock)', () => {
+  it('a submission created through the form appears in GET /api/guru/structured-questions?status=review and its detail', async () => {
+    const made = (await call<Detail>('POST', URL, GURU, body)).body.data
+    const list = await call<{
+      data: { id: string; source: string; editable: boolean; marks: number }[]
+    }>('GET', '/api/guru/structured-questions?status=review', GURU)
+    const row = list.body.data.find((r) => r.id === made.id)
+    expect(row).toMatchObject({ source: 'submission', editable: true, marks: 8 })
+    const detail = await call<Detail>('GET', `/api/guru/structured-questions/${made.id}`, GURU)
+    expect(detail.body.data.form.difficultyLevel).toBe(3)
+    // Another teacher does not see it.
+    const other = await call<{ data: { id: string }[] }>(
+      'GET',
+      '/api/guru/structured-questions?status=review',
+      OTHER_GURU,
+    )
+    expect(other.body.data.some((r) => r.id === made.id)).toBe(false)
   })
 })
 

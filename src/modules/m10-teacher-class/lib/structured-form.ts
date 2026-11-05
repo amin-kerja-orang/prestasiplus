@@ -76,8 +76,8 @@ export interface PartValues {
   /** Stable key for the v-for (a removed row must not reuse another row's inputs). */
   key: number
   text: string
-  /** Typed text (a number input hands a number over); parsed on validate. */
-  marks: string | number
+  /** Typed text, parsed on validate (the number input's value is stored as text). */
+  marks: string
   scheme: string
   cognitiveLevel: '' | CognitiveLevel
 }
