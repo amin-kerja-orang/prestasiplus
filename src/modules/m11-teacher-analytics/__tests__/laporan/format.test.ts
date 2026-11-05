@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { bandOf, grouped, parseId, parseRange, pctInt } from '../../components/laporan/format'
 import { trendChart } from '../../components/laporan/trend-chart'
-import { clip80, discLabel, discNote, pctLabel } from '../../components/analisis-item/bands'
+import { clip80, discLabel, discNote, pctLabel, tahapOf } from '../../components/analisis-item/bands'
 
 describe('S1 query helpers', () => {
   it('parseRange: only 7, 30 and 90 are kept (BR-M11-06)', () => {
@@ -57,15 +57,25 @@ describe('S1 trend chart config', () => {
 })
 
 describe('S6 table helpers', () => {
-  it('pctLabel drops a trailing .0', () => {
+  it('pctLabel is the whole number rounded half up (decision 11)', () => {
     expect(pctLabel(75)).toBe('75%')
-    expect(pctLabel(12.5)).toBe('12.5%')
-    expect(pctLabel(33.333)).toBe('33.3%')
+    expect(pctLabel(12.5)).toBe('13%')
+    expect(pctLabel(57.9)).toBe('58%')
+    expect(pctLabel(33.333)).toBe('33%')
+  })
+
+  it('tahapOf bands the whole-number % (AC-GUR-6-11)', () => {
+    expect(tahapOf(71)).toBe('mudah')
+    expect(tahapOf(70)).toBe('sederhana')
+    expect(tahapOf(70.4)).toBe('sederhana')
+    expect(tahapOf(40)).toBe('sederhana')
+    expect(tahapOf(39.5)).toBe('sederhana')
+    expect(tahapOf(39)).toBe('sukar')
   })
 
   it('discLabel / discNote', () => {
     expect(discLabel(0.3333)).toBe('0.33')
-    expect(discLabel(null)).toBe('-')
+    expect(discLabel(null)).toBe('Data Tidak Mencukupi')
     expect(discNote(0.31)).toBe('baik')
     expect(discNote(0.3)).toBeNull()
     expect(discNote(0)).toBeNull()

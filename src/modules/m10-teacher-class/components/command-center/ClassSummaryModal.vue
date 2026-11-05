@@ -12,7 +12,7 @@ import { fetchCommandCenterLiveData } from '../../api/command-center'
 import CcDialog from './CcDialog.vue'
 import CcTable from './CcTable.vue'
 import { statItems, useOpenTab } from './composables'
-import { accuracyTone, classPath, levelText, S2_COPY } from './copy'
+import { accuracyText, accuracyTone, classPath, levelText, S2_COPY } from './copy'
 import type { DrillRow } from './drill-table'
 
 defineEmits<{ close: [] }>()
@@ -24,7 +24,7 @@ const cards = computed(() => {
   return [
     { label: 'Jumlah Pelajar', value: String(d?.totalStudentsRaw ?? 0) },
     { label: 'Aktif', value: String(d?.activeStudentsRaw ?? 0) },
-    { label: 'Ketepatan', value: `${String(d?.accuracy ?? 0)}%` },
+    { label: 'Ketepatan', value: accuracyText(d?.accuracy ?? null) },
   ]
 })
 const HEADERS = ['#', 'Kelas', 'Tingkatan', 'Pelajar', 'Aktif', 'Ketepatan']
@@ -37,7 +37,7 @@ const rows = computed<DrillRow[]>(() =>
       { text: levelText(c.educationLevel) },
       { text: String(c.studentCount), mono: true },
       { text: String(c.active), mono: true },
-      { text: `${String(c.accuracy)}%`, tone: accuracyTone(c.accuracy), mono: true },
+      { text: accuracyText(c.accuracy), tone: accuracyTone(c.accuracy), mono: true },
     ],
   })),
 )
