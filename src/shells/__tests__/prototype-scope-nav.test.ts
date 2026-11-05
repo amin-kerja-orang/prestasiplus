@@ -62,17 +62,18 @@ describe('navFor with the prototype scope on', () => {
     }
   })
 
-  it('Murid keeps the matrix menu (37 + section A) and drops the rest', () => {
+  it('Murid keeps the matrix menu (38 + section A) and drops the rest', () => {
     const shown = labels('student')
     for (const label of ['Dashboard', 'Latih Tubi', 'Kedai Hadiah 🎁', 'Jemput Ibu Bapa', 'SPM']) {
       expect(shown).toContain(label)
     }
-    // 37 matrix labels (Analisa Item and Headcount are shown since S0-T05) + the four section A
+    // 38 matrix labels (Analisa Item and Headcount are shown since S0-T05) + the four section A
     // links in the menu (Log Keluar is the footer control), + the Bijak SPM entry under row 13 SPM
     // (its own sidebar item on .cloud).
     expect(shown).toContain('Analisa Item')
     expect(shown).toContain('Headcount')
-    expect(shown).toHaveLength(37 + 4 + 1)
+    expect(shown).toContain('Laporan Soalan')
+    expect(shown).toHaveLength(38 + 4 + 1)
     for (const label of [
       'Target SPM',
       'Misi Harian',
@@ -81,7 +82,6 @@ describe('navFor with the prototype scope on', () => {
       'Cikgu Suara',
       'Liga Pertandingan',
       'Bilik Duta',
-      'Laporan Soalan',
       'Cikgu Alesa Chat',
     ]) {
       expect(shown, label).not.toContain(label)

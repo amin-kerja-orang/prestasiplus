@@ -20,6 +20,9 @@ import {
 } from '@/shells/nav/user-nav'
 import type { Role } from '@/stores/session-types'
 
+/** Touch target of the Log Keluar row in the account dropdown and the Lagi panel (AC-MUR-A5-4: at least 44 px). */
+export const LOGOUT_ROW_MIN_HEIGHT_CLASS = 'min-h-11'
+
 export interface PembelajaranTab {
   id: string
   label: string

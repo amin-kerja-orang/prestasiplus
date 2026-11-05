@@ -18,7 +18,7 @@ import { PracticeRepository } from '../../practice'
 import type { ClassActor } from '../actor'
 import { ClassesRepository } from '../classes.repository'
 import { invalid, tryParseStrict } from '../strict-body'
-import { MISSION_AUDIT } from './missions.constants'
+import { MISSION_AUDIT, MISSION_REWARD_TOO_HIGH } from './missions.constants'
 import { MissionsRepository, type MissionRecord } from './missions.repository'
 
 const notFound = (): ApiError => ApiError.of('NOT_FOUND')
@@ -95,15 +95,25 @@ export class MissionsService {
    * The recipients are a snapshot of the active pupils at this moment.
    */
   async create(actor: ClassActor, raw: unknown): Promise<TeacherMission> {
-    const parsed = tryParseStrict(TeacherMissionCreateSchema, raw)
+    // ERR-GAME-17: a whole-number reward above the cap is its own refusal (code MISSION_REWARD_TOO_HIGH, 422). The contract schema
+    // would answer the form text for it, so the value is parsed at the cap and the other field failures are still reported with it.
+    const over = overCap(raw)
+    const parsed = tryParseStrict(TeacherMissionCreateSchema, over ? { ...(raw as object), rewardCoins: rewardMax() } : raw)
     const now = this.clock.now()
     const today = mytDay(now)
     const fields: Record<string, string> = { ...parsed.fields }
     const body = parsed.data
     if (body) {
       if (body.date < today) fields.date ??= MISSION_MESSAGES.datePast
-      if (body.rewardCoins > rewardMax()) fields.rewardCoins ??= MISSION_MESSAGES.reward
       if (!(isIdString(body.subjectId) && (await this.classes.activeSubjectExists(body.subjectId)))) fields.subjectId ??= MISSION_MESSAGES.subjectRequired
+    }
+    if (over) {
+      throw new ApiError({
+        code: MISSION_REWARD_TOO_HIGH.code,
+        status: 422,
+        message: MISSION_REWARD_TOO_HIGH.message,
+        fields: { ...fields, rewardCoins: MISSION_REWARD_TOO_HIGH.message },
+      })
     }
     if (!body || Object.keys(fields).length > 0) throw invalid(fields)
 
@@ -183,6 +193,12 @@ export class MissionsService {
     })
     return { deleted: 1 }
   }
+}
+
+function overCap(raw: unknown): boolean {
+  if (typeof raw !== 'object' || raw === null) return false
+  const v = (raw as { rewardCoins?: unknown }).rewardCoins
+  return typeof v === 'number' && Number.isInteger(v) && v > rewardMax()
 }
 
 function toTeacherMission(m: MissionRecord, subjectName: string | null, completedCount: number): TeacherMission {

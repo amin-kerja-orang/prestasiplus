@@ -17,6 +17,8 @@ describe('practiceRewardSource (M14 BR-M14-03 ledger source by mode)', () => {
       remedial: 'quiz_practice',
       question_set: 'quiz_practice',
       pksk: 'quiz_pksk',
+      databank: 'quiz_spm',
+      tracking_a: 'quiz_spm',
     })
   })
 

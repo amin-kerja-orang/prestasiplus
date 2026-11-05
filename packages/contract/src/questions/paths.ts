@@ -41,6 +41,10 @@ import {
   QuestionStructuredDetailSchema,
   QuestionStructuredListQuerySchema,
   QuestionStructuredRowSchema,
+  GuruStructuredDetailSchema,
+  GuruStructuredListQuerySchema,
+  GuruStructuredRowSchema,
+  GuruStructuredSubSchema,
   QuestionStructuredStatsSchema,
   QuestionStructuredSubSchema,
   QuestionFilterOptionsSchema,
@@ -79,6 +83,9 @@ export const QUESTIONS_COMPONENT_SCHEMAS = {
   QuestionFilterBulkRequest: QuestionFilterBulkRequestSchema,
   QuestionFilterBulkResult: QuestionFilterBulkResultSchema,
   QuestionStructuredRow: QuestionStructuredRowSchema,
+  GuruStructuredRow: GuruStructuredRowSchema,
+  GuruStructuredSub: GuruStructuredSubSchema,
+  GuruStructuredDetail: GuruStructuredDetailSchema,
   QuestionStructuredSub: QuestionStructuredSubSchema,
   QuestionStructuredDetail: QuestionStructuredDetailSchema,
   QuestionGuruSummary: QuestionGuruSummarySchema,
@@ -111,6 +118,8 @@ const StructuredListEnvelope = z.object({
   data: z.array(QuestionStructuredRowSchema),
   meta: ListMetaSchema.extend({ stats: QuestionStructuredStatsSchema }),
 })
+
+const GuruStructuredListEnvelope = z.object({ data: z.array(GuruStructuredRowSchema), meta: ListMetaSchema })
 
 /** Registers the BE-09 endpoints. Admin routes: Admin Pusat only. Guru routes: Guru or Admin (mock teacherOnly), own rows only. GET /guru/questions/template and POST /guru/questions/import (BE-10) and GET /guru/contributions (BE-17) belong to other cards. */
 export function registerQuestionsPaths(registry: OpenAPIRegistry): void {
@@ -257,6 +266,29 @@ export function registerQuestionsPaths(registry: OpenAPIRegistry): void {
     description: '`meta.stats` covers the whole store, not the filter. Unknown filter values match nothing.',
     request: { query: QuestionStructuredListQuerySchema },
     responses: { 200: json(StructuredListEnvelope, 'A page of rows.'), 401: unauthorized, 403: forbidden },
+  })
+  registry.registerPath({
+    method: 'get',
+    path: '/guru/structured-questions',
+    tags: ['questions', 'guru'],
+    summary: 'Teacher list of approved structured questions (20 per page, newest first)',
+    description: 'API-GUR-26, read-only. Teacher or Admin Pusat. Only approved, live, active questions a pupil is served; a question that needs a figure it lacks is left out. `meta.totalItems` is the dataset count. `status=review` answers an empty page.',
+    request: { query: GuruStructuredListQuerySchema },
+    responses: { 200: json(GuruStructuredListEnvelope, 'A page of rows.'), 401: unauthorized, 403: forbidden, 422: invalid },
+  })
+  registry.registerPath({
+    method: 'get',
+    path: '/guru/structured-questions/{id}',
+    tags: ['questions', 'guru'],
+    summary: 'Teacher detail of an approved structured question',
+    description: 'No admin-only fields. A question that is not approved, not served or unknown is 404.',
+    request: { params: idParams },
+    responses: {
+      200: json(envelopeOf(GuruStructuredDetailSchema), 'The question.'),
+      401: unauthorized,
+      403: forbidden,
+      404: notFound,
+    },
   })
   registry.registerPath({
     method: 'get',
