@@ -7,13 +7,17 @@
  * tree; otherwise only the prompt card. Deleting a chapter/topic/subtopic (native confirm) and adding or
  * saving a subtopic send the mutation, reload the same tree (collapsed again, as after a live redirect)
  * and show the flash. Redirect flashes (BR-18) are shown by the shell once, after navigation.
+ *
+ * S4-T07 (R1-ADM-C-01): tabs `Bab` (the tree) and `DSKP` (`SubjectDskpReportTab`, API-DSKP-11). The tab lives in
+ * the query (`?tab=dskp`; the `Bab` tab has no `tab` parameter) next to the GET-form filter, so a reload or a
+ * shared link keeps both. The filter card is shared by both tabs and its submit keeps the tab.
  */
 import { preferRateLimited } from '@/api/errors'
 import { computed, provide, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsEmptyState, DsPage, DsPageHeader, DsPanel, useConfirm } from '@/ds'
+import { DsEmptyState, DsPage, DsPageHeader, DsPanel, DsPillNav, useConfirm, type PillItem } from '@/ds'
 import { DsFormField, DsLoadError, DsNativeSelect } from '@/ds'
 
 import {
@@ -37,6 +41,7 @@ import {
   LOAD_ERROR,
 } from '../lib/curriculum-paths'
 import { queryString } from '../lib/query'
+import SubjectDskpReportTab from './SubjectDskpReportTab.vue'
 import { TREE_ACTIONS, type TreeActions } from '../lib/tree-actions'
 
 const route = useRoute()
@@ -47,6 +52,21 @@ const confirm = useConfirm()
 const subjectParam = computed(() => queryString(route.query.subject_id))
 const levelParam = computed(() => queryString(route.query.education_level_id))
 const hasPair = computed(() => subjectParam.value !== '' && levelParam.value !== '')
+
+type TabKey = 'bab' | 'dskp'
+const activeTab = computed<TabKey>(() => (queryString(route.query.tab) === 'dskp' ? 'dskp' : 'bab'))
+/** Tab links keep the filter parameters; `Bab` is the default and carries no `tab`. */
+function tabTo(tab: TabKey) {
+  const query: Record<string, string> = {}
+  if (subjectParam.value !== '') query.subject_id = subjectParam.value
+  if (levelParam.value !== '') query.education_level_id = levelParam.value
+  if (tab === 'dskp') query.tab = 'dskp'
+  return { path: CURRICULUM_PATH, query }
+}
+const tabs = computed<PillItem<TabKey>[]>(() => [
+  { key: 'bab', label: 'Bab', to: tabTo('bab') },
+  { key: 'dskp', label: 'DSKP', to: tabTo('dskp') },
+])
 
 const {
   data: subjects,
@@ -88,7 +108,11 @@ function retryLoad(): void {
 async function applyFilter(): Promise<void> {
   const failure = await router.push({
     path: CURRICULUM_PATH,
-    query: { subject_id: subjectSel.value, education_level_id: levelSel.value },
+    query: {
+      subject_id: subjectSel.value,
+      education_level_id: levelSel.value,
+      ...(activeTab.value === 'dskp' ? { tab: 'dskp' } : {}),
+    },
   })
   // Same URL again: a GET form reloads the page.
   if (failure) {
@@ -165,7 +189,7 @@ provide(TREE_ACTIONS, actions)
       title="Pengurusan Kurikulum"
       subtitle="Urus bab, topik dan subtopik mengikut subjek dan tahap."
     >
-      <template v-if="showTree && tree" #actions>
+      <template v-if="activeTab === 'bab' && showTree && tree" #actions>
         <UButton
           :to="chapterCreateTo(subjectParam, levelParam)"
           icon="i-ph-plus"
@@ -182,6 +206,8 @@ provide(TREE_ACTIONS, actions)
       testid="curriculum-load-error"
       @retry="retryLoad"
     />
+
+    <DsPillNav :items="tabs" :active="activeTab" label="Tab kurikulum" testid-prefix="curriculum-tab" />
 
     <template v-if="optionsReady">
       <DsPanel
@@ -233,7 +259,14 @@ provide(TREE_ACTIONS, actions)
         </div>
       </DsPanel>
 
-      <DsPanel v-if="!hasPair" padding="none" data-testid="curriculum-prompt">
+      <div v-if="activeTab === 'dskp'" data-testid="curriculum-dskp">
+        <SubjectDskpReportTab
+          :subject-id="subjectParam === '' ? null : subjectParam"
+          :level-id="levelParam === '' ? null : levelParam"
+        />
+      </div>
+
+      <DsPanel v-else-if="!hasPair" padding="none" data-testid="curriculum-prompt">
         <div class="p-6">
           <DsEmptyState
             title="Sila pilih subjek dan tahap pendidikan"

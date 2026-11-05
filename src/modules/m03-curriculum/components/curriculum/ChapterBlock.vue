@@ -43,6 +43,21 @@ const open = ref(true)
         >
           {{ chapter.description }}
         </p>
+        <p
+          v-if="chapter.questionCount !== undefined"
+          class="mt-1 text-caption text-muted"
+          data-testid="chapter-question-count"
+        >
+          Bilangan soalan: {{ chapter.questionCount }}
+          <UBadge
+            v-if="chapter.questionCount === 0"
+            color="warning"
+            variant="subtle"
+            label="Kosong"
+            class="ml-1"
+            data-testid="chapter-empty-flag"
+          />
+        </p>
       </div>
       <UButton
         :to="chapterEditTo(chapter.id)"
