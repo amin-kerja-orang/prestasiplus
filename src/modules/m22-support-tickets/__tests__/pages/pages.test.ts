@@ -439,12 +439,12 @@ describe('S2 admin queue (AC-M22-07, 08, 09)', () => {
       api.fetchQueue.mockResolvedValue(queue())
       api.fetchTicketDetail.mockResolvedValue(detail)
       api.setTicketStatus.mockRejectedValue(
-        new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Rekod tidak dijumpai. Ia mungkin telah dipadam.' }),
+        new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Rekod tidak dijumpai.' }),
       )
       const { w } = await open('/admin/tiket', AdminTicketsPage)
       await openRow(w)
       await pick('selesai')
-      expect(document.body.textContent).toContain('Rekod tidak dijumpai. Ia mungkin telah dipadam.')
+      expect(document.body.textContent).toContain('Rekod tidak dijumpai.')
       expect(body('tq-detail-flash')).toBeNull()
       expect(api.fetchQueue).toHaveBeenCalledTimes(1)
     })
@@ -494,7 +494,7 @@ describe('S2 admin queue (AC-M22-07, 08, 09)', () => {
     it('a failed load shows its message', async () => {
       api.fetchQueue.mockResolvedValue(queue())
       api.fetchTicketDetail.mockRejectedValue(
-        new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Rekod tidak dijumpai. Ia mungkin telah dipadam.' }),
+        new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Rekod tidak dijumpai.' }),
       )
       const { w } = await open('/admin/tiket', AdminTicketsPage)
       await openRow(w)
