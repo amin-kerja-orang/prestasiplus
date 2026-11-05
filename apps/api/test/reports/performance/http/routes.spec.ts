@@ -69,9 +69,11 @@ describe('roles', () => {
     expectError(await s.get(`/api/item-analysis/classes/${w.classId}`), 'FORBIDDEN')
   })
 
-  it('a school admin is refused (403) on analytics/classes and item-analysis classes', async () => {
+  it('a school admin reads analytics/classes of the own school (S10-T04 Change (2)) and is still refused (403) on item-analysis classes', async () => {
     const s = as.adminsekolah as Client
-    expectError(await s.get('/api/analytics/classes'), 'FORBIDDEN')
+    parseData(await s.get('/api/analytics/classes'), PerformanceClassAnalyticsSchema)
+    parseData(await s.get(`/api/analytics/classes?classroomId=${w.classId}`), PerformanceClassAnalyticsSchema)
+    expectError(await s.get('/api/analytics/classes?classroomId=987654'), 'FORBIDDEN')
     expectError(await s.get('/api/item-analysis/classes'), 'FORBIDDEN')
   })
 
