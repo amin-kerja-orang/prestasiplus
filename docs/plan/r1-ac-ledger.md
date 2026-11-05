@@ -48,6 +48,7 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
+| S2-T03 | AC-ADM-Q03.1 | CI | Pass | 2026-11-05 | team-cc/S-2 | StudioListPage.test.ts |
 
 ## Sprint 1
 
@@ -58,6 +59,7 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
+| S2-T07 | AC-ADM-R5 | CI | Pass | 2026-11-05 | team-cc/S-2 | intake-review-panes.test.ts |
 
 ## Sprint 3
 
