@@ -18,8 +18,8 @@
  */
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router'
-import { alertNative, confirmNative, useApi } from '@/composables'
-import { DsArt3D, DsPage, DsQuizOption } from '@/ds'
+import { alertNative, useApi } from '@/composables'
+import { DsArt3D, DsPage, DsQuizOption, useConfirm } from '@/ds'
 import { clock } from '@/lib/time/clock'
 import { toEpochMs } from '@/lib/time/zone'
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
@@ -35,6 +35,7 @@ import {
   type Winner,
 } from '../api'
 import { BATTLE_MSG, optionLetter } from '../components/battle/battle-lib'
+import { lastStartFor } from '../composables/useBattleSearch'
 
 const TICK_MS = 250
 /** The contract caps `seconds` at 60 (`battle_question_seconds` is at most 60). */
@@ -42,6 +43,9 @@ const MAX_SECONDS = 60
 
 const route = useRoute()
 const uuid = computed(() => String(route.params.uuid ?? ''))
+const confirm = useConfirm()
+/** Held only when this battle came from Quick Match / Battle Sekolah in this session. */
+const again = computed(() => lastStartFor(uuid.value))
 const { data, error, reload } = useApi((signal) => fetchArena(uuid.value, { signal }), uuid)
 
 const notFound = computed(() => isApiError(error.value) && error.value.status === 404)
@@ -202,7 +206,14 @@ async function submit(optionId: number | null): Promise<void> {
 }
 
 async function forfeit(): Promise<void> {
-  if (!confirmNative(BATTLE_MSG.forfeitConfirm)) return
+  const yes = await confirm({
+    title: BATTLE_MSG.forfeitTitle,
+    message: BATTLE_MSG.forfeitBody,
+    confirmLabel: BATTLE_MSG.forfeit,
+    cancelLabel: BATTLE_MSG.keepPlaying,
+    tone: 'error',
+  })
+  if (!yes) return
   stopTimers()
   try {
     await forfeitBattle(uuid.value)
@@ -307,14 +318,15 @@ function optionState(id: number): 'idle' | 'selected' | 'correct' | 'wrong' | 'd
               >{{ o.text }}</DsQuizOption
             >
           </div>
-          <!-- Waiting for the opponent: an icon only, no copy is specified for it -->
+          <!-- Waiting for the opponent -->
           <div
             v-if="phase === 'answering' && answered"
-            class="flex justify-center text-muted"
+            class="flex items-center justify-center text-muted"
             aria-busy="true"
             data-testid="battle-arena-waiting"
           >
             <UIcon name="i-ph-hourglass-duotone" class="size-6" aria-hidden="true" />
+            <span class="ms-2 text-label">{{ BATTLE_MSG.waitingOpponent }}</span>
           </div>
           <p
             v-if="reveal"
@@ -337,7 +349,7 @@ function optionState(id: number): 'idle' | 'selected' | 'correct' | 'wrong' | 'd
               data-testid="battle-arena-forfeit"
               @click="forfeit"
             >
-              Tamatkan
+              {{ BATTLE_MSG.forfeit }}
             </UButton>
           </div>
         </div>
@@ -358,6 +370,15 @@ function optionState(id: number): 'idle' | 'selected' | 'correct' | 'wrong' | 'd
             {{ result.scoreA }} vs {{ result.scoreB }}
           </p>
           <div class="flex flex-wrap justify-center gap-3">
+            <UButton
+              v-if="again"
+              :to="{ path: '/battle', query: { again: '1' } }"
+              size="xl"
+              color="primary"
+              class="min-h-12"
+              data-testid="battle-arena-play-again"
+              >{{ BATTLE_MSG.playAgain }}</UButton
+            >
             <UButton
               to="/battle"
               size="xl"

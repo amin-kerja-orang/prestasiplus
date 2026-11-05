@@ -4,12 +4,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import type { ArenaView } from '../../api'
+import { confirmHost, confirmState, settleConfirm } from '@/ds/useConfirm'
+import { useBattleSearch } from '../../composables/useBattleSearch'
 import BattleArenaPage from '../../pages/BattleArenaPage.vue'
 
 const api = vi.hoisted(() => ({
   fetchArena: vi.fn(),
   answerArena: vi.fn(),
   forfeitBattle: vi.fn(),
+  startBattle: vi.fn(),
 }))
 vi.mock('../../api/battle', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
@@ -213,6 +216,7 @@ describe('arena rounds (S7-T01 part C)', () => {
       seconds: 4,
     })
     expect(t('battle-arena-waiting').exists()).toBe(true)
+    expect(t('battle-arena-waiting').text()).toBe('Menunggu lawan...')
     expect(states()).toEqual(['dimmed', 'selected', 'dimmed', 'dimmed'])
     expect(t('battle-arena-feedback').exists()).toBe(false)
     expect(wrapper!.find('[data-state="correct"]').exists()).toBe(false)
@@ -225,7 +229,7 @@ describe('arena rounds (S7-T01 part C)', () => {
   it('youAnswered on load (a refresh after answering) shows the waiting state, not an open question', async () => {
     api.fetchArena.mockResolvedValue(answering({ youAnswered: true, secondsLeft: 6 }))
     await mountArena()
-    expect(t('battle-arena-waiting').exists()).toBe(true)
+    expect(t('battle-arena-waiting').text()).toBe('Menunggu lawan...')
     expect(states()).toEqual(['dimmed', 'dimmed', 'dimmed', 'dimmed'])
     await options()[0]!.trigger('click')
     expect(api.answerArena).not.toHaveBeenCalled()
@@ -377,5 +381,79 @@ describe('arena rounds (S7-T01 part C)', () => {
     await options()[0]!.trigger('click')
     await flushPromises()
     expect(t('battle-arena-title').text()).toBe('Anda menang!')
+  })
+
+  describe('"Main Lagi" (48:309)', () => {
+    async function remember(mode: 'quick-match' | 'school-battle', uuid: string) {
+      api.startBattle.mockResolvedValueOnce({
+        status: 200,
+        headers: {},
+        body: { matched: true, battle_uuid: uuid },
+      })
+      const { effectScope } = await import('vue')
+      effectScope().run(() => {
+        void useBattleSearch({ onMatched: () => undefined }).start(mode, {
+          question_type: 'biasa',
+          open_to_all: false,
+          subject_id: 3,
+        })
+      })
+      await flushPromises()
+    }
+
+    it('shows next to "Kembali ke Arena" when this session started the battle from the lobby', async () => {
+      await remember('quick-match', 'u1')
+      api.fetchArena.mockResolvedValue(finished('finished', 'A'))
+      await mountArena()
+      expect(t('battle-arena-play-again').text()).toBe('Main Lagi')
+      expect(t('battle-arena-again').text()).toBe('Kembali ke Arena')
+    })
+
+    it('is hidden when nothing is remembered for this battle (reload, deep link, Cabar Kawan)', async () => {
+      await remember('quick-match', 'another-battle')
+      api.fetchArena.mockResolvedValue(finished('finished', 'A'))
+      await mountArena()
+      expect(t('battle-arena-play-again').exists()).toBe(false)
+      expect(t('battle-arena-again').text()).toBe('Kembali ke Arena')
+    })
+  })
+
+  describe('"Menyerah" confirm (48:310)', () => {
+    beforeEach(() => {
+      confirmHost.count = 1
+    })
+    afterEach(() => {
+      settleConfirm(false)
+      confirmHost.count = 0
+    })
+
+    it('the trigger is "Menyerah" and opens the dialog with the 48 copy; "Menyerah" forfeits', async () => {
+      api.fetchArena.mockResolvedValue(answering())
+      api.forfeitBattle.mockResolvedValue({ status: 200, headers: {}, body: { success: true } })
+      await mountArena()
+      expect(t('battle-arena-forfeit').text()).toBe('Menyerah')
+      await t('battle-arena-forfeit').trigger('click')
+      expect(confirmState).toMatchObject({
+        open: true,
+        title: 'Menyerah battle ini?',
+        message: 'Anda akan kalah dan tidak mendapat mata.',
+        confirmLabel: 'Menyerah',
+        cancelLabel: 'Teruskan Bermain',
+        tone: 'error',
+      })
+      settleConfirm(true)
+      await flushPromises()
+      expect(api.forfeitBattle).toHaveBeenCalledExactlyOnceWith('u1')
+    })
+
+    it('"Teruskan Bermain" keeps playing and sends nothing', async () => {
+      api.fetchArena.mockResolvedValue(answering())
+      await mountArena()
+      await t('battle-arena-forfeit').trigger('click')
+      settleConfirm(false)
+      await flushPromises()
+      expect(api.forfeitBattle).not.toHaveBeenCalled()
+      expect(t('battle-arena-text').exists()).toBe(true)
+    })
   })
 })

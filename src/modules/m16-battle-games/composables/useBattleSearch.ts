@@ -74,7 +74,41 @@ function bodyOf<T extends object>(res: RawResponse<unknown>): Partial<T> | null 
   return typeof res.body === 'object' && res.body !== null ? res.body : null
 }
 
-export function useBattleSearch(options: { onMatched: (battleUuid: string) => void }) {
+interface StartRequest {
+  mode: 'quick-match' | 'school-battle'
+  params: BattleStartBody
+}
+
+/**
+ * The last Quick Match / Battle Sekolah request and the battle it opened: "Main Lagi" on the result
+ * screen starts the same search again. Module state: gone after a reload; never set for Cabar Kawan.
+ */
+let remembered: (StartRequest & { battleUuid: string | null }) | null = null
+
+/** The request that opened battle `uuid`, or null (reload, deep link, Cabar Kawan). */
+export function lastStartFor(uuid: string): StartRequest | null {
+  return remembered !== null && remembered.battleUuid === uuid
+    ? { mode: remembered.mode, params: remembered.params }
+    : null
+}
+
+/** The remembered request, for the lobby that "Main Lagi" opens. */
+export function lastStartRequest(): StartRequest | null {
+  return remembered === null ? null : { mode: remembered.mode, params: remembered.params }
+}
+
+export function useBattleSearch(rawOptions: {
+  onMatched: (battleUuid: string) => void
+  /** False when the account has no school (Battle Sekolah 422 {} then says so). */
+  hasSchool?: () => boolean
+}) {
+  const options = {
+    ...rawOptions,
+    onMatched: (battleUuid: string): void => {
+      if (remembered !== null && remembered.battleUuid === null) remembered.battleUuid = battleUuid
+      rawOptions.onMatched(battleUuid)
+    },
+  }
   const phase = ref<SearchPhase>('idle')
   const elapsedText = ref('0:00')
   const errorMsg = ref('')
@@ -198,6 +232,13 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
     schedule(mySession, () => searchTick(mySession))
   }
 
+  /** A refusal without text: 422 {} is "no school" (Battle Sekolah) or ERR-REQ-01, else the page text. */
+  function emptyRefusal(status: number, mode: 'quick-match' | 'school-battle'): string {
+    if (status !== 422) return BATTLE_MSG.startFallback
+    if (mode === 'school-battle' && rawOptions.hasSchool?.() === false) return BATTLE_MSG.noSchool
+    return BATTLE_MSG.invalidRequest
+  }
+
   /** FN-M16-2.2.3..2.2.5: #2 / #3 once, then the poll loop. */
   async function start(
     mode: 'quick-match' | 'school-battle',
@@ -209,6 +250,7 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
     errorMsg.value = ''
     canRetry.value = false
     lastStart = { mode, params }
+    remembered = { mode, params, battleUuid: null }
     loading.value = true
     const mine = new AbortController()
     controller = mine
@@ -226,7 +268,7 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
     const body = bodyOf<typeof res.body>(res)
     if (!isOk(res.status)) {
       // 429 BATTLE_DAILY_LIMIT: the server text inline, no countdown (ruling 35).
-      errorMsg.value = refusalText(body) || BATTLE_MSG.startFallback
+      errorMsg.value = refusalText(body) || emptyRefusal(res.status, mode)
       return
     }
     if (body === null) {
@@ -331,6 +373,7 @@ export function useBattleSearch(options: { onMatched: (battleUuid: string) => vo
   /** Polls #13 every 3 s for a join request already on file. */
   function watchWaiting(id: BattleQueueId, name: string, gradeLabel = ''): void {
     halt()
+    remembered = null
     const mySession = session
     errorMsg.value = ''
     queueId = id

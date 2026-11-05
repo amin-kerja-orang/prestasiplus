@@ -9,6 +9,12 @@ import BattleHistoryPage from '../../pages/BattleHistoryPage.vue'
 import BattleLeaderboardPage from '../../pages/BattleLeaderboardPage.vue'
 import BattleLobbyPage from '../../pages/BattleLobbyPage.vue'
 
+const session: { schoolId: number | null } = vi.hoisted(() => ({ schoolId: 5 }))
+vi.mock('@/composables/useSession', async () => {
+  const { ref } = await import('vue')
+  return { useSession: () => ({ user: ref({ id: 1, schoolId: session.schoolId }) }) }
+})
+
 const api = vi.hoisted(() => ({
   fetchBattleLobby: vi.fn(),
   fetchInvitations: vi.fn(),
@@ -64,6 +70,7 @@ async function mountPage(component: object, url = '/battle') {
 
 beforeEach(() => {
   for (const fn of Object.values(api)) fn.mockReset()
+  session.schoolId = 5
   api.fetchBattleLobby.mockResolvedValue(lobby())
   api.fetchInvitations.mockResolvedValue({ status: 200, headers: {}, body: { invitations: [] } })
 })
@@ -182,7 +189,9 @@ describe('S1 lobby', () => {
       { question_type: 'biasa', open_to_all: false, subject_id: 3, question_count: 10 },
       expect.anything(),
     )
-    expect(byId('battle-error').text()).toBe('Ralat dari server. Sila cuba lagi.')
+    expect(byId('battle-error').text()).toBe(
+      'Data yang dihantar tidak sah. Sila semak dan cuba lagi.',
+    )
     await byId('battle-error-close').trigger('click')
     expect(byId('battle-error').exists()).toBe(false)
   })
@@ -234,13 +243,49 @@ describe('S1 lobby', () => {
     expect(byId('battle-retry').exists()).toBe(false)
   })
 
-  it('Battle Sekolah with no school (422 {}) shows the page error text', async () => {
+  it('Battle Sekolah 422 {} with no school on the account says so; with a school it is the ERR-REQ-01 text', async () => {
     api.startBattle.mockResolvedValue({ status: 422, headers: {}, body: {} })
+    session.schoolId = null
     await mountPage(BattleLobbyPage)
     await wrapper!.findAll('[data-testid="battle-subject"]')[2]!.trigger('click')
     await byId('battle-school-battle').trigger('click')
     await flushPromises()
-    expect(byId('battle-error').text()).toBe('Ralat dari server. Sila cuba lagi.')
+    expect(byId('battle-error').text()).toBe('Akaun anda belum dikaitkan dengan sekolah atau kelas.')
+    wrapper!.unmount()
+    session.schoolId = 5
+    await mountPage(BattleLobbyPage)
+    await wrapper!.findAll('[data-testid="battle-subject"]')[2]!.trigger('click')
+    await byId('battle-school-battle').trigger('click')
+    await flushPromises()
+    expect(byId('battle-error').text()).toBe(
+      'Data yang dihantar tidak sah. Sila semak dan cuba lagi.',
+    )
+  })
+
+  it('"Main Lagi" opens /battle?again=1: the lobby starts the remembered search again', async () => {
+    api.startBattle.mockResolvedValue({ status: 200, headers: {}, body: { queue_id: 9 } })
+    const { router } = await mountPage(BattleLobbyPage, '/battle?again=1')
+    // nothing remembered yet from a started match: no request
+    expect(router.currentRoute.value.query.again).toBeUndefined()
+    const calls = api.startBattle.mock.calls.length
+    // a real match records the request; the next ?again=1 repeats it
+    wrapper!.unmount()
+    api.startBattle.mockResolvedValueOnce({
+      status: 200,
+      headers: {},
+      body: { matched: true, battle_uuid: 'b-1' },
+    })
+    await mountPage(BattleLobbyPage)
+    await wrapper!.findAll('[data-testid="battle-subject"]')[2]!.trigger('click')
+    await byId('battle-count-5').trigger('click')
+    await byId('battle-quick-match').trigger('click')
+    await flushPromises()
+    const first = api.startBattle.mock.calls[calls]!
+    wrapper!.unmount()
+    await mountPage(BattleLobbyPage, '/battle?again=1')
+    expect(api.startBattle).toHaveBeenCalledTimes(calls + 2)
+    expect(api.startBattle.mock.calls[calls + 1]!.slice(0, 2)).toEqual(first.slice(0, 2))
+    expect(first[1]).toMatchObject({ subject_id: 3, question_count: 5 })
   })
 
   it('an expired search shows "Tiada lawan dijumpai." with "Cuba Lagi", which searches again', async () => {

@@ -51,7 +51,6 @@ export const BATTLE_MSG = {
   leftQueue: 'Pemain sudah keluar dari barisan.',
   sendChallengeNetwork: 'Ralat menghantar cabaran.',
   acceptInviteNetwork: 'Ralat.',
-  forfeitConfirm: 'Tamatkan battle ini? Anda akan dikira kalah.',
   forfeitNetwork: 'Ralat. Sila cuba lagi.',
   // 48 GAME-01 Screen copy.
   robotOverlay: 'Tiada lawan setakat ini. Anda akan bermain dengan Robot PrestasiPlus (latihan).',
@@ -66,6 +65,18 @@ export const BATTLE_MSG = {
   resultAbandoned: 'Ditinggalkan',
   backToArena: 'Kembali ke Arena',
   questionCount: 'Bilangan Soalan',
+  playAgain: 'Main Lagi',
+  // 48:310 confirm dialog (D113)
+  forfeitTitle: 'Menyerah battle ini?',
+  forfeitBody: 'Anda akan kalah dan tidak mendapat mata.',
+  forfeit: 'Menyerah',
+  keepPlaying: 'Teruskan Bermain',
+  // [PROPOSED] waiting after you answered (lead ruling on #977)
+  waitingOpponent: 'Menunggu lawan...',
+  // 48:723 / AC-GM-16.6: Battle Sekolah refused because the account has no school
+  noSchool: 'Akaun anda belum dikaitkan dengan sekolah atau kelas.',
+  // 40:556 ERR-REQ-01 with no fields
+  invalidRequest: 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.',
 } as const
 
 export const rejectedMessage = (name: string): string => `${name} menolak permohonan anda.`

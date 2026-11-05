@@ -546,12 +546,11 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
       await mock.advanceTime(3000)
       await expect(page.getByTestId('battle-arena-progress')).toHaveText('Soalan 2/10')
 
-      const confirm = acceptNextDialog(page, {
-        type: 'confirm',
-        message: 'Tamatkan battle ini? Anda akan dikira kalah.',
-      })
       await page.getByTestId('battle-arena-forfeit').click()
-      await confirm
+      const dlg = page.getByRole('dialog')
+      await expect(dlg).toContainText('Menyerah battle ini?')
+      await expect(dlg).toContainText('Anda akan kalah dan tidak mendapat mata.')
+      await dlg.getByRole('button', { name: 'Menyerah', exact: true }).click()
       await expect(page.getByTestId('battle-arena-title')).toHaveText('Anda telah menyerah.')
       await page.goto(arenaUrl)
 
