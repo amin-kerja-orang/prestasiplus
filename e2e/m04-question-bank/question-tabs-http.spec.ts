@@ -7,7 +7,7 @@
  *     npx playwright test -c playwright.http.config.ts e2e/m04-question-bank/question-tabs-http.spec.ts --workers=1
  *
  * Writes: one draft question per Arkib Semua run, deleted in `finally`; one pupil report per row action, on a question with no report
- * yet (a pupil reports a question once and only one shown to them, so the test fails when none is left). `Nyahaktif Segera` and `Arkib` restore the question.
+ * yet (a pupil reports a question once and only one shown to them, so the test fails when none is left). `Nyahaktif Segera` restores the question; `Arkib` archives one that no paper places and sends it back through draft, review and approve (the refused fields are logged).
  */
 import type { APIRequestContext, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
@@ -168,11 +168,27 @@ test.describe('S2-T06 Laporan Soalan row actions (gap 5.1) @api', () => {
     return found as Report
   }
 
-  /** A pupil report on a structured question nobody reported yet; the page opens on the Menunggu tab. */
-  async function fileReport(page: Page): Promise<Report> {
+  /** True when no paper (Pilihan, any status) and no generated paper places the question (admin detail, `placements`). */
+  async function isUnplaced(page: Page, id: string): Promise<boolean> {
+    const d = ((await (await page.request.get(`/api/questions/${id}`)).json()) as { data: { placements?: unknown[]; generatedPaperCount?: number } }).data
+    return (d.placements ?? []).length === 0 && (d.generatedPaperCount ?? 0) === 0
+  }
+
+  /**
+   * A pupil report on a structured question nobody reported yet; the page opens on the Menunggu tab. `unplaced` picks one that no paper
+   * places, for the test that archives it: a structured question has no create route (intake only) and a pupil may report only a
+   * live, seeded one, so the spec cannot make its own question and paper; it must not archive one a Terbit paper depends on.
+   */
+  async function fileReport(page: Page, opts: { unplaced?: boolean } = {}): Promise<Report> {
     const used = new Set((await reports(page)).map((r) => r.questionId))
     const rows = ((await (await page.request.get('/api/structured-questions')).json()) as { data: { id: string }[] }).data
-    const free = rows.find((r) => !used.has(String(r.id)))
+    let free: { id: string } | undefined
+    for (const row of rows) {
+      if (used.has(String(row.id))) continue
+      if (opts.unplaced === true && !(await isUnplaced(page, String(row.id)))) continue
+      free = row
+      break
+    }
     // A hard failure on purpose: a skip here would hide the row-action coverage once the seeded pool runs out. A pupil may
     // report only a question shown to them, so a test cannot make its own.
     expect(free, 'no structured question without a report is left on this stack').toBeDefined()
@@ -245,7 +261,7 @@ test.describe('S2-T06 Laporan Soalan row actions (gap 5.1) @api', () => {
 
   test('Arkib asks first, then admin and pupil read Dikeluarkan (AC-ADM-Q22.1) @api', async ({ page }) => {
     only1280(page)
-    const r = await fileReport(page)
+    const r = await fileReport(page, { unplaced: true })
     try {
       await button(page, r, 'report-archive').click()
       await expect(page.locator('[data-ds="confirm-message"]')).toContainText(`Soalan #${r.questionId} akan diarkibkan`)
@@ -257,15 +273,24 @@ test.describe('S2-T06 Laporan Soalan row actions (gap 5.1) @api', () => {
       const mine = ((await (await pupil.get('/api/question-reports/mine')).json()) as { data: Report[] }).data
       expect(mine.find((m) => m.id === r.id)?.displayStatus).toBe('removed')
     } finally {
-      // An archived version goes back only through draft and review (lifecycle.ts). This question sits in a paper, so it must
-      // not stay archived. A seeded question may not pass today's approve gate, so review is as far as this can restore it.
-      for (const action of ['draft', 'review']) {
-        await page.request.post('/api/questions/bulk-action', {
+      // An archived version goes back only through draft, review and approve (lifecycle.ts). The question is unplaced (no paper depends
+      // on it), but restore it anyway. A seeded question may not pass today's approve gate: the refused `fields` (approveFields,
+      // gates.ts) are logged and attached so the cause is visible, and the final status is attached too.
+      let refused: unknown = null
+      for (const action of ['draft', 'review', 'approved']) {
+        const res = await page.request.post('/api/questions/bulk-action', {
           headers: { 'x-csrf-token': csrf },
           data: { action, ids: [r.questionId] },
         })
+        const body = (await res.json().catch(() => null)) as { data?: { failed?: unknown[] } } | null
+        if ((body?.data?.failed ?? []).length > 0) refused = { action, failed: body?.data?.failed }
       }
-      expect((await (await page.request.get(`/api/questions/${r.questionId}`)).json()) as { data: { status: string } }).toMatchObject({ data: { status: 'review' } })
+      const status = ((await (await page.request.get(`/api/questions/${r.questionId}`)).json()) as { data: { status: string } }).data.status
+      const note = JSON.stringify({ questionId: r.questionId, status, refused })
+      console.log(`[S2-T06 Arkib restore] ${note}`)
+      await test.info().attach('arkib-restore', { body: note, contentType: 'application/json' })
+      // Never left archived; if the approve gate refuses a seeded question it stays in review and the refused fields are in the log.
+      expect(status, `restore: ${note}`).not.toBe('archived')
     }
   })
 })
