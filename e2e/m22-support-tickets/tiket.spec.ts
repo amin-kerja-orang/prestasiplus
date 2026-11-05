@@ -527,11 +527,11 @@ test.describe('S2 queue', MODULE, () => {
       await openS2(page, gotoApp)
       expect(await page.getByTestId('tq-chips').getByRole('link').allInnerTexts()).toEqual([
         'Semua (9)',
-        'dibuka (5)',
-        'dalam_proses (1)',
-        'menunggu_balas (1)',
-        'selesai (1)',
-        'ditutup (1)',
+        'Dibuka (5)',
+        'Dalam Proses (1)',
+        'Menunggu Balas (1)',
+        'Selesai (1)',
+        'Ditutup (1)',
       ])
     })
 
@@ -616,8 +616,15 @@ test.describe('S2 queue', MODULE, () => {
     await loginAs(ADMIN)
     await openS2(page, gotoApp)
     const chips = page.getByTestId('tq-chips').getByRole('link')
-    expect(await chips.allInnerTexts()).toEqual(['Semua (2)', 'dibuka (2)'])
-    await expect(chips.first()).toHaveClass(/bg-indigo-600/)
+    expect(await chips.allInnerTexts()).toEqual([
+      'Semua (2)',
+      'Dibuka (2)',
+      'Dalam Proses (0)',
+      'Menunggu Balas (0)',
+      'Selesai (0)',
+      'Ditutup (0)',
+    ])
+    await expect(chips.first()).toHaveAttribute('data-active', 'true')
   })
 
   test('E2E-M22-34 an unknown status gives its own empty text', async ({
