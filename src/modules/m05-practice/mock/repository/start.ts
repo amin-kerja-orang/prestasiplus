@@ -24,6 +24,7 @@ import {
   REVISION_LENGTH,
   SPM_LEVEL_IDS,
   INVALID_MODE_MESSAGE,
+  isMode,
   isStartMode,
 } from './rules'
 import { seams } from './seams'
@@ -143,7 +144,8 @@ export function planStart(
   _sessionSeed: string,
   rng: Prng,
 ): StartPlan {
-  if (!isStartMode(req.mode)) throw invalid('mode', INVALID_MODE_MESSAGE)
+  // Mirror of the API: an unknown mode is "Nilai tidak sah."; "Mod tidak sah." only for a known stored mode that cannot be started.
+  if (!isStartMode(req.mode)) throw isMode(req.mode) ? invalid('mode', INVALID_MODE_MESSAGE) : invalid('mode')
   const plan = blank(req.mode)
 
   // BR-07: a user without a subscription and no trial left cannot start (402, LS-8 provisional).
