@@ -19,6 +19,7 @@ import ActivityPanel from '../components/laporan/ActivityPanel.vue'
 import {
   type ExpandKey,
   LAPORAN_COPY,
+  LIST_LIMIT,
   loginPanelTitle,
   neverLoggedCount,
   practisePanelTitle,
@@ -27,7 +28,6 @@ import {
 } from '../components/laporan/copy'
 import { grouped, parseId, parseRange, pctInt } from '../components/laporan/format'
 import ScorePanel from '../components/laporan/ScorePanel.vue'
-import LimitedStudentRows from '../components/laporan/LimitedStudentRows.vue'
 import StudentRows from '../components/laporan/StudentRows.vue'
 import SummaryCard from '../components/laporan/SummaryCard.vue'
 import TrendCard from '../components/laporan/TrendCard.vue'
@@ -210,7 +210,12 @@ const n = computed(() => d.value?.population.total ?? 0)
           >
             <UIcon name="i-ph-check-circle" class="size-4" />{{ LAPORAN_COPY.allLoggedIn }}
           </p>
-          <LimitedStudentRows v-else :rows="d.notLoggedIn" test-id="panel-login-list" />
+          <StudentRows
+            v-else
+            :limit="LIST_LIMIT"
+            :rows="d.notLoggedIn"
+            test-id="panel-login-list"
+          />
           <DsText
             v-if="d.population.loggedIn === 0"
             variant="caption"
@@ -241,7 +246,12 @@ const n = computed(() => d.value?.population.total ?? 0)
           >
             <UIcon name="i-ph-check-circle" class="size-4" />{{ LAPORAN_COPY.allPractised }}
           </p>
-          <LimitedStudentRows v-else :rows="d.notPractisedAll" test-id="panel-latihan-list" />
+          <StudentRows
+            v-else
+            :limit="LIST_LIMIT"
+            :rows="d.notPractisedAll"
+            test-id="panel-latihan-list"
+          />
         </div>
       </UCard>
 
@@ -283,7 +293,12 @@ const n = computed(() => d.value?.population.total ?? 0)
             >
               {{ n === 0 ? LAPORAN_COPY.noPupils : LAPORAN_COPY.allPractised }}
             </p>
-            <LimitedStudentRows v-else :rows="d.notPractisedAll" test-id="list-idle-rows" />
+            <StudentRows
+              v-else
+              :limit="LIST_LIMIT"
+              :rows="d.notPractisedAll"
+              test-id="list-idle-rows"
+            />
           </div>
         </UCard>
       </div>
