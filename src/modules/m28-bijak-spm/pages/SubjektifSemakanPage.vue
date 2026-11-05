@@ -77,7 +77,7 @@ async function toggleScheme(): Promise<void> {
   try {
     const view: ResultView = await server.getResult(user.value, attemptId.value, true)
     withScheme.value = view.result
-    refreshed.value = null
+    refreshed.value = stripScheme(view.result)
     shown.value = true
   } catch {
     schemeError.value = SCHEME_UNAVAILABLE

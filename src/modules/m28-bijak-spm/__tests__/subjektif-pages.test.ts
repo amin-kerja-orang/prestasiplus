@@ -385,6 +385,44 @@ describe('screen 3: Semakan', () => {
     expect(document.body.textContent).not.toContain(SCHEME_TEXT)
   })
 
+  it('a self-mark made while hidden is kept after Tunjuk then Sembunyi, and no scheme text shows', async () => {
+    let saved = 1
+    server.getResult.mockImplementation((_u: number, _id: string, withScheme?: boolean) => {
+      const v = semakanView(!!withScheme)
+      v.result.questions[0]!.parts[0]!.awarded = saved
+      v.result.score = saved
+      return Promise.resolve(v)
+    })
+    server.selfMark.mockImplementation((_u: number, _id: string, body: { mark: number }, withScheme?: boolean) => {
+      saved = body.mark
+      const v = semakanView(!!withScheme)
+      v.result.questions[0]!.parts[0]!.awarded = saved
+      return Promise.resolve({
+        partId: 'q1a',
+        awarded: saved,
+        max: 4,
+        status: 'separa',
+        attemptScore: saved,
+        attemptMax: 4,
+        provisional: false,
+        pendingReview: 0,
+        result: { ...v.result, score: saved, provisional: false, pendingReview: 0 },
+      })
+    })
+    await render('/kertas-subjektif/p1/semakan/a1')
+    ;(q('[data-testid=selfmark-inc]') as HTMLElement).click()
+    await settle()
+    expect(text('[data-testid=total]')).toBe('2 / 4')
+    ;(q('[data-testid=scheme-toggle]') as HTMLElement).click()
+    await flushPromises()
+    expect(text('[data-testid=total]')).toBe('2 / 4')
+    expect(document.body.textContent).toContain(SCHEME_TEXT)
+    ;(q('[data-testid=scheme-toggle]') as HTMLElement).click()
+    await flushPromises()
+    expect(text('[data-testid=total]')).toBe('2 / 4')
+    expect(document.body.textContent).not.toContain(SCHEME_TEXT)
+  })
+
   it('a paper id that does not match the attempt shows the not-found state', async () => {
     await render('/kertas-subjektif/other/semakan/a1')
     expect(q('[data-testid=paper-not-found]')).not.toBeNull()
