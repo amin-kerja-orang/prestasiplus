@@ -1,11 +1,15 @@
 # Fake image token in a unit test fixture (not a secret): 'abcDEF0123456789abcdef', a sequential placeholder.
 db83978c99f31ce0a037a3145f9d0f7e24113615:src/modules/m28-bijak-spm/__tests__/kuiz-pages.test.ts:generic-api-key:229
-
-# Fake UUIDs in tests (not secrets): clientUuid idempotency keys and test constants written by hand, S7-T04 and S7-T05.
+# Fake idempotency clientUuid in a mock test fixture (S7-T04, FR-ERR-9): a UUID used as a request key, not a secret.
 50cb92400be8090d6389094b80b5323892facba4:src/modules/m14-gamification/__tests__/mock/endpoints.test.ts:generic-api-key:959
+
+# Fake UUIDs in tests (not secrets): clientUuid idempotency keys written by hand in S7-T04 and S7-T05 specs.
+# Gitleaks scans every branch (fetch-depth 0), so a commit on any open branch counts.
 25dcd1bb6548807660c472256e469147cbfce393:apps/api/test/gamification/convert.spec.ts:generic-api-key:104
 25dcd1bb6548807660c472256e469147cbfce393:apps/api/test/gamification/convert.spec.ts:generic-api-key:162
 083ed11c89aabd6d9e887fa2569c4977dcefe4a2:apps/api/test/wallet/ledger-idempotency-migration.spec.ts:generic-api-key:13
 083ed11c89aabd6d9e887fa2569c4977dcefe4a2:apps/api/test/wallet/ledger-idempotency-migration.spec.ts:generic-api-key:14
 9f47bc3df7c3452462f31647a23cf82ea8ce00b0:apps/api/test/shop/user.spec.ts:generic-api-key:124
 71fc5320b646eda2412cce92e2102c06caf18675:apps/api/test/shop/concurrency.spec.ts:generic-api-key:30
+c68c97f9cc2109f12b390ece48775a719b0e000b:apps/api/test/shop/concurrency.spec.ts:generic-api-key:30
+763bacf05774a59f4adfe55b8592af56af5a9d65:apps/api/test/shop/concurrency.spec.ts:generic-api-key:30

@@ -24,10 +24,12 @@ import type {
   GradeLevel,
   HotCard,
 } from '../types'
-import { visibleGradeLevels } from '../types'
+import { ARTICLE_CATEGORIES, visibleGradeLevels } from '../types'
 import { authorRef, M09Error, nowIso, norm } from './common'
 
-export const READER_PAGE_SIZE = 18
+export const READER_PAGE_SIZE = 12
+/** FR-MUR-20-5: the reader search term is cut here. */
+const SEARCH_MAX = 100
 export const ADMIN_PAGE_SIZE = 20
 export const LATEST_LIMIT = 5
 export const RELATED_LIMIT = 3
@@ -187,6 +189,9 @@ export const articlesRepo = defineRepository({
       ...(category && category !== 'all' ? { category: category as ArticleCategory } : {}),
     })
 
+    const readerMatch = (term: string) => (a: ArticleRow) =>
+      a.title.toLowerCase().includes(term) || a.content.toLowerCase().includes(term)
+
     const uniqueSlug = (title: string): string => {
       const base = slugify(title) || 'artikel'
       let slug = base
@@ -265,19 +270,32 @@ export const articlesRepo = defineRepository({
           .rows.map(card)
       },
 
-      /** S15 list: published only, title substring, category, 18 per page. */
+      /** S15 list: published only, title or body substring (term cut at 100 characters), category, 12 per page. */
       readerList(filter: ArticleFilter = {}): { rows: ArticleCard[]; total: number } {
-        const term = norm(filter.search ?? '')
+        const term = norm((filter.search ?? '').slice(0, SEARCH_MAX))
         const res = store.query({
           where: readerWhere(filter.category),
-          ...(term === ''
-            ? {}
-            : { match: (a: ArticleRow) => a.title.toLowerCase().includes(term) }),
+          ...(term === '' ? {} : { match: readerMatch(term) }),
           sort: READER_SORT,
           page: filter.page ?? 1,
           pageSize: filter.pageSize ?? READER_PAGE_SIZE,
         })
         return { rows: res.rows.map(card), total: res.total }
+      },
+
+      /** Pill counts: published articles per category for a search term; the open category is not applied. */
+      categoryCounts(search: string = ''): Record<ArticleCategory, number> {
+        const term = norm(search.slice(0, SEARCH_MAX))
+        const out = Object.fromEntries(ARTICLE_CATEGORIES.map((c) => [c, 0])) as Record<
+          ArticleCategory,
+          number
+        >
+        const rows = store.query({
+          where: readerWhere(),
+          ...(term === '' ? {} : { match: readerMatch(term) }),
+        }).rows
+        for (const row of rows) out[row.category] += 1
+        return out
       },
 
       /** BR-M09-05: 6 random cards from featured ∪ top-10 non-featured by views, in draw order. */
