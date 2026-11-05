@@ -208,19 +208,37 @@ describe('saving Papan Bijak', () => {
 })
 
 describe('saving Ganjaran & Had Permainan', () => {
-  it('sends the 22 keys as numbers, with the toggle as 1 or 0, and flashes', async () => {
+  it('sends only the edited keys as numbers, with the toggle as 1 or 0, and flashes', async () => {
     api.saveGameSettings.mockResolvedValue(overview({ game_win_xp: 30, games_room_bots_enabled: 0 }).settings)
     const w = await open()
     await tid(w, 'gs-setting-game_win_xp').setValue('30')
     await tid(w, 'gs-setting-games_room_bots_enabled').trigger('click')
     await tid(w, 'gs-reward-form').trigger('submit')
     await flushPromises()
+    expect(api.saveGameSettings).toHaveBeenCalledExactlyOnceWith({ game_win_xp: 30, games_room_bots_enabled: 0 })
+    expect(flash()).toEqual({ type: 'success', message: 'Tetapan permainan disimpan.' })
+  })
+
+  it('a save with no edit sends the 22 keys, as an empty body is refused', async () => {
+    api.saveGameSettings.mockResolvedValue(overview().settings)
+    const w = await open()
+    await tid(w, 'gs-reward-form').trigger('submit')
+    await flushPromises()
     const body = api.saveGameSettings.mock.calls[0]?.[0] as Record<string, number>
     expect(Object.keys(body).sort()).toEqual([...GAMES_ADMIN_SETTING_KEYS].sort())
-    expect(body.game_win_xp).toBe(30)
-    expect(body.games_room_bots_enabled).toBe(0)
     expect(body.battle_questions_default).toBe(10)
-    expect(flash()).toEqual({ type: 'success', message: 'Tetapan permainan disimpan.' })
+  })
+
+  it('the next save compares with the saved values, not the first load', async () => {
+    api.saveGameSettings.mockResolvedValue(overview({ game_win_xp: 30 }).settings)
+    const w = await open()
+    await tid(w, 'gs-setting-game_win_xp').setValue('30')
+    await tid(w, 'gs-reward-form').trigger('submit')
+    await flushPromises()
+    await tid(w, 'gs-setting-game_draw_xp').setValue('12')
+    await tid(w, 'gs-reward-form').trigger('submit')
+    await flushPromises()
+    expect(api.saveGameSettings).toHaveBeenLastCalledWith({ game_draw_xp: 12 })
   })
 
   it('AC-GM-00.11: the range message shows at its field', async () => {

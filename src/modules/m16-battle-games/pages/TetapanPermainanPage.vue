@@ -3,7 +3,7 @@
  * R1-ADM-N-05 `/admin/permainan` "Tetapan Permainan" (S7-T03; 30 N-05, 48 section 2 and GAME-14): the four room tiles, the
  * Papan Bijak card with the live board breakdown, the card "Ganjaran & Had Permainan", the card `Senarai Permainan` with the per-game switch and the Segmen Roda Nasib editor.
  * Each card saves on its own, so unsaved input of another card stays. Validation is the server's and its messages show at
- * the field, so the number inputs carry no min, max or whole-number step that a browser would refuse first. The game list and its switch are not here yet (blocked on `game_enabled_<key>`).
+ * the field, so the number inputs carry no min, max or whole-number step that a browser would refuse first.
  */
 import type { TableColumn } from '@nuxt/ui'
 import {
@@ -138,8 +138,14 @@ const rewardErrors = ref<Record<string, string>>({})
 const rewardFailure = ref('')
 const rewardSaving = ref(false)
 
+/** The values as last read or saved, so a save does not send back a key another admin changed meanwhile. */
+const savedRewards = { ...rewards }
+
 function fillRewards(settings: AdminGameSettings): void {
-  for (const key of GAMES_ADMIN_SETTING_KEYS) rewards[key] = String(settings[key])
+  for (const key of GAMES_ADMIN_SETTING_KEYS) {
+    rewards[key] = String(settings[key])
+    savedRewards[key] = rewards[key]
+  }
 }
 
 async function saveRewards(): Promise<void> {
@@ -148,8 +154,10 @@ async function saveRewards(): Promise<void> {
   rewardErrors.value = {}
   rewardFailure.value = ''
   try {
-    const body = Object.fromEntries(GAMES_ADMIN_SETTING_KEYS.map((key) => [key, toNumber(rewards[key])]))
-    fillRewards(await saveGameSettings(body))
+    // An empty body is refused, so a save with no edit sends every key; the server then changes nothing.
+    const edited = GAMES_ADMIN_SETTING_KEYS.filter((key) => rewards[key] !== savedRewards[key])
+    const keys = edited.length > 0 ? edited : GAMES_ADMIN_SETTING_KEYS
+    fillRewards(await saveGameSettings(Object.fromEntries(keys.map((key) => [key, toNumber(rewards[key])]))))
     flash.show({ type: 'success', message: COPY.saved })
   } catch (err) {
     const { fields, message } = readFailure(err)
