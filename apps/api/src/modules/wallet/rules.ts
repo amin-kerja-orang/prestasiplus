@@ -56,18 +56,28 @@ export function defaultTier<T extends TierLike>(tiers: readonly T[]): T | undefi
 }
 
 /**
- * BR-M14-08: after a credit, the highest ACTIVE tier whose `minSyiling` is at most the CURRENT syiling,
- * if it is higher than the current tier; never down. Returns the tier id to keep or move to (null when
- * the wallet has none and no tier qualifies).
+ * GAME-17 (FR-GM-17.2; replaces the balance rule of BR-M14-08): the highest ACTIVE tier whose `minSyiling` is at
+ * most the LIFETIME syiling, if it is higher than the current tier; never down. Returns the tier id to keep or
+ * move to (null when the wallet has none and no tier qualifies).
  */
-export function upgradedTierId<T extends TierLike>(tiers: readonly T[], currentTierId: string | null, currentSyiling: number): string | null {
+export function upgradedTierId<T extends TierLike>(tiers: readonly T[], currentTierId: string | null, lifetimeSyiling: number): string | null {
   const current = tiers.find((t) => t.id === currentTierId)
   const floor = current ? current.minSyiling : Number.NEGATIVE_INFINITY
   let best: T | null = null
   for (const t of activeTiers(tiers)) {
-    if (t.minSyiling <= currentSyiling && t.minSyiling > floor) best = t
+    if (t.minSyiling <= lifetimeSyiling && t.minSyiling > floor) best = t
   }
   return best ? best.id : currentTierId
+}
+
+/**
+ * The tier a wallet stands on when it is READ (FR-GM-17.2, FR-MUR-29-5). The stored `tier_id` only moves on a
+ * credit, and a wallet credited under the old balance rule can lag behind its lifetime total, so every reader
+ * that shows or uses a tier asks here. Reading writes nothing; a wallet without a row is on the lowest tier.
+ */
+export function lifetimeTierOf<T extends TierLike>(tiers: readonly T[], wallet: { tierId: string | null; totalSyilingEarned: number } | null | undefined): T | undefined {
+  const id = upgradedTierId(tiers, wallet?.tierId ?? null, wallet?.totalSyilingEarned ?? 0)
+  return tiers.find((t) => t.id === id) ?? defaultTier(tiers)
 }
 
 /** BR-M14-06: the active tier with the smallest `minSyiling` above the current tier's. */
@@ -77,10 +87,10 @@ export function nextTierOf<T extends TierLike>(tiers: readonly T[], currentTierI
   return activeTiers(tiers).find((t) => t.minSyiling > min) ?? null
 }
 
-/** BR-M14-06: pct with 1 decimal, capped at 100; `need` is the syiling still missing. */
-export function nextTierProgress(currentSyiling: number, next: { minSyiling: number }): { pct: number; need: number } {
-  const raw = next.minSyiling > 0 ? (currentSyiling / next.minSyiling) * 100 : 100
-  return { pct: Math.min(100, Math.round(raw * 10) / 10), need: Math.max(0, next.minSyiling - currentSyiling) }
+/** BR-M14-06 on the lifetime total (AC-GM-17.6): pct with 1 decimal, capped at 100; `need` is the lifetime syiling still missing. */
+export function nextTierProgress(lifetimeSyiling: number, next: { minSyiling: number }): { pct: number; need: number } {
+  const raw = next.minSyiling > 0 ? (lifetimeSyiling / next.minSyiling) * 100 : 100
+  return { pct: Math.min(100, Math.round(raw * 10) / 10), need: Math.max(0, next.minSyiling - lifetimeSyiling) }
 }
 
 export interface StreakState {
