@@ -81,13 +81,13 @@ describe('question paper upload: request copy per field', () => {
     for (const year of [1999, 2100, 'abc', 2026.5, true]) {
       expect(fieldMessages(QuestionSetPaperRequestSchema.safeParse({ ...good, year }))).toEqual({ year: 'Tahun mesti antara 2000 dan 2099.' })
     }
-    expect(fieldMessages(QuestionSetPaperRequestSchema.safeParse({ ...good, preparedBy: 'a'.repeat(201) }))).toEqual({
-      preparedBy: 'Disediakan oleh tidak boleh melebihi 200 aksara.',
+    expect(fieldMessages(QuestionSetPaperRequestSchema.safeParse({ ...good, preparedBy: 'a'.repeat(151) }))).toEqual({
+      preparedBy: 'Disediakan oleh tidak boleh melebihi 150 aksara.',
     })
     expect(fieldMessages(QuestionSetPaperRequestSchema.safeParse({ ...good, note: 'a'.repeat(1001) }))).toEqual({
       note: 'Catatan tambahan tidak boleh melebihi 1000 aksara.',
     })
-    expect(QuestionSetPaperRequestSchema.safeParse({ ...good, preparedBy: 'a'.repeat(200), note: 'b'.repeat(1000) }).success).toBe(true)
+    expect(QuestionSetPaperRequestSchema.safeParse({ ...good, preparedBy: 'a'.repeat(150), note: 'b'.repeat(1000) }).success).toBe(true)
     for (const answerSchemeConfirmed of [false, 'false', '', undefined, 'no']) {
       expect(fieldMessages(QuestionSetPaperRequestSchema.safeParse({ ...good, answerSchemeConfirmed }))).toEqual({
         answerSchemeConfirmed: 'Sila sahkan skema jawapan disertakan.',
@@ -120,7 +120,7 @@ describe('question paper upload: request copy per field', () => {
       subjectLong: 'Matapelajaran tidak boleh melebihi 100 aksara.',
       level: 'Tingkatan tidak sah.',
       year: 'Tahun mesti antara 2000 dan 2099.',
-      author: 'Disediakan oleh tidak boleh melebihi 200 aksara.',
+      author: 'Disediakan oleh tidak boleh melebihi 150 aksara.',
       note: 'Catatan tambahan tidak boleh melebihi 1000 aksara.',
       confirm: 'Sila sahkan skema jawapan disertakan.',
       files: 'Sila pilih fail.',

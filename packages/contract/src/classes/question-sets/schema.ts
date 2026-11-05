@@ -29,7 +29,7 @@ export const QUESTION_SET_PAPER_MESSAGES = {
   subjectLong: 'Matapelajaran tidak boleh melebihi 100 aksara.',
   level: 'Tingkatan tidak sah.',
   year: 'Tahun mesti antara 2000 dan 2099.',
-  author: 'Disediakan oleh tidak boleh melebihi 200 aksara.',
+  author: 'Disediakan oleh tidak boleh melebihi 150 aksara.',
   note: 'Catatan tambahan tidak boleh melebihi 1000 aksara.',
   confirm: 'Sila sahkan skema jawapan disertakan.',
   files: 'Sila pilih fail.',
@@ -144,9 +144,9 @@ export const QuestionSetPaperFieldsSchema = z
     preparedBy: z
       .string()
       .trim()
-      .refine(within(200), QUESTION_SET_PAPER_MESSAGES.author)
+      .refine(within(150), QUESTION_SET_PAPER_MESSAGES.author)
       .nullish()
-      .meta({ maxLength: 200, description: 'At most 200 characters; empty is stored as "Kiriman guru".' }),
+      .meta({ maxLength: 150, description: 'At most 150 characters; empty is stored as "Kiriman guru".' }),
     note: z
       .string()
       .trim()

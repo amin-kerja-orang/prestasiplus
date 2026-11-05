@@ -55,7 +55,7 @@ export class GuruPaperIntakeAdapter implements QuestionPaperIntakePort {
         paperType: d.paperType,
         subject: d.subjectText,
         year: d.year,
-        sourceText: author === '' ? DEFAULT_SOURCE_TEXT : author.slice(0, 200),
+        sourceText: author === '' ? DEFAULT_SOURCE_TEXT : author.slice(0, 150),
         note: d.note,
       },
       who,

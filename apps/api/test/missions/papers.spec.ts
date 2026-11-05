@@ -52,7 +52,7 @@ describe('BE-18 B: POST /guru/question-papers', () => {
       expect((await run({ ...OK_FIELDS, levelId: 'abc' }, good)).fields).toEqual({ levelId: M.level })
       expect((await run({ ...OK_FIELDS, year: '1999' }, good)).fields).toEqual({ year: M.year })
       expect((await run({ ...OK_FIELDS, year: '2100' }, good)).fields).toEqual({ year: M.year })
-      expect((await run({ ...OK_FIELDS, preparedBy: 'x'.repeat(201) }, good)).fields).toEqual({ preparedBy: M.author })
+      expect((await run({ ...OK_FIELDS, preparedBy: 'x'.repeat(151) }, good)).fields).toEqual({ preparedBy: M.author })
       expect((await run({ ...OK_FIELDS, note: 'x'.repeat(1001) }, good)).fields).toEqual({ note: M.note })
       expect((await run({ ...OK_FIELDS, answerSchemeConfirmed: 'false' }, good)).fields).toEqual({ answerSchemeConfirmed: M.confirm })
       expect((await run({ ...OK_FIELDS, answerSchemeConfirmed: '' }, good)).fields).toEqual({ answerSchemeConfirmed: M.confirm })
@@ -65,7 +65,7 @@ describe('BE-18 B: POST /guru/question-papers', () => {
     })
 
     it('reports all failing fields at once, in form order, with the Laravel summary of the first', async () => {
-      const err = await run({ paperType: 'x', subject: '', levelId: '9', year: '5', preparedBy: 'x'.repeat(201), note: 'x'.repeat(1001) }, [])
+      const err = await run({ paperType: 'x', subject: '', levelId: '9', year: '5', preparedBy: 'x'.repeat(151), note: 'x'.repeat(1001) }, [])
       expect(Object.keys(err.fields)).toEqual(['paperType', 'subject', 'levelId', 'year', 'preparedBy', 'note', 'answerSchemeConfirmed', 'files'])
       expect(err.fields.files).toBe(M.files)
       expect(err.message).toBe(`${M.type} (and 7 more errors)`)

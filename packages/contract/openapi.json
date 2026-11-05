@@ -44166,8 +44166,8 @@
               "string",
               "null"
             ],
-            "maxLength": 200,
-            "description": "At most 200 characters; empty is stored as \"Kiriman guru\"."
+            "maxLength": 150,
+            "description": "At most 150 characters; empty is stored as \"Kiriman guru\"."
           },
           "note": {
             "type": [
@@ -44276,8 +44276,8 @@
               "string",
               "null"
             ],
-            "maxLength": 200,
-            "description": "At most 200 characters; empty is stored as \"Kiriman guru\"."
+            "maxLength": 150,
+            "description": "At most 150 characters; empty is stored as \"Kiriman guru\"."
           },
           "note": {
             "type": [
@@ -44364,8 +44364,8 @@
               "string",
               "null"
             ],
-            "maxLength": 200,
-            "description": "At most 200 characters; empty is stored as \"Kiriman guru\"."
+            "maxLength": 150,
+            "description": "At most 150 characters; empty is stored as \"Kiriman guru\"."
           },
           "note": {
             "type": [
@@ -44461,7 +44461,7 @@
                   "preparedBy": {
                     "type": "string",
                     "enum": [
-                      "Disediakan oleh tidak boleh melebihi 200 aksara."
+                      "Disediakan oleh tidak boleh melebihi 150 aksara."
                     ]
                   },
                   "note": {
