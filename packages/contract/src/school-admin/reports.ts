@@ -381,7 +381,14 @@ export const SchoolAdminClassRowSchema = z
     members: count.meta({ description: 'Active enrolments; may include pupils of another school.' }),
     joinCode: z.string().nullable(),
     isActive: z.boolean(),
-    link: z.string().min(1).meta({ description: 'Page link "/prestasi/kelas/{id}", built by the server from the id.' }),
+    link: z
+      .string()
+      .min(1)
+      .nullable()
+      .meta({
+        description:
+          'Page link "/prestasi/kelas/{id}" for a classroom row, built by the server from the id; null for a school_class row (it has no class dashboard).',
+      }),
   })
   .meta({ id: 'SchoolAdminClassRow' })
 export type SchoolAdminClassRow = z.infer<typeof SchoolAdminClassRowSchema>

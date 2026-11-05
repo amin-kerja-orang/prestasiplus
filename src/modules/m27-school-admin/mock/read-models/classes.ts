@@ -39,7 +39,7 @@ function rowOf(c: ClassroomRow): SchoolClassRow {
     members: classrooms.memberCount(c.kind, c.classId),
     joinCode: c.joinCode === '' ? null : c.joinCode,
     isActive: c.isActive,
-    link: `/prestasi/kelas/${String(c.classId)}`,
+    link: c.kind === 'classroom' ? `/prestasi/kelas/${String(c.classId)}` : null,
   }
 }
 

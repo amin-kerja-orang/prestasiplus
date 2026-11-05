@@ -30251,9 +30251,12 @@
             "type": "boolean"
           },
           "link": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "minLength": 1,
-            "description": "Page link \"/prestasi/kelas/{id}\", built by the server from the id."
+            "description": "Page link \"/prestasi/kelas/{id}\" for a classroom row, built by the server from the id; null for a school_class row (it has no class dashboard)."
           }
         },
         "required": [

@@ -20,6 +20,7 @@ import { SchoolAdminPupilCreateRequestSchema, SchoolAdminPupilCreatedResultSchem
 import {
   SchoolAdminActivityReportSchema,
   SchoolAdminClassListResponseSchema,
+  SchoolAdminClassRowSchema,
   SchoolAdminDashboardSchema,
   SchoolAdminDskpHeatmapSchema,
   SchoolAdminMonthlyReportSchema,
@@ -160,6 +161,7 @@ const classRow = {
   isActive: true,
   link: '/prestasi/kelas/7',
 }
+const schoolClassRow = { ...classRow, key: 'school_class:8', kind: 'school_class', id: '8', link: null }
 const classList = {
   data: [classRow],
   meta: { ...meta, displayed: 1 },
@@ -304,7 +306,9 @@ describe('school-admin contract: reports', () => {
     expect(ok(SchoolAdminClassListResponseSchema, { ...classList, tiles: undefined })).toBe(false)
     expect(ok(SchoolAdminClassListResponseSchema, { ...classList, meta: meta })).toBe(false) // displayed missing
     // S6-T13: the list holds active classes of both kinds (equal to the Kelas Aktif tile).
-    expect(ok(SchoolAdminClassListResponseSchema, { ...classList, data: [{ ...classRow, key: 'school_class:7', kind: 'school_class' }] })).toBe(true)
+    expect(ok(SchoolAdminClassListResponseSchema, { ...classList, data: [schoolClassRow] })).toBe(true)
+    expect(ok(SchoolAdminClassRowSchema, schoolClassRow)).toBe(true) // school_class: link null, no class dashboard
+    expect(ok(SchoolAdminClassRowSchema, { ...classRow, link: '' })).toBe(false)
     expect(ok(SchoolAdminClassListResponseSchema, { ...classList, data: [{ ...classRow, key: 'kelas:7', kind: 'kelas' }] })).toBe(false)
   })
 })

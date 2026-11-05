@@ -68,7 +68,8 @@ export class ClassesService {
         members: counts.get(c.id) ?? 0,
         joinCode: c.joinCode === null || c.joinCode.trim() === '' ? null : c.joinCode,
         isActive: c.isActive,
-        link: `/prestasi/kelas/${c.id}`,
+        // Only a classroom has a class dashboard (canOpenClassDashboard); a school_class link would answer NOT_FOUND.
+        link: c.kind === 'classroom' ? `/prestasi/kelas/${c.id}` : null,
       }
     })
 

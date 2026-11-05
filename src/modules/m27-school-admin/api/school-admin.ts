@@ -489,8 +489,8 @@ export interface SchoolClassRow {
   members: number
   joinCode: string | null
   isActive: boolean
-  /** `/prestasi/kelas/{id}`. */
-  link: string
+  /** `/prestasi/kelas/{id}` for a classroom; null for a school_class (no class dashboard). */
+  link: string | null
 }
 
 export interface SchoolClassListMeta {

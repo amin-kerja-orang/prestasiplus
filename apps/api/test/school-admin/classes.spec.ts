@@ -55,12 +55,13 @@ describe('GET /admin-sekolah/kelas', () => {
     expect(JSON.stringify(r)).not.toContain('Kelas Tidak Aktif')
   })
 
-  it('a school_class row is listed with its own kind, key and the same page link, and the inactive classroom is absent', async () => {
+  it('a school_class row is listed with its own kind, key and no page link, and the inactive classroom is absent', async () => {
     const r = SchoolAdminClassListResponseSchema.parse((await admin.get('/admin-sekolah/kelas?search=bukan%20bilik')).body)
     expect(r.data).toHaveLength(1)
     expect(r.data[0]).toMatchObject({ kind: 'school_class', name: 'Kelas Sekolah Bukan Bilik', levelLabel: 'Tingkatan 4', members: 0, isActive: true })
     expect(r.data[0]?.key).toBe(`school_class:${r.data[0]?.id}`)
-    expect(r.data[0]?.link).toBe(`/prestasi/kelas/${r.data[0]?.id}`)
+    // A school_class has no class dashboard (canOpenClassDashboard refuses it), so it carries no link.
+    expect(r.data[0]?.link).toBeNull()
     expect((await admin.get('/admin-sekolah/kelas?search=tidak%20aktif')).body.data).toEqual([])
   })
 
@@ -146,5 +147,12 @@ describe('GET /admin-sekolah/kelas: rows equal the Kelas Aktif tile (FR-AS-53-1)
     expect(r.tiles.activeClasses).toBe(3)
     expect(r.meta).toMatchObject({ totalItems: 3, displayed: 3 })
     expect(r.data).toHaveLength(r.tiles.activeClasses)
+  })
+
+  it('link: a classroom row keeps /prestasi/kelas/{id}; the school_class row has link null (no class dashboard, D106)', async () => {
+    const r = SchoolAdminClassListResponseSchema.parse((await admin.get('/admin-sekolah/kelas')).body)
+    for (const c of r.data) expect(c.link).toBe(c.kind === 'classroom' ? `/prestasi/kelas/${c.id}` : null)
+    expect(r.data.find((c) => c.kind === 'school_class')?.link).toBeNull()
+    // That a classroom id really opens is covered by canOpenClassDashboard (test/reports/performance/unit/policy-and-reduce.spec.ts).
   })
 })
