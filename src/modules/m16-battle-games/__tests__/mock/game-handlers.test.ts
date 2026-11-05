@@ -169,6 +169,7 @@ describe('seed (SRS §6.11.0, §6.11.3, §6.11.5)', () => {
     expect(r.body.data).toEqual({
       stats: { rooms: 160, playing: 0, finished: 0, players: 189 },
       settings: expect.objectContaining({ boardgameQuizTiles: 35, game_win_xp: 20 }) as unknown,
+      games: expect.any(Array) as unknown,
     })
     expect(rooms.plainTiles()).toBe(3)
   })
@@ -965,6 +966,36 @@ describe('game settings (SRS §7 #51-#52, BR-M16-36)', () => {
     await save(rows)
   })
 
+  it('Senarai Permainan: 14 games, no tournament or sambung-kata; the switch answers the row; 404 outside the list', async () => {
+    const list = async () => (await get<Data<Any>>('/api/admin/games', ADMIN)).body.data.games as Any[]
+    const keys = (await list()).map((g) => g.key as string)
+    expect(keys).toHaveLength(14)
+    expect(keys).toContain('roda-nasib')
+    expect(keys).not.toContain('tournament')
+    expect(keys).not.toContain('sambung-kata')
+
+    const off = await call<Any>('PUT', '/api/admin/games/kad-memori/active', ADMIN, { active: false })
+    expect(off.status).toBe(200)
+    expect(off.body.data).toEqual({
+      key: 'kad-memori',
+      name: 'Kad Memori',
+      active: false,
+      description: 'Padankan soalan dengan jawapan. 6 pasangan (12 kad).',
+    })
+    expect((await list()).filter((g) => !g.active).map((g) => g.key as string)).toEqual(['kad-memori'])
+
+    for (const key of ['tournament', 'sambung-kata', 'nope']) {
+      const missing = await call<Any>('PUT', `/api/admin/games/${key}/active`, ADMIN, { active: false })
+      expect(missing.status).toBe(404)
+      expect(missing.body.error.message).toBe('Rekod tidak dijumpai. Ia mungkin telah dipadam.')
+    }
+    const bad = await call<Any>('PUT', '/api/admin/games/battle/active', ADMIN, { active: 'x' })
+    expect(bad.body.error.fields).toEqual({ active: 'Nilai tidak sah.' })
+    const extra = await call<Any>('PUT', '/api/admin/games/battle/active', ADMIN, { active: true, extra: 1 })
+    expect(extra.body.error.fields).toEqual({ extra: 'The extra field is not allowed.' })
+    await call('PUT', '/api/admin/games/kad-memori/active', ADMIN, { active: true })
+  })
+
   it('every admin game route is admin only', async () => {
     for (const url of ['/api/admin/games', '/api/admin/games/spin-segments']) {
       expect((await get(url, null)).status).toBe(401)
@@ -972,6 +1003,8 @@ describe('game settings (SRS §7 #51-#52, BR-M16-36)', () => {
     }
     expect((await call('PUT', '/api/admin/games/settings', T4_STUDENT, { game_win_xp: 1 })).status).toBe(403)
     expect((await call('PUT', '/api/admin/games/spin-segments', T4_STUDENT, { segments: [] })).status).toBe(403)
+    expect((await call('PUT', '/api/admin/games/battle/active', T4_STUDENT, { active: false })).status).toBe(403)
+    expect((await call('PUT', '/api/admin/games/battle/active', null, { active: false })).status).toBe(401)
   })
 
   it('builds the Papan Bijak board from the setting (BR-M16-20): 50 tiles, fixed specials, quiz tiles', async () => {

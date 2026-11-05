@@ -3,7 +3,7 @@
  * R1-ADM-N-05 `/admin/permainan` against a mocked client (S7-T03; 30 N05-01..03, 48 section 2, AC-GM-00.11, AC-GM-14.3):
  * exact BM copy, the live breakdown, each card saving on its own, the server's messages at the field.
  */
-import { GAMES_ADMIN_SETTING_KEYS, GAMES_ADMIN_SETTINGS } from '@pp/contract'
+import { GAMES_ADMIN_GAMES, GAMES_ADMIN_SETTING_KEYS, GAMES_ADMIN_SETTINGS } from '@pp/contract'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -19,6 +19,7 @@ import routes from '../../routes'
 const api = vi.hoisted(() => ({
   fetchAdminGames: vi.fn(),
   saveGameSettings: vi.fn(),
+  saveGameActive: vi.fn(),
   fetchSpinSegments: vi.fn(),
   saveSpinSegments: vi.fn(),
 }))
@@ -28,6 +29,7 @@ const defaults = Object.fromEntries(GAMES_ADMIN_SETTING_KEYS.map((key) => [key, 
 const overview = (over: Partial<AdminGames['settings']> = {}): AdminGames => ({
   stats: { rooms: 160, playing: 2, finished: 158, players: 189 },
   settings: { boardgameQuizTiles: 35, ...defaults, ...over } as AdminGames['settings'],
+  games: GAMES_ADMIN_GAMES.map(({ key, name, ...rest }) => ({ key, name, active: true, ...rest })),
 })
 const SEGMENTS: AdminSpinSegment[] = [
   { position: 1, label: '1 Syiling', syiling: 1, weight: 25, active: true },
@@ -122,11 +124,10 @@ describe('the copy of 30 N-05', () => {
     expect((tid(w, 'gs-setting-game_win_xp').element as HTMLInputElement).value).toBe('20')
   })
 
-  it('has no field for a key of another screen, no game list and no coin switch', async () => {
+  it('has no field for a key of another screen and no coin switch', async () => {
     const w = await open()
     expect(tid(w, 'gs-setting-xp_per_correct').exists()).toBe(false)
     expect(tid(w, 'gs-setting-games_award_syiling').exists()).toBe(false)
-    expect(w.text()).not.toContain('Senarai Permainan')
     expect(w.text()).not.toContain('Syiling permainan')
   })
 })
@@ -230,6 +231,66 @@ describe('saving Ganjaran & Had Permainan', () => {
     await flushPromises()
     expect(tid(w, 'gs-reward-form').find('[data-testid="field-error"]').text()).toBe('Nilai mesti antara 10 dan 60.')
     expect(flash()).toBeNull()
+  })
+})
+
+describe('Senarai Permainan (N05-04)', () => {
+  it('shows the card, the 14 games with an Aktif switch, and descriptions only where 30 gives one', async () => {
+    const w = await open()
+    const card = tid(w, 'gs-games')
+    expect(card.text()).toContain('Senarai Permainan')
+    expect(card.text()).toContain('Permainan yang tersedia dalam sistem')
+    for (const game of GAMES_ADMIN_GAMES) {
+      const row = tid(w, `gs-game-${game.key}`)
+      expect(row.text(), game.key).toContain(game.name)
+      expect(row.text(), game.key).toContain('Aktif')
+    }
+    expect(tid(w, 'gs-game-papan-bijak').text()).toContain('Ular & tangga dengan soalan kuiz. Multiplayer 2-4 pemain.')
+    expect(tid(w, 'gs-game-kad-memori').text()).toContain('Padankan soalan dengan jawapan. 6 pasangan (12 kad).')
+    expect(tid(w, 'gs-game-battle').text()).toContain('1v1 kuiz battle masa nyata. Pilih lawan & subjek.')
+  })
+
+  it('has no row or switch for sambung-kata or tournament', async () => {
+    const w = await open()
+    for (const key of ['sambung-kata', 'tournament']) {
+      expect(tid(w, `gs-game-${key}`).exists(), key).toBe(false)
+      expect(tid(w, `gs-game-${key}-active`).exists(), key).toBe(false)
+    }
+    expect(tid(w, 'gs-games').text()).not.toContain('Sambung Kata')
+  })
+
+  it('switching off saves at once and flashes DINYAHAKTIFKAN; switching on flashes DIAKTIFKAN', async () => {
+    const row = { key: 'kad-memori', name: 'Kad Memori', active: false }
+    api.saveGameActive.mockResolvedValueOnce(row)
+    const w = await open()
+    const toggle = tid(w, 'gs-game-kad-memori-active')
+    await toggle.trigger('click')
+    await flushPromises()
+    expect(api.saveGameActive).toHaveBeenCalledExactlyOnceWith('kad-memori', false)
+    expect(flash()).toEqual({ type: 'success', message: 'Permainan "Kad Memori" telah DINYAHAKTIFKAN.' })
+    expect(tid(w, 'gs-game-kad-memori-active').attributes('aria-checked')).toBe('false')
+
+    api.saveGameActive.mockResolvedValueOnce({ ...row, active: true })
+    await tid(w, 'gs-game-kad-memori-active').trigger('click')
+    await flushPromises()
+    expect(api.saveGameActive).toHaveBeenLastCalledWith('kad-memori', true)
+    expect(flash()).toEqual({ type: 'success', message: 'Permainan "Kad Memori" telah DIAKTIFKAN.' })
+  })
+
+  it('a failed write leaves the switch as it was and shows the message', async () => {
+    api.saveGameActive.mockRejectedValue(new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Rekod tidak dijumpai. Ia mungkin telah dipadam.' }))
+    const w = await open()
+    await tid(w, 'gs-game-battle-active').trigger('click')
+    await flushPromises()
+    expect(tid(w, 'gs-game-battle-active').attributes('aria-checked')).toBe('true')
+    expect(tid(w, 'gs-game-failure').text()).toContain('Rekod tidak dijumpai. Ia mungkin telah dipadam.')
+    expect(flash()).toBeNull()
+  })
+
+  it('an empty list shows "Tiada permainan didaftarkan lagi."', async () => {
+    api.fetchAdminGames.mockResolvedValue({ ...overview(), games: [] })
+    const w = await open()
+    expect(tid(w, 'gs-games-empty').text()).toContain('Tiada permainan didaftarkan lagi.')
   })
 })
 

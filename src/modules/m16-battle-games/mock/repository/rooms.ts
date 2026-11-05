@@ -6,8 +6,11 @@
  */
 
 import {
+  GAMES_ADMIN_GAMES,
   GAMES_ADMIN_SETTINGS,
   GAMES_ADMIN_SETTING_KEYS,
+  type GamesAdminGame,
+  type GamesAdminGameKey,
   type GamesAdminSettingKey,
   type GamesAdminSettingsResult,
   type GamesAdminSettingsUpdateRequest,
@@ -249,6 +252,9 @@ const ADMIN_SETTING_DEFAULTS = (): Record<GamesAdminSettingKey, number> =>
     number
   >
 
+const ADMIN_GAMES_DEFAULT = (): Record<GamesAdminGameKey, boolean> =>
+  Object.fromEntries(GAMES_ADMIN_GAMES.map((game) => [game.key, true])) as Record<GamesAdminGameKey, boolean>
+
 export const roomsRepo = defineRepository({
   owner: 'M16',
   name: 'rooms',
@@ -278,6 +284,13 @@ export const roomsRepo = defineRepository({
     const adminSettings = (): GamesAdminSettingsResult => ({
       boardgameQuizTiles: quizTiles(),
       ...(settings.get(1)?.values ?? ADMIN_SETTING_DEFAULTS()),
+    })
+
+    const gameRow = (game: (typeof GAMES_ADMIN_GAMES)[number]): GamesAdminGame => ({
+      key: game.key,
+      name: game.name,
+      active: (settings.get(1)?.gamesActive ?? ADMIN_GAMES_DEFAULT())[game.key],
+      ...('description' in game ? { description: game.description } : {}),
     })
 
     const segmentRows = (): GamesAdminSpinSegment[] =>
@@ -639,7 +652,11 @@ export const roomsRepo = defineRepository({
               reachedAtMs: 0,
             })
           }
-          settings.insert({ boardgameQuizTiles: SEED_QUIZ_TILES, values: ADMIN_SETTING_DEFAULTS() })
+          settings.insert({
+            boardgameQuizTiles: SEED_QUIZ_TILES,
+            values: ADMIN_SETTING_DEFAULTS(),
+            gamesActive: ADMIN_GAMES_DEFAULT(),
+          })
           for (const s of SPIN_SEGMENTS) {
             spinSegments.insert({ label: s.label, syiling: s.value, weight: s.weight, active: true })
           }
@@ -1083,6 +1100,7 @@ export const roomsRepo = defineRepository({
             players: new Set(players.query({}).rows.map((p) => p.userId)).size,
           },
           settings: adminSettings(),
+          games: GAMES_ADMIN_GAMES.map(gameRow),
         }
       },
 
@@ -1096,9 +1114,24 @@ export const roomsRepo = defineRepository({
             values: { ...(row?.values ?? ADMIN_SETTING_DEFAULTS()), ...rest } as Record<GamesAdminSettingKey, number>,
           }
           if (row) settings.update(1, next)
-          else settings.insert(next)
+          else settings.insert({ ...next, gamesActive: ADMIN_GAMES_DEFAULT() })
         })
         return adminSettings()
+      },
+
+      /** API-ADM-08 N05-04; `null` when the key is not a game of the list. */
+      setGameActive(gameKey: string, active: boolean): GamesAdminGame | null {
+        const game = GAMES_ADMIN_GAMES.find((g) => g.key === gameKey)
+        if (!game) return null
+        transaction(() => {
+          const row = settings.get(1)
+          const gamesActive = { ...(row?.gamesActive ?? ADMIN_GAMES_DEFAULT()), [game.key]: active }
+          if (row) settings.update(1, { gamesActive })
+          else {
+            settings.insert({ boardgameQuizTiles: SEED_QUIZ_TILES, values: ADMIN_SETTING_DEFAULTS(), gamesActive })
+          }
+        })
+        return gameRow(game)
       },
 
       /** API-ADM-23: the 8 segments by position. */

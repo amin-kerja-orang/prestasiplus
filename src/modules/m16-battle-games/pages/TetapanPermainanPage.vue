@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * R1-ADM-N-05 `/admin/permainan` "Tetapan Permainan" (S7-T03; 30 N-05, 48 section 2 and GAME-14): the four room tiles, the
- * Papan Bijak card with the live board breakdown, the card "Ganjaran & Had Permainan" and the Segmen Roda Nasib editor.
+ * Papan Bijak card with the live board breakdown, the card "Ganjaran & Had Permainan", the card `Senarai Permainan` with the per-game switch and the Segmen Roda Nasib editor.
  * Each card saves on its own, so unsaved input of another card stays. Validation is the server's and its messages show at
  * the field, so the number inputs carry no min, max or whole-number step that a browser would refuse first. The game list and its switch are not here yet (blocked on `game_enabled_<key>`).
  */
@@ -25,9 +25,11 @@ import {
   DsCluster,
   DsDataTable,
   DsDefinitionList,
+  DsEmptyState,
   DsFormField,
   DsFormSection,
   DsHeading,
+  DsListRow,
   DsNativeSelect,
   DsPage,
   DsStack,
@@ -39,11 +41,18 @@ import {
   type StatItem,
 } from '@/ds'
 
-import { fetchAdminGames, fetchSpinSegments, saveGameSettings, saveSpinSegments } from '../api/games'
-import type { AdminGameSettings, AdminSpinSegment, SpinSegmentForm } from '../api/game-types'
+import {
+  fetchAdminGames,
+  fetchSpinSegments,
+  saveGameActive,
+  saveGameSettings,
+  saveSpinSegments,
+} from '../api/games'
+import type { AdminGame, AdminGameSettings, AdminSpinSegment, SpinSegmentForm } from '../api/game-types'
 import SpinSegmentField from '../components/admin/SpinSegmentField.vue'
 
 const flash = useFlash()
+const games = ref<AdminGame[]>([])
 
 const overview = useApi((signal) => fetchAdminGames({ signal }))
 const segmentsLoad = useApi((signal) => fetchSpinSegments({ signal }))
@@ -157,9 +166,31 @@ watch(
     if (!value) return
     quizTiles.value = String(value.settings.boardgameQuizTiles)
     fillRewards(value.settings)
+    games.value = value.games
   },
   { immediate: true },
 )
+
+// --- Senarai Permainan (N05-04) -----------------------------------------------------------------------------------
+
+const gameFailure = ref('')
+const gameSaving = ref<string | null>(null)
+
+/** Acts at once, with no save button. The switch follows the saved row, so a failed write leaves it as it was. */
+async function toggleGame(game: AdminGame, active: boolean): Promise<void> {
+  if (gameSaving.value !== null) return
+  gameSaving.value = game.key
+  gameFailure.value = ''
+  try {
+    const saved = await saveGameActive(game.key, active)
+    games.value = games.value.map((row) => (row.key === saved.key ? saved : row))
+    flash.show({ type: 'success', message: COPY.gameFlash(saved.name, saved.active) })
+  } catch (err) {
+    gameFailure.value = readFailure(err).message
+  } finally {
+    gameSaving.value = null
+  }
+}
 
 // --- Segmen Roda Nasib --------------------------------------------------------------------------------------------
 
@@ -343,6 +374,41 @@ const segmentsStatus = computed(() =>
             </template>
           </DsFormSection>
         </DsStack>
+
+        <DsFormSection
+          :title="COPY.gamesTitle"
+          :description="COPY.gamesDescription"
+          icon="game-controller"
+          data-testid="gs-games"
+        >
+          <DsEmptyState
+            v-if="games.length === 0"
+            size="sm"
+            :title="COPY.gamesEmpty"
+            data-testid="gs-games-empty"
+          />
+          <DsStack v-else as="ul" gap="sm">
+            <DsListRow
+              v-for="game in games"
+              :key="game.key"
+              :title="game.name"
+              :sub="game.description"
+              :data-testid="`gs-game-${game.key}`"
+            >
+              <template #meta>
+                <DsSwitchField
+                  :model-value="game.active"
+                  :label="COPY.gameActive"
+                  :loading="gameSaving === game.key"
+                  :aria-label="`${game.name} ${COPY.gameActive}`"
+                  :data-testid="`gs-game-${game.key}-active`"
+                  @update:model-value="toggleGame(game, $event)"
+                />
+              </template>
+            </DsListRow>
+          </DsStack>
+          <DsCallout v-if="gameFailure" tone="error" :description="gameFailure" data-testid="gs-game-failure" />
+        </DsFormSection>
       </DsStack>
     </DsStateView>
 

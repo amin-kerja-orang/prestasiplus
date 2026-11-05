@@ -4,7 +4,7 @@
  * 47 seeded results and the repository reads of §7.2 exist (the game handlers are M16-T2).
  */
 
-import type { GamesAdminSettingKey } from '@pp/contract'
+import type { GamesAdminGameKey, GamesAdminSettingKey } from '@pp/contract'
 
 export type BattleMode = 'quick_match' | 'school_battle' | 'challenge' | 'queue_join'
 export type QuestionType = 'biasa' | 'pksk' | 'spm'
@@ -395,6 +395,8 @@ export interface GameSettingsRow {
   boardgameQuizTiles: number
   /** The other keys of 48 section 2 on Tetapan Permainan (the API keeps them in `gamification_settings`). */
   values: Record<GamesAdminSettingKey, number>
+  /** `game_enabled_<game_key>` of Senarai Permainan. Nothing in the mock hub reads it yet (S7-T01). */
+  gamesActive: Record<GamesAdminGameKey, boolean>
 }
 
 /** DM-64 `spin_segments`; the row id is the position. */

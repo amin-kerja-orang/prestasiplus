@@ -5,11 +5,21 @@
  */
 
 import {
+  GAMES_MESSAGES,
+  GamesAdminGameActiveRequestSchema,
   GamesAdminSettingsUpdateRequestSchema,
   GamesAdminSpinSegmentsUpdateRequestSchema,
 } from '@pp/contract'
 
-import { ok, requireRole, route, validationError, type MockResponse, type RouteDef } from '@/mock/define'
+import {
+  notFound,
+  ok,
+  requireRole,
+  route,
+  validationError,
+  type MockResponse,
+  type RouteDef,
+} from '@/mock/define'
 
 import { roomsRepo } from '../repository'
 
@@ -47,6 +57,18 @@ export const adminGamesRoutes: RouteDef[] = [
     const parsed = StrictSettings.safeParse(req.body ?? {})
     if (!parsed.success) return refused(parsed.error.issues)
     return ok(roomsRepo.saveAdminSettings(parsed.data))
+  }),
+
+  // API-ADM-08 N05-04 (a key outside the list is 404 before the body is looked at)
+  route('PUT', '/api/admin/games/:gameKey/active', [requireRole('admin')], (req) => {
+    const key = String(req.params.gameKey)
+    if (!roomsRepo.adminOverview().games.some((g) => g.key === key)) {
+      return notFound(GAMES_MESSAGES.gameRecordNotFound)
+    }
+    const parsed = GamesAdminGameActiveRequestSchema.safeParse(req.body ?? {})
+    if (!parsed.success) return refused(parsed.error.issues)
+    const row = roomsRepo.setGameActive(key, parsed.data.active)
+    return row ? ok(row) : notFound(GAMES_MESSAGES.gameRecordNotFound)
   }),
 
   // API-ADM-23

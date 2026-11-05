@@ -13622,6 +13622,16 @@
       "approved_by_card": null
     },
     {
+      "key": "PUT /api/admin/games/:p/active",
+      "method": "PUT",
+      "path": "/api/admin/games/:gameKey/active",
+      "api_id": "API-ADM-08",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/games/rooms/admin/admin-games.controller.ts",
+      "approved_by_card": "S7-T03"
+    },
+    {
       "key": "GET /api/admin/games/spin-segments",
       "method": "GET",
       "path": "/api/admin/games/spin-segments",

@@ -10,6 +10,7 @@
 import { api, wireId, type EntityId, type RawResponse } from '@/api'
 
 import type {
+  AdminGame,
   AdminGames,
   AdminGameSettings,
   AdminGameSettingsPatch,
@@ -221,6 +222,11 @@ export function fetchAdminGames(options: Signal = {}): Promise<AdminGames> {
 /** #52 `PUT /api/admin/games/settings` (admin; partial; a 422 names each bad key under `fields`). */
 export function saveGameSettings(body: AdminGameSettingsPatch): Promise<AdminGameSettings> {
   return api.put<AdminGameSettings>('/api/admin/games/settings', { body })
+}
+
+/** API-ADM-08 `PUT /api/admin/games/:gameKey/active` (admin; answers the game row). */
+export function saveGameActive(gameKey: string, active: boolean): Promise<AdminGame> {
+  return api.put<AdminGame>(`/api/admin/games/${encodeURIComponent(gameKey)}/active`, { body: { active } })
 }
 
 /** API-ADM-23 `GET /api/admin/games/spin-segments` (admin). */

@@ -4,6 +4,7 @@
  */
 
 import type {
+  GamesAdminGame,
   GamesAdminOverview,
   GamesAdminSettingsResult,
   GamesAdminSettingsUpdateRequest,
@@ -336,6 +337,9 @@ export interface WeeklyCompetition {
 
 /** #51 `GET /api/admin/games`. */
 export type AdminGames = GamesAdminOverview
+
+/** One row of `Senarai Permainan`. */
+export type AdminGame = GamesAdminGame
 
 /** The answer of `PUT /api/admin/games/settings`: every setting. */
 export type AdminGameSettings = GamesAdminSettingsResult
