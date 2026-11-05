@@ -116,6 +116,8 @@ export class QueueService {
       if (e instanceof ParamRefusal) throw e.forbidden ? rawForbidden() : rawInvalid()
       throw e
     }
+    // 48 GAME-01: Battle Sekolah needs a school; no text is sent on this route (BR-M16-03), so the answer is 422 {}.
+    if (mode === 'school_battle' && ((await this.engine.player(userId))?.schoolId ?? null) === null) throw rawInvalid()
     const now = this.clock.now()
     await this.assertUnderDailyMax(userId, isTest, now)
     if (!(await this.engine.poolOk(params, grade, 'm16:pool-check'))) throw rawInvalid()
