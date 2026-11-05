@@ -45,6 +45,17 @@ export const NOT_SOURCE_TAKEN_DOWN_SQL = Prisma.sql`NOT EXISTS (SELECT 1 FROM so
 export const NOT_FLAGGED_SQL = Prisma.sql`(v.stimulus_flag IS NULL OR v.stimulus_flag = 'stem_duplicated' OR v.flag_dismissed_at IS NOT NULL)`
 
 /**
+ * S1-T09a (AC-PA-35, D-PA-6): an `mcq_multi` question (several correct options, ticks sent together) is not served in a drill that takes ONE option
+ * (46:967: Latih Tubi, Chapter, Databank, Tracking A objective, Remedial, Misi, PKSK and games). Written once and applied by every read that sets
+ * `spmPool` (true: `SPM_SERVABLE_SQL`; false: its complement with the flag, key and this condition, `QuestionsRepository.scope`). It is NOT part of
+ * the learner scope: the Bijak sitting, Kuiz, Set Soalan Guru, Subjektif and Kertas Subjektif serve it. PKSK is a separate surface (M07):
+ * `NOT_PKSK_SQL` keeps its questions out of `SPM_SERVABLE_SQL`, and M07 serves them as single-option items. Alias `v`. The JS twin is the type check
+ * of `servableMcq` / `groupSurfaceShapeReasons` (serving/rules.ts), which reports `shape_unsupported`; no new reason code is needed.
+ */
+export const MCQ_MULTI_TYPE = 'mcq_multi' as const
+export const NOT_MCQ_MULTI_SQL = Prisma.sql`v.type <> ${Prisma.raw(`'${MCQ_MULTI_TYPE}'`)}`
+
+/**
  * S1-T07 (lead decision on #424): a question is served only when every LEAF of its live version has an `answer_keys` row (a key for an MCQ, a scheme for any
  * other mode). Without it the leaf cannot be marked and the stored part tree does not parse (`StoredKeyError`). Alias `v`. JS twin: `keyReasons` in
  * serving/rules.ts (`no_key` for an MCQ leaf, `no_scheme` for any other), so the indicator and the draw agree (D91).
@@ -65,4 +76,4 @@ const OFFERED_LIST = OFFERED_LEVEL_CODES.map((c) => `'${c.replaceAll("'", '')}'`
 /** R1-T08 follow-up (REQ-B-013): the question's subject is active (a deactivated subject offers no question to pupils or to the paper builder). */
 export const ACTIVE_SUBJECT_SQL = Prisma.sql`EXISTS (SELECT 1 FROM subjects sj WHERE sj.id = v.subject_id AND sj.is_active)`
 
-export const SPM_SERVABLE_SQL = Prisma.sql`(${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_FLAGGED_SQL} AND ${ALL_LEAVES_KEYED_SQL} AND ${NOT_PKSK_SQL} AND EXISTS (SELECT 1 FROM education_levels ol WHERE ol.id = v.education_level_id AND ol.code IN (${Prisma.raw(OFFERED_LIST)})) AND EXISTS (SELECT 1 FROM subjects sj WHERE sj.id = v.subject_id AND sj.is_active) AND EXISTS (SELECT 1 FROM subject_levels sl WHERE sl.subject_id = v.subject_id AND sl.education_level_id = v.education_level_id))`
+export const SPM_SERVABLE_SQL = Prisma.sql`(${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_FLAGGED_SQL} AND ${ALL_LEAVES_KEYED_SQL} AND ${NOT_MCQ_MULTI_SQL} AND ${NOT_PKSK_SQL} AND EXISTS (SELECT 1 FROM education_levels ol WHERE ol.id = v.education_level_id AND ol.code IN (${Prisma.raw(OFFERED_LIST)})) AND EXISTS (SELECT 1 FROM subjects sj WHERE sj.id = v.subject_id AND sj.is_active) AND EXISTS (SELECT 1 FROM subject_levels sl WHERE sl.subject_id = v.subject_id AND sl.education_level_id = v.education_level_id))`

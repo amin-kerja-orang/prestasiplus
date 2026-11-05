@@ -8,7 +8,7 @@
  */
 import type { QuestionGateData } from '../ports'
 import { checkDskpGate } from '../../dskp-gate'
-import { checkDifficultyGate, checkStemGate } from '../../publish-gate'
+import { checkDifficultyGate, checkSchemeRulesGate, checkStemGate } from '../../publish-gate'
 import { checkKeysGate, checkTagGate, leavesOf } from './keys-gate'
 
 export type GateName = 'submit' | 'approve'
@@ -40,6 +40,7 @@ export function submitGate(d: QuestionGateData): GateFields {
   if (d.subjectId === null) f.subjectId = GATE_MESSAGES.subjectId
   if (d.educationLevelId === null) f.educationLevelId = GATE_MESSAGES.educationLevelId
   if (d.hasOpenDuplicateFlag) f.duplicate = GATE_MESSAGES.duplicate // duplicate resolved
+  Object.assign(f, checkSchemeRulesGate(d.parts, d.schemeRules)) // question-level penalty cap (SCHEME_PENALTY)
   return f
 }
 
@@ -61,7 +62,7 @@ export function approveGate(d: QuestionGateData, reviewerIsAi = false): GateFiel
  * rights are declared once, at the intake batch). */
 export function publishGate(d: QuestionGateData): GateFields {
   const f: GateFields = {}
-  Object.assign(f, checkKeysGate(d.parts)) // answer key / mark scheme (marks agree with the scheme)
+  Object.assign(f, checkKeysGate(d.parts, { schemeRules: d.schemeRules })) // answer key / mark scheme (marks agree with the scheme)
   Object.assign(f, checkTagGate(d)) // difficulty TP, DSKP unit and SP chosen from the curriculum
   if (d.hasOpenDuplicateFlag) f.duplicate = GATE_MESSAGES.duplicate // no open duplicate flag
   // R1-B05 (ADR-0031): DSKP complete for a NEW approval of an SPM-bound question: a cognitive level on every leaf, and the kertas.
