@@ -79,7 +79,6 @@ export const OUT_OF_SCOPE_ROUTES: readonly OutOfScopeRoute[] = [
   { to: '/guru/live-kelas', ...GURU_TOOLS },
   { to: '/guru/perbandingan-kelas', module: 'M11 Analitik Guru (S7)', reason: 'M11-T4 belum dibina; bukan baris 1.0' },
   { to: '/guru/soalan-guru', ...GURU_TOOLS },
-  { to: '/guru/soalan-berstruktur', ...GURU_TOOLS },
   { to: '/guru/databank', ...GURU_TOOLS },
   { to: '/guru/set-soalan', ...GURU_TOOLS },
   { to: '/guru/kertas-peperiksaan', ...GURU_TOOLS },

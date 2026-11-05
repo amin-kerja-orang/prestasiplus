@@ -131,6 +131,8 @@ describe('isPathInScope', () => {
       '/guru/kirkpatrick/reaction',
       '/guru/kirkpatrick/pelajar/5',
       '/guru/soalan/cipta',
+      '/guru/soalan-berstruktur',
+      '/guru/soalan-berstruktur/4454',
       '/guru/analisis-item',
       '/guru/laporan-mingguan-kelas',
       '/headcount/12/summary',
