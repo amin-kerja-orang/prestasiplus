@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
+import type { AccountProfileActivity } from '@pp/contract'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
-import { ApiError } from '@/api'
+import { api, ApiError } from '@/api'
 import { useFlashStore } from '@/stores/flash'
 import { useSessionStore } from '@/stores/session'
 
@@ -47,6 +48,14 @@ const USER: UserMe = {
   landingPath: '/dashboard',
 }
 
+const ACTIVITY: AccountProfileActivity = {
+  tiles: { coins: 0, streakDays: 1, level: 1, practiceDays: 1, sessions: 2, accuracy: null, streakBest: 1, streakToday: 1 },
+  calendar30d: Array.from({ length: 30 }, (_, i) => ({ date: `2026-10-${String(i + 1).padStart(2, '0')}`, answered: 0, sessions: 0 })),
+  badges: [],
+  recentSessions: [],
+  publicProfilePath: '/pelajar/2',
+}
+
 const blank = { template: '<div />' }
 let wrapper: VueWrapper | null = null
 
@@ -63,6 +72,7 @@ async function render(
     user,
   })
   vi.spyOn(session, 'refreshUser').mockReturnValue(refresh)
+  vi.spyOn(api, 'get').mockResolvedValue(ACTIVITY)
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -106,9 +116,18 @@ describe('S7 /profile (FR-M01-38)', () => {
     expect(w.get('[data-testid=profile-email]').text()).toBe('pelajar@demo.test')
     expect(w.get('[data-testid=profile-member-since]').text()).toBe('Ahli sejak 6 Februari 2026')
     expect(w.find('[data-testid=profile-crown]').exists()).toBe(true)
+    // The pupil edits in the page itself (FR-MUR-A1-7): no button to the edit page.
+    expect(w.find('[data-testid=profile-edit-link]').exists()).toBe(false)
+  })
+
+  it('keeps the hero button "Kemaskini Profil" for every role but the pupil, and loads no pupil blocks', async () => {
+    const get = vi.spyOn(api, 'get')
+    const w = await render(ProfilePage, { ...USER, role: 'teacher' })
     const link = w.get('[data-testid=profile-edit-link]')
     expect(link.text()).toBe('Kemaskini Profil')
     expect(link.attributes('href')).toBe('/profile/edit')
+    expect(get).not.toHaveBeenCalled()
+    expect(w.find('[data-testid=profile-public-card]').exists()).toBe(false)
   })
 
   it('uses the initials image without a picture and the uploaded picture otherwise', async () => {
@@ -125,7 +144,7 @@ describe('S7 /profile (FR-M01-38)', () => {
 })
 
 describe('S8 /profile/edit personal card (FR-M01-39, 40, 44)', () => {
-  it('pre-fills, disables the email and keeps the bio counter static', async () => {
+  it('pre-fills, disables the email and counts the bio against 1000', async () => {
     const w = await render(ProfileEditPage)
     expect((w.get('[data-testid=profile-name-input]').element as HTMLInputElement).value).toBe(
       'Pelajar Demo',
@@ -136,10 +155,10 @@ describe('S8 /profile/edit personal card (FR-M01-39, 40, 44)', () => {
     expect(email.attributes('name')).toBeUndefined()
     expect(w.text()).toContain('Email tidak boleh diubah')
     expect(w.get('[data-testid=profile-phone-input]').attributes('placeholder')).toBe('012-3456789')
-    expect(w.get('[data-testid=profile-bio-input]').attributes('maxlength')).toBe('500')
-    expect(w.get('[data-testid=profile-bio-counter]').text()).toBe('Baki: 500 aksara')
+    expect(w.get('[data-testid=profile-bio-input]').attributes('maxlength')).toBe('1000')
+    expect(w.get('[data-testid=profile-bio-counter]').text()).toBe('12/1000')
     await w.get('[data-testid=profile-bio-input]').setValue('abc')
-    expect(w.get('[data-testid=profile-bio-counter]').text()).toBe('Baki: 500 aksara')
+    expect(w.get('[data-testid=profile-bio-counter]').text()).toBe('3/1000')
   })
 
   it('has no Tingkatan picker and no "Maklumat Sekolah" card (S5-T05: grade and school are admin-managed)', async () => {
