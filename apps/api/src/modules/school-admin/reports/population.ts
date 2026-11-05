@@ -63,6 +63,26 @@ export class SchoolPopulation {
     return (await each(ids, (c) => this.analytics.sessionsByDay(c, new Date(from), new Date(to)))).flat()
   }
 
+  /** Sum of per-session accuracy and the session count behind "Skor Purata" (completed non-test sessions of `ids` with questions). */
+  async sessionScore(ids: readonly string[], from: number, to: number): Promise<{ sessions: number; ratioSum: number }> {
+    let sessions = 0
+    let ratioSum = 0
+    for (const part of await each(ids, (c) => this.analytics.sessionScoreSum(c, new Date(from), new Date(to)))) {
+      sessions += part.sessions
+      ratioSum += part.ratioSum
+    }
+    return { sessions, ratioSum }
+  }
+
+  /** Completed non-test sessions per subject id in the window. */
+  async sessionsBySubject(ids: readonly string[], from: number, to: number): Promise<Map<string, number>> {
+    const out = new Map<string, number>()
+    for (const part of await each(ids, (c) => this.analytics.sessionsBySubject(c, new Date(from), new Date(to)))) {
+      for (const [k, v] of part) out.set(k, (out.get(k) ?? 0) + v)
+    }
+    return out
+  }
+
   private window(from: number | null, to: number | null): XsWindow {
     return { from: from === null ? null : new Date(from), to: to === null ? null : new Date(to) }
   }
@@ -90,6 +110,11 @@ export class SchoolPopulation {
   /** XS-4 and XS-2 per MYT month in the window. */
   async tallyByMonth(schoolId: string, from: number, to: number): Promise<Map<string, XsMonthTally>> {
     return this.xs.tallyByMonth(schoolScope(schoolId), this.window(from, to))
+  }
+
+  /** XS-4 per MYT day (`YYYY-MM-DD`) in the window. */
+  async tallyByDay(schoolId: string, from: number, to: number): Promise<Map<string, number>> {
+    return this.xs.tallyByDay(schoolScope(schoolId), this.window(from, to))
   }
 
   /** XS-4 and XS-2 per subject in the window (answer rows, all modes; rows without a subject are left out). */

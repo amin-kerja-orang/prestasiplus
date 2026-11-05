@@ -31,22 +31,24 @@ export function windowOf(period: UsagePeriod, now: number): { from: number; to: 
   return { from, to: now + 1 }
 }
 
-/** BR-M27-23: the M05 S9 label of a mode. */
-export function modeLabel(mode: string): string {
-  switch (mode) {
-    case 'chapter':
-      return 'Bab'
-    case 'revision':
-      return 'Ulang Kaji'
-    case 'ramalan':
-      return 'Tracking A'
-    case 'pksk':
-      return 'PKSK'
-    default:
-      // random, past_year, latih_tubi, mission, remedial, question_set
-      return 'Latihan'
-  }
+/**
+ * BR-M27-23 and the X11 master table: stored mode to label. `drill` has no stored mode in the docs and stays unmapped;
+ * every other or unknown mode is Latihan (same map as the API, `reports/windows.ts`).
+ */
+const MODE_LABELS: Readonly<Record<string, string>> = {
+  chapter: 'Bab',
+  revision: 'Ulang Kaji',
+  tracking_a: 'Tracking A',
+  ramalan: 'Tracking A',
+  pksk: 'PKSK',
+  simulasi: 'Bijak',
+  subjektif: 'Subjektif',
+  game: 'Permainan',
+  question_set: 'Set Soalan',
+  mission: 'Misi',
 }
+export const modeLabel = (mode: string): string =>
+  Object.hasOwn(MODE_LABELS, mode) ? (MODE_LABELS[mode] as string) : 'Latihan'
 
 /** One decimal, half up (M05 Q-SESS-MEAN-ACC). */
 export const round1 = (n: number): number => Math.round(n * 10) / 10

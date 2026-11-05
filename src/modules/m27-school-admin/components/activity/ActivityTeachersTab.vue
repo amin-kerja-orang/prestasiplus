@@ -135,7 +135,7 @@ const tiles = computed<StatItem[]>(() => [
       :data="rows"
       :columns="columns"
       caption="Senarai guru"
-      empty-label="Tiada guru"
+      empty-title="Tiada rekod sepadan."
       card-title="name"
       :card-fields="cardFields"
       :page-size="Math.max(1, rows.length)"

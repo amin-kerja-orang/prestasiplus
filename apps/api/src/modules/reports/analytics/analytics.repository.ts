@@ -514,6 +514,35 @@ export class AnalyticsRepository {
     return rows.map((r) => ({ userId: r.user_id, mode: r.mode, day: r.day, sessions: r.sessions, correct: r.correct, questions: r.questions }))
   }
 
+  /**
+   * "Skor Purata" (R1-AS-48): the number of completed non-test sessions with questions in the window and the sum of their
+   * per-session accuracy (`correct_count / question_count`, 0..1). The mean is `ratioSum / sessions`; a session without questions is
+   * not part of it.
+   */
+  async sessionScoreSum(userIds: readonly string[], from: Date, to: Date): Promise<{ sessions: number; ratioSum: number }> {
+    const keys = toIds(userIds)
+    if (keys.length === 0) return { sessions: 0, ratioSum: 0 }
+    const rows = await this.db.$queryRaw<{ sessions: number; ratio_sum: number | null }[]>`
+      SELECT count(*)::int AS sessions, sum(LEAST(1.0, s.correct_count::float8 / s.question_count))::float8 AS ratio_sum
+      FROM practice_sessions s
+      WHERE s.user_id = ANY(${keys}::bigint[]) AND s.status = 'completed' AND NOT s.is_test AND s.question_count > 0
+        AND s.completed_at >= ${from} AND s.completed_at <= ${to}`
+    return { sessions: rows[0]?.sessions ?? 0, ratioSum: Number(rows[0]?.ratio_sum ?? 0) }
+  }
+
+  /** Completed non-test sessions per subject in the window (sessions without a subject are left out). */
+  async sessionsBySubject(userIds: readonly string[], from: Date, to: Date): Promise<Map<string, number>> {
+    const keys = toIds(userIds)
+    if (keys.length === 0) return new Map()
+    const rows = await this.db.$queryRaw<{ subject_id: string; sessions: number }[]>`
+      SELECT s.subject_id::text AS subject_id, count(*)::int AS sessions
+      FROM practice_sessions s
+      WHERE s.user_id = ANY(${keys}::bigint[]) AND s.status = 'completed' AND NOT s.is_test AND s.subject_id IS NOT NULL
+        AND s.completed_at >= ${from} AND s.completed_at <= ${to}
+      GROUP BY s.subject_id`
+    return new Map(rows.map((r) => [r.subject_id, r.sessions]))
+  }
+
   /** Pupils among `userIds` with at least one completed non-test session, optionally in one subject. */
   async practisedAmong(userIds: readonly string[], subjectId: string | null = null): Promise<Set<string>> {
     const keys = toIds(userIds)

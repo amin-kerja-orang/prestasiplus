@@ -99,6 +99,37 @@ describe('GET /admin-sekolah/laporan-aktiviti', () => {
     expect(r.tiles.pupils.accuracy).toBe(0)
   })
 
+  it('Skor Purata is the mean of per-session accuracy (separately named), null without a session; school B has its own', async () => {
+    // School A so far: 5 sessions of 7/10 each -> 70.
+    const base = SchoolAdminActivityReportSchema.parse((await admin.get('/admin-sekolah/laporan-aktiviti')).body.data)
+    expect(base.overview.skorPurata).toBe(70)
+    // Mean of per-session values, NOT pooled: one more session of 1/4 (25%) gives (5 x 70 + 25) / 6 = 62.5 (pooled would be 36/54 = 66.7).
+    const [extra] = await addPupilsWithSessions(t.db, s1, 1, { subjectId: await addSubject(t.db, 'AKT2', 'Subjek Skor'), mode: 'chapter', questions: 4, correct: 1, completedAt: '2026-10-19T08:10:00+08:00' }, 'Murid Skor')
+    // A session without questions, an old one (outside 7 days), and a session of an account that is not an XS-1 pupil are not part of it.
+    await addSession(t.db, extra as string, { questions: 0, correct: 0, completedAt: '2026-10-19T08:20:00+08:00' })
+    await addSession(t.db, extra as string, { questions: 10, correct: 0, completedAt: '2026-09-25T08:00:00+08:00' })
+    const unapproved = await addPupil(t.db, s1, 'Murid Belum Lulus', { active: false })
+    await addSession(t.db, unapproved, { questions: 10, correct: 0, completedAt: '2026-10-19T08:30:00+08:00' })
+    const r30 = SchoolAdminActivityReportSchema.parse((await admin.get('/admin-sekolah/laporan-aktiviti?range=7')).body.data)
+    expect(r30.overview.skorPurata).toBe(62.5)
+    // The 30-day window includes 25 Sep only when it is within 30 days of 19 Oct (it is: 24 days) -> adds a 0% session: (350 + 25 + 0) / 7.
+    const wide = SchoolAdminActivityReportSchema.parse((await admin.get('/admin-sekolah/laporan-aktiviti?range=30')).body.data)
+    expect(wide.overview.skorPurata).toBe(53.6)
+    // The pooled accuracy tile is a different measure and keeps its own value.
+    expect(r30.tiles.pupils.accuracy).not.toBe(r30.overview.skorPurata)
+    const b = SchoolAdminActivityReportSchema.parse((await adminB.get('/admin-sekolah/laporan-aktiviti')).body.data)
+    expect(b.overview.skorPurata).toBe(100)
+    expect(JSON.stringify(base)).not.toContain('"score"')
+  })
+
+  it('Skor Purata is null (shown as a dash) for a school without a completed session', async () => {
+    const school = (await t.db.query<{ id: string }>(`insert into schools (name, type) values ('Sekolah Skor Kosong', 'SMK') returning id::text`))[0]?.id as string
+    await addSchoolAdmin(t.db, school, 'admin.c@report.test')
+    const c = apiOf(await login(t, 'admin.c@report.test'))
+    const empty = SchoolAdminActivityReportSchema.parse((await c.get('/admin-sekolah/laporan-aktiviti')).body.data)
+    expect(empty.overview.skorPurata).toBeNull()
+  })
+
   it('401 without a session; 403 for admin, teacher and student', async () => {
     expect((await t.http().get('/api/admin-sekolah/laporan-aktiviti')).status).toBe(401)
     for (const who of [ADMIN, TEACHER, STUDENT]) {

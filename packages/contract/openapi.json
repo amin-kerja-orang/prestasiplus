@@ -28726,7 +28726,7 @@
               "properties": {
                 "label": {
                   "type": "string",
-                  "description": "Bab, Ulang Kaji, Tracking A, PKSK or Latihan."
+                  "description": "Bab (chapter), Ulang Kaji (revision), Tracking A (tracking_a, legacy ramalan), PKSK (pksk), Bijak (simulasi), Subjektif (subjektif), Permainan (game), Set Soalan (question_set), Misi (mission); every other or unknown stored mode is Latihan."
                 },
                 "sessions": {
                   "type": "integer",
@@ -28936,6 +28936,15 @@
               "activity": {
                 "type": "integer",
                 "minimum": 0
+              },
+              "skorPurata": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 100,
+                "description": "Mean of the per-session accuracy (correct / questions x 100) of the completed non-test sessions of the XS-1 pupils in the window, 1 decimal; null (shown \"—\") without such a session."
               }
             },
             "required": [
@@ -28944,7 +28953,8 @@
               "teachers",
               "teachersLogged",
               "practised",
-              "activity"
+              "activity",
+              "skorPurata"
             ]
           },
           "trend": {
@@ -29180,7 +29190,7 @@
           },
           "tingkatan": {
             "type": "string",
-            "description": "T4 or T5 (case-insensitive). Anything else means T4."
+            "description": "T1 to T5 (case-insensitive). Anything else, or a level without content, means the highest level with content."
           }
         }
       },
@@ -29299,27 +29309,14 @@
             ]
           },
           "level": {
-            "type": "object",
-            "properties": {
-              "code": {
-                "type": "string",
-                "enum": [
-                  "t4",
-                  "t5"
-                ]
-              },
-              "name": {
-                "type": "string",
-                "enum": [
-                  "Tingkatan 4",
-                  "Tingkatan 5"
-                ]
-              }
+            "$ref": "#/components/schemas/SchoolAdminHeatmapLevel"
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchoolAdminHeatmapLevel"
             },
-            "required": [
-              "code",
-              "name"
-            ]
+            "description": "The Tingkatan levels (T1 to T5) that have at least one subject with an SP, ascending. The default level is the last one."
           },
           "caption": {
             "type": [
@@ -29340,8 +29337,38 @@
           "subjects",
           "subject",
           "level",
+          "levels",
           "caption",
           "bidang"
+        ]
+      },
+      "SchoolAdminHeatmapLevel": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "t1",
+              "t2",
+              "t3",
+              "t4",
+              "t5"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "enum": [
+              "Tingkatan 1",
+              "Tingkatan 2",
+              "Tingkatan 3",
+              "Tingkatan 4",
+              "Tingkatan 5"
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "name"
         ]
       },
       "SchoolAdminMonthlyQuery": {
@@ -29371,13 +29398,19 @@
           "pupils": {
             "type": "integer",
             "minimum": 0
+          },
+          "sessions": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Completed non-test sessions of the XS-1 pupils in the subject in the shown month (\"{n} sesi\")."
           }
         },
         "required": [
           "name",
           "accuracy",
           "answers",
-          "pupils"
+          "pupils",
+          "sessions"
         ]
       },
       "SchoolAdminMonthlyMonthRow": {
@@ -29484,6 +29517,37 @@
               "sessions": {
                 "type": "integer",
                 "minimum": 0
+              },
+              "teachers": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "XS-3 teachers of the school (\"Guru\", \"berdaftar\")."
+              },
+              "busiestMonth": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "month": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                  },
+                  "label": {
+                    "type": "string",
+                    "description": "Short BM month name, e.g. \"Okt\"."
+                  },
+                  "sessions": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "month",
+                  "label",
+                  "sessions"
+                ],
+                "description": "The month of the shown year with the most completed sessions (\"Bulan Paling Aktif\", \"{n} sesi\"); null without a session in the year."
               }
             },
             "required": [
@@ -29493,8 +29557,70 @@
               "answers",
               "perPupil",
               "accuracy",
-              "sessions"
+              "sessions",
+              "teachers",
+              "busiestMonth"
             ]
+          },
+          "daily": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "day": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 31
+                },
+                "answers": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "day",
+                "answers"
+              ]
+            },
+            "description": "One entry per day of the shown month (MYT), ascending; answers = XS-4 rows of that day. Always present."
+          },
+          "yearly": {
+            "type": "object",
+            "properties": {
+              "year": {
+                "type": "integer"
+              },
+              "months": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "month": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                    },
+                    "label": {
+                      "type": "string",
+                      "description": "Short BM month name: Jan, Feb, Mac, Apr, Mei, Jun, Jul, Ogo, Sep, Okt, Nov, Dis."
+                    },
+                    "sessions": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "month",
+                    "label",
+                    "sessions"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "year",
+              "months"
+            ],
+            "description": "\"Trend Penggunaan Bulanan {tahun}\": completed sessions per month, Jan to Dis of the shown year."
           },
           "months": {
             "type": "array",
@@ -29565,7 +29691,8 @@
                 "items": {
                   "$ref": "#/components/schemas/SchoolAdminMonthlySubjectRow"
                 },
-                "description": "Shown month only, by accuracy descending, ties by answers descending then subject id."
+                "maxItems": 10,
+                "description": "Shown month only, the top 10 by sessions descending, ties by answers descending then subject id. Always present (empty array, never omitted). strongest and weakest are taken over every subject with enough pupils (not only the 10 rows), by accuracy."
               }
             },
             "required": [
@@ -29589,6 +29716,8 @@
           "prev",
           "next",
           "cards",
+          "daily",
+          "yearly",
           "months",
           "total",
           "subjects",
@@ -101641,10 +101770,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "T4 or T5 (case-insensitive). Anything else means T4."
+              "description": "T1 to T5 (case-insensitive). Anything else, or a level without content, means the highest level with content."
             },
             "required": false,
-            "description": "T4 or T5 (case-insensitive). Anything else means T4.",
+            "description": "T1 to T5 (case-insensitive). Anything else, or a level without content, means the highest level with content.",
             "name": "tingkatan",
             "in": "query"
           }

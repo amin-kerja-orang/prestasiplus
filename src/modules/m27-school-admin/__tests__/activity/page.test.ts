@@ -62,6 +62,7 @@ function report(over: Partial<SchoolActivityReport> = {}): SchoolActivityReport 
       teachersLogged: 6,
       practised: 600,
       activity: 1517,
+      skorPurata: 77.5,
     },
     trend: [
       { label: '24/08', value: 3 },
@@ -107,7 +108,7 @@ function report(over: Partial<SchoolActivityReport> = {}): SchoolActivityReport 
 }
 
 const EMPTY: SchoolActivityReport = report({
-  overview: { pupils: 0, pupilsLogged: 0, teachers: 0, teachersLogged: 0, practised: 0, activity: 0 },
+  overview: { pupils: 0, pupilsLogged: 0, teachers: 0, teachersLogged: 0, practised: 0, activity: 0, skorPurata: null },
   trend: [{ label: '25/09', value: 0 }],
   breakdown: { quiz: 0, structured: 0, battle: 0, game: 0 },
   topPupils: [],
@@ -257,30 +258,42 @@ describe('header, breadcrumb, pills, tabs (FR-M27-44, 66, 67; AC 13.1, 13.4, 19.
 })
 
 describe('Overview (FR-M27-68…70; AC 19.2…19.4)', () => {
-  it('renders exactly the four cards with percent, value, denominator and sub-lines', async () => {
+  it('renders the five cards with percent, value, denominator and sub-lines ("Pernah Akses" labels)', async () => {
     const w = await mountPage(report())
     expect(texts(w, 'la-card-label')).toEqual([
-      'Murid Pernah Login',
-      'Cikgu Pernah Login',
+      'Murid Pernah Akses',
+      'Cikgu Pernah Akses',
       'Murid Buat Latihan',
       'Jumlah Aktiviti',
+      'Skor Purata',
     ])
     expect(texts(w, 'la-card-pct')).toEqual(['57%', '67%', '49%'])
-    expect(texts(w, 'la-card-value')).toEqual(['700', '6', '600', '1,517'])
+    expect(texts(w, 'la-card-value')).toEqual(['700', '6', '600', '1,517', '78%'])
     expect(texts(w, 'la-card-of')).toEqual(['/ 1,234', '/ 9', '/ 1,234'])
     expect(texts(w, 'la-card-note')).toEqual([
       '534 belum pernah login',
       '3 belum pernah login',
       '30 hari lepas',
+      'purata ketepatan sesi',
     ])
+    expect(w.text()).not.toContain('Pernah Login')
   })
 
-  it('has no "Skor Purata", no "Struktur" chip and no "platform" wording', async () => {
+  it('"Skor Purata" is its own card (whole percent, half up), never called "Ketepatan", and has no "Struktur" chip', async () => {
     const w = await mountPage(report())
+    const card = w.get('[data-testid="la-card-score"]')
+    expect(card.text()).toContain('Skor Purata')
+    expect(card.text()).toContain('78%')
+    expect(card.text()).not.toContain('Ketepatan Purata')
+    expect(texts(w, 'la-card-label')).not.toContain('Ketepatan')
     const t = w.text()
-    expect(t).not.toContain('Skor Purata')
     expect(t).not.toContain('Struktur')
     expect(t).not.toMatch(/keseluruhan platform|seluruh platform/)
+  })
+
+  it('"Skor Purata" shows the dash without a completed session', async () => {
+    const w = await mountPage(EMPTY)
+    expect(w.get('[data-testid="la-card-score"] [data-testid="la-card-value"]').text()).toBe('—')
   })
 
   it('shows 0% (never NaN or 100%) with no pupils or teachers', async () => {
@@ -290,12 +303,13 @@ describe('Overview (FR-M27-68…70; AC 19.2…19.4)', () => {
       '0 belum pernah login',
       '0 belum pernah login',
       '30 hari lepas',
+      'purata ketepatan sesi',
     ])
   })
 
   it('draws the trend with the M17 chart options', async () => {
     const w = await mountPage(report())
-    expect(text(w, 'la-trend-title')).toBe('Trend Aktiviti')
+    expect(text(w, 'la-trend-title')).toBe('Trend Aktiviti (30 hari)')
     // the trend is drawn by DsChart; its data table carries the labels and the values
     const chart = text(w, 'la-trend-chart')
     expect(chart).toContain('24/08')
@@ -311,13 +325,29 @@ describe('Overview (FR-M27-68…70; AC 19.2…19.4)', () => {
       'Permainan',
     ])
     expect(texts(w, 'la-breakdown-value')).toEqual(['1,000', '400', '4', '24'])
-    expect(text(w, 'la-top')).toContain('Pelajar Paling Aktif')
+    expect(text(w, 'la-top')).toContain('Pelajar Paling Aktif (Top 10)')
     expect(texts(w, 'la-top-rank')).toEqual(['1', '2'])
     expect(texts(w, 'la-top-name')).toEqual(['Murid 1', 'Aini Contoh'])
     expect(texts(w, 'la-top-count')).toEqual(['877', '38'])
-    expect(text(w, 'la-never')).toContain('Cikgu Belum Login')
+    expect(text(w, 'la-never-title')).toBe('Cikgu Belum Akses (1)')
     expect(texts(w, 'la-never-name')).toEqual(['Guru Satu'])
     expect(texts(w, 'la-never-email')).toEqual(['guru1@demo.test'])
+  })
+
+  it('"Cikgu Belum Akses (12)" names the first 10 and "+ 2 lagi" opens the Guru tab (AC-AS-48-6)', async () => {
+    const never = Array.from({ length: 12 }, (_, i) => ({ userId: 100 + i, name: `Guru ${String(i + 1).padStart(2, '0')}`, email: `g${String(i + 1)}@demo.test` }))
+    const w = await mountPage(report({ teachersNeverLogged: never }))
+    expect(text(w, 'la-never-title')).toBe('Cikgu Belum Akses (12)')
+    expect(texts(w, 'la-never-name')).toEqual(never.slice(0, 10).map((n) => n.name))
+    expect(text(w, 'la-never-more')).toBe('+ 2 lagi')
+    await w.get('[data-testid="la-never-more"]').trigger('click')
+    expect(has(w, 'la-overview')).toBe(false)
+    expect(text(w, 'la-guru-title')).toBe('Senarai Guru (9)')
+  })
+
+  it('shows no "+ n lagi" link with 10 or fewer teachers', async () => {
+    const w = await mountPage(report())
+    expect(has(w, 'la-never-more')).toBe(false)
   })
 
   it('keeps the headings and no rows for an empty school', async () => {
@@ -459,6 +489,14 @@ describe('Murid tab (FR-M27-72; AC 20.2, 20.3)', () => {
     expect(texts(w, 'la-murid-name')).toEqual(['Aini Contoh'])
     await w.get('[data-testid="la-murid-search"]').setValue('tiada-padanan')
     expect(texts(w, 'la-murid-name')).toHaveLength(0)
+  })
+
+  it('pages the list 25 per page (FR-AS-48-5) and shows "Tiada rekod sepadan." for an empty list', async () => {
+    const many = Array.from({ length: 60 }, (_, i) => pupil(1000 + i, { name: `Murid Banyak ${String(i + 1).padStart(2, '0')}` }))
+    const w = await murid(report({ pupils: { semua: many, aktif: many, loginSahaja: [], belumLogin: [] } }))
+    expect(texts(w, 'la-murid-name')).toHaveLength(25)
+    const none = await murid(EMPTY)
+    expect(none.text()).toContain('Tiada rekod sepadan.')
   })
 
   it('shows the dash for the accuracy tile when there is no session', async () => {

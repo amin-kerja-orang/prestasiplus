@@ -4,7 +4,7 @@
  * "Aktif", "Login Sahaja", "Belum Login" (each lists its own pupils, up to 200), the search "Cari
  * murid...", the tiles "Jumlah Murid", "Pernah Latihan", "Jumlah Sesi", "Purata Ketepatan" and a
  * `DsDataTable` "#", "Nama", "Kelas", "Sesi", "Ketepatan", "Masa", "Syiling", "Login Terakhir" (cards below
- * `md`). No "Sekolah" column and no school select; a search with no match shows no rows.
+ * `md`), 25 per page. No "Sekolah" column and no school select; a search with no match shows "Tiada rekod sepadan.".
  */
 import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
@@ -15,6 +15,9 @@ import type { SchoolActivityReport } from '../../api/school-admin'
 import { accuracy, count, duration, lastLogin, matches, NO_DATA } from './activity-format'
 
 const props = defineProps<{ report: SchoolActivityReport }>()
+
+/** FR-AS-48-5: the Top 200 list is paginated 25 per page. */
+const PAGE_SIZE = 25
 
 type Filter = 'semua' | 'aktif' | 'loginSahaja' | 'belumLogin'
 const filter = ref<Filter>('semua')
@@ -127,10 +130,10 @@ const tiles = computed<StatItem[]>(() => [
       :data="rows"
       :columns="columns"
       caption="Senarai murid"
-      empty-label="Tiada murid"
+      empty-title="Tiada rekod sepadan."
       card-title="name"
       :card-fields="cardFields"
-      :page-size="Math.max(1, rows.length)"
+      :page-size="PAGE_SIZE"
       data-testid="la-murid-table"
     >
       <template #name-cell="{ row }">

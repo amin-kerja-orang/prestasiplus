@@ -1,15 +1,16 @@
 <script setup lang="ts">
 /**
- * S4 "Prestasi Mengikut Subjek" (restyle spec AS-50): the strongest and weakest subject as two quiet cards
- * (semantic badge with icon and word), a `DsChart` of horizontal bars of the accuracy per subject, and the
- * per-subject rows with accuracy, questions and pupils so that every figure stays readable.
+ * S4 "Prestasi Mengikut Subjek" (R1-AS-50, restyle spec AS-50), always rendered: the strongest and weakest
+ * subject as two quiet cards (semantic badge with icon and word), a `DsChart` of horizontal bars of the
+ * accuracy per subject, and the top 10 rows "{n} sesi · {x}%" (x a whole percent). A month without
+ * activity shows "Tiada aktiviti latihan pada bulan ini." (FR-AS-50-3).
  */
 import { computed } from 'vue'
 
 import { DsChart, DsPanel } from '@/ds'
 
 import type { MonthlyReport } from '../../api/school-admin'
-import { count, dec1 } from './monthly-format'
+import { count, dec1, pctWhole } from './monthly-format'
 
 const props = defineProps<{ subjects: MonthlyReport['subjects'] }>()
 
@@ -26,6 +27,14 @@ const series = computed(() => [
         Prestasi Mengikut Subjek
       </h2>
 
+      <p
+        v-if="subjects.rows.length === 0"
+        class="py-6 text-center text-body text-muted"
+        data-testid="lb-subjects-empty"
+      >
+        Tiada aktiviti latihan pada bulan ini.
+      </p>
+      <template v-else>
       <div class="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
         <DsPanel v-if="subjects.strongest" tone="inset" data-testid="lb-strongest">
           <UBadge
@@ -80,11 +89,11 @@ const series = computed(() => [
             r.name
           }}</span>
           <span class="tabular text-caption text-muted" data-testid="lb-subject-figure"
-            >{{ dec1(r.accuracy) }}% · {{ count(r.answers) }} soalan ·
-            {{ count(r.pupils) }} pelajar</span
+            >{{ count(r.sessions) }} sesi · {{ pctWhole(r.accuracy) }}</span
           >
         </li>
       </ul>
+      </template>
     </div>
   </DsPanel>
 </template>

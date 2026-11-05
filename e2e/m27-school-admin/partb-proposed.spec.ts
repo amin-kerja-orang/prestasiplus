@@ -32,7 +32,7 @@ const FORBIDDEN_COPY =
   'Anda tidak mempunyai kebenaran untuk mengakses halaman ini. Sila log masuk dengan akaun yang betul atau hubungi pentadbir.'
 const FORBIDDEN_TITLE = 'Akses Ditolak | PRESTASIPLUS'
 const LEGEND = ['Mahir (75%+)', 'Sederhana (50-74%)', 'Lemah (<50%)', 'Belum Cuba']
-const SP_EMPTY = 'Tiada Standard Pembelajaran untuk subjek dan tingkatan ini.'
+const SP_EMPTY = 'Tiada data penguasaan untuk subjek ini.'
 
 test.use({ mockInit: { latency: 0 } })
 // the populated school (P4) is computed from large owner datasets: allow the first answer time
@@ -428,41 +428,46 @@ test.describe('S5 Laporan Bulanan', MODULE, () => {
     await signIn(page, POPULATED)
     await open(page, gotoApp, S5, 'lb-cards')
     expect(await textsOf(page.getByTestId('lb-cards').locator('p.uppercase'))).toEqual([
-      'Penglibatan',
+      'Pelajar Berdaftar',
+      'Kadar Penglibatan',
       'Soalan Dijawab',
       'Ketepatan',
+      'Guru',
+      'Soalan / Pelajar Aktif',
+      'Bulan Paling Aktif',
       'Sesi Latihan',
     ])
-    const [part, answers, accuracy, sessions] = await texts(page, 'lb-card-value')
+    const [registeredText, part, answers, accuracy, , depth] = await texts(page, 'lb-card-value')
+    expect(registeredText).toMatch(/^\d{1,3}(,\d{3})*$/)
     expect(part).toMatch(/^\d{1,3}%$/)
     expect(answers).toMatch(/^\d{1,3}(,\d{3})*$/)
-    expect(accuracy).toMatch(/^(\d{1,3}\.\d%|—)$/)
-    expect(sessions).toMatch(/^\d{1,3}(,\d{3})*$/)
-    const [subA, subB] = await texts(page, 'lb-card-sub')
-    const m = /^([\d,]+) aktif \/ ([\d,]+) daftar$/.exec(subA ?? '')
+    expect(accuracy).toMatch(/^(\d{1,3}%|—)$/)
+    const subs = await texts(page, 'lb-card-sub')
+    const m = /^([\d,]+) aktif$/.exec(subs[0] ?? '')
     expect(m).not.toBeNull()
     const active = num(m![1] as string) as number
-    const registered = num(m![2] as string) as number
+    const registered = num(registeredText as string) as number
     expect(active).toBeLessThanOrEqual(registered)
     expect(num(part as string)).toBe(registered > 0 ? Math.round((active / registered) * 100) : 0)
-    const m2 = /^([\d,]+) soalan\/pelajar$/.exec(subB ?? '')
-    expect(m2).not.toBeNull()
-    expect(num(m2![1] as string)).toBe(
+    expect(num(depth as string)).toBe(
       active > 0 ? Math.round((num(answers as string) as number) / active) : 0,
     )
     await expectNoHorizontalScroll(page)
   })
 
-  test('E2E-M27-79 a month without answers: "0%", "0", "—", "0" and no section below the cards', async ({
+  test('E2E-M27-79 a month without answers: the note and every section stay, Ketepatan is "—"', async ({
     page,
     gotoApp,
   }) => {
     await signIn(page, AZLAN)
     await open(page, gotoApp, S5, 'lb-cards')
-    expect(await texts(page, 'lb-card-value')).toEqual(['0%', '0', '—', '0'])
-    expect(await texts(page, 'lb-card-sub')).toEqual(['0 aktif / 0 daftar', '0 soalan/pelajar'])
-    await expect(page.getByTestId('lb-table-title')).toHaveCount(0)
-    await expect(page.getByTestId('lb-subjects')).toHaveCount(0)
+    const values = await texts(page, 'lb-card-value')
+    expect(values[3]).toBe('—')
+    await expect(page.getByTestId('lb-empty-note')).toHaveText('Tiada data untuk bulan ini.')
+    await expect(page.getByTestId('lb-daily')).toBeVisible()
+    await expect(page.getByTestId('lb-yearly')).toBeVisible()
+    await expect(page.getByTestId('lb-table-title')).toBeVisible()
+    await expect(page.getByTestId('lb-subjects-empty')).toHaveText('Tiada aktiviti latihan pada bulan ini.')
     await expectNoHorizontalScroll(page)
   })
 

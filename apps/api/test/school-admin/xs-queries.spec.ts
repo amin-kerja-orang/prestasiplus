@@ -434,6 +434,6 @@ describe('Laporan Bulanan on XS-4 (a month with answers but no completed session
     // Subject rows: every answer has a subject, so the subject answers equal XS-4 of the month.
     const month = await xs.answers(sc1, { from: new Date('2026-10-01T00:00:00+08:00'), to: new Date('2026-10-31T23:59:59.999+08:00') })
     expect(r.subjects.rows.reduce((n, x) => n + x.answers, 0)).toBe(month)
-    expect(r.subjects.rows).toEqual([{ name: 'Subjek XS Bulanan', accuracy: 68.2, answers: 22, pupils: 5 }])
+    expect(r.subjects.rows).toEqual([{ name: 'Subjek XS Bulanan', accuracy: 68.2, answers: 22, pupils: 5, sessions: 0 }])
   })
 })

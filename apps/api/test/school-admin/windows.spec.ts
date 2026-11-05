@@ -43,18 +43,24 @@ describe('usage window', () => {
     const t = Date.parse('2026-10-19T00:30:00+08:00')
     expect(usageWindow('today', t).from).toBe(TODAY_START)
   })
-  it('mode labels: Bab, Ulang Kaji, Tracking A, PKSK; every other mode is Latihan', () => {
-    expect(['chapter', 'revision', 'ramalan', 'pksk', 'random', 'past_year', 'latih_tubi', 'mission', 'zzz'].map(modeLabelOf)).toEqual([
-      'Bab',
-      'Ulang Kaji',
-      'Tracking A',
-      'PKSK',
-      'Latihan',
-      'Latihan',
-      'Latihan',
-      'Latihan',
-      'Latihan',
-    ])
+  it('mode labels follow the X11 master table; every other or unknown mode is Latihan', () => {
+    const mapped: [string, string][] = [
+      ['chapter', 'Bab'],
+      ['revision', 'Ulang Kaji'],
+      ['tracking_a', 'Tracking A'],
+      ['ramalan', 'Tracking A'],
+      ['pksk', 'PKSK'],
+      ['simulasi', 'Bijak'],
+      ['subjektif', 'Subjektif'],
+      ['game', 'Permainan'],
+      ['question_set', 'Set Soalan'],
+      ['mission', 'Misi'],
+    ]
+    expect(mapped.map(([m]) => modeLabelOf(m))).toEqual(mapped.map(([, l]) => l))
+    // No stored mode is identified for "Drill" (an engine name), so latih_tubi stays Latihan; so do the unmapped modes.
+    for (const m of ['random', 'past_year', 'latih_tubi', 'remedial', 'databank', 'kuiz', 'structured', 'battle', 'audio_kbat', 'zzz', 'constructor', '']) {
+      expect(modeLabelOf(m), m).toBe('Latihan')
+    }
   })
 })
 
@@ -140,8 +146,8 @@ describe('DSKP heatmap rules', () => {
     expect(dskpStatusOf(75)).toBe('mahir')
     expect(dskpStatusOf(100)).toBe('mahir')
   })
-  it('tingkatan is T4 or T5 (case-insensitive); anything else is T4', () => {
-    expect(['T5', 't5', ' T5 ', 'T4', 't6', '', undefined].map(tingkatanOf)).toEqual(['t5', 't5', 't5', 't4', 't4', 't4', 't4'])
+  it('tingkatan is T1 to T5 (case-insensitive); anything else is null (the highest level with content is then used)', () => {
+    expect(['T5', 't5', ' T5 ', 'T4', 'T1', 't3', 't6', 'T0', '', undefined].map(tingkatanOf)).toEqual(['t5', 't5', 't5', 't4', 't1', 't3', null, null, null, null])
   })
 })
 

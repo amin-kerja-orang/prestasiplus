@@ -39,20 +39,28 @@ export function usageWindow(period: SchoolAdminUsagePeriod, now: number): { from
   return { from: now - (period === '7days' ? 7 : 30) * DAY_MS, to: now }
 }
 
-/** Session mode to the usage mode label: Bab, Ulang Kaji, Tracking A, PKSK; every other mode is Latihan. */
+/**
+ * Stored `practice_answers.mode` / `practice_sessions.mode` to the usage mode label, from the master table "Pupil activity ->
+ * stored `mode`" (40 section X11). Mapped: `chapter` Bab, `revision` Ulang Kaji, `tracking_a` (and legacy `ramalan`) Tracking A,
+ * `pksk` PKSK, `simulasi` Bijak, `subjektif` Subjektif, `game` Permainan, `question_set` Set Soalan, `mission` Misi. Every other
+ * mode, and an unknown one, is Latihan. No document names a stored mode for the label "Drill" (it is an engine name in 46, not a
+ * mode), so it is left unmapped; `kuiz`, `battle`, `audio_kbat` and `structured` have no label in the set either.
+ */
+const MODE_LABELS: Readonly<Record<string, string>> = {
+  chapter: 'Bab',
+  revision: 'Ulang Kaji',
+  tracking_a: 'Tracking A',
+  ramalan: 'Tracking A',
+  pksk: 'PKSK',
+  simulasi: 'Bijak',
+  subjektif: 'Subjektif',
+  game: 'Permainan',
+  question_set: 'Set Soalan',
+  mission: 'Misi',
+}
+
 export function modeLabelOf(mode: string): string {
-  switch (mode) {
-    case 'chapter':
-      return 'Bab'
-    case 'revision':
-      return 'Ulang Kaji'
-    case 'ramalan':
-      return 'Tracking A'
-    case 'pksk':
-      return 'PKSK'
-    default:
-      return 'Latihan'
-  }
+  return Object.hasOwn(MODE_LABELS, mode) ? (MODE_LABELS[mode] as string) : 'Latihan'
 }
 
 // --- activity --------------------------------------------------------------------------------------------------------------
@@ -84,6 +92,17 @@ const MONTHS_MS = [
   'November',
   'Disember',
 ] as const
+
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis'] as const
+
+/** Short BM month name ("Okt"). */
+export const monthShort = (ym: YearMonth): string => MONTHS_SHORT[ym.month - 1] as string
+
+/** The 12 months Jan to Dec of a year, ascending. */
+export const monthsOfYear = (year: number): YearMonth[] => Array.from({ length: 12 }, (_, i) => ({ year, month: i + 1 }))
+
+/** Days in a month. */
+export const daysInMonth = (ym: YearMonth): number => new Date(Date.UTC(ym.year, ym.month, 0)).getUTCDate()
 
 const MONTH_KEY = /^(\d{4})-(0[1-9]|1[0-2])$/
 
@@ -149,8 +168,14 @@ export function dskpStatusOf(pct: number | null): SchoolAdminDskpStatus {
   return pct >= 75 ? 'mahir' : pct >= 50 ? 'sederhana' : 'lemah'
 }
 
-/** T4 or T5, case-insensitive; anything else is T4. */
-export const tingkatanOf = (raw: string | undefined): 't4' | 't5' => (raw?.trim().toLowerCase() === 't5' ? 't5' : 't4')
+export const HEATMAP_LEVELS = ['t1', 't2', 't3', 't4', 't5'] as const
+export type HeatmapLevel = (typeof HEATMAP_LEVELS)[number]
+
+/** T1 to T5, case-insensitive; null for anything else (the caller then takes the highest level with content). */
+export function tingkatanOf(raw: string | undefined): HeatmapLevel | null {
+  const v = raw?.trim().toLowerCase()
+  return (HEATMAP_LEVELS as readonly string[]).includes(v ?? '') ? (v as HeatmapLevel) : null
+}
 
 // --- class list ------------------------------------------------------------------------------------------------------------
 

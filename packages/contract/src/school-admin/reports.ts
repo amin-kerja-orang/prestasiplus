@@ -121,7 +121,10 @@ export const SchoolAdminUsageSchema = z
     modes: z
       .array(
         z.object({
-          label: z.string().meta({ description: 'Bab, Ulang Kaji, Tracking A, PKSK or Latihan.' }),
+          label: z.string().meta({
+            description:
+              'Bab (chapter), Ulang Kaji (revision), Tracking A (tracking_a, legacy ramalan), PKSK (pksk), Bijak (simulasi), Subjektif (subjektif), Permainan (game), Set Soalan (question_set), Misi (mission); every other or unknown stored mode is Latihan.',
+          }),
           sessions: count,
           accuracy: z.number().nullable(),
         }),
@@ -177,6 +180,8 @@ export type SchoolAdminActivityTeacherRow = z.infer<typeof SchoolAdminActivityTe
 /**
  * The M17 statistics report in the school scope: no `schools` list, no `overview.score` /
  * `structuredScore` and no `schoolName` on rows (platform-only figures are never present).
+ * `overview.skorPurata` is the separately named "Skor Purata" of R1-AS-48 (mean of per-session accuracy); it is never labelled
+ * "Ketepatan" and is not the M17 platform `score`.
  */
 export const SchoolAdminActivityReportSchema = z
   .object({
@@ -190,6 +195,15 @@ export const SchoolAdminActivityReportSchema = z
       teachersLogged: count,
       practised: count,
       activity: count,
+      skorPurata: z
+        .number()
+        .min(0)
+        .max(100)
+        .nullable()
+        .meta({
+          description:
+            'Mean of the per-session accuracy (correct / questions x 100) of the completed non-test sessions of the XS-1 pupils in the window, 1 decimal; null (shown "—") without such a session.',
+        }),
     }),
     trend: z.array(z.object({ label: z.string(), value: count })),
     breakdown: z.object({ quiz: count, structured: count, battle: count, game: count }),
@@ -229,7 +243,10 @@ export type SchoolAdminDskpStatus = z.infer<typeof SchoolAdminDskpStatusSchema>
 export const SchoolAdminHeatmapQuerySchema = z
   .object({
     subjectId: z.string().optional().meta({ description: 'Subject id (digits). Unknown or absent = the first subject by name.' }),
-    tingkatan: z.string().optional().meta({ description: 'T4 or T5 (case-insensitive). Anything else means T4.' }),
+    tingkatan: z
+      .string()
+      .optional()
+      .meta({ description: 'T1 to T5 (case-insensitive). Anything else, or a level without content, means the highest level with content.' }),
   })
   .meta({ id: 'SchoolAdminHeatmapQuery' })
 export type SchoolAdminHeatmapQuery = z.infer<typeof SchoolAdminHeatmapQuerySchema>
@@ -257,6 +274,15 @@ export const SchoolAdminHeatmapBidangSchema = z
   .meta({ id: 'SchoolAdminHeatmapBidang' })
 export type SchoolAdminHeatmapBidang = z.infer<typeof SchoolAdminHeatmapBidangSchema>
 
+export const SCHOOL_ADMIN_HEATMAP_LEVELS = ['t1', 't2', 't3', 't4', 't5'] as const
+export const SchoolAdminHeatmapLevelSchema = z
+  .object({
+    code: z.enum(SCHOOL_ADMIN_HEATMAP_LEVELS),
+    name: z.enum(['Tingkatan 1', 'Tingkatan 2', 'Tingkatan 3', 'Tingkatan 4', 'Tingkatan 5']),
+  })
+  .meta({ id: 'SchoolAdminHeatmapLevel' })
+export type SchoolAdminHeatmapLevel = z.infer<typeof SchoolAdminHeatmapLevelSchema>
+
 export const SchoolAdminDskpHeatmapSchema = z
   .object({
     school: SchoolAdminSchoolRefSchema,
@@ -264,7 +290,10 @@ export const SchoolAdminDskpHeatmapSchema = z
       .array(z.object({ id: IdSchema, name: z.string() }))
       .meta({ description: 'Subjects with at least one SP at the level, by name A to Z.' }),
     subject: z.object({ id: IdSchema, name: z.string() }).nullable(),
-    level: z.object({ code: z.enum(['t4', 't5']), name: z.enum(['Tingkatan 4', 'Tingkatan 5']) }),
+    level: SchoolAdminHeatmapLevelSchema,
+    levels: z
+      .array(SchoolAdminHeatmapLevelSchema)
+      .meta({ description: 'The Tingkatan levels (T1 to T5) that have at least one subject with an SP, ascending. The default level is the last one.' }),
     caption: z.string().nullable().meta({ description: '"KSSM {Subjek} Tingkatan {n}"; null without a subject.' }),
     bidang: z.array(SchoolAdminHeatmapBidangSchema),
   })
@@ -292,6 +321,7 @@ export const SchoolAdminMonthlySubjectRowSchema = z
     accuracy: z.number().min(0).max(100),
     answers: count,
     pupils: count,
+    sessions: count.meta({ description: 'Completed non-test sessions of the XS-1 pupils in the subject in the shown month ("{n} sesi").' }),
   })
   .meta({ id: 'SchoolAdminMonthlySubjectRow' })
 export type SchoolAdminMonthlySubjectRow = z.infer<typeof SchoolAdminMonthlySubjectRowSchema>
@@ -328,7 +358,25 @@ export const SchoolAdminMonthlyReportSchema = z
       perPupil: count.meta({ description: 'Integer: round(answers / active), 0 without an active pupil.' }),
       accuracy: z.number().nullable().meta({ description: '1 decimal; null = "—".' }),
       sessions: count,
+      teachers: count.meta({ description: 'XS-3 teachers of the school ("Guru", "berdaftar").' }),
+      busiestMonth: z
+        .object({
+          month: MonthKeySchema,
+          label: z.string().meta({ description: 'Short BM month name, e.g. "Okt".' }),
+          sessions: count,
+        })
+        .nullable()
+        .meta({ description: 'The month of the shown year with the most completed sessions ("Bulan Paling Aktif", "{n} sesi"); null without a session in the year.' }),
     }),
+    daily: z
+      .array(z.object({ day: z.number().int().min(1).max(31), answers: count }))
+      .meta({ description: 'One entry per day of the shown month (MYT), ascending; answers = XS-4 rows of that day. Always present.' }),
+    yearly: z
+      .object({
+        year: z.number().int(),
+        months: z.array(z.object({ month: MonthKeySchema, label: z.string().meta({ description: 'Short BM month name: Jan, Feb, Mac, Apr, Mei, Jun, Jul, Ogo, Sep, Okt, Nov, Dis.' }), sessions: count })).length(12),
+      })
+      .meta({ description: '"Trend Penggunaan Bulanan {tahun}": completed sessions per month, Jan to Dis of the shown year.' }),
     months: z
       .array(SchoolAdminMonthlyMonthRowSchema)
       .meta({
@@ -344,7 +392,8 @@ export const SchoolAdminMonthlyReportSchema = z
       weakest: SchoolAdminMonthlySubjectRowSchema.nullable(),
       rows: z
         .array(SchoolAdminMonthlySubjectRowSchema)
-        .meta({ description: 'Shown month only, by accuracy descending, ties by answers descending then subject id.' }),
+        .max(10)
+        .meta({ description: 'Shown month only, the top 10 by sessions descending, ties by answers descending then subject id. Always present (empty array, never omitted). strongest and weakest are taken over every subject with enough pupils (not only the 10 rows), by accuracy.' }),
     }),
     generatedAt: TimestampSchema.meta({ description: 'The request minute.' }),
   })

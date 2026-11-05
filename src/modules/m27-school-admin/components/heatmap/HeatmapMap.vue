@@ -4,8 +4,8 @@
  * {Subjek} Tingkatan {n}" and a `DsHeatGrid` in the staff kobalt ramp. One row per Bidang ("{code} {name}",
  * a Bidang with more than 11 SP continues on further rows), one column per SP position, the percent in every
  * answered cell and a dash where the SP was not attempted. The popover of a cell names the SP, its status
- * and, when answered, "{n} cuba · {p}% betul" (FR-M27-63). The legend line explains the ramp and the
- * "Belum Cuba" cells. The empty text shows when the level or subject has no SP.
+ * and its answers ("{kod SP}: {tajuk} — {band} ({n} jawapan)", AC-AS-47-1). The one legend line names the four
+ * bands. The empty text "Tiada data penguasaan untuk subjek ini." shows when the level or subject has no SP.
  */
 import { computed } from 'vue'
 
@@ -60,7 +60,7 @@ function titleOf(rowId: string, column: number): string {
       </h2>
 
       <p v-if="empty" class="py-6 text-center text-body text-muted" data-testid="dh-empty">
-        Tiada Standard Pembelajaran untuk subjek dan tingkatan ini.
+        Tiada data penguasaan untuk subjek ini.
       </p>
       <template v-else>
         <p v-if="caption" class="text-overline text-muted" data-testid="dh-caption">
@@ -74,6 +74,7 @@ function titleOf(rowId: string, column: number): string {
           low-label="Lemah (<50%)"
           high-label="Mahir (75%+)"
           no-data-label="Belum Cuba"
+          :legend="false"
           data-testid="dh-tiles"
         >
           <template #popover="{ row, column }">
@@ -82,6 +83,7 @@ function titleOf(rowId: string, column: number): string {
         </DsHeatGrid>
       </template>
 
+      <!-- AC-AS-47-3: the one legend of the page (the grid's own ramp legend is switched off). -->
       <ul class="flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-muted" data-testid="dh-legend">
         <li v-for="l in LEGEND" :key="l.status">{{ l.label }}</li>
       </ul>

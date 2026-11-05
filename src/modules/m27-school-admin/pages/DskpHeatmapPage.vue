@@ -6,7 +6,7 @@
  *
  * States: loading shows the spinner only; a 403 renders the global 403 page in place; any other failure
  * shows the server's own message. A level with no subject, or a `subjectId` that is not a subject with SP at
- * the level, shows "Tiada Standard Pembelajaran untuk subjek dan tingkatan ini." (FR-M27-64).
+ * the level, shows "Tiada data penguasaan untuk subjek ini." (FR-AS-47-4).
  */
 import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -104,6 +104,7 @@ function pickSubject(id: number) {
         :subjects="data.subjects"
         :subject-id="selectValue"
         :level="data.level.code"
+        :levels="data.levels"
         @subject="pickSubject"
       />
       <HeatmapMap

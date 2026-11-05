@@ -23,7 +23,8 @@ const BASE = '/api/admin-sekolah'
 // --- shared ------------------------------------------------------------------------------------
 
 export type UsagePeriod = 'today' | '7days' | '30days'
-export type HeatmapLevelCode = 't4' | 't5'
+export type HeatmapLevelCode = 't1' | 't2' | 't3' | 't4' | 't5'
+export type HeatmapLevelName = `Tingkatan ${1 | 2 | 3 | 4 | 5}`
 export type DskpStatus = 'mahir' | 'sederhana' | 'lemah' | 'belum'
 
 export interface SchoolRef {
@@ -97,7 +98,9 @@ export interface SchoolDskpHeatmap {
   /** Subjects with at least one SP at the level, by name. */
   subjects: { id: number; name: string }[]
   subject: { id: number; name: string } | null
-  level: { code: HeatmapLevelCode; name: 'Tingkatan 4' | 'Tingkatan 5' }
+  level: { code: HeatmapLevelCode; name: HeatmapLevelName }
+  /** The Tingkatan levels that have content, ascending; the default level is the last one. */
+  levels: { code: HeatmapLevelCode; name: HeatmapLevelName }[]
   /** "KSSM {Subjek} Tingkatan {n}"; null without a subject. */
   caption: string | null
   bidang: HeatmapBidang[]
@@ -143,9 +146,9 @@ export interface ActivityTeacherRow {
 }
 
 /**
- * The M17 `StatsReport` (SRS M17 §7 #18) in the school scope (BR-M27-26): no `schools`, no `overview.score` /
- * `structuredScore` ("Skor Purata" and "Struktur" are never rendered), no `schoolName` on the rows and
- * `tiles` without the `schools` group.
+ * The M17 `StatsReport` (SRS M17 §7 #18) in the school scope (BR-M27-26): no `schools`, no platform
+ * `overview.score` / `structuredScore`, no `schoolName` on the rows and `tiles` without the `schools` group.
+ * `overview.skorPurata` is the school's own "Skor Purata" (R1-AS-48), the mean of per-session accuracy.
  */
 export interface SchoolActivityReport {
   range: 7 | 30 | 90
@@ -160,6 +163,8 @@ export interface SchoolActivityReport {
     teachersLogged: number
     practised: number
     activity: number
+    /** "Skor Purata": mean of per-session accuracy, one decimal; null = "—". Never labelled "Ketepatan". */
+    skorPurata: number | null
   }
   trend: { label: string; value: number }[]
   breakdown: { quiz: number; structured: number; battle: number; game: number }
@@ -202,6 +207,8 @@ export interface MonthlySubjectRow {
   accuracy: number
   answers: number
   pupils: number
+  /** Completed sessions of the subject in the shown month ("{n} sesi"). */
+  sessions: number
 }
 
 export interface MonthlyMonthRow {
@@ -237,13 +244,22 @@ export interface MonthlyReport {
     /** One decimal; null = "—". */
     accuracy: number | null
     sessions: number
+    /** XS-3 teachers ("Guru", "berdaftar"). */
+    teachers: number
+    /** The month of the shown year with the most sessions ("Bulan Paling Aktif"); null without a session in the year. */
+    busiestMonth: { month: string; label: string; sessions: number } | null
   }
+  /** One entry per day of the shown month (answers of that day); always present. */
+  daily: { day: number; answers: number }[]
+  /** "Trend Penggunaan Bulanan {tahun}": sessions per month, Jan to Dis of the shown year. */
+  yearly: { year: number; months: { month: string; label: string; sessions: number }[] }
   /** Empty for a month without answers; ascending by month. */
   months: MonthlyMonthRow[]
   total: { answers: number; correct: number; accuracy: number | null } | null
   subjects: {
     strongest: MonthlySubjectRow | null
     weakest: MonthlySubjectRow | null
+    /** Top 10 by sessions descending; strongest / weakest are over all subjects by accuracy. */
     rows: MonthlySubjectRow[]
   }
   /** ISO 8601 (+08:00), the request minute. */

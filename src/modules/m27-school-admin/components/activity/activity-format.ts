@@ -31,6 +31,9 @@ export const count = (n: number): string => formatCount(n)
 export const wholePercent = (part: number, total: number): string =>
   `${formatCount(total > 0 ? Math.round((part / total) * 100) : 0)}%`
 
+/** "Skor Purata" as a whole-number percent, half up ("78%"); the dash when null (no completed session). */
+export const skorPurata = (n: number | null): string => (n === null ? NO_DATA : `${formatCount(Math.floor(n + 0.5))}%`)
+
 /** One decimal ("68.2%"). */
 export const accuracy = (n: number): string => `${formatNumber(n, { decimals: 1 })}%`
 

@@ -38,6 +38,11 @@ function heatmap(over: Partial<SchoolDskpHeatmap> = {}): SchoolDskpHeatmap {
     ],
     subject: { id: 9, name: 'Kimia' },
     level: { code: 't5', name: 'Tingkatan 5' },
+    levels: [
+      { code: 't1', name: 'Tingkatan 1' },
+      { code: 't4', name: 'Tingkatan 4' },
+      { code: 't5', name: 'Tingkatan 5' },
+    ],
     caption: 'KSSM Kimia Tingkatan 5',
     bidang: [
       {
@@ -156,8 +161,12 @@ describe('filters (FR-M27-59; AC-M27-18.1)', () => {
     expect(w.text()).toContain('Subjek')
   })
 
-  it('shows the pills "Tingkatan 4" and "Tingkatan 5" with the data level active', async () => {
+  it('shows one pill per level with content (FR-AS-47-1), the data level active, and none for a level without content', async () => {
     const w = await mountPage(heatmap())
+    expect(w.findAll('[data-testid="dh-levels"] a').map((a) => a.text())).toEqual(['Tingkatan 1', 'Tingkatan 4', 'Tingkatan 5'])
+    expect(has(w, 'dh-level-t2')).toBe(false)
+    expect(has(w, 'dh-level-t3')).toBe(false)
+    expect(text(w, 'dh-level-t1')).toBe('Tingkatan 1')
     expect(text(w, 'dh-level-t4')).toBe('Tingkatan 4')
     expect(text(w, 'dh-level-t5')).toBe('Tingkatan 5')
     expect(w.get('[data-testid="dh-level-t5"]').attributes('data-active')).toBe('true')
@@ -210,8 +219,21 @@ describe('tiles (FR-M27-60…63; AC-M27-17.2…17.4)', () => {
   })
 
   it('judges the status on the shown integer (74.5 shows 75 and is "Mahir")', () => {
-    expect(tileTitle(sp(9, '9.9.9', 200, 149))).toContain('— Mahir')
-    expect(tileTitle(sp(9, '9.9.9', 200, 148))).toContain('— Sederhana')
+    expect(tileTitle(sp(9, '9.9.9', 200, 149))).toContain('— Mahir (75%+)')
+    expect(tileTitle(sp(9, '9.9.9', 200, 148))).toContain('— Sederhana (50-74%)')
+  })
+
+  it('the tooltip reads "{kod SP}: {tajuk} — {band} ({n} jawapan)" (AC-AS-47-1)', () => {
+    expect(tileTitle(sp(1, '1.1.1', 10, 8))).toBe('1.1.1: Murid boleh 1.1.1 — Mahir (75%+) (10 jawapan)')
+    expect(tileTitle(sp(2, '2.1', 100, 74))).toBe('2.1: Murid boleh 2.1 — Sederhana (50-74%) (100 jawapan)')
+    expect(tileTitle(sp(3, '3.1', 10, 2))).toBe('3.1: Murid boleh 3.1 — Lemah (<50%) (10 jawapan)')
+    expect(tileTitle(sp(4, '4.1', 0, 0))).toBe('4.1: Murid boleh 4.1 — Belum Cuba (0 jawapan)')
+  })
+
+  it('has exactly one legend (AC-AS-47-3): the page legend, not the grid ramp legend', async () => {
+    const w = await mountPage(heatmap())
+    expect(w.findAll('[data-testid="dh-legend"]')).toHaveLength(1)
+    expect(w.findAll('[data-ds="heat-legend"]')).toHaveLength(0)
   })
 
   it('shows the legend in order', async () => {
@@ -226,7 +248,7 @@ describe('tiles (FR-M27-60…63; AC-M27-17.2…17.4)', () => {
 })
 
 describe('empty states (FR-M27-64; AC-M27-18.2, 18.3)', () => {
-  const EMPTY = 'Tiada Standard Pembelajaran untuk subjek dan tingkatan ini.'
+  const EMPTY = 'Tiada data penguasaan untuk subjek ini.'
 
   it('shows the text and no tiles or caption when no subject has an SP at the level', async () => {
     const w = await mountPage(heatmap({ subjects: [], subject: null, caption: null, bidang: [] }))

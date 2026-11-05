@@ -7,7 +7,7 @@ import { ClassesPorts, ClassesRepository } from '../../classes'
 import { DAY_MS, byName, ddmm, dayKey, rangeOf, statusOf } from '../../reports/analytics/domain/rules'
 import { WalletService } from '../../wallet'
 import { SchoolPopulation, type PupilFact } from './population'
-import { accuracyOf, activityWindow } from './windows'
+import { accuracyOf, activityWindow, round1 } from './windows'
 
 /** At most this many teacher question-stat reads run at the same time. */
 const STATS_POOL = 8
@@ -61,10 +61,11 @@ export class ActivityService {
     const [pupils, teachers] = await Promise.all([this.population.pupils(schoolId), this.population.teachers(schoolId)])
     const ids = pupils.map((p) => p.id)
 
-    const [rows, totals, answered] = await Promise.all([
+    const [rows, totals, answered, score] = await Promise.all([
       this.population.sessions(ids, w.from, w.to),
       this.population.answerTotals(schoolId, w.from, w.to),
       this.population.tallyByPupil(schoolId, w.from, w.to),
+      this.population.sessionScore(ids, w.from, w.to),
     ])
     const perDay = new Map<string, number>()
     const per = new Map<string, { sessions: number }>()
@@ -143,6 +144,8 @@ export class ActivityService {
         teachersLogged,
         practised: practised.size,
         activity: quiz,
+        // "Skor Purata" (R1-AS-48): mean of per-session accuracy, a separately named measure, never "Ketepatan".
+        skorPurata: score.sessions > 0 ? round1((score.ratioSum / score.sessions) * 100) : null,
       },
       trend,
       breakdown: { quiz, structured: 0, battle: 0, game: 0 },

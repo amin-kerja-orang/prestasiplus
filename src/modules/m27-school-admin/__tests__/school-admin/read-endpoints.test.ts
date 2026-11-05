@@ -289,7 +289,9 @@ describe('#3 DSKP heatmap (S2; BR-M27-24, 25)', () => {
 
   it('falls back to the default subject and level for unknown values', async () => {
     const base = await data<SchoolDskpHeatmap>(P2, `${BASE}/dskp-heatmap`)
-    expect(base.level.code).toBe('t4')
+    // FR-AS-47-1: the default is the highest level with content, and only those levels are offered.
+    expect(base.levels.length).toBeGreaterThan(0)
+    expect(base.level.code).toBe(base.levels.at(-1)?.code)
     const odd = await data<SchoolDskpHeatmap>(
       P2,
       `${BASE}/dskp-heatmap?subjectId=999999&tingkatan=X9`,
@@ -313,10 +315,17 @@ describe('#5 monthly report (S5; BR-M27-28, 29)', () => {
       perPupil: 0,
       accuracy: null,
       sessions: 0,
+      teachers: 0,
+      busiestMonth: null,
     })
     expect(m.months).toEqual([])
     expect(m.total).toBeNull()
     expect(m.subjects).toEqual({ strongest: null, weakest: null, rows: [] })
+    // Every section is still present (FR-AS-50-3).
+    expect(m.daily).toHaveLength(30)
+    expect(m.daily.every((d) => d.answers === 0)).toBe(true)
+    expect(m.yearly.year).toBe(2026)
+    expect(m.yearly.months).toHaveLength(12)
     expect(m.generatedAt).toBe('2026-09-25T15:40:00+08:00')
   })
 
@@ -346,8 +355,13 @@ describe('#5 monthly report (S5; BR-M27-28, 29)', () => {
       const acc = m.subjects.rows.map((r) => r.accuracy)
       expect(m.subjects.strongest?.accuracy).toBe(Math.max(...acc))
       expect(m.subjects.weakest?.accuracy).toBe(Math.min(...acc))
-      expect(acc).toEqual([...acc].sort((a, b) => b - a))
+      // R1-AS-50: the rows are the top 10 by sessions descending.
+      const sess = m.subjects.rows.map((r) => r.sessions)
+      expect(sess).toEqual([...sess].sort((a, b) => b - a))
+      expect(m.subjects.rows.length).toBeLessThanOrEqual(10)
     }
+    expect(m.daily.reduce((n, d) => n + d.answers, 0)).toBe(answers)
+    expect(m.yearly.months.map((x) => x.label)).toEqual(['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis'])
     // The 12 month window ends with the shown month and lists months in ascending order.
     expect(m.months.map((r) => r.month)).toEqual([...m.months.map((r) => r.month)].sort())
     expect(m.months.every((r) => r.month <= '2026-09' && r.month >= '2025-10')).toBe(true)

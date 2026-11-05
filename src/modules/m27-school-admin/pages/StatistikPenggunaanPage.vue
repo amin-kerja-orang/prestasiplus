@@ -24,8 +24,9 @@ import UsageTiles from '../components/usage/UsageTiles.vue'
 import { DASHBOARD_PATH, normalisePeriod } from '../components/usage/usage-format'
 
 const TITLE = 'Statistik Penggunaan'
+// FR-AS-46-2 (DV-AS-46-1): the accuracy is XS-5 over answers, no longer session-based.
 const EMPTY_FOOTNOTE =
-  'Ketepatan dipaparkan sebagai “—” kerana belum ada sesi latihan direkodkan dalam skop ini.'
+  'Ketepatan dipaparkan sebagai “—” kerana belum ada soalan dijawab dalam tempoh ini.'
 const COHORT_FOOTNOTE = 'Disembunyikan kerana kurang daripada 5 pelajar aktif.'
 
 const crumbs = [{ label: 'Dashboard Sekolah', to: DASHBOARD_PATH }, { label: TITLE }]

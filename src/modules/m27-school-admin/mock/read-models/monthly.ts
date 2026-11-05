@@ -13,7 +13,7 @@ import { practice } from '@/modules/m05-practice/mock'
 
 import type { MonthlyMonthRow, MonthlyReport, MonthlySubjectRow } from '../../api/school-admin'
 import { schoolRefOf } from './school-info'
-import { peopleOf } from './school-people'
+import { countOf, peopleOf } from './school-people'
 import type { SchoolViewer } from './school-scope'
 import { round1 } from './usage'
 
@@ -27,6 +27,8 @@ function shift(year: number, month: number, by: number): { year: number; month: 
 }
 
 const labelOf = (year: number, month: number) => `${monthName(month)} ${String(year)}`
+
+const SHORT = ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis'] as const
 
 /** BR-M27-28: `YYYY-MM`, not after the current month, else the current month. */
 export function parseMonth(
@@ -77,16 +79,34 @@ export function buildMonthlyReport(
     return b
   }
   const subjects = new Map<number, Bucket>()
+  const subjectSessions = new Map<number, number>()
+  const yearSessions = new Map<string, number>()
+  const daysInShown = new Date(Date.UTC(shown.year, shown.month, 0)).getUTCDate()
+  const daily = Array.from({ length: daysInShown }, (_, i) => ({ day: i + 1, answers: 0 }))
+  const yearFrom = fromMytParts({ year: shown.year, month: 1, day: 1 })
+  const yearTo = fromMytParts({ year: shown.year + 1, month: 1, day: 1 })
 
   for (const pupil of pupils) {
     for (const s of practice.history(pupil.id, { from, to })) {
       bucketOf(s.completedAtMs).sessions += 1
+    }
+    for (const s of practice.history(pupil.id, { from: yearFrom, to: yearTo })) {
+      const p = mytParts(s.completedAtMs)
+      const key = keyOf(p.year, p.month)
+      yearSessions.set(key, (yearSessions.get(key) ?? 0) + 1)
+      if (key === shownKey && s.subjectId !== null) {
+        subjectSessions.set(s.subjectId, (subjectSessions.get(s.subjectId) ?? 0) + 1)
+      }
     }
     for (const a of practice.answers(pupil.id, { from, to })) {
       const b = bucketOf(a.answeredAtMs)
       b.answers += 1
       if (a.isCorrect) b.correct += 1
       b.pupils.add(pupil.id)
+      if (a.answeredAtMs >= shownFrom && a.answeredAtMs < to) {
+        const day = daily[mytParts(a.answeredAtMs).day - 1]
+        if (day) day.answers += 1
+      }
       if (a.answeredAtMs >= shownFrom && a.subjectId !== null) {
         const sb = subjects.get(a.subjectId) ?? emptyBucket()
         sb.answers += 1
@@ -130,6 +150,7 @@ export function buildMonthlyReport(
         accuracy: round1((b.correct / b.answers) * 100),
         answers: b.answers,
         pupils: b.pupils.size,
+        sessions: subjectSessions.get(id) ?? 0,
       }))
     : []
   // BR-M27-29: ties by more answers, then subject id.
@@ -137,12 +158,21 @@ export function buildMonthlyReport(
     b.answers - a.answers || a.id - b.id
   const byStrong = [...subjectRows].sort((a, b) => b.accuracy - a.accuracy || tie(a, b))
   const byWeak = [...subjectRows].sort((a, b) => a.accuracy - b.accuracy || tie(a, b))
-  const strip = ({ name, accuracy, answers, pupils: p }: MonthlySubjectRow): MonthlySubjectRow => ({
+  const strip = ({ name, accuracy, answers, pupils: p, sessions }: MonthlySubjectRow): MonthlySubjectRow => ({
     name,
     accuracy,
     answers,
     pupils: p,
+    sessions,
   })
+  // R1-AS-50: the rows are the top 10 by sessions descending; strongest / weakest are over all subjects.
+  const bySessions = [...subjectRows].sort((a, b) => b.sessions - a.sessions || tie(a, b))
+
+  const yearBars = SHORT.map((label, i) => {
+    const key = keyOf(shown.year, i + 1)
+    return { month: key, label, sessions: yearSessions.get(key) ?? 0 }
+  })
+  const top = yearBars.reduce((best, b) => (b.sessions > best.sessions ? b : best), { month: '', label: '', sessions: 0 })
 
   const prev = shift(shown.year, shown.month, -1)
   const minute = Math.floor(now / 60_000) * 60_000
@@ -161,7 +191,11 @@ export function buildMonthlyReport(
       perPupil: active > 0 ? Math.round(cur.answers / active) : 0,
       accuracy: hasAnswers ? round1((cur.correct / cur.answers) * 100) : null,
       sessions: cur.sessions,
+      teachers: countOf(viewer.schoolId, 'teacher'),
+      busiestMonth: top.sessions > 0 ? top : null,
     },
+    daily,
+    yearly: { year: shown.year, months: yearBars },
     months: rows,
     total:
       rows.length > 1
@@ -174,7 +208,7 @@ export function buildMonthlyReport(
     subjects: {
       strongest: byStrong[0] ? strip(byStrong[0]) : null,
       weakest: byWeak[0] ? strip(byWeak[0]) : null,
-      rows: byStrong.map(strip),
+      rows: bySessions.slice(0, 10).map(strip),
     },
     generatedAt: toIsoMyt(minute),
   }

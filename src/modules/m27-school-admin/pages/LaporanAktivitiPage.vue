@@ -79,7 +79,7 @@ watch(
         :pupils="data.tiles.pupils.total"
         @select="tab = $event"
       />
-      <ActivityOverview v-if="tab === 'overview'" :report="data" />
+      <ActivityOverview v-if="tab === 'overview'" :report="data" @show-teachers="tab = 'guru'" />
       <ActivityTeachersTab v-else-if="tab === 'guru'" :report="data" />
       <ActivityPupilsTab v-else :report="data" />
     </template>

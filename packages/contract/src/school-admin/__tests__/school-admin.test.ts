@@ -92,7 +92,7 @@ const activity = {
   range: 30,
   schoolId: '8880',
   generatedAt: AT,
-  overview: { pupils: 59, pupilsLogged: 20, teachers: 6, teachersLogged: 4, practised: 12, activity: 140 },
+  overview: { pupils: 59, pupilsLogged: 20, teachers: 6, teachersLogged: 4, practised: 12, activity: 140, skorPurata: 77.5 },
   trend: [{ label: '1 Okt', value: 4 }],
   breakdown: { quiz: 100, structured: 20, battle: 0, game: 0 },
   topPupils: [{ userId: '31', name: 'Aisyah Demo', activities: 14 }],
@@ -107,6 +107,7 @@ const heatmap = {
   subjects: [{ id: '3', name: 'Matematik' }],
   subject: { id: '3', name: 'Matematik' },
   level: { code: 't4', name: 'Tingkatan 4' },
+  levels: [{ code: 't1', name: 'Tingkatan 1' }, { code: 't4', name: 'Tingkatan 4' }],
   caption: 'KSSM Matematik Tingkatan 4',
   bidang: [
     {
@@ -128,22 +129,42 @@ const monthly = {
   label: 'Oktober 2026',
   prev: '2026-09',
   next: null,
-  cards: { participationPct: 20, active: 12, registered: 59, answers: 200, perPupil: 17, accuracy: 65, sessions: 30 },
+  cards: {
+    participationPct: 20,
+    active: 12,
+    registered: 59,
+    answers: 200,
+    perPupil: 17,
+    accuracy: 65,
+    sessions: 30,
+    teachers: 6,
+    busiestMonth: { month: '2026-10', label: 'Okt', sessions: 30 },
+  },
+  daily: Array.from({ length: 31 }, (_, i) => ({ day: i + 1, answers: i === 9 ? 200 : 0 })),
+  yearly: {
+    year: 2026,
+    months: ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis'].map((label, i) => ({
+      month: `2026-${String(i + 1).padStart(2, '0')}`,
+      label,
+      sessions: i === 9 ? 30 : 0,
+    })),
+  },
   months: [monthRow, { ...monthRow, month: '2026-10', label: 'Oktober 2026' }],
   total: { answers: 400, correct: 260, accuracy: 65 },
   subjects: {
-    strongest: { name: 'Matematik', accuracy: 70.1, answers: 80, pupils: 10 },
-    weakest: { name: 'Sains', accuracy: 50, answers: 60, pupils: 9 },
+    strongest: { name: 'Matematik', accuracy: 70.1, answers: 80, pupils: 10, sessions: 8 },
+    weakest: { name: 'Sains', accuracy: 50, answers: 60, pupils: 9, sessions: 5 },
     rows: [
-      { name: 'Matematik', accuracy: 70.1, answers: 80, pupils: 10 },
-      { name: 'Sains', accuracy: 50, answers: 60, pupils: 9 },
+      { name: 'Matematik', accuracy: 70.1, answers: 80, pupils: 10, sessions: 8 },
+      { name: 'Sains', accuracy: 50, answers: 60, pupils: 9, sessions: 5 },
     ],
   },
   generatedAt: AT,
 }
 const monthlyEmpty = {
   ...monthly,
-  cards: { ...monthly.cards, answers: 0, active: 0, perPupil: 0, accuracy: null, sessions: 0, participationPct: 0 },
+  cards: { ...monthly.cards, answers: 0, active: 0, perPupil: 0, accuracy: null, sessions: 0, participationPct: 0, busiestMonth: null },
+  daily: monthly.daily.map((d) => ({ ...d, answers: 0 })),
   months: [],
   total: null,
   subjects: { strongest: null, weakest: null, rows: [] },
@@ -279,6 +300,9 @@ describe('school-admin contract: reports', () => {
     expect(ok(SchoolAdminActivityReportSchema, { ...activity, range: 14 })).toBe(false)
     expect(ok(SchoolAdminActivityReportSchema, { ...activity, generatedAt: '2026-10-16T01:30:00Z' })).toBe(false)
     expect(Object.keys(SchoolAdminActivityReportSchema.shape.overview.shape)).not.toContain('score')
+    // "Skor Purata" is a separate, nullable measure (mean of per-session accuracy), never called accuracy.
+    expect(ok(SchoolAdminActivityReportSchema, { ...activity, overview: { ...activity.overview, skorPurata: null } })).toBe(true)
+    expect(ok(SchoolAdminActivityReportSchema, { ...activity, overview: { ...activity.overview, skorPurata: 101 } })).toBe(false)
     expect(JSON.stringify(Object.keys(SchoolAdminActivityReportSchema.shape))).not.toContain('schools')
   })
 
@@ -286,6 +310,10 @@ describe('school-admin contract: reports', () => {
     expect(ok(SchoolAdminDskpHeatmapSchema, heatmap)).toBe(true)
     expect(ok(SchoolAdminDskpHeatmapSchema, { ...heatmap, subjects: [], subject: null, caption: null, bidang: [] })).toBe(true)
     expect(ok(SchoolAdminDskpHeatmapSchema, { ...heatmap, level: { code: 't6', name: 'Tingkatan 6' } })).toBe(false)
+    // T1 to T5 are valid levels (FR-AS-47-1).
+    for (const n of [1, 2, 3, 4, 5]) {
+      expect(ok(SchoolAdminDskpHeatmapSchema, { ...heatmap, level: { code: `t${n}`, name: `Tingkatan ${n}` } })).toBe(true)
+    }
     const bad = structuredClone(heatmap)
     bad.bidang[0]!.sp[0]!.status = 'cemerlang'
     expect(ok(SchoolAdminDskpHeatmapSchema, bad)).toBe(false)
@@ -296,6 +324,11 @@ describe('school-admin contract: reports', () => {
     expect(ok(SchoolAdminMonthlyReportSchema, monthlyEmpty)).toBe(true)
     expect(ok(SchoolAdminMonthlyReportSchema, { ...monthly, month: '2026-13' })).toBe(false)
     expect(ok(SchoolAdminMonthlyReportSchema, { ...monthly, prev: null })).toBe(false)
+    // R1-AS-50: daily, yearly (exactly 12 bars) and the subject rows (at most 10) are always present.
+    expect(ok(SchoolAdminMonthlyReportSchema, { ...monthly, daily: undefined })).toBe(false)
+    expect(ok(SchoolAdminMonthlyReportSchema, { ...monthly, yearly: { ...monthly.yearly, months: monthly.yearly.months.slice(1) } })).toBe(false)
+    const eleven = Array.from({ length: 11 }, (_, i) => ({ name: `S${i}`, accuracy: 50, answers: 5, pupils: 5, sessions: 1 }))
+    expect(ok(SchoolAdminMonthlyReportSchema, { ...monthly, subjects: { ...monthly.subjects, rows: eleven } })).toBe(false)
   })
 
   it('parses the class list with its top-level extras', () => {

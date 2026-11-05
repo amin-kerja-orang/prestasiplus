@@ -293,6 +293,14 @@ export class XsQueries {
     return new Map(rows.map((r) => [String(r.month), { answered: num(r.answered), correct: num(r.correct), pupils: num(r.pupils) }]))
   }
 
+  /** XS-4 per MYT calendar day (`YYYY-MM-DD`; only days with answers). */
+  async tallyByDay(scope: XsScope, window: XsWindow): Promise<Map<string, number>> {
+    const rows = await this.q(Prisma.sql`
+      SELECT to_char(a.answered_at AT TIME ZONE ${KL}, 'YYYY-MM-DD') AS day, count(*)::int AS answered
+        ${answerRows(scope, window)} GROUP BY 1`)
+    return new Map(rows.map((r) => [String(r.day), num(r.answered)]))
+  }
+
   /** XS-4 and XS-2 per subject (`practice_answers.subject_id`; rows without a subject are left out), all modes, no session join. */
   async tallyBySubject(scope: XsScope, window: XsWindow = XS_ALL_TIME): Promise<Map<string, XsMonthTally>> {
     const rows = await this.q(Prisma.sql`

@@ -69,7 +69,10 @@ describe('P2 school 900001 (populated)', () => {
       const oracle = buildStatsReport(range, { schoolId: S1, includeInactive: true })
       expect(got.range).toBe(range)
       expect(got.schoolId).toBe(S1)
+      // "Skor Purata" is the school's own mean of per-session accuracy (R1-AS-48), not a builder figure.
+      expect(got.overview.skorPurata === null || (got.overview.skorPurata >= 0 && got.overview.skorPurata <= 100)).toBe(true)
       expect(got.overview).toEqual({
+        skorPurata: got.overview.skorPurata,
         pupils: oracle.overview.pupils,
         pupilsLogged: oracle.overview.pupilsLogged,
         teachers: oracle.overview.teachers,
@@ -135,6 +138,7 @@ describe('P1 school 900003 (empty)', () => {
       teachersLogged: 0,
       practised: 0,
       activity: 0,
+      skorPurata: null,
     })
     expect(got.breakdown).toEqual({ quiz: 0, structured: 0, battle: 0, game: 0 })
     expect(got.trend.every((p) => p.value === 0)).toBe(true)
