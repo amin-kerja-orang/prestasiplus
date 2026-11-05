@@ -53,6 +53,8 @@ export class SpmPoolService {
   private readonly inflight = new Map<string, Promise<PoolCell[]>>()
   private readonly cache = new Map<string, { until: number; cells: PoolCell[]; generation: number }>()
   private readonly databankInflight = new Map<string, Promise<number>>()
+  private readonly unitCellsInflight = new Map<string, Promise<PoolCell[]>>()
+  private readonly unitCellsCache = new Map<string, { until: number; cells: PoolCell[]; generation: number }>()
   private readonly databankCache = new Map<string, { until: number; n: number; generation: number }>()
 
   constructor(
@@ -88,15 +90,7 @@ export class SpmPoolService {
     if (running) return running
     const load = (async () => {
       const rows = await this.questions.groupCountsByLevelTp({ ...poolFilter(subjectId), status: 'approved', active: true })
-      const merged = new Map<string, PoolCell>()
-      for (const r of rows) {
-        const difficulty = difficultyOf(r.tp)
-        const key = `${r.levelId ?? ''}:${String(difficulty)}`
-        const cell = merged.get(key)
-        if (cell) cell.n += r.n
-        else merged.set(key, { levelId: r.levelId, difficulty, n: r.n })
-      }
-      const cells = [...merged.values()]
+      const cells = mergeCells(rows)
       if (ttl > 0) this.cache.set(subjectId, { until: now + ttl, cells, generation })
       return cells
     })()
@@ -119,6 +113,32 @@ export class SpmPoolService {
   /** The Latih Tubi SPM total of a subject: units the Latih Tubi draw can serve (see `latihTubiFilter`); cached like `databankCount`. */
   latihTubiCount(subjectId: string, options: { fresh?: boolean } = {}): Promise<number> {
     return this.unitsOf('latih_tubi_spm', subjectId, options)
+  }
+
+  /**
+   * The Latih Tubi cells of a subject by (level, difficulty) in UNITS (see `latihTubiFilter`): they sum to `latihTubiCount`, because a
+   * group sits in one bucket (the level and TP of its first member, `unitCountsByLevelTp`). Cached like `latihTubiCount`.
+   */
+  async latihTubiCells(subjectId: string): Promise<PoolCell[]> {
+    const ttl = this.ttlMs()
+    const now = this.clock.now().getTime()
+    const generation = this.generation()
+    const hit = this.unitCellsCache.get(subjectId)
+    if (ttl > 0 && hit && hit.until > now && hit.generation === generation) return hit.cells
+    const flight = `${subjectId}:${String(generation)}`
+    const running = this.unitCellsInflight.get(flight)
+    if (running) return running
+    const load = (async () => {
+      const cells = mergeCells(await this.questions.unitCountsByLevelTp(latihTubiFilter(subjectId)))
+      if (ttl > 0) this.unitCellsCache.set(subjectId, { until: now + ttl, cells, generation })
+      return cells
+    })()
+    this.unitCellsInflight.set(flight, load)
+    try {
+      return await load
+    } finally {
+      this.unitCellsInflight.delete(flight)
+    }
   }
 
   private async unitsOf(activity: CountedActivity, subjectId: string, options: { fresh?: boolean }): Promise<number> {
@@ -173,6 +193,19 @@ export class SpmPoolService {
     }
     return picked
   }
+}
+
+/** Merges (level, TP) rows into cells by (level, mock difficulty 1 to 5). */
+function mergeCells(rows: readonly { levelId: string | null; tp: number | null; n: number }[]): PoolCell[] {
+  const merged = new Map<string, PoolCell>()
+  for (const r of rows) {
+    const difficulty = difficultyOf(r.tp)
+    const key = `${r.levelId ?? ''}:${String(difficulty)}`
+    const cell = merged.get(key)
+    if (cell) cell.n += r.n
+    else merged.set(key, { levelId: r.levelId, difficulty, n: r.n })
+  }
+  return [...merged.values()]
 }
 
 export function countOf(cells: readonly PoolCell[], filter: { levelId?: string; difficulty?: number } = {}): number {

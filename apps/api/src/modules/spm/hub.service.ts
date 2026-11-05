@@ -162,14 +162,14 @@ export class SpmHubService {
     const s = (await this.catalog.spmSubjects()).find((x) => x.code === code.toUpperCase())
     if (!s) throw notFound()
     const levelIds = await this.catalog.spmLevelIds()
-    const facts = await this.pool.cells(s.subjectId)
+    const facts = await this.pool.latihTubiCells(s.subjectId)
     const target = s.targetSize
     return {
       code: s.code,
       name: s.name,
       icon: s.icon,
       color: s.color,
-      total: await this.pool.latihTubiCount(s.subjectId),
+      total: countOf(facts),
       targetType: s.targetType,
       targetSize: target,
       levelCounts: Object.fromEntries(levelIds.map((id) => [id, countOf(facts, { levelId: id })])),

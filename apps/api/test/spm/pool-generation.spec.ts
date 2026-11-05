@@ -64,3 +64,33 @@ describe('Databank count single-flight (pure)', () => {
     expect(await pool.latihTubiCount('1')).toBe(2)
   })
 })
+
+describe('Latih Tubi cells (pure)', () => {
+  it('[CI] AC-MUR-13-13 merges (level, TP) unit rows into level and difficulty cells, cached by generation', async () => {
+    let calls = 0
+    const repo = {
+      unitCountsByLevelTp: () => {
+        calls++
+        return Promise.resolve([
+          { levelId: '4', tp: 1, n: 2 },
+          { levelId: '4', tp: null, n: 1 },
+          { levelId: '4', tp: 6, n: 1 },
+          { levelId: '4', tp: 5, n: 3 },
+        ])
+      },
+    }
+    const cache = new OverviewCache({ now: () => new Date(0) } as never, {} as never)
+    const pool = new SpmPoolService(repo as never, { get: () => '600' } as never, { now: () => new Date(0) } as never, cache)
+    const cells = await pool.latihTubiCells('1')
+    // TP null and 1 are difficulty 1; TP 5 and 6 are difficulty 5.
+    expect(cells).toEqual([
+      { levelId: '4', difficulty: 1, n: 3 },
+      { levelId: '4', difficulty: 5, n: 4 },
+    ])
+    await pool.latihTubiCells('1')
+    expect(calls).toBe(1)
+    cache.invalidate()
+    await pool.latihTubiCells('1')
+    expect(calls).toBe(2)
+  })
+})

@@ -139,6 +139,38 @@ describe('Latih Tubi SPM hub total follows the serving rule', () => {
   })
 })
 
+describe('Latih Tubi breakdowns count units like the total', () => {
+  it('[CI] AC-MUR-13-13 a group sits in ONE bucket (its first member), so level and difficulty cells sum to the total (groups on and off)', async () => {
+    await t.db.query('delete from questions')
+    const bio = await subjectId('BIO')
+    await addQuestion(t.db, { subject: 'BIO', level: 'T4', tp: 1 })
+    await addQuestion(t.db, { subject: 'BIO', level: 'T5', tp: 4 })
+    // A complete group whose members differ in level and TP: it must land in the bucket of its first member only (T4, TP 2).
+    const members = [
+      await addQuestion(t.db, { subject: 'BIO', level: 'T4', tp: 2 }),
+      await addQuestion(t.db, { subject: 'BIO', level: 'T5', tp: 5 }),
+      await addQuestion(t.db, { subject: 'BIO', level: 'T5', tp: 3 }),
+    ]
+    await groupOf(members)
+    // An incomplete group counts nowhere.
+    await groupOf([await addQuestion(t.db, { subject: 'BIO', level: 'T4', tp: 1 }), await addQuestion(t.db, { subject: 'BIO', level: 'T4', tp: 1, status: 'draft' })])
+
+    const sum = (rows: { n: number }[]) => rows.reduce((a, r) => a + r.n, 0)
+    for (const filter of [latihTubiFilter(bio), withLtGroups(bio)]) {
+      const total = await repo.unitCount(filter)
+      expect(sum(await repo.unitCountsByLevelTp(filter))).toBe(total)
+    }
+    const on = await repo.unitCountsByLevelTp(withLtGroups(bio))
+    expect(sum(on)).toBe(3) // two solos + the complete group once
+    expect(on.filter((r) => r.tp === 2)).toHaveLength(1) // the group is at its first member (TP 2), not at TP 5 or 3
+    expect(on.some((r) => r.tp === 5 || r.tp === 3)).toBe(false)
+
+    // The service: breakdown cells equal the hub total under the live surfaces.
+    const cells = await pool.latihTubiCells(bio)
+    expect(cells.reduce((a, c) => a + c.n, 0)).toBe(await pool.latihTubiCount(bio, { fresh: true }))
+  })
+})
+
 describe('Databank count cache', () => {
   it('[CI] AC-MUR-13-10 the cached count rises by 1 on the next load after a question event', async () => {
     const id = await subjectId('PERNIAGA')
