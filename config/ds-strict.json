@@ -225,6 +225,7 @@
     "src/modules/m02-users-schools/{pages,components}/**",
     "src/modules/m03-curriculum/pages/{Chapter,Curriculum,Level,Subject}*Page.vue",
     "src/modules/m03-curriculum/pages/Topic{Create,Edit}Page.vue",
+    "src/modules/m03-curriculum/pages/SubjectDskpReportTab.vue",
     "src/modules/m03-curriculum/components/{curriculum,subjects-levels}/**",
     "src/modules/m04-question-bank/{pages,components}/**",
     "src/modules/m07-pksk/pages/{PkskAccessPage,PkskQuestionFormPage,PkskQuestionListPage}.vue",

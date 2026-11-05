@@ -18,12 +18,12 @@ describe('M25 S1 route', () => {
     expect(heatmap).toHaveLength(1)
   })
 
-  it('is a user-shell route for student and admin only, other roles go to their landing page', () => {
+  it('is a user-shell route for student and admin only, other roles see the 403 page', () => {
     const r = router.getRoutes().find((x) => x.path === '/buku-nota/heatmap')
     expect(r?.meta.layout).toBe('user')
     expect(r?.meta.access).toBe('auth')
     expect(r?.meta.roles).toEqual(['student', 'admin'])
-    expect(r?.meta.onForbidden).toBe('landing')
+    expect(r?.meta.onForbidden).toBe('403')
   })
 
   it('sets the DV-M25-01 header and the exact tab title', () => {

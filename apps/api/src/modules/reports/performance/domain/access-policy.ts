@@ -15,6 +15,8 @@ export function viewerSchoolId(ctx: Pick<Ctx, 'scope'>): string | null {
 export const ITEM_SCHOOL_ROLES: readonly RoleCode[] = ['admin', 'teacher', 'school_admin', 'student', 'ppd_officer']
 /** Roles that may call the class item analysis and the class analytics. */
 export const CLASS_ANALYSIS_ROLES: readonly RoleCode[] = ['admin', 'teacher']
+/** Analitik Adaptif class view (API-AS-16 / API-RPT-04): the item-analysis class routes stay admin/teacher. */
+export const ANALYTICS_CLASS_ROLES: readonly RoleCode[] = ['admin', 'teacher', 'school_admin']
 
 export const isOfficer = (role: RoleCode): boolean => role === 'ppd_officer'
 
@@ -27,11 +29,18 @@ export function canOpenClassDashboard(ctx: Ctx, cls: ClassInfo): boolean {
   return false
 }
 
-/** Class analytics and class item analysis: admin any classroom; teacher own. */
+/**
+ * Class analytics and class item analysis: admin any classroom; teacher own; school admin any classroom of
+ * the own school (S10-T04 Change (2), API-AS-16 / API-RPT-04: the school is always the caller's own).
+ */
 export function canOpenClassAnalysis(ctx: Ctx, cls: ClassInfo): boolean {
   if (cls.kind !== 'classroom') return false
   if (ctx.role === 'admin') return true
   if (ctx.role === 'teacher') return cls.teacherId === ctx.userId
+  if (ctx.role === 'school_admin') {
+    const school = viewerSchoolId(ctx)
+    return school !== null && school === cls.schoolId
+  }
   return false
 }
 
