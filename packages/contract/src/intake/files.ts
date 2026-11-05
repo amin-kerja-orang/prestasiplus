@@ -219,6 +219,7 @@ export const IntakeBatchSummarySchema = z
     itemCount: z.number().int().min(0).meta({ description: 'Items (questions read from the paper) of the batch, in any state. V2 column "Bilangan Soalan". REQ-C-009.' }),
     reviewedCount: z.number().int().min(0).meta({ description: 'Items with no unconfirmed low-confidence field (low fields minus confirmed fields is empty). V2 column "Disemak". REQ-C-009.' }),
     owner: IntakeOwnerRefSchema.nullable(),
+    targetPaperId: IdSchema.nullable().meta({ description: 'DM-45: the id of the paper whose `source_batch_id` is this batch (the draft paper made from it); null until one exists.' }),
     createdAt: TimestampSchema,
     updatedAt: TimestampSchema,
     submittedAt: TimestampSchema.nullable(),
