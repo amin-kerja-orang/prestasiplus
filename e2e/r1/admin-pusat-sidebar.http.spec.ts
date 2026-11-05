@@ -208,7 +208,14 @@ async function problemsOf(page: Page, link: Link): Promise<string[]> {
 }
 
 /** Pages whose width is checked at every viewport (page scroll, not an inner scroller). */
-const WIDTH_PAGES = ['/admin/command-center', '/admin/studio', '/admin/questions', '/admin/users', '/admin/spm']
+const WIDTH_PAGES = [
+  '/admin/command-center',
+  '/admin/studio',
+  '/admin/questions',
+  '/admin/users',
+  '/admin/spm',
+  '/admin/feature-toggles',
+]
 
 async function overflowFailures(page: Page, hrefs: string[], width: number): Promise<string[]> {
   const failures: string[] = []

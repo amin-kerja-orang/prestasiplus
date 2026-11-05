@@ -10,6 +10,9 @@
  * are hidden (route unregistered -> 404). The backend endpoint and the access-matrix row are kept.
  */
 
+import { FEATURE_ROUTE_PREFIXES, pathHasPrefix } from '@pp/contract'
+import { getActivePinia } from 'pinia'
+
 import { useSessionStore } from '@/stores/session'
 
 /** Whether the ALESA AI surfaces are shown. OFF unless `VITE_ALESA_AI=on`. */
@@ -38,11 +41,24 @@ export function whenKeluargaAngkat<T>(routes: readonly T[]): T[] {
  * that has no map (mock mode, logged out, no active Pinia).
  */
 export function isServerFeatureOn(key: string): boolean {
-  try {
-    return useSessionStore().features[key] !== false
-  } catch {
-    return true
-  }
+  // No active Pinia (before boot, plain unit tests) means no session: absent = ON (FR-ADM-N06.4, fail-open).
+  if (getActivePinia() === undefined) return true
+  // `features` is optional on the session (login, role and mode responses do not carry it): absent = ON.
+  return useSessionStore().features[key] !== false
+}
+
+/**
+ * Whether `path` (no query) belongs to a page of a feature that is switched OFF (Kawalan Ciri): it lies under
+ * one of the key's `fe` prefixes (segment boundary, `/permainanx` is not `/permainan`) and under none of its
+ * `feExcept` paths. The router answers the standard 404 page for such a path (AC-ADM-N06.1).
+ */
+export function isFeatureRouteOff(path: string): boolean {
+  return Object.entries(FEATURE_ROUTE_PREFIXES).some(
+    ([key, p]) =>
+      !isServerFeatureOn(key) &&
+      p.fe.some((prefix) => pathHasPrefix(path, prefix)) &&
+      !(p.feExcept ?? []).some((except) => pathHasPrefix(path, except)),
+  )
 }
 
 /** The build-time flag AND the server flag: a feature is shown only when both are on. */

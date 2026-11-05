@@ -8,7 +8,7 @@
  */
 import type { Page } from '@playwright/test'
 
-import { account, csrfOf, newPeerContext } from '../api/helpers'
+import { account, csrfOf, expectNoHScroll, newPeerContext } from '../api/helpers'
 import { expect, gotoApi, loginViaUi, test } from '../fixtures/api'
 
 const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
@@ -29,12 +29,10 @@ test.describe('Kawalan Ciri (S0-T10)', () => {
     await loginViaUi(page, adminAcc.user, adminAcc.pass)
     await gotoApi(page, '/admin/feature-toggles')
     await expect(page.locator(ROW)).toBeVisible()
-    const overflow = await page.evaluate(
-      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-    )
-    expect(overflow, 'horizontal page scroll').toBeLessThanOrEqual(0)
+    // Runs in every http project (375 / 768 / 1280): no horizontal page scroll on the page.
+    await expectNoHScroll(page)
 
-    const pupilSees = async (): Promise<{ menu: boolean; title: string }> => {
+    const pupilSees = async (): Promise<{ menu: boolean; title: string; notFoundShown: boolean }> => {
       const ctx = await newPeerContext(browser, info)
       try {
         const pupil = await ctx.newPage()
@@ -44,7 +42,12 @@ test.describe('Kawalan Ciri (S0-T10)', () => {
         const menu = (await pupil.locator('a[href="/permainan"]').count()) > 0
         await gotoApi(pupil, '/permainan')
         await expect.poll(() => pupil.title()).not.toBe('')
-        return { menu, title: await pupil.title() }
+        // The FE guard answers the standard 404 page in place (the API prefix 404s too).
+        const notFoundShown = await pupil
+          .getByRole('heading', { name: 'Halaman Tidak Dijumpai' })
+          .first()
+          .isVisible()
+        return { menu, title: await pupil.title(), notFoundShown }
       } finally {
         await ctx.close()
       }
@@ -64,7 +67,8 @@ test.describe('Kawalan Ciri (S0-T10)', () => {
       await expect(page.getByText('Ciri "Zona Permainan" telah DINYAHAKTIFKAN.')).toBeVisible()
       const off = await pupilSees()
       expect(off.menu, 'OFF: menu item').toBe(false)
-      expect(off.title, 'OFF: 404 page').toBe(NOT_FOUND_TITLE)
+      expect(off.title, 'OFF: 404 page title').toBe(NOT_FOUND_TITLE)
+      expect(off.notFoundShown, 'OFF: 404 page heading').toBe(true)
 
       // ON again.
       await page.locator(`${ROW} button[role="switch"]`).click()
@@ -72,6 +76,7 @@ test.describe('Kawalan Ciri (S0-T10)', () => {
       const on = await pupilSees()
       expect(on.menu, 'ON again: menu item').toBe(true)
       expect(on.title, 'ON again: not the 404 page').not.toBe(NOT_FOUND_TITLE)
+      expect(on.notFoundShown, 'ON again: no 404 heading').toBe(false)
     } finally {
       await put(page, true)
     }
