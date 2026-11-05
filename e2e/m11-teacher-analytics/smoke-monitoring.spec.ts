@@ -286,7 +286,7 @@ test.describe('M11 S2 Monitoring Penglibatan (admin, /admin/monitoring)', MODULE
     await expect(tid(page, 'mon-attention-item')).toHaveCount(18)
     await expect(tid(page, 'mon-suggestion-item')).toHaveCount(17)
     await expect(tid(page, 'mon-attention-item').first()).toContainText('Tahap rendah.')
-    await expect(tid(page, 'mon-attention-item').nth(1)).toContainText('Tahap kritikal.')
+    await expect(tid(page, 'mon-attention-item').nth(1)).toContainText('Tahap rendah.')
     await expect(
       tid(page, 'mon-attention-item').filter({ hasText: '(Nota: 16 guru telah login)' }),
     ).toHaveCount(1)

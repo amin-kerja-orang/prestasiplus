@@ -31,7 +31,7 @@ export const TAHAPS = [
   ['Cemerlang', 'Cemerlang'],
   ['Sederhana', 'Sederhana'],
   ['Rendah', 'Rendah'],
-  ['Tiada Langsung', 'Tiada'],
+  ['Tiada', 'Tiada'],
 ] as const
 
 const LABEL: Record<keyof MonitoringFilterQuery, string> = {

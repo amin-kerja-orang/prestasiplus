@@ -80,7 +80,7 @@ function overview(extra: Partial<MonitoringOverview> = {}): MonitoringOverview {
         registered: 5,
         engaged: 0,
         pct: 0,
-        tahap: 'Tiada Langsung',
+        tahap: 'Tiada',
       },
     ],
     teacherRows: [
