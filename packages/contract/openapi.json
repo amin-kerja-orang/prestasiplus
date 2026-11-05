@@ -31816,7 +31816,7 @@
             "items": {
               "$ref": "#/components/schemas/AmaranPupilRisk"
             },
-            "description": "Score descending (not_started last), 1-based rank. Inactive pupils are included."
+            "description": "Score descending (not_started last), 1-based rank. The XS-1 pupils of the school (active, not suspended, Tingkatan 1-5); others are not listed."
           }
         },
         "required": [
