@@ -176,7 +176,7 @@ Decisions (Q-n), apply exactly:
 - R-23 (D-02) The Dashboard "Set Soalan" entry tile is added by S6-T14 itself (same sector file); plan S6-T14 no longer waits for S6-T07.
 - R-24 (D-03) Settings key / column names: DM-38 is the master; DM-48 uses its names.
 - R-25 (D-04) API-GUR-16 list response adds `summary {total, siap}` and accepts `classroomId`.
-- R-26 (D-05) API-ADM-25 has two create routes, one for tournaments and one for leagues, each with its own body (league fields only on the league route); `levelIds` are 1..5 = T1..T5 via `LeagueClassLevel.level` (ruling of 2026-11-05). 48 GAME-15 names the league route.
+- R-26 (D-05) API-ADM-25 has two create routes, one for tournaments and one for leagues, each with its own body (league fields only on the league route); `levelIds` are numeric ids. 48 GAME-15 names the league route.
 - R-27 (D-06) A teacher personal question (`teacher_private`) is Diluluskan on save (no review) and is servable only in the owner's missions (activity `misi`); 45 §3.4 and 40 OPT-STATUS-SOALAN note it.
 - R-28 (D-07) Soalan & Rujukan edit page: New file `SoalanRujukanEditPage.vue`, route `/guru/soalan-rujukan/:id/sunting` (plan S6-T16).
 - R-29 (D-08) "Used by an active Misi" = drawn into an assignment of a mission whose status is active (20 GUR-44a).
