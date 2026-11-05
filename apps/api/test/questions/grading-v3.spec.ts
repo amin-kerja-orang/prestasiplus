@@ -126,6 +126,36 @@ describe('short_text (M-SHORT)', () => {
       expect(status(gradeShortText(key(['???']), '!!!', 1))).not.toBe('betul')
       expect(status(gradeShortText(key(['الجواب'], { anyOrder: true }), 'الجواب', 1))).toBe('betul')
     })
+    it('[CI] marks, tatweel and format characters do not make a different answer: harakat, shadda, kashida, ZWNJ, LRM', () => {
+      const k = key(['كتاب'])
+      expect(status(gradeShortText(k, 'كِتَابٌ', 1))).toBe('betul')
+      expect(status(gradeShortText(key(['كِتَابٌ']), 'كتاب', 1))).toBe('betul')
+      expect(status(gradeShortText(k, 'كتـــاب', 1))).toBe('betul')
+      expect(status(gradeShortText(k, 'ك\u200Cتاب', 1))).toBe('betul')
+      expect(status(gradeShortText(k, '\u200Eكتاب\u200F', 1))).toBe('betul')
+      expect(status(gradeShortText(key(['شدّة']), 'شدة', 1))).toBe('betul')
+    })
+    it('[CI] every decimal digit compares as its ASCII digit: Arabic-Indic, Extended Arabic-Indic and fullwidth', () => {
+      expect(status(gradeShortText(key(['3']), '٣', 1))).toBe('betul')
+      expect(status(gradeShortText(key(['٣']), '3', 1))).toBe('betul')
+      expect(status(gradeShortText(key(['۱۲۳']), '١٢٣', 1))).toBe('betul')
+      expect(status(gradeShortText(key(['123']), '۱۲۳', 1))).toBe('betul')
+      expect(status(gradeShortText(key(['12']), '１２', 1))).toBe('betul')
+      expect(status(gradeShortText(key(['عدد 3']), 'عدد ٣', 1))).toBe('betul')
+      expect(status(gradeShortText(key(['3']), '٤', 1))).toBe('salah')
+    })
+    it('[CI] genuinely different Arabic or Jawi words (different letters, not marks) still do not match', () => {
+      expect(status(gradeShortText(key(['كتاب']), 'كتب', 1))).toBe('salah')
+      expect(status(gradeShortText(key(['ڤولاو']), 'ڤولو', 1))).toBe('salah')
+      expect(status(gradeShortText(key(['ڤ']), 'ف', 1))).toBe('salah')
+      // alef with hamza and plain alef are different letters
+      expect(status(gradeShortText(key(['أمل']), 'امل', 1))).toBe('salah')
+      expect(status(gradeShortText(key(['٣']), '٤', 1))).toBe('salah')
+    })
+    it('[CI] mixed Latin and Jawi: the Latin runs are lower-cased and lose diacritics; the micro sign matches mu', () => {
+      expect(status(gradeShortText(key(['Kuala كتاب']), 'KUÁLA كتاب', 1))).toBe('betul')
+      expect(status(gradeShortText(key(['5 µm']), '5 μm', 1))).toBe('betul')
+    })
     it('[CI] table_fill cells and scheme points (keywords, all_of, step, notAccepted) read non-Latin text as written', () => {
       const grid = leaf({ mode: 'table_fill', marks: 2, key: { kind: 'mapping', cells: { r1c1: ['كتاب'], r1c2: ['马来西亚'] } }, modeConfig: { grid: { rows: 1, cols: 2, cells: [[{ type: 'kosong' }, { type: 'kosong' }]] } } })
       expect(gradeLeaf(grid, { kind: 'cells', cells: { r1c1: 'كتاب', r1c2: 'كتب' } })).toMatchObject({ kind: 'needs_review', suggestion: { message: 'Cadangan automatik: 1 daripada 2 sel sepadan' } })
