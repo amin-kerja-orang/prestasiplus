@@ -278,7 +278,6 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       '🤖 Cikgu Alesa AI',
       'Cikgu Alesa Chat',
       '✨ Visi & Pertandingan',
-      'Sekolah Bersaing',
       'Tetapan Peribadi',
       '🤖 AI Pintar (Pelajar)',
       'Wellbeing Alerts',
