@@ -64,6 +64,7 @@ import type {
   QuestionView,
   SetStatusOptions,
   StructuredListFilter,
+  GuruStructuredRecord,
   TextbookRef,
   StructuredListResult,
 } from './types'
@@ -684,6 +685,31 @@ export class QuestionsService {
     const record = await this.repo.get(id, 'latest')
     if (!record || record.version.type !== 'structured') throw questionNotFound()
     return this.detail(record)
+  }
+
+  // --- structured (teacher mount, API-GUR-26) ----------------------------------------------------
+
+  /**
+   * One page of what a pupil is served (approved, live, figures present), newest first. `status=review` is the teacher's own submissions,
+   * which have no source yet: an empty page. The caller fixes the page size.
+   */
+  async listGuruStructured(filter: StructuredListFilter, status: 'approved' | 'review'): Promise<Page<QuestionView>> {
+    if (status === 'review') return { rows: [], page: filter.page, pageSize: filter.pageSize, total: 0 }
+    const page = await this.repo.structuredIds({ ...filter, served: true, newestFirst: true })
+    const records = await this.repo.getMany(page.ids, 'live')
+    return { rows: await this.named(records), page: filter.page, pageSize: filter.pageSize, total: page.total }
+  }
+
+  /**
+   * Detail for the teacher mount: 404 unless the list would show the question. Reads the LIVE version and the stimulus group, and never
+   * loads the creator (no personal data).
+   */
+  async getGuruStructured(id: string): Promise<GuruStructuredRecord> {
+    if (!(await this.repo.isStructuredServed(id))) throw questionNotFound()
+    const record = await this.repo.get(id, 'live')
+    if (!record) throw questionNotFound()
+    const stimulusGroup = record.groupId ? await this.repo.groupOf(record.id) : null
+    return { ...(await this.viewOf(record)), stimulusGroup }
   }
 
   // --- Guru (own rows only; another teacher id is 404) ------------------------------------------

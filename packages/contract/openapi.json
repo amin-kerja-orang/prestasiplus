@@ -4204,17 +4204,27 @@
         "type": "object",
         "properties": {
           "email": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "whatsapp": {
+            "type": "string"
+          },
+          "hours": {
+            "type": "string"
           },
           "whatsappNumber": {
             "type": "string",
-            "minLength": 1
+            "deprecated": true
           }
         },
         "required": [
           "email",
-          "whatsappNumber"
+          "phone",
+          "whatsapp",
+          "hours"
         ],
         "additionalProperties": false
       },
@@ -10035,7 +10045,7 @@
           "image": {
             "type": "string",
             "format": "binary",
-            "description": "JPG, PNG, WebP or GIF (SVG refused), at most 2 MB. Storage: BE-04."
+            "description": "JPG, PNG or WebP (GIF and SVG refused), at most 2 MB. Storage: BE-04."
           }
         },
         "required": [
@@ -28377,7 +28387,8 @@
               "null"
             ],
             "minimum": 1,
-            "maximum": 11
+            "maximum": 11,
+            "description": "Tingkatan 1-11. Accepted and ignored by the server for every role (API-AUTH-09)."
           },
           "schoolId": {
             "type": [
@@ -28386,7 +28397,7 @@
             ],
             "minLength": 1,
             "maxLength": 64,
-            "description": "School id. Must exist (422 \"The selected school id is invalid.\"). `null` or absent means no school.",
+            "description": "School id. Accepted and ignored by the server for every role (API-AUTH-09).",
             "example": "1042"
           }
         },
@@ -41433,6 +41444,212 @@
           "kbatLevel",
           "totalMarks",
           "subCount"
+        ]
+      },
+      "GuruStructuredRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "number": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Position in the full ordered list (1-based): page offset + index."
+          },
+          "textExcerpt": {
+            "type": "string"
+          },
+          "level": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QuestionNamedRef"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "subject": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QuestionNamedRef"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "kbat": {
+            "type": "string",
+            "description": "KBAT chip text from the question cognitive level: \"LOTS 1\", \"LOTS 2\", \"MOTS 3\", \"HOTS 4\" to \"HOTS 6\"; empty when the question has no level."
+          },
+          "subCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Sum of the part marks."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "approved",
+              "review"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "textExcerpt",
+          "level",
+          "subject",
+          "kbat",
+          "subCount",
+          "marks",
+          "status"
+        ]
+      },
+      "GuruStructuredSub": {
+        "type": "object",
+        "properties": {
+          "partLabel": {
+            "type": "string"
+          },
+          "questionText": {
+            "type": "string"
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "0 for a branch (a part that only groups its children)."
+          },
+          "cognitiveLevel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "mengingat",
+              "memahami",
+              "mengaplikasi",
+              "menganalisis",
+              "menilai",
+              "mencipta",
+              null
+            ],
+            "description": "Bloom level of the part (Taksonomi Bloom), if set."
+          },
+          "modelAnswer": {
+            "type": "string",
+            "description": "\"Skema Jawapan\"."
+          },
+          "depth": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "partLabel",
+          "questionText",
+          "marks",
+          "cognitiveLevel",
+          "modelAnswer",
+          "depth"
+        ]
+      },
+      "GuruStructuredDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subject": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QuestionNamedRef"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "level": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QuestionNamedRef"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "kbat": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "approved",
+              "review"
+            ]
+          },
+          "stimulus": {
+            "type": "string",
+            "description": "The stimulus text, once, above all the sub-questions."
+          },
+          "stimulusImage": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Always null this round: the file read rule has no teacher branch for a question picture."
+          },
+          "totalMarks": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "subCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "subQuestions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuruStructuredSub"
+            }
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "subject",
+          "level",
+          "kbat",
+          "status",
+          "stimulus",
+          "stimulusImage",
+          "totalMarks",
+          "subCount",
+          "subQuestions",
+          "createdAt"
         ]
       },
       "QuestionStructuredSub": {
@@ -75807,10 +76024,10 @@
           "content"
         ],
         "summary": "Support contact (help box)",
-        "description": "Public. If the config row is missing the server answers 404 \"Konfigurasi sokongan tidak dijumpai.\" (the mock would fail with a generic error).",
+        "description": "Public. If the config row is missing the server answers 200 with empty strings {email: \"\", phone: \"\", whatsapp: \"\", hours: \"\"} (S5-T05, DM-33); phone and hours are always empty until S7-T09; the client hides a contact whose value is empty.",
         "responses": {
           "200": {
-            "description": "E-mail and WhatsApp number.",
+            "description": "E-mail, phone, WhatsApp number and hours (empty strings when not set).",
             "content": {
               "application/json": {
                 "schema": {
@@ -75823,16 +76040,6 @@
                   "required": [
                     "data"
                   ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "NOT_FOUND \"Konfigurasi sokongan tidak dijumpai.\"",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
@@ -83216,7 +83423,7 @@
           "diagram-audit"
         ],
         "summary": "Questions flagged as needing a diagram",
-        "description": "Admin only. Two lists with separate pagers (mcqPage, strPage; 20 per page; id descending). subjectId filters both lists, schoolId the MCQ list only; a malformed or unknown filter matches nothing. The body is { data: { mcq, structured }, meta: { stats, bySubject, unfilteredMcq } }, not the standard list meta.",
+        "description": "Admin, teacher and school admin (the whole bank, same data for all three). Two lists with separate pagers (mcqPage, strPage; 20 per page; id descending). subjectId filters both lists, schoolId the MCQ list only; a malformed or unknown filter matches nothing. The body is { data: { mcq, structured }, meta: { stats, bySubject, unfilteredMcq } }, not the standard list meta.",
         "parameters": [
           {
             "schema": {
@@ -83277,7 +83484,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin; Admin Sekolah and every other role included).",
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin, teacher or school admin).",
             "content": {
               "application/json": {
                 "schema": {
@@ -83296,7 +83503,7 @@
           "diagram-audit"
         ],
         "summary": "Attach a diagram image and clear the flag",
-        "description": "Admin only. multipart/form-data `image` (JPG, PNG, WebP or GIF, SVG refused, up to 2 MB; storage: BE-04). Sets needsDiagram false and stores the image reference. Flash: \"Gambar rajah berjaya dimuat naik.\".",
+        "description": "Admin only. multipart/form-data `image` (JPG, PNG or WebP, GIF and SVG refused, up to 2 MB; storage: BE-04). Sets needsDiagram false and stores the image reference. Flash: \"Gambar rajah berjaya dimuat naik.\".",
         "parameters": [
           {
             "schema": {
@@ -83380,7 +83587,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR fields.image \"Sila pilih fail gambar.\" (missing or not an image) or \"Gambar mesti jenis JPG, PNG, WebP atau GIF dan tidak melebihi 2MB.\".",
+            "description": "VALIDATION_ERROR fields.image \"Sila pilih fail gambar.\" (missing or not an image) \"Fail mesti berupa imej (jpg, png atau webp).\" (wrong type) or \"Saiz imej tidak boleh melebihi 2 MB.\" (over 2 MB).",
             "content": {
               "application/json": {
                 "schema": {
@@ -102755,7 +102962,7 @@
           "account"
         ],
         "summary": "Update own profile",
-        "description": "Any signed-in role, own record only. `email` and any other key in the body are ignored (BR-13). An absent key keeps the stored value; null or blank clears phone, bio, grade, schoolId. schoolId is ignored for school_admin, ppd_officer and admin accounts. D57a: this write route is rate limited (RATE_LIMITED, retryAfter, Retry-After); the per-user limit is a platform setting of the implementation.",
+        "description": "Any signed-in role, own record only. `email` and any other key in the body are ignored (BR-13). An absent key keeps the stored value; null or blank clears phone and bio. `grade`, `schoolId` and `role` are accepted and ignored for every role (API-AUTH-09). D57a: this write route is rate limited (RATE_LIMITED, retryAfter, Retry-After); the per-user limit is a platform setting of the implementation.",
         "parameters": [
           {
             "schema": {
@@ -102824,7 +103031,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields (one message per field, the first failing rule). name required, max 255; phone max 14; bio max 500; grade \"The selected grade is invalid.\"; school \"The selected school id is invalid.\". Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
+            "description": "VALIDATION_ERROR with fields (one message per field, the first failing rule). name required, max 255; phone max 14; bio max 500; grade \"The selected grade is invalid.\" and school \"The selected school id is invalid.\" when the value has the wrong type (a valid value is ignored). Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
             "content": {
               "application/json": {
                 "schema": {
@@ -107407,6 +107614,188 @@
           },
           "403": {
             "description": "FORBIDDEN, or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/structured-questions": {
+      "get": {
+        "tags": [
+          "questions",
+          "guru"
+        ],
+        "summary": "Teacher list of approved structured questions (20 per page, newest first)",
+        "description": "API-GUR-26, read-only. Teacher or Admin Pusat. Only approved, live, active questions a pupil is served; a question that needs a figure it lacks is left out. `meta.totalItems` is the dataset count. `status=review` answers an empty page.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "subjectId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "educationLevelId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "approved",
+                "review"
+              ],
+              "description": "Omitted: approved. `review` (the teacher's own submissions) is an empty page until the submission part exists."
+            },
+            "required": false,
+            "description": "Omitted: approved. `review` (the teacher's own submissions) is an empty page until the submission part exists.",
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of rows.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/GuruStructuredRow"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ListMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN, or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages), `message` = first message plus the count of the others.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/structured-questions/{id}": {
+      "get": {
+        "tags": [
+          "questions",
+          "guru"
+        ],
+        "summary": "Teacher detail of an approved structured question",
+        "description": "No admin-only fields. A question that is not approved, not served or unknown is 404.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The question.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GuruStructuredDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN, or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id (for Guru routes also another teacher's question; ids cannot be probed).",
             "content": {
               "application/json": {
                 "schema": {
