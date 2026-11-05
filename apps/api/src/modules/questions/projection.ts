@@ -229,6 +229,11 @@ export function languageToStore(language: WireLanguageIn | undefined, script: 'r
 export const bilingualScriptConflict = (language: WireLanguageIn | undefined, script: 'rumi' | 'arab' | 'jawi' | 'mixed' | QuestionVersionRecord['language'] | undefined): boolean =>
   language === 'ms+en' && (script === 'jawi' || script === 'arab' || script === 'ar')
 
+/** English text of the wire: blank is no text (null, so a draft saves with it empty); undefined keeps what is stored. */
+export const enText = (v: string | null | undefined): string | null | undefined => (v === undefined ? undefined : v === null || v.trim() === '' ? null : v.trim())
+
+// `ms_en` reads as `mixed` because the row holds BM and English text (the practice bridge and the remedial service consume this). Per the
+// bilingual ruling a bilingual question is always Rumi script: Jawi and Arab cannot be bilingual in R1.
 export const scriptOf = (l: QuestionVersionRecord['language']): FlatFields['scriptType'] =>
   l === 'jawi' ? 'jawi' : l === 'ar' ? 'arab' : l === 'ms_en' ? 'mixed' : 'rumi'
 

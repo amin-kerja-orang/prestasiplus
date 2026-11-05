@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { bilingualScriptConflict, flatFromVersion, flatLanguageOf, languageToStore, scriptOf } from '../../src/modules/questions/projection'
+import { bilingualScriptConflict, enText, flatFromVersion, flatLanguageOf, languageToStore, scriptOf } from '../../src/modules/questions/projection'
 import type { QuestionVersionRecord } from '../../src/modules/questions/types'
 
 /**
@@ -70,5 +70,15 @@ describe('language map store to wire', () => {
     expect(flat.language).toBe('ms+en')
     expect(flat.questionTextEn).toBe('The question in English.')
     expect(flatFromVersion({ ...v, stemEn: null, language: 'ms' } as QuestionVersionRecord)).toMatchObject({ language: 'ms', questionTextEn: null })
+  })
+})
+
+describe('English text of the wire (stem and caption)', () => {
+  it('blank is null, text is trimmed, undefined keeps the stored value', () => {
+    expect(enText(undefined)).toBeUndefined()
+    expect(enText(null)).toBeNull()
+    expect(enText('')).toBeNull()
+    expect(enText('  \t ')).toBeNull()
+    expect(enText('  Figure 1 ')).toBe('Figure 1')
   })
 })

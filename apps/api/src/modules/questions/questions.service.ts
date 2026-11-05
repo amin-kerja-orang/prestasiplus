@@ -23,6 +23,7 @@ import {
   kertasOfPaperCode,
   keyIndexOf,
   bilingualScriptConflict,
+  enText,
   languageToStore,
   partsFromFlat,
   paperCodeWithKertas,
@@ -104,8 +105,6 @@ const parse = (text: string): bigint | null => {
 }
 
 const fail = (fields: Record<string, string>): ApiError => ApiError.of('VALIDATION_ERROR', { fields })
-/** English text of the wire: blank is no text (null, so a draft saves with it empty); undefined keeps what is stored. */
-const enText = (v: string | null | undefined): string | null | undefined => (v === undefined ? undefined : v === null || v.trim() === '' ? null : v.trim())
 
 interface FlatIssue {
   path: PropertyKey[]

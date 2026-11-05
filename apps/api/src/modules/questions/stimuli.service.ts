@@ -25,6 +25,7 @@ import { stimulusTableParts } from './stimulus-table'
 import { type GroupRow, type GroupScope, type ListFilter, type MemberBrief, type MemberTrait, type StimulusData, type StimulusRow, StimuliRepository, plainExcerpt } from './stimuli.repository'
 import { QuestionsService } from './questions.service'
 import type { BulkFailure, BulkSkipped } from './errors'
+import { enText } from './projection'
 import { STIMULUS_KINDS } from './types'
 import type { QuestionBulkAction } from './types'
 import type { QuestionActor, QuestionCreateInput, QuestionView } from './types'
@@ -94,7 +95,7 @@ export class StimuliService {
       kind: input.kind,
       label: input.label ?? null,
       caption: input.caption ?? null,
-      captionEn: input.captionEn ?? null,
+      captionEn: enText(input.captionEn) ?? null,
       bodyMs: input.body?.ms ?? null,
       bodyEn: input.body?.en ?? null,
       altText: input.alt ?? null,
@@ -131,7 +132,7 @@ export class StimuliService {
         kind: current.kind,
         label: input.label === undefined ? current.label : input.label,
         caption: input.caption === undefined ? current.caption : input.caption,
-        captionEn: input.captionEn === undefined ? current.captionEn : input.captionEn,
+        captionEn: input.captionEn === undefined ? current.captionEn : (enText(input.captionEn) ?? null),
         bodyMs: body.ms,
         bodyEn: body.en,
         altText: input.alt === undefined ? current.altText : input.alt,
