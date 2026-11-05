@@ -8,7 +8,7 @@
  */
 import type { QuestionGateData } from '../ports'
 import { checkDskpGate } from '../../dskp-gate'
-import { checkDifficultyGate, checkStemGate } from '../../publish-gate'
+import { checkDifficultyGate, checkStemGate, checkStimulusFlagGate } from '../../publish-gate'
 import { checkKeysGate, checkTagGate, leavesOf } from './keys-gate'
 
 export type GateName = 'submit' | 'approve'
@@ -40,6 +40,7 @@ export function submitGate(d: QuestionGateData): GateFields {
   if (d.subjectId === null) f.subjectId = GATE_MESSAGES.subjectId
   if (d.educationLevelId === null) f.educationLevelId = GATE_MESSAGES.educationLevelId
   if (d.hasOpenDuplicateFlag) f.duplicate = GATE_MESSAGES.duplicate // duplicate resolved
+  Object.assign(f, checkStimulusFlagGate(d)) // rows 25 and 26 (S, A)
   return f
 }
 
@@ -54,6 +55,7 @@ export function approveGate(d: QuestionGateData, reviewerIsAi = false): GateFiel
     if (sum !== d.marks) f.marks = GATE_MESSAGES.marksTotal // marks total = sum of part marks
   }
   if (!d.mediaResolved) f.media = GATE_MESSAGES.media // media resolves
+  Object.assign(f, checkStimulusFlagGate(d)) // rows 25 and 26 (S, A)
   return f
 }
 

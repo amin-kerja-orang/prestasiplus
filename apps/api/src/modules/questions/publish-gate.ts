@@ -47,9 +47,9 @@ export function checkTagGate(input: TagGateInput): Record<string, string> {
   return fields
 }
 
-/** NO_DIFFICULTY (row 9, S): refused only when neither the typed Kesukaran nor a TP exists (readers fall back to `least(5, tp)`, else 3). */
+/** NO_DIFFICULTY (row 9, S): the typed Kesukaran is required on its own, whatever the TP (FR-ADM-QE3.7, AC-ADM-QE3.3; team-dd ruling on #503). */
 export function checkDifficultyGate(input: { difficultyLevel?: number | null; tp: number | null }): Record<string, string> {
-  return (input.difficultyLevel ?? null) === null && input.tp === null ? { difficultyLevel: PUBLISH_TAG_MESSAGES.difficultyLevel } : {}
+  return (input.difficultyLevel ?? null) === null ? { difficultyLevel: PUBLISH_TAG_MESSAGES.difficultyLevel } : {}
 }
 
 /** STEM_SHORT (row 10, S): the stem of an MCQ (one top-level MCQ leaf) has at least 10 characters. A blank stem is the REQUIRED_FIELD item, not this one. */
@@ -59,6 +59,27 @@ export function checkStemGate(stem: string | null | undefined, parts: readonly Q
   const only = parts[0]!
   if (!isLeaf(only) || only.mode !== 'mcq') return {}
   return Array.from(text).length < 10 ? { questionText: PUBLISH_TAG_MESSAGES.stem } : {}
+}
+
+/** Gate rows 25 and 26 (S, A): text of the open stimulus flag. `{Rajah 3}` of the PRD is the reference the text contains. */
+export const STIMULUS_FLAG_MESSAGES = {
+  missing: (rujukan: string): string => `Soalan menyebut ${rujukan} tetapi tiada rangsangan. Pilih kumpulan atau tambah rangsangan.`,
+  figureOnly: 'Soalan ini hanya mengandungi rangsangan. Tukarkan kepada rangsangan kumpulan.',
+} as const
+
+export interface StimulusFlagGateInput {
+  stimulusFlag?: 'stimulus_missing' | 'figure_only' | 'stem_duplicated' | null
+  flagDismissedAt?: Date | null
+  /** The reference the text contains ("Rajah 3"), for `stimulus_missing`. */
+  stimulusRefText?: string | null
+}
+
+/** Rows 25 STIMULUS_MISSING and 26 FIGURE_ONLY: an item only while the flag is open (not dismissed); `stem_duplicated` never blocks. */
+export function checkStimulusFlagGate(input: StimulusFlagGateInput): Record<string, string> {
+  if (input.flagDismissedAt != null) return {}
+  if (input.stimulusFlag === 'stimulus_missing') return { stimulusMissing: STIMULUS_FLAG_MESSAGES.missing(input.stimulusRefText ?? 'Rajah') }
+  if (input.stimulusFlag === 'figure_only') return { figureOnly: STIMULUS_FLAG_MESSAGES.figureOnly }
+  return {}
 }
 
 /** Sum of the marks a points key can award: free points, plus `anyN` of each group. */

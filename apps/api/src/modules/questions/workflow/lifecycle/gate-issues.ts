@@ -26,6 +26,9 @@ const BY_KEY: Readonly<Record<string, { code: string; step: 1 | 2 | 3 | 4 }>> = 
   duplicate: { code: 'DUPLICATE_OPEN', step: 4 },
   reviewer: { code: 'REVIEWER_IS_AI', step: 4 },
   year: { code: 'LOW_CONFIDENCE', step: 4 },
+  // Rows 25 and 26: the PRD table gives no step; Rangsangan is step 2 here, as MEDIA_UNRESOLVED.
+  stimulusMissing: { code: 'STIMULUS_MISSING', step: 2 },
+  figureOnly: { code: 'FIGURE_ONLY', step: 2 },
 }
 
 /** True for the text of `INTAKE_GATE_MESSAGES.spNotInTaxonomy(code)`, whatever the code. */
