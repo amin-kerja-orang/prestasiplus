@@ -331,9 +331,10 @@ test.describe('L04 unbuilt paths and states', MODULE, () => {
   }) => {
     await loginAs(PELAJAR)
     await openS1(page, gotoApp)
-    await mock.networkErrorNext('GET /api/tiket')
+    // The client retries a failed GET twice (X10.3.4, S0-T12), so all three attempts must fail.
+    for (let i = 0; i < 3; i++) await mock.networkErrorNext('GET /api/tiket')
     await page.getByTestId('tk-tabs').getByRole('link', { name: 'Ditutup' }).click()
-    await expect(page.getByTestId('tk-error')).toBeVisible()
+    await expect(page.getByTestId('tk-error')).toBeVisible({ timeout: 15_000 })
     await expect(cards(page)).toHaveCount(0)
     await expectNoHorizontalScroll(page)
     await page.getByTestId('tk-retry').click()
