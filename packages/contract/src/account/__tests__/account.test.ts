@@ -11,7 +11,13 @@ import {
   ACCOUNT_PICTURE_MESSAGES,
   ACCOUNT_RESET_IC_MAX_ATTEMPTS,
   ACCOUNT_RESET_IC_WINDOW_MINUTES,
+  ACCOUNT_MOODS,
+  ACCOUNT_MOOD_ALREADY_CHECKED_IN,
+  ACCOUNT_MOOD_MESSAGES,
   ACCOUNT_SETTINGS_DEFAULTS,
+  AccountMoodCheckinSchema,
+  AccountMoodRequestSchema,
+  AccountMoodTodaySchema,
   AccountPasswordChangeRequestSchema,
   AccountPasswordEmailRequestSchema,
   AccountPasswordResetIcRequestSchema,
@@ -285,6 +291,7 @@ describe('D57 security defaults', () => {
     ['put', '/me/password'],
     ['post', '/me/picture'],
     ['put', '/me/settings'],
+    ['post', '/me/mood'],
     ['get', '/public/stats'],
   ]
 
@@ -530,10 +537,10 @@ describe('openapi registration', () => {
     ['get', '/public/stats'],
   ]
 
-  it('contains the 11 account routes and counts them by its own tag', () => {
+  it('contains the 13 account routes and counts them by its own tag', () => {
     for (const [method, path] of routes) expect(doc.paths[path]?.[method], `${method} ${path}`).toBeDefined()
     const tagged = Object.values(doc.paths).flatMap((p) => Object.values(p)).filter((o) => o.tags?.includes('account'))
-    expect(tagged).toHaveLength(11)
+    expect(tagged).toHaveLength(13)
   })
 
   it('contains every component, with the Account prefix', () => {
@@ -572,5 +579,36 @@ describe('openapi registration', () => {
       const text = JSON.stringify(doc.components.schemas[id])
       expect(text, id).not.toMatch(/icNumber|passwordHash|"password"/)
     }
+  })
+})
+
+describe('mood check-in (S5-T04, API-MUR-11)', () => {
+  it('stores gembira, okay, sedih and tertekan only', () => {
+    expect([...ACCOUNT_MOODS]).toEqual(['gembira', 'okay', 'sedih', 'tertekan'])
+    for (const mood of ACCOUNT_MOODS) expect(AccountMoodRequestSchema.safeParse({ mood }).success).toBe(true)
+    for (const mood of ['happy', 'sad', 'stressed', 'ok', '', null, 1]) expect(AccountMoodRequestSchema.safeParse({ mood }).success, String(mood)).toBe(false)
+    expect(fields(AccountMoodRequestSchema, {})).toHaveProperty('mood')
+  })
+
+  it('ignores unknown request keys, answers {mood, checkedOn} and {mood: string|null}', () => {
+    expect(AccountMoodRequestSchema.parse({ mood: 'sedih', reason: 'x' })).toEqual({ mood: 'sedih' })
+    expect(AccountMoodCheckinSchema.safeParse({ mood: 'sedih', checkedOn: '2026-11-05' }).success).toBe(true)
+    expect(AccountMoodCheckinSchema.safeParse({ mood: 'sedih', checkedOn: '05/11/2026' }).success).toBe(false)
+    expect(AccountMoodTodaySchema.safeParse({ mood: null }).success).toBe(true)
+    expect(AccountMoodTodaySchema.safeParse({ mood: 'okay' }).success).toBe(true)
+    expect(AccountMoodTodaySchema.safeParse({}).success).toBe(false)
+  })
+
+  it('carries the exact BM copy and the 409 code', () => {
+    expect(ACCOUNT_MOOD_ALREADY_CHECKED_IN).toBe('ALREADY_CHECKED_IN')
+    expect(ACCOUNT_MOOD_MESSAGES.alreadyCheckedIn).toBe('Anda sudah merekodkan perasaan hari ini.')
+    expect(ACCOUNT_MOOD_MESSAGES.saveFailed).toBe('Gagal menyimpan. Sila cuba lagi.')
+  })
+
+  it('documents 409 on POST /me/mood and student-only 403 on both routes', () => {
+    const doc = buildOpenApiDocument() as unknown as { paths: Record<string, Record<string, { responses: Record<string, unknown> }>> }
+    expect(doc.paths['/me/mood']?.post?.responses['409']).toBeDefined()
+    expect(doc.paths['/me/mood']?.post?.responses['403']).toBeDefined()
+    expect(doc.paths['/me/mood/today']?.get?.responses['403']).toBeDefined()
   })
 })

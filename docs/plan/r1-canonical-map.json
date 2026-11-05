@@ -11237,6 +11237,26 @@
       "approved_by_card": null
     },
     {
+      "key": "POST /api/me/mood",
+      "method": "POST",
+      "path": "/api/me/mood",
+      "api_id": "API-MUR-11",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/src/modules/account/mood.controller.ts",
+      "approved_by_card": "S5-T04"
+    },
+    {
+      "key": "GET /api/me/mood/today",
+      "method": "GET",
+      "path": "/api/me/mood/today",
+      "api_id": "API-MUR-11",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/src/modules/account/mood.controller.ts",
+      "approved_by_card": "S5-T04"
+    },
+    {
       "key": "GET /api/public/stats",
       "method": "GET",
       "path": "/api/public/stats",

@@ -28253,6 +28253,65 @@
         ],
         "additionalProperties": false
       },
+      "AccountMood": {
+        "type": "string",
+        "enum": [
+          "gembira",
+          "okay",
+          "sedih",
+          "tertekan"
+        ]
+      },
+      "AccountMoodRequest": {
+        "type": "object",
+        "properties": {
+          "mood": {
+            "$ref": "#/components/schemas/AccountMood"
+          }
+        },
+        "required": [
+          "mood"
+        ]
+      },
+      "AccountMoodCheckin": {
+        "type": "object",
+        "properties": {
+          "mood": {
+            "$ref": "#/components/schemas/AccountMood"
+          },
+          "checkedOn": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "required": [
+          "mood",
+          "checkedOn"
+        ],
+        "additionalProperties": false
+      },
+      "AccountMoodToday": {
+        "type": "object",
+        "properties": {
+          "mood": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AccountMood"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "mood"
+        ],
+        "additionalProperties": false
+      },
       "NotificationCategory": {
         "type": "string",
         "enum": [
@@ -101544,6 +101603,166 @@
                 }
               }
             },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/mood": {
+      "post": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Record the pupil's mood of today (API-MUR-11)",
+        "description": "Student only (the active role; Mod Pelajar counts as student and the row is stamped is_test): any other role is 403 FORBIDDEN. Body {mood}: gembira, okay, sedih or tertekan (anything else is 422 on fields.mood). One check-in per pupil per Malaysia calendar day (Asia/Kuala_Lumpur): the first answers 200 {data: {mood, checkedOn}}; a second on the same day answers 409 ALREADY_CHECKED_IN \"Anda sudah merekodkan perasaan hari ini.\" and the stored row is unchanged (it is never updated). The reason column is never written in R1. The response is Cache-Control: no-store (a pupil's mood is personal data of a minor). D57a: this write route is rate limited (RATE_LIMITED, retryAfter, Retry-After); the per-user limit is a platform setting of the implementation.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on authenticated mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on authenticated mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountMoodRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recorded. mood is the stored value, checkedOn the Malaysia day.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AccountMoodCheckin"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not student), CSRF_INVALID (missing or wrong X-CSRF-Token), or PASSWORD_CHANGE_REQUIRED (shared common code, 403): while the account must change its password (session.mustChangePassword) every authenticated route except GET /session, PUT /me/password and POST /auth/logout answers this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ALREADY_CHECKED_IN \"Anda sudah merekodkan perasaan hari ini.\" (a check-in of today exists; it is unchanged).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (one message per field, the first failing rule). mood: \"The selected mood is invalid.\". Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter seconds in the body and the Retry-After header. \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" (D57a).",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/mood/today": {
+      "get": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Today's mood of the pupil (API-MUR-11)",
+        "description": "Student only (any other role is 403 FORBIDDEN). data.mood is the stored value of the Malaysia day, or null when the pupil has not checked in today. Cache-Control: no-store.",
+        "responses": {
+          "200": {
+            "description": "Today's choice or null.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AccountMoodToday"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not student), or PASSWORD_CHANGE_REQUIRED (shared common code, 403): while the account must change its password (session.mustChangePassword) every authenticated route except GET /session, PUT /me/password and POST /auth/logout answers this.",
             "content": {
               "application/json": {
                 "schema": {

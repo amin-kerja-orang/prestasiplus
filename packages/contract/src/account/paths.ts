@@ -13,6 +13,11 @@ import {
   ACCOUNT_SECURITY_NOTIFICATIONS,
   ACCOUNT_THROTTLE,
   AccountFaithSchema,
+  AccountMoodCheckinSchema,
+  AccountMoodRequestSchema,
+  AccountMoodSchema,
+  AccountMoodTodaySchema,
+  ACCOUNT_MOOD_MESSAGES,
   AccountPasswordChangeRequestSchema,
   AccountPasswordEmailRequestSchema,
   AccountPasswordResetIcRequestSchema,
@@ -57,6 +62,10 @@ export const ACCOUNT_COMPONENT_SCHEMAS = {
   AccountSettings: AccountSettingsSchema,
   AccountSettingsUpdateRequest: AccountSettingsUpdateRequestSchema,
   AccountPlatformStats: AccountPlatformStatsSchema,
+  AccountMood: AccountMoodSchema,
+  AccountMoodRequest: AccountMoodRequestSchema,
+  AccountMoodCheckin: AccountMoodCheckinSchema,
+  AccountMoodToday: AccountMoodTodaySchema,
 } as const
 
 const json = (schema: z.ZodType, description: string) => ({
@@ -88,7 +97,7 @@ const REDACTION_TEXT =
   'Log redaction (BE-NFR-10, BE-NFR-11): the request body, the IC number, the reset token, the e-mail and every password are never written to application logs, audit rows or error bodies (an e-mail may appear only masked, a token only as its id).'
 const WRITE_THROTTLE_TEXT = 'D57a: this write route is rate limited (RATE_LIMITED, retryAfter, Retry-After); the per-user limit is a platform setting of the implementation.'
 
-/** Registers the 11 account routes (register, reset, own profile, settings, public stats). */
+/** Registers the 13 account routes (register, reset, own profile, settings, mood check-in, public stats). */
 export function registerAccountPaths(registry: OpenAPIRegistry): void {
   const csrf = z.object({
     'X-CSRF-Token': z.string().min(1).meta({ description: 'Value of Session.csrf; required on authenticated mutating requests.' }),
@@ -261,6 +270,32 @@ export function registerAccountPaths(registry: OpenAPIRegistry): void {
       ),
       429: rateLimited(`"${AUTH_ERROR_MESSAGES.RATE_LIMITED}" (D57a).`),
     },
+  })
+
+  registry.registerPath({
+    method: 'post',
+    path: '/me/mood',
+    tags: ['account'],
+    summary: 'Record the pupil\'s mood of today (API-MUR-11)',
+    description: `Student only (the active role; Mod Pelajar counts as student and the row is stamped is_test): any other role is 403 FORBIDDEN. Body {mood}: gembira, okay, sedih or tertekan (anything else is 422 on fields.mood). One check-in per pupil per Malaysia calendar day (Asia/Kuala_Lumpur): the first answers 200 {data: {mood, checkedOn}}; a second on the same day answers 409 ALREADY_CHECKED_IN "${ACCOUNT_MOOD_MESSAGES.alreadyCheckedIn}" and the stored row is unchanged (it is never updated). The reason column is never written in R1. The response is Cache-Control: no-store (a pupil\'s mood is personal data of a minor). ${WRITE_THROTTLE_TEXT}`,
+    request: { headers: [csrf], body: body(AccountMoodRequestSchema) },
+    responses: {
+      200: json(envelopeOf(AccountMoodCheckinSchema), 'Recorded. mood is the stored value, checkedOn the Malaysia day.'),
+      401: unauthorized,
+      403: err('FORBIDDEN (the active role is not student), CSRF_INVALID (missing or wrong X-CSRF-Token), or ' + PCR),
+      409: err(`ALREADY_CHECKED_IN "${ACCOUNT_MOOD_MESSAGES.alreadyCheckedIn}" (a check-in of today exists; it is unchanged).`),
+      422: validation('mood: "The selected mood is invalid.".'),
+      429: rateLimited(`"${AUTH_ERROR_MESSAGES.RATE_LIMITED}" (D57a).`),
+    },
+  })
+
+  registry.registerPath({
+    method: 'get',
+    path: '/me/mood/today',
+    tags: ['account'],
+    summary: 'Today\'s mood of the pupil (API-MUR-11)',
+    description: 'Student only (any other role is 403 FORBIDDEN). data.mood is the stored value of the Malaysia day, or null when the pupil has not checked in today. Cache-Control: no-store.',
+    responses: { 200: json(envelopeOf(AccountMoodTodaySchema), 'Today\'s choice or null.'), 401: unauthorized, 403: err('FORBIDDEN (the active role is not student), or ' + PCR) },
   })
 
   registry.registerPath({

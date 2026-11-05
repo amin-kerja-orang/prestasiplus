@@ -577,3 +577,35 @@ export const AccountPlatformStatsSchema = z
   })
   .meta({ id: 'AccountPlatformStats' })
 export type AccountPlatformStats = z.infer<typeof AccountPlatformStatsSchema>
+
+// --- Mood check-in (S5-T04, API-MUR-11, DM-84, FR-MUR-2-12) ------------------------------------
+
+/**
+ * The four stored values of a pupil's daily mood (DM-84; PO delegate answer on issue 457, DOC DEFECT 1).
+ * The Command Center speaks `happy|okay|sad|stressed` (`CommandCenterMood`); its adapter maps these.
+ */
+export const ACCOUNT_MOODS = ['gembira', 'okay', 'sedih', 'tertekan'] as const
+export const AccountMoodSchema = z.enum(ACCOUNT_MOODS, { error: 'The selected mood is invalid.' }).meta({ id: 'AccountMood' })
+export type AccountMood = z.infer<typeof AccountMoodSchema>
+
+/** BM copy of the mood check-in (the toast is shown by the client; the 409 text is the server's). */
+export const ACCOUNT_MOOD_MESSAGES = {
+  alreadyCheckedIn: 'Anda sudah merekodkan perasaan hari ini.',
+  saveFailed: 'Gagal menyimpan. Sila cuba lagi.',
+} as const
+/** The error code of the second submit on the same day (409). */
+export const ACCOUNT_MOOD_ALREADY_CHECKED_IN = 'ALREADY_CHECKED_IN' as const
+
+/** Body of `POST /me/mood`. Unknown keys are ignored. */
+export const AccountMoodRequestSchema = z.object({ mood: AccountMoodSchema }).meta({ id: 'AccountMoodRequest' })
+export type AccountMoodRequest = z.infer<typeof AccountMoodRequestSchema>
+
+/** `data` of `POST /me/mood`: the stored choice and the Malaysia day (`YYYY-MM-DD`) it was recorded for. */
+export const AccountMoodCheckinSchema = z
+  .strictObject({ mood: AccountMoodSchema, checkedOn: z.iso.date() })
+  .meta({ id: 'AccountMoodCheckin' })
+export type AccountMoodCheckin = z.infer<typeof AccountMoodCheckinSchema>
+
+/** `data` of `GET /me/mood/today`: today's stored choice, or null when the pupil has not checked in today. */
+export const AccountMoodTodaySchema = z.strictObject({ mood: AccountMoodSchema.nullable() }).meta({ id: 'AccountMoodToday' })
+export type AccountMoodToday = z.infer<typeof AccountMoodTodaySchema>

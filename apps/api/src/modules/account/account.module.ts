@@ -15,6 +15,9 @@ import { AccountDataRepository } from './account-data.repository'
 import { AccountThrottle } from './account-throttle.service'
 import { AccountPortsModule } from './registration-ports'
 import { PasswordResetService } from './password-reset.service'
+import { MoodController } from './mood.controller'
+import { MoodReadAdapter } from './mood-read.adapter'
+import { MoodService } from './mood.service'
 import { LoggingMailPort, MAIL_PORT, NOTIFICATION_PORT } from './ports'
 import { ProfileService } from './profile.service'
 import { RegistrationService } from './registration.service'
@@ -34,7 +37,7 @@ import { SettingsService, StatsService } from './settings.service'
  */
 @Module({
   imports: [AuditModule, ThrottleModule, AccountPortsModule, AuthModule, AuthPortsModule, UsersModule, SchoolsModule, FilesModule, NotificationsModule],
-  controllers: [AccountPublicController, MeController, PublicStatsController],
+  controllers: [AccountPublicController, MeController, MoodController, PublicStatsController],
   providers: [
     AccountDataRepository,
     AccountThrottle,
@@ -44,12 +47,14 @@ import { SettingsService, StatsService } from './settings.service'
     ProfileService,
     SettingsService,
     StatsService,
+    MoodService,
+    MoodReadAdapter,
     PictureInterceptor,
     IcService,
     AuthAccountRepository,
     { provide: MAIL_PORT, useClass: LoggingMailPort },
     { provide: NOTIFICATION_PORT, useClass: NotificationsAdapter },
   ],
-  exports: [MAIL_PORT, NOTIFICATION_PORT],
+  exports: [MAIL_PORT, NOTIFICATION_PORT, MoodReadAdapter],
 })
 export class AccountModule {}
