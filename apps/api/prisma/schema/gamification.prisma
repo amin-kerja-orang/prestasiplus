@@ -334,9 +334,9 @@ model RewardRedemption {
   denominationRm       Decimal   @map("denomination_rm") @db.Decimal(10, 2)
   tokenCost            Int       @map("token_cost")
   /// DM-77: the reward's `token_cost` at the time of redemption.
-  tokenCostSnapshot    Int       @map("token_cost_snapshot")
+  tokenCostSnapshot    Int       @default(0) @map("token_cost_snapshot")
   /// DM-77: the reward's `cost_value_sen` at the time of redemption; the session budget (DM-48) sums it.
-  costValueSenSnapshot Int       @map("cost_value_sen_snapshot")
+  costValueSenSnapshot Int       @default(0) @map("cost_value_sen_snapshot")
   /// pending_parent_consent, pending_admin, delivered, cancelled (check).
   status               String
   stockReserved        Boolean   @default(false) @map("stock_reserved")

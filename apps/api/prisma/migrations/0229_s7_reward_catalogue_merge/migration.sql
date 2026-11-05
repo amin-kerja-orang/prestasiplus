@@ -10,7 +10,6 @@
 -- AlterTable
 ALTER TABLE "rewards" ADD COLUMN "cost_value_sen" INTEGER NOT NULL DEFAULT 0;
 
--- AlterTable: nullable first, fill the existing rows, then NOT NULL (DM-77 gives these two no default)
-ALTER TABLE "reward_redemptions" ADD COLUMN "token_cost_snapshot" INTEGER, ADD COLUMN "cost_value_sen_snapshot" INTEGER;
-UPDATE "reward_redemptions" SET "token_cost_snapshot" = "token_cost", "cost_value_sen_snapshot" = 0;
-ALTER TABLE "reward_redemptions" ALTER COLUMN "token_cost_snapshot" SET NOT NULL, ALTER COLUMN "cost_value_sen_snapshot" SET NOT NULL;
+-- AlterTable: the default keeps the old app able to insert during the deploy window (expand-then-contract). The new code always writes both.
+ALTER TABLE "reward_redemptions" ADD COLUMN "token_cost_snapshot" INTEGER NOT NULL DEFAULT 0, ADD COLUMN "cost_value_sen_snapshot" INTEGER NOT NULL DEFAULT 0;
+UPDATE "reward_redemptions" SET "token_cost_snapshot" = "token_cost";
