@@ -10180,6 +10180,16 @@
       "approved_by_card": null
     },
     {
+      "name": "SpinSegment",
+      "table": "spin_segments",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/games.prisma",
+      "approved_by_card": "S7-T01",
+      "dm": "DM-64",
+      "note": "The 8 Roda Nasib wheel segments (48 GAME-14) as admin data, replacing SPIN_SEGMENTS in the GAME-14 part."
+    },
+    {
       "name": "League",
       "table": "leagues",
       "status": "canonical",
@@ -15441,6 +15451,26 @@
       "sector": "S1",
       "file": "apps/api/src/modules/questions/http/structured.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "GET /api/guru/structured-questions",
+      "method": "GET",
+      "path": "/api/guru/structured-questions",
+      "api_id": "API-GUR-26",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
+      "key": "GET /api/guru/structured-questions/:p",
+      "method": "GET",
+      "path": "/api/guru/structured-questions/:id",
+      "api_id": "API-GUR-26",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
+      "approved_by_card": "S6-T17"
     },
     {
       "key": "GET /api/questions/studio/dskp",

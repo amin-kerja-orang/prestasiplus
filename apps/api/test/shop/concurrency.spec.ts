@@ -90,6 +90,17 @@ describe('M15 concurrency (BE-23, AC1)', () => {
       expect(await tickets(a)).toBe(1)
     })
 
+    it('a ticket key reused on another draw is refused and moves nothing; the first draw still replays it (S7-T05)', async () => {
+      const [draw, other] = [await insertDraw(t, { cost: 10, max: 5 }), await insertDraw(t, { cost: 10, max: 5 })]
+      const u = await bareUser(t, 'kunci cabutan lain')
+      await fund(t, u, { syiling: 50 }, 'key')
+      const first = await t.shop.buyTicket(actorFor(u), draw, { clientUuid: KEY })
+      expect((await settle([t.shop.buyTicket(actorFor(u), other, { clientUuid: KEY })])).codes).toEqual(['VALIDATION_ERROR'])
+      expect(await tickets(u)).toBe(1)
+      expect(await t.shop.buyTicket(actorFor(u), draw, { clientUuid: KEY })).toEqual(first)
+      expect(first).toEqual({ drawId: draw, ticketsOwned: 1, syilingBalance: 40 })
+    })
+
     it('the partial unique indexes refuse a second row with one key and allow any number without a key', async () => {
       const draw = await insertDraw(t)
       const u = await bareUser(t, 'indeks kunci')

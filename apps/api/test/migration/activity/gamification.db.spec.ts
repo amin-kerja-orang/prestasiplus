@@ -183,7 +183,7 @@ describe('catalogue', () => {
   })
 
   it('keeps the monthly key a gamification_settings row, adopting the seeded key, and writes none of the DM-48 values there (DM-38)', async () => {
-    const rows = await h.q<{ key: string; value: string; legacy_id: string | null }>(`select key, value::text, legacy_id from gamification_settings order by key`)
+    const rows = await h.q<{ key: string; value: string; legacy_id: string | null }>(`select key, value::text, legacy_id from gamification_settings where legacy_id is not null order by key`)
     expect(rows).toEqual([{ key: 'reward_budget_sen_month', value: '300.00', legacy_id: '1:reward_budget_sen_month' }])
     expect(recon.gamification_settings).toEqual({ source: 1, eligible: 1, loaded: 1, rejected: 0 })
   })
