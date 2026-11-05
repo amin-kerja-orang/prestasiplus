@@ -222,7 +222,8 @@ export class ShopAdminService {
     const raw = firstString(query.status)
     const status = raw === undefined ? 'pending_admin' : raw
     const page = pageOf(query.page)
-    const known = status === 'all' || (REWARD_REDEMPTION_STATUSES as readonly string[]).includes(status)
+    // No consent filter (FR-ADM-P2-08.4); a stored consent row still shows under `all`.
+    const known = status === 'all' || (status !== 'pending_parent_consent' && (REWARD_REDEMPTION_STATUSES as readonly string[]).includes(status))
     const activeStatus: RewardRedemptionListResponse['meta']['activeStatus'] = status === 'all' ? 'all' : known ? (status as RewardRedemptionStatus) : null
     const start = (page - 1) * ADMIN_PAGE_SIZE
     const { rows, total } = known ? await this.repo.queue(status, start, ADMIN_PAGE_SIZE) : { rows: [], total: 0 }

@@ -284,7 +284,7 @@ describe('errors', () => {
     }
   })
 
-  it('carries VALIDATION_ERROR fields with the Laravel-style messages', () => {
+  it('carries VALIDATION_ERROR fields with the BM messages (ERR-RWD-08)', () => {
     const body = {
       error: {
         code: 'VALIDATION_ERROR',
