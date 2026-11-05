@@ -13,6 +13,8 @@ import { PrismaService } from '../../../../db/prisma.service'
 import { assertCanActOn, isAdminPusat, isGuru, transitionActorOf, type WorkflowActor } from '../actor'
 import { QuestionReportsService } from '../reports'
 import { QuestionWorkflowPorts, type QuestionBankPort, type QuestionGateData, type QuestionStatusInfo } from '../ports'
+import { QUESTION_REJECTION_REASON_MESSAGE } from '@pp/contract'
+
 import { transitionConflict } from '../../errors'
 import { gateIssuesOf } from './gate-issues'
 import { GATE_SUMMARY, GATES, type GateFields, type GateName } from './gates'
@@ -26,6 +28,8 @@ export const TAKEDOWN_REASON_MESSAGE = 'Sila nyatakan sebab penarikan sumber.'
 
 export interface TransitionOptions {
   reason?: string | null
+  /** API-Q-06 `to: "rejected"`: the move is review to draft with a mandatory reason of 5 to 500 characters, kept in `rejection_reason`. */
+  rejection?: boolean
 }
 export interface TransitionResult {
   id: string
@@ -103,10 +107,15 @@ export class LifecycleService {
       const rule = questionWorkflowTransitionRule(from, to)
       if (!rule) throw transitionConflict(from, to)
       if (!rule.actors.includes(kind)) throw ApiError.of('FORBIDDEN')
-      if (rule.reasonRequired && reason === null) {
+      if (options.rejection === true) {
+        if (from !== 'review') throw transitionConflict(from, to) // "rejected" is only a move out of Semakan
+        if (reason === null || [...reason].length < 5 || [...reason].length > 500) {
+          throw ApiError.of('VALIDATION_ERROR', { message: QUESTION_REJECTION_REASON_MESSAGE, fields: { reason: QUESTION_REJECTION_REASON_MESSAGE } })
+        }
+      } else if (rule.reasonRequired && reason === null) {
         throw ApiError.of('VALIDATION_ERROR', { message: REASON_REQUIRED_MESSAGE, fields: { reason: REASON_REQUIRED_MESSAGE } })
       }
-      return this.apply(info, actor, [{ from, to, gate: rule.gate, reason }])
+      return this.apply(info, actor, [{ from, to, gate: rule.gate, reason, ...(options.rejection === true ? { rejection: true } : {}) }])
     })
   }
 
@@ -273,6 +282,7 @@ export class LifecycleService {
     const updated = await this.bank.setStatus(info.id, step.to, actor.userId, {
       actor: isAdminPusat(actor) ? 'admin' : 'owner_teacher',
       reason: step.reason,
+      ...(step.rejection === true && step.reason !== null ? { rejectionReason: step.reason } : {}),
       expectedFrom: step.from,
       ...(step.target ? { target: step.target } : {}),
       ...extra,
@@ -311,6 +321,8 @@ interface Step {
   to: QuestionWorkflowStatus
   gate: GateName | null
   reason: string | null
+  /** The move is a rejection (DM-58): the reason is stored in `rejection_reason`. */
+  rejection?: boolean
   /** Version the event is about when it is not the latest (the live one on takedown). */
   versionNo?: number
   target?: 'latest' | 'live'

@@ -14,9 +14,9 @@ import { TimestampSchema } from '../../common/time'
 
 /** Generic texts of the mock guards (401, 403, 404 on a malformed or unknown route). */
 export const QUESTION_SET_GUARD_MESSAGES = {
-  unauthenticated: 'Unauthenticated.',
-  forbidden: 'This action is unauthorized.',
-  notFound: 'Not Found.',
+  unauthenticated: 'Sesi anda telah tamat. Sila log masuk semula.',
+  forbidden: 'Anda tidak dibenarkan melakukan tindakan ini.',
+  notFound: 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?',
 } as const
 
 /** UNVERIFIED COPY in the mock (OQ-M10-16): `PAPER_MSG` of handlers/extras.ts, verbatim. */
