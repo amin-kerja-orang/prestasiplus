@@ -235,6 +235,14 @@ describe('PoC Bijak sittings seed: BE-21 school-admin dashboard of DEMO001', () 
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     const d = SchoolAdminDashboardSchema.parse(res.body.data)
     expect(d.performance.practice.sessions).toBeGreaterThan(0)
-    expect(d.performance.practice.accuracy).not.toBeNull()
+    // S6-T03: the practice accuracy is XS-5, pooled over the school's `practice_answers` (XS-4). Bijak sittings live in
+    // `exam_attempts`, so they reach this figure only through the AnswerFactsPort (#544). Until then it is null with no
+    // practice answers, and set when the school has some.
+    const [row] = await t.db.query(
+      `SELECT count(*)::int AS n FROM practice_answers pa JOIN users u ON u.id = pa.user_id JOIN schools s ON s.id = u.school_id
+        WHERE s.code = 'DEMO001' AND NOT pa.is_test`,
+    )
+    if (Number(row?.n ?? 0) === 0) expect(d.performance.practice.accuracy).toBeNull()
+    else expect(d.performance.practice.accuracy).not.toBeNull()
   })
 })
