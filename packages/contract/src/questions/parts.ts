@@ -127,7 +127,7 @@ const RubricKeyV1Base = z.object({
   notes: z.array(z.string()).optional(),
 })
 /** Write-path variants: a v1 key must not carry `scheme_v` (SCHEME_VERSION_MISMATCH, no PRD text). The read path (Base) never tightens. */
-const noSchemeV = { path: ['scheme_v'], message: 'SCHEME_VERSION_MISMATCH' }
+const noSchemeV = { path: [] as string[], message: 'SCHEME_VERSION_MISMATCH' }
 const PointsKeyV1 = PointsKeyV1Base.refine((k) => k.scheme_v === undefined, noSchemeV)
 const RubricKeyV1 = RubricKeyV1Base.refine((k) => k.scheme_v === undefined, noSchemeV)
 
@@ -223,7 +223,9 @@ const pointsV2Shape = {
   deductions: z.array(DeductionV2).optional(),
   zeroIf: z.array(ZeroIfV2).optional(),
 }
-const PointsKeyV2 = z.strictObject({ kind: z.literal('points'), scheme_v: z.literal(2), marks: Marks, ...pointsV2Shape })
+const PointsKeyV2 = z
+  .strictObject({ kind: z.literal('points'), scheme_v: z.literal(2), marks: Marks, ...pointsV2Shape })
+  .meta({ id: 'QuestionSchemeV2PointsKey' })
 
 const BandRangeV2 = z.tuple([Marks, Marks]).refine(([lo, hi]) => lo <= hi, { message: 'BAND_RANGE_INVALID' })
 const RubricKeyV2 = z
@@ -256,9 +258,19 @@ const RubricKeyV2 = z
     path: ['criteria'],
     message: 'CRITERION_MAX_REQUIRED',
   })
+  .meta({ id: 'QuestionSchemeV2RubricKey' })
 
 const PointsKey = z.union([PointsKeyV1, PointsKeyV2])
 const RubricOrPointsKey = z.union([RubricKeyV1, RubricKeyV2, PointsKeyV1, PointsKeyV2])
+/**
+ * Write and lenient-read key unions (S1-T09a part 5): the v2 shape is tried first so a malformed v2 key names its own field, and a
+ * consumer that reports union errors skips the branches of the other `kind`. The read variant keeps the v1 key lenient
+ * (`PointsKeyV1Base`, no `scheme_v` refine); v2 is tried first so its fields are never stripped by the lenient v1 object.
+ */
+const PointsKeyWrite = z.union([PointsKeyV2, PointsKeyV1])
+const RubricOrPointsKeyWrite = z.union([PointsKeyV2, PointsKeyV1, RubricKeyV2, RubricKeyV1])
+const PointsKeyReadV3 = z.union([PointsKeyV2, PointsKeyV1Base])
+const RubricOrPointsKeyReadV3 = z.union([PointsKeyV2, PointsKeyV1Base, RubricKeyV2, RubricKeyV1Base])
 
 /** 45:1005: `correct` (label), `accepted?` (extra accepted labels (45:463; may include `correct`); D7 the option id is its label), `note?` (Nota kunci). */
 const OptionKey = z.object({
@@ -430,9 +442,11 @@ const buildBranches = <Mcq extends z.ZodType, Pts extends z.ZodType, Ess extends
   ] as const
 /** Read path: old v1 rules plus the additive fields only. */
 const LeafBranches = buildBranches(OptionKey, PointsKeyV1Base, z.discriminatedUnion('kind', [RubricKeyV1Base, PointsKeyV1Base]))
-/** Write path (create/update requests): v1 key types, new rules on. */
-const LeafBranchesWrite = buildBranches(OptionKey, PointsKeyV1, z.discriminatedUnion('kind', [RubricKeyV1, PointsKeyV1]))
+/** Write path (create/update requests, S1-T09a part 5): v1 and scheme v2 keys, `mcq_multi`; new rules on. */
+const LeafBranchesWrite = buildBranches(z.union([OptionKey, McqMultiKey]), PointsKeyWrite, RubricOrPointsKeyWrite)
 const LeafBranchesV3 = buildBranches(z.union([OptionKey, McqMultiKey]), PointsKey, RubricOrPointsKey)
+/** Lenient read of a stored leaf that may hold a v2 key or an `mcq_multi` key (old rules only). */
+const LeafBranchesReadV3 = buildBranches(z.union([OptionKey, McqMultiKey]), PointsKeyReadV3, RubricOrPointsKeyReadV3)
 
 /** AC-ADM-QE3.17: an example leaf without an answer. */
 export const EXAMPLE_ANSWER_MESSAGE = 'Jawapan contoh diperlukan.'
@@ -508,6 +522,11 @@ export const QuestionWriteLeafPartSchema = z
   .discriminatedUnion('mode', LeafBranchesWrite)
   .check(refineLeaf(true) as never)
   .meta({ id: 'QuestionWriteLeafPart' })
+/** READ path that also carries v2 content (stored rows of S1-T09a): lenient like `QuestionLeafPartSchema`, nothing is stripped. */
+export const QuestionLeafPartReadV3Schema = z
+  .discriminatedUnion('mode', LeafBranchesReadV3)
+  .check(refineLeaf(false) as never)
+  .meta({ id: 'QuestionLeafPartReadV3' })
 /** Leaf that also accepts `mcq_multi` and scheme v2 keys (D2, D7). */
 export const QuestionLeafPartV3Schema = z
   .discriminatedUnion('mode', LeafBranchesV3)
@@ -542,6 +561,17 @@ export type QuestionPart = z.infer<typeof QuestionPartSchema>
 const WLevel3 = QuestionWriteLeafPartSchema
 const WLevel2 = z.union([QuestionWriteLeafPartSchema, branch(WLevel3)])
 export const QuestionWritePartSchema = z.union([QuestionWriteLeafPartSchema, branch(WLevel2)]).meta({ id: 'QuestionWritePart' })
+
+/** Lenient part tree that reads v1 and v2 stored content (tree.ts, unchanged parts of an update). */
+const ReadV3_3 = QuestionLeafPartReadV3Schema
+const ReadV3_2 = z.union([QuestionLeafPartReadV3Schema, branch(ReadV3_3)])
+export const QuestionPartReadV3Schema = z.union([QuestionLeafPartReadV3Schema, branch(ReadV3_2)]).meta({ id: 'QuestionPartReadV3' })
+/**
+ * The response `parts` (S1-T09a part 5): parses with the lenient V3 reader so a scheme v2 key and an `mcq_multi` key reach the client
+ * unstripped. The declared TS type stays the v1 `QuestionPart` so the existing consumers keep compiling (the extra fields are plain
+ * JSON for them); the OpenAPI schema is the runtime one.
+ */
+export const QuestionPartWireSchema = QuestionPartReadV3Schema as unknown as typeof QuestionPartSchema
 
 /** Part tree that reads v1 and scheme v2 / `mcq_multi` leaves (D2). Not yet used by the services (S1-T09a parts 3 to 5). */
 const LevelV3_3 = QuestionLeafPartV3Schema

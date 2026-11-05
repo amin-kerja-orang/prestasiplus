@@ -16,6 +16,7 @@ import type { z } from 'zod'
 
 import { ApiError } from '../../../common/errors/api-error'
 import { listMeta } from '../../../common/http/respond'
+import { deepestIssue, type UnionLike } from '../issue-path'
 import type { AdminListFilter, QuestionStatus, StructuredListFilter } from '../types'
 
 /** Admin list page size when the client sends none (mock: 20 per page, newest first). */
@@ -46,8 +47,11 @@ export const invalid = (fields: Record<string, string>): ApiError => ApiError.of
 export function fieldsOf(error: z.ZodError): Record<string, string> {
   const fields = newFields()
   for (const issue of error.issues) {
-    const key = issue.path.length > 0 ? issue.path.map(String).join('.') : '_'
-    fields[key] ??= issue.message
+    // A failed union inside the part tree names the field that got furthest (a malformed scheme v2 key names its own field).
+    const deep = issue.code === 'invalid_union' && issue.path[0] === 'parts' ? deepestIssue(issue as unknown as UnionLike, []) : undefined
+    const path = deep ? deep.path : issue.path
+    const key = path.length > 0 ? path.map(String).join('.') : '_'
+    fields[key] ??= deep ? deep.message : issue.message
   }
   return fields
 }

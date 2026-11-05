@@ -4,7 +4,7 @@
  * this file only converts. A key that does not parse as the contract leaf for its mode fails
  * closed (`StoredKeyError`, mapped to a 500 by the service with the part id logged).
  */
-import { QuestionLeafPartSchema, type ModeConfigSchema, type QuestionCognitiveLevel, type QuestionPart } from '@pp/contract'
+import { QuestionLeafPartReadV3Schema, type ModeConfigSchema, type QuestionCognitiveLevel, type QuestionPart } from '@pp/contract'
 import type { z } from 'zod'
 
 import type { AnswerKey, PartOption, QuestionPart as PartRow } from '../../db/generated/client'
@@ -85,7 +85,7 @@ function leafFromRow(row: PartRow, options: PartOption[], key: AnswerKey | undef
   if (row.mode === 'essay_choice') candidate.topics = row.topics
   // DM-55: mode_config round-trips as `modeConfig`; NULL stays absent.
   if (row.modeConfig !== null) candidate.modeConfig = row.modeConfig
-  const parsed = QuestionLeafPartSchema.safeParse(candidate)
+  const parsed = QuestionLeafPartReadV3Schema.safeParse(candidate)
   if (!parsed.success) {
     if (lenient && key === undefined) return candidate as unknown as QuestionLeaf
     throw new StoredKeyError(idToString(row.id))

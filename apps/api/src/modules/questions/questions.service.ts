@@ -4,7 +4,7 @@ import {
   QUESTION_WORKFLOW_STATUSES,
   isQuestionWorkflowTransitionAllowed,
   QUESTION_MESSAGES,
-  QuestionPartSchema,
+  QuestionPartReadV3Schema,
   QuestionWritePartSchema,
   type QuestionPart,
   type QuestionSchemeRules,
@@ -43,6 +43,7 @@ import { ServabilityService } from './serving/servability.service'
 import { QuestionsRepository, type NewGroup, type NewStimulus, type VersionDraft } from './questions.repository'
 import { draftsFromParts, MAX_PART_DEPTH, mapOptionImageIds, referencedIds, versionTypeOf } from './tree'
 import { isLeaf, leavesOf } from './grading'
+import { deepestIssue, type UnionLike } from './issue-path'
 import type {
   AdminListFilter,
   AdminListResult,
@@ -107,37 +108,6 @@ const parse = (text: string): bigint | null => {
 }
 
 const fail = (fields: Record<string, string>): ApiError => ApiError.of('VALIDATION_ERROR', { fields })
-
-interface FlatIssue {
-  path: PropertyKey[]
-  message: string
-}
-interface UnionLike {
-  code: string
-  path: readonly PropertyKey[]
-  message: string
-  errors?: readonly (readonly UnionLike[])[]
-}
-
-/**
- * A failed `z.union` reports only "Invalid input" at the union. This walks into the branches and keeps
- * the issue that got furthest into the value (longest path), so an `mcq` leaf with a `rubric` key
- * names `key.kind` instead of the whole part.
- */
-function deepestIssue(issue: UnionLike, prefix: readonly PropertyKey[]): FlatIssue {
-  const path = [...prefix, ...issue.path]
-  if (issue.code === 'invalid_union' && issue.errors && issue.errors.length > 0) {
-    let best: FlatIssue | undefined
-    for (const branch of issue.errors) {
-      for (const inner of branch) {
-        const flat = deepestIssue(inner, path)
-        if (!best || flat.path.length > best.path.length) best = flat
-      }
-    }
-    if (best) return best
-  }
-  return { path, message: issue.message }
-}
 
 /** 422 text of a `pksk_choice` leaf sent to the general question routes (no `pksk` tag). */
 export const PKSK_LEAF_REFUSED = 'Jenis soalan PKSK hanya boleh disimpan sebagai soalan PKSK.'
@@ -838,7 +808,7 @@ export class QuestionsService {
     if (parts.length < 1 || parts.length > 20) return { success: false, error: { issues: [{ path: [], message: 'Data tidak sah.' }] } }
     const data: QuestionPart[] = []
     for (const [i, p] of parts.entries()) {
-      const r = (unchanged(p, i) ? QuestionPartSchema : QuestionWritePartSchema).safeParse(p)
+      const r = (unchanged(p, i) ? QuestionPartReadV3Schema : QuestionWritePartSchema).safeParse(p)
       if (!r.success) return { success: false, error: { issues: r.error.issues.map((x) => ({ ...x, path: [i, ...x.path] })) as never } }
       data.push(r.data as QuestionPart)
     }
@@ -846,7 +816,8 @@ export class QuestionsService {
   }
 
   /** Re-validates a built tree with the contract; a failure is a 422 on the first offending path. */
-  private checkedParts(parts: QuestionPart[], supplied: boolean, stored?: readonly QuestionPart[]): QuestionPart[] {
+  private checkedParts(rawParts: readonly unknown[], supplied: boolean, stored?: readonly QuestionPart[]): QuestionPart[] {
+    const parts = rawParts as QuestionPart[]
     // Size caps run on the raw input, before the schema walks it (DoS): top level, total and depth.
     if (parts.length > MAX_TOP_PARTS || treeSize(parts, 1) > MAX_TOTAL_PARTS || treeDepth(parts) > MAX_PART_DEPTH) {
       throw fail({ parts: PARTS_TOO_LARGE })
@@ -871,12 +842,12 @@ export class QuestionsService {
    * internal ids, so tokens are swapped here, before the tree is built; an unknown token stays as sent and fails the
    * image check with the same 422 as any other bad image.
    */
-  private async withImageKeys<T extends { questionImageFileId?: string | null | undefined; optionImageFileIds?: (string | null)[] | undefined; parts?: QuestionPart[] | undefined }>(input: T): Promise<T> {
+  private async withImageKeys<T extends { questionImageFileId?: string | null | undefined; optionImageFileIds?: (string | null)[] | undefined; parts?: readonly unknown[] | undefined }>(input: T): Promise<T> {
     const out: T = { ...input }
     if (typeof out.questionImageFileId === 'string') out.questionImageFileId = await this.files.internalIdOf(out.questionImageFileId)
     if (out.optionImageFileIds) out.optionImageFileIds = await Promise.all(out.optionImageFileIds.map((id) => (typeof id === 'string' ? this.files.internalIdOf(id) : id)))
     // Studio (T13): option pictures of a part tree are named by the same public token, in and out.
-    if (out.parts) out.parts = await mapOptionImageIds(out.parts, (id) => this.files.internalIdOf(id))
+    if (out.parts) out.parts = (await mapOptionImageIds(out.parts as QuestionPart[], (id) => this.files.internalIdOf(id))) as T['parts']
     return out
   }
 
