@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 import { SCHOOL_ADMIN_ROLE_LABEL, type SchoolAdminDashboard, type SchoolAdminSubscriptionStatus } from '@pp/contract'
 
 import { ApiError } from '../../common/errors/api-error'
@@ -54,6 +54,8 @@ export function currentSubscriptionStatus(rows: readonly SubscriptionFacts[], to
 /** The school dashboard (M27 S0) of the school admin's own school. */
 @Injectable()
 export class DashboardService {
+  private readonly log = new Logger(DashboardService.name)
+
   constructor(
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(SchoolsRepository) private readonly schools: SchoolsRepository,
@@ -95,7 +97,11 @@ export class DashboardService {
       this.performance.school(perf),
       this.classes.activeClasses(schoolId),
       this.users.pendingTeachersOfSchool(schoolId), // the query behind GET /admin-sekolah/guru/pending
-      this.amaran.schoolTally(amaranCaller, schoolId), // the tally of GET /amaran/schools/:id (whole school)
+      // The tally of GET /amaran/schools/:id (whole school). An Amaran failure only hides the panel (risk null), never the dashboard.
+      this.amaran.schoolTally(amaranCaller, schoolId).catch((err: unknown) => {
+        this.log.warn(`Amaran tally for the dashboard failed: ${err instanceof Error ? err.message : String(err)}`)
+        return null
+      }),
     ])
     const shown = posts.slice(0, DASHBOARD_PERUTUSAN_LIMIT)
     const authors = new Map<string, Awaited<ReturnType<UsersRepository['get']>>>()

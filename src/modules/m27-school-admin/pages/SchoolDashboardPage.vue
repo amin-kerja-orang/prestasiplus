@@ -2,7 +2,7 @@
 /**
  * S0 `/admin-sekolah` "Dashboard Sekolah" (SRS M27 v1.3 FR-M27-01…37; roles-matrix row L07). User shell, one
  * read-only call (`GET /api/admin-sekolah/dashboard`, scope from the session). Top to bottom: Perutusan
- * Terkini, breadcrumb, red school banner, four summary cards, the "Guru Menunggu" callout (only when above 0), "Ringkasan Prestasi".
+ * Terkini, the school banner (no breadcrumb on this landing page, FR-AS-2-4), four summary cards, the "Guru Menunggu" callout (only when above 0), "Ringkasan Prestasi".
  *
  * States: loading shows the spinner only; a 403 (a school admin without a school, FR-M27-08) renders the
  * global 403 page in place; any other failure shows the shared BM load-error line (SWE; the server text is English, FR-M27-28;

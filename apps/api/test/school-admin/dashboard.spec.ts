@@ -5,7 +5,7 @@ import {
   SchoolAdminDashboardSchema,
   SchoolAdminPendingTeacherListResponseSchema,
 } from '@pp/contract'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import {
   ADMIN,
@@ -22,6 +22,7 @@ import {
   type Api,
   type SchoolAdminTestApp,
 } from './helpers'
+import { AmaranService } from '../../src/modules/school-admin/amaran/amaran.service'
 import { addClassroom, addLevel, addPupil, addSession, addSubject } from './reports-fixtures'
 
 describe('GET /admin-sekolah/dashboard with no BE-19 / BE-17 provider (fail-closed defaults)', () => {
@@ -291,6 +292,18 @@ describe('GET /admin-sekolah/dashboard: Amaran Awal panel and Kelas Aktif tile (
   }, 180_000)
   afterAll(async () => {
     await t.close()
+  })
+
+  it('an Amaran failure only hides the panel: the dashboard is 200 with risk null (review on #822)', async () => {
+    const amaranService = t.app.get(AmaranService, { strict: false })
+    const spy = vi.spyOn(amaranService, 'schoolTally').mockRejectedValueOnce(new Error('amaran down'))
+    try {
+      const res = await admin.get('/admin-sekolah/dashboard')
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(SchoolAdminDashboardSchema.parse(res.body.data).performance.risk).toBeNull()
+    } finally {
+      spy.mockRestore()
+    }
   })
 
   it('performance.risk equals the tally of GET /amaran/schools/:id (safe = green, watch = yellow, high = red, total = their sum)', async () => {
