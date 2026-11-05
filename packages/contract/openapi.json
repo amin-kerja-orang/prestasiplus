@@ -13570,6 +13570,10 @@
           "markable": {
             "type": "boolean"
           },
+          "multiple": {
+            "type": "boolean",
+            "description": "true for an mcq_multi question: tick every correct option and send them together as `optionIds`."
+          },
           "subjectName": {
             "type": [
               "string",
@@ -13641,6 +13645,16 @@
           "optionId": {
             "type": "string",
             "pattern": "^[A-H]$"
+          },
+          "optionIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-H]$"
+            },
+            "minItems": 1,
+            "maxItems": 8,
+            "description": "mcq_multi (46:612): every ticked option id, sent together. `optionId` stays required (additive contract): for mcq_multi send one of the ticked ids there and ALL ticks in `optionIds`; the server marks `optionIds`."
           }
         },
         "required": [
@@ -13657,7 +13671,16 @@
           },
           "correctOptionId": {
             "type": "string",
-            "pattern": "^[A-H]$"
+            "pattern": "^[A-H]$",
+            "description": "The correct option; for mcq_multi the first correct one (see `correctOptionIds`)."
+          },
+          "correctOptionIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-H]$"
+            },
+            "description": "mcq_multi only: every correct option id."
           },
           "explanation": {
             "type": [

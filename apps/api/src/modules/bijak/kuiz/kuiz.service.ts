@@ -22,6 +22,7 @@ import { mulberry32 } from '../../../db/prng'
 import { PrismaService } from '../../../db/prisma.service'
 import { CurriculumRepository } from '../../curriculum'
 import { FilesService } from '../../files'
+import { selectedLabelOf } from '../../practice'
 import { PracticePorts, practiceRewardSource } from '../../practice/ports'
 import { type GradedAnswer, PracticeRepository, type ServedRef, type StoredCheck } from '../../practice/practice.repository'
 import { pinServableForNewSitting, QuestionsRepository } from '../../questions'
@@ -43,6 +44,8 @@ import {
   leafOf,
   leavesOf,
   markableLeaf,
+  multiKeyOf,
+  selectionVerdict,
   optionImageIds,
   questionIdOfItem,
   resolveStimuli,
@@ -96,7 +99,7 @@ export class KuizService {
     // Published + active + learner-visible (secondary, not PKSK) are forced by the bank's `sample`; the shape is one objective leaf.
     // S1-T06 (FR-MUR-QP-6, D90): `wholeGroups` keeps a member only of a complete group; the draw below then takes whole units.
     const ids = await this.questions.sample(
-      { type: 'mcq', singleMcqLeaf: true, wholeGroups: true, ...(subjectId ? { subjectId } : {}) },
+      { servesMcqMulti: true, singleMcqLeaf: true, wholeGroups: true, ...(subjectId ? { subjectId } : {}) },
       count * KUIZ_OVER_FETCH,
       mulberry32(randomInt(0, 0x1_0000_0000)),
     )
@@ -144,6 +147,16 @@ export class KuizService {
     return BijakKuizSessionSchema.parse({ sessionId: session.id, count: items.length, items })
   }
 
+  /** The ticked option ids of a check request. Every id must belong to the leaf; a single-choice leaf takes exactly one (`optionId`), an `mcq_multi` leaf `optionIds`. */
+  private selectionOf(req: BijakKuizCheckRequest, leaf: Parameters<typeof multiKeyOf>[0]): string[] {
+    const multi = multiKeyOf(leaf) !== null
+    const given = multi ? req.optionIds : [req.optionId]
+    if (given === undefined) throw invalidAnswer('optionId')
+    const unique = [...new Set(given)]
+    if (!unique.every((id) => leaf.options.some((o) => o.label === id))) throw invalidAnswer('optionId')
+    return unique.sort()
+  }
+
   async check(caller: KuizCaller, sessionId: string, req: BijakKuizCheckRequest): Promise<BijakKuizCheckResult> {
     const now = this.clock.now()
     return this.prisma.transaction(async () => {
@@ -159,28 +172,37 @@ export class KuizService {
       const ref = record ? leafOf(record, req.itemId) : null
       const leaf = ref ? markableLeaf(ref) : null
       if (!record || !leaf) throw invalidAnswer('itemId')
-      if (!leaf.options.some((o) => o.label === req.optionId)) throw invalidAnswer('optionId')
+      const selected = this.selectionOf(req, leaf)
+      const marked = selectionVerdict(leaf, selected)
 
       const verdict = (correct: boolean): BijakKuizCheckResult =>
-        BijakKuizCheckResultSchema.parse({ correct, correctOptionId: leaf.key.correct, explanation: record.version.explanationMs })
-
+        BijakKuizCheckResultSchema.parse({
+          correct,
+          correctOptionId: marked.correctOptionId,
+          ...(marked.correctOptionIds ? { correctOptionIds: marked.correctOptionIds } : {}),
+          explanation: record.version.explanationMs,
+        })
       // One check per question: a repeat returns the stored verdict and counts nothing.
       const stored = await this.practice.check(session.id, questionId)
-      if (stored) return verdict(stored.selectedLabel === leaf.key.correct)
-      const correct = req.optionId === leaf.key.correct
+      // A multi check keeps its verdict in `is_correct` (the stored label is the comma-joined ticks, not one letter to compare).
+      const storedVerdict = (c: StoredCheck): boolean => (multiKeyOf(leaf) !== null ? c.isCorrect : c.selectedLabel === marked.correctOptionId)
+      if (stored) return verdict(storedVerdict(stored))
+      const label = selectedLabelOf(selected)
+      if (label === null) throw invalidAnswer('optionId')
+      const correct = marked.correct
       const inserted = await this.practice.insertCheck({
         sessionId: session.id,
         userId: caller.userId,
         questionId,
         questionVersionNo: served.versionNo,
-        selectedLabel: req.optionId,
+        selectedLabel: label,
         isCorrect: correct,
         checkedAt: now,
         isTest: caller.isTest || session.isTest,
       })
       if (!inserted) {
         const winner = await this.practice.check(session.id, questionId)
-        return verdict((winner?.selectedLabel ?? req.optionId) === leaf.key.correct)
+        return verdict(winner ? storedVerdict(winner) : correct)
       }
       return verdict(correct)
     })
@@ -239,15 +261,19 @@ export class KuizService {
       const record = byKey.get(`${ref.questionId}@${String(ref.versionNo)}`)
       const leaf = record ? leavesOf(record.id, record.version.parts).map(markableLeaf).find((l) => l !== null) : undefined
       const v = record?.version
+      // A multi row stores the comma-joined ticks ("A,C"): split back and graded by the one S1 grader (`selectionVerdict`).
+      const multi = leaf !== undefined && leaf !== null && multiKeyOf(leaf) !== null
+      const isCorrect = !leaf ? check.isCorrect : multi ? selectionVerdict(leaf, check.selectedLabel.split(',')).correct : leaf.key.correct === check.selectedLabel
+      // The answer row keeps the comma-joined ticks too (`practice_answers.selected_label`, S5 migration 0262; 46:270).
       return {
         check,
-        isCorrect: leaf ? leaf.key.correct === check.selectedLabel : check.isCorrect,
+        isCorrect,
         subjectId: v?.subjectId ?? null,
         educationLevelId: v?.educationLevelId ?? null,
         chapterId: v?.chapterId ?? null,
         topicId: v?.topicId ?? null,
         difficulty: v?.difficultyTp == null ? null : Math.min(5, Math.max(1, v.difficultyTp)),
-        questionType: 'mcq',
+        questionType: multi ? 'mcq_multi' : 'mcq',
       }
     })
   }
@@ -350,10 +376,11 @@ export class KuizService {
     // A question the page skips (its stimulus cannot be shown) is not marked either.
     if (!(await this.prepare([record]))[0]?.complete) throw invalidAnswer('itemId')
     // V2: the option must belong to the part it claims.
-    if (!leaf.options.some((o) => o.label === req.optionId)) throw invalidAnswer('optionId')
+    const marked = selectionVerdict(leaf, this.selectionOf(req, leaf))
     return BijakKuizCheckResultSchema.parse({
-      correct: req.optionId === leaf.key.correct,
-      correctOptionId: leaf.key.correct,
+      correct: marked.correct,
+      correctOptionId: marked.correctOptionId,
+      ...(marked.correctOptionIds ? { correctOptionIds: marked.correctOptionIds } : {}),
       explanation: record.version.explanationMs,
     })
   }

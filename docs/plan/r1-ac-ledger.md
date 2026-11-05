@@ -91,6 +91,7 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S8-T03 | AC-QA-18 | CI | Pass | 2026-11-05 | team-aa/S-3 | sanitize.test.ts::keeps allowed tags; render-markup.test.ts::sanitises before expanding |
 | S4-T07 | AC-ADM-C01.1 | CI | Pass | 2026-11-05 | team-bb/S-3 | CurriculumBrowserPage.test.ts |
 | S1-T09a | AC-PA-35 | CI | Pass | 2026-11-05 | team-aa/S-4 | v2-write-path.spec.ts: [CI] AC-PA-35: an mcq_multi leaf is stored as type mcq_multi; dropping the flag on edit stores mcq again; a Betul/Salah leaf stays mcq; served-mcq-multi.spec.ts: [CI] Latih Tubi, Databank, Tracking A, Misi and Battle SPM (spmPool without a type filter) never draw an mcq_multi |
+| S1-T09a | AC-PA-35 | CI | Pass | 2026-11-05 | team-aa/S-4 | kuiz-mcq-multi.spec.ts: [CI] the random quiz draws the ungrouped mcq_multi question, and the indicator says served and agrees with the draw; kuiz-mcq-multi.spec.ts: [CI] a random-quiz check on the mcq_multi stores the comma-joined ticks in selected_label and the all-ticks-right verdict in is_correct; optionId alone is 422; kuiz-mcq-multi.spec.ts: [CI] a GROUPED mcq_multi (a member of a stimulus group) is not drawn by the random quiz, and the indicator says shape_unsupported |
 
 ## Sprint 4
 

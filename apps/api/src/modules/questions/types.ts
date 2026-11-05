@@ -285,6 +285,8 @@ export interface QuestionFilter {
   active?: boolean
   excludeIds?: readonly string[]
   type?: StoreQuestionType
+  /** S1-T09a D1: the random Simulasi Kuiz shape: `mcq`, or `mcq_multi` outside any stimulus group (a grouped multi stays out, D2). Use INSTEAD of `type`. */
+  servesMcqMulti?: boolean
   /** R1-B06: `true` = SPM-servable (shared `SPM_SERVABLE_SQL`: offered level: active and not primary, T1 to T5; linked active subject), NOT the legacy `pool` tag; `false` = the complement. */
   spmPool?: boolean
   /**
