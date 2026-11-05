@@ -46,6 +46,12 @@ import {
   BattleStudentStandingSchema,
   BattleStudentStandingsQuerySchema,
   BattleSuccessSchema,
+  BattleInviteSentSchema,
+  BattleInvitationSentSchema,
+  BattleLobbyRecentSchema,
+  BattleQuestionCountSchema,
+  BattleMatchQuerySchema,
+  BattleRoundRevealSchema,
   BattleTournamentActiveSchema,
   BattleTournamentCreateRequestSchema,
   BattleTournamentCreatedSchema,
@@ -67,6 +73,12 @@ export const BATTLE_COMPONENT_SCHEMAS = {
   BattleEmptyBody: BattleEmptyBodySchema,
   BattleRawError: BattleRawErrorSchema,
   BattleSuccess: BattleSuccessSchema,
+  BattleInviteSent: BattleInviteSentSchema,
+  BattleInvitationSent: BattleInvitationSentSchema,
+  BattleLobbyRecent: BattleLobbyRecentSchema,
+  BattleQuestionCount: BattleQuestionCountSchema,
+  BattleMatchQuery: BattleMatchQuerySchema,
+  BattleRoundReveal: BattleRoundRevealSchema,
   BattleStartRequest: BattleStartRequestSchema,
   BattleStartResponse: BattleStartResponseSchema,
   BattleChallenger: BattleChallengerSchema,
@@ -159,9 +171,10 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
   const startDescription = (mode: string) =>
     [
       `Joins the ${mode} queue and returns the queue id. Response is raw (un-enveloped, live-shaped).`,
-      'The server first checks that 10 eligible keyless questions can be drawn; otherwise 422 with an empty body `{}`.',
+      'The server first checks that `question_count` (absent: `battle_questions_default`) eligible keyless questions can be drawn; otherwise 422 with an empty body `{}`.',
       '422 `{}` also covers an invalid question_type, subject, PKSK domain or level; 403 `{}` is an SPM request from a caller below Tingkatan 4. The BM texts (see BATTLE_MESSAGES) are NOT sent on these two routes (BR-M16-03).',
-      'Opponents are deterministic bots chosen by the server (D53(a)); real-time multiplayer is not part of this contract.',
+      'The opponent is another pupil matched while the entries poll, or "Robot PrestasiPlus" after `battle_bot_fallback_seconds` (48 GAME-01).',
+      '429 BATTLE_DAILY_LIMIT "Had battle hari ini telah dicapai. Cuba lagi esok." after `battle_daily_max` battles of Quick Match and Battle Sekolah in a Malaysia day (ERR-GAME-05), with the error body of every 429.',
     ].join('\n')
 
   registerRoute(registry, {
@@ -170,7 +183,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     tags: [BATTLE_TAGS.battle],
     summary: 'Join the quick-match queue (M16-02)',
     description: startDescription('quick-match'),
-    request: { headers: [csrf], body: body(BattleStartRequestSchema) },
+    request: { query: BattleMatchQuerySchema, headers: [csrf], body: body(BattleStartRequestSchema) },
     responses: {
       200: json(BattleStartResponseSchema, 'A waiting queue owned by the caller.'),
       401: UNAUTHORIZED,
@@ -184,8 +197,8 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     path: '/battle/school-battle',
     tags: [BATTLE_TAGS.battle],
     summary: 'Join the school-battle queue (M16-03)',
-    description: `${startDescription('school-battle')}\nSame body and answers as M16-02; the bot opponent must be from another school (widened when nobody fits).`,
-    request: { headers: [csrf], body: body(BattleStartRequestSchema) },
+    description: `${startDescription('school-battle')}\nSame body and answers as M16-02; a human opponent must be from another school and the pupil must have a school.`,
+    request: { query: BattleMatchQuerySchema, headers: [csrf], body: body(BattleStartRequestSchema) },
     responses: {
       200: json(BattleStartResponseSchema, 'A waiting queue owned by the caller (mode school_battle).'),
       401: UNAUTHORIZED,
@@ -201,15 +214,15 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     summary: 'Poll a queue (M16-04)',
     description: [
       'Polled every 3 s by the owner. Only the owner sees the queue; anyone else gets `{status:"not_found"}` with HTTP 200.',
-      'The first two polls answer `waiting`, the third matches a bot and answers `matched` with the battle uuid; later polls repeat that answer. A queue older than 120 s, or not polled for more than 10 s, answers `expired`.',
+      'A poll matches the oldest fitting entry of another pupil (same subject, type and count, same Tingkatan unless both are open to all) and answers `matched` with the battle uuid; so does the robot after `battle_bot_fallback_seconds` (0: never); later polls repeat that answer. A queue older than `battle_queue_seconds`, or not polled for more than 10 s, answers `expired`.',
       'A pending join request turns the queue into `incoming_challenge`, with the challenger name, grade label and school (no id).',
-      'The 404 `{error:"Tiada lawan dijumpai."}` answers when no bot can be picked; the 422 `{error:"Soalan tidak mencukupi."}` when the 10 questions cannot be drawn at match time.',
+      'The 404 `{error:"Tiada lawan dijumpai."}` answers when the owner\'s account is gone; the 422 `{error:"Soalan tidak mencukupi."}` when the questions cannot be drawn at match time.',
     ].join('\n'),
     request: { params: queueParams },
     responses: {
       200: json(BattlePollMatchResponseSchema, 'Queue state.'),
       401: UNAUTHORIZED,
-      404: raw('{error:"Tiada lawan dijumpai."}: nobody can be picked as the opponent.'),
+      404: raw('{error:"Tiada lawan dijumpai."}: the owner\'s account is gone.'),
       422: raw('{error:"Soalan tidak mencukupi."}.'),
     },
   })
@@ -307,7 +320,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
       description: [
         'Query `q` shorter than 2 trimmed characters answers `{users: []}`. Otherwise students whose name contains `q` (case-insensitive), the caller excluded, sorted by name then id, at most 10.',
         SEARCH_NOTE,
-        'Decided D59c: any signed-in student may search students of all schools (as the old system). The result exposes only name, display name and school (no e-mail, IC, class or contact data). Rate-limited (429).',
+        'FR-GM-01.6: a pupil finds pupils of the same school only, by first given name; `school` is always empty and `avatar` always null. Rate-limited (429).',
       ].join('\n'),
       request: { query: BattleSearchQuerySchema },
       responses: { 200: json(BattleSearchResponseSchema, 'Matching students.'), 401: UNAUTHORIZED },
@@ -321,13 +334,13 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     tags: [BATTLE_TAGS.battle],
     summary: 'Invite a student to a battle (M16-08)',
     description: [
-      'Body is the M16-02 body plus `receiver_id`. A `pending` invitation valid for 24 h is stored.',
-      '422 `{error}`: "Penerima tidak sah." (receiver is not an existing student, or is the sender), "Soalan tidak mencukupi.", "Jenis soalan tidak sah.", "Subjek tidak sah.", "Domain PKSK tidak sah.", "Tahap PKSK tidak sah.".',
+      'Body is the M16-02 body plus `receiver_id`. A `pending` invitation valid for `battle_invitation_hours` is stored; one pending invitation per pair, a repeat answers the same.',
+      '422 `{error}`: "Penerima tidak sah." (receiver is not an existing student of the sender\'s school, or is the sender), "Soalan tidak mencukupi.", "Jenis soalan tidak sah.", "Subjek tidak sah.", "Domain PKSK tidak sah.", "Tahap PKSK tidak sah.".',
       '403 `{error:"Khas untuk pelajar Tingkatan 4 & 5 sahaja."}` for an SPM invite from a caller below Tingkatan 4 (here the text IS sent).',
     ].join('\n'),
-    request: { headers: [csrf], body: body(BattleInviteRequestSchema) },
+    request: { query: BattleMatchQuerySchema, headers: [csrf], body: body(BattleInviteRequestSchema) },
     responses: {
-      200: json(BattleSuccessSchema, 'Invitation stored.'),
+      200: json(BattleInviteSentSchema, 'Invitation stored; `uuid` is the invitation.'),
       401: UNAUTHORIZED,
       403: json(
         z.union([BattleRawErrorSchema, ErrorBodySchema]),
@@ -342,7 +355,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     path: '/battle/invitations',
     tags: [BATTLE_TAGS.battle],
     summary: 'Own pending invitations (M16-09)',
-    description: `The caller's \`pending\` invitations younger than 24 h, newest first. ${SEARCH_NOTE}`,
+    description: `The caller's \`pending\` invitations younger than \`battle_invitation_hours\`, newest first; \`sent\` is what became of the ones the caller sent in that window. ${SEARCH_NOTE}`,
     responses: { 200: json(BattleInvitationsResponseSchema, 'Pending invitations.'), 401: UNAUTHORIZED },
   })
 
@@ -352,7 +365,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     tags: [BATTLE_TAGS.battle],
     summary: 'Accept an invitation (M16-10)',
     description:
-      'Receiver only, pending, within 24 h; otherwise 404 `{error:"Cabaran tidak dijumpai."}`. Creates an `active` battle (sender = A, receiver = B, mode challenge).',
+      'Receiver only and pending; otherwise 404 `{error:"Cabaran tidak dijumpai."}`; after `battle_invitation_hours` 404 `{error:"Cabaran tamat tempoh."}`. Creates an `active` battle (sender = A, receiver = B, mode challenge).',
     request: { params: uuidParams, headers: [csrf] },
     responses: {
       200: json(BattleInviteAcceptResponseSchema, 'The battle was created.'),
@@ -415,7 +428,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     tags: [BATTLE_TAGS.battle],
     summary: 'Arena state of a battle (M16-16)',
     description:
-      'Players of the battle only; anyone else gets 404 NOT_FOUND (never 403). The question carries id, text and options only: no answer key is ever sent before the player has answered.',
+      'Players of the battle only; anyone else gets 404 NOT_FOUND (never 403). The question carries id, text and options only: no answer key is ever sent before the round closed (`reveal`). This poll also moves the clocks (48 section 3.3) and tells the server the caller is present (48 section 3.6).',
     request: { params: uuidParams },
     responses: {
       200: json(envelopeOf(BattleArenaViewSchema), 'Arena state.'),
@@ -430,13 +443,13 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     tags: [BATTLE_TAGS.battle],
     summary: 'Answer the next arena question (M16-17)',
     description: [
-      '`questionId` must equal the caller\'s next question. A correct answer scores `1000 - round(500 * s / 15)` with `s = floor(seconds)` clamped to 0..15; wrong or timeout scores 0.',
-      'The simulated opponent\'s answer for the same question is returned in `opponent` (D53(a)). After question 10 the battle is `finished`: higher total wins, equal and non-zero is a draw (null), 0-0 is player B.',
+      '`questionId` must equal the question of the open round. A correct answer scores `1000 - round(500 * s / N)` with N = `battle_question_seconds` and `s` the whole seconds since the round started, clamped to 0..N; wrong or timeout scores 0. An answer after N + `battle_grace_seconds` is a timeout.',
+      'The round closes when both players have answered or timed out (`reveal`); until then the answer says `waiting`. After the last round the battle is `finished`: higher total wins, equal totals, 0-0 included, are a draw (null).',
       '404 "Battle tidak dijumpai." / "Soalan tidak dijumpai."; 409 CONFLICT "Battle sudah tamat."; 422 VALIDATION_ERROR "Soalan tidak sah." (fields.questionId), "Jawapan tidak sah." (fields.optionId), "Masa tidak sah." (fields.seconds).',
     ].join('\n'),
     request: { params: uuidParams, headers: [csrf], body: body(BattleAnswerRequestSchema) },
     responses: {
-      200: json(envelopeOf(BattleAnswerResultSchema), 'Result of the answer; `next` (keyless) or, after question 10, `result`.'),
+      200: json(envelopeOf(BattleAnswerResultSchema), 'Result of the answer; `waiting`, `reveal` or, after the last round, `result`.'),
       401: UNAUTHORIZED,
       403: CSRF_INVALID,
       404: err('NOT_FOUND "Battle tidak dijumpai." or "Soalan tidak dijumpai.".'),
