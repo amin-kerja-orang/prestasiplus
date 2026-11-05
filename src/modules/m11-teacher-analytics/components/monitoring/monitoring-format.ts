@@ -61,6 +61,7 @@ export const TAHAP_LABEL: Record<TahapKey, string> = {
   Sederhana: 'Sederhana',
   Rendah: 'Rendah',
   Kritikal: 'Rendah',
+  Tiada: 'Tiada',
   'Tiada Langsung': 'Tiada',
 }
 export const tahapLabel = (t: TahapKey) => TAHAP_LABEL[t]

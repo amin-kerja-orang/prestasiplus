@@ -2571,7 +2571,7 @@
     "src/modules/m10-teacher-class/components/command-center/drill-table.ts": 3,
     "src/modules/m11-teacher-analytics/components/laporan/ActivityPanel.vue": 1,
     "src/modules/m11-teacher-analytics/components/laporan/format.ts": 3,
-    "src/modules/m11-teacher-analytics/components/monitoring/monitoring-format.ts": 8,
+    "src/modules/m11-teacher-analytics/components/monitoring/monitoring-format.ts": 9,
     "src/modules/m12-kirkpatrick/components/kirkpatrick/behavior/behavior-format.ts": 5,
     "src/modules/m12-kirkpatrick/components/kirkpatrick/common/kirkpatrick-format.ts": 8,
     "src/modules/m12-kirkpatrick/components/kirkpatrick/learning/LearningKpis.vue": 1,
