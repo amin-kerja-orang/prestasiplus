@@ -164,7 +164,7 @@ test.describe('M17 Command Center board (Admin Pusat) @api', () => {
         data.recentFeed[0]!.student,
       )
     }
-    await expect(page.getByTestId('cc-unavailable')).toHaveCount(0)
+    await expect(page.getByTestId('cc-load-error')).toHaveCount(0)
     await expect(page.getByTestId('cc-footer')).toBeVisible()
     await expectNoHScroll(page)
   })
@@ -288,13 +288,16 @@ test.describe('M17 Command Center board (Admin Pusat) @api', () => {
       })
     })
 
-    // 500: the tiles keep "--" (FR-M17-21), the board is not replaced by an error page, no English text.
+    // 500: the tiles keep "--" (FR-M17-21), the standard load error shows above them, no English text.
     await page.goto('/admin/command-center')
     await expect(page.getByTestId('cc-s2')).toBeVisible({ timeout: 20_000 })
     await expect(page.getByTestId('cc-kpi-students').getByTestId('cc-kpi-value')).toHaveText('--', {
       timeout: 15_000,
     })
-    await expect(page.getByTestId('cc-unavailable'), '500 is not "not built yet"').toHaveCount(0)
+    await expect(
+      page.getByTestId('cc-load-error'),
+      '500 with no data: the standard load error',
+    ).toBeVisible()
     const failed = ((await page.getByTestId('cc-body').textContent()) ?? '').toLowerCase()
     expect(failed, 'no raw English server text').not.toContain('server error')
     await expectNoHScroll(page)
@@ -308,12 +311,11 @@ test.describe('M17 Command Center board (Admin Pusat) @api', () => {
       '--',
     )
 
-    // 404 (endpoint not built): the BM "unavailable" message, polling stops.
+    // 404: the standard load error (DsLoadError) with retry.
     mode = 'missing'
     await page.goto('/admin/command-center')
-    const unavailable = page.getByTestId('cc-unavailable')
+    const unavailable = page.getByTestId('cc-load-error')
     await expect(unavailable).toBeVisible({ timeout: 20_000 })
-    await expect(unavailable).toContainText('belum tersedia')
     expect(((await unavailable.textContent()) ?? '').toLowerCase()).not.toContain('server error')
     await expectNoHScroll(page)
   })
@@ -592,7 +594,7 @@ test.describe('M17 Command Center board (Admin Sekolah) @api', () => {
         { timeout: 15_000 },
       )
       .toBe(String(data.totalStudents))
-    await expect(page.getByTestId('cc-unavailable')).toHaveCount(0)
+    await expect(page.getByTestId('cc-load-error')).toHaveCount(0)
     await expectNoHScroll(page)
 
     // Every pupil link of the feed and the top pupils stays inside this school's alias route.
