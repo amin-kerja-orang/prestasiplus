@@ -81,13 +81,13 @@ interface Transition {
  * through `IntakeExtractionService`, which can only produce `generated` or `needs_review`.
  */
 /**
- * Kertas ('1' to '3') of a source paper: the trailing digit of its paper code (`1449/2`), else the digit of its printed
+ * Kertas ('1' to '4') of a source paper: the trailing digit of its paper code (`1449/2`), else the digit of its printed
  * label (`K2`, `P1`). Null when neither says (the question then carries no kertas and is not a paper-builder candidate).
  */
-export function kertasOfSourcePaper(paper: { paperCode: string | null; kertas: string | null } | null): '1' | '2' | '3' | null {
+export function kertasOfSourcePaper(paper: { paperCode: string | null; kertas: string | null } | null): '1' | '2' | '3' | '4' | null {
   if (!paper) return null
   const m = (paper.paperCode ? /\/([0-9])\s*$/.exec(paper.paperCode) : null) ?? (paper.kertas ? /^[A-Za-z]*\s*([0-9])\s*$/.exec(paper.kertas) : null)
-  return m && (m[1] === '1' || m[1] === '2' || m[1] === '3') ? m[1] : null
+  return m && (m[1] === '1' || m[1] === '2' || m[1] === '3' || m[1] === '4') ? m[1] : null
 }
 
 @Injectable()

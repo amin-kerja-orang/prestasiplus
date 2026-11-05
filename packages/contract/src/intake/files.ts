@@ -105,7 +105,7 @@ export type IntakeFileErrorCode = z.infer<typeof IntakeFileErrorCodeSchema>
 
 /**
  * Upload rejections (422 VALIDATION_ERROR, `fields.files`) and the two other upload failures. The
- * prototype has only "Fail melebihi had 20 MB."; every other line is new copy, [PROPOSED] (card open
+ * prototype has only "Fail melebihi had 20 MB." (the intake limit is 30 MB, S1-T03); every other line is new copy, [PROPOSED] (card open
  * question 1, the lead approves it). The {N} messages are functions.
  */
 export const INTAKE_FILE_MESSAGES = {
@@ -137,7 +137,7 @@ export const IntakeBatchCreateSchema = z
   .strictObject({
     paperType: IntakePaperTypeSchema,
     subject: z.string().regex(/^[A-Z0-9]{2,32}$/).meta({ description: 'Subject code (upper-case), e.g. MAT.', example: 'MAT' }),
-    kertas: z.union([z.literal(1), z.literal(2)]),
+    kertas: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
     year: z.number().int().min(1990).max(2100),
     source: z.string().trim().min(1).max(INTAKE_SOURCE_MAX).meta({ description: 'Source declaration text (max 200).' }),
     copyright: IntakeCopyrightSchema,
@@ -208,7 +208,7 @@ export const IntakeBatchSummarySchema = z
     statusLabel: z.string().meta({ description: 'BM label of `status` (INTAKE_BATCH_STATUS_LABELS).' }),
     paperType: z.union([IntakePaperTypeSchema, z.enum(INTAKE_GURU_PAPER_TYPE_CODES)]).meta({ description: 'An admin code (IntakePaperType) or, for a teacher submission, an OPT-JENIS-HANTARAN slug.' }),
     subject: z.string().meta({ description: 'Admin: subject code. Teacher submission: free text (at most 100).' }),
-    kertas: z.union([z.literal(1), z.literal(2)]).nullable().meta({ description: 'Null only for a teacher submission.' }),
+    kertas: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]).nullable().meta({ description: 'Null only for a teacher submission.' }),
     year: z.number().int().nullable().meta({ description: 'Null only when a teacher submission has no year.' }),
     source: z.string(),
     copyright: IntakeCopyrightSchema,

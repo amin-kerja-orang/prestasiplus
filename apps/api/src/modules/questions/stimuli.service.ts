@@ -53,8 +53,8 @@ export interface BulkOutcome {
 }
 
 /** Kertas of a trait ('1'..'3' text) as the smallint of the group row. */
-const kertasNumber = (k: '1' | '2' | '3' | null): number | null => (k === null ? null : Number(k))
-const kertasText = (n: number | null): '1' | '2' | '3' | null => (n === 1 ? '1' : n === 2 ? '2' : n === 3 ? '3' : null)
+const kertasNumber = (k: '1' | '2' | '3' | '4' | null): number | null => (k === null ? null : Number(k))
+const kertasText = (n: number | null): '1' | '2' | '3' | '4' | null => (n === 1 ? '1' : n === 2 ? '2' : n === 3 ? '3' : n === 4 ? '4' : null)
 
 /** One summary of what a write changed: ids and counts only (the audit row never carries content). */
 export interface StimulusWrite<T> {
@@ -300,7 +300,7 @@ export class StimuliService {
   }
 
   /** PUT scope: allowed while the group has no member or every member already matches the new value, else 422 `memberScope`. */
-  private async changeScope(id: string, input: { subjectId?: string | undefined; educationLevelId?: string | undefined; kertas?: '1' | '2' | '3' | null | undefined }): Promise<void> {
+  private async changeScope(id: string, input: { subjectId?: string | undefined; educationLevelId?: string | undefined; kertas?: '1' | '2' | '3' | '4' | null | undefined }): Promise<void> {
     const current = await this.repo.groupScope(id)
     if (current === null) throw notFound(STIMULUS_MESSAGES.groupNotFound)
     const next: GroupScope = {

@@ -67,6 +67,11 @@ export interface BatchItemCounts {
 
 export const NO_ITEMS: BatchItemCounts = { itemCount: 0, reviewedCount: 0 }
 
+/** DM-08: the stored kertas is 1 to 4 (ck_intake_batches_kertas); anything else cannot occur, so it reads as 1. */
+function kertasOf(n: number): 1 | 2 | 3 | 4 {
+  return n === 2 || n === 3 || n === 4 ? n : 1
+}
+
 /** `targetPaperId`: the paper whose `source_batch_id` is this batch (DM-45), from one set-based lookup; null when none. */
 export function toBatchSummary(row: BatchRow, counts: BatchItemCounts = NO_ITEMS, targetPaperId: bigint | null = null): IntakeBatchSummary {
   return {
@@ -75,7 +80,7 @@ export function toBatchSummary(row: BatchRow, counts: BatchItemCounts = NO_ITEMS
     statusLabel: INTAKE_BATCH_STATUS_LABELS[row.status as IntakeBatchStatus],
     paperType: row.paperType as IntakeBatchSummary['paperType'],
     subject: row.subject,
-    kertas: row.kertas === null ? null : row.kertas === 2 ? 2 : 1,
+    kertas: row.kertas === null ? null : kertasOf(row.kertas),
     year: row.year,
     source: row.sourceText,
     copyright: rightsToWire(row.rightsStatus),

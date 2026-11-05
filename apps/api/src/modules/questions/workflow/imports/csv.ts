@@ -267,7 +267,7 @@ export function planImport(
       continue
     }
     const kertasCell = get('kertas').trim()
-    if (kertasCell !== '' && kertasCell !== '1' && kertasCell !== '2' && kertasCell !== '3') {
+    if (kertasCell !== '' && !KERTAS_VALUES.has(kertasCell)) {
       fail(MSG.kertas)
       continue
     }
@@ -285,7 +285,7 @@ export function planImport(
         sourceType: 'excel',
         sourceSet: null,
         marks,
-        ...(kertasCell === '' ? {} : { kertas: kertasCell as '1' | '2' | '3' }),
+        ...(kertasCell === '' ? {} : { kertas: kertasCell as '1' | '2' | '3' | '4' }),
       },
     })
   }
@@ -301,8 +301,8 @@ const COGNITIVE: ReadonlySet<string> = new Set(QUESTION_COGNITIVE_LEVELS)
 const KBAT: ReadonlySet<string> = new Set([...QUESTION_KBAT_LEVELS, 'bukan'])
 const OPTION_LETTERS = 'ABCDEFGH'
 const KEY_MAX = 40
-/** Part 1 keeps the contract's Kertas 1..3 (S1-T03 widens it to 1..4). */
-const KERTAS_VALUES: ReadonlySet<string> = new Set(['1', '2', '3'])
+/** Kertas 1..4 (DM-08, S1-T03). */
+const KERTAS_VALUES: ReadonlySet<string> = new Set(['1', '2', '3', '4'])
 
 /** `bab_kod` / `topik_kod` cells compare as text, a number without leading zeros ("03" is "3"). */
 export const numberKey = (value: string): string => (/^\d{1,9}$/.test(value) ? String(Number(value)) : value)
@@ -501,7 +501,7 @@ function planCodeRows(
         sourceType: 'excel',
         sourceSet: null,
         marks: marks as number,
-        ...(kertasCell === '' ? {} : { kertas: kertasCell as '1' | '2' | '3' }),
+        ...(kertasCell === '' ? {} : { kertas: kertasCell as '1' | '2' | '3' | '4' }),
         ...(unitId === null ? {} : { unitId }),
         ...(spIds.length === 0 ? {} : { spIds }),
         ...(tp === null ? {} : { tp }),

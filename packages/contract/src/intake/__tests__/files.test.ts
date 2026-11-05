@@ -112,13 +112,19 @@ describe('BE-37 requests', () => {
     expect(IntakeBatchCreateSchema.safeParse({ ...create, notes: 'Nota' }).success).toBe(true)
   })
 
+  it('accepts kertas 1 to 4 (DM-08) and words the size refusal with the 30 MB limit', () => {
+    for (const kertas of [1, 2, 3, 4]) expect(IntakeBatchCreateSchema.safeParse({ ...create, kertas }).success).toBe(true)
+    expect(INTAKE_FILE_MESSAGES.size(30)).toBe('Fail melebihi had 30 MB.')
+  })
+
   it('rejects unknown keys, a false declaration and out-of-range values', () => {
     expect(IntakeBatchCreateSchema.safeParse({ ...create, ownerId: '1' }).success).toBe(false)
     expect(IntakeBatchCreateSchema.safeParse({ ...create, declaration: false }).success).toBe(false)
     const missing: Record<string, unknown> = { ...create }
     delete missing.declaration
     expect(IntakeBatchCreateSchema.safeParse(missing).success).toBe(false)
-    expect(IntakeBatchCreateSchema.safeParse({ ...create, kertas: 3 }).success).toBe(false)
+    expect(IntakeBatchCreateSchema.safeParse({ ...create, kertas: 5 }).success).toBe(false)
+    expect(IntakeBatchCreateSchema.safeParse({ ...create, kertas: 0 }).success).toBe(false)
     expect(IntakeBatchCreateSchema.safeParse({ ...create, year: 1989 }).success).toBe(false)
     expect(IntakeBatchCreateSchema.safeParse({ ...create, subject: 'mat' }).success).toBe(false)
     expect(IntakeBatchCreateSchema.safeParse({ ...create, paperType: 'mock' }).success).toBe(false)
