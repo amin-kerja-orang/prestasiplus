@@ -94,12 +94,15 @@ watch(
 )
 
 const hasClass = computed(() => classList.value.length > 0)
-const d = computed<GuruWeeklyReport | null>(() => (hasClass.value ? report.data.value : null))
+/** useApi keeps the previous data while a new fetch runs: only the selected class's report counts. */
+const d = computed<GuruWeeklyReport | null>(() => {
+  const data = report.data.value
+  return hasClass.value && data && String(data.classroom.id) === classId.value ? data : null
+})
 
 const classesLoading = computed(() => !classes.error.value && !classes.data.value)
-const reportLoading = computed(() => hasClass.value && !report.error.value && !report.data.value)
-const loadError = computed(() => classes.error.value ?? (hasClass.value ? report.error.value : null))
-const ready = computed(() => !classesLoading.value && !loadError.value && !reportLoading.value)
+const reportError = computed(() => (hasClass.value ? report.error.value : null))
+const reportLoading = computed(() => hasClass.value && !reportError.value && !d.value)
 
 function retry(): void {
   if (classes.error.value) void classes.reload()
@@ -142,14 +145,14 @@ function printPage(): void {
 <template>
   <DsPage data-testid="lm-page">
     <DsLoadError
-      v-if="loadError"
-      :error="loadError"
-      :message="loadError.message || undefined"
+      v-if="classes.error.value"
+      :error="classes.error.value"
+      :message="classes.error.value.message || undefined"
       testid="lm-error"
       @retry="retry"
     />
 
-    <div v-else-if="!ready" aria-busy="true" data-testid="lm-loading">
+    <div v-else-if="classesLoading" aria-busy="true" data-testid="lm-loading">
       <UProgress />
     </div>
 
@@ -185,108 +188,122 @@ function printPage(): void {
         {{ printTitle }}
       </DsHeading>
 
-      <UCard data-testid="lm-summary">
-        <DsStack gap="sm">
-          <DsHeading :level="2" variant="label">{{ COPY.summaryTitle }}</DsHeading>
-          <DsText variant="body" tone="muted" data-testid="lm-week">{{ week.label }}</DsText>
-          <DsGrid :cols="{ base: 2, md: 4 }" gap="sm" data-testid="lm-tiles">
-            <UCard
-              v-for="t in tiles"
-              :key="t.key"
-              variant="soft"
-              :data-testid="`lm-tile-${t.key}`"
-            >
-              <DsText variant="heading" tabular data-testid="lm-tile-value">{{ t.value }}</DsText>
-              <DsText variant="caption">{{ t.label }}</DsText>
-            </UCard>
-          </DsGrid>
-        </DsStack>
-      </UCard>
+      <DsLoadError
+        v-if="reportError"
+        :error="reportError"
+        :message="reportError.message || undefined"
+        testid="lm-error"
+        @retry="retry"
+      />
 
-      <UCard data-testid="lm-top">
-        <DsStack gap="sm">
-          <DsHeading :level="2" variant="label">{{ COPY.topTitle }}</DsHeading>
-          <DsText v-if="top.length === 0" variant="body" tone="muted" data-testid="lm-top-empty">
-            {{ COPY.topEmpty }}
-          </DsText>
-          <DsStack v-else as="ol" gap="xs" data-testid="lm-top-rows">
-            <li v-for="r in top" :key="r.rank" data-testid="lm-top-row">
-              <DsCluster justify="between" align="baseline">
-                <DsText variant="body" wrap="anywhere"
-                  ><DsText variant="label" as="span" tabular>{{ r.rank }}</DsText>
-                  {{ r.name }}</DsText
-                >
-                <DsText variant="caption">{{ r.answered }} soalan minggu ini</DsText>
-                <DsText variant="label" tabular>{{ whole(r.accuracy) }}% ketepatan</DsText>
-              </DsCluster>
-            </li>
+      <div v-else-if="reportLoading" aria-busy="true" data-testid="lm-loading">
+        <UProgress />
+      </div>
+
+      <template v-else>
+        <UCard data-testid="lm-summary">
+          <DsStack gap="sm">
+            <DsHeading :level="2" variant="label">{{ COPY.summaryTitle }}</DsHeading>
+            <DsText variant="body" tone="muted" data-testid="lm-week">{{ week.label }}</DsText>
+            <DsGrid :cols="{ base: 2, md: 4 }" gap="sm" data-testid="lm-tiles">
+              <UCard
+                v-for="t in tiles"
+                :key="t.key"
+                variant="soft"
+                :data-testid="`lm-tile-${t.key}`"
+              >
+                <DsText variant="heading" tabular data-testid="lm-tile-value">{{ t.value }}</DsText>
+                <DsText variant="caption">{{ t.label }}</DsText>
+              </UCard>
+            </DsGrid>
           </DsStack>
-        </DsStack>
-      </UCard>
+        </UCard>
 
-      <UCard data-testid="lm-improved">
-        <DsStack gap="sm">
-          <DsHeading :level="2" variant="label"
-            >{{ COPY.improvedTitle }}
-            <DsText variant="caption" as="span">{{ COPY.improvedCaption }}</DsText></DsHeading
-          >
-          <DsText
-            v-if="improvedRows.length === 0"
-            variant="body"
-            tone="muted"
-            data-testid="lm-improved-empty"
-          >
-            {{ COPY.improvedEmpty }}
-          </DsText>
-          <DsStack v-else as="ul" gap="xs" data-testid="lm-improved-rows">
-            <li v-for="(r, i) in improvedRows" :key="i" data-testid="lm-improved-row">
-              <DsCluster justify="between" align="baseline">
-                <DsText variant="body" wrap="anywhere">{{ r.name }}</DsText>
-                <DsText variant="body" tone="muted" tabular
-                  >{{ whole(r.previousAccuracy) }}% → {{ whole(r.accuracy) }}%</DsText
-                >
-                <DsText variant="label" tabular>+{{ r.delta }}%</DsText>
-              </DsCluster>
-            </li>
-          </DsStack>
-        </DsStack>
-      </UCard>
-
-      <UCard data-testid="lm-attention">
-        <DsStack gap="sm">
-          <DsHeading :level="2" variant="label"
-            >{{ COPY.attention }}
-            <DsText variant="caption" as="span">{{ COPY.attentionCaption }}</DsText></DsHeading
-          >
-          <DsText
-            v-if="subjects.length === 0"
-            variant="body"
-            tone="muted"
-            data-testid="lm-attention-empty"
-          >
-            {{ subjectsEmpty }}
-          </DsText>
-          <DsStack v-else as="ul" gap="sm" data-testid="lm-attention-rows">
-            <li v-for="(s, i) in subjects" :key="i" data-testid="lm-attention-row">
-              <DsStack gap="xs">
+        <UCard data-testid="lm-top">
+          <DsStack gap="sm">
+            <DsHeading :level="2" variant="label">{{ COPY.topTitle }}</DsHeading>
+            <DsText v-if="top.length === 0" variant="body" tone="muted" data-testid="lm-top-empty">
+              {{ COPY.topEmpty }}
+            </DsText>
+            <DsStack v-else as="ol" gap="xs" data-testid="lm-top-rows">
+              <li v-for="r in top" :key="r.rank" data-testid="lm-top-row">
                 <DsCluster justify="between" align="baseline">
-                  <DsText variant="body" wrap="anywhere">{{ s.subject }}</DsText>
-                  <DsText variant="label" tabular
-                    >{{ whole(s.accuracy) }}% ({{ s.answered }} soalan)</DsText
+                  <DsText variant="body" wrap="anywhere"
+                    ><DsText variant="label" as="span" tabular>{{ r.rank }}</DsText>
+                    {{ r.name }}</DsText
                   >
+                  <DsText variant="caption">{{ r.answered }} soalan minggu ini</DsText>
+                  <DsText variant="label" tabular>{{ whole(r.accuracy) }}% ketepatan</DsText>
                 </DsCluster>
-                <DsProgress
-                  :value="whole(s.accuracy)"
-                  :show-value="false"
-                  tone="error"
-                  :aria-label="`${s.subject} ${whole(s.accuracy)}%`"
-                  data-testid="lm-attention-bar"
-                />
-              </DsStack>
-            </li>
+              </li>
+            </DsStack>
           </DsStack>
-        </DsStack>
-      </UCard>
+        </UCard>
+
+        <UCard data-testid="lm-improved">
+          <DsStack gap="sm">
+            <DsHeading :level="2" variant="label"
+              >{{ COPY.improvedTitle }}
+              <DsText variant="caption" as="span">{{ COPY.improvedCaption }}</DsText></DsHeading
+            >
+            <DsText
+              v-if="improvedRows.length === 0"
+              variant="body"
+              tone="muted"
+              data-testid="lm-improved-empty"
+            >
+              {{ COPY.improvedEmpty }}
+            </DsText>
+            <DsStack v-else as="ul" gap="xs" data-testid="lm-improved-rows">
+              <li v-for="(r, i) in improvedRows" :key="i" data-testid="lm-improved-row">
+                <DsCluster justify="between" align="baseline">
+                  <DsText variant="body" wrap="anywhere">{{ r.name }}</DsText>
+                  <DsText variant="body" tone="muted" tabular
+                    >{{ whole(r.previousAccuracy) }}% → {{ whole(r.accuracy) }}%</DsText
+                  >
+                  <DsText variant="label" tabular>+{{ r.delta }}%</DsText>
+                </DsCluster>
+              </li>
+            </DsStack>
+          </DsStack>
+        </UCard>
+
+        <UCard data-testid="lm-attention">
+          <DsStack gap="sm">
+            <DsHeading :level="2" variant="label"
+              >{{ COPY.attention }}
+              <DsText variant="caption" as="span">{{ COPY.attentionCaption }}</DsText></DsHeading
+            >
+            <DsText
+              v-if="subjects.length === 0"
+              variant="body"
+              tone="muted"
+              data-testid="lm-attention-empty"
+            >
+              {{ subjectsEmpty }}
+            </DsText>
+            <DsStack v-else as="ul" gap="sm" data-testid="lm-attention-rows">
+              <li v-for="(s, i) in subjects" :key="i" data-testid="lm-attention-row">
+                <DsStack gap="xs">
+                  <DsCluster justify="between" align="baseline">
+                    <DsText variant="body" wrap="anywhere">{{ s.subject }}</DsText>
+                    <DsText variant="label" tabular
+                      >{{ whole(s.accuracy) }}% ({{ s.answered }} soalan)</DsText
+                    >
+                  </DsCluster>
+                  <DsProgress
+                    :value="whole(s.accuracy)"
+                    :show-value="false"
+                    tone="error"
+                    :aria-label="`${s.subject} ${whole(s.accuracy)}%`"
+                    data-testid="lm-attention-bar"
+                  />
+                </DsStack>
+              </li>
+            </DsStack>
+          </DsStack>
+        </UCard>
+      </template>
     </DsStack>
   </DsPage>
 </template>

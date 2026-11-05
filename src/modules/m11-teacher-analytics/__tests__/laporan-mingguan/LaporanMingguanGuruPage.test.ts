@@ -52,7 +52,8 @@ async function mountPage(classes: unknown[] = CLASSES, data: GuruWeeklyReport = 
 }
 const t = (w: VueWrapper, id: string) => w.get(`[data-testid="${id}"]`)
 const txt = (w: VueWrapper, id: string) => t(w, id).text().replace(/\s+/g, ' ')
-const tileValue = (w: VueWrapper, k: string) => t(w, `lm-tile-${k}`).get('[data-testid="lm-tile-value"]').text()
+const tileValue = (w: VueWrapper, k: string) =>
+  t(w, `lm-tile-${k}`).get('[data-testid="lm-tile-value"]').text()
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -112,8 +113,11 @@ describe('Laporan Mingguan Guru', () => {
 
   it('AC-GUR-43-5: no activity gives four 0 tiles and the exact empty copies', async () => {
     const w = await mountPage(CLASSES, emptyReport())
-    for (const k of ['answered', 'active', 'improved', 'attention']) expect(tileValue(w, k)).toBe('0')
-    expect(txt(w, 'lm-top-empty')).toBe('Tiada pelajar dengan sekurang-kurangnya 5 soalan minggu ini.')
+    for (const k of ['answered', 'active', 'improved', 'attention'])
+      expect(tileValue(w, k)).toBe('0')
+    expect(txt(w, 'lm-top-empty')).toBe(
+      'Tiada pelajar dengan sekurang-kurangnya 5 soalan minggu ini.',
+    )
     expect(txt(w, 'lm-improved-empty')).toBe('Tiada perbandingan minggu-ke-minggu yang mencukupi.')
     expect(txt(w, 'lm-attention-empty')).toBe('Tiada latihan direkodkan minggu ini.')
   })
@@ -124,7 +128,8 @@ describe('Laporan Mingguan Guru', () => {
     const select = t(w, 'lm-class')
     expect(select.attributes('disabled')).toBeDefined()
     expect(w.text()).toContain('Tiada kelas lagi')
-    for (const k of ['answered', 'active', 'improved', 'attention']) expect(tileValue(w, k)).toBe('0')
+    for (const k of ['answered', 'active', 'improved', 'attention'])
+      expect(tileValue(w, k)).toBe('0')
     expect(txt(w, 'lm-top-empty')).toContain('Tiada pelajar')
     expect(txt(w, 'lm-print-title')).toMatch(
       /^Laporan Mingguan — Semua Kelas \| \d{2} [A-Z][a-z]{2} – \d{2} [A-Z][a-z]{2} \d{4}$/,
@@ -147,7 +152,9 @@ describe('Laporan Mingguan Guru', () => {
 
   it('FR-GUR-43-7: tiles are 2 columns, 4 from md; Cetak is at least 44px tall', async () => {
     const w = await mountPage()
-    expect(t(w, 'lm-tiles').classes()).toEqual(expect.arrayContaining(['grid-cols-2', 'md:grid-cols-4']))
+    expect(t(w, 'lm-tiles').classes()).toEqual(
+      expect.arrayContaining(['grid-cols-2', 'md:grid-cols-4']),
+    )
     expect(t(w, 'lm-print').classes()).toContain('min-h-11')
   })
 
@@ -186,16 +193,63 @@ describe('Laporan Mingguan Guru', () => {
     wrapper = mount(LaporanMingguanGuruPage)
     await flushPromises()
     expect(wrapper.text()).toContain('Akses ditolak.')
-    await wrapper.get('button').trigger('click')
+    await wrapper.findAll('button').find((b) => b.text().includes('Cuba'))!.trigger('click')
     await flushPromises()
     expect(tileValue(wrapper, 'answered')).toBe('18')
   })
 
   it('shows an error when the classes fail to load', async () => {
-    m10.fetchGuruClasses.mockRejectedValue(new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Ralat.' }))
+    m10.fetchGuruClasses.mockRejectedValue(
+      new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Ralat.' }),
+    )
     wrapper = mount(LaporanMingguanGuruPage)
     await flushPromises()
     expect(wrapper.text()).toContain('Ralat.')
     expect(api.fetchGuruWeeklyReport).not.toHaveBeenCalled()
+  })
+
+  it('a class switch shows loading and never the old class rows while the new request is pending', async () => {
+    const w = await mountPage()
+    let resolveB!: (r: GuruWeeklyReport) => void
+    api.fetchGuruWeeklyReport.mockReturnValueOnce(
+      new Promise<GuruWeeklyReport>((res) => {
+        resolveB = res
+      }),
+    )
+    await w.get('select[name="classroomId"]').setValue('12')
+    await flushPromises()
+    expect(w.find('[data-testid="lm-loading"]').exists()).toBe(true)
+    expect(w.find('[data-testid="lm-toolbar"]').exists()).toBe(true)
+    expect(w.text()).not.toContain('Aina Fiktif')
+    expect(w.find('[data-testid="lm-top"]').exists()).toBe(false)
+    resolveB(
+      report({
+        classroom: { id: '12', name: '4 Cemerlang' },
+        topPerformers: [{ rank: 1, name: 'Citra Rekaan', answered: 9, accuracy: 80 }],
+        mostImproved: [],
+      }),
+    )
+    await flushPromises()
+    expect(w.text()).toContain('Citra Rekaan')
+    expect(w.text()).not.toContain('Aina Fiktif')
+    expect(txt(w, 'lm-print-title')).toBe('Laporan Mingguan — 4 Cemerlang | 02 Nov – 08 Nov 2026')
+  })
+
+  it('a report error keeps the toolbar and the select usable', async () => {
+    m10.fetchGuruClasses.mockResolvedValue({ data: CLASSES, meta: {} })
+    api.fetchGuruWeeklyReport.mockRejectedValueOnce(
+      new ApiError({ status: 403, code: 'FORBIDDEN', message: 'Akses ditolak.' }),
+    )
+    api.fetchGuruWeeklyReport.mockResolvedValue(
+      report({ classroom: { id: '12', name: '4 Cemerlang' } }),
+    )
+    wrapper = mount(LaporanMingguanGuruPage)
+    await flushPromises()
+    expect(wrapper.text()).toContain('Akses ditolak.')
+    expect(wrapper.find('[data-testid="lm-toolbar"]').exists()).toBe(true)
+    await wrapper.get('select[name="classroomId"]').setValue('12')
+    await flushPromises()
+    expect(wrapper.text()).not.toContain('Akses ditolak.')
+    expect(tileValue(wrapper, 'answered')).toBe('18')
   })
 })
