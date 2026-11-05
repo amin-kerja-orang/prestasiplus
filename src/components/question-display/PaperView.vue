@@ -18,10 +18,16 @@ const props = withDefaults(
   defineProps<{
     sections: PaperSection[]
     reveal?: boolean
+    /** False when the surface renders no section heading line (single-question previews). */
+    sectionHead?: boolean
+    /** Depth indent per level: 'sm' = 12px (w-3, default), 'md' = 24px (w-6). */
+    indentStep?: 'sm' | 'md'
+    /** Question-less section list as a tight ul/li (the cover); the section-head slot fills each li. */
+    compact?: boolean
     /** Scroll container used for rotation anchoring; the window when absent. */
     scrollContainer?: HTMLElement | null
   }>(),
-  { reveal: false, scrollContainer: null },
+  { reveal: false, scrollContainer: null, sectionHead: true, indentStep: 'sm', compact: false },
 )
 
 interface Block {
@@ -127,16 +133,21 @@ defineExpose({ record, restore })
 </script>
 
 <template>
-  <div ref="root" class="min-w-0" data-testid="paper-view">
+  <DsStack v-if="compact" as="ul" gap="2xs" data-testid="paper-view">
+    <li v-for="(s, si) in sections" :key="si" :data-testid="`paper-section-${s.id}`">
+      <slot name="section-head" :section="s" />
+    </li>
+  </DsStack>
+  <div v-else ref="root" class="min-w-0" data-testid="paper-view">
     <DsStack gap="xl">
       <DsStack
-        v-for="{ s, blocks } in sectionBlocks"
-        :key="s.id"
+        v-for="({ s, blocks }, si) in sectionBlocks"
+        :key="si"
         as="section"
         gap="md"
         :data-testid="`paper-section-${s.id}`"
       >
-        <slot name="section-head" :section="s">
+        <slot v-if="sectionHead" name="section-head" :section="s">
           <DsStack as="header" gap="2xs">
             <DsText variant="body" class="min-w-0 overflow-x-auto" data-testid="paper-section-line"
               ><strong>{{ s.label }}</strong
@@ -185,7 +196,8 @@ defineExpose({ record, restore })
                   <span
                     v-for="n in depth"
                     :key="n"
-                    class="w-3 shrink-0"
+                    :class="indentStep === 'md' ? 'w-6' : 'w-3'"
+                    class="shrink-0"
                     aria-hidden="true"
                     data-testid="paper-indent"
                   />

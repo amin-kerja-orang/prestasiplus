@@ -47,6 +47,7 @@ import {
   currentItem,
   labelTitle,
   drawerEntries,
+  LOGOUT_ROW_MIN_HEIGHT_CLASS,
   pembelajaranTabs,
   phClass,
   routeRoleCheck,
@@ -195,6 +196,7 @@ const accountMenu = computed(() => [
       icon: phClass('sign-out', learner.value),
       to: '/logout',
       color: 'error' as const,
+      class: LOGOUT_ROW_MIN_HEIGHT_CLASS,
     },
   ],
 ])
@@ -213,7 +215,7 @@ const lagiGroups = computed(() => [
       label: 'Log Keluar',
       icon: phClass('sign-out', learner.value),
       to: '/logout',
-      class: 'text-error',
+      class: `text-error ${LOGOUT_ROW_MIN_HEIGHT_CLASS}`,
     },
   ],
 ])

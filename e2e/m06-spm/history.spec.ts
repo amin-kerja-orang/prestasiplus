@@ -11,7 +11,16 @@ import {
   moduleTag,
   viewportWidth,
 } from '../support'
-import { ADMIN, columnsOf, PELAJAR, smallTexts, tid } from './support'
+import {
+  ADMIN,
+  columnsOf,
+  PELAJAR,
+  shellTitle,
+  smallTexts,
+  statLabels,
+  statValues,
+  tid,
+} from './support'
 
 const rowsOf = (page: import('@playwright/test').Page) => page.getByTestId('history-row')
 
@@ -26,16 +35,17 @@ test.describe('M06 S10 history', { tag: [moduleTag(6)] }, () => {
     await loginAs(ADMIN)
     await gotoApp('/spm/history')
     await expectTabTitle(page, 'Sejarah Kuiz SPM | PRESTASIPLUS')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Sejarah Kuiz SPM')
+    await expect(shellTitle(page)).toHaveText('Sejarah Kuiz SPM')
     if (isDesktopShell(page)) {
-      await expect(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')
+      // Fact gone in v2, left failing (S3-T03 report): neither v2 shell prints this subtitle.
+      await expect.soft(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')
     }
     await expect(tid(page, 'spm-back')).toHaveText('Kembali ke Mod SPM')
     await expect(tid(page, 'spm-back')).toHaveAttribute('href', '/spm')
     await expect(tid(page, 'spm-heading')).toHaveText('Sejarah Kuiz SPM')
     const stats = page.locator('[data-testid^=history-stat-]')
-    await expect(stats.getByTestId('stat-value')).toHaveText(['4', '21.8%', '26', '84'])
-    await expect(stats.getByTestId('stat-label')).toHaveText([
+    await expect(statValues(stats)).toHaveText(['4', '21.8%', '26', '84'])
+    await expect(statLabels(stats)).toHaveText([
       'Sesi Kuiz',
       'Purata Ketepatan',
       'Jumlah Syiling',
@@ -71,8 +81,8 @@ test.describe('M06 S10 history', { tag: [moduleTag(6)] }, () => {
       'Latih Tubi',
     ])
     for (let i = 0; i < 4; i++) {
-      await expect(rows.nth(i).getByTestId('row-score')).toHaveClass(/bg-red-100/)
-      await expect(rows.nth(i).getByTestId('row-score')).toHaveClass(/text-red-600/)
+      await expect(rows.nth(i).getByTestId('row-score')).toHaveClass(/bg-error/)
+      await expect(rows.nth(i).getByTestId('row-score')).toHaveClass(/text-error/)
     }
     await expect(rows.nth(1).getByTestId('row-meta')).toHaveText('19 May 2026, 03:26 AM · 0m 36s')
     await expect(rows.nth(2).getByTestId('row-meta')).toHaveText('11 May 2026, 02:27 PM · 1m 45s')
@@ -84,19 +94,17 @@ test.describe('M06 S10 history', { tag: [moduleTag(6)] }, () => {
     await tid(page, 'history-filter-past_year').click()
     await expect(page).toHaveURL(/\/spm\/history\?type=past_year$/)
     await expect(rows).toHaveCount(2)
-    await expect(tid(page, 'history-filter-past_year')).toHaveClass(/bg-amber-500/)
-    await expect(tid(page, 'history-filter-past_year')).toHaveClass(/text-white/)
-    await expect(tid(page, 'history-filter-past_year')).toHaveClass(/shadow-md/)
-    await expect(tid(page, 'history-filter-latih_tubi')).toHaveClass(/border-slate-200/)
+    await expect(tid(page, 'history-filter-past_year')).toHaveAttribute('data-active', 'true')
+    await expect(tid(page, 'history-filter-latih_tubi')).toHaveAttribute('data-active', 'false')
     // The stats do not follow the filter.
-    await expect(stats.getByTestId('stat-value')).toHaveText(['4', '21.8%', '26', '84'])
+    await expect(statValues(stats)).toHaveText(['4', '21.8%', '26', '84'])
 
     await tid(page, 'history-filter-latih_tubi').click()
-    await expect(tid(page, 'history-filter-latih_tubi')).toHaveClass(/bg-blue-500/)
+    await expect(tid(page, 'history-filter-latih_tubi')).toHaveAttribute('data-active', 'true')
     await expect(rows).toHaveCount(2)
 
     await tid(page, 'history-filter-ramalan').click()
-    await expect(tid(page, 'history-filter-ramalan')).toHaveClass(/bg-purple-500/)
+    await expect(tid(page, 'history-filter-ramalan')).toHaveAttribute('data-active', 'true')
     await expect(rows).toHaveCount(0)
     await expect(tid(page, 'history-empty')).toContainText('Belum Ada Sejarah')
     await expect(tid(page, 'history-empty')).toContainText(
@@ -110,9 +118,7 @@ test.describe('M06 S10 history', { tag: [moduleTag(6)] }, () => {
     await gotoApp('/spm/history?type=zzz')
     await expect(rows).toHaveCount(4)
     for (const id of ['all', 'past_year', 'latih_tubi', 'ramalan']) {
-      await expect(tid(page, `history-filter-${id}`)).not.toHaveClass(
-        /bg-(indigo|amber|blue|purple)-500/,
-      )
+      await expect(tid(page, `history-filter-${id}`)).toHaveAttribute('data-active', 'false')
     }
   })
 
@@ -127,14 +133,17 @@ test.describe('M06 S10 history', { tag: [moduleTag(6)] }, () => {
     await expect(rows).toHaveCount(4)
     await expect(rows.getByTestId('row-score')).toHaveText(['85%', '60%', '76%', '40%'])
     await expect(rows.nth(0).getByTestId('row-badge')).toHaveText('Tracking A')
-    await expect(rows.nth(0).getByTestId('row-score')).toHaveClass(/bg-green-100/)
-    await expect(rows.nth(1).getByTestId('row-score')).toHaveClass(/bg-yellow-100/)
-    await expect(rows.nth(2).getByTestId('row-score')).toHaveClass(/bg-yellow-100/)
-    await expect(rows.nth(3).getByTestId('row-score')).toHaveClass(/bg-red-100/)
-    await expect(rows.nth(0).getByTestId('row-badge')).toHaveClass(/bg-purple-100/)
-    await expect(page.locator('[data-testid^=history-stat-]').getByTestId('stat-value')).toHaveText(
-      ['4', '65.4%', '70', '94'],
-    )
+    await expect(rows.nth(0).getByTestId('row-score')).toHaveClass(/bg-success/)
+    await expect(rows.nth(1).getByTestId('row-score')).toHaveClass(/bg-warning/)
+    await expect(rows.nth(2).getByTestId('row-score')).toHaveClass(/bg-warning/)
+    await expect(rows.nth(3).getByTestId('row-score')).toHaveClass(/bg-error/)
+    await expect(rows.nth(0).getByTestId('row-badge')).toHaveClass(/bg-secondary/)
+    await expect(statValues(page.locator('[data-testid^=history-stat-]'))).toHaveText([
+      '4',
+      '65.4%',
+      '70',
+      '94',
+    ])
     await expectNoHorizontalScroll(page)
   })
 

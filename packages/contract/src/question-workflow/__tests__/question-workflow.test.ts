@@ -196,6 +196,7 @@ describe('reports', () => {
     createdAt: AT,
     updatedAt: AT,
     question,
+    reporterRole: 'murid',
     reporter: { id: '12', name: 'Aina Pelapor' },
   }
   const counts = { pending: 0, reviewed: 0, fixed: 1, dismissed: 0, all: 1 }

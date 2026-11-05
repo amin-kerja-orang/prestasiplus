@@ -154,8 +154,12 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
           extra.file ? 'Rajah' : null,
         ])
       )[0]!.id
-    const link = (key: string, ...ids: string[]) =>
-      Promise.all(ids.map((id, i) => q(`insert into question_version_stimuli (question_version_id, stimulus_id, position) select id, $2, $3 from question_versions where question_id = $1 and version_no = 1`, [made[key], id, i + 1])))
+    // S1-T07: these stems say "petikan"/"jadual" in plain prose, so the detectors flagged them at publish. Linking a stimulus clears the flag in the real write
+    // path (rewriteVersion); this raw insert bypasses it, so the helper clears the stored flag the same way.
+    const link = async (key: string, ...ids: string[]) => {
+      await Promise.all(ids.map((id, i) => q(`insert into question_version_stimuli (question_version_id, stimulus_id, position) select id, $2, $3 from question_versions where question_id = $1 and version_no = 1`, [made[key], id, i + 1])))
+      await q(`update question_versions set stimulus_flag = null, stimulus_flag_ref = null, stimulus_flag_at = null where question_id = $1`, [made[key]])
+    }
     await publish('ownPassage', 'Soalan dengan petikan sendiri untuk kesamaan kebolehhidangan.')
     await link('ownPassage', await stim('passage', { body: 'Teks petikan sendiri.' }))
     await publish('ownTable', 'Soalan dengan jadual sendiri untuk kesamaan kebolehhidangan.')

@@ -201,7 +201,6 @@ const FORBIDDEN_TEACHER = err('FORBIDDEN "Anda tidak dibenarkan melakukan tindak
 const FORBIDDEN_TEACHER_WRITE = err(
   'FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not teacher or admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).',
 )
-const FORBIDDEN_CSRF = err('CSRF_INVALID (missing or wrong X-CSRF-Token).')
 const NOT_FOUND = err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (unknown id, or a segment that does not match the route).')
 
 const CSV_422 =
@@ -237,13 +236,15 @@ export function registerQuestionWorkflowPaths(registry: OpenAPIRegistry): void {
     tags: ['question-workflow', 'question-reports'],
     summary: 'File a report on a question (Lapor Soalan)',
     description:
-      'Any signed-in user. Creates a `pending` report. The response is RAW (no data envelope). No duplicate-open-report check (as the mock): a second report by the same user for the same question is accepted. Whether and when the report deactivates the question is Open question 1 of the card (mock: an MCQ at the first report, a structured question at the third open report).',
+      'Student or teacher (active role). Creates a `pending` report; the response is RAW (no data envelope). One report per reporter per question version (S5-T06, FR-MUR-54-6): a second one answers 409 and changes nothing. A pupil must have been served the question (FR-MUR-54-5): an own Bijak attempt that holds it (`attemptId`), an own practice session that served it (`quizSessionId`), or a live structured question; otherwise 403 (an unknown question answers the same, so the status is not an existence oracle). `reporterRole` is set from the session role (student = murid, teacher = guru), never from the body. A report never deactivates the question (REQ-B-031, D98). At most QUESTION_REPORT_DAILY_CAP new reports per reporter per Malaysia day.',
     request: { headers: [csrf], body: body(QuestionReportCreateRequestSchema) },
     responses: {
       201: json(QuestionReportCreatedSchema, 'Report filed: { success: true, message: "Laporan berjaya dihantar." }.'),
       401: UNAUTHORIZED,
-      403: FORBIDDEN_CSRF,
-      404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (the question does not exist).'),
+      403: err(`CSRF_INVALID (missing or wrong X-CSRF-Token); FORBIDDEN for a role other than student or teacher; FORBIDDEN "${QUESTION_REPORT_MESSAGES.contextRequired}" when the pupil was never served the question (no proof, an unknown or someone else's session, a session that did not serve it, a structured question outside the pupil's levels).`),
+      404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (the pupil was served the question by an own proof, but the question is no longer live).'),
+      409: err(`CONFLICT "${QUESTION_REPORT_MESSAGES.duplicate}" when the reporter already reported this question version (checked under the reporter lock, before the daily cap).`),
+      429: err(`RATE_LIMITED "${QUESTION_REPORT_MESSAGES.dailyCap}" with retryAfter, at the daily cap.`),
       422: err(
         'VALIDATION_ERROR with fields: questionType "Jenis soalan tidak sah."; questionId "Sila pilih soalan."; reasons "Sila pilih sekurang-kurangnya satu sebab laporan." or "Sebab laporan tidak sah."; source "Sumber laporan tidak sah."; comment "Komen tidak boleh melebihi 500 aksara."; quizSessionId and roomCode "Rujukan sesi atau bilik tidak sah.". Top-level message is the first field message plus " (and N more error(s))" when several.',
       ),
