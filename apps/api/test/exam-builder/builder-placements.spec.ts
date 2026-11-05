@@ -506,7 +506,18 @@ describe('paper builder R1-B09a: placements, D90 groups, review, publish, copy, 
     })
 
     it('[CI] AC-QE7.1: the Jana draw never splits a group: whole or not at all, members contiguous in group order', async () => {
-      // Bahagian A needs 3 questions from 3 singles OR (single + the 2-member group): a lone group member is never an option.
+      // Bahagian A needs 3 questions: 3 singles OR (single + the 2-member group); a lone group member is never an option.
+      // Part 1: the pool allows only single + group, so the group is drawn on every generate (the order of the units varies).
+      for (let i = 0; i < 6; i++) {
+        setPools({ a: ['700001', '700021', '700022'], b: ['700004'], c: ['700005', '700006'] })
+        const res = await generate()
+        expect(res.status, JSON.stringify(res.body)).toBe(201)
+        const a = ids(await editor((res.body.data as { paperId: string }).paperId), 0)
+        expect(a).toHaveLength(3)
+        expect(a.includes('700021') && a.includes('700022')).toBe(true)
+        expect(a.indexOf('700022')).toBe(a.indexOf('700021') + 1)
+      }
+      // Part 2: with spare singles the draw may skip the group, but it never takes half of it.
       for (let i = 0; i < 6; i++) {
         setPools({ a: ['700001', '700002', '700003', '700021', '700022'], b: ['700004'], c: ['700005', '700006'] })
         const res = await generate()
