@@ -276,7 +276,7 @@ const SWEEP: SweepRoute[] = [
   { name: 'S10-empty', path: '/latihan-berstruktur?subject_id=3&scope=spm&kbat_level=6', who: 'pelajar@demo.test', ready: 'structured-empty' },
   { name: 'S10-spm', path: '/latihan-berstruktur?scope=spm&subject_id=3', who: 'pelajar@demo.test', ready: 'structured-grid' },
   { name: 'S10-bahasa', path: '/latihan-berstruktur?scope=spm&track=bahasa&subject_id=1', who: 'pelajar@demo.test', ready: 'structured-grid' },
-  { name: 'Q3', path: '/latihan-berstruktur/4454/jawab', who: 'pelajar@demo.test', ready: 'answer-stimulus' },
+  { name: 'Q3', path: '/latihan-berstruktur/4454/jawab', who: 'pelajar@demo.test', ready: 'stimulus-group' },
   { name: 'S13-empty', path: '/remedial/saya', who: 'pelajar@demo.test', ready: 'remedial-empty' },
   { name: 'S13', path: '/remedial/saya', who: 'murid3008@demo.test', ready: 'remedial-card-7601', tag: 'provisional' },
   { name: 'Q4', path: '/remedial/7601', who: 'murid3008@demo.test', ready: 'quiz-title', tag: 'provisional' },

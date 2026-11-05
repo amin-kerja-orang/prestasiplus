@@ -58,9 +58,9 @@ function list(rows: ArticleCard[], total = rows.length) {
     data: rows,
     meta: {
       page: 1,
-      pageSize: 18,
+      pageSize: 12,
       totalItems: total,
-      totalPages: Math.max(1, Math.ceil(total / 18)),
+      totalPages: Math.max(1, Math.ceil(total / 12)),
       from: rows.length ? 1 : null,
       to: rows.length || null,
     },
@@ -124,10 +124,11 @@ describe('ArtikelListPage (S15)', () => {
     expect(cards[0]?.text()).toContain('HOT')
     expect(cards[1]?.text()).not.toContain('HOT')
     expect(cards[0]?.get('a').attributes('href')).toBe('/artikel/artikel-1')
-    expect(cards[0]?.text()).toContain('310 Pembaca')
+    expect(cards[0]?.text()).toContain('310 bacaan')
     expect(w.get('[data-testid=artikel-search-input]').attributes('placeholder')).toBe(
-      'Cari artikel...',
+      'Cari',
     )
+    expect(w.get('[data-testid=artikel-search-input]').attributes('maxlength')).toBe('100')
     expect(w.find('[data-testid=artikel-pager]').exists()).toBe(true)
   })
 
@@ -161,6 +162,51 @@ describe('ArtikelListPage (S15)', () => {
     await w.get('[data-testid=artikel-search-form]').trigger('submit')
     await flushPromises()
     expect(router.currentRoute.value.fullPath).toBe('/artikel?search=sifir&category=UMUM')
+  })
+
+  it('a new search or pill drops the page (FR-MUR-20-5, AC-MUR-20-4)', async () => {
+    api.fetchArticles.mockResolvedValue(list([card(1)], 25))
+    const w = await mountAt('/artikel?page=3', ArtikelListPage)
+    await w.get('[data-testid=artikel-search-input]').setValue('sifir')
+    await w.get('[data-testid=artikel-search-form]').trigger('submit')
+    await flushPromises()
+    expect(router.currentRoute.value.fullPath).toBe('/artikel?search=sifir')
+    await router.push('/artikel?page=3')
+    await flushPromises()
+    const berita = w.findAll('[data-testid=artikel-pill]')[2]
+    expect(berita?.attributes('href')).toBe('/artikel?category=BERITA')
+  })
+
+  it('pills show their count and a zero-count pill is disabled; the open one never is (AC-MUR-20-1)', async () => {
+    const counts = {
+      TIPS_BELAJAR: 0,
+      BERITA: 2,
+      MOTIVASI: 0,
+      PANDUAN_IBU_BAPA: 0,
+      PANDUAN_GURU: 0,
+      KEJAYAAN: 0,
+      UMUM: 0,
+    }
+    api.fetchArticles.mockResolvedValue({ ...list([card(1), card(2)], 2), meta: { ...list([]).meta, counts } })
+    const w = await mountAt('/artikel', ArtikelListPage)
+    const pills = w.findAll('[data-testid=artikel-pill]')
+    expect(pills.map((p) => p.get('[data-testid=artikel-pill-count]').text())).toEqual([
+      '2', '0', '2', '0', '0', '0', '0', '0',
+    ])
+    expect(pills[2]?.attributes('aria-disabled')).toBeUndefined()
+    expect(pills[1]?.attributes('aria-disabled')).toBe('true')
+    expect(pills[1]?.attributes('href')).toBeUndefined()
+    // opened on a category whose count is 0: the pill stays usable
+    const w2 = await mountAt('/artikel?category=MOTIVASI', ArtikelListPage)
+    expect(w2.findAll('[data-testid=artikel-pill]')[3]?.attributes('aria-disabled')).toBeUndefined()
+  })
+
+  it('375 px: the pills row scrolls sideways below sm (AC-MUR-20-3)', async () => {
+    const w = await mountAt('/artikel', ArtikelListPage)
+    const cls = w.get('[data-testid=artikel-pills]').classes()
+    expect(cls).toContain('overflow-x-auto')
+    expect(cls).toContain('sm:flex-wrap')
+    expect(w.get('[data-testid=artikel-grid]').classes()).toContain('grid-cols-1')
   })
 
   it('empty result shows the empty state without grid and pager', async () => {
@@ -234,10 +280,10 @@ describe('ArtikelDetailPage (S16)', () => {
     expect(w.get('[data-testid=artikel-chip-featured]').text()).toBe('Pilihan')
     expect(w.get('[data-testid=artikel-title]').text()).toBe(DETAIL.title)
     expect(w.get('[data-testid=artikel-author-name]').text()).toBe('Admin Demo')
-    expect(w.get('[data-testid=artikel-published]').text()).toBe('24 Dec 2025')
+    expect(w.get('[data-testid=artikel-published]').text()).toBe('24 Disember 2025')
     expect(w.get('[data-testid=artikel-views]').text()).toBe('597')
     expect(w.get('[data-testid=artikel-likes]').text()).toBe('6')
-    expect(w.text()).toContain('Pembaca')
+    expect(w.text()).toContain('bacaan')
     expect(w.text()).toContain('Suka')
     expect(w.findAll('button').filter((b) => b.text().includes('Suka'))).toHaveLength(0)
     const body = w.get('[data-testid=artikel-body]')

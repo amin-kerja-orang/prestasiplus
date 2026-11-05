@@ -17,7 +17,7 @@ const routes: RouteRecordRaw[] = [
       v2: true,
       access: 'auth',
       roles: ['admin'],
-      title: 'Soalan Berstruktur - Admin Panel',
+      title: 'Soalan Berstruktur',
       header: { title: 'Soalan Berstruktur' },
       module: 'M04',
     },

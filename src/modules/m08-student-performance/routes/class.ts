@@ -2,8 +2,9 @@ import type { RouteRecordRaw } from 'vue-router'
 
 /**
  * M08 route fragment "class" (M08-T7; build-plan §S.3 rule 2): S5 `/prestasi/kelas/:id` and S8
- * `/analitik/kelas`. Admin and teacher only: every other role gets the standalone 404 for S5 (BR-M08-26,
- * "none → 404", INFERRED) and the 403 page for S8 (§9 "none"). S4, S10 and S11 are M08-T5's pages.
+ * `/analitik/kelas`. Admin, teacher and school admin (S0-T06 / S10-T04 Change (2): a school admin opens the
+ * classes of the own school; the API forces the school). Every other role gets the standalone 404 for S5
+ * (BR-M08-26, "none → 404", INFERRED) and the 403 page for S8 (§9 "none"). S4, S10 and S11 are M08-T5's pages.
  * An unknown or unpermitted class is decided by the API (S5 404, S8 403). The S5 tab title and header
  * are set from the class (`{kelas} — Dashboard Kelas`, FR-M08-03).
  */

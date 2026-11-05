@@ -7,7 +7,7 @@
  *     npx playwright test -c playwright.http.config.ts e2e/m04-question-bank/question-tabs-http.spec.ts --workers=1
  *
  * Writes: one draft question per Arkib Semua run, deleted in `finally`; one pupil report per row action, on a question with no report
- * yet (a pupil reports a question once, so the test skips when none is left). `Nyahaktif Segera` and `Arkib` restore the question.
+ * yet (a pupil reports a question once and only one shown to them, so the test fails when none is left). `Nyahaktif Segera` restores the question; `Arkib` archives one that no paper places and sends it back through draft, review and approve (the refused fields are logged).
  */
 import type { APIRequestContext, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
@@ -99,6 +99,21 @@ test.describe('S2-T06 Senarai Soalan tabs and regions @api', () => {
     })
     expect(made.status(), await made.text()).toBe(201)
     const id = ((await made.json()) as { data: { id: string } }).data.id
+    // Outside the filter: the same subject and level, a text the search does not match.
+    const outside = await page.request.post('/api/questions', {
+      headers: { 'x-csrf-token': csrf },
+      data: {
+        subjectId: sample!.subject.id,
+        educationLevelId: sample!.level.id,
+        difficultyLevel: 3,
+        questionType: 'mcq',
+        questionText: `Soalan luar tapisan ${String(Date.now())}`,
+        options: ['4', '5', '6', '7'],
+        correctAnswer: 1,
+      },
+    })
+    expect(outside.status(), await outside.text()).toBe(201)
+    const outsideId = ((await outside.json()) as { data: { id: string } }).data.id
     try {
       await page.goto(`/admin/questions?search=${token}`)
       await expect(page.getByTestId('questions-table')).toContainText(token)
@@ -121,8 +136,11 @@ test.describe('S2-T06 Senarai Soalan tabs and regions @api', () => {
       await expect(page.getByTestId('bulk-filter-success')).toContainText('Berjaya arkib 1 soalan (hasil tapisan).')
       const after = (await (await page.request.get(`/api/questions/${id}`)).json()) as { data: { status: string } }
       expect(after.data.status).toBe('archived')
+      const untouched = (await (await page.request.get(`/api/questions/${outsideId}`)).json()) as { data: { status: string } }
+      expect(untouched.data.status).toBe('draft')
       await expectNoPageScroll(page)
     } finally {
+      await page.request.delete(`/api/questions/${outsideId}`, { headers: { 'x-csrf-token': csrf } }).catch(() => undefined)
       await page.request.delete(`/api/questions/${id}`, { headers: { 'x-csrf-token': csrf } }).catch(() => undefined)
     }
   })
@@ -150,12 +168,30 @@ test.describe('S2-T06 Laporan Soalan row actions (gap 5.1) @api', () => {
     return found as Report
   }
 
-  /** A pupil report on a structured question nobody reported yet; the page opens on the Menunggu tab. */
-  async function fileReport(page: Page): Promise<Report> {
+  /** True when no paper (Pilihan, any status) and no generated paper places the question (admin detail, `placements`). */
+  async function isUnplaced(page: Page, id: string): Promise<boolean> {
+    const d = ((await (await page.request.get(`/api/questions/${id}`)).json()) as { data: { placements?: unknown[]; generatedPaperCount?: number } }).data
+    return (d.placements ?? []).length === 0 && (d.generatedPaperCount ?? 0) === 0
+  }
+
+  /**
+   * A pupil report on a structured question nobody reported yet; the page opens on the Menunggu tab. `unplaced` picks one that no paper
+   * places, for the test that archives it: a structured question has no create route (intake only) and a pupil may report only a
+   * live, seeded one, so the spec cannot make its own question and paper; it must not archive one a Terbit paper depends on.
+   */
+  async function fileReport(page: Page, opts: { unplaced?: boolean } = {}): Promise<Report> {
     const used = new Set((await reports(page)).map((r) => r.questionId))
     const rows = ((await (await page.request.get('/api/structured-questions')).json()) as { data: { id: string }[] }).data
-    const free = rows.find((r) => !used.has(String(r.id)))
-    test.skip(free === undefined, 'no structured question without a report is left on this stack')
+    let free: { id: string } | undefined
+    for (const row of rows) {
+      if (used.has(String(row.id))) continue
+      if (opts.unplaced === true && !(await isUnplaced(page, String(row.id)))) continue
+      free = row
+      break
+    }
+    // A hard failure on purpose: a skip here would hide the row-action coverage once the seeded pool runs out. A pupil may
+    // report only a question shown to them, so a test cannot make its own.
+    expect(free, 'no structured question without a report is left on this stack').toBeDefined()
     const res = await pupil.post('/api/question-reports', {
       headers: { 'x-csrf-token': pupilCsrf },
       data: { questionId: String(free!.id), questionType: 'structured', reasons: ['other'] },
@@ -225,7 +261,7 @@ test.describe('S2-T06 Laporan Soalan row actions (gap 5.1) @api', () => {
 
   test('Arkib asks first, then admin and pupil read Dikeluarkan (AC-ADM-Q22.1) @api', async ({ page }) => {
     only1280(page)
-    const r = await fileReport(page)
+    const r = await fileReport(page, { unplaced: true })
     try {
       await button(page, r, 'report-archive').click()
       await expect(page.locator('[data-ds="confirm-message"]')).toContainText(`Soalan #${r.questionId} akan diarkibkan`)
@@ -237,14 +273,25 @@ test.describe('S2-T06 Laporan Soalan row actions (gap 5.1) @api', () => {
       const mine = ((await (await pupil.get('/api/question-reports/mine')).json()) as { data: Report[] }).data
       expect(mine.find((m) => m.id === r.id)?.displayStatus).toBe('removed')
     } finally {
-      // An archived version goes back to approved only through draft and review (lifecycle.ts); this question sits in a paper.
+      // An archived version goes back only through draft, review and approve (lifecycle.ts). The question is unplaced (no paper depends
+      // on it), but restore it anyway. A seeded question may not pass today's approve gate: the refused `fields` (approveFields,
+      // gates.ts) are logged and attached so the cause is visible, and the test fails loudly unless the question is live again.
+      const refused: { action: string; failed: unknown[] }[] = []
       for (const action of ['draft', 'review', 'approved']) {
-        await page.request.post('/api/questions/bulk-action', {
+        const res = await page.request.post('/api/questions/bulk-action', {
           headers: { 'x-csrf-token': csrf },
           data: { action, ids: [r.questionId] },
         })
+        const body = (await res.json().catch(() => null)) as { data?: { failed?: unknown[] } } | null
+        const failed = body?.data?.failed ?? []
+        if (failed.length > 0) refused.push({ action, failed })
       }
-      expect((await (await page.request.get(`/api/questions/${r.questionId}`)).json()) as { data: { status: string } }).toMatchObject({ data: { status: 'approved' } })
+      const status = ((await (await page.request.get(`/api/questions/${r.questionId}`)).json()) as { data: { status: string } }).data.status
+      const note = JSON.stringify({ questionId: r.questionId, status, refused })
+      console.log(`[S2-T06 Arkib restore] ${note}`)
+      await test.info().attach('arkib-restore', { body: note, contentType: 'application/json' })
+      // Back to live; a refusal by the approve gate fails here, with the refused fields in the message and the log.
+      expect(status, `restore: ${note}`).toBe('approved')
     }
   })
 })

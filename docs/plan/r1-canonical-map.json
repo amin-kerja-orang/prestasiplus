@@ -1482,16 +1482,15 @@
       "approved_by_card": null
     },
     {
-      "key": "/prestasi|",
+      "key": "/prestasi|m08.prestasi.own",
       "path": "/prestasi",
-      "name": null,
+      "name": "m08.prestasi.own",
       "status": "canonical",
       "sector": "S10",
-      "component": null,
+      "component": "src/modules/m08-student-performance/pages/Prestasi360Page.vue",
       "file": "src/modules/m08-student-performance/routes/prestasi.ts",
-      "redirects_to": "/prestasi/sekolah",
-      "note": "Today redirects every role to /prestasi/sekolah (defect); target is a role-dependent redirect: a pupil goes to /prestasi/{ownId} (docs/prd/r1/10-murid.md row 3)",
-      "approved_by_card": null
+      "note": "S10-T01: a pupil sees own Prestasi 360 at /prestasi (FR-MUR-4-13, AC-MUR-4-9); beforeEnter sends every other role to /prestasi/sekolah. Same page as /prestasi/:userId (staff view of one pupil), not a copy.",
+      "approved_by_card": "S10-T01"
     },
     {
       "key": "/prestasi/sekolah|m08.prestasi.sekolah",
@@ -10181,6 +10180,16 @@
       "approved_by_card": null
     },
     {
+      "name": "SpinSegment",
+      "table": "spin_segments",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/games.prisma",
+      "approved_by_card": "S7-T01",
+      "dm": "DM-64",
+      "note": "The 8 Roda Nasib wheel segments (48 GAME-14) as admin data, replacing SPIN_SEGMENTS in the GAME-14 part."
+    },
+    {
       "name": "League",
       "table": "leagues",
       "status": "canonical",
@@ -12983,6 +12992,26 @@
       "approved_by_card": "S4-T02"
     },
     {
+      "key": "POST /api/admin/curriculum/questions/bulk-chapter",
+      "method": "POST",
+      "path": "/api/admin/curriculum/questions/bulk-chapter",
+      "api_id": "API-DSKP-09",
+      "status": "canonical",
+      "sector": "S4",
+      "file": "apps/api/src/modules/curriculum/admin.controller.ts",
+      "approved_by_card": "S4-T03"
+    },
+    {
+      "key": "GET /api/admin/curriculum/chapter-coverage",
+      "method": "GET",
+      "path": "/api/admin/curriculum/chapter-coverage",
+      "api_id": "API-DSKP-10",
+      "status": "canonical",
+      "sector": "S4",
+      "file": "apps/api/src/modules/curriculum/admin.controller.ts",
+      "approved_by_card": "S4-T03"
+    },
+    {
       "key": "GET /api/admin/curriculum/chapters/:p",
       "method": "GET",
       "path": "/api/admin/curriculum/chapters/:id",
@@ -14864,6 +14893,16 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/practice/remedial-suggestions",
+      "method": "GET",
+      "path": "/api/practice/remedial-suggestions",
+      "api_id": "API-PRAC-08",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/src/modules/practice/reads/analytics/analytics.controller.ts",
+      "approved_by_card": "S5-T07"
+    },
+    {
       "key": "GET /api/practice/progress",
       "method": "GET",
       "path": "/api/practice/progress",
@@ -15204,6 +15243,46 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/admin/servability/lanes/tracking-a",
+      "method": "GET",
+      "path": "/api/admin/servability/lanes/tracking-a",
+      "api_id": "API-BIJAK-12",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/servability.controller.ts",
+      "approved_by_card": "S3-T03"
+    },
+    {
+      "key": "GET /api/admin/servability/lanes/subjektif",
+      "method": "GET",
+      "path": "/api/admin/servability/lanes/subjektif",
+      "api_id": "API-BIJAK-12",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/servability.controller.ts",
+      "approved_by_card": "S3-T03"
+    },
+    {
+      "key": "GET /api/admin/servability/lanes/kertas-subjektif",
+      "method": "GET",
+      "path": "/api/admin/servability/lanes/kertas-subjektif",
+      "api_id": "API-BIJAK-12",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/servability.controller.ts",
+      "approved_by_card": "S3-T03"
+    },
+    {
+      "key": "GET /api/admin/servability/lanes/latih-tubi",
+      "method": "GET",
+      "path": "/api/admin/servability/lanes/latih-tubi",
+      "api_id": "API-BIJAK-12",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/servability.controller.ts",
+      "approved_by_card": "S3-T03"
+    },
+    {
       "key": "GET /api/admin/questions/:p/paper-servability",
       "method": "GET",
       "path": "/api/admin/questions/:id/paper-servability",
@@ -15444,6 +15523,26 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/guru/structured-questions",
+      "method": "GET",
+      "path": "/api/guru/structured-questions",
+      "api_id": "API-GUR-26",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
+      "key": "GET /api/guru/structured-questions/:p",
+      "method": "GET",
+      "path": "/api/guru/structured-questions/:id",
+      "api_id": "API-GUR-26",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
       "key": "GET /api/questions/studio/dskp",
       "method": "GET",
       "path": "/api/questions/studio/dskp",
@@ -15542,6 +15641,17 @@
       "sector": "S1",
       "file": "apps/api/src/modules/questions/workflow/imports/imports.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "GET /api/question-imports/:p/errors",
+      "method": "GET",
+      "path": "/api/question-imports/:id/errors",
+      "api_id": "API-Q-17",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/workflow/imports/imports.controller.ts",
+      "approved_by_card": "S1-T05",
+      "note": "Error report CSV of one import run (FR-ADM-QE6.2): baris, question_key, medan, kod_ralat, mesej. Admin only."
     },
     {
       "key": "POST /api/question-imports",
