@@ -26,6 +26,10 @@ import {
   RemedialStatusSchema,
   RemedialTestNotActiveSchema,
   RemedialTestNotFoundSchema,
+  TeacherMissionCreateSchema,
+  TeacherMissionListResponseSchema,
+  TeacherMissionResponseSchema,
+  TeacherMissionSchema,
 } from './schema'
 
 /** Components contributed by BE-18 (missions and remedial half; spread into COMPONENT_SCHEMAS). */
@@ -34,6 +38,10 @@ export const MISSIONS_COMPONENT_SCHEMAS = {
   MissionStatus: MissionStatusSchema,
   MissionToday: MissionTodaySchema,
   MissionTodayResponse: MissionTodayResponseSchema,
+  TeacherMission: TeacherMissionSchema,
+  TeacherMissionCreate: TeacherMissionCreateSchema,
+  TeacherMissionListResponse: TeacherMissionListResponseSchema,
+  TeacherMissionResponse: TeacherMissionResponseSchema,
   RemedialStatus: RemedialStatusSchema,
   RemedialMineItem: RemedialMineItemSchema,
   RemedialMineResponse: RemedialMineResponseSchema,
@@ -83,6 +91,48 @@ export function registerMissionsPaths(registry: OpenAPIRegistry): void {
     description:
       'Any signed-in user (no role check). The M10 missions whose mission date is today (Malaysia day) and whose stored recipients include the caller, oldest first, with the caller\'s status from practice sessions linked by missionId (completed beats in progress, none gives new). Empty list when none. Single page.',
     responses: { 200: json(MissionTodayResponseSchema, 'Missions of today.'), 401: unauthorized },
+  })
+
+  registry.registerPath({
+    method: 'get',
+    path: '/guru/missions',
+    tags: ['missions'],
+    summary: 'Misi Harian of the signed-in teacher (API-GUR-11)',
+    description: 'Teacher or admin. Own missions plus Global (platform) missions (global = true), date descending then created descending. completedCount counts pupils of the teacher\'s classes.',
+    responses: { 200: json(TeacherMissionListResponseSchema, 'Missions.'), 401: unauthorized, 403: teacherOnly },
+  })
+
+  registry.registerPath({
+    method: 'post',
+    path: '/guru/missions',
+    tags: ['missions'],
+    summary: 'Create a mission (API-GUR-11)',
+    description:
+      'Teacher or admin. Recipients are a snapshot at creation (classroomId null = all pupils of all own active classes). 422 VALIDATION_ERROR with fields for the body check and for a date before today (MYT); 422 VALIDATION_ERROR without fields and message "Had 5 misi sehari telah dicapai." when the teacher already has 5 missions on that MYT day. UI toast "Misi dicipta.".',
+    request: { headers: [csrf], body: body(TeacherMissionCreateSchema) },
+    responses: {
+      201: json(TeacherMissionResponseSchema, 'The created mission.'),
+      401: unauthorized,
+      403: teacherOnly,
+      422: err('VALIDATION_ERROR: fields per invalid input, or the daily cap refusal (no fields).'),
+      429: rateLimited,
+    },
+  })
+
+  registry.registerPath({
+    method: 'delete',
+    path: '/guru/missions/{id}',
+    tags: ['missions'],
+    summary: 'Delete an own mission (API-GUR-11)',
+    description: 'Teacher or admin. Rewards already paid stay. A Global mission answers 403 "Misi global tidak boleh dipadam."; another teacher\'s or an unknown id answers 404.',
+    request: { headers: [csrf], params: idParam },
+    responses: {
+      200: json(envelopeOf(z.object({ deleted: z.literal(1) })), '{ data: { deleted: 1 } }.'),
+      401: unauthorized,
+      403: err('FORBIDDEN "Misi global tidak boleh dipadam."; or the generic role text; or CSRF_INVALID.'),
+      404: err('NOT_FOUND: unknown id or not the caller\'s mission.'),
+      429: rateLimited,
+    },
   })
 
   registry.registerPath({

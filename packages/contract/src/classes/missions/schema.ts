@@ -1,5 +1,5 @@
 import { z } from '../../zod'
-import { listEnvelopeOf } from '../../common/envelope'
+import { envelopeOf, listEnvelopeOf } from '../../common/envelope'
 import { IdSchema } from '../../common/ids'
 import { TimestampSchema } from '../../common/time'
 
@@ -51,7 +51,7 @@ const accuracy = z.number().meta({ description: 'Percent with 1 decimal; not bou
 
 // --- Missions (student read, M05 #21) ------------------------------------------------------------
 
-export const MISSION_TYPES = ['latih_tubi', 'tracking_a', 'youtube'] as const
+export const MISSION_TYPES = ['latih_tubi', 'tracking_a', 'youtube', 'harian'] as const
 export const MissionTypeSchema = z.enum(MISSION_TYPES).meta({ id: 'MissionType' })
 
 /** INFERRED labels of the mission types (M10 S12), as `MISSION_TYPE_LABELS` of the mock. */
@@ -59,6 +59,7 @@ export const MISSION_TYPE_LABELS: Readonly<Record<(typeof MISSION_TYPES)[number]
   latih_tubi: 'Latih Tubi SPM',
   tracking_a: 'Tracking A',
   youtube: 'Soalan & Rujukan',
+  harian: 'Misi Harian',
 }
 
 /** Q-SESS-LINK status: a completed session beats an in-progress one; none gives `new`. */
@@ -80,6 +81,8 @@ export const MissionTodaySchema = z
     resourceUrl: z.string().nullable(),
     resourceNote: z.string().nullable(),
     status: MissionStatusSchema,
+    description: z.string().nullable().optional().meta({ description: 'S6-T07 additive: mission description (null when none).' }),
+    rewardCoins: z.number().int().optional().meta({ description: 'S6-T07 additive: coins paid once at the target.' }),
   })
   .meta({ id: 'MissionToday' })
 export type MissionToday = z.infer<typeof MissionTodaySchema>
@@ -288,3 +291,80 @@ export const RemedialTestNotFoundSchema = typedError('NOT_FOUND', [REMEDIAL_MESS
 export const RemedialTestNotActiveSchema = typedError('CONFLICT', [REMEDIAL_MESSAGES.testNotActive]).meta({
   id: 'RemedialTestNotActive',
 })
+
+// --- Misi Harian, teacher side (API-GUR-11, S6-T07) -----------------------------------------------
+
+export const MISSION_REWARD_MAX = 100
+export const MISSION_TARGET_MAX = 1000
+export const MISSION_DAILY_CAP = 5
+
+export const MISSION_MESSAGES = {
+  titleRequired: 'Sila isi tajuk misi.',
+  titleTooLong: 'Tajuk misi tidak boleh melebihi 255 aksara.',
+  descriptionTooLong: 'Keterangan tidak boleh melebihi 500 aksara.',
+  target: 'Sasaran soalan mesti antara 1 dan 1000.',
+  reward: 'Ganjaran syiling mesti antara 0 dan 100.',
+  dateInvalid: 'Tarikh tidak sah.',
+  datePast: 'Tarikh tidak boleh lebih awal daripada hari ini.',
+  subjectRequired: 'Sila pilih subjek.',
+  capReached: 'Had 5 misi sehari telah dicapai.',
+  globalNotDeletable: 'Misi global tidak boleh dipadam.',
+  created: 'Misi dicipta.',
+} as const
+
+const missionDate = z
+  .string({ error: MISSION_MESSAGES.dateInvalid })
+  .regex(/^\d{4}-\d{2}-\d{2}$/, MISSION_MESSAGES.dateInvalid)
+  .refine((v) => {
+    const d = new Date(`${v}T00:00:00Z`)
+    return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v
+  }, MISSION_MESSAGES.dateInvalid)
+
+/** One mission of `GET /guru/missions` (own and Global). */
+export const TeacherMissionSchema = z
+  .object({
+    id: IdSchema,
+    title: z.string(),
+    description: z.string().nullable(),
+    targetQuestions: z.number().int(),
+    rewardCoins: z.number().int(),
+    date: missionDate,
+    classroomId: IdSchema.nullable(),
+    subjectId: IdSchema.nullable(),
+    subjectName: z.string().nullable(),
+    global: z.boolean(),
+    completedCount: z.number().int().min(0).meta({ description: "Pupils of the teacher's classes who completed it." }),
+  })
+  .meta({ id: 'TeacherMission' })
+export type TeacherMission = z.infer<typeof TeacherMissionSchema>
+
+/** `POST /guru/missions` body. The "not before today" rule is server-side (MYT clock). */
+export const TeacherMissionCreateSchema = z
+  .object({
+    title: z
+      .string({ error: MISSION_MESSAGES.titleRequired })
+      .trim()
+      .min(1, MISSION_MESSAGES.titleRequired)
+      .max(255, MISSION_MESSAGES.titleTooLong),
+    description: z.string().max(500, MISSION_MESSAGES.descriptionTooLong).nullable().optional(),
+    targetQuestions: z
+      .number({ error: MISSION_MESSAGES.target })
+      .int(MISSION_MESSAGES.target)
+      .min(1, MISSION_MESSAGES.target)
+      .max(MISSION_TARGET_MAX, MISSION_MESSAGES.target)
+      .default(10),
+    rewardCoins: z
+      .number({ error: MISSION_MESSAGES.reward })
+      .int(MISSION_MESSAGES.reward)
+      .min(0, MISSION_MESSAGES.reward)
+      .max(MISSION_REWARD_MAX, MISSION_MESSAGES.reward)
+      .default(10),
+    date: missionDate,
+    classroomId: IdSchema.nullable().optional().meta({ description: 'null or absent = all own classes.' }),
+    subjectId: z.string({ error: MISSION_MESSAGES.subjectRequired }).min(1, MISSION_MESSAGES.subjectRequired).max(64),
+  })
+  .meta({ id: 'TeacherMissionCreate' })
+export type TeacherMissionCreate = z.infer<typeof TeacherMissionCreateSchema>
+
+export const TeacherMissionListResponseSchema = envelopeOf(z.array(TeacherMissionSchema)).meta({ id: 'TeacherMissionListResponse' })
+export const TeacherMissionResponseSchema = envelopeOf(TeacherMissionSchema).meta({ id: 'TeacherMissionResponse' })
