@@ -4,10 +4,11 @@
  * (rows kept, session `abandoned`, nothing paid) and the per-paper check [PROPOSED]. Real wiring, rows read from the database.
  */
 import { BijakKuizResultSchema, BijakKuizSessionSchema, type BijakKuizItem } from '@pp/contract'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { AttemptSweeper } from '../../src/modules/bijak/attempts/attempt-sweeper'
-import { paperKuizAttemptId } from '../../src/modules/bijak/kuiz/kuiz.service'
+import { KuizService, paperKuizAttemptId } from '../../src/modules/bijak/kuiz/kuiz.service'
+import { AnswerLogPort } from '../../src/modules/practice'
 import { bootIntegrationApp, type Client, type IntegrationApp, loginAs, START, STUDENT } from '../bijak-integration/helpers'
 
 process.env.THROTTLE_BIJAK_KUIZ_START_PER_MINUTE = '100'
@@ -146,6 +147,47 @@ describe('Kuiz idle sweep (API-BIJAK-06, P-5)', () => {
     const res = await me.post(`/api/bijak/kuiz/sessions/${s.sessionId}/finish`, {})
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     expect(BijakKuizResultSchema.parse(res.body.data)).toMatchObject({ score: 1, answered: 2 })
+  })
+})
+
+describe('atomicity and races', () => {
+  it('a failing AnswerLogPort.record on finish rolls everything back: the session stays open, no rows, no pay; a retry then succeeds', async () => {
+    const student = await loginAs(t, STUDENT) // earlier cases moved the clock past the first session
+    const s = await startQuiz(student)
+    await check(student, s, 1, 1)
+    const spy = vi.spyOn(t.app.get(AnswerLogPort), 'record').mockRejectedValue(new Error('port down'))
+    const res = await student.post(`/api/bijak/kuiz/sessions/${s.sessionId}/finish`, {})
+    spy.mockRestore()
+    expect(res.status).toBe(500)
+    expect((await session(s.sessionId)).status).toBe('in_progress')
+    expect(await answerRows(s.sessionId)).toHaveLength(0)
+    expect(Number((await t.db.query(`select count(*) n from practice_checks where session_id = $1::uuid`, [s.sessionId]))[0]!.n)).toBe(2)
+    expect(await paid(s.sessionId)).toEqual({ credits: 0, ledger: 0 })
+    expect((await student.post(`/api/bijak/kuiz/sessions/${s.sessionId}/finish`, {})).status).toBe(200)
+    expect(await answerRows(s.sessionId)).toHaveLength(2)
+  })
+
+  it('closeIdle racing finish on one idle session: exactly one wins, the sweep side pays nothing, the rows are consistent', async () => {
+    const s = await startQuiz(await loginAs(t, STUDENT), 'BM', 5)
+    await check(await loginAs(t, STUDENT), s, 1, 1)
+    t.clock.advance(3 * 3600_000)
+    const me = await loginAs(t, STUDENT)
+    const [fin, swept] = await Promise.all([me.post(`/api/bijak/kuiz/sessions/${s.sessionId}/finish`, {}), t.app.get(KuizService).closeIdle(s.sessionId, me.userId)])
+    expect(fin.status, JSON.stringify(fin.body)).toBe(200)
+    const state = await session(s.sessionId)
+    const rows = await answerRows(s.sessionId)
+    expect(rows.map((r) => [r.question_id, r.mode, r.is_correct])).toEqual([
+      [s.items[0]!.id, 'kuiz', true],
+      [s.items[1]!.id, 'kuiz', false],
+    ])
+    if (swept) {
+      expect(state.status).toBe('abandoned')
+      expect(await paid(s.sessionId)).toEqual({ credits: 0, ledger: 0 })
+      expect(state.coins_earned + state.points_earned).toBe(0)
+    } else {
+      expect(state.status).toBe('completed')
+      expect((await paid(s.sessionId)).credits).toBe(1)
+    }
   })
 })
 

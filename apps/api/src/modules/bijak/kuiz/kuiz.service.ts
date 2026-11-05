@@ -1,6 +1,6 @@
 import { createHash, randomInt } from 'node:crypto'
 
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 import {
   normaliseKuizCount,
   BijakKuizCheckResultSchema,
@@ -73,6 +73,8 @@ const KUIZ_MODE = 'latih_tubi' as const
 export const KUIZ_IDLE_MS = 2 * 60 * 60 * 1000
 /** Sessions looked at per pass of the sweep. */
 export const KUIZ_SWEEP_BATCH = 200
+/** The most batches read in one pass of the sweep. */
+const KUIZ_SWEEP_ROUNDS = 20
 
 /**
  * Simulasi Kuiz (R1-B16). The random quiz is a practice session written through `PracticeRepository` (U8), so Soalan Aku
@@ -84,6 +86,8 @@ export const KUIZ_SWEEP_BATCH = 200
  */
 @Injectable()
 export class KuizService {
+  private readonly logger = new Logger(KuizService.name)
+
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(CLOCK) private readonly clock: Clock,
@@ -300,14 +304,25 @@ export class KuizService {
 
   // --- idle sweep (S3-T04 R2) ----------------------------------------------------------------------
 
-  /** The scheduled sweep for kuiz sessions: closes every one idle for 2 h (a failing session is skipped). Returns how many were closed. */
+  /**
+   * The scheduled sweep for kuiz sessions: closes every one idle for 2 h. A session that fails (logged with its id) or is not closed
+   * is skipped for the rest of the run and the next batch is read past it, so one permanently failing session never starves the others.
+   * Returns how many were closed.
+   */
   async sweepIdle(now: Date = this.clock.now()): Promise<number> {
+    const cutoff = new Date(now.getTime() - KUIZ_IDLE_MS)
+    const skipped = new Set<string>()
     let closed = 0
-    for (const s of await this.practice.idleKuizSessions(new Date(now.getTime() - KUIZ_IDLE_MS), KUIZ_SWEEP_BATCH)) {
-      try {
-        if (await this.closeIdle(s.id, s.userId, now)) closed += 1
-      } catch {
-        // The next pass retries it.
+    for (let round = 0; round < KUIZ_SWEEP_ROUNDS; round++) {
+      const batch = (await this.practice.idleKuizSessions(cutoff, KUIZ_SWEEP_BATCH + skipped.size)).filter((s) => !skipped.has(s.id)).slice(0, KUIZ_SWEEP_BATCH)
+      if (batch.length === 0) break
+      for (const s of batch) {
+        skipped.add(s.id)
+        try {
+          if (await this.closeIdle(s.id, s.userId, now)) closed += 1
+        } catch (err) {
+          this.logger.warn(`Could not close idle kuiz session ${s.id}: ${err instanceof Error ? err.message : String(err)}`)
+        }
       }
     }
     return closed
@@ -458,6 +473,7 @@ export class KuizService {
     // V2: the option must belong to the part it claims.
     if (!leaf.options.some((o) => o.label === req.optionId)) throw invalidAnswer('optionId')
     const correct = req.optionId === leaf.key.correct
+    // One-writer rule: a failed row write fails this request (no swallowing).
     // [PROPOSED] (S3-T04 R4): a paper kuiz has no session, so its rows hang on a deterministic attempt uuid of (pupil, paper):
     // one `kuiz` row per question, a re-check updates it (DM-44 key). No new table, no S5 file.
     await this.answerLog.record({

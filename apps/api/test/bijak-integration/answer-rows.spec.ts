@@ -108,4 +108,25 @@ describe('Bijak sitting answer rows (D-A1)', () => {
     expect(after).toHaveLength(2)
     expect(after.every((r) => r.is_correct && r.mode === 'simulasi')).toBe(true)
   })
+
+  it('a self-mark writes a pending subjective part with marks_awarded null, then updates the same row (real port)', async () => {
+    const me = await loginAs(t, STUDENT) // the sweeper case moved the clock
+    const list = ((await me.get('/api/bijak/papers')).body.data as unknown[]).map((p) => BijakPaperSummarySchema.parse(p))
+    const sains = list.find((p) => p.code === '4541/2')!
+    const id = ((await me.post('/api/bijak/attempts', { paperId: sains.id, mode: 'exam' })).body.data as { attemptId: string }).attemptId
+    const part = 'sn2-sel-q2-b'
+    const sub = await me.post(`/api/bijak/attempts/${id}/submit`, { idempotencyKey: 'sm-1', changes: [{ partId: part, answer: { text: 'bahan terlarut dalam sel itu' }, rev: 1, savedAt: t.clock.now().toISOString() }] })
+    expect(sub.status, JSON.stringify(sub.body)).toBe(200)
+    const pick = async () => (await rows(id)).filter((r) => r.part_ref === part)
+    const before = await pick()
+    expect(before).toHaveLength(1)
+    expect(before[0]).toMatchObject({ mode: 'simulasi', marks_awarded: null, is_correct: false, marks_max: '2.00' })
+    const total = (await rows(id)).length
+    const mark = await me.post(`/api/bijak/attempts/${id}/self-mark`, { partId: part, mark: 2 })
+    expect(mark.status, JSON.stringify(mark.body)).toBe(200)
+    const after = await pick()
+    expect(after).toHaveLength(1)
+    expect(after[0]).toMatchObject({ marks_awarded: '2.00', is_correct: true })
+    expect((await rows(id)).length).toBe(total)
+  })
 })
