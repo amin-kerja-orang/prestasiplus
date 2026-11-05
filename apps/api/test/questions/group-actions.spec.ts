@@ -424,7 +424,6 @@ describe('stimulus group actions (admin, real database)', () => {
       expect((list.body.data as { id: string }[]).some((g) => g.id === copy.id)).toBe(false)
       const add = await admin.post(`/api/stimulus-groups/${copy.id}/members`, { questionId: await draft() })
       expect(add.status).toBe(409)
-      expect((await admin.post(`/api/stimulus-groups/${copy.id}/publish`)).status).toBe(409)
       expect((await admin.post(`/api/stimulus-groups/${copy.id}/edit-as-draft`)).status).toBe(409)
     })
 

@@ -627,6 +627,56 @@ export class StimuliRepository {
     return rows.map((r, i) => ({ id: idToString(r.id), position: i + 1, status: r.status as 'draft' | 'review' | 'approved' | 'archived' }))
   }
 
+  /** Latest-version status of the given questions in the order asked; an id that is not a question is left out. */
+  async statusesOf(ids: readonly string[]): Promise<{ id: string; position: number; status: 'draft' | 'review' | 'approved' | 'archived' }[]> {
+    const keys = ids.map(bi).filter((k): k is bigint => k !== null)
+    if (keys.length === 0) return []
+    const rows = await this.db.$queryRaw<{ id: bigint; status: string }[]>`
+      SELECT q.id, lv.status FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
+       WHERE q.id IN (${Prisma.join(keys)})`
+    const byId = new Map(rows.map((r) => [idToString(r.id), r.status as 'draft' | 'review' | 'approved' | 'archived']))
+    return ids.flatMap((id) => {
+      const status = byId.get(id)
+      return status === undefined ? [] : [{ id, position: 0, status }]
+    }).map((m, i) => ({ ...m, position: i + 1 }))
+  }
+
+  /** The group each of the questions sits in now (questions in no group are left out). */
+  async groupsOfQuestions(ids: readonly string[]): Promise<Map<string, string>> {
+    const keys = ids.map(bi).filter((k): k is bigint => k !== null)
+    const out = new Map<string, string>()
+    if (keys.length === 0) return out
+    const rows = await this.db.$queryRaw<{ id: bigint; group_id: bigint }[]>`SELECT id, group_id FROM questions WHERE id IN (${Prisma.join(keys)}) AND group_id IS NOT NULL`
+    for (const r of rows) out.set(idToString(r.id), idToString(r.group_id))
+    return out
+  }
+
+  /** Replaces the ordered question ids staged in a draft copy. */
+  async setDraftMembers(draftId: string, ids: readonly string[]): Promise<void> {
+    await this.db.stimulusGroup.update({ where: { id: BigInt(draftId) }, data: { draftMembers: [...ids], updatedAt: new Date() } })
+  }
+
+  /**
+   * The swap (S1-T01 part 3b): the live group takes the label, scope, option bank and stimuli of its draft copy. The copy's stimulus rows are
+   * linked to the live group (the live group id never changes); the live group's old stimulus rows are kept, only unlinked (D113: a row a
+   * published version or paper may reference is immutable and never deleted). The copy's option rows move to the live group.
+   */
+  async replaceFromCopy(liveId: string, draftId: string): Promise<void> {
+    const live = BigInt(liveId)
+    const draft = BigInt(draftId)
+    const copy = await this.db.stimulusGroup.findUniqueOrThrow({
+      where: { id: draft },
+      select: { label: true, scope: true, subjectId: true, educationLevelId: true, kertas: true, stimuli: { orderBy: { position: 'asc' }, select: { stimulusId: true } } },
+    })
+    await this.db.stimulusGroup.update({
+      where: { id: live },
+      data: { label: copy.label, scope: copy.scope, subjectId: copy.subjectId, educationLevelId: copy.educationLevelId, kertas: copy.kertas, updatedAt: new Date() },
+    })
+    await this.replaceGroupStimuli(liveId, copy.stimuli.map((x) => x.stimulusId))
+    await this.db.stimulusGroupOption.deleteMany({ where: { groupId: live } })
+    await this.db.stimulusGroupOption.updateMany({ where: { groupId: draft }, data: { groupId: live } })
+  }
+
   /** The id of the open draft copy of a group, or null. */
   async draftCopyOf(groupId: string): Promise<string | null> {
     const key = bi(groupId)
