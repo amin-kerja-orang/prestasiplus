@@ -116,20 +116,20 @@ const deltas = computed(() => {
           <div
             v-for="d in deltas"
             :key="d.key"
-            class="flex min-w-0 flex-col items-center gap-1"
+            :class="[
+              'flex min-w-0 flex-col items-center gap-1',
+              d.tone === 'up' ? 'text-success' : d.tone === 'down' ? 'text-error' : '',
+            ]"
             :data-testid="`kirk-delta-${d.key}`"
             :data-tone="d.tone"
           >
             <UIcon
               v-if="d.tone !== 'none'"
               :name="d.tone === 'up' ? 'i-ph-arrow-up' : 'i-ph-arrow-down'"
-              :class="['size-5', d.tone === 'up' ? 'text-success' : 'text-error']"
+              class="size-5"
             />
             <p
-              :class="[
-                'tabular text-subheading',
-                d.tone === 'none' ? 'text-muted' : d.tone === 'up' ? 'text-success' : 'text-error',
-              ]"
+              :class="['tabular text-subheading', d.tone === 'none' ? 'text-muted' : '']"
               data-testid="kirk-delta-value"
             >
               {{ d.text }}
