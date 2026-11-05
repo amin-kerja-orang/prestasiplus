@@ -71,9 +71,8 @@ type WalkRole = 'student' | 'guru' | 'adminSekolah'
  */
 const EXPECTED_RED: Record<WalkRole, Row[]> = {
   student: [
-    // The pupil /prestasi row (S10-T01) was removed once #544 made /prestasi the pupil's own Prestasi 360 page.
-    // The item is visible, but the m08 route currently answers 403 (Akses Ditolak) for the pupil until S10-T09 / S10-T03 land.
-    { id: 'headcount', route: '/headcount', ownerCard: 'S10-T09' },
+    // The pupil /prestasi row (S10-T01, #544) and the /headcount row (S10-T09) were removed when their pages landed.
+    // The item is visible, but the m08 route currently answers 403 (Akses Ditolak) for the pupil until S10-T03 lands.
     { id: 'analisa-item', route: '/analisa-item', ownerCard: 'S10-T03' },
   ],
   // Guru: the Laporan Mingguan row (S6-T01) was removed after its first CI run showed it passing.
