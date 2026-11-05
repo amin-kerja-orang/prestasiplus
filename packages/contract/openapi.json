@@ -81737,7 +81737,7 @@
           "question-reports"
         ],
         "summary": "File a report on a question (Lapor Soalan)",
-        "description": "Any signed-in user. Creates a `pending` report. The response is RAW (no data envelope). No duplicate-open-report check (as the mock): a second report by the same user for the same question is accepted. Whether and when the report deactivates the question is Open question 1 of the card (mock: an MCQ at the first report, a structured question at the third open report).",
+        "description": "Student or teacher (active role). Creates a `pending` report; the response is RAW (no data envelope). One report per reporter per question version (S5-T06, FR-MUR-54-6): a second one answers 409 and changes nothing. A pupil must have been served the question (FR-MUR-54-5): an own Bijak attempt that holds it (`attemptId`), an own practice session that served it (`quizSessionId`), or a live structured question; otherwise 403 (an unknown question answers the same, so the status is not an existence oracle). `reporterRole` is set from the session role (student = murid, teacher = guru), never from the body. A report never deactivates the question (REQ-B-031, D98). At most QUESTION_REPORT_DAILY_CAP new reports per reporter per Malaysia day.",
         "parameters": [
           {
             "schema": {
@@ -81783,7 +81783,7 @@
             }
           },
           "403": {
-            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token); FORBIDDEN for a role other than student or teacher; FORBIDDEN \"Anda hanya boleh melapor soalan yang dipaparkan kepada anda.\" when the pupil was never served the question (no proof, an unknown or someone else's session, a session that did not serve it, a structured question outside the pupil's levels).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81793,7 +81793,17 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (the question does not exist).",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (the pupil was served the question by an own proof, but the question is no longer live).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Anda sudah melaporkan soalan ini.\" when the reporter already reported this question version (checked under the reporter lock, before the daily cap).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81804,6 +81814,16 @@
           },
           "422": {
             "description": "VALIDATION_ERROR with fields: questionType \"Jenis soalan tidak sah.\"; questionId \"Sila pilih soalan.\"; reasons \"Sila pilih sekurang-kurangnya satu sebab laporan.\" or \"Sebab laporan tidak sah.\"; source \"Sumber laporan tidak sah.\"; comment \"Komen tidak boleh melebihi 500 aksara.\"; quizSessionId and roomCode \"Rujukan sesi atau bilik tidak sah.\". Top-level message is the first field message plus \" (and N more error(s))\" when several.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Anda telah mencapai had 20 laporan sehari. Sila cuba lagi esok.\" with retryAfter, at the daily cap.",
             "content": {
               "application/json": {
                 "schema": {
