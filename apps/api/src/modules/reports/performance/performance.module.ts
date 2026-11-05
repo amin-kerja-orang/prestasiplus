@@ -11,6 +11,7 @@ import { HeadcountFactsService } from './headcount/headcount-facts.service'
 import { HeadcountController } from './headcount/headcount.controllers'
 import { HeadcountRepository } from './headcount/headcount.repository'
 import { HeadcountService } from './headcount/headcount.service'
+import { GuruWeeklyReportController } from './http/guru-weekly-report.controller'
 import { CtxFactory } from './http/request'
 import { AnalyticsController, ItemAnalysisController, PerformanceController } from './http/performance.controllers'
 import { PublicStudentController, SocialController } from './http/social.controllers'
@@ -41,7 +42,7 @@ import { TimelineService } from './timeline/timeline.service'
  */
 @Module({
   imports: [AuditModule, ThrottleModule, UsersModule, SchoolsModule, CurriculumModule, FilesModule],
-  controllers: [AnalyticsController, PerformanceController, ItemAnalysisController, SocialController, PublicStudentController, HeadcountController, TimelineController],
+  controllers: [AnalyticsController, PerformanceController, ItemAnalysisController, SocialController, GuruWeeklyReportController, PublicStudentController, HeadcountController, TimelineController],
   providers: [
     PerformancePorts,
     { provide: DIRECTORY_PORT, useClass: UsersDirectoryAdapter },

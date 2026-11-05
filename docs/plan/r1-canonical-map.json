@@ -1993,7 +1993,7 @@
       "name": "m11.laporan-mingguan-kelas",
       "status": "canonical",
       "sector": "S6",
-      "component": "src/pages/PrototypeUnavailablePage.vue",
+      "component": "src/pages/NotFoundPage.vue",
       "file": "src/modules/m11-teacher-analytics/routes/laporan-mingguan.ts",
       "approved_by_card": null
     },
@@ -15960,6 +15960,16 @@
       "status": "canonical",
       "sector": "S10",
       "file": "apps/api/src/modules/reports/performance/headcount/headcount.controllers.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/guru/weekly-report",
+      "method": "GET",
+      "path": "/api/guru/weekly-report",
+      "api_id": "API-GUR-21",
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/http/guru-weekly-report.controller.ts",
       "approved_by_card": null
     },
     {
