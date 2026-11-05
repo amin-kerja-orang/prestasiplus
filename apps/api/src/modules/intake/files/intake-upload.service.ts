@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 
 import { Inject, Injectable } from '@nestjs/common'
-import { INTAKE_FILE_MESSAGES, type IntakeUploadResult } from '@pp/contract'
+import { INTAKE_DAILY_PAGE_QUOTA_CODE, INTAKE_FILE_MESSAGES, type IntakeUploadResult } from '@pp/contract'
 
 import { AUDIT_ACTIONS } from '../../../common/audit'
 import { AuditService } from '../../../common/audit/audit.service'
@@ -238,7 +238,7 @@ export class IntakeUploadService {
       })
       const adding = checked.reduce((n, c) => n + c.pages, 0)
       if ((used._sum.pageCount ?? 0) + adding > this.config.dailyPageQuota) {
-        throw ApiError.of('RATE_LIMITED', { message: INTAKE_FILE_MESSAGES.quota, retryAfter: 3600 })
+        throw new ApiError({ code: INTAKE_DAILY_PAGE_QUOTA_CODE, status: 429, message: INTAKE_FILE_MESSAGES.dailyPageQuota(this.config.dailyPageQuota), retryAfter: 3600 })
       }
     }
   }

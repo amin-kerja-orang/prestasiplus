@@ -81178,6 +81178,9 @@
           },
           "counts": {
             "$ref": "#/components/schemas/IntakeItemStateCounts"
+          },
+          "kirimanCounts": {
+            "$ref": "#/components/schemas/IntakeKirimanCounts"
           }
         },
         "required": [
@@ -81189,6 +81192,40 @@
         ],
         "additionalProperties": {},
         "description": "[PROPOSED] Standard list meta plus per-state counts computed from the same query (no stored counts)."
+      },
+      "IntakeKirimanCounts": {
+        "type": "object",
+        "properties": {
+          "jumlah": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pending": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "processing": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "selesai": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "ditolak": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "jumlah",
+          "pending",
+          "processing",
+          "selesai",
+          "ditolak"
+        ],
+        "additionalProperties": false,
+        "description": "S1-T08 (FR-ADM-Q12.1): Kiriman Guru tile counts. Each count uses the same rule as its `kirimanStatus` filter. `processing` and `jumlah` also include in-progress guru batches (submitted, processing) that have no items yet."
       },
       "IntakeItemListResponse": {
         "type": "object",
@@ -138174,7 +138211,7 @@
           "intake-files"
         ],
         "summary": "Upload one or more PDF files to a submission",
-        "description": "Card BE-37. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. multipart/form-data, parts named `files` (PDF only). The type is decided from the content (magic bytes), never the name. All-or-nothing: if any file is refused nothing is stored (422, `fields.files`, one BM message). Refusals: \"Jenis fail tidak disokong. Gunakan PDF.\", \"Fail melebihi had 20 MB.\" (INTAKE_MAX_FILE_MB), \"Fail melebihi had 200 halaman.\" (OCR_MAX_PAGES), \"Fail PDF dilindungi kata laluan dan tidak boleh dibaca.\", \"Fail PDF rosak atau tidak boleh dibaca.\", \"Fail PDF terlalu kompleks untuk diproses.\", \"Fail ini telah diimport dalam kelompok lain.\" (same hash as a file in another batch that is not failed or cancelled), \"Maksimum 10 fail bagi setiap kelompok.\" [PROPOSED copy]. A batch that no longer accepts files (cancelled, failed, or already processed) is 409 CONFLICT \"Kelompok ini tidak lagi menerima fail.\". Over the daily page quota (INTAKE_DAILY_PAGE_QUOTA; Admin Pusat exempt) is 429 RATE_LIMITED \"Had kuota muat naik harian telah dicapai. Cuba lagi esok.\". On success processing is queued and the batch becomes `processing`; the response lists the stored files.",
+        "description": "Card BE-37. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. multipart/form-data, parts named `files` (PDF only). The type is decided from the content (magic bytes), never the name. All-or-nothing: if any file is refused nothing is stored (422, `fields.files`, one BM message). Refusals: \"Jenis fail tidak disokong. Gunakan PDF.\", \"Fail melebihi had 20 MB.\" (INTAKE_MAX_FILE_MB), \"Fail melebihi had 200 halaman.\" (OCR_MAX_PAGES), \"Fail PDF dilindungi kata laluan dan tidak boleh dibaca.\", \"Fail PDF rosak atau tidak boleh dibaca.\", \"Fail PDF terlalu kompleks untuk diproses.\", \"Fail ini telah diimport dalam kelompok lain.\" (same hash as a file in another batch that is not failed or cancelled), \"Maksimum 10 fail bagi setiap kelompok.\" [PROPOSED copy]. A batch that no longer accepts files (cancelled, failed, or already processed) is 409 CONFLICT \"Kelompok ini tidak lagi menerima fail.\". Over the daily page quota (INTAKE_DAILY_PAGE_QUOTA; Admin Pusat exempt) is 429 INTAKE_DAILY_PAGE_QUOTA (ERR-QUOTA-05) \"Kuota halaman harian (500) telah dicapai. Cuba lagi esok.\" (500 = default limit). On success processing is queued and the batch becomes `processing`; the response lists the stored files.",
         "parameters": [
           {
             "schema": {
