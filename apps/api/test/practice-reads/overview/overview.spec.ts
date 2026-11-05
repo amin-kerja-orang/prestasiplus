@@ -402,6 +402,10 @@ describe('#7 / #8 chapter mode (S4, S5; BR-15, BR-16)', () => {
     expect(detail.levels.map((l) => l.count)).toEqual([0, 0, 0, 2, 2]) // T1..T3 are offered since S4-T06 and listed with zero
     expect(tile?.questionCount).toBe(4)
     expect(tile?.questionCount).toBe(detail.levels.reduce((n, l) => n + l.count, 0))
+    // S5-T02 (FR-MUR-9-5): the tile lists the levels that have chapters, each with its own counts; they sum to the tile.
+    expect(tile?.levels.map((l) => [l.code, l.chapterCount, l.questionCount])).toEqual([['T4', 2, 2], ['T5', 1, 2]])
+    expect(tile?.levels.reduce((n, l) => n + l.questionCount, 0)).toBe(tile?.questionCount)
+    expect(tile?.levels.reduce((n, l) => n + l.chapterCount, 0)).toBe(tile?.chapterCount)
   })
 
   it('#8 every chapter is open whatever the caller answered (REQ-C-021, D98: no progressive lock); the figures still follow the answers', async () => {

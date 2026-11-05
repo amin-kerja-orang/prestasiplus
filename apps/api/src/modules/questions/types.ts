@@ -455,5 +455,13 @@ export interface TextbookRef {
   hingga?: number
 }
 
+/**
+ * S1-T09a (D4, DM-69): the stored `question_versions.type` values once the DB check is widened (a later S1-T09a part): the 8 above plus
+ * `mcq_multi`, `true_false` and `fill_blank`. The API names and the mapping are `QUESTION_TYPES` / `questionTypeToDb` /
+ * `questionTypeFromDb` in `@pp/contract`. The DB is not changed by this part.
+ */
+export const STORE_QUESTION_TYPES_V3 = [...STORE_QUESTION_TYPES, 'mcq_multi', 'true_false', 'fill_blank'] as const
+export type StoreQuestionTypeV3 = (typeof STORE_QUESTION_TYPES_V3)[number]
+
 /** Teacher structured detail source: the question view of the LIVE version plus its stimulus group (no creator, no DSKP chain). */
 export type GuruStructuredRecord = QuestionView & { stimulusGroup: StimulusGroupRecord | null }

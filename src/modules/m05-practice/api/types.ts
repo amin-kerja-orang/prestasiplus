@@ -183,6 +183,8 @@ export interface ChapterSubject {
   color: string
   chapterCount: number
   questionCount: number
+  /** Levels with chapters and their own counts (FR-MUR-9-5); ids are numbers in the mock, strings on the real API. */
+  levels: { id: EntityId; code: string; name: string; chapterCount: number; questionCount: number }[]
 }
 
 export interface ChapterCard {
