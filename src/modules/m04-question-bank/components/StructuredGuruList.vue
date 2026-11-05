@@ -196,7 +196,12 @@ const showPager = computed(() => props.total > props.pageSize)
         <DsBadge v-if="row.original.subjectName" tone="neutral" :label="row.original.subjectName" />
       </template>
       <template #kbat-cell="{ row }">
-        <DsBadge tone="info" :label="row.original.kbat" data-testid="structured-kbat-pill" />
+        <DsBadge
+          v-if="row.original.kbat"
+          tone="info"
+          :label="row.original.kbat"
+          data-testid="structured-kbat-pill"
+        />
       </template>
       <template #status-cell="{ row }">
         <DsStatusBadge
@@ -206,10 +211,7 @@ const showPager = computed(() => props.total > props.pageSize)
         />
       </template>
       <template #actions-cell="{ row }">
-        <DsRowActions
-          :actions="rowActions(row.original.id, row.original.editable)"
-          :inline="2"
-        />
+        <DsRowActions :actions="rowActions(row.original.id, row.original.editable)" :inline="2" />
       </template>
       <template #card-actions="{ row }">
         <DsRowActions

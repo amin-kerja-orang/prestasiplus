@@ -9,7 +9,7 @@ import { z } from 'zod'
 import type { MockRuntime } from '@/mock/index'
 
 import type { GuruStructuredDetail, GuruStructuredRow } from '../../api/structured-guru'
-import { structured } from '../../mock'
+import { guruSubmissions, structured } from '../../mock'
 import { bootM04, callAs, GURU, PELAJAR, ADMIN, type Call } from './workflow-helpers'
 
 interface Page {
@@ -125,11 +125,7 @@ describe('GET /api/guru/structured-questions', () => {
   })
 
   it('status=approved is approved only; a teacher without submissions sees only questions', async () => {
-    const approved = await call<Page>(
-      'GET',
-      '/api/guru/structured-questions?status=approved',
-      GURU,
-    )
+    const approved = await call<Page>('GET', '/api/guru/structured-questions?status=approved', GURU)
     expect(new Set(approved.body.data.map((x) => x.status))).toEqual(new Set(['approved']))
     expect(approved.body.meta.totalItems).toBe(structured.visible({ pageSize: 1 }).total)
     const other = await call<Page>('GET', '/api/guru/structured-questions', ADMIN)
@@ -224,5 +220,60 @@ describe('GET /api/guru/structured-questions/:id', () => {
     // Another teacher (the admin account here) and an unknown g-id.
     expect((await call('GET', '/api/guru/structured-questions/g1', ADMIN)).status).toBe(404)
     expect((await call('GET', '/api/guru/structured-questions/g99', GURU)).status).toBe(404)
+  })
+})
+
+describe('review fixes (S6-T17)', () => {
+  it('m8: an unknown status is a 422 on status, like the BE enum', async () => {
+    const r = await call<{ error: { fields?: Record<string, string> } }>(
+      'GET',
+      '/api/guru/structured-questions?status=draft',
+      GURU,
+    )
+    expect(r.status).toBe(422)
+    expect(Object.keys(r.body.error.fields ?? {})).toEqual(['status'])
+  })
+
+  it('m4: a blob:mock/ stimulus image is not served as a URL; a real token is', async () => {
+    const base = {
+      subjectId: 1,
+      educationLevelId: 1,
+      chapterId: null,
+      spIds: [],
+      tp: null,
+      cognitiveLevel: null,
+      difficultyLevel: 3,
+      stimulus: 'Petikan.',
+      parts: [{ text: 'S?', marks: 2, scheme: 'J', cognitiveLevel: null }],
+    }
+    const blob = guruSubmissions.add(GURU, { ...base, stimulusImageId: 'blob:mock/r.png' }, 1)
+    const real = guruSubmissions.add(
+      GURU,
+      { ...base, stimulusImageId: 'AbCdEfGhIjKlMnOpQrStUv' },
+      2,
+    )
+    const a = await call<{ data: GuruStructuredDetail }>(
+      'GET',
+      `/api/guru/structured-questions/${blob.id}`,
+      GURU,
+    )
+    const b = await call<{ data: GuruStructuredDetail }>(
+      'GET',
+      `/api/guru/structured-questions/${real.id}`,
+      GURU,
+    )
+    expect(a.body.data.stimulusImage).toBeNull()
+    expect(b.body.data.stimulusImage).toBe('/api/files/AbCdEfGhIjKlMnOpQrStUv')
+    guruSubmissions.remove(blob)
+    guruSubmissions.remove(real)
+  })
+
+  it('m10: createdAt of a submission is the +08:00 stamp the BE emits (toMytTimestamp)', async () => {
+    const d = await call<{ data: GuruStructuredDetail }>(
+      'GET',
+      '/api/guru/structured-questions/g1',
+      GURU,
+    )
+    expect(d.body.data.createdAt).toMatch(/\+08:00$/)
   })
 })
