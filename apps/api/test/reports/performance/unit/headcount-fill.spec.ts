@@ -278,13 +278,10 @@ describe('Level detail: on track, below, at risk', () => {
     PerformanceLevelDetailSchema.parse(r)
   })
 
-  it('a teacher of other classes gets redacted ids and names; a school admin sees them', async () => {
+  it('a teacher of other classes gets no pupil at all (own classes only); a school admin sees them', async () => {
     const other = await w.school.level(ctxOf('teacher', 't9'), 't4')
-    expect(other.atRisk.map((a) => [a.userId, a.name])).toEqual([
-      ['0', 'Murid'],
-      ['0', 'Murid'],
-      ['0', 'Murid'],
-    ])
+    expect(other.atRisk).toEqual([])
+    expect(other.topStudents).toEqual([])
     expect((await w.school.level(schoolAdmin, 't4')).atRisk[0]).toMatchObject({ userId: '2', name: 'Murid Ujian 2' })
   })
 

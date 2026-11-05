@@ -147,8 +147,9 @@ describe('Cohort rules on the school totals (M1)', () => {
   })
 
   it('a teacher sees top students with a redacted id and name when they are not their own (minor 6)', async () => {
+    // A teacher of no class at the level sees no pupil at all (scoped to own classes).
     const r = await w.school.level(ctxOf('teacher', 't9'), 't4')
-    expect(r.topStudents[0]).toMatchObject({ userId: '0', name: 'Murid' })
+    expect(r.topStudents).toEqual([])
     const own = await w.school.level(ctxOf('teacher', 't2'), 't4')
     expect(own.topStudents[0]).toMatchObject({ userId: '1' })
   })
@@ -255,9 +256,9 @@ describe('Tingkatan', () => {
   describe('SW5-04: href only where the viewer can open the class dashboard', () => {
     const hrefs = async (ctx: ReturnType<typeof ctxOf>) => Object.fromEntries((await w.school.level(ctx, 't4')).classRows.map((c) => [c.classId, c.href]))
 
-    it('a teacher gets a link for own classes and null for another teacher class and the school class', async () => {
-      expect(await hrefs(ctxOf('teacher', 't1'))).toEqual({ '10': '/prestasi/kelas/10', '11': null, '12': null })
-      expect(await hrefs(ctxOf('teacher', 't2'))).toEqual({ '10': null, '11': '/prestasi/kelas/11', '12': null })
+    it('a teacher gets rows, and a link, for own classes only', async () => {
+      expect(await hrefs(ctxOf('teacher', 't1'))).toEqual({ '10': '/prestasi/kelas/10' })
+      expect(await hrefs(ctxOf('teacher', 't2'))).toEqual({ '11': '/prestasi/kelas/11' })
     })
 
     it('a school admin of the school and the platform admin keep a link for every classroom', async () => {
@@ -286,8 +287,33 @@ describe('Tingkatan', () => {
     expect((await few.school.level(schoolAdmin, 't4')).topStudents.map((t) => [t.userId, t.answered])).toEqual([['2', 6]])
     const own = await w.school.level(ctxOf('teacher', 't2'), 't4')
     expect(own.topStudents[0]?.name).toBe('Murid Ujian 1')
-    const other = await w.school.level(ctxOf('teacher', 't9'), 't4')
-    expect(other.topStudents[0]?.name).toBe('Murid')
+    expect((await w.school.level(ctxOf('teacher', 't9'), 't4')).topStudents).toEqual([])
+  })
+
+  it('a teacher sees no pupil, class row or figure of another teacher class at the level view (R1-GUR-4)', async () => {
+    // Own class 11 (t2): pupils 1 and 2, 3 of 5 right on the last two sittings. Class 10 (t1) and school class 12 belong to others.
+    const own = await w.school.level(ctxOf('teacher', 't2'), 't4')
+    expect(own.classRows.map((c) => c.classId)).toEqual(['11'])
+    expect(own).toMatchObject({ classes: 1, students: 2, subjects: 0 })
+    const ownIds = new Set(['1', '2'])
+    expect(own.topStudents.every((t) => ownIds.has(t.userId))).toBe(true)
+    expect(own.atRisk.every((t) => ownIds.has(t.userId))).toBe(true)
+    expect(own.atRisk.map((r) => r.className).filter((n) => n !== 'Kelas 11' && n !== '')).toEqual([])
+    // Figures equal the class-1-only figures the class row carries.
+    expect(own.accuracy).toBe(own.classRows[0]?.accuracy)
+    expect(own.sessions).toBe(own.classRows[0]?.sessions)
+    // The school admin still sees every class and pupil.
+    const all = await w.school.level(schoolAdmin, 't4')
+    expect(all.classRows.map((c) => c.classId).sort()).toEqual(['10', '11', '12'])
+    expect(all.students).toBe(6)
+    // Teacher t1 sees class 10 only: no pupil of class 11 or the school class beyond the shared ones, and never class 11 / 12 rows.
+    expect((await w.school.level(ctxOf('teacher', 't1'), 't4')).classRows.map((c) => c.classId)).toEqual(['10'])
+    // The Tingkatan cards follow the same scope; t1 teaches a t5 class too.
+    expect(await w.school.levels(ctxOf('teacher', 't2'))).toEqual([
+      { code: 't4', name: 'Tingkatan 4', classes: 1, students: 2 },
+      { code: 't5', name: 'Tingkatan 5', classes: 0, students: 0 },
+    ])
+    expect((await w.school.level(ctxOf('teacher', 't2'), 't5')).students).toBe(0)
   })
 
   it('students and officers get no pupil list', async () => {

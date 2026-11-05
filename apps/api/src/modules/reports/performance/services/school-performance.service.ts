@@ -369,8 +369,18 @@ export class SchoolPerformanceService {
     return { gps, distribution, subjects }
   }
 
+  /**
+   * A teacher's Tingkatan view covers the teacher's own active classes only (R1-GUR-4, OPT-KELAS-OWN: aggregates over the teacher's
+   * pupils); the school-wide comparison belongs to the school admin screen (R1-AS-4). Other roles keep the whole scope.
+   */
+  private async scoped(ctx: Ctx, fr: Frame): Promise<Frame> {
+    if (ctx.role !== 'teacher') return fr
+    const own = new Set((await this.ports.classes.classesForTeacher(ctx.userId)).map((c) => c.id))
+    return { ...fr, classes: fr.classes.filter((c) => own.has(c.id)) }
+  }
+
   async levels(ctx: Ctx): Promise<PerformanceLevelCard[]> {
-    const fr = await this.frame(ctx, false)
+    const fr = await this.scoped(ctx, await this.frame(ctx, false))
     // t4 and t5 always, t1 to t3 only with classes or pupils: the Tingkatan cards and chips are built from this list.
     return LEVEL_CODES.flatMap((code) => {
       const lc = fr.classes.filter((c) => c.levelSlug === code)
@@ -382,7 +392,7 @@ export class SchoolPerformanceService {
   async level(ctx: Ctx, code: string): Promise<PerformanceLevelDetail> {
     if (!(LEVEL_CODES as readonly string[]).includes(code)) throw ApiError.of('NOT_FOUND')
     const level = code as LevelCode
-    const fr = await this.frame(ctx)
+    const fr = await this.scoped(ctx, await this.frame(ctx))
     const lc = fr.classes.filter((c) => c.levelSlug === level)
     const students = [...new Set(lc.flatMap((c) => fr.members.byClass.get(c.id) ?? []))].sort(compareIds)
     // Non-staff: a class row hidden for having 1 to 4 pupils would be recovered as total minus shown rows, so the total is hidden too.

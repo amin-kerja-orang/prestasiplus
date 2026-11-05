@@ -35,6 +35,11 @@ function ownClassList(viewer: Viewer) {
   return viewer.schoolId === null ? [] : classrooms.list({ kind: 'classroom', schoolId: viewer.schoolId }).filter((c) => c.isActive)
 }
 
+/** The ids of the classes a teacher owns (undefined for every other role: the whole scope). */
+function ownClassIdsOf(viewer: Viewer): ReadonlySet<number> | undefined {
+  return viewer.role === 'teacher' ? new Set(ownClasses(viewer).map((c) => c.classId)) : undefined
+}
+
 export const performanceRoutes: RouteDef[] = [
   route('GET', '/api/performance/school', [requireAuth()], (req, ctx) => {
     const year = new Date(ctx.clock.now() + 8 * 3_600_000).getUTCFullYear()
@@ -43,7 +48,9 @@ export const performanceRoutes: RouteDef[] = [
   }),
 
   route('GET', '/api/performance/levels', [requireAuth()], (req) => {
-    const scope = scopeOf(viewerOf(req))
+    const viewer = viewerOf(req)
+    const scope = scopeOf(viewer)
+    const own = ownClassIdsOf(viewer)
     // t4 and t5 are always listed (zeros when empty); t1 to t3 only when the scope has classes or pupils (R1-AS-4).
     const cards: LevelCard[] = LEVEL_CODES.flatMap((code) => {
       const slug = LEVEL_SLUG[code]
@@ -52,7 +59,9 @@ export const performanceRoutes: RouteDef[] = [
         const s = classrooms.levelSummary(slug)
         card = { code, name: LEVEL_NAME[code], classes: s.classes, students: s.students }
       } else {
-        const cls = classrooms.list({ educationLevel: slug, schoolId: scope.schoolId })
+        const cls = classrooms
+          .list({ educationLevel: slug, schoolId: scope.schoolId })
+          .filter((c) => own === undefined || own.has(c.classId))
         const ids = new Set(cls.flatMap((c) => classrooms.memberIds(c.kind, c.classId)))
         card = { code, name: LEVEL_NAME[code], classes: cls.length, students: ids.size }
       }
@@ -68,8 +77,8 @@ export const performanceRoutes: RouteDef[] = [
     (req, ctx) => {
       const code = req.params.code
       if (!isLevel(code)) return notFound()
-      const scope = scopeOf(viewerOf(req))
-      return ok(levelDetail(code, scope, ctx.clock.now()))
+      const viewer = viewerOf(req)
+      return ok(levelDetail(code, scopeOf(viewer), ctx.clock.now(), ownClassIdsOf(viewer)))
     },
     { params: { code: str() } },
   ),
