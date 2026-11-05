@@ -307,10 +307,11 @@ describe('active item: single longest match (shells.md §2.8)', () => {
     expect(activeLabel('/admin/laporan-eksekutif/sekolah/7')).toBeNull()
   })
 
-  it('the /guru twins activate Monitoring and Kirkpatrick (FR-M11-05, FR-M12-04)', () => {
+  it('/admin/monitoring activates Monitoring; the /guru twin of Kirkpatrick is active too (FR-M11-05, FR-M12-04, S6-T08)', () => {
     expect(activeLabel('/admin/monitoring')).toBe('Monitoring')
-    expect(activeLabel('/guru/monitoring')).toBe('Monitoring')
-    expect(activeLabel('/guru/monitoring/sekolah/5/pelajar/9')).toBe('Monitoring')
+    expect(activeLabel('/admin/monitoring/sekolah/5/pelajar/9')).toBe('Monitoring')
+    // the admin has no /guru/monitoring alias: that route is the teacher's own school (R1-GUR-10)
+    expect(activeLabel('/guru/monitoring')).toBeNull()
     expect(activeLabel('/guru/kirkpatrick')).toBe('Overview')
     expect(activeLabel('/guru/kirkpatrick/reaction')).toBe('Tahap 1: Reaksi')
     expect(activeLabel('/admin/kirkpatrick/interventions')).toBe('Intervensi')

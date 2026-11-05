@@ -80,6 +80,11 @@ const REGISTRY: readonly ModuleManifest[] = [
         meta: { layout: 'admin', roles: BOTH, header: { title: 'Monitoring Penglibatan' } },
       },
       {
+        path: '/admin/monitoring',
+        component: page('admin-monitoring'),
+        meta: { layout: 'admin', roles: ['admin'], header: { title: 'Monitoring Penglibatan' } },
+      },
+      {
         path: '/guru/kirkpatrick',
         component: page('kirkpatrick'),
         meta: { layout: 'admin', roles: BOTH, header: { title: 'Kirkpatrick' } },
@@ -311,8 +316,8 @@ describe('AdminShell: menu per role', () => {
     expect(bottom(w).findAll('.active')).toHaveLength(1)
   })
 
-  it('admin on the /guru twins: admin menu, Monitoring / Kirkpatrick active (FR-M11-05, FR-M12-04)', async () => {
-    const w = await open('/guru/monitoring')
+  it('admin on /admin/monitoring and the /guru Kirkpatrick twin: admin menu, both active (FR-M11-05, FR-M12-04, S6-T08)', async () => {
+    const w = await open('/admin/monitoring')
     expect(w.get('[data-testid="shell-admin-caption"]').text()).toBe('Panel Pentadbir')
     expect(activeIds(sidebar(w))).toEqual(['monitoring'])
     await router.push('/guru/kirkpatrick')
