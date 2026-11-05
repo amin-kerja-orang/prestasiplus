@@ -74,6 +74,16 @@ describe('POST /api/gamification/convert (AC3, AC4)', () => {
     expect(await walletOf(t, id)).toBeUndefined()
   })
 
+  it('FR-MUR-29-5: a stored tier that lags pays the rate of the lifetime tier, the rate the page shows; balances move by the debit only', async () => {
+    const id = await bareUser(t, 'Tier Tertinggal')
+    await t.wallet.credit({ userId: id, amount: 100, source: 'quiz_practice', sourceId: 'lag', description: 'Latih Tubi: 10 betul', isTest: false })
+    await t.db.query(`update wallets set total_syiling_earned = 700 where user_id = $1`, [id])
+    expect(await t.gamification.convertView(id)).toMatchObject({ rate: 40, tierLabel: 'Perak' })
+    const d = await t.gamification.convert({ userId: id, isTest: false }, 80, null)
+    expect(d).toMatchObject({ tokensCredited: 2, currentSyiling: 20, tokenBalance: 2 })
+    expect(await walletOf(t, id)).toMatchObject({ current_syiling: 20, total_syiling_earned: 700, token_balance: 2 })
+  })
+
   it('the rate is read from the database tier: an admin edit of the rate applies at once; silver pays at its own rate', async () => {
     // maju (267, bronze) is lifted over 500 by a credit: the tier moves up to silver (rate 40).
     await t.wallet.credit({ userId: majuId, amount: 300, source: 'quiz_practice', sourceId: 'conv-up', description: 'Latih Tubi: 30 betul', isTest: false })

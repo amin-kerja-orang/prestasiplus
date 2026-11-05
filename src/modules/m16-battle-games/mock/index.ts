@@ -1,7 +1,7 @@
 /**
  * M16 mock plugin (M16-T1: battle, tournament and league stores, seeds and handlers; SRS M16 v1.6 §6, §7;
  * overview §6.7, D11/D12). Owner of the battle stores (`battles`, queues, invitations, arena answers),
- * the stored school-standing figures, tournaments, leagues, the Sekolah Bersaing snapshots and the
+ * the stored school-standing figures, tournaments, leagues, the (empty) Sekolah Bersaing table and the
  * single-player `gameResults` (the 47 seeded results; the game flows are M16-T2).
  *
  * PUBLIC exports (the only M16 mock code other modules may import, `@/modules/m16-battle-games/mock`, SRS §7.2):
@@ -43,7 +43,7 @@ import { M16_TABLES } from './tables/tables'
 const plugin = defineMockModule({
   id: 'M16',
   dependsOn: ['core', 'M01', 'M02', 'M03', 'M04', 'M05', 'M07', 'M11', 'M14'],
-  version: 2,
+  version: 3,
   tables: M16_TABLES,
   repositories: {
     battles: battlesRepo,

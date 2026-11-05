@@ -17,9 +17,9 @@ beforeAll(async () => {
   const pupil = w.ids['pelajar@demo.test'] as string
   // 5 answers inside the week (4 correct) and one before it, all outside any session, tagged with question 1 (no FK) (ck_practice_answers_link needs a question or a subject).
   for (let i = 0; i < 5; i++) {
-    await w.db.query(`insert into practice_answers (user_id, question_id, is_correct, answered_at) values ($1, 1, $2, '2026-10-20T10:00:00+08:00')`, [pupil, i < 4])
+    await w.db.query(`insert into practice_answers (user_id, question_id, is_correct, answered_at, mode) values ($1, 1, $2, '2026-10-20T10:00:00+08:00', 'random')`, [pupil, i < 4])
   }
-  await w.db.query(`insert into practice_answers (user_id, question_id, is_correct, answered_at) values ($1, 1, true, '2026-10-18T23:30:00+08:00')`, [pupil])
+  await w.db.query(`insert into practice_answers (user_id, question_id, is_correct, answered_at, mode) values ($1, 1, true, '2026-10-18T23:30:00+08:00', 'random')`, [pupil])
 }, 120_000)
 afterAll(async () => {
   await w?.close()

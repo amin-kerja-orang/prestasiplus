@@ -4,6 +4,7 @@ import {
   GAMES_MESSAGES,
   GamesLeagueCreateRequestSchema,
   type GamesLeagueCreateRequest,
+  type GamesSekolahBersaingBoard,
 } from '@pp/contract'
 
 import { ApiError } from '../../../common/errors/api-error'
@@ -112,3 +113,24 @@ export const dateOnly = (d: Date): string => d.toISOString().slice(0, 10)
 
 const INVITE_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 export { INVITE_ALPHABET }
+
+/**
+ * The Sekolah Bersaing board (FR-AS-45-1, FR-AS-45-6, FR-GM-16.4): schools listed in `schools` with at least `minPupils`
+ * pupils, by accuracy desc, pupils desc, sessions desc, school name asc (Malay collation), cut to `topN`. The order uses
+ * the unrounded accuracy; the wire carries one decimal.
+ */
+export function rankSekolahBersaing(
+  facts: readonly { schoolId: string; accuracy: number; pupils: number; sessions: number }[],
+  schools: readonly { id: string; name: string; state: string | null }[],
+  options: { minPupils: number; topN: number },
+): GamesSekolahBersaingBoard {
+  const byId = new Map(schools.map((s) => [s.id, s]))
+  return facts
+    .flatMap((f) => {
+      const school = byId.get(f.schoolId)
+      return school && f.pupils >= options.minPupils ? [{ ...f, school: school.name, state: school.state ?? '' }] : []
+    })
+    .sort((a, b) => b.accuracy - a.accuracy || b.pupils - a.pupils || b.sessions - a.sessions || a.school.localeCompare(b.school, 'ms'))
+    .slice(0, options.topN)
+    .map((r, i) => ({ rank: i + 1, school: r.school, state: r.state, accuracy: Math.min(100, Math.round(r.accuracy * 10) / 10), pupils: r.pupils }))
+}

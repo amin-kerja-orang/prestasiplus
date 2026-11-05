@@ -226,14 +226,14 @@ describe('SWP-2 TingkatanPage "Lihat →"', () => {
 })
 
 describe('SWP-3 HeadcountCards "Lihat Penuh"', () => {
-  it('is hidden from a pupil but the card stays', async () => {
+  it('is shown to a pupil (S10-T09: the own Headcount screen is open to the pupil)', async () => {
     session.role = 'student'
     const w = await mountAt(HeadcountCards, '/prestasi/47', '/prestasi/:id', {
       userId: 47,
       cards: CARDS,
     })
     expect(w.find('[data-testid=headcount-504]').exists()).toBe(true)
-    expect(w.find('a[href="/headcount/student/47"]').exists()).toBe(false)
+    expect(w.find('a[href="/headcount/student/47"]').exists()).toBe(true)
   })
 
   it('is shown to a teacher', async () => {
@@ -257,7 +257,7 @@ describe('SWP-3 HeadcountCards "Lihat Penuh"', () => {
   })
 
   it.each([
-    ['student', false],
+    ['student', true],
     ['teacher', true],
     [null, false],
   ])('with the prototype scope ON, role %s sees the link: %s', async (role, visible) => {

@@ -242,7 +242,7 @@ describe('Ringkasan Prestasi (FR-M27-31…37)', () => {
     expect(text(w, 'sd-panel-risk')).toContain('Berisiko')
     expect(text(w, 'sd-risk-total')).toBe('14 murid dinilai')
     expect(text(w, 'sd-panel-practice')).toContain('Latihan')
-    expect(text(w, 'sd-practice-accuracy')).toBe('61.4%')
+    expect(text(w, 'sd-practice-accuracy')).toBe('61%')
     expect(text(w, 'sd-panel-practice')).toContain('Purata Ketepatan')
     expect(text(w, 'sd-practice-counts')).toBe('57 sesi · 803 soalan')
   })
@@ -255,8 +255,8 @@ describe('Ringkasan Prestasi (FR-M27-31…37)', () => {
     const rows = w.findAll('[data-testid="sd-level-row"]')
     expect(rows.map((r) => r.get('span').text())).toEqual(['Tingkatan 4', 'Tingkatan 5'])
     expect(w.findAll('[data-testid="sd-level-pct"]').map((e) => e.text())).toEqual([
-      '66.2%',
-      '71.8%',
+      '66%',
+      '72%',
     ])
     expect(w.findAll('[data-testid="sd-level-pct"]')[0]?.classes()).toContain('text-warning')
     expect(panel.text()).toContain('Click untuk detail')
@@ -264,9 +264,11 @@ describe('Ringkasan Prestasi (FR-M27-31…37)', () => {
   })
 
   it.each([
-    [49.9, 'text-error'],
+    [49.4, 'text-error'],
+    [49.5, 'text-warning'],
     [50, 'text-warning'],
-    [69.9, 'text-warning'],
+    [69.4, 'text-warning'],
+    [69.5, 'text-success'],
     [70, 'text-success'],
   ])('colours a level at %s with %s', async (accuracy, cls) => {
     const base = dashboard()
