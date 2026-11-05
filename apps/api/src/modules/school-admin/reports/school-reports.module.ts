@@ -8,11 +8,11 @@ import { SchoolsModule } from '../../schools'
 import { UsersModule } from '../../users'
 import { WalletModule } from '../../wallet'
 import { ActivityService } from './activity.service'
-import { ClassesService } from './classes.service'
+import { AdminClassesService, ClassesService } from './classes.service'
 import { HeatmapService } from './heatmap.service'
 import { MonthlyService } from './monthly.service'
 import { SchoolPopulation } from './population'
-import { SchoolReportsController } from './school-reports.controller'
+import { AdminClassesController, SchoolReportsController } from './school-reports.controller'
 import { UsageService } from './usage.service'
 
 /**
@@ -22,7 +22,7 @@ import { UsageService } from './usage.service'
  */
 @Module({
   imports: [ThrottleModule, ClassesModule, CurriculumModule, AnalyticsReportsModule, SchoolsModule, UsersModule, WalletModule],
-  controllers: [SchoolReportsController],
-  providers: [SchoolPopulation, UsageService, ActivityService, MonthlyService, HeatmapService, ClassesService],
+  controllers: [SchoolReportsController, AdminClassesController],
+  providers: [SchoolPopulation, UsageService, ActivityService, MonthlyService, HeatmapService, ClassesService, AdminClassesService],
 })
 export class SchoolReportsModule {}

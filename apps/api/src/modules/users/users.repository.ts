@@ -459,6 +459,23 @@ export class UsersRepository {
     return out
   }
 
+  /**
+   * User tiles of the Admin Pusat dashboard (S6-T11, API-ADM-11) over everything the caller can see: `total` accounts, `students` and
+   * `teachers`. Teachers follow XS-3: role teacher, approved (no pending school request), active, and not also a school admin.
+   * `roleCounts` is untouched (its stat cards count roles, not accounts).
+   */
+  async centralCounts(caller: Caller): Promise<{ total: number; students: number; teachers: number }> {
+    const visible = this.visibleWhere(caller)
+    const [total, students, teachers] = await Promise.all([
+      this.prisma.client.user.count({ where: visible }),
+      this.prisma.client.user.count({ where: { AND: [visible, { roles: { some: { role: 'student' } } }] } }),
+      this.prisma.client.user.count({
+        where: { AND: [visible, { roles: { some: { role: 'teacher' } } }, { roles: { none: { role: 'school_admin' } } }, { pendingSchoolId: null }, { isActive: true }] },
+      }),
+    ])
+    return { total, students, teachers }
+  }
+
   /** Distinct schools of the users the caller can see (filter options). */
   async schoolIdsWithUsers(caller: Caller): Promise<string[]> {
     const groups = await this.prisma.client.user.groupBy({

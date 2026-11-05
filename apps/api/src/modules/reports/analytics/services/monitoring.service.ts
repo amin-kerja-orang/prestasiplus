@@ -1,15 +1,25 @@
 import { Inject, Injectable } from '@nestjs/common'
+import type { ServabilityActivity } from '@pp/contract'
 
 import { toMytTimestamp } from '../../../../common/time/myt'
 import { CLOCK, type Clock } from '../../../../db/clock'
 import { ApiError } from '../../../../common/errors/api-error'
 import { ClassesRepository } from '../../../classes'
+import { CurriculumRepository } from '../../../curriculum'
+import { RoomsRepository } from '../../../games'
+import { QuestionsRepository, QuestionsService, servabilityFilterOf } from '../../../questions'
+import { OverviewCache } from '../../../questions/serving/overview-cache'
+import type { Caller } from '../../../users/caller'
+import { UsersRepository } from '../../../users'
 import { AnalyticsRepository, type SchoolFact } from '../analytics.repository'
 import {
   type Period,
+  DAY_MS,
   byName,
   compareIds,
+  dayKey,
   levelLabelOf,
+  mytDayStart,
   percent,
   periodFromMs,
   periodOf,
@@ -19,6 +29,8 @@ import {
   weeksUntil,
 } from '../domain/rules'
 import type {
+  AdminAnalyticsView,
+  AdminDashboardView,
   MonitoringExport,
   MonitoringOverview,
   SchoolDetail,
@@ -384,6 +396,125 @@ export class MonitoringService {
         lowAccuracy: rows.filter((r) => r.raw !== null && r.raw < 50).length,
         answered: engaged,
       },
+    }
+  }
+}
+
+/** Admin Pusat range of the analytics: `7d`, `30d` or `90d`; anything else is `30d` (tolerant, like every M11 filter). */
+const analyticsRangeOf = (raw: string | undefined): { key: '7d' | '30d' | '90d'; days: 7 | 30 | 90 } =>
+  raw === '7d' ? { key: '7d', days: 7 } : raw === '90d' ? { key: '90d', days: 90 } : { key: '30d', days: 30 }
+
+/** Cache slot of the question-bank part of the analytics (5 minutes, stale-while-revalidate, shared with the servability overview cache). */
+const BANK_CACHE_SCOPE = 'admin-analytics-bank'
+
+/** Activities whose servable count the questions module exposes as a reader filter (the other three need reads it does not export). */
+const SERVABILITY_ACTIVITY_KEYS: readonly ServabilityActivity[] = ['latih_tubi_spm', 'bab', 'simulasi_kuiz']
+
+/**
+ * Admin Pusat central read models (S6-T11): the dashboard tiles (API-ADM-11) and the analytics (API-ADM-12). Everything is computed per
+ * request from the owners' reads: users (UsersRepository), subjects and levels (CurriculumRepository), question counts (the same
+ * query base as `GET /questions/summary`), game rooms (RoomsRepository) and the M11 aggregates here. Nothing is stored.
+ */
+@Injectable()
+export class AdminCentralService {
+  constructor(
+    @Inject(AnalyticsRepository) private readonly repo: AnalyticsRepository,
+    @Inject(UsersRepository) private readonly users: UsersRepository,
+    @Inject(CurriculumRepository) private readonly curriculum: CurriculumRepository,
+    @Inject(QuestionsService) private readonly questionsService: QuestionsService,
+    @Inject(QuestionsRepository) private readonly questions: QuestionsRepository,
+    @Inject(OverviewCache) private readonly cache: OverviewCache,
+    @Inject(RoomsRepository) private readonly rooms: RoomsRepository,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
+
+  async dashboard(caller: Caller): Promise<AdminDashboardView> {
+    const now = this.clock.now().getTime()
+    // Monday 00:00 (Asia/Kuala_Lumpur) of the current week.
+    const today = mytDayStart(now)
+    const sinceMonday = (new Date(today + 8 * 3_600_000).getUTCDay() + 6) % 7
+    const weekStart = new Date(today - sinceMonday * DAY_MS)
+    const [summary, subjects, levels, users, stats] = await Promise.all([
+      this.questionsService.statusSummary(weekStart),
+      this.curriculum.subjects(),
+      this.curriculum.levels(),
+      this.users.centralCounts(caller),
+      this.rooms.stats(),
+    ])
+    return {
+      questions: { total: summary.total, byStatus: summary.byStatus, thisWeek: summary.createdSince },
+      subjects: { total: subjects.length, active: subjects.filter((s) => s.isActive).length },
+      // Tingkatan 1 to 5: `levels()` never returns a primary (Darjah) level.
+      levels: levels.length,
+      users,
+      battles: { total: stats.rooms, active: stats.playing, finished: stats.finished },
+    }
+  }
+
+  async analytics(query: { range?: string | undefined }): Promise<AdminAnalyticsView> {
+    const now = this.clock.now()
+    const { key, days } = analyticsRangeOf(query.range)
+    const today = mytDayStart(now.getTime())
+    const from = new Date(today - (days - 1) * DAY_MS)
+    const [pupils, totals, byDay, top, subscriptions, schools, bank] = await Promise.all([
+      this.repo.pupilTotals(),
+      this.repo.answerTotals(from, now),
+      this.repo.answersByDay(from, now),
+      this.repo.topSchoolsByAnswers(from, now, 10),
+      this.repo.activeSubscriptionCount(dayKey(now.getTime())),
+      this.repo.schoolsWithUsers(null),
+      this.cache.get(() => this.bank(), BANK_CACHE_SCOPE),
+    ])
+    const trend: AdminAnalyticsView['trend'] = []
+    for (let d = days - 1; d >= 0; d--) {
+      const date = dayKey(today - d * DAY_MS)
+      trend.push({ date, answered: byDay.get(date) ?? 0 })
+    }
+    return {
+      range: key,
+      platform: {
+        schools: schools.length,
+        activeSubscriptions: subscriptions,
+        students: pupils.pupils,
+        activeStudents: totals.pupils,
+        answered: totals.answered,
+        accuracy: totals.answered > 0 ? round1(percent(totals.correct, totals.answered)) : null,
+      },
+      trend,
+      topSchools: top.map((t) => ({ schoolId: t.schoolId, school: t.name, answered: t.answered })),
+      bank: bank.value,
+    }
+  }
+
+  /** The question-bank figures (computed from the bank, never stored). Two batches so no more than four heavy reads hold the pool. */
+  private async bank(): Promise<AdminAnalyticsView['bank']> {
+    const live = { status: 'approved', active: true } as const
+    const [summary, bySubject, byLevel, byChapter] = await Promise.all([
+      this.questionsService.statusSummary(new Date(0)),
+      this.questions.groupCount('subject'),
+      this.questions.groupCount('level'),
+      this.questions.groupCount('chapter'),
+    ])
+    const [byUnit, served, subjects, levels] = await Promise.all([
+      this.questions.groupCount('unit'),
+      Promise.all(SERVABILITY_ACTIVITY_KEYS.map(async (a) => [a, await this.questions.count({ ...servabilityFilterOf(a), ...live })] as const)),
+      this.curriculum.subjects(),
+      this.curriculum.levels({ includeInactive: true }),
+    ])
+    const sum = (m: ReadonlyMap<string, number>): number => [...m.values()].reduce((a, b) => a + b, 0)
+    const share = (n: number): number => (summary.total > 0 ? round1(percent(n, summary.total)) : 0)
+    const rows = (counts: ReadonlyMap<string, number>, names: ReadonlyMap<string, string>) =>
+      [...counts]
+        .map(([id, total]) => ({ id, name: names.get(id) ?? '', total }))
+        .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name, 'ms', { sensitivity: 'base' }) || compareIds(a.id, b.id))
+    return {
+      total: summary.total,
+      bySubject: rows(bySubject, new Map(subjects.map((s) => [String(s.id), s.name]))),
+      byLevel: rows(byLevel, new Map(levels.map((l) => [String(l.id), l.name]))),
+      byStatus: summary.byStatus,
+      dskpTaggedShare: share(sum(byUnit)),
+      chapterCoverage: share(sum(byChapter)),
+      servability: Object.fromEntries(served),
     }
   }
 }

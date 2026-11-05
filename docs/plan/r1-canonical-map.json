@@ -394,6 +394,16 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/classes|",
+      "path": "/admin/classes",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m02-users-schools/pages/KelasSekolahPage.vue",
+      "file": "src/modules/m02-users-schools/routes/schools.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "/admin/schools/create|",
       "path": "/admin/schools/create",
       "name": null,
@@ -2534,6 +2544,16 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/analytics|m17.admin-analytics",
+      "path": "/admin/analytics",
+      "name": "m17.admin-analytics",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m17-admin-dashboard/pages/AdminAnalitikPage.vue",
+      "file": "src/modules/m17-admin-dashboard/routes/analytics.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "${prefix}/school/:schoolId(\\\\d+)|",
       "path": "${prefix}/school/:schoolId(\\\\d+)",
       "name": null,
@@ -2597,6 +2617,26 @@
       "component": "src/modules/m17-admin-dashboard/pages/CommandCenterDailyPage.vue",
       "file": "src/modules/m17-admin-dashboard/routes/command-center.ts",
       "template": true,
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin|m17.admin-dashboard",
+      "path": "/admin",
+      "name": "m17.admin-dashboard",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m17-admin-dashboard/pages/AdminDashboardPage.vue",
+      "file": "src/modules/m17-admin-dashboard/routes/dashboard.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/laporan|m17.admin-laporan",
+      "path": "/admin/laporan",
+      "name": "m17.admin-laporan",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m17-admin-dashboard/pages/AdminLaporanPage.vue",
+      "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
       "approved_by_card": null
     },
     {
@@ -3086,7 +3126,7 @@
         "admin"
       ],
       "status": "retire",
-      "sector": "S0",
+      "sector": "S6",
       "file": "src/shells/nav/admin-nav.ts",
       "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
       "approved_by_card": null
@@ -3116,7 +3156,7 @@
         "admin"
       ],
       "status": "retire",
-      "sector": "S0",
+      "sector": "S6",
       "file": "src/shells/nav/admin-nav.ts",
       "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
       "approved_by_card": null
@@ -15723,6 +15763,36 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/admin/dashboard",
+      "method": "GET",
+      "path": "/api/admin/dashboard",
+      "api_id": "API-ADM-11",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/reports/analytics/http/analytics.controllers.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/analytics",
+      "method": "GET",
+      "path": "/api/admin/analytics",
+      "api_id": "API-ADM-12",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/reports/analytics/http/analytics.controllers.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/reports/laporan",
+      "method": "GET",
+      "path": "/api/admin/reports/laporan",
+      "api_id": "API-ADM-13",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/reports/analytics/http/analytics.controllers.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "GET /api/kirkpatrick/overview",
       "method": "GET",
       "path": "/api/kirkpatrick/overview",
@@ -16389,6 +16459,16 @@
       "method": "GET",
       "path": "/api/admin-sekolah/kelas",
       "api_id": "API-AS-12",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/school-admin/reports/school-reports.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/classes",
+      "method": "GET",
+      "path": "/api/admin/classes",
+      "api_id": "API-ADM-05",
       "status": "canonical",
       "sector": "S6",
       "file": "apps/api/src/modules/school-admin/reports/school-reports.controller.ts",

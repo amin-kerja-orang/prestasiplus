@@ -60,6 +60,19 @@ import {
   ServerStatusResponseSchema,
   ServerStatusSchema,
 } from './admin'
+import {
+  AdminAnalyticsQuerySchema,
+  AdminAnalyticsResponseSchema,
+  AdminAnalyticsSchema,
+  AdminClassListQuerySchema,
+  AdminClassListResponseSchema,
+  AdminClassSchema,
+  AdminDashboardResponseSchema,
+  AdminDashboardSchema,
+  AdminLaporanQuerySchema,
+  AdminLaporanResponseSchema,
+  AdminLaporanSchema,
+} from './schema'
 
 /**
  * Components contributed by the admin/school half of BE-22 (appended to COMPONENT_SCHEMAS in
@@ -327,6 +340,88 @@ export function registerCommandCenterAdminPaths(registry: OpenAPIRegistry): void
       200: json(ServerStatusResponseSchema, 'The readings.'),
       401: UNAUTHORIZED,
       403: err('FORBIDDEN "This action is unauthorized." (role is not admin).'),
+    },
+  })
+}
+
+/** Components of the S6-T11 Admin Pusat central screens (appended to COMPONENT_SCHEMAS next to the Command Center ones). */
+export const ADMIN_CENTRAL_COMPONENT_SCHEMAS = {
+  AdminClass: AdminClassSchema,
+  AdminClassListResponse: AdminClassListResponseSchema,
+  AdminDashboard: AdminDashboardSchema,
+  AdminDashboardResponse: AdminDashboardResponseSchema,
+  AdminAnalytics: AdminAnalyticsSchema,
+  AdminAnalyticsResponse: AdminAnalyticsResponseSchema,
+  AdminLaporan: AdminLaporanSchema,
+  AdminLaporanResponse: AdminLaporanResponseSchema,
+} as const
+
+/** Registers the 4 Admin Pusat central GET routes (API-ADM-05, 11, 12, 13 laporan). */
+export function registerAdminCentralPaths(registry: OpenAPIRegistry): void {
+  const ADMIN_ONLY = err('FORBIDDEN (the active role is not admin).')
+  const RATE_LIMITED = err('RATE_LIMITED (database overloaded or per-user limit); retry after the `Retry-After` seconds.')
+
+  registry.registerPath({
+    method: 'get',
+    path: '/admin/classes',
+    tags: ['admin-central'],
+    summary: 'Kelas Sekolah: classes of every school (API-ADM-05)',
+    description:
+      'Role admin only. Classroom-kind classes of secondary levels (Darjah is hidden), active and inactive, name A to Z, across all schools; filters schoolId, level (slug), teacherId and search (class name). `pupils` is the active member count. Responses are no-store.',
+    request: { query: AdminClassListQuerySchema },
+    responses: {
+      200: json(AdminClassListResponseSchema, 'One page of classes with `meta`.'),
+      401: UNAUTHORIZED,
+      403: ADMIN_ONLY,
+      422: err('VALIDATION_ERROR with `fields` (bad id, level, page, pageSize or a search longer than 100).'),
+      429: RATE_LIMITED,
+    },
+  })
+
+  registry.registerPath({
+    method: 'get',
+    path: '/admin/dashboard',
+    tags: ['admin-central'],
+    summary: 'Admin Pusat dashboard tiles (API-ADM-11)',
+    description:
+      'Role admin only. Question counts use the same base query as `GET /questions/summary` (latest version, no PKSK, no Darjah). Users: teachers are approved teacher accounts (XS-3). `levels` counts Tingkatan 1 to 5 (Darjah never counted). `battles` counts game rooms (test rooms excluded; `active` = playing).',
+    responses: {
+      200: json(AdminDashboardResponseSchema, 'The tiles.'),
+      401: UNAUTHORIZED,
+      403: ADMIN_ONLY,
+      429: RATE_LIMITED,
+    },
+  })
+
+  registry.registerPath({
+    method: 'get',
+    path: '/admin/analytics',
+    tags: ['admin-central'],
+    summary: 'Admin Pusat analytics: platform, trend, top schools, question bank (API-ADM-12)',
+    description:
+      'Role admin only. `range` (7d, 30d, 90d) is tolerant: anything else is 30d. Accuracy is pooled with one decimal. The bank figures are computed from the question bank, never stored; the servability map has only the activities the questions module exposes as reads.',
+    request: { query: AdminAnalyticsQuerySchema },
+    responses: {
+      200: json(AdminAnalyticsResponseSchema, 'The analytics.'),
+      401: UNAUTHORIZED,
+      403: ADMIN_ONLY,
+      429: RATE_LIMITED,
+    },
+  })
+
+  registry.registerPath({
+    method: 'get',
+    path: '/admin/reports/laporan',
+    tags: ['admin-central'],
+    summary: 'Admin Pusat Laporan: tiles, 14-day trend, breakdown, top pupils, schools (API-ADM-13)',
+    description:
+      'Role admin only. Same read model as the Guru Laporan (`GET /teacher/report`): completed non-test practice sessions by completion day (Asia/Kuala_Lumpur), so the two reports agree. `range` (7, 30, 90) is tolerant: anything else is 30. Pupil names are returned to the admin only and never logged. Responses are no-store.',
+    request: { query: AdminLaporanQuerySchema },
+    responses: {
+      200: json(AdminLaporanResponseSchema, 'The report.'),
+      401: UNAUTHORIZED,
+      403: ADMIN_ONLY,
+      429: RATE_LIMITED,
     },
   })
 }

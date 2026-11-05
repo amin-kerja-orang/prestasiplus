@@ -229,6 +229,26 @@ export class ClassesRepository {
     return rows.map(toClass)
   }
 
+  /**
+   * Classroom-kind classes of every school for Admin Pusat (S6-T11, API-ADM-05), active and inactive, secondary levels only, newest first.
+   * `schoolId` and `teacherId` narrow the read in the database; a malformed id matches nothing.
+   */
+  async classroomsOf(filter: { schoolId?: string | undefined; teacherId?: string | undefined } = {}): Promise<ClassRecord[]> {
+    const school = filter.schoolId === undefined ? undefined : idOf(filter.schoolId)
+    const teacher = filter.teacherId === undefined ? undefined : idOf(filter.teacherId)
+    if (school === null || teacher === null) return []
+    const rows = await this.db.classroom.findMany({
+      where: {
+        kind: 'classroom',
+        educationLevelId: { notIn: await this.primaryLevelIds() },
+        ...(school === undefined ? {} : { schoolId: school }),
+        ...(teacher === undefined ? {} : { teacherId: teacher }),
+      },
+      orderBy: NEWEST_FIRST,
+    })
+    return rows.map(toClass)
+  }
+
   /** The classes a student is actively enrolled in, newest first. `isTest` selects the Mod Pelajar rows instead of the real ones. */
   async forStudent(studentId: string, opts: { isTest?: boolean } = {}): Promise<ClassRecord[]> {
     const key = idOf(studentId)

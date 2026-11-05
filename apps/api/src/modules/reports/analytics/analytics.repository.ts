@@ -610,4 +610,88 @@ export class AnalyticsRepository {
       GROUP BY 1, 2`
     return rows.map((r) => ({ subjectId: r.subject_id, userId: r.user_id, answers: r.answers, correct: r.correct }))
   }
+
+  // --- Admin Pusat central screens (S6-T11): platform-wide aggregates, no per-user lists ---------------------------------------
+
+  /** Platform pupils: active, role student, secondary (Darjah pupils are hidden everywhere, D72). Alias `u`. */
+  private static readonly PUPIL = Prisma.sql`u.is_active AND (u.grade IS NULL OR u.grade > 6) AND EXISTS (SELECT 1 FROM user_roles r WHERE r.user_id = u.id AND r.role = 'student')`
+
+  /** Platform pupils, those with a recorded login and those with a completed non-test session (any time). */
+  async pupilTotals(): Promise<{ pupils: number; accessed: number; practised: number }> {
+    const rows = await this.db.$queryRaw<{ pupils: number; accessed: number; practised: number }[]>`
+      SELECT count(*)::int AS pupils, (count(*) FILTER (WHERE u.last_login_at IS NOT NULL))::int AS accessed,
+        (count(*) FILTER (WHERE EXISTS (SELECT 1 FROM practice_sessions s WHERE s.user_id = u.id AND s.status = 'completed' AND NOT s.is_test)))::int AS practised
+      FROM users u WHERE ${AnalyticsRepository.PUPIL}`
+    return rows[0] ?? { pupils: 0, accessed: 0, practised: 0 }
+  }
+
+  /** Completed non-test sessions of the platform pupils in the window, grouped by mode and MYT day (the admin form of `sessionsByDay`). */
+  async platformSessionsByDay(from: Date, to: Date): Promise<Omit<SessionDayRow, 'userId'>[]> {
+    const rows = await this.db.$queryRaw<{ mode: string; day: string; sessions: number; correct: number; questions: number }[]>`
+      SELECT s.mode, to_char(s.completed_at AT TIME ZONE ${KL}, 'YYYY-MM-DD') AS day,
+        count(*)::int AS sessions, coalesce(sum(s.correct_count), 0)::int AS correct, coalesce(sum(s.question_count), 0)::int AS questions
+      FROM practice_sessions s JOIN users u ON u.id = s.user_id
+      WHERE ${AnalyticsRepository.PUPIL} AND s.status = 'completed' AND NOT s.is_test AND s.completed_at >= ${from} AND s.completed_at <= ${to}
+      GROUP BY 1, 2`
+    return rows.map((r) => ({ mode: r.mode, day: r.day, sessions: r.sessions, correct: r.correct, questions: r.questions }))
+  }
+
+  /** The most active pupils (sessions in the window) with their school; ties by name then id. Names go to the admin only. */
+  async topPupilsBySessions(from: Date, to: Date, limit: number): Promise<{ id: string; name: string; schoolId: string | null; schoolName: string | null; sessions: number }[]> {
+    const rows = await this.db.$queryRaw<{ id: string; name: string; school_id: string | null; school_name: string | null; sessions: number }[]>`
+      SELECT u.id::text AS id, u.name, u.school_id::text AS school_id, sc.name AS school_name, count(*)::int AS sessions
+      FROM practice_sessions s JOIN users u ON u.id = s.user_id LEFT JOIN schools sc ON sc.id = u.school_id
+      WHERE ${AnalyticsRepository.PUPIL} AND s.status = 'completed' AND NOT s.is_test AND s.completed_at >= ${from} AND s.completed_at <= ${to}
+      GROUP BY u.id, u.name, u.school_id, sc.name
+      ORDER BY sessions DESC, u.name ASC, u.id ASC LIMIT ${limit}`
+    return rows.map((r) => ({ id: r.id, name: r.name, schoolId: r.school_id, schoolName: r.school_name, sessions: r.sessions }))
+  }
+
+  /** Sessions and distinct pupils per school in the window, most sessions first. */
+  async sessionsBySchool(from: Date, to: Date, limit: number): Promise<{ schoolId: string; name: string; sessions: number; pupils: number }[]> {
+    const rows = await this.db.$queryRaw<{ school_id: string; name: string; sessions: number; pupils: number }[]>`
+      SELECT sc.id::text AS school_id, sc.name, count(*)::int AS sessions, count(DISTINCT u.id)::int AS pupils
+      FROM practice_sessions s JOIN users u ON u.id = s.user_id JOIN schools sc ON sc.id = u.school_id
+      WHERE ${AnalyticsRepository.PUPIL} AND s.status = 'completed' AND NOT s.is_test AND s.completed_at >= ${from} AND s.completed_at <= ${to}
+      GROUP BY sc.id, sc.name
+      ORDER BY sessions DESC, sc.name ASC, sc.id ASC LIMIT ${limit}`
+    return rows.map((r) => ({ schoolId: r.school_id, name: r.name, sessions: r.sessions, pupils: r.pupils }))
+  }
+
+  /** Answers, correct answers and answering pupils of the platform pupils in the window (clean log: all modes, no test rows). */
+  async answerTotals(from: Date, to: Date): Promise<{ answered: number; correct: number; pupils: number }> {
+    const rows = await this.db.$queryRaw<{ answered: number; correct: number; pupils: number }[]>`
+      SELECT count(*)::int AS answered, (count(*) FILTER (WHERE a.is_correct))::int AS correct, count(DISTINCT a.user_id)::int AS pupils
+      FROM ${CLEAN_ANSWERS} JOIN users u ON u.id = a.user_id
+      WHERE ${CLEAN_WHERE} AND ${AnalyticsRepository.PUPIL} AND a.answered_at >= ${from} AND a.answered_at <= ${to}`
+    return rows[0] ?? { answered: 0, correct: 0, pupils: 0 }
+  }
+
+  /** Answers per MYT day (`YYYY-MM-DD`) in the window. */
+  async answersByDay(from: Date, to: Date): Promise<Map<string, number>> {
+    const rows = await this.db.$queryRaw<{ day: string; n: number }[]>`
+      SELECT to_char(a.answered_at AT TIME ZONE ${KL}, 'YYYY-MM-DD') AS day, count(*)::int AS n
+      FROM ${CLEAN_ANSWERS} JOIN users u ON u.id = a.user_id
+      WHERE ${CLEAN_WHERE} AND ${AnalyticsRepository.PUPIL} AND a.answered_at >= ${from} AND a.answered_at <= ${to}
+      GROUP BY 1`
+    return new Map(rows.map((r) => [r.day, r.n]))
+  }
+
+  /** Schools with the most answers in the window. */
+  async topSchoolsByAnswers(from: Date, to: Date, limit: number): Promise<{ schoolId: string; name: string; answered: number }[]> {
+    const rows = await this.db.$queryRaw<{ school_id: string; name: string; answered: number }[]>`
+      SELECT sc.id::text AS school_id, sc.name, count(*)::int AS answered
+      FROM ${CLEAN_ANSWERS} JOIN users u ON u.id = a.user_id JOIN schools sc ON sc.id = u.school_id
+      WHERE ${CLEAN_WHERE} AND ${AnalyticsRepository.PUPIL} AND a.answered_at >= ${from} AND a.answered_at <= ${to}
+      GROUP BY sc.id, sc.name
+      ORDER BY answered DESC, sc.name ASC, sc.id ASC LIMIT ${limit}`
+    return rows.map((r) => ({ schoolId: r.school_id, name: r.name, answered: r.answered }))
+  }
+
+  /** Schools with an active subscription on `today` (`YYYY-MM-DD`). */
+  async activeSubscriptionCount(today: string): Promise<number> {
+    const rows = await this.db.$queryRaw<{ n: number }[]>`
+      SELECT count(DISTINCT school_id)::int AS n FROM school_subscriptions WHERE status = 'active' AND ends_on >= ${today}::date`
+    return rows[0]?.n ?? 0
+  }
 }

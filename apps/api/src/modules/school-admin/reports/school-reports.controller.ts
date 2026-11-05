@@ -1,15 +1,17 @@
 import { Controller, Get, Inject, Query, Req, UseGuards, UseInterceptors } from '@nestjs/common'
+import { AdminClassListQuerySchema, type AdminClassListQuery } from '@pp/contract'
 
 import { ApiError } from '../../../common/errors/api-error'
 import { Roles } from '../../../common/guards/decorators'
 import { NoStoreInterceptor, ok } from '../../../common/http'
 import { RateLimit, RateLimitGuard } from '../../../common/throttle'
 import { isOverloadError } from '../../auth/auth.errors'
+import { FieldsZodPipe, overloadTo429 } from '../../reports/analytics/http/request'
 import { PeopleHeadersGuard, PragmaNoCache } from '../people/people-headers.guard'
 import { schoolAdminOf, type SchoolAdminReq } from '../school-admin.actor'
 import { SCHOOL_ADMIN_LIMITS } from '../school-admin.constants'
 import { ActivityService } from './activity.service'
-import { ClassesService } from './classes.service'
+import { AdminClassesService, ClassesService } from './classes.service'
 import { HeatmapService } from './heatmap.service'
 import { MonthlyService } from './monthly.service'
 import { UsageService } from './usage.service'
@@ -83,5 +85,23 @@ export class SchoolReportsController {
       if (isOverloadError(err)) throw ApiError.of('RATE_LIMITED', { retryAfter: 5 })
       throw err
     }
+  }
+}
+
+/**
+ * API-ADM-05 (S6-T11): the class list of Admin Pusat across all schools. Role admin only (`@Roles`: every other role is 403, no session
+ * 401). The query is validated by the contract schema (422 with `fields`). Class names, teachers and join codes: `no-store`.
+ */
+@Controller('admin/classes')
+@Roles('admin')
+@UseGuards(RateLimitGuard)
+@UseInterceptors(NoStoreInterceptor)
+export class AdminClassesController {
+  constructor(@Inject(AdminClassesService) private readonly classes: AdminClassesService) {}
+
+  @Get()
+  @RateLimit(SCHOOL_ADMIN_LIMITS.read)
+  async list(@Query(new FieldsZodPipe(AdminClassListQuerySchema)) query: AdminClassListQuery) {
+    return overloadTo429(() => this.classes.list(query))
   }
 }
