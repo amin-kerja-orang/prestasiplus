@@ -1,6 +1,7 @@
 import { z } from '../zod'
 import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
+import { ListMetaSchema } from '../common/envelope'
 
 /**
  * M10 part A wire contract (BE-17, contract-only): classes, teacher roster, dashboard counters,
@@ -287,3 +288,99 @@ export const ClassJoinResultSchema = z.object({ classroomId: IdSchema }).meta({ 
 export const ClassJoinResponseSchema = z
   .object({ data: ClassJoinResultSchema, message: z.string().min(1) })
   .meta({ id: 'ClassJoinResponse', description: '201; `message` is "Berjaya menyertai kelas {name}."' })
+
+// --- Databank Soalan (guru) (S6-T19, API-GUR-27, R1-GUR-44d) -------------------------------------
+
+export const DATABANK_PAGE_SIZE = 20
+/** Fewer than this many characters of search text is refused (GLB-4). */
+export const DATABANK_SEARCH_MIN = 2
+export const DATABANK_MESSAGES = {
+  searchMin: 'Taip sekurang-kurangnya 2 aksara.',
+  subject: 'Subjek tidak sah.',
+  page: 'Halaman tidak sah.',
+  empty: 'Tiada soalan sepadan dengan carian anda.',
+} as const
+
+/** One tile of the overview: a subject with the number of questions pupils can be served in it (zero is kept). */
+export const DatabankSubjectTileSchema = z
+  .object({ subjectId: IdSchema, nameMs: z.string(), nameEn: z.string(), count: z.number().int().min(0) })
+  .meta({ id: 'DatabankSubjectTile' })
+
+/** `GET /guru/databank/overview`: counts come from the pupil-served predicate (D11, D91), Tingkatan 1-5 only. */
+export const DatabankOverviewSchema = z
+  .object({
+    totalQuestions: z.number().int().min(0).meta({ description: 'Sum of every tile count (questions, not units).' }),
+    activeSubjects: z.number().int().min(0).meta({ description: 'Subjects with count > 0.' }),
+    teras: z.array(DatabankSubjectTileSchema).meta({ description: 'Core subjects, by sort order then name; includes zero-count tiles.' }),
+    elektif: z.array(DatabankSubjectTileSchema).meta({ description: 'The other active subjects, same order; includes zero-count tiles.' }),
+  })
+  .meta({ id: 'DatabankOverview' })
+export type DatabankOverview = z.infer<typeof DatabankOverviewSchema>
+
+/** `q` is optional; blank means "no search"; otherwise at least 2 characters (trimmed) or 422 on `q`. */
+export const DatabankQuestionsQuerySchema = z
+  .object({
+    subjectId: z.string({ error: DATABANK_MESSAGES.subject }).regex(/^[1-9][0-9]{0,18}$/, DATABANK_MESSAGES.subject).optional(),
+    q: z
+      .string({ error: DATABANK_MESSAGES.searchMin })
+      .trim()
+      .refine((v) => v === '' || v.length >= DATABANK_SEARCH_MIN, DATABANK_MESSAGES.searchMin)
+      .optional(),
+    page: z.coerce.number({ error: DATABANK_MESSAGES.page }).int(DATABANK_MESSAGES.page).min(1, DATABANK_MESSAGES.page).optional(),
+  })
+  .meta({ id: 'DatabankQuestionsQuery' })
+
+export const DatabankStimulusSchema = z
+  .object({
+    id: IdSchema,
+    kind: z.string().meta({ description: 'passage, image, diagram, table, graph, map, infographic or audio.' }),
+    label: z.string(),
+    bodyMs: z.string().nullable(),
+    bodyEn: z.string().nullable(),
+    imageId: IdSchema.nullable().meta({ description: 'File id of the figure (read through GET /files/:id; teachers may read it while the question is served).' }),
+    alt: z.string().nullable(),
+    caption: z.string().nullable(),
+    sourceCitation: z.string().nullable(),
+    tableData: z.unknown().nullable().meta({ description: 'Table grid as stored (`{ head, rows }` for a table stimulus).' }),
+  })
+  .meta({ id: 'DatabankStimulus' })
+
+export const DatabankOptionSchema = z
+  .object({ label: z.string(), bodyMs: z.string().nullable(), bodyEn: z.string().nullable(), imageId: IdSchema.nullable() })
+  .meta({ id: 'DatabankOption' })
+
+/** One question of the bank; the answer key is never sent (read-only browse). */
+export const DatabankQuestionSchema = z
+  .object({
+    id: IdSchema,
+    stemMs: z.string().nullable(),
+    stemEn: z.string().nullable(),
+    type: z.string().meta({ description: 'Stored question type, for example mcq.' }),
+    options: z.array(DatabankOptionSchema).meta({ description: 'Options of a single-MCQ question in label order; empty otherwise.' }),
+    stimuli: z.array(DatabankStimulusSchema).meta({ description: 'Figures linked directly to this question (group figures are on the unit `group`).' }),
+    subjectId: IdSchema,
+    subject: z.string(),
+    levelLabel: z.string().meta({ description: 'For example "Tingkatan 4".' }),
+    difficulty: z.number().int().min(1).max(5).nullable().meta({ description: 'Kesukaran 1 to 5 stars, null when not set.' }),
+    status: z.literal('approved').meta({ description: 'Always approved: the list shows "Diluluskan".' }),
+    groupPosition: z.number().int().nullable(),
+  })
+  .meta({ id: 'DatabankQuestion' })
+
+/** A unit: a whole stimulus group (members in group order, with the group stimuli once) or one standalone question. */
+export const DatabankRowSchema = z
+  .object({
+    unitId: z.string().meta({ description: '`g<groupId>` for a group, `q<questionId>` for a standalone question.' }),
+    group: z.object({ id: IdSchema, stimuli: z.array(DatabankStimulusSchema) }).nullable(),
+    questions: z.array(DatabankQuestionSchema).min(1),
+  })
+  .meta({ id: 'DatabankRow' })
+
+export const DatabankListMetaSchema = ListMetaSchema.extend({
+  totalUnits: z.number().int().min(0).meta({ description: 'Units matching the filter (equals totalItems).' }),
+  totalQuestions: z.number().int().min(0).meta({ description: 'Questions inside those units; with a subject and no search it equals the tile count.' }),
+}).meta({ id: 'DatabankListMeta' })
+
+export const DatabankQuestionsResponseSchema = z
+  .object({ data: z.array(DatabankRowSchema), meta: DatabankListMetaSchema })
+  .meta({ id: 'DatabankQuestionsResponse' })

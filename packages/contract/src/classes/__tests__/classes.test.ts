@@ -21,6 +21,10 @@ import {
   TeacherGallerySchema,
   TeacherStudentSchema,
   TeacherTopicCreateRequestSchema,
+  DATABANK_MESSAGES,
+  DatabankOverviewSchema,
+  DatabankQuestionsQuerySchema,
+  DatabankQuestionsResponseSchema,
   classJoinedText,
 } from '../schema'
 
@@ -177,6 +181,8 @@ describe('OpenAPI document', () => {
       ['/guru/topics', 'post'],
       ['/guru/contributions', 'get'],
       ['/guru/galeri-rajah', 'get'],
+      ['/guru/databank/overview', 'get'],
+      ['/guru/databank/questions', 'get'],
       ['/kelas-saya', 'get'],
       ['/kelas-saya/join', 'post'],
     ]
@@ -211,5 +217,32 @@ describe('contract is no stricter than the mock', () => {
     expect(fieldsOf(TeacherChapterCreateRequestSchema.safeParse({ ...ch, name: 'Bab', chapterNumber: 0 }))).toEqual({ chapterNumber: CLASS_MESSAGES.chapterNumber })
     expect(fieldsOf(TeacherChapterCreateRequestSchema.safeParse({ ...ch, name: 'Bab', chapterNumber: 1.5 }))).toEqual({ chapterNumber: CLASS_MESSAGES.chapterNumber })
     expect(fieldsOf(TeacherTopicCreateRequestSchema.safeParse({ name: 'x'.repeat(256), chapterId: '1' }))).toEqual({ name: CLASS_MESSAGES.topicName })
+  })
+})
+
+describe('Databank Soalan (S6-T19, API-GUR-27)', () => {
+  it('parses the overview', () => {
+    const tile = { subjectId: '1', nameMs: 'Matematik', nameEn: 'Mathematics', count: 0 }
+    expect(DatabankOverviewSchema.safeParse({ totalQuestions: 0, activeSubjects: 0, teras: [tile], elektif: [] }).success).toBe(true)
+    expect(DatabankOverviewSchema.safeParse({ totalQuestions: -1, activeSubjects: 0, teras: [], elektif: [] }).success).toBe(false)
+  })
+  it('refuses a search shorter than 2 characters with the GLB-4 copy and treats a blank search as none', () => {
+    const bad = DatabankQuestionsQuerySchema.safeParse({ q: 'x' })
+    expect(bad.success).toBe(false)
+    expect(bad.error?.issues[0]?.message).toBe(DATABANK_MESSAGES.searchMin)
+    expect(DatabankQuestionsQuerySchema.safeParse({ q: ' x ' }).success).toBe(false)
+    expect(DatabankQuestionsQuerySchema.safeParse({ q: '  ' }).success).toBe(true)
+    expect(DatabankQuestionsQuerySchema.safeParse({ q: 'Rajah 3', subjectId: '12', page: '2' }).data).toEqual({ q: 'Rajah 3', subjectId: '12', page: 2 })
+    expect(DatabankQuestionsQuerySchema.safeParse({ page: '0' }).success).toBe(false)
+    expect(DatabankQuestionsQuerySchema.safeParse({ subjectId: 'abc' }).success).toBe(false)
+  })
+  it('parses a list with a group unit', () => {
+    const q = { id: '5', stemMs: 'Soalan', stemEn: null, type: 'mcq', options: [], stimuli: [], subjectId: '1', subject: 'Sains', levelLabel: 'Tingkatan 4', difficulty: 3, status: 'approved', groupPosition: 1 }
+    const body = {
+      data: [{ unitId: 'g9', group: { id: '9', stimuli: [] }, questions: [q] }],
+      meta: { page: 1, pageSize: 20, totalItems: 1, totalPages: 1, from: 1, to: 1, totalUnits: 1, totalQuestions: 1 },
+    }
+    expect(DatabankQuestionsResponseSchema.safeParse(body).success).toBe(true)
+    expect(DatabankQuestionsResponseSchema.safeParse({ ...body, data: [{ unitId: 'q1', group: null, questions: [] }] }).success).toBe(false)
   })
 })
