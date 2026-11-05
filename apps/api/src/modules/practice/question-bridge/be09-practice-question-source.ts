@@ -166,7 +166,7 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
       const { records, groups } = await this.servableRecords(wanted)
       return this.mapServable([...records.values()], (r) => r.id, true, groups)
     }
-    const records = (await this.questions.getMany(wanted, 'live')).filter(eligible)
+    const records = (await this.questions.getMany(wanted, 'live', 'exclude', { lenientKeys: true })).filter(eligible)
     return this.mapAll(records, (r) => r.id)
   }
 
@@ -211,14 +211,14 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     const records = new Map<string, QuestionRecord>()
     const groups = new Map<string, GroupUnit>()
     const loaded: QuestionRecord[] = []
-    for (let i = 0; i < ids.length; i += HYDRATE_MAX) loaded.push(...(await this.questions.getMany(ids.slice(i, i + HYDRATE_MAX), 'live')).filter(eligible))
+    for (let i = 0; i < ids.length; i += HYDRATE_MAX) loaded.push(...(await this.questions.getMany(ids.slice(i, i + HYDRATE_MAX), 'live', 'exclude', { lenientKeys: true })).filter(eligible))
     const groupIds = [...new Set(loaded.flatMap((r) => (r.groupId === null ? [] : [r.groupId])))]
     if (groupIds.length > 0) {
       const have = new Map(loaded.map((r) => [r.id, r]))
       const defs = await this.questions.groupsByIds(groupIds)
       const missing = [...new Set(defs.flatMap((g) => g.questionIds).filter((id) => !have.has(id)))]
       for (let i = 0; i < missing.length; i += HYDRATE_MAX) {
-        for (const r of (await this.questions.getMany(missing.slice(i, i + HYDRATE_MAX), 'live')).filter(eligible)) have.set(r.id, r)
+        for (const r of (await this.questions.getMany(missing.slice(i, i + HYDRATE_MAX), 'live', 'exclude', { lenientKeys: true })).filter(eligible)) have.set(r.id, r)
       }
       for (const g of defs) {
         const eligibleMembers = g.questionIds.flatMap((id) => (have.has(id) ? [have.get(id) as QuestionRecord] : []))
@@ -261,7 +261,7 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     if (allowStimulus) return new Set((await this.servableRecords(ids)).records.keys())
     const out = new Set<string>()
     for (let i = 0; i < ids.length; i += HYDRATE_MAX) {
-      const records = await this.questions.getMany(ids.slice(i, i + HYDRATE_MAX), 'live')
+      const records = await this.questions.getMany(ids.slice(i, i + HYDRATE_MAX), 'live', 'exclude', { lenientKeys: true })
       for (const r of records) if (eligible(r) && this.check(r)) out.add(r.id)
     }
     return out
