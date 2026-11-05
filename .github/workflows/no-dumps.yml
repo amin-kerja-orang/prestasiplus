@@ -1,13 +1,20 @@
 # Repository-wide guard (BE-34, BE-NFR-13): no database dumps or archives, no .migration-out/, no large files.
-# Deliberately has no `paths:` filter, so it runs on every push and pull request whatever the change touches.
+# Deliberately has no `paths:` filter, so it runs on every pull request and every push to a long-lived branch whatever the change touches.
 name: no-dumps
 
 on:
+  # Push only on the long-lived branches; PR branches are covered by pull_request (no push + pull_request double run).
   push:
+    branches: [feature/v3-bijak-r1, feature/v2-backend, be/integration-frontend]
   pull_request:
 
 permissions:
   contents: read
+
+# A newer push to the same PR cancels the superseded run; runs on long-lived branches are never cancelled.
+concurrency:
+  group: no-dumps-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   no-dumps:
