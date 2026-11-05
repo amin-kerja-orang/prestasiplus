@@ -5,20 +5,19 @@ import type {
   CurriculumNode,
   CurriculumTpDescriptor,
   EducationLevel,
-  LegacySubtopic,
-  LegacyTopic,
   Subject,
   Subtopic,
   Topic,
 } from '../../db/generated/client'
 import { Prisma } from '../../db/generated/client'
 import { PrismaService } from '../../db/prisma.service'
-import { byOrderThenId, chapterOrder, compareIds, MAP_GRADES, topicOrder } from './rules'
+import { offeredLevels, type OfferedLevel } from '../practice/rules'
+import { byOrderThenId, chapterOrder, compareIds, topicOrder } from './rules'
 
-/** The learner catalogue (topics, learning map) is Tingkatan 4 and 5 only (secondary-only, D72); a topic of any other grade is never read. */
-const LEARNER_TOPIC_GRADES: string[] = [...MAP_GRADES]
+/** A learner Topik: a tree chapter with its subject and level rows. */
+export type LearnerChapter = Chapter & { subject: Subject; educationLevel: EducationLevel }
 
-export type { Chapter, CurriculumNode, CurriculumTpDescriptor, EducationLevel, LegacySubtopic, LegacyTopic, Subject, Subtopic, Topic }
+export type { Chapter, CurriculumNode, CurriculumTpDescriptor, EducationLevel, Subject, Subtopic, Topic }
 
 /** A subject with the ids of its linked levels, in level order (BR-08). */
 export type SubjectWithLevels = Subject & { educationLevelIds: bigint[] }
@@ -564,39 +563,55 @@ export class CurriculumRepository {
     return this.db.curriculumTpDescriptor.findMany({ where: { subjectId, nodeId }, orderBy: { tp: 'asc' } })
   }
 
-  // --- learner catalogue (S12 to S14) -------------------------------------------------------------
+  /** The one offered-levels rule (DM-20, S4-T06): active levels with `stage <> 'primary'`, read per call. */
+  offeredLevels(): Promise<OfferedLevel[]> {
+    return offeredLevels(this.db)
+  }
+
+  // --- learner catalogue (S12 to S14), read from chapters -> topics -> subtopics (S4-T06, DM-16) -----------
 
   /**
-   * BR-13: filtered case-insensitively (AND), `sequence` then id. An empty or absent filter does
-   * not filter; an unknown code matches nothing.
+   * Learner "Topik" rows: the tree chapters (in tree, active) of the given offered levels, of active subjects, optionally
+   * limited to subjects whose `code` is in `subjectCodes`. The level list is per call (`offeredLevels(db)`), never a constant.
+   * Order: level order, subject order, then BR-08 chapter order.
    */
-  async legacyTopics(filter: { gradeLevel?: string | null; subject?: string | null } = {}): Promise<LegacyTopic[]> {
-    const rows = await this.db.legacyTopic.findMany({
+  async learnerChapters(filter: { levelIds: readonly bigint[]; subjectCodes?: readonly string[] }): Promise<LearnerChapter[]> {
+    if (filter.levelIds.length === 0 || filter.subjectCodes?.length === 0) return []
+    const rows = await this.db.chapter.findMany({
       where: {
-        // An allow-list, not a prefix test: no grade asked still means T4/T5 only; a grade outside it matches nothing.
-        AND: [{ gradeLevel: { in: LEARNER_TOPIC_GRADES } }, ...(filter.gradeLevel ? [{ gradeLevel: filter.gradeLevel.toUpperCase() }] : [])],
-        ...(filter.subject ? { subject: filter.subject.toUpperCase() } : {}),
+        inTree: true,
+        isActive: true,
+        educationLevelId: { in: [...filter.levelIds] },
+        subject: { isActive: true, ...(filter.subjectCodes ? { code: { in: [...filter.subjectCodes] } } : {}) },
       },
+      include: { subject: true, educationLevel: true },
     })
-    return rows.sort((a, b) => a.sequence - b.sequence || compareIds(a.id, b.id))
+    return rows
+      .map((r) => ({ ...r, educationLevel: r.educationLevel as EducationLevel }))
+      .sort(
+        (a, b) =>
+          byOrderThenId(a.educationLevel, b.educationLevel) || byOrderThenId(a.subject, b.subject) || chapterOrder(a, b),
+      )
   }
 
-  legacyTopic(id: bigint): Promise<LegacyTopic | null> {
-    return this.db.legacyTopic.findFirst({ where: { id, gradeLevel: { in: LEARNER_TOPIC_GRADES } } })
+  /** One learner chapter by id, under the same filter as `learnerChapters`; `null` otherwise. */
+  async learnerChapter(id: bigint, levelIds: readonly bigint[]): Promise<LearnerChapter | null> {
+    const row = await this.db.chapter.findFirst({
+      where: { id, inTree: true, isActive: true, educationLevelId: { in: [...levelIds] }, subject: { isActive: true } },
+      include: { subject: true, educationLevel: true },
+    })
+    return row ? { ...row, educationLevel: row.educationLevel as EducationLevel } : null
   }
 
-  /** Subtopics per learner topic id, ordered by `sortOrder` then id. */
-  async legacySubtopicsByTopic(topicIds: readonly bigint[]): Promise<Map<bigint, LegacySubtopic[]>> {
-    const map = new Map<bigint, LegacySubtopic[]>()
-    if (topicIds.length === 0) return map
-    const rows = await this.db.legacySubtopic.findMany({
-      where: { legacyTopicId: { in: [...topicIds] } },
-      orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
-    })
-    for (const r of rows) {
-      const list = map.get(r.legacyTopicId)
+  /** Active topics per chapter id, BR-08 natural order (the learner "subtopics" of a Topik card). */
+  async activeTopicsByChapter(chapterIds: readonly bigint[]): Promise<Map<bigint, Topic[]>> {
+    const map = new Map<bigint, Topic[]>()
+    if (chapterIds.length === 0) return map
+    const rows = await this.db.topic.findMany({ where: { chapterId: { in: [...chapterIds] }, isActive: true } })
+    for (const r of rows.sort(topicOrder)) {
+      const list = map.get(r.chapterId)
       if (list) list.push(r)
-      else map.set(r.legacyTopicId, [r])
+      else map.set(r.chapterId, [r])
     }
     return map
   }
