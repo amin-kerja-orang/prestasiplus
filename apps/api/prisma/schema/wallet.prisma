@@ -92,6 +92,8 @@ model CoinLedger {
   description  String
   /// Written while an admin is in Mod Pelajar (G-07); such rows are excluded from totals shown to others.
   isTest       Boolean  @default(false) @map("is_test")
+  /// DM-79: partial unique (user_id, client_uuid), written in migration 0231 only (Prisma cannot express partial indexes).
+  clientUuid   String?  @map("client_uuid") @db.Uuid
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   legacySource String?  @map("legacy_source")
   legacyId     String?  @map("legacy_id")
