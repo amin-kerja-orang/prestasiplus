@@ -155,6 +155,7 @@ async function read(id: string): Promise<GroupView> {
     educationLevelId: g.educationLevelId ?? null,
     kertas: g.kertas ?? null,
     draftOfGroupId: g.draftOfGroupId ?? null,
+    optionBank: (g.optionBank ?? []).map((o) => ({ label: o.label, text: o.body.ms })),
   }
 }
 
@@ -631,6 +632,11 @@ const preview = (m: GroupMember): string => (m.stem.length > 90 ? `${m.stem.slic
             </DsCluster>
           </DsStack>
         </template>
+      </DsStack>
+
+      <DsStack v-if="actions && (view.optionBank?.length ?? 0) > 0" as="section" gap="xs" aria-label="Bank pilihan" :data-testid="`${testid}-bank`">
+        <DsHeading :level="3">Bank pilihan (A-H)</DsHeading>
+        <DsText v-for="o in view.optionBank" :key="o.label" variant="body">{{ o.label }}. {{ o.text }}</DsText>
       </DsStack>
 
       <DsStack as="section" gap="sm" aria-label="Soalan dalam kumpulan">

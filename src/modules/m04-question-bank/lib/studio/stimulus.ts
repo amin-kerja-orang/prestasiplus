@@ -122,3 +122,17 @@ export interface PendingGroup {
   /** Other questions chosen to share the stimulus (the new question joins them when it is saved). */
   memberIds: string[]
 }
+
+/* ---- `Bank pilihan (A-H)` of a group (G-09, DM-52): 2 to 8 rows for `match` questions; the letters follow the order ---- */
+
+export const BANK_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'] as const
+export const BANK_MIN_MESSAGE = 'Bank pilihan mesti ada sekurang-kurangnya 2 pilihan.'
+
+/** Null when the bank is empty (no bank) or has at least 2 filled rows. */
+export function bankIssue(rows: readonly string[]): string | null {
+  if (rows.length === 0) return null
+  return rows.filter((r) => r.trim() !== '').length < 2 || rows.some((r) => r.trim() === '') ? BANK_MIN_MESSAGE : null
+}
+
+export const toOptionBank = (rows: readonly string[]): { label: string; body: { ms: string } }[] =>
+  rows.map((text, i) => ({ label: BANK_LETTERS[i] as string, body: { ms: text.trim() } }))

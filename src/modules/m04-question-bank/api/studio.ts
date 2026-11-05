@@ -53,6 +53,8 @@ export interface GroupDetail {
   kertas?: string | null
   /** S1-T01: the served group this draft copy will replace. */
   draftOfGroupId?: string | null
+  /** DM-52: `Bank pilihan (A-H)`, set when the group is created; the update route does not take it yet. */
+  optionBank?: { label: string; body: { ms: string; en?: string } }[]
 }
 
 export function fetchStudioDskp(subjectId: string, educationLevelId: string, signal?: AbortSignal): Promise<StudioDskp> {
@@ -101,7 +103,7 @@ export const updateStimulus = (id: string, body: StimulusUpdateRequest): Promise
 export const fetchGroup = (id: string, signal?: AbortSignal): Promise<GroupDetail> =>
   api.get<GroupDetail>(`/api/stimulus-groups/${id}`, signal ? { signal } : {})
 
-export const createGroup = (body: { label?: string | null; stimulusIds: string[]; questionIds?: string[]; subjectId?: string; educationLevelId?: string; kertas?: string | null }): Promise<Flash<GroupDetail>> =>
+export const createGroup = (body: { label?: string | null; stimulusIds: string[]; questionIds?: string[]; subjectId?: string; educationLevelId?: string; kertas?: string | null; optionBank?: { label: string; body: { ms: string } }[] }): Promise<Flash<GroupDetail>> =>
   api.post<Flash<GroupDetail>>('/api/stimulus-groups', { body, raw: true })
 
 export const setGroupStimuli = (id: string, stimulusIds: string[]): Promise<Flash<GroupDetail>> =>
@@ -122,6 +124,17 @@ export const setGroupMembers = (id: string, questionIds: string[]): Promise<Flas
 
 export const reorderGroupMembers = (id: string, questionIds: string[]): Promise<Flash<GroupDetail>> =>
   api.put<Flash<GroupDetail>>(`/api/stimulus-groups/${id}/members/order`, { body: { questionIds }, raw: true })
+
+export type StudioBulkAction = 'review' | 'approved' | 'archived'
+export interface StudioBulkResult {
+  affected: number
+  failed: { id: string; code: string; message: string }[]
+  skipped?: { id: string; message: string }[]
+}
+
+/** API-Q-04, selected rows (at most 64): group-aware; a selection holding part of a group is refused whole. */
+export const bulkStudioAction = (action: StudioBulkAction, ids: readonly string[]): Promise<Flash<StudioBulkResult>> =>
+  api.post<Flash<StudioBulkResult>>('/api/questions/bulk-action', { body: { action, ids }, raw: true })
 
 /** API-Q-04, group form: every `Draf` member goes to `Menunggu Semakan` in one transaction. */
 export const submitGroupForReview = (groupId: string): Promise<Flash<{ affected: number; failed: unknown[] }>> =>

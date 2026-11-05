@@ -19,6 +19,43 @@ test.skip(!ADMIN_USER || !ADMIN_PASS, NEEDS_PASSWORD)
 
 const data = async <T>(page: Page, path: string): Promise<T> => ((await (await page.request.get(path)).json()) as { data: T }).data
 
+test.describe('S2-T01 Studio bulk bar @api', () => {
+  test('selected rows go to review; all results of the filter are archived after a count @api', async ({ page }) => {
+    test.skip((page.viewportSize()?.width ?? 0) !== 1280, 'the whole flow runs once; responsive-s2 covers the widths')
+    test.setTimeout(120_000)
+    const login = await page.request.post('/api/auth/login', { data: { identifier: ADMIN_USER, password: ADMIN_PASS } })
+    expect(login.ok()).toBe(true)
+    const csrf = (await data<{ csrf: string }>(page, '/api/session')).csrf
+    const subjects = await data<{ id: number | string; name: string }[]>(page, '/api/subjects')
+    const levels = await data<{ id: number | string; name: string }[]>(page, '/api/education-levels')
+    const subjectId = String(subjects.find((s) => s.name === 'Matematik')?.id)
+    const educationLevelId = String(levels.find((l) => l.name === 'Tingkatan 4')?.id)
+    const token = `PUKALUJIAN${String(Date.now())}`
+    for (const n of [1, 2]) {
+      const res = await page.request.post('/api/questions', {
+        headers: { 'x-csrf-token': csrf },
+        data: { subjectId, educationLevelId, difficultyLevel: 3, questionType: 'mcq', questionText: `Soalan ${token} nombor ${String(n)}`, options: ['4', '5', '6', '7'], correctAnswer: 1 },
+      })
+      expect(res.status(), await res.text()).toBe(201)
+    }
+
+    await page.goto(`/admin/studio?search=${token}`)
+    const table = page.getByTestId('studio-table')
+    await expect(table).toContainText(token)
+    await table.locator('tbody [role="checkbox"]').first().click()
+    await expect(page.getByTestId('studio-bulk-count')).toHaveText('1 soalan dipilih')
+    await page.getByTestId('studio-bulk-review').click()
+    await expect(page.getByTestId('studio-bulk-result')).toBeVisible()
+
+    await page.getByTestId('studio-bulk-all').click()
+    await expect(page.getByTestId('studio-bulk-review')).toHaveCount(0)
+    await page.getByTestId('studio-bulk-archived').click()
+    await expect(page.locator('[data-ds="confirm-message"]')).toContainText('2 daripada 2 soalan sepadan akan diarkibkan.')
+    await page.locator('[data-ds="confirm-ok"]').click()
+    await expect(page.getByTestId('bulk-filter-result')).toBeVisible()
+  })
+})
+
 test.describe('S2-T01 Studio group first @api', () => {
   test('Cipta baharu makes a scoped group; 3 questions go through review and publish as one @api', async ({ page }) => {
     test.skip((page.viewportSize()?.width ?? 0) !== 1280, 'the whole flow runs once; responsive-s2 covers the widths')

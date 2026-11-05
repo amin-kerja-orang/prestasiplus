@@ -23,6 +23,8 @@ export interface GroupView {
   kertas?: string | null
   /** Set on a draft copy (FR-QA-04): the served group this copy will replace. */
   draftOfGroupId?: string | null
+  /** DM-52: `Bank pilihan (A-H)`. */
+  optionBank?: { label: string; text: string }[]
 }
 
 export interface GroupMember {

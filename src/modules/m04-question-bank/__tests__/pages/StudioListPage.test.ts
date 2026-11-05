@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
+import { ApiError } from '@/api'
 import { useFlashStore } from '@/stores/flash'
 
 import StudioListPage from '../../pages/StudioListPage.vue'
@@ -14,6 +15,7 @@ const studio = vi.hoisted(() => ({
   fetchStudioList: vi.fn(),
   createStimulus: vi.fn(),
   createGroup: vi.fn(),
+  bulkStudioAction: vi.fn(),
   fetchServabilityBatch: vi.fn(),
   moveQuestionStatus: vi.fn(),
   editAsDraft: vi.fn(),
@@ -26,7 +28,7 @@ const studio = vi.hoisted(() => ({
 const lookups = vi.hoisted(() => ({ fetchSubjects: vi.fn(), fetchEducationLevels: vi.fn() }))
 vi.mock('../../api/studio', () => studio)
 vi.mock('../../api/lookups', () => lookups)
-const summaryApi = vi.hoisted(() => ({ fetchQuestionSummary: vi.fn() }))
+const summaryApi = vi.hoisted(() => ({ fetchQuestionSummary: vi.fn(), bulkQuestionsByFilter: vi.fn() }))
 vi.mock('../../api/questions', () => summaryApi)
 
 const row = (id: string, status: string, extra: Record<string, unknown> = {}) => ({
@@ -105,6 +107,49 @@ describe('StudioListPage (S1 to S6)', () => {
     expect(t(w, 'studio-create').text()).toContain('Cipta baharu')
   })
 
+  describe('bulk bar (FR-ADM-Q03.5, field 03-15)', () => {
+    const tick = async (w: VueWrapper, n = 0): Promise<void> => {
+      await w.findAll('[role="checkbox"]')[n + 1]?.trigger('click')
+      await flushPromises()
+    }
+
+    it('selected rows take the three actions and read "{ok} berjaya, {gagal} dilangkau"', async () => {
+      studio.bulkStudioAction.mockResolvedValue({ data: { affected: 1, failed: [{ id: '2', code: 'X', message: 'Sila pilih Bab.' }] }, status: 'ok' })
+      const w = await render()
+      expect(w.find('[data-testid="studio-bulk"]').exists()).toBe(false)
+      await tick(w)
+      expect(t(w, 'studio-bulk-count').text()).toBe('1 soalan dipilih')
+      expect(t(w, 'studio-bulk-review').text()).toBe('Hantar untuk semakan')
+      await t(w, 'studio-bulk-approved').trigger('click')
+      await flushPromises()
+      expect(studio.bulkStudioAction.mock.calls[0]?.[0]).toBe('approved')
+      expect(t(w, 'studio-bulk-result').text()).toContain('1 berjaya, 1 dilangkau')
+      expect(t(w, 'studio-bulk-result').text()).toContain('Soalan #2 — Sila pilih Bab.')
+    })
+
+    it('a refused part of a group shows the server text', async () => {
+      studio.bulkStudioAction.mockRejectedValue(new ApiError({ status: 422, code: 'VALIDATION_ERROR', message: 'Soalan dalam kumpulan rangsangan mesti dipilih bersama.' }))
+      const w = await render()
+      await tick(w)
+      await t(w, 'studio-bulk-review').trigger('click')
+      await flushPromises()
+      expect(t(w, 'studio-bulk-problems').text()).toContain('mesti dipilih bersama')
+    })
+
+    it('all results needs a filter, offers Terbitkan and Arkib only, and counts first', async () => {
+      summaryApi.bulkQuestionsByFilter.mockResolvedValueOnce({ data: { matched: 5, eligible: 5, skipped: 0, cap: 1000, processed: 0, affected: 0, failed: [], remaining: 0, capped: false, dryRun: true }, status: 'ok' })
+      summaryApi.bulkQuestionsByFilter.mockResolvedValueOnce({ data: { matched: 5, eligible: 5, skipped: 0, cap: 1000, processed: 5, affected: 5, failed: [], remaining: 0, capped: false, dryRun: false }, status: 'ok' })
+      const w = await render('/admin/studio?subject_id=3')
+      await w.get('[data-testid="studio-bulk-all"] [role="checkbox"], [data-testid="studio-bulk-all"]').trigger('click')
+      await flushPromises()
+      expect(w.find('[data-testid="studio-bulk-review"]').exists()).toBe(false)
+      await t(w, 'studio-bulk-approved').trigger('click')
+      await flushPromises()
+      expect(summaryApi.bulkQuestionsByFilter).toHaveBeenNthCalledWith(1, 'approved', { subjectId: '3' }, { dryRun: true })
+      expect(summaryApi.bulkQuestionsByFilter).toHaveBeenNthCalledWith(2, 'approved', { subjectId: '3' }, { expectedCount: 5 })
+    })
+  })
+
   describe('Cipta baharu (FR-ADM-QE2.1)', () => {
     const body = (id: string): HTMLElement => document.querySelector(`[data-testid="${id}"]`) as HTMLElement
     const set = async (id: string, v: string): Promise<void> => {
@@ -143,6 +188,33 @@ describe('StudioListPage (S1 to S6)', () => {
       await flushPromises()
       expect(studio.createGroup).toHaveBeenCalledWith({ label: 'Petikan 1', stimulusIds: ['70'], subjectId: '3', educationLevelId: '7', kertas: null })
       expect(router.currentRoute.value.path).toBe('/admin/studio/groups/9')
+    })
+
+    it('Bank pilihan needs at least 2 filled rows, and goes with the group (G-09)', async () => {
+      studio.createStimulus.mockResolvedValue({ data: { id: '70' }, status: 'ok' })
+      studio.createGroup.mockResolvedValue({ data: { id: '9' }, status: 'ok' })
+      const w = await render()
+      await t(w, 'studio-create').trigger('click')
+      await flushPromises()
+      body('studio-start-group').click()
+      await flushPromises()
+      await set('studio-start-subject', '3')
+      await set('studio-start-level', '7')
+      await set('studio-start-stimulus-label', 'Petikan 1')
+      await set('studio-start-stimulus-body', 'Teks petikan.')
+      body('studio-start-bank-add').click()
+      await flushPromises()
+      await set('studio-start-bank-0', 'Satu')
+      body('studio-start-create').click()
+      await flushPromises()
+      expect(document.body.textContent).toContain('Bank pilihan mesti ada sekurang-kurangnya 2 pilihan.')
+      expect(studio.createGroup).not.toHaveBeenCalled()
+      body('studio-start-bank-add').click()
+      await flushPromises()
+      await set('studio-start-bank-1', 'Dua')
+      body('studio-start-create').click()
+      await flushPromises()
+      expect(studio.createGroup).toHaveBeenCalledWith(expect.objectContaining({ optionBank: [{ label: 'A', body: { ms: 'Satu' } }, { label: 'B', body: { ms: 'Dua' } }] }))
     })
   })
 

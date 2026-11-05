@@ -41,7 +41,7 @@ import {
 import { useMedia } from '@/ds/useMedia'
 
 import { fetchEducationLevels, fetchSubjects } from '../api/lookups'
-import { fetchQuestionSummary } from '../api/questions'
+import { fetchQuestionSummary, type QuestionBulkFilter } from '../api/questions'
 import {
   createGroup,
   createStimulus,
@@ -56,12 +56,13 @@ import {
   studioAvailable,
   type StudioRow,
 } from '../api/studio'
+import StudioBulkBar from '../components/studio/StudioBulkBar.vue'
 import StudioPreview from '../components/studio/StudioPreview.vue'
 import StudioStimulusEditor from '../components/studio/StudioStimulusEditor.vue'
 import { excerpt, sourceLabel } from '../lib/question-list'
 import { pageOf, queryText } from '../lib/route-query'
 import { hydrate, blankDraft, type StudioDraft } from '../lib/studio/draft'
-import { blankStimulus, stimulusIssue, toCreateBody, type StimulusForm } from '../lib/studio/stimulus'
+import { BANK_LETTERS, bankIssue, blankStimulus, stimulusIssue, toCreateBody, toOptionBank, type StimulusForm } from '../lib/studio/stimulus'
 import type { GroupView } from '../lib/studio/group-members'
 import {
   ARCHIVE_DIALOG,
@@ -163,6 +164,8 @@ const startOpen = ref(false)
 const startGroup = ref(false)
 const groupForm = ref({ subjectId: '', educationLevelId: '', kertas: '' })
 const groupStimulus = ref<StimulusForm>(blankStimulus())
+/** `Bank pilihan (A-H)` (G-09): set here, as the group update route does not take it yet; empty = no bank. */
+const groupBank = ref<string[]>([])
 const groupErrors = ref<Record<string, string>>({})
 const groupProblems = ref<string[]>([])
 const groupBusy = ref(false)
@@ -173,6 +176,7 @@ function openStart(): void {
   startGroup.value = false
   groupForm.value = { subjectId: '', educationLevelId: '', kertas: '' }
   groupStimulus.value = blankStimulus()
+  groupBank.value = []
   groupErrors.value = {}
   groupProblems.value = []
   startOpen.value = true
@@ -184,7 +188,7 @@ async function createNewGroup(): Promise<void> {
   if (f.subjectId === '') errors.subjectId = 'Sila pilih subjek.'
   if (f.educationLevelId === '') errors.educationLevelId = 'Sila pilih tahap pendidikan.'
   groupErrors.value = errors
-  const issue = stimulusIssue(groupStimulus.value)
+  const issue = stimulusIssue(groupStimulus.value) ?? bankIssue(groupBank.value)
   groupProblems.value = issue === null ? [] : [issue]
   if (Object.keys(errors).length > 0 || issue !== null) return
   groupBusy.value = true
@@ -196,6 +200,7 @@ async function createNewGroup(): Promise<void> {
       subjectId: f.subjectId,
       educationLevelId: f.educationLevelId,
       kertas: f.kertas === '' ? null : f.kertas,
+      ...(groupBank.value.length === 0 ? {} : { optionBank: toOptionBank(groupBank.value) }),
     })
     startOpen.value = false
     await router.push(`/admin/studio/groups/${g.data.id}`)
@@ -204,6 +209,21 @@ async function createNewGroup(): Promise<void> {
   } finally {
     groupBusy.value = false
   }
+}
+
+/** FR-ADM-Q03.5: rows picked for the bulk bar; the selection survives paging. */
+const selected = ref<TableRow[]>([])
+const selectedIds = computed(() => selected.value.map((r) => r.id))
+/** The applied filter as the filter route takes it; the status filter is already the wire code here. */
+const bulkFilter = computed<QuestionBulkFilter>(() => {
+  const a = applied.value
+  return Object.fromEntries(
+    Object.entries({ subjectId: a.subject_id, status: a.status, search: a.search, tahun: a.tahun, negeri: a.negeri, kertas: a.kertas, jenis: a.jenis }).filter(([, v]) => v !== ''),
+  )
+})
+async function afterBulk(): Promise<void> {
+  selected.value = []
+  await Promise.all([list.reload(), summary.reload()])
 }
 
 /** The KPI strip by Subjek (plan S2-T01, copied from `BankPage.vue`; data API-Q-01 `/summary`). A failed read just hides it. */
@@ -572,6 +592,8 @@ const cardFields: CardField[] = [
         </div>
       </DsFilterBar>
 
+      <StudioBulkBar :selected-ids="selectedIds" :filter="bulkFilter" :matched="list.data.value?.meta.totalItems ?? 0" @done="afterBulk" />
+
       <DsLoadError v-if="list.error.value" :message="listLoadMessage(list.error.value)" testid="studio-error" retry-testid="studio-retry" @retry="list.reload()" />
 
       <DsPanel v-else-if="!firstLoad && rows.length === 0" data-testid="studio-empty">
@@ -585,9 +607,11 @@ const cardFields: CardField[] = [
 
       <DsDataTable
         v-else
+        v-model:selection="selected"
         variant="flush"
         :layout="lg ? 'fixed' : 'auto'"
         row-key="id"
+        selectable
         :data="tableRows"
         :columns="columns"
         caption="Senarai soalan Studio"
@@ -686,6 +710,15 @@ const cardFields: CardField[] = [
             </DsNativeSelect>
           </DsFormField>
           <StudioStimulusEditor v-model="groupStimulus" testid="studio-start-stimulus" />
+          <DsStack gap="xs" data-testid="studio-start-bank">
+            <DsText variant="label">Bank pilihan (A-H)</DsText>
+            <DsCluster v-for="(_b, i) in groupBank" :key="i" gap="xs" :wrap="false">
+              <DsText variant="label" tabular>{{ BANK_LETTERS[i] }}</DsText>
+              <UInput v-model="groupBank[i]" :aria-label="`Pilihan ${BANK_LETTERS[i]}`" :data-testid="`studio-start-bank-${i}`" />
+              <UButton type="button" color="error" variant="soft" :data-testid="`studio-start-bank-${i}-remove`" @click="groupBank.splice(i, 1)">Buang</UButton>
+            </DsCluster>
+            <UButton v-if="groupBank.length < BANK_LETTERS.length" type="button" color="neutral" variant="soft" data-testid="studio-start-bank-add" @click="groupBank.push('')">+ Pilihan</UButton>
+          </DsStack>
           <DsStack v-if="groupProblems.length > 0" gap="2xs" role="alert" data-testid="studio-start-problems">
             <DsText v-for="p in groupProblems" :key="p" variant="body" tone="error">{{ p }}</DsText>
           </DsStack>
