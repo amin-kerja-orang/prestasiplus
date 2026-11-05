@@ -10,13 +10,16 @@ import { DsPillNav, type PillItem } from '@/ds'
 import type { LevelFilter } from '../../api/amaran'
 import { AMARAN_PATH, LEVEL_PILLS } from './amaran-format'
 
-const props = defineProps<{ active: LevelFilter | null }>()
+/** `basePath`: the route the pills link to (M17 central views); default the school-admin report. */
+const props = defineProps<{ active: LevelFilter | null; basePath?: string }>()
 
 const items = computed<PillItem<string>[]>(() =>
   LEVEL_PILLS.map((p) => ({
     key: p.level ?? 'all',
     label: p.label,
-    to: p.level ? { path: AMARAN_PATH, query: { tingkatan: p.level } } : { path: AMARAN_PATH },
+    to: p.level
+      ? { path: props.basePath ?? AMARAN_PATH, query: { tingkatan: p.level } }
+      : { path: props.basePath ?? AMARAN_PATH },
   })),
 )
 </script>

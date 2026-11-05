@@ -46,16 +46,16 @@ describe('practice_answers question index and the used query (migration 0091_pra
     )
     // A few thousand answers: real ones on other questions, test traffic, migrated history without a question link, and one on an owned question.
     await db.query(
-      `insert into practice_answers (user_id, question_id, is_correct, answered_at, is_test)
-       select $1::bigint, 1000000 + g, true, now(), g % 7 = 0 from generate_series(1, 6000) g`,
+      `insert into practice_answers (user_id, question_id, is_correct, answered_at, is_test, mode)
+       select $1::bigint, 1000000 + g, true, now(), g % 7 = 0, 'latih_tubi' from generate_series(1, 6000) g`,
       [student],
     )
     await db.query(
-      `insert into practice_answers (user_id, subject_id, is_correct, answered_at, historical)
-       select $1::bigint, $2::bigint, true, now(), true from generate_series(1, 3000) g`,
+      `insert into practice_answers (user_id, subject_id, is_correct, answered_at, historical, mode)
+       select $1::bigint, $2::bigint, true, now(), true, 'latih_tubi' from generate_series(1, 3000) g`,
       [student, subject],
     )
-    await db.query(`insert into practice_answers (user_id, question_id, is_correct, answered_at) values ($1, $2, true, now())`, [student, ownedQuestion])
+    await db.query(`insert into practice_answers (user_id, question_id, is_correct, answered_at, mode) values ($1, $2, true, now(), 'latih_tubi')`, [student, ownedQuestion])
     await db.query(`analyze practice_answers`)
   }, 180_000)
   afterAll(async () => {

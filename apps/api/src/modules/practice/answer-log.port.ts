@@ -1,13 +1,15 @@
 /**
  * The single answer store write path (S5-T15, DM-44, 60 section 2.17.5): `AnswerLogPort.record` is the one writer of
- * `practice_answers` for every R1 activity (the two legacy direct writers in `practice.repository.ts` are the
- * allow-list of `answer-store-writers.spec.ts` until they move here). Idempotency key: (attempt_id, user_id,
+ * `practice_answers` for every R1 activity (the practice writers moved here in part 2; the allow-list of `answer-store-writers.spec.ts`
+ * is empty; migration 0188 validates the mode check and sets NOT NULL). Idempotency key: (attempt_id, user_id,
  * question_id, coalesce(part_ref, '')), the partial unique index of migration 0181; a second `record` with the same
  * key updates the row and returns `created: false`.
  *
  * The SQL and the validation are exported functions (`validateAnswerEntry`, `upsertAnswerRow`) so the Bijak backfill
  * script reuses the same statement.
  */
+import { createHash } from 'node:crypto'
+
 import { Inject, Injectable, Logger } from '@nestjs/common'
 
 import type { TxClient } from '../../db/client'
@@ -48,11 +50,32 @@ export const WRITABLE_ANSWER_MODES = ANSWER_MODES.filter((m) => !LEGACY_ANSWER_M
 >[]
 export type WritableAnswerMode = (typeof WRITABLE_ANSWER_MODES)[number]
 
-/** The entry of `record`: exactly the 10 fields of 60 section 2.17.5. */
+/**
+ * The writable mode a session of `mode` records its answers under. The 3 legacy modes are still startable as sessions
+ * but are not writable on `practice_answers` (D-T10-2): `past_year` -> `databank`, `ramalan` -> `tracking_a`
+ * (OPT-MODE-SESI: legacy read as these lanes), `random` -> `latih_tubi` ("Latih Tubi Rawak", default taken).
+ */
+export function writableModeOf(mode: AnswerMode): WritableAnswerMode {
+  switch (mode) {
+    case 'past_year':
+      return 'databank'
+    case 'ramalan':
+      return 'tracking_a'
+    case 'random':
+      return 'latih_tubi'
+    default:
+      return mode
+  }
+}
+
+/** The entry of `record`: the 10 fields of 60 section 2.17.5 plus 3 optional pass-through fields (#468 answer 1). */
 export interface AnswerLogEntry {
   /** Decimal-string user id. */
   userId: string
-  /** uuid of the activity instance (exam attempt, practice session, battle/game uuid). */
+  /**
+   * Id of the activity instance: a uuid (exam attempt, practice session, battle/game uuid) or the decimal id of a PKSK
+   * exam attempt (`PkskExamAttempt.id`, ruling on #466/#468). A decimal id is stored as `attemptUuidOf(id)`.
+   */
   attemptId: string
   /** Decimal-string question id. */
   questionId: string
@@ -67,6 +90,12 @@ export interface AnswerLogEntry {
   answeredAt: Date
   /** True in Mod Pelajar (INV-30); the caller sets it, the port never infers it. */
   isTest: boolean
+  /** Optional pass-through: the option label chosen (`A`..`H`), null when none. */
+  selectedLabel?: string | null
+  /** Optional pass-through: the version the pupil was served; when given it is the served version for the dimensions. */
+  questionVersionNo?: number | null
+  /** Optional pass-through: seconds spent on the question (integer, 0 or more). */
+  timeSeconds?: number | null
 }
 
 /** A fully resolved row (entry plus the dimensions of the served version) as written. */
@@ -75,7 +104,8 @@ export interface AnswerRow {
   attemptId: string
   /** Set when `attemptId` is a practice session id of this user. */
   sessionId: string | null
-  questionId: string
+  /** Null only for the demo seed (an answer not linked to a question); `record` always passes a question. */
+  questionId: string | null
   questionVersionNo: number | null
   partRef: string | null
   mode: AnswerMode
@@ -90,16 +120,39 @@ export interface AnswerRow {
   marksMax: number | null
   answeredAt: Date
   isTest: boolean
+  selectedLabel?: string | null
+  timeSeconds?: number | null
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** Namespace of the deterministic attempt uuid of a decimal (PKSK exam attempt) id; fixed, never change it. */
+const DECIMAL_ATTEMPT_NAMESPACE = 'pp:practice_answers.attempt_id:pksk_exam_attempt:'
+
+/**
+ * The stored `practice_answers.attempt_id` of an entry's attemptId. A uuid is stored as it is (lower case). A decimal id
+ * (a PKSK exam attempt, `PkskExamAttempt.id`) becomes a deterministic name-based uuid (RFC 4122 version 5 layout over
+ * SHA-1 of the namespace and the id), so the column stays `uuid`, the DM-44 unique index keeps working, and a reader
+ * finds the rows of attempt N with `attempt_id = attemptUuidOf(String(N))`.
+ */
+export function attemptUuidOf(attemptId: string): string {
+  if (UUID.test(attemptId)) return attemptId.toLowerCase()
+  if (!isIdString(attemptId)) throw new Error('AnswerLogPort: attemptId must be a uuid or a decimal id')
+  const b = createHash('sha1').update(DECIMAL_ATTEMPT_NAMESPACE + BigInt(attemptId).toString()).digest().subarray(0, 16)
+  b[6] = (b[6]! & 0x0f) | 0x50
+  b[8] = (b[8]! & 0x3f) | 0x80
+  const h = b.toString('hex')
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`
+}
 
 /** Throws a clear Error for an entry the port refuses (before any database access). */
 export function validateAnswerEntry(entry: AnswerLogEntry): void {
   if (!(WRITABLE_ANSWER_MODES as readonly string[]).includes(entry.mode)) {
     throw new Error(`AnswerLogPort: mode '${String(entry.mode)}' is not writable (legacy or unknown)`)
   }
-  if (typeof entry.attemptId !== 'string' || !UUID.test(entry.attemptId)) throw new Error('AnswerLogPort: attemptId must be a uuid')
+  if (typeof entry.attemptId !== 'string' || !(UUID.test(entry.attemptId) || isIdString(entry.attemptId))) {
+    throw new Error('AnswerLogPort: attemptId must be a uuid or a decimal id')
+  }
   if (typeof entry.userId !== 'string' || !isIdString(entry.userId)) throw new Error('AnswerLogPort: userId must be a decimal id')
   if (typeof entry.questionId !== 'string' || !isIdString(entry.questionId)) throw new Error('AnswerLogPort: questionId must be a decimal id')
   if (!Number.isFinite(entry.marksMax) || entry.marksMax <= 0) throw new Error('AnswerLogPort: marksMax must be greater than 0')
@@ -110,6 +163,15 @@ export function validateAnswerEntry(entry: AnswerLogEntry): void {
   // A marked part is correct only when marksAwarded = marksMax; a part still waiting for a mark is not correct.
   const correct = entry.marksAwarded !== null && entry.marksAwarded === entry.marksMax
   if (entry.isCorrect !== correct) throw new Error('AnswerLogPort: isCorrect must be true exactly when marksAwarded equals marksMax (false while marksAwarded is null)')
+  if (entry.selectedLabel != null && (typeof entry.selectedLabel !== 'string' || !/^[A-H]$/.test(entry.selectedLabel))) {
+    throw new Error('AnswerLogPort: selectedLabel must be null or a letter A to H')
+  }
+  if (entry.timeSeconds != null && (!Number.isInteger(entry.timeSeconds) || entry.timeSeconds < 0 || entry.timeSeconds > 2147483647)) {
+    throw new Error('AnswerLogPort: timeSeconds must be null or a non-negative integer')
+  }
+  if (entry.questionVersionNo != null && (!Number.isInteger(entry.questionVersionNo) || entry.questionVersionNo < 1 || entry.questionVersionNo > 2147483647)) {
+    throw new Error('AnswerLogPort: questionVersionNo must be null or a positive integer')
+  }
   if (!(entry.answeredAt instanceof Date) || Number.isNaN(entry.answeredAt.getTime())) throw new Error('AnswerLogPort: answeredAt must be a valid date')
 }
 
@@ -122,9 +184,9 @@ export async function upsertAnswerRow(db: Pick<TxClient, '$queryRaw'>, row: Answ
     INSERT INTO practice_answers (
       session_id, attempt_id, user_id, question_id, question_version_no, part_ref, mode,
       subject_id, education_level_id, chapter_id, topic_id, difficulty, question_type,
-      is_correct, marks_awarded, marks_max, answered_at, is_test, historical)
+      is_correct, marks_awarded, marks_max, answered_at, is_test, historical, selected_label, time_seconds)
     VALUES (
-      ${row.sessionId}::uuid, ${row.attemptId}::uuid, ${idFromString(row.userId)}::bigint, ${idFromString(row.questionId)}::bigint,
+      ${row.sessionId}::uuid, ${row.attemptId}::uuid, ${idFromString(row.userId)}::bigint, ${row.questionId === null ? null : idFromString(row.questionId)}::bigint,
       ${row.questionVersionNo}::int, ${row.partRef}::text, ${row.mode}::text,
       ${row.subjectId === null ? null : idFromString(row.subjectId)}::bigint,
       ${row.educationLevelId === null ? null : idFromString(row.educationLevelId)}::bigint,
@@ -132,7 +194,7 @@ export async function upsertAnswerRow(db: Pick<TxClient, '$queryRaw'>, row: Answ
       ${row.topicId === null ? null : idFromString(row.topicId)}::bigint,
       ${row.difficulty}::smallint, ${row.questionType}::text,
       ${row.isCorrect}::boolean, ${row.marksAwarded}::numeric, ${row.marksMax}::numeric,
-      ${row.answeredAt}::timestamptz, ${row.isTest}::boolean, false)
+      ${row.answeredAt}::timestamptz, ${row.isTest}::boolean, false, ${row.selectedLabel ?? null}::text, ${row.timeSeconds ?? null}::int)
     ON CONFLICT (attempt_id, user_id, question_id, (coalesce(part_ref, ''))) WHERE attempt_id IS NOT NULL
     DO UPDATE SET
       session_id = coalesce(EXCLUDED.session_id, practice_answers.session_id),
@@ -148,7 +210,9 @@ export async function upsertAnswerRow(db: Pick<TxClient, '$queryRaw'>, row: Answ
       marks_awarded = EXCLUDED.marks_awarded,
       marks_max = EXCLUDED.marks_max,
       answered_at = EXCLUDED.answered_at,
-      is_test = EXCLUDED.is_test
+      is_test = EXCLUDED.is_test,
+      selected_label = EXCLUDED.selected_label,
+      time_seconds = EXCLUDED.time_seconds
     RETURNING id::text, (xmax = 0) AS created`
   const out = rows[0]
   if (!out) throw new Error('AnswerLogPort: the upsert returned no row')
@@ -173,17 +237,21 @@ export class AnswerLogPort {
     const db = this.prisma.client
     const userId = idFromString(entry.userId)
 
-    // A drill's attempt id is its session id: also fill session_id (only for the pupil's own session).
-    const own = await db.$queryRaw<{ id: string }[]>`
-      SELECT id::text FROM practice_sessions WHERE id = ${entry.attemptId}::uuid AND user_id = ${userId}::bigint`
+    const attemptId = attemptUuidOf(entry.attemptId)
+    // A drill's attempt id is its session id: also fill session_id (only for the pupil's own session; a decimal PKSK
+    // attempt id is never a session).
+    const own = UUID.test(entry.attemptId)
+      ? await db.$queryRaw<{ id: string }[]>`
+      SELECT id::text FROM practice_sessions WHERE id = ${attemptId}::uuid AND user_id = ${userId}::bigint`
+      : []
     const sessionId = own[0]?.id ?? null
 
-    const served = await this.servedVersion(entry.questionId, sessionId)
+    const served = await this.servedVersion(entry.questionId, sessionId, entry.questionVersionNo ?? undefined)
     // No question from the bridge: the row is still written, without dimensions. No user id in the log line.
     if (served.question === null) this.logger.warn(`Answer written without question dimensions: question ${entry.questionId}, mode ${entry.mode}`)
     return upsertAnswerRow(db, {
       userId: entry.userId,
-      attemptId: entry.attemptId,
+      attemptId,
       sessionId,
       questionId: entry.questionId,
       questionVersionNo: served.versionNo,
@@ -200,6 +268,8 @@ export class AnswerLogPort {
       marksMax: entry.marksMax,
       answeredAt: entry.answeredAt,
       isTest: entry.isTest,
+      selectedLabel: entry.selectedLabel ?? null,
+      timeSeconds: entry.timeSeconds ?? null,
     })
   }
 
