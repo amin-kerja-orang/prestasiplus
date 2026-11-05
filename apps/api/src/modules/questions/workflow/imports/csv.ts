@@ -19,7 +19,8 @@ export interface CsvRecord {
 }
 
 /** Splits CSV text into records; quoted fields may contain commas, `""` and line breaks. */
-export function parseCsv(text: string): CsvRecord[] {
+/** `limit`: stop once this many records were read (a caller that only needs to know the file is over its row cap does not build the rest). */
+export function parseCsv(text: string, limit = Number.POSITIVE_INFINITY): CsvRecord[] {
   const src = text.replace(/^﻿/, '')
   const records: CsvRecord[] = []
   let cells: string[] = []
@@ -41,7 +42,7 @@ export function parseCsv(text: string): CsvRecord[] {
     touched = false
   }
 
-  for (let i = 0; i < src.length; i++) {
+  for (let i = 0; i < src.length && records.length < limit; i++) {
     const ch = src[i] as string
     if (quoted) {
       if (ch === '"' && src[i + 1] === '"') {
@@ -78,7 +79,7 @@ export function parseCsv(text: string): CsvRecord[] {
       cell += ch
     }
   }
-  if (touched || cell !== '' || cells.length > 0) endRecord()
+  if (records.length < limit && (touched || cell !== '' || cells.length > 0)) endRecord()
   return records
 }
 
@@ -96,13 +97,6 @@ export interface ImportLookups {
   subjectIds: ReadonlySet<string>
   levelIds: ReadonlySet<string>
 }
-
-/** The Guru caps (SRS M10 S22): question text up to 2000, each option up to 500 characters. */
-export interface ImportCaps {
-  textMax: number
-  optionMax: number
-}
-export const GURU_IMPORT_CAPS: ImportCaps = { textMax: 2000, optionMax: 500 }
 
 export interface PlannedRow {
   line: number
@@ -131,7 +125,6 @@ export function planImport(
   text: string,
   lookups: ImportLookups,
   defaults: ImportDefaults = NO_IMPORT_DEFAULTS,
-  caps: ImportCaps | null = null,
 ): ImportPlan {
   const [header, ...data] = parseCsv(text)
   const plan: ImportPlan = { missingColumns: [], rows: [], failures: [], dataRows: 0 }
@@ -201,14 +194,6 @@ export function planImport(
     }
     if (texts.filter((t) => t !== '').length < MIN_OPTIONS) {
       fail(MIN_OPTIONS_MESSAGE)
-      continue
-    }
-    if (caps && [...stemMs].length > caps.textMax) {
-      fail(MSG.textTooLong)
-      continue
-    }
-    if (caps && texts.some((o) => [...o].length > caps.optionMax)) {
-      fail(MSG.optionTooLong)
       continue
     }
     const kertasCell = get('kertas').trim()

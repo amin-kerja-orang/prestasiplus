@@ -39,7 +39,6 @@ import { isLeaf, leavesOf } from './grading'
 import type {
   AdminListFilter,
   AdminListResult,
-  ContributionCounts,
   NamedRef,
   PartAnswer,
   PublicQuestion,
@@ -203,7 +202,7 @@ interface Normalized {
 /**
  * Question bank use cases (M04, BE-09). Controllers (Part C) call the admin and Guru methods;
  * BE-10 calls `setStatus`, `getStatus`, `deactivate`; BE-12/15/41 call `getPublicForLearner` and
- * `gradeAnswer`; BE-17 calls `contributionCountsFor`.
+ * `gradeAnswer`.
  *
  * Errors: 404 `NOT_FOUND` for an unknown id and for a row the caller may not see; 422
  * `VALIDATION_ERROR` with `fields`; 409 `CONFLICT` for a status pair outside the contract table.
@@ -677,13 +676,6 @@ export class QuestionsService {
     const record = await this.repo.get(id, 'latest')
     if (!record || record.version.type !== 'structured') throw questionNotFound()
     return this.detail(record)
-  }
-
-  // --- Guru (own rows only; another teacher id is 404) ------------------------------------------
-
-  async contributionCountsFor(userId: string): Promise<ContributionCounts> {
-    const byStatus = await this.repo.ownerStatusCounts(userId)
-    return { total: Object.values(byStatus).reduce((s, n) => s + n, 0), byStatus }
   }
 
   // --- learners (BE-12, BE-15, BE-41); there is no student HTTP route (Q-3) ---------------------

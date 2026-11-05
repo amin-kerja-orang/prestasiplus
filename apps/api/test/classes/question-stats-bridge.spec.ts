@@ -14,7 +14,7 @@ import { questionsSeed } from '../../prisma/seed/questions'
 import { ClassesPorts } from '../../src/modules/classes'
 import { ClassesQuestionsBridgeModule } from '../../src/modules/classes/question-bridge'
 import { featureModules } from '../../src/modules'
-import { QuestionsModule, QuestionsService } from '../../src/modules/questions'
+import { QuestionsModule } from '../../src/modules/questions'
 import {
   STUDENT_1,
   TEACHER_A,
@@ -134,20 +134,6 @@ describe('teacher question stats bridge (SW12-02)', () => {
     expect(d.stats).toMatchObject({ questions: 7, questionsApproved: 4 })
   })
 
-  it('total equals the teacher list and QuestionsService.contributionCountsFor (no drift in scope)', async () => {
-    const list = listEnvelopeOf(QuestionGuruSummarySchema).parse((await a.get('/guru/questions')).body)
-    const svc = t.app.get(QuestionsService)
-    const counts = await svc.contributionCountsFor(teacherA)
-    expect(list.meta.totalItems).toBe(7)
-    expect(counts.total).toBe(7)
-    expect(counts.byStatus).toMatchObject({ draft: 1, review: 1, approved: 4, archived: 1 })
-    const stats = await t.app.get(ClassesPorts).questions.statsOf(teacherA)
-    expect(stats.total).toBe(counts.total)
-    expect(stats.approved).toBe(counts.byStatus.approved)
-    // "Menunggu" counts every accepted item whose question is not published yet (review, draft and archived here), not only `review`.
-    expect(stats.pending).toBe(counts.byStatus.review + counts.byStatus.draft + counts.byStatus.archived)
-  })
-
   it('structured is always 0 (a submission is one MCQ); a further item moves total by one and removing it moves it back', async () => {
     const ports = t.app.get(ClassesPorts)
     expect(await ports.questions.statsOf(teacherA)).toMatchObject({ total: 7, structured: 0 })
@@ -182,5 +168,33 @@ describe('teacher question stats bridge (SW12-02)', () => {
     await setStatus('SEED-REVIEW-SCI-T5', 'approved')
     const moved = TeacherContributionsSchema.parse((await a.get('/guru/contributions')).body)
     expect(moved.stats).toMatchObject({ total: 7, approved: 5, pending: 2 })
+  })
+
+  it('the SQL status behind the counts agrees with the TS status of GET /guru/questions: pending, approved and both forms of rejected', async () => {
+    // (1) an item the admin rejected with a reason, never accepted; (2) an accepted item whose Draf question was sent back with a reason.
+    const batch = (await t.db.query<{ id: string }>(`insert into intake_batches (owner_user_id, source, status, paper_type, subject, source_text, rights_status) values ($1::bigint, 'guru', 'ready_for_review', 'umum', 'Subjek', 'Kiriman guru', 'own') returning id::text id`, [teacherA]))[0]!.id
+    const guru = { v: 1, questionType: 'mcq', subjectId: '1', educationLevelId: '1', chapterId: null, spIds: [], tp: null, cognitiveLevel: null, difficultyLevel: 3, correctIndex: 1, explanation: null }
+    await t.db.query(
+      `insert into intake_items (batch_id, position, source_type, number_label, item_type, payload, review_state, reject_reason) values ($1::bigint, 1, 'manual', '1', 'mcq', $2::jsonb, 'rejected', 'Kunci jawapan salah.')`,
+      [batch, JSON.stringify({ stem: 'ditolak', options: [], guru })],
+    )
+    await t.db.query(`update question_versions set rejection_reason = 'Betulkan kunci jawapan.' where number_label = 'SEED-DRAFT-BM-T4' and status = 'draft'`)
+
+    const rows: { status: string; rejectionReason: string | null }[] = []
+    for (let page = 1; ; page += 1) {
+      const res = listEnvelopeOf(QuestionGuruSummarySchema).parse((await a.get(`/guru/questions?page=${String(page)}`)).body)
+      rows.push(...res.data)
+      if (rows.length >= res.meta.totalItems) break
+    }
+    const of = (s: string) => rows.filter((r) => r.status === s).length
+    expect(of('rejected')).toBe(2)
+    expect(rows.filter((r) => r.status === 'rejected').map((r) => r.rejectionReason).sort()).toEqual(['Betulkan kunci jawapan.', 'Kunci jawapan salah.'])
+    expect(of('approved')).toBeGreaterThan(0)
+    expect(of('pending')).toBeGreaterThan(0)
+
+    const stats = TeacherContributionsSchema.parse((await a.get('/guru/contributions')).body).stats
+    expect(stats.total).toBe(rows.length) // Jumlah
+    expect(stats.approved).toBe(of('approved')) // Diluluskan
+    expect(stats.pending).toBe(of('pending')) // Menunggu (a rejected item is in neither)
   })
 })

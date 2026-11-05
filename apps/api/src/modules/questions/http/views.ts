@@ -7,8 +7,6 @@
 import {
   QUESTION_WORKFLOW_STATUS_LABELS,
   QuestionDetailSchema,
-  QuestionGuruDetailSchema,
-  QuestionGuruSummarySchema,
   QuestionRowSchema,
   QuestionSchema,
   QuestionStimulusGroupSchema,
@@ -22,7 +20,7 @@ import type { z } from 'zod'
 
 import { toMytTimestamp } from '../../../common/time/myt'
 import { isLeaf, type QuestionLeaf } from '../grading'
-import { constantFields, difficultyLabelOf, flatFromVersion, kertasOfPaperCode, wireSourceType } from '../projection'
+import { constantFields, flatFromVersion, kertasOfPaperCode, wireSourceType } from '../projection'
 import { dskpCompleteness } from '../dskp-gate'
 import { stimulusTableParts } from '../stimulus-table'
 import type { QuestionDetailView, QuestionView, StimulusGroupRecord } from '../types'
@@ -188,55 +186,6 @@ export function detailView(d: QuestionDetailView): QuestionDetailWire {
     ...(d.placements === undefined ? {} : { placements: d.placements, generatedPaperCount: d.generatedPaperCount ?? 0 }),
     dskpStatus: dskpOf(d),
     createdBy: { id: d.createdById ?? NO_CREATOR, name: d.createdByName },
-  })
-}
-
-// --- Guru (owner) --------------------------------------------------------------------------------
-
-export function guruSummaryView(q: QuestionView): z.output<typeof QuestionGuruSummarySchema> {
-  const f = flatOf(q)
-  const v = q.version
-  return QuestionGuruSummarySchema.parse({
-    id: q.id,
-    questionType: f.questionType,
-    questionText: f.questionText,
-    subjectId: v.subjectId,
-    subjectName: q.subject?.name ?? '',
-    educationLevelId: v.educationLevelId,
-    levelName: q.level?.name ?? '',
-    difficultyLevel: f.difficultyLevel,
-    difficultyLabel: difficultyLabelOf(f.difficultyLevel),
-    dskpTagged: v.spIds.length > 0,
-    status: v.status,
-    statusLabel: statusLabel(v.status),
-    isActive: q.isActive,
-    options: f.options,
-    correctAnswer: f.correctAnswer,
-    explanation: f.explanation,
-    source: v.sourceFile,
-    createdAt: toMytTimestamp(q.createdAt),
-  })
-}
-
-export function guruDetailView(q: QuestionView): z.output<typeof QuestionGuruDetailSchema> {
-  const f = flatOf(q)
-  const v = q.version
-  const c = constantFields(q)
-  return QuestionGuruDetailSchema.parse({
-    ...guruSummaryView(q),
-    questionImage: imageOf(q, q.version.stemImageId),
-    optionImages: imagesOf(q, f),
-    tfAnswer: f.tfAnswer,
-    correctAnswerText: f.correctAnswerText,
-    altAnswers: f.altAnswers,
-    modelAnswer: f.modelAnswer,
-    language: f.language,
-    scriptType: f.scriptType,
-    textDirection: f.textDirection,
-    curriculumChapterId: v.chapterId,
-    curriculumTopicId: v.topicId,
-    dskpSpId: v.spIds[0] ?? null,
-    usage: { attempts: c.usage.attempts, correct: c.usage.correct, accuracy: 0 },
   })
 }
 

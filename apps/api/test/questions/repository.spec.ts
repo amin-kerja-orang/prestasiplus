@@ -129,13 +129,4 @@ describe('QuestionsRepository contract', () => {
     expect(await repo.groupOf(mathT4)).toBeNull()
     expect(await repo.groupOf('999999999')).toBeNull()
   })
-
-  it('ownerStatusCounts and listOwn are scoped to the owner', async () => {
-    const teacher = (await t.db.query<{ id: string }>(`select id::text id from users where email = 'guru@demo.test'`))[0]!.id
-    expect((await repo.ownerStatusCounts(teacher)).review).toBe(1)
-    const page = await repo.listOwn({ ownerId: teacher, page: 1, pageSize: 20 })
-    expect(page.total).toBe(1)
-    expect(page.rows[0]?.version.status).toBe('review')
-    expect((await repo.listOwn({ ownerId: 'nope', page: 1, pageSize: 20 })).total).toBe(0)
-  })
 })

@@ -294,12 +294,6 @@ export interface QuestionFilter {
 export type SampleFilter = QuestionFilter
 export type GroupCountBy = 'subject' | 'level' | 'status' | 'difficultyTp' | 'unit' | 'chapter'
 
-export interface GuruListFilter {
-  ownerId: string
-  page: number
-  pageSize: number
-}
-
 export interface StructuredListFilter {
   subjectId?: string
   educationLevelId?: string
@@ -375,11 +369,6 @@ export interface QuestionGrade {
   marks: number
   maxMarks: number
   needsReview: boolean
-}
-
-export interface ContributionCounts {
-  total: number
-  byStatus: Record<QuestionStatus, number>
 }
 
 /**

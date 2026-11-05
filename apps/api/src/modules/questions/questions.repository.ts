@@ -14,8 +14,6 @@ import { partsFromRows, type PartDraft, StoredKeyError } from './tree'
 import type {
   AdminListFilter,
   GroupCountBy,
-  GuruListFilter,
-  Page,
   QuestionFilter,
   QuestionRecord,
   GateFacts,
@@ -620,22 +618,6 @@ export class QuestionsRepository {
     })
   }
 
-  async listOwn(filter: GuruListFilter): Promise<Page<QuestionRecord>> {
-    const owner = bi(filter.ownerId)
-    if (owner === null) return { rows: [], page: filter.page, pageSize: filter.pageSize, total: 0 }
-    // One raw filter for rows and total (no primary-level question, before pagination): the page and `total` always agree.
-    const from = Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
-    const where = Prisma.sql`q.created_by_id = ${owner} AND ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL}`
-    const offset = (filter.page - 1) * filter.pageSize
-    const [totals, ids] = await Promise.all([
-      this.db.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n ${from} WHERE ${where}`,
-      this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY q.id ASC LIMIT ${filter.pageSize} OFFSET ${offset}`,
-    ])
-    const total = totals[0]?.n ?? 0
-    const records = await this.hydrate(ids.map((r) => r.id), 'latest')
-    return { rows: records, page: filter.page, pageSize: filter.pageSize, total }
-  }
-
   // --- reads for the service (admin, structured, counts) ------------------------------------------
 
   /** Admin list over the LATEST version: ids of one page (newest first), the total and `counts` per status. */
@@ -775,19 +757,6 @@ export class QuestionsRepository {
       if (r.subject_id !== null) bySubject.set(idToString(r.subject_id), { total: r.total, published: r.published })
     }
     return { total, bySubject }
-  }
-
-  /** Counts of one owner questions per latest-version status. */
-  async ownerStatusCounts(ownerId: string): Promise<Record<QuestionStatus, number>> {
-    const counts = NO_STATUS_COUNTS()
-    const owner = bi(ownerId)
-    if (owner === null) return counts
-    const rows = await this.db.$queryRaw<{ status: string; n: number }[]>`
-      SELECT v.status AS status, count(*)::int AS n
-      FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
-      WHERE q.created_by_id = ${owner} AND ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL} GROUP BY 1`
-    for (const r of rows) if (isQuestionStatus(r.status)) counts[r.status] = r.n
-    return counts
   }
 
   /** The owner of a question (decimal id) or `undefined` when the question does not exist. */

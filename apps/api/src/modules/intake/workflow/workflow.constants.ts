@@ -19,6 +19,8 @@ export const INTAKE_AUDIT = {
   itemAccepted: 'intake.item_accepted',
   itemAdded: 'intake.item_added',
   itemEdited: 'intake.item_edited',
+  /** S6-T06: a teacher deletes their own pending or returned question submission. */
+  itemDeleted: 'intake.item_deleted',
   itemRejected: 'intake.item_rejected',
   itemDuplicate: 'intake.item_duplicate_decided',
   itemsBulk: 'intake.items_bulk',

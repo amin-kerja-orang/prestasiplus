@@ -25,7 +25,6 @@ describe('QuestionsService (real database)', () => {
   let tag: Tag
   let admin: Awaited<ReturnType<typeof adminActor>>
   let teacherId: string
-  let teacher2Id: string
   beforeAll(async () => {
     t = await bootQuestionsApp()
     svc = t.app.get(QuestionsService)
@@ -33,7 +32,6 @@ describe('QuestionsService (real database)', () => {
     tag = await tagOf(t.db, 'SEED-MCQ-MATH-T4')
     admin = await adminActor(t.db)
     teacherId = await userIdOf(t.db, 'guru@demo.test')
-    teacher2Id = await userIdOf(t.db, 'guruadmin@demo.test')
   })
   afterAll(async () => {
     await t.close()
@@ -189,9 +187,9 @@ describe('QuestionsService (real database)', () => {
   })
 
   describe('Guru (own rows)', () => {
-    // S6-T06: the Guru HTTP routes now take intake items; the owner-scoped question reads stay on the repository (`listOwn`) and the owner's edit
-    // is `update` with a teacher actor (ownership of a submission is enforced by the intake service, see test/questions/guru.spec.ts).
-    it('create (teacher actor) saves as review, owned by the caller; the owner list holds only the caller rows', async () => {
+    // S6-T06: the Guru HTTP routes now take intake items (ownership of a submission is enforced by the intake service, see
+    // test/questions/guru.spec.ts); the owner's edit of a QUESTION is `update` with a teacher actor.
+    it('create (teacher actor) saves as review, owned by the caller; the owner edits it with update and an admin deletes it', async () => {
       const g = await svc.create(
         { subjectId: tag.subjectId, educationLevelId: tag.levelId, questionType: 'mcq', difficultyLevel: 3, questionText: 'Soalan guru untuk ujian perkhidmatan.', options: ['a', 'b', 'c', 'd'], correctAnswer: 2, status: 'review' } as never,
         { userId: teacherId, role: 'teacher' },
@@ -199,30 +197,10 @@ describe('QuestionsService (real database)', () => {
       expect(g.version.status).toBe('review')
       expect(g.createdById).toBe(teacherId)
       expect(g.version.difficultyTp).toBe(3)
-      expect((await repo.listOwn({ ownerId: teacher2Id, page: 1, pageSize: 20 })).rows.some((r) => r.id === g.id)).toBe(false)
-      expect((await repo.listOwn({ ownerId: teacherId, page: 1, pageSize: 20 })).rows.some((r) => r.id === g.id)).toBe(true)
-    })
-
-    it('listOwn shows only the caller rows, id ascending; the owner edits with update and an admin deletes', async () => {
-      const mine = await repo.listOwn({ ownerId: teacherId, page: 1, pageSize: 20 })
-      expect(mine.rows.length).toBeGreaterThanOrEqual(2)
-      expect(mine.rows.every((r) => r.createdById === teacherId)).toBe(true)
-      const ids = mine.rows.map((r) => BigInt(r.id))
-      expect(ids).toEqual([...ids].sort((x, y) => (x < y ? -1 : 1)))
-      expect((await repo.listOwn({ ownerId: teacher2Id, page: 1, pageSize: 20 })).total).toBe(0)
-      const first = mine.rows.at(-1)! // the row created above, never the seeded review row
-      const upd = await svc.update(first.id, { questionText: 'Teks guru yang telah disunting.' } as never, { userId: teacherId, role: 'teacher' })
+      const upd = await svc.update(g.id, { questionText: 'Teks guru yang telah disunting.' } as never, { userId: teacherId, role: 'teacher' })
       expect(upd.version.stemMs).toBe('Teks guru yang telah disunting.')
-      await svc.remove(first.id, { userId: teacherId, role: 'admin' })
-      expect(await repo.get(first.id, 'latest')).toBeNull()
-    })
-
-    it('contributionCountsFor counts the owner rows by status', async () => {
-      const c = await svc.contributionCountsFor(teacherId)
-      expect(c.total).toBe(Object.values(c.byStatus).reduce((a, b) => a + b, 0))
-      expect(c.byStatus.review).toBeGreaterThanOrEqual(1)
-      expect((await svc.contributionCountsFor(teacher2Id)).total).toBe(0)
-      expect((await svc.contributionCountsFor('999999999')).total).toBe(0)
+      await svc.remove(g.id, { userId: teacherId, role: 'admin' })
+      expect(await repo.get(g.id, 'latest')).toBeNull()
     })
   })
 

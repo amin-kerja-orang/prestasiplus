@@ -19,11 +19,14 @@ import type { TxClient } from '../../../db/client'
 import { idFromString, idToString } from '../../../db/ids'
 import { Prisma } from '../../../db/generated/client'
 import { PrismaService } from '../../../db/prisma.service'
+import { difficultyLabelOf } from '../../questions/projection'
+import { INTAKE_AUDIT } from '../workflow/workflow.constants'
 import {
   GURU_EDITABLE_STATES,
   GURU_PAPER_TYPE_QUESTION,
   GURU_QUESTION_SOURCE_TEXT,
   GURU_SUBMISSION_ITEM,
+  guruLowFields,
   guruPayloadOf,
   guruStatusOf,
   readGuruSubmission,
@@ -55,8 +58,6 @@ export interface GuruRowInput {
 
 const SUBJECT_TEXT_MAX = 100
 const MIXED_SUBJECTS = 'Pelbagai subjek'
-const AUDIT_ITEM_EDITED = 'intake.item_edited'
-const AUDIT_ITEM_DELETED = 'intake.item_deleted'
 /** One teacher batch holds at most this many items (the CSV cap). */
 export const GURU_BATCH_MAX_ITEMS = 500
 
@@ -198,6 +199,7 @@ export class GuruSubmissionsService {
             itemType: 'mcq',
             payload: guruPayloadOf(r.input, r.codes, { label, page: 1 }) as Prisma.InputJsonValue,
             pageNo: 1,
+            lowFields: guruLowFields(r.input),
             reviewState: 'needs_review',
           },
           select: { id: true },
@@ -259,11 +261,18 @@ export class GuruSubmissionsService {
       levelIds.length === 0 ? [] : db.educationLevel.findMany({ where: { id: { in: levelIds } }, select: { id: true, name: true } }),
       questionIds.length === 0
         ? []
-        : db.question.findMany({
-            where: { id: { in: questionIds } },
-            select: { id: true, liveVersionNo: true, latestVersionNo: true, versions: { select: { versionNo: true, status: true, rejectionReason: true } } },
-          }),
+        : db.question.findMany({ where: { id: { in: questionIds } }, select: { id: true, liveVersionNo: true, latestVersionNo: true } }),
     ])
+    // Only the LATEST version of each linked question is read (its status and rejection reason).
+    const latestOf = new Map(
+      (questions.length === 0
+        ? []
+        : await db.questionVersion.findMany({
+            where: { OR: questions.map((q) => ({ questionId: q.id, versionNo: q.latestVersionNo })) },
+            select: { questionId: true, status: true, rejectionReason: true },
+          })
+      ).map((v) => [v.questionId, v]),
+    )
     const subjectName = new Map(subjects.map((s) => [s.id, s.name]))
     const levelName = new Map(levels.map((l) => [l.id, l.name]))
     const questionById = new Map(questions.map((q) => [q.id, q]))
@@ -271,7 +280,7 @@ export class GuruSubmissionsService {
     for (const { item, sub } of stored) {
       if (!sub) continue
       const q = item.questionId === null ? undefined : questionById.get(item.questionId)
-      const latest = q?.versions.find((v) => v.versionNo === q.latestVersionNo)
+      const latest = q === undefined ? undefined : latestOf.get(q.id)
       const { status, label, reason } = guruStatusOf({
         reviewState: item.reviewState,
         rejectReason: item.rejectReason,
@@ -287,7 +296,7 @@ export class GuruSubmissionsService {
         educationLevelId: g.educationLevelId,
         levelName: levelName.get(parse(g.educationLevelId) as bigint) ?? '',
         difficultyLevel: g.difficultyLevel,
-        difficultyLabel: g.difficultyLevel <= 2 ? 'Mudah' : g.difficultyLevel === 3 ? 'Sederhana' : 'Sukar',
+        difficultyLabel: difficultyLabelOf(g.difficultyLevel),
         dskpTagged: g.spIds.length > 0,
         status: status satisfies GuruSubmissionStatus,
         statusLabel: label,
@@ -324,7 +333,7 @@ export class GuruSubmissionsService {
           decidedAt: null,
           humanEdited: [],
           confirmedFields: [],
-          lowFields: [],
+          lowFields: guruLowFields(row.input),
         },
       })
       await tx.intakeItemEvent.create({
@@ -334,7 +343,7 @@ export class GuruSubmissionsService {
       if ((await tx.intakeItem.count({ where: { batchId: item.batchId } })) === 1) {
         await tx.intakeBatch.update({ where: { id: item.batchId }, data: { subject: row.subjectName.slice(0, SUBJECT_TEXT_MAX) } })
       }
-      await this.record(AUDIT_ITEM_EDITED, actor, 'intake_item', item.id, { from: item.reviewState, to: 'needs_review' }, tx)
+      await this.record(INTAKE_AUDIT.itemEdited, actor, 'intake_item', item.id, { from: item.reviewState, to: 'needs_review' }, tx)
     })
     return this.get(actor.userId, itemId)
   }
@@ -350,7 +359,7 @@ export class GuruSubmissionsService {
       if ((await tx.intakeItem.count({ where: { batchId: item.batchId } })) === 0 && (await tx.intakeFile.count({ where: { batchId: item.batchId } })) === 0) {
         await tx.intakeBatch.deleteMany({ where: { id: item.batchId, source: 'guru' } })
       }
-      await this.record(AUDIT_ITEM_DELETED, actor, 'intake_item', item.id, { from: item.reviewState }, tx)
+      await this.record(INTAKE_AUDIT.itemDeleted, actor, 'intake_item', item.id, { from: item.reviewState }, tx)
     })
   }
 

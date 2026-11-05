@@ -9222,7 +9222,7 @@
           "csvFile": {
             "type": "string",
             "format": "binary",
-            "description": "CSV file, UTF-8, at most 2 MB and 500 data rows (or the JSON field `csv` with the file text)."
+            "description": "CSV file, UTF-8, at most 2 MB and 500 data rows (or the JSON field `csv` with the file text, limited to the default 100 kb JSON body)."
           }
         },
         "required": [
@@ -82012,7 +82012,7 @@
           "guru-question-import"
         ],
         "summary": "Guru CSV contribution (items of one guru intake batch)",
-        "description": "Teacher or admin. multipart/form-data `csvFile` (.csv only, UTF-8, up to 2 MB and 500 data rows) or JSON `{ csv }`. Rows are matched by column NAME (`subjek,tingkatan,bab,sp,tp,aras,kesukaran,soalan,pilihan_a..d,jawapan,penerangan`); each valid row becomes an item of ONE `source = guru` intake batch, shown as \"Menunggu Semakan\" (S6-T06, D113); bad rows are listed in `errors` ordered by file row and never block the valid ones. Answers 200 with { data: { imported, errors: [{ row, message }] } }. 422 `fields.csvFile`: \"Sila pilih fail.\", \"Jenis fail tidak disokong. Format dibenarkan: CSV.\", \"Fail melebihi saiz maksimum 2 MB.\", \"Fail melebihi 500 baris.\", \"Lajur wajib tiada: ...\". A static path: it matches before `/guru/questions/{id}`.",
+        "description": "Teacher or admin. multipart/form-data `csvFile` (.csv only, UTF-8, up to 2 MB and 500 data rows) or JSON `{ csv }` (the JSON path is limited to the default 100 kb body parser). Rows are matched by column NAME (`subjek,tingkatan,bab,sp,tp,aras,kesukaran,soalan,pilihan_a..d,jawapan,penerangan`); each valid row becomes an item of ONE `source = guru` intake batch, shown as \"Menunggu Semakan\" (S6-T06, D113); bad rows are listed in `errors` ordered by file row and never block the valid ones. Answers 200 with { data: { imported, errors: [{ row, message }] } }. 422 `fields.csvFile`: \"Sila pilih fail.\", \"Jenis fail tidak disokong. Format dibenarkan: CSV.\", \"Fail melebihi saiz maksimum 2 MB.\", \"Fail melebihi 500 baris.\", \"Lajur wajib tiada: ...\". A static path: it matches before `/guru/questions/{id}`.",
         "parameters": [
           {
             "schema": {

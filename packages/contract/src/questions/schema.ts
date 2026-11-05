@@ -753,7 +753,8 @@ const guruBody = () =>
       .optional(),
     tp: z.number({ error: GURU_QUESTION_MESSAGES.tpRange }).int(GURU_QUESTION_MESSAGES.tpRange).min(1, GURU_QUESTION_MESSAGES.tpRange).max(6, GURU_QUESTION_MESSAGES.tpRange).nullable().optional(),
     cognitiveLevel: z.enum(QUESTION_COGNITIVE_LEVELS, { error: GURU_QUESTION_MESSAGES.cognitive }).nullable().optional(),
-    difficultyLevel: z.coerce
+    // A strict JSON integer 1..5 (no coercion: `true` or `[3]` must not pass).
+    difficultyLevel: z
       .number({ error: GURU_QUESTION_MESSAGES.difficulty })
       .int(GURU_QUESTION_MESSAGES.difficulty)
       .min(1, GURU_QUESTION_MESSAGES.difficulty)

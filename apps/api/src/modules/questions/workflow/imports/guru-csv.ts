@@ -31,7 +31,8 @@ export interface GuruCsvRead {
 }
 
 export function readGuruCsv(text: string): GuruCsvRead {
-  const [header, ...data] = parseCsv(text)
+  // Header + cap + 1 records at most: a file over the cap is detected without building every record.
+  const [header, ...data] = parseCsv(text, QUESTION_IMPORT_GURU_MAX_ROWS + 2)
   if (!header) return { missingColumns: [...QUESTION_IMPORT_GURU_REQUIRED_COLUMNS], rows: [], tooMany: false }
   const index = new Map<string, number>()
   header.cells.forEach((name, i) => {
@@ -39,6 +40,7 @@ export function readGuruCsv(text: string): GuruCsvRead {
     if (!index.has(key)) index.set(key, i)
   })
   const missingColumns = QUESTION_IMPORT_GURU_REQUIRED_COLUMNS.filter((c) => !index.has(c))
+  if (data.length > QUESTION_IMPORT_GURU_MAX_ROWS) return { missingColumns, rows: [], tooMany: true }
   const rows = data.map<GuruCsvRow>((rec) => ({
     line: rec.line,
     get: (column) => {
@@ -46,7 +48,7 @@ export function readGuruCsv(text: string): GuruCsvRead {
       return i === undefined ? '' : (rec.cells[i] ?? '')
     },
   }))
-  return { missingColumns, rows, tooMany: rows.length > QUESTION_IMPORT_GURU_MAX_ROWS }
+  return { missingColumns, rows, tooMany: false }
 }
 
 export interface GuruSubjectRef {
@@ -107,6 +109,9 @@ function chapterOf(chapters: readonly GuruChapterRef[], cell: string): GuruChapt
   return chapters.find((c) => (c.name ?? '').trim().toLowerCase() === key || (c.number !== null && `${String(c.number)}. ${(c.name ?? '').trim()}`.toLowerCase() === key)) ?? null
 }
 
+/** A cell value echoed in a row reason: cut to 50 characters so a long cell cannot bloat the response. */
+const echo = (value: string): string => ([...value].length > 50 ? [...value].slice(0, 50).join('') : value)
+
 const intIn = (cell: string, min: number, max: number): number | null => {
   const t = cell.trim()
   if (!/^\d{1,3}$/.test(t)) return null
@@ -141,14 +146,14 @@ export function planGuruRows(rows: readonly GuruCsvRow[], lookups: GuruCsvLookup
       let chapterId: string | null = null
       if (babCell !== '') {
         const chapter = chapterOf(refs.chapters, babCell)
-        if (!chapter) return MSG.chapterNotFound(babCell)
+        if (!chapter) return MSG.chapterNotFound(echo(babCell))
         chapterId = chapter.id
       }
       const spCell = r.get('sp').trim()
       let sp: GuruSpRef | null = null
       if (spCell !== '') {
         sp = refs.sps.find((s) => s.code === spCell) ?? null
-        if (!sp) return MSG.spNotFound(spCell)
+        if (!sp) return MSG.spNotFound(echo(spCell))
       }
 
       const text = r.get('soalan').trim()

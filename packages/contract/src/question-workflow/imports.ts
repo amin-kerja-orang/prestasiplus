@@ -244,11 +244,11 @@ const guruCsvFile = questionWorkflowFile({
   maxBytes: QUESTION_IMPORT_GURU_MAX_BYTES,
   mimes: QUESTION_IMPORT_MIME_TYPES,
   extensions: ['csv'],
-  description: 'CSV file, UTF-8, at most 2 MB and 500 data rows (or the JSON field `csv` with the file text).',
+  description: 'CSV file, UTF-8, at most 2 MB and 500 data rows (or the JSON field `csv` with the file text, limited to the default 100 kb JSON body).',
 })
 
 /**
- * Body of `POST /guru/questions/import`: `multipart/form-data` with `csvFile`, or JSON `{ csv: "<file text>" }`. 422 `fields.csvFile` for:
+ * Body of `POST /guru/questions/import`: `multipart/form-data` with `csvFile`, or JSON `{ csv: "<file text>" }` (the JSON path is limited to the default 100 kb body parser). 422 `fields.csvFile` for:
  * none chosen, not CSV, over 2 MB, over 500 data rows ("Fail melebihi 500 baris."), a missing required column, no data row. A bad ROW never
  * fails the request: it is listed in `errors` and the valid rows still become intake items.
  */

@@ -1,7 +1,7 @@
 import { QUESTION_IMPORT_HEADER, QUESTION_IMPORT_ROW_MESSAGES as MSG, QUESTION_IMPORT_TEMPLATE_CSV } from '@pp/contract'
 import { describe, expect, it } from 'vitest'
 
-import { GURU_IMPORT_CAPS, buildCsv, csvCell, parseCsv, planImport } from '../../src/modules/questions/workflow/imports/csv'
+import { buildCsv, csvCell, parseCsv, planImport } from '../../src/modules/questions/workflow/imports/csv'
 
 const lookups = { subjectIds: new Set(['1', '3']), levelIds: new Set(['1', '4']) }
 const HEADER = QUESTION_IMPORT_HEADER.join(',')
@@ -122,17 +122,6 @@ describe('imports: row planning (mock messages, verbatim)', () => {
     expect(p.rows[0]?.input.correctLabel).toBe('B')
     expect(planImport('question_text,option_a\nx,y', lookups).missingColumns).toEqual(['option_b', 'correct_answer'])
     expect(planImport('', lookups).missingColumns).toHaveLength(4)
-  })
-
-  it('the Guru caps reject a long question text and a long option, after the other checks', () => {
-    const long = (n: number) => 'x'.repeat(n)
-    const body = (q: string, a: string) => `"${q}",${a},B,C,,A,3,4,1,1,`
-    const p = planImport(`${HEADER}\n${body(long(2001), 'A')}\n${body(long(2000), long(500))}\n${body('ok', long(501))}`, lookups, undefined, GURU_IMPORT_CAPS)
-    expect(p.failures).toEqual([
-      { row: 2, message: MSG.textTooLong },
-      { row: 4, message: MSG.optionTooLong },
-    ])
-    expect(p.rows).toHaveLength(1)
   })
 })
 

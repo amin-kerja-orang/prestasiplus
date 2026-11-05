@@ -51,11 +51,24 @@ export const GURU_QUESTION_SOURCE_TEXT = 'Kiriman guru'
 
 const LETTERS = ['A', 'B', 'C', 'D'] as const
 
-/** `T4`/`T5` tags keep their level; Tingkatan 1 to 3 read as the wide tag with the form of origin `T1-T3`. */
+/**
+ * The intake tag (`IntakeCurriculumTagSchema`) is strict and has no absent form: `level` is T4, T5 or T4+T5, `tp` is 1..6 and `formOrigin`
+ * is required. `T4`/`T5` keep their level; Tingkatan 1 to 3 take the wide level `T4+T5` with the form of origin `T1-T3` (the same pair a blank
+ * hand-added item gets). These tag values are only the minimum the schema needs: the teacher's real Subjek, Tingkatan, Bab, SP, TP and Aras
+ * are in `payload.guru`, and S2-T02 must pre-fill the Draf from `payload.guru`, not from `payload.tag`.
+ */
 function tagLevel(levelCode: string): { level: 'T4' | 'T5' | 'T4+T5'; formOrigin: 'T1-T3' | 'T4' | 'T5' } {
   if (levelCode === 'T4') return { level: 'T4', formOrigin: 'T4' }
   if (levelCode === 'T5') return { level: 'T5', formOrigin: 'T5' }
   return { level: 'T4+T5', formOrigin: 'T1-T3' }
+}
+
+/**
+ * `intake_items.low_fields` of a submission: the tag fields the teacher did not supply (TP, SP) are listed as low-confidence, so they show as
+ * unconfirmed in the review and the admin completes them (D112, AC-GUR-44-11) instead of reading a value nobody chose.
+ */
+export function guruLowFields(input: Pick<GuruSubmissionInput, 'tp' | 'spIds'>): string[] {
+  return [...(input.tp === null ? ['tag.tp'] : []), ...(input.spIds.length === 0 ? ['tag.sp'] : [])]
 }
 
 /** The stored `payload` (intake question content + `guru` snapshot) of a submission. */
@@ -88,6 +101,7 @@ export function guruPayloadOf(input: GuruSubmissionInput, codes: GuruTagCodes, o
       unit: null,
       unitLabel: '',
       sp: [...codes.spCodes],
+      // Placeholder when the teacher chose no TP (the schema needs 1..6): `guruLowFields` marks it, so the admin sees it as missing (AC-GUR-44-11).
       tp: input.tp ?? 3,
       formOrigin,
     },
