@@ -164,11 +164,24 @@ export interface WeakTopic {
   focusCount: number
 }
 
+/** One of the 12 ISO weeks of "Trend Prestasi" (S10-T01 Build (b)); `accuracy` is null for a week with no answers. */
+export interface PerformanceTrendWeek {
+  /** Monday of the week, `YYYY-MM-DD`. */
+  week: string
+  /** "Mgg 1" (oldest) … "Mgg 12" (current). */
+  label: string
+  accuracy: number | null
+  sessions: number
+}
+
 export interface StudentPerformance {
   user: { id: number; name: string; initial: string }
-  heroAccuracy: number
+  /** Null when nothing is answered; the screen shows "—". */
+  heroAccuracy: number | null
   streak: number
-  stats: { sessions: number; accuracy: number; answered: number; seconds: number }
+  stats: { sessions: number; accuracy: number | null; answered: number; seconds: number }
+  /** Always 12 weeks, oldest first. */
+  trend: PerformanceTrendWeek[]
   headcount: {
     configId: number
     subject: string
