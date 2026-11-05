@@ -44,6 +44,7 @@ function dashboard(over: Partial<SchoolDashboard> = {}): SchoolDashboard {
         author: { initials: 'AD', roleLabel: 'Pengetua' },
       },
     ],
+    pendingTeachers: 0,
     cards: {
       pupils: 1234,
       teachers: 9,
@@ -144,20 +145,13 @@ describe('header and Perutusan card (FR-M27-03, 12…17)', () => {
   })
 })
 
-describe('breadcrumb and banner (FR-M27-18…21)', () => {
-  it('renders "← Papan Pemuka" as a link to /dashboard and the bold current page as text', async () => {
+describe('banner (FR-M27-18…21, FR-AS-2-4)', () => {
+  it('shows no "Papan Pemuka" crumb on the landing page', async () => {
     const w = await mountPage(dashboard())
-    const back = w.get('[data-testid="sd-breadcrumb"] a')
-    expect(back.text()).toBe('Papan Pemuka')
-    expect(back.attributes('href')).toBe('/dashboard')
-    const current = w.get('[data-testid="sd-breadcrumb"] [aria-current="page"]')
-    expect(current.text()).toBe('Dashboard Sekolah')
-    expect(current.element.tagName).not.toBe('A')
-    expect(current.classes()).toContain('text-highlighted')
-    // order: card, breadcrumb, banner
-    const order = ['sd-perutusan', 'sd-breadcrumb', 'sd-banner'].map((id) =>
-      w.html().indexOf(`data-testid="${id}"`),
-    )
+    expect(has(w, 'sd-breadcrumb')).toBe(false)
+    expect(w.text()).not.toContain('Papan Pemuka')
+    // order: card, banner
+    const order = ['sd-perutusan', 'sd-banner'].map((id) => w.html().indexOf(`data-testid="${id}"`))
     expect(order).toEqual([...order].sort((a, b) => a - b))
   })
 
@@ -185,7 +179,7 @@ describe('breadcrumb and banner (FR-M27-18…21)', () => {
 })
 
 describe('summary cards (FR-M27-23, 24, 30)', () => {
-  it('shows four cards in order with labels, ms-MY values; none is a link', async () => {
+  it('shows four cards in order with labels, ms-MY values; only Langganan is not a link', async () => {
     const w = await mountPage(dashboard())
     const cards = w.findAll(
       '[data-testid^="sd-card-"][data-testid$="s"], [data-testid="sd-card-subscription"]',
@@ -199,7 +193,14 @@ describe('summary cards (FR-M27-23, 24, 30)', () => {
       '12',
       'Belum Ada',
     ])
-    expect(w.get('[data-testid="sd-cards"]').find('a').exists()).toBe(false)
+    const hrefs = ['pupils', 'teachers', 'classes'].map((k) =>
+      w.get(`[data-testid="sd-card-${k}"] a`).attributes('href'),
+    )
+    expect(hrefs).toEqual(['/admin-sekolah/pelajar', '/admin-sekolah/guru', '/admin-sekolah/kelas'])
+    const subscription = w.get('[data-testid="sd-card-subscription"]')
+    expect(subscription.element.tagName).not.toBe('A')
+    expect(subscription.find('a').exists()).toBe(false)
+    expect(w.get('[data-testid="sd-cards"]').findAll('a')).toHaveLength(3)
   })
 
   it('shows "Belum Ada" and the subscription label (DV-M27-04)', async () => {
@@ -245,6 +246,15 @@ describe('Ringkasan Prestasi (FR-M27-31…37)', () => {
     expect(text(w, 'sd-practice-accuracy')).toBe('61.4%')
     expect(text(w, 'sd-panel-practice')).toContain('Purata Ketepatan')
     expect(text(w, 'sd-practice-counts')).toBe('57 sesi · 803 soalan')
+  })
+
+  it('links every panel to its page (FR-AS-2-1)', async () => {
+    const w = await mountPage(dashboard())
+    const href = (id: string) => w.get(`[data-testid="${id}"]`).attributes('href')
+    expect(href('sd-panel-gps')).toBe('/prestasi/sekolah')
+    expect(href('sd-panel-risk')).toBe('/amaran/sekolah')
+    expect(href('sd-panel-practice')).toBe('/admin-sekolah/statistik-penggunaan')
+    expect(href('sd-panel-levels')).toBe('/prestasi/tingkatan')
   })
 
   it('shows the Tingkatan panel as a link with coloured rows and "Click untuk detail"', async () => {
@@ -386,5 +396,23 @@ describe('states (FR-M27-28)', () => {
     expect(text(w, 'sd-error')).toContain('Tidak dapat memuatkan data. Sila cuba semula.')
     expect(text(w, 'sd-error')).not.toContain('Server Error')
     expect(has(w, 'sd-banner')).toBe(false)
+  })
+})
+
+describe('Guru Menunggu callout (FR-AS-2-1)', () => {
+  it('shows with the count and links to the pending page when above 0', async () => {
+    const w = await mountPage(dashboard({ pendingTeachers: 2 }))
+    expect(has(w, 'sd-pending-teachers')).toBe(true)
+    expect(text(w, 'sd-pending-teachers')).toContain('Guru Menunggu')
+    expect(text(w, 'sd-pending-teachers-count')).toBe('2')
+    expect(w.get('[data-testid="sd-pending-teachers-link"]').attributes('href')).toBe(
+      '/admin-sekolah/guru/menunggu',
+    )
+  })
+
+  it('is hidden at 0', async () => {
+    const w = await mountPage(dashboard({ pendingTeachers: 0 }))
+    expect(has(w, 'sd-pending-teachers')).toBe(false)
+    expect(w.text()).not.toContain('Guru Menunggu')
   })
 })

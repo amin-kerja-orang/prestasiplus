@@ -64,6 +64,7 @@ const dashboard = {
   school: { id: '8880', name: 'SMK DEMO', state: 'Negeri Demo', ppd: 'PPD DEMO', code: 'DEMO0001' },
   roleLabel: 'Admin Sekolah',
   perutusan: [{ id: '5', title: 'Perutusan Demo', createdAt: AT, author: { initials: 'AD', roleLabel: 'Admin Pusat' } }],
+  pendingTeachers: 2,
   cards: { pupils: 59, teachers: 6, activeClasses: 4, subscription: { status: 'active', label: 'Aktif' } },
   performance: {
     gps: { value: 5.2, grade: 'C+', band: 'Sederhana', entries: 3 },
@@ -260,6 +261,7 @@ const effectivenessEmpty = {
 describe('school-admin contract: reports', () => {
   it('parses the dashboard, including a school without risk data or practice', () => {
     expect(ok(SchoolAdminDashboardSchema, dashboard)).toBe(true)
+    expect(ok(SchoolAdminDashboardSchema, { ...dashboard, pendingTeachers: undefined })).toBe(false)
     expect(ok(SchoolAdminDashboardSchema, { ...dashboard, performance: { ...dashboard.performance, risk: null, gps: { value: null, grade: null, band: null, entries: 0 } } })).toBe(true)
     expect(ok(SchoolAdminDashboardSchema, { ...dashboard, cards: { ...dashboard.cards, subscription: { status: 'paused', label: 'x' } } })).toBe(false)
     expect(ok(SchoolAdminDashboardSchema, { ...dashboard, perutusan: Array(4).fill(dashboard.perutusan[0]) })).toBe(false)

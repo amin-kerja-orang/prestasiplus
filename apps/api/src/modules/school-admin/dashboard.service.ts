@@ -83,7 +83,7 @@ export class DashboardService {
     // XS-1 / XS-3 (S6-T03): the cards are the same named queries every other screen uses; the practice questions and accuracy
     // are XS-4 / XS-5 of the school, all time ("sepanjang masa").
     const scope = { kind: 'school', schoolId } as const
-    const [pupils, teachers, totals, posts, subs, view, activeClasses] = await Promise.all([
+    const [pupils, teachers, totals, posts, subs, view, activeClasses, pending] = await Promise.all([
       this.xs.pupilCount(scope),
       this.xs.teacherCount(schoolId),
       this.xs.answerTotals(scope),
@@ -91,6 +91,7 @@ export class DashboardService {
       this.subscriptions.list(caller, {}),
       this.performance.school(perf),
       this.classes.activeClasses(schoolId),
+      this.users.pendingTeachersOfSchool(schoolId), // the query behind GET /admin-sekolah/guru/pending
     ])
     const shown = posts.slice(0, DASHBOARD_PERUTUSAN_LIMIT)
     const authors = new Map<string, Awaited<ReturnType<UsersRepository['get']>>>()
@@ -116,6 +117,7 @@ export class DashboardService {
           author: { initials: initialsOf(author?.name ?? ''), roleLabel: role ? (AUTHOR_ROLE_LABELS[role] as string) : '' },
         }
       }),
+      pendingTeachers: pending.length,
       cards: {
         pupils,
         teachers,

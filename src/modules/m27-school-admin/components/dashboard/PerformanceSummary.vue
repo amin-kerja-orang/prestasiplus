@@ -3,7 +3,7 @@
  * S0 "Ringkasan Prestasi" card (FR-M27-31…37; restyle spec AS-2): title and subtitle, then four panels (GPS
  * SEKOLAH, AMARAN AWAL, LATIHAN, TINGKATAN) and the grade chart. 4 panels per row at 1280, 2 at 768, 1 at
  * 375 (FR-M27-25). AMARAN AWAL is rendered when the M18 risk read answers (`risk` not null; XR-M27-08
- * resolved). The TINGKATAN panel is the link to `/prestasi/tingkatan`. No-data states follow BR-M27-18.
+ * resolved). Each panel is a link: GPS to Prestasi, AMARAN AWAL to Amaran Awal, LATIHAN to Statistik Penggunaan, TINGKATAN to `/prestasi/tingkatan` (FR-AS-2-1). No-data states follow BR-M27-18.
  * Colour appears only on the figures that carry a meaning (GPS band, risk, level accuracy).
  */
 import { computed } from 'vue'
@@ -67,7 +67,8 @@ const isEmpty = computed(() => {
       class="mt-4 grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4"
       data-testid="sd-panels"
     >
-      <DsPanel tone="inset" data-testid="sd-panel-gps">
+      <RouterLink :to="PATHS.school" class="block min-w-0" data-testid="sd-panel-gps">
+        <DsPanel tone="inset" class="h-full hover:bg-elevated">
         <div class="flex flex-col items-center justify-center gap-1 text-center">
           <p class="text-overline text-muted">GPS Sekolah</p>
           <p
@@ -94,8 +95,10 @@ const isEmpty = computed(() => {
           </p>
         </div>
       </DsPanel>
+      </RouterLink>
 
-      <DsPanel v-if="performance.risk" tone="inset" data-testid="sd-panel-risk">
+      <RouterLink v-if="performance.risk" :to="PATHS.amaran" class="block min-w-0" data-testid="sd-panel-risk">
+        <DsPanel tone="inset" class="h-full hover:bg-elevated">
         <div class="flex flex-col items-center justify-center gap-1 text-center">
           <p class="text-overline text-muted">Amaran Awal</p>
           <div class="mt-1 flex items-start justify-center gap-4">
@@ -123,8 +126,10 @@ const isEmpty = computed(() => {
           </p>
         </div>
       </DsPanel>
+      </RouterLink>
 
-      <DsPanel tone="inset" data-testid="sd-panel-practice">
+      <RouterLink :to="PATHS.usage" class="block min-w-0" data-testid="sd-panel-practice">
+        <DsPanel tone="inset" class="h-full hover:bg-elevated">
         <div class="flex flex-col items-center justify-center gap-1 text-center">
           <p class="text-overline text-muted">Latihan</p>
           <p class="tabular text-display text-highlighted" data-testid="sd-practice-accuracy">
@@ -137,6 +142,7 @@ const isEmpty = computed(() => {
           </p>
         </div>
       </DsPanel>
+      </RouterLink>
 
       <RouterLink :to="PATHS.levels" class="block min-w-0" data-testid="sd-panel-levels">
         <DsPanel tone="inset" class="h-full hover:bg-elevated">

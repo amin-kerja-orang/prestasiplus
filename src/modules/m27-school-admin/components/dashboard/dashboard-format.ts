@@ -13,6 +13,12 @@ export const PATHS = {
   home: '/dashboard',
   levels: '/prestasi/tingkatan',
   school: '/prestasi/sekolah',
+  pupils: '/admin-sekolah/pelajar',
+  teachers: '/admin-sekolah/guru',
+  kelas: '/admin-sekolah/kelas',
+  amaran: '/amaran/sekolah',
+  usage: '/admin-sekolah/statistik-penggunaan',
+  pendingTeachers: '/admin-sekolah/guru/menunggu',
 } as const
 
 /** Integer with the `ms-MY` thousands separator ("1,234"). */

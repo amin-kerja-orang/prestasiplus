@@ -48,6 +48,10 @@ export const SchoolAdminDashboardSchema = z
       )
       .max(3)
       .meta({ description: 'The first 3 Perutusan posts visible to the caller (content owner BE-24).' }),
+    pendingTeachers: count.meta({
+      description:
+        'Teachers waiting for the school admin to approve them ("Guru Menunggu"); equals the length of GET /admin-sekolah/guru/pending.',
+    }),
     cards: z.object({
       pupils: count.meta({ description: 'Pupils of the school, active or not.' }),
       teachers: count.meta({ description: 'Teachers of the school, active or not.' }),

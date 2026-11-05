@@ -1,4 +1,9 @@
-import { ErrorBodySchema, SchoolAdminDashboardSchema } from '@pp/contract'
+import {
+  ErrorBodySchema,
+  SchoolAdminClassListResponseSchema,
+  SchoolAdminDashboardSchema,
+  SchoolAdminPendingTeacherListResponseSchema,
+} from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import {
@@ -7,6 +12,7 @@ import {
   bootSchoolAdminApp,
   emptyView,
   FakePerformance,
+  insertPendingTeacher,
   login,
   SCHOOL_ADMIN,
   schoolIdOf,
@@ -15,6 +21,7 @@ import {
   type Api,
   type SchoolAdminTestApp,
 } from './helpers'
+import { addClassroom, addLevel } from './reports-fixtures'
 
 describe('GET /admin-sekolah/dashboard with no BE-19 / BE-17 provider (fail-closed defaults)', () => {
   let t: SchoolAdminTestApp
@@ -194,5 +201,53 @@ describe('GET /admin-sekolah/dashboard with a BE-19-shaped provider', () => {
     const d = SchoolAdminDashboardSchema.parse((await admin.get('/admin-sekolah/dashboard')).body.data)
     // Changed from { null, 0, 0 }: sessions are the view's; no answer rows in this DB, so questions 0 and accuracy null.
     expect(d.performance.practice).toEqual({ accuracy: null, sessions: 9, questions: 0 })
+  })
+})
+
+describe('GET /admin-sekolah/dashboard agrees with the pages it links to (S6-T13 A)', () => {
+  let t: SchoolAdminTestApp
+  let admin: Api
+  let s1: string
+  let s2: string
+
+  beforeAll(async () => {
+    t = await bootSchoolAdminApp()
+    admin = apiOf(await login(t, SCHOOL_ADMIN))
+    s1 = await schoolIdOf(t.db, 'DEMO001')
+    s2 = await schoolIdOf(t.db, 'DEMO002')
+  }, 120_000)
+  afterAll(async () => {
+    await t.close()
+  })
+
+  const dashboard = async () => SchoolAdminDashboardSchema.parse((await admin.get('/admin-sekolah/dashboard')).body.data)
+  const pendingList = async () =>
+    SchoolAdminPendingTeacherListResponseSchema.parse((await admin.get('/admin-sekolah/guru/pending')).body)
+
+  it('pendingTeachers equals the length of GET /admin-sekolah/guru/pending (0, then 2, own school only, suspended not counted)', async () => {
+    expect((await dashboard()).pendingTeachers).toBe(0)
+    expect((await pendingList()).data).toHaveLength(0)
+
+    await insertPendingTeacher(t.db, 'tunggu1@ujian.test', s1, 'Guru Tunggu Satu')
+    await insertPendingTeacher(t.db, 'tunggu2@ujian.test', s1, 'Guru Tunggu Dua')
+    await insertPendingTeacher(t.db, 'tunggu3@ujian.test', s2, 'Guru Sekolah Lain')
+    const suspended = await insertPendingTeacher(t.db, 'tunggu4@ujian.test', s1, 'Guru Digantung')
+    await t.db.query(`update users set is_suspended = true where id = $1::bigint`, [suspended])
+
+    const d = await dashboard()
+    const list = await pendingList()
+    expect(d.pendingTeachers).toBe(2)
+    expect(d.pendingTeachers).toBe(list.data.length)
+    expect(JSON.stringify(d)).not.toContain('Guru Tunggu')
+  })
+
+  it('cards.activeClasses equals the /admin-sekolah/kelas tile (classroom-kind classes; inactive and other schools not counted)', async () => {
+    const level = await addLevel(t.db, 'T4', 'Tingkatan 4', 10)
+    for (let i = 1; i <= 3; i++) await addClassroom(t.db, { schoolId: s1, name: `Kelas Sepadan ${i}`, levelId: level })
+    await addClassroom(t.db, { schoolId: s1, name: 'Kelas Tidak Aktif', levelId: level, active: false })
+    await addClassroom(t.db, { schoolId: s2, name: 'Kelas Sekolah Lain', levelId: level })
+    const tile = SchoolAdminClassListResponseSchema.parse((await admin.get('/admin-sekolah/kelas')).body).tiles.activeClasses
+    expect(tile).toBe(3)
+    expect((await dashboard()).cards.activeClasses).toBe(tile)
   })
 })
