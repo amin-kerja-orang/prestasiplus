@@ -12,6 +12,7 @@ import { useApi } from '@/composables'
 import {
   DsCluster,
   DsEmptyState,
+  DsHeading,
   DsIconChip,
   DsLoadError,
   DsPage,
@@ -25,7 +26,7 @@ import { formatDate } from '@/lib/time'
 import { fetchRemedialSuggestions, fetchRemedialTests } from '../api/practice'
 import {
   accuracyBarWidth,
-  deltaColorClass,
+  deltaTone,
   deltaLabel,
   pctOrDash,
   remedialChip,
@@ -45,8 +46,8 @@ const isEmpty = computed(
 )
 
 function retry(): void {
-  reload()
-  suggestions.reload()
+  void reload()
+  void suggestions.reload()
 }
 </script>
 
@@ -58,7 +59,7 @@ function retry(): void {
     data-testid="remedial-page"
   >
     <template #leading>
-      <span class="text-title" aria-hidden="true">🔬</span>
+      <DsText variant="title" as="span" aria-hidden="true">🔬</DsText>
     </template>
 
     <template v-if="ready">
@@ -70,31 +71,22 @@ function retry(): void {
         data-testid="remedial-empty"
       >
         <template #actions>
-          <UButton to="/practice" size="lg" class="min-h-11" data-testid="remedial-empty-cta"
-            >Terus Berlatih →</UButton
-          >
+          <UButton to="/practice" size="xl" data-testid="remedial-empty-cta">Terus Berlatih →</UButton>
         </template>
       </DsEmptyState>
 
       <DsStack v-else gap="xl">
-        <ul v-if="completed.length > 0" class="flex flex-col gap-3" data-testid="remedial-set-list">
-          <li
-            v-for="c in completed"
-            :key="`${c.subjectCode}-${String(c.setNo)}`"
-            class="min-w-0"
-          >
+        <DsStack v-if="completed.length > 0" as="ul" gap="sm" data-testid="remedial-set-list">
+          <li v-for="c in completed" :key="`${c.subjectCode}-${String(c.setNo)}`">
             <UCard :data-testid="`remedial-set-${c.subjectCode}-${String(c.setNo)}`">
-              <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <DsStack gap="xs" class="min-w-0">
+              <DsCluster justify="between" align="center" stack-below="sm" gap="md">
+                <DsStack gap="xs">
                   <DsCluster gap="sm">
-                    <h2
-                      class="text-subheading break-words text-highlighted"
-                      data-testid="remedial-set-title"
+                    <DsHeading :level="2" variant="subheading" data-testid="remedial-set-title"
+                      >Remedial Set {{ c.setNo }} — {{ c.subjectName }}</DsHeading
                     >
-                      Remedial Set {{ c.setNo }} — {{ c.subjectName }}
-                    </h2>
                     <UBadge
-                      :color="remedialChip('completed').color"
+                      color="success"
                       variant="solid"
                       icon="i-ph-check-circle-bold"
                       data-testid="remedial-set-status"
@@ -111,46 +103,44 @@ function retry(): void {
                     <DsText variant="caption" tone="muted" data-testid="remedial-set-after"
                       >Selepas: {{ pctOrDash(c.after) }}
                       <template v-if="c.delta !== null"
-                        >(<span
-                          :class="deltaColorClass(c.delta)"
-                          :data-tone="c.delta < 0 ? 'error' : 'success'"
+                        >(<DsText
+                          as="span"
+                          variant="caption"
+                          :tone="deltaTone(c.delta)"
+                          :data-tone="deltaTone(c.delta)"
                           data-testid="remedial-set-delta"
-                          >{{ deltaLabel(c.delta) }}</span
+                          >{{ deltaLabel(c.delta) }}</DsText
                         >)</template
                       ></DsText
                     >
                   </DsCluster>
-                  <div>
+                  <DsCluster>
                     <UBadge color="neutral" variant="subtle" data-testid="remedial-set-chip"
                       >{{ c.subjectName }} (Umum)</UBadge
                     >
-                  </div>
+                  </DsCluster>
                 </DsStack>
                 <UButton
                   :to="`/practice/revision/${encodeURIComponent(c.subjectCode)}`"
-                  size="lg"
-                  class="min-h-11 shrink-0 justify-center"
+                  size="xl"
                   data-testid="remedial-set-redo"
                   >🎯 Ulang Latihan →</UButton
                 >
-              </div>
+              </DsCluster>
             </UCard>
           </li>
-        </ul>
+        </DsStack>
 
         <DsSection v-if="needed.length > 0" title="Perlu Pemulihan Sekarang">
-          <ul class="flex flex-col gap-3" data-testid="remedial-needed-list">
-            <li v-for="n in needed" :key="n.subjectCode" class="min-w-0">
+          <DsStack as="ul" gap="sm" data-testid="remedial-needed-list">
+            <li v-for="n in needed" :key="n.subjectCode">
               <UCard :data-testid="`remedial-needed-${n.subjectCode}`">
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <DsStack gap="xs" class="min-w-0 flex-1">
+                <DsCluster justify="between" align="center" stack-below="sm" gap="md">
+                  <DsStack gap="xs">
                     <DsCluster gap="sm">
-                      <h3
-                        class="text-subheading break-words text-highlighted"
-                        data-testid="remedial-needed-subject"
-                      >
-                        {{ n.subjectName }}
-                      </h3>
+                      <DsHeading :level="3" variant="subheading" data-testid="remedial-needed-subject">{{
+                        n.subjectName
+                      }}</DsHeading>
                       <UBadge
                         color="error"
                         variant="solid"
@@ -178,40 +168,36 @@ function retry(): void {
                       data-testid="remedial-needed-bar"
                       :data-width="accuracyBarWidth(n.accuracy, n.target)"
                     />
-                    <div>
+                    <DsCluster>
                       <UBadge color="neutral" variant="subtle" data-testid="remedial-needed-chip"
                         >{{ n.subjectName }} (Umum)</UBadge
                       >
-                    </div>
+                    </DsCluster>
                   </DsStack>
                   <UButton
                     :to="`/practice/revision/${encodeURIComponent(n.subjectCode)}`"
-                    size="lg"
-                    class="min-h-11 shrink-0 justify-center"
+                    size="xl"
                     data-testid="remedial-needed-start"
                     >🎯 Latihan Pemulihan →</UButton
                   >
-                </div>
+                </DsCluster>
               </UCard>
             </li>
-          </ul>
+          </DsStack>
         </DsSection>
 
         <DsSection v-if="items.length > 0" title="Ujian Daripada Guru">
-          <ul class="flex flex-col gap-3" data-testid="remedial-list">
-            <li v-for="t in items" :key="t.id" class="min-w-0">
+          <DsStack as="ul" gap="sm" data-testid="remedial-list">
+            <li v-for="t in items" :key="t.id">
               <UCard :data-testid="`remedial-card-${String(t.id)}`">
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div class="flex min-w-0 items-start gap-3">
+                <DsCluster justify="between" align="center" stack-below="sm" gap="md">
+                  <DsCluster align="start" gap="sm" :wrap="false">
                     <DsIconChip icon="lifebuoy" accent="heat" size="lg" />
-                    <div class="flex min-w-0 flex-col gap-1">
-                      <div class="flex flex-wrap items-center gap-2">
-                        <h3
-                          class="text-subheading break-words text-highlighted"
-                          data-testid="remedial-subject"
-                        >
-                          {{ t.subjectName }}
-                        </h3>
+                    <DsStack gap="xs">
+                      <DsCluster gap="sm">
+                        <DsHeading :level="3" variant="subheading" data-testid="remedial-subject">{{
+                          t.subjectName
+                        }}</DsHeading>
                         <UBadge
                           :color="remedialChip(t.status).color"
                           variant="solid"
@@ -219,27 +205,26 @@ function retry(): void {
                           data-testid="remedial-status"
                           >{{ remedialChip(t.status).label }}</UBadge
                         >
-                      </div>
-                      <p class="text-body text-default" data-testid="remedial-count">
-                        {{ t.totalQuestions }} soalan
-                      </p>
-                      <p class="text-caption text-muted" data-testid="remedial-meta">
-                        Daripada: {{ t.teacherName }} · {{ formatDate(t.createdAt) }}
-                      </p>
-                    </div>
-                  </div>
+                      </DsCluster>
+                      <DsText variant="body" data-testid="remedial-count"
+                        >{{ t.totalQuestions }} soalan</DsText
+                      >
+                      <DsText variant="caption" tone="muted" data-testid="remedial-meta"
+                        >Daripada: {{ t.teacherName }} · {{ formatDate(t.createdAt) }}</DsText
+                      >
+                    </DsStack>
+                  </DsCluster>
                   <UButton
                     v-if="t.status === 'active'"
                     :to="`/remedial/${String(t.id)}`"
-                    size="lg"
-                    class="min-h-14 shrink-0 justify-center"
+                    size="xl"
                     data-testid="remedial-start"
                     >Mula Ujian</UButton
                   >
-                </div>
+                </DsCluster>
               </UCard>
             </li>
-          </ul>
+          </DsStack>
         </DsSection>
       </DsStack>
     </template>

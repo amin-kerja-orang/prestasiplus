@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { SpmTargetRow } from '../../api/types'
 import {
   accuracyBarWidth,
-  deltaColorClass,
+  deltaTone,
   deltaLabel,
   parseId,
   pctOrDash,
@@ -93,9 +93,9 @@ describe('assigned-lib', () => {
     expect(deltaLabel(-5)).toBe('-5%')
     expect(deltaLabel(0)).toBe('+0%')
     expect(deltaLabel(-0)).toBe('+0%')
-    expect(deltaColorClass(0)).toBe('text-success')
-    expect(deltaColorClass(12)).toBe('text-success')
-    expect(deltaColorClass(-1)).toBe('text-error')
+    expect(deltaTone(0)).toBe('success')
+    expect(deltaTone(12)).toBe('success')
+    expect(deltaTone(-1)).toBe('error')
   })
 
   it('prints a missing percent as a dash', () => {

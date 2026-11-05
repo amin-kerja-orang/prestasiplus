@@ -30,8 +30,8 @@ export function pctOrDash(value: number | null): string {
 }
 
 /** Green when not negative, red when negative (FR-MUR-12-4). */
-export function deltaColorClass(delta: number): 'text-success' | 'text-error' {
-  return delta < 0 ? 'text-error' : 'text-success'
+export function deltaTone(delta: number): 'success' | 'error' {
+  return delta < 0 ? 'error' : 'success'
 }
 
 /** S13 needed-card bar width in % of the 60 target, clamped 0-100. */

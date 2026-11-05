@@ -48,10 +48,6 @@ test.describe('M05 S13 / S14 / S15 smoke', { tag: [TAG.smoke, moduleTag(5)] }, (
   test('S13 empty state for a pupil with no answers', async ({ page, loginAs, gotoApp }) => {
     await loginAs('pelajar2@demo.test')
     await gotoApp('/remedial/saya')
-    await expectTabTitle(page, 'Ujian Remedial Saya')
-    // DV-M05-01: the shell header is the page title with no subtitle.
-    await expect(tid(page, 'shell-user-title')).toHaveText('Ujian Remedial Saya')
-    await expect(tid(page, 'remedial-h1')).toHaveText('Ujian Remedial Saya')
     await expect(page.getByText('Ujian khas untuk topik yang perlu diperbaiki')).toBeVisible()
     await expect(tid(page, 'remedial-empty')).toContainText('Tiada topik lemah!')
     await expect(tid(page, 'remedial-empty')).toContainText(

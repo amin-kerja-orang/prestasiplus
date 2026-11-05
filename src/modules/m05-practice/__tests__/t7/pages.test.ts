@@ -405,16 +405,16 @@ describe('S13 RemedialListPage', () => {
     expect(a.get('[data-testid=remedial-set-after]').text().replace(/\s+/g, ' ')).toBe(
       'Selepas: 80% (+40%)',
     )
-    expect(a.get('[data-testid=remedial-set-delta]').classes()).toContain('text-success')
+    expect(a.get('[data-testid=remedial-set-delta]').attributes('data-tone')).toBe('success')
     expect(a.get('[data-testid=remedial-set-chip]').text()).toBe('Sains (Umum)')
     expect(a.get('[data-testid=remedial-set-redo]').text()).toBe('🎯 Ulang Latihan →')
     expect(a.get('[data-testid=remedial-set-redo]').attributes('href')).toBe('/practice/revision/SN')
     const neg = t(w, 'remedial-set-BM-1').get('[data-testid=remedial-set-delta]')
     expect(neg.text()).toBe('-5%')
-    expect(neg.classes()).toContain('text-error')
+    expect(neg.attributes('data-tone')).toBe('error')
     const zero = t(w, 'remedial-set-MATH-1').get('[data-testid=remedial-set-delta]')
     expect(zero.text()).toBe('+0%')
-    expect(zero.classes()).toContain('text-success')
+    expect(zero.attributes('data-tone')).toBe('success')
   })
 
   it('a null side shows "—" and a null delta drops the "(±d%)" part', async () => {
