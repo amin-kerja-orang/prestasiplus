@@ -1,9 +1,10 @@
 import { GamificationDrawSchema, GamificationEconomySettingsSchema, GamificationRewardControlSchema, GamificationSettingsListSchema, GamificationSyilingRewardSchema } from '@pp/contract'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { cryptoDrawRandom } from '../../src/modules/gamification/ports'
 import { prngStream } from '../../src/db/prng'
 import { GamificationPorts } from '../../src/modules/gamification'
+import { RewardSettingsService } from '../../src/modules/shop'
 import { ADMIN, bareUser, bootGamificationApp, dataOf, fail, signIn, userIdOf, type Client, type GamificationTestApp } from './helpers'
 
 const KEYS = ['coins_per_question', 'cash_rate_coins', 'cash_rate_sen', 'min_cash_withdrawal', 'cash_withdrawal_enabled', 'reward_budget_sen_session', 'reward_budget_sen_month', 'current_session_year', 'flat_quiz_reward', 'games_award_syiling']
@@ -80,6 +81,25 @@ describe('M14 admin operations: settings, reward control, lucky draws (BE-23, AC
         expect(fail(await admin.put('/admin/gamification/settings', { settings: [bad] }), 422, 'VALIDATION_ERROR', SUMMARY).fields).toEqual({ settings: SUMMARY })
       }
       await admin.put('/admin/gamification/settings', { settings: [{ key: 'flat_quiz_reward', value: 1 }, { key: 'games_award_syiling', value: 0 }] })
+    })
+
+    it('two admins saving different keys keep both: a save writes only its posted columns; before and after stay for the audit (S7-T05)', async () => {
+      const service = t.app.get(RewardSettingsService)
+      const adminId = await userIdOf(t.db, ADMIN)
+      const at = new Date()
+      const read = service.read.bind(service)
+      // The other admin commits between this save's read and its write, the window of a stale read.
+      const spy = vi.spyOn(service, 'read').mockImplementationOnce(async (db) => {
+        const stale = await read(db)
+        await t.prisma.transaction((tx) => service.save(tx, [{ key: 'reward_budget_sen_session', value: 500 }], adminId, at))
+        return stale
+      })
+      const { before, after } = await t.prisma.transaction((tx) => service.save(tx, [{ key: 'flat_quiz_reward', value: 5 }], adminId, at))
+      spy.mockRestore()
+      expect(await rewardRow()).toMatchObject({ coins_per_correct: 5, redeem_budget_sen: 500, updated_by: adminId })
+      expect(before).toMatchObject({ coinsPerCorrect: 1, redeemBudgetSen: 300 })
+      expect(after).toMatchObject({ coinsPerCorrect: 5, redeemBudgetSen: 500 })
+      await admin.put('/admin/gamification/settings', { settings: [{ key: 'flat_quiz_reward', value: 1 }, { key: 'reward_budget_sen_session', value: 300 }] })
     })
   })
 

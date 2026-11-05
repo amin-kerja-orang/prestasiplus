@@ -40,25 +40,32 @@ export function rewardSettingsByKey(values: RewardSettingsValues): ReadonlyMap<s
   return new Map(Object.entries(KEYS).map(([key, { column }]) => [key, Number(values[column])]))
 }
 
+function valuesOf(row: RewardSettingsValues): RewardSettingsValues {
+  return { coinsPerCorrect: row.coinsPerCorrect, redeemBudgetSen: row.redeemBudgetSen, sessionYear: row.sessionYear, miniGamesGiveCoins: row.miniGamesGiveCoins }
+}
+
 @Injectable()
 export class RewardSettingsService {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async read(db: TxClient | PrismaClient = this.prisma.client): Promise<RewardSettingsValues> {
     const row = await db.rewardSetting.findUnique({ where: { id: 1 } })
-    return row ? { coinsPerCorrect: row.coinsPerCorrect, redeemBudgetSen: row.redeemBudgetSen, sessionYear: row.sessionYear, miniGamesGiveCoins: row.miniGamesGiveCoins } : DEFAULTS
+    return row ? valuesOf(row) : DEFAULTS
   }
 
-  /** Writes the posted keys (the caller checked them with `rewardSettingError`); answers the row before and after for the audit. */
+  /**
+   * Writes only the posted keys (the caller checked them with `rewardSettingError`), so two admins saving different keys
+   * cannot overwrite each other; answers the row before and after for the audit, `after` as the write left it.
+   */
   async save(tx: TxClient, values: readonly { key: RewardSettingKey; value: number }[], updatedBy: string, at: Date): Promise<{ before: RewardSettingsValues; after: RewardSettingsValues }> {
     const before = await this.read(tx)
-    const after = { ...before }
+    const posted: Partial<RewardSettingsValues> = {}
     for (const { key, value } of values) {
-      if (key === 'games_award_syiling') after.miniGamesGiveCoins = value === 1
-      else after[KEYS[key].column] = value
+      if (key === 'games_award_syiling') posted.miniGamesGiveCoins = value === 1
+      else posted[KEYS[key].column] = value
     }
-    const data = { ...after, updatedBy: idFromString(updatedBy), updatedAt: at }
-    await tx.rewardSetting.upsert({ where: { id: 1 }, create: data, update: data })
-    return { before, after }
+    const stamp = { updatedBy: idFromString(updatedBy), updatedAt: at }
+    const row = await tx.rewardSetting.upsert({ where: { id: 1 }, create: { ...before, ...posted, ...stamp }, update: { ...posted, ...stamp } })
+    return { before, after: valuesOf(row) }
   }
 }
