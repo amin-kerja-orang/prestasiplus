@@ -279,6 +279,23 @@ describe('S3 PracticeConfigPage', () => {
     expect(router.currentRoute.value.path).toBe('/practice/MATH')
   })
 
+  it('disables the count buttons above the available count with the title "Hanya {n} soalan tersedia."', async () => {
+    api.fetchSubjectConfig.mockResolvedValue({
+      ...MATH,
+      difficultyStats: { ...MATH.difficultyStats, '3': 12 },
+    })
+    const w = await render(PracticeConfigPage, '/practice/MATH')
+    await t(w, 'difficulty-3').trigger('click')
+    for (const n of [5, 10]) {
+      expect(t(w, `count-${n}`).attributes('disabled')).toBeUndefined()
+      expect(t(w, `count-${n}`).attributes('title')).toBeUndefined()
+    }
+    for (const n of [15, 20]) {
+      expect(t(w, `count-${n}`).attributes('disabled')).toBeDefined()
+      expect(t(w, `count-${n}`).attributes('title')).toBe('Hanya 12 soalan tersedia.')
+    }
+  })
+
   it('starts Q1 with the chosen parameters when the link is clicked', async () => {
     const w = await render(PracticeConfigPage, '/practice/MATH')
     await t(w, 'level-1').trigger('click')

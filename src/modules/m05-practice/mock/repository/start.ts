@@ -134,14 +134,14 @@ function linked(
 }
 
 /**
- * Resolves a start. `_sessionSeed` (the session id, BR-13) keyed the removed `random` draw and is kept for the call shape; `now` is the mock
+ * Resolves a start. `sessionSeed` keys the Latih Tubi draw (the session id, BR-13); `now` is the mock
  * clock (epoch ms).
  */
 export function planStart(
   userId: number,
   req: StartRequest,
   now: number,
-  _sessionSeed: string,
+  sessionSeed: string,
   rng: Prng,
 ): StartPlan {
   // Mirror of the API: an unknown mode is "Nilai tidak sah."; "Mod tidak sah." only for a known stored mode that cannot be started.
@@ -217,13 +217,20 @@ export function planStart(
       const target = LATIH_TUBI_TARGETS[s.id]
       const count =
         countIn(req.count, target !== undefined ? [target, ...COUNT_OPTIONS] : [...LATIH_TUBI_COUNTS, ...COUNT_OPTIONS])
-      const rows = questions
-        .spmPool({
-          subjectId: s.id,
-          ...(levelId !== null ? { educationLevelIds: [levelId] } : {}),
-          ...(difficulty !== null ? { difficultyLevel: difficulty } : {}),
-        })
-        .sample(count, rng)
+      // The draw uses the rule of the config counts (Q-PRACTICE over the offered levels, `practiceLevelCount` and
+      // `difficultyCounts`), so a count the page enables can be served (the API counts and draws the same servable set).
+      const offered = s.educationLevelIds.filter((l) => offeredPracticeLevelIds().includes(l))
+      const levels = levelId !== null ? [levelId] : offered
+      const rows =
+        levels.length === 0
+          ? []
+          : questions.practiceQuery({
+              subjectId: s.id,
+              educationLevelIds: levels,
+              ...(difficulty !== null ? { difficultyLevel: difficulty } : {}),
+              limit: count,
+              seed: sessionSeed,
+            })
       if (rows.length === 0) throw notEnough()
       Object.assign(plan, {
         subjectId: s.id,
