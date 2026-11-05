@@ -1,4 +1,4 @@
-import { INTAKE_FILE_MESSAGES, IntakeBatchSummarySchema, QUESTION_SET_PAPER_MESSAGES, QuestionSetPaperSchema } from '@pp/contract'
+import { INTAKE_FILE_MESSAGES, IntakeBatchSummarySchema, QUESTION_SET_PAPER_MESSAGES, QuestionSetPaperSchema, questionSetPaperFileText } from '@pp/contract'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { QuestionSetsPorts } from '../../src/modules/classes/question-sets'
@@ -326,6 +326,24 @@ describe('S1-T08: the file size limit is checked before the content', () => {
   })
 })
 
+describe('S1-T08: AC-GUR-44-3 at the default size cap', () => {
+  it('a file just over the default INTAKE_MAX_FILE_MB (20 MB, no env override) is refused with the size text and nothing is stored', async () => {
+    const t = await bootQsApp({ realIntake: true })
+    try {
+      const teacher = await client(t, TEACHER_A)
+      const files = Number((await t.db.query<{ n: string }>('select count(*)::text n from files'))[0]?.n)
+      const res = await upload(teacher, FIELDS, [{ name: 'terlalu-besar.pdf', bytes: Buffer.concat([textPdf(1), Buffer.alloc(21 * 1024 * 1024, 0x20)]) }])
+      expect(res.status, JSON.stringify(res.body)).toBe(422)
+      expect(res.body.error.fields.files).toBe(questionSetPaperFileText('terlalu-besar.pdf'))
+      expect(res.body.error.fields.files).toBe('terlalu-besar.pdf: format atau saiz tidak dibenarkan.')
+      expect(await count(t)).toBe(0)
+      expect(Number((await t.db.query<{ n: string }>('select count(*)::text n from files'))[0]?.n)).toBe(files)
+    } finally {
+      await t.close()
+    }
+  })
+})
+
 describe('S1-T08 G3: the 7-label paper type slug map', () => {
   it('maps exactly the seven OPT-JENIS-HANTARAN labels, each stored on the batch; an unknown label is refused by the contract', async () => {
     expect(GURU_PAPER_TYPE_SLUGS).toEqual({
@@ -368,7 +386,7 @@ describe('S1-T08 G3: the daily page quota on the guru path', () => {
       const files = Number((await t.db.query<{ n: string }>('select count(*)::text n from files'))[0]?.n)
       const over = await upload(teacher, FIELDS, [{ name: 'b.pdf', bytes: textPdf(3, 3) }])
       expect(over.status, JSON.stringify(over.body)).toBe(429)
-      expect(over.body.error.code).toBe('RATE_LIMITED')
+      expect(over.body.error.code).toBe('INTAKE_DAILY_PAGE_QUOTA')
       expect(over.body.error.message).toBe(INTAKE_FILE_MESSAGES.quota)
       expect(await count(t)).toBe(batches)
       expect(Number((await t.db.query<{ n: string }>('select count(*)::text n from files'))[0]?.n)).toBe(files)

@@ -108,6 +108,9 @@ export type IntakeFileErrorCode = z.infer<typeof IntakeFileErrorCodeSchema>
  * prototype has only "Fail melebihi had 20 MB."; every other line is new copy, [PROPOSED] (card open
  * question 1, the lead approves it). The {N} messages are functions.
  */
+/** ERR-QUOTA-05 (40:580): the per-user daily page quota is reached; HTTP 429, text `INTAKE_FILE_MESSAGES.quota`. */
+export const INTAKE_DAILY_PAGE_QUOTA_CODE = 'INTAKE_DAILY_PAGE_QUOTA'
+
 export const INTAKE_FILE_MESSAGES = {
   type: 'Jenis fail tidak disokong. Gunakan PDF.',
   size: (mb: number) => `Fail melebihi had ${mb} MB.`,

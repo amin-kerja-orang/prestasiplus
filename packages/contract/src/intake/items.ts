@@ -417,7 +417,22 @@ export const IntakeItemStateCountsSchema = z
   .meta({ id: 'IntakeItemStateCounts', description: '[PROPOSED] Items per review state within the caller scope and the filters other than `state` (for the status tabs).' })
 export type IntakeItemStateCounts = z.infer<typeof IntakeItemStateCountsSchema>
 
-export const IntakeItemListMetaSchema = ListMetaSchema.extend({ counts: IntakeItemStateCountsSchema }).meta({
+export const IntakeKirimanCountsSchema = z
+  .strictObject({
+    jumlah: z.number().int().min(0),
+    pending: z.number().int().min(0),
+    processing: z.number().int().min(0),
+    selesai: z.number().int().min(0),
+    ditolak: z.number().int().min(0),
+  })
+  .meta({
+    id: 'IntakeKirimanCounts',
+    description:
+      'S1-T08 (FR-ADM-Q12.1): Kiriman Guru tile counts, same scope and mapping as `kirimanStatus` (each equals the `totalItems` of that filter). In-progress guru batches (submitted, processing) with no item yet are added to `processing` and `jumlah`.',
+  })
+export type IntakeKirimanCounts = z.infer<typeof IntakeKirimanCountsSchema>
+
+export const IntakeItemListMetaSchema = ListMetaSchema.extend({ counts: IntakeItemStateCountsSchema, kirimanCounts: IntakeKirimanCountsSchema.optional() }).meta({
   id: 'IntakeItemListMeta',
   description: '[PROPOSED] Standard list meta plus per-state counts computed from the same query (no stored counts).',
 })
