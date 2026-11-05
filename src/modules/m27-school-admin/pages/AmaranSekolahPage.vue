@@ -83,10 +83,10 @@ async function download(): Promise<void> {
 <template>
   <DsPage data-testid="am-page" :data-level="data?.levelFilter ?? 'all'">
     <template v-if="data && schoolId !== null">
-      <AmaranLevelPills :active="level" :levels="data.levels" />
+      <AmaranLevelPills :active="level" :levels="data.levels ?? []" />
       <AmaranTiles :tally="data.tally" />
       <p class="text-body text-muted" data-testid="am-not-started">
-        {{ notStartedLine(data.tally.notStarted) }}
+        {{ notStartedLine(data.tally.notStarted ?? 0) }}
       </p>
       <AmaranDistribution :tally="data.tally" />
       <AmaranActions :school-id="schoolId" :downloading="downloading" @download="download" />

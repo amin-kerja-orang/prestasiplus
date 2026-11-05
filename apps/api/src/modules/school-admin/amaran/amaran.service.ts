@@ -20,7 +20,7 @@ import { PracticeRepository } from '../../practice'
 import { KirkpatrickRepository } from '../../reports/kirkpatrick'
 import { SchoolsRepository, type SchoolRow } from '../../schools'
 import { UsersRepository } from '../../users'
-import { K_COHORT, SCHOOL_ADMIN_AUDIT } from '../school-admin.constants'
+import { SCHOOL_ADMIN_AUDIT } from '../school-admin.constants'
 import { canReadSchool, schoolIdOf, type AmaranCaller } from './amaran.access'
 import { amaranCsv } from './amaran.csv'
 import {
@@ -367,7 +367,7 @@ export class AmaranService {
   }
 
   private async weakness(counters: readonly (readonly SubjectCounter[])[]): Promise<AmaranSubjectRisk[]> {
-    const rows = weaknessOf(counters, K_COHORT)
+    const rows = weaknessOf(counters) // staff-only screens: no minimum cohort (PO decision, issue #503)
     const names = await this.classes.subjectNames(rows.map((r) => r.subjectId))
     return rows.map((r) => ({ subjectId: r.subjectId, subjectName: names.get(r.subjectId) ?? `Subjek ${r.subjectId}`, weak: r.weak, total: r.total, pct: r.pct }))
   }

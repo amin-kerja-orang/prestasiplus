@@ -157,7 +157,7 @@ describe('BE-21 Amaran access: /amaran/*', () => {
     expect(scores).toEqual([...scores].sort((a, b) => b - a))
     expect(data.pupils.slice(scored.length).every((p) => p.status === 'not_started' && p.score === null)).toBe(true)
     // AC-AS-49-3: Hijau + Kuning + Merah + Belum Bermula = the Senarai Pelajar count; not_started is outside the total.
-    expect(data.tally.green + data.tally.yellow + data.tally.red + data.tally.notStarted).toBe(data.pupils.length)
+    expect(data.tally.green + data.tally.yellow + data.tally.red + (data.tally.notStarted ?? -1)).toBe(data.pupils.length)
     expect(data.tally.total).toBe(data.tally.green + data.tally.yellow + data.tally.red)
     expect(data.tally.notStarted).toBe(data.pupils.filter((p) => p.status === 'not_started').length)
     expect(data.levels).toContain(4)
@@ -170,15 +170,15 @@ describe('BE-21 Amaran access: /amaran/*', () => {
     expect(text).not.toContain('@ujian.test')
     expect(text).not.toContain('0123334445')
     expect(text).not.toMatch(/"(email|phone|icNumber|ic_masked)"/)
-    // k = 5: 6 pupils answered the subject, so the weakness row is there (3 weak).
+    // 6 pupils answered the subject (3 weak).
     expect(data.weakness).toEqual([expect.objectContaining({ subjectName: 'Matematik Ujian', weak: 3, total: 6, pct: 50 })])
   })
 
-  it('k=5: a subject answered by fewer than five pupils is not shown', async () => {
+  it('no minimum cohort on staff screens (PO decision, issue #503): a subject answered by one pupil is listed', async () => {
     const lone = await addSubject(t.db, 'AMR2', 'Sains Ujian')
     await mastery(t, pupilIds[0] as string, lone, 1, 10)
     const data = AmaranSchoolRiskSchema.parse((await schoolAdmin.get(`/amaran/schools/${s1}`)).body.data)
-    expect(data.weakness.map((w) => w.subjectName)).not.toContain('Sains Ujian')
+    expect(data.weakness).toContainEqual(expect.objectContaining({ subjectName: 'Sains Ujian', weak: 1, total: 1, pct: 100 }))
   })
 
   it('tingkatan filter is class based; an unknown value means no filter', async () => {

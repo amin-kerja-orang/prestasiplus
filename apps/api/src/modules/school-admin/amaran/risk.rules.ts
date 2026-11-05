@@ -8,7 +8,7 @@ import {
   type AmaranInterventionType,
   type AmaranPupilRisk,
   type AmaranRiskStatus,
-  type AmaranSchoolTally,
+  type AmaranTally,
 } from '@pp/contract'
 
 /**
@@ -186,7 +186,10 @@ export function pupilView(p: ScoredPupil, rank: number): AmaranPupilRisk {
   }
 }
 
-export function tallyOf(pupils: readonly ScoredPupil[]): AmaranSchoolTally {
+/** The service always sets `notStarted` (optional on the wire). */
+export type SchoolTally = AmaranTally & { notStarted: number }
+
+export function tallyOf(pupils: readonly ScoredPupil[]): SchoolTally {
   const green = pupils.filter((p) => p.risk.status === 'on_track').length
   const yellow = pupils.filter((p) => p.risk.status === 'watch').length
   const red = pupils.filter((p) => p.risk.status === 'high').length
@@ -218,9 +221,9 @@ export interface WeaknessRow {
 
 /**
  * One row per subject that at least `minPupils` pupils answered, sorted by weak share (`pct`) descending, ties by subject id
- * (numeric). `weak` = pupils under `WEAK_BELOW_PCT`. A subject with fewer pupils than `minPupils` is left out (k-cohort rule).
+ * (numeric). `weak` = pupils under `WEAK_BELOW_PCT`. A subject with fewer pupils than `minPupils` is left out (only when a caller asks for a minimum; staff screens pass none, PO decision #503).
  */
-export function weaknessOf(perPupil: readonly (readonly SubjectCounter[])[], minPupils: number): WeaknessRow[] {
+export function weaknessOf(perPupil: readonly (readonly SubjectCounter[])[], minPupils = 1): WeaknessRow[] {
   const by = new Map<string, { weak: number; total: number }>()
   for (const counters of perPupil) {
     for (const c of counters) {

@@ -15,7 +15,7 @@ export interface RiskTallyView {
   yellow: number
   red: number
   /** Pupils with no practice data (outside green, yellow, red and total). */
-  notStarted: number
+  notStarted?: number
   /** green + yellow + red. */
   total: number
   /** Integer percentages. */
@@ -48,7 +48,7 @@ export interface SchoolRiskData {
   school: { id: number; name: string }
   levelFilter: LevelFilter | null
   /** The Tingkatan numbers that have pupils; the pills list only these. */
-  levels: number[]
+  levels?: number[]
   /** `''` or `' — Tingkatan {n}'`. */
   levelSuffix: string
   tally: RiskTallyView

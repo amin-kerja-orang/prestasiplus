@@ -192,14 +192,18 @@ describe('BE-21 Amaran cell texts and labels', () => {
   })
 })
 
-describe('BE-21 Amaran weakness and the k=5 cohort rule', () => {
-  it('counts weak pupils (under 50 percent correct) per subject and leaves out a subject answered by fewer than 5 pupils', () => {
+describe('BE-21 Amaran weakness (no minimum cohort, PO decision #503)', () => {
+  it('counts weak pupils (under 50 percent correct) per subject and lists a subject answered by 1 to 4 pupils too', () => {
     const pupil = (sub: string, correct: number, answered: number) => [{ subjectId: sub, correct, answered }]
     const rows = weaknessOf(
       [pupil('10', 1, 10), pupil('10', 9, 10), pupil('10', 5, 10), pupil('10', 0, 4), pupil('10', 4, 4), pupil('2', 0, 5), pupil('2', 0, 5), [{ subjectId: '10', correct: 0, answered: 0 }]],
-      5,
     )
-    expect(rows).toEqual([{ subjectId: '10', weak: 2, total: 5, pct: 40 }])
+    expect(rows).toEqual([
+      { subjectId: '2', weak: 2, total: 2, pct: 100 },
+      { subjectId: '10', weak: 2, total: 5, pct: 40 },
+    ])
+    expect(weaknessOf([pupil('7', 0, 3)])).toEqual([{ subjectId: '7', weak: 1, total: 1, pct: 100 }])
+    expect(weaknessOf([pupil('7', 0, 3)], 5)).toEqual([])
   })
 
   it('orders subjects by weak share descending, ties by numeric id', () => {
