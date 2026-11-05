@@ -195,7 +195,7 @@ export const STUDENT_ITEMS: readonly MatrixItem[] = [
 export const TEACHER_ITEMS: readonly MatrixItem[] = [
   // [S6 begin]
   item(1, 'Command Center', p('/guru/command-center'), p('/guru/remedial-progress')),
-  item(2, 'Dashboard Guru', p('/guru', true)),
+  item(2, 'Dashboard Guru', p('/guru', true), p('/guru/misi-harian')),
   // [S6 end]
   // [S10 begin]
   item(3, 'Headcount', p('/headcount')),
