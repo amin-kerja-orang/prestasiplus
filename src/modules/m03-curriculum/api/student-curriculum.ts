@@ -30,11 +30,14 @@ export type LegacySubject =
   | 'SEJARAH'
   | 'GEOGRAFI'
 
+/** S4-T06 (D11): any active subject; a legacy code (`LegacySubject`) or the subject's own code. Labels come from `subjectLabel`. */
+export type LearnerSubjectCode = string
+
 /** #25 item (S12 card). */
 export interface TopicCard {
   id: number
   gradeLevel: LegacyGradeLevel
-  subject: LegacySubject
+  subject: LearnerSubjectCode
   /** Code with "_" → " ". */
   subjectLabel: string
   name: string
@@ -56,7 +59,7 @@ export interface TopicSubtopic {
 export interface TopicDetail {
   id: number
   gradeLevel: LegacyGradeLevel
-  subject: LegacySubject
+  subject: LearnerSubjectCode
   subjectLabel: string
   /** BR-16: the admin subject code for `/practice/{practiceCode}`. */
   practiceCode: string
