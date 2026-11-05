@@ -87,13 +87,19 @@ export class QuestionReportsService {
         throw ApiError.of('VALIDATION_ERROR', { fields: { questionType: M.type } })
       }
       const versionNo = info!.liveVersionNo as number
-      // REQ-B-046: a re-POST of a report this reporter already has is a refresh, not a new report, so the cap does not apply to it.
-      if (!(await this.repo.exists(idFromString(actor.userId), v.questionId, versionNo))) await this.assertUnderDailyCap(actor)
-      await this.repo.upsert({
+      // FR-MUR-54-6/10: one report per reporter, question and version, for every reporter (a Guru too). The reporter lock (REP-L1, held to
+      // the end of this transaction) comes first so two concurrent first reports cannot both pass the check; a repeat is 409 before the cap.
+      const reporter = idFromString(actor.userId)
+      await this.repo.lockReporter(reporter)
+      if (await this.repo.exists(reporter, v.questionId, versionNo)) throw ApiError.of('CONFLICT', { message: M.duplicate })
+      await this.assertUnderDailyCap(actor)
+      // DM-82: the role the report was filed under comes from the session, never from the body.
+      const inserted = await this.repo.insert({
         questionId: v.questionId,
         questionVersionNo: versionNo,
         questionType: v.questionType,
-        reporterId: idFromString(actor.userId),
+        reporterId: reporter,
+        reporterRole: actor.role === 'student' ? 'murid' : 'guru',
         reasons: v.reasons,
         comment: v.comment,
         source: v.source,
@@ -103,6 +109,7 @@ export class QuestionReportsService {
         isTest: actor.isTest,
         now: this.clock.now(),
       })
+      if (!inserted) throw ApiError.of('CONFLICT', { message: M.duplicate }) // the unique index is the last guard
       return { success: true as const, message: M.created }
     })
   }
@@ -127,16 +134,18 @@ export class QuestionReportsService {
    * REQ-B-031 / REQ-B-046 (D98): a pupil can report only a question served to them. The proof is the attempt already checked by
    * `contextOf`, or a practice session of theirs that served the question (`quizSessionId`, unknown and someone else's answer alike).
    * A live structured question needs no proof: the structured practice keeps no session and the report is offered before the first
-   * submit, so serving it is the proof (the daily cap bounds abuse). A question that is not live gives a pupil the same 422 as an
-   * MCQ without proof. A Guru (Databank guru) is not asked for one; a given session id is still checked.
+   * submit, so serving it is the proof (the daily cap bounds abuse). A question that was not served (no proof, an unknown or someone
+   * else's session, an own session that did not serve it, a question that is not live) is 403 with `contextRequired` (FR-MUR-54-5), so the
+   * answer is not an existence oracle; a malformed session reference stays 422. A Guru (Databank guru) is not asked for a proof; a given
+   * session id is still checked.
    */
   private async assertServed(actor: WorkflowActor, sessionRef: string | null, hasAttempt: boolean, questionId: bigint, live: boolean, type: 'mcq' | 'structured'): Promise<void> {
     const me = idFromString(actor.userId)
     let session = false
     if (sessionRef !== null) {
       const s = await this.repo.sessionFacts(sessionRef, questionId)
-      if (!s || s.userId !== me) throw ApiError.of('VALIDATION_ERROR', { fields: { quizSessionId: M.session } })
-      if (!s.holds) throw ApiError.of('VALIDATION_ERROR', { fields: { quizSessionId: M.sessionQuestion } })
+      if (s === 'malformed') throw ApiError.of('VALIDATION_ERROR', { fields: { quizSessionId: M.session } })
+      if (!s || s.userId !== me || !s.holds) throw ApiError.of('FORBIDDEN', { message: M.contextRequired })
       session = true
     }
     if (actor.role !== 'student') return
@@ -147,13 +156,12 @@ export class QuestionReportsService {
     }
     // REQ-B-049: only what the structured practice would show this pupil (approved live version, active, structured, level T4/T5).
     if (live && type === 'structured' && (await this.bank.structuredVisible(String(questionId)))) return
-    throw ApiError.of('VALIDATION_ERROR', { fields: { context: M.contextRequired } })
+    throw ApiError.of('FORBIDDEN', { message: M.contextRequired })
   }
 
-  /** REQ-B-031: at most QUESTION_REPORT_DAILY_CAP new reports per reporter per Malaysia day (429, BM text). */
+  /** REQ-B-031: at most QUESTION_REPORT_DAILY_CAP new reports per reporter per Malaysia day (429, BM text). The caller holds the reporter lock (REP-L1). */
   private async assertUnderDailyCap(actor: WorkflowActor): Promise<void> {
     const since = mytDayStartOf(this.clock.now())
-    await this.repo.lockReporter(idFromString(actor.userId)) // REP-L1: held to the end of the filing transaction
     if ((await this.repo.countCreatedSince(idFromString(actor.userId), since)) >= QUESTION_REPORT_DAILY_CAP) {
       throw ApiError.of('RATE_LIMITED', { message: M.dailyCap, retryAfter: Math.max(1, Math.ceil((since.getTime() + 86_400_000 - this.clock.now().getTime()) / 1000)) })
     }
@@ -296,6 +304,7 @@ export class QuestionReportsService {
       adminNotes: r.adminNotes,
       createdAt: toMytTimestamp(r.createdAt),
       updatedAt: toMytTimestamp(r.updatedAt),
+      reporterRole: r.reporterRole as 'murid' | 'guru',
       reporter: { id: r.reporterId === null ? '' : idToString(r.reporterId), name: r.reporterId === null ? null : (names.get(idToString(r.reporterId)) ?? null) },
     }
   }

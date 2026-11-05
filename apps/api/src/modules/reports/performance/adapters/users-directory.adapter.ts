@@ -124,4 +124,15 @@ export class UsersDirectoryAdapter implements DirectoryPort {
     }
     return out
   }
+
+  async subjectsOfIds(ids: readonly string[]): Promise<Map<string, { code: string; name: string }>> {
+    if (ids.length === 0) return new Map()
+    const wanted = new Set(ids)
+    const out = new Map<string, { code: string; name: string }>()
+    for (const s of await this.curriculum.subjects()) {
+      const id = s.id.toString()
+      if (wanted.has(id)) out.set(id, { code: s.code, name: s.name })
+    }
+    return out
+  }
 }

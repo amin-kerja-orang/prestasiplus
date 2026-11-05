@@ -474,6 +474,8 @@ export const ACCOUNT_PROFILE_MODE_LABELS = {
   past_year: 'Tahun Lepas',
   latih_tubi: 'Latih Tubi',
   ramalan: 'Tracking A',
+  databank: 'Databank Soalan',
+  tracking_a: 'Tracking A',
   mission: 'Misi Harian',
   remedial: 'Remedial',
   question_set: 'Set Soalan Guru',
