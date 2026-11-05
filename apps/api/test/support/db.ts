@@ -20,6 +20,20 @@ export interface TestDatabase {
 }
 
 /**
+ * DM-11 for the harnesses that place ids with no question content in a table (a fake bank, the PoC double, an id "the bank does not hold"): a placement of
+ * an unknown id gets an empty, inactive `questions` row first (no version, so the bank still does not know it), so the foreign key of migration 0160 holds.
+ */
+export async function stubPlacedQuestions(db: TestDatabase): Promise<void> {
+  await db.query(`
+    CREATE FUNCTION test_stub_placed_question() RETURNS trigger LANGUAGE plpgsql AS $$
+    BEGIN
+      INSERT INTO questions (id, source_type, latest_version_no, is_active) OVERRIDING SYSTEM VALUE VALUES (NEW.question_id, 'manual', 1, false) ON CONFLICT (id) DO NOTHING;
+      RETURN NEW;
+    END $$`)
+  await db.query(`CREATE TRIGGER test_stub_placed_question BEFORE INSERT ON paper_placements FOR EACH ROW EXECUTE FUNCTION test_stub_placed_question()`)
+}
+
+/**
  * A private database for one test file: a clone of the migrated template (`CREATE DATABASE ...
  * TEMPLATE`, a few tens of milliseconds). Files cannot see each other's data, extensions and
  * sequences are real, and nothing needs truncating. Call `drop()` in `afterAll`.

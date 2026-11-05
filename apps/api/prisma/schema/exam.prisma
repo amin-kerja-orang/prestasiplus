@@ -9,9 +9,8 @@
 // by BE-08, `users` by BE-03/05): those are plain scalar columns here so this file does not edit
 // another card's models.
 //
-// `paper_placements.question_id` is a plain bigint with NO foreign key yet: the question store
-// (`questions`, BE-09, migration 0011) is not on the base this migration was written against. The
-// integrator adds `fk_paper_placements_question_id` (-> questions.id) once BE-09 is merged.
+// `paper_placements.question_id` is a plain bigint here. Its foreign key `fk_paper_placements_question_id`
+// (-> questions.id, ON DELETE RESTRICT) is in migration 0160 (S3-T02, DM-11), SQL only.
 //
 // None of these tables can receive .cloud rows (data model 3.8: `exam_papers` and the blueprints are
 // archived, not migrated), so they carry no `legacy_*` columns and are not in migratable-models.json.
@@ -242,7 +241,7 @@ model PaperSection {
 model PaperPlacement {
   id             BigInt  @id @default(autoincrement())
   paperSectionId BigInt  @map("paper_section_id")
-  /// -> questions.id (BE-09). No foreign key until BE-09 is merged (see the header).
+  /// -> questions.id. FK ON DELETE RESTRICT in migration 0160 (DM-11); no Prisma relation (the builder reads questions through its port).
   questionId     BigInt  @map("question_id")
   /// The question version printed on the paper (editing a published question makes version n+1).
   pinnedVersionNo Int    @default(1) @map("pinned_version_no")

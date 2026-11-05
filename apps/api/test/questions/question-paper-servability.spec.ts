@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { QuestionsService } from '../../src/modules/questions'
+import { stubPlacedQuestions } from '../support/db'
 import { ServabilityService } from '../../src/modules/questions/serving'
 import { PaperServabilityService, QUESTION_PAPERS_MAX } from '../../src/modules/questions/serving/paper-servability.service'
 import { adminActor, mcqInput, tagBody, tagOf, type Tag } from './fixtures'
@@ -53,6 +54,7 @@ describe('REQ-A-018 GET /api/admin/questions/:id/paper-servability', () => {
 
   beforeAll(async () => {
     t = await bootQuestionsApp()
+    await stubPlacedQuestions(t.db) // DM-11: a placement of an id the bank does not hold needs a question row
     svc = t.app.get(QuestionsService)
     admin = await loginAs(t, 'admin')
     guru = await loginAs(t, 'teacher')

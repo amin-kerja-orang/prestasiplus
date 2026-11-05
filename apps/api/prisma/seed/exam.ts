@@ -12,10 +12,10 @@
  * paper by (kind, title, subject). Existing rows are never updated or deleted. `legacy_*` does not
  * exist on these tables. Time comes from `ctx.clock`.
  *
- * QUESTIONS (BE-09): the placements point at the reserved PoC question ids (`POC_QUESTION_ID_BASE`),
- * so the papers seed correctly before the question bank exists. The question rows themselves belong
- * to M04: the step at the end runs only when the `questions` table exists (information_schema check)
- * and hands the export to a loader supplied by the BE-09 integration. TODO(BE-09 wire-up): implement
+ * QUESTIONS (BE-09): the placements point at the reserved PoC question ids (`POC_QUESTION_ID_BASE`). DM-11 (migration 0160) gives
+ * `paper_placements.question_id` a foreign key, so each reserved id gets an empty, inactive `questions` row: no version, so it
+ * is in no list, pool or read of the bank. The question content itself belongs to M04: the step at the end runs only when the `questions` table
+ * exists (information_schema check) and hands the export to a loader supplied by the BE-09 integration. TODO(BE-09 wire-up): implement
  * `PocQuestionLoader` against the BE-09 repository (insert with the reserved ids, status `published`)
  * and use `createExamSeed({ questionLoader })` in `seedModules`.
  */
@@ -120,6 +120,14 @@ async function seedBlueprints(prisma: PrismaClient, subjects: Map<string, bigint
   for (const bp of POC_BANK.blueprints) await createBlueprintIfAbsent(prisma, subjects.get(bp.subject) as bigint, bp)
 }
 
+/** DM-11: the row a placement of a reserved PoC id needs (see the header). Idempotent. */
+async function ensurePocQuestionRows(prisma: PrismaClient, ids: readonly bigint[], now: Date): Promise<void> {
+  await prisma.$executeRaw`
+    INSERT INTO questions (id, source_type, latest_version_no, is_active, created_at, updated_at) OVERRIDING SYSTEM VALUE
+    SELECT x, 'manual', 1, false, ${now}, ${now} FROM unnest(${[...ids]}::bigint[]) AS x
+    ON CONFLICT (id) DO NOTHING`
+}
+
 async function seedPaper(prisma: PrismaClient, ctx: SeedContext, paper: PocPaper, subjects: Map<string, bigint>): Promise<void> {
   const subjectId = subjects.get(paper.subject) as bigint
   const exists = await prisma.paper.findFirst({ where: { kind: 'pilihan', title: paper.title, subjectId }, select: { id: true } })
@@ -129,6 +137,7 @@ async function seedPaper(prisma: PrismaClient, ctx: SeedContext, paper: PocPaper
     orderBy: { version: 'desc' },
     select: { id: true },
   })
+  await ensurePocQuestionRows(prisma, paper.sections.flatMap((s) => s.questionIds.map((key) => pocQuestionId(key))), ctx.clock.now())
   await prisma.paper.create({
     data: {
       kind: 'pilihan',
@@ -191,7 +200,7 @@ export const examSeed: SeedModule = createExamSeed()
  * the demo, staging and e2e seeds, a reseed over an already seeded host).
  *
  * Guarded: only a PUBLISHED paper whose placements ALL point at the reserved PoC id block (`POC_QUESTION_ID_BASE` and up) with no
- * question row of that id is withdrawn, so a paper with any bank question (an admin-made paper, a generated Jana paper, the bank demo
+ * question version behind that id (DM-11: the row itself exists, empty) is withdrawn, so a paper with any bank question (an admin-made paper, a generated Jana paper, the bank demo
  * paper) is never touched. Existing attempts and results stay as they are (they reference the paper, which still exists). Idempotent.
  */
 export const examRetirePocSeed: SeedModule = {
@@ -204,7 +213,7 @@ export const examRetirePocSeed: SeedModule = {
          AND NOT EXISTS (
                SELECT 1 FROM paper_placements pl JOIN paper_sections ps ON ps.id = pl.paper_section_id
                 WHERE ps.paper_id = p.id
-                  AND (pl.question_id < ${POC_QUESTION_ID_BASE} OR EXISTS (SELECT 1 FROM questions q WHERE q.id = pl.question_id)))`
+                  AND (pl.question_id < ${POC_QUESTION_ID_BASE} OR EXISTS (SELECT 1 FROM question_versions v WHERE v.question_id = pl.question_id)))`
     if (withdrawn > 0) console.warn(`seed exam-retire-poc: withdrew ${String(withdrawn)} seeded PoC paper(s) (no question bank rows behind them)`)
   },
 }

@@ -18,7 +18,7 @@ import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AuthModule } from '../../src/modules/auth'
 import { BijakIntegrationModule } from '../../src/modules/bijak/integration'
-import { createTestDatabase, type TestDatabase } from '../support/db'
+import { createTestDatabase, stubPlacedQuestions, type TestDatabase } from '../support/db'
 import { plugPocFixture } from '../support/poc/plug'
 
 export const DEMO_PASSWORD = 'Demo1234'
@@ -45,6 +45,7 @@ export async function bootIntegrationApp(opts: { pocQuestions?: boolean; extraMo
   // `e2eProfile`: the whole `e2e` seed profile with E2E_SEED=1, exactly what the e2e stack is seeded with (REQ-B-003).
   if (opts.e2eProfile) await runSeeds(seedModules, { prisma: db.prisma, profile: 'e2e', env: { ...process.env, E2E_SEED: '1' } })
   else await runSeeds([identitySeed, curriculumSeed, questionsSeed, examSeed, walletSeed, ...(opts.extraSeeds ?? [])], { prisma: db.prisma })
+  await stubPlacedQuestions(db) // DM-11: the PoC double and the "bank does not hold it" cases place ids with no content in a table
   const env: Record<string, string | undefined> = {
     DATABASE_URL: db.url,
     COOKIE_SECURE: 'false',

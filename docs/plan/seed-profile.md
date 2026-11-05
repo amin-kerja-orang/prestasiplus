@@ -112,7 +112,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | question_version_sp_nodes | 501 |
 | question_version_stimuli | 7 |
 | question_versions | 1271 |
-| questions | 1271 |
+| questions | 1296 |
 | reward_settings | 1 |
 | rewards | 59 |
 | rph_plans | 2 |
@@ -143,7 +143,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | videos | 3 |
 | wallets | 3 |
 
-Tables with rows: 99 of 199. Total rows: 21892.
+Tables with rows: 99 of 199. Total rows: 21917.
 <!-- poc-counts:end -->
 
 Mod Pelajar (`is_test`) rows: none are seeded; the profile counts and `verify` rules exclude them anyway.

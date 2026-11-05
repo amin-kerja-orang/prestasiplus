@@ -18,7 +18,7 @@ import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AuthModule } from '../../src/modules/auth'
 import { BijakPapersModule, BijakPapersPorts, type BijakProgressSource, type BijakQuestionSource, type BijakServedSource } from '../../src/modules/bijak/papers'
 import type { BijakPoolSource } from '../../src/modules/bijak/papers/pool-source'
-import { createTestDatabase, type TestDatabase } from '../support/db'
+import { createTestDatabase, stubPlacedQuestions, type TestDatabase } from '../support/db'
 import { plugPocPapers } from '../support/poc/plug'
 import { PocPoolSource } from '../support/poc/pool-source'
 
@@ -48,7 +48,10 @@ export interface BootOptions {
 /** Nest app with the auth and Bijak papers modules on a private database seeded with identity, curriculum and exam. */
 export async function bootPapersApp(opts: BootOptions = {}): Promise<PapersTestApp> {
   const db = opts.db ?? (await createTestDatabase())
-  if (!opts.db) await runSeeds([identitySeed, curriculumSeed, examSeed], { prisma: db.prisma })
+  if (!opts.db) {
+    await runSeeds([identitySeed, curriculumSeed, examSeed], { prisma: db.prisma })
+    await stubPlacedQuestions(db)
+  }
   Object.assign(process.env, {
     DATABASE_URL: db.url,
     COOKIE_SECURE: 'false',
