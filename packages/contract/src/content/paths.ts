@@ -262,7 +262,7 @@ export function registerContentPaths(registry: OpenAPIRegistry): void {
     path: '/articles',
     tags: ['content'],
     summary: 'Published articles (reader list)',
-    description: 'Public (guests allowed). Only published articles; 18 per page, `publishedAt` desc then id. An out-of-range page is an empty list, not an error.',
+    description: 'Public (guests allowed). Only published articles; 12 per page, `publishedAt` desc then id. `meta.counts` holds the number of published articles per category code for the current `search` (ignoring `category`), so a pill can show its count. An out-of-range page is an empty list, not an error.',
     request: { query: ArticleListQuerySchema },
     responses: { 200: json(listEnvelopeOf(ArticleCardSchema), 'Article cards with ListMeta.') },
   })
@@ -310,10 +310,9 @@ export function registerContentPaths(registry: OpenAPIRegistry): void {
     path: '/config/support',
     tags: ['content'],
     summary: 'Support contact (help box)',
-    description: 'Public. If the config row is missing the server answers 404 "Konfigurasi sokongan tidak dijumpai." (the mock would fail with a generic error).',
+    description: 'Public. If the config row is missing the server answers 200 with empty strings {email: "", phone: "", whatsapp: "", hours: ""} (S5-T05, DM-33); phone and hours are always empty until S7-T09; the client hides a contact whose value is empty.',
     responses: {
-      200: json(envelopeOf(ContentSupportConfigSchema), 'E-mail and WhatsApp number.'),
-      404: err('NOT_FOUND "Konfigurasi sokongan tidak dijumpai."'),
+      200: json(envelopeOf(ContentSupportConfigSchema), 'E-mail, phone, WhatsApp number and hours (empty strings when not set).'),
     },
   })
 

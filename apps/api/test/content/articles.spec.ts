@@ -98,7 +98,7 @@ describe('AC 1 the public never sees a draft', () => {
     expect(titles).toContain('Terbit Satu')
     expect(titles).not.toContain('Draf Rahsia')
     for (const a of res.body.data) ArticleCardSchema.parse(a)
-    expect(res.body.meta).toMatchObject({ page: 1, pageSize: 18, totalItems: 1, totalPages: 1, from: 1, to: 1 })
+    expect(res.body.meta).toMatchObject({ page: 1, pageSize: 12, totalItems: 1, totalPages: 1, from: 1, to: 1 })
     expect(JSON.stringify(res.body)).not.toContain('draf-rahsia')
   })
 
@@ -159,15 +159,18 @@ describe('reader details', () => {
     expect((await pub('/articles/motivasi-3')).body.data.views).toBe(2)
   })
 
-  it('paginates 18 per page with the standard meta; an out-of-range or junk page is not an error', async () => {
-    for (let i = 1; i <= 20; i++) await insertArticle(t, { title: `Halaman ${String(i)}`, slug: `halaman-${String(i)}`, category: 'BERITA', publishedAt: `2026-09-${String(i).padStart(2, '0')}T00:00:00Z` })
+  it('paginates 12 per page with the standard meta; an out-of-range or junk page is not an error', async () => {
+    for (let i = 1; i <= 25; i++) await insertArticle(t, { title: `Halaman ${String(i)}`, slug: `halaman-${String(i)}`, category: 'BERITA', publishedAt: `2026-09-${String(i).padStart(2, '0')}T00:00:00Z` })
     const p1 = await pub('/articles?category=BERITA')
-    expect(p1.body.data).toHaveLength(18)
-    expect(p1.body.meta).toMatchObject({ page: 1, pageSize: 18, totalItems: 20, totalPages: 2, from: 1, to: 18 })
-    expect(p1.body.data[0].slug).toBe('halaman-20') // newest first
+    expect(p1.body.data).toHaveLength(12)
+    expect(p1.body.meta).toMatchObject({ page: 1, pageSize: 12, totalItems: 25, totalPages: 3, from: 1, to: 12 })
+    expect(p1.body.data[0].slug).toBe('halaman-25') // newest first
     const p2 = await pub('/articles?category=BERITA&page=2')
-    expect(p2.body.data).toHaveLength(2)
-    expect(p2.body.meta).toMatchObject({ page: 2, from: 19, to: 20 })
+    expect(p2.body.data).toHaveLength(12)
+    // AC-MUR-20-4: 25 articles, page 3 shows the last one
+    const p3 = await pub('/articles?category=BERITA&page=3')
+    expect(p3.body.data).toHaveLength(1)
+    expect(p3.body.meta).toMatchObject({ page: 3, from: 25, to: 25 })
     const far = await pub('/articles?category=BERITA&page=99')
     expect(far.status).toBe(200)
     expect(far.body.data).toEqual([])
@@ -175,6 +178,32 @@ describe('reader details', () => {
     expect((await pub('/articles?category=BERITA&page=abc')).body.meta.page).toBe(1)
     expect((await pub('/articles?category=BERITA&page=0')).body.meta.page).toBe(1)
     expect((await pub('/articles?search=HALAMAN 1&category=BERITA')).body.meta.totalItems).toBe(11)
+  })
+
+  it('meta.counts carries the published articles per category for the current search (FR-MUR-20-2, AC-MUR-20-1)', async () => {
+    // Other tests in this file leave published articles behind, so the counts are checked as deltas.
+    const before = (await pub('/articles?category=KEJAYAAN')).body.meta as { counts: Record<string, number>; totalItems: number }
+    await insertArticle(t, { title: 'Kira Satu', slug: 'kira-satu', category: 'KEJAYAAN', content: '<p>kata-kunci-pilih</p>' })
+    await insertArticle(t, { title: 'Kira Dua', slug: 'kira-dua', category: 'KEJAYAAN' })
+    await insertArticle(t, { title: 'Kira Draf', slug: 'kira-draf', category: 'KEJAYAAN', published: false })
+    const all = await pub('/articles?category=KEJAYAAN')
+    expect(all.body.meta.counts).toMatchObject({
+      KEJAYAAN: (before.counts.KEJAYAAN ?? 0) + 2,
+      MOTIVASI: before.counts.MOTIVASI ?? 0,
+      PANDUAN_GURU: before.counts.PANDUAN_GURU ?? 0,
+    })
+    expect(all.body.meta.totalItems).toBe(before.totalItems + 2)
+    // the open category does not narrow the other counts; the search does
+    const searched = await pub('/articles?category=BERITA&search=kata-kunci-pilih')
+    expect(searched.body.meta.counts).toMatchObject({ KEJAYAAN: 1, BERITA: 0 })
+    // the body is searched too (the card field is "title and body")
+    expect((await pub('/articles?search=kata-kunci-pilih')).body.data.map((a: { slug: string }) => a.slug)).toEqual(['kira-satu'])
+  })
+
+  it('FR-MUR-20-5: the search term is cut at 100 characters', async () => {
+    const stem = 'a'.repeat(100)
+    await insertArticle(t, { title: `${stem} jejak`, slug: 'batas-cari' })
+    expect((await pub(`/articles?search=${stem}zzzz`)).body.meta.totalItems).toBe(1)
   })
 })
 
