@@ -35,6 +35,10 @@ export const grouped = (n: number): string => formatNumber(n)
 /** "79.8%": one decimal and "%" (S1 "Purata Ketepatan", level cards, S9). */
 export const pct1 = (n: number): string => `${formatNumber(n, { decimals: 1 })}%`
 
+/** "87%": the whole number rounded half up, "—" for no value (decision 11, XS-5; FR-MUR-4-4/-12). */
+export const pctWhole = (n: number | null | undefined): string =>
+  n === null || n === undefined || !Number.isFinite(n) ? DASH : `${String(Math.round(n))}%`
+
 /** "64%" / "93.3%": one decimal, no trailing ".0" (S3 rows, FR-M08-27). */
 export const pctTrim = (n: number): string =>
   `${formatNumber(n, { decimals: 1, dropZeroFraction: true })}%`
