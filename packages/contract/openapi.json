@@ -107111,7 +107111,7 @@
           "stimuli"
         ],
         "summary": "Add a question to a group (appended at the end)",
-        "description": "A question already in another group is refused with 422 `questionId` (\"Soalan ini sudah berada dalam kumpulan rangsangan lain.\"). Moving a question between groups is remove, then add.",
+        "description": "A question already in another group is refused with 422 `questionId` (\"Soalan ini sudah berada dalam kumpulan rangsangan lain.\"). Moving a question between groups is remove, then add. On a draft copy (`draftOfGroupId` set) the question is staged in the copy instead: see `PUT /stimulus-groups/{id}/members`.",
         "parameters": [
           {
             "schema": {
@@ -107225,7 +107225,7 @@
           "stimuli"
         ],
         "summary": "Set the complete ordered member list of a group (atomic)",
-        "description": "Adds, removals and reordering in one call. A question that is already shown to pupils (live version approved, active) cannot be added, removed or have its relative order changed; new draft or review questions can still be appended to a group that has served members (409 `groupServed` / `memberServed` otherwise). A question of another group, a PKSK, archived or inactive question, a question of another subject, and more than 40 members are 422.",
+        "description": "Adds, removals and reordering in one call. A question that is already shown to pupils (live version approved, active) cannot be added, removed or have its relative order changed; new draft or review questions can still be appended to a group that has served members (409 `groupServed` / `memberServed` otherwise). A question of another group, a PKSK, archived or inactive question, a question of another subject, and more than 40 members are 422. On a draft copy (`draftOfGroupId` set) add, remove, order and set edit the members staged in the copy instead (the same member rules, except the served lock). Creating a question inside a copy and `PUT /questions/{id}` with the `stimulusGroupId` of a copy stay 409; the served group is unchanged until the copy is published.",
         "parameters": [
           {
             "schema": {
@@ -107341,7 +107341,7 @@
           "stimuli"
         ],
         "summary": "Remove a question from a group",
-        "description": "Positions of the others close up. When the last member is removed the removal still succeeds and `warning` carries the BM empty-group message (\"Kumpulan ini kini kosong. ...\").",
+        "description": "Positions of the others close up. When the last member is removed the removal still succeeds and `warning` carries the BM empty-group message (\"Kumpulan ini kini kosong. ...\"). On a draft copy the member is removed from the staged members only: see `PUT /stimulus-groups/{id}/members`.",
         "parameters": [
           {
             "schema": {
@@ -107446,7 +107446,7 @@
           "stimuli"
         ],
         "summary": "Reorder the members of a group",
-        "description": "`questionIds` must list every current member exactly once (422 `questionIds` otherwise).",
+        "description": "`questionIds` must list every current member exactly once (422 `questionIds` otherwise). On a draft copy it reorders the staged members only: see `PUT /stimulus-groups/{id}/members`.",
         "parameters": [
           {
             "schema": {
