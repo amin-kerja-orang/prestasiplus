@@ -81,17 +81,17 @@ describe('VisibilityList', () => {
 })
 
 describe('NotServedNotice', () => {
-  it('chip "Tidak disajikan" plus the full line "Tidak dihidangkan kerana ...."', () => {
+  it('chip "Tidak disajikan" plus the full line "Tidak disajikan kerana ...."', () => {
     const w = mount(NotServedNotice, { props: { reason: 'imej belum dimuat naik' } })
     expect(w.find('[data-testid=not-served-chip]').text()).toBe('Tidak disajikan')
     expect(w.find('[data-testid=not-served-reason]').text()).toBe(
-      'Tidak dihidangkan kerana imej belum dimuat naik.',
+      'Tidak disajikan kerana imej belum dimuat naik.',
     )
   })
   it('does not double the full stop', () => {
     const w = mount(NotServedNotice, { props: { reason: 'tiada kunci jawapan.' } })
     expect(w.find('[data-testid=not-served-reason]').text()).toBe(
-      'Tidak dihidangkan kerana tiada kunci jawapan.',
+      'Tidak disajikan kerana tiada kunci jawapan.',
     )
   })
   it('compact shows the chip only', () => {
