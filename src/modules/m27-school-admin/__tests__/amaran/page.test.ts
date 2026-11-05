@@ -414,7 +414,7 @@ describe('states', () => {
 
   it('shows the BM rate-limit line for a 429', async () => {
     const w = await mountPage(apiError(429, 'RATE_LIMITED', 'Too Many Attempts.'))
-    expect(text(w, 'am-error')).toContain('Terlalu banyak percubaan. Cuba sebentar lagi.')
+    expect(text(w, 'am-error')).toContain('Terlalu banyak percubaan. Sila cuba sebentar lagi.')
   })
 
   it('shows the spinner while loading', async () => {

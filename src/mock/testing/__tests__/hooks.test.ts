@@ -137,7 +137,10 @@ describe('window.__mock built-ins', () => {
     await expect(api.get('/api/notes')).resolves.toBeDefined()
 
     hooks.networkErrorNext('/api/notes')
-    const err: unknown = await api.get('/api/notes').catch((e: unknown) => e)
+    // A POST: a GET network fault is retried automatically (X10.3.4) and would be absorbed.
+    const err: unknown = await api
+      .post('/api/notes', { body: { text: 'x' } })
+      .catch((e: unknown) => e)
     expect(err instanceof TransportNetworkError || (err as ApiError).code === 'NETWORK_ERROR').toBe(
       true,
     )
@@ -146,7 +149,7 @@ describe('window.__mock built-ins', () => {
     const last = hooks.lastRequest('POST /api/notes')
     expect(last).toMatchObject({ method: 'POST', path: '/api/notes', body: { text: 'baru' } })
     expect(hooks.lastRequest('/api/nothing')).toBeNull()
-    expect(hooks.requests('GET /api/notes')).toHaveLength(3)
+    expect(hooks.requests('GET /api/notes')).toHaveLength(2)
   })
 
   it('setLatency / clearLatency', async () => {
