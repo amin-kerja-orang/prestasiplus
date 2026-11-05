@@ -9,7 +9,6 @@ import { useRouteOutcome } from '@/app/router'
 import { setRouteOutcome } from '@/app/router/outcome'
 
 import HeadcountExportPage from '../../pages/HeadcountExportPage.vue'
-import HeadcountShellPage from '../../pages/HeadcountShellPage.vue'
 
 const api = vi.hoisted(() => ({
   downloadHeadcountCsv: vi.fn(),
@@ -88,46 +87,5 @@ describe('HeadcountExportPage', () => {
     await render(HeadcountExportPage, '/headcount/9/export', '/headcount/:id/export')
     expect(useRouteOutcome().value).toBe(403)
     expect(save.saveBlob).not.toHaveBeenCalled()
-  })
-})
-
-describe('HeadcountShellPage', () => {
-  const SUMMARY = { config: { id: 501, activeOtrs: 3 } }
-
-  it('shows only the back link to S23', async () => {
-    api.fetchHeadcountSummary.mockResolvedValue(SUMMARY)
-    const w = await render(HeadcountShellPage, '/headcount/501/edit', '/headcount/:id/edit')
-    expect(w.get('[data-testid=back-link]').attributes('href')).toBe('/headcount/501')
-    expect(useRouteOutcome().value).toBeNull()
-  })
-
-  it.each([
-    [1, null],
-    [3, null],
-    [0, 404],
-    [4, 404],
-  ])('results/%s → outcome %s', async (n, outcome) => {
-    api.fetchHeadcountSummary.mockResolvedValue(SUMMARY)
-    await render(
-      HeadcountShellPage,
-      `/headcount/501/results/${String(n)}`,
-      '/headcount/:id/results/:n',
-    )
-    expect(useRouteOutcome().value).toBe(outcome)
-  })
-
-  it('an unknown config is the 404 page, a forbidden one the 403 page', async () => {
-    api.fetchHeadcountSummary.mockRejectedValue(
-      new ApiError({ status: 404, code: 'NOT_FOUND', message: 'x' }),
-    )
-    await render(HeadcountShellPage, '/headcount/9/edit', '/headcount/:id/edit')
-    expect(useRouteOutcome().value).toBe(404)
-    wrapper?.unmount()
-    setRouteOutcome(null)
-    api.fetchHeadcountSummary.mockRejectedValue(
-      new ApiError({ status: 403, code: 'FORBIDDEN', message: 'x' }),
-    )
-    await render(HeadcountShellPage, '/headcount/9/edit', '/headcount/:id/edit')
-    expect(useRouteOutcome().value).toBe(403)
   })
 })

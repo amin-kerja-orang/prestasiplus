@@ -215,8 +215,7 @@ function computeClassDashboard(
     recent.filter((s) => s.completedAtMs >= sevenDaysAgo).map((s) => s.userId),
   ).size
 
-  // Trend: one point per local date with sessions in the last 30 days (INFERRED window: today and the
-  // 29 days before; the day accuracy = Σ correct ÷ Σ answered of that day).
+  // Trend (R1-GUR-4): 30 local days, today last, zero-filled like the server; the day accuracy = Σ correct ÷ Σ answered of that day.
   const byDay = new Map<string, { sessions: number; q: number; c: number; users: Set<number> }>()
   for (const s of recent) {
     const key = formatDateKey(s.completedAtMs)
@@ -227,14 +226,16 @@ function computeClassDashboard(
     d.users.add(s.userId)
     byDay.set(key, d)
   }
-  const trend = [...byDay.entries()]
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([date, d]) => ({
+  const trend = Array.from({ length: 30 }, (_, i) => {
+    const date = formatDateKey(now - (29 - i) * DAY)
+    const d = byDay.get(date)
+    return {
       date,
-      sessions: d.sessions,
-      avgAccuracy: round(capPercent(pct(d.c, d.q)), 1),
-      activeStudents: d.users.size,
-    }))
+      sessions: d?.sessions ?? 0,
+      avgAccuracy: d === undefined ? 0 : round(capPercent(pct(d.c, d.q)), 1),
+      activeStudents: d?.users.size ?? 0,
+    }
+  })
 
   const { block, badges } = headcountBlock(cls)
 
@@ -249,7 +250,8 @@ function computeClassDashboard(
     if (ra === null && rb === null) return a.userId - b.userId
     if (ra === null) return 1
     if (rb === null) return -1
-    return rb - ra || a.userId - b.userId
+    // Ties: answers descending, then name (R1-GUR-4 Kedudukan Murid).
+    return rb - ra || b.answered - a.answered || nameOf(a.userId).localeCompare(nameOf(b.userId)) || a.userId - b.userId
   })
   const ranking = order.map((f, i) => {
     const r = raw(f)
@@ -298,7 +300,8 @@ function computeClassDashboard(
       accuracy: round(capPercent(pct(correct, answered)), 1),
       sessions,
       answered,
-      avgMinutes: sessions === 0 ? 0 : round(seconds / sessions / 60, 1),
+      // Purata Masa/Sesi: Σ seconds ÷ finished sessions ÷ 60 (BR-M08-10); null when no session finished.
+      avgMinutes: sessions === 0 ? null : round(seconds / sessions / 60, 1),
       active7d,
     },
     headcount: block,
