@@ -447,8 +447,8 @@ describe('S1-T05 part 1: CSV with DSKP codes (real bank)', () => {
       expect(res.status, JSON.stringify(res.body)).toBe(201)
       expect(res.body.status).toBe('Import selesai: 2 soalan diimport, 0 gagal.')
       const [dup, two] = await t.db.query<{ question_id: string; type: string }>('select question_id::text, type from question_versions order by id desc limit 2')
-      // TODO(#820): assert type === 'mcq_multi' after the rebase onto #820; until then the stored type is 'mcq' and the leaf shape is what is asserted.
-      expect([two!.type, dup!.type]).toEqual(['mcq', 'mcq'])
+      // #820 versionTypeOf: an mcq leaf with modeConfig.multi is stored as 'mcq_multi'.
+      expect([two!.type, dup!.type]).toEqual(['mcq_multi', 'mcq_multi'])
       const opts = await optionsOf(two!.question_id)
       expect(opts.map((o) => o.label)).toEqual(['A', 'B', 'C', 'D'])
       expect(opts.filter((o) => o.is_correct).map((o) => o.label)).toEqual(['A', 'C'])
