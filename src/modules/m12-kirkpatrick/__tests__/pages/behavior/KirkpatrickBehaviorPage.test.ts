@@ -68,18 +68,16 @@ describe('S4 on the school-admin mount (FR-AS-11-2)', () => {
       { scopeForced: true },
       SESSION_SCHOOL,
     )
-    expect(t(w, 'kirk-school-label').findAll('p').map((p) => p.text())).toEqual([
-      'SMK Contoh Ujian',
-      'ABC1234 · PPD Contoh · Johor',
-    ])
+    expect(
+      t(w, 'kirk-school-label')
+        .findAll('p')
+        .map((p) => p.text()),
+    ).toEqual(['SMK Contoh Ujian', 'ABC1234 · PPD Contoh · Johor'])
     expect(w.find('select').exists()).toBe(false)
     const text = squash(w.text())
     for (const gone of ['Semua Sekolah', 'Tapis', 'Reset']) expect(text).not.toContain(gone)
     expect(api.fetchKirkpatrickFilterOptions).not.toHaveBeenCalled()
-    expect(api.fetchKirkpatrickBehavior).toHaveBeenCalledWith(
-      { schoolId: null },
-      expect.anything(),
-    )
+    expect(api.fetchKirkpatrickBehavior).toHaveBeenCalledWith({ schoolId: null }, expect.anything())
   })
 })
 
@@ -90,11 +88,7 @@ describe('S4 filter (AC-M12-14.1 ... 14.3)', () => {
     expect(has(w, 'kirk-filter-state')).toBe(false)
     expect(t(w, 'kirk-filter').get('button[type="submit"]').text()).toBe('Tapis')
     expect(resetLink(w).exists()).toBe(false)
-    expect(nativeLabels(w, 'school_id')).toEqual([
-      'Semua Sekolah',
-      'SMK Demo Satu',
-      'SMK Demo Dua',
-    ])
+    expect(nativeLabels(w, 'school_id')).toEqual(['Semua Sekolah', 'SMK Demo Satu', 'SMK Demo Dua'])
   })
 
   it('Tapis pushes school_id, Reset appears and the API receives the id', async () => {
@@ -152,7 +146,7 @@ describe('S4 KPIs (AC-M12-14.1, 14.2)', () => {
       '946',
       '20,991',
       '306,133',
-      '82.8%',
+      '83%',
       '53.1%',
     ])
     expect(captions(w)).toEqual(['277/522'])
@@ -174,14 +168,7 @@ describe('S4 KPIs (AC-M12-14.1, 14.2)', () => {
       }),
     )
     const { wrapper: w } = await open('/admin/kirkpatrick', '?school_id=8080')
-    expect(tiles(w).map((x) => x.value)).toEqual([
-      '184',
-      '53',
-      '1,002',
-      '15,007',
-      '75.6%',
-      '100%',
-    ])
+    expect(tiles(w).map((x) => x.value)).toEqual(['184', '53', '1,002', '15,007', '76%', '100%'])
     expect(captions(w)[0]).toBe('34/34')
   })
 

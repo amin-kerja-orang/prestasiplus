@@ -75,10 +75,10 @@ describe('S1 level cards and flow (AC-M12-06.1, 06.2, 07.1)', () => {
       'Tahap 4: Hasil 4.30 GPS Sekolah · 4,378 rekod headcount Lihat detail',
     )
     expect(flat(t(w, 'kirk-level-t3'))).toBe(
-      'Tahap 3: Tingkah Laku 946 /4,158 Pelajar aktif · 20,991 sesi · 82.8% ketepatan Lihat detail',
+      'Tahap 3: Tingkah Laku 946 /4,158 Pelajar aktif · 20,991 sesi · 83% ketepatan Lihat detail',
     )
     expect(flat(t(w, 'kirk-level-t2'))).toBe(
-      'Tahap 2: Pembelajaran 82.8% Ketepatan · 306,133 soalan dijawab Lihat detail',
+      'Tahap 2: Pembelajaran 83% Ketepatan · 306,133 soalan dijawab Lihat detail',
     )
     expect(flat(t(w, 'kirk-level-t1'))).toBe(
       'Tahap 1: Reaksi 4.6 /5 Kepuasan purata · 336 respon Lihat detail',
@@ -92,7 +92,7 @@ describe('S1 level cards and flow (AC-M12-06.1, 06.2, 07.1)', () => {
     const pills = t(w, 'kirk-flow-circles').findAll('[data-testid="kirk-flow-pill"]')
     expect(pills.map((p) => p.text())).toEqual([
       '4.6/5',
-      '82.8% ketepatan',
+      '83% ketepatan',
       '946 pelajar aktif',
       'GPS 4.30',
     ])
@@ -166,9 +166,9 @@ describe('S1 comparison (AC-M12-08.1..08.5)', () => {
       t(w, id)
         .findAll('[data-testid="kirk-panel-value"]')
         .map((e) => e.text())
-    expect(panel('kirk-panel-before')).toEqual(['2', '33.3%', '3', '0'])
+    expect(panel('kirk-panel-before')).toEqual(['2', '33%', '3', '0'])
     expect(panel('kirk-panel-after')).toEqual(['58', '87%', '13,968', '28'])
-    expect(values(w, 'kirk-delta-value')).toEqual(['+56', '+53.7%', '+13,965', '+28'])
+    expect(values(w, 'kirk-delta-value')).toEqual(['+56', '+54%', '+13,965', '+28'])
     for (const d of t(w, 'kirk-deltas').element.children) {
       expect(d.getAttribute('data-tone')).toBe('up')
     }
@@ -191,7 +191,7 @@ describe('S1 comparison (AC-M12-08.1..08.5)', () => {
       }),
     )
     const { wrapper: w } = await open('/admin/kirkpatrick?school_id=8080')
-    expect(values(w, 'kirk-delta-value')).toEqual(['-11', '-16.6%', '-451', '-2'])
+    expect(values(w, 'kirk-delta-value')).toEqual(['-11', '-17%', '-451', '-2'])
     expect(t(w, 'kirk-delta-active').attributes('data-tone')).toBe('down')
   })
 
@@ -241,7 +241,7 @@ describe('S1 KPI row, bands and info (AC-M12-09.1..09.3)', () => {
       ['Pelajar Berdaftar (T4/T5)', '4,158'],
       ['Soalan Dijawab', '306,133'],
       ['Guru Aktif', '277/522'],
-      ['Ketepatan Keseluruhan', '82.8%'],
+      ['Ketepatan Keseluruhan', '83%'],
     ])
   })
 

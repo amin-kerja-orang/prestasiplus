@@ -10,10 +10,8 @@ import { computed } from 'vue'
 
 import { DsPanel } from '@/ds'
 
-import { formatPercent } from '@/lib/number'
-
 import type { Comparison, ComparisonPanel } from '../../../api/types'
-import { count, dateEn, pct, plain } from '../common'
+import { count, dateEn, plain, accuracyPct } from '../common'
 
 const props = defineProps<{ comparison: Comparison }>()
 
@@ -27,7 +25,7 @@ interface Metric {
 }
 const metrics = (p: ComparisonPanel | null): Metric[] => [
   { key: 'active', label: 'Pelajar Aktif', value: plain(p?.active ?? 0) },
-  { key: 'accuracy', label: 'Ketepatan', value: pct(p?.accuracy ?? 0) },
+  { key: 'accuracy', label: 'Ketepatan', value: accuracyPct(p?.accuracy ?? 0) },
   { key: 'answers', label: 'Jumlah Jawapan', value: count(p?.answers ?? 0) },
   { key: 'champions', label: 'Champion', value: plain(p?.champions ?? 0) },
 ]
@@ -54,7 +52,7 @@ const deltas = computed(() => {
       key: 'accuracy',
       label: 'Ketepatan',
       n: d?.accuracy ?? 0,
-      text: formatPercent(d?.accuracy ?? 0, { decimals: 1, dropZeroFraction: true, signed: true }),
+      text: accuracyPct(d?.accuracy ?? 0, { signed: true }),
     },
     { key: 'answers', label: 'Jumlah Jawapan', n: d?.answers ?? 0, text: signed(d?.answers ?? 0) },
     {

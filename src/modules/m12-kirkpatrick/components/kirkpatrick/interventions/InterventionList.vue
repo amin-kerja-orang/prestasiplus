@@ -19,7 +19,7 @@ import { clock, formatMyt } from '@/lib/time'
 import { reviewKirkpatrickIntervention } from '../../../api'
 
 import type { InterventionRow, WireId } from '../../../api/types'
-import { dateEn, pct } from '../common/kirkpatrick-format'
+import { dateEn, accuracyPct } from '../common/kirkpatrick-format'
 import { alertLabel, moodLabel, STATUS_COLOR } from './intervention-format'
 
 const props = defineProps<{ rows: InterventionRow[] }>()
@@ -33,7 +33,9 @@ const canReview = computed(() => role.value !== 'admin')
 const REVIEW_AFTER_DAYS = 7
 function ageInDays(actionDate: string): number {
   const today = formatMyt(clock.now(), 'yyyy-MM-dd')
-  return Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${actionDate}T00:00:00Z`)) / 86_400_000)
+  return Math.round(
+    (Date.parse(`${today}T00:00:00Z`) - Date.parse(`${actionDate}T00:00:00Z`)) / 86_400_000,
+  )
 }
 /** Whole %, half up ("62%"); "—" without a value. */
 const wholePercent = (v: number | null) => (v === null ? '—' : formatPercent(v, { decimals: 0 }))
@@ -61,7 +63,7 @@ const statusColor = (status: unknown) =>
 
 /** "55.5% · Gembira" / "-" (accuracy then mood, as option labels). */
 function accuracyCell(accuracy: number | null, mood: InterventionRow['beforeMood']): string {
-  const parts = [accuracy === null ? null : pct(accuracy), moodLabel(mood) || null].filter(
+  const parts = [accuracy === null ? null : accuracyPct(accuracy), moodLabel(mood) || null].filter(
     (p): p is string => p !== null,
   )
   return parts.length > 0 ? parts.join(' · ') : '-'

@@ -275,7 +275,7 @@ describe('S7 list (AC-M12-28.2)', () => {
     expect(all(w, 'int-row-status').map((e) => e.text())).toEqual(['Meningkat', 'Menunggu Semakan'])
     expect(all(w, 'int-row-status')[0]?.classes()).toContain('text-success')
     expect(all(w, 'int-row-status')[1]?.classes()).toContain('text-warning')
-    expect(rows[0]?.get('[data-testid="int-row-after"]').text()).toBe('55.5% · Gembira')
+    expect(rows[0]?.get('[data-testid="int-row-after"]').text()).toBe('56% · Gembira')
     expect(rows[1]?.get('[data-testid="int-row-after"]').text()).toBe('-')
     expect(rows[0]?.text()).toContain('25 Sep 2026')
     expect(rows[0]?.text()).toContain('Tidak Aktif')
@@ -341,10 +341,7 @@ describe('S7 "Semak keputusan" (AC-GUR-11-9)', () => {
   it('shows the result without a button for a row that already has afterAccuracy and "Menunggu Semakan" while it has none', async () => {
     clock.setNow('2026-10-05T10:00:00+08:00')
     api.fetchKirkpatrickInterventions.mockResolvedValue(
-      list([
-        pending({ id: 2, afterAccuracy: 55.5, status: 'Meningkat' }),
-        pending({ id: 1 }),
-      ]),
+      list([pending({ id: 2, afterAccuracy: 55.5, status: 'Meningkat' }), pending({ id: 1 })]),
     )
     const w = await open()
     expect(all(w, 'int-row-result').map((e) => e.text())).toEqual([
