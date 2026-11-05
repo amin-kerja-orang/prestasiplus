@@ -498,6 +498,8 @@ export class BijakAttemptsService {
         ...(leaf.topicIds && c.answer.topicId !== undefined ? { choice: c.answer.topicId } : {}),
       }
       delete answer.revealed
+      // A leaf with no topic choice has nowhere to keep a topic: a client `topicId` is dropped (not stored, not an error).
+      if (!leaf.topicIds) delete answer.topicId
       if (cur?.answer.revealed) answer.revealed = true
       if (answer.photos) {
         if (!photos) {
