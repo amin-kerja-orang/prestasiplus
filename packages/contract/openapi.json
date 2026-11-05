@@ -53637,8 +53637,7 @@
                 "type": [
                   "number",
                   "null"
-                ],
-                "deprecated": true
+                ]
               },
               "active7d": {
                 "type": "integer"
@@ -53767,7 +53766,7 @@
                 "activeStudents"
               ]
             },
-            "description": "Weekly, last 12 ISO weeks with an answer; `date` is the Monday of the week (MYT)."
+            "description": "Daily, the last 30 Malaysian days including today, oldest first, zero-filled (a day without an answer is sessions 0, avgAccuracy 0, activeStudents 0); `date` is the MYT day."
           },
           "ranking": {
             "type": "array",

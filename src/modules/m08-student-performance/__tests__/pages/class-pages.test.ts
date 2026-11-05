@@ -34,7 +34,7 @@ const S5: ClassDashboard = {
     year: 2026,
     joinCode: 'DMO101',
   },
-  stats: { students: 8, accuracy: 42.6, sessions: 11, answered: 68, avgMinutes: null, active7d: 6 },
+  stats: { students: 8, accuracy: 42.6, sessions: 11, answered: 68, avgMinutes: 10.4, active7d: 6 },
   headcount: {
     configId: 504,
     onTrack: 0,
@@ -160,7 +160,7 @@ afterEach(() => {
 })
 
 describe('S5 PrestasiKelasDetailPage', () => {
-  it('shows the header (no join code), the 5 stat cards (no Purata Masa/Sesi) and the headcount block', async () => {
+  it('shows the header (no join code), the 6 stat cards (with Purata Masa/Sesi) and the headcount block', async () => {
     api.fetchClassDashboard.mockResolvedValue(S5)
     const w = await render(PrestasiKelasDetailPage, '/prestasi/kelas/2001', '/prestasi/kelas/:id')
     expect(t(w, 'class-name').text()).toBe('5 MARIKH - Kimia')
@@ -169,10 +169,10 @@ describe('S5 PrestasiKelasDetailPage', () => {
     expect(t(w, 'back-link').attributes('title')).toBe('Kembali ke senarai kelas')
     expect(t(w, 'back-link').attributes('href')).toBe('/prestasi/kelas')
     expect(
-      ['murid', 'ketepatan', 'sesi', 'soalan', 'aktif'].map((id) => num(w, `stat-${id}`)),
-    ).toEqual(['8', '43%', '11', '68', '6'])
-    expect(w.find('[data-testid=stat-masa]').exists()).toBe(false)
-    expect(w.text()).not.toContain('Purata Masa/Sesi')
+      ['murid', 'ketepatan', 'sesi', 'soalan', 'masa', 'aktif'].map((id) => num(w, `stat-${id}`)),
+    ).toEqual(['8', '43%', '11', '68', '10.4m', '6'])
+    expect(w.text()).toContain('Purata Masa/Sesi')
+    expect(w.text()).toContain('Trend Aktiviti Kelas (30 Hari)')
     expect(num(w, 'hc-on')).toBe('0')
     expect(num(w, 'hc-below')).toBe('1')
     expect(num(w, 'hc-none')).toBe('7')
@@ -191,15 +191,22 @@ describe('S5 PrestasiKelasDetailPage', () => {
     expect(t(w, 'class-sub').text()).toBe('SMK DEMO · 2026')
   })
 
-  it('shows zeros as "0%" and the weekly empty trend message', async () => {
+  it('shows zeros as "0%" / "0m" and the 30-day empty trend message when all 30 zero-filled days are empty', async () => {
+    const zeroDays = Array.from({ length: 30 }, (_, i) => ({
+      date: `2026-09-${String(i + 1).padStart(2, '0')}`,
+      sessions: 0,
+      avgAccuracy: 0,
+      activeStudents: 0,
+    }))
     api.fetchClassDashboard.mockResolvedValue({
       ...S5,
       stats: { students: 15, accuracy: 0, sessions: 0, answered: 0, avgMinutes: null, active7d: 0 },
-      trend: [],
+      trend: zeroDays,
     })
     const w = await render(PrestasiKelasDetailPage, '/prestasi/kelas/2001', '/prestasi/kelas/:id')
     expect(t(w, 'stat-ketepatan').text()).toContain('0%')
-    expect(t(w, 'trend-empty').text()).toContain('Belum ada aktiviti dalam 12 minggu terakhir.')
+    expect(t(w, 'stat-masa').text()).toContain('0m')
+    expect(t(w, 'trend-empty').text()).toContain('Belum ada aktiviti dalam 30 hari terakhir.')
     expect(w.find('[data-testid=chart]').exists()).toBe(false)
   })
 

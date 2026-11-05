@@ -71,6 +71,29 @@ export interface SessionCountRow {
   sessions: number
 }
 
+export interface DailyFactRow {
+  userId: string
+  /** The Malaysian calendar day, YYYY-MM-DD (Asia/Kuala_Lumpur). */
+  day: string
+  attempts: number
+  correct: number
+  /** Distinct `session_id`; answers with no session count one session per mode per MYT day (same rule as `WeeklyFactRow.sessions`). */
+  sessions: number
+}
+
+/**
+ * Finished-session durations per pupil (S10-T07 part 2, "Purata Masa/Sesi"). Read from `practice_sessions` (`status = 'completed'`,
+ * `time_spent_sec`, the stored seconds of the finished session; `started_at` and `completed_at` are the session's own stamps).
+ * `is_test` sessions are never returned. `from` / `to` bound `completed_at` ([from, to)); `modes` and `subjectId` filter the session.
+ */
+export interface SessionDurationRow {
+  userId: string
+  /** Finished (completed) sessions. */
+  sessions: number
+  /** Sum of `time_spent_sec` over those sessions. */
+  seconds: number
+}
+
 export interface SpInfo {
   id: string
   kind: 'topic' | 'chapter'
@@ -83,6 +106,10 @@ export interface SpInfo {
 export interface AnswerFactsPort {
   answerFacts(query: AnswerFactsQuery): Promise<AnswerFactRow[]>
   weeklyFacts(query: AnswerFactsQuery): Promise<WeeklyFactRow[]>
+  /** Day grain of `weeklyFacts` (S10-T07 part 2): one row per pupil and Malaysian day with an answer. */
+  dailyFacts(query: AnswerFactsQuery): Promise<DailyFactRow[]>
+  /** Finished-session seconds per pupil (S10-T07 part 2). Only `userIds`, `subjectId`, `modes`, `from` and `to` apply. */
+  sessionDurations(query: AnswerFactsQuery): Promise<SessionDurationRow[]>
   /** Added for S10-T01 (not on the card): a distinct count cannot be built from `weeklyFacts` rows. */
   sessionCounts(query: AnswerFactsQuery): Promise<SessionCountRow[]>
   spInfo(ids: { topicIds: readonly string[]; chapterIds: readonly string[] }): Promise<SpInfo[]>
@@ -125,6 +152,12 @@ export class EmptyAnswerFacts implements AnswerFactsPort {
     return []
   }
   async weeklyFacts(): Promise<WeeklyFactRow[]> {
+    return []
+  }
+  async dailyFacts(): Promise<DailyFactRow[]> {
+    return []
+  }
+  async sessionDurations(): Promise<SessionDurationRow[]> {
     return []
   }
   async sessionCounts(): Promise<SessionCountRow[]> {
