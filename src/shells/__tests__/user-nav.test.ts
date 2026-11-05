@@ -78,6 +78,9 @@ const liveMenuLinks = inventory.elements
 /** Live links the rebuild deliberately changes (approved DVs). */
 const REPLACED_LIVE_HREFS: Record<string, string> = {
   '/settings': '/tetapan', // M01 DV-01 (drawer "Tetapan")
+  // team-dd ruling on #503 (S0-T07): the admin "Databank Soalan" opened the teacher-only
+  // /guru/databank; it opens the admin lane page instead (the teacher item keeps /guru/databank).
+  '/guru/databank': '/admin/spm/databank',
 }
 /**
  * Live links of the admin capture whose admin-only copies were retired from USER_NAV (D113, F-02,
@@ -176,6 +179,15 @@ describe('USER_NAV data', () => {
       .map((i) => i.to)
     expect(notLive).toEqual([])
     expect(STUDENT_ONLY_IDS.size).toBeGreaterThan(0)
+  })
+
+  it('admin "Databank Soalan" opens /admin/spm/databank, the teacher item keeps /guru/databank (S0-T07, #503)', () => {
+    const byId = new Map(ALL_ITEMS.map((i) => [i.id, i]))
+    expect(byId.get('databank-soalan')?.to).toBe('/admin/spm/databank')
+    expect(byId.get('databank-soalan')?.label).toBe('Databank Soalan')
+    expect(byId.get('databank-soalan')?.fa).toBe('fa-database')
+    expect(byId.get('t-databank')?.to).toBe('/guru/databank')
+    expect(items(navFor('admin', 'sidebar', USER_NAV, FULL)).filter((i) => i.to === '/guru/databank')).toEqual([])
   })
 
   it('the admin-only copies retired by F-02 are gone (guru-*, admin-soalan-by-chapter, admin-tebusan, urus-hadiah, kelulusan-hadiah, command-center-guru, ke-admin-panel, billing-dashboard, urus-produk, urus-penjual)', () => {

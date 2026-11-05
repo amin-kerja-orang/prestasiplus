@@ -484,7 +484,7 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'item', id: 'dashboard-guru', label: 'Dashboard Guru', to: '/guru', fa: 'fa-chart-pie', color: 'text-teal-500', roles: A },
   { kind: 'item', id: 'kelas-guru', label: 'Kelas Guru', to: '/guru/kelas', fa: 'fa-chalkboard-teacher', color: 'text-teal-500', roles: A },
   { kind: 'item', id: 'sumbang-soalan', label: 'Sumbang Soalan', to: '/guru/soalan', fa: 'fa-pen-fancy', color: 'text-emerald-500', roles: A },
-  { kind: 'item', id: 'databank-soalan', label: 'Databank Soalan', to: '/guru/databank', fa: 'fa-database', color: 'text-violet-500', roles: A },
+  { kind: 'item', id: 'databank-soalan', label: 'Databank Soalan', to: '/admin/spm/databank', fa: 'fa-database', color: 'text-violet-500', roles: A },
 
   // ── PPD / JPN (sidebar capture + drawer-only items) ──
   { kind: 'section', id: 'sec-ppd-jpn', label: 'PPD / JPN', text: 'text-indigo-700', rule: 'from-indigo-300', roles: ['admin', 'ppd_officer', 'jpn_officer'] },

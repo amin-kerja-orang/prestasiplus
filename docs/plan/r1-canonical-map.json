@@ -5493,12 +5493,12 @@
       "source": "user-nav",
       "id": "databank-soalan",
       "label": "Databank Soalan",
-      "route": "/guru/databank",
+      "route": "/admin/spm/databank",
       "roles": [
         "admin"
       ],
       "status": "retire",
-      "sector": "S0",
+      "sector": "S3",
       "file": "src/shells/nav/user-nav.ts",
       "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
       "approved_by_card": null
