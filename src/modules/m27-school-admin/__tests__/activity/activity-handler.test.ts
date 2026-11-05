@@ -4,6 +4,7 @@
  * P2 = school admin 8 of school 900001 (populated); P1 = school admin 3102 of school 900003 (empty).
  */
 
+import { REPORT_SCOPE_MESSAGES } from '@pp/contract'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import type { HttpMethod, TransportResponse } from '@/api/transport'
@@ -165,10 +166,31 @@ describe('guards', () => {
     expect((await call(null, URL)).status).toBe(401)
   })
 
-  it('403 for admin, teacher and pupil', async () => {
-    for (const id of [ADMIN, GURU, PELAJAR]) {
-      expect((await call(id, URL)).status, String(id)).toBe(403)
+  it('403 for teacher and pupil', async () => {
+    for (const id of [GURU, PELAJAR]) {
+      expect((await call(id, `${URL}?schoolId=${String(S1)}`)).status, String(id)).toBe(403)
     }
+  })
+
+  // API-ADM-22 (R1-ADM-M-07): Admin Pusat reads any school through `?schoolId=`
+  it('admin: the report of the named school equals the school admin screen of that school (AC-ADM-M07.1)', async () => {
+    const central = await call(ADMIN, `${URL}?schoolId=${String(S1)}&range=7`)
+    expect(central.status).toBe(200)
+    expect(central.body.data).toEqual(await report(P2, '?range=7'))
+  })
+
+  it('admin: 422 without or with a malformed schoolId, 404 for an unknown school', async () => {
+    const missing = await call(ADMIN, URL)
+    expect(missing.status).toBe(422)
+    expect(JSON.stringify(missing.body)).toContain(REPORT_SCOPE_MESSAGES.schoolIdRequired)
+    expect((await call(ADMIN, `${URL}?schoolId=abc`)).status).toBe(422)
+    expect((await call(ADMIN, `${URL}?schoolId=999999999`)).status).toBe(404)
+  })
+
+  it('school admin: a schoolId they send is ignored', async () => {
+    const r = await call(P2, `${URL}?schoolId=${String(S3)}`)
+    expect(r.status).toBe(200)
+    expect(r.body.data.schoolId).toBe(S1)
   })
 
   it('403 for a school admin without a school', async () => {
