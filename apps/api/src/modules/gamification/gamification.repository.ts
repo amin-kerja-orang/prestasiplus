@@ -762,18 +762,9 @@ export class GamificationRepository {
     return created
   }
 
-  /** Tickets of a draw as one entry per ticket row (ticket id, user), oldest first. */
-  async ticketsOf(db: Db, drawId: bigint): Promise<{ id: string; userId: string }[]> {
-    const rows = await db.drawTicket.findMany({ where: { drawId }, orderBy: { id: 'asc' }, select: { id: true, userId: true } })
-    return rows.map((r) => ({ id: idToString(r.id), userId: idToString(r.userId) }))
-  }
-
-  /** Closes a draw: only an `open` draw closes (zero rows = somebody else did). */
-  async closeDraw(db: Db, id: bigint, winnerUserId: string | null, at: Date): Promise<boolean> {
-    const r = await db.draw.updateMany({
-      where: { id, status: 'open' },
-      data: { status: 'closed', drawnAt: at, winnerUserId: winnerUserId === null ? null : idFromString(winnerUserId), updatedAt: at },
-    })
+  /** Moves a draw from `from` to `to` (`Buka`, `Tutup`): zero rows = somebody else moved it first. */
+  async setDrawStatus(db: Db, id: bigint, from: string, to: string, at: Date): Promise<boolean> {
+    const r = await db.draw.updateMany({ where: { id, status: from }, data: { status: to, updatedAt: at } })
     return r.count === 1
   }
 

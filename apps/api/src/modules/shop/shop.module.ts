@@ -2,10 +2,12 @@ import { Module } from '@nestjs/common'
 
 import { AuditModule } from '../../common/audit'
 import { ThrottleModule } from '../../common/throttle'
+import { NotificationsModule } from '../notifications'
 import { WalletModule } from '../wallet'
 import { BOX_RANDOM, CsprngBoxRandom } from './box-random'
 import { ShopAdminController } from './admin.controller'
 import { ShopAdminService } from './admin.service'
+import { DrawWinnersService } from './draw-winners.service'
 import { RewardSettingsService } from './reward-settings.service'
 import { ShopController } from './shop.controller'
 import { ShopRepository } from './shop.repository'
@@ -17,9 +19,9 @@ import { ShopService } from './shop.service'
  * `WalletService` (BE-11), in the same transaction as the shop write. The parent approval routes are not built (UD-3).
  */
 @Module({
-  imports: [AuditModule, ThrottleModule, WalletModule],
+  imports: [AuditModule, ThrottleModule, WalletModule, NotificationsModule],
   controllers: [ShopController, ShopAdminController],
-  providers: [ShopRepository, ShopService, ShopAdminService, RewardSettingsService, { provide: BOX_RANDOM, useValue: CsprngBoxRandom }],
-  exports: [RewardSettingsService],
+  providers: [ShopRepository, ShopService, ShopAdminService, RewardSettingsService, DrawWinnersService, { provide: BOX_RANDOM, useValue: CsprngBoxRandom }],
+  exports: [RewardSettingsService, DrawWinnersService],
 })
 export class ShopModule {}
