@@ -51,6 +51,8 @@ export interface TopicNode extends CurriculumTopic {
 }
 
 export interface ChapterNode extends CurriculumChapter {
+  /** API-DSKP-04: live, active, approved questions linked to the Bab (absent on payloads without counts). */
+  questionCount?: number
   topics: TopicNode[]
 }
 

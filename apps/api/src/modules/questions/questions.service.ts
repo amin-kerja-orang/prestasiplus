@@ -1,5 +1,6 @@
 import { isDeepStrictEqual } from 'node:util'
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common'
+import { z } from 'zod'
 import {
   QUESTION_WORKFLOW_STATUSES,
   isQuestionWorkflowTransitionAllowed,
@@ -835,7 +836,9 @@ export class QuestionsService {
   private parseParts(parts: QuestionPart[], unchanged: (p: QuestionPart, i: number) => boolean):
     | { success: true; data: QuestionPart[] }
     | { success: false; error: { issues: { path: PropertyKey[]; message: string }[] } } {
-    if (parts.length < 1 || parts.length > 20) return { success: false, error: { issues: [{ path: [], message: 'Data tidak sah.' }] } }
+    // The count rule is the one the schema always had (`array().min(1).max(20)`), so its message stays unchanged.
+    const sized = z.array(z.unknown()).min(1).max(20).safeParse(parts)
+    if (!sized.success) return { success: false, error: { issues: sized.error.issues.map((x) => ({ path: x.path, message: x.message })) } }
     const data: QuestionPart[] = []
     for (const [i, p] of parts.entries()) {
       const r = (unchanged(p, i) ? QuestionPartSchema : QuestionWritePartSchema).safeParse(p)

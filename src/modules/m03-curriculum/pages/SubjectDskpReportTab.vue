@@ -12,7 +12,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
-import { type CardField, DsDataTable, DsEmptyState, DsListRow, DsLoadError, DsStack } from '@/ds'
+import { type CardField, DsBadge, DsDataTable, DsEmptyState, DsListRow, DsLoadError, DsStack, DsText } from '@/ds'
 
 import { fetchDskpReport, type DskpNode, type DskpReportRow } from '../api/admin-curriculum'
 import { COPY } from '../lib/subjects-levels'
@@ -77,9 +77,8 @@ const nodes = computed(() => data.value?.nodes ?? null)
         data-testid="dskp-report-table"
       >
         <template #state-cell="{ row }">
-          <UBadge
-            :color="row.original.state === 'dimuatkan' ? 'success' : 'neutral'"
-            variant="subtle"
+          <DsBadge
+            :tone="row.original.state === 'dimuatkan' ? 'success' : 'neutral'"
             :label="row.original.state"
             data-testid="dskp-state"
           />
@@ -88,17 +87,15 @@ const nodes = computed(() => data.value?.nodes ?? null)
 
       <DsEmptyState v-if="data && rows.length === 0" item="subjek" :filtered="subjectId !== null || levelId !== null" data-testid="dskp-report-empty" />
 
-      <DsStack v-if="nodes && nodes.length > 0" as="ul" gap="sm" data-testid="dskp-node-list">
-        <li v-for="node in nodes" :key="node.id" data-testid="dskp-node">
-          <DsListRow :title="`${node.code} ${node.title}`">
-            <template #leading>
-              <UBadge color="neutral" variant="subtle" :label="KIND_LABEL[node.kind]" />
-            </template>
-            <template v-if="node.tpDescriptors.length > 0" #sub>
-              <span v-for="d in node.tpDescriptors" :key="d.tp" class="block">TP{{ d.tp }}: {{ d.descriptor }}</span>
-            </template>
-          </DsListRow>
-        </li>
+      <DsStack v-if="nodes && nodes.length > 0" gap="sm" data-testid="dskp-node-list">
+        <DsListRow v-for="node in nodes" :key="node.id" :title="`${node.code} ${node.title}`" data-testid="dskp-node">
+          <template #leading>
+            <DsBadge :label="KIND_LABEL[node.kind]" />
+          </template>
+          <template v-if="node.tpDescriptors.length > 0" #sub>
+            <DsText v-for="d in node.tpDescriptors" :key="d.tp" variant="caption" as="div">TP{{ d.tp }}: {{ d.descriptor }}</DsText>
+          </template>
+        </DsListRow>
       </DsStack>
     </template>
   </DsStack>

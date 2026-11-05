@@ -45,6 +45,7 @@ import {
   GamesRoomCreateRequestSchema,
   GamesRoomJoinRequestSchema,
   GamesRoomViewSchema,
+  GamesSekolahBersaingBoardSchema,
   GamesSekolahBersaingSchema,
   GamesSoloPayloadSchema,
   GamesSoloCheckRequestSchema,
@@ -792,6 +793,27 @@ describe('leagues (M16-46 to M16-49)', () => {
   })
 })
 
+describe('Sekolah Bersaing live board (API-AS-14, S7-T02)', () => {
+  const row = { rank: 1, school: 'SMK Rekaan', state: 'Negeri Rekaan', accuracy: 69.6, pupils: 5 }
+
+  it('is a bare array of rows; [] is the empty board', () => {
+    ok(GamesSekolahBersaingBoardSchema, [row])
+    ok(GamesSekolahBersaingBoardSchema, [])
+    rejected(GamesSekolahBersaingBoardSchema, { rows: [row] })
+  })
+
+  it('removed fields are refused', () => {
+    for (const extra of ['weekStart', 'count', 'aktifPct', 'streakAvg', 'notaPer10', 'anonymous']) {
+      rejected(GamesSekolahBersaingBoardSchema, [{ ...row, [extra]: 1 }])
+    }
+  })
+
+  it('accuracy is 0..100 with at most one decimal; 100 and 50 carry no fraction', () => {
+    for (const accuracy of [0, 50, 100, 69.6]) ok(GamesSekolahBersaingBoardSchema, [{ ...row, accuracy }])
+    for (const accuracy of [-1, 100.1, 69.65]) rejected(GamesSekolahBersaingBoardSchema, [{ ...row, accuracy }])
+  })
+})
+
 describe('Sekolah Bersaing (M16-50)', () => {
   const row = { rank: 1, schoolName: 'SK Rekaan', state: 'Negeri Rekaan', aktifPct: 61.5, streakAvg: 3.2, notaPer10: 4.1, anonymous: false }
 
@@ -959,10 +981,10 @@ describe('openapi registration', () => {
     for (const code of ['404', '409', '422']) expect(JSON.stringify(checkOp?.responses[code]), code).toContain('[PROPOSED]')
   })
 
-  it('M16-51 and M16-52 are admin only: 403 "This action is unauthorized."', () => {
+  it('M16-51 and M16-52 are admin only: 403 "Anda tidak dibenarkan melakukan tindakan ini."', () => {
     for (const key of ['GET /admin/games', 'PUT /admin/games/settings']) {
       const op = gamesOps.find((o) => o.key === key)?.op
-      expect(JSON.stringify(op?.responses['403']), key).toMatch(/This action is unauthorized\./)
+      expect(JSON.stringify(op?.responses['403']), key).toMatch(/Anda tidak dibenarkan melakukan tindakan ini\./)
     }
     expect(gamesOps.find((o) => o.key === 'GET /games/hub')?.op.responses['403']).toBeUndefined()
   })

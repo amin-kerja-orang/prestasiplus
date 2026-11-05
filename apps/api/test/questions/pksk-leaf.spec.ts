@@ -15,7 +15,7 @@ const pksk = (n: number, correct: string[]) => ({ label: '1', prompt: rich('Soal
 const mcq = (n: number, correct: string) => ({ label: '1', prompt: rich('Soalan'), marks: 1, mode: 'mcq', options: opts(n), key: { kind: 'option', correct } })
 
 describe('contract: the PKSK leaf is additive', () => {
-  it('McqLeaf is unchanged: 2 to 8 options (S1-T09a), exactly one correct label, kind option only', () => {
+  it('McqLeaf: 2 to 8 options (S1-T09a), exactly one correct label, kind option only', () => {
     expect(QuestionLeafPartSchema.safeParse(mcq(4, 'B')).success).toBe(true)
     expect(QuestionLeafPartSchema.safeParse(mcq(2, 'A')).success).toBe(true)
     expect(QuestionLeafPartSchema.safeParse(mcq(1, 'A')).success).toBe(false)
