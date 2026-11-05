@@ -70,7 +70,7 @@ export const GAME_SETTINGS = {
 } as const satisfies Record<string, RangeSpec | ChoiceSpec>
 
 // `mystery_box_cost` is not here on purpose (ruling 2 on #505): the cost of a Kotak Misteri lives only in `mystery_boxes.cost_syiling` (DM-37).
-// Its row is still in `gamification_settings` (0224 is merged; the row and the key check are left as they are) and nothing reads or writes it.
+// Its row is still in `gamification_settings` (0224 is merged; the row and the key check are left as they are) and nothing reads it; the generic `PUT /admin/settings` can still store a value, with no effect.
 export type GameSettingKey = keyof typeof GAME_SETTINGS
 
 export function isGameSettingKey(key: string): key is GameSettingKey {

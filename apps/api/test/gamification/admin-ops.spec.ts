@@ -588,7 +588,15 @@ describe('M14 admin operations: settings, reward control, lucky draws (BE-23, AC
       fail(await admin.post(`/admin/reward-control/draws/${id}/close`), 409, 'CONFLICT')
     })
 
-    it('the winner rows refuse a second winner for the same slot, a second prize for the same pupil, and a ticket that is not of the draw', async () => {
+    it('a draw with tickets and no prize line answers 409 and stays closed, with no winner', async () => {
+      const { id } = await newDraw([1], [1])
+      await t.db.query(`delete from draw_prizes where draw_id = ${id}`)
+      fail(await press(id), 409, 'CONFLICT')
+      expect(await stored(id)).toEqual({ status: 'closed', winner_user_id: null, drawn_at: null })
+      expect(await winnerRows(id)).toEqual([])
+    })
+
+    it('the winner rows refuse a second winner for the same slot and a second prize for the same pupil', async () => {
       const { id, users } = await newDraw([1], [2, 1])
       await press(id)
       const [first] = await winnerRows(id)

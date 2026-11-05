@@ -62,6 +62,9 @@ const lockDraw = async (tx: TxClient, id: bigint): Promise<void> => {
   await tx.$queryRaw`SELECT id FROM draws WHERE id = ${id} FOR UPDATE`
 }
 
+/** A run writes one winner and one notice per pupil, so a large draw needs more than the default 5 s. */
+const DRAW_TX = { maxWait: 10_000, timeout: 60_000 }
+
 /**
  * "Cabut pemenang" and "Tandakan Dihantar" (48 GAME-22, DM-36, API-GAME-09, API-ADM-24). The draw row is locked FOR UPDATE for the whole
  * run, the same lock family a ticket purchase takes FOR SHARE, so no ticket can arrive between the read of the pool and the new status,
@@ -96,6 +99,8 @@ export class DrawWinnersService {
       if (tickets.length === 0) throw new ApiError({ code: NO_PARTICIPANTS_CODE, status: 409, message: GAMIFICATION_DRAW_MESSAGES.noParticipants })
 
       const picks = pickWinners(tickets, draw.prizes, this.random.stream(`cabutan-draw:${idToString(drawId)}`))
+      // A draw with tickets and no prize line has nothing to award: refused, and it stays as it was.
+      if (picks.length === 0) throw ApiError.of('CONFLICT')
 
       await tx.drawWinner.createMany({
         data: picks.map((p) => ({ drawId, drawPrizeId: p.prize.id, ticketId: p.ticket.id, slot: p.slot, userId: p.ticket.userId, drawnAt: at, drawnById: idFromString(actor.userId) })),
@@ -120,7 +125,7 @@ export class DrawWinnersService {
         },
         tx,
       })
-    })
+    }, DRAW_TX)
   }
 
   /**
