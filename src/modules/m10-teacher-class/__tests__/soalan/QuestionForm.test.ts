@@ -184,6 +184,40 @@ describe('S22 form fields (44-F1)', () => {
   })
 })
 
+describe('S22 failed Bab / SP lookups', () => {
+  it('a failed lookup shows the module load-error with retry, never "Tiada ...", and keeps the fields required', async () => {
+    guru.fetchChapters.mockRejectedValue(new Error('x'))
+    guru.fetchBidang.mockRejectedValue(new Error('x'))
+    const w = await mountForm()
+    await pickLevelAndSubject(w)
+    expect(t(w, 'dskp-lookup-error').text()).toContain('Gagal memuatkan data. Sila cuba lagi.')
+    expect(t(w, 'dskp-lookup-error').text()).toContain('Cuba Semula')
+    expect(w.text()).not.toContain('Tiada bab untuk subjek dan tingkatan ini.')
+    expect(w.text()).not.toContain('Tiada SP untuk subjek dan tingkatan ini.')
+    expect(w.text()).toContain('Bab *')
+    expect(w.text()).toContain('SP *')
+    await t(w, 'q-difficulty').setValue('3')
+    await t(w, 'q-text').setValue('Soalan?')
+    for (const i of [0, 1, 2, 3]) await t(w, `q-option-${String(i)}`).setValue(`P${String(i)}`)
+    await w.findAll('[data-testid="q-correct"] [role="radio"]')[0]!.trigger('click')
+    await w.find('form').trigger('submit')
+    await flushPromises()
+    expect(w.emitted('submit')).toBeUndefined()
+    expect(w.text()).toContain('Sila pilih bab.')
+  })
+
+  it('Cuba Semula loads the lists again and the error goes away', async () => {
+    guru.fetchChapters.mockRejectedValueOnce(new Error('x'))
+    const w = await mountForm()
+    await pickLevelAndSubject(w)
+    expect(t(w, 'dskp-lookup-error').exists()).toBe(true)
+    await w.get('[data-testid="dskp-lookup-error"] button').trigger('click')
+    await flushPromises()
+    expect(t(w, 'dskp-lookup-error').exists()).toBe(false)
+    expect(opts(w, 'q-chapter')).toEqual(['-- Pilih bab --', '1. Satu', '2. Dua'])
+  })
+})
+
 describe('S22 validation (FR-GUR-44-11; AC-GUR-44-10, AC-GUR-44-12)', () => {
   it('an empty form shows every BM text, a banner, and sends nothing', async () => {
     const w = await mountForm()

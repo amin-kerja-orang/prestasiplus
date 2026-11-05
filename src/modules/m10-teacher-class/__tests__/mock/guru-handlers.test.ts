@@ -23,6 +23,7 @@ import { M10_DISPLAY_CONSTANTS } from '../../mock/constants/display'
 import { crc32 } from '../../mock/handlers/docx'
 import { m10Hooks } from '../../mock/hooks'
 import { planImport, TEMPLATE_CSV, TEMPLATE_HEADER } from '../../mock/handlers/csv'
+import { QuestionGuruDetailSchema, QuestionGuruSummarySchema } from '../contract-shape/shapes'
 import { bootM10 } from './helpers'
 
 const ADMIN = 1
@@ -711,19 +712,17 @@ describe('#53–#56 contributed questions (S22–S24; BR-M10-21, BR-M10-22, SEC-
     id: number
     status: string
     rejectionReason: string | null
-    isActive: boolean
+    editable: boolean
     difficultyLevel: number
     options: string[] | null
     correctAnswer: number | null
     questionType: string
     explanation: string | null
     createdAt: string
-    questionImage: string | null
     chapterId: number | null
     spIds: number[]
     tp: number | null
     cognitiveLevel: string | null
-    usage: { attempts: number; correct: number; accuracy: number }
   }
   // Kimia Tingkatan 5 has chapters and DSKP nodes (SP 9001), so the DSKP fields are required (D112).
   let chapterOf: { id: number } | undefined
@@ -756,7 +755,6 @@ describe('#53–#56 contributed questions (S22–S24; BR-M10-21, BR-M10-22, SEC-
       'educationLevelId',
       'options',
       'questionText',
-      'questionType',
       'subjectId',
     ])
     const cases: [Record<string, unknown>, string][] = [
@@ -828,7 +826,9 @@ describe('#53–#56 contributed questions (S22–S24; BR-M10-21, BR-M10-22, SEC-
     expect(q).toMatchObject({
       status: 'pending',
       rejectionReason: null,
-      isActive: true,
+      editable: true,
+      statusLabel: 'Menunggu Semakan',
+      difficultyLabel: 'Sederhana',
       difficultyLevel: 3,
       chapterId: chapterOf?.id,
       spIds: [9001],
@@ -910,12 +910,11 @@ describe('#53–#56 contributed questions (S22–S24; BR-M10-21, BR-M10-22, SEC-
     expect(count()).toBe(before + 4)
   })
 
-  it('#54 gives the detail with usage to the owner and 404 to anyone else', async () => {
+  it('#54 gives the detail (no usage, no source) to the owner and 404 to anyone else', async () => {
     const a = await call<Data<Q>>('GET', `/api/guru/questions/${String(firstQuestionId)}`)
     expect(a.status).toBe(200)
     expect(a.body.data).toMatchObject({
       id: firstQuestionId,
-      usage: { attempts: 0, correct: 0, accuracy: 0 },
       chapterId: chapterOf?.id,
       difficultyLevel: 3,
       correctAnswer: 0,
@@ -934,50 +933,52 @@ describe('#53–#56 contributed questions (S22–S24; BR-M10-21, BR-M10-22, SEC-
     }
   })
 
-  it('#55 edits an own pending question (int difficulty); only while pending; refusals', async () => {
+  it('#55 takes the SAME body as the create (full form); only while pending; refusals', async () => {
     const url = `/api/guru/questions/${String(firstQuestionId)}`
     const edit = {
+      ...mcq,
       questionText: 'Apakah hasil di anod semasa elektrolisis NaCl pekat?',
       difficultyLevel: 2,
-      options: [
-        { id: 0, optionText: 'Gas klorin' },
-        { id: 1, optionText: 'Gas hidrogen' },
-        { id: 2, optionText: 'Gas oksigen' },
-        { id: 3, optionText: 'Logam natrium' },
-      ],
-      correctOptionId: 2,
+      options: ['Gas klorin', 'Gas hidrogen', 'Gas oksigen', 'Logam natrium'],
+      correctAnswer: 2,
       explanation: '',
+      tp: 4,
     }
     const a = await call<Data<Q>>('PUT', url, { body: edit })
-    expect(a.status).toBe(200)
+    expect(a.status, JSON.stringify(a.body)).toBe(200)
     expect(a.body.data).toMatchObject({
       difficultyLevel: 2,
       options: ['Gas klorin', 'Gas hidrogen', 'Gas oksigen', 'Logam natrium'],
       correctAnswer: 2,
       explanation: null,
       status: 'pending',
-      isActive: true,
+      tp: 4,
+      chapterId: chapterOf?.id,
+      spIds: [9001],
     })
-    const kept = await call<Data<Q>>('PUT', url, { body: { questionText: edit.questionText } })
-    expect(kept.body.data).toMatchObject({ difficultyLevel: 2, correctAnswer: 2 })
-    const hard = await call<Data<Q>>('PUT', url, {
-      body: { questionText: edit.questionText, difficultyLevel: 4 },
+    expect(questions.get(firstQuestionId)?.questionText).toBe(edit.questionText)
+    // `correctOptionId` is an alias of `correctAnswer`.
+    const alias = await call<Data<Q>>('PUT', url, {
+      body: { ...edit, correctAnswer: undefined, correctOptionId: 1 },
     })
-    expect(hard.body.data).toMatchObject({ difficultyLevel: 4, correctAnswer: 2 })
+    expect(alias.body.data).toMatchObject({ correctAnswer: 1 })
+
+    // The old partial bodies are refused: the whole form must be sent.
+    expect((await call('PUT', url, { body: { questionText: edit.questionText } })).status).toBe(422)
+    expect((await call('PUT', url, { body: { ...edit, questionText: ' ' } })).status).toBe(422)
     expect((await call('PUT', url, { body: { ...edit, difficultyLevel: 'hard' } })).status).toBe(
       422,
     )
-    expect(questions.get(firstQuestionId)?.questionText).toBe(edit.questionText)
-
-    expect((await call('PUT', url, { body: { questionText: ' ' } })).status).toBe(422)
-    expect((await call('PUT', url, { body: { ...edit, difficultyLevel: 'x' } })).status).toBe(422)
-    const reordered = { ...edit, options: edit.options.slice(0, 3), correctOptionId: 1 }
-    expect(fieldsOf(await call('PUT', url, { body: reordered })).options).toBeDefined()
     expect(
-      Object.keys(fieldsOf(await call('PUT', url, { body: { ...edit, correctOptionId: 9 } }))),
-    ).toEqual(['correctOptionId'])
-    const dupIds = { ...edit, options: edit.options.map((o) => ({ ...o, id: 0 })) }
-    expect((await call('PUT', url, { body: dupIds })).status).toBe(422)
+      fieldsOf(await call('PUT', url, { body: { ...edit, options: edit.options.slice(0, 3) } }))
+        .options,
+    ).toBeDefined()
+    expect(
+      Object.keys(fieldsOf(await call('PUT', url, { body: { ...edit, correctAnswer: 9 } }))),
+    ).toEqual(['correctAnswer'])
+    expect(
+      Object.keys(fieldsOf(await call('PUT', url, { body: { ...edit, chapterId: undefined } }))),
+    ).toEqual(['chapterId'])
 
     // An approved item is read-only: Edit and Padam answer 409 (FR-GUR-44-10).
     const locked = `/api/guru/questions/${String(anchorId)}`
@@ -990,10 +991,20 @@ describe('#53–#56 contributed questions (S22–S24; BR-M10-21, BR-M10-22, SEC-
 
     expect((await call('PUT', url, { as: ADMIN, body: edit })).status).toBe(404)
     expect((await call('PUT', '/api/guru/questions/987654321', { body: edit })).status).toBe(404)
-    expect(
-      (await call('PUT', `/api/guru/questions/${String(anchorId)}`, { as: ADMIN, body: edit }))
-        .status,
-    ).toBe(404)
+    expect((await call('PUT', locked, { as: ADMIN, body: edit })).status).toBe(404)
+  })
+
+  it('contract shape: the list rows and the detail parse with QuestionGuruSummary / QuestionGuruDetail (strict)', async () => {
+    const list = await call<{ data: unknown[] }>('GET', '/api/guru/questions')
+    expect(list.body.data.length).toBeGreaterThan(0)
+    for (const row of list.body.data) {
+      const parsed = QuestionGuruSummarySchema.safeParse(row)
+      expect(parsed.error?.issues).toBeUndefined()
+    }
+    const one = await call<Data<unknown>>('GET', `/api/guru/questions/${String(firstQuestionId)}`)
+    expect(QuestionGuruDetailSchema.safeParse(one.body.data).error?.issues).toBeUndefined()
+    const anchor = await call<Data<unknown>>('GET', `/api/guru/questions/${String(anchorId)}`)
+    expect(QuestionGuruDetailSchema.safeParse(anchor.body.data).error?.issues).toBeUndefined()
   })
 
   it('#56 deletes an own question, never another one, and keeps the M14 count', async () => {
@@ -1569,30 +1580,36 @@ describe('#59, #60, #63 gallery, question papers, Audio KBAT templates (S21, S22
 })
 
 describe('#53 / #55 form-encoded bodies (no image fields in the teacher flow)', () => {
-  it('#55 accepts one multipart PUT', async () => {
+  it('#55 accepts a form-encoded full body', async () => {
+    const chapter = curriculum.chapters(10, 11).find((c) => c.isActive)
     const made = await call<Data<{ id: number }>>('POST', '/api/guru/questions', {
       body: {
-        questionType: 'mcq',
         questionText: 'Apakah unsur dengan simbol Na?',
         educationLevelId: 11,
         subjectId: 10,
         correctAnswer: 0,
         options: ['A', 'B', 'C', 'D'],
         difficultyLevel: 2,
-        chapterId: curriculum.chapters(10, 11).find((c) => c.isActive)?.id,
+        chapterId: chapter?.id,
         spIds: [9001],
         tp: 3,
         cognitiveLevel: 'memahami',
       },
     })
     const form = new FormData()
-    form.append('questionText', 'Soalan yang disunting.')
-    form.append('difficultyLevel', '4')
-    for (let i = 0; i < 4; i++) {
-      form.append(`options[${String(i)}][id]`, String(i))
-      form.append(`options[${String(i)}][optionText]`, `Pilihan ${String(i)}`)
-    }
-    form.append('correctOptionId', '2')
+    for (const [k, v] of Object.entries({
+      questionText: 'Soalan yang disunting.',
+      educationLevelId: '11',
+      subjectId: '10',
+      difficultyLevel: '4',
+      chapterId: String(chapter?.id),
+      tp: '3',
+      cognitiveLevel: 'memahami',
+      correctAnswer: '2',
+    }))
+      form.append(k, v)
+    form.append('spIds[]', '9001')
+    for (const o of ['P0', 'P1', 'P2', 'P3']) form.append('options[]', o)
     const a = await call<Data<Record<string, unknown>>>(
       'PUT',
       `/api/guru/questions/${String(made.body.data.id)}`,
@@ -1602,7 +1619,7 @@ describe('#53 / #55 form-encoded bodies (no image fields in the teacher flow)', 
     expect(a.body.data).toMatchObject({
       questionText: 'Soalan yang disunting.',
       difficultyLevel: 4,
-      options: ['Pilihan 0', 'Pilihan 1', 'Pilihan 2', 'Pilihan 3'],
+      options: ['P0', 'P1', 'P2', 'P3'],
       correctAnswer: 2,
     })
   })

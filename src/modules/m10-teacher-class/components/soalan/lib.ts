@@ -106,7 +106,3 @@ export function fileKind(name: string): 'pdf' | 'word' | 'excel' | 'file' {
   if (ext === 'xls' || ext === 'xlsx') return 'excel'
   return 'file'
 }
-
-/** A stored `blob:mock/...` image cannot load (D22): show nothing instead of a broken image. */
-export const isLoadableImage = (value: string | null): value is string =>
-  value !== null && value !== '' && !value.startsWith('blob:mock/')

@@ -16,8 +16,8 @@
  *   `chapterId` is required iff the Subjek + Tingkatan has chapters, `spIds` / `tp` / `cognitiveLevel` iff it has DSKP
  *   nodes (D112); a new row is `pending_review` (shown "Menunggu Semakan"), active, `createdBy` = the viewer. No image fields in this flow.
  * - #54/#55/#56 (BR-M10-01, SEC-M10-07): a question that is not the viewer's own, or unknown, is a
- *   404. #55 keeps the saved difficulty when none is sent (DV-M10-15, INFERRED); an MCQ edit sends
- *   all four options by index (`id` 0–3, never trusted as a record id) and `correctOptionId`.
+ *   404. #55 takes the same body and rules as #53 (the edit form sends every field; `correctOptionId`
+ *   is an alias of `correctAnswer`).
  * - #57: the CSV template. #58: the import of `csvFile` (see `csv.ts`); 422 for a missing or wrong
  *   file (`.csv`, 2 MB, 500 rows), missing columns or no data rows; otherwise 200 with `imported` and `errors`.
  * - #55/#56 act only while the item is pending (else 409). Status words: pending / approved / rejected.
@@ -150,34 +150,21 @@ function summaryOf(q: Question) {
     statusLabel: STATUS_WORDS[statusOf(q)],
     rejectionReason: null,
     editable: statusOf(q) === 'pending',
-    isActive: q.isActive,
-    options: q.options,
-    correctAnswer: q.correctAnswer,
+    options: q.options ?? [],
+    correctAnswer: q.correctAnswer ?? 0,
     explanation: q.explanation,
-    source: q.sourceSet ?? q.sourceType ?? null,
     createdAt: q.createdAt,
   }
 }
 
-/** #53 / #54 / #55 `data`: the summary plus the S23 / S24 fields and the usage figures. */
+/** #53 / #54 / #55 `data`: the summary plus the DSKP fields of 44-F1 (`QuestionGuruDetail`). */
 function detailOf(q: Question) {
-  const attempts = q.usage.attempts
   return {
     ...summaryOf(q),
-    questionImage: q.questionImage,
-    optionImages: q.optionImages,
-    language: q.language,
-    scriptType: q.scriptType,
-    textDirection: q.textDirection,
     chapterId: q.curriculumChapterId,
     spIds: dskpExtra.get(q.id)?.spIds ?? (q.dskpSpId === null ? [] : [q.dskpSpId]),
     tp: dskpExtra.get(q.id)?.tp ?? null,
     cognitiveLevel: dskpExtra.get(q.id)?.cognitiveLevel ?? null,
-    usage: {
-      attempts,
-      correct: q.usage.correct,
-      accuracy: attempts === 0 ? 0 : Math.round((q.usage.correct / attempts) * 100),
-    },
   }
 }
 
@@ -302,8 +289,9 @@ export function parseCreate(b: Body): Parsed {
   const subjectId = intOf(b.subjectId)
   if (subjectId === undefined || !curriculum.subject(subjectId)) fields.subjectId = QMSG.subject
 
-  const type = textOf(b.questionType) as QuestionType | undefined
-  if (type === undefined || !QUESTION_TYPES.includes(type)) fields.questionType = MSG.questionType
+  const sent = textOf(b.questionType)
+  const type = (sent === undefined || sent === '' ? 'mcq' : sent) as QuestionType
+  if (!QUESTION_TYPES.includes(type)) fields.questionType = MSG.questionType
 
   const difficulty = mapDifficulty(b.difficultyLevel)
   if (difficulty === undefined) fields.difficultyLevel = QMSG.difficulty
@@ -319,11 +307,11 @@ export function parseCreate(b: Body): Parsed {
   if (options.some((o) => o === '')) fields.options = MSG.options
   else if (options.some((o) => [...o].length > OPTION_MAX)) fields.options = MSG.optionLong
   values.options = options
-  const key = keyIndex(b.correctAnswer)
+  const key = keyIndex(b.correctAnswer ?? b.correctOptionId)
   if (key === undefined) fields.correctAnswer = MSG.correctAnswer
   else values.correctAnswer = key
   const explanation = textOf(b.explanation) ?? ''
-  if (explanation !== '') values.explanation = explanation
+  if (b.explanation !== undefined) values.explanation = explanation === '' ? null : explanation
 
   const { extra, ...place } = placement(b, subjectId, levelId, fields)
 
@@ -341,57 +329,6 @@ export function parseCreate(b: Body): Parsed {
       questionText: text,
     },
   }
-}
-
-/** Validates the S24 post (#55) against the saved question. */
-function parseUpdate(b: Body, current: Question): Parsed {
-  const fields: Record<string, string> = {}
-  const patch: Partial<QuestionInput> = {}
-
-  const text = textOf(b.questionText) ?? ''
-  if (text === '') fields.questionText = MSG.questionText
-  else if ([...text].length > TEXT_MAX) fields.questionText = MSG.questionTextLong
-  else patch.questionText = text
-
-  const d = b.difficultyLevel
-  if (d !== undefined && d !== null && d !== '') {
-    const mapped = mapDifficulty(d)
-    if (mapped === undefined) fields.difficultyLevel = QMSG.difficulty
-    else patch.difficultyLevel = mapped
-  }
-
-  if (
-    current.questionType === 'mcq' &&
-    (b.options !== undefined || b.correctOptionId !== undefined)
-  ) {
-    const list = updateOptions(b)
-    const options = Array.from({ length: 4 }, () => '')
-    const seen = new Set<number>()
-    for (const entry of list) {
-      const id =
-        typeof entry === 'object' && entry !== null
-          ? intOf((entry as { id?: unknown }).id)
-          : undefined
-      if (id !== undefined && id >= 0 && id <= 3 && !seen.has(id)) {
-        seen.add(id)
-        options[id] = optionText(entry)
-      }
-    }
-    if (seen.size !== 4 || options.some((o) => o === '')) fields.options = MSG.options
-    else if (options.some((o) => [...o].length > OPTION_MAX)) fields.options = MSG.optionLong
-    else patch.options = options
-    const key = keyIndex(b.correctOptionId)
-    if (key === undefined) fields.correctOptionId = MSG.correctAnswer
-    else patch.correctAnswer = key
-  }
-
-  if (b.explanation !== undefined) {
-    const e = textOf(b.explanation) ?? ''
-    patch.explanation = e === '' ? null : e
-  }
-
-  if (Object.keys(fields).length > 0) return { ok: false, fields }
-  return { ok: true, input: patch as QuestionInput }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -506,7 +443,8 @@ export const questionRoutes: RouteDef[] = [
       const current = ownQuestion(req, Number(req.params.id))
       if (!current) return notFound()
       if (statusOf(current) !== 'pending') return conflict(QMSG.locked)
-      const parsed = parseUpdate(bodyOf(req), current)
+      // The same form and rules as the create (44-F1): the edit form sends every field.
+      const parsed = parseCreate(bodyOf(req))
       if (!parsed.ok) return validationError(parsed.fields)
       const row = questions.updateOwn(
         { id: viewerId(req) },
@@ -514,7 +452,9 @@ export const questionRoutes: RouteDef[] = [
         parsed.input,
         ctx.clock.now(),
       )
-      return row ? ok(detailOf(row)) : notFound()
+      if (!row) return notFound()
+      if (parsed.extra) dskpExtra.set(row.id, parsed.extra)
+      return ok(detailOf(row))
     },
     { params: { id: int() } },
   ),
@@ -538,17 +478,3 @@ export const questionRoutes: RouteDef[] = [
     { params: { id: int() } },
   ),
 ]
-
-/**
- * The MCQ options of #55: a JSON array of `{id, optionText}`, or the multipart keys
- * `options[i][id]` / `options[i][optionText]` of a PUT that carries an image.
- */
-function updateOptions(b: Body): unknown[] {
-  if (Array.isArray(b.options)) return b.options as unknown[]
-  const out: Record<number, { id?: unknown; optionText?: unknown }> = {}
-  for (const [key, value] of Object.entries(b)) {
-    const m = /^options\[(\d+)\]\[(id|optionText|text)\]$/.exec(key)
-    if (m) (out[Number(m[1])] ??= {})[m[2] === 'id' ? 'id' : 'optionText'] = value
-  }
-  return Object.values(out)
-}

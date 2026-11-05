@@ -8,7 +8,7 @@
  * "Jenis Tulisan" Arab / Jawi makes the textarea RTL; the keyboard button opens the Arabic / Jawi keys.
  * Server messages show in a box above the form and under their field; the typed values are kept.
  */
-import { DsFormSection, DsNativeSelect, DsPanel, DsRtlScope, DsText } from '@/ds'
+import { DsFormSection, DsLoadError, DsNativeSelect, DsPanel, DsRtlScope, DsText } from '@/ds'
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 
 import {
@@ -20,13 +20,18 @@ import {
 } from '@/modules/m04-question-bank'
 
 import { fetchChapters } from '../../api/guru'
-import type { ChapterOption, CreateQuestionRequest } from '../../api/types'
+import type {
+  ChapterOption,
+  ContributedQuestionDetail,
+  CreateQuestionRequest,
+} from '../../api/types'
 import { fetchLevelOptions, fetchSubjectOptions, type NamedLookup } from './data'
 import { DSKP_EMPTY, TP_VALUES, dskpRequired } from './dskp-rule'
 import { fetchSpChoices, type SpChoice } from './dskp-lookup'
 import { buildBody, emptyValues, validateForm, type FormField } from './form'
 import {
   chapterLabel,
+  COPY,
   correctItems,
   DIFFICULTY_OPTIONS,
   difficultyFromTp,
@@ -38,11 +43,24 @@ import {
 
 const CORRECT_ITEMS = correctItems()
 
-const props = defineProps<{
-  saving: boolean
-  general: string[]
-  fields: Record<string, string>
-}>()
+const props = withDefaults(
+  defineProps<{
+    saving: boolean
+    general: string[]
+    fields: Record<string, string>
+    /** The saved submission of the edit page: every field is preloaded (difficulty, key, DSKP). */
+    initial?: ContributedQuestionDetail
+    submitLabel?: string
+    busyLabel?: string
+    cancelTo?: string
+  }>(),
+  {
+    initial: undefined,
+    submitLabel: 'Hantar untuk Semakan',
+    busyLabel: 'Menyimpan...',
+    cancelTo: '/guru/soalan',
+  },
+)
 const emit = defineEmits<{
   submit: [body: CreateQuestionRequest]
 }>()
@@ -56,6 +74,8 @@ const chapters = ref<ChapterOption[]>([])
 const sps = ref<SpChoice[]>([])
 /** The Bab / SP lists of the chosen pair have been answered (so an empty list means "none exist"). */
 const loaded = reactive({ chapters: false, sps: false })
+/** A lookup that failed: the fields stay required (never "none exist") and the retry box shows. */
+const failed = reactive({ chapters: false, sps: false })
 const seq = { chapters: 0, sp: 0 }
 
 onMounted(async () => {
@@ -75,48 +95,76 @@ const sorted = (list: ChapterOption[]): ChapterOption[] =>
 
 const ready = computed(() => v.levelId !== '' && v.subjectId !== '')
 
+/** Loads the Bab and SP lists of the chosen pair; `restore` re-selects a saved Bab / SP once its list has arrived. */
+function loadPair(restore: { chapterId: string; spId: string } | null): void {
+  seq.chapters++
+  seq.sp++
+  chapters.value = []
+  sps.value = []
+  loaded.chapters = false
+  loaded.sps = false
+  failed.chapters = false
+  failed.sps = false
+  if (!ready.value) return
+  const query = { subjectId: Number(v.subjectId), educationLevelId: Number(v.levelId) }
+  const chapterToken = seq.chapters
+  fetchChapters(query)
+    .then((list) => {
+      if (chapterToken !== seq.chapters) return
+      chapters.value = sorted(list)
+      if (restore && list.some((c) => String(c.id) === restore.chapterId)) {
+        v.chapterId = restore.chapterId
+      }
+    })
+    .catch(() => {
+      if (chapterToken === seq.chapters) failed.chapters = true
+    })
+    .finally(() => {
+      if (chapterToken === seq.chapters) loaded.chapters = true
+    })
+  const spToken = seq.sp
+  fetchSpChoices(query)
+    .then((list) => {
+      if (spToken !== seq.sp) return
+      sps.value = list
+      if (restore && list.some((s) => String(s.id) === restore.spId)) v.spId = restore.spId
+    })
+    .catch(() => {
+      if (spToken === seq.sp) failed.sps = true
+    })
+    .finally(() => {
+      if (spToken === seq.sp) loaded.sps = true
+    })
+}
+
+/** The edit preload sets the pair itself and loads the lists with the saved Bab / SP to restore. */
+let preloaded = false
 watch(
   () => [v.levelId, v.subjectId] as const,
   () => {
+    if (preloaded) {
+      preloaded = false
+      return
+    }
     v.chapterId = ''
     v.spId = ''
-    seq.chapters++
-    seq.sp++
-    chapters.value = []
-    sps.value = []
-    loaded.chapters = false
-    loaded.sps = false
-    if (!ready.value) return
-    const query = { subjectId: Number(v.subjectId), educationLevelId: Number(v.levelId) }
-    const chapterToken = seq.chapters
-    fetchChapters(query)
-      .then((list) => {
-        if (chapterToken === seq.chapters) chapters.value = sorted(list)
-      })
-      .catch(() => undefined)
-      .finally(() => {
-        if (chapterToken === seq.chapters) loaded.chapters = true
-      })
-    const spToken = seq.sp
-    fetchSpChoices(query)
-      .then((list) => {
-        if (spToken === seq.sp) sps.value = list
-      })
-      .catch(() => undefined)
-      .finally(() => {
-        if (spToken === seq.sp) loaded.sps = true
-      })
+    loadPair(null)
   },
 )
 
-/** D112: what the lookups found for the chosen Subjek + Tingkatan. */
+const lookupFailed = computed(() => failed.chapters || failed.sps)
+const retryLookups = (): void => loadPair({ chapterId: v.chapterId, spId: v.spId })
+
+/** D112: what the lookups found for the chosen Subjek + Tingkatan (a failed lookup keeps its fields required). */
 const ctx = computed(() => ({
-  hasChapters: chapters.value.length > 0,
-  hasDskpNodes: sps.value.length > 0,
+  hasChapters: chapters.value.length > 0 || failed.chapters,
+  hasDskpNodes: sps.value.length > 0 || failed.sps,
 }))
 const need = computed(() => dskpRequired(ctx.value))
-const noChapters = computed(() => ready.value && loaded.chapters && chapters.value.length === 0)
-const noSps = computed(() => ready.value && loaded.sps && sps.value.length === 0)
+const noChapters = computed(
+  () => ready.value && loaded.chapters && !failed.chapters && chapters.value.length === 0,
+)
+const noSps = computed(() => ready.value && loaded.sps && !failed.sps && sps.value.length === 0)
 const star = (on: boolean): string => (on ? ' *' : '')
 
 const chapterOptions = computed(() =>
@@ -138,6 +186,26 @@ watch(
 function pickDifficulty(value: string | number): void {
   difficultyTouched.value = true
   v.difficulty = String(value)
+}
+
+// --- edit: preload every saved field ----------------------------------------------------------
+if (props.initial) {
+  const q = props.initial
+  difficultyTouched.value = true
+  v.levelId = q.educationLevelId === null ? '' : String(q.educationLevelId)
+  v.subjectId = q.subjectId === null ? '' : String(q.subjectId)
+  preloaded = v.levelId !== '' || v.subjectId !== ''
+  v.tp = q.tp === null ? '' : String(q.tp)
+  v.cognitiveLevel = q.cognitiveLevel ?? ''
+  v.difficulty = q.difficultyLevel >= 1 && q.difficultyLevel <= 5 ? String(q.difficultyLevel) : ''
+  v.questionText = q.questionText
+  v.options = Array.from({ length: 4 }, (_, i) => q.options[i] ?? '')
+  v.correct = q.correctAnswer
+  v.explanation = q.explanation ?? ''
+  loadPair({
+    chapterId: q.chapterId === null ? '' : String(q.chapterId),
+    spId: q.spIds[0] === undefined ? '' : String(q.spIds[0]),
+  })
 }
 
 // --- question text, keyboard, preview --------------------------------------------------------
@@ -316,6 +384,14 @@ async function submit(): Promise<void> {
 
     <!-- Pemetaan DSKP (D112: required only where the Subjek + Tingkatan has chapters / DSKP nodes) -->
     <DsFormSection title="Pemetaan DSKP" icon="book-open" accent="win" data-testid="dskp-card">
+      <DsLoadError
+        v-if="lookupFailed"
+        :message="COPY.loadFailed"
+        :retry-label="COPY.retry"
+        variant="inline"
+        testid="dskp-lookup-error"
+        @retry="retryLookups"
+      />
       <div class="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2">
         <div class="min-w-0">
           <label for="q-chapter" class="mb-2 block text-label text-highlighted"
@@ -532,7 +608,7 @@ async function submit(): Promise<void> {
 
     <div class="flex items-center justify-between gap-3">
       <UButton
-        to="/guru/soalan"
+        :to="cancelTo"
         color="neutral"
         variant="ghost"
         icon="i-ph-x"
@@ -547,7 +623,7 @@ async function submit(): Promise<void> {
         :icon="saving ? undefined : 'i-ph-paper-plane-tilt-duotone'"
         class="min-h-11"
         data-testid="form-submit"
-        >{{ saving ? 'Menyimpan...' : 'Hantar untuk Semakan' }}</UButton
+        >{{ saving ? busyLabel : submitLabel }}</UButton
       >
     </div>
   </form>

@@ -29,7 +29,6 @@ import type {
   JoinedClass,
   QuestionPaper,
   QuestionPaperRequest,
-  RajahGallery,
   RemedialProgress,
   StudentQuestionSet,
   SkOption,
@@ -233,22 +232,30 @@ export function fetchContributedQuestions(
 }
 
 /**
- * #53 `POST /api/guru/questions` (API-GUR-18): one MCQ submitted as a `source = guru` intake item,
- * shown as "Menunggu Semakan". JSON only (the teacher flow has no image fields). The contract ids are
- * opaque strings (`idWith` / `idOrBlank`): http mode sends them as strings (a number is 422 "Sila pilih
- * tingkatan." etc., SW7-08). null stays null, undefined absent.
+ * The wire body of #53 / #55 (the same form): the contract ids are opaque strings (`GuruId`, `idOrBlank`), so http
+ * mode sends `educationLevelId`, `subjectId`, `chapterId` and `spIds` as strings (a number is 422 "Sila pilih
+ * tingkatan." etc., SW7-08). null stays null, undefined stays absent.
  */
-export function createContributedQuestion(
-  body: CreateQuestionRequest,
-): Promise<ContributedQuestionDetail> {
-  const wired = {
+function wireQuestionBody(body: CreateQuestionRequest) {
+  return {
     ...body,
     educationLevelId: wireId(body.educationLevelId),
     subjectId: wireId(body.subjectId),
     ...(body.chapterId !== undefined ? { chapterId: wireIdOpt(body.chapterId) } : {}),
     ...(body.spIds !== undefined ? { spIds: body.spIds.map((id) => wireId(id)) } : {}),
   }
-  return api.post<ContributedQuestionDetail>('/api/guru/questions', { body: wired })
+}
+
+/**
+ * #53 `POST /api/guru/questions` (API-GUR-18): one MCQ submitted as a `source = guru` intake item,
+ * shown as "Menunggu Semakan". JSON only (the teacher flow has no image fields).
+ */
+export function createContributedQuestion(
+  body: CreateQuestionRequest,
+): Promise<ContributedQuestionDetail> {
+  return api.post<ContributedQuestionDetail>('/api/guru/questions', {
+    body: wireQuestionBody(body),
+  })
 }
 
 /** #54 `GET /api/guru/questions/:id` (404 when not own). */
@@ -267,7 +274,9 @@ export function updateContributedQuestion(
   id: number,
   body: UpdateQuestionRequest,
 ): Promise<ContributedQuestionDetail> {
-  return api.put<ContributedQuestionDetail>(`/api/guru/questions/${String(id)}`, { body })
+  return api.put<ContributedQuestionDetail>(`/api/guru/questions/${String(id)}`, {
+    body: wireQuestionBody(body),
+  })
 }
 
 /** #56 `DELETE /api/guru/questions/:id` (404 when not own). */
@@ -306,15 +315,7 @@ export function fetchMyQuestionSets(options: Signal = {}): Promise<ListResult<St
   return api.list<StudentQuestionSet>('/api/set-soalan-saya', withSignal(options))
 }
 
-// --- gallery, question papers, Audio KBAT templates (S21, S22) --------------------------------
-
-/** #59 `GET /api/guru/galeri-rajah`: always empty (DV-M10-09); `?folder=` answers `{images: []}`. */
-export function fetchRajahGallery(folder?: string, options: Signal = {}): Promise<RajahGallery> {
-  return api.get<RajahGallery>('/api/guru/galeri-rajah', {
-    query: { folder },
-    ...withSignal(options),
-  })
-}
+// --- question papers, Audio KBAT templates (S21, S22) --------------------------------
 
 /**
  * #60 `POST /api/guru/question-papers` (API-GUR-17; multipart; 422 with `fields`): a paper for the
@@ -329,7 +330,7 @@ export function submitQuestionPaper(
   for (const [key, value] of Object.entries(body)) {
     if (value !== undefined && value !== '') form.append(key, String(value))
   }
-  for (const f of files) form.append('files[]', f)
+  for (const f of files) form.append('files', f)
   return api.multipart<QuestionPaper>('/api/guru/question-papers', form)
 }
 

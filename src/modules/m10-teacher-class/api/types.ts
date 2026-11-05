@@ -219,48 +219,40 @@ export type QuestionType = 'mcq'
 export type QuestionStatus = 'pending' | 'approved' | 'rejected'
 export type ScriptType = 'rumi' | 'arab' | 'jawi' | 'mixed'
 
-/** One card of "Soalan Saya" (FN-M10-7.1.8). */
+/** One row of "Soalan Saya": the server `QuestionGuruSummary` (the teacher's own intake item, API-GUR-18). */
 export interface ContributedQuestion {
+  /** The intake item id. */
   id: number
   questionType: QuestionType
   questionText: string
   subjectId: number | null
   subjectName: string
   educationLevelId: number | null
-  /** M03 level name ("Darjah 6"). */
   levelName: string
   /** Kesukaran 1 (Sangat mudah) to 5 (Sangat sukar); never derived from TP. */
   difficultyLevel: number
+  difficultyLabel: string
   dskpTagged: boolean
   status: QuestionStatus
+  /** "Menunggu Semakan" / "Diluluskan" / "Ditolak". */
+  statusLabel: string
   /** The admin's reason of a `rejected` item ("Sebab: {reason}"); `null` otherwise. */
   rejectionReason: string | null
   /** Edit and Padam show only when true (a rejected item can be editable). */
   editable: boolean
-  isActive: boolean
-  options: string[] | null
-  /** Index 0–3 of the correct option (MCQ). */
-  correctAnswer: number | null
+  options: string[]
+  /** Index 0–3 of the correct option. */
+  correctAnswer: number
   explanation: string | null
-  /** Source shown in the open card (`sourceSet`, else `sourceType`), or `null`. */
-  source: string | null
   createdAt: string
 }
 
-/** #54: the summary plus the S23 / S24 fields and the usage statistics. */
+/** The detail: the server `QuestionGuruDetail` (the summary plus the DSKP fields of 44-F1). */
 export interface ContributedQuestionDetail extends ContributedQuestion {
-  questionImage: string | null
-  optionImages: (string | null)[]
-  language: 'bm' | 'en'
-  scriptType: ScriptType
-  textDirection: 'ltr' | 'rtl'
-  /** DSKP fields of 44-F1; `null` / empty when the item was sent without them. */
   chapterId: number | null
   spIds: number[]
   tp: number | null
   cognitiveLevel: string | null
-  /** Kali Digunakan / Jawab Betul / Ketepatan (FN-M10-7.3.3). */
-  usage: { attempts: number; correct: number; accuracy: number }
 }
 
 /** #53 request (API-GUR-18 `QuestionGuruCreateRequest`, camelCase). MCQ only. */
@@ -284,19 +276,10 @@ export interface CreateQuestionRequest {
   tp?: number | null
   /** Aras Pemikiran (OPT-ARAS); required iff DSKP nodes exist. */
   cognitiveLevel?: string | null
-  scriptType?: ScriptType
 }
 
-/** #55 request. */
-export interface UpdateQuestionRequest {
-  questionText: string
-  /** Kesukaran 1 to 5; the edit form preselects the saved value. */
-  difficultyLevel?: number
-  /** MCQ only: `id` is the option index 0–3. */
-  options?: { id: number; optionText: string }[]
-  correctOptionId?: number
-  explanation?: string | null
-}
+/** #55 request: the same form and body as the create (the edit form sends every field). */
+export type UpdateQuestionRequest = CreateQuestionRequest
 
 export interface ImportFailure {
   /** Spreadsheet row number (the header is row 1). */
@@ -346,12 +329,6 @@ export interface StudentQuestionSet {
 // ---------------------------------------------------------------------------------------------
 // #59, #60 gallery and question papers (S21, S22)
 // ---------------------------------------------------------------------------------------------
-
-/** #59: always empty (DV-M10-09); `images` answers a `?folder=` request. */
-export interface RajahGallery {
-  folders?: never[]
-  images?: never[]
-}
 
 /** OPT-JENIS-HANTARAN stored slugs (the labels are in `paper-rules.ts`). */
 export type PaperType =

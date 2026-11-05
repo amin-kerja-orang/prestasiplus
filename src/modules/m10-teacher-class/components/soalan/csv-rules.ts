@@ -105,8 +105,14 @@ export const countDataRows = (text: string): number => Math.max(0, parseCsvRecor
 export const validateCsvRows = (text: string): string | null =>
   countDataRows(text) > CSV_LIMITS.rows ? CSV_MESSAGES.tooManyRows : null
 
-const cell = (value: string): string =>
-  /[",\r\n]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value
+/**
+ * One cell of the error file. A cell that starts with `=`, `+`, `-` or `@` is prefixed with `'` so a spreadsheet never runs
+ * it as a formula (CSV injection); the cell is quoted when it holds a comma, a quote or a line break.
+ */
+export function csvCell(value: string): string {
+  const safe = /^[=+\-@]/.test(value) ? `'${value}` : value
+  return /[",\r\n]/.test(safe) ? `"${safe.replaceAll('"', '""')}"` : safe
+}
 
 /** `ralat-import-{yyyymmdd}.csv` for a date (local time). */
 export function errorFileName(date: Date): string {
@@ -115,17 +121,16 @@ export function errorFileName(date: Date): string {
 }
 
 /**
- * The error file: columns Baris, Sebab, then the original columns. Each failed row keeps its uploaded text; a row
- * the text does not hold gets empty original cells.
+ * The error file: columns Baris, Sebab, then the original columns. Each failed row keeps its uploaded cells (formula
+ * starters neutralised, see `csvCell`); a row the text does not hold gets empty original cells.
  */
 export function buildErrorCsv(text: string, errors: readonly ImportFailure[]): string {
   const records = parseCsvRecords(text)
-  const header = records[0]
   const byLine = new Map(records.map((r) => [r.line, r]))
-  const lines = [`Baris,Sebab,${header ? header.raw : ''}`.replace(/,$/, '')]
+  const line = (cells: readonly string[]): string => cells.map(csvCell).join(',')
+  const lines = [line(['Baris', 'Sebab', ...(records[0]?.cells ?? [])])]
   for (const e of errors) {
-    const rec = byLine.get(e.row)
-    lines.push(`${String(e.row)},${cell(e.message)}${rec ? `,${rec.raw}` : ''}`)
+    lines.push(line([String(e.row), e.message, ...(byLine.get(e.row)?.cells ?? [])]))
   }
-  return `﻿${lines.join('\r\n')}\r\n`
+  return `\uFEFF${lines.join('\r\n')}\r\n`
 }

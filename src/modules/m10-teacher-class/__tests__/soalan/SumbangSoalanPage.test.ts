@@ -397,22 +397,6 @@ describe('S21 Hantar Kertas', () => {
   })
 })
 
-const TITLES = [
-  'Soalan & Rujukan',
-  'Soalan Berstruktur',
-  'Soalan Gambar Rajah',
-  'Databank Soalan',
-  'Set Soalan',
-  'Kertas Peperiksaan',
-]
-const CAPTIONS = [
-  'Soalan peribadi + rujukan',
-  'Soalan subjektif & esei',
-  'Soalan perlu gambar rajah',
-  'Layari bank soalan SPM',
-  'Cipta set soalan kustom',
-  'Muat naik & kongsi kertas',
-]
 const TOOLS = [
   '/guru/soalan-guru',
   '/guru/soalan-berstruktur',
@@ -427,18 +411,21 @@ describe('Alat Soalan (FR-GUR-44-8, AC-GUR-44-9, D-T06-1)', () => {
     router = makeRouter(TOOLS)
     const w = await mountPage()
     const tiles = all(w, 'alat-tile')
-    const titles = tiles.map((x) => x.text())
-    expect(tiles.map((x) => x.find('a').text().split('\n')[0]?.trim() ?? '')).toBeDefined()
-    expect(titles.map((x, i) => x.startsWith(TITLES[i] ?? '?'))).not.toContain(false)
-    expect(TITLES).toEqual([
-      'Soalan & Rujukan',
-      'Soalan Berstruktur',
-      'Soalan Gambar Rajah',
-      'Databank Soalan',
-      'Set Soalan',
-      'Kertas Peperiksaan',
-    ])
-    expect(titles.map((x, i) => x.endsWith(CAPTIONS[i] ?? '?'))).not.toContain(false)
+    const expected = [
+      ['Soalan & Rujukan', 'Soalan peribadi + rujukan'],
+      ['Soalan Berstruktur', 'Soalan subjektif & esei'],
+      ['Soalan Gambar Rajah', 'Soalan perlu gambar rajah'],
+      ['Databank Soalan', 'Layari bank soalan SPM'],
+      ['Set Soalan', 'Cipta set soalan kustom'],
+      ['Kertas Peperiksaan', 'Muat naik & kongsi kertas'],
+    ] as const
+    expect(tiles).toHaveLength(6)
+    expected.forEach(([title, caption], i) => {
+      const text = tiles[i]!.text()
+      expect(text, title).toContain(title)
+      expect(text, caption).toContain(caption)
+      expect(text.indexOf(title)).toBeLessThan(text.indexOf(caption))
+    })
     expect(tiles.map((x) => x.find('a').attributes('href'))).toEqual(TOOLS)
     expect(t(w, 'alat-soalan').text()).toContain('Alat Soalan')
   })

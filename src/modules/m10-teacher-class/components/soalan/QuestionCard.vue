@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
  * One card of "Soalan Saya" (44-F2; FR-M10-96, 97; FR-GUR-44-10). Clicking the head toggles it open:
- * the question, options "A." … "D." (correct highlighted), "Penjelasan", footer "#{id}", source and
- * "Aktif", and the actions "Edit" (→ S24) and "Padam" (the owner confirms and deletes), which show only
+ * the question, options "A." … "D." (correct highlighted), "Penjelasan", footer "#{id}"
+ * and the actions "Edit" (→ S24) and "Padam" (the owner confirms and deletes), which show only
  * while the server says the item is `editable`. The status chip says Menunggu Semakan / Diluluskan / Ditolak and a
  * rejected item shows "Sebab: {reason}".
  */
@@ -125,16 +125,6 @@ const open = ref(false)
           <div class="flex flex-wrap items-center gap-3 text-caption text-muted">
             <span class="inline-flex items-center gap-1" data-testid="question-id">
               <UIcon name="i-ph-hash" class="size-4" />{{ question.id }}
-            </span>
-            <span v-if="question.source" class="inline-flex items-center gap-1 break-all">
-              <UIcon name="i-ph-database-duotone" class="size-4" />{{ question.source }}
-            </span>
-            <span class="inline-flex items-center gap-1">
-              <UIcon
-                :name="question.isActive ? 'i-ph-eye-duotone' : 'i-ph-eye-slash-duotone'"
-                class="size-4"
-              />
-              {{ question.isActive ? 'Aktif' : 'Tidak Aktif' }}
             </span>
           </div>
           <div v-if="question.editable" class="flex gap-2" data-testid="question-actions">

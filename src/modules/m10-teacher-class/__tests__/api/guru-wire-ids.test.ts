@@ -159,7 +159,6 @@ describe('createContributedQuestion wire ids', () => {
     questionText: 'Soalan ujian?',
     options: ['a', 'b', 'c', 'd'],
     correctAnswer: 1,
-    scriptType: 'rumi',
     spIds: [7],
     chapterId: 12,
     tp: 3,

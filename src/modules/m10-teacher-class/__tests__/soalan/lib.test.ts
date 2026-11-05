@@ -7,7 +7,6 @@ import {
   DIFFICULTY_OPTIONS,
   difficultyFromTp,
   fileKind,
-  isLoadableImage,
   isRtlScript,
   megabytes,
   rejectionLine,
@@ -37,12 +36,6 @@ describe('S21-S24 helpers', () => {
     expect(isRtlScript('mixed')).toBe(false)
     expect(isRtlScript('rumi')).toBe(false)
   })
-
-  it('never loads a mock blob reference', () => {
-    expect(isLoadableImage('blob:mock/question/a.png')).toBe(false)
-    expect(isLoadableImage(null)).toBe(false)
-    expect(isLoadableImage('https://x/y.png')).toBe(true)
-  })
 })
 
 describe('buildBody (44-F1, MCQ only)', () => {
@@ -66,6 +59,7 @@ describe('buildBody (44-F1, MCQ only)', () => {
       options: ['a', 'b', 'c', 'd'],
       correctAnswer: 2,
     })
+    expect(body).not.toHaveProperty('scriptType')
     expect(body.chapterId).toBeUndefined()
     expect(body.spIds).toBeUndefined()
     expect(body.tp).toBeUndefined()
@@ -87,8 +81,8 @@ describe('buildBody (44-F1, MCQ only)', () => {
       tp: 3,
       cognitiveLevel: 'mengaplikasi',
       explanation: 'Sebab',
-      scriptType: 'jawi',
     })
+    expect(body).not.toHaveProperty('scriptType')
   })
 })
 

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildErrorCsv,
   countDataRows,
+  csvCell,
   errorFileName,
   parseCsvRecords,
   validateCsvFile,
@@ -87,6 +88,25 @@ describe('csv rules (44-F3)', () => {
     expect(csv.replace('﻿', '')).toBe(
       'Baris,Sebab,subjek,soalan\r\n3,"Jawapan mesti A, B, C atau D.",B,s2\r\n',
     )
+  })
+
+  it('neutralises formula starters in the original cells and the reason (CSV injection)', () => {
+    const text = 'subjek,soalan\n=HYPERLINK("x"),+1\n@a,-2\nok,"=1,2"\n'
+    const csv = buildErrorCsv(text, [
+      { row: 2, message: 'Bab tidak dijumpai: =cmd' },
+      { row: 3, message: 'x' },
+      { row: 4, message: 'y' },
+    ]).replace('\uFEFF', '')
+    expect(csv.split('\r\n')).toEqual([
+      'Baris,Sebab,subjek,soalan',
+      '2,Bab tidak dijumpai: =cmd,"\'=HYPERLINK(""x"")",\'+1',
+      "3,x,'@a,'-2",
+      '4,y,ok,"\'=1,2"',
+      '',
+    ])
+    expect(csvCell('=1')).toBe("'=1")
+    expect(csvCell('plain')).toBe('plain')
+    expect(csvCell('-5')).toBe("'-5")
   })
 
   it('names the error file ralat-import-yyyymmdd.csv', () => {

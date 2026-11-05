@@ -15,6 +15,7 @@ export interface QuestionFormValues {
   cognitiveLevel: string
   /** Kesukaran 1 to 5 as text; '' = not chosen. */
   difficulty: string
+  /** "Jenis Tulisan": a local typing aid (RTL input, keyboard); the server does not store it, so it is never sent. */
   scriptType: ScriptType
   questionText: string
   options: string[]
@@ -48,7 +49,6 @@ export function buildBody(v: QuestionFormValues): CreateQuestionRequest {
     questionType: 'mcq',
     difficultyLevel: Number(v.difficulty),
     questionText: v.questionText,
-    scriptType: v.scriptType,
     options: [...v.options],
     correctAnswer: v.correct ?? 0,
   }
