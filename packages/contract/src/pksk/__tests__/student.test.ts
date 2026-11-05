@@ -111,7 +111,8 @@ describe('student responses produced by the mock parse', () => {
 
   it('M07-02 the 15 domains', async () => {
     const r = await call('GET', '/api/pksk-domains', ids.noAccess)
-    const parsed = z.array(PkskDomainSchema).parse(data(r))
+    // Deviation: the FE mock does not ship questionCount (the API does).
+    const parsed = z.array(PkskDomainSchema).parse((data(r) as object[]).map((d) => ({ questionCount: 0, ...d })))
     expect(parsed).toHaveLength(15)
     expect(parsed.map((d) => d.code)).toEqual([...PKSK_DOMAIN_CODES])
   })
@@ -169,8 +170,26 @@ describe('student responses produced by the mock parse', () => {
     // Deviation: the mock session id is not a uuid (v2 uses the M05 uuid, PracticeSessionIdSchema).
     const mockData = data(r) as { sessionId: string }
     expect(typeof mockData.sessionId).toBe('string')
-    const res = PkskPracticeResultSchema.parse({ ...mockData, sessionId: '0b8f7c64-2f0e-4c58-9a57-5f5d6f6f1a10' })
+    const res = PkskPracticeResultSchema.parse({ correct: 10, total: 10, review: [], ...mockData, sessionId: '0b8f7c64-2f0e-4c58-9a57-5f5d6f6f1a10' })
     expect(res.masteryPct).toBe(100)
+  })
+
+  it('M07-07 result: correct, total and review shapes', () => {
+    const base = {
+      masteryPct: 50,
+      sessionId: '0b8f7c64-2f0e-4c58-9a57-5f5d6f6f1a10',
+      correct: 1,
+      total: 2,
+      gamification: { coinsEarned: 1, pointsEarned: 1, streakCount: 1, totalBalance: 1 },
+    }
+    const review = [
+      { questionId: '1', selectedIndex: 0, correctIndex: 0, isCorrect: true, explanation: 'Sebab.' },
+      { questionId: '2', selectedIndex: null, correctIndex: null, isCorrect: false, explanation: null },
+    ]
+    expect(PkskPracticeResultSchema.safeParse({ ...base, review }).success).toBe(true)
+    expect(PkskPracticeResultSchema.safeParse({ ...base, review: undefined }).success).toBe(false)
+    expect(PkskPracticeResultSchema.safeParse({ ...base, correct: -1, review }).success).toBe(false)
+    expect(PkskPracticeResultSchema.safeParse({ ...base, review: [{ ...review[0], isCorrect: 'x' }] }).success).toBe(false)
   })
 
   it('M07-09 exam submit: 201 body parses', async () => {
