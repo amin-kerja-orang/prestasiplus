@@ -9,6 +9,10 @@ import {
   QUESTION_IMPORT_REQUIRED_COLUMNS,
   QUESTION_IMPORT_ROW_MESSAGES as MSG,
   QUESTION_KBAT_LEVELS,
+  MCQ_MULTI_COUNT_MESSAGE,
+  QuestionLeafPartV3Schema,
+  QuestionTrueFalseLeafSchema,
+  TRUE_FALSE_OPTIONS,
   neutraliseQuestionImportCsvCell,
   questionImportRowPrefix,
   type QuestionImportErrorCode,
@@ -295,8 +299,8 @@ export function planImport(
 // --- the new (code) header ---------------------------------------------------------------------
 
 const KNOWN_CODE_COLUMNS: ReadonlySet<string> = new Set<string>([...QUESTION_IMPORT_CODE_HEADER, ...QUESTION_IMPORT_CODE_ALIAS_COLUMNS])
-/** Types of the Q-11 list: only `mcq` is read in part 1, the rest go through the Studio wizard for now. */
-const OTHER_Q11_TYPES: ReadonlySet<string> = new Set(['mcq_multi', 'true_false', 'match', 'short_answer', 'fill_blank', 'structured', 'working', 'essay', 'drawing', 'table_fill', 'essay_choice'])
+/** Types of the Q-11 list: `mcq`, `mcq_multi` and `true_false` are read (S1-T05 parts 1 and 5a), the rest go through the Studio wizard for now. */
+const OTHER_Q11_TYPES: ReadonlySet<string> = new Set(['match', 'short_answer', 'fill_blank', 'structured', 'working', 'essay', 'drawing', 'table_fill', 'essay_choice'])
 const COGNITIVE: ReadonlySet<string> = new Set(QUESTION_COGNITIVE_LEVELS)
 const KBAT: ReadonlySet<string> = new Set([...QUESTION_KBAT_LEVELS, 'bukan'])
 const OPTION_LETTERS = 'ABCDEFGH'
@@ -365,8 +369,10 @@ function planCodeRows(
     } else lastKey = null
 
     const type = get('type').toLowerCase()
-    if (type === '' || (type !== 'mcq' && !OTHER_Q11_TYPES.has(type))) bad('type', 'TYPE_INVALID', CODE_MSG.typeInvalid)
-    else if (type !== 'mcq') bad('type', 'TYPE_STUDIO_ONLY', CODE_MSG.typeStudio)
+    const isTf = type === 'true_false'
+    const isMulti = type === 'mcq_multi'
+    if (type === '' || (type !== 'mcq' && !isTf && !isMulti && !OTHER_Q11_TYPES.has(type))) bad('type', 'TYPE_INVALID', CODE_MSG.typeInvalid)
+    else if (type !== 'mcq' && !isTf && !isMulti) bad('type', 'TYPE_STUDIO_ONLY', CODE_MSG.typeStudio)
 
     // Prompt, options, key, marks.
     const stem = get('prompt_ms')
@@ -374,12 +380,26 @@ function planCodeRows(
     else if ([...stem].length > textMax) bad('prompt_ms', 'PROMPT_LONG', MSG.textTooLong)
     const texts = [...OPTION_LETTERS].map((l) => get(`option_${l.toLowerCase()}`))
     const filled = texts.findLastIndex((t) => t !== '') + 1
-    if (texts[0] === '' || texts[1] === '' || texts.slice(0, filled).some((t) => t === '')) bad('option_a', 'OPTIONS_BLANK', CODE_MSG.optionsBlank)
-    else if (filled < MIN_OPTIONS) bad('option_c', 'OPTIONS_MIN', MIN_OPTIONS_MESSAGE)
-    if (texts.some((o) => [...o].length > optionMax)) bad('option_a', 'OPTION_LONG', MSG.optionTooLong)
     const correct = get('correct').toUpperCase()
-    const correctAt = /^[A-H]$/.test(correct) ? correct.charCodeAt(0) - 65 : -1
-    if (correctAt < 0 || correctAt >= filled || texts[correctAt] === '') bad('correct', 'CORRECT_REQUIRED', CODE_MSG.correctRequired)
+    // `mcq_multi`: letters separated by `;`, de-duplicated (the leaf schema refuses a repeated id).
+    const multiIds = isMulti ? [...new Set(correct.split(';').map((c) => c.trim()).filter((c) => c !== ''))] : []
+    if (isTf) {
+      // `true_false`: the option cells stay empty (30 Q-11); the PRD has no text for a filled one, so the contract's "Jenis soalan tidak sah." is used.
+      if (filled > 0) bad('option_a', 'TYPE_INVALID', CODE_MSG.typeInvalid)
+      if (!['BETUL', 'SALAH'].includes(correct)) bad('correct', 'CORRECT_REQUIRED', CODE_MSG.correctRequired)
+    } else {
+      if (texts[0] === '' || texts[1] === '' || texts.slice(0, filled).some((t) => t === '')) bad('option_a', 'OPTIONS_BLANK', CODE_MSG.optionsBlank)
+      else if (filled < MIN_OPTIONS) bad('option_c', 'OPTIONS_MIN', MIN_OPTIONS_MESSAGE)
+      if (texts.some((o) => [...o].length > optionMax)) bad('option_a', 'OPTION_LONG', MSG.optionTooLong)
+      if (isMulti) {
+        if (multiIds.length === 0 || multiIds.some((l) => !/^[A-H]$/.test(l) || l.charCodeAt(0) - 65 >= filled || texts[l.charCodeAt(0) - 65] === '')) {
+          bad('correct', 'CORRECT_REQUIRED', CODE_MSG.correctRequired)
+        } else if (multiIds.length > filled - 1) bad('correct', 'CORRECT_REQUIRED', MCQ_MULTI_COUNT_MESSAGE)
+      } else {
+        const correctAt = /^[A-H]$/.test(correct) ? correct.charCodeAt(0) - 65 : -1
+        if (correctAt < 0 || correctAt >= filled || texts[correctAt] === '') bad('correct', 'CORRECT_REQUIRED', CODE_MSG.correctRequired)
+      }
+    }
     const marksCell = get('marks')
     const marks = toInt(marksCell)
     if (marks === null || marks < 1) bad('marks', 'MARKS_MIN', CODE_MSG.marksMin)
@@ -472,6 +492,32 @@ function planCodeRows(
     const difficulty = diffCell === '' ? (defaults.difficultyLevel ?? (tp === null ? null : Math.min(5, tp))) : toInt(diffCell)
     if (difficulty === null || difficulty < 1 || difficulty > 5) bad('difficulty', 'DIFFICULTY_INVALID', CODE_MSG.difficulty)
 
+    // `true_false` / `mcq_multi`: build the V3 leaf and judge it with the contract's own schema (no second validator, Q74).
+    let built: { parts: unknown[]; options: { label: string; text: string }[]; correctLabel: string } | null = null
+    if ((isTf || isMulti) && errors.length === 0) {
+      const options = isTf ? TRUE_FALSE_OPTIONS.map((o) => ({ label: o.label, body: { ms: o.body.ms } })) : texts.slice(0, filled).map((t, i) => ({ label: OPTION_LETTERS.charAt(i), body: { ms: t } }))
+      const key = isTf ? { kind: 'option' as const, correct: correct === 'BETUL' ? 'A' : 'B' } : { kind: 'options' as const, correctOptionIds: multiIds }
+      const leaf = {
+        label: '1',
+        prompt: { ms: stem },
+        marks: marks as number,
+        ...(arasCell === '' ? {} : { cognitiveLevel: arasCell }),
+        ...(kbatCell === '' ? {} : { kbat: kbatCell }),
+        mode: 'mcq',
+        options,
+        key,
+        ...(isMulti ? { modeConfig: { multi: true } } : {}),
+      }
+      const checked = (isTf ? QuestionTrueFalseLeafSchema : QuestionLeafPartV3Schema).safeParse(leaf)
+      if (checked.success) {
+        built = {
+          parts: [leaf],
+          options: options.map((o) => ({ label: o.label, text: o.body.ms })),
+          correctLabel: isTf ? (correct === 'BETUL' ? 'A' : 'B') : (multiIds[0] as string),
+        }
+      } else bad('correct', 'CORRECT_REQUIRED', checked.error.issues[0]?.message ?? CODE_MSG.correctRequired)
+    }
+
     if (errors.length > 0) {
       plan.failedQuestions++
       for (const e of errors) {
@@ -492,8 +538,9 @@ function planCodeRows(
       questionKey: key.slice(0, KEY_MAX),
       input: {
         stemMs: stem,
-        options: texts.slice(0, filled).map((t, i) => ({ label: OPTION_LETTERS.charAt(i), text: t })),
-        correctLabel: correct,
+        options: built ? built.options : texts.slice(0, filled).map((t, i) => ({ label: OPTION_LETTERS.charAt(i), text: t })),
+        correctLabel: built ? built.correctLabel : correct,
+        ...(built ? { questionType: type as 'true_false' | 'mcq_multi', parts: built.parts } : {}),
         subjectId: subjectId as string,
         educationLevelId: levelId as string,
         difficultyLevel: difficulty as number,
