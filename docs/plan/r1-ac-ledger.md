@@ -74,6 +74,7 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
 | S1-T05 | AC-QA-34 | CI | Pass | 2026-11-05 | team-aa/S-3 | imports.spec.ts::[CI] the 2,000-row cap is admin-only: the Guru route refuses more than 500 rows with "Fail melebihi 500 baris." for every header, the admin route 2,001 rows with the 2,000 message; imports-csv.spec.ts::[CI] more than 2,000 data rows refuses the file whole (both formats); 2,000 is accepted |
+| S4-T06 | AC-X3-1 | CI | Pass | 2026-11-05 | team-bb/S-3 | bab-mode-t1.spec.ts::AC-X3-1 T1 pupil: per-level subjects with counts (MATH 5, BM 2 at T1; BI has none and is left out, a per-subject empty state); AC-X3-1 T1 pupil: the MATH detail for the level lists its chapters with counts; AC-X3-1 T1 pupil: starting practice from a T1 Bab returns 201 with questions of that chapter (T5 parity tests in the same file; the UAT half, T1 pupil at 375/768/1280 on UAT after S4-T09 and U-OP-12, stays open) |
 
 ## Sprint 3
 
