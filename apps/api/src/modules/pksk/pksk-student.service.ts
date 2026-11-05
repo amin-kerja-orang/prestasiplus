@@ -124,10 +124,11 @@ export class PkskStudentService {
     const domain = await this.domains.byCode(code)
     if (!domain) throw ApiError.of('NOT_FOUND')
     const pool = this.shuffle(await this.questions.approvedPool(level, [domain.code]))
-    await this.progress.markLoaded(actor.userId, level, domain.id, now)
+    const set = pool.slice(0, PRACTICE_SIZE)
+    await this.progress.markLoaded(actor.userId, level, domain.id, now, set.map((q) => q.id))
     return {
       domain: { id: domain.id, code: domain.code as PkskDomain['code'], name: domain.name, bahagian: domain.bahagian },
-      questions: pool.slice(0, PRACTICE_SIZE).map(served),
+      questions: set.map(served),
     }
   }
 
@@ -158,13 +159,18 @@ export class PkskStudentService {
     const masteryPct = Math.round((scored.filter((s) => s.isCorrect).length / scored.length) * 100)
     const correctCount = scored.filter((s) => s.isCorrect).length
     return this.write(async () => {
+      // Only the served set, and only once: no open set, or an id that was not served, is refused before anything is
+      // scored, stored or revealed (the delete of the load rolls back with the refusal).
       const loaded = await this.progress.takeLoaded(actor.userId, level, domain.id)
+      if (loaded === null) throw invalidAnswers()
+      const servedIds = new Set(loaded.servedIds)
+      if (!answers.every((a) => servedIds.has(a.questionId))) throw invalidAnswers()
       const done = await this.practice.completeDirect({
         userId: actor.userId,
         isTest: actor.isTest,
         domainCode: domain.code,
         level,
-        startedAt: loaded !== null && loaded.getTime() < now.getTime() ? loaded : now,
+        startedAt: loaded.at.getTime() < now.getTime() ? loaded.at : now,
         completedAt: now,
         answers: scored,
       })
@@ -175,6 +181,7 @@ export class PkskStudentService {
         return {
           questionId: s.questionId,
           selectedIndex: domain.bahagian === 'C' ? null : s.optionIndex,
+          // The contract allows one index; a multi-key question reveals its first correct option.
           correctIndex: domain.bahagian === 'C' ? null : (key.correctIndexes[0] ?? null),
           isCorrect: s.isCorrect,
           explanation: key.explanation,

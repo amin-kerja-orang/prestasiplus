@@ -193,7 +193,8 @@ describe('practice submit (AC 7)', () => {
     expect(world.loads).toHaveLength(0)
     expect(world.sessions).toHaveLength(1)
     expect(world.sessions[0]?.startedAt.getTime()).toBeLessThanOrEqual(world.sessions[0]?.completedAt.getTime() as number)
-    // one row per user, level and domain: a second submission updates it
+    // one row per user, level and domain: a second submission (of a new set) updates it
+    await student.practiceSet(STUDENT, 'T1', 'PKSK_MATH')
     await student.submitPractice(STUDENT, 'T1', 'PKSK_MATH', { answers: [{ questionId: qs[0]?.id, optionIndex: 0 }] })
     expect(world.mastery).toHaveLength(1)
     expect(world.mastery[0]?.pct).toBe(100)
@@ -201,13 +202,14 @@ describe('practice submit (AC 7)', () => {
 
   it('a start time after now is clamped to now', async () => {
     const { student, world, qs } = setup()
-    world.loads.push({ userId: '10', level: 'T1', domainId: '2', at: new Date(world.clock.now().getTime() + 3600_000) })
+    world.loads.push({ userId: '10', level: 'T1', domainId: '2', at: new Date(world.clock.now().getTime() + 3600_000), servedIds: qs.map((q) => q.id) })
     await student.submitPractice(STUDENT, 'T1', 'PKSK_MATH', { answers: [{ questionId: qs[0]?.id, optionIndex: 0 }] })
     expect(world.sessions[0]?.startedAt.getTime()).toBe(world.clock.now().getTime())
   })
 
   it('Mod Pelajar stamps the session and mastery as test', async () => {
     const { student, world, qs } = setup()
+    await student.practiceSet({ ...STUDENT, isTest: true }, 'T1', 'PKSK_MATH')
     await student.submitPractice({ ...STUDENT, isTest: true }, 'T1', 'PKSK_MATH', { answers: [{ questionId: qs[0]?.id, optionIndex: 0 }] })
     expect(world.sessions[0]?.isTest).toBe(true)
     expect(world.mastery[0]?.isTest).toBe(true)
@@ -225,8 +227,10 @@ describe('practice submit (AC 7)', () => {
   it('essay: 50 trimmed characters are accepted by the simulated marker', async () => {
     const { student, world } = setup()
     const essay = seedQuestions(world, 'PKSK_ESSAY', 'T1', 1)[0]
+    await student.practiceSet(STUDENT, 'T1', 'PKSK_ESSAY')
     const bad = await student.submitPractice(STUDENT, 'T1', 'PKSK_ESSAY', { answers: [{ questionId: essay?.id, text: 'x'.repeat(49) }] })
     expect(bad.masteryPct).toBe(0)
+    await student.practiceSet(STUDENT, 'T1', 'PKSK_ESSAY')
     const good = await student.submitPractice(STUDENT, 'T1', 'PKSK_ESSAY', { answers: [{ questionId: essay?.id, text: ` ${'x'.repeat(50)} ` }] })
     expect(good.masteryPct).toBe(100)
   })
@@ -297,6 +301,59 @@ describe('exam (AC 8, 9)', () => {
   })
 })
 
+describe('submit only the served set, once (S5-T13 anti-cheat)', () => {
+  const setup = () => {
+    const w = buildWorld()
+    grant(w.world, '10', 'T1')
+    return { ...w, qs: seedQuestions(w.world, 'PKSK_MATH', 'T1', 14) }
+  }
+  const refused = { status: 422, code: 'VALIDATION_ERROR', message: 'Jawapan tidak sah.', fields: { answers: 'Jawapan tidak sah.' } }
+
+  it('no served set: 422 and nothing in the body but the standard error', async () => {
+    const { student, world, qs } = setup()
+    const e = await code(student.submitPractice(STUDENT, 'T1', 'PKSK_MATH', { answers: [{ questionId: qs[0]?.id, optionIndex: 0 }] }))
+    expect(e).toMatchObject(refused)
+    expect(Object.keys(e).sort()).toEqual(['code', 'fields', 'message', 'status'])
+    expect(world.sessions).toHaveLength(0)
+    expect(world.mastery).toHaveLength(0)
+  })
+
+  it('an approved id that was not served is refused with no review or key, and the set stays open', async () => {
+    const { student, world, qs } = setup()
+    const set = await student.practiceSet(STUDENT, 'T1', 'PKSK_MATH')
+    const servedIds = new Set(set.questions.map((q) => q.id))
+    const guessed = qs.find((q) => !servedIds.has(q.id))
+    expect(guessed).toBeDefined()
+    const e = await code(student.submitPractice(STUDENT, 'T1', 'PKSK_MATH', { answers: [{ questionId: guessed?.id, optionIndex: 0 }] }))
+    expect(e).toMatchObject(refused)
+    expect(JSON.stringify(e)).not.toMatch(/review|correctIndex|Penjelasan/)
+    expect(world.sessions).toHaveLength(0)
+    expect(world.loads).toHaveLength(1) // the refusal rolled back the take
+    const ok = await student.submitPractice(STUDENT, 'T1', 'PKSK_MATH', { answers: [{ questionId: set.questions[0]?.id, optionIndex: 0 }] })
+    expect(ok.total).toBe(1)
+  })
+
+  it('a second submit of the same set is refused: no second session, mastery change or coins', async () => {
+    const { student, world } = setup()
+    const set = await student.practiceSet(STUDENT, 'T1', 'PKSK_MATH')
+    const body = { answers: set.questions.map((q) => ({ questionId: q.id, optionIndex: 0 })) }
+    const first = await student.submitPractice(STUDENT, 'T1', 'PKSK_MATH', body)
+    expect(first.review).toHaveLength(10)
+    expect(world.sessions).toHaveLength(1)
+    const again = await code(student.submitPractice(STUDENT, 'T1', 'PKSK_MATH', body))
+    expect(again).toMatchObject(refused)
+    expect(world.sessions).toHaveLength(1)
+    expect(world.loads).toHaveLength(0)
+  })
+
+  it('a normal submit of a subset of the served set still works', async () => {
+    const { student } = setup()
+    const set = await student.practiceSet(STUDENT, 'T1', 'PKSK_MATH')
+    const res = await student.submitPractice(STUDENT, 'T1', 'PKSK_MATH', { answers: set.questions.slice(0, 3).map((q) => ({ questionId: q.id, optionIndex: 0 })) })
+    expect(res).toMatchObject({ total: 3 })
+  })
+})
+
 describe('answer reveal and domain counts (S5-T13)', () => {
   const setup = () => {
     const w = buildWorld()
@@ -306,6 +363,7 @@ describe('answer reveal and domain counts (S5-T13)', () => {
 
   it('submit returns correct, total and a review with the key and the explanation', async () => {
     const { student, qs } = setup()
+    await student.practiceSet(STUDENT, 'T1', 'PKSK_MATH')
     const res = await student.submitPractice(STUDENT, 'T1', 'PKSK_MATH', {
       answers: [
         { questionId: qs[0]?.id, optionIndex: 0 }, // correct
@@ -326,6 +384,7 @@ describe('answer reveal and domain counts (S5-T13)', () => {
     const { student, world } = setup()
     const essay = seedQuestions(world, 'PKSK_ESSAY', 'T1', 1)[0]
     if (essay) essay.explanation = null
+    await student.practiceSet(STUDENT, 'T1', 'PKSK_ESSAY')
     const res = await student.submitPractice(STUDENT, 'T1', 'PKSK_ESSAY', { answers: [{ questionId: essay?.id, text: 'x'.repeat(60) }] })
     expect(res).toMatchObject({ correct: 1, total: 1 })
     expect(res.review).toEqual([{ questionId: essay?.id, selectedIndex: null, correctIndex: null, isCorrect: true, explanation: null }])

@@ -139,6 +139,26 @@ describe('PKSK HTTP (BE-42)', () => {
     }
   })
 
+  it('practice submit takes only the served set, once, against the real load row', async () => {
+    const s = await as('pelajar@demo.test')
+    const extra = seedQuestions(world.world, 'PKSK_SCI', 'T1', 12)
+    const set = (await get(s, '/pksk/levels/T1/domains/PKSK_SCI')).body.data.questions as { id: string }[]
+    const served = new Set(set.map((q) => q.id))
+    const guessed = extra.find((q) => !served.has(q.id))
+    const url = '/pksk/levels/T1/domains/PKSK_SCI/practice-sessions'
+    const bad = await post(s, url, { answers: [{ questionId: guessed?.id, optionIndex: 0 }] })
+    expect(bad.status).toBe(422)
+    expect(bad.body.error.message).toBe('Jawapan tidak sah.')
+    expect(JSON.stringify(bad.body)).not.toMatch(/review|correctIndex|Penjelasan/)
+    const body = { answers: set.map((q) => ({ questionId: q.id, optionIndex: 0 })) }
+    const ok = await post(s, url, body)
+    expect(ok.status, JSON.stringify(ok.body)).toBe(201)
+    expect(ok.body.data.review).toHaveLength(set.length)
+    const again = await post(s, url, body)
+    expect(again.status).toBe(422)
+    expect(again.body.data).toBeUndefined()
+  })
+
   it('admin routes: 403 for a student, packages list for admin', async () => {
     const s = await as('pelajar@demo.test')
     for (const path of ['/admin/pksk-questions', '/admin/pksk-access', '/admin/pksk-access/stats', '/pksk-packages']) expect((await get(s, path)).status, path).toBe(403)

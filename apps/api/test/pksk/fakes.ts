@@ -83,7 +83,7 @@ export interface World {
   questions: StoredQuestion[]
   attempts: { id: string; userId: string; level: PkskLevel; completedAt: Date; scorePct: number; bahagianA: number; bahagianB: number; bahagianC: number; grade: string; isTest: boolean }[]
   mastery: { userId: string; level: PkskLevel; domainId: string; pct: number; isTest: boolean }[]
-  loads: { userId: string; level: PkskLevel; domainId: string; at: Date }[]
+  loads: { userId: string; level: PkskLevel; domainId: string; at: Date; servedIds: string[] }[]
   sessions: PkskPracticeCompletion[]
   audits: Record<string, unknown>[]
   subscribed: Set<string>
@@ -330,17 +330,17 @@ export function buildWorld() {
       else world.mastery.push({ userId, level, domainId, pct, isTest })
       return Promise.resolve()
     },
-    markLoaded: (userId: string, level: PkskLevel, domainId: string, at: Date) => {
+    markLoaded: (userId: string, level: PkskLevel, domainId: string, at: Date, servedIds: readonly string[]) => {
       const row = world.loads.find((m) => m.userId === userId && m.level === level && m.domainId === domainId)
-      if (row) row.at = at
-      else world.loads.push({ userId, level, domainId, at })
+      if (row) Object.assign(row, { at, servedIds: [...servedIds] })
+      else world.loads.push({ userId, level, domainId, at, servedIds: [...servedIds] })
       return Promise.resolve()
     },
     takeLoaded: (userId: string, level: PkskLevel, domainId: string) => {
       const i = world.loads.findIndex((m) => m.userId === userId && m.level === level && m.domainId === domainId)
       if (i < 0) return Promise.resolve(null)
       const [row] = world.loads.splice(i, 1)
-      return Promise.resolve(row?.at ?? null)
+      return Promise.resolve(row ? { at: row.at, servedIds: row.servedIds } : null)
     },
   }
 
