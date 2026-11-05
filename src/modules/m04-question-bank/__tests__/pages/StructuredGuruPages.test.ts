@@ -330,6 +330,22 @@ describe('own submissions in the guru list and detail (S6-T17, ruling B)', () =>
     expect(rows[2]!.get('[data-testid=structured-status-chip]').text()).toBe('Diluluskan')
   })
 
+  it('a g12 row links to a real detail route, and that detail loads the g-id as text', async () => {
+    api.fetchGuruStructuredQuestions.mockResolvedValue(result([submissionRow(12)], 1))
+    const w = await renderList('/guru/soalan-berstruktur', FORM_ROUTES)
+    const href = w.get('[data-testid=structured-view]').attributes('href')
+    expect(href).toBe('/guru/soalan-berstruktur/g12')
+    w.unmount()
+    api.fetchGuruStructuredQuestion.mockResolvedValue({
+      ...detail,
+      id: 'g12',
+      source: 'submission',
+    })
+    const d = await renderDetail('g12')
+    expect(api.fetchGuruStructuredQuestion.mock.calls.at(-1)![0]).toBe('g12')
+    expect(d.find('[data-testid=structured-status]').exists()).toBe(true)
+  })
+
   it('the Edit link is hidden while the edit route is not registered (no dead link)', async () => {
     api.fetchGuruStructuredQuestions.mockResolvedValue(result([submissionRow(1)], 1))
     const w = await renderList()
@@ -421,4 +437,3 @@ describe('own submissions in the guru list and detail (S6-T17, ruling B)', () =>
     expect(w.find('[data-testid=structured-sub]').exists()).toBe(true)
   })
 })
-
