@@ -14,13 +14,32 @@ import { expect, gotoApi, loginViaUi, test } from '../fixtures/api'
 const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 const ROW = '[data-testid="ft-row-permainan"]'
 
-async function put(admin: Page, enabled: boolean): Promise<void> {
-  const res = await admin.request.put('/api/admin/feature-toggles/permainan', {
+async function put(admin: Page, enabled: boolean, key = 'permainan'): Promise<void> {
+  const res = await admin.request.put(`/api/admin/feature-toggles/${key}`, {
     data: { enabled },
     headers: { 'x-csrf-token': await csrfOf(admin) },
   })
-  expect(res.status(), 'PUT permainan').toBe(200)
+  expect(res.status(), `PUT ${key}`).toBe(200)
 }
+
+const NAV_SCOPES = [
+  '[data-testid="pembelajaran-nav"]',
+  '[data-testid="pembelajaran-bottom-nav"]',
+  '[data-testid="pembelajaran-lagi-nav"]',
+]
+
+/** Links to `href` in the pupil menus: sidebar, bottom nav and (below lg) the opened "Lagi" panel. */
+async function menuLinks(pupil: Page, href: string): Promise<number> {
+  const lagi = pupil.locator('button[data-nav-id="tab-lagi"]')
+  const opened = (await lagi.count()) > 0 && (await lagi.isVisible())
+  if (opened) await lagi.click()
+  let n = 0
+  for (const scope of NAV_SCOPES) n += await pupil.locator(`${scope} a[href="${href}"]`).count()
+  if (opened) await pupil.keyboard.press('Escape')
+  return n
+}
+
+const notFoundHeading = (pupil: Page) => pupil.getByRole('heading', { name: 'Halaman Tidak Dijumpai' }).first()
 
 test.describe('Kawalan Ciri (S0-T10)', () => {
   test('@api Admin Pusat switches Permainan OFF and ON; the pupil menu and URL follow', async ({ page, browser }, info) => {
@@ -79,6 +98,59 @@ test.describe('Kawalan Ciri (S0-T10)', () => {
       expect(on.notFoundShown, 'ON again: no 404 heading').toBe(false)
     } finally {
       await put(page, true)
+    }
+  })
+  test('@api Latih Tubi OFF: /practice is 404, the menu item goes, progress and history stay (AC-ADM-N06.1)', async ({ page, browser }, info) => {
+    test.setTimeout(240_000)
+    const adminAcc = account('adminPusat')
+    await loginViaUi(page, adminAcc.user, adminAcc.pass)
+
+    /** One fresh pupil session (the flags are read at login). */
+    const asPupil = async (check: (pupil: Page) => Promise<void>): Promise<void> => {
+      const ctx = await newPeerContext(browser, info)
+      try {
+        const pupil = await ctx.newPage()
+        const acc = account('student')
+        await loginViaUi(pupil, acc.user, acc.pass)
+        await gotoApi(pupil, '/dashboard')
+        await check(pupil)
+      } finally {
+        await ctx.close()
+      }
+    }
+
+    try {
+      await put(page, true, 'latih-tubi')
+      await asPupil(async (pupil) => {
+        expect(await menuLinks(pupil, '/practice'), 'ON: Latih Tubi item').toBeGreaterThan(0)
+        await gotoApi(pupil, '/practice')
+        await expect(pupil.getByTestId('practice-list-page')).toBeVisible()
+        await expect(notFoundHeading(pupil)).toBeHidden()
+      })
+
+      await put(page, false, 'latih-tubi')
+      await asPupil(async (pupil) => {
+        expect(await menuLinks(pupil, '/practice'), 'OFF: Latih Tubi item').toBe(0)
+        await gotoApi(pupil, '/practice')
+        await expect(notFoundHeading(pupil)).toBeVisible()
+        expect(await pupil.title(), 'OFF: 404 title').toBe(NOT_FOUND_TITLE)
+        // D-5 exceptions: other modules under /practice keep working.
+        await gotoApi(pupil, '/practice/progress')
+        await expect(pupil.getByTestId('progress-page')).toBeVisible()
+        await expect(notFoundHeading(pupil)).toBeHidden()
+        await gotoApi(pupil, '/practice/history')
+        await expect(pupil.getByTestId('history-page')).toBeVisible()
+        await expect(notFoundHeading(pupil)).toBeHidden()
+      })
+
+      await put(page, true, 'latih-tubi')
+      await asPupil(async (pupil) => {
+        expect(await menuLinks(pupil, '/practice'), 'ON again: Latih Tubi item').toBeGreaterThan(0)
+        await gotoApi(pupil, '/practice')
+        await expect(pupil.getByTestId('practice-list-page')).toBeVisible()
+      })
+    } finally {
+      await put(page, true, 'latih-tubi')
     }
   })
 })
