@@ -7,7 +7,7 @@ import { computed, ref } from 'vue'
 
 import { ApiError } from '@/api'
 import { useApi } from '@/composables'
-import { DsPage, DsStatTile } from '@/ds'
+import { DsPage, DsStatTile, DsText } from '@/ds'
 
 import { claimChallenge, fetchGamificationChallenges } from '../api'
 import S13ChallengeCard from '../components/student-a/S13ChallengeCard.vue'
@@ -100,9 +100,9 @@ async function onClaim(id: number): Promise<void> {
             <p class="text-body text-muted">
               Selesaikan cabaran hari ini dan tuntut ganjaran syiling
             </p>
-            <p class="text-label text-toned" data-testid="s13-claimed-count">
+            <DsText as="p" variant="label" tone="toned" data-testid="s13-claimed-count">
               {{ claimedCount }} / {{ challenges.data.value.meta.active }} ganjaran dituntut
-            </p>
+            </DsText>
           </div>
           <div data-testid="s13-counter">
             <DsStatTile

@@ -5,7 +5,7 @@
  * full bar, "✅" before the title (SRS §8.2, PROPOSED), done state in the success colour. A done card shows
  * "Tuntut" until its reward is claimed, then "Dituntut" (FR-GM-19.2, S7-T04); the page owns the request.
  */
-import { DsIconChip, DsRewardChip } from '@/ds'
+import { DsCluster, DsIconChip, DsRewardChip, DsText } from '@/ds'
 
 import type { ChallengeProgress } from '../../api'
 import { gamClampPct, gamDifficultyLabel } from '../../lib/student/s11-format'
@@ -79,9 +79,9 @@ defineEmits<{ claim: [id: number] }>()
           :data-value="challenge.completed ? 100 : gamClampPct(challenge.pct)"
           data-testid="s13-bar"
         />
-        <div v-if="challenge.completed" class="flex justify-end">
-          <span v-if="claimed" class="text-label font-bold text-success" data-testid="s13-claimed"
-            >Dituntut</span
+        <DsCluster v-if="challenge.completed" justify="end">
+          <DsText v-if="claimed" as="span" variant="label" tone="success" data-testid="s13-claimed"
+            >Dituntut</DsText
           >
           <UButton
             v-else
@@ -94,7 +94,7 @@ defineEmits<{ claim: [id: number] }>()
             @click="$emit('claim', challenge.id)"
             >Tuntut</UButton
           >
-        </div>
+        </DsCluster>
       </div>
     </div>
   </UCard>
