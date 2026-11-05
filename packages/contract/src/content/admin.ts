@@ -71,7 +71,7 @@ export const ScreenshotUploadResultSchema = z
 /**
  * `data` of `GET /config/support` (#43, public): the contact shown in the help box. A value is the empty
  * string when it is not set; when no config row exists all four are empty (S5-T05, DM-33). `whatsapp` is the
- * stored `whatsapp_number`; `phone` and `hours` are always the empty string until S7-T09 stores them.
+ * stored `whatsapp_number`; `hours` is the stored `hours` (DM-86, S7-T09); `phone` is always the empty string.
  * `whatsappNumber` is the previous key for `whatsapp`; it stays as an optional property so no required
  * property is removed from the response (the server may omit it).
  */

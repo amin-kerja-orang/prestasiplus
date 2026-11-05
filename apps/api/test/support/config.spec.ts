@@ -1,3 +1,4 @@
+import { ContentSupportConfigSchema } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { bootPartC, expectError, type PartCApp } from '../content/audio-helpers'

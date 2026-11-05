@@ -119,11 +119,11 @@ export class SupportService {
     return { count: await this.guard(() => this.repo.openCount()) }
   }
 
-  /** GET /config/support (public): `{email, phone, whatsapp, hours}`; `whatsapp` is the row's `whatsapp_number`, all four are '' when no row exists (DM-33, S5-T05). */
+  /** GET /config/support (public): `{email, phone, whatsapp, hours}`; `whatsapp` is the row's `whatsapp_number`, `hours` is the row's `hours` or '' (DM-86, S7-T09), all four are '' when no row exists (DM-33, S5-T05). */
   async supportConfig(): Promise<SupportConfigResponse> {
     const config = await this.guard(() => this.repo.config())
-    // Four-key wire shape (#458 decision 2): phone and hours are not stored until S7-T09.
-    return { email: config?.email ?? '', phone: '', whatsapp: config?.whatsappNumber ?? '', hours: '' }
+    // Four-key wire shape (#458 decision 2): phone is not stored.
+    return { email: config?.email ?? '', phone: '', whatsapp: config?.whatsappNumber ?? '', hours: config?.hours ?? '' }
   }
 
   /** GET /admin/settings/support: '' when nothing is saved. The phone is `whatsapp` (PO decision 18). */

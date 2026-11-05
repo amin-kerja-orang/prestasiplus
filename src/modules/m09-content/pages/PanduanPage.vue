@@ -5,8 +5,7 @@
  * `pelajar`; an unknown hash leaves no tab active and no panel, as live), the contact block fed by
  * `GET /api/config/support` (#43; hidden until the API answers with a non-empty value, each button
  * hidden when its own value is empty, the service hours line only when set, nothing on a failed
- * call) and, for a guest, the "Daftar
- * Percuma Sekarang" button.
+ * call) and, for a guest, the "Daftar Percuma Sekarang" button.
  *
  * v2 restyle (B04): standalone page on the theme tokens (own top bar, no shell), role cards as
  * buttons, panels as `UCard`s.
@@ -111,9 +110,10 @@ function setRole(id: string): void {
             <h2 class="text-heading text-highlighted">Perlukan Bantuan Lanjut?</h2>
             <p class="text-label text-muted">
               Hubungi pasukan sokongan kami untuk sebarang pertanyaan.
-            </p>
-            <p v-if="hours !== ''" class="text-label text-muted" data-testid="panduan-hours">
-              Waktu perkhidmatan: {{ hours }}
+              <template v-if="hours !== ''">
+                <br />
+                <span data-testid="panduan-hours">Waktu perkhidmatan: {{ hours }}</span>
+              </template>
             </p>
             <DsCluster gap="sm" justify="center">
               <UButton
