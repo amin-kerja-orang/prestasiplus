@@ -79,10 +79,12 @@ const liveMenuLinks = inventory.elements
 const REPLACED_LIVE_HREFS: Record<string, string> = {
   '/settings': '/tetapan', // M01 DV-01 (drawer "Tetapan")
 }
-/** Rebuild hrefs that differ from live on purpose. */
-const CHANGED_HREFS = new Set([
-  '/admin/hadiah/tebusan', // M15 DV-M15-04 ("Admin Tebusan", live /admin/hadiah)
-])
+/**
+ * Live links of the admin capture whose admin-only copies were retired from USER_NAV (D113, F-02,
+ * S0-T07): Admin Pusat is framed by the Pentadbiran menu, which lists these screens itself (or, for
+ * the gift links, will when the card that builds them lands).
+ */
+const RETIRED_LIVE_HREFS = new Set(['/cikgu/kelulusan-hadiah', '/admin/hadiah'])
 /** Student-only entries: seen in the murid screenshots, not in the admin-identity capture. */
 const STUDENT_ONLY_IDS = new Set(
   items(USER_NAV)
@@ -126,10 +128,10 @@ describe('USER_NAV data', () => {
     const menuHrefs = new Set(ALL_ITEMS.map((i) => i.to))
     const missing = liveMenuLinks
       .map((l) => REPLACED_LIVE_HREFS[l.href] ?? l.href)
-      .filter((href) => !menuHrefs.has(href))
+      .filter((href) => !menuHrefs.has(href) && !RETIRED_LIVE_HREFS.has(href))
     // The capture has ~130 menu links (sidebar + drawer); guard against an empty read.
     expect(liveMenuLinks.length).toBeGreaterThan(100)
-    // `/admin/hadiah` stays in the menu as "Urus Hadiah"; only "Admin Tebusan" moved (DV-M15-04).
+    // The retired admin-only copies (F-02) are the only live links not in USER_NAV any more.
     expect([...new Set(missing)]).toEqual([])
   })
 
@@ -141,7 +143,6 @@ describe('USER_NAV data', () => {
       '/cikgu/rph': 'RPH',
       '/ppd/statistik-penggunaan': 'Statistik Penggunaan',
       '/jpn/ranking-kebangsaan': 'Ranking Kebangsaan',
-      '/admin/hadiah': 'Admin Tebusan',
     }
     const mismatched = liveMenuLinks.filter((l) => {
       // User decision 2026-10-31 (DV-M12-39): "Tahap N" replaces the live "TN" level labels.
@@ -150,7 +151,10 @@ describe('USER_NAV data', () => {
       const candidates = byHref.get(href) ?? []
       const ok = candidates.some((c) => liveText === c.label || liveText.startsWith(`${c.label} `))
       return (
-        !ok && DRAWER_LABELS[href] !== l.text && !(l.href === '/settings' && l.text === 'Tetapan')
+        !ok &&
+        !RETIRED_LIVE_HREFS.has(href) &&
+        DRAWER_LABELS[href] !== l.text &&
+        !(l.href === '/settings' && l.text === 'Tetapan')
       )
     })
     expect(mismatched).toEqual([])
@@ -160,10 +164,24 @@ describe('USER_NAV data', () => {
     const liveHrefs = new Set(liveMenuLinks.map((l) => REPLACED_LIVE_HREFS[l.href] ?? l.href))
     const notLive = items(navFor('admin', 'sidebar', USER_NAV, FULL))
       .concat(items(navFor('admin', 'drawer')))
-      .filter((i) => !liveHrefs.has(i.to) && !CHANGED_HREFS.has(i.to))
+      .filter((i) => !liveHrefs.has(i.to))
       .map((i) => i.to)
     expect(notLive).toEqual([])
     expect(STUDENT_ONLY_IDS.size).toBeGreaterThan(0)
+  })
+
+  it('the admin-only copies retired by F-02 are gone (guru-*, admin-soalan-by-chapter, admin-tebusan, urus-hadiah, kelulusan-hadiah)', () => {
+    const all = [
+      ...USER_NAV.map((e) => e.id),
+      ...USER_NAV.flatMap((e) => (e.kind === 'group' ? e.children.map((c) => c.id) : [])),
+    ]
+    expect(
+      all.filter(
+        (id) =>
+          id.startsWith('guru-') ||
+          ['admin-soalan-by-chapter', 'admin-tebusan', 'urus-hadiah', 'kelulusan-hadiah'].includes(id),
+      ),
+    ).toEqual([])
   })
 
   it('bottom nav: Home, SPM, Game, Topik links, then Chat and Lagi buttons (live)', () => {

@@ -53,7 +53,7 @@ useShellTabTitle(computed(() => (entity.value ? `${entity.value} · ${title.valu
 // Crumbs = the sidebar group of the active screen, generated from menu.ts.
 const crumbs = computed(() => {
   const g = activeGroupDef.value
-  if (!g || g.label === title.value) return []
+  if (!g?.label || g.label === title.value) return []
   return [g.label]
 })
 const initials = computed(

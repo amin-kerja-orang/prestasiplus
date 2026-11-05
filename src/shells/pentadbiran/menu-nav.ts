@@ -61,7 +61,7 @@ export function buildNavGroups(
       folded.add(item.sub)
       rows.push(link(item, group, opts, item.sub, opts.activeSub === item.sub))
     }
-    return { key: group.key, label: group.label, rows }
+    return { key: group.key, ...(group.label ? { label: group.label } : {}), rows }
   })
 }
 
@@ -80,7 +80,7 @@ export function sectionTabs(
 export function buildSearchGroups(groups: readonly PentadbiranGroup[]): DsShellSearchGroup[] {
   return groups.map((g) => ({
     id: g.key,
-    label: g.label,
+    label: g.label ?? '',
     items: g.items.map((i) => ({
       id: i.id,
       label: i.label,

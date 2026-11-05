@@ -57,8 +57,9 @@ describe('Pentadbiran menu data', () => {
     expect(ALL_ITEMS.every((i) => i.built)).toBe(true)
     expect(ALL_ITEMS.length).toBe(FULL_ITEMS.filter((i) => i.built).length)
     expect(PENTADBIRAN_MENU.every((g) => g.items.length > 0)).toBe(true)
+    // the top shortcuts have no heading (30 §3.1 row 0)
     expect(PENTADBIRAN_MENU.map((g) => g.label)).toEqual([
-      'Pintasan',
+      undefined,
       'Analitik',
       'Kurikulum',
       'Soalan',
@@ -131,7 +132,7 @@ describe('Pentadbiran menu data', () => {
   })
 
   it('has no duplicate "Bank Soalan" label or group', () => {
-    const labels = [...FULL_ITEMS.map((i) => i.label), ...PENTADBIRAN_FULL_MENU.map((g) => g.label)]
+    const labels = [...FULL_ITEMS.map((i) => i.label), ...PENTADBIRAN_FULL_MENU.map((g) => g.label ?? '')]
     expect(labels.filter((l) => l === 'Bank Soalan')).toEqual([])
     expect(labels.filter((l) => l.startsWith('Bank Soalan'))).toEqual(['Bank Soalan (Studio)'])
     // no two rendered items share a label inside the Soalan group, nor a route anywhere

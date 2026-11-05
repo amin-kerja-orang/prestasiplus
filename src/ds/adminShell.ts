@@ -21,7 +21,8 @@ export interface DsShellNavSub {
 
 export interface DsShellNavGroup {
   key: string
-  label: string
+  /** Quiet heading above the rows; omitted = no heading (for example the top shortcuts). */
+  label?: string
   rows: readonly (DsShellNavLink | DsShellNavSub)[]
 }
 

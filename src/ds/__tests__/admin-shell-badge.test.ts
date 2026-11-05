@@ -28,7 +28,6 @@ beforeAll(() => {
 const groups: DsShellNavGroup[] = [
   {
     key: 'pintasan',
-    label: 'Pintasan',
     rows: [
       {
         kind: 'link',
@@ -45,6 +44,20 @@ const groups: DsShellNavGroup[] = [
         label: 'Aktiviti Harian',
         icon: 'i-ph-calendar-check',
         to: '/admin/command-center/daily-activity',
+        active: false,
+      },
+    ],
+  },
+  {
+    key: 'analitik',
+    label: 'Analitik',
+    rows: [
+      {
+        kind: 'link',
+        id: 'PM-03',
+        label: 'Monitoring',
+        icon: 'i-ph-monitor',
+        to: '/admin/monitoring',
         active: false,
       },
     ],
@@ -81,6 +94,11 @@ describe('DsAdminShell nav badge', () => {
     expect(badges).toHaveLength(1)
     expect(badges[0]?.text()).toBe('LIVE')
     expect(badges[0]?.element.closest('a')?.textContent).toContain('Command Center')
+    // a group with no label renders no heading row; a labelled one does
+    const navText = w.get('[data-testid="pentadbiran-nav"]').text()
+    expect(navText).toContain('Analitik')
+    expect(navText.indexOf('Analitik')).toBeGreaterThan(navText.indexOf('Aktiviti Harian'))
+    expect(navText.trimStart().startsWith('Command Center')).toBe(true)
     w.unmount()
   })
 })

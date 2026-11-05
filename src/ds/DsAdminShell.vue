@@ -84,7 +84,7 @@ const flashText = computed(() => {
 /** Menu items; the sub-group indent applies to the expanded sidebar only (the rail keeps one column). */
 const navItemsFor = (collapsed: boolean): NavigationMenuItem[][] =>
   props.groups.map((g) => [
-    { label: g.label, type: 'label' as const, value: g.key },
+    ...(g.label ? [{ label: g.label, type: 'label' as const, value: g.key }] : []),
     ...g.rows.map((r) =>
       r.kind === 'sub'
         ? { label: r.label, type: 'label' as const, value: `sub:${r.label}`, class: adminNavSubLabel }

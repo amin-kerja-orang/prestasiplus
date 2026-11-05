@@ -31,7 +31,8 @@ export interface PentadbiranItem {
 
 export interface PentadbiranGroup {
   key: string
-  label: string
+  /** Sidebar heading; omitted = no heading (the top shortcuts, 30 §3.1 row 0 names none). */
+  label?: string
   /** Phosphor base name (listed in `src/theme/ds-icons.ts`). */
   icon: string
   items: readonly PentadbiranItem[]
@@ -64,7 +65,6 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
   {
     // V2 top shortcuts (30 §3.1 row 0).
     key: 'pintasan',
-    label: 'Pintasan',
     icon: 'pulse',
     items: items([
       ['PM-01', 'Command Center', '/admin/command-center'],

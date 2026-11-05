@@ -46,9 +46,9 @@ interface Expected {
  * Kirkpatrick is one folded row labelled `Kirkpatrick` that opens its first page.
  */
 const EXPECTED: Expected[] = [
-  { group: 'Pintasan', label: 'Command Center', href: '/admin/command-center' },
-  { group: 'Pintasan', label: 'Aktiviti Harian', href: '/admin/command-center/daily-activity' },
-  { group: 'Pintasan', label: 'Audio KBAT', href: '/admin/audio-kbat' },
+  { group: '', label: 'Command Center', href: '/admin/command-center' },
+  { group: '', label: 'Aktiviti Harian', href: '/admin/command-center/daily-activity' },
+  { group: '', label: 'Audio KBAT', href: '/admin/audio-kbat' },
   { group: 'Analitik', label: 'Monitoring', href: '/admin/monitoring' },
   { group: 'Analitik', label: 'Kirkpatrick', href: '/admin/kirkpatrick' },
   { group: 'Kurikulum', label: 'Kurikulum', href: '/admin/curriculum' },
@@ -77,9 +77,8 @@ const EXPECTED: Expected[] = [
   { group: 'Sistem', label: 'Tiket Bantuan', href: '/admin/tiket' },
 ]
 
-/** Group headings in order, with the sub heading row inside Soalan. */
+/** Group headings in order, with the sub heading row inside Soalan. The top shortcuts have none. */
 const HEADINGS = [
-  'Pintasan',
   'Analitik',
   'Kurikulum',
   'Soalan',

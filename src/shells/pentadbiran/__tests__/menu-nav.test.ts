@@ -37,6 +37,13 @@ describe('Pentadbiran navigation groups', () => {
     )
   })
 
+  it('the top shortcuts group has no heading; every other group has one', () => {
+    expect(groups[0]?.key).toBe('pintasan')
+    expect('label' in (groups[0] ?? {})).toBe(false)
+    expect(groups.slice(1).every((g) => !!g.label)).toBe(true)
+    expect(buildSearchGroups(PENTADBIRAN_MENU)[0]?.label).toBe('')
+  })
+
   it('emits the Bank Lama (Legasi) heading once, before its indented links', () => {
     const rows = groups.find((g) => g.key === 'soalan')?.rows ?? []
     const at = rows.findIndex((r) => r.kind === 'sub')
