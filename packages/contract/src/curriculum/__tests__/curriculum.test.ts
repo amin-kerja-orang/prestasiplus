@@ -80,6 +80,19 @@ describe('curriculum contract: responses', () => {
     expect(CurriculumTreeSchema.safeParse({ ...tree, stats: { chapters: 1 } }).success).toBe(false)
   })
 
+  it('tree chapter nodes carry optional non-negative questionCount and servableCount (API-DSKP-04)', () => {
+    const tree = (extra: object) => ({
+      subject: { id: '5', name: 'Subjek Ujian' },
+      level: { id: '11', name: 'Tingkatan 4' },
+      stats: { chapters: 1, topics: 0, subtopics: 0 },
+      chapters: [{ ...chapter, ...extra, topics: [] }],
+    })
+    expect(CurriculumTreeSchema.safeParse(tree({})).success).toBe(true)
+    expect(CurriculumTreeSchema.safeParse(tree({ questionCount: 3, servableCount: 2 })).success).toBe(true)
+    expect(CurriculumTreeSchema.safeParse(tree({ questionCount: -1 })).success).toBe(false)
+    expect(CurriculumTreeSchema.safeParse(tree({ servableCount: 1.5 })).success).toBe(false)
+  })
+
   it('parses the status envelope and cascade counts', () => {
     const env = curriculumStatusEnvelopeOf(CurriculumChapterSchema)
     expect(env.safeParse({ data: chapter, status: CURRICULUM_FLASH_MESSAGES.chapter.created }).success).toBe(true)
