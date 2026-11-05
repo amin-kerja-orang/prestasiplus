@@ -74,7 +74,6 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
 | S1-T05 | AC-QA-34 | CI | Pass | 2026-11-05 | team-aa/S-3 | imports.spec.ts::[CI] the 2,000-row cap is admin-only: the Guru route refuses more than 500 rows with "Fail melebihi 500 baris." for every header, the admin route 2,001 rows with the 2,000 message; imports-csv.spec.ts::[CI] more than 2,000 data rows refuses the file whole (both formats); 2,000 is accepted |
-| S4-T06 | AC-X3-1 | CI | Pass | 2026-11-05 | team-bb/S-3 | bab-mode-t1.spec.ts; offered-levels-serving.spec.ts |
 
 ## Sprint 3
 
