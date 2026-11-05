@@ -86,4 +86,36 @@ export class PracticeAssignmentsAdapter implements PracticeAssignmentSource {
       isTest: input.isTest,
     })
   }
+
+  /**
+   * S6-T07 (FR-GM-20.2, AC-GM-20.2, AC-GUR-2b-7), called inside the practice submit transaction (`tx`) when a session with a
+   * `mission_id` completes. Pays the mission's `rewardCoins` ONCE per pupil and mission, when the pupil has reached the target.
+   *
+   * Count rule: "reaches targetQuestions" = the pupil's answered count is at least `question_count`, where the answered count is
+   * the number of `practice_answers` rows (every answer, right or wrong) of the pupil's COMPLETED sessions linked to the mission,
+   * summed over all of them; the session being completed is already stored in `tx`, so it counts. Only the Mod Pelajar flag
+   * must match (`is_test`). A Global mission, a pupil who is not a stored recipient, and a reward of 0 or null pay nothing.
+   * Returns the coins paid by THIS call: 0 when not met, when ineligible, or when already paid (unique `mission_rewards`).
+   * Crediting the wallet is the caller's job (S7), in the same transaction.
+   */
+  async settleTargetReward(
+    input: { userId: string; missionId: string; sessionId: string; isTest: boolean; at: Date },
+    tx: TxClient,
+  ): Promise<{ paid: number }> {
+    if (!isRealId(input.missionId) || !isRealId(input.userId)) return { paid: 0 }
+    await this.repo.lockTargetReward(tx, input.missionId, input.userId)
+    const facts = await this.repo.targetRewardFacts(tx, { missionId: input.missionId, studentId: input.userId, isTest: input.isTest })
+    if (!facts || facts.scope !== 'teacher' || !facts.recipient) return { paid: 0 }
+    const coins = facts.rewardCoins ?? 0
+    if (coins <= 0 || facts.answered < facts.questionCount) return { paid: 0 }
+    const inserted = await this.repo.insertReward(tx, {
+      missionId: input.missionId,
+      studentId: input.userId,
+      coins,
+      sessionId: input.sessionId,
+      isTest: input.isTest,
+      paidAt: input.at,
+    })
+    return { paid: inserted ? coins : 0 }
+  }
 }

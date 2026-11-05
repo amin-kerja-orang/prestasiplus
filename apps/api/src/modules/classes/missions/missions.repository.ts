@@ -88,6 +88,17 @@ export interface NewRemedial {
   items: readonly { questionId: string; questionVersionNo: number }[]
 }
 
+/** What `settleTargetReward` needs to decide (S6-T07): the mission's terms and the pupil's progress. */
+export interface TargetRewardFacts {
+  scope: MissionScope
+  questionCount: number
+  rewardCoins: number | null
+  /** The pupil is a stored recipient (`mission_items`). */
+  recipient: boolean
+  /** `practice_answers` rows of the pupil in COMPLETED sessions linked to the mission (all answers, right or wrong). */
+  answered: number
+}
+
 const idOf = (id: string): bigint | null => (isIdString(id) ? idFromString(id) : null)
 
 const toMission = (r: {
@@ -414,5 +425,45 @@ export class MissionsRepository {
       where: { id, studentId: student, status: 'active', isTest: input.isTest },
       data: { status: 'completed', afterAccuracy: input.afterAccuracy, completedAt: input.completedAt, updatedAt: input.completedAt },
     })
+  }
+
+  // --- target reward (S6-T07, DM-TBD `mission_rewards`) --------------------------------------------
+
+  /**
+   * Serialises the settlement of one (mission, pupil) until the caller's transaction ends, so two sessions that complete at once
+   * cannot both count the other's answers as missing (READ COMMITTED would hide the uncommitted rows from each) and pay nobody.
+   */
+  async lockTargetReward(tx: TxClient, missionId: string, studentId: string): Promise<void> {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`mission-reward:${missionId}:${studentId}`}, 0))`
+  }
+
+  /** The mission's terms and the pupil's progress, read inside the caller's transaction; null when the mission or the ids are unknown. */
+  async targetRewardFacts(tx: TxClient, input: { missionId: string; studentId: string; isTest: boolean }): Promise<TargetRewardFacts | null> {
+    const mission = idOf(input.missionId)
+    const student = idOf(input.studentId)
+    if (mission === null || student === null) return null
+    const rows = await tx.$queryRaw<{ scope: string; question_count: number; reward_coins: number | null; recipient: boolean; answered: number }[]>`
+      SELECT m.scope, m.question_count, m.reward_coins,
+             EXISTS (SELECT 1 FROM mission_items i WHERE i.mission_id = m.id AND i.student_id = ${student}) AS recipient,
+             (SELECT COUNT(*)::int
+                FROM practice_answers a JOIN practice_sessions s ON s.id = a.session_id
+               WHERE s.mission_id = m.id AND s.user_id = ${student} AND s.status = 'completed' AND s.is_test = ${input.isTest}) AS answered
+        FROM missions m
+       WHERE m.id = ${mission}`
+    const r = rows[0]
+    if (!r) return null
+    return { scope: r.scope === 'global' ? 'global' : 'teacher', questionCount: r.question_count, rewardCoins: r.reward_coins, recipient: r.recipient, answered: r.answered }
+  }
+
+  /** Records the payment; true only for the call that inserted it (unique on mission and pupil: a repeat inserts nothing). */
+  async insertReward(tx: TxClient, input: { missionId: string; studentId: string; coins: number; sessionId: string | null; isTest: boolean; paidAt: Date }): Promise<boolean> {
+    const mission = idOf(input.missionId)
+    const student = idOf(input.studentId)
+    if (mission === null || student === null) return false
+    const inserted = await tx.$executeRaw`
+      INSERT INTO mission_rewards (mission_id, student_id, coins, session_id, is_test, paid_at)
+      VALUES (${mission}, ${student}, ${input.coins}, ${input.sessionId}::uuid, ${input.isTest}, ${input.paidAt})
+      ON CONFLICT (mission_id, student_id) DO NOTHING`
+    return inserted === 1
   }
 }
