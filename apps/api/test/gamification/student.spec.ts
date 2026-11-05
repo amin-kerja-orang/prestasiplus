@@ -164,8 +164,7 @@ describe('M14 student reads (BE-23, AC4, AC6, AC7)', () => {
       const d = GamificationAchievementsSchema.parse(dataOf(await student.get('/gamification/achievements')))
       expect(d).toMatchObject({ unlocked: 0, total: 26 })
       expect(d.items).toHaveLength(26)
-      // by name: migration 0234 inserts #26 first on an empty catalogue
-      expect(d.items.find((i) => i.name === 'Langkah Pertama')).toMatchObject({ name: 'Langkah Pertama', rarityLabel: 'Biasa', rarityColor: '#9ca3af', progress: { value: 0, target: 1 }, unlocked: false, unlockedAt: null })
+      expect(d.items[0]).toMatchObject({ name: 'Langkah Pertama', rarityLabel: 'Biasa', rarityColor: '#9ca3af', progress: { value: 0, target: 1 }, unlocked: false, unlockedAt: null })
       expect(d.items.filter((i) => i.progress !== null)).toHaveLength(5)
     })
 

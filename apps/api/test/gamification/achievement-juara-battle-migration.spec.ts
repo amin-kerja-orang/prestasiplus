@@ -75,7 +75,8 @@ describe('migration 0234 achievement Juara Battle', () => {
     expect(r[0]).toMatchObject({ criterion_kind: 'streak', criterion_min: 7, rarity: 'epic', reward_syiling: 99, reward_xp: 88 })
   })
 
-  it('inserts the row when none exists', async () => {
+  it('inserts the row when none exists on a database that has other achievements', async () => {
+    await db.query(`insert into achievements (name, criterion_kind, criterion_min) values ('Langkah Pertama', 'practice_sessions', 1)`)
     await rerun()
     const r = await rows()
     expect(r).toHaveLength(1)
@@ -83,12 +84,18 @@ describe('migration 0234 achievement Juara Battle', () => {
     expect(r[0]!.icon).not.toBe('')
   })
 
+  it('inserts nothing on an empty achievements table (the seed supplies #26 there)', async () => {
+    await rerun()
+    expect(await rows()).toHaveLength(0)
+  })
+
   it('is idempotent: a second and third run leave one row', async () => {
+    await db.query(`insert into achievements (name, criterion_kind, criterion_min) values ('Langkah Pertama', 'practice_sessions', 1)`)
     await rerun()
     await rerun()
     await rerun()
     expect(await rows()).toHaveLength(1)
     const n = (await db.query<{ n: string }>(`select count(*)::text as n from achievements`))[0]!.n
-    expect(n).toBe('1')
+    expect(n).toBe('2')
   })
 })

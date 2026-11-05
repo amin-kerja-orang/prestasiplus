@@ -87,7 +87,7 @@ describe('achievements follow completed practice-mode sessions (BR-M14-16, FR-M1
     expect(s15.status).toBe(200)
     const d = GamificationAchievementsSchema.parse(s15.body.data)
     expect(d.unlocked).toBe(2)
-    expect(d.items.find((i) => i.name === 'Langkah Pertama')).toMatchObject({ unlocked: true }) // by name: migration 0234 inserts #26 first on an empty catalogue
+    expect(d.items[0]).toMatchObject({ name: 'Langkah Pertama', unlocked: true })
   })
 
   it('3. a further session does not unlock or pay it again', async () => {

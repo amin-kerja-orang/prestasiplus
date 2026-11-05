@@ -210,9 +210,7 @@ describe('M14 achievements: evaluateAchievements (BR-M14-16, FR-M14-51)', () => 
     await t.gamification.evaluateAchievements(u, { isTest: false })
     const d = GamificationAchievementsSchema.parse(dataOf(await who.get('/gamification/achievements')))
     expect(d.unlocked).toBe(1)
-    // by name: migration 0234 inserts #26 first on an empty catalogue
-    const card = d.items.find((i) => i.name === 'Langkah Pertama')!
-    expect(card).toMatchObject({ unlocked: true, progress: { value: 1, target: 1 } })
-    expect(card.unlockedAt).toMatch(/\+08:00$/)
+    expect(d.items[0]).toMatchObject({ name: 'Langkah Pertama', unlocked: true, progress: { value: 1, target: 1 } })
+    expect(d.items[0]!.unlockedAt).toMatch(/\+08:00$/)
   })
 })
