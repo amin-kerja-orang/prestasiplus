@@ -99,8 +99,8 @@ export interface SubjektifPage {
   rows: AdminPaperSummary[]
   /** Rows matching the filters (all pages). */
   total: number
-  /** The three tiles. */
-  counts: SubjektifCounts
+  /** The three tiles; null when the server sent no `meta.counts` (the tiles then show "—"). */
+  counts: SubjektifCounts | null
 }
 
 /** S3-T06 create form 18-02..18-08. `durationMinutes` null or absent = untimed. */

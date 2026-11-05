@@ -356,7 +356,7 @@ export class BuilderService {
     }
   }
 
-  private questionWire(info: BuilderQuestionInfo, pinned?: boolean, notServed?: string | null): BijakBuilderQuestion {
+  private questionWire(info: BuilderQuestionInfo, pinned?: boolean, notServed?: string | null, hasScheme?: boolean): BijakBuilderQuestion {
     return {
       id: info.id,
       ...(info.groupId ? { groupId: info.groupId } : {}),
@@ -369,6 +369,7 @@ export class BuilderService {
       kertas: info.kertas,
       subject: info.subject,
       ...(pinned === undefined ? {} : { pinned }),
+      ...(hasScheme === undefined ? {} : { hasScheme }),
       ...(notServed === undefined ? {} : { servable: notServed === null, ...(notServed === null ? {} : { notServedReason: notServed }) }),
     }
   }
@@ -420,6 +421,13 @@ export class BuilderService {
         ordered.push(info)
       }
     }
+    // S3-T06: the scheme flag of a placed question of a Kertas Subjektif, from the one scheme rule (`schemeOf`, as the list count and NO_SCHEME).
+    const schemed = paper.surface === 'subjektif' ? await this.schemeKeys(used) : null
+    const refOf = new Map(used.map((r) => [r.id, r]))
+    const hasScheme = (id: string): boolean | undefined => {
+      const r = refOf.get(id)
+      return schemed && r ? schemed.has(schemeKey(r.id, r.versionNo)) : undefined
+    }
     const groupIds = [...new Set(ordered.flatMap((q) => (q.groupId ? [q.groupId] : [])))]
     const groupMap = groupIds.length ? await this.questions.groups(groupIds) : new Map<string, BuilderGroupInfo>()
     const bp = subject && paper.surface !== 'subjektif' ? await this.repo.activeBlueprint(subject.id, paper.kertas) : null
@@ -427,7 +435,7 @@ export class BuilderService {
     return {
       paper: wire,
       blueprint,
-      questions: ordered.map((q) => (placed.has(q.id) ? this.questionWire(q, pinned, notServed(q.id)) : this.questionWire(q))),
+      questions: ordered.map((q) => (placed.has(q.id) ? this.questionWire(q, pinned, notServed(q.id), hasScheme(q.id)) : this.questionWire(q))),
       groups: groupIds.flatMap((id) => {
         const g = groupMap.get(id)
         return g ? [{ id: g.id, ...(g.stimulus ? { stimulus: g.stimulus } : {}), stimuli: stimuliOfGroup(g), questionIds: g.questionIds }] : []

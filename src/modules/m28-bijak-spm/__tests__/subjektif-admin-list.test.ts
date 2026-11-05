@@ -134,6 +134,22 @@ describe('Kertas Subjektif list (FR-ADM-Q18.1)', () => {
   })
 })
 
+describe('missing server data', () => {
+  it('shows "—" in the tiles when meta.counts is missing and no "tiada skema" badge when schemeCount is unknown', async () => {
+    const real = await api.listSubjektif()
+    vi.spyOn(api, 'listSubjektif').mockResolvedValue({
+      rows: real.rows.map((r) => ({ ...r, schemeCount: undefined })),
+      total: real.total,
+      counts: null,
+    })
+    await render()
+    const text = body().textContent ?? ''
+    expect(text.match(/—/g)!.length).toBeGreaterThanOrEqual(3)
+    expect(text).not.toContain('tiada skema')
+    expect(text).toContain('2 soalan')
+  })
+})
+
 describe('Baharu form (fields 18-02..18-08)', () => {
   it('shows each field error on an empty submit, with the 18-xx messages', async () => {
     await render()
@@ -197,7 +213,10 @@ describe('Baharu form (fields 18-02..18-08)', () => {
 describe('row menu (18-11, FR-ADM-Q18.3)', () => {
   it('offers Pratonton, Sunting, Kandungan, Sembunyikan or Terbit, and Padam', async () => {
     await render()
-    for (const id of ['sj-preview-sj-1', 'sj-edit-sj-1', 'sj-content-sj-1', 'sj-toggle-sj-1', 'sj-delete-sj-1']) expect(byTid(id)).not.toBeNull()
+    for (const id of ['sj-preview-sj-1', 'sj-edit-sj-1', 'sj-content-sj-1', 'sj-toggle-sj-1', 'sj-delete-sj-3']) expect(byTid(id)).not.toBeNull()
+    // Padam is offered on a Draf row only
+    expect(byTid('sj-delete-sj-1')).toBeNull()
+    expect(byTid('sj-delete-sj-2')).toBeNull()
     expect(byTid('sj-toggle-sj-1')!.textContent).toBe('Sembunyikan')
     expect(byTid('sj-toggle-sj-3')!.textContent).toBe('Terbit')
   })

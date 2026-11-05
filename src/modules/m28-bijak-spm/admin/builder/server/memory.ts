@@ -168,8 +168,9 @@ function sjEditor(p: SjPaper): PaperEditorData {
       status: 'terbit' as const,
       kertas: p.kertas,
       subject: p.subject,
-      servable: x.hasScheme,
-      ...(x.hasScheme ? {} : { notServedReason: BIJAK_BUILDER_MESSAGES.subjektifNoScheme }),
+      // `servable` is deliberately not the scheme flag (a Terbit paper reads servable for every pinned question).
+      servable: true,
+      hasScheme: x.hasScheme,
     })),
     groups: [],
   }

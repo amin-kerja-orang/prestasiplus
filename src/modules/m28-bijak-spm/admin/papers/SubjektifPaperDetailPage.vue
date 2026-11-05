@@ -60,7 +60,8 @@ const sections = computed(() =>
 )
 const placed = computed(() => sections.value.flatMap((s) => s.questions))
 
-const hasScheme = (q: BuilderQuestion): boolean => q.servable !== false
+/** The one scheme rule of the server (`hasScheme` of the editor wire), never `servable`. */
+const hasScheme = (q: BuilderQuestion): boolean => q.hasScheme === true
 const negeri = computed(() => {
   const v = paper.value?.examBoard
   return v ? (BIJAK_NEGERI_ORDER.find((n) => bijakNegeriSlug(n) === bijakNegeriSlug(v)) ?? v) : '—'
@@ -103,7 +104,7 @@ async function upload(): Promise<void> {
   try {
     await api.uploadSource(id.value, { paper: paperFile.value, scheme: schemeFile.value })
     uploadOpen.value = false
-    flash.show({ type: 'success', message: 'Fail sumber telah dimuat naik.' })
+    flash.show({ type: 'success', message: M.sourceUploaded })
     await editor.reload()
   } catch (e) {
     uploadError.value = builderMessage(e, 'Sesuatu tidak kena. Sila cuba lagi.')
@@ -159,7 +160,7 @@ async function upload(): Promise<void> {
               data-testid="sj-open-builder"
             />
           </DsCluster>
-          <DsEmptyState v-if="placed.length === 0" title="Tiada soalan dalam kertas ini." icon="scroll" data-testid="sj-content-empty" />
+          <DsEmptyState v-if="placed.length === 0" :title="M.subjektifNoQuestions" icon="scroll" data-testid="sj-content-empty" />
           <template v-else>
             <DsPanel v-for="s in sections" :key="s.id" :title="s.label" :data-testid="`sj-section-${s.id}`">
               <DsStack as="ol" gap="sm">
@@ -173,7 +174,7 @@ async function upload(): Promise<void> {
         </DsStack>
 
         <DsStack v-else as="section" gap="md" aria-label="Skema" data-testid="sj-tab-skema">
-          <DsEmptyState v-if="placed.length === 0" title="Tiada soalan dalam kertas ini." icon="scroll" />
+          <DsEmptyState v-if="placed.length === 0" :title="M.subjektifNoQuestions" icon="scroll" />
           <DsStack v-else as="ul" gap="sm">
             <DsPanel v-for="q in placed" :key="q.id" as="li" :data-testid="`sj-scheme-${q.id}`">
               <DsCluster justify="between">

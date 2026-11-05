@@ -28,6 +28,7 @@ import {
   DsStatRow,
   DsStatusBadge,
   DsText,
+  dsCopy,
   type DefinitionItem,
   type RowAction,
   type StatItem,
@@ -37,6 +38,7 @@ import type { AdminPaperSummary } from '../../domain/admin-types'
 import StudentViewDrawer from '../builder/components/StudentViewDrawer.vue'
 import { builderMessage, BuilderError, type SubjektifQuery } from '../builder/server/api'
 import { builderServer } from '../builder/server/client'
+import { kontrakServer } from '../kontrak/server/client'
 import { SUBJEKTIF_ROUTES } from './ui'
 
 type Row = AdminPaperSummary & Record<string, unknown>
@@ -61,7 +63,8 @@ const query = computed<SubjektifQuery>(() => ({
   pageSize: PAGE_SIZE,
 }))
 const list = useApi(() => api.listSubjektif(query.value), query)
-const subjects = useApi(() => api.builderSubjects())
+// The full subject list: a Kertas Subjektif needs no Kontrak, so the blueprint-only list of the Set Builder would hide subjects.
+const subjects = useApi(() => kontrakServer().subjectOptions())
 
 const rows = computed(() => (list.data.value?.rows ?? []) as Row[])
 const total = computed(() => list.data.value?.total ?? 0)
@@ -77,9 +80,9 @@ const subjectItems = computed(() => {
 const stats = computed<StatItem[]>(() => {
   const c = list.data.value?.counts
   return [
-    { key: 'total', label: 'Jumlah Kertas', value: c?.total ?? null, icon: 'scroll' },
-    { key: 'published', label: 'Diterbitkan', value: c?.published ?? null, icon: 'upload-simple', accent: 'win' },
-    { key: 'scheme', label: 'Ada Skema', value: c?.withScheme ?? null, icon: 'seal-check' },
+    { key: 'total', label: 'Jumlah Kertas', value: c ? c.total : '—', icon: 'scroll' },
+    { key: 'published', label: 'Diterbitkan', value: c ? c.published : '—', icon: 'upload-simple', accent: 'win' },
+    { key: 'scheme', label: 'Ada Skema', value: c ? c.withScheme : '—', icon: 'seal-check' },
   ]
 })
 
@@ -108,7 +111,8 @@ function contentText(row: AdminPaperSummary): string {
   const s = row.schemeCount ?? 0
   return s > 0 ? `${row.questionCount} soalan, ${s} bersekema` : `${row.questionCount} soalan`
 }
-const noScheme = (row: AdminPaperSummary): boolean => (row.schemeCount ?? 0) < row.questionCount
+/** Unknown (`schemeCount` absent) shows no badge. */
+const noScheme = (row: AdminPaperSummary): boolean => row.schemeCount !== undefined && row.schemeCount < row.questionCount
 const negeriLabel = (v: string | null | undefined): string => {
   if (!v) return '—'
   return BIJAK_NEGERI_ORDER.find((n) => bijakNegeriSlug(n) === bijakNegeriSlug(v)) ?? v
@@ -189,14 +193,17 @@ function actionsOf(row: Row): RowAction[] {
       loading: busyId.value === row.id,
       onSelect: () => void toggleStatus(row),
     },
-    {
-      label: 'Padam',
-     
-      danger: true,
-      testid: `sj-delete-${row.id}`,
-      confirm: { title: 'Padam kertas ini?', confirmLabel: 'Ya, Padam' },
-      onSelect: () => void remove(row),
-    },
+    ...(terbit
+      ? []
+      : [
+          {
+            label: 'Padam',
+            danger: true,
+            testid: `sj-delete-${row.id}`,
+            confirm: { title: 'Padam kertas ini?', confirmLabel: 'Ya, Padam' },
+            onSelect: () => void remove(row),
+          },
+        ]),
   ]
 }
 
@@ -393,19 +400,19 @@ async function save(): Promise<void> {
           </DsFormField>
           <DsFormField label="Kertas" required :error="errors.kertas">
             <DsNativeSelect v-model="form.kertas" aria-label="Kertas" :disabled="!!editing" data-testid="sj-f-kertas">
-              <option value="">Pilih kertas</option>
+              <option value="">{{ M.subjektifPickKertas }}</option>
               <option v-for="k in KERTAS" :key="k" :value="String(k)">Kertas {{ k }}</option>
             </DsNativeSelect>
           </DsFormField>
           <DsFormField label="Negeri" required :error="errors.examBoard">
             <DsNativeSelect v-model="form.examBoard" aria-label="Negeri" data-testid="sj-f-negeri">
-              <option value="">Pilih negeri</option>
+              <option value="">{{ M.subjektifPickNegeri }}</option>
               <option v-for="n in BIJAK_NEGERI_ORDER" :key="n" :value="bijakNegeriSlug(n)">{{ n }}</option>
             </DsNativeSelect>
           </DsFormField>
           <DsFormField label="Tahun" required :error="errors.year">
             <DsNativeSelect v-model="form.year" aria-label="Tahun" data-testid="sj-f-year">
-              <option value="">Pilih tahun</option>
+              <option value="">{{ M.subjektifPickTahun }}</option>
               <option v-for="y in YEARS" :key="y" :value="String(y)">{{ y }}</option>
             </DsNativeSelect>
           </DsFormField>
@@ -419,7 +426,7 @@ async function save(): Promise<void> {
       </DsStack>
       <template #footer>
         <UButton color="neutral" variant="soft" label="Batal" data-testid="sj-f-cancel" @click="formOpen = false" />
-        <UButton :label="editing ? 'Simpan' : 'Cipta'" :loading="saving" data-testid="sj-f-submit" @click="save" />
+        <UButton :label="editing ? dsCopy.save : 'Cipta'" :loading="saving" data-testid="sj-f-submit" @click="save" />
       </template>
     </DsDialog>
 

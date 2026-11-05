@@ -247,7 +247,7 @@ export class HttpBuilderServer extends HttpBijakServer implements BuilderApi {
       return {
         rows,
         total: res?.meta?.totalItems ?? rows.length,
-        counts: res?.meta?.counts ?? { total: rows.length, published: 0, withScheme: 0 },
+        counts: res?.meta?.counts ?? null,
       }
     } catch (e) {
       throw builderErrorFrom(e)

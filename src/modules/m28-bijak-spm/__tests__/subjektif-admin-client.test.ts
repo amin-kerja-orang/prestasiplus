@@ -47,6 +47,13 @@ describe('listSubjektif', () => {
   })
 })
 
+describe('listSubjektif without meta.counts', () => {
+  it('returns null counts, not zeros', async () => {
+    const { server } = setup(() => ok([{ id: 'a', subject: 'MAT', updatedAt: T0 }], { meta: { totalItems: 1, totalPages: 1 } }))
+    expect((await server.listSubjektif()).counts).toBeNull()
+  })
+})
+
 describe('createSubjektif', () => {
   it('posts surface subjektif with the 18-02..18-08 body', async () => {
     const { server, requests } = setup(() => ok({ id: 'n1' }))

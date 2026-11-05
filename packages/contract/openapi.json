@@ -65661,6 +65661,10 @@
             "type": "boolean",
             "description": "S3-T02, FR-ADM-Q14.7, API-BIJAK-10 (g): on a question placed on this paper in the editor, false when pupils cannot be served it (chip `Tidak disajikan`, blocks Terbit). A Terbit paper serves its pinned version, so it reads true there (AC-ADM-Q14.3). Absent on a candidate that is not placed."
           },
+          "hasScheme": {
+            "type": "boolean",
+            "description": "S3-T06 (FR-ADM-Q18.8): on a question placed on a Kertas Subjektif paper, whether it has a mark scheme (the one `schemeOf` rule that also gives `schemeCount` and the NO_SCHEME blocker). Absent on a Simulasi paper and on a candidate."
+          },
           "notServedReason": {
             "type": "string",
             "description": "S3-T02: the BM reason of `Dilihat murid di` (tooltip of `Tidak disajikan`); present when `servable` is false."

@@ -283,6 +283,8 @@ export interface BuilderQuestion {
   pinned?: boolean
   /** S3-T02: false when pupils cannot be served the question (for a Kertas Subjektif paper: no scheme). */
   servable?: boolean
+  /** S3-T06: on a question placed on a Kertas Subjektif paper, whether it has a mark scheme. */
+  hasScheme?: boolean
   notServedReason?: string
 }
 
