@@ -78,7 +78,6 @@ const liveMenuLinks = inventory.elements
 /** Live links the rebuild deliberately changes (approved DVs). */
 const REPLACED_LIVE_HREFS: Record<string, string> = {
   '/settings': '/tetapan', // M01 DV-01 (drawer "Tetapan")
-  '/guru/laporan-mingguan-kelas': '/laporan-mingguan', // L48: the built screen is M08 S21 (M11-T5 S8 not built)
 }
 /** Rebuild hrefs that differ from live on purpose. */
 const CHANGED_HREFS = new Set([
@@ -279,7 +278,6 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       '🤖 Cikgu Alesa AI',
       'Cikgu Alesa Chat',
       '✨ Visi & Pertandingan',
-      'Sekolah Bersaing',
       'Tetapan Peribadi',
       '🤖 AI Pintar (Pelajar)',
       'Wellbeing Alerts',
@@ -464,7 +462,7 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       '/guru/kelas',
       '/guru/pelajar',
       '/guru/laporan',
-      '/laporan-mingguan',
+      '/guru/laporan-mingguan-kelas',
       '/guru/soalan',
       '/guru/monitoring',
       '/guru/kirkpatrick',
@@ -550,4 +548,56 @@ describe('bottomNavActive: "Game" tab', () => {
     expect(bottomNavActive(link('spm'), '/spm/latih-tubi')).toBe(true)
     expect(bottomNavActive(link('spm'), '/battle')).toBe(false)
   })
+})
+
+describe('S0-T06 nav integrity (scope on)', () => {
+  beforeEach(() => {
+    vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
+  })
+
+  const target = (role: Role, id: string) =>
+    items(navFor(role, 'sidebar')).find((i) => i.id === id)?.to
+
+  it('retargets Analitik Adaptif and Laporan Mingguan for the teacher and the school admin', () => {
+    expect(target('teacher', 't-analitik-adaptif')).toBe('/analitik/kelas')
+    expect(target('school_admin', 'sa-analitik-adaptif')).toBe('/analitik/kelas')
+    expect(target('teacher', 't-laporan-mingguan')).toBe('/guru/laporan-mingguan-kelas')
+  })
+
+  // Keep this list and e2e/r1/sidebar-walk.http.spec.ts in step: the walk opens exactly the
+  // sidebar links these ids render. A nav change must update both (and the walk's EXPECTED_RED).
+  const SIDEBAR_IDS: Record<'student' | 'teacher' | 'school_admin', string[]> = {
+    student: [
+      'dashboard', 'remedial', 'spm', 'bijak-spm', 'headcount', 'prestasi', 'analitik-adaptif',
+      'analisa-item', 'heatmap-topik-lemah', 'latih-tubi', 'soalan-by-chapter',
+      'soalan-berstruktur', 'kedudukan', 'pksk', 'artikel', 'video', 'permainan', 'cabutan',
+      'tournament', 'topik', 'peta-belajar', 'kelas-saya', 'set-soalan-guru', 'audio-kbat',
+      'syiling-token', 'tukar-token', 'cabaran-harian', 'kedai-hadiah', 'marketplace',
+      'papan-pendahulu', 'pencapaian', 'kotak-misteri', 'rujuk-kawan', 'cikgu-alesa',
+      'kedai-hadiah-digital', 'timeline-saya', 'jemput-ibu-bapa', 'profil-saya',
+      'tetapan-peribadi', 'panduan', 'tiket-bantuan',
+    ],
+    teacher: [
+      't-command-center', 't-dashboard-guru', 't-headcount', 't-soalan-by-chapter', 't-kelas-saya',
+      't-pelajar-saya', 't-prestasi', 't-laporan', 't-monitoring', 't-kirk-ringkasan',
+      't-kirk-reaksi', 't-kirk-pembelajaran', 't-kirk-tingkah-laku', 't-kirk-hasil',
+      't-kirk-rantaian', 't-kirk-intervensi', 't-analitik-adaptif', 't-analisa-item',
+      't-laporan-mingguan', 't-sumbang-soalan', 't-video', 't-profil-saya', 'tetapan-peribadi',
+      't-panduan', 't-analisis-item', 'tiket-bantuan',
+    ],
+    school_admin: [
+      'sa-command-center', 'sa-aktiviti-harian', 'sekolah-bersaing-ai', 'sa-dashboard',
+      'sa-senarai-pelajar', 'sa-senarai-guru', 'sa-kelas-sekolah', 'sa-headcount', 'sa-prestasi',
+      'sa-amaran-awal', 'sa-laporan-bulanan', 'sa-monitoring', 'sa-kirkpatrick',
+      'sa-analitik-adaptif', 'sa-statistik-penggunaan', 'sa-dskp-heatmap', 'sa-analisa-item',
+      'sa-laporan-aktiviti', 'sa-video', 'sa-profil-saya', 'tetapan-peribadi', 'sa-panduan',
+      'tiket-bantuan',
+    ],
+  }
+
+  for (const role of ['student', 'teacher', 'school_admin'] as const) {
+    it(`pins the sidebar item ids of ${role}`, () => {
+      expect(items(navFor(role, 'sidebar')).map((i) => i.id)).toEqual(SIDEBAR_IDS[role])
+    })
+  }
 })
