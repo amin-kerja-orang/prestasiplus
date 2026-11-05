@@ -46,8 +46,8 @@ export interface SittablePaper {
 }
 
 /**
- * Bijak SPM papers (M28, BE-15): Kertas Pilihan list and cover, the Kontrak list, the subject hub
- * and "Jana Kertas". Marks are derived from the placements on every read (Q-S6). No answer key,
+ * Bijak SPM papers (M28, BE-15): Kertas Pilihan list and cover, the Kontrak list, and the subject hub.
+ * Marks are derived from the placements on every read (Q-S6). No answer key,
  * mark scheme, accepted equivalent, explanation or question id is returned from here (US-15).
  */
 @Injectable()

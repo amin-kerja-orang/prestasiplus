@@ -57,16 +57,6 @@ export const bijakPapersScenarios: Scenario[] = [
     },
   },
   {
-    id: 'bijak-papers-api/generate: removed for every caller, 404 NOT_FOUND (S3-T07)',
-    domain: 'bijak-papers',
-    targets: API_ONLY,
-    async run(ctx) {
-      const body = { subject: 'MAT', kertas: 2 }
-      expectError(ctx, await (await ctx.as('student')).request('POST', '/bijak/papers/generate', { body }), 404, 'NOT_FOUND')
-      expectError(ctx, await (await ctx.as('teacher')).request('POST', '/bijak/papers/generate', { body }), 404, 'NOT_FOUND')
-    },
-  },
-  {
     id: 'bijak-papers-api/roles: anonymous 401, a teacher 403',
     domain: 'bijak-papers',
     targets: API_ONLY,
