@@ -355,14 +355,14 @@ test.describe('M07 student screens', { tag: [moduleTag(7)] }, () => {
     await expectNoHorizontalScroll(page)
 
     await gotoApp('/pksk/level/T4/history')
-    await expect(page.getByTestId('history-empty')).toHaveText('Tiada sejarah peperiksaan.')
+    await expect(page.getByTestId('history-empty')).toHaveText('Belum ada sejarah peperiksaan.')
     await expect(page.locator('table')).toHaveCount(0)
   })
 
   test('E2E-M07-07b History: empty for the admin', async ({ page, gotoApp, loginAs }) => {
     await loginAs('admin@demo.test')
     await gotoApp('/pksk/level/T1/history')
-    await expect(page.getByTestId('history-empty')).toHaveText('Tiada sejarah peperiksaan.')
+    await expect(page.getByTestId('history-empty')).toHaveText('Belum ada sejarah peperiksaan.')
     await expect(page.locator('table')).toHaveCount(0)
   })
 

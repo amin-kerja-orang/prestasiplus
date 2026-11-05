@@ -120,17 +120,20 @@ test.describe('QA-G5 M07 student flow', MODULE, () => {
     // History: 3 rows, newest first, today's attempt on top.
     await tid(page, 'shortcut-history').click()
     await expect(page).toHaveURL(/\/pksk\/level\/T1\/history$/)
-    const rows = tid(page, 'history-row')
+    // Table rows from md up, card list items below it (DsDataTable).
+    const rows = tid(page, 'history-table').locator(
+      'tbody tr, [data-ds=data-table-cards] > li',
+    )
     await expect(rows).toHaveCount(3)
     const texts = await rows.allTextContents()
     expect(texts[0]).toContain('25/09/2026')
     expect(texts[1]).toContain('20/09/2026')
     expect(texts[2]).toContain('10/09/2026')
-    expect(texts[1]).toMatch(/64%\s*C/)
-    expect(texts[2]).toMatch(/46%\s*D/)
+    expect(texts[1]).toMatch(/64%[\s\S]*C/)
+    expect(texts[2]).toMatch(/46%[\s\S]*D/)
     // T4 history is separate and still empty.
     await gotoApp('/pksk/level/T4/history')
-    await expect(tid(page, 'history-empty')).toHaveText('Tiada sejarah peperiksaan.')
+    await expect(tid(page, 'history-empty')).toHaveText('Belum ada sejarah peperiksaan.')
   })
 
   test('SEC-M07-07 the served exam has no correct-answer marker in the DOM and is 30 / 70 / 1', async ({
