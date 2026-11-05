@@ -54,6 +54,7 @@ export function numericValue(raw: string): number | null {
   return engineNumericValue(defuseRootIndex(raw))
 }
 export { effectiveMarks, leavesOf, type Leaf } from '@pp/exam-core/paper-model'
+export { countedIds, type ChooseCandidate } from '@pp/exam-core/choose-n'
 export type {
   CurriculumTag,
   LeafKind,

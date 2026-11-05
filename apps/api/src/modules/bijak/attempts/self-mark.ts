@@ -18,7 +18,7 @@ import type { BijakAttemptPartResult, BijakAttemptResult } from '@pp/contract'
 
 import { isBlank, type LeafKind, type QuestionResult, type SchemeDef, type SectionSnapshot } from './exam-core.adapter'
 import { answerTextOf, suggestFromPoints } from './keyword-suggest'
-import { assembleResult, leavesOfBundle, type AnswerMap, type Bundles } from './marking'
+import { assembleResult, groupIdsOf, leavesOfBundle, type AnswerMap, type Bundles } from './marking'
 
 export interface SelfMarkEntry {
   /** Already clamped to 0..part marks (and to the band range). */
@@ -102,7 +102,7 @@ export function applySelfMarks(base: BijakAttemptResult, composition: readonly S
     }
   }
   // assembleResult only reads and sets fields both shapes share (marks, awarded, counted, attempted, parts[].status).
-  const assembled = assembleResult(composition, questions as unknown as QuestionResult[])
+  const assembled = assembleResult(composition, questions as unknown as QuestionResult[], bundles ? groupIdsOf(bundles) : undefined)
   // Coins and points are what was CREDITED at submit (the wallet reward is never repeated), not a figure recomputed from the self-marked score.
   return { ...assembled, questions, coins: base.coins, points: base.points }
 }
@@ -111,6 +111,6 @@ export function applySelfMarks(base: BijakAttemptResult, composition: readonly S
  * The best-N score of the AUTOMATIC grading, without any self-mark: what the submit reward paid for. The score column of a stored
  * result carries the self-marks, so this re-ranks the stored graded rows (which keep the automatic marks) with best-N.
  */
-export function automaticScore(stored: BijakAttemptResult, composition: readonly SectionSnapshot[]): number {
-  return assembleResult(composition, structuredClone(stored.questions) as unknown as QuestionResult[]).score
+export function automaticScore(stored: BijakAttemptResult, composition: readonly SectionSnapshot[], bundles?: Bundles): number {
+  return assembleResult(composition, structuredClone(stored.questions) as unknown as QuestionResult[], bundles ? groupIdsOf(bundles) : undefined).score
 }
