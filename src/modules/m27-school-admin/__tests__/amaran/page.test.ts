@@ -163,30 +163,39 @@ describe('data call (FR-M27-80)', () => {
     expect(api.fetchSchoolRisk.mock.calls[0]?.[1]).toMatchObject({ tingkatan: null })
   })
 
-  it('passes ?tingkatan=T5 and ignores any other value', async () => {
+  it('passes ?tingkatan=T1..T5 and ignores any other value', async () => {
     await mountPage(data(), '/amaran/sekolah?tingkatan=T5')
     expect(api.fetchSchoolRisk.mock.calls[0]?.[1]).toMatchObject({ tingkatan: 'T5' })
     api.fetchSchoolRisk.mockClear()
-    await mountPage(data(), '/amaran/sekolah?tingkatan=T3&school_id=8080')
+    await mountPage(data(), '/amaran/sekolah?tingkatan=T3')
+    expect(api.fetchSchoolRisk.mock.calls[0]?.[1]).toMatchObject({ tingkatan: 'T3' })
+    api.fetchSchoolRisk.mockClear()
+    await mountPage(data(), '/amaran/sekolah?tingkatan=T6&school_id=8080')
     expect(api.fetchSchoolRisk.mock.calls[0]?.[0]).toBe(SCHOOL_ID)
     expect(api.fetchSchoolRisk.mock.calls[0]?.[1]).toMatchObject({ tingkatan: null })
   })
 })
 
 describe('pills (FR-M27-75)', () => {
-  it('shows the three pills, links on the alias, and activates the current level', async () => {
+  it('shows the Tingkatan 1-5 pills, links on the alias, and activates the current level', async () => {
     const w = await mountPage(data())
     expect(texts(w, 'am-pills').join('')).toContain('Semua Tingkatan')
-    const hrefs = ['all', 'T4', 'T5'].map((k) =>
+    const hrefs = ['all', 'T1', 'T2', 'T3', 'T4', 'T5'].map((k) =>
       w.get(`[data-testid="am-pill-${k}"]`).attributes('href'),
     )
     expect(hrefs).toEqual([
       '/amaran/sekolah',
+      '/amaran/sekolah?tingkatan=T1',
+      '/amaran/sekolah?tingkatan=T2',
+      '/amaran/sekolah?tingkatan=T3',
       '/amaran/sekolah?tingkatan=T4',
       '/amaran/sekolah?tingkatan=T5',
     ])
     expect(w.findAll('[data-testid^="am-pill-"]').map((e) => e.text())).toEqual([
       'Semua Tingkatan',
+      'Tingkatan 1',
+      'Tingkatan 2',
+      'Tingkatan 3',
       'Tingkatan 4',
       'Tingkatan 5',
     ])

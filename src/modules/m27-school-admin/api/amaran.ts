@@ -8,7 +8,7 @@
 import { api } from '@/api'
 
 export type RiskStatus = 'on_track' | 'watch' | 'high'
-export type LevelFilter = 'T4' | 'T5'
+export type LevelFilter = 'T1' | 'T2' | 'T3' | 'T4' | 'T5'
 
 export interface RiskTallyView {
   green: number

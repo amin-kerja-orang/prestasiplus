@@ -185,6 +185,17 @@ describe('BE-21 Amaran access: /amaran/*', () => {
     expect(none.pupils.length).toBeGreaterThan(3)
   })
 
+  it('tingkatan T1 to T3 are accepted (Tingkatan 1-5, D101 / FR-X3-3)', async () => {
+    for (const [q, code, label] of [['T1', 'T1', 'Tingkatan 1'], ['t2', 'T2', 'Tingkatan 2'], ['3', 'T3', 'Tingkatan 3']] as const) {
+      const res = await schoolAdmin.get(`/amaran/schools/${s1}?tingkatan=${q}`)
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      const data = AmaranSchoolRiskSchema.parse(res.body.data)
+      expect(data.levelFilter).toBe(code)
+      expect(data.levelSuffix).toBe(` — ${label}`)
+      expect(data.pupils).toHaveLength(0)
+    }
+  })
+
   it('summary: the default scope is the own school for school_admin and teacher; admin has no default (403)', async () => {
     for (const api of [schoolAdmin, teacher]) {
       const res = await api.get('/amaran/summary')

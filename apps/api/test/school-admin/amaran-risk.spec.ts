@@ -127,6 +127,8 @@ describe('BE-21 Amaran cell texts and labels', () => {
 
   it('tingkatan filter accepts T4, T5, 4, 5 in any case; anything else is no filter', () => {
     expect(['T4', 't4', '4', ' T5 ', '5', 'T6', '', 'x', undefined].map((v) => parseTingkatan(v))).toEqual([4, 4, 4, 5, 5, undefined, undefined, undefined, undefined])
+    // Tingkatan 1-5 (D101, FR-X3-3): the lower forms filter too.
+    expect(['T1', 't2', '3', ' T3 ', '0', 'T0', '12'].map((v) => parseTingkatan(v))).toEqual([1, 2, 3, 3, undefined, undefined, undefined])
     expect(inTingkatan([{ name: 'A', slug: 'tingkatan-4' }], 4)).toBe(true)
     expect(inTingkatan([{ name: 'A', slug: 'tingkatan-4' }], 5)).toBe(false)
     expect(inTingkatan([], 4)).toBe(false)
