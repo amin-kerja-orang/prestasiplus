@@ -4420,7 +4420,7 @@
                 },
                 "count": {
                   "type": "integer",
-                  "minimum": 1
+                  "minimum": 0
                 }
               },
               "required": [
@@ -4445,7 +4445,10 @@
         },
         "required": [
           "total",
-          "counts"
+          "counts",
+          "page",
+          "perPage",
+          "matched"
         ],
         "additionalProperties": false
       },
@@ -4457,7 +4460,7 @@
             "items": {
               "$ref": "#/components/schemas/SupportQueueRow"
             },
-            "maxItems": 200
+            "maxItems": 25
           },
           "meta": {
             "$ref": "#/components/schemas/SupportQueueMeta"
@@ -25159,84 +25162,6 @@
           "$ref": "#/components/schemas/GamesSekolahBersaingBoardRow"
         },
         "description": "Rank order; [] when no school has a session."
-      },
-      "GamesSekolahBersaingQuery": {
-        "type": "object",
-        "properties": {
-          "week": {
-            "type": "string",
-            "description": "Any text; an invalid value is ignored."
-          }
-        }
-      },
-      "GamesSekolahBersaingRow": {
-        "type": "object",
-        "properties": {
-          "rank": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "schoolName": {
-            "type": "string"
-          },
-          "state": {
-            "type": "string"
-          },
-          "aktifPct": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 100
-          },
-          "streakAvg": {
-            "type": "number",
-            "minimum": 0
-          },
-          "notaPer10": {
-            "type": "number",
-            "minimum": 0
-          },
-          "anonymous": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "rank",
-          "schoolName",
-          "state",
-          "aktifPct",
-          "streakAvg",
-          "notaPer10",
-          "anonymous"
-        ],
-        "additionalProperties": false
-      },
-      "GamesSekolahBersaing": {
-        "type": "object",
-        "properties": {
-          "weekStart": {
-            "type": "string",
-            "format": "date",
-            "description": "Monday of the selected week.",
-            "example": "2026-10-16"
-          },
-          "count": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "rows": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/GamesSekolahBersaingRow"
-            },
-            "description": "Stored rank order; [] for an empty week."
-          }
-        },
-        "required": [
-          "weekStart",
-          "count",
-          "rows"
-        ],
-        "additionalProperties": false
       },
       "GamesAdminOverview": {
         "type": "object",
@@ -59907,6 +59832,41 @@
           "questionCount": {
             "type": "integer",
             "minimum": 0
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "code": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "name": {
+                  "type": "string"
+                },
+                "chapterCount": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "questionCount": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "id",
+                "code",
+                "name",
+                "chapterCount",
+                "questionCount"
+              ],
+              "additionalProperties": false
+            },
+            "description": "S5-T02 (FR-MUR-9-5): the offered levels of this subject that have at least one chapter with a servable question, with their own counts. `chapterCount` and `questionCount` above are the sums over these levels."
           }
         },
         "required": [
@@ -59915,7 +59875,8 @@
           "icon",
           "color",
           "chapterCount",
-          "questionCount"
+          "questionCount",
+          "levels"
         ],
         "additionalProperties": false
       },
@@ -79575,7 +79536,7 @@
           "support"
         ],
         "summary": "Admin support queue",
-        "description": "Admin only. Newest first (createdAt desc, then id desc), 25 per page with `page`. `meta.total` = all tickets; `meta.counts` = statuses with a count above 0, in vocabulary order, over all tickets; `meta.matched` counts the rows matching the filters. A row has no body, no e-mail and no user id.",
+        "description": "Admin only. Newest first (createdAt desc, then id desc), 25 per page with `page`. `meta.total` and `meta.counts` cover the role-filtered tickets, whatever the status filter; `meta.counts` has all five statuses in vocabulary order; `meta.matched` counts the rows matching both filters. A row has no body, no e-mail and no user id.",
         "parameters": [
           {
             "schema": {
@@ -79850,7 +79811,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields.text: \"Sila isi balasan.\" or \"Balasan tidak boleh melebihi 5000 aksara.\"",
+            "description": "VALIDATION_ERROR with fields.text: \"Sila tulis balasan.\" or \"Balasan tidak boleh melebihi 5000 aksara.\"",
             "content": {
               "application/json": {
                 "schema": {
@@ -79951,7 +79912,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields.status: \"Sila pilih status.\"",
+            "description": "VALIDATION_ERROR with fields.status: \"Data yang dihantar tidak sah. Sila semak dan cuba lagi.\"",
             "content": {
               "application/json": {
                 "schema": {
@@ -99967,30 +99928,18 @@
         "tags": [
           "games"
         ],
-        "summary": "Sekolah Bersaing weekly board (M16-50)",
-        "description": "National board, no school scope. `week`: a valid YYYY-MM-DD selects the Monday of that week; anything else the current week; never an error. An anonymous row shows \"Sekolah anonim\".",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "description": "Any text; an invalid value is ignored."
-            },
-            "required": false,
-            "description": "Any text; an invalid value is ignored.",
-            "name": "week",
-            "in": "query"
-          }
-        ],
+        "summary": "Sekolah Bersaing live board (API-AS-14)",
+        "description": "National board, no school scope, computed on request. School admin and admin only. Top 30 schools by mean session accuracy; ties by pupils, sessions, school name. An unknown query parameter is ignored.",
         "responses": {
           "200": {
-            "description": "Weekly snapshot.",
+            "description": "Rank order; [] when no school has a session.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/components/schemas/GamesSekolahBersaing"
+                      "$ref": "#/components/schemas/GamesSekolahBersaingBoard"
                     }
                   },
                   "required": [
@@ -100002,6 +99951,16 @@
           },
           "401": {
             "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not school_admin or admin).",
             "content": {
               "application/json": {
                 "schema": {

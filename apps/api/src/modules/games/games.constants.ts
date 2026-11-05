@@ -34,3 +34,7 @@ export const BOT_ACCURACY_FALLBACK = 0
 /** Default of `game_settings.boardgame_quiz_tiles` (mock SEED_QUIZ_TILES); max is 38. */
 export const DEFAULT_QUIZ_TILES = 35
 export const MAX_QUIZ_TILES = 38
+
+/** Sekolah Bersaing (FR-GM-16.4): defaults of `sekolah_bersaing_min_pupils` and `sekolah_bersaing_top_n`, used until S7-T01 part 1 adds the setting reader. */
+export const SEKOLAH_BERSAING_MIN_PUPILS = 1
+export const SEKOLAH_BERSAING_TOP_N = 30
