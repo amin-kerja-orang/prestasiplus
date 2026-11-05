@@ -38,7 +38,7 @@ const vsCards = computed(() => {
     { label: 'Ketepatan Lepas', value: `${plain(e.accuracyPrev)}%` },
     {
       label: 'Perubahan',
-      value: `${e.accuracyChange > 0 ? '+' : ''}${plain(e.accuracyChange)}%`,
+      value: e.accuracyChange === null ? '—' : `${e.accuracyChange > 0 ? '+' : ''}${plain(e.accuracyChange)}%`,
     },
     { label: 'Jawapan Kini', value: String(e.answersNow) },
     { label: 'Jawapan Lepas', value: String(e.answersPrev) },
