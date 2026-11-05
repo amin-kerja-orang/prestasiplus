@@ -70,8 +70,9 @@ describe('Jana eligibility: the SQL scope equals the pool facts through describe
 
     await approve('control')
     await approve('noUnit', { tag: undefined })
+    await setVersion('noUnit', 'difficulty_tp = 3') // no fallback from the typed Kesukaran any more (#685): the TP is set here so that only the unit is missing
     await approve('t1t3NoUnit', { tag: undefined })
-    await setVersion('t1t3NoUnit', `form_origin = 't1_t3'`)
+    await setVersion('t1t3NoUnit', `form_origin = 't1_t3', difficulty_tp = 3`)
     await approve('tagReview')
     await setVersion('tagReview', 'tag_review = true')
     await approve('marksZero')

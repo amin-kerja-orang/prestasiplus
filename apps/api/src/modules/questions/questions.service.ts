@@ -176,8 +176,8 @@ function statusAfterEdit(current: QuestionStatus): QuestionStatus {
 interface Normalized {
   subjectId: string
   educationLevelId: string
-  /** 1..6, stored in `difficulty_tp`. Working default: still falls back to the typed Kesukaran when no `tag.tp` is sent (S1-T01's save path). */
-  tp: number
+  /** 1..6, stored in `difficulty_tp`; null when no `tag.tp` is sent (TP is separate from Kesukaran, #685). */
+  tp: number | null
   /** DM-47: the typed Kesukaran 1..5, stored in `difficulty_level` on every save. */
   difficultyLevel: number
   /** DM-56: a value sets the reference, null clears it, undefined keeps what is stored. */
@@ -295,7 +295,7 @@ export class QuestionsService {
       {
         subjectId: input.subjectId,
         educationLevelId: input.educationLevelId,
-        tp: input.tag?.tp ?? input.difficultyLevel,
+        tp: input.tag?.tp ?? null,
         difficultyLevel: input.difficultyLevel,
         textbookRef: input.textbookRef,
         stem: input.questionText,
@@ -715,7 +715,7 @@ export class QuestionsService {
       {
         subjectId: input.subjectId,
         educationLevelId: input.educationLevelId,
-        tp: input.tag?.tp ?? difficultyOf(input.difficultyLevel),
+        tp: input.tag?.tp ?? null,
         difficultyLevel: difficultyOf(input.difficultyLevel),
         stem: input.questionText,
         parts,
@@ -990,7 +990,7 @@ export class QuestionsService {
     if (!subject) fields.subjectId = QUESTION_MESSAGES.subject
     // Secondary-only (D72): a Darjah (primary-stage) level cannot be written; same refusal as an unknown level.
     if (!level || level.stage === 'primary') fields.educationLevelId = QUESTION_MESSAGES.level
-    if (!Number.isInteger(n.tp) || n.tp < 1 || n.tp > 6) fields.difficultyLevel = QUESTION_MESSAGES.difficulty
+    if ((n.tp !== null && (!Number.isInteger(n.tp) || n.tp < 1 || n.tp > 6)) || !Number.isInteger(n.difficultyLevel) || n.difficultyLevel < 1 || n.difficultyLevel > 5) fields.difficultyLevel = QUESTION_MESSAGES.difficulty
 
     // Curriculum tag: unit (kind unit), 1 to 3 SP nodes (kind sp), all of this subject and level.
     let unitKey: bigint | null = null
@@ -1223,7 +1223,7 @@ export class QuestionsService {
     const normalized: Normalized = {
       subjectId: opts.keepSubject ? (v.subjectId ?? input.subjectId) : input.subjectId,
       educationLevelId: opts.keepSubject ? (v.educationLevelId ?? input.educationLevelId) : input.educationLevelId,
-      tp: input.tag?.tp ?? (keepTp && v.difficultyTp !== null ? v.difficultyTp : input.difficultyLevel),
+      tp: input.tag?.tp ?? (keepTp && v.difficultyTp !== null ? v.difficultyTp : null),
       difficultyLevel: input.difficultyLevel,
       textbookRef: input.textbookRef,
       stem: input.questionText,

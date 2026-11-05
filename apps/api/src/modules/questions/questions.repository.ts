@@ -946,7 +946,7 @@ export class QuestionsRepository {
       }[]
     >`
       SELECT v.last_editor, v.declared_marks,
-             EXISTS (SELECT 1 FROM curriculum_nodes cn WHERE cn.subject_id = v.subject_id AND cn.education_level_id = v.education_level_id) AS has_dskp,
+             EXISTS (SELECT 1 FROM curriculum_nodes cn WHERE cn.subject_id = v.subject_id AND cn.education_level_id = v.education_level_id AND cn.kind = 'sp') AS has_dskp,
              EXISTS (SELECT 1 FROM chapters ch WHERE ch.subject_id = v.subject_id AND ch.education_level_id = v.education_level_id AND ch.is_active AND ch.in_tree) AS has_chapters,
              CASE WHEN v.unit_node_id IS NULL THEN NULL ELSE ARRAY(
                SELECT sp.code FROM question_version_sp_nodes qs JOIN curriculum_nodes sp ON sp.id = qs.node_id
@@ -985,7 +985,7 @@ export class QuestionsRepository {
     const level = levelId === null ? null : bi(levelId)
     if (subject === null || level === null) return { hasDskpNodes: false, hasChapters: false }
     const rows = await this.db.$queryRaw<{ has_dskp: boolean; has_chapters: boolean }[]>`
-      SELECT EXISTS (SELECT 1 FROM curriculum_nodes WHERE subject_id = ${subject} AND education_level_id = ${level}) AS has_dskp,
+      SELECT EXISTS (SELECT 1 FROM curriculum_nodes WHERE subject_id = ${subject} AND education_level_id = ${level} AND kind = 'sp') AS has_dskp,
              EXISTS (SELECT 1 FROM chapters WHERE subject_id = ${subject} AND education_level_id = ${level} AND is_active AND in_tree) AS has_chapters`
     return { hasDskpNodes: rows[0]?.has_dskp === true, hasChapters: rows[0]?.has_chapters === true }
   }

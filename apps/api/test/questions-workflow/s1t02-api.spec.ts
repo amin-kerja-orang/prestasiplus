@@ -184,4 +184,54 @@ describe('S1-T02 part 1: difficulty_level, textbook_ref, rejection, SP outside t
       expect(res.body.error.fields.spIds).toBe(INTAKE_GATE_MESSAGES.spNotInTaxonomy('99.9'))
     })
   })
+  describe('TP has no Kesukaran fallback (#685) and has_dskp counts SP nodes only (#453)', () => {
+    it('[CI] a question saved without tag.tp keeps TP null, stores difficulty_level, and the approve gate lists "Bahagian (1) belum ada TP." (AC-ADM-QE4.5)', async () => {
+      const id = await create({ difficultyLevel: 4, tag: undefined, dskpSpId: tag.spId, status: 'review' })
+      expect(await row(id)).toMatchObject({ difficulty_level: 4, difficulty_tp: null })
+      const check = await gate(id, 'approve')
+      expect(check.issues.map((i) => i.code)).toEqual(expect.arrayContaining(['TP_MISSING', 'LEAF_NO_TP']))
+      expect(check.issues.find((i) => i.code === 'LEAF_NO_TP')?.message).toBe('Bahagian (1) belum ada TP.')
+      const refused = await status(id, 'approved')
+      expect(refused.status).toBe(422)
+      expect(await row(id)).toMatchObject({ status: 'review', difficulty_level: 4, difficulty_tp: null })
+    })
+
+    it('[CI] an update that changes Kesukaran without tag.tp does not copy it into TP; an unchanged Kesukaran keeps the stored TP', async () => {
+      const id = await create({ difficultyLevel: 2, tag: { unitId: tag.unitId, spIds: [tag.spId], tp: 5 } })
+      const kept = await c.admin.put(`/api/questions/${id}`, body({ difficultyLevel: 2, tag: undefined }))
+      expect(kept.status, JSON.stringify(kept.body)).toBe(200)
+      expect(await row(id)).toMatchObject({ difficulty_level: 2, difficulty_tp: 5 })
+      const changed = await c.admin.put(`/api/questions/${id}`, body({ difficultyLevel: 4, tag: undefined, dskpSpId: tag.spId }))
+      expect(changed.status, JSON.stringify(changed.body)).toBe(200)
+      expect(await row(id)).toMatchObject({ difficulty_level: 4, difficulty_tp: null })
+    })
+
+    it('[CI] T1-T3 with unit nodes only (no SP): the gate asks for no SP and no TP, and the question is approved', async () => {
+      const [free] = await t.db.query<{ subject_id: string; level_id: string }>(
+        `select s.id::text as subject_id, l.id::text as level_id from subjects s, education_levels l
+          where l.code = 'T1' and not exists (select 1 from curriculum_nodes n where n.subject_id = s.id and n.education_level_id = l.id)
+            and not exists (select 1 from chapters ch where ch.subject_id = s.id and ch.education_level_id = l.id) limit 1`,
+      )
+      expect(free, 'a subject without DSKP nodes at T1').toBeDefined()
+      await t.db.query(
+        `insert into curriculum_nodes (subject_id, education_level_id, kind, code, title, edition) values ($1::bigint, $2::bigint, 'unit', 'U-T1-NOSP', 'Unit tanpa SP', 'KSSM')`,
+        [free!.subject_id, free!.level_id],
+      )
+      const id = await create({ subjectId: free!.subject_id, educationLevelId: free!.level_id, tag: undefined, curriculumChapterId: undefined, status: 'review' })
+      const check = await gate(id, 'approve')
+      expect(check.issues.filter((i) => ['NO_SP', 'TP_MISSING', 'LEAF_NO_TP'].includes(i.code))).toEqual([])
+      const res = await status(id, 'approved')
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(await row(id)).toMatchObject({ status: 'approved', difficulty_tp: null })
+      const [sp] = await t.db.query<{ n: number }>(`select count(*)::int as n from question_version_sp_nodes where question_version_id in (select id from question_versions where question_id = $1::bigint)`, [id])
+      expect(sp!.n).toBe(0)
+    })
+
+    it('[CI] T4 with SP nodes behaves as before: no SP is refused', async () => {
+      const id = await create({ status: 'review' })
+      await t.db.query(`delete from question_version_sp_nodes where question_version_id in (select id from question_versions where question_id = $1::bigint)`, [id])
+      expect((await gate(id, 'approve')).issues.map((i) => i.code)).toContain('NO_SP')
+      expect((await status(id, 'approved')).status).toBe(422)
+    })
+  })
 })

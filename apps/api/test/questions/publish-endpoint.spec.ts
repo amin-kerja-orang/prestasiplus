@@ -49,10 +49,11 @@ describe('AC 5 (endpoint half): publishing needs subject, level, unit, SP and TP
     expect(rows[0]?.live_version_no).toBe(1)
   })
 
-  it('a flat dskpSpId alone gives the SP, but the TP is the difficulty and the unit is its ancestor', async () => {
+  it('a flat dskpSpId alone gives the SP and its ancestor unit, but no TP: the TP stays null and approval is refused (#685)', async () => {
     const tag = await tagOf(t.db, refs.mathId, refs.t4Id)
     const res = await admin.post('/api/questions', mcqBody(refs, { status: 'approved', dskpSpId: tag.spIds[0] }))
-    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    expect(res.status, JSON.stringify(res.body)).toBe(422)
+    expect(Object.keys(res.body.error.fields).sort()).toEqual(['parts.1.difficultyTp', 'tp'])
   })
 
   it('bulk Terbitkan: a review question without a tag stays in review; a tagged one is approved', async () => {
