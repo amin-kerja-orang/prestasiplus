@@ -15443,6 +15443,26 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/guru/structured-questions",
+      "method": "GET",
+      "path": "/api/guru/structured-questions",
+      "api_id": "API-GUR-26",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
+      "key": "GET /api/guru/structured-questions/:p",
+      "method": "GET",
+      "path": "/api/guru/structured-questions/:id",
+      "api_id": "API-GUR-26",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
       "key": "GET /api/questions/studio/dskp",
       "method": "GET",
       "path": "/api/questions/studio/dskp",
