@@ -139,7 +139,6 @@ export interface ImportedQuestionInput {
   kertas?: '1' | '2' | '3'
 }
 
-/** Display facts about a question for lists (reports, master notes). */
 /** The stem and subject of one exact version (the version a report was filed against), for the reporter's own list. */
 export interface QuestionVersionBrief {
   /** Plain-text stem (the adapter strips markup). */
@@ -148,6 +147,7 @@ export interface QuestionVersionBrief {
   subjectName: string | null
 }
 
+/** Display facts about a question for lists (reports, master notes). */
 export interface QuestionBrief {
   id: string
   /** Plain-text stem (the adapter strips markup). */

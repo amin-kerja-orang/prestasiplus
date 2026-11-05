@@ -358,7 +358,6 @@ export class QuestionReportsService {
 /** Longest preview of a question stem sent to a reporter's own list. */
 export const PLAIN_PREVIEW_MAX = 200
 
-/** Plain-text preview of a stem that may hold markup: tags dropped, common entities decoded, whitespace collapsed, capped with an ellipsis. */
 /**
  * Markup the stems use (rich-text editor output). Only these tag names count as markup, so a maths comparison such as
  * `x<y dan y>3` is never taken for a tag.
@@ -371,6 +370,7 @@ function codePointOr(cp: number, raw: string): string {
   return Number.isInteger(cp) && cp >= 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : raw
 }
 
+/** Plain-text preview of a stem that may hold markup: tags dropped, common entities decoded, whitespace collapsed, capped with an ellipsis. */
 export function plainPreview(html: string, max: number = PLAIN_PREVIEW_MAX): string {
   const text = html
     .replace(PREVIEW_TAG, ' ')
