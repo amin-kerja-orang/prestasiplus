@@ -18,9 +18,14 @@ import {
   GamesSoloGameSchema,
 } from './common'
 import {
+  GamesAdminGameActiveRequestSchema,
+  GamesAdminGameSchema,
   GamesAdminOverviewSchema,
   GamesAdminSettingsResultSchema,
   GamesAdminSettingsUpdateRequestSchema,
+  GamesAdminSpinSegmentSchema,
+  GamesAdminSpinSegmentsSchema,
+  GamesAdminSpinSegmentsUpdateRequestSchema,
 } from './admin'
 import {
   GamesLeagueCardSchema,
@@ -205,9 +210,14 @@ export const GAMES_COMPONENT_SCHEMAS = {
   GamesSekolahBersaingBoardRow: GamesSekolahBersaingBoardRowSchema,
   GamesSekolahBersaingBoard: GamesSekolahBersaingBoardSchema,
   // admin
+  GamesAdminGame: GamesAdminGameSchema,
+  GamesAdminGameActiveRequest: GamesAdminGameActiveRequestSchema,
   GamesAdminOverview: GamesAdminOverviewSchema,
   GamesAdminSettingsUpdateRequest: GamesAdminSettingsUpdateRequestSchema,
   GamesAdminSettingsResult: GamesAdminSettingsResultSchema,
+  GamesAdminSpinSegment: GamesAdminSpinSegmentSchema,
+  GamesAdminSpinSegments: GamesAdminSpinSegmentsSchema,
+  GamesAdminSpinSegmentsUpdateRequest: GamesAdminSpinSegmentsUpdateRequestSchema,
 } as const
 
 const json = (schema: z.ZodType, description: string) => ({
@@ -230,6 +240,7 @@ const RoomParams = z.object({
 const SoloGameParam = z.object({
   game: GamesSoloGameSchema.meta({ description: 'Solo game key. Unknown: 404 "Permainan tidak dijumpai.".' }),
 })
+const GameKeyParam = z.object({ gameKey: z.string().min(1).meta({ description: 'Game key of Senarai Permainan.' }) })
 const SessionParams = z.object({ sessionId: z.string().min(1).meta({ description: 'Jutawan session id (uuid string).' }) })
 const LeagueParams = z.object({
   id: z.string().min(1).meta({ description: 'League id. Digits only; a non-numeric segment does not match the route.' }),
@@ -733,15 +744,61 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     method: 'put',
     path: '/admin/games/settings',
     tags: TAGS,
-    summary: 'Save the Papan Bijak quiz-tile count (M16-52)',
-    description: 'Role admin only. The mock writes no audit event.',
+    summary: 'Save the Tetapan Permainan settings (M16-52, API-ADM-08)',
+    description:
+      'Role admin only. Partial and strict: a key left out keeps its value, an unknown key is refused. One bad value saves nothing. Each change is audited with before and after, a save that changes nothing writes no audit row, and a change applies to later events only. Answers every setting. The mock writes no audit event.',
     request: { headers: [csrf], body: body(GamesAdminSettingsUpdateRequestSchema) },
     responses: {
       429: RATE_LIMITED,
       200: json(envelopeOf(GamesAdminSettingsResultSchema), 'Saved.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_ADMIN_WRITE,
-      422: err('VALIDATION_ERROR "Nilai mesti antara 0 dan 38." (fields.boardgame_quiz_tiles).'),
+      422: err(
+        'VALIDATION_ERROR on fields.<key>: "Nilai mesti antara {min} dan {max}.", for boardgame_quiz_tiles "Maksimum 38 petak soalan." above 38 and "Bilangan petak tidak sah." for a non-integer or below 0, "The <key> field is not allowed." for an unknown key.',
+      ),
+    },
+  })
+
+  registry.registerPath({
+    method: 'put',
+    path: '/admin/games/{gameKey}/active',
+    tags: TAGS,
+    summary: 'Switch a game on or off in Senarai Permainan (API-ADM-08, N05-04)',
+    description:
+      'Role admin only. Strict body. Stored as `game_enabled_<game_key>`. Audited with before and after; the same value writes no audit row. The hub does not read this yet (S7-T01). The mock writes no audit event.',
+    request: { headers: [csrf], params: GameKeyParam, body: body(GamesAdminGameActiveRequestSchema) },
+    responses: {
+      429: RATE_LIMITED,
+      200: json(envelopeOf(GamesAdminGameSchema), 'The game row.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_ADMIN_WRITE,
+      404: err('NOT_FOUND "Rekod tidak dijumpai. Ia mungkin telah dipadam." (not a game of the list).'),
+      422: err('VALIDATION_ERROR on fields.active "Nilai tidak sah.", or "The <key> field is not allowed." for an unknown key.'),
+    },
+  })
+
+  registry.registerPath({
+    method: 'get',
+    path: '/admin/games/spin-segments',
+    tags: TAGS,
+    summary: 'The 8 Roda Nasib segments (API-ADM-23)',
+    description: 'Role admin only.',
+    responses: { 200: json(envelopeOf(GamesAdminSpinSegmentsSchema), 'The 8 segments by position.'), 401: UNAUTHORIZED, 403: FORBIDDEN_ADMIN },
+  })
+
+  registry.registerPath({
+    method: 'put',
+    path: '/admin/games/spin-segments',
+    tags: TAGS,
+    summary: 'Save the 8 Roda Nasib segments (API-ADM-23)',
+    description: 'Role admin only. All or nothing. Audited with before and after; a save that changes nothing writes no audit row. The mock writes no audit event.',
+    request: { headers: [csrf], body: body(GamesAdminSpinSegmentsUpdateRequestSchema) },
+    responses: {
+      429: RATE_LIMITED,
+      200: json(envelopeOf(GamesAdminSpinSegmentsSchema), 'Saved; the 8 segments by position.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_ADMIN_WRITE,
+      422: err('VALIDATION_ERROR "Jumlah berat mesti 100." (fields.segments), or a field message under fields.segments.<n>.<key>.'),
     },
   })
 }

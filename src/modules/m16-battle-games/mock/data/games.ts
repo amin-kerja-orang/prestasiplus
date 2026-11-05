@@ -89,7 +89,6 @@ export const ROOM_COINS = {
 
 /** Seed value of `boardgame_quiz_tiles` and its limits (BR-M16-36). */
 export const SEED_QUIZ_TILES = 35
-export const MAX_QUIZ_TILES = 38
 export const BOARD_NON_PLAIN = 10
 
 /** Seed rooms (§6.11.0): 160 rooms over 189 distinct users, 38 of them the standing users. */

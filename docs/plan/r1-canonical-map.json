@@ -2720,6 +2720,16 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/permainan|m16.admin-settings",
+      "path": "/admin/permainan",
+      "name": "m16.admin-settings",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m16-battle-games/pages/TetapanPermainanPage.vue",
+      "file": "src/modules/m16-battle-games/routes/admin.ts",
+      "approved_by_card": "S7-T03"
+    },
+    {
       "key": "/admin/tiket|m22.admin-tickets",
       "path": "/admin/tiket",
       "name": "m22.admin-tickets",
@@ -13730,6 +13740,36 @@
       "sector": "S7",
       "file": "apps/api/src/modules/games/rooms/admin/admin-games.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "PUT /api/admin/games/:p/active",
+      "method": "PUT",
+      "path": "/api/admin/games/:gameKey/active",
+      "api_id": "API-ADM-08",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/games/rooms/admin/admin-games.controller.ts",
+      "approved_by_card": "S7-T03"
+    },
+    {
+      "key": "GET /api/admin/games/spin-segments",
+      "method": "GET",
+      "path": "/api/admin/games/spin-segments",
+      "api_id": "API-ADM-23",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/games/rooms/admin/admin-games.controller.ts",
+      "approved_by_card": "S7-T03"
+    },
+    {
+      "key": "PUT /api/admin/games/spin-segments",
+      "method": "PUT",
+      "path": "/api/admin/games/spin-segments",
+      "api_id": "API-ADM-23",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/games/rooms/admin/admin-games.controller.ts",
+      "approved_by_card": "S7-T03"
     },
     {
       "key": "POST /api/papan-bijak/quick-match",

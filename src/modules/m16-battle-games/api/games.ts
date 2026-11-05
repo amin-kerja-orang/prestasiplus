@@ -10,7 +10,12 @@
 import { api, wireId, type EntityId, type RawResponse } from '@/api'
 
 import type {
+  AdminGame,
   AdminGames,
+  AdminGameSettings,
+  AdminGameSettingsPatch,
+  AdminSpinSegment,
+  AdminSpinSegmentInput,
   GameLobby,
   GamesHub,
   JutawanAnswerResult,
@@ -214,11 +219,22 @@ export function fetchAdminGames(options: Signal = {}): Promise<AdminGames> {
   return api.get<AdminGames>('/api/admin/games', withSignal(options))
 }
 
-/** #52 `PUT /api/admin/games/settings` (admin; 422 with the message under `boardgame_quiz_tiles`). */
-export function saveGameSettings(
-  boardgameQuizTiles: number,
-): Promise<{ boardgameQuizTiles: number }> {
-  return api.put<{ boardgameQuizTiles: number }>('/api/admin/games/settings', {
-    body: { boardgame_quiz_tiles: boardgameQuizTiles },
-  })
+/** #52 `PUT /api/admin/games/settings` (admin; partial; a 422 names each bad key under `fields`). */
+export function saveGameSettings(body: AdminGameSettingsPatch): Promise<AdminGameSettings> {
+  return api.put<AdminGameSettings>('/api/admin/games/settings', { body })
+}
+
+/** API-ADM-08 `PUT /api/admin/games/:gameKey/active` (admin; answers the game row). */
+export function saveGameActive(gameKey: string, active: boolean): Promise<AdminGame> {
+  return api.put<AdminGame>(`/api/admin/games/${encodeURIComponent(gameKey)}/active`, { body: { active } })
+}
+
+/** API-ADM-23 `GET /api/admin/games/spin-segments` (admin). */
+export function fetchSpinSegments(options: Signal = {}): Promise<AdminSpinSegment[]> {
+  return api.get<AdminSpinSegment[]>('/api/admin/games/spin-segments', withSignal(options))
+}
+
+/** API-ADM-23 `PUT /api/admin/games/spin-segments` (admin; exactly 8 rows, weights total 100). */
+export function saveSpinSegments(segments: AdminSpinSegmentInput[]): Promise<AdminSpinSegment[]> {
+  return api.put<AdminSpinSegment[]>('/api/admin/games/spin-segments', { body: { segments } })
 }
