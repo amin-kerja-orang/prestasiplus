@@ -240,6 +240,20 @@ describe('S7 create and join (FR-M16-56, 57)', () => {
     expect(input.element.value).toBe('ABC123')
   })
 
+  it('a code that is not 6 characters A-Z0-9 shows "Kod bilik tidak sah." and sends no request (AC-GM-R.1)', async () => {
+    const { router } = await mountPage()
+    for (const bad of ['AB12C', 'AB-12C', '']) {
+      await wrapper!.get('[data-testid="join-input"]').setValue(bad)
+      await wrapper!.get('[data-testid="join-form"]').trigger('submit')
+      await flushPromises()
+      expect(wrapper!.get('[data-testid="join-card"]').text()).toContain('Kod bilik tidak sah.')
+    }
+    expect(joinRoom).not.toHaveBeenCalled()
+    expect(router.currentRoute.value.fullPath).toBe('/papan-bijak')
+    await wrapper!.get('[data-testid="join-input"]').setValue('AB12CD') // typing again clears the message
+    expect(wrapper!.get('[data-testid="join-card"]').text()).not.toContain('Kod bilik tidak sah.')
+  })
+
   it('joins by code, opening the room', async () => {
     joinRoom.mockResolvedValueOnce({ code: 'ABC123' })
     const { router } = await mountPage()
