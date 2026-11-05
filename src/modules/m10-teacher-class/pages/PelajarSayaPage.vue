@@ -2,17 +2,25 @@
 /**
  * S6 `/guru/pelajar` (FR-M10-35..37; URS FT-M10-3.3): counter, "Cipta Pelajar" link, tabs
  * "Pelajar Sekolah" / "Pelajar Saya" (default, client state), the empty and no-school cards, and
- * the PROPOSED student rows with add (#16) and remove (#17).
+ * the PROPOSED student rows with add (#16) and remove (#17). R1-GUR-41 (S6-T10): the route
+ * `/guru/pelajar/cipta` renders the same page with `create` set, which opens the "Cipta Pelajar" card
+ * (Nama, Kelas, No. IC; API-GUR-06); the result message stays until dismissed; 25 rows per page.
  */
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+
+import { ApiError } from '@/api'
 
 import { useApi, useDebouncedRef, useFlash, usePrototypeScope } from '@/composables'
 import {
+  DsCallout,
   DsEmptyState,
+  DsFormField,
   DsLoadError,
   DsNativeSelect,
   DsPage,
   DsPanel,
+  DsStack,
+  DsText,
   DsPillNav,
   DsStatTile,
   useConfirm,
@@ -21,6 +29,7 @@ import {
 
 import {
   addStudentToClass,
+  createGuruStudent,
   fetchGuruClasses,
   fetchGuruStudents,
   removeStudentFromClass,
@@ -31,6 +40,11 @@ import StudentRow from '../components/pelajar/StudentRow.vue'
 import { isInClass } from '../components/pelajar/student-classes'
 import { moduleMessage } from '../lib/generic-server-text'
 
+defineProps<{
+  /** The route `/guru/pelajar/cipta`: the "Cipta Pelajar" card is open. */
+  create?: boolean
+}>()
+
 const flash = useFlash()
 const confirm = useConfirm()
 // Prototype scope (D43): the teacher profile editor is outside the matrix.
@@ -40,16 +54,34 @@ const search = ref('')
 const searchApplied = useDebouncedRef(search, 300)
 const targetClass = ref('')
 const busy = ref(false)
+const minePage = ref(1)
+const schoolPage = ref(1)
+const targetError = ref('')
 
-const mine = useApi((signal) => fetchGuruStudents({ tab: 'mine' }, { signal }))
+const mine = useApi(
+  (signal) => fetchGuruStudents({ tab: 'mine', page: minePage.value }, { signal }),
+  [minePage],
+)
 const classes = useApi((signal) => fetchGuruClasses({ signal }))
 const school = useApi(
   async (signal) =>
     tab.value === 'school'
-      ? fetchGuruStudents({ tab: 'school', search: searchApplied.value.trim() }, { signal })
+      ? fetchGuruStudents(
+          { tab: 'school', search: searchApplied.value.trim(), page: schoolPage.value },
+          { signal },
+        )
       : null,
-  [tab, searchApplied],
+  [tab, searchApplied, schoolPage],
 )
+watch(searchApplied, () => {
+  schoolPage.value = 1
+})
+watch(targetClass, () => {
+  targetError.value = ''
+})
+
+const minePages = computed(() => mine.data.value?.meta.totalPages ?? 1)
+const schoolPages = computed(() => school.data.value?.meta.totalPages ?? 1)
 
 const tabs = computed<PillItem<StudentTab>[]>(() => [
   { key: 'school', label: PELAJAR_COPY.tabSchool, icon: 'i-ph-buildings' },
@@ -109,11 +141,70 @@ async function act(run: () => Promise<unknown>, okMessage: string): Promise<void
   }
 }
 
-const add = (studentId: number): Promise<void> =>
-  act(
+const add = (studentId: number): Promise<void> => {
+  // AC-GUR-41-7: "Tambah" with no class chosen says so and adds nobody.
+  if (targetClass.value === '') {
+    targetError.value = PELAJAR_COPY.chooseClassFirst
+    flash.show({ type: 'error', message: PELAJAR_COPY.chooseClassFirst })
+    return Promise.resolve()
+  }
+  return act(
     () => addStudentToClass(studentId, { classroomId: targetClass.value }),
     PELAJAR_COPY.added,
   )
+}
+
+// --- Cipta Pelajar (API-GUR-06) -----------------------------------------------------------------
+
+const IC_PATTERN = /^\d{12}$/
+const newName = ref('')
+const newClass = ref('')
+const newIc = ref('')
+const createFields = ref<Record<string, string>>({})
+const creating = ref(false)
+/** The server message "Pelajar dicipta. Login: ... / ...": shown until dismissed, never stored. */
+const createdMessage = ref('')
+
+/** The preselected class when the teacher has exactly one active class. */
+const classChoice = computed(() =>
+  newClass.value !== '' ? newClass.value : ownClasses.value.length === 1 ? String(ownClasses.value[0]?.id) : '',
+)
+
+function checkCreate(): Record<string, string> {
+  const errors: Record<string, string> = {}
+  const name = newName.value.trim()
+  if (name === '') errors.name = PELAJAR_COPY.errName
+  else if (name.length > 255) errors.name = PELAJAR_COPY.errNameMax
+  if (classChoice.value === '') errors.classroomId = PELAJAR_COPY.errClass
+  const ic = newIc.value.trim()
+  if (ic !== '' && !IC_PATTERN.test(ic)) errors.ic = PELAJAR_COPY.errIc
+  return errors
+}
+
+async function submitCreate(): Promise<void> {
+  if (creating.value) return
+  createFields.value = checkCreate()
+  if (Object.keys(createFields.value).length > 0) return
+  creating.value = true
+  createdMessage.value = ''
+  try {
+    const created = await createGuruStudent({
+      name: newName.value.trim(),
+      classroomId: classChoice.value,
+      ...(newIc.value.trim() !== '' ? { ic: newIc.value.trim() } : {}),
+    })
+    createdMessage.value = created.message
+    newName.value = ''
+    newIc.value = ''
+    minePage.value = 1
+    await reloadAll()
+  } catch (err) {
+    if (err instanceof ApiError && err.fields) createFields.value = err.fields
+    else flash.show({ type: 'error', message: moduleMessage(err) ?? PELAJAR_COPY.actionFailed })
+  } finally {
+    creating.value = false
+  }
+}
 
 async function remove(studentId: number, classId: number): Promise<void> {
   if (!(await confirm({ message: PELAJAR_COPY.removeConfirm, tone: 'error' }))) return
@@ -141,6 +232,48 @@ async function remove(studentId: number, classId: number): Promise<void> {
         >Cipta<span class="hidden sm:inline">&nbsp;Pelajar</span></UButton
       >
     </div>
+
+    <DsCallout
+      v-if="createdMessage"
+      tone="success"
+      :title="createdMessage"
+      dismissible
+      data-testid="pelajar-created"
+      @dismiss="createdMessage = ''"
+    />
+
+    <DsPanel v-if="create" data-testid="pelajar-create-card">
+      <DsStack gap="md">
+        <DsText as="p" variant="subheading" tone="highlighted">{{ PELAJAR_COPY.createTitle }}</DsText>
+        <DsText as="p" variant="body" tone="muted">{{ PELAJAR_COPY.createIntro }}</DsText>
+        <DsText
+          v-if="classes.data.value && ownClasses.length === 0"
+          as="p"
+          variant="body"
+          tone="warning"
+          role="status"
+          data-testid="pelajar-create-no-class"
+          >{{ PELAJAR_COPY.noActiveClass }}</DsText
+        >
+        <DsStack v-else-if="classes.data.value" as="form" gap="md" data-testid="pelajar-create-form" @submit.prevent="submitCreate">
+          <DsFormField :label="PELAJAR_COPY.fieldName" name="pelajar-new-name" required :error="createFields.name">
+            <UInput id="pelajar-new-name" v-model="newName" type="text" class="w-full" data-testid="pelajar-new-name" />
+          </DsFormField>
+          <DsFormField :label="PELAJAR_COPY.fieldClass" name="pelajar-new-class" required :error="createFields.classroomId">
+            <DsNativeSelect id="pelajar-new-class" :model-value="classChoice" data-testid="pelajar-new-class" @update:model-value="newClass = String($event)">
+              <option value="">{{ PELAJAR_COPY.chooseClass }}</option>
+              <option v-for="c in ownClasses" :key="c.id" :value="String(c.id)">{{ c.name }}</option>
+            </DsNativeSelect>
+          </DsFormField>
+          <DsFormField :label="PELAJAR_COPY.fieldIc" name="pelajar-new-ic" :hint="PELAJAR_COPY.fieldIcHint" :error="createFields.ic">
+            <UInput id="pelajar-new-ic" v-model="newIc" type="text" inputmode="numeric" autocomplete="off" class="w-full" data-testid="pelajar-new-ic" />
+          </DsFormField>
+          <UButton type="submit" class="min-h-11" :loading="creating" :disabled="creating" data-testid="pelajar-new-submit">{{
+            creating ? PELAJAR_COPY.submitting : PELAJAR_COPY.submitCreate
+          }}</UButton>
+        </DsStack>
+      </DsStack>
+    </DsPanel>
 
     <DsPillNav
       :items="tabs"
@@ -197,6 +330,14 @@ async function remove(studentId: number, classId: number): Promise<void> {
           @remove="remove"
         />
       </ul>
+      <div v-if="minePages > 1" data-testid="pelajar-mine-pager">
+        <UPagination
+          :page="minePage"
+          :total="mine.data.value?.meta.count ?? 0"
+          :items-per-page="mine.data.value?.meta.pageSize ?? 25"
+          @update:page="minePage = $event"
+        />
+      </div>
     </template>
 
     <!-- Pelajar Sekolah -->
@@ -218,6 +359,15 @@ async function remove(studentId: number, classId: number): Promise<void> {
             <option v-for="c in ownClasses" :key="c.id" :value="String(c.id)">{{ c.name }}</option>
           </DsNativeSelect>
         </div>
+        <DsText
+          v-if="targetError"
+          as="p"
+          variant="caption"
+          tone="error"
+          role="alert"
+          data-testid="pelajar-target-error"
+          >{{ targetError }}</DsText
+        >
       </DsPanel>
 
       <DsPanel v-if="school.data.value && !schoolSet" data-testid="pelajar-no-school">
@@ -256,12 +406,19 @@ async function remove(studentId: number, classId: number): Promise<void> {
             :key="s.id"
             :student="s"
             mode="school"
-            :can-add="targetClass !== ''"
             :already-in="isInClass(s, { id: targetClass, name: targetName })"
             :busy="busy"
             @add="add"
           />
         </ul>
+        <div v-if="schoolPages > 1" data-testid="pelajar-school-pager">
+          <UPagination
+            :page="schoolPage"
+            :total="schoolRows.length === 0 ? 0 : (school.data.value?.meta.pageSize ?? 25) * schoolPages"
+            :items-per-page="school.data.value?.meta.pageSize ?? 25"
+            @update:page="schoolPage = $event"
+          />
+        </div>
       </template>
       <div v-else class="flex flex-col gap-2" aria-busy="true" data-testid="pelajar-loading">
         <USkeleton v-for="n in 3" :key="n" class="h-16 w-full" />

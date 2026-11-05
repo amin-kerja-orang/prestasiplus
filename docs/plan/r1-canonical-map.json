@@ -1906,16 +1906,15 @@
       "approved_by_card": null
     },
     {
-      "key": "/guru/pelajar/cipta|",
+      "key": "/guru/pelajar/cipta|guru-pelajar-cipta",
       "path": "/guru/pelajar/cipta",
-      "name": null,
+      "name": "guru-pelajar-cipta",
       "status": "canonical",
       "sector": "S6",
-      "component": null,
+      "component": "src/modules/m10-teacher-class/pages/PelajarSayaPage.vue",
       "file": "src/modules/m10-teacher-class/routes/pelajar.ts",
-      "redirects_to": "/guru/pelajar",
-      "note": "Today redirects back silently (defect); must open the create form (docs/prd/r1/20-guru-admin-sekolah.md FR-GUR-41-3)",
-      "approved_by_card": null
+      "note": "Opens the Cipta Pelajar form (PelajarSayaPage with create=true; S6-T10, D-T10-1, FR-GUR-41-3)",
+      "approved_by_card": "S6-T10"
     },
     {
       "key": "/guru/remedial-progress|guru-remedial-progress",
@@ -12113,6 +12112,16 @@
       "method": "GET",
       "path": "/api/guru/students",
       "api_id": "API-GUR-05",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/guru/students",
+      "method": "POST",
+      "path": "/api/guru/students",
+      "api_id": "API-GUR-06",
       "status": "canonical",
       "sector": "S6",
       "file": "apps/api/src/modules/classes/teacher.controller.ts",

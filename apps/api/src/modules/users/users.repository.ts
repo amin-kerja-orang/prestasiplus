@@ -665,6 +665,15 @@ export class UsersRepository {
     return rows.length > 0
   }
 
+  /** Which of the lower-case `usernames` already exist in the school (one query; the generator of S6-T10). */
+  async takenUsernames(schoolId: string, usernames: readonly string[]): Promise<Set<string>> {
+    if (!isIdString(schoolId) || usernames.length === 0) return new Set()
+    const lower = usernames.map((u) => u.toLowerCase())
+    const rows = await this.prisma.client.$queryRaw<{ u: string }[]>`
+      SELECT lower(username) AS u FROM users WHERE school_id = ${idFromString(schoolId)} AND lower(username) = ANY(${lower}::text[])`
+    return new Set(rows.map((r) => r.u))
+  }
+
   /** Lower-case e-mails among `emails` that already exist (one query for a whole import). */
   async existingEmails(emails: readonly string[]): Promise<Set<string>> {
     const lower = [...new Set(emails.map((e) => e.toLowerCase()))]

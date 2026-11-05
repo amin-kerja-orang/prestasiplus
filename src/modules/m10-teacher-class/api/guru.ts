@@ -31,6 +31,8 @@ import type {
   GuruClass,
   GuruDashboard,
   GuruStudent,
+  GuruStudentCreated,
+  GuruStudentCreateRequest,
   GuruStudentsMeta,
   ImportResult,
   JoinClassResponse,
@@ -92,15 +94,26 @@ export function fetchClassQrData(classId: number, options: Signal = {}): Promise
 
 // --- students (S6) --------------------------------------------------------------------------
 
-/** #15 `GET /api/guru/students?tab=&search=`. */
+/** #15 `GET /api/guru/students?tab=&search=&page=` (25 per page). */
 export function fetchGuruStudents(
-  params: { tab?: StudentTab; search?: string } = {},
+  params: { tab?: StudentTab; search?: string; page?: number } = {},
   options: Signal = {},
 ): Promise<{ data: GuruStudent[]; meta: GuruStudentsMeta }> {
   return api.get<{ data: GuruStudent[]; meta: GuruStudentsMeta }>('/api/guru/students', {
-    query: { tab: params.tab, search: params.search },
+    query: { tab: params.tab, search: params.search, page: params.page },
     raw: true,
     ...withSignal(options),
+  })
+}
+
+/**
+ * `POST /api/guru/students` (API-GUR-06, Cipta Pelajar; 422 `fields`, 409 `fields.ic`). `classroomId`
+ * goes out as a string id. The answer message holds the configured default password: show it, never store it.
+ */
+export function createGuruStudent(body: GuruStudentCreateRequest): Promise<GuruStudentCreated> {
+  const { classroomId, ic, ...rest } = body
+  return api.post<GuruStudentCreated>('/api/guru/students', {
+    body: { ...rest, classroomId: wireId(classroomId), ...(ic !== undefined && ic !== '' ? { ic } : {}) },
   })
 }
 

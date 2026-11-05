@@ -138,7 +138,7 @@ describe('teacher roster, dashboard and inline curriculum (AC 2, 3, 4, 7)', () =
       await a.put(`/guru/students/${s1}`, { classroomId: k2.id })
       const res = await a.get('/guru/students')
       const body = StudentsBody.parse(res.body)
-      expect(body.meta).toEqual({ count: 2, schoolSet: true })
+      expect(body.meta).toEqual({ count: 2, schoolSet: true, page: 1, pageSize: 25, totalPages: 1 })
       expect(body.data.map((s) => s.name)).toEqual(['Murid Demo', 'Murid Demo Kosong'])
       const first = body.data[0]
       expect(first?.id).toBe(s1)
@@ -185,7 +185,7 @@ describe('teacher roster, dashboard and inline curriculum (AC 2, 3, 4, 7)', () =
       expect(ids).toContain(sMaju)
       expect(ids).not.toContain(sInactive)
       expect(ids).not.toContain(sOther)
-      expect(res.meta).toEqual({ count: res.data.length, schoolSet: true })
+      expect(res.meta).toEqual({ count: res.data.length, schoolSet: true, page: 1, pageSize: 25, totalPages: 1 })
       // DEMO002 is a primary school (SK) and its seeded pupil is Darjah 4: hidden (secondary-only, D72) until both are made secondary
       const hidden = StudentsBody.parse((await c.get('/guru/students?tab=school')).body)
       expect(hidden.data.map((s) => s.id)).not.toContain(sOther)

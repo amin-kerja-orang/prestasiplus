@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { GuruStudent } from '../../api/types'
 import { chipsOf, isInClass } from '../../components/pelajar/student-classes'
 
-const base: GuruStudent = { id: 1, name: 'Murid Demo 01', levelName: null, classNames: [] }
+const base: GuruStudent = { id: 1, name: 'Murid Demo 01', levelName: null, classNames: [], username: null, tugasan: 0, skorPurata: null, lastActiveAt: null }
 
 describe('student class chips (SW5-03)', () => {
   it('keys the chips by class id, so two classes with the same name stay apart', () => {

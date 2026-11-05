@@ -7,7 +7,7 @@
  */
 import { computed } from 'vue'
 
-import { DsIdentity, DsPanel, DsStatusBadge } from '@/ds'
+import { DsCluster, DsIdentity, DsPanel, DsStatusBadge, DsText } from '@/ds'
 
 import type { GuruStudent } from '../../api/types'
 import { PELAJAR_COPY } from './copy'
@@ -31,8 +31,6 @@ const props = defineProps<{
    * be removed (unique active class names only). Chips that carry an id never read it.
    */
   classIds?: ReadonlyMap<string, number>
-  /** School tab: a class is chosen. */
-  canAdd?: boolean
   /** School tab: the student is already in the chosen class. */
   alreadyIn?: boolean
   busy?: boolean
@@ -40,6 +38,31 @@ const props = defineProps<{
 defineEmits<{ add: [studentId: number]; remove: [studentId: number, classId: number] }>()
 
 const chips = computed(() => chipsOf(props.student))
+
+/** `dd/mm/yyyy` of an instant in Malaysia time (MYT), or the dash when there is none. */
+const MYT_DATE = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Asia/Kuala_Lumpur',
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+})
+function dateOf(iso: string | null): string {
+  if (iso === null) return PELAJAR_COPY.none
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? PELAJAR_COPY.none : MYT_DATE.format(d)
+}
+
+/** The "Pelajar Saya" columns after the class chips (FR-GUR-41-6): Tahap, Tugasan, Skor Purata, Terakhir Aktif. */
+const columns = computed(() => [
+  { key: 'tahap', label: PELAJAR_COPY.colTahap, value: props.student.levelName ?? PELAJAR_COPY.none },
+  { key: 'tugasan', label: PELAJAR_COPY.colTugasan, value: String(props.student.tugasan) },
+  {
+    key: 'skor',
+    label: PELAJAR_COPY.colSkor,
+    value: props.student.skorPurata === null ? PELAJAR_COPY.none : `${String(props.student.skorPurata)}%`,
+  },
+  { key: 'active', label: PELAJAR_COPY.colActive, value: dateOf(props.student.lastActiveAt) },
+])
 
 /** The class a chip's remove button acts on: its own id, else the name's id when the name is unique. */
 function removeIdOf(chip: StudentChip): number | undefined {
@@ -55,13 +78,24 @@ function removeIdOf(chip: StudentChip): number | undefined {
           <div class="min-w-0 flex-1">
             <DsIdentity
               :name="student.name"
-              :sub="student.levelName ?? undefined"
+              :sub="(mode === 'mine' ? student.username : student.levelName) ?? undefined"
               :initials="initialsOf(student.name)"
             >
               <template #name
                 ><span data-testid="student-name">{{ student.name }}</span></template
               >
             </DsIdentity>
+            <DsCluster v-if="mode === 'mine'" gap="md" data-testid="student-columns">
+              <DsText
+                v-for="c in columns"
+                :key="c.key"
+                as="span"
+                variant="caption"
+                tone="muted"
+                :data-testid="`student-${c.key}`"
+                >{{ c.label }}: {{ c.value }}</DsText
+              >
+            </DsCluster>
             <ul v-if="chips.length > 0" class="mt-2 flex flex-wrap items-center gap-2">
               <li
                 v-for="chip in chips"
@@ -98,7 +132,7 @@ function removeIdOf(chip: StudentChip): number | undefined {
             type="button"
             icon="i-ph-plus"
             class="min-h-11"
-            :disabled="!canAdd || busy"
+            :disabled="busy"
             data-testid="student-add"
             @click="$emit('add', student.id)"
             >{{ PELAJAR_COPY.add }}</UButton

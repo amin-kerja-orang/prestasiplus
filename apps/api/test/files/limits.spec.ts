@@ -238,6 +238,7 @@ describe('environment', () => {
     DATABASE_URL: 'postgresql://u:p@db:5432/x',
     SESSION_SECRET: 's'.repeat(32),
     IC_HASH_KEY: 'i'.repeat(32),
+    PUPIL_DEFAULT_PASSWORD: 'z'.repeat(8),
   }
 
   it('loadEnv refuses production with FILE_STORAGE_DIR unset, whitespace-only or relative', () => {

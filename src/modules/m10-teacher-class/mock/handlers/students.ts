@@ -73,6 +73,11 @@ function studentBody(s: StudentRef, classes: Map<number, ClassRef[]>) {
     levelName: s.grade === null ? null : (curriculum.levelForGrade(s.grade)?.name ?? null),
     classNames: own.map((c) => c.name),
     classes: own.map((c) => ({ id: c.id, name: c.name })),
+    // R1-GUR-41 columns: the mock has no sessions or logins, so the figures are the empty ones.
+    username: (s as StudentRef & { username?: string | null }).username ?? null,
+    tugasan: 0,
+    skorPurata: null,
+    lastActiveAt: null,
   }
 }
 

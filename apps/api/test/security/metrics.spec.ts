@@ -131,10 +131,10 @@ describe('GET /api/metrics (BE-33)', () => {
 
   describe('production policy (METRICS_INTERNAL_CIDRS)', () => {
     async function withProd(extra: Record<string, string | undefined>, fn: (a: INestApplication) => Promise<void>): Promise<void> {
-      const saved = { NODE_ENV: process.env.NODE_ENV, IC_HASH_KEY: process.env.IC_HASH_KEY, FILE_STORAGE_DIR: process.env.FILE_STORAGE_DIR, SESSION_SECRET: process.env.SESSION_SECRET, MAIL_LOG_RESET_LINKS: process.env.MAIL_LOG_RESET_LINKS }
+      const saved = { NODE_ENV: process.env.NODE_ENV, IC_HASH_KEY: process.env.IC_HASH_KEY, FILE_STORAGE_DIR: process.env.FILE_STORAGE_DIR, SESSION_SECRET: process.env.SESSION_SECRET, MAIL_LOG_RESET_LINKS: process.env.MAIL_LOG_RESET_LINKS, PUPIL_DEFAULT_PASSWORD: process.env.PUPIL_DEFAULT_PASSWORD }
       let a: INestApplication | undefined
       try {
-        Object.assign(process.env, { NODE_ENV: 'production', IC_HASH_KEY: 'i'.repeat(40), SESSION_SECRET: 's'.repeat(40), FILE_STORAGE_DIR: '/tmp/pp-metrics-test' })
+        Object.assign(process.env, { NODE_ENV: 'production', IC_HASH_KEY: 'i'.repeat(40), SESSION_SECRET: 's'.repeat(40), FILE_STORAGE_DIR: '/tmp/pp-metrics-test', PUPIL_DEFAULT_PASSWORD: 'z'.repeat(8) })
         delete process.env.MAIL_LOG_RESET_LINKS
         a = await boot(db, { METRICS_INTERNAL_CIDRS: undefined, ...extra })
         await fn(a)

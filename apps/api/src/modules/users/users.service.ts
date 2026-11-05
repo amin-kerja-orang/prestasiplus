@@ -6,6 +6,7 @@ import {
   STUDENT_SEARCH_LIMIT,
   STUDENT_SEARCH_MIN_CHARS,
   USERS_PAGE_SIZE,
+  GURU_STUDENT_MESSAGES,
   USER_MESSAGES,
   usersDeletedText,
   type AdminUserDetail,
@@ -32,7 +33,7 @@ import { ParentsRepository } from '../parents/parents.repository'
 import { SchoolsRepository } from '../schools'
 import type { Caller } from './caller'
 import { classLevelOfGrade } from './class-level'
-import { generatePassword, IcService } from './credentials'
+import { generatePassword, IcService, USERNAME_SUFFIXES, usernameStem } from './credentials'
 import { toDetail, toListItem, toStudentItem } from './users.mapper'
 import { BULK_DELETE_MAX_IDS, PAGE_NUMBER_MAX, USER_AUDIT } from './users.constants'
 import { FIELD_MESSAGES, forbidden, invalid, lastAdmin, notFound } from './users.errors'
@@ -44,6 +45,8 @@ type LinkChange = { added: string[]; removed: string[] }
 const linkDetails = (c: LinkChange | null): { linkedStudents?: LinkChange } =>
   c !== null && (c.added.length > 0 || c.removed.length > 0) ? { linkedStudents: c } : {}
 
+/** Tries of the pupil username generator when a parallel create takes the chosen name. */
+const PUPIL_USERNAME_ATTEMPTS = 5
 const WRITE_TX = { maxWait: 10_000, timeout: 15_000 } as const
 const SORT_LOCALE = 'ms'
 const byNameThenId = (a: { name: string; id: string }, b: { name: string; id: string }): number =>
@@ -242,6 +245,65 @@ export class UsersService {
     const created = await this.mustGet(id)
     const detail = await this.detailOf(caller, created)
     return { data: { ...detail, mustChangePassword: false, generatedPassword: password }, status: USER_MESSAGES.created }
+  }
+
+  // --- pupil created by a teacher (API-GUR-06, S6-T10) ----------------------------------------------
+
+  /**
+   * Creates a student of `schoolId` with a generated username (`stem` + 2-digit suffix, unique in the school) and
+   * the given initial password, then runs `within(userId)` in the same transaction (the caller enrols and audits).
+   * A duplicate IC is a 409 on `fields.ic`. A username taken between the check and the insert (unique index
+   * `uq_users_school_username`) aborts the transaction, so the whole transaction is retried with a fresh check.
+   */
+  async createPupil(
+    input: { name: string; schoolId: string; grade: number | null; ic?: string | undefined; password: string; createdById: string },
+    within: (userId: string, username: string) => Promise<void>,
+  ): Promise<{ id: string; username: string }> {
+    let icParts: { hash: string; masked: string } | null = null
+    if (input.ic !== undefined) {
+      icParts = this.ic.parts(input.ic)
+      if (icParts === null) throw invalid({ ic: GURU_STUDENT_MESSAGES.ic })
+      if ((await this.users.existingIcHashes([icParts.hash])).has(icParts.hash)) {
+        throw ApiError.of('CONFLICT', { message: GURU_STUDENT_MESSAGES.icTaken, fields: { ic: GURU_STUDENT_MESSAGES.icTaken } })
+      }
+    }
+    const passwordHash = await this.passwords.hash(input.password)
+    const stem = usernameStem(input.name)
+    for (let attempt = 0; attempt < PUPIL_USERNAME_ATTEMPTS; attempt++) {
+      const candidates = USERNAME_SUFFIXES.map((n) => `${stem}${n}`)
+      const taken = await this.users.takenUsernames(input.schoolId, candidates)
+      const username = candidates.find((c) => !taken.has(c))
+      if (username === undefined) throw ApiError.of('CONFLICT')
+      const now = this.clock.now()
+      try {
+        const id = await this.prisma.transaction(async () => {
+          const newId = await this.users.create({
+            name: input.name,
+            email: null,
+            username,
+            phone: null,
+            schoolId: input.schoolId,
+            grade: input.grade,
+            passwordHash,
+            mustChangePassword: false,
+            icHash: icParts?.hash ?? null,
+            icMasked: icParts?.masked ?? null,
+            isActive: true,
+            createdById: input.createdById,
+            now,
+          })
+          await this.users.setRoles(newId, ['student'], now)
+          await within(newId, username)
+          return newId
+        }, WRITE_TX)
+        return { id, username }
+      } catch (err) {
+        if (uniqueField(err) === 'username') continue
+        if (isOverloadError(err)) throw ApiError.of('RATE_LIMITED', { retryAfter: 5 })
+        throw err
+      }
+    }
+    throw ApiError.of('CONFLICT')
   }
 
   // --- update -------------------------------------------------------------------------------------

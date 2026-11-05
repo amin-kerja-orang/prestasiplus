@@ -37,6 +37,7 @@ export const JOIN_ROLES = ['student', 'admin'] as const
 export const CLASS_AUDIT = {
   CLASS_CREATED: 'classes.class.created',
   STUDENT_ADDED: 'classes.student.added',
+  STUDENT_CREATED: 'classes.student.created',
   STUDENT_REMOVED: 'classes.student.removed',
   JOINED: 'classes.class.joined',
   CHAPTER_CREATED: 'curriculum.chapter.created',

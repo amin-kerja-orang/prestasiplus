@@ -12,6 +12,21 @@ export function generatePassword(): string {
   return out
 }
 
+/** Username stem of a pupil name (D113): each word lower-cased to ASCII a-z0-9 (diacritics folded), words joined by ".". */
+export function usernameStem(name: string): string {
+  const words = name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .split(/\s+/)
+    .map((w) => w.replace(/[^a-z0-9]/g, ''))
+    .filter((w) => w !== '')
+  return words.length > 0 ? words.join('.') : 'pelajar'
+}
+
+/** Two-digit suffixes 01..99 appended to a stem, in order. */
+export const USERNAME_SUFFIXES = Array.from({ length: 99 }, (_, i) => String(i + 1).padStart(2, '0'))
+
 export interface IcParts {
   hash: string
   masked: string

@@ -132,6 +132,14 @@ export interface GuruStudent {
    * predates the field: the page then falls back to the names.
    */
   classes?: GuruStudentClass[]
+  /** Login name, shown beneath the name (API-GUR-05). */
+  username: string | null
+  /** Completed Set Soalan / Misi of the pupil's class (FR-GUR-41-6). */
+  tugasan: number
+  /** Mean of the per-session accuracies, whole percent; `null` without sessions. */
+  skorPurata: number | null
+  /** Time of the latest answer (`+08:00`), `null` when none. */
+  lastActiveAt: string | null
 }
 
 /** One class chip of a student row: the id tells two classes with the same name apart. */
@@ -145,6 +153,25 @@ export interface GuruStudentsMeta {
   count: number
   /** Whether the teacher profile has a school (BR-M10-30). */
   schoolSet: boolean
+  /** Paging of API-GUR-05 (25 per page); absent in mock mode (one page). */
+  page?: number
+  pageSize?: number
+  totalPages?: number
+}
+
+/** `POST /api/guru/students` body (API-GUR-06). */
+export interface GuruStudentCreateRequest {
+  name: string
+  classroomId: number | string
+  ic?: string
+}
+
+/** `POST /api/guru/students` answer; `message` carries the login and the default password, shown once. */
+export interface GuruStudentCreated {
+  id: number | string
+  name: string
+  username: string
+  message: string
 }
 
 export interface ClassroomStudent {

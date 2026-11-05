@@ -70,7 +70,15 @@ export type EnrolOutcome = 'created' | 'reactivated' | 'already'
 export interface StudentLine {
   id: string
   name: string
+  username: string | null
   grade: number | null
+}
+
+/** Per-pupil figures of the Pelajar Saya list (FR-GUR-41-6). */
+export interface StudentStats {
+  tugasan: number
+  skorPurata: number | null
+  lastActiveAt: Date | null
 }
 
 export interface TeacherProfileRecord {
@@ -130,6 +138,11 @@ const toEnrolment = (r: {
 
 /** Newest first, ties by id (mock: createdAt desc, then classId asc). */
 const NEWEST_FIRST: Prisma.ClassroomOrderByWithRelationInput[] = [{ createdAt: 'desc' }, { id: 'asc' }]
+
+/** Skor Purata: the mean of the per-session accuracies (sum of correct/total ratios over the session count) as a whole percent; null without sessions. */
+export function skorPurataOf(ratioSum: number, sessions: number): number | null {
+  return sessions > 0 ? Math.round((ratioSum / sessions) * 100) : null
+}
 
 /** A decimal-string id as bigint, or null when it is not a canonical id (an unknown id, never an error). */
 const idOf = (id: string): bigint | null => (isIdString(id) ? idFromString(id) : null)
@@ -579,13 +592,54 @@ export class ClassesRepository {
   async studentLines(ids: readonly string[], term: string): Promise<StudentLine[]> {
     const keys = idsOf(ids)
     if (keys.length === 0) return []
-    const rows = await this.db.$queryRaw<{ id: bigint; name: string; grade: number | null }[]>`
-      SELECT u.id, u.name, u.grade
+    const rows = await this.db.$queryRaw<{ id: bigint; name: string; username: string | null; grade: number | null }[]>`
+      SELECT u.id, u.name, u.username, u.grade
         FROM users u
        WHERE u.id = ANY(${keys}::bigint[]) AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student')
          AND ${VISIBLE_USER_SQL} ${nameFilter(term)}
        ORDER BY u.name ASC, u.id ASC`
-    return rows.map((r) => ({ id: idToString(r.id), name: r.name, grade: r.grade }))
+    return rows.map((r) => ({ id: idToString(r.id), name: r.name, username: r.username, grade: r.grade }))
+  }
+
+  /**
+   * Tugasan, Skor Purata and Terakhir Aktif of the given pupils (one grouped query each; test rows never count).
+   * - tugasan: distinct Set Soalan sets and Misi the pupil completed that are assigned to a class of THIS teacher the
+   *   pupil is an active member of (`question_sets.classroom_id` today; S6-T14 repoints it to the assignment table).
+   * - skorPurata: round(mean of correct_count / question_count x 100) (`skorPurataOf`) over completed sessions of every mode.
+   * - lastActiveAt: latest `practice_answers.answered_at`.
+   */
+  async studentStats(teacherId: string, studentIds: readonly string[]): Promise<Map<string, StudentStats>> {
+    const out = new Map<string, StudentStats>()
+    const keys = idsOf(studentIds)
+    const teacher = idOf(teacherId)
+    if (keys.length === 0 || teacher === null) return out
+    const [tugasan, scores, active] = await Promise.all([
+      this.db.$queryRaw<{ user_id: bigint; n: number }[]>`
+        SELECT s.user_id, count(DISTINCT s.mode || ':' || coalesce(s.question_set_id, s.mission_id)::text)::int AS n
+          FROM practice_sessions s
+         WHERE s.user_id = ANY(${keys}::bigint[]) AND s.status = 'completed' AND s.is_test = false AND s.mode IN ('question_set', 'mission')
+           AND EXISTS (
+             SELECT 1 FROM enrolments e JOIN classrooms c ON c.id = e.classroom_id
+              WHERE e.student_id = s.user_id AND e.status = 'active' AND e.is_test = false AND c.teacher_id = ${teacher}
+                AND ((s.mode = 'question_set' AND EXISTS (SELECT 1 FROM question_sets q WHERE q.id = s.question_set_id AND q.classroom_id = e.classroom_id))
+                  OR (s.mode = 'mission' AND EXISTS (SELECT 1 FROM missions m WHERE m.id = s.mission_id AND m.classroom_id = e.classroom_id))))
+         GROUP BY s.user_id`,
+      this.db.$queryRaw<{ user_id: bigint; ratio: number; n: number }[]>`
+        SELECT s.user_id, sum(s.correct_count::float8 / s.question_count) AS ratio, count(*)::int AS n
+          FROM practice_sessions s
+         WHERE s.user_id = ANY(${keys}::bigint[]) AND s.status = 'completed' AND s.is_test = false AND s.question_count > 0
+         GROUP BY s.user_id`,
+      this.db.$queryRaw<{ user_id: bigint; last: Date }[]>`
+        SELECT a.user_id, max(a.answered_at) AS last
+          FROM practice_answers a
+         WHERE a.user_id = ANY(${keys}::bigint[]) AND a.is_test = false
+         GROUP BY a.user_id`,
+    ])
+    for (const k of keys) out.set(idToString(k), { tugasan: 0, skorPurata: null, lastActiveAt: null })
+    for (const r of tugasan) (out.get(idToString(r.user_id)) as StudentStats).tugasan = r.n
+    for (const r of scores) (out.get(idToString(r.user_id)) as StudentStats).skorPurata = skorPurataOf(r.ratio, r.n)
+    for (const r of active) (out.get(idToString(r.user_id)) as StudentStats).lastActiveAt = r.last
+    return out
   }
 
   /**
@@ -598,11 +652,11 @@ export class ClassesRepository {
     const where = Prisma.sql`u.school_id = ${key} AND u.is_active AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student')
          AND ${VISIBLE_USER_SQL} ${nameFilter(term)}`
     const [rows, totals] = await Promise.all([
-      this.db.$queryRaw<{ id: bigint; name: string; grade: number | null }[]>`
-        SELECT u.id, u.name, u.grade FROM users u WHERE ${where} ORDER BY u.name ASC, u.id ASC LIMIT ${limit}`,
+      this.db.$queryRaw<{ id: bigint; name: string; username: string | null; grade: number | null }[]>`
+        SELECT u.id, u.name, u.username, u.grade FROM users u WHERE ${where} ORDER BY u.name ASC, u.id ASC LIMIT ${limit}`,
       this.db.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n FROM users u WHERE ${where}`,
     ])
-    return { rows: rows.map((r) => ({ id: idToString(r.id), name: r.name, grade: r.grade })), total: totals[0]?.n ?? 0 }
+    return { rows: rows.map((r) => ({ id: idToString(r.id), name: r.name, username: r.username, grade: r.grade })), total: totals[0]?.n ?? 0 }
   }
 }
 
