@@ -145,7 +145,7 @@ const SECTOR_RULES = [
   [/^src\/lib\/lower-form\.ts$/, 5],
   [/^src\/modules\/m01-authentication\/(pages\/(Profile|Tetapan)|routes\/(profile|tetapan)\.ts)/, 5],
   [/^docs\/ops\/dskp-loader\.md$/, 4],
-  [new RegExp(`^${M28}components/(PartInput|PartNode|QuestionBlock|RichText|MathField|MathKeyboard|StimulusStack|StimulusView|StimulusChip|NavigatorPanel|AttemptShell)\\.vue$`), 8],
+  [new RegExp(`^${M28}components/(PartInput|PartNode|QuestionBlock|RichText|MathField|MathKeyboard|StimulusView|NavigatorPanel|AttemptShell)\\.vue$`), 8],
   [new RegExp(`^${M28}components/(SelfMarkControl|ResultGroup|PartResultCard|PastSittingsLink|GenerateShortageAlert|KeywordSuggestion|KuizItem|ReportQuestionButton)\\.vue$`), 3],
   [new RegExp(`^${M28}admin/intake/`), 2],
   [new RegExp(`^${M28}__tests__/(intake|figure-links|semakan)`), 2],
