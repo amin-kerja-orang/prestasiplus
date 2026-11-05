@@ -76,7 +76,7 @@ describe('GET /admin-sekolah/dashboard with no BE-19 / BE-17 provider (fail-clos
   })
 })
 
-describe('GET /admin-sekolah/dashboard cards agree with the managed lists (FR-M27-50, D-14)', () => {
+describe('GET /admin-sekolah/dashboard cards are XS-1 and XS-3 (S6-T03)', () => {
   let t: SchoolAdminTestApp
   let admin: Api
   let s1: string
@@ -99,7 +99,7 @@ describe('GET /admin-sekolah/dashboard cards agree with the managed lists (FR-M2
       ))[0]?.n,
     )
 
-  it('JUMLAH GURU and JUMLAH PELAJAR equal the unfiltered S7 / S6 totals; a peer school_admin teacher is not counted', async () => {
+  it('JUMLAH GURU is XS-3 (a peer school_admin teacher is not counted) and JUMLAH PELAJAR is XS-1 (active, not suspended, Tingkatan 1-5)', async () => {
     // The seed holds both a plain teacher and a teacher who is also a school_admin (guruadmin@demo.test) in DEMO001.
     const peers = await countRole('teacher', `and exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'school_admin')`)
     const plain = await countRole('teacher', `and not exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'school_admin')`)
@@ -114,10 +114,15 @@ describe('GET /admin-sekolah/dashboard cards agree with the managed lists (FR-M2
     expect(guru.status, JSON.stringify(guru.body)).toBe(200)
     expect(pelajar.status, JSON.stringify(pelajar.body)).toBe(200)
 
+    // The seed has only student / teacher / school_admin roles, so the managed teacher list total equals XS-3 here.
     expect(d.cards.teachers).toBe(guru.body.meta.counts.total)
-    expect(d.cards.pupils).toBe(pelajar.body.meta.counts.total)
     // The raw teacher count includes the peers; the card must not.
     expect(d.cards.teachers).toBe((await countRole('teacher')) - hidden)
+    expect(d.cards.teachers).toBe(plain)
+    // Changed from `= pelajar.counts.total`: the list still counts every pupil with its status; the card counts XS-1 only.
+    const xs1 = await countRole('student', 'and u.is_active and not u.is_suspended and u.grade between 7 and 11')
+    expect(d.cards.pupils).toBe(xs1)
+    expect(d.cards.pupils).toBeLessThanOrEqual(pelajar.body.meta.counts.total)
   })
 })
 
@@ -155,7 +160,8 @@ describe('GET /admin-sekolah/dashboard with a BE-19-shaped provider', () => {
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     const d = SchoolAdminDashboardSchema.parse(res.body.data)
     expect(d.cards.activeClasses).toBe(7)
-    expect(d.performance.practice).toEqual({ accuracy: 68.4, sessions: 40, questions: 500 })
+    // S6-T03: `sessions` is the S10 view's (40); `questions` and `accuracy` are XS-4 / XS-5 of the school (no answer rows in this DB: 0 and null, never 0 %).
+    expect(d.performance.practice).toEqual({ accuracy: null, sessions: 40, questions: 0 })
     // t5 has 3 pupils: suppressed. t4 has 9: shown.
     expect(d.performance.levels).toEqual([
       { code: 't4', name: 'Tingkatan 4', accuracy: 71.2 },

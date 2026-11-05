@@ -41,9 +41,11 @@ export interface SessionSeed {
   completedAt: string
   seconds?: number
   subjectId?: string | null
+  /** Also write the answers when there is no subject (XS-4 reads `practice_answers`, not session counts). */
+  answers?: boolean
 }
 
-/** One completed practice session; when `subjectId` is given, one answer per question is also written (correct ones first). */
+/** One completed practice session; when `subjectId` is given (or `answers` is true), one answer per question is also written (correct ones first). */
 export async function addSession(db: TestDatabase, userId: string, s: SessionSeed): Promise<void> {
   const rows = await db.query<{ id: string }>(
     `insert into practice_sessions (user_id, mode, question_count, status, correct_count, time_spent_sec, started_at, completed_at, subject_id, created_at, updated_at)
@@ -51,12 +53,13 @@ export async function addSession(db: TestDatabase, userId: string, s: SessionSee
     [userId, s.mode ?? 'chapter', s.questions, s.correct, s.seconds ?? 60, s.completedAt, s.subjectId ?? null],
   )
   const sessionId = rows[0]?.id as string
-  if (s.subjectId) {
+  if (s.subjectId || s.answers) {
     for (let i = 0; i < s.questions; i++) {
       await db.query(
-        `insert into practice_answers (session_id, user_id, subject_id, is_correct, answered_at, created_at)
-         values ($1::uuid, $2::bigint, $3::bigint, $4, $5::timestamptz, now())`,
-        [sessionId, userId, s.subjectId, i < s.correct, s.completedAt],
+        `insert into practice_answers (session_id, user_id, subject_id, question_id, is_correct, answered_at, created_at)
+         values ($1::uuid, $2::bigint, $3::bigint, $4::bigint, $5, $6::timestamptz, now())`,
+        // The table needs a subject or a question; without a subject a plain id stands for the question (no foreign key yet).
+        [sessionId, userId, s.subjectId ?? null, s.subjectId ? null : 9000 + i, i < s.correct, s.completedAt],
       )
     }
   }
@@ -106,21 +109,29 @@ export async function addSchoolAdmin(db: TestDatabase, schoolId: string, email: 
   await db.query(`insert into user_roles (user_id, role, created_at) values ($1::bigint, 'school_admin', now())`, [rows[0]?.id as string])
 }
 
-/** Managed accounts of one role in a school, as S0/S6/S7 and the reports count them: the role, no role outside student/teacher, any status. */
-async function managedCount(db: TestDatabase, schoolId: string, role: 'student' | 'teacher'): Promise<number> {
+/** XS-1 as plain SQL: pupils of a school that are active, not suspended and in Tingkatan 1-5 (`grade` 7..11). Independent of `xs-queries.ts` on purpose. */
+export async function xsPupilCount(db: TestDatabase, schoolId: string): Promise<number> {
   const rows = await db.query<{ n: number }>(
     `select count(*)::int as n from users u where u.school_id = $1::bigint
-       and exists (select 1 from user_roles r where r.user_id = u.id and r.role = $2)
-       and not exists (select 1 from user_roles r where r.user_id = u.id and r.role not in ('student', 'teacher'))`,
-    [schoolId, role],
+       and exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'student')
+       and u.is_active and not u.is_suspended and u.grade between 7 and 11`,
+    [schoolId],
   )
   return rows[0]?.n ?? 0
 }
 
-export const managedPupilCount = (db: TestDatabase, schoolId: string) => managedCount(db, schoolId, 'student')
-export const managedTeacherCount = (db: TestDatabase, schoolId: string) => managedCount(db, schoolId, 'teacher')
+/** XS-3 as plain SQL: teachers of a school, approved (no pending school), without a school-admin role; `is_active` is not filtered (DOC DEFECT 1). */
+export async function xsTeacherCount(db: TestDatabase, schoolId: string): Promise<number> {
+  const rows = await db.query<{ n: number }>(
+    `select count(*)::int as n from users u where u.school_id = $1::bigint and u.pending_school_id is null
+       and exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'teacher')
+       and not exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'school_admin')`,
+    [schoolId],
+  )
+  return rows[0]?.n ?? 0
+}
 
-/** Marks an account suspended (it stays active and is still counted as a managed account). */
+/** Marks an account suspended (it stays listed in Senarai Pelajar, but XS-1 does not count it). */
 export async function suspend(db: TestDatabase, userId: string): Promise<void> {
   await db.query(`update users set is_suspended = true where id = $1::bigint`, [userId])
 }

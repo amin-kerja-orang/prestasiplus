@@ -1,6 +1,7 @@
 import type { SchoolAdminDskpStatus, SchoolAdminUsagePeriod } from '@pp/contract'
 
 import { DAY_MS, mytDayStart } from '../../reports/analytics/domain/rules'
+import { xsAccuracy } from '../xs-queries'
 
 /**
  * Pure window, label and rounding rules of the school admin reports (BE-21 Part B). No database, no clock: the caller passes
@@ -130,9 +131,8 @@ export const minuteOf = (now: number): number => Math.floor(now / 60_000) * 60_0
 
 export const round1 = (n: number): number => Math.round(n * 10) / 10
 
-/** `correct / answered x 100`, 1 decimal, never above 100; null when nothing was answered. */
-export const accuracyOf = (correct: number, answered: number): number | null =>
-  answered > 0 ? Math.min(100, round1((correct / answered) * 100)) : null
+/** XS-5 (`xs-queries.ts` owns the rule): `correct / answered x 100`, 1 decimal half up, never above 100; null when nothing was answered. */
+export const accuracyOf = xsAccuracy
 
 /** `round(part / whole x 100)`; 0 without a whole. */
 export const participationOf = (part: number, whole: number): number => (whole > 0 ? Math.round((part / whole) * 100) : 0)
