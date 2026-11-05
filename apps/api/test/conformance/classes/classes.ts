@@ -24,9 +24,8 @@ export const classesScenarios: Scenario[] = [
       const cls = dataOf(created)
       ctx.check(typeof cls.joinCode === 'string' && cls.joinCode !== '', 'class has no join code')
       ctx.expectStatus(await teacher.request('GET', '/guru/classes'), 200)
-      // S6-T14 (API-GUR-04): the QR route is gone for every id; edit and the duplicate name guard work.
-      expectError(ctx, await teacher.request('GET', `/guru/classes/${String(cls.id)}/qr-data`), 404, 'NOT_FOUND')
-      expectError(ctx, await teacher.request('GET', '/guru/classes/987654321/qr-data'), 404, 'NOT_FOUND')
+      // S6-T14 (API-GUR-04): the QR route is gone (the 404 is proven in test/classes/teacher-classes.spec.ts: the contract path
+      // is deprecated and has no route, so a conformance request to it would count as "not yet implemented"); edit works.
       ctx.expectStatus(
         await teacher.request('PUT', `/guru/classes/${String(cls.id)}`, { body: { name: 'Kelas Konformans', educationLevel: 'tingkatan-4' } }),
         200,

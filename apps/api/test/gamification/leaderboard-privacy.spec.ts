@@ -48,7 +48,7 @@ describe('GET /api/gamification/leaderboard: names only within scope (#76)', () 
     )[0]!.id
     const cls = (
       await t.db.query<{ id: string }>(
-        `insert into classrooms (name, teacher_id, school_id, education_level_id, academic_year, is_active) values ('Kelas Papan', $1::bigint, $2::bigint, $3::bigint, 2026, $4) returning id::text`,
+        `insert into classrooms (name, teacher_id, school_id, education_level_id, academic_year, is_active) values ('Kelas Papan ' || (select count(*) from classrooms)::text, $1::bigint, $2::bigint, $3::bigint, 2026, $4) returning id::text`,
         [teacherId, schoolId, level, active],
       )
     )[0]!.id

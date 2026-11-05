@@ -143,7 +143,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | videos | 3 |
 | wallets | 3 |
 
-Tables with rows: 99 of 199. Total rows: 21892.
+Tables with rows: 99 of 200. Total rows: 21892.
 <!-- poc-counts:end -->
 
 Mod Pelajar (`is_test`) rows: none are seeded; the profile counts and `verify` rules exclude them anyway.
