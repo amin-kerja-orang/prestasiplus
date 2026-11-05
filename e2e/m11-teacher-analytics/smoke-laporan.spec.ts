@@ -254,7 +254,7 @@ test.describe('M11 S1 Laporan Statistik: admin', MODULE, () => {
     await expect(page.getByTestId('list-active-empty')).toHaveText(
       'Tiada aktiviti dalam tempoh ini.',
     )
-    await expect(page.getByTestId('list-idle')).toContainText('Belum Pernah Buat Latihan')
+    await expect(page.getByTestId('list-idle')).toContainText('Pelajar Belum Pernah Buat Latihan (0)')
     await expect(page.getByTestId('list-idle-empty')).toHaveText(
       'Belum ada pelajar dalam kelas anda.',
     )

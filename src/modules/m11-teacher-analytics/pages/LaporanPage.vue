@@ -283,7 +283,7 @@ const n = computed(() => d.value?.population.total ?? 0)
           <div class="flex flex-col gap-3">
             <h2 class="flex items-center gap-2 text-label text-highlighted">
               <UIcon name="i-ph-moon" class="size-4 text-muted" />{{
-                LAPORAN_COPY.notPractisedTitle
+                practisePanelTitle(d.notPractisedAll.length)
               }}
             </h2>
             <p

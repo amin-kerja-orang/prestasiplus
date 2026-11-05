@@ -539,7 +539,7 @@ export class AnalyticsRepository {
    * FR-GUR-42-6 (XS-8): every completed non-test unit of activity in the window, grouped by pupil, mode and MYT day. Two sources
    * write one unit each: a completed `practice_sessions` row (every mode, Set Soalan Guru = `question_set`) and a graded Bijak
    * sitting (`practice_attempt_aggregates`, which does NOT write `practice_sessions`; mode `bijak`). The accuracy of a unit is
-   * correct / questions (sessions) or units awarded / units max (sittings); a unit without questions has none.
+   * correct / questions (sessions) or units awarded / units max (sittings); a unit without questions has none, and a provisional sitting counts as activity but has no accuracy.
    */
   async activityByDay(userIds: readonly string[], from: Date, to: Date): Promise<ActivityDayRow[]> {
     const keys = toIds(userIds)
@@ -555,7 +555,7 @@ export class AnalyticsRepository {
           AND s.completed_at >= ${from} AND s.completed_at <= ${to}
         UNION ALL
         SELECT g.user_id, 'bijak' AS mode, to_char(g.submitted_at AT TIME ZONE ${KL}, 'YYYY-MM-DD') AS day,
-          CASE WHEN g.units_max > 0 THEN (g.units_awarded / g.units_max)::float8 END AS acc
+          CASE WHEN g.units_max > 0 AND NOT g.provisional THEN (g.units_awarded / g.units_max)::float8 END AS acc
         FROM practice_attempt_aggregates g
         WHERE g.user_id = ANY(${keys}::bigint[]) AND NOT g.is_test AND g.submitted_at IS NOT NULL
           AND g.submitted_at >= ${from} AND g.submitted_at <= ${to}

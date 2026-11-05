@@ -302,6 +302,7 @@ describe('S1 Laporan: expandable cards (FR-M11-17, E2E-M11-11/12)', () => {
     expect(t(w, 'panel-latihan-list').findAll('li')).toHaveLength(10)
     expect(text(w, 'panel-latihan-list-more')).toBe('+ 2 lagi')
     expect(t(w, 'list-idle-rows').findAll('li')).toHaveLength(10)
+    expect(text(w, 'list-idle')).toContain('Pelajar Belum Pernah Buat Latihan (12)')
     expect(text(w, 'list-idle-rows-more')).toBe('+ 2 lagi')
     await t(w, 'list-idle-rows-more').trigger('click')
     expect(t(w, 'list-idle-rows').findAll('li')).toHaveLength(12)
